@@ -150,17 +150,6 @@ button{font-family:inherit}
 }
 .knock-btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px -6px rgba(255,90,31,.55)}
 
-/* ---------- sound toggle ---------- */
-.sound-toggle{
-  position:fixed;left:16px;bottom:16px;z-index:40;
-  width:38px;height:38px;border-radius:999px;
-  display:flex;align-items:center;justify-content:center;
-  background:var(--bg-raised);border:1px solid var(--line);color:var(--ink-dim);
-  cursor:pointer;transition:color .15s ease, border-color .15s ease;
-}
-.sound-toggle:hover{color:var(--ink);border-color:var(--ink-dim)}
-.sound-toggle svg{width:15px;height:15px}
-
 /* ---------- modal ---------- */
 .modal-overlay{
   position:fixed;inset:0;background:rgba(19,19,17,.45);backdrop-filter:blur(4px);
@@ -233,7 +222,6 @@ button{font-family:inherit}
   .hero-visual{height:220px}
   .footer{flex-direction:row;justify-content:space-between;padding:32px 0 56px}
   .knock-btn{right:32px;bottom:32px}
-  .sound-toggle{left:32px;bottom:32px}
   .modal{padding:36px}
   .stack-panel .wrap{max-width:640px}
 }
