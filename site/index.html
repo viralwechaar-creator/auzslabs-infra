@@ -16,7 +16,7 @@
 <meta name="twitter:title" content="AUZslab">
 <meta name="twitter:description" content="Software, built for how you actually work.">
 <link rel="icon" href="/logo.png">
-<link rel="stylesheet" href="theme.css?v=4">
+<link rel="stylesheet" href="theme.css?v=5">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"Organization","name":"AUZslab","url":"https://auzslab.in","logo":"https://auzslab.in/logo.png","description":"AUZslab builds point of sale, CRM, and business software in-house."}
@@ -25,7 +25,16 @@
 <body data-auto-knock="true">
 
 <div class="shell">
-  <aside class="sidebar">
+  <header class="topbar">
+    <button class="hamburger" id="menuToggle" aria-label="Open menu" aria-expanded="false">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <a href="index.html" class="topbar-logo"><img src="logo.png" alt="AUZslab"></a>
+  </header>
+
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+
+  <aside class="sidebar" id="sidebarDrawer">
     <a href="index.html" class="sidebar-logo"><img src="logo.png" alt="AUZslab"></a>
     <nav class="sidebar-nav" aria-label="Primary">
       <a href="index.html" class="nav-link active">Home</a>

@@ -1,11 +1,11 @@
 :root{
-  --ink:#f2f2ef;
-  --ink-dim:#8c8c86;
-  --ink-faint:#4a4a46;
-  --bg:#080807;
-  --bg-raised:#111110;
-  --line:rgba(242,242,239,.14);
-  --line-soft:rgba(242,242,239,.06);
+  --ink:#131311;
+  --ink-dim:#6b6b65;
+  --ink-faint:#a3a39b;
+  --bg:#fafaf7;
+  --bg-raised:#efeee7;
+  --line:rgba(19,19,17,.14);
+  --line-soft:rgba(19,19,17,.05);
   --accent:#ff5a1f;
   --sidebar-w:240px;
   --font-display:'Bricolage Grotesque',sans-serif;
@@ -17,28 +17,52 @@ html{scroll-behavior:smooth}
 html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
 button{font-family:inherit}
-::selection{background:var(--accent);color:#0a0a09}
+::selection{background:var(--accent);color:#fff}
 
-/* ---------- layout shell (mobile-first: top bar default, fixed sidebar is the desktop enhancement) ---------- */
+/* ---------- layout shell ---------- */
+/* Mobile-first: a slim top bar + a hamburger that opens a
+   half-width slide-in drawer. The persistent full sidebar is a
+   desktop-only enhancement, added in the min-width block below. */
 .shell{display:flex;flex-direction:column;min-height:100vh;width:100%;background:var(--bg)}
-.sidebar{
-  position:relative;width:100%;height:auto;
-  display:flex;flex-direction:row;align-items:center;gap:18px;
-  padding:14px 18px;
-  border-bottom:1px solid var(--line);
-  background:var(--bg-raised);
-  z-index:20;
+
+.topbar{
+  display:flex;align-items:center;gap:14px;padding:14px 18px;
+  border-bottom:1px solid var(--line);background:var(--bg-raised);
+  position:relative;z-index:25;
 }
-.sidebar-logo img{width:100%;max-width:104px;display:block;filter:invert(1) brightness(1.5);opacity:.95}
-.sidebar-nav{display:flex;flex-direction:row;gap:2px;margin-top:0;flex-wrap:wrap}
+.hamburger{
+  width:34px;height:34px;border-radius:999px;flex-shrink:0;
+  border:1px solid var(--line);background:transparent;color:var(--ink);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+}
+.hamburger:hover{border-color:var(--ink-faint)}
+.topbar-logo img{max-width:84px;display:block}
+
+.drawer-overlay{
+  position:fixed;inset:0;background:rgba(19,19,17,.35);
+  opacity:0;pointer-events:none;transition:opacity .25s ease;z-index:29;
+}
+.drawer-overlay.open{opacity:1;pointer-events:auto}
+
+.sidebar{
+  position:fixed;top:0;left:0;bottom:0;width:55%;max-width:300px;height:100%;
+  transform:translateX(-100%);transition:transform .3s ease;
+  display:flex;flex-direction:column;gap:28px;padding:24px 22px;
+  border-right:1px solid var(--line);
+  background:var(--bg-raised);
+  z-index:30;overflow-y:auto;
+}
+.sidebar.open{transform:translateX(0)}
+.sidebar-logo img{width:100%;max-width:120px;display:block}
+.sidebar-nav{display:flex;flex-direction:column;gap:2px;margin-top:4px}
 .nav-link{
-  font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;text-transform:uppercase;
-  padding:10px 9px;border-radius:2px;color:var(--ink-dim);
+  font-family:var(--font-mono);font-size:12px;letter-spacing:.04em;text-transform:uppercase;
+  padding:12px 14px;border-radius:999px;color:var(--ink-dim);
   transition:color .15s ease, background .15s ease;
 }
 .nav-link:hover{color:var(--ink);background:var(--line-soft)}
-.nav-link.active{color:var(--ink);background:var(--line-soft);box-shadow:inset 2px 0 0 var(--accent)}
-.sidebar-foot{display:none}
+.nav-link.active{color:var(--ink);background:var(--line-soft);box-shadow:inset 3px 0 0 var(--accent)}
+.sidebar-foot{display:flex;flex-direction:column;gap:12px;margin-top:auto}
 .sidebar-copy{font-family:var(--font-mono);font-size:10px;color:var(--ink-faint);letter-spacing:.02em}
 
 .content{margin-left:0;flex:1;min-width:0;position:relative;z-index:2}
@@ -62,26 +86,25 @@ button{font-family:inherit}
 .p{font-size:12.5px;line-height:1.7;color:var(--ink-dim)}
 .accent{color:var(--accent)}
 
-/* ---------- buttons: small, technical, quiet glow on the one that matters ---------- */
+/* ---------- buttons: pill-shaped, soft, one quiet glow ---------- */
 .btn{
-  display:inline-flex;align-items:center;gap:8px;padding:11px 18px;border-radius:2px;
+  display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;
   font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;text-transform:uppercase;
   border:1px solid var(--line);cursor:pointer;background:transparent;color:var(--ink);
   transition:transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease;
 }
 .btn:hover{border-color:var(--ink-dim);transform:translateY(-1px)}
 .btn-primary{
-  background:var(--accent);color:#0a0a09;border-color:var(--accent);
-  box-shadow:0 0 0 0 rgba(255,90,31,.5);
+  background:var(--accent);color:#fff;border-color:var(--accent);
 }
-.btn-primary:hover{box-shadow:0 6px 24px -4px rgba(255,90,31,.55);transform:translateY(-1px)}
+.btn-primary:hover{box-shadow:0 8px 24px -6px rgba(255,90,31,.45);transform:translateY(-1px)}
 .btn-ghost{border-color:var(--line);color:var(--ink-dim)}
 
-/* ---------- cards / depth ---------- */
+/* ---------- cards / depth: soft rounded, gentle shadow ---------- */
 .card{
   background:var(--bg-raised);
-  border:1px solid var(--line);border-radius:4px;padding:20px;
-  box-shadow:0 20px 40px -28px rgba(0,0,0,.8);
+  border:1px solid var(--line);border-radius:20px;padding:22px;
+  box-shadow:0 20px 40px -28px rgba(19,19,17,.25);
   position:relative;
   transition:border-color .2s ease, transform .2s ease;
 }
@@ -92,13 +115,13 @@ button{font-family:inherit}
 .dash{border-top:1px dashed var(--line);margin:0}
 
 .tag{
-  display:inline-flex;padding:5px 10px;border-radius:2px;border:1px solid var(--line);
+  display:inline-flex;padding:6px 12px;border-radius:999px;border:1px solid var(--line);
   font-family:var(--font-mono);font-size:10px;color:var(--ink-dim);background:var(--bg-raised);
 }
 
 /* ---------- hero visual ---------- */
 .hero-visual{
-  height:180px;border-radius:4px;position:relative;overflow:hidden;
+  height:180px;border-radius:20px;position:relative;overflow:hidden;
   background:var(--bg-raised);
   border:1px solid var(--line);
 }
@@ -120,17 +143,17 @@ button{font-family:inherit}
 /* ---------- floating knock trigger ---------- */
 .knock-btn{
   position:fixed;right:16px;bottom:16px;z-index:40;
-  display:flex;align-items:center;gap:8px;padding:12px 16px;border-radius:2px;
-  background:var(--accent);color:#0a0a09;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;
-  border:none;cursor:pointer;box-shadow:0 8px 24px -6px rgba(255,90,31,.5);
+  display:flex;align-items:center;gap:8px;padding:13px 18px;border-radius:999px;
+  background:var(--accent);color:#fff;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;
+  border:none;cursor:pointer;box-shadow:0 8px 24px -6px rgba(255,90,31,.45);
   transition:transform .18s ease, box-shadow .18s ease;
 }
-.knock-btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px -6px rgba(255,90,31,.6)}
+.knock-btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px -6px rgba(255,90,31,.55)}
 
-/* ---------- sound toggle (homepage) ---------- */
+/* ---------- sound toggle ---------- */
 .sound-toggle{
   position:fixed;left:16px;bottom:16px;z-index:40;
-  width:36px;height:36px;border-radius:50%;
+  width:38px;height:38px;border-radius:999px;
   display:flex;align-items:center;justify-content:center;
   background:var(--bg-raised);border:1px solid var(--line);color:var(--ink-dim);
   cursor:pointer;transition:color .15s ease, border-color .15s ease;
@@ -140,17 +163,17 @@ button{font-family:inherit}
 
 /* ---------- modal ---------- */
 .modal-overlay{
-  position:fixed;inset:0;background:rgba(3,3,3,.8);backdrop-filter:blur(4px);
+  position:fixed;inset:0;background:rgba(19,19,17,.45);backdrop-filter:blur(4px);
   display:none;align-items:center;justify-content:center;z-index:50;
 }
 .modal-overlay.open{display:flex;animation:fadeIn .18s ease}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 .modal{
-  width:400px;max-width:calc(100vw - 40px);background:var(--bg-raised);border:1px solid var(--line);
-  border-radius:4px;padding:24px;box-shadow:0 40px 80px -20px rgba(0,0,0,.9);position:relative;
+  width:400px;max-width:calc(100vw - 40px);background:var(--bg);border:1px solid var(--line);
+  border-radius:24px;padding:26px;box-shadow:0 40px 80px -20px rgba(19,19,17,.3);position:relative;
 }
 .modal-close{
-  position:absolute;top:16px;right:16px;width:28px;height:28px;border-radius:2px;
+  position:absolute;top:18px;right:18px;width:30px;height:30px;border-radius:999px;
   border:1px solid var(--line);background:transparent;color:var(--ink-dim);cursor:pointer;
   display:flex;align-items:center;justify-content:center;font-size:14px;
 }
@@ -158,15 +181,15 @@ button{font-family:inherit}
 .field{display:flex;flex-direction:column;gap:5px;margin-top:14px}
 .field label{font-family:var(--font-mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-faint)}
 .field input,.field textarea{
-  background:var(--bg);border:1px solid var(--line);border-radius:2px;padding:10px 12px;
+  background:var(--bg-raised);border:1px solid var(--line);border-radius:14px;padding:11px 14px;
   color:var(--ink);font-family:var(--font-body);font-size:13px;width:100%;
 }
 .field input:focus,.field textarea:focus{outline:none;border-color:var(--accent)}
-.field textarea{resize:none;min-height:68px}
+.field textarea{resize:none;min-height:68px;border-radius:16px}
 .form-submit{width:100%;justify-content:center;margin-top:18px}
 .success-view{display:none;flex-direction:column;align-items:flex-start;gap:8px}
 .success-view.show{display:flex}
-.success-mark{width:40px;height:40px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#0a0a09;font-size:18px}
+.success-mark{width:40px;height:40px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px}
 
 /* ---------- stacked scroll panels (homepage) ---------- */
 .stack{position:relative}
@@ -177,25 +200,25 @@ button{font-family:inherit}
   padding:64px 0;
   background:var(--bg);
   border-top:1px solid var(--line);
-  box-shadow:0 -60px 100px -30px rgba(0,0,0,.7);
+  box-shadow:0 -60px 100px -30px rgba(19,19,17,.12);
 }
 .stack-panel.alt{background:var(--bg-raised)}
 .stack-panel .wrap{width:100%}
 .reveal{opacity:0;transform:translateY(16px);transition:opacity .7s ease, transform .7s ease}
 .reveal.in{opacity:1;transform:translateY(0)}
 
-/* ---------- DESKTOP ENHANCEMENT ---------- */
+/* ---------- DESKTOP ENHANCEMENT: persistent sidebar, no drawer ---------- */
 @media (min-width: 861px){
   .shell{flex-direction:row}
+  .topbar{display:none}
+  .drawer-overlay{display:none}
   .sidebar{
-    position:fixed;top:0;left:0;bottom:0;width:var(--sidebar-w);height:100%;
+    position:fixed;top:0;left:0;bottom:0;width:var(--sidebar-w);max-width:none;height:100%;
+    transform:none;
     flex-direction:column;align-items:stretch;gap:32px;
     padding:28px 22px;
-    border-bottom:none;border-right:1px solid var(--line);
   }
   .sidebar-logo img{max-width:132px}
-  .sidebar-nav{flex-direction:column;gap:2px;margin-top:4px;flex-wrap:nowrap}
-  .sidebar-foot{display:flex;flex-direction:column;gap:12px;margin-top:auto}
   .content{margin-left:var(--sidebar-w)}
   .wrap{padding:0 56px}
   .section{padding:64px 0}
@@ -204,19 +227,19 @@ button{font-family:inherit}
   .h-1{font-size:28px}
   .h-2{font-size:17px}
   .lede{font-size:14px}
-  .card{padding:22px}
+  .card{padding:26px}
   .grid-3{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
   .grid-2{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
   .hero-visual{height:220px}
   .footer{flex-direction:row;justify-content:space-between;padding:32px 0 56px}
   .knock-btn{right:32px;bottom:32px}
   .sound-toggle{left:32px;bottom:32px}
-  .modal{padding:32px}
+  .modal{padding:36px}
   .stack-panel .wrap{max-width:640px}
 }
 
 @media (prefers-reduced-motion: reduce){
   html{scroll-behavior:auto}
   .reveal{transition:none;opacity:1;transform:none}
-  .card,.btn,.btn-primary,.knock-btn{transition:none}
+  .card,.btn,.btn-primary,.knock-btn,.sidebar{transition:none}
 }
