@@ -1,0 +1,108 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>AUZlabs — New Client</title>
+<style>
+body{font-family:system-ui,sans-serif;max-width:480px;margin:8vh auto;padding:0 16px;color:#161513}
+label{display:block;margin-top:14px;font-size:14px;color:#444}
+input,select{width:100%;padding:8px;margin-top:4px;font-size:15px;box-sizing:border-box}
+button{margin-top:20px;padding:10px 16px;font-size:15px;cursor:pointer}
+.err{color:#b00020;margin-top:10px}
+.ok{background:#eef7ee;border:1px solid #bfe3bf;padding:12px;margin-top:16px;border-radius:6px}
+.ok a{word-break:break-all}
+</style>
+</head><body>
+<h2>Onboard a new client</h2>
+<div id=login>
+ <label>Your AUZlabs admin email<input id=email type=email></label>
+ <label>Password<input id=password type=password></label>
+ <button id=signin>Sign in</button>
+ <div id=loginErr class=err></div>
+</div>
+
+<form id=form style="display:none">
+ <label>Business name<input id=name required placeholder="OG Book Cafe"></label>
+ <label>Subdomain<input id=slug required placeholder="ogbookcafe" pattern="[a-z0-9-]+"></label>
+ <label>Niche<select id=niche>
+   <option value=cafe>Cafe / Restaurant</option>
+   <option value=salon>Salon</option>
+   <option value=gym>Gym</option>
+   <option value=retail>Retail</option>
+   <option value=general>General</option>
+ </select></label>
+ <label>Owner's email (their first login)<input id=ownerEmail type=email required></label>
+ <button type=submit>Create client</button>
+ <div id=formErr class=err></div>
+</form>
+
+<div id=result></div>
+
+<script src=https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin=anonymous></script>
+<script src=/config.js></script>
+<script>
+const sb = supabase.createClient(CFG.url, CFG.key);
+
+async function checkSession() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    document.getElementById('login').style.display = 'none';
+    document.getElementById('form').style.display = 'block';
+  }
+}
+checkSession();
+
+document.getElementById('signin').onclick = async () => {
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) {
+    document.getElementById('loginErr').textContent = error.message;
+    return;
+  }
+  checkSession();
+};
+
+document.getElementById('form').onsubmit = async (e) => {
+  e.preventDefault();
+  const name = document.getElementById('name').value.trim();
+  const slug = document.getElementById('slug').value.trim().toLowerCase();
+  const niche = document.getElementById('niche').value;
+  const ownerEmail = document.getElementById('ownerEmail').value.trim();
+  const errEl = document.getElementById('formErr');
+  const resultEl = document.getElementById('result');
+  errEl.textContent = '';
+  resultEl.innerHTML = 'Creating tenant…';
+
+  const { data: tenantId, error: rpcErr } = await sb.rpc('provision_tenant', {
+    p_name: name, p_slug: slug, p_niche: niche
+  });
+  if (rpcErr) {
+    errEl.textContent = rpcErr.message;
+    resultEl.innerHTML = '';
+    return;
+  }
+
+  resultEl.innerHTML = 'Tenant created — creating owner login…';
+  const { data: { session } } = await sb.auth.getSession();
+  const res = await fetch(CFG.url + '/functions/v1/provision-owner', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + session.access_token
+    },
+    body: JSON.stringify({ tenant_id: tenantId, email: ownerEmail, name })
+  });
+  const body = await res.json();
+  if (!res.ok) {
+    errEl.textContent = body.error || 'owner creation failed';
+    resultEl.innerHTML = `Tenant "${name}" was created (slug: ${slug}), but the owner login failed — you can retry just that step, or create it manually in Supabase Studio.`;
+    return;
+  }
+
+  resultEl.innerHTML = `
+    <div class=ok>
+      <b>${name}</b> is live at <b>${slug}.yourdomain.com</b><br><br>
+      Send this link to the owner so they can set their password and sign in:<br>
+      <a href="${body.action_link}" target=_blank>${body.action_link}</a>
+    </div>`;
+  e.target.reset();
+};
+</script>
+</body></html>

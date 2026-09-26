@@ -1,0 +1,40 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Terms</title>
+<link rel=icon href=/logo.png>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel=stylesheet>
+<style>
+body{margin:0;background:#f6f2e9;color:#2a2822;font:16px/1.7 Inter,system-ui,sans-serif}
+.wrap{max-width:720px;margin:0 auto;padding:50px 24px 80px}
+h1{font-family:Fraunces,serif;font-weight:600;font-size:32px;margin:0 0 6px}
+h2{font-family:Fraunces,serif;font-weight:600;font-size:20px;margin:34px 0 10px}
+p,li{color:#4a4638}
+.back{font-size:14px;text-decoration:none;color:#5f6d4f}
+.note{background:#fff3c4;border-radius:10px;padding:14px 16px;font-size:14px;margin:20px 0}
+</style></head><body><div class=wrap>
+<a class=back href=/site.html>← Back</a>
+<h1 id=t>Terms of Use</h1>
+<p id=sub>Last updated: <span id=d></span></p>
+<div class=note>This is a starting template, not legal advice — it hasn't been reviewed by a lawyer. Please have it checked before relying on it.</div>
+
+<h2>Placing an order</h2>
+<p>Orders placed in person or via a table QR code are requests to us, which we confirm once received. Prices shown include applicable taxes unless stated otherwise. We reserve the right to decline an order, for example if an item is out of stock.</p>
+
+<h2>Payment</h2>
+<p>Payment is due at the time of ordering or on presentation of your bill, by cash, UPI, or card as available.</p>
+
+<h2>Self-ordering by QR code</h2>
+<p>The self-order page lets you browse our menu and send an order to our kitchen from your own device while seated at a table. A staff member will confirm your order before it's prepared. We may limit the number of orders a table can place in a short period to prevent accidental duplicate submissions.</p>
+
+<h2>Accuracy</h2>
+<p>We try to keep our menu and prices up to date, but occasional errors may occur; we'll let you know before charging you if a price has changed.</p>
+
+<h2>Contact</h2>
+<p id=contact>Contact us at the address or phone number on this website.</p>
+</div>
+<script src=https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin=anonymous></script>
+<script src=/config.js></script>
+<script src=/tenant.js></script>
+<script>
+document.getElementById('d').textContent=new Date().toLocaleDateString();
+(async()=>{try{const sb=supabase.createClient(CFG.url,CFG.key);const{data}=await sb.rpc('public_menu',{tenant_slug:TENANT_SLUG});const cfg=(data&&data.cfg)||{};if(cfg.name){document.title=cfg.name+' — Terms';document.getElementById('t').textContent=cfg.name+' Terms of Use'}if(cfg.addr||cfg.phone)document.getElementById('contact').textContent='Contact us: '+[cfg.addr,cfg.phone].filter(Boolean).join(' · ')}catch{}})();
+</script>
+</body></html>

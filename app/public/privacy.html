@@ -1,0 +1,43 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Privacy Policy</title>
+<link rel=icon href=/logo.png>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel=stylesheet>
+<style>
+body{margin:0;background:#f6f2e9;color:#2a2822;font:16px/1.7 Inter,system-ui,sans-serif}
+.wrap{max-width:720px;margin:0 auto;padding:50px 24px 80px}
+h1{font-family:Fraunces,serif;font-weight:600;font-size:32px;margin:0 0 6px}
+h2{font-family:Fraunces,serif;font-weight:600;font-size:20px;margin:34px 0 10px}
+p,li{color:#4a4638}
+.back{font-size:14px;text-decoration:none;color:#5f6d4f}
+.note{background:#fff3c4;border-radius:10px;padding:14px 16px;font-size:14px;margin:20px 0}
+</style></head><body><div class=wrap>
+<a class=back href=/site.html>← Back</a>
+<h1 id=t>Privacy Policy</h1>
+<p id=sub>Last updated: <span id=d></span></p>
+<div class=note>This is a starting template, not legal advice — it hasn't been reviewed by a lawyer. Please have it checked before relying on it, and update the contact details below for your business.</div>
+
+<h2>What we collect</h2>
+<p>When you order in person, self-order by scanning a table QR code, or ask us to send your bill on WhatsApp, we collect the name and phone number you give us, along with your order details. We do not require an account or password to place an order.</p>
+
+<h2>Why we collect it</h2>
+<p>To take and prepare your order, print or send your receipt, and — if you visit again — recognise you as a returning customer so we can serve you better. We do not sell your information to anyone.</p>
+
+<h2>Who can see it</h2>
+<p>Only our own staff, through our point-of-sale system, for the purpose of running the business. Our point-of-sale software is provided by <a href="https://auzlabs.com" target=_blank rel=noopener>AUZlabs</a>, who host the underlying database on our behalf but do not use your data for their own purposes.</p>
+
+<h2>How long we keep it</h2>
+<p>Order and billing records are kept for as long as needed for accounting and tax purposes, in line with applicable law.</p>
+
+<h2>Your choices</h2>
+<p>You can ask us at any time what information we hold about you, or ask us to delete it, subject to what we're legally required to keep for tax records.</p>
+
+<h2>Contact</h2>
+<p id=contact>Contact us at the address or phone number on this website.</p>
+</div>
+<script src=https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin=anonymous></script>
+<script src=/config.js></script>
+<script src=/tenant.js></script>
+<script>
+document.getElementById('d').textContent=new Date().toLocaleDateString();
+(async()=>{try{const sb=supabase.createClient(CFG.url,CFG.key);const{data}=await sb.rpc('public_menu',{tenant_slug:TENANT_SLUG});const cfg=(data&&data.cfg)||{};if(cfg.name){document.title=cfg.name+' — Privacy Policy';document.getElementById('t').textContent=cfg.name+' Privacy Policy'}if(cfg.addr||cfg.phone)document.getElementById('contact').textContent='Contact us: '+[cfg.addr,cfg.phone].filter(Boolean).join(' · ')}catch{}})();
+</script>
+</body></html>

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Contact — AUZslab</title>
+<meta name="description" content="Tell us about your business — AUZslab will get back to you within a day.">
+<link rel="canonical" href="https://auzslab.in/contact.html">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Contact — AUZslab">
+<meta property="og:description" content="Tell us about your business. We'll get back to you.">
+<meta property="og:url" content="https://auzslab.in/contact.html">
+<meta property="og:image" content="https://auzslab.in/logo.png">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="/logo.png">
+<link rel="stylesheet" href="theme.css">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="shell">
+  <aside class="sidebar">
+    <a href="index.html" class="sidebar-logo"><img src="logo.png" alt="AUZslab"></a>
+    <nav class="sidebar-nav" aria-label="Primary">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="products.html" class="nav-link">Products</a>
+      <a href="platform.html" class="nav-link">Platform</a>
+      <a href="contact.html" class="nav-link active">Contact</a>
+    </nav>
+    <div class="sidebar-foot">
+      <a href="#form" class="btn btn-ghost" style="width:100%;justify-content:center;text-align:center">Let's talk</a>
+      <div class="sidebar-copy">&copy; 2026 AUZslab</div>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="wrap">
+
+      <section class="section" style="padding-top:104px">
+        <div class="label">Contact</div>
+        <h1 class="h-1" style="font-size:58px">Let's talk.</h1>
+        <p class="lede">Tell us about your business. We'll get back to you within a day.</p>
+      </section>
+
+      <section class="section tight" id="form">
+        <div class="grid-2" style="align-items:start">
+          <div>
+            <div class="h-2">Reach us directly</div>
+            <p class="p" style="margin-top:14px">Prefer to skip the form? Write to us directly.</p>
+            <p class="p" style="margin-top:18px"><span class="accent">hello@auzslab.in</span></p>
+          </div>
+
+          <div class="card">
+            <form id="formView" data-contact-form>
+              <div class="field" style="margin-top:0">
+                <label for="c-name">Name</label>
+                <input id="c-name" name="name" type="text" placeholder="Your name" required>
+              </div>
+              <div class="field">
+                <label for="c-business">Business</label>
+                <input id="c-business" name="business" type="text" placeholder="Business name">
+              </div>
+              <div class="field">
+                <label for="c-contact">Phone or email</label>
+                <input id="c-contact" name="contact" type="text" placeholder="How we reach you" required>
+              </div>
+              <div class="field">
+                <label for="c-message">Message</label>
+                <textarea id="c-message" name="message" placeholder="What are you running today?"></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary form-submit">Send</button>
+            </form>
+            <div class="success-view" id="successView">
+              <div class="success-mark">&check;</div>
+              <h3 class="h-2" style="font-size:22px">Got it.</h3>
+              <p class="p">We'll reach out to <span class="success-contact" id="successContact">you</span> shortly.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <span>AUZslab — software, built in-house.</span>
+        <span style="display:flex;gap:22px">
+          <a href="index.html" style="color:var(--ink-faint)">Home</a>
+          <a href="products.html" style="color:var(--ink-faint)">Products</a>
+          <a href="platform.html" style="color:var(--ink-faint)">Platform</a>
+        </span>
+      </footer>
+
+    </div>
+  </main>
+</div>
+<script src="site.js"></script>
+</body>
+</html>

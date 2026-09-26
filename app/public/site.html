@@ -1,0 +1,245 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>AUZslab</title>
+<meta name=description content="A quiet corner for books and coffee.">
+<link rel=icon href=/logo.png>
+<link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel=stylesheet>
+<style>
+:root{--cream:#f6f2e9;--paper:#fbf8f2;--ink:#2a2822;--olive:#8a9878;--olive-dk:#5f6d4f;--line:#ddd6c4;--shadow:0 20px 50px -20px rgba(42,40,34,.25)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--cream);color:var(--ink);font:16px/1.6 Inter,system-ui,sans-serif;overflow-x:hidden}
+h1,h2,h3,.serif{font-family:Fraunces,Georgia,serif}
+a{color:inherit}
+.wrap{max-width:1100px;margin:0 auto;padding:0 28px}
+/* nav */
+header{position:sticky;top:0;z-index:40;background:rgba(246,242,233,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+nav{display:flex;align-items:center;gap:28px;padding:16px 28px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;letter-spacing:.03em;margin-right:auto}
+.brand img{height:32px;width:32px;border-radius:50%;object-fit:cover;background:#111}
+nav a.link{font-size:14px;letter-spacing:.03em;text-transform:uppercase;text-decoration:none;color:var(--ink);opacity:.75;transition:opacity .2s}
+nav a.link:hover{opacity:1}
+.cta{background:var(--olive-dk);color:#fff!important;padding:10px 20px;border-radius:100px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;text-decoration:none;box-shadow:0 8px 20px -8px rgba(95,109,79,.6);transition:transform .2s}
+.cta:hover{transform:translateY(-2px)}
+@media(max-width:760px){nav a.link{display:none}}
+/* hero */
+.hero{position:relative;padding:90px 0 60px;overflow:hidden}
+.hero .wrap{display:grid;grid-template-columns:1fr;gap:20px;position:relative;z-index:2}
+.kicker{font-size:13px;letter-spacing:.15em;text-transform:uppercase;color:var(--olive-dk);font-weight:600}
+.hero h1{font-size:clamp(38px,7vw,74px);line-height:1.05;margin:14px 0 18px;font-weight:500}
+.hero p{max-width:520px;color:#544f42;font-size:17px}
+.hero-art{position:relative;margin-top:40px;border-radius:22px;overflow:hidden;box-shadow:var(--shadow);aspect-ratio:16/9;background:linear-gradient(135deg,#e7e0cc,#c9d2b5)}
+.hero-art img{width:100%;height:100%;object-fit:cover;display:block}
+.hero-art .fallback{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.doodle{position:absolute;opacity:.5;pointer-events:none}
+.d1{top:10%;left:-40px;width:120px;animation:float 7s ease-in-out infinite}
+.d2{top:60%;right:-30px;width:90px;animation:float 9s ease-in-out infinite reverse}
+.d3{top:5%;right:6%;width:60px;animation:spin 30s linear infinite}
+@keyframes float{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-18px) rotate(6deg)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* reveal */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}
+.reveal.show{opacity:1;transform:none}
+/* sections */
+section{padding:70px 0}
+.eyebrow{font-size:13px;letter-spacing:.15em;text-transform:uppercase;color:var(--olive-dk);font-weight:600;margin-bottom:10px}
+.split{display:grid;grid-template-columns:1fr;gap:36px;align-items:center}
+@media(min-width:820px){.split{grid-template-columns:1fr 1fr}}
+.about-img{border-radius:20px;box-shadow:var(--shadow);aspect-ratio:4/5;background:linear-gradient(160deg,#efe9d8,#d7ceb4);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.about-img img{width:100%;height:100%;object-fit:cover}
+p.lead{font-size:19px;color:#4a4638;white-space:pre-line}
+/* menu */
+.tabs{display:flex;gap:10px;overflow-x:auto;padding-bottom:14px;margin-bottom:24px}
+.tabs button{flex:none;border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:9px 18px;border-radius:100px;font:13px/1 Inter,sans-serif;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;transition:all .2s}
+.tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+.mcard{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:0 10px 26px -18px rgba(42,40,34,.35);transition:transform .25s,box-shadow .25s}
+.mcard:hover{transform:translateY(-4px);box-shadow:0 20px 36px -18px rgba(42,40,34,.4)}
+.mcard .row{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.mcard b{font-family:Fraunces,serif;font-size:18px;font-weight:500}
+.mcard .price{color:var(--olive-dk);font-weight:600;white-space:nowrap}
+/* gallery */
+.gal{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+@media(min-width:700px){.gal{grid-template-columns:repeat(4,1fr)}}
+.gal div{border-radius:16px;overflow:hidden;aspect-ratio:1;box-shadow:0 10px 26px -18px rgba(42,40,34,.4);background:linear-gradient(150deg,#e7e0cc,#c9d2b5);transition:transform .3s}
+.gal div:hover{transform:scale(1.04) rotate(-1deg)}
+.gal img{width:100%;height:100%;object-fit:cover;display:block}
+/* visit / footer */
+.visit{background:var(--ink);color:#f2efe6;border-radius:26px;margin:0 28px;padding:56px 40px;position:relative;overflow:hidden}
+.visit h2{color:#fff}
+.visit .cols{display:grid;grid-template-columns:1fr;gap:26px}
+@media(min-width:760px){.visit .cols{grid-template-columns:1fr 1fr 1fr}}
+.visit b{display:block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#c8cbb3;margin-bottom:8px}
+footer{text-align:center;padding:40px 20px;font-size:13px;color:#7a7561}
+footer .socials{display:flex;gap:14px;justify-content:center;margin-top:14px}
+footer .socials a{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;text-decoration:none}
+/* ordering */
+.tbanner{background:var(--ink);color:#f2efe6;text-align:center;padding:10px;font-size:13px;letter-spacing:.03em}
+.mcard .variant{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--line)}
+.mcard .variant:first-of-type{border-top:none;margin-top:6px}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper button{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:#fff;font-size:16px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.stepper button:disabled{opacity:.3;cursor:default}
+.cartbar{position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--ink);color:#fff;padding:14px 20px;display:none;align-items:center;justify-content:space-between;box-shadow:0 -14px 30px -14px rgba(0,0,0,.4)}
+.cartbar button{background:#fff;color:var(--ink);border:none;padding:10px 20px;border-radius:100px;font:13px/1 Inter,sans-serif;font-weight:600;letter-spacing:.03em;text-transform:uppercase;cursor:pointer}
+.sheet-ov{position:fixed;inset:0;background:rgba(20,18,14,.5);z-index:70;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--paper);width:100%;max-width:520px;border-radius:22px 22px 0 0;padding:24px;max-height:88vh;overflow:auto;box-shadow:var(--shadow)}
+.sheet h3{font-family:Fraunces,serif;font-weight:500;margin:0 0 14px}
+.sheet input,.sheet textarea{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;font:inherit;margin-bottom:10px;background:#fff}
+.sheet .cta{border:none;width:100%;text-align:center;cursor:pointer;font:inherit;font-weight:600}
+.sline{display:flex;justify-content:space-between;padding:6px 0;font-size:14px}
+</style></head><body>
+<header><nav>
+ <a class=brand href=#top><img id=navlogo src=/logo.png alt=""><span id=navname>AUZslab</span></a>
+ <a class=link href=#about>About</a><a class=link href=#menu>Menu</a><a class=link href=#gallery>Gallery</a><a class=link href=#visit>Visit</a>
+ <a class=cta id=orderCta href="https://wa.me/" target=_blank rel=noopener>Order on WhatsApp</a>
+</nav></header>
+<div id=tbanner class=tbanner style="display:none"></div>
+
+<div id=top></div>
+<section class=hero>
+ <svg class="doodle d1" viewBox="0 0 100 100" fill=none xmlns=http://www.w3.org/2000/svg><path d="M20 70 Q20 40 50 40 Q80 40 80 70" stroke="#5f6d4f" stroke-width="2"/><ellipse cx=50 cy=72 rx=32 ry=8 stroke="#5f6d4f" stroke-width=2/><path d="M40 34c-2-8 6-10 4-18M50 34c-2-10 8-12 5-20M60 34c-2-8 6-10 4-18" stroke="#5f6d4f" stroke-width=2 stroke-linecap=round/></svg>
+ <svg class="doodle d2" viewBox="0 0 120 90" fill=none xmlns=http://www.w3.org/2000/svg><rect x=10 y=20 width=60 height=44 rx=3 stroke="#5f6d4f" stroke-width=2/><path d="M14 24h52M20 34h30M20 42h34M20 50h24" stroke="#5f6d4f" stroke-width=1.5/><path d="M70 20l30-8v56l-30 4" stroke="#5f6d4f" stroke-width=2/></svg>
+ <svg class="doodle d3" viewBox="0 0 60 60" xmlns=http://www.w3.org/2000/svg><circle cx=30 cy=30 r=28 stroke="#5f6d4f" stroke-width=1.5 fill=none stroke-dasharray="4 6"/></svg>
+ <div class=wrap>
+  <div class=kicker id=kicker>Powered by AUZslab</div>
+  <h1 id=heroTitle class=reveal>Quiet pages.<br>Warm cups.</h1>
+  <p class=reveal id=heroSub style="transition-delay:.1s">A slow corner to read, work and linger — good coffee, good books, and a seat that doesn't rush you.</p>
+  <div class="hero-art reveal" style="transition-delay:.2s"><img id=heroImg style="display:none" alt=""><div class=fallback id=heroFallback></div></div>
+ </div>
+</section>
+
+<section id=about>
+ <div class="wrap split reveal">
+  <div class=about-img><img id=aboutImg style="display:none" alt=""><svg id=aboutFallback viewBox="0 0 200 200" width=70% xmlns=http://www.w3.org/2000/svg fill=none><path d="M40 150V50c0-6 4-10 10-10h100c6 0 10 4 10 10v100" stroke="#5f6d4f" stroke-width=3/><path d="M40 150c0-8 6-12 14-12h92c8 0 14 4 14 12" stroke="#5f6d4f" stroke-width=3/><path d="M100 40v110" stroke="#5f6d4f" stroke-width=2 stroke-dasharray="3 6"/></svg></div>
+  <div>
+   <div class=eyebrow>Our Story</div>
+   <h2 style="font-size:34px;font-weight:500;margin:0 0 16px">About the cafe</h2>
+   <p class=lead id=aboutText>We're a small book cafe — part reading room, part coffee counter. Come for the espresso, stay for the stacks.</p>
+  </div>
+ </div>
+</section>
+
+<section id=menu>
+ <div class=wrap>
+  <div class="reveal" style="text-align:center;margin-bottom:36px">
+   <div class=eyebrow style="justify-content:center;display:flex">On The Menu</div>
+   <h2 style="font-size:34px;font-weight:500;margin:8px 0 0">What we're brewing</h2>
+  </div>
+  <div class=tabs id=menuTabs></div>
+  <div class=menu-grid id=menuGrid></div>
+ </div>
+</section>
+
+<section id=gallery>
+ <div class=wrap>
+  <div class="reveal" style="text-align:center;margin-bottom:30px">
+   <div class=eyebrow style="justify-content:center;display:flex">Gallery</div>
+   <h2 style="font-size:34px;font-weight:500;margin:8px 0 0">A peek inside</h2>
+  </div>
+  <div class=gal id=gallery-grid></div>
+ </div>
+</section>
+
+<section id=visit>
+ <div class="visit reveal">
+  <h2 style="font-size:32px;font-weight:500;margin:0 0 30px">Come visit</h2>
+  <div class=cols>
+   <div><b>Address</b><span id=vAddr>—</span></div>
+   <div><b>Hours</b><span id=vHours>Mon–Sun · 9am – 9pm</span></div>
+   <div><b>Say hello</b><span id=vPhone>—</span><br><a class=cta style="margin-top:10px;display:inline-block" id=vWa href="https://wa.me/" target=_blank rel=noopener>Chat on WhatsApp</a></div>
+  </div>
+ </div>
+</section>
+
+<footer>
+ <div id=fName>AUZslab</div>
+ <div class=socials><a id=fInsta href="#" target=_blank rel=noopener title=Instagram>◎</a><a id=fMaps href="#" target=_blank rel=noopener title=Directions>⌖</a></div>
+ <div style="margin-top:10px;font-size:12px"><a href=/privacy.html style="opacity:.8">Privacy Policy</a> · <a href=/terms.html style="opacity:.8">Terms</a></div>
+ <div style="margin-top:14px;opacity:.7">© <span id=year></span> <span id=fName2>AUZslab</span> — powered by <a href="https://auzslab.in" target=_blank rel=noopener style="opacity:.9">AUZslab</a></div>
+</footer>
+
+<div class=cartbar id=cartBar><span id=cartBarText></span><button id=cartBarBtn>Review order</button></div>
+<script src=https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin=anonymous></script>
+<script src=/config.js></script>
+<script src=/tenant.js></script>
+<script>
+document.getElementById('year').textContent=new Date().getFullYear();
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';'),inr=n=>'₹'+Math.round(n*100)/100;
+const waLink=(phone,text)=>{let p=(phone||'').replace(/\D/g,'');if(p.length==10)p='91'+p;return 'https://wa.me/'+(p||'')+(text?'?text='+encodeURIComponent(text):'')};
+const sb=supabase.createClient(CFG.url,CFG.key),T=new URLSearchParams(location.search).get('t'),cart={};
+let M=null,tb=null;
+(async()=>{
+ try{const{data}=await sb.rpc('public_menu',{tenant_slug:TENANT_SLUG});M=data}catch(e){console.warn(e)}
+ const cfg=(M&&M.cfg)||{};
+ if(T){tb=(M&&M.tables||[]).find(x=>x.id==T);const bEl=document.getElementById('tbanner');bEl.style.display='block';bEl.textContent=tb?('📍 Ordering for '+tb.name+' — tap items below to add to your order'):'This QR code isn\'t linked to a table — please ask our staff.'}
+ const name=cfg.name||'AUZslab';
+ document.title=name;
+ document.getElementById('navname').textContent=name;
+ document.getElementById('fName').textContent=name;
+ document.getElementById('fName2').textContent=name;
+ document.getElementById('kicker').textContent=name+' · '+(cfg.siteKicker||'Books & Brew');
+ document.getElementById('heroTitle').innerHTML=esc(cfg.siteTag||'Quiet pages.').replace(/\n/g,'<br>')||'Quiet pages.<br>Warm cups.';
+ if(cfg.siteTag)document.getElementById('heroTitle').innerHTML=esc(cfg.siteTag).split('\n').join('<br>');
+ document.getElementById('heroSub').textContent=cfg.siteSub||"A slow corner to read, work and linger — good coffee, good books, and a seat that doesn't rush you.";
+ document.getElementById('aboutText').textContent=cfg.siteAbout||"We're a small book cafe — part reading room, part coffee counter. Come for the espresso, stay for the stacks.";
+ document.getElementById('vAddr').textContent=cfg.addr||'—';
+ document.getElementById('vHours').textContent=cfg.siteHours||'Mon–Sun · 9am – 9pm';
+ document.getElementById('vPhone').textContent=cfg.phone||'—';
+ if(cfg.col){document.documentElement.style.setProperty('--olive-dk',cfg.col);}
+ if(cfg.logo){document.getElementById('navlogo').src=cfg.logo}
+ const wa=waLink(cfg.phone,'Hi '+name+', I would like to place an order.');
+ document.getElementById('orderCta').href=wa;document.getElementById('vWa').href=wa;
+ if(cfg.siteHero){const im=document.getElementById('heroImg');im.src=cfg.siteHero;im.style.display='block';document.getElementById('heroFallback').style.display='none'}
+ else{document.getElementById('heroFallback').innerHTML='<svg width=40% viewBox="0 0 200 200" fill=none xmlns=http://www.w3.org/2000/svg><path d="M50 90c0-30 22-46 50-46s50 16 50 46-22 50-50 50-50-20-50-50Z" stroke="#5f6d4f" stroke-width=3/><path d="M70 40c-2-10 8-14 5-24M90 40c-2-12 10-16 6-26M110 40c-2-10 8-14 5-24" stroke="#5f6d4f" stroke-width=3 stroke-linecap=round/></svg>'}
+ if(cfg.siteAboutImg){const im=document.getElementById('aboutImg');im.src=cfg.siteAboutImg;im.style.display='block';document.getElementById('aboutFallback').style.display='none'}
+ const insta=document.getElementById('fInsta'),maps=document.getElementById('fMaps');
+ if(cfg.siteInsta)insta.href=cfg.siteInsta;else insta.style.display='none';
+ if(cfg.siteMaps)maps.href=cfg.siteMaps;else maps.style.display='none';
+ const gEl=document.getElementById('gallery-grid'),imgs=(cfg.siteGallery||'').split(',').map(s=>s.trim()).filter(Boolean);
+ const fallbackDoodles=['<svg viewBox="0 0 100 100" width=50% xmlns=http://www.w3.org/2000/svg fill=none><rect x=20 y=20 width=60 height=60 rx=6 stroke="#5f6d4f" stroke-width=2/><path d="M30 40h40M30 50h30M30 60h34" stroke="#5f6d4f" stroke-width=1.5/></svg>','<svg viewBox="0 0 100 100" width=50% xmlns=http://www.w3.org/2000/svg fill=none><ellipse cx=50 cy=60 rx=28 ry=22 stroke="#5f6d4f" stroke-width=2/><path d="M42 30c-2-6 4-8 3-14M58 30c-2-7 5-9 3-15" stroke="#5f6d4f" stroke-width=2 stroke-linecap=round/></svg>','<svg viewBox="0 0 100 100" width=50% xmlns=http://www.w3.org/2000/svg fill=none><path d="M20 30l60-8v56l-60 8z" stroke="#5f6d4f" stroke-width=2/><path d="M30 40h40M30 50h34M30 60h30" stroke="#5f6d4f" stroke-width=1.5/></svg>','<svg viewBox="0 0 100 100" width=50% xmlns=http://www.w3.org/2000/svg fill=none><circle cx=50 cy=50 r=30 stroke="#5f6d4f" stroke-width=2/><path d="M50 20v30l20 12" stroke="#5f6d4f" stroke-width=2/></svg>'];
+ (imgs.length?imgs:fallbackDoodles).slice(0,8).forEach((src,i)=>{const d=document.createElement('div');if(imgs.length)d.innerHTML='<img src="'+esc(src)+'">';else d.innerHTML='<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center">'+fallbackDoodles[i%4]+'</div>';gEl.append(d)});
+ const cats=(M&&M.cats||[]).slice().sort((a,b)=>a.n-b.n),items=(M&&M.items||[]).filter(i=>!i.off);
+ const tabsEl=document.getElementById('menuTabs'),gridEl=document.getElementById('menuGrid');
+ let active=cats[0]&&cats[0].id;
+ const priceOf=k=>{const j=k.indexOf('|'),i=items.find(x=>x.id==k.slice(0,j)),sz=k.slice(j+1),s=sz&&(i.sizes||[]).find(x=>x.l==sz);return[i,sz,s?s.p:i.price]};
+ const cartTotal=()=>{let n=0,t=0;for(const k in cart){t+=priceOf(k)[2]*cart[k].q;n+=cart[k].q}return{n,t}};
+ function chg(k,d){const[i,sz,p]=priceOf(k),c=cart[k]||(cart[k]={id:i.id,size:sz,q:0});c.q=Math.max(0,c.q+d);if(!c.q)delete cart[k];drawMenu();drawCartBar()}
+ function drawCartBar(){const{n,t}=cartTotal(),bar=document.getElementById('cartBar');if(!tb||!n){bar.style.display='none';return}bar.style.display='flex';document.getElementById('cartBarText').textContent=n+' item'+(n>1?'s':'')+' · '+inr(t)}
+ function drawMenu(){
+  tabsEl.innerHTML='';cats.forEach(c=>{const b=document.createElement('button');b.textContent=c.name;if(c.id==active)b.className='on';b.onclick=()=>{active=c.id;drawMenu()};tabsEl.append(b)});
+  gridEl.innerHTML='';items.filter(i=>i.cat==active).sort((a,b)=>a.name.localeCompare(b.name)).forEach(i=>{
+   const c=document.createElement('div');c.className='mcard';
+   if(tb){
+    const variants=i.sizes&&i.sizes.length?i.sizes.map(s=>[s.l,s.p]):[['',i.price]];
+    c.innerHTML='<b>'+esc(i.name)+'</b>'+variants.map(([sz,p])=>{const k=i.id+'|'+sz,q=(cart[k]||{}).q||0;return '<div class=variant><span>'+(sz?esc(sz)+' — ':'')+inr(p)+'</span><div class=stepper><button data-k="'+esc(k)+'" data-d=-1>−</button><b>'+q+'</b><button data-k="'+esc(k)+'" data-d=1>+</button></div></div>'}).join('');
+    c.querySelectorAll('button').forEach(b=>b.onclick=()=>chg(b.dataset.k,+b.dataset.d));
+   }else{
+    const price=i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+inr(s.p)).join(' / '):inr(i.price);
+    c.innerHTML='<div class=row><b>'+esc(i.name)+'</b><span class=price>'+esc(price)+'</span></div>';
+   }
+   gridEl.append(c)
+  });
+  if(!items.filter(i=>i.cat==active).length)gridEl.innerHTML='<p style="opacity:.6">Menu coming soon.</p>';
+ }
+ if(cats.length)drawMenu();else gridEl.innerHTML='<p style="opacity:.6">Menu coming soon.</p>';
+ document.getElementById('cartBarBtn').onclick=openCheckout;
+ function openCheckout(){
+  const{t}=cartTotal(),ov=document.createElement('div');ov.className='sheet-ov';ov.onclick=e=>{if(e.target===ov)ov.remove()};
+  const rows=Object.keys(cart).map(k=>{const[i,sz,p]=priceOf(k);return '<div class=sline><span>'+cart[k].q+'× '+esc(i.name)+(sz?' ('+esc(sz)+')':'')+'</span><span>'+inr(p*cart[k].q)+'</span></div>'}).join('');
+  ov.innerHTML='<div class=sheet><h3>Your order · '+esc(tb.name)+'</h3>'+rows+'<div class=sline style="border-top:1px solid var(--line);margin-top:6px;padding-top:10px"><b>Estimated total</b><b>'+inr(t)+'</b></div><input id=coName placeholder="Your name *"><input id=coPhone type=tel placeholder="Mobile number *"><textarea id=coNote placeholder="Notes (e.g. less spicy, no onion)" rows=2></textarea><button class="cta" id=coGo style="margin-top:4px">Place order</button><button style="background:none;border:none;width:100%;padding:10px;color:#8a8577;cursor:pointer" id=coBack>Back</button></div>';
+  document.body.append(ov);
+  ov.querySelector('#coBack').onclick=()=>ov.remove();
+  ov.querySelector('#coGo').onclick=async e=>{
+   const n=ov.querySelector('#coName').value.trim(),p=ov.querySelector('#coPhone').value.trim();
+   if(!n)return alert('Please enter your name');if(!p)return alert('Please enter your mobile number');
+   e.target.disabled=true;e.target.textContent='Placing order…';
+   const{error}=await sb.rpc('place_order',{tenant_slug:TENANT_SLUG,t:T,n,p,nt:ov.querySelector('#coNote').value.trim(),its:Object.values(cart).map(c=>({id:c.id,size:c.size,qty:c.q}))});
+   if(error){e.target.disabled=false;e.target.textContent='Place order';return alert(/busy/.test(error.message)?'Too many pending orders for this table. Please call our staff.':'Could not place the order. Please try again or call our staff.')}
+   for(const k in cart)delete cart[k];ov.remove();drawMenu();drawCartBar();
+   const ok=document.createElement('div');ok.className='sheet-ov';ok.innerHTML='<div class=sheet style="text-align:center"><h3>✅ Order sent!</h3><p>Thank you '+esc(n)+'. Our staff will confirm it shortly.</p><button class=cta id=okClose>Order more</button></div>';document.body.append(ok);ok.onclick=e=>{if(e.target===ok||e.target.id=='okClose')ok.remove()}
+  };
+ }
+ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+})();
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('show');io.unobserve(e.target)}}),{threshold:.15});
+</script>
+</body></html>

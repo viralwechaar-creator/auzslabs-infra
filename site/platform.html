@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Platform — AUZslab</title>
+<meta name="description" content="One account, every business tool. AUZslab runs on infrastructure we own — built for cafés, salons, gyms, retail and more.">
+<link rel="canonical" href="https://auzslab.in/platform.html">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Platform — AUZslab">
+<meta property="og:description" content="One account. Every business tool. No per-app sign-ins, no re-entered data.">
+<meta property="og:url" content="https://auzslab.in/platform.html">
+<meta property="og:image" content="https://auzslab.in/logo.png">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="/logo.png">
+<link rel="stylesheet" href="theme.css">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body data-auto-knock="true">
+
+<div class="shell">
+  <aside class="sidebar">
+    <a href="index.html" class="sidebar-logo"><img src="logo.png" alt="AUZslab"></a>
+    <nav class="sidebar-nav" aria-label="Primary">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="products.html" class="nav-link">Products</a>
+      <a href="platform.html" class="nav-link active">Platform</a>
+      <a href="contact.html" class="nav-link">Contact</a>
+    </nav>
+    <div class="sidebar-foot">
+      <button class="btn btn-ghost" data-open-contact style="width:100%;justify-content:center">Let's talk</button>
+      <div class="sidebar-copy">&copy; 2026 AUZslab</div>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="wrap">
+
+      <section class="section" style="padding-top:104px">
+        <div class="label">Platform</div>
+        <h1 class="h-1" style="font-size:58px">One account.<br>Every business tool.</h1>
+        <p class="lede">No per-app sign-ins. No re-entered data. Everything your business runs on, talking to itself.</p>
+      </section>
+
+      <hr class="dash">
+
+      <section class="section">
+        <div class="label">Built for your kind of business</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <span class="tag">Cafés</span>
+          <span class="tag">Restaurants</span>
+          <span class="tag">Salons</span>
+          <span class="tag">Gyms</span>
+          <span class="tag">Retail</span>
+          <span class="tag" style="opacity:.6">and more</span>
+        </div>
+      </section>
+
+      <hr class="dash">
+
+      <section class="section">
+        <div class="label">Independent by design</div>
+        <div class="grid-2">
+          <div style="border-top:1px dashed var(--line);padding-top:20px">
+            <div class="h-2">Your infrastructure</div>
+            <p class="p" style="margin-top:10px">Your data lives on infrastructure we run — not rented from someone else, not resold under another name.</p>
+          </div>
+          <div style="border-top:1px dashed var(--line);padding-top:20px">
+            <div class="h-2">Your terms</div>
+            <p class="p" style="margin-top:10px">No third-party outage takes your business down with it.</p>
+          </div>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <span>AUZslab — software, built in-house.</span>
+        <span style="display:flex;gap:22px">
+          <a href="index.html" style="color:var(--ink-faint)">Home</a>
+          <a href="products.html" style="color:var(--ink-faint)">Products</a>
+          <a href="contact.html" style="color:var(--ink-faint)">Contact</a>
+        </span>
+      </footer>
+
+    </div>
+  </main>
+
+  <button class="knock-btn" data-open-contact>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3a2 2 0 0 0-2 2v3.17a3 3 0 0 0-2 2.83v6a5 5 0 0 0 5 5h4a5 5 0 0 0 5-5v-3M8 3a2 2 0 0 1 2 2v6M8 3v8M12 5a2 2 0 0 1 4 0v6M16 5a2 2 0 0 1 4 0v6"/></svg>
+    Knock, we'll answer
+  </button>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modal">
+      <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+      <form id="formView" data-contact-form>
+        <div class="label" style="margin-bottom:14px">Reach us</div>
+        <h3 class="h-2" style="font-size:24px">Got a business? Let's talk.</h3>
+        <p class="p" style="margin-top:8px">Tell us a little about it — we'll get back to you within a day.</p>
+        <div class="field">
+          <label for="m-name">Name</label>
+          <input id="m-name" name="name" type="text" placeholder="Your name" required>
+        </div>
+        <div class="field">
+          <label for="m-business">Business</label>
+          <input id="m-business" name="business" type="text" placeholder="Business name">
+        </div>
+        <div class="field">
+          <label for="m-contact">Phone or email</label>
+          <input id="m-contact" name="contact" type="text" placeholder="How we reach you" required>
+        </div>
+        <div class="field">
+          <label for="m-message">Message</label>
+          <textarea id="m-message" name="message" placeholder="What are you running today?"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary form-submit">Send</button>
+      </form>
+      <div class="success-view" id="successView">
+        <div class="success-mark">&check;</div>
+        <h3 class="h-2" style="font-size:22px">Got it.</h3>
+        <p class="p">We'll reach out to <span class="success-contact" id="successContact">you</span> shortly.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script src="site.js"></script>
+</body>
+</html>

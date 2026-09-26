@@ -1,0 +1,62 @@
+(function () {
+  function $(sel, root) { return (root || document).querySelector(sel); }
+  function $all(sel) { return document.querySelectorAll(sel); }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var overlay = $('#modalOverlay');
+    var modal = $('#modal');
+    var formView = $('#formView');
+    var successView = $('#successView');
+    var successContact = $('#successContact');
+
+    function openContact() {
+      if (!overlay) return;
+      overlay.classList.add('open');
+      if (formView) formView.style.display = 'block';
+      if (successView) successView.classList.remove('show');
+    }
+    function closeContact() {
+      if (overlay) overlay.classList.remove('open');
+    }
+
+    $all('[data-open-contact]').forEach(function (btn) {
+      btn.addEventListener('click', openContact);
+    });
+    var closeBtn = $('#modalClose');
+    if (closeBtn) closeBtn.addEventListener('click', closeContact);
+    if (overlay) {
+      overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) closeContact();
+      });
+    }
+    if (modal) modal.addEventListener('click', function (e) { e.stopPropagation(); });
+
+    // works for both the modal form (index/products/platform) and the
+    // inline form (contact.html) — whichever is present on the page
+    $all('form[data-contact-form]').forEach(function (form) {
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var contactField = form.querySelector('[name="contact"]');
+        var contact = contactField ? contactField.value : '';
+        var thisSuccess = form.parentElement.querySelector('.success-view');
+        form.style.display = 'none';
+        if (thisSuccess) {
+          thisSuccess.classList.add('show');
+          var span = thisSuccess.querySelector('.success-contact');
+          if (span) span.textContent = contact || 'you';
+        }
+        form.reset();
+      });
+    });
+
+    // first-time visitor: knock once, wherever they land, never again
+    if (document.body.dataset.autoKnock === 'true') {
+      try {
+        if (!localStorage.getItem('auz_seen')) {
+          setTimeout(openContact, 4000);
+          localStorage.setItem('auz_seen', '1');
+        }
+      } catch (e) {}
+    }
+  });
+})();

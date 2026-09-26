@@ -1,0 +1,69 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Invoice</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel=stylesheet>
+<style>
+:root{--paper:#f5f2ea;--ink:#161513;--line:rgba(22,21,19,.14);--mute:#6b675e}
+*{box-sizing:border-box}
+body{font-family:Inter,-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;color:var(--ink);margin:0;background:var(--paper);-webkit-font-smoothing:antialiased}
+.bar{display:flex;justify-content:flex-end;padding:22px 24px 0;max-width:640px;margin:0 auto}
+.bar button{font:13px/1 Inter,sans-serif;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:11px 18px;border-radius:2px;border:1px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer}
+.bar button:hover{background:var(--ink);color:var(--paper)}
+.wrap{max-width:640px;margin:0 auto;padding:18px 24px 70px}
+.hd{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:26px}
+.mark{font-size:44px;font-weight:800;letter-spacing:-.02em;line-height:1}
+.mark img{max-height:40px;display:block}
+.meta-r{text-align:right;font-size:13px;color:var(--mute);line-height:1.6}
+.meta-r b{color:var(--ink);font-weight:600}
+hr{border:none;border-top:1px solid var(--line);margin:0}
+.billto{padding:22px 0;font-size:14px;line-height:1.7}
+.billto b{display:block;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-bottom:6px}
+table{width:100%;border-collapse:collapse;margin:0}
+th{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);text-align:left;padding:16px 0 10px}
+td{padding:13px 0;font-size:14px;border-top:1px solid var(--line)}
+th.c,td.c{text-align:center}th.r,td.r{text-align:right}
+.tot{display:flex;justify-content:flex-end;padding:22px 0 0}
+.tot table{width:auto;min-width:240px}
+.tot td{border-top:none;padding:5px 0;font-size:14px}
+.tot td:first-child{color:var(--mute);padding-right:32px}
+.tot td:last-child{text-align:right}
+.tot .big td{border-top:1px solid var(--ink);padding-top:12px;margin-top:6px;font-size:19px;font-weight:700}
+.thanks{font-size:16px;font-weight:500;padding:34px 0 0}
+.ft{display:flex;justify-content:space-between;gap:20px;padding:28px 0 0;font-size:13px;line-height:1.7}
+.ft b{display:block;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-bottom:6px}
+.sig{text-align:right}.sig b:first-child{font-size:14px;font-weight:700;letter-spacing:0;text-transform:none;color:var(--ink);margin-bottom:2px}
+.dup{display:inline-block;border:1px solid var(--ink);padding:5px 12px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:22px}
+.powered{text-align:center;padding-top:36px;font-size:11px;color:var(--mute)}
+.powered a{color:var(--mute)}
+.err{padding:80px 20px;text-align:center;font-size:15px;color:var(--mute)}
+@media print{.bar{display:none}body{background:#fff}}
+</style></head><body>
+<div class=bar><button onclick="print()">Print / Download</button></div>
+<div class=wrap id=a>Loading…</div>
+<script src=https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin=anonymous></script><script src=/config.js></script><script>
+const sb=supabase.createClient(CFG.url,CFG.key),A=document.getElementById('a'),esc=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';'),r2=n=>Math.round(n*100)/100,inr=n=>'₹'+r2(n).toLocaleString('en-IN');
+const id=new URLSearchParams(location.search).get('o');
+(async()=>{
+ if(!id)return A.innerHTML='<div class=err>Invoice not found.</div>';
+ const{data,error}=await sb.rpc('public_invoice',{oid:id});
+ if(error||!data||!data.order)return A.innerHTML='<div class=err>Invoice not found.</div>';
+ const o=data.order,s=data.cfg||{},t=o.t,logo=s.logo||'/logo.png';
+ const rows=o.lines.map(l=>`<tr><td>${esc(l.name)}${l.size?' ('+esc(l.size)+')':''}</td><td class=c>${l.qty}</td><td class=r>${inr(l.price)}</td><td class=r>${inr(l.price*l.qty)}</td></tr>`).join('');
+ A.innerHTML=`<div class=hd><div class=mark>${s.logo?'<img src="'+esc(logo)+'">':'Invoice'}</div><div class=meta-r><b>Invoice No.</b> ${esc(o.no)}<br>${new Date(o.paidAt||o.created).toLocaleDateString()}</div></div>
+<hr>
+<div class=billto><b>Billed to</b>${esc((o.cust||{}).name)}<br>${esc((o.cust||{}).phone)}</div>
+<hr>
+<table><thead><tr><th>Item</th><th class=c>Qty</th><th class=r>Unit price</th><th class=r>Amount</th></tr></thead><tbody>${rows}</tbody></table>
+<div class=tot><table>
+<tr><td>Subtotal</td><td>${inr(t.sub)}</td></tr>
+${t.d?`<tr><td>Discount</td><td>-${inr(t.d)}</td></tr>`:''}
+<tr><td>CGST</td><td>${inr(t.tax/2)}</td></tr>
+<tr><td>SGST</td><td>${inr(t.tax/2)}</td></tr>
+${t.round?`<tr><td>Round off</td><td>${t.round>=0?'+':'-'}${inr(Math.abs(t.round))}</td></tr>`:''}
+<tr class=big><td>Total</td><td>${inr(t.total)}</td></tr>
+</table></div>
+<p class=thanks>${esc(s.ftr||'Thank you!')}</p>
+<hr style="margin-top:24px">
+<div class=ft><div><b>Paid via</b>${(o.pays||[]).map(p=>p.m.toUpperCase()+' — '+inr(p.amt)).join('<br>')||'—'}</div><div class=sig><b>${esc(s.name)}</b><br>${esc(s.addr)}${s.gstin?'<br>GSTIN '+esc(s.gstin):''}</div></div>
+<div class=powered>Powered by <a href="https://auzlabs.com" target=_blank rel=noopener>AUZlabs</a></div>`;
+ if(s.logo){const im=A.querySelector('.mark img');if(im)im.onerror=()=>im.replaceWith(document.createTextNode('Invoice'))}
+})();
+</script></body></html>

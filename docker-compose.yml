@@ -1,0 +1,67 @@
+services:
+  # ---- Reverse proxy: serves both static sites + handles HTTPS automatically ----
+  # No app container needed for either — everything here is plain static
+  # files with no build step. The marketing site (./site) answers the root
+  # domain; the POS app (./app/public) answers every client subdomain —
+  # routing between the two lives in the Caddyfile.
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./site:/srv/site:ro
+      - ./app/public:/srv/app:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+  # ---- Database: TODO — replace with Supabase's own self-hosted stack ----
+  # This schema depends on real Supabase features plain Postgres does not
+  # provide: auth.users (login), storage.buckets (uploads), the
+  # supabase_realtime publication (live sync), and RPC calls over
+  # PostgREST. Swap this service for Supabase's official self-hosted
+  # docker-compose (Postgres+GoTrue+PostgREST+Realtime+Storage+Kong)
+  # rather than hand-rolling those pieces here.
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db:/docker-entrypoint-initdb.d:ro   # schema files here auto-run on first boot only
+    expose:
+      - "5432"
+
+  # ---- Automated nightly backups, kept locally in ./backups ----
+  backup:
+    image: prodrigestivill/postgres-backup-local:16
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+      SCHEDULE: "@daily"
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS}
+      BACKUP_KEEP_WEEKS: ${BACKUP_KEEP_WEEKS}
+      BACKUP_KEEP_MONTHS: ${BACKUP_KEEP_MONTHS}
+    volumes:
+      - ./backups:/backups
+    depends_on:
+      - postgres
+
+  # ---- "Is it alive" dashboard + alerting ----
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    restart: unless-stopped
+    volumes:
+      - uptime_kuma_data:/app/data
+    expose:
+      - "3001"
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:
+  uptime_kuma_data:
