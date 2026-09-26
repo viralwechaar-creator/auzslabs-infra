@@ -16,8 +16,8 @@
 <meta name="twitter:title" content="AUZslab">
 <meta name="twitter:description" content="Software, built for how you actually work.">
 <link rel="icon" href="/logo.png">
-<link rel="stylesheet" href="theme.css?v=6">
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css?v=7">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"Organization","name":"AUZslab","url":"https://auzslab.in","logo":"https://auzslab.in/logo.png","description":"AUZslab builds point of sale, CRM, and business software in-house."}
 </script>
@@ -52,19 +52,23 @@
 
     <div class="stack">
 
-      <section class="stack-panel">
+      <section class="stack-panel" data-tab="01 — Home">
         <div class="wrap">
           <h1 class="label">AUZslab</h1>
           <p class="h-hero reveal in">Software, built for how you actually work.</p>
           <p class="lede reveal in">One system for point of sale, customers, and everything after — built in-house, not stitched together from someone else's tools.</p>
-          <div style="display:flex;gap:10px;margin-top:26px;flex-wrap:wrap" class="reveal in">
+          <div style="display:flex;align-items:center;gap:10px;margin-top:26px;flex-wrap:wrap" class="reveal in">
             <a href="products.html" class="btn btn-primary">View products</a>
             <button class="btn btn-ghost" data-open-contact>Let's talk</button>
+            <svg class="doodle-arrow" width="54" height="34" viewBox="0 0 54 34" fill="none" aria-hidden="true">
+              <path d="M2 6c14 2 30-2 40 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="1 7"/>
+              <path d="M35 6l7 6.5-8 3" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
           </div>
         </div>
       </section>
 
-      <section class="stack-panel alt">
+      <section class="stack-panel alt" data-tab="02 — How we work">
         <div class="wrap">
           <div class="hero-visual reveal" role="presentation" style="margin-bottom:28px">
             <div class="grid-lines"></div>
@@ -91,7 +95,7 @@
         </div>
       </section>
 
-      <section class="stack-panel">
+      <section class="stack-panel" data-tab="03 — What we build">
         <div class="wrap">
           <div class="label reveal">What we build</div>
           <h2 class="h-1 reveal" style="max-width:9em">Modules, not monoliths.</h2>
