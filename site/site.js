@@ -58,5 +58,69 @@
         }
       } catch (e) {}
     }
+
+    // ---- reveal-on-scroll for the homepage's stacked panels ----
+    var revealEls = $all('.reveal:not(.in)');
+    if (revealEls.length && 'IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in');
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.15 });
+      revealEls.forEach(function (el) { io.observe(el); });
+    }
+
+    // ---- synthesized scroll sound (no audio file — generated live) ----
+    var soundToggle = $('#soundToggle');
+    if (soundToggle) {
+      var soundOn = false;
+      try { soundOn = localStorage.getItem('auz_sound') === '1'; } catch (e) {}
+      soundToggle.setAttribute('aria-pressed', String(soundOn));
+      soundToggle.style.color = soundOn ? 'var(--ink)' : '';
+
+      var audioCtx = null;
+      function getAudioCtx() {
+        if (!audioCtx) {
+          var AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return null;
+          audioCtx = new AC();
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        return audioCtx;
+      }
+      function tick() {
+        var c = getAudioCtx();
+        if (!c) return;
+        var osc = c.createOscillator();
+        var gain = c.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = 900 + Math.random() * 220;
+        gain.gain.setValueAtTime(0.05, c.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.05);
+        osc.connect(gain).connect(c.destination);
+        osc.start();
+        osc.stop(c.currentTime + 0.06);
+      }
+
+      soundToggle.addEventListener('click', function () {
+        soundOn = !soundOn;
+        soundToggle.setAttribute('aria-pressed', String(soundOn));
+        soundToggle.style.color = soundOn ? 'var(--ink)' : '';
+        try { localStorage.setItem('auz_sound', soundOn ? '1' : '0'); } catch (e) {}
+        if (soundOn) { getAudioCtx(); tick(); }
+      });
+
+      var lastTick = 0;
+      window.addEventListener('scroll', function () {
+        if (!soundOn) return;
+        var now = Date.now();
+        if (now - lastTick < 220) return;
+        lastTick = now;
+        tick();
+      }, { passive: true });
+    }
   });
 })();
