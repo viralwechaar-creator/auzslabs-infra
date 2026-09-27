@@ -73,9 +73,9 @@ button{font-family:inherit}
   image-rendering:pixelated;image-rendering:-moz-crisp-edges;image-rendering:crisp-edges;
 }
 .drawer-close{
-  position:absolute;top:24px;right:22px;width:38px;height:38px;border-radius:999px;
+  position:fixed;bottom:24px;right:22px;width:44px;height:44px;border-radius:999px;
   border:1px solid rgba(255,255,255,.3);background:none;color:#fff;
-  display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:1;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:40;
   transition:background .15s ease,color .15s ease;
 }
 .drawer-close:hover{background:#fff;color:var(--ink)}
@@ -101,9 +101,28 @@ button{font-family:inherit}
 .nav-group-chevron{transition:transform .2s ease;color:rgba(255,255,255,.35);flex-shrink:0}
 .nav-group-toggle[aria-expanded="true"]{color:#fff;background:none}
 .nav-group-toggle[aria-expanded="true"] .nav-group-chevron{transform:rotate(180deg);color:var(--accent)}
-.nav-submenu{display:grid;grid-template-rows:0fr;transition:grid-template-rows .25s ease}
-.nav-group-toggle[aria-expanded="true"] + .nav-submenu{grid-template-rows:1fr}
-.nav-submenu-inner{overflow:hidden}
+/* mobile: tapping a category swaps the WHOLE screen to a dedicated
+   sub-list (full-screen overlay), not an inline expand -- a back
+   button returns to the main list, matching a drill-down app menu
+   rather than an accordion. Desktop overrides this back to the
+   hover flyout further down. */
+.nav-submenu{
+  display:block;position:fixed;inset:0;background:var(--ink);z-index:35;
+  padding:90px 24px 110px;overflow-y:auto;
+  opacity:0;pointer-events:none;transform:translateX(16px);
+  transition:opacity .2s ease,transform .2s ease;
+}
+.nav-group-toggle[aria-expanded="true"] + .nav-submenu{opacity:1;pointer-events:auto;transform:translateX(0)}
+.nav-submenu-title{font-family:var(--font-display);font-weight:700;font-size:28px;color:#fff;margin-bottom:22px}
+.nav-submenu-inner{display:flex;flex-direction:column;gap:2px}
+.nav-back{
+  position:fixed;bottom:24px;left:22px;z-index:40;
+  width:44px;height:44px;border-radius:999px;background:none;
+  border:1px solid rgba(255,255,255,.3);color:#fff;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:background .15s ease,color .15s ease;
+}
+.nav-back:hover{background:#fff;color:var(--ink)}
 .nav-sublink{
   display:flex;align-items:center;gap:9px;
   padding:9px 10px 9px 18px;font-family:var(--font-mono);font-size:11px;
@@ -206,6 +225,21 @@ button{font-family:inherit}
    not a literal product screenshot ---------- */
 .hero-grid{display:grid;grid-template-columns:1fr}
 .hero-art{display:none}
+.hero-services{display:flex;flex-direction:column;gap:3px;margin-top:30px}
+.hero-services-label{font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:5px}
+.hero-service{font-family:var(--font-display);font-weight:600;font-size:15px;color:var(--ink-faint)}
+.hero-service.is-primary{color:var(--ink);font-weight:700}
+
+/* ---------- homepage closer: the wordmark, repeated huge ---------- */
+.mega-logo{
+  display:flex;align-items:center;justify-content:center;position:relative;
+  padding:48px 16px;overflow:hidden;
+}
+.mega-logo .brand-mark{position:relative;z-index:1;font-size:clamp(48px,16vw,220px);line-height:1;white-space:nowrap}
+.mega-logo-blob{
+  position:absolute;top:50%;left:50%;width:60vw;max-width:420px;
+  transform:translate(-50%,-50%);opacity:.14;z-index:0;
+}
 
 /* ---------- hand-drawn doodle accents (original inline SVG) ---------- */
 .doodle-arrow{
@@ -379,6 +413,8 @@ button{font-family:inherit}
   }
   .sidebar-logo img{max-width:132px}
   .drawer-close{display:none}
+  .nav-back{display:none}
+  .nav-submenu-title{display:none}
   .sidebar-nav{gap:2px;margin-top:4px}
   .nav-link{font-size:17px;padding:10px 4px;border-bottom:none}
   .content{margin-left:0;margin-right:var(--sidebar-w)}
@@ -429,12 +465,7 @@ button{font-family:inherit}
     background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
     background-size:26px 26px;opacity:.6;
   }
-  .hero-art .orb{position:absolute;border:2px solid var(--ink);border-radius:50%}
-  .hero-art .orb-lg{width:240px;height:240px;right:-60px;top:-60px;opacity:.85}
-  .hero-art .orb-lg::before{content:'';position:absolute;inset:34px;border:2px dashed var(--ink);border-radius:50%}
-  .hero-art .orb-lg::after{content:'';position:absolute;inset:76px;border-radius:50%;background:var(--accent)}
-  .hero-art .orb-sm{width:120px;height:120px;left:36px;bottom:36px;opacity:.6}
-  .hero-art .orb-sm::after{content:'';position:absolute;inset:28px;border-radius:50%;background:var(--ink)}
+  .hero-doodle{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
   .hero-art-tag{position:absolute;z-index:1;background:#fff}
   .footer-dark{border-radius:40px 40px 0 0;padding:56px 0 36px}
   .footer-top{grid-template-columns:1.4fr 1fr 1fr 1fr;gap:32px}

@@ -78,6 +78,10 @@
         menuToggle.classList.remove('is-open');
         menuToggle.setAttribute('aria-expanded', 'false');
         if (menuToggleLabel) menuToggleLabel.textContent = 'Menu';
+        // always reopen on the main list, never mid-drill-down
+        $all('.nav-group-toggle[aria-expanded="true"]').forEach(function (t) {
+          t.setAttribute('aria-expanded', 'false');
+        });
       }
       menuToggle.addEventListener('click', function () {
         if (sidebarDrawer.classList.contains('open')) closeDrawer(); else openDrawer();
@@ -104,10 +108,18 @@
     });
 
     // ---- expandable nav groups (Products / Business types / Resources) ----
+    // desktop: hover flyout. mobile: full-screen drill-down with a back
+    // button, so the same toggle/aria-expanded drives both.
     $all('.nav-group-toggle').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var expanded = btn.getAttribute('aria-expanded') === 'true';
         btn.setAttribute('aria-expanded', String(!expanded));
+      });
+    });
+    $all('.nav-back').forEach(function (back) {
+      back.addEventListener('click', function () {
+        var toggle = back.closest('.nav-group').querySelector('.nav-group-toggle');
+        if (toggle) toggle.setAttribute('aria-expanded', 'false');
       });
     });
 
