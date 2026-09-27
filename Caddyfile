@@ -12,7 +12,15 @@
 # Every client's subdomain serves the POS app. Which client it is gets
 # figured out client-side (tenant.js reads the subdomain) or via RLS
 # once a staff member logs in — same files for every tenant.
+# A wildcard cert can't use the normal HTTP challenge (there's no single
+# server to answer it for every possible subdomain) -- it needs a DNS-01
+# challenge instead, proving control of the domain by creating a TXT
+# record via the registrar's API. GODADDY_API_TOKEN is KEY:SECRET from
+# developer.godaddy.com/keys (see .env.example).
 *.{$DOMAIN} {
+    tls {
+        dns godaddy {env.GODADDY_API_TOKEN}
+    }
     root * /srv/app
     # a stale cached service worker can pin clients to old code indefinitely
     header /sw.js Cache-Control "no-cache"
@@ -41,7 +49,3 @@ api.{$DOMAIN} {
         reverse_proxy api:3000
     }
 }
-
-# NOTE: the wildcard *.{$DOMAIN} above needs a DNS-01 challenge (a Caddy DNS
-# plugin for your registrar) for its certificate, not the plain HTTP
-# challenge — set that up before this goes live with real client subdomains.

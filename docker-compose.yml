@@ -7,7 +7,7 @@ services:
   # directly and publicly from the same volume the api container writes
   # to. Routing lives in the Caddyfile. ----
   caddy:
-    image: caddy:2-alpine
+    build: ./caddy   # stock caddy + the GoDaddy DNS plugin (needed for the wildcard cert's DNS-01 challenge) -- see caddy/Dockerfile
     restart: unless-stopped
     env_file: .env
     ports:
