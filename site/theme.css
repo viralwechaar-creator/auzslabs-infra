@@ -64,7 +64,7 @@ button{font-family:inherit}
 .sidebar{
   position:fixed;top:0;right:0;bottom:0;width:100%;max-width:none;height:100%;
   transform:translateX(100%);transition:transform .3s ease;
-  display:flex;flex-direction:column;gap:28px;padding:26px 24px;
+  display:flex;flex-direction:column;gap:28px;padding:26px 24px 84px;
   background:#000;color:#fff;
   box-shadow:-30px 0 70px -20px rgba(0,0,0,.5);
   z-index:30;overflow-y:auto;
@@ -130,13 +130,13 @@ button{font-family:inherit}
 }
 .nav-back:hover{background:#fff;color:var(--ink)}
 .nav-sublink{
-  display:flex;align-items:center;gap:9px;
-  padding:9px 10px 9px 18px;font-family:var(--font-mono);font-size:11px;
-  letter-spacing:.03em;text-transform:uppercase;color:rgba(255,255,255,.45);border-radius:10px;
+  display:flex;align-items:center;gap:12px;
+  padding:12px 10px 12px 18px;font-family:var(--font-display);font-weight:700;font-size:19px;
+  letter-spacing:-.01em;color:rgba(255,255,255,.5);border-radius:10px;
   transition:color .15s ease,background .15s ease;
 }
 .nav-sublink > span:first-of-type{flex:1}
-.nav-sublink-icon{flex-shrink:0;opacity:.8}
+.nav-sublink-icon{flex-shrink:0;opacity:.8;width:19px;height:19px}
 .nav-sublink:hover{color:#fff;background:rgba(255,255,255,.08)}
 .nav-sublink.is-disabled{color:rgba(255,255,255,.25);cursor:default;pointer-events:none}
 .nav-subtag{
@@ -227,10 +227,21 @@ button{font-family:inherit}
 .hero-visual .orb::after{content:'';position:absolute;inset:32px;border-radius:50%;background:var(--accent)}
 
 /* ---------- hero art: fills the space beside the hero text on wide
-   screens instead of leaving it blank — abstract, on-brand geometry,
-   not a literal product screenshot ---------- */
+   screens, and below it on narrow ones, instead of leaving it blank —
+   abstract, on-brand geometry, not a literal product screenshot ---------- */
 .hero-grid{display:grid;grid-template-columns:1fr}
-.hero-art{display:none}
+.hero-art{
+  display:block;position:relative;height:200px;margin-top:28px;overflow:hidden;
+  border:2px solid var(--ink);border-radius:22px;background:var(--bg-raised);
+  box-shadow:0 20px 40px -24px rgba(23,23,23,.22);
+}
+.hero-art .grid-lines{
+  position:absolute;inset:0;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:22px 22px;opacity:.6;
+}
+.hero-doodle{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+.hero-art-tag{position:absolute;z-index:1;background:#fff}
 .hero-services{display:flex;flex-direction:column;gap:3px;margin-top:30px}
 .hero-services-label{font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:5px}
 .hero-service{font-family:var(--font-display);font-weight:600;font-size:15px;color:var(--ink-faint)}
@@ -268,16 +279,20 @@ button{font-family:inherit}
 .footer-dark{
   background:var(--ink);color:rgba(255,255,255,.6);
   border-radius:28px 28px 0 0;margin-top:40px;
-  padding:44px 0 28px;
+  padding:32px 0 22px;
 }
-.footer-top{display:grid;grid-template-columns:1fr;gap:28px;padding-bottom:32px;border-bottom:1px solid rgba(255,255,255,.14)}
+/* two columns on mobile instead of one long vertical stack -- the brand
+   mark spans both, Explore/Connect/Legal split left/right so the panel
+   doesn't run on forever */
+.footer-top{display:grid;grid-template-columns:1fr 1fr;gap:20px 16px;padding-bottom:22px;border-bottom:1px solid rgba(255,255,255,.14)}
+.footer-col-brand{grid-column:1/-1}
 .footer-col-brand .brand-mark{color:#fff;font-size:19px}
-.footer-col{display:flex;flex-direction:column;gap:10px}
+.footer-col{display:flex;flex-direction:column;gap:8px}
 .footer-col-title{font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:2px}
 .footer-col a{font-size:13px;color:rgba(255,255,255,.65);transition:color .15s ease}
 .footer-col a:hover{color:var(--accent)}
 
-.footer-newsletter{display:flex;flex-direction:column;gap:16px;padding:28px 0;border-bottom:1px solid rgba(255,255,255,.14)}
+.footer-newsletter{display:flex;flex-direction:column;gap:14px;padding:20px 0;border-bottom:1px solid rgba(255,255,255,.14)}
 .footer-newsletter-label{font-family:var(--font-display);font-weight:600;font-size:24px;color:#fff;line-height:1.15}
 .footer-newsletter-form{display:flex;gap:8px}
 .footer-newsletter-form input{
@@ -420,7 +435,7 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
 .stack-panel.stack-panel-dark{
   position:sticky;top:112px;z-index:2;min-height:0;
   background:var(--ink);color:rgba(255,255,255,.6);
-  border-color:var(--ink);padding-top:150px;
+  border-color:var(--ink);padding-top:128px;
 }
 .stack-panel-dark::before{
   content:attr(data-tab);
@@ -492,20 +507,11 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
   .grid-2{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
   .hero-visual{height:220px}
   .hero-grid{grid-template-columns:1.1fr 1fr;align-items:center;gap:56px}
-  .hero-art{
-    display:block;position:relative;height:440px;overflow:hidden;
-    border:2px solid var(--ink);border-radius:26px;background:var(--bg-raised);
-    box-shadow:0 30px 60px -30px rgba(23,23,23,.25);
-  }
-  .hero-art .grid-lines{
-    position:absolute;inset:0;
-    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
-    background-size:26px 26px;opacity:.6;
-  }
-  .hero-doodle{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
-  .hero-art-tag{position:absolute;z-index:1;background:#fff}
-  .footer-dark{border-radius:40px 40px 0 0;padding:56px 0 36px}
+  .hero-art{height:440px;margin-top:0;border-radius:26px;box-shadow:0 30px 60px -30px rgba(23,23,23,.25)}
+  .hero-art .grid-lines{background-size:26px 26px}
+  .footer-dark{border-radius:40px 40px 0 0;padding:48px 0 32px}
   .footer-top{grid-template-columns:1.4fr 1fr 1fr 1fr;gap:32px}
+  .footer-col-brand{grid-column:auto}
   .footer-newsletter{flex-direction:row;align-items:center;justify-content:space-between}
   .footer-newsletter-form{width:320px}
   .footer-bottom{flex-direction:row;justify-content:space-between;align-items:center}
@@ -518,7 +524,7 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
   .stack-panel:nth-of-type(3){top:calc(150px + var(--tab-step))}
   .stack-panel:nth-of-type(4){top:calc(150px + (var(--tab-step) * 2))}
   .stack-panel:not(:first-of-type)::before{left:56px}
-  .stack-panel.stack-panel-dark{top:150px;padding-top:190px}
+  .stack-panel.stack-panel-dark{top:150px;padding-top:160px}
   .stack-panel-dark::before{left:56px}
   .mega-logo{padding-left:56px}
 }
@@ -533,9 +539,9 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
   position:fixed;inset:0;z-index:999;pointer-events:none;
   background:var(--ink);
   clip-path:circle(0% at var(--ox,50%) var(--oy,50%));
-  transition:clip-path .5s cubic-bezier(.65,0,.35,1);
+  transition:clip-path .6s cubic-bezier(.4,0,.2,1);
 }
-.page-transition.is-active{clip-path:circle(150% at var(--ox,50%) var(--oy,50%))}
+.page-transition.is-active{clip-path:circle(120% at var(--ox,50%) var(--oy,50%))}
 
 @media (prefers-reduced-motion: reduce){
   html{scroll-behavior:auto}

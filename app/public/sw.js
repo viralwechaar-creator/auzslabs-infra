@@ -1,4 +1,4 @@
-const V='pos-v9',A=['/','/index.html','/order.html','/site.html','/i.html','/config.js','/manifest.json','/logo.png','https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js','https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js'];
+const V='pos-v10',A=['/','/index.html','/order.html','/site.html','/i.html','/config.js','/manifest.json','/logo.png','/icon-512.png','https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js','https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js'];
 self.oninstall=e=>e.waitUntil(caches.open(V).then(c=>Promise.all(A.map(u=>c.add(u).catch(()=>0)))).then(()=>skipWaiting()));
 self.onactivate=e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!=V).map(x=>caches.delete(x)))).then(()=>clients.claim()));
 self.onfetch=e=>{const r=e.request,u=new URL(r.url);if(r.method!='GET'||(u.origin!=location.origin&&!u.host.includes('jsdelivr')))return;e.respondWith(fetch(r).then(x=>{if(x.ok){const y=x.clone();caches.open(V).then(c=>c.put(r,y))}return x}).catch(()=>caches.match(r).then(m=>m||caches.match('/index.html'))))};
