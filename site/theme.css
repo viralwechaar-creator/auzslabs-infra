@@ -36,6 +36,17 @@ button{font-family:inherit}
   display:flex;align-items:center;justify-content:center;cursor:pointer;
 }
 .hamburger:hover{background:var(--ink);color:#fff}
+.hamburger-bars{width:15px;height:11px;position:relative}
+.hamburger-bars span{
+  position:absolute;left:0;width:100%;height:2px;background:currentColor;border-radius:2px;
+  transition:transform .25s ease,opacity .2s ease,top .25s ease;
+}
+.hamburger-bars span:nth-child(1){top:0}
+.hamburger-bars span:nth-child(2){top:4.5px}
+.hamburger-bars span:nth-child(3){top:9px}
+.hamburger.is-open .hamburger-bars span:nth-child(1){top:4.5px;transform:rotate(45deg)}
+.hamburger.is-open .hamburger-bars span:nth-child(2){opacity:0}
+.hamburger.is-open .hamburger-bars span:nth-child(3){top:4.5px;transform:rotate(-45deg)}
 .topbar-logo{order:1}
 .topbar-logo img{max-width:84px;display:block}
 

@@ -67,11 +67,13 @@
       function openDrawer() {
         sidebarDrawer.classList.add('open');
         drawerOverlay.classList.add('open');
+        menuToggle.classList.add('is-open');
         menuToggle.setAttribute('aria-expanded', 'true');
       }
       function closeDrawer() {
         sidebarDrawer.classList.remove('open');
         drawerOverlay.classList.remove('open');
+        menuToggle.classList.remove('is-open');
         menuToggle.setAttribute('aria-expanded', 'false');
       }
       menuToggle.addEventListener('click', function () {

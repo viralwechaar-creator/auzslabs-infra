@@ -15,6 +15,7 @@
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="/logo.png">
 <link rel="stylesheet" href="theme.css?v=7">
+<link rel="stylesheet" href="design-system/ui-kit.css?v=1">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -22,7 +23,7 @@
 <div class="shell">
   <header class="topbar">
     <button class="hamburger" id="menuToggle" aria-label="Open menu" aria-expanded="false">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      <span class="hamburger-bars"><span></span><span></span><span></span></span>
     </button>
     <a href="index.html" class="topbar-logo"><img src="logo.png" alt="AUZslab"></a>
   </header>
@@ -89,6 +90,43 @@
         </div>
       </section>
 
+      <hr class="dash">
+
+      <section class="section tight uk-kit">
+        <div class="label">Before you write in</div>
+        <div class="h-2" style="margin-bottom:6px">A few things people usually ask</div>
+        <div class="uk-accordion" style="margin-top:18px">
+          <div class="uk-accordion-item is-open">
+            <button class="uk-accordion-head">
+              <span>Can I run more than one outlet on this?</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Yes — every outlet shares one account, one login and one customer list. No separate sign-ups per branch.</p></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head">
+              <span>Is my business data actually mine?</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>It lives on infrastructure we run for you — not rented from, or resold under, someone else's name.</p></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head">
+              <span>We already use another POS — can we switch?</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Tell us what you're on today in the form above — we'll map out the switch before you commit to anything.</p></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head">
+              <span>How fast do you reply?</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Within a day, usually sooner.</p></div></div>
+          </div>
+        </div>
+      </section>
+
       <footer class="footer">
         <span>AUZslab — software, built in-house.</span>
         <span style="display:flex;gap:22px">
@@ -102,5 +140,6 @@
   </main>
 </div>
 <script src="site.js"></script>
+<script src="design-system/ui-kit.js?v=1"></script>
 </body>
 </html>

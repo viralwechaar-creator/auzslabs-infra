@@ -17,6 +17,7 @@
 <meta name="twitter:description" content="Software, built for how you actually work.">
 <link rel="icon" href="/logo.png">
 <link rel="stylesheet" href="theme.css?v=7">
+<link rel="stylesheet" href="design-system/ui-kit.css?v=1">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"Organization","name":"AUZslab","url":"https://auzslab.in","logo":"https://auzslab.in/logo.png","description":"AUZslab builds point of sale, CRM, and business software in-house."}
@@ -27,7 +28,7 @@
 <div class="shell">
   <header class="topbar">
     <button class="hamburger" id="menuToggle" aria-label="Open menu" aria-expanded="false">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      <span class="hamburger-bars"><span></span><span></span><span></span></span>
     </button>
     <a href="index.html" class="topbar-logo"><img src="logo.png" alt="AUZslab"></a>
   </header>
@@ -99,22 +100,28 @@
         <div class="wrap">
           <div class="label reveal">What we build</div>
           <h2 class="h-1 reveal" style="max-width:9em">Modules, not monoliths.</h2>
-          <div class="grid-3" style="margin-top:24px">
-            <div class="card reveal">
-              <span class="tag">Live</span>
-              <div class="h-2" style="margin-top:12px">AUZslab POS</div>
-              <p class="p" style="margin-top:8px">Billing, kitchen orders, inventory and staff — one till for restaurants and cafés.</p>
-            </div>
-            <div class="card reveal">
-              <span class="tag">Live</span>
-              <div class="h-2" style="margin-top:12px">AUZslab CRM</div>
-              <p class="p" style="margin-top:8px">Know who your customers are, and bring them back.</p>
-            </div>
-            <div class="card reveal">
-              <span class="tag" style="opacity:.6">In progress</span>
-              <div class="h-2" style="margin-top:12px">What's next</div>
-              <p class="p" style="margin-top:8px">Booking, payroll and more — built as real businesses ask for them.</p>
-            </div>
+          <div class="uk-kit uk-bento reveal" style="margin-top:24px">
+            <a href="products.html" class="uk-bento-tile uk-dark uk-span-2">
+              <span class="uk-bento-code">.pos-till {<br>&nbsp;&nbsp;display: <b>flex</b>;<br>}</span>
+            </a>
+            <a href="products.html" class="uk-bento-tile uk-accent">
+              <span class="uk-bento-label">POS</span>
+              <span class="uk-bento-sub" style="color:rgba(255,255,255,.8)">Live</span>
+            </a>
+            <a href="products.html" class="uk-bento-tile">
+              <span class="uk-bento-label">CRM</span>
+              <span class="uk-bento-sub">Live</span>
+            </a>
+            <a href="products.html" class="uk-bento-tile uk-span-2-row uk-dark" style="justify-content:space-between;padding-top:14px">
+              <span class="uk-bento-sub" style="color:rgba(255,255,255,.55)">Every part talks to every other part</span>
+              <span class="uk-bento-label">One login,<br>every module</span>
+            </a>
+            <a href="products.html" class="uk-bento-tile uk-soon">
+              <span class="uk-bento-label">Booking</span>
+            </a>
+            <a href="products.html" class="uk-bento-tile uk-soon">
+              <span class="uk-bento-label">Payroll</span>
+            </a>
           </div>
           <a href="products.html" class="btn btn-ghost reveal" style="margin-top:24px">See all products</a>
         </div>
