@@ -65,7 +65,7 @@ button{font-family:inherit}
   position:fixed;top:0;right:0;bottom:0;width:100%;max-width:none;height:100%;
   transform:translateX(100%);transition:transform .3s ease;
   display:flex;flex-direction:column;gap:28px;padding:26px 24px;
-  background:var(--ink);color:#fff;
+  background:#000;color:#fff;
   box-shadow:-30px 0 70px -20px rgba(0,0,0,.5);
   z-index:30;overflow-y:auto;
 }
@@ -86,13 +86,14 @@ button{font-family:inherit}
 .drawer-close:hover{background:#fff;color:var(--ink)}
 .sidebar-nav{display:flex;flex-direction:column;gap:0;margin-top:12px}
 .nav-link{
-  font-family:var(--font-display);font-weight:600;font-size:38px;letter-spacing:-.01em;
-  padding:16px 4px;border-radius:0;color:rgba(255,255,255,.55);background:none;
+  font-family:var(--font-display);font-weight:700;font-size:22px;letter-spacing:-.01em;
+  padding:13px 4px;border-radius:0;color:rgba(255,255,255,.55);background:none;
   border-bottom:1px solid rgba(255,255,255,.14);
+  text-align:right;
   transition:color .15s ease, transform .15s ease;
 }
-.nav-link:hover{color:#fff;background:none;transform:translateX(3px)}
-.nav-link.active{color:#fff;background:none;box-shadow:inset 3px 0 0 var(--accent);padding-left:14px}
+.nav-link:hover{color:#fff;background:none;transform:translateX(-3px)}
+.nav-link.active{color:#fff;background:none;box-shadow:inset -3px 0 0 var(--accent);padding-right:14px}
 
 /* ---------- nav-group: expandable sub-list (Products / Business types / Resources) ---------- */
 /* Same information as a horizontal mega-menu would show, adapted to our
@@ -100,8 +101,8 @@ button{font-family:inherit}
    dropdown panel, since there's no horizontal top bar to drop one from. */
 .nav-group{display:flex;flex-direction:column}
 .nav-group-toggle{
-  width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;
-  background:none;border:none;cursor:pointer;text-align:left;font-family:inherit;
+  width:100%;display:flex;align-items:center;justify-content:flex-end;gap:10px;
+  background:none;border:none;cursor:pointer;text-align:right;font-family:inherit;
 }
 .nav-group-chevron{transition:transform .2s ease;color:rgba(255,255,255,.35);flex-shrink:0}
 .nav-group-toggle[aria-expanded="true"]{color:#fff;background:none}
@@ -112,7 +113,7 @@ button{font-family:inherit}
    rather than an accordion. Desktop overrides this back to the
    hover flyout further down. */
 .nav-submenu{
-  display:block;position:fixed;inset:0;background:var(--ink);z-index:35;
+  display:block;position:fixed;inset:0;background:#000;z-index:35;
   padding:90px 24px 110px;overflow-y:auto;
   opacity:0;pointer-events:none;transform:translateX(16px);
   transition:opacity .2s ease,transform .2s ease;
@@ -237,12 +238,15 @@ button{font-family:inherit}
 
 /* ---------- homepage closer: the wordmark, repeated huge ---------- */
 .mega-logo{
-  display:flex;align-items:center;justify-content:center;position:relative;
-  padding:48px 16px;overflow:hidden;
+  display:flex;align-items:center;justify-content:flex-start;position:relative;
+  padding:48px 20px;overflow:hidden;
 }
-.mega-logo .brand-mark{position:relative;z-index:1;font-size:clamp(64px,22vw,220px);line-height:1;white-space:nowrap}
+.mega-logo .brand-mark{
+  position:relative;z-index:1;font-size:clamp(64px,22vw,220px);line-height:1;white-space:nowrap;
+  font-weight:700;letter-spacing:-.03em;
+}
 .mega-logo-blob{
-  position:absolute;top:50%;left:50%;width:60vw;max-width:420px;
+  position:absolute;top:50%;left:26%;width:60vw;max-width:420px;
   transform:translate(-50%,-50%);opacity:.14;z-index:0;
 }
 
@@ -307,9 +311,13 @@ button{font-family:inherit}
   display:flex;align-items:center;gap:8px;padding:13px 18px;border-radius:999px;
   background:var(--accent);color:#fff;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;
   border:2px solid var(--ink);cursor:pointer;box-shadow:4px 4px 0 var(--ink);
-  transition:transform .18s ease, box-shadow .18s ease;
+  transition:transform .18s ease, box-shadow .18s ease, opacity .2s ease;
 }
 .knock-btn:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink)}
+/* the drawer's close/back controls sit bottom-right/bottom-left -- this
+   floating button lives in the same corner and blocks them whenever the
+   menu (or one of its full-screen sub-lists) is open */
+body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14px)}
 
 /* ---------- modal ---------- */
 .modal-overlay{
@@ -512,11 +520,27 @@ button{font-family:inherit}
   .stack-panel:not(:first-of-type)::before{left:56px}
   .stack-panel.stack-panel-dark{top:150px;padding-top:190px}
   .stack-panel-dark::before{left:56px}
+  .mega-logo{padding-left:56px}
 }
+
+/* ---------- page transition: a circle expands out from whatever link or
+   button was tapped, covering the screen; the destination page starts
+   already covered and shrinks the same circle away on load, so internal
+   navigation reads as one continuous motion instead of a hard page-cut.
+   Driven entirely from site.js (click origin + sessionStorage handoff
+   across the real page load) -- this is just the shape/timing. ---------- */
+.page-transition{
+  position:fixed;inset:0;z-index:999;pointer-events:none;
+  background:var(--ink);
+  clip-path:circle(0% at var(--ox,50%) var(--oy,50%));
+  transition:clip-path .5s cubic-bezier(.65,0,.35,1);
+}
+.page-transition.is-active{clip-path:circle(150% at var(--ox,50%) var(--oy,50%))}
 
 @media (prefers-reduced-motion: reduce){
   html{scroll-behavior:auto}
   .reveal{transition:none;opacity:1;transform:none}
   .card,.btn,.btn-primary,.knock-btn,.sidebar{transition:none}
   .doodle-arrow{animation:none}
+  .page-transition{transition:none}
 }

@@ -2,6 +2,81 @@
   function $(sel, root) { return (root || document).querySelector(sel); }
   function $all(sel) { return document.querySelectorAll(sel); }
 
+  // ---- page transition: a circle expands out from whatever link was
+  // tapped, then the destination page starts fully covered and shrinks
+  // the same circle away -- sessionStorage carries the origin point
+  // across the real page load. Runs immediately (not on DOMContentLoaded)
+  // since this script tag is at the end of body, after the overlay div,
+  // so the element already exists and an early "cover on arrival" cuts
+  // down the flash of uncovered content before the shrink kicks in. ----
+  (function () {
+    var pageTransition = document.getElementById('pageTransition');
+    if (!pageTransition) return;
+    var TKEY = 'auz_transition';
+
+    function setOrigin(x, y) {
+      pageTransition.style.setProperty('--ox', x + '%');
+      pageTransition.style.setProperty('--oy', y + '%');
+    }
+
+    function snapHidden() {
+      pageTransition.style.transition = 'none';
+      pageTransition.classList.remove('is-active');
+      pageTransition.getBoundingClientRect(); // force layout before re-enabling transition
+      requestAnimationFrame(function () { pageTransition.style.transition = ''; });
+    }
+
+    (function revealIncoming() {
+      var raw;
+      try { raw = sessionStorage.getItem(TKEY); } catch (e) { raw = null; }
+      if (!raw) return;
+      try { sessionStorage.removeItem(TKEY); } catch (e) {}
+      var origin;
+      try { origin = JSON.parse(raw); } catch (e) { origin = null; }
+      if (origin) setOrigin(origin.x, origin.y);
+      pageTransition.style.transition = 'none';
+      pageTransition.classList.add('is-active');
+      pageTransition.getBoundingClientRect();
+      requestAnimationFrame(function () {
+        pageTransition.style.transition = '';
+        requestAnimationFrame(function () { pageTransition.classList.remove('is-active'); });
+      });
+    })();
+
+    // back/forward out of bfcache can restore the overlay mid-state
+    window.addEventListener('pageshow', function (e) {
+      if (e.persisted) snapHidden();
+    });
+
+    document.addEventListener('click', function (e) {
+      if (e.defaultPrevented || e.button !== 0) return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var a = e.target.closest('a[href]');
+      if (!a) return;
+      var href = a.getAttribute('href');
+      if (!href || href.charAt(0) === '#') return;
+      if (a.target === '_blank') return;
+      if (/^(mailto:|tel:|https?:)/i.test(href)) return;
+
+      e.preventDefault();
+      var rect = a.getBoundingClientRect();
+      var x = (rect.left + rect.width / 2) / window.innerWidth * 100;
+      var y = (rect.top + rect.height / 2) / window.innerHeight * 100;
+      setOrigin(x.toFixed(2), y.toFixed(2));
+      pageTransition.classList.add('is-active');
+
+      var navigated = false;
+      function go() {
+        if (navigated) return;
+        navigated = true;
+        try { sessionStorage.setItem(TKEY, JSON.stringify({ x: x.toFixed(2), y: y.toFixed(2) })); } catch (err) {}
+        window.location.href = href;
+      }
+      pageTransition.addEventListener('transitionend', go, { once: true });
+      setTimeout(go, 700); // safety net if transitionend never fires
+    });
+  })();
+
   document.addEventListener('DOMContentLoaded', function () {
     var overlay = $('#modalOverlay');
     var modal = $('#modal');
@@ -71,6 +146,9 @@
         menuToggle.classList.add('is-open');
         menuToggle.setAttribute('aria-expanded', 'true');
         if (menuToggleLabel) menuToggleLabel.textContent = 'Close';
+        // the floating knock button sits in the same corner as the
+        // drawer's close/back controls and blocks them while open
+        document.body.classList.add('menu-open');
       }
       function closeDrawer() {
         sidebarDrawer.classList.remove('open');
@@ -78,6 +156,7 @@
         menuToggle.classList.remove('is-open');
         menuToggle.setAttribute('aria-expanded', 'false');
         if (menuToggleLabel) menuToggleLabel.textContent = 'Menu';
+        document.body.classList.remove('menu-open');
         // always reopen on the main list, never mid-drill-down
         $all('.nav-group-toggle[aria-expanded="true"]').forEach(function (t) {
           t.setAttribute('aria-expanded', 'false');
