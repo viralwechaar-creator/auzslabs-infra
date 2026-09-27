@@ -235,7 +235,7 @@ button{font-family:inherit}
   display:flex;align-items:center;justify-content:center;position:relative;
   padding:48px 16px;overflow:hidden;
 }
-.mega-logo .brand-mark{position:relative;z-index:1;font-size:clamp(48px,16vw,220px);line-height:1;white-space:nowrap}
+.mega-logo .brand-mark{position:relative;z-index:1;font-size:clamp(64px,22vw,220px);line-height:1;white-space:nowrap}
 .mega-logo-blob{
   position:absolute;top:50%;left:50%;width:60vw;max-width:420px;
   transform:translate(-50%,-50%);opacity:.14;z-index:0;
@@ -262,8 +262,7 @@ button{font-family:inherit}
   padding:44px 0 28px;
 }
 .footer-top{display:grid;grid-template-columns:1fr;gap:28px;padding-bottom:32px;border-bottom:1px solid rgba(255,255,255,.14)}
-.footer-col-brand .brand-mark{color:#fff;font-size:26px}
-.footer-tagline{font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,.45);margin-top:10px}
+.footer-col-brand .brand-mark{color:#fff;font-size:19px}
 .footer-col{display:flex;flex-direction:column;gap:10px}
 .footer-col-title{font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:2px}
 .footer-col a{font-size:13px;color:rgba(255,255,255,.65);transition:color .15s ease}
