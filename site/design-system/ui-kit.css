@@ -19,7 +19,7 @@
   --uk-bg-sunken:#dedede;
   --uk-line:rgba(23,23,23,.12);
   --uk-line-soft:rgba(23,23,23,.06);
-  --uk-accent:#f25623;
+  --uk-accent:#341e21;
   --uk-radius-sm:10px;
   --uk-radius-md:16px;
   --uk-radius-lg:22px;
@@ -125,7 +125,7 @@
 }
 .uk-overflow-item:hover{background:var(--uk-bg-raised);color:var(--uk-ink)}
 .uk-overflow-item.uk-danger{color:var(--uk-accent)}
-.uk-overflow-item.uk-danger:hover{background:rgba(242,86,35,.08)}
+.uk-overflow-item.uk-danger:hover{background:rgba(52,30,33,.08)}
 
 /* ---------- 7. Tab / nav bar ---------- */
 .uk-tabbar-row{display:flex;align-items:center;gap:8px}
