@@ -14,7 +14,7 @@
 <meta property="og:image" content="https://auzslab.in/logo.png">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="/logo.png">
-<link rel="stylesheet" href="theme.css?v=18">
+<link rel="stylesheet" href="theme.css?v=21">
 <link rel="stylesheet" href="design-system/ui-kit.css?v=1">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 </head>
@@ -36,7 +36,7 @@
       <a href="index.html" class="nav-link">Home</a>
 
       <div class="nav-group">
-        <button class="nav-link nav-group-toggle" aria-expanded="true" style="color:#fff;box-shadow:inset 3px 0 0 var(--accent);padding-left:14px">
+        <button class="nav-link nav-group-toggle" aria-expanded="false">
           <span>Products</span>
           <svg class="nav-group-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
@@ -100,65 +100,30 @@
       </section>
 
       <section class="section tight">
-        <div class="zigzag">
-          <div class="zigzag-row">
-            <div class="card" id="pos" style="scroll-margin-top:24px">
-              <span class="tag">Live</span>
-              <div class="h-2" style="margin-top:16px;font-size:26px">AUZslab POS</div>
-              <p class="p" style="margin-top:10px;max-width:520px">Point of sale for restaurants and cafés — billing, kitchen orders, inventory and staff, all in one till.</p>
-              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
-                <span class="tag">Billing</span><span class="tag">Kitchen orders</span><span class="tag">Inventory</span><span class="tag">Staff</span><span class="tag">Self-order via QR</span>
-              </div>
-            </div>
-            <div class="zigzag-accent">
-              <div class="mock-card">
-                <div class="mock-title"><span>Order #24</span><span>Table 3</span></div>
-                <div class="mock-row"><span>Masala Chai</span><b>&times;2</b></div>
-                <div class="mock-row"><span>Veg Samosa</span><b>&times;3</b></div>
-                <div class="mock-dash"></div>
-                <div class="mock-total"><span>Total</span><span>&#8377;180</span></div>
-                <span class="mock-pill accent">Paid</span>
-              </div>
-            </div>
+        <div class="card" id="pos" style="margin-bottom:20px;scroll-margin-top:24px">
+          <span class="tag">Live</span>
+          <div class="h-2" style="margin-top:16px;font-size:26px">AUZslab POS</div>
+          <p class="p" style="margin-top:10px;max-width:520px">Point of sale for restaurants and cafés — billing, kitchen orders, inventory and staff, all in one till.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
+            <span class="tag">Billing</span><span class="tag">Kitchen orders</span><span class="tag">Inventory</span><span class="tag">Staff</span><span class="tag">Self-order via QR</span>
           </div>
+        </div>
 
-          <div class="zigzag-row">
-            <div class="card" id="crm" style="scroll-margin-top:24px">
-              <span class="tag">Live</span>
-              <div class="h-2" style="margin-top:16px;font-size:26px">AUZslab CRM</div>
-              <p class="p" style="margin-top:10px;max-width:520px">Know who your customers are, and bring them back — visits, spend and outreach in one view.</p>
-              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
-                <span class="tag">Customer profiles</span><span class="tag">Visit history</span><span class="tag">Repeat-visit tracking</span>
-              </div>
-            </div>
-            <div class="zigzag-accent alt">
-              <div class="mock-card">
-                <div class="mock-person">
-                  <span class="mock-avatar">P</span>
-                  <span class="name">Priya Sharma</span>
-                </div>
-                <div class="mock-stat"><span>14 visits</span><span>Last: 2d ago</span></div>
-                <span class="mock-pill">Regular</span>
-              </div>
-            </div>
+        <div class="card" id="crm" style="margin-bottom:20px;scroll-margin-top:24px">
+          <span class="tag">Live</span>
+          <div class="h-2" style="margin-top:16px;font-size:26px">AUZslab CRM</div>
+          <p class="p" style="margin-top:10px;max-width:520px">Know who your customers are, and bring them back — visits, spend and outreach in one view.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
+            <span class="tag">Customer profiles</span><span class="tag">Visit history</span><span class="tag">Repeat-visit tracking</span>
           </div>
+        </div>
 
-          <div class="zigzag-row">
-            <div class="card" id="next" style="scroll-margin-top:24px">
-              <span class="tag" style="opacity:.6">In progress</span>
-              <div class="h-2" style="margin-top:16px;font-size:26px">What's next</div>
-              <p class="p" style="margin-top:10px;max-width:520px">Booking, payroll and more — built as real businesses ask for them, not before.</p>
-              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
-                <span class="tag" style="opacity:.6">Booking</span><span class="tag" style="opacity:.6">Payroll</span><span class="tag" style="opacity:.6">Multi-outlet</span>
-              </div>
-            </div>
-            <div class="zigzag-accent">
-              <div class="mock-card">
-                <div class="mock-list-row"><span class="mock-list-left"><span class="mock-dot live"></span>POS + CRM</span><span>Live</span></div>
-                <div class="mock-list-row"><span class="mock-list-left"><span class="mock-dot"></span>Booking</span><span>Soon</span></div>
-                <div class="mock-list-row"><span class="mock-list-left"><span class="mock-dot"></span>Payroll</span><span>Soon</span></div>
-              </div>
-            </div>
+        <div class="card" id="next" style="scroll-margin-top:24px">
+          <span class="tag" style="opacity:.6">In progress</span>
+          <div class="h-2" style="margin-top:16px;font-size:26px">What's next</div>
+          <p class="p" style="margin-top:10px;max-width:520px">Booking, payroll and more — built as real businesses ask for them, not before.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
+            <span class="tag" style="opacity:.6">Booking</span><span class="tag" style="opacity:.6">Payroll</span><span class="tag" style="opacity:.6">Multi-outlet</span>
           </div>
         </div>
       </section>
