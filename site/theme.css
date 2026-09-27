@@ -6,7 +6,7 @@
   --bg-raised:#dedede;
   --line:rgba(23,23,23,.16);
   --line-soft:rgba(23,23,23,.06);
-  --accent:#341e21;
+  --accent:#722f37;
   /* used only by the WORK/Products curve accent -- a deliberate one-off
      nod to the 9read reference's actual red, not a site-wide colour */
   --nine-red:#ea2129;
@@ -116,7 +116,7 @@ button{font-family:inherit}
    rather than an accordion. Desktop overrides this back to the
    hover flyout further down. */
 .nav-submenu{
-  display:block;position:fixed;inset:0;background:#000;z-index:35;
+  display:block;position:fixed;inset:0;background:var(--accent);z-index:35;
   padding:90px 24px 110px;overflow-y:auto;
   opacity:0;pointer-events:none;transform:translateX(16px);
   transition:opacity .2s ease,transform .2s ease;
@@ -183,7 +183,7 @@ button{font-family:inherit}
 .btn-primary{
   background:var(--accent);color:#fff;border-color:var(--accent);
 }
-.btn-primary:hover{background:var(--accent);box-shadow:0 8px 24px -6px rgba(52,30,33,.5);transform:translateY(-1px)}
+.btn-primary:hover{background:var(--accent);box-shadow:0 8px 24px -6px rgba(114,47,55,.5);transform:translateY(-1px)}
 .btn-ghost{border-color:var(--line);color:var(--ink-dim)}
 .btn-ghost:hover{background:var(--ink);border-color:var(--ink);color:#fff}
 
@@ -202,6 +202,14 @@ button{font-family:inherit}
 .card:hover{transform:translate(-2px,-2px) rotate(0deg);box-shadow:7px 7px 0 var(--ink)}
 .grid-3{display:grid;grid-template-columns:1fr;gap:12px}
 .work-step{position:relative;overflow:hidden;z-index:0}
+/* WORK panel only -- staggered left/right so the 3 steps read as a
+   zigzag instead of one long column, and take less vertical room to
+   scroll through before the BUILD panel covers this one */
+.zigzag{gap:8px}
+.zigzag > .work-step:nth-child(1){margin-right:16%}
+.zigzag > .work-step:nth-child(2){margin-left:16%}
+.zigzag > .work-step:nth-child(3){margin-right:8%}
+.work-step .big-numeral{font-size:clamp(30px,9vw,52px);top:-2px;right:4px}
 .grid-2{display:grid;grid-template-columns:1fr;gap:12px}
 
 
@@ -534,6 +542,7 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
   .lede{font-size:14px}
   .card{padding:26px}
   .grid-3{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+  .zigzag > .work-step{margin-left:0;margin-right:0}
   .grid-2{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
   .hero-visual{height:220px}
   .hero-grid{grid-template-columns:1.1fr 1fr;align-items:center;gap:56px}

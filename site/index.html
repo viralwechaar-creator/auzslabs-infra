@@ -17,7 +17,7 @@
 <meta name="twitter:description" content="Software, built for how you actually work.">
 <link rel="icon" href="/logo.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="stylesheet" href="theme.css?v=38">
+<link rel="stylesheet" href="theme.css?v=39">
 <link rel="stylesheet" href="design-system/ui-kit.css?v=2">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script type="application/ld+json">
@@ -107,7 +107,10 @@
       <a href="contact.html" class="nav-link">Contact</a>
     </nav>
     <div class="sidebar-foot">
-      <button class="btn btn-ghost" data-open-contact style="width:100%;justify-content:center">Let's talk</button>
+      <div style="display:flex;gap:10px">
+        <a href="pricing.html" class="btn btn-ghost" style="flex:1;justify-content:center">Pricing</a>
+        <button class="btn btn-ghost" data-open-contact style="flex:1;justify-content:center">Let's talk</button>
+      </div>
       <div class="sidebar-copy">&copy; 2026 AUZslab</div>
     </div>
   </aside>
@@ -153,26 +156,22 @@
         <span class="side-label" aria-hidden="true">How we work</span>
         <div class="dot-texture" aria-hidden="true"></div>
         <div class="wrap">
-          <div class="hero-visual reveal" role="presentation" style="margin-bottom:28px">
-            <div class="grid-lines"></div>
-            <div class="orb"></div>
-          </div>
           <div class="label reveal">How we work</div>
-          <div class="grid-3">
-            <div class="reveal work-step" style="border-top:1px dashed var(--line);padding-top:16px">
+          <div class="grid-3 zigzag">
+            <div class="reveal work-step" style="border-top:1px dashed var(--line);padding-top:12px">
               <span class="big-numeral">01</span>
-              <div class="h-2" style="margin-top:10px">Build</div>
-              <p class="p" style="margin-top:8px">Custom-built for how your business actually runs — not a template with your logo on it.</p>
+              <div class="h-2" style="margin-top:6px">Build</div>
+              <p class="p" style="margin-top:6px">Custom-built for how your business actually runs — not a template with your logo on it.</p>
             </div>
-            <div class="reveal work-step" style="border-top:1px dashed var(--line);padding-top:16px">
+            <div class="reveal work-step" style="border-top:1px dashed var(--line);padding-top:12px">
               <span class="big-numeral">02</span>
-              <div class="h-2" style="margin-top:10px">Connect</div>
-              <p class="p" style="margin-top:8px">Every part talks to every other part. No exports, no duct tape between tools.</p>
+              <div class="h-2" style="margin-top:6px">Connect</div>
+              <p class="p" style="margin-top:6px">Every part talks to every other part. No exports, no duct tape between tools.</p>
             </div>
-            <div class="reveal work-step" style="border-top:1px dashed var(--line);padding-top:16px">
+            <div class="reveal work-step" style="border-top:1px dashed var(--line);padding-top:12px">
               <span class="big-numeral">03</span>
-              <div class="h-2" style="margin-top:10px">Grow</div>
-              <p class="p" style="margin-top:8px">New tools, added as your business needs them — not before, not bundled in.</p>
+              <div class="h-2" style="margin-top:6px">Grow</div>
+              <p class="p" style="margin-top:6px">New tools, added as your business needs them — not before, not bundled in.</p>
             </div>
           </div>
         </div>
