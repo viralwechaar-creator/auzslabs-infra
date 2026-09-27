@@ -11,6 +11,11 @@
   --font-display:'Fraunces',serif;
   --font-body:'Inter',sans-serif;
   --font-mono:'Space Mono',monospace;
+  /* half the rendered height of the stack-panel title (clamp(56px,16vw,130px)
+     at line-height .85) -- the gap between two consecutive panel offsets, so
+     the panel that follows always slices a title exactly through its middle
+     instead of leaving room for the whole word to clear it */
+  --tab-step: clamp(24px, 6.8vw, 55px);
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -370,8 +375,8 @@ button{font-family:inherit}
 }
 .stack-panel:nth-of-type(1){top:0;z-index:1}
 .stack-panel:nth-of-type(2){top:112px;z-index:2}
-.stack-panel:nth-of-type(3){top:194px;z-index:3}
-.stack-panel:nth-of-type(4){top:276px;z-index:4}
+.stack-panel:nth-of-type(3){top:calc(112px + var(--tab-step));z-index:3}
+.stack-panel:nth-of-type(4){top:calc(112px + (var(--tab-step) * 2));z-index:4}
 .stack-panel.alt{background-color:var(--bg-raised);background-blend-mode:normal}
 .stack-panel{overflow:hidden}
 /* extra headroom so the huge title (below) has room before the panel's
@@ -392,6 +397,31 @@ button{font-family:inherit}
 .stack-panel .wrap{width:100%;position:relative}
 .reveal{opacity:0;transform:translateY(16px);transition:opacity .7s ease, transform .7s ease}
 .reveal.in{opacity:1;transform:translateY(0)}
+
+/* ---------- footer as its own stack: the main content stack settles
+   (a plain margin gap = the "pause"), then this .stack instance restarts
+   a fresh sticky sequence just for the footer, so it closes the page
+   with the same folder-panel language instead of just trailing off as
+   flat content. Self-sufficient (doesn't rely on :not(:first-of-type))
+   because on pages with no panel before it, it's the only one. ---------- */
+/* .stack-panel.stack-panel-dark (compounded, not a bare .stack-panel-dark)
+   so this always beats .stack-panel:nth-of-type(1) -- the footer panel is
+   the lone child of its own fresh .stack on every page, so it always
+   matches :nth-of-type(1) too, and a nth-of-type pseudo-class carries the
+   same specificity weight as a class */
+.stack-panel.stack-panel-dark{
+  position:sticky;top:112px;z-index:2;min-height:0;
+  background:var(--ink);color:rgba(255,255,255,.6);
+  border-color:var(--ink);padding-top:150px;
+}
+.stack-panel-dark::before{
+  content:attr(data-tab);
+  position:absolute;top:0;left:20px;
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(56px,16vw,130px);line-height:.85;letter-spacing:-.02em;
+  color:#fff;pointer-events:none;white-space:nowrap;
+}
+.stack-panel-dark .footer-dark{margin-top:0;border-radius:0}
 
 /* ---------- DESKTOP ENHANCEMENT: persistent sidebar, no drawer ---------- */
 @media (min-width: 861px){
@@ -477,9 +507,11 @@ button{font-family:inherit}
   .stack-panel{border-radius:10px 36px 0 0;padding:96px 0 80px}
   .stack-panel:not(:first-of-type){padding-top:190px}
   .stack-panel:nth-of-type(2){top:150px}
-  .stack-panel:nth-of-type(3){top:260px}
-  .stack-panel:nth-of-type(4){top:370px}
+  .stack-panel:nth-of-type(3){top:calc(150px + var(--tab-step))}
+  .stack-panel:nth-of-type(4){top:calc(150px + (var(--tab-step) * 2))}
   .stack-panel:not(:first-of-type)::before{left:56px}
+  .stack-panel.stack-panel-dark{top:150px;padding-top:190px}
+  .stack-panel-dark::before{left:56px}
 }
 
 @media (prefers-reduced-motion: reduce){
