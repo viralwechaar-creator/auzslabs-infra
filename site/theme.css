@@ -202,7 +202,10 @@ button{font-family:inherit}
 .success-mark{width:40px;height:40px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px}
 
 /* ---------- stacked scroll panels — folder effect ---------- */
-.stack{position:relative}
+/* mobile: the topbar isn't sticky, so give the panel's rounded top
+   corners + folder tab room to breathe below it instead of crowding
+   the logo/hamburger with a hard, flush seam. */
+.stack{position:relative;margin-top:40px}
 .stack-panel{
   position:sticky;top:0;
   min-height:100svh;
@@ -225,6 +228,7 @@ button{font-family:inherit}
   font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;
   background:var(--ink);color:#fff;padding:7px 16px 9px;
   border-radius:12px 12px 0 0;
+  z-index:20;
 }
 .stack-panel .wrap{width:100%;position:relative}
 .reveal{opacity:0;transform:translateY(16px);transition:opacity .7s ease, transform .7s ease}
@@ -257,6 +261,7 @@ button{font-family:inherit}
   .footer{flex-direction:row;justify-content:space-between;padding:32px 0 56px}
   .knock-btn{right:32px;bottom:32px}
   .modal{padding:36px}
+  .stack{margin-top:0}
   .stack-panel{border-radius:36px 36px 0 0;padding:96px 0 80px}
   .stack-panel::before{left:56px;font-size:12px;padding:9px 20px 11px}
   .stack-panel .wrap{max-width:640px}
