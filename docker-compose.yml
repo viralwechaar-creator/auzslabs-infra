@@ -2,8 +2,11 @@ services:
   # ---- Reverse proxy: serves both static sites + handles HTTPS automatically ----
   # No app container needed for either — everything here is plain static
   # files with no build step. The marketing site (./site) answers the root
-  # domain; the POS app (./app/public) answers every client subdomain —
-  # routing between the two lives in the Caddyfile.
+  # domain; the POS app (./app/public) answers every client subdomain; and
+  # api.$DOMAIN reverse-proxies into the self-hosted Supabase stack's own
+  # gateway (a separate `docker compose` project, brought up first — see
+  # the setup steps for this repo). Routing between all three lives in
+  # the Caddyfile.
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
@@ -17,39 +20,30 @@ services:
       - ./app/public:/srv/app:ro
       - caddy_data:/data
       - caddy_config:/config
+    networks:
+      - default
+      - supabase_default
 
-  # ---- Database: TODO — replace with Supabase's own self-hosted stack ----
-  # This schema depends on real Supabase features plain Postgres does not
-  # provide: auth.users (login), storage.buckets (uploads), the
-  # supabase_realtime publication (live sync), and RPC calls over
-  # PostgREST. Swap this service for Supabase's official self-hosted
-  # docker-compose (Postgres+GoTrue+PostgREST+Realtime+Storage+Kong)
-  # rather than hand-rolling those pieces here.
-  postgres:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    env_file: .env
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./db:/docker-entrypoint-initdb.d:ro   # schema files here auto-run on first boot only
-    expose:
-      - "5432"
-
-  # ---- Automated nightly backups, kept locally in ./backups ----
+  # ---- Automated nightly backups of the self-hosted Supabase Postgres,
+  # kept locally in ./backups. Runs against the *Supabase* stack's db
+  # service (container name supabase-db), not a database of our own. ----
   backup:
     image: prodrigestivill/postgres-backup-local:16
     restart: unless-stopped
     env_file: .env
     environment:
-      POSTGRES_HOST: postgres
+      POSTGRES_HOST: supabase-db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
       SCHEDULE: "@daily"
       BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS}
       BACKUP_KEEP_WEEKS: ${BACKUP_KEEP_WEEKS}
       BACKUP_KEEP_MONTHS: ${BACKUP_KEEP_MONTHS}
     volumes:
       - ./backups:/backups
-    depends_on:
-      - postgres
+    networks:
+      - supabase_default
 
   # ---- "Is it alive" dashboard + alerting ----
   uptime-kuma:
@@ -60,8 +54,14 @@ services:
     expose:
       - "3001"
 
+networks:
+  # Created by the Supabase stack's own compose project (name: supabase in
+  # its docker-compose.yml -> network "supabase_default"). Bring that stack
+  # up first, then this one, or this fails with "network not found".
+  supabase_default:
+    external: true
+
 volumes:
-  postgres_data:
   caddy_data:
   caddy_config:
   uptime_kuma_data:

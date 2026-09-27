@@ -23,6 +23,16 @@ status.{$DOMAIN} {
     reverse_proxy uptime-kuma:3001
 }
 
+# Self-hosted Supabase's own gateway (container alias "kong", port 8000).
+# Serves the REST/Auth/Storage/Realtime API *and* the Studio dashboard
+# (Studio is behind the DASHBOARD_USERNAME/PASSWORD basic auth baked into
+# the gateway itself, not set up again here). This is a more specific host
+# match than the *.{$DOMAIN} wildcard above, so Caddy routes it here first
+# regardless of block order.
+api.{$DOMAIN} {
+    reverse_proxy kong:8000
+}
+
 # NOTE: the wildcard *.{$DOMAIN} above needs a DNS-01 challenge (a Caddy DNS
 # plugin for your registrar) for its certificate, not the plain HTTP
 # challenge — set that up before this goes live with real client subdomains.
