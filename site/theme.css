@@ -227,9 +227,9 @@ button{font-family:inherit}
   box-shadow:0 -30px 60px -30px rgba(23,23,23,.2);
 }
 .stack-panel:nth-of-type(1){top:0;z-index:1}
-.stack-panel:nth-of-type(2){top:56px;z-index:2}
-.stack-panel:nth-of-type(3){top:112px;z-index:3}
-.stack-panel:nth-of-type(4){top:168px;z-index:4}
+.stack-panel:nth-of-type(2){top:64px;z-index:2}
+.stack-panel:nth-of-type(3){top:128px;z-index:3}
+.stack-panel:nth-of-type(4){top:192px;z-index:4}
 .stack-panel.alt{background-color:var(--bg-raised);background-blend-mode:normal}
 .stack-panel::before{
   content:attr(data-tab);
@@ -237,13 +237,14 @@ button{font-family:inherit}
   font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;
   background:var(--ink);color:#fff;padding:7px 16px 9px;
   border-radius:12px 12px 0 0;
+  box-shadow:0 8px 16px -6px rgba(23,23,23,.5);
   z-index:20;
 }
-/* a different tab colour per panel — reads as distinct folder tabs,
-   not one repeated label */
-.stack-panel:nth-of-type(2)::before{background:var(--accent)}
-.stack-panel:nth-of-type(3)::before{background:var(--ink-dim)}
-.stack-panel:nth-of-type(4)::before{background:var(--ink-faint);color:var(--ink)}
+/* every tab is the same colour — depth comes from the shadow each one
+   casts on the tab/panel behind it, not from colour-coding */
+.stack-panel:nth-of-type(2)::before{left:52px}
+.stack-panel:nth-of-type(3)::before{left:76px}
+.stack-panel:nth-of-type(4)::before{left:100px}
 .stack-panel .wrap{width:100%;position:relative}
 .reveal{opacity:0;transform:translateY(16px);transition:opacity .7s ease, transform .7s ease}
 .reveal.in{opacity:1;transform:translateY(0)}
@@ -278,6 +279,9 @@ button{font-family:inherit}
   .stack{margin-top:0}
   .stack-panel{border-radius:36px 36px 0 0;padding:96px 0 80px}
   .stack-panel::before{left:56px;font-size:12px;padding:9px 20px 11px}
+  .stack-panel:nth-of-type(2)::before{left:84px}
+  .stack-panel:nth-of-type(3)::before{left:112px}
+  .stack-panel:nth-of-type(4)::before{left:140px}
   .stack-panel .wrap{max-width:920px;margin:0 auto;padding:0 64px}
 }
 
