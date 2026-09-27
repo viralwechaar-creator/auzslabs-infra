@@ -114,13 +114,30 @@
         var contactField = form.querySelector('[name="contact"]');
         var contact = contactField ? contactField.value : '';
         var thisSuccess = form.parentElement.querySelector('.success-view');
-        form.style.display = 'none';
-        if (thisSuccess) {
-          thisSuccess.classList.add('show');
-          var span = thisSuccess.querySelector('.success-contact');
-          if (span) span.textContent = contact || 'you';
-        }
-        form.reset();
+        var showSuccess = function () {
+          form.style.display = 'none';
+          if (thisSuccess) {
+            thisSuccess.classList.add('show');
+            var span = thisSuccess.querySelector('.success-contact');
+            if (span) span.textContent = contact || 'you';
+          }
+          form.reset();
+        };
+        var nameField = form.querySelector('[name="name"]');
+        var businessField = form.querySelector('[name="business"]');
+        var messageField = form.querySelector('[name="message"]');
+        var nicheField = form.querySelector('[name="niche"]');
+        fetch('https://api.auzslab.in/rpc/submit_lead', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            p_name: nameField ? nameField.value : '',
+            p_contact: contact,
+            p_business: businessField ? businessField.value : '',
+            p_message: messageField ? messageField.value : '',
+            p_niche: nicheField ? nicheField.value : '',
+          }),
+        }).then(showSuccess).catch(showSuccess); // still show success even if offline -- don't block on network errors, the person already typed it
       });
     });
 

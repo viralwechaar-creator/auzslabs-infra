@@ -9,6 +9,11 @@ button{margin-top:20px;padding:10px 16px;font-size:15px;cursor:pointer}
 .ok a{word-break:break-all}
 </style>
 </head><body>
+<style>
+#leads table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+#leads th,#leads td{text-align:left;padding:6px 8px;border-bottom:1px solid #ddd;vertical-align:top}
+#leads button{margin:0 4px 4px 0;padding:4px 8px;font-size:12px}
+</style>
 <h2>Onboard a new client</h2>
 <div id=login>
  <label>Your AUZlabs admin email<input id=email type=email></label>
@@ -34,6 +39,11 @@ button{margin-top:20px;padding:10px 16px;font-size:15px;cursor:pointer}
 
 <div id=result></div>
 
+<div id=leads style="display:none">
+ <h2>Leads</h2>
+ <div id=leadsList>Loading…</div>
+</div>
+
 <script src=/sb-client.js></script>
 <script src=/config.js></script>
 <script>
@@ -44,9 +54,54 @@ async function checkSession() {
   if (session) {
     document.getElementById('login').style.display = 'none';
     document.getElementById('form').style.display = 'block';
+    document.getElementById('leads').style.display = 'block';
+    loadLeads();
   }
 }
 checkSession();
+
+const STATUS_NEXT = { new: 'contacted', contacted: 'converted' };
+
+async function loadLeads() {
+  const listEl = document.getElementById('leadsList');
+  const { data, error } = await sb.from('leads').select('*').order('created_at');
+  if (error) { listEl.textContent = error.message; return; }
+  if (!data || !data.length) { listEl.textContent = 'No leads yet.'; return; }
+  const rows = data.slice().reverse().map((l) => `
+    <tr data-id="${l.id}">
+      <td><b>${esc(l.name)}</b>${l.business ? '<br>' + esc(l.business) : ''}</td>
+      <td>${esc(l.contact)}</td>
+      <td>${esc(l.niche || '—')}</td>
+      <td>${esc(l.message || '')}</td>
+      <td>${esc(l.status)}</td>
+      <td>
+        <button data-use>Use for onboarding</button>
+        ${STATUS_NEXT[l.status] ? `<button data-advance="${STATUS_NEXT[l.status]}">Mark ${STATUS_NEXT[l.status]}</button>` : ''}
+      </td>
+    </tr>`).join('');
+  listEl.innerHTML = `<table><tr><th>Name</th><th>Contact</th><th>Niche</th><th>Message</th><th>Status</th><th></th></tr>${rows}</table>`;
+
+  listEl.querySelectorAll('tr[data-id]').forEach((tr) => {
+    const id = tr.dataset.id;
+    const lead = data.find((l) => l.id === id);
+    const useBtn = tr.querySelector('[data-use]');
+    if (useBtn) useBtn.onclick = () => {
+      document.getElementById('name').value = lead.business || lead.name;
+      document.getElementById('niche').value = lead.niche || 'general';
+      document.getElementById('ownerEmail').value = lead.contact.includes('@') ? lead.contact : '';
+      document.getElementById('form').scrollIntoView({ behavior: 'smooth' });
+    };
+    const advBtn = tr.querySelector('[data-advance]');
+    if (advBtn) advBtn.onclick = async () => {
+      await sb.from('leads').update({ status: advBtn.dataset.advance }).eq('id', id);
+      loadLeads();
+    };
+  });
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
 
 document.getElementById('signin').onclick = async () => {
   const email = document.getElementById('email').value.trim();
@@ -98,7 +153,7 @@ document.getElementById('form').onsubmit = async (e) => {
 
   resultEl.innerHTML = `
     <div class=ok>
-      <b>${name}</b> is live at <b>${slug}.yourdomain.com</b><br><br>
+      <b>${name}</b> is live at <b>${slug}.auzslab.in</b><br><br>
       Share these with the owner directly (e.g. over WhatsApp) so they can sign in and change it:<br>
       Email: <b>${ownerEmail}</b><br>
       Temporary password: <b>${body.temp_password}</b>

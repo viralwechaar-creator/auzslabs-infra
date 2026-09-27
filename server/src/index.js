@@ -15,6 +15,7 @@ const TABLES = {
   profiles: { columns: ['id', 'tenant_id', 'email', 'role'], writable: ['role'] },
   guest_orders: { columns: ['id', 'tenant_id', 'tbl', 'name', 'phone', 'note', 'items', 'status', 'created_at'], writable: ['status'] },
   push_subs: { columns: ['id', 'tenant_id', 'user_id', 'endpoint', 'p256dh', 'auth', 'created_at'], insertable: ['user_id', 'endpoint', 'p256dh', 'auth'] },
+  leads: { columns: ['id', 'name', 'business', 'contact', 'message', 'niche', 'status', 'created_at'], writable: ['status'] }, // admin-only via RLS (is_platform_admin())
 };
 
 const OPS = { eq: '=', gte: '>=', lte: '<=', gt: '>', lt: '<' };
@@ -32,6 +33,7 @@ const RPC = {
   public_menu: { params: ['tenant_slug'], auth: false },
   place_order: { params: ['tenant_slug', 't', 'n', 'p', 'nt', 'its'], jsonb: ['its'], auth: false },
   public_invoice: { params: ['oid'], auth: false },
+  submit_lead: { params: ['p_name', 'p_contact', 'p_business', 'p_message', 'p_niche'], auth: false },
 };
 
 class HttpError extends Error {
