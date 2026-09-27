@@ -230,7 +230,7 @@ button{font-family:inherit}
    screens, and below it on narrow ones, instead of leaving it blank —
    just the plain logo, no card/box chrome around it ---------- */
 .hero-grid{display:grid;grid-template-columns:1fr}
-.hero-art{display:block;margin-top:28px}
+.hero-art{display:flex;justify-content:flex-end;margin-top:28px}
 .hero-art-logo{
   display:block;width:72%;max-width:260px;
   image-rendering:pixelated;image-rendering:-moz-crisp-edges;image-rendering:crisp-edges;
