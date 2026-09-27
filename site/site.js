@@ -80,6 +80,8 @@
         if (sidebarDrawer.classList.contains('open')) closeDrawer(); else openDrawer();
       });
       drawerOverlay.addEventListener('click', closeDrawer);
+      var drawerClose = $('#drawerClose');
+      if (drawerClose) drawerClose.addEventListener('click', closeDrawer);
     }
 
     // ---- expandable nav groups (Products / Business types / Resources) ----
