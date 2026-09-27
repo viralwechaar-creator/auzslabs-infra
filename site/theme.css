@@ -189,7 +189,7 @@ button{font-family:inherit}
   background:#fff;
   border:2px solid var(--ink);border-radius:26px 12px 26px 12px;padding:22px;
   box-shadow:5px 5px 0 var(--ink);
-  position:relative;
+  position:relative;overflow:hidden;
   transition:transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s cubic-bezier(.22,1,.36,1);
 }
 /* a little deliberate imperfection instead of every card sitting in a
@@ -198,6 +198,7 @@ button{font-family:inherit}
 .card:nth-of-type(even){transform:rotate(.4deg);border-radius:12px 26px 12px 26px}
 .card:hover{transform:translate(-2px,-2px) rotate(0deg);box-shadow:7px 7px 0 var(--ink)}
 .grid-3{display:grid;grid-template-columns:1fr;gap:12px}
+.work-step{position:relative;overflow:hidden;z-index:0}
 .grid-2{display:grid;grid-template-columns:1fr;gap:12px}
 
 
@@ -206,6 +207,27 @@ button{font-family:inherit}
 .tag{
   display:inline-flex;padding:6px 12px;border-radius:999px;border:1.5px solid var(--ink);
   font-family:var(--font-mono);font-size:10px;color:var(--ink);background:#fff;
+}
+
+/* ---------- 9read-inspired accents: an oversized faint numeral behind a
+   card/step's own heading, a bold curved shape, and a dotted texture --
+   kept in the site's own ink/orange/cream palette instead of the
+   reference's red/black/cream ---------- */
+.big-numeral{
+  position:absolute;top:2px;right:8px;z-index:-1;
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(56px,16vw,110px);line-height:1;
+  color:var(--line-soft);pointer-events:none;
+}
+.curve-accent{position:absolute;z-index:0;opacity:.12;pointer-events:none}
+.curve-accent-work{top:-30px;right:-50px;width:65vw;max-width:460px}
+.curve-accent-products{top:-40px;right:-60px;width:70vw;max-width:480px}
+.dot-texture{
+  position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.5;
+  background-image:radial-gradient(var(--line) 1.5px, transparent 1.5px);
+  background-size:18px 18px;
+  -webkit-mask-image:linear-gradient(to bottom, transparent, #000 20%, #000 80%, transparent);
+  mask-image:linear-gradient(to bottom, transparent, #000 20%, #000 80%, transparent);
 }
 
 /* ---------- hero visual ---------- */

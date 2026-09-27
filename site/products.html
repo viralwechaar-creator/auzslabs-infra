@@ -15,7 +15,7 @@
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="/logo.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="stylesheet" href="theme.css?v=35">
+<link rel="stylesheet" href="theme.css?v=36">
 <link rel="stylesheet" href="design-system/ui-kit.css?v=1">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 </head>
@@ -110,7 +110,11 @@
   <main class="content">
     <div class="wrap">
 
-      <section class="section" style="padding-top:104px">
+      <section class="section" style="padding-top:104px;position:relative;overflow:hidden">
+        <svg class="curve-accent curve-accent-products" viewBox="0 0 200 200" aria-hidden="true">
+          <path fill="var(--accent)" d="M45.7,-58.8C58.4,-49.6,67.2,-34.2,70.9,-17.8C74.6,-1.4,73.2,16,65.6,30.2C58,44.4,44.2,55.4,28.8,62.1C13.4,68.8,-3.6,71.2,-19.6,67.3C-35.6,63.4,-50.6,53.2,-60.3,39.1C-70,25,-74.4,7,-71.8,-9.8C-69.2,-26.6,-59.6,-42.2,-46.2,-51.6C-32.8,-61,-16.4,-64.2,0.9,-65.4C18.2,-66.6,36.4,-65.8,45.7,-58.8Z" transform="translate(100 100)"/>
+        </svg>
+        <div class="dot-texture" aria-hidden="true"></div>
         <div class="label">Products</div>
         <h1 class="h-1" style="font-size:58px">Modules,<br>not monoliths.</h1>
         <p class="lede">Turn on what your business needs. Nothing you don't.</p>
@@ -118,6 +122,7 @@
 
       <section class="section tight">
         <div class="card" id="pos" style="margin-bottom:20px;scroll-margin-top:24px">
+          <span class="big-numeral">01</span>
           <span class="tag">Live</span>
           <div class="h-2" style="margin-top:16px;font-size:26px">AUZslab POS</div>
           <p class="p" style="margin-top:10px;max-width:520px">Point of sale for restaurants and cafés — billing, kitchen orders, inventory and staff, all in one till.</p>
@@ -127,6 +132,7 @@
         </div>
 
         <div class="card" id="crm" style="margin-bottom:20px;scroll-margin-top:24px">
+          <span class="big-numeral">02</span>
           <span class="tag">Live</span>
           <div class="h-2" style="margin-top:16px;font-size:26px">AUZslab CRM</div>
           <p class="p" style="margin-top:10px;max-width:520px">Know who your customers are, and bring them back — visits, spend and outreach in one view.</p>
@@ -136,6 +142,7 @@
         </div>
 
         <div class="card" id="next" style="scroll-margin-top:24px">
+          <span class="big-numeral">03</span>
           <span class="tag" style="opacity:.6">In progress</span>
           <div class="h-2" style="margin-top:16px;font-size:26px">What's next</div>
           <p class="p" style="margin-top:10px;max-width:520px">Booking, payroll and more — built as real businesses ask for them, not before.</p>
