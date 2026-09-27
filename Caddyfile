@@ -20,6 +20,14 @@
 *.{$DOMAIN} {
     tls {
         dns godaddy {env.GODADDY_API_TOKEN}
+        # GoDaddy's own propagation is slow enough that Let's Encrypt's
+        # *secondary* validation (from other global vantage points, an
+        # anti-hijacking check) was seeing NXDOMAIN and failing even
+        # though the record existed and Caddy's own check had already
+        # passed -- confirmed against the real logs while setting this
+        # up. Wait before checking at all, then allow more total time.
+        propagation_delay 2m
+        propagation_timeout 5m
     }
     root * /srv/app
     # a stale cached service worker can pin clients to old code indefinitely
