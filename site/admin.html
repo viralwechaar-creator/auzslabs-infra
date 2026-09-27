@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin — AUZslab</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="/logo.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="theme.css?v=41">
+<link rel="stylesheet" href="design-system/ui-kit.css?v=3">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ---- admin-only additions: a data table in the same visual language
+   as the rest of the site (thick ink borders, mono labels, pill tags)
+   -- the shared design system has no table component, everything else
+   here reuses .field/.btn/.card/.label/.h-1/.h-2 as-is. ---- */
+.admin-table-wrap{overflow-x:auto;border:2px solid var(--ink);border-radius:14px;margin-top:16px}
+.admin-table{width:100%;border-collapse:collapse;font-size:12.5px;white-space:nowrap}
+.admin-table th{
+  text-align:left;padding:10px 12px;background:var(--bg-raised);
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-dim);
+  border-bottom:2px solid var(--ink);
+}
+.admin-table td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top;white-space:normal}
+.admin-table tr:last-child td{border-bottom:none}
+.admin-table .row-actions{display:flex;gap:6px;flex-wrap:wrap}
+.admin-table .row-actions .btn{padding:7px 12px;font-size:9.5px}
+.status-pill{
+  display:inline-flex;padding:3px 10px;border-radius:999px;border:1.5px solid var(--ink);
+  font-family:var(--font-mono);font-size:9.5px;text-transform:uppercase;
+}
+.status-new{background:var(--accent);color:#fff;border-color:var(--accent)}
+.err{color:var(--accent);font-size:12.5px;margin-top:10px}
+.ok-box{
+  background:var(--bg-raised);border:2px solid var(--ink);border-radius:18px 8px 18px 8px;
+  padding:16px 18px;margin-top:16px;font-size:13px;line-height:1.7;
+}
+.ok-box b{word-break:break-word}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <a href="index.html" class="btn btn-ghost" style="order:2">&larr; Site</a>
+    <a href="index.html" class="topbar-logo"><img src="logo.png" alt="AUZslab"></a>
+  </header>
+
+  <main class="content">
+    <div class="wrap" style="max-width:920px">
+
+      <section class="section" style="padding-top:56px">
+        <div class="label">AUZlabs internal</div>
+        <h1 class="h-1">Admin</h1>
+        <p class="lede">Sign in to review leads and onboard new clients.</p>
+      </section>
+
+      <section class="section tight" id="loginSection">
+        <div class="card" style="max-width:380px">
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" type="email">
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input id="password" type="password">
+          </div>
+          <button id="signin" class="btn btn-primary form-submit">Sign in</button>
+          <div id="loginErr" class="err"></div>
+        </div>
+      </section>
+
+      <section class="section tight" id="leadsSection" style="display:none">
+        <div class="label">Leads</div>
+        <h2 class="h-2">Get-in-touch submissions</h2>
+        <div id="leadsList">Loading&hellip;</div>
+      </section>
+
+      <section class="section tight" id="onboardSection" style="display:none">
+        <div class="label">New client</div>
+        <h2 class="h-2">Onboard a new client</h2>
+        <div class="card" style="max-width:420px">
+          <form id="form">
+            <div class="field">
+              <label for="name">Business name</label>
+              <input id="name" required placeholder="OG Book Cafe">
+            </div>
+            <div class="field">
+              <label for="slug">Subdomain</label>
+              <input id="slug" required placeholder="ogbookcafe" pattern="[a-z0-9-]+">
+            </div>
+            <div class="field">
+              <label for="niche">Niche</label>
+              <select id="niche">
+                <option value="cafe">Cafe / Restaurant</option>
+                <option value="salon">Salon</option>
+                <option value="gym">Gym</option>
+                <option value="retail">Retail</option>
+                <option value="general">General</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="ownerEmail">Owner's email (their first login)</label>
+              <input id="ownerEmail" type="email" required>
+            </div>
+            <button type="submit" class="btn btn-primary form-submit">Create client</button>
+            <div id="formErr" class="err"></div>
+          </form>
+        </div>
+        <div id="result"></div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script src="/sb-client.js"></script>
+<script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
+<script>
+const sb = supabase.createClient(CFG.url, CFG.key);
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+async function checkSession() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    document.getElementById('loginSection').style.display = 'none';
+    document.getElementById('leadsSection').style.display = 'block';
+    document.getElementById('onboardSection').style.display = 'block';
+    loadLeads();
+  }
+}
+checkSession();
+
+document.getElementById('signin').onclick = async () => {
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) {
+    document.getElementById('loginErr').textContent = error.message;
+    return;
+  }
+  checkSession();
+};
+
+const STATUS_NEXT = { new: 'contacted', contacted: 'converted' };
+
+async function loadLeads() {
+  const listEl = document.getElementById('leadsList');
+  const { data, error } = await sb.from('leads').select('*').order('created_at');
+  if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  if (!data || !data.length) { listEl.innerHTML = '<p class="p">No leads yet.</p>'; return; }
+  const rows = data.slice().reverse().map((l) => `
+    <tr data-id="${l.id}">
+      <td><b>${esc(l.name)}</b>${l.business ? '<br>' + esc(l.business) : ''}</td>
+      <td>${esc(l.contact)}</td>
+      <td>${esc(l.niche || '&mdash;')}</td>
+      <td>${esc(l.message || '')}</td>
+      <td><span class="status-pill ${l.status === 'new' ? 'status-new' : ''}">${esc(l.status)}</span></td>
+      <td class="row-actions">
+        <button class="btn btn-ghost" data-use>Use for onboarding</button>
+        ${STATUS_NEXT[l.status] ? `<button class="btn btn-ghost" data-advance="${STATUS_NEXT[l.status]}">Mark ${STATUS_NEXT[l.status]}</button>` : ''}
+      </td>
+    </tr>`).join('');
+  listEl.innerHTML = `<div class="admin-table-wrap"><table class="admin-table">
+    <tr><th>Name</th><th>Contact</th><th>Niche</th><th>Message</th><th>Status</th><th></th></tr>
+    ${rows}
+  </table></div>`;
+
+  listEl.querySelectorAll('tr[data-id]').forEach((tr) => {
+    const id = tr.dataset.id;
+    const lead = data.find((l) => l.id === id);
+    const useBtn = tr.querySelector('[data-use]');
+    if (useBtn) useBtn.onclick = () => {
+      document.getElementById('name').value = lead.business || lead.name;
+      document.getElementById('niche').value = lead.niche || 'general';
+      document.getElementById('ownerEmail').value = lead.contact.includes('@') ? lead.contact : '';
+      document.getElementById('onboardSection').scrollIntoView({ behavior: 'smooth' });
+    };
+    const advBtn = tr.querySelector('[data-advance]');
+    if (advBtn) advBtn.onclick = async () => {
+      await sb.from('leads').update({ status: advBtn.dataset.advance }).eq('id', id);
+      loadLeads();
+    };
+  });
+}
+
+document.getElementById('form').onsubmit = async (e) => {
+  e.preventDefault();
+  const name = document.getElementById('name').value.trim();
+  const slug = document.getElementById('slug').value.trim().toLowerCase();
+  const niche = document.getElementById('niche').value;
+  const ownerEmail = document.getElementById('ownerEmail').value.trim();
+  const errEl = document.getElementById('formErr');
+  const resultEl = document.getElementById('result');
+  errEl.textContent = '';
+  resultEl.innerHTML = '<p class="p">Creating tenant&hellip;</p>';
+
+  const { data: tenantId, error: rpcErr } = await sb.rpc('provision_tenant', {
+    p_name: name, p_slug: slug, p_niche: niche
+  });
+  if (rpcErr) {
+    errEl.textContent = rpcErr.message;
+    resultEl.innerHTML = '';
+    return;
+  }
+
+  resultEl.innerHTML = '<p class="p">Tenant created &mdash; creating owner login&hellip;</p>';
+  const { data: { session } } = await sb.auth.getSession();
+  const res = await fetch(CFG.url + '/admin/provision-owner', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + session.access_token
+    },
+    body: JSON.stringify({ tenant_id: tenantId, email: ownerEmail, name })
+  });
+  const body = await res.json();
+  if (!res.ok) {
+    errEl.textContent = body.error || 'owner creation failed';
+    resultEl.innerHTML = `<div class="ok-box">Tenant "<b>${esc(name)}</b>" was created (slug: ${esc(slug)}), but the owner login failed &mdash; you can retry just that step, or create the login directly with a POST to /admin/provision-owner.</div>`;
+    return;
+  }
+
+  resultEl.innerHTML = `
+    <div class="ok-box">
+      <b>${esc(name)}</b> is live at <b>${esc(slug)}.auzslab.in</b><br><br>
+      Share these with the owner directly (e.g. over WhatsApp) so they can sign in and change it:<br>
+      Email: <b>${esc(ownerEmail)}</b><br>
+      Temporary password: <b>${esc(body.temp_password)}</b>
+    </div>`;
+  e.target.reset();
+};
+</script>
+</body>
+</html>
