@@ -48,11 +48,14 @@ button{font-family:inherit}
 .hamburger.is-open .hamburger-bars span:nth-child(2){opacity:0}
 .hamburger.is-open .hamburger-bars span:nth-child(3){top:4.5px;transform:rotate(-45deg)}
 .topbar-logo{order:1}
-/* text wordmark — was a low-res bitmap image that read as garbled
-   pixel-mush at real display sizes; real text scales cleanly instead */
-.brand-mark{font-family:var(--font-display);font-weight:700;letter-spacing:-.01em;display:inline-block}
-.brand-mark .brand-accent{color:var(--accent)}
-.topbar-logo.brand-mark{font-size:19px;color:var(--ink)}
+/* the logo is deliberately pixel-art — browsers blur/anti-alias it when
+   scaled down by default, which is what made it look like garbled mush
+   at real display sizes. image-rendering:pixelated keeps every pixel
+   crisp instead of smoothing it into illegibility. */
+.topbar-logo img{
+  max-width:84px;display:block;
+  image-rendering:pixelated;image-rendering:-moz-crisp-edges;image-rendering:crisp-edges;
+}
 
 .drawer-overlay{
   position:fixed;inset:0;background:rgba(23,23,23,.4);
@@ -71,7 +74,11 @@ button{font-family:inherit}
 .sidebar.open{transform:translateX(0)}
 /* the logo file is dark ink on transparent — invert it to read on the
    now-black sidebar instead of disappearing into the background */
-.sidebar-logo.brand-mark{font-size:28px;color:#fff}
+.sidebar-logo img{
+  width:100%;max-width:120px;display:block;
+  filter:invert(1) brightness(1.6);
+  image-rendering:pixelated;image-rendering:-moz-crisp-edges;image-rendering:crisp-edges;
+}
 .drawer-close{
   position:absolute;top:24px;right:22px;width:38px;height:38px;border-radius:999px;
   border:1px solid rgba(255,255,255,.3);background:none;color:#fff;
@@ -149,7 +156,7 @@ button{font-family:inherit}
   display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;
   font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;text-transform:uppercase;
   border:2px solid var(--ink);cursor:pointer;background:transparent;color:var(--ink);
-  transition:transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease;
+  transition:transform .2s cubic-bezier(.22,1,.36,1), box-shadow .2s cubic-bezier(.22,1,.36,1), background .2s ease, border-color .2s ease;
 }
 .btn:hover{background:var(--ink);color:#fff;transform:translateY(-1px)}
 .btn-primary{
@@ -165,7 +172,7 @@ button{font-family:inherit}
   border:2px solid var(--ink);border-radius:26px 12px 26px 12px;padding:22px;
   box-shadow:5px 5px 0 var(--ink);
   position:relative;
-  transition:transform .2s ease, box-shadow .2s ease;
+  transition:transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s cubic-bezier(.22,1,.36,1);
 }
 /* a little deliberate imperfection instead of every card sitting in a
    perfectly identical box — settles straight on hover/focus */
@@ -210,13 +217,22 @@ button{font-family:inherit}
 /* ---------- hand-drawn doodle accents (original inline SVG) ---------- */
 .doodle-arrow{
   display:inline-block;color:var(--accent);flex-shrink:0;
+  animation:doodleFloat 3.2s ease-in-out infinite;
+}
+@keyframes doodleFloat{
+  0%,100%{transform:translateY(0) rotate(0deg)}
+  50%{transform:translateY(-5px) rotate(-4deg)}
 }
 .doodle-underline{
   display:block;margin-top:-6px;color:var(--accent);
 }
 
 /* ---------- footer ---------- */
-.footer{border-top:2px solid var(--ink);padding:24px 0 40px;display:flex;flex-direction:column;gap:10px;color:var(--ink-dim);font-size:11px;font-family:var(--font-mono)}
+.footer{border-top:2px solid var(--ink);padding:24px 0 40px;display:flex;flex-direction:column;gap:16px;color:var(--ink-dim);font-size:11px;font-family:var(--font-mono)}
+.footer-brand{display:flex;flex-direction:column;gap:10px}
+.footer-contact{display:flex;flex-wrap:wrap;gap:14px}
+.footer-contact a{color:var(--ink-faint);transition:color .15s ease}
+.footer-contact a:hover{color:var(--accent)}
 
 /* ---------- floating knock trigger ---------- */
 .knock-btn{
@@ -287,7 +303,7 @@ button{font-family:inherit}
   background-size:24px 24px,24px 24px,100% 100%;
   border:2px solid var(--ink);
   border-bottom:none;
-  border-radius:0 26px 0 0;
+  border-radius:8px 26px 0 0;
   box-shadow:0 -30px 60px -30px rgba(23,23,23,.2);
 }
 .stack-panel:nth-of-type(1){top:0;z-index:1}
@@ -325,7 +341,7 @@ button{font-family:inherit}
        drop the clip entirely instead of fighting it. */
     overflow:visible;
   }
-  .sidebar-logo.brand-mark{font-size:26px}
+  .sidebar-logo img{max-width:132px}
   .drawer-close{display:none}
   .sidebar-nav{gap:2px;margin-top:4px}
   .nav-link{font-size:17px;padding:10px 4px;border-bottom:none}
@@ -384,11 +400,11 @@ button{font-family:inherit}
   .hero-art .orb-sm{width:120px;height:120px;left:36px;bottom:36px;opacity:.6}
   .hero-art .orb-sm::after{content:'';position:absolute;inset:28px;border-radius:50%;background:var(--ink)}
   .hero-art-tag{position:absolute;z-index:1;background:#fff}
-  .footer{flex-direction:row;justify-content:space-between;padding:32px 0 56px}
+  .footer{flex-direction:row;justify-content:space-between;align-items:flex-start;padding:32px 0 56px}
   .knock-btn{right:32px;bottom:32px}
   .modal{padding:36px}
   .stack{margin-top:0}
-  .stack-panel{border-radius:0 36px 0 0;padding:96px 0 80px}
+  .stack-panel{border-radius:10px 36px 0 0;padding:96px 0 80px}
   .stack-panel:nth-of-type(2){top:56px}
   .stack-panel:nth-of-type(3){top:92px}
   .stack-panel:nth-of-type(4){top:128px}
@@ -399,4 +415,5 @@ button{font-family:inherit}
   html{scroll-behavior:auto}
   .reveal{transition:none;opacity:1;transform:none}
   .card,.btn,.btn-primary,.knock-btn,.sidebar{transition:none}
+  .doodle-arrow{animation:none}
 }

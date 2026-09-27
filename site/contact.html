@@ -14,7 +14,7 @@
 <meta property="og:image" content="https://auzslab.in/logo.png">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="/logo.png">
-<link rel="stylesheet" href="theme.css?v=23">
+<link rel="stylesheet" href="theme.css?v=24">
 <link rel="stylesheet" href="design-system/ui-kit.css?v=1">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 </head>
@@ -25,13 +25,13 @@
     <button class="hamburger" id="menuToggle" aria-label="Open menu" aria-expanded="false">
       <span class="hamburger-bars"><span></span><span></span><span></span></span>
     </button>
-    <a href="index.html" class="topbar-logo brand-mark">AUZ<span class="brand-accent">slab</span></a>
+    <a href="index.html" class="topbar-logo"><img src="logo.png" alt="AUZslab"></a>
   </header>
 
   <div class="drawer-overlay" id="drawerOverlay"></div>
 
   <aside class="sidebar" id="sidebarDrawer">
-    <a href="index.html" class="sidebar-logo brand-mark">AUZ<span class="brand-accent">slab</span></a>
+    <a href="index.html" class="sidebar-logo"><img src="logo.png" alt="AUZslab"></a>
     <button class="drawer-close" id="drawerClose" aria-label="Close menu">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
     </button>
@@ -177,12 +177,22 @@
       </section>
 
       <footer class="footer">
-        <span>AUZslab — software, built in-house.</span>
-        <span style="display:flex;gap:22px">
+        <div class="footer-brand">
+          <span>AUZslab — software, built in-house.</span>
+          <div class="footer-contact">
+            <a href="tel:+918005673683">+91 80056 73683</a>
+            <a href="tel:+918302723179">+91 83027 23179</a>
+            <a href="mailto:helloauzslab@gmail.com">helloauzslab@gmail.com</a>
+            <a href="https://instagram.com/auzslab" target="_blank" rel="noopener noreferrer">@auzslab</a>
+          </div>
+        </div>
+        <span style="display:flex;gap:22px;flex-wrap:wrap">
           <a href="index.html" style="color:var(--ink-faint)">Home</a>
           <a href="products.html" style="color:var(--ink-faint)">Products</a>
           <a href="platform.html" style="color:var(--ink-faint)">Platform</a>
           <a href="pricing.html" style="color:var(--ink-faint)">Pricing</a>
+          <a href="terms.html" style="color:var(--ink-faint)">Terms</a>
+          <a href="privacy.html" style="color:var(--ink-faint)">Privacy</a>
         </span>
       </footer>
 
