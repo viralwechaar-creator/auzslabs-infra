@@ -17,9 +17,13 @@
 -- profiles: one row per login, admin-provisioned at onboarding
 -- (tenant_id + role staged in auth_users.app_metadata by the control
 -- console — see on_signup() below), never self-signup across tenants.
+-- tenant_id is nullable: platform_admins (AUZlabs' own team, see
+-- 004_platform_admin_onboarding.sql) log in via auth_users too but
+-- don't belong to any tenant, so they never get a profiles row at all
+-- (see on_signup() below).
 create table profiles (
   id         uuid primary key references auth_users(id) on delete cascade,
-  tenant_id  uuid not null references tenants(id),
+  tenant_id  uuid references tenants(id),
   email      text,
   role       text not null default 'cashier' check (role in ('owner','manager','cashier'))
 );
@@ -78,13 +82,17 @@ create policy r_upd on records for update
 -- that breaks the instant a second tenant exists.
 create function on_signup() returns trigger language plpgsql security definer set search_path = public as $$
 begin
-  insert into profiles (id, tenant_id, email, role)
-  values (
-    new.id,
-    (new.app_metadata->>'tenant_id')::uuid,
-    new.email,
-    coalesce(new.app_metadata->>'role', 'cashier')
-  );
+  -- platform_admins have no app_metadata.tenant_id -- they're not tenant
+  -- staff, so they get no profiles row (that table is tenant-staff-only).
+  if new.app_metadata ? 'tenant_id' then
+    insert into profiles (id, tenant_id, email, role)
+    values (
+      new.id,
+      (new.app_metadata->>'tenant_id')::uuid,
+      new.email,
+      coalesce(new.app_metadata->>'role', 'cashier')
+    );
+  end if;
   return new;
 end $$;
 create trigger t_signup after insert on auth_users for each row execute function on_signup();
