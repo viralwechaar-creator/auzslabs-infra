@@ -228,21 +228,11 @@ button{font-family:inherit}
 
 /* ---------- hero art: fills the space beside the hero text on wide
    screens, and below it on narrow ones, instead of leaving it blank —
-   abstract, on-brand geometry, not a literal product screenshot ---------- */
+   just the plain logo, no card/box chrome around it ---------- */
 .hero-grid{display:grid;grid-template-columns:1fr}
-.hero-art{
-  display:block;position:relative;height:200px;margin-top:28px;overflow:hidden;
-  border:2px solid var(--ink);border-radius:22px;background:var(--bg-raised);
-  box-shadow:0 20px 40px -24px rgba(23,23,23,.22);
-}
-.hero-art .grid-lines{
-  position:absolute;inset:0;
-  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
-  background-size:22px 22px;opacity:.6;
-}
-.hero-art-tag{position:absolute;z-index:1;background:#fff}
+.hero-art{display:block;margin-top:28px}
 .hero-art-logo{
-  position:absolute;right:18px;bottom:18px;width:62%;max-width:230px;
+  display:block;width:72%;max-width:260px;
   image-rendering:pixelated;image-rendering:-moz-crisp-edges;image-rendering:crisp-edges;
 }
 .hero-services{display:flex;flex-direction:column;gap:3px;margin-top:30px}
@@ -510,9 +500,8 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
   .grid-2{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
   .hero-visual{height:220px}
   .hero-grid{grid-template-columns:1.1fr 1fr;align-items:center;gap:56px}
-  .hero-art{height:440px;margin-top:0;border-radius:26px;box-shadow:0 30px 60px -30px rgba(23,23,23,.25)}
-  .hero-art .grid-lines{background-size:26px 26px}
-  .hero-art-logo{width:56%;max-width:280px}
+  .hero-art{margin-top:0}
+  .hero-art-logo{width:80%;max-width:340px}
   .footer-dark{border-radius:40px 40px 0 0;padding:48px 0 32px}
   .footer-top{grid-template-columns:1.4fr 1fr 1fr 1fr;gap:32px}
   .footer-col-brand{grid-column:auto}
