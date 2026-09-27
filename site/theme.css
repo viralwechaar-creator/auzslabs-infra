@@ -230,19 +230,22 @@ button{font-family:inherit}
 .success-mark{width:40px;height:40px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px}
 
 /* ---------- stacked scroll panels — folder effect ---------- */
-/* Each panel sticks at an increasing offset instead of all sticking to
-   top:0 — so a panel never fully covers the one before it. Earlier
-   panels stop partway up the screen and stay visible as a strip (tab +
-   a band of content) that the next panel overlaps, like a fanned stack
-   of folders rather than one page flatly swapping for the next.
+/* The hero (first panel) is a plain intro, not part of the folder
+   stack — no tab, content starts near the top instead of floating
+   centred with dead space above it. From the second panel on, each
+   one sticks at an increasing viewport-relative offset instead of all
+   sticking to top:0, so they visibly cascade and pause partway down
+   the screen rather than each fully covering the last. The final
+   panel deliberately stops at the vertical middle (never reaches
+   top:0), so the ones behind it stay visible above it permanently.
    mobile: the topbar isn't sticky, so give the first panel's rounded
-   top corners + tab room to breathe below it instead of crowding the
+   top corners room to breathe below it instead of crowding the
    logo/hamburger with a hard, flush seam. */
 .stack{position:relative;margin-top:40px}
 .stack-panel{
   position:sticky;top:0;
   min-height:100svh;
-  display:flex;flex-direction:column;justify-content:center;
+  display:flex;flex-direction:column;justify-content:flex-start;
   padding:76px 0 64px;
   background:
     linear-gradient(var(--line-soft) 1px, transparent 1px),
@@ -255,24 +258,19 @@ button{font-family:inherit}
   box-shadow:0 -30px 60px -30px rgba(23,23,23,.2);
 }
 .stack-panel:nth-of-type(1){top:0;z-index:1}
-.stack-panel:nth-of-type(2){top:64px;z-index:2}
-.stack-panel:nth-of-type(3){top:128px;z-index:3}
-.stack-panel:nth-of-type(4){top:192px;z-index:4}
+.stack-panel:nth-of-type(2){top:22vh;z-index:2}
+.stack-panel:nth-of-type(3){top:36vh;z-index:3}
+.stack-panel:last-of-type{top:50vh}
 .stack-panel.alt{background-color:var(--bg-raised);background-blend-mode:normal}
-.stack-panel::before{
+.stack-panel:not(:first-of-type)::before{
   content:attr(data-tab);
-  position:absolute;top:0;left:28px;transform:translateY(-100%);
+  position:absolute;top:0;left:0;transform:translateY(-100%);
   font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;
   background:var(--ink);color:#fff;padding:7px 16px 9px;
-  border-radius:12px 12px 0 0;
+  border-radius:0 12px 0 0;
   box-shadow:0 8px 16px -6px rgba(23,23,23,.5);
   z-index:20;
 }
-/* every tab is the same colour — depth comes from the shadow each one
-   casts on the tab/panel behind it, not from colour-coding */
-.stack-panel:nth-of-type(2)::before{left:52px}
-.stack-panel:nth-of-type(3)::before{left:76px}
-.stack-panel:nth-of-type(4)::before{left:100px}
 .stack-panel .wrap{width:100%;position:relative}
 .reveal{opacity:0;transform:translateY(16px);transition:opacity .7s ease, transform .7s ease}
 .reveal.in{opacity:1;transform:translateY(0)}
@@ -290,7 +288,7 @@ button{font-family:inherit}
   }
   .sidebar-logo img{max-width:132px}
   .content{margin-left:0;margin-right:var(--sidebar-w)}
-  .wrap{padding:0 56px}
+  .wrap{max-width:920px;margin:0 auto;padding:0 64px}
   .section{padding:64px 0}
   .section.tight{padding:40px 0}
   .h-hero{font-size:44px}
@@ -306,15 +304,11 @@ button{font-family:inherit}
   .modal{padding:36px}
   .stack{margin-top:0}
   .stack-panel{border-radius:36px 36px 0 0;padding:96px 0 80px}
-  .stack-panel::before{left:56px;font-size:12px;padding:9px 20px 11px}
-  .stack-panel:nth-of-type(2)::before{left:84px}
-  .stack-panel:nth-of-type(3)::before{left:112px}
-  .stack-panel:nth-of-type(4)::before{left:140px}
-  .stack-panel .wrap{max-width:920px;margin:0 auto;padding:0 64px}
+  .stack-panel:not(:first-of-type)::before{font-size:12px;padding:9px 20px 11px}
 }
 
 @media (min-width: 1400px){
-  .stack-panel .wrap{max-width:1040px}
+  .wrap{max-width:1040px}
 }
 
 @media (prefers-reduced-motion: reduce){
