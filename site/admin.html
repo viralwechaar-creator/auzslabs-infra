@@ -31,6 +31,12 @@
   font-family:var(--font-mono);font-size:9.5px;text-transform:uppercase;
 }
 .status-new{background:var(--accent);color:#fff;border-color:var(--accent)}
+.status-active{background:#1f6b3a;color:#fff;border-color:#1f6b3a}
+.status-trial{background:var(--bg-raised);color:var(--ink-dim)}
+.status-suspended,.status-cancelled{background:var(--ink);color:#fff}
+.renewal-soon{color:var(--accent);font-weight:600}
+.renewal-overdue{color:var(--accent);font-weight:700;text-decoration:underline wavy}
+.feature-tag{display:inline-block;padding:2px 8px;margin:1px 2px 1px 0;border-radius:999px;border:1px solid var(--line);font-family:var(--font-mono);font-size:9px;color:var(--ink-dim)}
 .err{color:var(--accent);font-size:12.5px;margin-top:10px}
 .ok-box{
   background:var(--bg-raised);border:2px solid var(--ink);border-radius:18px 8px 18px 8px;
@@ -74,6 +80,12 @@
         <div class="label">Leads</div>
         <h2 class="h-2">Get-in-touch submissions</h2>
         <div id="leadsList">Loading&hellip;</div>
+      </section>
+
+      <section class="section tight" id="clientsSection" style="display:none">
+        <div class="label">Your clients</div>
+        <h2 class="h-2">Dashboard</h2>
+        <div id="clientsList">Loading&hellip;</div>
       </section>
 
       <section class="section tight" id="onboardSection" style="display:none">
@@ -128,8 +140,10 @@ async function checkSession() {
   if (session) {
     document.getElementById('loginSection').style.display = 'none';
     document.getElementById('leadsSection').style.display = 'block';
+    document.getElementById('clientsSection').style.display = 'block';
     document.getElementById('onboardSection').style.display = 'block';
     loadLeads();
+    loadClients();
   }
 }
 checkSession();
@@ -183,6 +197,69 @@ async function loadLeads() {
     if (advBtn) advBtn.onclick = async () => {
       await sb.from('leads').update({ status: advBtn.dataset.advance }).eq('id', id);
       loadLeads();
+    };
+  });
+}
+
+const NICHE_LABEL = { cafe: 'Cafe / Restaurant', salon: 'Salon', gym: 'Gym', retail: 'Retail', general: 'General' };
+const FEATURE_LABEL = { pos: 'POS', crm: 'CRM', booking: 'Booking', billing: 'Billing', self_order: 'Self-order', kds: 'Kitchen display' };
+
+async function loadClients() {
+  const listEl = document.getElementById('clientsList');
+  const { data, error } = await sb.rpc('list_clients', {});
+  if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  if (!data || !data.length) { listEl.innerHTML = '<p class="p">No clients yet &mdash; onboard one below.</p>'; return; }
+
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const rows = data.map((c) => {
+    const services = Object.entries(c.features || {}).filter(([, on]) => on)
+      .map(([k]) => `<span class="feature-tag">${esc(FEATURE_LABEL[k] || k)}</span>`).join('') || '&mdash;';
+    let renewalHtml = '&mdash;';
+    if (c.renewal_date) {
+      const days = Math.round((new Date(c.renewal_date) - today) / 86400000);
+      const cls = days < 0 ? 'renewal-overdue' : days <= 7 ? 'renewal-soon' : '';
+      const note = days < 0 ? ` (${-days}d overdue)` : days === 0 ? ' (today)' : days <= 7 ? ` (${days}d)` : '';
+      renewalHtml = `<span class="${cls}">${esc(c.renewal_date)}${note}</span>`;
+    }
+    return `
+    <tr data-id="${c.id}">
+      <td><b>${esc(c.name)}</b><br><span style="color:var(--ink-faint)">${esc(c.slug)}.auzslab.in</span></td>
+      <td>${esc(NICHE_LABEL[c.niche] || c.niche)}</td>
+      <td>${services}</td>
+      <td>${c.monthly_fee != null ? '&#8377;' + esc(c.monthly_fee) : '&mdash;'}</td>
+      <td>${renewalHtml}</td>
+      <td><span class="status-pill status-${esc(c.status)}">${esc(c.status)}</span></td>
+      <td>${c.notes ? esc(c.notes) : '&mdash;'}</td>
+      <td><button class="btn btn-ghost" data-edit>Edit</button></td>
+    </tr>`;
+  }).join('');
+
+  listEl.innerHTML = `<div class="admin-table-wrap"><table class="admin-table">
+    <tr><th>Client</th><th>Niche</th><th>Services</th><th>Fee</th><th>Renewal</th><th>Status</th><th>Notes</th><th></th></tr>
+    ${rows}
+  </table></div>`;
+
+  listEl.querySelectorAll('tr[data-id]').forEach((tr) => {
+    const id = tr.dataset.id;
+    const c = data.find((x) => x.id === id);
+    tr.querySelector('[data-edit]').onclick = async () => {
+      const fee = prompt('Monthly fee (INR, blank to clear)', c.monthly_fee != null ? c.monthly_fee : '');
+      if (fee === null) return;
+      const renewal = prompt('Renewal date (YYYY-MM-DD, blank to clear)', c.renewal_date || '');
+      if (renewal === null) return;
+      const notes = prompt('Notes about this client', c.notes || '');
+      if (notes === null) return;
+      const status = prompt('Status (trial / active / suspended / cancelled)', c.status);
+      if (status === null) return;
+      const { error: updErr } = await sb.rpc('update_client', {
+        p_tenant_id: c.id,
+        p_monthly_fee: fee.trim() ? Number(fee.trim()) : null,
+        p_renewal_date: renewal.trim() || null,
+        p_notes: notes,
+        p_status: status.trim(),
+      });
+      if (updErr) { alert(updErr.message); return; }
+      loadClients();
     };
   });
 }
