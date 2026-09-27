@@ -202,9 +202,14 @@ button{font-family:inherit}
 .success-mark{width:40px;height:40px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px}
 
 /* ---------- stacked scroll panels — folder effect ---------- */
-/* mobile: the topbar isn't sticky, so give the panel's rounded top
-   corners + folder tab room to breathe below it instead of crowding
-   the logo/hamburger with a hard, flush seam. */
+/* Each panel sticks at an increasing offset instead of all sticking to
+   top:0 — so a panel never fully covers the one before it. Earlier
+   panels stop partway up the screen and stay visible as a strip (tab +
+   a band of content) that the next panel overlaps, like a fanned stack
+   of folders rather than one page flatly swapping for the next.
+   mobile: the topbar isn't sticky, so give the first panel's rounded
+   top corners + tab room to breathe below it instead of crowding the
+   logo/hamburger with a hard, flush seam. */
 .stack{position:relative;margin-top:40px}
 .stack-panel{
   position:sticky;top:0;
@@ -221,6 +226,10 @@ button{font-family:inherit}
   border-radius:26px 26px 0 0;
   box-shadow:0 -30px 60px -30px rgba(23,23,23,.2);
 }
+.stack-panel:nth-of-type(1){top:0;z-index:1}
+.stack-panel:nth-of-type(2){top:56px;z-index:2}
+.stack-panel:nth-of-type(3){top:112px;z-index:3}
+.stack-panel:nth-of-type(4){top:168px;z-index:4}
 .stack-panel.alt{background-color:var(--bg-raised);background-blend-mode:normal}
 .stack-panel::before{
   content:attr(data-tab);
@@ -230,6 +239,11 @@ button{font-family:inherit}
   border-radius:12px 12px 0 0;
   z-index:20;
 }
+/* a different tab colour per panel — reads as distinct folder tabs,
+   not one repeated label */
+.stack-panel:nth-of-type(2)::before{background:var(--accent)}
+.stack-panel:nth-of-type(3)::before{background:var(--ink-dim)}
+.stack-panel:nth-of-type(4)::before{background:var(--ink-faint);color:var(--ink)}
 .stack-panel .wrap{width:100%;position:relative}
 .reveal{opacity:0;transform:translateY(16px);transition:opacity .7s ease, transform .7s ease}
 .reveal.in{opacity:1;transform:translateY(0)}
@@ -264,7 +278,11 @@ button{font-family:inherit}
   .stack{margin-top:0}
   .stack-panel{border-radius:36px 36px 0 0;padding:96px 0 80px}
   .stack-panel::before{left:56px;font-size:12px;padding:9px 20px 11px}
-  .stack-panel .wrap{max-width:640px}
+  .stack-panel .wrap{max-width:920px;margin:0 auto;padding:0 64px}
+}
+
+@media (min-width: 1400px){
+  .stack-panel .wrap{max-width:1040px}
 }
 
 @media (prefers-reduced-motion: reduce){
