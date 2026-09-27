@@ -6,15 +6,15 @@
 -- =========================================================
 
 create table platform_admins (
-  id  uuid primary key references auth.users(id) on delete cascade
+  id  uuid primary key references auth_users(id) on delete cascade
 );
 alter table platform_admins enable row level security;
-create policy self_read on platform_admins for select using (id = auth.uid());
+create policy self_read on platform_admins for select using (id = app_uid());
 -- add yourselves manually after creating your own logins:
 --   insert into platform_admins (id) values ('<your-auth-user-uuid>');
 
 create function is_platform_admin() returns boolean language sql security definer stable set search_path = public as $$
-  select exists(select 1 from platform_admins where id = auth.uid())
+  select exists(select 1 from platform_admins where id = app_uid())
 $$;
 
 -- provision_tenant: the whole "add a new client" action in one call —
@@ -49,5 +49,5 @@ begin
   return tid;
 end;
 $$;
-revoke execute on function provision_tenant(text,text,text) from public;
-grant execute on function provision_tenant(text,text,text) to authenticated;
+-- gated by the is_platform_admin() check inside the function body,
+-- not a Postgres role grant.

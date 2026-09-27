@@ -23,4 +23,4 @@ create table bookings (
 create index idx_bookings_tenant_id on bookings (tenant_id);
 alter table bookings enable row level security;
 create policy tenant_isolation on bookings
-  using (tenant_id = (select tenant_id from profiles where id = auth.uid()));
+  using (tenant_id = (select tenant_id from profiles where id = app_uid()));

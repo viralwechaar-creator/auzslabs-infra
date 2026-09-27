@@ -15,11 +15,10 @@
 -- =========================================================
 
 -- profiles: one row per login, admin-provisioned at onboarding
--- (tenant_id + role staged in auth.users.raw_app_meta_data by
--- the control console — see on_signup() below), never self-signup
--- across tenants.
+-- (tenant_id + role staged in auth_users.app_metadata by the control
+-- console — see on_signup() below), never self-signup across tenants.
 create table profiles (
-  id         uuid primary key references auth.users(id) on delete cascade,
+  id         uuid primary key references auth_users(id) on delete cascade,
   tenant_id  uuid not null references tenants(id),
   email      text,
   role       text not null default 'cashier' check (role in ('owner','manager','cashier'))
@@ -31,11 +30,11 @@ alter table profiles enable row level security;
 -- below uses this instead of re-querying profiles each time.
 create function me() returns jsonb language sql security definer stable set search_path = public as $$
   select jsonb_build_object('role', role, 'tenant_id', tenant_id)
-  from profiles where id = auth.uid()
+  from profiles where id = app_uid()
 $$;
 
 create policy p_read on profiles for select
-  using (id = auth.uid() or ((me()->>'role') = 'owner' and tenant_id = (me()->>'tenant_id')::uuid));
+  using (id = app_uid() or ((me()->>'role') = 'owner' and tenant_id = (me()->>'tenant_id')::uuid));
 create policy p_set on profiles for update
   using ((me()->>'role') = 'owner' and tenant_id = (me()->>'tenant_id')::uuid);
 
@@ -48,7 +47,7 @@ create table records (
   kind        text not null,
   data        jsonb not null,
   deleted     boolean not null default false,
-  author      uuid default auth.uid(),
+  author      uuid default app_uid(),
   updated_at  timestamptz not null default now(),
   primary key (tenant_id, id)
 );
@@ -71,27 +70,39 @@ create policy r_upd on records for update
     me() is not null and tenant_id = (me()->>'tenant_id')::uuid
     and (kind in ('order','exp','shift','ing','waste','voidlog') or (me()->>'role') = 'owner')
   );
-alter publication supabase_realtime add table records;
-
--- Admin-provisioned signup: expects tenant_id + role already
--- staged in raw_app_meta_data by the control console at invite
--- time. Production's version made "first user ever" the owner —
+-- Admin-provisioned signup: expects tenant_id + role already staged in
+-- app_metadata by the control console at invite time (auth_users insert
+-- itself is done by the API server, after hashing the password -- this
+-- trigger just does the same profiles-row bookkeeping Supabase's
+-- version did). Production's version made "first user ever" the owner —
 -- that breaks the instant a second tenant exists.
 create function on_signup() returns trigger language plpgsql security definer set search_path = public as $$
 begin
   insert into profiles (id, tenant_id, email, role)
   values (
     new.id,
-    (new.raw_app_meta_data->>'tenant_id')::uuid,
+    (new.app_metadata->>'tenant_id')::uuid,
     new.email,
-    coalesce(new.raw_app_meta_data->>'role', 'cashier')
+    coalesce(new.app_metadata->>'role', 'cashier')
   );
   return new;
 end $$;
-create trigger t_signup after insert on auth.users for each row execute function on_signup();
+create trigger t_signup after insert on auth_users for each row execute function on_signup();
 
+-- realtime replacement: NOTIFY a small JSON envelope (table/tenant_id/
+-- kind/id -- never the full row, NOTIFY payloads cap at 8000 bytes) on
+-- the "live_changes" channel. The API server keeps one LISTEN connection
+-- and relays each notification to whichever WebSocket clients belong to
+-- that tenant_id -- same "something changed, go refetch" shape Supabase
+-- Realtime's postgres_changes gave the client before.
 create function touch() returns trigger language plpgsql as $$
-begin new.updated_at = now(); return new; end $$;
+begin
+  new.updated_at = now();
+  perform pg_notify('live_changes', jsonb_build_object(
+    'table', TG_TABLE_NAME, 'tenant_id', new.tenant_id, 'kind', new.kind, 'id', new.id
+  )::text);
+  return new;
+end $$;
 create trigger t_touch before insert or update on records for each row execute function touch();
 
 -- guest_orders: self-order via table QR, tenant-scoped
@@ -113,7 +124,15 @@ create policy g_read on guest_orders for select
 create policy g_upd on guest_orders for update
   using (me() is not null and tenant_id = (me()->>'tenant_id')::uuid)
   with check (me() is not null and tenant_id = (me()->>'tenant_id')::uuid);
-alter publication supabase_realtime add table guest_orders;
+
+create function notify_guest_orders_change() returns trigger language plpgsql as $$
+begin
+  perform pg_notify('live_changes', jsonb_build_object(
+    'table', 'guest_orders', 'tenant_id', new.tenant_id, 'id', new.id
+  )::text);
+  return new;
+end $$;
+create trigger t_notify_guest_orders after insert or update on guest_orders for each row execute function notify_guest_orders_change();
 
 -- public_menu / place_order: called by anon (no login), so both
 -- take the tenant SLUG from the subdomain and resolve tenant_id
@@ -142,7 +161,8 @@ create function public_menu(tenant_slug text) returns jsonb language sql securit
               ), '{}'::jsonb)
   )
 $$;
-grant execute on function public_menu(text) to anon;
+-- callable by anyone; anon vs authenticated is enforced by the API
+-- server's own routing now, not a Postgres role grant.
 
 create function place_order(tenant_slug text, t text, n text, p text, nt text, its jsonb) returns void language plpgsql security definer set search_path = public as $$
 declare cnt int; tid uuid;
@@ -156,7 +176,7 @@ begin
   insert into guest_orders (tenant_id, tbl, name, phone, note, items) values (tid, t, n, p, nt, its);
 end;
 $$;
-grant execute on function place_order(text,text,text,text,text,jsonb) to anon;
+-- callable by anyone -- see note above.
 
 -- public_invoice: token is already globally unguessable (random,
 -- not the sequential invoice number). `cfg` here is the same
@@ -174,7 +194,7 @@ create function public_invoice(oid text) returns jsonb language sql security def
     ), '{}'::jsonb)
   )
 $$;
-grant execute on function public_invoice(text) to anon;
+-- callable by anyone -- see note above.
 create index if not exists records_order_tok_idx on records (((data->>'tok'))) where kind = 'order';
 
 -- next_invoice_no: a counter per tenant instead of one global
@@ -196,8 +216,8 @@ begin
 
   return prefix || '-' || lpad(n::text, 6, '0');
 end $$;
-revoke execute on function next_invoice_no(text) from public;
-grant execute on function next_invoice_no(text) to authenticated;
+-- me() already raises inside the function if there's no caller --
+-- that's the real gate, not a Postgres role grant.
 
 -- push_record: identical optimistic-concurrency logic to
 -- production — rejects a write whose `base` no longer matches
@@ -224,64 +244,44 @@ begin
 
   return jsonb_build_object('ok', not conflict, 'conflict', conflict, 'server_updated_at', newv);
 end $$;
-revoke execute on function push_record(text,text,jsonb,boolean,timestamptz,boolean) from public;
-grant execute on function push_record(text,text,jsonb,boolean,timestamptz,boolean) to authenticated;
+-- same: gated by the me()/app_uid() check inside the function body.
 
--- Storage: one shared 'site' bucket, paths prefixed by tenant
--- slug (e.g. 'ogbookcafe/hero.jpg') so RLS can isolate uploads
--- per client inside a single bucket.
-insert into storage.buckets (id, name, public) values ('site','site', true) on conflict (id) do nothing;
-create policy site_public_read on storage.objects for select using (bucket_id = 'site');
-create policy site_owner_write on storage.objects for insert
-  with check (
-    bucket_id = 'site' and (me()->>'role') = 'owner'
-    and (storage.foldername(name))[1] = (select slug from tenants where id = (me()->>'tenant_id')::uuid)
-  );
-create policy site_owner_update on storage.objects for update
-  using (
-    bucket_id = 'site' and (me()->>'role') = 'owner'
-    and (storage.foldername(name))[1] = (select slug from tenants where id = (me()->>'tenant_id')::uuid)
-  );
-create policy site_owner_delete on storage.objects for delete
-  using (
-    bucket_id = 'site' and (me()->>'role') = 'owner'
-    and (storage.foldername(name))[1] = (select slug from tenants where id = (me()->>'tenant_id')::uuid)
-  );
+-- Storage: no Postgres involvement at all (Supabase Storage's
+-- buckets/objects/RLS is gone with the rest of Supabase). Uploaded
+-- files for the "site" bucket use case (branding assets) live on disk
+-- on the VPS at ./uploads/site/<tenant-slug>/<filename>, written by
+-- the API server's own upload endpoint (which enforces the exact same
+-- rule these policies used to: only that tenant's owner can write to
+-- their own slug's folder), and served publicly and directly by Caddy
+-- -- see the Caddyfile.
 
 -- push_subs: tenant-scoped device subscriptions for Web Push
 create table push_subs (
   id          uuid primary key default gen_random_uuid(),
   tenant_id   uuid not null references tenants(id),
-  user_id     uuid references auth.users(id) on delete cascade,
+  user_id     uuid references auth_users(id) on delete cascade,
   endpoint    text unique not null,
   p256dh      text not null,
   auth        text not null,
   created_at  timestamptz not null default now()
 );
 alter table push_subs enable row level security;
-create policy ps_ins on push_subs for insert with check (me() is not null and user_id = auth.uid());
-create policy ps_read on push_subs for select using (me() is not null and user_id = auth.uid());
-create policy ps_upd on push_subs for update using (me() is not null and user_id = auth.uid()) with check (me() is not null and user_id = auth.uid());
-create policy ps_del on push_subs for delete using (me() is not null and user_id = auth.uid());
+create policy ps_ins on push_subs for insert with check (me() is not null and user_id = app_uid());
+create policy ps_read on push_subs for select using (me() is not null and user_id = app_uid());
+create policy ps_upd on push_subs for update using (me() is not null and user_id = app_uid()) with check (me() is not null and user_id = app_uid());
+create policy ps_del on push_subs for delete using (me() is not null and user_id = app_uid());
 
--- notify_push / notify_order_change / notify_guest_order: same
--- shape as production, but the shared secret moves to Supabase
--- Vault (never a literal in this file — see security note),
--- and every call now carries tenant_id so ONE shared Edge
--- Function can notify only that tenant's devices, not everyone's.
-create extension if not exists pg_net;
-
+-- notify_push / notify_order_change / notify_guest_order: NOTIFY a
+-- small JSON envelope on "push_events" instead of an HTTP call to an
+-- Edge Function -- the API server LISTENs on this channel and sends
+-- the actual Web Push requests itself, in-process (server/push.js),
+-- so there's no secret to share between a trigger and a function
+-- anymore, and nothing here needs pg_net or Vault.
 create function notify_push(p_tenant_id uuid, title text, body text) returns void language plpgsql as $$
-declare trigger_secret text; edge_url text;
 begin
-  select decrypted_secret into trigger_secret from vault.decrypted_secrets where name = 'push_trigger_secret';
-  edge_url := current_setting('app.settings.push_edge_url', true);
-
-  perform net.http_post(
-    url := edge_url,
-    headers := jsonb_build_object('Content-Type','application/json','x-trigger-secret', trigger_secret),
-    body := jsonb_build_object('tenant_id', p_tenant_id, 'title', title, 'body', body)
-  );
+  perform pg_notify('push_events', jsonb_build_object(
+    'tenant_id', p_tenant_id, 'title', title, 'body', body
+  )::text);
 end $$;
 
 create function notify_order_change() returns trigger language plpgsql as $$
