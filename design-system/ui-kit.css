@@ -1,0 +1,201 @@
+/* =========================================================================
+   AUZslab UI Kit — shared component library
+   Used by the marketing site AND the POS/CRM product. This is the brand:
+   minimal, premium, unmistakably ours. Rules that keep it that way —
+     - restraint: ink / white / gray do the work; accent appears only on
+       the one active/important thing per component, never decoration
+     - quiet elevation: soft shadows, thin 1px lines — no clutter, no glow
+     - generous spacing, rounded-but-not-cartoonish corners
+     - motion is short and purposeful (150–220ms), never bouncy
+   Prefix: every class is namespaced `uk-` so it can drop into any page
+   without colliding with page-specific styles.
+   ========================================================================= */
+:root{
+  --uk-ink:#171717;
+  --uk-ink-dim:#4d4d4d;
+  --uk-ink-faint:#8c8c8c;
+  --uk-bg:#ffffff;
+  --uk-bg-raised:#f4f4f2;
+  --uk-bg-sunken:#dedede;
+  --uk-line:rgba(23,23,23,.12);
+  --uk-line-soft:rgba(23,23,23,.06);
+  --uk-accent:#f25623;
+  --uk-radius-sm:10px;
+  --uk-radius-md:16px;
+  --uk-radius-lg:22px;
+  --uk-radius-full:999px;
+  --uk-shadow-sm:0 2px 8px -4px rgba(23,23,23,.16);
+  --uk-shadow-md:0 12px 28px -12px rgba(23,23,23,.20);
+  --uk-shadow-lg:0 24px 48px -20px rgba(23,23,23,.24);
+  --uk-ease:cubic-bezier(.4,0,.2,1);
+  --uk-font-display:'Baloo 2',sans-serif;
+  --uk-font-body:'IBM Plex Sans',sans-serif;
+  --uk-font-mono:'Space Mono',monospace;
+}
+.uk-kit,.uk-kit *{box-sizing:border-box}
+.uk-kit{font-family:var(--uk-font-body);color:var(--uk-ink)}
+.uk-kit button{font-family:inherit;-webkit-tap-highlight-color:transparent}
+.uk-kit svg{display:block}
+
+/* ---------- 1. Accordion ---------- */
+.uk-accordion{border-top:1px solid var(--uk-line)}
+.uk-accordion-item{border-bottom:1px solid var(--uk-line)}
+.uk-accordion-head{
+  width:100%;display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:18px 4px;background:none;border:none;cursor:pointer;text-align:left;
+  font-family:var(--uk-font-display);font-weight:600;font-size:15px;color:var(--uk-ink);
+}
+.uk-accordion-chevron{flex-shrink:0;color:var(--uk-ink-faint);transition:transform .25s var(--uk-ease)}
+.uk-accordion-item.is-open .uk-accordion-chevron{transform:rotate(180deg);color:var(--uk-ink)}
+.uk-accordion-body{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s var(--uk-ease)}
+.uk-accordion-item.is-open .uk-accordion-body{grid-template-rows:1fr}
+.uk-accordion-body-inner{overflow:hidden}
+.uk-accordion-body p{margin:0 0 18px;padding-right:32px;font-size:13.5px;line-height:1.7;color:var(--uk-ink-dim)}
+
+/* ---------- 2. Bento menu ---------- */
+.uk-bento{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:84px;gap:10px}
+.uk-bento-tile{
+  border-radius:var(--uk-radius-md);background:var(--uk-bg-raised);border:1px solid var(--uk-line);
+  display:flex;flex-direction:column;justify-content:flex-end;padding:14px;position:relative;overflow:hidden;
+  transition:transform .2s var(--uk-ease),box-shadow .2s var(--uk-ease);
+}
+.uk-bento-tile:hover{transform:translateY(-2px);box-shadow:var(--uk-shadow-md)}
+.uk-bento-tile .uk-bento-label{font-family:var(--uk-font-display);font-weight:600;font-size:14px}
+.uk-bento-tile .uk-bento-sub{font-family:var(--uk-font-mono);font-size:10px;color:var(--uk-ink-faint);margin-top:2px}
+.uk-bento-tile.uk-span-2{grid-column:span 2}
+.uk-bento-tile.uk-span-2-row{grid-row:span 2}
+.uk-bento-tile.uk-dark{background:var(--uk-ink);color:#fff;border-color:var(--uk-ink)}
+.uk-bento-tile.uk-dark .uk-bento-sub{color:rgba(255,255,255,.55)}
+.uk-bento-tile.uk-accent{background:var(--uk-accent);border-color:var(--uk-accent);color:#fff}
+.uk-bento-tile .uk-bento-code{font-family:var(--uk-font-mono);font-size:11px;line-height:1.6;color:rgba(255,255,255,.85);position:absolute;top:14px;left:14px;right:14px}
+.uk-bento-tile .uk-bento-code b{color:var(--uk-accent);font-weight:400}
+.uk-bento-tile.uk-soon::after{
+  content:'Soon';position:absolute;top:12px;right:12px;font-family:var(--uk-font-mono);font-size:9px;
+  padding:3px 8px;border-radius:var(--uk-radius-full);background:var(--uk-line-soft);color:var(--uk-ink-faint);
+}
+
+/* ---------- 3. Breadcrumb ---------- */
+.uk-breadcrumb{display:flex;align-items:center;gap:8px;font-family:var(--uk-font-mono);font-size:11px}
+.uk-breadcrumb a{color:var(--uk-ink-faint);transition:color .15s var(--uk-ease)}
+.uk-breadcrumb a:hover{color:var(--uk-ink)}
+.uk-breadcrumb-sep{color:var(--uk-line);font-size:11px}
+.uk-breadcrumb-current{color:var(--uk-ink);font-weight:700}
+
+/* ---------- 4. Hamburger menu ---------- */
+.uk-hamburger{
+  width:38px;height:38px;border-radius:var(--uk-radius-full);border:1px solid var(--uk-line);
+  background:var(--uk-bg);display:flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:background .18s var(--uk-ease),border-color .18s var(--uk-ease);
+}
+.uk-hamburger:hover{border-color:var(--uk-ink)}
+.uk-hamburger-bars{width:15px;height:11px;position:relative}
+.uk-hamburger-bars span{
+  position:absolute;left:0;width:100%;height:1.5px;background:var(--uk-ink);border-radius:2px;
+  transition:transform .25s var(--uk-ease),opacity .2s var(--uk-ease),top .25s var(--uk-ease);
+}
+.uk-hamburger-bars span:nth-child(1){top:0}
+.uk-hamburger-bars span:nth-child(2){top:5px}
+.uk-hamburger-bars span:nth-child(3){top:10px}
+.uk-hamburger.is-open .uk-hamburger-bars span:nth-child(1){top:5px;transform:rotate(45deg)}
+.uk-hamburger.is-open .uk-hamburger-bars span:nth-child(2){opacity:0}
+.uk-hamburger.is-open .uk-hamburger-bars span:nth-child(3){top:5px;transform:rotate(-45deg)}
+
+/* ---------- 5 / 6. Kebab & meatballs menus ---------- */
+.uk-overflow-menu{position:relative;display:inline-block}
+.uk-overflow-trigger{
+  width:32px;height:32px;border-radius:var(--uk-radius-full);border:1px solid transparent;background:none;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--uk-ink-dim);
+  transition:background .15s var(--uk-ease),color .15s var(--uk-ease);
+}
+.uk-overflow-trigger:hover,.uk-overflow-trigger.is-open{background:var(--uk-bg-raised);color:var(--uk-ink)}
+.uk-kebab-dots{display:flex;flex-direction:column;gap:3px}
+.uk-meatballs-dots{display:flex;flex-direction:row;gap:3px}
+.uk-kebab-dots span,.uk-meatballs-dots span{width:3.5px;height:3.5px;border-radius:50%;background:currentColor}
+.uk-overflow-panel{
+  position:absolute;top:calc(100% + 8px);right:0;min-width:172px;background:var(--uk-bg);
+  border:1px solid var(--uk-line);border-radius:var(--uk-radius-md);box-shadow:var(--uk-shadow-lg);
+  padding:6px;opacity:0;transform:translateY(-4px) scale(.98);pointer-events:none;
+  transition:opacity .16s var(--uk-ease),transform .16s var(--uk-ease);z-index:40;
+}
+.uk-overflow-panel.is-open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+.uk-overflow-item{
+  width:100%;text-align:left;padding:9px 12px;border-radius:var(--uk-radius-sm);border:none;background:none;
+  font-size:12.5px;color:var(--uk-ink-dim);cursor:pointer;transition:background .12s var(--uk-ease),color .12s var(--uk-ease);
+}
+.uk-overflow-item:hover{background:var(--uk-bg-raised);color:var(--uk-ink)}
+.uk-overflow-item.uk-danger{color:var(--uk-accent)}
+.uk-overflow-item.uk-danger:hover{background:rgba(242,86,35,.08)}
+
+/* ---------- 7. Tab / nav bar ---------- */
+.uk-tabbar-row{display:flex;align-items:center;gap:8px}
+.uk-tabbar{
+  position:relative;display:flex;gap:2px;padding:4px;border-radius:var(--uk-radius-full);
+  background:var(--uk-ink);
+}
+.uk-tab{
+  position:relative;z-index:1;padding:9px 18px;border-radius:var(--uk-radius-full);border:none;background:none;
+  font-family:var(--uk-font-mono);font-size:11px;letter-spacing:.03em;color:rgba(255,255,255,.55);cursor:pointer;
+  display:flex;align-items:center;gap:6px;transition:color .2s var(--uk-ease);
+}
+.uk-tab.is-active{color:var(--uk-ink)}
+.uk-tabbar-indicator{
+  position:absolute;top:4px;bottom:4px;left:4px;border-radius:var(--uk-radius-full);background:#fff;
+  transition:transform .28s var(--uk-ease),width .28s var(--uk-ease);z-index:0;
+}
+.uk-tabbar-action{
+  width:38px;height:38px;border-radius:var(--uk-radius-full);background:var(--uk-ink);color:#fff;
+  border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;
+  transition:transform .18s var(--uk-ease);
+}
+.uk-tabbar-action:hover{transform:translateY(-1px)}
+
+/* ---------- 8. Sidebar (embeddable nav list) ---------- */
+.uk-sidebar{
+  width:100%;max-width:220px;background:var(--uk-bg);border:1px solid var(--uk-line);
+  border-radius:var(--uk-radius-lg);padding:10px;display:flex;flex-direction:column;gap:2px;
+}
+.uk-sidebar-item{
+  display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:var(--uk-radius-sm);
+  font-size:12.5px;color:var(--uk-ink-dim);transition:background .15s var(--uk-ease),color .15s var(--uk-ease);
+}
+.uk-sidebar-item svg{color:var(--uk-ink-faint);flex-shrink:0;transition:color .15s var(--uk-ease)}
+.uk-sidebar-item:hover{background:var(--uk-bg-raised);color:var(--uk-ink)}
+.uk-sidebar-item.is-active{background:var(--uk-ink);color:#fff}
+.uk-sidebar-item.is-active svg{color:#fff}
+
+/* ---------- 9. Pagination ---------- */
+.uk-pagination{
+  display:inline-flex;align-items:center;gap:4px;padding:4px;background:var(--uk-bg-raised);
+  border-radius:var(--uk-radius-full);
+}
+.uk-page-btn{
+  min-width:32px;height:32px;padding:0 6px;border-radius:var(--uk-radius-full);border:none;background:none;
+  font-family:var(--uk-font-mono);font-size:11.5px;color:var(--uk-ink-dim);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:background .15s var(--uk-ease),color .15s var(--uk-ease);
+}
+.uk-page-btn:hover{color:var(--uk-ink)}
+.uk-page-btn.is-active{background:var(--uk-ink);color:#fff}
+.uk-page-btn:disabled{opacity:.35;cursor:default}
+
+/* ---------- 10. List of links ---------- */
+.uk-linklist{list-style:none;margin:0;padding:0;border-top:1px solid var(--uk-line)}
+.uk-linklist li{border-bottom:1px solid var(--uk-line)}
+.uk-linklist a{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 2px;
+  font-size:13px;color:var(--uk-ink-dim);transition:color .15s var(--uk-ease);
+}
+.uk-linklist a svg{color:var(--uk-ink-faint);flex-shrink:0;transition:transform .18s var(--uk-ease),color .15s var(--uk-ease)}
+.uk-linklist a:hover{color:var(--uk-ink)}
+.uk-linklist a:hover svg{transform:translateX(3px);color:var(--uk-ink)}
+
+/* ---------- kit demo scaffolding ---------- */
+.uk-demo-block{margin-bottom:64px}
+.uk-demo-label{
+  font-family:var(--uk-font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--uk-ink-faint);display:flex;align-items:center;gap:9px;margin-bottom:18px;
+}
+.uk-demo-label::before{content:'';width:14px;height:1px;background:var(--uk-accent)}
+.uk-demo-stage{
+  background:var(--uk-bg);border:1px solid var(--uk-line);border-radius:var(--uk-radius-lg);
+  padding:32px;display:flex;align-items:center;flex-wrap:wrap;gap:24px;
+}
