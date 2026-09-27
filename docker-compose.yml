@@ -1,9 +1,11 @@
 services:
-  # ---- Reverse proxy: serves both static sites + handles HTTPS automatically ----
-  # No app container needed for either — everything here is plain static
-  # files with no build step. The marketing site (./site) answers the root
-  # domain; the POS app (./app/public) answers every client subdomain —
-  # routing between the two lives in the Caddyfile.
+  # ---- Reverse proxy: serves both static sites + the API + handles
+  # HTTPS automatically. The marketing site (./site) answers the root
+  # domain; the POS app (./app/public) answers every client subdomain;
+  # api.$DOMAIN reverse-proxies to the api service; /uploads is this
+  # project's own file storage (see server/src/storage.js), served
+  # directly and publicly from the same volume the api container writes
+  # to. Routing lives in the Caddyfile. ----
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
@@ -15,6 +17,7 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./site:/srv/site:ro
       - ./app/public:/srv/app:ro
+      - uploads_data:/srv/uploads:ro
       - caddy_data:/data
       - caddy_config:/config
 
@@ -30,6 +33,25 @@ services:
       - ./db:/docker-entrypoint-initdb.d:ro   # schema files here auto-run on first boot only
     expose:
       - "5432"
+
+  # ---- This project's own API: auth, the data API, RPC endpoints,
+  # file uploads, realtime (WebSocket + Postgres LISTEN/NOTIFY) and Web
+  # Push -- everything Supabase used to provide, now plain code against
+  # plain Postgres. Connects as the "app" role (db/000b_create_app_role.sh),
+  # never POSTGRES_USER -- see that file for why. ----
+  api:
+    build: ./server
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+    volumes:
+      - uploads_data:/data/uploads
+    expose:
+      - "3000"
+    depends_on:
+      - postgres
 
   # ---- Automated nightly backups, kept locally in ./backups ----
   backup:
@@ -61,3 +83,4 @@ volumes:
   caddy_data:
   caddy_config:
   uptime_kuma_data:
+  uploads_data:

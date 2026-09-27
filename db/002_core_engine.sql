@@ -258,7 +258,13 @@ end $$;
 -- push_subs: tenant-scoped device subscriptions for Web Push
 create table push_subs (
   id          uuid primary key default gen_random_uuid(),
-  tenant_id   uuid not null references tenants(id),
+  -- the client never sends tenant_id (confirmed against its actual
+  -- upload call, index.html) -- it can't be trusted from the client
+  -- anyway, so resolve it from the caller's own profile via me(),
+  -- exactly like records.author defaults to app_uid() above. (Postgres
+  -- doesn't allow a raw subquery in a column DEFAULT, only a function
+  -- call -- me() already does this same profiles lookup internally.)
+  tenant_id   uuid not null references tenants(id) default ((me()->>'tenant_id')::uuid),
   user_id     uuid references auth_users(id) on delete cascade,
   endpoint    text unique not null,
   p256dh      text not null,

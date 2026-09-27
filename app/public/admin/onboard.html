@@ -34,7 +34,7 @@ button{margin-top:20px;padding:10px 16px;font-size:15px;cursor:pointer}
 
 <div id=result></div>
 
-<script src=https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin=anonymous></script>
+<script src=/sb-client.js></script>
 <script src=/config.js></script>
 <script>
 const sb = supabase.createClient(CFG.url, CFG.key);
@@ -81,7 +81,7 @@ document.getElementById('form').onsubmit = async (e) => {
 
   resultEl.innerHTML = 'Tenant created — creating owner login…';
   const { data: { session } } = await sb.auth.getSession();
-  const res = await fetch(CFG.url + '/functions/v1/provision-owner', {
+  const res = await fetch(CFG.url + '/admin/provision-owner', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -92,15 +92,16 @@ document.getElementById('form').onsubmit = async (e) => {
   const body = await res.json();
   if (!res.ok) {
     errEl.textContent = body.error || 'owner creation failed';
-    resultEl.innerHTML = `Tenant "${name}" was created (slug: ${slug}), but the owner login failed — you can retry just that step, or create it manually in Supabase Studio.`;
+    resultEl.innerHTML = `Tenant "${name}" was created (slug: ${slug}), but the owner login failed — you can retry just that step, or create the login directly with a POST to /admin/provision-owner.`;
     return;
   }
 
   resultEl.innerHTML = `
     <div class=ok>
       <b>${name}</b> is live at <b>${slug}.yourdomain.com</b><br><br>
-      Send this link to the owner so they can set their password and sign in:<br>
-      <a href="${body.action_link}" target=_blank>${body.action_link}</a>
+      Share these with the owner directly (e.g. over WhatsApp) so they can sign in and change it:<br>
+      Email: <b>${ownerEmail}</b><br>
+      Temporary password: <b>${body.temp_password}</b>
     </div>`;
   e.target.reset();
 };

@@ -25,11 +25,22 @@ status.{$DOMAIN} {
     reverse_proxy uptime-kuma:3001
 }
 
-# NOTE: once there's a custom API/auth server (this project's own code, no
-# Supabase/Vercel/third-party platform), add its route here, e.g.:
-#   api.{$DOMAIN} {
-#       reverse_proxy api:PORT
-#   }
+# This project's own API (server/) -- auth, the data API, RPC, realtime
+# (the /ws upgrade goes through the same reverse_proxy transparently),
+# and Web Push. /uploads/* is file storage (server/src/storage.js writes
+# there; this just serves it back out, publicly and directly -- no need
+# to round-trip through Node for a static file). CORS is handled by the
+# api service itself (every response already carries
+# Access-Control-Allow-Origin), not duplicated here.
+api.{$DOMAIN} {
+    handle_path /uploads/* {
+        root * /srv/uploads
+        file_server
+    }
+    handle {
+        reverse_proxy api:3000
+    }
+}
 
 # NOTE: the wildcard *.{$DOMAIN} above needs a DNS-01 challenge (a Caddy DNS
 # plugin for your registrar) for its certificate, not the plain HTTP
