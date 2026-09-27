@@ -82,6 +82,14 @@
       drawerOverlay.addEventListener('click', closeDrawer);
     }
 
+    // ---- expandable nav groups (Products / Business types / Resources) ----
+    $all('.nav-group-toggle').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var expanded = btn.getAttribute('aria-expanded') === 'true';
+        btn.setAttribute('aria-expanded', String(!expanded));
+      });
+    });
+
     // ---- reveal-on-scroll for the homepage's stacked panels ----
     var revealEls = $all('.reveal:not(.in)');
     if (revealEls.length && 'IntersectionObserver' in window) {

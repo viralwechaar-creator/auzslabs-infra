@@ -74,6 +74,34 @@ button{font-family:inherit}
 }
 .nav-link:hover{color:var(--ink);background:var(--line-soft)}
 .nav-link.active{color:var(--ink);background:#fff;box-shadow:inset -3px 0 0 var(--accent)}
+
+/* ---------- nav-group: expandable sub-list (Products / Business types / Resources) ---------- */
+/* Same information as a horizontal mega-menu would show, adapted to our
+   vertical sidebar/drawer: click to expand in place instead of a
+   dropdown panel, since there's no horizontal top bar to drop one from. */
+.nav-group{display:flex;flex-direction:column}
+.nav-group-toggle{
+  width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  background:none;border:none;cursor:pointer;text-align:left;font-family:inherit;
+}
+.nav-group-chevron{transition:transform .2s ease;color:var(--ink-faint);flex-shrink:0}
+.nav-group-toggle[aria-expanded="true"]{color:var(--ink);background:var(--line-soft)}
+.nav-group-toggle[aria-expanded="true"] .nav-group-chevron{transform:rotate(180deg);color:var(--ink)}
+.nav-submenu{display:grid;grid-template-rows:0fr;transition:grid-template-rows .25s ease}
+.nav-group-toggle[aria-expanded="true"] + .nav-submenu{grid-template-rows:1fr}
+.nav-submenu-inner{overflow:hidden}
+.nav-sublink{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:9px 14px 9px 30px;font-family:var(--font-mono);font-size:10.5px;
+  letter-spacing:.03em;text-transform:uppercase;color:var(--ink-dim);border-radius:999px;
+  transition:color .15s ease,background .15s ease;
+}
+.nav-sublink:hover{color:var(--ink);background:var(--line-soft)}
+.nav-sublink.is-disabled{color:var(--ink-faint);cursor:default;pointer-events:none}
+.nav-subtag{
+  font-size:8.5px;padding:2px 7px;border-radius:999px;background:var(--line-soft);color:var(--ink-faint);
+  flex-shrink:0;
+}
 .sidebar-foot{display:flex;flex-direction:column;gap:12px;margin-top:auto}
 .sidebar-copy{font-family:var(--font-mono);font-size:10px;color:var(--ink-faint);letter-spacing:.02em}
 

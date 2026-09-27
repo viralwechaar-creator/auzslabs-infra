@@ -14,7 +14,7 @@
 <meta property="og:image" content="https://auzslab.in/logo.png">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="/logo.png">
-<link rel="stylesheet" href="theme.css?v=10">
+<link rel="stylesheet" href="theme.css?v=11">
 <link rel="stylesheet" href="design-system/ui-kit.css?v=1">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 </head>
@@ -34,8 +34,54 @@
     <a href="index.html" class="sidebar-logo"><img src="logo.png" alt="AUZslab"></a>
     <nav class="sidebar-nav" aria-label="Primary">
       <a href="index.html" class="nav-link">Home</a>
-      <a href="products.html" class="nav-link active">Products</a>
+
+      <div class="nav-group">
+        <button class="nav-link nav-group-toggle" aria-expanded="true" style="color:var(--ink);background:#fff;box-shadow:inset -3px 0 0 var(--accent)">
+          <span>Products</span>
+          <svg class="nav-group-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="nav-submenu">
+          <div class="nav-submenu-inner">
+            <a href="products.html#pos" class="nav-sublink"><span>POS</span><span class="nav-subtag">Live</span></a>
+            <a href="products.html#crm" class="nav-sublink"><span>CRM</span><span class="nav-subtag">Live</span></a>
+            <a href="products.html#next" class="nav-sublink"><span>Booking</span><span class="nav-subtag">Soon</span></a>
+            <a href="products.html#next" class="nav-sublink"><span>Payroll</span><span class="nav-subtag">Soon</span></a>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button class="nav-link nav-group-toggle" aria-expanded="false">
+          <span>Business types</span>
+          <svg class="nav-group-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="nav-submenu">
+          <div class="nav-submenu-inner">
+            <a href="platform.html#who" class="nav-sublink"><span>Caf&eacute;s &amp; restaurants</span></a>
+            <a href="platform.html#who" class="nav-sublink"><span>Salons</span></a>
+            <a href="platform.html#who" class="nav-sublink"><span>Gyms</span></a>
+            <a href="platform.html#who" class="nav-sublink"><span>Retail &amp; bookstores</span></a>
+          </div>
+        </div>
+      </div>
+
       <a href="platform.html" class="nav-link">Platform</a>
+      <a href="pricing.html" class="nav-link">Pricing</a>
+
+      <div class="nav-group">
+        <button class="nav-link nav-group-toggle" aria-expanded="false">
+          <span>Resources</span>
+          <svg class="nav-group-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="nav-submenu">
+          <div class="nav-submenu-inner">
+            <span class="nav-sublink is-disabled"><span>Getting started</span><span class="nav-subtag">Soon</span></span>
+            <span class="nav-sublink is-disabled"><span>Operations &amp; workflows</span><span class="nav-subtag">Soon</span></span>
+            <span class="nav-sublink is-disabled"><span>Growth &amp; scaling</span><span class="nav-subtag">Soon</span></span>
+          </div>
+        </div>
+      </div>
+
       <a href="contact.html" class="nav-link">Contact</a>
     </nav>
     <div class="sidebar-foot">
@@ -54,7 +100,7 @@
       </section>
 
       <section class="section tight">
-        <div class="card" style="margin-bottom:20px">
+        <div class="card" id="pos" style="margin-bottom:20px;scroll-margin-top:24px">
           <span class="tag">Live</span>
           <div class="h-2" style="margin-top:16px;font-size:26px">AUZslab POS</div>
           <p class="p" style="margin-top:10px;max-width:520px">Point of sale for restaurants and cafés — billing, kitchen orders, inventory and staff, all in one till.</p>
@@ -63,7 +109,7 @@
           </div>
         </div>
 
-        <div class="card" style="margin-bottom:20px">
+        <div class="card" id="crm" style="margin-bottom:20px;scroll-margin-top:24px">
           <span class="tag">Live</span>
           <div class="h-2" style="margin-top:16px;font-size:26px">AUZslab CRM</div>
           <p class="p" style="margin-top:10px;max-width:520px">Know who your customers are, and bring them back — visits, spend and outreach in one view.</p>
@@ -72,7 +118,7 @@
           </div>
         </div>
 
-        <div class="card">
+        <div class="card" id="next" style="scroll-margin-top:24px">
           <span class="tag" style="opacity:.6">In progress</span>
           <div class="h-2" style="margin-top:16px;font-size:26px">What's next</div>
           <p class="p" style="margin-top:10px;max-width:520px">Booking, payroll and more — built as real businesses ask for them, not before.</p>
@@ -99,6 +145,7 @@
         <span style="display:flex;gap:22px">
           <a href="index.html" style="color:var(--ink-faint)">Home</a>
           <a href="platform.html" style="color:var(--ink-faint)">Platform</a>
+          <a href="pricing.html" style="color:var(--ink-faint)">Pricing</a>
           <a href="contact.html" style="color:var(--ink-faint)">Contact</a>
         </span>
       </footer>

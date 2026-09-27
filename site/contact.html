@@ -14,7 +14,7 @@
 <meta property="og:image" content="https://auzslab.in/logo.png">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="/logo.png">
-<link rel="stylesheet" href="theme.css?v=10">
+<link rel="stylesheet" href="theme.css?v=11">
 <link rel="stylesheet" href="design-system/ui-kit.css?v=1">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 </head>
@@ -34,8 +34,54 @@
     <a href="index.html" class="sidebar-logo"><img src="logo.png" alt="AUZslab"></a>
     <nav class="sidebar-nav" aria-label="Primary">
       <a href="index.html" class="nav-link">Home</a>
-      <a href="products.html" class="nav-link">Products</a>
+
+      <div class="nav-group">
+        <button class="nav-link nav-group-toggle" aria-expanded="false">
+          <span>Products</span>
+          <svg class="nav-group-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="nav-submenu">
+          <div class="nav-submenu-inner">
+            <a href="products.html#pos" class="nav-sublink"><span>POS</span><span class="nav-subtag">Live</span></a>
+            <a href="products.html#crm" class="nav-sublink"><span>CRM</span><span class="nav-subtag">Live</span></a>
+            <a href="products.html#next" class="nav-sublink"><span>Booking</span><span class="nav-subtag">Soon</span></a>
+            <a href="products.html#next" class="nav-sublink"><span>Payroll</span><span class="nav-subtag">Soon</span></a>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button class="nav-link nav-group-toggle" aria-expanded="false">
+          <span>Business types</span>
+          <svg class="nav-group-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="nav-submenu">
+          <div class="nav-submenu-inner">
+            <a href="platform.html#who" class="nav-sublink"><span>Caf&eacute;s &amp; restaurants</span></a>
+            <a href="platform.html#who" class="nav-sublink"><span>Salons</span></a>
+            <a href="platform.html#who" class="nav-sublink"><span>Gyms</span></a>
+            <a href="platform.html#who" class="nav-sublink"><span>Retail &amp; bookstores</span></a>
+          </div>
+        </div>
+      </div>
+
       <a href="platform.html" class="nav-link">Platform</a>
+      <a href="pricing.html" class="nav-link">Pricing</a>
+
+      <div class="nav-group">
+        <button class="nav-link nav-group-toggle" aria-expanded="false">
+          <span>Resources</span>
+          <svg class="nav-group-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="nav-submenu">
+          <div class="nav-submenu-inner">
+            <span class="nav-sublink is-disabled"><span>Getting started</span><span class="nav-subtag">Soon</span></span>
+            <span class="nav-sublink is-disabled"><span>Operations &amp; workflows</span><span class="nav-subtag">Soon</span></span>
+            <span class="nav-sublink is-disabled"><span>Growth &amp; scaling</span><span class="nav-subtag">Soon</span></span>
+          </div>
+        </div>
+      </div>
+
       <a href="contact.html" class="nav-link active">Contact</a>
     </nav>
     <div class="sidebar-foot">
@@ -133,6 +179,7 @@
           <a href="index.html" style="color:var(--ink-faint)">Home</a>
           <a href="products.html" style="color:var(--ink-faint)">Products</a>
           <a href="platform.html" style="color:var(--ink-faint)">Platform</a>
+          <a href="pricing.html" style="color:var(--ink-faint)">Pricing</a>
         </span>
       </footer>
 
