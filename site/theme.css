@@ -240,15 +240,10 @@ button{font-family:inherit}
   background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
   background-size:22px 22px;opacity:.6;
 }
-.hero-doodle{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
 .hero-art-tag{position:absolute;z-index:1;background:#fff}
-/* fills whatever's left of the hero panel below the doodle box on
-   narrow screens -- a second, smaller brand mark instead of dead
-   grid-paper space before the next stacked panel takes over */
-.hero-bottom-mark{margin-top:44px}
-.hero-bottom-mark .brand-mark{
-  display:block;font-size:clamp(44px,16vw,110px);font-weight:700;
-  letter-spacing:-.02em;line-height:1;color:var(--ink);
+.hero-art-logo{
+  position:absolute;right:18px;bottom:18px;width:62%;max-width:230px;
+  image-rendering:pixelated;image-rendering:-moz-crisp-edges;image-rendering:crisp-edges;
 }
 .hero-services{display:flex;flex-direction:column;gap:3px;margin-top:30px}
 .hero-services-label{font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:5px}
@@ -515,12 +510,9 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
   .grid-2{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
   .hero-visual{height:220px}
   .hero-grid{grid-template-columns:1.1fr 1fr;align-items:center;gap:56px}
-  /* desktop's hero-art already fills the second column -- this mark
-     exists only to close the gap below it on narrow single-column
-     layouts */
-  .hero-bottom-mark{display:none}
   .hero-art{height:440px;margin-top:0;border-radius:26px;box-shadow:0 30px 60px -30px rgba(23,23,23,.25)}
   .hero-art .grid-lines{background-size:26px 26px}
+  .hero-art-logo{width:56%;max-width:280px}
   .footer-dark{border-radius:40px 40px 0 0;padding:48px 0 32px}
   .footer-top{grid-template-columns:1.4fr 1fr 1fr 1fr;gap:32px}
   .footer-col-brand{grid-column:auto}
