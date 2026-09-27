@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Your cart — AUZslab</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="/logo.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="theme.css?v=41">
+<link rel="stylesheet" href="design-system/ui-kit.css?v=3">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+.err{color:var(--accent);font-size:12.5px;margin-top:10px}
+.cart-item{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:12px 16px;border:2px solid var(--ink);border-radius:14px;margin-bottom:10px;background:#fff;
+}
+.cart-item b{font-family:var(--font-display);font-size:15px}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <a href="products.html" class="btn btn-ghost" style="order:2">&larr; Products</a>
+    <a href="index.html" class="topbar-logo"><img src="logo.png" alt="AUZslab"></a>
+  </header>
+
+  <main class="content">
+    <div class="wrap" style="max-width:640px">
+
+      <section class="section" style="padding-top:56px">
+        <div class="label">Your cart</div>
+        <h1 class="h-1">Ready when you are.</h1>
+        <p class="lede">Confirm what you need, sign in, and we'll take it from there.</p>
+      </section>
+
+      <section class="section tight">
+        <div id="cartItems"></div>
+      </section>
+
+      <section class="section tight" id="signedOutNotice" style="display:none">
+        <div class="card">
+          <p class="p">Sign in or create an account to send this to us.</p>
+          <a href="signup.html" class="btn btn-primary form-submit">Sign in / Create account</a>
+        </div>
+      </section>
+
+      <section class="section tight" id="requestSection" style="display:none">
+        <div class="card">
+          <p class="p" style="margin-bottom:8px">Signed in as <b id="whoami"></b></p>
+          <div class="field">
+            <label for="bizName">Business name</label>
+            <input id="bizName" placeholder="OG Book Cafe">
+          </div>
+          <div class="field">
+            <label for="bizSlug">Desired subdomain</label>
+            <input id="bizSlug" placeholder="ogbookcafe" pattern="[a-z0-9-]+">
+          </div>
+          <div class="field">
+            <label for="bizNotes">Anything else we should know?</label>
+            <textarea id="bizNotes" placeholder="Optional"></textarea>
+          </div>
+          <button id="submitBtn" class="btn btn-primary form-submit">Send to AUZslab</button>
+          <div id="submitErr" class="err"></div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modal">
+      <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+      <div class="success-view show">
+        <div class="success-mark">&check;</div>
+        <h3 class="h-2" style="font-size:22px">Request sent.</h3>
+        <p class="p">The AUZslab team is verifying your requirements and will reach out to you shortly.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="/sb-client.js"></script>
+<script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
+<script>
+const sb = supabase.createClient(CFG.url, CFG.key);
+const PRODUCT_LABEL = { pos: 'POS', crm: 'CRM', billing: 'Billing & Invoicing', inventory: 'Inventory', qr: 'QR Ordering' };
+
+function slugify(s) {
+  return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '').slice(0, 40);
+}
+
+function renderCart() {
+  const items = AUZcart.get();
+  const el = document.getElementById('cartItems');
+  if (!items.length) {
+    el.innerHTML = '<p class="p">Your cart is empty. <a href="products.html" style="color:var(--accent)">Browse products</a> to add something.</p>';
+    document.getElementById('requestSection').style.display = 'none';
+    return;
+  }
+  el.innerHTML = items.map((key) => `
+    <div class="cart-item" data-key="${key}">
+      <b>${PRODUCT_LABEL[key] || key}</b>
+      <button class="btn btn-ghost" data-remove="${key}">Remove</button>
+    </div>`).join('');
+  el.querySelectorAll('[data-remove]').forEach((btn) => {
+    btn.onclick = () => { AUZcart.remove(btn.dataset.remove); renderCart(); };
+  });
+}
+renderCart();
+
+async function checkSession() {
+  const { data: { session } } = await sb.auth.getSession();
+  const hasItems = AUZcart.get().length > 0;
+  if (session && hasItems) {
+    document.getElementById('signedOutNotice').style.display = 'none';
+    document.getElementById('requestSection').style.display = 'block';
+    document.getElementById('whoami').textContent = session.user.email;
+  } else if (!session && hasItems) {
+    document.getElementById('signedOutNotice').style.display = 'block';
+    document.getElementById('requestSection').style.display = 'none';
+  }
+}
+checkSession();
+
+document.getElementById('bizName').addEventListener('input', (e) => {
+  const slugEl = document.getElementById('bizSlug');
+  if (!slugEl.dataset.touched) slugEl.value = slugify(e.target.value);
+});
+document.getElementById('bizSlug').addEventListener('input', (e) => { e.target.dataset.touched = '1'; });
+
+document.getElementById('submitBtn').onclick = async () => {
+  const name = document.getElementById('bizName').value.trim();
+  const slug = document.getElementById('bizSlug').value.trim().toLowerCase();
+  const notes = document.getElementById('bizNotes').value.trim();
+  const errEl = document.getElementById('submitErr');
+  errEl.textContent = '';
+  if (!name || !slug) { errEl.textContent = 'Business name and subdomain are required.'; return; }
+
+  const features = {};
+  AUZcart.get().forEach((key) => { features[key] = true; });
+
+  const { error } = await sb.rpc('submit_signup_request', {
+    p_business_name: name, p_slug: slug, p_features: features, p_notes: notes,
+  });
+  if (error) { errEl.textContent = error.message; return; }
+
+  AUZcart.clear();
+  document.getElementById('modalOverlay').classList.add('open');
+};
+
+document.getElementById('modalClose').onclick = () => {
+  document.getElementById('modalOverlay').classList.remove('open');
+  window.location.href = 'index.html';
+};
+</script>
+</body>
+</html>

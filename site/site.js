@@ -2,6 +2,33 @@
   function $(sel, root) { return (root || document).querySelector(sel); }
   function $all(sel) { return document.querySelectorAll(sel); }
 
+  // ---- cart: which product keys a visitor picked, kept in
+  // localStorage (survives across pages, no login required to build
+  // one -- only submitting it at cart.html needs an account) ----
+  var CART_KEY = 'auz_cart';
+  function readCart() {
+    try { return JSON.parse(localStorage.getItem(CART_KEY) || '[]'); } catch (e) { return []; }
+  }
+  function writeCart(items) {
+    try { localStorage.setItem(CART_KEY, JSON.stringify(items)); } catch (e) {}
+  }
+  window.AUZcart = {
+    get: readCart,
+    has: function (key) { return readCart().indexOf(key) !== -1; },
+    add: function (key) {
+      var items = readCart();
+      if (items.indexOf(key) === -1) items.push(key);
+      writeCart(items);
+    },
+    remove: function (key) {
+      writeCart(readCart().filter(function (k) { return k !== key; }));
+    },
+    toggle: function (key) {
+      if (window.AUZcart.has(key)) window.AUZcart.remove(key); else window.AUZcart.add(key);
+    },
+    clear: function () { writeCart([]); },
+  };
+
   // ---- page transition: a circle expands out from whatever link was
   // tapped, then the destination page starts fully covered and shrinks
   // the same circle away -- sessionStorage carries the origin point
@@ -78,6 +105,15 @@
   })();
 
   document.addEventListener('DOMContentLoaded', function () {
+    // ---- cart count badge: every page's nav "Cart" link + any other
+    // .cart-count element updates itself here, so individual pages don't
+    // each need their own inline refresh script ----
+    var cartCountEls = $all('.cart-count');
+    if (cartCountEls.length) {
+      var n = AUZcart.get().length;
+      cartCountEls.forEach(function (el) { el.textContent = n ? '(' + n + ')' : ''; });
+    }
+
     var overlay = $('#modalOverlay');
     var modal = $('#modal');
     var formView = $('#formView');

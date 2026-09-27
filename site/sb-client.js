@@ -82,6 +82,15 @@
         saveSession(session);
         return { data: { session, user: data.user }, error: null };
       },
+      // Public self-serve account creation (POST /auth/signup) -- distinct
+      // from admin-provisioned tenant-staff logins, which never call this.
+      async signUp({ email, password }) {
+        const { data, error } = await request('/auth/signup', { method: 'POST', body: { email, password }, auth: false });
+        if (error) return { data: { session: null }, error };
+        session = { access_token: data.access_token, user: data.user };
+        saveSession(session);
+        return { data: { session, user: data.user }, error: null };
+      },
       async signOut() {
         session = null;
         saveSession(null);

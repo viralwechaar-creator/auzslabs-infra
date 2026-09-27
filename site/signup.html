@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign in — AUZslab</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="/logo.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="theme.css?v=41">
+<link rel="stylesheet" href="design-system/ui-kit.css?v=3">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>.err{color:var(--accent);font-size:12.5px;margin-top:10px}</style>
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <a href="index.html" class="btn btn-ghost" style="order:2">&larr; Site</a>
+    <a href="index.html" class="topbar-logo"><img src="logo.png" alt="AUZslab"></a>
+  </header>
+
+  <main class="content">
+    <div class="wrap" style="max-width:920px">
+
+      <section class="section" style="padding-top:56px">
+        <div class="label">Your account</div>
+        <h1 class="h-1" id="pageTitle">Sign in</h1>
+        <p class="lede" id="pageLede">Create an account or sign in to build your cart and send us your requirements.</p>
+      </section>
+
+      <section class="section tight" id="authSection">
+        <div class="card" style="max-width:380px">
+          <div style="display:flex;gap:8px;margin-bottom:6px">
+            <button class="btn btn-ghost" id="modeNew" style="flex:1;justify-content:center">New account</button>
+            <button class="btn btn-ghost" id="modeLogin" style="flex:1;justify-content:center">Log in</button>
+          </div>
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" type="email">
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input id="password" type="password">
+          </div>
+          <button id="submitBtn" class="btn btn-primary form-submit">Create account</button>
+          <div id="authErr" class="err"></div>
+        </div>
+      </section>
+
+      <section class="section tight" id="loggedInSection" style="display:none">
+        <div class="card" style="max-width:380px">
+          <p class="p">You're signed in as <b id="loggedInEmail"></b>.</p>
+          <a href="cart.html" class="btn btn-primary form-submit">Go to your cart</a>
+          <button id="signOutBtn" class="btn btn-ghost form-submit">Sign out</button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script src="/sb-client.js"></script>
+<script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
+<script>
+const sb = supabase.createClient(CFG.url, CFG.key);
+let mode = 'signup';
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('modeNew').style.background = m === 'signup' ? 'var(--ink)' : '';
+  document.getElementById('modeNew').style.color = m === 'signup' ? '#fff' : '';
+  document.getElementById('modeLogin').style.background = m === 'login' ? 'var(--ink)' : '';
+  document.getElementById('modeLogin').style.color = m === 'login' ? '#fff' : '';
+  document.getElementById('submitBtn').textContent = m === 'signup' ? 'Create account' : 'Log in';
+  document.getElementById('pageTitle').textContent = m === 'signup' ? 'Create your account' : 'Sign in';
+}
+document.getElementById('modeNew').onclick = () => setMode('signup');
+document.getElementById('modeLogin').onclick = () => setMode('login');
+setMode('signup');
+
+async function checkSession() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    document.getElementById('authSection').style.display = 'none';
+    document.getElementById('loggedInSection').style.display = 'block';
+    document.getElementById('loggedInEmail').textContent = session.user.email;
+  }
+}
+checkSession();
+
+document.getElementById('submitBtn').onclick = async () => {
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const errEl = document.getElementById('authErr');
+  errEl.textContent = '';
+  const { error } = mode === 'signup'
+    ? await sb.auth.signUp({ email, password })
+    : await sb.auth.signInWithPassword({ email, password });
+  if (error) { errEl.textContent = error.message; return; }
+  window.location.href = 'cart.html';
+};
+
+document.getElementById('signOutBtn').onclick = async () => {
+  await sb.auth.signOut();
+  window.location.reload();
+};
+</script>
+</body>
+</html>

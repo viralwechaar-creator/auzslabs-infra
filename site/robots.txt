@@ -1,5 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /admin.html
+Disallow: /signup.html
+Disallow: /cart.html
 
 Sitemap: https://auzslab.in/sitemap.xml

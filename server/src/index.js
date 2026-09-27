@@ -1,6 +1,6 @@
 import http from 'node:http';
 import { pool, withAuth } from './db.js';
-import { login, verifyToken, bearerFrom, createUser, resetToRandomPassword } from './auth.js';
+import { login, verifyToken, bearerFrom, createUser, resetToRandomPassword, signToken } from './auth.js';
 import { saveSiteUpload } from './storage.js';
 import { startRealtime } from './realtime.js';
 import { handlePushEvent } from './push.js';
@@ -16,6 +16,7 @@ const TABLES = {
   guest_orders: { columns: ['id', 'tenant_id', 'tbl', 'name', 'phone', 'note', 'items', 'status', 'created_at'], writable: ['status'] },
   push_subs: { columns: ['id', 'tenant_id', 'user_id', 'endpoint', 'p256dh', 'auth', 'created_at'], insertable: ['user_id', 'endpoint', 'p256dh', 'auth'] },
   leads: { columns: ['id', 'name', 'business', 'contact', 'message', 'niche', 'status', 'created_at'], writable: ['status'] }, // admin-only via RLS (is_platform_admin())
+  signup_requests: { columns: ['id', 'user_id', 'business_name', 'slug', 'features', 'notes', 'status', 'created_at'] }, // read-only here; state changes go through approve/decline_signup_request
 };
 
 const OPS = { eq: '=', gte: '>=', lte: '<=', gt: '>', lt: '<' };
@@ -36,6 +37,9 @@ const RPC = {
   submit_lead: { params: ['p_name', 'p_contact', 'p_business', 'p_message', 'p_niche'], auth: false },
   list_clients: { params: [], auth: true },
   update_client: { params: ['p_tenant_id', 'p_monthly_fee', 'p_renewal_date', 'p_notes', 'p_status'], auth: true },
+  submit_signup_request: { params: ['p_business_name', 'p_slug', 'p_features', 'p_notes'], jsonb: ['p_features'], auth: true },
+  approve_signup_request: { params: ['p_request_id', 'p_niche'], auth: true },
+  decline_signup_request: { params: ['p_request_id'], auth: true },
 };
 
 class HttpError extends Error {
@@ -162,6 +166,22 @@ const server = http.createServer(async (req, res) => {
       const result = await login(email, password);
       if (!result) throw new HttpError(401, 'invalid credentials');
       return send(res, 200, result);
+    }
+    // ---- public self-serve signup: creates a bare login with no
+    // tenant_id yet (on_signup's guard skips the profiles row for it,
+    // same as a platform_admin) -- becomes a real tenant owner only
+    // once a platform_admin approves their signup_request. ----
+    if (url.pathname === '/auth/signup' && req.method === 'POST') {
+      const { email, password } = await readJsonBody(req);
+      if (!email || !password) throw new HttpError(400, 'email and password are required');
+      let created;
+      try {
+        created = await createUser({ email, password });
+      } catch (err) {
+        if (err.code === '23505') throw new HttpError(409, 'an account with that email already exists');
+        throw err;
+      }
+      return send(res, 200, { access_token: signToken(created), user: created });
     }
     if (url.pathname === '/auth/session' && req.method === 'GET') {
       if (!user) throw new HttpError(401, 'no session');

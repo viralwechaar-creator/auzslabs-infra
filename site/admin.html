@@ -82,6 +82,12 @@
         <div id="leadsList">Loading&hellip;</div>
       </section>
 
+      <section class="section tight" id="signupRequestsSection" style="display:none">
+        <div class="label">Self-serve signups</div>
+        <h2 class="h-2">Cart requests</h2>
+        <div id="signupRequestsList">Loading&hellip;</div>
+      </section>
+
       <section class="section tight" id="clientsSection" style="display:none">
         <div class="label">Your clients</div>
         <h2 class="h-2">Dashboard</h2>
@@ -140,9 +146,11 @@ async function checkSession() {
   if (session) {
     document.getElementById('loginSection').style.display = 'none';
     document.getElementById('leadsSection').style.display = 'block';
+    document.getElementById('signupRequestsSection').style.display = 'block';
     document.getElementById('clientsSection').style.display = 'block';
     document.getElementById('onboardSection').style.display = 'block';
     loadLeads();
+    loadSignupRequests();
     loadClients();
   }
 }
@@ -202,7 +210,53 @@ async function loadLeads() {
 }
 
 const NICHE_LABEL = { cafe: 'Cafe / Restaurant', salon: 'Salon', gym: 'Gym', retail: 'Retail', general: 'General' };
-const FEATURE_LABEL = { pos: 'POS', crm: 'CRM', booking: 'Booking', billing: 'Billing', self_order: 'Self-order', kds: 'Kitchen display' };
+const FEATURE_LABEL = { pos: 'POS', crm: 'CRM', booking: 'Booking', billing: 'Billing', self_order: 'Self-order', kds: 'Kitchen display', inventory: 'Inventory', qr: 'QR Ordering' };
+
+async function loadSignupRequests() {
+  const listEl = document.getElementById('signupRequestsList');
+  const { data, error } = await sb.from('signup_requests').select('*').order('created_at');
+  if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  const pending = (data || []).filter((r) => r.status === 'pending');
+  if (!pending.length) { listEl.innerHTML = '<p class="p">No pending signup requests.</p>'; return; }
+
+  const rows = pending.slice().reverse().map((r) => {
+    const services = Object.entries(r.features || {}).filter(([, on]) => on)
+      .map(([k]) => `<span class="feature-tag">${esc(FEATURE_LABEL[k] || k)}</span>`).join('') || '&mdash;';
+    return `
+    <tr data-id="${r.id}">
+      <td><b>${esc(r.business_name)}</b><br><span style="color:var(--ink-faint)">${esc(r.slug)}.auzslab.in</span></td>
+      <td>${services}</td>
+      <td>${r.notes ? esc(r.notes) : '&mdash;'}</td>
+      <td class="row-actions">
+        <button class="btn btn-primary" data-approve>Approve</button>
+        <button class="btn btn-ghost" data-decline>Decline</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  listEl.innerHTML = `<div class="admin-table-wrap"><table class="admin-table">
+    <tr><th>Business</th><th>Requested</th><th>Notes</th><th></th></tr>
+    ${rows}
+  </table></div>`;
+
+  listEl.querySelectorAll('tr[data-id]').forEach((tr) => {
+    const id = tr.dataset.id;
+    tr.querySelector('[data-approve]').onclick = async () => {
+      const niche = prompt('Niche for this tenant (cafe / salon / gym / retail / general)', 'general');
+      if (niche === null) return;
+      const { error: appErr } = await sb.rpc('approve_signup_request', { p_request_id: id, p_niche: niche.trim() || 'general' });
+      if (appErr) { alert(appErr.message); return; }
+      loadSignupRequests();
+      loadClients();
+    };
+    tr.querySelector('[data-decline]').onclick = async () => {
+      if (!confirm('Decline this request?')) return;
+      const { error: decErr } = await sb.rpc('decline_signup_request', { p_request_id: id });
+      if (decErr) { alert(decErr.message); return; }
+      loadSignupRequests();
+    };
+  });
+}
 
 async function loadClients() {
   const listEl = document.getElementById('clientsList');
