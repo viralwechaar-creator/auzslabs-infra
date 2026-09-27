@@ -153,6 +153,30 @@ button{font-family:inherit}
 .grid-3{display:grid;grid-template-columns:1fr;gap:12px}
 .grid-2{display:grid;grid-template-columns:1fr;gap:12px}
 
+/* ---------- zig-zag rows: alternating content/accent, not a flat stack ---------- */
+.zigzag{display:flex;flex-direction:column;gap:20px}
+.zigzag-row{display:grid;grid-template-columns:1fr;gap:16px}
+.zigzag-accent{
+  border:2px solid var(--ink);border-radius:20px;background:var(--bg-raised);
+  display:flex;flex-direction:column;justify-content:center;gap:6px;
+  padding:24px;min-height:120px;position:relative;overflow:hidden;
+}
+.zigzag-accent::before{
+  content:'';position:absolute;inset:0;
+  background-image:linear-gradient(var(--line-soft) 1px,transparent 1px),linear-gradient(90deg,var(--line-soft) 1px,transparent 1px);
+  background-size:20px 20px;opacity:.6;
+}
+.zigzag-num{font-family:var(--font-display);font-weight:700;font-size:38px;color:var(--ink-faint);position:relative;line-height:1}
+.zigzag-accent-label{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-dim);position:relative}
+.zigzag-accent.alt{background:var(--ink);border-color:var(--ink)}
+.zigzag-accent.alt .zigzag-num{color:rgba(255,255,255,.35)}
+.zigzag-accent.alt .zigzag-accent-label{color:rgba(255,255,255,.7)}
+@media (min-width:861px){
+  .zigzag-row{grid-template-columns:1.2fr 1fr;align-items:stretch;gap:32px}
+  .zigzag-row:nth-child(even){direction:rtl}
+  .zigzag-row:nth-child(even) > *{direction:ltr}
+}
+
 .dash{border-top:2px dashed var(--line);margin:0}
 
 .tag{
