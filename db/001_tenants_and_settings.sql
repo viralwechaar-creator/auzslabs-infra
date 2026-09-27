@@ -101,7 +101,10 @@ insert into niche_presets (niche, default_features, default_labels, default_busi
            '{"currency": "INR"}'),
 ('retail', '{"booking": false, "crm": true, "billing": true, "pos": true}',
            '{"catalog": "Products",   "resource": "Counter",  "booking": "Sale"}',
-           '{"currency": "INR", "tax_rate": 18}');
+           '{"currency": "INR", "tax_rate": 18}'),
+('general', '{"booking": false, "crm": true, "billing": true, "pos": true}',
+           '{"catalog": "Items",      "resource": "Counter",  "booking": "Sale"}',
+           '{"currency": "INR"}');
 
 -- Onboarding a new client becomes:
 --   1. insert into tenants (slug, name, niche) values (..., 'cafe');
