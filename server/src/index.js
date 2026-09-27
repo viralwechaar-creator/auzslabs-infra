@@ -214,7 +214,13 @@ const server = http.createServer(async (req, res) => {
     // ---- admin: provision-owner (was a Supabase Edge Function) ----
     if (url.pathname === '/admin/provision-owner' && req.method === 'POST') {
       if (!user) throw new HttpError(401, 'unauthorized');
-      const { rows } = await pool.query('select 1 from platform_admins where id = $1', [user.id]);
+      // platform_admins has RLS (id = app_uid()) -- a bare pool.query here
+      // never sets app.uid, so the row is invisible and this check fails
+      // for every caller regardless of admin status. Must go through
+      // withAuth like every other query that touches an RLS-protected table.
+      const { rows } = await withAuth(user.id, (client) =>
+        client.query('select 1 from platform_admins where id = $1', [user.id]),
+      );
       if (!rows.length) throw new HttpError(403, 'forbidden -- not a platform admin');
       const body = await readJsonBody(req);
       if (!body.tenant_id || !body.email) throw new HttpError(400, 'tenant_id and email are required');
