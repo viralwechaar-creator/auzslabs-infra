@@ -14,6 +14,8 @@
 # once a staff member logs in — same files for every tenant.
 *.{$DOMAIN} {
     root * /srv/app
+    # a stale cached service worker can pin clients to old code indefinitely
+    header /sw.js Cache-Control "no-cache"
     file_server
     try_files {path} /index.html
 }
@@ -23,15 +25,11 @@ status.{$DOMAIN} {
     reverse_proxy uptime-kuma:3001
 }
 
-# Self-hosted Supabase's own gateway (container alias "kong", port 8000).
-# Serves the REST/Auth/Storage/Realtime API *and* the Studio dashboard
-# (Studio is behind the DASHBOARD_USERNAME/PASSWORD basic auth baked into
-# the gateway itself, not set up again here). This is a more specific host
-# match than the *.{$DOMAIN} wildcard above, so Caddy routes it here first
-# regardless of block order.
-api.{$DOMAIN} {
-    reverse_proxy kong:8000
-}
+# NOTE: once there's a custom API/auth server (this project's own code, no
+# Supabase/Vercel/third-party platform), add its route here, e.g.:
+#   api.{$DOMAIN} {
+#       reverse_proxy api:PORT
+#   }
 
 # NOTE: the wildcard *.{$DOMAIN} above needs a DNS-01 challenge (a Caddy DNS
 # plugin for your registrar) for its certificate, not the plain HTTP
