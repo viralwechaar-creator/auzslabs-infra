@@ -310,6 +310,12 @@ button{font-family:inherit}
     transform:none;
     flex-direction:column;align-items:stretch;gap:32px;
     padding:28px 22px;
+    /* overflow-y:auto (set in the base rule for the mobile drawer) forces
+       overflow-x to clip too, per spec -- which was cutting off the
+       hover flyout since it renders outside the sidebar's own box
+       (right:100%). Desktop's compact nav fits without scrolling, so
+       drop the clip entirely instead of fighting it. */
+    overflow:visible;
   }
   .sidebar-logo img{max-width:132px}
   .drawer-close{display:none}
