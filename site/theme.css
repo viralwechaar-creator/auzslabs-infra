@@ -30,23 +30,16 @@ button{font-family:inherit}
   border-bottom:2px solid var(--ink);background:var(--bg);
   position:relative;z-index:25;
 }
+/* text menu button, not an icon — order:2 keeps it on the right of the
+   logo in the topbar's flex row */
 .hamburger{
-  width:34px;height:34px;border-radius:999px;flex-shrink:0;order:2;
-  border:2px solid var(--ink);background:transparent;color:var(--ink);
-  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  order:2;flex-shrink:0;display:flex;align-items:center;gap:8px;
+  padding:9px 18px;border-radius:999px;border:2px solid var(--ink);
+  background:transparent;color:var(--ink);cursor:pointer;
+  font-family:var(--font-mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;
+  transition:background .15s ease,color .15s ease;
 }
-.hamburger:hover{background:var(--ink);color:#fff}
-.hamburger-bars{width:15px;height:11px;position:relative}
-.hamburger-bars span{
-  position:absolute;left:0;width:100%;height:2px;background:currentColor;border-radius:2px;
-  transition:transform .25s ease,opacity .2s ease,top .25s ease;
-}
-.hamburger-bars span:nth-child(1){top:0}
-.hamburger-bars span:nth-child(2){top:4.5px}
-.hamburger-bars span:nth-child(3){top:9px}
-.hamburger.is-open .hamburger-bars span:nth-child(1){top:4.5px;transform:rotate(45deg)}
-.hamburger.is-open .hamburger-bars span:nth-child(2){opacity:0}
-.hamburger.is-open .hamburger-bars span:nth-child(3){top:4.5px;transform:rotate(-45deg)}
+.hamburger:hover,.hamburger.is-open{background:var(--ink);color:#fff}
 .topbar-logo{order:1}
 /* the logo is deliberately pixel-art — browsers blur/anti-alias it when
    scaled down by default, which is what made it look like garbled mush
@@ -228,11 +221,47 @@ button{font-family:inherit}
 }
 
 /* ---------- footer ---------- */
-.footer{border-top:2px solid var(--ink);padding:24px 0 40px;display:flex;flex-direction:column;gap:16px;color:var(--ink-dim);font-size:11px;font-family:var(--font-mono)}
-.footer-brand{display:flex;flex-direction:column;gap:10px}
-.footer-contact{display:flex;flex-wrap:wrap;gap:14px}
-.footer-contact a{color:var(--ink-faint);transition:color .15s ease}
-.footer-contact a:hover{color:var(--accent)}
+/* ---------- footer: black panel, wordmark, newsletter, back-to-top ---------- */
+.footer-dark{
+  background:var(--ink);color:rgba(255,255,255,.6);
+  border-radius:28px 28px 0 0;margin-top:40px;
+  padding:44px 0 28px;
+}
+.footer-top{display:grid;grid-template-columns:1fr;gap:28px;padding-bottom:32px;border-bottom:1px solid rgba(255,255,255,.14)}
+.footer-col-brand .brand-mark{color:#fff;font-size:26px}
+.footer-tagline{font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,.45);margin-top:10px}
+.footer-col{display:flex;flex-direction:column;gap:10px}
+.footer-col-title{font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:2px}
+.footer-col a{font-size:13px;color:rgba(255,255,255,.65);transition:color .15s ease}
+.footer-col a:hover{color:var(--accent)}
+
+.footer-newsletter{display:flex;flex-direction:column;gap:16px;padding:28px 0;border-bottom:1px solid rgba(255,255,255,.14)}
+.footer-newsletter-label{font-family:var(--font-display);font-weight:600;font-size:24px;color:#fff;line-height:1.15}
+.footer-newsletter-form{display:flex;gap:8px}
+.footer-newsletter-form input{
+  flex:1;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:999px;
+  padding:12px 18px;color:#fff;font-family:var(--font-body);font-size:13px;min-width:0;
+}
+.footer-newsletter-form input::placeholder{color:rgba(255,255,255,.4)}
+.footer-newsletter-form input:focus{outline:none;border-color:var(--accent)}
+.footer-newsletter-form button{
+  width:44px;height:44px;border-radius:999px;background:var(--accent);border:none;color:#fff;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;
+  transition:transform .18s ease;
+}
+.footer-newsletter-form button:hover{transform:translateX(2px)}
+.footer-contact-inline a{font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,.4)}
+
+.footer-bottom{display:flex;flex-direction:column;gap:16px;padding-top:24px;align-items:flex-start}
+.footer-top-btn{
+  display:inline-flex;align-items:center;gap:10px;padding:6px 8px 6px 20px;border-radius:999px;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:#fff;
+  font-family:var(--font-mono);font-size:11px;letter-spacing:.03em;cursor:pointer;
+  transition:background .15s ease;
+}
+.footer-top-btn:hover{background:rgba(255,255,255,.16)}
+.footer-top-icon{width:24px;height:24px;border-radius:999px;background:#fff;color:var(--ink);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.footer-copy{font-family:var(--font-mono);font-size:10px;color:rgba(255,255,255,.35)}
 
 /* ---------- floating knock trigger ---------- */
 .knock-btn{
@@ -307,18 +336,25 @@ button{font-family:inherit}
   box-shadow:0 -30px 60px -30px rgba(23,23,23,.2);
 }
 .stack-panel:nth-of-type(1){top:0;z-index:1}
-.stack-panel:nth-of-type(2){top:44px;z-index:2}
-.stack-panel:nth-of-type(3){top:72px;z-index:3}
-.stack-panel:nth-of-type(4){top:100px;z-index:4}
+.stack-panel:nth-of-type(2){top:112px;z-index:2}
+.stack-panel:nth-of-type(3){top:194px;z-index:3}
+.stack-panel:nth-of-type(4){top:276px;z-index:4}
 .stack-panel.alt{background-color:var(--bg-raised);background-blend-mode:normal}
+.stack-panel{overflow:hidden}
+/* extra headroom so the huge title (below) has room before the panel's
+   own content starts -- the hero (first panel) doesn't need it, it has
+   no title */
+.stack-panel:not(:first-of-type){padding-top:150px}
+/* the section name prints as huge bold type at the panel's own top
+   edge instead of a small tab -- the next panel's higher z-index
+   covers the lower half of it as it slides in, so only the top half
+   ever reads as "peeking out" above the panel that follows it */
 .stack-panel:not(:first-of-type)::before{
   content:attr(data-tab);
-  position:absolute;top:0;left:0;transform:translateY(-100%);
-  font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;
-  background:var(--ink);color:#fff;padding:7px 16px 9px;
-  border-radius:0 12px 0 0;
-  box-shadow:0 8px 16px -6px rgba(23,23,23,.5);
-  z-index:20;
+  position:absolute;top:0;left:20px;
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(56px,16vw,130px);line-height:.85;letter-spacing:-.02em;
+  color:var(--ink);pointer-events:none;white-space:nowrap;
 }
 .stack-panel .wrap{width:100%;position:relative}
 .reveal{opacity:0;transform:translateY(16px);transition:opacity .7s ease, transform .7s ease}
@@ -355,8 +391,8 @@ button{font-family:inherit}
   .nav-submenu{
     display:block;grid-template-rows:none;
     position:absolute;top:-10px;right:100%;margin-right:16px;
-    width:250px;background:#fff;border:2px solid var(--ink);border-radius:18px;
-    padding:10px;box-shadow:10px 10px 0 var(--ink);
+    width:264px;background:#fff;border:2px solid var(--ink);border-radius:18px;
+    padding:14px;box-shadow:10px 10px 0 var(--ink);
     opacity:0;pointer-events:none;transform:translateX(10px) scale(.97);transform-origin:top right;
     transition:opacity .18s ease,transform .18s ease;
   }
@@ -365,8 +401,8 @@ button{font-family:inherit}
   .nav-group-toggle[aria-expanded="true"] + .nav-submenu{
     opacity:1;pointer-events:auto;transform:translateX(0) scale(1);
   }
-  .nav-submenu-inner{overflow:visible;display:flex;flex-direction:column;gap:2px}
-  .nav-sublink{color:var(--ink-dim);padding:10px 12px}
+  .nav-submenu-inner{overflow:visible;display:flex;flex-direction:column;gap:5px}
+  .nav-sublink{color:var(--ink-dim);padding:12px 14px}
   .nav-sublink:hover{color:var(--ink);background:var(--bg-raised)}
   .nav-sublink.is-disabled{color:var(--ink-faint)}
   .nav-sublink-icon{opacity:.7}
@@ -400,15 +436,20 @@ button{font-family:inherit}
   .hero-art .orb-sm{width:120px;height:120px;left:36px;bottom:36px;opacity:.6}
   .hero-art .orb-sm::after{content:'';position:absolute;inset:28px;border-radius:50%;background:var(--ink)}
   .hero-art-tag{position:absolute;z-index:1;background:#fff}
-  .footer{flex-direction:row;justify-content:space-between;align-items:flex-start;padding:32px 0 56px}
+  .footer-dark{border-radius:40px 40px 0 0;padding:56px 0 36px}
+  .footer-top{grid-template-columns:1.4fr 1fr 1fr 1fr;gap:32px}
+  .footer-newsletter{flex-direction:row;align-items:center;justify-content:space-between}
+  .footer-newsletter-form{width:320px}
+  .footer-bottom{flex-direction:row;justify-content:space-between;align-items:center}
   .knock-btn{right:32px;bottom:32px}
   .modal{padding:36px}
   .stack{margin-top:0}
   .stack-panel{border-radius:10px 36px 0 0;padding:96px 0 80px}
-  .stack-panel:nth-of-type(2){top:56px}
-  .stack-panel:nth-of-type(3){top:92px}
-  .stack-panel:nth-of-type(4){top:128px}
-  .stack-panel:not(:first-of-type)::before{font-size:12px;padding:9px 20px 11px}
+  .stack-panel:not(:first-of-type){padding-top:190px}
+  .stack-panel:nth-of-type(2){top:150px}
+  .stack-panel:nth-of-type(3){top:260px}
+  .stack-panel:nth-of-type(4){top:370px}
+  .stack-panel:not(:first-of-type)::before{left:56px}
 }
 
 @media (prefers-reduced-motion: reduce){

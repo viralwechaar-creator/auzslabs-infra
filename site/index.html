@@ -16,7 +16,7 @@
 <meta name="twitter:title" content="AUZslab">
 <meta name="twitter:description" content="Software, built for how you actually work.">
 <link rel="icon" href="/logo.png">
-<link rel="stylesheet" href="theme.css?v=24">
+<link rel="stylesheet" href="theme.css?v=25">
 <link rel="stylesheet" href="design-system/ui-kit.css?v=1">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script type="application/ld+json">
@@ -28,7 +28,7 @@
 <div class="shell">
   <header class="topbar">
     <button class="hamburger" id="menuToggle" aria-label="Open menu" aria-expanded="false">
-      <span class="hamburger-bars"><span></span><span></span><span></span></span>
+      <span class="menu-btn-label">Menu</span>
     </button>
     <a href="index.html" class="topbar-logo"><img src="logo.png" alt="AUZslab"></a>
   </header>
@@ -127,7 +127,7 @@
         </div>
       </section>
 
-      <section class="stack-panel alt" data-tab="02 — How we work">
+      <section class="stack-panel alt" data-tab="WORK">
         <div class="wrap">
           <div class="hero-visual reveal" role="presentation" style="margin-bottom:28px">
             <div class="grid-lines"></div>
@@ -154,7 +154,7 @@
         </div>
       </section>
 
-      <section class="stack-panel" data-tab="03 — What we build">
+      <section class="stack-panel" data-tab="BUILD">
         <div class="wrap">
           <div class="label reveal">What we build</div>
           <h2 class="h-1 reveal" style="max-width:9em">Modules, not monoliths.</h2>
@@ -188,24 +188,52 @@
     </div>
 
     <div class="wrap">
-      <footer class="footer">
-        <div class="footer-brand">
-          <span>AUZslab — software, built in-house.</span>
-          <div class="footer-contact">
-            <a href="tel:+918005673683">+91 80056 73683</a>
-            <a href="tel:+918302723179">+91 83027 23179</a>
-            <a href="mailto:helloauzslab@gmail.com">helloauzslab@gmail.com</a>
-            <a href="https://instagram.com/auzslab" target="_blank" rel="noopener noreferrer">@auzslab</a>
+      <footer class="footer-dark">
+        <div class="wrap">
+          <div class="footer-top">
+            <div class="footer-col footer-col-brand">
+              <span class="brand-mark">AUZ<span class="brand-accent">slab</span></span>
+              <p class="footer-tagline">Software, built in-house.</p>
+            </div>
+            <div class="footer-col">
+              <div class="footer-col-title">Explore</div>
+              <a href="index.html">Home</a>
+              <a href="products.html">Products</a>
+              <a href="platform.html">Platform</a>
+              <a href="pricing.html">Pricing</a>
+            </div>
+            <div class="footer-col">
+              <div class="footer-col-title">Connect</div>
+              <a href="contact.html">Contact</a>
+              <a href="https://instagram.com/auzslab" target="_blank" rel="noopener noreferrer">Instagram</a>
+              <a href="mailto:helloauzslab@gmail.com">Email</a>
+              <a href="tel:+918005673683">Call</a>
+            </div>
+            <div class="footer-col">
+              <div class="footer-col-title">Legal</div>
+              <a href="terms.html">Terms &amp; Conditions</a>
+              <a href="privacy.html">Privacy Policy</a>
+            </div>
+          </div>
+
+          <div class="footer-newsletter">
+            <div class="footer-newsletter-label">AUZslab<br>in your inbox</div>
+            <form class="footer-newsletter-form" data-newsletter-form>
+              <input type="email" placeholder="name@example.com" required>
+              <button type="submit" aria-label="Subscribe">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </button>
+            </form>
+          </div>
+
+          <div class="footer-bottom">
+            <button class="footer-top-btn" data-scroll-top>
+              Back to top
+              <span class="footer-top-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
+            </button>
+            <span class="footer-copy">&copy; 2026 AUZslab. All rights reserved.</span>
           </div>
         </div>
-        <span style="display:flex;gap:18px;flex-wrap:wrap">
-          <a href="products.html" style="color:var(--ink-faint)">Products</a>
-          <a href="platform.html" style="color:var(--ink-faint)">Platform</a>
-          <a href="pricing.html" style="color:var(--ink-faint)">Pricing</a>
-          <a href="contact.html" style="color:var(--ink-faint)">Contact</a>
-          <a href="terms.html" style="color:var(--ink-faint)">Terms</a>
-          <a href="privacy.html" style="color:var(--ink-faint)">Privacy</a>
-        </span>
       </footer>
     </div>
 

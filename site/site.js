@@ -59,22 +59,25 @@
       } catch (e) {}
     }
 
-    // ---- hamburger drawer (half-width slide-in nav) ----
+    // ---- menu button drawer (full-screen slide-in nav) ----
     var menuToggle = $('#menuToggle');
     var sidebarDrawer = $('#sidebarDrawer');
     var drawerOverlay = $('#drawerOverlay');
+    var menuToggleLabel = menuToggle ? menuToggle.querySelector('.menu-btn-label') : null;
     if (menuToggle && sidebarDrawer && drawerOverlay) {
       function openDrawer() {
         sidebarDrawer.classList.add('open');
         drawerOverlay.classList.add('open');
         menuToggle.classList.add('is-open');
         menuToggle.setAttribute('aria-expanded', 'true');
+        if (menuToggleLabel) menuToggleLabel.textContent = 'Close';
       }
       function closeDrawer() {
         sidebarDrawer.classList.remove('open');
         drawerOverlay.classList.remove('open');
         menuToggle.classList.remove('is-open');
         menuToggle.setAttribute('aria-expanded', 'false');
+        if (menuToggleLabel) menuToggleLabel.textContent = 'Menu';
       }
       menuToggle.addEventListener('click', function () {
         if (sidebarDrawer.classList.contains('open')) closeDrawer(); else openDrawer();
@@ -83,6 +86,22 @@
       var drawerClose = $('#drawerClose');
       if (drawerClose) drawerClose.addEventListener('click', closeDrawer);
     }
+
+    // ---- footer: back-to-top + newsletter (visual only, no backend yet) ----
+    $all('[data-scroll-top]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+    $all('[data-newsletter-form]').forEach(function (form) {
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var input = form.querySelector('input');
+        var btn = form.querySelector('button');
+        if (btn) btn.innerHTML = '&check;';
+        if (input) input.value = '';
+      });
+    });
 
     // ---- expandable nav groups (Products / Business types / Resources) ----
     $all('.nav-group-toggle').forEach(function (btn) {
