@@ -23,6 +23,37 @@
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"Organization","name":"AUZslab","url":"https://auzslab.in","logo":"https://auzslab.in/logo.png","description":"AUZslab builds point of sale, CRM, and business software in-house."}
 </script>
+<style>
+/* ---- home page only: the menu stays a button-triggered drawer on
+   desktop too, instead of theme.css's persistent always-open sidebar
+   every other page uses -- reusing the exact same drawer/overlay
+   markup and site.js toggle, just letting the mobile off-canvas
+   state through at desktop widths here instead of overriding it to
+   "fixed open, 240px". ---- */
+@media (min-width:861px){
+  .shell{flex-direction:column}
+  .topbar{display:flex}
+  .sidebar{
+    position:fixed;top:0;right:0;left:auto;bottom:0;width:100%;max-width:420px;height:100%;
+    transform:translateX(100%);
+  }
+  .sidebar.open{transform:translateX(0)}
+  .content{margin-right:0}
+  .drawer-overlay{display:block}
+
+  /* hero: text stays a normal-width column on the left: the logo
+     used to share a 50/50 grid column with it -- now it's one big
+     mark anchored to the panel's own bottom-right corner instead,
+     same idea as the reference's giant wordmark in the corner. */
+  .home-hero{position:relative}
+  .home-hero .wrap{max-width:640px}
+  .home-hero .hero-art{
+    position:absolute;right:24px;bottom:90px;margin:0;
+    width:min(46vw,480px);justify-content:flex-end;pointer-events:none;
+  }
+  .home-hero .hero-art-logo{width:100%;max-width:none}
+}
+</style>
 </head>
 <body data-auto-knock="true">
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
@@ -125,8 +156,8 @@
 
     <div class="stack">
 
-      <section class="stack-panel">
-        <div class="wrap hero-grid">
+      <section class="stack-panel home-hero">
+        <div class="wrap">
           <div>
             <h1 class="label">AUZslab</h1>
             <p class="h-hero reveal in">Software, built for how you actually work.</p>
@@ -146,9 +177,9 @@
               <span class="hero-service">Payroll</span>
             </div>
           </div>
-          <div class="hero-art reveal" role="presentation">
-            <img class="hero-art-logo" src="logo.png" alt="" aria-hidden="true">
-          </div>
+        </div>
+        <div class="hero-art reveal" role="presentation">
+          <img class="hero-art-logo" src="logo.png" alt="" aria-hidden="true">
         </div>
       </section>
 
