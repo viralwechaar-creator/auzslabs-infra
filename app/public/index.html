@@ -155,6 +155,10 @@ const cfg=()=>({name:'My Restaurant',addr:'',phone:'',gstin:'',tax:5,prefix:'INV
 // salon/gym/retail tenants -- gated the same way as any other feature,
 // just off the owner-set business type instead of an admin-set flag.
 const isRestaurant=()=>['restaurant','cafe'].includes(cfg().bizType||'restaurant');
+// Retail: clothing/apparel-style shops that stock size+color variants
+// instead of a recipe of shared ingredients -- billing, barcode scan and
+// stock deduction all branch off this the same way isRestaurant() does.
+const isRetail=()=>cfg().bizType=='retail';
 // Legacy default for any staffer with no custom role assigned yet
 // (role_id null) -- reproduces the OLD hardcoded behavior exactly
 // (everything but menu/settings, plus billing for a plain-text
@@ -236,7 +240,7 @@ function syncNow(){return navigator.locks?navigator.locks.request('pos-sync',{},
 function tot(o){const sub=r2(o.lines.reduce((a,l)=>a+l.price*l.qty,0)),d=o.disc?r2(Math.min(sub,o.disc.t=='%'?sub*o.disc.v/100:o.disc.v)):0,tax=r2((sub-d)*cfg().tax/100),ex=sub-d+tax,total=Math.round(ex);return{sub,d,tax,round:r2(total-ex),total}}
 function localNo(){const n=(+localStorage.n||0)+1;localStorage.n=n;const d=localStorage.dev||(localStorage.dev=Math.random().toString(36).slice(2,4).toUpperCase());return cfg().prefix+'-'+d+'-'+String(n).padStart(4,'0')}
 async function nextNo(){if(navigator.onLine){try{const{data,error}=await sb.rpc('next_invoice_no',{prefix:cfg().prefix});if(!error&&data)return data}catch{}}return localNo()+'~'}
-const newOrder=()=>({id:uid(),type:'Dine-in',table:null,lines:[],status:'open',created:now(),by:S.user.id,cust:{}});
+const newOrder=()=>({id:uid(),type:isRetail()?'Sale':'Dine-in',table:null,lines:[],status:'open',created:now(),by:S.user.id,cust:{}});
 async function persist(){const o=S.cur;if(!o.no)o.no=await nextNo();o.t=tot(o);await save('order',o,o.id)}
 function mk(o){const n=o.lines.filter(l=>l.qty>l.sent).map(l=>({n:l.name+(l.size?' ('+l.size+')':''),q:l.qty-l.sent,s:l.st||'Kitchen'})),k=o.kstat=='new';o.lines.forEach(l=>l.sent=l.qty);if(n.length){o.knew=(k?o.knew||[]:[]).concat(n);o.kstat='new';o.ktime=o.ktime&&k?o.ktime:now()}return n}
 /* printing (80mm friendly) + whatsapp */
@@ -313,7 +317,12 @@ function validCoupon(code){const c=L('coupon').find(x=>x.code==code.trim().toUpp
 function pickReason(cb){const reasons=L('reason');if(!reasons.length){const r=prompt('Reason');if(r)cb(r.trim());return}
  const x=modal(h('h3',{},'Select a reason'),...reasons.map(rn=>h('button',{onclick:()=>{x();cb(rn.name)}},rn.name)),h('button',{onclick:()=>{x();const r=prompt('Other reason');if(r)cb(r.trim())}},'Other…'),h('button',{class:'warn',onclick:()=>x()},'Cancel'))}
 /* selling */
-function addLine(i,sz,p,note){const l=!note&&S.cur.lines.find(x=>x.id==i.id&&x.size==sz&&x.price==p&&!x.note);l?l.qty++:S.cur.lines.push({id:i.id,name:i.name,size:sz,price:p,qty:1,sent:0,st:i.st||'Kitchen',note});render()}
+// variant (retail only) carries {size,color} straight off the item's own
+// variants[] row -- kept separate from sz/l.size (a display string, e.g.
+// "M / Blue") so deduVariant() can match the exact stock row on sale
+// without re-parsing that string back apart.
+function addLine(i,sz,p,note,variant){const l=!note&&S.cur.lines.find(x=>x.id==i.id&&x.size==sz&&x.price==p&&!x.note&&(x.variant?.color||'')==(variant?.color||'')&&(x.variant?.size||'')==(variant?.size||''));l?l.qty++:S.cur.lines.push({id:i.id,name:i.name,size:sz,price:p,qty:1,sent:0,st:i.st||'Kitchen',note,variant});render()}
+function variant(i){const x=modal(h('h3',{},i.name),...(i.variants||[]).map(v=>h('button',{onclick:()=>{if(v.qty<=0&&!confirm('This variant shows 0 in stock. Add anyway?'))return;x();addLine(i,v.size+(v.color?' / '+v.color:''),i.price,undefined,{size:v.size,color:v.color})}},v.size+(v.color?' / '+v.color:'')+' — '+(v.qty>0?v.qty+' in stock':'Out of stock'))))}
 function pickMods(i,sz,p){const mods=(i.mods||[]).map(m=>{const[n,v]=m.split(':');return{n:n.trim(),v:+v||0}});if(!mods.length)return addLine(i,sz,p);
  const boxes=mods.map(m=>({m,cb:h('input',{type:'checkbox'})}));
  const x=modal(h('h3',{},i.name),...boxes.map(b=>h('label',{style:'display:flex;gap:8px;align-items:center'},b.cb,b.m.n+(b.m.v?' (+'+inr(b.m.v)+')':''))),h('button',{class:'p',onclick:()=>{const picked=boxes.filter(b=>b.cb.checked).map(b=>b.m);const price=p+r2(picked.reduce((a,m)=>a+m.v,0)),note=picked.map(m=>m.n).join(', ')||undefined;x();addLine(i,sz,price,note)}},'Add'))}
@@ -347,10 +356,16 @@ addEventListener('keydown',e=>{
   e.preventDefault();
   const code=scanBuf;scanBuf='';
   if(code.length<3)return;
-  const it=L('item').find(x=>x.barcode&&x.barcode==code);
+  // Item-level barcode (restaurant-style, one code per item) first, then
+  // fall through to every item's own variant barcodes (retail: each
+  // size/color has its own code) -- a scan should resolve straight to
+  // the exact variant, skipping the picker modal entirely.
+  let it=L('item').find(x=>x.barcode&&x.barcode==code),vr=null;
+  if(!it)for(const x of L('item')){const found=(x.variants||[]).find(v=>v.barcode&&v.barcode==code);if(found){it=x;vr=found;break}}
   if(!it)return alert('No item matches barcode: '+code);
   if(itemOff(it))return alert(it.name+' is currently sold out.');
-  it.sizes&&it.sizes.length?size(it):pickMods(it,'',it.price);
+  if(vr){if(vr.qty<=0&&!confirm('This variant shows 0 in stock. Add anyway?'))return;addLine(it,vr.size+(vr.color?' / '+vr.color:''),it.price,undefined,{size:vr.size,color:vr.color})}
+  else it.sizes&&it.sizes.length?size(it):pickMods(it,'',it.price);
  }else if(e.key.length==1)scanBuf+=e.key;
 });
 function qty(l,d){const o=S.cur;
@@ -400,15 +415,21 @@ async function kot(){const o=S.cur;if(!o.lines.some(l=>l.qty>l.sent))return aler
 // until real usage accumulates, rather than a forecast faked from
 // nothing.
 async function dedu(o){for(const l of o.lines){const it=R[l.id];if(!it||!it.data.rec)continue;for(const p of it.data.rec.split(',')){const[n,q]=p.split(':'),g=L('ing').find(x=>x.name.toLowerCase()==n.trim().toLowerCase());if(g&&+q){const used=q*l.qty;g.qty=r2(g.qty-used);g.usage=(g.usage||[]).concat({q:used,d:today(),at:now()}).slice(-200);await save('ing',g,g.id)}}}}
+// Retail stock deduction: an item with variants[] gets its matched
+// size+color row decremented directly on sale -- no shared-ingredient
+// recipe involved, unlike dedu() above. Runs unconditionally alongside
+// dedu() and no-ops for any line with no variant match, so it costs
+// nothing for non-retail tenants or mixed-catalog edge cases.
+async function deduVariant(o){for(const l of o.lines){const it=R[l.id];if(!it||!it.data.variants||!it.data.variants.length||!l.variant)continue;const v=it.data.variants.find(x=>x.size==l.variant.size&&(x.color||'')==(l.variant.color||''));if(v){v.qty=r2((v.qty||0)-l.qty);await save('item',it.data,it.data.id)}}}
 function pay(){const o=S.cur;if(!o.lines.length)return;if(!(o.cust.name||'').trim()||!(o.cust.phone||'').trim())return alert('Customer name and phone number are required before payment.');o.t=tot(o);
  // Re-opening a Due/credit order to settle it must start from what was
  // ALREADY collected, not an empty list -- otherwise re-settling silently
  // forgot every earlier part-payment and asked for the full total again.
  const P=(o.pays||[]).slice(),due=()=>r2(o.t.total-P.reduce((a,x)=>a+x.amt,0));
- const amt=h('input',{type:'number',value:o.t.total}),info=h('b'),list=h('div'),done=h('button',{class:'p',disabled:true,onclick:async()=>{o.pays=P;if(o.loyaltyRedeemed)o.loyaltyRedeemed=o.t.d;o.change=Math.max(-due(),0);o.status='paid';o.paidAt=now();o.tok=o.tok||tok();if(!o.no||o.no.endsWith('~'))o.no=await nextNo();await dedu(o);mk(o);o.printCount=(o.printCount||0)+1;await persist();x();prnInv(rcpt(o,false));
+ const amt=h('input',{type:'number',value:o.t.total}),info=h('b'),list=h('div'),done=h('button',{class:'p',disabled:true,onclick:async()=>{o.pays=P;if(o.loyaltyRedeemed)o.loyaltyRedeemed=o.t.d;o.change=Math.max(-due(),0);o.status='paid';o.paidAt=now();o.tok=o.tok||tok();if(!o.no||o.no.endsWith('~'))o.no=await nextNo();await dedu(o);await deduVariant(o);if(!isRetail())mk(o);o.printCount=(o.printCount||0)+1;await persist();x();prnInv(rcpt(o,false));
   const url=location.origin+'/i.html?o='+encodeURIComponent(o.tok),cm=modal(h('h3',{},'Payment complete · '+inrc(o.t.total)),h('div',{class:'row'},h('button',{class:'p',onclick:()=>wa(o)},'Send bill'),h('button',{onclick:()=>open(url,'_blank')},'Open'),h('button',{onclick:()=>cm()},'Done')));
   S.cur=null;render()}},'Complete and print');
- const asDue=h('button',{disabled:true,onclick:async()=>{o.pays=P;if(o.loyaltyRedeemed)o.loyaltyRedeemed=o.t.d;o.status='due';o.dueAt=now();o.tok=o.tok||tok();if(!o.no||o.no.endsWith('~'))o.no=await nextNo();mk(o);await persist();x();S.cur=null;render()}},'Save as due (credit)');
+ const asDue=h('button',{disabled:true,onclick:async()=>{o.pays=P;if(o.loyaltyRedeemed)o.loyaltyRedeemed=o.t.d;o.status='due';o.dueAt=now();o.tok=o.tok||tok();if(!o.no||o.no.endsWith('~'))o.no=await nextNo();if(!isRetail())mk(o);await persist();x();S.cur=null;render()}},'Save as due (credit)');
  const up=()=>{list.replaceChildren(...P.map(p=>h('div',{class:'row'},p.m.toUpperCase(),inr(p.amt))));info.textContent=due()>0?'Due '+inr(due()):'Change to return '+inr(-due());amt.value=Math.max(due(),0);done.disabled=due()>0;asDue.disabled=due()<=0||!can('m')};
  const splitEq=()=>{const n=+prompt('Split between how many people?','2');if(n>1)amt.value=Math.ceil(due()/n)};
  const splitItem=()=>{const v=prompt(o.lines.map((l,i)=>(i+1)+'. '+l.name+' x'+l.qty).join('\n')+'\nItem numbers to pay now (e.g. 1,3)');if(!v)return;const idxs=v.split(',').map(s=>+s.trim());const q=idxs.reduce((a,i)=>{const l=o.lines[i-1];return a+(l?l.price*l.qty:0)},0);if(q)amt.value=Math.min(due(),Math.ceil(o.t.total*q/(o.t.sub||1)))};
@@ -419,7 +440,7 @@ async function refund(o){if(!can('m'))return alert('Manager only');if(dayLocked(
 async function voidOrder(o){if(!can('m'))return alert('Manager only');if(o.status=='paid'&&dayLocked(new Date(o.paidAt).toLocaleDateString('en-CA'))&&!can('o'))return alert('This day is closed. Ask an owner to reopen it first.');
  pickReason(async reason=>{const c=structuredClone(o);c.status='void';c.voidReason=reason;await save('order',c,c.id);await save('voidlog',{order:c.id,no:c.no,reason,by:S.user.email||S.user.id,at:now()});render()})}
 async function reprint(o){const dup=(o.printCount||0)>0;const c=structuredClone(o);c.printCount=(c.printCount||0)+1;await save('order',c,c.id);prnInv(rcpt(o,dup))}
-V.pos=()=>{const o=S.cur||(S.cur=newOrder()),cats=L('cat').sort((a,b)=>a.n-b.n),q=S.q.toLowerCase(),t=tot(o);if(!cats.some(c=>c.id==S.cat))S.cat=cats[0]&&cats[0].id;
+V.pos=()=>{const isR=isRetail(),o=S.cur||(S.cur=newOrder()),cats=L('cat').sort((a,b)=>a.n-b.n),q=S.q.toLowerCase(),t=tot(o);if(!cats.some(c=>c.id==S.cat))S.cat=cats[0]&&cats[0].id;
  const its=L('item').filter(i=>!itemOff(i)&&(q?i.name.toLowerCase().includes(q):i.cat==S.cat)).sort((a,b)=>a.name.localeCompare(b.name));
  // Due orders already had the discount granted and the receipt printed
  // -- only void ones didn't really happen -- so they count toward past
@@ -427,12 +448,15 @@ V.pos=()=>{const o=S.cur||(S.cur=newOrder()),cats=L('cat').sort((a,b)=>a.n-b.n),
  // way to reuse a single-use coupon or the same loyalty points forever.
  const phone=(o.cust.phone||'').replace(/\D/g,''),hist=phone.length>=10?L('order').filter(x=>x.id!=o.id&&(x.status=='paid'||x.status=='due')&&(x.cust||{}).phone&&x.cust.phone.replace(/\D/g,'')==phone):[];
  return h('div',{class:'g pos-g'},h('div',{},
-  h('div',{class:'row'},...['Dine-in','Takeaway','Delivery'].map(x=>h('button',{class:o.type==x?'on':'',onclick:()=>{o.type=x;if(x=='Delivery')o.src=prompt('Source (Zomato / Swiggy / Website)',o.src||'Zomato')||'';if(x!='Dine-in')o.table=null;render()}},x)),
-   o.type=='Dine-in'?h('select',{onchange:e=>pickTable(e.target.value)},h('option',{value:''},'Table'),...L('table').sort((a,b)=>a.name.localeCompare(b.name,0,{numeric:true})).map(x=>h('option',{value:x.id,selected:o.table==x.id},x.name+(busyT(x.id)?' (open)':'')))):null,
+  // Dine-in/Takeaway/Delivery, the table picker and the floor plan are
+  // restaurant concepts with no retail equivalent -- a clothing-store
+  // sale is just a sale, no seating or dispatch involved.
+  isR?null:h('div',{class:'row'},...['Dine-in','Takeaway','Delivery'].map(x=>h('button',{class:o.type==x?'on':'',onclick:()=>{o.type=x;if(x=='Delivery')o.src=prompt('Source (Zomato / Swiggy / Website)',o.src||'Zomato')||'';if(x!='Dine-in')o.table=null;render()}},x))),
+  h('div',{class:'row'},isR?null:(o.type=='Dine-in'?h('select',{onchange:e=>pickTable(e.target.value)},h('option',{value:''},'Table'),...L('table').sort((a,b)=>a.name.localeCompare(b.name,0,{numeric:true})).map(x=>h('option',{value:x.id,selected:o.table==x.id},x.name+(busyT(x.id)?' (open)':'')))):null),
    h('input',{placeholder:'Search item',value:S.q,onchange:e=>{S.q=e.target.value;render()}})),
-  o.type=='Dine-in'&&isRestaurant()?floorPlan(o):null,
+  (!isR&&o.type=='Dine-in'&&isRestaurant())?floorPlan(o):null,
   h('div',{class:'row',style:'justify-content:flex-start'},...cats.map(c=>h('button',{class:c.id==S.cat&&!q?'on':'',onclick:()=>{S.cat=c.id;S.q='';render()}},c.name))),
-  h('div',{class:'items'},...its.map(i=>h('button',{onclick:()=>i.sizes&&i.sizes.length?size(i):pickMods(i,'',i.price)},h('b',{},i.name),h('br'),i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price)))),its.length?null:h('p',{},cats.length?'No items here.':'Add categories and items in the Menu tab.')),
+  h('div',{class:'items'},...its.map(i=>h('button',{onclick:()=>isR&&i.variants&&i.variants.length?variant(i):(i.sizes&&i.sizes.length?size(i):pickMods(i,'',i.price))},h('b',{},i.name),h('br'),isR?inr(i.price)+' · '+variantQty(i)+' in stock':(i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price))))),its.length?null:h('p',{},cats.length?'No items here.':'Add categories and items in the Menu tab.')),
  h('div',{class:'card'},h('h3',{},o.no?'Order '+o.no:'New order'),...o.lines.map(l=>h('div',{class:'row'},h('span',{},l.name+(l.size?' ('+l.size+')':'')+(l.note?' — '+l.note:'')),h('span',{},h('button',{onclick:()=>qty(l,-1)},'−'),' '+l.qty+' ',h('button',{onclick:()=>qty(l,1)},'+')),h('b',{},inr(l.price*l.qty)))),
   o.lines.length?null:h('p',{},'Tap an item to add it.'),
   h('div',{class:'row'},h('input',{placeholder:'Customer name *',style:'width:48%',value:o.cust.name||'',oninput:e=>o.cust.name=e.target.value}),h('input',{placeholder:'Phone *',style:'width:48%',value:o.cust.phone||'',oninput:e=>{o.cust.phone=e.target.value;clearTimeout(S.phoneT);S.phoneT=setTimeout(render,700)}})),
@@ -441,9 +465,9 @@ V.pos=()=>{const o=S.cur||(S.cur=newOrder()),cats=L('cat').sort((a,b)=>a.n-b.n),
   h('div',{class:'row'},'Subtotal',inr(t.sub)),h('div',{class:'row'},h('span',{},'Discount ',can('m')?h('button',{onclick:()=>{const v=prompt('Discount, like 10% or 50');if(v==null)return;o.disc=v?{t:v.includes('%')?'%':'₹',v:parseFloat(v)||0}:null;o.coupon=null;o.loyaltyRedeemed=0;render()}},'Set'):null),'-'+inr(t.d)),
   h('div',{class:'row'},h('span',{},'Coupon ',o.coupon?h('b',{},o.coupon):null),can('m')?h('span',{},h('button',{onclick:()=>{const code=prompt('Coupon code');if(!code)return;const c=validCoupon(code);if(!c)return alert('Invalid, expired, or fully-used coupon.');o.coupon=c.code;o.disc={t:c.type,v:c.value};o.loyaltyRedeemed=0;render()}},o.coupon?'Change':'Apply'),o.coupon?h('button',{class:'warn',onclick:()=>{o.coupon=null;o.disc=null;render()}},'Remove'):null):null),
   h('div',{class:'row'},'GST '+cfg().tax+'%',inr(t.tax)),h('div',{class:'row'},h('b',{},'Total'),h('b',{},inr(t.total))),
-  h('div',{class:'row'},h('button',{onclick:kot,disabled:!o.lines.length},'Send to kitchen'),h('button',{onclick:async()=>{await persist();S.cur=null;render()},disabled:!o.lines.length},'Hold'),h('button',{class:'p',onclick:pay,disabled:!o.lines.length},'Pay')),
+  h('div',{class:'row'},isR?null:h('button',{onclick:kot,disabled:!o.lines.length},'Send to kitchen'),h('button',{onclick:async()=>{await persist();S.cur=null;render()},disabled:!o.lines.length},'Hold'),h('button',{class:'p',onclick:pay,disabled:!o.lines.length},'Pay')),
   h('button',{onclick:async()=>{if(o.no){if(!can('m'))return alert('Manager only');if(!confirm('Cancel saved order?'))return;o.status='void';await persist()}S.cur=null;render()}},'Clear order')),
- h('div',{class:'cart-bar'+(o.lines.length?' show':'')},h('span',{},o.lines.reduce((a,l)=>a+l.qty,0)+' items · '+inr(t.total)),h('span',{class:'row',style:'gap:6px'},h('button',{onclick:kot},'KOT'),h('button',{class:'p',onclick:pay},'Pay'))))};
+ h('div',{class:'cart-bar'+(o.lines.length?' show':'')},h('span',{},o.lines.reduce((a,l)=>a+l.qty,0)+' items · '+inr(t.total)),h('span',{class:'row',style:'gap:6px'},isR?null:h('button',{onclick:kot},'KOT'),h('button',{class:'p',onclick:pay},'Pay'))))};
 V.tabs=()=>{const os=L('order').filter(o=>o.t).sort((a,b)=>b.created>a.created?1:-1),op=os.filter(o=>o.status=='open'&&o.lines.length),due=os.filter(o=>o.status=='due');
  return h('div',{class:'g',style:'grid-template-columns:1fr'},h('div',{class:'card'},h('h3',{},'Open orders ('+op.length+')'),...op.map(o=>h('div',{class:'row'},o.no+' · '+o.type+' '+(o.src?o.src+' ':'')+tn(o.table)+(o.kstat?' · '+({new:'sent to kitchen',preparing:'preparing',ready:'ready',served:'served',dispatched:'dispatched',done:'delivered'}[o.kstat]||o.kstat):''),h('b',{},inr(o.t.total)),h('button',{class:'p',onclick:()=>{S.cur=structuredClone(o);S.tab='pos';render()}},'Open')))),
  due.length?h('div',{class:'card'},h('h3',{},'Credit / Due orders ('+due.length+')'),...due.map(o=>h('div',{class:'row'},o.no+' · '+((o.cust||{}).name||'')+' '+((o.cust||{}).phone||''),h('b',{style:'color:var(--accent)'},inr(r2(o.t.total-(o.pays||[]).reduce((a,p)=>a+p.amt,0)))+' due'),h('button',{class:'p',onclick:()=>{S.cur=structuredClone(o);S.tab='pos';render()}},'Settle')))):null,
@@ -562,7 +586,17 @@ function feedbackCard(){const fb=L('feedback');if(!fb.length)return null;
   h('div',{class:'row'},h('span',{},'★'.repeat(Math.round(avg))+'☆'.repeat(5-Math.round(avg))+' '+avg+' avg'),h('span',{style:'color:var(--ink-faint)'},fb.length+' rating'+(fb.length>1?'s':''))),
   ...recent.map(f=>h('div',{class:'row',style:'align-items:flex-start'},h('span',{},'★'.repeat(f.rating)+'☆'.repeat(5-f.rating)+(f.comment?' — '+f.comment:'')),h('span',{style:'color:var(--ink-faint);font-size:11px;flex-shrink:0'},f.orderNo)))
  )}
-function item(i){const px=h('input',{type:'number',value:i.price??'',placeholder:'Price'}),nm=h('input',{value:i.name||'',placeholder:'Name'}),sz=h('input',{value:(i.sizes||[]).map(s=>s.l+':'+s.p).join(', '),placeholder:'Sizes, e.g. Half:49, Full:69 (optional)'}),ct=h('select',{},...L('cat').map(c=>h('option',{value:c.id,selected:c.id==i.cat},c.name))),off=h('input',{type:'checkbox',checked:itemOff(i)}),rc=h('input',{value:i.rec||'',placeholder:'Recipe, e.g. Milk:0.1, Tea:5 (optional, for stock)'}),cs=h('input',{type:'number',value:i.cost??'',placeholder:'Cost price (optional)'}),stn=h('select',{},...['Kitchen','Bar','Dessert'].map(s=>h('option',{selected:(i.st||'Kitchen')==s},s))),md=h('input',{value:(i.mods||[]).join(', '),placeholder:'Modifiers, e.g. Extra shot:20, Less sugar:0 (optional)'}),bc=h('input',{value:i.barcode||'',placeholder:'Barcode (scan or type, optional)'});
+const variantQty=i=>(i.variants||[]).reduce((a,v)=>a+(+v.qty||0),0);
+function item(i){const isR=isRetail();const px=h('input',{type:'number',value:i.price??'',placeholder:'Price'}),nm=h('input',{value:i.name||'',placeholder:'Name'}),sz=h('input',{value:(i.sizes||[]).map(s=>s.l+':'+s.p).join(', '),placeholder:'Sizes, e.g. Half:49, Full:69 (optional)'}),ct=h('select',{},...L('cat').map(c=>h('option',{value:c.id,selected:c.id==i.cat},c.name))),off=h('input',{type:'checkbox',checked:itemOff(i)}),rc=h('input',{value:i.rec||'',placeholder:'Recipe, e.g. Milk:0.1, Tea:5 (optional, for stock)'}),cs=h('input',{type:'number',value:i.cost??'',placeholder:'Cost price (optional)'}),stn=h('select',{},...['Kitchen','Bar','Dessert'].map(s=>h('option',{selected:(i.st||'Kitchen')==s},s))),md=h('input',{value:(i.mods||[]).join(', '),placeholder:'Modifiers, e.g. Extra shot:20, Less sugar:0 (optional)'}),bc=h('input',{value:i.barcode||'',placeholder:'Barcode (scan or type, optional)'});
+ // Retail: a size+color+barcode+stock variant matrix instead of the
+ // restaurant's price-tier sizes -- each row is its own stock count and
+ // (optionally) its own scannable barcode. vGen just scaffolds the
+ // sizes×colors grid into the textarea; staff still fills in barcode/qty
+ // per row by hand, same "type it as a compact list" pattern as sizes/
+ // recipe/mods above rather than a bespoke dynamic-rows widget.
+ const vSizes=h('input',{placeholder:'Sizes, e.g. S,M,L,XL'}),vColors=h('input',{placeholder:'Colors, e.g. Black,White (optional)'}),
+  vTa=h('textarea',{placeholder:'One variant per line: Size|Color|Barcode|Qty\ne.g. M|Blue|8901030123|12',style:'min-height:90px;width:100%'},(i.variants||[]).map(v=>[v.size,v.color||'',v.barcode||'',v.qty||0].join('|')).join('\n')),
+  vGen=h('button',{onclick:e=>{e.preventDefault();const sizes=vSizes.value.split(',').map(s=>s.trim()).filter(Boolean),colors=vColors.value.split(',').map(s=>s.trim()).filter(Boolean),cs2=colors.length?colors:[''],rows=[];for(const s of sizes)for(const c of cs2)rows.push([s,c,'',0].join('|'));if(!rows.length)return alert('Enter at least one size first.');const existing=vTa.value.trim();vTa.value=(existing?existing+'\n':'')+rows.join('\n')}},'+ Generate rows from sizes/colors');
  // 'Keep current timer' (default whenever the item is already off) stops
  // an unrelated edit -- fixing the price, say -- from silently resetting
  // an existing 2-hour sold-out timer to indefinite just because the
@@ -572,7 +606,23 @@ function item(i){const px=h('input',{type:'number',value:i.price??'',placeholder
  // auto-tick it here so choosing "24 Hours" and hitting Save can't
  // silently do nothing because the checkbox itself was never checked.
  const dur=h('select',{onchange:()=>off.checked=true},...durOpts.map(([v,l])=>h('option',{value:v,selected:v==(itemOff(i)?'keep':'0')},l)));
- const x=modal(h('h3',{},i.id?'Edit item':'New item'),nm,ct,stn,px,sz,md,rc,cs,cfg().hwBarcode?bc:null,h('label',{style:'display:flex;align-items:center;gap:8px'},off,' Sold out'),h('label',{style:'display:flex;align-items:center;gap:8px'},'For how long ',dur),h('div',{class:'row'},h('button',{class:'p',onclick:async()=>{const sizes=sz.value.split(',').map(s=>s.split(':')).filter(a=>a[1]).map(a=>({l:a[0].trim(),p:+a[1]}));const mods=md.value.split(',').map(s=>s.trim()).filter(Boolean);if(!nm.value||!ct.value||(!sizes.length&&!+px.value))return alert('Name, category and a price are needed.');
+ const x=modal(h('h3',{},i.id?'Edit item':'New item'),nm,ct,isR?null:stn,px,
+  isR?h('div',{style:'display:grid;gap:6px'},h('div',{class:'row'},vSizes,vColors,vGen),vTa):sz,
+  isR?null:md,isR?null:rc,cs,(!isR&&cfg().hwBarcode)?bc:null,
+  h('label',{style:'display:flex;align-items:center;gap:8px'},off,' Sold out'),h('label',{style:'display:flex;align-items:center;gap:8px'},'For how long ',dur),
+  h('div',{class:'row'},h('button',{class:'p',onclick:async()=>{
+  let sizes=[],variants=[],barcode=bc.value.trim()||null;
+  if(isR){
+   variants=vTa.value.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{const[sz2,cl,vbc,qt]=l.split('|');return{size:(sz2||'').trim(),color:(cl||'').trim(),barcode:(vbc||'').trim()||null,qty:+qt||0}}).filter(v=>v.size);
+   if(!variants.length)return alert('Add at least one size (or size+color) variant.');
+   const seen=new Set();for(const v of variants){const key=v.size+'|'+v.color;if(seen.has(key))return alert('Duplicate variant: '+v.size+(v.color?' / '+v.color:''));seen.add(key)}
+   barcode=null; // retail barcodes live on the variant row, not the item
+  }else{
+   sizes=sz.value.split(',').map(s=>s.split(':')).filter(a=>a[1]).map(a=>({l:a[0].trim(),p:+a[1]}));
+  }
+  const mods=isR?[]:md.value.split(',').map(s=>s.trim()).filter(Boolean);
+  if(!nm.value||!ct.value)return alert('Name and category are needed.');
+  if(isR?!+px.value:(!sizes.length&&!+px.value))return alert('A price is needed.');
   let offUntil=null;
   if(off.checked){const dv=dur.value;
    if(dv=='keep')offUntil=i.offUntil??null;
@@ -580,10 +630,19 @@ function item(i){const px=h('input',{type:'number',value:i.price??'',placeholder
    else if(dv=='nbd'){const d=new Date();if(d.getHours()>=4)d.setDate(d.getDate()+1);d.setHours(4,0,0,0);offUntil=d.toISOString()} // business day starts 04:00 -- spec 13; only roll to tomorrow if today's 04:00 cutoff already passed
    else if(dv!='0')offUntil=new Date(Date.now()+ +dv*3600000).toISOString();
   }
-  const barcode=bc.value.trim()||null;
-  if(barcode){const dupe=L('item').find(x=>x.barcode==barcode&&x.id!=i.id);if(dupe&&!confirm('"'+dupe.name+'" already uses this barcode. Scanning it will always add that item, never this one. Save anyway?'))return}
-  await save('item',{...i,name:nm.value.trim(),cat:ct.value,price:+px.value||sizes[0].p,sizes,off:off.checked,offUntil,rec:rc.value.trim(),cost:+cs.value||0,st:stn.value,mods,barcode});x();render()}},'Save'),i.id?h('button',{onclick:async()=>{await save('item',i,i.id,true);x();render()}},'Delete'):null))}
-V.menu=()=>h('div',{class:'g',style:'grid-template-columns:1fr'},h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Menu'),h('span',{},h('button',{onclick:()=>{const n=prompt('Category name');n&&save('cat',{name:n,n:Date.now()}).then(render)}},'Add category'),h('button',{class:'p',onclick:()=>item({})},'Add item'))),...L('cat').sort((a,b)=>a.n-b.n).map(c=>h('div',{},h('div',{class:'row'},h('b',{},c.name),h('button',{onclick:()=>confirm('Delete category?')&&save('cat',c,c.id,true).then(render)},'Delete')),...L('item').filter(i=>i.cat==c.id).map(i=>h('div',{class:'row'},i.name+(itemOff(i)?' (sold out'+(i.offUntil?' until '+new Date(i.offUntil).toLocaleString():'')+')':''),i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price),h('button',{onclick:()=>item(i)},'Edit')))))));
+  // Barcode uniqueness: check the item-level barcode (restaurant) or
+  // every variant's barcode (retail) against every OTHER item's own
+  // item-level barcode and variant barcodes -- a scan always resolves
+  // to whichever matches first, so a collision silently makes one of
+  // them unreachable.
+  const allOtherCodes=L('item').filter(x=>x.id!=i.id).flatMap(x=>[x.barcode,...(x.variants||[]).map(v=>v.barcode)]).filter(Boolean);
+  const myCodes=isR?variants.map(v=>v.barcode).filter(Boolean):[barcode].filter(Boolean);
+  const selfDupe=myCodes.find((c,idx)=>myCodes.indexOf(c)!=idx);
+  if(selfDupe)return alert('Barcode "'+selfDupe+'" is used on more than one of this item\'s own variants. Scanning it would always resolve to just one of them -- give each variant its own code.');
+  const dupeCode=myCodes.find(c=>allOtherCodes.includes(c));
+  if(dupeCode&&!confirm('Barcode "'+dupeCode+'" is already used on another item/variant. Scanning it will always resolve to whichever matches first. Save anyway?'))return;
+  await save('item',{...i,name:nm.value.trim(),cat:ct.value,price:+px.value||(sizes[0]&&sizes[0].p)||0,sizes,variants,off:off.checked,offUntil,rec:isR?'':rc.value.trim(),cost:+cs.value||0,st:stn.value,mods,barcode});x();render()}},'Save'),i.id?h('button',{onclick:async()=>{await save('item',i,i.id,true);x();render()}},'Delete'):null))}
+V.menu=()=>{const isR=isRetail();return h('div',{class:'g',style:'grid-template-columns:1fr'},h('div',{class:'card'},h('div',{class:'row'},h('h3',{},isR?'Products':'Menu'),h('span',{},h('button',{onclick:()=>{const n=prompt('Category name');n&&save('cat',{name:n,n:Date.now()}).then(render)}},'Add category'),h('button',{class:'p',onclick:()=>item({})},isR?'Add product':'Add item'))),...L('cat').sort((a,b)=>a.n-b.n).map(c=>h('div',{},h('div',{class:'row'},h('b',{},c.name),h('button',{onclick:()=>confirm('Delete category?')&&save('cat',c,c.id,true).then(render)},'Delete')),...L('item').filter(i=>i.cat==c.id).map(i=>h('div',{class:'row'},i.name+(itemOff(i)?' (sold out'+(i.offUntil?' until '+new Date(i.offUntil).toLocaleString():'')+')':''),isR?inr(i.price)+' · '+variantQty(i)+' in stock':(i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price)),h('button',{onclick:()=>item(i)},'Edit')))))))};
 V.set=()=>{const s=cfg(),F={},sel=(k,l,o)=>h('label',{},l,h('select',{style:'width:100%',onchange:e=>F[k]=e.target.value},...o.map(([v,n])=>h('option',{value:v,selected:String(s[k]||o[0][0])==String(v)},n)))),f=(k,l,t)=>h('label',{},l,h('input',{type:t||'text',value:s[k],style:'width:100%',oninput:e=>F[k]=t=='number'?+e.target.value:e.target.value})),ta=(k,l)=>h('label',{},l,h('textarea',{style:'width:100%;min-height:70px',oninput:e=>F[k]=e.target.value},s[k]||''));
  // Hardware toggles save instantly (like flipping a real switch) instead
  // of queuing into F for the Business tab's Save button -- off by
@@ -603,7 +662,7 @@ V.set=()=>{const s=cfg(),F={},sel=(k,l,o)=>h('label',{},l,h('select',{style:'wid
  // scroll -- switchable tabs (persisted in S.setTab so it survives the
  // re-renders every save/sync triggers) show one section at a time.
  const panes={
-  biz:()=>h('div',{class:'card',style:'display:grid;gap:8px'},h('h3',{},'Business details'),sel('bizType','Business type',[['restaurant','Restaurant / Cafe (tables, KOT, kitchen display)'],['salon','Salon / spa'],['gym','Gym / fitness'],['retail','Retail shop']]),f('name','Name'),f('addr','Address'),f('phone','Phone'),f('gstin','GSTIN'),f('tax','GST %','number'),f('prefix','Invoice prefix'),h('h4',{},'Look & invoice'),f('col','Brand colour (hex, e.g. #1f3d2e)'),f('logo','Logo image URL (optional)'),f('ftr','Invoice thank-you message'),sel('w','Paper width',[[80,'80 mm'],[58,'58 mm']]),sel('sty','Invoice style',[['mono','Thermal (monospace)'],['sans','Clean (sans-serif)']]),f('fs','Invoice font size (px)','number'),h('h4',{},'Self-order'),f('gw','Guest ordering welcome text'),saveBtn()),
+  biz:()=>h('div',{class:'card',style:'display:grid;gap:8px'},h('h3',{},'Business details'),sel('bizType','Business type',[['restaurant','Restaurant / Cafe (tables, KOT, kitchen display)'],['salon','Salon / spa'],['gym','Gym / fitness'],['retail','Retail shop (clothing/apparel — size & color stock)']]),f('name','Name'),f('addr','Address'),f('phone','Phone'),f('gstin','GSTIN'),f('tax','GST %','number'),f('prefix','Invoice prefix'),h('h4',{},'Look & invoice'),f('col','Brand colour (hex, e.g. #1f3d2e)'),f('logo','Logo image URL (optional)'),f('ftr','Invoice thank-you message'),sel('w','Paper width',[[80,'80 mm'],[58,'58 mm']]),sel('sty','Invoice style',[['mono','Thermal (monospace)'],['sans','Clean (sans-serif)']]),f('fs','Invoice font size (px)','number'),h('h4',{},'Self-order'),f('gw','Guest ordering welcome text'),saveBtn()),
   tables:()=>{const so=featureOn('self_order'),secs=[...new Set(L('table').map(t=>t.sec||'Main'))];
    return h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Tables'),h('span',{},so?h('button',{onclick:()=>qr(L('table'))},'Print all QR'):null,h('button',{class:'p',onclick:()=>{const n=prompt('Table name');if(!n)return;const sc=prompt('Section (e.g. AC, Garden, Terrace)','Main')||'Main';save('table',{name:n,sec:sc.trim()||'Main'}).then(render)}},'Add table'))),
    !so?h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Self-order (QR) is turned off in your Services settings, so table QR codes won\'t take customers to an ordering page. Turn it back on to print/share codes again.'):null,
