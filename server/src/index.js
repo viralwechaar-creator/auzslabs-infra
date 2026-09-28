@@ -7,6 +7,13 @@ import { handlePushEvent } from './push.js';
 
 const PORT = process.env.PORT || 3000;
 const DOMAIN = process.env.DOMAIN || '';
+// The two logins seeded by db/023_demo_tenants.sql and published on
+// site/demo.html on purpose -- unlike a real tenant's login, lots of
+// unrelated strangers trying these from behind the same mobile-carrier
+// or office IP within the same 15 minutes is expected traffic, not an
+// attack, so they get their own much looser rate-limit bucket below
+// instead of sharing login's tight one.
+const DEMO_LOGIN_EMAILS = new Set(['demo-cafe@auzslab.in', 'demo-retail@auzslab.in']);
 
 // ---- whitelist: the only tables/columns this API will ever touch.
 // Mirrors exactly what app/public's client code actually calls (see
@@ -252,10 +259,17 @@ const server = http.createServer(async (req, res) => {
   try {
     // ---- auth ----
     if (url.pathname === '/auth/login' && req.method === 'POST') {
-      // 20 attempts / 15 min per IP -- bcrypt is expensive on purpose,
-      // and login is the endpoint most worth brute-forcing.
-      if (rateLimited(`login:${ip}`, 20, 15 * 60_000)) throw new HttpError(429, 'too many login attempts, try again later');
       const { email, password } = await readJsonBody(req);
+      // 20 attempts / 15 min per IP for real accounts -- bcrypt is
+      // expensive on purpose, and login is the endpoint most worth
+      // brute-forcing. The two published demo logins get a far looser,
+      // separate bucket (see DEMO_LOGIN_EMAILS above) so a crowd of
+      // prospects sharing one IP don't lock each other out of a login
+      // that's meant to be tried by strangers.
+      const isDemo = typeof email === 'string' && DEMO_LOGIN_EMAILS.has(email.trim().toLowerCase());
+      const bucket = isDemo ? `demologin:${ip}` : `login:${ip}`;
+      const limit = isDemo ? 300 : 20;
+      if (rateLimited(bucket, limit, 15 * 60_000)) throw new HttpError(429, 'too many login attempts, try again later');
       const result = await login(email, password);
       if (!result) throw new HttpError(401, 'invalid credentials');
       return reply(200, result);
