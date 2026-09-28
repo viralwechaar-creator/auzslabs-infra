@@ -17,6 +17,17 @@ const TABLES = {
   push_subs: { columns: ['id', 'tenant_id', 'user_id', 'endpoint', 'p256dh', 'auth', 'created_at'], insertable: ['user_id', 'endpoint', 'p256dh', 'auth'] },
   leads: { columns: ['id', 'name', 'business', 'contact', 'message', 'niche', 'status', 'created_at'], writable: ['status'] }, // admin-only via RLS (is_platform_admin())
   signup_requests: { columns: ['id', 'user_id', 'business_name', 'slug', 'features', 'notes', 'status', 'created_at'] }, // read-only here; state changes go through approve/decline_signup_request
+
+  // --- Phase 1: Booking & Appointments ---
+  // tenant_id is never insertable/writable -- it defaults from the
+  // caller's own session (see 008_phase1_...sql), same pattern
+  // push_subs.tenant_id already uses. order_id is likewise excluded
+  // from both lists: it's only ever set by convert_booking_to_order.
+  bookings: {
+    columns: ['id', 'tenant_id', 'resource_id', 'customer_name', 'customer_phone', 'date', 'time', 'end_time', 'status', 'items', 'total', 'order_id', 'created_at'],
+    insertable: ['resource_id', 'customer_name', 'customer_phone', 'date', 'time', 'end_time', 'items', 'total'],
+    writable: ['resource_id', 'customer_name', 'customer_phone', 'date', 'time', 'end_time', 'status', 'items', 'total'],
+  },
 };
 
 const OPS = { eq: '=', gte: '>=', lte: '<=', gt: '>', lt: '<' };
@@ -40,6 +51,10 @@ const RPC = {
   submit_signup_request: { params: ['p_business_name', 'p_slug', 'p_features', 'p_notes'], jsonb: ['p_features'], auth: true },
   approve_signup_request: { params: ['p_request_id', 'p_niche'], auth: true },
   decline_signup_request: { params: ['p_request_id'], auth: true },
+
+  // --- Phase 1: Booking & Appointments / Reports & Analytics ---
+  convert_booking_to_order: { params: ['p_booking_id', 'p_invoice_prefix'], auth: true },
+  report_dashboard: { params: ['p_from', 'p_to'], auth: true },
 };
 
 class HttpError extends Error {
@@ -188,7 +203,7 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { user });
     }
 
-    // ---- generic data API (records/profiles/guest_orders/push_subs) ----
+    // ---- generic data API (records/profiles/guest_orders/push_subs/leads/signup_requests/bookings) ----
     const dbMatch = url.pathname.match(/^\/db\/([a-z_]+)$/);
     if (dbMatch) {
       const table = dbMatch[1];
@@ -263,9 +278,18 @@ const server = http.createServer(async (req, res) => {
 
     throw new HttpError(404, 'not found');
   } catch (err) {
-    const status = err.status || 500;
+    let status = err.status || 500;
+    let message = err.message || 'internal error';
+    // Phase 1: bookings_no_overlap is a Postgres EXCLUDE constraint
+    // (see 008_phase1_...sql) -- surface its violation as a normal
+    // 409, not a raw 500. Verified against a real Postgres 16 (see
+    // that migration's own testing notes).
+    if (err.code === '23P01') {
+      status = 409;
+      message = 'That resource is already booked for an overlapping time.';
+    }
     if (status === 500) console.error(err);
-    send(res, status, { error: err.message || 'internal error' });
+    send(res, status, { error: message });
   }
 });
 
