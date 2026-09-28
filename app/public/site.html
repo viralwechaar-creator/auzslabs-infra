@@ -170,7 +170,18 @@ let M=null,tb=null;
 (async()=>{
  try{const{data}=await sb.rpc('public_menu',{tenant_slug:TENANT_SLUG});M=data}catch(e){console.warn(e)}
  const cfg=(M&&M.cfg)||{};
- if(T){tb=(M&&M.tables||[]).find(x=>x.id==T);const bEl=document.getElementById('tbanner');bEl.style.display='block';bEl.textContent=tb?('📍 Ordering for '+tb.name+' — tap items below to add to your order'):'This QR code isn\'t linked to a table — please ask our staff.'}
+ // Same on/off logic as featureOn() in the dashboard app: entitled
+ // (_features) AND not explicitly turned off (_enabled_features).
+ // place_order() enforces this server-side too -- this just keeps the
+ // page itself from showing a live "tap to order" flow the RPC would
+ // reject, and from leaving tb set (which is what turns every other
+ // branch below into ordering mode) once it's off.
+ const selfOrderOn=!!(cfg._features&&cfg._features.self_order===true&&(!cfg._enabled_features||cfg._enabled_features.self_order!==false));
+ if(T){
+  const bEl=document.getElementById('tbanner');bEl.style.display='block';
+  if(!selfOrderOn){bEl.textContent='Online ordering isn\'t available right now — please order at the counter.'}
+  else{tb=(M&&M.tables||[]).find(x=>x.id==T);bEl.textContent=tb?('📍 Ordering for '+tb.name+' — tap items below to add to your order'):'This QR code isn\'t linked to a table — please ask our staff.'}
+ }
  const name=cfg.name||'AUZslab';
  document.title=name;
  document.getElementById('navname').textContent=name;
