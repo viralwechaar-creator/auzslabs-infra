@@ -57,8 +57,11 @@ table{width:100%;border-collapse:collapse}td,th{padding:5px;border-bottom:1px so
 /* ---- tabbar: a segmented control for switching panes within one
    screen (currently Settings' Business/Tables/Website) instead of
    stacking every section as its own long card, one under the next. ---- */
-.tabbar{display:flex;gap:2px;padding:4px;background:var(--bg-raised);border-radius:999px;margin-bottom:10px}
-.tabbar button{flex:1;padding:8px 12px;border-radius:999px;font-family:'Space Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-dim);text-align:center}
+/* Settings now has 6 sub-tabs (was 3-5) -- squeezing them all to equal
+   width on a phone made each label unreadably tiny. Scroll sideways
+   instead, each tab keeping a comfortable minimum width. */
+.tabbar{display:flex;gap:2px;padding:4px;background:var(--bg-raised);border-radius:999px;margin-bottom:10px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tabbar button{flex:0 0 auto;min-width:76px;padding:8px 12px;border-radius:999px;font-family:'Space Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-dim);text-align:center;white-space:nowrap}
 .tabbar button:hover{background:none;color:var(--ink)}
 .tabbar button.on{background:#fff;color:var(--ink);box-shadow:0 1px 4px rgba(23,23,23,.15)}
 .tabbar button.on:hover{background:#fff}
@@ -67,6 +70,24 @@ table{width:100%;border-collapse:collapse}td,th{padding:5px;border-bottom:1px so
 .tbl-tile:hover{border-color:var(--ink-faint);background:#fff}
 .tbl-tile.run{background:#fff3c4;border-color:#e0b400}
 .tbl-tile.sel{border-color:var(--accent);border-width:2px}
+/* Toggle switch for Settings > Hardware -- a plain checkbox reads as
+   "form field" (does something need filling in?); a switch reads as
+   "on/off", which is what these actually are, and it's a bigger,
+   clearer mobile tap target than a native checkbox either way. */
+.switch{position:relative;display:inline-block;width:46px;height:26px;flex-shrink:0}
+.switch input{opacity:0;width:100%;height:100%;margin:0;position:absolute;cursor:pointer;z-index:1}
+.switch .track{position:absolute;inset:0;background:var(--l);border-radius:999px;transition:background .15s}
+.switch .track::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .15s}
+.switch input:checked+.track{background:var(--accent)}
+.switch input:checked+.track::after{transform:translateX(20px)}
+.hw-row{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--l)}
+.hw-row:last-child{border-bottom:none}
+.hw-row .hw-text{flex:1}
+.hw-row .hw-text b{display:block;font-size:14px}
+.hw-row .hw-text span{font-size:12.5px;color:var(--ink-dim)}
+.token-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:14px;padding:14px}
+.token-tile{background:var(--ink);color:#fff;font-family:Fraunces,serif;font-weight:700;font-size:34px;border-radius:16px;min-height:110px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm)}
+.token-tile:hover{background:var(--ink);opacity:.85}
 /* Sticky cart bar: on a phone the item grid + floor plan sit above the
    order card, so reaching Pay/KOT meant scrolling past all of it every
    time. This floats above everything so the running total and the two
@@ -282,6 +303,41 @@ function pickMods(i,sz,p){const mods=(i.mods||[]).map(m=>{const[n,v]=m.split(':'
  const boxes=mods.map(m=>({m,cb:h('input',{type:'checkbox'})}));
  const x=modal(h('h3',{},i.name),...boxes.map(b=>h('label',{style:'display:flex;gap:8px;align-items:center'},b.cb,b.m.n+(b.m.v?' (+'+inr(b.m.v)+')':''))),h('button',{class:'p',onclick:()=>{const picked=boxes.filter(b=>b.cb.checked).map(b=>b.m);const price=p+r2(picked.reduce((a,m)=>a+m.v,0)),note=picked.map(m=>m.n).join(', ')||undefined;x();addLine(i,sz,price,note)}},'Add'))}
 function size(i){const x=modal(h('h3',{},i.name),...i.sizes.map(s=>h('button',{onclick:()=>{x();pickMods(i,s.l,s.p)}},s.l+' — '+inr(s.p))))}
+// Barcode scanning, software-only: a USB/Bluetooth scanner set to its
+// default keyboard-emulation mode just types the barcode's characters
+// really fast and hits Enter -- no WebUSB/driver/pairing needed, this
+// just has to tell "a burst of keys within ~40ms of each other" apart
+// from a human typing. Only acts when nothing is focused for actual
+// typing (a text field getting the same keystrokes is left alone) and
+// only on the Sell screen, gated by the hwBarcode toggle (off by
+// default) so it costs nothing for a tenant with no scanner.
+let scanBuf='',scanAt=0;
+addEventListener('keydown',e=>{
+ if(S.tab!='pos'||!cfg().hwBarcode)return;
+ // A stray scan while the payment modal is open (S.tab is still 'pos'
+ // underneath it) would silently add a line to an order already mid-
+ // checkout, after its total was already shown to the customer.
+ // modal() always appends a .ov element to <body>, so its presence is
+ // enough to detect without adding separate open/closed state.
+ if(document.querySelector('.ov'))return;
+ const tag=document.activeElement&&document.activeElement.tagName;
+ if(tag=='INPUT'||tag=='TEXTAREA'||tag=='SELECT')return;
+ const now=Date.now();
+ if(now-scanAt>300)scanBuf='';
+ scanAt=now;
+ if(e.key=='Enter'){
+  // Prevent default so a scanner's terminating Enter can't also
+  // double-fire whatever button happens to still have DOM focus (e.g.
+  // re-triggering "Send to kitchen" if that's what was last tapped).
+  e.preventDefault();
+  const code=scanBuf;scanBuf='';
+  if(code.length<3)return;
+  const it=L('item').find(x=>x.barcode&&x.barcode==code);
+  if(!it)return alert('No item matches barcode: '+code);
+  if(itemOff(it))return alert(it.name+' is currently sold out.');
+  it.sizes&&it.sizes.length?size(it):pickMods(it,'',it.price);
+ }else if(e.key.length==1)scanBuf+=e.key;
+});
 function qty(l,d){const o=S.cur;
  if(d<0&&l.qty-1<l.sent){
   if(!can('m'))return alert('Already sent to kitchen. Ask a manager to remove it.');
@@ -308,12 +364,21 @@ function floorPlan(o){const secs=[...new Set(L('table').map(t=>t.sec||'Main'))];
   }))
  )))}
 function pickTable(id){const ex=L('order').find(x=>x.status=='open'&&x.table==id&&x.lines.length);if(ex){if(S.cur.lines.length&&!S.cur.no&&!confirm('Discard the current unsaved order?'))return;S.cur=structuredClone(ex)}else S.cur.table=id||null;render()}
-async function kot(){const o=S.cur;if(!o.lines.some(l=>l.qty>l.sent))return alert('Nothing new to send');if(!o.no)o.no=await nextNo();const n=mk(o);await persist();
+// Token numbers restart each day, computed from today's already-synced
+// orders' own tokens rather than a server counter -- unlike invoice
+// numbers (next_invoice_no) this is a display convenience for the
+// pickup screen, not a legal/financial record, so a rare same-number
+// collision between two tills at the exact same instant is an
+// acceptable tradeoff for not needing a new RPC.
+function nextToken(){const day=today(),nums=L('order').filter(o=>o.token&&o.tokenDay==day).map(o=>o.token);return nums.length?Math.max(...nums)+1:1}
+async function kot(){const o=S.cur;if(!o.lines.some(l=>l.qty>l.sent))return alert('Nothing new to send');if(!o.no)o.no=await nextNo();
+ if(cfg().hwToken&&o.type!='Dine-in'&&!o.token){o.token=nextToken();o.tokenDay=today()}
+ const n=mk(o);await persist();
  // Persist every KOT send as its own record (order snapshot only keeps
  // the LATEST one) so the KOT report (spec 4.3) has real history.
  await save('kotlog',{orderId:o.id,orderNo:o.no,type:o.type,table:o.table,cust:o.cust,items:n,createdAt:now()},uid());
  const stations=[...new Set(n.map(x=>x.s))];
- prn(`<b>KOT ${o.no}</b><br>${o.type} ${esc(tn(o.table))}<br>${new Date().toLocaleTimeString()}<hr>`+stations.map(s=>`<u>${s}</u><br>`+n.filter(x=>x.s==s).map(x=>`<b>${x.q}× ${esc(x.n)}</b><br>`).join('')).join('<hr>'));render()}
+ prn(`<b>KOT ${o.no}</b>${o.token?' · Token #'+o.token:''}<br>${o.type} ${esc(tn(o.table))}<br>${new Date().toLocaleTimeString()}<hr>`+stations.map(s=>`<u>${s}</u><br>`+n.filter(x=>x.s==s).map(x=>`<b>${x.q}× ${esc(x.n)}</b><br>`).join('')).join('<hr>'));render()}
 // usage log (trimmed to the last 200 entries) feeds the reorder-forecast
 // velocity in V.inv -- there's no historical consumption trail before
 // this starts recording, so a freshly-migrated tenant sees no forecast
@@ -386,6 +451,19 @@ V.kotrep=()=>{const from=S.kotFrom||S.d,to=S.kotTo||S.d,q=(S.kotQ||'').toLowerCa
   h('div',{class:'row'},h('input',{placeholder:'Search order no / customer / phone',value:S.kotQ||'',oninput:e=>{S.kotQ=e.target.value;render()}}),h('button',{onclick:()=>csv([['Order No','Type','Table','Customer','Phone','Items','Item count','Created'],...rows.map(k=>[k.orderNo,k.type,tn(k.table),(k.cust||{}).name,(k.cust||{}).phone,k.items.map(x=>x.q+'x '+x.n).join('; '),k.items.reduce((a,x)=>a+x.q,0),k.createdAt])],'kot-'+from+'_'+to+'.csv')},'Export CSV')),
   h('table',{},h('tr',{},h('th',{},'Order'),h('th',{},'Type'),h('th',{},'Table'),h('th',{},'Customer'),h('th',{},'Items'),h('th',{},'Created')),...rows.map(k=>h('tr',{},h('td',{},k.orderNo),h('td',{},k.type),h('td',{},tn(k.table)),h('td',{},(k.cust||{}).name||''),h('td',{},k.items.map(x=>x.q+'× '+x.n).join(', ')),h('td',{},new Date(k.createdAt).toLocaleString())))),
   rows.length?null:h('p',{},'No KOTs in this range.')))};
+// Meant for a spare tablet/monitor at the pickup counter, viewed from a
+// distance -- big high-contrast tiles, no small text, no scrolling
+// needed for a normal handful of ready orders at once.
+// Restricted to today's tokens: numbers restart daily (nextToken), so
+// without this filter a forgotten order from yesterday could show the
+// same number as a brand-new one today. A stale ready order that never
+// got dispatched still shows up in the Orders tab (with its kstat), so
+// it isn't lost -- just off this display, which is meant to be today's
+// pickup queue, not a full history.
+V.token=()=>{const ready=L('order').filter(o=>o.status!='void'&&o.kstat=='ready'&&o.type!='Dine-in'&&o.token&&o.tokenDay==today()).sort((a,b)=>a.token-b.token);
+ return h('div',{},h('h2',{style:"text-align:center;color:var(--ink-dim);font-family:'Space Mono',monospace;font-size:13px;letter-spacing:.1em;text-transform:uppercase;padding:16px 0 4px"},'Ready for pickup'),
+  h('div',{class:'token-grid'},...ready.map(o=>h('button',{class:'token-tile',onclick:async()=>{const c=structuredClone(o);c.kstat='dispatched';c.dispatchAt=now();await save('order',c,c.id);render()}},'#'+o.token))),
+  ready.length?null:h('p',{style:'text-align:center;color:var(--ink-faint);padding:50px 0'},'No orders ready right now.'))};
 // Day closure/settlement (spec 7.2): compares the system's expected
 // cash-in-drawer figure against what was actually counted, instead of
 // a bare confirm() -- a mismatch needs a reason from the same master
@@ -396,7 +474,13 @@ function closeDay(d,expected,sales,bills){
   const counted=+cnt.value||0,variance=r2(counted-expected),finish=async reason=>{await save('dayclose',{d,sales,bills,expectedCash:expected,countedCash:counted,variance,varianceReason:reason||null,by:S.user.email||S.user.id,at:now()});x();render()};
   if(Math.abs(variance)>0.5)pickReason(reason=>finish(reason));else finish(null);
  }},'Close day')))}
-V.rep=()=>{const dc=L('dayclose').find(x=>x.d==S.d),os=L('order').filter(o=>o.status=='paid'&&new Date(o.paidAt).toLocaleDateString('en-CA')==S.d),ex=L('exp').filter(e=>e.d==S.d),m={cash:0,upi:0,card:0},it={},src={},sm=f=>r2(os.reduce((a,o)=>a+f(o),0));
+// Dynamic report builder (spec 28): a custom-report sub-tab alongside
+// the fixed Day report, instead of its own top-level nav item -- one
+// more entry in an already 6-8-tab drawer isn't worth it for something
+// that lives naturally as a second view of the same Reports screen.
+V.rep=()=>{const tabs=[['day','Day report'],['custom','Custom report']],rt=S.repTab||'day';
+ return h('div',{},h('div',{class:'tabbar'},...tabs.map(([k,n])=>h('button',{class:rt==k?'on':'',onclick:()=>{S.repTab=k;render()}},n))),rt=='custom'?V.dynrep():dayReportPane())};
+function dayReportPane(){const dc=L('dayclose').find(x=>x.d==S.d),os=L('order').filter(o=>o.status=='paid'&&new Date(o.paidAt).toLocaleDateString('en-CA')==S.d),ex=L('exp').filter(e=>e.d==S.d),m={cash:0,upi:0,card:0},it={},src={},sm=f=>r2(os.reduce((a,o)=>a+f(o),0));
  os.forEach(o=>{o.pays.forEach(p=>m[p.m]+=p.amt-(p.m=='cash'?o.change||0:0));o.lines.forEach(l=>{const k=l.name+(l.size?' ('+l.size+')':'');(it[k]=it[k]||{q:0,a:0}).q+=l.qty;it[k].a+=l.price*l.qty});if(o.src)src[o.src]=r2((src[o.src]||0)+o.t.total)});
  const refunds=r2(os.reduce((a,o)=>a+(o.refunds||[]).reduce((b,r)=>b+r.amt,0),0)),et=r2(ex.reduce((a,e)=>a+e.amt,0)),ec=h('input',{placeholder:'Expense (e.g. milk)'}),ea=h('input',{type:'number',placeholder:'Amount'}),R_=(a,b)=>h('div',{class:'row'},a,h('b',{},b));
  const expCats=[...new Set(L('exp').map(e=>e.cat).filter(Boolean))].sort(),eCat=h('input',{list:'expcatlist',placeholder:'Category (e.g. Rent, Utilities)'}),eCatDl=h('datalist',{id:'expcatlist'},...expCats.map(c=>h('option',{value:c})));
@@ -407,8 +491,63 @@ V.rep=()=>{const dc=L('dayclose').find(x=>x.d==S.d),os=L('order').filter(o=>o.st
   h('div',{class:'row'},h('button',{onclick:()=>csv([['No','Type','Customer','Phone','Total','Paid via'],...os.map(o=>[o.no,o.type,(o.cust||{}).name,(o.cust||{}).phone,o.t.total,(o.pays||[]).map(p=>p.m).join('+')])],'orders-'+S.d+'.csv')},'Export orders CSV'),
    can('o')?h('button',{class:dc?'':'p',onclick:async()=>{if(dc){if(!confirm('Reopen this day for edits?'))return;await save('dayclose',dc,dc.id,true)}else closeDay(S.d,m.cash-et,sm(o=>o.t.total),os.length)}},dc?'Reopen day':'Close day'):null)),
  h('div',{class:'card'},h('h3',{},'Add expense'),dc?h('p',{},'Day is closed. '+(can('o')?'Reopen it to add expenses.':'Ask an owner to reopen it.')):h('div',{class:'row'},ec,eCat,eCatDl,ea,h('button',{onclick:async()=>{if(!ec.value||!(+ea.value>0))return;await save('exp',{note:ec.value,cat:eCat.value.trim()||'Other',amt:+ea.value,d:S.d});render()}},'Add')),...ex.map(e=>h('div',{class:'row'},e.note+' · '+(e.cat||'Other'),inr(e.amt))),Object.keys(byCat).length>1?h('div',{style:'margin-top:8px'},h('b',{style:'font-size:12px'},'By category'),...Object.entries(byCat).sort((a,b)=>b[1]-a[1]).map(([k,v])=>h('div',{class:'row'},k,inr(v)))):null),
- h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Items sold'),h('button',{onclick:()=>csv([['Item','Qty','Amount'],...Object.entries(it).map(([k,v])=>[k,v.q,v.a])],'items-'+S.d+'.csv')},'Export CSV')),h('table',{},...Object.entries(it).sort((a,b)=>b[1].a-a[1].a).map(([k,v])=>h('tr',{},h('td',{},k),h('td',{},v.q),h('td',{},inr(v.a)))))))};
-function item(i){const px=h('input',{type:'number',value:i.price??'',placeholder:'Price'}),nm=h('input',{value:i.name||'',placeholder:'Name'}),sz=h('input',{value:(i.sizes||[]).map(s=>s.l+':'+s.p).join(', '),placeholder:'Sizes, e.g. Half:49, Full:69 (optional)'}),ct=h('select',{},...L('cat').map(c=>h('option',{value:c.id,selected:c.id==i.cat},c.name))),off=h('input',{type:'checkbox',checked:itemOff(i)}),rc=h('input',{value:i.rec||'',placeholder:'Recipe, e.g. Milk:0.1, Tea:5 (optional, for stock)'}),cs=h('input',{type:'number',value:i.cost??'',placeholder:'Cost price (optional)'}),stn=h('select',{},...['Kitchen','Bar','Dessert'].map(s=>h('option',{selected:(i.st||'Kitchen')==s},s))),md=h('input',{value:(i.mods||[]).join(', '),placeholder:'Modifiers, e.g. Extra shot:20, Less sugar:0 (optional)'});
+ h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Items sold'),h('button',{onclick:()=>csv([['Item','Qty','Amount'],...Object.entries(it).map(([k,v])=>[k,v.q,v.a])],'items-'+S.d+'.csv')},'Export CSV')),h('table',{},...Object.entries(it).sort((a,b)=>b[1].a-a[1].a).map(([k,v])=>h('tr',{},h('td',{},k),h('td',{},v.q),h('td',{},inr(v.a)))))),
+ feedbackCard())};
+// Groups paid orders by a chosen dimension and sums a chosen metric --
+// Day/Order type/Payment mode bucket at the ORDER level, Item/Category
+// bucket at the LINE level (a bill with 3 items contributes 3 rows).
+// Staff isn't offered as a dimension: the order only stores the
+// staffer's user id locally, and showing a name needs a profiles
+// lookup this screen doesn't otherwise make (see V.staff for that).
+function dynRows(from,to,dim,metric){
+ // paidAt is stored as a UTC ISO timestamp (now()) -- the Day report,
+ // refund() and voidOrder() all bucket it by LOCAL calendar date
+ // (toLocaleDateString('en-CA')), not the raw UTC date substring. Using
+ // slice(0,10) here instead would put a late-night IST order on the
+ // wrong side of midnight versus every other date-bucketed view in
+ // this file, and versus the <input type=date> range picker itself.
+ const localDay=iso=>new Date(iso).toLocaleDateString('en-CA');
+ const os=L('order').filter(o=>o.status=='paid'&&o.paidAt&&localDay(o.paidAt)>=from&&localDay(o.paidAt)<=to),buckets={};
+ // "Bills" means distinct paid orders touching a bucket, not "how many
+ // times add() ran" -- item/category dimensions call add() once per
+ // LINE (so one order with 2 lines of the same item must still count
+ // as 1 bill, not 2) and pay mode calls it once per split payment (so
+ // one order split cash+UPI must still count as 1 bill, not 2). A Set
+ // of order ids per bucket, sized at the end, gets this right for every
+ // dimension without needing dimension-specific counting logic.
+ const bump=(key,sales,qty,oid)=>{const b=buckets[key]||(buckets[key]={sales:0,qty:0,bills:new Set()});b.sales=r2(b.sales+sales);b.qty+=qty;b.bills.add(oid)};
+ os.forEach(o=>{
+  if(dim=='day')bump(localDay(o.paidAt),o.t.total,o.lines.reduce((a,l)=>a+l.qty,0),o.id);
+  else if(dim=='type')bump(o.type,o.t.total,o.lines.reduce((a,l)=>a+l.qty,0),o.id);
+  else if(dim=='pay')o.pays.forEach(p=>bump(p.m.toUpperCase(),p.amt,0,o.id));
+  else if(dim=='item')o.lines.forEach(l=>bump(l.name+(l.size?' ('+l.size+')':''),l.price*l.qty,l.qty,o.id));
+  else if(dim=='cat')o.lines.forEach(l=>{const it=R[l.id];bump(it&&!it.deleted?tn(it.data.cat)||'Uncategorised':'Unknown',l.price*l.qty,l.qty,o.id)});
+ });
+ return Object.entries(buckets).map(([k,v])=>({key:k,val:metric=='bills'?v.bills.size:v[metric]})).sort((a,b)=>b.val-a.val);
+}
+V.dynrep=()=>{const from=S.dynFrom||today(),to=S.dynTo||today(),dim=S.dynDim||'day';
+ // "Quantity" has no meaning for Payment mode (a payment isn't a count
+ // of items) -- rather than silently render an all-zero table for that
+ // combination, it's just not offered while that dimension is picked.
+ const dims=[['day','Day'],['item','Item'],['cat','Category'],['pay','Payment mode'],['type','Order type']],allMetrics=[['sales','Sales (₹)'],['qty','Quantity'],['bills','Bills']],metrics=dim=='pay'?allMetrics.filter(([v])=>v!='qty'):allMetrics;
+ const metric=metrics.some(([v])=>v==S.dynMetric)?S.dynMetric:'sales',rows=dynRows(from,to,dim,metric);
+ const dimLabel=dims.find(([v])=>v==dim)[1],metricLabel=metrics.find(([v])=>v==metric)[1];
+ return h('div',{class:'card'},
+  h('div',{class:'row'},h('input',{type:'date',value:from,onchange:e=>{S.dynFrom=e.target.value;render()}}),' to ',h('input',{type:'date',value:to,onchange:e=>{S.dynTo=e.target.value;render()}})),
+  h('div',{class:'row'},h('select',{onchange:e=>{S.dynDim=e.target.value;render()}},...dims.map(([v,l])=>h('option',{value:v,selected:v==dim},l))),h('select',{onchange:e=>{S.dynMetric=e.target.value;render()}},...metrics.map(([v,l])=>h('option',{value:v,selected:v==metric},l)))),
+  h('div',{class:'row'},h('b',{},dimLabel+' by '+metricLabel),h('button',{onclick:()=>csv([[dimLabel,metricLabel],...rows.map(r=>[r.key,r.val])],'custom-'+dim+'-'+metric+'-'+from+'_'+to+'.csv')},'Export CSV')),
+  h('table',{},...rows.map(r=>h('tr',{},h('td',{},r.key),h('td',{},metric=='sales'?inr(r.val):r.val)))),
+  rows.length?null:h('p',{},'No paid orders in this range.'))};
+// All-time, not filtered to S.d -- feedback trickles in slowly (one per
+// customer who bothers to rate on the invoice page), so a single day's
+// slice would almost always be empty and tell the owner nothing.
+function feedbackCard(){const fb=L('feedback');if(!fb.length)return null;
+ const avg=r2(fb.reduce((a,f)=>a+f.rating,0)/fb.length),recent=fb.slice().sort((a,b)=>b.at>a.at?1:-1).slice(0,8);
+ return h('div',{class:'card'},h('h3',{},'Customer feedback'),
+  h('div',{class:'row'},h('span',{},'★'.repeat(Math.round(avg))+'☆'.repeat(5-Math.round(avg))+' '+avg+' avg'),h('span',{style:'color:var(--ink-faint)'},fb.length+' rating'+(fb.length>1?'s':''))),
+  ...recent.map(f=>h('div',{class:'row',style:'align-items:flex-start'},h('span',{},'★'.repeat(f.rating)+'☆'.repeat(5-f.rating)+(f.comment?' — '+f.comment:'')),h('span',{style:'color:var(--ink-faint);font-size:11px;flex-shrink:0'},f.orderNo)))
+ )}
+function item(i){const px=h('input',{type:'number',value:i.price??'',placeholder:'Price'}),nm=h('input',{value:i.name||'',placeholder:'Name'}),sz=h('input',{value:(i.sizes||[]).map(s=>s.l+':'+s.p).join(', '),placeholder:'Sizes, e.g. Half:49, Full:69 (optional)'}),ct=h('select',{},...L('cat').map(c=>h('option',{value:c.id,selected:c.id==i.cat},c.name))),off=h('input',{type:'checkbox',checked:itemOff(i)}),rc=h('input',{value:i.rec||'',placeholder:'Recipe, e.g. Milk:0.1, Tea:5 (optional, for stock)'}),cs=h('input',{type:'number',value:i.cost??'',placeholder:'Cost price (optional)'}),stn=h('select',{},...['Kitchen','Bar','Dessert'].map(s=>h('option',{selected:(i.st||'Kitchen')==s},s))),md=h('input',{value:(i.mods||[]).join(', '),placeholder:'Modifiers, e.g. Extra shot:20, Less sugar:0 (optional)'}),bc=h('input',{value:i.barcode||'',placeholder:'Barcode (scan or type, optional)'});
  // 'Keep current timer' (default whenever the item is already off) stops
  // an unrelated edit -- fixing the price, say -- from silently resetting
  // an existing 2-hour sold-out timer to indefinite just because the
@@ -418,7 +557,7 @@ function item(i){const px=h('input',{type:'number',value:i.price??'',placeholder
  // auto-tick it here so choosing "24 Hours" and hitting Save can't
  // silently do nothing because the checkbox itself was never checked.
  const dur=h('select',{onchange:()=>off.checked=true},...durOpts.map(([v,l])=>h('option',{value:v,selected:v==(itemOff(i)?'keep':'0')},l)));
- const x=modal(h('h3',{},i.id?'Edit item':'New item'),nm,ct,stn,px,sz,md,rc,cs,h('label',{style:'display:flex;align-items:center;gap:8px'},off,' Sold out'),h('label',{style:'display:flex;align-items:center;gap:8px'},'For how long ',dur),h('div',{class:'row'},h('button',{class:'p',onclick:async()=>{const sizes=sz.value.split(',').map(s=>s.split(':')).filter(a=>a[1]).map(a=>({l:a[0].trim(),p:+a[1]}));const mods=md.value.split(',').map(s=>s.trim()).filter(Boolean);if(!nm.value||!ct.value||(!sizes.length&&!+px.value))return alert('Name, category and a price are needed.');
+ const x=modal(h('h3',{},i.id?'Edit item':'New item'),nm,ct,stn,px,sz,md,rc,cs,cfg().hwBarcode?bc:null,h('label',{style:'display:flex;align-items:center;gap:8px'},off,' Sold out'),h('label',{style:'display:flex;align-items:center;gap:8px'},'For how long ',dur),h('div',{class:'row'},h('button',{class:'p',onclick:async()=>{const sizes=sz.value.split(',').map(s=>s.split(':')).filter(a=>a[1]).map(a=>({l:a[0].trim(),p:+a[1]}));const mods=md.value.split(',').map(s=>s.trim()).filter(Boolean);if(!nm.value||!ct.value||(!sizes.length&&!+px.value))return alert('Name, category and a price are needed.');
   let offUntil=null;
   if(off.checked){const dv=dur.value;
    if(dv=='keep')offUntil=i.offUntil??null;
@@ -426,9 +565,21 @@ function item(i){const px=h('input',{type:'number',value:i.price??'',placeholder
    else if(dv=='nbd'){const d=new Date();if(d.getHours()>=4)d.setDate(d.getDate()+1);d.setHours(4,0,0,0);offUntil=d.toISOString()} // business day starts 04:00 -- spec 13; only roll to tomorrow if today's 04:00 cutoff already passed
    else if(dv!='0')offUntil=new Date(Date.now()+ +dv*3600000).toISOString();
   }
-  await save('item',{...i,name:nm.value.trim(),cat:ct.value,price:+px.value||sizes[0].p,sizes,off:off.checked,offUntil,rec:rc.value.trim(),cost:+cs.value||0,st:stn.value,mods});x();render()}},'Save'),i.id?h('button',{onclick:async()=>{await save('item',i,i.id,true);x();render()}},'Delete'):null))}
+  const barcode=bc.value.trim()||null;
+  if(barcode){const dupe=L('item').find(x=>x.barcode==barcode&&x.id!=i.id);if(dupe&&!confirm('"'+dupe.name+'" already uses this barcode. Scanning it will always add that item, never this one. Save anyway?'))return}
+  await save('item',{...i,name:nm.value.trim(),cat:ct.value,price:+px.value||sizes[0].p,sizes,off:off.checked,offUntil,rec:rc.value.trim(),cost:+cs.value||0,st:stn.value,mods,barcode});x();render()}},'Save'),i.id?h('button',{onclick:async()=>{await save('item',i,i.id,true);x();render()}},'Delete'):null))}
 V.menu=()=>h('div',{class:'g',style:'grid-template-columns:1fr'},h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Menu'),h('span',{},h('button',{onclick:()=>{const n=prompt('Category name');n&&save('cat',{name:n,n:Date.now()}).then(render)}},'Add category'),h('button',{class:'p',onclick:()=>item({})},'Add item'))),...L('cat').sort((a,b)=>a.n-b.n).map(c=>h('div',{},h('div',{class:'row'},h('b',{},c.name),h('button',{onclick:()=>confirm('Delete category?')&&save('cat',c,c.id,true).then(render)},'Delete')),...L('item').filter(i=>i.cat==c.id).map(i=>h('div',{class:'row'},i.name+(itemOff(i)?' (sold out'+(i.offUntil?' until '+new Date(i.offUntil).toLocaleString():'')+')':''),i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price),h('button',{onclick:()=>item(i)},'Edit')))))));
 V.set=()=>{const s=cfg(),F={},sel=(k,l,o)=>h('label',{},l,h('select',{style:'width:100%',onchange:e=>F[k]=e.target.value},...o.map(([v,n])=>h('option',{value:v,selected:String(s[k]||o[0][0])==String(v)},n)))),f=(k,l,t)=>h('label',{},l,h('input',{type:t||'text',value:s[k],style:'width:100%',oninput:e=>F[k]=t=='number'?+e.target.value:e.target.value})),ta=(k,l)=>h('label',{},l,h('textarea',{style:'width:100%;min-height:70px',oninput:e=>F[k]=e.target.value},s[k]||''));
+ // Hardware toggles save instantly (like flipping a real switch) instead
+ // of queuing into F for the Business tab's Save button -- off by
+ // default, so a tenant with no hardware sees no change at all; each
+ // toggle only unlocks its own feature, checked via cfg().<key>, so
+ // nothing else in the app needs to know these exist.
+ // Reads cfg() fresh at click time, not the closed-over `s` this render
+ // captured -- otherwise flipping a second switch before the first
+ // save's render() finishes writes back the first switch's now-stale
+ // pre-toggle value, silently reverting it.
+ const sw=(k,title,desc)=>h('div',{class:'hw-row'},h('div',{class:'hw-text'},h('b',{},title),h('span',{},desc)),h('label',{class:'switch'},h('input',{type:'checkbox',checked:!!s[k],onchange:async e=>{await save('settings',{...cfg(),[k]:e.target.checked},'settings');render()}}),h('div',{class:'track'})));
  const imgField=(k,l)=>{const inp=h('input',{type:'file',accept:'image/*'}),prev=h('div',{style:'font-size:12px;color:var(--ink-dim)'},s[k]?'Current image is set':'No image yet');inp.onchange=async()=>{const file=inp.files[0];if(!file)return;prev.textContent='Compressing & uploading…';try{F[k]=await uploadSiteImage(file,k);prev.textContent='Uploaded ✓ — click Save to apply'}catch(e){prev.textContent='Upload failed: '+e.message}};return h('label',{style:'display:grid;gap:4px'},l,inp,prev)};
  const galInp=h('input',{type:'file',accept:'image/*',multiple:true}),galPrev=h('div',{style:'font-size:12px;color:var(--ink-dim)'},(s.siteGallery||'').split(',').filter(Boolean).length+' photo(s) in gallery');
  galInp.onchange=async()=>{const files=[...galInp.files];if(!files.length)return;galPrev.textContent='Compressing & uploading '+files.length+'…';try{const urls=[];for(const file of files)urls.push(await uploadSiteImage(file,'gallery'));const existing=(F.siteGallery??s.siteGallery??'').split(',').filter(Boolean);F.siteGallery=[...existing,...urls].join(',');galPrev.textContent=F.siteGallery.split(',').filter(Boolean).length+' photo(s) — click Save to apply'}catch(e){galPrev.textContent='Upload failed: '+e.message}};
@@ -448,8 +599,11 @@ V.set=()=>{const s=cfg(),F={},sel=(k,l,o)=>h('label',{},l,h('select',{style:'wid
    h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Applied at billing with the Coupon field next to Discount.'),
    ...L('coupon').map(c=>{const used=L('order').filter(o=>(o.status=='paid'||o.status=='due')&&o.coupon==c.code).length;return h('div',{class:'row'},c.code+' · '+c.value+(c.type=='%'?'% off':' ₹ off')+(c.expiry?' · expires '+c.expiry:'')+(c.maxUses?' · '+used+'/'+c.maxUses+' used':' · '+used+' used'),h('button',{class:'warn',onclick:()=>confirm('Delete coupon?')&&save('coupon',c,c.id,true).then(render)},'Delete'))}))},
   site:()=>h('div',{class:'card',style:'display:grid;gap:10px'},h('div',{class:'row'},h('h3',{},'Website'),h('a',{href:'/site.html',target:'_blank'},'Preview ↗')),f('siteKicker','Small tagline above headline'),ta('siteTag','Headline (press Enter for a line break)'),f('siteSub','Subheading'),ta('siteAbout','About text'),f('siteHours','Opening hours text'),f('siteInsta','Instagram link (optional)'),f('siteMaps','Google Maps link (optional)'),imgField('siteHero','Hero photo — compressed automatically on upload'),imgField('siteAboutImg','About-section photo'),h('label',{style:'display:grid;gap:4px'},'Gallery photos (adds to existing, compressed automatically)',galInp,galPrev),saveBtn()),
+  hardware:()=>h('div',{class:'card'},h('h3',{},'Hardware'),h('p',{style:'font-size:12.5px;color:var(--ink-dim);margin-top:-4px'},'Off by default. Only turn one on if you actually have that setup — nothing changes for anyone else.'),
+   sw('hwBarcode','Barcode scanner','Adds a Barcode field to items, and scanning one on the Sell screen adds it straight to the order. Works with any USB/Bluetooth scanner set to keyboard-emulation mode (the default for nearly all of them) — no drivers or pairing needed.'),
+   sw('hwToken','Token display screen','Adds a Token tab showing large ready-for-pickup numbers, meant for a spare tablet or monitor at the counter. Takeaway/Delivery orders get a token number when sent to the kitchen.')),
  };
- const tabs=[['biz','Business'],['tables','Tables'],['reasons','Reasons'],['coupons','Coupons'],['site','Website']];
+ const tabs=[['biz','Business'],['tables','Tables'],['reasons','Reasons'],['coupons','Coupons'],['hardware','Hardware'],['site','Website']];
  return h('div',{class:'g',style:'grid-template-columns:1fr'},
   h('div',{class:'tabbar'},...tabs.map(([k,n])=>h('button',{class:S.setTab==k?'on':'',onclick:()=>{S.setTab=k;render()}},n))),
   panes[S.setTab in panes?S.setTab:'biz']()
@@ -547,8 +701,8 @@ function render(){if(S.authExpired||!S.user)return login('Your session ended. Pl
  // 4th element is the subscription feature key this tab needs live,
  // or null if it's core (no separate feature flag exists for it, so
  // it's only gated by role permission, not the owner's service toggles).
- const ALL_T=[['pos','Sell','pos','pos'],['tabs','Orders','orders',null],['kds','Kitchen','kitchen','kds'],['kotrep','KOT','kitchen','kds'],['rep','Reports','reports','reports'],['staff','Staff','staff',null],['inv','Stock','inventory',null],['crm','Customers','crm','crm']];
- const T=ALL_T.filter(([k,,perm,feat])=>can(perm)&&(!feat||featureOn(feat))&&(k!='kotrep'||isRestaurant())).map(([k,n])=>[k,n]);
+ const ALL_T=[['pos','Sell','pos','pos'],['tabs','Orders','orders',null],['kds','Kitchen','kitchen','kds'],['kotrep','KOT','kitchen','kds'],['token','Token','kitchen',null],['rep','Reports','reports','reports'],['staff','Staff','staff',null],['inv','Stock','inventory',null],['crm','Customers','crm','crm']];
+ const T=ALL_T.filter(([k,,perm,feat])=>can(perm)&&(!feat||featureOn(feat))&&(k!='kotrep'||isRestaurant())&&(k!='token'||cfg().hwToken)).map(([k,n])=>[k,n]);
  if(can('o'))T.push(['menu','Menu'],['set','Settings']);
  const tabLabel=(T.find(([k])=>k==S.tab)||[,'AUZslab'])[1];
  $('#app').replaceChildren(

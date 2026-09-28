@@ -34,7 +34,16 @@ th.c,td.c{text-align:center}th.r,td.r{text-align:right}
 .powered{text-align:center;padding-top:36px;font-size:11px;color:var(--mute)}
 .powered a{color:var(--mute)}
 .err{padding:80px 20px;text-align:center;font-size:15px;color:var(--mute)}
-@media print{.bar{display:none}body{background:#fff}}
+.fb{margin-top:34px;padding-top:28px;border-top:1px solid var(--line)}
+.fb h4{font-size:15px;font-weight:700;margin:0 0 12px}
+.stars{display:flex;gap:8px}
+.stars button{font-size:34px;line-height:1;background:none;border:none;padding:4px;cursor:pointer;color:#d8d4c8;min-width:44px;min-height:44px}
+.stars button.on{color:#e0a72a}
+.fb textarea{width:100%;margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:6px;font:14px Inter,sans-serif;min-height:70px;box-sizing:border-box}
+.fb .submit{margin-top:12px;width:100%;padding:15px;font:14px/1 Inter,sans-serif;font-weight:700;background:var(--ink);color:var(--paper);border:none;border-radius:4px;cursor:pointer}
+.fb .submit:disabled{opacity:.5}
+.fb .thanks-msg{font-size:14px;color:var(--mute)}
+@media print{.bar{display:none}.fb{display:none}body{background:#fff}}
 </style></head><body>
 <div class=bar><button onclick="print()">Print / Download</button></div>
 <div class=wrap id=a>Loading…</div>
@@ -63,7 +72,27 @@ ${t.round?`<tr><td>Round off</td><td>${t.round>=0?'+':'-'}${inr(Math.abs(t.round
 <p class=thanks>${esc(s.ftr||'Thank you!')}</p>
 <hr style="margin-top:24px">
 <div class=ft><div><b>Paid via</b>${(o.pays||[]).map(p=>p.m.toUpperCase()+' — '+inr(p.amt)).join('<br>')||'—'}</div><div class=sig><b>${esc(s.name)}</b><br>${esc(s.addr)}${s.gstin?'<br>GSTIN '+esc(s.gstin):''}</div></div>
+<div class=fb id=fb><h4>How was your experience at ${esc(s.name)}?</h4>
+<div class=stars id=stars>${[1,2,3,4,5].map(n=>`<button type=button data-v=${n}>★</button>`).join('')}</div>
+<textarea id=fbComment placeholder="Anything you'd like to tell us? (optional)" maxlength=1000></textarea>
+<button class=submit id=fbSubmit disabled>Submit feedback</button>
+</div>
 <div class=powered>Powered by <a href="https://auzslab.in" target=_blank rel=noopener>AUZslab</a></div>`;
  if(s.logo){const im=A.querySelector('.mark img');if(im)im.onerror=()=>im.replaceWith(document.createTextNode('Invoice'))}
+ // Feedback: a star tap sets the rating and unlocks Submit -- comment
+ // stays optional. One feedback row per order (submit_feedback upserts
+ // on the order's own token), so resubmitting just updates it.
+ let rating=0;const starsEl=document.getElementById('stars'),submitBtn=document.getElementById('fbSubmit');
+ starsEl.querySelectorAll('button').forEach(btn=>btn.onclick=()=>{
+  rating=+btn.dataset.v;submitBtn.disabled=false;
+  starsEl.querySelectorAll('button').forEach(b=>b.classList.toggle('on',+b.dataset.v<=rating));
+ });
+ const fbErr=document.createElement('p');fbErr.style.cssText='color:#b23;font-size:13px;margin:8px 0 0';document.getElementById('fb').appendChild(fbErr);
+ submitBtn.onclick=async()=>{
+  if(!rating)return;submitBtn.disabled=true;submitBtn.textContent='Submitting…';fbErr.textContent='';
+  const{error}=await sb.rpc('submit_feedback',{oid:id,rating,comment:document.getElementById('fbComment').value.trim()});
+  if(error){fbErr.textContent='Could not submit right now — please try again.';submitBtn.disabled=false;submitBtn.textContent='Submit feedback'}
+  else document.getElementById('fb').innerHTML='<p class=thanks-msg>Thank you for your feedback!</p>';
+ };
 })();
 </script></body></html>
