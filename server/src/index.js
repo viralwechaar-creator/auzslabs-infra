@@ -291,6 +291,14 @@ const server = http.createServer(async (req, res) => {
       status = 409;
       message = 'That resource is already booked for an overlapping time.';
     }
+    // A stale/cached login token whose auth_users row no longer exists
+    // (e.g. an admin cleanup deleted it) hits this FK, not a bad
+    // password -- surface it as "please sign in again", not a raw
+    // constraint-violation string.
+    if (err.code === '23503' && /user_id_fkey/.test(err.constraint || '')) {
+      status = 401;
+      message = 'Your session is no longer valid. Please sign in again.';
+    }
     if (status === 500) console.error(err);
     send(res, status, { error: message });
   }
