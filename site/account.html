@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>My Account — AUZslab</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="/logo.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="theme.css?v=41">
+<link rel="stylesheet" href="design-system/ui-kit.css?v=3">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ---- account-page-only additions: reuses .field/.btn/.card/.label/
+   .h-1/.h-2/.status-pill/.feature-tag/.ok-box/.err as-is (same
+   components admin.html already established); only a data table and
+   a toggle switch are genuinely new here. ---- */
+.acct-table-wrap{overflow-x:auto;border:2px solid var(--ink);border-radius:14px;margin-top:16px}
+.acct-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.acct-table th{text-align:left;padding:10px 12px;background:var(--bg-raised);font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-dim);border-bottom:2px solid var(--ink)}
+.acct-table td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+.acct-table tr:last-child td{border-bottom:none}
+.acct-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.acct-row:last-child{border-bottom:none}
+.switch{position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:var(--bg-raised);border:1.5px solid var(--ink);border-radius:999px;transition:.15s;cursor:pointer}
+.slider:before{content:"";position:absolute;height:14px;width:14px;left:2px;top:2px;background:#fff;border:1px solid var(--ink);border-radius:50%;transition:.15s}
+input:checked+.slider{background:var(--accent);border-color:var(--accent)}
+input:checked+.slider:before{transform:translateX(18px);border-color:var(--accent)}
+input:disabled+.slider{opacity:.4;cursor:default}
+.perm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:12px 0}
+.perm-grid label{display:flex;align-items:center;gap:6px;font-size:12.5px;background:var(--bg-raised);border-radius:8px;padding:7px 10px}
+.notif{padding:12px 0;border-bottom:1px solid var(--line)}
+.notif:last-child{border-bottom:none}
+.notif.unread{background:var(--bg-raised);margin:0 -18px;padding:12px 18px;border-radius:8px}
+.notif b{display:block;font-size:14px}
+.notif .muted{font-size:11px;color:var(--ink-dim)}
+.muted{color:var(--ink-dim);font-size:13px}
+.tab-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.tab-row .btn{padding:9px 16px;font-size:11px}
+.tab-row .btn.on{background:var(--ink);color:#fff}
+.section-pane{display:none}
+.section-pane.on{display:block}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <a href="index.html" class="btn btn-ghost" style="order:2">&larr; Site</a>
+    <a href="index.html" class="topbar-logo"><img src="logo.png" alt="AUZslab"></a>
+  </header>
+
+  <main class="content">
+    <div class="wrap" style="max-width:820px">
+      <section class="section" style="padding-top:56px">
+        <div class="label">Your account</div>
+        <h1 class="h-1" id="pageTitle">Loading…</h1>
+        <p class="lede" id="pageLede"></p>
+      </section>
+
+      <section class="section tight" id="tabsSection" style="display:none">
+        <div class="tab-row">
+          <button class="btn btn-ghost" data-tab="account">Account</button>
+          <button class="btn btn-ghost" data-tab="services">Services</button>
+          <button class="btn btn-ghost" data-tab="staff" id="tabStaffBtn" style="display:none">Staff</button>
+          <button class="btn btn-ghost" data-tab="roles" id="tabRolesBtn" style="display:none">Roles</button>
+          <button class="btn btn-ghost" data-tab="notifications">Notifications <span id="notifBadge"></span></button>
+        </div>
+        <div class="section-pane" id="pane-account"></div>
+        <div class="section-pane" id="pane-services"></div>
+        <div class="section-pane" id="pane-staff"></div>
+        <div class="section-pane" id="pane-roles"></div>
+        <div class="section-pane" id="pane-notifications"></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script src="/sb-client.js?v=2"></script>
+<script src="site.js?v=5"></script>
+<script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
+<script>
+const sb = supabase.createClient(CFG.url, CFG.key);
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const PERM_KEYS = [['pos','Sell (POS)'],['orders','Orders'],['kitchen','Kitchen Display'],['reports','Reports'],['staff','Staff (view)'],['inventory','Stock'],['crm','Customers'],['menu','Menu'],['settings','Business Settings'],['billing','Billing / Refunds']];
+const FEATURE_LABEL = { pos:'POS', crm:'CRM', billing:'Billing & Invoicing', inventory:'Inventory', qr:'QR Ordering', self_order:'Self-order (QR)', kds:'Kitchen display', booking:'Bookings', reports:'Reports', expenses:'Expenses' };
+
+let DASH = null, ROLES = [], STAFF = [], NOTIFS = [];
+
+async function boot() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { window.location.href = 'signup.html'; return; }
+  const { data, error } = await sb.rpc('my_dashboard');
+  if (error) {
+    $('#pageTitle').textContent = 'Could not load your account';
+    $('#pageLede').textContent = error.message;
+    return;
+  }
+  DASH = data;
+  $('#pageTitle').textContent = DASH.tenant.name;
+  $('#pageLede').textContent = 'Manage your account, services, staff, and notifications.';
+  $('#tabsSection').style.display = 'block';
+  if (DASH.my_role === 'owner') { $('#tabStaffBtn').style.display = ''; $('#tabRolesBtn').style.display = ''; }
+
+  await loadRoles();
+  if (DASH.my_role === 'owner') await loadStaff();
+  await loadNotifications();
+
+  document.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = () => showTab(b.dataset.tab); });
+  showTab(location.hash === '#notifications' ? 'notifications' : 'account');
+  setInterval(async () => { await loadNotifications(); if ($('#pane-notifications').classList.contains('on')) renderNotifications(); }, 20000);
+}
+
+function showTab(tab) {
+  document.querySelectorAll('[data-tab]').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
+  document.querySelectorAll('.section-pane').forEach((s) => s.classList.remove('on'));
+  $('#pane-' + tab).classList.add('on');
+  if (tab === 'account') renderAccount();
+  if (tab === 'services') renderServices();
+  if (tab === 'staff') renderStaff();
+  if (tab === 'roles') renderRoles();
+  if (tab === 'notifications') renderNotifications();
+}
+
+// ---------------- Account ----------------
+function renderAccount() {
+  const t = DASH.tenant;
+  $('#pane-account').innerHTML = `
+    <div class="card">
+      <h3 class="h-2">Your business</h3>
+      <div class="acct-row"><span class="muted">Business</span><b>${esc(t.name)}</b></div>
+      <div class="acct-row"><span class="muted">Subdomain</span><b>${esc(t.slug)}.auzslab.in</b></div>
+      <div class="acct-row"><span class="muted">Plan</span><b>${esc(t.plan)}</b></div>
+      <div class="acct-row"><span class="muted">Status</span><span class="status-pill status-${esc(t.status)}">${esc(t.status)}</span></div>
+      <div class="acct-row"><span class="muted">Renewal date</span><b>${t.renewal_date ? esc(t.renewal_date) : 'Not set — ask AUZslab'}</b></div>
+    </div>
+    <div class="card">
+      <h3 class="h-2">Your login</h3>
+      <div class="acct-row"><span class="muted">Email</span><b>${esc(DASH.my_email)}</b></div>
+      <div class="acct-row"><span class="muted">Role</span><b>${esc(DASH.my_role)}</b></div>
+    </div>
+    <div class="card">
+      <h3 class="h-2">Change password</h3>
+      <div class="field"><label>Current password</label><input id="pwOld" type="password"></div>
+      <div class="field"><label>New password (min 8 characters)</label><input id="pwNew" type="password"></div>
+      <button class="btn btn-primary form-submit" id="pwBtn" style="margin-top:12px">Update password</button>
+      <div id="pwMsg"></div>
+    </div>
+  `;
+  $('#pwBtn').onclick = async () => {
+    const oldP = $('#pwOld').value, newP = $('#pwNew').value, msg = $('#pwMsg');
+    msg.className = ''; msg.textContent = '';
+    if (newP.length < 8) { msg.className = 'err'; msg.textContent = 'New password must be at least 8 characters.'; return; }
+    const { error } = await sb.rpc('change_my_password', { p_old_password: oldP, p_new_password: newP });
+    if (error) { msg.className = 'err'; msg.textContent = error.message; return; }
+    msg.className = 'ok-box'; msg.textContent = 'Password updated.';
+    $('#pwOld').value = ''; $('#pwNew').value = '';
+  };
+}
+
+// ---------------- Services ----------------
+function renderServices() {
+  const entitled = DASH.features || {}, enabled = DASH.enabled_features || {};
+  const keys = Object.keys(entitled).filter((k) => entitled[k] === true);
+  const isOwner = DASH.my_role === 'owner';
+  $('#pane-services').innerHTML = `
+    <div class="card">
+      <h3 class="h-2">Your subscribed services</h3>
+      <p class="muted">${isOwner ? 'Turn any of these off temporarily — turning one back on takes effect instantly, no need to contact us.' : 'Only the business owner can change these.'}</p>
+      ${keys.length ? keys.map((k) => {
+        const on = enabled[k] !== false;
+        return `<div class="acct-row">
+          <span>${esc(FEATURE_LABEL[k] || k)}</span>
+          <label class="switch"><input type="checkbox" data-feat="${esc(k)}" ${on ? 'checked' : ''} ${isOwner ? '' : 'disabled'}><span class="slider"></span></label>
+        </div>`;
+      }).join('') : '<p class="muted">No services on your subscription yet — contact AUZslab.</p>'}
+      <div id="svcMsg"></div>
+    </div>
+  `;
+  if (isOwner) {
+    document.querySelectorAll('[data-feat]').forEach((cb) => {
+      cb.onchange = async () => {
+        const map = {}; document.querySelectorAll('[data-feat]').forEach((x) => { map[x.dataset.feat] = x.checked; });
+        const msg = $('#svcMsg');
+        const { error } = await sb.rpc('update_my_features', { p_enabled: map });
+        if (error) { msg.className = 'err'; msg.textContent = error.message; return; }
+        msg.className = 'ok-box'; msg.textContent = 'Saved.';
+        DASH.enabled_features = map;
+        setTimeout(() => { if (msg) { msg.textContent = ''; msg.className = ''; } }, 2000);
+      };
+    });
+  }
+}
+
+// ---------------- Staff ----------------
+async function loadStaff() {
+  const { data } = await sb.from('profiles').select('*').order('email');
+  STAFF = data || [];
+}
+function renderStaff() {
+  $('#pane-staff').innerHTML = `
+    <div class="card">
+      <h3 class="h-2">Add staff</h3>
+      <div class="field"><label>Name</label><input id="stName"></div>
+      <div class="field"><label>Mobile number</label><input id="stPhone" type="tel"></div>
+      <div class="field"><label>Email (their login)</label><input id="stEmail" type="email"></div>
+      <div class="field"><label>Role</label><select id="stRole">${ROLES.map((r) => `<option value="${r.id}">${esc(r.name)}</option>`).join('') || '<option value="">Create a role first</option>'}</select></div>
+      <button class="btn btn-primary form-submit" id="stAdd" ${ROLES.length ? '' : 'disabled'} style="margin-top:12px">Add staff</button>
+      <div id="stMsg"></div>
+    </div>
+    <div class="card">
+      <h3 class="h-2">Current staff</h3>
+      ${STAFF.map((p) => `
+        <div class="acct-row">
+          <span>
+            <b>${esc(p.name || p.email)}</b><br>
+            <span class="muted">${esc(p.email)}${p.phone ? ' · ' + esc(p.phone) : ''}</span>
+          </span>
+          ${p.role === 'owner' ? '<span class="status-pill">owner</span>' : `
+            <span style="display:flex;gap:6px;align-items:center">
+              <select data-role="${p.id}" style="max-width:150px">
+                ${ROLES.map((r) => `<option value="${r.id}" ${p.role_id === r.id ? 'selected' : ''}>${esc(r.name)}</option>`).join('')}
+              </select>
+              <button class="btn btn-ghost" data-remove="${p.id}">Remove</button>
+            </span>
+          `}
+        </div>
+      `).join('')}
+    </div>
+  `;
+  $('#stAdd').onclick = async () => {
+    const name = $('#stName').value.trim(), phone = $('#stPhone').value.trim(), email = $('#stEmail').value.trim(), roleId = $('#stRole').value, msg = $('#stMsg');
+    msg.className = ''; msg.textContent = '';
+    if (!name || !email || !roleId) { msg.className = 'err'; msg.textContent = 'Name, email, and role are required.'; return; }
+    const { data, error } = await sb.rpc('invite_staff', { p_email: email, p_name: name, p_phone: phone, p_role_id: roleId });
+    if (error) { msg.className = 'err'; msg.textContent = error.message; return; }
+    msg.className = 'ok-box'; msg.innerHTML = `Added. Share these with them directly:<br><b>${esc(email)}</b> / <b>${esc(data.temp_password)}</b>`;
+    $('#stName').value = ''; $('#stPhone').value = ''; $('#stEmail').value = '';
+    await loadStaff(); renderStaff();
+  };
+  document.querySelectorAll('[data-role]').forEach((sel) => {
+    sel.onchange = async () => {
+      const role = ROLES.find((r) => r.id === sel.value);
+      if (!role) return;
+      const { error } = await sb.from('profiles').update({ role_id: role.id, role: role.name }).eq('id', sel.dataset.role);
+      if (error) { alert(error.message); return; }
+      await loadStaff();
+    };
+  });
+  document.querySelectorAll('[data-remove]').forEach((btn) => {
+    btn.onclick = async () => {
+      if (!confirm('Remove this staff member? They will no longer be able to sign in.')) return;
+      const { error } = await sb.rpc('remove_staff', { p_staff_id: btn.dataset.remove });
+      if (error) { alert(error.message); return; }
+      await loadStaff(); renderStaff();
+    };
+  });
+}
+
+// ---------------- Roles ----------------
+async function loadRoles() {
+  const { data } = await sb.from('roles').select('*').order('name');
+  ROLES = data || [];
+}
+function renderRoles() {
+  $('#pane-roles').innerHTML = `
+    <div class="card">
+      <h3 class="h-2">Create a role</h3>
+      <div class="field"><label>Role name</label><input id="roleName" placeholder="e.g. Chef, Manager"></div>
+      <p class="muted">Choose which parts of the system this role can see:</p>
+      <div class="perm-grid">${PERM_KEYS.map(([k, l]) => `<label><input type="checkbox" data-perm="${k}"> ${esc(l)}</label>`).join('')}</div>
+      <button class="btn btn-primary form-submit" id="roleAdd">Create role</button>
+      <div id="roleMsg"></div>
+    </div>
+    <div class="card">
+      <h3 class="h-2">Existing roles</h3>
+      ${ROLES.length ? ROLES.map((r) => `
+        <div class="acct-row" style="flex-direction:column;align-items:stretch">
+          <div class="acct-row" style="border:none;padding:0 0 6px">
+            <b>${esc(r.name)}</b>
+            <button class="btn btn-ghost" data-delrole="${r.id}">Delete</button>
+          </div>
+          <div class="muted">${PERM_KEYS.filter(([k]) => r.permissions && r.permissions[k]).map(([, l]) => l).join(', ') || 'No access granted'}</div>
+        </div>
+      `).join('') : '<p class="muted">No custom roles yet.</p>'}
+    </div>
+  `;
+  $('#roleAdd').onclick = async () => {
+    const name = $('#roleName').value.trim(), msg = $('#roleMsg');
+    msg.className = ''; msg.textContent = '';
+    if (!name) { msg.className = 'err'; msg.textContent = 'Role name is required.'; return; }
+    const perms = {}; document.querySelectorAll('[data-perm]').forEach((cb) => { if (cb.checked) perms[cb.dataset.perm] = true; });
+    const { error } = await sb.from('roles').insert({ name, permissions: perms });
+    if (error) { msg.className = 'err'; msg.textContent = error.message; return; }
+    $('#roleName').value = '';
+    await loadRoles(); renderRoles();
+  };
+  document.querySelectorAll('[data-delrole]').forEach((btn) => {
+    btn.onclick = async () => {
+      if (!confirm('Delete this role? Any staff on it will lose their custom permissions until reassigned.')) return;
+      const { error } = await sb.rpc('delete_role', { p_role_id: btn.dataset.delrole });
+      if (error) { alert(error.message); return; }
+      await loadRoles(); renderRoles();
+    };
+  });
+}
+
+// ---------------- Notifications ----------------
+async function loadNotifications() {
+  const { data } = await sb.from('notifications').select('*').order('created_at');
+  NOTIFS = (data || []).slice().reverse();
+  const unread = NOTIFS.filter((n) => !n.read).length;
+  const badge = $('#notifBadge');
+  if (badge) badge.textContent = unread ? '(' + unread + ')' : '';
+}
+function renderNotifications() {
+  $('#pane-notifications').innerHTML = `
+    <div class="card">
+      <h3 class="h-2">Notifications</h3>
+      ${NOTIFS.length ? NOTIFS.map((n) => `
+        <div class="notif ${n.read ? '' : 'unread'}" data-notif="${n.id}">
+          <b>${esc(n.title)}</b>
+          ${n.body ? `<div>${esc(n.body)}</div>` : ''}
+          <div class="muted">${new Date(n.created_at).toLocaleString()}</div>
+        </div>
+      `).join('') : '<p class="muted">Nothing yet.</p>'}
+    </div>
+  `;
+  document.querySelectorAll('[data-notif]').forEach((el) => {
+    el.onclick = async () => {
+      const id = el.dataset.notif, n = NOTIFS.find((x) => x.id === id);
+      if (!n || n.read) return;
+      n.read = true; el.classList.remove('unread');
+      await sb.from('notifications').update({ read: true }).eq('id', id);
+      loadNotifications();
+    };
+  });
+}
+
+boot();
+</script>
+</body>
+</html>

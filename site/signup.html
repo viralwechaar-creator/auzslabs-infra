@@ -82,6 +82,14 @@ setMode('signup');
 async function checkSession() {
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
+    // A tenant_id in app_metadata means this is already a live client
+    // (either onboarded by us directly, like OG Book Cafe, or a
+    // self-signup that's since been approved) -- send them straight
+    // to their account dashboard instead of the cart/signup flow.
+    if (session.user.app_metadata && session.user.app_metadata.tenant_id) {
+      window.location.href = 'account.html';
+      return;
+    }
     document.getElementById('authSection').style.display = 'none';
     document.getElementById('loggedInSection').style.display = 'block';
     document.getElementById('loggedInEmail').textContent = session.user.email;
@@ -94,10 +102,15 @@ document.getElementById('submitBtn').onclick = async () => {
   const password = document.getElementById('password').value;
   const errEl = document.getElementById('authErr');
   errEl.textContent = '';
-  const { error } = mode === 'signup'
+  const { data, error } = mode === 'signup'
     ? await sb.auth.signUp({ email, password })
     : await sb.auth.signInWithPassword({ email, password });
   if (error) { errEl.textContent = error.message; return; }
+  const user = data && (data.user || (data.session && data.session.user));
+  if (user && user.app_metadata && user.app_metadata.tenant_id) {
+    window.location.href = 'account.html';
+    return;
+  }
   window.location.href = 'cart.html';
 };
 
