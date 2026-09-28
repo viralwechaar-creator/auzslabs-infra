@@ -64,4 +64,5 @@ docker compose ps              # what's running
 docker compose logs -f app     # tail app logs
 docker compose exec postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"  # DB shell
 ls backups/                    # nightly backups land here
+docker compose logs -f offsite-backup   # confirm the Backblaze B2 sync is running
 ```

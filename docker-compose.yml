@@ -69,6 +69,41 @@ services:
     depends_on:
       - postgres
 
+  # ---- Off-site copy of the Postgres backups + uploaded files, so a
+  # lost/corrupted VPS doesn't also mean losing every backup that was
+  # ONLY ever kept on that same disk (both ./backups and uploads_data
+  # live here alone otherwise). Backblaze B2's free tier (10GB
+  # storage, uploads always free) comfortably covers this project's
+  # actual backup size -- see .env.example for how to get the 3
+  # required values. Syncs once at container start, then every 24h;
+  # `rclone sync` is one-directional (local -> B2) and mirrors
+  # deletions too, so a file removed locally is removed off-site on
+  # the next sync rather than piling up forever. ----
+  offsite-backup:
+    image: rclone/rclone:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      RCLONE_CONFIG_B2_TYPE: b2
+      RCLONE_CONFIG_B2_ACCOUNT: ${B2_KEY_ID}
+      RCLONE_CONFIG_B2_KEY: ${B2_APPLICATION_KEY}
+    volumes:
+      - ./backups:/data/backups:ro
+      - uploads_data:/data/uploads:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        while true; do
+          echo "[$$(date -Iseconds)] offsite-backup: syncing ./backups";
+          rclone sync /data/backups B2:$$B2_BUCKET/backups --log-level INFO;
+          echo "[$$(date -Iseconds)] offsite-backup: syncing uploads";
+          rclone sync /data/uploads B2:$$B2_BUCKET/uploads --log-level INFO;
+          echo "[$$(date -Iseconds)] offsite-backup: done, sleeping 24h";
+          sleep 86400;
+        done
+    depends_on:
+      - backup
+
   # ---- "Is it alive" dashboard + alerting ----
   uptime-kuma:
     image: louislam/uptime-kuma:1
