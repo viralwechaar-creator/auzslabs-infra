@@ -49,6 +49,26 @@
         <p class="p">This demo link isn't valid, or has expired. <a href="contact.html" style="color:var(--accent)">Get in touch</a> and we'll sort you out.</p>
       </div>
 
+      <!-- Real, hands-on access first -- a shared live demo tenant
+           (see db/023_demo_tenants.sql), not a description of one.
+           The module tour below still exists for whoever wants the
+           reading, but this is the actual point of the page. -->
+      <section class="section tight" id="liveDemoSection" style="display:none">
+        <div class="card" style="border-color:var(--accent);box-shadow:5px 5px 0 var(--accent)">
+          <span class="tag" style="background:var(--accent);color:#fff;border-color:var(--accent)">Hands-on</span>
+          <div class="h-2" style="margin-top:14px;font-size:22px">Skip the reading. Try it yourself.</div>
+          <p class="p" style="margin-top:8px">This is a real, live AUZslab account, shared publicly for exactly this. Sign in and click around &mdash; take an order, print a receipt, add a customer. Nothing you do here touches your own business.</p>
+          <div style="margin-top:14px;background:var(--bg-raised);border:1.5px solid var(--ink);border-radius:14px;padding:14px 16px;font-family:var(--font-mono);font-size:12.5px;line-height:1.9">
+            <div>URL &nbsp; <b id="liveDemoUrl"></b></div>
+            <div>Email &nbsp; <b id="liveDemoEmail"></b></div>
+            <div>Password &nbsp; <b>AuzslabDemo!2026</b></div>
+          </div>
+          <a id="liveDemoBtn" href="#" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top:16px">Launch live demo &rarr;</a>
+        </div>
+      </section>
+
+      <hr class="dash" id="tourDash" style="display:none">
+
       <section class="section tight" id="demoBody" style="display:none"></section>
 
       <hr class="dash" id="ctaDash" style="display:none">
@@ -150,9 +170,14 @@ const NICHE_DEFAULTS = {
   general: { pos: true, crm: true, billing: true, inventory: true, qr: false },
 };
 
+// title/bullets are our own hardcoded strings (POS_BULLETS etc. above),
+// not user input, and already contain intentional HTML entities like
+// &mdash; -- esc()-ing title here double-encoded them into literal
+// "&amp;mdash;" text on screen, so only ctx.business_name (the one
+// real user-supplied value rendered on this page) gets escaped.
 function modCard(title, bullets) {
   if (!bullets.length) return '';
-  return `<div class="card demo-mod"><span class="tag">Included</span><div class="h-2" style="margin-top:14px;font-size:20px">${esc(title)}</div>
+  return `<div class="card demo-mod"><span class="tag">Included</span><div class="h-2" style="margin-top:14px;font-size:20px">${title}</div>
     <ul class="uk-kit uk-linklist">${bullets.map((b) => `<li><span>${b}</span></li>`).join('')}</ul></div>`;
 }
 
@@ -171,6 +196,18 @@ function render(ctx) {
     ? "Here's exactly what you picked, walked through one module at a time."
     : "Here's what a business like yours typically runs on AUZslab. Your account manager will confirm the final list with you.";
 
+  // Retail gets the retail-flavored sandbox (size/color billing, trial
+  // room); every other niche gets the café/restaurant one, since that's
+  // the fuller generic-POS experience and salon/gym have no POS UI of
+  // their own yet (see the roadmap note below).
+  const demoSlug = ctx.niche === 'retail' ? 'demo-retail' : 'demo-cafe';
+  const demoUrl = 'https://' + demoSlug + '.auzslab.in';
+  document.getElementById('liveDemoUrl').textContent = demoUrl;
+  document.getElementById('liveDemoEmail').textContent = demoSlug + '@auzslab.in';
+  document.getElementById('liveDemoBtn').href = demoUrl;
+  document.getElementById('liveDemoSection').style.display = 'block';
+  document.getElementById('tourDash').style.display = 'block';
+
   let html = '';
   if (showPos) html += modCard('POS &mdash; Selling', POS_BULLETS[fl] || POS_BULLETS.general);
   if (showCrm) html += modCard('CRM &mdash; Customers &amp; growth', CRM_BULLETS);
@@ -185,7 +222,8 @@ function render(ctx) {
       <p class="p" style="margin-top:10px">Real appointment/slot booking is being built for salons and gyms specifically &mdash; not live yet, so it isn't included here.</p></div>`;
   }
 
-  document.getElementById('demoBody').innerHTML = html || '<p class="p">Nothing to show for this niche yet &mdash; get in touch and we\'ll walk you through it directly.</p>';
+  const label = '<div class="label" style="margin-bottom:14px">Or, if you\'d rather read first</div>';
+  document.getElementById('demoBody').innerHTML = label + (html || '<p class="p">Nothing to show for this niche yet &mdash; get in touch and we\'ll walk you through it directly.</p>');
   document.getElementById('demoLoading').style.display = 'none';
   document.getElementById('demoBody').style.display = 'block';
   document.getElementById('ctaDash').style.display = 'block';

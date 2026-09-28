@@ -101,7 +101,10 @@ insert into niche_presets (niche, default_features, default_labels, default_busi
            '{"currency": "INR"}'),
 ('retail', '{"booking": false, "crm": true, "billing": true, "pos": true}',
            '{"catalog": "Products",   "resource": "Counter",  "booking": "Sale"}',
-           '{"currency": "INR", "tax_rate": 18}'),
+           -- "tax" to match cfg() in index.html exactly (like the cafe
+           -- preset's comment above already says) -- a "tax_rate" key
+           -- here silently did nothing, since cfg() only ever reads "tax".
+           '{"currency": "INR", "tax": 18}'),
 ('general', '{"booking": false, "crm": true, "billing": true, "pos": true}',
            '{"catalog": "Items",      "resource": "Counter",  "booking": "Sale"}',
            '{"currency": "INR"}');
