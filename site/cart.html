@@ -49,6 +49,18 @@
       <section class="section tight" id="requestSection" style="display:none">
         <div class="card">
           <p class="p" style="margin-bottom:8px">Signed in as <b id="whoami"></b></p>
+
+          <p class="label" style="margin-top:4px">About you</p>
+          <div class="field">
+            <label for="contactName">Your name</label>
+            <input id="contactName" placeholder="Full name">
+          </div>
+          <div class="field">
+            <label for="contactPhone">Phone number</label>
+            <input id="contactPhone" type="tel" placeholder="9876543210">
+          </div>
+
+          <p class="label" style="margin-top:18px">About your business</p>
           <div class="field">
             <label for="bizName">Business name</label>
             <input id="bizName" placeholder="OG Book Cafe">
@@ -58,8 +70,22 @@
             <input id="bizSlug" placeholder="ogbookcafe" pattern="[a-z0-9-]+">
           </div>
           <div class="field">
+            <label for="bizNiche">Type of business</label>
+            <select id="bizNiche">
+              <option value="cafe">Cafe / Restaurant</option>
+              <option value="retail">Retail / Shop</option>
+              <option value="salon">Salon / Spa</option>
+              <option value="gym">Gym / Fitness</option>
+              <option value="general">Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="bizAddress">Business address / city</label>
+            <input id="bizAddress" placeholder="City, State">
+          </div>
+          <div class="field">
             <label for="bizNotes">Anything else we should know?</label>
-            <textarea id="bizNotes" placeholder="Optional"></textarea>
+            <textarea id="bizNotes" placeholder="Current billing software, number of outlets, etc. (optional)"></textarea>
           </div>
           <button id="submitBtn" class="btn btn-primary form-submit">Send to AUZslab</button>
           <div id="submitErr" class="err"></div>
@@ -133,11 +159,16 @@ document.getElementById('bizName').addEventListener('input', (e) => {
 document.getElementById('bizSlug').addEventListener('input', (e) => { e.target.dataset.touched = '1'; });
 
 document.getElementById('submitBtn').onclick = async () => {
+  const contactName = document.getElementById('contactName').value.trim();
+  const contactPhone = document.getElementById('contactPhone').value.trim();
   const name = document.getElementById('bizName').value.trim();
   const slug = document.getElementById('bizSlug').value.trim().toLowerCase();
+  const niche = document.getElementById('bizNiche').value;
+  const address = document.getElementById('bizAddress').value.trim();
   const notes = document.getElementById('bizNotes').value.trim();
   const errEl = document.getElementById('submitErr');
   errEl.textContent = '';
+  if (!contactName || !contactPhone) { errEl.textContent = 'Your name and phone number are required.'; return; }
   if (!name || !slug) { errEl.textContent = 'Business name and subdomain are required.'; return; }
 
   const features = {};
@@ -145,6 +176,7 @@ document.getElementById('submitBtn').onclick = async () => {
 
   const { error } = await sb.rpc('submit_signup_request', {
     p_business_name: name, p_slug: slug, p_features: features, p_notes: notes,
+    p_contact_name: contactName, p_phone: contactPhone, p_niche: niche, p_address: address,
   });
   if (error) {
     errEl.textContent = error.message;

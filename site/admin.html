@@ -310,7 +310,14 @@ async function loadSignupRequests() {
       .map(([k]) => `<span class="feature-tag">${esc(FEATURE_LABEL[k] || k)}</span>`).join('') || '&mdash;';
     return `
     <tr data-id="${r.id}">
-      <td><b>${esc(r.business_name)}</b><br><span style="color:var(--ink-faint)">${esc(r.slug)}.auzslab.in</span></td>
+      <td>
+        <b>${esc(r.business_name)}</b><br><span style="color:var(--ink-faint)">${esc(r.slug)}.auzslab.in</span><br>
+        <span style="color:var(--ink-faint)">${esc(NICHE_LABEL[r.niche] || r.niche || 'Type not given')}${r.address ? ' &middot; ' + esc(r.address) : ''}</span>
+      </td>
+      <td>
+        <b>${r.contact_name ? esc(r.contact_name) : '&mdash;'}</b><br>
+        <span style="color:var(--ink-faint)">${r.phone ? esc(r.phone) : 'No phone given'}</span>
+      </td>
       <td>${services}</td>
       <td>${r.notes ? esc(r.notes) : '&mdash;'}</td>
       <td class="row-actions">
@@ -321,14 +328,15 @@ async function loadSignupRequests() {
   }).join('');
 
   listEl.innerHTML = `<div class="admin-table-wrap"><table class="admin-table">
-    <tr><th>Business</th><th>Requested</th><th>Notes</th><th></th></tr>
+    <tr><th>Business</th><th>Contact</th><th>Requested</th><th>Notes</th><th></th></tr>
     ${rows}
   </table></div>`;
 
   listEl.querySelectorAll('tr[data-id]').forEach((tr) => {
     const id = tr.dataset.id;
+    const req = pending.find((p) => p.id === id);
     tr.querySelector('[data-approve]').onclick = async () => {
-      const niche = prompt('Niche for this tenant (cafe / salon / gym / retail / general)', 'general');
+      const niche = prompt('Niche for this tenant (cafe / salon / gym / retail / general)', req?.niche || 'general');
       if (niche === null) return;
       const cleanNiche = ['cafe', 'salon', 'gym', 'retail', 'general'].includes(niche.trim()) ? niche.trim() : 'general';
       const { error: appErr } = await sb.rpc('approve_signup_request', { p_request_id: id, p_niche: cleanNiche });
