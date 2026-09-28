@@ -27,26 +27,33 @@
   </header>
 
   <main class="content">
-    <div class="wrap" style="max-width:640px">
+    <div class="wrap">
 
       <section class="section" style="padding-top:56px">
+        <div class="hero-grid">
+        <div>
         <div class="label">Your cart</div>
         <h1 class="h-1">Ready when you are.</h1>
         <p class="lede">Confirm what you need, sign in, and we'll take it from there.</p>
+        </div>
+        <div class="hero-art" role="presentation">
+          <img class="hero-art-logo" src="logo.png" alt="" aria-hidden="true">
+        </div>
+        </div>
       </section>
 
-      <section class="section tight">
+      <section class="section tight" style="max-width:640px">
         <div id="cartItems"></div>
       </section>
 
-      <section class="section tight" id="signedOutNotice" style="display:none">
+      <section class="section tight" id="signedOutNotice" style="display:none;max-width:640px">
         <div class="card">
-          <p class="p">Sign in or create an account to send this to us.</p>
+          <p class="p">Sign in or create an account first -- then tell us what you need and we'll take it from there.</p>
           <a href="signup.html" class="btn btn-primary form-submit">Sign in / Create account</a>
         </div>
       </section>
 
-      <section class="section tight" id="requestSection" style="display:none">
+      <section class="section tight" id="requestSection" style="display:none;max-width:640px">
         <div class="card">
           <p class="p" style="margin-bottom:8px">Signed in as <b id="whoami"></b></p>
 
@@ -123,8 +130,7 @@ function renderCart() {
   const items = AUZcart.get();
   const el = document.getElementById('cartItems');
   if (!items.length) {
-    el.innerHTML = '<p class="p">Your cart is empty. <a href="products.html" style="color:var(--accent)">Browse products</a> to add something.</p>';
-    document.getElementById('requestSection').style.display = 'none';
+    el.innerHTML = '<p class="p">No products picked yet. <a href="products.html" style="color:var(--accent)">Browse products</a> to add some -- or just fill in your details below and we\'ll follow up to help you choose.</p>';
     return;
   }
   el.innerHTML = items.map((key) => `
@@ -138,14 +144,18 @@ function renderCart() {
 }
 renderCart();
 
+// Signed-in visitors go straight to the details form -- whether or not
+// they've picked any products yet. Requiring cart items first forced
+// people to shop before we'd even take their name, backwards from how
+// a lead-gen flow should work: identify them first, help them pick
+// services after (see submitBtn's own product-count check below).
 async function checkSession() {
   const { data: { session } } = await sb.auth.getSession();
-  const hasItems = AUZcart.get().length > 0;
-  if (session && hasItems) {
+  if (session) {
     document.getElementById('signedOutNotice').style.display = 'none';
     document.getElementById('requestSection').style.display = 'block';
     document.getElementById('whoami').textContent = session.user.email;
-  } else if (!session && hasItems) {
+  } else {
     document.getElementById('signedOutNotice').style.display = 'block';
     document.getElementById('requestSection').style.display = 'none';
   }
@@ -170,6 +180,7 @@ document.getElementById('submitBtn').onclick = async () => {
   errEl.textContent = '';
   if (!contactName || !contactPhone) { errEl.textContent = 'Your name and phone number are required.'; return; }
   if (!name || !slug) { errEl.textContent = 'Business name and subdomain are required.'; return; }
+  if (!AUZcart.get().length) { errEl.textContent = 'Pick at least one product above before sending -- or tell us in the notes and we\'ll help you choose.'; return; }
 
   const features = {};
   AUZcart.get().forEach((key) => { features[key] = true; });

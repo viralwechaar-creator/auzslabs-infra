@@ -10,7 +10,64 @@
 <link rel="stylesheet" href="theme.css?v=42">
 <link rel="stylesheet" href="design-system/ui-kit.css?v=3">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<style>.err{color:var(--accent);font-size:12.5px;margin-top:10px}</style>
+<style>
+.err{color:var(--accent);font-size:12.5px;margin-top:10px}
+
+/* ---- signup-page-only: a decorative panel beside the auth card on
+   wide screens, filling what was previously dead space next to a
+   narrow 380px card. Pure CSS -- no JS, no external assets besides
+   the existing logo.png -- so it costs nothing and can't break the
+   auth flow if it fails to render for any reason. ---- */
+.auth-grid{align-items:stretch}
+.auth-art{
+  position:relative;display:none;flex-direction:column;align-items:center;justify-content:center;
+  min-height:460px;padding:40px 24px;border-radius:24px;overflow:hidden;
+  background:var(--ink);
+}
+@media (min-width:861px){ .auth-art{display:flex} }
+.auth-art-glow{
+  position:absolute;width:340px;height:340px;border-radius:50%;
+  background:radial-gradient(circle, rgba(160,20,40,.5), transparent 70%);
+  animation:auzGlow 6s ease-in-out infinite;
+}
+@keyframes auzGlow{0%,100%{transform:scale(1);opacity:.65}50%{transform:scale(1.3);opacity:1}}
+.auth-art-particles span{
+  position:absolute;bottom:0;width:6px;height:6px;background:var(--accent);opacity:0;
+  animation-name:auzRise;animation-timing-function:ease-in;animation-iteration-count:infinite;
+}
+.auth-art-particles span:nth-child(1){left:18%;animation-duration:7s;animation-delay:.2s}
+.auth-art-particles span:nth-child(2){left:32%;animation-duration:5.5s;animation-delay:1.8s}
+.auth-art-particles span:nth-child(3){left:50%;animation-duration:8s;animation-delay:.6s}
+.auth-art-particles span:nth-child(4){left:66%;animation-duration:6s;animation-delay:2.4s}
+.auth-art-particles span:nth-child(5){left:80%;animation-duration:7.5s;animation-delay:1.1s}
+.auth-art-particles span:nth-child(6){left:42%;animation-duration:9s;animation-delay:3.2s}
+@keyframes auzRise{
+  0%{transform:translateY(20px);opacity:0}
+  12%{opacity:.9}
+  85%{opacity:.7}
+  100%{transform:translateY(-320px);opacity:0}
+}
+.auth-art-logo{
+  position:relative;width:52%;max-width:210px;
+  filter:invert(1) brightness(1.6);
+  animation:auzFloat 4.5s ease-in-out infinite;
+}
+@keyframes auzFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.auth-art-taglines{position:relative;margin-top:30px;height:18px;width:100%;text-align:center}
+.auth-art-taglines span{
+  position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap;
+  font-family:var(--font-mono);font-size:11.5px;letter-spacing:.03em;color:rgba(255,255,255,.8);
+  opacity:0;animation:auzTagline 10.5s ease-in-out infinite;
+}
+.auth-art-taglines span:nth-child(2){animation-delay:3.5s}
+.auth-art-taglines span:nth-child(3){animation-delay:7s}
+@keyframes auzTagline{0%,4%{opacity:0}8%,28%{opacity:1}33%,100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){
+  .auth-art-glow,.auth-art-particles span,.auth-art-logo,.auth-art-taglines span{animation:none}
+  .auth-art-logo{filter:invert(1) brightness(1.6)}
+  .auth-art-taglines span:first-child{opacity:1}
+}
+</style>
 </head>
 <body>
 <div class="shell">
@@ -20,38 +77,54 @@
   </header>
 
   <main class="content">
-    <div class="wrap" style="max-width:920px">
+    <div class="wrap">
 
       <section class="section" style="padding-top:56px">
+        <div class="hero-grid auth-grid">
+        <div>
+
         <div class="label">Your account</div>
         <h1 class="h-1" id="pageTitle">Sign in</h1>
         <p class="lede" id="pageLede">Create an account or sign in to build your cart and send us your requirements.</p>
-      </section>
 
-      <section class="section tight" id="authSection">
-        <div class="card" style="max-width:380px">
-          <div style="display:flex;gap:8px;margin-bottom:6px">
-            <button class="btn btn-ghost" id="modeNew" style="flex:1;justify-content:center">New account</button>
-            <button class="btn btn-ghost" id="modeLogin" style="flex:1;justify-content:center">Log in</button>
+        <section class="section tight" id="authSection" style="padding-top:24px">
+          <div class="card" style="max-width:380px">
+            <div style="display:flex;gap:8px;margin-bottom:6px">
+              <button class="btn btn-ghost" id="modeNew" style="flex:1;justify-content:center">New account</button>
+              <button class="btn btn-ghost" id="modeLogin" style="flex:1;justify-content:center">Log in</button>
+            </div>
+            <div class="field">
+              <label for="email">Email</label>
+              <input id="email" type="email">
+            </div>
+            <div class="field">
+              <label for="password">Password</label>
+              <input id="password" type="password">
+            </div>
+            <button id="submitBtn" class="btn btn-primary form-submit">Create account</button>
+            <div id="authErr" class="err"></div>
           </div>
-          <div class="field">
-            <label for="email">Email</label>
-            <input id="email" type="email">
+        </section>
+
+        <section class="section tight" id="loggedInSection" style="display:none;padding-top:24px">
+          <div class="card" style="max-width:380px">
+            <p class="p">You're signed in as <b id="loggedInEmail"></b>.</p>
+            <a href="cart.html" class="btn btn-primary form-submit">Go to your cart</a>
+            <button id="signOutBtn" class="btn btn-ghost form-submit">Sign out</button>
           </div>
-          <div class="field">
-            <label for="password">Password</label>
-            <input id="password" type="password">
-          </div>
-          <button id="submitBtn" class="btn btn-primary form-submit">Create account</button>
-          <div id="authErr" class="err"></div>
+        </section>
+
         </div>
-      </section>
-
-      <section class="section tight" id="loggedInSection" style="display:none">
-        <div class="card" style="max-width:380px">
-          <p class="p">You're signed in as <b id="loggedInEmail"></b>.</p>
-          <a href="cart.html" class="btn btn-primary form-submit">Go to your cart</a>
-          <button id="signOutBtn" class="btn btn-ghost form-submit">Sign out</button>
+        <div class="auth-art" role="presentation">
+          <div class="auth-art-glow"></div>
+          <div class="auth-art-particles"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+          <img class="auth-art-logo" src="logo.png" alt="" aria-hidden="true">
+          <div class="auth-art-taglines">
+            <span>Self-hosted. Your data, your server.</span>
+            <span>Real-time sync across every device.</span>
+            <span>One login. Every service.</span>
+          </div>
+        </div>
         </div>
       </section>
 

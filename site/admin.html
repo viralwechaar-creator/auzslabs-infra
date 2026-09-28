@@ -84,12 +84,19 @@
   </aside>
 
   <main class="content">
-    <div class="wrap" style="max-width:920px">
+    <div class="wrap">
 
       <section class="section" style="padding-top:56px">
+        <div class="hero-grid">
+        <div>
         <div class="label">AUZlabs internal</div>
         <h1 class="h-1" id="pageTitle">Admin</h1>
         <p class="lede" id="pageLede">Sign in to review leads and onboard new clients.</p>
+        </div>
+        <div class="hero-art" role="presentation">
+          <img class="hero-art-logo" src="logo.png" alt="" aria-hidden="true">
+        </div>
+        </div>
       </section>
 
       <section class="section tight" id="loginSection">
@@ -409,6 +416,7 @@ async function loadClients() {
         <button class="btn btn-ghost" data-edit>Edit</button>
         <button class="btn btn-ghost" data-reset-pw>Reset password</button>
         <button class="btn btn-ghost" data-message>Message</button>
+        <button class="btn btn-ghost" data-delete style="color:var(--accent);border-color:var(--accent)">Delete</button>
       </td>
     </tr>`;
   }).join('');
@@ -441,6 +449,18 @@ async function loadClients() {
       const { error } = await sb.rpc('send_client_notification', { p_tenant_id: id, p_title: title, p_body: body });
       if (error) { alert(error.message); return; }
       alert('Sent -- they\'ll see it in their account\'s Notifications tab.');
+    };
+  });
+  listEl.querySelectorAll('[data-delete]').forEach((btn) => {
+    btn.onclick = async () => {
+      const id = btn.closest('tr').dataset.id;
+      const c = clientsCache.find((x) => x.id === id);
+      const typed = prompt(`This permanently deletes "${c.name}" -- their login, orders, bookings, everything. This cannot be undone.\n\nType the client's exact name to confirm:`);
+      if (typed !== c.name) { if (typed !== null) alert('Name did not match -- nothing was deleted.'); return; }
+      const { error } = await sb.rpc('delete_client', { p_tenant_id: id });
+      if (error) { alert(error.message); return; }
+      alert(`"${c.name}" has been deleted.`);
+      loadClients();
     };
   });
 }

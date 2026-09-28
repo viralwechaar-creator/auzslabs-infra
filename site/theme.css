@@ -495,7 +495,13 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
   .nav-group{position:relative}
   .nav-submenu{
     display:block;grid-template-rows:none;
-    position:absolute;top:-10px;right:100%;margin-right:16px;
+    /* left/bottom reset to auto -- the base (mobile) rule sets them via
+       `inset:0`, and leaving them at 0 here over-constrains the box
+       (left, right and width all non-auto at once), which makes every
+       browser discard `right` and pin the flyout to `left:0` of its
+       40px-tall toggle instead -- rendering it off past the sidebar's
+       right edge, clipped by the viewport, instead of flying out left. */
+    position:absolute;left:auto;bottom:auto;top:-10px;right:100%;margin-right:16px;
     width:264px;background:#fff;border:2px solid var(--ink);border-radius:18px;
     padding:14px;box-shadow:10px 10px 0 var(--ink);
     opacity:0;pointer-events:none;transform:translateX(10px) scale(.97);transform-origin:top right;
