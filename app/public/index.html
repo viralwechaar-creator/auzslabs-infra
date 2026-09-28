@@ -3,31 +3,52 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel=stylesheet>
 <style>
 /* ---- Same design tokens/typography as auzslab.in (site/theme.css):
-   ink/accent palette, Fraunces+Inter+Space Mono, the thick-ink-border
-   + solid-offset-shadow card language. --g used to be overridden per
-   tenant at runtime from their own "Brand colour" setting (see the old
-   render()) -- now fixed to AUZslab's own accent by default; a
-   client's own colour is a manual, on-request change we make for that
-   tenant specifically, not a self-serve default. Radii stay tighter
-   than the marketing site's (and cards skip its odd/even rotate
-   flourish) since this is a dense working tool, not a landing page. ---- */
+   ink/accent palette, Fraunces+Inter+Space Mono. A 2px-ink-border-on-
+   every-element pass (the previous version of this comment/reskin)
+   read as "boxy" in a dense screen with dozens of buttons on it at
+   once -- borders on every row action, every category pill, every nav
+   tab. Minimal-premium instead: borders/shadow reserved for the few
+   things that are genuinely containers (.card, .md modal, item
+   tiles) or need a visible edit boundary (form fields); everything
+   else (buttons, nav, row actions) is a plain or soft-filled shape
+   that differentiates by colour/weight, not an outline. ---- */
 :root{--ink:#171717;--ink-dim:#4d4d4d;--ink-faint:#8c8c8c;--accent:#800020;--g:var(--accent);--l:rgba(23,23,23,.16);--bg-raised:#dedede;--radius-sm:12px;--radius-md:16px;--radius-lg:20px;--shadow-sm:0 2px 8px -4px rgba(23,23,23,.16);--shadow-md:0 12px 28px -12px rgba(23,23,23,.2)}*{box-sizing:border-box}body{margin:0;font:15px/1.5 Inter,system-ui,sans-serif;background:var(--bg-raised);color:var(--ink)}
-button,input,select,textarea{font:inherit;padding:9px 14px;border:2px solid var(--ink);border-radius:var(--radius-sm);background:#fff;color:inherit;transition:box-shadow .15s,border-color .15s,background .15s}button{cursor:pointer}button.p,button.on{background:var(--g);color:#fff;border-color:var(--g)}button.warn{background:#fff;color:var(--accent);border-color:var(--accent)}button.warn:hover{background:var(--accent);color:#fff}button:disabled{opacity:.4}
-header{display:flex;gap:6px;align-items:center;padding:10px 12px;background:var(--ink);flex-wrap:wrap;font-family:Fraunces,serif;font-weight:700;box-shadow:var(--shadow-sm)}header button{background:#ffffff26;color:#fff;border-color:#ffffff40;font-family:Fraunces,serif;font-weight:700}header button.on{background:#fff;color:var(--ink)}header span{margin-left:auto;color:rgba(255,255,255,.55);font-size:12px;font-family:'Space Mono',monospace}
+button{font:inherit;cursor:pointer;padding:9px 14px;border:none;border-radius:var(--radius-sm);background:none;color:var(--ink-dim);transition:background .15s,color .15s}
+button:hover{background:var(--l)}
+button.p,button.on{background:var(--g);color:#fff}
+button.p:hover,button.on:hover{background:var(--g);opacity:.9}
+button.warn{color:var(--accent)}
+button.warn:hover{background:var(--accent);color:#fff}
+button:disabled{opacity:.4;background:none}
+input,select,textarea{font:inherit;padding:9px 14px;border:1.5px solid var(--l);border-radius:var(--radius-sm);background:#fff;color:inherit}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+header{display:flex;gap:4px;align-items:center;padding:10px 12px;background:var(--ink);flex-wrap:wrap;font-family:Fraunces,serif;font-weight:700;box-shadow:var(--shadow-sm)}header button{color:rgba(255,255,255,.65);font-family:Fraunces,serif;font-weight:700}header button:hover{background:#ffffff1a;color:#fff}header button.on{background:#fff;color:var(--ink)}header button.on:hover{background:#fff;opacity:1}header span{margin-left:auto;color:rgba(255,255,255,.55);font-size:12px;font-family:'Space Mono',monospace}
 .g{display:grid;grid-template-columns:1fr 340px;gap:10px;padding:10px}@media(max-width:800px){.g{grid-template-columns:1fr}}
-.card{background:#fff;border:2px solid var(--ink);border-radius:18px 8px 18px 8px;padding:12px;box-shadow:4px 4px 0 var(--ink)}.items{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:8px}.items button{text-align:left;min-height:64px;border-radius:12px}
-.row{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:5px 0;flex-wrap:wrap}.ov{position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;padding:10px}
-.md{background:#fff;border:2px solid var(--ink);border-radius:var(--radius-lg);padding:18px;width:420px;max-width:100%;max-height:90vh;overflow:auto;display:grid;gap:8px;box-shadow:6px 6px 0 var(--ink)}.k{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;padding:10px}
+.card{background:#fff;border-radius:16px;padding:14px;box-shadow:var(--shadow-sm)}
+.items{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:8px}
+.items button{text-align:left;min-height:64px;border-radius:12px;background:#fff;border:1.5px solid var(--l);color:var(--ink)}
+.items button:hover{border-color:var(--ink-faint);background:#fff}
+.row{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid var(--l);flex-wrap:wrap}.row:last-child{border-bottom:none}
+.ov{position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;padding:10px}
+.md{background:#fff;border-radius:var(--radius-lg);padding:18px;width:420px;max-width:100%;max-height:90vh;overflow:auto;display:grid;gap:8px;box-shadow:var(--shadow-md)}.k{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;padding:10px}
 table{width:100%;border-collapse:collapse}td,th{padding:5px;border-bottom:1px solid var(--l);text-align:left}
 .powered{text-align:center;padding:14px 10px 24px;font-size:11px;color:var(--ink-faint);font-family:'Space Mono',monospace}.powered a{color:var(--ink-faint)}
 #notifCount:not(:empty){background:var(--accent);color:#fff;border-radius:999px;padding:1px 6px;font-size:10px;margin-left:3px}
+/* ---- tabbar: a segmented control for switching panes within one
+   screen (currently Settings' Business/Tables/Website) instead of
+   stacking every section as its own long card, one under the next. ---- */
+.tabbar{display:flex;gap:2px;padding:4px;background:var(--bg-raised);border-radius:999px;margin-bottom:10px}
+.tabbar button{flex:1;padding:8px 12px;border-radius:999px;font-family:'Space Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-dim);text-align:center}
+.tabbar button:hover{background:none;color:var(--ink)}
+.tabbar button.on{background:#fff;color:var(--ink);box-shadow:0 1px 4px rgba(23,23,23,.15)}
+.tabbar button.on:hover{background:#fff}
 </style></head><body><div id=app></div>
 <script src=/sb-client.js?v=2></script>
 <script src=https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js integrity="sha384-8FWZA6BGMXhsfO+BLtrJK0We6gg5o1JyO8xQm6peWDEUs17ACA5ziE/NIAkl9z2k" crossorigin=anonymous></script>
 <script src=/config.js></script>
 <script>
 const VAPID_PUBLIC='BN_aBfhAkcWmYJ8RArUKpcXFBId6rUsNO7bAuhyPr4To51XeATMoWY-8NxtJMCG_iHm4O4UbhV_EZnxloXkEMe4';
-const C=window.CFG||{},sb=supabase.createClient(C.url,C.key),S={tab:'pos',type:'Dine-in',cur:null,role:'cashier',role_id:null,perms:null,features:null,enabledFeatures:{},q:'',d:new Date().toLocaleDateString('en-CA'),authExpired:false},R={},V={};let busy=0,conflicts=0,syncErr=0;
+const C=window.CFG||{},sb=supabase.createClient(C.url,C.key),S={tab:'pos',setTab:'biz',type:'Dine-in',cur:null,role:'cashier',role_id:null,perms:null,features:null,enabledFeatures:{},q:'',d:new Date().toLocaleDateString('en-CA'),authExpired:false},R={},V={};let busy=0,conflicts=0,syncErr=0;
 const $=s=>document.querySelector(s),uid=()=>crypto.randomUUID(),tok=()=>crypto.randomUUID().replace(/-/g,'').slice(0,12),now=()=>new Date().toISOString(),r2=n=>Math.round(n*100)/100,inr=n=>'₹'+r2(n),inrc=n=>'₹'+r2(n).toLocaleString('en-IN');
 const fmtDate=d=>{const t=new Date(d);return t.toLocaleDateString('en-US',{weekday:'short'})+', '+t.getDate()+' '+t.toLocaleDateString('en-US',{month:'short'})+' '+t.getFullYear()};
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -212,9 +233,19 @@ V.set=()=>{const s=cfg(),F={},sel=(k,l,o)=>h('label',{},l,h('select',{style:'wid
  const galInp=h('input',{type:'file',accept:'image/*',multiple:true}),galPrev=h('div',{style:'font-size:12px;color:var(--ink-dim)'},(s.siteGallery||'').split(',').filter(Boolean).length+' photo(s) in gallery');
  galInp.onchange=async()=>{const files=[...galInp.files];if(!files.length)return;galPrev.textContent='Compressing & uploading '+files.length+'…';try{const urls=[];for(const file of files)urls.push(await uploadSiteImage(file,'gallery'));const existing=(F.siteGallery??s.siteGallery??'').split(',').filter(Boolean);F.siteGallery=[...existing,...urls].join(',');galPrev.textContent=F.siteGallery.split(',').filter(Boolean).length+' photo(s) — click Save to apply'}catch(e){galPrev.textContent='Upload failed: '+e.message}};
  const saveBtn=()=>h('button',{class:'p',onclick:async()=>{await save('settings',{...s,...F},'settings');alert('Saved')}},'Save');
- return h('div',{class:'g',style:'grid-template-columns:1fr'},h('div',{class:'card',style:'display:grid;gap:8px'},h('h3',{},'Business details'),f('name','Name'),f('addr','Address'),f('phone','Phone'),f('gstin','GSTIN'),f('tax','GST %','number'),f('prefix','Invoice prefix'),h('h4',{},'Look & invoice'),f('col','Brand colour (hex, e.g. #1f3d2e)'),f('logo','Logo image URL (optional)'),f('ftr','Invoice thank-you message'),sel('w','Paper width',[[80,'80 mm'],[58,'58 mm']]),sel('sty','Invoice style',[['mono','Thermal (monospace)'],['sans','Clean (sans-serif)']]),f('fs','Invoice font size (px)','number'),h('h4',{},'Self-order'),f('gw','Guest ordering welcome text'),saveBtn()),
- h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Tables'),h('span',{},h('button',{onclick:()=>qr(L('table'))},'Print all QR'),h('button',{onclick:()=>{const n=prompt('Table name');n&&save('table',{name:n}).then(render)}},'Add table'))),...L('table').map(t=>h('div',{class:'row'},t.name,h('span',{},h('button',{onclick:()=>qr([t])},'QR'),h('button',{onclick:()=>save('table',t,t.id,true).then(render)},'Delete'))))),
- h('div',{class:'card',style:'display:grid;gap:10px'},h('div',{class:'row'},h('h3',{},'Website'),h('a',{href:'/site.html',target:'_blank'},'Preview ↗')),f('siteKicker','Small tagline above headline'),ta('siteTag','Headline (press Enter for a line break)'),f('siteSub','Subheading'),ta('siteAbout','About text'),f('siteHours','Opening hours text'),f('siteInsta','Instagram link (optional)'),f('siteMaps','Google Maps link (optional)'),imgField('siteHero','Hero photo — compressed automatically on upload'),imgField('siteAboutImg','About-section photo'),h('label',{style:'display:grid;gap:4px'},'Gallery photos (adds to existing, compressed automatically)',galInp,galPrev),saveBtn()))};
+ // Three long cards stacked one under the next made this a very long
+ // scroll -- switchable tabs (persisted in S.setTab so it survives the
+ // re-renders every save/sync triggers) show one section at a time.
+ const panes={
+  biz:()=>h('div',{class:'card',style:'display:grid;gap:8px'},h('h3',{},'Business details'),f('name','Name'),f('addr','Address'),f('phone','Phone'),f('gstin','GSTIN'),f('tax','GST %','number'),f('prefix','Invoice prefix'),h('h4',{},'Look & invoice'),f('col','Brand colour (hex, e.g. #1f3d2e)'),f('logo','Logo image URL (optional)'),f('ftr','Invoice thank-you message'),sel('w','Paper width',[[80,'80 mm'],[58,'58 mm']]),sel('sty','Invoice style',[['mono','Thermal (monospace)'],['sans','Clean (sans-serif)']]),f('fs','Invoice font size (px)','number'),h('h4',{},'Self-order'),f('gw','Guest ordering welcome text'),saveBtn()),
+  tables:()=>h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Tables'),h('span',{},h('button',{onclick:()=>qr(L('table'))},'Print all QR'),h('button',{class:'p',onclick:()=>{const n=prompt('Table name');n&&save('table',{name:n}).then(render)}},'Add table'))),...L('table').map(t=>h('div',{class:'row'},t.name,h('span',{},h('button',{onclick:()=>qr([t])},'QR'),h('button',{class:'warn',onclick:()=>save('table',t,t.id,true).then(render)},'Delete'))))),
+  site:()=>h('div',{class:'card',style:'display:grid;gap:10px'},h('div',{class:'row'},h('h3',{},'Website'),h('a',{href:'/site.html',target:'_blank'},'Preview ↗')),f('siteKicker','Small tagline above headline'),ta('siteTag','Headline (press Enter for a line break)'),f('siteSub','Subheading'),ta('siteAbout','About text'),f('siteHours','Opening hours text'),f('siteInsta','Instagram link (optional)'),f('siteMaps','Google Maps link (optional)'),imgField('siteHero','Hero photo — compressed automatically on upload'),imgField('siteAboutImg','About-section photo'),h('label',{style:'display:grid;gap:4px'},'Gallery photos (adds to existing, compressed automatically)',galInp,galPrev),saveBtn()),
+ };
+ const tabs=[['biz','Business'],['tables','Tables'],['site','Website']];
+ return h('div',{class:'g',style:'grid-template-columns:1fr'},
+  h('div',{class:'tabbar'},...tabs.map(([k,n])=>h('button',{class:S.setTab==k?'on':'',onclick:()=>{S.setTab=k;render()}},n))),
+  panes[S.setTab in panes?S.setTab:'biz']()
+ )};
 function compressImage(file,maxW,quality){return new Promise((res,rej)=>{const img=new Image(),url=URL.createObjectURL(file);img.onload=()=>{const scale=Math.min(1,maxW/img.width),w=Math.round(img.width*scale),ht=Math.round(img.height*scale),c=document.createElement('canvas');c.width=w;c.height=ht;c.getContext('2d').drawImage(img,0,0,w,ht);c.toBlob(b=>{URL.revokeObjectURL(url);b?res(b):rej(new Error('Could not process that image'))},'image/jpeg',quality)};img.onerror=()=>rej(new Error('Could not read that image'));img.src=url})}
 async function uploadSiteImage(file,prefix){const blob=await compressImage(file,prefix=='gallery'?1200:1800,.8);const path=prefix+'/'+Date.now()+'-'+Math.random().toString(36).slice(2,7)+'.jpg';const{error}=await sb.storage.from('site').upload(path,blob,{contentType:'image/jpeg'});if(error)throw error;return sb.storage.from('site').getPublicUrl(path).data.publicUrl}
 function qr(ts){const cards=ts.map(t=>{const q=qrcode(0,'M');q.addData(location.origin+'/site.html?t='+t.id);q.make();return `<div style="display:inline-block;text-align:center;margin:8px;padding:8px;border:1px solid #000;width:220px"><b>${esc(cfg().name)}</b><br>${q.createSvgTag(5)}<br><b>${esc(t.name)}</b><br>Scan to view menu &amp; order</div>`}).join(''),d=h('div');d.innerHTML=cards;modal(h('h3',{},'Table QR codes'),d,h('button',{class:'p',onclick:()=>prn(cards)},'Print'))}
