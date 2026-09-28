@@ -255,6 +255,14 @@
       });
     });
 
+    // ---- scroll-fade everywhere: auto-mark every top-level content
+    // section as .reveal instead of requiring each page to hand-annotate
+    // its own markup -- .stack-panel content is skipped since it already
+    // animates via the sticky-scroll folder effect, not this fade ----
+    $all('.section:not(.reveal)').forEach(function (el) {
+      if (!el.closest('.stack-panel')) el.classList.add('reveal');
+    });
+
     // ---- reveal-on-scroll for the homepage's stacked panels ----
     var revealEls = $all('.reveal:not(.in)');
     if (revealEls.length && 'IntersectionObserver' in window) {

@@ -55,6 +55,9 @@ const RPC = {
   // --- Phase 1: Booking & Appointments / Reports & Analytics ---
   convert_booking_to_order: { params: ['p_booking_id', 'p_invoice_prefix'], auth: true },
   report_dashboard: { params: ['p_from', 'p_to'], auth: true },
+
+  // --- Admin: reset a client's forgotten password ---
+  admin_reset_client_password: { params: ['p_tenant_id'], auth: true },
 };
 
 class HttpError extends Error {

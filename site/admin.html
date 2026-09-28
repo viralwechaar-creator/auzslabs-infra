@@ -43,22 +43,53 @@
   padding:16px 18px;margin-top:16px;font-size:13px;line-height:1.7;
 }
 .ok-box b{word-break:break-word}
+/* admin section nav, reusing the marketing site's sidebar/drawer shell
+   (same CSS, same hamburger/drawer JS in site.js) so this stays visually
+   and behaviorally consistent instead of a bespoke nav component */
+.admin-nav-btn{
+  background:none;border:none;width:100%;cursor:pointer;font-family:inherit;
+  text-align:right;padding:13px 4px;
+}
+.admin-section{display:none}
+.admin-section.active{display:block}
 </style>
 </head>
 <body>
 <div class="shell">
   <header class="topbar">
-    <a href="index.html" class="btn btn-ghost" style="order:2">&larr; Site</a>
+    <button class="hamburger" id="menuToggle" aria-label="Open menu" aria-expanded="false">
+      <span class="menu-btn-label">Menu</span>
+    </button>
     <a href="index.html" class="topbar-logo"><img src="logo.png" alt="AUZslab"></a>
   </header>
+
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+
+  <aside class="sidebar" id="sidebarDrawer">
+    <a href="index.html" class="sidebar-logo"><img src="logo.png" alt="AUZslab"></a>
+    <button class="drawer-close" id="drawerClose" aria-label="Close menu">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+    </button>
+    <nav class="sidebar-nav" id="adminNav" aria-label="Admin sections" style="display:none">
+      <button class="nav-link admin-nav-btn active" data-section="leads">Leads</button>
+      <button class="nav-link admin-nav-btn" data-section="signupRequests">Signup requests</button>
+      <button class="nav-link admin-nav-btn" data-section="clients">Clients</button>
+      <button class="nav-link admin-nav-btn" data-section="onboard">Onboard new</button>
+      <a href="design-system/nav-kit.html" target="_blank" rel="noopener" class="nav-link">UI Kit &#8599;</a>
+    </nav>
+    <div class="sidebar-foot">
+      <button class="btn btn-ghost" id="signOutBtn" style="width:100%;justify-content:center;display:none">Sign out</button>
+      <div class="sidebar-copy">&copy; 2026 AUZslab</div>
+    </div>
+  </aside>
 
   <main class="content">
     <div class="wrap" style="max-width:920px">
 
       <section class="section" style="padding-top:56px">
         <div class="label">AUZlabs internal</div>
-        <h1 class="h-1">Admin</h1>
-        <p class="lede">Sign in to review leads and onboard new clients.</p>
+        <h1 class="h-1" id="pageTitle">Admin</h1>
+        <p class="lede" id="pageLede">Sign in to review leads and onboard new clients.</p>
       </section>
 
       <section class="section tight" id="loginSection">
@@ -76,25 +107,25 @@
         </div>
       </section>
 
-      <section class="section tight" id="leadsSection" style="display:none">
+      <section class="section tight admin-section active" id="leadsSection">
         <div class="label">Leads</div>
         <h2 class="h-2">Get-in-touch submissions</h2>
         <div id="leadsList">Loading&hellip;</div>
       </section>
 
-      <section class="section tight" id="signupRequestsSection" style="display:none">
+      <section class="section tight admin-section" id="signupRequestsSection">
         <div class="label">Self-serve signups</div>
         <h2 class="h-2">Cart requests</h2>
         <div id="signupRequestsList">Loading&hellip;</div>
       </section>
 
-      <section class="section tight" id="clientsSection" style="display:none">
+      <section class="section tight admin-section" id="clientsSection">
         <div class="label">Your clients</div>
         <h2 class="h-2">Dashboard</h2>
         <div id="clientsList">Loading&hellip;</div>
       </section>
 
-      <section class="section tight" id="onboardSection" style="display:none">
+      <section class="section tight admin-section" id="onboardSection">
         <div class="label">New client</div>
         <h2 class="h-2">Onboard a new client</h2>
         <div class="card" style="max-width:420px">
@@ -130,9 +161,44 @@
 
     </div>
   </main>
+
+  <div class="modal-overlay" id="editOverlay">
+    <div class="modal" id="editModal">
+      <button class="modal-close" id="editClose" aria-label="Close">&times;</button>
+      <div class="label" style="margin-bottom:10px">Edit client</div>
+      <h3 class="h-2" id="editClientName" style="font-size:20px"></h3>
+      <form id="editForm">
+        <div class="field">
+          <label for="editFee">Monthly fee (INR)</label>
+          <input id="editFee" type="number" step="0.01" placeholder="Leave blank to clear">
+        </div>
+        <div class="field">
+          <label for="editRenewal">Renewal date</label>
+          <input id="editRenewal" type="date">
+        </div>
+        <div class="field">
+          <label for="editStatus">Status</label>
+          <select id="editStatus">
+            <option value="trial">Trial</option>
+            <option value="active">Active</option>
+            <option value="suspended">Suspended</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="editNotes">Notes</label>
+          <textarea id="editNotes" placeholder="Anything worth remembering about this client"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary form-submit">Save</button>
+        <div id="editErr" class="err"></div>
+      </form>
+    </div>
+  </div>
+
 </div>
 
 <script src="/sb-client.js"></script>
+<script src="site.js?v=5"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script>
 const sb = supabase.createClient(CFG.url, CFG.key);
@@ -141,14 +207,29 @@ function esc(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+// ---- section switching ----
+document.querySelectorAll('.admin-nav-btn').forEach((btn) => {
+  btn.onclick = () => {
+    document.querySelectorAll('.admin-nav-btn').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.admin-section').forEach((s) => s.classList.remove('active'));
+    document.getElementById(btn.dataset.section + 'Section').classList.add('active');
+    const drawer = document.getElementById('sidebarDrawer');
+    const overlay = document.getElementById('drawerOverlay');
+    const toggle = document.getElementById('menuToggle');
+    if (drawer) drawer.classList.remove('open');
+    if (overlay) overlay.classList.remove('open');
+    if (toggle) toggle.classList.remove('is-open');
+  };
+});
+
 async function checkSession() {
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
     document.getElementById('loginSection').style.display = 'none';
-    document.getElementById('leadsSection').style.display = 'block';
-    document.getElementById('signupRequestsSection').style.display = 'block';
-    document.getElementById('clientsSection').style.display = 'block';
-    document.getElementById('onboardSection').style.display = 'block';
+    document.getElementById('pageLede').textContent = 'Signed in as ' + session.user.email;
+    document.getElementById('adminNav').style.display = 'flex';
+    document.getElementById('signOutBtn').style.display = 'flex';
     loadLeads();
     loadSignupRequests();
     loadClients();
@@ -165,6 +246,11 @@ document.getElementById('signin').onclick = async () => {
     return;
   }
   checkSession();
+};
+
+document.getElementById('signOutBtn').onclick = async () => {
+  await sb.auth.signOut();
+  window.location.reload();
 };
 
 const STATUS_NEXT = { new: 'contacted', contacted: 'converted' };
@@ -196,10 +282,10 @@ async function loadLeads() {
     const lead = data.find((l) => l.id === id);
     const useBtn = tr.querySelector('[data-use]');
     if (useBtn) useBtn.onclick = () => {
+      document.querySelector('[data-section="onboard"]').click();
       document.getElementById('name').value = lead.business || lead.name;
       document.getElementById('niche').value = lead.niche || 'general';
       document.getElementById('ownerEmail').value = lead.contact.includes('@') ? lead.contact : '';
-      document.getElementById('onboardSection').scrollIntoView({ behavior: 'smooth' });
     };
     const advBtn = tr.querySelector('[data-advance]');
     if (advBtn) advBtn.onclick = async () => {
@@ -244,7 +330,8 @@ async function loadSignupRequests() {
     tr.querySelector('[data-approve]').onclick = async () => {
       const niche = prompt('Niche for this tenant (cafe / salon / gym / retail / general)', 'general');
       if (niche === null) return;
-      const { error: appErr } = await sb.rpc('approve_signup_request', { p_request_id: id, p_niche: niche.trim() || 'general' });
+      const cleanNiche = ['cafe', 'salon', 'gym', 'retail', 'general'].includes(niche.trim()) ? niche.trim() : 'general';
+      const { error: appErr } = await sb.rpc('approve_signup_request', { p_request_id: id, p_niche: cleanNiche });
       if (appErr) { alert(appErr.message); return; }
       loadSignupRequests();
       loadClients();
@@ -258,14 +345,17 @@ async function loadSignupRequests() {
   });
 }
 
+let clientsCache = [];
+
 async function loadClients() {
   const listEl = document.getElementById('clientsList');
   const { data, error } = await sb.rpc('list_clients', {});
   if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
-  if (!data || !data.length) { listEl.innerHTML = '<p class="p">No clients yet &mdash; onboard one below.</p>'; return; }
+  clientsCache = data || [];
+  if (!clientsCache.length) { listEl.innerHTML = '<p class="p">No clients yet &mdash; onboard one below.</p>'; return; }
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const rows = data.map((c) => {
+  const rows = clientsCache.map((c) => {
     const services = Object.entries(c.features || {}).filter(([, on]) => on)
       .map(([k]) => `<span class="feature-tag">${esc(FEATURE_LABEL[k] || k)}</span>`).join('') || '&mdash;';
     let renewalHtml = '&mdash;';
@@ -284,7 +374,10 @@ async function loadClients() {
       <td>${renewalHtml}</td>
       <td><span class="status-pill status-${esc(c.status)}">${esc(c.status)}</span></td>
       <td>${c.notes ? esc(c.notes) : '&mdash;'}</td>
-      <td><button class="btn btn-ghost" data-edit>Edit</button></td>
+      <td class="row-actions">
+        <button class="btn btn-ghost" data-edit>Edit</button>
+        <button class="btn btn-ghost" data-reset-pw>Reset password</button>
+      </td>
     </tr>`;
   }).join('');
 
@@ -293,30 +386,55 @@ async function loadClients() {
     ${rows}
   </table></div>`;
 
-  listEl.querySelectorAll('tr[data-id]').forEach((tr) => {
-    const id = tr.dataset.id;
-    const c = data.find((x) => x.id === id);
-    tr.querySelector('[data-edit]').onclick = async () => {
-      const fee = prompt('Monthly fee (INR, blank to clear)', c.monthly_fee != null ? c.monthly_fee : '');
-      if (fee === null) return;
-      const renewal = prompt('Renewal date (YYYY-MM-DD, blank to clear)', c.renewal_date || '');
-      if (renewal === null) return;
-      const notes = prompt('Notes about this client', c.notes || '');
-      if (notes === null) return;
-      const status = prompt('Status (trial / active / suspended / cancelled)', c.status);
-      if (status === null) return;
-      const { error: updErr } = await sb.rpc('update_client', {
-        p_tenant_id: c.id,
-        p_monthly_fee: fee.trim() ? Number(fee.trim()) : null,
-        p_renewal_date: renewal.trim() || null,
-        p_notes: notes,
-        p_status: status.trim(),
-      });
-      if (updErr) { alert(updErr.message); return; }
-      loadClients();
+  listEl.querySelectorAll('[data-edit]').forEach((btn) => {
+    btn.onclick = () => openEditModal(btn.closest('tr').dataset.id);
+  });
+  listEl.querySelectorAll('[data-reset-pw]').forEach((btn) => {
+    btn.onclick = async () => {
+      const id = btn.closest('tr').dataset.id;
+      const c = clientsCache.find((x) => x.id === id);
+      if (!confirm(`Reset the owner password for "${c.name}"? Their current password will stop working immediately.`)) return;
+      const { data, error } = await sb.rpc('admin_reset_client_password', { p_tenant_id: id });
+      if (error) { alert(error.message); return; }
+      alert(`New password for ${data.email}:\n\n${data.temp_password}\n\nShare this with them directly (e.g. WhatsApp) -- it won't be shown again.`);
     };
   });
 }
+
+function openEditModal(id) {
+  const c = clientsCache.find((x) => x.id === id);
+  if (!c) return;
+  document.getElementById('editModal').dataset.id = id;
+  document.getElementById('editClientName').textContent = c.name;
+  document.getElementById('editFee').value = c.monthly_fee != null ? c.monthly_fee : '';
+  document.getElementById('editRenewal').value = c.renewal_date || '';
+  document.getElementById('editStatus').value = c.status;
+  document.getElementById('editNotes').value = c.notes || '';
+  document.getElementById('editErr').textContent = '';
+  document.getElementById('editOverlay').classList.add('open');
+}
+document.getElementById('editClose').onclick = () => document.getElementById('editOverlay').classList.remove('open');
+document.getElementById('editOverlay').onclick = (e) => { if (e.target.id === 'editOverlay') e.currentTarget.classList.remove('open'); };
+
+document.getElementById('editForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const id = document.getElementById('editModal').dataset.id;
+  const fee = document.getElementById('editFee').value.trim();
+  const renewal = document.getElementById('editRenewal').value;
+  const status = document.getElementById('editStatus').value; // constrained by <select>, can't be a typo
+  const notes = document.getElementById('editNotes').value;
+  const errEl = document.getElementById('editErr');
+  const { error } = await sb.rpc('update_client', {
+    p_tenant_id: id,
+    p_monthly_fee: fee ? Number(fee) : null,
+    p_renewal_date: renewal || null,
+    p_notes: notes,
+    p_status: status,
+  });
+  if (error) { errEl.textContent = error.message; return; }
+  document.getElementById('editOverlay').classList.remove('open');
+  loadClients();
+};
 
 document.getElementById('form').onsubmit = async (e) => {
   e.preventDefault();
@@ -363,6 +481,7 @@ document.getElementById('form').onsubmit = async (e) => {
       Temporary password: <b>${esc(body.temp_password)}</b>
     </div>`;
   e.target.reset();
+  loadClients();
 };
 </script>
 </body>
