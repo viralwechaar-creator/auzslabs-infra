@@ -7,8 +7,10 @@
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="/logo.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="stylesheet" href="theme.css?v=42">
+<link rel="stylesheet" href="theme.css?v=43">
 <link rel="stylesheet" href="design-system/ui-kit.css?v=3">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 /* ---- admin-only additions: a data table in the same visual language
@@ -55,6 +57,7 @@
 </style>
 </head>
 <body>
+<div id="pageTransition" class="page-transition" aria-hidden="true"></div>
 <div class="shell">
   <header class="topbar">
     <button class="hamburger" id="menuToggle" aria-label="Open menu" aria-expanded="false">
@@ -205,7 +208,7 @@
 </div>
 
 <script src="/sb-client.js?v=2"></script>
-<script src="site.js?v=6"></script>
+<script src="site.js?v=7"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script>
 const sb = supabase.createClient(CFG.url, CFG.key);

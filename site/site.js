@@ -40,6 +40,27 @@
     var pageTransition = document.getElementById('pageTransition');
     if (!pageTransition) return;
     var TKEY = 'auz_transition';
+    // Read the real transition-duration from CSS rather than keeping a
+    // second hardcoded number in sync with theme.css by hand (a fixed
+    // JS constant next to a CSS duration, tied together only by a
+    // comment, drifts the moment either file is edited without the
+    // other -- this diff's own .6s->.32s change is exactly the kind of
+    // edit that would silently break that). Navigating at 70% of the
+    // real duration, not a small fraction of it, matters on a slow
+    // connection: the browser keeps showing this page's last frame
+    // until the destination is ready to paint, so leaving before the
+    // circle has visually finished covering the screen means a
+    // half-formed circle can sit frozen on screen for however long the
+    // network takes -- waiting for most of the animation avoids that
+    // while still cutting the old "wait for the full thing, or 700ms"
+    // delay by roughly a third.
+    // 0 is a legitimate value here, not just "failed to read" -- prefers-
+    // reduced-motion sets transition:none, and a user who's asked for
+    // that should navigate immediately with no delay, not fall back to
+    // a default duration that reintroduces the exact wasted wait this
+    // is meant to avoid. Only NaN (the read itself failing) falls back.
+    var cssDurationMs = parseFloat(getComputedStyle(pageTransition).transitionDuration) * 1000;
+    var NAV_DELAY_MS = (isNaN(cssDurationMs) ? 320 : cssDurationMs) * 0.7;
 
     function setOrigin(x, y) {
       pageTransition.style.setProperty('--ox', x + '%');
@@ -92,15 +113,20 @@
       setOrigin(x.toFixed(2), y.toFixed(2));
       pageTransition.classList.add('is-active');
 
-      var navigated = false;
-      function go() {
-        if (navigated) return;
-        navigated = true;
-        try { sessionStorage.setItem(TKEY, JSON.stringify({ x: x.toFixed(2), y: y.toFixed(2) })); } catch (err) {}
-        window.location.href = href;
-      }
-      pageTransition.addEventListener('transitionend', go, { once: true });
-      setTimeout(go, 700); // safety net if transitionend never fires
+      // Used to wait for the full clip-path transition to finish (or a
+      // 700ms fallback) before navigating at all -- every internal link
+      // click added up to 700ms of pure animation on top of the real
+      // page load, which is most of what "pages take too long to load"
+      // actually was. NAV_DELAY_MS above already stops short of the
+      // full duration, at a point where the circle has visually covered
+      // the screen -- and if the destination is slow to load, this page
+      // just keeps showing that same full black cover (not a half-
+      // finished circle) until it's replaced. When the destination does
+      // arrive, revealIncoming() (above) re-applies full coverage with
+      // transitions disabled before its first frame, so the swap itself
+      // has nothing uncovered to flash either.
+      try { sessionStorage.setItem(TKEY, JSON.stringify({ x: x.toFixed(2), y: y.toFixed(2) })); } catch (err) {}
+      setTimeout(function () { window.location.href = href; }, NAV_DELAY_MS);
     });
   })();
 
