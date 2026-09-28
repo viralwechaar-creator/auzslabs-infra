@@ -208,7 +208,14 @@ let M=null,tb=null;
  const gEl=document.getElementById('gallery-grid'),imgs=(cfg.siteGallery||'').split(',').map(s=>s.trim()).filter(Boolean);
  const fallbackDoodles=['<svg viewBox="0 0 100 100" width=50% xmlns=http://www.w3.org/2000/svg fill=none><rect x=20 y=20 width=60 height=60 rx=6 stroke="#5f6d4f" stroke-width=2/><path d="M30 40h40M30 50h30M30 60h34" stroke="#5f6d4f" stroke-width=1.5/></svg>','<svg viewBox="0 0 100 100" width=50% xmlns=http://www.w3.org/2000/svg fill=none><ellipse cx=50 cy=60 rx=28 ry=22 stroke="#5f6d4f" stroke-width=2/><path d="M42 30c-2-6 4-8 3-14M58 30c-2-7 5-9 3-15" stroke="#5f6d4f" stroke-width=2 stroke-linecap=round/></svg>','<svg viewBox="0 0 100 100" width=50% xmlns=http://www.w3.org/2000/svg fill=none><path d="M20 30l60-8v56l-60 8z" stroke="#5f6d4f" stroke-width=2/><path d="M30 40h40M30 50h34M30 60h30" stroke="#5f6d4f" stroke-width=1.5/></svg>','<svg viewBox="0 0 100 100" width=50% xmlns=http://www.w3.org/2000/svg fill=none><circle cx=50 cy=50 r=30 stroke="#5f6d4f" stroke-width=2/><path d="M50 20v30l20 12" stroke="#5f6d4f" stroke-width=2/></svg>'];
  (imgs.length?imgs:fallbackDoodles).slice(0,8).forEach((src,i)=>{const d=document.createElement('div');if(imgs.length)d.innerHTML='<img src="'+esc(src)+'">';else d.innerHTML='<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center">'+fallbackDoodles[i%4]+'</div>';gEl.append(d)});
- const cats=(M&&M.cats||[]).slice().sort((a,b)=>a.n-b.n),items=(M&&M.items||[]).filter(i=>!i.off);
+ // Sold-out now carries an optional expiry (index.html's itemOff()) --
+ // an item marked off for 2 hours must reappear here automatically too,
+ // not just in the staff POS, or a customer sees a permanently-hidden
+ // item the staff already consider back on sale (the exact "gate one
+ // surface, miss another" bug 018_enforce_self_order_feature.sql fixed
+ // for the self-order toggle itself).
+ const itemOff=i=>!!i.off&&(!i.offUntil||new Date(i.offUntil)>new Date());
+ const cats=(M&&M.cats||[]).slice().sort((a,b)=>a.n-b.n),items=(M&&M.items||[]).filter(i=>!itemOff(i));
  const tabsEl=document.getElementById('menuTabs'),gridEl=document.getElementById('menuGrid');
  let active=cats[0]&&cats[0].id;
  const priceOf=k=>{const j=k.indexOf('|'),i=items.find(x=>x.id==k.slice(0,j)),sz=k.slice(j+1),s=sz&&(i.sizes||[]).find(x=>x.l==sz);return[i,sz,s?s.p:i.price]};
