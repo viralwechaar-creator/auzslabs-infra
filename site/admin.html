@@ -13,6 +13,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
+/* Matches account.html's own #sidebarDrawer treatment -- a half-width
+   drawer instead of the shared .sidebar default's full-width mobile
+   drawer, with the visible left edge (it opens from the right) curved.
+   Desktop's persistent sidebar (>860px) is untouched -- it's flush
+   against the screen's own edge, so a radius there would just look
+   like a gap. */
+#sidebarDrawer{max-width:320px;box-shadow:-30px 0 70px -20px rgba(0,0,0,.5)}
+@media (max-width:860px){#sidebarDrawer{border-radius:26px 0 0 26px}}
 /* ---- admin-only additions: a data table in the same visual language
    as the rest of the site (thick ink borders, mono labels, pill tags)
    -- the shared design system has no table component, everything else
