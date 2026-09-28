@@ -17,7 +17,26 @@ function safeSegment(s) {
   return String(s).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60) || 'x';
 }
 
+// The client always re-encodes to JPEG via canvas before uploading
+// (see compressImage/uploadSiteImage in app/public/index.html), so
+// this only ever rejects a request that bypassed that client entirely
+// -- checked by magic bytes, not the (client-supplied, untrustworthy)
+// filename or content-type.
+function looksLikeImage(buffer) {
+  if (buffer.length < 12) return false;
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return true; // JPEG
+  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) return true; // PNG
+  if (buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP') return true; // WEBP
+  return false;
+}
+
 export async function saveSiteUpload({ tenantId, prefix, buffer }) {
+  if (!looksLikeImage(buffer)) {
+    const err = new Error('file does not look like a supported image (jpeg/png/webp)');
+    err.status = 400;
+    throw err;
+  }
+
   const { rows } = await pool.query('select slug from tenants where id = $1', [tenantId]);
   const slug = rows[0]?.slug;
   if (!slug) throw new Error('unknown tenant');

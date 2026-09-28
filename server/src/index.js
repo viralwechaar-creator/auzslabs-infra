@@ -6,6 +6,7 @@ import { startRealtime } from './realtime.js';
 import { handlePushEvent } from './push.js';
 
 const PORT = process.env.PORT || 3000;
+const DOMAIN = process.env.DOMAIN || '';
 
 // ---- whitelist: the only tables/columns this API will ever touch.
 // Mirrors exactly what app/public's client code actually calls (see
@@ -62,6 +63,45 @@ const RPC = {
 
 class HttpError extends Error {
   constructor(status, message) { super(message); this.status = status; }
+}
+
+// ---- CORS: reflect the request's Origin only when it's this domain,
+// a subdomain of it (every tenant), or localhost (local dev) -- never
+// the wildcard '*' every response used to send unconditionally. ----
+function allowedOrigin(originHeader) {
+  if (!originHeader) return null;
+  let u;
+  try { u = new URL(originHeader); } catch { return null; }
+  if (u.hostname === 'localhost' || u.hostname === '127.0.0.1') return originHeader;
+  if (!DOMAIN || u.protocol !== 'https:') return null;
+  if (u.hostname === DOMAIN || u.hostname.endsWith('.' + DOMAIN)) return originHeader;
+  return null;
+}
+
+// ---- rate limiting: plain in-memory fixed-window counters, no
+// external dependency or paid service. Deliberately NOT applied as a
+// single global per-IP cap -- a cafe's whole customer base can share
+// one NAT/WiFi IP while self-ordering off a QR code, so a blanket
+// limit would lock out real customers. Instead: tight limits on the
+// two endpoints actually worth brute-forcing (login, signup), and a
+// generous shared-IP-friendly ceiling on the public/anonymous RPCs. ----
+const rateBuckets = new Map();
+function rateLimited(key, limit, windowMs) {
+  const now = Date.now();
+  let b = rateBuckets.get(key);
+  if (!b || b.resetAt <= now) { b = { count: 0, resetAt: now + windowMs }; rateBuckets.set(key, b); }
+  b.count += 1;
+  return b.count > limit;
+}
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, b] of rateBuckets) if (b.resetAt <= now) rateBuckets.delete(k);
+}, 60_000).unref();
+
+function clientIp(req) {
+  const fwd = req.headers['x-forwarded-for'];
+  if (fwd) return fwd.split(',')[0].trim();
+  return req.socket.remoteAddress || 'unknown';
 }
 
 function parseFilters(query, allowedColumns) {
@@ -152,44 +192,59 @@ function readJsonBody(req) {
     req.on('error', reject);
   });
 }
-function readRawBody(req) {
+function readRawBody(req, maxBytes) {
   return new Promise((resolve, reject) => {
     const chunks = [];
-    req.on('data', (c) => { chunks.push(c); });
+    let total = 0;
+    req.on('data', (c) => {
+      total += c.length;
+      if (maxBytes && total > maxBytes) { req.destroy(); reject(new HttpError(413, 'file too large')); return; }
+      chunks.push(c);
+    });
     req.on('end', () => resolve(Buffer.concat(chunks)));
     req.on('error', reject);
   });
 }
 
-function send(res, status, body) {
-  res.writeHead(status, {
+function send(res, status, body, origin) {
+  const headers = {
     'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Authorization, Content-Type',
     'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
-  });
+  };
+  if (origin) { headers['Access-Control-Allow-Origin'] = origin; headers['Vary'] = 'Origin'; }
+  res.writeHead(status, headers);
   res.end(JSON.stringify(body));
 }
 
 const server = http.createServer(async (req, res) => {
-  if (req.method === 'OPTIONS') { send(res, 204, {}); return; }
+  const origin = allowedOrigin(req.headers.origin);
+  const reply = (status, body) => send(res, status, body, origin);
+  if (req.method === 'OPTIONS') { reply(204, {}); return; }
 
   const url = new URL(req.url, 'http://internal');
   const user = verifyToken(bearerFrom(req) || '');
+  const ip = clientIp(req);
 
   try {
     // ---- auth ----
     if (url.pathname === '/auth/login' && req.method === 'POST') {
+      // 20 attempts / 15 min per IP -- bcrypt is expensive on purpose,
+      // and login is the endpoint most worth brute-forcing.
+      if (rateLimited(`login:${ip}`, 20, 15 * 60_000)) throw new HttpError(429, 'too many login attempts, try again later');
       const { email, password } = await readJsonBody(req);
       const result = await login(email, password);
       if (!result) throw new HttpError(401, 'invalid credentials');
-      return send(res, 200, result);
+      return reply(200, result);
     }
     // ---- public self-serve signup: creates a bare login with no
     // tenant_id yet (on_signup's guard skips the profiles row for it,
     // same as a platform_admin) -- becomes a real tenant owner only
     // once a platform_admin approves their signup_request. ----
     if (url.pathname === '/auth/signup' && req.method === 'POST') {
+      // 10 accounts / hour per IP -- loose enough for a shared cafe/office
+      // IP, tight enough to block scripted account-spam.
+      if (rateLimited(`signup:${ip}`, 10, 60 * 60_000)) throw new HttpError(429, 'too many signups from this network, try again later');
       const { email, password } = await readJsonBody(req);
       if (!email || !password) throw new HttpError(400, 'email and password are required');
       let created;
@@ -199,11 +254,11 @@ const server = http.createServer(async (req, res) => {
         if (err.code === '23505') throw new HttpError(409, 'an account with that email already exists');
         throw err;
       }
-      return send(res, 200, { access_token: signToken(created), user: created });
+      return reply(200, { access_token: signToken(created), user: created });
     }
     if (url.pathname === '/auth/session' && req.method === 'GET') {
       if (!user) throw new HttpError(401, 'no session');
-      return send(res, 200, { user });
+      return reply(200, { user });
     }
 
     // ---- generic data API (records/profiles/guest_orders/push_subs/leads/signup_requests/bookings) ----
@@ -226,7 +281,7 @@ const server = http.createServer(async (req, res) => {
         }
         throw new HttpError(405, 'method not allowed');
       });
-      return send(res, 200, { data: result });
+      return reply(200, { data: result });
     }
 
     // ---- rpc ----
@@ -236,21 +291,28 @@ const server = http.createServer(async (req, res) => {
       const cfg = RPC[fnName];
       if (!cfg) throw new HttpError(404, 'unknown function');
       if (cfg.auth && !user) throw new HttpError(401, 'authentication required');
+      // Public/anonymous RPCs (public_menu, place_order, ...) are
+      // reachable by every customer self-ordering off a QR code, often
+      // from one shared cafe/restaurant WiFi IP -- so this stays
+      // generous (300 / 5 min) rather than a tight per-request cap.
+      // Authenticated calls aren't limited here: a logged-in session
+      // already required passing the login rate limit above.
+      if (!cfg.auth && rateLimited(`public:${ip}`, 300, 5 * 60_000)) throw new HttpError(429, 'too many requests, please slow down');
       const args = await readJsonBody(req);
       const uid = user?.id || null;
       const result = await withAuth(uid, (client) => callRpc(client, fnName, args));
-      return send(res, 200, { data: result });
+      return reply(200, { data: result });
     }
 
-    // ---- storage: POST /storage/site/:prefix (raw jpeg body) ----
+    // ---- storage: POST /storage/site/:prefix (raw image body) ----
     const storageMatch = url.pathname.match(/^\/storage\/site\/([a-zA-Z0-9_-]+)$/);
     if (storageMatch && req.method === 'POST') {
       if (!user) throw new HttpError(401, 'authentication required');
       const tenantId = user.app_metadata?.tenant_id;
       if (!tenantId || user.app_metadata?.role !== 'owner') throw new HttpError(403, 'owner only');
-      const buffer = await readRawBody(req);
+      const buffer = await readRawBody(req, 8_000_000); // 8MB cap -- client already compresses to well under this
       const result = await saveSiteUpload({ tenantId, prefix: storageMatch[1], buffer });
-      return send(res, 200, result);
+      return reply(200, result);
     }
 
     // ---- admin: provision-owner (was a Supabase Edge Function) ----
@@ -276,7 +338,7 @@ const server = http.createServer(async (req, res) => {
       // shared with the new owner directly (e.g. over WhatsApp) -- see
       // resetToRandomPassword's own note on why this replaces a
       // recovery-link email.
-      return send(res, 200, { user_id: created.id, temp_password: tempPassword });
+      return reply(200, { user_id: created.id, temp_password: tempPassword });
     }
 
     throw new HttpError(404, 'not found');
@@ -300,7 +362,7 @@ const server = http.createServer(async (req, res) => {
       message = 'Your session is no longer valid. Please sign in again.';
     }
     if (status === 500) console.error(err);
-    send(res, status, { error: message });
+    reply(status, { error: message });
   }
 });
 

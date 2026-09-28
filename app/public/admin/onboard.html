@@ -147,16 +147,16 @@ document.getElementById('form').onsubmit = async (e) => {
   const body = await res.json();
   if (!res.ok) {
     errEl.textContent = body.error || 'owner creation failed';
-    resultEl.innerHTML = `Tenant "${name}" was created (slug: ${slug}), but the owner login failed — you can retry just that step, or create the login directly with a POST to /admin/provision-owner.`;
+    resultEl.innerHTML = `Tenant "${esc(name)}" was created (slug: ${esc(slug)}), but the owner login failed — you can retry just that step, or create the login directly with a POST to /admin/provision-owner.`;
     return;
   }
 
   resultEl.innerHTML = `
     <div class=ok>
-      <b>${name}</b> is live at <b>${slug}.auzslab.in</b><br><br>
+      <b>${esc(name)}</b> is live at <b>${esc(slug)}.auzslab.in</b><br><br>
       Share these with the owner directly (e.g. over WhatsApp) so they can sign in and change it:<br>
-      Email: <b>${ownerEmail}</b><br>
-      Temporary password: <b>${body.temp_password}</b>
+      Email: <b>${esc(ownerEmail)}</b><br>
+      Temporary password: <b>${esc(body.temp_password)}</b>
     </div>`;
   e.target.reset();
 };
