@@ -245,7 +245,12 @@ async function kot(){const o=S.cur;if(!o.lines.some(l=>l.qty>l.sent))return aler
  await save('kotlog',{orderId:o.id,orderNo:o.no,type:o.type,table:o.table,cust:o.cust,items:n,createdAt:now()},uid());
  const stations=[...new Set(n.map(x=>x.s))];
  prn(`<b>KOT ${o.no}</b><br>${o.type} ${esc(tn(o.table))}<br>${new Date().toLocaleTimeString()}<hr>`+stations.map(s=>`<u>${s}</u><br>`+n.filter(x=>x.s==s).map(x=>`<b>${x.q}× ${esc(x.n)}</b><br>`).join('')).join('<hr>'));render()}
-async function dedu(o){for(const l of o.lines){const it=R[l.id];if(!it||!it.data.rec)continue;for(const p of it.data.rec.split(',')){const[n,q]=p.split(':'),g=L('ing').find(x=>x.name.toLowerCase()==n.trim().toLowerCase());if(g&&+q){g.qty=r2(g.qty-q*l.qty);await save('ing',g,g.id)}}}}
+// usage log (trimmed to the last 200 entries) feeds the reorder-forecast
+// velocity in V.inv -- there's no historical consumption trail before
+// this starts recording, so a freshly-migrated tenant sees no forecast
+// until real usage accumulates, rather than a forecast faked from
+// nothing.
+async function dedu(o){for(const l of o.lines){const it=R[l.id];if(!it||!it.data.rec)continue;for(const p of it.data.rec.split(',')){const[n,q]=p.split(':'),g=L('ing').find(x=>x.name.toLowerCase()==n.trim().toLowerCase());if(g&&+q){const used=q*l.qty;g.qty=r2(g.qty-used);g.usage=(g.usage||[]).concat({q:used,d:today(),at:now()}).slice(-200);await save('ing',g,g.id)}}}}
 function pay(){const o=S.cur;if(!o.lines.length)return;if(!(o.cust.name||'').trim()||!(o.cust.phone||'').trim())return alert('Customer name and phone number are required before payment.');o.t=tot(o);
  // Re-opening a Due/credit order to settle it must start from what was
  // ALREADY collected, not an empty list -- otherwise re-settling silently
@@ -402,10 +407,26 @@ function purchaseIng(g){
   await save('ing',c,c.id);x();render()
  }},'Save purchase')))
 }
+// Reorder forecast (spec 8.1): velocity from the usage log dedu() now
+// keeps (last 14 days), days-left at that rate, and a suggested 7-day
+// reorder quantity. Ingredients with no usage history yet (nothing
+// consumed through a recipe since this shipped) just don't show a
+// forecast -- not a fabricated one.
+function reorderRows(){const cutoff=new Date(Date.now()-14*86400000).toLocaleDateString('en-CA'); // matches today()'s local-date convention, not UTC
+ return L('ing').map(g=>{const recent=(g.usage||[]).filter(u=>u.d>=cutoff);
+  // usage is append-only chronological, so recent[0] is the earliest entry
+  // still inside the window -- divide by the actual span covered, not a
+  // fixed 14, or a couple of days of real data understates velocity ~7x.
+  const span=recent.length?Math.max(1,Math.min(14,Math.round((Date.now()-new Date(recent[0].d))/86400000)+1)):0;
+  const vel=recent.length?r2(recent.reduce((a,u)=>a+u.q,0)/span):0,daysLeft=vel>0?Math.floor(g.qty/vel):null;
+  return{g,vel,daysLeft,suggest:vel>0?Math.ceil(vel*7):null}}).filter(r=>r.g.qty<=r.g.low||(r.daysLeft!=null&&r.daysLeft<=7))}
 V.inv=()=>{const nm=h('input',{placeholder:'Ingredient'}),un=h('input',{placeholder:'unit'}),q=h('input',{type:'number',placeholder:'Stock'}),lo=h('input',{type:'number',placeholder:'Low at'}),
  sf=S.stkFrom||today(),st=S.stkTo||today(),inRange=d=>d&&d>=sf&&d<=st,
- stockRows=L('ing').map(g=>({g,purch:r2((g.purchases||[]).filter(p=>inRange(p.d)).reduce((a,p)=>a+p.qty,0)),purchAmt:r2((g.purchases||[]).filter(p=>inRange(p.d)).reduce((a,p)=>a+p.amt,0)),waste:r2(L('waste').filter(w=>w.ing==g.name&&inRange(w.d)).reduce((a,w)=>a+w.q,0))}));
-return h('div',{class:'g',style:'grid-template-columns:1fr'},h('div',{class:'card'},h('h3',{},'Inventory (linked to item recipes in Menu)'),can('m')?h('div',{class:'row'},nm,un,q,lo,h('button',{class:'p',onclick:async()=>{if(!nm.value)return;await save('ing',{name:nm.value,unit:un.value,qty:+q.value||0,low:+lo.value||0});render()}},'Add')):null,...L('ing').map(g=>h('div',{class:'row',style:g.qty<=g.low?'color:var(--accent)':''},g.name+' '+g.qty+' '+g.unit+(g.qty<=g.low?' ⚠ low':''),can('m')?h('span',{},h('button',{class:'p',onclick:()=>purchaseIng(g)},'Purchase'),h('button',{onclick:async()=>{const v=+prompt('Adjust stock (+) or remove (−) -- for corrections, not purchases');if(v){g.qty=r2(g.qty+v);await save('ing',g,g.id)}render()}},'Adjust'),h('button',{onclick:async()=>{const v=+prompt('Wasted quantity');if(v>0){g.qty=r2(g.qty-v);await save('ing',g,g.id);await save('waste',{ing:g.name,q:v,d:today()})}render()}},'Waste')):null))),
+ stockRows=L('ing').map(g=>({g,purch:r2((g.purchases||[]).filter(p=>inRange(p.d)).reduce((a,p)=>a+p.qty,0)),purchAmt:r2((g.purchases||[]).filter(p=>inRange(p.d)).reduce((a,p)=>a+p.amt,0)),waste:r2(L('waste').filter(w=>w.ing==g.name&&inRange(w.d)).reduce((a,w)=>a+w.q,0))})),
+ reorder=reorderRows();
+return h('div',{class:'g',style:'grid-template-columns:1fr'},
+ reorder.length?h('div',{class:'card'},h('h3',{},'Reorder alerts ('+reorder.length+')'),...reorder.map(({g,vel,daysLeft,suggest})=>h('div',{class:'row',style:'color:var(--accent)'},g.name+' — '+g.qty+' '+g.unit+' on hand',daysLeft!=null?daysLeft+' days left at current use · reorder ~'+suggest+' '+g.unit:'below low-stock threshold'))):null,
+ h('div',{class:'card'},h('h3',{},'Inventory (linked to item recipes in Menu)'),can('m')?h('div',{class:'row'},nm,un,q,lo,h('button',{class:'p',onclick:async()=>{if(!nm.value)return;await save('ing',{name:nm.value,unit:un.value,qty:+q.value||0,low:+lo.value||0});render()}},'Add')):null,...L('ing').map(g=>h('div',{class:'row',style:g.qty<=g.low?'color:var(--accent)':''},g.name+' '+g.qty+' '+g.unit+(g.qty<=g.low?' ⚠ low':''),can('m')?h('span',{},h('button',{class:'p',onclick:()=>purchaseIng(g)},'Purchase'),h('button',{onclick:async()=>{const v=+prompt('Adjust stock (+) or remove (−) -- for corrections, not purchases');if(v){g.qty=r2(g.qty+v);await save('ing',g,g.id)}render()}},'Adjust'),h('button',{onclick:async()=>{const v=+prompt('Wasted quantity');if(v>0){g.qty=r2(g.qty-v);await save('ing',g,g.id);await save('waste',{ing:g.name,q:v,d:today()})}render()}},'Waste')):null))),
  h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Stock movement'),h('span',{},h('input',{type:'date',value:sf,onchange:e=>{S.stkFrom=e.target.value;render()}}),' to ',h('input',{type:'date',value:st,onchange:e=>{S.stkTo=e.target.value;render()}}))),
   h('p',{style:'font-size:12px;color:var(--ink-dim)'},'Purchased and wasted quantities in this range, alongside the current stock on hand.'),
   h('table',{},h('tr',{},h('th',{},'Ingredient'),h('th',{},'Purchased'),h('th',{},'Purchase cost'),h('th',{},'Wasted'),h('th',{},'On hand')),...stockRows.map(({g,purch,purchAmt,waste})=>h('tr',{},h('td',{},g.name),h('td',{},purch+' '+g.unit),h('td',{},inr(purchAmt)),h('td',{},waste+' '+g.unit),h('td',{},g.qty+' '+g.unit)))),
