@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="/logo.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="stylesheet" href="theme.css?v=43">
+<link rel="stylesheet" href="theme.css?v=44">
 <link rel="stylesheet" href="design-system/ui-kit.css?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -133,7 +133,15 @@ function renderCart() {
   const items = AUZcart.get();
   const el = document.getElementById('cartItems');
   if (!items.length) {
-    el.innerHTML = '<p class="p">No products picked yet. <a href="products.html" style="color:var(--accent)">Browse products</a> to add some -- or just fill in your details below and we\'ll follow up to help you choose.</p>';
+    el.innerHTML = `<div class="doodle-empty">
+      <svg width="88" height="88" viewBox="0 0 88 88" fill="none" aria-hidden="true">
+        <path d="M14 34 44 22 74 34 44 46Z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+        <path d="M14 34v28l30 12V46" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+        <path d="M74 34v28L44 74V46" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+        <path d="M30 12c2 4 2 8-1 11M58 10c-3 3-4 7-2 11M44 6v9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="1 6"/>
+      </svg>
+      <p class="p">No products picked yet. <a href="products.html" style="color:var(--accent)">Browse products</a> to add some -- or just fill in your details below and we'll follow up to help you choose.</p>
+    </div>`;
     return;
   }
   el.innerHTML = items.map((key) => `

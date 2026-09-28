@@ -290,6 +290,22 @@ button{font-family:inherit}
 .doodle-underline{
   display:block;margin-top:-6px;color:var(--accent);
 }
+.doodle-sparkle{
+  display:inline-block;color:var(--accent);flex-shrink:0;
+  animation:doodleTwinkle 2.6s ease-in-out infinite;
+}
+@keyframes doodleTwinkle{
+  0%,100%{transform:scale(1) rotate(0deg);opacity:1}
+  50%{transform:scale(1.15) rotate(8deg);opacity:.7}
+}
+/* Empty-state illustration: a single hand-drawn line-art doodle (same
+   stroke language as doodle-arrow above -- ink-coloured, currentColor
+   strokes) instead of a bare sentence for "nothing here yet" screens
+   (cart, admin leads/clients/requests). Floats gently so it reads as
+   deliberate, not like unstyled placeholder art. */
+.doodle-empty{text-align:center;padding:28px 12px}
+.doodle-empty svg{color:var(--ink-faint);animation:doodleFloat 4s ease-in-out infinite}
+.doodle-empty p{margin-top:14px}
 
 /* ---------- footer ---------- */
 /* ---------- footer: black panel, wordmark, newsletter, back-to-top ---------- */
@@ -576,6 +592,6 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
   html{scroll-behavior:auto}
   .reveal{transition:none;opacity:1;transform:none}
   .card,.btn,.btn-primary,.knock-btn,.sidebar{transition:none}
-  .doodle-arrow{animation:none}
+  .doodle-arrow,.doodle-sparkle,.doodle-empty svg{animation:none}
   .page-transition{transition:none}
 }
