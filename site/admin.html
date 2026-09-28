@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="/logo.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="stylesheet" href="theme.css?v=43">
+<link rel="stylesheet" href="theme.css?v=44">
 <link rel="stylesheet" href="design-system/ui-kit.css?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -233,6 +233,21 @@ function esc(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+// Same hand-drawn open-box doodle as cart.html's empty-cart state --
+// one shared "nothing here yet" illustration instead of a bare
+// sentence, reused for leads/signup requests/clients.
+function emptyDoodle(text) {
+  return `<div class="doodle-empty">
+    <svg width="88" height="88" viewBox="0 0 88 88" fill="none" aria-hidden="true">
+      <path d="M14 34 44 22 74 34 44 46Z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+      <path d="M14 34v28l30 12V46" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+      <path d="M74 34v28L44 74V46" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+      <path d="M30 12c2 4 2 8-1 11M58 10c-3 3-4 7-2 11M44 6v9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="1 6"/>
+    </svg>
+    <p class="p">${text}</p>
+  </div>`;
+}
+
 // A prospect has no login yet, so the demo page reads its context
 // through demo_context() (a public, security-definer RPC -- see
 // db/022_demo_context.sql) keyed only by this id, never by anything
@@ -341,7 +356,7 @@ async function loadLeads() {
   const listEl = document.getElementById('leadsList');
   const { data, error } = await sb.from('leads').select('*').order('created_at');
   if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
-  if (!data || !data.length) { listEl.innerHTML = '<p class="p">No leads yet.</p>'; return; }
+  if (!data || !data.length) { listEl.innerHTML = emptyDoodle('No leads yet.'); return; }
   const rows = data.slice().reverse().map((l) => `
     <tr data-id="${l.id}">
       <td><b>${esc(l.name)}</b>${l.business ? '<br>' + esc(l.business) : ''}</td>
@@ -388,7 +403,7 @@ async function loadSignupRequests() {
   const { data, error } = await sb.from('signup_requests').select('*').order('created_at');
   if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
   const pending = (data || []).filter((r) => r.status === 'pending');
-  if (!pending.length) { listEl.innerHTML = '<p class="p">No pending signup requests.</p>'; return; }
+  if (!pending.length) { listEl.innerHTML = emptyDoodle('No pending signup requests.'); return; }
 
   const rows = pending.slice().reverse().map((r) => {
     const services = Object.entries(r.features || {}).filter(([, on]) => on)
@@ -452,7 +467,7 @@ async function loadClients(preFetched) {
     data = fetched;
   }
   clientsCache = data || [];
-  if (!clientsCache.length) { listEl.innerHTML = '<p class="p">No clients yet &mdash; onboard one below.</p>'; return; }
+  if (!clientsCache.length) { listEl.innerHTML = emptyDoodle('No clients yet &mdash; onboard one below.'); return; }
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const rows = clientsCache.map((c) => {
