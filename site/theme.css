@@ -33,7 +33,7 @@ button{font-family:inherit}
 .topbar{
   display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 18px;
   border-bottom:2px solid var(--ink);background:var(--bg);
-  position:relative;z-index:25;
+  position:sticky;top:0;z-index:25;
 }
 /* text menu button, not an icon — order:2 keeps it on the right of the
    logo in the topbar's flex row */

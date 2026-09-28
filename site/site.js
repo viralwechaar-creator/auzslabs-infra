@@ -114,6 +114,30 @@
       cartCountEls.forEach(function (el) { el.textContent = n ? '(' + n + ')' : ''; });
     }
 
+    // ---- sign-in -> account icon: any [data-signin-link] element (the
+    // topbar pill + the mobile drawer's copy of it) swaps to an account
+    // icon linking to the client dashboard once a LIVE tenant session
+    // is detected -- app_metadata.tenant_id is only present once a
+    // signup has actually been approved into a real tenant, so a
+    // pending self-signup still sees the normal "Sign in" pill and the
+    // cart/signup flow, not a dashboard that doesn't apply to them yet. ----
+    var signinLinks = $all('[data-signin-link]');
+    if (signinLinks.length && window.supabase && window.CFG) {
+      try {
+        var navSb = window.supabase.createClient(window.CFG.url, window.CFG.key);
+        navSb.auth.getSession().then(function (res) {
+          var session = res && res.data && res.data.session;
+          var tenantId = session && session.user && session.user.app_metadata && session.user.app_metadata.tenant_id;
+          if (!tenantId) return;
+          signinLinks.forEach(function (el) {
+            el.href = 'https://auzslab.in/account.html';
+            el.setAttribute('aria-label', 'My account');
+            el.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg> Account';
+          });
+        });
+      } catch (e) {}
+    }
+
     var overlay = $('#modalOverlay');
     var modal = $('#modal');
     var formView = $('#formView');
