@@ -233,6 +233,24 @@ function esc(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+// A prospect has no login yet, so the demo page reads its context
+// through demo_context() (a public, security-definer RPC -- see
+// db/022_demo_context.sql) keyed only by this id, never by anything
+// that needs auth. Handing that link out is the whole point of the
+// button, so this just builds it and copies it -- no separate
+// "generate" step for the team to remember.
+async function copyDemoLink(kind, id, btn) {
+  const url = `https://auzslab.in/demo.html?${kind}=${id}`;
+  try {
+    await navigator.clipboard.writeText(url);
+    const orig = btn.textContent;
+    btn.textContent = 'Copied ✓';
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+  } catch {
+    prompt('Copy this link:', url);
+  }
+}
+
 // ---- section switching ----
 document.querySelectorAll('.admin-nav-btn').forEach((btn) => {
   btn.onclick = () => {
@@ -333,6 +351,7 @@ async function loadLeads() {
       <td><span class="status-pill ${l.status === 'new' ? 'status-new' : ''}">${esc(l.status)}</span></td>
       <td class="row-actions">
         <button class="btn btn-ghost" data-use>Use for onboarding</button>
+        <button class="btn btn-ghost" data-demo>Copy demo link</button>
         ${STATUS_NEXT[l.status] ? `<button class="btn btn-ghost" data-advance="${STATUS_NEXT[l.status]}">Mark ${STATUS_NEXT[l.status]}</button>` : ''}
       </td>
     </tr>`).join('');
@@ -351,6 +370,8 @@ async function loadLeads() {
       document.getElementById('niche').value = lead.niche || 'general';
       document.getElementById('ownerEmail').value = lead.contact.includes('@') ? lead.contact : '';
     };
+    const demoBtn = tr.querySelector('[data-demo]');
+    if (demoBtn) demoBtn.onclick = () => copyDemoLink('lead', id, demoBtn);
     const advBtn = tr.querySelector('[data-advance]');
     if (advBtn) advBtn.onclick = async () => {
       await sb.from('leads').update({ status: advBtn.dataset.advance }).eq('id', id);
@@ -386,6 +407,7 @@ async function loadSignupRequests() {
       <td>${r.notes ? esc(r.notes) : '&mdash;'}</td>
       <td class="row-actions">
         <button class="btn btn-primary" data-approve>Approve</button>
+        <button class="btn btn-ghost" data-demo>Copy demo link</button>
         <button class="btn btn-ghost" data-decline>Decline</button>
       </td>
     </tr>`;
@@ -399,6 +421,8 @@ async function loadSignupRequests() {
   listEl.querySelectorAll('tr[data-id]').forEach((tr) => {
     const id = tr.dataset.id;
     const req = pending.find((p) => p.id === id);
+    const demoBtn = tr.querySelector('[data-demo]');
+    demoBtn.onclick = () => copyDemoLink('req', id, demoBtn);
     tr.querySelector('[data-approve]').onclick = async () => {
       const niche = prompt('Niche for this tenant (cafe / salon / gym / retail / general)', req?.niche || 'general');
       if (niche === null) return;

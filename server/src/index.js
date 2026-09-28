@@ -58,6 +58,7 @@ const RPC = {
   public_invoice: { params: ['oid'], auth: false },
   submit_feedback: { params: ['oid', 'rating', 'comment'], auth: false },
   submit_lead: { params: ['p_name', 'p_contact', 'p_business', 'p_message', 'p_niche'], auth: false },
+  demo_context: { params: ['p_kind', 'p_id'], auth: false },
   list_clients: { params: [], auth: true },
   update_client: { params: ['p_tenant_id', 'p_monthly_fee', 'p_renewal_date', 'p_notes', 'p_status'], auth: true },
   submit_signup_request: { params: ['p_business_name', 'p_slug', 'p_features', 'p_notes', 'p_contact_name', 'p_phone', 'p_niche', 'p_address'], jsonb: ['p_features'], auth: true },
