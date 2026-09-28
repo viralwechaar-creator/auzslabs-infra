@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>POS — AUZslab</title>
-<meta name="description" content="AUZslab POS — billing, table management and kitchen order tickets for cafés, restaurants and retail counters. Self-hosted, works offline.">
-<link rel="canonical" href="https://auzslab.in/pos.html">
+<title>For gyms — AUZslab</title>
+<meta name="description" content="AUZslab for gyms: member billing, walk-in day passes, retail/supplement stock and staff pay, from one account.">
+<link rel="canonical" href="https://auzslab.in/business-gyms.html">
 <meta name="robots" content="index,follow">
 <meta property="og:type" content="website">
-<meta property="og:title" content="POS — AUZslab">
-<meta property="og:description" content="Billing, table management and kitchen order tickets, all in one till.">
-<meta property="og:url" content="https://auzslab.in/pos.html">
+<meta property="og:title" content="For gyms — AUZslab">
+<meta property="og:description" content="Bill members and walk-ins, track supplement stock, pay your trainers.">
+<meta property="og:url" content="https://auzslab.in/business-gyms.html">
 <meta property="og:image" content="https://auzslab.in/logo.png">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="/logo.png">
@@ -77,7 +77,7 @@
           <div class="nav-submenu-inner">
             <a href="business-cafes.html" class="nav-sublink"><svg class="nav-sublink-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8h13a3 3 0 0 1 0 6h-1"/><path d="M4 8v9a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2V8"/><path d="M8 2v2M12 2v2"/></svg><span>Caf&eacute;s &amp; restaurants</span></a>
             <a href="business-salons.html" class="nav-sublink"><svg class="nav-sublink-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M20 4 8.5 15.5M20 20 8.5 8.5"/></svg><span>Salons</span></a>
-            <a href="business-gyms.html" class="nav-sublink"><svg class="nav-sublink-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 7v10M18 7v10M2 10v4M22 10v4M6 12h12"/></svg><span>Gyms</span></a>
+            <a href="business-gyms.html" class="nav-sublink active"><svg class="nav-sublink-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 7v10M18 7v10M2 10v4M22 10v4M6 12h12"/></svg><span>Gyms</span></a>
             <a href="business-retail.html" class="nav-sublink"><svg class="nav-sublink-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3V4Z"/><path d="M8 8h6M8 12h6"/></svg><span>Retail &amp; bookstores</span></a>
             <a href="business-clothing.html" class="nav-sublink"><svg class="nav-sublink-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3 5 6l2 3-1 11h12l-1-11 2-3-3-3-2 2h-2z"/></svg><span>Clothing &amp; apparel</span></a>
           </div>
@@ -108,14 +108,14 @@
         <div class="hero-grid">
         <div>
         <div class="uk-kit uk-breadcrumb" style="margin-bottom:18px">
-          <a href="products.html">Products</a><span class="uk-breadcrumb-sep">/</span><span class="uk-breadcrumb-current">POS</span>
+          <a href="platform.html">Business types</a><span class="uk-breadcrumb-sep">/</span><span class="uk-breadcrumb-current">Gyms</span>
         </div>
-        <div class="label">Point of sale</div>
-        <h1 class="h-1" style="font-size:44px">Billing that keeps<br>up with the rush.</h1>
-        <p class="lede">Ring up an order, print or share the bill, and send it to the kitchen &mdash; all from one till that keeps working even when the internet doesn't.</p>
+        <div class="label">Gyms</div>
+        <h1 class="h-1" style="font-size:48px">Every member, walk-in<br>and sale, in one place.</h1>
+        <p class="lede">Bill a day pass, know who's a regular, and keep supplement stock straight &mdash; all from the same account.</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px">
-          <button class="btn btn-primary" id="addCartBtn">Add to cart</button>
-          <a href="cart.html" class="btn btn-ghost">View cart</a>
+          <button class="btn btn-primary" data-open-contact>Let's talk</button>
+          <a href="products.html" class="btn btn-ghost">See all products</a>
         </div>
         </div>
         <div class="hero-art" role="presentation">
@@ -124,49 +124,77 @@
         </div>
       </section>
 
+      <hr class="dash">
+
       <section class="section tight">
-        <div class="grid-2">
-          <div class="card">
-            <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Billing &amp; checkout</div>
-            <p class="p" style="margin-top:8px">Fast line-item entry, discounts, split payments and instant receipts.</p>
+        <div class="label">What usually slows a gym down</div>
+        <div class="grid-2" style="margin-top:12px">
+          <div style="border-top:1px dashed var(--line);padding-top:20px">
+            <div class="h-2" style="font-size:19px">Walk-ins billed off memory</div>
+            <p class="p" style="margin-top:10px">A day pass or a supplement sale rung up with no real record, and no way to look back at what actually sold.</p>
           </div>
-          <div class="card">
-            <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Table management</div>
-            <p class="p" style="margin-top:8px">See every table's status at a glance &mdash; open, occupied, billed &mdash; and move orders between them.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Kitchen order tickets</div>
-            <p class="p" style="margin-top:8px">Every order prints or displays in the kitchen the instant it's placed &mdash; no shouting across the counter.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Staff &amp; shifts</div>
-            <p class="p" style="margin-top:8px">Role-based logins for owners, managers and cashiers, with a shift log for every till session.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Size &amp; color billing</div>
-            <p class="p" style="margin-top:8px">Running a clothing or retail shop instead? The same till bills against size/color stock, with barcode scanning and returns/exchanges built in.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Optional</span>
-            <div class="h-2" style="margin-top:14px">Barcode scanning</div>
-            <p class="p" style="margin-top:8px">Off by default &mdash; turn it on if you have a scanner, and scanning an item adds it to the bill instantly.</p>
+          <div style="border-top:1px dashed var(--line);padding-top:20px">
+            <div class="h-2" style="font-size:19px">Trainer pay, tracked by hand</div>
+            <p class="p" style="margin-top:10px">Shift hours written down separately from whatever's used to actually pay staff at month end.</p>
           </div>
         </div>
       </section>
 
       <hr class="dash">
 
-      <section class="section">
-        <div class="label">Pairs well with</div>
-        <div style="display:flex;gap:12px;flex-wrap:wrap">
-          <a href="billing.html" class="tag">Billing &amp; Invoicing</a>
-          <a href="inventory.html" class="tag">Inventory</a>
-          <a href="qr-ordering.html" class="tag">QR Ordering</a>
+      <section class="section tight">
+        <div class="label">What works best for a gym</div>
+        <div class="grid-2" style="margin-top:12px">
+          <div class="card">
+            <span class="tag">CRM</span>
+            <div class="h-2" style="margin-top:12px;font-size:19px">Member profiles &amp; visit history</div>
+            <p class="p" style="margin-top:8px">Know who's a regular and who's gone quiet, computed automatically from real visits &mdash; no manual tagging.</p>
+          </div>
+          <div class="card">
+            <span class="tag">Billing</span>
+            <div class="h-2" style="margin-top:12px;font-size:19px">Day passes &amp; walk-in billing</div>
+            <p class="p" style="margin-top:8px">Bill a walk-in same as anything else, numbered and recorded, so it's actually on your books.</p>
+          </div>
+          <div class="card">
+            <span class="tag">Inventory</span>
+            <div class="h-2" style="margin-top:12px;font-size:19px">Supplement &amp; retail stock</div>
+            <p class="p" style="margin-top:8px">Track what's on the shelf for anything you sell at the counter &mdash; shakes, gear, supplements.</p>
+          </div>
+          <div class="card">
+            <span class="tag">CRM</span>
+            <div class="h-2" style="margin-top:12px;font-size:19px">Loyalty &amp; coupons</div>
+            <p class="p" style="margin-top:8px">Points redeemable at billing, and a coupon code whenever you want to run a promotion.</p>
+          </div>
+          <div class="card">
+            <span class="tag">Payroll</span>
+            <div class="h-2" style="margin-top:12px;font-size:19px">Trainer pay, off real attendance</div>
+            <p class="p" style="margin-top:8px">A rate per trainer, hours from their own clock-ins, one button to mark a month paid.</p>
+          </div>
+          <div class="card" style="opacity:.75">
+            <span class="tag" style="opacity:.6">On our roadmap</span>
+            <div class="h-2" style="margin-top:12px;font-size:19px">Class &amp; session booking</div>
+            <p class="p" style="margin-top:8px">Real slot-based class booking is being built for gyms specifically &mdash; not live yet, so we won't claim it is.</p>
+          </div>
+        </div>
+      </section>
+
+      <hr class="dash">
+
+      <section class="section tight">
+        <div class="label">See it before you decide</div>
+        <h2 class="h-2">See CRM &amp; billing in the live demo.</h2>
+        <p class="p" style="margin-top:8px">Class booking isn't live yet, but the member billing, loyalty and stock tracking your gym would actually use are &mdash; try them in a shared live account.</p>
+        <a href="https://demo-cafe.auzslab.in" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top:14px">Try the live demo &rarr;</a>
+      </section>
+
+      <hr class="dash">
+
+      <section class="section tight">
+        <div class="label">Ready?</div>
+        <h2 class="h-2">Tell us about your gym &mdash; we'll set you up.</h2>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+          <button class="btn btn-primary" data-open-contact>Let's talk</button>
+          <a href="pricing.html" class="btn btn-ghost">See pricing</a>
         </div>
       </section>
 
@@ -255,10 +283,9 @@
         <div class="field">
           <label for="m-niche">What are you running?</label>
           <select id="m-niche" name="niche">
-            <option value="">Not sure yet</option>
             <option value="cafe">Caf&eacute; / restaurant</option>
             <option value="salon">Salon</option>
-            <option value="gym">Gym</option>
+            <option value="gym" selected>Gym</option>
             <option value="retail">Retail</option>
             <option value="general">Something else</option>
           </select>
@@ -282,19 +309,5 @@
 <script src="site.js?v=7"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script src="design-system/ui-kit.js?v=1"></script>
-<script>
-(function () {
-  var KEY = 'pos';
-  var btn = document.getElementById('addCartBtn');
-  function refresh() {
-    var has = AUZcart.has(KEY);
-    btn.textContent = has ? 'Added ✓ — remove' : 'Add to cart';
-  }
-  btn.addEventListener('click', function () { AUZcart.toggle(KEY); refresh(); });
-  var n = AUZcart.get().length;
-  document.querySelectorAll('.cart-count').forEach(function (el) { el.textContent = n ? '(' + n + ')' : ''; });
-  refresh();
-})();
-</script>
 </body>
 </html>

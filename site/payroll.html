@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>POS — AUZslab</title>
-<meta name="description" content="AUZslab POS — billing, table management and kitchen order tickets for cafés, restaurants and retail counters. Self-hosted, works offline.">
-<link rel="canonical" href="https://auzslab.in/pos.html">
+<title>Payroll — AUZslab</title>
+<meta name="description" content="AUZslab Payroll: attendance-based staff pay, computed from real clock-ins, marked paid in the same account as everything else — no separate spreadsheet.">
+<link rel="canonical" href="https://auzslab.in/payroll.html">
 <meta name="robots" content="index,follow">
 <meta property="og:type" content="website">
-<meta property="og:title" content="POS — AUZslab">
-<meta property="og:description" content="Billing, table management and kitchen order tickets, all in one till.">
-<meta property="og:url" content="https://auzslab.in/pos.html">
+<meta property="og:title" content="Payroll — AUZslab">
+<meta property="og:description" content="Attendance-based staff pay, computed and marked paid in the same account.">
+<meta property="og:url" content="https://auzslab.in/payroll.html">
 <meta property="og:image" content="https://auzslab.in/logo.png">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="/logo.png">
@@ -58,7 +58,7 @@
             <a href="billing.html" class="nav-sublink"><svg class="nav-sublink-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l3 3v15H6z"/><path d="M9 11h6M9 15h6"/></svg><span>Billing &amp; Invoicing</span><span class="nav-subtag">Live</span></a>
             <a href="inventory.html" class="nav-sublink"><svg class="nav-sublink-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l9-4 9 4-9 4-9-4Z"/><path d="M3 7v10l9 4 9-4V7"/></svg><span>Inventory</span><span class="nav-subtag">Live</span></a>
             <a href="qr-ordering.html" class="nav-sublink"><svg class="nav-sublink-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM19 14h2M14 19h2M19 19h2"/></svg><span>QR Ordering</span><span class="nav-subtag">Live</span></a>
-            <a href="payroll.html" class="nav-sublink"><svg class="nav-sublink-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v20M16.5 6H10a3 3 0 0 0 0 6h4a3 3 0 0 1 0 6H7"/></svg><span>Payroll</span><span class="nav-subtag">Live</span></a>
+            <a href="payroll.html" class="nav-sublink active"><svg class="nav-sublink-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v20M16.5 6H10a3 3 0 0 0 0 6h4a3 3 0 0 1 0 6H7"/></svg><span>Payroll</span><span class="nav-subtag">Live</span></a>
             <a href="custom-build.html" class="nav-sublink"><svg class="nav-sublink-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.5-.8z"/></svg><span>Custom build</span><span class="nav-subtag">On-demand</span></a>
           </div>
           <button class="nav-back" data-drill-back aria-label="Back">
@@ -108,11 +108,11 @@
         <div class="hero-grid">
         <div>
         <div class="uk-kit uk-breadcrumb" style="margin-bottom:18px">
-          <a href="products.html">Products</a><span class="uk-breadcrumb-sep">/</span><span class="uk-breadcrumb-current">POS</span>
+          <a href="products.html">Products</a><span class="uk-breadcrumb-sep">/</span><span class="uk-breadcrumb-current">Payroll</span>
         </div>
-        <div class="label">Point of sale</div>
-        <h1 class="h-1" style="font-size:44px">Billing that keeps<br>up with the rush.</h1>
-        <p class="lede">Ring up an order, print or share the bill, and send it to the kitchen &mdash; all from one till that keeps working even when the internet doesn't.</p>
+        <div class="label">Payroll</div>
+        <h1 class="h-1" style="font-size:44px">Pay your team<br>from the same login.</h1>
+        <p class="lede">A monthly rate per staffer, hours pulled straight from their own clock-ins, and one button to mark a month paid &mdash; no separate spreadsheet to keep in sync.</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px">
           <button class="btn btn-primary" id="addCartBtn">Add to cart</button>
           <a href="cart.html" class="btn btn-ghost">View cart</a>
@@ -128,33 +128,33 @@
         <div class="grid-2">
           <div class="card">
             <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Billing &amp; checkout</div>
-            <p class="p" style="margin-top:8px">Fast line-item entry, discounts, split payments and instant receipts.</p>
+            <div class="h-2" style="margin-top:14px">Attendance, already tracked</div>
+            <p class="p" style="margin-top:8px">Staff clock in and out on their own login &mdash; the same shift log the rest of the till already keeps, not a second system to maintain.</p>
           </div>
           <div class="card">
             <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Table management</div>
-            <p class="p" style="margin-top:8px">See every table's status at a glance &mdash; open, occupied, billed &mdash; and move orders between them.</p>
+            <div class="h-2" style="margin-top:14px">A rate per person</div>
+            <p class="p" style="margin-top:8px">Set a monthly rate for each staffer once; hours worked that month are computed automatically from their real clock-ins.</p>
           </div>
           <div class="card">
             <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Kitchen order tickets</div>
-            <p class="p" style="margin-top:8px">Every order prints or displays in the kitchen the instant it's placed &mdash; no shouting across the counter.</p>
+            <div class="h-2" style="margin-top:14px">Adjustments, with a note</div>
+            <p class="p" style="margin-top:8px">Add a bonus or a deduction against any month, with a short note kept alongside it for when you look back.</p>
           </div>
           <div class="card">
             <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Staff &amp; shifts</div>
-            <p class="p" style="margin-top:8px">Role-based logins for owners, managers and cashiers, with a shift log for every till session.</p>
+            <div class="h-2" style="margin-top:14px">Mark paid, keep a record</div>
+            <p class="p" style="margin-top:8px">One button turns a computed month into a payslip &mdash; re-marking the same month later updates it instead of piling up duplicates.</p>
           </div>
           <div class="card">
             <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Size &amp; color billing</div>
-            <p class="p" style="margin-top:8px">Running a clothing or retail shop instead? The same till bills against size/color stock, with barcode scanning and returns/exchanges built in.</p>
+            <div class="h-2" style="margin-top:14px">Owner-only, by design</div>
+            <p class="p" style="margin-top:8px">Salary data is kept off every other device on the account, not just hidden from the screen &mdash; a cashier or manager's app never even syncs it.</p>
           </div>
           <div class="card">
-            <span class="tag">Optional</span>
-            <div class="h-2" style="margin-top:14px">Barcode scanning</div>
-            <p class="p" style="margin-top:8px">Off by default &mdash; turn it on if you have a scanner, and scanning an item adds it to the bill instantly.</p>
+            <span class="tag">Included</span>
+            <div class="h-2" style="margin-top:14px">Payslip history</div>
+            <p class="p" style="margin-top:8px">Every month you've marked paid, kept in one list, exportable per staffer whenever you need it on hand.</p>
           </div>
         </div>
       </section>
@@ -164,9 +164,19 @@
       <section class="section">
         <div class="label">Pairs well with</div>
         <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <a href="pos.html" class="tag">POS</a>
           <a href="billing.html" class="tag">Billing &amp; Invoicing</a>
-          <a href="inventory.html" class="tag">Inventory</a>
-          <a href="qr-ordering.html" class="tag">QR Ordering</a>
+        </div>
+      </section>
+
+      <hr class="dash">
+
+      <section class="section tight">
+        <div class="label">Ready?</div>
+        <h2 class="h-2">Add payroll to what your account already runs on.</h2>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+          <button class="btn btn-primary" data-open-contact>Let's talk</button>
+          <a href="pricing.html" class="btn btn-ghost">See pricing</a>
         </div>
       </section>
 
@@ -284,7 +294,7 @@
 <script src="design-system/ui-kit.js?v=1"></script>
 <script>
 (function () {
-  var KEY = 'pos';
+  var KEY = 'payroll';
   var btn = document.getElementById('addCartBtn');
   function refresh() {
     var has = AUZcart.has(KEY);

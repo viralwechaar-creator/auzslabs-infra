@@ -151,6 +151,7 @@ const INV_BULLETS = {
 const CRM_BULLETS = ['Customer profiles with full visit &amp; spend history', 'Automatic segments &mdash; new, regular, at-risk, VIP', 'Loyalty points &amp; coupons', 'Post-purchase feedback, collected right off the receipt'];
 const BILLING_BULLETS = ['GST invoices with automatic numbering &amp; tax breakdown', 'Shareable public receipt page &mdash; print, or send to WhatsApp', 'Due &amp; credit tracking'];
 const QR_BULLETS = ['Table QR codes &mdash; guest self-ordering, straight to the kitchen', 'Your own public mini-website &mdash; menu, hours, location'];
+const PAYROLL_BULLETS = ['A monthly rate per staffer, hours pulled from their own clock-ins', 'Adjustments with a note, and an exportable payslip history', 'Owner-only &mdash; kept off every other device on the account'];
 
 function flavor(niche) { return niche === 'retail' ? 'retail' : niche === 'cafe' ? 'restaurant' : 'general'; }
 
@@ -214,6 +215,9 @@ function render(ctx) {
   if (showBilling) html += modCard('Billing &amp; Invoicing', BILLING_BULLETS);
   if (showInventory) html += modCard('Inventory &amp; stock', INV_BULLETS[fl] || INV_BULLETS.general);
   if (showQr) html += modCard('Online &amp; self-order', QR_BULLETS);
+  // Payroll, like Inventory, has no featureOn() gate in the real app --
+  // every owner login gets it regardless of niche or cart selection.
+  html += modCard('Payroll', PAYROLL_BULLETS);
   // Real appointment/slot booking (bookings table exists server-side per
   // db/003_bookings.sql) has no UI shipped yet -- never claim a salon/gym
   // lead already has it, just say plainly that it's coming.
