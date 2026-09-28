@@ -27,7 +27,15 @@
       const res = await fetch(base + path, { method, headers, body: raw ? body : (body !== undefined ? JSON.stringify(body) : undefined) });
       let json = null;
       try { json = await res.json(); } catch {}
-      if (!res.ok) return { data: null, error: { message: json?.error || res.statusText, status: res.status } };
+      if (!res.ok) {
+        // A 401 on an authed request means the stored token itself is
+        // dead (expired, or its account was deleted server-side) --
+        // drop it immediately so it's never resent, instead of leaving
+        // the page stuck showing "signed in" against a token every
+        // future request will also fail.
+        if (res.status === 401 && auth && session) { session = null; saveSession(null); }
+        return { data: null, error: { message: json?.error || res.statusText, status: res.status } };
+      }
       return { data: json?.data !== undefined ? json.data : json, error: null };
     }
 

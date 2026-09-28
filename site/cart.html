@@ -82,7 +82,7 @@
 
 </div>
 
-<script src="/sb-client.js"></script>
+<script src="/sb-client.js?v=2"></script>
 <script src="site.js?v=5"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script>
@@ -146,7 +146,14 @@ document.getElementById('submitBtn').onclick = async () => {
   const { error } = await sb.rpc('submit_signup_request', {
     p_business_name: name, p_slug: slug, p_features: features, p_notes: notes,
   });
-  if (error) { errEl.textContent = error.message; return; }
+  if (error) {
+    errEl.textContent = error.message;
+    // A 401 means sb-client.js already dropped the dead token -- flip
+    // the UI back to "signed out" now instead of leaving the form up
+    // as if signed in, which would just fail the same way on retry.
+    if (error.status === 401) checkSession();
+    return;
+  }
 
   AUZcart.clear();
   document.getElementById('modalOverlay').classList.add('open');
