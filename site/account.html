@@ -37,19 +37,41 @@ input:disabled+.slider{opacity:.4;cursor:default}
 .notif b{display:block;font-size:14px}
 .notif .muted{font-size:11px;color:var(--ink-dim)}
 .muted{color:var(--ink-dim);font-size:13px}
-.tab-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
-.tab-row .btn{padding:9px 16px;font-size:11px}
-.tab-row .btn.on{background:var(--ink);color:#fff}
 .section-pane{display:none}
 .section-pane.on{display:block}
+.pos-link-box{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--bg-raised);border:2px solid var(--ink);border-radius:14px;padding:12px 14px;margin-top:8px}
+.pos-link-box code{font-family:var(--font-mono);font-size:12px;word-break:break-all}
 </style>
 </head>
 <body>
 <div class="shell">
   <header class="topbar">
-    <a href="index.html" class="btn btn-ghost" style="order:2">&larr; Site</a>
+    <button class="hamburger" id="menuToggle" aria-label="Open menu" aria-expanded="false">
+      <span class="menu-btn-label">Menu</span>
+    </button>
     <a href="index.html" class="topbar-logo"><img src="logo.png" alt="AUZslab"></a>
   </header>
+
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+
+  <aside class="sidebar" id="sidebarDrawer">
+    <a href="index.html" class="sidebar-logo"><img src="logo.png" alt="AUZslab"></a>
+    <button class="drawer-close" id="drawerClose" aria-label="Close menu">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+    </button>
+    <nav class="sidebar-nav" id="acctNav" aria-label="Account sections" style="display:none">
+      <button class="nav-link acct-nav-btn active" data-tab="account">Account</button>
+      <button class="nav-link acct-nav-btn" data-tab="services">Services</button>
+      <button class="nav-link acct-nav-btn" data-tab="staff" id="tabStaffBtn" style="display:none">Staff</button>
+      <button class="nav-link acct-nav-btn" data-tab="roles" id="tabRolesBtn" style="display:none">Roles</button>
+      <button class="nav-link acct-nav-btn" data-tab="notifications">Notifications <span id="notifBadge"></span></button>
+      <a href="#" id="openPosLink" target="_blank" rel="noopener" class="nav-link">Open POS system &#8599;</a>
+    </nav>
+    <div class="sidebar-foot">
+      <button class="btn btn-ghost" id="signOutBtn" style="width:100%;justify-content:center">Sign out</button>
+      <div class="sidebar-copy">&copy; 2026 AUZslab</div>
+    </div>
+  </aside>
 
   <main class="content">
     <div class="wrap" style="max-width:820px">
@@ -60,13 +82,6 @@ input:disabled+.slider{opacity:.4;cursor:default}
       </section>
 
       <section class="section tight" id="tabsSection" style="display:none">
-        <div class="tab-row">
-          <button class="btn btn-ghost" data-tab="account">Account</button>
-          <button class="btn btn-ghost" data-tab="services">Services</button>
-          <button class="btn btn-ghost" data-tab="staff" id="tabStaffBtn" style="display:none">Staff</button>
-          <button class="btn btn-ghost" data-tab="roles" id="tabRolesBtn" style="display:none">Roles</button>
-          <button class="btn btn-ghost" data-tab="notifications">Notifications <span id="notifBadge"></span></button>
-        </div>
         <div class="section-pane" id="pane-account"></div>
         <div class="section-pane" id="pane-services"></div>
         <div class="section-pane" id="pane-staff"></div>
@@ -102,19 +117,36 @@ async function boot() {
   $('#pageTitle').textContent = DASH.tenant.name;
   $('#pageLede').textContent = 'Manage your account, services, staff, and notifications.';
   $('#tabsSection').style.display = 'block';
+  $('#acctNav').style.display = 'flex';
   if (DASH.my_role === 'owner') { $('#tabStaffBtn').style.display = ''; $('#tabRolesBtn').style.display = ''; }
+  $('#openPosLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in';
 
   await loadRoles();
   if (DASH.my_role === 'owner') await loadStaff();
   await loadNotifications();
 
-  document.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = () => showTab(b.dataset.tab); });
+  document.querySelectorAll('.acct-nav-btn').forEach((b) => {
+    b.onclick = () => {
+      showTab(b.dataset.tab);
+      const drawer = document.getElementById('sidebarDrawer');
+      const overlay = document.getElementById('drawerOverlay');
+      const toggle = document.getElementById('menuToggle');
+      if (drawer) drawer.classList.remove('open');
+      if (overlay) overlay.classList.remove('open');
+      if (toggle) toggle.classList.remove('is-open');
+    };
+  });
   showTab(location.hash === '#notifications' ? 'notifications' : 'account');
   setInterval(async () => { await loadNotifications(); if ($('#pane-notifications').classList.contains('on')) renderNotifications(); }, 20000);
+
+  $('#signOutBtn').onclick = async () => {
+    await sb.auth.signOut();
+    window.location.href = 'signup.html';
+  };
 }
 
 function showTab(tab) {
-  document.querySelectorAll('[data-tab]').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
+  document.querySelectorAll('.acct-nav-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
   document.querySelectorAll('.section-pane').forEach((s) => s.classList.remove('on'));
   $('#pane-' + tab).classList.add('on');
   if (tab === 'account') renderAccount();
@@ -137,6 +169,15 @@ function renderAccount() {
       <div class="acct-row"><span class="muted">Renewal date</span><b>${t.renewal_date ? esc(t.renewal_date) : 'Not set — ask AUZslab'}</b></div>
     </div>
     <div class="card">
+      <h3 class="h-2">Your POS system</h3>
+      <p class="muted">This is your staff's login page — share it with them along with the login you create for them under Staff.</p>
+      <div class="pos-link-box">
+        <code>https://${esc(t.slug)}.auzslab.in</code>
+        <button class="btn btn-ghost" id="copyPosLink" type="button">Copy link</button>
+      </div>
+      <a href="https://${esc(t.slug)}.auzslab.in" target="_blank" rel="noopener" class="btn btn-primary form-submit" style="margin-top:12px">Open POS system &#8599;</a>
+    </div>
+    <div class="card">
       <h3 class="h-2">Your login</h3>
       <div class="acct-row"><span class="muted">Email</span><b>${esc(DASH.my_email)}</b></div>
       <div class="acct-row"><span class="muted">Role</span><b>${esc(DASH.my_role)}</b></div>
@@ -149,6 +190,17 @@ function renderAccount() {
       <div id="pwMsg"></div>
     </div>
   `;
+  $('#copyPosLink').onclick = async () => {
+    const url = 'https://' + t.slug + '.auzslab.in';
+    const btn = $('#copyPosLink');
+    try {
+      await navigator.clipboard.writeText(url);
+      btn.textContent = 'Copied!';
+    } catch {
+      window.prompt('Copy this link:', url);
+    }
+    setTimeout(() => { btn.textContent = 'Copy link'; }, 2000);
+  };
   $('#pwBtn').onclick = async () => {
     const oldP = $('#pwOld').value, newP = $('#pwNew').value, msg = $('#pwMsg');
     msg.className = ''; msg.textContent = '';
