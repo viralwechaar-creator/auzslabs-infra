@@ -63,7 +63,7 @@ ${t.round?`<tr><td>Round off</td><td>${t.round>=0?'+':'-'}${inr(Math.abs(t.round
 <p class=thanks>${esc(s.ftr||'Thank you!')}</p>
 <hr style="margin-top:24px">
 <div class=ft><div><b>Paid via</b>${(o.pays||[]).map(p=>p.m.toUpperCase()+' — '+inr(p.amt)).join('<br>')||'—'}</div><div class=sig><b>${esc(s.name)}</b><br>${esc(s.addr)}${s.gstin?'<br>GSTIN '+esc(s.gstin):''}</div></div>
-<div class=powered>Powered by <a href="https://auzlabs.com" target=_blank rel=noopener>AUZlabs</a></div>`;
+<div class=powered>Powered by <a href="https://auzslab.in" target=_blank rel=noopener>AUZslab</a></div>`;
  if(s.logo){const im=A.querySelector('.mark img');if(im)im.onerror=()=>im.replaceWith(document.createTextNode('Invoice'))}
 })();
 </script></body></html>
