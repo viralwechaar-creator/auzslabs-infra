@@ -112,15 +112,19 @@ button{font-family:inherit}
    button returns to the main list, matching a drill-down app menu
    rather than an accordion. Desktop overrides this back to the
    hover flyout further down. */
+/* Same black background and right-aligned bold-Fraunces link rows as
+   the main sidebar list (.nav-link) -- this used to be a maroon
+   full-bleed panel with icon+pill rows of its own, which read as a
+   different menu rather than a drilled-in view of the same one. */
 .nav-submenu{
-  display:block;position:fixed;inset:0;background:var(--accent);z-index:35;
+  display:block;position:fixed;inset:0;background:#000;z-index:35;
   padding:90px 24px 110px;overflow-y:auto;
   opacity:0;pointer-events:none;transform:translateX(16px);
   transition:opacity .2s ease,transform .2s ease;
 }
 .nav-group-toggle[aria-expanded="true"] + .nav-submenu{opacity:1;pointer-events:auto;transform:translateX(0)}
-.nav-submenu-title{font-family:var(--font-display);font-weight:700;font-size:28px;color:#fff;margin-bottom:22px}
-.nav-submenu-inner{display:flex;flex-direction:column;gap:2px}
+.nav-submenu-title{font-family:var(--font-display);font-weight:700;font-size:22px;color:rgba(255,255,255,.55);text-align:right;margin-bottom:6px;padding:13px 4px;border-bottom:1px solid rgba(255,255,255,.14)}
+.nav-submenu-inner{display:flex;flex-direction:column;gap:0}
 .nav-back{
   position:fixed;bottom:24px;left:22px;z-index:40;
   width:44px;height:44px;border-radius:999px;background:none;
@@ -130,19 +134,14 @@ button{font-family:inherit}
 }
 .nav-back:hover{background:#fff;color:var(--ink)}
 .nav-sublink{
-  display:flex;align-items:center;gap:12px;
-  padding:12px 10px 12px 18px;font-family:var(--font-display);font-weight:700;font-size:19px;
-  letter-spacing:-.01em;color:rgba(255,255,255,.5);border-radius:10px;
-  transition:color .15s ease,background .15s ease;
+  display:block;font-family:var(--font-display);font-weight:700;font-size:22px;letter-spacing:-.01em;
+  padding:13px 4px;border-radius:0;color:rgba(255,255,255,.55);background:none;
+  border-bottom:1px solid rgba(255,255,255,.14);
+  text-align:right;
+  transition:color .15s ease,transform .15s ease;
 }
-.nav-sublink > span:first-of-type{flex:1}
-.nav-sublink-icon{flex-shrink:0;opacity:.8;width:19px;height:19px}
-.nav-sublink:hover{color:#fff;background:rgba(255,255,255,.08)}
+.nav-sublink:hover{color:#fff;background:none;transform:translateX(-3px)}
 .nav-sublink.is-disabled{color:rgba(255,255,255,.25);cursor:default;pointer-events:none}
-.nav-subtag{
-  font-size:8.5px;padding:2px 7px;border-radius:999px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.5);
-  flex-shrink:0;
-}
 .sidebar-foot{display:flex;flex-direction:column;gap:14px;margin-top:auto;padding-top:20px;border-top:1px solid rgba(255,255,255,.15)}
 .sidebar-copy{font-family:var(--font-mono);font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.02em}
 .sidebar .btn-ghost{border-color:rgba(255,255,255,.3);color:#fff}
@@ -529,11 +528,9 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
     opacity:1;pointer-events:auto;transform:translateX(0) scale(1);
   }
   .nav-submenu-inner{overflow:visible;display:flex;flex-direction:column;gap:5px}
-  .nav-sublink{color:var(--ink-dim);padding:12px 14px}
-  .nav-sublink:hover{color:var(--ink);background:var(--bg-raised)}
+  .nav-sublink{font-size:15px;color:var(--ink-dim);padding:12px 14px;border-bottom:none;text-align:left}
+  .nav-sublink:hover{color:var(--ink);background:var(--bg-raised);transform:none}
   .nav-sublink.is-disabled{color:var(--ink-faint)}
-  .nav-sublink-icon{opacity:.7}
-  .nav-subtag{background:var(--bg-raised);color:var(--ink-faint)}
   .wrap{max-width:none;padding:0 64px}
   .section{padding:64px 0}
   .section.tight{padding:40px 0}
