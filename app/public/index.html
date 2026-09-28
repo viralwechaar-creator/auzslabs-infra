@@ -22,18 +22,38 @@ button.warn:hover{background:var(--accent);color:#fff}
 button:disabled{opacity:.4;background:none}
 input,select,textarea{font:inherit;padding:9px 14px;border:1.5px solid var(--l);border-radius:var(--radius-sm);background:#fff;color:inherit}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
-header{display:flex;gap:4px;align-items:center;padding:10px 12px;background:var(--ink);flex-wrap:wrap;font-family:Fraunces,serif;font-weight:700;box-shadow:var(--shadow-sm)}header button{color:rgba(255,255,255,.65);font-family:Fraunces,serif;font-weight:700}header button:hover{background:#ffffff1a;color:#fff}header button.on{background:#fff;color:var(--ink)}header button.on:hover{background:#fff;opacity:1}header span{margin-left:auto;color:rgba(255,255,255,.55);font-size:12px;font-family:'Space Mono',monospace}
+input[type=checkbox]{width:22px;height:22px;flex-shrink:0;accent-color:var(--accent)}
+/* ---- Top bar: was a multi-row wrapped button strip (every nav tab
+   visible at once) plus its own status row plus its own bell/sign-out
+   row -- on a phone that's 3-4 rows before any actual screen content.
+   Now one row: hamburger (opens the drawer with every tab), the
+   current screen's name, a compact status pill (blank when healthy,
+   so it costs no space most of the time), and a bell with a badge. ---- */
+.top-bar{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--ink);box-shadow:var(--shadow-sm)}
+.top-bar h1{font-family:Fraunces,serif;font-size:16px;font-weight:700;color:#fff;margin:0;flex-shrink:0}
+.hamburger-btn{width:36px;height:36px;padding:0;flex-shrink:0;border-radius:10px;background:none;display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px}
+.hamburger-btn:hover{background:#ffffff1a}
+#net{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:rgba(255,255,255,.55);font-size:11px;font-family:'Space Mono',monospace;text-align:right}
+#net:empty{display:none}
+.bell-wrap{position:relative;flex-shrink:0}
+.bell-wrap button{padding:6px 8px;color:rgba(255,255,255,.75)}
+.bell-wrap button:hover{background:#ffffff1a}
+#notifCount{position:absolute;top:0;right:0;min-width:15px;text-align:center;background:var(--accent);color:#fff;border-radius:999px;padding:1px 4px;font-size:9px;font-family:'Space Mono',monospace;line-height:1.4}
+#notifCount:empty{display:none}
+.drawer-ov{position:fixed;inset:0;background:#0007;z-index:50}
+.drawer{position:fixed;top:0;left:0;bottom:0;width:76%;max-width:270px;background:#fff;z-index:51;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:2px;box-shadow:var(--shadow-md)}
+.drawer button{display:block;width:100%;text-align:left;padding:13px 12px;border-radius:12px;font-family:Fraunces,serif;font-weight:700;font-size:15px;color:var(--ink)}
+.drawer button.on{background:var(--accent);color:#fff}
 .g{display:grid;grid-template-columns:1fr 340px;gap:10px;padding:10px}@media(max-width:800px){.g{grid-template-columns:1fr}}
 .card{background:#fff;border-radius:16px;padding:14px;box-shadow:var(--shadow-sm)}
 .items{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:8px}
 .items button{text-align:left;min-height:64px;border-radius:12px;background:#fff;border:1.5px solid var(--l);color:var(--ink)}
 .items button:hover{border-color:var(--ink-faint);background:#fff}
 .row{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid var(--l);flex-wrap:wrap}.row:last-child{border-bottom:none}
-.ov{position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;padding:10px}
+.ov{position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;padding:10px;z-index:45}
 .md{background:#fff;border-radius:var(--radius-lg);padding:18px;width:420px;max-width:100%;max-height:90vh;overflow:auto;display:grid;gap:8px;box-shadow:var(--shadow-md)}.k{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;padding:10px}
 table{width:100%;border-collapse:collapse}td,th{padding:5px;border-bottom:1px solid var(--l);text-align:left}
 .powered{text-align:center;padding:14px 10px 24px;font-size:11px;color:var(--ink-faint);font-family:'Space Mono',monospace}.powered a{color:var(--ink-faint)}
-#notifCount:not(:empty){background:var(--accent);color:#fff;border-radius:999px;padding:1px 6px;font-size:10px;margin-left:3px}
 /* ---- tabbar: a segmented control for switching panes within one
    screen (currently Settings' Business/Tables/Website) instead of
    stacking every section as its own long card, one under the next. ---- */
@@ -47,13 +67,23 @@ table{width:100%;border-collapse:collapse}td,th{padding:5px;border-bottom:1px so
 .tbl-tile:hover{border-color:var(--ink-faint);background:#fff}
 .tbl-tile.run{background:#fff3c4;border-color:#e0b400}
 .tbl-tile.sel{border-color:var(--accent);border-width:2px}
+/* Sticky cart bar: on a phone the item grid + floor plan sit above the
+   order card, so reaching Pay/KOT meant scrolling past all of it every
+   time. This floats above everything so the running total and the two
+   most-used actions are always one tap away, no scrolling needed. Not
+   shown on wide screens, where the order panel already sits beside
+   the items with nothing to scroll past. */
+.cart-bar{position:fixed;left:0;right:0;bottom:0;display:none;align-items:center;justify-content:space-between;gap:10px;background:var(--ink);color:#fff;padding:10px 14px;box-shadow:0 -4px 16px rgba(0,0,0,.25);z-index:40;font-family:Fraunces,serif;font-weight:700}
+.cart-bar button{color:#fff}
+.cart-bar button.p{background:var(--accent)}
+@media(max-width:800px){.cart-bar.show{display:flex}.pos-g{padding-bottom:64px}}
 </style></head><body><div id=app></div>
 <script src=/sb-client.js?v=2></script>
 <script src=https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js integrity="sha384-8FWZA6BGMXhsfO+BLtrJK0We6gg5o1JyO8xQm6peWDEUs17ACA5ziE/NIAkl9z2k" crossorigin=anonymous></script>
 <script src=/config.js></script>
 <script>
 const VAPID_PUBLIC='BN_aBfhAkcWmYJ8RArUKpcXFBId6rUsNO7bAuhyPr4To51XeATMoWY-8NxtJMCG_iHm4O4UbhV_EZnxloXkEMe4';
-const C=window.CFG||{},sb=supabase.createClient(C.url,C.key),S={tab:'pos',setTab:'biz',type:'Dine-in',cur:null,role:'cashier',role_id:null,perms:null,features:null,enabledFeatures:{},q:'',d:new Date().toLocaleDateString('en-CA'),authExpired:false},R={},V={};let busy=0,conflicts=0,syncErr=0;
+const C=window.CFG||{},sb=supabase.createClient(C.url,C.key),S={tab:'pos',setTab:'biz',type:'Dine-in',cur:null,role:'cashier',role_id:null,perms:null,features:null,enabledFeatures:{},q:'',d:new Date().toLocaleDateString('en-CA'),authExpired:false,drawerOpen:false},R={},V={};let busy=0,conflicts=0,syncErr=0;
 const $=s=>document.querySelector(s),uid=()=>crypto.randomUUID(),tok=()=>crypto.randomUUID().replace(/-/g,'').slice(0,12),now=()=>new Date().toISOString(),r2=n=>Math.round(n*100)/100,inr=n=>'₹'+r2(n),inrc=n=>'₹'+r2(n).toLocaleString('en-IN');
 const fmtDate=d=>{const t=new Date(d);return t.toLocaleDateString('en-US',{weekday:'short'})+', '+t.getDate()+' '+t.toLocaleDateString('en-US',{month:'short'})+' '+t.getFullYear()};
 // S.d is "the day currently shown in Reports" (a view-state global the
@@ -93,8 +123,20 @@ const idb=new Promise(r=>{const q=indexedDB.open('pos3',1);q.onupgradeneeded=()=
 const tx=async(s,m,f)=>{const d=await idb;return new Promise((res,rej)=>{const t=d.transaction(s,m),q=f(t.objectStore(s));t.oncomplete=()=>res(q.result);t.onerror=()=>rej(t.error)})};
 const all=s=>tx(s,'readonly',o=>o.getAll()),get=(s,k)=>tx(s,'readonly',o=>o.get(k)),put=(s,v)=>tx(s,'readwrite',o=>o.put(v)),del=(s,k)=>tx(s,'readwrite',o=>o.delete(k));
 async function save(kind,data,id=data.id||uid(),deleted=false){data.id=id;const base=(R[id]&&R[id].srv)||null,r={id,kind,data,deleted,updated_at:now(),srv:(R[id]&&R[id].srv)};R[id]=r;await put('rec',r);await put('out',{id,kind,data,deleted,updated_at:r.updated_at,base});sync();return r}
-async function setNote(){const n=(await all('out')).length,e=$('#net');if(e)e.textContent=(navigator.onLine?'Online':'Offline')+(n?' · '+n+' unsynced':' · synced')+(conflicts?' · ⚠'+conflicts+' auto-resolved conflict'+(conflicts>1?'s':''):'')+(syncErr?' · ⚠ sync error':'')+' · '+S.role}
-async function refreshNotifCount(){try{const{data}=await sb.from('notifications').select('id').eq('read',false);const el=$('#notifCount');if(el)el.textContent=data&&data.length?' '+data.length:''}catch{}}
+// Blank when healthy (nothing to look at = one less thing on a small
+// screen) instead of always showing "Online · synced · owner" -- the
+// role now lives in the drawer instead. Shows the actual last error
+// message on a sync failure so it's screenshot-able without dev tools.
+let lastSyncErrMsg='';
+async function setNote(){const n=(await all('out')).length,e=$('#net');if(!e)return;
+ const bits=[];
+ if(!navigator.onLine)bits.push('Offline');
+ if(n)bits.push(n+' unsynced');
+ if(conflicts)bits.push('⚠'+conflicts+' conflict'+(conflicts>1?'s':'')+' auto-resolved');
+ if(syncErr)bits.push('⚠ sync error'+(lastSyncErrMsg?': '+lastSyncErrMsg:''));
+ e.textContent=bits.join(' · ')
+}
+async function refreshNotifCount(){try{const{data}=await sb.from('notifications').select('id').eq('read',false);const el=$('#notifCount');if(el)el.textContent=data&&data.length?String(data.length):''}catch{}}
 let seenNew=new Set(),seenReady=new Set();
 function alertSound(n=3){try{const a=new(window.AudioContext||window.webkitAudioContext)();for(let i=0;i<n;i++){const o=a.createOscillator(),g=a.createGain();o.type='square';o.frequency.value=880;o.connect(g);g.connect(a.destination);g.gain.value=0.001;const t=a.currentTime+i*0.45;g.gain.exponentialRampToValueAtTime(0.6,t+0.02);g.gain.exponentialRampToValueAtTime(0.001,t+0.35);o.start(t);o.stop(t+0.36)}}catch{}try{navigator.vibrate&&navigator.vibrate([200,100,200,100,200])}catch{}}
 function checkAlerts(){for(const o of L('order')){if(o.status=='void')continue;if(o.kstat=='new'){if(!seenNew.has(o.id)){seenNew.add(o.id);alertSound(3)}}else seenNew.delete(o.id);if(o.kstat=='ready'){if(!seenReady.has(o.id)){seenReady.add(o.id);alertSound(4)}}else seenReady.delete(o.id)}}
@@ -111,7 +153,14 @@ async function enablePush(){
  alert('Notifications enabled on this device — you\'ll get an alert even if the app is closed.');
 }
 function forceRelogin(msg){S.user=null;S.authExpired=false;localStorage.removeItem('u');login(msg)}
-async function doSync(){if(busy||!navigator.onLine||!S.user)return;busy=1;try{
+async function doSync(){if(busy||!navigator.onLine||!S.user)return;busy=1;
+ // syncErr/lastSyncErrMsg must self-heal -- a transient blip that later
+ // fully recovers shouldn't leave a stale "⚠ sync error: <old message>"
+ // showing forever (syncErr never had a decrement anywhere before this).
+ // Only cleared when an ENTIRE pass finishes with zero errors, including
+ // ones caught per-item below.
+ let hadError=false;
+ try{
  const{data:{session}}=await sb.auth.getSession();if(!session){busy=0;return forceRelogin('Your session ended. Please sign in again.')}
  for(const r of await all('out')){try{
   const{data:res,error}=await sb.rpc('push_record',{rid:r.id,rkind:r.kind,rdata:r.data,rdeleted:r.deleted,base:r.base||null,force:false});
@@ -120,11 +169,12 @@ async function doSync(){if(busy||!navigator.onLine||!S.user)return;busy=1;try{
   if(res.conflict){conflicts++;console.warn('sync conflict (auto-resolved, local write kept)',{kind:r.kind,id:r.id});const{data:res2,error:e2}=await sb.rpc('push_record',{rid:r.id,rkind:r.kind,rdata:r.data,rdeleted:r.deleted,base:null,force:true});if(e2)throw e2;sv=res2.server_updated_at}
   if(R[r.id])R[r.id].srv=sv;
   const c=await get('out',r.id);if(c&&c.updated_at==r.updated_at)await del('out',r.id)
- }catch(e){syncErr++;console.warn('sync item',r.id,e)}}
+ }catch(e){hadError=true;syncErr++;lastSyncErrMsg=(e&&e.message)||String(e);console.warn('sync item',r.id,e)}}
  const since=((await get('meta','since'))||{}).v||'1970-01-01T00:00:00Z',{data,error}=await sb.from('records').select('id,kind,data,deleted,updated_at').gte('updated_at',since).order('updated_at').limit(1000);if(error)throw error;let ch=0;
  for(const row of data){if(await get('out',row.id)||(R[row.id]&&R[row.id].updated_at==row.updated_at))continue;const r={...row,srv:row.updated_at};R[row.id]=r;await put('rec',r);ch++}
  if(data.length)await put('meta',{k:'since',v:data[data.length-1].updated_at});if(ch)checkAlerts();if(ch&&!/INPUT|SELECT/.test(document.activeElement.tagName))render();if(data.length>=1000)setTimeout(sync,500)
-}catch(e){syncErr++;console.warn('sync',e)}busy=0;setNote()}
+ if(!hadError){syncErr=0;lastSyncErrMsg=''}
+}catch(e){hadError=true;syncErr++;lastSyncErrMsg=(e&&e.message)||String(e);console.warn('sync',e)}busy=0;setNote()}
 function sync(){if(navigator.locks)navigator.locks.request('pos-sync',{ifAvailable:true},lock=>lock?doSync():null);else doSync()}
 function syncNow(){return navigator.locks?navigator.locks.request('pos-sync',{},()=>doSync()):doSync()}
 /* money — GST is added on top of the menu price, not included in it */
@@ -277,7 +327,7 @@ V.pos=()=>{const o=S.cur||(S.cur=newOrder()),cats=L('cat').sort((a,b)=>a.n-b.n),
  // visits/loyalty same as paid ones. Otherwise "Save as due" is a free
  // way to reuse a single-use coupon or the same loyalty points forever.
  const phone=(o.cust.phone||'').replace(/\D/g,''),hist=phone.length>=10?L('order').filter(x=>x.id!=o.id&&(x.status=='paid'||x.status=='due')&&(x.cust||{}).phone&&x.cust.phone.replace(/\D/g,'')==phone):[];
- return h('div',{class:'g'},h('div',{},
+ return h('div',{class:'g pos-g'},h('div',{},
   h('div',{class:'row'},...['Dine-in','Takeaway','Delivery'].map(x=>h('button',{class:o.type==x?'on':'',onclick:()=>{o.type=x;if(x=='Delivery')o.src=prompt('Source (Zomato / Swiggy / Website)',o.src||'Zomato')||'';if(x!='Dine-in')o.table=null;render()}},x)),
    o.type=='Dine-in'?h('select',{onchange:e=>pickTable(e.target.value)},h('option',{value:''},'Table'),...L('table').sort((a,b)=>a.name.localeCompare(b.name,0,{numeric:true})).map(x=>h('option',{value:x.id,selected:o.table==x.id},x.name+(busyT(x.id)?' (open)':'')))):null,
    h('input',{placeholder:'Search item',value:S.q,onchange:e=>{S.q=e.target.value;render()}})),
@@ -293,7 +343,8 @@ V.pos=()=>{const o=S.cur||(S.cur=newOrder()),cats=L('cat').sort((a,b)=>a.n-b.n),
   h('div',{class:'row'},h('span',{},'Coupon ',o.coupon?h('b',{},o.coupon):null),can('m')?h('span',{},h('button',{onclick:()=>{const code=prompt('Coupon code');if(!code)return;const c=validCoupon(code);if(!c)return alert('Invalid, expired, or fully-used coupon.');o.coupon=c.code;o.disc={t:c.type,v:c.value};o.loyaltyRedeemed=0;render()}},o.coupon?'Change':'Apply'),o.coupon?h('button',{class:'warn',onclick:()=>{o.coupon=null;o.disc=null;render()}},'Remove'):null):null),
   h('div',{class:'row'},'GST '+cfg().tax+'%',inr(t.tax)),h('div',{class:'row'},h('b',{},'Total'),h('b',{},inr(t.total))),
   h('div',{class:'row'},h('button',{onclick:kot,disabled:!o.lines.length},'Send to kitchen'),h('button',{onclick:async()=>{await persist();S.cur=null;render()},disabled:!o.lines.length},'Hold'),h('button',{class:'p',onclick:pay,disabled:!o.lines.length},'Pay')),
-  h('button',{onclick:async()=>{if(o.no){if(!can('m'))return alert('Manager only');if(!confirm('Cancel saved order?'))return;o.status='void';await persist()}S.cur=null;render()}},'Clear order')))};
+  h('button',{onclick:async()=>{if(o.no){if(!can('m'))return alert('Manager only');if(!confirm('Cancel saved order?'))return;o.status='void';await persist()}S.cur=null;render()}},'Clear order')),
+ h('div',{class:'cart-bar'+(o.lines.length?' show':'')},h('span',{},o.lines.reduce((a,l)=>a+l.qty,0)+' items · '+inr(t.total)),h('span',{class:'row',style:'gap:6px'},h('button',{onclick:kot},'KOT'),h('button',{class:'p',onclick:pay},'Pay'))))};
 V.tabs=()=>{const os=L('order').filter(o=>o.t).sort((a,b)=>b.created>a.created?1:-1),op=os.filter(o=>o.status=='open'&&o.lines.length),due=os.filter(o=>o.status=='due');
  return h('div',{class:'g',style:'grid-template-columns:1fr'},h('div',{class:'card'},h('h3',{},'Open orders ('+op.length+')'),...op.map(o=>h('div',{class:'row'},o.no+' · '+o.type+' '+(o.src?o.src+' ':'')+tn(o.table)+(o.kstat?' · '+({new:'sent to kitchen',preparing:'preparing',ready:'ready',served:'served',dispatched:'dispatched',done:'delivered'}[o.kstat]||o.kstat):''),h('b',{},inr(o.t.total)),h('button',{class:'p',onclick:()=>{S.cur=structuredClone(o);S.tab='pos';render()}},'Open')))),
  due.length?h('div',{class:'card'},h('h3',{},'Credit / Due orders ('+due.length+')'),...due.map(o=>h('div',{class:'row'},o.no+' · '+((o.cust||{}).name||'')+' '+((o.cust||{}).phone||''),h('b',{style:'color:var(--accent)'},inr(r2(o.t.total-(o.pays||[]).reduce((a,p)=>a+p.amt,0)))+' due'),h('button',{class:'p',onclick:()=>{S.cur=structuredClone(o);S.tab='pos';render()}},'Settle')))):null,
@@ -344,8 +395,11 @@ function item(i){const px=h('input',{type:'number',value:i.price??'',placeholder
  // an existing 2-hour sold-out timer to indefinite just because the
  // duration dropdown always opened on its first option.
  const durOpts=[['keep','Keep current timer'],['0','Indefinite'],['2','2 Hours'],['4','4 Hours'],['8','8 Hours'],['24','24 Hours'],['nbd','Next business day'],['custom','Custom hours']].filter(([v])=>v!='keep'||itemOff(i));
- const dur=h('select',{},...durOpts.map(([v,l])=>h('option',{value:v,selected:v==(itemOff(i)?'keep':'0')},l)));
- const x=modal(h('h3',{},i.id?'Edit item':'New item'),nm,ct,stn,px,sz,md,rc,cs,h('label',{},off,' Sold out'),h('label',{},'For how long ',dur),h('div',{class:'row'},h('button',{class:'p',onclick:async()=>{const sizes=sz.value.split(',').map(s=>s.split(':')).filter(a=>a[1]).map(a=>({l:a[0].trim(),p:+a[1]}));const mods=md.value.split(',').map(s=>s.trim()).filter(Boolean);if(!nm.value||!ct.value||(!sizes.length&&!+px.value))return alert('Name, category and a price are needed.');
+ // Picking a duration only matters if "Sold out" is actually ticked --
+ // auto-tick it here so choosing "24 Hours" and hitting Save can't
+ // silently do nothing because the checkbox itself was never checked.
+ const dur=h('select',{onchange:()=>off.checked=true},...durOpts.map(([v,l])=>h('option',{value:v,selected:v==(itemOff(i)?'keep':'0')},l)));
+ const x=modal(h('h3',{},i.id?'Edit item':'New item'),nm,ct,stn,px,sz,md,rc,cs,h('label',{style:'display:flex;align-items:center;gap:8px'},off,' Sold out'),h('label',{style:'display:flex;align-items:center;gap:8px'},'For how long ',dur),h('div',{class:'row'},h('button',{class:'p',onclick:async()=>{const sizes=sz.value.split(',').map(s=>s.split(':')).filter(a=>a[1]).map(a=>({l:a[0].trim(),p:+a[1]}));const mods=md.value.split(',').map(s=>s.trim()).filter(Boolean);if(!nm.value||!ct.value||(!sizes.length&&!+px.value))return alert('Name, category and a price are needed.');
   let offUntil=null;
   if(off.checked){const dv=dur.value;
    if(dv=='keep')offUntil=i.offUntil??null;
@@ -468,7 +522,24 @@ function render(){if(S.authExpired||!S.user)return login('Your session ended. Pl
  const ALL_T=[['pos','Sell','pos','pos'],['tabs','Orders','orders',null],['kds','Kitchen','kitchen','kds'],['kotrep','KOT','kitchen','kds'],['rep','Reports','reports','reports'],['staff','Staff','staff',null],['inv','Stock','inventory',null],['crm','Customers','crm','crm']];
  const T=ALL_T.filter(([k,,perm,feat])=>can(perm)&&(!feat||featureOn(feat))&&(k!='kotrep'||isRestaurant())).map(([k,n])=>[k,n]);
  if(can('o'))T.push(['menu','Menu'],['set','Settings']);
- $('#app').replaceChildren(h('header',{},...T.map(([k,n])=>h('button',{class:S.tab==k?'on':'',onclick:()=>{S.tab=k;render()}},n)),h('span',{id:'net'}),h('button',{id:'notifBell',onclick:()=>location.href='https://auzslab.in/account.html#notifications'},'🔔',h('span',{id:'notifCount'})),h('button',{onclick:async()=>{await sb.auth.signOut();localStorage.removeItem('u');location.reload()}},'Sign out')),...[guestBar(),readyBar(),dispatchedBar(),lowBar()].filter(Boolean),V[S.tab](),h('div',{class:'powered'},'Powered by ',h('a',{href:'https://auzslab.in',target:'_blank',rel:'noopener'},'AUZslab')));setNote();refreshNotifCount()}
+ const tabLabel=(T.find(([k])=>k==S.tab)||[,'AUZslab'])[1];
+ $('#app').replaceChildren(
+  h('div',{class:'top-bar'},
+   h('button',{class:'hamburger-btn',onclick:()=>{S.drawerOpen=!S.drawerOpen;render()}},'☰'),
+   h('h1',{},tabLabel),
+   h('span',{id:'net'}),
+   h('span',{class:'bell-wrap'},h('button',{id:'notifBell',onclick:()=>location.href='https://auzslab.in/account.html#notifications'},'🔔'),h('span',{id:'notifCount'}))
+  ),
+  S.drawerOpen?h('div',{class:'drawer-ov',onclick:()=>{S.drawerOpen=false;render()}}):null,
+  S.drawerOpen?h('div',{class:'drawer'},
+   ...T.map(([k,n])=>h('button',{class:S.tab==k?'on':'',onclick:()=>{S.tab=k;S.drawerOpen=false;render()}},n)),
+   h('button',{class:'warn',onclick:async()=>{await sb.auth.signOut();localStorage.removeItem('u');location.reload()}},'Sign out'),
+   h('div',{style:'margin-top:auto;padding:10px 12px;font-size:11px;color:var(--ink-faint);font-family:\'Space Mono\',monospace'},'Signed in as '+S.role)
+  ):null,
+  ...[guestBar(),readyBar(),dispatchedBar(),lowBar()].filter(Boolean),
+  V[S.tab](),
+  h('div',{class:'powered'},'Powered by ',h('a',{href:'https://auzslab.in',target:'_blank',rel:'noopener'},'AUZslab'))
+ );setNote();refreshNotifCount()}
 function login(msg){const e=h('input',{type:'email',placeholder:'Email'}),p=h('input',{type:'password',placeholder:'Password'}),m=h('div',{},msg||'');$('#app').replaceChildren(h('div',{class:'md',style:'margin:12vh auto'},h('h2',{},'Sign in'),e,p,m,h('button',{class:'p',onclick:async()=>{const{error}=await sb.auth.signInWithPassword({email:e.value.trim(),password:p.value});error?m.textContent=error.message:boot()}},'Sign in')))}
 async function seed(){localStorage.seeded=1;const c=uid();await save('cat',{name:'Tea',n:1},c);await save('item',{name:'Masala Tea',cat:c,price:25,sizes:[]});await save('item',{name:'Coffee',cat:c,price:49,sizes:[{l:'M',p:29},{l:'L',p:49}]});for(let i=1;i<=6;i++)await save('table',{name:'T'+i})}
 async function boot(){if(!C.url||C.url.includes('YOUR-PROJECT'))return $('#app').replaceChildren(h('div',{class:'md',style:'margin:12vh auto'},h('h3',{},'Setup needed'),'Open config.js and add your Supabase URL and key. See SETUP-GUIDE.md.'));(await all('rec')).forEach(r=>R[r.id]=r);navigator.storage&&navigator.storage.persist&&navigator.storage.persist();navigator.serviceWorker&&navigator.serviceWorker.register('/sw.js');
