@@ -563,7 +563,12 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
   position:fixed;inset:0;z-index:999;pointer-events:none;
   background:var(--ink);
   clip-path:circle(0% at var(--ox,50%) var(--oy,50%));
-  transition:clip-path .6s cubic-bezier(.4,0,.2,1);
+  /* Was .6s -- site.js used to wait for this to fully finish (or a 700ms
+     fallback) before actually navigating, so every internal link click
+     added up to 700ms of pure animation on top of the real page load.
+     Shortened, and site.js no longer gates navigation on it at all --
+     see the comment there. */
+  transition:clip-path .32s cubic-bezier(.4,0,.2,1);
 }
 .page-transition.is-active{clip-path:circle(120% at var(--ox,50%) var(--oy,50%))}
 
