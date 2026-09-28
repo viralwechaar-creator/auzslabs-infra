@@ -1,0 +1,307 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>AUZslab Payroll</title><link rel=icon href=/logo.png><meta name=theme-color content=#171717>
+<link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel=stylesheet>
+<style>
+/* This app is deliberately its own thing -- same design tokens as the
+   POS app (so it still feels like AUZslab), but its own file, own
+   IndexedDB store, own localStorage key, and its own records kinds
+   (hr_*) that the POS app never reads or writes. Payroll signing in
+   uses the same tenant login everyone already has; what happens after
+   that is entirely separate. */
+:root{--ink:#171717;--ink-dim:#4d4d4d;--ink-faint:#8c8c8c;--accent:#800020;--g:var(--accent);--l:rgba(23,23,23,.14);--bg-raised:#dedede;--radius-sm:14px;--radius-md:18px;--radius-lg:26px;--shadow-sm:0 1px 2px rgba(23,23,23,.06),0 6px 20px -10px rgba(23,23,23,.14);--shadow-md:0 4px 12px rgba(23,23,23,.08),0 20px 44px -16px rgba(23,23,23,.22);--ease:cubic-bezier(.4,0,.2,1)}*{box-sizing:border-box}body{margin:0;font:15px/1.5 Inter,system-ui,sans-serif;background:var(--bg-raised);color:var(--ink);-webkit-tap-highlight-color:transparent}
+button{font:inherit;cursor:pointer;padding:10px 15px;border:none;border-radius:var(--radius-sm);background:none;color:var(--ink-dim);transition:background .15s var(--ease),color .15s var(--ease),transform .12s var(--ease)}
+button:hover{background:var(--l)}button:active{transform:scale(.96)}
+button.p,button.on{background:var(--g);color:#fff}button.p:hover,button.on:hover{background:var(--g);opacity:.9}
+button.warn{color:var(--accent)}button.warn:hover{background:var(--accent);color:#fff}
+button:disabled{opacity:.4;background:none}
+input,select,textarea{font:inherit;padding:10px 15px;border:1.5px solid var(--l);border-radius:var(--radius-sm);background:#fff;color:inherit;transition:border-color .15s var(--ease)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+h1,h2,h3{font-family:Fraunces,serif;margin:0}
+.top-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:14px 16px;background:rgba(222,222,222,.85);backdrop-filter:saturate(180%) blur(16px)}
+.top-bar h1{font-size:18px;flex:1}
+.hamburger-btn{background:none;border:none;font-size:20px;padding:6px 10px}
+.tabs{display:flex;gap:6px;padding:10px 16px;overflow-x:auto}
+.tabs button{white-space:nowrap;border-radius:999px;background:#fff;box-shadow:var(--shadow-sm)}
+.tabs button.on{background:var(--g);color:#fff}
+.g{display:grid;gap:14px;padding:0 16px 90px}
+.card{background:#fff;border-radius:var(--radius-md);padding:16px;box-shadow:var(--shadow-sm)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--l)}
+.row:last-child{border-bottom:none}
+.md{background:#fff;border-radius:var(--radius-lg);padding:22px;max-width:420px;width:92vw;margin:12vh auto;box-shadow:var(--shadow-md);display:grid;gap:10px;animation:sheetIn .28s var(--ease)}
+.ov{position:fixed;inset:0;background:rgba(23,23,23,.35);z-index:20;overflow:auto;animation:ovIn .2s var(--ease)}
+@keyframes ovIn{from{opacity:0}to{opacity:1}}
+@keyframes sheetIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+.badge{display:inline-flex;padding:3px 10px;border-radius:999px;font-family:'Space Mono',monospace;font-size:10.5px;text-transform:uppercase;background:var(--bg-raised)}
+.badge.present{background:#dff3e6;color:#1f6b3a}.badge.absent{background:#fde2e2;color:var(--accent)}
+.badge.late{background:#fdf0d5;color:#8a5a00}.badge.half{background:#e6ecfd;color:#2a4bb0}
+.badge.leave{background:#eee;color:var(--ink-dim)}.badge.missing{background:#fde2e2;color:var(--accent)}
+.pill{padding:2px 9px;border-radius:999px;font-size:11px;background:var(--bg-raised);color:var(--ink-dim)}
+.powered{text-align:center;font-size:11px;color:var(--ink-faint);padding:14px}
+label{display:grid;gap:4px;font-size:12.5px;color:var(--ink-dim)}
+.note{font-size:12.5px;color:var(--ink-faint);line-height:1.6}
+@media(prefers-reduced-motion:reduce){.md,.ov{animation:none}}
+</style>
+</head><body>
+<div id=app></div>
+<script src="/sb-client.js?v=2"></script>
+<script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
+<script>
+const C=window.CFG||{},sb=supabase.createClient(C.url,C.key),S={tab:'employees',cur:null},R={},V={};let busy=0,syncErr=0;
+const $=s=>document.querySelector(s),uid=()=>crypto.randomUUID(),now=()=>new Date().toISOString(),r2=n=>Math.round(n*100)/100,inr=n=>'₹'+r2(n).toLocaleString('en-IN');
+const today=()=>new Date().toLocaleDateString('en-CA');
+const h=(t,a={},...k)=>{const e=document.createElement(t);for(const x in a){const v=a[x];if(v==null||v===false)continue;x.startsWith('on')?e[x]=v:x=='class'?e.className=v:e.setAttribute(x,v)}e.append(...k.flat().filter(x=>x!=null&&x!==false));return e};
+const L=k=>Object.values(R).filter(r=>r.kind==k&&!r.deleted).map(r=>r.data);
+const idb=new Promise(r=>{const q=indexedDB.open('hr1',1);q.onupgradeneeded=()=>['rec','out','meta'].forEach(s=>q.result.createObjectStore(s,{keyPath:s=='meta'?'k':'id'}));q.onsuccess=()=>r(q.result)});
+const tx=async(s,m,f)=>{const d=await idb;return new Promise((res,rej)=>{const t=d.transaction(s,m),q=f(t.objectStore(s));t.oncomplete=()=>res(q.result);t.onerror=()=>rej(t.error)})};
+const all=s=>tx(s,'readonly',o=>o.getAll()),get=(s,k)=>tx(s,'readonly',o=>o.get(k)),put=(s,v)=>tx(s,'readwrite',o=>o.put(v)),del=(s,k)=>tx(s,'readwrite',o=>o.delete(k));
+async function save(kind,data,id=data.id||uid(),deleted=false){data.id=id;const base=(R[id]&&R[id].srv)||null,r={id,kind,data,deleted,updated_at:now(),srv:(R[id]&&R[id].srv)};R[id]=r;await put('rec',r);await put('out',{id,kind,data,deleted,updated_at:r.updated_at,base});sync();return r}
+async function doSync(){if(busy||!navigator.onLine||!S.user)return;busy=1;
+ try{
+ const{data:{session}}=await sb.auth.getSession();if(!session){busy=0;return forceRelogin('Your session ended. Please sign in again.')}
+ for(const r of await all('out')){try{
+  const{data:res,error}=await sb.rpc('push_record',{rid:r.id,rkind:r.kind,rdata:r.data,rdeleted:r.deleted,base:r.base||null,force:false});
+  if(error){if(/JWT|expired|401|invalid/i.test(error.message||'')){busy=0;return forceRelogin('Your session ended. Please sign in again.')}throw error}
+  let sv=res.server_updated_at;
+  if(res.conflict){const{data:res2,error:e2}=await sb.rpc('push_record',{rid:r.id,rkind:r.kind,rdata:r.data,rdeleted:r.deleted,base:null,force:true});if(e2)throw e2;sv=res2.server_updated_at}
+  if(R[r.id])R[r.id].srv=sv;
+  const c=await get('out',r.id);if(c&&c.updated_at==r.updated_at)await del('out',r.id)
+ }catch(e){syncErr++;console.warn('sync item',r.id,e)}}
+ const since=((await get('meta','since'))||{}).v||'1970-01-01T00:00:00Z',{data,error}=await sb.from('records').select('id,kind,data,deleted,updated_at').gte('updated_at',since).order('updated_at').limit(1000);if(error)throw error;let ch=0;
+ for(const row of data){if(!row.kind.startsWith('hr_'))continue;if(await get('out',row.id)||(R[row.id]&&R[row.id].updated_at==row.updated_at))continue;const r={...row,srv:row.updated_at};R[row.id]=r;await put('rec',r);ch++}
+ if(data.length)await put('meta',{k:'since',v:data[data.length-1].updated_at});if(ch&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))render();if(data.length>=1000)setTimeout(sync,500)
+}catch(e){syncErr++;console.warn('sync',e)}busy=0}
+function sync(){if(navigator.locks)navigator.locks.request('hr-sync',{ifAvailable:true},lock=>lock?doSync():null);else doSync()}
+function forceRelogin(msg){S.user=null;localStorage.removeItem('hru');login(msg)}
+function modal(...k){const o=h('div',{class:'ov',onclick:e=>e.target==o&&o.remove()},h('div',{class:'md'},...k));document.body.append(o);return()=>o.remove()}
+function csv(rows,name){const s=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n'),a=h('a',{href:URL.createObjectURL(new Blob([s],{type:'text/csv'})),download:name});document.body.append(a);a.click();a.remove()}
+
+// ---- role: same tenant login as everything else, but what you see
+// here depends only on whether you're HR/Admin (owner or manager) or
+// an ordinary employee -- nothing about this reads POS's own role
+// permissions system, just the plain role string. ----
+const isHR=()=>S.role=='owner'||S.role=='manager';
+const myEmployee=()=>L('hr_employee').find(e=>e.authUserId==S.user.id);
+const hrSettings=()=>({companyName:'',pf:12,esic:0.75,pt:200,tds:0,...(R.hr_settings&&R.hr_settings.data)});
+
+// ---- attendance status, computed from a shift + a punch pair ----
+function shiftFor(emp){return L('hr_shift').find(s=>s.id==emp.shiftId)}
+function statusFor(att,emp){
+ if(att.leaveType)return 'leave';
+ if(!att.in)return 'absent';
+ if(!att.out)return 'missing';
+ const sh=shiftFor(emp);
+ const mins=(new Date(att.out)-new Date(att.in))/60000;
+ if(sh){
+  const shiftMins=(()=>{const[sh1,sm1]=sh.start.split(':').map(Number),[sh2,sm2]=sh.end.split(':').map(Number);let a=sh1*60+sm1,b=sh2*60+sm2;if(sh.overnight||b<a)b+=1440;return b-a})();
+  if(mins<shiftMins*0.55)return 'half';
+  const inTime=new Date(att.in),sched=new Date(inTime);const[sh1,sm1]=sh.start.split(':').map(Number);sched.setHours(sh1,sm1,0,0);
+  if(inTime-sched>15*60000)return 'late';
+  if(mins>shiftMins+30)return 'present'; // overtime tracked separately, not its own status
+ }
+ return 'present';
+}
+function overtimeHours(att,emp){const sh=shiftFor(emp);if(!sh||!att.in||!att.out)return 0;
+ const shiftMins=(()=>{const[sh1,sm1]=sh.start.split(':').map(Number),[sh2,sm2]=sh.end.split(':').map(Number);let a=sh1*60+sm1,b=sh2*60+sm2;if(sh.overnight||b<a)b+=1440;return b-a})();
+ const worked=(new Date(att.out)-new Date(att.in))/60000;return r2(Math.max(0,worked-shiftMins)/60)}
+
+// ---- geolocation punch, software-only. Real fingerprint/face-recognition
+// hardware needs a vendor SDK/driver we don't have and won't fake --
+// this covers mobile punch + location capture, the two methods that
+// need no extra hardware at all. An assigned-location radius is just a
+// flag on the punch (out of range), never a hard block, since GPS
+// indoors is routinely off by 50+ metres. ----
+function getLoc(){return new Promise(res=>{if(!navigator.geolocation)return res(null);navigator.geolocation.getCurrentPosition(p=>res({lat:r2(p.coords.latitude),lng:r2(p.coords.longitude)}),()=>res(null),{timeout:5000})})}
+function haversine(a,b){if(!a||!b)return null;const R=6371000,toRad=d=>d*Math.PI/180;const dLat=toRad(b.lat-a.lat),dLng=toRad(b.lng-a.lng);const x=Math.sin(dLat/2)**2+Math.cos(toRad(a.lat))*Math.cos(toRad(b.lat))*Math.sin(dLng/2)**2;return Math.round(2*R*Math.asin(Math.sqrt(x)))}
+
+// =========================================================
+// Employee self-service: punch, own attendance, own leave, own payslips
+// =========================================================
+async function doPunch(emp){
+ const loc=await getLoc();
+ const openRow=L('hr_attendance').find(a=>a.empId==emp.id&&a.date==today()&&!a.out);
+ if(openRow){const c={...openRow,out:now(),outLoc:loc};await save('hr_attendance',c,c.id)}
+ else{const flagged=emp.siteLoc&&loc&&haversine(emp.siteLoc,loc)>(emp.siteRadius||200);
+  await save('hr_attendance',{empId:emp.id,date:today(),in:now(),inLoc:loc,outOfRange:flagged,source:'mobile'})}
+ render()
+}
+V.myself=()=>{const emp=myEmployee();
+ if(!emp)return h('div',{class:'g'},h('div',{class:'card'},h('p',{},'Your account isn\'t linked to an employee record yet -- ask your admin to add you under Employees.')));
+ const openRow=L('hr_attendance').find(a=>a.empId==emp.id&&a.date==today()&&!a.out);
+ const mine=L('hr_attendance').filter(a=>a.empId==emp.id).sort((a,b)=>b.date>a.date?1:-1);
+ const leaves=L('hr_leave').filter(l=>l.empId==emp.id).sort((a,b)=>b.at>a.at?1:-1);
+ const slips=L('hr_payslip').filter(p=>p.empId==emp.id).sort((a,b)=>b.month>a.month?1:-1);
+ return h('div',{class:'g'},
+  h('div',{class:'card',style:'text-align:center'},h('h2',{},emp.name),h('p',{class:'note'},(emp.designation||'')+(emp.dept?' · '+emp.dept:'')),
+   h('button',{class:'p',style:'margin-top:10px;font-size:16px;padding:14px 26px',onclick:()=>doPunch(emp)},openRow?'Punch out':'Punch in'),
+   openRow?h('p',{class:'note',style:'margin-top:8px'},'Punched in at '+new Date(openRow.in).toLocaleTimeString()):null),
+  h('div',{class:'card'},h('h3',{},'My attendance'),...mine.slice(0,20).map(a=>h('div',{class:'row'},a.date,h('span',{class:'badge '+statusFor(a,emp)},statusFor(a,emp)),h('span',{class:'note'},a.in?new Date(a.in).toLocaleTimeString():'')))),
+  h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Leave'),h('button',{class:'p',onclick:()=>leaveRequest(emp)},'Request leave')),
+   ...leaves.slice(0,10).map(l=>h('div',{class:'row'},l.from+(l.to!=l.from?' → '+l.to:'')+' · '+l.type,h('span',{class:'pill'},l.status)))),
+  h('div',{class:'card'},h('h3',{},'My payslips'),slips.length?null:h('p',{class:'note'},'Nothing generated yet.'),
+   ...slips.map(p=>h('div',{class:'row'},p.month,h('b',{},inr(p.net)),h('button',{onclick:()=>printPayslip(p,emp)},'View')))))};
+function leaveRequest(emp){const from=h('input',{type:'date',value:today()}),to=h('input',{type:'date',value:today()}),ty=h('select',{},h('option',{value:'paid'},'Paid'),h('option',{value:'unpaid'},'Unpaid')),reason=h('textarea',{placeholder:'Reason (optional)'});
+ const x=modal(h('h3',{},'Request leave'),h('label',{},'From',from),h('label',{},'To',to),h('label',{},'Type',ty),h('label',{},'Reason',reason),
+  h('button',{class:'p',onclick:async()=>{await save('hr_leave',{empId:emp.id,from:from.value,to:to.value,type:ty.value,reason:reason.value.trim(),status:'pending',at:now()});x();render()}},'Send request'))}
+
+// =========================================================
+// HR/Admin: Employees
+// =========================================================
+function employeeModal(e){e=e||{};
+ const nm=h('input',{value:e.name||'',placeholder:'Full name'}),empId=h('input',{value:e.empId||'',placeholder:'Employee ID (optional)'}),
+  dept=h('input',{value:e.dept||'',placeholder:'Department'}),desig=h('input',{value:e.designation||'',placeholder:'Designation'}),
+  phone=h('input',{value:e.phone||'',placeholder:'Phone'}),joined=h('input',{type:'date',value:e.dateJoined||today()}),
+  shiftSel=h('select',{},h('option',{value:''},'No shift assigned'),...L('hr_shift').map(s=>h('option',{value:s.id,selected:e.shiftId==s.id},s.name))),
+  authEmail=h('input',{value:e.authEmail||'',placeholder:'Their login email (to link self-service, optional)'}),
+  basic=h('input',{type:'number',value:(e.salaryStructure||{}).basic??'',placeholder:'Basic salary/month'}),
+  hra=h('input',{type:'number',value:(e.salaryStructure||{}).hra??'',placeholder:'HRA/month'}),
+  allow=h('input',{type:'number',value:(e.salaryStructure||{}).allowances??'',placeholder:'Other allowances/month'}),
+  otRate=h('input',{type:'number',value:(e.salaryStructure||{}).otRate??'',placeholder:'Overtime rate/hour'}),
+  active=h('input',{type:'checkbox',checked:e.active!==false});
+ const x=modal(h('h3',{},e.id?'Edit employee':'New employee'),nm,empId,dept,desig,phone,joined,shiftSel,authEmail,
+  h('div',{class:'note'},'Salary structure'),basic,hra,allow,otRate,
+  h('label',{style:'display:flex;flex-direction:row;align-items:center;gap:8px'},active,'Active'),
+  h('button',{class:'p',onclick:async()=>{
+   if(!nm.value.trim())return alert('Name is needed.');
+   let authUserId=e.authUserId||null;
+   if(authEmail.value.trim()){const{data}=await sb.from('profiles').select('id').eq('email',authEmail.value.trim()).maybeSingle();if(data)authUserId=data.id}
+   await save('hr_employee',{...e,name:nm.value.trim(),empId:empId.value.trim(),dept:dept.value.trim(),designation:desig.value.trim(),phone:phone.value.trim(),dateJoined:joined.value,shiftId:shiftSel.value||null,authEmail:authEmail.value.trim(),authUserId,active:active.checked,
+    salaryStructure:{basic:+basic.value||0,hra:+hra.value||0,allowances:+allow.value||0,otRate:+otRate.value||0}});
+   x();render()}},'Save'),
+  e.id?h('button',{class:'warn',onclick:async()=>{if(!confirm('Remove this employee?'))return;await save('hr_employee',e,e.id,true);x();render()}},'Remove'):null)}
+V.employees=()=>{const emps=L('hr_employee').sort((a,b)=>a.name.localeCompare(b.name));
+ return h('div',{class:'g'},h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Employees ('+emps.length+')'),h('button',{class:'p',onclick:()=>employeeModal()},'Add employee')),
+  emps.length?null:h('p',{class:'note'},'No employees yet.'),
+  ...emps.map(e=>h('div',{class:'row'},h('span',{},e.name+(e.active===false?' (inactive)':''),h('br'),h('span',{class:'note'},(e.designation||'')+(e.dept?' · '+e.dept:''))),h('button',{onclick:()=>employeeModal(e)},'Edit')))))};
+
+// =========================================================
+// HR/Admin: Shifts
+// =========================================================
+function shiftModal(s){s=s||{};const nm=h('input',{value:s.name||'',placeholder:'Shift name, e.g. Morning'}),
+ start=h('input',{type:'time',value:s.start||'09:00'}),end=h('input',{type:'time',value:s.end||'18:00'}),overnight=h('input',{type:'checkbox',checked:!!s.overnight});
+ const x=modal(h('h3',{},s.id?'Edit shift':'New shift'),nm,h('label',{},'Start',start),h('label',{},'End',end),
+  h('label',{style:'display:flex;flex-direction:row;align-items:center;gap:8px'},overnight,'Ends the next day (overnight shift)'),
+  h('button',{class:'p',onclick:async()=>{if(!nm.value.trim())return alert('Name is needed.');await save('hr_shift',{...s,name:nm.value.trim(),start:start.value,end:end.value,overnight:overnight.checked});x();render()}},'Save'))}
+V.shifts=()=>{const shifts=L('hr_shift');
+ return h('div',{class:'g'},h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Shifts'),h('button',{class:'p',onclick:()=>shiftModal()},'Add shift')),
+  shifts.length?null:h('p',{class:'note'},'No shifts defined yet -- attendance still records punches without one, just without late/overtime detection.'),
+  ...shifts.map(s=>h('div',{class:'row'},s.name+' · '+s.start+'–'+s.end+(s.overnight?' (overnight)':''),h('button',{onclick:()=>shiftModal(s)},'Edit')))))};
+
+// =========================================================
+// HR/Admin: Leave approvals
+// =========================================================
+V.leave=()=>{const pending=L('hr_leave').filter(l=>l.status=='pending'),all_=L('hr_leave').sort((a,b)=>b.at>a.at?1:-1);
+ const empName=id=>{const e=L('hr_employee').find(x=>x.id==id);return e?e.name:'—'};
+ return h('div',{class:'g'},
+  h('div',{class:'card'},h('h3',{},'Pending approval ('+pending.length+')'),pending.length?null:h('p',{class:'note'},'Nothing waiting.'),
+   ...pending.map(l=>h('div',{class:'row'},empName(l.empId)+' · '+l.from+(l.to!=l.from?' → '+l.to:'')+' · '+l.type+(l.reason?' — '+l.reason:''),
+    h('span',{},h('button',{class:'p',onclick:async()=>{const c={...l,status:'approved',approvedBy:S.user.email||S.user.id,at:l.at};await save('hr_leave',c,c.id);render()}},'Approve'),
+     h('button',{class:'warn',onclick:async()=>{const c={...l,status:'declined'};await save('hr_leave',c,c.id);render()}},'Decline'))))),
+  h('div',{class:'card'},h('h3',{},'Leave history'),...all_.slice(0,30).map(l=>h('div',{class:'row'},empName(l.empId)+' · '+l.from+(l.to!=l.from?' → '+l.to:''),h('span',{class:'pill'},l.status)))));
+};
+
+// =========================================================
+// HR/Admin: Advances
+// =========================================================
+function advanceOutstanding(empId){return r2(L('hr_advance').filter(a=>a.empId==empId).reduce((s,a)=>s+a.amount,0)-L('hr_payslip').filter(p=>p.empId==empId).reduce((s,p)=>s+(p.advanceDeduction||0),0))}
+
+// =========================================================
+// Payroll run: attendance + shift + leave + salary structure +
+// PF/ESIC/PT/TDS (owner-configured rates, NOT government-filed
+// compliance -- these are your own numbers, not tax-filing software) +
+// advances -> net salary -> payslip.
+// =========================================================
+function runPayroll(emp,ym){
+ const[y,m]=ym.split('-').map(Number),mStart=new Date(y,m-1,1),mEnd=new Date(y,m,1),days=(mEnd-mStart)/86400000;
+ const att=L('hr_attendance').filter(a=>a.empId==emp.id&&a.date>=ym+'-01'&&a.date<ym+'-32');
+ let present=0,absent=0,half=0,leave=0,ot=0;
+ for(let d=1;d<=days;d++){const ds=ym+'-'+String(d).padStart(2,'0'),row=att.find(a=>a.date==ds);
+  if(!row){absent++;continue}
+  const st=statusFor(row,emp);
+  if(st=='half')half++;else if(st=='leave')leave++;else present++;
+  ot+=overtimeHours(row,emp);
+ }
+ const ss=emp.salaryStructure||{},perDay=r2((ss.basic||0)/days);
+ const paidDays=present+half*0.5+leave; // leave here means an APPROVED leave day already counted present-equivalent; unpaid leave shows as absent instead since it's never written to hr_attendance
+ const basicPaid=r2(perDay*paidDays),otPay=r2(ot*(ss.otRate||0));
+ const gross=r2(basicPaid+(ss.hra||0)+(ss.allowances||0)+otPay);
+ const rates=hrSettings();
+ const pf=r2(gross*(rates.pf||0)/100),esic=r2(gross*(rates.esic||0)/100),pt=rates.pt||0,tds=r2(gross*(rates.tds||0)/100);
+ const outstanding=advanceOutstanding(emp.id),advanceDeduction=Math.min(outstanding,gross);
+ const net=r2(gross-pf-esic-pt-tds-advanceDeduction);
+ return{present,absent,half,leave,ot,basicPaid,hra:ss.hra||0,allowances:ss.allowances||0,otPay,gross,pf,esic,pt,tds,advanceDeduction,net};
+}
+function printPayslip(p,emp){const w=window.open('','_blank');
+ w.document.write(`<style>body{font-family:Inter,sans-serif;max-width:480px;margin:40px auto;color:#171717}h2{font-family:Fraunces,serif}table{width:100%;border-collapse:collapse;margin-top:12px}td{padding:6px 0;border-bottom:1px solid #eee}td:last-child{text-align:right}.tot{font-weight:700;border-top:2px solid #171717}</style>
+ <h2>${(hrSettings().companyName)||'AUZslab'} — Payslip</h2><p>${emp.name} · ${p.month}</p>
+ <table>
+ <tr><td>Present days</td><td>${p.present}</td></tr><tr><td>Half days</td><td>${p.half}</td></tr><tr><td>Absent</td><td>${p.absent}</td></tr><tr><td>Overtime hours</td><td>${p.ot}</td></tr>
+ <tr><td>Basic (attendance-adjusted)</td><td>${inr(p.basicPaid)}</td></tr><tr><td>HRA</td><td>${inr(p.hra)}</td></tr><tr><td>Allowances</td><td>${inr(p.allowances)}</td></tr><tr><td>Overtime pay</td><td>${inr(p.otPay)}</td></tr>
+ <tr><td><b>Gross</b></td><td><b>${inr(p.gross)}</b></td></tr>
+ <tr><td>PF</td><td>-${inr(p.pf)}</td></tr><tr><td>ESIC</td><td>-${inr(p.esic)}</td></tr><tr><td>Professional tax</td><td>-${inr(p.pt)}</td></tr><tr><td>TDS</td><td>-${inr(p.tds)}</td></tr><tr><td>Advance deduction</td><td>-${inr(p.advanceDeduction)}</td></tr>
+ <tr class=tot><td>Net salary</td><td>${inr(p.net)}</td></tr>
+ </table><p style="font-size:11px;color:#8c8c8c;margin-top:20px">PF/ESIC/PT/TDS here use the rates set in Payroll → Settings — this is not filed government compliance software.</p>`);
+ w.document.close();w.print()}
+V.run=()=>{const ym=S.runMonth||today().slice(0,7),emps=L('hr_employee').filter(e=>e.active!==false);
+ return h('div',{class:'g'},
+  h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Payroll run'),h('input',{type:'month',value:ym,onchange:e=>{S.runMonth=e.target.value;render()}}))),
+  ...emps.map(emp=>{const r=runPayroll(emp,ym),slip=L('hr_payslip').find(p=>p.empId==emp.id&&p.month==ym);
+   return h('div',{class:'card'},h('div',{class:'row'},h('span',{},emp.name,h('br'),h('span',{class:'note'},r.present+' present · '+r.absent+' absent · '+r.ot+'h overtime')),h('b',{},inr(r.net))),
+    h('div',{class:'row'},h('span',{},slip?'Marked paid':'Not yet marked'),h('span',{},
+     h('button',{onclick:()=>printPayslip({...r,month:ym},emp)},'Preview'),
+     h('button',{class:slip?'':'p',onclick:async()=>{await save('hr_payslip',{...r,empId:emp.id,month:ym,generatedAt:now(),paidAt:now(),paidBy:S.user.email||S.user.id},'hrpay-'+emp.id+'-'+ym);render()}},slip?'Re-mark paid':'Mark paid'))))
+  }),
+  emps.length?null:h('div',{class:'card'},h('p',{class:'note'},'Add employees first.')));
+};
+
+// =========================================================
+// HR/Admin: Reports + Settings
+// =========================================================
+V.reports=()=>{const from=S.repFrom||today(),to=S.repTo||today();
+ const empName=id=>{const e=L('hr_employee').find(x=>x.id==id);return e?e.name:'—'};
+ const att=L('hr_attendance').filter(a=>a.date>=from&&a.date<=to);
+ return h('div',{class:'g'},
+  h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Attendance report'),h('span',{},h('input',{type:'date',value:from,onchange:e=>{S.repFrom=e.target.value;render()}}),' to ',h('input',{type:'date',value:to,onchange:e=>{S.repTo=e.target.value;render()}}))),
+   h('button',{onclick:()=>csv([['Employee','Date','In','Out'],...att.map(a=>[empName(a.empId),a.date,a.in,a.out])],'attendance-'+from+'_'+to+'.csv')},'Export attendance CSV')),
+  h('div',{class:'card'},h('h3',{},'Payroll history'),h('button',{onclick:()=>csv([['Employee','Month','Gross','Net'],...L('hr_payslip').map(p=>[empName(p.empId),p.month,p.gross,p.net])],'payroll-history.csv')},'Export payroll CSV')));
+};
+V.settings=()=>{const s=hrSettings(),nm=h('input',{value:s.companyName,placeholder:'Company name on payslips'}),
+ pf=h('input',{type:'number',value:s.pf,placeholder:'PF %'}),esic=h('input',{type:'number',value:s.esic,placeholder:'ESIC %'}),pt=h('input',{type:'number',value:s.pt,placeholder:'Professional tax (flat, ₹/month)'}),tds=h('input',{type:'number',value:s.tds,placeholder:'TDS %'});
+ return h('div',{class:'g'},h('div',{class:'card'},h('h3',{},'Payroll settings'),
+  h('p',{class:'note'},'These are your own configured rates, used only to compute payslips here -- not automatic government filing or compliance.'),
+  nm,pf,esic,pt,tds,
+  h('button',{class:'p',onclick:async()=>{await save('hr_settings',{companyName:nm.value.trim(),pf:+pf.value||0,esic:+esic.value||0,pt:+pt.value||0,tds:+tds.value||0},'settings');render()}},'Save')),
+  h('div',{class:'card'},h('h3',{},'Hardware attendance'),h('p',{class:'note'},'Mobile punch and location capture work today, no extra hardware needed. Fingerprint/face-recognition device integration needs that device\'s own vendor SDK -- ',h('a',{href:'mailto:helloauzslab@gmail.com',style:'color:var(--accent)'},'get in touch'),' if you already have a biometric device and want it wired in.')));
+};
+
+// =========================================================
+// Shell
+// =========================================================
+function render(){
+ const hr=isHR();
+ const tabs=hr?[['employees','Employees'],['shifts','Shifts'],['leave','Leave'],['run','Payroll run'],['reports','Reports'],['settings','Settings']]:[['myself','My attendance']];
+ if(!tabs.some(([k])=>k==S.tab))S.tab=tabs[0][0];
+ $('#app').replaceChildren(
+  h('div',{class:'top-bar'},h('h1',{},'AUZslab Payroll'),h('button',{onclick:async()=>{await sb.auth.signOut();localStorage.removeItem('hru');location.reload()}},'Sign out')),
+  h('div',{class:'tabs'},...tabs.map(([k,n])=>h('button',{class:S.tab==k?'on':'',onclick:()=>{S.tab=k;render()}},n))),
+  V[S.tab](),
+  h('div',{class:'powered'},'Powered by ',h('a',{href:'https://auzslab.in',target:'_blank',rel:'noopener'},'AUZslab'))
+ );
+}
+function login(msg){const e=h('input',{type:'email',placeholder:'Email'}),p=h('input',{type:'password',placeholder:'Password'}),m=h('div',{},msg||'');
+ $('#app').replaceChildren(h('div',{class:'md'},h('h2',{},'Payroll sign in'),h('p',{class:'note'},'Same login as your AUZslab account.'),e,p,m,
+  h('button',{class:'p',onclick:async()=>{const{error}=await sb.auth.signInWithPassword({email:e.value.trim(),password:p.value});error?m.textContent=error.message:boot()}},'Sign in')))}
+async function boot(){
+ (await all('rec')).forEach(r=>R[r.id]=r);
+ let c=JSON.parse(localStorage.hru||'null'),ses=null;try{ses=(await sb.auth.getSession()).data.session}catch{}
+ if(ses){S.user=ses.user;try{const{data}=await sb.from('profiles').select('role').eq('id',ses.user.id).single();if(data)localStorage.hru=JSON.stringify(c={id:ses.user.id,role:data.role})}catch{}}else if(c)S.user={id:c.id};
+ if(!S.user)return login();
+ S.role=(c&&c.role)||'cashier';
+ $('#app').textContent='Loading…';
+ addEventListener('online',sync);
+ sb.channel('hr').on('postgres_changes',{event:'*',schema:'public',table:'records'},()=>sync()).subscribe();setInterval(sync,30000);
+ await new Promise(r=>{const check=async()=>{await doSync();r()};check()});
+ render();
+}
+boot();
+</script>
+</body></html>

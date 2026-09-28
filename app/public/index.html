@@ -820,54 +820,13 @@ return h('div',{class:'g',style:'grid-template-columns:1fr'},
   h('table',{},h('tr',{},h('th',{},'Item'),h('th',{},'Variant'),h('th',{},'Purchased'),h('th',{},'Sold'),h('th',{},'On hand')),...rows.map(({i,v,purch,sold})=>h('tr',{},h('td',{},i.name),h('td',{},v.size+(v.color?' / '+v.color:'')),h('td',{},purch),h('td',{},sold),h('td',{},v.qty)))),
   h('button',{onclick:()=>csv([['Item','Variant','Purchased','Sold','On hand'],...rows.map(({i,v,purch,sold})=>[i.name,v.size+(v.color?' / '+v.color:''),purch,sold,v.qty])],'stock-'+sf+'_'+st+'.csv')},'Export CSV')))}
 V.inv=()=>isRetail()?retailInv():ingInv();
-V.staff=()=>{const b=h('div',{class:'card'},h('h3',{},'Staff & roles')),sh=L('shift').sort((a,b)=>b.in>a.in?1:-1),mine=sh.find(x=>x.u==S.user.id&&!x.out);
+V.staff=()=>{const b=h('div',{class:'card'},h('h3',{},'Staff & roles'),can('o')?h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Attendance-based pay, leave and payslips now live on their own login — ',h('a',{href:'/payroll.html',target:'_blank',style:'color:var(--accent)'},'open Payroll'),'.'):null),sh=L('shift').sort((a,b)=>b.in>a.in?1:-1),mine=sh.find(x=>x.u==S.user.id&&!x.out);
 sb.from('profiles').select('id,email,role').then(({data})=>(data||[]).forEach(p=>b.append(h('div',{class:'row'},p.email,can('o')?h('select',{onchange:e=>sb.from('profiles').update({role:e.target.value}).eq('id',p.id)},...['cashier','manager','owner'].map(r=>h('option',{selected:p.role==r},r))):p.role))));
 return h('div',{class:'g',style:'grid-template-columns:1fr'},h('div',{class:'card'},h('h3',{},'Attendance'),h('button',{class:'p',onclick:async()=>{if(mine){mine.out=now();await save('shift',mine,mine.id)}else await save('shift',{u:S.user.id,e:S.user.email||'me',in:now()});render()}},mine?'Clock out':'Clock in'),...sh.slice(0,30).map(x=>h('div',{class:'row'},(x.e||'')+' '+new Date(x.in).toLocaleString(),x.out?Math.round((new Date(x.out)-new Date(x.in))/6e4)+' min':'on shift')),h('h3',{},'Notifications'),h('p',{style:'font-size:13px;color:var(--ink-dim)'},'Get an order alert on this device even when the app is closed.'),h('button',{class:'p',onclick:enablePush},'Enable notifications on this device')),b)};
-// Payroll: owner-only (pushed into the tab bar the same way Menu/
-// Settings are, not through the featureOn() mechanism, since salary
-// data is more sensitive than a feature toggle -- also checked with
-// can('o') inside V.payroll itself, not just by which tab button
-// renders). No new table -- a monthly rate per staffer lives in
-// kind='payrate' (id = the staffer's own profile id), and each month's
-// computed slip in kind='payslip' (deterministic id 'pay-<uid>-<month>'
-// so re-marking a month updates its own slip instead of piling up
-// duplicates). Both kinds are left OUT of the non-owner records-write
-// allow-list (db/019's r_ins/r_upd), AND out of r_read for non-owners
-// (db/021) -- unlike every other kind here, a cashier's device should
-// never even sync a coworker's salary down to its local cache, not
-// just never show it on screen.
-// Overlaps each shift's actual [in,out) interval with the month window
-// instead of bucketing the whole shift by its clock-in date -- an
-// overnight shift that starts Aug 31 and ends Sep 1 needs its hours
-// split across both months, not credited entirely to whichever side
-// the clock-in happened to land on.
-function staffHours(uid,ym){const[y,m]=ym.split('-').map(Number),mStart=new Date(y,m-1,1),mEnd=new Date(y,m,1);let total=0;
- for(const s of L('shift')){if(s.u!=uid||!s.out)continue;const inT=new Date(s.in),outT=new Date(s.out),from=inT<mStart?mStart:inT,to=outT>mEnd?mEnd:outT;if(to>from)total+=(to-from)/3600000}
- return r2(total)}
-V.payroll=()=>{if(!can('o'))return h('p',{},'Owner only.');const ym=S.payMonth||today().slice(0,7),b=h('div',{class:'card'},h('h3',{},'Staff pay — '+ym));
- sb.from('profiles').select('id,email,role').then(({data})=>(data||[]).forEach(p=>{
-  const rate=(L('payrate').find(r=>r.id==p.id)||{}).monthlyRate||0,hrs=staffHours(p.id,ym),slip=L('payslip').find(x=>x.user==p.id&&x.month==ym);
-  const rateInp=h('input',{type:'number',value:rate||'',placeholder:'Monthly rate',style:'width:100px'}),
-   adjInp=h('input',{type:'number',value:slip?slip.adjustment||'':'',placeholder:'Adjustment ±',style:'width:90px'}),
-   noteInp=h('input',{value:slip?slip.adjustmentNote||'':'',placeholder:'Adjustment note (optional)'}),
-   net=()=>r2((+rateInp.value||0)+(+adjInp.value||0)),netLabel=h('b',{},inr(net()));
-  rateInp.oninput=adjInp.oninput=()=>netLabel.textContent=inr(net());
-  b.append(h('div',{class:'row',style:'flex-wrap:wrap;gap:8px;align-items:center'},
-   h('span',{style:'flex:1;min-width:160px'},p.email+' · '+hrs+' hrs this month'),
-   rateInp,adjInp,noteInp,netLabel,
-   h('button',{class:slip?'':'p',onclick:async()=>{
-    await save('payrate',{monthlyRate:+rateInp.value||0},p.id);
-    await save('payslip',{user:p.id,userEmail:p.email,month:ym,hours:hrs,rate:+rateInp.value||0,adjustment:+adjInp.value||0,adjustmentNote:noteInp.value.trim(),net:net(),paidAt:now(),paidBy:S.user.email||S.user.id},'pay-'+p.id+'-'+ym);
-    render()
-   }},slip?'Re-mark paid':'Mark paid'),
-   slip?h('span',{style:'font-size:11px;color:var(--ink-dim)'},'Last marked '+new Date(slip.paidAt).toLocaleDateString()):null))
- }));
- const hist=L('payslip').sort((a,b2)=>b2.paidAt>a.paidAt?1:-1).slice(0,30);
- return h('div',{class:'g',style:'grid-template-columns:1fr'},
-  h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Month'),h('input',{type:'month',value:ym,onchange:e=>{S.payMonth=e.target.value;render()}}))),
-  b,
-  h('div',{class:'card'},h('h3',{},'Payslip history'),hist.length?null:h('p',{},'Nothing marked paid yet.'),...hist.map(s=>h('div',{class:'row'},s.userEmail+' · '+s.month,inr(s.net),h('button',{onclick:()=>csv([['Field','Value'],['Email',s.userEmail],['Month',s.month],['Hours',s.hours],['Rate',s.rate],['Adjustment',s.adjustment],['Net',s.net],['Marked at',s.paidAt]],'payslip-'+s.userEmail+'-'+s.month+'.csv')},'Export'))))
- )};
+// Payroll is its own separate product (app/public/payroll.html) with
+// its own data and its own login screen, deliberately not read from
+// or written to here -- it used to be a tab on this app; it isn't
+// anymore, on purpose.
 // Segments (spec 6.1/6.2) are computed straight from paid order history,
 // no schema change needed: tier from lifetime spend, risk from recency.
 function custSegment(c){
@@ -927,7 +886,7 @@ function render(){if(S.authExpired||!S.user)return login('Your session ended. Pl
  // it's only gated by role permission, not the owner's service toggles).
  const ALL_T=[['pos','Sell','pos','pos'],['tabs','Orders','orders',null],['kds','Kitchen','kitchen','kds'],['kotrep','KOT','kitchen','kds'],['token','Token','kitchen',null],['rep','Reports','reports','reports'],['staff','Staff','staff',null],['inv','Stock','inventory',null],['crm','Customers','crm','crm']];
  const T=ALL_T.filter(([k,,perm,feat])=>can(perm)&&(!feat||featureOn(feat))&&(k!='kotrep'||isRestaurant())&&(k!='token'||cfg().hwToken)).map(([k,n])=>[k,n]);
- if(can('o'))T.push(['menu','Menu'],['payroll','Payroll'],['set','Settings']);
+ if(can('o'))T.push(['menu','Menu'],['set','Settings']);
  const tabLabel=(T.find(([k])=>k==S.tab)||[,'AUZslab'])[1];
  $('#app').replaceChildren(
   h('div',{class:'top-bar'},
