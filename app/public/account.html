@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<title>My Account — AUZslab</title>
+<link rel=icon href=/logo.png>
+<meta name=theme-color content=#000000>
+<link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel=stylesheet>
+<style>
+:root{--g:#1f3d2e;--l:rgba(23,23,23,.14);--ink:#171717;--radius-sm:10px;--radius-md:16px;--radius-lg:22px;--shadow-sm:0 2px 8px -4px rgba(23,23,23,.16);--shadow-md:0 12px 28px -12px rgba(23,23,23,.2)}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.5 'IBM Plex Sans',system-ui,sans-serif;background:#f3f4ef;color:var(--ink)}
+button,input,select,textarea{font:inherit;padding:9px 14px;border:1px solid var(--l);border-radius:var(--radius-sm);background:#fff;color:inherit}
+button{cursor:pointer}
+button.p{background:var(--g);color:#fff;border-color:var(--g)}
+button.warn{background:#b00020;color:#fff;border-color:#b00020}
+button:disabled{opacity:.4;cursor:default}
+header{display:flex;gap:6px;align-items:center;padding:10px 12px;background:var(--g);flex-wrap:wrap;font-family:'Baloo 2',sans-serif;font-weight:600;box-shadow:var(--shadow-sm)}
+header button{background:#ffffff26;color:#fff;border-color:#ffffff40;font-family:'Baloo 2',sans-serif;font-weight:600}
+header button.on{background:#fff;color:var(--g)}
+header a.back{color:#fff;opacity:.85;text-decoration:none;font-size:13px;margin-right:6px}
+main{max-width:720px;margin:0 auto;padding:16px}
+.card{background:#fff;border:1px solid var(--l);border-radius:var(--radius-md);padding:16px;box-shadow:var(--shadow-sm);margin-bottom:14px}
+.card h3{margin:0 0 12px;font-family:'Baloo 2',sans-serif}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--l)}
+.row:last-child{border-bottom:none}
+.muted{color:#6b6b6b;font-size:13px}
+.field{display:grid;gap:4px;margin-bottom:10px}
+.field label{font-size:12px;color:#6b6b6b}
+.switch{position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:#ccc;border-radius:999px;transition:.15s;cursor:pointer}
+.slider:before{content:"";position:absolute;height:16px;width:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.15s}
+input:checked+.slider{background:var(--g)}
+input:checked+.slider:before{transform:translateX(18px)}
+input:disabled+.slider{opacity:.4;cursor:default}
+.perm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:10px 0}
+.perm-grid label{display:flex;align-items:center;gap:6px;font-size:13px;background:#f6f6f3;border-radius:8px;padding:6px 10px}
+.notif{padding:10px 0;border-bottom:1px solid var(--l)}
+.notif:last-child{border-bottom:none}
+.notif.unread{background:#fff8e6;margin:0 -16px;padding:10px 16px}
+.notif b{display:block;font-size:14px}
+.notif .muted{font-size:11px}
+.tag{display:inline-block;font-size:10px;padding:2px 8px;border-radius:999px;background:#eee;color:#555;font-family:'Space Mono',monospace}
+.err{color:#b00020;font-size:13px;margin-top:6px}
+.ok{color:#1a7a3c;font-size:13px;margin-top:6px}
+.section{display:none}
+.section.on{display:block}
+.powered{text-align:center;padding:14px 10px 24px;font-size:11px;color:#8c8c8c;font-family:'Space Mono',monospace}
+.powered a{color:#8c8c8c}
+</style>
+</head>
+<body>
+<div id=app>Loading…</div>
+
+<script src=/sb-client.js?v=2></script>
+<script src=/config.js></script>
+<script>
+const CFGv=window.CFG||{},sb=supabase.createClient(CFGv.url,CFGv.key);
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const PERM_KEYS=[['pos','Sell (POS)'],['orders','Orders'],['kitchen','Kitchen Display'],['reports','Reports'],['staff','Staff (view)'],['inventory','Stock'],['crm','Customers'],['menu','Menu'],['settings','Business Settings'],['billing','Billing / Refunds']];
+const FEATURE_LABEL={pos:'POS',crm:'CRM',billing:'Billing & Invoicing',inventory:'Inventory',qr:'QR Ordering',self_order:'Self-order (QR)',kds:'Kitchen display',booking:'Bookings',reports:'Reports',expenses:'Expenses'};
+
+let DASH=null, ROLES=[], STAFF=[];
+
+function login(msg){
+  $('#app').innerHTML=`<div style="max-width:360px;margin:14vh auto;padding:0 16px">
+    <h2 style="font-family:'Baloo 2',sans-serif">Sign in</h2>
+    <div class=field><input id=liEmail type=email placeholder="Email"></div>
+    <div class=field><input id=liPass type=password placeholder="Password"></div>
+    <button class=p id=liBtn>Sign in</button>
+    <div class=err id=liErr>${msg?esc(msg):''}</div>
+  </div>`;
+  $('#liBtn').onclick=async()=>{
+    const{error}=await sb.auth.signInWithPassword({email:$('#liEmail').value.trim(),password:$('#liPass').value});
+    if(error){$('#liErr').textContent=error.message;return}
+    boot();
+  };
+}
+
+function shell(activeTab){
+  $('#app').innerHTML=`
+    <header>
+      <button onclick="location.href='index.html'" class=back style="background:none;border:none">&larr; App</button>
+      <button data-tab=account>Account</button>
+      <button data-tab=services>Services</button>
+      ${DASH.my_role==='owner'?'<button data-tab=staff>Staff</button><button data-tab=roles>Roles</button>':''}
+      <button data-tab=notifications>Notifications <span id=notifBadge></span></button>
+    </header>
+    <main>
+      <div class="section" id=sec-account></div>
+      <div class="section" id=sec-services></div>
+      <div class="section" id=sec-staff></div>
+      <div class="section" id=sec-roles></div>
+      <div class="section" id=sec-notifications></div>
+    </main>
+    <div class=powered>Powered by <a href="https://auzslab.in" target=_blank rel=noopener>AUZslab</a></div>
+  `;
+  document.querySelectorAll('header [data-tab]').forEach(b=>{
+    b.onclick=()=>showTab(b.dataset.tab);
+  });
+  showTab(activeTab);
+}
+
+function showTab(tab){
+  document.querySelectorAll('header [data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('on'));
+  $('#sec-'+tab).classList.add('on');
+  if(tab==='account')renderAccount();
+  if(tab==='services')renderServices();
+  if(tab==='staff')renderStaff();
+  if(tab==='roles')renderRoles();
+  if(tab==='notifications')renderNotifications();
+}
+
+// ---------------- Account ----------------
+function renderAccount(){
+  const t=DASH.tenant;
+  $('#sec-account').innerHTML=`
+    <div class=card>
+      <h3>Your business</h3>
+      <div class=row><span class=muted>Business</span><b>${esc(t.name)}</b></div>
+      <div class=row><span class=muted>Subdomain</span><b>${esc(t.slug)}.auzslab.in</b></div>
+      <div class=row><span class=muted>Plan</span><b>${esc(t.plan)}</b></div>
+      <div class=row><span class=muted>Status</span><b>${esc(t.status)}</b></div>
+      <div class=row><span class=muted>Renewal date</span><b>${t.renewal_date?esc(t.renewal_date):'Not set — ask AUZslab'}</b></div>
+    </div>
+    <div class=card>
+      <h3>Your login</h3>
+      <div class=row><span class=muted>Email</span><b>${esc(DASH.my_email)}</b></div>
+      <div class=row><span class=muted>Role</span><b>${esc(DASH.my_role)}</b></div>
+    </div>
+    <div class=card>
+      <h3>Change password</h3>
+      <div class=field><label>Current password</label><input id=pwOld type=password></div>
+      <div class=field><label>New password (min 8 characters)</label><input id=pwNew type=password></div>
+      <button class=p id=pwBtn>Update password</button>
+      <div id=pwMsg></div>
+    </div>
+    ${t.status==='trial'||t.status==='suspended'?`<div class=card><p class=muted>Your account status is <b>${esc(t.status)}</b>. Contact AUZslab if you have questions about billing or renewal.</p></div>`:''}
+  `;
+  $('#pwBtn').onclick=async()=>{
+    const oldP=$('#pwOld').value,newP=$('#pwNew').value,msg=$('#pwMsg');
+    msg.className='';msg.textContent='';
+    if(newP.length<8){msg.className='err';msg.textContent='New password must be at least 8 characters.';return}
+    const{error}=await sb.rpc('change_my_password',{p_old_password:oldP,p_new_password:newP});
+    if(error){msg.className='err';msg.textContent=error.message;return}
+    msg.className='ok';msg.textContent='Password updated.';
+    $('#pwOld').value='';$('#pwNew').value='';
+  };
+}
+
+// ---------------- Services ----------------
+function renderServices(){
+  const entitled=DASH.features||{},enabled=DASH.enabled_features||{};
+  const keys=Object.keys(entitled).filter(k=>entitled[k]===true);
+  const isOwner=DASH.my_role==='owner';
+  $('#sec-services').innerHTML=`
+    <div class=card>
+      <h3>Your subscribed services</h3>
+      <p class=muted>These are the modules you're subscribed to. ${isOwner?'Turn any of them off temporarily — turning one back on doesn’t need us, it takes effect instantly.':'Only the business owner can change these.'}</p>
+      ${keys.length?keys.map(k=>{
+        const on=enabled[k]!==false;
+        return `<div class=row>
+          <span>${esc(FEATURE_LABEL[k]||k)}</span>
+          <label class=switch><input type=checkbox data-feat="${esc(k)}" ${on?'checked':''} ${isOwner?'':'disabled'}><span class=slider></span></label>
+        </div>`;
+      }).join(''):'<p class=muted>No services on your subscription yet — contact AUZslab.</p>'}
+      <div id=svcMsg></div>
+    </div>
+  `;
+  if(isOwner){
+    document.querySelectorAll('[data-feat]').forEach(cb=>{
+      cb.onchange=async()=>{
+        const map={};document.querySelectorAll('[data-feat]').forEach(x=>map[x.dataset.feat]=x.checked);
+        const msg=$('#svcMsg');
+        const{error}=await sb.rpc('update_my_features',{p_enabled:map});
+        if(error){msg.className='err';msg.textContent=error.message;return}
+        msg.className='ok';msg.textContent='Saved.';
+        DASH.enabled_features=map;
+        setTimeout(()=>{if(msg)msg.textContent=''},2000);
+      };
+    });
+  }
+}
+
+// ---------------- Staff ----------------
+async function loadStaff(){
+  const{data}=await sb.from('profiles').select('*').order('email');
+  STAFF=data||[];
+}
+function renderStaff(){
+  $('#sec-staff').innerHTML=`
+    <div class=card>
+      <h3>Add staff</h3>
+      <div class=field><label>Name</label><input id=stName></div>
+      <div class=field><label>Mobile number</label><input id=stPhone type=tel></div>
+      <div class=field><label>Email (their login)</label><input id=stEmail type=email></div>
+      <div class=field><label>Role</label><select id=stRole>${ROLES.map(r=>`<option value="${r.id}">${esc(r.name)}</option>`).join('')||'<option value="">Create a role first</option>'}</select></div>
+      <button class=p id=stAdd ${ROLES.length?'':'disabled'}>Add staff</button>
+      <div id=stMsg></div>
+    </div>
+    <div class=card>
+      <h3>Current staff</h3>
+      ${STAFF.map(p=>`
+        <div class=row>
+          <span>
+            <b>${esc(p.name||p.email)}</b><br>
+            <span class=muted>${esc(p.email)}${p.phone?' · '+esc(p.phone):''}</span>
+          </span>
+          ${p.role==='owner'?'<span class=tag>owner</span>':`
+            <select data-role="${p.id}" style="max-width:150px">
+              ${ROLES.map(r=>`<option value="${r.id}" ${p.role_id===r.id?'selected':''}>${esc(r.name)}</option>`).join('')}
+            </select>
+            <button class=warn data-remove="${p.id}">Remove</button>
+          `}
+        </div>
+      `).join('')}
+    </div>
+  `;
+  $('#stAdd').onclick=async()=>{
+    const name=$('#stName').value.trim(),phone=$('#stPhone').value.trim(),email=$('#stEmail').value.trim(),roleId=$('#stRole').value,msg=$('#stMsg');
+    msg.className='';msg.textContent='';
+    if(!name||!email||!roleId){msg.className='err';msg.textContent='Name, email, and role are required.';return}
+    const{data,error}=await sb.rpc('invite_staff',{p_email:email,p_name:name,p_phone:phone,p_role_id:roleId});
+    if(error){msg.className='err';msg.textContent=error.message;return}
+    msg.className='ok';msg.innerHTML=`Added. Share these with them directly:<br><b>${esc(email)}</b> / <b>${esc(data.temp_password)}</b>`;
+    $('#stName').value='';$('#stPhone').value='';$('#stEmail').value='';
+    await loadStaff();renderStaff();
+  };
+  document.querySelectorAll('[data-role]').forEach(sel=>{
+    sel.onchange=async()=>{
+      const role=ROLES.find(r=>r.id===sel.value);
+      if(!role)return;
+      const{error}=await sb.from('profiles').update({role_id:role.id,role:role.name}).eq('id',sel.dataset.role);
+      if(error){alert(error.message);return}
+      await loadStaff();
+    };
+  });
+  document.querySelectorAll('[data-remove]').forEach(btn=>{
+    btn.onclick=async()=>{
+      if(!confirm('Remove this staff member? They will no longer be able to sign in.'))return;
+      const{error}=await sb.rpc('remove_staff',{p_staff_id:btn.dataset.remove});
+      if(error){alert(error.message);return}
+      await loadStaff();renderStaff();
+    };
+  });
+}
+
+// ---------------- Roles ----------------
+async function loadRoles(){
+  const{data}=await sb.from('roles').select('*').order('name');
+  ROLES=data||[];
+}
+function renderRoles(){
+  $('#sec-roles').innerHTML=`
+    <div class=card>
+      <h3>Create a role</h3>
+      <div class=field><label>Role name</label><input id=roleName placeholder="e.g. Chef, Manager"></div>
+      <p class=muted>Choose which parts of the system this role can see:</p>
+      <div class=perm-grid>${PERM_KEYS.map(([k,l])=>`<label><input type=checkbox data-perm="${k}"> ${esc(l)}</label>`).join('')}</div>
+      <button class=p id=roleAdd>Create role</button>
+      <div id=roleMsg></div>
+    </div>
+    <div class=card>
+      <h3>Existing roles</h3>
+      ${ROLES.length?ROLES.map(r=>`
+        <div class=row style="flex-direction:column;align-items:stretch">
+          <div class=row style="border:none;padding:0 0 6px">
+            <b>${esc(r.name)}</b>
+            <button class=warn data-delrole="${r.id}">Delete</button>
+          </div>
+          <div class=muted>${PERM_KEYS.filter(([k])=>r.permissions&&r.permissions[k]).map(([,l])=>l).join(', ')||'No access granted'}</div>
+        </div>
+      `).join(''):'<p class=muted>No custom roles yet.</p>'}
+    </div>
+  `;
+  $('#roleAdd').onclick=async()=>{
+    const name=$('#roleName').value.trim(),msg=$('#roleMsg');
+    msg.className='';msg.textContent='';
+    if(!name){msg.className='err';msg.textContent='Role name is required.';return}
+    const perms={};document.querySelectorAll('[data-perm]').forEach(cb=>{if(cb.checked)perms[cb.dataset.perm]=true});
+    const{error}=await sb.from('roles').insert({name,permissions:perms});
+    if(error){msg.className='err';msg.textContent=error.message;return}
+    $('#roleName').value='';
+    await loadRoles();renderRoles();
+  };
+  document.querySelectorAll('[data-delrole]').forEach(btn=>{
+    btn.onclick=async()=>{
+      if(!confirm('Delete this role? Any staff on it will lose their custom permissions until reassigned.'))return;
+      const{error}=await sb.rpc('delete_role',{p_role_id:btn.dataset.delrole});
+      if(error){alert(error.message);return}
+      await loadRoles();renderRoles();
+    };
+  });
+}
+
+// ---------------- Notifications ----------------
+let NOTIFS=[];
+async function loadNotifications(){
+  const{data}=await sb.from('notifications').select('*').order('created_at');
+  NOTIFS=(data||[]).slice().reverse();
+  const unread=NOTIFS.filter(n=>!n.read).length;
+  const badge=$('#notifBadge');
+  if(badge)badge.textContent=unread?' '+unread:'';
+}
+function renderNotifications(){
+  $('#sec-notifications').innerHTML=`
+    <div class=card>
+      <h3>Notifications</h3>
+      ${NOTIFS.length?NOTIFS.map(n=>`
+        <div class="notif ${n.read?'':'unread'}" data-notif="${n.id}">
+          <b>${esc(n.title)}</b>
+          ${n.body?`<div>${esc(n.body)}</div>`:''}
+          <div class=muted>${new Date(n.created_at).toLocaleString()}</div>
+        </div>
+      `).join(''):'<p class=muted>Nothing yet.</p>'}
+    </div>
+  `;
+  document.querySelectorAll('[data-notif]').forEach(el=>{
+    el.onclick=async()=>{
+      const id=el.dataset.notif,n=NOTIFS.find(x=>x.id===id);
+      if(!n||n.read)return;
+      n.read=true;el.classList.remove('unread');
+      await sb.from('notifications').update({read:true}).eq('id',id);
+      loadNotifications();
+    };
+  });
+}
+
+async function boot(){
+  const{data:{session}}=await sb.auth.getSession();
+  if(!session)return login();
+  const{data,error}=await sb.rpc('my_dashboard');
+  if(error){login(error.message);return}
+  DASH=data;
+  await loadRoles();
+  if(DASH.my_role==='owner')await loadStaff();
+  await loadNotifications();
+  shell(location.hash==='#notifications'?'notifications':'account');
+  setInterval(async()=>{await loadNotifications();if(document.querySelector('[data-tab=notifications]').classList.contains('on'))renderNotifications()},20000);
+}
+boot();
+</script>
+</body>
+</html>

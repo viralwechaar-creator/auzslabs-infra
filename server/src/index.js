@@ -13,11 +13,21 @@ const DOMAIN = process.env.DOMAIN || '';
 // index.html/site.html/i.html) -- not a generic open-ended DB proxy. ----
 const TABLES = {
   records: { columns: ['id', 'tenant_id', 'kind', 'data', 'deleted', 'author', 'updated_at'] }, // read-only here; writes go through the push_record RPC (optimistic concurrency)
-  profiles: { columns: ['id', 'tenant_id', 'email', 'role'], writable: ['role'] },
+  profiles: { columns: ['id', 'tenant_id', 'email', 'role', 'role_id', 'name', 'phone'], writable: ['role', 'role_id', 'name', 'phone'] },
   guest_orders: { columns: ['id', 'tenant_id', 'tbl', 'name', 'phone', 'note', 'items', 'status', 'created_at'], writable: ['status'] },
   push_subs: { columns: ['id', 'tenant_id', 'user_id', 'endpoint', 'p256dh', 'auth', 'created_at'], insertable: ['user_id', 'endpoint', 'p256dh', 'auth'] },
   leads: { columns: ['id', 'name', 'business', 'contact', 'message', 'niche', 'status', 'created_at'], writable: ['status'] }, // admin-only via RLS (is_platform_admin())
   signup_requests: { columns: ['id', 'user_id', 'business_name', 'slug', 'features', 'notes', 'contact_name', 'phone', 'niche', 'address', 'status', 'created_at'] }, // read-only here; state changes go through approve/decline_signup_request
+
+  // --- Client dashboard: custom roles + staff, notifications ---
+  // roles.tenant_id defaults from the caller's own session (see
+  // 013_client_dashboard_roles_notifications.sql), same pattern as
+  // bookings.tenant_id -- never insertable/writable directly.
+  roles: { columns: ['id', 'tenant_id', 'name', 'permissions', 'created_at'], insertable: ['name', 'permissions'], writable: ['name', 'permissions'] },
+  // insert/delete deliberately blocked here -- creation only via
+  // the auto-notify triggers or send_client_notification, and the
+  // only thing a client/admin can change afterward is read state.
+  notifications: { columns: ['id', 'tenant_id', 'type', 'title', 'body', 'link', 'read', 'created_at'], insertable: [], writable: ['read'] },
 
   // --- Phase 1: Booking & Appointments ---
   // tenant_id is never insertable/writable -- it defaults from the
@@ -59,6 +69,17 @@ const RPC = {
 
   // --- Admin: reset a client's forgotten password ---
   admin_reset_client_password: { params: ['p_tenant_id'], auth: true },
+
+  // --- Client dashboard: own account, staff, feature toggles ---
+  my_dashboard: { params: [], auth: true },
+  update_my_features: { params: ['p_enabled'], jsonb: ['p_enabled'], auth: true },
+  change_my_password: { params: ['p_old_password', 'p_new_password'], auth: true },
+  invite_staff: { params: ['p_email', 'p_name', 'p_phone', 'p_role_id'], auth: true },
+  remove_staff: { params: ['p_staff_id'], auth: true },
+  delete_role: { params: ['p_role_id'], auth: true },
+
+  // --- Notifications ---
+  send_client_notification: { params: ['p_tenant_id', 'p_title', 'p_body'], auth: true },
 };
 
 class HttpError extends Error {
@@ -360,6 +381,10 @@ const server = http.createServer(async (req, res) => {
     if (err.code === '23503' && /user_id_fkey/.test(err.constraint || '')) {
       status = 401;
       message = 'Your session is no longer valid. Please sign in again.';
+    }
+    if (err.code === '23505' && err.constraint === 'auth_users_email_key') {
+      status = 409;
+      message = 'An account with that email already exists.';
     }
     if (status === 500) console.error(err);
     reply(status, { error: message });

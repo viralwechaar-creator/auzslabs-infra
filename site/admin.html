@@ -71,8 +71,8 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
     </button>
     <nav class="sidebar-nav" id="adminNav" aria-label="Admin sections" style="display:none">
-      <button class="nav-link admin-nav-btn active" data-section="leads">Leads</button>
-      <button class="nav-link admin-nav-btn" data-section="signupRequests">Signup requests</button>
+      <button class="nav-link admin-nav-btn active" data-section="leads">Leads <span id="notifBadgeLeads"></span></button>
+      <button class="nav-link admin-nav-btn" data-section="signupRequests">Signup requests <span id="notifBadgeSignup"></span></button>
       <button class="nav-link admin-nav-btn" data-section="clients">Clients</button>
       <button class="nav-link admin-nav-btn" data-section="onboard">Onboard new</button>
       <a href="design-system/nav-kit.html" target="_blank" rel="noopener" class="nav-link">UI Kit &#8599;</a>
@@ -220,8 +220,29 @@ document.querySelectorAll('.admin-nav-btn').forEach((btn) => {
     if (drawer) drawer.classList.remove('open');
     if (overlay) overlay.classList.remove('open');
     if (toggle) toggle.classList.remove('is-open');
+    if (btn.dataset.section === 'leads') markAdminNotifsRead('lead');
+    if (btn.dataset.section === 'signupRequests') markAdminNotifsRead('signup_request');
   };
 });
+
+// ---- notification badges: new leads / signup requests, read from
+// the notifications table (auto-populated by DB triggers) rather
+// than recomputed from status fields, so it also covers any future
+// admin-facing notification type without new nav wiring. ----
+async function refreshAdminNotifBadges() {
+  const { data } = await sb.from('notifications').select('id,type').eq('read', false);
+  const counts = {};
+  (data || []).forEach((n) => { counts[n.type] = (counts[n.type] || 0) + 1; });
+  const leadsBadge = document.getElementById('notifBadgeLeads');
+  const signupBadge = document.getElementById('notifBadgeSignup');
+  if (leadsBadge) leadsBadge.textContent = counts.lead ? ' (' + counts.lead + ')' : '';
+  if (signupBadge) signupBadge.textContent = counts.signup_request ? ' (' + counts.signup_request + ')' : '';
+}
+async function markAdminNotifsRead(type) {
+  const { data } = await sb.from('notifications').select('id').eq('read', false).eq('type', type);
+  for (const n of (data || [])) await sb.from('notifications').update({ read: true }).eq('id', n.id);
+  refreshAdminNotifBadges();
+}
 
 async function checkSession() {
   const { data: { session } } = await sb.auth.getSession();
@@ -233,6 +254,8 @@ async function checkSession() {
     loadLeads();
     loadSignupRequests();
     loadClients();
+    refreshAdminNotifBadges();
+    setInterval(refreshAdminNotifBadges, 20000);
   }
 }
 checkSession();
@@ -385,6 +408,7 @@ async function loadClients() {
       <td class="row-actions">
         <button class="btn btn-ghost" data-edit>Edit</button>
         <button class="btn btn-ghost" data-reset-pw>Reset password</button>
+        <button class="btn btn-ghost" data-message>Message</button>
       </td>
     </tr>`;
   }).join('');
@@ -405,6 +429,18 @@ async function loadClients() {
       const { data, error } = await sb.rpc('admin_reset_client_password', { p_tenant_id: id });
       if (error) { alert(error.message); return; }
       alert(`New password for ${data.email}:\n\n${data.temp_password}\n\nShare this with them directly (e.g. WhatsApp) -- it won't be shown again.`);
+    };
+  });
+  listEl.querySelectorAll('[data-message]').forEach((btn) => {
+    btn.onclick = async () => {
+      const id = btn.closest('tr').dataset.id;
+      const c = clientsCache.find((x) => x.id === id);
+      const title = prompt(`Message title for "${c.name}"`);
+      if (!title) return;
+      const body = prompt('Message body (optional)') || '';
+      const { error } = await sb.rpc('send_client_notification', { p_tenant_id: id, p_title: title, p_body: body });
+      if (error) { alert(error.message); return; }
+      alert('Sent -- they\'ll see it in their account\'s Notifications tab.');
     };
   });
 }
