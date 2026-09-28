@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Your demo — AUZslab</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="/logo.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="theme.css?v=43">
+<link rel="stylesheet" href="design-system/ui-kit.css?v=3">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+.demo-mod{margin-bottom:20px}
+.demo-mod .uk-kit.uk-linklist{margin-top:14px;border-top:none}
+.demo-mod .uk-kit.uk-linklist li{border-bottom:1px dashed var(--line)}
+.demo-mod .uk-kit.uk-linklist li:last-child{border-bottom:none}
+.demo-mod .uk-kit.uk-linklist li span{display:block;padding:8px 2px;font-size:12.5px;color:var(--ink-dim)}
+.demo-loading,.demo-error{padding:40px 0;text-align:center;color:var(--ink-dim)}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <a href="contact.html" class="btn btn-ghost" style="order:2">Questions? Let's talk</a>
+    <a href="index.html" class="topbar-logo"><img src="logo.png" alt="AUZslab"></a>
+  </header>
+
+  <main class="content">
+    <div class="wrap">
+
+      <section class="section" style="padding-top:72px">
+        <div class="hero-grid">
+        <div>
+        <div class="label" id="kicker">A look at what you get</div>
+        <h1 class="h-1" id="heroTitle" style="font-size:46px">Loading your demo&hellip;</h1>
+        <p class="lede" id="heroSub">One moment.</p>
+        </div>
+        <div class="hero-art" role="presentation">
+          <img class="hero-art-logo" src="logo.png" alt="" aria-hidden="true">
+        </div>
+        </div>
+      </section>
+
+      <div id="demoLoading" class="demo-loading">Fetching your demo&hellip;</div>
+      <div id="demoError" class="demo-error" style="display:none">
+        <p class="p">This demo link isn't valid, or has expired. <a href="contact.html" style="color:var(--accent)">Get in touch</a> and we'll sort you out.</p>
+      </div>
+
+      <section class="section tight" id="demoBody" style="display:none"></section>
+
+      <hr class="dash" id="ctaDash" style="display:none">
+
+      <section class="section tight" id="ctaSection" style="display:none">
+        <div class="label">Like what you see?</div>
+        <h2 class="h-2">This is exactly what your account will look like &mdash; nothing more, nothing hidden.</h2>
+        <p class="p" style="margin-top:8px">Your AUZslab contact will follow up to get you live. In a hurry? Just reach out.</p>
+        <button class="btn btn-primary" data-open-contact style="margin-top:14px">Let's talk</button>
+      </section>
+
+    </div>
+  </main>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modal">
+      <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+      <form id="formView" data-contact-form>
+        <div class="label" style="margin-bottom:14px">Reach us</div>
+        <h3 class="h-2" style="font-size:24px">Ready to get started?</h3>
+        <p class="p" style="margin-top:8px">Tell us a little about it — we'll get back to you within a day.</p>
+        <div class="field">
+          <label for="m-name">Name</label>
+          <input id="m-name" name="name" type="text" placeholder="Your name" required>
+        </div>
+        <div class="field">
+          <label for="m-business">Business</label>
+          <input id="m-business" name="business" type="text" placeholder="Business name">
+        </div>
+        <div class="field">
+          <label for="m-contact">Phone or email</label>
+          <input id="m-contact" name="contact" type="text" placeholder="How we reach you" required>
+        </div>
+        <div class="field">
+          <label for="m-message">Message</label>
+          <textarea id="m-message" name="message" placeholder="Anything to add?"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary form-submit">Send</button>
+      </form>
+      <div class="success-view" id="successView">
+        <div class="success-mark">&check;</div>
+        <h3 class="h-2" style="font-size:22px">Got it.</h3>
+        <p class="p">We'll reach out to <span class="success-contact" id="successContact">you</span> shortly.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script src="/sb-client.js?v=2"></script>
+<script src="site.js?v=7"></script>
+<script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
+<script>
+const sb = supabase.createClient(CFG.url, CFG.key);
+
+function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+// Bullet copy is intentionally split by niche flavor, never invented per
+// business -- POS/Inventory read very differently for a café (tables,
+// KOT, kitchen display) than for a clothing shop (size/color stock,
+// trial room, returns), and neither should be shown to a business that
+// wouldn't actually get them. 'general' gets only the bullets true for
+// any business, since niche_presets.general has no table/KOT concept
+// but does have pos:true.
+const POS_BULLETS = {
+  restaurant: ['Order taking, GST billing &amp; due/credit tracking', 'Table floor plan, kitchen order tickets (KOT) &amp; kitchen display', 'Token/queue display for counter service', 'Day settlement, day &amp; KOT reports, a build-your-own report tool', 'Custom staff roles &amp; permissions &middot; barcode scanner support (optional)'],
+  retail: ['Size &amp; color billing, scan-to-bill on a barcode per variant', 'Trial room queue, kept apart from confirmed sales', 'Returns &amp; exchanges against the original invoice', 'Purchase entry straight into your size/color stock', 'Custom staff roles &amp; permissions'],
+  general: ['Order taking &amp; GST billing', 'Due &amp; credit tracking', 'Custom staff roles &amp; permissions', 'Barcode scanner support (optional hardware)'],
+};
+const INV_BULLETS = {
+  restaurant: ['Ingredient &amp; stock tracking tied to recipes', 'Purchase entry &amp; vendor tracking, wastage logging', 'Reorder forecasting off real usage velocity'],
+  retail: ['Size/color stock tracking per product', 'Purchase entry &amp; vendor tracking', 'Reorder forecasting off real sale velocity'],
+  general: ['Stock tracking, purchase entry &amp; low-stock alerts'],
+};
+const CRM_BULLETS = ['Customer profiles with full visit &amp; spend history', 'Automatic segments &mdash; new, regular, at-risk, VIP', 'Loyalty points &amp; coupons', 'Post-purchase feedback, collected right off the receipt'];
+const BILLING_BULLETS = ['GST invoices with automatic numbering &amp; tax breakdown', 'Shareable public receipt page &mdash; print, or send to WhatsApp', 'Due &amp; credit tracking'];
+const QR_BULLETS = ['Table QR codes &mdash; guest self-ordering, straight to the kitchen', 'Your own public mini-website &mdash; menu, hours, location'];
+
+function flavor(niche) { return niche === 'retail' ? 'retail' : niche === 'cafe' ? 'restaurant' : 'general'; }
+
+// pos/crm/billing/qr mirror db/001_tenants_and_settings.sql's
+// niche_presets.default_features exactly (qr tracks that preset's
+// self_order key) -- a lead with no cart yet gets shown only what that
+// niche is actually entitled to by default, never a guess. inventory
+// has no equivalent key in niche_presets at all: index.html's Stock
+// tab has no featureOn() gate (ALL_T's 'inv' entry passes null for
+// feat), so it's always on for every niche regardless of preset,
+// unlike everything else here.
+const NICHE_DEFAULTS = {
+  cafe: { pos: true, crm: true, billing: true, inventory: true, qr: true },
+  retail: { pos: true, crm: true, billing: true, inventory: true, qr: false },
+  salon: { pos: false, crm: true, billing: true, inventory: true, qr: false },
+  gym: { pos: false, crm: true, billing: true, inventory: true, qr: false },
+  general: { pos: true, crm: true, billing: true, inventory: true, qr: false },
+};
+
+function modCard(title, bullets) {
+  if (!bullets.length) return '';
+  return `<div class="card demo-mod"><span class="tag">Included</span><div class="h-2" style="margin-top:14px;font-size:20px">${esc(title)}</div>
+    <ul class="uk-kit uk-linklist">${bullets.map((b) => `<li><span>${b}</span></li>`).join('')}</ul></div>`;
+}
+
+function render(ctx) {
+  const fl = flavor(ctx.niche);
+  const hasFeatures = ctx.features && Object.keys(ctx.features).length > 0;
+  // A signup_request demo shows exactly what was picked in the cart; a
+  // bare lead (no cart yet) falls back to that niche's real defaults.
+  const defaults = NICHE_DEFAULTS[ctx.niche] || NICHE_DEFAULTS.general;
+  const on = (k) => hasFeatures ? !!ctx.features[k] : defaults[k];
+  const showPos = on('pos'), showCrm = on('crm'), showBilling = on('billing'), showInventory = on('inventory'), showQr = on('qr');
+
+  document.getElementById('kicker').textContent = 'A look at what ' + ctx.business_name + ' gets';
+  document.getElementById('heroTitle').textContent = 'Everything ' + ctx.business_name + ' runs on.';
+  document.getElementById('heroSub').textContent = hasFeatures
+    ? "Here's exactly what you picked, walked through one module at a time."
+    : "Here's what a business like yours typically runs on AUZslab. Your account manager will confirm the final list with you.";
+
+  let html = '';
+  if (showPos) html += modCard('POS &mdash; Selling', POS_BULLETS[fl] || POS_BULLETS.general);
+  if (showCrm) html += modCard('CRM &mdash; Customers &amp; growth', CRM_BULLETS);
+  if (showBilling) html += modCard('Billing &amp; Invoicing', BILLING_BULLETS);
+  if (showInventory) html += modCard('Inventory &amp; stock', INV_BULLETS[fl] || INV_BULLETS.general);
+  if (showQr) html += modCard('Online &amp; self-order', QR_BULLETS);
+  // Real appointment/slot booking (bookings table exists server-side per
+  // db/003_bookings.sql) has no UI shipped yet -- never claim a salon/gym
+  // lead already has it, just say plainly that it's coming.
+  if (ctx.niche === 'salon' || ctx.niche === 'gym') {
+    html += `<div class="card demo-mod"><span class="tag" style="opacity:.6">On our roadmap</span><div class="h-2" style="margin-top:14px;font-size:20px">Booking &amp; scheduling</div>
+      <p class="p" style="margin-top:10px">Real appointment/slot booking is being built for salons and gyms specifically &mdash; not live yet, so it isn't included here.</p></div>`;
+  }
+
+  document.getElementById('demoBody').innerHTML = html || '<p class="p">Nothing to show for this niche yet &mdash; get in touch and we\'ll walk you through it directly.</p>';
+  document.getElementById('demoLoading').style.display = 'none';
+  document.getElementById('demoBody').style.display = 'block';
+  document.getElementById('ctaDash').style.display = 'block';
+  document.getElementById('ctaSection').style.display = 'block';
+}
+
+function showError() {
+  document.getElementById('demoLoading').style.display = 'none';
+  document.getElementById('demoError').style.display = 'block';
+  document.getElementById('heroTitle').textContent = "We couldn't find that demo.";
+  document.getElementById('heroSub').textContent = '';
+}
+
+(async function () {
+  const params = new URLSearchParams(location.search);
+  const req = params.get('req'), lead = params.get('lead');
+  const kind = req ? 'req' : lead ? 'lead' : null, id = req || lead;
+  const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!kind || !uuidRe.test(id)) return showError();
+  const { data, error } = await sb.rpc('demo_context', { p_kind: kind, p_id: id });
+  if (error || !data) return showError();
+  render(data);
+})();
+</script>
+</body>
+</html>
