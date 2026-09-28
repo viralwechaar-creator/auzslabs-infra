@@ -12,15 +12,22 @@
    tiles) or need a visible edit boundary (form fields); everything
    else (buttons, nav, row actions) is a plain or soft-filled shape
    that differentiates by colour/weight, not an outline. ---- */
-:root{--ink:#171717;--ink-dim:#4d4d4d;--ink-faint:#8c8c8c;--accent:#800020;--g:var(--accent);--l:rgba(23,23,23,.16);--bg-raised:#dedede;--radius-sm:12px;--radius-md:16px;--radius-lg:20px;--shadow-sm:0 2px 8px -4px rgba(23,23,23,.16);--shadow-md:0 12px 28px -12px rgba(23,23,23,.2)}*{box-sizing:border-box}body{margin:0;font:15px/1.5 Inter,system-ui,sans-serif;background:var(--bg-raised);color:var(--ink)}
-button{font:inherit;cursor:pointer;padding:9px 14px;border:none;border-radius:var(--radius-sm);background:none;color:var(--ink-dim);transition:background .15s,color .15s}
+/* iOS-leaning pass: bigger radii, softer/more diffuse shadows (iOS
+   shadows are low-opacity and spread wide rather than sitting tight
+   and dark), a shared spring-like ease, and a tactile press response
+   on every button (scale down slightly instead of just a colour
+   swap) -- the small physical-feeling touches that read as "smooth"
+   more than any single shape choice does. */
+:root{--ink:#171717;--ink-dim:#4d4d4d;--ink-faint:#8c8c8c;--accent:#800020;--g:var(--accent);--l:rgba(23,23,23,.14);--bg-raised:#dedede;--radius-sm:14px;--radius-md:18px;--radius-lg:26px;--shadow-sm:0 1px 2px rgba(23,23,23,.06),0 6px 20px -10px rgba(23,23,23,.14);--shadow-md:0 4px 12px rgba(23,23,23,.08),0 20px 44px -16px rgba(23,23,23,.22);--ease:cubic-bezier(.4,0,.2,1)}*{box-sizing:border-box}body{margin:0;font:15px/1.5 Inter,system-ui,sans-serif;background:var(--bg-raised);color:var(--ink);-webkit-tap-highlight-color:transparent}
+button{font:inherit;cursor:pointer;padding:10px 15px;border:none;border-radius:var(--radius-sm);background:none;color:var(--ink-dim);transition:background .15s var(--ease),color .15s var(--ease),transform .12s var(--ease)}
 button:hover{background:var(--l)}
+button:active{transform:scale(.96)}
 button.p,button.on{background:var(--g);color:#fff}
 button.p:hover,button.on:hover{background:var(--g);opacity:.9}
 button.warn{color:var(--accent)}
 button.warn:hover{background:var(--accent);color:#fff}
 button:disabled{opacity:.4;background:none}
-input,select,textarea{font:inherit;padding:9px 14px;border:1.5px solid var(--l);border-radius:var(--radius-sm);background:#fff;color:inherit}
+input,select,textarea{font:inherit;padding:10px 15px;border:1.5px solid var(--l);border-radius:var(--radius-sm);background:#fff;color:inherit;transition:border-color .15s var(--ease)}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 input[type=checkbox]{width:22px;height:22px;flex-shrink:0;accent-color:var(--accent)}
 /* ---- Top bar: was a multi-row wrapped button strip (every nav tab
@@ -29,10 +36,11 @@ input[type=checkbox]{width:22px;height:22px;flex-shrink:0;accent-color:var(--acc
    Now one row: hamburger (opens the drawer with every tab), the
    current screen's name, a compact status pill (blank when healthy,
    so it costs no space most of the time), and a bell with a badge. ---- */
-.top-bar{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--ink);box-shadow:var(--shadow-sm)}
+.top-bar{display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(23,23,23,.86);backdrop-filter:saturate(180%) blur(16px);-webkit-backdrop-filter:saturate(180%) blur(16px);box-shadow:var(--shadow-sm)}
 .top-bar h1{font-family:Fraunces,serif;font-size:16px;font-weight:700;color:#fff;margin:0;flex-shrink:0}
-.hamburger-btn{width:36px;height:36px;padding:0;flex-shrink:0;border-radius:10px;background:none;display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px}
+.hamburger-btn{width:36px;height:36px;padding:0;flex-shrink:0;border-radius:12px;background:none;display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px;transition:background .15s var(--ease),transform .12s var(--ease)}
 .hamburger-btn:hover{background:#ffffff1a}
+.hamburger-btn:active{transform:scale(.92)}
 #net{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:rgba(255,255,255,.55);font-size:11px;font-family:'Space Mono',monospace;text-align:right}
 #net:empty{display:none}
 .bell-wrap{position:relative;flex-shrink:0}
@@ -40,18 +48,25 @@ input[type=checkbox]{width:22px;height:22px;flex-shrink:0;accent-color:var(--acc
 .bell-wrap button:hover{background:#ffffff1a}
 #notifCount{position:absolute;top:0;right:0;min-width:15px;text-align:center;background:var(--accent);color:#fff;border-radius:999px;padding:1px 4px;font-size:9px;font-family:'Space Mono',monospace;line-height:1.4}
 #notifCount:empty{display:none}
-.drawer-ov{position:fixed;inset:0;background:#0007;z-index:50}
-.drawer{position:fixed;top:0;left:0;bottom:0;width:76%;max-width:270px;background:#fff;z-index:51;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:2px;box-shadow:var(--shadow-md);border-radius:0 22px 22px 0}
-.drawer button{display:block;width:100%;text-align:left;padding:13px 12px;border-radius:12px;font-family:Fraunces,serif;font-weight:700;font-size:15px;color:var(--ink)}
+/* Was mounted/unmounted instantly on open/close -- no motion at all.
+   Always mounted now, toggled by a class, so it actually slides and
+   fades like a native panel instead of just appearing. */
+.drawer-ov{position:fixed;inset:0;background:#0007;z-index:50;opacity:0;pointer-events:none;transition:opacity .25s var(--ease)}
+.drawer-ov.show{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;left:0;bottom:0;width:76%;max-width:270px;background:#fff;z-index:51;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:2px;box-shadow:var(--shadow-md);border-radius:0 26px 26px 0;transform:translateX(-100%);transition:transform .32s var(--ease)}
+.drawer.open{transform:translateX(0)}
+.drawer button{display:block;width:100%;text-align:left;padding:13px 14px;border-radius:var(--radius-sm);font-family:Inter,sans-serif;font-weight:600;font-size:15px;color:var(--ink);transition:background .15s var(--ease)}
 .drawer button.on{background:var(--accent);color:#fff}
 .g{display:grid;grid-template-columns:1fr 340px;gap:10px;padding:10px}@media(max-width:800px){.g{grid-template-columns:1fr}}
-.card{background:#fff;border-radius:16px;padding:14px;box-shadow:var(--shadow-sm)}
+.card{background:#fff;border-radius:var(--radius-md);padding:14px;box-shadow:var(--shadow-sm)}
 .items{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:8px}
-.items button{text-align:left;min-height:64px;border-radius:12px;background:#fff;border:1.5px solid var(--l);color:var(--ink)}
-.items button:hover{border-color:var(--ink-faint);background:#fff}
+.items button{text-align:left;min-height:64px;border-radius:var(--radius-sm);background:#fff;border:none;box-shadow:var(--shadow-sm);color:var(--ink);transition:transform .12s var(--ease),box-shadow .12s var(--ease)}
+.items button:hover{background:#fff;box-shadow:0 1px 3px rgba(23,23,23,.08),0 10px 24px -10px rgba(23,23,23,.18)}
 .row{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid var(--l);flex-wrap:wrap}.row:last-child{border-bottom:none}
-.ov{position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;padding:10px;z-index:45}
-.md{background:#fff;border-radius:var(--radius-lg);padding:18px;width:420px;max-width:100%;max-height:90vh;overflow:auto;display:grid;gap:8px;box-shadow:var(--shadow-md)}.k{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;padding:10px}
+.ov{position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;padding:10px;z-index:45;animation:ovIn .18s var(--ease)}
+@keyframes ovIn{from{opacity:0}to{opacity:1}}
+@keyframes sheetIn{from{opacity:0;transform:scale(.94) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.md{background:#fff;border-radius:var(--radius-lg);padding:20px;width:420px;max-width:100%;max-height:90vh;overflow:auto;display:grid;gap:8px;box-shadow:var(--shadow-md);animation:sheetIn .24s var(--ease)}.k{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;padding:10px}
 table{width:100%;border-collapse:collapse}td,th{padding:5px;border-bottom:1px solid var(--l);text-align:left}
 .powered{text-align:center;padding:14px 10px 24px;font-size:11px;color:var(--ink-faint);font-family:'Space Mono',monospace}.powered a{color:var(--ink-faint)}
 /* ---- tabbar: a segmented control for switching panes within one
@@ -66,8 +81,8 @@ table{width:100%;border-collapse:collapse}td,th{padding:5px;border-bottom:1px so
 .tabbar button.on{background:#fff;color:var(--ink);box-shadow:0 1px 4px rgba(23,23,23,.15)}
 .tabbar button.on:hover{background:#fff}
 .tbl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px;margin-top:2px}
-.tbl-tile{border-radius:12px;padding:10px;text-align:left;min-height:60px;border:1.5px solid var(--l);background:#fff;color:var(--ink)}
-.tbl-tile:hover{border-color:var(--ink-faint);background:#fff}
+.tbl-tile{border-radius:var(--radius-sm);padding:10px;text-align:left;min-height:60px;border:1.5px solid transparent;background:#fff;color:var(--ink);box-shadow:var(--shadow-sm);transition:transform .12s var(--ease)}
+.tbl-tile:hover{background:#fff}
 .tbl-tile.run{background:#fff3c4;border-color:#e0b400}
 .tbl-tile.sel{border-color:var(--accent);border-width:2px}
 /* Toggle switch for Settings > Hardware -- a plain checkbox reads as
@@ -86,7 +101,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:5px;border-bottom:1px so
 .hw-row .hw-text b{display:block;font-size:14px}
 .hw-row .hw-text span{font-size:12.5px;color:var(--ink-dim)}
 .token-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:14px;padding:14px}
-.token-tile{background:var(--ink);color:#fff;font-family:Fraunces,serif;font-weight:700;font-size:34px;border-radius:16px;min-height:110px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm)}
+.token-tile{background:var(--ink);color:#fff;font-family:Fraunces,serif;font-weight:700;font-size:34px;border-radius:var(--radius-md);min-height:110px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm);transition:transform .12s var(--ease)}
 .token-tile:hover{background:var(--ink);opacity:.85}
 /* Sticky cart bar: on a phone the item grid + floor plan sit above the
    order card, so reaching Pay/KOT meant scrolling past all of it every
@@ -94,7 +109,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:5px;border-bottom:1px so
    most-used actions are always one tap away, no scrolling needed. Not
    shown on wide screens, where the order panel already sits beside
    the items with nothing to scroll past. */
-.cart-bar{position:fixed;left:0;right:0;bottom:0;display:none;align-items:center;justify-content:space-between;gap:10px;background:var(--ink);color:#fff;padding:10px 14px;box-shadow:0 -4px 16px rgba(0,0,0,.25);z-index:40;font-family:Fraunces,serif;font-weight:700}
+.cart-bar{position:fixed;left:0;right:0;bottom:0;display:none;align-items:center;justify-content:space-between;gap:10px;background:rgba(23,23,23,.9);backdrop-filter:saturate(180%) blur(16px);-webkit-backdrop-filter:saturate(180%) blur(16px);color:#fff;padding:12px 16px;box-shadow:0 -4px 16px rgba(0,0,0,.25);z-index:40;font-family:Fraunces,serif;font-weight:700;border-radius:var(--radius-lg) var(--radius-lg) 0 0}
 .cart-bar button{color:#fff}
 .cart-bar button.p{background:var(--accent)}
 @media(max-width:800px){.cart-bar.show{display:flex}.pos-g{padding-bottom:64px}}
@@ -697,6 +712,24 @@ let G=[];
 async function getG(){if(!navigator.onLine||!S.user)return;if(!featureOn('self_order')){if(G.length){G=[];render()}return}const{data,error}=await sb.from('guest_orders').select('*').eq('status','new').order('created_at');if(error)return;const n=G.length;G=data||[];if(G.length>n)alertSound(3);if(G.length!=n&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))render()}
 async function acceptG(g){let o=L('order').find(x=>x.status=='open'&&x.table==g.tbl&&x.lines.length);o=o?structuredClone(o):{...newOrder(),table:g.tbl};g.items.forEach(i=>{const it=R[i.id]&&R[i.id].data;if(!it)return;const sizeObj=i.size&&(it.sizes||[]).find(s=>s.l==i.size),price=sizeObj?sizeObj.p:it.price;const l=o.lines.find(x=>x.id==i.id&&x.size==i.size&&x.price==price&&!x.note);l?l.qty+=i.qty:o.lines.push({id:i.id,name:it.name,size:i.size,price,qty:i.qty,sent:0,st:it.st||'Kitchen'})});if(!(o.cust&&o.cust.name))o.cust={name:g.name,phone:g.phone};if(g.note)o.gn=g.note;const prev=S.cur;S.cur=o;mk(o);await persist();S.cur=prev;await sb.from('guest_orders').update({status:'done'}).eq('id',g.id);getG()}
 const guestBar=()=>G.length?h('div',{style:'background:var(--bg-raised);border-left:4px solid var(--accent);padding:8px;display:grid;gap:6px'},...G.map(g=>h('div',{class:'row'},h('span',{},'📲 '+(tn(g.tbl)||'Table')+' · '+g.name+(g.phone?' '+g.phone:'')+' — '+g.items.map(i=>i.qty+'× '+i.name+(i.size?' ('+i.size+')':'')).join(', ')+(g.note?' · "'+g.note+'"':'')),h('span',{},h('button',{class:'p',onclick:()=>acceptG(g)},'Accept → kitchen'),h('button',{onclick:async()=>{await sb.from('guest_orders').update({status:'rejected'}).eq('id',g.id);getG()}},'Reject'))))):null;
+// render() tears down and rebuilds the whole #app tree on every click
+// (replaceChildren), so a drawer built fresh inside it each time has no
+// prior state for a CSS transition to animate FROM -- a brand-new node
+// just snaps straight to its resting class. The drawer/overlay are
+// built once here, live outside #app entirely, and only ever have
+// their class toggled on the SAME persistent node -- that's what makes
+// the slide/fade transitions in the CSS actually animate.
+let drawerEl=null,drawerOvEl=null;
+function syncDrawer(){if(!drawerOvEl)return;drawerOvEl.classList.toggle('show',!!S.drawerOpen);drawerEl.classList.toggle('open',!!S.drawerOpen)}
+function renderDrawer(T){
+ if(!drawerEl){drawerOvEl=h('div',{class:'drawer-ov',onclick:()=>{S.drawerOpen=false;syncDrawer()}});drawerEl=h('div',{class:'drawer'});document.body.append(drawerOvEl,drawerEl)}
+ drawerEl.replaceChildren(
+  ...T.map(([k,n])=>h('button',{class:S.tab==k?'on':'',onclick:()=>{S.tab=k;S.drawerOpen=false;syncDrawer();render()}},n)),
+  h('button',{class:'warn',onclick:async()=>{await sb.auth.signOut();localStorage.removeItem('u');location.reload()}},'Sign out'),
+  h('div',{style:'margin-top:auto;padding:10px 12px;font-size:11px;color:var(--ink-faint);font-family:\'Space Mono\',monospace'},'Signed in as '+S.role)
+ );
+ syncDrawer();
+}
 function render(){if(S.authExpired||!S.user)return login('Your session ended. Please sign in again.');
  // 4th element is the subscription feature key this tab needs live,
  // or null if it's core (no separate feature flag exists for it, so
@@ -707,22 +740,22 @@ function render(){if(S.authExpired||!S.user)return login('Your session ended. Pl
  const tabLabel=(T.find(([k])=>k==S.tab)||[,'AUZslab'])[1];
  $('#app').replaceChildren(
   h('div',{class:'top-bar'},
-   h('button',{class:'hamburger-btn',onclick:()=>{S.drawerOpen=!S.drawerOpen;render()}},'☰'),
+   h('button',{class:'hamburger-btn',onclick:()=>{S.drawerOpen=!S.drawerOpen;syncDrawer()}},'☰'),
    h('h1',{},tabLabel),
    h('span',{id:'net'}),
    h('span',{class:'bell-wrap'},h('button',{id:'notifBell',onclick:()=>location.href='https://auzslab.in/account.html#notifications'},'🔔'),h('span',{id:'notifCount'}))
   ),
-  S.drawerOpen?h('div',{class:'drawer-ov',onclick:()=>{S.drawerOpen=false;render()}}):null,
-  S.drawerOpen?h('div',{class:'drawer'},
-   ...T.map(([k,n])=>h('button',{class:S.tab==k?'on':'',onclick:()=>{S.tab=k;S.drawerOpen=false;render()}},n)),
-   h('button',{class:'warn',onclick:async()=>{await sb.auth.signOut();localStorage.removeItem('u');location.reload()}},'Sign out'),
-   h('div',{style:'margin-top:auto;padding:10px 12px;font-size:11px;color:var(--ink-faint);font-family:\'Space Mono\',monospace'},'Signed in as '+S.role)
-  ):null,
   ...[guestBar(),readyBar(),dispatchedBar(),lowBar()].filter(Boolean),
   V[S.tab](),
   h('div',{class:'powered'},'Powered by ',h('a',{href:'https://auzslab.in',target:'_blank',rel:'noopener'},'AUZslab'))
- );setNote();refreshNotifCount()}
-function login(msg){const e=h('input',{type:'email',placeholder:'Email'}),p=h('input',{type:'password',placeholder:'Password'}),m=h('div',{},msg||'');$('#app').replaceChildren(h('div',{class:'md',style:'margin:12vh auto'},h('h2',{},'Sign in'),e,p,m,h('button',{class:'p',onclick:async()=>{const{error}=await sb.auth.signInWithPassword({email:e.value.trim(),password:p.value});error?m.textContent=error.message:boot()}},'Sign in')))}
+ );renderDrawer(T);setNote();refreshNotifCount()}
+function login(msg){
+ // The drawer/overlay now live outside #app permanently (see
+ // renderDrawer) so a session expiring while it's open would leave it
+ // painted on top of this sign-in form -- it's never part of what
+ // replaceChildren below rewrites, so it has to be closed explicitly.
+ S.drawerOpen=false;syncDrawer();
+ const e=h('input',{type:'email',placeholder:'Email'}),p=h('input',{type:'password',placeholder:'Password'}),m=h('div',{},msg||'');$('#app').replaceChildren(h('div',{class:'md',style:'margin:12vh auto'},h('h2',{},'Sign in'),e,p,m,h('button',{class:'p',onclick:async()=>{const{error}=await sb.auth.signInWithPassword({email:e.value.trim(),password:p.value});error?m.textContent=error.message:boot()}},'Sign in')))}
 async function seed(){localStorage.seeded=1;const c=uid();await save('cat',{name:'Tea',n:1},c);await save('item',{name:'Masala Tea',cat:c,price:25,sizes:[]});await save('item',{name:'Coffee',cat:c,price:49,sizes:[{l:'M',p:29},{l:'L',p:49}]});for(let i=1;i<=6;i++)await save('table',{name:'T'+i})}
 async function boot(){if(!C.url||C.url.includes('YOUR-PROJECT'))return $('#app').replaceChildren(h('div',{class:'md',style:'margin:12vh auto'},h('h3',{},'Setup needed'),'Open config.js and add your Supabase URL and key. See SETUP-GUIDE.md.'));(await all('rec')).forEach(r=>R[r.id]=r);navigator.storage&&navigator.storage.persist&&navigator.storage.persist();navigator.serviceWorker&&navigator.serviceWorker.register('/sw.js');
  let c=JSON.parse(localStorage.u||'null'),ses=null;try{ses=(await sb.auth.getSession()).data.session}catch{}
