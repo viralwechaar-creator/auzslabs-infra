@@ -13,6 +13,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
+/* Matches account.html's own #sidebarDrawer treatment -- a half-width
+   drawer instead of the shared .sidebar default's full-width mobile
+   drawer, with the visible left edge (it opens from the right) curved.
+   Desktop's persistent sidebar (>860px) is untouched -- it's flush
+   against the screen's own edge, so a radius there would just look
+   like a gap. */
+#sidebarDrawer{max-width:320px;box-shadow:-30px 0 70px -20px rgba(0,0,0,.5)}
+@media (max-width:860px){#sidebarDrawer{border-radius:26px 0 0 26px}}
 /* ---- admin-only additions: a data table in the same visual language
    as the rest of the site (thick ink borders, mono labels, pill tags)
    -- the shared design system has no table component, everything else
@@ -117,7 +125,15 @@
         </div>
       </section>
 
-      <section class="section tight admin-section active" id="leadsSection">
+      <section class="section tight" id="notAuthorizedSection" style="display:none">
+        <div class="card" style="max-width:420px">
+          <span class="tag">Restricted</span>
+          <div class="h-2" style="margin-top:14px;font-size:20px">For AUZslab admin access only</div>
+          <p class="p" style="margin-top:10px">This account doesn't have access to the admin dashboard. If you're looking for your own business's dashboard, use <a href="account.html" style="color:var(--accent)">account.html</a> instead.</p>
+        </div>
+      </section>
+
+      <section class="section tight admin-section" id="leadsSection">
         <div class="label">Leads</div>
         <h2 class="h-2">Get-in-touch submissions</h2>
         <div id="leadsList">Loading&hellip;</div>
@@ -254,19 +270,34 @@ async function markAdminNotifsRead(type) {
   refreshAdminNotifBadges();
 }
 
+// Signing in only proves who the visitor is, not that they're allowed
+// here -- a tenant owner has a perfectly valid Supabase session too.
+// list_clients() is a safe, read-only, already-existing RPC that the
+// server itself raises 'not authorized' from unless is_platform_admin()
+// is true, so it doubles as the access check: nothing admin-only (the
+// nav, the Leads/Clients/Onboard sections, or even their labels) renders
+// until it comes back clean.
 async function checkSession() {
   const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    document.getElementById('loginSection').style.display = 'none';
-    document.getElementById('pageLede').textContent = 'Signed in as ' + session.user.email;
-    document.getElementById('adminNav').style.display = 'flex';
-    document.getElementById('signOutBtn').style.display = 'flex';
-    loadLeads();
-    loadSignupRequests();
-    loadClients();
-    refreshAdminNotifBadges();
-    setInterval(refreshAdminNotifBadges, 20000);
+  if (!session) return;
+  document.getElementById('loginSection').style.display = 'none';
+  document.getElementById('signOutBtn').style.display = 'flex';
+
+  const { data: clients, error: gateErr } = await sb.rpc('list_clients', {});
+  if (gateErr) {
+    document.getElementById('pageLede').textContent = 'Signed in as ' + session.user.email + '.';
+    document.getElementById('notAuthorizedSection').style.display = 'block';
+    return;
   }
+
+  document.getElementById('pageLede').textContent = 'Signed in as ' + session.user.email;
+  document.getElementById('adminNav').style.display = 'flex';
+  document.getElementById('leadsSection').classList.add('active');
+  loadLeads();
+  loadSignupRequests();
+  loadClients(clients);
+  refreshAdminNotifBadges();
+  setInterval(refreshAdminNotifBadges, 20000);
 }
 checkSession();
 
@@ -388,10 +419,14 @@ async function loadSignupRequests() {
 
 let clientsCache = [];
 
-async function loadClients() {
+async function loadClients(preFetched) {
   const listEl = document.getElementById('clientsList');
-  const { data, error } = await sb.rpc('list_clients', {});
-  if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  let data = preFetched;
+  if (!data) {
+    const { data: fetched, error } = await sb.rpc('list_clients', {});
+    if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+    data = fetched;
+  }
   clientsCache = data || [];
   if (!clientsCache.length) { listEl.innerHTML = '<p class="p">No clients yet &mdash; onboard one below.</p>'; return; }
 

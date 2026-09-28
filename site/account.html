@@ -50,6 +50,13 @@ input:disabled+.slider{opacity:.4;cursor:default}
 #menuToggle{padding:9px;width:40px;height:40px;justify-content:center}
 #menuToggle svg{display:block}
 #sidebarDrawer{max-width:320px;box-shadow:-30px 0 70px -20px rgba(0,0,0,.5)}
+/* Only the mobile half-width drawer gets curved -- the desktop
+   persistent sidebar (>860px, theme.css) sits flush against the
+   screen's own right edge with nothing beyond it, so a radius there
+   would just look like a gap, not a curve. Left side only: the drawer
+   opens from the right, so the left edge is the one actually visible
+   against the dimmed page behind it. */
+@media (max-width:860px){#sidebarDrawer{border-radius:26px 0 0 26px}}
 #sidebarDrawer .nav-link{font-size:17px;padding:11px 4px}
 .acct-nav-btn{background:none;border:none;width:100%;cursor:pointer;font-family:inherit}
 </style>
