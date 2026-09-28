@@ -77,6 +77,25 @@ table{width:100%;border-collapse:collapse}td,th{padding:5px;border-bottom:1px so
 .cart-bar button{color:#fff}
 .cart-bar button.p{background:var(--accent)}
 @media(max-width:800px){.cart-bar.show{display:flex}.pos-g{padding-bottom:64px}}
+/* Customer list: was plain text rows (name · phone · tier all run
+   together as one string) with no visible way to tell it was tappable.
+   Avatar + name/tier on one line, phone/visits/spend as quiet
+   secondary text, and an actual "View" button as the call to action. */
+.cust-row{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--l);cursor:pointer}
+.cust-row:last-child{border-bottom:none}
+.cust-avatar{width:42px;height:42px;border-radius:50%;background:var(--bg-raised);color:var(--ink-dim);display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;font-family:Fraunces,serif;font-size:16px}
+.cust-info{flex:1;min-width:0}
+.cust-name-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.cust-name{font-weight:700}
+.badge{font-size:10px;padding:2px 9px;border-radius:999px;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:.03em;flex-shrink:0}
+.badge.tier-gold{background:#f4d35e;color:#5a4300}
+.badge.tier-silver{background:#dfe3e6;color:#44515a}
+.badge.tier-bronze{background:#e7c9a9;color:#5a3a1e}
+.badge.risk-active{background:#d8ecdc;color:#1f5c34}
+.badge.risk-atrisk{background:#fde2c4;color:#8a4b00}
+.badge.risk-lapsed{background:#fde2e2;color:#8a1f1f}
+.cust-meta{font-size:12px;color:var(--ink-dim);margin-top:3px}
+.cust-view{flex-shrink:0}
 </style></head><body><div id=app></div>
 <script src=/sb-client.js?v=2></script>
 <script src=https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js integrity="sha384-8FWZA6BGMXhsfO+BLtrJK0We6gg5o1JyO8xQm6peWDEUs17ACA5ziE/NIAkl9z2k" crossorigin=anonymous></script>
@@ -497,20 +516,29 @@ function custSegment(c){
   risk=daysSince>60?'Lapsed':daysSince>30?'At risk':'Active';
  return{tier,risk,daysSince}
 }
+function riskClass(risk){return 'risk-'+risk.toLowerCase().replace(/\s+/g,'')}
 function custModal(c,orders){
  const fav={};orders.forEach(o=>o.lines.forEach(l=>{const k=l.name;fav[k]=(fav[k]||0)+l.qty}));
  const favs=Object.entries(fav).sort((a,b)=>b[1]-a[1]).slice(0,5),{tier,risk,daysSince}=custSegment(c);
- modal(h('h3',{},c.name||'Customer'),h('div',{style:'font-size:12px;color:var(--ink-dim)'},c.phone),
-  h('div',{class:'row',style:'flex-wrap:wrap;gap:6px'},h('span',{style:'background:var(--bg-raised);padding:3px 10px;border-radius:999px;font-size:11px'},tier),h('span',{style:'background:var(--bg-raised);padding:3px 10px;border-radius:999px;font-size:11px'},risk)),
+ modal(
+  h('div',{class:'row',style:'justify-content:flex-start;border-bottom:none'},h('div',{class:'cust-avatar',style:'width:52px;height:52px;font-size:19px'},(c.name||'?')[0].toUpperCase()),h('div',{},h('h3',{style:'margin:0'},c.name||'Customer'),h('div',{style:'font-size:12.5px;color:var(--ink-dim)'},c.phone))),
+  h('div',{class:'row',style:'justify-content:flex-start;flex-wrap:wrap;gap:6px;border-bottom:none'},h('span',{class:'badge tier-'+tier.toLowerCase()},tier),h('span',{class:'badge '+riskClass(risk)},risk)),
   h('div',{class:'row'},'Visits',h('b',{},c.n)),h('div',{class:'row'},'Lifetime spend',h('b',{},inr(c.tot))),h('div',{class:'row'},'Last visit',h('b',{},daysSince+' days ago')),
-  favs.length?h('div',{},h('b',{style:'font-size:12px'},'Past favourites'),h('div',{class:'row',style:'flex-wrap:wrap;gap:6px'},...favs.map(([n,q])=>h('span',{style:'background:var(--bg-raised);padding:3px 10px;border-radius:999px;font-size:11px'},n+' × '+q)))):null)
+  favs.length?h('div',{},h('b',{style:'font-size:12px'},'Past favourites'),h('div',{class:'row',style:'justify-content:flex-start;flex-wrap:wrap;gap:6px;border-bottom:none'},...favs.map(([n,q])=>h('span',{style:'background:var(--bg-raised);color:var(--ink-dim);font-size:12px;padding:3px 10px;border-radius:999px;font-family:Inter,sans-serif;text-transform:none;letter-spacing:normal'},n+' × '+q)))):null)
 }
 // Same set of orders V.pos's hist uses (paid + due, net of refunds) --
 // otherwise a customer with only "saved as due" orders shows loyalty
 // points redeemable at billing but doesn't exist here at all.
 V.crm=()=>{const paid=L('order').filter(o=>(o.status=='paid'||o.status=='due')&&(o.cust||{}).phone),cs={};paid.forEach(o=>{const p=o.cust.phone.replace(/\D/g,''),net=r2(o.t.total-(o.refunds||[]).reduce((a,r)=>a+r.amt,0));const c=cs[p]||(cs[p]={name:o.cust.name,phone:p,n:0,tot:0,last:o.paidAt||o.created,orders:[]});c.n++;c.tot=r2(c.tot+net);c.orders.push(o);if((o.paidAt||o.created)>c.last)c.last=o.paidAt||o.created});
 const list=Object.values(cs).sort((a,b)=>b.tot-a.tot);
-return h('div',{class:'g',style:'grid-template-columns:1fr'},h('div',{class:'card'},h('h3',{},'Customers ('+list.length+')'),...list.map(c=>h('div',{class:'row',style:'cursor:pointer',onclick:()=>custModal(c,c.orders)},(c.name||'')+' · '+c.phone+' · '+custSegment(c).tier,c.n+' visit'+(c.n>1?'s':'')+' · '+inr(c.tot)+' · last '+new Date(c.last).toLocaleDateString()))),list.length?null:h('p',{},'No paid orders with a customer phone yet.'))};
+return h('div',{class:'g',style:'grid-template-columns:1fr'},h('div',{class:'card'},h('h3',{},'Customers ('+list.length+')'),...list.map(c=>{const{tier}=custSegment(c);return h('div',{class:'cust-row',onclick:()=>custModal(c,c.orders)},
+  h('div',{class:'cust-avatar'},(c.name||'?')[0].toUpperCase()),
+  h('div',{class:'cust-info'},
+   h('div',{class:'cust-name-row'},h('span',{class:'cust-name'},c.name||'Unknown'),h('span',{class:'badge tier-'+tier.toLowerCase()},tier)),
+   h('div',{class:'cust-meta'},c.phone+' · '+c.n+' visit'+(c.n>1?'s':'')+' · '+inr(c.tot)+' · last '+new Date(c.last).toLocaleDateString())
+  ),
+  h('button',{class:'p cust-view'},'View')
+ )})),list.length?null:h('p',{},'No paid orders with a customer phone yet.'))};
 let G=[];
 async function getG(){if(!navigator.onLine||!S.user)return;if(!featureOn('self_order')){if(G.length){G=[];render()}return}const{data,error}=await sb.from('guest_orders').select('*').eq('status','new').order('created_at');if(error)return;const n=G.length;G=data||[];if(G.length>n)alertSound(3);if(G.length!=n&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))render()}
 async function acceptG(g){let o=L('order').find(x=>x.status=='open'&&x.table==g.tbl&&x.lines.length);o=o?structuredClone(o):{...newOrder(),table:g.tbl};g.items.forEach(i=>{const it=R[i.id]&&R[i.id].data;if(!it)return;const sizeObj=i.size&&(it.sizes||[]).find(s=>s.l==i.size),price=sizeObj?sizeObj.p:it.price;const l=o.lines.find(x=>x.id==i.id&&x.size==i.size&&x.price==price&&!x.note);l?l.qty+=i.qty:o.lines.push({id:i.id,name:it.name,size:i.size,price,qty:i.qty,sent:0,st:it.st||'Kitchen'})});if(!(o.cust&&o.cust.name))o.cust={name:g.name,phone:g.phone};if(g.note)o.gn=g.note;const prev=S.cur;S.cur=o;mk(o);await persist();S.cur=prev;await sb.from('guest_orders').update({status:'done'}).eq('id',g.id);getG()}
