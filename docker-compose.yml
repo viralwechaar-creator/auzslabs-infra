@@ -48,6 +48,14 @@ services:
       PGPORT: 5432
     volumes:
       - uploads_data:/data/uploads
+      # Employee documents (Aadhar/PAN/driving-licence) are private --
+      # unlike uploads_data above, this volume is mounted into the api
+      # container ONLY, never into caddy, so there is no static-file
+      # path that can ever serve one of these out unauthenticated
+      # (Caddy has no filesystem access to it at all). Every read goes
+      # through GET /storage/doc/... (server/src/index.js), which
+      # checks the caller's own session before touching disk.
+      - private_uploads_data:/data/private-uploads
     expose:
       - "3000"
     depends_on:
@@ -90,6 +98,7 @@ services:
     volumes:
       - ./backups:/data/backups:ro
       - uploads_data:/data/uploads:ro
+      - private_uploads_data:/data/private-uploads:ro
     entrypoint: ["/bin/sh", "-c"]
     command:
       - >
@@ -98,6 +107,8 @@ services:
           rclone sync /data/backups B2:$$B2_BUCKET/backups --log-level INFO;
           echo "[$$(date -Iseconds)] offsite-backup: syncing uploads";
           rclone sync /data/uploads B2:$$B2_BUCKET/uploads --log-level INFO;
+          echo "[$$(date -Iseconds)] offsite-backup: syncing private uploads";
+          rclone sync /data/private-uploads B2:$$B2_BUCKET/private-uploads --log-level INFO;
           echo "[$$(date -Iseconds)] offsite-backup: done, sleeping 24h";
           sleep 86400;
         done
@@ -119,3 +130,4 @@ volumes:
   caddy_config:
   uptime_kuma_data:
   uploads_data:
+  private_uploads_data:

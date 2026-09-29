@@ -30,6 +30,51 @@ function looksLikeImage(buffer) {
   return false;
 }
 
+// Employee documents (Aadhar/PAN/driving-licence scans) are private --
+// unlike saveSiteUpload above, these must never be reachable through
+// Caddy's public `/uploads/*` file_server rule (Caddyfile), so they're
+// written under a directory that's requested only via this server's
+// own authenticated GET /storage/doc/... route (index.js), never a
+// `/uploads/...` URL. Same tenant-isolation shape as saveSiteUpload
+// (tenant slug/id resolved server-side, never trusted from the client).
+const DOC_ROOT = process.env.DOC_UPLOAD_ROOT || '/data/private-uploads';
+
+function docExtAndCheck(buffer) {
+  if (buffer.length < 12) return null;
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return { ext: 'jpg', type: 'image/jpeg' };
+  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) return { ext: 'png', type: 'image/png' };
+  if (buffer.toString('ascii', 0, 5) === '%PDF-') return { ext: 'pdf', type: 'application/pdf' };
+  return null;
+}
+
+export async function saveDocUpload({ tenantId, empId, buffer }) {
+  const kind = docExtAndCheck(buffer);
+  if (!kind) {
+    const err = new Error('file must be a JPEG, PNG or PDF');
+    err.status = 400;
+    throw err;
+  }
+  const dir = path.join(DOC_ROOT, safeSegment(tenantId), safeSegment(empId));
+  await fs.mkdir(dir, { recursive: true });
+  const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${kind.ext}`;
+  await fs.writeFile(path.join(dir, filename), buffer);
+  return { path: `${safeSegment(tenantId)}/${safeSegment(empId)}/${filename}`, contentType: kind.type };
+}
+
+export async function readDocUpload({ tenantId, empId, filename }) {
+  const ext = path.extname(filename).toLowerCase();
+  const type = ext === '.pdf' ? 'application/pdf' : ext === '.png' ? 'image/png' : ext === '.jpg' ? 'image/jpeg' : null;
+  if (!type) return null;
+  const base = safeSegment(path.basename(filename, ext));
+  const file = path.join(DOC_ROOT, safeSegment(tenantId), safeSegment(empId), base + ext);
+  try {
+    const buffer = await fs.readFile(file);
+    return { buffer, type };
+  } catch {
+    return null;
+  }
+}
+
 export async function saveSiteUpload({ tenantId, prefix, buffer }) {
   if (!looksLikeImage(buffer)) {
     const err = new Error('file does not look like a supported image (jpeg/png/webp)');
