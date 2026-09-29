@@ -83,11 +83,11 @@
                 </div>
                 <div class="field">
                   <label for="email">Email</label>
-                  <input id="email" type="email">
+                  <input id="email" type="email" required autocomplete="email">
                 </div>
                 <div class="field">
                   <label for="password">Password</label>
-                  <input id="password" type="password">
+                  <input id="password" type="password" required minlength="8" autocomplete="new-password">
                 </div>
                 <button id="submitBtn" class="btn btn-primary form-submit">Create account</button>
                 <div id="authErr" class="err"></div>
@@ -146,6 +146,9 @@ document.getElementById('submitBtn').onclick = async () => {
   const password = document.getElementById('password').value;
   const errEl = document.getElementById('authErr');
   errEl.textContent = '';
+  if (!email) { errEl.textContent = 'Enter your email address.'; return; }
+  if (!password) { errEl.textContent = 'Enter a password.'; return; }
+  if (mode === 'signup' && password.length < 8) { errEl.textContent = 'Password must be at least 8 characters.'; return; }
   const { data, error } = mode === 'signup'
     ? await sb.auth.signUp({ email, password })
     : await sb.auth.signInWithPassword({ email, password });
