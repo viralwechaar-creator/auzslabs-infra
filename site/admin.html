@@ -84,6 +84,7 @@
     <nav class="sidebar-nav" id="adminNav" aria-label="Admin sections" style="display:none">
       <button class="nav-link admin-nav-btn active" data-section="leads">Leads <span id="notifBadgeLeads"></span></button>
       <button class="nav-link admin-nav-btn" data-section="signupRequests">Signup requests <span id="notifBadgeSignup"></span></button>
+      <button class="nav-link admin-nav-btn" data-section="addonRequests">Add-on requests <span id="notifBadgeAddon"></span></button>
       <button class="nav-link admin-nav-btn" data-section="clients">Clients</button>
       <button class="nav-link admin-nav-btn" data-section="onboard">Onboard new</button>
       <a href="design-system/nav-kit.html" target="_blank" rel="noopener" class="nav-link">UI Kit &#8599;</a>
@@ -143,6 +144,17 @@
         <div class="label">Self-serve signups</div>
         <h2 class="h-2">Cart requests</h2>
         <div id="signupRequestsList">Loading&hellip;</div>
+      </section>
+
+      <!-- An EXISTING client asking to add a product to their live
+           subscription (db/027_addon_requests.sql) -- deliberately
+           separate from signup requests above, since approving one
+           never provisions a tenant, only merges a key into one that
+           already exists. -->
+      <section class="section tight admin-section" id="addonRequestsSection">
+        <div class="label">Existing clients</div>
+        <h2 class="h-2">Add-on requests</h2>
+        <div id="addonRequestsList">Loading&hellip;</div>
       </section>
 
       <section class="section tight admin-section" id="clientsSection">
@@ -281,6 +293,7 @@ document.querySelectorAll('.admin-nav-btn').forEach((btn) => {
     if (toggle) toggle.classList.remove('is-open');
     if (btn.dataset.section === 'leads') markAdminNotifsRead('lead');
     if (btn.dataset.section === 'signupRequests') markAdminNotifsRead('signup_request');
+    if (btn.dataset.section === 'addonRequests') markAdminNotifsRead('addon_request');
   };
 });
 
@@ -294,8 +307,10 @@ async function refreshAdminNotifBadges() {
   (data || []).forEach((n) => { counts[n.type] = (counts[n.type] || 0) + 1; });
   const leadsBadge = document.getElementById('notifBadgeLeads');
   const signupBadge = document.getElementById('notifBadgeSignup');
+  const addonBadge = document.getElementById('notifBadgeAddon');
   if (leadsBadge) leadsBadge.textContent = counts.lead ? ' (' + counts.lead + ')' : '';
   if (signupBadge) signupBadge.textContent = counts.signup_request ? ' (' + counts.signup_request + ')' : '';
+  if (addonBadge) addonBadge.textContent = counts.addon_request ? ' (' + counts.addon_request + ')' : '';
 }
 async function markAdminNotifsRead(type) {
   const { data } = await sb.from('notifications').select('id').eq('read', false).eq('type', type);
@@ -328,6 +343,7 @@ async function checkSession() {
   document.getElementById('leadsSection').classList.add('active');
   loadLeads();
   loadSignupRequests();
+  loadAddonRequests();
   loadClients(clients);
   refreshAdminNotifBadges();
   setInterval(refreshAdminNotifBadges, 20000);
@@ -452,6 +468,50 @@ async function loadSignupRequests() {
       const { error: decErr } = await sb.rpc('decline_signup_request', { p_request_id: id });
       if (decErr) { alert(decErr.message); return; }
       loadSignupRequests();
+    };
+  });
+}
+
+async function loadAddonRequests() {
+  const listEl = document.getElementById('addonRequestsList');
+  const { data, error } = await sb.from('addon_requests').select('*').order('created_at');
+  if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  const pending = (data || []).filter((r) => r.status === 'pending');
+  if (!pending.length) { listEl.innerHTML = emptyDoodle('No pending add-on requests.'); return; }
+
+  const rows = pending.slice().reverse().map((r) => {
+    const services = Object.entries(r.features || {}).filter(([, on]) => on)
+      .map(([k]) => `<span class="feature-tag">${esc(FEATURE_LABEL[k] || k)}</span>`).join('') || '&mdash;';
+    return `
+    <tr data-id="${r.id}">
+      <td><b>${esc(r.tenant_name)}</b><br><span style="color:var(--ink-faint)">${esc(r.tenant_slug)}.auzslab.in</span></td>
+      <td>${services}</td>
+      <td>${r.notes ? esc(r.notes) : '&mdash;'}</td>
+      <td class="row-actions">
+        <button class="btn btn-primary" data-approve>Approve</button>
+        <button class="btn btn-ghost" data-decline>Decline</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  listEl.innerHTML = `<div class="admin-table-wrap"><table class="admin-table">
+    <tr><th>Client</th><th>Requested</th><th>Notes</th><th></th></tr>
+    ${rows}
+  </table></div>`;
+
+  listEl.querySelectorAll('tr[data-id]').forEach((tr) => {
+    const id = tr.dataset.id;
+    tr.querySelector('[data-approve]').onclick = async () => {
+      const { error: appErr } = await sb.rpc('approve_addon_request', { p_request_id: id });
+      if (appErr) { alert(appErr.message); return; }
+      loadAddonRequests();
+      loadClients();
+    };
+    tr.querySelector('[data-decline]').onclick = async () => {
+      if (!confirm('Decline this request?')) return;
+      const { error: decErr } = await sb.rpc('decline_addon_request', { p_request_id: id });
+      if (decErr) { alert(decErr.message); return; }
+      loadAddonRequests();
     };
   });
 }

@@ -25,6 +25,7 @@ const TABLES = {
   push_subs: { columns: ['id', 'tenant_id', 'user_id', 'endpoint', 'p256dh', 'auth', 'created_at'], insertable: ['user_id', 'endpoint', 'p256dh', 'auth'] },
   leads: { columns: ['id', 'name', 'business', 'contact', 'message', 'niche', 'status', 'created_at'], writable: ['status'] }, // admin-only via RLS (is_platform_admin())
   signup_requests: { columns: ['id', 'user_id', 'business_name', 'slug', 'features', 'notes', 'contact_name', 'phone', 'niche', 'address', 'status', 'created_at'] }, // read-only here; state changes go through approve/decline_signup_request
+  addon_requests: { columns: ['id', 'tenant_id', 'tenant_name', 'tenant_slug', 'user_id', 'features', 'notes', 'status', 'created_at'] }, // read-only here; state changes go through approve/decline_addon_request
 
   // --- Client dashboard: custom roles + staff, notifications ---
   // roles.tenant_id defaults from the caller's own session (see

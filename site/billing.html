@@ -284,15 +284,22 @@
 <script>
 (function () {
   var KEY = 'billing';
+  var sb = supabase.createClient(CFG.url, CFG.key);
   var btn = document.getElementById('addCartBtn');
+  var owned = false;
   function refresh() {
+    if (owned) { btn.textContent = 'Already included ✓'; btn.disabled = true; return; }
+    btn.disabled = false;
     var has = AUZcart.has(KEY);
     btn.textContent = has ? 'Added ✓ — remove' : 'Add to cart';
   }
-  btn.addEventListener('click', function () { AUZcart.toggle(KEY); refresh(); });
+  btn.addEventListener('click', function () { if (owned) return; AUZcart.toggle(KEY); refresh(); });
   var n = AUZcart.get().length;
   document.querySelectorAll('.cart-count').forEach(function (el) { el.textContent = n ? '(' + n + ')' : ''; });
   refresh();
+  AUZaccount.fetch(sb).then(function (dash) {
+    if (dash && dash.features && dash.features[KEY] === true) { owned = true; refresh(); }
+  });
 })();
 </script>
 </body>

@@ -56,6 +56,29 @@
         </div>
       </section>
 
+      <!-- Bug this exists to fix: a signed-in EXISTING client (already
+           has a tenant) landing here used to see the same "new business"
+           form as a fresh prospect -- submitting it either collided with
+           their own subdomain or, if approved as-is, would have spun up
+           a second empty tenant next to their real one. An existing
+           client gets this section instead: no business details (they
+           already have those), just the cart items they don't already
+           have, submitted as an add-on request against their own tenant
+           (db/027_addon_requests.sql) rather than a new-tenant signup. -->
+      <section class="section tight" id="addonSection" style="display:none;max-width:640px">
+        <div class="card">
+          <p class="p" style="margin-bottom:8px">Signed in as <b id="addonWhoami"></b> — adding to <b id="addonTenant"></b></p>
+          <div id="addonAlreadyOwned"></div>
+          <div id="addonItems"></div>
+          <div class="field">
+            <label for="addonNotes">Anything else we should know?</label>
+            <textarea id="addonNotes" placeholder="When you'd like this live, number of staff who'll use it, etc. (optional)"></textarea>
+          </div>
+          <button id="addonSubmitBtn" class="btn btn-primary form-submit">Request these add-ons</button>
+          <div id="addonErr" class="err"></div>
+        </div>
+      </section>
+
       <section class="section tight" id="requestSection" style="display:none;max-width:640px">
         <div class="card">
           <p class="p" style="margin-bottom:8px">Signed in as <b id="whoami"></b></p>
@@ -110,8 +133,8 @@
       <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
       <div class="success-view show">
         <div class="success-mark">&check;</div>
-        <h3 class="h-2" style="font-size:22px">Request sent.</h3>
-        <p class="p">The AUZslab team is verifying your requirements and will reach out to you shortly.</p>
+        <h3 class="h-2" style="font-size:22px" id="successTitle">Request sent.</h3>
+        <p class="p" id="successBody">The AUZslab team is verifying your requirements and will reach out to you shortly.</p>
       </div>
     </div>
   </div>
@@ -155,20 +178,65 @@ function renderCart() {
 }
 renderCart();
 
-// Signed-in visitors go straight to the details form -- whether or not
-// they've picked any products yet. Requiring cart items first forced
-// people to shop before we'd even take their name, backwards from how
-// a lead-gen flow should work: identify them first, help them pick
-// services after (see submitBtn's own product-count check below).
+let DASH = null;
+
+function renderAddonItems() {
+  const entitled = (DASH && DASH.features) || {};
+  const items = AUZcart.get();
+  const el = document.getElementById('addonItems');
+  const ownedNote = document.getElementById('addonAlreadyOwned');
+  const alreadyOwned = items.filter((k) => entitled[k] === true);
+  const requestable = items.filter((k) => entitled[k] !== true);
+  ownedNote.innerHTML = alreadyOwned.length
+    ? `<p class="p" style="margin-bottom:8px">${alreadyOwned.map((k) => PRODUCT_LABEL[k] || k).join(', ')} ${alreadyOwned.length > 1 ? 'are' : 'is'} already on your subscription -- skipped below.</p>`
+    : '';
+  if (!requestable.length) {
+    el.innerHTML = `<p class="p">No new products picked yet. <a href="products.html" style="color:var(--accent)">Browse products</a> to add something you don't already have.</p>`;
+    return;
+  }
+  el.innerHTML = requestable.map((key) => `
+    <div class="cart-item" data-key="${key}">
+      <b>${PRODUCT_LABEL[key] || key}</b>
+      <button class="btn btn-ghost" data-remove="${key}">Remove</button>
+    </div>`).join('');
+  el.querySelectorAll('[data-remove]').forEach((btn) => {
+    btn.onclick = () => { AUZcart.remove(btn.dataset.remove); renderCart(); renderAddonItems(); };
+  });
+}
+
+// Signed-in visitors go straight to a details/add-on form -- whether
+// or not they've picked any products yet. Requiring cart items first
+// forced people to shop before we'd even take their name, backwards
+// from how a lead-gen flow should work: identify them first, help
+// them pick services after (see the submit buttons' own checks below).
+//
+// Bug this branch exists to fix: an EXISTING client (AUZaccount.fetch
+// resolves to a real dashboard) used to see the exact same "new
+// business" form a brand-new prospect does -- submitting it collided
+// with their own subdomain, or worse, would have provisioned a SECOND
+// tenant. They get the add-on request section instead now; only a
+// visitor with no tenant yet (a fresh signup, or genuinely signed
+// out) sees the new-business form.
 async function checkSession() {
   const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    document.getElementById('signedOutNotice').style.display = 'none';
-    document.getElementById('requestSection').style.display = 'block';
-    document.getElementById('whoami').textContent = session.user.email;
-  } else {
+  if (!session) {
     document.getElementById('signedOutNotice').style.display = 'block';
     document.getElementById('requestSection').style.display = 'none';
+    document.getElementById('addonSection').style.display = 'none';
+    return;
+  }
+  document.getElementById('signedOutNotice').style.display = 'none';
+  DASH = await AUZaccount.fetch(sb);
+  if (DASH) {
+    document.getElementById('requestSection').style.display = 'none';
+    document.getElementById('addonSection').style.display = 'block';
+    document.getElementById('addonWhoami').textContent = session.user.email;
+    document.getElementById('addonTenant').textContent = DASH.tenant.name;
+    renderAddonItems();
+  } else {
+    document.getElementById('addonSection').style.display = 'none';
+    document.getElementById('requestSection').style.display = 'block';
+    document.getElementById('whoami').textContent = session.user.email;
   }
 }
 checkSession();
@@ -210,12 +278,41 @@ document.getElementById('submitBtn').onclick = async () => {
   }
 
   AUZcart.clear();
+  document.getElementById('successTitle').textContent = 'Request sent.';
+  document.getElementById('successBody').textContent = 'The AUZslab team is verifying your requirements and will reach out to you shortly.';
+  modalRedirect = 'index.html';
   document.getElementById('modalOverlay').classList.add('open');
 };
 
+document.getElementById('addonSubmitBtn').onclick = async () => {
+  const notes = document.getElementById('addonNotes').value.trim();
+  const errEl = document.getElementById('addonErr');
+  errEl.textContent = '';
+  const entitled = (DASH && DASH.features) || {};
+  const requestable = AUZcart.get().filter((k) => entitled[k] !== true);
+  if (!requestable.length) { errEl.textContent = 'Pick at least one new product above before sending.'; return; }
+
+  const features = {};
+  requestable.forEach((key) => { features[key] = true; });
+
+  const { error } = await sb.rpc('submit_addon_request', { p_features: features, p_notes: notes });
+  if (error) {
+    errEl.textContent = error.message;
+    if (error.status === 401) checkSession();
+    return;
+  }
+
+  AUZcart.clear();
+  document.getElementById('successTitle').textContent = 'Add-on request sent.';
+  document.getElementById('successBody').textContent = 'The AUZslab team will review it and add it to your account shortly -- you\'ll get a notification the moment it\'s live.';
+  modalRedirect = 'account.html';
+  document.getElementById('modalOverlay').classList.add('open');
+};
+
+let modalRedirect = 'index.html';
 document.getElementById('modalClose').onclick = () => {
   document.getElementById('modalOverlay').classList.remove('open');
-  window.location.href = 'index.html';
+  window.location.href = modalRedirect;
 };
 </script>
 </body>
