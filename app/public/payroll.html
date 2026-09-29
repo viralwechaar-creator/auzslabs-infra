@@ -340,10 +340,51 @@ function employeeModal(e){e=e||{};
     salaryStructure:{basic:+basic.value||0,hra:+hra.value||0,allowances:+allow.value||0,otRate:+otRate.value||0}});
    x();render()}},'Save'),
   e.id?h('button',{class:'warn',onclick:async()=>{if(!confirm('Remove this employee?'))return;await save('hr_employee',e,e.id,true);x();render()}},'Remove'):null)}
+function hoursBetween(empId,from,to){return r2(L('hr_attendance').filter(a=>a.empId==empId&&a.in&&a.out&&a.date>=from&&a.date<=to).reduce((s,a)=>s+(new Date(a.out)-new Date(a.in))/3600000,0))}
+function hoursForMonth(empId,ym){return hoursBetween(empId,ym+'-01',ym+'-32')}
+function hoursAllTime(empId){return hoursBetween(empId,'0000-01-01','9999-12-31')}
+function employeeProfile(e){
+ const sh=shiftFor(e),ss=e.salaryStructure||{},ym=today().slice(0,7);
+ const mHours=hoursForMonth(e.id,ym),allHours=hoursAllTime(e.id),outstanding=advanceOutstanding(e.id);
+ const recent=L('hr_attendance').filter(a=>a.empId==e.id).sort((a,b)=>b.date>a.date?1:-1).slice(0,8);
+ const x=modal(
+  h('div',{style:'display:flex;justify-content:space-between;align-items:center'},h('h3',{},e.name),h('button',{onclick:()=>x()},icon('x'))),
+  h('p',{class:'note'},(e.designation||'Staff')+(e.dept?' · '+e.dept:'')+(e.phone?' · '+e.phone:'')),
+  h('div',{style:'display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px'},
+   h('div',{class:'card',style:'text-align:center;box-shadow:none;background:var(--bg-raised)'},h('div',{class:'note'},'Hours this month'),h('h3',{},mHours+'h')),
+   h('div',{class:'card',style:'text-align:center;box-shadow:none;background:var(--bg-raised)'},h('div',{class:'note'},'Hours all-time'),h('h3',{},allHours+'h'))),
+  h('div',{class:'row'},h('span',{},'Shift'),h('b',{},sh?sh.name+' · '+sh.start+'–'+sh.end:'Not assigned')),
+  h('div',{class:'row'},h('span',{},'Role / designation'),h('b',{},e.designation||'—')),
+  h('div',{class:'row'},h('span',{},'Basic salary/month'),h('b',{},inr(ss.basic||0))),
+  h('div',{class:'row'},h('span',{},'HRA + allowances'),h('b',{},inr((ss.hra||0)+(ss.allowances||0)))),
+  h('div',{class:'row'},h('span',{},'Overtime rate'),h('b',{},inr(ss.otRate||0)+'/hr')),
+  h('div',{class:'row'},h('span',{},'Loan/advance outstanding'),h('b',{},inr(outstanding))),
+  h('h3',{style:'margin-top:14px'},'Recent attendance'),
+  recent.length?null:h('p',{class:'note'},'No punches yet.'),
+  ...recent.map(a=>h('div',{class:'row'},a.date,h('span',{class:'badge '+statusFor(a,e)},statusFor(a,e)))),
+  h('div',{class:'card',style:'margin-top:14px;box-shadow:none;background:var(--bg-raised)'},
+   h('div',{class:'row'},h('span',{},icon('doc'),' Documents'),h('span',{class:'note'},'Coming soon')),
+   h('p',{class:'note'},"Uploading and storing ID/PAN/driving-licence documents per employee isn't wired up yet.")),
+  h('div',{style:'display:flex;gap:10px;margin-top:10px'},
+   h('button',{class:'p',style:'flex:1',onclick:()=>{x();employeeModal(e)}},'Edit details'),
+   h('button',{class:'warn',onclick:async()=>{if(!confirm('Remove this employee?'))return;await save('hr_employee',e,e.id,true);x();render()}},'Remove')))
+}
 V.employees=()=>{const emps=L('hr_employee').sort((a,b)=>a.name.localeCompare(b.name));
- return h('div',{class:'g'},h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Employees ('+emps.length+')'),h('button',{class:'p',onclick:()=>employeeModal()},'Add employee')),
-  emps.length?null:h('p',{class:'note'},'No employees yet.'),
-  ...emps.map(e=>h('div',{class:'row'},h('span',{},e.name+(e.active===false?' (inactive)':''),h('br'),h('span',{class:'note'},(e.designation||'')+(e.dept?' · '+e.dept:''))),h('button',{onclick:()=>employeeModal(e)},'Edit')))))};
+ const ym=today().slice(0,7),activeCount=emps.filter(e=>e.active!==false).length,totalHoursMonth=r2(emps.reduce((s,e)=>s+hoursForMonth(e.id,ym),0));
+ return h('div',{class:'g'},
+  h('div',{style:'display:grid;grid-template-columns:1fr 1fr;gap:12px'},
+   h('div',{class:'card',style:'text-align:center'},h('div',{class:'note'},'Active employees'),h('h2',{style:'margin-top:4px'},activeCount)),
+   h('div',{class:'card',style:'text-align:center'},h('div',{class:'note'},'Hours logged this month'),h('h2',{style:'margin-top:4px'},totalHoursMonth+'h'))),
+  h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Employees ('+emps.length+')'),h('button',{class:'p',onclick:()=>employeeModal()},'Add employee')),
+   emps.length?null:h('p',{class:'note'},'No employees yet.')),
+  ...emps.map(e=>{const sh=shiftFor(e);
+   return h('div',{class:'list-row',style:'cursor:pointer',onclick:()=>employeeProfile(e)},
+    h('span',{class:'dchip',style:'background:var(--bg-raised);color:var(--ink-dim);font-size:17px;font-weight:700'},e.name.slice(0,1).toUpperCase()),
+    h('span',{style:'flex:1'},h('b',{},e.name),e.active===false?h('span',{class:'pill',style:'margin-left:6px'},'inactive'):null,h('br'),
+     h('span',{class:'note'},(e.designation||'Staff')+(e.dept?' · '+e.dept:'')+(sh?' · '+sh.name:''))),
+    h('span',{class:'note',style:'text-align:right;white-space:nowrap'},hoursForMonth(e.id,ym)+'h this mo.'),
+    icon('chevR'))}));
+};
 
 function shiftModal(s){s=s||{};const nm=h('input',{value:s.name||'',placeholder:'Shift name, e.g. Morning'}),
  start=h('input',{type:'time',value:s.start||'09:00'}),end=h('input',{type:'time',value:s.end||'18:00'}),overnight=h('input',{type:'checkbox',checked:!!s.overnight});
