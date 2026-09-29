@@ -168,7 +168,7 @@ async function enablePush(){
  alert('Notifications enabled on this device — you\'ll get an alert even if the app is closed.');
 }
 function forceRelogin(msg){S.user=null;S.authExpired=false;localStorage.removeItem('u');login(msg)}
-async function doSync(){if(busy||!navigator.onLine||!S.user)return;busy=1;
+async function doSync(){if(busy||!navigator.onLine||!S.user)return;busy=1;conflicts=0;
  let hadError=false;
  try{
  const{data:{session}}=await sb.auth.getSession();if(!session){busy=0;return forceRelogin('Your session ended. Please sign in again.')}
