@@ -216,7 +216,7 @@ const featureOn=k=>!S.features||(S.features[k]===true&&S.enabledFeatures[k]!==fa
 /* local store: rec = every record (with srv = last confirmed server updated_at), out = unsent changes, meta = sync cursor */
 const idb=new Promise(r=>{const q=indexedDB.open('pos3',1);q.onupgradeneeded=()=>['rec','out','meta'].forEach(s=>q.result.createObjectStore(s,{keyPath:s=='meta'?'k':'id'}));q.onsuccess=()=>r(q.result)});
 const tx=async(s,m,f)=>{const d=await idb;return new Promise((res,rej)=>{const t=d.transaction(s,m),q=f(t.objectStore(s));t.oncomplete=()=>res(q.result);t.onerror=()=>rej(t.error)})};
-const all=s=>tx(s,'readonly',o=>o.getAll()),get=(s,k)=>tx(s,'readonly',o=>o.get(k)),put=(s,v)=>tx(s,'readwrite',o=>o.put(v)),del=(s,k)=>tx(s,'readwrite',o=>o.delete(k));
+const all=s=>tx(s,'readonly',o=>o.getAll()),get=(s,k)=>tx(s,'readonly',o=>o.get(k)),put=(s,v)=>tx(s,'readwrite',o=>o.put(v)),del=(s,k)=>tx(s,'readwrite',o=>o.delete(k)),clr=s=>tx(s,'readwrite',o=>o.clear());
 async function save(kind,data,id=data.id||uid(),deleted=false){data.id=id;const base=(R[id]&&R[id].srv)||null,r={id,kind,data,deleted,updated_at:now(),srv:(R[id]&&R[id].srv)};R[id]=r;await put('rec',r);await put('out',{id,kind,data,deleted,updated_at:r.updated_at,base});sync();return r}
 // Blank when healthy (nothing to look at = one less thing on a small
 // screen) instead of always showing "Online · synced · owner" -- the
@@ -950,8 +950,22 @@ function login(msg){
  S.drawerOpen=false;syncDrawer();
  const e=h('input',{type:'email',placeholder:'Email'}),p=h('input',{type:'password',placeholder:'Password'}),m=h('div',{},msg||'');$('#app').replaceChildren(h('div',{class:'md',style:'margin:12vh auto'},h('h2',{},'Sign in'),e,p,m,h('button',{class:'p',onclick:async()=>{const{error}=await sb.auth.signInWithPassword({email:e.value.trim(),password:p.value});error?m.textContent=error.message:boot()}},'Sign in')))}
 async function seed(){localStorage.seeded=1;const c=uid();await save('cat',{name:'Tea',n:1},c);await save('item',{name:'Masala Tea',cat:c,price:25,sizes:[]});await save('item',{name:'Coffee',cat:c,price:49,sizes:[{l:'M',p:29},{l:'L',p:49}]});for(let i=1;i<=6;i++)await save('table',{name:'T'+i})}
-async function boot(){if(!C.url||C.url.includes('YOUR-PROJECT'))return $('#app').replaceChildren(h('div',{class:'md',style:'margin:12vh auto'},h('h3',{},'Setup needed'),'Open config.js and add your Supabase URL and key. See SETUP-GUIDE.md.'));(await all('rec')).forEach(r=>R[r.id]=r);navigator.storage&&navigator.storage.persist&&navigator.storage.persist();navigator.serviceWorker&&navigator.serviceWorker.register('/sw.js');
+async function boot(){if(!C.url||C.url.includes('YOUR-PROJECT'))return $('#app').replaceChildren(h('div',{class:'md',style:'margin:12vh auto'},h('h3',{},'Setup needed'),'Open config.js and add your Supabase URL and key. See SETUP-GUIDE.md.'));navigator.storage&&navigator.storage.persist&&navigator.storage.persist();navigator.serviceWorker&&navigator.serviceWorker.register('/sw.js');
  let c=JSON.parse(localStorage.u||'null'),ses=null;try{ses=(await sb.auth.getSession()).data.session}catch{}
+ // The local cache (IndexedDB 'pos3') is one flat store with no tenant
+ // scoping -- signing into a DIFFERENT tenant on the same device (the
+ // two shared public demo logins being the obvious way to hit this,
+ // but any device reused across clients too) used to leave the
+ // PREVIOUS tenant's cached catalog merged into R forever, since
+ // nothing here ever checked whose records they were. meta.lastUser
+ // tracks whose cache this is; a mismatch wipes rec+out before
+ // anything loads (the outbox has to go too -- a leftover unsynced
+ // write from the old tenant would otherwise land in the NEW tenant's
+ // records, since push_record resolves tenant_id from the live session,
+ // not from whatever the write was originally queued under).
+ const uid=ses?ses.user.id:(c&&c.id);
+ if(uid){const meta=await get('meta','lastUser');if(meta&&meta.v&&meta.v!==uid){await clr('rec');await clr('out');await del('meta','since')}await put('meta',{k:'lastUser',v:uid})}
+ (await all('rec')).forEach(r=>R[r.id]=r);
  if(ses){S.user=ses.user;try{const{data}=await sb.from('profiles').select('role,role_id').eq('id',ses.user.id).single();if(data)localStorage.u=JSON.stringify(c={id:ses.user.id,role:data.role,role_id:data.role_id})}catch{}}else if(c)S.user={id:c.id};
  if(!S.user)return login();S.role=(c&&c.role)||'cashier';S.role_id=(c&&c.role_id)||null;S.perms=null;if(S.role_id){try{const{data}=await sb.from('roles').select('permissions').eq('id',S.role_id).single();S.perms=data&&data.permissions}catch{}}
  S.features=null;S.enabledFeatures={};try{const{data}=await sb.rpc('my_dashboard');if(data&&data.features){S.features=data.features;S.enabledFeatures=data.enabled_features||{}}}catch{}
