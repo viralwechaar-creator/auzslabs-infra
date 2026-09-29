@@ -127,10 +127,23 @@ document.getElementById('modeNew').onclick = () => setMode('signup');
 document.getElementById('modeLogin').onclick = () => setMode('login');
 setMode('signup');
 
+// Whether to send someone to account.html or cart.html has to come
+// from their actual profiles row, not user.app_metadata off the JWT --
+// that's only a snapshot from whenever they first signed up (before
+// they had a tenant), and can drift out of sync with profiles (see
+// db/038_client_setup_handoff.sql for the real incident this caused:
+// an approved owner kept bouncing back to cart.html because
+// app_metadata never got updated even though their profile was
+// already correct).
+async function hasOwnTenant(userId) {
+  const { data } = await sb.from('profiles').select('tenant_id').eq('id', userId).single();
+  return !!(data && data.tenant_id);
+}
+
 async function checkSession() {
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
-    if (session.user.app_metadata && session.user.app_metadata.tenant_id) {
+    if (await hasOwnTenant(session.user.id)) {
       window.location.href = 'account.html';
       return;
     }
@@ -154,7 +167,7 @@ document.getElementById('submitBtn').onclick = async () => {
     : await sb.auth.signInWithPassword({ email, password });
   if (error) { errEl.textContent = error.message; return; }
   const user = data && (data.user || (data.session && data.session.user));
-  if (user && user.app_metadata && user.app_metadata.tenant_id) {
+  if (user && await hasOwnTenant(user.id)) {
     window.location.href = 'account.html';
     return;
   }
