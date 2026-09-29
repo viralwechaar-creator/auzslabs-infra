@@ -138,7 +138,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:5px;border-bottom:1px so
 <script src=/config.js></script>
 <script>
 const VAPID_PUBLIC='BN_aBfhAkcWmYJ8RArUKpcXFBId6rUsNO7bAuhyPr4To51XeATMoWY-8NxtJMCG_iHm4O4UbhV_EZnxloXkEMe4';
-const C=window.CFG||{},sb=supabase.createClient(C.url,C.key),S={tab:'pos',setTab:'biz',type:'Dine-in',cur:null,role:'cashier',role_id:null,perms:null,features:null,enabledFeatures:{},q:'',d:new Date().toLocaleDateString('en-CA'),authExpired:false,drawerOpen:false},R={},V={};let busy=0,conflicts=0,syncErr=0;
+const C=window.CFG||{},sb=supabase.createClient(C.url,C.key),S={tab:'pos',setTab:'biz',type:'Dine-in',cur:null,role:'cashier',role_id:null,perms:null,features:null,enabledFeatures:{},q:'',d:new Date().toLocaleDateString('en-CA'),authExpired:false,drawerOpen:false,previewNiche:null},R={},V={};let busy=0,conflicts=0,syncErr=0;
 const $=s=>document.querySelector(s),uid=()=>crypto.randomUUID(),tok=()=>crypto.randomUUID().replace(/-/g,'').slice(0,12),now=()=>new Date().toISOString(),r2=n=>Math.round(n*100)/100,inr=n=>'₹'+r2(n),inrc=n=>'₹'+r2(n).toLocaleString('en-IN');
 const fmtDate=d=>{const t=new Date(d);return t.toLocaleDateString('en-US',{weekday:'short'})+', '+t.getDate()+' '+t.toLocaleDateString('en-US',{month:'short'})+' '+t.getFullYear()};
 // S.d is "the day currently shown in Reports" (a view-state global the
@@ -154,11 +154,47 @@ const cfg=()=>({name:'My Restaurant',addr:'',phone:'',gstin:'',tax:5,prefix:'INV
 // Restaurant-only screens (table floor plan, KOT log) stay hidden for
 // salon/gym/retail tenants -- gated the same way as any other feature,
 // just off the owner-set business type instead of an admin-set flag.
-const isRestaurant=()=>['restaurant','cafe'].includes(cfg().bizType||'restaurant');
+const isRestaurant=()=>['restaurant','cafe'].includes(effBizType()||'restaurant');
 // Retail: clothing/apparel-style shops that stock size+color variants
 // instead of a recipe of shared ingredients -- billing, barcode scan and
 // stock deduction all branch off this the same way isRestaurant() does.
-const isRetail=()=>cfg().bizType=='retail';
+const isRetail=()=>effBizType()=='retail';
+// Demo-only niche preview: cfg().isDemo is set on the two shared public
+// demo tenants (see db/023/026_demo_tenants.sql) so a prospect can
+// browse what the Menu/POS screens would look like for a different
+// business type without 5 separate demo logins -- picked in Settings
+// (V.biz below), never persisted (S.previewNiche resets on reload),
+// and never written back through save()/push_record. A REAL tenant
+// never sees this control and effBizType() is always just their own
+// cfg().bizType -- switching a live business's `bizType` label alone
+// never touches their actual menu/categories/items.
+const effBizType=()=>(cfg().isDemo&&S.previewNiche)||cfg().bizType;
+const PREVIEW_CATALOGS={
+ restaurant:{cats:[{id:'pv-r-c1',name:'Beverages'},{id:'pv-r-c2',name:'Mains'}],
+  items:[{id:'pv-r-i1',cat:'pv-r-c1',name:'Masala Chai',price:25,sizes:[],mods:[]},
+   {id:'pv-r-i2',cat:'pv-r-c1',name:'Cold Coffee',price:90,sizes:[],mods:[]},
+   {id:'pv-r-i3',cat:'pv-r-c2',name:'Veg Thali',price:180,sizes:[],mods:[]},
+   {id:'pv-r-i4',cat:'pv-r-c2',name:'Butter Naan',price:40,sizes:[],mods:[]}]},
+ salon:{cats:[{id:'pv-s-c1',name:'Hair'},{id:'pv-s-c2',name:'Skin & nails'}],
+  items:[{id:'pv-s-i1',cat:'pv-s-c1',name:'Haircut',price:250,sizes:[],mods:['Wash & blow-dry:150']},
+   {id:'pv-s-i2',cat:'pv-s-c1',name:'Hair colour',price:1200,sizes:[],mods:[]},
+   {id:'pv-s-i3',cat:'pv-s-c2',name:'Manicure',price:400,sizes:[],mods:[]},
+   {id:'pv-s-i4',cat:'pv-s-c2',name:'Facial',price:900,sizes:[],mods:['Gold facial:600']}]},
+ gym:{cats:[{id:'pv-g-c1',name:'Passes'},{id:'pv-g-c2',name:'Training'}],
+  items:[{id:'pv-g-i1',cat:'pv-g-c1',name:'Day pass',price:200,sizes:[],mods:[]},
+   {id:'pv-g-i2',cat:'pv-g-c1',name:'Monthly membership',price:1500,sizes:[],mods:[]},
+   {id:'pv-g-i3',cat:'pv-g-c2',name:'Personal training session',price:600,sizes:[],mods:[]},
+   {id:'pv-g-i4',cat:'pv-g-c2',name:'Nutrition consult',price:500,sizes:[],mods:[]}]},
+ retail:{cats:[{id:'pv-t-c1',name:'T-Shirts'},{id:'pv-t-c2',name:'Accessories'}],
+  items:[{id:'pv-t-i1',cat:'pv-t-c1',name:'Graphic Tee',price:549,low:2,sizes:[],mods:[],
+    variants:[{size:'S',color:'Black',barcode:null,qty:8},{size:'M',color:'Black',barcode:null,qty:10},{size:'L',color:'Black',barcode:null,qty:6}]},
+   {id:'pv-t-i2',cat:'pv-t-c1',name:'Denim Jacket',price:1899,low:2,sizes:[],mods:[],
+    variants:[{size:'M',color:'Blue',barcode:null,qty:5},{size:'L',color:'Blue',barcode:null,qty:3}]},
+   {id:'pv-t-i3',cat:'pv-t-c2',name:'Cap',price:299,low:2,sizes:[],mods:[],
+    variants:[{size:'Free size',color:'Black',barcode:null,qty:12}]}]}
+};
+const effCats=()=>cfg().isDemo&&S.previewNiche?PREVIEW_CATALOGS[S.previewNiche].cats.map((c,i)=>({...c,n:i})):L('cat');
+const effItems=()=>cfg().isDemo&&S.previewNiche?PREVIEW_CATALOGS[S.previewNiche].items:L('item');
 // Legacy default for any staffer with no custom role assigned yet
 // (role_id null) -- reproduces the OLD hardcoded behavior exactly
 // (everything but menu/settings, plus billing for a plain-text
@@ -476,8 +512,8 @@ async function doReturn(o,idx,qtyv,type,give){if(!can('m'))return alert('Manager
   c.exchanges=(c.exchanges||[]).concat({lineIdx:idx,qty:qtyv,type,amt,give:give?{...give,qty:qtyv,amt:givenAmt}:null,diff:r2(givenAmt-amt),reason,by:S.user.email||S.user.id,at:now()});
   await save('order',c,c.id);render();
   alert(type=='refund'?('Refund due: '+inr(amt)):(givenAmt>amt?'Collect the difference: '+inr(r2(givenAmt-amt)):givenAmt<amt?'Refund the difference: '+inr(r2(amt-givenAmt)):'Even exchange, nothing owed either way.'))})}
-V.pos=()=>{const isR=isRetail(),o=S.cur||(S.cur=newOrder()),cats=L('cat').sort((a,b)=>a.n-b.n),q=S.q.toLowerCase(),t=tot(o);if(!cats.some(c=>c.id==S.cat))S.cat=cats[0]&&cats[0].id;
- const its=L('item').filter(i=>!itemOff(i)&&(q?i.name.toLowerCase().includes(q):i.cat==S.cat)).sort((a,b)=>a.name.localeCompare(b.name));
+V.pos=()=>{const isR=isRetail(),o=S.cur||(S.cur=newOrder()),cats=effCats().sort((a,b)=>a.n-b.n),q=S.q.toLowerCase(),t=tot(o);if(!cats.some(c=>c.id==S.cat))S.cat=cats[0]&&cats[0].id;
+ const its=effItems().filter(i=>!itemOff(i)&&(q?i.name.toLowerCase().includes(q):i.cat==S.cat)).sort((a,b)=>a.name.localeCompare(b.name));
  // Due orders already had the discount granted and the receipt printed
  // -- only void ones didn't really happen -- so they count toward past
  // visits/loyalty same as paid ones. Otherwise "Save as due" is a free
@@ -688,7 +724,9 @@ function item(i){const isR=isRetail();const px=h('input',{type:'number',value:i.
   const dupeCode=myCodes.find(c=>allOtherCodes.includes(c));
   if(dupeCode&&!confirm('Barcode "'+dupeCode+'" is already used on another item/variant. Scanning it will always resolve to whichever matches first. Save anyway?'))return;
   await save('item',{...i,name:nm.value.trim(),cat:ct.value,price:+px.value||(sizes[0]&&sizes[0].p)||0,sizes,variants,low:isR?(lowInp.value===''?2:+lowInp.value):i.low,off:off.checked,offUntil,rec:isR?'':rc.value.trim(),cost:+cs.value||0,st:stn.value,mods,barcode});x();render()}},'Save'),i.id?h('button',{onclick:async()=>{await save('item',i,i.id,true);x();render()}},'Delete'):null))}
-V.menu=()=>{const isR=isRetail();return h('div',{class:'g',style:'grid-template-columns:1fr'},h('div',{class:'card'},h('div',{class:'row'},h('h3',{},isR?'Products':'Menu'),h('span',{},h('button',{onclick:()=>{const n=prompt('Category name');n&&save('cat',{name:n,n:Date.now()}).then(render)}},'Add category'),h('button',{class:'p',onclick:()=>item({})},isR?'Add product':'Add item'))),...L('cat').sort((a,b)=>a.n-b.n).map(c=>h('div',{},h('div',{class:'row'},h('b',{},c.name),h('button',{onclick:()=>confirm('Delete category?')&&save('cat',c,c.id,true).then(render)},'Delete')),...L('item').filter(i=>i.cat==c.id).map(i=>h('div',{class:'row'},i.name+(itemOff(i)?' (sold out'+(i.offUntil?' until '+new Date(i.offUntil).toLocaleString():'')+')':''),isR?inr(i.price)+' · '+variantQty(i)+' in stock':(i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price)),h('button',{onclick:()=>item(i)},'Edit')))))))};
+V.menu=()=>{const isR=isRetail(),previewing=cfg().isDemo&&S.previewNiche;return h('div',{class:'g',style:'grid-template-columns:1fr'},
+ previewing?h('p',{style:'color:var(--accent);font-size:13px'},'Previewing a sample '+S.previewNiche+' menu — read only. Pick "Current" in Settings → Business to go back to editing your real menu.'):null,
+ h('div',{class:'card'},h('div',{class:'row'},h('h3',{},isR?'Products':'Menu'),previewing?null:h('span',{},h('button',{onclick:()=>{const n=prompt('Category name');n&&save('cat',{name:n,n:Date.now()}).then(render)}},'Add category'),h('button',{class:'p',onclick:()=>item({})},isR?'Add product':'Add item'))),...effCats().sort((a,b)=>a.n-b.n).map(c=>h('div',{},h('div',{class:'row'},h('b',{},c.name),previewing?null:h('button',{onclick:()=>confirm('Delete category?')&&save('cat',c,c.id,true).then(render)},'Delete')),...effItems().filter(i=>i.cat==c.id).map(i=>h('div',{class:'row'},i.name+(itemOff(i)?' (sold out'+(i.offUntil?' until '+new Date(i.offUntil).toLocaleString():'')+')':''),isR?inr(i.price)+' · '+variantQty(i)+' in stock':(i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price)),previewing?null:h('button',{onclick:()=>item(i)},'Edit')))))))};
 V.set=()=>{const s=cfg(),F={},sel=(k,l,o)=>h('label',{},l,h('select',{style:'width:100%',onchange:e=>F[k]=e.target.value},...o.map(([v,n])=>h('option',{value:v,selected:String(s[k]||o[0][0])==String(v)},n)))),f=(k,l,t)=>h('label',{},l,h('input',{type:t||'text',value:s[k],style:'width:100%',oninput:e=>F[k]=t=='number'?+e.target.value:e.target.value})),ta=(k,l)=>h('label',{},l,h('textarea',{style:'width:100%;min-height:70px',oninput:e=>F[k]=e.target.value},s[k]||''));
  // Hardware toggles save instantly (like flipping a real switch) instead
  // of queuing into F for the Business tab's Save button -- off by
@@ -708,7 +746,12 @@ V.set=()=>{const s=cfg(),F={},sel=(k,l,o)=>h('label',{},l,h('select',{style:'wid
  // scroll -- switchable tabs (persisted in S.setTab so it survives the
  // re-renders every save/sync triggers) show one section at a time.
  const panes={
-  biz:()=>h('div',{class:'card',style:'display:grid;gap:8px'},h('h3',{},'Business details'),sel('bizType','Business type',[['restaurant','Restaurant / Cafe (tables, KOT, kitchen display)'],['salon','Salon / spa'],['gym','Gym / fitness'],['retail','Retail shop (clothing/apparel — size & color stock)']]),f('name','Name'),f('addr','Address'),f('phone','Phone'),f('gstin','GSTIN'),f('tax','GST %','number'),f('prefix','Invoice prefix'),h('h4',{},'Look & invoice'),f('col','Brand colour (hex, e.g. #1f3d2e)'),f('logo','Logo image URL (optional)'),f('ftr','Invoice thank-you message'),sel('w','Paper width',[[80,'80 mm'],[58,'58 mm']]),sel('sty','Invoice style',[['mono','Thermal (monospace)'],['sans','Clean (sans-serif)']]),f('fs','Invoice font size (px)','number'),h('h4',{},'Self-order'),f('gw','Guest ordering welcome text'),saveBtn()),
+  biz:()=>h('div',{class:'card',style:'display:grid;gap:8px'},h('h3',{},'Business details'),
+   // Demo-only: previews a different niche's sample Menu/POS without
+   // touching this shared account's real catalog -- never saved, never
+   // shown to a real tenant. See effBizType()/PREVIEW_CATALOGS above.
+   s.isDemo?h('label',{},'Preview a different business type (this account only, nothing is saved)',h('select',{style:'width:100%',onchange:e=>{S.previewNiche=e.target.value||null;render()}},h('option',{value:'',selected:!S.previewNiche},'Current — '+s.name),...['restaurant','salon','gym','retail'].map(k=>h('option',{value:k,selected:S.previewNiche==k},({restaurant:'Restaurant / Cafe',salon:'Salon / spa',gym:'Gym / fitness',retail:'Retail (clothing/apparel)'})[k]+' (sample menu)')))):null,
+   sel('bizType','Business type',[['restaurant','Restaurant / Cafe (tables, KOT, kitchen display)'],['salon','Salon / spa'],['gym','Gym / fitness'],['retail','Retail shop (clothing/apparel — size & color stock)']]),f('name','Name'),f('addr','Address'),f('phone','Phone'),f('gstin','GSTIN'),f('tax','GST %','number'),f('prefix','Invoice prefix'),h('h4',{},'Look & invoice'),f('col','Brand colour (hex, e.g. #1f3d2e)'),f('logo','Logo image URL (optional)'),f('ftr','Invoice thank-you message'),sel('w','Paper width',[[80,'80 mm'],[58,'58 mm']]),sel('sty','Invoice style',[['mono','Thermal (monospace)'],['sans','Clean (sans-serif)']]),f('fs','Invoice font size (px)','number'),h('h4',{},'Self-order'),f('gw','Guest ordering welcome text'),saveBtn()),
   tables:()=>{const so=featureOn('self_order'),secs=[...new Set(L('table').map(t=>t.sec||'Main'))];
    return h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Tables'),h('span',{},so?h('button',{onclick:()=>qr(L('table'))},'Print all QR'):null,h('button',{class:'p',onclick:()=>{const n=prompt('Table name');if(!n)return;const sc=prompt('Section (e.g. AC, Garden, Terrace)','Main')||'Main';save('table',{name:n,sec:sc.trim()||'Main'}).then(render)}},'Add table'))),
    !so?h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Self-order (QR) is turned off in your Services settings, so table QR codes won\'t take customers to an ordering page. Turn it back on to print/share codes again.'):null,
