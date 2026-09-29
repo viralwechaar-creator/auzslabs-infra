@@ -1,6 +1,6 @@
 <!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>AUZslab Payroll</title><link rel=icon href=/logo.png><meta name=theme-color content=#171717>
 <link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel=stylesheet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel=stylesheet>
 <style>
 /* This app is deliberately its own thing -- same design tokens as the
    POS app (so it still feels like AUZslab), but its own file, own
@@ -16,7 +16,7 @@ button.warn{color:var(--accent)}button.warn:hover{background:var(--accent);color
 button:disabled{opacity:.4;background:none}
 input,select,textarea{font:inherit;padding:10px 15px;border:1.5px solid var(--l);border-radius:var(--radius-sm);background:#fff;color:inherit;transition:border-color .15s var(--ease)}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
-h1,h2,h3{font-family:Fraunces,serif;margin:0}
+h1,h2,h3{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif;margin:0}
 .top-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:14px 16px;background:rgba(222,222,222,.85);backdrop-filter:saturate(180%) blur(16px)}
 .top-bar h1{font-size:18px;flex:1}
 .hamburger-btn{background:none;border:none;font-size:20px;padding:6px 10px}
@@ -231,7 +231,7 @@ function runPayroll(emp,ym){
  return{present,absent,half,leave,ot,basicPaid,hra:ss.hra||0,allowances:ss.allowances||0,otPay,gross,pf,esic,pt,tds,advanceDeduction,net};
 }
 function printPayslip(p,emp){const w=window.open('','_blank');
- w.document.write(`<style>body{font-family:Inter,sans-serif;max-width:480px;margin:40px auto;color:#171717}h2{font-family:Fraunces,serif}table{width:100%;border-collapse:collapse;margin-top:12px}td{padding:6px 0;border-bottom:1px solid #eee}td:last-child{text-align:right}.tot{font-weight:700;border-top:2px solid #171717}</style>
+ w.document.write(`<style>body{font-family:Inter,sans-serif;max-width:480px;margin:40px auto;color:#171717}h2{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif}table{width:100%;border-collapse:collapse;margin-top:12px}td{padding:6px 0;border-bottom:1px solid #eee}td:last-child{text-align:right}.tot{font-weight:700;border-top:2px solid #171717}</style>
  <h2>${(hrSettings().companyName)||'AUZslab'} — Payslip</h2><p>${emp.name} · ${p.month}</p>
  <table>
  <tr><td>Present days</td><td>${p.present}</td></tr><tr><td>Half days</td><td>${p.half}</td></tr><tr><td>Absent</td><td>${p.absent}</td></tr><tr><td>Overtime hours</td><td>${p.ot}</td></tr>
