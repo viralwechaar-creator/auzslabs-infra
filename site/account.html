@@ -97,6 +97,7 @@ input:disabled+.slider{opacity:.4;cursor:default}
       </div>
       <div class="ios-menu-group">
         <a href="#" id="openPosLink" target="_blank" rel="noopener" class="nav-link"><svg class="ios-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 4h6v6M20 4 11 13"/><path d="M20 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h4"/></svg><span>Open POS system</span></a>
+        <a href="#" id="openPayrollLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><svg class="ios-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M8 14h.01M12 14h4"/></svg><span>Open Payroll</span></a>
       </div>
     </nav>
     <div class="sidebar-foot">
@@ -159,6 +160,8 @@ async function boot() {
   $('#acctNav').style.display = 'flex';
   if (DASH.my_role === 'owner') { $('#tabStaffBtn').style.display = ''; $('#tabRolesBtn').style.display = ''; }
   $('#openPosLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in';
+  const payrollOn = (DASH.features || {}).payroll === true && (DASH.enabled_features || {}).payroll !== false;
+  if (payrollOn) { $('#openPayrollLink').style.display = ''; $('#openPayrollLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in/payroll.html'; }
 
   await loadRoles();
   if (DASH.my_role === 'owner') await loadStaff();
