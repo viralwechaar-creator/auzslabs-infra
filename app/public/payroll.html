@@ -361,7 +361,11 @@ function bottomNav(){
 function empApp(){
  const emp=myEmployee();
  if(S._tick){clearInterval(S._tick);S._tick=null}
- if(!emp)return h('div',{class:'g'},h('div',{class:'card'},h('p',{},"Your account isn't linked to an employee record yet -- ask your admin to add you under Employees.")));
+ if(!emp)return h('div',{class:'g',style:'padding-top:16px'},h('div',{class:'card'},
+  h('p',{},"Your account isn't linked to an employee record yet -- ask your admin to add you under Employees."),
+  h('div',{style:'display:flex;gap:10px;margin-top:12px'},
+   h('button',{class:'p',onclick:()=>{sync();render()}},'Check again'),
+   h('button',{class:'warn',onclick:async()=>{await sb.auth.signOut();localStorage.removeItem('hru');location.reload()}},'Sign out'))));
  const tab=S.empTab||'home';
  const body=tab=='home'?empHome(emp):tab=='calendar'?empCalendar(emp):tab=='leave'?empLeave(emp):tab=='payslip'?empPayslip(emp):empNotif();
  return h('div',{},body,bottomNav());
