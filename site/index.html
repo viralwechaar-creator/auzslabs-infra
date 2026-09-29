@@ -26,12 +26,7 @@
 {"@context":"https://schema.org","@type":"Organization","name":"AUZslab","url":"https://auzslab.in","logo":"https://auzslab.in/logo.png","description":"AUZslab builds point of sale, CRM, and business software in-house."}
 </script>
 <style>
-/* ---- home page only: the menu stays a button-triggered drawer on
-   desktop too, instead of theme.css's persistent always-open sidebar
-   every other page uses -- reusing the exact same drawer/overlay
-   markup and site.js toggle, just letting the mobile off-canvas
-   state through at desktop widths here instead of overriding it to
-   "fixed open, 240px". ---- */
+
 @media (min-width:861px){
   .shell{flex-direction:column}
   .topbar{display:flex}
@@ -43,10 +38,7 @@
   .content{margin-right:0}
   .drawer-overlay{display:block}
 
-  /* hero: text stays a normal-width column on the left: the logo
-     used to share a 50/50 grid column with it -- now it's one big
-     mark anchored to the panel's own bottom-right corner instead,
-     same idea as the reference's giant wordmark in the corner. */
+  
   .home-hero{position:relative}
   .home-hero .wrap{max-width:640px}
   .home-hero .hero-art{

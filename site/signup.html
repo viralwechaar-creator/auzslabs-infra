@@ -15,23 +15,13 @@
 <style>
 .err{color:var(--accent);font-size:12.5px;margin-top:10px}
 
-/* ---- signup-page-only: one unified card holding a decorative panel
-   beside the form (illustration-left/form-right, like a typical auth
-   page), replacing an earlier version that used a solid black square
-   -- reads as "a heavy black box" rather than decoration, so this
-   uses the same light --bg-raised panel every other card on the site
-   sits on, with the site's own ink/maroon in place of illustration
-   colour. Pure CSS, no external assets besides the existing logo. ---- */
 .auth-combo{
   display:flex;flex-wrap:wrap;max-width:1100px;min-height:460px;
   background:#fff;border:2px solid var(--ink);border-radius:26px 12px 26px 12px;
   box-shadow:5px 5px 0 var(--ink);overflow:hidden;
 }
 .auth-illustration{
-  /* grow:3 vs. the form column's grow:0 (capped by max-width below) --
-     on a very wide screen the extra width goes to this decorative
-     side instead of stretching the email/password inputs into
-     unusably long bars. */
+  
   flex:3 1 260px;min-width:220px;position:relative;overflow:hidden;
   background:var(--bg-raised);display:flex;align-items:center;justify-content:center;padding:40px 24px;
 }
@@ -55,11 +45,7 @@
 @media (prefers-reduced-motion:reduce){
   .auth-illustration-shape.s2,.auth-illustration-shape.s3,.auth-illustration-logo{animation:none}
 }
-/* on a genuinely wide screen (theme.css's .wrap has no max-width at
-   desktop by design, for the full-bleed marketing pages), this page's
-   own content stayed pinned to the left edge, leaving a huge one-sided
-   gap the wider the window got. Centering it as its own column reads
-   like a deliberate auth-page layout instead of an accident. */
+
 @media (min-width:861px){
   .wrap{max-width:1180px;margin:0 auto}
 }
@@ -144,10 +130,6 @@ setMode('signup');
 async function checkSession() {
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
-    // A tenant_id in app_metadata means this is already a live client
-    // (either onboarded by us directly, like OG Book Cafe, or a
-    // self-signup that's since been approved) -- send them straight
-    // to their account dashboard instead of the cart/signup flow.
     if (session.user.app_metadata && session.user.app_metadata.tenant_id) {
       window.location.href = 'account.html';
       return;

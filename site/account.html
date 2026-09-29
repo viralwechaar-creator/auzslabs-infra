@@ -13,10 +13,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-/* ---- account-page-only additions: reuses .field/.btn/.card/.label/
-   .h-1/.h-2/.status-pill/.feature-tag/.ok-box/.err as-is (same
-   components admin.html already established); only a data table and
-   a toggle switch are genuinely new here. ---- */
+
 .acct-table-wrap{overflow-x:auto;border:2px solid var(--ink);border-radius:14px;margin-top:16px}
 .acct-table{width:100%;border-collapse:collapse;font-size:12.5px}
 .acct-table th{text-align:left;padding:10px 12px;background:var(--bg-raised);font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-dim);border-bottom:2px solid var(--ink)}
@@ -43,29 +40,14 @@ input:disabled+.slider{opacity:.4;cursor:default}
 .section-pane.on{display:block}
 .pos-link-box{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--bg-raised);border:2px solid var(--ink);border-radius:14px;padding:12px 14px;margin-top:8px}
 .pos-link-box code{font-family:var(--font-mono);font-size:12px;word-break:break-all}
-/* ---- this page's menu is a functional dashboard nav, not a
-   marketing mega-menu -- an icon-only trigger and a narrower panel
-   read as "switch section" instead of the sitewide full-screen
-   text-pill takeover (kept as-is everywhere else on purpose). ---- */
+
 #menuToggle{padding:9px;width:40px;height:40px;justify-content:center}
 #menuToggle svg{display:block}
 #sidebarDrawer{max-width:320px;box-shadow:-30px 0 70px -20px rgba(0,0,0,.5)}
-/* Only the mobile half-width drawer gets curved -- the desktop
-   persistent sidebar (>860px, theme.css) sits flush against the
-   screen's own right edge with nothing beyond it, so a radius there
-   would just look like a gap, not a curve. Left side only: the drawer
-   opens from the right, so the left edge is the one actually visible
-   against the dimmed page behind it. */
+
 @media (max-width:860px){#sidebarDrawer{border-radius:26px 0 0 26px}}
 .acct-nav-btn{background:none;border:none;width:100%;cursor:pointer;font-family:inherit}
 
-/* ---- iOS-style menu: this dashboard's own nav, deliberately not the
-   marketing site's thick-ink-border/doodle language used everywhere
-   else -- a frosted grouped list instead of a boxy bordered stack,
-   per an explicit "too boxy, make it iOS style, premium and minimal"
-   request. Scoped to this page's own <style> tag only, so nothing
-   about the shared .sidebar/.nav-link classes changes on any
-   marketing page that reuses them. ---- */
 #sidebarDrawer{background:rgba(20,20,22,.78);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%)}
 .ios-menu{gap:22px;margin-top:8px}
 .ios-menu-group{display:flex;flex-direction:column;gap:1px;background:rgba(255,255,255,.06);border-radius:16px;overflow:hidden}
@@ -209,7 +191,6 @@ function showTab(tab) {
   if (tab === 'notifications') renderNotifications();
 }
 
-// ---------------- Account ----------------
 function renderAccount() {
   const t = DASH.tenant;
   $('#pane-account').innerHTML = `
@@ -265,7 +246,6 @@ function renderAccount() {
   };
 }
 
-// ---------------- Services ----------------
 function renderServices() {
   const entitled = DASH.features || {}, enabled = DASH.enabled_features || {};
   const keys = Object.keys(entitled).filter((k) => entitled[k] === true);
@@ -299,7 +279,6 @@ function renderServices() {
   }
 }
 
-// ---------------- Staff ----------------
 async function loadStaff() {
   const { data } = await sb.from('profiles').select('*').order('email');
   STAFF = data || [];
@@ -364,7 +343,6 @@ function renderStaff() {
   });
 }
 
-// ---------------- Roles ----------------
 async function loadRoles() {
   const { data } = await sb.from('roles').select('*').order('name');
   ROLES = data || [];
@@ -412,7 +390,6 @@ function renderRoles() {
   });
 }
 
-// ---------------- Notifications ----------------
 async function loadNotifications() {
   const { data } = await sb.from('notifications').select('*').order('created_at');
   NOTIFS = (data || []).slice().reverse();

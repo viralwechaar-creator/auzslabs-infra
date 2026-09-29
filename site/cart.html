@@ -56,15 +56,7 @@
         </div>
       </section>
 
-      <!-- Bug this exists to fix: a signed-in EXISTING client (already
-           has a tenant) landing here used to see the same "new business"
-           form as a fresh prospect -- submitting it either collided with
-           their own subdomain or, if approved as-is, would have spun up
-           a second empty tenant next to their real one. An existing
-           client gets this section instead: no business details (they
-           already have those), just the cart items they don't already
-           have, submitted as an add-on request against their own tenant
-           (db/027_addon_requests.sql) rather than a new-tenant signup. -->
+      
       <section class="section tight" id="addonSection" style="display:none;max-width:640px">
         <div class="card">
           <p class="p" style="margin-bottom:8px">Signed in as <b id="addonWhoami"></b> — adding to <b id="addonTenant"></b></p>
@@ -203,19 +195,6 @@ function renderAddonItems() {
   });
 }
 
-// Signed-in visitors go straight to a details/add-on form -- whether
-// or not they've picked any products yet. Requiring cart items first
-// forced people to shop before we'd even take their name, backwards
-// from how a lead-gen flow should work: identify them first, help
-// them pick services after (see the submit buttons' own checks below).
-//
-// Bug this branch exists to fix: an EXISTING client (AUZaccount.fetch
-// resolves to a real dashboard) used to see the exact same "new
-// business" form a brand-new prospect does -- submitting it collided
-// with their own subdomain, or worse, would have provisioned a SECOND
-// tenant. They get the add-on request section instead now; only a
-// visitor with no tenant yet (a fresh signup, or genuinely signed
-// out) sees the new-business form.
 async function checkSession() {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) {
@@ -269,9 +248,6 @@ document.getElementById('submitBtn').onclick = async () => {
   });
   if (error) {
     errEl.textContent = error.message;
-    // A 401 means sb-client.js already dropped the dead token -- flip
-    // the UI back to "signed out" now instead of leaving the form up
-    // as if signed in, which would just fail the same way on retry.
     if (error.status === 401) checkSession();
     return;
   }

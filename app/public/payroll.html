@@ -2,12 +2,7 @@
 <link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel=stylesheet>
 <style>
-/* This app is deliberately its own thing -- same design tokens as the
-   POS app (so it still feels like AUZslab), but its own file, own
-   IndexedDB store, own localStorage key, and its own records kinds
-   (hr_*) that the POS app never reads or writes. Payroll signing in
-   uses the same tenant login everyone already has; what happens after
-   that is entirely separate. */
+
 :root{--ink:#171717;--ink-dim:#4d4d4d;--ink-faint:#8c8c8c;--accent:#800020;--g:var(--accent);--l:rgba(23,23,23,.14);--bg-raised:#dedede;--radius-sm:14px;--radius-md:18px;--radius-lg:26px;--shadow-sm:0 1px 2px rgba(23,23,23,.06),0 6px 20px -10px rgba(23,23,23,.14);--shadow-md:0 4px 12px rgba(23,23,23,.08),0 20px 44px -16px rgba(23,23,23,.22);--ease:cubic-bezier(.4,0,.2,1)}*{box-sizing:border-box}body{margin:0;font:15px/1.5 Inter,system-ui,sans-serif;background:var(--bg-raised);color:var(--ink);-webkit-tap-highlight-color:transparent}
 button{font:inherit;cursor:pointer;padding:10px 15px;border:none;border-radius:var(--radius-sm);background:none;color:var(--ink-dim);transition:background .15s var(--ease),color .15s var(--ease),transform .12s var(--ease)}
 button:hover{background:var(--l)}button:active{transform:scale(.96)}
@@ -75,15 +70,10 @@ function forceRelogin(msg){S.user=null;localStorage.removeItem('hru');login(msg)
 function modal(...k){const o=h('div',{class:'ov',onclick:e=>e.target==o&&o.remove()},h('div',{class:'md'},...k));document.body.append(o);return()=>o.remove()}
 function csv(rows,name){const s=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n'),a=h('a',{href:URL.createObjectURL(new Blob([s],{type:'text/csv'})),download:name});document.body.append(a);a.click();a.remove()}
 
-// ---- role: same tenant login as everything else, but what you see
-// here depends only on whether you're HR/Admin (owner or manager) or
-// an ordinary employee -- nothing about this reads POS's own role
-// permissions system, just the plain role string. ----
 const isHR=()=>S.role=='owner'||S.role=='manager';
 const myEmployee=()=>L('hr_employee').find(e=>e.authUserId==S.user.id);
 const hrSettings=()=>({companyName:'',pf:12,esic:0.75,pt:200,tds:0,...(R.hr_settings&&R.hr_settings.data)});
 
-// ---- attendance status, computed from a shift + a punch pair ----
 function shiftFor(emp){return L('hr_shift').find(s=>s.id==emp.shiftId)}
 function statusFor(att,emp){
  if(att.leaveType)return 'leave';
@@ -96,7 +86,7 @@ function statusFor(att,emp){
   if(mins<shiftMins*0.55)return 'half';
   const inTime=new Date(att.in),sched=new Date(inTime);const[sh1,sm1]=sh.start.split(':').map(Number);sched.setHours(sh1,sm1,0,0);
   if(inTime-sched>15*60000)return 'late';
-  if(mins>shiftMins+30)return 'present'; // overtime tracked separately, not its own status
+  if(mins>shiftMins+30)return 'present';
  }
  return 'present';
 }
@@ -104,18 +94,9 @@ function overtimeHours(att,emp){const sh=shiftFor(emp);if(!sh||!att.in||!att.out
  const shiftMins=(()=>{const[sh1,sm1]=sh.start.split(':').map(Number),[sh2,sm2]=sh.end.split(':').map(Number);let a=sh1*60+sm1,b=sh2*60+sm2;if(sh.overnight||b<a)b+=1440;return b-a})();
  const worked=(new Date(att.out)-new Date(att.in))/60000;return r2(Math.max(0,worked-shiftMins)/60)}
 
-// ---- geolocation punch, software-only. Real fingerprint/face-recognition
-// hardware needs a vendor SDK/driver we don't have and won't fake --
-// this covers mobile punch + location capture, the two methods that
-// need no extra hardware at all. An assigned-location radius is just a
-// flag on the punch (out of range), never a hard block, since GPS
-// indoors is routinely off by 50+ metres. ----
 function getLoc(){return new Promise(res=>{if(!navigator.geolocation)return res(null);navigator.geolocation.getCurrentPosition(p=>res({lat:r2(p.coords.latitude),lng:r2(p.coords.longitude)}),()=>res(null),{timeout:5000})})}
 function haversine(a,b){if(!a||!b)return null;const R=6371000,toRad=d=>d*Math.PI/180;const dLat=toRad(b.lat-a.lat),dLng=toRad(b.lng-a.lng);const x=Math.sin(dLat/2)**2+Math.cos(toRad(a.lat))*Math.cos(toRad(b.lat))*Math.sin(dLng/2)**2;return Math.round(2*R*Math.asin(Math.sqrt(x)))}
 
-// =========================================================
-// Employee self-service: punch, own attendance, own leave, own payslips
-// =========================================================
 async function doPunch(emp){
  const loc=await getLoc();
  const openRow=L('hr_attendance').find(a=>a.empId==emp.id&&a.date==today()&&!a.out);
@@ -143,9 +124,6 @@ function leaveRequest(emp){const from=h('input',{type:'date',value:today()}),to=
  const x=modal(h('h3',{},'Request leave'),h('label',{},'From',from),h('label',{},'To',to),h('label',{},'Type',ty),h('label',{},'Reason',reason),
   h('button',{class:'p',onclick:async()=>{await save('hr_leave',{empId:emp.id,from:from.value,to:to.value,type:ty.value,reason:reason.value.trim(),status:'pending',at:now()});x();render()}},'Send request'))}
 
-// =========================================================
-// HR/Admin: Employees
-// =========================================================
 function employeeModal(e){e=e||{};
  const nm=h('input',{value:e.name||'',placeholder:'Full name'}),empId=h('input',{value:e.empId||'',placeholder:'Employee ID (optional)'}),
   dept=h('input',{value:e.dept||'',placeholder:'Department'}),desig=h('input',{value:e.designation||'',placeholder:'Designation'}),
@@ -173,9 +151,6 @@ V.employees=()=>{const emps=L('hr_employee').sort((a,b)=>a.name.localeCompare(b.
   emps.length?null:h('p',{class:'note'},'No employees yet.'),
   ...emps.map(e=>h('div',{class:'row'},h('span',{},e.name+(e.active===false?' (inactive)':''),h('br'),h('span',{class:'note'},(e.designation||'')+(e.dept?' · '+e.dept:''))),h('button',{onclick:()=>employeeModal(e)},'Edit')))))};
 
-// =========================================================
-// HR/Admin: Shifts
-// =========================================================
 function shiftModal(s){s=s||{};const nm=h('input',{value:s.name||'',placeholder:'Shift name, e.g. Morning'}),
  start=h('input',{type:'time',value:s.start||'09:00'}),end=h('input',{type:'time',value:s.end||'18:00'}),overnight=h('input',{type:'checkbox',checked:!!s.overnight});
  const x=modal(h('h3',{},s.id?'Edit shift':'New shift'),nm,h('label',{},'Start',start),h('label',{},'End',end),
@@ -186,9 +161,6 @@ V.shifts=()=>{const shifts=L('hr_shift');
   shifts.length?null:h('p',{class:'note'},'No shifts defined yet -- attendance still records punches without one, just without late/overtime detection.'),
   ...shifts.map(s=>h('div',{class:'row'},s.name+' · '+s.start+'–'+s.end+(s.overnight?' (overnight)':''),h('button',{onclick:()=>shiftModal(s)},'Edit')))))};
 
-// =========================================================
-// HR/Admin: Leave approvals
-// =========================================================
 V.leave=()=>{const pending=L('hr_leave').filter(l=>l.status=='pending'),all_=L('hr_leave').sort((a,b)=>b.at>a.at?1:-1);
  const empName=id=>{const e=L('hr_employee').find(x=>x.id==id);return e?e.name:'—'};
  return h('div',{class:'g'},
@@ -199,17 +171,8 @@ V.leave=()=>{const pending=L('hr_leave').filter(l=>l.status=='pending'),all_=L('
   h('div',{class:'card'},h('h3',{},'Leave history'),...all_.slice(0,30).map(l=>h('div',{class:'row'},empName(l.empId)+' · '+l.from+(l.to!=l.from?' → '+l.to:''),h('span',{class:'pill'},l.status)))));
 };
 
-// =========================================================
-// HR/Admin: Advances
-// =========================================================
 function advanceOutstanding(empId){return r2(L('hr_advance').filter(a=>a.empId==empId).reduce((s,a)=>s+a.amount,0)-L('hr_payslip').filter(p=>p.empId==empId).reduce((s,p)=>s+(p.advanceDeduction||0),0))}
 
-// =========================================================
-// Payroll run: attendance + shift + leave + salary structure +
-// PF/ESIC/PT/TDS (owner-configured rates, NOT government-filed
-// compliance -- these are your own numbers, not tax-filing software) +
-// advances -> net salary -> payslip.
-// =========================================================
 function runPayroll(emp,ym){
  const[y,m]=ym.split('-').map(Number),mStart=new Date(y,m-1,1),mEnd=new Date(y,m,1),days=(mEnd-mStart)/86400000;
  const att=L('hr_attendance').filter(a=>a.empId==emp.id&&a.date>=ym+'-01'&&a.date<ym+'-32');
@@ -221,7 +184,7 @@ function runPayroll(emp,ym){
   ot+=overtimeHours(row,emp);
  }
  const ss=emp.salaryStructure||{},perDay=r2((ss.basic||0)/days);
- const paidDays=present+half*0.5+leave; // leave here means an APPROVED leave day already counted present-equivalent; unpaid leave shows as absent instead since it's never written to hr_attendance
+ const paidDays=present+half*0.5+leave;
  const basicPaid=r2(perDay*paidDays),otPay=r2(ot*(ss.otRate||0));
  const gross=r2(basicPaid+(ss.hra||0)+(ss.allowances||0)+otPay);
  const rates=hrSettings();
@@ -253,9 +216,6 @@ V.run=()=>{const ym=S.runMonth||today().slice(0,7),emps=L('hr_employee').filter(
   emps.length?null:h('div',{class:'card'},h('p',{class:'note'},'Add employees first.')));
 };
 
-// =========================================================
-// HR/Admin: Reports + Settings
-// =========================================================
 V.reports=()=>{const from=S.repFrom||today(),to=S.repTo||today();
  const empName=id=>{const e=L('hr_employee').find(x=>x.id==id);return e?e.name:'—'};
  const att=L('hr_attendance').filter(a=>a.date>=from&&a.date<=to);
@@ -273,9 +233,6 @@ V.settings=()=>{const s=hrSettings(),nm=h('input',{value:s.companyName,placehold
   h('div',{class:'card'},h('h3',{},'Hardware attendance'),h('p',{class:'note'},'Mobile punch and location capture work today, no extra hardware needed. Fingerprint/face-recognition device integration needs that device\'s own vendor SDK -- ',h('a',{href:'mailto:helloauzslab@gmail.com',style:'color:var(--accent)'},'get in touch'),' if you already have a biometric device and want it wired in.')));
 };
 
-// =========================================================
-// Shell
-// =========================================================
 function render(){
  const hr=isHR();
  const tabs=hr?[['employees','Employees'],['shifts','Shifts'],['leave','Leave'],['run','Payroll run'],['reports','Reports'],['settings','Settings']]:[['myself','My attendance']];
@@ -292,10 +249,6 @@ function login(msg){const e=h('input',{type:'email',placeholder:'Email'}),p=h('i
   h('button',{class:'p',onclick:async()=>{const{error}=await sb.auth.signInWithPassword({email:e.value.trim(),password:p.value});error?m.textContent=error.message:boot()}},'Sign in')))}
 async function boot(){
  let c=JSON.parse(localStorage.hru||'null'),ses=null;try{ses=(await sb.auth.getSession()).data.session}catch{}
- // Same cross-tenant cache leak as index.html's boot() -- see its own
- // comment. This app has its own separate IndexedDB store ('hr1') but
- // the same flat, tenant-unaware shape, so switching between two
- // tenants' Payroll logins on one device needs the same guard.
  const uid=ses?ses.user.id:(c&&c.id);
  if(uid){const meta=await get('meta','lastUser');if(meta&&meta.v&&meta.v!==uid){await clr('rec');await clr('out');await del('meta','since')}await put('meta',{k:'lastUser',v:uid})}
  (await all('rec')).forEach(r=>R[r.id]=r);

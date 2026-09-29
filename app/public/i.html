@@ -79,9 +79,6 @@ ${t.round?`<tr><td>Round off</td><td>${t.round>=0?'+':'-'}${inr(Math.abs(t.round
 </div>
 <div class=powered>Powered by <a href="https://auzslab.in" target=_blank rel=noopener>AUZslab</a></div>`;
  if(s.logo){const im=A.querySelector('.mark img');if(im)im.onerror=()=>im.replaceWith(document.createTextNode('Invoice'))}
- // Feedback: a star tap sets the rating and unlocks Submit -- comment
- // stays optional. One feedback row per order (submit_feedback upserts
- // on the order's own token), so resubmitting just updates it.
  let rating=0;const starsEl=document.getElementById('stars'),submitBtn=document.getElementById('fbSubmit');
  starsEl.querySelectorAll('button').forEach(btn=>btn.onclick=()=>{
   rating=+btn.dataset.v;submitBtn.disabled=false;
