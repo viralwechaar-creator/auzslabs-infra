@@ -59,6 +59,17 @@
         order(col) { state.order = col; return builder; },
         limit(n) { state.limit = n; return builder; },
         single() { state.single = true; return then(); },
+        // The server's `single=1` already returns rows[0] || null on
+        // zero rows (server/src/index.js) rather than erroring -- real
+        // Supabase's actual .single()/.maybeSingle() split (error vs.
+        // null on zero rows) was never reproduced server-side, so
+        // there's nothing to distinguish here; this alias exists only
+        // because payroll.html calls .maybeSingle() and the shim's
+        // comment above claimed to cover every call site but was never
+        // actually checked against payroll.html/builder.html when they
+        // were added, so this one was missing outright -- not a
+        // behavior difference from .single(), just the missing name.
+        maybeSingle() { state.single = true; return then(); },
         insert(values) { return request(`/db/${table}`, { method: 'POST', body: values }); },
         upsert(values, opts) { return request(`/db/${table}?onConflict=${encodeURIComponent(opts?.onConflict || 'id')}`, { method: 'POST', body: values }); },
         update(values) {
