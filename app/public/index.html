@@ -425,7 +425,18 @@ const busyT=id=>L('order').some(x=>x.status=='open'&&x.table==id&&x.lines.length
 // day/indefinite/custom) instead of only a permanent toggle -- an item
 // auto-reappears once offUntil passes, no need to remember to switch it
 // back on. i.off with no offUntil still means "off indefinitely".
-const itemOff=i=>!!i.off&&(!i.offUntil||new Date(i.offUntil)>new Date());
+// Menu availability driven by real ingredient stock, not just the
+// manual off/offUntil toggle -- an item with a recipe (i.rec) whose
+// stock hits zero goes unavailable the same way a manually-marked-off
+// item does, everywhere itemOff() is already checked (POS grid, Menu
+// tab's sold-out label). No separate "menu availability" flag to keep
+// in sync by hand -- it's just a live read of the same ingredient
+// stock the recipe already deducts from.
+const itemOff=i=>{
+ if(i.off&&(!i.offUntil||new Date(i.offUntil)>new Date()))return true;
+ if(!i.rec)return false;
+ return i.rec.split(',').some(p=>{const[n]=p.split(':'),g=L('ing').find(x=>x.name.toLowerCase()==n.trim().toLowerCase());return g&&g.qty<=0});
+};
 function tableInfo(id){const o=L('order').find(x=>x.status=='open'&&x.table==id&&x.lines.length);if(!o)return{st:'blank'};const mins=Math.round((Date.now()-new Date(o.created))/60000);return{st:'running',mins,amt:tot(o).total}}
 // Floor plan: tables grouped into sections (t.sec, e.g. AC/Garden/
 // Terrace), each a tile coloured by status instead of a flat dropdown --
@@ -806,6 +817,64 @@ function purchaseIng(g){
   await save('ing',c,c.id);x();render()
  }},'Save purchase')))
 }
+function setExpiry(g){const v=prompt('Next expiry date for '+g.name+' (YYYY-MM-DD), blank to clear',g.expiry||'');if(v===null)return;const c=structuredClone(g);c.expiry=v.trim()||null;save('ing',c,c.id).then(render)}
+// One next-expiry date per ingredient, not a full batch ledger -- an
+// honest middle ground: real enough to warn "this is about to go off"
+// without pretending we track which physical lot gets consumed first
+// (that's FIFO -- see the note where Purchase Orders receive stock).
+const expiringSoon=()=>{const cutoff=new Date(Date.now()+7*86400000).toLocaleDateString('en-CA');return L('ing').filter(g=>g.expiry&&g.expiry<=cutoff&&g.qty>0)};
+const expiryBar=()=>{const l=expiringSoon();return l.length?h('div',{style:'background:#fff3cd;padding:8px'},'⏳ Expiring within 7 days: '+l.map(g=>g.name+' ('+g.expiry+')').join(', ')):null};
+
+// ---- Suppliers: a light vendor directory so a Purchase Order has
+// someone to send to, instead of the free-text vendor field
+// purchaseIng() already used. Doesn't replace that quick-purchase
+// flow (a walk-in market buy still doesn't need a formal PO) -- this
+// is specifically for the plan-ahead "raise an order, receive it
+// later" workflow below. ----
+function supplierModal(s){s=s||{};const nm=h('input',{value:s.name||'',placeholder:'Supplier name'}),ph=h('input',{value:s.phone||'',placeholder:'Phone'}),nt=h('input',{value:s.notes||'',placeholder:'Notes (optional)'});
+ const x=modal(h('h3',{},s.id?'Edit supplier':'New supplier'),nm,ph,nt,h('button',{class:'p',onclick:async()=>{if(!nm.value.trim())return alert('Name is needed.');await save('supplier',{...s,name:nm.value.trim(),phone:ph.value.trim(),notes:nt.value.trim()});x();render()}},'Save'),
+  s.id?h('button',{class:'warn',onclick:async()=>{await save('supplier',s,s.id,true);x();render()}},'Remove'):null)}
+
+// ---- Purchase Orders: draft -> sent -> received. Only the receive
+// step actually touches stock -- a sent PO is a paper trail of what
+// you asked for, not what you have yet. Receiving reuses the exact
+// same ing.qty/cost/purchases[] update purchaseIng() does per line, so
+// a received PO shows up in Stock movement/reorder forecasts exactly
+// like any other purchase. FIFO (oldest stock consumed first) would
+// need each receipt to become its own tracked lot rather than folding
+// into one running ing.qty -- real gap, not attempted here; expiry
+// above is a simpler, honest substitute (a warning, not a consumption
+// order).
+function poModal(){const supNames=L('supplier').map(s=>s.name);
+ const sup=h('input',{list:'suplist',placeholder:'Supplier'}),supDl=h('datalist',{id:'suplist'},...supNames.map(n=>h('option',{value:n})));
+ let lines=[{ing:'',qty:''}];
+ const linesWrap=h('div',{});
+ const ingNames=L('ing').map(g=>g.name);
+ function renderLines(){linesWrap.replaceChildren(...lines.map((ln,idx)=>{
+  const ingInp=h('input',{list:'inglist',value:ln.ing,placeholder:'Ingredient',oninput:e=>ln.ing=e.target.value}),
+   qtyInp=h('input',{type:'number',value:ln.qty,placeholder:'Qty',style:'width:70px',oninput:e=>ln.qty=e.target.value});
+  return h('div',{class:'row'},ingInp,qtyInp,lines.length>1?h('button',{onclick:()=>{lines=lines.filter(x=>x!==ln);renderLines()}},'Remove'):null)}))}
+ renderLines();
+ const x=modal(h('h3',{},'New purchase order'),sup,supDl,h('datalist',{id:'inglist'},...ingNames.map(n=>h('option',{value:n}))),linesWrap,
+  h('button',{onclick:()=>{lines.push({ing:'',qty:''});renderLines()}},'Add line'),
+  h('button',{class:'p',onclick:async()=>{
+   const items=lines.filter(l=>l.ing.trim()&&+l.qty>0).map(l=>({ing:l.ing.trim(),qty:+l.qty}));
+   if(!items.length)return alert('Add at least one ingredient and quantity.');
+   await save('po',{supplier:sup.value.trim(),items,status:'draft',createdAt:now()});x();render()
+  }},'Save as draft'))}
+function receivePO(po){const rows=po.items.map(it=>({it,qv:h('input',{type:'number',value:it.qty,placeholder:'Qty received',style:'width:80px'}),pr:h('input',{type:'number',placeholder:'Price/unit',style:'width:90px'})}));
+ const x=modal(h('h3',{},'Receive PO — '+(po.supplier||'')),...rows.map(({it,qv,pr})=>h('div',{class:'row'},it.ing,qv,pr)),
+  h('button',{class:'p',onclick:async()=>{
+   for(const{it,qv,pr}of rows){
+    const qtyv=+qv.value,price=+pr.value;if(!(qtyv>0))continue;
+    let g=L('ing').find(x=>x.name.toLowerCase()==it.ing.toLowerCase());
+    const c=g?structuredClone(g):{name:it.ing,unit:'',qty:0,low:0};
+    c.qty=r2((c.qty||0)+qtyv);if(price>=0)c.cost=price;
+    c.purchases=(c.purchases||[]).concat({vendor:po.supplier||'',qty:qtyv,price:price||0,tax:0,amt:r2(qtyv*(price||0)),d:today(),at:now()});
+    await save('ing',c,g?g.id:undefined);
+   }
+   await save('po',{...po,status:'received',receivedAt:now()},po.id);x();render()
+  }},'Confirm receipt'))}
 // Reorder forecast (spec 8.1): velocity from the usage log dedu() now
 // keeps (last 14 days), days-left at that rate, and a suggested 7-day
 // reorder quantity. Ingredients with no usage history yet (nothing
@@ -819,13 +888,40 @@ function reorderRows(){const cutoff=new Date(Date.now()-14*86400000).toLocaleDat
   const span=recent.length?Math.max(1,Math.min(14,Math.round((Date.now()-new Date(recent[0].d))/86400000)+1)):0;
   const vel=recent.length?r2(recent.reduce((a,u)=>a+u.q,0)/span):0,daysLeft=vel>0?Math.floor(g.qty/vel):null;
   return{g,vel,daysLeft,suggest:vel>0?Math.ceil(vel*7):null}}).filter(r=>r.g.qty<=r.g.low||(r.daysLeft!=null&&r.daysLeft<=7))}
+function foodCostRows(){
+ const rows=L('item').filter(i=>i.rec).map(i=>{
+  const cost=r2(i.rec.split(',').reduce((a,p)=>{
+   const parts=p.split(':'),n=parts[0],qn=+parts[1],g=L('ing').find(x=>x.name.toLowerCase()==n.trim().toLowerCase());
+   return a+(g?(g.cost||0)*qn:0);
+  },0));
+  const margin=r2(i.price-cost),marginPct=i.price?Math.round((i.price-cost)/i.price*100):null;
+  return{i,cost,margin,marginPct};
+ });
+ if(!rows.length)return[h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No items with a recipe yet.')];
+ const head=h('tr',{},h('th',{},'Item'),h('th',{},'Recipe cost'),h('th',{},'Price'),h('th',{},'Margin'));
+ const body=rows.map(({i,cost,margin,marginPct})=>{
+  const marginTxt=inr(margin)+(marginPct!=null?' ('+marginPct+'%)':'');
+  return h('tr',{},h('td',{},i.name),h('td',{},inr(cost)),h('td',{},inr(i.price)),h('td',{},marginTxt));
+ });
+ return[h('table',{},head,...body)];
+}
 function ingInv(){const nm=h('input',{placeholder:'Ingredient'}),un=h('input',{placeholder:'unit'}),q=h('input',{type:'number',placeholder:'Stock'}),lo=h('input',{type:'number',placeholder:'Low at'}),
  sf=S.stkFrom||today(),st=S.stkTo||today(),inRange=d=>d&&d>=sf&&d<=st,
  stockRows=L('ing').map(g=>({g,purch:r2((g.purchases||[]).filter(p=>inRange(p.d)).reduce((a,p)=>a+p.qty,0)),purchAmt:r2((g.purchases||[]).filter(p=>inRange(p.d)).reduce((a,p)=>a+p.amt,0)),waste:r2(L('waste').filter(w=>w.ing==g.name&&inRange(w.d)).reduce((a,w)=>a+w.q,0))})),
  reorder=reorderRows();
 return h('div',{class:'g',style:'grid-template-columns:1fr'},
  reorder.length?h('div',{class:'card'},h('h3',{},'Reorder alerts ('+reorder.length+')'),...reorder.map(({g,vel,daysLeft,suggest})=>h('div',{class:'row',style:'color:var(--accent)'},g.name+' — '+g.qty+' '+g.unit+' on hand',daysLeft!=null?daysLeft+' days left at current use · reorder ~'+suggest+' '+g.unit:'below low-stock threshold'))):null,
- h('div',{class:'card'},h('h3',{},'Inventory (linked to item recipes in Menu)'),can('m')?h('div',{class:'row'},nm,un,q,lo,h('button',{class:'p',onclick:async()=>{if(!nm.value)return;await save('ing',{name:nm.value,unit:un.value,qty:+q.value||0,low:+lo.value||0});render()}},'Add')):null,...L('ing').map(g=>h('div',{class:'row',style:g.qty<=g.low?'color:var(--accent)':''},g.name+' '+g.qty+' '+g.unit+(g.qty<=g.low?' ⚠ low':''),can('m')?h('span',{},h('button',{class:'p',onclick:()=>purchaseIng(g)},'Purchase'),h('button',{onclick:async()=>{const v=+prompt('Adjust stock (+) or remove (−) -- for corrections, not purchases');if(v){g.qty=r2(g.qty+v);await save('ing',g,g.id)}render()}},'Adjust'),h('button',{onclick:async()=>{const v=+prompt('Wasted quantity');if(v>0){g.qty=r2(g.qty-v);await save('ing',g,g.id);await save('waste',{ing:g.name,q:v,d:today()})}render()}},'Waste')):null))),
+ h('div',{class:'card'},h('h3',{},'Inventory (linked to item recipes in Menu)'),can('m')?h('div',{class:'row'},nm,un,q,lo,h('button',{class:'p',onclick:async()=>{if(!nm.value)return;await save('ing',{name:nm.value,unit:un.value,qty:+q.value||0,low:+lo.value||0});render()}},'Add')):null,...L('ing').map(g=>h('div',{class:'row',style:g.qty<=g.low?'color:var(--accent)':''},g.name+' '+g.qty+' '+g.unit+(g.qty<=g.low?' ⚠ low':'')+(g.expiry?' · exp '+g.expiry:''),can('m')?h('span',{},h('button',{class:'p',onclick:()=>purchaseIng(g)},'Purchase'),h('button',{onclick:async()=>{const v=+prompt('Adjust stock (+) or remove (−) -- for corrections, not purchases');if(v){g.qty=r2(g.qty+v);await save('ing',g,g.id)}render()}},'Adjust'),h('button',{onclick:async()=>{const v=+prompt('Wasted quantity');if(v>0){g.qty=r2(g.qty-v);await save('ing',g,g.id);await save('waste',{ing:g.name,q:v,d:today()})}render()}},'Waste'),h('button',{onclick:()=>setExpiry(g)},'Expiry')):null))),
+ h('div',{class:'card'},h('h3',{},'Stock value & food cost'),
+  h('div',{class:'row'},'Inventory value on hand',h('b',{},inr(r2(L('ing').reduce((a,g)=>a+(g.qty||0)*(g.cost||0),0))))),
+  h('p',{style:'font-size:12px;color:var(--ink-dim);margin-top:8px'},'Recipe cost is what the last purchase price of each ingredient says it costs to make one -- not a formal FIFO/weighted-average cost.'),
+  ...foodCostRows()),
+ h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Suppliers'),can('m')?h('button',{class:'p',onclick:()=>supplierModal()},'Add supplier'):null),
+  ...L('supplier').map(s=>h('div',{class:'row'},s.name+(s.phone?' · '+s.phone:''),can('m')?h('button',{onclick:()=>supplierModal(s)},'Edit'):null)),
+  L('supplier').length?null:h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No suppliers yet -- add one to raise a purchase order against.')),
+ h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Purchase orders'),can('m')?h('button',{class:'p',onclick:()=>poModal()},'New PO'):null),
+  ...L('po').sort((a,b)=>b.createdAt>a.createdAt?1:-1).map(po=>h('div',{class:'row'},(po.supplier||'No supplier')+' · '+po.items.map(it=>it.qty+' '+it.ing).join(', ')+' · ['+po.status+']',h('span',{},can('m')&&po.status=='draft'?h('button',{class:'p',onclick:()=>save('po',{...po,status:'sent',sentAt:now()},po.id).then(render)},'Send'):null,can('m')&&po.status=='sent'?h('button',{class:'p',onclick:()=>receivePO(po)},'Receive'):null))),
+  L('po').length?null:h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No purchase orders yet.')),
  h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Stock movement'),h('span',{},h('input',{type:'date',value:sf,onchange:e=>{S.stkFrom=e.target.value;render()}}),' to ',h('input',{type:'date',value:st,onchange:e=>{S.stkTo=e.target.value;render()}}))),
   h('p',{style:'font-size:12px;color:var(--ink-dim)'},'Purchased and wasted quantities in this range, alongside the current stock on hand.'),
   h('table',{},h('tr',{},h('th',{},'Ingredient'),h('th',{},'Purchased'),h('th',{},'Purchase cost'),h('th',{},'Wasted'),h('th',{},'On hand')),...stockRows.map(({g,purch,purchAmt,waste})=>h('tr',{},h('td',{},g.name),h('td',{},purch+' '+g.unit),h('td',{},inr(purchAmt)),h('td',{},waste+' '+g.unit),h('td',{},g.qty+' '+g.unit)))),
@@ -947,7 +1043,7 @@ function render(){if(S.authExpired||!S.user)return login('Your session ended. Pl
    h('span',{id:'net'}),
    h('span',{class:'bell-wrap'},h('button',{id:'notifBell',onclick:()=>location.href='https://auzslab.in/account.html#notifications'},'🔔'),h('span',{id:'notifCount'}))
   ),
-  ...[guestBar(),readyBar(),dispatchedBar(),lowBar()].filter(Boolean),
+  ...[guestBar(),readyBar(),dispatchedBar(),lowBar(),expiryBar()].filter(Boolean),
   V[S.tab](),
   h('div',{class:'powered'},'Powered by ',h('a',{href:'https://auzslab.in',target:'_blank',rel:'noopener'},'AUZslab'))
  );renderDrawer(T);setNote();refreshNotifCount()}

@@ -214,7 +214,15 @@ let M=null,tb=null;
  // item the staff already consider back on sale (the exact "gate one
  // surface, miss another" bug 018_enforce_self_order_feature.sql fixed
  // for the self-order toggle itself).
- const itemOff=i=>!!i.off&&(!i.offUntil||new Date(i.offUntil)>new Date());
+ // Mirrors index.html's own itemOff() -- see db/028_inventory_purchasing.sql's
+ // public_menu() comment for why 'ings' only ever carries name+qty here,
+ // never cost/purchases/vendor (this is served to anonymous customers).
+ const ings=M&&M.ings||[];
+ const itemOff=i=>{
+  if(i.off&&(!i.offUntil||new Date(i.offUntil)>new Date()))return true;
+  if(!i.rec)return false;
+  return i.rec.split(',').some(p=>{const n=p.split(':')[0],g=ings.find(x=>x.name.toLowerCase()==n.trim().toLowerCase());return g&&g.qty<=0});
+ };
  const cats=(M&&M.cats||[]).slice().sort((a,b)=>a.n-b.n),items=(M&&M.items||[]).filter(i=>!itemOff(i));
  const tabsEl=document.getElementById('menuTabs'),gridEl=document.getElementById('menuGrid');
  let active=cats[0]&&cats[0].id;
