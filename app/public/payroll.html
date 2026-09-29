@@ -86,13 +86,18 @@ button.ditem.on{color:var(--accent);font-weight:700;background:var(--bg-raised)}
 .dchip b{font-size:17px}
 .dchip span{font-size:10px;opacity:.8}
 .empty-state{text-align:center;padding:40px 20px}
-.empty-state .ic-lg{width:70px;height:70px;border-radius:99px;background:#eaf1ff;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;color:#2f6fed}
+.empty-state .ic-lg{position:relative;width:70px;height:70px;border-radius:99px;background:#eaf1ff;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;color:#2f6fed}
+.empty-state .ic-lg::before{content:'';position:absolute;inset:-11px;border:1.5px dashed rgba(47,111,237,.35);border-radius:999px;animation:spin 16s linear infinite}
+.empty-state .ic-lg::after{content:'';position:absolute;top:-3px;right:0px;width:7px;height:7px;border-radius:999px;background:var(--accent);opacity:.55}
 .empty-state h3{margin-bottom:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+.card,.empty-state{animation:fadeUp .32s var(--ease) both}
 .leave-row{border-left:4px solid var(--l)}
 .leave-row.approved{border-color:#1f6b3a}
 .leave-row.pending{border-color:#c9860a}
 .leave-row.declined{border-color:var(--accent)}
-@media(prefers-reduced-motion:reduce){.md,.ov,.drawer-ov,.drawer{animation:none}}
+@media(prefers-reduced-motion:reduce){.md,.ov,.drawer-ov,.drawer,.card,.empty-state,.empty-state .ic-lg::before{animation:none}}
 </style>
 </head><body>
 <div id=app></div>
