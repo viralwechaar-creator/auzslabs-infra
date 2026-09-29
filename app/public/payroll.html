@@ -31,7 +31,7 @@ h1,h2,h3{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,sys
 label{display:grid;gap:4px;font-size:12.5px;color:var(--ink-dim)}
 .note{font-size:12.5px;color:var(--ink-faint);line-height:1.6}
 .ic svg{width:20px;height:20px;display:block}
-.emp-app{padding-bottom:86px}
+.emp-app{padding-bottom:98px}
 .emp-top{display:flex;align-items:center;gap:12px;padding:16px 16px 10px}
 .emp-top h1{font-size:18px}
 .ic-btn{width:40px;height:40px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm);flex:none;border:none;color:var(--ink-dim)}
@@ -48,9 +48,12 @@ label{display:grid;gap:4px;font-size:12.5px;color:var(--ink-dim)}
 .swipe{position:relative;background:#3b7bf0;color:#fff;border-radius:999px;height:54px;display:flex;align-items:center;justify-content:center;font-weight:700;overflow:hidden;touch-action:none;user-select:none}
 .swipe .thumb{position:absolute;left:4px;top:4px;bottom:4px;width:46px;background:#fff;color:#3b7bf0;border-radius:999px;display:flex;align-items:center;justify-content:center}
 .swipe.busy{opacity:.65}
-.bottom-nav{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:space-around;background:#fff;box-shadow:0 -6px 24px rgba(23,23,23,.1);padding:8px 4px calc(6px + env(safe-area-inset-bottom));z-index:16}
-.bottom-nav button{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--ink-faint);background:none;padding:6px 12px;border-radius:12px;flex:1}
-.bottom-nav button.on{color:#2f6fed}
+.bottom-nav{position:fixed;left:0;right:0;bottom:0;background:#fff;box-shadow:0 -6px 24px rgba(23,23,23,.1);padding:8px 4px calc(2px + env(safe-area-inset-bottom));z-index:16}
+.bottom-nav-row{display:flex;justify-content:space-around}
+.bottom-nav-row button{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--ink-faint);background:none;padding:6px 12px;border-radius:12px;flex:1}
+.bottom-nav-row button.on{color:#2f6fed}
+.bottom-nav-brand{text-align:center;font-size:9.5px;color:var(--ink-faint);padding-top:3px;font-family:'Space Mono',monospace}
+.bottom-nav-brand a{color:var(--ink-faint)}
 .drawer-ov{position:fixed;inset:0;background:rgba(23,23,23,.4);z-index:30;display:flex;animation:ovIn .2s var(--ease)}
 .drawer{width:78%;max-width:300px;background:#fff;height:100%;overflow:auto;animation:drawerIn .22s var(--ease);display:grid;gap:2px;padding:16px 0;align-content:start}
 @keyframes drawerIn{from{transform:translateX(-100%)}to{transform:translateX(0)}}
@@ -345,8 +348,10 @@ function empNotif(){
   h('div',{class:'empty-state'},h('div',{class:'ic-lg'},icon('megaphone')),h('h3',{},'No Announcement Yet'),h('p',{class:'note'},"When your HR or admin team shares an update, it'll show up right here.")));
 }
 function bottomNav(){
- return h('div',{class:'bottom-nav'},...[['calendar','calendar','Calendar'],['leave','leave','Leave'],['home','home','Home'],['payslip','receipt','Payslip'],['notif','bell','Alerts']]
-  .map(([k,ic,label])=>h('button',{class:S.empTab==k?'on':'',onclick:()=>{S.empTab=k;render()}},icon(ic),label)));
+ return h('div',{class:'bottom-nav'},
+  h('div',{class:'bottom-nav-row'},...[['calendar','calendar','Calendar'],['leave','leave','Leave'],['home','home','Home'],['payslip','receipt','Payslip'],['notif','bell','Alerts']]
+   .map(([k,ic,label])=>h('button',{class:S.empTab==k?'on':'',onclick:()=>{S.empTab=k;render()}},icon(ic),label))),
+  h('div',{class:'bottom-nav-brand'},'Powered by ',h('a',{href:'https://auzslab.in',target:'_blank',rel:'noopener'},'AUZslab')));
 }
 function empApp(){
  const emp=myEmployee();
