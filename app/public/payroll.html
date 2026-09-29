@@ -27,7 +27,7 @@ h1,h2,h3{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,sys
 .badge.late{background:#fdf0d5;color:#8a5a00}.badge.half{background:#e6ecfd;color:#2a4bb0}
 .badge.leave{background:#eee;color:var(--ink-dim)}.badge.missing{background:#fde2e2;color:var(--accent)}
 .pill{padding:2px 9px;border-radius:999px;font-size:11px;background:var(--bg-raised);color:var(--ink-dim)}
-.powered{text-align:center;font-size:11px;color:var(--ink-faint);padding:14px}
+.powered{position:fixed;left:0;right:0;bottom:0;z-index:8;background:var(--bg-raised);text-align:center;font-size:11px;color:var(--ink-faint);padding:10px 14px calc(10px + env(safe-area-inset-bottom))}
 label{display:grid;gap:4px;font-size:12.5px;color:var(--ink-dim)}
 .note{font-size:12.5px;color:var(--ink-faint);line-height:1.6}
 .ic svg{width:20px;height:20px;display:block}
