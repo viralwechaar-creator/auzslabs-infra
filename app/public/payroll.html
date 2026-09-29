@@ -1,4 +1,5 @@
-<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>AUZslab Payroll</title><link rel=icon href=/logo.png><meta name=theme-color content=#171717>
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><title>AUZslab Payroll</title><link rel=icon href=/logo.png><meta name=theme-color content=#171717>
+<meta name=apple-mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-status-bar-style content=black-translucent><meta name=apple-mobile-web-app-title content=Payroll>
 <link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel=stylesheet>
 <style>
@@ -12,14 +13,16 @@ button:disabled{opacity:.4;background:none}
 input,select,textarea{font:inherit;padding:10px 15px;border:1.5px solid var(--l);border-radius:var(--radius-sm);background:#fff;color:inherit;transition:border-color .15s var(--ease)}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 h1,h2,h3{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif;margin:0}
-.top-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:14px 16px;background:rgba(222,222,222,.85);backdrop-filter:saturate(180%) blur(16px)}
+.top-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:calc(14px + env(safe-area-inset-top)) 16px 14px;background:rgba(222,222,222,.85);backdrop-filter:saturate(180%) blur(16px)}
 .top-bar h1{font-size:18px;flex:1}
 .g{display:grid;gap:14px;padding:0 16px 90px}
 .card{background:#fff;border-radius:var(--radius-md);padding:16px;box-shadow:var(--shadow-sm)}
 .row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--l)}
 .row:last-child{border-bottom:none}
 .md{background:#fff;border-radius:var(--radius-lg);padding:22px;max-width:420px;width:100%;min-width:0;max-height:88vh;overflow:auto;box-shadow:var(--shadow-md);display:grid;gap:10px;animation:sheetIn .28s var(--ease)}
+.md input[type=file]{width:100%;max-width:100%;font-size:13px}
 .ov{position:fixed;inset:0;background:rgba(23,23,23,.35);z-index:20;display:flex;align-items:center;justify-content:center;padding:16px;animation:ovIn .2s var(--ease)}
+@media(max-width:380px){.md{padding:16px;gap:8px}}
 @keyframes ovIn{from{opacity:0}to{opacity:1}}
 @keyframes sheetIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
 .badge{display:inline-flex;padding:3px 10px;border-radius:999px;font-family:'Space Mono',monospace;font-size:10.5px;text-transform:uppercase;background:var(--bg-raised)}
@@ -47,14 +50,11 @@ label{display:grid;gap:4px;font-size:12.5px;color:var(--ink-dim)}
 .punch-card .stat{display:flex;align-items:center;gap:10px;padding:10px 0 0;margin-top:10px;border-top:1px solid rgba(255,255,255,.2);font-size:13px}
 .tap-btn{position:relative;background:var(--accent);color:#fff;border-radius:999px;height:54px;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:700;font-size:15px;user-select:none;transition:transform .12s var(--ease)}
 .tap-btn:active{transform:scale(.97)}
-.tap-btn .ic{width:30px;height:30px;border-radius:999px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex:none}
 .tap-btn.busy{opacity:.65}
 .bottom-nav{position:fixed;left:14px;right:14px;bottom:calc(10px + env(safe-area-inset-bottom));background:var(--ink);border-radius:999px;box-shadow:var(--shadow-md);padding:8px;z-index:16}
 .bottom-nav-row{display:flex;justify-content:space-around;gap:2px}
 .bottom-nav-row button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;color:rgba(255,255,255,.5);background:none;padding:8px 4px;border-radius:999px;flex:1;transition:background .15s var(--ease),color .15s var(--ease)}
 .bottom-nav-row button.on{color:#fff;background:var(--accent)}
-.bottom-nav-brand{text-align:center;font-size:9px;color:rgba(255,255,255,.35);padding-top:4px;font-family:'Space Mono',monospace}
-.bottom-nav-brand a{color:rgba(255,255,255,.55)}
 .drawer-ov{position:fixed;inset:0;background:rgba(23,23,23,.4);z-index:30;display:flex;animation:ovIn .2s var(--ease)}
 .drawer{width:78%;max-width:300px;background:#fff;height:100%;overflow:auto;animation:drawerIn .22s var(--ease);display:grid;gap:2px;padding:16px 0;align-content:start;border-radius:0 26px 26px 0;box-shadow:var(--shadow-md)}
 @keyframes drawerIn{from{transform:translateX(-100%)}to{transform:translateX(0)}}
@@ -65,6 +65,9 @@ button.ditem.on{color:var(--accent);font-weight:700;background:var(--bg-raised)}
 .seg{display:flex;background:var(--bg-raised);border-radius:999px;padding:3px;gap:2px}
 .seg button{padding:6px 10px;border-radius:999px;font-size:12px}
 .seg button.on{background:#fff;color:var(--ink);box-shadow:var(--shadow-sm)}
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.stat-card{text-align:center;padding:16px 8px}
+.stat-val{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif;font-size:26px;font-weight:800;color:var(--ink)}
 .cal-nav{display:flex;align-items:center;justify-content:space-between;padding:6px 16px 4px}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:10px 16px 0}
 .cal-dow{text-align:center;font-size:11px;color:var(--ink-faint);padding-bottom:2px}
@@ -312,7 +315,6 @@ function loanSheet(emp,outstanding){
  h('button',{onclick:()=>x()},'Close'))}
 function swipeBtn(emp,openRow){
  return h('div',{class:'tap-btn',onclick:async e=>{const t=e.currentTarget;if(t.classList.contains('busy'))return;t.classList.add('busy');await doPunch(emp)}},
-  h('span',{class:'ic'},icon('arrowR')),
   openRow?'Tap to punch out':'Tap to punch in');
 }
 function empHome(emp){
@@ -408,8 +410,7 @@ function empNotif(){
 function bottomNav(){
  return h('div',{class:'bottom-nav'},
   h('div',{class:'bottom-nav-row'},...[['calendar','calendar','Calendar'],['leave','leave','Leave'],['home','home','Home'],['payslip','receipt','Payslip'],['notif','bell','Alerts']]
-   .map(([k,ic,label])=>h('button',{class:S.empTab==k?'on':'',onclick:()=>{S.empTab=k;render()}},icon(ic),label))),
-  h('div',{class:'bottom-nav-brand'},'Powered by ',h('a',{href:'https://auzslab.in',target:'_blank',rel:'noopener'},'AUZslab')));
+   .map(([k,ic,label])=>h('button',{class:S.empTab==k?'on':'',onclick:()=>{S.empTab=k;render()}},icon(ic),label))));
 }
 function empApp(){
  const emp=myEmployee();
@@ -496,6 +497,47 @@ function employeeProfile(e){
    h('button',{class:'p',style:'flex:1',onclick:()=>{x();employeeModal(e)}},'Edit details'),
    h('button',{class:'warn',onclick:async()=>{if(!confirm('Remove this employee?'))return;await save('hr_employee',e,e.id,true);x();render()}},'Remove')))
 }
+V.attendance=()=>{
+ const ds=today(),emps=L('hr_employee').filter(e=>e.active!==false),shifts=L('hr_shift');
+ const tm=iso=>iso?new Date(iso).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'—';
+ const attFor=id=>L('hr_attendance').find(a=>a.empId==id&&a.date==ds);
+ const onLeaveToday=id=>L('hr_leave').some(l=>l.empId==id&&l.status=='approved'&&ds>=l.from&&ds<=l.to);
+ const statusOf=e=>{const a=attFor(e.id);if(a&&a.in)return a.out?'done':'working';if(onLeaveToday(e.id))return 'leave';return 'absent'};
+ const working=emps.filter(e=>statusOf(e)=='working').length;
+ const onLeaveN=emps.filter(e=>onLeaveToday(e.id)).length;
+ const pending=L('hr_leave').filter(l=>l.status=='pending').length+L('hr_regularization').filter(r=>r.status=='pending').length;
+ const statCard=(label,val)=>h('div',{class:'card stat-card'},h('div',{class:'stat-val'},val),h('div',{class:'note'},label));
+ const shiftTab=S.attShift&&shifts.some(sh=>sh.id==S.attShift)?S.attShift:'all';
+ const shiftEmps=shiftTab=='all'?emps:emps.filter(e=>e.shiftId==shiftTab);
+ const statusLabel={working:'Present',done:'Present',leave:'On leave',absent:'Absent'};
+ const statusPillStyle=st=>st=='absent'?'background:rgba(128,0,32,.1);color:var(--accent)':st=='leave'?'background:var(--bg-raised);color:var(--ink-dim)':'background:rgba(46,125,50,.12);color:#2e7d32';
+ const presentN=shiftEmps.filter(e=>{const st=statusOf(e);return st=='working'||st=='done'}).length;
+ const absentN=shiftEmps.filter(e=>statusOf(e)=='absent').length;
+ const leaveN=shiftEmps.filter(e=>statusOf(e)=='leave').length;
+ const shiftName=id=>{const s=shifts.find(x=>x.id==id);return s?s.name:'—'};
+ return h('div',{class:'g'},
+  h('div',{class:'stat-grid'},
+   statCard('Total employees',emps.length),
+   statCard('Currently working',working),
+   statCard('On leave today',onLeaveN),
+   statCard('Pending requests',pending)),
+  h('div',{class:'card'},
+   h('div',{class:'row'},h('h3',{},'Today’s attendance'),h('span',{class:'note'},new Date(ds).toLocaleDateString([],{weekday:'short',day:'numeric',month:'short'}))),
+   shifts.length?h('div',{class:'seg',style:'margin:8px 0;flex-wrap:wrap'},
+    h('button',{class:shiftTab=='all'?'on':'',onclick:()=>{S.attShift='all';render()}},'All'),
+    ...shifts.map(sh=>h('button',{class:shiftTab==sh.id?'on':'',onclick:()=>{S.attShift=sh.id;render()}},sh.name))):null,
+   h('div',{style:'display:flex;gap:8px;margin:6px 0 10px;flex-wrap:wrap'},
+    h('span',{class:'pill',style:statusPillStyle('working')},presentN+' Present'),
+    h('span',{class:'pill',style:statusPillStyle('absent')},absentN+' Absent'),
+    h('span',{class:'pill',style:statusPillStyle('leave')},leaveN+' On leave')),
+   shiftEmps.length?null:h('p',{class:'note'},'No employees in this shift.'),
+   ...shiftEmps.sort((a,b)=>a.name.localeCompare(b.name)).map(e=>{
+    const a=attFor(e.id),st=statusOf(e);
+    return h('div',{class:'row',style:'cursor:pointer',onclick:()=>employeeProfile(e)},
+     h('span',{},h('b',{},e.name),h('br'),h('span',{class:'note'},(e.shiftId?shiftName(e.shiftId)+' · ':'')+(a?'In '+tm(a.in)+(a.out?' · Out '+tm(a.out):''):'No punch yet'))),
+     h('span',{class:'pill',style:statusPillStyle(st)},statusLabel[st]));
+   })));
+};
 V.employees=()=>{const emps=L('hr_employee').sort((a,b)=>a.name.localeCompare(b.name));
  const ym=today().slice(0,7),activeCount=emps.filter(e=>e.active!==false).length,totalHoursMonth=r2(emps.reduce((s,e)=>s+hoursForMonth(e.id,ym),0));
  return h('div',{class:'g'},
@@ -634,7 +676,7 @@ function render(){
  const hr=isHR();
  if(!hr){$('#app').replaceChildren(empApp());return}
  if(S._tick){clearInterval(S._tick);S._tick=null}
- const tabs=[['employees','Employees'],['shifts','Shifts'],['holidays','Holidays'],['leave','Leave'],['run','Payroll run'],['reports','Reports'],['settings','Settings']];
+ const tabs=[['attendance','Attendance'],['employees','Employees'],['shifts','Shifts'],['holidays','Holidays'],['leave','Leave'],['run','Payroll run'],['reports','Reports'],['settings','Settings']];
  if(!tabs.some(([k])=>k==S.tab))S.tab=tabs[0][0];
  $('#app').replaceChildren(
   h('div',{class:'top-bar'},
