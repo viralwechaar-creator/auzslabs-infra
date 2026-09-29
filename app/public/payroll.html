@@ -53,7 +53,7 @@ const h=(t,a={},...k)=>{const e=document.createElement(t);for(const x in a){cons
 const L=k=>Object.values(R).filter(r=>r.kind==k&&!r.deleted).map(r=>r.data);
 const idb=new Promise(r=>{const q=indexedDB.open('hr1',1);q.onupgradeneeded=()=>['rec','out','meta'].forEach(s=>q.result.createObjectStore(s,{keyPath:s=='meta'?'k':'id'}));q.onsuccess=()=>r(q.result)});
 const tx=async(s,m,f)=>{const d=await idb;return new Promise((res,rej)=>{const t=d.transaction(s,m),q=f(t.objectStore(s));t.oncomplete=()=>res(q.result);t.onerror=()=>rej(t.error)})};
-const all=s=>tx(s,'readonly',o=>o.getAll()),get=(s,k)=>tx(s,'readonly',o=>o.get(k)),put=(s,v)=>tx(s,'readwrite',o=>o.put(v)),del=(s,k)=>tx(s,'readwrite',o=>o.delete(k));
+const all=s=>tx(s,'readonly',o=>o.getAll()),get=(s,k)=>tx(s,'readonly',o=>o.get(k)),put=(s,v)=>tx(s,'readwrite',o=>o.put(v)),del=(s,k)=>tx(s,'readwrite',o=>o.delete(k)),clr=s=>tx(s,'readwrite',o=>o.clear());
 async function save(kind,data,id=data.id||uid(),deleted=false){data.id=id;const base=(R[id]&&R[id].srv)||null,r={id,kind,data,deleted,updated_at:now(),srv:(R[id]&&R[id].srv)};R[id]=r;await put('rec',r);await put('out',{id,kind,data,deleted,updated_at:r.updated_at,base});sync();return r}
 async function doSync(){if(busy||!navigator.onLine||!S.user)return;busy=1;
  try{
@@ -291,8 +291,14 @@ function login(msg){const e=h('input',{type:'email',placeholder:'Email'}),p=h('i
  $('#app').replaceChildren(h('div',{class:'md'},h('h2',{},'Payroll sign in'),h('p',{class:'note'},'Same login as your AUZslab account.'),e,p,m,
   h('button',{class:'p',onclick:async()=>{const{error}=await sb.auth.signInWithPassword({email:e.value.trim(),password:p.value});error?m.textContent=error.message:boot()}},'Sign in')))}
 async function boot(){
- (await all('rec')).forEach(r=>R[r.id]=r);
  let c=JSON.parse(localStorage.hru||'null'),ses=null;try{ses=(await sb.auth.getSession()).data.session}catch{}
+ // Same cross-tenant cache leak as index.html's boot() -- see its own
+ // comment. This app has its own separate IndexedDB store ('hr1') but
+ // the same flat, tenant-unaware shape, so switching between two
+ // tenants' Payroll logins on one device needs the same guard.
+ const uid=ses?ses.user.id:(c&&c.id);
+ if(uid){const meta=await get('meta','lastUser');if(meta&&meta.v&&meta.v!==uid){await clr('rec');await clr('out');await del('meta','since')}await put('meta',{k:'lastUser',v:uid})}
+ (await all('rec')).forEach(r=>R[r.id]=r);
  if(ses){S.user=ses.user;try{const{data}=await sb.from('profiles').select('role').eq('id',ses.user.id).single();if(data)localStorage.hru=JSON.stringify(c={id:ses.user.id,role:data.role})}catch{}}else if(c)S.user={id:c.id};
  if(!S.user)return login();
  S.role=(c&&c.role)||'cashier';

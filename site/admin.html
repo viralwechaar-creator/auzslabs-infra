@@ -54,14 +54,37 @@
 }
 .ok-box b{word-break:break-word}
 /* admin section nav, reusing the marketing site's sidebar/drawer shell
-   (same CSS, same hamburger/drawer JS in site.js) so this stays visually
-   and behaviorally consistent instead of a bespoke nav component */
-.admin-nav-btn{
-  background:none;border:none;width:100%;cursor:pointer;font-family:inherit;
-  text-align:right;padding:13px 4px;
-}
+   (same JS in site.js) for the drawer mechanics, but not its boxy
+   look -- see the iOS-menu block below. */
+.admin-nav-btn{background:none;border:none;width:100%;cursor:pointer;font-family:inherit}
 .admin-section{display:none}
 .admin-section.active{display:block}
+
+/* ---- iOS-style menu: this dashboard's own nav, deliberately not the
+   marketing site's thick-ink-border/doodle language used everywhere
+   else -- a frosted grouped list instead of a boxy bordered stack,
+   per an explicit "too boxy, make it iOS style, premium and minimal"
+   request. Scoped to this page's own <style> tag only, so nothing
+   about the shared .sidebar/.nav-link classes changes on any
+   marketing page that reuses them. Same treatment as account.html's
+   own copy of this block, kept in sync by hand since each page's
+   <style> is self-contained (no shared partial file for it). ---- */
+#sidebarDrawer{background:rgba(20,20,22,.78);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%)}
+.ios-menu{gap:22px;margin-top:8px}
+.ios-menu-group{display:flex;flex-direction:column;gap:1px;background:rgba(255,255,255,.06);border-radius:16px;overflow:hidden}
+.ios-menu .nav-link{
+  font-family:'Inter',sans-serif;font-weight:600;font-size:15px;letter-spacing:0;
+  display:flex;align-items:center;gap:12px;text-align:left;
+  padding:13px 14px;border-bottom:none;border-radius:0;
+  color:rgba(255,255,255,.68);background:none;
+  transition:background .15s ease,color .15s ease;
+}
+.ios-menu .nav-link:hover{color:#fff;background:rgba(255,255,255,.06);transform:none}
+.ios-menu .nav-link.active{color:#fff;background:var(--accent);box-shadow:none;padding-right:14px}
+.ios-menu-icon{flex-shrink:0;opacity:.85}
+.ios-menu .nav-link span:not(.ios-menu-icon){flex:1}
+.ios-menu .nav-link span[id^="notifBadge"]{flex:none;font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,.55)}
+.ios-menu .nav-link.active span[id^="notifBadge"]{color:rgba(255,255,255,.85)}
 </style>
 </head>
 <body>
@@ -81,12 +104,17 @@
     <button class="drawer-close" id="drawerClose" aria-label="Close menu">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
     </button>
-    <nav class="sidebar-nav" id="adminNav" aria-label="Admin sections" style="display:none">
-      <button class="nav-link admin-nav-btn active" data-section="leads">Leads <span id="notifBadgeLeads"></span></button>
-      <button class="nav-link admin-nav-btn" data-section="signupRequests">Signup requests <span id="notifBadgeSignup"></span></button>
-      <button class="nav-link admin-nav-btn" data-section="clients">Clients</button>
-      <button class="nav-link admin-nav-btn" data-section="onboard">Onboard new</button>
-      <a href="design-system/nav-kit.html" target="_blank" rel="noopener" class="nav-link">UI Kit &#8599;</a>
+    <nav class="sidebar-nav ios-menu" id="adminNav" aria-label="Admin sections" style="display:none">
+      <div class="ios-menu-group">
+        <button class="nav-link admin-nav-btn active" data-section="leads"><svg class="ios-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v12H8l-4 4Z"/></svg><span>Leads</span><span id="notifBadgeLeads"></span></button>
+        <button class="nav-link admin-nav-btn" data-section="signupRequests"><svg class="ios-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="6" width="16" height="14" rx="2"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span>Signup requests</span><span id="notifBadgeSignup"></span></button>
+        <button class="nav-link admin-nav-btn" data-section="addonRequests"><svg class="ios-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg><span>Add-on requests</span><span id="notifBadgeAddon"></span></button>
+        <button class="nav-link admin-nav-btn" data-section="clients"><svg class="ios-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20v-1a6.5 6.5 0 0 1 13 0v1"/><path d="M16.5 5a3.2 3.2 0 0 1 0 6.2M21 20v-1a5.6 5.6 0 0 0-4-5.4"/></svg><span>Clients</span></button>
+        <button class="nav-link admin-nav-btn" data-section="onboard"><svg class="ios-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg><span>Onboard new</span></button>
+      </div>
+      <div class="ios-menu-group">
+        <a href="design-system/nav-kit.html" target="_blank" rel="noopener" class="nav-link"><svg class="ios-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>UI Kit</span></a>
+      </div>
     </nav>
     <div class="sidebar-foot">
       <button class="btn btn-ghost" id="signOutBtn" style="width:100%;justify-content:center;display:none">Sign out</button>
@@ -143,6 +171,17 @@
         <div class="label">Self-serve signups</div>
         <h2 class="h-2">Cart requests</h2>
         <div id="signupRequestsList">Loading&hellip;</div>
+      </section>
+
+      <!-- An EXISTING client asking to add a product to their live
+           subscription (db/027_addon_requests.sql) -- deliberately
+           separate from signup requests above, since approving one
+           never provisions a tenant, only merges a key into one that
+           already exists. -->
+      <section class="section tight admin-section" id="addonRequestsSection">
+        <div class="label">Existing clients</div>
+        <h2 class="h-2">Add-on requests</h2>
+        <div id="addonRequestsList">Loading&hellip;</div>
       </section>
 
       <section class="section tight admin-section" id="clientsSection">
@@ -281,6 +320,7 @@ document.querySelectorAll('.admin-nav-btn').forEach((btn) => {
     if (toggle) toggle.classList.remove('is-open');
     if (btn.dataset.section === 'leads') markAdminNotifsRead('lead');
     if (btn.dataset.section === 'signupRequests') markAdminNotifsRead('signup_request');
+    if (btn.dataset.section === 'addonRequests') markAdminNotifsRead('addon_request');
   };
 });
 
@@ -294,8 +334,10 @@ async function refreshAdminNotifBadges() {
   (data || []).forEach((n) => { counts[n.type] = (counts[n.type] || 0) + 1; });
   const leadsBadge = document.getElementById('notifBadgeLeads');
   const signupBadge = document.getElementById('notifBadgeSignup');
+  const addonBadge = document.getElementById('notifBadgeAddon');
   if (leadsBadge) leadsBadge.textContent = counts.lead ? ' (' + counts.lead + ')' : '';
   if (signupBadge) signupBadge.textContent = counts.signup_request ? ' (' + counts.signup_request + ')' : '';
+  if (addonBadge) addonBadge.textContent = counts.addon_request ? ' (' + counts.addon_request + ')' : '';
 }
 async function markAdminNotifsRead(type) {
   const { data } = await sb.from('notifications').select('id').eq('read', false).eq('type', type);
@@ -328,6 +370,7 @@ async function checkSession() {
   document.getElementById('leadsSection').classList.add('active');
   loadLeads();
   loadSignupRequests();
+  loadAddonRequests();
   loadClients(clients);
   refreshAdminNotifBadges();
   setInterval(refreshAdminNotifBadges, 20000);
@@ -452,6 +495,50 @@ async function loadSignupRequests() {
       const { error: decErr } = await sb.rpc('decline_signup_request', { p_request_id: id });
       if (decErr) { alert(decErr.message); return; }
       loadSignupRequests();
+    };
+  });
+}
+
+async function loadAddonRequests() {
+  const listEl = document.getElementById('addonRequestsList');
+  const { data, error } = await sb.from('addon_requests').select('*').order('created_at');
+  if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  const pending = (data || []).filter((r) => r.status === 'pending');
+  if (!pending.length) { listEl.innerHTML = emptyDoodle('No pending add-on requests.'); return; }
+
+  const rows = pending.slice().reverse().map((r) => {
+    const services = Object.entries(r.features || {}).filter(([, on]) => on)
+      .map(([k]) => `<span class="feature-tag">${esc(FEATURE_LABEL[k] || k)}</span>`).join('') || '&mdash;';
+    return `
+    <tr data-id="${r.id}">
+      <td><b>${esc(r.tenant_name)}</b><br><span style="color:var(--ink-faint)">${esc(r.tenant_slug)}.auzslab.in</span></td>
+      <td>${services}</td>
+      <td>${r.notes ? esc(r.notes) : '&mdash;'}</td>
+      <td class="row-actions">
+        <button class="btn btn-primary" data-approve>Approve</button>
+        <button class="btn btn-ghost" data-decline>Decline</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  listEl.innerHTML = `<div class="admin-table-wrap"><table class="admin-table">
+    <tr><th>Client</th><th>Requested</th><th>Notes</th><th></th></tr>
+    ${rows}
+  </table></div>`;
+
+  listEl.querySelectorAll('tr[data-id]').forEach((tr) => {
+    const id = tr.dataset.id;
+    tr.querySelector('[data-approve]').onclick = async () => {
+      const { error: appErr } = await sb.rpc('approve_addon_request', { p_request_id: id });
+      if (appErr) { alert(appErr.message); return; }
+      loadAddonRequests();
+      loadClients();
+    };
+    tr.querySelector('[data-decline]').onclick = async () => {
+      if (!confirm('Decline this request?')) return;
+      const { error: decErr } = await sb.rpc('decline_addon_request', { p_request_id: id });
+      if (decErr) { alert(decErr.message); return; }
+      loadAddonRequests();
     };
   });
 }

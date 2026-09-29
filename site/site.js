@@ -29,6 +29,33 @@
     clear: function () { writeCart([]); },
   };
 
+  // ---- account: is the current visitor already an existing,
+  // subscribed client (not just any logged-in auth user -- a fresh
+  // signup with no tenant yet is still "no account" for this check)?
+  // Bug this exists to fix: products.html and the 6 per-product pages
+  // showed "Add to cart" for a service a signed-in client already has,
+  // and cart.html had no way to submit an add-on request against an
+  // EXISTING tenant at all -- only a brand-new-business signup. Each
+  // page calls this once with its own `sb` client (site.js loads
+  // before window.CFG is set, so it can't build one itself) and reuses
+  // the same in-flight promise if called more than once. ----
+  var dashPromise = null;
+  window.AUZaccount = {
+    fetch: function (sb) {
+      if (dashPromise) return dashPromise;
+      dashPromise = (async function () {
+        try {
+          var s = await sb.auth.getSession();
+          if (!s.data.session) return null;
+          var r = await sb.rpc('my_dashboard');
+          if (r.error || !r.data) return null;
+          return r.data; // { tenant, features, enabled_features, my_role, my_email }
+        } catch (e) { return null; }
+      })();
+      return dashPromise;
+    },
+  };
+
   // ---- page transition: a circle expands out from whatever link was
   // tapped, then the destination page starts fully covered and shrinks
   // the same circle away -- sessionStorage carries the origin point

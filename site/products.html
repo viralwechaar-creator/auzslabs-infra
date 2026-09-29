@@ -393,21 +393,34 @@
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script>
 (function () {
+  var sb = supabase.createClient(CFG.url, CFG.key);
+  var cards = [];
   document.querySelectorAll('[data-product]').forEach(function (card) {
     var key = card.dataset.product;
     var btn = card.querySelector('[data-cart-btn]');
     if (!btn) return;
+    var entry = { key: key, btn: btn, owned: false };
     function refresh() {
+      if (entry.owned) { btn.textContent = 'Already included ✓'; btn.disabled = true; return; }
+      btn.disabled = false;
       btn.textContent = AUZcart.has(key) ? 'Added ✓ — remove' : 'Add to cart';
     }
-    btn.addEventListener('click', function () { AUZcart.toggle(key); refresh(); refreshCount(); });
+    entry.refresh = refresh;
+    btn.addEventListener('click', function () { if (entry.owned) return; AUZcart.toggle(key); refresh(); refreshCount(); });
     refresh();
+    cards.push(entry);
   });
   function refreshCount() {
     var n = AUZcart.get().length;
     document.querySelectorAll('.cart-count').forEach(function (el) { el.textContent = n ? '(' + n + ')' : ''; });
   }
   refreshCount();
+  AUZaccount.fetch(sb).then(function (dash) {
+    if (!dash || !dash.features) return;
+    cards.forEach(function (entry) {
+      if (dash.features[entry.key] === true) { entry.owned = true; entry.refresh(); }
+    });
+  });
 })();
 </script>
 </body>
