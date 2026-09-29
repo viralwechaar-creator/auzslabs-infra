@@ -75,6 +75,7 @@ button.ditem.on{color:var(--accent);font-weight:700;background:var(--bg-raised)}
 .cal-cell.st-leave{background:#ece5fb;color:#5b3ea6}
 .cal-cell.st-half,.cal-cell.st-late{background:#fdf0d5;color:#8a5a00}
 .cal-cell.st-missing{background:#fde2e2;color:var(--accent)}
+.cal-cell.st-holiday{background:#d6ede9;color:#00695c}
 .cal-cell.st-future{background:none;color:var(--ink-faint);font-weight:500}
 .cal-cell.today{outline:2px solid var(--ink);outline-offset:-2px}
 .cal-cell .fl{font-size:8px}
@@ -222,8 +223,9 @@ function openDrawer(emp){
   h('div',{class:'dhead'},h('h3',{},'Menu'),h('button',{class:'ic-btn',onclick:()=>close()},icon('x'))),
   h('button',{class:'ditem',onclick:()=>{close();shiftsSheet(sh,days,onLeave)}},icon('clock'),'Upcoming shifts'),
   h('button',{class:'ditem',onclick:()=>{close();documentsSheet(emp)}},icon('doc'),'My documents'),
-  h('button',{class:'ditem',onclick:()=>{close();loanSheet(outstanding)}},icon('wallet'),'Loan & advance'),
-  h('button',{class:'ditem',onclick:()=>{close();comingSoonSheet('sun','Holidays list',"A company holiday calendar isn't set up here yet.")}},icon('sun'),'Holidays list',h('span',{class:'soon'},'SOON')),
+  h('button',{class:'ditem',onclick:()=>{close();loanSheet(emp,outstanding)}},icon('wallet'),'Loan & advance'),
+  h('button',{class:'ditem',onclick:()=>{close();holidaysSheet()}},icon('sun'),'Holidays list'),
+  h('button',{class:'ditem',onclick:()=>{close();profileModal(emp)}},icon('doc'),'My profile'),
   h('button',{class:'ditem warn',onclick:async()=>{await sb.auth.signOut();localStorage.removeItem('hru');location.reload()}},icon('signout'),'Logout')
  );
  return close;
@@ -235,6 +237,23 @@ function shiftsSheet(sh,days,onLeave){const x=modal(h('h3',{},'Upcoming shifts')
 function comingSoonSheet(ic,title,body){const x=modal(
  h('div',{class:'empty-state'},h('div',{class:'ic-lg'},icon(ic)),h('h3',{},title),h('p',{class:'note'},body)),
  h('button',{onclick:()=>x()},'Close'))}
+function holidaysSheet(){const hols=L('hr_holiday').filter(hd=>hd.date>=today()).sort((a,b)=>a.date>b.date?1:-1);
+ const x=modal(h('h3',{},'Upcoming holidays'),
+  hols.length?null:h('div',{class:'empty-state'},h('div',{class:'ic-lg'},icon('sun')),h('h3',{},'No holidays listed'),h('p',{class:'note'},"Your admin hasn't added any company holidays yet.")),
+  ...hols.map(hd=>h('div',{class:'row'},new Date(hd.date+'T00:00').toLocaleDateString('en-US',{weekday:'short',day:'numeric',month:'long'}),h('b',{},hd.name))),
+  h('button',{onclick:()=>x()},'Close'))}
+function profileModal(emp){
+ const prof=L('hr_profile').find(p=>p.empId==emp.id)||{};
+ const isAdmin=isHR();
+ const ec=h('input',{value:prof.emergencyContact||'',placeholder:'Name'}),ep=h('input',{value:prof.emergencyPhone||'',placeholder:'Phone'}),
+  bn=h('input',{value:prof.bankName||'',placeholder:'Bank name'}),ba=h('input',{value:prof.bankAccountNo||'',placeholder:'Account number'}),bi=h('input',{value:prof.bankIFSC||'',placeholder:'IFSC code'});
+ const x=modal(h('h3',{},isAdmin?emp.name+"'s profile":'My profile'),
+  h('div',{class:'note'},'Emergency contact'),h('label',{},'Name',ec),h('label',{},'Phone',ep),
+  h('div',{class:'note',style:'margin-top:6px'},'Bank details (for salary transfer reference)'),h('label',{},'Bank name',bn),h('label',{},'Account number',ba),h('label',{},'IFSC',bi),
+  h('button',{class:'p',onclick:async()=>{
+   await save('hr_profile',{empId:emp.id,emergencyContact:ec.value.trim(),emergencyPhone:ep.value.trim(),bankName:bn.value.trim(),bankAccountNo:ba.value.trim(),bankIFSC:bi.value.trim().toUpperCase()},prof.id);
+   x();render()}},'Save'),
+  h('button',{onclick:()=>x()},'Close'))}
 const DOC_TYPES={aadhar:'Aadhar',pan:'PAN',driving_licence:'Driving licence',other:'Other'};
 async function uploadDoc(emp,docType,file){
  const buf=await file.arrayBuffer();
@@ -277,9 +296,19 @@ function documentsSheet(emp){
  };
  paint();
 }
-function loanSheet(outstanding){const x=modal(h('h3',{},'Loan & advance'),
+function loanSheet(emp,outstanding){
+ const mine=L('hr_advance').filter(a=>a.empId==emp.id).sort((a,b)=>b.at>a.at?1:-1);
+ const amt=h('input',{type:'number',placeholder:'Amount'}),reason=h('input',{placeholder:'Reason (optional)'});
+ const x=modal(h('h3',{},'Loan & advance'),
  h('div',{class:'card',style:'text-align:center;box-shadow:none;background:var(--bg-raised)'},h('p',{class:'note'},'Outstanding balance'),h('h2',{},inr(outstanding))),
- h('p',{class:'note'},"This is deducted from your payslip automatically each month, if your admin has recorded any advances for you. Requesting a new one from here is coming soon -- ask your admin for now."),
+ h('p',{class:'note'},'Deducted from your payslip automatically each month until repaid.'),
+ h('div',{class:'note'},'Request a new advance'),amt,reason,
+ h('button',{class:'p',onclick:async()=>{
+  const n=+amt.value;if(!n||n<=0)return alert('Enter an amount.');
+  await save('hr_advance',{empId:emp.id,amount:n,note:reason.value.trim(),status:'requested',at:now()});
+  x();render()}},'Send request'),
+ mine.length?h('h3',{style:'margin-top:10px'},'History'):null,
+ ...mine.map(a=>h('div',{class:'row'},new Date(a.at).toLocaleDateString()+(a.note?' · '+a.note:''),h('span',{},h('b',{},inr(a.amount)),h('span',{class:'pill'},a.status||'approved')))),
  h('button',{onclick:()=>x()},'Close'))}
 function swipeBtn(emp,openRow){
  return h('div',{class:'tap-btn',onclick:async e=>{const t=e.currentTarget;if(t.classList.contains('busy'))return;t.classList.add('busy');await doPunch(emp)}},
@@ -310,7 +339,7 @@ function empHome(emp){
     sh?h('div',{class:'stat'},h('span',{},icon('clock')),h('span',{},'Shift timing'),h('b',{style:'margin-left:auto'},sh.start+' – '+sh.end)):h('div',{class:'stat'},h('span',{},'No shift assigned yet'))),
    isToday?swipeBtn(emp,openRow):null,
    h('div',{},h('h3',{style:'margin:4px 2px 10px'},"Activity"),
-    dayRow?h('div',{class:'list-row'},h('span',{class:'dchip',style:'background:#dff3e6;color:#1f6b3a'},icon('arrowR')),h('span',{style:'flex:1'},'Punch in'),h('b',{},new Date(dayRow.in).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}))):h('p',{class:'note'},'No punches on this day.'),
+    dayRow?h('div',{class:'list-row'},h('span',{class:'dchip',style:'background:#dff3e6;color:#1f6b3a'},icon('arrowR')),h('span',{style:'flex:1'},'Punch in'+(dayRow.outOfRange?' · outside worksite':'')),h('b',{},new Date(dayRow.in).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}))):h('p',{class:'note'},'No punches on this day.'),
     dayRow&&dayRow.out?h('div',{class:'list-row'},h('span',{class:'dchip',style:'background:#fde2e2;color:var(--accent)'},icon('arrowR')),h('span',{style:'flex:1'},'Punch out'),h('b',{},new Date(dayRow.out).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}))):null)));
 }
 function empCalendar(emp){
@@ -318,14 +347,15 @@ function empCalendar(emp){
  const first=new Date(y,m-1,1),daysInMonth=new Date(y,m,0).getDate(),startDow=first.getDay();
  const onLeaveDate=ds=>L('hr_leave').find(l=>l.empId==emp.id&&l.status=='approved'&&ds>=l.from&&ds<=l.to);
  const rowFor=ds=>L('hr_attendance').find(a=>a.empId==emp.id&&a.date==ds);
- const statusForDate=ds=>{if(ds>today())return 'future';if(onLeaveDate(ds))return 'leave';const row=rowFor(ds);if(!row)return 'absent';return statusFor(row,emp)};
+ const isHoliday=ds=>L('hr_holiday').some(hd=>hd.date==ds);
+ const statusForDate=ds=>{if(isHoliday(ds))return 'holiday';if(ds>today())return 'future';if(onLeaveDate(ds))return 'leave';const row=rowFor(ds);if(!row)return 'absent';return statusFor(row,emp)};
  const header=h('div',{class:'emp-top'},h('h1',{style:'flex:1'},'Calendar'),
   h('div',{class:'seg'},h('button',{class:view=='month'?'on':'',onclick:()=>{S.calView='month';render()}},icon('calendar')),h('button',{class:view=='list'?'on':'',onclick:()=>{S.calView='list';render()}},icon('doc'))));
  const nav=h('div',{class:'cal-nav'},
   h('button',{class:'ic-btn',onclick:()=>{const d=new Date(y,m-2,1);S.calMonth=d.toLocaleDateString('en-CA').slice(0,7);render()}},icon('chevL')),
   h('b',{},first.toLocaleDateString('en-US',{month:'long',year:'numeric'})),
   h('button',{class:'ic-btn',onclick:()=>{const d=new Date(y,m,1);S.calMonth=d.toLocaleDateString('en-CA').slice(0,7);render()}},icon('chevR')));
- const legend=h('div',{class:'legend'},...[['Today','var(--ink)'],['Present','#1f6b3a'],['Absent','#800020'],['On leave','#5b3ea6'],['Half day','#8a5a00'],['Missed punch','#800020']].map(([l,c])=>h('span',{class:'lg'},h('span',{class:'dot',style:'background:'+c}),l)));
+ const legend=h('div',{class:'legend'},...[['Today','var(--ink)'],['Present','#1f6b3a'],['Absent','#800020'],['On leave','#5b3ea6'],['Half day','#8a5a00'],['Missed punch','#800020'],['Holiday','#00695c']].map(([l,c])=>h('span',{class:'lg'},h('span',{class:'dot',style:'background:'+c}),l)));
  const fixable=st=>st=='absent'||st=='missing'||st=='late';
  if(view=='month'){
   const cells=[];
@@ -339,10 +369,10 @@ function empCalendar(emp){
  const rows=[];
  for(let d=1;d<=daysInMonth;d++){const ds=ym+'-'+String(d).padStart(2,'0');if(ds>today())continue;rows.push({ds,st:statusForDate(ds),d:new Date(ds+'T00:00')})}
  const filt=S.calFilter,shown=filt?rows.filter(r=>r.st==filt):rows;
- const STCOL={present:['#dff3e6','#1f6b3a'],absent:['#fde2e2','#800020'],leave:['#ece5fb','#5b3ea6'],half:['#fdf0d5','#8a5a00'],late:['#fdf0d5','#8a5a00'],missing:['#fde2e2','#800020']};
+ const STCOL={present:['#dff3e6','#1f6b3a'],absent:['#fde2e2','#800020'],leave:['#ece5fb','#5b3ea6'],half:['#fdf0d5','#8a5a00'],late:['#fdf0d5','#8a5a00'],missing:['#fde2e2','#800020'],holiday:['#d6ede9','#00695c']};
  return h('div',{class:'emp-app'},header,
   h('div',{style:'display:flex;justify-content:space-between;align-items:center;padding:8px 16px'},h('b',{},'All days'),
-   h('select',{onchange:e=>{S.calFilter=e.target.value||null;render()}},h('option',{value:''},'All'),...['present','absent','leave','half','late','missing'].map(s=>h('option',{value:s,selected:filt==s},s[0].toUpperCase()+s.slice(1))))),
+   h('select',{onchange:e=>{S.calFilter=e.target.value||null;render()}},h('option',{value:''},'All'),...['present','absent','leave','half','late','missing','holiday'].map(s=>h('option',{value:s,selected:filt==s},s[0].toUpperCase()+s.slice(1))))),
   h('div',{class:'g',style:'padding-top:0'},
    ...shown.slice().reverse().map(r=>{const[bg,fg]=STCOL[r.st]||['#eee','var(--ink-dim)'];
     return h('div',{class:'list-row',style:fixable(r.st)?'cursor:pointer':'',onclick:fixable(r.st)?()=>regularizationModal(emp,r.ds):null},
@@ -365,7 +395,7 @@ function empPayslip(emp){
  return h('div',{class:'emp-app'},
   h('div',{class:'emp-top'},h('h1',{style:'flex:1'},'Payslips')),
   h('div',{class:'g',style:'padding-top:4px'},
-   slips.length?null:h('div',{class:'empty-state'},h('div',{class:'ic-lg'},icon('receipt')),h('h3',{},'No payslips yet'),h('p',{class:'note'},'Once your admin runs payroll for a month, it will show up here.')),
+   slips.length?h('p',{class:'note'},'Tap a payslip to open it, then use your browser\'s Print → Save as PDF to download it.'):h('div',{class:'empty-state'},h('div',{class:'ic-lg'},icon('receipt')),h('h3',{},'No payslips yet'),h('p',{class:'note'},'Once your admin runs payroll for a month, it will show up here.')),
    ...slips.map(p=>h('div',{class:'list-row',onclick:()=>printPayslip(p,emp),style:'cursor:pointer'},h('span',{class:'dchip',style:'background:var(--bg-raised);color:var(--ink-dim)'},icon('receipt')),h('span',{style:'flex:1'},h('b',{},p.month),h('br'),h('span',{class:'note'},'Net '+inr(p.net))),icon('chevR')))));
 }
 function empNotif(){
@@ -431,10 +461,10 @@ function advanceModal(e){
   h('button',{class:'p',onclick:async()=>{
    const n=+amt.value;
    if(!n||n<=0)return alert('Enter an amount.');
-   await save('hr_advance',{empId:e.id,amount:n,note:note.value.trim(),at:now(),by:S.user.email||S.user.id});
+   await save('hr_advance',{empId:e.id,amount:n,note:note.value.trim(),status:'approved',at:now(),by:S.user.email||S.user.id});
    x();employeeProfile(e)}},'Record'),
   past.length?h('h3',{style:'margin-top:10px'},'History'):null,
-  ...past.map(a=>h('div',{class:'row'},new Date(a.at).toLocaleDateString()+(a.note?' · '+a.note:''),h('b',{},inr(a.amount)))),
+  ...past.map(a=>h('div',{class:'row'},new Date(a.at).toLocaleDateString()+(a.note?' · '+a.note:''),h('span',{},h('b',{},inr(a.amount)),a.status=='requested'?h('span',{class:'pill'},'requested'):a.status=='declined'?h('span',{class:'pill'},'declined'):null))),
   h('button',{onclick:()=>{x();employeeProfile(e)}},'Back'))}
 function employeeProfile(e){
  const sh=shiftFor(e),ss=e.salaryStructure||{},ym=today().slice(0,7);
@@ -452,10 +482,14 @@ function employeeProfile(e){
   h('div',{class:'row'},h('span',{},'HRA + allowances'),h('b',{},inr((ss.hra||0)+(ss.allowances||0)))),
   h('div',{class:'row'},h('span',{},'Overtime rate'),h('b',{},inr(ss.otRate||0)+'/hr')),
   h('div',{class:'row'},h('span',{},'Loan/advance outstanding'),h('span',{},h('b',{},inr(outstanding)),h('button',{onclick:()=>{x();advanceModal(e)}},'Record advance'))),
+  h('div',{class:'row'},h('span',{},'Worksite location'),h('span',{},h('b',{},e.siteLoc?'Set ('+(e.siteRadius||200)+'m radius)':'Not set'),h('button',{onclick:async()=>{const loc=await getLoc();if(!loc)return alert('Could not get your current location.');await save('hr_employee',{...e,siteLoc:loc,siteRadius:e.siteRadius||200},e.id);x();employeeProfile({...e,siteLoc:loc})}},'Use my location'))),
   h('h3',{style:'margin-top:14px'},'Recent attendance'),
   recent.length?null:h('p',{class:'note'},'No punches yet.'),
-  ...recent.map(a=>h('div',{class:'row'},a.date,h('span',{class:'badge '+statusFor(a,e)},statusFor(a,e)))),
-  h('div',{class:'card',style:'margin-top:14px;box-shadow:none;background:var(--bg-raised);cursor:pointer',onclick:()=>documentsSheet(e)},
+  ...recent.map(a=>h('div',{class:'row'},a.date+(a.outOfRange?' ⚠️':''),h('span',{class:'badge '+statusFor(a,e)},statusFor(a,e)))),
+  h('div',{class:'card',style:'margin-top:14px;box-shadow:none;background:var(--bg-raised);cursor:pointer',onclick:()=>{x();profileModal(e)}},
+   h('div',{class:'row'},h('span',{},icon('doc'),' Profile'),h('span',{class:'note'},'Emergency contact & bank')),
+   h('p',{class:'note'},"Tap to view or edit this employee's emergency contact and bank details.")),
+  h('div',{class:'card',style:'margin-top:8px;box-shadow:none;background:var(--bg-raised);cursor:pointer',onclick:()=>documentsSheet(e)},
    h('div',{class:'row'},h('span',{},icon('doc'),' Documents'),h('span',{class:'note'},L('hr_document').filter(d=>d.empId==e.id).length+' on file')),
    h('p',{class:'note'},'Tap to view or upload ID/PAN/driving-licence scans.')),
   h('div',{style:'display:flex;gap:10px;margin-top:10px'},
@@ -488,6 +522,15 @@ V.shifts=()=>{const shifts=L('hr_shift');
  return h('div',{class:'g'},h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Shifts'),h('button',{class:'p',onclick:()=>shiftModal()},'Add shift')),
   shifts.length?null:h('p',{class:'note'},'No shifts defined yet -- attendance still records punches without one, just without late/overtime detection.'),
   ...shifts.map(s=>h('div',{class:'row'},s.name+' · '+s.start+'–'+s.end+(s.overnight?' (overnight)':''),h('button',{onclick:()=>shiftModal(s)},'Edit')))))};
+function holidayModal(h_){h_=h_||{};const dt=h('input',{type:'date',value:h_.date||today()}),nm=h('input',{value:h_.name||'',placeholder:'e.g. Diwali'});
+ const x=modal(h('h3',{},h_.id?'Edit holiday':'New holiday'),h('label',{},'Date',dt),h('label',{},'Name',nm),
+  h('button',{class:'p',onclick:async()=>{if(!nm.value.trim())return alert('Name is needed.');await save('hr_holiday',{...h_,date:dt.value,name:nm.value.trim()});x();render()}},'Save'),
+  h_.id?h('button',{class:'warn',onclick:async()=>{await save('hr_holiday',h_,h_.id,true);x();render()}},'Remove'):null)}
+V.holidays=()=>{const hols=L('hr_holiday').sort((a,b)=>a.date>b.date?1:-1);
+ return h('div',{class:'g'},h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Company holidays'),h('button',{class:'p',onclick:()=>holidayModal()},'Add holiday')),
+  h('p',{class:'note'},'Shown on every employee\'s calendar, and counted as a paid day off (not absent) in payroll.'),
+  hols.length?null:h('p',{class:'note'},'No holidays added yet.'),
+  ...hols.map(h_=>h('div',{class:'row'},new Date(h_.date+'T00:00').toLocaleDateString('en-US',{weekday:'short',day:'numeric',month:'long',year:'numeric'})+' · '+h_.name,h('button',{onclick:()=>holidayModal(h_)},'Edit')))))};
 
 async function approveRegularization(r){
  const existing=L('hr_attendance').find(a=>a.empId==r.empId&&a.date==r.date);
@@ -496,6 +539,7 @@ async function approveRegularization(r){
 }
 V.leave=()=>{const pending=L('hr_leave').filter(l=>l.status=='pending'),all_=L('hr_leave').sort((a,b)=>b.at>a.at?1:-1);
  const pendingReg=L('hr_regularization').filter(r=>r.status=='pending');
+ const pendingAdv=L('hr_advance').filter(a=>a.status=='requested');
  const empName=id=>{const e=L('hr_employee').find(x=>x.id==id);return e?e.name:'—'};
  const tm=iso=>iso?new Date(iso).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
  return h('div',{class:'g'},
@@ -507,36 +551,41 @@ V.leave=()=>{const pending=L('hr_leave').filter(l=>l.status=='pending'),all_=L('
    ...pendingReg.map(r=>h('div',{class:'row'},empName(r.empId)+' · '+r.date+' · in '+tm(r.proposedIn)+(r.proposedOut?' – out '+tm(r.proposedOut):'')+(r.reason?' — '+r.reason:''),
     h('span',{},h('button',{class:'p',onclick:async()=>{await approveRegularization(r);render()}},'Approve'),
      h('button',{class:'warn',onclick:async()=>{await save('hr_regularization',{...r,status:'declined'},r.id);render()}},'Decline'))))),
+  h('div',{class:'card'},h('h3',{},'Advance requests ('+pendingAdv.length+')'),pendingAdv.length?null:h('p',{class:'note'},'Nothing waiting.'),
+   ...pendingAdv.map(a=>h('div',{class:'row'},empName(a.empId)+' · '+inr(a.amount)+(a.note?' — '+a.note:''),
+    h('span',{},h('button',{class:'p',onclick:async()=>{await save('hr_advance',{...a,status:'approved',approvedBy:S.user.email||S.user.id},a.id);render()}},'Approve'),
+     h('button',{class:'warn',onclick:async()=>{await save('hr_advance',{...a,status:'declined'},a.id);render()}},'Decline'))))),
   h('div',{class:'card'},h('h3',{},'Leave history'),...all_.slice(0,30).map(l=>h('div',{class:'row'},empName(l.empId)+' · '+l.from+(l.to!=l.from?' → '+l.to:''),h('span',{class:'pill'},l.status)))));
 };
 
-function advanceOutstanding(empId){return r2(L('hr_advance').filter(a=>a.empId==empId).reduce((s,a)=>s+a.amount,0)-L('hr_payslip').filter(p=>p.empId==empId).reduce((s,p)=>s+(p.advanceDeduction||0),0))}
+function advanceOutstanding(empId){return r2(L('hr_advance').filter(a=>a.empId==empId&&a.status!='requested'&&a.status!='declined').reduce((s,a)=>s+a.amount,0)-L('hr_payslip').filter(p=>p.empId==empId).reduce((s,p)=>s+(p.advanceDeduction||0),0))}
 
 function runPayroll(emp,ym){
  const[y,m]=ym.split('-').map(Number),mStart=new Date(y,m-1,1),mEnd=new Date(y,m,1),days=(mEnd-mStart)/86400000;
  const att=L('hr_attendance').filter(a=>a.empId==emp.id&&a.date>=ym+'-01'&&a.date<ym+'-32');
- let present=0,absent=0,half=0,leave=0,ot=0;
+ const holidays=new Set(L('hr_holiday').filter(hd=>hd.date>=ym+'-01'&&hd.date<ym+'-32').map(hd=>hd.date));
+ let present=0,absent=0,half=0,leave=0,ot=0,holiday=0;
  for(let d=1;d<=days;d++){const ds=ym+'-'+String(d).padStart(2,'0'),row=att.find(a=>a.date==ds);
-  if(!row){absent++;continue}
+  if(!row){if(holidays.has(ds))holiday++;else absent++;continue}
   const st=statusFor(row,emp);
   if(st=='half')half++;else if(st=='leave')leave++;else present++;
   ot+=overtimeHours(row,emp);
  }
  const ss=emp.salaryStructure||{},perDay=r2((ss.basic||0)/days);
- const paidDays=present+half*0.5+leave;
+ const paidDays=present+half*0.5+leave+holiday;
  const basicPaid=r2(perDay*paidDays),otPay=r2(ot*(ss.otRate||0));
  const gross=r2(basicPaid+(ss.hra||0)+(ss.allowances||0)+otPay);
  const rates=hrSettings();
  const pf=r2(gross*(rates.pf||0)/100),esic=r2(gross*(rates.esic||0)/100),pt=rates.pt||0,tds=r2(gross*(rates.tds||0)/100);
  const outstanding=advanceOutstanding(emp.id),advanceDeduction=Math.min(outstanding,gross);
  const net=r2(gross-pf-esic-pt-tds-advanceDeduction);
- return{present,absent,half,leave,ot,basicPaid,hra:ss.hra||0,allowances:ss.allowances||0,otPay,gross,pf,esic,pt,tds,advanceDeduction,net};
+ return{present,absent,half,leave,holiday,ot,basicPaid,hra:ss.hra||0,allowances:ss.allowances||0,otPay,gross,pf,esic,pt,tds,advanceDeduction,net};
 }
 function printPayslip(p,emp){const w=window.open('','_blank');
  w.document.write(`<style>body{font-family:Inter,sans-serif;max-width:480px;margin:40px auto;color:#171717}h2{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif}table{width:100%;border-collapse:collapse;margin-top:12px}td{padding:6px 0;border-bottom:1px solid #eee}td:last-child{text-align:right}.tot{font-weight:700;border-top:2px solid #171717}</style>
  <h2>${(hrSettings().companyName)||'AUZslab'} — Payslip</h2><p>${emp.name} · ${p.month}</p>
  <table>
- <tr><td>Present days</td><td>${p.present}</td></tr><tr><td>Half days</td><td>${p.half}</td></tr><tr><td>Absent</td><td>${p.absent}</td></tr><tr><td>Overtime hours</td><td>${p.ot}</td></tr>
+ <tr><td>Present days</td><td>${p.present}</td></tr><tr><td>Half days</td><td>${p.half}</td></tr><tr><td>Holidays (paid)</td><td>${p.holiday||0}</td></tr><tr><td>Absent</td><td>${p.absent}</td></tr><tr><td>Overtime hours</td><td>${p.ot}</td></tr>
  <tr><td>Basic (attendance-adjusted)</td><td>${inr(p.basicPaid)}</td></tr><tr><td>HRA</td><td>${inr(p.hra)}</td></tr><tr><td>Allowances</td><td>${inr(p.allowances)}</td></tr><tr><td>Overtime pay</td><td>${inr(p.otPay)}</td></tr>
  <tr><td><b>Gross</b></td><td><b>${inr(p.gross)}</b></td></tr>
  <tr><td>PF</td><td>-${inr(p.pf)}</td></tr><tr><td>ESIC</td><td>-${inr(p.esic)}</td></tr><tr><td>Professional tax</td><td>-${inr(p.pt)}</td></tr><tr><td>TDS</td><td>-${inr(p.tds)}</td></tr><tr><td>Advance deduction</td><td>-${inr(p.advanceDeduction)}</td></tr>
@@ -585,7 +634,7 @@ function render(){
  const hr=isHR();
  if(!hr){$('#app').replaceChildren(empApp());return}
  if(S._tick){clearInterval(S._tick);S._tick=null}
- const tabs=[['employees','Employees'],['shifts','Shifts'],['leave','Leave'],['run','Payroll run'],['reports','Reports'],['settings','Settings']];
+ const tabs=[['employees','Employees'],['shifts','Shifts'],['holidays','Holidays'],['leave','Leave'],['run','Payroll run'],['reports','Reports'],['settings','Settings']];
  if(!tabs.some(([k])=>k==S.tab))S.tab=tabs[0][0];
  $('#app').replaceChildren(
   h('div',{class:'top-bar'},
