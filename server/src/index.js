@@ -79,6 +79,8 @@ const RPC = {
 
   // --- Admin: reset a client's forgotten password ---
   admin_reset_client_password: { params: ['p_tenant_id'], auth: true },
+  delete_client: { params: ['p_tenant_id'], auth: true },
+  admin_system_stats: { params: [], auth: true },
 
   // --- Client dashboard: own account, staff, feature toggles ---
   my_dashboard: { params: [], auth: true },
@@ -90,6 +92,11 @@ const RPC = {
 
   // --- Notifications ---
   send_client_notification: { params: ['p_tenant_id', 'p_title', 'p_body'], auth: true },
+
+  // --- Add-on requests (existing client asking to add modules) ---
+  submit_addon_request: { params: ['p_features', 'p_notes'], jsonb: ['p_features'], auth: true },
+  approve_addon_request: { params: ['p_request_id'], auth: true },
+  decline_addon_request: { params: ['p_request_id'], auth: true },
 };
 
 class HttpError extends Error {
