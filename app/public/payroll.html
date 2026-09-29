@@ -197,7 +197,7 @@ function openDrawer(emp){
  const close=drawer(
   h('div',{class:'dhead'},h('h3',{},'Menu'),h('button',{class:'ic-btn',onclick:()=>close()},icon('x'))),
   h('button',{class:'ditem',onclick:()=>{close();shiftsSheet(sh,days,onLeave)}},icon('clock'),'Upcoming shifts'),
-  h('button',{class:'ditem',onclick:()=>{close();comingSoonSheet('doc','My documents',"Uploading ID, PAN or driving licence documents isn't wired up here yet -- ask your admin if you need to share one for now.")}},icon('doc'),'My documents',h('span',{class:'soon'},'SOON')),
+  h('button',{class:'ditem',onclick:()=>{close();documentsSheet(emp)}},icon('doc'),'My documents'),
   h('button',{class:'ditem',onclick:()=>{close();loanSheet(outstanding)}},icon('wallet'),'Loan & advance'),
   h('button',{class:'ditem',onclick:()=>{close();comingSoonSheet('sun','Holidays list',"A company holiday calendar isn't set up here yet.")}},icon('sun'),'Holidays list',h('span',{class:'soon'},'SOON')),
   h('button',{class:'ditem warn',onclick:async()=>{await sb.auth.signOut();localStorage.removeItem('hru');location.reload()}},icon('signout'),'Logout')
@@ -211,6 +211,48 @@ function shiftsSheet(sh,days,onLeave){const x=modal(h('h3',{},'Upcoming shifts')
 function comingSoonSheet(ic,title,body){const x=modal(
  h('div',{class:'empty-state'},h('div',{class:'ic-lg'},icon(ic)),h('h3',{},title),h('p',{class:'note'},body)),
  h('button',{onclick:()=>x()},'Close'))}
+const DOC_TYPES={aadhar:'Aadhar',pan:'PAN',driving_licence:'Driving licence',other:'Other'};
+async function uploadDoc(emp,docType,file){
+ const buf=await file.arrayBuffer();
+ const{data:{session}}=await sb.auth.getSession();
+ if(!session)throw new Error('Your session ended -- sign in again.');
+ const res=await fetch(C.url+'/storage/doc?empId='+encodeURIComponent(emp.id),{method:'POST',headers:{Authorization:'Bearer '+session.access_token},body:buf});
+ const body=await res.json().catch(()=>({}));
+ if(!res.ok)throw new Error(body.error||'Upload failed.');
+ await save('hr_document',{empId:emp.id,docType,path:body.path,contentType:body.contentType,uploadedAt:now()});
+}
+async function viewDoc(path){
+ const{data:{session}}=await sb.auth.getSession();
+ if(!session)return alert('Your session ended -- sign in again.');
+ const res=await fetch(C.url+'/storage/doc/'+path,{headers:{Authorization:'Bearer '+session.access_token}});
+ if(!res.ok)return alert('Could not load that document.');
+ window.open(URL.createObjectURL(await res.blob()),'_blank');
+}
+function documentsSheet(emp){
+ const body=h('div',{style:'display:grid;gap:10px'});
+ const x=modal(body);
+ const paint=()=>{
+  const docs=L('hr_document').filter(d=>d.empId==emp.id).sort((a,b)=>b.uploadedAt>a.uploadedAt?1:-1);
+  const ty=h('select',{},...Object.entries(DOC_TYPES).map(([v,l])=>h('option',{value:v},l)));
+  const file=h('input',{type:'file',accept:'image/*,application/pdf'});
+  const err=h('div',{class:'note',style:'color:var(--accent)'});
+  body.replaceChildren(
+   h('div',{style:'display:flex;justify-content:space-between;align-items:center'},h('h3',{},'Documents'),h('button',{onclick:()=>x()},icon('x'))),
+   h('p',{class:'note'},'JPEG, PNG or PDF. Only this employee and your admins can view these.'),
+   ty,file,err,
+   h('button',{class:'p',onclick:async()=>{
+    if(!file.files[0]){err.textContent='Choose a file first.';return}
+    err.textContent='Uploading…';
+    try{await uploadDoc(emp,ty.value,file.files[0]);paint()}
+    catch(e){err.textContent=e.message}
+   }},'Upload'),
+   ...(docs.length?docs.map(d=>h('div',{class:'list-row',style:'cursor:pointer',onclick:()=>viewDoc(d.path)},
+     h('span',{class:'dchip',style:'background:var(--bg-raised);color:var(--ink-dim)'},icon('doc')),
+     h('span',{style:'flex:1'},h('b',{},DOC_TYPES[d.docType]||d.docType),h('br'),h('span',{class:'note'},new Date(d.uploadedAt).toLocaleDateString())),
+     icon('chevR'))):[h('p',{class:'note'},'No documents uploaded yet.')]));
+ };
+ paint();
+}
 function loanSheet(outstanding){const x=modal(h('h3',{},'Loan & advance'),
  h('div',{class:'card',style:'text-align:center;box-shadow:none;background:var(--bg-raised)'},h('p',{class:'note'},'Outstanding balance'),h('h2',{},inr(outstanding))),
  h('p',{class:'note'},"This is deducted from your payslip automatically each month, if your admin has recorded any advances for you. Requesting a new one from here is coming soon -- ask your admin for now."),
@@ -343,6 +385,20 @@ function employeeModal(e){e=e||{};
 function hoursBetween(empId,from,to){return r2(L('hr_attendance').filter(a=>a.empId==empId&&a.in&&a.out&&a.date>=from&&a.date<=to).reduce((s,a)=>s+(new Date(a.out)-new Date(a.in))/3600000,0))}
 function hoursForMonth(empId,ym){return hoursBetween(empId,ym+'-01',ym+'-32')}
 function hoursAllTime(empId){return hoursBetween(empId,'0000-01-01','9999-12-31')}
+function advanceModal(e){
+ const amt=h('input',{type:'number',placeholder:'Amount'}),note=h('input',{placeholder:'Reason (optional)'});
+ const past=L('hr_advance').filter(a=>a.empId==e.id).sort((a,b)=>b.at>a.at?1:-1);
+ const x=modal(h('h3',{},'Record advance for '+e.name),
+  h('p',{class:'note'},'Deducted automatically from their next payslip(s) until repaid.'),
+  amt,note,
+  h('button',{class:'p',onclick:async()=>{
+   const n=+amt.value;
+   if(!n||n<=0)return alert('Enter an amount.');
+   await save('hr_advance',{empId:e.id,amount:n,note:note.value.trim(),at:now(),by:S.user.email||S.user.id});
+   x();employeeProfile(e)}},'Record'),
+  past.length?h('h3',{style:'margin-top:10px'},'History'):null,
+  ...past.map(a=>h('div',{class:'row'},new Date(a.at).toLocaleDateString()+(a.note?' · '+a.note:''),h('b',{},inr(a.amount)))),
+  h('button',{onclick:()=>{x();employeeProfile(e)}},'Back'))}
 function employeeProfile(e){
  const sh=shiftFor(e),ss=e.salaryStructure||{},ym=today().slice(0,7);
  const mHours=hoursForMonth(e.id,ym),allHours=hoursAllTime(e.id),outstanding=advanceOutstanding(e.id);
@@ -358,13 +414,13 @@ function employeeProfile(e){
   h('div',{class:'row'},h('span',{},'Basic salary/month'),h('b',{},inr(ss.basic||0))),
   h('div',{class:'row'},h('span',{},'HRA + allowances'),h('b',{},inr((ss.hra||0)+(ss.allowances||0)))),
   h('div',{class:'row'},h('span',{},'Overtime rate'),h('b',{},inr(ss.otRate||0)+'/hr')),
-  h('div',{class:'row'},h('span',{},'Loan/advance outstanding'),h('b',{},inr(outstanding))),
+  h('div',{class:'row'},h('span',{},'Loan/advance outstanding'),h('span',{},h('b',{},inr(outstanding)),h('button',{onclick:()=>{x();advanceModal(e)}},'Record advance'))),
   h('h3',{style:'margin-top:14px'},'Recent attendance'),
   recent.length?null:h('p',{class:'note'},'No punches yet.'),
   ...recent.map(a=>h('div',{class:'row'},a.date,h('span',{class:'badge '+statusFor(a,e)},statusFor(a,e)))),
-  h('div',{class:'card',style:'margin-top:14px;box-shadow:none;background:var(--bg-raised)'},
-   h('div',{class:'row'},h('span',{},icon('doc'),' Documents'),h('span',{class:'note'},'Coming soon')),
-   h('p',{class:'note'},"Uploading and storing ID/PAN/driving-licence documents per employee isn't wired up yet.")),
+  h('div',{class:'card',style:'margin-top:14px;box-shadow:none;background:var(--bg-raised);cursor:pointer',onclick:()=>documentsSheet(e)},
+   h('div',{class:'row'},h('span',{},icon('doc'),' Documents'),h('span',{class:'note'},L('hr_document').filter(d=>d.empId==e.id).length+' on file')),
+   h('p',{class:'note'},'Tap to view or upload ID/PAN/driving-licence scans.')),
   h('div',{style:'display:flex;gap:10px;margin-top:10px'},
    h('button',{class:'p',style:'flex:1',onclick:()=>{x();employeeModal(e)}},'Edit details'),
    h('button',{class:'warn',onclick:async()=>{if(!confirm('Remove this employee?'))return;await save('hr_employee',e,e.id,true);x();render()}},'Remove')))

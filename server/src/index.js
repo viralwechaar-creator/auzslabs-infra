@@ -1,7 +1,7 @@
 import http from 'node:http';
 import { pool, withAuth } from './db.js';
 import { login, verifyToken, bearerFrom, createUser, resetToRandomPassword, signToken } from './auth.js';
-import { saveSiteUpload } from './storage.js';
+import { saveSiteUpload, saveDocUpload, readDocUpload } from './storage.js';
 import { startRealtime } from './realtime.js';
 import { handlePushEvent } from './push.js';
 
@@ -359,6 +359,43 @@ const server = http.createServer(async (req, res) => {
       const buffer = await readRawBody(req, 8_000_000); // 8MB cap -- client already compresses to well under this
       const result = await saveSiteUpload({ tenantId, prefix: storageMatch[1], buffer });
       return reply(200, result);
+    }
+
+    // ---- storage: employee documents (private -- never under
+    // Caddy's public /uploads/* file_server rule, see storage.js). An
+    // owner/manager can upload/view any employee's docs in their
+    // tenant; a plain employee only their own -- checked by asking
+    // Postgres "can this session read hr_employee row :empId", which
+    // r_read's existing policy already answers correctly for both
+    // cases, so there's no separate authorization rule to keep in
+    // sync here. ----
+    if (url.pathname === '/storage/doc' && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      const tenantId = user.app_metadata?.tenant_id;
+      const empId = url.searchParams.get('empId');
+      if (!tenantId || !empId) throw new HttpError(400, 'empId is required');
+      const { rows } = await withAuth(user.id, (client) =>
+        client.query(`select 1 from records where tenant_id = $1 and kind = 'hr_employee' and id = $2 and not deleted`, [tenantId, empId]),
+      );
+      if (!rows.length) throw new HttpError(403, 'not authorized for this employee');
+      const buffer = await readRawBody(req, 10_000_000);
+      const result = await saveDocUpload({ tenantId, empId, buffer });
+      return reply(200, result);
+    }
+    const docMatch = url.pathname.match(/^\/storage\/doc\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_.-]+)$/);
+    if (docMatch && req.method === 'GET') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      const [, tenantId, empId, filename] = docMatch;
+      if (user.app_metadata?.tenant_id !== tenantId) throw new HttpError(403, 'not authorized');
+      const { rows } = await withAuth(user.id, (client) =>
+        client.query(`select 1 from records where tenant_id = $1 and kind = 'hr_employee' and id = $2 and not deleted`, [tenantId, empId]),
+      );
+      if (!rows.length) throw new HttpError(403, 'not authorized for this employee');
+      const doc = await readDocUpload({ tenantId, empId, filename });
+      if (!doc) throw new HttpError(404, 'not found');
+      res.writeHead(200, { 'Content-Type': doc.type, 'Cache-Control': 'private, max-age=31536000' });
+      res.end(doc.buffer);
+      return;
     }
 
     // ---- admin: provision-owner (was a Supabase Edge Function) ----
