@@ -105,7 +105,38 @@
     });
   })();
 
+  // iOS-only: navigator.standalone is true when launched from a saved
+  // Home Screen icon, false in a regular Safari tab, undefined
+  // everywhere else (Android, desktop). A regular tab always shows
+  // Safari's own chrome (its own top bar AND bottom toolbar) around
+  // the page -- no meta tag or CSS can remove that, it's not this
+  // site's chrome. Real support ticket this answers: "the header/
+  // footer is blocking the app" turned out to be someone re-opening a
+  // page from an old Safari tab/history entry instead of the Home
+  // Screen icon they'd saved, and not being able to tell the two apart
+  // from the screenshot alone.
+  function showStandaloneHint() {
+    if (window.navigator.standalone !== false) return;
+    var topbar = $('.topbar');
+    if (!topbar) return;
+    if (sessionStorage.getItem('auz_standalone_hint_dismissed')) return;
+    var bar = document.createElement('div');
+    bar.style.cssText = 'background:var(--ink);color:#fff;font-size:12.5px;padding:10px 16px;display:flex;align-items:center;gap:10px;justify-content:space-between';
+    bar.innerHTML = '<span>You\'re viewing this in Safari, not your saved app icon &mdash; for the full-screen app, open it from the icon on your Home Screen instead.</span>';
+    var dismiss = document.createElement('button');
+    dismiss.textContent = '×';
+    dismiss.setAttribute('aria-label', 'Dismiss');
+    dismiss.style.cssText = 'background:none;border:none;color:#fff;font-size:20px;line-height:1;flex-shrink:0;cursor:pointer;padding:0 4px';
+    dismiss.onclick = function () {
+      bar.remove();
+      try { sessionStorage.setItem('auz_standalone_hint_dismissed', '1'); } catch (e) {}
+    };
+    bar.appendChild(dismiss);
+    topbar.insertAdjacentElement('afterend', bar);
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
+    showStandaloneHint();
     var cartCountEls = $all('.cart-count');
     if (cartCountEls.length) {
       var n = AUZcart.get().length;
