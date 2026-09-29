@@ -13,7 +13,7 @@ button:disabled{opacity:.4;background:none}
 input,select,textarea{font:inherit;padding:10px 15px;border:1.5px solid var(--l);border-radius:var(--radius-sm);background:#fff;color:inherit;transition:border-color .15s var(--ease)}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 h1,h2,h3{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif;margin:0}
-.top-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:calc(14px + env(safe-area-inset-top)) 16px 14px;background:rgba(222,222,222,.85);backdrop-filter:saturate(180%) blur(16px)}
+.top-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:max(14px, env(safe-area-inset-top)) 16px 14px;background:rgba(222,222,222,.85);backdrop-filter:saturate(180%) blur(16px)}
 .top-bar h1{font-size:18px;flex:1}
 .g{display:grid;gap:14px;padding:0 16px 90px}
 .card{background:#fff;border-radius:var(--radius-md);padding:16px;box-shadow:var(--shadow-sm)}
@@ -709,6 +709,16 @@ async function boot(){
  sb.channel('hr').on('postgres_changes',{event:'*',schema:'public',table:'records'},()=>sync()).subscribe();setInterval(sync,30000);
  await new Promise(r=>{const check=async()=>{await doSync();r()};check()});
  render();
+}
+if(navigator.standalone===false&&!sessionStorage.getItem('auz_standalone_hint_dismissed')){
+ const bar=document.createElement('div');
+ bar.style.cssText='background:#171717;color:#fff;font-size:12.5px;padding:10px 16px;display:flex;align-items:center;gap:10px;justify-content:space-between';
+ bar.innerHTML='<span>You\'re viewing this in Safari, not your saved app icon — for the full-screen app, open it from the icon on your Home Screen instead.</span>';
+ const x=document.createElement('button');
+ x.textContent='×';x.setAttribute('aria-label','Dismiss');
+ x.style.cssText='background:none;border:none;color:#fff;font-size:20px;line-height:1;flex-shrink:0;cursor:pointer;padding:0 4px';
+ x.onclick=()=>{bar.remove();try{sessionStorage.setItem('auz_standalone_hint_dismissed','1')}catch{}};
+ bar.appendChild(x);document.body.prepend(bar);
 }
 boot();
 </script>
