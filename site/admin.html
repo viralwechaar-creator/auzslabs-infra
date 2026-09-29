@@ -96,6 +96,7 @@
         <button class="nav-link admin-nav-btn" data-section="addonRequests"><svg class="ios-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg><span>Add-on requests</span><span id="notifBadgeAddon"></span></button>
         <button class="nav-link admin-nav-btn" data-section="clients"><svg class="ios-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20v-1a6.5 6.5 0 0 1 13 0v1"/><path d="M16.5 5a3.2 3.2 0 0 1 0 6.2M21 20v-1a5.6 5.6 0 0 0-4-5.4"/></svg><span>Clients</span></button>
         <button class="nav-link admin-nav-btn" data-section="onboard"><svg class="ios-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg><span>Onboard new</span></button>
+        <button class="nav-link admin-nav-btn" data-section="systemStats"><svg class="ios-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M12 20V4M20 20v-7"/></svg><span>System resources</span></button>
       </div>
       <div class="ios-menu-group">
         <a href="design-system/nav-kit.html" target="_blank" rel="noopener" class="nav-link"><svg class="ios-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>UI Kit</span></a>
@@ -202,6 +203,12 @@
           </form>
         </div>
         <div id="result"></div>
+      </section>
+
+      <section class="section tight admin-section" id="systemStatsSection">
+        <div class="label">Droplet: 2 vCPU / 4GB RAM / 75GB disk</div>
+        <h2 class="h-2">System resources</h2>
+        <div id="systemStatsList">Loading&hellip;</div>
       </section>
 
     </div>
@@ -331,6 +338,7 @@ async function checkSession() {
   loadSignupRequests();
   loadAddonRequests();
   loadClients(clients);
+  loadSystemStats();
   refreshAdminNotifBadges();
   setInterval(refreshAdminNotifBadges, 20000);
 }
@@ -500,6 +508,48 @@ async function loadAddonRequests() {
       loadAddonRequests();
     };
   });
+}
+
+// server/src/db.js's pg.Pool is unconfigured, so it defaults to 10 --
+// not read from anywhere in the DB, hence the constant here.
+const APP_POOL_MAX = 10;
+
+function formatBytes(n) {
+  if (n == null) return '&mdash;';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let i = 0;
+  while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
+  return n.toFixed(i === 0 ? 0 : 1) + ' ' + units[i];
+}
+
+async function loadSystemStats() {
+  const listEl = document.getElementById('systemStatsList');
+  const { data, error } = await sb.rpc('admin_system_stats', {});
+  if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+
+  const conns = data.app_connections;
+  const connWarn = conns >= APP_POOL_MAX ? ' style="color:var(--accent)"' : '';
+  const topRows = (data.top_tenants_by_rows || []).map((t) => `
+    <tr>
+      <td><b>${esc(t.name)}</b><br><span style="color:var(--ink-faint)">${esc(t.slug)}.auzslab.in</span></td>
+      <td>${t.row_count.toLocaleString()}</td>
+    </tr>`).join('');
+
+  listEl.innerHTML = `
+    <div class="card" style="max-width:640px">
+      <div class="stat-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px 24px">
+        <div><div class="label">Tenants</div><div class="h-2" style="font-size:26px">${data.tenant_count}</div></div>
+        <div><div class="label">DB connections (app pool)</div><div class="h-2" style="font-size:26px"${connWarn}>${conns} / ${APP_POOL_MAX}</div></div>
+        <div><div class="label">Database size</div><div class="h-2" style="font-size:26px">${formatBytes(data.db_size_bytes)}</div></div>
+        <div><div class="label">Records (all tenants)</div><div class="h-2" style="font-size:26px">${data.records_total.toLocaleString()}</div></div>
+      </div>
+    </div>
+    <div class="label" style="margin-top:22px">Largest tenants by row count</div>
+    ${topRows
+      ? `<div class="admin-table-wrap"><table class="admin-table"><tr><th>Client</th><th>Rows</th></tr>${topRows}</table></div>`
+      : emptyDoodle('No tenant data yet.')}
+    <p class="p" style="color:var(--ink-faint);margin-top:14px">Droplet is 2 vCPU / 4GB RAM / 75GB disk. Uploads storage usage isn't shown here -- getting a directory's real size needs shelling out to <code>du</code>, which the API deliberately doesn't do for something this minor.</p>
+  `;
 }
 
 let clientsCache = [];
