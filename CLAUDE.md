@@ -46,14 +46,27 @@ rebuild, no restart.
 
 **Design system**: `site/theme.css` is the single source of truth for the
 whole product's visual identity — ink/accent palette (`--ink:#171717`,
-`--accent:#800020`), Fraunces (display) + Inter (body) + Space Mono
-(labels/mono), the thick-ink-border-and-card language. `app/public/index.html`
-(the POS) has its own inline `<style>` reusing the *same tokens* but a
-lighter, more minimal component language (no borders on plain buttons,
-borders reserved for real containers) — a dense working tool reads
-differently from a landing page, but the palette/typography must always
-match. If you're building new internal tooling, match this, don't
-reinvent it.
+`--accent:#800020`), the SF Pro/system-ui display stack + Inter (body) +
+Space Mono (labels/mono), the thick-ink-border-and-card language. (Fraunces
+was fully removed in favor of an iOS-style system font stack — don't
+reintroduce it.) `app/public/index.html` (the POS) has its own inline
+`<style>` reusing the *same tokens* but a lighter, more minimal component
+language (no borders on plain buttons, borders reserved for real
+containers) — a dense working tool reads differently from a landing page,
+but the palette/typography must always match. If you're building new
+internal tooling, match this, don't reinvent it.
+
+Every `site/*.html` page also loads `site/design-system/ui-kit.css`
+(`.uk-kit` components: accordion, bento tiles, linklist, etc.) alongside
+`theme.css`. It's a second token set (`--uk-ink`, `--uk-accent`,
+`--uk-font-display`, ...) that must be kept in sync with `theme.css`'s
+tokens by hand — nothing enforces this automatically. If you change a
+color or font in `theme.css`, check `ui-kit.css`'s `:root` block too, or
+`.uk-kit` components will silently drift (this already happened once:
+`--uk-font-display`/`--uk-font-body` pointed at Google Fonts that were
+never actually `<link>`ed on any real page, so every `.uk-kit` component
+on 18 pages silently rendered in a fallback font instead of the intended
+one).
 
 ## Deploying (the actual command sequence)
 
