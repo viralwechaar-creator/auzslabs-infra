@@ -152,7 +152,7 @@ const h=(t,a={},...k)=>{const e=document.createElement(t);for(const x in a){cons
 const L=k=>Object.values(R).filter(r=>r.kind==k&&!r.deleted).map(r=>r.data),tn=id=>{const t=R[id];return t&&!t.deleted?t.data.name:''};
 const cfg=()=>({name:'My Restaurant',addr:'',phone:'',gstin:'',tax:5,prefix:'INV',col:null,logo:'/logo.png',ftr:'Thank you!',w:80,sty:'mono',fs:12,gw:'Scan, order and relax. Your order goes straight to our kitchen.',bizType:'restaurant',...(R.settings&&R.settings.data)});
 // Restaurant-only screens (table floor plan, KOT log) stay hidden for
-// salon/gym/retail tenants -- gated the same way as any other feature,
+// salon/retail tenants -- gated the same way as any other feature,
 // just off the owner-set business type instead of an admin-set flag.
 const isRestaurant=()=>['restaurant','cafe'].includes(effBizType()||'restaurant');
 // Retail: clothing/apparel-style shops that stock size+color variants
@@ -180,11 +180,6 @@ const PREVIEW_CATALOGS={
    {id:'pv-s-i2',cat:'pv-s-c1',name:'Hair colour',price:1200,sizes:[],mods:[]},
    {id:'pv-s-i3',cat:'pv-s-c2',name:'Manicure',price:400,sizes:[],mods:[]},
    {id:'pv-s-i4',cat:'pv-s-c2',name:'Facial',price:900,sizes:[],mods:['Gold facial:600']}]},
- gym:{cats:[{id:'pv-g-c1',name:'Passes'},{id:'pv-g-c2',name:'Training'}],
-  items:[{id:'pv-g-i1',cat:'pv-g-c1',name:'Day pass',price:200,sizes:[],mods:[]},
-   {id:'pv-g-i2',cat:'pv-g-c1',name:'Monthly membership',price:1500,sizes:[],mods:[]},
-   {id:'pv-g-i3',cat:'pv-g-c2',name:'Personal training session',price:600,sizes:[],mods:[]},
-   {id:'pv-g-i4',cat:'pv-g-c2',name:'Nutrition consult',price:500,sizes:[],mods:[]}]},
  retail:{cats:[{id:'pv-t-c1',name:'T-Shirts'},{id:'pv-t-c2',name:'Accessories'}],
   items:[{id:'pv-t-i1',cat:'pv-t-c1',name:'Graphic Tee',price:549,low:2,sizes:[],mods:[],
     variants:[{size:'S',color:'Black',barcode:null,qty:8},{size:'M',color:'Black',barcode:null,qty:10},{size:'L',color:'Black',barcode:null,qty:6}]},
@@ -206,7 +201,7 @@ const effItems=()=>cfg().isDemo&&S.previewNiche?PREVIEW_CATALOGS[S.previewNiche]
 // this account's own branding) gets their niche's own default so the
 // four niches are visually distinguishable, not just different item
 // names in an identical shell.
-const NICHE_ACCENT={restaurant:'#800020',salon:'#7a3b6e',gym:'#1f6b3a',retail:'#1f3d6b'};
+const NICHE_ACCENT={restaurant:'#800020',salon:'#7a3b6e',retail:'#1f3d6b'};
 const themeAccent=()=>{const niche=effBizType();if(cfg().isDemo&&S.previewNiche)return NICHE_ACCENT[niche]||'#800020';return cfg().col||NICHE_ACCENT[niche]||'#800020'};
 function applyTheme(){document.documentElement.style.setProperty('--accent',themeAccent())}
 // Legacy default for any staffer with no custom role assigned yet
@@ -764,8 +759,8 @@ V.set=()=>{const s=cfg(),F={},sel=(k,l,o)=>h('label',{},l,h('select',{style:'wid
    // Demo-only: previews a different niche's sample Menu/POS without
    // touching this shared account's real catalog -- never saved, never
    // shown to a real tenant. See effBizType()/PREVIEW_CATALOGS above.
-   s.isDemo?h('label',{},'Preview a different business type (this account only, nothing is saved)',h('select',{style:'width:100%',onchange:e=>{S.previewNiche=e.target.value||null;render()}},h('option',{value:'',selected:!S.previewNiche},'Current — '+s.name),...['restaurant','salon','gym','retail'].map(k=>h('option',{value:k,selected:S.previewNiche==k},({restaurant:'Restaurant / Cafe',salon:'Salon / spa',gym:'Gym / fitness',retail:'Retail (clothing/apparel)'})[k]+' (sample menu)')))):null,
-   sel('bizType','Business type',[['restaurant','Restaurant / Cafe (tables, KOT, kitchen display)'],['salon','Salon / spa'],['gym','Gym / fitness'],['retail','Retail shop (clothing/apparel — size & color stock)']]),f('name','Name'),f('addr','Address'),f('phone','Phone'),f('gstin','GSTIN'),f('tax','GST %','number'),f('prefix','Invoice prefix'),h('h4',{},'Look & invoice'),f('col','Brand colour (hex, e.g. #1f3d2e)'),f('logo','Logo image URL (optional)'),f('ftr','Invoice thank-you message'),sel('w','Paper width',[[80,'80 mm'],[58,'58 mm']]),sel('sty','Invoice style',[['mono','Thermal (monospace)'],['sans','Clean (sans-serif)']]),f('fs','Invoice font size (px)','number'),h('h4',{},'Self-order'),f('gw','Guest ordering welcome text'),saveBtn()),
+   s.isDemo?h('label',{},'Preview a different business type (this account only, nothing is saved)',h('select',{style:'width:100%',onchange:e=>{S.previewNiche=e.target.value||null;render()}},h('option',{value:'',selected:!S.previewNiche},'Current — '+s.name),...['restaurant','salon','retail'].map(k=>h('option',{value:k,selected:S.previewNiche==k},({restaurant:'Café / restaurant / bar / bakery / hotel',salon:'Salon / spa',retail:'Retail (shoes, clothing, books)'})[k]+' (sample menu)')))):null,
+   sel('bizType','Business type',[['restaurant','Café, restaurant, bar, bakery, hotel (tables, KOT, kitchen display)'],['salon','Salon / spa'],['retail','Retail — shoes, clothing, books (size & color stock)']]),f('name','Name'),f('addr','Address'),f('phone','Phone'),f('gstin','GSTIN'),f('tax','GST %','number'),f('prefix','Invoice prefix'),h('h4',{},'Look & invoice'),f('col','Brand colour (hex, e.g. #1f3d2e)'),f('logo','Logo image URL (optional)'),f('ftr','Invoice thank-you message'),sel('w','Paper width',[[80,'80 mm'],[58,'58 mm']]),sel('sty','Invoice style',[['mono','Thermal (monospace)'],['sans','Clean (sans-serif)']]),f('fs','Invoice font size (px)','number'),h('h4',{},'Self-order'),f('gw','Guest ordering welcome text'),saveBtn()),
   tables:()=>{const so=featureOn('self_order'),secs=[...new Set(L('table').map(t=>t.sec||'Main'))];
    return h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Tables'),h('span',{},so?h('button',{onclick:()=>qr(L('table'))},'Print all QR'):null,h('button',{class:'p',onclick:()=>{const n=prompt('Table name');if(!n)return;const sc=prompt('Section (e.g. AC, Garden, Terrace)','Main')||'Main';save('table',{name:n,sec:sc.trim()||'Main'}).then(render)}},'Add table'))),
    !so?h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Self-order (QR) is turned off in your Services settings, so table QR codes won\'t take customers to an ordering page. Turn it back on to print/share codes again.'):null,

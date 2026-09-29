@@ -206,10 +206,9 @@
             <div class="field">
               <label for="niche">Niche</label>
               <select id="niche">
-                <option value="cafe">Cafe / Restaurant</option>
-                <option value="salon">Salon</option>
-                <option value="gym">Gym</option>
-                <option value="retail">Retail</option>
+                <option value="cafe">Café, restaurant, bar & more</option>
+                <option value="salon">Salon / spa</option>
+                <option value="retail">Retail (shoes, clothing, books)</option>
                 <option value="general">General</option>
               </select>
             </div>
@@ -438,7 +437,7 @@ async function loadLeads() {
   });
 }
 
-const NICHE_LABEL = { cafe: 'Cafe / Restaurant', salon: 'Salon', gym: 'Gym', retail: 'Retail', general: 'General' };
+const NICHE_LABEL = { cafe: 'Café / restaurant / bar / bakery / hotel', salon: 'Salon / spa', retail: 'Retail (shoes, clothing, books)', general: 'General' };
 const FEATURE_LABEL = { pos: 'POS', crm: 'CRM', booking: 'Booking', billing: 'Billing', self_order: 'Self-order', kds: 'Kitchen display', inventory: 'Inventory', qr: 'QR Ordering', payroll: 'Payroll' };
 
 async function loadSignupRequests() {
@@ -482,9 +481,9 @@ async function loadSignupRequests() {
     const demoBtn = tr.querySelector('[data-demo]');
     demoBtn.onclick = () => copyDemoLink('req', id, demoBtn);
     tr.querySelector('[data-approve]').onclick = async () => {
-      const niche = prompt('Niche for this tenant (cafe / salon / gym / retail / general)', req?.niche || 'general');
+      const niche = prompt('Niche for this tenant (cafe / salon / retail / general)', req?.niche || 'general');
       if (niche === null) return;
-      const cleanNiche = ['cafe', 'salon', 'gym', 'retail', 'general'].includes(niche.trim()) ? niche.trim() : 'general';
+      const cleanNiche = ['cafe', 'salon', 'retail', 'general'].includes(niche.trim()) ? niche.trim() : 'general';
       const { error: appErr } = await sb.rpc('approve_signup_request', { p_request_id: id, p_niche: cleanNiche });
       if (appErr) { alert(appErr.message); return; }
       loadSignupRequests();
