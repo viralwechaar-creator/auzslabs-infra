@@ -18,8 +18,8 @@ h1,h2,h3{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,sys
 .card{background:#fff;border-radius:var(--radius-md);padding:16px;box-shadow:var(--shadow-sm)}
 .row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--l)}
 .row:last-child{border-bottom:none}
-.md{background:#fff;border-radius:var(--radius-lg);padding:22px;max-width:420px;width:92vw;margin:12vh auto;box-shadow:var(--shadow-md);display:grid;gap:10px;animation:sheetIn .28s var(--ease)}
-.ov{position:fixed;inset:0;background:rgba(23,23,23,.35);z-index:20;overflow:auto;animation:ovIn .2s var(--ease)}
+.md{background:#fff;border-radius:var(--radius-lg);padding:22px;max-width:420px;width:100%;min-width:0;max-height:88vh;overflow:auto;box-shadow:var(--shadow-md);display:grid;gap:10px;animation:sheetIn .28s var(--ease)}
+.ov{position:fixed;inset:0;background:rgba(23,23,23,.35);z-index:20;display:flex;align-items:center;justify-content:center;padding:16px;animation:ovIn .2s var(--ease)}
 @keyframes ovIn{from{opacity:0}to{opacity:1}}
 @keyframes sheetIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
 .badge{display:inline-flex;padding:3px 10px;border-radius:999px;font-family:'Space Mono',monospace;font-size:10.5px;text-transform:uppercase;background:var(--bg-raised)}
@@ -45,9 +45,10 @@ label{display:grid;gap:4px;font-size:12.5px;color:var(--ink-dim)}
 .punch-card .big small{font-size:20px;font-weight:600;opacity:.85}
 .punch-card .sub{font-size:12.5px;opacity:.85;display:flex;align-items:center;gap:6px;margin-top:2px}
 .punch-card .stat{display:flex;align-items:center;gap:10px;padding:10px 0 0;margin-top:10px;border-top:1px solid rgba(255,255,255,.2);font-size:13px}
-.swipe{position:relative;background:#3b7bf0;color:#fff;border-radius:999px;height:54px;display:flex;align-items:center;justify-content:center;font-weight:700;overflow:hidden;user-select:none}
-.swipe .thumb{position:absolute;left:4px;top:4px;bottom:4px;width:46px;background:#fff;color:#3b7bf0;border-radius:999px;display:flex;align-items:center;justify-content:center}
-.swipe.busy{opacity:.65}
+.tap-btn{position:relative;background:#3b7bf0;color:#fff;border-radius:999px;height:54px;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:700;font-size:15px;user-select:none;transition:transform .12s var(--ease)}
+.tap-btn:active{transform:scale(.97)}
+.tap-btn .ic{width:30px;height:30px;border-radius:999px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex:none}
+.tap-btn.busy{opacity:.65}
 .bottom-nav{position:fixed;left:0;right:0;bottom:0;background:#fff;box-shadow:0 -6px 24px rgba(23,23,23,.1);padding:8px 4px calc(2px + env(safe-area-inset-bottom));z-index:16}
 .bottom-nav-row{display:flex;justify-content:space-around}
 .bottom-nav-row button{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--ink-faint);background:none;padding:6px 12px;border-radius:12px;flex:1}
@@ -263,9 +264,9 @@ function loanSheet(outstanding){const x=modal(h('h3',{},'Loan & advance'),
  h('p',{class:'note'},"This is deducted from your payslip automatically each month, if your admin has recorded any advances for you. Requesting a new one from here is coming soon -- ask your admin for now."),
  h('button',{onclick:()=>x()},'Close'))}
 function swipeBtn(emp,openRow){
- return h('div',{class:'swipe',onclick:async e=>{const t=e.currentTarget;if(t.classList.contains('busy'))return;t.classList.add('busy');await doPunch(emp)}},
-  h('span',{style:'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px'},openRow?'Tap to punch out':'Tap to punch in'),
-  h('div',{class:'thumb'},icon('arrowR')));
+ return h('div',{class:'tap-btn',onclick:async e=>{const t=e.currentTarget;if(t.classList.contains('busy'))return;t.classList.add('busy');await doPunch(emp)}},
+  h('span',{class:'ic'},icon('arrowR')),
+  openRow?'Tap to punch out':'Tap to punch in');
 }
 function empHome(emp){
  const ds=S.homeDate||today(),isToday=ds==today();
