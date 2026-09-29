@@ -1,4 +1,5 @@
-<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>AUZslab Payroll</title><link rel=icon href=/logo.png><meta name=theme-color content=#171717>
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><title>AUZslab Payroll</title><link rel=icon href=/logo.png><meta name=theme-color content=#171717>
+<meta name=apple-mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-status-bar-style content=black-translucent><meta name=apple-mobile-web-app-title content=Payroll>
 <link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel=stylesheet>
 <style>
@@ -12,14 +13,16 @@ button:disabled{opacity:.4;background:none}
 input,select,textarea{font:inherit;padding:10px 15px;border:1.5px solid var(--l);border-radius:var(--radius-sm);background:#fff;color:inherit;transition:border-color .15s var(--ease)}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 h1,h2,h3{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif;margin:0}
-.top-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:14px 16px;background:rgba(222,222,222,.85);backdrop-filter:saturate(180%) blur(16px)}
+.top-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:calc(14px + env(safe-area-inset-top)) 16px 14px;background:rgba(222,222,222,.85);backdrop-filter:saturate(180%) blur(16px)}
 .top-bar h1{font-size:18px;flex:1}
 .g{display:grid;gap:14px;padding:0 16px 90px}
 .card{background:#fff;border-radius:var(--radius-md);padding:16px;box-shadow:var(--shadow-sm)}
 .row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--l)}
 .row:last-child{border-bottom:none}
 .md{background:#fff;border-radius:var(--radius-lg);padding:22px;max-width:420px;width:100%;min-width:0;max-height:88vh;overflow:auto;box-shadow:var(--shadow-md);display:grid;gap:10px;animation:sheetIn .28s var(--ease)}
+.md input[type=file]{width:100%;max-width:100%;font-size:13px}
 .ov{position:fixed;inset:0;background:rgba(23,23,23,.35);z-index:20;display:flex;align-items:center;justify-content:center;padding:16px;animation:ovIn .2s var(--ease)}
+@media(max-width:380px){.md{padding:16px;gap:8px}}
 @keyframes ovIn{from{opacity:0}to{opacity:1}}
 @keyframes sheetIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
 .badge{display:inline-flex;padding:3px 10px;border-radius:999px;font-family:'Space Mono',monospace;font-size:10.5px;text-transform:uppercase;background:var(--bg-raised)}
@@ -47,14 +50,11 @@ label{display:grid;gap:4px;font-size:12.5px;color:var(--ink-dim)}
 .punch-card .stat{display:flex;align-items:center;gap:10px;padding:10px 0 0;margin-top:10px;border-top:1px solid rgba(255,255,255,.2);font-size:13px}
 .tap-btn{position:relative;background:var(--accent);color:#fff;border-radius:999px;height:54px;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:700;font-size:15px;user-select:none;transition:transform .12s var(--ease)}
 .tap-btn:active{transform:scale(.97)}
-.tap-btn .ic{width:30px;height:30px;border-radius:999px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex:none}
 .tap-btn.busy{opacity:.65}
 .bottom-nav{position:fixed;left:14px;right:14px;bottom:calc(10px + env(safe-area-inset-bottom));background:var(--ink);border-radius:999px;box-shadow:var(--shadow-md);padding:8px;z-index:16}
 .bottom-nav-row{display:flex;justify-content:space-around;gap:2px}
 .bottom-nav-row button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;color:rgba(255,255,255,.5);background:none;padding:8px 4px;border-radius:999px;flex:1;transition:background .15s var(--ease),color .15s var(--ease)}
 .bottom-nav-row button.on{color:#fff;background:var(--accent)}
-.bottom-nav-brand{text-align:center;font-size:9px;color:rgba(255,255,255,.35);padding-top:4px;font-family:'Space Mono',monospace}
-.bottom-nav-brand a{color:rgba(255,255,255,.55)}
 .drawer-ov{position:fixed;inset:0;background:rgba(23,23,23,.4);z-index:30;display:flex;animation:ovIn .2s var(--ease)}
 .drawer{width:78%;max-width:300px;background:#fff;height:100%;overflow:auto;animation:drawerIn .22s var(--ease);display:grid;gap:2px;padding:16px 0;align-content:start;border-radius:0 26px 26px 0;box-shadow:var(--shadow-md)}
 @keyframes drawerIn{from{transform:translateX(-100%)}to{transform:translateX(0)}}
@@ -312,7 +312,6 @@ function loanSheet(emp,outstanding){
  h('button',{onclick:()=>x()},'Close'))}
 function swipeBtn(emp,openRow){
  return h('div',{class:'tap-btn',onclick:async e=>{const t=e.currentTarget;if(t.classList.contains('busy'))return;t.classList.add('busy');await doPunch(emp)}},
-  h('span',{class:'ic'},icon('arrowR')),
   openRow?'Tap to punch out':'Tap to punch in');
 }
 function empHome(emp){
@@ -408,8 +407,7 @@ function empNotif(){
 function bottomNav(){
  return h('div',{class:'bottom-nav'},
   h('div',{class:'bottom-nav-row'},...[['calendar','calendar','Calendar'],['leave','leave','Leave'],['home','home','Home'],['payslip','receipt','Payslip'],['notif','bell','Alerts']]
-   .map(([k,ic,label])=>h('button',{class:S.empTab==k?'on':'',onclick:()=>{S.empTab=k;render()}},icon(ic),label))),
-  h('div',{class:'bottom-nav-brand'},'Powered by ',h('a',{href:'https://auzslab.in',target:'_blank',rel:'noopener'},'AUZslab')));
+   .map(([k,ic,label])=>h('button',{class:S.empTab==k?'on':'',onclick:()=>{S.empTab=k;render()}},icon(ic),label))));
 }
 function empApp(){
  const emp=myEmployee();
