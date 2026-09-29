@@ -17,7 +17,7 @@ input,select,textarea{font:inherit;padding:10px 15px;border:1.5px solid var(--l)
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 input[type=checkbox]{width:22px;height:22px;flex-shrink:0;accent-color:var(--accent)}
 
-.top-bar{display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top)) 12px 10px;background:rgba(23,23,23,.86);backdrop-filter:saturate(180%) blur(16px);-webkit-backdrop-filter:saturate(180%) blur(16px);box-shadow:var(--shadow-sm)}
+.top-bar{display:flex;align-items:center;gap:8px;padding:max(10px, env(safe-area-inset-top)) 12px 10px;background:rgba(23,23,23,.86);backdrop-filter:saturate(180%) blur(16px);-webkit-backdrop-filter:saturate(180%) blur(16px);box-shadow:var(--shadow-sm)}
 .top-bar h1{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif;font-size:16px;font-weight:700;color:#fff;margin:0;flex-shrink:0}
 .hamburger-btn{width:36px;height:36px;padding:0;flex-shrink:0;border-radius:12px;background:none;display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px;transition:background .15s var(--ease),transform .12s var(--ease)}
 .hamburger-btn:hover{background:#ffffff1a}
@@ -32,7 +32,7 @@ input[type=checkbox]{width:22px;height:22px;flex-shrink:0;accent-color:var(--acc
 
 .drawer-ov{position:fixed;inset:0;background:#0007;z-index:50;opacity:0;pointer-events:none;transition:opacity .25s var(--ease)}
 .drawer-ov.show{opacity:1;pointer-events:auto}
-.drawer{position:fixed;top:0;left:0;bottom:0;width:76%;max-width:270px;background:#fff;z-index:51;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:2px;box-shadow:var(--shadow-md);border-radius:0 26px 26px 0;transform:translateX(-100%);transition:transform .32s var(--ease)}
+.drawer{position:fixed;top:0;left:0;bottom:0;width:76%;max-width:270px;background:#fff;z-index:51;overflow:auto;padding:max(14px, env(safe-area-inset-top)) 14px 14px;display:flex;flex-direction:column;gap:2px;box-shadow:var(--shadow-md);border-radius:0 26px 26px 0;transform:translateX(-100%);transition:transform .32s var(--ease)}
 .drawer.open{transform:translateX(0)}
 .drawer button{display:block;width:100%;text-align:left;padding:13px 14px;border-radius:var(--radius-sm);font-family:Inter,sans-serif;font-weight:600;font-size:15px;color:var(--ink);transition:background .15s var(--ease)}
 .drawer button.on{background:var(--accent);color:#fff}
@@ -737,5 +737,20 @@ async function boot(){if(!C.url||C.url.includes('YOUR-PROJECT'))return $('#app')
  try{const reqTab=new URLSearchParams(location.search).get('tab');if(reqTab&&visibleTabs().some(([k])=>k==reqTab))S.tab=reqTab}catch{}
  S.authExpired=false;$('#app').textContent='Loading…';addEventListener('online',()=>{sync();setNote()});addEventListener('offline',setNote);
  sb.channel('r').on('postgres_changes',{event:'*',schema:'public',table:'records'},()=>sync()).subscribe();setInterval(sync,30000);sb.channel('g').on('postgres_changes',{event:'*',schema:'public',table:'guest_orders'},()=>getG()).subscribe();setInterval(getG,15000);sb.channel('n').on('postgres_changes',{event:'*',schema:'public',table:'notifications'},()=>refreshNotifCount()).subscribe();setInterval(refreshNotifCount,30000);setInterval(checkAlerts,5000);await syncNow();getG();checkAlerts();if(can('o')&&!L('cat').length&&!localStorage.seeded)await seed();render()}
+// navigator.standalone is iOS Safari's own flag: true when launched from a
+// saved Home Screen icon, false in a regular tab, undefined elsewhere. A
+// regular tab always shows Safari's own chrome around the page (that's
+// Apple's UI, not fixable from here) -- this tells the user why instead of
+// leaving them to guess from a screenshot.
+if(navigator.standalone===false&&!sessionStorage.getItem('auz_standalone_hint_dismissed')){
+ const bar=document.createElement('div');
+ bar.style.cssText='background:#171717;color:#fff;font-size:12.5px;padding:10px 16px;display:flex;align-items:center;gap:10px;justify-content:space-between';
+ bar.innerHTML='<span>You\'re viewing this in Safari, not your saved app icon — for the full-screen app, open it from the icon on your Home Screen instead.</span>';
+ const x=document.createElement('button');
+ x.textContent='×';x.setAttribute('aria-label','Dismiss');
+ x.style.cssText='background:none;border:none;color:#fff;font-size:20px;line-height:1;flex-shrink:0;cursor:pointer;padding:0 4px';
+ x.onclick=()=>{bar.remove();try{sessionStorage.setItem('auz_standalone_hint_dismissed','1')}catch{}};
+ bar.appendChild(x);document.body.prepend(bar);
+}
 boot();
 </script></body></html>

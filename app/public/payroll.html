@@ -13,7 +13,7 @@ button:disabled{opacity:.4;background:none}
 input,select,textarea{font:inherit;padding:10px 15px;border:1.5px solid var(--l);border-radius:var(--radius-sm);background:#fff;color:inherit;transition:border-color .15s var(--ease)}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 h1,h2,h3{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif;margin:0}
-.top-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:calc(14px + env(safe-area-inset-top)) 16px 14px;background:rgba(222,222,222,.85);backdrop-filter:saturate(180%) blur(16px)}
+.top-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:max(14px, env(safe-area-inset-top)) 16px 14px;background:rgba(222,222,222,.85);backdrop-filter:saturate(180%) blur(16px)}
 .top-bar h1{font-size:18px;flex:1}
 .g{display:grid;gap:14px;padding:0 16px 90px}
 .card{background:#fff;border-radius:var(--radius-md);padding:16px;box-shadow:var(--shadow-sm)}
@@ -56,7 +56,7 @@ label{display:grid;gap:4px;font-size:12.5px;color:var(--ink-dim)}
 .bottom-nav-row button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;color:rgba(255,255,255,.5);background:none;padding:8px 4px;border-radius:999px;flex:1;transition:background .15s var(--ease),color .15s var(--ease)}
 .bottom-nav-row button.on{color:#fff;background:var(--accent)}
 .drawer-ov{position:fixed;inset:0;background:rgba(23,23,23,.4);z-index:30;display:flex;animation:ovIn .2s var(--ease)}
-.drawer{width:78%;max-width:300px;background:#fff;height:100%;overflow:auto;animation:drawerIn .22s var(--ease);display:grid;gap:2px;padding:16px 0;align-content:start;border-radius:0 26px 26px 0;box-shadow:var(--shadow-md)}
+.drawer{width:78%;max-width:300px;background:#fff;height:100%;overflow:auto;animation:drawerIn .22s var(--ease);display:grid;gap:2px;padding:max(16px, env(safe-area-inset-top)) 0 16px;align-content:start;border-radius:0 26px 26px 0;box-shadow:var(--shadow-md)}
 @keyframes drawerIn{from{transform:translateX(-100%)}to{transform:translateX(0)}}
 .dhead{padding:0 18px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--l);margin-bottom:6px}
 button.ditem{display:flex;align-items:center;gap:12px;padding:13px 18px;text-align:left;border-radius:0;width:100%;font-size:14px;color:var(--ink)}
@@ -709,6 +709,16 @@ async function boot(){
  sb.channel('hr').on('postgres_changes',{event:'*',schema:'public',table:'records'},()=>sync()).subscribe();setInterval(sync,30000);
  await new Promise(r=>{const check=async()=>{await doSync();r()};check()});
  render();
+}
+if(navigator.standalone===false&&!sessionStorage.getItem('auz_standalone_hint_dismissed')){
+ const bar=document.createElement('div');
+ bar.style.cssText='background:#171717;color:#fff;font-size:12.5px;padding:10px 16px;display:flex;align-items:center;gap:10px;justify-content:space-between';
+ bar.innerHTML='<span>You\'re viewing this in Safari, not your saved app icon — for the full-screen app, open it from the icon on your Home Screen instead.</span>';
+ const x=document.createElement('button');
+ x.textContent='×';x.setAttribute('aria-label','Dismiss');
+ x.style.cssText='background:none;border:none;color:#fff;font-size:20px;line-height:1;flex-shrink:0;cursor:pointer;padding:0 4px';
+ x.onclick=()=>{bar.remove();try{sessionStorage.setItem('auz_standalone_hint_dismissed','1')}catch{}};
+ bar.appendChild(x);document.body.prepend(bar);
 }
 boot();
 </script>

@@ -25,7 +25,7 @@ button{font-family:inherit}
 .shell{display:flex;flex-direction:column;min-height:100vh;width:100%;background:var(--bg)}
 
 .topbar{
-  display:flex;align-items:center;justify-content:space-between;gap:14px;padding:calc(14px + env(safe-area-inset-top)) 18px 14px;
+  display:flex;align-items:center;justify-content:space-between;gap:14px;padding:max(14px, env(safe-area-inset-top)) 18px 14px;
   border-bottom:2px solid var(--ink);background:var(--bg);
   position:sticky;top:0;z-index:25;
 }
@@ -63,7 +63,7 @@ button{font-family:inherit}
 
 .drawer-topbar{
   display:flex;align-items:center;justify-content:space-between;gap:10px;
-  padding:18px 20px 16px;position:sticky;top:0;background:#000;z-index:2;
+  padding:max(18px, env(safe-area-inset-top)) 20px 16px;position:sticky;top:0;background:#000;z-index:2;
 }
 .drawer-close{
   display:inline-flex;align-items:center;gap:4px;flex-shrink:0;
