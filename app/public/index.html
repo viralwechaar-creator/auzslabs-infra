@@ -737,6 +737,60 @@ V.mem=()=>{
    checkins.length?null:h('p',{style:mut},'No check-ins yet.'))
  );
 };
+const TICKET_STATUS_LABEL={open:'Open',in_progress:'In progress',resolved:'Resolved',closed:'Closed'};
+const TICKET_PRI_LABEL={low:'Low',medium:'Medium',high:'High'};
+const ticketBadgeStyle=status=>status=='open'?'background:var(--accent);color:#fff':status=='in_progress'?'background:#b8860b;color:#fff':status=='resolved'?'background:#1f6b3a;color:#fff':'background:var(--bg-raised);color:var(--ink-dim)';
+const priBadgeStyle=p=>p=='high'?'background:var(--accent);color:#fff':p=='low'?'background:var(--bg-raised);color:var(--ink-dim)':'background:#b8860b;color:#fff';
+function ticketModal(t){
+ const subj=h('input',{placeholder:'Subject',value:t?t.subject:''}),
+  nm=h('input',{placeholder:'Customer name',value:t?t.custName:''}),
+  ph=h('input',{placeholder:'Phone (optional)',value:t?t.custPhone||'':''}),
+  pr=h('select',{},...['low','medium','high'].map(p=>h('option',{value:p,selected:(t?t.priority:'medium')==p},TICKET_PRI_LABEL[p]))),
+  desc=h('textarea',{placeholder:'What happened?',style:'min-height:70px'},t?t.description||'':'');
+ const x=modal(h('h3',{},t?'Edit ticket':'New ticket'),subj,nm,ph,pr,desc,
+  h('div',{class:'row'},h('span',{}),
+   h('button',{class:'p',onclick:async()=>{
+    if(!subj.value.trim()||!nm.value.trim())return alert('Enter a subject and customer name.');
+    const base=t||{status:'open',createdAt:now()};
+    await save('ticket',{...base,subject:subj.value.trim(),custName:nm.value.trim(),custPhone:ph.value.trim(),priority:pr.value,description:desc.value.trim(),updatedAt:now()},t?t.id:undefined);
+    x();render()
+   }},t?'Save':'Create ticket')));
+}
+function ticketDetail(t){
+ const notes=L('ticketnote').filter(n=>n.ticketId==t.id).sort((a,b)=>a.at>b.at?1:-1);
+ const noteIn=h('textarea',{placeholder:'Add a note…',style:'min-height:50px'});
+ const x=modal(
+  h('div',{class:'row',style:'justify-content:flex-start;border-bottom:none'},h('h3',{style:'margin:0'},t.subject),h('span',{class:'badge',style:priBadgeStyle(t.priority)},TICKET_PRI_LABEL[t.priority]||'Medium')),
+  h('div',{style:'font-size:12.5px;color:var(--ink-dim)'},t.custName+(t.custPhone?' · '+t.custPhone:'')+' · opened '+new Date(t.createdAt).toLocaleString()),
+  t.description?h('p',{style:'font-size:13.5px;margin-top:8px'},t.description):null,
+  h('div',{class:'row',style:'margin-top:10px'},h('b',{style:'font-size:12.5px'},'Status'),
+   h('select',{onchange:async e=>{const upd={...t,status:e.target.value,updatedAt:now(),resolvedAt:e.target.value=='resolved'?now():t.resolvedAt};await save('ticket',upd,t.id);x();ticketDetail(upd);render()}},
+    ...['open','in_progress','resolved','closed'].map(s=>h('option',{value:s,selected:t.status==s},TICKET_STATUS_LABEL[s])))),
+  h('div',{style:'margin-top:10px'},h('b',{style:'font-size:12.5px'},'Notes'),
+   ...notes.map(n=>h('div',{style:'font-size:12.5px;padding:6px 0;border-bottom:1px solid var(--l)'},h('b',{},n.by),': '+n.note+' · '+new Date(n.at).toLocaleString())),
+   notes.length?null:h('p',{style:'font-size:12px;color:var(--ink-dim)'},'No notes yet.')),
+  noteIn,
+  h('button',{class:'p',onclick:async()=>{
+   if(!noteIn.value.trim())return;
+   await save('ticketnote',{ticketId:t.id,note:noteIn.value.trim(),by:S.user.email||S.role,at:now()});
+   x();ticketDetail(t)
+  }},'Add note'),
+  h('button',{onclick:()=>{x();ticketModal(t)}},'Edit ticket'));
+}
+V.help=()=>{
+ const tickets=L('ticket').sort((a,b)=>b.createdAt>a.createdAt?1:-1);
+ const open=tickets.filter(t=>t.status=='open'),inProg=tickets.filter(t=>t.status=='in_progress'),resolved=tickets.filter(t=>t.status=='resolved'||t.status=='closed');
+ return h('div',{class:'g',style:'grid-template-columns:1fr'},
+  h('div',{style:'display:grid;grid-template-columns:repeat(3,1fr);gap:10px'},
+   h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:22px;font-weight:800;color:var(--accent)'},open.length),h('div',{style:'font-size:12.5px;color:var(--ink-dim)'},'Open')),
+   h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:22px;font-weight:800'},inProg.length),h('div',{style:'font-size:12.5px;color:var(--ink-dim)'},'In progress')),
+   h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:22px;font-weight:800'},resolved.length),h('div',{style:'font-size:12.5px;color:var(--ink-dim)'},'Resolved'))),
+  h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Tickets ('+tickets.length+')'),h('button',{class:'p',onclick:()=>ticketModal()},'+ New ticket')),
+   ...tickets.map(t=>h('div',{class:'row',style:'cursor:pointer',onclick:()=>ticketDetail(t)},
+    h('span',{},h('b',{},t.subject),h('br'),h('span',{style:'font-size:12.5px;color:var(--ink-dim)'},t.custName+' · '+new Date(t.createdAt).toLocaleDateString())),
+    h('span',{style:'display:flex;gap:6px;align-items:center'},h('span',{class:'badge',style:priBadgeStyle(t.priority)},TICKET_PRI_LABEL[t.priority]||'Medium'),h('span',{class:'badge',style:ticketBadgeStyle(t.status)},TICKET_STATUS_LABEL[t.status]||'Open')))),
+   tickets.length?null:h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No tickets yet.')));
+};
 let G=[];
 async function getG(){if(!navigator.onLine||!S.user)return;if(!featureOn('self_order')){if(G.length){G=[];render()}return}const{data,error}=await sb.from('guest_orders').select('*').eq('status','new').order('created_at');if(error)return;const n=G.length;G=data||[];if(G.length>n)alertSound(3);if(G.length!=n&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))render()}
 async function acceptG(g){let o=L('order').find(x=>x.status=='open'&&x.table==g.tbl&&x.lines.length);o=o?structuredClone(o):{...newOrder(),table:g.tbl};g.items.forEach(i=>{const it=R[i.id]&&R[i.id].data;if(!it)return;const sizeObj=i.size&&(it.sizes||[]).find(s=>s.l==i.size),price=sizeObj?sizeObj.p:it.price;const l=o.lines.find(x=>x.id==i.id&&x.size==i.size&&x.price==price&&!x.note);l?l.qty+=i.qty:o.lines.push({id:i.id,name:it.name,size:i.size,price,qty:i.qty,sent:0,st:it.st||'Kitchen'})});if(!(o.cust&&o.cust.name))o.cust={name:g.name,phone:g.phone};if(g.note)o.gn=g.note;const prev=S.cur;S.cur=o;mk(o);await persist();S.cur=prev;await sb.from('guest_orders').update({status:'done'}).eq('id',g.id);getG()}
@@ -754,6 +808,7 @@ const T_ICON={
  inv:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
  crm:'<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/>',
  mem:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><circle cx="8.5" cy="14" r="1.6"/><path d="M12.5 14h6"/>',
+ help:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.8 1c0 1.7-2.3 2-2.3 3.5"/><path d="M12 17h.01"/>',
  payroll:'<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M8 14h.01M12 14h4"/>',
  builder:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 9v12"/>',
  menu:'<path d="M4 6h16M4 12h16M4 18h10"/>',
@@ -769,7 +824,7 @@ function renderDrawer(T){
  );
  syncDrawer();
 }
-const ALL_T=[['pos','Sell','pos','pos'],['tabs','Orders','orders',null],['kds','Kitchen','kitchen','kds'],['kotrep','KOT','kitchen','kds'],['token','Token','kitchen',null],['rep','Reports','reports','reports'],['staff','Staff','staff',null],['inv','Stock','inventory',null],['crm','Customers','crm','crm'],['mem','Memberships','crm','membership'],['payroll','Payroll','o','payroll'],['builder','Website','o','website_builder']];
+const ALL_T=[['pos','Sell','pos','pos'],['tabs','Orders','orders',null],['kds','Kitchen','kitchen','kds'],['kotrep','KOT','kitchen','kds'],['token','Token','kitchen',null],['rep','Reports','reports','reports'],['staff','Staff','staff',null],['inv','Stock','inventory',null],['crm','Customers','crm','crm'],['mem','Memberships','crm','membership'],['help','Support','crm','helpdesk'],['payroll','Payroll','o','payroll'],['builder','Website','o','website_builder']];
 const visibleTabs=()=>ALL_T.filter(([k,,perm,feat])=>can(perm)&&(!feat||featureOn(feat))&&(k!='kotrep'||isRestaurant())&&(k!='token'||cfg().hwToken));
 function render(){if(S.authExpired||!S.user)return login('Your session ended. Please sign in again.');applyTheme();
  const T=visibleTabs().map(([k,n])=>[k,n]);
