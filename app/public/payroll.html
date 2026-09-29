@@ -45,7 +45,7 @@ label{display:grid;gap:4px;font-size:12.5px;color:var(--ink-dim)}
 .punch-card .big small{font-size:20px;font-weight:600;opacity:.85}
 .punch-card .sub{font-size:12.5px;opacity:.85;display:flex;align-items:center;gap:6px;margin-top:2px}
 .punch-card .stat{display:flex;align-items:center;gap:10px;padding:10px 0 0;margin-top:10px;border-top:1px solid rgba(255,255,255,.2);font-size:13px}
-.swipe{position:relative;background:#3b7bf0;color:#fff;border-radius:999px;height:54px;display:flex;align-items:center;justify-content:center;font-weight:700;overflow:hidden;touch-action:none;user-select:none}
+.swipe{position:relative;background:#3b7bf0;color:#fff;border-radius:999px;height:54px;display:flex;align-items:center;justify-content:center;font-weight:700;overflow:hidden;user-select:none}
 .swipe .thumb{position:absolute;left:4px;top:4px;bottom:4px;width:46px;background:#fff;color:#3b7bf0;border-radius:999px;display:flex;align-items:center;justify-content:center}
 .swipe.busy{opacity:.65}
 .bottom-nav{position:fixed;left:0;right:0;bottom:0;background:#fff;box-shadow:0 -6px 24px rgba(23,23,23,.1);padding:8px 4px calc(2px + env(safe-area-inset-bottom));z-index:16}
@@ -361,7 +361,11 @@ function bottomNav(){
 function empApp(){
  const emp=myEmployee();
  if(S._tick){clearInterval(S._tick);S._tick=null}
- if(!emp)return h('div',{class:'g'},h('div',{class:'card'},h('p',{},"Your account isn't linked to an employee record yet -- ask your admin to add you under Employees.")));
+ if(!emp)return h('div',{class:'g',style:'padding-top:16px'},h('div',{class:'card'},
+  h('p',{},"Your account isn't linked to an employee record yet -- ask your admin to add you under Employees."),
+  h('div',{style:'display:flex;gap:10px;margin-top:12px'},
+   h('button',{class:'p',onclick:()=>{sync();render()}},'Check again'),
+   h('button',{class:'warn',onclick:async()=>{await sb.auth.signOut();localStorage.removeItem('hru');location.reload()}},'Sign out'))));
  const tab=S.empTab||'home';
  const body=tab=='home'?empHome(emp):tab=='calendar'?empCalendar(emp):tab=='leave'?empLeave(emp):tab=='payslip'?empPayslip(emp):empNotif();
  return h('div',{},body,bottomNav());

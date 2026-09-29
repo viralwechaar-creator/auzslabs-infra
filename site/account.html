@@ -294,6 +294,7 @@ async function loadStaff() {
   STAFF = data || [];
 }
 function renderStaff() {
+  const payrollOn = (DASH.features || {}).payroll === true && (DASH.enabled_features || {}).payroll !== false;
   $('#pane-staff').innerHTML = `
     <div class="card">
       <h3 class="h-2">Add staff</h3>
@@ -303,6 +304,7 @@ function renderStaff() {
       <div class="field"><label>Role</label><select id="stRole">${ROLES.map((r) => `<option value="${r.id}">${esc(r.name)}</option>`).join('') || '<option value="">Create a role first</option>'}</select></div>
       <button class="btn btn-primary form-submit" id="stAdd" ${ROLES.length ? '' : 'disabled'} style="margin-top:12px">Add staff</button>
       <div id="stMsg"></div>
+      ${payrollOn ? `<p class="muted" style="margin-top:12px;font-size:12.5px">This creates their login only. For Payroll self-service (attendance, leave, payslips), also add them under <a href="https://${esc(DASH.tenant.slug)}.auzslab.in/payroll.html" target="_blank" style="color:inherit;text-decoration:underline">Payroll → Employees</a>, entering this same email there.</p>` : ''}
     </div>
     <div class="card">
       <h3 class="h-2">Current staff</h3>
