@@ -699,7 +699,7 @@ const T_GROUP_START=new Set(['kds','rep','menu']);
 function renderDrawer(T){
  if(!drawerEl){drawerOvEl=h('div',{class:'drawer-ov',onclick:()=>{S.drawerOpen=false;syncDrawer()}});drawerEl=h('div',{class:'drawer'});document.body.append(drawerOvEl,drawerEl)}
  drawerEl.replaceChildren(
-  ...T.map(([k,n])=>{const btn=h('button',{class:S.tab==k?'on':'',style:'display:flex;align-items:center;gap:10px'+(T_GROUP_START.has(k)?';margin-top:12px':''),onclick:()=>{if(k=='payroll'){window.open('/payroll.html','_blank');S.drawerOpen=false;syncDrawer();return}if(k=='builder'){window.open('/builder.html','_blank');S.drawerOpen=false;syncDrawer();return}S.tab=k;S.drawerOpen=false;syncDrawer();render()}});btn.innerHTML='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0">'+(T_ICON[k]||'')+'</svg><span>'+esc(n)+'</span>';return btn}),
+  ...T.map(([k,n])=>{const btn=h('button',{class:S.tab==k?'on':'',style:'display:flex;align-items:center;gap:10px'+(T_GROUP_START.has(k)?';margin-top:12px':''),onclick:()=>{if(k=='payroll'){location.href='/payroll.html';return}if(k=='builder'){location.href='/builder.html';return}S.tab=k;S.drawerOpen=false;syncDrawer();render()}});btn.innerHTML='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0">'+(T_ICON[k]||'')+'</svg><span>'+esc(n)+'</span>';return btn}),
   h('button',{class:'warn',style:'margin-top:12px',onclick:async()=>{await sb.auth.signOut();localStorage.removeItem('u');location.reload()}},'Sign out'),
   h('div',{style:'margin-top:auto;padding:10px 12px;font-size:11px;color:var(--ink-faint);font-family:\'Space Mono\',monospace'},'Signed in as '+S.role)
  );
