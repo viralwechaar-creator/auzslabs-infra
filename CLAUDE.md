@@ -24,10 +24,13 @@ There are three separate front-facing surfaces:
   day: `index.html` is the POS/CRM/inventory/staff/reports app, `site.html`
   is that one tenant's own public-facing mini-website (which QR codes on
   tables also point to, doubling as the self-order ordering page), `order.html`
-  is the public invoice/receipt view. Served on every tenant's own
-  subdomain (`<slug>.auzslab.in`) — same files for every tenant, the
-  active one is resolved client-side from the subdomain (`tenant.js`) or
-  server-side from the logged-in staff member's own profile.
+  is the public invoice/receipt view, `payroll.html` is the standalone
+  Payroll app, `builder.html`/`w.html` are the Website Builder editor and
+  its public renderer (see "Website Builder" below). Served on every
+  tenant's own subdomain (`<slug>.auzslab.in`) — same files for every
+  tenant, the active one is resolved client-side from the subdomain
+  (`tenant.js`) or server-side from the logged-in staff member's own
+  profile.
 - **`server/`** — the API: auth, a generic data API, RPC endpoints, file
   storage, realtime (WebSocket + Postgres LISTEN/NOTIFY), Web Push. This
   is what stands in for "Supabase" — see `db/000_own_auth.sql`'s own
@@ -175,6 +178,46 @@ database invisible to staff. When wiring up a new toggle, check it in
 *every* place that feature's behavior surfaces — client UI, the public
 page, and the RPC itself (server-side, so it can't be bypassed by calling
 the RPC directly) — not just the one place that was easiest to gate.
+
+## Website Builder
+
+A sellable product (`website_builder` feature key) like Payroll — its own
+standalone app on the tenant's own login, not a tab inside `index.html`:
+
+- **`app/public/builder.html`** — the drag-and-drop editor (owner-only;
+  gated client-side on `featureOn('website_builder')`, checked via
+  `my_dashboard` the same way `index.html` does). Pages are just another
+  `records` kind, `'sitepage'`, keyed by slug (`'home'`, `'about'`, ...) —
+  not a new table, matching the generic-engine philosophy in "The
+  `records` table" above. A page's `data.blocks` is the working draft
+  (synced continuously via the normal `push_record` path); `data.publishedBlocks`
+  is a snapshot copied from `blocks` only when the owner clicks Publish.
+  Block reordering is native HTML5 drag-and-drop (no library). Uses the
+  same offline-sync engine as `payroll.html`/`index.html` (own IndexedDB
+  namespace `builder1`), even though editing a website isn't really an
+  offline workflow — consistency with the rest of the codebase mattered
+  more than trimming unused code paths here.
+- **`app/public/w.html`** — the public renderer. Resolves the tenant from
+  the subdomain (`tenant.js`) and the page from `?page=slug` (default
+  `home`), then calls the `public_page(tenant_slug, page_slug)` RPC (same
+  SECURITY DEFINER pattern as `public_menu`/`public_invoice`, since RLS
+  requires a logged-in tenant member and a visitor has no session).
+  **Only ever reads `publishedBlocks`, never `blocks`** — a half-finished
+  edit can never go live by accident.
+- No RLS/`push_record` changes were needed for the write side: the
+  `(me()->>'role') = 'owner'` catch-all in `push_record` (db/028's
+  version) and the `r_read`/`r_ins`/`r_upd` policies already authorize an
+  owner to read/write *any* kind, `'sitepage'` included, for free. This is
+  deliberately owner-only — if staff ever need write access, add
+  `'sitepage'` to the explicit kind allow-lists the same way
+  `db/019_allow_kotlog_kind.sql` added `'kotlog'`.
+- **Every new public RPC needs registering in `server/src/index.js`'s
+  `RPC` object, or every call 404s with "unknown function."** This isn't
+  hypothetical — the entire add-on-request feature (`submit_addon_request`
+  and friends) shipped broken this way and went unnoticed until a real
+  client hit it, because the Postgres function existed and worked fine in
+  isolation; only the HTTP-layer allow-list was missing. `public_page` was
+  added to that list in the same migration.
 
 ## Local-first sync (the POS app specifically)
 

@@ -137,7 +137,7 @@
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script>
 const sb = supabase.createClient(CFG.url, CFG.key);
-const PRODUCT_LABEL = { pos: 'POS', crm: 'CRM', billing: 'Billing & Invoicing', inventory: 'Inventory', self_order: 'QR Ordering', payroll: 'Payroll' };
+const PRODUCT_LABEL = { pos: 'POS', crm: 'CRM', billing: 'Billing & Invoicing', inventory: 'Inventory', self_order: 'QR Ordering', payroll: 'Payroll', website_builder: 'Website Builder' };
 
 function slugify(s) {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '').slice(0, 40);

@@ -1,0 +1,75 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
+<title>Loading…</title><link rel=icon href=/logo.png>
+<link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@700&display=swap" rel=stylesheet>
+<style>
+:root{--ink:#171717;--ink-dim:#4d4d4d;--accent:#800020;--bg:#fff}
+*{box-sizing:border-box}body{margin:0;font:16px/1.6 Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+a{color:inherit}
+.wrap{max-width:900px;margin:0 auto;padding:0 22px}
+.wb-hero{padding:90px 0 60px;text-align:center}
+.wb-hero h1{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif;font-size:clamp(30px,6vw,52px);font-weight:800;margin:0;letter-spacing:-.01em}
+.wb-hero p{max-width:38em;margin:16px auto 0;color:var(--ink-dim);font-size:17px}
+.wb-hero .btn{display:inline-block;margin-top:24px;padding:13px 26px;border-radius:999px;background:var(--accent);color:#fff;text-decoration:none;font-weight:600}
+.wb-section{padding:44px 0}
+.wb-text h2{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif;font-size:26px;margin:0 0 12px}
+.wb-text p{color:var(--ink-dim);white-space:pre-wrap}
+.wb-image img{width:100%;border-radius:18px;display:block}
+.wb-image .cap{font-size:13px;color:var(--ink-dim);margin-top:8px;text-align:center}
+.wb-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.wb-gallery img{width:100%;height:160px;object-fit:cover;border-radius:12px;display:block}
+.wb-button{text-align:center}
+.wb-button a{display:inline-block;padding:13px 28px;border-radius:999px;background:var(--accent);color:#fff;text-decoration:none;font-weight:600}
+.wb-empty{padding:20vh 22px;text-align:center;color:var(--ink-dim)}
+.wb-foot{text-align:center;padding:30px;font-size:12px;color:#999}
+</style>
+</head><body>
+<div id=app></div>
+<script src="/sb-client.js?v=2"></script>
+<script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
+<script src=/tenant.js></script>
+<script>
+const sb=supabase.createClient(CFG.url,CFG.key);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pageSlug=new URLSearchParams(location.search).get('page')||'home';
+
+function renderBlock(b){
+ const p=b.props||{};
+ if(b.type=='hero')return `<section class="wb-section wb-hero wrap">
+  ${p.heading?`<h1>${esc(p.heading)}</h1>`:''}
+  ${p.sub?`<p>${esc(p.sub)}</p>`:''}
+  ${p.btnText?`<a class="btn" href="${esc(p.btnLink||'#')}">${esc(p.btnText)}</a>`:''}
+ </section>`;
+ if(b.type=='text')return `<section class="wb-section wb-text wrap">
+  ${p.heading?`<h2>${esc(p.heading)}</h2>`:''}
+  ${p.body?`<p>${esc(p.body)}</p>`:''}
+ </section>`;
+ if(b.type=='image')return p.url?`<section class="wb-section wb-image wrap">
+  <img src="${esc(p.url)}" alt="${esc(p.caption||'')}">
+  ${p.caption?`<div class="cap">${esc(p.caption)}</div>`:''}
+ </section>`:'';
+ if(b.type=='gallery')return (p.urls||[]).length?`<section class="wb-section wb-gallery wrap">
+  ${(p.urls||[]).map(u=>`<img src="${esc(u)}">`).join('')}
+ </section>`:'';
+ if(b.type=='button')return p.text?`<section class="wb-section wb-button wrap"><a href="${esc(p.link||'#')}">${esc(p.text)}</a></section>`:'';
+ if(b.type=='spacer')return `<div style="height:${+p.height||40}px"></div>`;
+ return '';
+}
+
+async function boot(){
+ const app=document.getElementById('app');
+ if(!TENANT_SLUG){app.innerHTML='<div class="wb-empty">No site here.</div>';return}
+ let data;
+ try{const r=await sb.rpc('public_page',{tenant_slug:TENANT_SLUG,page_slug:pageSlug});data=r.data}catch(e){app.innerHTML='<div class="wb-empty">This page couldn’t load.</div>';return}
+ if(!data||!data.page){
+  app.innerHTML='<div class="wb-empty">'+(data&&data.pages&&data.pages.length?'This page hasn’t been published yet.':'This site hasn’t been published yet.')+'</div>';
+  return;
+ }
+ const cfg=data.cfg||{};
+ if(cfg.col)document.documentElement.style.setProperty('--accent',cfg.col);
+ document.title=(data.page.title||cfg.name||'Website')+(cfg.name?' — '+cfg.name:'');
+ app.innerHTML=(data.page.blocks||[]).map(renderBlock).join('')+'<div class="wb-foot">Powered by <a href="https://auzslab.in" target="_blank" rel="noopener">AUZslab</a></div>';
+}
+boot();
+</script>
+</body></html>
