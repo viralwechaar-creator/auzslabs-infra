@@ -10,7 +10,7 @@ button:hover{background:var(--l)}button:active{transform:scale(.96)}
 button.p,button.on{background:var(--g);color:#fff}button.p:hover,button.on:hover{background:var(--g);opacity:.9}
 button.warn{color:var(--accent)}button.warn:hover{background:var(--accent);color:#fff}
 button:disabled{opacity:.4;background:none}
-input,select,textarea{font:inherit;padding:10px 15px;border:1.5px solid var(--l);border-radius:var(--radius-sm);background:#fff;color:inherit;width:100%;transition:border-color .15s var(--ease)}
+input,select,textarea{font:inherit;font-size:16px;padding:10px 15px;border:1.5px solid var(--l);border-radius:var(--radius-sm);background:#fff;color:inherit;width:100%;transition:border-color .15s var(--ease)}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 textarea{min-height:80px;resize:vertical}
 h1,h2,h3{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif;margin:0}
@@ -169,7 +169,19 @@ function blockCard(page,b,idx){
 async function publish(page){
  page.publishedBlocks=JSON.parse(JSON.stringify(page.blocks));
  page.publishedAt=now();
- await save('sitepage',page,page.slug);
+ const r=await save('sitepage',page,page.slug);
+ // save() queues this for sync() in the background (fire-and-forget,
+ // see doSync()'s own comment) -- Preview opens a brand new tab that
+ // reads the page straight from the server via public_page(), so
+ // without an explicit, awaited push here, a quick tap on Preview
+ // right after Publish can land before the server actually has the
+ // new publishedBlocks, showing "not published yet" even though it
+ // clearly just was. force:true because this IS the latest state --
+ // no conflict check needed, it should just win.
+ try{
+  const{data:res,error}=await sb.rpc('push_record',{rid:r.id,rkind:r.kind,rdata:r.data,rdeleted:r.deleted,base:null,force:true});
+  if(!error&&res){r.srv=res.server_updated_at;await put('rec',r);await del('out',r.id)}
+ }catch(e){console.warn('publish sync',e)}
  alert('Published. Live at your site’s /w.html?page='+page.slug);
 }
 

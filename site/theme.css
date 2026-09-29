@@ -342,7 +342,7 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
 .field label{font-family:var(--font-mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-dim)}
 .field input,.field textarea,.field select{
   background:var(--bg-raised);border:2px solid var(--ink);border-radius:14px;padding:11px 14px;
-  color:var(--ink);font-family:var(--font-body);font-size:13px;width:100%;
+  color:var(--ink);font-family:var(--font-body);font-size:16px;width:100%;
 }
 .field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:var(--accent)}
 .field textarea{resize:none;min-height:68px;border-radius:16px}
