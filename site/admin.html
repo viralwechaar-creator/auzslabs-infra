@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Admin — AUZslab</title>
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="/logo.png">
@@ -96,6 +98,7 @@
         <button class="nav-link admin-nav-btn" data-section="addonRequests"><svg class="ios-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg><span>Add-on requests</span><span id="notifBadgeAddon"></span></button>
         <button class="nav-link admin-nav-btn" data-section="clients"><svg class="ios-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20v-1a6.5 6.5 0 0 1 13 0v1"/><path d="M16.5 5a3.2 3.2 0 0 1 0 6.2M21 20v-1a5.6 5.6 0 0 0-4-5.4"/></svg><span>Clients</span></button>
         <button class="nav-link admin-nav-btn" data-section="onboard"><svg class="ios-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg><span>Onboard new</span></button>
+        <button class="nav-link admin-nav-btn" data-section="setup"><svg class="ios-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21v-6M4 10V3M12 21v-9M12 8V3M20 21v-4M20 13V3"/><circle cx="4" cy="12" r="2"/><circle cx="12" cy="10" r="2"/><circle cx="20" cy="15" r="2"/></svg><span>Client setup</span><span id="notifBadgeSetup"></span></button>
         <button class="nav-link admin-nav-btn" data-section="systemStats"><svg class="ios-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M12 20V4M20 20v-7"/></svg><span>System resources</span></button>
       </div>
       <div class="ios-menu-group">
@@ -203,6 +206,14 @@
           </form>
         </div>
         <div id="result"></div>
+      </section>
+
+      <section class="section tight admin-section" id="setupSection">
+        <div class="label">Handoff queue</div>
+        <h2 class="h-2">Client setup</h2>
+        <p class="p" style="max-width:640px;color:var(--ink-faint)">Every client below has a working login but hasn't been marked "delivered" yet. Log in as their owner, build out their menu/catalog, tables, staff and (if they have it) Payroll employees using the real app -- then generate a fresh handoff password and send it over.</p>
+        <div id="setupHandoffResult"></div>
+        <div id="setupList">Loading&hellip;</div>
       </section>
 
       <section class="section tight admin-section" id="systemStatsSection">
@@ -563,6 +574,7 @@ async function loadClients(preFetched) {
     data = fetched;
   }
   clientsCache = data || [];
+  loadSetupQueue();
   if (!clientsCache.length) { listEl.innerHTML = emptyDoodle('No clients yet &mdash; onboard one below.'); return; }
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -633,6 +645,71 @@ async function loadClients(preFetched) {
       const { error } = await sb.rpc('delete_client', { p_tenant_id: id });
       if (error) { alert(error.message); return; }
       alert(`"${c.name}" has been deleted.`);
+      loadClients();
+    };
+  });
+}
+
+function loadSetupQueue() {
+  const listEl = document.getElementById('setupList');
+  const pending = clientsCache.filter((c) => !c.delivered_at);
+  const badge = document.getElementById('notifBadgeSetup');
+  if (badge) badge.textContent = pending.length ? ' (' + pending.length + ')' : '';
+  if (!pending.length) { listEl.innerHTML = emptyDoodle('Nothing waiting -- every client has been set up and handed over.'); return; }
+
+  listEl.innerHTML = pending.map((c) => {
+    const services = Object.entries(c.features || {}).filter(([, on]) => on)
+      .map(([k]) => `<span class="feature-tag">${esc(FEATURE_LABEL[k] || k)}</span>`).join('') || '&mdash;';
+    return `
+    <div class="card" data-id="${c.id}" style="max-width:640px;margin-bottom:14px">
+      <b>${esc(c.name)}</b> &mdash; <span style="color:var(--ink-faint)">${esc(c.slug)}.auzslab.in</span><br>
+      <span style="color:var(--ink-faint)">${esc(NICHE_LABEL[c.niche] || c.niche)}</span> &middot; ${services}
+      <div class="row-actions" style="margin-top:10px">
+        <button class="btn btn-ghost" data-login-as>Log in as owner (setup)</button>
+        <button class="btn btn-primary" data-deliver>Mark set up &amp; hand over</button>
+      </div>
+      <div data-loginbox></div>
+    </div>`;
+  }).join('');
+
+  listEl.querySelectorAll('[data-login-as]').forEach((btn) => {
+    btn.onclick = async () => {
+      const card = btn.closest('[data-id]');
+      const id = card.dataset.id;
+      const c = clientsCache.find((x) => x.id === id);
+      if (!confirm(`This resets "${c.name}"'s current owner password so you can log in as them to set things up. If they've already tried logging in themselves, their password will stop working until you hand over the new one at the end. Continue?`)) return;
+      const { data, error } = await sb.rpc('admin_reset_client_password', { p_tenant_id: id });
+      if (error) { alert(error.message); return; }
+      card.querySelector('[data-loginbox]').innerHTML = `
+        <div class="ok-box" style="margin-top:10px">
+          Open <a href="https://${esc(c.slug)}.auzslab.in" target="_blank" rel="noopener"><b>${esc(c.slug)}.auzslab.in</b></a> and sign in as owner to build out their setup:<br>
+          Email: <b>${esc(data.email)}</b><br>
+          Password: <b>${esc(data.temp_password)}</b><br>
+          <span style="color:var(--ink-faint);font-size:12.5px">This is a working password just for you to set things up with -- generate a fresh one below once you're done.</span>
+        </div>`;
+    };
+  });
+  listEl.querySelectorAll('[data-deliver]').forEach((btn) => {
+    btn.onclick = async () => {
+      const card = btn.closest('[data-id]');
+      const id = card.dataset.id;
+      const c = clientsCache.find((x) => x.id === id);
+      if (!confirm(`Mark "${c.name}" as set up and ready? This generates a brand-new password for them (any password you were using to set things up stops working) and removes them from this queue.`)) return;
+      const { data: pw, error: pwErr } = await sb.rpc('admin_reset_client_password', { p_tenant_id: id });
+      if (pwErr) { alert(pwErr.message); return; }
+      const { error: delErr } = await sb.rpc('mark_client_delivered', { p_tenant_id: id });
+      if (delErr) { alert(delErr.message); return; }
+      const msg = `Your AUZslab account for ${c.name} is ready!\n\nLog in here: https://auzslab.in/signup.html (use the "Log in" tab)\nEmail: ${pw.email}\nPassword: ${pw.temp_password}\n\nOnce you're in, open "Your dashboard" to see your live site -- and please change your password from there.`;
+      document.getElementById('setupHandoffResult').innerHTML = `
+        <div class="ok-box" style="margin-bottom:14px">
+          <b>${esc(c.name)}</b> marked as delivered. Copy this and send it to them directly (WhatsApp, SMS, etc.):
+          <textarea readonly rows="6" style="width:100%;margin-top:8px;font:inherit;padding:10px;border:1.5px solid var(--l);border-radius:10px" onclick="this.select()">${esc(msg)}</textarea>
+          <button class="btn btn-primary" style="margin-top:8px" data-copy-handoff>Copy message</button>
+        </div>`;
+      document.querySelector('#setupHandoffResult [data-copy-handoff]').onclick = async (e) => {
+        try { await navigator.clipboard.writeText(msg); e.target.textContent = 'Copied ✓'; setTimeout(() => { e.target.textContent = 'Copy message'; }, 1500); }
+        catch { prompt('Copy this message:', msg); }
+      };
       loadClients();
     };
   });

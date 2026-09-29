@@ -80,6 +80,7 @@ const RPC = {
 
   // --- Admin: reset a client's forgotten password ---
   admin_reset_client_password: { params: ['p_tenant_id'], auth: true },
+  mark_client_delivered: { params: ['p_tenant_id'], auth: true },
   delete_client: { params: ['p_tenant_id'], auth: true },
   admin_system_stats: { params: [], auth: true },
 
