@@ -13,18 +13,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-/* Matches account.html's own #sidebarDrawer treatment -- a half-width
-   drawer instead of the shared .sidebar default's full-width mobile
-   drawer, with the visible left edge (it opens from the right) curved.
-   Desktop's persistent sidebar (>860px) is untouched -- it's flush
-   against the screen's own edge, so a radius there would just look
-   like a gap. */
+
 #sidebarDrawer{max-width:320px;box-shadow:-30px 0 70px -20px rgba(0,0,0,.5)}
 @media (max-width:860px){#sidebarDrawer{border-radius:26px 0 0 26px}}
-/* ---- admin-only additions: a data table in the same visual language
-   as the rest of the site (thick ink borders, mono labels, pill tags)
-   -- the shared design system has no table component, everything else
-   here reuses .field/.btn/.card/.label/.h-1/.h-2 as-is. ---- */
+
 .admin-table-wrap{overflow-x:auto;border:2px solid var(--ink);border-radius:14px;margin-top:16px}
 .admin-table{width:100%;border-collapse:collapse;font-size:12.5px;white-space:nowrap}
 .admin-table th{
@@ -53,22 +45,11 @@
   padding:16px 18px;margin-top:16px;font-size:13px;line-height:1.7;
 }
 .ok-box b{word-break:break-word}
-/* admin section nav, reusing the marketing site's sidebar/drawer shell
-   (same JS in site.js) for the drawer mechanics, but not its boxy
-   look -- see the iOS-menu block below. */
+
 .admin-nav-btn{background:none;border:none;width:100%;cursor:pointer;font-family:inherit}
 .admin-section{display:none}
 .admin-section.active{display:block}
 
-/* ---- iOS-style menu: this dashboard's own nav, deliberately not the
-   marketing site's thick-ink-border/doodle language used everywhere
-   else -- a frosted grouped list instead of a boxy bordered stack,
-   per an explicit "too boxy, make it iOS style, premium and minimal"
-   request. Scoped to this page's own <style> tag only, so nothing
-   about the shared .sidebar/.nav-link classes changes on any
-   marketing page that reuses them. Same treatment as account.html's
-   own copy of this block, kept in sync by hand since each page's
-   <style> is self-contained (no shared partial file for it). ---- */
 #sidebarDrawer{background:rgba(20,20,22,.78);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%)}
 .ios-menu{gap:22px;margin-top:8px}
 .ios-menu-group{display:flex;flex-direction:column;gap:1px;background:rgba(255,255,255,.06);border-radius:16px;overflow:hidden}
@@ -173,11 +154,7 @@
         <div id="signupRequestsList">Loading&hellip;</div>
       </section>
 
-      <!-- An EXISTING client asking to add a product to their live
-           subscription (db/027_addon_requests.sql) -- deliberately
-           separate from signup requests above, since approving one
-           never provisions a tenant, only merges a key into one that
-           already exists. -->
+      
       <section class="section tight admin-section" id="addonRequestsSection">
         <div class="label">Existing clients</div>
         <h2 class="h-2">Add-on requests</h2>
@@ -271,9 +248,6 @@ function esc(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-// Same hand-drawn open-box doodle as cart.html's empty-cart state --
-// one shared "nothing here yet" illustration instead of a bare
-// sentence, reused for leads/signup requests/clients.
 function emptyDoodle(text) {
   return `<div class="doodle-empty">
     <svg width="88" height="88" viewBox="0 0 88 88" fill="none" aria-hidden="true">
@@ -286,12 +260,6 @@ function emptyDoodle(text) {
   </div>`;
 }
 
-// A prospect has no login yet, so the demo page reads its context
-// through demo_context() (a public, security-definer RPC -- see
-// db/022_demo_context.sql) keyed only by this id, never by anything
-// that needs auth. Handing that link out is the whole point of the
-// button, so this just builds it and copies it -- no separate
-// "generate" step for the team to remember.
 async function copyDemoLink(kind, id, btn) {
   const url = `https://auzslab.in/demo.html?${kind}=${id}`;
   try {
@@ -304,7 +272,6 @@ async function copyDemoLink(kind, id, btn) {
   }
 }
 
-// ---- section switching ----
 document.querySelectorAll('.admin-nav-btn').forEach((btn) => {
   btn.onclick = () => {
     document.querySelectorAll('.admin-nav-btn').forEach((b) => b.classList.remove('active'));
@@ -323,10 +290,6 @@ document.querySelectorAll('.admin-nav-btn').forEach((btn) => {
   };
 });
 
-// ---- notification badges: new leads / signup requests, read from
-// the notifications table (auto-populated by DB triggers) rather
-// than recomputed from status fields, so it also covers any future
-// admin-facing notification type without new nav wiring. ----
 async function refreshAdminNotifBadges() {
   const { data } = await sb.from('notifications').select('id,type').eq('read', false);
   const counts = {};
@@ -344,13 +307,6 @@ async function markAdminNotifsRead(type) {
   refreshAdminNotifBadges();
 }
 
-// Signing in only proves who the visitor is, not that they're allowed
-// here -- a tenant owner has a perfectly valid Supabase session too.
-// list_clients() is a safe, read-only, already-existing RPC that the
-// server itself raises 'not authorized' from unless is_platform_admin()
-// is true, so it doubles as the access check: nothing admin-only (the
-// nav, the Leads/Clients/Onboard sections, or even their labels) renders
-// until it comes back clean.
 async function checkSession() {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) return;
@@ -648,7 +604,7 @@ document.getElementById('editForm').onsubmit = async (e) => {
   const id = document.getElementById('editModal').dataset.id;
   const fee = document.getElementById('editFee').value.trim();
   const renewal = document.getElementById('editRenewal').value;
-  const status = document.getElementById('editStatus').value; // constrained by <select>, can't be a typo
+  const status = document.getElementById('editStatus').value;
   const notes = document.getElementById('editNotes').value;
   const errEl = document.getElementById('editErr');
   const { error } = await sb.rpc('update_client', {

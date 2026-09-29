@@ -11,10 +11,7 @@
   --font-display:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif;
   --font-body:'Inter',sans-serif;
   --font-mono:'Space Mono',monospace;
-  /* half the rendered height of the stack-panel title (clamp(56px,16vw,130px)
-     at line-height .85) -- the gap between two consecutive panel offsets, so
-     the panel that follows always slices a title exactly through its middle
-     instead of leaving room for the whole word to clear it */
+  
   --tab-step: clamp(24px, 6.8vw, 55px);
 }
 *{box-sizing:border-box}
@@ -24,10 +21,6 @@ a{color:inherit;text-decoration:none}
 button{font-family:inherit}
 ::selection{background:var(--accent);color:#fff}
 
-/* ---------- layout shell ---------- */
-/* Mobile-first: a slim top bar + a hamburger that opens a
-   half-width slide-in drawer. The persistent full sidebar is a
-   desktop-only enhancement, added in the min-width block below. */
 .shell{display:flex;flex-direction:column;min-height:100vh;width:100%;background:var(--bg)}
 
 .topbar{
@@ -35,8 +28,7 @@ button{font-family:inherit}
   border-bottom:2px solid var(--ink);background:var(--bg);
   position:sticky;top:0;z-index:25;
 }
-/* text menu button, not an icon — order:2 keeps it on the right of the
-   logo in the topbar's flex row */
+
 .hamburger{
   order:2;flex-shrink:0;display:flex;align-items:center;gap:8px;
   padding:9px 18px;border-radius:999px;border:2px solid var(--ink);
@@ -46,10 +38,7 @@ button{font-family:inherit}
 }
 .hamburger:hover,.hamburger.is-open{background:var(--ink);color:#fff}
 .topbar-logo{order:1}
-/* the logo is deliberately pixel-art — browsers blur/anti-alias it when
-   scaled down by default, which is what made it look like garbled mush
-   at real display sizes. image-rendering:pixelated keeps every pixel
-   crisp instead of smoothing it into illegibility. */
+
 .topbar-logo img{
   max-width:84px;display:block;
   image-rendering:pixelated;image-rendering:-moz-crisp-edges;image-rendering:crisp-edges;
@@ -70,8 +59,7 @@ button{font-family:inherit}
   z-index:30;overflow-y:auto;
 }
 .sidebar.open{transform:translateX(0)}
-/* the logo file is dark ink on transparent — invert it to read on the
-   now-black sidebar instead of disappearing into the background */
+
 .sidebar-logo img{
   width:100%;max-width:120px;display:block;
   filter:invert(1) brightness(1.6);
@@ -95,10 +83,6 @@ button{font-family:inherit}
 .nav-link:hover{color:#fff;background:none;transform:translateX(-3px)}
 .nav-link.active{color:#fff;background:none;box-shadow:inset -3px 0 0 var(--accent);padding-right:14px}
 
-/* ---------- nav-group: expandable sub-list (Products / Business types / Resources) ---------- */
-/* Same information as a horizontal mega-menu would show, adapted to our
-   vertical sidebar/drawer: click to expand in place instead of a
-   dropdown panel, since there's no horizontal top bar to drop one from. */
 .nav-group{display:flex;flex-direction:column}
 .nav-group-toggle{
   width:100%;display:flex;align-items:center;justify-content:flex-end;gap:10px;
@@ -107,15 +91,7 @@ button{font-family:inherit}
 .nav-group-chevron{transition:transform .2s ease;color:rgba(255,255,255,.35);flex-shrink:0}
 .nav-group-toggle[aria-expanded="true"]{color:#fff;background:none}
 .nav-group-toggle[aria-expanded="true"] .nav-group-chevron{transform:rotate(180deg);color:var(--accent)}
-/* mobile: tapping a category swaps the WHOLE screen to a dedicated
-   sub-list (full-screen overlay), not an inline expand -- a back
-   button returns to the main list, matching a drill-down app menu
-   rather than an accordion. Desktop overrides this back to the
-   hover flyout further down. */
-/* Same black background and right-aligned bold display-font link rows as
-   the main sidebar list (.nav-link) -- this used to be a maroon
-   full-bleed panel with icon+pill rows of its own, which read as a
-   different menu rather than a drilled-in view of the same one. */
+
 .nav-submenu{
   display:block;position:fixed;inset:0;background:#000;z-index:35;
   padding:90px 24px 110px;overflow-y:auto;
@@ -152,7 +128,6 @@ button{font-family:inherit}
 .section{padding:44px 0}
 .section.tight{padding:28px 0}
 
-/* ---------- typography: bold, rounded, hand-made ---------- */
 .label{
   font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
   color:var(--ink-dim);display:flex;align-items:center;gap:9px;margin-bottom:16px;
@@ -168,7 +143,6 @@ button{font-family:inherit}
 .p{font-size:12.5px;line-height:1.7;color:var(--ink-dim)}
 .accent{color:var(--accent)}
 
-/* ---------- buttons: pill-shaped, soft, one quiet glow ---------- */
 .btn{
   display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;
   font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;text-transform:uppercase;
@@ -183,7 +157,6 @@ button{font-family:inherit}
 .btn-ghost{border-color:var(--line);color:var(--ink-dim)}
 .btn-ghost:hover{background:var(--ink);border-color:var(--ink);color:#fff}
 
-/* ---------- cards / depth: soft rounded, gentle shadow ---------- */
 .card{
   background:#fff;
   border:2px solid var(--ink);border-radius:26px 12px 26px 12px;padding:22px;
@@ -191,23 +164,19 @@ button{font-family:inherit}
   position:relative;overflow:hidden;
   transition:transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s cubic-bezier(.22,1,.36,1);
 }
-/* a little deliberate imperfection instead of every card sitting in a
-   perfectly identical box — settles straight on hover/focus */
+
 .card:nth-of-type(odd){transform:rotate(-.5deg)}
 .card:nth-of-type(even){transform:rotate(.4deg);border-radius:12px 26px 12px 26px}
 .card:hover{transform:translate(-2px,-2px) rotate(0deg);box-shadow:7px 7px 0 var(--ink)}
 .grid-3{display:grid;grid-template-columns:1fr;gap:12px}
 .work-step{position:relative;overflow:hidden;z-index:0}
-/* WORK panel only -- staggered left/right so the 3 steps read as a
-   zigzag instead of one long column, and take less vertical room to
-   scroll through before the BUILD panel covers this one */
+
 .zigzag{gap:8px}
 .zigzag > .work-step:nth-child(1){margin-right:16%}
 .zigzag > .work-step:nth-child(2){margin-left:16%}
 .zigzag > .work-step:nth-child(3){margin-right:8%}
 .work-step .big-numeral{font-size:clamp(30px,9vw,52px);top:-2px;right:4px}
 .grid-2{display:grid;grid-template-columns:1fr;gap:12px}
-
 
 .dash{border-top:2px dashed var(--line);margin:0}
 
@@ -216,8 +185,6 @@ button{font-family:inherit}
   font-family:var(--font-mono);font-size:10px;color:var(--ink);background:#fff;
 }
 
-/* ---------- 9read-inspired accents: an oversized faint numeral behind a
-   card/step's own heading, and a dotted texture ---------- */
 .big-numeral{
   position:absolute;top:2px;right:8px;z-index:-1;
   font-family:var(--font-display);font-weight:700;
@@ -231,7 +198,7 @@ button{font-family:inherit}
   -webkit-mask-image:linear-gradient(to bottom, transparent, #000 20%, #000 80%, transparent);
   mask-image:linear-gradient(to bottom, transparent, #000 20%, #000 80%, transparent);
 }
-/* ---------- hero visual ---------- */
+
 .hero-visual{
   height:180px;border-radius:20px;position:relative;overflow:hidden;
   background:var(--bg-raised);
@@ -249,9 +216,6 @@ button{font-family:inherit}
 .hero-visual .orb::before{content:'';position:absolute;inset:16px;border:2px dashed var(--ink);border-radius:50%}
 .hero-visual .orb::after{content:'';position:absolute;inset:32px;border-radius:50%;background:var(--accent)}
 
-/* ---------- hero art: fills the space beside the hero text on wide
-   screens, and below it on narrow ones, instead of leaving it blank —
-   just the plain logo, no card/box chrome around it ---------- */
 .hero-grid{display:grid;grid-template-columns:1fr}
 .hero-art{display:flex;justify-content:flex-end;margin-top:28px}
 .hero-art-logo{
@@ -263,7 +227,6 @@ button{font-family:inherit}
 .hero-service{font-family:var(--font-display);font-weight:600;font-size:15px;color:var(--ink-faint)}
 .hero-service.is-primary{color:var(--ink);font-weight:700}
 
-/* ---------- homepage closer: the wordmark, repeated huge ---------- */
 .mega-logo{
   display:flex;align-items:center;justify-content:flex-start;position:relative;
   padding:48px 20px;overflow:hidden;
@@ -277,7 +240,6 @@ button{font-family:inherit}
   transform:translate(-50%,-50%);opacity:.14;z-index:0;
 }
 
-/* ---------- hand-drawn doodle accents (original inline SVG) ---------- */
 .doodle-arrow{
   display:inline-block;color:var(--accent);flex-shrink:0;
   animation:doodleFloat 3.2s ease-in-out infinite;
@@ -297,25 +259,17 @@ button{font-family:inherit}
   0%,100%{transform:scale(1) rotate(0deg);opacity:1}
   50%{transform:scale(1.15) rotate(8deg);opacity:.7}
 }
-/* Empty-state illustration: a single hand-drawn line-art doodle (same
-   stroke language as doodle-arrow above -- ink-coloured, currentColor
-   strokes) instead of a bare sentence for "nothing here yet" screens
-   (cart, admin leads/clients/requests). Floats gently so it reads as
-   deliberate, not like unstyled placeholder art. */
+
 .doodle-empty{text-align:center;padding:28px 12px}
 .doodle-empty svg{color:var(--ink-faint);animation:doodleFloat 4s ease-in-out infinite}
 .doodle-empty p{margin-top:14px}
 
-/* ---------- footer ---------- */
-/* ---------- footer: black panel, wordmark, newsletter, back-to-top ---------- */
 .footer-dark{
   background:var(--ink);color:rgba(255,255,255,.6);
   border-radius:28px 28px 0 0;margin-top:40px;
   padding:32px 0 22px;
 }
-/* two columns on mobile instead of one long vertical stack -- the brand
-   mark spans both, Explore/Connect/Legal split left/right so the panel
-   doesn't run on forever */
+
 .footer-top{display:grid;grid-template-columns:1fr 1fr;gap:20px 16px;padding-bottom:22px;border-bottom:1px solid rgba(255,255,255,.14)}
 .footer-col-brand{grid-column:1/-1}
 .footer-col-brand .brand-mark{color:#fff;font-size:19px}
@@ -352,7 +306,6 @@ button{font-family:inherit}
 .footer-top-icon{width:24px;height:24px;border-radius:999px;background:#fff;color:var(--ink);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .footer-copy{font-family:var(--font-mono);font-size:10px;color:rgba(255,255,255,.35)}
 
-/* ---------- floating knock trigger ---------- */
 .knock-btn{
   position:fixed;right:16px;bottom:16px;z-index:40;
   display:flex;align-items:center;gap:8px;padding:13px 18px;border-radius:999px;
@@ -361,12 +314,9 @@ button{font-family:inherit}
   transition:transform .18s ease, box-shadow .18s ease, opacity .2s ease;
 }
 .knock-btn:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink)}
-/* the drawer's close/back controls sit bottom-right/bottom-left -- this
-   floating button lives in the same corner and blocks them whenever the
-   menu (or one of its full-screen sub-lists) is open */
+
 body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14px)}
 
-/* ---------- modal ---------- */
 .modal-overlay{
   position:fixed;inset:0;background:rgba(23,23,23,.5);backdrop-filter:blur(4px);
   display:none;align-items:center;justify-content:center;z-index:50;
@@ -396,22 +346,6 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
 .success-view.show{display:flex}
 .success-mark{width:40px;height:40px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px}
 
-/* ---------- stacked scroll panels — folder effect ---------- */
-/* The hero (first panel) is a plain intro, not part of the folder
-   stack — no tab, content starts near the top instead of floating
-   centred with dead space above it. From the second panel on, each
-   one sticks at a small increasing offset instead of all sticking to
-   top:0 — just enough to reveal the previous panel's tab and nothing
-   else. The offset is deliberately kept smaller than a panel's own
-   top padding, so the sliver that stays visible is always blank
-   grid-paper + a tab, never someone else's headline text bleeding
-   through underneath it.
-   The panel's top-left corner is square, not rounded, because the tab
-   sits flush against it at left:0 — rounding that corner made the tab
-   look like it was cutting into the panel instead of sitting on it.
-   mobile: the topbar isn't sticky, so give the first panel's top
-   corner room to breathe below it instead of crowding the
-   logo/hamburger with a hard, flush seam. */
 .stack{position:relative;margin-top:40px}
 .stack-panel{
   position:sticky;top:0;
@@ -434,14 +368,9 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
 .stack-panel:nth-of-type(4){top:calc(112px + (var(--tab-step) * 2));z-index:4}
 .stack-panel.alt{background-color:var(--bg-raised);background-blend-mode:normal}
 .stack-panel{overflow:hidden}
-/* extra headroom so the huge title (below) has room before the panel's
-   own content starts -- the hero (first panel) doesn't need it, it has
-   no title */
+
 .stack-panel:not(:first-of-type){padding-top:150px}
-/* the section name prints as huge bold type at the panel's own top
-   edge instead of a small tab -- the next panel's higher z-index
-   covers the lower half of it as it slides in, so only the top half
-   ever reads as "peeking out" above the panel that follows it */
+
 .stack-panel:not(:first-of-type)::before{
   content:attr(data-tab);
   position:absolute;top:0;left:20px;
@@ -453,17 +382,6 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
 .reveal{opacity:0;transform:translateY(16px);transition:opacity .7s ease, transform .7s ease}
 .reveal.in{opacity:1;transform:translateY(0)}
 
-/* ---------- footer as its own stack: the main content stack settles
-   (a plain margin gap = the "pause"), then this .stack instance restarts
-   a fresh sticky sequence just for the footer, so it closes the page
-   with the same folder-panel language instead of just trailing off as
-   flat content. Self-sufficient (doesn't rely on :not(:first-of-type))
-   because on pages with no panel before it, it's the only one. ---------- */
-/* .stack-panel.stack-panel-dark (compounded, not a bare .stack-panel-dark)
-   so this always beats .stack-panel:nth-of-type(1) -- the footer panel is
-   the lone child of its own fresh .stack on every page, so it always
-   matches :nth-of-type(1) too, and a nth-of-type pseudo-class carries the
-   same specificity weight as a class */
 .stack-panel.stack-panel-dark{
   position:sticky;top:112px;z-index:2;min-height:0;
   background:var(--ink);color:rgba(255,255,255,.6);
@@ -478,7 +396,6 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
 }
 .stack-panel-dark .footer-dark{margin-top:0;border-radius:0}
 
-/* ---------- DESKTOP ENHANCEMENT: persistent sidebar, no drawer ---------- */
 @media (min-width: 861px){
   .shell{flex-direction:row}
   .topbar{display:none}
@@ -488,11 +405,7 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
     transform:none;
     flex-direction:column;align-items:stretch;gap:32px;
     padding:28px 22px;
-    /* overflow-y:auto (set in the base rule for the mobile drawer) forces
-       overflow-x to clip too, per spec -- which was cutting off the
-       hover flyout since it renders outside the sidebar's own box
-       (right:100%). Desktop's compact nav fits without scrolling, so
-       drop the clip entirely instead of fighting it. */
+    
     overflow:visible;
   }
   .sidebar-logo img{max-width:132px}
@@ -503,19 +416,11 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
   .nav-link{font-size:17px;padding:10px 4px;border-bottom:none}
   .content{margin-left:0;margin-right:var(--sidebar-w)}
 
-  /* Products / Business types / Resources open as a floating card beside
-     the sidebar on hover, instead of expanding in place — a real
-     mouse has room for a flyout; a touch drawer doesn't, so mobile
-     keeps the inline accordion untouched. */
+  
   .nav-group{position:relative}
   .nav-submenu{
     display:block;grid-template-rows:none;
-    /* left/bottom reset to auto -- the base (mobile) rule sets them via
-       `inset:0`, and leaving them at 0 here over-constrains the box
-       (left, right and width all non-auto at once), which makes every
-       browser discard `right` and pin the flyout to `left:0` of its
-       40px-tall toggle instead -- rendering it off past the sidebar's
-       right edge, clipped by the viewport, instead of flying out left. */
+    
     position:absolute;left:auto;bottom:auto;top:-10px;right:100%;margin-right:16px;
     width:264px;background:#fff;border:2px solid var(--ink);border-radius:18px;
     padding:14px;box-shadow:10px 10px 0 var(--ink);
@@ -566,21 +471,11 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
   .mega-logo{padding-left:56px}
 }
 
-/* ---------- page transition: a circle expands out from whatever link or
-   button was tapped, covering the screen; the destination page starts
-   already covered and shrinks the same circle away on load, so internal
-   navigation reads as one continuous motion instead of a hard page-cut.
-   Driven entirely from site.js (click origin + sessionStorage handoff
-   across the real page load) -- this is just the shape/timing. ---------- */
 .page-transition{
   position:fixed;inset:0;z-index:999;pointer-events:none;
   background:var(--ink);
   clip-path:circle(0% at var(--ox,50%) var(--oy,50%));
-  /* Was .6s -- site.js used to wait for this to fully finish (or a 700ms
-     fallback) before actually navigating, so every internal link click
-     added up to 700ms of pure animation on top of the real page load.
-     Shortened, and site.js no longer gates navigation on it at all --
-     see the comment there. */
+  
   transition:clip-path .32s cubic-bezier(.4,0,.2,1);
 }
 .page-transition.is-active{clip-path:circle(120% at var(--ox,50%) var(--oy,50%))}

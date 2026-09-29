@@ -2,9 +2,6 @@
   function $(sel, root) { return (root || document).querySelector(sel); }
   function $all(sel) { return document.querySelectorAll(sel); }
 
-  // ---- cart: which product keys a visitor picked, kept in
-  // localStorage (survives across pages, no login required to build
-  // one -- only submitting it at cart.html needs an account) ----
   var CART_KEY = 'auz_cart';
   function readCart() {
     try { return JSON.parse(localStorage.getItem(CART_KEY) || '[]'); } catch (e) { return []; }
@@ -29,16 +26,6 @@
     clear: function () { writeCart([]); },
   };
 
-  // ---- account: is the current visitor already an existing,
-  // subscribed client (not just any logged-in auth user -- a fresh
-  // signup with no tenant yet is still "no account" for this check)?
-  // Bug this exists to fix: products.html and the 6 per-product pages
-  // showed "Add to cart" for a service a signed-in client already has,
-  // and cart.html had no way to submit an add-on request against an
-  // EXISTING tenant at all -- only a brand-new-business signup. Each
-  // page calls this once with its own `sb` client (site.js loads
-  // before window.CFG is set, so it can't build one itself) and reuses
-  // the same in-flight promise if called more than once. ----
   var dashPromise = null;
   window.AUZaccount = {
     fetch: function (sb) {
@@ -56,36 +43,10 @@
     },
   };
 
-  // ---- page transition: a circle expands out from whatever link was
-  // tapped, then the destination page starts fully covered and shrinks
-  // the same circle away -- sessionStorage carries the origin point
-  // across the real page load. Runs immediately (not on DOMContentLoaded)
-  // since this script tag is at the end of body, after the overlay div,
-  // so the element already exists and an early "cover on arrival" cuts
-  // down the flash of uncovered content before the shrink kicks in. ----
   (function () {
     var pageTransition = document.getElementById('pageTransition');
     if (!pageTransition) return;
     var TKEY = 'auz_transition';
-    // Read the real transition-duration from CSS rather than keeping a
-    // second hardcoded number in sync with theme.css by hand (a fixed
-    // JS constant next to a CSS duration, tied together only by a
-    // comment, drifts the moment either file is edited without the
-    // other -- this diff's own .6s->.32s change is exactly the kind of
-    // edit that would silently break that). Navigating at 70% of the
-    // real duration, not a small fraction of it, matters on a slow
-    // connection: the browser keeps showing this page's last frame
-    // until the destination is ready to paint, so leaving before the
-    // circle has visually finished covering the screen means a
-    // half-formed circle can sit frozen on screen for however long the
-    // network takes -- waiting for most of the animation avoids that
-    // while still cutting the old "wait for the full thing, or 700ms"
-    // delay by roughly a third.
-    // 0 is a legitimate value here, not just "failed to read" -- prefers-
-    // reduced-motion sets transition:none, and a user who's asked for
-    // that should navigate immediately with no delay, not fall back to
-    // a default duration that reintroduces the exact wasted wait this
-    // is meant to avoid. Only NaN (the read itself failing) falls back.
     var cssDurationMs = parseFloat(getComputedStyle(pageTransition).transitionDuration) * 1000;
     var NAV_DELAY_MS = (isNaN(cssDurationMs) ? 320 : cssDurationMs) * 0.7;
 
@@ -118,7 +79,6 @@
       });
     })();
 
-    // back/forward out of bfcache can restore the overlay mid-state
     window.addEventListener('pageshow', function (e) {
       if (e.persisted) snapHidden();
     });
@@ -140,40 +100,18 @@
       setOrigin(x.toFixed(2), y.toFixed(2));
       pageTransition.classList.add('is-active');
 
-      // Used to wait for the full clip-path transition to finish (or a
-      // 700ms fallback) before navigating at all -- every internal link
-      // click added up to 700ms of pure animation on top of the real
-      // page load, which is most of what "pages take too long to load"
-      // actually was. NAV_DELAY_MS above already stops short of the
-      // full duration, at a point where the circle has visually covered
-      // the screen -- and if the destination is slow to load, this page
-      // just keeps showing that same full black cover (not a half-
-      // finished circle) until it's replaced. When the destination does
-      // arrive, revealIncoming() (above) re-applies full coverage with
-      // transitions disabled before its first frame, so the swap itself
-      // has nothing uncovered to flash either.
       try { sessionStorage.setItem(TKEY, JSON.stringify({ x: x.toFixed(2), y: y.toFixed(2) })); } catch (err) {}
       setTimeout(function () { window.location.href = href; }, NAV_DELAY_MS);
     });
   })();
 
   document.addEventListener('DOMContentLoaded', function () {
-    // ---- cart count badge: every page's nav "Cart" link + any other
-    // .cart-count element updates itself here, so individual pages don't
-    // each need their own inline refresh script ----
     var cartCountEls = $all('.cart-count');
     if (cartCountEls.length) {
       var n = AUZcart.get().length;
       cartCountEls.forEach(function (el) { el.textContent = n ? '(' + n + ')' : ''; });
     }
 
-    // ---- sign-in -> account icon: any [data-signin-link] element (the
-    // topbar pill + the mobile drawer's copy of it) swaps to an account
-    // icon linking to the client dashboard once a LIVE tenant session
-    // is detected -- app_metadata.tenant_id is only present once a
-    // signup has actually been approved into a real tenant, so a
-    // pending self-signup still sees the normal "Sign in" pill and the
-    // cart/signup flow, not a dashboard that doesn't apply to them yet. ----
     var signinLinks = $all('[data-signin-link]');
     if (signinLinks.length && window.supabase && window.CFG) {
       try {
@@ -219,8 +157,6 @@
     }
     if (modal) modal.addEventListener('click', function (e) { e.stopPropagation(); });
 
-    // works for both the modal form (index/products/platform) and the
-    // inline form (contact.html) — whichever is present on the page
     $all('form[data-contact-form]').forEach(function (form) {
       form.addEventListener('submit', function (e) {
         e.preventDefault();
@@ -254,7 +190,6 @@
       });
     });
 
-    // first-time visitor: knock once, wherever they land, never again
     if (document.body.dataset.autoKnock === 'true') {
       try {
         if (!localStorage.getItem('auz_seen')) {
@@ -264,7 +199,6 @@
       } catch (e) {}
     }
 
-    // ---- menu button drawer (full-screen slide-in nav) ----
     var menuToggle = $('#menuToggle');
     var sidebarDrawer = $('#sidebarDrawer');
     var drawerOverlay = $('#drawerOverlay');
@@ -276,8 +210,6 @@
         menuToggle.classList.add('is-open');
         menuToggle.setAttribute('aria-expanded', 'true');
         if (menuToggleLabel) menuToggleLabel.textContent = 'Close';
-        // the floating knock button sits in the same corner as the
-        // drawer's close/back controls and blocks them while open
         document.body.classList.add('menu-open');
       }
       function closeDrawer() {
@@ -287,7 +219,6 @@
         menuToggle.setAttribute('aria-expanded', 'false');
         if (menuToggleLabel) menuToggleLabel.textContent = 'Menu';
         document.body.classList.remove('menu-open');
-        // always reopen on the main list, never mid-drill-down
         $all('.nav-group-toggle[aria-expanded="true"]').forEach(function (t) {
           t.setAttribute('aria-expanded', 'false');
         });
@@ -300,7 +231,6 @@
       if (drawerClose) drawerClose.addEventListener('click', closeDrawer);
     }
 
-    // ---- footer: back-to-top + newsletter (visual only, no backend yet) ----
     $all('[data-scroll-top]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -316,9 +246,6 @@
       });
     });
 
-    // ---- expandable nav groups (Products / Business types / Resources) ----
-    // desktop: hover flyout. mobile: full-screen drill-down with a back
-    // button, so the same toggle/aria-expanded drives both.
     $all('.nav-group-toggle').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var expanded = btn.getAttribute('aria-expanded') === 'true';
@@ -332,15 +259,10 @@
       });
     });
 
-    // ---- scroll-fade everywhere: auto-mark every top-level content
-    // section as .reveal instead of requiring each page to hand-annotate
-    // its own markup -- .stack-panel content is skipped since it already
-    // animates via the sticky-scroll folder effect, not this fade ----
     $all('.section:not(.reveal)').forEach(function (el) {
       if (!el.closest('.stack-panel')) el.classList.add('reveal');
     });
 
-    // ---- reveal-on-scroll for the homepage's stacked panels ----
     var revealEls = $all('.reveal:not(.in)');
     if (revealEls.length && 'IntersectionObserver' in window) {
       var io = new IntersectionObserver(function (entries) {

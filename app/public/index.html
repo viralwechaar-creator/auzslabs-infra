@@ -2,22 +2,7 @@
 <link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel=stylesheet>
 <style>
-/* ---- Same design tokens/typography as auzslab.in (site/theme.css):
-   ink/accent palette, the system font (SF Pro/Inter) + Space Mono. A 2px-ink-border-on-
-   every-element pass (the previous version of this comment/reskin)
-   read as "boxy" in a dense screen with dozens of buttons on it at
-   once -- borders on every row action, every category pill, every nav
-   tab. Minimal-premium instead: borders/shadow reserved for the few
-   things that are genuinely containers (.card, .md modal, item
-   tiles) or need a visible edit boundary (form fields); everything
-   else (buttons, nav, row actions) is a plain or soft-filled shape
-   that differentiates by colour/weight, not an outline. ---- */
-/* iOS-leaning pass: bigger radii, softer/more diffuse shadows (iOS
-   shadows are low-opacity and spread wide rather than sitting tight
-   and dark), a shared spring-like ease, and a tactile press response
-   on every button (scale down slightly instead of just a colour
-   swap) -- the small physical-feeling touches that read as "smooth"
-   more than any single shape choice does. */
+
 :root{--ink:#171717;--ink-dim:#4d4d4d;--ink-faint:#8c8c8c;--accent:#800020;--g:var(--accent);--l:rgba(23,23,23,.14);--bg-raised:#dedede;--radius-sm:14px;--radius-md:18px;--radius-lg:26px;--shadow-sm:0 1px 2px rgba(23,23,23,.06),0 6px 20px -10px rgba(23,23,23,.14);--shadow-md:0 4px 12px rgba(23,23,23,.08),0 20px 44px -16px rgba(23,23,23,.22);--ease:cubic-bezier(.4,0,.2,1)}*{box-sizing:border-box}body{margin:0;font:15px/1.5 Inter,system-ui,sans-serif;background:var(--bg-raised);color:var(--ink);-webkit-tap-highlight-color:transparent}
 button{font:inherit;cursor:pointer;padding:10px 15px;border:none;border-radius:var(--radius-sm);background:none;color:var(--ink-dim);transition:background .15s var(--ease),color .15s var(--ease),transform .12s var(--ease)}
 button:hover{background:var(--l)}
@@ -30,12 +15,7 @@ button:disabled{opacity:.4;background:none}
 input,select,textarea{font:inherit;padding:10px 15px;border:1.5px solid var(--l);border-radius:var(--radius-sm);background:#fff;color:inherit;transition:border-color .15s var(--ease)}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 input[type=checkbox]{width:22px;height:22px;flex-shrink:0;accent-color:var(--accent)}
-/* ---- Top bar: was a multi-row wrapped button strip (every nav tab
-   visible at once) plus its own status row plus its own bell/sign-out
-   row -- on a phone that's 3-4 rows before any actual screen content.
-   Now one row: hamburger (opens the drawer with every tab), the
-   current screen's name, a compact status pill (blank when healthy,
-   so it costs no space most of the time), and a bell with a badge. ---- */
+
 .top-bar{display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(23,23,23,.86);backdrop-filter:saturate(180%) blur(16px);-webkit-backdrop-filter:saturate(180%) blur(16px);box-shadow:var(--shadow-sm)}
 .top-bar h1{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif;font-size:16px;font-weight:700;color:#fff;margin:0;flex-shrink:0}
 .hamburger-btn{width:36px;height:36px;padding:0;flex-shrink:0;border-radius:12px;background:none;display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px;transition:background .15s var(--ease),transform .12s var(--ease)}
@@ -48,9 +28,7 @@ input[type=checkbox]{width:22px;height:22px;flex-shrink:0;accent-color:var(--acc
 .bell-wrap button:hover{background:#ffffff1a}
 #notifCount{position:absolute;top:0;right:0;min-width:15px;text-align:center;background:var(--accent);color:#fff;border-radius:999px;padding:1px 4px;font-size:9px;font-family:'Space Mono',monospace;line-height:1.4}
 #notifCount:empty{display:none}
-/* Was mounted/unmounted instantly on open/close -- no motion at all.
-   Always mounted now, toggled by a class, so it actually slides and
-   fades like a native panel instead of just appearing. */
+
 .drawer-ov{position:fixed;inset:0;background:#0007;z-index:50;opacity:0;pointer-events:none;transition:opacity .25s var(--ease)}
 .drawer-ov.show{opacity:1;pointer-events:auto}
 .drawer{position:fixed;top:0;left:0;bottom:0;width:76%;max-width:270px;background:#fff;z-index:51;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:2px;box-shadow:var(--shadow-md);border-radius:0 26px 26px 0;transform:translateX(-100%);transition:transform .32s var(--ease)}
@@ -69,12 +47,7 @@ input[type=checkbox]{width:22px;height:22px;flex-shrink:0;accent-color:var(--acc
 .md{background:#fff;border-radius:var(--radius-lg);padding:20px;width:420px;max-width:100%;max-height:90vh;overflow:auto;display:grid;gap:8px;box-shadow:var(--shadow-md);animation:sheetIn .24s var(--ease)}.k{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;padding:10px}
 table{width:100%;border-collapse:collapse}td,th{padding:5px;border-bottom:1px solid var(--l);text-align:left}
 .powered{text-align:center;padding:14px 10px 24px;font-size:11px;color:var(--ink-faint);font-family:'Space Mono',monospace}.powered a{color:var(--ink-faint)}
-/* ---- tabbar: a segmented control for switching panes within one
-   screen (currently Settings' Business/Tables/Website) instead of
-   stacking every section as its own long card, one under the next. ---- */
-/* Settings now has 6 sub-tabs (was 3-5) -- squeezing them all to equal
-   width on a phone made each label unreadably tiny. Scroll sideways
-   instead, each tab keeping a comfortable minimum width. */
+
 .tabbar{display:flex;gap:2px;padding:4px;background:var(--bg-raised);border-radius:999px;margin-bottom:10px;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .tabbar button{flex:0 0 auto;min-width:76px;padding:8px 12px;border-radius:999px;font-family:'Space Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-dim);text-align:center;white-space:nowrap}
 .tabbar button:hover{background:none;color:var(--ink)}
@@ -85,10 +58,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:5px;border-bottom:1px so
 .tbl-tile:hover{background:#fff}
 .tbl-tile.run{background:#fff3c4;border-color:#e0b400}
 .tbl-tile.sel{border-color:var(--accent);border-width:2px}
-/* Toggle switch for Settings > Hardware -- a plain checkbox reads as
-   "form field" (does something need filling in?); a switch reads as
-   "on/off", which is what these actually are, and it's a bigger,
-   clearer mobile tap target than a native checkbox either way. */
+
 .switch{position:relative;display:inline-block;width:46px;height:26px;flex-shrink:0}
 .switch input{opacity:0;width:100%;height:100%;margin:0;position:absolute;cursor:pointer;z-index:1}
 .switch .track{position:absolute;inset:0;background:var(--l);border-radius:999px;transition:background .15s}
@@ -103,20 +73,12 @@ table{width:100%;border-collapse:collapse}td,th{padding:5px;border-bottom:1px so
 .token-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:14px;padding:14px}
 .token-tile{background:var(--ink);color:#fff;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif;font-weight:700;font-size:34px;border-radius:var(--radius-md);min-height:110px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm);transition:transform .12s var(--ease)}
 .token-tile:hover{background:var(--ink);opacity:.85}
-/* Sticky cart bar: on a phone the item grid + floor plan sit above the
-   order card, so reaching Pay/KOT meant scrolling past all of it every
-   time. This floats above everything so the running total and the two
-   most-used actions are always one tap away, no scrolling needed. Not
-   shown on wide screens, where the order panel already sits beside
-   the items with nothing to scroll past. */
+
 .cart-bar{position:fixed;left:0;right:0;bottom:0;display:none;align-items:center;justify-content:space-between;gap:10px;background:rgba(23,23,23,.9);backdrop-filter:saturate(180%) blur(16px);-webkit-backdrop-filter:saturate(180%) blur(16px);color:#fff;padding:12px 16px;box-shadow:0 -4px 16px rgba(0,0,0,.25);z-index:40;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif;font-weight:700;border-radius:var(--radius-lg) var(--radius-lg) 0 0}
 .cart-bar button{color:#fff}
 .cart-bar button.p{background:var(--accent)}
 @media(max-width:800px){.cart-bar.show{display:flex}.pos-g{padding-bottom:64px}}
-/* Customer list: was plain text rows (name · phone · tier all run
-   together as one string) with no visible way to tell it was tappable.
-   Avatar + name/tier on one line, phone/visits/spend as quiet
-   secondary text, and an actual "View" button as the call to action. */
+
 .cust-row{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--l);cursor:pointer}
 .cust-row:last-child{border-bottom:none}
 .cust-avatar{width:42px;height:42px;border-radius:50%;background:var(--bg-raised);color:var(--ink-dim);display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif;font-size:16px}
@@ -141,33 +103,13 @@ const VAPID_PUBLIC='BN_aBfhAkcWmYJ8RArUKpcXFBId6rUsNO7bAuhyPr4To51XeATMoWY-8NxtJ
 const C=window.CFG||{},sb=supabase.createClient(C.url,C.key),S={tab:'pos',setTab:'biz',type:'Dine-in',cur:null,role:'cashier',role_id:null,perms:null,features:null,enabledFeatures:{},q:'',d:new Date().toLocaleDateString('en-CA'),authExpired:false,drawerOpen:false,previewNiche:null},R={},V={};let busy=0,conflicts=0,syncErr=0;
 const $=s=>document.querySelector(s),uid=()=>crypto.randomUUID(),tok=()=>crypto.randomUUID().replace(/-/g,'').slice(0,12),now=()=>new Date().toISOString(),r2=n=>Math.round(n*100)/100,inr=n=>'₹'+r2(n),inrc=n=>'₹'+r2(n).toLocaleString('en-IN');
 const fmtDate=d=>{const t=new Date(d);return t.toLocaleDateString('en-US',{weekday:'short'})+', '+t.getDate()+' '+t.toLocaleDateString('en-US',{month:'short'})+' '+t.getFullYear()};
-// S.d is "the day currently shown in Reports" (a view-state global the
-// date picker there sets, on purpose, so a manager can backdate an
-// expense against a past day they're reconciling) -- NOT "today". Any
-// check of real elapsed time (a coupon's expiry) must use this instead,
-// or leaving Reports on yesterday silently keeps an expired coupon valid.
 const today=()=>new Date().toLocaleDateString('en-CA');
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const h=(t,a={},...k)=>{const e=document.createElement(t);for(const x in a){const v=a[x];if(v==null||v===false)continue;x.startsWith('on')?e[x]=v:x=='class'?e.className=v:e.setAttribute(x,v)}e.append(...k.flat().filter(x=>x!=null&&x!==false));return e};
 const L=k=>Object.values(R).filter(r=>r.kind==k&&!r.deleted).map(r=>r.data),tn=id=>{const t=R[id];return t&&!t.deleted?t.data.name:''};
 const cfg=()=>({name:'My Restaurant',addr:'',phone:'',gstin:'',tax:5,prefix:'INV',col:null,logo:'/logo.png',ftr:'Thank you!',w:80,sty:'mono',fs:12,gw:'Scan, order and relax. Your order goes straight to our kitchen.',bizType:'restaurant',...(R.settings&&R.settings.data)});
-// Restaurant-only screens (table floor plan, KOT log) stay hidden for
-// salon/retail tenants -- gated the same way as any other feature,
-// just off the owner-set business type instead of an admin-set flag.
 const isRestaurant=()=>['restaurant','cafe'].includes(effBizType()||'restaurant');
-// Retail: clothing/apparel-style shops that stock size+color variants
-// instead of a recipe of shared ingredients -- billing, barcode scan and
-// stock deduction all branch off this the same way isRestaurant() does.
 const isRetail=()=>effBizType()=='retail';
-// Demo-only niche preview: cfg().isDemo is set on the two shared public
-// demo tenants (see db/023/026_demo_tenants.sql) so a prospect can
-// browse what the Menu/POS screens would look like for a different
-// business type without 5 separate demo logins -- picked in Settings
-// (V.biz below), never persisted (S.previewNiche resets on reload),
-// and never written back through save()/push_record. A REAL tenant
-// never sees this control and effBizType() is always just their own
-// cfg().bizType -- switching a live business's `bizType` label alone
-// never touches their actual menu/categories/items.
 const effBizType=()=>(cfg().isDemo&&S.previewNiche)||cfg().bizType;
 const PREVIEW_CATALOGS={
  restaurant:{cats:[{id:'pv-r-c1',name:'Beverages'},{id:'pv-r-c2',name:'Mains'}],
@@ -190,47 +132,16 @@ const PREVIEW_CATALOGS={
 };
 const effCats=()=>cfg().isDemo&&S.previewNiche?PREVIEW_CATALOGS[S.previewNiche].cats.map((c,i)=>({...c,n:i})):L('cat');
 const effItems=()=>cfg().isDemo&&S.previewNiche?PREVIEW_CATALOGS[S.previewNiche].items:L('item');
-// Each niche's own accent -- the actual bug behind "switching niche
-// doesn't change the design": cfg().col ("Brand colour" in Settings)
-// was captured into every tenant's own settings row and never once
-// read back anywhere, so setting it did nothing, and every niche
-// rendered in the exact same maroon regardless. Real tenants who've
-// picked their own col keep it; everyone else (including every demo
-// preview, which always ignores a real tenant's own col on purpose --
-// it's previewing what a NEW tenant of that niche starts with, not
-// this account's own branding) gets their niche's own default so the
-// four niches are visually distinguishable, not just different item
-// names in an identical shell.
 const NICHE_ACCENT={restaurant:'#800020',salon:'#7a3b6e',retail:'#1f3d6b'};
 const themeAccent=()=>{const niche=effBizType();if(cfg().isDemo&&S.previewNiche)return NICHE_ACCENT[niche]||'#800020';return cfg().col||NICHE_ACCENT[niche]||'#800020'};
 function applyTheme(){document.documentElement.style.setProperty('--accent',themeAccent())}
-// Legacy default for any staffer with no custom role assigned yet
-// (role_id null) -- reproduces the OLD hardcoded behavior exactly
-// (everything but menu/settings, plus billing for a plain-text
-// 'manager' role) so existing tenants see zero regression the
-// moment this ships. A custom role (managed at auzslab.in/account.html) overrides
-// this entirely via S.perms, fetched in boot() below.
 const DEFAULT_PERMS={pos:true,orders:true,kitchen:true,reports:true,staff:true,inventory:true,crm:true,menu:false,settings:false,billing:false};
 const can=x=>{if(S.role=='owner')return true;if(x=='o')return false;const p=S.perms||(S.role=='manager'?{...DEFAULT_PERMS,billing:true}:DEFAULT_PERMS);return x=='m'?!!p.billing:!!p[x]};
-// A feature is live only if it's both entitled (S.features, admin-set)
-// AND not explicitly turned off (S.enabledFeatures, owner-toggled from
-// account.html) -- update_my_features already clamps enabledFeatures
-// to never contain a key that isn't entitled, so "not explicitly off"
-// is the correct default for anything the owner hasn't touched yet.
-// S.features stays null until my_dashboard actually loads real data --
-// featureOn fails OPEN (everything visible) until then, so a slow/
-// flaky network moment never makes the Sell tab vanish; it just
-// means the toggle hasn't taken effect on THIS load yet.
 const featureOn=k=>!S.features||(S.features[k]===true&&S.enabledFeatures[k]!==false);
-/* local store: rec = every record (with srv = last confirmed server updated_at), out = unsent changes, meta = sync cursor */
 const idb=new Promise(r=>{const q=indexedDB.open('pos3',1);q.onupgradeneeded=()=>['rec','out','meta'].forEach(s=>q.result.createObjectStore(s,{keyPath:s=='meta'?'k':'id'}));q.onsuccess=()=>r(q.result)});
 const tx=async(s,m,f)=>{const d=await idb;return new Promise((res,rej)=>{const t=d.transaction(s,m),q=f(t.objectStore(s));t.oncomplete=()=>res(q.result);t.onerror=()=>rej(t.error)})};
 const all=s=>tx(s,'readonly',o=>o.getAll()),get=(s,k)=>tx(s,'readonly',o=>o.get(k)),put=(s,v)=>tx(s,'readwrite',o=>o.put(v)),del=(s,k)=>tx(s,'readwrite',o=>o.delete(k)),clr=s=>tx(s,'readwrite',o=>o.clear());
 async function save(kind,data,id=data.id||uid(),deleted=false){data.id=id;const base=(R[id]&&R[id].srv)||null,r={id,kind,data,deleted,updated_at:now(),srv:(R[id]&&R[id].srv)};R[id]=r;await put('rec',r);await put('out',{id,kind,data,deleted,updated_at:r.updated_at,base});sync();return r}
-// Blank when healthy (nothing to look at = one less thing on a small
-// screen) instead of always showing "Online · synced · owner" -- the
-// role now lives in the drawer instead. Shows the actual last error
-// message on a sync failure so it's screenshot-able without dev tools.
 let lastSyncErrMsg='';
 async function setNote(){const n=(await all('out')).length,e=$('#net');if(!e)return;
  const bits=[];
@@ -258,11 +169,6 @@ async function enablePush(){
 }
 function forceRelogin(msg){S.user=null;S.authExpired=false;localStorage.removeItem('u');login(msg)}
 async function doSync(){if(busy||!navigator.onLine||!S.user)return;busy=1;
- // syncErr/lastSyncErrMsg must self-heal -- a transient blip that later
- // fully recovers shouldn't leave a stale "⚠ sync error: <old message>"
- // showing forever (syncErr never had a decrement anywhere before this).
- // Only cleared when an ENTIRE pass finishes with zero errors, including
- // ones caught per-item below.
  let hadError=false;
  try{
  const{data:{session}}=await sb.auth.getSession();if(!session){busy=0;return forceRelogin('Your session ended. Please sign in again.')}
@@ -281,14 +187,12 @@ async function doSync(){if(busy||!navigator.onLine||!S.user)return;busy=1;
 }catch(e){hadError=true;syncErr++;lastSyncErrMsg=(e&&e.message)||String(e);console.warn('sync',e)}busy=0;setNote()}
 function sync(){if(navigator.locks)navigator.locks.request('pos-sync',{ifAvailable:true},lock=>lock?doSync():null);else doSync()}
 function syncNow(){return navigator.locks?navigator.locks.request('pos-sync',{},()=>doSync()):doSync()}
-/* money — GST is added on top of the menu price, not included in it */
 function tot(o){const sub=r2(o.lines.reduce((a,l)=>a+l.price*l.qty,0)),d=o.disc?r2(Math.min(sub,o.disc.t=='%'?sub*o.disc.v/100:o.disc.v)):0,tax=r2((sub-d)*cfg().tax/100),ex=sub-d+tax,total=Math.round(ex);return{sub,d,tax,round:r2(total-ex),total}}
 function localNo(){const n=(+localStorage.n||0)+1;localStorage.n=n;const d=localStorage.dev||(localStorage.dev=Math.random().toString(36).slice(2,4).toUpperCase());return cfg().prefix+'-'+d+'-'+String(n).padStart(4,'0')}
 async function nextNo(){if(navigator.onLine){try{const{data,error}=await sb.rpc('next_invoice_no',{prefix:cfg().prefix});if(!error&&data)return data}catch{}}return localNo()+'~'}
 const newOrder=()=>({id:uid(),type:isRetail()?'Sale':'Dine-in',table:null,lines:[],status:'open',created:now(),by:S.user.id,cust:{}});
 async function persist(){const o=S.cur;if(!o.no)o.no=await nextNo();o.t=tot(o);await save('order',o,o.id)}
 function mk(o){const n=o.lines.filter(l=>l.qty>l.sent).map(l=>({n:l.name+(l.size?' ('+l.size+')':''),q:l.qty-l.sent,s:l.st||'Kitchen'})),k=o.kstat=='new';o.lines.forEach(l=>l.sent=l.qty);if(n.length){o.knew=(k?o.knew||[]:[]).concat(n);o.kstat='new';o.ktime=o.ktime&&k?o.ktime:now()}return n}
-/* printing (80mm friendly) + whatsapp */
 function prn(html){const c=cfg(),f=h('iframe',{style:'position:fixed;width:0;height:0;border:0'});document.body.append(f);const d=f.contentDocument;d.write('<style>body{font:'+(c.fs||12)+'px '+(c.sty=='sans'?'system-ui,sans-serif':'monospace')+';width:'+(c.w==58?48:72)+'mm;margin:0}td{padding:1px 0}.r{text-align:right}.dup{text-align:center;border:2px solid #000;padding:2px;margin-bottom:4px}img{max-width:100%}</style>'+html);d.close();f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),3000)}
 function prnInv(html){const f=h('iframe',{style:'position:fixed;width:0;height:0;border:0'});document.body.append(f);const d=f.contentDocument;d.write(`<style>
 @page{margin:16mm}
@@ -336,58 +240,18 @@ function wa(o){let p=((o.cust||{}).phone||prompt('Customer phone')||'').replace(
  const msg=`Hi ${(o.cust||{}).name||''}, thank you for visiting ${cfg().name}.\n\nInvoice ${o.no} (${fmtDate(o.paidAt||o.created)})\n${items}\nTotal: ${inrc(o.t.total)}\n\nView or download your invoice:\n${url}`;
  open('https://wa.me/'+p+'?text='+encodeURIComponent(msg),'_blank')}
 function modal(...k){const o=h('div',{class:'ov',onclick:e=>e.target==o&&o.remove()},h('div',{class:'md'},...k));document.body.append(o);return()=>o.remove()}
-// Every destructive action (void, refund, cancelling a sent item) must
-// pick a reason from the master list in Settings > Reasons, not type a
-// free prompt() -- spec section 13. Falls back to a free-text prompt
-// only if the owner hasn't set up any reasons yet, so this never hard-
-// blocks a tenant who hasn't touched that settings tab.
-// Coupon usage isn't tracked by decrementing the coupon record itself
-// (that would need a new RLS-whitelisted kind just for this) -- instead
-// counted by scanning paid orders that reference this code, which any
-// staffer can already read.
-// maxUses/loyalty-balance checks only see already-PAID orders -- same
-// optimistic, eventually-consistent tradeoff busyT() already accepts for
-// table picking. Two tills applying the same single-use coupon (or the
-// same customer's last loyalty points) to two still-unpaid orders at
-// once can both pass this check; there's no server-side atomic
-// increment backing it (that would need its own ledger table). Fine
-// for a single/few-till cafe; would need a real fix before this scales
-// to many simultaneous tills.
-// Usage is counted by code, not coupon id: deleting a coupon and
-// creating a new one with the same code inherits the old one's usage
-// count. Accepted as a known edge case (an unusual admin action, not a
-// normal flow) rather than adding a couponId field to every order just
-// to guard against it.
 function validCoupon(code){const c=L('coupon').find(x=>x.code==code.trim().toUpperCase());if(!c)return null;if(c.expiry&&c.expiry<today())return null;if(c.maxUses){const used=L('order').filter(o=>(o.status=='paid'||o.status=='due')&&o.coupon==c.code).length;if(used>=c.maxUses)return null}return c}
 function pickReason(cb){const reasons=L('reason');if(!reasons.length){const r=prompt('Reason');if(r)cb(r.trim());return}
  const x=modal(h('h3',{},'Select a reason'),...reasons.map(rn=>h('button',{onclick:()=>{x();cb(rn.name)}},rn.name)),h('button',{onclick:()=>{x();const r=prompt('Other reason');if(r)cb(r.trim())}},'Other…'),h('button',{class:'warn',onclick:()=>x()},'Cancel'))}
-/* selling */
-// variant (retail only) carries {size,color} straight off the item's own
-// variants[] row -- kept separate from sz/l.size (a display string, e.g.
-// "M / Blue") so deduVariant() can match the exact stock row on sale
-// without re-parsing that string back apart.
 function addLine(i,sz,p,note,variant){const l=!note&&S.cur.lines.find(x=>x.id==i.id&&x.size==sz&&x.price==p&&!x.note&&(x.variant?.color||'')==(variant?.color||'')&&(x.variant?.size||'')==(variant?.size||''));l?l.qty++:S.cur.lines.push({id:i.id,name:i.name,size:sz,price:p,qty:1,sent:0,st:i.st||'Kitchen',note,variant});render()}
 function variant(i){const x=modal(h('h3',{},i.name),...(i.variants||[]).map(v=>h('button',{onclick:()=>{if(v.qty<=0&&!confirm('This variant shows 0 in stock. Add anyway?'))return;x();addLine(i,v.size+(v.color?' / '+v.color:''),i.price,undefined,{size:v.size,color:v.color})}},v.size+(v.color?' / '+v.color:'')+' — '+(v.qty>0?v.qty+' in stock':'Out of stock'))))}
 function pickMods(i,sz,p){const mods=(i.mods||[]).map(m=>{const[n,v]=m.split(':');return{n:n.trim(),v:+v||0}});if(!mods.length)return addLine(i,sz,p);
  const boxes=mods.map(m=>({m,cb:h('input',{type:'checkbox'})}));
  const x=modal(h('h3',{},i.name),...boxes.map(b=>h('label',{style:'display:flex;gap:8px;align-items:center'},b.cb,b.m.n+(b.m.v?' (+'+inr(b.m.v)+')':''))),h('button',{class:'p',onclick:()=>{const picked=boxes.filter(b=>b.cb.checked).map(b=>b.m);const price=p+r2(picked.reduce((a,m)=>a+m.v,0)),note=picked.map(m=>m.n).join(', ')||undefined;x();addLine(i,sz,price,note)}},'Add'))}
 function size(i){const x=modal(h('h3',{},i.name),...i.sizes.map(s=>h('button',{onclick:()=>{x();pickMods(i,s.l,s.p)}},s.l+' — '+inr(s.p))))}
-// Barcode scanning, software-only: a USB/Bluetooth scanner set to its
-// default keyboard-emulation mode just types the barcode's characters
-// really fast and hits Enter -- no WebUSB/driver/pairing needed, this
-// just has to tell "a burst of keys within ~40ms of each other" apart
-// from a human typing. Only acts when nothing is focused for actual
-// typing (a text field getting the same keystrokes is left alone) and
-// only on the Sell screen, gated by the hwBarcode toggle (off by
-// default) so it costs nothing for a tenant with no scanner.
 let scanBuf='',scanAt=0;
 addEventListener('keydown',e=>{
  if(S.tab!='pos'||!cfg().hwBarcode)return;
- // A stray scan while the payment modal is open (S.tab is still 'pos'
- // underneath it) would silently add a line to an order already mid-
- // checkout, after its total was already shown to the customer.
- // modal() always appends a .ov element to <body>, so its presence is
- // enough to detect without adding separate open/closed state.
  if(document.querySelector('.ov'))return;
  const tag=document.activeElement&&document.activeElement.tagName;
  if(tag=='INPUT'||tag=='TEXTAREA'||tag=='SELECT')return;
@@ -395,16 +259,9 @@ addEventListener('keydown',e=>{
  if(now-scanAt>300)scanBuf='';
  scanAt=now;
  if(e.key=='Enter'){
-  // Prevent default so a scanner's terminating Enter can't also
-  // double-fire whatever button happens to still have DOM focus (e.g.
-  // re-triggering "Send to kitchen" if that's what was last tapped).
   e.preventDefault();
   const code=scanBuf;scanBuf='';
   if(code.length<3)return;
-  // Item-level barcode (restaurant-style, one code per item) first, then
-  // fall through to every item's own variant barcodes (retail: each
-  // size/color has its own code) -- a scan should resolve straight to
-  // the exact variant, skipping the picker modal entirely.
   let it=L('item').find(x=>x.barcode&&x.barcode==code),vr=null;
   if(!it)for(const x of L('item')){const found=(x.variants||[]).find(v=>v.barcode&&v.barcode==code);if(found){it=x;vr=found;break}}
   if(!it)return alert('No item matches barcode: '+code);
@@ -421,27 +278,12 @@ function qty(l,d){const o=S.cur;
  l.qty+=d;l.sent=Math.min(l.sent,l.qty);if(l.qty<=0)o.lines=o.lines.filter(x=>x!==l);render();
 }
 const busyT=id=>L('order').some(x=>x.status=='open'&&x.table==id&&x.lines.length);
-// Item off/on has a timer now (spec 5.2: 2h/4h/8h/24h/next business
-// day/indefinite/custom) instead of only a permanent toggle -- an item
-// auto-reappears once offUntil passes, no need to remember to switch it
-// back on. i.off with no offUntil still means "off indefinitely".
-// Menu availability driven by real ingredient stock, not just the
-// manual off/offUntil toggle -- an item with a recipe (i.rec) whose
-// stock hits zero goes unavailable the same way a manually-marked-off
-// item does, everywhere itemOff() is already checked (POS grid, Menu
-// tab's sold-out label). No separate "menu availability" flag to keep
-// in sync by hand -- it's just a live read of the same ingredient
-// stock the recipe already deducts from.
 const itemOff=i=>{
  if(i.off&&(!i.offUntil||new Date(i.offUntil)>new Date()))return true;
  if(!i.rec)return false;
  return i.rec.split(',').some(p=>{const[n]=p.split(':'),g=L('ing').find(x=>x.name.toLowerCase()==n.trim().toLowerCase());return g&&g.qty<=0});
 };
 function tableInfo(id){const o=L('order').find(x=>x.status=='open'&&x.table==id&&x.lines.length);if(!o)return{st:'blank'};const mins=Math.round((Date.now()-new Date(o.created))/60000);return{st:'running',mins,amt:tot(o).total}}
-// Floor plan: tables grouped into sections (t.sec, e.g. AC/Garden/
-// Terrace), each a tile coloured by status instead of a flat dropdown --
-// spec section 3.2. Only shown for restaurant/cafe tenants; other niches
-// never had a "tables" concept to begin with.
 function floorPlan(o){const secs=[...new Set(L('table').map(t=>t.sec||'Main'))];
  if(!secs.length)return h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No tables yet — add them in Settings › Tables.');
  return h('div',{},...secs.map(sec=>h('div',{},h('div',{style:"font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-faint);margin:10px 0 4px"},sec),
@@ -450,37 +292,16 @@ function floorPlan(o){const secs=[...new Set(L('table').map(t=>t.sec||'Main'))];
   }))
  )))}
 function pickTable(id){const ex=L('order').find(x=>x.status=='open'&&x.table==id&&x.lines.length);if(ex){if(S.cur.lines.length&&!S.cur.no&&!confirm('Discard the current unsaved order?'))return;S.cur=structuredClone(ex)}else S.cur.table=id||null;render()}
-// Token numbers restart each day, computed from today's already-synced
-// orders' own tokens rather than a server counter -- unlike invoice
-// numbers (next_invoice_no) this is a display convenience for the
-// pickup screen, not a legal/financial record, so a rare same-number
-// collision between two tills at the exact same instant is an
-// acceptable tradeoff for not needing a new RPC.
 function nextToken(){const day=today(),nums=L('order').filter(o=>o.token&&o.tokenDay==day).map(o=>o.token);return nums.length?Math.max(...nums)+1:1}
 async function kot(){const o=S.cur;if(!o.lines.some(l=>l.qty>l.sent))return alert('Nothing new to send');if(!o.no)o.no=await nextNo();
  if(cfg().hwToken&&o.type!='Dine-in'&&!o.token){o.token=nextToken();o.tokenDay=today()}
  const n=mk(o);await persist();
- // Persist every KOT send as its own record (order snapshot only keeps
- // the LATEST one) so the KOT report (spec 4.3) has real history.
  await save('kotlog',{orderId:o.id,orderNo:o.no,type:o.type,table:o.table,cust:o.cust,items:n,createdAt:now()},uid());
  const stations=[...new Set(n.map(x=>x.s))];
  prn(`<b>KOT ${o.no}</b>${o.token?' · Token #'+o.token:''}<br>${o.type} ${esc(tn(o.table))}<br>${new Date().toLocaleTimeString()}<hr>`+stations.map(s=>`<u>${s}</u><br>`+n.filter(x=>x.s==s).map(x=>`<b>${x.q}× ${esc(x.n)}</b><br>`).join('')).join('<hr>'));render()}
-// usage log (trimmed to the last 200 entries) feeds the reorder-forecast
-// velocity in V.inv -- there's no historical consumption trail before
-// this starts recording, so a freshly-migrated tenant sees no forecast
-// until real usage accumulates, rather than a forecast faked from
-// nothing.
 async function dedu(o){for(const l of o.lines){const it=R[l.id];if(!it||!it.data.rec)continue;for(const p of it.data.rec.split(',')){const[n,q]=p.split(':'),g=L('ing').find(x=>x.name.toLowerCase()==n.trim().toLowerCase());if(g&&+q){const used=q*l.qty;g.qty=r2(g.qty-used);g.usage=(g.usage||[]).concat({q:used,d:today(),at:now()}).slice(-200);await save('ing',g,g.id)}}}}
-// Retail stock deduction: an item with variants[] gets its matched
-// size+color row decremented directly on sale -- no shared-ingredient
-// recipe involved, unlike dedu() above. Runs unconditionally alongside
-// dedu() and no-ops for any line with no variant match, so it costs
-// nothing for non-retail tenants or mixed-catalog edge cases.
 async function deduVariant(o){for(const l of o.lines){const it=R[l.id];if(!it||!it.data.variants||!it.data.variants.length||!l.variant)continue;const v=it.data.variants.find(x=>x.size==l.variant.size&&(x.color||'')==(l.variant.color||''));if(v){v.qty=r2((v.qty||0)-l.qty);v.usage=(v.usage||[]).concat({q:l.qty,d:today(),at:now()}).slice(-200);await save('item',it.data,it.data.id)}}}
 function pay(){const o=S.cur;if(!o.lines.length)return;if(!(o.cust.name||'').trim()||!(o.cust.phone||'').trim())return alert('Customer name and phone number are required before payment.');o.t=tot(o);
- // Re-opening a Due/credit order to settle it must start from what was
- // ALREADY collected, not an empty list -- otherwise re-settling silently
- // forgot every earlier part-payment and asked for the full total again.
  const P=(o.pays||[]).slice(),due=()=>r2(o.t.total-P.reduce((a,x)=>a+x.amt,0));
  const amt=h('input',{type:'number',value:o.t.total}),info=h('b'),list=h('div'),done=h('button',{class:'p',disabled:true,onclick:async()=>{o.pays=P;if(o.loyaltyRedeemed)o.loyaltyRedeemed=o.t.d;o.change=Math.max(-due(),0);o.status='paid';o.paidAt=now();o.tok=o.tok||tok();if(!o.no||o.no.endsWith('~'))o.no=await nextNo();await dedu(o);await deduVariant(o);if(!isRetail())mk(o);o.printCount=(o.printCount||0)+1;await persist();x();prnInv(rcpt(o,false));
   const url=location.origin+'/i.html?o='+encodeURIComponent(o.tok),cm=modal(h('h3',{},'Payment complete · '+inrc(o.t.total)),h('div',{class:'row'},h('button',{class:'p',onclick:()=>wa(o)},'Send bill'),h('button',{onclick:()=>open(url,'_blank')},'Open'),h('button',{onclick:()=>cm()},'Done')));
@@ -496,14 +317,6 @@ async function refund(o){if(!can('m'))return alert('Manager only');if(dayLocked(
 async function voidOrder(o){if(!can('m'))return alert('Manager only');if(o.status=='paid'&&dayLocked(new Date(o.paidAt).toLocaleDateString('en-CA'))&&!can('o'))return alert('This day is closed. Ask an owner to reopen it first.');
  pickReason(async reason=>{const c=structuredClone(o);c.status='void';c.voidReason=reason;await save('order',c,c.id);await save('voidlog',{order:c.id,no:c.no,reason,by:S.user.email||S.user.id,at:now()});render()})}
 async function reprint(o){const dup=(o.printCount||0)>0;const c=structuredClone(o);c.printCount=(c.printCount||0)+1;await save('order',c,c.id);prnInv(rcpt(o,dup))}
-// Retail returns & exchanges: distinct from refund()/voidOrder() above,
-// which only ever move money against a whole order -- this restocks
-// the exact variant that came back (and decrements the exact variant
-// handed over on an exchange), per line, against the original invoice.
-// Lives entirely on the order's own o.exchanges[] (same pattern as
-// o.refunds[]/o.voidReason above) rather than a new records kind, so it
-// needs no RLS/migration change -- 'order' is already writable by
-// managers.
 function returnableQty(o,idx){const l=o.lines[idx],returned=(o.exchanges||[]).filter(e=>e.lineIdx==idx).reduce((a,e)=>a+e.qty,0);return l.qty-returned}
 function returnExchange(o){if(!can('m'))return alert('Manager only');if(dayLocked(new Date(o.paidAt).toLocaleDateString('en-CA'))&&!can('o'))return alert('This day is closed. Ask an owner to reopen it first.');
  const rows=o.lines.map((l,idx)=>({l,idx,avail:returnableQty(o,idx)})).filter(r=>r.avail>0);
@@ -519,11 +332,6 @@ function pickExchangeVariant(o,idx,qtyv,ni){const x=modal(h('h3',{},ni.name),...
 async function doReturn(o,idx,qtyv,type,give){if(!can('m'))return alert('Manager only');
  const c=structuredClone(o),l=c.lines[idx];
  let amt=r2(l.price*qtyv),givenAmt=type=='exchange'&&give?r2(give.price*qtyv):0;
- // Stock is only touched inside the reason-picker's callback, never
- // before it -- pickReason()'s cancel path never invokes its callback,
- // and doing the restock/decrement first (then only maybe logging the
- // exchange) let a cancelled reason silently double-restock on retry
- // with no record of it ever having happened.
  pickReason(async reason=>{
   const it=R[l.id];
   if(it&&it.data.variants&&l.variant){const v=it.data.variants.find(x=>x.size==l.variant.size&&(x.color||'')==(l.variant.color||''));if(v)v.qty=r2((v.qty||0)+qtyv);await save('item',it.data,it.data.id)}
@@ -534,15 +342,8 @@ async function doReturn(o,idx,qtyv,type,give){if(!can('m'))return alert('Manager
   alert(type=='refund'?('Refund due: '+inr(amt)):(givenAmt>amt?'Collect the difference: '+inr(r2(givenAmt-amt)):givenAmt<amt?'Refund the difference: '+inr(r2(amt-givenAmt)):'Even exchange, nothing owed either way.'))})}
 V.pos=()=>{const isR=isRetail(),o=S.cur||(S.cur=newOrder()),cats=effCats().sort((a,b)=>a.n-b.n),q=S.q.toLowerCase(),t=tot(o);if(!cats.some(c=>c.id==S.cat))S.cat=cats[0]&&cats[0].id;
  const its=effItems().filter(i=>!itemOff(i)&&(q?i.name.toLowerCase().includes(q):i.cat==S.cat)).sort((a,b)=>a.name.localeCompare(b.name));
- // Due orders already had the discount granted and the receipt printed
- // -- only void ones didn't really happen -- so they count toward past
- // visits/loyalty same as paid ones. Otherwise "Save as due" is a free
- // way to reuse a single-use coupon or the same loyalty points forever.
  const phone=(o.cust.phone||'').replace(/\D/g,''),hist=phone.length>=10?L('order').filter(x=>x.id!=o.id&&(x.status=='paid'||x.status=='due')&&(x.cust||{}).phone&&x.cust.phone.replace(/\D/g,'')==phone):[];
  return h('div',{class:'g pos-g'},h('div',{},
-  // Dine-in/Takeaway/Delivery, the table picker and the floor plan are
-  // restaurant concepts with no retail equivalent -- a clothing-store
-  // sale is just a sale, no seating or dispatch involved.
   isR?null:h('div',{class:'row'},...['Dine-in','Takeaway','Delivery'].map(x=>h('button',{class:o.type==x?'on':'',onclick:()=>{o.type=x;if(x=='Delivery')o.src=prompt('Source (Zomato / Swiggy / Website)',o.src||'Zomato')||'';if(x!='Dine-in')o.table=null;render()}},x))),
   h('div',{class:'row'},isR?null:(o.type=='Dine-in'?h('select',{onchange:e=>pickTable(e.target.value)},h('option',{value:''},'Table'),...L('table').sort((a,b)=>a.name.localeCompare(b.name,0,{numeric:true})).map(x=>h('option',{value:x.id,selected:o.table==x.id},x.name+(busyT(x.id)?' (open)':'')))):null),
    h('input',{placeholder:'Search item',value:S.q,onchange:e=>{S.q=e.target.value;render()}})),
@@ -558,11 +359,6 @@ V.pos=()=>{const isR=isRetail(),o=S.cur||(S.cur=newOrder()),cats=effCats().sort(
   h('div',{class:'row'},h('span',{},'Coupon ',o.coupon?h('b',{},o.coupon):null),can('m')?h('span',{},h('button',{onclick:()=>{const code=prompt('Coupon code');if(!code)return;const c=validCoupon(code);if(!c)return alert('Invalid, expired, or fully-used coupon.');o.coupon=c.code;o.disc={t:c.type,v:c.value};o.loyaltyRedeemed=0;render()}},o.coupon?'Change':'Apply'),o.coupon?h('button',{class:'warn',onclick:()=>{o.coupon=null;o.disc=null;render()}},'Remove'):null):null),
   h('div',{class:'row'},'GST '+cfg().tax+'%',inr(t.tax)),h('div',{class:'row'},h('b',{},'Total'),h('b',{},inr(t.total))),
   h('div',{class:'row'},isR?null:h('button',{onclick:kot,disabled:!o.lines.length},'Send to kitchen'),
-   // Trial room: a customer taking garments to try on isn't a sale yet --
-   // separate from Hold (which is just "come back to this cart later")
-   // so it shows in its own queue (V.tabs) instead of mixed into Open
-   // orders, and "Release" doesn't need a cancellation reason since
-   // nothing was ever charged or stocked out.
    isR?h('button',{onclick:async()=>{o.trial=true;await persist();S.cur=null;render()},disabled:!o.lines.length},'Trial room'):null,
    h('button',{onclick:async()=>{await persist();S.cur=null;render()},disabled:!o.lines.length},'Hold'),h('button',{class:'p',onclick:pay,disabled:!o.lines.length},'Pay')),
   h('button',{onclick:async()=>{if(o.no){if(!can('m'))return alert('Manager only');if(!confirm('Cancel saved order?'))return;o.status='void';await persist()}S.cur=null;render()}},'Clear order')),
@@ -573,10 +369,6 @@ V.tabs=()=>{const isR=isRetail(),os=L('order').filter(o=>o.t).sort((a,b)=>b.crea
  h('div',{class:'card'},h('h3',{},'Open orders ('+op.length+')'),...op.map(o=>h('div',{class:'row'},o.no+' · '+o.type+' '+(o.src?o.src+' ':'')+tn(o.table)+(o.kstat?' · '+({new:'sent to kitchen',preparing:'preparing',ready:'ready',served:'served',dispatched:'dispatched',done:'delivered'}[o.kstat]||o.kstat):''),h('b',{},inr(o.t.total)),h('button',{class:'p',onclick:()=>{S.cur=structuredClone(o);S.tab='pos';render()}},'Open')))),
  due.length?h('div',{class:'card'},h('h3',{},'Credit / Due orders ('+due.length+')'),...due.map(o=>h('div',{class:'row'},o.no+' · '+((o.cust||{}).name||'')+' '+((o.cust||{}).phone||''),h('b',{style:'color:var(--accent)'},inr(r2(o.t.total-(o.pays||[]).reduce((a,p)=>a+p.amt,0)))+' due'),h('button',{class:'p',onclick:()=>{S.cur=structuredClone(o);S.tab='pos';render()}},'Settle')))):null,
  h('div',{class:'card'},h('h3',{},'Recent bills'),...os.filter(o=>o.status!='open'&&o.status!='due').slice(0,25).map(o=>h('div',{class:'row'},o.no+(o.status=='void'?' (void)':'')+((o.refunds||[]).length?' (refunded '+inr(r2(o.refunds.reduce((a,r)=>a+r.amt,0)))+')':'')+((o.exchanges||[]).length?' ('+o.exchanges.length+' return/exchange)':''),h('b',{},inr(o.t.total)),h('span',{},h('button',{onclick:()=>reprint(o)},'Print'),h('button',{onclick:()=>wa(o)},'WhatsApp'),can('m')&&o.status=='paid'?h('button',{onclick:()=>refund(o)},'Refund'):null,isR&&can('m')&&o.status=='paid'?h('button',{onclick:()=>returnExchange(o)},'Return/Exchange'):null,can('m')&&o.status=='paid'?h('button',{class:'warn',onclick:()=>voidOrder(o)},'Void'):null)))))};
-// Order states now match spec 4.1's lifecycle: new (received) ->
-// preparing (kitchen acknowledged) -> ready -> served (Dine-in) or
-// dispatched (Takeaway/Delivery, with its own elapsed timer below)
-// instead of jumping straight from new to ready.
 V.kds=()=>{const st=S.st||'All',os=L('order').filter(o=>o.status!='void'&&(o.kstat=='new'||o.kstat=='preparing')).sort((a,b)=>a.ktime>b.ktime?1:-1);
 return h('div',{},h('div',{class:'row',style:'padding:0 0 8px;justify-content:flex-start'},...['All','Kitchen','Bar','Dessert'].map(x=>h('button',{class:x==st?'on':'',onclick:()=>{S.st=x;render()}},x))),
 h('div',{class:'k'},...os.map(o=>{const it=(o.knew||[]).filter(x=>st=='All'||(x.s||'Kitchen')==st);if(!it.length)return null;return h('div',{class:'card'},h('b',{},o.no+' · '+o.type+' '+tn(o.table)+(o.kstat=='preparing'?' · preparing':'')),h('div',{},new Date(o.ktime).toLocaleTimeString()),...it.map(x=>h('div',{class:'row'},x.q+'× '+x.n)),
@@ -591,33 +383,16 @@ V.kotrep=()=>{const from=S.kotFrom||S.d,to=S.kotTo||S.d,q=(S.kotQ||'').toLowerCa
   h('div',{class:'row'},h('input',{placeholder:'Search order no / customer / phone',value:S.kotQ||'',oninput:e=>{S.kotQ=e.target.value;render()}}),h('button',{onclick:()=>csv([['Order No','Type','Table','Customer','Phone','Items','Item count','Created'],...rows.map(k=>[k.orderNo,k.type,tn(k.table),(k.cust||{}).name,(k.cust||{}).phone,k.items.map(x=>x.q+'x '+x.n).join('; '),k.items.reduce((a,x)=>a+x.q,0),k.createdAt])],'kot-'+from+'_'+to+'.csv')},'Export CSV')),
   h('table',{},h('tr',{},h('th',{},'Order'),h('th',{},'Type'),h('th',{},'Table'),h('th',{},'Customer'),h('th',{},'Items'),h('th',{},'Created')),...rows.map(k=>h('tr',{},h('td',{},k.orderNo),h('td',{},k.type),h('td',{},tn(k.table)),h('td',{},(k.cust||{}).name||''),h('td',{},k.items.map(x=>x.q+'× '+x.n).join(', ')),h('td',{},new Date(k.createdAt).toLocaleString())))),
   rows.length?null:h('p',{},'No KOTs in this range.')))};
-// Meant for a spare tablet/monitor at the pickup counter, viewed from a
-// distance -- big high-contrast tiles, no small text, no scrolling
-// needed for a normal handful of ready orders at once.
-// Restricted to today's tokens: numbers restart daily (nextToken), so
-// without this filter a forgotten order from yesterday could show the
-// same number as a brand-new one today. A stale ready order that never
-// got dispatched still shows up in the Orders tab (with its kstat), so
-// it isn't lost -- just off this display, which is meant to be today's
-// pickup queue, not a full history.
 V.token=()=>{const ready=L('order').filter(o=>o.status!='void'&&o.kstat=='ready'&&o.type!='Dine-in'&&o.token&&o.tokenDay==today()).sort((a,b)=>a.token-b.token);
  return h('div',{},h('h2',{style:"text-align:center;color:var(--ink-dim);font-family:'Space Mono',monospace;font-size:13px;letter-spacing:.1em;text-transform:uppercase;padding:16px 0 4px"},'Ready for pickup'),
   h('div',{class:'token-grid'},...ready.map(o=>h('button',{class:'token-tile',onclick:async()=>{const c=structuredClone(o);c.kstat='dispatched';c.dispatchAt=now();await save('order',c,c.id);render()}},'#'+o.token))),
   ready.length?null:h('p',{style:'text-align:center;color:var(--ink-faint);padding:50px 0'},'No orders ready right now.'))};
-// Day closure/settlement (spec 7.2): compares the system's expected
-// cash-in-drawer figure against what was actually counted, instead of
-// a bare confirm() -- a mismatch needs a reason from the same master
-// list voids/refunds use, not a silent close.
 function closeDay(d,expected,sales,bills){
  const cnt=h('input',{type:'number',value:expected});
  const x=modal(h('h3',{},'Close '+d),h('p',{},'Expected cash in drawer: '+inr(expected)),h('label',{style:'display:grid;gap:4px'},'Cash actually counted',cnt),h('div',{class:'row'},h('button',{class:'warn',onclick:()=>x()},'Cancel'),h('button',{class:'p',onclick:async()=>{
   const counted=+cnt.value||0,variance=r2(counted-expected),finish=async reason=>{await save('dayclose',{d,sales,bills,expectedCash:expected,countedCash:counted,variance,varianceReason:reason||null,by:S.user.email||S.user.id,at:now()});x();render()};
   if(Math.abs(variance)>0.5)pickReason(reason=>finish(reason));else finish(null);
  }},'Close day')))}
-// Dynamic report builder (spec 28): a custom-report sub-tab alongside
-// the fixed Day report, instead of its own top-level nav item -- one
-// more entry in an already 6-8-tab drawer isn't worth it for something
-// that lives naturally as a second view of the same Reports screen.
 V.rep=()=>{const tabs=[['day','Day report'],['custom','Custom report']],rt=S.repTab||'day';
  return h('div',{},h('div',{class:'tabbar'},...tabs.map(([k,n])=>h('button',{class:rt==k?'on':'',onclick:()=>{S.repTab=k;render()}},n))),rt=='custom'?V.dynrep():dayReportPane())};
 function dayReportPane(){const dc=L('dayclose').find(x=>x.d==S.d),os=L('order').filter(o=>o.status=='paid'&&new Date(o.paidAt).toLocaleDateString('en-CA')==S.d),ex=L('exp').filter(e=>e.d==S.d),m={cash:0,upi:0,card:0},it={},src={},sm=f=>r2(os.reduce((a,o)=>a+f(o),0));
@@ -633,28 +408,9 @@ function dayReportPane(){const dc=L('dayclose').find(x=>x.d==S.d),os=L('order').
  h('div',{class:'card'},h('h3',{},'Add expense'),dc?h('p',{},'Day is closed. '+(can('o')?'Reopen it to add expenses.':'Ask an owner to reopen it.')):h('div',{class:'row'},ec,eCat,eCatDl,ea,h('button',{onclick:async()=>{if(!ec.value||!(+ea.value>0))return;await save('exp',{note:ec.value,cat:eCat.value.trim()||'Other',amt:+ea.value,d:S.d});render()}},'Add')),...ex.map(e=>h('div',{class:'row'},e.note+' · '+(e.cat||'Other'),inr(e.amt))),Object.keys(byCat).length>1?h('div',{style:'margin-top:8px'},h('b',{style:'font-size:12px'},'By category'),...Object.entries(byCat).sort((a,b)=>b[1]-a[1]).map(([k,v])=>h('div',{class:'row'},k,inr(v)))):null),
  h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Items sold'),h('button',{onclick:()=>csv([['Item','Qty','Amount'],...Object.entries(it).map(([k,v])=>[k,v.q,v.a])],'items-'+S.d+'.csv')},'Export CSV')),h('table',{},...Object.entries(it).sort((a,b)=>b[1].a-a[1].a).map(([k,v])=>h('tr',{},h('td',{},k),h('td',{},v.q),h('td',{},inr(v.a)))))),
  feedbackCard())};
-// Groups paid orders by a chosen dimension and sums a chosen metric --
-// Day/Order type/Payment mode bucket at the ORDER level, Item/Category
-// bucket at the LINE level (a bill with 3 items contributes 3 rows).
-// Staff isn't offered as a dimension: the order only stores the
-// staffer's user id locally, and showing a name needs a profiles
-// lookup this screen doesn't otherwise make (see V.staff for that).
 function dynRows(from,to,dim,metric){
- // paidAt is stored as a UTC ISO timestamp (now()) -- the Day report,
- // refund() and voidOrder() all bucket it by LOCAL calendar date
- // (toLocaleDateString('en-CA')), not the raw UTC date substring. Using
- // slice(0,10) here instead would put a late-night IST order on the
- // wrong side of midnight versus every other date-bucketed view in
- // this file, and versus the <input type=date> range picker itself.
  const localDay=iso=>new Date(iso).toLocaleDateString('en-CA');
  const os=L('order').filter(o=>o.status=='paid'&&o.paidAt&&localDay(o.paidAt)>=from&&localDay(o.paidAt)<=to),buckets={};
- // "Bills" means distinct paid orders touching a bucket, not "how many
- // times add() ran" -- item/category dimensions call add() once per
- // LINE (so one order with 2 lines of the same item must still count
- // as 1 bill, not 2) and pay mode calls it once per split payment (so
- // one order split cash+UPI must still count as 1 bill, not 2). A Set
- // of order ids per bucket, sized at the end, gets this right for every
- // dimension without needing dimension-specific counting logic.
  const bump=(key,sales,qty,oid)=>{const b=buckets[key]||(buckets[key]={sales:0,qty:0,bills:new Set()});b.sales=r2(b.sales+sales);b.qty+=qty;b.bills.add(oid)};
  os.forEach(o=>{
   if(dim=='day')bump(localDay(o.paidAt),o.t.total,o.lines.reduce((a,l)=>a+l.qty,0),o.id);
@@ -666,9 +422,6 @@ function dynRows(from,to,dim,metric){
  return Object.entries(buckets).map(([k,v])=>({key:k,val:metric=='bills'?v.bills.size:v[metric]})).sort((a,b)=>b.val-a.val);
 }
 V.dynrep=()=>{const from=S.dynFrom||today(),to=S.dynTo||today(),dim=S.dynDim||'day';
- // "Quantity" has no meaning for Payment mode (a payment isn't a count
- // of items) -- rather than silently render an all-zero table for that
- // combination, it's just not offered while that dimension is picked.
  const dims=[['day','Day'],['item','Item'],['cat','Category'],['pay','Payment mode'],['type','Order type']],allMetrics=[['sales','Sales (₹)'],['qty','Quantity'],['bills','Bills']],metrics=dim=='pay'?allMetrics.filter(([v])=>v!='qty'):allMetrics;
  const metric=metrics.some(([v])=>v==S.dynMetric)?S.dynMetric:'sales',rows=dynRows(from,to,dim,metric);
  const dimLabel=dims.find(([v])=>v==dim)[1],metricLabel=metrics.find(([v])=>v==metric)[1];
@@ -678,9 +431,6 @@ V.dynrep=()=>{const from=S.dynFrom||today(),to=S.dynTo||today(),dim=S.dynDim||'d
   h('div',{class:'row'},h('b',{},dimLabel+' by '+metricLabel),h('button',{onclick:()=>csv([[dimLabel,metricLabel],...rows.map(r=>[r.key,r.val])],'custom-'+dim+'-'+metric+'-'+from+'_'+to+'.csv')},'Export CSV')),
   h('table',{},...rows.map(r=>h('tr',{},h('td',{},r.key),h('td',{},metric=='sales'?inr(r.val):r.val)))),
   rows.length?null:h('p',{},'No paid orders in this range.'))};
-// All-time, not filtered to S.d -- feedback trickles in slowly (one per
-// customer who bothers to rate on the invoice page), so a single day's
-// slice would almost always be empty and tell the owner nothing.
 function feedbackCard(){const fb=L('feedback');if(!fb.length)return null;
  const avg=r2(fb.reduce((a,f)=>a+f.rating,0)/fb.length),recent=fb.slice().sort((a,b)=>b.at>a.at?1:-1).slice(0,8);
  return h('div',{class:'card'},h('h3',{},'Customer feedback'),
@@ -689,24 +439,11 @@ function feedbackCard(){const fb=L('feedback');if(!fb.length)return null;
  )}
 const variantQty=i=>(i.variants||[]).reduce((a,v)=>a+(+v.qty||0),0);
 function item(i){const isR=isRetail();const px=h('input',{type:'number',value:i.price??'',placeholder:'Price'}),nm=h('input',{value:i.name||'',placeholder:'Name'}),sz=h('input',{value:(i.sizes||[]).map(s=>s.l+':'+s.p).join(', '),placeholder:'Sizes, e.g. Half:49, Full:69 (optional)'}),ct=h('select',{},...L('cat').map(c=>h('option',{value:c.id,selected:c.id==i.cat},c.name))),off=h('input',{type:'checkbox',checked:itemOff(i)}),rc=h('input',{value:i.rec||'',placeholder:'Recipe, e.g. Milk:0.1, Tea:5 (optional, for stock)'}),cs=h('input',{type:'number',value:i.cost??'',placeholder:'Cost price (optional)'}),stn=h('select',{},...['Kitchen','Bar','Dessert'].map(s=>h('option',{selected:(i.st||'Kitchen')==s},s))),md=h('input',{value:(i.mods||[]).join(', '),placeholder:'Modifiers, e.g. Extra shot:20, Less sugar:0 (optional)'}),bc=h('input',{value:i.barcode||'',placeholder:'Barcode (scan or type, optional)'});
- // Retail: a size+color+barcode+stock variant matrix instead of the
- // restaurant's price-tier sizes -- each row is its own stock count and
- // (optionally) its own scannable barcode. vGen just scaffolds the
- // sizes×colors grid into the textarea; staff still fills in barcode/qty
- // per row by hand, same "type it as a compact list" pattern as sizes/
- // recipe/mods above rather than a bespoke dynamic-rows widget.
  const vSizes=h('input',{placeholder:'Sizes, e.g. S,M,L,XL'}),vColors=h('input',{placeholder:'Colors, e.g. Black,White (optional)'}),
   lowInp=h('input',{type:'number',value:i.low??'',placeholder:'Low stock alert at (optional, default 2)'}),
   vTa=h('textarea',{placeholder:'One variant per line: Size|Color|Barcode|Qty\ne.g. M|Blue|8901030123|12',style:'min-height:90px;width:100%'},(i.variants||[]).map(v=>[v.size,v.color||'',v.barcode||'',v.qty||0].join('|')).join('\n')),
   vGen=h('button',{onclick:e=>{e.preventDefault();const sizes=vSizes.value.split(',').map(s=>s.trim()).filter(Boolean),colors=vColors.value.split(',').map(s=>s.trim()).filter(Boolean),cs2=colors.length?colors:[''],rows=[];for(const s of sizes)for(const c of cs2)rows.push([s,c,'',0].join('|'));if(!rows.length)return alert('Enter at least one size first.');const existing=vTa.value.trim();vTa.value=(existing?existing+'\n':'')+rows.join('\n')}},'+ Generate rows from sizes/colors');
- // 'Keep current timer' (default whenever the item is already off) stops
- // an unrelated edit -- fixing the price, say -- from silently resetting
- // an existing 2-hour sold-out timer to indefinite just because the
- // duration dropdown always opened on its first option.
  const durOpts=[['keep','Keep current timer'],['0','Indefinite'],['2','2 Hours'],['4','4 Hours'],['8','8 Hours'],['24','24 Hours'],['nbd','Next business day'],['custom','Custom hours']].filter(([v])=>v!='keep'||itemOff(i));
- // Picking a duration only matters if "Sold out" is actually ticked --
- // auto-tick it here so choosing "24 Hours" and hitting Save can't
- // silently do nothing because the checkbox itself was never checked.
  const dur=h('select',{onchange:()=>off.checked=true},...durOpts.map(([v,l])=>h('option',{value:v,selected:v==(itemOff(i)?'keep':'0')},l)));
  const x=modal(h('h3',{},i.id?'Edit item':'New item'),nm,ct,isR?null:stn,px,
   isR?h('div',{style:'display:grid;gap:6px'},h('div',{class:'row'},vSizes,vColors,vGen),vTa,lowInp):sz,
@@ -718,7 +455,7 @@ function item(i){const isR=isRetail();const px=h('input',{type:'number',value:i.
    variants=vTa.value.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{const[sz2,cl,vbc,qt]=l.split('|');return{size:(sz2||'').trim(),color:(cl||'').trim(),barcode:(vbc||'').trim()||null,qty:+qt||0}}).filter(v=>v.size);
    if(!variants.length)return alert('Add at least one size (or size+color) variant.');
    const seen=new Set();for(const v of variants){const key=v.size+'|'+v.color;if(seen.has(key))return alert('Duplicate variant: '+v.size+(v.color?' / '+v.color:''));seen.add(key)}
-   barcode=null; // retail barcodes live on the variant row, not the item
+   barcode=null;
   }else{
    sizes=sz.value.split(',').map(s=>s.split(':')).filter(a=>a[1]).map(a=>({l:a[0].trim(),p:+a[1]}));
   }
@@ -729,14 +466,9 @@ function item(i){const isR=isRetail();const px=h('input',{type:'number',value:i.
   if(off.checked){const dv=dur.value;
    if(dv=='keep')offUntil=i.offUntil??null;
    else if(dv=='custom'){const hrs=+prompt('Sold out for how many hours?','2');if(!(hrs>0))return alert('Enter a positive number of hours, or pick a different duration.');offUntil=new Date(Date.now()+hrs*3600000).toISOString()}
-   else if(dv=='nbd'){const d=new Date();if(d.getHours()>=4)d.setDate(d.getDate()+1);d.setHours(4,0,0,0);offUntil=d.toISOString()} // business day starts 04:00 -- spec 13; only roll to tomorrow if today's 04:00 cutoff already passed
+   else if(dv=='nbd'){const d=new Date();if(d.getHours()>=4)d.setDate(d.getDate()+1);d.setHours(4,0,0,0);offUntil=d.toISOString()}
    else if(dv!='0')offUntil=new Date(Date.now()+ +dv*3600000).toISOString();
   }
-  // Barcode uniqueness: check the item-level barcode (restaurant) or
-  // every variant's barcode (retail) against every OTHER item's own
-  // item-level barcode and variant barcodes -- a scan always resolves
-  // to whichever matches first, so a collision silently makes one of
-  // them unreachable.
   const allOtherCodes=L('item').filter(x=>x.id!=i.id).flatMap(x=>[x.barcode,...(x.variants||[]).map(v=>v.barcode)]).filter(Boolean);
   const myCodes=isR?variants.map(v=>v.barcode).filter(Boolean):[barcode].filter(Boolean);
   const selfDupe=myCodes.find((c,idx)=>myCodes.indexOf(c)!=idx);
@@ -748,28 +480,13 @@ V.menu=()=>{const isR=isRetail(),previewing=cfg().isDemo&&S.previewNiche;return 
  previewing?h('p',{style:'color:var(--accent);font-size:13px'},'Previewing a sample '+S.previewNiche+' menu — read only. Pick "Current" in Settings → Business to go back to editing your real menu.'):null,
  h('div',{class:'card'},h('div',{class:'row'},h('h3',{},isR?'Products':'Menu'),previewing?null:h('span',{},h('button',{onclick:()=>{const n=prompt('Category name');n&&save('cat',{name:n,n:Date.now()}).then(render)}},'Add category'),h('button',{class:'p',onclick:()=>item({})},isR?'Add product':'Add item'))),...effCats().sort((a,b)=>a.n-b.n).map(c=>h('div',{},h('div',{class:'row'},h('b',{},c.name),previewing?null:h('button',{onclick:()=>confirm('Delete category?')&&save('cat',c,c.id,true).then(render)},'Delete')),...effItems().filter(i=>i.cat==c.id).map(i=>h('div',{class:'row'},i.name+(itemOff(i)?' (sold out'+(i.offUntil?' until '+new Date(i.offUntil).toLocaleString():'')+')':''),isR?inr(i.price)+' · '+variantQty(i)+' in stock':(i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price)),previewing?null:h('button',{onclick:()=>item(i)},'Edit')))))))};
 V.set=()=>{const s=cfg(),F={},sel=(k,l,o)=>h('label',{},l,h('select',{style:'width:100%',onchange:e=>F[k]=e.target.value},...o.map(([v,n])=>h('option',{value:v,selected:String(s[k]||o[0][0])==String(v)},n)))),f=(k,l,t)=>h('label',{},l,h('input',{type:t||'text',value:s[k],style:'width:100%',oninput:e=>F[k]=t=='number'?+e.target.value:e.target.value})),ta=(k,l)=>h('label',{},l,h('textarea',{style:'width:100%;min-height:70px',oninput:e=>F[k]=e.target.value},s[k]||''));
- // Hardware toggles save instantly (like flipping a real switch) instead
- // of queuing into F for the Business tab's Save button -- off by
- // default, so a tenant with no hardware sees no change at all; each
- // toggle only unlocks its own feature, checked via cfg().<key>, so
- // nothing else in the app needs to know these exist.
- // Reads cfg() fresh at click time, not the closed-over `s` this render
- // captured -- otherwise flipping a second switch before the first
- // save's render() finishes writes back the first switch's now-stale
- // pre-toggle value, silently reverting it.
  const sw=(k,title,desc)=>h('div',{class:'hw-row'},h('div',{class:'hw-text'},h('b',{},title),h('span',{},desc)),h('label',{class:'switch'},h('input',{type:'checkbox',checked:!!s[k],onchange:async e=>{await save('settings',{...cfg(),[k]:e.target.checked},'settings');render()}}),h('div',{class:'track'})));
  const imgField=(k,l)=>{const inp=h('input',{type:'file',accept:'image/*'}),prev=h('div',{style:'font-size:12px;color:var(--ink-dim)'},s[k]?'Current image is set':'No image yet');inp.onchange=async()=>{const file=inp.files[0];if(!file)return;prev.textContent='Compressing & uploading…';try{F[k]=await uploadSiteImage(file,k);prev.textContent='Uploaded ✓ — click Save to apply'}catch(e){prev.textContent='Upload failed: '+e.message}};return h('label',{style:'display:grid;gap:4px'},l,inp,prev)};
  const galInp=h('input',{type:'file',accept:'image/*',multiple:true}),galPrev=h('div',{style:'font-size:12px;color:var(--ink-dim)'},(s.siteGallery||'').split(',').filter(Boolean).length+' photo(s) in gallery');
  galInp.onchange=async()=>{const files=[...galInp.files];if(!files.length)return;galPrev.textContent='Compressing & uploading '+files.length+'…';try{const urls=[];for(const file of files)urls.push(await uploadSiteImage(file,'gallery'));const existing=(F.siteGallery??s.siteGallery??'').split(',').filter(Boolean);F.siteGallery=[...existing,...urls].join(',');galPrev.textContent=F.siteGallery.split(',').filter(Boolean).length+' photo(s) — click Save to apply'}catch(e){galPrev.textContent='Upload failed: '+e.message}};
  const saveBtn=()=>h('button',{class:'p',onclick:async()=>{await save('settings',{...s,...F},'settings');alert('Saved')}},'Save');
- // Three long cards stacked one under the next made this a very long
- // scroll -- switchable tabs (persisted in S.setTab so it survives the
- // re-renders every save/sync triggers) show one section at a time.
  const panes={
   biz:()=>h('div',{class:'card',style:'display:grid;gap:8px'},h('h3',{},'Business details'),
-   // Demo-only: previews a different niche's sample Menu/POS without
-   // touching this shared account's real catalog -- never saved, never
-   // shown to a real tenant. See effBizType()/PREVIEW_CATALOGS above.
    s.isDemo?h('label',{},'Preview a different business type (this account only, nothing is saved)',h('select',{style:'width:100%',onchange:e=>{S.previewNiche=e.target.value||null;render()}},h('option',{value:'',selected:!S.previewNiche},'Current — '+s.name),...['restaurant','salon','retail'].map(k=>h('option',{value:k,selected:S.previewNiche==k},({restaurant:'Café / restaurant / bar / bakery / hotel',salon:'Salon / spa',retail:'Retail (shoes, clothing, books)'})[k]+' (sample menu)')))):null,
    sel('bizType','Business type',[['restaurant','Café, restaurant, bar, bakery, hotel (tables, KOT, kitchen display)'],['salon','Salon / spa'],['retail','Retail — shoes, clothing, books (size & color stock)']]),f('name','Name'),f('addr','Address'),f('phone','Phone'),f('gstin','GSTIN'),f('tax','GST %','number'),f('prefix','Invoice prefix'),h('h4',{},'Look & invoice'),f('col','Brand colour (hex, e.g. #1f3d2e)'),f('logo','Logo image URL (optional)'),f('ftr','Invoice thank-you message'),sel('w','Paper width',[[80,'80 mm'],[58,'58 mm']]),sel('sty','Invoice style',[['mono','Thermal (monospace)'],['sans','Clean (sans-serif)']]),f('fs','Invoice font size (px)','number'),h('h4',{},'Self-order'),f('gw','Guest ordering welcome text'),saveBtn()),
   tables:()=>{const so=featureOn('self_order'),secs=[...new Set(L('table').map(t=>t.sec||'Main'))];
@@ -795,17 +512,6 @@ function compressImage(file,maxW,quality){return new Promise((res,rej)=>{const i
 async function uploadSiteImage(file,prefix){const blob=await compressImage(file,prefix=='gallery'?1200:1800,.8);const path=prefix+'/'+Date.now()+'-'+Math.random().toString(36).slice(2,7)+'.jpg';const{error}=await sb.storage.from('site').upload(path,blob,{contentType:'image/jpeg'});if(error)throw error;return sb.storage.from('site').getPublicUrl(path).data.publicUrl}
 function qr(ts){const cards=ts.map(t=>{const q=qrcode(0,'M');q.addData(location.origin+'/site.html?t='+t.id);q.make();return `<div style="display:inline-block;text-align:center;margin:8px;padding:8px;border:1px solid #000;width:220px"><b>${esc(cfg().name)}</b><br>${q.createSvgTag(5)}<br><b>${esc(t.name)}</b><br>Scan to view menu &amp; order</div>`}).join(''),d=h('div');d.innerHTML=cards;modal(h('h3',{},'Table QR codes'),d,h('button',{class:'p',onclick:()=>prn(cards)},'Print'))}
 const lowBar=()=>{const l=L('ing').filter(g=>g.qty<=g.low);return l.length?h('div',{style:'background:#fde2e2;padding:8px'},'⚠ Low stock: '+l.map(g=>g.name).join(', ')):null};
-// Purchase entry (spec 8.2): logs vendor/qty/price/tax against the
-// ingredient itself (kind='ing', already writable by any staffer) --
-// avoids a whole new record kind + RLS migration for something that's
-// really just a richer stock-in than the old bare "± Stock" prompt.
-// purchases is a plain array field on the ingredient record, replaced
-// whole on every save (push_record does a full-row update, not a
-// merge) -- same tradeoff o.refunds/o.pays already accept elsewhere in
-// this file. Two tills logging a purchase for the SAME ingredient at
-// the same moment can lose one of the two entries on conflict. Rare in
-// practice (purchase entry isn't a high-concurrency action) but a real
-// limitation, not silently "handled".
 function purchaseIng(g){
  const vendors=[...new Set(L('ing').flatMap(x=>(x.purchases||[]).map(p=>p.vendor).filter(Boolean)))];
  const vend=h('input',{list:'vendlist',placeholder:'Vendor'}),dl=h('datalist',{id:'vendlist'},...vendors.map(v=>h('option',{value:v}))),
@@ -818,33 +524,13 @@ function purchaseIng(g){
  }},'Save purchase')))
 }
 function setExpiry(g){const v=prompt('Next expiry date for '+g.name+' (YYYY-MM-DD), blank to clear',g.expiry||'');if(v===null)return;const c=structuredClone(g);c.expiry=v.trim()||null;save('ing',c,c.id).then(render)}
-// One next-expiry date per ingredient, not a full batch ledger -- an
-// honest middle ground: real enough to warn "this is about to go off"
-// without pretending we track which physical lot gets consumed first
-// (that's FIFO -- see the note where Purchase Orders receive stock).
 const expiringSoon=()=>{const cutoff=new Date(Date.now()+7*86400000).toLocaleDateString('en-CA');return L('ing').filter(g=>g.expiry&&g.expiry<=cutoff&&g.qty>0)};
 const expiryBar=()=>{const l=expiringSoon();return l.length?h('div',{style:'background:#fff3cd;padding:8px'},'⏳ Expiring within 7 days: '+l.map(g=>g.name+' ('+g.expiry+')').join(', ')):null};
 
-// ---- Suppliers: a light vendor directory so a Purchase Order has
-// someone to send to, instead of the free-text vendor field
-// purchaseIng() already used. Doesn't replace that quick-purchase
-// flow (a walk-in market buy still doesn't need a formal PO) -- this
-// is specifically for the plan-ahead "raise an order, receive it
-// later" workflow below. ----
 function supplierModal(s){s=s||{};const nm=h('input',{value:s.name||'',placeholder:'Supplier name'}),ph=h('input',{value:s.phone||'',placeholder:'Phone'}),nt=h('input',{value:s.notes||'',placeholder:'Notes (optional)'});
  const x=modal(h('h3',{},s.id?'Edit supplier':'New supplier'),nm,ph,nt,h('button',{class:'p',onclick:async()=>{if(!nm.value.trim())return alert('Name is needed.');await save('supplier',{...s,name:nm.value.trim(),phone:ph.value.trim(),notes:nt.value.trim()});x();render()}},'Save'),
   s.id?h('button',{class:'warn',onclick:async()=>{await save('supplier',s,s.id,true);x();render()}},'Remove'):null)}
 
-// ---- Purchase Orders: draft -> sent -> received. Only the receive
-// step actually touches stock -- a sent PO is a paper trail of what
-// you asked for, not what you have yet. Receiving reuses the exact
-// same ing.qty/cost/purchases[] update purchaseIng() does per line, so
-// a received PO shows up in Stock movement/reorder forecasts exactly
-// like any other purchase. FIFO (oldest stock consumed first) would
-// need each receipt to become its own tracked lot rather than folding
-// into one running ing.qty -- real gap, not attempted here; expiry
-// above is a simpler, honest substitute (a warning, not a consumption
-// order).
 function poModal(){const supNames=L('supplier').map(s=>s.name);
  const sup=h('input',{list:'suplist',placeholder:'Supplier'}),supDl=h('datalist',{id:'suplist'},...supNames.map(n=>h('option',{value:n})));
  let lines=[{ing:'',qty:''}];
@@ -875,16 +561,8 @@ function receivePO(po){const rows=po.items.map(it=>({it,qv:h('input',{type:'numb
    }
    await save('po',{...po,status:'received',receivedAt:now()},po.id);x();render()
   }},'Confirm receipt'))}
-// Reorder forecast (spec 8.1): velocity from the usage log dedu() now
-// keeps (last 14 days), days-left at that rate, and a suggested 7-day
-// reorder quantity. Ingredients with no usage history yet (nothing
-// consumed through a recipe since this shipped) just don't show a
-// forecast -- not a fabricated one.
-function reorderRows(){const cutoff=new Date(Date.now()-14*86400000).toLocaleDateString('en-CA'); // matches today()'s local-date convention, not UTC
+function reorderRows(){const cutoff=new Date(Date.now()-14*86400000).toLocaleDateString('en-CA');
  return L('ing').map(g=>{const recent=(g.usage||[]).filter(u=>u.d>=cutoff);
-  // usage is append-only chronological, so recent[0] is the earliest entry
-  // still inside the window -- divide by the actual span covered, not a
-  // fixed 14, or a couple of days of real data understates velocity ~7x.
   const span=recent.length?Math.max(1,Math.min(14,Math.round((Date.now()-new Date(recent[0].d))/86400000)+1)):0;
   const vel=recent.length?r2(recent.reduce((a,u)=>a+u.q,0)/span):0,daysLeft=vel>0?Math.floor(g.qty/vel):null;
   return{g,vel,daysLeft,suggest:vel>0?Math.ceil(vel*7):null}}).filter(r=>r.g.qty<=r.g.low||(r.daysLeft!=null&&r.daysLeft<=7))}
@@ -927,9 +605,6 @@ return h('div',{class:'g',style:'grid-template-columns:1fr'},
   h('table',{},h('tr',{},h('th',{},'Ingredient'),h('th',{},'Purchased'),h('th',{},'Purchase cost'),h('th',{},'Wasted'),h('th',{},'On hand')),...stockRows.map(({g,purch,purchAmt,waste})=>h('tr',{},h('td',{},g.name),h('td',{},purch+' '+g.unit),h('td',{},inr(purchAmt)),h('td',{},waste+' '+g.unit),h('td',{},g.qty+' '+g.unit)))),
   h('button',{onclick:()=>csv([['Ingredient','Purchased','Purchase cost','Wasted','On hand'],...stockRows.map(({g,purch,purchAmt,waste})=>[g.name,purch,purchAmt,waste,g.qty])],'stock-'+sf+'_'+st+'.csv')},'Export CSV')),
  h('div',{class:'card'},h('h3',{},'Wastage log'),...L('waste').slice(-20).reverse().map(w=>h('div',{class:'row'},w.d+' · '+w.ing,w.q))))}
-// Retail: purchase entry against an item's own size/color rows -- a
-// vendor bill lists quantities per variant, not per raw ingredient, so
-// this writes straight to item.variants[].qty instead of touching 'ing'.
 function purchaseItem(i){const vendors=[...new Set(L('item').flatMap(x=>(x.purchases||[]).map(p=>p.vendor).filter(Boolean)))];
  const vend=h('input',{list:'vendlist2',placeholder:'Vendor'}),dl=h('datalist',{id:'vendlist2'},...vendors.map(v=>h('option',{value:v}))),tx=h('input',{type:'number',placeholder:'Tax % (optional)',value:0});
  const rows=(i.variants||[]).map(v=>({v,qv:h('input',{type:'number',placeholder:'Qty',style:'width:70px'}),pr:h('input',{type:'number',placeholder:'Price/unit',style:'width:90px'})}));
@@ -944,9 +619,6 @@ function purchaseItem(i){const vendors=[...new Set(L('item').flatMap(x=>(x.purch
    c.purchases=(c.purchases||[]).concat({vendor:vend.value.trim(),tax:+tx.value||0,amt,lines,d:today(),at:now()});
    await save('item',c,c.id);x();render()
   }},'Save purchase')))}
-// Reorder forecast for retail, mirroring reorderRows() above but keyed
-// off each variant's own usage[] (populated by deduVariant()) and the
-// item-level `low` threshold instead of a per-ingredient one.
 function reorderRowsRetail(){const cutoff=new Date(Date.now()-14*86400000).toLocaleDateString('en-CA'),rows=[];
  for(const i of L('item')){if(!i.variants||!i.variants.length)continue;for(const v of i.variants){
   const recent=(v.usage||[]).filter(u=>u.d>=cutoff);
@@ -971,12 +643,6 @@ V.inv=()=>isRetail()?retailInv():ingInv();
 V.staff=()=>{const b=h('div',{class:'card'},h('h3',{},'Staff & roles'),can('o')?h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Attendance-based pay, leave and payslips now live on their own login — ',h('a',{href:'/payroll.html',target:'_blank',style:'color:var(--accent)'},'open Payroll'),'.'):null),sh=L('shift').sort((a,b)=>b.in>a.in?1:-1),mine=sh.find(x=>x.u==S.user.id&&!x.out);
 sb.from('profiles').select('id,email,role').then(({data})=>(data||[]).forEach(p=>b.append(h('div',{class:'row'},p.email,can('o')?h('select',{onchange:e=>sb.from('profiles').update({role:e.target.value}).eq('id',p.id)},...['cashier','manager','owner'].map(r=>h('option',{selected:p.role==r},r))):p.role))));
 return h('div',{class:'g',style:'grid-template-columns:1fr'},h('div',{class:'card'},h('h3',{},'Attendance'),h('button',{class:'p',onclick:async()=>{if(mine){mine.out=now();await save('shift',mine,mine.id)}else await save('shift',{u:S.user.id,e:S.user.email||'me',in:now()});render()}},mine?'Clock out':'Clock in'),...sh.slice(0,30).map(x=>h('div',{class:'row'},(x.e||'')+' '+new Date(x.in).toLocaleString(),x.out?Math.round((new Date(x.out)-new Date(x.in))/6e4)+' min':'on shift')),h('h3',{},'Notifications'),h('p',{style:'font-size:13px;color:var(--ink-dim)'},'Get an order alert on this device even when the app is closed.'),h('button',{class:'p',onclick:enablePush},'Enable notifications on this device')),b)};
-// Payroll is its own separate product (app/public/payroll.html) with
-// its own data and its own login screen, deliberately not read from
-// or written to here -- it used to be a tab on this app; it isn't
-// anymore, on purpose.
-// Segments (spec 6.1/6.2) are computed straight from paid order history,
-// no schema change needed: tier from lifetime spend, risk from recency.
 function custSegment(c){
  const tier=c.tot>=10000?'Gold':c.tot>=3000?'Silver':'Bronze',
   daysSince=Math.floor((Date.now()-new Date(c.last))/86400000),
@@ -993,9 +659,6 @@ function custModal(c,orders){
   h('div',{class:'row'},'Visits',h('b',{},c.n)),h('div',{class:'row'},'Lifetime spend',h('b',{},inr(c.tot))),h('div',{class:'row'},'Last visit',h('b',{},daysSince+' days ago')),
   favs.length?h('div',{},h('b',{style:'font-size:12px'},'Past favourites'),h('div',{class:'row',style:'justify-content:flex-start;flex-wrap:wrap;gap:6px;border-bottom:none'},...favs.map(([n,q])=>h('span',{style:'background:var(--bg-raised);color:var(--ink-dim);font-size:12px;padding:3px 10px;border-radius:999px;font-family:Inter,sans-serif;text-transform:none;letter-spacing:normal'},n+' × '+q)))):null)
 }
-// Same set of orders V.pos's hist uses (paid + due, net of refunds) --
-// otherwise a customer with only "saved as due" orders shows loyalty
-// points redeemable at billing but doesn't exist here at all.
 V.crm=()=>{const paid=L('order').filter(o=>(o.status=='paid'||o.status=='due')&&(o.cust||{}).phone),cs={};paid.forEach(o=>{const p=o.cust.phone.replace(/\D/g,''),net=r2(o.t.total-(o.refunds||[]).reduce((a,r)=>a+r.amt,0));const c=cs[p]||(cs[p]={name:o.cust.name,phone:p,n:0,tot:0,last:o.paidAt||o.created,orders:[]});c.n++;c.tot=r2(c.tot+net);c.orders.push(o);if((o.paidAt||o.created)>c.last)c.last=o.paidAt||o.created});
 const list=Object.values(cs).sort((a,b)=>b.tot-a.tot);
 return h('div',{class:'g',style:'grid-template-columns:1fr'},h('div',{class:'card'},h('h3',{},'Customers ('+list.length+')'),...list.map(c=>{const{tier}=custSegment(c);return h('div',{class:'cust-row',onclick:()=>custModal(c,c.orders)},
@@ -1010,13 +673,6 @@ let G=[];
 async function getG(){if(!navigator.onLine||!S.user)return;if(!featureOn('self_order')){if(G.length){G=[];render()}return}const{data,error}=await sb.from('guest_orders').select('*').eq('status','new').order('created_at');if(error)return;const n=G.length;G=data||[];if(G.length>n)alertSound(3);if(G.length!=n&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))render()}
 async function acceptG(g){let o=L('order').find(x=>x.status=='open'&&x.table==g.tbl&&x.lines.length);o=o?structuredClone(o):{...newOrder(),table:g.tbl};g.items.forEach(i=>{const it=R[i.id]&&R[i.id].data;if(!it)return;const sizeObj=i.size&&(it.sizes||[]).find(s=>s.l==i.size),price=sizeObj?sizeObj.p:it.price;const l=o.lines.find(x=>x.id==i.id&&x.size==i.size&&x.price==price&&!x.note);l?l.qty+=i.qty:o.lines.push({id:i.id,name:it.name,size:i.size,price,qty:i.qty,sent:0,st:it.st||'Kitchen'})});if(!(o.cust&&o.cust.name))o.cust={name:g.name,phone:g.phone};if(g.note)o.gn=g.note;const prev=S.cur;S.cur=o;mk(o);await persist();S.cur=prev;await sb.from('guest_orders').update({status:'done'}).eq('id',g.id);getG()}
 const guestBar=()=>G.length?h('div',{style:'background:var(--bg-raised);border-left:4px solid var(--accent);padding:8px;display:grid;gap:6px'},...G.map(g=>h('div',{class:'row'},h('span',{},'📲 '+(tn(g.tbl)||'Table')+' · '+g.name+(g.phone?' '+g.phone:'')+' — '+g.items.map(i=>i.qty+'× '+i.name+(i.size?' ('+i.size+')':'')).join(', ')+(g.note?' · "'+g.note+'"':'')),h('span',{},h('button',{class:'p',onclick:()=>acceptG(g)},'Accept → kitchen'),h('button',{onclick:async()=>{await sb.from('guest_orders').update({status:'rejected'}).eq('id',g.id);getG()}},'Reject'))))):null;
-// render() tears down and rebuilds the whole #app tree on every click
-// (replaceChildren), so a drawer built fresh inside it each time has no
-// prior state for a CSS transition to animate FROM -- a brand-new node
-// just snaps straight to its resting class. The drawer/overlay are
-// built once here, live outside #app entirely, and only ever have
-// their class toggled on the SAME persistent node -- that's what makes
-// the slide/fade transitions in the CSS actually animate.
 let drawerEl=null,drawerOvEl=null;
 function syncDrawer(){if(!drawerOvEl)return;drawerOvEl.classList.toggle('show',!!S.drawerOpen);drawerEl.classList.toggle('open',!!S.drawerOpen)}
 function renderDrawer(T){
@@ -1028,12 +684,6 @@ function renderDrawer(T){
  );
  syncDrawer();
 }
-// 4th element is the subscription feature key this tab needs live, or
-// null if it's core (no separate feature flag exists for it, so it's
-// only gated by role permission, not the owner's service toggles).
-// Shared between render() (builds the actual drawer/tab list) and
-// boot()'s demo deep-link handling (?tab=crm etc., see visibleTabs())
-// so the two can never drift out of sync on what's actually reachable.
 const ALL_T=[['pos','Sell','pos','pos'],['tabs','Orders','orders',null],['kds','Kitchen','kitchen','kds'],['kotrep','KOT','kitchen','kds'],['token','Token','kitchen',null],['rep','Reports','reports','reports'],['staff','Staff','staff',null],['inv','Stock','inventory',null],['crm','Customers','crm','crm']];
 const visibleTabs=()=>ALL_T.filter(([k,,perm,feat])=>can(perm)&&(!feat||featureOn(feat))&&(k!='kotrep'||isRestaurant())&&(k!='token'||cfg().hwToken));
 function render(){if(S.authExpired||!S.user)return login('Your session ended. Please sign in again.');applyTheme();
@@ -1052,41 +702,17 @@ function render(){if(S.authExpired||!S.user)return login('Your session ended. Pl
   h('div',{class:'powered'},'Powered by ',h('a',{href:'https://auzslab.in',target:'_blank',rel:'noopener'},'AUZslab'))
  );renderDrawer(T);setNote();refreshNotifCount()}
 function login(msg){
- // The drawer/overlay now live outside #app permanently (see
- // renderDrawer) so a session expiring while it's open would leave it
- // painted on top of this sign-in form -- it's never part of what
- // replaceChildren below rewrites, so it has to be closed explicitly.
  S.drawerOpen=false;syncDrawer();
  const e=h('input',{type:'email',placeholder:'Email'}),p=h('input',{type:'password',placeholder:'Password'}),m=h('div',{},msg||'');$('#app').replaceChildren(h('div',{class:'md',style:'margin:12vh auto'},h('h2',{},'Sign in'),e,p,m,h('button',{class:'p',onclick:async()=>{const{error}=await sb.auth.signInWithPassword({email:e.value.trim(),password:p.value});error?m.textContent=error.message:boot()}},'Sign in')))}
 async function seed(){localStorage.seeded=1;const c=uid();await save('cat',{name:'Tea',n:1},c);await save('item',{name:'Masala Tea',cat:c,price:25,sizes:[]});await save('item',{name:'Coffee',cat:c,price:49,sizes:[{l:'M',p:29},{l:'L',p:49}]});for(let i=1;i<=6;i++)await save('table',{name:'T'+i})}
 async function boot(){if(!C.url||C.url.includes('YOUR-PROJECT'))return $('#app').replaceChildren(h('div',{class:'md',style:'margin:12vh auto'},h('h3',{},'Setup needed'),'Open config.js and add your Supabase URL and key. See SETUP-GUIDE.md.'));navigator.storage&&navigator.storage.persist&&navigator.storage.persist();navigator.serviceWorker&&navigator.serviceWorker.register('/sw.js');
  let c=JSON.parse(localStorage.u||'null'),ses=null;try{ses=(await sb.auth.getSession()).data.session}catch{}
- // The local cache (IndexedDB 'pos3') is one flat store with no tenant
- // scoping -- signing into a DIFFERENT tenant on the same device (the
- // two shared public demo logins being the obvious way to hit this,
- // but any device reused across clients too) used to leave the
- // PREVIOUS tenant's cached catalog merged into R forever, since
- // nothing here ever checked whose records they were. meta.lastUser
- // tracks whose cache this is; a mismatch wipes rec+out before
- // anything loads (the outbox has to go too -- a leftover unsynced
- // write from the old tenant would otherwise land in the NEW tenant's
- // records, since push_record resolves tenant_id from the live session,
- // not from whatever the write was originally queued under).
  const uid=ses?ses.user.id:(c&&c.id);
  if(uid){const meta=await get('meta','lastUser');if(meta&&meta.v&&meta.v!==uid){await clr('rec');await clr('out');await del('meta','since')}await put('meta',{k:'lastUser',v:uid})}
  (await all('rec')).forEach(r=>R[r.id]=r);
  if(ses){S.user=ses.user;try{const{data}=await sb.from('profiles').select('role,role_id').eq('id',ses.user.id).single();if(data)localStorage.u=JSON.stringify(c={id:ses.user.id,role:data.role,role_id:data.role_id})}catch{}}else if(c)S.user={id:c.id};
  if(!S.user)return login();S.role=(c&&c.role)||'cashier';S.role_id=(c&&c.role_id)||null;S.perms=null;if(S.role_id){try{const{data}=await sb.from('roles').select('permissions').eq('id',S.role_id).single();S.perms=data&&data.permissions}catch{}}
  S.features=null;S.enabledFeatures={};try{const{data}=await sb.rpc('my_dashboard');if(data&&data.features){S.features=data.features;S.enabledFeatures=data.enabled_features||{}}}catch{}
- // Product marketing pages (pos.html/crm.html/inventory.html/...) each
- // link their own "Try this in the live demo" CTA straight at the tab
- // that IS that product (?tab=crm, ?tab=inv, ...), on the same shared
- // demo login every other product already uses -- one demo tenant,
- // deep-linked differently per product, rather than five separate
- // logins. Validated against visibleTabs() (menu/menu('menu') aren't
- // in it -- can('o') decides those separately) so a bad or
- // no-longer-permitted tab in the URL can never land on an undefined
- // V[S.tab] and crash the render instead of just landing on POS.
  try{const reqTab=new URLSearchParams(location.search).get('tab');if(reqTab&&visibleTabs().some(([k])=>k==reqTab))S.tab=reqTab}catch{}
  S.authExpired=false;$('#app').textContent='Loading…';addEventListener('online',()=>{sync();setNote()});addEventListener('offline',setNote);
  sb.channel('r').on('postgres_changes',{event:'*',schema:'public',table:'records'},()=>sync()).subscribe();setInterval(sync,30000);sb.channel('g').on('postgres_changes',{event:'*',schema:'public',table:'guest_orders'},()=>getG()).subscribe();setInterval(getG,15000);sb.channel('n').on('postgres_changes',{event:'*',schema:'public',table:'notifications'},()=>refreshNotifCount()).subscribe();setInterval(refreshNotifCount,30000);setInterval(checkAlerts,5000);await syncNow();getG();checkAlerts();if(can('o')&&!L('cat').length&&!localStorage.seeded)await seed();render()}

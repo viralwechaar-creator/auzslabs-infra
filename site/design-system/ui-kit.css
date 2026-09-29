@@ -1,15 +1,4 @@
-/* =========================================================================
-   AUZslab UI Kit — shared component library
-   Used by the marketing site AND the POS/CRM product. This is the brand:
-   minimal, premium, unmistakably ours. Rules that keep it that way —
-     - restraint: ink / white / gray do the work; accent appears only on
-       the one active/important thing per component, never decoration
-     - quiet elevation: soft shadows, thin 1px lines — no clutter, no glow
-     - generous spacing, rounded-but-not-cartoonish corners
-     - motion is short and purposeful (150–220ms), never bouncy
-   Prefix: every class is namespaced `uk-` so it can drop into any page
-   without colliding with page-specific styles.
-   ========================================================================= */
+
 :root{
   --uk-ink:#171717;
   --uk-ink-dim:#4d4d4d;
@@ -37,7 +26,6 @@
 .uk-kit button{font-family:inherit;-webkit-tap-highlight-color:transparent}
 .uk-kit svg{display:block}
 
-/* ---------- 1. Accordion ---------- */
 .uk-accordion{border-top:1px solid var(--uk-line)}
 .uk-accordion-item{border-bottom:1px solid var(--uk-line)}
 .uk-accordion-head{
@@ -52,7 +40,6 @@
 .uk-accordion-body-inner{overflow:hidden}
 .uk-accordion-body p{margin:0 0 18px;padding-right:32px;font-size:13.5px;line-height:1.7;color:var(--uk-ink-dim)}
 
-/* ---------- 2. Bento menu ---------- */
 .uk-bento{display:grid;grid-template-columns:repeat(2,1fr);grid-auto-rows:76px;gap:8px}
 @media (min-width:640px){.uk-bento{grid-template-columns:repeat(4,1fr);grid-auto-rows:84px}}
 .uk-bento-tile{
@@ -75,14 +62,12 @@
   padding:3px 8px;border-radius:var(--uk-radius-full);background:var(--uk-line-soft);color:var(--uk-ink-faint);
 }
 
-/* ---------- 3. Breadcrumb ---------- */
 .uk-breadcrumb{display:flex;align-items:center;gap:8px;font-family:var(--uk-font-mono);font-size:11px}
 .uk-breadcrumb a{color:var(--uk-ink-faint);transition:color .15s var(--uk-ease)}
 .uk-breadcrumb a:hover{color:var(--uk-ink)}
 .uk-breadcrumb-sep{color:var(--uk-line);font-size:11px}
 .uk-breadcrumb-current{color:var(--uk-ink);font-weight:700}
 
-/* ---------- 4. Hamburger menu ---------- */
 .uk-hamburger{
   width:38px;height:38px;border-radius:var(--uk-radius-full);border:1px solid var(--uk-line);
   background:var(--uk-bg);display:flex;align-items:center;justify-content:center;cursor:pointer;
@@ -101,7 +86,6 @@
 .uk-hamburger.is-open .uk-hamburger-bars span:nth-child(2){opacity:0}
 .uk-hamburger.is-open .uk-hamburger-bars span:nth-child(3){top:5px;transform:rotate(-45deg)}
 
-/* ---------- 5 / 6. Kebab & meatballs menus ---------- */
 .uk-overflow-menu{position:relative;display:inline-block}
 .uk-overflow-trigger{
   width:32px;height:32px;border-radius:var(--uk-radius-full);border:1px solid transparent;background:none;
@@ -127,7 +111,6 @@
 .uk-overflow-item.uk-danger{color:var(--uk-accent)}
 .uk-overflow-item.uk-danger:hover{background:rgba(128,0,32,.08)}
 
-/* ---------- 7. Tab / nav bar ---------- */
 .uk-tabbar-row{display:flex;align-items:center;gap:8px}
 .uk-tabbar{
   position:relative;display:flex;gap:2px;padding:4px;border-radius:var(--uk-radius-full);
@@ -150,7 +133,6 @@
 }
 .uk-tabbar-action:hover{transform:translateY(-1px)}
 
-/* ---------- 8. Sidebar (embeddable nav list) ---------- */
 .uk-sidebar{
   width:100%;max-width:220px;background:var(--uk-bg);border:1px solid var(--uk-line);
   border-radius:var(--uk-radius-lg);padding:10px;display:flex;flex-direction:column;gap:2px;
@@ -164,7 +146,6 @@
 .uk-sidebar-item.is-active{background:var(--uk-ink);color:#fff}
 .uk-sidebar-item.is-active svg{color:#fff}
 
-/* ---------- 9. Pagination ---------- */
 .uk-pagination{
   display:inline-flex;align-items:center;gap:4px;padding:4px;background:var(--uk-bg-raised);
   border-radius:var(--uk-radius-full);
@@ -178,7 +159,6 @@
 .uk-page-btn.is-active{background:var(--uk-ink);color:#fff}
 .uk-page-btn:disabled{opacity:.35;cursor:default}
 
-/* ---------- 10. List of links ---------- */
 .uk-linklist{list-style:none;margin:0;padding:0;border-top:1px solid var(--uk-line)}
 .uk-linklist li{border-bottom:1px solid var(--uk-line)}
 .uk-linklist a{
@@ -189,7 +169,6 @@
 .uk-linklist a:hover{color:var(--uk-ink)}
 .uk-linklist a:hover svg{transform:translateX(3px);color:var(--uk-ink)}
 
-/* ---------- kit demo scaffolding ---------- */
 .uk-demo-block{margin-bottom:64px}
 .uk-demo-label{
   font-family:var(--uk-font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;

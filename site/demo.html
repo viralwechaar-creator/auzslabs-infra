@@ -49,10 +49,7 @@
         <p class="p">This demo link isn't valid, or has expired. <a href="contact.html" style="color:var(--accent)">Get in touch</a> and we'll sort you out.</p>
       </div>
 
-      <!-- Real, hands-on access first -- a shared live demo tenant
-           (see db/023_demo_tenants.sql), not a description of one.
-           The module tour below still exists for whoever wants the
-           reading, but this is the actual point of the page. -->
+      
       <section class="section tight" id="liveDemoSection" style="display:none">
         <div class="card" style="border-color:var(--accent);box-shadow:5px 5px 0 var(--accent)">
           <span class="tag" style="background:var(--accent);color:#fff;border-color:var(--accent)">Hands-on</span>
@@ -64,6 +61,7 @@
             <div>Password &nbsp; <b>Auzslab@Demo</b></div>
           </div>
           <a id="liveDemoBtn" href="#" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top:16px">Launch live demo &rarr;</a>
+          <p class="p" style="margin-top:12px;font-size:11.5px;color:var(--ink-faint)">For evaluation only &mdash; please don't scrape or copy the software. See our <a href="terms.html" style="color:var(--ink-faint);text-decoration:underline">terms</a>.</p>
         </div>
       </section>
 
@@ -131,13 +129,6 @@ const sb = supabase.createClient(CFG.url, CFG.key);
 
 function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
-// Bullet copy is intentionally split by niche flavor, never invented per
-// business -- POS/Inventory read very differently for a café (tables,
-// KOT, kitchen display) than for a clothing shop (size/color stock,
-// trial room, returns), and neither should be shown to a business that
-// wouldn't actually get them. 'general' gets only the bullets true for
-// any business, since niche_presets.general has no table/KOT concept
-// but does have pos:true.
 const POS_BULLETS = {
   restaurant: ['Order taking, GST billing &amp; due/credit tracking', 'Table floor plan, kitchen order tickets (KOT) &amp; kitchen display', 'Token/queue display for counter service', 'Day settlement, day &amp; KOT reports, a build-your-own report tool', 'Custom staff roles &amp; permissions &middot; barcode scanner support (optional)'],
   retail: ['Size &amp; color billing, scan-to-bill on a barcode per variant', 'Trial room queue, kept apart from confirmed sales', 'Returns &amp; exchanges against the original invoice', 'Purchase entry straight into your size/color stock', 'Custom staff roles &amp; permissions'],
@@ -155,14 +146,6 @@ const PAYROLL_BULLETS = ['A monthly rate per staffer, hours pulled from their ow
 
 function flavor(niche) { return niche === 'retail' ? 'retail' : niche === 'cafe' ? 'restaurant' : 'general'; }
 
-// pos/crm/billing/qr mirror db/001_tenants_and_settings.sql's
-// niche_presets.default_features exactly (qr tracks that preset's
-// self_order key) -- a lead with no cart yet gets shown only what that
-// niche is actually entitled to by default, never a guess. inventory
-// has no equivalent key in niche_presets at all: index.html's Stock
-// tab has no featureOn() gate (ALL_T's 'inv' entry passes null for
-// feat), so it's always on for every niche regardless of preset,
-// unlike everything else here.
 const NICHE_DEFAULTS = {
   cafe: { pos: true, crm: true, billing: true, inventory: true, qr: true },
   retail: { pos: true, crm: true, billing: true, inventory: true, qr: false },
@@ -170,11 +153,6 @@ const NICHE_DEFAULTS = {
   general: { pos: true, crm: true, billing: true, inventory: true, qr: false },
 };
 
-// title/bullets are our own hardcoded strings (POS_BULLETS etc. above),
-// not user input, and already contain intentional HTML entities like
-// &mdash; -- esc()-ing title here double-encoded them into literal
-// "&amp;mdash;" text on screen, so only ctx.business_name (the one
-// real user-supplied value rendered on this page) gets escaped.
 function modCard(title, bullets) {
   if (!bullets.length) return '';
   return `<div class="card demo-mod"><span class="tag">Included</span><div class="h-2" style="margin-top:14px;font-size:20px">${title}</div>
@@ -184,8 +162,6 @@ function modCard(title, bullets) {
 function render(ctx) {
   const fl = flavor(ctx.niche);
   const hasFeatures = ctx.features && Object.keys(ctx.features).length > 0;
-  // A signup_request demo shows exactly what was picked in the cart; a
-  // bare lead (no cart yet) falls back to that niche's real defaults.
   const defaults = NICHE_DEFAULTS[ctx.niche] || NICHE_DEFAULTS.general;
   const on = (k) => hasFeatures ? !!ctx.features[k] : defaults[k];
   const showPos = on('pos'), showCrm = on('crm'), showBilling = on('billing'), showInventory = on('inventory'), showQr = on('qr');
@@ -196,10 +172,6 @@ function render(ctx) {
     ? "Here's exactly what you picked, walked through one module at a time."
     : "Here's what a business like yours typically runs on AUZslab. Your account manager will confirm the final list with you.";
 
-  // Retail gets the retail-flavored sandbox (size/color billing, trial
-  // room); every other niche gets the café/restaurant one, since that's
-  // the fuller generic-POS experience and salon has no POS UI of its
-  // own yet (see the roadmap note below).
   const demoSlug = ctx.niche === 'retail' ? 'demo-retail' : 'demo-cafe';
   const demoUrl = 'https://' + demoSlug + '.auzslab.in';
   document.getElementById('liveDemoUrl').textContent = demoUrl;
@@ -214,12 +186,7 @@ function render(ctx) {
   if (showBilling) html += modCard('Billing &amp; Invoicing', BILLING_BULLETS);
   if (showInventory) html += modCard('Inventory &amp; stock', INV_BULLETS[fl] || INV_BULLETS.general);
   if (showQr) html += modCard('Online &amp; self-order', QR_BULLETS);
-  // Payroll, like Inventory, has no featureOn() gate in the real app --
-  // every owner login gets it regardless of niche or cart selection.
   html += modCard('Payroll', PAYROLL_BULLETS);
-  // Real appointment/slot booking (bookings table exists server-side per
-  // db/003_bookings.sql) has no UI shipped yet -- never claim a salon
-  // lead already has it, just say plainly that it's coming.
   if (ctx.niche === 'salon') {
     html += `<div class="card demo-mod"><span class="tag" style="opacity:.6">On our roadmap</span><div class="h-2" style="margin-top:14px;font-size:20px">Booking &amp; scheduling</div>
       <p class="p" style="margin-top:10px">Real appointment/slot booking is being built for salons specifically &mdash; not live yet, so it isn't included here.</p></div>`;
