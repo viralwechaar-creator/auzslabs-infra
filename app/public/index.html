@@ -1028,12 +1028,16 @@ function renderDrawer(T){
  );
  syncDrawer();
 }
+// 4th element is the subscription feature key this tab needs live, or
+// null if it's core (no separate feature flag exists for it, so it's
+// only gated by role permission, not the owner's service toggles).
+// Shared between render() (builds the actual drawer/tab list) and
+// boot()'s demo deep-link handling (?tab=crm etc., see visibleTabs())
+// so the two can never drift out of sync on what's actually reachable.
+const ALL_T=[['pos','Sell','pos','pos'],['tabs','Orders','orders',null],['kds','Kitchen','kitchen','kds'],['kotrep','KOT','kitchen','kds'],['token','Token','kitchen',null],['rep','Reports','reports','reports'],['staff','Staff','staff',null],['inv','Stock','inventory',null],['crm','Customers','crm','crm']];
+const visibleTabs=()=>ALL_T.filter(([k,,perm,feat])=>can(perm)&&(!feat||featureOn(feat))&&(k!='kotrep'||isRestaurant())&&(k!='token'||cfg().hwToken));
 function render(){if(S.authExpired||!S.user)return login('Your session ended. Please sign in again.');applyTheme();
- // 4th element is the subscription feature key this tab needs live,
- // or null if it's core (no separate feature flag exists for it, so
- // it's only gated by role permission, not the owner's service toggles).
- const ALL_T=[['pos','Sell','pos','pos'],['tabs','Orders','orders',null],['kds','Kitchen','kitchen','kds'],['kotrep','KOT','kitchen','kds'],['token','Token','kitchen',null],['rep','Reports','reports','reports'],['staff','Staff','staff',null],['inv','Stock','inventory',null],['crm','Customers','crm','crm']];
- const T=ALL_T.filter(([k,,perm,feat])=>can(perm)&&(!feat||featureOn(feat))&&(k!='kotrep'||isRestaurant())&&(k!='token'||cfg().hwToken)).map(([k,n])=>[k,n]);
+ const T=visibleTabs().map(([k,n])=>[k,n]);
  if(can('o'))T.push(['menu','Menu'],['set','Settings']);
  const tabLabel=(T.find(([k])=>k==S.tab)||[,'AUZslab'])[1];
  $('#app').replaceChildren(
@@ -1074,6 +1078,16 @@ async function boot(){if(!C.url||C.url.includes('YOUR-PROJECT'))return $('#app')
  if(ses){S.user=ses.user;try{const{data}=await sb.from('profiles').select('role,role_id').eq('id',ses.user.id).single();if(data)localStorage.u=JSON.stringify(c={id:ses.user.id,role:data.role,role_id:data.role_id})}catch{}}else if(c)S.user={id:c.id};
  if(!S.user)return login();S.role=(c&&c.role)||'cashier';S.role_id=(c&&c.role_id)||null;S.perms=null;if(S.role_id){try{const{data}=await sb.from('roles').select('permissions').eq('id',S.role_id).single();S.perms=data&&data.permissions}catch{}}
  S.features=null;S.enabledFeatures={};try{const{data}=await sb.rpc('my_dashboard');if(data&&data.features){S.features=data.features;S.enabledFeatures=data.enabled_features||{}}}catch{}
+ // Product marketing pages (pos.html/crm.html/inventory.html/...) each
+ // link their own "Try this in the live demo" CTA straight at the tab
+ // that IS that product (?tab=crm, ?tab=inv, ...), on the same shared
+ // demo login every other product already uses -- one demo tenant,
+ // deep-linked differently per product, rather than five separate
+ // logins. Validated against visibleTabs() (menu/menu('menu') aren't
+ // in it -- can('o') decides those separately) so a bad or
+ // no-longer-permitted tab in the URL can never land on an undefined
+ // V[S.tab] and crash the render instead of just landing on POS.
+ try{const reqTab=new URLSearchParams(location.search).get('tab');if(reqTab&&visibleTabs().some(([k])=>k==reqTab))S.tab=reqTab}catch{}
  S.authExpired=false;$('#app').textContent='Loading…';addEventListener('online',()=>{sync();setNote()});addEventListener('offline',setNote);
  sb.channel('r').on('postgres_changes',{event:'*',schema:'public',table:'records'},()=>sync()).subscribe();setInterval(sync,30000);sb.channel('g').on('postgres_changes',{event:'*',schema:'public',table:'guest_orders'},()=>getG()).subscribe();setInterval(getG,15000);sb.channel('n').on('postgres_changes',{event:'*',schema:'public',table:'notifications'},()=>refreshNotifCount()).subscribe();setInterval(refreshNotifCount,30000);setInterval(checkAlerts,5000);await syncNow();getG();checkAlerts();if(can('o')&&!L('cat').length&&!localStorage.seeded)await seed();render()}
 boot();
