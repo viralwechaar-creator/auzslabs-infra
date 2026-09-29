@@ -553,14 +553,27 @@ async function loadSystemStats() {
         <div><div class="label">DB connections (app pool)</div><div class="h-2" style="font-size:26px"${connWarn}>${conns} / ${APP_POOL_MAX}</div></div>
         <div><div class="label">Database size</div><div class="h-2" style="font-size:26px">${formatBytes(data.db_size_bytes)}</div></div>
         <div><div class="label">Records (all tenants)</div><div class="h-2" style="font-size:26px">${data.records_total.toLocaleString()}</div></div>
+        <div><div class="label">Uploads storage</div><div class="h-2" style="font-size:26px" id="uploadsUsageVal">&hellip;</div></div>
       </div>
     </div>
     <div class="label" style="margin-top:22px">Largest tenants by row count</div>
     ${topRows
       ? `<div class="admin-table-wrap"><table class="admin-table"><tr><th>Client</th><th>Rows</th></tr>${topRows}</table></div>`
       : emptyDoodle('No tenant data yet.')}
-    <p class="p" style="color:var(--ink-faint);margin-top:14px">Droplet is 2 vCPU / 4GB RAM / 75GB disk. Uploads storage usage isn't shown here -- getting a directory's real size needs shelling out to <code>du</code>, which the API deliberately doesn't do for something this minor.</p>
+    <p class="p" style="color:var(--ink-faint);margin-top:14px">Droplet is 2 vCPU / 4GB RAM / 75GB disk.</p>
   `;
+
+  const uploadsEl = document.getElementById('uploadsUsageVal');
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const res = await fetch(CFG.url + '/admin/uploads-usage', {
+      headers: { Authorization: 'Bearer ' + session.access_token },
+    });
+    const body = await res.json();
+    uploadsEl.textContent = res.ok ? formatBytes(body.total_bytes) : '—';
+  } catch {
+    uploadsEl.textContent = '—';
+  }
 }
 
 let clientsCache = [];

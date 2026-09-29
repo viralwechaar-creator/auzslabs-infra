@@ -7,13 +7,12 @@
 -- against records) -- no DigitalOcean metrics API integration, no
 -- credentials for that exist anywhere in this stack.
 --
--- Uploads storage (disk usage under /data/uploads, see
--- server/src/storage.js) is deliberately NOT reported here: getting a
--- directory's size from inside the Node API process without shelling
--- out to `du` has no clean built-in (fs.stat on the directory itself
--- just gives the inode size, not its contents), and this project
--- avoids shelling out from the API for something this minor. Skipped
--- rather than hacked in fragile -- revisit if it turns out to matter.
+-- Uploads storage (disk usage under /data/uploads and
+-- /data/private-uploads) can't be reported here -- Postgres has no way
+-- to stat a directory on the API container's filesystem. It's reported
+-- separately, by walking those directories in Node (getUploadsDiskUsage
+-- in server/src/storage.js, no shelling out to `du`), via GET
+-- /admin/uploads-usage, and admin.html merges that into the same panel.
 -- =========================================================
 
 create function admin_system_stats() returns jsonb

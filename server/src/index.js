@@ -1,7 +1,7 @@
 import http from 'node:http';
 import { pool, withAuth } from './db.js';
 import { login, verifyToken, bearerFrom, createUser, resetToRandomPassword, signToken } from './auth.js';
-import { saveSiteUpload, saveDocUpload, readDocUpload } from './storage.js';
+import { saveSiteUpload, saveDocUpload, readDocUpload, getUploadsDiskUsage } from './storage.js';
 import { startRealtime } from './realtime.js';
 import { handlePushEvent } from './push.js';
 
@@ -424,6 +424,20 @@ const server = http.createServer(async (req, res) => {
       // resetToRandomPassword's own note on why this replaces a
       // recovery-link email.
       return reply(200, { user_id: created.id, temp_password: tempPassword });
+    }
+
+    // ---- admin: uploads disk usage (System resources panel) ----
+    // Not a Postgres RPC like the rest of that panel -- Postgres has no
+    // way to stat a directory on the API container's filesystem, so
+    // this stays a plain HTTP endpoint the admin.html page fetches
+    // alongside admin_system_stats and merges into the same display.
+    if (url.pathname === '/admin/uploads-usage' && req.method === 'GET') {
+      if (!user) throw new HttpError(401, 'unauthorized');
+      const { rows } = await withAuth(user.id, (client) =>
+        client.query('select 1 from platform_admins where id = $1', [user.id]),
+      );
+      if (!rows.length) throw new HttpError(403, 'forbidden -- not a platform admin');
+      return reply(200, await getUploadsDiskUsage());
     }
 
     throw new HttpError(404, 'not found');

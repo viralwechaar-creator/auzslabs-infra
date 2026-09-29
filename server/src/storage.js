@@ -75,6 +75,36 @@ export async function readDocUpload({ tenantId, empId, filename }) {
   }
 }
 
+// Recursive, in-process byte count -- no shelling out to `du` (see
+// db/029_admin_system_stats.sql's own note on why that was skipped
+// originally). fs.stat on a directory only gives its own inode size,
+// not its contents, so this has to actually walk the tree; on a droplet
+// this small the upload trees are nowhere near big enough for that to
+// matter. Missing root (nothing uploaded yet on a fresh box) is 0, not
+// an error.
+async function dirSize(dir) {
+  let total = 0;
+  let entries;
+  try {
+    entries = await fs.readdir(dir, { withFileTypes: true });
+  } catch {
+    return 0;
+  }
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) total += await dirSize(full);
+    else if (entry.isFile()) {
+      try { total += (await fs.stat(full)).size; } catch {}
+    }
+  }
+  return total;
+}
+
+export async function getUploadsDiskUsage() {
+  const [siteBytes, docBytes] = await Promise.all([dirSize(UPLOAD_ROOT), dirSize(DOC_ROOT)]);
+  return { site_bytes: siteBytes, doc_bytes: docBytes, total_bytes: siteBytes + docBytes };
+}
+
 export async function saveSiteUpload({ tenantId, prefix, buffer }) {
   if (!looksLikeImage(buffer)) {
     const err = new Error('file does not look like a supported image (jpeg/png/webp)');
