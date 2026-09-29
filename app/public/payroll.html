@@ -31,7 +31,7 @@ h1,h2,h3{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,sys
 label{display:grid;gap:4px;font-size:12.5px;color:var(--ink-dim)}
 .note{font-size:12.5px;color:var(--ink-faint);line-height:1.6}
 .ic svg{width:20px;height:20px;display:block}
-.emp-app{padding-bottom:98px}
+.emp-app{padding-bottom:118px}
 .emp-top{display:flex;align-items:center;gap:12px;padding:16px 16px 10px}
 .emp-top h1{font-size:18px}
 .ic-btn{width:40px;height:40px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm);flex:none;border:none;color:var(--ink-dim)}
@@ -39,22 +39,22 @@ label{display:grid;gap:4px;font-size:12.5px;color:var(--ink-dim)}
 .who .hi{font-size:12.5px;color:var(--ink-faint)}
 .who .nm{font-size:17px;font-weight:700;text-transform:capitalize}
 .date-pill{display:inline-flex;align-items:center;gap:8px;background:#fff;border-radius:999px;padding:8px 14px;box-shadow:var(--shadow-sm);font-size:13.5px;font-weight:600;margin:0 16px 14px;width:fit-content;cursor:pointer}
-.punch-card{background:linear-gradient(135deg,#3b7bf0,#1c4fc7);color:#fff;border-radius:24px;padding:20px;box-shadow:var(--shadow-md)}
+.punch-card{background:linear-gradient(135deg,#9c2847,var(--accent) 60%,#4d0013);color:#fff;border-radius:24px;padding:20px;box-shadow:var(--shadow-md)}
 .punch-card .lbl{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.08em;opacity:.85}
 .punch-card .big{font-size:38px;font-weight:700;letter-spacing:-.02em;margin-top:4px}
 .punch-card .big small{font-size:20px;font-weight:600;opacity:.85}
 .punch-card .sub{font-size:12.5px;opacity:.85;display:flex;align-items:center;gap:6px;margin-top:2px}
 .punch-card .stat{display:flex;align-items:center;gap:10px;padding:10px 0 0;margin-top:10px;border-top:1px solid rgba(255,255,255,.2);font-size:13px}
-.tap-btn{position:relative;background:#3b7bf0;color:#fff;border-radius:999px;height:54px;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:700;font-size:15px;user-select:none;transition:transform .12s var(--ease)}
+.tap-btn{position:relative;background:var(--accent);color:#fff;border-radius:999px;height:54px;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:700;font-size:15px;user-select:none;transition:transform .12s var(--ease)}
 .tap-btn:active{transform:scale(.97)}
 .tap-btn .ic{width:30px;height:30px;border-radius:999px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex:none}
 .tap-btn.busy{opacity:.65}
-.bottom-nav{position:fixed;left:0;right:0;bottom:0;background:#fff;box-shadow:0 -6px 24px rgba(23,23,23,.1);padding:8px 4px calc(2px + env(safe-area-inset-bottom));z-index:16}
-.bottom-nav-row{display:flex;justify-content:space-around}
-.bottom-nav-row button{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--ink-faint);background:none;padding:6px 12px;border-radius:12px;flex:1}
-.bottom-nav-row button.on{color:#2f6fed}
-.bottom-nav-brand{text-align:center;font-size:9.5px;color:var(--ink-faint);padding-top:3px;font-family:'Space Mono',monospace}
-.bottom-nav-brand a{color:var(--ink-faint)}
+.bottom-nav{position:fixed;left:14px;right:14px;bottom:calc(10px + env(safe-area-inset-bottom));background:var(--ink);border-radius:999px;box-shadow:var(--shadow-md);padding:8px;z-index:16}
+.bottom-nav-row{display:flex;justify-content:space-around;gap:2px}
+.bottom-nav-row button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;color:rgba(255,255,255,.5);background:none;padding:8px 4px;border-radius:999px;flex:1;transition:background .15s var(--ease),color .15s var(--ease)}
+.bottom-nav-row button.on{color:#fff;background:var(--accent)}
+.bottom-nav-brand{text-align:center;font-size:9px;color:rgba(255,255,255,.35);padding-top:4px;font-family:'Space Mono',monospace}
+.bottom-nav-brand a{color:rgba(255,255,255,.55)}
 .drawer-ov{position:fixed;inset:0;background:rgba(23,23,23,.4);z-index:30;display:flex;animation:ovIn .2s var(--ease)}
 .drawer{width:78%;max-width:300px;background:#fff;height:100%;overflow:auto;animation:drawerIn .22s var(--ease);display:grid;gap:2px;padding:16px 0;align-content:start;border-radius:0 26px 26px 0;box-shadow:var(--shadow-md)}
 @keyframes drawerIn{from{transform:translateX(-100%)}to{transform:translateX(0)}}
@@ -76,7 +76,7 @@ button.ditem.on{color:var(--accent);font-weight:700;background:var(--bg-raised)}
 .cal-cell.st-half,.cal-cell.st-late{background:#fdf0d5;color:#8a5a00}
 .cal-cell.st-missing{background:#fde2e2;color:var(--accent)}
 .cal-cell.st-future{background:none;color:var(--ink-faint);font-weight:500}
-.cal-cell.today{outline:2px solid #2f6fed;outline-offset:-2px}
+.cal-cell.today{outline:2px solid var(--ink);outline-offset:-2px}
 .cal-cell .fl{font-size:8px}
 .legend{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px 4px}
 .legend .lg{display:inline-flex;align-items:center;gap:6px;background:var(--bg-raised);border-radius:999px;padding:5px 10px 5px 8px;font-size:11.5px;color:var(--ink-dim)}
@@ -87,8 +87,8 @@ button.ditem.on{color:var(--accent);font-weight:700;background:var(--bg-raised)}
 .dchip b{font-size:17px}
 .dchip span{font-size:10px;opacity:.8}
 .empty-state{text-align:center;padding:40px 20px}
-.empty-state .ic-lg{position:relative;width:70px;height:70px;border-radius:99px;background:#eaf1ff;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;color:#2f6fed}
-.empty-state .ic-lg::before{content:'';position:absolute;inset:-11px;border:1.5px dashed rgba(47,111,237,.35);border-radius:999px;animation:spin 16s linear infinite}
+.empty-state .ic-lg{position:relative;width:70px;height:70px;border-radius:99px;background:rgba(128,0,32,.08);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;color:var(--accent)}
+.empty-state .ic-lg::before{content:'';position:absolute;inset:-11px;border:1.5px dashed rgba(128,0,32,.3);border-radius:999px;animation:spin 16s linear infinite}
 .empty-state .ic-lg::after{content:'';position:absolute;top:-3px;right:0px;width:7px;height:7px;border-radius:999px;background:var(--accent);opacity:.55}
 .empty-state h3{margin-bottom:8px}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -191,6 +191,24 @@ async function doPunch(emp){
   await save('hr_attendance',{empId:emp.id,date:today(),in:now(),inLoc:loc,outOfRange:flagged,source:'mobile'})}
  render()
 }
+function regularizationModal(emp,ds){
+ const dateLabel=new Date(ds+'T00:00').toLocaleDateString('en-US',{weekday:'long',day:'numeric',month:'long'});
+ const existing=L('hr_regularization').find(r=>r.empId==emp.id&&r.date==ds);
+ if(existing){
+  const x=modal(h('h3',{},'Correction request'),h('p',{class:'note'},dateLabel),
+   h('div',{class:'row'},'Status',h('span',{class:'pill'},existing.status)),
+   existing.reason?h('p',{class:'note'},existing.reason):null,
+   h('button',{onclick:()=>x()},'Close'));
+  return;
+ }
+ const pin=h('input',{type:'time'}),pout=h('input',{type:'time'}),reason=h('textarea',{placeholder:'What happened? (optional)'});
+ const x=modal(h('h3',{},'Request a correction'),h('p',{class:'note'},dateLabel+' -- tell your admin what your actual punch times were.'),
+  h('label',{},'Actual punch in',pin),h('label',{},'Actual punch out (optional)',pout),h('label',{},'Reason',reason),
+  h('button',{class:'p',onclick:async()=>{
+   if(!pin.value)return alert('Enter your punch-in time.');
+   await save('hr_regularization',{empId:emp.id,date:ds,proposedIn:ds+'T'+pin.value+':00',proposedOut:pout.value?ds+'T'+pout.value+':00':null,reason:reason.value.trim(),status:'pending',at:now()});
+   x();render()}},'Submit request'))
+}
 function leaveRequest(emp){const from=h('input',{type:'date',value:today()}),to=h('input',{type:'date',value:today()}),ty=h('select',{},h('option',{value:'paid'},'Paid'),h('option',{value:'unpaid'},'Unpaid')),reason=h('textarea',{placeholder:'Reason (optional)'});
  const x=modal(h('h3',{},'Request leave'),h('label',{},'From',from),h('label',{},'To',to),h('label',{},'Type',ty),h('label',{},'Reason',reason),
   h('button',{class:'p',onclick:async()=>{await save('hr_leave',{empId:emp.id,from:from.value,to:to.value,type:ty.value,reason:reason.value.trim(),status:'pending',at:now()});x();render()}},'Send request'))}
@@ -275,14 +293,14 @@ function empHome(emp){
  const sh=shiftFor(emp);
  const workedMs=openRow?Date.now()-new Date(openRow.in).getTime():(dayRow&&dayRow.in&&dayRow.out)?new Date(dayRow.out)-new Date(dayRow.in):0;
  const t=fmtHMS(workedMs);
- const dateInput=h('input',{type:'date',value:ds,style:'position:absolute;opacity:0;width:1px;height:1px',onchange:e=>{S.homeDate=e.target.value;render()}});
+ const dateInput=h('input',{type:'date',value:ds,max:today(),style:'position:absolute;inset:0;opacity:0;cursor:pointer;border:none',onchange:e=>{if(e.target.value){S.homeDate=e.target.value;render()}}});
  if(isToday&&openRow)S._tick=setInterval(render,1000);
  return h('div',{class:'emp-app'},
   h('div',{class:'emp-top'},
    h('button',{class:'ic-btn',onclick:()=>openDrawer(emp)},icon('menu')),
    h('div',{class:'who'},h('div',{class:'hi'},'Welcome back'),h('div',{class:'nm'},emp.name)),
    h('button',{class:'ic-btn',onclick:()=>{S.empTab='notif';render()}},icon('megaphone'))),
-  h('div',{class:'date-pill',style:'position:relative',onclick:()=>dateInput.showPicker?dateInput.showPicker():dateInput.click()},
+  h('div',{class:'date-pill',style:'position:relative'},
    icon('calendar'),new Date(ds+'T00:00').toLocaleDateString('en-US',{weekday:'short',day:'numeric',month:'long',year:'numeric'}),icon('chevD'),dateInput),
   h('div',{class:'g',style:'padding-top:0'},
    h('div',{class:'punch-card'},
@@ -307,14 +325,16 @@ function empCalendar(emp){
   h('button',{class:'ic-btn',onclick:()=>{const d=new Date(y,m-2,1);S.calMonth=d.toLocaleDateString('en-CA').slice(0,7);render()}},icon('chevL')),
   h('b',{},first.toLocaleDateString('en-US',{month:'long',year:'numeric'})),
   h('button',{class:'ic-btn',onclick:()=>{const d=new Date(y,m,1);S.calMonth=d.toLocaleDateString('en-CA').slice(0,7);render()}},icon('chevR')));
- const legend=h('div',{class:'legend'},...[['Today','#2f6fed'],['Present','#1f6b3a'],['Absent','#800020'],['On leave','#5b3ea6'],['Half day','#8a5a00'],['Missed punch','#800020']].map(([l,c])=>h('span',{class:'lg'},h('span',{class:'dot',style:'background:'+c}),l)));
+ const legend=h('div',{class:'legend'},...[['Today','var(--ink)'],['Present','#1f6b3a'],['Absent','#800020'],['On leave','#5b3ea6'],['Half day','#8a5a00'],['Missed punch','#800020']].map(([l,c])=>h('span',{class:'lg'},h('span',{class:'dot',style:'background:'+c}),l)));
+ const fixable=st=>st=='absent'||st=='missing'||st=='late';
  if(view=='month'){
   const cells=[];
   for(let i=0;i<startDow;i++)cells.push(h('div',{class:'cal-cell empty'}));
   for(let d=1;d<=daysInMonth;d++){const ds=ym+'-'+String(d).padStart(2,'0'),st=statusForDate(ds);
-   cells.push(h('div',{class:'cal-cell st-'+st+(ds==today()?' today':'')},String(d),(st=='late'||st=='missing')?h('span',{class:'fl'},'⚠'):null))}
+   cells.push(h('div',{class:'cal-cell st-'+st+(ds==today()?' today':''),style:fixable(st)?'cursor:pointer':'',onclick:fixable(st)?()=>regularizationModal(emp,ds):null},String(d),(st=='late'||st=='missing')?h('span',{class:'fl'},'⚠'):null))}
   return h('div',{class:'emp-app'},header,nav,
-   h('div',{class:'cal-grid'},...['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>h('div',{class:'cal-dow'},d)),...cells),legend);
+   h('div',{class:'cal-grid'},...['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>h('div',{class:'cal-dow'},d)),...cells),legend,
+   h('p',{class:'note',style:'padding:0 16px'},'Tap a red/orange day to request a correction.'));
  }
  const rows=[];
  for(let d=1;d<=daysInMonth;d++){const ds=ym+'-'+String(d).padStart(2,'0');if(ds>today())continue;rows.push({ds,st:statusForDate(ds),d:new Date(ds+'T00:00')})}
@@ -325,7 +345,9 @@ function empCalendar(emp){
    h('select',{onchange:e=>{S.calFilter=e.target.value||null;render()}},h('option',{value:''},'All'),...['present','absent','leave','half','late','missing'].map(s=>h('option',{value:s,selected:filt==s},s[0].toUpperCase()+s.slice(1))))),
   h('div',{class:'g',style:'padding-top:0'},
    ...shown.slice().reverse().map(r=>{const[bg,fg]=STCOL[r.st]||['#eee','var(--ink-dim)'];
-    return h('div',{class:'list-row'},h('div',{class:'dchip',style:'background:'+bg+';color:'+fg},h('b',{},r.d.getDate()),h('span',{},r.d.toLocaleDateString('en-US',{weekday:'short'}))),h('span',{style:'flex:1;font-weight:600'},r.st[0].toUpperCase()+r.st.slice(1)))}),
+    return h('div',{class:'list-row',style:fixable(r.st)?'cursor:pointer':'',onclick:fixable(r.st)?()=>regularizationModal(emp,r.ds):null},
+     h('div',{class:'dchip',style:'background:'+bg+';color:'+fg},h('b',{},r.d.getDate()),h('span',{},r.d.toLocaleDateString('en-US',{weekday:'short'}))),
+     h('span',{style:'flex:1;font-weight:600'},r.st[0].toUpperCase()+r.st.slice(1)),fixable(r.st)?icon('chevR'):null)}),
    shown.length?null:h('p',{class:'note'},'Nothing here.')));
 }
 function empLeave(emp){
@@ -467,13 +489,24 @@ V.shifts=()=>{const shifts=L('hr_shift');
   shifts.length?null:h('p',{class:'note'},'No shifts defined yet -- attendance still records punches without one, just without late/overtime detection.'),
   ...shifts.map(s=>h('div',{class:'row'},s.name+' · '+s.start+'–'+s.end+(s.overnight?' (overnight)':''),h('button',{onclick:()=>shiftModal(s)},'Edit')))))};
 
+async function approveRegularization(r){
+ const existing=L('hr_attendance').find(a=>a.empId==r.empId&&a.date==r.date);
+ await save('hr_attendance',{empId:r.empId,date:r.date,in:r.proposedIn,out:r.proposedOut||null,source:'regularized'},existing?existing.id:undefined);
+ await save('hr_regularization',{...r,status:'approved',approvedBy:S.user.email||S.user.id},r.id);
+}
 V.leave=()=>{const pending=L('hr_leave').filter(l=>l.status=='pending'),all_=L('hr_leave').sort((a,b)=>b.at>a.at?1:-1);
+ const pendingReg=L('hr_regularization').filter(r=>r.status=='pending');
  const empName=id=>{const e=L('hr_employee').find(x=>x.id==id);return e?e.name:'—'};
+ const tm=iso=>iso?new Date(iso).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
  return h('div',{class:'g'},
   h('div',{class:'card'},h('h3',{},'Pending approval ('+pending.length+')'),pending.length?null:h('p',{class:'note'},'Nothing waiting.'),
    ...pending.map(l=>h('div',{class:'row'},empName(l.empId)+' · '+l.from+(l.to!=l.from?' → '+l.to:'')+' · '+l.type+(l.reason?' — '+l.reason:''),
     h('span',{},h('button',{class:'p',onclick:async()=>{const c={...l,status:'approved',approvedBy:S.user.email||S.user.id,at:l.at};await save('hr_leave',c,c.id);render()}},'Approve'),
      h('button',{class:'warn',onclick:async()=>{const c={...l,status:'declined'};await save('hr_leave',c,c.id);render()}},'Decline'))))),
+  h('div',{class:'card'},h('h3',{},'Attendance corrections ('+pendingReg.length+')'),pendingReg.length?null:h('p',{class:'note'},'Nothing waiting.'),
+   ...pendingReg.map(r=>h('div',{class:'row'},empName(r.empId)+' · '+r.date+' · in '+tm(r.proposedIn)+(r.proposedOut?' – out '+tm(r.proposedOut):'')+(r.reason?' — '+r.reason:''),
+    h('span',{},h('button',{class:'p',onclick:async()=>{await approveRegularization(r);render()}},'Approve'),
+     h('button',{class:'warn',onclick:async()=>{await save('hr_regularization',{...r,status:'declined'},r.id);render()}},'Decline'))))),
   h('div',{class:'card'},h('h3',{},'Leave history'),...all_.slice(0,30).map(l=>h('div',{class:'row'},empName(l.empId)+' · '+l.from+(l.to!=l.from?' → '+l.to:''),h('span',{class:'pill'},l.status)))));
 };
 
