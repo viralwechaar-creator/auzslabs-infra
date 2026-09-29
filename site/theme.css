@@ -63,7 +63,7 @@ button{font-family:inherit}
 
 .drawer-topbar{
   display:flex;align-items:center;justify-content:space-between;gap:10px;
-  padding:18px 20px 16px;position:sticky;top:0;background:#000;z-index:2;
+  padding:max(18px, env(safe-area-inset-top)) 20px 16px;position:sticky;top:0;background:#000;z-index:2;
 }
 .drawer-close{
   display:inline-flex;align-items:center;gap:4px;flex-shrink:0;
