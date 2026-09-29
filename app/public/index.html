@@ -674,6 +674,69 @@ return h('div',{class:'g',style:'grid-template-columns:1fr'},h('div',{class:'car
   ),
   h('button',{class:'p cust-view'},'View')
  )})),list.length?null:h('p',{},'No paid orders with a customer phone yet.'))};
+function addDays(ds,n){const d=new Date(ds+'T00:00:00');d.setDate(d.getDate()+n);return d.toLocaleDateString('en-CA')}
+function memStatus(m){if(m.status=='cancelled')return 'cancelled';return m.endDate<today()?'expired':'active'}
+const MEM_STATUS_LABEL={active:'Active',expired:'Expired',cancelled:'Cancelled'};
+function planModal(p){
+ const nm=h('input',{placeholder:'Plan name',value:p?p.name:''}),
+  pr=h('input',{type:'number',placeholder:'Price',value:p?p.price:''}),
+  dy=h('input',{type:'number',placeholder:'Validity (days)',value:p?p.days:30}),
+  ds=h('input',{placeholder:'Description (optional)',value:p?p.desc||'':''}),
+  acIn=h('input',{type:'checkbox',checked:!p||p.active!==false}),
+  ac=h('label',{style:'display:flex;align-items:center;gap:6px;font-size:13px'},acIn,'Active');
+ const x=modal(h('h3',{},p?'Edit plan':'New plan'),nm,pr,dy,ds,ac,
+  h('div',{class:'row'},
+   p?h('button',{class:'warn',onclick:async()=>{if(!confirm('Delete this plan?'))return;await save('plan',p,p.id,true);x();render()}},'Delete'):h('span',{}),
+   h('button',{class:'p',onclick:async()=>{
+    if(!nm.value.trim()||!(+pr.value>0)||!(+dy.value>0))return alert('Enter a name, price and validity.');
+    await save('plan',{name:nm.value.trim(),price:+pr.value,days:+dy.value,desc:ds.value.trim(),active:acIn.checked},p?p.id:undefined);
+    x();render()
+   }},'Save')));
+}
+function enrollModal(plans){
+ const nm=h('input',{placeholder:'Customer name'}),ph=h('input',{placeholder:'Phone'}),
+  pl=h('select',{},...plans.map(p=>h('option',{value:p.id},p.name+' — '+inr(p.price)+' / '+p.days+'d'))),
+  sd=h('input',{type:'date',value:today()});
+ const x=modal(h('h3',{},'Enroll member'),nm,ph,pl,sd,
+  h('div',{class:'row'},h('button',{class:'warn',onclick:()=>x()},'Cancel'),h('button',{class:'p',onclick:async()=>{
+   if(!nm.value.trim()||!ph.value.trim())return alert('Enter name and phone.');
+   const plan=plans.find(p=>p.id==pl.value);if(!plan)return;
+   await save('membership',{custName:nm.value.trim(),custPhone:ph.value.trim(),planId:plan.id,planName:plan.name,price:plan.price,startDate:sd.value||today(),endDate:addDays(sd.value||today(),plan.days),status:'active',createdAt:now()});
+   x();render()
+  }},'Enroll')));
+}
+V.mem=()=>{
+ const isOM=S.role=='owner'||S.role=='manager',mut='font-size:12.5px;color:var(--ink-dim)';
+ const allPlans=L('plan'),plans=allPlans.filter(p=>p.active!==false).sort((a,b)=>a.price-b.price);
+ const members=L('membership').sort((a,b)=>b.createdAt>a.createdAt?1:-1);
+ const activeCount=members.filter(m=>memStatus(m)=='active').length;
+ const expSoon=members.filter(m=>memStatus(m)=='active'&&m.endDate<=addDays(today(),7));
+ const checkins=L('checkin'),checkinsToday=checkins.filter(c=>(c.at||'').slice(0,10)==today()).length;
+ const badgeStyle=st=>st=='active'?'background:#1f6b3a;color:#fff':st=='expired'?'background:var(--accent);color:#fff':'background:var(--bg-raised);color:var(--ink-dim)';
+ return h('div',{class:'g',style:'grid-template-columns:1fr'},
+  h('div',{style:'display:grid;grid-template-columns:repeat(3,1fr);gap:10px'},
+   h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:22px;font-weight:800'},activeCount),h('div',{style:mut},'Active members')),
+   h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:22px;font-weight:800'+(expSoon.length?';color:var(--accent)':'')},expSoon.length),h('div',{style:mut},'Expiring this week')),
+   h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:22px;font-weight:800'},checkinsToday),h('div',{style:mut},'Check-ins today'))
+  ),
+  expSoon.length?h('div',{class:'card'},h('h3',{},'Expiring soon'),...expSoon.map(m=>h('div',{class:'row'},m.custName+' · '+m.planName,h('span',{style:'color:var(--accent)'},'until '+m.endDate)))):null,
+  h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Plans'),isOM?h('button',{class:'p',onclick:()=>planModal()},'+ Add plan'):null),
+   ...allPlans.map(p=>h('div',{class:'row',style:p.active===false?'opacity:.5':''},p.name+' · '+inr(p.price)+' / '+p.days+' days'+(p.active===false?' (inactive)':''),isOM?h('button',{onclick:()=>planModal(p)},'Edit'):null)),
+   allPlans.length?null:h('p',{style:mut},'No plans yet — add one to start enrolling members.')),
+  h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Members ('+members.length+')'),plans.length?h('button',{class:'p',onclick:()=>enrollModal(plans)},'+ Enroll member'):null),
+   ...members.map(m=>{const st=memStatus(m);
+    return h('div',{class:'row'},
+     h('span',{},h('b',{},m.custName),h('br'),h('span',{style:mut},m.planName+' · '+m.startDate+' → '+m.endDate)),
+     h('span',{style:'display:flex;align-items:center;gap:6px;flex-wrap:wrap'},h('span',{class:'badge',style:badgeStyle(st)},MEM_STATUS_LABEL[st]),
+      st!='cancelled'?h('button',{onclick:async()=>{await save('checkin',{membershipId:m.id,custPhone:m.custPhone,at:now()});render()}},'Check in'):null,
+      st!='cancelled'?h('button',{class:'p',onclick:async()=>{const plan=allPlans.find(p=>p.id==m.planId);const days=plan?plan.days:30;const base=st=='active'&&m.endDate>today()?m.endDate:today();await save('membership',{...m,endDate:addDays(base,days)},m.id);render()}},'Renew'):null,
+      st!='cancelled'?h('button',{class:'warn',onclick:async()=>{if(!confirm('Cancel this membership?'))return;await save('membership',{...m,status:'cancelled'},m.id);render()}},'Cancel'):null)
+    )}),
+   members.length?null:h('p',{style:mut},'No members yet.')),
+  h('div',{class:'card'},h('h3',{},'Recent check-ins'),...checkins.sort((a,b)=>b.at>a.at?1:-1).slice(0,20).map(c=>{const m=members.find(x=>x.id==c.membershipId);return h('div',{class:'row'},(m?m.custName:c.custPhone)+' · '+new Date(c.at).toLocaleString())}),
+   checkins.length?null:h('p',{style:mut},'No check-ins yet.'))
+ );
+};
 let G=[];
 async function getG(){if(!navigator.onLine||!S.user)return;if(!featureOn('self_order')){if(G.length){G=[];render()}return}const{data,error}=await sb.from('guest_orders').select('*').eq('status','new').order('created_at');if(error)return;const n=G.length;G=data||[];if(G.length>n)alertSound(3);if(G.length!=n&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))render()}
 async function acceptG(g){let o=L('order').find(x=>x.status=='open'&&x.table==g.tbl&&x.lines.length);o=o?structuredClone(o):{...newOrder(),table:g.tbl};g.items.forEach(i=>{const it=R[i.id]&&R[i.id].data;if(!it)return;const sizeObj=i.size&&(it.sizes||[]).find(s=>s.l==i.size),price=sizeObj?sizeObj.p:it.price;const l=o.lines.find(x=>x.id==i.id&&x.size==i.size&&x.price==price&&!x.note);l?l.qty+=i.qty:o.lines.push({id:i.id,name:it.name,size:i.size,price,qty:i.qty,sent:0,st:it.st||'Kitchen'})});if(!(o.cust&&o.cust.name))o.cust={name:g.name,phone:g.phone};if(g.note)o.gn=g.note;const prev=S.cur;S.cur=o;mk(o);await persist();S.cur=prev;await sb.from('guest_orders').update({status:'done'}).eq('id',g.id);getG()}
@@ -690,6 +753,7 @@ const T_ICON={
  staff:'<circle cx="9" cy="8" r="3.2"/><path d="M2.5 20v-1a6.5 6.5 0 0 1 13 0v1"/><path d="M16.5 5a3.2 3.2 0 0 1 0 6.2M21 20v-1a5.6 5.6 0 0 0-4-5.4"/>',
  inv:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
  crm:'<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/>',
+ mem:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><circle cx="8.5" cy="14" r="1.6"/><path d="M12.5 14h6"/>',
  payroll:'<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M8 14h.01M12 14h4"/>',
  builder:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 9v12"/>',
  menu:'<path d="M4 6h16M4 12h16M4 18h10"/>',
@@ -705,7 +769,7 @@ function renderDrawer(T){
  );
  syncDrawer();
 }
-const ALL_T=[['pos','Sell','pos','pos'],['tabs','Orders','orders',null],['kds','Kitchen','kitchen','kds'],['kotrep','KOT','kitchen','kds'],['token','Token','kitchen',null],['rep','Reports','reports','reports'],['staff','Staff','staff',null],['inv','Stock','inventory',null],['crm','Customers','crm','crm'],['payroll','Payroll','o','payroll'],['builder','Website','o','website_builder']];
+const ALL_T=[['pos','Sell','pos','pos'],['tabs','Orders','orders',null],['kds','Kitchen','kitchen','kds'],['kotrep','KOT','kitchen','kds'],['token','Token','kitchen',null],['rep','Reports','reports','reports'],['staff','Staff','staff',null],['inv','Stock','inventory',null],['crm','Customers','crm','crm'],['mem','Memberships','crm','membership'],['payroll','Payroll','o','payroll'],['builder','Website','o','website_builder']];
 const visibleTabs=()=>ALL_T.filter(([k,,perm,feat])=>can(perm)&&(!feat||featureOn(feat))&&(k!='kotrep'||isRestaurant())&&(k!='token'||cfg().hwToken));
 function render(){if(S.authExpired||!S.user)return login('Your session ended. Please sign in again.');applyTheme();
  const T=visibleTabs().map(([k,n])=>[k,n]);
