@@ -62,6 +62,7 @@ const RPC = {
   next_invoice_no: { params: ['prefix'], auth: true },
   provision_tenant: { params: ['p_name', 'p_slug', 'p_niche'], auth: true },
   public_menu: { params: ['tenant_slug'], auth: false },
+  public_page: { params: ['tenant_slug', 'page_slug'], auth: false },
   place_order: { params: ['tenant_slug', 't', 'n', 'p', 'nt', 'its'], jsonb: ['its'], auth: false },
   public_invoice: { params: ['oid'], auth: false },
   submit_feedback: { params: ['oid', 'rating', 'comment'], auth: false },

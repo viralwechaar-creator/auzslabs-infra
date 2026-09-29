@@ -1,0 +1,233 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>AUZslab Website Builder</title><link rel=icon href=/logo.png><meta name=theme-color content=#171717>
+<link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel=stylesheet>
+<style>
+:root{--ink:#171717;--ink-dim:#4d4d4d;--ink-faint:#8c8c8c;--accent:#800020;--g:var(--accent);--l:rgba(23,23,23,.14);--bg-raised:#dedede;--radius-sm:14px;--radius-md:18px;--radius-lg:26px;--shadow-sm:0 1px 2px rgba(23,23,23,.06),0 6px 20px -10px rgba(23,23,23,.14);--shadow-md:0 4px 12px rgba(23,23,23,.08),0 20px 44px -16px rgba(23,23,23,.22);--ease:cubic-bezier(.4,0,.2,1)}
+*{box-sizing:border-box}body{margin:0;font:15px/1.5 Inter,system-ui,sans-serif;background:var(--bg-raised);color:var(--ink);-webkit-tap-highlight-color:transparent}
+button{font:inherit;cursor:pointer;padding:10px 15px;border:none;border-radius:var(--radius-sm);background:none;color:var(--ink-dim);transition:background .15s var(--ease),color .15s var(--ease),transform .12s var(--ease)}
+button:hover{background:var(--l)}button:active{transform:scale(.96)}
+button.p,button.on{background:var(--g);color:#fff}button.p:hover,button.on:hover{background:var(--g);opacity:.9}
+button.warn{color:var(--accent)}button.warn:hover{background:var(--accent);color:#fff}
+button:disabled{opacity:.4;background:none}
+input,select,textarea{font:inherit;padding:10px 15px;border:1.5px solid var(--l);border-radius:var(--radius-sm);background:#fff;color:inherit;width:100%;transition:border-color .15s var(--ease)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+textarea{min-height:80px;resize:vertical}
+h1,h2,h3{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif;margin:0}
+.top-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:14px 16px;background:rgba(222,222,222,.85);backdrop-filter:saturate(180%) blur(16px)}
+.top-bar h1{font-size:17px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hamburger-btn{background:none;border:none;font-size:20px;padding:6px 10px}
+.g{display:grid;gap:14px;padding:0 16px 90px;max-width:640px;margin:0 auto}
+.card{background:#fff;border-radius:var(--radius-md);padding:16px;box-shadow:var(--shadow-sm)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--l)}
+.row:last-child{border-bottom:none}
+.md{background:#fff;border-radius:var(--radius-lg);padding:22px;max-width:440px;width:92vw;margin:8vh auto;box-shadow:var(--shadow-md);display:grid;gap:10px;animation:sheetIn .28s var(--ease);max-height:82vh;overflow:auto}
+.ov{position:fixed;inset:0;background:rgba(23,23,23,.35);z-index:20;overflow:auto;animation:ovIn .2s var(--ease)}
+@keyframes ovIn{from{opacity:0}to{opacity:1}}
+@keyframes sheetIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+.pill{padding:2px 9px;border-radius:999px;font-size:11px;background:var(--bg-raised);color:var(--ink-dim)}
+.powered{text-align:center;font-size:11px;color:var(--ink-faint);padding:14px}
+label{display:grid;gap:4px;font-size:12.5px;color:var(--ink-dim)}
+.note{font-size:12.5px;color:var(--ink-faint);line-height:1.6}
+.block-card{border:1.5px solid var(--l);border-radius:var(--radius-sm);padding:12px 14px;background:#fff;display:flex;align-items:center;gap:10px;cursor:grab}
+.block-card.dragging{opacity:.4}
+.block-card .drag-handle{color:var(--ink-faint);font-size:16px;flex-shrink:0;cursor:grab}
+.block-card .block-body{flex:1;min-width:0}
+.block-card .block-type{font-family:'Space Mono',monospace;font-size:9.5px;text-transform:uppercase;color:var(--accent);letter-spacing:.04em}
+.block-card .block-preview{font-size:13px;color:var(--ink-dim);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.block-card .block-actions{display:flex;gap:2px;flex-shrink:0}
+.block-card .block-actions button{padding:6px 9px;font-size:13px}
+.block-picker{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.block-picker button{background:var(--bg-raised);border-radius:var(--radius-sm);padding:14px 10px;text-align:center;display:grid;gap:4px;color:var(--ink)}
+.block-picker button .bp-label{font-size:13px;font-weight:600}
+.block-picker button .bp-desc{font-size:11px;color:var(--ink-dim)}
+.drop-slot{height:6px}
+.drop-slot.over{background:var(--accent);border-radius:4px}
+.upgrade-card{max-width:440px;margin:14vh auto;padding:26px;text-align:center}
+.page-btn{background:var(--bg-raised);color:var(--ink)}
+.page-btn.on{background:#fff;color:var(--ink);box-shadow:inset 3px 0 0 var(--accent)}
+@media(prefers-reduced-motion:reduce){.md,.ov{animation:none}}
+</style>
+</head><body>
+<div id=app></div>
+<script src="/sb-client.js?v=2"></script>
+<script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
+<script>
+const C=window.CFG||{},sb=supabase.createClient(C.url,C.key),S={pages:[],curSlug:null,drag:null},R={};let busy=0;
+const $=s=>document.querySelector(s),uid=()=>crypto.randomUUID(),now=()=>new Date().toISOString();
+const h=(t,a={},...k)=>{const e=document.createElement(t);for(const x in a){const v=a[x];if(v==null||v===false)continue;x.startsWith('on')?e[x]=v:x=='class'?e.className=v:e.setAttribute(x,v)}e.append(...k.flat().filter(x=>x!=null&&x!==false));return e};
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const L=k=>Object.values(R).filter(r=>r.kind==k&&!r.deleted).map(r=>r.data);
+const idb=new Promise(r=>{const q=indexedDB.open('builder1',1);q.onupgradeneeded=()=>['rec','out','meta'].forEach(s=>q.result.createObjectStore(s,{keyPath:s=='meta'?'k':'id'}));q.onsuccess=()=>r(q.result)});
+const tx=async(s,m,f)=>{const d=await idb;return new Promise((res,rej)=>{const t=d.transaction(s,m),q=f(t.objectStore(s));t.oncomplete=()=>res(q.result);t.onerror=()=>rej(t.error)})};
+const all=s=>tx(s,'readonly',o=>o.getAll()),get=(s,k)=>tx(s,'readonly',o=>o.get(k)),put=(s,v)=>tx(s,'readwrite',o=>o.put(v)),del=(s,k)=>tx(s,'readwrite',o=>o.delete(k)),clr=s=>tx(s,'readwrite',o=>o.clear());
+async function save(kind,data,id=data.id||uid(),deleted=false){data.id=id;const base=(R[id]&&R[id].srv)||null,r={id,kind,data,deleted,updated_at:now(),srv:(R[id]&&R[id].srv)};R[id]=r;await put('rec',r);await put('out',{id,kind,data,deleted,updated_at:r.updated_at,base});sync();render();return r}
+async function doSync(){if(busy||!navigator.onLine||!S.user)return;busy=1;
+ try{
+ const{data:{session}}=await sb.auth.getSession();if(!session){busy=0;return forceRelogin()}
+ for(const r of await all('out')){try{
+  const{data:res,error}=await sb.rpc('push_record',{rid:r.id,rkind:r.kind,rdata:r.data,rdeleted:r.deleted,base:r.base||null,force:false});
+  if(error){if(/JWT|expired|401|invalid/i.test(error.message||'')){busy=0;return forceRelogin()}throw error}
+  let sv=res.server_updated_at;
+  if(res.conflict){const{data:res2,error:e2}=await sb.rpc('push_record',{rid:r.id,rkind:r.kind,rdata:r.data,rdeleted:r.deleted,base:null,force:true});if(e2)throw e2;sv=res2.server_updated_at}
+  if(R[r.id])R[r.id].srv=sv;
+  const c=await get('out',r.id);if(c&&c.updated_at==r.updated_at)await del('out',r.id)
+ }catch(e){console.warn('sync item',r.id,e)}}
+ const since=((await get('meta','since'))||{}).v||'1970-01-01T00:00:00Z',{data,error}=await sb.from('records').select('id,kind,data,deleted,updated_at').gte('updated_at',since).order('updated_at').limit(1000);if(error)throw error;
+ for(const row of data){if(await get('out',row.id))continue;const r={...row,srv:row.updated_at};R[row.id]=r;await put('rec',r)}
+ if(data.length)await put('meta',{k:'since',v:data[data.length-1].updated_at});
+ }catch(e){console.warn('sync',e)}busy=0}
+function sync(){if(navigator.locks)navigator.locks.request('builder-sync',{ifAvailable:true},lock=>lock?doSync():null);else doSync()}
+function forceRelogin(){S.user=null;localStorage.removeItem('bu');login('Your session ended. Please sign in again.')}
+function slugify(s){return String(s||'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||uid().slice(0,8)}
+
+const BLOCK_DEFS={
+ hero:{label:'Hero',desc:'Big heading + button',fields:[['heading','Heading','text'],['sub','Subheading','textarea'],['btnText','Button text','text'],['btnLink','Button link','text']],preview:p=>p.heading||'Hero'},
+ text:{label:'Text',desc:'Heading + paragraph',fields:[['heading','Heading (optional)','text'],['body','Body text','textarea']],preview:p=>p.body||p.heading||'Text block'},
+ image:{label:'Image',desc:'A photo with a caption',fields:[['url','Image','image'],['caption','Caption','text']],preview:p=>p.caption||(p.url?'Image set':'No image yet')},
+ gallery:{label:'Gallery',desc:'Multiple photos in a grid',fields:[['urls','Photos','images']],preview:p=>(p.urls||[]).length+' photo(s)'},
+ button:{label:'Button',desc:'A standalone call-to-action',fields:[['text','Button text','text'],['link','Link','text']],preview:p=>p.text||'Button'},
+ spacer:{label:'Spacer',desc:'Blank vertical space',fields:[['height','Height (px)','number']],preview:p=>(p.height||40)+'px gap'},
+};
+
+function newPage(){
+ const t=h('input',{placeholder:'Page title, e.g. About us'});
+ const x=modal(h('h3',{},'New page'),t,h('div',{style:'display:flex;gap:8px;justify-content:flex-end'},h('button',{onclick:()=>x()},'Cancel'),h('button',{class:'p',onclick:async()=>{
+  if(!t.value.trim())return;
+  const slug=slugify(t.value);
+  if(R[slug])return alert('A page with a similar title already exists.');
+  await save('sitepage',{title:t.value.trim(),slug,blocks:[]},slug);
+  S.curSlug=slug;x();
+ }},'Create')));
+}
+function modal(...kids){const ov=h('div',{class:'ov',onclick:e=>{if(e.target===ov)close()}},h('div',{class:'md'},...kids));document.body.append(ov);const close=()=>ov.remove();return close}
+
+function addBlock(page){
+ const body=h('div',{class:'block-picker'},...Object.entries(BLOCK_DEFS).map(([k,d])=>h('button',{onclick:()=>{page.blocks.push({id:uid(),type:k,props:{}});save('sitepage',page,page.slug);close();editBlock(page,page.blocks.length-1)}},h('div',{class:'bp-label'},d.label),h('div',{class:'bp-desc'},d.desc))));
+ const close=modal(h('h3',{},'Add a block'),body);
+}
+
+function editBlock(page,idx){
+ const b=page.blocks[idx],def=BLOCK_DEFS[b.type];
+ const inputs={};
+ const fieldEls=def.fields.map(([key,label,type])=>{
+  if(type=='textarea'){const el=h('textarea',{},b.props[key]||'');inputs[key]=()=>el.value;return h('label',{},label,el)}
+  if(type=='image'){
+   const prev=h('div',{class:'note'},b.props[key]?'Current image is set':'No image yet');
+   const inp=h('input',{type:'file',accept:'image/*'});
+   let val=b.props[key]||'';
+   inp.onchange=async()=>{const f=inp.files[0];if(!f)return;prev.textContent='Compressing & uploading…';try{val=await uploadImage(f,'builder');prev.textContent='Uploaded ✓'}catch(e){prev.textContent='Upload failed: '+e.message}};
+   inputs[key]=()=>val;
+   return h('label',{},label,inp,prev);
+  }
+  if(type=='images'){
+   const prev=h('div',{class:'note'},(b.props[key]||[]).length+' photo(s)');
+   const inp=h('input',{type:'file',accept:'image/*',multiple:true});
+   let val=(b.props[key]||[]).slice();
+   inp.onchange=async()=>{const files=[...inp.files];if(!files.length)return;prev.textContent='Uploading…';try{for(const f of files)val.push(await uploadImage(f,'builder-gallery'));prev.textContent=val.length+' photo(s)'}catch(e){prev.textContent='Upload failed: '+e.message}};
+   inputs[key]=()=>val;
+   return h('label',{},label,inp,prev);
+  }
+  const el=h('input',{type:type=='number'?'number':'text',value:b.props[key]||''});inputs[key]=()=>type=='number'?+el.value:el.value;return h('label',{},label,el);
+ });
+ const close=modal(
+  h('h3',{},'Edit '+def.label),
+  ...fieldEls,
+  h('div',{style:'display:flex;gap:8px;justify-content:flex-end;margin-top:8px'},
+   h('button',{class:'warn',onclick:()=>{page.blocks.splice(idx,1);save('sitepage',page,page.slug);close()}},'Delete block'),
+   h('button',{class:'p',onclick:()=>{for(const k in inputs)b.props[k]=inputs[k]();save('sitepage',page,page.slug);close()}},'Save')
+  )
+ );
+}
+async function uploadImage(file,prefix){
+ const blob=await compressImage(file,1600,.8);
+ const path=prefix+'/'+Date.now()+'-'+Math.random().toString(36).slice(2,7)+'.jpg';
+ const{error}=await sb.storage.from('site').upload(path,blob,{contentType:'image/jpeg'});
+ if(error)throw error;
+ return sb.storage.from('site').getPublicUrl(path).data.publicUrl;
+}
+function compressImage(file,maxW,quality){return new Promise((res,rej)=>{const img=new Image(),url=URL.createObjectURL(file);img.onload=()=>{const scale=Math.min(1,maxW/img.width),w=Math.round(img.width*scale),ht=Math.round(img.height*scale),c=document.createElement('canvas');c.width=w;c.height=ht;c.getContext('2d').drawImage(img,0,0,w,ht);c.toBlob(b=>{URL.revokeObjectURL(url);b?res(b):rej(new Error('Could not process that image'))},'image/jpeg',quality)};img.onerror=()=>rej(new Error('Could not read that image'));img.src=url})}
+
+function reorder(page,from,to){if(from===to)return;const [b]=page.blocks.splice(from,1);page.blocks.splice(to,0,b);save('sitepage',page,page.slug)}
+
+function blockCard(page,b,idx){
+ const def=BLOCK_DEFS[b.type]||{label:b.type,preview:()=>''};
+ const card=h('div',{class:'block-card',draggable:'true',
+  ondragstart:e=>{S.drag=idx;card.classList.add('dragging');e.dataTransfer.effectAllowed='move'},
+  ondragend:()=>{card.classList.remove('dragging');S.drag=null},
+  ondragover:e=>{e.preventDefault()},
+  ondrop:e=>{e.preventDefault();if(S.drag!=null)reorder(page,S.drag,idx)},
+  onclick:()=>editBlock(page,idx)
+ },
+  h('span',{class:'drag-handle'},'⠿'),
+  h('div',{class:'block-body'},h('div',{class:'block-type'},def.label),h('div',{class:'block-preview'},def.preview(b.props||{})||'—')),
+  h('div',{class:'block-actions'},h('button',{onclick:e=>{e.stopPropagation();editBlock(page,idx)}},'Edit'),h('button',{class:'warn',onclick:e=>{e.stopPropagation();if(!confirm('Delete this block?'))return;page.blocks.splice(idx,1);save('sitepage',page,page.slug)}},'✕'))
+ );
+ return card;
+}
+
+async function publish(page){
+ page.publishedBlocks=JSON.parse(JSON.stringify(page.blocks));
+ page.publishedAt=now();
+ await save('sitepage',page,page.slug);
+ alert('Published. Live at your site’s /w.html?page='+page.slug);
+}
+
+function editorView(){
+ const page=R[S.curSlug]&&R[S.curSlug].data;
+ if(!page)return h('div',{class:'g'},h('p',{},'Pick a page from the menu, or create a new one.'));
+ return h('div',{class:'g'},
+  h('div',{class:'card'},h('b',{},page.title),h('div',{class:'note'},'/'+page.slug)),
+  h('div',{style:'display:flex;gap:8px;flex-wrap:wrap'},
+   h('button',{class:'p',onclick:()=>addBlock(page)},'+ Add block'),
+   h('button',{onclick:()=>window.open('/w.html?page='+page.slug+(page.publishedBlocks?'':'&draft=1'),'_blank')},'Preview'),
+   h('button',{class:'on',onclick:()=>publish(page)},page.publishedBlocks?'Publish changes':'Publish')
+  ),
+  page.publishedAt?h('div',{class:'note'},'Last published '+new Date(page.publishedAt).toLocaleString()):h('div',{class:'note'},'Not published yet — visitors won’t see this page until you publish.'),
+  h('div',{style:'display:grid;gap:8px'},...(page.blocks.length?page.blocks.map((b,i)=>blockCard(page,b,i)):[h('p',{class:'note'},'No blocks yet. Add one to start building this page.')]))
+ );
+}
+
+function drawer(){
+ const pages=L('sitepage').sort((a,b)=>(a.title||'').localeCompare(b.title||''));
+ return h('div',{class:'g',style:'padding-top:14px'},
+  ...pages.map(p=>h('button',{class:'page-btn'+(S.curSlug==p.slug?' on':''),style:'width:100%;text-align:left;display:flex;justify-content:space-between;margin-bottom:4px',onclick:()=>{S.curSlug=p.slug;render()}},h('span',{},p.title),p.publishedAt?h('span',{class:'pill'},'live'):h('span',{class:'pill'},'draft'))),
+  h('button',{class:'p',onclick:newPage},'+ New page')
+ );
+}
+
+function render(){
+ if(!S.user)return;
+ $('#app').replaceChildren(
+  h('div',{class:'top-bar'},h('h1',{},'Website Builder')),
+  h('div',{class:'g',style:'padding-top:0'},h('div',{class:'card'},drawer())),
+  editorView(),
+  h('div',{class:'powered'},'Powered by ',h('a',{href:'https://auzslab.in',target:'_blank',rel:'noopener'},'AUZslab'))
+ );
+}
+
+function login(msg){
+ const e=h('input',{type:'email',placeholder:'Email'}),p=h('input',{type:'password',placeholder:'Password'}),m=h('div',{class:'note'},msg||'');
+ $('#app').replaceChildren(h('div',{class:'md',style:'margin:12vh auto'},h('h2',{},'Sign in'),e,p,m,h('button',{class:'p',onclick:async()=>{const{error}=await sb.auth.signInWithPassword({email:e.value.trim(),password:p.value});error?m.textContent=error.message:boot()}},'Sign in')));
+}
+
+function notEntitled(){
+ $('#app').replaceChildren(h('div',{class:'upgrade-card card'},h('h2',{},'Website Builder isn’t on your plan yet'),h('p',{class:'note',style:'margin-top:10px'},'Ask AUZslab to add it to your subscription, then come back here.'),h('button',{class:'p',style:'margin-top:14px',onclick:()=>location.href='https://auzslab.in/products.html'},'See products')));
+}
+
+async function boot(){
+ let ses=null;try{ses=(await sb.auth.getSession()).data.session}catch{}
+ if(!ses)return login();
+ S.user=ses.user;
+ let features={};
+ try{const{data}=await sb.rpc('my_dashboard');if(data)features=data.features||{}}catch{}
+ if(!(features.website_builder===true)){S.user=null;return notEntitled()}
+ (await all('rec')).forEach(r=>R[r.id]=r);
+ await doSync();
+ if(!S.curSlug){const pages=L('sitepage');if(pages.length)S.curSlug=pages.sort((a,b)=>(a.title||'').localeCompare(b.title||''))[0].slug}
+ render();
+ setInterval(sync,15000);
+ window.addEventListener('online',sync);
+}
+boot();
+</script>
+</body></html>
