@@ -65,6 +65,9 @@ button.ditem.on{color:var(--accent);font-weight:700;background:var(--bg-raised)}
 .seg{display:flex;background:var(--bg-raised);border-radius:999px;padding:3px;gap:2px}
 .seg button{padding:6px 10px;border-radius:999px;font-size:12px}
 .seg button.on{background:#fff;color:var(--ink);box-shadow:var(--shadow-sm)}
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.stat-card{text-align:center;padding:16px 8px}
+.stat-val{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif;font-size:26px;font-weight:800;color:var(--ink)}
 .cal-nav{display:flex;align-items:center;justify-content:space-between;padding:6px 16px 4px}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:10px 16px 0}
 .cal-dow{text-align:center;font-size:11px;color:var(--ink-faint);padding-bottom:2px}
@@ -494,6 +497,47 @@ function employeeProfile(e){
    h('button',{class:'p',style:'flex:1',onclick:()=>{x();employeeModal(e)}},'Edit details'),
    h('button',{class:'warn',onclick:async()=>{if(!confirm('Remove this employee?'))return;await save('hr_employee',e,e.id,true);x();render()}},'Remove')))
 }
+V.attendance=()=>{
+ const ds=today(),emps=L('hr_employee').filter(e=>e.active!==false),shifts=L('hr_shift');
+ const tm=iso=>iso?new Date(iso).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'—';
+ const attFor=id=>L('hr_attendance').find(a=>a.empId==id&&a.date==ds);
+ const onLeaveToday=id=>L('hr_leave').some(l=>l.empId==id&&l.status=='approved'&&ds>=l.from&&ds<=l.to);
+ const statusOf=e=>{const a=attFor(e.id);if(a&&a.in)return a.out?'done':'working';if(onLeaveToday(e.id))return 'leave';return 'absent'};
+ const working=emps.filter(e=>statusOf(e)=='working').length;
+ const onLeaveN=emps.filter(e=>onLeaveToday(e.id)).length;
+ const pending=L('hr_leave').filter(l=>l.status=='pending').length+L('hr_regularization').filter(r=>r.status=='pending').length;
+ const statCard=(label,val)=>h('div',{class:'card stat-card'},h('div',{class:'stat-val'},val),h('div',{class:'note'},label));
+ const shiftTab=S.attShift&&shifts.some(sh=>sh.id==S.attShift)?S.attShift:'all';
+ const shiftEmps=shiftTab=='all'?emps:emps.filter(e=>e.shiftId==shiftTab);
+ const statusLabel={working:'Present',done:'Present',leave:'On leave',absent:'Absent'};
+ const statusPillStyle=st=>st=='absent'?'background:rgba(128,0,32,.1);color:var(--accent)':st=='leave'?'background:var(--bg-raised);color:var(--ink-dim)':'background:rgba(46,125,50,.12);color:#2e7d32';
+ const presentN=shiftEmps.filter(e=>{const st=statusOf(e);return st=='working'||st=='done'}).length;
+ const absentN=shiftEmps.filter(e=>statusOf(e)=='absent').length;
+ const leaveN=shiftEmps.filter(e=>statusOf(e)=='leave').length;
+ const shiftName=id=>{const s=shifts.find(x=>x.id==id);return s?s.name:'—'};
+ return h('div',{class:'g'},
+  h('div',{class:'stat-grid'},
+   statCard('Total employees',emps.length),
+   statCard('Currently working',working),
+   statCard('On leave today',onLeaveN),
+   statCard('Pending requests',pending)),
+  h('div',{class:'card'},
+   h('div',{class:'row'},h('h3',{},'Today’s attendance'),h('span',{class:'note'},new Date(ds).toLocaleDateString([],{weekday:'short',day:'numeric',month:'short'}))),
+   shifts.length?h('div',{class:'seg',style:'margin:8px 0;flex-wrap:wrap'},
+    h('button',{class:shiftTab=='all'?'on':'',onclick:()=>{S.attShift='all';render()}},'All'),
+    ...shifts.map(sh=>h('button',{class:shiftTab==sh.id?'on':'',onclick:()=>{S.attShift=sh.id;render()}},sh.name))):null,
+   h('div',{style:'display:flex;gap:8px;margin:6px 0 10px;flex-wrap:wrap'},
+    h('span',{class:'pill',style:statusPillStyle('working')},presentN+' Present'),
+    h('span',{class:'pill',style:statusPillStyle('absent')},absentN+' Absent'),
+    h('span',{class:'pill',style:statusPillStyle('leave')},leaveN+' On leave')),
+   shiftEmps.length?null:h('p',{class:'note'},'No employees in this shift.'),
+   ...shiftEmps.sort((a,b)=>a.name.localeCompare(b.name)).map(e=>{
+    const a=attFor(e.id),st=statusOf(e);
+    return h('div',{class:'row',style:'cursor:pointer',onclick:()=>employeeProfile(e)},
+     h('span',{},h('b',{},e.name),h('br'),h('span',{class:'note'},(e.shiftId?shiftName(e.shiftId)+' · ':'')+(a?'In '+tm(a.in)+(a.out?' · Out '+tm(a.out):''):'No punch yet'))),
+     h('span',{class:'pill',style:statusPillStyle(st)},statusLabel[st]));
+   })));
+};
 V.employees=()=>{const emps=L('hr_employee').sort((a,b)=>a.name.localeCompare(b.name));
  const ym=today().slice(0,7),activeCount=emps.filter(e=>e.active!==false).length,totalHoursMonth=r2(emps.reduce((s,e)=>s+hoursForMonth(e.id,ym),0));
  return h('div',{class:'g'},
@@ -632,7 +676,7 @@ function render(){
  const hr=isHR();
  if(!hr){$('#app').replaceChildren(empApp());return}
  if(S._tick){clearInterval(S._tick);S._tick=null}
- const tabs=[['employees','Employees'],['shifts','Shifts'],['holidays','Holidays'],['leave','Leave'],['run','Payroll run'],['reports','Reports'],['settings','Settings']];
+ const tabs=[['attendance','Attendance'],['employees','Employees'],['shifts','Shifts'],['holidays','Holidays'],['leave','Leave'],['run','Payroll run'],['reports','Reports'],['settings','Settings']];
  if(!tabs.some(([k])=>k==S.tab))S.tab=tabs[0][0];
  $('#app').replaceChildren(
   h('div',{class:'top-bar'},
