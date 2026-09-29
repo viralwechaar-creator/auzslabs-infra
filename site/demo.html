@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="design-system/ui-kit.css?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 .demo-mod{margin-bottom:20px}
 .demo-mod .uk-kit.uk-linklist{margin-top:14px;border-top:none}
@@ -167,7 +167,6 @@ const NICHE_DEFAULTS = {
   cafe: { pos: true, crm: true, billing: true, inventory: true, qr: true },
   retail: { pos: true, crm: true, billing: true, inventory: true, qr: false },
   salon: { pos: false, crm: true, billing: true, inventory: true, qr: false },
-  gym: { pos: false, crm: true, billing: true, inventory: true, qr: false },
   general: { pos: true, crm: true, billing: true, inventory: true, qr: false },
 };
 
@@ -199,8 +198,8 @@ function render(ctx) {
 
   // Retail gets the retail-flavored sandbox (size/color billing, trial
   // room); every other niche gets the café/restaurant one, since that's
-  // the fuller generic-POS experience and salon/gym have no POS UI of
-  // their own yet (see the roadmap note below).
+  // the fuller generic-POS experience and salon has no POS UI of its
+  // own yet (see the roadmap note below).
   const demoSlug = ctx.niche === 'retail' ? 'demo-retail' : 'demo-cafe';
   const demoUrl = 'https://' + demoSlug + '.auzslab.in';
   document.getElementById('liveDemoUrl').textContent = demoUrl;
@@ -219,11 +218,11 @@ function render(ctx) {
   // every owner login gets it regardless of niche or cart selection.
   html += modCard('Payroll', PAYROLL_BULLETS);
   // Real appointment/slot booking (bookings table exists server-side per
-  // db/003_bookings.sql) has no UI shipped yet -- never claim a salon/gym
+  // db/003_bookings.sql) has no UI shipped yet -- never claim a salon
   // lead already has it, just say plainly that it's coming.
-  if (ctx.niche === 'salon' || ctx.niche === 'gym') {
+  if (ctx.niche === 'salon') {
     html += `<div class="card demo-mod"><span class="tag" style="opacity:.6">On our roadmap</span><div class="h-2" style="margin-top:14px;font-size:20px">Booking &amp; scheduling</div>
-      <p class="p" style="margin-top:10px">Real appointment/slot booking is being built for salons and gyms specifically &mdash; not live yet, so it isn't included here.</p></div>`;
+      <p class="p" style="margin-top:10px">Real appointment/slot booking is being built for salons specifically &mdash; not live yet, so it isn't included here.</p></div>`;
   }
 
   const label = '<div class="label" style="margin-bottom:14px">Or, if you\'d rather read first</div>';

@@ -8,7 +8,7 @@
   --line-soft:rgba(23,23,23,.06);
   --accent:#800020;
   --sidebar-w:240px;
-  --font-display:'Fraunces',serif;
+  --font-display:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif;
   --font-body:'Inter',sans-serif;
   --font-mono:'Space Mono',monospace;
   /* half the rendered height of the stack-panel title (clamp(56px,16vw,130px)
@@ -112,7 +112,7 @@ button{font-family:inherit}
    button returns to the main list, matching a drill-down app menu
    rather than an accordion. Desktop overrides this back to the
    hover flyout further down. */
-/* Same black background and right-aligned bold-Fraunces link rows as
+/* Same black background and right-aligned bold display-font link rows as
    the main sidebar list (.nav-link) -- this used to be a maroon
    full-bleed panel with icon+pill rows of its own, which read as a
    different menu rather than a drilled-in view of the same one. */
