@@ -368,21 +368,24 @@ function employeeModal(e){e=e||{};
   phone=h('input',{value:e.phone||'',placeholder:'Phone'}),joined=h('input',{type:'date',value:e.dateJoined||today()}),
   shiftSel=h('select',{},h('option',{value:''},'No shift assigned'),...L('hr_shift').map(s=>h('option',{value:s.id,selected:e.shiftId==s.id},s.name))),
   authEmail=h('input',{value:e.authEmail||'',placeholder:'Their login email (to link self-service, optional)'}),
+  authNote=h('p',{class:'note'},"Payroll doesn't create logins itself -- add their login (and set/reset its password) under ",h('a',{href:'https://auzslab.in/account.html#staff',target:'_blank',rel:'noopener',style:'color:var(--accent)'},'your account’s Staff page'),' first, then link it here by email.'),
   basic=h('input',{type:'number',value:(e.salaryStructure||{}).basic??'',placeholder:'Basic salary/month'}),
   hra=h('input',{type:'number',value:(e.salaryStructure||{}).hra??'',placeholder:'HRA/month'}),
   allow=h('input',{type:'number',value:(e.salaryStructure||{}).allowances??'',placeholder:'Other allowances/month'}),
   otRate=h('input',{type:'number',value:(e.salaryStructure||{}).otRate??'',placeholder:'Overtime rate/hour'}),
   active=h('input',{type:'checkbox',checked:e.active!==false});
- const x=modal(h('h3',{},e.id?'Edit employee':'New employee'),nm,empId,dept,desig,phone,joined,shiftSel,authEmail,
+ const x=modal(h('h3',{},e.id?'Edit employee':'New employee'),nm,empId,dept,desig,phone,joined,shiftSel,authEmail,authNote,
   h('div',{class:'note'},'Salary structure'),basic,hra,allow,otRate,
   h('label',{style:'display:flex;flex-direction:row;align-items:center;gap:8px'},active,'Active'),
   h('button',{class:'p',onclick:async()=>{
    if(!nm.value.trim())return alert('Name is needed.');
-   let authUserId=e.authUserId||null;
-   if(authEmail.value.trim()){try{const{data}=await sb.from('profiles').select('id').eq('email',authEmail.value.trim()).maybeSingle();if(data)authUserId=data.id}catch{}}
-   await save('hr_employee',{...e,name:nm.value.trim(),empId:empId.value.trim(),dept:dept.value.trim(),designation:desig.value.trim(),phone:phone.value.trim(),dateJoined:joined.value,shiftId:shiftSel.value||null,authEmail:authEmail.value.trim(),authUserId,active:active.checked,
+   let authUserId=e.authUserId||null,linkFailed=false;
+   const wantEmail=authEmail.value.trim();
+   if(wantEmail){try{const{data}=await sb.from('profiles').select('id').eq('email',wantEmail).maybeSingle();if(data)authUserId=data.id;else linkFailed=true}catch{}}
+   await save('hr_employee',{...e,name:nm.value.trim(),empId:empId.value.trim(),dept:dept.value.trim(),designation:desig.value.trim(),phone:phone.value.trim(),dateJoined:joined.value,shiftId:shiftSel.value||null,authEmail:wantEmail,authUserId,active:active.checked,
     salaryStructure:{basic:+basic.value||0,hra:+hra.value||0,allowances:+allow.value||0,otRate:+otRate.value||0}});
-   x();render()}},'Save'),
+   x();render();
+   if(linkFailed)alert('Employee saved, but no login exists yet for '+wantEmail+' -- add them under your account\'s Staff page first, then edit this employee and enter that email again to link self-service.')}},'Save'),
   e.id?h('button',{class:'warn',onclick:async()=>{if(!confirm('Remove this employee?'))return;await save('hr_employee',e,e.id,true);x();render()}},'Remove'):null)}
 function hoursBetween(empId,from,to){return r2(L('hr_attendance').filter(a=>a.empId==empId&&a.in&&a.out&&a.date>=from&&a.date<=to).reduce((s,a)=>s+(new Date(a.out)-new Date(a.in))/3600000,0))}
 function hoursForMonth(empId,ym){return hoursBetween(empId,ym+'-01',ym+'-32')}

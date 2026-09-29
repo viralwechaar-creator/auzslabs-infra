@@ -313,10 +313,11 @@ function renderStaff() {
             <span class="muted">${esc(p.email)}${p.phone ? ' · ' + esc(p.phone) : ''}</span>
           </span>
           ${p.role === 'owner' ? '<span class="status-pill">owner</span>' : `
-            <span style="display:flex;gap:6px;align-items:center">
+            <span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
               <select data-role="${p.id}" style="max-width:150px">
                 ${ROLES.map((r) => `<option value="${r.id}" ${p.role_id === r.id ? 'selected' : ''}>${esc(r.name)}</option>`).join('')}
               </select>
+              <button class="btn btn-ghost" data-reset-pw="${p.id}" data-email="${esc(p.email)}">Set/reset password</button>
               <button class="btn btn-ghost" data-remove="${p.id}">Remove</button>
             </span>
           `}
@@ -349,6 +350,17 @@ function renderStaff() {
       const { error } = await sb.rpc('remove_staff', { p_staff_id: btn.dataset.remove });
       if (error) { alert(error.message); return; }
       await loadStaff(); renderStaff();
+    };
+  });
+  document.querySelectorAll('[data-reset-pw]').forEach((btn) => {
+    btn.onclick = async () => {
+      const typed = prompt(`Set a new password for ${btn.dataset.email} (min 8 characters), or leave blank to generate a random one:`);
+      if (typed === null) return; // cancelled
+      const newPassword = typed.trim() || null;
+      if (newPassword && newPassword.length < 8) { alert('Password must be at least 8 characters.'); return; }
+      const { data, error } = await sb.rpc('reset_staff_password', { p_staff_id: btn.dataset.resetPw, p_new_password: newPassword });
+      if (error) { alert(error.message); return; }
+      alert(`Password set. Share these with them directly:\n\n${data.email} / ${data.temp_password}`);
     };
   });
 }
