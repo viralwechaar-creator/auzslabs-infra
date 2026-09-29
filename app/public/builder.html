@@ -20,8 +20,8 @@ h1,h2,h3{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,sys
 .card{background:#fff;border-radius:var(--radius-md);padding:16px;box-shadow:var(--shadow-sm)}
 .row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--l)}
 .row:last-child{border-bottom:none}
-.md{background:#fff;border-radius:var(--radius-lg);padding:22px;max-width:440px;width:92vw;margin:8vh auto;box-shadow:var(--shadow-md);display:grid;gap:10px;animation:sheetIn .28s var(--ease);max-height:82vh;overflow:auto}
-.ov{position:fixed;inset:0;background:rgba(23,23,23,.35);z-index:20;overflow:auto;animation:ovIn .2s var(--ease)}
+.md{background:#fff;border-radius:var(--radius-lg);padding:22px;max-width:440px;width:100%;min-width:0;max-height:88vh;overflow:auto;box-shadow:var(--shadow-md);display:grid;gap:10px;animation:sheetIn .28s var(--ease)}
+.ov{position:fixed;inset:0;background:rgba(23,23,23,.35);z-index:20;display:flex;align-items:center;justify-content:center;padding:16px;animation:ovIn .2s var(--ease)}
 @keyframes ovIn{from{opacity:0}to{opacity:1}}
 @keyframes sheetIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
 .pill{padding:2px 9px;border-radius:999px;font-size:11px;background:var(--bg-raised);color:var(--ink-dim)}
