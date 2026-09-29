@@ -140,7 +140,7 @@ const sb = supabase.createClient(CFG.url, CFG.key);
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const PERM_KEYS = [['pos','Sell (POS)'],['orders','Orders'],['kitchen','Kitchen Display'],['reports','Reports'],['staff','Staff (view)'],['inventory','Stock'],['crm','Customers'],['menu','Menu'],['settings','Business Settings'],['billing','Billing / Refunds']];
-const FEATURE_LABEL = { pos:'POS', crm:'CRM', billing:'Billing & Invoicing', inventory:'Inventory', qr:'QR Ordering', self_order:'Self-order (QR)', kds:'Kitchen display', booking:'Bookings', reports:'Reports', expenses:'Expenses' };
+const FEATURE_LABEL = { pos:'POS', crm:'CRM', billing:'Billing & Invoicing', inventory:'Inventory', self_order:'QR Ordering', kds:'Kitchen display', booking:'Bookings', reports:'Reports', expenses:'Expenses', payroll:'Payroll' };
 
 let DASH = null, ROLES = [], STAFF = [], NOTIFS = [];
 

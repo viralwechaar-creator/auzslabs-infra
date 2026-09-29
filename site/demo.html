@@ -147,10 +147,10 @@ const PAYROLL_BULLETS = ['A monthly rate per staffer, hours pulled from their ow
 function flavor(niche) { return niche === 'retail' ? 'retail' : niche === 'cafe' ? 'restaurant' : 'general'; }
 
 const NICHE_DEFAULTS = {
-  cafe: { pos: true, crm: true, billing: true, inventory: true, qr: true },
-  retail: { pos: true, crm: true, billing: true, inventory: true, qr: false },
-  salon: { pos: false, crm: true, billing: true, inventory: true, qr: false },
-  general: { pos: true, crm: true, billing: true, inventory: true, qr: false },
+  cafe: { pos: true, crm: true, billing: true, inventory: true, self_order: true },
+  retail: { pos: true, crm: true, billing: true, inventory: true, self_order: false },
+  salon: { pos: false, crm: true, billing: true, inventory: true, self_order: false },
+  general: { pos: true, crm: true, billing: true, inventory: true, self_order: false },
 };
 
 function modCard(title, bullets) {
@@ -164,7 +164,7 @@ function render(ctx) {
   const hasFeatures = ctx.features && Object.keys(ctx.features).length > 0;
   const defaults = NICHE_DEFAULTS[ctx.niche] || NICHE_DEFAULTS.general;
   const on = (k) => hasFeatures ? !!ctx.features[k] : defaults[k];
-  const showPos = on('pos'), showCrm = on('crm'), showBilling = on('billing'), showInventory = on('inventory'), showQr = on('qr');
+  const showPos = on('pos'), showCrm = on('crm'), showBilling = on('billing'), showInventory = on('inventory'), showQr = on('self_order');
 
   document.getElementById('kicker').textContent = 'A look at what ' + ctx.business_name + ' gets';
   document.getElementById('heroTitle').textContent = 'Everything ' + ctx.business_name + ' runs on.';
