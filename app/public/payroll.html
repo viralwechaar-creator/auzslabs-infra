@@ -14,10 +14,6 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 h1,h2,h3{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif;margin:0}
 .top-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:14px 16px;background:rgba(222,222,222,.85);backdrop-filter:saturate(180%) blur(16px)}
 .top-bar h1{font-size:18px;flex:1}
-.hamburger-btn{background:none;border:none;font-size:20px;padding:6px 10px}
-.tabs{display:flex;gap:6px;padding:10px 16px;overflow-x:auto}
-.tabs button{white-space:nowrap;border-radius:999px;background:#fff;box-shadow:var(--shadow-sm)}
-.tabs button.on{background:var(--g);color:#fff}
 .g{display:grid;gap:14px;padding:0 16px 90px}
 .card{background:#fff;border-radius:var(--radius-md);padding:16px;box-shadow:var(--shadow-sm)}
 .row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--l)}
@@ -61,6 +57,7 @@ label{display:grid;gap:4px;font-size:12.5px;color:var(--ink-dim)}
 .dhead{padding:0 18px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--l);margin-bottom:6px}
 button.ditem{display:flex;align-items:center;gap:12px;padding:13px 18px;text-align:left;border-radius:0;width:100%;font-size:14px;color:var(--ink)}
 button.ditem .soon{margin-left:auto;font-size:10px;color:var(--ink-faint);font-family:'Space Mono',monospace}
+button.ditem.on{color:var(--accent);font-weight:700;background:var(--bg-raised)}
 .seg{display:flex;background:var(--bg-raised);border-radius:999px;padding:3px;gap:2px}
 .seg button{padding:6px 10px;border-radius:999px;font-size:12px}
 .seg button.on{background:#fff;color:var(--ink);box-shadow:var(--shadow-sm)}
@@ -377,7 +374,7 @@ function employeeModal(e){e=e||{};
   h('button',{class:'p',onclick:async()=>{
    if(!nm.value.trim())return alert('Name is needed.');
    let authUserId=e.authUserId||null;
-   if(authEmail.value.trim()){const{data}=await sb.from('profiles').select('id').eq('email',authEmail.value.trim()).maybeSingle();if(data)authUserId=data.id}
+   if(authEmail.value.trim()){try{const{data}=await sb.from('profiles').select('id').eq('email',authEmail.value.trim()).maybeSingle();if(data)authUserId=data.id}catch{}}
    await save('hr_employee',{...e,name:nm.value.trim(),empId:empId.value.trim(),dept:dept.value.trim(),designation:desig.value.trim(),phone:phone.value.trim(),dateJoined:joined.value,shiftId:shiftSel.value||null,authEmail:authEmail.value.trim(),authUserId,active:active.checked,
     salaryStructure:{basic:+basic.value||0,hra:+hra.value||0,allowances:+allow.value||0,otRate:+otRate.value||0}});
    x();render()}},'Save'),
@@ -540,11 +537,19 @@ function render(){
  const tabs=[['employees','Employees'],['shifts','Shifts'],['leave','Leave'],['run','Payroll run'],['reports','Reports'],['settings','Settings']];
  if(!tabs.some(([k])=>k==S.tab))S.tab=tabs[0][0];
  $('#app').replaceChildren(
-  h('div',{class:'top-bar'},h('h1',{},'AUZslab Payroll'),h('button',{onclick:async()=>{await sb.auth.signOut();localStorage.removeItem('hru');location.reload()}},'Sign out')),
-  h('div',{class:'tabs'},...tabs.map(([k,n])=>h('button',{class:S.tab==k?'on':'',onclick:()=>{S.tab=k;render()}},n))),
+  h('div',{class:'top-bar'},
+   h('button',{class:'ic-btn',onclick:()=>hrDrawer(tabs)},icon('menu')),
+   h('h1',{},tabs.find(([k])=>k==S.tab)[1]),
+   h('button',{onclick:async()=>{await sb.auth.signOut();localStorage.removeItem('hru');location.reload()}},'Sign out')),
   V[S.tab](),
   h('div',{class:'powered'},'Powered by ',h('a',{href:'https://auzslab.in',target:'_blank',rel:'noopener'},'AUZslab'))
  );
+}
+function hrDrawer(tabs){
+ const close=drawer(
+  h('div',{class:'dhead'},h('h3',{},'AUZslab Payroll'),h('button',{class:'ic-btn',onclick:()=>close()},icon('x'))),
+  ...tabs.map(([k,n])=>h('button',{class:'ditem'+(S.tab==k?' on':''),onclick:()=>{close();S.tab=k;render()}},n)));
+ return close;
 }
 function login(msg){const e=h('input',{type:'email',placeholder:'Email'}),p=h('input',{type:'password',placeholder:'Password'}),m=h('div',{},msg||'');
  $('#app').replaceChildren(h('div',{class:'md'},h('h2',{},'Payroll sign in'),h('p',{class:'note'},'Same login as your AUZslab account.'),e,p,m,
