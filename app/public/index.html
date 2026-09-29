@@ -150,7 +150,7 @@ const today=()=>new Date().toLocaleDateString('en-CA');
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const h=(t,a={},...k)=>{const e=document.createElement(t);for(const x in a){const v=a[x];if(v==null||v===false)continue;x.startsWith('on')?e[x]=v:x=='class'?e.className=v:e.setAttribute(x,v)}e.append(...k.flat().filter(x=>x!=null&&x!==false));return e};
 const L=k=>Object.values(R).filter(r=>r.kind==k&&!r.deleted).map(r=>r.data),tn=id=>{const t=R[id];return t&&!t.deleted?t.data.name:''};
-const cfg=()=>({name:'My Restaurant',addr:'',phone:'',gstin:'',tax:5,prefix:'INV',col:'#1f3d2e',logo:'/logo.png',ftr:'Thank you!',w:80,sty:'mono',fs:12,gw:'Scan, order and relax. Your order goes straight to our kitchen.',bizType:'restaurant',...(R.settings&&R.settings.data)});
+const cfg=()=>({name:'My Restaurant',addr:'',phone:'',gstin:'',tax:5,prefix:'INV',col:null,logo:'/logo.png',ftr:'Thank you!',w:80,sty:'mono',fs:12,gw:'Scan, order and relax. Your order goes straight to our kitchen.',bizType:'restaurant',...(R.settings&&R.settings.data)});
 // Restaurant-only screens (table floor plan, KOT log) stay hidden for
 // salon/gym/retail tenants -- gated the same way as any other feature,
 // just off the owner-set business type instead of an admin-set flag.
@@ -195,6 +195,20 @@ const PREVIEW_CATALOGS={
 };
 const effCats=()=>cfg().isDemo&&S.previewNiche?PREVIEW_CATALOGS[S.previewNiche].cats.map((c,i)=>({...c,n:i})):L('cat');
 const effItems=()=>cfg().isDemo&&S.previewNiche?PREVIEW_CATALOGS[S.previewNiche].items:L('item');
+// Each niche's own accent -- the actual bug behind "switching niche
+// doesn't change the design": cfg().col ("Brand colour" in Settings)
+// was captured into every tenant's own settings row and never once
+// read back anywhere, so setting it did nothing, and every niche
+// rendered in the exact same maroon regardless. Real tenants who've
+// picked their own col keep it; everyone else (including every demo
+// preview, which always ignores a real tenant's own col on purpose --
+// it's previewing what a NEW tenant of that niche starts with, not
+// this account's own branding) gets their niche's own default so the
+// four niches are visually distinguishable, not just different item
+// names in an identical shell.
+const NICHE_ACCENT={restaurant:'#800020',salon:'#7a3b6e',gym:'#1f6b3a',retail:'#1f3d6b'};
+const themeAccent=()=>{const niche=effBizType();if(cfg().isDemo&&S.previewNiche)return NICHE_ACCENT[niche]||'#800020';return cfg().col||NICHE_ACCENT[niche]||'#800020'};
+function applyTheme(){document.documentElement.style.setProperty('--accent',themeAccent())}
 // Legacy default for any staffer with no custom role assigned yet
 // (role_id null) -- reproduces the OLD hardcoded behavior exactly
 // (everything but menu/settings, plus billing for a plain-text
@@ -923,7 +937,7 @@ function renderDrawer(T){
  );
  syncDrawer();
 }
-function render(){if(S.authExpired||!S.user)return login('Your session ended. Please sign in again.');
+function render(){if(S.authExpired||!S.user)return login('Your session ended. Please sign in again.');applyTheme();
  // 4th element is the subscription feature key this tab needs live,
  // or null if it's core (no separate feature flag exists for it, so
  // it's only gated by role permission, not the owner's service toggles).
