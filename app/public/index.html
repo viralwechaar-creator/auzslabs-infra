@@ -826,6 +826,56 @@ V.task=()=>{
      h('button',{class:t.status=='done'?'':'p',onclick:async()=>{await save('task',{...t,status:cycle[t.status]},t.id);render()}},TASK_STATUS_LABEL[t.status])))),
    tasks.length?null:h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No tasks yet.')));
 };
+function vendorFormModal(v){
+ const nm=h('input',{placeholder:'Vendor name',value:v?v.name:''}),
+  ph=h('input',{placeholder:'Phone (optional)',value:v?v.phone||'':''}),
+  em=h('input',{placeholder:'Email (optional)',value:v?v.email||'':''}),
+  no=h('textarea',{placeholder:'Notes (optional)',style:'min-height:50px'},v?v.notes||'':'');
+ const x=modal(h('h3',{},v?'Edit vendor':'New vendor'),nm,ph,em,no,
+  h('div',{class:'row'},h('span',{}),h('button',{class:'p',onclick:async()=>{
+   if(!nm.value.trim())return alert('Enter a vendor name.');
+   await save('vendor',{name:nm.value.trim(),phone:ph.value.trim(),email:em.value.trim(),notes:no.value.trim()},v?v.id:undefined);
+   x();render()
+  }},'Save')));
+}
+function purchaseFormModal(vendors){
+ const vs=h('select',{},...vendors.map(v=>h('option',{value:v.id},v.name))),
+  dt=h('input',{type:'date',value:today()}),
+  rows=[0,1,2].map(()=>({ds:h('input',{placeholder:'Item'}),qt:h('input',{type:'number',placeholder:'Qty',value:1}),pr:h('input',{type:'number',placeholder:'Unit price'})})),
+  no=h('textarea',{placeholder:'Notes (optional)',style:'min-height:50px'});
+ const x=modal(h('h3',{},'New purchase'),vs,dt,
+  h('div',{style:'font-size:12px;color:var(--ink-dim);margin-top:4px'},'Items'),
+  ...rows.map(r=>h('div',{class:'row',style:'gap:6px'},r.ds,r.qt,r.pr)),
+  no,
+  h('div',{class:'row'},h('span',{}),h('button',{class:'p',onclick:async()=>{
+   if(!vendors.length)return alert('Add a vendor first.');
+   const items=rows.map(r=>({desc:r.ds.value.trim(),qty:+r.qt.value||0,unitPrice:+r.pr.value||0})).filter(i=>i.desc&&i.qty>0);
+   if(!items.length)return alert('Enter at least one item.');
+   const vend=vendors.find(v=>v.id==vs.value);
+   const amount=r2(items.reduce((a,i)=>a+i.qty*i.unitPrice,0));
+   await save('purchase',{vendorId:vend.id,vendorName:vend.name,items,amount,date:dt.value||today(),notes:no.value.trim()});
+   x();render()
+  }},'Save purchase')));
+}
+V.vendor=()=>{
+ const vendors=L('vendor').sort((a,b)=>a.name.localeCompare(b.name));
+ const purchases=L('purchase').sort((a,b)=>b.date>a.date?1:-1);
+ const thisMonth=today().slice(0,7);
+ const totalSpend=r2(purchases.reduce((a,p)=>a+p.amount,0)),
+  monthSpend=r2(purchases.filter(p=>(p.date||'').slice(0,7)==thisMonth).reduce((a,p)=>a+p.amount,0));
+ return h('div',{class:'g',style:'grid-template-columns:1fr'},
+  h('div',{style:'display:grid;grid-template-columns:repeat(2,1fr);gap:10px'},
+   h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:20px;font-weight:800'},inr(monthSpend)),h('div',{style:'font-size:12.5px;color:var(--ink-dim)'},'This month')),
+   h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:20px;font-weight:800'},inr(totalSpend)),h('div',{style:'font-size:12.5px;color:var(--ink-dim)'},'All time'))),
+  h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Vendors ('+vendors.length+')'),h('button',{class:'p',onclick:()=>vendorFormModal()},'+ Add vendor')),
+   ...vendors.map(v=>h('div',{class:'row'},v.name+(v.phone?' · '+v.phone:''),h('button',{onclick:()=>vendorFormModal(v)},'Edit'))),
+   vendors.length?null:h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No vendors yet — add one to start logging purchases.')),
+  h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Purchases ('+purchases.length+')'),vendors.length?h('button',{class:'p',onclick:()=>purchaseFormModal(vendors)},'+ New purchase'):null),
+   ...purchases.map(p=>h('div',{class:'row'},
+    h('span',{},h('b',{},p.vendorName),h('br'),h('span',{style:'font-size:12.5px;color:var(--ink-dim)'},p.date+' · '+p.items.map(i=>i.qty+'× '+i.desc).join(', '))),
+    h('b',{},inr(p.amount)))),
+   purchases.length?null:h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No purchases logged yet.')));
+};
 let G=[];
 async function getG(){if(!navigator.onLine||!S.user)return;if(!featureOn('self_order')){if(G.length){G=[];render()}return}const{data,error}=await sb.from('guest_orders').select('*').eq('status','new').order('created_at');if(error)return;const n=G.length;G=data||[];if(G.length>n)alertSound(3);if(G.length!=n&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))render()}
 async function acceptG(g){let o=L('order').find(x=>x.status=='open'&&x.table==g.tbl&&x.lines.length);o=o?structuredClone(o):{...newOrder(),table:g.tbl};g.items.forEach(i=>{const it=R[i.id]&&R[i.id].data;if(!it)return;const sizeObj=i.size&&(it.sizes||[]).find(s=>s.l==i.size),price=sizeObj?sizeObj.p:it.price;const l=o.lines.find(x=>x.id==i.id&&x.size==i.size&&x.price==price&&!x.note);l?l.qty+=i.qty:o.lines.push({id:i.id,name:it.name,size:i.size,price,qty:i.qty,sent:0,st:it.st||'Kitchen'})});if(!(o.cust&&o.cust.name))o.cust={name:g.name,phone:g.phone};if(g.note)o.gn=g.note;const prev=S.cur;S.cur=o;mk(o);await persist();S.cur=prev;await sb.from('guest_orders').update({status:'done'}).eq('id',g.id);getG()}
@@ -845,6 +895,7 @@ const T_ICON={
  mem:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><circle cx="8.5" cy="14" r="1.6"/><path d="M12.5 14h6"/>',
  help:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.8 1c0 1.7-2.3 2-2.3 3.5"/><path d="M12 17h.01"/>',
  task:'<path d="M9 11l2 2 4-4"/><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4"/>',
+ vendor:'<path d="M3 21h18M4 21V9l8-6 8 6v12"/><path d="M9 21v-6h6v6"/>',
  payroll:'<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M8 14h.01M12 14h4"/>',
  builder:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 9v12"/>',
  menu:'<path d="M4 6h16M4 12h16M4 18h10"/>',
@@ -860,7 +911,7 @@ function renderDrawer(T){
  );
  syncDrawer();
 }
-const ALL_T=[['pos','Sell','pos','pos'],['tabs','Orders','orders',null],['kds','Kitchen','kitchen','kds'],['kotrep','KOT','kitchen','kds'],['token','Token','kitchen',null],['rep','Reports','reports','reports'],['staff','Staff','staff',null],['inv','Stock','inventory',null],['crm','Customers','crm','crm'],['mem','Memberships','crm','membership'],['help','Support','crm','helpdesk'],['task','Tasks','staff','tasks'],['payroll','Payroll','o','payroll'],['builder','Website','o','website_builder']];
+const ALL_T=[['pos','Sell','pos','pos'],['tabs','Orders','orders',null],['kds','Kitchen','kitchen','kds'],['kotrep','KOT','kitchen','kds'],['token','Token','kitchen',null],['rep','Reports','reports','reports'],['staff','Staff','staff',null],['inv','Stock','inventory',null],['crm','Customers','crm','crm'],['mem','Memberships','crm','membership'],['help','Support','crm','helpdesk'],['task','Tasks','staff','tasks'],['vendor','Purchases','inventory','purchases'],['payroll','Payroll','o','payroll'],['builder','Website','o','website_builder']];
 const visibleTabs=()=>ALL_T.filter(([k,,perm,feat])=>can(perm)&&(!feat||featureOn(feat))&&(k!='kotrep'||isRestaurant())&&(k!='token'||cfg().hwToken));
 function render(){if(S.authExpired||!S.user)return login('Your session ended. Please sign in again.');applyTheme();
  const T=visibleTabs().map(([k,n])=>[k,n]);
