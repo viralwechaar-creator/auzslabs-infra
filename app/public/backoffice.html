@@ -240,6 +240,10 @@ function item(i){const isR=isRetail();const px=h('input',{type:'number',value:i.
  const imgPrev=h('div',{style:'font-size:12px;color:var(--ink-dim)'},i.img?'Current photo is set':'No photo yet'),imgInp=h('input',{type:'file',accept:'image/*'});let imgUrl=i.img||null;
  imgInp.onchange=async()=>{const file=imgInp.files[0];if(!file)return;imgPrev.textContent='Compressing & uploading…';try{imgUrl=await uploadSiteImage(file,'menu');imgPrev.textContent='Uploaded ✓'}catch(e){imgPrev.textContent='Upload failed: '+e.message}};
  const imgField2=h('label',{style:'display:grid;gap:4px'},'Photo (optional)',imgInp,imgPrev);
+ // Distinct from rc (the ingredient:qty consumption formula, machine-facing) --
+ // this is the human-readable prep method a kitchen employee actually reads,
+ // surfaced read-only on index.html's Staff tab (see V.staff's Recipes card).
+ const recipeText=h('textarea',{style:'min-height:70px;width:100%'},i.recipeText||''),recipeText2=h('label',{style:'display:grid;gap:4px'},'Prep instructions for kitchen staff (optional)',recipeText);
  const vSizes=h('input',{placeholder:'Sizes, e.g. S,M,L,XL'}),vColors=h('input',{placeholder:'Colors, e.g. Black,White (optional)'}),
   lowInp=h('input',{type:'number',value:i.low??'',placeholder:'Low stock alert at (optional, default 2)'}),
   vTa=h('textarea',{placeholder:'One variant per line: Size|Color|Barcode|Qty\ne.g. M|Blue|8901030123|12',style:'min-height:90px;width:100%'},(i.variants||[]).map(v=>[v.size,v.color||'',v.barcode||'',v.qty||0].join('|')).join('\n')),
@@ -249,7 +253,7 @@ function item(i){const isR=isRetail();const px=h('input',{type:'number',value:i.
  const x=modal(h('h3',{},i.id?'Edit item':'New item'),nm,ct,isR?null:stn,px,
   isR?h('div',{style:'display:grid;gap:6px'},h('div',{class:'row'},vSizes,vColors,vGen),vTa,lowInp):sz,
   isR?null:veg,isR?null:desc2,isR?null:imgField2,
-  isR?null:md,isR?null:rc,cs,(!isR&&cfg().hwBarcode)?bc:null,
+  isR?null:md,isR?null:rc,isR?null:recipeText2,cs,(!isR&&cfg().hwBarcode)?bc:null,
   h('label',{style:'display:flex;align-items:center;gap:8px'},off,' Sold out'),h('label',{style:'display:flex;align-items:center;gap:8px'},'For how long ',dur),
   h('div',{class:'row'},h('button',{class:'p',onclick:async()=>{
   let sizes=[],variants=[],barcode=bc.value.trim()||null;
@@ -277,7 +281,7 @@ function item(i){const isR=isRetail();const px=h('input',{type:'number',value:i.
   if(selfDupe)return alert('Barcode "'+selfDupe+'" is used on more than one of this item\'s own variants. Scanning it would always resolve to just one of them -- give each variant its own code.');
   const dupeCode=myCodes.find(c=>allOtherCodes.includes(c));
   if(dupeCode&&!confirm('Barcode "'+dupeCode+'" is already used on another item/variant. Scanning it will always resolve to whichever matches first. Save anyway?'))return;
-  await save('item',{...i,name:nm.value.trim(),cat:ct.value,price:+px.value||(sizes[0]&&sizes[0].p)||0,sizes,variants,low:isR?(lowInp.value===''?2:+lowInp.value):i.low,off:off.checked,offUntil,rec:isR?'':rc.value.trim(),cost:+cs.value||0,st:stn.value,mods,barcode,veg:isR?i.veg:veg.value,desc:isR?i.desc:desc.value.trim(),img:isR?i.img:imgUrl});x();render()}},'Save'),i.id?h('button',{onclick:async()=>{await save('item',i,i.id,true);x();render()}},'Delete'):null))}
+  await save('item',{...i,name:nm.value.trim(),cat:ct.value,price:+px.value||(sizes[0]&&sizes[0].p)||0,sizes,variants,low:isR?(lowInp.value===''?2:+lowInp.value):i.low,off:off.checked,offUntil,rec:isR?'':rc.value.trim(),cost:+cs.value||0,st:stn.value,mods,barcode,veg:isR?i.veg:veg.value,desc:isR?i.desc:desc.value.trim(),img:isR?i.img:imgUrl,recipeText:isR?i.recipeText:recipeText.value.trim()});x();render()}},'Save'),i.id?h('button',{onclick:async()=>{await save('item',i,i.id,true);x();render()}},'Delete'):null))}
 const VEG_DOT={veg:'🟢',nonveg:'🔴',egg:'🟡'};
 V.menu=()=>{const isR=isRetail(),previewing=cfg().isDemo&&S.previewNiche;return h('div',{class:'g',style:'grid-template-columns:1fr'},
  previewing?h('p',{style:'color:var(--accent);font-size:13px'},'Previewing a sample '+S.previewNiche+' menu — read only. Pick "Current" in Settings → Business to go back to editing your real menu.'):null,
@@ -296,6 +300,7 @@ V.set=()=>{const s=cfg(),F={},sel=(k,l,o)=>h('label',{},l,h('select',{style:'wid
    return h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Tables'),h('span',{},so?h('button',{onclick:()=>qr(L('table'))},'Print all QR'):null,h('button',{class:'p',onclick:()=>{const n=prompt('Table name');if(!n)return;const sc=prompt('Section (e.g. AC, Garden, Terrace)','Main')||'Main';save('table',{name:n,sec:sc.trim()||'Main'}).then(render)}},'Add table'))),
    !so?h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Self-order (QR) is turned off in your Services settings, so table QR codes won\'t take customers to an ordering page. Turn it back on to print/share codes again.'):null,
    ...secs.map(sc=>h('div',{},h('div',{style:"font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;color:var(--ink-faint);margin:10px 0 4px"},sc),...L('table').filter(t=>(t.sec||'Main')==sc).map(t=>h('div',{class:'row'},t.name,h('span',{},so?h('button',{onclick:()=>qr([t])},'QR'):null,h('button',{onclick:()=>{const sc2=prompt('Section',t.sec||'Main');if(sc2!=null)save('table',{...t,sec:sc2.trim()||'Main'},t.id).then(render)}},'Section'),h('button',{class:'warn',onclick:()=>save('table',t,t.id,true).then(render)},'Delete')))))))},
+  manual:()=>h('div',{class:'card',style:'display:grid;gap:8px'},h('h3',{},'Staff manual'),h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Shown read-only to staff on the POS app\'s Staff tab -- house rules, opening/closing checklist, how to handle common situations. Per-item cooking instructions are set on each item in the Menu tab instead.'),ta('staffManual','Manual text'),saveBtn()),
   reasons:()=>h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Cancellation reasons'),h('button',{class:'p',onclick:()=>{const n=prompt('Reason (e.g. "Customer changed mind")');n&&save('reason',{name:n.trim()}).then(render)}},'Add reason')),h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Required whenever a bill is voided, refunded, or a sent item is cancelled.'),...L('reason').map(rn=>h('div',{class:'row'},rn.name,h('button',{class:'warn',onclick:()=>confirm('Delete reason?')&&save('reason',rn,rn.id,true).then(render)},'Delete')))),
   coupons:()=>{const code=h('input',{placeholder:'Code, e.g. WELCOME10'}),ty=h('select',{},h('option',{value:'%'},'% off'),h('option',{value:'₹'},'₹ off')),val=h('input',{type:'number',placeholder:'Value'}),exp=h('input',{type:'date',placeholder:'Expires (optional)'}),mx=h('input',{type:'number',placeholder:'Max uses (optional)'});
    return h('div',{class:'g',style:'grid-template-columns:1fr'},
@@ -310,7 +315,7 @@ V.set=()=>{const s=cfg(),F={},sel=(k,l,o)=>h('label',{},l,h('select',{style:'wid
    sw('hwBarcode','Barcode scanner','Adds a Barcode field to items, and scanning one on the Sell screen adds it straight to the order. Works with any USB/Bluetooth scanner set to keyboard-emulation mode (the default for nearly all of them) — no drivers or pairing needed.'),
    sw('hwToken','Token display screen','Adds a Token tab showing large ready-for-pickup numbers, meant for a spare tablet or monitor at the counter. Takeaway/Delivery orders get a token number when sent to the kitchen.')),
  };
- const tabs=[['biz','Business'],['tables','Tables'],['reasons','Reasons'],['coupons','Coupons & Loyalty'],['hardware','Hardware'],['site','Website']];
+ const tabs=[['biz','Business'],['tables','Tables'],['reasons','Reasons'],['coupons','Coupons & Loyalty'],['hardware','Hardware'],['manual','Staff manual'],['site','Website']];
  return h('div',{class:'g',style:'grid-template-columns:1fr'},
   h('div',{class:'tabbar'},...tabs.map(([k,n])=>h('button',{class:S.setTab==k?'on':'',onclick:()=>{S.setTab=k;render()}},n))),
   panes[S.setTab in panes?S.setTab:'biz']()
