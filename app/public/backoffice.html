@@ -37,6 +37,7 @@ input[type=checkbox]{width:22px;height:22px;flex-shrink:0;accent-color:var(--acc
 .drawer button{display:block;width:100%;text-align:left;padding:13px 14px;border-radius:var(--radius-sm);font-family:Inter,sans-serif;font-weight:600;font-size:15px;color:var(--ink);transition:background .15s var(--ease)}
 .drawer button.on{background:var(--accent);color:#fff}
 .g{display:grid;grid-template-columns:1fr 340px;gap:10px;padding:10px}@media(max-width:800px){.g{grid-template-columns:1fr}}
+.g1{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:10px;padding:10px;align-items:start}
 .card{background:#fff;border-radius:var(--radius-md);padding:14px;box-shadow:var(--shadow-sm)}
 .items{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:8px}
 .items button{text-align:left;min-height:64px;border-radius:var(--radius-sm);background:#fff;border:none;box-shadow:var(--shadow-sm);color:var(--ink);transition:transform .12s var(--ease),box-shadow .12s var(--ease)}
@@ -235,7 +236,7 @@ function analyticsPane(){
  const perfRows=Object.entries(perf).map(([name,v])=>({name,...v,profit:r2(v.rev-v.cost)})).sort((a,b)=>b.rev-a.rev);
  const top5=perfRows.slice(0,5),bottom5=perfRows.length>5?perfRows.slice(-5).reverse():[];
  const target=+cfg().salesTarget||0,mf=new Date(now_.getFullYear(),now_.getMonth(),1).toLocaleDateString('en-CA'),monthSales=r2(L('order').filter(o=>o.status=='paid'&&o.paidAt&&localDay(o.paidAt)>=mf&&localDay(o.paidAt)<=today()).reduce((a,o)=>a+o.t.total,0)),targetPct=target?Math.min(100,Math.round(monthSales/target*100)):null;
- return h('div',{class:'g',style:'grid-template-columns:1fr'},
+ return h('div',{class:'g1'},
   h('div',{class:'card'},h('div',{class:'row',style:'flex-wrap:wrap'},...presets.map(([v,l])=>h('button',{class:period==v?'on':'',onclick:()=>{S.anPeriod=v;render()}},l))),
    period=='custom'?h('div',{class:'row'},h('input',{type:'date',value:from,onchange:e=>{S.anFrom=e.target.value;render()}}),' to ',h('input',{type:'date',value:to,onchange:e=>{S.anTo=e.target.value;render()}})):null),
   h('div',{class:'card'},h('h3',{},'Profit & Loss'),
@@ -260,7 +261,7 @@ function dayReportPane(){const dc=L('dayclose').find(x=>x.d==S.d),os=L('order').
  const refunds=r2(os.reduce((a,o)=>a+(o.refunds||[]).reduce((b,r)=>b+r.amt,0),0)),et=r2(ex.reduce((a,e)=>a+e.amt,0)),ec=h('input',{placeholder:'Expense (e.g. milk)'}),ea=h('input',{type:'number',placeholder:'Amount'}),R_=(a,b)=>h('div',{class:'row'},a,h('b',{},b));
  const expCats=[...new Set(L('exp').map(e=>e.cat).filter(Boolean))].sort(),eCat=h('input',{list:'expcatlist',placeholder:'Category (e.g. Rent, Utilities)'}),eCatDl=h('datalist',{id:'expcatlist'},...expCats.map(c=>h('option',{value:c})));
  const byCat={};ex.forEach(e=>{const k=e.cat||'Other';byCat[k]=r2((byCat[k]||0)+e.amt)});
- return h('div',{class:'g',style:'grid-template-columns:1fr'},h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Day report',dc?[' ',icon('lock'),' closed']:null),h('input',{type:'date',value:S.d,onchange:e=>{S.d=e.target.value;render()}})),R_('Bills',os.length),R_('Sales',inr(sm(o=>o.t.total))),R_('Discounts',inr(sm(o=>o.t.d))),R_('GST collected',inr(sm(o=>o.t.tax))),R_('Refunds',inr(refunds)),R_('Cash',inr(m.cash)),R_('UPI',inr(m.upi)),R_('Card',inr(m.card)),...Object.entries(src).map(([k,v])=>R_(k,inr(v))),R_('Expenses',inr(et)),R_('Cash expected in drawer',inr(m.cash-et)),
+ return h('div',{class:'g1'},h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Day report',dc?[' ',icon('lock'),' closed']:null),h('input',{type:'date',value:S.d,onchange:e=>{S.d=e.target.value;render()}})),R_('Bills',os.length),R_('Sales',inr(sm(o=>o.t.total))),R_('Discounts',inr(sm(o=>o.t.d))),R_('GST collected',inr(sm(o=>o.t.tax))),R_('Refunds',inr(refunds)),R_('Cash',inr(m.cash)),R_('UPI',inr(m.upi)),R_('Card',inr(m.card)),...Object.entries(src).map(([k,v])=>R_(k,inr(v))),R_('Expenses',inr(et)),R_('Cash expected in drawer',inr(m.cash-et)),
   dc&&dc.countedCash!=null?R_('Cash counted',inr(dc.countedCash)):null,
   dc&&dc.variance?h('div',{class:'row'},'Variance'+(dc.varianceReason?' ('+dc.varianceReason+')':''),h('b',{style:'color:var(--accent)'},(dc.variance>0?'+':'')+inr(dc.variance))):null,
   h('div',{class:'row'},h('button',{onclick:()=>csv([['No','Type','Customer','Phone','Total','Paid via'],...os.map(o=>[o.no,o.type,(o.cust||{}).name,(o.cust||{}).phone,o.t.total,(o.pays||[]).map(p=>p.m).join('+')])],'orders-'+S.d+'.csv')},'Export orders CSV'),
@@ -354,7 +355,7 @@ function item(i){const isR=isRetail();const px=h('input',{type:'number',value:i.
   if(dupeCode&&!confirm('Barcode "'+dupeCode+'" is already used on another item/variant. Scanning it will always resolve to whichever matches first. Save anyway?'))return;
   await save('item',{...i,name:nm.value.trim(),cat:ct.value,price:+px.value||(sizes[0]&&sizes[0].p)||0,sizes,variants,low:isR?(lowInp.value===''?2:+lowInp.value):i.low,off:off.checked,offUntil,rec:isR?'':rc.value.trim(),cost:+cs.value||0,st:stn.value,mods,barcode,veg:isR?i.veg:veg.value,desc:isR?i.desc:desc.value.trim(),img:isR?i.img:imgUrl,recipeText:isR?i.recipeText:recipeText.value.trim(),combo:isR?false:combo.checked,comboText:isR?'':comboText.value.trim()});x();render()}},'Save'),i.id?h('button',{onclick:async()=>{await save('item',i,i.id,true);x();render()}},'Delete'):null))}
 const VEG_COLOR={veg:'#2e7d32',nonveg:'#b3261e',egg:'#c98a00'};
-V.menu=()=>{const isR=isRetail(),previewing=cfg().isDemo&&S.previewNiche;return h('div',{class:'g',style:'grid-template-columns:1fr'},
+V.menu=()=>{const isR=isRetail(),previewing=cfg().isDemo&&S.previewNiche;return h('div',{class:'g1'},
  previewing?h('p',{style:'color:var(--accent);font-size:13px'},'Previewing a sample '+S.previewNiche+' menu — read only. Pick "Current" in Settings → Business to go back to editing your real menu.'):null,
  h('div',{class:'card'},h('div',{class:'row'},h('h3',{},isR?'Products':'Menu'),previewing?null:h('span',{},h('button',{onclick:()=>{const n=prompt('Category name');n&&save('cat',{name:n,n:Date.now()}).then(render)}},'Add category'),h('button',{class:'p',onclick:()=>item({})},isR?'Add product':'Add item'))),...effCats().sort((a,b)=>a.n-b.n).map(c=>h('div',{},h('div',{class:'row'},h('b',{},c.name),previewing?null:h('button',{onclick:()=>confirm('Delete category?')&&save('cat',c,c.id,true).then(render)},'Delete')),...effItems().filter(i=>i.cat==c.id).map(i=>h('div',{class:'row'},h('span',{},isR?null:[swatch(VEG_COLOR[i.veg||'veg']),' '],i.name,i.combo?[' ',icon('gift')]:null,itemOff(i)?' (sold out'+(i.offUntil?' until '+new Date(i.offUntil).toLocaleString():'')+')':''),isR?inr(i.price)+' · '+variantQty(i)+' in stock':(i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price)),previewing?null:h('button',{onclick:()=>item(i)},'Edit')))))))};
 V.set=()=>{const s=cfg(),F={},sel=(k,l,o)=>h('label',{},l,h('select',{style:'width:100%',onchange:e=>F[k]=e.target.value},...o.map(([v,n])=>h('option',{value:v,selected:String(s[k]||o[0][0])==String(v)},n)))),f=(k,l,t)=>h('label',{},l,h('input',{type:t||'text',value:s[k],style:'width:100%',oninput:e=>F[k]=t=='number'?+e.target.value:e.target.value})),ta=(k,l)=>h('label',{},l,h('textarea',{style:'width:100%;min-height:70px',oninput:e=>F[k]=e.target.value},s[k]||''));
@@ -381,23 +382,21 @@ V.set=()=>{const s=cfg(),F={},sel=(k,l,o)=>h('label',{},l,h('select',{style:'wid
   manual:()=>h('div',{class:'card',style:'display:grid;gap:8px'},h('h3',{},'Staff manual'),h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Shown read-only to staff on the POS app\'s Staff tab -- house rules, opening/closing checklist, how to handle common situations. Per-item cooking instructions are set on each item in the Menu tab instead.'),ta('staffManual','Manual text'),saveBtn()),
   reasons:()=>h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Cancellation reasons'),h('button',{class:'p',onclick:()=>{const n=prompt('Reason (e.g. "Customer changed mind")');n&&save('reason',{name:n.trim()}).then(render)}},'Add reason')),h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Required whenever a bill is voided, refunded, or a sent item is cancelled.'),...L('reason').map(rn=>h('div',{class:'row'},rn.name,h('button',{class:'warn',onclick:()=>confirm('Delete reason?')&&save('reason',rn,rn.id,true).then(render)},'Delete')))),
   coupons:()=>{const code=h('input',{placeholder:'Code, e.g. WELCOME10'}),ty=h('select',{},h('option',{value:'%'},'% off'),h('option',{value:'₹'},'₹ off')),val=h('input',{type:'number',placeholder:'Value'}),exp=h('input',{type:'date',placeholder:'Expires (optional)'}),mx=h('input',{type:'number',placeholder:'Max uses (optional)'});
-   return h('div',{class:'g',style:'grid-template-columns:1fr'},
+   return h('div',{class:'g1'},
    h('div',{class:'card',style:'display:grid;gap:8px'},h('h3',{},'Loyalty points'),
     sw('loyaltyOn','Loyalty points','Shows lifetime points and a Redeem button on the Sell screen once a customer with past visits is picked.'),
     s.loyaltyOn?h('div',{},f('loyaltyEarnRs','₹ spent per 1 point earned','number'),f('loyaltyRedeemRs','₹ value per point when redeemed','number'),h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Example: with 100 and 1, a customer who has spent ₹1,000 lifetime has 10 points, redeemable for ₹10 off.'),saveBtn()):null),
    h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Coupons')),h('div',{class:'row'},code,ty,val,exp,mx,h('button',{class:'p',onclick:()=>{if(!code.value||!(+val.value>0))return alert('Code and a positive value are needed.');save('coupon',{code:code.value.trim().toUpperCase(),type:ty.value,value:+val.value,expiry:exp.value||null,maxUses:mx.value===''?null:+mx.value}).then(render)}},'Add')),
    h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Applied at billing with the Coupon field next to Discount.'),
    ...L('coupon').map(c=>{const used=L('order').filter(o=>(o.status=='paid'||o.status=='due')&&o.coupon==c.code).length;return h('div',{class:'row'},c.code+' · '+c.value+(c.type=='%'?'% off':' ₹ off')+(c.expiry?' · expires '+c.expiry:'')+(c.maxUses?' · '+used+'/'+c.maxUses+' used':' · '+used+' used'),h('button',{class:'warn',onclick:()=>confirm('Delete coupon?')&&save('coupon',c,c.id,true).then(render)},'Delete'))})))},
-  site:()=>h('div',{class:'g',style:'grid-template-columns:1fr'},
+  site:()=>h('div',{class:'g1'},
    h('div',{class:'card',style:'display:grid;gap:10px'},h('div',{class:'row'},h('h3',{},'Website'),h('a',{href:'/site.html',target:'_blank'},'Preview ↗')),f('siteKicker','Small tagline above headline'),ta('siteTag','Headline (press Enter for a line break)'),f('siteSub','Subheading'),ta('siteAbout','About text'),f('siteHours','Opening hours text'),f('siteInsta','Instagram link (optional)'),f('siteMaps','Google Maps link (optional)'),imgField('siteHero','Hero photo — compressed automatically on upload'),imgField('siteAboutImg','About-section photo'),h('label',{style:'display:grid;gap:4px'},'Gallery photos (adds to existing, compressed automatically)',galInp,galPrev),saveBtn()),
    h('div',{class:'card',style:'display:grid;gap:10px'},h('h3',{},'QR ordering banners'),h('p',{style:'font-size:12.5px;color:var(--ink-dim);margin-top:-4px'},'Shown to customers right when they scan a table\'s QR code, above the menu — combos, today\'s offer, anything worth putting in front of someone about to order.'),h('label',{style:'display:grid;gap:4px'},'Add banner photos',qrInp,qrPrev),(s.qrBanners||'').split(',').filter(Boolean).length?qrClear:null)),
   hardware:()=>h('div',{class:'card'},h('h3',{},'Hardware'),h('p',{style:'font-size:12.5px;color:var(--ink-dim);margin-top:-4px'},'Off by default. Only turn one on if you actually have that setup — nothing changes for anyone else.'),
    sw('hwBarcode','Barcode scanner','Adds a Barcode field to items, and scanning one on the Sell screen adds it straight to the order. Works with any USB/Bluetooth scanner set to keyboard-emulation mode (the default for nearly all of them) — no drivers or pairing needed.'),
    sw('hwToken','Token display screen','Adds a Token tab showing large ready-for-pickup numbers, meant for a spare tablet or monitor at the counter. Takeaway/Delivery orders get a token number when sent to the kitchen.')),
  };
- const tabs=[['biz','Business'],['tables','Tables'],['reasons','Reasons'],['coupons','Coupons & Loyalty'],['hardware','Hardware'],['manual','Staff manual'],['site','Website']];
- return h('div',{class:'g',style:'grid-template-columns:1fr'},
-  h('div',{class:'tabbar'},...tabs.map(([k,n])=>h('button',{class:S.setTab==k?'on':'',onclick:()=>{S.setTab=k;render()}},n))),
+ return h('div',{class:'g1'},
   panes[S.setTab in panes?S.setTab:'biz']()
  )};
 function compressImage(file,maxW,quality){return new Promise((res,rej)=>{const img=new Image(),url=URL.createObjectURL(file);img.onload=()=>{const scale=Math.min(1,maxW/img.width),w=Math.round(img.width*scale),ht=Math.round(img.height*scale),c=document.createElement('canvas');c.width=w;c.height=ht;c.getContext('2d').drawImage(img,0,0,w,ht);c.toBlob(b=>{URL.revokeObjectURL(url);b?res(b):rej(new Error('Could not process that image'))},'image/jpeg',quality)};img.onerror=()=>rej(new Error('Could not read that image'));img.src=url})}
@@ -491,7 +490,7 @@ function ingInv(){const nm=h('input',{placeholder:'Ingredient'}),un=h('input',{p
  sf=S.stkFrom||today(),st=S.stkTo||today(),inRange=d=>d&&d>=sf&&d<=st,
  stockRows=L('ing').map(g=>({g,purch:r2((g.purchases||[]).filter(p=>inRange(p.d)).reduce((a,p)=>a+p.qty,0)),purchAmt:r2((g.purchases||[]).filter(p=>inRange(p.d)).reduce((a,p)=>a+p.amt,0)),waste:r2(L('waste').filter(w=>w.ing==g.name&&inRange(w.d)).reduce((a,w)=>a+w.q,0))})),
  reorder=reorderRows();
-return h('div',{class:'g',style:'grid-template-columns:1fr'},
+return h('div',{class:'g1'},
  reorder.length?h('div',{class:'card'},h('h3',{},'Reorder alerts ('+reorder.length+')'),...reorder.map(({g,vel,daysLeft,suggest})=>h('div',{class:'row',style:'color:var(--accent)'},g.name+' — '+g.qty+' '+g.unit+' on hand',daysLeft!=null?daysLeft+' days left at current use · reorder ~'+suggest+' '+g.unit:'below low-stock threshold'))):null,
  h('div',{class:'card'},h('h3',{},'Inventory (linked to item recipes in Menu)'),can('m')?h('div',{class:'row'},nm,un,q,lo,h('button',{class:'p',onclick:async()=>{if(!nm.value)return;await save('ing',{name:nm.value,unit:un.value,qty:+q.value||0,low:+lo.value||0});render()}},'Add')):null,...L('ing').map(g=>h('div',{class:'row',style:g.qty<=g.low?'color:var(--accent)':''},g.name+' '+g.qty+' '+g.unit+(g.qty<=g.low?' ⚠ low':'')+(g.expiry?' · exp '+g.expiry:''),can('m')?h('span',{},h('button',{class:'p',onclick:()=>purchaseIng(g)},'Purchase'),h('button',{onclick:()=>adjustModal(g)},'Adjust'),h('button',{onclick:()=>transferModal(g)},'Transfer'),h('button',{onclick:async()=>{const v=+prompt('Wasted quantity');if(v>0){g.qty=r2(g.qty-v);await save('ing',g,g.id);await save('waste',{ing:g.name,q:v,d:today()})}render()}},'Waste'),h('button',{onclick:()=>setExpiry(g)},'Expiry')):null))),
  h('div',{class:'card'},h('h3',{},'Stock value & food cost'),
@@ -541,7 +540,7 @@ function retailInv(){const sf=S.stkFrom||today(),st=S.stkTo||today(),inRange=d=>
  rows=items.flatMap(i=>i.variants.map(v=>({i,v,
   purch:(i.purchases||[]).filter(p=>inRange(p.d)).flatMap(p=>p.lines).filter(l=>l.size==v.size&&(l.color||'')==(v.color||'')).reduce((a,l)=>a+l.qty,0),
   sold:(v.usage||[]).filter(u=>inRange(u.d)).reduce((a,u)=>a+u.q,0)})));
-return h('div',{class:'g',style:'grid-template-columns:1fr'},
+return h('div',{class:'g1'},
  reorder.length?h('div',{class:'card'},h('h3',{},'Reorder alerts ('+reorder.length+')'),...reorder.map(({i,v,daysLeft,suggest})=>h('div',{class:'row',style:'color:var(--accent)'},i.name+' '+v.size+(v.color?' / '+v.color:'')+' — '+v.qty+' on hand',daysLeft!=null?daysLeft+' days left at current pace · reorder ~'+suggest:'below low-stock threshold'))):null,
  h('div',{class:'card'},h('h3',{},'Stock by variant'),items.length?null:h('p',{},'Add variants to your products in the Products tab.'),...items.map(i=>h('div',{},h('div',{class:'row'},h('b',{style:'font-size:12.5px'},i.name),can('m')?h('button',{class:'p',onclick:()=>purchaseItem(i)},'Purchase'):null),...i.variants.map(v=>h('div',{class:'row',style:v.qty<=(i.low??2)?'color:var(--accent)':''},v.size+(v.color?' / '+v.color:'')+(v.qty<=(i.low??2)?' ⚠ low':''),v.qty))))),
  h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Stock movement'),h('span',{},h('input',{type:'date',value:sf,onchange:e=>{S.stkFrom=e.target.value;render()}}),' to ',h('input',{type:'date',value:st,onchange:e=>{S.stkTo=e.target.value;render()}}))),
@@ -553,7 +552,7 @@ V.staff=()=>{
  const b=h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Staff & roles'),h('a',{href:'https://auzslab.in/account.html#staff',target:'_blank',class:'p',style:'text-decoration:none;padding:10px 15px;border-radius:14px;background:var(--accent);color:#fff'},'Manage staff & roles ↗')),h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Adding/removing staff, inviting logins and editing custom roles now live on your account page — this is a read-only list.'));
  sb.from('profiles').select('id,email,role').then(({data})=>(data||[]).forEach(p=>b.append(h('div',{class:'row'},p.email,p.role))));
  const sh=L('shift').sort((a,b)=>b.in>a.in?1:-1);
- return h('div',{class:'g',style:'grid-template-columns:1fr'},b,h('div',{class:'card'},h('h3',{},'Recent attendance'),h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Staff clock in/out from the Sell app — ',h('a',{href:'/index.html',style:'color:var(--accent)'},'open POS'),' to clock in or out.'),...sh.slice(0,30).map(x=>h('div',{class:'row'},(x.e||'')+' '+new Date(x.in).toLocaleString(),x.out?Math.round((new Date(x.out)-new Date(x.in))/6e4)+' min':'on shift'))));
+ return h('div',{class:'g1'},b,h('div',{class:'card'},h('h3',{},'Recent attendance'),h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Staff clock in/out from the Sell app — ',h('a',{href:'/index.html',style:'color:var(--accent)'},'open POS'),' to clock in or out.'),...sh.slice(0,30).map(x=>h('div',{class:'row'},(x.e||'')+' '+new Date(x.in).toLocaleString(),x.out?Math.round((new Date(x.out)-new Date(x.in))/6e4)+' min':'on shift'))));
 };
 function custSegment(c){
  const tier=c.tot>=10000?'Gold':c.tot>=3000?'Silver':'Bronze',
@@ -587,7 +586,7 @@ function upcomingDates(field,label){
 V.crm=()=>{const paid=L('order').filter(o=>(o.status=='paid'||o.status=='due')&&(o.cust||{}).phone),cs={};paid.forEach(o=>{const p=o.cust.phone.replace(/\D/g,''),net=r2(o.t.total-(o.refunds||[]).reduce((a,r)=>a+r.amt,0));const c=cs[p]||(cs[p]={name:o.cust.name,phone:p,n:0,tot:0,last:o.paidAt||o.created,orders:[]});c.n++;c.tot=r2(c.tot+net);c.orders.push(o);if((o.paidAt||o.created)>c.last)c.last=o.paidAt||o.created});
 const list=Object.values(cs).sort((a,b)=>b.tot-a.tot);
 const upcoming=[...upcomingDates('dob','Birthday'),...upcomingDates('anniversary','Anniversary')].sort((a,b)=>a.inDays-b.inDays);
-return h('div',{class:'g',style:'grid-template-columns:1fr'},
+return h('div',{class:'g1'},
  upcoming.length?h('div',{class:'card'},h('h3',{},'Upcoming birthdays & anniversaries'),...upcoming.map(u=>h('div',{class:'row'},u.name+' · '+u.phone,u.label+' '+(u.inDays==0?'today':u.inDays==1?'tomorrow':'in '+u.inDays+' days')))):null,
  h('div',{class:'card'},h('h3',{},'Customers ('+list.length+')'),
   ...list.map(c=>{const{tier}=custSegment(c),profile=L('customer').find(p=>p.phone==c.phone);return h('div',{class:'cust-row',onclick:()=>custModal(c,c.orders)},
@@ -640,7 +639,7 @@ V.mem=()=>{
  const expSoon=members.filter(m=>memStatus(m)=='active'&&m.endDate<=addDays(today(),7));
  const checkins=L('checkin'),checkinsToday=checkins.filter(c=>(c.at||'').slice(0,10)==today()).length;
  const badgeStyle=st=>st=='active'?'background:#1f6b3a;color:#fff':st=='expired'?'background:var(--accent);color:#fff':'background:var(--bg-raised);color:var(--ink-dim)';
- return h('div',{class:'g',style:'grid-template-columns:1fr'},
+ return h('div',{class:'g1'},
   h('div',{style:'display:grid;grid-template-columns:repeat(3,1fr);gap:10px'},
    h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:22px;font-weight:800'},activeCount),h('div',{style:mut},'Active members')),
    h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:22px;font-weight:800'+(expSoon.length?';color:var(--accent)':'')},expSoon.length),h('div',{style:mut},'Expiring this week')),
@@ -707,7 +706,7 @@ function ticketDetail(t){
 V.help=()=>{
  const tickets=L('ticket').sort((a,b)=>b.createdAt>a.createdAt?1:-1);
  const open=tickets.filter(t=>t.status=='open'),inProg=tickets.filter(t=>t.status=='in_progress'),resolved=tickets.filter(t=>t.status=='resolved'||t.status=='closed');
- return h('div',{class:'g',style:'grid-template-columns:1fr'},
+ return h('div',{class:'g1'},
   h('div',{style:'display:grid;grid-template-columns:repeat(3,1fr);gap:10px'},
    h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:22px;font-weight:800;color:var(--accent)'},open.length),h('div',{style:'font-size:12.5px;color:var(--ink-dim)'},'Open')),
    h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:22px;font-weight:800'},inProg.length),h('div',{style:'font-size:12.5px;color:var(--ink-dim)'},'In progress')),
@@ -740,7 +739,7 @@ V.task=()=>{
  const todo=tasks.filter(t=>t.status=='todo'),inProg=tasks.filter(t=>t.status=='in_progress'),done=tasks.filter(t=>t.status=='done');
  const overdue=tasks.filter(t=>t.status!='done'&&t.dueDate&&t.dueDate<today());
  const cycle={todo:'in_progress',in_progress:'done',done:'todo'};
- return h('div',{class:'g',style:'grid-template-columns:1fr'},
+ return h('div',{class:'g1'},
   h('div',{style:'display:grid;grid-template-columns:repeat(3,1fr);gap:10px'},
    h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:22px;font-weight:800'},todo.length),h('div',{style:'font-size:12.5px;color:var(--ink-dim)'},'To do')),
    h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:22px;font-weight:800'},inProg.length),h('div',{style:'font-size:12.5px;color:var(--ink-dim)'},'In progress')),
@@ -799,7 +798,7 @@ V.vendor=()=>{
  const thisMonth=today().slice(0,7);
  const totalSpend=r2(purchases.reduce((a,p)=>a+p.amount,0)),
   monthSpend=r2(purchases.filter(p=>(p.date||'').slice(0,7)==thisMonth).reduce((a,p)=>a+p.amount,0));
- return h('div',{class:'g',style:'grid-template-columns:1fr'},
+ return h('div',{class:'g1'},
   h('div',{style:'display:grid;grid-template-columns:repeat(2,1fr);gap:10px'},
    h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:20px;font-weight:800'},inr(monthSpend)),h('div',{style:'font-size:12.5px;color:var(--ink-dim)'},'This month')),
    h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:20px;font-weight:800'},inr(totalSpend)),h('div',{style:'font-size:12.5px;color:var(--ink-dim)'},'All time'))),
@@ -830,10 +829,18 @@ const T_ICON={
  set:'<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
 };
 const T_GROUP_START=new Set(['inv','menu']);
+// The Settings screen used to render these as a second row of tab pills at
+// the top of its own content, eating a full row of vertical space on every
+// visit -- moved into the drawer itself, as a submenu indented under the
+// Settings entry, so picking a settings section is part of the same nav
+// gesture as picking any other tab instead of a second in-page control.
+const SETTINGS_TABS=[['biz','Business'],['tables','Tables'],['reasons','Reasons'],['coupons','Coupons & Loyalty'],['hardware','Hardware'],['manual','Staff manual'],['site','Website']];
 function renderDrawer(T){
  if(!drawerEl){drawerOvEl=h('div',{class:'drawer-ov',onclick:()=>{S.drawerOpen=false;syncDrawer()}});drawerEl=h('div',{class:'drawer'});document.body.append(drawerOvEl,drawerEl)}
  drawerEl.replaceChildren(
-  ...T.map(([k,n])=>{const btn=h('button',{class:S.tab==k?'on':'',style:'display:flex;align-items:center;gap:10px'+(T_GROUP_START.has(k)?';margin-top:12px':''),onclick:()=>{S.tab=k;S.drawerOpen=false;syncDrawer();render()}});btn.innerHTML='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0">'+(T_ICON[k]||'')+'</svg><span>'+esc(n)+'</span>';return btn}),
+  ...T.flatMap(([k,n])=>{const btn=h('button',{class:S.tab==k?'on':'',style:'display:flex;align-items:center;gap:10px'+(T_GROUP_START.has(k)?';margin-top:12px':''),onclick:()=>{S.tab=k;S.drawerOpen=false;syncDrawer();render()}});btn.innerHTML='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0">'+(T_ICON[k]||'')+'</svg><span>'+esc(n)+'</span>';
+   if(k!='set')return[btn];
+   return[btn,...SETTINGS_TABS.map(([sk,sn])=>h('button',{class:(S.tab=='set'&&(S.setTab||'biz')==sk)?'on':'',style:'padding:9px 14px 9px 40px;font-size:13.5px',onclick:()=>{S.tab='set';S.setTab=sk;S.drawerOpen=false;syncDrawer();render()}},sn))]}),
   (()=>{const btn=h('button',{style:'display:flex;align-items:center;gap:10px;margin-top:12px',onclick:()=>{location.href='/index.html'}});btn.innerHTML='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0">'+T_ICON.pos+'</svg><span>Open POS</span>';return btn})(),
   h('button',{class:'warn',style:'margin-top:12px',onclick:async()=>{await sb.auth.signOut();localStorage.removeItem('u');location.reload()}},'Sign out'),
   h('div',{style:'margin-top:auto;padding:10px 12px;font-size:11px;color:var(--ink-faint);font-family:\'Space Mono\',monospace'},'Signed in as '+S.role)
