@@ -13,6 +13,11 @@ export const pool = new Pool({
   user: 'app',
   password: process.env.POSTGRES_APP_PASSWORD,
   database: process.env.POSTGRES_DB,
+  // Max connections this API may hold open at once (node-pg's default is 10).
+  // Postgres itself allows 100 by default, and the realtime LISTEN connection
+  // (realtime.js) plus the backup container sit outside this pool, so 35 leaves
+  // ample headroom. PG_POOL_MAX overrides it without a code change.
+  max: Number(process.env.PG_POOL_MAX || 35),
 });
 
 // Runs `fn` inside a transaction with app.uid set as a *transaction-local*
