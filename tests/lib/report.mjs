@@ -45,3 +45,9 @@ ${rows}</main>`;
   fs.writeFileSync(path.join(REPORT_DIR, 'index.html'), html);
   return path.join(REPORT_DIR, 'index.html');
 }
+
+export function printFailures() {
+  let n = 0;
+  for (const st of results.suites) for (const c of st.checks) if (!c.ok) { n++; console.log(`\n[${c.sev.toUpperCase()}] ${st.name}\n  ${c.title}\n  ${String(c.error).split('\n')[0].slice(0, 220)}`); }
+  if (!n) console.log('\nNo failures.');
+}

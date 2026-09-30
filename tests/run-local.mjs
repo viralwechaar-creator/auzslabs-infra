@@ -3,7 +3,7 @@ import { chromium, launchOptions } from './lib/pw.mjs';
 import { reset } from './lib/harness.mjs';
 import { build } from './lib/db.mjs';
 import { startStack } from './lib/stack.mjs';
-import { writeReport, verdict } from './lib/report.mjs';
+import { writeReport, verdict, printFailures } from './lib/report.mjs';
 import { summary } from './lib/harness.mjs';
 
 const only = process.argv[2];
@@ -20,6 +20,7 @@ for (const name of suites) {
   catch (e) { console.log('CRASHED: ' + e.message); const { suite } = await import('./lib/harness.mjs'); const s = suite(name + ' (suite crashed)'); await s.check('suite ran to the end', () => { throw e; }, 'critical'); }
 }
 await browser.close(); await stack.stop();
+printFailures();
 const file = writeReport(); const v = verdict(), s = summary();
 console.log(`\n${v.label}: ${s.pass} passed, ${s.fail} failed (${s.bySev.critical} critical, ${s.bySev.major} major, ${s.bySev.minor} minor) in ${Math.round((Date.now() - t0) / 1000)}s\nReport: ${file}`);
 process.exit(s.bySev.critical || s.bySev.major ? 1 : 0);

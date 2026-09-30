@@ -3,7 +3,7 @@
 import tls from 'node:tls';
 import { chromium, launchOptions } from './lib/pw.mjs';
 import { reset, suite, watch, assert, summary } from './lib/harness.mjs';
-import { writeReport, verdict } from './lib/report.mjs';
+import { writeReport, verdict, printFailures } from './lib/report.mjs';
 import { DEVICES, layoutIssues } from './lib/common.mjs';
 
 const BASE = (process.env.BASE_URL || 'https://auzslab.in').replace(/\/$/, '');
