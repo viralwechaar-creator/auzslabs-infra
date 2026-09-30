@@ -12,7 +12,8 @@ const DEMOS = (process.env.DEMO_TENANTS || 'demo-salon,demo-cafe,demo-retail').s
 const SAFE_POST = /\/rpc\/(public_menu|public_page|public_invoice|my_dashboard)\b|\/salon-api\/(slots|site)\b|\/auth\/login\b/;
 reset('live site (read-only)');
 const blocked = [];
-const guard = (ctx) => ctx.route('**/*', (route) => {
+const guard = async (ctx) => { await ctx.addInitScript(() => { try { sessionStorage.setItem('sk_loaded', '1'); } catch {} }); return guardRoute(ctx); };
+const guardRoute = (ctx) => ctx.route('**/*', (route) => {
   const r = route.request(), m = r.method();
   if (['GET', 'HEAD', 'OPTIONS'].includes(m) || SAFE_POST.test(r.url()) || !/auzslab\.in/.test(r.url())) return route.continue();
   blocked.push(m + ' ' + r.url()); return route.abort();

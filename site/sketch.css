@@ -1,0 +1,152 @@
+/* AUZslab "conceptual sketch" layer: paper + pencil look, 3D loader, fluid motion.
+   Loaded after theme.css on every marketing page. Everything decorative lives here so theme.css stays the
+   single source of truth for palette/type. Motion is switched off for prefers-reduced-motion at the bottom. */
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&display=swap');
+
+:root{
+  --paper:#faf8f3;
+  --pencil:rgba(23,23,23,.055);
+  --hand:'Caveat','Bradley Hand','Segoe Script',cursive;
+  --ease-out:cubic-bezier(.22,1,.36,1);
+  --ease-spring:cubic-bezier(.34,1.56,.64,1);
+}
+html{scroll-padding-top:72px}
+
+/* ---------- paper + blueprint grid ---------- */
+.shell{
+  background-color:var(--paper);
+  background-image:
+    linear-gradient(var(--pencil) 1px,transparent 1px),
+    linear-gradient(90deg,var(--pencil) 1px,transparent 1px);
+  background-size:32px 32px;
+}
+.shell::after{ /* paper grain */
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.5;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .4 0 0 0 0 .35 0 0 0 0 .3 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------- pencil borders (the wobble lives on a pseudo layer so text stays crisp) ---------- */
+.card{border-color:transparent;
+  transform:perspective(900px) rotate(var(--r,0deg)) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translate3d(var(--tx,0),var(--ty,0),0);
+  will-change:transform}
+.card:nth-of-type(odd){--r:-.5deg;transform:perspective(900px) rotate(var(--r)) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translate3d(var(--tx,0),var(--ty,0),0)}
+.card:nth-of-type(even){--r:.4deg;transform:perspective(900px) rotate(var(--r)) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translate3d(var(--tx,0),var(--ty,0),0)}
+.card:hover,.card:nth-of-type(odd):hover,.card:nth-of-type(even):hover{--r:0deg;--tx:-2px;--ty:-2px;
+  transform:perspective(900px) rotate(0deg) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translate3d(-2px,-2px,0)}
+.card::before,.btn::before,.tag::before{
+  content:"";position:absolute;inset:-1px;border:2px solid var(--ink);border-radius:inherit;
+  filter:url(#sk-rough);pointer-events:none;z-index:3;
+}
+.card::before{inset:2px}
+.btn,.tag{position:relative}
+.btn-ghost::before{border-color:var(--line);border-width:1.5px}
+.btn-primary::before{border-color:var(--accent)}
+.tag{border-color:transparent}
+.btn{border-color:transparent}
+.btn-ghost{border-color:transparent}
+.btn-primary{border-color:transparent}
+.dash{border-top-style:dashed;filter:url(#sk-rough)}
+.knock-btn{filter:none}
+
+/* ---------- pencil underline on headings + scribble marker on labels ---------- */
+.h-1,.h-hero{
+  padding-bottom:16px;background-repeat:no-repeat;background-position:0 100%;background-size:min(260px,62%) 10px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 10' preserveAspectRatio='none'%3E%3Cpath d='M2 6 C 30 1, 50 9, 80 5 S 130 2, 160 6 S 210 8, 238 3' fill='none' stroke='%23800020' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+.reveal .h-1,.reveal .h-hero{background-size:0 10px}
+.reveal.in .h-1,.reveal.in .h-hero{background-size:min(260px,62%) 10px;transition:background-size 1.1s .35s var(--ease-out)}
+.label::before{
+  width:22px;height:8px;background:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 8'%3E%3Cpath d='M1 5 C 5 1, 8 7, 12 3 S 18 6, 21 2' fill='none' stroke='%23800020' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+/* margin notes written by hand (inserted by sketch.js for [data-sk-note]) */
+.sk-note{
+  display:inline-flex;align-items:center;gap:4px;margin-left:10px;vertical-align:middle;
+  font-family:var(--hand);font-weight:700;font-size:21px;line-height:1;color:var(--accent);white-space:nowrap;
+  transform:rotate(-4deg);opacity:0;transition:opacity .6s .9s ease;
+}
+.reveal.in .sk-note,.sk-note.on{opacity:1}
+.sk-note svg{width:44px;height:26px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:90;stroke-dashoffset:90;transition:stroke-dashoffset .9s 1.1s var(--ease-out)}
+.reveal.in .sk-note svg,.sk-note.on svg{stroke-dashoffset:0}
+
+/* ---------- fluid scroll reveals ---------- */
+.reveal{opacity:0;transform:translate3d(0,38px,0) rotate(-.6deg);
+  transition:opacity .9s var(--ease-out),transform 1.05s var(--ease-out)}
+.reveal.in{opacity:1;transform:none}
+.reveal.in .grid-3>*,.reveal.in .grid-2>*,.reveal.in .zigzag>*{animation:sk-pop .85s var(--ease-spring) backwards;animation-delay:calc(var(--i,0)*90ms + 120ms)}
+@keyframes sk-pop{from{opacity:0;translate:0 34px;scale:.94}to{opacity:1;translate:0 0;scale:1}}
+
+/* pencil scroll progress along the top edge */
+.sk-progress{position:fixed;left:0;top:0;height:4px;width:100%;z-index:70;pointer-events:none;transform-origin:0 50%;
+  transform:scaleX(var(--p,0));background:var(--accent);filter:url(#sk-rough);opacity:.9}
+
+/* hero art floats in 3D */
+.hero-art{perspective:900px;transform:translate3d(0,var(--py,0px),0);will-change:transform}
+.hero-art-logo{animation:sk-float 7s ease-in-out infinite;transform-style:preserve-3d;
+  transform:rotateX(var(--hx,0deg)) rotateY(var(--hy,0deg))}
+@keyframes sk-float{0%,100%{translate:0 0;rotate:y -7deg}50%{translate:0 -12px;rotate:y 7deg}}
+
+/* ---------- 3D sketch loader ---------- */
+.sk-loader{
+  position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:34px;
+  background-color:var(--paper);
+  background-image:linear-gradient(var(--pencil) 1px,transparent 1px),linear-gradient(90deg,var(--pencil) 1px,transparent 1px);
+  background-size:32px 32px;color:var(--ink);
+  transition:clip-path 1s var(--ease-out);clip-path:inset(0 0 0 0);
+}
+.sk-loader.out{clip-path:inset(0 0 100% 0);pointer-events:none}
+.sk-loader.out .sk-cube{animation-duration:1.2s}
+.sk-scene{width:150px;height:150px;perspective:700px;position:relative}
+.sk-cube{position:absolute;inset:0;transform-style:preserve-3d;animation:sk-spin 7s linear infinite}
+.sk-cube.in{inset:40px;animation:sk-spin-rev 5s linear infinite}
+.sk-f{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  border:2px solid var(--ink);background-color:rgba(255,255,255,.6);
+  background-image:repeating-linear-gradient(135deg,transparent 0 7px,rgba(23,23,23,.09) 7px 8px);
+  font-family:var(--font-mono);font-size:15px;font-weight:700;letter-spacing:.12em;
+  backface-visibility:visible;
+}
+.sk-cube .sk-f:nth-child(1){transform:translateZ(75px)}
+.sk-cube .sk-f:nth-child(2){transform:rotateY(90deg) translateZ(75px)}
+.sk-cube .sk-f:nth-child(3){transform:rotateY(180deg) translateZ(75px)}
+.sk-cube .sk-f:nth-child(4){transform:rotateY(-90deg) translateZ(75px)}
+.sk-cube .sk-f:nth-child(5){transform:rotateX(90deg) translateZ(75px)}
+.sk-cube .sk-f:nth-child(6){transform:rotateX(-90deg) translateZ(75px)}
+.sk-cube.in .sk-f{border:2px dashed var(--accent);background:rgba(128,0,32,.05);background-image:none}
+.sk-cube.in .sk-f:nth-child(n){transform-origin:50% 50%}
+.sk-cube.in .sk-f:nth-child(1){transform:translateZ(35px)}
+.sk-cube.in .sk-f:nth-child(2){transform:rotateY(90deg) translateZ(35px)}
+.sk-cube.in .sk-f:nth-child(3){transform:rotateY(180deg) translateZ(35px)}
+.sk-cube.in .sk-f:nth-child(4){transform:rotateY(-90deg) translateZ(35px)}
+.sk-cube.in .sk-f:nth-child(5){transform:rotateX(90deg) translateZ(35px)}
+.sk-cube.in .sk-f:nth-child(6){transform:rotateX(-90deg) translateZ(35px)}
+@keyframes sk-spin{from{transform:rotateX(-24deg) rotateY(0deg)}to{transform:rotateX(-24deg) rotateY(360deg)}}
+@keyframes sk-spin-rev{from{transform:rotateX(18deg) rotateY(360deg) rotateZ(10deg)}to{transform:rotateX(18deg) rotateY(0deg) rotateZ(10deg)}}
+.sk-shadow{position:absolute;left:50%;bottom:-34px;width:120px;height:18px;margin-left:-60px;border-radius:50%;
+  background:radial-gradient(closest-side,rgba(23,23,23,.28),transparent);animation:sk-shadow 3.5s ease-in-out infinite}
+@keyframes sk-shadow{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(.82);opacity:.6}}
+.sk-brand{font-family:var(--font-display);font-weight:700;font-size:22px;letter-spacing:-.01em;text-align:center}
+.sk-line{font-family:var(--hand);font-weight:700;font-size:24px;color:var(--accent);margin-top:2px;text-align:center}
+.sk-bar{width:min(220px,60vw);height:10px;margin:14px auto 0;position:relative}
+.sk-bar i{position:absolute;inset:0;transform-origin:0 50%;transform:scaleX(var(--lp,.05));transition:transform .5s var(--ease-out);
+  background-repeat:no-repeat;background-size:100% 100%;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 10' preserveAspectRatio='none'%3E%3Cpath d='M2 6 C 30 1, 50 9, 80 5 S 130 2, 160 6 S 200 8, 218 4' fill='none' stroke='%23800020' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E")}
+html.sk-loading,html.sk-loading body{overflow:hidden}
+
+@media (max-width:600px){
+  .sk-note{display:none}
+  .sk-scene{transform:scale(.85)}
+}
+@media (prefers-reduced-motion:reduce){
+  .sk-loader{display:none}
+  html.sk-loading,html.sk-loading body{overflow:auto}
+  .reveal,.reveal.in{transition:none;opacity:1;transform:none}
+  .reveal.in .grid-3>*,.reveal.in .grid-2>*,.reveal.in .zigzag>*{animation:none}
+  .hero-art-logo{animation:none}
+  .hero-art{transform:none}
+  .sk-note,.sk-note svg{transition:none;opacity:1;stroke-dashoffset:0}
+  .reveal .h-1,.reveal .h-hero{background-size:min(260px,62%) 10px}
+  .sk-progress{display:none}
+}
