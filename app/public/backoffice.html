@@ -200,6 +200,10 @@ function unitCost(i){
 // every other report already reads -- not a separately-maintained
 // calculation, so every sale/expense automatically contributes here
 // without staff entering anything twice.
+function barRow(label,val,max,displayVal,color){
+ return h('div',{style:'margin:6px 0'},h('div',{class:'row',style:'font-size:12.5px;margin-bottom:3px'},label,h('b',{},displayVal)),
+  h('div',{style:'background:var(--l);border-radius:6px;height:8px;overflow:hidden'},h('div',{style:'background:'+(color||'var(--accent)')+';height:100%;width:'+(max?Math.max(2,Math.round(val/max*100)):0)+'%'})));
+}
 function analyticsPane(){
  const presets=[['today','Today'],['week','This week'],['month','This month'],['year','This year'],['custom','Custom']];
  const period=S.anPeriod||'month',now_=new Date(),localDay=iso=>new Date(iso).toLocaleDateString('en-CA');
@@ -225,16 +229,20 @@ function analyticsPane(){
   h('div',{class:'card'},h('div',{class:'row',style:'flex-wrap:wrap'},...presets.map(([v,l])=>h('button',{class:period==v?'on':'',onclick:()=>{S.anPeriod=v;render()}},l))),
    period=='custom'?h('div',{class:'row'},h('input',{type:'date',value:from,onchange:e=>{S.anFrom=e.target.value;render()}}),' to ',h('input',{type:'date',value:to,onchange:e=>{S.anTo=e.target.value;render()}})):null),
   h('div',{class:'card'},h('h3',{},'Profit & Loss'),
-   h('div',{class:'row'},'Gross sales',inr(grossSales)),h('div',{class:'row'},'Discounts','-'+inr(discounts)),h('div',{class:'row'},'Refunds','-'+inr(refunds)),
-   h('div',{class:'row'},h('b',{},'Net sales'),h('b',{},inr(netSales))),h('div',{class:'row'},'Cost of goods sold','-'+inr(cogs)),
-   h('div',{class:'row'},h('b',{},'Gross profit'),h('b',{},inr(grossProfit))),h('div',{class:'row'},'Operating expenses','-'+inr(opEx)),
+   barRow('Gross sales',grossSales,grossSales||1,inr(grossSales)),
+   barRow('Discounts',discounts,grossSales||1,'-'+inr(discounts),'#c98a00'),
+   barRow('Refunds',refunds,grossSales||1,'-'+inr(refunds),'#b3261e'),
+   h('div',{class:'row',style:'margin-top:2px'},h('b',{},'Net sales'),h('b',{},inr(netSales))),
+   barRow('Cost of goods sold',cogs,grossSales||1,'-'+inr(cogs),'#b3261e'),
+   h('div',{class:'row'},h('b',{},'Gross profit'),h('b',{},inr(grossProfit))),
+   barRow('Operating expenses',opEx,grossSales||1,'-'+inr(opEx),'#c98a00'),
    h('div',{class:'row',style:'border-top:2px solid var(--ink);padding-top:8px;margin-top:4px'},h('b',{},'Net profit'),h('b',{style:netProfit>=0?'color:#1f7a3d':'color:var(--accent)'},inr(netProfit)+' ('+marginPct+'%)'))),
   h('div',{class:'card'},h('h3',{},'Monthly sales target'),
    h('div',{class:'row'},h('input',{type:'number',placeholder:'Set monthly target',value:cfg().salesTarget||'',onblur:async e=>{await save('settings',{...cfg(),salesTarget:+e.target.value||0},'settings');render()}})),
    target?h('div',{},h('div',{class:'row'},'This month',inr(monthSales)+' of '+inr(target)),h('div',{style:'background:var(--l);border-radius:999px;height:10px;overflow:hidden;margin-top:4px'},h('div',{style:'background:var(--accent);height:100%;width:'+targetPct+'%'}))):h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Set a target above to track progress.')),
-  h('div',{class:'card'},h('h3',{},'Peak hours'),peakRows.length?peakRows.map(([hr,n])=>h('div',{class:'row'},hr+':00–'+hr+':59',n+' order'+(n>1?'s':''))):h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No paid orders in this range.')),
-  h('div',{class:'card'},h('h3',{},'Top-selling'),...top5.map(p=>h('div',{class:'row'},p.name,p.qty+' · '+inr(p.rev)+' · '+inr(p.profit)+' profit'))),
-  bottom5.length?h('div',{class:'card'},h('h3',{},'Lower-selling'),h('p',{style:'font-size:12px;color:var(--ink-dim)'},'Numbers only — doesn\'t mean cut it.'),...bottom5.map(p=>h('div',{class:'row'},p.name,p.qty+' · '+inr(p.rev)+' · '+inr(p.profit)+' profit'))):null,
+  h('div',{class:'card'},h('h3',{},'Peak hours'),peakRows.length?peakRows.map(([hr,n])=>barRow(hr+':00–'+hr+':59',n,peakRows[0][1],n+' order'+(n>1?'s':''))):h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No paid orders in this range.')),
+  h('div',{class:'card'},h('h3',{},'Top-selling'),...top5.map(p=>barRow(p.name,p.rev,top5[0].rev||1,p.qty+' · '+inr(p.rev)+' · '+inr(p.profit)+' profit','#1f7a3d'))),
+  bottom5.length?h('div',{class:'card'},h('h3',{},'Lower-selling'),h('p',{style:'font-size:12px;color:var(--ink-dim)'},'Numbers only — doesn\'t mean cut it.'),...bottom5.map(p=>barRow(p.name,p.rev,bottom5[0].rev||1,p.qty+' · '+inr(p.rev)+' · '+inr(p.profit)+' profit','#c98a00'))):null,
   feedbackCard());
 }
 function dayReportPane(){const dc=L('dayclose').find(x=>x.d==S.d),os=L('order').filter(o=>o.status=='paid'&&new Date(o.paidAt).toLocaleDateString('en-CA')==S.d),ex=L('exp').filter(e=>e.d==S.d),m={cash:0,upi:0,card:0},it={},src={},sm=f=>r2(os.reduce((a,o)=>a+f(o),0));
@@ -271,7 +279,7 @@ V.dynrep=()=>{const from=S.dynFrom||today(),to=S.dynTo||today(),dim=S.dynDim||'d
   h('div',{class:'row'},h('input',{type:'date',value:from,onchange:e=>{S.dynFrom=e.target.value;render()}}),' to ',h('input',{type:'date',value:to,onchange:e=>{S.dynTo=e.target.value;render()}})),
   h('div',{class:'row'},h('select',{onchange:e=>{S.dynDim=e.target.value;render()}},...dims.map(([v,l])=>h('option',{value:v,selected:v==dim},l))),h('select',{onchange:e=>{S.dynMetric=e.target.value;render()}},...metrics.map(([v,l])=>h('option',{value:v,selected:v==metric},l)))),
   h('div',{class:'row'},h('b',{},dimLabel+' by '+metricLabel),h('button',{onclick:()=>csv([[dimLabel,metricLabel],...rows.map(r=>[r.key,r.val])],'custom-'+dim+'-'+metric+'-'+from+'_'+to+'.csv')},'Export CSV')),
-  h('table',{},...rows.map(r=>h('tr',{},h('td',{},r.key),h('td',{},metric=='sales'?inr(r.val):r.val)))),
+  ...rows.map(r=>barRow(r.key,r.val,rows[0].val||1,metric=='sales'?inr(r.val):r.val)),
   rows.length?null:h('p',{},'No paid orders in this range.'))};
 function feedbackCard(){const fb=L('feedback');if(!fb.length)return null;
  const avg=r2(fb.reduce((a,f)=>a+f.rating,0)/fb.length),recent=fb.slice().sort((a,b)=>b.at>a.at?1:-1).slice(0,8);
@@ -739,11 +747,14 @@ function vendorFormModal(v){
  const nm=h('input',{placeholder:'Vendor name',value:v?v.name:''}),
   ph=h('input',{placeholder:'Phone (optional)',value:v?v.phone||'':''}),
   em=h('input',{placeholder:'Email (optional)',value:v?v.email||'':''}),
+  cp=h('input',{placeholder:'Contact person (optional)',value:v?v.contact||'':''}),
+  gst=h('input',{placeholder:'GSTIN (optional)',value:v?v.gstin||'':''}),
+  ad=h('textarea',{placeholder:'Address (optional)',style:'min-height:50px'},v?v.address||'':''),
   no=h('textarea',{placeholder:'Notes (optional)',style:'min-height:50px'},v?v.notes||'':'');
- const x=modal(h('h3',{},v?'Edit vendor':'New vendor'),nm,ph,em,no,
+ const x=modal(h('h3',{},v?'Edit vendor':'New vendor'),nm,ph,em,cp,gst,ad,no,
   h('div',{class:'row'},h('span',{}),h('button',{class:'p',onclick:async()=>{
    if(!nm.value.trim())return alert('Enter a vendor name.');
-   await save('vendor',{name:nm.value.trim(),phone:ph.value.trim(),email:em.value.trim(),notes:no.value.trim()},v?v.id:undefined);
+   await save('vendor',{name:nm.value.trim(),phone:ph.value.trim(),email:em.value.trim(),contact:cp.value.trim(),gstin:gst.value.trim(),address:ad.value.trim(),notes:no.value.trim()},v?v.id:undefined);
    x();render()
   }},'Save')));
 }
@@ -777,7 +788,9 @@ V.vendor=()=>{
    h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:20px;font-weight:800'},inr(monthSpend)),h('div',{style:'font-size:12.5px;color:var(--ink-dim)'},'This month')),
    h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:20px;font-weight:800'},inr(totalSpend)),h('div',{style:'font-size:12.5px;color:var(--ink-dim)'},'All time'))),
   h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Vendors ('+vendors.length+')'),h('button',{class:'p',onclick:()=>vendorFormModal()},'+ Add vendor')),
-   ...vendors.map(v=>h('div',{class:'row'},v.name+(v.phone?' · '+v.phone:''),h('button',{onclick:()=>vendorFormModal(v)},'Edit'))),
+   ...vendors.map(v=>h('div',{class:'row',style:'align-items:flex-start'},
+    h('span',{},h('b',{},v.name),h('br'),h('span',{style:'font-size:12px;color:var(--ink-dim)'},[v.phone,v.contact,v.gstin&&'GSTIN '+v.gstin,v.address].filter(Boolean).join(' · ')||'No contact details yet')),
+    h('button',{onclick:()=>vendorFormModal(v)},'Edit'))),
    vendors.length?null:h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No vendors yet — add one to start logging purchases.')),
   h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Purchases ('+purchases.length+')'),vendors.length?h('button',{class:'p',onclick:()=>purchaseFormModal(vendors)},'+ New purchase'):null),
    ...purchases.map(p=>h('div',{class:'row'},

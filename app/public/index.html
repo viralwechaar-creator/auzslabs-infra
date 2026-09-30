@@ -357,7 +357,8 @@ function tableInfo(id){
 }
 function floorPlan(o){const secs=[...new Set(L('table').map(t=>t.sec||'Main'))];
  if(!secs.length)return h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No tables yet — add them in Settings › Tables.');
- return h('div',{},...secs.map(sec=>h('div',{},h('div',{style:"font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-faint);margin:10px 0 4px"},sec),
+ return h('div',{},h('div',{style:'font-size:10.5px;color:var(--ink-faint);display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px'},...Object.entries(TBL_STATUS_ICON).map(([k,ic])=>h('span',{},ic+' '+TBL_STATUS_LABEL[k]))),
+ ...secs.map(sec=>h('div',{},h('div',{style:"font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-faint);margin:10px 0 4px"},sec),
   h('div',{class:'tbl-grid'},...L('table').filter(t=>(t.sec||'Main')==sec).sort((a,b)=>a.name.localeCompare(b.name,0,{numeric:true})).map(t=>{const info=tableInfo(t.id);
    if(info.st=='dirty')return h('div',{class:'tbl-tile st-dirty'},h('b',{},t.name),h('div',{style:'font-size:11px'},TBL_STATUS_ICON.dirty+' '+TBL_STATUS_LABEL.dirty),h('button',{style:'font-size:10.5px;margin-top:4px;padding:3px 8px',onclick:async()=>{await save('table',{...t,cleaned:true},t.id);render()}},'Mark cleaned'));
    const body=info.st=='running'
@@ -445,7 +446,7 @@ async function doReturn(o,idx,qtyv,type,give){if(!can('m'))return alert('Manager
   c.exchanges=(c.exchanges||[]).concat({lineIdx:idx,qty:qtyv,type,amt,give:give?{...give,qty:qtyv,amt:givenAmt}:null,diff:r2(givenAmt-amt),reason,by:S.user.email||S.user.id,at:now()});
   await save('order',c,c.id);render();
   alert(type=='refund'?('Refund due: '+inr(amt)):(givenAmt>amt?'Collect the difference: '+inr(r2(givenAmt-amt)):givenAmt<amt?'Refund the difference: '+inr(r2(amt-givenAmt)):'Even exchange, nothing owed either way.'))})}
-const VEG_DOT={veg:'🟢',nonveg:'🔴',egg:'🟡'};
+const VEG_DOT={veg:'🟢',nonveg:'🔴',egg:'🟡'},VEG_COLOR={veg:'#2e7d32',nonveg:'#b3261e',egg:'#c98a00'};
 V.pos=()=>{const isR=isRetail(),o=S.cur||(S.cur=newOrder()),cats=effCats().sort((a,b)=>a.n-b.n),q=S.q.toLowerCase(),t=tot(o);if(!cats.some(c=>c.id==S.cat))S.cat=cats[0]&&cats[0].id;
  const vf=S.vf||'all';
  const its=effItems().filter(i=>!itemOff(i)&&(q?i.name.toLowerCase().includes(q):i.cat==S.cat)&&(isR||vf=='all'||(i.veg||'veg')==vf)).sort((a,b)=>a.name.localeCompare(b.name));
@@ -457,9 +458,10 @@ V.pos=()=>{const isR=isRetail(),o=S.cur||(S.cur=newOrder()),cats=effCats().sort(
   (!isR&&o.type=='Dine-in'&&isRestaurant())?floorPlan(o):null,
   h('div',{class:'row',style:'justify-content:flex-start'},...cats.map(c=>h('button',{class:c.id==S.cat&&!q?'on':'',onclick:()=>{S.cat=c.id;S.q='';render()}},c.name))),
   isR?null:h('div',{class:'row',style:'justify-content:flex-start'},...[['all','All'],['veg','🟢 Veg'],['nonveg','🔴 Non-veg']].map(([v,l])=>h('button',{class:vf==v?'on':'',onclick:()=>{S.vf=v;render()}},l))),
-  h('div',{class:'items'},...its.map(i=>h('button',{onclick:()=>isR&&i.variants&&i.variants.length?variant(i):(i.sizes&&i.sizes.length?size(i):pickMods(i,'',i.price))},
+  isR?null:h('div',{style:'font-size:10.5px;color:var(--ink-faint);margin:-2px 0 4px'},'Left edge colour: green = veg, red = non-veg, amber = contains egg'),
+  h('div',{class:'items'},...its.map(i=>h('button',{style:isR?null:'border-left:4px solid '+VEG_COLOR[i.veg||'veg'],onclick:()=>isR&&i.variants&&i.variants.length?variant(i):(i.sizes&&i.sizes.length?size(i):pickMods(i,'',i.price))},
    i.img?h('img',{src:i.img,style:'width:100%;height:60px;object-fit:cover;border-radius:8px;margin-bottom:4px'}):null,
-   h('b',{},(isR?'':VEG_DOT[i.veg||'veg']+' ')+i.name+(i.combo?' 🎁':'')),h('br'),isR?inr(i.price)+' · '+variantQty(i)+' in stock':(i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price))))),its.length?null:h('p',{},cats.length?'No items here.':'Add categories and items in the Menu tab.')),
+   h('b',{},i.name+(i.combo?' 🎁':'')),h('br'),isR?inr(i.price)+' · '+variantQty(i)+' in stock':(i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price))))),its.length?null:h('p',{},cats.length?'No items here.':'Add categories and items in the Menu tab.')),
  h('div',{class:'card'},h('h3',{},o.no?'Order '+o.no:'New order'),...o.lines.map(l=>h('div',{class:'row'},h('span',{},l.name+(l.size?' ('+l.size+')':'')+(l.note?' — '+l.note:'')),h('span',{},h('button',{onclick:()=>qty(l,-1)},'−'),' '+l.qty+' ',h('button',{onclick:()=>qty(l,1)},'+')),h('b',{},inr(l.price*l.qty)))),
   o.lines.length?null:h('p',{},'Tap an item to add it.'),
   h('div',{class:'row'},h('input',{placeholder:'Customer name *',style:'width:48%',value:o.cust.name||'',oninput:e=>o.cust.name=e.target.value}),h('input',{placeholder:'Phone *',style:'width:48%',value:o.cust.phone||'',oninput:e=>{o.cust.phone=e.target.value;clearTimeout(S.phoneT);S.phoneT=setTimeout(render,700)}})),
