@@ -52,21 +52,9 @@ input:disabled+.slider{opacity:.4;cursor:default}
 .acct-nav-btn{background:none;border:none;width:100%;cursor:pointer;font-family:inherit}
 
 #sidebarDrawer{background:rgba(20,20,22,.78);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%)}
-.ios-menu{gap:22px;margin-top:8px}
-.ios-menu-group{display:flex;flex-direction:column;gap:1px;background:rgba(255,255,255,.06);border-radius:16px;overflow:hidden}
-.ios-menu .nav-link{
-  font-family:'Inter',sans-serif;font-weight:600;font-size:15px;letter-spacing:0;
-  display:flex;align-items:center;gap:12px;text-align:left;
-  padding:13px 14px;border-bottom:none;border-radius:0;
-  color:rgba(255,255,255,.68);background:none;
-  transition:background .15s ease,color .15s ease;
-}
-.ios-menu .nav-link:hover{color:#fff;background:rgba(255,255,255,.06);transform:none}
-.ios-menu .nav-link.active{color:#fff;background:var(--accent);box-shadow:none;padding-right:14px}
-.ios-menu-icon{flex-shrink:0;opacity:.85}
-.ios-menu .nav-link span:not(.ios-menu-icon){flex:1}
-#notifBadge{flex:none!important;font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,.55)}
-.ios-menu .nav-link.active #notifBadge{color:rgba(255,255,255,.85)}
+#notifBadge{font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,.4)}
+.nav-link.active #notifBadge{color:rgba(255,255,255,.7)}
+.sidebar-nav .nav-divider{border-top:1px solid rgba(255,255,255,.15);margin:14px 0 4px}
 </style>
 </head>
 <body>
@@ -90,19 +78,16 @@ input:disabled+.slider{opacity:.4;cursor:default}
         <a href="signup.html" class="drawer-icon-link" aria-label="Account"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></a>
       </div>
     </div>
-    <nav class="sidebar-nav ios-menu" id="acctNav" aria-label="Account sections" style="display:none">
-      <div class="ios-menu-group">
-        <button class="nav-link acct-nav-btn active" data-tab="account"><svg class="ios-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg><span>Account</span></button>
-        <button class="nav-link acct-nav-btn" data-tab="services"><svg class="ios-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Services</span></button>
-        <button class="nav-link acct-nav-btn" data-tab="staff" id="tabStaffBtn" style="display:none"><svg class="ios-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20v-1a6.5 6.5 0 0 1 13 0v1"/><path d="M16.5 5a3.2 3.2 0 0 1 0 6.2M21 20v-1a5.6 5.6 0 0 0-4-5.4"/></svg><span>Staff</span></button>
-        <button class="nav-link acct-nav-btn" data-tab="roles" id="tabRolesBtn" style="display:none"><svg class="ios-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg><span>Roles</span></button>
-        <button class="nav-link acct-nav-btn" data-tab="notifications"><svg class="ios-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 10a6 6 0 0 1 12 0c0 3 1 4.5 2 6H4c1-1.5 2-3 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span>Notifications</span><span id="notifBadge"></span></button>
-      </div>
-      <div class="ios-menu-group">
-        <a href="#" id="openPosLink" target="_blank" rel="noopener" class="nav-link"><svg class="ios-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 4h6v6M20 4 11 13"/><path d="M20 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h4"/></svg><span>Open POS system</span></a>
-        <a href="#" id="openPayrollLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><svg class="ios-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M8 14h.01M12 14h4"/></svg><span>Open Payroll</span></a>
-        <a href="#" id="openBuilderLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><svg class="ios-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 9v12"/></svg><span>Open Website Builder</span></a>
-      </div>
+    <nav class="sidebar-nav" id="acctNav" aria-label="Account sections" style="display:none">
+      <button class="nav-link acct-nav-btn active" data-tab="account"><span>Account</span></button>
+      <button class="nav-link acct-nav-btn" data-tab="services"><span>Services</span></button>
+      <button class="nav-link acct-nav-btn" data-tab="staff" id="tabStaffBtn" style="display:none"><span>Staff</span></button>
+      <button class="nav-link acct-nav-btn" data-tab="roles" id="tabRolesBtn" style="display:none"><span>Roles</span></button>
+      <button class="nav-link acct-nav-btn" data-tab="notifications"><span>Notifications</span><span id="notifBadge"></span></button>
+      <div class="nav-divider"></div>
+      <a href="#" id="openPosLink" target="_blank" rel="noopener" class="nav-link"><span>Open POS system</span></a>
+      <a href="#" id="openPayrollLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><span>Open Payroll</span></a>
+      <a href="#" id="openBuilderLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><span>Open Website Builder</span></a>
     </nav>
     <div class="sidebar-foot">
       <button class="btn btn-ghost" id="signOutBtn" style="width:100%;justify-content:center">Sign out</button>
