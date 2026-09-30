@@ -249,7 +249,14 @@ function modal(...k){const o=h('div',{class:'ov',onclick:e=>e.target==o&&o.remov
 function validCoupon(code){const c=L('coupon').find(x=>x.code==code.trim().toUpperCase());if(!c)return null;if(c.expiry&&c.expiry<today())return null;if(c.maxUses){const used=L('order').filter(o=>(o.status=='paid'||o.status=='due')&&o.coupon==c.code).length;if(used>=c.maxUses)return null}return c}
 function pickReason(cb){const reasons=L('reason');if(!reasons.length){const r=prompt('Reason');if(r)cb(r.trim());return}
  const x=modal(h('h3',{},'Select a reason'),...reasons.map(rn=>h('button',{onclick:()=>{x();cb(rn.name)}},rn.name)),h('button',{onclick:()=>{x();const r=prompt('Other reason');if(r)cb(r.trim())}},'Other…'),h('button',{class:'warn',onclick:()=>x()},'Cancel'))}
-function addLine(i,sz,p,note,variant){const l=!note&&S.cur.lines.find(x=>x.id==i.id&&x.size==sz&&x.price==p&&!x.note&&(x.variant?.color||'')==(variant?.color||'')&&(x.variant?.size||'')==(variant?.size||''));l?l.qty++:S.cur.lines.push({id:i.id,name:i.name,size:sz,price:p,qty:1,sent:0,st:i.st||'Kitchen',note,variant});render()}
+function addLine(i,sz,p,note,variant){
+ // Heads-up only, not a block: a dish cancelled after it was already sent to
+ // the kitchen (see qty()'s dedu-and-waste branch below) may still be
+ // physically sitting in the kitchen -- worth checking before cooking a
+ // fresh one for a new order of the same item within the next 15 minutes.
+ const recentCancel=L('waste').find(w=>w.itemId==i.id&&w.at&&(Date.now()-new Date(w.at))<15*60000);
+ if(recentCancel&&!(S._dupWarned=S._dupWarned||{})[i.id]){S._dupWarned[i.id]=true;alert('Heads up: "'+i.name+'" was cancelled from another order '+Math.max(1,Math.round((Date.now()-new Date(recentCancel.at))/60000))+'m ago'+(recentCancel.reason?' ('+recentCancel.reason+')':'')+'. Check with the kitchen before cooking a new one -- it may still be usable.')}
+ const l=!note&&S.cur.lines.find(x=>x.id==i.id&&x.size==sz&&x.price==p&&!x.note&&(x.variant?.color||'')==(variant?.color||'')&&(x.variant?.size||'')==(variant?.size||''));l?l.qty++:S.cur.lines.push({id:i.id,name:i.name,size:sz,price:p,qty:1,sent:0,st:i.st||'Kitchen',note,variant});render()}
 function variant(i){const x=modal(h('h3',{},i.name),...(i.variants||[]).map(v=>h('button',{onclick:()=>{if(v.qty<=0&&!confirm('This variant shows 0 in stock. Add anyway?'))return;x();addLine(i,v.size+(v.color?' / '+v.color:''),i.price,undefined,{size:v.size,color:v.color})}},v.size+(v.color?' / '+v.color:'')+' — '+(v.qty>0?v.qty+' in stock':'Out of stock'))))}
 function pickMods(i,sz,p){const mods=(i.mods||[]).map(m=>{const[n,v]=m.split(':');return{n:n.trim(),v:+v||0}});if(!mods.length)return addLine(i,sz,p);
  const boxes=mods.map(m=>({m,cb:h('input',{type:'checkbox'})}));
@@ -276,10 +283,24 @@ addEventListener('keydown',e=>{
   else it.sizes&&it.sizes.length?size(it):pickMods(it,'',it.price);
  }else if(e.key.length==1)scanBuf+=e.key;
 });
+// Kitchen already cooked this portion before it got cancelled -- deduct
+// its recipe ingredients now (they were consumed, even though the order
+// line itself never reaches pay()'s dedu() since it's removed first) and
+// log the loss as wastage, tagged with itemId so addLine()'s duplicate-
+// order check can flag a fresh order of the same item within 15 minutes.
+async function deduAndWasteLine(l,qty,reason){
+ const it=R[l.id];
+ if(it&&it.data.rec){
+  for(const p of it.data.rec.split(',')){
+   const[n,q]=p.split(':'),g=L('ing').find(x=>x.name.toLowerCase()==n.trim().toLowerCase());
+   if(g&&+q){const used=+q*qty;g.qty=r2(g.qty-used);g.usage=(g.usage||[]).concat({q:used,d:today(),at:now()}).slice(-200);await save('ing',g,g.id);await save('waste',{ing:g.name,q:used,d:today(),reason:'Cancelled after KOT — '+l.name,itemId:l.id,at:now()})}
+  }
+ }else await save('waste',{ing:l.name,q:qty,d:today(),reason,itemId:l.id,at:now()});
+}
 function qty(l,d){const o=S.cur;
  if(d<0&&l.qty-1<l.sent){
   if(!can('m'))return alert('Already sent to kitchen. Ask a manager to remove it.');
-  return pickReason(reason=>{save('voidlog',{order:o.id,no:o.no,item:l.name,reason,by:S.user.email||S.user.id,at:now()});l.qty+=d;l.sent=Math.min(l.sent,l.qty);if(l.qty<=0)o.lines=o.lines.filter(x=>x!==l);render()});
+  return pickReason(reason=>{save('voidlog',{order:o.id,no:o.no,item:l.name,reason,by:S.user.email||S.user.id,at:now()});deduAndWasteLine(l,-d,reason);l.qty+=d;l.sent=Math.min(l.sent,l.qty);if(l.qty<=0)o.lines=o.lines.filter(x=>x!==l);render()});
  }
  l.qty+=d;l.sent=Math.min(l.sent,l.qty);if(l.qty<=0)o.lines=o.lines.filter(x=>x!==l);render();
 }
