@@ -43,9 +43,6 @@ input:disabled+.slider{opacity:.4;cursor:default}
 .section-pane.on{display:block}
 .pos-link-box{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--bg-raised);border:2px solid var(--ink);border-radius:14px;padding:12px 14px;margin-top:8px}
 .pos-link-box code{font-family:var(--font-mono);font-size:12px;word-break:break-all}
-.service-group{margin-top:18px}
-.service-group:first-of-type{margin-top:14px}
-.service-group-label{font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:2px}
 
 #menuToggle{padding:9px;width:40px;height:40px;justify-content:center}
 #menuToggle svg{display:block}
@@ -132,7 +129,6 @@ const sb = supabase.createClient(CFG.url, CFG.key);
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const PERM_KEYS = [['pos','Sell (POS)'],['orders','Orders'],['kitchen','Kitchen Display'],['reports','Reports'],['staff','Staff (view)'],['inventory','Stock'],['crm','Customers'],['menu','Menu'],['settings','Business Settings'],['billing','Billing / Refunds']];
-const FEATURE_LABEL = { pos:'POS', crm:'CRM', billing:'Billing & Invoicing', inventory:'Inventory', self_order:'QR Ordering', kds:'Kitchen display', booking:'Bookings', reports:'Reports', expenses:'Expenses', payroll:'Payroll', website_builder:'Website Builder' };
 
 let DASH = null, ROLES = [], STAFF = [], NOTIFS = [];
 
@@ -255,7 +251,7 @@ function renderAccount() {
 // this rendered before didn't match that mental model at all -- group
 // it the same way the products actually get sold.
 const SERVICE_GROUPS = [
-  ['POS & Operations', ['pos', 'self_order', 'inventory', 'crm', 'kds', 'billing', 'reports', 'booking', 'expenses', 'membership', 'helpdesk', 'tasks', 'purchases']],
+  ['POS', ['pos', 'self_order', 'inventory', 'crm', 'kds', 'billing', 'reports', 'booking', 'expenses', 'membership', 'helpdesk', 'tasks', 'purchases']],
   ['Payroll', ['payroll']],
   ['Website Builder', ['website_builder']],
 ];
@@ -283,24 +279,29 @@ function renderServices() {
       ${keys.length ? SERVICE_GROUPS.map(([label, groupKeys]) => {
         const rows = groupKeys.filter((k) => keys.includes(k));
         if (!rows.length) return '';
-        return `<div class="service-group">
-          <div class="service-group-label">${esc(label)}</div>
-          ${rows.map((k) => {
-            const on = enabled[k] !== false;
-            return `<div class="acct-row">
-              <span>${esc(FEATURE_LABEL[k] || k)}</span>
-              <label class="switch"><input type="checkbox" data-feat="${esc(k)}" ${on ? 'checked' : ''} ${isOwner ? '' : 'disabled'}><span class="slider"></span></label>
-            </div>`;
-          }).join('')}
+        // One switch per product line, not per underlying flag -- flipping
+        // "POS" off disables every sub-feature (CRM/billing/inventory/QR/
+        // KDS/reports/etc.) at once for this tenant. The individual flags
+        // still exist and still gate independently everywhere in the app
+        // (featureOn() per key) -- this is just the one control surface an
+        // owner gets; a client needing just one piece split out is an
+        // admin.html job (the per-feature checkboxes there still exist).
+        const allOn = rows.every((k) => enabled[k] !== false);
+        return `<div class="acct-row">
+          <span>${esc(label)}</span>
+          <label class="switch"><input type="checkbox" data-feat-group="${esc(rows.join(','))}" ${allOn ? 'checked' : ''} ${isOwner ? '' : 'disabled'}><span class="slider"></span></label>
         </div>`;
       }).join('') : '<p class="muted">No services on your subscription yet — contact AUZslab.</p>'}
       <div id="svcMsg"></div>
     </div>
   `;
   if (isOwner) {
-    document.querySelectorAll('[data-feat]').forEach((cb) => {
+    document.querySelectorAll('[data-feat-group]').forEach((cb) => {
       cb.onchange = async () => {
-        const map = {}; document.querySelectorAll('[data-feat]').forEach((x) => { map[x.dataset.feat] = x.checked; });
+        const map = {};
+        document.querySelectorAll('[data-feat-group]').forEach((x) => {
+          x.dataset.featGroup.split(',').forEach((k) => { map[k] = x.checked; });
+        });
         const msg = $('#svcMsg');
         const { error } = await sb.rpc('update_my_features', { p_enabled: map });
         if (error) { msg.className = 'err'; msg.textContent = error.message; return; }
