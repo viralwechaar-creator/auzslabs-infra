@@ -6,6 +6,13 @@
 # The root domain is the AUZlabs marketing site.
 {$DOMAIN} {
     root * /srv/site
+    # iOS Safari (especially a Home Screen web-clip) has been seen serving
+    # a stale cached copy of a page's own HTML even after a fresh deploy --
+    # every reported "still showing the old header" turned out to be this,
+    # not the deploy itself. no-cache forces a revalidation request every
+    # time instead of trusting the local cache blindly (same reasoning as
+    # the /sw.js rule below already uses).
+    header /*.html Cache-Control "no-cache"
     file_server
 }
 
@@ -32,6 +39,10 @@
     root * /srv/app
     # a stale cached service worker can pin clients to old code indefinitely
     header /sw.js Cache-Control "no-cache"
+    # same reasoning, for the actual app-shell HTML itself (index.html,
+    # payroll.html, builder.html, site.html, ...) -- see the root domain
+    # block above for the full story on why this exists.
+    header /*.html Cache-Control "no-cache"
     file_server
     try_files {path} /index.html
 }
