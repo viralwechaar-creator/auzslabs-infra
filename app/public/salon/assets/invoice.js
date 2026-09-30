@@ -6,6 +6,7 @@
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || 'Invoice not found');
     const { invoice: v, salon: s } = d;
+    applyBrand(s);
     document.title = 'Invoice ' + v.no + ', ' + s.salonName;
     const disc = v.discountAmt > 0 ? (v.discount.type === 'percent' ? `Discount (${v.discount.value}%)` : 'Discount') : null;
     sheet.replaceChildren(

@@ -9,6 +9,7 @@
     return;
   }
   const { settings: S, content: C } = site;
+  applyBrand(S);
   const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text || ''; };
 
   /* ---------- header + full-screen nav ---------- */
@@ -100,7 +101,8 @@
     heroMedia.replaceChildren(h('div', { class: 'hero-media-fallback' },
       h('img', { src: S.heroLogo, alt: '', width: 900, height: 900, fetchpriority: 'high', decoding: 'async' })));
   } else {
-    heroMedia.replaceChildren(h('img', { src: '/salon/assets/hero-photo.jpg', alt: '', fetchpriority: 'high', decoding: 'async' }));
+    const heroSrc = /^(\/uploads\/|\/salon\/assets\/)[\w./-]+$/.test(S.heroPhoto || '') ? S.heroPhoto : '/salon/assets/hero-photo.jpg';
+    heroMedia.replaceChildren(h('img', { src: heroSrc, alt: '', fetchpriority: 'high', decoding: 'async' }));
   }
 
   const heroTel = $('#heroTel');

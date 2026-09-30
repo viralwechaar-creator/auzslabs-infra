@@ -1,6 +1,7 @@
 (function () {
   'use strict';
-  let D = null, current = 'dashboard', B = null;
+  let D = null, current = 'dashboard', B = null, ME = { role: 'owner' };
+  const isOwner = () => ME.role === 'owner';
   const view = () => $('#view');
 
   /* ---------- plumbing ---------- */
@@ -47,32 +48,51 @@
   function showLogin() { $('#app').hidden = true; $('#login').hidden = false; $('#pw').focus(); }
   $('#loginForm').addEventListener('submit', async e => {
     e.preventDefault(); $('#loginError').textContent = '';
-    try { await api('POST', '/api/admin/login', { password: $('#pw').value }); $('#pw').value = ''; await boot(); }
+    try {
+      const body = { password: $('#pw').value };
+      if (!$('#phoneField').hidden) body.phone = $('#staffPhone').value;
+      await api('POST', '/api/admin/login', body); $('#pw').value = ''; await boot();
+    }
     catch (ex) { $('#loginError').textContent = ex.message; }
+  });
+  $('#staffToggle').addEventListener('click', () => {
+    const staff = $('#phoneField').hidden; $('#phoneField').hidden = !staff;
+    $('#staffToggle').textContent = staff ? 'Owner sign in' : 'Staff sign in';
+    $('#loginTitle').textContent = staff ? 'Staff sign in' : 'Admin';
+    $('#pwLabel').textContent = staff ? 'Password' : 'Password';
+    (staff ? $('#staffPhone') : $('#pw')).focus();
   });
   $('#logout').addEventListener('click', async () => { await api('POST', '/api/admin/logout', {}).catch(() => {}); D = null; showLogin(); });
 
   async function boot() {
     const me = await fetch('/api/admin/me').then(r => r.json()).catch(() => ({}));
     if (!me.admin) return showLogin();
+    ME = me;
     await load();
+    $('#sideName').textContent = D.settings.salonName;
+    $('.a-side-profile-text small').textContent = isOwner() ? 'Admin console' : (ME.name || 'Staff');
+    document.title = (isOwner() ? 'Admin, ' : 'Staff, ') + D.settings.salonName;
+    applyBrand(D.settings);
     $('#login').hidden = true; $('#app').hidden = false;
-    go(location.hash.slice(1) in VIEWS ? location.hash.slice(1) : 'dashboard');
+    go(location.hash.slice(1) in VIEWS && allowed(location.hash.slice(1)) ? location.hash.slice(1) : 'dashboard');
   }
 
-  const TITLES = { dashboard: 'Today', bookings: 'Bookings', billing: 'Billing', clients: 'Clients', menu: 'Menu and prices', stylists: 'Hairstylists', gallery: 'Gallery', content: 'Website text', settings: 'Settings', expenses: 'Expenses', analytics: 'Analytics' };
-  const ICONS = { dashboard: 'grid', bookings: 'calendar', billing: 'receipt', clients: 'users', menu: 'list', stylists: 'cut', gallery: 'pics', content: 'doc', settings: 'gear', expenses: 'wallet', analytics: 'chart' };
+  const TITLES = { dashboard: 'Today', bookings: 'Bookings', billing: 'Billing', clients: 'Clients', menu: 'Menu and prices', stylists: 'Hairstylists', gallery: 'Gallery', content: 'Website text', settings: 'Settings', expenses: 'Expenses', analytics: 'Analytics', staff: 'Staff' };
+  const ICONS = { dashboard: 'grid', bookings: 'calendar', billing: 'receipt', clients: 'users', menu: 'list', stylists: 'cut', gallery: 'pics', content: 'doc', settings: 'gear', expenses: 'wallet', analytics: 'chart', staff: 'chair' };
   const PRIMARY = ['dashboard', 'bookings', 'billing', 'clients'];
-  const SECONDARY = Object.keys(TITLES).filter(k => !PRIMARY.includes(k));
+  /* Staff logins see exactly the PRIMARY four. This is only the UI half: the API
+     refuses every other endpoint for a staff session (server/src/salon.js). */
+  const allowed = k => isOwner() || PRIMARY.includes(k);
+  const SECONDARY = () => Object.keys(TITLES).filter(k => !PRIMARY.includes(k) && allowed(k));
 
   function renderNav() {
     const pending = D.bookings.filter(b => b.status === 'pending').length;
-    const items = Object.entries(TITLES);
+    const items = Object.entries(TITLES).filter(([k]) => allowed(k));
     $('#rail').replaceChildren(...items.map(([k, t]) => h('button', { type: 'button', title: t, 'aria-label': t, 'aria-current': k === current ? 'page' : null, onclick: () => go(k) }, icon(ICONS[k]))));
     $('#sideNav').replaceChildren(...items.map(([k, t]) => h('button', { type: 'button', 'aria-current': k === current ? 'page' : null, onclick: () => go(k) },
       icon(ICONS[k]), h('span', { class: 'a-nav-label', text: t }), k === 'bookings' && pending ? h('span', { class: 'badge', text: pending }) : null)));
 
-    const inMore = SECONDARY.includes(current);
+    const inMore = SECONDARY().includes(current);
     $('#tabbar').replaceChildren(
       ...PRIMARY.map(k => h('button', { type: 'button', 'aria-current': k === current ? 'page' : null, onclick: () => go(k) },
         icon(ICONS[k]), h('span', { text: TITLES[k] }), k === 'bookings' && pending ? h('span', { class: 'a-tab-dot' }) : null)),
@@ -85,7 +105,7 @@
       h('button', { type: 'button', class: 'a-dialog-close', 'aria-label': 'Close', onclick: () => d.close() }, icon('close')),
       h('h2', { text: 'More' }),
       h('div', { class: 'a-more-list' },
-        SECONDARY.map(k => h('button', { type: 'button', 'aria-current': k === current ? 'page' : null, onclick: () => { d.close(); go(k); } },
+        SECONDARY().map(k => h('button', { type: 'button', 'aria-current': k === current ? 'page' : null, onclick: () => { d.close(); go(k); } },
           icon(ICONS[k]), TITLES[k], k === 'bookings' && pending ? h('span', { class: 'badge', text: pending }) : null)),
         h('div', { class: 'a-more-sep' }),
         h('a', { href: '/salon/', target: '_blank', rel: 'noopener' }, icon('doc'), 'View website'),
@@ -95,6 +115,7 @@
     document.body.append(d); d.showModal();
   }
   function go(v) {
+    if (!allowed(v)) v = 'dashboard';
     current = v; location.hash = v;
     renderNav(); $('#viewTitle').textContent = TITLES[v]; setActions();
     view().replaceChildren(); VIEWS[v](); window.scrollTo(0, 0);
@@ -138,7 +159,7 @@
         h('td', { class: 'a-td-actions' }, h('div', { class: 'a-row-actions' },
           waBtn('WhatsApp', b.phone, bookingMessage(b)),
           btn('Create bill', () => { B = billFromBooking(b); go('billing'); }, 'btn-sm btn-alt'),
-          btn('Delete', async () => { if (await confirmBox('Delete booking ' + b.ref + ' for ' + b.name + '?', 'Delete')) { try { await api('DELETE', '/api/admin/bookings/' + b.id); await load(); rerender(); toast('Booking deleted'); } catch (ex) { fail(ex); } } }, 'btn-sm btn-danger')))))))
+          !isOwner() ? null : btn('Delete', async () => { if (await confirmBox('Delete booking ' + b.ref + ' for ' + b.name + '?', 'Delete')) { try { await api('DELETE', '/api/admin/bookings/' + b.id); await load(); rerender(); toast('Booking deleted'); } catch (ex) { fail(ex); } } }, 'btn-sm btn-danger')))))))
     );
   }
 
@@ -185,21 +206,104 @@
     view().replaceChildren(seg, box);
   }
 
+  /* ---------- clock in / out (staff, feeds AUZslab Payroll attendance) ---------- */
+  function punchCard() {
+    if (isOwner() || !ME.payroll) return null;
+    const box = h('div', { class: 'a-card', style: 'margin-bottom:20px' });
+    const clock = iso => new Date(iso).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
+    const dur = (a, b) => { const m = Math.round((new Date(b) - new Date(a)) / 60000); return Math.floor(m / 60) + 'h ' + String(m % 60).padStart(2, '0') + 'm'; };
+    async function draw() {
+      let st;
+      try { st = await api('GET', '/api/admin/punch'); } catch (ex) { box.replaceChildren(h('p', { class: 'muted', text: ex.message })); return; }
+      const done = (st.recent || []).filter(r => r.out);
+      box.replaceChildren(
+        h('div', { style: 'display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap' },
+          h('div', {}, h('b', { text: st.open ? 'You are clocked in' : 'Not clocked in' }), h('br'),
+            h('span', { class: 'muted', text: st.open ? 'Since ' + clock(st.in) : 'Clock in when you start. Your hours go straight to payroll.' })),
+          btn(st.open ? 'Clock out' : 'Clock in', async () => {
+            try { const r = await api('POST', '/api/admin/punch', {}); toast(r.status === 'in' ? 'Clocked in' : 'Clocked out'); draw(); } catch (ex) { fail(ex); }
+          })),
+        done.length ? h('div', { class: 'a-note', style: 'margin-top:12px' }, done.slice(0, 5).map(r =>
+          h('div', { text: fmtDate(r.date, { weekday: 'short', day: 'numeric', month: 'short' }) + ': ' + clock(r.in) + ' to ' + clock(r.out) + ' (' + dur(r.in, r.out) + ')' }))) : null);
+    }
+    draw();
+    return box;
+  }
+
+  /* ---------- staff accounts (owner) ---------- */
+  function staffDialog(employees) {
+    const F = { name: '', phone: '', designation: 'Stylist', password: '', employeeId: '' };
+    const emp = h('select', { id: 'stEmp', onchange: e => { F.employeeId = e.target.value; F.payroll = e.target.value !== 'none'; if (F.employeeId === 'none' || F.employeeId === 'new') F.employeeId = ''; } },
+      h('option', { value: 'new', text: 'Add to payroll as a new employee' }),
+      employees.map(x => h('option', { value: x.id, text: 'Link to existing payroll employee: ' + x.name })),
+      h('option', { value: 'none', text: 'Do not add to payroll' }));
+    const body = h('div', {},
+      fld('Name', inp(F, 'name', { id: 'stName' }), 'stName'),
+      fld('Phone number (their sign-in)', inp(F, 'phone', { id: 'stPhone', type: 'tel' }), 'stPhone'),
+      fld('Role', inp(F, 'designation', { id: 'stRole', placeholder: 'Stylist, Receptionist...' }), 'stRole'),
+      fld('Password (6 or more characters)', inp(F, 'password', { id: 'stPw', type: 'text', autocomplete: 'off' }), 'stPw'),
+      fld('Payroll', emp, 'stEmp'),
+      h('p', { class: 'a-note', text: 'Share the phone number and password with them. They sign in at this same page using "Staff sign in".' }));
+    modal('Add staff', body, [{ label: 'Cancel', cls: 'btn-alt', value: 'no' }, { label: 'Add staff', fn: async () => {
+      try { await api('POST', '/api/admin/staff', { ...F, payroll: F.payroll !== false }); toast('Staff added'); viewStaff(); } catch (ex) { fail(ex); return false; }
+    } }]);
+  }
+  async function viewStaff() {
+    setActions(btn('Add staff', async () => { try { staffDialog((await api('GET', '/api/admin/staff')).employees); } catch (ex) { fail(ex); } }));
+    view().replaceChildren(h('p', { class: 'muted', text: 'Loading...' }));
+    let data;
+    try { data = await api('GET', '/api/admin/staff'); } catch (ex) { fail(ex); return; }
+    if (current !== 'staff') return;
+    const patch = async (st, body, msg) => { try { await api('PATCH', '/api/admin/staff/' + st.id, body); toast(msg); viewStaff(); } catch (ex) { fail(ex); } };
+    const list = data.staff.length
+      ? h('div', { class: 'a-scroll' }, h('table', { class: 'a-table' },
+        h('thead', {}, h('tr', {}, ['Staff', 'Phone', 'Payroll', 'Bills', ''].map(t => h('th', { text: t })))),
+        h('tbody', {}, data.staff.map(st => h('tr', { style: st.active ? '' : 'opacity:.55' },
+          h('td', { 'data-label': 'Staff' }, h('b', { text: st.name }), h('br'), h('span', { class: 'muted', text: st.designation + (st.active ? '' : ' (off)') })),
+          h('td', { 'data-label': 'Phone', text: st.phone }),
+          h('td', { 'data-label': 'Payroll', text: st.employeeId ? 'Linked' : 'Not linked' }),
+          h('td', { 'data-label': 'Bills', text: st.bills }),
+          h('td', { class: 'a-td-actions' }, h('div', { class: 'a-row-actions' },
+            btn('New password', () => {
+              const F = { password: '' };
+              modal('New password for ' + st.name, h('div', {}, fld('New password (6 or more characters)', inp(F, 'password', { id: 'npw', autocomplete: 'off' }), 'npw')),
+                [{ label: 'Cancel', cls: 'btn-alt', value: 'no' }, { label: 'Save', fn: async () => { try { await api('PATCH', '/api/admin/staff/' + st.id, { password: F.password }); toast('Password changed'); } catch (ex) { fail(ex); return false; } } }]);
+            }, 'btn-sm btn-alt'),
+            btn(st.active ? 'Turn off' : 'Turn on', () => patch(st, { active: !st.active }, st.active ? 'Sign-in turned off' : 'Sign-in turned on'), 'btn-sm btn-alt'),
+            btn('Remove', async () => { if (await confirmBox('Remove ' + st.name + '? They can no longer sign in. Their payroll record stays.', 'Remove')) { try { await api('DELETE', '/api/admin/staff/' + st.id); toast('Staff removed'); viewStaff(); } catch (ex) { fail(ex); } } }, 'btn-sm btn-danger'))))))))
+      : emptyNote('No staff logins yet. Add one so your team can make bills and manage bookings.', 'chair');
+    view().replaceChildren(
+      h('div', { class: 'a-card', style: 'max-width:760px;margin-bottom:24px' },
+        h('p', { text: 'Staff sign in with their phone number. They can see Today, Bookings, Billing and Clients only: they can take bookings, make bills and send them on WhatsApp, but cannot change the menu, prices, website, gallery, settings or expenses, void bills, or see other people\'s bills.' }),
+        h('p', { class: 'a-note', style: 'margin-top:8px', text: 'Each staff member is linked to AUZslab Payroll. Their clock in and out on the Today tab becomes their attendance there; set their salary under Payroll, Employees.' }),
+        h('a', { class: 'btn btn-sm btn-alt', style: 'margin-top:10px', href: '/payroll.html', target: '_blank', rel: 'noopener' }, 'Open Payroll')),
+      list);
+  }
+
+  function myPasswordDialog() {
+    const P = { current: '', next: '' };
+    modal('Change my password', h('div', {},
+      fld('Current password', inp(P, 'current', { id: 'mpCur', type: 'password', autocomplete: 'current-password' }), 'mpCur'),
+      fld('New password (6 or more characters)', inp(P, 'next', { id: 'mpNew', type: 'password', autocomplete: 'new-password' }), 'mpNew')),
+      [{ label: 'Cancel', cls: 'btn-alt', value: 'no' }, { label: 'Change password', fn: async () => { try { await api('POST', '/api/admin/password', P); toast('Password changed'); } catch (ex) { fail(ex); return false; } } }]);
+  }
+
   /* ---------- dashboard ---------- */
   function viewDashboard() {
-    setActions(btn('New bill', () => { B = newBill(); go('billing'); }), btn('Add booking', addBookingDialog, 'btn-alt'));
+    setActions(btn('New bill', () => { B = newBill(); go('billing'); }), btn('Add booking', addBookingDialog, 'btn-alt'), isOwner() ? null : btn('My password', myPasswordDialog, 'btn-alt'));
     const t = D.today, live = D.bookings.filter(b => b.status !== 'cancelled');
     const invM = D.invoices.filter(i => !i.void && i.date.startsWith(t.slice(0, 7)));
     const stats = [[live.filter(b => b.date === t).length, 'Bookings today'], [D.bookings.filter(b => b.status === 'pending').length, 'Waiting for confirmation'],
-      [invM.length, 'Bills this month'], [inr(invM.reduce((a, i) => a + i.total, 0)), 'Billed this month']];
+      [invM.length, isOwner() ? 'Bills this month' : 'Your bills this month'], [inr(invM.reduce((a, i) => a + i.total, 0)), isOwner() ? 'Billed this month' : 'You billed this month']];
     const up = live.filter(b => b.date >= t && b.status !== 'completed').sort(cmpWhen).slice(0, 12);
     view().replaceChildren(
+      punchCard(),
       h('div', { class: 'a-stats' }, stats.map(([n, l]) => h('div', { class: 'a-stat' }, h('b', { text: n }), h('span', { text: l })))),
       h('div', { class: 'a-section' }, h('h2', { class: 'a-h2', text: 'Coming up' }), bookingTable(up)));
   }
 
   /* ---------- billing ---------- */
-  const newBill = pre => ({ client: { name: '', phone: '', email: '' }, date: D.today, servedBy: '', items: [], discType: 'flat', discVal: 0, note: '', bookingId: '', ...pre });
+  const newBill = pre => ({ client: { name: '', phone: '', email: '' }, date: D.today, servedBy: isOwner() ? '' : (ME.name || ''), items: [], discType: 'flat', discVal: 0, note: '', bookingId: '', ...pre });
   function billFromBooking(b) {
     const idx = menuIndex();
     return newBill({ client: { name: b.name, phone: b.phone, email: b.email || '' }, date: b.date < D.today ? D.today : b.date, bookingId: b.id,
@@ -280,7 +384,7 @@
           h('td', { 'data-label': 'Total', text: i.void ? 'Void' : inr(i.total) }),
           h('td', { class: 'a-td-actions' }, i.void ? null : h('div', { class: 'a-row-actions' }, waBtn('Send', i.client.phone, invoiceMessage(i)),
             h('a', { class: 'btn btn-sm btn-alt', href: '/i/' + i.token, target: '_blank', rel: 'noopener' }, 'Open'),
-            btn('Void', async () => { if (await confirmBox('Void invoice ' + i.no + '? The customer link will stop working.', 'Void invoice')) { try { await api('DELETE', '/api/admin/invoices/' + i.id); await load(); rerender(); toast('Invoice voided'); } catch (ex) { fail(ex); } } }, 'btn-sm btn-danger')))))))) : emptyNote('No invoices yet.', 'scissors'));
+            !isOwner() ? null : btn('Void', async () => { if (await confirmBox('Void invoice ' + i.no + '? The customer link will stop working.', 'Void invoice')) { try { await api('DELETE', '/api/admin/invoices/' + i.id); await load(); rerender(); toast('Invoice voided'); } catch (ex) { fail(ex); } } }, 'btn-sm btn-danger')))))))) : emptyNote('No invoices yet.', 'scissors'));
     }
     drawHist();
     view().replaceChildren(h('div', { class: 'a-cols' }, form, h('div', {}, h('h2', { class: 'a-h2', text: 'Invoices' }), q, h('div', { style: 'height:12px' }), hist)));
@@ -388,8 +492,8 @@
   }
 
   /* ---------- uploads ---------- */
-  async function uploadFile(file) {
-    const dataUrl = await readImage(file);
+  async function uploadFile(file, png) {
+    const dataUrl = await readImage(file, png ? 700 : 1100, !!png);
     return (await api('POST', '/api/admin/upload', { dataUrl })).src;
   }
   async function uploadAudio(file) {
@@ -528,6 +632,38 @@
     }
     drawLogo();
 
+    /* Branding: logos, hero photo and colours -- what makes this salon's site
+       look like theirs instead of the template. */
+    if (!S.theme) S.theme = {};
+    const imgPick = (key, title, hint, ratio, png) => {
+      const box = h('div', { class: 'a-card', style: 'max-width:220px' });
+      const draw = () => {
+        const file = h('input', { type: 'file', accept: 'image/jpeg,image/png,image/webp', class: 'vh', id: 'sImg_' + key, onchange: async e => {
+          const f = e.target.files[0]; if (!f) return;
+          try { S[key] = await uploadFile(f, png); draw(); } catch (ex) { fail(ex); }
+        } });
+        box.replaceChildren(h('b', { text: title }), h('p', { class: 'a-note', text: hint }),
+          h('div', { class: 'pic', style: 'aspect-ratio:' + ratio + ';background:var(--tint);margin-top:8px' }, S[key] ? h('img', { src: S[key], alt: '', style: 'object-fit:contain' }) : doodle('sparkle')), file,
+          h('div', { style: 'margin-top:8px' },
+            h('label', { class: 'btn btn-sm btn-alt', for: 'sImg_' + key, tabindex: 0, onkeydown: e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); file.click(); } } }, S[key] ? 'Change' : 'Upload'),
+            S[key] ? [' ', btn('Remove', () => { S[key] = ''; draw(); }, 'btn-sm btn-alt')] : null));
+      };
+      draw(); return box;
+    };
+    const colourRow = (key, label, dflt) => h('label', { class: 'a-check', style: 'display:flex;align-items:center;gap:10px;padding:6px 0' },
+      h('input', { type: 'color', value: S.theme[key] || dflt, style: 'width:44px;height:32px;padding:0;border:1px solid var(--line);background:none', oninput: e => { S.theme[key] = e.target.value; } }),
+      label, ' ', btn('Reset', () => { delete S.theme[key]; viewSettings(); }, 'btn-sm btn-alt'));
+    const brandBox = h('div', {},
+      h('div', { style: 'display:flex;gap:16px;flex-wrap:wrap' },
+        imgPick('logo', 'Logo', 'Dark logo on a transparent or white background. Used in the header, admin and invoices.', '1', true),
+        imgPick('logoLight', 'Logo for dark areas (optional)', 'A light version for the dark footer. Skip it and the logo above is turned white automatically.', '1', true),
+        imgPick('heroPhoto', 'Home page photo', 'The big picture at the top of your home page. Your first gallery photo wins if you have one.', '4/3', false)),
+      h('div', { class: 'field', style: 'margin-top:16px' }, h('label', { text: 'Colours' }),
+        colourRow('plum', 'Main colour (header, buttons, invoice)', '#391D21'),
+        colourRow('gold', 'Accent colour (badges, highlights)', '#E8CF7F'),
+        colourRow('cream', 'Text on the main colour', '#F3E6C8')),
+      h('p', { class: 'a-note', text: 'Save, then open your website to see the new look.' }));
+
     const MUSIC_MODES = { off: 'Off', upload: 'Uploaded track', spotify: 'Spotify' };
     const spotifyEmbedUrl = url => {
       const m = String(url || '').match(/open\.spotify\.com\/(?:intl-\w+\/)?(playlist|track|album|artist)\/([a-zA-Z0-9]+)/);
@@ -594,7 +730,7 @@
       qrCanvas = h('canvas', { width: size, height: size, style: 'width:100%;height:100%' });
       const ctx = qrCanvas.getContext('2d');
       ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, size, size);
-      ctx.fillStyle = '#391D21';
+      ctx.fillStyle = S.theme.plum || '#391D21';
       for (let r = 0; r < count; r++) for (let c = 0; c < count; c++) if (qr.isDark(r, c)) ctx.fillRect((c + margin) * cell, (r + margin) * cell, cell, cell);
       qrPic.replaceChildren(qrCanvas);
     }
@@ -602,7 +738,9 @@
 
     view().replaceChildren(h('div', { style: 'max-width:760px' },
       h('h2', { class: 'a-h2', text: 'Branding' }),
-      h('p', { class: 'muted', style: 'margin-bottom:12px', text: 'Shown in the home page hero in place of the salon photo. Leave empty to use the photo.' }),
+      brandBox,
+      h('h2', { class: 'a-h2', style: 'margin-top:32px', text: 'Home page logo artwork' }),
+      h('p', { class: 'muted', style: 'margin-bottom:12px', text: 'Optional: a large logo shown in the home page hero in place of the salon photo. Leave empty to use the photo.' }),
       logoBox,
       h('h2', { class: 'a-h2', style: 'margin-top:32px', text: 'Background music' }),
       h('p', { class: 'muted', style: 'margin-bottom:12px', text: "Pick at most one source. An uploaded track loops quietly and needs a visitor to tap the on-site button once before it makes sound (browsers block that automatically); only upload music you have the rights to play publicly. Spotify shows their own player instead." }),
@@ -614,7 +752,7 @@
         h('p', { class: 'a-note', style: 'word-break:break-all', text: qrUrl }),
         h('div', { class: 'a-row-actions', style: 'justify-content:center;margin-top:10px' },
           btn('Copy link', async () => { try { await navigator.clipboard.writeText(qrUrl); toast('Link copied'); } catch { toast(qrUrl); } }, 'btn-sm btn-alt'),
-          btn('Download QR', () => { const a = document.createElement('a'); a.href = qrCanvas.toDataURL('image/png'); a.download = 'showoff-salon-menu-qr.png'; a.click(); }, 'btn-sm btn-alt'))),
+          btn('Download QR', () => { const a = document.createElement('a'); a.href = qrCanvas.toDataURL('image/png'); a.download = 'menu-qr.png'; a.click(); }, 'btn-sm btn-alt'))),
       h('h2', { class: 'a-h2', style: 'margin-top:32px', text: 'Salon details' }),
       h('div', { class: 'a-grid' }, fld('Salon name', inp(S, 'salonName', { id: id('salonName') }), id('salonName')), fld('Phone', inp(S, 'phone', { id: id('phone'), type: 'tel' }), id('phone')),
         fld('WhatsApp number (for the Book form)', inp(S, 'whatsapp', { id: id('whatsapp'), type: 'tel', placeholder: '10 digit number' }), id('whatsapp')), fld('Email', inp(S, 'email', { id: id('email') }), id('email')),
@@ -633,11 +771,11 @@
       h('h2', { class: 'a-h2', style: 'margin-top:32px', text: 'Danger zone' }),
       h('p', { class: 'muted', style: 'margin-bottom:12px', text: 'Start fresh by permanently deleting all bookings, bills and expenses. Your menu, prices, stylists, gallery, website text and settings are not touched.' }),
       h('div', { class: 'a-row-actions' },
-        h('a', { class: 'btn btn-alt', href: '/api/admin/export', download: 'showoff-salon-backup.json' }, 'Download backup first'),
+        h('a', { class: 'btn btn-alt', href: '/api/admin/export', download: 'salon-backup.json' }, 'Download backup first'),
         btn('Clear all bookings, bills and expenses', clearHistoryDialog, 'btn-danger'))),
       sticky(btn('Save settings', async () => { if (await saveSection('settings', S)) await load(); })));
   }
 
-  const VIEWS = { dashboard: viewDashboard, bookings: viewBookings, billing: viewBilling, clients: viewClients, menu: viewMenu, stylists: viewStylists, gallery: viewGallery, content: viewContent, settings: viewSettings, expenses: viewExpenses, analytics: viewAnalytics };
+  const VIEWS = { staff: viewStaff, dashboard: viewDashboard, bookings: viewBookings, billing: viewBilling, clients: viewClients, menu: viewMenu, stylists: viewStylists, gallery: viewGallery, content: viewContent, settings: viewSettings, expenses: viewExpenses, analytics: viewAnalytics };
   boot();
 })();

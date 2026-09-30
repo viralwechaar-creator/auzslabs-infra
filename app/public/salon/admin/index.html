@@ -19,13 +19,15 @@
 
 <section class="a-login" id="login" hidden>
   <div class="a-login-card">
-    <img src="/salon/assets/logo-plum.png" alt="Showoff Salon" width="88" height="88">
-    <h1>Admin</h1>
+    <img src="/salon/assets/logo-plum.png" alt="" width="88" height="88">
+    <h1 id="loginTitle">Admin</h1>
     <form id="loginForm">
-      <div class="field"><label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" required></div>
+      <div class="field" id="phoneField" hidden><label for="staffPhone">Phone number</label><input id="staffPhone" type="tel" inputmode="tel" autocomplete="username"></div>
+      <div class="field"><label for="pw" id="pwLabel">Password</label><input id="pw" type="password" autocomplete="current-password" required></div>
       <p class="error" id="loginError" role="alert"></p>
       <button class="btn btn-wide" type="submit">Sign in</button>
     </form>
+    <button class="link" id="staffToggle" type="button" style="background:none;border:0;cursor:pointer;margin-right:16px;font:inherit">Staff sign in</button>
     <a class="link" href="/salon/">Back to website</a>
   </div>
 </section>
@@ -35,7 +37,7 @@
   <aside class="a-side">
     <a class="a-side-profile" href="/salon/" target="_blank" rel="noopener" aria-label="Open website">
       <img src="/salon/assets/logo-plum.png" alt="" width="36" height="36">
-      <span class="a-side-profile-text"><b>Showoff Salon</b><small>Admin console</small></span>
+      <span class="a-side-profile-text"><b id="sideName"></b><small>Admin console</small></span>
     </a>
     <nav id="sideNav" aria-label="Admin"></nav>
     <div class="a-side-foot">

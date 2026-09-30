@@ -9,6 +9,7 @@
     return;
   }
   const { settings: S, content: C } = site;
+  applyBrand(S);
   const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text || ''; };
 
   /* ---------- header + full-screen nav ---------- */

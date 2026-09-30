@@ -161,4 +161,121 @@ function makeSeed() {
   };
 }
 
-export { makeSeed };
+
+/* ---------------------------------------------------------------------
+   Template: what a brand-new AUZslab Salon starts as. Same structure and
+   design as Showoff Salon's site, with neutral copy, a compact sample menu
+   and placeholder artwork (logo, hero) the owner replaces under Settings.
+   Showoff Salon itself keeps makeSeed()'s real menu (see salon.js).
+   --------------------------------------------------------------------- */
+function makeTemplate(salonName) {
+  const name = salonName || 'Your Salon';
+  const menu = [
+    cat('Hair', 'female', [
+      ['Haircut and style', 'A consultation, a cut that suits you, and a blow-dry to finish.', 600, null, true],
+      ['Hair wash and blow-dry', 'Relaxing wash with a smooth, long-lasting blow-dry.', 350],
+      ['Global hair colour', 'Even colour from root to tip with a gentle formula.', 2500],
+      ['Root touch-up', 'Covers regrowth to match your existing colour.', 900],
+      ['Highlights', 'Lighter strands to add dimension and shine.', 3500, null, true],
+      ['Hair spa', 'Deep-conditioning spa with scalp massage for soft, healthy hair.', 1200]
+    ]),
+    cat('Hair', 'male', [
+      ['Haircut', 'A sharp cut with a clean finish.', 300, null, true],
+      ['Beard trim', 'Shaped and tidied to suit your face.', 150],
+      ['Hair colour', 'Natural-looking colour with a gentle formula.', 600],
+      ['Head massage', 'A relaxing scalp and shoulder massage.', 250]
+    ]),
+    cat('Skin', 'all', [
+      ['Clean-up', 'Deep cleansing that removes impurities and refreshes skin.', 900],
+      ['Glow facial', 'Brightening facial for healthy, radiant skin.', 1800, null, true],
+      ['Hydrating facial', 'Moisture-rich treatment for dry or tired skin.', 2200],
+      ['De-tan treatment', 'Evens skin tone and restores brightness.', 1100]
+    ]),
+    cat('Waxing and threading', 'female', [
+      ['Eyebrow threading', 'Precise shaping and definition.', 50],
+      ['Full face threading', 'Smooth, clean finish across the face.', 200],
+      ['Full arms wax', 'Smooth, even skin from shoulder to wrist.', 350],
+      ['Full legs wax', 'Silky smooth legs, long-lasting results.', 650, null, true]
+    ]),
+    cat('Nails', 'all', [
+      ['Classic manicure', 'Shaping, cuticle care and polish.', 500],
+      ['Classic pedicure', 'Soak, scrub, shape and polish for fresh feet.', 700, null, true],
+      ['Spa pedicure', 'Extended treatment with massage and mask.', 1200]
+    ])
+  ];
+  const ph = (role, bio) => ({ id: 'st-' + slug(role), name: 'Add name', role, bio, photo: '', visible: true });
+  return {
+    settings: {
+      salonName: name, tagline: 'Unisex salon', phone: '', whatsapp: '', email: '', address: '', mapUrl: '', instagram: '',
+      timezone: 'Asia/Kolkata', open: '10:00', close: '20:00', slotMinutes: 30, capacity: 2, closedDays: [], advanceDays: 60,
+      invoiceFooter: 'Thank you for visiting ' + name + '.', heroLogo: '',
+      logo: '/salon/assets/template-logo.svg', logoLight: '/salon/assets/template-logo-light.svg', heroPhoto: '/salon/assets/template-hero.svg', theme: {},
+      bgMusic: { mode: 'off', src: '', volume: 15, spotifyUrl: '', spotifyEmbed: '' }
+    },
+    content: {
+      heroTitle: 'Look good. Feel better.',
+      heroText: 'Hair, skin and nails with clear descriptions and fixed prices, from people who take the time to get it right.',
+      servicesText: 'Everything we offer, grouped the way you would ask for it. Choose a group to see its full menu.',
+      menuText: 'Swipe or use the arrows to move through the menu. Prices are in rupees.',
+      galleryText: 'A look at the salon and our work.',
+      stylistsText: 'The people who will look after you.',
+      aboutTitle: 'A salon for the whole family.',
+      aboutText: 'Every treatment on our menu has a plain description and a fixed price, so you know what to expect before you sit down.\nWe keep the studio calm and unhurried, whether you are in for a quick trim or a full spa afternoon.\nBook online in a minute, or call ahead if you would rather speak to someone first.',
+      bookText: 'Choose your services, a date and a time. We will confirm your slot after you send the request.'
+    },
+    menu,
+    stylists: [
+      ph('Senior hair stylist', 'Add a short introduction from the admin console.'),
+      ph('Skin and beauty specialist', 'Add a short introduction from the admin console.'),
+      ph('Nail artist', 'Add a short introduction from the admin console.')
+    ],
+    gallery: [], bookings: [], invoices: [], expenses: [], counters: { booking: 0, invoice: 0 }
+  };
+}
+
+/* Demo salon: the template plus a believable week of activity, dated relative
+   to today so the demo never looks stale. Re-applied automatically (salon.js)
+   so prospects always land on a clean, populated demo. */
+const DEMO_STAFF_PHONE = '9000000001';
+function makeDemo(today) {
+  const db = makeTemplate('AUZslab Salon Demo');
+  db.settings.tagline = 'Sample salon, try everything';
+  db.settings.address = 'This is a demo: nothing you enter here is real';
+  db.settings.phone = '98290 00000';
+  db.settings.whatsapp = '9829000000';
+  db.settings.instagram = 'auzslab';
+  db.stylists = [
+    { id: 'st-demo-1', name: 'Priya', role: 'Senior hair stylist', bio: 'Colour and cutting specialist.', photo: '', visible: true },
+    { id: 'st-demo-2', name: 'Rahul', role: 'Barber and groomer', bio: 'Clean cuts and beard work.', photo: '', visible: true },
+    { id: 'st-demo-3', name: 'Meera', role: 'Skin and beauty specialist', bio: 'Facials, waxing and nails.', photo: '', visible: true }
+  ];
+  const all = db.menu.flatMap(c => c.items);
+  const item = n => all.find(i => i.name === n) || all[0];
+  const addDays = (d, n) => { const x = new Date(d + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+  const clients = [['Ananya Sharma', '9811100001'], ['Rohan Mehta', '9811100002'], ['Kavya Joshi', '9811100003'], ['Vikram Singh', '9811100004'], ['Neha Kapoor', '9811100005'], ['Aditya Rao', '9811100006']];
+  const plan = [
+    [0, '11:00', 0, ['Haircut and style'], 'confirmed'], [0, '14:30', 1, ['Hair colour'], 'pending'], [1, '12:00', 2, ['Glow facial'], 'confirmed'],
+    [2, '16:00', 3, ['Haircut'], 'pending'], [3, '10:30', 4, ['Classic pedicure', 'Classic manicure'], 'confirmed'], [4, '15:00', 5, ['Global hair colour'], 'pending'],
+    [-1, '13:00', 0, ['Hair spa'], 'completed'], [-2, '17:00', 2, ['Full legs wax'], 'completed']
+  ];
+  plan.forEach(([d, time, ci, names, status], n) => {
+    const services = names.map(x => { const i = item(x); return { id: i.id, name: i.name, price: i.price }; });
+    db.bookings.push({ id: 'demo-b' + n, ref: 'DEMO' + String(n + 1).padStart(4, '0'), name: clients[ci][0], phone: clients[ci][1], email: '', date: addDays(today, d), time, note: '',
+      services, price: services.reduce((s, x) => s + x.price, 0), status, createdAt: new Date().toISOString() });
+  });
+  const bills = [[-1, 0, ['Hair spa'], 0], [-2, 2, ['Full legs wax', 'Classic pedicure'], 100], [-4, 3, ['Haircut', 'Beard trim'], 0], [-6, 4, ['Glow facial'], 0], [-9, 1, ['Hair colour'], 0], [-12, 5, ['Highlights'], 300]];
+  bills.forEach(([d, ci, names, disc], n) => {
+    const items = names.map(x => { const i = item(x); return { name: i.name, qty: 1, price: i.price }; });
+    const subtotal = items.reduce((s, x) => s + x.price, 0);
+    db.invoices.push({ id: 'demo-i' + n, token: 'de00' + String(n + 1).padStart(4, '0'), no: 'SS-' + String(n + 1).padStart(4, '0'), date: addDays(today, d),
+      client: { name: clients[ci][0], phone: clients[ci][1], email: '' }, items, subtotal, discount: { type: 'flat', value: disc }, discountAmt: disc, total: subtotal - disc,
+      servedBy: n % 2 ? 'Meera' : 'Priya', createdBy: { id: 'owner', name: 'Owner' }, note: '', bookingId: '', void: false, createdAt: new Date().toISOString() });
+  });
+  db.counters.invoice = bills.length;
+  [[-3, 'rent', 'Shop rent', 25000], [-5, 'purchase', 'Hair colour stock', 6200], [-8, 'bills', 'Electricity', 3400], [-10, 'salary', 'Part payment, assistant', 8000]].forEach(([d, category, note, amount], n) => {
+    db.expenses.push({ id: 'demo-e' + n, date: addDays(today, d), category, note, amount, createdAt: new Date().toISOString() });
+  });
+  return db;
+}
+
+export { makeSeed, makeTemplate, makeDemo, DEMO_STAFF_PHONE };

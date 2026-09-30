@@ -55,7 +55,7 @@ window.waLink = (phone, text) => {
 
 /* Resize an image file in the browser before upload (keeps uploads small and the
    site fast to load — everything here is shown at a few hundred px, never full-res). */
-window.readImage = (file, max = 1100) => new Promise((resolve, reject) => {
+window.readImage = (file, max = 1100, png = false) => new Promise((resolve, reject) => {
   if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return reject(new Error('Choose a JPG, PNG or WebP image.'));
   const url = URL.createObjectURL(file), img = new Image();
   img.onload = () => {
@@ -64,7 +64,7 @@ window.readImage = (file, max = 1100) => new Promise((resolve, reject) => {
     c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
     c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
     URL.revokeObjectURL(url);
-    resolve(c.toDataURL('image/jpeg', 0.8));
+    resolve(png ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', 0.8)); /* logos stay PNG so transparency survives */
   };
   img.onerror = () => reject(new Error('That image could not be read.'));
   img.src = url;
@@ -77,3 +77,25 @@ window.readImage = (file, max = 1100) => new Promise((resolve, reject) => {
     return rc.apply(this, kids.flat(Infinity).filter(k => k != null && k !== false));
   };
 })();
+
+/* Per-salon branding. Every page calls this once it has the salon's settings:
+   `theme` recolours the shared CSS tokens, `logo` / `logoLight` replace the
+   bundled Showoff Salon marks (dark-on-light / light-on-dark). Nothing set =
+   the original look, unchanged. Values come from the owner's admin console, so
+   they are validated before touching CSS or an img src. */
+window.applyBrand = function applyBrand(S) {
+  S = S || {};
+  const root = document.documentElement.style, t = S.theme || {};
+  const colour = v => /^#[0-9a-fA-F]{6}$/.test(v || '') ? v : null;
+  const map = { plum: '--plum', cream: '--cream', gold: '--gold', goldD: '--gold-d', taupe: '--taupe', tint: '--tint' };
+  for (const [k, cssVar] of Object.entries(map)) { const c = colour(t[k]); if (c) root.setProperty(cssVar, c); }
+  if (colour(t.plum)) { const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', t.plum); }
+  const safeSrc = v => typeof v === 'string' && /^(\/uploads\/|\/salon\/assets\/)[\w./-]+$/.test(v) ? v : null;
+  const dark = safeSrc(S.logo), light = safeSrc(S.logoLight);
+  if (dark) document.querySelectorAll('img[src$="logo-plum.png"]').forEach(i => { i.src = dark; });
+  if (light || dark) document.querySelectorAll('img[src$="logo-cream.png"]').forEach(i => {
+    i.src = light || dark;
+    if (!light) i.style.filter = 'brightness(0) invert(1)'; /* a single-colour dark logo, turned light for the dark footer */
+  });
+  if (S.salonName) document.querySelectorAll('img[src$="logo-cream.png"], img[data-brand-alt]').forEach(i => { i.alt = S.salonName; });
+};

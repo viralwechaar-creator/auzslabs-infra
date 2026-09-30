@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import bcrypt from 'bcryptjs';
 import { pool } from './db.js';
-import { makeSeed } from './salon-seed.js';
+import { makeSeed, makeTemplate, makeDemo, DEMO_STAFF_PHONE } from './salon-seed.js';
 
 // Salon Suite API: the original Showoff Salon /api/* surface (see the
 // app/public/salon/ front-end, a verbatim port), multi-tenant. The
@@ -46,13 +46,35 @@ async function writeKey(client, tid, key, data) {
     [tid, key, JSON.stringify(data)],
   );
 }
+// What a salon starts as. Showoff Salon (the first client) keeps its real
+// menu and copy; the demo salon gets sample activity; everyone else gets the
+// neutral template (same design, placeholder logo/menu/copy to replace).
 function freshDb(tenant) {
-  const db = makeSeed();
-  if (tenant.name) db.settings.salonName = tenant.name;
+  if (tenant.slug === 'showoffsalon') return makeSeed();
+  if (tenant.is_demo) { const d = makeDemo(todayStr()); d.seededAt = Date.now(); return d; }
+  return makeTemplate(tenant.name);
+}
+const DEMO_PASSWORD = 'Auzslab@Demo'; // same public demo password as demo-cafe / demo-retail (db/025)
+const DEMO_TTL = 12 * 3600 * 1000;
+// The public demo salon puts itself back to a clean, populated state every
+// 12 hours (and recreates its sample staff login + payroll employee).
+async function reseedDemo(tenant) {
+  const db = freshDb(tenant);
+  const eid = (await pool.query('select salon_hr_ensure($1, $2, $3, $4) as id', [tenant.id, 'Priya', DEMO_STAFF_PHONE, 'Senior hair stylist'])).rows[0].id;
+  const client = await pool.connect();
+  try {
+    await client.query('begin');
+    await writeKey(client, tenant.id, 'db', db);
+    await writeKey(client, tenant.id, 'staff', { list: [{ id: '00000000-0000-4000-8000-000000000001', name: 'Priya', phone: DEMO_STAFF_PHONE, designation: 'Senior hair stylist',
+      passwordHash: hashPassword(DEMO_PASSWORD), active: true, employeeId: eid, createdAt: new Date().toISOString() }] });
+    await writeKey(client, tenant.id, 'admin', {});
+    await client.query('commit');
+  } catch (e) { await client.query('rollback').catch(() => {}); throw e; } finally { client.release(); }
   return db;
 }
 async function loadDb(tenant) {
   let db = await readKey(pool, tenant.id, 'db');
+  if (tenant.is_demo && (!db || !db.seededAt || Date.now() - db.seededAt > DEMO_TTL)) return reseedDemo(tenant);
   if (db) return db;
   db = freshDb(tenant);
   await pool.query(
@@ -60,6 +82,23 @@ async function loadDb(tenant) {
     [tenant.id, JSON.stringify(db)],
   );
   return (await readKey(pool, tenant.id, 'db')) || db;
+}
+// Same, for any other salon_store key (staff list, admin record): row-locked
+// read-modify-write, creating the row from `init` if it doesn't exist yet.
+async function mutateKey(tid, key, fn, init) {
+  await pool.query('insert into salon_store (tenant_id, key, data) values ($1, $2, $3) on conflict do nothing', [tid, key, JSON.stringify(init)]);
+  const client = await pool.connect();
+  try {
+    await client.query('begin');
+    const d = await readKey(client, tid, key, true);
+    const out = await fn(d);
+    await writeKey(client, tid, key, d);
+    await client.query('commit');
+    return out;
+  } catch (e) {
+    await client.query('rollback').catch(() => {});
+    throw e;
+  } finally { client.release(); }
 }
 // Read-modify-write under a row lock; fn gets the live db and may mutate
 // it (or return a replacement via {replace}); its return value is passed on.
@@ -98,22 +137,26 @@ async function ownerPasswordOk(tid, pw) {
   return false;
 }
 const sign = (v) => crypto.createHmac('sha256', SECRET).update(v).digest('base64url');
-function setSession(res, tid) {
-  const payload = Buffer.from(JSON.stringify({ tid, exp: Date.now() + 7 * 864e5 })).toString('base64url');
+// Session payload carries the role: 'owner' (full console) or 'staff'
+// (Today / Bookings / Billing / Clients only -- enforced per endpoint
+// below, never just hidden in the UI). sid/name identify the staff member.
+function setSession(res, tid, who = { role: 'owner' }) {
+  const payload = Buffer.from(JSON.stringify({ tid, role: who.role, sid: who.sid || null, name: who.name || null, exp: Date.now() + 7 * 864e5 })).toString('base64url');
   res.setHeader('Set-Cookie', `salon_session=${payload}.${sign(payload)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`);
 }
 const clearSession = (res) => res.setHeader('Set-Cookie', 'salon_session=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0');
-function isAdmin(req, tid) {
+function getSession(req, tid) {
   const m = String(req.headers.cookie || '').match(/(?:^|;\s*)salon_session=([^;]+)/);
-  if (!m) return false;
+  if (!m) return null;
   const [payload, sig] = m[1].split('.');
-  if (!payload || !sig) return false;
+  if (!payload || !sig) return null;
   const exp = sign(payload);
-  if (sig.length !== exp.length || !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(exp))) return false;
+  if (sig.length !== exp.length || !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(exp))) return null;
   try {
     const d = JSON.parse(Buffer.from(payload, 'base64url').toString());
-    return d.tid === tid && Date.now() < d.exp;
-  } catch { return false; }
+    if (d.tid !== tid || Date.now() >= d.exp) return null;
+    return { role: d.role === 'staff' ? 'staff' : 'owner', sid: d.sid || null, name: d.name || null };
+  } catch { return null; }
 }
 
 // ---- helpers (unchanged from the original app) ----
@@ -123,6 +166,7 @@ const cleanString = (v, max = 200) => String(v || '').trim().slice(0, max);
 const validDate = (v) => /^\d{4}-\d{2}-\d{2}$/.test(v);
 const validTime = (v) => /^\d{2}:\d{2}$/.test(v);
 const round2 = (n) => Math.round(n * 100) / 100;
+const staffPhone = (v) => String(v || '').replace(/\D/g, '').slice(-10);
 const EXPENSE_CATEGORIES = ['rent', 'salary', 'bills', 'purchase', 'other'];
 
 function publicSite(db) {
@@ -201,7 +245,7 @@ function clientsList(db) {
   return [...map.values()].sort((a, b) => (b.last || '').localeCompare(a.last || ''));
 }
 
-function addInvoice(db, body) {
+function addInvoice(db, body, who) {
   const client = body.client || {};
   const name = cleanString(client.name, 80);
   if (name.length < 2) fail(400, 'Enter the client name.');
@@ -227,7 +271,9 @@ function addInvoice(db, body) {
     date: validDate(body.date) ? cleanString(body.date, 10) : todayStr(),
     client: { name, phone, email: cleanString(client.email, 120) },
     items, subtotal, discount: { type: dType, value: dVal }, discountAmt: dAmt, total: round2(subtotal - dAmt),
-    servedBy: cleanString(body.servedBy, 80), note: cleanString(body.note, 300), bookingId: cleanString(body.bookingId, 40),
+    servedBy: cleanString(body.servedBy, 80) || (who && who.role === 'staff' ? who.name || '' : ''),
+    createdBy: who && who.role === 'staff' ? { id: who.sid, name: who.name } : { id: 'owner', name: 'Owner' },
+    note: cleanString(body.note, 300), bookingId: cleanString(body.bookingId, 40),
     void: false, createdAt: new Date().toISOString(),
   };
   db.invoices.push(inv);
@@ -293,12 +339,33 @@ export async function handleSalon(req, res, ip) {
     const tenant = await tenantFor(req);
     const tid = tenant.id;
     const body = ['POST', 'PUT', 'PATCH'].includes(method) ? await readBody(req) : {};
-    const admin = () => { if (!isAdmin(req, tid)) fail(401, 'Unauthorized.'); };
+    const sess = getSession(req, tid);
+    // member(): any signed-in console user (owner or an active staff member).
+    // admin(): owner only -- the default for every endpoint below, so a new
+    // endpoint is owner-only unless it is explicitly opened to staff.
+    const member = async () => {
+      if (!sess) fail(401, 'Unauthorized.');
+      if (sess.role === 'staff') {
+        const st = ((await readKey(pool, tid, 'staff')) || { list: [] }).list.find((x) => x.id === sess.sid);
+        if (!st || st.active === false) fail(401, 'Unauthorized.');
+      }
+      return sess;
+    };
+    const admin = async () => { const m = await member(); if (m.role !== 'owner') fail(403, 'Only the owner can do that.'); return m; };
+    const noDemo = () => { if (tenant.is_demo) fail(403, 'Not available on the demo salon.'); };
     const send = (s, d) => sendJson(res, s, d);
 
     if (method === 'GET' && p === '/site') return send(200, publicSite(await loadDb(tenant)));
     if (method === 'GET' && p === '/slots') return send(200, computeSlots(await loadDb(tenant), String(url.searchParams.get('date') || '')));
-    if (method === 'GET' && p === '/admin/me') return send(200, { admin: isAdmin(req, tid) });
+    if (method === 'GET' && p === '/admin/me') {
+      if (!sess) return send(200, { admin: false });
+      if (sess.role === 'staff') {
+        const st = ((await readKey(pool, tid, 'staff')) || { list: [] }).list.find((x) => x.id === sess.sid);
+        if (!st || st.active === false) return send(200, { admin: false });
+        return send(200, { admin: true, role: 'staff', name: st.name, payroll: !!st.employeeId, demo: !!tenant.is_demo });
+      }
+      return send(200, { admin: true, role: 'owner', name: 'Owner', demo: !!tenant.is_demo });
+    }
 
     const inv = p.match(/^\/invoice\/([a-f0-9]{8,32})$/);
     if (method === 'GET' && inv) {
@@ -306,7 +373,7 @@ export async function handleSalon(req, res, ip) {
       const invoice = (db.invoices || []).find((x) => x.token === inv[1] && !x.void);
       if (!invoice) fail(404, 'Invoice not found.');
       const s = db.settings;
-      return send(200, { invoice, salon: { salonName: s.salonName, address: s.address, phone: s.phone, email: s.email, instagram: s.instagram, invoiceFooter: s.invoiceFooter } });
+      return send(200, { invoice, salon: { salonName: s.salonName, address: s.address, phone: s.phone, email: s.email, instagram: s.instagram, invoiceFooter: s.invoiceFooter, logo: s.logo, logoLight: s.logoLight, theme: s.theme } });
     }
 
     if (method === 'POST' && p === '/bookings') {
@@ -320,6 +387,15 @@ export async function handleSalon(req, res, ip) {
       const password = String(body.password || '');
       if (!password) fail(400, 'Password is required.');
       await loadDb(tenant);
+      if (body.phone) {
+        // Staff sign-in: phone number + the password the owner set for them.
+        const phone = staffPhone(body.phone);
+        if (phone.length < 6 || limited(`stafflogin:${tid}:${phone}`, 8, 15 * 60_000)) fail(429, 'Too many attempts. Try again later.');
+        const st = ((await readKey(pool, tid, 'staff')) || { list: [] }).list.find((x) => x.phone === phone && x.active !== false);
+        if (!st || !verifyScrypt(password, st.passwordHash)) fail(401, 'Invalid phone number or password.');
+        setSession(res, tid, { role: 'staff', sid: st.id, name: st.name });
+        return send(200, { ok: true, role: 'staff' });
+      }
       const result = await (async () => {
         const client = await pool.connect();
         try {
@@ -346,16 +422,28 @@ export async function handleSalon(req, res, ip) {
       })();
       if (result.status !== 200) fail(result.status, result.error);
       setSession(res, tid);
-      return send(200, { ok: true });
+      return send(200, { ok: true, role: 'owner' });
     }
     if (method === 'POST' && p === '/admin/logout') { clearSession(res); return send(200, { ok: true }); }
 
     // ---- everything below needs the console session ----
-    if (method === 'GET' && p === '/bookings') { admin(); return send(200, { bookings: (await loadDb(tenant)).bookings || [] }); }
+    if (method === 'GET' && p === '/bookings') { await member(); return send(200, { bookings: (await loadDb(tenant)).bookings || [] }); }
 
     if (method === 'GET' && p === '/admin/data') {
-      admin();
+      const me = await member();
       const db = await loadDb(tenant);
+      if (me.role === 'staff') {
+        // Staff get what Today / Bookings / Billing / Clients need and nothing
+        // else: no expenses, website text, gallery, or other people's bills
+        // (so no revenue totals either).
+        const mine = (db.invoices || []).filter((i) => i.createdBy && i.createdBy.id === me.sid);
+        const { bgMusic, ...settings } = db.settings;
+        return send(200, {
+          settings, menu: db.menu, content: {}, gallery: [], expenses: [],
+          stylists: (db.stylists || []).filter((x) => x.visible && x.name !== 'Add name').map((x) => ({ id: x.id, name: x.name, role: x.role })),
+          bookings: db.bookings || [], invoices: mine, clients: clientsList({ bookings: db.bookings, invoices: mine }), today: todayStr(),
+        });
+      }
       return send(200, {
         settings: db.settings, menu: db.menu, content: db.content, stylists: db.stylists || [], gallery: db.gallery || [],
         bookings: db.bookings || [], invoices: db.invoices || [], expenses: db.expenses || [], clients: clientsList(db), today: todayStr(),
@@ -364,7 +452,7 @@ export async function handleSalon(req, res, ip) {
 
     const put = p.match(/^\/admin\/(settings|menu|content|stylists|gallery)$/);
     if (method === 'PUT' && put) {
-      admin();
+      await admin();
       const k = put[1];
       const isArr = Array.isArray(body);
       if (['menu', 'stylists', 'gallery'].includes(k) && !isArr) fail(400, `${k[0].toUpperCase() + k.slice(1)} must be an array.`);
@@ -375,7 +463,7 @@ export async function handleSalon(req, res, ip) {
 
     const bk = p.match(/^\/admin\/bookings\/(.+)$/);
     if (method === 'PATCH' && bk) {
-      admin();
+      await member();
       const id = decodeURIComponent(bk[1]);
       const booking = await mutate(tenant, (db) => {
         const b = (db.bookings || []).find((x) => String(x.id) === id);
@@ -389,7 +477,7 @@ export async function handleSalon(req, res, ip) {
       return send(200, { ok: true, booking });
     }
     if (method === 'DELETE' && bk) {
-      admin();
+      await admin();
       const id = decodeURIComponent(bk[1]);
       await mutate(tenant, (db) => {
         const before = db.bookings || [];
@@ -398,12 +486,12 @@ export async function handleSalon(req, res, ip) {
       });
       return send(200, { ok: true });
     }
-    if (method === 'POST' && p === '/admin/bookings') { admin(); return send(201, { ok: true, booking: await mutate(tenant, (db) => addBooking(db, body, true)) }); }
+    if (method === 'POST' && p === '/admin/bookings') { await member(); return send(201, { ok: true, booking: await mutate(tenant, (db) => addBooking(db, body, true)) }); }
 
-    if (method === 'POST' && p === '/admin/invoices') { admin(); return send(201, { ok: true, invoice: await mutate(tenant, (db) => addInvoice(db, body)) }); }
+    if (method === 'POST' && p === '/admin/invoices') { const me = await member(); return send(201, { ok: true, invoice: await mutate(tenant, (db) => addInvoice(db, body, me)) }); }
     const iv = p.match(/^\/admin\/invoices\/(.+)$/);
     if (method === 'DELETE' && iv) {
-      admin();
+      await admin();
       const id = decodeURIComponent(iv[1]);
       await mutate(tenant, (db) => {
         const i = (db.invoices || []).find((x) => String(x.id) === id);
@@ -413,10 +501,10 @@ export async function handleSalon(req, res, ip) {
       return send(200, { ok: true });
     }
 
-    if (method === 'POST' && p === '/admin/expenses') { admin(); return send(201, { ok: true, expense: await mutate(tenant, (db) => addExpense(db, body)) }); }
+    if (method === 'POST' && p === '/admin/expenses') { await admin(); return send(201, { ok: true, expense: await mutate(tenant, (db) => addExpense(db, body)) }); }
     const ex = p.match(/^\/admin\/expenses\/(.+)$/);
     if (method === 'PATCH' && ex) {
-      admin();
+      await admin();
       const id = decodeURIComponent(ex[1]);
       const expense = await mutate(tenant, (db) => {
         const e = (db.expenses || []).find((x) => String(x.id) === id);
@@ -434,7 +522,7 @@ export async function handleSalon(req, res, ip) {
       return send(200, { ok: true, expense });
     }
     if (method === 'DELETE' && ex) {
-      admin();
+      await admin();
       const id = decodeURIComponent(ex[1]);
       await mutate(tenant, (db) => {
         const before = db.expenses || [];
@@ -445,7 +533,7 @@ export async function handleSalon(req, res, ip) {
     }
 
     if (method === 'POST' && p === '/admin/upload') {
-      admin();
+      await admin(); noDemo();
       const m = String(body.dataUrl || '').match(/^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/);
       if (!m) fail(400, 'Upload a JPG, PNG or WebP image.');
       const buf = Buffer.from(m[2], 'base64');
@@ -457,7 +545,7 @@ export async function handleSalon(req, res, ip) {
       return send(201, { ok: true, src: await saveUpload(tenant, buf, m[1] === 'jpeg' ? 'jpg' : m[1]) });
     }
     if (method === 'POST' && p === '/admin/upload-audio') {
-      admin();
+      await admin(); noDemo();
       const m = String(body.dataUrl || '').match(/^data:audio\/mpeg;base64,([A-Za-z0-9+/=]+)$/);
       if (!m) fail(400, 'Upload an MP3 file.');
       const buf = Buffer.from(m[1], 'base64');
@@ -468,9 +556,20 @@ export async function handleSalon(req, res, ip) {
     }
 
     if (method === 'POST' && p === '/admin/password') {
-      admin();
+      const me = await member();
+      noDemo();
       const cur = String(body.current || '');
       const next = String(body.next || '');
+      if (me.role === 'staff') {
+        // A staff member changes their own password only.
+        if (next.length < 6) fail(400, 'New password must be at least 6 characters.');
+        await mutateKey(tid, 'staff', (d) => {
+          const st = (d.list || []).find((x) => x.id === me.sid);
+          if (!st || !verifyScrypt(cur, st.passwordHash)) fail(400, 'Current password is wrong.');
+          st.passwordHash = hashPassword(next);
+        }, { list: [] });
+        return send(200, { ok: true });
+      }
       await loadDb(tenant);
       const a = (await readKey(pool, tid, 'admin')) || {};
       const ok = a.passwordHash ? verifyScrypt(cur, a.passwordHash) : await ownerPasswordOk(tid, cur);
@@ -481,15 +580,93 @@ export async function handleSalon(req, res, ip) {
       return send(200, { ok: true });
     }
 
-    if (method === 'GET' && p === '/admin/export') { admin(); return send(200, await loadDb(tenant)); }
+
+    // ---- staff accounts (owner only) ----
+    const staffView = (st, invoices) => ({
+      id: st.id, name: st.name, phone: st.phone, designation: st.designation || '', active: st.active !== false,
+      employeeId: st.employeeId || null, createdAt: st.createdAt,
+      bills: (invoices || []).filter((i) => !i.void && i.createdBy && i.createdBy.id === st.id).length,
+    });
+    if (method === 'GET' && p === '/admin/staff') {
+      await admin();
+      const db = await loadDb(tenant);
+      const d = (await readKey(pool, tid, 'staff')) || { list: [] };
+      return send(200, { staff: d.list.map((st) => staffView(st, db.invoices)), employees: (await pool.query('select salon_hr_list($1) as l', [tid])).rows[0].l });
+    }
+    if (method === 'POST' && p === '/admin/staff') {
+      await admin(); noDemo();
+      const name = cleanString(body.name, 80);
+      const phone = staffPhone(body.phone);
+      const password = String(body.password || '');
+      if (name.length < 2) fail(400, 'Enter the staff member\'s name.');
+      if (phone.length < 6) fail(400, 'Enter a valid phone number.');
+      if (password.length < 6) fail(400, 'Password must be at least 6 characters.');
+      const designation = cleanString(body.designation, 60) || 'Stylist';
+      let employeeId = cleanString(body.employeeId, 60) || null;
+      if (body.payroll !== false && !employeeId) employeeId = (await pool.query('select salon_hr_ensure($1, $2, $3, $4) as id', [tid, name, phone, designation])).rows[0].id;
+      const st = { id: crypto.randomUUID(), name, phone, designation, passwordHash: hashPassword(password), active: true, employeeId, createdAt: new Date().toISOString() };
+      await mutateKey(tid, 'staff', (d) => {
+        if ((d.list || []).some((x) => x.phone === phone)) fail(409, 'A staff member with this phone number already exists.');
+        d.list = [...(d.list || []), st];
+      }, { list: [] });
+      return send(201, { ok: true, staff: staffView(st, []) });
+    }
+    const sm = p.match(/^\/admin\/staff\/([0-9a-f-]{36})$/);
+    if (method === 'PATCH' && sm) {
+      await admin(); noDemo();
+      const out = await mutateKey(tid, 'staff', (d) => {
+        const st = (d.list || []).find((x) => x.id === sm[1]);
+        if (!st) fail(404, 'Staff member not found.');
+        if (body.name !== undefined) st.name = cleanString(body.name, 80) || st.name;
+        if (body.designation !== undefined) st.designation = cleanString(body.designation, 60);
+        if (body.active !== undefined) st.active = !!body.active;
+        if (body.employeeId !== undefined) st.employeeId = cleanString(body.employeeId, 60) || null;
+        if (body.phone !== undefined) {
+          const ph = staffPhone(body.phone);
+          if (ph.length < 6) fail(400, 'Enter a valid phone number.');
+          if (d.list.some((x) => x.phone === ph && x.id !== st.id)) fail(409, 'A staff member with this phone number already exists.');
+          st.phone = ph;
+        }
+        if (body.password) {
+          if (String(body.password).length < 6) fail(400, 'Password must be at least 6 characters.');
+          st.passwordHash = hashPassword(String(body.password));
+        }
+        return staffView(st, []);
+      }, { list: [] });
+      return send(200, { ok: true, staff: out });
+    }
+    if (method === 'DELETE' && sm) {
+      await admin(); noDemo();
+      await mutateKey(tid, 'staff', (d) => {
+        const before = d.list || [];
+        d.list = before.filter((x) => x.id !== sm[1]);
+        if (d.list.length === before.length) fail(404, 'Staff member not found.');
+      }, { list: [] });
+      return send(200, { ok: true });
+    }
+
+    // ---- clock in / out: writes the same hr_attendance record AUZslab
+    // Payroll reads, for a staff member linked to a payroll employee ----
+    if (p === '/admin/punch' && (method === 'GET' || method === 'POST')) {
+      const me = await member();
+      if (me.role !== 'staff') fail(400, 'Clock in is for staff logins.');
+      const st = ((await readKey(pool, tid, 'staff')) || { list: [] }).list.find((x) => x.id === me.sid);
+      if (!st.employeeId) fail(400, 'Your login is not linked to payroll yet. Ask the owner.');
+      if (method === 'GET') return send(200, (await pool.query('select salon_punch_state($1, $2, $3) as s', [tid, st.employeeId, todayStr()])).rows[0].s || { open: false, recent: [] });
+      const r = await pool.query('select salon_punch($1, $2, $3, $4) as r', [tid, st.employeeId, todayStr(), new Date().toISOString()]);
+      return send(200, { ok: true, ...r.rows[0].r });
+    }
+
+    if (method === 'GET' && p === '/admin/export') { await admin(); return send(200, await loadDb(tenant)); }
     if (method === 'POST' && p === '/admin/clear-history') {
-      admin();
+      await admin();
       await mutate(tenant, (db) => { db.bookings = []; db.invoices = []; db.expenses = []; db.counters = { booking: 0, invoice: 0 }; });
       return send(200, { ok: true });
     }
     if (method === 'POST' && p === '/admin/reset') {
-      admin();
-      await mutate(tenant, () => ({ replace: freshDb(tenant), value: { ok: true } }));
+      await admin();
+      if (tenant.is_demo) await reseedDemo(tenant);
+      else await mutate(tenant, () => ({ replace: freshDb(tenant), value: { ok: true } }));
       return send(200, { ok: true });
     }
 
