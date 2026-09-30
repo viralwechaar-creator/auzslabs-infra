@@ -7,7 +7,7 @@ body{font-family:Inter,-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-ser
 .bar{display:flex;justify-content:flex-end;padding:22px 24px 0;max-width:640px;margin:0 auto}
 .bar button{font:13px/1 Inter,sans-serif;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:11px 18px;border-radius:2px;border:1px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer}
 .bar button:hover{background:var(--ink);color:var(--paper)}
-.wrap{max-width:640px;margin:0 auto;padding:18px 24px 70px}
+.wrap{max-width:640px;margin:0 auto;padding:18px 24px 70px;position:relative}
 .hd{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:26px}
 .mark{font-size:44px;font-weight:800;letter-spacing:-.02em;line-height:1}
 .mark img{max-height:40px;display:block}
@@ -54,9 +54,27 @@ const id=new URLSearchParams(location.search).get('o');
  if(!id)return A.innerHTML='<div class=err>Invoice not found.</div>';
  const{data,error}=await sb.rpc('public_invoice',{oid:id});
  if(error||!data||!data.order)return A.innerHTML='<div class=err>Invoice not found.</div>';
- const o=data.order,s=data.cfg||{},t=o.t,logo=s.logo||'/logo.png';
+ const o=data.order,s=data.cfg||{},t=o.t,b=s.brand||null,logo=s.logo||'/logo.png';
+ // A tenant's own brand (colours/font/doodle, the same settings.brand
+ // object booking.html reads) re-themes this same invoice markup instead
+ // of a second, separately-maintained invoice template -- one structure,
+ // per-tenant CSS variables. Gated on `brand` specifically (not the
+ // pre-existing, widely-set `col`) so every tenant who already had a
+ // brand colour configured for their site's accent doesn't suddenly get
+ // a different-looking invoice they never asked for -- only a tenant who
+ // opts into the new extended palette sees this.
+ if(b){
+  const root=document.documentElement.style;
+  if(b.plum||s.col)root.setProperty('--ink',b.plum||s.col);
+  if(b.tint)root.setProperty('--paper',b.tint);
+  if(b.muted)root.setProperty('--mute',b.muted);
+  if(b.line)root.setProperty('--line',b.line);
+  if(b.fontUrl){const l=document.createElement('link');l.rel='stylesheet';l.href=b.fontUrl;document.head.appendChild(l)}
+  if(b.font)document.body.style.fontFamily='"'+b.font+'",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif';
+ }
  const rows=o.lines.map(l=>`<tr><td>${esc(l.name)}${l.size?' ('+esc(l.size)+')':''}</td><td class=c>${l.qty}</td><td class=r>${inr(l.price)}</td><td class=r>${inr(l.price*l.qty)}</td></tr>`).join('');
- A.innerHTML=`<div class=hd><div class=mark>${s.logo?'<img src="'+esc(logo)+'">':'Invoice'}</div><div class=meta-r><b>Invoice No.</b> ${esc(o.no)}<br>${new Date(o.paidAt||o.created).toLocaleDateString()}</div></div>
+ A.innerHTML=`<div class=hd><div class=mark>${(s.logo||b)?'<img src="'+esc(logo)+'">':'Invoice'}</div><div class=meta-r><b>Invoice No.</b> ${esc(o.no)}<br>${new Date(o.paidAt||o.created).toLocaleDateString()}</div></div>
+ ${b&&b.doodle?'<img src="'+esc(b.doodle)+'" style="position:absolute;right:18px;bottom:120px;width:90px;opacity:.5;pointer-events:none">':''}
 <hr>
 <div class=billto><b>Billed to</b>${esc((o.cust||{}).name)}<br>${esc((o.cust||{}).phone)}</div>
 <hr>

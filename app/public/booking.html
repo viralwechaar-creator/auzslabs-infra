@@ -1,0 +1,297 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
+<title>Loading…</title><link rel=icon href=/logo.png>
+<link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
+<style>
+/*
+ The public booking page for a 'salon' niche tenant. Defaults below are
+ Showoff Salon's own exact brand (plum/cream/gold palette, Hanken Grotesk)
+ -- the first real client this page was built for -- but every one of
+ these CSS custom properties, the font, and the logo/hero/doodle images
+ are overridden at runtime from that tenant's own settings.brand object
+ (see boot() below), so a different salon tenant gets their own look
+ without touching this file. cfg.brand absent -> this page still looks
+ exactly like Showoff Salon's original site, not a generic placeholder.
+*/
+:root{
+ --plum:#391D21;--cream:#F3E6C8;--gold:#E8CF7F;--gold-d:#B8942F;
+ --taupe:#B9A79C;--tint:#F7F3F0;--line:#E4DCD6;--muted:#74635F;
+ --font:"Hanken Grotesk","Helvetica Neue",Helvetica,Arial,sans-serif;
+ --pad:clamp(20px,4vw,56px);--max:1180px;
+ --r-sm:10px;--r-md:18px;--r-lg:24px;--ease:cubic-bezier(.2,.7,.2,1);
+ --shadow-sm:0 10px 20px -14px rgba(57,29,33,.35);--shadow-md:0 20px 36px -18px rgba(57,29,33,.32);
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;font:400 17px/1.55 var(--font);color:var(--plum);background:#fff;-webkit-font-smoothing:antialiased}
+img{max-width:100%;display:block}
+a{color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-appearance:none;appearance:none}
+h1,h2,h3,p,dl,dd,ul{margin:0;padding:0}
+ul{list-style:none}
+.wrap{width:100%;max-width:var(--max);margin-inline:auto;padding-inline:var(--pad)}
+h1{font-weight:500;font-size:clamp(38px,6.4vw,84px);line-height:.98;letter-spacing:-.03em}
+h2{font-weight:500;font-size:clamp(28px,3.8vw,48px);line-height:1;letter-spacing:-.03em}
+.lead{font-size:clamp(16px,1.5vw,19px);line-height:1.55;max-width:36em;color:var(--muted)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:15px 28px;border-radius:999px;background:var(--plum);color:#fff;border:1px solid var(--plum);text-decoration:none;font-weight:500;transition:background .2s var(--ease),color .2s var(--ease),transform .2s var(--ease);}
+.btn:hover{background:#fff;color:var(--plum);transform:translateY(-1px)}
+.btn:active{transform:scale(.97)}
+.btn-wide{width:100%;padding-block:17px}
+
+/* header */
+.hdr{position:sticky;top:0;z-index:20;background:#fffc;backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.hdr-in{display:flex;align-items:center;justify-content:space-between;padding-block:14px}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none;font-weight:500;font-size:15px;letter-spacing:.02em}
+.brand img{width:38px;height:38px;border-radius:50%;object-fit:cover}
+
+/* hero */
+.hero{padding:clamp(30px,5vw,56px) 0 0}
+.hero-frame{position:relative;border-radius:var(--r-lg);overflow:hidden;min-height:clamp(360px,58vw,560px);display:flex;align-items:flex-end;background:var(--plum)}
+.hero-frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55}
+.hero-overlay{position:relative;padding:clamp(24px,4vw,56px);color:var(--cream);max-width:640px}
+.hero-overlay .eyebrow{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:10px}
+.hero-overlay h1{color:#fff}
+.hero-overlay .lead{color:var(--cream);opacity:.85;margin-top:14px}
+.hero-cta{margin-top:24px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.hero-cta .link{color:var(--cream);text-decoration:underline;text-underline-offset:4px}
+.hero-cta .btn-gold{background:var(--gold);color:var(--plum);border-color:var(--gold)}
+.hero-cta .btn-gold:hover{background:transparent;color:var(--cream);border-color:var(--cream)}
+
+/* sections */
+.sec{padding:clamp(48px,7vw,88px) 0}
+.sec-tint{background:var(--tint)}
+.sec-plum{background:var(--plum);color:#fff}
+.sec-plum .lead{color:var(--cream);opacity:.85}
+.sec-head{margin-bottom:clamp(24px,3vw,40px)}
+.sec-head p{color:var(--muted);margin-top:10px;max-width:44em}
+.sec-plum .sec-head p{color:var(--cream);opacity:.8}
+
+/* services */
+.cat-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}
+.cat-tabs button{padding:9px 18px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:13.5px;font-weight:500;color:var(--muted);transition:all .15s var(--ease)}
+.cat-tabs button.on{background:var(--plum);color:#fff;border-color:var(--plum)}
+.svc-list{display:grid;gap:1px;background:var(--line);border-radius:var(--r-md);overflow:hidden}
+.svc-row{display:flex;justify-content:space-between;gap:16px;padding:18px 22px;background:#fff}
+.svc-row .name{font-weight:500}
+.svc-row .desc{font-size:14px;color:var(--muted);margin-top:4px;max-width:44em}
+.svc-row .price{font-weight:500;white-space:nowrap;font-variant-numeric:tabular-nums}
+.svc-row .price small{display:block;font-size:11px;color:var(--muted);font-weight:400;text-align:right}
+
+/* gallery */
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.gallery img{width:100%;height:220px;object-fit:cover;border-radius:var(--r-md)}
+
+/* about */
+.about-text{white-space:pre-wrap;color:var(--muted);max-width:56em;line-height:1.7}
+
+/* booking */
+.book{display:grid;grid-template-columns:1fr 1.3fr;gap:clamp(28px,4vw,56px);align-items:start}
+@media(max-width:820px){.book{grid-template-columns:1fr}}
+.panel{background:#fff;color:var(--plum);border-radius:var(--r-lg);padding:clamp(20px,3vw,32px);box-shadow:var(--shadow-md)}
+.field{display:grid;gap:6px;margin-bottom:16px}
+.field label{font-size:13px;font-weight:500;color:var(--muted)}
+.field input,.field textarea,.field select{padding:13px 15px;border:1.5px solid var(--line);border-radius:var(--r-sm);background:#fff;color:var(--plum)}
+.field input:focus,.field textarea:focus{outline:none;border-color:var(--plum)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:480px){.row2{grid-template-columns:1fr}}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.chip{display:flex;align-items:center;gap:8px;padding:7px 8px 7px 14px;border-radius:999px;background:var(--tint);font-size:13.5px}
+.chip button{background:none;border:none;color:var(--muted);font-size:16px;line-height:1;padding:2px 6px}
+.pick-list{max-height:260px;overflow:auto;border:1.5px solid var(--line);border-radius:var(--r-sm);margin-top:8px}
+.pick-list label{display:flex;justify-content:space-between;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line);font-size:14.5px;cursor:pointer}
+.pick-list label:last-child{border-bottom:none}
+.pick-list label:hover{background:var(--tint)}
+.pick-list input{width:auto}
+.slots{display:flex;flex-wrap:wrap;gap:8px}
+.slot-btn{padding:9px 14px;border-radius:999px;border:1.5px solid var(--line);background:#fff;font-size:13.5px;font-variant-numeric:tabular-nums}
+.slot-btn.on{background:var(--plum);color:#fff;border-color:var(--plum)}
+.slot-btn:disabled{opacity:.35;text-decoration:line-through}
+.hint{font-size:13.5px;color:var(--muted)}
+.err{color:#a33;font-size:13.5px;min-height:1.4em}
+.done{text-align:center;padding:30px 10px}
+.done h3{margin-bottom:8px}
+
+/* footer */
+.foot{background:var(--plum);color:var(--cream);padding:44px 0}
+.foot-grid{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap}
+.foot img{width:56px;height:56px;border-radius:50%}
+.foot .meta{font-size:13.5px;line-height:1.8;opacity:.85}
+.foot a{opacity:.85}
+.wb-empty{padding:22vh 22px;text-align:center;color:var(--muted)}
+</style>
+</head><body>
+<div id=app><div class=wb-empty>Loading…</div></div>
+<script src="/sb-client.js?v=2"></script>
+<script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
+<script src=/tenant.js></script>
+<script>
+const sb=supabase.createClient(CFG.url,CFG.key);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const inr=n=>'₹'+Math.round(n).toLocaleString('en-IN');
+const app=document.getElementById('app');
+let CATS=[],SVCS=[],CFGD={},SELECTED=new Set(),SLOT=null;
+
+function applyBrand(brand,cfg){
+ // cfg.col (the one generic brand-colour field every niche's Settings ->
+ // Business pane already has) is the primary brand colour -- 'plum' here
+ // is just that same value under this palette's own name, not a second
+ // source of truth. brand only carries the *extra* colours/font/doodle a
+ // single hex field can't: this is what a future non-Showoff-Salon tenant
+ // fills in to get their own full palette instead of this one's defaults.
+ const b=brand||{},root=document.documentElement.style;
+ if(cfg.col)root.setProperty('--plum',cfg.col);
+ ['cream','gold','goldD','taupe','tint','line','muted'].forEach(k=>{if(b[k])root.setProperty('--'+({goldD:'gold-d'}[k]||k),b[k])});
+ if(b.fontUrl){const l=document.createElement('link');l.rel='stylesheet';l.href=b.fontUrl;document.head.appendChild(l)}
+ if(b.font)root.setProperty('--font','"'+b.font+'","Helvetica Neue",Helvetica,Arial,sans-serif');
+ document.title=cfg.name||'Book an appointment';
+ const fav=document.querySelector('link[rel=icon]');if(fav&&cfg.logo)fav.href=cfg.logo;
+}
+
+function svcRow(s){
+ const price=s.sizes&&s.sizes.length?s.sizes.map(sz=>sz.l+' '+inr(sz.p)).join(' · '):inr(s.price);
+ const checked=SELECTED.has(s.id);
+ return `<label class=svc-row><span><span class=name>${esc(s.name)}</span>${s.desc?`<span class=desc>${esc(s.desc)}</span>`:''}</span><span style="display:flex;align-items:center;gap:10px"><b class=price>${esc(price)}</b><input type=checkbox data-id="${esc(s.id)}" data-price="${s.sizes&&s.sizes.length?s.sizes[0].p:s.price}" data-name="${esc(s.name)}" ${checked?'checked':''}></span></label>`;
+}
+
+function renderChips(){
+ const wrap=document.getElementById('pickChips');
+ wrap.innerHTML=[...SELECTED].map(id=>{
+  const s=SVCS.find(x=>x.id==id);if(!s)return '';
+  return `<span class=chip>${esc(s.name)}<button type=button data-remove="${esc(id)}">×</button></span>`;
+ }).join('')||'<span class="hint">No services chosen yet.</span>';
+ wrap.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{SELECTED.delete(b.dataset.remove);renderChips();document.querySelectorAll('#pickList input[type=checkbox]').forEach(c=>{if(c.dataset.id==b.dataset.remove)c.checked=false})});
+}
+
+async function loadSlots(date){
+ const box=document.getElementById('slots');
+ if(!date){box.innerHTML='<p class="hint">Choose a date to see available times.</p>';return}
+ box.innerHTML='<p class="hint">Loading times…</p>';
+ SLOT=null;
+ try{
+  const{data,error}=await sb.rpc('public_salon_slots',{tenant_slug:TENANT_SLUG,p_date:date});
+  if(error||!data||!data.length){box.innerHTML='<p class="hint">No times available that day — try another date.</p>';return}
+  box.innerHTML=data.map(s=>`<button type=button class=slot-btn data-time="${s.time}">${s.time}</button>`).join('');
+  box.querySelectorAll('.slot-btn').forEach(b=>b.onclick=()=>{SLOT=b.dataset.time;box.querySelectorAll('.slot-btn').forEach(x=>x.classList.toggle('on',x===b))});
+ }catch(e){box.innerHTML='<p class="hint">Could not load times — please try again.</p>'}
+}
+
+function renderBookSection(){
+ return `<section class="sec sec-plum" id=book><div class="wrap book">
+  <div><h2>Book appointment</h2><p class=lead>Choose your services, a date and a time. We will confirm your slot.</p></div>
+  <div class=panel>
+   <form id=bookForm novalidate>
+    <div class=field><label>Your name</label><input id=bName required maxlength=80></div>
+    <div class=row2>
+     <div class=field><label>Phone number</label><input id=bPhone type=tel required maxlength=20></div>
+     <div class=field><label>Email (optional)</label><input id=bEmail type=email maxlength=120></div>
+    </div>
+    <div class=field><label>Services</label>
+     <div class=pick-list id=pickList>${SVCS.map(svcRow).join('')||'<p style="padding:14px" class=hint>No services listed yet.</p>'}</div>
+     <div class=chips id=pickChips></div>
+    </div>
+    <div class=field><label>Date</label><input id=bDate type=date required min="${new Date().toLocaleDateString('en-CA')}"></div>
+    <div class=field><label>Time</label><div class=slots id=slots><p class=hint>Choose a date to see available times.</p></div></div>
+    <p class=err id=bookErr></p>
+    <button class="btn btn-wide" type=submit id=bookBtn>Book appointment</button>
+   </form>
+   <div class=done id=bookDone hidden></div>
+  </div>
+ </div></section>`;
+}
+
+function wireBookForm(){
+ document.getElementById('pickList').addEventListener('change',e=>{
+  const cb=e.target;if(cb.type!=='checkbox')return;
+  if(cb.checked)SELECTED.add(cb.dataset.id);else SELECTED.delete(cb.dataset.id);
+  renderChips();
+ });
+ renderChips();
+ document.getElementById('bDate').onchange=e=>loadSlots(e.target.value);
+ document.getElementById('bookForm').onsubmit=async e=>{
+  e.preventDefault();
+  const errEl=document.getElementById('bookErr'),btn=document.getElementById('bookBtn');
+  errEl.textContent='';
+  const name=document.getElementById('bName').value.trim(),phone=document.getElementById('bPhone').value.trim(),
+   email=document.getElementById('bEmail').value.trim(),date=document.getElementById('bDate').value;
+  if(!name||!phone)return errEl.textContent='Name and phone are required.';
+  if(!SELECTED.size)return errEl.textContent='Pick at least one service.';
+  if(!date||!SLOT)return errEl.textContent='Pick a date and a time.';
+  btn.disabled=true;btn.textContent='Booking…';
+  try{
+   const{data,error}=await sb.rpc('public_create_booking',{tenant_slug:TENANT_SLUG,p_name:name,p_phone:phone,p_email:email||null,p_date:date,p_time:SLOT,p_service_ids:[...SELECTED]});
+   if(error)throw error;
+   document.getElementById('bookForm').hidden=true;
+   const d=document.getElementById('bookDone');d.hidden=false;
+   d.innerHTML=`<h3>You're booked</h3><p class=hint>${esc(name)}, we'll see you on ${esc(date)} at ${esc(SLOT)}. Total: ${inr(data.total)}.</p>`;
+  }catch(err){errEl.textContent=(err&&err.message)||'Could not book that slot — please try again.';btn.disabled=false;btn.textContent='Book appointment'}
+ };
+}
+
+async function boot(){
+ if(!TENANT_SLUG){app.innerHTML='<div class=wb-empty>No site here.</div>';return}
+ let data;
+ try{const r=await sb.rpc('public_salon_page',{tenant_slug:TENANT_SLUG});data=r.data}catch(e){app.innerHTML='<div class=wb-empty>This page couldn&#39;t load.</div>';return}
+ if(!data){app.innerHTML='<div class=wb-empty>This page couldn&#39;t load.</div>';return}
+ CFGD=data.cfg||{};CATS=(data.cats||[]).sort((a,b)=>(a.n||0)-(b.n||0));SVCS=data.services||[];
+ applyBrand(CFGD.brand,CFGD);
+ // Reuses the exact same settings.siteTag/siteSub/siteAbout/siteHero/
+ // siteInsta/siteHours/siteKicker fields site.html's own Settings ->
+ // Website pane already edits -- a salon tenant configures their public
+ // page through the same UI they'd use for a cafe's, no new admin screen.
+ const logo=CFGD.logo||'/logo.png',hero=CFGD.siteHero||'';
+ const gallery=(CFGD.siteGallery||'').split(',').map(s=>s.trim()).filter(Boolean);
+ const heading=esc(CFGD.siteTag||CFGD.name||'Book an appointment').split('\n').join('<br>');
+
+ app.innerHTML=`
+ <header class=hdr><div class="wrap hdr-in">
+  <a class=brand href=#top><img src="${esc(logo)}" alt="" onerror="this.style.display='none'"><span>${esc(CFGD.name||'Book an appointment')}</span></a>
+  <a class=btn href=#book>Book appointment</a>
+ </div></header>
+ <section class=hero id=top><div class=wrap><div class=hero-frame>
+  ${hero?`<img src="${esc(hero)}" alt="">`:''}
+  <div class=hero-overlay>
+   <p class=eyebrow>${esc(CFGD.siteKicker||CFGD.addr||'')}</p>
+   <h1>${heading}</h1>
+   <p class=lead>${esc(CFGD.siteSub||'')}</p>
+   <div class=hero-cta><a class="btn btn-gold" href=#book>Book appointment</a>${CFGD.phone?`<a class=link href="tel:${esc(CFGD.phone)}">Call ${esc(CFGD.phone)}</a>`:''}</div>
+  </div>
+ </div></div></section>
+
+ <section class=sec id=services><div class=wrap>
+  <div class=sec-head><h2>Services</h2><p>Everything we offer, with clear prices.</p></div>
+  ${CATS.length?`<div class=cat-tabs id=catTabs>${CATS.map((c,i)=>`<button type=button data-cat="${esc(c.id||c.name)}" class="${i==0?'on':''}">${esc(c.name)}</button>`).join('')}</div>`:''}
+  <div class=svc-list id=svcList></div>
+ </div></section>
+
+ ${gallery.length?`<section class="sec sec-tint" id=gallery><div class=wrap>
+  <div class=sec-head><h2>Gallery</h2></div>
+  <div class=gallery>${gallery.map(u=>`<img src="${esc(u)}">`).join('')}</div>
+ </div></section>`:''}
+
+ ${CFGD.siteAbout?`<section class=sec id=about><div class=wrap>
+  <div class=sec-head><h2>About us</h2>${CFGD.siteHours?`<p>${esc(CFGD.siteHours)}</p>`:''}</div>
+  <p class=about-text>${esc(CFGD.siteAbout)}</p>
+ </div></section>`:''}
+
+ ${renderBookSection()}
+
+ <footer class=foot><div class="wrap foot-grid">
+  <img src="${esc(logo)}" alt="" onerror="this.style.display='none'">
+  <div class=meta>${esc(CFGD.addr||'')}${CFGD.phone?'<br>'+esc(CFGD.phone):''}${CFGD.siteInsta?'<br><a href="'+esc(CFGD.siteInsta)+'" target=_blank rel=noopener>Instagram</a>':''}</div>
+  <div class=meta>Powered by <a href="https://auzslab.in" target=_blank rel=noopener>AUZslab</a></div>
+ </div></footer>`;
+
+ // Category filter for the service list (defaults to the first category).
+ const itemsForCat=cid=>SVCS.filter(s=>s.cat==cid);
+ const catTabs=document.getElementById('catTabs');
+ const paintCat=cid=>{
+  document.getElementById('svcList').innerHTML=itemsForCat(cid).map(svcRow).join('')||'<div class="svc-row hint">No services in this category yet.</div>';
+  if(catTabs)catTabs.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.cat==cid));
+ };
+ if(CATS.length)paintCat(CATS[0].id||CATS[0].name);
+ if(catTabs)catTabs.querySelectorAll('button').forEach(b=>b.onclick=()=>paintCat(b.dataset.cat));
+
+ wireBookForm();
+}
+boot();
+</script>
+</body></html>
