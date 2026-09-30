@@ -6,6 +6,100 @@
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   var fine = window.matchMedia && matchMedia('(hover: hover) and (pointer: fine)').matches;
 
+  /* ---------- the blast: cube goes hot, bursts, particles fly to the real logo/text/buttons and the page opens ---------- */
+  function pickTargets() {
+    var sel = '.topbar-logo, .content .h-hero, .content h1, .content .label, .content .lede, .content .btn-primary, .content .btn-ghost, .hero-art-logo, .hero-services, .topbar .btn';
+    var vw = innerWidth, vh = innerHeight, out = [];
+    [].forEach.call(document.querySelectorAll(sel), function (el) {
+      var r = el.getBoundingClientRect();
+      if (r.width < 8 || r.height < 8 || r.bottom < 0 || r.top > vh * .95 || r.right < 0 || r.left > vw) return;
+      if (getComputedStyle(el).visibility === 'hidden') return;
+      var rects = [];
+      if (!/^(IMG|BUTTON|A|SVG)$/i.test(el.tagName) && el.textContent.trim()) { // follow the actual lines of text
+        var rg = document.createRange(); rg.selectNodeContents(el);
+        [].forEach.call(rg.getClientRects(), function (q) { if (q.width > 6 && q.height > 6) rects.push({ x: q.left, y: q.top + q.height * .15, w: q.width, h: q.height * .7 }); });
+      }
+      if (!rects.length) rects.push({ x: r.left, y: r.top, w: r.width, h: r.height });
+      var wt = 0; rects.forEach(function (q) { q.a = Math.max(40, Math.min(q.w * q.h, 60000)); wt += q.a; });
+      out.push({ el: el, rects: rects, wt: wt });
+    });
+    return out.slice(0, 14);
+  }
+  function boom(L, cleanup) {
+    var W = innerWidth, H = innerHeight, dpr = Math.min(2, window.devicePixelRatio || 1), diag = Math.hypot(W, H);
+    var cv = document.createElement('canvas'); cv.className = 'sk-fx'; cv.width = W * dpr; cv.height = H * dpr; root.appendChild(cv);
+    var ctx = cv.getContext('2d'); if (!ctx) throw new Error('no canvas'); ctx.scale(dpr, dpr);
+    var sc = L.querySelector('.sk-scene').getBoundingClientRect(), cx = sc.left + sc.width / 2, cy = sc.top + sc.height / 2;
+    L.style.setProperty('--cx', cx + 'px'); L.style.setProperty('--cy', cy + 'px');
+    var targets = pickTargets(), totalW = targets.reduce(function (a, t) { return a + t.wt; }, 0);
+    targets.forEach(function (t) { t.el.setAttribute('data-sk-t', ''); });
+    root.classList.add('sk-hold');
+    L.classList.add('charge');
+    function spot() {
+      if (!targets.length) return { x: W / 2 + (Math.random() - .5) * W * .6, y: H * .35 + (Math.random() - .5) * 120 };
+      var r = Math.random() * totalW, t = targets[0], i;
+      for (i = 0; i < targets.length; i++) { r -= targets[i].wt; if (r <= 0) { t = targets[i]; break; } }
+      var q = t.rects[0], rr = Math.random() * t.wt;
+      for (i = 0; i < t.rects.length; i++) { rr -= t.rects[i].a; if (rr <= 0) { q = t.rects[i]; break; } }
+      return { x: q.x + Math.random() * q.w, y: q.y + Math.random() * q.h };
+    }
+    var N = W < 500 ? 190 : 320, P = [];
+    for (var i = 0; i < N; i++) {
+      var ang = Math.random() * 6.2832, sp = 260 + Math.random() * 900, tg = spot();
+      P.push({ x: cx + (Math.random() - .5) * 30, y: cy + (Math.random() - .5) * 30, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp,
+        tx: tg.x, ty: tg.y, s: 2 + Math.random() * (i % 9 === 0 ? 7 : 3.5), a: Math.random() * 6.28, w: (Math.random() - .5) * 14,
+        go: 520 + Math.random() * 300, hot: 1, land: 0, acc: Math.random() < .35, shard: i % 9 === 0 });
+    }
+    var BLAST_AT = 380, T0 = performance.now(), last = T0, finished = false, flashed = false;
+    function ease(t) { return 1 - Math.pow(1 - t, 3); }
+    function finish() {
+      if (finished) return; finished = true;
+      targets.forEach(function (t) { t.el.classList.add('sk-land'); });
+      root.classList.remove('sk-hold');
+      cv.style.opacity = '0';
+      setTimeout(function () { targets.forEach(function (t) { t.el.removeAttribute('data-sk-t'); t.el.classList.remove('sk-land'); }); if (cv.parentNode) cv.parentNode.removeChild(cv); }, 900);
+      cleanup();
+    }
+    function step(now) {
+      var t = now - T0, dt = Math.min(.04, (now - last) / 1000); last = now;
+      if (t >= BLAST_AT && !flashed) {
+        flashed = true; L.classList.add('boom');
+        ['sk-ring', 'sk-flash'].forEach(function (cls) { // on <html>, not inside the loader: the loader is being masked away
+          var e = document.createElement('div'); e.className = cls; e.style.setProperty('--cx', cx + 'px'); e.style.setProperty('--cy', cy + 'px'); root.appendChild(e);
+          setTimeout(function () { if (e.parentNode) e.parentNode.removeChild(e); }, 1100);
+        });
+      }
+      ctx.clearRect(0, 0, W, H);
+      if (t < BLAST_AT) { requestAnimationFrame(step); return; }
+      var bt = t - BLAST_AT, r = ease(Math.min(1, bt / 1000)) * diag * .95;
+      var m = 'radial-gradient(circle at ' + cx + 'px ' + cy + 'px, transparent ' + r + 'px, #000 ' + (r + 2) + 'px)';
+      L.style.webkitMaskImage = m; L.style.maskImage = m;
+      var landed = 0;
+      for (var i = 0; i < P.length; i++) {
+        var q = P[i];
+        if (bt < q.go) { var d = Math.pow(.03, dt); q.vx *= d; q.vy *= d; q.x += q.vx * dt; q.y += q.vy * dt; }
+        else if (!q.land) {
+          var k = 55, c = 2 * Math.sqrt(k) * .88, ax = (q.tx - q.x) * k - q.vx * c, ay = (q.ty - q.y) * k - q.vy * c;
+          if (q.acc) { ax += -(q.ty - q.y) * 9; ay += (q.tx - q.x) * 9; } // a little curl so they swirl in
+          q.vx += ax * dt; q.vy += ay * dt; q.x += q.vx * dt; q.y += q.vy * dt;
+          if (Math.hypot(q.tx - q.x, q.ty - q.y) < 2 && Math.hypot(q.vx, q.vy) < 60) q.land = now;
+        }
+        if (q.land) landed++;
+        q.a += q.w * dt; q.hot = Math.max(0, q.hot - dt * (bt < q.go ? .9 : 1.6));
+        var life = q.land ? Math.max(0, 1 - (now - q.land) / 260) : 1, sz = q.s * (q.land ? life : 1);
+        if (sz < .3) continue;
+        ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.a);
+        ctx.globalAlpha = Math.min(1, .35 + life);
+        ctx.fillStyle = q.hot > .55 ? (q.hot > .85 ? '#fff6d6' : '#ff8a2e') : (q.acc ? '#800020' : '#171717');
+        if (q.shard) { ctx.fillRect(-sz, -sz * .35, sz * 2, sz * .7); } else { ctx.fillRect(-sz / 2, -sz / 2, sz, sz); }
+        ctx.restore();
+      }
+      if (landed > P.length * .96 || bt > 2100) { finish(); return; }
+      requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
   /* ---------- loader: once per browser session, never on repeat page views ---------- */
   var seen = false;
   try { seen = !!sessionStorage.getItem('sk_loaded'); } catch (e) {}
@@ -20,18 +114,20 @@
       '<div><div class="sk-brand">AUZslab</div><div class="sk-line">sketching your workspace...</div><div class="sk-bar"><i></i></div></div>';
     root.appendChild(L);
     var bar = L.querySelector('.sk-bar i'), t0 = Date.now(), done = false, p = .05;
-    var tick = setInterval(function () { p = Math.min(.9, p + (1 - p) * .12); L.style.setProperty('--lp', p); bar.style.setProperty('--lp', p); bar.style.transform = 'scaleX(' + p + ')'; }, 140);
+    var tick = setInterval(function () { p = Math.min(.9, p + (1 - p) * .12); bar.style.transform = 'scaleX(' + p + ')'; }, 140);
+    var cleanup = function () { root.classList.remove('sk-loading', 'sk-hold'); if (L.parentNode) L.parentNode.removeChild(L); };
     var finish = function () {
       if (done) return; done = true; clearInterval(tick);
       bar.style.transform = 'scaleX(1)';
       setTimeout(function () {
-        L.classList.add('out');
-        setTimeout(function () { root.classList.remove('sk-loading'); if (L.parentNode) L.parentNode.removeChild(L); }, 1050);
+        try { boom(L, cleanup); }
+        catch (e) { L.classList.add('out'); setTimeout(cleanup, 1050); } // plain paper-lift fallback
       }, 250);
     };
     var ready = function () { var wait = Math.max(0, 1500 - (Date.now() - t0)); setTimeout(finish, wait); };
     if (document.readyState === 'complete') ready(); else window.addEventListener('load', ready);
     setTimeout(finish, 4500); // never hold the visitor hostage
+    setTimeout(cleanup, 9000); // absolute safety net
     try { sessionStorage.setItem('sk_loaded', '1'); } catch (e) {}
   }
 
