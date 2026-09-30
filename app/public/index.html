@@ -57,7 +57,12 @@ table{width:100%;border-collapse:collapse}td,th{padding:5px;border-bottom:1px so
 .tbl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px;margin-top:2px}
 .tbl-tile{border-radius:var(--radius-sm);padding:10px;text-align:left;min-height:60px;border:1.5px solid transparent;background:#fff;color:var(--ink);box-shadow:var(--shadow-sm);transition:transform .12s var(--ease)}
 .tbl-tile:hover{background:#fff}
-.tbl-tile.run{background:#fff3c4;border-color:#e0b400}
+.tbl-tile.st-placed{background:#e3f0fc;border-color:#7fb8e8}
+.tbl-tile.st-kot{background:#fff3c4;border-color:#e0b400}
+.tbl-tile.st-prep{background:#ffe4b5;border-color:#e08a00}
+.tbl-tile.st-ready{background:#d7f5d0;border-color:#3fa32e}
+.tbl-tile.st-served{background:#e6d9f7;border-color:#8e5cd9}
+.tbl-tile.st-dirty{background:#f6e2e2;border-color:#c94f4f;cursor:default}
 .tbl-tile.sel{border-color:var(--accent);border-width:2px}
 
 .switch{position:relative;display:inline-block;width:46px;height:26px;flex-shrink:0}
@@ -193,7 +198,14 @@ function localNo(){const n=(+localStorage.n||0)+1;localStorage.n=n;const d=local
 async function nextNo(){if(navigator.onLine){try{const{data,error}=await sb.rpc('next_invoice_no',{prefix:cfg().prefix});if(!error&&data)return data}catch{}}return localNo()+'~'}
 const newOrder=()=>({id:uid(),type:isRetail()?'Sale':'Dine-in',table:null,lines:[],status:'open',created:now(),by:S.user.id,cust:{}});
 async function persist(){const o=S.cur;if(!o.no)o.no=await nextNo();o.t=tot(o);await save('order',o,o.id)}
-function mk(o){const n=o.lines.filter(l=>l.qty>l.sent).map(l=>({n:l.name+(l.size?' ('+l.size+')':''),q:l.qty-l.sent,s:l.st||'Kitchen'})),k=o.kstat=='new';o.lines.forEach(l=>l.sent=l.qty);if(n.length){o.knew=(k?o.knew||[]:[]).concat(n);o.kstat='new';o.ktime=o.ktime&&k?o.ktime:now()}return n}
+// A combo is one order line (one price) but the kitchen needs to see
+// what to actually cook -- expand it into its constituent items on the
+// ticket instead of printing the combo's own name alone.
+function mk(o){const n=[];o.lines.filter(l=>l.qty>l.sent).forEach(l=>{
+ const rem=l.qty-l.sent,it=R[l.id]&&R[l.id].data;
+ if(it&&it.combo&&it.comboText){it.comboText.split(',').forEach(p=>{const parts=p.split(':'),cn=parts[0];if(cn&&cn.trim())n.push({n:cn.trim()+(l.size?' ('+l.size+')':''),q:r2((+parts[1]||1)*rem),s:it.st||'Kitchen'})})}
+ else n.push({n:l.name+(l.size?' ('+l.size+')':''),q:rem,s:l.st||'Kitchen'});
+});const k=o.kstat=='new';o.lines.forEach(l=>l.sent=l.qty);if(n.length){o.knew=(k?o.knew||[]:[]).concat(n);o.kstat='new';o.ktime=o.ktime&&k?o.ktime:now()}return n}
 function prn(html){const c=cfg(),f=h('iframe',{style:'position:fixed;width:0;height:0;border:0'});document.body.append(f);const d=f.contentDocument;d.write('<style>body{font:'+(c.fs||12)+'px '+(c.sty=='sans'?'system-ui,sans-serif':'monospace')+';width:'+(c.w==58?48:72)+'mm;margin:0}td{padding:1px 0}.r{text-align:right}.dup{text-align:center;border:2px solid #000;padding:2px;margin-bottom:4px}img{max-width:100%}</style>'+html);d.close();f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),3000)}
 function prnInv(html){const f=h('iframe',{style:'position:fixed;width:0;height:0;border:0'});document.body.append(f);const d=f.contentDocument;d.write(`<style>
 @page{margin:16mm}
@@ -244,7 +256,14 @@ function modal(...k){const o=h('div',{class:'ov',onclick:e=>e.target==o&&o.remov
 function validCoupon(code){const c=L('coupon').find(x=>x.code==code.trim().toUpperCase());if(!c)return null;if(c.expiry&&c.expiry<today())return null;if(c.maxUses){const used=L('order').filter(o=>(o.status=='paid'||o.status=='due')&&o.coupon==c.code).length;if(used>=c.maxUses)return null}return c}
 function pickReason(cb){const reasons=L('reason');if(!reasons.length){const r=prompt('Reason');if(r)cb(r.trim());return}
  const x=modal(h('h3',{},'Select a reason'),...reasons.map(rn=>h('button',{onclick:()=>{x();cb(rn.name)}},rn.name)),h('button',{onclick:()=>{x();const r=prompt('Other reason');if(r)cb(r.trim())}},'Other…'),h('button',{class:'warn',onclick:()=>x()},'Cancel'))}
-function addLine(i,sz,p,note,variant){const l=!note&&S.cur.lines.find(x=>x.id==i.id&&x.size==sz&&x.price==p&&!x.note&&(x.variant?.color||'')==(variant?.color||'')&&(x.variant?.size||'')==(variant?.size||''));l?l.qty++:S.cur.lines.push({id:i.id,name:i.name,size:sz,price:p,qty:1,sent:0,st:i.st||'Kitchen',note,variant});render()}
+function addLine(i,sz,p,note,variant){
+ // Heads-up only, not a block: a dish cancelled after it was already sent to
+ // the kitchen (see qty()'s dedu-and-waste branch below) may still be
+ // physically sitting in the kitchen -- worth checking before cooking a
+ // fresh one for a new order of the same item within the next 15 minutes.
+ const recentCancel=L('waste').find(w=>w.itemId==i.id&&w.at&&(Date.now()-new Date(w.at))<15*60000);
+ if(recentCancel&&!(S._dupWarned=S._dupWarned||{})[i.id]){S._dupWarned[i.id]=true;alert('Heads up: "'+i.name+'" was cancelled from another order '+Math.max(1,Math.round((Date.now()-new Date(recentCancel.at))/60000))+'m ago'+(recentCancel.reason?' ('+recentCancel.reason+')':'')+'. Check with the kitchen before cooking a new one -- it may still be usable.')}
+ const l=!note&&S.cur.lines.find(x=>x.id==i.id&&x.size==sz&&x.price==p&&!x.note&&(x.variant?.color||'')==(variant?.color||'')&&(x.variant?.size||'')==(variant?.size||''));l?l.qty++:S.cur.lines.push({id:i.id,name:i.name,size:sz,price:p,qty:1,sent:0,st:i.st||'Kitchen',note,variant});render()}
 function variant(i){const x=modal(h('h3',{},i.name),...(i.variants||[]).map(v=>h('button',{onclick:()=>{if(v.qty<=0&&!confirm('This variant shows 0 in stock. Add anyway?'))return;x();addLine(i,v.size+(v.color?' / '+v.color:''),i.price,undefined,{size:v.size,color:v.color})}},v.size+(v.color?' / '+v.color:'')+' — '+(v.qty>0?v.qty+' in stock':'Out of stock'))))}
 function pickMods(i,sz,p){const mods=(i.mods||[]).map(m=>{const[n,v]=m.split(':');return{n:n.trim(),v:+v||0}});if(!mods.length)return addLine(i,sz,p);
  const boxes=mods.map(m=>({m,cb:h('input',{type:'checkbox'})}));
@@ -271,10 +290,24 @@ addEventListener('keydown',e=>{
   else it.sizes&&it.sizes.length?size(it):pickMods(it,'',it.price);
  }else if(e.key.length==1)scanBuf+=e.key;
 });
+// Kitchen already cooked this portion before it got cancelled -- deduct
+// its recipe ingredients now (they were consumed, even though the order
+// line itself never reaches pay()'s dedu() since it's removed first) and
+// log the loss as wastage, tagged with itemId so addLine()'s duplicate-
+// order check can flag a fresh order of the same item within 15 minutes.
+async function deduAndWasteLine(l,qty,reason){
+ const it=R[l.id];
+ if(it&&it.data.rec){
+  for(const p of it.data.rec.split(',')){
+   const[n,q]=p.split(':'),g=L('ing').find(x=>x.name.toLowerCase()==n.trim().toLowerCase());
+   if(g&&+q){const used=+q*qty;g.qty=r2(g.qty-used);g.usage=(g.usage||[]).concat({q:used,d:today(),at:now()}).slice(-200);await save('ing',g,g.id);await save('waste',{ing:g.name,q:used,d:today(),reason:'Cancelled after KOT — '+l.name,itemId:l.id,at:now()})}
+  }
+ }else await save('waste',{ing:l.name,q:qty,d:today(),reason,itemId:l.id,at:now()});
+}
 function qty(l,d){const o=S.cur;
  if(d<0&&l.qty-1<l.sent){
   if(!can('m'))return alert('Already sent to kitchen. Ask a manager to remove it.');
-  return pickReason(reason=>{save('voidlog',{order:o.id,no:o.no,item:l.name,reason,by:S.user.email||S.user.id,at:now()});l.qty+=d;l.sent=Math.min(l.sent,l.qty);if(l.qty<=0)o.lines=o.lines.filter(x=>x!==l);render()});
+  return pickReason(reason=>{save('voidlog',{order:o.id,no:o.no,item:l.name,reason,by:S.user.email||S.user.id,at:now()});deduAndWasteLine(l,-d,reason);l.qty+=d;l.sent=Math.min(l.sent,l.qty);if(l.qty<=0)o.lines=o.lines.filter(x=>x!==l);render()});
  }
  l.qty+=d;l.sent=Math.min(l.sent,l.qty);if(l.qty<=0)o.lines=o.lines.filter(x=>x!==l);render();
 }
@@ -284,14 +317,35 @@ const itemOff=i=>{
  if(!i.rec)return false;
  return i.rec.split(',').some(p=>{const[n]=p.split(':'),g=L('ing').find(x=>x.name.toLowerCase()==n.trim().toLowerCase());return g&&g.qty<=0});
 };
-function tableInfo(id){const o=L('order').find(x=>x.status=='open'&&x.table==id&&x.lines.length);if(!o)return{st:'blank'};const mins=Math.round((Date.now()-new Date(o.created))/60000);return{st:'running',mins,amt:tot(o).total}}
+const TBL_STATUS_ICON={placed:'📝',kot:'🔥',prep:'🍳',ready:'🔔',served:'🍽️',dirty:'🧹'};
+const TBL_STATUS_LABEL={placed:'Order placed',kot:'KOT running',prep:'Preparing',ready:'Ready to serve',served:'Served · bill pending',dirty:'Needs cleaning'};
+function tableInfo(id){
+ const o=L('order').find(x=>x.status=='open'&&x.table==id&&x.lines.length);
+ if(!o){
+  // cleaned flips false the moment a dine-in bill closes (see pay()) so a
+  // table shows as busy right up until cleaning staff mark it done, instead
+  // of looking "Available" the instant the guest pays while it's still
+  // physically dirty.
+  const tbl=L('table').find(x=>x.id==id);
+  if(tbl&&tbl.cleaned===false)return{st:'dirty'};
+  return{st:'blank'};
+ }
+ const mins=Math.round((Date.now()-new Date(o.created))/60000);
+ const sub=!o.kstat?'placed':o.kstat=='new'?'kot':o.kstat=='preparing'?'prep':o.kstat=='ready'?'ready':'served';
+ return{st:'running',sub,mins,amt:tot(o).total};
+}
 function floorPlan(o){const secs=[...new Set(L('table').map(t=>t.sec||'Main'))];
  if(!secs.length)return h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No tables yet — add them in Settings › Tables.');
  return h('div',{},...secs.map(sec=>h('div',{},h('div',{style:"font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-faint);margin:10px 0 4px"},sec),
   h('div',{class:'tbl-grid'},...L('table').filter(t=>(t.sec||'Main')==sec).sort((a,b)=>a.name.localeCompare(b.name,0,{numeric:true})).map(t=>{const info=tableInfo(t.id);
-   return h('button',{class:'tbl-tile'+(info.st=='running'?' run':'')+(o.table==t.id?' sel':''),onclick:()=>pickTable(t.id)},h('b',{},t.name),info.st=='running'?h('div',{style:'font-size:11px'},info.mins+'m · '+inr(info.amt)):h('div',{style:'font-size:11px;color:var(--ink-faint)'},'Available'))
+   if(info.st=='dirty')return h('div',{class:'tbl-tile st-dirty'},h('b',{},t.name),h('div',{style:'font-size:11px'},TBL_STATUS_ICON.dirty+' '+TBL_STATUS_LABEL.dirty),h('button',{style:'font-size:10.5px;margin-top:4px;padding:3px 8px',onclick:async()=>{await save('table',{...t,cleaned:true},t.id);render()}},'Mark cleaned'));
+   const body=info.st=='running'
+    ?h('div',{style:'font-size:11px'},TBL_STATUS_ICON[info.sub]+' '+info.mins+'m · '+inr(info.amt))
+    :h('div',{style:'font-size:11px;color:var(--ink-faint)'},'Available');
+   return h('button',{class:'tbl-tile'+(info.st=='running'?' st-'+info.sub:'')+(o.table==t.id?' sel':''),onclick:()=>pickTable(t.id)},h('b',{},t.name),body)
   }))
  )))}
+async function markTableDirty(o){if(!o.table)return;const tbl=L('table').find(x=>x.id==o.table);if(tbl&&tbl.cleaned!==false)await save('table',{...tbl,cleaned:false},tbl.id)}
 function pickTable(id){const ex=L('order').find(x=>x.status=='open'&&x.table==id&&x.lines.length);if(ex){if(S.cur.lines.length&&!S.cur.no&&!confirm('Discard the current unsaved order?'))return;S.cur=structuredClone(ex)}else S.cur.table=id||null;render()}
 function nextToken(){const day=today(),nums=L('order').filter(o=>o.token&&o.tokenDay==day).map(o=>o.token);return nums.length?Math.max(...nums)+1:1}
 async function kot(){const o=S.cur;if(!o.lines.some(l=>l.qty>l.sent))return alert('Nothing new to send');if(!o.no)o.no=await nextNo();
@@ -300,18 +354,47 @@ async function kot(){const o=S.cur;if(!o.lines.some(l=>l.qty>l.sent))return aler
  await save('kotlog',{orderId:o.id,orderNo:o.no,type:o.type,table:o.table,cust:o.cust,items:n,createdAt:now()},uid());
  const stations=[...new Set(n.map(x=>x.s))];
  prn(`<b>KOT ${o.no}</b>${o.token?' · Token #'+o.token:''}<br>${o.type} ${esc(tn(o.table))}<br>${new Date().toLocaleTimeString()}<hr>`+stations.map(s=>`<u>${s}</u><br>`+n.filter(x=>x.s==s).map(x=>`<b>${x.q}× ${esc(x.n)}</b><br>`).join('')).join('<hr>'));render()}
-async function dedu(o){for(const l of o.lines){const it=R[l.id];if(!it||!it.data.rec)continue;for(const p of it.data.rec.split(',')){const[n,q]=p.split(':'),g=L('ing').find(x=>x.name.toLowerCase()==n.trim().toLowerCase());if(g&&+q){const used=q*l.qty;g.qty=r2(g.qty-used);g.usage=(g.usage||[]).concat({q:used,d:today(),at:now()}).slice(-200);await save('ing',g,g.id)}}}}
+async function deduRecipe(rec,mult){for(const p of rec.split(',')){const parts=p.split(':'),n=parts[0],q=+parts[1],g=L('ing').find(x=>x.name.toLowerCase()==n.trim().toLowerCase());if(g&&q){const used=q*mult;g.qty=r2(g.qty-used);g.usage=(g.usage||[]).concat({q:used,d:today(),at:now()}).slice(-200);await save('ing',g,g.id)}}}
+async function dedu(o){for(const l of o.lines){const it=R[l.id];if(!it)continue;
+ if(it.data.combo&&it.data.comboText){
+  for(const part of it.data.comboText.split(',')){const parts=part.split(':'),cn=parts[0];if(!cn||!cn.trim())continue;const constituent=L('item').find(x=>x.name.toLowerCase()==cn.trim().toLowerCase());if(constituent&&constituent.rec)await deduRecipe(constituent.rec,(+parts[1]||1)*l.qty)}
+  continue;
+ }
+ if(it.data.rec)await deduRecipe(it.data.rec,l.qty);
+}}
 async function deduVariant(o){for(const l of o.lines){const it=R[l.id];if(!it||!it.data.variants||!it.data.variants.length||!l.variant)continue;const v=it.data.variants.find(x=>x.size==l.variant.size&&(x.color||'')==(l.variant.color||''));if(v){v.qty=r2((v.qty||0)-l.qty);v.usage=(v.usage||[]).concat({q:l.qty,d:today(),at:now()}).slice(-200);await save('item',it.data,it.data.id)}}}
+const CASH_DENOMS=[500,200,100,50,20,10,5,2,1];
+// Counts actual notes/coins tendered instead of a single typed amount, so
+// the drawer total can be reconciled against what the till should hold --
+// stored on the payment line itself (amt is what's applied to the bill,
+// tendered/denoms/change are the physical cash detail).
+function cashDenomModal(amountDue,cb){
+ const counts={},totalEl=h('b',{},'₹0'),changeEl=h('div',{style:'font-size:13px'});
+ const recalc=()=>{
+  const tendered=CASH_DENOMS.reduce((a,d)=>a+d*(counts[d]||0),0);
+  totalEl.textContent=inr(tendered);
+  const change=r2(tendered-amountDue);
+  if(tendered<=0)changeEl.textContent='';
+  else if(change<0)changeEl.textContent='Short by '+inr(-change);
+  else{let rem=change,parts=[];for(const d of CASH_DENOMS){const n=Math.floor(rem/d);if(n>0){parts.push(n+'× ₹'+d);rem=r2(rem-n*d)}}changeEl.textContent='Change to return: '+inr(change)+(parts.length?' ('+parts.join(', ')+')':'')}
+ };
+ const rows=CASH_DENOMS.map(d=>{const inp=h('input',{type:'number',min:0,placeholder:'0',style:'width:64px',oninput:()=>{counts[d]=+inp.value||0;recalc()}});return h('div',{class:'row'},'₹'+d,inp)});
+ const x=modal(h('h3',{},'Cash received · due '+inr(amountDue)),...rows,h('div',{class:'row'},'Total tendered',totalEl),changeEl,
+  h('button',{class:'p',onclick:()=>{const tendered=CASH_DENOMS.reduce((a,d)=>a+d*(counts[d]||0),0);if(tendered<=0)return alert('Enter at least one note or coin.');x();cb(tendered,{...counts})}},'Confirm'));
+}
 function pay(){const o=S.cur;if(!o.lines.length)return;if(!(o.cust.name||'').trim()||!(o.cust.phone||'').trim())return alert('Customer name and phone number are required before payment.');o.t=tot(o);
  const P=(o.pays||[]).slice(),due=()=>r2(o.t.total-P.reduce((a,x)=>a+x.amt,0));
- const amt=h('input',{type:'number',value:o.t.total}),info=h('b'),list=h('div'),done=h('button',{class:'p',disabled:true,onclick:async()=>{o.pays=P;if(o.loyaltyRedeemed)o.loyaltyRedeemed=o.t.d;o.change=Math.max(-due(),0);o.status='paid';o.paidAt=now();o.tok=o.tok||tok();if(!o.no||o.no.endsWith('~'))o.no=await nextNo();await dedu(o);await deduVariant(o);if(!isRetail())mk(o);o.printCount=(o.printCount||0)+1;await persist();x();prnInv(rcpt(o,false));
+ const amt=h('input',{type:'number',value:o.t.total}),info=h('b'),list=h('div'),done=h('button',{class:'p',disabled:true,onclick:async()=>{o.pays=P;if(o.loyaltyRedeemed)o.loyaltyRedeemed=o.t.d;o.change=Math.max(-due(),0);o.status='paid';o.paidAt=now();o.tok=o.tok||tok();if(!o.no||o.no.endsWith('~'))o.no=await nextNo();await dedu(o);await deduVariant(o);if(!isRetail())mk(o);o.printCount=(o.printCount||0)+1;await persist();await markTableDirty(o);x();prnInv(rcpt(o,false));
   const url=location.origin+'/i.html?o='+encodeURIComponent(o.tok),cm=modal(h('h3',{},'Payment complete · '+inrc(o.t.total)),h('div',{class:'row'},h('button',{class:'p',onclick:()=>wa(o)},'Send bill'),h('button',{onclick:()=>open(url,'_blank')},'Open'),h('button',{onclick:()=>cm()},'Done')));
   S.cur=null;render()}},'Complete and print');
- const asDue=h('button',{disabled:true,onclick:async()=>{o.pays=P;if(o.loyaltyRedeemed)o.loyaltyRedeemed=o.t.d;o.status='due';o.dueAt=now();o.tok=o.tok||tok();if(!o.no||o.no.endsWith('~'))o.no=await nextNo();if(!isRetail())mk(o);await persist();x();S.cur=null;render()}},'Save as due (credit)');
- const up=()=>{list.replaceChildren(...P.map(p=>h('div',{class:'row'},p.m.toUpperCase(),inr(p.amt))));info.textContent=due()>0?'Due '+inr(due()):'Change to return '+inr(-due());amt.value=Math.max(due(),0);done.disabled=due()>0;asDue.disabled=due()<=0||!can('m')};
+ const asDue=h('button',{disabled:true,onclick:async()=>{o.pays=P;if(o.loyaltyRedeemed)o.loyaltyRedeemed=o.t.d;o.status='due';o.dueAt=now();o.tok=o.tok||tok();if(!o.no||o.no.endsWith('~'))o.no=await nextNo();if(!isRetail())mk(o);await persist();await markTableDirty(o);x();S.cur=null;render()}},'Save as due (credit)');
+ const up=()=>{list.replaceChildren(...P.map(p=>h('div',{class:'row'},p.m.toUpperCase()+(p.tendered?' (tendered '+inr(p.tendered)+(p.change?', change '+inr(p.change):'')+')':''),inr(p.amt))));info.textContent=due()>0?'Due '+inr(due()):'Change to return '+inr(-due());amt.value=Math.max(due(),0);done.disabled=due()>0;asDue.disabled=due()<=0||!can('m')};
  const splitEq=()=>{const n=+prompt('Split between how many people?','2');if(n>1)amt.value=Math.ceil(due()/n)};
  const splitItem=()=>{const v=prompt(o.lines.map((l,i)=>(i+1)+'. '+l.name+' x'+l.qty).join('\n')+'\nItem numbers to pay now (e.g. 1,3)');if(!v)return;const idxs=v.split(',').map(s=>+s.trim());const q=idxs.reduce((a,i)=>{const l=o.lines[i-1];return a+(l?l.price*l.qty:0)},0);if(q)amt.value=Math.min(due(),Math.ceil(o.t.total*q/(o.t.sub||1)))};
- const x=modal(h('h3',{},'Pay '+inr(o.t.total)),amt,h('div',{class:'row'},h('button',{onclick:splitEq},'Split equally'),h('button',{onclick:splitItem},'Split by item')),h('div',{class:'row'},...['cash','upi','card','other'].map(m=>h('button',{onclick:()=>{let a=+amt.value;if(!(a>0))return;if(m!='cash')a=Math.min(a,due());if(a<=0)return;P.push({m,amt:a});up()}},m.toUpperCase()))),list,info,h('div',{class:'row'},done,asDue));up()}
+ const x=modal(h('h3',{},'Pay '+inr(o.t.total)),amt,h('div',{class:'row'},h('button',{onclick:splitEq},'Split equally'),h('button',{onclick:splitItem},'Split by item')),h('div',{class:'row'},...['cash','upi','card','other'].map(m=>h('button',{onclick:()=>{
+  if(m=='cash'){const target=Math.min(+amt.value||due(),due());if(!(target>0))return;cashDenomModal(target,(tendered,denoms)=>{const applied=Math.min(tendered,target);P.push({m,amt:applied,tendered,denoms,change:r2(tendered-applied)});up()});return}
+  let a=+amt.value;if(!(a>0))return;a=Math.min(a,due());if(a<=0)return;P.push({m,amt:a});up()
+ }},m.toUpperCase()))),list,info,h('div',{class:'row'},done,asDue));up()}
 const dayLocked=d=>L('dayclose').find(x=>x.d==d);
 async function refund(o){if(!can('m'))return alert('Manager only');if(dayLocked(new Date(o.paidAt).toLocaleDateString('en-CA'))&&!can('o'))return alert('This day is closed. Ask an owner to reopen it first.');const max=r2(o.t.total-(o.refunds||[]).reduce((a,r)=>a+r.amt,0));if(max<=0)return alert('Nothing left to refund');const amt=+prompt('Refund amount (up to '+inr(max)+')',max);if(!(amt>0)||amt>max)return;
  pickReason(async reason=>{const c=structuredClone(o);c.refunds=(c.refunds||[]).concat({amt:r2(amt),reason,by:S.user.email||S.user.id,at:now()});await save('order',c,c.id);render()})}
@@ -341,8 +424,10 @@ async function doReturn(o,idx,qtyv,type,give){if(!can('m'))return alert('Manager
   c.exchanges=(c.exchanges||[]).concat({lineIdx:idx,qty:qtyv,type,amt,give:give?{...give,qty:qtyv,amt:givenAmt}:null,diff:r2(givenAmt-amt),reason,by:S.user.email||S.user.id,at:now()});
   await save('order',c,c.id);render();
   alert(type=='refund'?('Refund due: '+inr(amt)):(givenAmt>amt?'Collect the difference: '+inr(r2(givenAmt-amt)):givenAmt<amt?'Refund the difference: '+inr(r2(amt-givenAmt)):'Even exchange, nothing owed either way.'))})}
+const VEG_DOT={veg:'🟢',nonveg:'🔴',egg:'🟡'};
 V.pos=()=>{const isR=isRetail(),o=S.cur||(S.cur=newOrder()),cats=effCats().sort((a,b)=>a.n-b.n),q=S.q.toLowerCase(),t=tot(o);if(!cats.some(c=>c.id==S.cat))S.cat=cats[0]&&cats[0].id;
- const its=effItems().filter(i=>!itemOff(i)&&(q?i.name.toLowerCase().includes(q):i.cat==S.cat)).sort((a,b)=>a.name.localeCompare(b.name));
+ const vf=S.vf||'all';
+ const its=effItems().filter(i=>!itemOff(i)&&(q?i.name.toLowerCase().includes(q):i.cat==S.cat)&&(isR||vf=='all'||(i.veg||'veg')==vf)).sort((a,b)=>a.name.localeCompare(b.name));
  const phone=(o.cust.phone||'').replace(/\D/g,''),hist=phone.length>=10?L('order').filter(x=>x.id!=o.id&&(x.status=='paid'||x.status=='due')&&(x.cust||{}).phone&&x.cust.phone.replace(/\D/g,'')==phone):[];
  return h('div',{class:'g pos-g'},h('div',{},
   isR?null:h('div',{class:'row'},...['Dine-in','Takeaway','Delivery'].map(x=>h('button',{class:o.type==x?'on':'',onclick:()=>{o.type=x;if(x=='Delivery')o.src=prompt('Source (Zomato / Swiggy / Website)',o.src||'Zomato')||'';if(x!='Dine-in')o.table=null;render()}},x))),
@@ -350,7 +435,10 @@ V.pos=()=>{const isR=isRetail(),o=S.cur||(S.cur=newOrder()),cats=effCats().sort(
    h('input',{placeholder:'Search item',value:S.q,onchange:e=>{S.q=e.target.value;render()}})),
   (!isR&&o.type=='Dine-in'&&isRestaurant())?floorPlan(o):null,
   h('div',{class:'row',style:'justify-content:flex-start'},...cats.map(c=>h('button',{class:c.id==S.cat&&!q?'on':'',onclick:()=>{S.cat=c.id;S.q='';render()}},c.name))),
-  h('div',{class:'items'},...its.map(i=>h('button',{onclick:()=>isR&&i.variants&&i.variants.length?variant(i):(i.sizes&&i.sizes.length?size(i):pickMods(i,'',i.price))},h('b',{},i.name),h('br'),isR?inr(i.price)+' · '+variantQty(i)+' in stock':(i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price))))),its.length?null:h('p',{},cats.length?'No items here.':'Add categories and items in the Menu tab.')),
+  isR?null:h('div',{class:'row',style:'justify-content:flex-start'},...[['all','All'],['veg','🟢 Veg'],['nonveg','🔴 Non-veg']].map(([v,l])=>h('button',{class:vf==v?'on':'',onclick:()=>{S.vf=v;render()}},l))),
+  h('div',{class:'items'},...its.map(i=>h('button',{onclick:()=>isR&&i.variants&&i.variants.length?variant(i):(i.sizes&&i.sizes.length?size(i):pickMods(i,'',i.price))},
+   i.img?h('img',{src:i.img,style:'width:100%;height:60px;object-fit:cover;border-radius:8px;margin-bottom:4px'}):null,
+   h('b',{},(isR?'':VEG_DOT[i.veg||'veg']+' ')+i.name+(i.combo?' 🎁':'')),h('br'),isR?inr(i.price)+' · '+variantQty(i)+' in stock':(i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price))))),its.length?null:h('p',{},cats.length?'No items here.':'Add categories and items in the Menu tab.')),
  h('div',{class:'card'},h('h3',{},o.no?'Order '+o.no:'New order'),...o.lines.map(l=>h('div',{class:'row'},h('span',{},l.name+(l.size?' ('+l.size+')':'')+(l.note?' — '+l.note:'')),h('span',{},h('button',{onclick:()=>qty(l,-1)},'−'),' '+l.qty+' ',h('button',{onclick:()=>qty(l,1)},'+')),h('b',{},inr(l.price*l.qty)))),
   o.lines.length?null:h('p',{},'Tap an item to add it.'),
   h('div',{class:'row'},h('input',{placeholder:'Customer name *',style:'width:48%',value:o.cust.name||'',oninput:e=>o.cust.name=e.target.value}),h('input',{placeholder:'Phone *',style:'width:48%',value:o.cust.phone||'',oninput:e=>{o.cust.phone=e.target.value;clearTimeout(S.phoneT);S.phoneT=setTimeout(render,700)}})),
@@ -390,7 +478,12 @@ V.token=()=>{const ready=L('order').filter(o=>o.status!='void'&&o.kstat=='ready'
   ready.length?null:h('p',{style:'text-align:center;color:var(--ink-faint);padding:50px 0'},'No orders ready right now.'))};
 const variantQty=i=>(i.variants||[]).reduce((a,v)=>a+(+v.qty||0),0);
 V.staff=()=>{const sh=L('shift').sort((a,b)=>b.in>a.in?1:-1),mine=sh.find(x=>x.u==S.user.id&&!x.out);
+ const rq=(S.recipeQ||'').toLowerCase(),recipeItems=L('item').filter(i=>i.recipeText&&(!rq||i.name.toLowerCase().includes(rq)));
 return h('div',{class:'g',style:'grid-template-columns:1fr'},h('div',{class:'card'},h('h3',{},'Attendance'),h('button',{class:'p',onclick:async()=>{if(mine){mine.out=now();await save('shift',mine,mine.id)}else await save('shift',{u:S.user.id,e:S.user.email||'me',in:now()});render()}},mine?'Clock out':'Clock in'),...sh.slice(0,30).map(x=>h('div',{class:'row'},(x.e||'')+' '+new Date(x.in).toLocaleString(),x.out?Math.round((new Date(x.out)-new Date(x.in))/6e4)+' min':'on shift')),h('h3',{},'Notifications'),h('p',{style:'font-size:13px;color:var(--ink-dim)'},'Get an order alert on this device even when the app is closed.'),h('button',{class:'p',onclick:enablePush},'Enable notifications on this device')),
+ cfg().staffManual?h('div',{class:'card'},h('h3',{},'Staff manual'),h('p',{style:'font-size:13px;white-space:pre-wrap'},cfg().staffManual)):null,
+ h('div',{class:'card'},h('h3',{},'Recipes'),h('input',{placeholder:'Search item',value:S.recipeQ||'',oninput:e=>{S.recipeQ=e.target.value;render()}}),
+  ...recipeItems.map(i=>h('div',{style:'padding:8px 0;border-bottom:1px solid var(--line)'},h('b',{},i.name),h('p',{style:'font-size:13px;white-space:pre-wrap;margin:4px 0 0'},i.recipeText))),
+  recipeItems.length?null:h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},rq?'No matching recipes.':'No prep instructions added yet — set them per item in Back Office › Menu.')),
  can('m')?h('div',{class:'card'},h('h3',{},'Staff & roles'),h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Adding/removing staff, role assignment and payslips are managed elsewhere — ',h('a',{href:'/backoffice.html',style:'color:var(--accent)'},'open Back Office'),' or ',h('a',{href:'https://auzslab.in/account.html#staff',target:'_blank',style:'color:var(--accent)'},'your account page'),'.')):null)};
 let G=[];
 async function getG(){if(!navigator.onLine||!S.user)return;if(!featureOn('self_order')){if(G.length){G=[];render()}return}const{data,error}=await sb.from('guest_orders').select('*').eq('status','new').order('created_at');if(error)return;const n=G.length;G=data||[];if(G.length>n)alertSound(3);if(G.length!=n&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))render()}

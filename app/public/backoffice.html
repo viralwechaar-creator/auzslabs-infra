@@ -189,8 +189,54 @@ function closeDay(d,expected,sales,bills){
   const counted=+cnt.value||0,variance=r2(counted-expected),finish=async reason=>{await save('dayclose',{d,sales,bills,expectedCash:expected,countedCash:counted,variance,varianceReason:reason||null,by:S.user.email||S.user.id,at:now()});x();render()};
   if(Math.abs(variance)>0.5)pickReason(reason=>finish(reason));else finish(null);
  }},'Close day')))}
-V.rep=()=>{const tabs=[['day','Day report'],['custom','Custom report']],rt=S.repTab||'day';
- return h('div',{},h('div',{class:'tabbar'},...tabs.map(([k,n])=>h('button',{class:rt==k?'on':'',onclick:()=>{S.repTab=k;render()}},n))),rt=='custom'?V.dynrep():dayReportPane())};
+V.rep=()=>{const tabs=[['day','Day report'],['custom','Custom report'],['analytics','Analytics']],rt=S.repTab||'day';
+ return h('div',{},h('div',{class:'tabbar'},...tabs.map(([k,n])=>h('button',{class:rt==k?'on':'',onclick:()=>{S.repTab=k;render()}},n))),rt=='custom'?V.dynrep():rt=='analytics'?analyticsPane():dayReportPane())};
+function unitCost(i){
+ if(i.combo&&i.comboText)return r2(i.comboText.split(',').reduce((a,p)=>{const parts=p.split(':'),cn=parts[0],cq=+parts[1]||1,ci=L('item').find(x=>x.name.toLowerCase()==(cn||'').trim().toLowerCase());return a+(ci?unitCost(ci)*cq:0)},0));
+ if(i.rec)return r2(i.rec.split(',').reduce((a,p)=>{const parts=p.split(':'),n=parts[0],qn=+parts[1],g=L('ing').find(x=>x.name.toLowerCase()==n.trim().toLowerCase());return a+(g?(g.cost||0)*qn:0)},0));
+ return i.cost||0;
+}
+// One dashboard reading straight off the same order/exp/item records
+// every other report already reads -- not a separately-maintained
+// calculation, so every sale/expense automatically contributes here
+// without staff entering anything twice.
+function analyticsPane(){
+ const presets=[['today','Today'],['week','This week'],['month','This month'],['year','This year'],['custom','Custom']];
+ const period=S.anPeriod||'month',now_=new Date(),localDay=iso=>new Date(iso).toLocaleDateString('en-CA');
+ let from,to;
+ if(period=='today'){from=to=today()}
+ else if(period=='week'){const d=new Date(now_);d.setDate(d.getDate()-d.getDay());from=d.toLocaleDateString('en-CA');to=today()}
+ else if(period=='month'){from=new Date(now_.getFullYear(),now_.getMonth(),1).toLocaleDateString('en-CA');to=today()}
+ else if(period=='year'){from=new Date(now_.getFullYear(),0,1).toLocaleDateString('en-CA');to=today()}
+ else{from=S.anFrom||today();to=S.anTo||today()}
+ const os=L('order').filter(o=>o.status=='paid'&&o.paidAt&&localDay(o.paidAt)>=from&&localDay(o.paidAt)<=to);
+ const ex=L('exp').filter(e=>e.d>=from&&e.d<=to);
+ const grossSales=r2(os.reduce((a,o)=>a+o.t.sub,0)),discounts=r2(os.reduce((a,o)=>a+o.t.d,0)),refunds=r2(os.reduce((a,o)=>a+(o.refunds||[]).reduce((b,r)=>b+r.amt,0),0));
+ const netSales=r2(grossSales-discounts-refunds);
+ const cogs=r2(os.reduce((a,o)=>a+o.lines.reduce((b,l)=>{const it=R[l.id];return b+(it&&!it.deleted?unitCost(it.data)*l.qty:0)},0),0));
+ const grossProfit=r2(netSales-cogs),opEx=r2(ex.reduce((a,e)=>a+e.amt,0)),netProfit=r2(grossProfit-opEx),marginPct=netSales?Math.round(netProfit/netSales*100):0;
+ const hourBuckets={};os.forEach(o=>{const hr=new Date(o.paidAt).getHours();hourBuckets[hr]=(hourBuckets[hr]||0)+1});
+ const peakRows=Object.entries(hourBuckets).sort((a,b)=>b[1]-a[1]).slice(0,5);
+ const perf={};os.forEach(o=>o.lines.forEach(l=>{const it=R[l.id],cost=it&&!it.deleted?unitCost(it.data)*l.qty:0,rev=l.price*l.qty,k=l.name,p=perf[k]||(perf[k]={qty:0,rev:0,cost:0});p.qty+=l.qty;p.rev=r2(p.rev+rev);p.cost=r2(p.cost+cost)}));
+ const perfRows=Object.entries(perf).map(([name,v])=>({name,...v,profit:r2(v.rev-v.cost)})).sort((a,b)=>b.rev-a.rev);
+ const top5=perfRows.slice(0,5),bottom5=perfRows.length>5?perfRows.slice(-5).reverse():[];
+ const target=+cfg().salesTarget||0,mf=new Date(now_.getFullYear(),now_.getMonth(),1).toLocaleDateString('en-CA'),monthSales=r2(L('order').filter(o=>o.status=='paid'&&o.paidAt&&localDay(o.paidAt)>=mf&&localDay(o.paidAt)<=today()).reduce((a,o)=>a+o.t.total,0)),targetPct=target?Math.min(100,Math.round(monthSales/target*100)):null;
+ return h('div',{class:'g',style:'grid-template-columns:1fr'},
+  h('div',{class:'card'},h('div',{class:'row',style:'flex-wrap:wrap'},...presets.map(([v,l])=>h('button',{class:period==v?'on':'',onclick:()=>{S.anPeriod=v;render()}},l))),
+   period=='custom'?h('div',{class:'row'},h('input',{type:'date',value:from,onchange:e=>{S.anFrom=e.target.value;render()}}),' to ',h('input',{type:'date',value:to,onchange:e=>{S.anTo=e.target.value;render()}})):null),
+  h('div',{class:'card'},h('h3',{},'Profit & Loss'),
+   h('div',{class:'row'},'Gross sales',inr(grossSales)),h('div',{class:'row'},'Discounts','-'+inr(discounts)),h('div',{class:'row'},'Refunds','-'+inr(refunds)),
+   h('div',{class:'row'},h('b',{},'Net sales'),h('b',{},inr(netSales))),h('div',{class:'row'},'Cost of goods sold','-'+inr(cogs)),
+   h('div',{class:'row'},h('b',{},'Gross profit'),h('b',{},inr(grossProfit))),h('div',{class:'row'},'Operating expenses','-'+inr(opEx)),
+   h('div',{class:'row',style:'border-top:2px solid var(--ink);padding-top:8px;margin-top:4px'},h('b',{},'Net profit'),h('b',{style:netProfit>=0?'color:#1f7a3d':'color:var(--accent)'},inr(netProfit)+' ('+marginPct+'%)'))),
+  h('div',{class:'card'},h('h3',{},'Monthly sales target'),
+   h('div',{class:'row'},h('input',{type:'number',placeholder:'Set monthly target',value:cfg().salesTarget||'',onblur:async e=>{await save('settings',{...cfg(),salesTarget:+e.target.value||0},'settings');render()}})),
+   target?h('div',{},h('div',{class:'row'},'This month',inr(monthSales)+' of '+inr(target)),h('div',{style:'background:var(--l);border-radius:999px;height:10px;overflow:hidden;margin-top:4px'},h('div',{style:'background:var(--accent);height:100%;width:'+targetPct+'%'}))):h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Set a target above to track progress.')),
+  h('div',{class:'card'},h('h3',{},'Peak hours'),peakRows.length?peakRows.map(([hr,n])=>h('div',{class:'row'},hr+':00–'+hr+':59',n+' order'+(n>1?'s':''))):h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No paid orders in this range.')),
+  h('div',{class:'card'},h('h3',{},'Top-selling'),...top5.map(p=>h('div',{class:'row'},p.name,p.qty+' · '+inr(p.rev)+' · '+inr(p.profit)+' profit'))),
+  bottom5.length?h('div',{class:'card'},h('h3',{},'Lower-selling'),h('p',{style:'font-size:12px;color:var(--ink-dim)'},'Numbers only — doesn\'t mean cut it.'),...bottom5.map(p=>h('div',{class:'row'},p.name,p.qty+' · '+inr(p.rev)+' · '+inr(p.profit)+' profit'))):null,
+  feedbackCard());
+}
 function dayReportPane(){const dc=L('dayclose').find(x=>x.d==S.d),os=L('order').filter(o=>o.status=='paid'&&new Date(o.paidAt).toLocaleDateString('en-CA')==S.d),ex=L('exp').filter(e=>e.d==S.d),m={cash:0,upi:0,card:0},it={},src={},sm=f=>r2(os.reduce((a,o)=>a+f(o),0));
  os.forEach(o=>{o.pays.forEach(p=>m[p.m]+=p.amt-(p.m=='cash'?o.change||0:0));o.lines.forEach(l=>{const k=l.name+(l.size?' ('+l.size+')':'');(it[k]=it[k]||{q:0,a:0}).q+=l.qty;it[k].a+=l.price*l.qty});if(o.src)src[o.src]=r2((src[o.src]||0)+o.t.total)});
  const refunds=r2(os.reduce((a,o)=>a+(o.refunds||[]).reduce((b,r)=>b+r.amt,0),0)),et=r2(ex.reduce((a,e)=>a+e.amt,0)),ec=h('input',{placeholder:'Expense (e.g. milk)'}),ea=h('input',{type:'number',placeholder:'Amount'}),R_=(a,b)=>h('div',{class:'row'},a,h('b',{},b));
@@ -235,6 +281,22 @@ function feedbackCard(){const fb=L('feedback');if(!fb.length)return null;
  )}
 const variantQty=i=>(i.variants||[]).reduce((a,v)=>a+(+v.qty||0),0);
 function item(i){const isR=isRetail();const px=h('input',{type:'number',value:i.price??'',placeholder:'Price'}),nm=h('input',{value:i.name||'',placeholder:'Name'}),sz=h('input',{value:(i.sizes||[]).map(s=>s.l+':'+s.p).join(', '),placeholder:'Sizes, e.g. Half:49, Full:69 (optional)'}),ct=h('select',{},...L('cat').map(c=>h('option',{value:c.id,selected:c.id==i.cat},c.name))),off=h('input',{type:'checkbox',checked:itemOff(i)}),rc=h('input',{value:i.rec||'',placeholder:'Recipe, e.g. Milk:0.1, Tea:5 (optional, for stock)'}),cs=h('input',{type:'number',value:i.cost??'',placeholder:'Cost price (optional)'}),stn=h('select',{},...['Kitchen','Bar','Dessert'].map(s=>h('option',{selected:(i.st||'Kitchen')==s},s))),md=h('input',{value:(i.mods||[]).join(', '),placeholder:'Modifiers, e.g. Extra shot:20, Less sugar:0 (optional)'}),bc=h('input',{value:i.barcode||'',placeholder:'Barcode (scan or type, optional)'});
+ const veg=h('select',{},...[['veg','Veg'],['nonveg','Non-veg'],['egg','Contains egg']].map(([v,l])=>h('option',{value:v,selected:(i.veg||'veg')==v},l)));
+ const desc=h('textarea',{style:'min-height:50px;width:100%'},i.desc||''),desc2=h('label',{style:'display:grid;gap:4px'},'Description (optional, shown to customers on QR ordering)',desc);
+ const imgPrev=h('div',{style:'font-size:12px;color:var(--ink-dim)'},i.img?'Current photo is set':'No photo yet'),imgInp=h('input',{type:'file',accept:'image/*'});let imgUrl=i.img||null;
+ imgInp.onchange=async()=>{const file=imgInp.files[0];if(!file)return;imgPrev.textContent='Compressing & uploading…';try{imgUrl=await uploadSiteImage(file,'menu');imgPrev.textContent='Uploaded ✓'}catch(e){imgPrev.textContent='Upload failed: '+e.message}};
+ const imgField2=h('label',{style:'display:grid;gap:4px'},'Photo (optional)',imgInp,imgPrev);
+ // Distinct from rc (the ingredient:qty consumption formula, machine-facing) --
+ // this is the human-readable prep method a kitchen employee actually reads,
+ // surfaced read-only on index.html's Staff tab (see V.staff's Recipes card).
+ const recipeText=h('textarea',{style:'min-height:70px;width:100%'},i.recipeText||''),recipeText2=h('label',{style:'display:grid;gap:4px'},'Prep instructions for kitchen staff (optional)',recipeText);
+ // A combo is priced and sold as one item, but at KOT time (mk() in
+ // index.html) it expands into its constituent items so the kitchen
+ // ticket says what to actually cook, and at payment (dedu()) each
+ // constituent's own recipe gets deducted -- the combo itself carries
+ // no rec of its own, matching how its cost is the sum of its parts.
+ const combo=h('input',{type:'checkbox',checked:!!i.combo}),comboText=h('input',{value:i.comboText||'',placeholder:'e.g. Chicken Biryani:1, Coke:1'}),
+  comboField=h('div',{style:'display:grid;gap:6px'},h('label',{style:'display:flex;align-items:center;gap:8px'},combo,'This is a combo (bundle of other menu items)'),comboText);
  const vSizes=h('input',{placeholder:'Sizes, e.g. S,M,L,XL'}),vColors=h('input',{placeholder:'Colors, e.g. Black,White (optional)'}),
   lowInp=h('input',{type:'number',value:i.low??'',placeholder:'Low stock alert at (optional, default 2)'}),
   vTa=h('textarea',{placeholder:'One variant per line: Size|Color|Barcode|Qty\ne.g. M|Blue|8901030123|12',style:'min-height:90px;width:100%'},(i.variants||[]).map(v=>[v.size,v.color||'',v.barcode||'',v.qty||0].join('|')).join('\n')),
@@ -243,7 +305,8 @@ function item(i){const isR=isRetail();const px=h('input',{type:'number',value:i.
  const dur=h('select',{onchange:()=>off.checked=true},...durOpts.map(([v,l])=>h('option',{value:v,selected:v==(itemOff(i)?'keep':'0')},l)));
  const x=modal(h('h3',{},i.id?'Edit item':'New item'),nm,ct,isR?null:stn,px,
   isR?h('div',{style:'display:grid;gap:6px'},h('div',{class:'row'},vSizes,vColors,vGen),vTa,lowInp):sz,
-  isR?null:md,isR?null:rc,cs,(!isR&&cfg().hwBarcode)?bc:null,
+  isR?null:veg,isR?null:desc2,isR?null:imgField2,
+  isR?null:comboField,isR?null:md,isR?null:rc,isR?null:recipeText2,cs,(!isR&&cfg().hwBarcode)?bc:null,
   h('label',{style:'display:flex;align-items:center;gap:8px'},off,' Sold out'),h('label',{style:'display:flex;align-items:center;gap:8px'},'For how long ',dur),
   h('div',{class:'row'},h('button',{class:'p',onclick:async()=>{
   let sizes=[],variants=[],barcode=bc.value.trim()||null;
@@ -271,15 +334,23 @@ function item(i){const isR=isRetail();const px=h('input',{type:'number',value:i.
   if(selfDupe)return alert('Barcode "'+selfDupe+'" is used on more than one of this item\'s own variants. Scanning it would always resolve to just one of them -- give each variant its own code.');
   const dupeCode=myCodes.find(c=>allOtherCodes.includes(c));
   if(dupeCode&&!confirm('Barcode "'+dupeCode+'" is already used on another item/variant. Scanning it will always resolve to whichever matches first. Save anyway?'))return;
-  await save('item',{...i,name:nm.value.trim(),cat:ct.value,price:+px.value||(sizes[0]&&sizes[0].p)||0,sizes,variants,low:isR?(lowInp.value===''?2:+lowInp.value):i.low,off:off.checked,offUntil,rec:isR?'':rc.value.trim(),cost:+cs.value||0,st:stn.value,mods,barcode});x();render()}},'Save'),i.id?h('button',{onclick:async()=>{await save('item',i,i.id,true);x();render()}},'Delete'):null))}
+  await save('item',{...i,name:nm.value.trim(),cat:ct.value,price:+px.value||(sizes[0]&&sizes[0].p)||0,sizes,variants,low:isR?(lowInp.value===''?2:+lowInp.value):i.low,off:off.checked,offUntil,rec:isR?'':rc.value.trim(),cost:+cs.value||0,st:stn.value,mods,barcode,veg:isR?i.veg:veg.value,desc:isR?i.desc:desc.value.trim(),img:isR?i.img:imgUrl,recipeText:isR?i.recipeText:recipeText.value.trim(),combo:isR?false:combo.checked,comboText:isR?'':comboText.value.trim()});x();render()}},'Save'),i.id?h('button',{onclick:async()=>{await save('item',i,i.id,true);x();render()}},'Delete'):null))}
+const VEG_DOT={veg:'🟢',nonveg:'🔴',egg:'🟡'};
 V.menu=()=>{const isR=isRetail(),previewing=cfg().isDemo&&S.previewNiche;return h('div',{class:'g',style:'grid-template-columns:1fr'},
  previewing?h('p',{style:'color:var(--accent);font-size:13px'},'Previewing a sample '+S.previewNiche+' menu — read only. Pick "Current" in Settings → Business to go back to editing your real menu.'):null,
- h('div',{class:'card'},h('div',{class:'row'},h('h3',{},isR?'Products':'Menu'),previewing?null:h('span',{},h('button',{onclick:()=>{const n=prompt('Category name');n&&save('cat',{name:n,n:Date.now()}).then(render)}},'Add category'),h('button',{class:'p',onclick:()=>item({})},isR?'Add product':'Add item'))),...effCats().sort((a,b)=>a.n-b.n).map(c=>h('div',{},h('div',{class:'row'},h('b',{},c.name),previewing?null:h('button',{onclick:()=>confirm('Delete category?')&&save('cat',c,c.id,true).then(render)},'Delete')),...effItems().filter(i=>i.cat==c.id).map(i=>h('div',{class:'row'},i.name+(itemOff(i)?' (sold out'+(i.offUntil?' until '+new Date(i.offUntil).toLocaleString():'')+')':''),isR?inr(i.price)+' · '+variantQty(i)+' in stock':(i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price)),previewing?null:h('button',{onclick:()=>item(i)},'Edit')))))))};
+ h('div',{class:'card'},h('div',{class:'row'},h('h3',{},isR?'Products':'Menu'),previewing?null:h('span',{},h('button',{onclick:()=>{const n=prompt('Category name');n&&save('cat',{name:n,n:Date.now()}).then(render)}},'Add category'),h('button',{class:'p',onclick:()=>item({})},isR?'Add product':'Add item'))),...effCats().sort((a,b)=>a.n-b.n).map(c=>h('div',{},h('div',{class:'row'},h('b',{},c.name),previewing?null:h('button',{onclick:()=>confirm('Delete category?')&&save('cat',c,c.id,true).then(render)},'Delete')),...effItems().filter(i=>i.cat==c.id).map(i=>h('div',{class:'row'},(isR?'':VEG_DOT[i.veg||'veg']+' ')+i.name+(i.combo?' 🎁':'')+(itemOff(i)?' (sold out'+(i.offUntil?' until '+new Date(i.offUntil).toLocaleString():'')+')':''),isR?inr(i.price)+' · '+variantQty(i)+' in stock':(i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price)),previewing?null:h('button',{onclick:()=>item(i)},'Edit')))))))};
 V.set=()=>{const s=cfg(),F={},sel=(k,l,o)=>h('label',{},l,h('select',{style:'width:100%',onchange:e=>F[k]=e.target.value},...o.map(([v,n])=>h('option',{value:v,selected:String(s[k]||o[0][0])==String(v)},n)))),f=(k,l,t)=>h('label',{},l,h('input',{type:t||'text',value:s[k],style:'width:100%',oninput:e=>F[k]=t=='number'?+e.target.value:e.target.value})),ta=(k,l)=>h('label',{},l,h('textarea',{style:'width:100%;min-height:70px',oninput:e=>F[k]=e.target.value},s[k]||''));
  const sw=(k,title,desc)=>h('div',{class:'hw-row'},h('div',{class:'hw-text'},h('b',{},title),h('span',{},desc)),h('label',{class:'switch'},h('input',{type:'checkbox',checked:!!s[k],onchange:async e=>{await save('settings',{...cfg(),[k]:e.target.checked},'settings');render()}}),h('div',{class:'track'})));
  const imgField=(k,l)=>{const inp=h('input',{type:'file',accept:'image/*'}),prev=h('div',{style:'font-size:12px;color:var(--ink-dim)'},s[k]?'Current image is set':'No image yet');inp.onchange=async()=>{const file=inp.files[0];if(!file)return;prev.textContent='Compressing & uploading…';try{F[k]=await uploadSiteImage(file,k);prev.textContent='Uploaded ✓ — click Save to apply'}catch(e){prev.textContent='Upload failed: '+e.message}};return h('label',{style:'display:grid;gap:4px'},l,inp,prev)};
  const galInp=h('input',{type:'file',accept:'image/*',multiple:true}),galPrev=h('div',{style:'font-size:12px;color:var(--ink-dim)'},(s.siteGallery||'').split(',').filter(Boolean).length+' photo(s) in gallery');
  galInp.onchange=async()=>{const files=[...galInp.files];if(!files.length)return;galPrev.textContent='Compressing & uploading '+files.length+'…';try{const urls=[];for(const file of files)urls.push(await uploadSiteImage(file,'gallery'));const existing=(F.siteGallery??s.siteGallery??'').split(',').filter(Boolean);F.siteGallery=[...existing,...urls].join(',');galPrev.textContent=F.siteGallery.split(',').filter(Boolean).length+' photo(s) — click Save to apply'}catch(e){galPrev.textContent='Upload failed: '+e.message}};
+ // Shown only on the customer-facing table-QR ordering screen (site.html,
+ // when a valid ?t=<table> is present) -- separate from the general
+ // marketing-site gallery above, since a combo/offer banner belongs at the
+ // point of ordering, not the public homepage a QR scan never lands on.
+ const qrInp=h('input',{type:'file',accept:'image/*',multiple:true}),qrPrev=h('div',{style:'font-size:12px;color:var(--ink-dim)'},(s.qrBanners||'').split(',').filter(Boolean).length+' banner(s)');
+ qrInp.onchange=async()=>{const files=[...qrInp.files];if(!files.length)return;qrPrev.textContent='Compressing & uploading '+files.length+'…';try{const urls=[];for(const file of files)urls.push(await uploadSiteImage(file,'qrbanner'));const existing=(F.qrBanners??s.qrBanners??'').split(',').filter(Boolean);F.qrBanners=[...existing,...urls].join(',');qrPrev.textContent=F.qrBanners.split(',').filter(Boolean).length+' banner(s) — click Save to apply'}catch(e){qrPrev.textContent='Upload failed: '+e.message}};
+ const qrClear=h('button',{onclick:async()=>{await save('settings',{...cfg(),qrBanners:''},'settings');render()}},'Clear all banners');
  const saveBtn=()=>h('button',{class:'p',onclick:async()=>{await save('settings',{...s,...F},'settings');alert('Saved')}},'Save');
  const panes={
   biz:()=>h('div',{class:'card',style:'display:grid;gap:8px'},h('h3',{},'Business details'),
@@ -289,6 +360,7 @@ V.set=()=>{const s=cfg(),F={},sel=(k,l,o)=>h('label',{},l,h('select',{style:'wid
    return h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Tables'),h('span',{},so?h('button',{onclick:()=>qr(L('table'))},'Print all QR'):null,h('button',{class:'p',onclick:()=>{const n=prompt('Table name');if(!n)return;const sc=prompt('Section (e.g. AC, Garden, Terrace)','Main')||'Main';save('table',{name:n,sec:sc.trim()||'Main'}).then(render)}},'Add table'))),
    !so?h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Self-order (QR) is turned off in your Services settings, so table QR codes won\'t take customers to an ordering page. Turn it back on to print/share codes again.'):null,
    ...secs.map(sc=>h('div',{},h('div',{style:"font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;color:var(--ink-faint);margin:10px 0 4px"},sc),...L('table').filter(t=>(t.sec||'Main')==sc).map(t=>h('div',{class:'row'},t.name,h('span',{},so?h('button',{onclick:()=>qr([t])},'QR'):null,h('button',{onclick:()=>{const sc2=prompt('Section',t.sec||'Main');if(sc2!=null)save('table',{...t,sec:sc2.trim()||'Main'},t.id).then(render)}},'Section'),h('button',{class:'warn',onclick:()=>save('table',t,t.id,true).then(render)},'Delete')))))))},
+  manual:()=>h('div',{class:'card',style:'display:grid;gap:8px'},h('h3',{},'Staff manual'),h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Shown read-only to staff on the POS app\'s Staff tab -- house rules, opening/closing checklist, how to handle common situations. Per-item cooking instructions are set on each item in the Menu tab instead.'),ta('staffManual','Manual text'),saveBtn()),
   reasons:()=>h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Cancellation reasons'),h('button',{class:'p',onclick:()=>{const n=prompt('Reason (e.g. "Customer changed mind")');n&&save('reason',{name:n.trim()}).then(render)}},'Add reason')),h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Required whenever a bill is voided, refunded, or a sent item is cancelled.'),...L('reason').map(rn=>h('div',{class:'row'},rn.name,h('button',{class:'warn',onclick:()=>confirm('Delete reason?')&&save('reason',rn,rn.id,true).then(render)},'Delete')))),
   coupons:()=>{const code=h('input',{placeholder:'Code, e.g. WELCOME10'}),ty=h('select',{},h('option',{value:'%'},'% off'),h('option',{value:'₹'},'₹ off')),val=h('input',{type:'number',placeholder:'Value'}),exp=h('input',{type:'date',placeholder:'Expires (optional)'}),mx=h('input',{type:'number',placeholder:'Max uses (optional)'});
    return h('div',{class:'g',style:'grid-template-columns:1fr'},
@@ -298,12 +370,14 @@ V.set=()=>{const s=cfg(),F={},sel=(k,l,o)=>h('label',{},l,h('select',{style:'wid
    h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Coupons')),h('div',{class:'row'},code,ty,val,exp,mx,h('button',{class:'p',onclick:()=>{if(!code.value||!(+val.value>0))return alert('Code and a positive value are needed.');save('coupon',{code:code.value.trim().toUpperCase(),type:ty.value,value:+val.value,expiry:exp.value||null,maxUses:mx.value===''?null:+mx.value}).then(render)}},'Add')),
    h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Applied at billing with the Coupon field next to Discount.'),
    ...L('coupon').map(c=>{const used=L('order').filter(o=>(o.status=='paid'||o.status=='due')&&o.coupon==c.code).length;return h('div',{class:'row'},c.code+' · '+c.value+(c.type=='%'?'% off':' ₹ off')+(c.expiry?' · expires '+c.expiry:'')+(c.maxUses?' · '+used+'/'+c.maxUses+' used':' · '+used+' used'),h('button',{class:'warn',onclick:()=>confirm('Delete coupon?')&&save('coupon',c,c.id,true).then(render)},'Delete'))})))},
-  site:()=>h('div',{class:'card',style:'display:grid;gap:10px'},h('div',{class:'row'},h('h3',{},'Website'),h('a',{href:'/site.html',target:'_blank'},'Preview ↗')),f('siteKicker','Small tagline above headline'),ta('siteTag','Headline (press Enter for a line break)'),f('siteSub','Subheading'),ta('siteAbout','About text'),f('siteHours','Opening hours text'),f('siteInsta','Instagram link (optional)'),f('siteMaps','Google Maps link (optional)'),imgField('siteHero','Hero photo — compressed automatically on upload'),imgField('siteAboutImg','About-section photo'),h('label',{style:'display:grid;gap:4px'},'Gallery photos (adds to existing, compressed automatically)',galInp,galPrev),saveBtn()),
+  site:()=>h('div',{class:'g',style:'grid-template-columns:1fr'},
+   h('div',{class:'card',style:'display:grid;gap:10px'},h('div',{class:'row'},h('h3',{},'Website'),h('a',{href:'/site.html',target:'_blank'},'Preview ↗')),f('siteKicker','Small tagline above headline'),ta('siteTag','Headline (press Enter for a line break)'),f('siteSub','Subheading'),ta('siteAbout','About text'),f('siteHours','Opening hours text'),f('siteInsta','Instagram link (optional)'),f('siteMaps','Google Maps link (optional)'),imgField('siteHero','Hero photo — compressed automatically on upload'),imgField('siteAboutImg','About-section photo'),h('label',{style:'display:grid;gap:4px'},'Gallery photos (adds to existing, compressed automatically)',galInp,galPrev),saveBtn()),
+   h('div',{class:'card',style:'display:grid;gap:10px'},h('h3',{},'QR ordering banners'),h('p',{style:'font-size:12.5px;color:var(--ink-dim);margin-top:-4px'},'Shown to customers right when they scan a table\'s QR code, above the menu — combos, today\'s offer, anything worth putting in front of someone about to order.'),h('label',{style:'display:grid;gap:4px'},'Add banner photos',qrInp,qrPrev),(s.qrBanners||'').split(',').filter(Boolean).length?qrClear:null)),
   hardware:()=>h('div',{class:'card'},h('h3',{},'Hardware'),h('p',{style:'font-size:12.5px;color:var(--ink-dim);margin-top:-4px'},'Off by default. Only turn one on if you actually have that setup — nothing changes for anyone else.'),
    sw('hwBarcode','Barcode scanner','Adds a Barcode field to items, and scanning one on the Sell screen adds it straight to the order. Works with any USB/Bluetooth scanner set to keyboard-emulation mode (the default for nearly all of them) — no drivers or pairing needed.'),
    sw('hwToken','Token display screen','Adds a Token tab showing large ready-for-pickup numbers, meant for a spare tablet or monitor at the counter. Takeaway/Delivery orders get a token number when sent to the kitchen.')),
  };
- const tabs=[['biz','Business'],['tables','Tables'],['reasons','Reasons'],['coupons','Coupons & Loyalty'],['hardware','Hardware'],['site','Website']];
+ const tabs=[['biz','Business'],['tables','Tables'],['reasons','Reasons'],['coupons','Coupons & Loyalty'],['hardware','Hardware'],['manual','Staff manual'],['site','Website']];
  return h('div',{class:'g',style:'grid-template-columns:1fr'},
   h('div',{class:'tabbar'},...tabs.map(([k,n])=>h('button',{class:S.setTab==k?'on':'',onclick:()=>{S.setTab=k;render()}},n))),
   panes[S.setTab in panes?S.setTab:'biz']()
@@ -383,13 +457,25 @@ function foodCostRows(){
  });
  return[h('table',{},head,...body)];
 }
+// Logged as their own kind (see db/046) instead of silently mutating
+// g.qty with no trace -- every other stock movement here (purchase,
+// waste) already writes its own record, adjustment/transfer previously
+// didn't.
+function adjustModal(g){
+ const v=h('input',{type:'number',placeholder:'Adjust by (+ add, − remove)'}),reason=h('input',{placeholder:'Reason (e.g. count correction)'});
+ const x=modal(h('h3',{},'Adjust stock — '+g.name),h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'For corrections (miscounts, damage found later), not purchases or sales.'),v,reason,
+  h('button',{class:'p',onclick:async()=>{const n=+v.value;if(!n)return alert('Enter a non-zero amount.');g.qty=r2(g.qty+n);await save('ing',g,g.id);await save('adjustment',{ing:g.name,q:n,reason:reason.value.trim()||null,by:S.user.email||S.user.id,at:now()});x();render()}},'Save'))}
+function transferModal(g){
+ const v=h('input',{type:'number',placeholder:'Quantity'}),from=h('input',{placeholder:'From (e.g. Main Store)'}),to=h('input',{placeholder:'To (e.g. Kitchen)'});
+ const x=modal(h('h3',{},'Transfer — '+g.name),h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Moving stock between areas doesn\'t change the total on hand -- this just logs where it went.'),v,from,to,
+  h('button',{class:'p',onclick:async()=>{const n=+v.value;if(!(n>0))return alert('Enter a positive quantity.');if(!from.value.trim()||!to.value.trim())return alert('Enter both a from and a to area.');await save('transfer',{ing:g.name,q:n,from:from.value.trim(),to:to.value.trim(),by:S.user.email||S.user.id,at:now()});x();render()}},'Save'))}
 function ingInv(){const nm=h('input',{placeholder:'Ingredient'}),un=h('input',{placeholder:'unit'}),q=h('input',{type:'number',placeholder:'Stock'}),lo=h('input',{type:'number',placeholder:'Low at'}),
  sf=S.stkFrom||today(),st=S.stkTo||today(),inRange=d=>d&&d>=sf&&d<=st,
  stockRows=L('ing').map(g=>({g,purch:r2((g.purchases||[]).filter(p=>inRange(p.d)).reduce((a,p)=>a+p.qty,0)),purchAmt:r2((g.purchases||[]).filter(p=>inRange(p.d)).reduce((a,p)=>a+p.amt,0)),waste:r2(L('waste').filter(w=>w.ing==g.name&&inRange(w.d)).reduce((a,w)=>a+w.q,0))})),
  reorder=reorderRows();
 return h('div',{class:'g',style:'grid-template-columns:1fr'},
  reorder.length?h('div',{class:'card'},h('h3',{},'Reorder alerts ('+reorder.length+')'),...reorder.map(({g,vel,daysLeft,suggest})=>h('div',{class:'row',style:'color:var(--accent)'},g.name+' — '+g.qty+' '+g.unit+' on hand',daysLeft!=null?daysLeft+' days left at current use · reorder ~'+suggest+' '+g.unit:'below low-stock threshold'))):null,
- h('div',{class:'card'},h('h3',{},'Inventory (linked to item recipes in Menu)'),can('m')?h('div',{class:'row'},nm,un,q,lo,h('button',{class:'p',onclick:async()=>{if(!nm.value)return;await save('ing',{name:nm.value,unit:un.value,qty:+q.value||0,low:+lo.value||0});render()}},'Add')):null,...L('ing').map(g=>h('div',{class:'row',style:g.qty<=g.low?'color:var(--accent)':''},g.name+' '+g.qty+' '+g.unit+(g.qty<=g.low?' ⚠ low':'')+(g.expiry?' · exp '+g.expiry:''),can('m')?h('span',{},h('button',{class:'p',onclick:()=>purchaseIng(g)},'Purchase'),h('button',{onclick:async()=>{const v=+prompt('Adjust stock (+) or remove (−) -- for corrections, not purchases');if(v){g.qty=r2(g.qty+v);await save('ing',g,g.id)}render()}},'Adjust'),h('button',{onclick:async()=>{const v=+prompt('Wasted quantity');if(v>0){g.qty=r2(g.qty-v);await save('ing',g,g.id);await save('waste',{ing:g.name,q:v,d:today()})}render()}},'Waste'),h('button',{onclick:()=>setExpiry(g)},'Expiry')):null))),
+ h('div',{class:'card'},h('h3',{},'Inventory (linked to item recipes in Menu)'),can('m')?h('div',{class:'row'},nm,un,q,lo,h('button',{class:'p',onclick:async()=>{if(!nm.value)return;await save('ing',{name:nm.value,unit:un.value,qty:+q.value||0,low:+lo.value||0});render()}},'Add')):null,...L('ing').map(g=>h('div',{class:'row',style:g.qty<=g.low?'color:var(--accent)':''},g.name+' '+g.qty+' '+g.unit+(g.qty<=g.low?' ⚠ low':'')+(g.expiry?' · exp '+g.expiry:''),can('m')?h('span',{},h('button',{class:'p',onclick:()=>purchaseIng(g)},'Purchase'),h('button',{onclick:()=>adjustModal(g)},'Adjust'),h('button',{onclick:()=>transferModal(g)},'Transfer'),h('button',{onclick:async()=>{const v=+prompt('Wasted quantity');if(v>0){g.qty=r2(g.qty-v);await save('ing',g,g.id);await save('waste',{ing:g.name,q:v,d:today()})}render()}},'Waste'),h('button',{onclick:()=>setExpiry(g)},'Expiry')):null))),
  h('div',{class:'card'},h('h3',{},'Stock value & food cost'),
   h('div',{class:'row'},'Inventory value on hand',h('b',{},inr(r2(L('ing').reduce((a,g)=>a+(g.qty||0)*(g.cost||0),0))))),
   h('p',{style:'font-size:12px;color:var(--ink-dim);margin-top:8px'},'Recipe cost is what the last purchase price of each ingredient says it costs to make one -- not a formal FIFO/weighted-average cost.'),
@@ -404,7 +490,12 @@ return h('div',{class:'g',style:'grid-template-columns:1fr'},
   h('p',{style:'font-size:12px;color:var(--ink-dim)'},'Purchased and wasted quantities in this range, alongside the current stock on hand.'),
   h('table',{},h('tr',{},h('th',{},'Ingredient'),h('th',{},'Purchased'),h('th',{},'Purchase cost'),h('th',{},'Wasted'),h('th',{},'On hand')),...stockRows.map(({g,purch,purchAmt,waste})=>h('tr',{},h('td',{},g.name),h('td',{},purch+' '+g.unit),h('td',{},inr(purchAmt)),h('td',{},waste+' '+g.unit),h('td',{},g.qty+' '+g.unit)))),
   h('button',{onclick:()=>csv([['Ingredient','Purchased','Purchase cost','Wasted','On hand'],...stockRows.map(({g,purch,purchAmt,waste})=>[g.name,purch,purchAmt,waste,g.qty])],'stock-'+sf+'_'+st+'.csv')},'Export CSV')),
- h('div',{class:'card'},h('h3',{},'Wastage log'),...L('waste').slice(-20).reverse().map(w=>h('div',{class:'row'},w.d+' · '+w.ing,w.q))))}
+ h('div',{class:'card'},h('h3',{},'Wastage log'),...L('waste').slice(-20).reverse().map(w=>h('div',{class:'row'},w.d+' · '+w.ing+(w.reason?' · '+w.reason:''),w.q))),
+ h('div',{class:'card'},h('h3',{},'Adjustments & transfers'),h('p',{style:'font-size:12px;color:var(--ink-dim)'},'Adjustments correct the total on hand; transfers just record where stock moved -- the total is unchanged.'),
+  ...[...L('adjustment').map(a=>({...a,_t:'adjustment'})),...L('transfer').map(t=>({...t,_t:'transfer'}))].sort((a,b)=>(b.at||'')>(a.at||'')?1:-1).slice(0,20).map(r=>h('div',{class:'row'},
+   new Date(r.at).toLocaleString()+' · '+r.ing+(r._t=='adjustment'?' · '+(r.q>0?'+':'')+r.q+(r.reason?' ('+r.reason+')':''):' · '+r.q+' from '+r.from+' → '+r.to),
+   h('span',{class:'pill'},r._t))),
+  [...L('adjustment'),...L('transfer')].length?null:h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No adjustments or transfers logged yet.')))}
 function purchaseItem(i){const vendors=[...new Set(L('item').flatMap(x=>(x.purchases||[]).map(p=>p.vendor).filter(Boolean)))];
  const vend=h('input',{list:'vendlist2',placeholder:'Vendor'}),dl=h('datalist',{id:'vendlist2'},...vendors.map(v=>h('option',{value:v}))),tx=h('input',{type:'number',placeholder:'Tax % (optional)',value:0});
  const rows=(i.variants||[]).map(v=>({v,qv:h('input',{type:'number',placeholder:'Qty',style:'width:70px'}),pr:h('input',{type:'number',placeholder:'Price/unit',style:'width:90px'})}));
