@@ -90,13 +90,45 @@ const BLOCK_DEFS={
  spacer:{label:'Spacer',desc:'Blank vertical space',fields:[['height','Height (px)','number']],preview:p=>(p.height||40)+'px gap'},
 };
 
+// Ready-made starting points -- picking one prefills a normal set of
+// blocks (same 6 types editBlock() already knows how to render), so
+// "select and push it live" is: pick a template, swap in your own
+// text/photos, hit Publish. Blocks/props only (no ids) -- newPage()
+// stamps fresh ids per page so two pages started from the same
+// template never share a block id.
+const TEMPLATES={
+ blank:{label:'Blank page',blocks:[]},
+ general:{label:'General business',blocks:[
+  {type:'hero',props:{heading:'Welcome to our business',sub:'Tell visitors what you do and why they should choose you.',btnText:'Contact us',btnLink:'tel:'}},
+  {type:'text',props:{heading:'About us',body:'Share your story here — what makes your business special.'}},
+  {type:'gallery',props:{urls:[]}},
+  {type:'button',props:{text:'Get in touch',link:'tel:'}},
+ ]},
+ cafe:{label:'Cafe / restaurant',blocks:[
+  {type:'hero',props:{heading:'Fresh food, made daily',sub:'Come in and taste the difference.',btnText:'View menu',btnLink:'/site.html'}},
+  {type:'text',props:{heading:'Our story',body:'Add a few lines about your food, ingredients, or history.'}},
+  {type:'gallery',props:{urls:[]}},
+  {type:'button',props:{text:'Order online',link:'/site.html'}},
+ ]},
+ salon:{label:'Salon / services',blocks:[
+  {type:'hero',props:{heading:'Look and feel your best',sub:'Book an appointment with our team today.',btnText:'Book now',btnLink:'tel:'}},
+  {type:'text',props:{heading:'Our services',body:'List your services and specialities here.'}},
+  {type:'gallery',props:{urls:[]}},
+  {type:'button',props:{text:'Call to book',link:'tel:'}},
+ ]},
+};
+
 function newPage(){
+ let chosen='blank';
  const t=h('input',{placeholder:'Page title, e.g. About us'});
- const x=modal(h('h3',{},'New page'),t,h('div',{style:'display:flex;gap:8px;justify-content:flex-end'},h('button',{onclick:()=>x()},'Cancel'),h('button',{class:'p',onclick:async()=>{
+ const tplWrap=h('div',{style:'display:grid;gap:6px'});
+ tplWrap.append(...Object.entries(TEMPLATES).map(([k,def])=>h('button',{class:'page-btn'+(k=='blank'?' on':''),style:'width:100%;text-align:left',onclick:e=>{chosen=k;[...tplWrap.children].forEach(c=>c.classList.remove('on'));e.currentTarget.classList.add('on')}},def.label)));
+ const x=modal(h('h3',{},'New page'),t,h('div',{class:'note'},'Start from a template, or blank:'),tplWrap,h('div',{style:'display:flex;gap:8px;justify-content:flex-end;margin-top:6px'},h('button',{onclick:()=>x()},'Cancel'),h('button',{class:'p',onclick:async()=>{
   if(!t.value.trim())return;
   const slug=slugify(t.value);
   if(R[slug])return alert('A page with a similar title already exists.');
-  await save('sitepage',{title:t.value.trim(),slug,blocks:[]},slug);
+  const blocks=TEMPLATES[chosen].blocks.map(b=>({id:uid(),type:b.type,props:JSON.parse(JSON.stringify(b.props))}));
+  await save('sitepage',{title:t.value.trim(),slug,blocks},slug);
   S.curSlug=slug;x();
  }},'Create')));
 }
@@ -182,17 +214,31 @@ async function publish(page){
   const{data:res,error}=await sb.rpc('push_record',{rid:r.id,rkind:r.kind,rdata:r.data,rdeleted:r.deleted,base:null,force:true});
   if(!error&&res){r.srv=res.server_updated_at;await put('rec',r);await del('out',r.id)}
  }catch(e){console.warn('publish sync',e)}
- alert('Published. Live at your site’s /w.html?page='+page.slug);
+ alert('Published. Live at '+liveUrl(page));
 }
+
+// visitors only ever see /w.html?page=<slug> (see w.html + the
+// public_page RPC) -- your subdomain's own root is the staff POS app,
+// not this site, so that URL is the one thing worth making impossible
+// to miss on this screen.
+function liveUrl(page){return location.origin+'/w.html?page='+page.slug}
 
 function editorView(){
  const page=R[S.curSlug]&&R[S.curSlug].data;
  if(!page)return h('div',{class:'g'},h('p',{},'Pick a page from the menu, or create a new one.'));
+ const url=liveUrl(page);
  return h('div',{class:'g'},
   h('div',{class:'card'},h('b',{},page.title),h('div',{class:'note'},'/'+page.slug)),
+  h('div',{class:'card',style:'display:flex;align-items:center;gap:10px'},
+   h('div',{style:'flex:1;min-width:0'},
+    h('div',{class:'note'},'Your live site'),
+    h('div',{style:'font-family:\'Space Mono\',monospace;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'},url)
+   ),
+   h('button',{onclick:async()=>{try{await navigator.clipboard.writeText(url);alert('Link copied')}catch{alert(url)}}},'Copy')
+  ),
   h('div',{style:'display:flex;gap:8px;flex-wrap:wrap'},
    h('button',{class:'p',onclick:()=>addBlock(page)},'+ Add block'),
-   h('button',{onclick:()=>window.open('/w.html?page='+page.slug+(page.publishedBlocks?'':'&draft=1'),'_blank')},'Preview'),
+   h('button',{onclick:()=>window.open(url,'_blank')},'Preview'),
    h('button',{class:'on',onclick:()=>publish(page)},page.publishedBlocks?'Publish changes':'Publish')
   ),
   page.publishedAt?h('div',{class:'note'},'Last published '+new Date(page.publishedAt).toLocaleString()):h('div',{class:'note'},'Not published yet — visitors won’t see this page until you publish.'),

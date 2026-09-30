@@ -15,6 +15,21 @@ const DOMAIN = process.env.DOMAIN || '';
 // instead of sharing login's tight one.
 const DEMO_LOGIN_EMAILS = new Set(['demo-cafe@auzslab.in', 'demo-retail@auzslab.in']);
 
+// user.app_metadata.tenant_id/role come from the JWT -- a snapshot from
+// whenever that token was issued. profiles is the actual live source of
+// truth (same lesson as db/038_client_setup_handoff.sql's app_metadata
+// fix on the auth side): a caller whose profile changed since their last
+// login -- or, real incident, an owner uploading an employee document
+// whose token predates some other profile update -- gets a stale
+// tenant_id here and a misleading "empId is required" 400, since the
+// actual missing piece was tenantId, not empId. Look it up fresh instead.
+async function myProfile(userId) {
+  const { rows } = await withAuth(userId, (client) =>
+    client.query('select tenant_id, role from profiles where id = $1', [userId]),
+  );
+  return rows[0] || null;
+}
+
 // ---- whitelist: the only tables/columns this API will ever touch.
 // Mirrors exactly what app/public's client code actually calls (see
 // index.html/site.html/i.html) -- not a generic open-ended DB proxy. ----
@@ -356,10 +371,10 @@ const server = http.createServer(async (req, res) => {
     const storageMatch = url.pathname.match(/^\/storage\/site\/([a-zA-Z0-9_-]+)$/);
     if (storageMatch && req.method === 'POST') {
       if (!user) throw new HttpError(401, 'authentication required');
-      const tenantId = user.app_metadata?.tenant_id;
-      if (!tenantId || user.app_metadata?.role !== 'owner') throw new HttpError(403, 'owner only');
+      const profile = await myProfile(user.id);
+      if (!profile?.tenant_id || profile.role !== 'owner') throw new HttpError(403, 'owner only');
       const buffer = await readRawBody(req, 8_000_000); // 8MB cap -- client already compresses to well under this
-      const result = await saveSiteUpload({ tenantId, prefix: storageMatch[1], buffer });
+      const result = await saveSiteUpload({ tenantId: profile.tenant_id, prefix: storageMatch[1], buffer });
       return reply(200, result);
     }
 
@@ -373,9 +388,10 @@ const server = http.createServer(async (req, res) => {
     // sync here. ----
     if (url.pathname === '/storage/doc' && req.method === 'POST') {
       if (!user) throw new HttpError(401, 'authentication required');
-      const tenantId = user.app_metadata?.tenant_id;
+      const profile = await myProfile(user.id);
+      const tenantId = profile?.tenant_id;
       const empId = url.searchParams.get('empId');
-      if (!tenantId || !empId) throw new HttpError(400, 'empId is required');
+      if (!tenantId || !empId) throw new HttpError(400, !tenantId ? 'could not resolve your tenant -- sign in again' : 'empId is required');
       const { rows } = await withAuth(user.id, (client) =>
         client.query(`select 1 from records where tenant_id = $1 and kind = 'hr_employee' and id = $2 and not deleted`, [tenantId, empId]),
       );
@@ -388,7 +404,8 @@ const server = http.createServer(async (req, res) => {
     if (docMatch && req.method === 'GET') {
       if (!user) throw new HttpError(401, 'authentication required');
       const [, tenantId, empId, filename] = docMatch;
-      if (user.app_metadata?.tenant_id !== tenantId) throw new HttpError(403, 'not authorized');
+      const profile = await myProfile(user.id);
+      if (profile?.tenant_id !== tenantId) throw new HttpError(403, 'not authorized');
       const { rows } = await withAuth(user.id, (client) =>
         client.query(`select 1 from records where tenant_id = $1 and kind = 'hr_employee' and id = $2 and not deleted`, [tenantId, empId]),
       );
