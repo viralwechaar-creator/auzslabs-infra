@@ -102,6 +102,39 @@ table{width:100%;border-collapse:collapse}td,th{padding:5px;border-bottom:1px so
 .badge.risk-lapsed{background:#fde2e2;color:#8a1f1f}
 .cust-meta{font-size:12px;color:var(--ink-dim);margin-top:3px}
 .cust-view{flex-shrink:0}
+
+/* ---- mobile layout hardening (phones were getting pushed sideways) ----
+   Wide content (tables, date fields, long inputs) used to stretch the whole page wider
+   than the screen, so iOS shrank/shifted it and cards were cut off. Everything below
+   makes content fit its card and lets only tables scroll sideways. */
+html{-webkit-text-size-adjust:100%;max-width:100%}
+body{max-width:100%;overflow-x:clip}
+.g1{grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr))}
+.g>*,.g1>*,.k>*,.card,.md{min-width:0;max-width:100%}
+input,select,textarea{max-width:100%;min-width:0}
+label>input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),label>select,label>textarea,
+.md>input:not([type=checkbox]):not([type=radio]),.md>select,.md>textarea,
+.card>input:not([type=checkbox]):not([type=radio]),.card>select,.card>textarea{width:100%}
+input[type=date],input[type=time],input[type=month]{width:156px}
+.row>input:not([type=checkbox]):not([type=radio]):not([type=date]):not([type=time]):not([type=month]),.row>select{flex:1 1 150px}
+.row a{white-space:nowrap}
+.card a:not([class]){color:var(--accent);font-weight:600;text-decoration:none}
+.card a:not([class]):hover{text-decoration:underline}
+@media(max-width:800px){
+ table{display:block;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+ .tot table{display:table}
+ td,th{vertical-align:top;min-width:68px}
+}
+
+/* ---- sidebar drawer polish ----
+   The drawer slides under the phone's status bar, so scrolled items used to print over
+   the clock: a sticky white strip the height of the safe area now masks them. Groups are
+   separated by a hairline instead of an uneven gap. */
+.drawer::before{content:"";flex:none;position:sticky;top:0;z-index:3;height:max(14px,env(safe-area-inset-top));margin:calc(-1*max(14px,env(safe-area-inset-top))) -14px 0;background:#fff;border-radius:0 26px 0 0}
+.drawer button{flex:none;min-height:46px}
+.drawer button.grp{margin-top:14px;position:relative}
+.drawer button.grp::before{content:"";position:absolute;left:14px;right:14px;top:-8px;height:1px;background:var(--l)}
+.drawer{overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-bottom:max(14px,env(safe-area-inset-bottom))}
 </style></head><body><div id=app></div>
 <script src=/sb-client.js?v=2></script>
 <script src=/config.js></script>
@@ -588,7 +621,7 @@ const T_GROUP_START=new Set(['kds']);
 function renderDrawer(T){
  if(!drawerEl){drawerOvEl=h('div',{class:'drawer-ov',onclick:()=>{S.drawerOpen=false;syncDrawer()}});drawerEl=h('div',{class:'drawer'});document.body.append(drawerOvEl,drawerEl)}
  drawerEl.replaceChildren(
-  ...T.map(([k,n])=>{const btn=h('button',{class:S.tab==k?'on':'',style:'display:flex;align-items:center;gap:10px'+(T_GROUP_START.has(k)?';margin-top:12px':''),onclick:()=>{if(k=='builder'){location.href='/builder.html';return}if(k=='backoffice'){location.href='/backoffice.html';return}S.tab=k;S.drawerOpen=false;syncDrawer();render()}});btn.innerHTML='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0">'+(T_ICON[k]||'')+'</svg><span>'+esc(n)+'</span>';return btn}),
+  ...T.map(([k,n])=>{const btn=h('button',{class:(S.tab==k?'on':'')+(T_GROUP_START.has(k)?' grp':''),style:'display:flex;align-items:center;gap:10px',onclick:()=>{if(k=='builder'){location.href='/builder.html';return}if(k=='backoffice'){location.href='/backoffice.html';return}S.tab=k;S.drawerOpen=false;syncDrawer();render()}});btn.innerHTML='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0">'+(T_ICON[k]||'')+'</svg><span>'+esc(n)+'</span>';return btn}),
   h('button',{class:'warn',style:'margin-top:12px',onclick:async()=>{await sb.auth.signOut();localStorage.removeItem('u');location.reload()}},'Sign out'),
   h('div',{style:'margin-top:auto;padding:10px 12px;font-size:11px;color:var(--ink-faint);font-family:\'Space Mono\',monospace'},'Signed in as '+S.role)
  );
