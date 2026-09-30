@@ -404,13 +404,25 @@ function foodCostRows(){
  });
  return[h('table',{},head,...body)];
 }
+// Logged as their own kind (see db/046) instead of silently mutating
+// g.qty with no trace -- every other stock movement here (purchase,
+// waste) already writes its own record, adjustment/transfer previously
+// didn't.
+function adjustModal(g){
+ const v=h('input',{type:'number',placeholder:'Adjust by (+ add, − remove)'}),reason=h('input',{placeholder:'Reason (e.g. count correction)'});
+ const x=modal(h('h3',{},'Adjust stock — '+g.name),h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'For corrections (miscounts, damage found later), not purchases or sales.'),v,reason,
+  h('button',{class:'p',onclick:async()=>{const n=+v.value;if(!n)return alert('Enter a non-zero amount.');g.qty=r2(g.qty+n);await save('ing',g,g.id);await save('adjustment',{ing:g.name,q:n,reason:reason.value.trim()||null,by:S.user.email||S.user.id,at:now()});x();render()}},'Save'))}
+function transferModal(g){
+ const v=h('input',{type:'number',placeholder:'Quantity'}),from=h('input',{placeholder:'From (e.g. Main Store)'}),to=h('input',{placeholder:'To (e.g. Kitchen)'});
+ const x=modal(h('h3',{},'Transfer — '+g.name),h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Moving stock between areas doesn\'t change the total on hand -- this just logs where it went.'),v,from,to,
+  h('button',{class:'p',onclick:async()=>{const n=+v.value;if(!(n>0))return alert('Enter a positive quantity.');if(!from.value.trim()||!to.value.trim())return alert('Enter both a from and a to area.');await save('transfer',{ing:g.name,q:n,from:from.value.trim(),to:to.value.trim(),by:S.user.email||S.user.id,at:now()});x();render()}},'Save'))}
 function ingInv(){const nm=h('input',{placeholder:'Ingredient'}),un=h('input',{placeholder:'unit'}),q=h('input',{type:'number',placeholder:'Stock'}),lo=h('input',{type:'number',placeholder:'Low at'}),
  sf=S.stkFrom||today(),st=S.stkTo||today(),inRange=d=>d&&d>=sf&&d<=st,
  stockRows=L('ing').map(g=>({g,purch:r2((g.purchases||[]).filter(p=>inRange(p.d)).reduce((a,p)=>a+p.qty,0)),purchAmt:r2((g.purchases||[]).filter(p=>inRange(p.d)).reduce((a,p)=>a+p.amt,0)),waste:r2(L('waste').filter(w=>w.ing==g.name&&inRange(w.d)).reduce((a,w)=>a+w.q,0))})),
  reorder=reorderRows();
 return h('div',{class:'g',style:'grid-template-columns:1fr'},
  reorder.length?h('div',{class:'card'},h('h3',{},'Reorder alerts ('+reorder.length+')'),...reorder.map(({g,vel,daysLeft,suggest})=>h('div',{class:'row',style:'color:var(--accent)'},g.name+' — '+g.qty+' '+g.unit+' on hand',daysLeft!=null?daysLeft+' days left at current use · reorder ~'+suggest+' '+g.unit:'below low-stock threshold'))):null,
- h('div',{class:'card'},h('h3',{},'Inventory (linked to item recipes in Menu)'),can('m')?h('div',{class:'row'},nm,un,q,lo,h('button',{class:'p',onclick:async()=>{if(!nm.value)return;await save('ing',{name:nm.value,unit:un.value,qty:+q.value||0,low:+lo.value||0});render()}},'Add')):null,...L('ing').map(g=>h('div',{class:'row',style:g.qty<=g.low?'color:var(--accent)':''},g.name+' '+g.qty+' '+g.unit+(g.qty<=g.low?' ⚠ low':'')+(g.expiry?' · exp '+g.expiry:''),can('m')?h('span',{},h('button',{class:'p',onclick:()=>purchaseIng(g)},'Purchase'),h('button',{onclick:async()=>{const v=+prompt('Adjust stock (+) or remove (−) -- for corrections, not purchases');if(v){g.qty=r2(g.qty+v);await save('ing',g,g.id)}render()}},'Adjust'),h('button',{onclick:async()=>{const v=+prompt('Wasted quantity');if(v>0){g.qty=r2(g.qty-v);await save('ing',g,g.id);await save('waste',{ing:g.name,q:v,d:today()})}render()}},'Waste'),h('button',{onclick:()=>setExpiry(g)},'Expiry')):null))),
+ h('div',{class:'card'},h('h3',{},'Inventory (linked to item recipes in Menu)'),can('m')?h('div',{class:'row'},nm,un,q,lo,h('button',{class:'p',onclick:async()=>{if(!nm.value)return;await save('ing',{name:nm.value,unit:un.value,qty:+q.value||0,low:+lo.value||0});render()}},'Add')):null,...L('ing').map(g=>h('div',{class:'row',style:g.qty<=g.low?'color:var(--accent)':''},g.name+' '+g.qty+' '+g.unit+(g.qty<=g.low?' ⚠ low':'')+(g.expiry?' · exp '+g.expiry:''),can('m')?h('span',{},h('button',{class:'p',onclick:()=>purchaseIng(g)},'Purchase'),h('button',{onclick:()=>adjustModal(g)},'Adjust'),h('button',{onclick:()=>transferModal(g)},'Transfer'),h('button',{onclick:async()=>{const v=+prompt('Wasted quantity');if(v>0){g.qty=r2(g.qty-v);await save('ing',g,g.id);await save('waste',{ing:g.name,q:v,d:today()})}render()}},'Waste'),h('button',{onclick:()=>setExpiry(g)},'Expiry')):null))),
  h('div',{class:'card'},h('h3',{},'Stock value & food cost'),
   h('div',{class:'row'},'Inventory value on hand',h('b',{},inr(r2(L('ing').reduce((a,g)=>a+(g.qty||0)*(g.cost||0),0))))),
   h('p',{style:'font-size:12px;color:var(--ink-dim);margin-top:8px'},'Recipe cost is what the last purchase price of each ingredient says it costs to make one -- not a formal FIFO/weighted-average cost.'),
@@ -425,7 +437,12 @@ return h('div',{class:'g',style:'grid-template-columns:1fr'},
   h('p',{style:'font-size:12px;color:var(--ink-dim)'},'Purchased and wasted quantities in this range, alongside the current stock on hand.'),
   h('table',{},h('tr',{},h('th',{},'Ingredient'),h('th',{},'Purchased'),h('th',{},'Purchase cost'),h('th',{},'Wasted'),h('th',{},'On hand')),...stockRows.map(({g,purch,purchAmt,waste})=>h('tr',{},h('td',{},g.name),h('td',{},purch+' '+g.unit),h('td',{},inr(purchAmt)),h('td',{},waste+' '+g.unit),h('td',{},g.qty+' '+g.unit)))),
   h('button',{onclick:()=>csv([['Ingredient','Purchased','Purchase cost','Wasted','On hand'],...stockRows.map(({g,purch,purchAmt,waste})=>[g.name,purch,purchAmt,waste,g.qty])],'stock-'+sf+'_'+st+'.csv')},'Export CSV')),
- h('div',{class:'card'},h('h3',{},'Wastage log'),...L('waste').slice(-20).reverse().map(w=>h('div',{class:'row'},w.d+' · '+w.ing,w.q))))}
+ h('div',{class:'card'},h('h3',{},'Wastage log'),...L('waste').slice(-20).reverse().map(w=>h('div',{class:'row'},w.d+' · '+w.ing+(w.reason?' · '+w.reason:''),w.q))),
+ h('div',{class:'card'},h('h3',{},'Adjustments & transfers'),h('p',{style:'font-size:12px;color:var(--ink-dim)'},'Adjustments correct the total on hand; transfers just record where stock moved -- the total is unchanged.'),
+  ...[...L('adjustment').map(a=>({...a,_t:'adjustment'})),...L('transfer').map(t=>({...t,_t:'transfer'}))].sort((a,b)=>(b.at||'')>(a.at||'')?1:-1).slice(0,20).map(r=>h('div',{class:'row'},
+   new Date(r.at).toLocaleString()+' · '+r.ing+(r._t=='adjustment'?' · '+(r.q>0?'+':'')+r.q+(r.reason?' ('+r.reason+')':''):' · '+r.q+' from '+r.from+' → '+r.to),
+   h('span',{class:'pill'},r._t))),
+  [...L('adjustment'),...L('transfer')].length?null:h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No adjustments or transfers logged yet.')))}
 function purchaseItem(i){const vendors=[...new Set(L('item').flatMap(x=>(x.purchases||[]).map(p=>p.vendor).filter(Boolean)))];
  const vend=h('input',{list:'vendlist2',placeholder:'Vendor'}),dl=h('datalist',{id:'vendlist2'},...vendors.map(v=>h('option',{value:v}))),tx=h('input',{type:'number',placeholder:'Tax % (optional)',value:0});
  const rows=(i.variants||[]).map(v=>({v,qv:h('input',{type:'number',placeholder:'Qty',style:'width:70px'}),pr:h('input',{type:'number',placeholder:'Price/unit',style:'width:90px'})}));
