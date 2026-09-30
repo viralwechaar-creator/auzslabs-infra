@@ -86,6 +86,7 @@ input:disabled+.slider{opacity:.4;cursor:default}
       <button class="nav-link acct-nav-btn" data-tab="notifications"><span>Notifications</span><span id="notifBadge"></span></button>
       <div class="nav-divider"></div>
       <a href="#" id="openPosLink" target="_blank" rel="noopener" class="nav-link"><span id="openPosLabel">Open POS system</span></a>
+      <a href="#" id="openPosAddonLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><span>Open POS (add-on)</span></a>
       <a href="#" id="openPayrollLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><span>Open Payroll</span></a>
       <a href="#" id="openBuilderLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><span>Open Website Builder</span></a>
     </nav>
@@ -151,6 +152,10 @@ async function boot() {
   // staff/owner console lives at /salon/admin/.
   if (DASH.tenant.niche === 'salon') $('#openPosLabel').textContent = 'Open AUZslab Salon';
   $('#openPosLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in' + (DASH.tenant.niche === 'salon' ? '/salon/admin/' : '');
+  // A salon that added the POS product keeps AUZslab Salon as its main app; the POS is a second link.
+  if (DASH.tenant.niche === 'salon' && (DASH.features || {}).pos === true && (DASH.enabled_features || {}).pos !== false) {
+    $('#openPosAddonLink').style.display = ''; $('#openPosAddonLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in/index.html';
+  }
   const payrollOn = (DASH.features || {}).payroll === true && (DASH.enabled_features || {}).payroll !== false;
   if (payrollOn) { $('#openPayrollLink').style.display = ''; $('#openPayrollLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in/payroll.html'; }
   const builderOn = (DASH.features || {}).website_builder === true && (DASH.enabled_features || {}).website_builder !== false;
@@ -256,6 +261,14 @@ function renderAccount() {
 // the POS line, not separate products. The flat, alphabetical-ish list
 // this rendered before didn't match that mental model at all -- group
 // it the same way the products actually get sold.
+// Salon tenants: AUZslab Salon is the base product; everything else is an
+// add-on they can request from the products page.
+const SALON_SERVICE_GROUPS = [
+  ['AUZslab Salon', ['salon', 'booking', 'crm', 'billing', 'expenses', 'membership', 'helpdesk', 'tasks']],
+  ['POS', ['pos', 'self_order', 'inventory', 'kds', 'reports', 'purchases']],
+  ['Payroll', ['payroll']],
+  ['Website Builder', ['website_builder']],
+];
 const SERVICE_GROUPS = [
   ['POS', ['pos', 'self_order', 'inventory', 'crm', 'kds', 'billing', 'reports', 'booking', 'expenses', 'membership', 'helpdesk', 'tasks', 'purchases']],
   ['Payroll', ['payroll']],
@@ -282,7 +295,7 @@ function renderServices() {
     <div class="card">
       <h3 class="h-2">Your subscribed services</h3>
       <p class="muted">${isOwner ? 'Turn any of these off temporarily — turning one back on takes effect instantly, no need to contact us.' : 'Only the business owner can change these.'}</p>
-      ${keys.length ? SERVICE_GROUPS.map(([label, groupKeys]) => {
+      ${keys.length ? (DASH.tenant.niche === 'salon' ? SALON_SERVICE_GROUPS : SERVICE_GROUPS).map(([label, groupKeys]) => {
         const rows = groupKeys.filter((k) => keys.includes(k));
         if (!rows.length) return '';
         // One switch per product line, not per underlying flag -- flipping
@@ -294,12 +307,17 @@ function renderServices() {
         // admin.html job (the per-feature checkboxes there still exist).
         const allOn = rows.every((k) => enabled[k] !== false);
         return `<div class="acct-row">
-          <span>${esc(label === 'POS' && DASH.tenant.niche === 'salon' ? 'AUZslab Salon' : label)}</span>
+          <span>${esc(label)}</span>
           <label class="switch"><input type="checkbox" data-feat-group="${esc(rows.join(','))}" ${allOn ? 'checked' : ''} ${isOwner ? '' : 'disabled'}><span class="slider"></span></label>
         </div>`;
       }).join('') : '<p class="muted">No services on your subscription yet — contact AUZslab.</p>'}
       <div id="svcMsg"></div>
     </div>
+    ${isOwner ? `<div class="card">
+      <h3 class="h-2">Add more products</h3>
+      <p class="muted">${DASH.tenant.niche === 'salon' ? 'Payroll, Website Builder, POS and inventory all work alongside AUZslab Salon.' : 'Add Payroll, Website Builder or any other product to your account.'} Pick what you want and send the request &mdash; we'll switch it on and notify you here.</p>
+      <a href="products.html" class="btn btn-primary form-submit" style="margin-top:12px">Browse products</a>
+    </div>` : ''}
   `;
   if (isOwner) {
     document.querySelectorAll('[data-feat-group]').forEach((cb) => {
@@ -328,6 +346,7 @@ function renderStaff() {
   $('#pane-staff').innerHTML = `
     <div class="card">
       <h3 class="h-2">Add staff</h3>
+      ${DASH.tenant.niche === 'salon' ? '<p class="muted" style="margin-bottom:10px;font-size:12.5px">For your salon team (bookings, billing, clients), add staff inside your AUZslab Salon console under Staff &mdash; they sign in with a phone number. This page is for people who need an AUZslab login for Payroll or the POS add-on.</p>' : ''}
       <div class="field"><label>Name</label><input id="stName"></div>
       <div class="field"><label>Mobile number</label><input id="stPhone" type="tel"></div>
       <div class="field"><label>Email (their login)</label><input id="stEmail" type="email"></div>
