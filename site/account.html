@@ -43,6 +43,9 @@ input:disabled+.slider{opacity:.4;cursor:default}
 .section-pane.on{display:block}
 .pos-link-box{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--bg-raised);border:2px solid var(--ink);border-radius:14px;padding:12px 14px;margin-top:8px}
 .pos-link-box code{font-family:var(--font-mono);font-size:12px;word-break:break-all}
+.service-group{margin-top:18px}
+.service-group:first-of-type{margin-top:14px}
+.service-group-label{font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:2px}
 
 #menuToggle{padding:9px;width:40px;height:40px;justify-content:center}
 #menuToggle svg{display:block}
@@ -244,6 +247,18 @@ function renderAccount() {
   };
 }
 
+// Products the marketing site (products.html) actually sells are POS,
+// Payroll and Website Builder -- everything else (CRM, billing,
+// inventory, QR ordering, kitchen display, reports, bookings,
+// expenses, and the 4 newer ERP modules) are add-ons/sub-features of
+// the POS line, not separate products. The flat, alphabetical-ish list
+// this rendered before didn't match that mental model at all -- group
+// it the same way the products actually get sold.
+const SERVICE_GROUPS = [
+  ['POS & Operations', ['pos', 'self_order', 'inventory', 'crm', 'kds', 'billing', 'reports', 'booking', 'expenses', 'membership', 'helpdesk', 'tasks', 'purchases']],
+  ['Payroll', ['payroll']],
+  ['Website Builder', ['website_builder']],
+];
 function renderServices() {
   const entitled = DASH.features || {}, enabled = DASH.enabled_features || {};
   const keys = Object.keys(entitled).filter((k) => entitled[k] === true);
@@ -265,11 +280,18 @@ function renderServices() {
     <div class="card">
       <h3 class="h-2">Your subscribed services</h3>
       <p class="muted">${isOwner ? 'Turn any of these off temporarily — turning one back on takes effect instantly, no need to contact us.' : 'Only the business owner can change these.'}</p>
-      ${keys.length ? keys.map((k) => {
-        const on = enabled[k] !== false;
-        return `<div class="acct-row">
-          <span>${esc(FEATURE_LABEL[k] || k)}</span>
-          <label class="switch"><input type="checkbox" data-feat="${esc(k)}" ${on ? 'checked' : ''} ${isOwner ? '' : 'disabled'}><span class="slider"></span></label>
+      ${keys.length ? SERVICE_GROUPS.map(([label, groupKeys]) => {
+        const rows = groupKeys.filter((k) => keys.includes(k));
+        if (!rows.length) return '';
+        return `<div class="service-group">
+          <div class="service-group-label">${esc(label)}</div>
+          ${rows.map((k) => {
+            const on = enabled[k] !== false;
+            return `<div class="acct-row">
+              <span>${esc(FEATURE_LABEL[k] || k)}</span>
+              <label class="switch"><input type="checkbox" data-feat="${esc(k)}" ${on ? 'checked' : ''} ${isOwner ? '' : 'disabled'}><span class="slider"></span></label>
+            </div>`;
+          }).join('')}
         </div>`;
       }).join('') : '<p class="muted">No services on your subscription yet — contact AUZslab.</p>'}
       <div id="svcMsg"></div>
