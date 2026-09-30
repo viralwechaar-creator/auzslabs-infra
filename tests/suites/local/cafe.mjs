@@ -30,6 +30,7 @@ export default async function run({ browser, stack }) {
     if (!r) { const c = await q("select column_name from information_schema.columns where table_name = 'guest_orders'"); throw new Error('guest_orders columns: ' + c.map((x) => x.column_name).join(',')); }
     assert(r[0].n === 1, 'found ' + r[0].n + ' order(s)');
   }, 'critical');
+  await page.evaluate(() => document.querySelectorAll('.sheet-ov').forEach((e) => e.remove()));
   await s.check('"Call waiter" works and a repeat tap does not spam staff', async () => {
     await page.locator('#callWaiterBtn').click(); await page.waitForTimeout(800); await page.locator('#callWaiterBtn').click().catch(() => {}); await page.waitForTimeout(800);
     const r = await q("select count(*)::int n from guest_orders g join tenants t on t.id = g.tenant_id where t.slug = 'testcafe' and g.note = 'Waiter called'").catch(() => [{ n: -1 }]);

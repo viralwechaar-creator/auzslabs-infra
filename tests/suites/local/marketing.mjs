@@ -44,22 +44,25 @@ export default async function run({ browser, stack }) {
     await mp.click('#drawerClose'); await mp.waitForTimeout(500);
     assert(!(await mp.locator('#drawerOverlay').evaluate((e) => e.classList.contains('open'))), 'drawer did not close'); await mctx.close();
   }, 'critical');
-  await s.check('Homepage on desktop: navigation sidebar is always visible with links', async () => {
-    assert(await page.locator('#sidebarDrawer').isVisible(), 'sidebar hidden on desktop'); assert((await page.locator('#sidebarDrawer a').count()) >= 5);
+  await s.check('Homepage on desktop: MENU button slides the menu into view and it closes again', async () => {
+    await page.click('#menuToggle'); await page.waitForTimeout(600);
+    const box = await page.locator('#sidebarDrawer').boundingBox(); assert(box && box.x < 1280 - 100, 'menu panel is not on screen after clicking MENU (x=' + (box && Math.round(box.x)) + ')');
+    await page.click('#drawerClose'); await page.waitForTimeout(700);
+    const b2 = await page.locator('#sidebarDrawer').boundingBox(); assert(!b2 || b2.x >= 1270, 'menu did not close');
   }, 'critical');
   await s.check('Every link inside the menu drawer works', async () => {
     const hs = await page.$$eval('#sidebarDrawer a', (as) => as.map((a) => a.getAttribute('href')).filter((h) => h && !/^(#|mailto:|tel:|https?:)/.test(h)));
     for (const h of [...new Set(hs)]) { const r = await page.request.get(new URL(h, stack.url('', '/index.html')).href); assert(r.status() === 200, h + ' -> ' + r.status()); }
   }, 'critical');
   await s.check('Homepage: a "Contact" button opens the contact form', async () => {
-    const trig = page.locator('[data-open-contact]').first();
+    const trig = page.locator('main [data-open-contact]').first();
     assert(await trig.count(), 'no [data-open-contact] button found');
     await trig.scrollIntoViewIfNeeded(); await trig.click({ force: true }); await page.waitForTimeout(400);
     assert(await page.locator('#modal').isVisible(), 'contact modal did not open');
     await page.click('#modalClose'); await page.waitForTimeout(300);
   }, 'critical');
   await s.check('Contact form refuses an empty submit', async () => {
-    await page.locator('[data-open-contact]').first().click({ force: true }); await page.waitForTimeout(300);
+    await page.locator('main [data-open-contact]').first().click({ force: true }); await page.waitForTimeout(300);
     const before = await page.locator('#successView').isVisible().catch(() => false);
     await page.locator('#formView button[type=submit], #formView [type=submit]').first().click();
     await page.waitForTimeout(400);
