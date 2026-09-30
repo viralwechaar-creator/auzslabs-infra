@@ -189,8 +189,53 @@ function closeDay(d,expected,sales,bills){
   const counted=+cnt.value||0,variance=r2(counted-expected),finish=async reason=>{await save('dayclose',{d,sales,bills,expectedCash:expected,countedCash:counted,variance,varianceReason:reason||null,by:S.user.email||S.user.id,at:now()});x();render()};
   if(Math.abs(variance)>0.5)pickReason(reason=>finish(reason));else finish(null);
  }},'Close day')))}
-V.rep=()=>{const tabs=[['day','Day report'],['custom','Custom report']],rt=S.repTab||'day';
- return h('div',{},h('div',{class:'tabbar'},...tabs.map(([k,n])=>h('button',{class:rt==k?'on':'',onclick:()=>{S.repTab=k;render()}},n))),rt=='custom'?V.dynrep():dayReportPane())};
+V.rep=()=>{const tabs=[['day','Day report'],['custom','Custom report'],['analytics','Analytics']],rt=S.repTab||'day';
+ return h('div',{},h('div',{class:'tabbar'},...tabs.map(([k,n])=>h('button',{class:rt==k?'on':'',onclick:()=>{S.repTab=k;render()}},n))),rt=='custom'?V.dynrep():rt=='analytics'?analyticsPane():dayReportPane())};
+function unitCost(i){
+ if(i.rec)return r2(i.rec.split(',').reduce((a,p)=>{const parts=p.split(':'),n=parts[0],qn=+parts[1],g=L('ing').find(x=>x.name.toLowerCase()==n.trim().toLowerCase());return a+(g?(g.cost||0)*qn:0)},0));
+ return i.cost||0;
+}
+// One dashboard reading straight off the same order/exp/item records
+// every other report already reads -- not a separately-maintained
+// calculation, so every sale/expense automatically contributes here
+// without staff entering anything twice.
+function analyticsPane(){
+ const presets=[['today','Today'],['week','This week'],['month','This month'],['year','This year'],['custom','Custom']];
+ const period=S.anPeriod||'month',now_=new Date(),localDay=iso=>new Date(iso).toLocaleDateString('en-CA');
+ let from,to;
+ if(period=='today'){from=to=today()}
+ else if(period=='week'){const d=new Date(now_);d.setDate(d.getDate()-d.getDay());from=d.toLocaleDateString('en-CA');to=today()}
+ else if(period=='month'){from=new Date(now_.getFullYear(),now_.getMonth(),1).toLocaleDateString('en-CA');to=today()}
+ else if(period=='year'){from=new Date(now_.getFullYear(),0,1).toLocaleDateString('en-CA');to=today()}
+ else{from=S.anFrom||today();to=S.anTo||today()}
+ const os=L('order').filter(o=>o.status=='paid'&&o.paidAt&&localDay(o.paidAt)>=from&&localDay(o.paidAt)<=to);
+ const ex=L('exp').filter(e=>e.d>=from&&e.d<=to);
+ const grossSales=r2(os.reduce((a,o)=>a+o.t.sub,0)),discounts=r2(os.reduce((a,o)=>a+o.t.d,0)),refunds=r2(os.reduce((a,o)=>a+(o.refunds||[]).reduce((b,r)=>b+r.amt,0),0));
+ const netSales=r2(grossSales-discounts-refunds);
+ const cogs=r2(os.reduce((a,o)=>a+o.lines.reduce((b,l)=>{const it=R[l.id];return b+(it&&!it.deleted?unitCost(it.data)*l.qty:0)},0),0));
+ const grossProfit=r2(netSales-cogs),opEx=r2(ex.reduce((a,e)=>a+e.amt,0)),netProfit=r2(grossProfit-opEx),marginPct=netSales?Math.round(netProfit/netSales*100):0;
+ const hourBuckets={};os.forEach(o=>{const hr=new Date(o.paidAt).getHours();hourBuckets[hr]=(hourBuckets[hr]||0)+1});
+ const peakRows=Object.entries(hourBuckets).sort((a,b)=>b[1]-a[1]).slice(0,5);
+ const perf={};os.forEach(o=>o.lines.forEach(l=>{const it=R[l.id],cost=it&&!it.deleted?unitCost(it.data)*l.qty:0,rev=l.price*l.qty,k=l.name,p=perf[k]||(perf[k]={qty:0,rev:0,cost:0});p.qty+=l.qty;p.rev=r2(p.rev+rev);p.cost=r2(p.cost+cost)}));
+ const perfRows=Object.entries(perf).map(([name,v])=>({name,...v,profit:r2(v.rev-v.cost)})).sort((a,b)=>b.rev-a.rev);
+ const top5=perfRows.slice(0,5),bottom5=perfRows.length>5?perfRows.slice(-5).reverse():[];
+ const target=+cfg().salesTarget||0,mf=new Date(now_.getFullYear(),now_.getMonth(),1).toLocaleDateString('en-CA'),monthSales=r2(L('order').filter(o=>o.status=='paid'&&o.paidAt&&localDay(o.paidAt)>=mf&&localDay(o.paidAt)<=today()).reduce((a,o)=>a+o.t.total,0)),targetPct=target?Math.min(100,Math.round(monthSales/target*100)):null;
+ return h('div',{class:'g',style:'grid-template-columns:1fr'},
+  h('div',{class:'card'},h('div',{class:'row',style:'flex-wrap:wrap'},...presets.map(([v,l])=>h('button',{class:period==v?'on':'',onclick:()=>{S.anPeriod=v;render()}},l))),
+   period=='custom'?h('div',{class:'row'},h('input',{type:'date',value:from,onchange:e=>{S.anFrom=e.target.value;render()}}),' to ',h('input',{type:'date',value:to,onchange:e=>{S.anTo=e.target.value;render()}})):null),
+  h('div',{class:'card'},h('h3',{},'Profit & Loss'),
+   h('div',{class:'row'},'Gross sales',inr(grossSales)),h('div',{class:'row'},'Discounts','-'+inr(discounts)),h('div',{class:'row'},'Refunds','-'+inr(refunds)),
+   h('div',{class:'row'},h('b',{},'Net sales'),h('b',{},inr(netSales))),h('div',{class:'row'},'Cost of goods sold','-'+inr(cogs)),
+   h('div',{class:'row'},h('b',{},'Gross profit'),h('b',{},inr(grossProfit))),h('div',{class:'row'},'Operating expenses','-'+inr(opEx)),
+   h('div',{class:'row',style:'border-top:2px solid var(--ink);padding-top:8px;margin-top:4px'},h('b',{},'Net profit'),h('b',{style:netProfit>=0?'color:#1f7a3d':'color:var(--accent)'},inr(netProfit)+' ('+marginPct+'%)'))),
+  h('div',{class:'card'},h('h3',{},'Monthly sales target'),
+   h('div',{class:'row'},h('input',{type:'number',placeholder:'Set monthly target',value:cfg().salesTarget||'',onblur:async e=>{await save('settings',{...cfg(),salesTarget:+e.target.value||0},'settings');render()}})),
+   target?h('div',{},h('div',{class:'row'},'This month',inr(monthSales)+' of '+inr(target)),h('div',{style:'background:var(--l);border-radius:999px;height:10px;overflow:hidden;margin-top:4px'},h('div',{style:'background:var(--accent);height:100%;width:'+targetPct+'%'}))):h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Set a target above to track progress.')),
+  h('div',{class:'card'},h('h3',{},'Peak hours'),peakRows.length?peakRows.map(([hr,n])=>h('div',{class:'row'},hr+':00–'+hr+':59',n+' order'+(n>1?'s':''))):h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No paid orders in this range.')),
+  h('div',{class:'card'},h('h3',{},'Top-selling'),...top5.map(p=>h('div',{class:'row'},p.name,p.qty+' · '+inr(p.rev)+' · '+inr(p.profit)+' profit'))),
+  bottom5.length?h('div',{class:'card'},h('h3',{},'Lower-selling'),h('p',{style:'font-size:12px;color:var(--ink-dim)'},'Numbers only — doesn\'t mean cut it.'),...bottom5.map(p=>h('div',{class:'row'},p.name,p.qty+' · '+inr(p.rev)+' · '+inr(p.profit)+' profit'))):null,
+  feedbackCard());
+}
 function dayReportPane(){const dc=L('dayclose').find(x=>x.d==S.d),os=L('order').filter(o=>o.status=='paid'&&new Date(o.paidAt).toLocaleDateString('en-CA')==S.d),ex=L('exp').filter(e=>e.d==S.d),m={cash:0,upi:0,card:0},it={},src={},sm=f=>r2(os.reduce((a,o)=>a+f(o),0));
  os.forEach(o=>{o.pays.forEach(p=>m[p.m]+=p.amt-(p.m=='cash'?o.change||0:0));o.lines.forEach(l=>{const k=l.name+(l.size?' ('+l.size+')':'');(it[k]=it[k]||{q:0,a:0}).q+=l.qty;it[k].a+=l.price*l.qty});if(o.src)src[o.src]=r2((src[o.src]||0)+o.t.total)});
  const refunds=r2(os.reduce((a,o)=>a+(o.refunds||[]).reduce((b,r)=>b+r.amt,0),0)),et=r2(ex.reduce((a,e)=>a+e.amt,0)),ec=h('input',{placeholder:'Expense (e.g. milk)'}),ea=h('input',{type:'number',placeholder:'Amount'}),R_=(a,b)=>h('div',{class:'row'},a,h('b',{},b));
