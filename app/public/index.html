@@ -674,6 +674,208 @@ return h('div',{class:'g',style:'grid-template-columns:1fr'},h('div',{class:'car
   ),
   h('button',{class:'p cust-view'},'View')
  )})),list.length?null:h('p',{},'No paid orders with a customer phone yet.'))};
+function addDays(ds,n){const d=new Date(ds+'T00:00:00');d.setDate(d.getDate()+n);return d.toLocaleDateString('en-CA')}
+function memStatus(m){if(m.status=='cancelled')return 'cancelled';return m.endDate<today()?'expired':'active'}
+const MEM_STATUS_LABEL={active:'Active',expired:'Expired',cancelled:'Cancelled'};
+function planModal(p){
+ const nm=h('input',{placeholder:'Plan name',value:p?p.name:''}),
+  pr=h('input',{type:'number',placeholder:'Price',value:p?p.price:''}),
+  dy=h('input',{type:'number',placeholder:'Validity (days)',value:p?p.days:30}),
+  ds=h('input',{placeholder:'Description (optional)',value:p?p.desc||'':''}),
+  acIn=h('input',{type:'checkbox',checked:!p||p.active!==false}),
+  ac=h('label',{style:'display:flex;align-items:center;gap:6px;font-size:13px'},acIn,'Active');
+ const x=modal(h('h3',{},p?'Edit plan':'New plan'),nm,pr,dy,ds,ac,
+  h('div',{class:'row'},
+   p?h('button',{class:'warn',onclick:async()=>{if(!confirm('Delete this plan?'))return;await save('plan',p,p.id,true);x();render()}},'Delete'):h('span',{}),
+   h('button',{class:'p',onclick:async()=>{
+    if(!nm.value.trim()||!(+pr.value>0)||!(+dy.value>0))return alert('Enter a name, price and validity.');
+    await save('plan',{name:nm.value.trim(),price:+pr.value,days:+dy.value,desc:ds.value.trim(),active:acIn.checked},p?p.id:undefined);
+    x();render()
+   }},'Save')));
+}
+function enrollModal(plans){
+ const nm=h('input',{placeholder:'Customer name'}),ph=h('input',{placeholder:'Phone'}),
+  pl=h('select',{},...plans.map(p=>h('option',{value:p.id},p.name+' — '+inr(p.price)+' / '+p.days+'d'))),
+  sd=h('input',{type:'date',value:today()});
+ const x=modal(h('h3',{},'Enroll member'),nm,ph,pl,sd,
+  h('div',{class:'row'},h('button',{class:'warn',onclick:()=>x()},'Cancel'),h('button',{class:'p',onclick:async()=>{
+   if(!nm.value.trim()||!ph.value.trim())return alert('Enter name and phone.');
+   const plan=plans.find(p=>p.id==pl.value);if(!plan)return;
+   await save('membership',{custName:nm.value.trim(),custPhone:ph.value.trim(),planId:plan.id,planName:plan.name,price:plan.price,startDate:sd.value||today(),endDate:addDays(sd.value||today(),plan.days),status:'active',createdAt:now()});
+   x();render()
+  }},'Enroll')));
+}
+V.mem=()=>{
+ const isOM=S.role=='owner'||S.role=='manager',mut='font-size:12.5px;color:var(--ink-dim)';
+ const allPlans=L('plan'),plans=allPlans.filter(p=>p.active!==false).sort((a,b)=>a.price-b.price);
+ const members=L('membership').sort((a,b)=>b.createdAt>a.createdAt?1:-1);
+ const activeCount=members.filter(m=>memStatus(m)=='active').length;
+ const expSoon=members.filter(m=>memStatus(m)=='active'&&m.endDate<=addDays(today(),7));
+ const checkins=L('checkin'),checkinsToday=checkins.filter(c=>(c.at||'').slice(0,10)==today()).length;
+ const badgeStyle=st=>st=='active'?'background:#1f6b3a;color:#fff':st=='expired'?'background:var(--accent);color:#fff':'background:var(--bg-raised);color:var(--ink-dim)';
+ return h('div',{class:'g',style:'grid-template-columns:1fr'},
+  h('div',{style:'display:grid;grid-template-columns:repeat(3,1fr);gap:10px'},
+   h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:22px;font-weight:800'},activeCount),h('div',{style:mut},'Active members')),
+   h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:22px;font-weight:800'+(expSoon.length?';color:var(--accent)':'')},expSoon.length),h('div',{style:mut},'Expiring this week')),
+   h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:22px;font-weight:800'},checkinsToday),h('div',{style:mut},'Check-ins today'))
+  ),
+  expSoon.length?h('div',{class:'card'},h('h3',{},'Expiring soon'),...expSoon.map(m=>h('div',{class:'row'},m.custName+' · '+m.planName,h('span',{style:'color:var(--accent)'},'until '+m.endDate)))):null,
+  h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Plans'),isOM?h('button',{class:'p',onclick:()=>planModal()},'+ Add plan'):null),
+   ...allPlans.map(p=>h('div',{class:'row',style:p.active===false?'opacity:.5':''},p.name+' · '+inr(p.price)+' / '+p.days+' days'+(p.active===false?' (inactive)':''),isOM?h('button',{onclick:()=>planModal(p)},'Edit'):null)),
+   allPlans.length?null:h('p',{style:mut},'No plans yet — add one to start enrolling members.')),
+  h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Members ('+members.length+')'),plans.length?h('button',{class:'p',onclick:()=>enrollModal(plans)},'+ Enroll member'):null),
+   ...members.map(m=>{const st=memStatus(m);
+    return h('div',{class:'row'},
+     h('span',{},h('b',{},m.custName),h('br'),h('span',{style:mut},m.planName+' · '+m.startDate+' → '+m.endDate)),
+     h('span',{style:'display:flex;align-items:center;gap:6px;flex-wrap:wrap'},h('span',{class:'badge',style:badgeStyle(st)},MEM_STATUS_LABEL[st]),
+      st!='cancelled'?h('button',{onclick:async()=>{await save('checkin',{membershipId:m.id,custPhone:m.custPhone,at:now()});render()}},'Check in'):null,
+      st!='cancelled'?h('button',{class:'p',onclick:async()=>{const plan=allPlans.find(p=>p.id==m.planId);const days=plan?plan.days:30;const base=st=='active'&&m.endDate>today()?m.endDate:today();await save('membership',{...m,endDate:addDays(base,days)},m.id);render()}},'Renew'):null,
+      st!='cancelled'?h('button',{class:'warn',onclick:async()=>{if(!confirm('Cancel this membership?'))return;await save('membership',{...m,status:'cancelled'},m.id);render()}},'Cancel'):null)
+    )}),
+   members.length?null:h('p',{style:mut},'No members yet.')),
+  h('div',{class:'card'},h('h3',{},'Recent check-ins'),...checkins.sort((a,b)=>b.at>a.at?1:-1).slice(0,20).map(c=>{const m=members.find(x=>x.id==c.membershipId);return h('div',{class:'row'},(m?m.custName:c.custPhone)+' · '+new Date(c.at).toLocaleString())}),
+   checkins.length?null:h('p',{style:mut},'No check-ins yet.'))
+ );
+};
+const TICKET_STATUS_LABEL={open:'Open',in_progress:'In progress',resolved:'Resolved',closed:'Closed'};
+const TICKET_PRI_LABEL={low:'Low',medium:'Medium',high:'High'};
+const ticketBadgeStyle=status=>status=='open'?'background:var(--accent);color:#fff':status=='in_progress'?'background:#b8860b;color:#fff':status=='resolved'?'background:#1f6b3a;color:#fff':'background:var(--bg-raised);color:var(--ink-dim)';
+const priBadgeStyle=p=>p=='high'?'background:var(--accent);color:#fff':p=='low'?'background:var(--bg-raised);color:var(--ink-dim)':'background:#b8860b;color:#fff';
+function ticketModal(t){
+ const subj=h('input',{placeholder:'Subject',value:t?t.subject:''}),
+  nm=h('input',{placeholder:'Customer name',value:t?t.custName:''}),
+  ph=h('input',{placeholder:'Phone (optional)',value:t?t.custPhone||'':''}),
+  pr=h('select',{},...['low','medium','high'].map(p=>h('option',{value:p,selected:(t?t.priority:'medium')==p},TICKET_PRI_LABEL[p]))),
+  desc=h('textarea',{placeholder:'What happened?',style:'min-height:70px'},t?t.description||'':'');
+ const x=modal(h('h3',{},t?'Edit ticket':'New ticket'),subj,nm,ph,pr,desc,
+  h('div',{class:'row'},h('span',{}),
+   h('button',{class:'p',onclick:async()=>{
+    if(!subj.value.trim()||!nm.value.trim())return alert('Enter a subject and customer name.');
+    const base=t||{status:'open',createdAt:now()};
+    await save('ticket',{...base,subject:subj.value.trim(),custName:nm.value.trim(),custPhone:ph.value.trim(),priority:pr.value,description:desc.value.trim(),updatedAt:now()},t?t.id:undefined);
+    x();render()
+   }},t?'Save':'Create ticket')));
+}
+function ticketDetail(t){
+ const notes=L('ticketnote').filter(n=>n.ticketId==t.id).sort((a,b)=>a.at>b.at?1:-1);
+ const noteIn=h('textarea',{placeholder:'Add a note…',style:'min-height:50px'});
+ const x=modal(
+  h('div',{class:'row',style:'justify-content:flex-start;border-bottom:none'},h('h3',{style:'margin:0'},t.subject),h('span',{class:'badge',style:priBadgeStyle(t.priority)},TICKET_PRI_LABEL[t.priority]||'Medium')),
+  h('div',{style:'font-size:12.5px;color:var(--ink-dim)'},t.custName+(t.custPhone?' · '+t.custPhone:'')+' · opened '+new Date(t.createdAt).toLocaleString()),
+  t.description?h('p',{style:'font-size:13.5px;margin-top:8px'},t.description):null,
+  h('div',{class:'row',style:'margin-top:10px'},h('b',{style:'font-size:12.5px'},'Status'),
+   h('select',{onchange:async e=>{const upd={...t,status:e.target.value,updatedAt:now(),resolvedAt:e.target.value=='resolved'?now():t.resolvedAt};await save('ticket',upd,t.id);x();ticketDetail(upd);render()}},
+    ...['open','in_progress','resolved','closed'].map(s=>h('option',{value:s,selected:t.status==s},TICKET_STATUS_LABEL[s])))),
+  h('div',{style:'margin-top:10px'},h('b',{style:'font-size:12.5px'},'Notes'),
+   ...notes.map(n=>h('div',{style:'font-size:12.5px;padding:6px 0;border-bottom:1px solid var(--l)'},h('b',{},n.by),': '+n.note+' · '+new Date(n.at).toLocaleString())),
+   notes.length?null:h('p',{style:'font-size:12px;color:var(--ink-dim)'},'No notes yet.')),
+  noteIn,
+  h('button',{class:'p',onclick:async()=>{
+   if(!noteIn.value.trim())return;
+   await save('ticketnote',{ticketId:t.id,note:noteIn.value.trim(),by:S.user.email||S.role,at:now()});
+   x();ticketDetail(t)
+  }},'Add note'),
+  h('button',{onclick:()=>{x();ticketModal(t)}},'Edit ticket'));
+}
+V.help=()=>{
+ const tickets=L('ticket').sort((a,b)=>b.createdAt>a.createdAt?1:-1);
+ const open=tickets.filter(t=>t.status=='open'),inProg=tickets.filter(t=>t.status=='in_progress'),resolved=tickets.filter(t=>t.status=='resolved'||t.status=='closed');
+ return h('div',{class:'g',style:'grid-template-columns:1fr'},
+  h('div',{style:'display:grid;grid-template-columns:repeat(3,1fr);gap:10px'},
+   h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:22px;font-weight:800;color:var(--accent)'},open.length),h('div',{style:'font-size:12.5px;color:var(--ink-dim)'},'Open')),
+   h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:22px;font-weight:800'},inProg.length),h('div',{style:'font-size:12.5px;color:var(--ink-dim)'},'In progress')),
+   h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:22px;font-weight:800'},resolved.length),h('div',{style:'font-size:12.5px;color:var(--ink-dim)'},'Resolved'))),
+  h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Tickets ('+tickets.length+')'),h('button',{class:'p',onclick:()=>ticketModal()},'+ New ticket')),
+   ...tickets.map(t=>h('div',{class:'row',style:'cursor:pointer',onclick:()=>ticketDetail(t)},
+    h('span',{},h('b',{},t.subject),h('br'),h('span',{style:'font-size:12.5px;color:var(--ink-dim)'},t.custName+' · '+new Date(t.createdAt).toLocaleDateString())),
+    h('span',{style:'display:flex;gap:6px;align-items:center'},h('span',{class:'badge',style:priBadgeStyle(t.priority)},TICKET_PRI_LABEL[t.priority]||'Medium'),h('span',{class:'badge',style:ticketBadgeStyle(t.status)},TICKET_STATUS_LABEL[t.status]||'Open')))),
+   tickets.length?null:h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No tickets yet.')));
+};
+const TASK_STATUS_LABEL={todo:'To do',in_progress:'In progress',done:'Done'};
+function taskModal(t){
+ const ti=h('input',{placeholder:'Task',value:t?t.title:''}),
+  ds=h('textarea',{placeholder:'Details (optional)',style:'min-height:60px'},t?t.desc||'':''),
+  as=h('input',{placeholder:'Assign to (name or email, optional)',value:t?t.assignedTo||'':''}),
+  du=h('input',{type:'date',value:t?t.dueDate||'':''}),
+  pr=h('select',{},...['low','medium','high'].map(p=>h('option',{value:p,selected:(t?t.priority:'medium')==p},TICKET_PRI_LABEL[p])));
+ const x=modal(h('h3',{},t?'Edit task':'New task'),ti,ds,as,du,pr,
+  h('div',{class:'row'},
+   t?h('button',{class:'warn',onclick:async()=>{if(!confirm('Delete this task?'))return;await save('task',t,t.id,true);x();render()}},'Delete'):h('span',{}),
+   h('button',{class:'p',onclick:async()=>{
+    if(!ti.value.trim())return alert('Enter a task title.');
+    const base=t||{status:'todo',createdAt:now(),createdBy:S.user.email||S.role};
+    await save('task',{...base,title:ti.value.trim(),desc:ds.value.trim(),assignedTo:as.value.trim(),dueDate:du.value,priority:pr.value},t?t.id:undefined);
+    x();render()
+   }},t?'Save':'Create task')));
+}
+V.task=()=>{
+ const tasks=L('task').sort((a,b)=>{const oa=a.status=='done'?1:0,ob=b.status=='done'?1:0;if(oa!=ob)return oa-ob;return(a.dueDate||'9999')<(b.dueDate||'9999')?-1:1});
+ const todo=tasks.filter(t=>t.status=='todo'),inProg=tasks.filter(t=>t.status=='in_progress'),done=tasks.filter(t=>t.status=='done');
+ const overdue=tasks.filter(t=>t.status!='done'&&t.dueDate&&t.dueDate<today());
+ const cycle={todo:'in_progress',in_progress:'done',done:'todo'};
+ return h('div',{class:'g',style:'grid-template-columns:1fr'},
+  h('div',{style:'display:grid;grid-template-columns:repeat(3,1fr);gap:10px'},
+   h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:22px;font-weight:800'},todo.length),h('div',{style:'font-size:12.5px;color:var(--ink-dim)'},'To do')),
+   h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:22px;font-weight:800'},inProg.length),h('div',{style:'font-size:12.5px;color:var(--ink-dim)'},'In progress')),
+   h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:22px;font-weight:800'+(overdue.length?';color:var(--accent)':'')},overdue.length),h('div',{style:'font-size:12.5px;color:var(--ink-dim)'},'Overdue'))),
+  h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Tasks ('+tasks.length+')'),h('button',{class:'p',onclick:()=>taskModal()},'+ New task')),
+   ...tasks.map(t=>h('div',{class:'row',style:t.status=='done'?'opacity:.5':''},
+    h('span',{style:'cursor:pointer',onclick:()=>taskModal(t)},h('b',{},t.title),h('br'),h('span',{style:'font-size:12.5px;color:var(--ink-dim)'},(t.assignedTo?t.assignedTo+' · ':'')+(t.dueDate?'due '+t.dueDate:'no due date'))),
+    h('span',{style:'display:flex;gap:6px;align-items:center'},
+     h('span',{class:'badge',style:priBadgeStyle(t.priority)},TICKET_PRI_LABEL[t.priority]||'Medium'),
+     h('button',{class:t.status=='done'?'':'p',onclick:async()=>{await save('task',{...t,status:cycle[t.status]},t.id);render()}},TASK_STATUS_LABEL[t.status])))),
+   tasks.length?null:h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No tasks yet.')));
+};
+function vendorFormModal(v){
+ const nm=h('input',{placeholder:'Vendor name',value:v?v.name:''}),
+  ph=h('input',{placeholder:'Phone (optional)',value:v?v.phone||'':''}),
+  em=h('input',{placeholder:'Email (optional)',value:v?v.email||'':''}),
+  no=h('textarea',{placeholder:'Notes (optional)',style:'min-height:50px'},v?v.notes||'':'');
+ const x=modal(h('h3',{},v?'Edit vendor':'New vendor'),nm,ph,em,no,
+  h('div',{class:'row'},h('span',{}),h('button',{class:'p',onclick:async()=>{
+   if(!nm.value.trim())return alert('Enter a vendor name.');
+   await save('vendor',{name:nm.value.trim(),phone:ph.value.trim(),email:em.value.trim(),notes:no.value.trim()},v?v.id:undefined);
+   x();render()
+  }},'Save')));
+}
+function purchaseFormModal(vendors){
+ const vs=h('select',{},...vendors.map(v=>h('option',{value:v.id},v.name))),
+  dt=h('input',{type:'date',value:today()}),
+  rows=[0,1,2].map(()=>({ds:h('input',{placeholder:'Item'}),qt:h('input',{type:'number',placeholder:'Qty',value:1}),pr:h('input',{type:'number',placeholder:'Unit price'})})),
+  no=h('textarea',{placeholder:'Notes (optional)',style:'min-height:50px'});
+ const x=modal(h('h3',{},'New purchase'),vs,dt,
+  h('div',{style:'font-size:12px;color:var(--ink-dim);margin-top:4px'},'Items'),
+  ...rows.map(r=>h('div',{class:'row',style:'gap:6px'},r.ds,r.qt,r.pr)),
+  no,
+  h('div',{class:'row'},h('span',{}),h('button',{class:'p',onclick:async()=>{
+   if(!vendors.length)return alert('Add a vendor first.');
+   const items=rows.map(r=>({desc:r.ds.value.trim(),qty:+r.qt.value||0,unitPrice:+r.pr.value||0})).filter(i=>i.desc&&i.qty>0);
+   if(!items.length)return alert('Enter at least one item.');
+   const vend=vendors.find(v=>v.id==vs.value);
+   const amount=r2(items.reduce((a,i)=>a+i.qty*i.unitPrice,0));
+   await save('purchase',{vendorId:vend.id,vendorName:vend.name,items,amount,date:dt.value||today(),notes:no.value.trim()});
+   x();render()
+  }},'Save purchase')));
+}
+V.vendor=()=>{
+ const vendors=L('vendor').sort((a,b)=>a.name.localeCompare(b.name));
+ const purchases=L('purchase').sort((a,b)=>b.date>a.date?1:-1);
+ const thisMonth=today().slice(0,7);
+ const totalSpend=r2(purchases.reduce((a,p)=>a+p.amount,0)),
+  monthSpend=r2(purchases.filter(p=>(p.date||'').slice(0,7)==thisMonth).reduce((a,p)=>a+p.amount,0));
+ return h('div',{class:'g',style:'grid-template-columns:1fr'},
+  h('div',{style:'display:grid;grid-template-columns:repeat(2,1fr);gap:10px'},
+   h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:20px;font-weight:800'},inr(monthSpend)),h('div',{style:'font-size:12.5px;color:var(--ink-dim)'},'This month')),
+   h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:20px;font-weight:800'},inr(totalSpend)),h('div',{style:'font-size:12.5px;color:var(--ink-dim)'},'All time'))),
+  h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Vendors ('+vendors.length+')'),h('button',{class:'p',onclick:()=>vendorFormModal()},'+ Add vendor')),
+   ...vendors.map(v=>h('div',{class:'row'},v.name+(v.phone?' · '+v.phone:''),h('button',{onclick:()=>vendorFormModal(v)},'Edit'))),
+   vendors.length?null:h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No vendors yet — add one to start logging purchases.')),
+  h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Purchases ('+purchases.length+')'),vendors.length?h('button',{class:'p',onclick:()=>purchaseFormModal(vendors)},'+ New purchase'):null),
+   ...purchases.map(p=>h('div',{class:'row'},
+    h('span',{},h('b',{},p.vendorName),h('br'),h('span',{style:'font-size:12.5px;color:var(--ink-dim)'},p.date+' · '+p.items.map(i=>i.qty+'× '+i.desc).join(', '))),
+    h('b',{},inr(p.amount)))),
+   purchases.length?null:h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No purchases logged yet.')));
+};
 let G=[];
 async function getG(){if(!navigator.onLine||!S.user)return;if(!featureOn('self_order')){if(G.length){G=[];render()}return}const{data,error}=await sb.from('guest_orders').select('*').eq('status','new').order('created_at');if(error)return;const n=G.length;G=data||[];if(G.length>n)alertSound(3);if(G.length!=n&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))render()}
 async function acceptG(g){let o=L('order').find(x=>x.status=='open'&&x.table==g.tbl&&x.lines.length);o=o?structuredClone(o):{...newOrder(),table:g.tbl};g.items.forEach(i=>{const it=R[i.id]&&R[i.id].data;if(!it)return;const sizeObj=i.size&&(it.sizes||[]).find(s=>s.l==i.size),price=sizeObj?sizeObj.p:it.price;const l=o.lines.find(x=>x.id==i.id&&x.size==i.size&&x.price==price&&!x.note);l?l.qty+=i.qty:o.lines.push({id:i.id,name:it.name,size:i.size,price,qty:i.qty,sent:0,st:it.st||'Kitchen'})});if(!(o.cust&&o.cust.name))o.cust={name:g.name,phone:g.phone};if(g.note)o.gn=g.note;const prev=S.cur;S.cur=o;mk(o);await persist();S.cur=prev;await sb.from('guest_orders').update({status:'done'}).eq('id',g.id);getG()}
@@ -690,6 +892,10 @@ const T_ICON={
  staff:'<circle cx="9" cy="8" r="3.2"/><path d="M2.5 20v-1a6.5 6.5 0 0 1 13 0v1"/><path d="M16.5 5a3.2 3.2 0 0 1 0 6.2M21 20v-1a5.6 5.6 0 0 0-4-5.4"/>',
  inv:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
  crm:'<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/>',
+ mem:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><circle cx="8.5" cy="14" r="1.6"/><path d="M12.5 14h6"/>',
+ help:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.8 1c0 1.7-2.3 2-2.3 3.5"/><path d="M12 17h.01"/>',
+ task:'<path d="M9 11l2 2 4-4"/><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4"/>',
+ vendor:'<path d="M3 21h18M4 21V9l8-6 8 6v12"/><path d="M9 21v-6h6v6"/>',
  payroll:'<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M8 14h.01M12 14h4"/>',
  builder:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 9v12"/>',
  menu:'<path d="M4 6h16M4 12h16M4 18h10"/>',
@@ -705,7 +911,7 @@ function renderDrawer(T){
  );
  syncDrawer();
 }
-const ALL_T=[['pos','Sell','pos','pos'],['tabs','Orders','orders',null],['kds','Kitchen','kitchen','kds'],['kotrep','KOT','kitchen','kds'],['token','Token','kitchen',null],['rep','Reports','reports','reports'],['staff','Staff','staff',null],['inv','Stock','inventory',null],['crm','Customers','crm','crm'],['payroll','Payroll','o','payroll'],['builder','Website','o','website_builder']];
+const ALL_T=[['pos','Sell','pos','pos'],['tabs','Orders','orders',null],['kds','Kitchen','kitchen','kds'],['kotrep','KOT','kitchen','kds'],['token','Token','kitchen',null],['rep','Reports','reports','reports'],['staff','Staff','staff',null],['inv','Stock','inventory',null],['crm','Customers','crm','crm'],['mem','Memberships','crm','membership'],['help','Support','crm','helpdesk'],['task','Tasks','staff','tasks'],['vendor','Purchases','inventory','purchases'],['payroll','Payroll','o','payroll'],['builder','Website','o','website_builder']];
 const visibleTabs=()=>ALL_T.filter(([k,,perm,feat])=>can(perm)&&(!feat||featureOn(feat))&&(k!='kotrep'||isRestaurant())&&(k!='token'||cfg().hwToken));
 function render(){if(S.authExpired||!S.user)return login('Your session ended. Please sign in again.');applyTheme();
  const T=visibleTabs().map(([k,n])=>[k,n]);

@@ -21,6 +21,13 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:v
 a{color:inherit;text-decoration:none}
 button{font-family:inherit}
 ::selection{background:var(--accent);color:#fff}
+/* iOS Safari auto-zooms the page on focusing any text input under
+   16px -- .field input below already covers that variant, but a
+   bare <input> outside a .field wrapper (login, signup, cart, admin
+   onboarding -- all real, high-traffic forms) had no font-size rule
+   at all and fell back to the browser's own default (well under
+   16px), still triggering the zoom. This is the actual global floor. */
+input,select,textarea{font-size:16px}
 
 .shell{display:flex;flex-direction:column;min-height:100vh;width:100%;background:var(--bg)}
 
