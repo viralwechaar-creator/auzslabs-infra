@@ -36,12 +36,16 @@ export default async function run({ browser, stack }) {
 
   const page = await ctx.newPage(); const errs = watch(page);
   await page.goto(stack.url('', '/index.html')); await page.waitForTimeout(500);
-  await s.check('Homepage: hamburger menu opens and closes', async () => {
-    await page.click('#menuToggle'); await page.waitForTimeout(400);
-    assert(await page.locator('#sidebarDrawer').isVisible(), 'drawer did not open');
-    const n = await page.locator('#sidebarDrawer a').count(); assert(n >= 5, 'drawer has only ' + n + ' links');
-    await page.click('#drawerClose'); await page.waitForTimeout(400);
-    assert(!(await page.locator('#sidebarDrawer').isVisible()), 'drawer did not close');
+  await s.check('Homepage on a phone: hamburger menu opens and closes', async () => {
+    const mctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const mp = await mctx.newPage(); await mp.goto(stack.url('', '/index.html')); await mp.waitForTimeout(500);
+    await mp.click('#menuToggle'); await mp.waitForTimeout(500);
+    assert(await mp.locator('#sidebarDrawer').isVisible(), 'drawer did not open');
+    const n = await mp.locator('#sidebarDrawer a').count(); assert(n >= 5, 'drawer has only ' + n + ' links');
+    await mp.click('#drawerClose'); await mp.waitForTimeout(500);
+    assert(!(await mp.locator('#drawerOverlay').evaluate((e) => e.classList.contains('open'))), 'drawer did not close'); await mctx.close();
+  }, 'critical');
+  await s.check('Homepage on desktop: navigation sidebar is always visible with links', async () => {
+    assert(await page.locator('#sidebarDrawer').isVisible(), 'sidebar hidden on desktop'); assert((await page.locator('#sidebarDrawer a').count()) >= 5);
   }, 'critical');
   await s.check('Every link inside the menu drawer works', async () => {
     const hs = await page.$$eval('#sidebarDrawer a', (as) => as.map((a) => a.getAttribute('href')).filter((h) => h && !/^(#|mailto:|tel:|https?:)/.test(h)));

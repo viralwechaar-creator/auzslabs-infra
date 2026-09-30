@@ -228,7 +228,8 @@ input,select,textarea{font-size:16px}
 .hero-visual .orb::before{content:'';position:absolute;inset:16px;border:2px dashed var(--ink);border-radius:50%}
 .hero-visual .orb::after{content:'';position:absolute;inset:32px;border-radius:50%;background:var(--accent)}
 
-.hero-grid{display:grid;grid-template-columns:1fr}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1fr)}
+.hero-grid>*{min-width:0}
 .hero-art{display:flex;justify-content:flex-end;margin-top:28px}
 .hero-art-logo{
   display:block;width:72%;max-width:260px;

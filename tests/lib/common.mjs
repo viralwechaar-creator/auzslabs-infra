@@ -22,7 +22,7 @@ export async function layoutIssues(page) {
     const sw = Math.max(document.documentElement.scrollWidth, document.body ? document.body.scrollWidth : 0);
     if (sw > vw + 2) {
       let worst = null;
-      for (const el of document.querySelectorAll('body *')) { const r = el.getBoundingClientRect(); if (r.width && r.right > vw + 2 && getComputedStyle(el).position !== 'fixed' && !el.closest('[aria-hidden="true"],.marquee,.ticker')) { worst = el; break; } }
+      for (const el of document.querySelectorAll('body *')) { const r = el.getBoundingClientRect(); if (r.width && r.right > vw + 2 && getComputedStyle(el).position !== 'fixed' && !el.closest('[aria-hidden="true"],.marquee,.ticker,#sidebarDrawer,.drawer,.sheet-ov')) { worst = el; break; } }
       out.push('page scrolls sideways (' + sw + 'px wide on a ' + vw + 'px screen)' + (worst ? ' near <' + worst.tagName.toLowerCase() + ' class="' + (worst.className && worst.className.baseVal === undefined ? worst.className : '') + '">' : ''));
     }
     const imgs = [...document.images].filter((i) => i.complete && i.naturalWidth === 0 && i.src && !i.src.startsWith('data:'));

@@ -26,7 +26,7 @@ export default async function run({ browser, stack }) {
   }, 'critical');
   await s.shot(page, 'cafe-order-sent');
   await s.check('The order is in the database for the right tenant', async () => {
-    const r = await q("select count(*)::int n from guest_orders g join tenants t on t.id = g.tenant_id where t.slug = 'testcafe' and g.customer_name = 'QA Guest'").catch(() => null);
+    const r = await q("select count(*)::int n from guest_orders g join tenants t on t.id = g.tenant_id where t.slug = 'testcafe' and g.name = 'QA Guest'").catch(() => null);
     if (!r) { const c = await q("select column_name from information_schema.columns where table_name = 'guest_orders'"); throw new Error('guest_orders columns: ' + c.map((x) => x.column_name).join(',')); }
     assert(r[0].n === 1, 'found ' + r[0].n + ' order(s)');
   }, 'critical');

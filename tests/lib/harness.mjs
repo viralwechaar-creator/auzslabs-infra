@@ -39,7 +39,7 @@ export function suite(name, description = '') {
 export const assert = (cond, msg) => { if (!cond) throw new Error(msg || 'assertion failed'); };
 
 // Errors a real visitor would hit. Fonts/CDN scripts are ignored because the test box may be offline.
-const IGNORE_HOSTS = /fonts\.googleapis\.com|fonts\.gstatic\.com|cdn\.jsdelivr\.net|google-analytics|googletagmanager/;
+const IGNORE_HOSTS = /wss?:\/\/api\.auzslab\.in\/ws|fonts\.googleapis\.com|fonts\.gstatic\.com|cdn\.jsdelivr\.net|google-analytics|googletagmanager/;
 export function watch(page) {
   const errors = [];
   page.on('pageerror', (e) => errors.push('JS error: ' + e.message));

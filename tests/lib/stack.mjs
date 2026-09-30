@@ -30,7 +30,7 @@ export async function startStack({ apiPort, webPort, log = () => {} } = {}) {
   apiPort = apiPort || await freePort(); webPort = webPort || await freePort();
   const uploads = fs.mkdtempSync('/tmp/auz-uploads-');
   const env = { ...process.env, PORT: String(apiPort), PGHOST: PG.host, PGPORT: String(PG.port), POSTGRES_APP_PASSWORD: PG.appPassword, POSTGRES_DB: PG.db,
-    JWT_SECRET: 'test-secret-test-secret-test-secret-123', DOMAIN: 'localhost', UPLOAD_ROOT: uploads, DOC_UPLOAD_ROOT: uploads + '-private' };
+    JWT_SECRET: 'test-secret-test-secret-test-secret-123', DOMAIN: 'localhost', DISABLE_RATE_LIMIT: '1', UPLOAD_ROOT: uploads, DOC_UPLOAD_ROOT: uploads + '-private' };
   const api = spawn('node', ['src/index.js'], { cwd: path.join(root, 'server'), env, stdio: ['ignore', 'pipe', 'pipe'] });
   process.on('exit', () => { try { api.kill('SIGKILL'); } catch {} });
   let apiLog = '';

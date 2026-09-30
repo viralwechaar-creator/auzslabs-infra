@@ -154,6 +154,7 @@ function allowedOrigin(originHeader) {
 // generous shared-IP-friendly ceiling on the public/anonymous RPCs. ----
 const rateBuckets = new Map();
 function rateLimited(key, limit, windowMs) {
+  if (process.env.DISABLE_RATE_LIMIT === '1') return false; // automated tests only (tests/lib/stack.mjs); never set in production
   const now = Date.now();
   let b = rateBuckets.get(key);
   if (!b || b.resetAt <= now) { b = { count: 0, resetAt: now + windowMs }; rateBuckets.set(key, b); }
