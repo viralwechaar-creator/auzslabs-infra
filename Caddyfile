@@ -59,23 +59,29 @@
         root * /srv/uploads
         file_server
     }
-    # try_files below doesn't count a bare directory (/salon/, /salon/menu/,
-    # /salon/admin/) as an existing file and would hand it to land.html,
-    # which redirects straight back here (a loop) -- so map them to their
-    # index.html explicitly first.
-    @salonDir path_regexp sd ^(/salon(?:/[a-z]+)?)/?$
-    rewrite @salonDir {re.sd.1}/index.html
-    @salonInvoice path_regexp ^/i/[a-f0-9]{8,32}$
-    rewrite @salonInvoice /salon/invoice.html
-    file_server
-    # A request for a real file (index.html, booking.html, site.html,
-    # backoffice.html, ...) is served directly, above -- this fallback
-    # only fires for a path that isn't one, in practice almost always
-    # the bare subdomain root. land.html is the one place that decides
-    # which page is a given tenant's real front door, by niche (a
-    # salon's is a booking page, not the staff POS) -- see its own
-    # comment for why this used to just be index.html unconditionally.
-    try_files {path} /land.html
+    # Everything else. Wrapped in handle so the /api and /uploads blocks
+    # above win: Caddy runs try_files BEFORE handle in its fixed directive
+    # order, so a bare top-level try_files would rewrite /api/site to
+    # /land.html before those blocks ever saw it.
+    handle {
+        # try_files below doesn't count a bare directory (/salon/,
+        # /salon/menu/, /salon/admin/) as an existing file and would hand
+        # it to land.html, which redirects straight back here (a loop) --
+        # so map them to their index.html explicitly first.
+        @salonDir path_regexp sd ^(/salon(?:/[a-z]+)?)/?$
+        rewrite @salonDir {re.sd.1}/index.html
+        @salonInvoice path_regexp ^/i/[a-f0-9]{8,32}$
+        rewrite @salonInvoice /salon/invoice.html
+        file_server
+        # A request for a real file (index.html, booking.html, site.html,
+        # backoffice.html, ...) is served directly, above -- this fallback
+        # only fires for a path that isn't one, in practice almost always
+        # the bare subdomain root. land.html is the one place that decides
+        # which page is a given tenant's real front door, by niche (a
+        # salon's is the /salon/ app, not the staff POS) -- see its own
+        # comment for why this used to just be index.html unconditionally.
+        try_files {path} /land.html
+    }
 }
 
 # Monitoring dashboard, kept on its own subdomain
