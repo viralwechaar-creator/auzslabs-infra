@@ -66,14 +66,32 @@ h2{font-weight:500;font-size:clamp(28px,3.8vw,48px);line-height:1;letter-spacing
 .sec-plum .sec-head p{color:var(--cream);opacity:.8}
 
 /* services */
-.cat-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}
+.svc-stats{display:flex;gap:clamp(24px,4vw,56px);flex-wrap:wrap;margin-bottom:clamp(20px,3vw,32px)}
+.svc-stats div dt{font-size:13px;color:var(--muted)}
+.svc-stats div dd{font-size:clamp(20px,2.4vw,28px);font-weight:500;margin-top:2px}
+.svc-ticker{overflow:hidden;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding-block:16px;margin-bottom:clamp(28px,4vw,48px);-webkit-mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent);mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent)}
+.svc-ticker-track{display:flex;width:max-content;animation:ticker 30s linear infinite}
+.svc-ticker-track span{font-size:15px;font-weight:500;color:var(--muted);white-space:nowrap;display:flex;align-items:center;gap:24px;padding-right:24px}
+.svc-ticker-track span::after{content:'•';color:var(--gold-d)}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media(prefers-reduced-motion:reduce){.svc-ticker-track{animation:none}}
+.seg{display:inline-flex;border:1px solid var(--plum);border-radius:999px;padding:3px;gap:2px;margin-bottom:20px}
+.seg button{border:0;border-radius:999px;background:transparent;padding:8px 16px;font-weight:500;font-size:13.5px;color:var(--plum)}
+.seg button.on{background:var(--plum);color:#fff}
+.menu-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.cat-tabs{display:flex;gap:8px;flex-wrap:wrap}
 .cat-tabs button{padding:9px 18px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:13.5px;font-weight:500;color:var(--muted);transition:all .15s var(--ease)}
 .cat-tabs button.on{background:var(--plum);color:#fff;border-color:var(--plum)}
+.cat-nav{display:flex;align-items:center;gap:10px;white-space:nowrap}
+.cat-count{color:var(--muted);font-size:13.5px;font-variant-numeric:tabular-nums}
+.sq{width:38px;height:38px;border-radius:999px;display:grid;place-items:center;border:1px solid var(--plum);background:#fff;font-size:16px}
+.sq:disabled{opacity:.3}
 .svc-list{display:grid;gap:1px;background:var(--line);border-radius:var(--r-md);overflow:hidden}
 .svc-row{display:flex;justify-content:space-between;gap:16px;padding:18px 22px;background:#fff}
-.svc-row .name{font-weight:500}
+.svc-row .name{font-weight:500;display:flex;align-items:center;gap:8px}
+.svc-row .pop{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-d);border:1px solid var(--gold-d);border-radius:999px;padding:2px 8px}
 .svc-row .desc{font-size:14px;color:var(--muted);margin-top:4px;max-width:44em}
-.svc-row .price{font-weight:500;white-space:nowrap;font-variant-numeric:tabular-nums}
+.svc-row .price{font-weight:500;white-space:nowrap;font-variant-numeric:tabular-nums;display:flex;gap:16px}
 .svc-row .price small{display:block;font-size:11px;color:var(--muted);font-weight:400;text-align:right}
 
 /* gallery */
@@ -146,10 +164,17 @@ function applyBrand(brand,cfg){
  const fav=document.querySelector('link[rel=icon]');if(fav&&cfg.logo)fav.href=cfg.logo;
 }
 
-function svcRow(s){
- const price=s.sizes&&s.sizes.length?s.sizes.map(sz=>sz.l+' '+inr(sz.p)).join(' · '):inr(s.price);
+function priceText(s,cat){
+ if(s.sizes&&s.sizes.length)return s.sizes.map(sz=>sz.l+' '+inr(sz.p)).join(' · ');
+ if(s.price2!=null){
+  const labels=(cat&&cat.priceLabels&&cat.priceLabels.length===2)?cat.priceLabels:null;
+  return labels?`<small>${esc(labels[0])}</small>${inr(s.price)} · <small>${esc(labels[1])}</small>${inr(s.price2)}`:`${inr(s.price)} · ${inr(s.price2)}`;
+ }
+ return inr(s.price);
+}
+function svcRow(s,cat){
  const checked=SELECTED.has(s.id);
- return `<label class=svc-row><span><span class=name>${esc(s.name)}</span>${s.desc?`<span class=desc>${esc(s.desc)}</span>`:''}</span><span style="display:flex;align-items:center;gap:10px"><b class=price>${esc(price)}</b><input type=checkbox data-id="${esc(s.id)}" data-price="${s.sizes&&s.sizes.length?s.sizes[0].p:s.price}" data-name="${esc(s.name)}" ${checked?'checked':''}></span></label>`;
+ return `<label class=svc-row><span><span class=name>${esc(s.name)}${s.popular?'<span class=pop>Popular</span>':''}</span>${s.desc?`<span class=desc>${esc(s.desc)}</span>`:''}</span><span style="display:flex;align-items:center;gap:10px"><b class=price>${priceText(s,cat)}</b><input type=checkbox data-id="${esc(s.id)}" data-price="${s.sizes&&s.sizes.length?s.sizes[0].p:s.price}" data-name="${esc(s.name)}" ${checked?'checked':''}></span></label>`;
 }
 
 function renderChips(){
@@ -257,8 +282,22 @@ async function boot(){
  </div></div></section>
 
  <section class=sec id=services><div class=wrap>
-  <div class=sec-head><h2>Services</h2><p>Everything we offer, with clear prices.</p></div>
-  ${CATS.length?`<div class=cat-tabs id=catTabs>${CATS.map((c,i)=>`<button type=button data-cat="${esc(c.id||c.name)}" class="${i==0?'on':''}">${esc(c.name)}</button>`).join('')}</div>`:''}
+  <div class=sec-head><h2>Services</h2><p>Everything we offer, grouped the way you would ask for it.</p></div>
+  ${CATS.length?`<dl class=svc-stats>
+   <div><dt>${CATS.length===1?'Category':'Categories'}</dt><dd>${CATS.length}</dd></div>
+   <div><dt>Treatments</dt><dd>${SVCS.length}+</dd></div>
+   <div><dt>Ends at</dt><dd>${inr(Math.max(...SVCS.map(s=>Math.max(s.price||0,s.price2||0))))}</dd></div>
+  </dl>
+  <div class=svc-ticker><div class=svc-ticker-track>${CATS.concat(CATS).map(c=>`<span>${esc(c.name)}</span>`).join('')}</div></div>
+  ${CATS.some(c=>c.gender&&c.gender!=='all')?`<div class=seg id=genderSeg>
+   <button type=button data-g=all class=on>Everyone</button>
+   <button type=button data-g=female>Women</button>
+   <button type=button data-g=male>Men</button>
+  </div>`:''}
+  <div class=menu-bar>
+   <div class=cat-tabs id=catTabs></div>
+   <div class=cat-nav><span class=cat-count id=catCount></span><button type=button class=sq id=prevCat>‹</button><button type=button class=sq id=nextCat>›</button></div>
+  </div>`:''}
   <div class=svc-list id=svcList></div>
  </div></section>
 
@@ -280,15 +319,31 @@ async function boot(){
   <div class=meta>Powered by <a href="https://auzslab.in" target=_blank rel=noopener>AUZslab</a></div>
  </div></footer>`;
 
- // Category filter for the service list (defaults to the first category).
+ // Category browsing: an optional Everyone/Women/Men gender filter narrows
+ // which categories are in play, then one category is shown at a time
+ // (tabs to jump directly, prev/next + a "X of Y" count to step through) --
+ // this is our own adaptation of the real site's swipeable carousel, not a
+ // literal clone, but it keeps the same "one group at a time" browsing model.
+ let GENDER='all',CATIDX=0;
+ const filteredCats=()=>CATS.filter(c=>GENDER==='all'||!c.gender||c.gender==='all'||c.gender===GENDER);
  const itemsForCat=cid=>SVCS.filter(s=>s.cat==cid);
- const catTabs=document.getElementById('catTabs');
- const paintCat=cid=>{
-  document.getElementById('svcList').innerHTML=itemsForCat(cid).map(svcRow).join('')||'<div class="svc-row hint">No services in this category yet.</div>';
-  if(catTabs)catTabs.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.cat==cid));
+ const catTabs=document.getElementById('catTabs'),catCount=document.getElementById('catCount'),
+  prevCat=document.getElementById('prevCat'),nextCat=document.getElementById('nextCat'),genderSeg=document.getElementById('genderSeg');
+ const paintCats=()=>{
+  const cats=filteredCats();
+  CATIDX=Math.min(CATIDX,Math.max(0,cats.length-1));
+  const cur=cats[CATIDX];
+  if(catTabs)catTabs.innerHTML=cats.map((c,i)=>`<button type=button data-i="${i}" class="${i===CATIDX?'on':''}">${esc(c.name)}${GENDER==='all'&&c.gender&&c.gender!=='all'?' ('+(c.gender==='female'?'women':'men')+')':''}</button>`).join('');
+  if(catTabs)catTabs.querySelectorAll('button').forEach(b=>b.onclick=()=>{CATIDX=+b.dataset.i;paintCats()});
+  if(catCount)catCount.textContent=cats.length?`${CATIDX+1} of ${cats.length}`:'';
+  if(prevCat)prevCat.disabled=CATIDX<=0;
+  if(nextCat)nextCat.disabled=CATIDX>=cats.length-1;
+  document.getElementById('svcList').innerHTML=cur?(itemsForCat(cur.id||cur.name).map(s=>svcRow(s,cur)).join('')||'<div class="svc-row hint">No services in this category yet.</div>'):'<div class="svc-row hint">No services listed yet.</div>';
  };
- if(CATS.length)paintCat(CATS[0].id||CATS[0].name);
- if(catTabs)catTabs.querySelectorAll('button').forEach(b=>b.onclick=()=>paintCat(b.dataset.cat));
+ if(prevCat)prevCat.onclick=()=>{CATIDX--;paintCats()};
+ if(nextCat)nextCat.onclick=()=>{CATIDX++;paintCats()};
+ if(genderSeg)genderSeg.querySelectorAll('button').forEach(b=>b.onclick=()=>{GENDER=b.dataset.g;CATIDX=0;genderSeg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));paintCats()});
+ if(CATS.length)paintCats();
 
  wireBookForm();
 }
