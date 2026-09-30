@@ -542,6 +542,23 @@ like the original repo; don't rebuild it in `booking.html`.
   `salon_store` (`key='db'`) for the tenant.
 - `booking.html` and the `public_salon_*` RPCs are left in place but unused.
 
+**Storage layout (salon data split, Steps 1 + 2):** a salon's data is two
+`salon_store` rows, not one: `'site'` (settings, menu, content, stylists,
+gallery, `seededAt`: small, public) and `'data'` (bookings, invoices, expenses,
+counters: grows daily). `loadSite()` serves the public pages from a 30 s
+in-memory cache that every write clears (`dropCaches`; generation counters stop
+a read that raced a write from being cached), and `bookingCounts()` caches
+booked-slot counts for the slot picker; concurrent cache misses share one read
+(`once()`). `mutate(tenant, fn, parts, write)` reads the halves a handler needs
+and locks/saves only the halves it may change (site edits never rewrite bookings
+and vice versa). Handlers still see one combined object. Legacy single-`'db'`
+salons are split on first use by `initStorage()` (old row kept as `'db_backup'`).
+The cache is per process: if the API is ever run as more than one instance, it
+needs a shared invalidation (or drop the cache) first. Not done yet (Step 3):
+bookings/invoices as individual rows, so a save no longer rewrites the whole
+`'data'` row. Measured on a salon with 6,000 bookings + 6,000 bills (4 MB): public
+`/site` 22 -> ~700 req/s, `/slots` 23 -> ~750 req/s (20 concurrent, p95 ~1 s -> <0.15 s).
+
 ### Salon Suite part 2: staff logins, payroll link, template, demo
 
 - **Staff logins** (`salon_store` key `'staff'`, managed by the owner under
