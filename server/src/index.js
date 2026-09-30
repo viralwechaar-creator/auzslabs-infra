@@ -4,6 +4,7 @@ import { login, verifyToken, bearerFrom, createUser, resetToRandomPassword, sign
 import { saveSiteUpload, saveDocUpload, readDocUpload, getUploadsDiskUsage } from './storage.js';
 import { startRealtime } from './realtime.js';
 import { handlePushEvent } from './push.js';
+import { sendStaffInviteEmail } from './mail.js';
 
 const PORT = process.env.PORT || 3000;
 const DOMAIN = process.env.DOMAIN || '';
@@ -105,6 +106,7 @@ const RPC = {
   update_my_features: { params: ['p_enabled'], jsonb: ['p_enabled'], auth: true },
   change_my_password: { params: ['p_old_password', 'p_new_password'], auth: true },
   invite_staff: { params: ['p_email', 'p_name', 'p_phone', 'p_role_id'], auth: true },
+  confirm_staff_email: { params: ['p_token'], auth: false },
   remove_staff: { params: ['p_staff_id'], auth: true },
   reset_staff_password: { params: ['p_staff_id', 'p_new_password'], auth: true },
   delete_role: { params: ['p_role_id'], auth: true },
@@ -299,6 +301,7 @@ const server = http.createServer(async (req, res) => {
       if (rateLimited(bucket, limit, 15 * 60_000)) throw new HttpError(429, 'too many login attempts, try again later');
       const result = await login(email, password);
       if (!result) throw new HttpError(401, 'invalid credentials');
+      if (result.unverified) throw new HttpError(403, 'Please verify your email first -- check your inbox for the verification link, or ask your manager to resend it.');
       return reply(200, result);
     }
     // ---- public self-serve signup: creates a bare login with no
@@ -442,6 +445,21 @@ const server = http.createServer(async (req, res) => {
       // resetToRandomPassword's own note on why this replaces a
       // recovery-link email.
       return reply(200, { user_id: created.id, temp_password: tempPassword });
+    }
+
+    // ---- staff invite: send the verification email (Resend) ----
+    // Separate from invite_staff itself because Postgres can't make an
+    // outbound HTTPS call -- invite_staff (db/044) only ever creates
+    // the token; this is what actually emails it, from account.html
+    // right after that RPC succeeds.
+    if (url.pathname === '/staff/send-invite-email' && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      const profile = await myProfile(user.id);
+      if (profile?.role !== 'owner') throw new HttpError(403, 'owner only');
+      const body = await readJsonBody(req);
+      if (!body.email || !body.verify_link) throw new HttpError(400, 'email and verify_link are required');
+      const sent = await sendStaffInviteEmail({ to: body.email, name: body.name || '', verifyLink: body.verify_link });
+      return reply(200, sent);
     }
 
     // ---- admin: uploads disk usage (System resources panel) ----

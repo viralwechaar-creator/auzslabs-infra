@@ -334,7 +334,23 @@ function renderStaff() {
     if (!name || !email || !roleId) { msg.className = 'err'; msg.textContent = 'Name, email, and role are required.'; return; }
     const { data, error } = await sb.rpc('invite_staff', { p_email: email, p_name: name, p_phone: phone, p_role_id: roleId });
     if (error) { msg.className = 'err'; msg.textContent = error.message; return; }
-    msg.className = 'ok-box'; msg.innerHTML = `Added. Share these with them directly:<br><b>${esc(email)}</b> / <b>${esc(data.temp_password)}</b>`;
+    const verifyLink = 'https://' + DASH.tenant.slug + '.auzslab.in/verify.html?token=' + data.verify_token;
+    let emailSent = false;
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      const res = await fetch(CFG.url + '/staff/send-invite-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+        body: JSON.stringify({ email, name, verify_link: verifyLink }),
+      });
+      const body = await res.json();
+      emailSent = res.ok && body.sent;
+    } catch {}
+    msg.className = 'ok-box';
+    msg.innerHTML = `Added. Share this temporary password with them directly:<br><b>${esc(email)}</b> / <b>${esc(data.temp_password)}</b><br><br>` +
+      (emailSent
+        ? `They can't sign in until they confirm their email — we've sent a verification link to <b>${esc(email)}</b>.`
+        : `They can't sign in until this link is opened — <b>the verification email couldn't be sent</b>, so share this link with them directly too:<br><a href="${esc(verifyLink)}" target="_blank" style="word-break:break-all">${esc(verifyLink)}</a>`);
     $('#stName').value = ''; $('#stPhone').value = ''; $('#stEmail').value = '';
     await loadStaff(); renderStaff();
   };

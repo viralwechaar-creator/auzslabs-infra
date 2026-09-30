@@ -52,6 +52,7 @@ label{display:grid;gap:4px;font-size:12.5px;color:var(--ink-dim)}
 <div id=app></div>
 <script src="/sb-client.js?v=2"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
+<script src=/tenant.js></script>
 <script>
 const C=window.CFG||{},sb=supabase.createClient(C.url,C.key),S={pages:[],curSlug:null,drag:null},R={};let busy=0;
 const $=s=>document.querySelector(s),uid=()=>crypto.randomUUID(),now=()=>new Date().toISOString();
@@ -277,8 +278,15 @@ async function boot(){
  let ses=null;try{ses=(await sb.auth.getSession()).data.session}catch{}
  if(!ses)return login();
  S.user=ses.user;
- let features={};
- try{const{data}=await sb.rpc('my_dashboard');if(data)features=data.features||{}}catch{}
+ let features={},dash=null;
+ try{const r=await sb.rpc('my_dashboard');dash=r.data;if(dash)features=dash.features||{}}catch{}
+ // see index.html's boot() for why: login is global, not scoped to a
+ // subdomain, so this account could belong to a different business
+ // than the one this URL says.
+ if(dash&&window.TENANT_SLUG&&dash.tenant&&dash.tenant.slug!==window.TENANT_SLUG){
+  await sb.auth.signOut();S.user=null;
+  return login('This login belongs to a different business ('+dash.tenant.slug+'.auzslab.in) — please sign in at your own business’s link instead.');
+ }
  if(!(features.website_builder===true)){S.user=null;return notEntitled()}
  (await all('rec')).forEach(r=>R[r.id]=r);
  await doSync();
