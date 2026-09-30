@@ -1,0 +1,29 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
+<title>Confirm your email — AUZslab</title><link rel=icon href=/logo.png>
+<link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel=stylesheet>
+<style>
+:root{--ink:#171717;--ink-dim:#4d4d4d;--accent:#800020;--bg:#f4f4f4}
+*{box-sizing:border-box}body{margin:0;font:16px/1.6 Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink);display:flex;min-height:100vh;align-items:center;justify-content:center;padding:20px}
+.card{background:#fff;border-radius:22px;padding:34px 28px;max-width:420px;width:100%;text-align:center;box-shadow:0 4px 12px rgba(23,23,23,.08),0 20px 44px -16px rgba(23,23,23,.22)}
+h1{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif;font-size:22px;margin:0 0 10px}
+p{color:var(--ink-dim);margin:0 0 18px}
+a.btn{display:inline-block;padding:12px 24px;border-radius:999px;background:var(--accent);color:#fff;text-decoration:none;font-weight:600}
+.icon{font-size:40px;margin-bottom:6px}
+</style>
+</head><body>
+<div class="card" id=card><div class=icon>…</div><h1>Confirming…</h1><p>One moment.</p></div>
+<script src="/sb-client.js?v=2"></script>
+<script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
+<script>
+const sb=supabase.createClient(CFG.url,CFG.key);
+const card=document.getElementById('card');
+const token=new URLSearchParams(location.search).get('token');
+(async()=>{
+ if(!token){card.innerHTML='<div class="icon">⚠️</div><h1>Missing link</h1><p>This page needs a verification link — open the one from your email instead.</p>';return}
+ const{error}=await sb.rpc('confirm_staff_email',{p_token:token});
+ if(error){card.innerHTML='<div class="icon">⚠️</div><h1>Couldn’t verify</h1><p>'+error.message+'</p>';return}
+ card.innerHTML='<div class="icon">✓</div><h1>Email confirmed</h1><p>You can sign in now.</p><a class="btn" href="/index.html">Go to sign in</a>';
+})();
+</script>
+</body></html>

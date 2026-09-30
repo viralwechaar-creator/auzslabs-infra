@@ -108,6 +108,7 @@ button.ditem.on{color:var(--accent);font-weight:700;background:var(--bg-raised)}
 <div id=app></div>
 <script src="/sb-client.js?v=2"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
+<script src=/tenant.js></script>
 <script>
 const C=window.CFG||{},sb=supabase.createClient(C.url,C.key),S={tab:'employees',cur:null},R={},V={};let busy=0,syncErr=0;
 const $=s=>document.querySelector(s),uid=()=>crypto.randomUUID(),now=()=>new Date().toISOString(),r2=n=>Math.round(n*100)/100,inr=n=>'₹'+r2(n).toLocaleString('en-IN');
@@ -701,7 +702,20 @@ async function boot(){
  const uid=ses?ses.user.id:(c&&c.id);
  if(uid){const meta=await get('meta','lastUser');if(meta&&meta.v&&meta.v!==uid){await clr('rec');await clr('out');await del('meta','since')}await put('meta',{k:'lastUser',v:uid})}
  (await all('rec')).forEach(r=>R[r.id]=r);
- if(ses){S.user=ses.user;try{const{data}=await sb.from('profiles').select('role').eq('id',ses.user.id).single();if(data)localStorage.hru=JSON.stringify(c={id:ses.user.id,role:data.role})}catch{}}else if(c)S.user={id:c.id};
+ if(ses){
+  S.user=ses.user;
+  try{const{data}=await sb.from('profiles').select('role').eq('id',ses.user.id).single();if(data)localStorage.hru=JSON.stringify(c={id:ses.user.id,role:data.role})}catch{}
+  // see index.html's boot() for why: login is global, not scoped to a
+  // subdomain, so this staff member's credentials could belong to a
+  // completely different business than the one this URL says.
+  try{
+   const{data:dash}=await sb.rpc('my_dashboard');
+   if(dash&&window.TENANT_SLUG&&dash.tenant&&dash.tenant.slug!==window.TENANT_SLUG){
+    await sb.auth.signOut();S.user=null;localStorage.removeItem('hru');
+    return login('This login belongs to a different business ('+dash.tenant.slug+'.auzslab.in) — please sign in at your own business’s link instead.');
+   }
+  }catch{}
+ }else if(c)S.user={id:c.id};
  if(!S.user)return login();
  S.role=(c&&c.role)||'cashier';
  $('#app').textContent='Loading…';

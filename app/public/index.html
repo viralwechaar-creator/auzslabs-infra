@@ -99,6 +99,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:5px;border-bottom:1px so
 <script src=/sb-client.js?v=2></script>
 <script src=https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js integrity="sha384-8FWZA6BGMXhsfO+BLtrJK0We6gg5o1JyO8xQm6peWDEUs17ACA5ziE/NIAkl9z2k" crossorigin=anonymous></script>
 <script src=/config.js></script>
+<script src=/tenant.js></script>
 <script>
 const VAPID_PUBLIC='BN_aBfhAkcWmYJ8RArUKpcXFBId6rUsNO7bAuhyPr4To51XeATMoWY-8NxtJMCG_iHm4O4UbhV_EZnxloXkEMe4';
 const C=window.CFG||{},sb=supabase.createClient(C.url,C.key),S={tab:'pos',setTab:'biz',type:'Dine-in',cur:null,role:'cashier',role_id:null,perms:null,features:null,enabledFeatures:{},q:'',d:new Date().toLocaleDateString('en-CA'),authExpired:false,drawerOpen:false,previewNiche:null},R={},V={};let busy=0,conflicts=0,syncErr=0;
@@ -939,7 +940,19 @@ async function boot(){if(!C.url||C.url.includes('YOUR-PROJECT'))return $('#app')
  (await all('rec')).forEach(r=>R[r.id]=r);
  if(ses){S.user=ses.user;try{const{data}=await sb.from('profiles').select('role,role_id').eq('id',ses.user.id).single();if(data)localStorage.u=JSON.stringify(c={id:ses.user.id,role:data.role,role_id:data.role_id})}catch{}}else if(c)S.user={id:c.id};
  if(!S.user)return login();S.role=(c&&c.role)||'cashier';S.role_id=(c&&c.role_id)||null;S.perms=null;if(S.role_id){try{const{data}=await sb.from('roles').select('permissions').eq('id',S.role_id).single();S.perms=data&&data.permissions}catch{}}
- S.features=null;S.enabledFeatures={};try{const{data}=await sb.rpc('my_dashboard');if(data&&data.features){S.features=data.features;S.enabledFeatures=data.enabled_features||{}}}catch{}
+ S.features=null;S.enabledFeatures={};let dash=null;try{const r=await sb.rpc('my_dashboard');dash=r.data}catch{}
+ // credentials are global (one email = one login, see db/000_own_auth.sql),
+ // never scoped to a subdomain -- signInWithPassword happily accepts any
+ // tenant's staff email from any OTHER tenant's URL. RLS already keeps
+ // the data itself correctly scoped to the account's real tenant either
+ // way, but logging in as staff-A while the address bar says tenant-B is
+ // actively misleading, so refuse it outright rather than silently
+ // rendering staff-A's real business under tenant-B's branding.
+ if(dash&&window.TENANT_SLUG&&dash.tenant&&dash.tenant.slug!==window.TENANT_SLUG){
+  await sb.auth.signOut();S.user=null;localStorage.removeItem('u');
+  return login('This login belongs to a different business ('+dash.tenant.slug+'.auzslab.in) — please sign in at your own business’s link instead.');
+ }
+ if(dash&&dash.features){S.features=dash.features;S.enabledFeatures=dash.enabled_features||{}}
  try{const reqTab=new URLSearchParams(location.search).get('tab');if(reqTab&&visibleTabs().some(([k])=>k==reqTab))S.tab=reqTab}catch{}
  S.authExpired=false;$('#app').textContent='Loading…';addEventListener('online',()=>{sync();setNote()});addEventListener('offline',setNote);
  sb.channel('r').on('postgres_changes',{event:'*',schema:'public',table:'records'},()=>sync()).subscribe();setInterval(sync,30000);sb.channel('g').on('postgres_changes',{event:'*',schema:'public',table:'guest_orders'},()=>getG()).subscribe();setInterval(getG,15000);sb.channel('n').on('postgres_changes',{event:'*',schema:'public',table:'notifications'},()=>refreshNotifCount()).subscribe();setInterval(refreshNotifCount,30000);setInterval(checkAlerts,5000);await syncNow();getG();checkAlerts();if(can('o')&&!L('cat').length&&!localStorage.seeded)await seed();render()}

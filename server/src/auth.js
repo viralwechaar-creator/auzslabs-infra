@@ -37,13 +37,19 @@ export function bearerFrom(req) {
 // the password, and returns a signed token plus the user record.
 export async function login(email, password) {
   const { rows } = await pool.query(
-    'select id, email, password_hash, app_metadata, user_metadata from auth_users where email = $1',
+    `select au.id, au.email, au.password_hash, au.app_metadata, au.user_metadata, p.email_verified
+     from auth_users au left join profiles p on p.id = au.id where au.email = $1`,
     [email],
   );
   const row = rows[0];
   if (!row) return null;
   const ok = await bcrypt.compare(password, row.password_hash);
   if (!ok) return null;
+  // p.email_verified is null for a caller with no profiles row at all
+  // (a platform admin, or a bare self-signup account with no tenant
+  // yet) -- only a real staff profile can actually be unverified
+  // (see db/044_staff_email_verification.sql), so null/true both pass.
+  if (row.email_verified === false) return { unverified: true };
   const user = { id: row.id, email: row.email, app_metadata: row.app_metadata, user_metadata: row.user_metadata };
   return { access_token: signToken(user), user };
 }
