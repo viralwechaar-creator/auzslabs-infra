@@ -1,0 +1,14 @@
+{
+  "name": "auzslab-tests",
+  "private": true,
+  "type": "module",
+  "description": "Automated launch-readiness tests: npm run test:local (isolated test copy), npm run test:live (read-only smoke against the live site)",
+  "scripts": {
+    "test:local": "node run-local.mjs",
+    "test:live": "node run-live.mjs",
+    "report": "node -e \"console.log('open tests/report/index.html')\""
+  },
+  "devDependencies": {
+    "playwright": "^1.49.0"
+  }
+}

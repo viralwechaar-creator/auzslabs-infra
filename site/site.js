@@ -150,6 +150,27 @@
         navSb.auth.getSession().then(function (res) {
           var session = res && res.data && res.data.session;
           var tenantId = session && session.user && session.user.app_metadata && session.user.app_metadata.tenant_id;
+          if (session && !tenantId) {
+            // Signed in but no business of their own: AUZslab's own team (platform admins) go
+            // straight to the admin dashboard from here. Checked once per sign-in, then remembered.
+            var key = 'auz_admin_' + session.user.id, cached = null;
+            try { cached = sessionStorage.getItem(key); } catch (e) {}
+            var apply = function (isAdmin) {
+              if (!isAdmin) return;
+              signinLinks.forEach(function (el) {
+                el.href = 'https://auzslab.in/admin.html';
+                el.setAttribute('aria-label', 'Admin dashboard');
+                el.textContent = 'Admin';
+              });
+            };
+            if (cached !== null) { apply(cached === '1'); return; }
+            navSb.rpc('list_clients', {}).then(function (r) {
+              var ok = !r.error;
+              try { sessionStorage.setItem(key, ok ? '1' : '0'); } catch (e) {}
+              apply(ok);
+            });
+            return;
+          }
           if (!tenantId) return;
           signinLinks.forEach(function (el) {
             el.href = 'https://auzslab.in/account.html';

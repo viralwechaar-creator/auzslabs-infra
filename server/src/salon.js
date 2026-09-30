@@ -324,6 +324,12 @@ function addBooking(db, body, isAdminBooking) {
   db.bookings = db.bookings || [];
   if (db.bookings.some((x) => x.phone === phone && x.date === date && x.time === time && x.status !== 'cancelled'))
     fail(409, 'A booking already exists for this phone number at that time.');
+  // The slot picker hides full times, but a direct request must not be able to overbook one.
+  if (!isAdminBooking) {
+    const cap = (db.settings && db.settings.capacity) || 1;
+    const taken = db.bookings.filter((x) => x.date === date && x.time === time && x.status !== 'cancelled').length;
+    if (taken >= cap) fail(409, 'That time was just taken. Please pick another slot.');
+  }
   const all = (db.menu || []).flatMap((c) => c.items || []);
   const services = ids.map((id) => all.find((i) => String(i.id) === id)).filter(Boolean).map((i) => ({ id: i.id, name: i.name, price: i.price }));
   if (!services.length) fail(400, 'Selected services were not found.');
