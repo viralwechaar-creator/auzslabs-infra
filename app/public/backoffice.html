@@ -553,16 +553,36 @@ function custModal(c,orders){
   h('div',{class:'row'},'Visits',h('b',{},c.n)),h('div',{class:'row'},'Lifetime spend',h('b',{},inr(c.tot))),h('div',{class:'row'},'Last visit',h('b',{},daysSince+' days ago')),
   favs.length?h('div',{},h('b',{style:'font-size:12px'},'Past favourites'),h('div',{class:'row',style:'justify-content:flex-start;flex-wrap:wrap;gap:6px;border-bottom:none'},...favs.map(([n,q])=>h('span',{style:'background:var(--bg-raised);color:var(--ink-dim);font-size:12px;padding:3px 10px;border-radius:999px;font-family:Inter,sans-serif;text-transform:none;letter-spacing:normal'},n+' × '+q)))):null)
 }
+// upcomingDates: month-day match within the next 7 days, ignoring
+// year -- a birthday/anniversary is a yearly-recurring date, so the
+// stored year in dob/anniversary is irrelevant to "is it coming up".
+function upcomingDates(field,label){
+ const today_=new Date(),rows=[];
+ for(const p of L('customer')){const v=p[field];if(!v)continue;
+  const d=new Date(v+'T00:00:00');
+  for(let i=0;i<7;i++){const check=new Date(today_);check.setDate(check.getDate()+i);
+   if(d.getMonth()==check.getMonth()&&d.getDate()==check.getDate()){rows.push({name:p.name||p.phone,phone:p.phone,inDays:i,label});break}
+  }
+ }
+ return rows;
+}
 V.crm=()=>{const paid=L('order').filter(o=>(o.status=='paid'||o.status=='due')&&(o.cust||{}).phone),cs={};paid.forEach(o=>{const p=o.cust.phone.replace(/\D/g,''),net=r2(o.t.total-(o.refunds||[]).reduce((a,r)=>a+r.amt,0));const c=cs[p]||(cs[p]={name:o.cust.name,phone:p,n:0,tot:0,last:o.paidAt||o.created,orders:[]});c.n++;c.tot=r2(c.tot+net);c.orders.push(o);if((o.paidAt||o.created)>c.last)c.last=o.paidAt||o.created});
 const list=Object.values(cs).sort((a,b)=>b.tot-a.tot);
-return h('div',{class:'g',style:'grid-template-columns:1fr'},h('div',{class:'card'},h('h3',{},'Customers ('+list.length+')'),...list.map(c=>{const{tier}=custSegment(c);return h('div',{class:'cust-row',onclick:()=>custModal(c,c.orders)},
-  h('div',{class:'cust-avatar'},(c.name||'?')[0].toUpperCase()),
-  h('div',{class:'cust-info'},
-   h('div',{class:'cust-name-row'},h('span',{class:'cust-name'},c.name||'Unknown'),h('span',{class:'badge tier-'+tier.toLowerCase()},tier)),
-   h('div',{class:'cust-meta'},c.phone+' · '+c.n+' visit'+(c.n>1?'s':'')+' · '+inr(c.tot)+' · last '+new Date(c.last).toLocaleDateString())
-  ),
-  h('button',{class:'p cust-view'},'View')
- )})),list.length?null:h('p',{},'No paid orders with a customer phone yet.'))};
+const upcoming=[...upcomingDates('dob','Birthday'),...upcomingDates('anniversary','Anniversary')].sort((a,b)=>a.inDays-b.inDays);
+return h('div',{class:'g',style:'grid-template-columns:1fr'},
+ upcoming.length?h('div',{class:'card'},h('h3',{},'Upcoming birthdays & anniversaries'),...upcoming.map(u=>h('div',{class:'row'},u.name+' · '+u.phone,u.label+' '+(u.inDays==0?'today':u.inDays==1?'tomorrow':'in '+u.inDays+' days')))):null,
+ h('div',{class:'card'},h('h3',{},'Customers ('+list.length+')'),
+  ...list.map(c=>{const{tier}=custSegment(c),profile=L('customer').find(p=>p.phone==c.phone);return h('div',{class:'cust-row',onclick:()=>custModal(c,c.orders)},
+   h('div',{class:'cust-avatar'},(c.name||'?')[0].toUpperCase()),
+   h('div',{class:'cust-info'},
+    h('div',{class:'cust-name-row'},h('span',{class:'cust-name'},(profile&&profile.favorite?'⭐ ':'')+(c.name||'Unknown')),h('span',{class:'badge tier-'+tier.toLowerCase()},tier),...(profile&&profile.tags||[]).map(t=>h('span',{class:'badge',style:'background:var(--bg-raised);color:var(--ink-dim)'},t))),
+    h('div',{class:'cust-meta'},c.phone+' · '+c.n+' visit'+(c.n>1?'s':'')+' · '+inr(c.tot)+' · last '+new Date(c.last).toLocaleDateString())
+   ),
+   h('button',{class:'p cust-view'},'View')
+  )}),
+  list.length?null:h('p',{},'No paid orders with a customer phone yet.')
+ )
+);};
 function addDays(ds,n){const d=new Date(ds+'T00:00:00');d.setDate(d.getDate()+n);return d.toLocaleDateString('en-CA')}
 function memStatus(m){if(m.status=='cancelled')return 'cancelled';return m.endDate<today()?'expired':'active'}
 const MEM_STATUS_LABEL={active:'Active',expired:'Expired',cancelled:'Cancelled'};

@@ -465,6 +465,7 @@ V.pos=()=>{const isR=isRetail(),o=S.cur||(S.cur=newOrder()),cats=effCats().sort(
   h('div',{class:'row'},h('input',{placeholder:'Customer name *',style:'width:48%',value:o.cust.name||'',oninput:e=>o.cust.name=e.target.value}),h('input',{placeholder:'Phone *',style:'width:48%',value:o.cust.phone||'',oninput:e=>{o.cust.phone=e.target.value;clearTimeout(S.phoneT);S.phoneT=setTimeout(render,700)}})),
   h('div',{class:'row',style:'justify-content:flex-start;flex-wrap:wrap;gap:8px'},
    !isR&&o.type=='Dine-in'?h('button',{onclick:()=>assignCaptain(o)},o.captain?'👤 '+o.captain.name:'Assign captain'):null,
+   h('button',{onclick:()=>customerModal(o)},(R[(o.cust.phone||'').replace(/\D/g,'')]||{}).data?.favorite?'⭐ Customer details':'Customer details'),
    h('button',{onclick:()=>{const v=prompt('Comment for this order (kitchen/billing note)',o.comment||'');if(v==null)return;o.comment=v.trim();render()}},o.comment?'💬 '+o.comment:'Add comment'),
    can('m')?h('label',{style:'display:flex;align-items:center;gap:6px;font-size:13px'},h('input',{type:'checkbox',checked:!!o.complimentary,onchange:e=>{
     if(!e.target.checked){o.complimentary=false;o.compReason=null;return render()}
@@ -588,6 +589,26 @@ async function boot(){if(!C.url||C.url.includes('YOUR-PROJECT'))return $('#app')
  sb.channel('r').on('postgres_changes',{event:'*',schema:'public',table:'records'},()=>sync()).subscribe();setInterval(sync,30000);sb.channel('g').on('postgres_changes',{event:'*',schema:'public',table:'guest_orders'},()=>getG()).subscribe();setInterval(getG,15000);sb.channel('n').on('postgres_changes',{event:'*',schema:'public',table:'notifications'},()=>refreshNotifCount()).subscribe();setInterval(refreshNotifCount,30000);setInterval(checkAlerts,5000);await syncNow();getG();checkAlerts();if(can('o')&&!L('cat').length&&!localStorage.seeded)await seed();loadStaffList();render()}
 let STAFF_LIST=[];
 async function loadStaffList(){try{const{data}=await sb.from('profiles').select('id,email,name');STAFF_LIST=data||[];render()}catch{}}
+// A persistent customer profile (email/DOB/anniversary/tags/favourite),
+// keyed by the same digits-only phone V.crm already groups order
+// history by in backoffice.html -- previously nothing outlived a
+// single order's embedded {name,phone}.
+function customerModal(o){
+ const phone=(o.cust.phone||'').replace(/\D/g,'');
+ if(phone.length<10)return alert('Enter a phone number first.');
+ const c=(R[phone]&&R[phone].data)||{phone};
+ const email=h('input',{type:'email',value:c.email||'',placeholder:'Email'}),
+  dob=h('input',{type:'date',value:c.dob||'',placeholder:'Date of birth'}),
+  ann=h('input',{type:'date',value:c.anniversary||'',placeholder:'Anniversary'}),
+  tags=h('input',{value:(c.tags||[]).join(', '),placeholder:'Tags, e.g. Regular, VIP'}),
+  optOut=h('input',{type:'checkbox',checked:!!c.optOut}),fav=h('input',{type:'checkbox',checked:!!c.favorite});
+ const x=modal(h('h3',{},'Customer details'),email,dob,ann,tags,
+  h('label',{style:'display:flex;align-items:center;gap:8px'},optOut,'Do not send updates (SMS/WhatsApp)'),
+  h('label',{style:'display:flex;align-items:center;gap:8px'},fav,'Mark as favourite'),
+  h('button',{class:'p',onclick:async()=>{
+   await save('customer',{phone,name:o.cust.name||c.name,email:email.value.trim(),dob:dob.value||null,anniversary:ann.value||null,tags:tags.value.split(',').map(t=>t.trim()).filter(Boolean),optOut:optOut.checked,favorite:fav.checked},phone);
+   x();render()
+  }},'Save'))}
 function assignCaptain(o){
  const x=modal(h('h3',{},'Assign to'),...(STAFF_LIST.length?STAFF_LIST:[]).map(p=>h('button',{style:'text-align:left',onclick:()=>{o.captain={id:p.id,name:p.name||p.email};x();render()}},(p.name||p.email)+(o.captain&&o.captain.id==p.id?' ✓':''))),
   STAFF_LIST.length?null:h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No staff found.'),
