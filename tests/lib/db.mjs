@@ -1,0 +1,109 @@
+// Builds an isolated TEST copy of the database (never touches live data): runs every migration in
+// order, then seeds known tenants and logins. Needs a Postgres server you can connect to as a superuser.
+import { createRequire } from 'node:module';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const root = path.resolve(here, '..', '..');
+const req = createRequire(path.join(root, 'server', 'package.json'));
+const pg = req('pg');
+const bcrypt = req('bcryptjs');
+
+export const PG = {
+  host: process.env.TEST_PG_HOST || 'localhost',
+  port: Number(process.env.TEST_PG_PORT || 5432),
+  user: process.env.TEST_PG_USER || 'postgres',
+  password: process.env.TEST_PG_PASSWORD || 'postgres',
+  db: process.env.TEST_PG_DB || 'auzslab_test',
+  appPassword: process.env.TEST_PG_APP_PASSWORD || 'apppw_test',
+};
+export const PASSWORD = 'Test!pass123';
+export const USERS = {
+  admin: 'admin@test.local',
+  cafeOwner: 'owner-cafe@test.local',
+  salonOwner: 'owner-salon@test.local',
+  retailOwner: 'owner-retail@test.local',
+  plain: 'plain@test.local',
+};
+export const TENANTS = { cafe: 'testcafe', salon: 'testsalon', retail: 'testretail' };
+
+export async function connect(database) {
+  const c = new pg.Client({ host: PG.host, port: PG.port, user: PG.user, password: PG.password, database });
+  await c.connect();
+  return c;
+}
+
+// Migrations that only make sense for one real client's data, or that assume live state.
+const SKIP = /mannat/i;
+
+export async function build(log = () => {}) {
+  const admin = await connect('postgres');
+  await admin.query(`select pg_terminate_backend(pid) from pg_stat_activity where datname = $1 and pid <> pg_backend_pid()`, [PG.db]);
+  await admin.query(`drop database if exists ${PG.db}`);
+  await admin.query(`create database ${PG.db}`);
+  await admin.query(`do $$ begin if not exists (select from pg_roles where rolname = 'app') then create role app login password '${PG.appPassword}'; else alter role app password '${PG.appPassword}'; end if; end $$`);
+  await admin.end();
+
+  const c = await connect(PG.db);
+  const files = fs.readdirSync(path.join(root, 'db')).filter((f) => f.endsWith('.sql')).sort();
+  const first = files.filter((f) => f.startsWith('000_')), last = files.filter((f) => f.startsWith('999_'));
+  const middle = files.filter((f) => !first.includes(f) && !last.includes(f) && !SKIP.test(f));
+  const warn = [];
+  for (const f of [...first, ...middle, ...last]) {
+    try { await c.query(fs.readFileSync(path.join(root, 'db', f), 'utf8')); }
+    catch (e) { warn.push(f + ': ' + e.message.split('\n')[0]); }
+  }
+  log('migrations applied' + (warn.length ? ' with ' + warn.length + ' warning(s): ' + warn.join(' | ') : ''));
+  if (warn.length) throw new Error('Migration failures: ' + warn.join(' | '));
+  await seed(c);
+  await c.end();
+  return warn;
+}
+
+async function user(c, email, meta = {}) {
+  const hash = bcrypt.hashSync(PASSWORD, 4);
+  const { rows } = await c.query('insert into auth_users (email, password_hash, app_metadata) values ($1, $2, $3) on conflict (email) do update set password_hash = excluded.password_hash returning id', [email, hash, meta]);
+  return rows[0].id;
+}
+
+async function tenant(c, slug, name, niche, extraFeatures = {}) {
+  const { rows } = await c.query(`insert into tenants (slug, name, niche, plan, status) values ($1, $2, $3, 'pro', 'active') returning id`, [slug, name, niche]);
+  const id = rows[0].id;
+  await c.query(`insert into tenant_settings (tenant_id, features, labels, business_rules)
+    select $1, p.default_features || $3::jsonb, p.default_labels, p.default_business_rules from niche_presets p where p.niche = $2`, [id, niche, JSON.stringify(extraFeatures)]);
+  return id;
+}
+
+async function seed(c) {
+  const cafe = await tenant(c, TENANTS.cafe, 'Test Cafe', 'cafe', { payroll: true, website_builder: true, self_order: true });
+  const salon = await tenant(c, TENANTS.salon, 'Test Salon', 'salon');
+  const retail = await tenant(c, TENANTS.retail, 'Test Retail', 'retail');
+  // Real provisioning (provision_tenant) also creates the settings record from the niche preset; do the same for the salon.
+  await c.query(`insert into records (id, tenant_id, kind, data) select 'settings', $1, 'settings', p.default_business_rules || '{"name":"Test Salon"}'::jsonb from niche_presets p where p.niche = 'salon'`, [salon]);
+  await user(c, USERS.cafeOwner, { tenant_id: cafe, role: 'owner' });
+  await user(c, USERS.salonOwner, { tenant_id: salon, role: 'owner' });
+  await user(c, USERS.retailOwner, { tenant_id: retail, role: 'owner' });
+  await user(c, USERS.plain);
+  const adminId = await user(c, USERS.admin);
+  await c.query('insert into platform_admins (id) values ($1) on conflict do nothing', [adminId]);
+
+  // A small, realistic café menu + tables so the QR page and POS have something to show.
+  const rec = (tid, id, kind, data) => c.query('insert into records (id, tenant_id, kind, data) values ($1,$2,$3,$4) on conflict do nothing', [id, tid, kind, JSON.stringify({ id, ...data })]);
+  await rec(cafe, 'settings', 'settings', { name: 'Test Cafe', bizType: 'restaurant', tax: 5, prefix: 'TC', phone: '9876543210', addr: '1 Test Street', siteTag: 'Good food.\nSlow evenings.', siteHours: 'Daily 10am to 10pm', col: '#1f3d2e' });
+  await rec(cafe, 'cat-start', 'cat', { name: 'Starters', n: 1 });
+  await rec(cafe, 'cat-drink', 'cat', { name: 'Beverages', n: 2 });
+  await rec(cafe, 'it-1', 'item', { name: 'Paneer Tikka', cat: 'cat-start', price: 280, veg: 'veg', desc: 'Charred paneer', sizes: [] });
+  await rec(cafe, 'it-2', 'item', { name: 'Chicken 65', cat: 'cat-start', price: 300, veg: 'nonveg', sizes: [] });
+  await rec(cafe, 'it-3', 'item', { name: 'Masala Tea', cat: 'cat-drink', price: 40, veg: 'veg', sizes: [{ l: 'Half', p: 25 }, { l: 'Full', p: 40 }] });
+  await rec(cafe, 'tbl-1', 'table', { name: 'T1', sec: 'Main' });
+  await rec(retail, 'settings', 'settings', { name: 'Test Retail', bizType: 'retail', tax: 18, prefix: 'TR' });
+  await rec(retail, 'cat-1', 'cat', { name: 'T-Shirts', n: 1 });
+  await rec(retail, 'it-r1', 'item', { name: 'Classic Tee', cat: 'cat-1', price: 499, sizes: [], variants: [{ size: 'M', color: 'Black', qty: 10 }] });
+}
+
+export async function q(sql, params = []) {
+  const c = await connect(PG.db);
+  try { return (await c.query(sql, params)).rows; } finally { await c.end(); }
+}
