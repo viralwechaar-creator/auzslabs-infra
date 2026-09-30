@@ -39,8 +39,7 @@ input[type=checkbox]{width:22px;height:22px;flex-shrink:0;accent-color:var(--acc
 .g{display:grid;grid-template-columns:1fr 340px;gap:10px;padding:10px}@media(max-width:800px){.g{grid-template-columns:1fr}}
 .g1{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:10px;padding:10px;align-items:start}
 .card{background:#fff;border-radius:var(--radius-md);padding:14px;box-shadow:var(--shadow-sm);transition:transform .18s var(--ease),box-shadow .18s var(--ease)}
-.card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lift)}
-.items{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:8px}
+.card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lift)}.items{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:8px}
 .items button{text-align:left;min-height:64px;border-radius:var(--radius-sm);background:#fff;border:none;box-shadow:var(--shadow-sm);color:var(--ink);transition:transform .15s var(--ease),box-shadow .15s var(--ease)}
 .items button:hover{background:#fff;transform:translateY(-3px);box-shadow:var(--shadow-lift)}
 .items button:active{transform:translateY(-1px) scale(.98)}
@@ -309,8 +308,7 @@ function analyticsPane(){
  const top5=perfRows.slice(0,5),bottom5=perfRows.length>5?perfRows.slice(-5).reverse():[];
  const target=+cfg().salesTarget||0,mf=new Date(now_.getFullYear(),now_.getMonth(),1).toLocaleDateString('en-CA'),monthSales=r2(L('order').filter(o=>o.status=='paid'&&o.paidAt&&localDay(o.paidAt)>=mf&&localDay(o.paidAt)<=today()).reduce((a,o)=>a+o.t.total,0)),targetPct=target?Math.min(100,Math.round(monthSales/target*100)):null;
  return h('div',{class:'g1'},
-  h('div',{class:'card',style:'grid-column:1/-1'},h('div',{class:'row',style:'flex-wrap:wrap'},...presets.map(([v,l])=>h('button',{class:period==v?'on':'',onclick:()=>{S.anPeriod=v;render()}},l))),
-   period=='custom'?h('div',{class:'row'},h('input',{type:'date',value:from,onchange:e=>{S.anFrom=e.target.value;render()}}),' to ',h('input',{type:'date',value:to,onchange:e=>{S.anTo=e.target.value;render()}})):null),
+  h('div',{class:'card',style:'grid-column:1/-1'},h('div',{class:'row',style:'flex-wrap:wrap'},...presets.map(([v,l])=>h('button',{class:period==v?'on':'',onclick:()=>{S.anPeriod=v;render()}},l))),   period=='custom'?h('div',{class:'row'},h('input',{type:'date',value:from,onchange:e=>{S.anFrom=e.target.value;render()}}),' to ',h('input',{type:'date',value:to,onchange:e=>{S.anTo=e.target.value;render()}})):null),
   h('div',{class:'card',style:'grid-column:1/-1'},h('h3',{},'Revenue trend'),lineChart(trendPoints)),
   h('div',{class:'card'},h('h3',{},'Profit & Loss'),
    barRow('Gross sales',grossSales,grossSales||1,inr(grossSales)),
@@ -439,8 +437,7 @@ const VEG_COLOR={veg:'#2e7d32',nonveg:'#b3261e',egg:'#c98a00'};
 // every other category's items to find it.
 V.menu=()=>{const isR=isRetail(),previewing=cfg().isDemo&&S.previewNiche;if(!S.menuOpen)S.menuOpen={};
  const cats=effCats().sort((a,b)=>a.n-b.n);
- return h('div',{class:'g1'},
- previewing?h('p',{style:'color:var(--accent);font-size:13px'},'Previewing a sample '+S.previewNiche+' menu — read only. Pick "Current" in Settings → Business to go back to editing your real menu.'):null,
+ return h('div',{class:'g1'}, previewing?h('p',{style:'color:var(--accent);font-size:13px'},'Previewing a sample '+S.previewNiche+' menu — read only. Pick "Current" in Settings → Business to go back to editing your real menu.'):null,
  h('div',{class:'card',style:'grid-column:1/-1'},h('div',{class:'row'},h('h3',{},isR?'Products':'Menu'),previewing?null:h('span',{},h('button',{onclick:()=>{const n=prompt('Category name');n&&save('cat',{name:n,n:Date.now()}).then(render)}},'Add category'),h('button',{class:'p',onclick:()=>item({})},isR?'Add product':'Add item'))),
   ...cats.map(c=>{const its=effItems().filter(i=>i.cat==c.id),open=!!S.menuOpen[c.id];
    return h('div',{style:'border-top:1px solid var(--l)'},
