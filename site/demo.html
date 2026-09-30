@@ -146,14 +146,15 @@ const CRM_BULLETS = ['Customer profiles with full visit &amp; spend history', 'A
 const BILLING_BULLETS = ['GST invoices with automatic numbering &amp; tax breakdown', 'Shareable public receipt page &mdash; print, or send to WhatsApp', 'Due &amp; credit tracking'];
 const QR_BULLETS = ['Table QR codes &mdash; guest self-ordering, straight to the kitchen', 'Your own public mini-website &mdash; menu, hours, location'];
 const PAYROLL_BULLETS = ['A monthly rate per staffer, hours pulled from their own clock-ins', 'Adjustments with a note, and an exportable payslip history', 'Owner-only &mdash; kept off every other device on the account'];
+const BOOKING_BULLETS = ['A public booking page &mdash; services, a live slot picker, your hours', 'Set your own slot length and how many chairs can take a slot at once', 'Every booking becomes a client profile automatically'];
 
 function flavor(niche) { return niche === 'retail' ? 'retail' : niche === 'cafe' ? 'restaurant' : 'general'; }
 
 const NICHE_DEFAULTS = {
-  cafe: { pos: true, crm: true, billing: true, inventory: true, self_order: true },
-  retail: { pos: true, crm: true, billing: true, inventory: true, self_order: false },
-  salon: { pos: false, crm: true, billing: true, inventory: true, self_order: false },
-  general: { pos: true, crm: true, billing: true, inventory: true, self_order: false },
+  cafe: { pos: true, crm: true, billing: true, inventory: true, self_order: true, booking: false },
+  retail: { pos: true, crm: true, billing: true, inventory: true, self_order: false, booking: false },
+  salon: { pos: false, crm: true, billing: true, inventory: true, self_order: false, booking: true },
+  general: { pos: true, crm: true, billing: true, inventory: true, self_order: false, booking: false },
 };
 
 function modCard(title, bullets) {
@@ -167,7 +168,7 @@ function render(ctx) {
   const hasFeatures = ctx.features && Object.keys(ctx.features).length > 0;
   const defaults = NICHE_DEFAULTS[ctx.niche] || NICHE_DEFAULTS.general;
   const on = (k) => hasFeatures ? !!ctx.features[k] : defaults[k];
-  const showPos = on('pos'), showCrm = on('crm'), showBilling = on('billing'), showInventory = on('inventory'), showQr = on('self_order');
+  const showPos = on('pos'), showCrm = on('crm'), showBilling = on('billing'), showInventory = on('inventory'), showQr = on('self_order'), showBooking = on('booking');
 
   document.getElementById('kicker').textContent = 'A look at what ' + ctx.business_name + ' gets';
   document.getElementById('heroTitle').textContent = 'Everything ' + ctx.business_name + ' runs on.';
@@ -189,11 +190,8 @@ function render(ctx) {
   if (showBilling) html += modCard('Billing &amp; Invoicing', BILLING_BULLETS);
   if (showInventory) html += modCard('Inventory &amp; stock', INV_BULLETS[fl] || INV_BULLETS.general);
   if (showQr) html += modCard('Online &amp; self-order', QR_BULLETS);
+  if (showBooking) html += modCard('Booking &amp; scheduling', BOOKING_BULLETS);
   html += modCard('Payroll', PAYROLL_BULLETS);
-  if (ctx.niche === 'salon') {
-    html += `<div class="card demo-mod"><span class="tag" style="opacity:.6">On our roadmap</span><div class="h-2" style="margin-top:14px;font-size:20px">Booking &amp; scheduling</div>
-      <p class="p" style="margin-top:10px">Real appointment/slot booking is being built for salons specifically &mdash; not live yet, so it isn't included here.</p></div>`;
-  }
 
   const label = '<div class="label" style="margin-bottom:14px">Or, if you\'d rather read first</div>';
   document.getElementById('demoBody').innerHTML = label + (html || '<p class="p">Nothing to show for this niche yet &mdash; get in touch and we\'ll walk you through it directly.</p>');
