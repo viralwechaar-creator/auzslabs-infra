@@ -44,7 +44,14 @@
     # block above for the full story on why this exists.
     header /*.html Cache-Control "no-cache"
     file_server
-    try_files {path} /index.html
+    # A request for a real file (index.html, booking.html, site.html,
+    # backoffice.html, ...) is served directly, above -- this fallback
+    # only fires for a path that isn't one, in practice almost always
+    # the bare subdomain root. land.html is the one place that decides
+    # which page is a given tenant's real front door, by niche (a
+    # salon's is a booking page, not the staff POS) -- see its own
+    # comment for why this used to just be index.html unconditionally.
+    try_files {path} /land.html
 }
 
 # Monitoring dashboard, kept on its own subdomain
