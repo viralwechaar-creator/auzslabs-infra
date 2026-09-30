@@ -124,6 +124,7 @@ footer .socials a{width:34px;height:34px;border-radius:50%;border:1px solid var(
    <div class=eyebrow style="justify-content:center;display:flex">On The Menu</div>
    <h2 style="font-size:34px;font-weight:500;margin:8px 0 0">What we're brewing</h2>
   </div>
+  <div class=tabs id=menuVegFilter><button class=on data-vf=all>All</button><button data-vf=veg>🟢 Veg</button><button data-vf=nonveg>🔴 Non-veg</button></div>
   <div class=tabs id=menuTabs></div>
   <div class=menu-grid id=menuGrid></div>
  </div>
@@ -235,27 +236,32 @@ async function callWaiter(){
  };
  const cats=(M&&M.cats||[]).slice().sort((a,b)=>a.n-b.n),items=(M&&M.items||[]).filter(i=>!itemOff(i));
  const tabsEl=document.getElementById('menuTabs'),gridEl=document.getElementById('menuGrid');
- let active=cats[0]&&cats[0].id;
+ const VEG_DOT={veg:'🟢',nonveg:'🔴',egg:'🟡'};
+ let active=cats[0]&&cats[0].id,vf='all';
  const priceOf=k=>{const j=k.indexOf('|'),i=items.find(x=>x.id==k.slice(0,j)),sz=k.slice(j+1),s=sz&&(i.sizes||[]).find(x=>x.l==sz);return[i,sz,s?s.p:i.price]};
  const cartTotal=()=>{let n=0,t=0;for(const k in cart){t+=priceOf(k)[2]*cart[k].q;n+=cart[k].q}return{n,t}};
  function chg(k,d){const[i,sz,p]=priceOf(k),c=cart[k]||(cart[k]={id:i.id,size:sz,q:0});c.q=Math.max(0,c.q+d);if(!c.q)delete cart[k];drawMenu();drawCartBar()}
  function drawCartBar(){const{n,t}=cartTotal(),bar=document.getElementById('cartBar');if(!tb||!n){bar.style.display='none';return}bar.style.display='flex';document.getElementById('cartBarText').textContent=n+' item'+(n>1?'s':'')+' · '+inr(t)}
  function drawMenu(){
   tabsEl.innerHTML='';cats.forEach(c=>{const b=document.createElement('button');b.textContent=c.name;if(c.id==active)b.className='on';b.onclick=()=>{active=c.id;drawMenu()};tabsEl.append(b)});
-  gridEl.innerHTML='';items.filter(i=>i.cat==active).sort((a,b)=>a.name.localeCompare(b.name)).forEach(i=>{
+  const filtered=items.filter(i=>i.cat==active&&(vf=='all'||(i.veg||'veg')==vf)).sort((a,b)=>a.name.localeCompare(b.name));
+  gridEl.innerHTML='';filtered.forEach(i=>{
    const c=document.createElement('div');c.className='mcard';
+   const dot=VEG_DOT[i.veg||'veg'],photo=i.img?'<img src="'+esc(i.img)+'" style="width:100%;height:110px;object-fit:cover;border-radius:10px;margin-bottom:6px">':'',desc=i.desc?'<div style="font-size:12px;opacity:.7;margin:2px 0 4px">'+esc(i.desc)+'</div>':'';
    if(tb){
     const variants=i.sizes&&i.sizes.length?i.sizes.map(s=>[s.l,s.p]):[['',i.price]];
-    c.innerHTML='<b>'+esc(i.name)+'</b>'+variants.map(([sz,p])=>{const k=i.id+'|'+sz,q=(cart[k]||{}).q||0;return '<div class=variant><span>'+(sz?esc(sz)+' — ':'')+inr(p)+'</span><div class=stepper><button data-k="'+esc(k)+'" data-d=-1>−</button><b>'+q+'</b><button data-k="'+esc(k)+'" data-d=1>+</button></div></div>'}).join('');
+    c.innerHTML=photo+'<b>'+dot+' '+esc(i.name)+'</b>'+desc+variants.map(([sz,p])=>{const k=i.id+'|'+sz,q=(cart[k]||{}).q||0;return '<div class=variant><span>'+(sz?esc(sz)+' — ':'')+inr(p)+'</span><div class=stepper><button data-k="'+esc(k)+'" data-d=-1>−</button><b>'+q+'</b><button data-k="'+esc(k)+'" data-d=1>+</button></div></div>'}).join('');
     c.querySelectorAll('button').forEach(b=>b.onclick=()=>chg(b.dataset.k,+b.dataset.d));
    }else{
     const price=i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+inr(s.p)).join(' / '):inr(i.price);
-    c.innerHTML='<div class=row><b>'+esc(i.name)+'</b><span class=price>'+esc(price)+'</span></div>';
+    c.innerHTML=photo+'<div class=row><b>'+dot+' '+esc(i.name)+'</b><span class=price>'+esc(price)+'</span></div>'+desc;
    }
    gridEl.append(c)
   });
-  if(!items.filter(i=>i.cat==active).length)gridEl.innerHTML='<p style="opacity:.6">Menu coming soon.</p>';
+  if(!filtered.length)gridEl.innerHTML='<p style="opacity:.6">'+(items.filter(i=>i.cat==active).length?'No items match this filter.':'Menu coming soon.')+'</p>';
  }
+ const vfEl=document.getElementById('menuVegFilter');
+ if(vfEl)[...vfEl.children].forEach(b=>b.onclick=()=>{vf=b.dataset.vf;[...vfEl.children].forEach(x=>x.classList.toggle('on',x==b));drawMenu()});
  if(cats.length)drawMenu();else gridEl.innerHTML='<p style="opacity:.6">Menu coming soon.</p>';
  document.getElementById('cartBarBtn').onclick=openCheckout;
  function openCheckout(){
