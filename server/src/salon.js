@@ -118,6 +118,13 @@ async function mutate(tenant, fn) {
   } finally { client.release(); }
 }
 
+// Payroll is an add-on: staff clock-ins only flow to AUZslab Payroll for a
+// salon that has it (entitled, and not switched off by the owner).
+async function payrollOn(tid) {
+  const f = (await pool.query('select salon_features($1) as f', [tid])).rows[0].f || {};
+  return (f.features || {}).payroll === true && (f.enabled || {}).payroll !== false;
+}
+
 // ---- admin password + session ----
 const hashPassword = (pw) => { const salt = crypto.randomBytes(16).toString('hex'); return `scrypt$${salt}$${crypto.scryptSync(pw, salt, 64).toString('hex')}`; };
 function verifyScrypt(pw, stored) {
@@ -362,7 +369,7 @@ export async function handleSalon(req, res, ip) {
       if (sess.role === 'staff') {
         const st = ((await readKey(pool, tid, 'staff')) || { list: [] }).list.find((x) => x.id === sess.sid);
         if (!st || st.active === false) return send(200, { admin: false });
-        return send(200, { admin: true, role: 'staff', name: st.name, payroll: !!st.employeeId, demo: !!tenant.is_demo });
+        return send(200, { admin: true, role: 'staff', name: st.name, payroll: !!st.employeeId && await payrollOn(tid), demo: !!tenant.is_demo });
       }
       return send(200, { admin: true, role: 'owner', name: 'Owner', demo: !!tenant.is_demo });
     }
@@ -591,7 +598,8 @@ export async function handleSalon(req, res, ip) {
       await admin();
       const db = await loadDb(tenant);
       const d = (await readKey(pool, tid, 'staff')) || { list: [] };
-      return send(200, { staff: d.list.map((st) => staffView(st, db.invoices)), employees: (await pool.query('select salon_hr_list($1) as l', [tid])).rows[0].l });
+      const pay = await payrollOn(tid);
+      return send(200, { payroll: pay, staff: d.list.map((st) => staffView(st, db.invoices)), employees: pay ? (await pool.query('select salon_hr_list($1) as l', [tid])).rows[0].l : [] });
     }
     if (method === 'POST' && p === '/admin/staff') {
       await admin(); noDemo();
@@ -602,8 +610,9 @@ export async function handleSalon(req, res, ip) {
       if (phone.length < 6) fail(400, 'Enter a valid phone number.');
       if (password.length < 6) fail(400, 'Password must be at least 6 characters.');
       const designation = cleanString(body.designation, 60) || 'Stylist';
-      let employeeId = cleanString(body.employeeId, 60) || null;
-      if (body.payroll !== false && !employeeId) employeeId = (await pool.query('select salon_hr_ensure($1, $2, $3, $4) as id', [tid, name, phone, designation])).rows[0].id;
+      const pay = await payrollOn(tid);
+      let employeeId = pay ? cleanString(body.employeeId, 60) || null : null;
+      if (pay && body.payroll !== false && !employeeId) employeeId = (await pool.query('select salon_hr_ensure($1, $2, $3, $4) as id', [tid, name, phone, designation])).rows[0].id;
       const st = { id: crypto.randomUUID(), name, phone, designation, passwordHash: hashPassword(password), active: true, employeeId, createdAt: new Date().toISOString() };
       await mutateKey(tid, 'staff', (d) => {
         if ((d.list || []).some((x) => x.phone === phone)) fail(409, 'A staff member with this phone number already exists.');
@@ -614,6 +623,15 @@ export async function handleSalon(req, res, ip) {
     const sm = p.match(/^\/admin\/staff\/([0-9a-f-]{36})$/);
     if (method === 'PATCH' && sm) {
       await admin(); noDemo();
+      // "Link to payroll" (after the Payroll add-on is switched on): create or
+      // find the payroll employee for this person.
+      let linkId = null;
+      if (body.linkPayroll) {
+        if (!(await payrollOn(tid))) fail(400, 'Payroll is not on your account yet.');
+        const cur = ((await readKey(pool, tid, 'staff')) || { list: [] }).list.find((x) => x.id === sm[1]);
+        if (!cur) fail(404, 'Staff member not found.');
+        linkId = (await pool.query('select salon_hr_ensure($1, $2, $3, $4) as id', [tid, cur.name, cur.phone, cur.designation])).rows[0].id;
+      }
       const out = await mutateKey(tid, 'staff', (d) => {
         const st = (d.list || []).find((x) => x.id === sm[1]);
         if (!st) fail(404, 'Staff member not found.');
@@ -621,6 +639,7 @@ export async function handleSalon(req, res, ip) {
         if (body.designation !== undefined) st.designation = cleanString(body.designation, 60);
         if (body.active !== undefined) st.active = !!body.active;
         if (body.employeeId !== undefined) st.employeeId = cleanString(body.employeeId, 60) || null;
+        if (linkId) st.employeeId = linkId;
         if (body.phone !== undefined) {
           const ph = staffPhone(body.phone);
           if (ph.length < 6) fail(400, 'Enter a valid phone number.');
@@ -651,7 +670,7 @@ export async function handleSalon(req, res, ip) {
       const me = await member();
       if (me.role !== 'staff') fail(400, 'Clock in is for staff logins.');
       const st = ((await readKey(pool, tid, 'staff')) || { list: [] }).list.find((x) => x.id === me.sid);
-      if (!st.employeeId) fail(400, 'Your login is not linked to payroll yet. Ask the owner.');
+      if (!st.employeeId || !(await payrollOn(tid))) fail(400, 'Your login is not linked to payroll yet. Ask the owner.');
       if (method === 'GET') return send(200, (await pool.query('select salon_punch_state($1, $2, $3) as s', [tid, st.employeeId, todayStr()])).rows[0].s || { open: false, recent: [] });
       const r = await pool.query('select salon_punch($1, $2, $3, $4) as r', [tid, st.employeeId, todayStr(), new Date().toISOString()]);
       return send(200, { ok: true, ...r.rows[0].r });

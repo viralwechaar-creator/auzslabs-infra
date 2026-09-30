@@ -582,6 +582,28 @@ like the original repo; don't rebuild it in `booking.html`.
   `psql ... < db/054_salon_staff_payroll.sql`, `psql ... < db/055_demo_salon.sql`,
   `docker compose up -d --build api`, `docker compose restart caddy`.
 
+### Salon Suite part 3: AUZslab Salon as a product, everything else as add-ons
+
+- `salon` is a feature key (the base product; `db/056_salon_product_addons.sql`:
+  preset + backfill + `approve_signup_request` now merges
+  `{salon,booking,crm,billing}` for niche `salon`, which it used to skip, so a
+  salon that bought only Payroll got no base features). It is a cart product
+  on `site/products.html` (card 08).
+- Payroll, Website Builder, POS, inventory etc. are ordinary add-ons through
+  the existing `submit_addon_request` / `approve_addon_request` flow (db/027,
+  niche-agnostic). `site/account.html` uses `SALON_SERVICE_GROUPS` for salon
+  tenants (AUZslab Salon / POS / Payroll / Website Builder), has an "Add more
+  products" card, and a second nav link for the POS add-on.
+- The salon console checks the **Payroll add-on** before linking staff:
+  `payrollOn()` in `salon.js` (via `salon_features()`, entitled AND not switched
+  off by the owner). Without it, staff are created unlinked and cannot clock in;
+  the Staff tab shows an "add-ons" prompt; once Payroll is on, each unlinked
+  staff member gets a **Link to payroll** button (`PATCH /admin/staff/:id`
+  `{linkPayroll:true}`). Switching Payroll off pauses clock-ins but keeps links.
+- Deploy: pull, `psql ... < db/056_salon_product_addons.sql`,
+  `docker compose up -d --build api`. Static `site/` and `app/public/` changes
+  need no restart.
+
 ## Non-technical owner, deploy over SSH from a phone
 
 The person operating this project deploys by pasting commands into

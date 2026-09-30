@@ -231,7 +231,7 @@
   }
 
   /* ---------- staff accounts (owner) ---------- */
-  function staffDialog(employees) {
+  function staffDialog(employees, payrollOn) {
     const F = { name: '', phone: '', designation: 'Stylist', password: '', employeeId: '' };
     const emp = h('select', { id: 'stEmp', onchange: e => { F.employeeId = e.target.value; F.payroll = e.target.value !== 'none'; if (F.employeeId === 'none' || F.employeeId === 'new') F.employeeId = ''; } },
       h('option', { value: 'new', text: 'Add to payroll as a new employee' }),
@@ -242,14 +242,14 @@
       fld('Phone number (their sign-in)', inp(F, 'phone', { id: 'stPhone', type: 'tel' }), 'stPhone'),
       fld('Role', inp(F, 'designation', { id: 'stRole', placeholder: 'Stylist, Receptionist...' }), 'stRole'),
       fld('Password (6 or more characters)', inp(F, 'password', { id: 'stPw', type: 'text', autocomplete: 'off' }), 'stPw'),
-      fld('Payroll', emp, 'stEmp'),
+      payrollOn ? fld('Payroll', emp, 'stEmp') : h('p', { class: 'a-note', text: 'Payroll is not on your account, so hours are not synced. Add Payroll from your AUZslab account and link them later.' }),
       h('p', { class: 'a-note', text: 'Share the phone number and password with them. They sign in at this same page using "Staff sign in".' }));
     modal('Add staff', body, [{ label: 'Cancel', cls: 'btn-alt', value: 'no' }, { label: 'Add staff', fn: async () => {
       try { await api('POST', '/api/admin/staff', { ...F, payroll: F.payroll !== false }); toast('Staff added'); viewStaff(); } catch (ex) { fail(ex); return false; }
     } }]);
   }
   async function viewStaff() {
-    setActions(btn('Add staff', async () => { try { staffDialog((await api('GET', '/api/admin/staff')).employees); } catch (ex) { fail(ex); } }));
+    setActions(btn('Add staff', async () => { try { const d = await api('GET', '/api/admin/staff'); staffDialog(d.employees, d.payroll); } catch (ex) { fail(ex); } }));
     view().replaceChildren(h('p', { class: 'muted', text: 'Loading...' }));
     let data;
     try { data = await api('GET', '/api/admin/staff'); } catch (ex) { fail(ex); return; }
@@ -261,7 +261,7 @@
         h('tbody', {}, data.staff.map(st => h('tr', { style: st.active ? '' : 'opacity:.55' },
           h('td', { 'data-label': 'Staff' }, h('b', { text: st.name }), h('br'), h('span', { class: 'muted', text: st.designation + (st.active ? '' : ' (off)') })),
           h('td', { 'data-label': 'Phone', text: st.phone }),
-          h('td', { 'data-label': 'Payroll', text: st.employeeId ? 'Linked' : 'Not linked' }),
+          h('td', { 'data-label': 'Payroll' }, st.employeeId ? 'Linked' : (data.payroll ? btn('Link to payroll', () => patch(st, { linkPayroll: true }, 'Linked to payroll'), 'btn-sm btn-alt') : 'Not linked')),
           h('td', { 'data-label': 'Bills', text: st.bills }),
           h('td', { class: 'a-td-actions' }, h('div', { class: 'a-row-actions' },
             btn('New password', () => {
@@ -275,8 +275,11 @@
     view().replaceChildren(
       h('div', { class: 'a-card', style: 'max-width:760px;margin-bottom:24px' },
         h('p', { text: 'Staff sign in with their phone number. They can see Today, Bookings, Billing and Clients only: they can take bookings, make bills and send them on WhatsApp, but cannot change the menu, prices, website, gallery, settings or expenses, void bills, or see other people\'s bills.' }),
-        h('p', { class: 'a-note', style: 'margin-top:8px', text: 'Each staff member is linked to AUZslab Payroll. Their clock in and out on the Today tab becomes their attendance there; set their salary under Payroll, Employees.' }),
-        h('a', { class: 'btn btn-sm btn-alt', style: 'margin-top:10px', href: '/payroll.html', target: '_blank', rel: 'noopener' }, 'Open Payroll')),
+        data.payroll
+          ? [h('p', { class: 'a-note', style: 'margin-top:8px', text: 'Staff are linked to AUZslab Payroll. Their clock in and out on the Today tab becomes their attendance there; set their salary under Payroll, Employees.' }),
+            h('a', { class: 'btn btn-sm btn-alt', style: 'margin-top:10px', href: '/payroll.html', target: '_blank', rel: 'noopener' }, 'Open Payroll')]
+          : [h('p', { class: 'a-note', style: 'margin-top:8px', text: 'Want clock in and out to feed payroll? Payroll is an add-on for AUZslab Salon. Once it is on your account, staff can clock in from their Today tab and the hours go straight into the pay run.' }),
+            h('a', { class: 'btn btn-sm btn-alt', style: 'margin-top:10px', href: 'https://' + location.hostname.split('.').slice(1).join('.') + '/products.html', target: '_blank', rel: 'noopener' }, 'See add-ons')]),
       list);
   }
 
