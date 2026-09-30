@@ -65,7 +65,7 @@ const tenantUrl = (slug, p = '/') => `https://${slug}.${HOST}${p}`;
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true }); await guard(ctx); const page = await ctx.newPage(); const errs = watch(page);
   await page.goto(BASE + '/'); await page.waitForTimeout(800);
   await s.check('Hamburger menu opens and lists pages', async () => { await page.click('#menuToggle'); await page.waitForTimeout(400); assert(await page.locator('#sidebarDrawer').isVisible()); assert((await page.locator('#sidebarDrawer a').count()) >= 5); }, 'critical');
-  await s.check('Contact button opens the form', async () => { await page.click('#drawerClose').catch(() => {}); await page.waitForTimeout(300); await page.locator('[data-open-contact]').first().click({ force: true }); await page.waitForTimeout(400); assert(await page.locator('#modal').isVisible()); }, 'critical');
+  await s.check('Contact button opens the form', async () => { await page.click('#drawerClose').catch(() => {}); await page.waitForTimeout(300); await page.locator('main [data-open-contact]').first().click(); await page.waitForTimeout(400); assert(await page.locator('#modal').isVisible()); }, 'critical');
   await s.check('Sign-in / signup page shows its form', async () => { await page.goto(BASE + '/signup.html'); await page.waitForTimeout(600); assert(await page.locator('#email').isVisible() && await page.locator('#password').isVisible()); }, 'critical');
   await s.check('No JS errors while clicking around', async () => assert(!errs.length, errs.slice(0, 3).join(' | ')));
   await ctx.close(); s.done();
@@ -75,8 +75,9 @@ const tenantUrl = (slug, p = '/') => `https://${slug}.${HOST}${p}`;
   const s = suite('Live: demo businesses', 'The public demo salon / café / retail sites are up and their login screens render.');
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true }); await guard(ctx); const page = await ctx.newPage(); const errs = watch(page);
   for (const slug of DEMOS) {
+    const page = await ctx.newPage(); const errs = watch(page);
     await s.check(`${slug}: front door loads`, async () => { const r = await page.goto(tenantUrl(slug), { waitUntil: 'load' }); assert(r.status() < 400, 'HTTP ' + r.status()); await page.waitForTimeout(1800); assert(!errs.length, errs.splice(0).slice(0, 3).join(' | ')); }, 'critical');
-    await s.shot(page, slug + ' front door');
+    await s.shot(page, slug + ' front door'); await page.close();
   }
   if (DEMOS.includes('demo-salon')) {
     await s.check('demo-salon: booking slots load', async () => { const r = await fetch(tenantUrl('demo-salon', '/api/slots?date=' + new Date(Date.now() + 864e5).toISOString().slice(0, 10))); assert(r.ok); const d = await r.json(); assert(d.closed || (d.slots && d.slots.length), 'no slots'); }, 'critical');

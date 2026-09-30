@@ -56,7 +56,7 @@ export function watch(page) {
   });
   page.on('response', (r) => {
     const u = r.url(), s = r.status();
-    if (s >= 400 && !IGNORE_HOSTS.test(u) && !/favicon|\/sw\.js|manifest/.test(u)) errors.push('HTTP ' + s + ': ' + u.slice(0, 120));
+    if (s >= 400 && !IGNORE_HOSTS.test(u) && !/favicon|\/sw\.js|manifest/.test(u)) errors.push('HTTP ' + s + ': ' + u.slice(0, 120) + ' (loaded by page ' + page.url().slice(0, 80) + ')');
   });
   return errors;
 }
