@@ -758,18 +758,24 @@ function vendorFormModal(v){
    x();render()
   }},'Save')));
 }
+const PURCHASE_UNITS=['kg','g','ltr','ml','pcs','box','dozen','packet'];
 function purchaseFormModal(vendors){
  const vs=h('select',{},...vendors.map(v=>h('option',{value:v.id},v.name))),
   dt=h('input',{type:'date',value:today()}),
-  rows=[0,1,2].map(()=>({ds:h('input',{placeholder:'Item'}),qt:h('input',{type:'number',placeholder:'Qty',value:1}),pr:h('input',{type:'number',placeholder:'Unit price'})})),
-  no=h('textarea',{placeholder:'Notes (optional)',style:'min-height:50px'});
+  rows=[],rowsWrap=h('div',{style:'display:grid;gap:6px'}),
+  unitDl=h('datalist',{id:'purchunitlist'},...PURCHASE_UNITS.map(u=>h('option',{value:u}))),
+  no=h('textarea',{placeholder:'Notes (optional)',style:'min-height:50px'}),
+  mkRow=()=>{const r={ds:h('input',{placeholder:'Item'}),qt:h('input',{type:'number',placeholder:'Qty',value:1}),un:h('input',{list:'purchunitlist',placeholder:'Unit (kg/ltr/pcs…)',style:'width:90px'}),pr:h('input',{type:'number',placeholder:'Unit price'})};
+   r.el=h('div',{class:'row',style:'gap:6px'},r.ds,r.qt,r.un,r.pr);rows.push(r);rowsWrap.append(r.el)};
+ mkRow();mkRow();mkRow();
  const x=modal(h('h3',{},'New purchase'),vs,dt,
   h('div',{style:'font-size:12px;color:var(--ink-dim);margin-top:4px'},'Items'),
-  ...rows.map(r=>h('div',{class:'row',style:'gap:6px'},r.ds,r.qt,r.pr)),
+  unitDl,rowsWrap,
+  h('button',{onclick:e=>{e.preventDefault();mkRow()}},'+ Add item'),
   no,
   h('div',{class:'row'},h('span',{}),h('button',{class:'p',onclick:async()=>{
    if(!vendors.length)return alert('Add a vendor first.');
-   const items=rows.map(r=>({desc:r.ds.value.trim(),qty:+r.qt.value||0,unitPrice:+r.pr.value||0})).filter(i=>i.desc&&i.qty>0);
+   const items=rows.map(r=>({desc:r.ds.value.trim(),qty:+r.qt.value||0,unit:r.un.value.trim(),unitPrice:+r.pr.value||0})).filter(i=>i.desc&&i.qty>0);
    if(!items.length)return alert('Enter at least one item.');
    const vend=vendors.find(v=>v.id==vs.value);
    const amount=r2(items.reduce((a,i)=>a+i.qty*i.unitPrice,0));
@@ -794,7 +800,7 @@ V.vendor=()=>{
    vendors.length?null:h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No vendors yet — add one to start logging purchases.')),
   h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Purchases ('+purchases.length+')'),vendors.length?h('button',{class:'p',onclick:()=>purchaseFormModal(vendors)},'+ New purchase'):null),
    ...purchases.map(p=>h('div',{class:'row'},
-    h('span',{},h('b',{},p.vendorName),h('br'),h('span',{style:'font-size:12.5px;color:var(--ink-dim)'},p.date+' · '+p.items.map(i=>i.qty+'× '+i.desc).join(', '))),
+    h('span',{},h('b',{},p.vendorName),h('br'),h('span',{style:'font-size:12.5px;color:var(--ink-dim)'},p.date+' · '+p.items.map(i=>i.qty+(i.unit?' '+i.unit:'')+'× '+i.desc).join(', '))),
     h('b',{},inr(p.amount)))),
    purchases.length?null:h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No purchases logged yet.')));
 };
