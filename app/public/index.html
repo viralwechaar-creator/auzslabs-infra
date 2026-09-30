@@ -404,7 +404,14 @@ function cashDenomModal(amountDue,cb){
  const x=modal(h('h3',{},'Cash received · due '+inr(amountDue)),...rows,h('div',{class:'row'},'Total tendered',totalEl),changeEl,
   h('button',{class:'p',onclick:()=>{const tendered=CASH_DENOMS.reduce((a,d)=>a+d*(counts[d]||0),0);if(tendered<=0)return alert('Enter at least one note or coin.');x();cb(tendered,{...counts})}},'Confirm'));
 }
-function pay(){const o=S.cur;if(!o.lines.length)return;if(!(o.cust.name||'').trim()||!(o.cust.phone||'').trim())return alert('Customer name and phone number are required before payment.');o.t=tot(o);
+function pay(){const o=S.cur;if(!o.lines.length)return;if(!(o.cust.name||'').trim()||!(o.cust.phone||'').trim())return alert('Customer name and phone number are required before payment.');
+ // Paying closes the order and frees the table (markTableDirty below), but
+ // the kitchen tracks its own state (o.kstat) independently -- without this
+ // check the table view would show "Available"/"Needs cleaning" while the
+ // KOT view still shows the same order actively preparing, a live
+ // mismatch between the two screens for something that's still cooking.
+ if(o.type=='Dine-in'&&(o.kstat=='new'||o.kstat=='preparing')&&!confirm('Kitchen still has this order marked as '+(o.kstat=='new'?'"sent to kitchen"':'"preparing"')+' in the KOT view — it hasn\'t been marked ready yet. Bill and free the table anyway?'))return;
+ o.t=tot(o);
  const P=(o.pays||[]).slice(),due=()=>r2(o.t.total-P.reduce((a,x)=>a+x.amt,0));
  const amt=h('input',{type:'number',value:o.t.total}),info=h('b'),list=h('div'),done=h('button',{class:'p',disabled:true,onclick:async()=>{o.pays=P;if(o.loyaltyRedeemed)o.loyaltyRedeemed=o.t.d;o.change=Math.max(-due(),0);o.status='paid';o.paidAt=now();o.tok=o.tok||tok();if(!o.no||o.no.endsWith('~'))o.no=await nextNo();await dedu(o);await deduVariant(o);if(!isRetail())mk(o);o.printCount=(o.printCount||0)+1;await persist();await markTableDirty(o);x();prnInv(rcpt(o,false));
   const url=location.origin+'/i.html?o='+encodeURIComponent(o.tok),cm=modal(h('h3',{},'Payment complete · '+inrc(o.t.total)),h('div',{class:'row'},h('button',{class:'p',onclick:()=>wa(o)},'Send bill'),h('button',{onclick:()=>open(url,'_blank')},'Open'),h('button',{onclick:()=>cm()},'Done')));
@@ -461,7 +468,8 @@ V.pos=()=>{const isR=isRetail(),o=S.cur||(S.cur=newOrder()),cats=effCats().sort(
   isR?null:h('div',{style:'font-size:10.5px;color:var(--ink-faint);margin:-2px 0 4px'},'Left edge colour: green = veg, red = non-veg, amber = contains egg'),
   h('div',{class:'items'},...its.map(i=>h('button',{style:isR?null:'border-left:4px solid '+VEG_COLOR[i.veg||'veg'],onclick:()=>isR&&i.variants&&i.variants.length?variant(i):(i.sizes&&i.sizes.length?size(i):pickMods(i,'',i.price))},
    i.img?h('img',{src:i.img,style:'width:100%;height:60px;object-fit:cover;border-radius:8px;margin-bottom:4px'}):null,
-   h('b',{},i.name+(i.combo?' 🎁':'')),h('br'),isR?inr(i.price)+' · '+variantQty(i)+' in stock':(i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price))))),its.length?null:h('p',{},cats.length?'No items here.':'Add categories and items in the Menu tab.')),
+   h('b',{},i.name+(i.combo?' 🎁':'')),h('br'),isR?inr(i.price)+' · '+variantQty(i)+' in stock':(i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price)),
+   (!isR&&avgPrepMinutes(i.name)!=null)?h('div',{style:'font-size:10px;color:var(--ink-faint)'},'⏱ ~'+avgPrepMinutes(i.name)+'m avg'):null))),its.length?null:h('p',{},cats.length?'No items here.':'Add categories and items in the Menu tab.')),
  h('div',{class:'card'},h('h3',{},o.no?'Order '+o.no:'New order'),...o.lines.map(l=>h('div',{class:'row'},h('span',{},l.name+(l.size?' ('+l.size+')':'')+(l.note?' — '+l.note:'')),h('span',{},h('button',{onclick:()=>qty(l,-1)},'−'),' '+l.qty+' ',h('button',{onclick:()=>qty(l,1)},'+')),h('b',{},inr(l.price*l.qty)))),
   o.lines.length?null:h('p',{},'Tap an item to add it.'),
   h('div',{class:'row'},h('input',{placeholder:'Customer name *',style:'width:48%',value:o.cust.name||'',oninput:e=>o.cust.name=e.target.value}),h('input',{placeholder:'Phone *',style:'width:48%',value:o.cust.phone||'',oninput:e=>{o.cust.phone=e.target.value;clearTimeout(S.phoneT);S.phoneT=setTimeout(render,700)}})),
@@ -501,7 +509,13 @@ h('div',{class:'k'},...os.map(o=>{const batches=(o.kotBatches&&o.kotBatches.leng
   h('div',{class:'row'},h('b',{},o.no+' · '+o.type+' '+tn(o.table)+(o.kstat=='preparing'?' · preparing':'')),h('b',{style:'font-family:\'Space Mono\',monospace;color:'+(over?'#c0392b':'var(--ink-dim)')},mm+':'+ss)),
   biller?h('div',{style:'font-size:11px;color:var(--ink-dim)'},'👤 '+biller):null,
   ...batches.flatMap((b,i)=>[h('div',{style:'font-size:11px;color:var(--ink-dim);margin-top:6px'},'KOT '+(i+1)+' · '+new Date(b.time).toLocaleTimeString()),...b.items.map(x=>h('div',{class:'row'},x.q+'× '+x.n))]),
-  o.kstat=='new'?h('button',{class:'p',onclick:async()=>{const c=structuredClone(o);c.kstat='preparing';await save('order',c,c.id);render()}},'Start preparing'):h('button',{class:'p',onclick:async()=>{const c=structuredClone(o);c.kstat='ready';await save('order',c,c.id);render()}},'Food is ready'))}),os.length?null:h('p',{},'No orders waiting.')))};
+  o.kstat=='new'?h('button',{class:'p',onclick:async()=>{const c=structuredClone(o);c.kstat='preparing';c.preparingAt=now();await save('order',c,c.id);render()}},'Start preparing'):h('button',{class:'p',onclick:async()=>{const c=structuredClone(o);c.kstat='ready';c.readyAt=now();await save('order',c,c.id);await markKotBatchesReady(o.id);render()}},'Food is ready'))}),os.length?null:h('p',{},'No orders waiting.')))};
+// Stamps every not-yet-resolved kotlog batch of this order with the time
+// the kitchen actually marked it ready, so avgPrepMinutes() below can
+// compute a real per-item KOT-to-ready duration instead of guessing.
+async function markKotBatchesReady(orderId){for(const k of L('kotlog').filter(k=>k.orderId==orderId&&!k.readyAt))await save('kotlog',{...k,readyAt:now()},k.id)}
+function avgPrepMinutes(itemName){const rows=L('kotlog').filter(k=>k.readyAt&&k.items.some(x=>x.n==itemName||x.n.startsWith(itemName+' (')));if(!rows.length)return null;
+ return Math.round(rows.reduce((a,k)=>a+(new Date(k.readyAt)-new Date(k.createdAt)),0)/rows.length/60000)}
 const readyBar=()=>{const r=L('order').filter(o=>o.kstat=='ready'&&o.status!='void');return r.length?h('div',{style:'background:#fff3c4;padding:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center'},'🔔 Ready:',...r.map(o=>{const dineIn=o.type=='Dine-in';return h('button',{onclick:async()=>{const c=structuredClone(o);c.kstat=dineIn?'served':'dispatched';if(!dineIn)c.dispatchAt=now();await save('order',c,c.id);render()}},(dineIn?tn(o.table)||o.no:o.type+' '+o.no)+(dineIn?' ✓ served':' 🚚 mark dispatched'))})):null};
 const dispatchedBar=()=>{const r=L('order').filter(o=>o.kstat=='dispatched'&&o.status!='void');return r.length?h('div',{style:'background:#dbeafe;padding:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center'},'🚚 Dispatched:',...r.map(o=>h('button',{onclick:async()=>{const c=structuredClone(o);c.kstat='done';await save('order',c,c.id);render()}},o.type+' '+o.no+' · '+Math.max(0,Math.round((Date.now()-new Date(o.dispatchAt||o.ktime))/60000))+'m ✓ delivered'))):null};
 function csv(rows,name){const s=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n'),a=h('a',{href:URL.createObjectURL(new Blob([s],{type:'text/csv'})),download:name});document.body.append(a);a.click();a.remove()}
@@ -597,7 +611,7 @@ async function boot(){if(!C.url||C.url.includes('YOUR-PROJECT'))return $('#app')
  if(dash&&dash.features){S.features=dash.features;S.enabledFeatures=dash.enabled_features||{}}
  try{const reqTab=new URLSearchParams(location.search).get('tab');if(reqTab&&visibleTabs().some(([k])=>k==reqTab))S.tab=reqTab}catch{}
  S.authExpired=false;$('#app').textContent='Loading…';addEventListener('online',()=>{sync();setNote()});addEventListener('offline',setNote);
- sb.channel('r').on('postgres_changes',{event:'*',schema:'public',table:'records'},()=>sync()).subscribe();setInterval(sync,30000);sb.channel('g').on('postgres_changes',{event:'*',schema:'public',table:'guest_orders'},()=>getG()).subscribe();setInterval(getG,15000);sb.channel('n').on('postgres_changes',{event:'*',schema:'public',table:'notifications'},()=>refreshNotifCount()).subscribe();setInterval(refreshNotifCount,30000);setInterval(checkAlerts,5000);setInterval(()=>{if(S.tab=='kds')render()},1000);await syncNow();getG();checkAlerts();if(can('o')&&!L('cat').length&&!localStorage.seeded)await seed();loadStaffList();render()}
+ sb.channel('r').on('postgres_changes',{event:'*',schema:'public',table:'records'},()=>sync()).subscribe();setInterval(sync,30000);sb.channel('g').on('postgres_changes',{event:'*',schema:'public',table:'guest_orders'},()=>getG()).subscribe();setInterval(getG,15000);sb.channel('n').on('postgres_changes',{event:'*',schema:'public',table:'notifications'},()=>refreshNotifCount()).subscribe();setInterval(refreshNotifCount,30000);setInterval(checkAlerts,5000);setInterval(()=>{if((S.tab=='kds'||S.tab=='pos')&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))render()},1000);await syncNow();getG();checkAlerts();if(can('o')&&!L('cat').length&&!localStorage.seeded)await seed();loadStaffList();render()}
 let STAFF_LIST=[];
 async function loadStaffList(){try{const{data}=await sb.from('profiles').select('id,email,name');STAFF_LIST=data||[];render()}catch{}}
 // A persistent customer profile (email/DOB/anniversary/tags/favourite),
