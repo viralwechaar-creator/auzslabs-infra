@@ -238,6 +238,127 @@ Don't trust `README.md` for anything architectural; this file supersedes
 it. (Worth fixing/removing the stale parts of README.md at some point —
 just flagging it hasn't happened yet.)
 
+## Working style the owner has actually asked for
+
+Two standing instructions given directly in chat, not written down
+anywhere else until now — a fresh session should follow both without
+being re-asked:
+
+- **Build extensively, talk minimally.** The owner does not want a
+  narrated play-by-play of tool calls or a running commentary. Do the
+  work, ship it (commit → PR → merge, see below), and only surface a
+  message when input is genuinely needed or a batch of work is ready to
+  report — one summary at the end, not a message per file edited.
+- **PetPooja screenshots are reference, not a spec.** The owner
+  periodically shares screenshots of PetPooja (a competitor POS) UI —
+  explicitly "for reference purpose only, do not exact copy everything."
+  The job each time is: find the genuine functional/UX gap the
+  screenshot reveals (not already covered by something AUZslab already
+  has), then implement it adapted into AUZslab's own ink/maroon design
+  language (see "Design system" above) and existing architecture (the
+  `records` table, `push_record`, `featureOn`, etc.) — never clone
+  PetPooja's literal layout or copy. When a screenshot turns out to be
+  something AUZslab already does (this has happened repeatedly — Split
+  Bill, Part Payment, self-order waiter-calling, item recipes/add-ons
+  all already existed and just weren't obvious/discoverable), say so and
+  point at where it already lives instead of building a duplicate.
+
+## No emoji in the UI — use the icon() helper
+
+`index.html`, `backoffice.html` and `payroll.html` each carry their own
+small `ICONS` map + `icon(name, size)` helper (duplicated per file — see
+"no shared JS modules" in the file-split note above) that renders a
+single-stroke inline SVG line icon (a `<span>` with its `innerHTML` set
+to raw SVG, since `document.createElement('svg')` is the wrong
+namespace and silently fails to render). This replaced every emoji that
+used to sit in button/label text (🔔🍳🍽️🧹📝🔥👤💬📲🚚🎁⭐🔴🟢🟡…) —
+emoji render as full-color platform pictograms with wildly inconsistent
+style across devices/fonts, which clashed with the flat ink/mono design
+the rest of the product uses. **Do not introduce a new emoji character
+into any button/label/card.** Adding a new icon means adding an SVG path
+string to that file's own `ICONS` map and calling `icon('name')` as a
+child alongside the text, not writing an emoji into the string.
+Color-coding (veg/non-veg, order type, table status) uses `swatch(color)`
+(a small colored square) or a `border-left` stripe on the row/card, never
+a colored emoji dot. One case wasn't just a rendering choice: `db/045`'s
+`call_waiter()` RPC used to store the literal string `'🔔 Waiter called'`
+in `guest_orders.note` as its own dedupe marker — `db/048` replaced it
+with plain `'Waiter called'`; if you ever match against a `guest_orders`
+note string, match the plain-text version.
+
+## Desktop layout: `.g1`, not inline `grid-template-columns:1fr`
+
+Both `index.html` and `backoffice.html` define a `.g1` CSS class
+(`display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr))`)
+that every full-width dashboard/list screen should use as its container
+class. The old pattern — `h('div',{class:'g',style:'grid-template-columns:1fr'},...)`
+— forces a single full-viewport-wide column, which looks fine on a
+phone but wastes most of the screen on a real desktop monitor (a
+two-line "Gross sales ₹7,662" card a few hundred pixels wide with a
+huge gutter of empty background next to it). `.g1` lets independent
+cards flow into 2–3 columns on wide screens while a single wide card
+(or a wide chart/table) still fills the full width, since CSS grid's
+`auto-fit` collapses unused tracks; it still collapses to one column on
+phones with no media query needed. A chart or table card that needs the
+full row regardless of column count gets an explicit
+`style:'grid-column:1/-1'` alongside `class:'card'`.
+
+`backoffice.html` also has a small zero-dependency chart kit for
+Analytics-style views — `barRow` (horizontal bar), `lineChart`,
+`donutChart`, `stackedBarChart`, all in the same raw-SVG-via-innerHTML
+style as `icon()`. Reuse these for any new chart rather than reaching
+for a charting library; this codebase has a hard "no build step, no
+bundler" rule (see "Stack" above) that a library like Chart.js would
+break.
+
+## Testing an `app/public/*.html` change before committing
+
+These are single-file HTML documents with one big inline `<script>` —
+`node --check` can't run against the `.html` file directly. Extract the
+script first, then check it:
+
+```bash
+python3 -c "
+import re
+html = open('app/public/index.html').read()
+scripts = re.findall(r'<script>(.*?)</script>', html, re.S)
+open('/tmp/idx_check.js','w').write(scripts[-1] if scripts else '')
+"
+node --check /tmp/idx_check.js
+```
+
+Do this for every file touched (`index.html`, `backoffice.html`,
+`payroll.html`, `builder.html`/`w.html`, etc.) before every commit — a
+syntax error in one of these ships straight to production the moment
+someone runs `git pull` on the VPS, with no build/CI step to catch it
+first.
+
+## Recurring git workflow: squash-merge SHA divergence on PRs
+
+Every PR opened from a long-lived feature branch in this repo fails
+`merge_pull_request` on the *first* attempt with a GitHub API 405
+"Pull Request has merge conflicts" — even when the branch's content is
+a clean superset of `main` with zero real conflicts. This happens
+because earlier PRs from the same branch were squash-merged, which
+creates a new commit on `main` that the branch's own history doesn't
+recognize as a descendant, so GitHub's fast-forward/merge check fails
+even though there's no actual conflicting change. The fix, every time:
+
+```bash
+git fetch origin main
+git merge origin/main -m "Merge origin/main (squash-merge SHA divergence)"
+# resolve any conflicts -- in practice these are always trivial, a
+# single line each, and HEAD's side is the correct superset; keep HEAD
+git add <resolved files>
+git commit --no-edit   # or with a message if you didn't use --no-edit above
+git push
+# retry the PR merge -- it now succeeds
+```
+
+Don't be surprised by this and don't try to force-push or rebase around
+it — merging `origin/main` into the branch (never the reverse) and
+resolving in favor of HEAD is the established, repeatable fix.
+
 ## Non-technical owner, deploy over SSH from a phone
 
 The person operating this project deploys by pasting commands into
