@@ -143,11 +143,24 @@ async function hasOwnTenant(userId) {
   return !!(data && data.tenant_id);
 }
 
+// AUZslab's own team signs in here too, same as any client -- they skip
+// the cart and land straight on the admin dashboard. list_clients() is
+// the same server-side gate admin.html itself uses (it raises for anyone
+// who isn't a platform admin).
+async function isPlatformAdmin() {
+  const { error } = await sb.rpc('list_clients', {});
+  return !error;
+}
+
 async function checkSession() {
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
     if (await hasOwnTenant(session.user.id)) {
       window.location.href = 'account.html';
+      return;
+    }
+    if (await isPlatformAdmin()) {
+      window.location.href = 'admin.html';
       return;
     }
     document.getElementById('authSection').style.display = 'none';
@@ -172,6 +185,10 @@ document.getElementById('submitBtn').onclick = async () => {
   const user = data && (data.user || (data.session && data.session.user));
   if (user && await hasOwnTenant(user.id)) {
     window.location.href = 'account.html';
+    return;
+  }
+  if (mode === 'login' && await isPlatformAdmin()) {
+    window.location.href = 'admin.html';
     return;
   }
   window.location.href = 'cart.html';
