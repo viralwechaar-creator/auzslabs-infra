@@ -406,6 +406,111 @@ things bit this specific import, all worth checking before the next one:
   before assuming it's a code bug — `featureOn()`'s definition is
   above ("Feature flags: two layers").
 
+## Salon niche: a real client (Showoff Salon) migrated from their own Vercel site
+
+The owner's previous client, Showoff Salon (a unisex salon in Jodhpur),
+had its own standalone Vercel + Blob-storage site/booking/CRM app —
+**`viralwechaar-creator/showoff-salon`** on GitHub is that real app's
+source, still there for reference (their exact copy text, `seed.js`
+starter menu, `style.css` palette). They were migrated onto AUZslab as
+the first real `'salon'` niche tenant, and "Salon" was built as a
+reusable niche (not a one-off fork) in the process — the next salon
+client reuses all of this with zero new code, just their own settings.
+
+- **A salon tenant's real front door is `app/public/booking.html`, not
+  `index.html`.** A salon/gym has no dine-in floor plan or KOT — its
+  customer-facing surface is a public booking page, not the staff POS.
+  `app/public/land.html` is the niche-aware router the Caddyfile's
+  subdomain-root fallback now points at (`try_files {path} /land.html`,
+  changed from `/index.html`) — it calls the existing `public_menu` RPC
+  to read `cfg.bizType`, then redirects to `LANDING[bizType]` (currently
+  just `{salon:'/booking.html'}`) or `/index.html` otherwise. A request
+  for a real file (`index.html`, `booking.html`, ...) never reaches
+  `land.html` at all — Caddy serves it directly; only the bare
+  subdomain root (or a genuinely unknown path) falls through to it. A
+  future niche with its own customer-facing front door: add its page to
+  `LANDING` here, nothing else, no Caddyfile change needed.
+- **`bizType` must actually be set, or every tenant silently defaults to
+  `'restaurant'`.** `cfg()` in `index.html` hardcodes that default;
+  `niche_presets.default_business_rules` (db/001) never set a `bizType`
+  key for any niche until `db/050_fix_biztype_by_niche.sql` fixed it
+  (preset going forward + a backfill for already-provisioned tenants,
+  gated on `bizType is null` so a deliberately hand-picked value is
+  never overwritten). This is what actually caused "salon redirects to
+  the staff POS login" the first time a real salon tenant went live —
+  the `land.html` router above only works once this field is real.
+- **`public_salon_page(tenant_slug)` / `public_salon_slots(tenant_slug,
+  date)` / `public_create_booking(...)`** (db/049_salon_public_booking.sql)
+  are the anon-callable RPCs `booking.html` runs on — same
+  SECURITY DEFINER / tenant-resolved-from-slug pattern as
+  `public_menu`/`place_order`. Services/categories are the same
+  `kind='item'`/`kind='cat'` records every niche's menu already uses
+  (no new table), just with salon-specific optional fields: `cat.gender`
+  (`'all'|'female'|'male'`, drives `booking.html`'s Everyone/Women/Men
+  filter), `cat.priceLabels` (e.g. `['Normal','Rica']` for a two-column
+  price display), `item.price2` + `item.popular`. A booking is a real
+  `bookings` row (db/003's dedicated table, not `records` — the one
+  deliberate non-generic-engine exception, for real date/time
+  slot-conflict checking), with `bookingOpen`/`bookingClose`/
+  `bookingSlotMinutes`/`bookingSlotCapacity` read from the tenant's own
+  `settings` record (defaults `10:00`/`19:00`/`30`/`1`).
+- **`booking.html`'s look is Showoff Salon's exact plum/cream/gold
+  palette + Hanken Grotesk *by default*, overridden at runtime from
+  `settings.brand`** (`{cream,gold,goldD,taupe,tint,line,muted,font,
+  fontUrl}` — deliberately not `plum`/`logo`/`hero`, which reuse the
+  already-generic `col`/`logo`/`siteHero` fields every tenant has) —
+  so a brand-new salon tenant with no `brand` set still looks
+  intentional instead of a blank placeholder, and a *different* salon
+  client gets their own full palette just by filling in Settings →
+  Booking. `i.html` (the public invoice) reads the same `brand` object,
+  gated strictly on `brand` being present (not on `col` alone) so it
+  never silently re-themes every pre-existing tenant's invoice that
+  happens to have `col` set for an unrelated reason.
+- **Reuses existing generic site-settings fields — never invent a
+  parallel set.** `siteKicker`/`siteTag`/`siteSub`/`siteAbout`/
+  `siteHours`/`siteInsta`/`siteHero`/`siteGallery`(comma-joined URL
+  string)/`logo` are the *same* fields `site.html`'s own Settings →
+  Website pane already edits for every other niche — `booking.html`
+  and the booking-hours/brand-palette fields just add a new Settings →
+  Booking pane (shown only when `bizType=='salon'`, via
+  `settingsTabs()` in `backoffice.html`) on top of that, not a
+  second admin screen.
+- **A one-off real client's data seed goes in `db_data/`, never
+  `db/`.** `db_data/showoff_salon_seed.sql` (their real 67-service
+  menu, transcribed from their own `seed.js`/`style.css` — regenerate
+  it from there again if it's ever found incomplete, don't hand-guess
+  fields) is deliberately kept out of `db/` (which auto-runs on every
+  fresh install — a one-off tenant's menu seeded into every future
+  install would be wrong). Apply it by hand, once, the same way as any
+  migration but from `db_data/`:
+  ```bash
+  docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" < db_data/showoff_salon_seed.sql
+  ```
+  Safe to re-run (every insert is `on conflict do update`).
+- **The menu editor in `backoffice.html`'s Menu tab must expose every
+  field the public booking page can read, or the owner can't actually
+  maintain their own menu.** Category creation used to be a bare
+  `prompt()` with no edit action afterward at all; `catModal()` now
+  covers name + (salon-only) gender/priceLabels/note, and the item
+  modal grew a (salon-only) price2/popular pair — both gated on
+  `cfg().bizType=='salon'` so every other niche's menu editor is
+  untouched. If a new salon-specific field is ever added to
+  `public_salon_page`'s RPC output, add it to these modals in the same
+  change, or it becomes another thing only a one-off SQL script can set.
+- **Historical data migration (their real past bookings/clients/
+  invoices) is still unstarted, and genuinely blocked** — the zip/repo
+  access available is their application *code* (including `seed.js`,
+  which happened to double as real starter menu data), not an export of
+  their live Vercel Blob store's actual runtime data. Needs a real data
+  export from the owner before this can proceed.
+- **Numbering collision, not yet cleaned up:** `db/049_salon_public_booking.sql`
+  /`db/050_fix_biztype_by_niche.sql` (this work) and
+  `db/049_import_mannat_cafe.sql`/`db/050_mannat_cafe_real_menu.sql`
+  (see the Mannat Cafe section above) landed on `main` with duplicate
+  numbers from two different sessions' work. Not actually broken (both
+  run, in alphabetical sub-order, on a fresh install) but worth
+  renumbering one set for clarity before it happens a third time.
+
 ## Non-technical owner, deploy over SSH from a phone
 
 The person operating this project deploys by pasting commands into
