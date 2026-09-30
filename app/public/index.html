@@ -328,16 +328,38 @@ async function kot(){const o=S.cur;if(!o.lines.some(l=>l.qty>l.sent))return aler
  prn(`<b>KOT ${o.no}</b>${o.token?' · Token #'+o.token:''}<br>${o.type} ${esc(tn(o.table))}<br>${new Date().toLocaleTimeString()}<hr>`+stations.map(s=>`<u>${s}</u><br>`+n.filter(x=>x.s==s).map(x=>`<b>${x.q}× ${esc(x.n)}</b><br>`).join('')).join('<hr>'));render()}
 async function dedu(o){for(const l of o.lines){const it=R[l.id];if(!it||!it.data.rec)continue;for(const p of it.data.rec.split(',')){const[n,q]=p.split(':'),g=L('ing').find(x=>x.name.toLowerCase()==n.trim().toLowerCase());if(g&&+q){const used=q*l.qty;g.qty=r2(g.qty-used);g.usage=(g.usage||[]).concat({q:used,d:today(),at:now()}).slice(-200);await save('ing',g,g.id)}}}}
 async function deduVariant(o){for(const l of o.lines){const it=R[l.id];if(!it||!it.data.variants||!it.data.variants.length||!l.variant)continue;const v=it.data.variants.find(x=>x.size==l.variant.size&&(x.color||'')==(l.variant.color||''));if(v){v.qty=r2((v.qty||0)-l.qty);v.usage=(v.usage||[]).concat({q:l.qty,d:today(),at:now()}).slice(-200);await save('item',it.data,it.data.id)}}}
+const CASH_DENOMS=[500,200,100,50,20,10,5,2,1];
+// Counts actual notes/coins tendered instead of a single typed amount, so
+// the drawer total can be reconciled against what the till should hold --
+// stored on the payment line itself (amt is what's applied to the bill,
+// tendered/denoms/change are the physical cash detail).
+function cashDenomModal(amountDue,cb){
+ const counts={},totalEl=h('b',{},'₹0'),changeEl=h('div',{style:'font-size:13px'});
+ const recalc=()=>{
+  const tendered=CASH_DENOMS.reduce((a,d)=>a+d*(counts[d]||0),0);
+  totalEl.textContent=inr(tendered);
+  const change=r2(tendered-amountDue);
+  if(tendered<=0)changeEl.textContent='';
+  else if(change<0)changeEl.textContent='Short by '+inr(-change);
+  else{let rem=change,parts=[];for(const d of CASH_DENOMS){const n=Math.floor(rem/d);if(n>0){parts.push(n+'× ₹'+d);rem=r2(rem-n*d)}}changeEl.textContent='Change to return: '+inr(change)+(parts.length?' ('+parts.join(', ')+')':'')}
+ };
+ const rows=CASH_DENOMS.map(d=>{const inp=h('input',{type:'number',min:0,placeholder:'0',style:'width:64px',oninput:()=>{counts[d]=+inp.value||0;recalc()}});return h('div',{class:'row'},'₹'+d,inp)});
+ const x=modal(h('h3',{},'Cash received · due '+inr(amountDue)),...rows,h('div',{class:'row'},'Total tendered',totalEl),changeEl,
+  h('button',{class:'p',onclick:()=>{const tendered=CASH_DENOMS.reduce((a,d)=>a+d*(counts[d]||0),0);if(tendered<=0)return alert('Enter at least one note or coin.');x();cb(tendered,{...counts})}},'Confirm'));
+}
 function pay(){const o=S.cur;if(!o.lines.length)return;if(!(o.cust.name||'').trim()||!(o.cust.phone||'').trim())return alert('Customer name and phone number are required before payment.');o.t=tot(o);
  const P=(o.pays||[]).slice(),due=()=>r2(o.t.total-P.reduce((a,x)=>a+x.amt,0));
  const amt=h('input',{type:'number',value:o.t.total}),info=h('b'),list=h('div'),done=h('button',{class:'p',disabled:true,onclick:async()=>{o.pays=P;if(o.loyaltyRedeemed)o.loyaltyRedeemed=o.t.d;o.change=Math.max(-due(),0);o.status='paid';o.paidAt=now();o.tok=o.tok||tok();if(!o.no||o.no.endsWith('~'))o.no=await nextNo();await dedu(o);await deduVariant(o);if(!isRetail())mk(o);o.printCount=(o.printCount||0)+1;await persist();await markTableDirty(o);x();prnInv(rcpt(o,false));
   const url=location.origin+'/i.html?o='+encodeURIComponent(o.tok),cm=modal(h('h3',{},'Payment complete · '+inrc(o.t.total)),h('div',{class:'row'},h('button',{class:'p',onclick:()=>wa(o)},'Send bill'),h('button',{onclick:()=>open(url,'_blank')},'Open'),h('button',{onclick:()=>cm()},'Done')));
   S.cur=null;render()}},'Complete and print');
  const asDue=h('button',{disabled:true,onclick:async()=>{o.pays=P;if(o.loyaltyRedeemed)o.loyaltyRedeemed=o.t.d;o.status='due';o.dueAt=now();o.tok=o.tok||tok();if(!o.no||o.no.endsWith('~'))o.no=await nextNo();if(!isRetail())mk(o);await persist();await markTableDirty(o);x();S.cur=null;render()}},'Save as due (credit)');
- const up=()=>{list.replaceChildren(...P.map(p=>h('div',{class:'row'},p.m.toUpperCase(),inr(p.amt))));info.textContent=due()>0?'Due '+inr(due()):'Change to return '+inr(-due());amt.value=Math.max(due(),0);done.disabled=due()>0;asDue.disabled=due()<=0||!can('m')};
+ const up=()=>{list.replaceChildren(...P.map(p=>h('div',{class:'row'},p.m.toUpperCase()+(p.tendered?' (tendered '+inr(p.tendered)+(p.change?', change '+inr(p.change):'')+')':''),inr(p.amt))));info.textContent=due()>0?'Due '+inr(due()):'Change to return '+inr(-due());amt.value=Math.max(due(),0);done.disabled=due()>0;asDue.disabled=due()<=0||!can('m')};
  const splitEq=()=>{const n=+prompt('Split between how many people?','2');if(n>1)amt.value=Math.ceil(due()/n)};
  const splitItem=()=>{const v=prompt(o.lines.map((l,i)=>(i+1)+'. '+l.name+' x'+l.qty).join('\n')+'\nItem numbers to pay now (e.g. 1,3)');if(!v)return;const idxs=v.split(',').map(s=>+s.trim());const q=idxs.reduce((a,i)=>{const l=o.lines[i-1];return a+(l?l.price*l.qty:0)},0);if(q)amt.value=Math.min(due(),Math.ceil(o.t.total*q/(o.t.sub||1)))};
- const x=modal(h('h3',{},'Pay '+inr(o.t.total)),amt,h('div',{class:'row'},h('button',{onclick:splitEq},'Split equally'),h('button',{onclick:splitItem},'Split by item')),h('div',{class:'row'},...['cash','upi','card','other'].map(m=>h('button',{onclick:()=>{let a=+amt.value;if(!(a>0))return;if(m!='cash')a=Math.min(a,due());if(a<=0)return;P.push({m,amt:a});up()}},m.toUpperCase()))),list,info,h('div',{class:'row'},done,asDue));up()}
+ const x=modal(h('h3',{},'Pay '+inr(o.t.total)),amt,h('div',{class:'row'},h('button',{onclick:splitEq},'Split equally'),h('button',{onclick:splitItem},'Split by item')),h('div',{class:'row'},...['cash','upi','card','other'].map(m=>h('button',{onclick:()=>{
+  if(m=='cash'){const target=Math.min(+amt.value||due(),due());if(!(target>0))return;cashDenomModal(target,(tendered,denoms)=>{const applied=Math.min(tendered,target);P.push({m,amt:applied,tendered,denoms,change:r2(tendered-applied)});up()});return}
+  let a=+amt.value;if(!(a>0))return;a=Math.min(a,due());if(a<=0)return;P.push({m,amt:a});up()
+ }},m.toUpperCase()))),list,info,h('div',{class:'row'},done,asDue));up()}
 const dayLocked=d=>L('dayclose').find(x=>x.d==d);
 async function refund(o){if(!can('m'))return alert('Manager only');if(dayLocked(new Date(o.paidAt).toLocaleDateString('en-CA'))&&!can('o'))return alert('This day is closed. Ask an owner to reopen it first.');const max=r2(o.t.total-(o.refunds||[]).reduce((a,r)=>a+r.amt,0));if(max<=0)return alert('Nothing left to refund');const amt=+prompt('Refund amount (up to '+inr(max)+')',max);if(!(amt>0)||amt>max)return;
  pickReason(async reason=>{const c=structuredClone(o);c.refunds=(c.refunds||[]).concat({amt:r2(amt),reason,by:S.user.email||S.user.id,at:now()});await save('order',c,c.id);render()})}
