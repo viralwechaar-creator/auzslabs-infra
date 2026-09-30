@@ -85,7 +85,7 @@ input:disabled+.slider{opacity:.4;cursor:default}
       <button class="nav-link acct-nav-btn" data-tab="roles" id="tabRolesBtn" style="display:none"><span>Roles</span></button>
       <button class="nav-link acct-nav-btn" data-tab="notifications"><span>Notifications</span><span id="notifBadge"></span></button>
       <div class="nav-divider"></div>
-      <a href="#" id="openPosLink" target="_blank" rel="noopener" class="nav-link"><span>Open POS system</span></a>
+      <a href="#" id="openPosLink" target="_blank" rel="noopener" class="nav-link"><span id="openPosLabel">Open POS system</span></a>
       <a href="#" id="openPayrollLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><span>Open Payroll</span></a>
       <a href="#" id="openBuilderLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><span>Open Website Builder</span></a>
     </nav>
@@ -147,7 +147,10 @@ async function boot() {
   $('#tabsSection').style.display = 'block';
   $('#acctNav').style.display = 'flex';
   if (DASH.my_role === 'owner') { $('#tabStaffBtn').style.display = ''; $('#tabRolesBtn').style.display = ''; }
-  $('#openPosLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in';
+  // Salon tenants run AUZslab Salon (app/public/salon/), not the POS -- its
+  // staff/owner console lives at /salon/admin/.
+  if (DASH.tenant.niche === 'salon') $('#openPosLabel').textContent = 'Open AUZslab Salon';
+  $('#openPosLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in' + (DASH.tenant.niche === 'salon' ? '/salon/admin/' : '');
   const payrollOn = (DASH.features || {}).payroll === true && (DASH.enabled_features || {}).payroll !== false;
   if (payrollOn) { $('#openPayrollLink').style.display = ''; $('#openPayrollLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in/payroll.html'; }
   const builderOn = (DASH.features || {}).website_builder === true && (DASH.enabled_features || {}).website_builder !== false;
@@ -191,6 +194,8 @@ function showTab(tab) {
 
 function renderAccount() {
   const t = DASH.tenant;
+  const isSalon = t.niche === 'salon';
+  const staffUrl = 'https://' + t.slug + '.auzslab.in' + (isSalon ? '/salon/admin/' : '');
   $('#pane-account').innerHTML = `
     <div class="card">
       <h3 class="h-2">Your business</h3>
@@ -201,13 +206,13 @@ function renderAccount() {
       <div class="acct-row"><span class="muted">Renewal date</span><b>${t.renewal_date ? esc(t.renewal_date) : 'Not set — ask AUZslab'}</b></div>
     </div>
     <div class="card">
-      <h3 class="h-2">Your POS system</h3>
-      <p class="muted">This is your staff's login page — share it with them along with the login you create for them under Staff.</p>
+      <h3 class="h-2">${isSalon ? 'Your AUZslab Salon' : 'Your POS system'}</h3>
+      <p class="muted">${isSalon ? 'This is your salon console — bookings, billing, clients, expenses and your website text. Your public website is at ' + esc(t.slug) + '.auzslab.in.' : "This is your staff's login page — share it with them along with the login you create for them under Staff."}</p>
       <div class="pos-link-box">
-        <code>https://${esc(t.slug)}.auzslab.in</code>
+        <code>${staffUrl}</code>
         <button class="btn btn-ghost" id="copyPosLink" type="button">Copy link</button>
       </div>
-      <a href="https://${esc(t.slug)}.auzslab.in" target="_blank" rel="noopener" class="btn btn-primary form-submit" style="margin-top:12px">Open POS system &#8599;</a>
+      <a href="${staffUrl}" target="_blank" rel="noopener" class="btn btn-primary form-submit" style="margin-top:12px">${isSalon ? 'Open AUZslab Salon' : 'Open POS system'} &#8599;</a>
     </div>
     <div class="card">
       <h3 class="h-2">Your login</h3>
@@ -223,7 +228,7 @@ function renderAccount() {
     </div>
   `;
   $('#copyPosLink').onclick = async () => {
-    const url = 'https://' + t.slug + '.auzslab.in';
+    const url = staffUrl;
     const btn = $('#copyPosLink');
     try {
       await navigator.clipboard.writeText(url);
@@ -289,7 +294,7 @@ function renderServices() {
         // admin.html job (the per-feature checkboxes there still exist).
         const allOn = rows.every((k) => enabled[k] !== false);
         return `<div class="acct-row">
-          <span>${esc(label)}</span>
+          <span>${esc(label === 'POS' && DASH.tenant.niche === 'salon' ? 'AUZslab Salon' : label)}</span>
           <label class="switch"><input type="checkbox" data-feat-group="${esc(rows.join(','))}" ${allOn ? 'checked' : ''} ${isOwner ? '' : 'disabled'}><span class="slider"></span></label>
         </div>`;
       }).join('') : '<p class="muted">No services on your subscription yet — contact AUZslab.</p>'}
