@@ -93,6 +93,7 @@ footer .socials a{width:34px;height:34px;border-radius:50%;border:1px solid var(
  <a class=cta id=orderCta href="https://wa.me/" target=_blank rel=noopener>Order on WhatsApp</a>
 </nav></header>
 <div id=tbanner class=tbanner style="display:none"></div>
+<div id=qrBanners style="display:none;padding:10px 22px 0"></div>
 
 <div id=top></div>
 <section class=hero>
@@ -198,6 +199,8 @@ async function callWaiter(){
    bEl.innerHTML='<span>'+orderMsg+'</span><button id=callWaiterBtn class=cta style="margin-left:10px;padding:5px 14px;font-size:12.5px;vertical-align:middle">🔔 Call waiter</button>';
    document.getElementById('callWaiterBtn').onclick=callWaiter;
   }
+  const banners=(cfg.qrBanners||'').split(',').map(s=>s.trim()).filter(Boolean);
+  if(banners.length){const bwEl=document.getElementById('qrBanners');bwEl.style.display='block';bwEl.innerHTML=banners.map(u=>'<img src="'+esc(u)+'" style="width:100%;border-radius:14px;margin-bottom:8px;display:block">').join('')}
  }
  const name=cfg.name||'AUZslab';
  document.title=name;
