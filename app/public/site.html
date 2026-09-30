@@ -167,14 +167,36 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';'),inr=n
 const waLink=(phone,text)=>{let p=(phone||'').replace(/\D/g,'');if(p.length==10)p='91'+p;return 'https://wa.me/'+(p||'')+(text?'?text='+encodeURIComponent(text):'')};
 const sb=supabase.createClient(CFG.url,CFG.key),T=new URLSearchParams(location.search).get('t'),cart={};
 let M=null,tb=null;
+// Reuses guest_orders (the same channel staff already watch for QR self-orders,
+// see index.html's getG()/guestBar()) with empty items and a fixed marker note
+// instead of a whole new table/RPC/staff UI -- getG() already renders an empty
+// items array as just "table + name + note", so this needs zero POS-side changes.
+async function callWaiter(){
+ const btn=document.getElementById('callWaiterBtn');
+ btn.disabled=true;btn.textContent='Calling…';
+ try{
+  const{error}=await sb.rpc('call_waiter',{tenant_slug:TENANT_SLUG,t:T});
+  if(error){alert(error.message);btn.disabled=false;btn.textContent='🔔 Call waiter';return}
+  btn.textContent='✓ Waiter called';
+  setTimeout(()=>{btn.disabled=false;btn.textContent='🔔 Call waiter'},10*60000);
+ }catch(e){alert('Could not reach the staff right now — please try again.');btn.disabled=false;btn.textContent='🔔 Call waiter'}
+}
 (async()=>{
  try{const{data}=await sb.rpc('public_menu',{tenant_slug:TENANT_SLUG});M=data}catch(e){console.warn(e)}
  const cfg=(M&&M.cfg)||{};
  const selfOrderOn=!!(cfg._features&&cfg._features.self_order===true&&(!cfg._enabled_features||cfg._enabled_features.self_order!==false));
  if(T){
   const bEl=document.getElementById('tbanner');bEl.style.display='block';
-  if(!selfOrderOn){bEl.textContent='Online ordering isn\'t available right now — please order at the counter.'}
-  else{tb=(M&&M.tables||[]).find(x=>x.id==T);bEl.textContent=tb?('📍 Ordering for '+tb.name+' — tap items below to add to your order'):'This QR code isn\'t linked to a table — please ask our staff.'}
+  tb=(M&&M.tables||[]).find(x=>x.id==T);
+  if(!tb){bEl.textContent='This QR code isn\'t linked to a table — please ask our staff.'}
+  else{
+   // Calling a waiter is independent of self-order being on -- a table
+   // should always be able to flag staff down, even if online ordering
+   // itself is turned off (order-at-counter mode).
+   const orderMsg=selfOrderOn?('📍 Ordering for '+esc(tb.name)+' — tap items below to add to your order'):('📍 '+esc(tb.name)+' — please order at the counter.');
+   bEl.innerHTML='<span>'+orderMsg+'</span><button id=callWaiterBtn class=cta style="margin-left:10px;padding:5px 14px;font-size:12.5px;vertical-align:middle">🔔 Call waiter</button>';
+   document.getElementById('callWaiterBtn').onclick=callWaiter;
+  }
  }
  const name=cfg.name||'AUZslab';
  document.title=name;

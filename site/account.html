@@ -168,7 +168,8 @@ async function boot() {
       if (toggle) toggle.classList.remove('is-open');
     };
   });
-  showTab(location.hash === '#notifications' ? 'notifications' : 'account');
+  const hashTab = { '#notifications': 'notifications', '#staff': 'staff', '#roles': 'roles' }[location.hash];
+  showTab(hashTab && document.getElementById('pane-' + hashTab) ? hashTab : 'account');
   setInterval(async () => { await loadNotifications(); if ($('#pane-notifications').classList.contains('on')) renderNotifications(); }, 20000);
 
   $('#signOutBtn').onclick = async () => {
