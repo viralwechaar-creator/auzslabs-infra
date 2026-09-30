@@ -43,6 +43,24 @@
     # payroll.html, builder.html, site.html, ...) -- see the root domain
     # block above for the full story on why this exists.
     header /*.html Cache-Control "no-cache"
+    # Salon Suite (app/public/salon/ -- Showoff Salon's original site,
+    # admin console and invoice page, run for 'salon'-niche tenants):
+    #  - /api/* is that app's own same-origin API (server/src/salon.js),
+    #    tenant resolved from this subdomain (Host is passed through);
+    #  - /i/<token> is its public, shareable invoice link;
+    #  - /uploads/* serves images/audio the salon admin uploaded.
+    # None of these paths are used by the POS app, so other niches are unaffected.
+    header /salon/* Cache-Control "no-cache, must-revalidate"
+    handle /api/* {
+        uri replace /api /salon-api 1
+        reverse_proxy api:3000
+    }
+    handle_path /uploads/* {
+        root * /srv/uploads
+        file_server
+    }
+    @salonInvoice path_regexp ^/i/[a-f0-9]{8,32}$
+    rewrite @salonInvoice /salon/invoice.html
     file_server
     # A request for a real file (index.html, booking.html, site.html,
     # backoffice.html, ...) is served directly, above -- this fallback

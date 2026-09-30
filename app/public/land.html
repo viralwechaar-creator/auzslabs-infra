@@ -19,7 +19,7 @@
  customer-facing page later -> just add its bizType here, nothing
  else (this file, not the Caddyfile) is the one place that mapping lives.
 */
-const LANDING = { salon: '/booking.html' };
+const LANDING = { salon: '/salon/' };
 (async () => {
  if (!TENANT_SLUG) return location.replace('/index.html');
  const sb = supabase.createClient(CFG.url, CFG.key);

@@ -5,6 +5,7 @@ import { saveSiteUpload, saveDocUpload, readDocUpload, getUploadsDiskUsage } fro
 import { startRealtime } from './realtime.js';
 import { handlePushEvent } from './push.js';
 import { sendStaffInviteEmail } from './mail.js';
+import { handleSalon } from './salon.js';
 
 const PORT = process.env.PORT || 3000;
 const DOMAIN = process.env.DOMAIN || '';
@@ -284,6 +285,9 @@ function send(res, status, body, origin) {
 }
 
 const server = http.createServer(async (req, res) => {
+  // Salon Suite (Showoff Salon's original app, see salon.js): same-origin
+  // /api/* on a tenant subdomain, rewritten to /salon-api by Caddy.
+  if (req.url.startsWith('/salon-api')) { handleSalon(req, res, clientIp(req)); return; }
   const origin = allowedOrigin(req.headers.origin);
   const reply = (status, body) => send(res, status, body, origin);
   if (req.method === 'OPTIONS') { reply(204, {}); return; }

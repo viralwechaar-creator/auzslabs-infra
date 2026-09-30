@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin, Showoff Salon</title>
+<meta name="theme-color" content="#391D21">
+<link rel="icon" type="image/png" href="/salon/assets/favicon.png">
+<link rel="apple-touch-icon" href="/salon/assets/icon-180.png">
+<link rel="manifest" href="/salon/admin/manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/salon/assets/style.css">
+<link rel="stylesheet" href="/salon/admin/admin.css">
+</head>
+<body class="adm">
+
+<section class="a-login" id="login" hidden>
+  <div class="a-login-card">
+    <img src="/salon/assets/logo-plum.png" alt="Showoff Salon" width="88" height="88">
+    <h1>Admin</h1>
+    <form id="loginForm">
+      <div class="field"><label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" required></div>
+      <p class="error" id="loginError" role="alert"></p>
+      <button class="btn btn-wide" type="submit">Sign in</button>
+    </form>
+    <a class="link" href="/salon/">Back to website</a>
+  </div>
+</section>
+
+<div class="a-app" id="app" hidden>
+  <nav class="a-rail" id="rail" aria-label="Sections"></nav>
+  <aside class="a-side">
+    <a class="a-side-profile" href="/salon/" target="_blank" rel="noopener" aria-label="Open website">
+      <img src="/salon/assets/logo-plum.png" alt="" width="36" height="36">
+      <span class="a-side-profile-text"><b>Showoff Salon</b><small>Admin console</small></span>
+    </a>
+    <nav id="sideNav" aria-label="Admin"></nav>
+    <div class="a-side-foot">
+      <a href="/salon/" target="_blank" rel="noopener">View website</a>
+      <button id="logout" type="button">Sign out</button>
+    </div>
+  </aside>
+  <main class="a-main">
+    <header class="a-top"><h1 id="viewTitle"></h1><div class="a-actions" id="viewActions"></div></header>
+    <div id="view"></div>
+  </main>
+  <nav class="a-tabbar" id="tabbar" aria-label="Sections"></nav>
+</div>
+
+<div class="a-toast" id="toast" role="status" aria-live="polite"></div>
+<script src="/salon/assets/dom.js"></script>
+<script src="/salon/assets/feedback.js"></script>
+<script src="/salon/assets/qrcode-lib.js"></script>
+<script src="/salon/admin/admin.js"></script>
+</body>
+</html>

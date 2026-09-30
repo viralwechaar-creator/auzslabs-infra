@@ -511,6 +511,37 @@ client reuses all of this with zero new code, just their own settings.
   run, in alphabetical sub-order, on a fresh install) but worth
   renumbering one set for clarity before it happens a third time.
 
+## Salon Suite: Showoff Salon's original app, run as-is (supersedes booking.html)
+
+The `booking.html` approach above never reproduced the real site (no
+gallery, logo, admin, nav, animations), so salon tenants now run the
+**original Showoff Salon app verbatim**: `app/public/salon/` is a copy of
+the Vercel repo's `public/` (home, `/menu/`, `/admin/`, `invoice.html`,
+`assets/`), with only absolute URLs rewritten to the `/salon/` prefix.
+Everything else (typography, palette, nav overlay, admin console,
+invoice design) is the original code. To change how it looks, edit it
+like the original repo; don't rebuild it in `booking.html`.
+
+- **Routing:** `land.html` sends `bizType=salon` to `/salon/`. Caddy's
+  wildcard block also maps `/api/*` to `api:3000/salon-api/*` (tenant
+  resolved from the Host subdomain), `/i/<token>` to `/salon/invoice.html`
+  (public WhatsApp invoice links), and `/uploads/*` to the uploads volume.
+- **API:** `server/src/salon.js` is the original `api/[...path].js`
+  ported, multi-tenant. `db/053_salon_store.sql`: one JSON document per
+  tenant in `salon_store` (`key='db'`, same shape as the old Blob, plus
+  `key='admin'` for lockout state / console password), mutated under a
+  row lock. `salon_tenant()` / `salon_owner_hashes()` are SECURITY
+  DEFINER lookups restricted to `tenants.niche='salon'`. Deploy: apply
+  053 by hand, `docker compose up -d --build api`, `docker compose restart caddy`.
+- **Console login** (`https://<slug>.auzslab.in/salon/admin/`): the
+  tenant owner's normal AUZslab password works until the owner sets a
+  console password via Settings -> Change password.
+- **Data:** a salon's first API hit seeds the original `seed.js` menu
+  (`server/src/salon-seed.js`). Historical Vercel data: export from
+  `/api/admin/export` on the old site, then write that JSON to
+  `salon_store` (`key='db'`) for the tenant.
+- `booking.html` and the `public_salon_*` RPCs are left in place but unused.
+
 ## Non-technical owner, deploy over SSH from a phone
 
 The person operating this project deploys by pasting commands into
