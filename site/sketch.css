@@ -11,6 +11,7 @@
   --ease-spring:cubic-bezier(.34,1.56,.64,1);
 }
 html{scroll-padding-top:72px}
+body{overflow-x:clip}
 
 /* ---------- paper + blueprint grid ---------- */
 .shell{
@@ -72,7 +73,7 @@ html{scroll-padding-top:72px}
 .reveal.in .sk-note svg,.sk-note.on svg{stroke-dashoffset:0}
 
 /* ---------- fluid scroll reveals ---------- */
-.reveal{opacity:0;transform:translate3d(0,38px,0) rotate(-.6deg);
+.reveal{opacity:0;transform:translate3d(0,38px,0);
   transition:opacity .9s var(--ease-out),transform 1.05s var(--ease-out)}
 .reveal.in{opacity:1;transform:none}
 .reveal.in .grid-3>*,.reveal.in .grid-2>*,.reveal.in .zigzag>*{animation:sk-pop .85s var(--ease-spring) backwards;animation-delay:calc(var(--i,0)*90ms + 120ms)}
@@ -170,3 +171,69 @@ html.sk-hold [data-sk-t]{opacity:0!important;transition:none!important;animation
 [data-sk-t].sk-land{animation:sk-landing .7s var(--ease-spring) backwards}
 @keyframes sk-landing{from{opacity:0;scale:.93}}
 @media (prefers-reduced-motion:reduce){.sk-fx,.sk-flash,.sk-ring{display:none}}
+
+/* ---------- pencil-art illustrations (sketch-art.js) ---------- */
+.sk-art{position:relative;width:100%}
+.sk-svg{display:block;width:100%;height:auto;overflow:visible;color:var(--ink)}
+.sk-svg *{fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.sk-svg .f{fill:#fff}
+.sk-svg .a{stroke:var(--accent)}
+.sk-svg .a.f{fill:rgba(128,0,32,.07)}
+.sk-svg .h{stroke-width:1.4;opacity:.5}
+.sk-orbit{position:absolute;inset:-6% -4%;width:108%;height:112%;overflow:visible;pointer-events:none;animation:sk-orbit 38s linear infinite}
+.sk-orbit ellipse{fill:none;stroke:var(--ink);stroke-width:1.2;stroke-dasharray:3 7;opacity:.35;vector-effect:non-scaling-stroke}
+@keyframes sk-orbit{to{transform:rotate(360deg)}}
+.sk-tilt{transform:perspective(800px) rotateX(var(--ax,0deg)) rotateY(var(--ay,0deg));transition:transform .25s ease-out;animation:sk-bob 6.5s ease-in-out infinite}
+@keyframes sk-bob{0%,100%{translate:0 0}50%{translate:0 -9px}}
+/* draw-in */
+.sk-svg path,.sk-svg circle,.sk-svg rect,.sk-svg ellipse{stroke-dasharray:1;stroke-dashoffset:1}
+.sk-art.on .sk-svg path,.sk-art.on .sk-svg circle,.sk-art.on .sk-svg rect,.sk-art.on .sk-svg ellipse{animation:sk-draw 1.3s cubic-bezier(.4,0,.2,1) forwards;animation-delay:calc(var(--d,0)*55ms)}
+@keyframes sk-draw{to{stroke-dashoffset:0}}
+.sk-svg .tw{transform-box:fill-box;transform-origin:center}
+.sk-art.on .sk-svg .tw{animation:sk-draw 1.3s forwards,sk-twinkle 2.8s ease-in-out 1.6s infinite}
+@keyframes sk-twinkle{0%,100%{scale:1;opacity:1}50%{scale:1.35;opacity:.6}}
+
+/* heroes: art balances the text on the right */
+.hero-art.has-sk{justify-content:center;align-items:center;width:100%}
+.hero-art.has-sk .sk-hero{width:min(360px,78%);min-width:220px;margin:0 auto}
+.hero-art.sk-injected{margin-top:22px}
+@media (min-width:900px){
+  .hero-art.has-sk .sk-hero{width:min(400px,100%)}
+  .hero-art.sk-injected{position:absolute;right:4%;top:50%;transform:translateY(-44%);width:min(400px,36%);margin:0}
+}
+
+/* long product cards: copy left, drawing right */
+.card.sk-big{display:block}
+.sk-card-art{width:min(210px,62%);margin:16px auto 0}
+@media (min-width:900px){
+  .card.sk-big{display:grid;grid-template-columns:minmax(0,1fr) min(300px,34%);align-items:center;gap:34px}
+  .sk-card-art{margin:0;width:100%}
+  .card.sk-big .big-numeral{z-index:0}
+  .card.sk-big .sk-card-body,.card.sk-big .sk-card-art{position:relative;z-index:1}
+}
+/* short feature cards: a small pencil icon in the corner */
+.card.sk-mini{padding-right:96px}
+.sk-mini-art{position:absolute;top:16px;right:14px;width:68px;z-index:2}
+.sk-mini-art .sk-orbit{display:none}
+.sk-mini-art .sk-tilt{animation-duration:5.5s}
+@media (min-width:900px){.card.sk-mini{padding-right:120px}.sk-mini-art{width:84px;top:18px;right:18px}}
+@media (max-width:420px){.card.sk-mini{padding-right:84px}.sk-mini-art{width:58px}}
+
+/* text sections with a drawing beside them */
+.section.sk-side{display:block}
+.sk-side-art{width:min(200px,56%);margin:22px auto 0}
+@media (min-width:900px){
+  .section.sk-side{display:grid;grid-template-columns:minmax(0,1fr) min(280px,30%);gap:48px;align-items:center}
+  .sk-side-art{margin:0;width:100%}
+}
+
+/* dividers */
+.sk-divider{display:flex;align-items:center;gap:14px;margin:6px 0}
+.sk-divider i{flex:1;border-top:2px dashed var(--line);filter:url(#sk-rough)}
+.sk-divider svg{width:26px;height:26px;flex:none;overflow:visible;animation:sk-spin-slow 14s linear infinite}
+.sk-divider path{fill:rgba(128,0,32,.1);stroke:var(--accent);stroke-width:2;stroke-linejoin:round}
+@keyframes sk-spin-slow{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){
+  .sk-orbit,.sk-tilt,.sk-divider svg{animation:none}
+  .sk-svg path,.sk-svg circle,.sk-svg rect,.sk-svg ellipse{stroke-dashoffset:0;animation:none!important}
+}
