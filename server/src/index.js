@@ -79,6 +79,12 @@ const RPC = {
   provision_tenant: { params: ['p_name', 'p_slug', 'p_niche'], auth: true },
   public_menu: { params: ['tenant_slug'], auth: false },
   public_page: { params: ['tenant_slug', 'page_slug'], auth: false },
+  public_salon_page: { params: ['tenant_slug'], auth: false },
+  public_salon_slots: { params: ['tenant_slug', 'p_date'], auth: false },
+  // p_service_ids is a Postgres text[] param, not jsonb -- a JS array is
+  // already sent as a native array literal by default (see the comment
+  // on RPC/jsonb above), so it's deliberately absent from a jsonb list here.
+  public_create_booking: { params: ['tenant_slug', 'p_name', 'p_phone', 'p_email', 'p_date', 'p_time', 'p_service_ids'], auth: false },
   place_order: { params: ['tenant_slug', 't', 'n', 'p', 'nt', 'its'], jsonb: ['its'], auth: false },
   call_waiter: { params: ['tenant_slug', 't'], auth: false },
   public_invoice: { params: ['oid'], auth: false },
