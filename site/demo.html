@@ -63,6 +63,10 @@
             <div>Email &nbsp; <b id="liveDemoEmail"></b></div>
             <div>Password &nbsp; <b>Auzslab@Demo</b></div>
           </div>
+ <div id="liveDemoExtra" style="display:none;margin-top:10px;font-family:var(--font-mono);font-size:12.5px;line-height:1.9;background:var(--bg-raised);border:1.5px solid var(--ink);border-radius:14px;padding:14px 16px">
+            <div>Staff view: choose &ldquo;Staff sign in&rdquo; &nbsp; Phone <b>9000000001</b> &nbsp; Password <b>Auzslab@Demo</b></div>
+            <div>Public website &nbsp; <b>demo-salon.auzslab.in</b></div>
+          </div>
           <a id="liveDemoBtn" href="#" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top:16px">Launch live demo &rarr;</a>
           <p class="p" style="margin-top:12px;font-size:11.5px;color:var(--ink-faint)">For evaluation only &mdash; please don't scrape or copy the software. See our <a href="terms.html" style="color:var(--ink-faint);text-decoration:underline">terms</a>.</p>
         </div>
@@ -176,8 +180,9 @@ function render(ctx) {
     ? "Here's exactly what you picked, walked through one module at a time."
     : "Here's what a business like yours typically runs on AUZslab. Your account manager will confirm the final list with you.";
 
-  const demoSlug = ctx.niche === 'retail' ? 'demo-retail' : 'demo-cafe';
-  const demoUrl = 'https://' + demoSlug + '.auzslab.in';
+  const demoSlug = ctx.niche === 'retail' ? 'demo-retail' : ctx.niche === 'salon' ? 'demo-salon' : 'demo-cafe';
+  const demoUrl = 'https://' + demoSlug + '.auzslab.in' + (ctx.niche === 'salon' ? '/salon/admin/' : '');
+  if (ctx.niche === 'salon') document.getElementById('liveDemoExtra').style.display = 'block';
   document.getElementById('liveDemoUrl').textContent = demoUrl;
   document.getElementById('liveDemoEmail').textContent = demoSlug + '@auzslab.in';
   document.getElementById('liveDemoBtn').href = demoUrl;

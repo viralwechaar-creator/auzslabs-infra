@@ -511,6 +511,77 @@ client reuses all of this with zero new code, just their own settings.
   run, in alphabetical sub-order, on a fresh install) but worth
   renumbering one set for clarity before it happens a third time.
 
+## Salon Suite: Showoff Salon's original app, run as-is (supersedes booking.html)
+
+The `booking.html` approach above never reproduced the real site (no
+gallery, logo, admin, nav, animations), so salon tenants now run the
+**original Showoff Salon app verbatim**: `app/public/salon/` is a copy of
+the Vercel repo's `public/` (home, `/menu/`, `/admin/`, `invoice.html`,
+`assets/`), with only absolute URLs rewritten to the `/salon/` prefix.
+Everything else (typography, palette, nav overlay, admin console,
+invoice design) is the original code. To change how it looks, edit it
+like the original repo; don't rebuild it in `booking.html`.
+
+- **Routing:** `land.html` sends `bizType=salon` to `/salon/`. Caddy's
+  wildcard block also maps `/api/*` to `api:3000/salon-api/*` (tenant
+  resolved from the Host subdomain), `/i/<token>` to `/salon/invoice.html`
+  (public WhatsApp invoice links), and `/uploads/*` to the uploads volume.
+- **API:** `server/src/salon.js` is the original `api/[...path].js`
+  ported, multi-tenant. `db/053_salon_store.sql`: one JSON document per
+  tenant in `salon_store` (`key='db'`, same shape as the old Blob, plus
+  `key='admin'` for lockout state / console password), mutated under a
+  row lock. `salon_tenant()` / `salon_owner_hashes()` are SECURITY
+  DEFINER lookups restricted to `tenants.niche='salon'`. Deploy: apply
+  053 by hand, `docker compose up -d --build api`, `docker compose restart caddy`.
+- **Console login** (`https://<slug>.auzslab.in/salon/admin/`): the
+  tenant owner's normal AUZslab password works until the owner sets a
+  console password via Settings -> Change password.
+- **Data:** a salon's first API hit seeds the original `seed.js` menu
+  (`server/src/salon-seed.js`). Historical Vercel data: export from
+  `/api/admin/export` on the old site, then write that JSON to
+  `salon_store` (`key='db'`) for the tenant.
+- `booking.html` and the `public_salon_*` RPCs are left in place but unused.
+
+### Salon Suite part 2: staff logins, payroll link, template, demo
+
+- **Staff logins** (`salon_store` key `'staff'`, managed by the owner under
+  the console's new **Staff** tab). A staff member signs in on the same
+  `/salon/admin/` page via "Staff sign in" (phone number + the password the
+  owner set). The session cookie carries `role: 'staff'`. **Enforcement is
+  server-side in `salon.js`**: `admin()` (owner only) is the default for every
+  endpoint, and only `member()` endpoints are open to staff: `GET /admin/data`
+  (filtered: no expenses / website text / gallery, and only their own bills, so
+  no revenue totals), bookings create + status change, invoice create, punch,
+  own password. No deleting bookings, no voiding bills, no menu / settings /
+  uploads / export. The UI hiding the other tabs (`allowed()` in `admin.js`)
+  is only the cosmetic half; when adding an endpoint, it is owner-only unless
+  you explicitly call `member()`.
+- **Payroll link** (`db/054_salon_staff_payroll.sql`): a new staff login is
+  attached to an `hr_employee` record (created with zero salary, or linked to
+  an existing one) via `salon_hr_ensure()`. Clock in/out on the staff Today tab
+  calls `salon_punch()`, which writes the exact `hr_attendance` shape
+  `payroll.html` writes (`{empId,date,in,out}`), so hours appear in Payroll's
+  attendance and pay run. Salary is set in Payroll -> Employees. All these
+  SECURITY DEFINER functions are restricted to `niche='salon'` tenants.
+- **Template**: a salon other than `showoffsalon` starts from
+  `makeTemplate()` in `server/src/salon-seed.js` (same design, neutral copy,
+  compact sample menu, placeholder logo/hero SVGs in `assets/template-*.svg`).
+  Branding is per tenant in Settings -> Branding (`settings.logo`,
+  `logoLight`, `heroPhoto`, `theme.{plum,gold,cream}`), applied by
+  `applyBrand()` in `assets/dom.js` on every page. Limitation: static `<meta>`
+  og/twitter tags, the favicon and manifest icons are still Showoff's (they
+  can't be per-tenant without server-rendered HTML).
+- **Demo** (`db/055_demo_salon.sql`): tenant `demo-salon` (is_demo) with
+  owner login `demo-salon@auzslab.in` / `Auzslab@Demo` (same as the other
+  demos) and a staff login `9000000001` / `Auzslab@Demo`. `makeDemo()` adds a
+  week of sample bookings, bills and expenses dated relative to today; `salon.js`
+  re-seeds the demo (plus its staff login and payroll employee) every 12 h. Demo
+  tenants cannot upload files, change passwords, or add staff. Linked from
+  `site/business-salons.html` and `site/demo.html`.
+- **Deploy** (in order): pull the branch, then
+  `psql ... < db/054_salon_staff_payroll.sql`, `psql ... < db/055_demo_salon.sql`,
+  `docker compose up -d --build api`, `docker compose restart caddy`.
+
 ## Non-technical owner, deploy over SSH from a phone
 
 The person operating this project deploys by pasting commands into
