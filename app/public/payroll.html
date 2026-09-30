@@ -4,10 +4,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel=stylesheet>
 <style>
 
-:root{--ink:#171717;--ink-dim:#4d4d4d;--ink-faint:#8c8c8c;--accent:#800020;--g:var(--accent);--l:rgba(23,23,23,.14);--bg-raised:#dedede;--radius-sm:14px;--radius-md:18px;--radius-lg:26px;--shadow-sm:0 1px 2px rgba(23,23,23,.06),0 6px 20px -10px rgba(23,23,23,.14);--shadow-md:0 4px 12px rgba(23,23,23,.08),0 20px 44px -16px rgba(23,23,23,.22);--ease:cubic-bezier(.4,0,.2,1)}*{box-sizing:border-box}body{margin:0;font:15px/1.5 Inter,system-ui,sans-serif;background:var(--bg-raised);color:var(--ink);-webkit-tap-highlight-color:transparent}
+:root{--ink:#171717;--ink-dim:#4d4d4d;--ink-faint:#8c8c8c;--accent:#800020;--g:var(--accent);--l:rgba(23,23,23,.14);--bg-raised:#dedede;--radius-sm:14px;--radius-md:18px;--radius-lg:26px;--shadow-sm:0 1px 2px rgba(23,23,23,.06),0 6px 20px -10px rgba(23,23,23,.14);--shadow-md:0 4px 12px rgba(23,23,23,.08),0 20px 44px -16px rgba(23,23,23,.22);--shadow-lift:0 10px 26px -8px rgba(23,23,23,.34),0 3px 8px rgba(23,23,23,.16);--accent-glow:0 4px 14px -2px rgba(128,0,32,.45);--ease:cubic-bezier(.4,0,.2,1)}*{box-sizing:border-box}body{margin:0;font:15px/1.5 Inter,system-ui,sans-serif;background:var(--bg-raised);color:var(--ink);-webkit-tap-highlight-color:transparent}
 button{font:inherit;cursor:pointer;padding:10px 15px;border:none;border-radius:var(--radius-sm);background:none;color:var(--ink-dim);transition:background .15s var(--ease),color .15s var(--ease),transform .12s var(--ease)}
 button:hover{background:var(--l)}button:active{transform:scale(.96)}
-button.p,button.on{background:var(--g);color:#fff}button.p:hover,button.on:hover{background:var(--g);opacity:.9}
+button.p,button.on{background:var(--g);color:#fff;box-shadow:var(--accent-glow);transition:background .15s var(--ease),color .15s var(--ease),transform .12s var(--ease),box-shadow .15s var(--ease)}button.p:hover,button.on:hover{background:var(--g);opacity:.9;transform:translateY(-1px);box-shadow:0 6px 18px -2px rgba(128,0,32,.55)}
 button.warn{color:var(--accent)}button.warn:hover{background:var(--accent);color:#fff}
 button:disabled{opacity:.4;background:none}
 input,select,textarea{font:inherit;font-size:16px;padding:10px 15px;border:1.5px solid var(--l);border-radius:var(--radius-sm);background:#fff;color:inherit;transition:border-color .15s var(--ease)}
@@ -16,7 +16,8 @@ h1,h2,h3{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,sys
 .top-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:max(14px, env(safe-area-inset-top)) 16px 14px;background:rgba(222,222,222,.85);backdrop-filter:saturate(180%) blur(16px)}
 .top-bar h1{font-size:18px;flex:1}
 .g{display:grid;gap:14px;padding:0 16px 90px}
-.card{background:#fff;border-radius:var(--radius-md);padding:16px;box-shadow:var(--shadow-sm)}
+.card{background:#fff;border-radius:var(--radius-md);padding:16px;box-shadow:var(--shadow-sm);transition:transform .18s var(--ease),box-shadow .18s var(--ease)}
+.card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lift)}
 .row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--l)}
 .row:last-child{border-bottom:none}
 .md{background:#fff;border-radius:var(--radius-lg);padding:22px;max-width:420px;width:100%;min-width:0;max-height:88vh;overflow:auto;box-shadow:var(--shadow-md);display:grid;gap:10px;animation:sheetIn .28s var(--ease)}

@@ -4,12 +4,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel=stylesheet>
 <style>
 
-:root{--ink:#171717;--ink-dim:#4d4d4d;--ink-faint:#8c8c8c;--accent:#800020;--g:var(--accent);--l:rgba(23,23,23,.14);--bg-raised:#dedede;--radius-sm:14px;--radius-md:18px;--radius-lg:26px;--shadow-sm:0 1px 2px rgba(23,23,23,.06),0 6px 20px -10px rgba(23,23,23,.14);--shadow-md:0 4px 12px rgba(23,23,23,.08),0 20px 44px -16px rgba(23,23,23,.22);--ease:cubic-bezier(.4,0,.2,1)}*{box-sizing:border-box}body{margin:0;font:15px/1.5 Inter,system-ui,sans-serif;background:var(--bg-raised);color:var(--ink);-webkit-tap-highlight-color:transparent;padding-bottom:40px}
+:root{--ink:#171717;--ink-dim:#4d4d4d;--ink-faint:#8c8c8c;--accent:#800020;--g:var(--accent);--l:rgba(23,23,23,.14);--bg-raised:#dedede;--radius-sm:14px;--radius-md:18px;--radius-lg:26px;--shadow-sm:0 1px 2px rgba(23,23,23,.06),0 6px 20px -10px rgba(23,23,23,.14);--shadow-md:0 4px 12px rgba(23,23,23,.08),0 20px 44px -16px rgba(23,23,23,.22);--shadow-lift:0 10px 26px -8px rgba(23,23,23,.34),0 3px 8px rgba(23,23,23,.16);--accent-glow:0 4px 14px -2px rgba(128,0,32,.45);--ease:cubic-bezier(.4,0,.2,1)}*{box-sizing:border-box}body{margin:0;font:15px/1.5 Inter,system-ui,sans-serif;background:var(--bg-raised);color:var(--ink);-webkit-tap-highlight-color:transparent;padding-bottom:40px}
 button{font:inherit;cursor:pointer;padding:10px 15px;border:none;border-radius:var(--radius-sm);background:none;color:var(--ink-dim);transition:background .15s var(--ease),color .15s var(--ease),transform .12s var(--ease)}
 button:hover{background:var(--l)}
 button:active{transform:scale(.96)}
-button.p,button.on{background:var(--g);color:#fff}
-button.p:hover,button.on:hover{background:var(--g);opacity:.9}
+button.p,button.on{background:var(--g);color:#fff;box-shadow:var(--accent-glow);transition:background .15s var(--ease),color .15s var(--ease),transform .12s var(--ease),box-shadow .15s var(--ease)}
+button.p:hover,button.on:hover{background:var(--g);opacity:.9;transform:translateY(-1px);box-shadow:0 6px 18px -2px rgba(128,0,32,.55)}
 button.warn{color:var(--accent)}
 button.warn:hover{background:var(--accent);color:#fff}
 button:disabled{opacity:.4;background:none}
@@ -35,13 +35,15 @@ input[type=checkbox]{width:22px;height:22px;flex-shrink:0;accent-color:var(--acc
 .drawer{position:fixed;top:0;left:0;bottom:0;width:76%;max-width:270px;background:#fff;z-index:51;overflow:auto;padding:max(14px, env(safe-area-inset-top)) 14px 14px;display:flex;flex-direction:column;gap:2px;box-shadow:var(--shadow-md);border-radius:0 26px 26px 0;transform:translateX(-100%);transition:transform .32s var(--ease)}
 .drawer.open{transform:translateX(0)}
 .drawer button{display:block;width:100%;text-align:left;padding:13px 14px;border-radius:var(--radius-sm);font-family:Inter,sans-serif;font-weight:600;font-size:15px;color:var(--ink);transition:background .15s var(--ease)}
-.drawer button.on{background:var(--accent);color:#fff}
+.drawer button.on{background:var(--accent);color:#fff;box-shadow:var(--accent-glow)}
 .g{display:grid;grid-template-columns:1fr 340px;gap:10px;padding:10px}@media(max-width:800px){.g{grid-template-columns:1fr}}
 .g1{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:10px;padding:10px;align-items:start}
-.card{background:#fff;border-radius:var(--radius-md);padding:14px;box-shadow:var(--shadow-sm)}
+.card{background:#fff;border-radius:var(--radius-md);padding:14px;box-shadow:var(--shadow-sm);transition:transform .18s var(--ease),box-shadow .18s var(--ease)}
+.card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lift)}
 .items{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:8px}
-.items button{text-align:left;min-height:64px;border-radius:var(--radius-sm);background:#fff;border:none;box-shadow:var(--shadow-sm);color:var(--ink);transition:transform .12s var(--ease),box-shadow .12s var(--ease)}
-.items button:hover{background:#fff;box-shadow:0 1px 3px rgba(23,23,23,.08),0 10px 24px -10px rgba(23,23,23,.18)}
+.items button{text-align:left;min-height:64px;border-radius:var(--radius-sm);background:#fff;border:none;box-shadow:var(--shadow-sm);color:var(--ink);transition:transform .15s var(--ease),box-shadow .15s var(--ease)}
+.items button:hover{background:#fff;transform:translateY(-3px);box-shadow:var(--shadow-lift)}
+.items button:active{transform:translateY(-1px) scale(.98)}
 .row{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid var(--l);flex-wrap:wrap}.row:last-child{border-bottom:none}
 .ov{position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;padding:10px;z-index:45;animation:ovIn .18s var(--ease)}
 @keyframes ovIn{from{opacity:0}to{opacity:1}}
@@ -56,10 +58,10 @@ table{width:100%;border-collapse:collapse}td,th{padding:5px;border-bottom:1px so
 .tabbar button.on{background:#fff;color:var(--ink);box-shadow:0 1px 4px rgba(23,23,23,.15)}
 .tabbar button.on:hover{background:#fff}
 .tbl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px;margin-top:2px}
-.tbl-tile{border-radius:var(--radius-sm);padding:10px;text-align:left;min-height:60px;border:1.5px solid transparent;background:#fff;color:var(--ink);box-shadow:var(--shadow-sm);transition:transform .12s var(--ease)}
-.tbl-tile:hover{background:#fff}
+.tbl-tile{border-radius:var(--radius-sm);padding:10px;text-align:left;min-height:60px;border:1.5px solid transparent;background:#fff;color:var(--ink);box-shadow:var(--shadow-sm);transition:transform .15s var(--ease),box-shadow .15s var(--ease)}
+.tbl-tile:hover{background:#fff;transform:translateY(-2px);box-shadow:var(--shadow-lift)}
 .tbl-tile.run{background:#fff3c4;border-color:#e0b400}
-.tbl-tile.sel{border-color:var(--accent);border-width:2px}
+.tbl-tile.sel{border-color:var(--accent);border-width:2px;box-shadow:var(--accent-glow)}
 
 .switch{position:relative;display:inline-block;width:46px;height:26px;flex-shrink:0}
 .switch input{opacity:0;width:100%;height:100%;margin:0;position:absolute;cursor:pointer;z-index:1}
@@ -115,7 +117,8 @@ const h=(t,a={},...k)=>{const e=document.createElement(t);for(const x in a){cons
 const ICONS={gift:'<rect x="4" y="9" width="16" height="11" rx="1"/><path d="M4 9h16M12 9v11"/><path d="M8 9c-1.5 0-3-1-3-3s1.5-2 3-1c1 .6 2 2 3 4zM16 9c1.5 0 3-1 3-3s-1.5-2-3-1c-1 .6-2 2-3 4z"/>',
  lock:'<rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
  bell:'<path d="M12 3a5 5 0 0 0-5 5v3.5c0 1-.4 2-1.2 2.7L5 15h14l-.8-.8A4 4 0 0 1 17 11.5V8a5 5 0 0 0-5-5Z"/><path d="M10 18a2 2 0 0 0 4 0"/>',
- star:'<path d="M12 3l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.2L6.6 19.3l1.3-6-4.6-4.1 6.1-.6z"/>'};
+ star:'<path d="M12 3l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.2L6.6 19.3l1.3-6-4.6-4.1 6.1-.6z"/>',
+ chevron:'<path d="M9 6l6 6-6 6"/>'};
 const icon=(name,sz)=>{const s=h('span',{style:'display:inline-flex;vertical-align:-3px'});s.innerHTML='<svg width="'+(sz||14)+'" height="'+(sz||14)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0">'+(ICONS[name]||'')+'</svg>';return s};
 const swatch=c=>h('span',{style:'width:9px;height:9px;border-radius:2px;background:'+c+';display:inline-block;vertical-align:-1px'});
 const L=k=>Object.values(R).filter(r=>r.kind==k&&!r.deleted).map(r=>r.data),tn=id=>{const t=R[id];return t&&!t.deleted?t.data.name:''};
@@ -215,6 +218,54 @@ function barRow(label,val,max,displayVal,color){
  return h('div',{style:'margin:6px 0'},h('div',{class:'row',style:'font-size:12.5px;margin-bottom:3px'},label,h('b',{},displayVal)),
   h('div',{style:'background:var(--l);border-radius:6px;height:8px;overflow:hidden'},h('div',{style:'background:'+(color||'var(--accent)')+';height:100%;width:'+(max?Math.max(2,Math.round(val/max*100)):0)+'%'})));
 }
+// Small inline-SVG chart set (no charting library, matching this codebase's
+// zero-dependency rule) -- a <div> with its innerHTML set to raw SVG, the
+// same trick icon() already uses for icons, since document.createElement
+// can't build namespaced SVG elements. `fixed` picks a set pixel size
+// (small chart glued to a legend, e.g. the donut) vs a responsive one that
+// fills its card and keeps its aspect ratio (the line/stacked-bar charts).
+function chartWrap(w,ht,inner,fixed){const d=document.createElement('div');if(fixed){d.style.width=w+'px';d.style.flexShrink='0'}else d.style.width='100%';
+ d.innerHTML='<svg viewBox="0 0 '+w+' '+ht+'" width="100%" height="'+(fixed?ht:'auto')+'" style="display:block;overflow:visible;aspect-ratio:'+w+'/'+ht+'">'+inner+'</svg>';return d}
+function lineChart(points,color){
+ if(!points.some(p=>p.y>0))return h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No data in this range.');
+ const w=640,ht=180,pad=28,c=color||'#800020',maxY=Math.max(1,...points.map(p=>p.y));
+ const stepX=points.length>1?(w-pad*2)/(points.length-1):0,xAt=i=>pad+i*stepX,yAt=v=>ht-pad-v/maxY*(ht-pad*2);
+ const linePts=points.map((p,i)=>xAt(i)+','+yAt(p.y)).join(' ');
+ const areaPts='M'+xAt(0)+','+(ht-pad)+' L'+points.map((p,i)=>xAt(i)+','+yAt(p.y)).join(' L')+' L'+xAt(points.length-1)+','+(ht-pad)+' Z';
+ const dots=points.map((p,i)=>'<circle cx="'+xAt(i)+'" cy="'+yAt(p.y)+'" r="3" fill="'+c+'"><title>'+esc(p.x)+': '+inr(p.y)+'</title></circle>').join('');
+ const step=Math.max(1,Math.ceil(points.length/8)),labels=points.map((p,i)=>(i%step==0||i==points.length-1)?'<text x="'+xAt(i)+'" y="'+(ht-8)+'" font-size="9" fill="var(--ink-faint)" text-anchor="middle" font-family=\'Space Mono,monospace\'>'+esc(p.x)+'</text>':'').join('');
+ const inner='<line x1="'+pad+'" y1="'+(ht-pad)+'" x2="'+(w-pad)+'" y2="'+(ht-pad)+'" stroke="var(--l)" stroke-width="1"/>'
+  +'<path d="'+areaPts+'" fill="'+c+'" opacity=".12"/>'
+  +'<polyline points="'+linePts+'" fill="none" stroke="'+c+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'+dots+labels;
+ return chartWrap(w,ht,inner);
+}
+function donutChart(segments){
+ const total=segments.reduce((a,s)=>a+s.value,0);
+ if(!total)return h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No data in this range.');
+ const r=48,cx=60,cy=60,circ=2*Math.PI*r;let offset=0;
+ const arcs=segments.filter(s=>s.value>0).map(s=>{const frac=s.value/total,len=frac*circ,gap=Math.min(2,len);
+  const dash=Math.max(0,len-gap)+' '+(circ-Math.max(0,len-gap)),el='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+s.color+'" stroke-width="18" stroke-dasharray="'+dash+'" stroke-dashoffset="'+(-offset)+'" transform="rotate(-90 '+cx+' '+cy+')"><title>'+esc(s.label)+': '+Math.round(frac*100)+'%</title></circle>';
+  offset+=len;return el}).join('');
+ const inner='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="var(--l)" stroke-width="18"/>'+arcs
+  +'<text x="'+cx+'" y="'+(cy-2)+'" text-anchor="middle" font-size="14" font-weight="700" fill="var(--ink)" font-family="Inter,sans-serif">'+inr(total)+'</text>'
+  +'<text x="'+cx+'" y="'+(cy+12)+'" text-anchor="middle" font-size="8.5" fill="var(--ink-faint)" font-family=\'Space Mono,monospace\'>TOTAL</text>';
+ const legend=h('div',{style:'display:grid;gap:5px;flex:1;min-width:140px'},...segments.filter(s=>s.value>0).map(s=>h('div',{style:'display:flex;align-items:center;gap:6px;font-size:12.5px'},swatch(s.color),h('span',{},s.label),h('b',{style:'margin-left:auto'},Math.round(s.value/total*100)+'%'))));
+ return h('div',{style:'display:flex;align-items:center;gap:14px;flex-wrap:wrap'},chartWrap(120,120,inner,true),legend);
+}
+function stackedBarChart(buckets,series){
+ if(!buckets.some(b=>Object.values(b.values).some(v=>v>0)))return h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No data in this range.');
+ const w=640,ht=180,pad=26,barGap=3,slot=(w-pad*2)/buckets.length,bw=Math.max(2,slot-barGap);
+ const maxTotal=Math.max(1,...buckets.map(b=>series.reduce((a,s)=>a+(b.values[s.key]||0),0)));
+ const step=Math.max(1,Math.ceil(buckets.length/8));
+ const bars=buckets.map((b,i)=>{const x=pad+i*slot+barGap/2;let y=ht-pad,segs='';
+  series.forEach(s=>{const v=b.values[s.key]||0;if(!v)return;const segH=v/maxTotal*(ht-pad*2);y-=segH;
+   segs+='<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+Math.max(0,segH-1)+'" fill="'+s.color+'" rx="1.5"><title>'+esc(b.label)+' · '+esc(s.label)+': '+v+'</title></rect>'});
+  const lbl=(i%step==0||i==buckets.length-1)?'<text x="'+(x+bw/2)+'" y="'+(ht-8)+'" font-size="8.5" fill="var(--ink-faint)" text-anchor="middle" font-family=\'Space Mono,monospace\'>'+esc(b.label)+'</text>':'';
+  return segs+lbl}).join('');
+ const inner='<line x1="'+pad+'" y1="'+(ht-pad)+'" x2="'+(w-pad)+'" y2="'+(ht-pad)+'" stroke="var(--l)" stroke-width="1"/>'+bars;
+ return chartWrap(w,ht,inner);
+}
+function chartLegend(series){return h('div',{style:'display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-dim);margin-top:6px'},...series.map(s=>h('span',{style:'display:flex;align-items:center;gap:5px'},swatch(s.color),s.label)))}
 function analyticsPane(){
  const presets=[['today','Today'],['week','This week'],['month','This month'],['year','This year'],['custom','Custom']];
  const period=S.anPeriod||'month',now_=new Date(),localDay=iso=>new Date(iso).toLocaleDateString('en-CA');
@@ -232,13 +283,35 @@ function analyticsPane(){
  const grossProfit=r2(netSales-cogs),opEx=r2(ex.reduce((a,e)=>a+e.amt,0)),netProfit=r2(grossProfit-opEx),marginPct=netSales?Math.round(netProfit/netSales*100):0;
  const hourBuckets={};os.forEach(o=>{const hr=new Date(o.paidAt).getHours();hourBuckets[hr]=(hourBuckets[hr]||0)+1});
  const peakRows=Object.entries(hourBuckets).sort((a,b)=>b[1]-a[1]).slice(0,5);
+ // Revenue trend: daily buckets for short ranges, monthly once the range
+ // gets long enough (>60 days) that a daily line would be an unreadable
+ // sawtooth -- filled with 0 for empty days/months so the line stays
+ // continuous instead of skipping gaps.
+ const daySpan=Math.round((new Date(to)-new Date(from))/86400000)+1,trendByMonth=daySpan>60,trendTotals={};
+ os.forEach(o=>{const key=trendByMonth?localDay(o.paidAt).slice(0,7):localDay(o.paidAt);trendTotals[key]=r2((trendTotals[key]||0)+o.t.total)});
+ const trendPoints=[];
+ if(trendByMonth){let d=new Date(from.slice(0,7)+'-01');const end=new Date(to.slice(0,7)+'-01');while(d<=end){const key=d.toLocaleDateString('en-CA').slice(0,7);trendPoints.push({x:key.slice(5),y:trendTotals[key]||0});d.setMonth(d.getMonth()+1)}}
+ else{let d=new Date(from+'T00:00:00');const end=new Date(to+'T00:00:00');while(d<=end){const key=d.toLocaleDateString('en-CA');trendPoints.push({x:key.slice(5),y:trendTotals[key]||0});d.setDate(d.getDate()+1)}}
+ // Payment mix: donut over actual cash/upi/card/other split (net of any
+ // cash change given back), reusing the same p.m keys pay() already writes.
+ const PAY_COLOR={cash:'#800020',card:'#2d5f8a',upi:'#1f6b3a',other:'#c98a00'},payTotals={};
+ os.forEach(o=>o.pays.forEach(p=>{payTotals[p.m]=r2((payTotals[p.m]||0)+p.amt-(p.m=='cash'?o.change||0:0))}));
+ const paySegments=Object.entries(payTotals).map(([m,v])=>({label:m.toUpperCase(),value:Math.max(0,v),color:PAY_COLOR[m]||'#6b6b6b'}));
+ // Order fulfilment mix: order count per hour, stacked by order type, so
+ // a busy hour's Dine-in/Takeaway/Delivery/Sale split is visible at once
+ // instead of only the combined "orders this hour" number Peak hours shows.
+ const TYPE_COLOR2={'Dine-in':'#800020','Takeaway':'#c98a00','Delivery':'#1f6b3a','Sale':'#2d5f8a'},hourTypeBuckets={};
+ os.forEach(o=>{const hr=new Date(o.paidAt).getHours();(hourTypeBuckets[hr]=hourTypeBuckets[hr]||{})[o.type]=(hourTypeBuckets[hr][o.type]||0)+1});
+ const presentTypes=[...new Set(os.map(o=>o.type))],typeSeries=presentTypes.map(t=>({key:t,label:t,color:TYPE_COLOR2[t]||'#6b6b6b'}));
+ const hourStackBuckets=Array.from({length:24},(_,hr)=>({label:hr+'h',values:hourTypeBuckets[hr]||{}}));
  const perf={};os.forEach(o=>o.lines.forEach(l=>{const it=R[l.id],cost=it&&!it.deleted?unitCost(it.data)*l.qty:0,rev=l.price*l.qty,k=l.name,p=perf[k]||(perf[k]={qty:0,rev:0,cost:0});p.qty+=l.qty;p.rev=r2(p.rev+rev);p.cost=r2(p.cost+cost)}));
  const perfRows=Object.entries(perf).map(([name,v])=>({name,...v,profit:r2(v.rev-v.cost)})).sort((a,b)=>b.rev-a.rev);
  const top5=perfRows.slice(0,5),bottom5=perfRows.length>5?perfRows.slice(-5).reverse():[];
  const target=+cfg().salesTarget||0,mf=new Date(now_.getFullYear(),now_.getMonth(),1).toLocaleDateString('en-CA'),monthSales=r2(L('order').filter(o=>o.status=='paid'&&o.paidAt&&localDay(o.paidAt)>=mf&&localDay(o.paidAt)<=today()).reduce((a,o)=>a+o.t.total,0)),targetPct=target?Math.min(100,Math.round(monthSales/target*100)):null;
  return h('div',{class:'g1'},
-  h('div',{class:'card'},h('div',{class:'row',style:'flex-wrap:wrap'},...presets.map(([v,l])=>h('button',{class:period==v?'on':'',onclick:()=>{S.anPeriod=v;render()}},l))),
+  h('div',{class:'card',style:'grid-column:1/-1'},h('div',{class:'row',style:'flex-wrap:wrap'},...presets.map(([v,l])=>h('button',{class:period==v?'on':'',onclick:()=>{S.anPeriod=v;render()}},l))),
    period=='custom'?h('div',{class:'row'},h('input',{type:'date',value:from,onchange:e=>{S.anFrom=e.target.value;render()}}),' to ',h('input',{type:'date',value:to,onchange:e=>{S.anTo=e.target.value;render()}})):null),
+  h('div',{class:'card',style:'grid-column:1/-1'},h('h3',{},'Revenue trend'),lineChart(trendPoints)),
   h('div',{class:'card'},h('h3',{},'Profit & Loss'),
    barRow('Gross sales',grossSales,grossSales||1,inr(grossSales)),
    barRow('Discounts',discounts,grossSales||1,'-'+inr(discounts),'#c98a00'),
@@ -251,7 +324,9 @@ function analyticsPane(){
   h('div',{class:'card'},h('h3',{},'Monthly sales target'),
    h('div',{class:'row'},h('input',{type:'number',placeholder:'Set monthly target',value:cfg().salesTarget||'',onblur:async e=>{await save('settings',{...cfg(),salesTarget:+e.target.value||0},'settings');render()}})),
    target?h('div',{},h('div',{class:'row'},'This month',inr(monthSales)+' of '+inr(target)),h('div',{style:'background:var(--l);border-radius:999px;height:10px;overflow:hidden;margin-top:4px'},h('div',{style:'background:var(--accent);height:100%;width:'+targetPct+'%'}))):h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Set a target above to track progress.')),
+  h('div',{class:'card'},h('h3',{},'Payment mix'),donutChart(paySegments)),
   h('div',{class:'card'},h('h3',{},'Peak hours'),peakRows.length?peakRows.map(([hr,n])=>barRow(hr+':00–'+hr+':59',n,peakRows[0][1],n+' order'+(n>1?'s':''))):h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No paid orders in this range.')),
+  h('div',{class:'card',style:'grid-column:1/-1'},h('h3',{},'Order fulfilment mix by hour'),stackedBarChart(hourStackBuckets,typeSeries),chartLegend(typeSeries)),
   h('div',{class:'card'},h('h3',{},'Top-selling'),...top5.map(p=>barRow(p.name,p.rev,top5[0].rev||1,p.qty+' · '+inr(p.rev)+' · '+inr(p.profit)+' profit','#1f7a3d'))),
   bottom5.length?h('div',{class:'card'},h('h3',{},'Lower-selling'),h('p',{style:'font-size:12px;color:var(--ink-dim)'},'Numbers only — doesn\'t mean cut it.'),...bottom5.map(p=>barRow(p.name,p.rev,bottom5[0].rev||1,p.qty+' · '+inr(p.rev)+' · '+inr(p.profit)+' profit','#c98a00'))):null,
   feedbackCard());
@@ -355,9 +430,25 @@ function item(i){const isR=isRetail();const px=h('input',{type:'number',value:i.
   if(dupeCode&&!confirm('Barcode "'+dupeCode+'" is already used on another item/variant. Scanning it will always resolve to whichever matches first. Save anyway?'))return;
   await save('item',{...i,name:nm.value.trim(),cat:ct.value,price:+px.value||(sizes[0]&&sizes[0].p)||0,sizes,variants,low:isR?(lowInp.value===''?2:+lowInp.value):i.low,off:off.checked,offUntil,rec:isR?'':rc.value.trim(),cost:+cs.value||0,st:stn.value,mods,barcode,veg:isR?i.veg:veg.value,desc:isR?i.desc:desc.value.trim(),img:isR?i.img:imgUrl,recipeText:isR?i.recipeText:recipeText.value.trim(),combo:isR?false:combo.checked,comboText:isR?'':comboText.value.trim()});x();render()}},'Save'),i.id?h('button',{onclick:async()=>{await save('item',i,i.id,true);x();render()}},'Delete'):null))}
 const VEG_COLOR={veg:'#2e7d32',nonveg:'#b3261e',egg:'#c98a00'};
-V.menu=()=>{const isR=isRetail(),previewing=cfg().isDemo&&S.previewNiche;return h('div',{class:'g1'},
+// Categories used to render as one continuous list, every item of every
+// category expanded at once -- fine with a handful of items, but a real
+// menu with a dozen categories turned this into one long scroll with no
+// way to focus on just one section. Each category is now its own
+// collapse/expand row (S.menuOpen tracks which ones are open, keyed by
+// category id) so opening one section doesn't require scrolling past
+// every other category's items to find it.
+V.menu=()=>{const isR=isRetail(),previewing=cfg().isDemo&&S.previewNiche;if(!S.menuOpen)S.menuOpen={};
+ const cats=effCats().sort((a,b)=>a.n-b.n);
+ return h('div',{class:'g1'},
  previewing?h('p',{style:'color:var(--accent);font-size:13px'},'Previewing a sample '+S.previewNiche+' menu — read only. Pick "Current" in Settings → Business to go back to editing your real menu.'):null,
- h('div',{class:'card'},h('div',{class:'row'},h('h3',{},isR?'Products':'Menu'),previewing?null:h('span',{},h('button',{onclick:()=>{const n=prompt('Category name');n&&save('cat',{name:n,n:Date.now()}).then(render)}},'Add category'),h('button',{class:'p',onclick:()=>item({})},isR?'Add product':'Add item'))),...effCats().sort((a,b)=>a.n-b.n).map(c=>h('div',{},h('div',{class:'row'},h('b',{},c.name),previewing?null:h('button',{onclick:()=>confirm('Delete category?')&&save('cat',c,c.id,true).then(render)},'Delete')),...effItems().filter(i=>i.cat==c.id).map(i=>h('div',{class:'row'},h('span',{},isR?null:[swatch(VEG_COLOR[i.veg||'veg']),' '],i.name,i.combo?[' ',icon('gift')]:null,itemOff(i)?' (sold out'+(i.offUntil?' until '+new Date(i.offUntil).toLocaleString():'')+')':''),isR?inr(i.price)+' · '+variantQty(i)+' in stock':(i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price)),previewing?null:h('button',{onclick:()=>item(i)},'Edit')))))))};
+ h('div',{class:'card',style:'grid-column:1/-1'},h('div',{class:'row'},h('h3',{},isR?'Products':'Menu'),previewing?null:h('span',{},h('button',{onclick:()=>{const n=prompt('Category name');n&&save('cat',{name:n,n:Date.now()}).then(render)}},'Add category'),h('button',{class:'p',onclick:()=>item({})},isR?'Add product':'Add item'))),
+  ...cats.map(c=>{const its=effItems().filter(i=>i.cat==c.id),open=!!S.menuOpen[c.id];
+   return h('div',{style:'border-top:1px solid var(--l)'},
+    h('div',{class:'row',style:'cursor:pointer;padding:10px 0',onclick:()=>{S.menuOpen[c.id]=!open;render()}},
+     h('span',{style:'display:flex;align-items:center;gap:8px'},h('span',{style:'display:inline-flex;transition:transform .15s var(--ease);transform:rotate('+(open?90:0)+'deg)'},icon('chevron')),h('b',{},c.name),h('span',{style:'font-size:11.5px;color:var(--ink-faint)'},'('+its.length+')')),
+     previewing?null:h('button',{onclick:e=>{e.stopPropagation();confirm('Delete category?')&&save('cat',c,c.id,true).then(render)}},'Delete')),
+    open?h('div',{style:'padding:0 0 8px 26px;display:grid'},...its.map(i=>h('div',{class:'row'},h('span',{},isR?null:[swatch(VEG_COLOR[i.veg||'veg']),' '],i.name,i.combo?[' ',icon('gift')]:null,itemOff(i)?' (sold out'+(i.offUntil?' until '+new Date(i.offUntil).toLocaleString():'')+')':''),isR?inr(i.price)+' · '+variantQty(i)+' in stock':(i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price)),previewing?null:h('button',{onclick:()=>item(i)},'Edit')))):null)
+  })))};
 V.set=()=>{const s=cfg(),F={},sel=(k,l,o)=>h('label',{},l,h('select',{style:'width:100%',onchange:e=>F[k]=e.target.value},...o.map(([v,n])=>h('option',{value:v,selected:String(s[k]||o[0][0])==String(v)},n)))),f=(k,l,t)=>h('label',{},l,h('input',{type:t||'text',value:s[k],style:'width:100%',oninput:e=>F[k]=t=='number'?+e.target.value:e.target.value})),ta=(k,l)=>h('label',{},l,h('textarea',{style:'width:100%;min-height:70px',oninput:e=>F[k]=e.target.value},s[k]||''));
  const sw=(k,title,desc)=>h('div',{class:'hw-row'},h('div',{class:'hw-text'},h('b',{},title),h('span',{},desc)),h('label',{class:'switch'},h('input',{type:'checkbox',checked:!!s[k],onchange:async e=>{await save('settings',{...cfg(),[k]:e.target.checked},'settings');render()}}),h('div',{class:'track'})));
  const imgField=(k,l)=>{const inp=h('input',{type:'file',accept:'image/*'}),prev=h('div',{style:'font-size:12px;color:var(--ink-dim)'},s[k]?'Current image is set':'No image yet');inp.onchange=async()=>{const file=inp.files[0];if(!file)return;prev.textContent='Compressing & uploading…';try{F[k]=await uploadSiteImage(file,k);prev.textContent='Uploaded ✓ — click Save to apply'}catch(e){prev.textContent='Upload failed: '+e.message}};return h('label',{style:'display:grid;gap:4px'},l,inp,prev)};
