@@ -238,6 +238,10 @@
           <label for="editNotes">Notes</label>
           <textarea id="editNotes" placeholder="Anything worth remembering about this client"></textarea>
         </div>
+        <div class="field">
+          <label>Services entitled</label>
+          <div id="editFeatures" style="display:flex;flex-wrap:wrap;gap:10px"></div>
+        </div>
         <button type="submit" class="btn btn-primary form-submit">Save</button>
         <div id="editErr" class="err"></div>
       </form>
@@ -723,6 +727,11 @@ function openEditModal(id) {
   document.getElementById('editRenewal').value = c.renewal_date || '';
   document.getElementById('editStatus').value = c.status;
   document.getElementById('editNotes').value = c.notes || '';
+  const entitled = c.features || {};
+  document.getElementById('editFeatures').innerHTML = Object.entries(FEATURE_LABEL).map(([k, label]) => `
+    <label style="display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:400">
+      <input type="checkbox" data-feat-key="${esc(k)}" ${entitled[k] === true ? 'checked' : ''}> ${esc(label)}
+    </label>`).join('');
   document.getElementById('editErr').textContent = '';
   document.getElementById('editOverlay').classList.add('open');
 }
@@ -745,6 +754,10 @@ document.getElementById('editForm').onsubmit = async (e) => {
     p_status: status,
   });
   if (error) { errEl.textContent = error.message; return; }
+  const features = {};
+  document.querySelectorAll('#editFeatures [data-feat-key]').forEach((cb) => { features[cb.dataset.featKey] = cb.checked; });
+  const { error: featErr } = await sb.rpc('admin_set_tenant_features', { p_tenant_id: id, p_features: features });
+  if (featErr) { errEl.textContent = featErr.message; return; }
   document.getElementById('editOverlay').classList.remove('open');
   loadClients();
 };
