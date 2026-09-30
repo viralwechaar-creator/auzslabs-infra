@@ -359,6 +359,53 @@ Don't be surprised by this and don't try to force-push or rebase around
 it — merging `origin/main` into the branch (never the reverse) and
 resolving in favor of HEAD is the established, repeatable fix.
 
+## Onboarding a real client's menu/inventory via a data-import migration
+
+`db/049`→`052` (Mannat Cafe) is the reference case for "client sends a
+PDF/spreadsheet of their real menu and ingredients, import it as a
+one-time migration" (same category as `db/010`'s OG Book Cafe import,
+but for a brand-new tenant instead of a Supabase migration). Three
+things bit this specific import, all worth checking before the next one:
+
+- **Check whether the tenant already exists before assuming your
+  migration is the one creating it.** The admin onboarding flow (or a
+  platform admin manually) can create a tenant with the target slug
+  before your import migration ever runs — `provision_tenant` being
+  idempotent (see above) means a second onboarding attempt doesn't
+  error, it just silently reuses/updates the existing row. Mannat's
+  import script correctly detected this (`if exists (select 1 from
+  tenants where slug = ...)`) and refused rather than risk a
+  duplicate — but that meant the actual menu import had to become a
+  *second* migration (`db/050`) against the pre-existing tenant,
+  retiring (soft-deleting, never hard-deleting) whatever placeholder
+  content was already there rather than assuming a clean slate.
+- **`index.html`'s `seed()` auto-populates a placeholder menu ("Tea"
+  category, Masala Tea ₹25 / Coffee ₹49, tables T1–T6) the first time
+  any owner opens the POS with zero categories.** If a client's tenant
+  was created before their real menu was ready, expect this
+  placeholder content to already be sitting there by the time you
+  import the real thing — find it by its exact seeded prices (25/49)
+  before deleting, so a client's own genuine "Masala Tea" added later
+  is never caught by the same cleanup.
+- **The `item` record schema has grown fields since `db/049` was first
+  written that a bulk-import migration must set explicitly, or every
+  item silently gets the default.** `veg` (`'veg'|'nonveg'|'egg'`,
+  defaults to `'veg'` when absent — `db/051` is the fix-after-the-fact
+  for six chicken dishes that imported with no `veg` key and therefore
+  showed under the Veg filter) is the one that's bitten so far; check
+  `index.html`'s item editor (search for `i.veg||`, `i.photo`, etc.)
+  for the current full field list before writing the next import,
+  since this list will keep growing.
+- **A tenant's `tenant_settings.features` entitlement can be missing
+  a flag the niche preset says it should have**, independent of
+  anything an import migration touches — `db/052` (Mannat missing
+  `kds`, which hid the Kitchen/KOT tabs) traced back to whatever
+  process originally provisioned the tenant, not to the menu import at
+  all. If a client reports a whole tab/section missing (not just wrong
+  data), check `tenant_settings.features`/`enabled_features` directly
+  before assuming it's a code bug — `featureOn()`'s definition is
+  above ("Feature flags: two layers").
+
 ## Non-technical owner, deploy over SSH from a phone
 
 The person operating this project deploys by pasting commands into
