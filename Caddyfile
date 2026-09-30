@@ -59,6 +59,12 @@
         root * /srv/uploads
         file_server
     }
+    # try_files below doesn't count a bare directory (/salon/, /salon/menu/,
+    # /salon/admin/) as an existing file and would hand it to land.html,
+    # which redirects straight back here (a loop) -- so map them to their
+    # index.html explicitly first.
+    @salonDir path_regexp sd ^(/salon(?:/[a-z]+)?)/?$
+    rewrite @salonDir {re.sd.1}/index.html
     @salonInvoice path_regexp ^/i/[a-f0-9]{8,32}$
     rewrite @salonInvoice /salon/invoice.html
     file_server
