@@ -54,35 +54,129 @@ function freshDb(tenant) {
   if (tenant.is_demo) { const d = makeDemo(todayStr()); d.seededAt = Date.now(); return d; }
   return makeTemplate(tenant.name);
 }
+
+// ---- storage layout ----
+// A salon's document is stored in TWO rows so the public website never has to
+// touch (or rewrite) the private, fast-growing part:
+//   key 'site' = settings, menu, content, stylists, gallery   (small, public)
+//   key 'data' = bookings, invoices, expenses, counters       (grows every day)
+// `loadDb()` / `mutate()` still hand handlers the familiar combined object, so
+// the endpoint code below is unchanged. Older salons were one 'db' row: it is
+// split on first use (initStorage) and kept as 'db_backup'.
+const DATA_FIELDS = ['bookings', 'invoices', 'expenses', 'counters'];
+function splitDb(db) {
+  const site = {}, data = {};
+  for (const [k, v] of Object.entries(db || {})) (DATA_FIELDS.includes(k) ? data : site)[k] = v;
+  return { site, data };
+}
+
+// In-memory caches (this API runs as a single process; every write below goes
+// through this process and clears the affected entry, so they are never stale
+// after an edit; the TTL only bounds how long an edit made some other way,
+// e.g. by hand in SQL, can take to show).
+const SITE_TTL = 30_000, SLOT_TTL = 30_000, CACHE_MAX = 500;
+const siteCache = new Map(), slotCache = new Map();
+function cacheSet(map, tid, v) { if (map.size >= CACHE_MAX) map.clear(); map.set(tid, { v, at: Date.now() }); }
+const cacheGet = (map, tid, ttl) => { const h = map.get(tid); return h && Date.now() - h.at < ttl ? h.v : null; };
+// A write bumps the salon's generation; a read that started before the write finished
+// will not be cached (it may hold pre-write data).
+const gens = new Map();
+const genOf = (tid) => gens.get(tid) || 0;
+const dropCaches = (tid) => { gens.set(tid, genOf(tid) + 1); siteCache.delete(tid); slotCache.delete(tid); };
+// When many requests miss the cache at the same instant (right after an edit), only
+// the first one reads the database; the rest wait for that same answer.
+const inflight = new Map();
+function once(key, fn) {
+  let p = inflight.get(key);
+  if (!p) { p = fn().finally(() => inflight.delete(key)); inflight.set(key, p); }
+  return p;
+}
+
 const DEMO_PASSWORD = 'Auzslab@Demo'; // same public demo password as demo-cafe / demo-retail (db/025)
 const DEMO_TTL = 12 * 3600 * 1000;
 // The public demo salon puts itself back to a clean, populated state every
 // 12 hours (and recreates its sample staff login + payroll employee).
 async function reseedDemo(tenant) {
-  const db = freshDb(tenant);
+  const { site, data } = splitDb(freshDb(tenant));
   const eid = (await pool.query('select salon_hr_ensure($1, $2, $3, $4) as id', [tenant.id, 'Priya', DEMO_STAFF_PHONE, 'Senior hair stylist'])).rows[0].id;
   const client = await pool.connect();
   try {
     await client.query('begin');
-    await writeKey(client, tenant.id, 'db', db);
+    await writeKey(client, tenant.id, 'site', site);
+    await writeKey(client, tenant.id, 'data', data);
     await writeKey(client, tenant.id, 'staff', { list: [{ id: '00000000-0000-4000-8000-000000000001', name: 'Priya', phone: DEMO_STAFF_PHONE, designation: 'Senior hair stylist',
       passwordHash: hashPassword(DEMO_PASSWORD), active: true, employeeId: eid, createdAt: new Date().toISOString() }] });
     await writeKey(client, tenant.id, 'admin', {});
     await client.query('commit');
   } catch (e) { await client.query('rollback').catch(() => {}); throw e; } finally { client.release(); }
-  return db;
+  dropCaches(tenant.id);
+  return { site, data };
 }
+
+// First use of a salon's storage: split a legacy single 'db' row, or create a
+// brand-new salon from its template. Serialised per salon with an advisory lock
+// so two first requests can't both initialise it.
+async function initStorage(tenant) {
+  const tid = tenant.id, client = await pool.connect();
+  try {
+    await client.query('begin');
+    await client.query('select pg_advisory_xact_lock(hashtext($1))', ['salon-init:' + tid]);
+    let site = await readKey(client, tid, 'site');
+    if (!site) {
+      const legacy = await readKey(client, tid, 'db');
+      const parts = splitDb(legacy || freshDb(tenant));
+      site = parts.site;
+      await writeKey(client, tid, 'site', parts.site);
+      await writeKey(client, tid, 'data', parts.data);
+      if (legacy) {
+        await writeKey(client, tid, 'db_backup', legacy);
+        await client.query("delete from salon_store where tenant_id = $1 and key = 'db'", [tid]);
+      }
+    }
+    await client.query('commit');
+    return site;
+  } catch (e) { await client.query('rollback').catch(() => {}); throw e; } finally { client.release(); }
+}
+
+// The public half (cached). Everything the website, menu page and booking form need.
+async function loadSite(tenant) {
+  const hit = cacheGet(siteCache, tenant.id, SITE_TTL);
+  return hit || once('site:' + tenant.id, () => loadSiteUncached(tenant));
+}
+async function loadSiteUncached(tenant) {
+  const tid = tenant.id, g = genOf(tid);
+  let site = await readKey(pool, tid, 'site');
+  if (!site) site = await initStorage(tenant);
+  if (tenant.is_demo && (!site.seededAt || Date.now() - site.seededAt > DEMO_TTL)) site = (await reseedDemo(tenant)).site;
+  if (genOf(tid) === g) cacheSet(siteCache, tid, site);
+  return site;
+}
+// Everything, as one object (admin screens, export). Not cached.
 async function loadDb(tenant) {
-  let db = await readKey(pool, tenant.id, 'db');
-  if (tenant.is_demo && (!db || !db.seededAt || Date.now() - db.seededAt > DEMO_TTL)) return reseedDemo(tenant);
-  if (db) return db;
-  db = freshDb(tenant);
-  await pool.query(
-    `insert into salon_store (tenant_id, key, data) values ($1, 'db', $2) on conflict do nothing`,
-    [tenant.id, JSON.stringify(db)],
-  );
-  return (await readKey(pool, tenant.id, 'db')) || db;
+  const site = await loadSite(tenant);
+  const data = (await readKey(pool, tenant.id, 'data')) || {};
+  return { ...site, ...data };
 }
+// Booked-slot counts per date and time, for the public slot picker (cached, so
+// a busy booking page does not re-read the salon's whole bookings list).
+async function bookingCounts(tenant) {
+  const hit = cacheGet(slotCache, tenant.id, SLOT_TTL);
+  return hit || once('slots:' + tenant.id, () => bookingCountsUncached(tenant));
+}
+async function bookingCountsUncached(tenant) {
+  const tid = tenant.id;
+  await loadSite(tenant); // make sure storage exists
+  const g = genOf(tid);
+  const data = (await readKey(pool, tid, 'data')) || {};
+  const from = new Date(Date.now() - 2 * 864e5).toISOString().slice(0, 10), counts = {};
+  for (const b of data.bookings || []) {
+    if (b.status === 'cancelled' || b.date < from) continue;
+    ((counts[b.date] = counts[b.date] || {})[b.time] = (counts[b.date][b.time] || 0) + 1);
+  }
+  if (genOf(tid) === g) cacheSet(slotCache, tid, counts);
+  return counts;
+}
+
 // Same, for any other salon_store key (staff list, admin record): row-locked
 // read-modify-write, creating the row from `init` if it doesn't exist yet.
 async function mutateKey(tid, key, fn, init) {
@@ -100,17 +194,27 @@ async function mutateKey(tid, key, fn, init) {
     throw e;
   } finally { client.release(); }
 }
-// Read-modify-write under a row lock; fn gets the live db and may mutate
-// it (or return a replacement via {replace}); its return value is passed on.
-async function mutate(tenant, fn) {
-  await loadDb(tenant);
-  const client = await pool.connect();
+// Read-modify-write under row locks. `parts` = which halves the handler needs
+// to see ('site', 'data'); `write` = which halves it may change (only those are
+// locked and saved, so a booking never rewrites the website half and a menu edit
+// never rewrites the bookings). Locks are always taken site-then-data. fn gets
+// the combined object; it may return {replace, value} to swap the whole document.
+async function mutate(tenant, fn, parts = ['site', 'data'], write = parts) {
+  await loadSite(tenant);
+  const tid = tenant.id, client = await pool.connect();
   try {
     await client.query('begin');
-    const db = await readKey(client, tenant.id, 'db', true);
+    const db = {};
+    for (const part of ['site', 'data']) {
+      if (parts.includes(part) || write.includes(part)) Object.assign(db, (await readKey(client, tid, part, write.includes(part))) || {});
+    }
     const out = await fn(db);
-    await writeKey(client, tenant.id, 'db', out && out.replace ? out.replace : db);
+    const next = out && out.replace ? out.replace : db;
+    const { site, data } = splitDb(next);
+    if (write.includes('site')) await writeKey(client, tid, 'site', site);
+    if (write.includes('data')) await writeKey(client, tid, 'data', data);
     await client.query('commit');
+    dropCaches(tid);
     return out && out.replace ? out.value : out;
   } catch (e) {
     await client.query('rollback').catch(() => {});
@@ -185,8 +289,8 @@ function publicSite(db) {
   };
 }
 
-function computeSlots(db, date) {
-  const S = db.settings;
+function computeSlots(site, counts, date) {
+  const S = site.settings;
   if (!validDate(date)) fail(400, 'Invalid date.');
   const day = new Date(date + 'T00:00:00Z').getUTCDay();
   if ((S.closedDays || []).includes(day)) return { closed: true, reason: 'Closed that day.', slots: [] };
@@ -194,12 +298,11 @@ function computeSlots(db, date) {
   const [ch, cm] = S.close.split(':').map(Number);
   const step = S.slotMinutes || 30;
   const capacity = S.capacity || 1;
-  const counts = {};
-  for (const b of db.bookings || []) if (b.date === date && b.status !== 'cancelled') counts[b.time] = (counts[b.time] || 0) + 1;
+  const booked = counts[date] || {};
   const slots = [];
   for (let m = oh * 60 + om; m < ch * 60 + cm; m += step) {
     const time = String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
-    slots.push({ time, free: (counts[time] || 0) < capacity });
+    slots.push({ time, free: (booked[time] || 0) < capacity });
   }
   return { closed: false, slots };
 }
@@ -362,8 +465,9 @@ export async function handleSalon(req, res, ip) {
     const noDemo = () => { if (tenant.is_demo) fail(403, 'Not available on the demo salon.'); };
     const send = (s, d) => sendJson(res, s, d);
 
-    if (method === 'GET' && p === '/site') return send(200, publicSite(await loadDb(tenant)));
-    if (method === 'GET' && p === '/slots') return send(200, computeSlots(await loadDb(tenant), String(url.searchParams.get('date') || '')));
+    // Public reads touch only the cached website half; the private bookings/bills are never loaded for them.
+    if (method === 'GET' && p === '/site') return send(200, publicSite(await loadSite(tenant)));
+    if (method === 'GET' && p === '/slots') return send(200, computeSlots(await loadSite(tenant), await bookingCounts(tenant), String(url.searchParams.get('date') || '')));
     if (method === 'GET' && p === '/admin/me') {
       if (!sess) return send(200, { admin: false });
       if (sess.role === 'staff') {
@@ -376,16 +480,15 @@ export async function handleSalon(req, res, ip) {
 
     const inv = p.match(/^\/invoice\/([a-f0-9]{8,32})$/);
     if (method === 'GET' && inv) {
-      const db = await loadDb(tenant);
-      const invoice = (db.invoices || []).find((x) => x.token === inv[1] && !x.void);
+      const s = (await loadSite(tenant)).settings;
+      const invoice = (((await readKey(pool, tid, 'data')) || {}).invoices || []).find((x) => x.token === inv[1] && !x.void);
       if (!invoice) fail(404, 'Invoice not found.');
-      const s = db.settings;
       return send(200, { invoice, salon: { salonName: s.salonName, address: s.address, phone: s.phone, email: s.email, instagram: s.instagram, invoiceFooter: s.invoiceFooter, logo: s.logo, logoLight: s.logoLight, theme: s.theme } });
     }
 
     if (method === 'POST' && p === '/bookings') {
       if (limited(`book:${tid}:${ip}`, 20, 60 * 60_000)) fail(429, 'Too many requests, please try again later.');
-      const booking = await mutate(tenant, (db) => addBooking(db, body, false));
+      const booking = await mutate(tenant, (db) => addBooking(db, body, false), ['site', 'data'], ['data']);
       return send(201, { ok: true, booking });
     }
 
@@ -393,7 +496,7 @@ export async function handleSalon(req, res, ip) {
       if (limited(`salonlogin:${ip}`, 30, 15 * 60_000)) fail(429, 'Too many attempts. Try again later.');
       const password = String(body.password || '');
       if (!password) fail(400, 'Password is required.');
-      await loadDb(tenant);
+      await loadSite(tenant);
       if (body.phone) {
         // Staff sign-in: phone number + the password the owner set for them.
         const phone = staffPhone(body.phone);
@@ -464,7 +567,7 @@ export async function handleSalon(req, res, ip) {
       const isArr = Array.isArray(body);
       if (['menu', 'stylists', 'gallery'].includes(k) && !isArr) fail(400, `${k[0].toUpperCase() + k.slice(1)} must be an array.`);
       if (k === 'content' && (!body || typeof body !== 'object' || isArr)) fail(400, 'Content must be an object.');
-      await mutate(tenant, (db) => { db[k] = body; });
+      await mutate(tenant, (db) => { db[k] = body; }, ['site']);
       return send(200, { ok: true });
     }
 
@@ -480,7 +583,7 @@ export async function handleSalon(req, res, ip) {
           b.status = body.status;
         }
         return b;
-      });
+      }, ['data']);
       return send(200, { ok: true, booking });
     }
     if (method === 'DELETE' && bk) {
@@ -490,12 +593,12 @@ export async function handleSalon(req, res, ip) {
         const before = db.bookings || [];
         db.bookings = before.filter((x) => String(x.id) !== id);
         if (db.bookings.length === before.length) fail(404, 'Booking not found.');
-      });
+      }, ['data']);
       return send(200, { ok: true });
     }
-    if (method === 'POST' && p === '/admin/bookings') { await member(); return send(201, { ok: true, booking: await mutate(tenant, (db) => addBooking(db, body, true)) }); }
+    if (method === 'POST' && p === '/admin/bookings') { await member(); return send(201, { ok: true, booking: await mutate(tenant, (db) => addBooking(db, body, true), ['site', 'data'], ['data']) }); }
 
-    if (method === 'POST' && p === '/admin/invoices') { const me = await member(); return send(201, { ok: true, invoice: await mutate(tenant, (db) => addInvoice(db, body, me)) }); }
+    if (method === 'POST' && p === '/admin/invoices') { const me = await member(); return send(201, { ok: true, invoice: await mutate(tenant, (db) => addInvoice(db, body, me), ['site', 'data'], ['data']) }); }
     const iv = p.match(/^\/admin\/invoices\/(.+)$/);
     if (method === 'DELETE' && iv) {
       await admin();
@@ -504,11 +607,11 @@ export async function handleSalon(req, res, ip) {
         const i = (db.invoices || []).find((x) => String(x.id) === id);
         if (!i) fail(404, 'Invoice not found.');
         i.void = true;
-      });
+      }, ['data']);
       return send(200, { ok: true });
     }
 
-    if (method === 'POST' && p === '/admin/expenses') { await admin(); return send(201, { ok: true, expense: await mutate(tenant, (db) => addExpense(db, body)) }); }
+    if (method === 'POST' && p === '/admin/expenses') { await admin(); return send(201, { ok: true, expense: await mutate(tenant, (db) => addExpense(db, body), ['data']) }); }
     const ex = p.match(/^\/admin\/expenses\/(.+)$/);
     if (method === 'PATCH' && ex) {
       await admin();
@@ -525,7 +628,7 @@ export async function handleSalon(req, res, ip) {
           e.amount = a;
         }
         return e;
-      });
+      }, ['data']);
       return send(200, { ok: true, expense });
     }
     if (method === 'DELETE' && ex) {
@@ -535,7 +638,7 @@ export async function handleSalon(req, res, ip) {
         const before = db.expenses || [];
         db.expenses = before.filter((x) => String(x.id) !== id);
         if (db.expenses.length === before.length) fail(404, 'Expense not found.');
-      });
+      }, ['data']);
       return send(200, { ok: true });
     }
 
@@ -577,7 +680,7 @@ export async function handleSalon(req, res, ip) {
         }, { list: [] });
         return send(200, { ok: true });
       }
-      await loadDb(tenant);
+      await loadSite(tenant);
       const a = (await readKey(pool, tid, 'admin')) || {};
       const ok = a.passwordHash ? verifyScrypt(cur, a.passwordHash) : await ownerPasswordOk(tid, cur);
       if (!ok) fail(400, 'Current password is wrong.');
@@ -679,7 +782,7 @@ export async function handleSalon(req, res, ip) {
     if (method === 'GET' && p === '/admin/export') { await admin(); return send(200, await loadDb(tenant)); }
     if (method === 'POST' && p === '/admin/clear-history') {
       await admin();
-      await mutate(tenant, (db) => { db.bookings = []; db.invoices = []; db.expenses = []; db.counters = { booking: 0, invoice: 0 }; });
+      await mutate(tenant, (db) => { db.bookings = []; db.invoices = []; db.expenses = []; db.counters = { booking: 0, invoice: 0 }; }, ['data']);
       return send(200, { ok: true });
     }
     if (method === 'POST' && p === '/admin/reset') {
