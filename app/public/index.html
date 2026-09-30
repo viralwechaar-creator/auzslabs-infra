@@ -214,7 +214,7 @@ async function doSync(){if(busy||!navigator.onLine||!S.user)return;busy=1;confli
 }catch(e){hadError=true;syncErr++;lastSyncErrMsg=(e&&e.message)||String(e);console.warn('sync',e)}busy=0;setNote()}
 function sync(){if(navigator.locks)navigator.locks.request('pos-sync',{ifAvailable:true},lock=>lock?doSync():null);else doSync()}
 function syncNow(){return navigator.locks?navigator.locks.request('pos-sync',{},()=>doSync()):doSync()}
-function tot(o){const sub=r2(o.lines.reduce((a,l)=>a+l.price*l.qty,0)),d=o.disc?r2(Math.min(sub,o.disc.t=='%'?sub*o.disc.v/100:o.disc.v)):0,tax=r2((sub-d)*cfg().tax/100),ex=sub-d+tax,total=Math.round(ex);return{sub,d,tax,round:r2(total-ex),total}}
+function tot(o){const sub=r2(o.lines.reduce((a,l)=>a+l.price*l.qty,0)),d=o.complimentary?sub:(o.disc?r2(Math.min(sub,o.disc.t=='%'?sub*o.disc.v/100:o.disc.v)):0),tax=r2((sub-d)*cfg().tax/100),ex=sub-d+tax,total=Math.round(ex);return{sub,d,tax,round:r2(total-ex),total}}
 function localNo(){const n=(+localStorage.n||0)+1;localStorage.n=n;const d=localStorage.dev||(localStorage.dev=Math.random().toString(36).slice(2,4).toUpperCase());return cfg().prefix+'-'+d+'-'+String(n).padStart(4,'0')}
 async function nextNo(){if(navigator.onLine){try{const{data,error}=await sb.rpc('next_invoice_no',{prefix:cfg().prefix});if(!error&&data)return data}catch{}}return localNo()+'~'}
 const newOrder=()=>({id:uid(),type:isRetail()?'Sale':'Dine-in',table:null,lines:[],status:'open',created:now(),by:S.user.id,cust:{}});
@@ -254,7 +254,7 @@ function rcpt(o,dup){const s=cfg(),t=o.t;const rows=o.lines.map(l=>`<tr><td>${es
 const refunded=r2((o.refunds||[]).reduce((a,r)=>a+r.amt,0));
 return `${dup?'<div class=dup>DUPLICATE — REPRINT</div>':''}<div class=hd><div class=mark>${s.logo?'<img src="'+esc(s.logo)+'">':'Invoice'}</div><div class=meta-r><b>Invoice No.</b> ${esc(o.no)}<br>${fmtDate(o.paidAt||o.created)}</div></div>
 <hr>
-<div class=billto><b>Billed to</b>${esc((o.cust||{}).name)}<br>${esc((o.cust||{}).phone)}</div>
+<div class=billto><b>Billed to</b>${esc((o.cust||{}).name)}<br>${esc((o.cust||{}).phone)}${o.captain?'<br><b>Served by</b> '+esc(o.captain.name):''}${o.comment?'<br><b>Note</b> '+esc(o.comment):''}${o.complimentary?'<br><b>Complimentary</b>'+(o.compReason?' — '+esc(o.compReason):''):''}</div>
 <hr>
 <table><thead><tr><th>Item</th><th class=c>Qty</th><th class=r>Unit price</th><th class=r>Amount</th></tr></thead><tbody>${rows}</tbody></table>
 <div class=tot><table>
@@ -463,6 +463,13 @@ V.pos=()=>{const isR=isRetail(),o=S.cur||(S.cur=newOrder()),cats=effCats().sort(
  h('div',{class:'card'},h('h3',{},o.no?'Order '+o.no:'New order'),...o.lines.map(l=>h('div',{class:'row'},h('span',{},l.name+(l.size?' ('+l.size+')':'')+(l.note?' — '+l.note:'')),h('span',{},h('button',{onclick:()=>qty(l,-1)},'−'),' '+l.qty+' ',h('button',{onclick:()=>qty(l,1)},'+')),h('b',{},inr(l.price*l.qty)))),
   o.lines.length?null:h('p',{},'Tap an item to add it.'),
   h('div',{class:'row'},h('input',{placeholder:'Customer name *',style:'width:48%',value:o.cust.name||'',oninput:e=>o.cust.name=e.target.value}),h('input',{placeholder:'Phone *',style:'width:48%',value:o.cust.phone||'',oninput:e=>{o.cust.phone=e.target.value;clearTimeout(S.phoneT);S.phoneT=setTimeout(render,700)}})),
+  h('div',{class:'row',style:'justify-content:flex-start;flex-wrap:wrap;gap:8px'},
+   !isR&&o.type=='Dine-in'?h('button',{onclick:()=>assignCaptain(o)},o.captain?'👤 '+o.captain.name:'Assign captain'):null,
+   h('button',{onclick:()=>{const v=prompt('Comment for this order (kitchen/billing note)',o.comment||'');if(v==null)return;o.comment=v.trim();render()}},o.comment?'💬 '+o.comment:'Add comment'),
+   can('m')?h('label',{style:'display:flex;align-items:center;gap:6px;font-size:13px'},h('input',{type:'checkbox',checked:!!o.complimentary,onchange:e=>{
+    if(!e.target.checked){o.complimentary=false;o.compReason=null;return render()}
+    pickReason(reason=>{o.complimentary=true;o.compReason=reason;render()})
+   }}),'Complimentary'):null),
   hist.length&&cfg().loyaltyOn?(()=>{const earnRs=+cfg().loyaltyEarnRs||100,redeemRs=+cfg().loyaltyRedeemRs||1,netTotal=x=>r2(x.t.total-(x.refunds||[]).reduce((a,r)=>a+r.amt,0)),lifetime=r2(hist.reduce((a,x)=>a+netTotal(x),0)),redeemed=hist.reduce((a,x)=>a+(x.loyaltyRedeemed||0),0),pts=Math.max(0,Math.floor(lifetime/earnRs)-redeemed);
    return h('p',{style:'color:var(--accent);font-size:13px'},'👤 '+hist.length+' past visit'+(hist.length>1?'s':'')+' · '+inr(lifetime)+' lifetime · '+pts+' loyalty pts',pts>0&&!o.coupon&&can('m')?h('button',{onclick:()=>{o.loyaltyRedeemed=pts;o.disc={t:'₹',v:r2(pts*redeemRs)};render()}},'Redeem ('+inr(r2(pts*redeemRs))+')'):null)})():null,
   h('div',{class:'row'},'Subtotal',inr(t.sub)),h('div',{class:'row'},h('span',{},'Discount ',can('m')?h('button',{onclick:()=>{const v=prompt('Discount, like 10% or 50');if(v==null)return;o.disc=v?{t:v.includes('%')?'%':'₹',v:parseFloat(v)||0}:null;o.coupon=null;o.loyaltyRedeemed=0;render()}},'Set'):null),'-'+inr(t.d)),
@@ -578,7 +585,13 @@ async function boot(){if(!C.url||C.url.includes('YOUR-PROJECT'))return $('#app')
  if(dash&&dash.features){S.features=dash.features;S.enabledFeatures=dash.enabled_features||{}}
  try{const reqTab=new URLSearchParams(location.search).get('tab');if(reqTab&&visibleTabs().some(([k])=>k==reqTab))S.tab=reqTab}catch{}
  S.authExpired=false;$('#app').textContent='Loading…';addEventListener('online',()=>{sync();setNote()});addEventListener('offline',setNote);
- sb.channel('r').on('postgres_changes',{event:'*',schema:'public',table:'records'},()=>sync()).subscribe();setInterval(sync,30000);sb.channel('g').on('postgres_changes',{event:'*',schema:'public',table:'guest_orders'},()=>getG()).subscribe();setInterval(getG,15000);sb.channel('n').on('postgres_changes',{event:'*',schema:'public',table:'notifications'},()=>refreshNotifCount()).subscribe();setInterval(refreshNotifCount,30000);setInterval(checkAlerts,5000);await syncNow();getG();checkAlerts();if(can('o')&&!L('cat').length&&!localStorage.seeded)await seed();render()}
+ sb.channel('r').on('postgres_changes',{event:'*',schema:'public',table:'records'},()=>sync()).subscribe();setInterval(sync,30000);sb.channel('g').on('postgres_changes',{event:'*',schema:'public',table:'guest_orders'},()=>getG()).subscribe();setInterval(getG,15000);sb.channel('n').on('postgres_changes',{event:'*',schema:'public',table:'notifications'},()=>refreshNotifCount()).subscribe();setInterval(refreshNotifCount,30000);setInterval(checkAlerts,5000);await syncNow();getG();checkAlerts();if(can('o')&&!L('cat').length&&!localStorage.seeded)await seed();loadStaffList();render()}
+let STAFF_LIST=[];
+async function loadStaffList(){try{const{data}=await sb.from('profiles').select('id,email,name');STAFF_LIST=data||[];render()}catch{}}
+function assignCaptain(o){
+ const x=modal(h('h3',{},'Assign to'),...(STAFF_LIST.length?STAFF_LIST:[]).map(p=>h('button',{style:'text-align:left',onclick:()=>{o.captain={id:p.id,name:p.name||p.email};x();render()}},(p.name||p.email)+(o.captain&&o.captain.id==p.id?' ✓':''))),
+  STAFF_LIST.length?null:h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No staff found.'),
+  o.captain?h('button',{class:'warn',onclick:()=>{o.captain=null;x();render()}},'Unassign'):null)}
 // navigator.standalone is iOS Safari's own flag: true when launched from a
 // saved Home Screen icon, false in a regular tab, undefined elsewhere. A
 // regular tab always shows Safari's own chrome around the page (that's
