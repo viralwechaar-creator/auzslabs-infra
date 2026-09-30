@@ -47,6 +47,15 @@ label{display:grid;gap:4px;font-size:12.5px;color:var(--ink-dim)}
 .page-btn{background:var(--bg-raised);color:var(--ink)}
 .page-btn.on{background:#fff;color:var(--ink);box-shadow:inset 3px 0 0 var(--accent)}
 @media(prefers-reduced-motion:reduce){.md,.ov{animation:none}}
+
+/* ---- mobile layout hardening: wide content must not push the page sideways ---- */
+html{-webkit-text-size-adjust:100%;max-width:100%}
+body{max-width:100%;overflow-x:clip}
+.card,.md{min-width:0;max-width:100%}
+input,select,textarea{max-width:100%;min-width:0}
+input[type=date],input[type=time],input[type=month]{max-width:100%}
+.card a:not([class]){color:var(--accent);font-weight:600;text-decoration:none}
+@media(max-width:800px){table{display:block;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}td,th{vertical-align:top;min-width:64px}}
 </style>
 </head><body>
 <div id=app></div>
