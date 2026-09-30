@@ -159,8 +159,29 @@ async function setNote(){const n=(await all('out')).length,e=$('#net');if(!e)ret
 }
 async function refreshNotifCount(){try{const{data}=await sb.from('notifications').select('id').eq('read',false);const el=$('#notifCount');if(el)el.textContent=data&&data.length?String(data.length):''}catch{}}
 let seenNew=new Set(),seenReady=new Set();
-function alertSound(n=3){try{const a=new(window.AudioContext||window.webkitAudioContext)();for(let i=0;i<n;i++){const o=a.createOscillator(),g=a.createGain();o.type='square';o.frequency.value=880;o.connect(g);g.connect(a.destination);g.gain.value=0.001;const t=a.currentTime+i*0.45;g.gain.exponentialRampToValueAtTime(0.6,t+0.02);g.gain.exponentialRampToValueAtTime(0.001,t+0.35);o.start(t);o.stop(t+0.36)}}catch{}try{navigator.vibrate&&navigator.vibrate([200,100,200,100,200])}catch{}}
-function checkAlerts(){for(const o of L('order')){if(o.status=='void')continue;if(o.kstat=='new'){if(!seenNew.has(o.id)){seenNew.add(o.id);alertSound(3)}}else seenNew.delete(o.id);if(o.kstat=='ready'){if(!seenReady.has(o.id)){seenReady.add(o.id);alertSound(4)}}else seenReady.delete(o.id)}}
+// Each event kind gets its own pitch pattern + vibration, not just a
+// different repeat count of the same beep -- KOT/ready/guest-order/
+// waiter-call used to all sound almost identical, easy to mix up when
+// they mean very different things to act on.
+const ALERT_TONES={
+ kot:{freqs:[880],reps:3,gap:.45,vib:[200,100,200,100,200]},
+ ready:{freqs:[660,990],reps:2,gap:.3,vib:[150,80,150,80,300]},
+ guest:{freqs:[523,659,784],reps:1,gap:.15,vib:[100,60,100,60,100,60,200]},
+ waiter:{freqs:[440,349],reps:3,gap:.28,vib:[300,150,300,150,300,150,300]},
+};
+function alertSound(kind='kot'){
+ const cfg=ALERT_TONES[kind]||ALERT_TONES.kot;
+ try{
+  const a=new(window.AudioContext||window.webkitAudioContext)();let t=a.currentTime;
+  for(let r=0;r<cfg.reps;r++)for(const f of cfg.freqs){
+   const o=a.createOscillator(),g=a.createGain();o.type='square';o.frequency.value=f;o.connect(g);g.connect(a.destination);g.gain.value=.001;
+   g.gain.exponentialRampToValueAtTime(.6,t+.02);g.gain.exponentialRampToValueAtTime(.001,t+cfg.gap-.05);
+   o.start(t);o.stop(t+cfg.gap);t+=cfg.gap;
+  }
+ }catch{}
+ try{navigator.vibrate&&navigator.vibrate(cfg.vib)}catch{}
+}
+function checkAlerts(){for(const o of L('order')){if(o.status=='void')continue;if(o.kstat=='new'){if(!seenNew.has(o.id)){seenNew.add(o.id);alertSound('kot')}}else seenNew.delete(o.id);if(o.kstat=='ready'){if(!seenReady.has(o.id)){seenReady.add(o.id);alertSound('ready')}}else seenReady.delete(o.id)}}
 function b64ToArr(s){const p='='.repeat((4-s.length%4)%4),b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/')),a=new Uint8Array(b.length);for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return a}
 async function enablePush(){
  if(!('serviceWorker' in navigator)||!('PushManager' in window))return alert('Push notifications are not supported on this browser/device.');
@@ -486,7 +507,10 @@ return h('div',{class:'g',style:'grid-template-columns:1fr'},h('div',{class:'car
   recipeItems.length?null:h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},rq?'No matching recipes.':'No prep instructions added yet — set them per item in Back Office › Menu.')),
  can('m')?h('div',{class:'card'},h('h3',{},'Staff & roles'),h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'Adding/removing staff, role assignment and payslips are managed elsewhere — ',h('a',{href:'/backoffice.html',style:'color:var(--accent)'},'open Back Office'),' or ',h('a',{href:'https://auzslab.in/account.html#staff',target:'_blank',style:'color:var(--accent)'},'your account page'),'.')):null)};
 let G=[];
-async function getG(){if(!navigator.onLine||!S.user)return;if(!featureOn('self_order')){if(G.length){G=[];render()}return}const{data,error}=await sb.from('guest_orders').select('*').eq('status','new').order('created_at');if(error)return;const n=G.length;G=data||[];if(G.length>n)alertSound(3);if(G.length!=n&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))render()}
+async function getG(){if(!navigator.onLine||!S.user)return;if(!featureOn('self_order')){if(G.length){G=[];render()}return}const{data,error}=await sb.from('guest_orders').select('*').eq('status','new').order('created_at');if(error)return;const prevIds=new Set(G.map(g=>g.id));G=data||[];
+ const arrived=G.filter(g=>!prevIds.has(g.id));
+ if(arrived.length)alertSound(arrived.some(g=>g.note=='🔔 Waiter called')?'waiter':'guest');
+ if(arrived.length&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))render()}
 async function acceptG(g){let o=L('order').find(x=>x.status=='open'&&x.table==g.tbl&&x.lines.length);o=o?structuredClone(o):{...newOrder(),table:g.tbl};g.items.forEach(i=>{const it=R[i.id]&&R[i.id].data;if(!it)return;const sizeObj=i.size&&(it.sizes||[]).find(s=>s.l==i.size),price=sizeObj?sizeObj.p:it.price;const l=o.lines.find(x=>x.id==i.id&&x.size==i.size&&x.price==price&&!x.note);l?l.qty+=i.qty:o.lines.push({id:i.id,name:it.name,size:i.size,price,qty:i.qty,sent:0,st:it.st||'Kitchen'})});if(!(o.cust&&o.cust.name))o.cust={name:g.name,phone:g.phone};if(g.note)o.gn=g.note;const prev=S.cur;S.cur=o;mk(o);await persist();S.cur=prev;await sb.from('guest_orders').update({status:'done'}).eq('id',g.id);getG()}
 const guestBar=()=>G.length?h('div',{style:'background:var(--bg-raised);border-left:4px solid var(--accent);padding:8px;display:grid;gap:6px'},...G.map(g=>h('div',{class:'row'},h('span',{},'📲 '+(tn(g.tbl)||'Table')+' · '+g.name+(g.phone?' '+g.phone:'')+' — '+g.items.map(i=>i.qty+'× '+i.name+(i.size?' ('+i.size+')':'')).join(', ')+(g.note?' · "'+g.note+'"':'')),h('span',{},h('button',{class:'p',onclick:()=>acceptG(g)},'Accept → kitchen'),h('button',{onclick:async()=>{await sb.from('guest_orders').update({status:'rejected'}).eq('id',g.id);getG()}},'Reject'))))):null;
 let drawerEl=null,drawerOvEl=null;
