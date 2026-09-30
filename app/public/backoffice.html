@@ -372,7 +372,13 @@ function feedbackCard(){const fb=L('feedback');if(!fb.length)return null;
   ...recent.map(f=>h('div',{class:'row',style:'align-items:flex-start'},h('span',{},'★'.repeat(f.rating)+'☆'.repeat(5-f.rating)+(f.comment?' — '+f.comment:'')),h('span',{style:'color:var(--ink-faint);font-size:11px;flex-shrink:0'},f.orderNo)))
  )}
 const variantQty=i=>(i.variants||[]).reduce((a,v)=>a+(+v.qty||0),0);
-function item(i){const isR=isRetail();const px=h('input',{type:'number',value:i.price??'',placeholder:'Price'}),nm=h('input',{value:i.name||'',placeholder:'Name'}),sz=h('input',{value:(i.sizes||[]).map(s=>s.l+':'+s.p).join(', '),placeholder:'Sizes, e.g. Half:49, Full:69 (optional)'}),ct=h('select',{},...L('cat').map(c=>h('option',{value:c.id,selected:c.id==i.cat},c.name))),off=h('input',{type:'checkbox',checked:itemOff(i)}),rc=h('input',{value:i.rec||'',placeholder:'Recipe, e.g. Milk:0.1, Tea:5 (optional, for stock)'}),cs=h('input',{type:'number',value:i.cost??'',placeholder:'Cost price (optional)'}),stn=h('select',{},...['Kitchen','Bar','Dessert'].map(s=>h('option',{selected:(i.st||'Kitchen')==s},s))),md=h('input',{value:(i.mods||[]).join(', '),placeholder:'Modifiers, e.g. Extra shot:20, Less sugar:0 (optional)'}),bc=h('input',{value:i.barcode||'',placeholder:'Barcode (scan or type, optional)'});
+function item(i){const isR=isRetail(),isSalon=cfg().bizType=='salon';const px=h('input',{type:'number',value:i.price??'',placeholder:'Price'}),nm=h('input',{value:i.name||'',placeholder:'Name'}),sz=h('input',{value:(i.sizes||[]).map(s=>s.l+':'+s.p).join(', '),placeholder:'Sizes, e.g. Half:49, Full:69 (optional)'}),ct=h('select',{},...L('cat').map(c=>h('option',{value:c.id,selected:c.id==i.cat},c.name))),off=h('input',{type:'checkbox',checked:itemOff(i)}),rc=h('input',{value:i.rec||'',placeholder:'Recipe, e.g. Milk:0.1, Tea:5 (optional, for stock)'}),cs=h('input',{type:'number',value:i.cost??'',placeholder:'Cost price (optional)'}),stn=h('select',{},...['Kitchen','Bar','Dessert'].map(s=>h('option',{selected:(i.st||'Kitchen')==s},s))),md=h('input',{value:(i.mods||[]).join(', '),placeholder:'Modifiers, e.g. Extra shot:20, Less sugar:0 (optional)'}),bc=h('input',{value:i.barcode||'',placeholder:'Barcode (scan or type, optional)'});
+ // Salon-only: a second price column (e.g. Normal/Rica waxing) and a
+ // "Popular" badge shown on the public booking page (booking.html) --
+ // these ride the same 'item' record every other niche's menu item uses,
+ // just fields other niches never set or read, so hidden from their editor.
+ const px2=h('input',{type:'number',value:i.price2??'',placeholder:'Second price (optional, e.g. Rica wax)'}),pop=h('input',{type:'checkbox',checked:!!i.popular});
+ const salonFields=isSalon?h('div',{style:'display:grid;gap:6px'},px2,h('label',{style:'display:flex;align-items:center;gap:8px'},pop,' Mark as popular on the booking page')):null;
  const veg=h('select',{},...[['veg','Veg'],['nonveg','Non-veg'],['egg','Contains egg']].map(([v,l])=>h('option',{value:v,selected:(i.veg||'veg')==v},l)));
  const desc=h('textarea',{style:'min-height:50px;width:100%'},i.desc||''),desc2=h('label',{style:'display:grid;gap:4px'},'Description (optional, shown to customers on QR ordering)',desc);
  const imgPrev=h('div',{style:'font-size:12px;color:var(--ink-dim)'},i.img?'Current photo is set':'No photo yet'),imgInp=h('input',{type:'file',accept:'image/*'});let imgUrl=i.img||null;
@@ -398,7 +404,7 @@ function item(i){const isR=isRetail();const px=h('input',{type:'number',value:i.
  const x=modal(h('h3',{},i.id?'Edit item':'New item'),nm,ct,isR?null:stn,px,
   isR?h('div',{style:'display:grid;gap:6px'},h('div',{class:'row'},vSizes,vColors,vGen),vTa,lowInp):sz,
   isR?null:veg,isR?null:desc2,isR?null:imgField2,
-  isR?null:comboField,isR?null:md,isR?null:rc,isR?null:recipeText2,cs,(!isR&&cfg().hwBarcode)?bc:null,
+  isR?null:comboField,isR?null:md,isR?null:rc,isR?null:recipeText2,salonFields,cs,(!isR&&cfg().hwBarcode)?bc:null,
   h('label',{style:'display:flex;align-items:center;gap:8px'},off,' Sold out'),h('label',{style:'display:flex;align-items:center;gap:8px'},'For how long ',dur),
   h('div',{class:'row'},h('button',{class:'p',onclick:async()=>{
   let sizes=[],variants=[],barcode=bc.value.trim()||null;
@@ -426,7 +432,7 @@ function item(i){const isR=isRetail();const px=h('input',{type:'number',value:i.
   if(selfDupe)return alert('Barcode "'+selfDupe+'" is used on more than one of this item\'s own variants. Scanning it would always resolve to just one of them -- give each variant its own code.');
   const dupeCode=myCodes.find(c=>allOtherCodes.includes(c));
   if(dupeCode&&!confirm('Barcode "'+dupeCode+'" is already used on another item/variant. Scanning it will always resolve to whichever matches first. Save anyway?'))return;
-  await save('item',{...i,name:nm.value.trim(),cat:ct.value,price:+px.value||(sizes[0]&&sizes[0].p)||0,sizes,variants,low:isR?(lowInp.value===''?2:+lowInp.value):i.low,off:off.checked,offUntil,rec:isR?'':rc.value.trim(),cost:+cs.value||0,st:stn.value,mods,barcode,veg:isR?i.veg:veg.value,desc:isR?i.desc:desc.value.trim(),img:isR?i.img:imgUrl,recipeText:isR?i.recipeText:recipeText.value.trim(),combo:isR?false:combo.checked,comboText:isR?'':comboText.value.trim()});x();render()}},'Save'),i.id?h('button',{onclick:async()=>{await save('item',i,i.id,true);x();render()}},'Delete'):null))}
+  await save('item',{...i,name:nm.value.trim(),cat:ct.value,price:+px.value||(sizes[0]&&sizes[0].p)||0,sizes,variants,low:isR?(lowInp.value===''?2:+lowInp.value):i.low,off:off.checked,offUntil,rec:isR?'':rc.value.trim(),cost:+cs.value||0,st:stn.value,mods,barcode,veg:isR?i.veg:veg.value,desc:isR?i.desc:desc.value.trim(),img:isR?i.img:imgUrl,recipeText:isR?i.recipeText:recipeText.value.trim(),combo:isR?false:combo.checked,comboText:isR?'':comboText.value.trim(),price2:isSalon?(+px2.value||null):i.price2,popular:isSalon?pop.checked:i.popular});x();render()}},'Save'),i.id?h('button',{onclick:async()=>{await save('item',i,i.id,true);x();render()}},'Delete'):null))}
 const VEG_COLOR={veg:'#2e7d32',nonveg:'#b3261e',egg:'#c98a00'};
 // Categories used to render as one continuous list, every item of every
 // category expanded at once -- fine with a handful of items, but a real
@@ -435,15 +441,31 @@ const VEG_COLOR={veg:'#2e7d32',nonveg:'#b3261e',egg:'#c98a00'};
 // collapse/expand row (S.menuOpen tracks which ones are open, keyed by
 // category id) so opening one section doesn't require scrolling past
 // every other category's items to find it.
+function catModal(c){
+ // Gender grouping + a two-column price-label pair (e.g. "Normal"/"Rica")
+ // are salon-specific -- the exact fields booking.html's Everyone/Women/Men
+ // filter and two-tier pricing display read (see db/049_salon_public_booking.sql).
+ // Same 'cat' record every niche uses, just fields other niches never set.
+ const nm=h('input',{value:c.name||'',placeholder:'Category name'}),
+  gen=h('select',{},...[['all','Everyone'],['female','Women'],['male','Men']].map(([v,l])=>h('option',{value:v,selected:(c.gender||'all')==v},l))),
+  pl=h('input',{value:(c.priceLabels||[]).join(', '),placeholder:'Price column labels, e.g. Normal, Rica (optional)'}),
+  note=h('input',{value:c.note||'',placeholder:'Note shown under the group name (optional)'});
+ const x=modal(h('h3',{},c.id?'Edit category':'New category'),nm,cfg().bizType=='salon'?gen:null,cfg().bizType=='salon'?pl:null,cfg().bizType=='salon'?note:null,
+  h('div',{class:'row'},h('button',{class:'p',onclick:async()=>{
+   if(!nm.value.trim())return alert('Name is needed.');
+   const priceLabels=pl.value.split(',').map(s=>s.trim()).filter(Boolean);
+   await save('cat',{...c,name:nm.value.trim(),n:c.n??Date.now(),gender:gen.value,priceLabels,note:note.value.trim()},c.id);x();render()}},'Save'),
+   c.id?h('button',{onclick:async()=>{await save('cat',c,c.id,true);x();render()}},'Delete'):null));
+}
 V.menu=()=>{const isR=isRetail(),previewing=cfg().isDemo&&S.previewNiche;if(!S.menuOpen)S.menuOpen={};
  const cats=effCats().sort((a,b)=>a.n-b.n);
  return h('div',{class:'g1'}, previewing?h('p',{style:'color:var(--accent);font-size:13px'},'Previewing a sample '+S.previewNiche+' menu — read only. Pick "Current" in Settings → Business to go back to editing your real menu.'):null,
- h('div',{class:'card',style:'grid-column:1/-1'},h('div',{class:'row'},h('h3',{},isR?'Products':'Menu'),previewing?null:h('span',{},h('button',{onclick:()=>{const n=prompt('Category name');n&&save('cat',{name:n,n:Date.now()}).then(render)}},'Add category'),h('button',{class:'p',onclick:()=>item({})},isR?'Add product':'Add item'))),
+ h('div',{class:'card',style:'grid-column:1/-1'},h('div',{class:'row'},h('h3',{},isR?'Products':'Menu'),previewing?null:h('span',{},h('button',{onclick:()=>catModal({})},'Add category'),h('button',{class:'p',onclick:()=>item({})},isR?'Add product':'Add item'))),
   ...cats.map(c=>{const its=effItems().filter(i=>i.cat==c.id),open=!!S.menuOpen[c.id];
    return h('div',{style:'border-top:1px solid var(--l)'},
     h('div',{class:'row',style:'cursor:pointer;padding:10px 0',onclick:()=>{S.menuOpen[c.id]=!open;render()}},
      h('span',{style:'display:flex;align-items:center;gap:8px'},h('span',{style:'display:inline-flex;transition:transform .15s var(--ease);transform:rotate('+(open?90:0)+'deg)'},icon('chevron')),h('b',{},c.name),h('span',{style:'font-size:11.5px;color:var(--ink-faint)'},'('+its.length+')')),
-     previewing?null:h('button',{onclick:e=>{e.stopPropagation();confirm('Delete category?')&&save('cat',c,c.id,true).then(render)}},'Delete')),
+     previewing?null:h('button',{onclick:e=>{e.stopPropagation();catModal(c)}},'Edit')),
     open?h('div',{style:'padding:0 0 8px 26px;display:grid'},...its.map(i=>h('div',{class:'row'},h('span',{},isR?null:[swatch(VEG_COLOR[i.veg||'veg']),' '],i.name,i.combo?[' ',icon('gift')]:null,itemOff(i)?' (sold out'+(i.offUntil?' until '+new Date(i.offUntil).toLocaleString():'')+')':''),isR?inr(i.price)+' · '+variantQty(i)+' in stock':(i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price)),previewing?null:h('button',{onclick:()=>item(i)},'Edit')))):null)
   })))};
 V.set=()=>{const s=cfg(),F={},sel=(k,l,o)=>h('label',{},l,h('select',{style:'width:100%',onchange:e=>F[k]=e.target.value},...o.map(([v,n])=>h('option',{value:v,selected:String(s[k]||o[0][0])==String(v)},n)))),f=(k,l,t)=>h('label',{},l,h('input',{type:t||'text',value:s[k],style:'width:100%',oninput:e=>F[k]=t=='number'?+e.target.value:e.target.value})),ta=(k,l)=>h('label',{},l,h('textarea',{style:'width:100%;min-height:70px',oninput:e=>F[k]=e.target.value},s[k]||''));
