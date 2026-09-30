@@ -248,7 +248,20 @@ function renderServices() {
   const entitled = DASH.features || {}, enabled = DASH.enabled_features || {};
   const keys = Object.keys(entitled).filter((k) => entitled[k] === true);
   const isOwner = DASH.my_role === 'owner';
+  const builderOn = entitled.website_builder === true;
+  // The Website Builder's own editor (builder.html) always shows the same
+  // link per-page, but a non-technical owner won't necessarily go looking
+  // there -- surface the site's home page here too, where "your services"
+  // already lives. Visitors never see the builder or its draft blocks,
+  // only /w.html?page=... (see w.html + public_page RPC) -- your bare
+  // subdomain root is the staff POS app, not this site.
+  const siteUrl = 'https://' + DASH.tenant.slug + '.auzslab.in/w.html?page=home';
   $('#pane-services').innerHTML = `
+    ${builderOn ? `<div class="card">
+      <h3 class="h-2">Your website</h3>
+      <p class="muted">Built with Website Builder. This is the link to give customers — your subdomain's own home page is your staff POS app, not this.</p>
+      <div class="acct-row"><span style="font-family:monospace;font-size:13px;word-break:break-all">${esc(siteUrl)}</span></div>
+    </div>` : ''}
     <div class="card">
       <h3 class="h-2">Your subscribed services</h3>
       <p class="muted">${isOwner ? 'Turn any of these off temporarily — turning one back on takes effect instantly, no need to contact us.' : 'Only the business owner can change these.'}</p>
