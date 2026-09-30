@@ -198,7 +198,14 @@ function localNo(){const n=(+localStorage.n||0)+1;localStorage.n=n;const d=local
 async function nextNo(){if(navigator.onLine){try{const{data,error}=await sb.rpc('next_invoice_no',{prefix:cfg().prefix});if(!error&&data)return data}catch{}}return localNo()+'~'}
 const newOrder=()=>({id:uid(),type:isRetail()?'Sale':'Dine-in',table:null,lines:[],status:'open',created:now(),by:S.user.id,cust:{}});
 async function persist(){const o=S.cur;if(!o.no)o.no=await nextNo();o.t=tot(o);await save('order',o,o.id)}
-function mk(o){const n=o.lines.filter(l=>l.qty>l.sent).map(l=>({n:l.name+(l.size?' ('+l.size+')':''),q:l.qty-l.sent,s:l.st||'Kitchen'})),k=o.kstat=='new';o.lines.forEach(l=>l.sent=l.qty);if(n.length){o.knew=(k?o.knew||[]:[]).concat(n);o.kstat='new';o.ktime=o.ktime&&k?o.ktime:now()}return n}
+// A combo is one order line (one price) but the kitchen needs to see
+// what to actually cook -- expand it into its constituent items on the
+// ticket instead of printing the combo's own name alone.
+function mk(o){const n=[];o.lines.filter(l=>l.qty>l.sent).forEach(l=>{
+ const rem=l.qty-l.sent,it=R[l.id]&&R[l.id].data;
+ if(it&&it.combo&&it.comboText){it.comboText.split(',').forEach(p=>{const parts=p.split(':'),cn=parts[0];if(cn&&cn.trim())n.push({n:cn.trim()+(l.size?' ('+l.size+')':''),q:r2((+parts[1]||1)*rem),s:it.st||'Kitchen'})})}
+ else n.push({n:l.name+(l.size?' ('+l.size+')':''),q:rem,s:l.st||'Kitchen'});
+});const k=o.kstat=='new';o.lines.forEach(l=>l.sent=l.qty);if(n.length){o.knew=(k?o.knew||[]:[]).concat(n);o.kstat='new';o.ktime=o.ktime&&k?o.ktime:now()}return n}
 function prn(html){const c=cfg(),f=h('iframe',{style:'position:fixed;width:0;height:0;border:0'});document.body.append(f);const d=f.contentDocument;d.write('<style>body{font:'+(c.fs||12)+'px '+(c.sty=='sans'?'system-ui,sans-serif':'monospace')+';width:'+(c.w==58?48:72)+'mm;margin:0}td{padding:1px 0}.r{text-align:right}.dup{text-align:center;border:2px solid #000;padding:2px;margin-bottom:4px}img{max-width:100%}</style>'+html);d.close();f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),3000)}
 function prnInv(html){const f=h('iframe',{style:'position:fixed;width:0;height:0;border:0'});document.body.append(f);const d=f.contentDocument;d.write(`<style>
 @page{margin:16mm}
@@ -347,7 +354,14 @@ async function kot(){const o=S.cur;if(!o.lines.some(l=>l.qty>l.sent))return aler
  await save('kotlog',{orderId:o.id,orderNo:o.no,type:o.type,table:o.table,cust:o.cust,items:n,createdAt:now()},uid());
  const stations=[...new Set(n.map(x=>x.s))];
  prn(`<b>KOT ${o.no}</b>${o.token?' · Token #'+o.token:''}<br>${o.type} ${esc(tn(o.table))}<br>${new Date().toLocaleTimeString()}<hr>`+stations.map(s=>`<u>${s}</u><br>`+n.filter(x=>x.s==s).map(x=>`<b>${x.q}× ${esc(x.n)}</b><br>`).join('')).join('<hr>'));render()}
-async function dedu(o){for(const l of o.lines){const it=R[l.id];if(!it||!it.data.rec)continue;for(const p of it.data.rec.split(',')){const[n,q]=p.split(':'),g=L('ing').find(x=>x.name.toLowerCase()==n.trim().toLowerCase());if(g&&+q){const used=q*l.qty;g.qty=r2(g.qty-used);g.usage=(g.usage||[]).concat({q:used,d:today(),at:now()}).slice(-200);await save('ing',g,g.id)}}}}
+async function deduRecipe(rec,mult){for(const p of rec.split(',')){const parts=p.split(':'),n=parts[0],q=+parts[1],g=L('ing').find(x=>x.name.toLowerCase()==n.trim().toLowerCase());if(g&&q){const used=q*mult;g.qty=r2(g.qty-used);g.usage=(g.usage||[]).concat({q:used,d:today(),at:now()}).slice(-200);await save('ing',g,g.id)}}}
+async function dedu(o){for(const l of o.lines){const it=R[l.id];if(!it)continue;
+ if(it.data.combo&&it.data.comboText){
+  for(const part of it.data.comboText.split(',')){const parts=part.split(':'),cn=parts[0];if(!cn||!cn.trim())continue;const constituent=L('item').find(x=>x.name.toLowerCase()==cn.trim().toLowerCase());if(constituent&&constituent.rec)await deduRecipe(constituent.rec,(+parts[1]||1)*l.qty)}
+  continue;
+ }
+ if(it.data.rec)await deduRecipe(it.data.rec,l.qty);
+}}
 async function deduVariant(o){for(const l of o.lines){const it=R[l.id];if(!it||!it.data.variants||!it.data.variants.length||!l.variant)continue;const v=it.data.variants.find(x=>x.size==l.variant.size&&(x.color||'')==(l.variant.color||''));if(v){v.qty=r2((v.qty||0)-l.qty);v.usage=(v.usage||[]).concat({q:l.qty,d:today(),at:now()}).slice(-200);await save('item',it.data,it.data.id)}}}
 const CASH_DENOMS=[500,200,100,50,20,10,5,2,1];
 // Counts actual notes/coins tendered instead of a single typed amount, so
@@ -424,7 +438,7 @@ V.pos=()=>{const isR=isRetail(),o=S.cur||(S.cur=newOrder()),cats=effCats().sort(
   isR?null:h('div',{class:'row',style:'justify-content:flex-start'},...[['all','All'],['veg','🟢 Veg'],['nonveg','🔴 Non-veg']].map(([v,l])=>h('button',{class:vf==v?'on':'',onclick:()=>{S.vf=v;render()}},l))),
   h('div',{class:'items'},...its.map(i=>h('button',{onclick:()=>isR&&i.variants&&i.variants.length?variant(i):(i.sizes&&i.sizes.length?size(i):pickMods(i,'',i.price))},
    i.img?h('img',{src:i.img,style:'width:100%;height:60px;object-fit:cover;border-radius:8px;margin-bottom:4px'}):null,
-   h('b',{},(isR?'':VEG_DOT[i.veg||'veg']+' ')+i.name),h('br'),isR?inr(i.price)+' · '+variantQty(i)+' in stock':(i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price))))),its.length?null:h('p',{},cats.length?'No items here.':'Add categories and items in the Menu tab.')),
+   h('b',{},(isR?'':VEG_DOT[i.veg||'veg']+' ')+i.name+(i.combo?' 🎁':'')),h('br'),isR?inr(i.price)+' · '+variantQty(i)+' in stock':(i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price))))),its.length?null:h('p',{},cats.length?'No items here.':'Add categories and items in the Menu tab.')),
  h('div',{class:'card'},h('h3',{},o.no?'Order '+o.no:'New order'),...o.lines.map(l=>h('div',{class:'row'},h('span',{},l.name+(l.size?' ('+l.size+')':'')+(l.note?' — '+l.note:'')),h('span',{},h('button',{onclick:()=>qty(l,-1)},'−'),' '+l.qty+' ',h('button',{onclick:()=>qty(l,1)},'+')),h('b',{},inr(l.price*l.qty)))),
   o.lines.length?null:h('p',{},'Tap an item to add it.'),
   h('div',{class:'row'},h('input',{placeholder:'Customer name *',style:'width:48%',value:o.cust.name||'',oninput:e=>o.cust.name=e.target.value}),h('input',{placeholder:'Phone *',style:'width:48%',value:o.cust.phone||'',oninput:e=>{o.cust.phone=e.target.value;clearTimeout(S.phoneT);S.phoneT=setTimeout(render,700)}})),

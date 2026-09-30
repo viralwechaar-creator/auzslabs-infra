@@ -250,7 +250,7 @@ async function callWaiter(){
   const filtered=items.filter(i=>i.cat==active&&(vf=='all'||(i.veg||'veg')==vf)).sort((a,b)=>a.name.localeCompare(b.name));
   gridEl.innerHTML='';filtered.forEach(i=>{
    const c=document.createElement('div');c.className='mcard';
-   const dot=VEG_DOT[i.veg||'veg'],photo=i.img?'<img src="'+esc(i.img)+'" style="width:100%;height:110px;object-fit:cover;border-radius:10px;margin-bottom:6px">':'',desc=i.desc?'<div style="font-size:12px;opacity:.7;margin:2px 0 4px">'+esc(i.desc)+'</div>':'';
+   const dot=VEG_DOT[i.veg||'veg']+(i.combo?' 🎁':''),photo=i.img?'<img src="'+esc(i.img)+'" style="width:100%;height:110px;object-fit:cover;border-radius:10px;margin-bottom:6px">':'',desc=i.desc?'<div style="font-size:12px;opacity:.7;margin:2px 0 4px">'+esc(i.desc)+'</div>':'';
    if(tb){
     const variants=i.sizes&&i.sizes.length?i.sizes.map(s=>[s.l,s.p]):[['',i.price]];
     c.innerHTML=photo+'<b>'+dot+' '+esc(i.name)+'</b>'+desc+variants.map(([sz,p])=>{const k=i.id+'|'+sz,q=(cart[k]||{}).q||0;return '<div class=variant><span>'+(sz?esc(sz)+' — ':'')+inr(p)+'</span><div class=stepper><button data-k="'+esc(k)+'" data-d=-1>−</button><b>'+q+'</b><button data-k="'+esc(k)+'" data-d=1>+</button></div></div>'}).join('');

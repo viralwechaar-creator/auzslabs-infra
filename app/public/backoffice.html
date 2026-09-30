@@ -192,6 +192,7 @@ function closeDay(d,expected,sales,bills){
 V.rep=()=>{const tabs=[['day','Day report'],['custom','Custom report'],['analytics','Analytics']],rt=S.repTab||'day';
  return h('div',{},h('div',{class:'tabbar'},...tabs.map(([k,n])=>h('button',{class:rt==k?'on':'',onclick:()=>{S.repTab=k;render()}},n))),rt=='custom'?V.dynrep():rt=='analytics'?analyticsPane():dayReportPane())};
 function unitCost(i){
+ if(i.combo&&i.comboText)return r2(i.comboText.split(',').reduce((a,p)=>{const parts=p.split(':'),cn=parts[0],cq=+parts[1]||1,ci=L('item').find(x=>x.name.toLowerCase()==(cn||'').trim().toLowerCase());return a+(ci?unitCost(ci)*cq:0)},0));
  if(i.rec)return r2(i.rec.split(',').reduce((a,p)=>{const parts=p.split(':'),n=parts[0],qn=+parts[1],g=L('ing').find(x=>x.name.toLowerCase()==n.trim().toLowerCase());return a+(g?(g.cost||0)*qn:0)},0));
  return i.cost||0;
 }
@@ -289,6 +290,13 @@ function item(i){const isR=isRetail();const px=h('input',{type:'number',value:i.
  // this is the human-readable prep method a kitchen employee actually reads,
  // surfaced read-only on index.html's Staff tab (see V.staff's Recipes card).
  const recipeText=h('textarea',{style:'min-height:70px;width:100%'},i.recipeText||''),recipeText2=h('label',{style:'display:grid;gap:4px'},'Prep instructions for kitchen staff (optional)',recipeText);
+ // A combo is priced and sold as one item, but at KOT time (mk() in
+ // index.html) it expands into its constituent items so the kitchen
+ // ticket says what to actually cook, and at payment (dedu()) each
+ // constituent's own recipe gets deducted -- the combo itself carries
+ // no rec of its own, matching how its cost is the sum of its parts.
+ const combo=h('input',{type:'checkbox',checked:!!i.combo}),comboText=h('input',{value:i.comboText||'',placeholder:'e.g. Chicken Biryani:1, Coke:1'}),
+  comboField=h('div',{style:'display:grid;gap:6px'},h('label',{style:'display:flex;align-items:center;gap:8px'},combo,'This is a combo (bundle of other menu items)'),comboText);
  const vSizes=h('input',{placeholder:'Sizes, e.g. S,M,L,XL'}),vColors=h('input',{placeholder:'Colors, e.g. Black,White (optional)'}),
   lowInp=h('input',{type:'number',value:i.low??'',placeholder:'Low stock alert at (optional, default 2)'}),
   vTa=h('textarea',{placeholder:'One variant per line: Size|Color|Barcode|Qty\ne.g. M|Blue|8901030123|12',style:'min-height:90px;width:100%'},(i.variants||[]).map(v=>[v.size,v.color||'',v.barcode||'',v.qty||0].join('|')).join('\n')),
@@ -298,7 +306,7 @@ function item(i){const isR=isRetail();const px=h('input',{type:'number',value:i.
  const x=modal(h('h3',{},i.id?'Edit item':'New item'),nm,ct,isR?null:stn,px,
   isR?h('div',{style:'display:grid;gap:6px'},h('div',{class:'row'},vSizes,vColors,vGen),vTa,lowInp):sz,
   isR?null:veg,isR?null:desc2,isR?null:imgField2,
-  isR?null:md,isR?null:rc,isR?null:recipeText2,cs,(!isR&&cfg().hwBarcode)?bc:null,
+  isR?null:comboField,isR?null:md,isR?null:rc,isR?null:recipeText2,cs,(!isR&&cfg().hwBarcode)?bc:null,
   h('label',{style:'display:flex;align-items:center;gap:8px'},off,' Sold out'),h('label',{style:'display:flex;align-items:center;gap:8px'},'For how long ',dur),
   h('div',{class:'row'},h('button',{class:'p',onclick:async()=>{
   let sizes=[],variants=[],barcode=bc.value.trim()||null;
@@ -326,11 +334,11 @@ function item(i){const isR=isRetail();const px=h('input',{type:'number',value:i.
   if(selfDupe)return alert('Barcode "'+selfDupe+'" is used on more than one of this item\'s own variants. Scanning it would always resolve to just one of them -- give each variant its own code.');
   const dupeCode=myCodes.find(c=>allOtherCodes.includes(c));
   if(dupeCode&&!confirm('Barcode "'+dupeCode+'" is already used on another item/variant. Scanning it will always resolve to whichever matches first. Save anyway?'))return;
-  await save('item',{...i,name:nm.value.trim(),cat:ct.value,price:+px.value||(sizes[0]&&sizes[0].p)||0,sizes,variants,low:isR?(lowInp.value===''?2:+lowInp.value):i.low,off:off.checked,offUntil,rec:isR?'':rc.value.trim(),cost:+cs.value||0,st:stn.value,mods,barcode,veg:isR?i.veg:veg.value,desc:isR?i.desc:desc.value.trim(),img:isR?i.img:imgUrl,recipeText:isR?i.recipeText:recipeText.value.trim()});x();render()}},'Save'),i.id?h('button',{onclick:async()=>{await save('item',i,i.id,true);x();render()}},'Delete'):null))}
+  await save('item',{...i,name:nm.value.trim(),cat:ct.value,price:+px.value||(sizes[0]&&sizes[0].p)||0,sizes,variants,low:isR?(lowInp.value===''?2:+lowInp.value):i.low,off:off.checked,offUntil,rec:isR?'':rc.value.trim(),cost:+cs.value||0,st:stn.value,mods,barcode,veg:isR?i.veg:veg.value,desc:isR?i.desc:desc.value.trim(),img:isR?i.img:imgUrl,recipeText:isR?i.recipeText:recipeText.value.trim(),combo:isR?false:combo.checked,comboText:isR?'':comboText.value.trim()});x();render()}},'Save'),i.id?h('button',{onclick:async()=>{await save('item',i,i.id,true);x();render()}},'Delete'):null))}
 const VEG_DOT={veg:'🟢',nonveg:'🔴',egg:'🟡'};
 V.menu=()=>{const isR=isRetail(),previewing=cfg().isDemo&&S.previewNiche;return h('div',{class:'g',style:'grid-template-columns:1fr'},
  previewing?h('p',{style:'color:var(--accent);font-size:13px'},'Previewing a sample '+S.previewNiche+' menu — read only. Pick "Current" in Settings → Business to go back to editing your real menu.'):null,
- h('div',{class:'card'},h('div',{class:'row'},h('h3',{},isR?'Products':'Menu'),previewing?null:h('span',{},h('button',{onclick:()=>{const n=prompt('Category name');n&&save('cat',{name:n,n:Date.now()}).then(render)}},'Add category'),h('button',{class:'p',onclick:()=>item({})},isR?'Add product':'Add item'))),...effCats().sort((a,b)=>a.n-b.n).map(c=>h('div',{},h('div',{class:'row'},h('b',{},c.name),previewing?null:h('button',{onclick:()=>confirm('Delete category?')&&save('cat',c,c.id,true).then(render)},'Delete')),...effItems().filter(i=>i.cat==c.id).map(i=>h('div',{class:'row'},(isR?'':VEG_DOT[i.veg||'veg']+' ')+i.name+(itemOff(i)?' (sold out'+(i.offUntil?' until '+new Date(i.offUntil).toLocaleString():'')+')':''),isR?inr(i.price)+' · '+variantQty(i)+' in stock':(i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price)),previewing?null:h('button',{onclick:()=>item(i)},'Edit')))))))};
+ h('div',{class:'card'},h('div',{class:'row'},h('h3',{},isR?'Products':'Menu'),previewing?null:h('span',{},h('button',{onclick:()=>{const n=prompt('Category name');n&&save('cat',{name:n,n:Date.now()}).then(render)}},'Add category'),h('button',{class:'p',onclick:()=>item({})},isR?'Add product':'Add item'))),...effCats().sort((a,b)=>a.n-b.n).map(c=>h('div',{},h('div',{class:'row'},h('b',{},c.name),previewing?null:h('button',{onclick:()=>confirm('Delete category?')&&save('cat',c,c.id,true).then(render)},'Delete')),...effItems().filter(i=>i.cat==c.id).map(i=>h('div',{class:'row'},(isR?'':VEG_DOT[i.veg||'veg']+' ')+i.name+(i.combo?' 🎁':'')+(itemOff(i)?' (sold out'+(i.offUntil?' until '+new Date(i.offUntil).toLocaleString():'')+')':''),isR?inr(i.price)+' · '+variantQty(i)+' in stock':(i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price)),previewing?null:h('button',{onclick:()=>item(i)},'Edit')))))))};
 V.set=()=>{const s=cfg(),F={},sel=(k,l,o)=>h('label',{},l,h('select',{style:'width:100%',onchange:e=>F[k]=e.target.value},...o.map(([v,n])=>h('option',{value:v,selected:String(s[k]||o[0][0])==String(v)},n)))),f=(k,l,t)=>h('label',{},l,h('input',{type:t||'text',value:s[k],style:'width:100%',oninput:e=>F[k]=t=='number'?+e.target.value:e.target.value})),ta=(k,l)=>h('label',{},l,h('textarea',{style:'width:100%;min-height:70px',oninput:e=>F[k]=e.target.value},s[k]||''));
  const sw=(k,title,desc)=>h('div',{class:'hw-row'},h('div',{class:'hw-text'},h('b',{},title),h('span',{},desc)),h('label',{class:'switch'},h('input',{type:'checkbox',checked:!!s[k],onchange:async e=>{await save('settings',{...cfg(),[k]:e.target.checked},'settings');render()}}),h('div',{class:'track'})));
  const imgField=(k,l)=>{const inp=h('input',{type:'file',accept:'image/*'}),prev=h('div',{style:'font-size:12px;color:var(--ink-dim)'},s[k]?'Current image is set':'No image yet');inp.onchange=async()=>{const file=inp.files[0];if(!file)return;prev.textContent='Compressing & uploading…';try{F[k]=await uploadSiteImage(file,k);prev.textContent='Uploaded ✓ — click Save to apply'}catch(e){prev.textContent='Upload failed: '+e.message}};return h('label',{style:'display:grid;gap:4px'},l,inp,prev)};
