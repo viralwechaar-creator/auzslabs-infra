@@ -150,3 +150,23 @@ html.sk-loading,html.sk-loading body{overflow:hidden}
   .reveal .h-1,.reveal .h-hero{background-size:min(260px,62%) 10px}
   .sk-progress{display:none}
 }
+
+/* ---------- the blast ---------- */
+.sk-fx{position:fixed;inset:0;width:100%;height:100%;z-index:2147483001;pointer-events:none;transition:opacity .35s ease}
+.sk-loader.charge .sk-brand,.sk-loader.charge .sk-line,.sk-loader.charge .sk-bar{opacity:0;transition:opacity .25s ease}
+.sk-loader.charge .sk-scene{animation:sk-shake .09s linear infinite;filter:drop-shadow(0 0 22px rgba(255,140,40,.95)) brightness(1.15)}
+.sk-loader.charge .sk-cube{animation-duration:.55s}
+.sk-loader.charge .sk-cube.in{animation-duration:.3s}
+.sk-loader.charge .sk-f{background-color:rgba(255,190,110,.55);border-color:#b34a00}
+.sk-loader.boom .sk-scene{opacity:0;transform:scale(1.9);transition:opacity .16s ease,transform .2s ease-out;animation:none}
+@keyframes sk-shake{0%{transform:translate(0,0)}25%{transform:translate(3px,-2px)}50%{transform:translate(-3px,2px)}75%{transform:translate(2px,3px)}100%{transform:translate(0,0)}}
+.sk-flash{position:fixed;z-index:2147483002;inset:0;pointer-events:none;opacity:0;animation:sk-flash .7s ease-out forwards;
+  background:radial-gradient(circle at var(--cx) var(--cy),#fff 0,rgba(255,214,140,.95) 10%,rgba(255,150,60,.35) 28%,transparent 55%)}
+@keyframes sk-flash{0%{opacity:1;transform:scale(.3)}100%{opacity:0;transform:scale(1.6)}}
+.sk-ring{position:fixed;z-index:2147483002;left:var(--cx);top:var(--cy);width:24px;height:24px;margin:-12px 0 0 -12px;border:3px solid var(--accent);border-radius:50%;
+  pointer-events:none;animation:sk-ring .9s cubic-bezier(.2,.7,.2,1) forwards}
+@keyframes sk-ring{from{transform:scale(1);opacity:1}to{transform:scale(60);opacity:0;border-width:.3px}}
+html.sk-hold [data-sk-t]{opacity:0!important;transition:none!important;animation:none!important}
+[data-sk-t].sk-land{animation:sk-landing .7s var(--ease-spring) backwards}
+@keyframes sk-landing{from{opacity:0;scale:.93}}
+@media (prefers-reduced-motion:reduce){.sk-fx,.sk-flash,.sk-ring{display:none}}
