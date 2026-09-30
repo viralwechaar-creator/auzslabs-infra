@@ -107,6 +107,16 @@ const fmtDate=d=>{const t=new Date(d);return t.toLocaleDateString('en-US',{weekd
 const today=()=>new Date().toLocaleDateString('en-CA');
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const h=(t,a={},...k)=>{const e=document.createElement(t);for(const x in a){const v=a[x];if(v==null||v===false)continue;x.startsWith('on')?e[x]=v:x=='class'?e.className=v:e.setAttribute(x,v)}e.append(...k.flat().filter(x=>x!=null&&x!==false));return e};
+// Small line-icon set standing in for emoji (colourful platform pictograms
+// clash with this app's flat ink/mono design) -- same trick T_ICON below
+// already uses for the sidebar: a <span> with raw SVG innerHTML, since
+// document.createElement('svg') is the wrong namespace and won't render.
+const ICONS={gift:'<rect x="4" y="9" width="16" height="11" rx="1"/><path d="M4 9h16M12 9v11"/><path d="M8 9c-1.5 0-3-1-3-3s1.5-2 3-1c1 .6 2 2 3 4zM16 9c1.5 0 3-1 3-3s-1.5-2-3-1c-1 .6-2 2-3 4z"/>',
+ lock:'<rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+ bell:'<path d="M12 3a5 5 0 0 0-5 5v3.5c0 1-.4 2-1.2 2.7L5 15h14l-.8-.8A4 4 0 0 1 17 11.5V8a5 5 0 0 0-5-5Z"/><path d="M10 18a2 2 0 0 0 4 0"/>',
+ star:'<path d="M12 3l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.2L6.6 19.3l1.3-6-4.6-4.1 6.1-.6z"/>'};
+const icon=(name,sz)=>{const s=h('span',{style:'display:inline-flex;vertical-align:-3px'});s.innerHTML='<svg width="'+(sz||14)+'" height="'+(sz||14)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0">'+(ICONS[name]||'')+'</svg>';return s};
+const swatch=c=>h('span',{style:'width:9px;height:9px;border-radius:2px;background:'+c+';display:inline-block;vertical-align:-1px'});
 const L=k=>Object.values(R).filter(r=>r.kind==k&&!r.deleted).map(r=>r.data),tn=id=>{const t=R[id];return t&&!t.deleted?t.data.name:''};
 const cfg=()=>({name:'My Restaurant',addr:'',phone:'',gstin:'',tax:5,prefix:'INV',col:null,logo:'/logo.png',ftr:'Thank you!',w:80,sty:'mono',fs:12,gw:'Scan, order and relax. Your order goes straight to our kitchen.',bizType:'restaurant',loyaltyOn:true,loyaltyEarnRs:100,loyaltyRedeemRs:1,...(R.settings&&R.settings.data)});
 const isRestaurant=()=>['restaurant','cafe'].includes(effBizType()||'restaurant');
@@ -250,7 +260,7 @@ function dayReportPane(){const dc=L('dayclose').find(x=>x.d==S.d),os=L('order').
  const refunds=r2(os.reduce((a,o)=>a+(o.refunds||[]).reduce((b,r)=>b+r.amt,0),0)),et=r2(ex.reduce((a,e)=>a+e.amt,0)),ec=h('input',{placeholder:'Expense (e.g. milk)'}),ea=h('input',{type:'number',placeholder:'Amount'}),R_=(a,b)=>h('div',{class:'row'},a,h('b',{},b));
  const expCats=[...new Set(L('exp').map(e=>e.cat).filter(Boolean))].sort(),eCat=h('input',{list:'expcatlist',placeholder:'Category (e.g. Rent, Utilities)'}),eCatDl=h('datalist',{id:'expcatlist'},...expCats.map(c=>h('option',{value:c})));
  const byCat={};ex.forEach(e=>{const k=e.cat||'Other';byCat[k]=r2((byCat[k]||0)+e.amt)});
- return h('div',{class:'g',style:'grid-template-columns:1fr'},h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Day report'+(dc?' 🔒 closed':'')),h('input',{type:'date',value:S.d,onchange:e=>{S.d=e.target.value;render()}})),R_('Bills',os.length),R_('Sales',inr(sm(o=>o.t.total))),R_('Discounts',inr(sm(o=>o.t.d))),R_('GST collected',inr(sm(o=>o.t.tax))),R_('Refunds',inr(refunds)),R_('Cash',inr(m.cash)),R_('UPI',inr(m.upi)),R_('Card',inr(m.card)),...Object.entries(src).map(([k,v])=>R_(k,inr(v))),R_('Expenses',inr(et)),R_('Cash expected in drawer',inr(m.cash-et)),
+ return h('div',{class:'g',style:'grid-template-columns:1fr'},h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Day report',dc?[' ',icon('lock'),' closed']:null),h('input',{type:'date',value:S.d,onchange:e=>{S.d=e.target.value;render()}})),R_('Bills',os.length),R_('Sales',inr(sm(o=>o.t.total))),R_('Discounts',inr(sm(o=>o.t.d))),R_('GST collected',inr(sm(o=>o.t.tax))),R_('Refunds',inr(refunds)),R_('Cash',inr(m.cash)),R_('UPI',inr(m.upi)),R_('Card',inr(m.card)),...Object.entries(src).map(([k,v])=>R_(k,inr(v))),R_('Expenses',inr(et)),R_('Cash expected in drawer',inr(m.cash-et)),
   dc&&dc.countedCash!=null?R_('Cash counted',inr(dc.countedCash)):null,
   dc&&dc.variance?h('div',{class:'row'},'Variance'+(dc.varianceReason?' ('+dc.varianceReason+')':''),h('b',{style:'color:var(--accent)'},(dc.variance>0?'+':'')+inr(dc.variance))):null,
   h('div',{class:'row'},h('button',{onclick:()=>csv([['No','Type','Customer','Phone','Total','Paid via'],...os.map(o=>[o.no,o.type,(o.cust||{}).name,(o.cust||{}).phone,o.t.total,(o.pays||[]).map(p=>p.m).join('+')])],'orders-'+S.d+'.csv')},'Export orders CSV'),
@@ -343,10 +353,10 @@ function item(i){const isR=isRetail();const px=h('input',{type:'number',value:i.
   const dupeCode=myCodes.find(c=>allOtherCodes.includes(c));
   if(dupeCode&&!confirm('Barcode "'+dupeCode+'" is already used on another item/variant. Scanning it will always resolve to whichever matches first. Save anyway?'))return;
   await save('item',{...i,name:nm.value.trim(),cat:ct.value,price:+px.value||(sizes[0]&&sizes[0].p)||0,sizes,variants,low:isR?(lowInp.value===''?2:+lowInp.value):i.low,off:off.checked,offUntil,rec:isR?'':rc.value.trim(),cost:+cs.value||0,st:stn.value,mods,barcode,veg:isR?i.veg:veg.value,desc:isR?i.desc:desc.value.trim(),img:isR?i.img:imgUrl,recipeText:isR?i.recipeText:recipeText.value.trim(),combo:isR?false:combo.checked,comboText:isR?'':comboText.value.trim()});x();render()}},'Save'),i.id?h('button',{onclick:async()=>{await save('item',i,i.id,true);x();render()}},'Delete'):null))}
-const VEG_DOT={veg:'🟢',nonveg:'🔴',egg:'🟡'};
+const VEG_COLOR={veg:'#2e7d32',nonveg:'#b3261e',egg:'#c98a00'};
 V.menu=()=>{const isR=isRetail(),previewing=cfg().isDemo&&S.previewNiche;return h('div',{class:'g',style:'grid-template-columns:1fr'},
  previewing?h('p',{style:'color:var(--accent);font-size:13px'},'Previewing a sample '+S.previewNiche+' menu — read only. Pick "Current" in Settings → Business to go back to editing your real menu.'):null,
- h('div',{class:'card'},h('div',{class:'row'},h('h3',{},isR?'Products':'Menu'),previewing?null:h('span',{},h('button',{onclick:()=>{const n=prompt('Category name');n&&save('cat',{name:n,n:Date.now()}).then(render)}},'Add category'),h('button',{class:'p',onclick:()=>item({})},isR?'Add product':'Add item'))),...effCats().sort((a,b)=>a.n-b.n).map(c=>h('div',{},h('div',{class:'row'},h('b',{},c.name),previewing?null:h('button',{onclick:()=>confirm('Delete category?')&&save('cat',c,c.id,true).then(render)},'Delete')),...effItems().filter(i=>i.cat==c.id).map(i=>h('div',{class:'row'},(isR?'':VEG_DOT[i.veg||'veg']+' ')+i.name+(i.combo?' 🎁':'')+(itemOff(i)?' (sold out'+(i.offUntil?' until '+new Date(i.offUntil).toLocaleString():'')+')':''),isR?inr(i.price)+' · '+variantQty(i)+' in stock':(i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price)),previewing?null:h('button',{onclick:()=>item(i)},'Edit')))))))};
+ h('div',{class:'card'},h('div',{class:'row'},h('h3',{},isR?'Products':'Menu'),previewing?null:h('span',{},h('button',{onclick:()=>{const n=prompt('Category name');n&&save('cat',{name:n,n:Date.now()}).then(render)}},'Add category'),h('button',{class:'p',onclick:()=>item({})},isR?'Add product':'Add item'))),...effCats().sort((a,b)=>a.n-b.n).map(c=>h('div',{},h('div',{class:'row'},h('b',{},c.name),previewing?null:h('button',{onclick:()=>confirm('Delete category?')&&save('cat',c,c.id,true).then(render)},'Delete')),...effItems().filter(i=>i.cat==c.id).map(i=>h('div',{class:'row'},h('span',{},isR?null:[swatch(VEG_COLOR[i.veg||'veg']),' '],i.name,i.combo?[' ',icon('gift')]:null,itemOff(i)?' (sold out'+(i.offUntil?' until '+new Date(i.offUntil).toLocaleString():'')+')':''),isR?inr(i.price)+' · '+variantQty(i)+' in stock':(i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price)),previewing?null:h('button',{onclick:()=>item(i)},'Edit')))))))};
 V.set=()=>{const s=cfg(),F={},sel=(k,l,o)=>h('label',{},l,h('select',{style:'width:100%',onchange:e=>F[k]=e.target.value},...o.map(([v,n])=>h('option',{value:v,selected:String(s[k]||o[0][0])==String(v)},n)))),f=(k,l,t)=>h('label',{},l,h('input',{type:t||'text',value:s[k],style:'width:100%',oninput:e=>F[k]=t=='number'?+e.target.value:e.target.value})),ta=(k,l)=>h('label',{},l,h('textarea',{style:'width:100%;min-height:70px',oninput:e=>F[k]=e.target.value},s[k]||''));
  const sw=(k,title,desc)=>h('div',{class:'hw-row'},h('div',{class:'hw-text'},h('b',{},title),h('span',{},desc)),h('label',{class:'switch'},h('input',{type:'checkbox',checked:!!s[k],onchange:async e=>{await save('settings',{...cfg(),[k]:e.target.checked},'settings');render()}}),h('div',{class:'track'})));
  const imgField=(k,l)=>{const inp=h('input',{type:'file',accept:'image/*'}),prev=h('div',{style:'font-size:12px;color:var(--ink-dim)'},s[k]?'Current image is set':'No image yet');inp.onchange=async()=>{const file=inp.files[0];if(!file)return;prev.textContent='Compressing & uploading…';try{F[k]=await uploadSiteImage(file,k);prev.textContent='Uploaded ✓ — click Save to apply'}catch(e){prev.textContent='Upload failed: '+e.message}};return h('label',{style:'display:grid;gap:4px'},l,inp,prev)};
@@ -583,7 +593,7 @@ return h('div',{class:'g',style:'grid-template-columns:1fr'},
   ...list.map(c=>{const{tier}=custSegment(c),profile=L('customer').find(p=>p.phone==c.phone);return h('div',{class:'cust-row',onclick:()=>custModal(c,c.orders)},
    h('div',{class:'cust-avatar'},(c.name||'?')[0].toUpperCase()),
    h('div',{class:'cust-info'},
-    h('div',{class:'cust-name-row'},h('span',{class:'cust-name'},(profile&&profile.favorite?'⭐ ':'')+(c.name||'Unknown')),h('span',{class:'badge tier-'+tier.toLowerCase()},tier),...(profile&&profile.tags||[]).map(t=>h('span',{class:'badge',style:'background:var(--bg-raised);color:var(--ink-dim)'},t))),
+    h('div',{class:'cust-name-row'},h('span',{class:'cust-name'},profile&&profile.favorite?icon('star'):null,' '+(c.name||'Unknown')),h('span',{class:'badge tier-'+tier.toLowerCase()},tier),...(profile&&profile.tags||[]).map(t=>h('span',{class:'badge',style:'background:var(--bg-raised);color:var(--ink-dim)'},t))),
     h('div',{class:'cust-meta'},c.phone+' · '+c.n+' visit'+(c.n>1?'s':'')+' · '+inr(c.tot)+' · last '+new Date(c.last).toLocaleDateString())
    ),
    h('button',{class:'p cust-view'},'View')
@@ -842,7 +852,7 @@ function render(){if(S.authExpired||!S.user)return login('Your session ended. Pl
    h('button',{class:'hamburger-btn',onclick:()=>{S.drawerOpen=!S.drawerOpen;syncDrawer()}},'☰'),
    h('h1',{},tabLabel),
    h('span',{id:'net'}),
-   h('span',{class:'bell-wrap'},h('button',{id:'notifBell',onclick:()=>location.href='https://auzslab.in/account.html#notifications'},'🔔'),h('span',{id:'notifCount'}))
+   h('span',{class:'bell-wrap'},h('button',{id:'notifBell',onclick:()=>location.href='https://auzslab.in/account.html#notifications'},icon('bell',16)),h('span',{id:'notifCount'}))
   ),
   ...[lowBar(),expiryBar()].filter(Boolean),
   V[S.tab](),
