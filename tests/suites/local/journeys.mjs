@@ -13,9 +13,9 @@ export default async function run({ browser, stack }) {
     const r = await q('select count(*)::int n from auth_users where email = $1', [email]); assert(r[0].n === 1, 'account not created; page says: ' + (await page.locator('#authErr').innerText().catch(() => '')));
   }, 'critical');
   await s.check('Signup refuses a weak/short password', async () => {
-    const p = await ctx.newPage(); await p.goto(stack.url('', '/signup.html')); await p.waitForTimeout(500);
+    const cw = await newCtx(browser, stack); const p = await cw.newPage(); await p.goto(stack.url('', '/signup.html')); await p.waitForTimeout(500);
     await p.fill('#email', 'weak-' + Date.now() + '@test.local'); await p.fill('#password', '123'); await p.click('#submitBtn'); await p.waitForTimeout(1000);
-    const r = await q("select count(*)::int n from auth_users where email like 'weak-%'"); assert(r[0].n === 0, 'short password accepted'); await p.close();
+    const r = await q("select count(*)::int n from auth_users where email like 'weak-%'"); assert(r[0].n === 0, 'short password accepted'); await cw.close();
   });
   await s.check('Existing account can sign in again (login mode)', async () => {
     const c2 = await newCtx(browser, stack); const p = await c2.newPage();
@@ -39,9 +39,11 @@ export default async function run({ browser, stack }) {
   await s.check('Cart page lets a signed-in visitor pick products and submit a request', async () => {
     const c5 = await newCtx(browser, stack); const p = await c5.newPage(); const e5 = watch(p);
     await p.goto(stack.url('', '/signup.html')); await p.waitForTimeout(500); await p.click('#modeLogin'); await p.fill('#email', USERS.plain); await p.fill('#password', PASSWORD); await p.click('#submitBtn'); await p.waitForTimeout(1500);
+    await p.goto(stack.url('', '/products.html')); await p.waitForTimeout(800);
+    const adds = p.locator('[data-cart-btn]'); assert((await adds.count()) >= 3, 'products page has too few Add to cart buttons');
+    await adds.first().click(); await p.waitForTimeout(400);
     await p.goto(stack.url('', '/cart.html')); await p.waitForTimeout(1200);
-    const toggles = p.locator('input[type=checkbox]'); const n = await toggles.count(); assert(n >= 3, 'cart shows only ' + n + ' products');
-    await toggles.first().check({ force: true }).catch(() => {});
+    assert(/\S/.test(await p.locator('#cartItems').innerText()), 'cart is empty after adding a product');
     await p.fill('#contactName', 'QA Owner'); await p.fill('#contactPhone', '9811100011'); await p.fill('#bizName', 'QA Business'); await p.fill('#bizSlug', 'qabusiness' + (Date.now() % 10000));
     await p.selectOption('#bizNiche', { index: 1 }).catch(() => {}); await p.fill('#bizAddress', '1 Test Road').catch(() => {});
     await p.click('#submitBtn'); await p.waitForTimeout(2000);
