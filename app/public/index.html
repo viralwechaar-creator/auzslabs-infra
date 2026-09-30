@@ -906,13 +906,13 @@ const T_GROUP_START=new Set(['kds','rep','menu']);
 function renderDrawer(T){
  if(!drawerEl){drawerOvEl=h('div',{class:'drawer-ov',onclick:()=>{S.drawerOpen=false;syncDrawer()}});drawerEl=h('div',{class:'drawer'});document.body.append(drawerOvEl,drawerEl)}
  drawerEl.replaceChildren(
-  ...T.map(([k,n])=>{const btn=h('button',{class:S.tab==k?'on':'',style:'display:flex;align-items:center;gap:10px'+(T_GROUP_START.has(k)?';margin-top:12px':''),onclick:()=>{if(k=='payroll'){location.href='/payroll.html';return}if(k=='builder'){location.href='/builder.html';return}S.tab=k;S.drawerOpen=false;syncDrawer();render()}});btn.innerHTML='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0">'+(T_ICON[k]||'')+'</svg><span>'+esc(n)+'</span>';return btn}),
+  ...T.map(([k,n])=>{const btn=h('button',{class:S.tab==k?'on':'',style:'display:flex;align-items:center;gap:10px'+(T_GROUP_START.has(k)?';margin-top:12px':''),onclick:()=>{if(k=='builder'){location.href='/builder.html';return}S.tab=k;S.drawerOpen=false;syncDrawer();render()}});btn.innerHTML='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0">'+(T_ICON[k]||'')+'</svg><span>'+esc(n)+'</span>';return btn}),
   h('button',{class:'warn',style:'margin-top:12px',onclick:async()=>{await sb.auth.signOut();localStorage.removeItem('u');location.reload()}},'Sign out'),
   h('div',{style:'margin-top:auto;padding:10px 12px;font-size:11px;color:var(--ink-faint);font-family:\'Space Mono\',monospace'},'Signed in as '+S.role)
  );
  syncDrawer();
 }
-const ALL_T=[['pos','Sell','pos','pos'],['tabs','Orders','orders',null],['kds','Kitchen','kitchen','kds'],['kotrep','KOT','kitchen','kds'],['token','Token','kitchen',null],['rep','Reports','reports','reports'],['staff','Staff','staff',null],['inv','Stock','inventory',null],['crm','Customers','crm','crm'],['mem','Memberships','crm','membership'],['help','Support','crm','helpdesk'],['task','Tasks','staff','tasks'],['vendor','Purchases','inventory','purchases'],['payroll','Payroll','o','payroll'],['builder','Website','o','website_builder']];
+const ALL_T=[['pos','Sell','pos','pos'],['tabs','Orders','orders',null],['kds','Kitchen','kitchen','kds'],['kotrep','KOT','kitchen','kds'],['token','Token','kitchen',null],['rep','Reports','reports','reports'],['staff','Staff','staff',null],['inv','Stock','inventory',null],['crm','Customers','crm','crm'],['mem','Memberships','crm','membership'],['help','Support','crm','helpdesk'],['task','Tasks','staff','tasks'],['vendor','Purchases','inventory','purchases'],['builder','Website','o','website_builder']];
 const visibleTabs=()=>ALL_T.filter(([k,,perm,feat])=>can(perm)&&(!feat||featureOn(feat))&&(k!='kotrep'||isRestaurant())&&(k!='token'||cfg().hwToken));
 function render(){if(S.authExpired||!S.user)return login('Your session ended. Please sign in again.');applyTheme();
  const T=visibleTabs().map(([k,n])=>[k,n]);
