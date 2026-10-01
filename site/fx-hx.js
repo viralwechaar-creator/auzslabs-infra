@@ -15,6 +15,24 @@
     var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }); }, { threshold: .2 });
     [].forEach.call(doc.querySelectorAll('.hx-card,.vw-card,.hx-row'), function (el) { io.observe(el); });
   } else [].forEach.call(doc.querySelectorAll('.hx-card,.vw-card,.hx-row'), function (el) { el.classList.add('in'); });
+  // Phones and tablets: pinned folder-cut sheets (CSS sticky) with plain swipe rows. NO scroll-linked card animation here: moving cards over pinned
+  // sheets made iPhone scrolling shake. Each sheet's top is min(pin, viewport - sheet height); only sizes are measured, on load / fonts / width change.
+  function stkMeasure() {
+    var sheets = [].slice.call(doc.querySelectorAll('.hw,.hx,.vw,.tk'));
+    if (window.innerWidth >= 900) { root.classList.remove('fx-stk'); sheets.forEach(function (e) { e.style.removeProperty('--h'); }); return; }
+    root.classList.add('fx-stk');
+    root.style.setProperty('--pin', Math.round(Math.max(112, Math.min(190, window.innerHeight * .2))) + 'px');
+    sheets.forEach(function (e) { e.style.removeProperty('--h'); });
+    sheets.forEach(function (e) { e.style.setProperty('--h', e.offsetHeight + 'px'); });
+  }
+  if (window.innerWidth < 900) {
+    stkMeasure();
+    var sw = window.innerWidth;
+    window.addEventListener('resize', function () { if (window.innerWidth === sw) return; sw = window.innerWidth; stkMeasure(); });
+    window.addEventListener('load', function () { setTimeout(stkMeasure, 200); });
+    if (doc.fonts && doc.fonts.ready) doc.fonts.ready.then(stkMeasure);
+    return;
+  }
   if (reduce || !ok) return;   // wide screens (>= 900px) skip the pinned deck: they get the plain stacked layout (see fx-hx.css)
 
   var items = [].slice.call(track.children), vwEl = doc.querySelector('.vw'), vwItems = vwEl ? [].slice.call(vwEl.querySelectorAll('.vw-card')) : [];
