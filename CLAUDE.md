@@ -709,3 +709,12 @@ such file or directory` usually means they were already inside that
 directory, not that it's missing). Always give a concrete way to verify a
 deploy actually landed (e.g. `git log -1 --oneline`) rather than just
 trusting "I ran it."
+
+### Homepage scroll rules (final, iPhone shake fix)
+
+- Touch devices get **zero scroll-linked motion**: page 2 (`.hx`) is a native swipe row there. The pinned sideways slide and card float
+  (CSS `animation-timeline`) exist only inside `@media (hover:hover) and (pointer:fine)`; `fx-hx.js` returns early otherwise.
+- The marquee is a CSS animation (`--mq-w`/`--mq-dur` set once in `measure()`), and flow mode runs no rAF loop. Do not add scroll listeners,
+  per-frame `getBoundingClientRect`, fixed full-screen layers, or `will-change` sprinkling.
+- Every homepage sheet shares `--sheet-r:28px` (rounded top, 28px overlap, shadow). No extra edge bars or `::before` overlaps (they cut the hero logo).
+- Sheets are folder-cut with `clip-path: polygon()` on `.hx/.vw/.tk` (straight diagonal shoulder + chamfered corners, `--cut`, `--ch`, `--nx`; no border-radius, no cutter pseudo-elements). The previous sheet must extend under the cut, so each sheet overlaps it by `--cut + --ch` (and `.hero2` pads its bottom by the same). No progress bar on page 2. Static, no scroll motion, no box-shadow.

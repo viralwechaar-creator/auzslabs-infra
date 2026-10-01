@@ -106,6 +106,9 @@ html.fx-live .fx-only-static{display:none!important}
 
 /* ---------- marquee ---------- */
 [data-marquee]{overflow:hidden;white-space:nowrap}
+.fx-mq-track{animation:fx-mq var(--mq-dur,40s) linear infinite}
+@keyframes fx-mq{from{transform:translate3d(0,0,0)}to{transform:translate3d(calc(var(--mq-w,0px) * -1),0,0)}}
+@media (prefers-reduced-motion:reduce){.fx-mq-track{animation:none}}
 .fx-mq-track{display:flex;width:max-content;will-change:transform}
 .fx-mq-set{display:flex;align-items:center;flex-shrink:0}
 

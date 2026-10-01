@@ -15,7 +15,8 @@
     var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }); }, { threshold: .2 });
     [].forEach.call(doc.querySelectorAll('.hx-card,.vw-card,.hx-row'), function (el) { io.observe(el); });
   } else [].forEach.call(doc.querySelectorAll('.hx-card,.vw-card,.hx-row'), function (el) { el.classList.add('in'); });
-  if (reduce || !ok) return;
+  var fine = window.matchMedia && matchMedia('(hover:hover) and (pointer:fine)').matches;   // phones/tablets: native swipe row, no scroll-linked motion
+  if (reduce || !ok || !fine) return;
 
   function measure() {
     var vw = window.innerWidth, sh = stage.offsetHeight;                    // stage is 100svh: does not change when the phone toolbar hides

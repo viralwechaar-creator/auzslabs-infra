@@ -296,6 +296,9 @@
     this.w = this.set.offsetWidth || 1;
     var need = Math.ceil((FX.vw * 2.2) / this.w) + 1;
     for (var i = 0; i < need; i++) this.track.appendChild(this.set.cloneNode(true));
+    // the band scrolls with a plain CSS animation (compositor): the old per-frame JS skewed it by scroll velocity and read layout every frame, which made pages wobble while scrolling
+    this.track.style.setProperty('--mq-w', this.w + 'px'); this.track.style.setProperty('--mq-dur', (this.w / Math.max(10, this.speed)).toFixed(2) + 's');
+    this.track.style.animationDirection = this.dir > 0 ? 'reverse' : 'normal';
     [].forEach.call(this.track.children, function (c, i) { if (i) c.setAttribute('aria-hidden', 'true'); });
   };
   Marquee.prototype.step = function (dt) {
@@ -373,10 +376,8 @@
       }, { threshold: 0, rootMargin: '0px 0px -6% 0px' });
       els.forEach(function (el) { io.observe(el); });
     } else els.forEach(function (el) { el.classList.add('in'); if (el.hasAttribute('data-draw-in')) el.style.setProperty('--d', 1); });
-    FX.tick(function (t, dt) { for (var i = 0; i < marquees.length; i++) marquees[i].step(dt); });
     window.addEventListener('load', function () { marquees.forEach(function (m) { m.measure(); }); });
-    root.classList.add('fx-flow-ready');
-    requestAnimationFrame(frame);
+    root.classList.add('fx-flow-ready');   // no requestAnimationFrame loop in flow mode: nothing needs one
   }
   function boot() {
     FX.hydrate();

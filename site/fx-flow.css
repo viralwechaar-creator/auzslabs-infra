@@ -349,8 +349,10 @@ html.fx-stacked .fx-panel:first-of-type{background-color:#fbfaf9;box-shadow:none
 html.fx-stacked .fx-panel.alt{background-color:inherit}
 html.fx-stacked .fx-panel:nth-of-type(3n+2).fx-panel,html.fx-stacked .fx-panel:nth-of-type(3n+3).fx-panel{background-image:none!important}
 .fx .fx-panel::before{opacity:.92}
-@supports (animation-timeline: view()) {
+@media (hover:hover) and (pointer:fine) { @supports (animation-timeline: view()) {
   /* each panel's content drifts slower than the panel itself, so the layers read as separate depths; compositor-only */
   html.fx-stacked .fx-panel:not(:first-of-type)>*:not(.stack-panel-dark){animation:fxDepth linear both;animation-timeline:view();animation-range:entry 0% cover 60%}
   @keyframes fxDepth{from{transform:translate3d(0,34px,0);opacity:.6}to{transform:none;opacity:1}}
-}
+} }
+
+.page-transition:not(.is-active){display:none}   /* a full-screen fixed layer that is invisible 99% of the time still costs compositing on phones */
