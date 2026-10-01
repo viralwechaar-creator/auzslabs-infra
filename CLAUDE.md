@@ -657,6 +657,15 @@ cursor trail), `fx-phys.js` (draggable bubbles), `fx-ui.js` (pricing stack build
   because theme.css sets smooth scrolling).
 - **Intro blast:** `sketch.js` flies particles to elements marked `[data-blast]` (falls back to headings/buttons).
 
+## Staff apps: Apple HIG layer (`app/public/hig.css`)
+
+POS (`index.html`), Back Office, Payroll and Website Builder link `/hig.css` right after their own inline `<style>`. It is a restyle only
+(no markup or behaviour): system typeface and a real type scale (body 16, nothing under 12), 44pt minimum hit targets on buttons/inputs/tabs,
+segmented-control tabs, grouped rounded cards with hairline separators, a bottom-sheet for `.md` modals on phones, soft spring motion,
+visible focus rings, reduced-motion support. It was built from Apple's Human Interface Guidelines (repo `NutshellEngineering/apple-design-skill`,
+`references/foundations/typography.md`, `components/menus-and-actions/buttons.md`). Tenant colours (`--accent`/`--g`) are untouched. The
+marketing site (`site/`) deliberately does NOT use it. Customer-facing pages (`site.html`, `booking.html`, `order.html`, `i.html`) don't either.
+
 ## Non-technical owner, deploy over SSH from a phone
 
 The person operating this project deploys by pasting commands into
