@@ -675,6 +675,18 @@ after its own `<style>` and is built to the HIG from the start: 44pt hit targets
 uppercase), segmented controls for tabs, bottom sheets for modals on phones, no light/heavy weights. When starting a new app, copy the link tag from
 `index.html`, then check it on a phone-width screenshot. Exceptions: the marketing site and the Showoff-style salon console (`app/public/salon/`, a client's own design). Customer-facing pages (`site.html`, `booking.html`, `order.html`, `i.html`) don't either.
 
+## POS hand-over rules (cashier <-> kitchen <-> sync)
+
+Found by `tests/suites/local/pos.mjs`; keep them true:
+- **`records.updated_at` is the concurrency token** (`push_record` compares it for exact equality), so `GET /db/records` serves it as a microsecond ISO string (`handleSelect` in `server/src/index.js`).
+  node-pg's default Date (milliseconds) made every pulled record look "changed elsewhere" and pushes were force-overwritten. Never return it as a JS Date.
+- **Sync requests that arrive while a sync is running are remembered** (`syncAgain` in `index.html`), not dropped: back-to-back saves (order then kotlog) used to leave the second one waiting up to 30 s.
+- **The cart (`S.cur`) is a clone**, the kitchen edits the same order record: `freshCur()` copies the kitchen-owned fields (`kstat`, `preparingAt`, `readyAt`, `dispatchAt`) into it before pay / KOT / render.
+  Otherwise paying wrote the stale clone over the kitchen's state and a paid order re-appeared in the kitchen queue. Any new kitchen-owned field goes in `KFIELDS`.
+- The POS screen redraws once a minute, not every second (taps were swallowed); kitchen clocks tick via `data-kt` text nodes.
+- Guest orders: a "Waiter called" alert (empty `items`) is only acknowledged, never turned into an order; accepting a guest order refreshes the cashier's open cart if it is the same order.
+- Cash payment has one-tap "Exact" / round-note buttons above the denomination counter.
+
 ## App logos (AUZslab POS / AUZslab Payroll)
 
 Owner-supplied marks (a slanted stroke plus two stepped pixel squares), recoloured to the brand: POS = ink tile, white mark, bright-wine last square (`#c2183f`);
