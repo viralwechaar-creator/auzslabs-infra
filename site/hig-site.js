@@ -23,7 +23,25 @@
       p.dataset.trim = '1'; p.title = t; p.textContent = m[1];
     });
   }
-  function run() { try { trim(); soft(); } catch (e) {} }
-  function boot() { run(); setTimeout(run, 1200); window.addEventListener('load', function () { setTimeout(run, 300); }); }
+  var CARD = '.featsec.orbit .o,.mcols .mr,.stp,.st,.plan,.hs-i,.pcard,.hig-soft';
+  function cards() {
+    [].forEach.call(doc.querySelectorAll('.fx-panel'), function (panel) {
+      var seen = new Map();
+      [].forEach.call(panel.querySelectorAll(CARD), function (c) {
+        if (c.closest('.k,.demo,.faq,footer,form,table') || c.classList.contains('sw-card')) return;
+        var r = c.getBoundingClientRect(); if (r.height < 60 || r.width < 120) return;
+        var n = seen.get(c.parentNode) || 0; seen.set(c.parentNode, n + 1);
+        c.classList.add('sw-card'); c.style.setProperty('--sw', n % 2 ? -1 : 1);
+      });
+    });
+  }
+  // sticky sheets: each sheet's top is min(pin, viewport - its height), so a tall sheet scrolls until its bottom shows, then pauses
+  function pins() {
+    [].forEach.call(doc.querySelectorAll('.fx-panel'), function (p) { p.style.removeProperty('--h'); });
+    if (window.innerWidth >= 900) return;
+    [].forEach.call(doc.querySelectorAll('.fx-panel'), function (p) { p.style.setProperty('--h', p.offsetHeight + 'px'); });
+  }
+  function run() { try { trim(); soft(); cards(); pins(); } catch (e) {} }
+  function boot() { run(); setTimeout(run, 1200); window.addEventListener('load', function () { setTimeout(run, 300); }); var w = window.innerWidth; window.addEventListener('resize', function () { if (window.innerWidth !== w) { w = window.innerWidth; pins(); } }); if (doc.fonts && doc.fonts.ready) doc.fonts.ready.then(pins); }
   if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', boot); else boot();
 })();

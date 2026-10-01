@@ -45,10 +45,10 @@ html.fx-flow body.fx header.topbar{background:rgba(246,244,241,.86)}
 body.fx .knock-btn{font-size:0;gap:0;width:52px;height:52px;min-height:52px;padding:0;justify-content:center;right:14px;bottom:calc(14px + env(safe-area-inset-bottom))}
 body.fx .knock-btn svg{width:22px;height:22px}
 }
-html.fx-stacked{--cut:38px;--ch:20px;--sl:calc(var(--cut) * .9);--sheet-a:#f6f4f1;--sheet-b:#ebe6e1;--wine:#800020}
+html.fx-stacked{--pin:clamp(112px,20svh,190px);--cut:38px;--ch:20px;--sl:calc(var(--cut) * .9);--sheet-a:#f6f4f1;--sheet-b:#ebe6e1;--wine:#800020}
 body.fx{background:#f6f4f1}
 html.fx-stacked body.fx .stack{position:relative}
-html.fx-stacked body.fx .fx-panel{position:relative!important;border:0!important;border-radius:0!important;box-shadow:none!important;min-height:0!important;
+html.fx-stacked body.fx .fx-panel{position:sticky!important;top:min(var(--pin,150px),calc(100lvh - var(--h,0px)));border:0!important;border-radius:0!important;box-shadow:none!important;min-height:0!important;
  margin-top:calc((var(--cut) + var(--ch)) * -1)!important;padding:calc(var(--cut) + var(--ch) + 36px) 0 calc(var(--cut) + var(--ch) + 28px)!important;
  background:var(--sheet-a);--nx:40%;
  clip-path:polygon(0 var(--ch),var(--ch) 0,var(--nx) 0,calc(var(--nx) + var(--sl)) var(--cut),calc(100% - var(--ch)) var(--cut),100% calc(var(--cut) + var(--ch)),100% 100%,0 100%)}
@@ -99,3 +99,18 @@ body.fx main :is(h1,h2,h3){line-height:1.15!important}
 /* "What's included" lists live in .featsec.orbit .ring: fx-flow hid every .ring (decorative rings share the class), leaving an empty sheet */
 html body.fx .featsec.orbit .ring{display:grid!important;opacity:1!important;visibility:visible!important;height:auto!important}
 html body.fx .featsec.orbit .ring .o{opacity:1!important;transform:none!important}
+
+
+/* ---- stacked sheets pause under the header and the next sheet slides up over them (CSS sticky, no scroll listener).
+   top = min(pin, viewport - sheet height): a tall sheet scrolls until its bottom is on screen, then pauses. The first sheet (hero) is not pinned. ---- */
+html.fx-stacked body.fx .fx-panel:first-of-type{position:relative!important}
+html.fx-stacked body.fx .stack{overflow:visible}
+/* ---- cards float in from the side, alternating left and right, as they scroll into view (compositor-only scroll-driven animation) ---- */
+body.fx .sw-card{--sw:1;box-shadow:0 1px 2px rgba(0,0,0,.04),0 22px 40px -28px rgba(0,0,0,.28)!important}
+@supports (animation-timeline: view()){
+ @media (prefers-reduced-motion:no-preference){
+  body.fx .sw-card{animation:swIn linear both;animation-timeline:view();animation-range:entry 0% entry 90%}
+  @keyframes swIn{from{transform:translate3d(calc(var(--sw) * 46vw),0,0) rotate(calc(var(--sw) * 3deg));opacity:.15}to{transform:none;opacity:1}}
+ }
+}
+body.fx .sw-card{margin-bottom:12px!important}
