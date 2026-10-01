@@ -218,3 +218,45 @@ html:not(.fx-live) .fx-stage :is(.coin){flex:0 0 26vw!important}
   html:not(.fx-live) .fx-stage .seg{flex:1 1 20%!important}
   .fx-panel:not(:first-of-type){padding-top:132px}
 }
+
+/* ---------- calmer, more minimal type scale (everything one notch smaller) + hero logo ---------- */
+.hp-hero .fx-stage{position:relative}
+.hp-hero .hero-art{position:absolute;right:5vw;bottom:34px;margin:0;display:block;z-index:1}
+.hp-hero .hero-art-logo{width:clamp(96px,16vw,190px);max-width:none}
+html.fx-flow .giant{font-size:clamp(34px,9vw,150px)}
+html.fx-flow .fx-h2{font-size:clamp(26px,4.2vw,64px)}
+html.fx-flow .fx-copy{font-size:clamp(14px,1.05vw,17px)}
+html:not(.fx-live) #story .hw,html:not(.fx-live) #story .hw-out,html:not(.fx-live) #story .hw-mid,html:not(.fx-live) #story .hw-big{font-size:min(10.5vw,52px)}
+html:not(.fx-live) #story .hw-hand{font-size:min(7.5vw,32px)}
+html:not(.fx-live) .hww{font-size:min(10vw,52px)!important}
+html:not(.fx-live) .room .nm{font-size:min(13vw,60px)}
+html:not(.fx-live) .portal-h{font-size:min(9.5vw,50px)}
+html:not(.fx-live) .k.note{font-size:clamp(20px,5.2vw,30px)}
+html.fx-flow .lab-h .giant{font-size:9vw}html.fx-flow .lab-h .lh2{font-size:6vw}
+.fx-panel::before{font-size:clamp(46px,12vw,110px)}
+@media (min-width:900px){
+  html:not(.fx-live) #story .hw,html:not(.fx-live) #story .hw-out,html:not(.fx-live) #story .hw-mid,html:not(.fx-live) #story .hw-big{font-size:min(5.2vw,76px)}
+  html:not(.fx-live) #story .hw-hand{font-size:min(3vw,40px)}
+  html:not(.fx-live) .hero-h1 .k.giant{font-size:min(6.4vw,92px)}
+  html.fx-flow .giant{font-size:clamp(40px,6vw,96px)}
+  html.fx-flow .lab-h .giant{font-size:min(8vw,130px)}html.fx-flow .lab-h .lh2{font-size:min(4.6vw,72px)}
+  html:not(.fx-live) .hww{font-size:min(5.6vw,84px)!important}
+  html:not(.fx-live) .hww-copy{font-size:clamp(17px,1.5vw,24px)}
+  html:not(.fx-live) .room .nm{font-size:min(6vw,88px)}
+  html:not(.fx-live) .room p{font-size:clamp(14px,1.05vw,17px)}
+  html:not(.fx-live) .portal-h{font-size:min(6vw,92px)}
+  html:not(.fx-live) .portal-p{font-size:clamp(15px,1.2vw,19px)}
+  html:not(.fx-live) .k.note{font-size:clamp(22px,2.2vw,34px)}
+  html.fx-flow .fx-h2{font-size:clamp(28px,3.8vw,56px)}
+  .fx-panel::before{font-size:clamp(70px,9vw,140px)}
+}
+@media (min-width:900px){
+  .hp-hero .fx-stage{min-height:calc(100svh - 60px);align-content:flex-start}
+  html:not(.fx-live) .hp-hero .hero-h1{flex:0 0 56%}
+  html:not(.fx-live) .hp-hero .cubebox{--cs:min(28vw,360px);margin:6vh 0 0 auto;align-self:flex-start;flex:0 0 auto}
+  html:not(.fx-live) .hp-hero .note{display:none}
+}
+@media (min-width:900px){
+  html:not(.fx-live) .hp-hero .cubebox{position:absolute!important;right:6vw;top:150px;margin:0!important}
+  html:not(.fx-live) .hp-hero .fx-stage{height:calc(100svh - 60px)!important;min-height:560px}
+}
