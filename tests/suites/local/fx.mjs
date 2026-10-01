@@ -30,7 +30,9 @@ export default async function run({ browser, stack }) {
         assert(info.live || info.flow, 'animation layer not switched on');
         assert(info.flow && info.scenes === 0, 'expected the flowing stacked layout, got scenes=' + info.scenes);
         assert(await page.evaluate((n) => (n === 'index' ? document.querySelectorAll('.hx .hx-card').length === 8 && !!document.querySelector('.vw') : document.querySelectorAll('.stack-panel').length >= 2), n), 'expected layout missing (homepage showcase or stacked panels)');
-        assert(await page.evaluate(() => ![...document.querySelectorAll('.fx-panel')].some((p) => getComputedStyle(p).position === 'sticky')), 'a pinned (sticky) panel is back: it made scrolling shake');
+        // phones: every sheet after the hero pauses under the header (CSS sticky, owner request); desktop: plain stacked sheets, nothing pinned
+        const sticky = await page.evaluate(() => [...document.querySelectorAll('.fx-panel')].map((p) => getComputedStyle(p).position === 'sticky'));
+        if (n !== 'index') { const wide = await page.evaluate(() => window.innerWidth >= 900); assert(wide ? !sticky.some(Boolean) : sticky.slice(1).every(Boolean) && !sticky[0], 'sheet pinning is wrong for this width: ' + sticky.join(',')); }
         assert(info.over <= 2, 'page scrolls sideways by ' + info.over + 'px');
         {
           await page.evaluate(async () => { window.scrollTo({ top: 0, behavior: 'instant' }); await new Promise((r) => setTimeout(r, 900)); });
