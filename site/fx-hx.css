@@ -79,15 +79,23 @@
   }
 }
 
-/* folder-tab sheets: each sheet carries a tab like a file divider (static, no scroll motion) */
-:root{--tab-h:34px}
-.hx,.vw,.tk{--tab-w:132px;--fl:14px}
-.hx{--sc:var(--hx-bg);--tc:#f6f4f1;--tl:7vw}
-.vw{--sc:var(--wine);--tc:#fff;--tl:auto;--tr:7vw}
-.tk{--sc:var(--cream);--tc:#171717;--tl:34vw}
-.hx::before,.vw::before,.tk::before,.hx::after,.vw::after,.tk::after{content:"";position:absolute;top:calc(var(--tab-h) * -1 + 1px);left:max(var(--tl),44px);right:auto;width:var(--tab-w);height:var(--tab-h);pointer-events:none}
-.vw::before,.vw::after{left:auto;right:max(var(--tr),44px)}
-.hx::before,.vw::before,.tk::before{content:attr(data-tab);box-sizing:border-box;background:var(--sc);color:var(--tc);border-radius:14px 14px 0 0;display:flex;align-items:center;padding:0 18px;font:600 13px/1 var(--mono,ui-monospace,monospace);letter-spacing:.12em;text-transform:uppercase}
-.hx::after,.vw::after,.tk::after{top:calc(-1px);height:var(--fl);margin:0 calc(var(--fl) * -1);width:calc(var(--tab-w) + var(--fl) * 2);background:radial-gradient(circle at 0 0,transparent calc(var(--fl) - .5px),var(--sc) var(--fl)) left top/var(--fl) var(--fl) no-repeat,radial-gradient(circle at 100% 0,transparent calc(var(--fl) - .5px),var(--sc) var(--fl)) right top/var(--fl) var(--fl) no-repeat;top:calc(var(--fl) * -1 + 1px);margin:0}
-.hx::after,.vw::after,.tk::after{transform:translateX(calc(var(--fl) * -1));width:calc(var(--tab-w) + var(--fl) * 2)}
-.hero2{padding-bottom:calc(var(--sheet-r) + var(--tab-h) + 24px)!important}
+/* downside-cut sheets: each sheet's top edge has a notch cut DOWN into it (previous sheet shows through), like a file divider; no labels */
+:root{--cut:34px;--cr:14px;--cb:18px}
+.hx{--pc:#f6f4f1;--sc:var(--hx-bg);--nx:42%}
+.vw{--pc:var(--hx-bg);--sc:var(--wine);--nx:34%}
+.tk{--pc:var(--wine);--sc:var(--cream);--nx:46%}
+.hx,.vw,.tk{box-shadow:none}
+.hx::before,.vw::before,.tk::before{content:"";position:absolute;z-index:3;pointer-events:none;top:0;left:calc(var(--nx) - var(--cr));width:calc(100% - var(--nx) + var(--cr));height:calc(var(--cut) + var(--cb));
+ background:
+  radial-gradient(circle at 0 100%,transparent calc(var(--cr) - .5px),var(--pc) var(--cr)) 0 0/var(--cr) var(--cr) no-repeat,
+  linear-gradient(var(--pc),var(--pc)) 0 0/var(--cr) calc(var(--cut) - var(--cr)) no-repeat,
+  radial-gradient(circle at 100% 0,var(--pc) calc(var(--cr) - .5px),transparent var(--cr)) 0 calc(var(--cut) - var(--cr))/var(--cr) var(--cr) no-repeat,
+  linear-gradient(var(--pc),var(--pc)) var(--cr) 0/calc(100% - var(--cr)) var(--cut) no-repeat,
+  radial-gradient(circle at 0 100%,transparent calc(var(--cb) - .5px),var(--pc) var(--cb)) 100% var(--cut)/var(--cb) var(--cb) no-repeat}
+.vw::before{left:0;right:auto;width:calc(100% - var(--nx) + var(--cr));transform:scaleX(-1)}
+.hx::after,.vw::after,.tk::after{content:none}
+.hero2{padding-bottom:calc(var(--sheet-r) + var(--cut) + 24px)!important}
+/* premium cards: soft tinted art panel, deep radius, layered shadow */
+.hx-card,.vw-card{border-radius:32px;box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 30px 60px -30px rgba(0,0,0,.65),0 8px 18px -10px rgba(0,0,0,.35)}
+.hx-card .hx-art{background:#f1eeea;border-radius:22px;padding:14px;box-sizing:border-box;width:100%}
+.hx-card .hx-no{align-self:flex-start;padding:5px 11px;border-radius:99px;background:#171717;color:#f6f4f1!important;font-size:12px;letter-spacing:.08em}
