@@ -127,4 +127,59 @@
 <section class="path"><div class="eye">How it works</div><div class="stp" data-reveal><b>1</b><div><h3>Set up your business on AUZslab</h3><p>Your website, menu, booking and billing, ready to take customers.</p></div></div><div class="stp" data-reveal><b>2</b><div><h3>Plan a campaign with Creatopz</h3><p>Creatopz matches your business with creators and handles the content and posting.</p></div></div><div class="stp" data-reveal><b>3</b><div><h3>Turn views into visits</h3><p>Customers find you, book online and show up. You see it in your bookings and bills.</p></div></div></section>
 <section class="closer"><div class="eye">Get started</div><h2 class="fx-h2" data-split="rise">Tell us about your business.</h2><p class="fx-copy">Share what you run and where, and we will put you in touch with the right people on both sides.</p><div class="acts"><button class="btn btn-primary" data-open-contact data-magnet>Let's talk</button><a href="https://www.creatopz.in" target="_blank" rel="noopener" class="btn btn-ghost">Visit Creatopz</a><a href="live-demo.html" class="btn btn-ghost">Try the live demo</a></div></section>
 
-    
+  </main>
+
+  <button class="knock-btn" data-open-contact>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3a2 2 0 0 0-2 2v3.17a3 3 0 0 0-2 2.83v6a5 5 0 0 0 5 5h4a5 5 0 0 0 5-5v-3M8 3a2 2 0 0 1 2 2v6M8 3v8M12 5a2 2 0 0 1 4 0v6M16 5a2 2 0 0 1 4 0v6"/></svg>
+    Knock, we'll answer
+  </button>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modal">
+      <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+      <form id="formView" data-contact-form>
+        <div class="label" style="margin-bottom:14px">Reach us</div>
+        <h3 class="h-2" style="font-size:24px">Got a business? Let's talk.</h3>
+        <p class="p" style="margin-top:8px">Tell us a little about it &mdash; we'll get back to you within a day.</p>
+        <div class="field">
+          <label for="m-name">Name</label>
+          <input id="m-name" name="name" type="text" placeholder="Your name" required>
+        </div>
+        <div class="field">
+          <label for="m-business">Business</label>
+          <input id="m-business" name="business" type="text" placeholder="Business name">
+        </div>
+        <div class="field">
+          <label for="m-contact">Phone or email</label>
+          <input id="m-contact" name="contact" type="text" placeholder="How we reach you" required>
+        </div>
+        <div class="field">
+          <label for="m-niche">What are you running?</label>
+          <select id="m-niche" name="niche">
+            <option value="cafe">Café, restaurant, bar & more</option>
+            <option value="salon" selected>Salon</option>
+            <option value="retail">Retail (shoes, clothing, books)</option>
+            <option value="general">Something else</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="m-message">Message</label>
+          <textarea id="m-message" name="message" placeholder="What are you running today?"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary form-submit">Send</button>
+      </form>
+      <div class="success-view" id="successView">
+        <div class="success-mark">&check;</div>
+        <h3 class="h-2" style="font-size:22px">Got it.</h3>
+        <p class="p">We'll reach out to <span class="success-contact" id="successContact">you</span> shortly.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script src="/sb-client.js?v=2"></script>
+<script src="site.js?v=7"></script>
+<script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
+<script src="design-system/ui-kit.js?v=1"></script>
+</body>
+</html>

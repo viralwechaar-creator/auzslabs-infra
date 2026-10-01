@@ -115,7 +115,7 @@
 <h1 class="hh"><span class="k giant l1" style="font-size:12vw" data-blast data-k="0:x-4,y-3,o1; .16:x-6,o1; .3:x-70,o0">Try AUZslab</span>
 <span class="k giant outline-m l2" style="font-size:12vw" data-blast data-k="0:x4,y12,o1; .16:x8,o1; .3:x70,o0">before you buy.</span></h1>
 <p class="k lede2 bl" data-k="0:o1; .12:o0">Real, working accounts, open to everyone. Pick the one closest to your business, sign in and click around. Nothing you do here touches your own business.</p>
-<div class="k trio" data-k=".15:o0,y14; .4:o1,y0; .8:o1; .9:o0"><i class="dv d1"></i><i class="dv d2"></i><i class="dv d3"></i></div>
+<div class="k trio" data-k=".15:o0,y14; .4:o1,y0; .8:o1; .9:o0"><i class="dv d1"><b>Caf&eacute; POS</b><u></u><u></u><u></u></i><i class="dv d2"><b>Retail</b><u></u><u></u></i><i class="dv d3"><b>Salon</b><u></u><u></u></i></div>
 <div class="k note nl" data-k=".4:o0,y6; .5:o1,y0; .8:o1; .86:o0">pick the closest one.</div>
 </div></div>
 <section class="devs"><article class="dev dv0" data-reveal><div class="bezel"><span class="tg">Salons &amp; spas</span><h3>AUZslab Salon</h3><p>Your salon website, online booking, billing and clients. Sign in as the owner, or as a staff member to see the limited view your team gets. Resets every 12 hours.</p><div class="cred">
@@ -134,4 +134,59 @@
           </div><div class="acts"><a href="https://demo-retail.auzslab.in/" target="_blank" rel="noopener" class="btn btn-primary">Launch the retail demo &rarr;</a></div></div></article></section>
 <section class="closer"><div class="eye">Not sure which one?</div><h2 class="fx-h2" data-split="rise">We'll walk you through it.</h2><div class="acts"><button class="btn btn-primary" data-open-contact data-magnet>Let's talk</button><a href="products.html" class="btn btn-ghost">See all products</a></div><p class="terms">For evaluation only. Please don't scrape or copy the software. See our <a href="terms.html">terms</a>.</p></section>
 
-    
+  </main>
+
+  <button class="knock-btn" data-open-contact>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3a2 2 0 0 0-2 2v3.17a3 3 0 0 0-2 2.83v6a5 5 0 0 0 5 5h4a5 5 0 0 0 5-5v-3M8 3a2 2 0 0 1 2 2v6M8 3v8M12 5a2 2 0 0 1 4 0v6M16 5a2 2 0 0 1 4 0v6"/></svg>
+    Knock, we'll answer
+  </button>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modal">
+      <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+      <form id="formView" data-contact-form>
+        <div class="label" style="margin-bottom:14px">Reach us</div>
+        <h3 class="h-2" style="font-size:24px">Got a business? Let's talk.</h3>
+        <p class="p" style="margin-top:8px">Tell us a little about it &mdash; we'll get back to you within a day.</p>
+        <div class="field">
+          <label for="m-name">Name</label>
+          <input id="m-name" name="name" type="text" placeholder="Your name" required>
+        </div>
+        <div class="field">
+          <label for="m-business">Business</label>
+          <input id="m-business" name="business" type="text" placeholder="Business name">
+        </div>
+        <div class="field">
+          <label for="m-contact">Phone or email</label>
+          <input id="m-contact" name="contact" type="text" placeholder="How we reach you" required>
+        </div>
+        <div class="field">
+          <label for="m-niche">What are you running?</label>
+          <select id="m-niche" name="niche">
+            <option value="cafe">Café, restaurant, bar & more</option>
+            <option value="salon" selected>Salon</option>
+            <option value="retail">Retail (shoes, clothing, books)</option>
+            <option value="general">Something else</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="m-message">Message</label>
+          <textarea id="m-message" name="message" placeholder="What are you running today?"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary form-submit">Send</button>
+      </form>
+      <div class="success-view" id="successView">
+        <div class="success-mark">&check;</div>
+        <h3 class="h-2" style="font-size:22px">Got it.</h3>
+        <p class="p">We'll reach out to <span class="success-contact" id="successContact">you</span> shortly.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script src="/sb-client.js?v=2"></script>
+<script src="site.js?v=7"></script>
+<script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
+<script src="design-system/ui-kit.js?v=1"></script>
+</body>
+</html>
