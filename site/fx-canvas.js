@@ -7,7 +7,7 @@
      flow | scatter | ring | cube | spiral | wave | grid | text:WORD (use | for line breaks) | art:pos */
 (function () {
   'use strict';
-  var FX = window.FX; if (!FX || !FX.live) return;
+  var FX = window.FX; if (!FX || !FX.live || FX.flow) return;
   var TAU = Math.PI * 2, rnd = Math.random;
   var FONT = '-apple-system,BlinkMacSystemFont,"SF Pro Display",Inter,system-ui,sans-serif';
 

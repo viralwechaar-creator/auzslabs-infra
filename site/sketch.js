@@ -5,7 +5,12 @@
   var root = document.documentElement;
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   var fine = window.matchMedia && matchMedia('(hover: hover) and (pointer: fine)').matches;
-  if (!reduce) root.classList.add('fx-live'); // switches the scroll-scene layouts on (fx.css); absent = plain readable pages
+  // desktop: pinned scroll scenes (fx-live). phones/tablets: a lighter flowing layout with scroll-in animation (fx-flow, fx-flow.css).
+  // Neither class (reduced motion / no JS) = plain readable pages.
+  var FLOW_MAX = 900; // phones and portrait tablets
+  var flow = !reduce && innerWidth < FLOW_MAX;
+  if (!reduce) root.classList.add(flow ? 'fx-flow' : 'fx-live');
+  if (!reduce) addEventListener('resize', (function () { var h; return function () { clearTimeout(h); h = setTimeout(function () { if ((innerWidth < FLOW_MAX) !== flow) location.reload(); }, 400); }; })());
 
   /* ---------- the blast: cube goes hot, bursts, particles fly to the real logo/text/buttons and the page opens ---------- */
   function pickTargets() {
@@ -46,7 +51,7 @@
       for (i = 0; i < t.rects.length; i++) { rr -= t.rects[i].a; if (rr <= 0) { q = t.rects[i]; break; } }
       return { x: q.x + Math.random() * q.w, y: q.y + Math.random() * q.h };
     }
-    var N = W < 500 ? 190 : 320, P = [];
+    var N = W < 500 ? 90 : 320, P = [];
     for (var i = 0; i < N; i++) {
       var ang = Math.random() * 6.2832, sp = 260 + Math.random() * 900, tg = spot();
       P.push({ x: cx + (Math.random() - .5) * 30, y: cy + (Math.random() - .5) * 30, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp,
@@ -154,7 +159,7 @@
       if (!el.closest('.reveal')) setTimeout(function () { n.classList.add('on'); }, 1800);
     });
 
-    if (reduce) return;
+    if (reduce || flow) return;
 
     // stagger index for grids so cards pop one after another
     [].forEach.call(document.querySelectorAll('.grid-3,.grid-2,.zigzag'), function (g) {

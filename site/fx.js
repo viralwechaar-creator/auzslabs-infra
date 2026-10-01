@@ -33,7 +33,7 @@
   var FX = window.FX = window.FX || {};
   FX.reduce = mq('(prefers-reduced-motion: reduce)');
   FX.fine = mq('(hover: hover) and (pointer: fine)');
-  FX.live = !FX.reduce;
+  FX.live = !FX.reduce; FX.flow = root.classList.contains('fx-flow');
   FX.vw = window.innerWidth; FX.vh = window.innerHeight; FX.mobile = FX.vw < 700;
   FX.y = window.pageYOffset; FX.ty = FX.y; FX.v = 0; FX.t = 0; FX.dt = 16;
   FX.mx = -9999; FX.my = -9999; FX.nx = 0; FX.ny = 0; FX.tnx = 0; FX.tny = 0; FX.down = false;
@@ -358,9 +358,30 @@
   }
 
   /* ---------- boot ---------- */
+  /* phones: no pinned scenes, no per-frame transforms. Everything is in normal flow and animates in once as it is scrolled to. */
+  function bootFlow() {
+    $$('[data-split]').forEach(splitEl);
+    $$('[data-marquee]').forEach(function (el) { marquees.push(new Marquee(el)); });
+    initCounters(); initReveal(); initTilt();
+    var els = $$('.fx-stage .k, [data-split], .hs-i, [data-draw-in]');
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (es) {
+        es.forEach(function (e) {
+          if (!e.isIntersecting) return; io.unobserve(e.target); e.target.classList.add('in');
+          if (e.target.hasAttribute('data-draw-in')) drawIn(e.target);
+        });
+      }, { threshold: 0, rootMargin: '0px 0px -6% 0px' });
+      els.forEach(function (el) { io.observe(el); });
+    } else els.forEach(function (el) { el.classList.add('in'); if (el.hasAttribute('data-draw-in')) el.style.setProperty('--d', 1); });
+    FX.tick(function (t, dt) { for (var i = 0; i < marquees.length; i++) marquees[i].step(dt); });
+    window.addEventListener('load', function () { marquees.forEach(function (m) { m.measure(); }); });
+    root.classList.add('fx-flow-ready');
+    requestAnimationFrame(frame);
+  }
   function boot() {
     FX.hydrate();
     if (!FX.live) return;
+    if (FX.flow) return bootFlow();
     $$('[data-split]').forEach(splitEl);
     $$('[data-scene]').forEach(function (el) { scenes.push(new Scene(el)); });
     $$('[data-marquee]').forEach(function (el) { marquees.push(new Marquee(el)); });

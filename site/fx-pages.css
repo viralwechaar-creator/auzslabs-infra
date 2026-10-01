@@ -54,7 +54,7 @@ html .pd-qr .phonebox{left:70%;top:40%;width:min(24vw,330px);transform-style:pre
 html .pd-qr .phonebox svg{width:100%;height:auto;display:block}
 html .pd-qr .beam{position:absolute;left:12%;right:12%;top:18%;height:4px;background:var(--accent);box-shadow:0 0 18px 6px rgba(128,0,32,.45);transform:translateY(calc(var(--y,0)*1%));translate:0 0}
 html .pd-qr .table3d{left:70%;top:64%;width:min(54vw,760px);height:min(22vh,200px);border:3px solid var(--ink);background:repeating-linear-gradient(90deg,rgba(23,23,23,.08) 0 2px,transparent 2px 22px);transform-origin:50% 0;translate:-50% 0}
-html .pd-qr .call{font:700 clamp(22px,2.6vw,42px)/1 var(--hand);color:var(--accent);white-space:nowrap}
+html .pd-qr .qcall{font:700 clamp(22px,2.6vw,42px)/1 var(--hand);color:var(--accent);white-space:nowrap}
 html .pd-qr .c1{left:34%;top:30%}html .pd-qr .c2{left:36%;top:52%}html .pd-qr .c3{left:70%;top:84%}
 html .pd-qr .l1{top:30%}html .pd-qr .l2{top:72%;left:8vw}html .pd-qr .big-end{left:50%;top:34%}
 /* --- Payroll: the clock --- */
@@ -105,7 +105,7 @@ html .pd-web .l1{top:30%}html .pd-web .l2{top:50%;left:10vw}
 .closer .acts{display:flex;gap:12px;flex-wrap:wrap}.closer p{color:rgba(244,238,226,.7)}
 @media (max-width:760px){
   html .pd .l1{left:5vw}html .pd .l2{left:8vw}html .pd .hh .giant{font-size:15vw}
-  html .pd .lede2{display:none}
+  html.fx-live .pd .lede2{display:none}
   html .pd-pos .till{width:70vw}html .pd-pos .strip{left:50%;width:62vw;top:62%}
   html .pd-billing .longrec{left:50%;width:78vw}html .pd-billing .stampbig{left:50%}html .pd-billing .gst{left:8%}
   html .pd-inv .crate{width:34vw}html .pd-inv .c0{left:56%}html .pd-inv .c1{left:72%}html .pd-inv .c2{left:88%}html .pd-inv .c3{left:64%;bottom:calc(19vh + 13.2vw)}html .pd-inv .c4{left:80%;bottom:calc(19vh + 13.2vw)}html .pd-inv .c5{left:72%;bottom:calc(19vh + 26.4vw)}
@@ -113,7 +113,7 @@ html .pd-web .l1{top:30%}html .pd-web .l2{top:50%;left:10vw}
   html .pd-pay .clock{left:50%;width:62vw}html .pd-pay .cal{left:8%;top:78%;width:60vw}html .pd-pay .slip{left:12%;top:60%;width:60vw}
   html .pd-web .wb{left:50%;width:84vw}html .pd-crm .seg{font-size:11px}html .pd-crm .s1{left:5%}html .pd-crm .s2{left:42%}html .pd-crm .s3{left:5%}html .pd-crm .s4{left:42%}
   .featsec.labels li{width:100%}.featsec.stairs .st{margin-left:calc(var(--i)*2vw)}.featsec.cols .cl,.featsec.orbit .ring{grid-template-columns:1fr}
-  html.fx-live .pd .k.note,html.fx-live .pd .k.call,html.fx-live .pd .k.seg,html.fx-live .pd .k.cal,html.fx-live .pd .k.slip,html.fx-live .pd .k.alarm,html.fx-live .pd .k.meter{translate:0 -50%}
+  html.fx-live .pd .k.note,html.fx-live .pd .k.qcall,html.fx-live .pd .k.seg,html.fx-live .pd .k.cal,html.fx-live .pd .k.slip,html.fx-live .pd .k.alarm,html.fx-live .pd .k.meter{translate:0 -50%}
   html.fx-live .pd .k.note{font-size:24px}
 }
 
@@ -277,7 +277,7 @@ html .pd-demo .d1{left:0;bottom:0;width:62%;height:68%;border-radius:8px;backgro
 html.fx-live .pd .k.note.nl,html.fx-live .pd .k.note.nr{translate:0 -50%}
 html.fx-live .pd .k.note.nc{translate:-50% -50%}
 html.fx-live .plans .k.note{top:9vh}
-html.fx-live .pd .k.call.c1,html.fx-live .pd .k.call.c2,html.fx-live .pd .k.call.c3{translate:0 -50%}
+html.fx-live .pd .k.qcall.c1,html.fx-live .pd .k.qcall.c2,html.fx-live .pd .k.qcall.c3{translate:0 -50%}
 html .pd-demo .trio .dv{padding:1.2em;display:flex;flex-direction:column;gap:.7em}
 .pd-demo .trio .dv b{font:900 clamp(14px,1.6vw,24px)/1 var(--font-display);text-transform:uppercase;letter-spacing:-.02em;font-style:normal}
 .pd-demo .trio .dv u{display:block;height:8px;border-radius:6px;background:rgba(23,23,23,.2);text-decoration:none}.pd-demo .trio .dv u:nth-child(2){width:70%;background:var(--accent)}.pd-demo .trio .dv u:nth-child(3){width:45%}
