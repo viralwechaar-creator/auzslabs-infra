@@ -222,10 +222,13 @@ async function boot(){
  try{const{data}=await sb.from('profiles').select('role,role_id,email,name').eq('id',ses.user.id).single();if(data){S.role=data.role;S.me=data;if(data.role_id){const r=await sb.from('roles').select('permissions').eq('id',data.role_id).single();S.perms=r.data&&r.data.permissions}}}catch{}
  try{const r=await sb.rpc('my_dashboard');if(r.data){S.tenant=r.data.tenant;S.features=r.data.features;S.enabledFeatures=r.data.enabled_features||{};if(window.TENANT_SLUG&&r.data.tenant&&r.data.tenant.slug!==window.TENANT_SLUG){await sb.auth.signOut();S.user=null;return login('This login belongs to a different business ('+r.data.tenant.slug+'.auzslab.in).')}}}catch{}
  const hs=(location.hash||'').slice(1);if(hs&&(PAGES[hs]||hs=='dashboard'))S.page=hs;const g=NAV.find(n=>n[0].startsWith('g:')&&n[3].some(c=>c[0]==S.page));if(g)S.open[g[0]]=true;
- render();await syncNow();render();
+ render();await syncNow();loadProfiles().then(()=>render());render();
  sb.channel('console').on('postgres_changes',{event:'*',schema:'public',table:'records'},()=>sync()).subscribe();setInterval(sync,30000);addEventListener('online',sync);
  addEventListener('hashchange',()=>{const p=(location.hash||'').slice(1);if(p&&p!=S.page&&PAGES[p]){S.page=p;S.q='';render()}})}
 $('#ov').onclick=()=>{S.sideOpen=false;render()};
 
-const saveSettings=patch=>save('settings',{...settingsRec(),...patch},'settings');
+const saveSettings=async patch=>{if(S.role!='owner'){toast('Only the owner can change business settings');return false}return save('settings',{...settingsRec(),...patch},'settings')};
 async function uploadFile(file,prefix){const ext=(file.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,''),name=prefix+'/'+Date.now()+'-'+Math.random().toString(36).slice(2,7)+'.'+ext,{error}=await sb.storage.from('site').upload(name,file,{contentType:file.type||'application/octet-stream'});if(error)throw error;return sb.storage.from('site').getPublicUrl(name).data.publicUrl}
+
+async function loadProfiles(force){if(S.profiles&&!force)return S.profiles;try{const{data}=await sb.from('profiles').select('*').order('email');S.profiles=data||[]}catch{S.profiles=S.profiles||[]}return S.profiles}
+const profName=id=>{const p=(S.profiles||[]).find(x=>x.id==id);return p?(p.name||p.email):(id?String(id).slice(0,6):'—')};
