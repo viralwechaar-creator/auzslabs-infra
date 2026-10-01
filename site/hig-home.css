@@ -1,0 +1,89 @@
+/* Apple Human Interface Guidelines layer for the homepage (header to footer, sheets and cards).
+   Restyle only: system typeface and a real type scale (nothing under 12, body 17), 44pt hit targets, sentence-case labels instead of tiny
+   mono capitals, filled / tinted pill buttons, continuous large-radius cards with soft layered shadows, a translucent header, visible focus rings,
+   spring-like press feedback, reduced-motion support. Palette stays white / ink / wine. Loaded last on index.html only. */
+body.home{--hig-font:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display',Inter,system-ui,sans-serif;--hig-spring:cubic-bezier(.2,.9,.25,1.1);font-family:var(--hig-font);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body.home :is(.btn,.hamburger,.h2-nav a,.hx-eye,.hx-no,.footer-col-title,.footer-copy,.footer-top-btn,.sidebar-copy,.nav-link,.nav-sublink){font-family:var(--hig-font)}
+body.home :is(h1,h2,h3){text-wrap:balance}
+
+/* ---- header: translucent bar with a hairline, 44pt controls ---- */
+html.fx-flow body.home.fx header.topbar,body.home header.topbar{border-bottom:.5px solid rgba(23,23,23,.14)!important;background:rgba(246,244,241,.86);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);min-height:56px;box-sizing:border-box;padding-top:max(8px,env(safe-area-inset-top));padding-bottom:8px}
+body.home .topbar-logo img{max-width:78px}
+body.home .hamburger{min-height:44px;padding:0 18px;border:0;background:rgba(23,23,23,.07);font-size:15px;font-weight:600;letter-spacing:0;text-transform:none;transition:background .25s var(--hig-spring),transform .25s var(--hig-spring)}
+body.home .hamburger:hover,body.home .hamburger.is-open{background:var(--ink);color:#fff}
+body.home .hamburger:active{transform:scale(.96)}
+
+/* ---- buttons: filled (primary) and tinted (secondary), 17pt semibold, 50pt tall ---- */
+body.home .btn{min-height:50px;padding:0 26px;justify-content:center;font-size:17px;font-weight:600;letter-spacing:-.01em;text-transform:none;border:0;background:rgba(23,23,23,.07);color:var(--ink);transition:background .25s var(--hig-spring),transform .25s var(--hig-spring),box-shadow .25s ease}
+body.home .btn:hover{background:rgba(23,23,23,.12);color:var(--ink);transform:none}
+body.home .btn:active{transform:scale(.97)}
+body.home .btn-primary,body.home .btn-primary:hover{background:var(--wine,#800020);color:#fff;box-shadow:none}
+body.home .btn-primary:hover{background:#9a0a2c}
+body.home .topbar .btn{min-height:44px;padding:0 18px;font-size:15px}
+body.home .hx .btn-ghost,body.home .hx .btn-ghost:hover{background:rgba(246,244,241,.14);color:#f6f4f1;border:0}
+body.home .hx .btn-ghost:hover{background:rgba(246,244,241,.24)}
+body.home .hx .btn-primary{background:var(--wine-hi)}
+
+/* ---- hero ---- */
+body.home .h2-tag{font-weight:700;letter-spacing:-.035em;line-height:1.06;font-size:clamp(34px,6.2vw,64px);max-width:13em}
+body.home .h2-nav a{text-transform:none;font-size:17px;font-weight:500;min-height:44px;display:inline-flex;align-items:center;letter-spacing:-.01em}
+body.home .h2-list{font-size:17px;gap:2px 20px;flex-wrap:wrap}
+body.home .h2-list b{font-size:13px;font-weight:600;color:#6e6a67;margin-bottom:4px}
+body.home .h2-list a{min-height:34px;display:flex;align-items:center;color:#6e6a67}
+body.home .h2-img{border-radius:28px}
+
+/* ---- sheets: eyebrows become 15pt semibold sentence-case labels; titles use SF display with tight tracking ---- */
+body.home .hx-eye{font-size:15px;font-weight:600;letter-spacing:-.005em;text-transform:none;color:var(--wine-hi)}
+body.home .hx-eye::before{display:none}
+body.home .vw .hx-eye{color:rgba(255,255,255,.82)}
+body.home .tk .hx-eye{color:var(--wine)}
+body.home .hx-title{font-weight:700;letter-spacing:-.04em;line-height:1.04}
+body.home .hx-big{font-weight:700;letter-spacing:-.045em}
+body.home .hx-row{border-color:rgba(246,244,241,.14)}
+body.home .hx-row p,body.home .tk-p{font-size:19px;line-height:1.42;letter-spacing:-.012em}
+body.home .hx-hint{font-size:17px}
+body.home .tk-p a,body.home .hx-go{font-weight:600}
+
+/* ---- cards: 28pt continuous corners, no inner bevel, one soft shadow, pill index chip ---- */
+body.home :is(.hx-card,.vw-card){border-radius:28px;box-shadow:0 1px 2px rgba(0,0,0,.06),0 24px 48px -24px rgba(0,0,0,.45);transition:transform .35s var(--hig-spring),box-shadow .35s ease}
+@media (hover:hover) and (pointer:fine){body.home .vw-card:hover{box-shadow:0 2px 4px rgba(0,0,0,.08),0 32px 60px -24px rgba(0,0,0,.5)}}
+body.home .hx-card:active,body.home .vw-card:active{transform:scale(.985)}
+body.home .hx-card .hx-art{background:#f4f1ed;border-radius:20px}
+body.home .hx-card .hx-no{background:rgba(23,23,23,.07);color:#5b5754!important;font-family:var(--hig-font);font-size:13px;font-weight:600;letter-spacing:0;padding:5px 12px}
+body.home .hx-name{font-weight:700;letter-spacing:-.035em}
+body.home .hx-card p,body.home .vw-card p{font-size:17px;line-height:1.4;letter-spacing:-.012em}
+body.home .vw-card h3{font-size:24px;font-weight:700;letter-spacing:-.03em}
+body.home .hx-go{font-size:17px;min-height:44px;display:inline-flex;align-items:center}
+
+/* ---- drawer ---- */
+body.home .nav-link{font-size:22px;font-weight:600;letter-spacing:-.02em;min-height:48px}
+body.home .nav-sublink{font-size:17px;min-height:44px;display:flex;align-items:center}
+body.home .nav-group-count{font-family:var(--hig-font)}
+body.home .drawer-close{min-height:44px;font-family:var(--hig-font);font-size:15px;font-weight:600;text-transform:none;letter-spacing:0}
+body.home .drawer-icon-link{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+body.home .sidebar-copy{font-size:13px;letter-spacing:0}
+
+/* ---- footer ---- */
+body.home .footer-dark{border-radius:28px 28px 0 0}
+body.home .footer-col-title{font-size:13px;font-weight:600;letter-spacing:0;text-transform:none;color:rgba(255,255,255,.55)}
+body.home .footer-col{gap:0}
+body.home .footer-col a{font-size:17px;min-height:44px;display:flex;align-items:center;color:rgba(255,255,255,.82);letter-spacing:-.01em}
+body.home .footer-newsletter-label{font-weight:700;letter-spacing:-.03em}
+body.home .footer-newsletter-form input{min-height:48px;font-size:17px;padding:0 20px;border:0;background:rgba(255,255,255,.1)}
+body.home .footer-newsletter-form button{width:48px;height:48px}
+body.home .footer-contact-inline a,body.home .footer-copy,body.home .footer-top-btn{font-size:13px;letter-spacing:0;min-height:44px;display:inline-flex;align-items:center}
+body.home .footer-top-btn{border:0;background:rgba(255,255,255,.12);font-size:15px;font-weight:600}
+body.home .knock-btn{font-family:var(--hig-font);font-size:15px;font-weight:600;letter-spacing:0;text-transform:none;border:0;box-shadow:0 10px 24px -8px rgba(128,0,32,.55);min-height:48px}
+body.home .knock-btn:hover{transform:none;box-shadow:0 12px 28px -8px rgba(128,0,32,.6)}
+
+/* ---- focus + motion ---- */
+body.home :is(a,button,input,select,textarea,[tabindex]):focus-visible{outline:3px solid rgba(194,24,63,.55);outline-offset:3px;border-radius:12px}
+@media (prefers-reduced-motion:reduce){body.home *{transition-duration:.01ms!important;animation-duration:.01ms!important}}
+
+body.home header.topbar .btn{padding:0 18px!important;font-size:15px!important;border:0!important}
+body.home header.topbar .btn-ghost{background:rgba(23,23,23,.07)}
+body.home .btn::before,body.home .btn::after{display:none!important}
+html.fx-flow body.home.fx header.topbar{background:rgba(246,244,241,.86)}
+/* hero: no photo tile; the wordmark is a little smaller */
+body.home .h2-img{display:none}
+body.home .h2-word{width:80%!important;margin-left:auto}
