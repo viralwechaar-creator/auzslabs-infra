@@ -79,23 +79,19 @@
   }
 }
 
-/* downside-cut sheets: each sheet's top edge has a notch cut DOWN into it (previous sheet shows through), like a file divider; no labels */
-:root{--cut:34px;--cr:14px;--cb:18px}
-.hx{--pc:#f6f4f1;--sc:var(--hx-bg);--nx:42%}
-.vw{--pc:var(--hx-bg);--sc:var(--wine);--nx:34%}
-.tk{--pc:var(--wine);--sc:var(--cream);--nx:46%}
-.hx,.vw,.tk{box-shadow:none}
-.hx::before,.vw::before,.tk::before{content:"";position:absolute;z-index:3;pointer-events:none;top:0;left:calc(var(--nx) - var(--cr));width:calc(100% - var(--nx) + var(--cr));height:calc(var(--cut) + var(--cb));
- background:
-  radial-gradient(circle at 0 100%,transparent calc(var(--cr) - .5px),var(--pc) var(--cr)) 0 0/var(--cr) var(--cr) no-repeat,
-  linear-gradient(var(--pc),var(--pc)) 0 0/var(--cr) calc(var(--cut) - var(--cr)) no-repeat,
-  radial-gradient(circle at 100% 0,var(--pc) calc(var(--cr) - .5px),transparent var(--cr)) 0 calc(var(--cut) - var(--cr))/var(--cr) var(--cr) no-repeat,
-  linear-gradient(var(--pc),var(--pc)) var(--cr) 0/calc(100% - var(--cr)) var(--cut) no-repeat,
-  radial-gradient(circle at 0 100%,transparent calc(var(--cb) - .5px),var(--pc) var(--cb)) 100% var(--cut)/var(--cb) var(--cb) no-repeat}
-.vw::before{left:0;right:auto;width:calc(100% - var(--nx) + var(--cr));transform:scaleX(-1)}
-.hx::after,.vw::after,.tk::after{content:none}
+/* folder-cut sheets: the top edge is clipped like a file divider (straight diagonal shoulders, chamfered corners); the previous sheet shows through */
+:root{--cut:38px;--ch:20px}
+.hx,.vw,.tk{border-radius:0!important;box-shadow:none;--sl:calc(var(--cut) * .9);
+ clip-path:polygon(0 var(--ch),var(--ch) 0,var(--nx) 0,calc(var(--nx) + var(--sl)) var(--cut),calc(100% - var(--ch)) var(--cut),100% calc(var(--cut) + var(--ch)),100% 100%,0 100%)}
+.vw{clip-path:polygon(0 calc(var(--cut) + var(--ch)),var(--ch) var(--cut),calc(var(--nx) - var(--sl)) var(--cut),var(--nx) 0,calc(100% - var(--ch)) 0,100% var(--ch),100% 100%,0 100%)}
+.hx{--nx:40%}.vw{--nx:62%}.tk{--nx:44%}
+.hx-stage{border-radius:0!important}
+.hx-bar{display:none!important}
 .hero2{padding-bottom:calc(var(--sheet-r) + var(--cut) + 24px)!important}
 /* premium cards: soft tinted art panel, deep radius, layered shadow */
 .hx-card,.vw-card{border-radius:32px;box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 30px 60px -30px rgba(0,0,0,.65),0 8px 18px -10px rgba(0,0,0,.35)}
 .hx-card .hx-art{background:#f1eeea;border-radius:22px;padding:14px;box-sizing:border-box;width:100%}
 .hx-card .hx-no{align-self:flex-start;padding:5px 11px;border-radius:99px;background:#171717;color:#f6f4f1!important;font-size:12px;letter-spacing:.08em}
+.hx,.vw,.tk{margin-top:calc(var(--cut) * -1)}
+.hx,.vw,.tk{margin-top:calc((var(--cut) + var(--ch)) * -1)}
+.hero2{padding-bottom:calc(var(--cut) + var(--ch) + 28px)!important}
