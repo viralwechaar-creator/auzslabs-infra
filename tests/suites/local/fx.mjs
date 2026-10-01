@@ -7,14 +7,14 @@ const WORLD = ['index', 'products', 'pos', 'crm', 'billing', 'inventory', 'qr-or
 
 export default async function run({ browser, stack }) {
   const s = suite('Scroll worlds: every page scrolled end to end, plus the no-animation fallback', 'Looks for JavaScript errors while scrolling, scenes that never start, sideways overflow, and checks the pages stay readable with reduced motion.');
-  for (const dev of [{ name: 'phone', w: 390, h: 844, mobile: true }, { name: 'desktop', w: 1366, h: 800 }]) {
+  for (const dev of [{ name: 'phone', w: 390, h: 844, mobile: true }, { name: 'tablet', w: 768, h: 1024, mobile: true }, { name: 'desktop', w: 1366, h: 800 }]) {
     const ctx = await newCtx(browser, stack, dev); const page = await ctx.newPage(); const errs = watch(page);
     for (const n of WORLD) {
       await s.check(`${n} (${dev.name}): scrolls top to bottom without errors, scenes run, no sideways scroll`, async () => {
         errs.length = 0;
         await page.goto(stack.url('', '/' + n + '.html'), { waitUntil: 'load' }); await page.waitForTimeout(700);
         const info = await page.evaluate(async () => {
-          const H = document.documentElement.scrollHeight, out = { scenes: window.FX ? FX.scenes.length : -1, live: document.documentElement.classList.contains('fx-live'), moved: 0 };
+          const H = document.documentElement.scrollHeight, out = { scenes: window.FX ? FX.scenes.length : -1, live: document.documentElement.classList.contains('fx-live'), flow: document.documentElement.classList.contains('fx-flow-ready'), moved: 0 };
           const frames = []; let last = performance.now(); let stop = false;
           (function loop(t) { frames.push(t - last); last = t; if (!stop) requestAnimationFrame(loop); })(last);
           for (let y = 0; y < H; y += 420) { window.scrollTo(0, y); await new Promise((r) => setTimeout(r, 55)); }
@@ -27,9 +27,20 @@ export default async function run({ browser, stack }) {
           return out;
         });
         assert(!errs.length, errs.slice(0, 3).join(' | '));
-        assert(info.live, 'animation layer not switched on');
-        assert(info.scenes > 0 || n === 'products', 'no scroll scene started (' + info.scenes + ')');
+        assert(info.live || info.flow, 'animation layer not switched on');
+        if (dev.mobile) assert(info.flow && info.scenes === 0, 'phone should use the light flowing layout, got scenes=' + info.scenes);
+        else assert(info.scenes > 0 || n === 'products', 'no scroll scene started (' + info.scenes + ')');
         assert(info.over <= 2, 'page scrolls sideways by ' + info.over + 'px');
+        if (dev.mobile) {
+          await page.evaluate(async () => { await new Promise((r) => setTimeout(r, 900)); });
+          const bad = await page.evaluate(() => {
+            const els = [...document.querySelectorAll('main .fx-stage .k')].filter((e) => { const r = e.getBoundingClientRect(), cs = getComputedStyle(e); return r.width > 4 && r.height > 4 && cs.display !== 'none' && cs.visibility !== 'hidden' && !e.closest('.hh') && !e.closest('.fx-world') && !e.matches('.cubebox, .stack3d, .doorway'); });
+            const it = els.map((e) => ({ e, r: e.getBoundingClientRect(), t: (e.className.baseVal ?? e.className).toString().split(' ').slice(0, 2).join('.') })), out = [];
+            for (let i = 0; i < it.length; i++) for (let j = i + 1; j < it.length; j++) { const a = it[i], b = it[j]; if (a.e.contains(b.e) || b.e.contains(a.e)) continue; const x = Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left), y = Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top); if (x > 8 && y > 8 && x * y > .15 * Math.min(a.r.width * a.r.height, b.r.width * b.r.height)) out.push(a.t + ' overlaps ' + b.t); }
+            return out.slice(0, 3);
+          });
+          assert(!bad.length, 'text blocks overlap: ' + bad.join(' | '));
+        }
         assert(info.progress > .95 || info.scenes === 0, 'scene stuck at ' + info.progress);
       }, 'critical');
     }
