@@ -57,10 +57,10 @@
 .hx-title .fx-w,.hx-name .fx-w{white-space:nowrap}
 .hx-card p,.hx-go{opacity:1}
 
-/* ---- mouse / trackpad screens only: page 2 pins and slides sideways, cards float, sheets rise (CSS scroll-linked, compositor) ---- */
-@media (hover:hover) and (pointer:fine) {
+/* ---- page 2 pins and slides sideways on every device (CSS scroll-linked, compositor); card tilt / door float on mouse devices only ---- */
+@media all {
   html.fx-hx .hx-hint .hx-h-d{display:inline}html.fx-hx .hx-hint .hx-h-t{display:none}
-  html.fx-hx .hx-stage{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;display:flex;align-items:center;padding-top:calc(66px + var(--sheet-r))}
+  html.fx-hx .hx-stage{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;display:flex;align-items:center;padding:calc(66px + var(--sheet-r)) 0 calc(var(--cut) + var(--ch) + 8px)}
   html.fx-hx .hx-track{overflow:visible;padding:0 8vw;height:100%;align-items:center;will-change:transform;scroll-snap-type:none}
   html.fx-hx .hx-card:nth-of-type(odd){margin-top:9vh}html.fx-hx .hx-card:nth-of-type(even){margin-top:-9vh}
   html.fx-hx .hx-bar{display:block;position:absolute;left:8vw;right:8vw;bottom:calc(5vh + env(safe-area-inset-bottom));height:2px;background:var(--hx-line);z-index:2}
@@ -72,9 +72,9 @@
     @keyframes hxSlide{to{transform:translate3d(calc(var(--hx-dist) * -1),0,0)}}
     html.fx-hx .hx-bar i{animation:hxBar linear both;animation-timeline:--hx;animation-range:contain 0% contain 100%}
     @keyframes hxBar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-    html.fx-hx .hx-card{animation:hxCard linear both;animation-timeline:--hx;animation-range:contain var(--r0) contain var(--r1)}
+    @media (hover:hover) and (pointer:fine){html.fx-hx .hx-card{animation:hxCard linear both;animation-timeline:--hx;animation-range:contain var(--r0) contain var(--r1)}}
     @keyframes hxCard{from{transform:translate3d(0,calc(46px * var(--dir)),0) rotate(calc(3.2deg * var(--dir)))}to{transform:translate3d(0,calc(-46px * var(--dir)),0) rotate(calc(-3.2deg * var(--dir)))}}
-    .vw-card{--fk:30;animation:vwFloat linear both;animation-timeline:view();animation-range:cover 0% cover 100%}
+    @media (hover:hover) and (pointer:fine){.vw-card{--fk:30;animation:vwFloat linear both;animation-timeline:view();animation-range:cover 0% cover 100%}}
     @keyframes vwFloat{from{transform:translate3d(0,calc(var(--fk) * 1px),0)}to{transform:translate3d(0,calc(var(--fk) * -1px),0)}}
   }
 }
@@ -95,3 +95,8 @@
 .hx,.vw,.tk{margin-top:calc(var(--cut) * -1)}
 .hx,.vw,.tk{margin-top:calc((var(--cut) + var(--ch)) * -1)}
 .hero2{padding-bottom:calc(var(--cut) + var(--ch) + 28px)!important}
+
+/* foot of the pinned stage: the next (wine) sheet's folder cut, so the bottom is never blank and the page continues from exactly there */
+.hx-foot{display:none}
+html.fx-hx .hx-foot{display:block;position:absolute;left:0;right:0;bottom:0;height:calc(var(--cut) + var(--ch) + 1px);background:var(--wine);pointer-events:none;
+ clip-path:polygon(0 calc(var(--cut) + var(--ch)),var(--ch) var(--cut),calc(62% - var(--sl)) var(--cut),62% 0,calc(100% - var(--ch)) 0,100% var(--ch),100% 100%,0 100%)}
