@@ -147,7 +147,7 @@ html:not(.fx-live) .hero-h1 .k.hand,html:not(.fx-live) .hh .k.hand{margin:0 0 0 
 .fx-panel:first-of-type{border-radius:0;border-top:0;padding-top:0;min-height:100svh}
 .fx-panel .fx-stage{padding-top:0}
 .fx-panel:first-of-type .fx-stage{padding-top:96px}
-.fx-panel.stack-panel-dark{background:#0e0d0c;top:auto;padding-top:150px;min-height:0}
+.fx-panel.stack-panel-dark{background:var(--ink);top:auto;padding-top:150px;min-height:0}
 .fx-panel.stack-panel-dark::before{color:#fff}
 .fx-panel .closer{background:transparent;padding-top:0}
 .fx-panel .slab:first-child{padding-top:30px}
@@ -260,3 +260,13 @@ html.fx-flow .lab-h .giant{font-size:9vw}html.fx-flow .lab-h .lh2{font-size:6vw}
   html:not(.fx-live) .hp-hero .cubebox{position:absolute!important;right:6vw;top:150px;margin:0!important}
   html:not(.fx-live) .hp-hero .fx-stage{height:calc(100svh - 60px)!important;min-height:560px}
 }
+
+/* footer panel corners blend into the dark closer above it; header is solid and every page leaves air below it */
+.fx .stack-panel-dark+.stack-panel-dark,.fx .stack .stack-panel-dark{border-color:var(--ink)}
+html.fx-flow .fx .topbar,html.fx-flow body.fx .topbar{background:#f6f4f1}
+html.fx-flow .fx .topbar::before,html.fx-flow .fx .topbar::after{display:none}
+.fx .fx-panel:first-of-type .fx-stage{padding-top:calc(max(16px,env(safe-area-inset-top)) + 96px)}
+.fx{scroll-padding-top:100px}
+@media (min-width:900px){.fx .fx-panel:first-of-type .fx-stage{padding-top:112px}}
+.fx .stack-panel-dark{border-radius:0!important;border-top:0}
+.fx .stack-panel-dark .eye{color:rgba(255,255,255,.55)}
