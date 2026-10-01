@@ -70,6 +70,43 @@ export default async function run({ browser, stack }) {
     assert(await page.evaluate(() => window.__marker === document.querySelector('.items')), 'the item grid was replaced by a re-render within 3.5 s');
   }, 'major');
 
+  await s.check('Advance order: schedule an order for later, it waits under "Advance orders" and is counted in the live strip', async () => {
+    await drawer('Sell');
+    await page.locator('.items button', { hasText: 'Paneer Tikka' }).first().click();
+    await page.locator('input[placeholder*="Customer"]').first().fill('Advance Guest'); await page.locator('input[placeholder*="Phone"]').first().fill('9822233344');
+    await page.locator('button', { hasText: 'Schedule for later' }).first().click(); await page.waitForTimeout(400);
+    await page.locator('.md button', { hasText: /^Save$/ }).first().click(); await page.waitForTimeout(400);
+    await page.locator('button', { hasText: /^Hold$/ }).first().click();
+    assert(await until(async () => (await orders()).some((o) => o.adv && o.status === 'open')), 'the scheduled order did not reach the server with its time');
+    await drawer('Orders'); const t = await text();
+    assert(/Advance orders \(1\)/.test(t), 'no "Advance orders" card on the Orders screen'); assert(/Running orders/.test(t) && /Out for delivery/.test(t), 'live strip missing');
+  }, 'major');
+
+  await s.check('Cash drawer: a top-up and a withdrawal change the expected cash and show in the activity log', async () => {
+    await page.goto(stack.url('testcafe', '/backoffice.html?tab=rep')); await page.waitForSelector('.tabbar', { timeout: 15000 }); await page.waitForTimeout(800);
+    const card = page.locator('.card', { has: page.locator('h3', { hasText: 'Cash drawer' }) });
+    await card.locator('input[placeholder="Amount"]').fill('500'); await card.locator('button', { hasText: 'Record' }).click(); await page.waitForTimeout(600);
+    await card.locator('select').first().selectOption('out'); await card.locator('input[placeholder="Amount"]').fill('120'); await card.locator('button', { hasText: 'Record' }).click(); await page.waitForTimeout(600);
+    assert(await until(async () => (await q("select data from records where tenant_id=$1 and kind='cashmove'", [tid])).length === 2), 'cash movements did not reach the server');
+    const t = await text(); assert(/Cash top-ups\s*₹500/.test(t) && /Withdrawals\s*₹120/.test(t), 'day report does not show the top-up and withdrawal');
+    await page.locator('.tabbar button', { hasText: 'Activity log' }).click(); await page.waitForTimeout(600);
+    assert(/Cash top-up/.test(await text()) && /Withdrawal/.test(await text()), 'activity log is missing the cash movements');
+  }, 'major');
+
+  await s.check('Menu: select items and raise their prices by 10 percent in one action', async () => {
+    await page.goto(stack.url('testcafe', '/backoffice.html?tab=menu')); await page.waitForSelector('button', { timeout: 15000 }); await page.waitForTimeout(800);
+    const prices = () => q("select data->>'name' n, (data->>'price')::numeric p from records where tenant_id=$1 and kind='item' and not deleted order by 1", [tid]).then((r) => r.map((x) => x.n + ':' + +x.p));
+    const before = await prices();
+    page.removeAllListeners('dialog'); page.on('dialog', (d) => (d.type() === 'prompt' ? d.accept('10') : d.accept()).catch(() => {}));
+    await page.locator('button', { hasText: /^Select$/ }).click(); await page.waitForTimeout(300);
+    await page.locator('button', { hasText: 'Select all' }).first().click(); await page.waitForTimeout(400);
+    assert(/\d+ selected/.test(await text()), 'no selection bar appeared');
+    await page.locator('button', { hasText: 'Price +%' }).click();
+    assert(await until(async () => { const a = await prices(); return a.join() !== before.join(); }), 'prices did not change');
+    const after = await prices(), b0 = before.map((x) => +x.split(':')[1]), a0 = after.map((x) => +x.split(':')[1]);
+    assert(a0.some((v, i) => Math.abs(v - Math.round(b0[i] * 110) / 100) < 0.011 && v > b0[i]), 'no price rose by 10%');
+  }, 'major');
+
   await s.check('No JavaScript errors during the whole workflow', async () => { const bad = errs.filter((e) => !/print|callback/i.test(e)); assert(!bad.length, bad.slice(0, 3).join(' | ')); }, 'major');
   await ctx.close(); s.done();
 }
