@@ -22,7 +22,7 @@
       if (cur && cur.dark) cur = null;
       if (!cur) open();
       cur.items.push(k); acc += h;
-      if (acc >= vh * .8) cur = null;
+      if (acc >= vh * .45) cur = null;
     });
     var TAB = [[/included|inside|what we build|everything a|what a /i, 'INSIDE'], [/pairs/i, 'PAIRS'], [/ready|get started|next|your cart/i, 'START'], [/try|hands-on|demo|live client/i, 'TRY'],
       [/before you write|answered|faq/i, 'ASK'], [/how it works|step|how we work/i, 'STEPS'], [/why|struggle|gap|paper|counting|wrong|pain/i, 'WHY'], [/get found|marketing|creator/i, 'REACH'], [/independent|infrastructure/i, 'OWN']];
@@ -44,13 +44,15 @@
       var vw = window.innerWidth, vhh = window.innerHeight, base = vw >= 861 ? 150 : 112, step = Math.min(55, Math.max(24, vw * .068));
       panels.forEach(function (p, i) {
         var want = i === 0 ? 0 : base + Math.min(i - 1, 2) * step;
-        p.style.top = Math.min(want, vhh - p.offsetHeight) + 'px'; p.style.zIndex = i + 1;
+        var t = Math.round(Math.min(want, vhh - p.offsetHeight)) + 'px';
+        if (p.style.top !== t) p.style.top = t;
+        if (p.style.zIndex !== String(i + 1)) p.style.zIndex = i + 1;
       });
     }
     layout(); requestAnimationFrame(layout);
-    window.addEventListener('load', layout); window.addEventListener('resize', layout);
+    window.addEventListener('load', layout); var rt; window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(layout, 120); });
     if (doc.fonts && doc.fonts.ready) doc.fonts.ready.then(layout);
-    if ('ResizeObserver' in window) { var ro = new ResizeObserver(layout); panels.forEach(function (p) { ro.observe(p); }); }
+    if ('ResizeObserver' in window) { var rq = 0, ro = new ResizeObserver(function () { cancelAnimationFrame(rq); rq = requestAnimationFrame(layout); }); panels.forEach(function (p) { ro.observe(p); }); }
     doc.documentElement.classList.add('fx-stacked');
   }
   if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', boot); else boot();
