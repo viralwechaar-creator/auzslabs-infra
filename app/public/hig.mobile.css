@@ -98,3 +98,13 @@ body.has-tabs .toast,.toast{bottom:calc(88px + env(safe-area-inset-bottom))!impo
 html{background:#1d1a1a}
 body{background:#efeeed}
 @media (max-width:700px){.shell>.ios-tabs{padding-bottom:calc(6px + env(safe-area-inset-bottom))}.ios-tabs button{min-height:50px}}
+
+/* slimmer tab bar that slides away on scroll down (class set by wireTabHide in index.html) */
+@media (max-width:700px){
+  .shell>.ios-tabs{padding:4px 8px calc(4px + env(safe-area-inset-bottom));transition:transform .28s var(--hig-ease)}
+  .ios-tabs button{min-height:46px;gap:1px}
+  .shell.tabs-away>.ios-tabs{transform:translateY(105%)}
+  .shell-body{padding-bottom:calc(62px + env(safe-area-inset-bottom))}
+  .shell-body .cart-bar{bottom:calc(58px + env(safe-area-inset-bottom));transition:bottom .28s var(--hig-ease)}
+  .shell.tabs-away .shell-body .cart-bar{bottom:0}
+}

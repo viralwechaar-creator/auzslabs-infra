@@ -250,7 +250,7 @@ input[type=date],input[type=time],input[type=month]{width:156px}
 .drawer button{flex:none;min-height:46px}
 .drawer button.grp{margin-top:14px;position:relative}
 .drawer button.grp::before{content:"";position:absolute;left:14px;right:14px;top:-8px;height:1px;background:var(--l)}
-</style><link rel="stylesheet" href="/hig.mobile.css?v=10" media="(max-width:899px)"><link rel="stylesheet" href="/hig.desktop.css?v=4" media="(min-width:900px)"></head><body><div id=app></div>
+</style><link rel="stylesheet" href="/hig.mobile.css?v=11" media="(max-width:899px)"><link rel="stylesheet" href="/hig.desktop.css?v=4" media="(min-width:900px)"></head><body><div id=app></div>
 <script src=/sb-client.js?v=2></script>
 <script src=/config.js></script>
 <script src=/tenant.js></script>
@@ -773,6 +773,8 @@ function renderDrawer(T){
 }
 const ALL_T=[['pos','Sell','pos','pos'],['tabs','Orders','orders',null],['kds','Kitchen','kitchen','kds'],['kotrep','KOT','kitchen','kds'],['token','Token','kitchen',null],['staff','Staff','staff',null],['builder','Website','o','website_builder']];
 const visibleTabs=()=>ALL_T.filter(([k,,perm,feat])=>can(perm)&&(!feat||featureOn(feat))&&(k!='kotrep'||isRestaurant())&&(k!='token'||cfg().hwToken));
+// the bottom tab bar slides away while scrolling down and returns on scroll up, so it never blocks the bottom of a long screen
+function wireTabHide(){const b=document.querySelector('.shell-body'),sh=document.querySelector('.shell');if(!b||!sh)return;let last=b.scrollTop;b.addEventListener('scroll',()=>{const y=b.scrollTop,d=y-last;if(Math.abs(d)<10)return;sh.classList.toggle('tabs-away',d>0&&y>80);last=y},{passive:true})}
 function render(){if(S.authExpired||!S.user)return login('Your session ended. Please sign in again.');applyTheme();freshCur();
  const T=visibleTabs().map(([k,n])=>[k,n]);
  if(S.role=='owner'||S.role=='manager'){if(can('reports'))T.push(['bo:rep','Reports & Analytics']);if(can('o'))T.push(['bo:menu','Menu'],['bo:set','Settings & Tables']);T.push(['dash','Admin Dashboard'],['backoffice','Back Office'])}
@@ -789,7 +791,7 @@ function render(){if(S.authExpired||!S.user)return login('Your session ended. Pl
    V[S.tab](),
    h('div',{class:'powered'},'Powered by ',h('a',{href:'https://auzslab.in',target:'_blank',rel:'noopener'},'AUZslab'))),
   iosTabs(T)
- ));const nb=document.querySelector('.shell-body');if(nb)nb.scrollTop=keepTop;renderDrawer(T);setNote();refreshNotifCount()}
+ ));const nb=document.querySelector('.shell-body');if(nb)nb.scrollTop=keepTop;wireTabHide();renderDrawer(T);setNote();refreshNotifCount()}
 // iOS-style tab bar (phones): the four most-used screens + "More", which opens the full menu
 function iosTabs(T){
  const main=T.filter(([k])=>!k.startsWith('bo:')&&k!='backoffice'&&k!='builder').slice(0,4);
