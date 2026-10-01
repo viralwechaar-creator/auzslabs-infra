@@ -17,32 +17,44 @@
   } else [].forEach.call(doc.querySelectorAll('.hx-card,.vw-card,.hx-row'), function (el) { el.classList.add('in'); });
   if (reduce || !ok) return;
 
-  var items = [].slice.call(track.children), N = items.length, kf = doc.createElement('style');
-  doc.head.appendChild(kf);
-  function T(d) { return 'translate3d(' + (d * 34 - 44).toFixed(1) + 'px,' + (d * -22 + 26).toFixed(1) + 'px,0) scale(' + (1 - d * .055).toFixed(3) + ')'; }
-  var sheets = [].slice.call(doc.querySelectorAll('.hw,.vw'));
-  function pins() { sheets.forEach(function (el) { el.style.setProperty('--pin', (el.classList.contains('hw') ? 104 : Math.min(0, window.innerHeight - el.offsetHeight)) + 'px'); }); }
+  var items = [].slice.call(track.children), vwEl = doc.querySelector('.vw'), vwItems = vwEl ? [].slice.call(vwEl.querySelectorAll('.vw-card')) : [];
+  var sheets = [].slice.call(doc.querySelectorAll('.hw,.vw,.tk'));
+  var kf = doc.createElement('style'); doc.head.appendChild(kf);
+  var spacer = doc.createElement('div'); spacer.className = 'vw-pin'; spacer.setAttribute('aria-hidden', 'true');
+  if (vwEl) vwEl.parentNode.insertBefore(spacer, vwEl.nextSibling);
+
+  // One card at a time travels across the screen: it enters from one side, crosses the centre, leaves on the other side; the last one stays centred.
+  // dir = +1: enters from the right (page 2), -1: from the left (four doors). Keyframes are written once; the scroll position drives them (compositor).
+  function deckCss(sel, name, n, dir, A, B) {
+    var D = 2.2, w = .94 / (n - 1 + D), css = '';
+    function X(x, r) { return 'translate3d(' + (x * dir).toFixed(2) + 'vw,0,0) rotate(' + (r * dir).toFixed(2) + 'deg)'; }
+    for (var i = 0; i < n; i++) {
+      var s = i * w, c = s + D * w, e = s + 2 * D * w, k = '0%{transform:' + X(125, 7) + '}';
+      k += (s * 100).toFixed(3) + '%{transform:' + X(125, 7) + '}' + (c * 100).toFixed(3) + '%{transform:' + X(0, 0) + '}';
+      if (i < n - 1) {
+        if (e <= 1) k += (e * 100).toFixed(3) + '%{transform:' + X(-125, -7) + '}100%{transform:' + X(-125, -7) + '}';
+        else { var f = (1 - c) / (e - c); k += '100%{transform:' + X(-125 * f, -7 * f) + '}'; }
+      } else k += '100%{transform:' + X(0, 0) + '}';
+      css += '@keyframes ' + name + i + '{' + k + '}html.fx-hx ' + sel + ':nth-child(' + (i + 1) + '){z-index:' + (i + 1) + ';animation:' + name + i + ' linear both;animation-timeline:scroll(root block);animation-range:' + Math.round(A) + 'px ' + Math.round(B) + 'px}';
+    }
+    return css;
+  }
+  function perCard(sh, n) { return Math.round(sh * .5 * (n - 1 + 2.2) / .94); }   // total scroll length: about half a screen per card
+
   function measure() {
-    var vw = window.innerWidth, sh = stage.offsetHeight;                    // stage is 100svh: does not change when the phone toolbar hides
-    root.classList.remove('fx-hx'); hx.style.height = '';
-    var step = Math.round(sh * .5), dist = (N - 1) * step + Math.round(sh * .35);   // scroll length of the pinned part
+    var sh = stage.offsetHeight, pin = Math.round(Math.max(120, Math.min(200, window.innerHeight * .2)));   // stage is 100svh: stable when the phone toolbar hides
+    root.classList.remove('fx-hx'); hx.style.height = ''; spacer.style.height = '0px'; root.style.setProperty('--pin', pin + 'px');
+    var dist = perCard(sh, items.length), css = '';
     hx.style.height = (sh + dist) + 'px';
-    var H0 = .05, w = (1 - H0 - .06) / (N - 1), css = '';                   // share of the timeline each card takes to leave
-    items.forEach(function (el, i) {
-      var P = function (x) { return (Math.max(0, Math.min(1, x)) * 100).toFixed(3) + '%'; }, a = H0 + i * w, b = a + w, k = '';
-      el.style.zIndex = N - i;
-      if (i > 0) {
-        k += '0%{transform:' + T(Math.min(i, 4)) + ';opacity:' + (i > 3 ? 0 : 1) + '}';
-        if (i > 4) k += P(a - 4 * w) + '{transform:' + T(4) + ';opacity:0}';
-        if (i > 3) k += P(a - 3 * w) + '{transform:' + T(3) + ';opacity:1}';
-        k += P(a) + '{transform:' + T(0) + ';opacity:1}';
-      } else k += '0%{transform:' + T(0) + ';opacity:1}' + P(a) + '{transform:' + T(0) + ';opacity:1}';
-      if (i < N - 1) k += P(b) + '{transform:translate3d(-125vw,0,0) rotate(-9deg);opacity:1}100%{transform:translate3d(-125vw,0,0) rotate(-9deg);opacity:1}';
-      else k += '100%{transform:' + T(0) + ';opacity:1}';
-      css += '@keyframes hxd' + i + '{' + k + '}.hx-track>:nth-child(' + (i + 1) + '){animation-name:hxd' + i + '}';
-    });
+    root.classList.add('fx-hx');                                            // layout (margins, sticky) now final
+    var A = hx.getBoundingClientRect().top + window.pageYOffset;
+    css += deckCss('.hx-track>*', 'hxd', items.length, 1, A, A + dist);
+    if (vwEl && vwItems.length) {
+      var dv = perCard(sh, vwItems.length); spacer.style.height = dv + 'px';
+      var flowTop = spacer.getBoundingClientRect().top + window.pageYOffset - vwEl.offsetHeight, Av = flowTop - pin;
+      css += deckCss('.vw-grid>*', 'vwd', vwItems.length, -1, Av, Av + dv);
+    }
     kf.textContent = css;
-    pins(); root.classList.add('fx-hx');
   }
   measure();
   var lastW = window.innerWidth, rt;

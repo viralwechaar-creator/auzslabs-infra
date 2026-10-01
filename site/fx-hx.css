@@ -107,14 +107,24 @@ html.fx-hx .hx-row p{font-size:15px}
 html.fx-hx .hx-card .hx-art{max-height:22svh;flex:0 1 auto}
 html.fx-hx .hx-card{justify-content:flex-start}
 
-/* ---- How we work: its own sheet (original look), pinned while the deck rises over it ---- */
-.hw{position:relative;z-index:1;background:var(--hx-bg);min-height:calc(100svh - 104px);box-sizing:border-box;padding:calc(var(--cut) + var(--ch) + 24px) 8vw 56px;display:flex;align-items:center;--sl:calc(var(--cut) * .9)}
+/* ---- How we work: its own sheet (original look), pinned while the deck travels over it ---- */
+.hw{position:relative;z-index:1;background:var(--hx-bg);min-height:100vh;min-height:100svh;box-sizing:border-box;padding:calc(var(--cut) + var(--ch) + 56px) 8vw 56px;display:flex;align-items:center}
 .hw-in{width:min(100%,760px)}
-.hw+.hx{margin-top:0}
 .hx{background:transparent}
 html:not(.fx-hx) .hx{background:var(--hx-bg)}
-html.fx-hx .hw,html.fx-hx .vw{position:sticky;top:var(--pin,0px)}
-.hw,.vw{position:relative}
 .vw{z-index:3}.tk{z-index:4}
-html.fx-hx .hx{z-index:2}
-html.fx-hx .hx-stage{background:transparent}
+.vw-pin{height:0}
+
+/* ---- pinned mode (every device): the three folder-cut sheets stop at one place under the header and cover each other ---- */
+html.fx-hx .hw,html.fx-hx .vw,html.fx-hx .tk{position:sticky;top:var(--pin,150px);min-height:calc(100vh - var(--pin,150px));min-height:calc(100svh - var(--pin,150px));box-sizing:border-box}
+html.fx-hx .hw{padding-top:calc(var(--cut) + var(--ch) + 24px);padding-bottom:24px;align-items:flex-start}
+html.fx-hx .vw{padding:calc(var(--cut) + var(--ch) + 22px) 8vw 24px;display:flex;flex-direction:column}
+html.fx-hx .tk{padding-top:calc(var(--cut) + var(--ch) + 40px)}
+html.fx-hx .hx{z-index:2;margin-top:-100vh;margin-top:-100svh;background:transparent}
+html.fx-hx .hx-stage{background:transparent;padding:var(--pin,150px) 0 0}
+html.fx-hx .hx-track>.hx-s,html.fx-hx .hx-track>.hx-card{top:50%}
+html.fx-hx .hx-track>*{will-change:transform}
+html.fx-hx .vw-grid{position:relative;display:block;flex:1;min-height:300px;margin-top:8px}
+html.fx-hx .vw-card{position:absolute;left:50%;top:50%;translate:-50% -50%;width:min(74vw,320px);margin:0!important;will-change:transform}
+html.fx-hx .vw .hx-title{font-size:clamp(30px,9vw,40px)}
+html.fx-hx .vw-art{max-height:19svh}
