@@ -20,14 +20,134 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="stylesheet" href="theme.css?v=44">
 <link rel="stylesheet" href="sketch.css?v=1">
+<link rel="stylesheet" href="fx.css?v=1">
 <script src="sketch.js?v=1"></script>
-<script src="sketch-art.js?v=1" defer></script>
+<script src="fx-art.js?v=1" defer></script>
+<script src="fx.js?v=1" defer></script>
+<script src="fx-canvas.js?v=1" defer></script>
+<script src="fx-phys.js?v=1" defer></script>
 <link rel="stylesheet" href="design-system/ui-kit.css?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ---------- products: bubble lab + nine differently composed slabs ---------- */
+.lab{position:relative;min-height:100vh;min-height:100svh;overflow:hidden;padding:0}
+.lab-h{position:absolute;left:4vw;top:15vh;margin:0;z-index:1;pointer-events:none;display:flex;flex-direction:column;gap:0}
+.lab-h .giant{font-size:clamp(46px,14.5vw,320px);line-height:.84}
+.lab-h .lh2{font-size:clamp(34px,7vw,150px);margin-left:34vw;margin-top:-.15em}
+.lab-h .lh3{margin-left:8vw}
+.lab-lede{position:absolute;right:5vw;top:15vh;max-width:15em;margin:0;z-index:2;font:500 clamp(14px,1.3vw,20px)/1.5 var(--font-body);color:var(--ink-dim);text-align:right}
+.bubbles{position:absolute;inset:0;z-index:3}
+.bub{position:absolute;left:0;top:0;width:var(--s);height:var(--s);border-radius:50%;background:#fffdf7;border:2px solid var(--ink);box-shadow:5px 5px 0 var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.2em;cursor:grab;user-select:none;-webkit-user-select:none;transition:box-shadow .2s,background .2s}
+.bub svg{width:62%;height:auto;margin-top:-6%;pointer-events:none}
+.bub b{font:900 clamp(12px,1.9vmin,24px)/1 var(--font-display);letter-spacing:-.03em;text-transform:uppercase;pointer-events:none}
+.bub:hover{background:var(--hl)}
+.bub.grab{cursor:grabbing;box-shadow:10px 10px 0 var(--accent)}
+.bub.dash{border-style:dashed;border-color:var(--accent);box-shadow:none;background:transparent;color:var(--accent)}
+html:not(.fx-live) .bubbles{position:static;display:flex;flex-wrap:wrap;gap:14px;padding:30vh 5vw 40px}
+html:not(.fx-live) .bub{position:static}
+html:not(.fx-live) .lab-h,html:not(.fx-live) .lab-lede{position:static;padding:90px 5vw 0}
+.lab-hint{position:absolute;left:5vw;bottom:5vh;font-size:clamp(22px,2.6vw,42px);z-index:2;transform:rotate(-3deg)}
+
+.band{background:var(--ink);color:#f4eee2;padding:1.1em 0;font:900 clamp(22px,4vw,64px)/1 var(--font-display);letter-spacing:-.04em;text-transform:uppercase;transform:rotate(-1.6deg);margin:5vh -3vw;position:relative;z-index:4}
+.band span{padding:0 .5em;white-space:nowrap}
+.band i{display:inline-block;width:.5em;height:.5em;border:.12em solid var(--hl);border-radius:50%;margin:0 .4em}
+
+.slab{position:relative;padding:clamp(70px,13vh,150px) 5vw;overflow:hidden}
+.slab .no{position:absolute;font:900 clamp(120px,32vw,640px)/.8 var(--font-display);letter-spacing:-.07em;color:transparent;-webkit-text-stroke:max(1.5px,.1vw) rgba(23,23,23,.16);z-index:0;pointer-events:none;user-select:none}
+.slab>*{position:relative;z-index:1}.slab>.no{position:absolute;z-index:0}
+.slab .eye{font:500 clamp(10px,.85vw,13px)/1 var(--font-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:10px;margin-bottom:2vh}
+.slab .eye::before{content:"";width:28px;height:2px;background:var(--accent)}
+.slab .nm{margin:0;font-size:clamp(44px,12vw,250px);line-height:.84;max-width:100%}
+.slab .sum{font-size:clamp(15px,1.5vw,24px);line-height:1.5;color:var(--ink-dim);max-width:24em;margin:2vh 0 0}
+.feats{list-style:none;margin:3vh 0 0;padding:0;max-width:30em;font-size:clamp(13px,1.05vw,17px);line-height:1.5}
+.feats li{padding:.7em 0 .7em 1.8em;position:relative;border-bottom:1.5px dashed rgba(23,23,23,.2)}
+.feats li::before{content:"";position:absolute;left:0;top:1.05em;width:.9em;height:.9em;border:2px solid var(--accent);border-radius:50%;background:radial-gradient(circle,var(--accent) 38%,transparent 42%)}
+.acts{display:flex;gap:12px;flex-wrap:wrap;margin-top:4vh}
+.art{pointer-events:none}
+
+.s-pos{min-height:120vh}.s-pos .no{right:-4vw;top:2vh}
+.s-pos .nm{font-size:clamp(70px,24vw,520px);margin-left:-.04em}
+.s-pos .blk{max-width:34em;margin-top:-2vh}
+.s-pos .a-big{position:absolute;right:-6vw;bottom:2vh;width:min(58vw,820px);transform:rotate(7deg)}
+.s-crm{background:rgba(255,217,59,.16);min-height:120vh}
+.s-crm .no{left:-3vw;bottom:-6vh}
+.s-crm .blk{margin-left:auto;text-align:right;max-width:40em}.s-crm .blk .eye{justify-content:flex-end}.s-crm .sum{margin-left:auto}.s-crm .acts{justify-content:flex-end}
+.s-crm .nm.tilt{transform:rotate(-5deg);transform-origin:100% 50%;font-size:clamp(60px,19vw,400px)}
+.notes{list-style:none;margin:6vh 0 0;padding:0;display:flex;flex-wrap:wrap;gap:3vh 2.4vw;max-width:62vw;margin-left:auto;justify-content:flex-end}
+.notes li{position:relative;width:min(26vw,300px);padding:2.4em 1.2em 1.4em;background:#ffe45e;box-shadow:6px 8px 0 rgba(23,23,23,.18);font:700 clamp(18px,1.9vw,30px)/1.15 var(--hand);color:#2a2410;transform:rotate(var(--r)) translateX(var(--x))}
+.notes .tape{top:-.7em;left:30%}
+.s-crm .a-left{position:absolute;left:4vw;top:16vh;width:min(30vw,420px);transform:rotate(-8deg)}
+.s-billing{min-height:130vh;padding-left:0}.s-billing .no{right:2vw;top:4vh}
+.s-billing .vert{position:absolute;left:1.5vw;top:6vh;writing-mode:vertical-rl;transform:rotate(180deg);font:900 clamp(60px,15vw,300px)/.84 var(--font-display);letter-spacing:-.05em;text-transform:uppercase;color:transparent;-webkit-text-stroke:max(1.5px,.11vw) var(--ink);white-space:nowrap}
+.receipt{position:relative;margin:0 6vw 0 auto;width:min(46vw,620px);background:#fffdf7;padding:5vh 3vw 7vh;box-shadow:0 18px 40px rgba(23,23,23,.18);transform:rotate(1.6deg)}
+.receipt .feats.lines li{font-family:var(--font-mono)}.receipt .tot{display:flex;justify-content:space-between;align-items:center;margin-top:3vh;font:900 clamp(20px,2.2vw,36px)/1 var(--font-display);text-transform:uppercase;border-top:3px double var(--ink);padding-top:2vh}
+.receipt .stamp{font-size:clamp(16px,2vw,32px)}
+.s-billing .a-corner{position:absolute;left:14vw;bottom:6vh;width:min(24vw,340px);transform:rotate(-10deg)}
+.s-inventory{text-align:center;min-height:120vh}.s-inventory .no{left:50%;transform:translateX(-50%);top:0}
+.s-inventory .nm.center{font-size:clamp(36px,12.2vw,280px)}
+.s-inventory .a-mid{width:min(42vw,560px);margin:-2vh auto 0;display:block}
+.s-inventory .sum.center{margin:0 auto}
+.labels{list-style:none;margin:5vh 0 0;padding:0;display:flex;flex-wrap:wrap;gap:2vh 1.6vw;justify-content:center}
+.labels li{max-width:21em;font-size:clamp(13px,1.1vw,18px);text-align:left;transform:rotate(var(--r));background:#fffdf7 repeating-linear-gradient(90deg,var(--ink) 0 2px,transparent 2px 5px) no-repeat 0 0/34px 100%;border:2px solid var(--ink);box-shadow:5px 5px 0 var(--ink);padding:.9em 1.3em .9em 56px}
+.s-inventory .acts{justify-content:center}
+.s-qr{min-height:140vh}.s-qr .no{left:-6vw;top:10vh}
+.s-qr .a-phone{position:absolute;left:50%;top:48%;width:min(30vw,420px);transform:translate(-50%,-50%) rotate(-5deg)}
+.s-qr .blk{position:relative;max-width:min(62vw,880px);margin-left:auto;text-align:right}.s-qr .blk .eye{justify-content:flex-end}.s-qr .sum{margin-left:auto}.s-qr .acts{justify-content:flex-end}
+.s-qr .nm{font-size:clamp(40px,9.6vw,210px)}
+.orb{position:absolute;margin:0;width:min(22vw,300px);font:600 clamp(13px,1.15vw,19px)/1.45 var(--font-body);color:var(--ink-dim);z-index:2}
+.orb b{display:inline-grid;place-items:center;width:2.1em;height:2.1em;border-radius:50%;border:2px solid var(--accent);color:var(--accent);margin-right:.7em;font:900 .95em/1 var(--font-display);vertical-align:middle}
+.orb.o1{left:6vw;top:34vh}.orb.o2{left:12vw;top:70vh}.orb.o3{left:62vw;top:78vh}
+.s-payroll{background:#0e0d0c;color:#f4eee2;min-height:120vh}.s-payroll .no{-webkit-text-stroke-color:rgba(244,238,226,.14);left:-4vw;top:8vh}
+.s-payroll .nm{color:#f4eee2;font-size:clamp(40px,8.6vw,190px)}.s-payroll .sum{color:rgba(244,238,226,.72)}.s-payroll .eye{color:var(--hl)}.s-payroll .eye::before{background:var(--hl)}
+.s-payroll .fx-art{color:#f4eee2}.s-payroll .fx-art .f{fill:#0e0d0c}.s-payroll .fx-art .a{stroke:var(--hl)}
+.s-payroll .a-clock{position:absolute;left:3vw;top:50%;width:min(38vw,560px);transform:translateY(-50%) rotate(-6deg)}
+.s-payroll .blk{margin-left:auto;width:min(52vw,760px)}
+.tline{list-style:none;margin:4vh 0 0;padding:0 0 0 1.6em;border-left:2px dashed rgba(244,238,226,.35);font-size:clamp(13px,1.1vw,18px);line-height:1.5;counter-reset:t}
+.tline li{position:relative;padding:0 0 2.2vh 1em;color:rgba(244,238,226,.82);counter-increment:t}
+.tline li::before{content:counter(t,decimal-leading-zero);position:absolute;left:-3.25em;top:0;width:2.2em;height:2.2em;display:grid;place-items:center;border-radius:50%;background:var(--hl);color:#0e0d0c;font:700 .8em/1 var(--font-mono)}
+.s-payroll .btn-ghost{color:#f4eee2}.s-payroll .btn-ghost::before{border-color:rgba(244,238,226,.6)!important}
+.s-web{min-height:120vh}.s-web .no{right:-3vw;bottom:-8vh}
+.frame{width:min(78vw,1080px);margin:0 auto 0 3vw;border:2.5px solid var(--ink);background:#fffdf7;box-shadow:14px 14px 0 var(--ink);transform:rotate(-1.2deg)}
+.frame .bar{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:2.5px solid var(--ink);background:var(--hl)}
+.frame .bar i{width:13px;height:13px;border-radius:50%;border:2px solid var(--ink);background:#fffdf7}
+.frame .bar span{margin-left:12px;font:500 12px/1 var(--font-mono);background:#fffdf7;border:2px solid var(--ink);border-radius:99px;padding:6px 14px}
+.frame .pg{padding:5vh 4vw 6vh}.frame .nm{font-size:clamp(40px,8.4vw,170px)}
+.s-web .a-cursor{position:absolute;right:6vw;top:26vh;width:min(20vw,260px);transform:rotate(12deg)}
+.s-salon{min-height:120vh}
+.band-bg{position:absolute!important;inset:12% -10% 8%;background:rgba(128,0,32,.1);transform:skewY(-5deg);z-index:0;border-top:3px solid var(--accent);border-bottom:3px solid var(--accent)}
+.s-salon .no{left:50%;top:6vh;transform:translateX(-30%)}
+.s-salon .blk{max-width:36em;margin-left:6vw;margin-top:3vh}
+.s-salon .nm{font-size:clamp(44px,10.5vw,230px)}.s-salon .nm .hand{font-size:1.05em;text-transform:none;letter-spacing:0;color:var(--accent);display:inline-block;transform:rotate(-6deg);margin-left:.3em}
+.s-salon .a-scissors{position:absolute;right:2vw;top:22vh;width:min(46vw,640px);transform:rotate(-14deg)}
+.s-custom{min-height:100vh;background:linear-gradient(rgba(39,71,255,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(39,71,255,.12) 1px,transparent 1px);background-size:36px 36px;border-top:2px dashed var(--blue);border-bottom:2px dashed var(--blue)}
+.s-custom .q{position:absolute;right:4vw;top:50%;transform:translateY(-52%);font:900 clamp(200px,52vw,900px)/.7 var(--font-display);color:transparent;-webkit-text-stroke:max(2px,.18vw) var(--blue);opacity:.55}
+.s-custom .no{left:4vw;top:2vh;-webkit-text-stroke-color:rgba(39,71,255,.25)}
+.s-custom .nm{font-size:clamp(50px,13vw,280px)}.s-custom .blk{margin-top:12vh;max-width:30em}
+.checkout{padding:14vh 5vw 10vh;display:flex;flex-direction:column;gap:2.4vh;align-items:flex-start;position:relative}
+.checkout .eye{font:500 12px/1 var(--font-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+.checkout .tags{display:flex;gap:10px;flex-wrap:wrap;margin-top:2vh}
+@media (max-width:760px){
+  .lab-h{top:11vh}.lab-h .giant{font-size:12.4vw}.lab-h .lh2{margin-left:30vw;font-size:8vw}.lab-lede{display:none}
+  .bub b{font-size:9px}.bub{--s:21vw!important}.bub.dash{--s:17vw!important}
+  .slab{padding:60px 5vw}
+  .s-pos .a-big{position:relative;right:auto;bottom:auto;width:90vw;margin:4vh -3vw 0 0}
+  .s-crm .a-left{position:relative;left:auto;top:auto;width:46vw;margin:3vh 0 0;display:block}
+  .notes{max-width:none;justify-content:center}.notes li{width:42vw}
+  .s-billing .vert{position:relative;left:auto;top:auto;writing-mode:horizontal-tb;transform:none;font-size:clamp(40px,14vw,120px);white-space:normal;margin-bottom:3vh}
+  .receipt{width:auto;margin:0}.s-billing .a-corner{position:relative;left:auto;bottom:auto;width:40vw;margin-top:3vh}
+  .s-inventory .a-mid{width:70vw}
+  .s-qr .a-phone{position:relative;left:auto;top:auto;transform:rotate(-5deg);width:50vw;margin:2vh auto;display:block}
+  .orb{position:relative;left:auto!important;top:auto!important;width:auto;margin:0 0 2vh}.s-qr .blk{margin-top:3vh}
+  .s-payroll .a-clock{position:relative;left:auto;top:auto;transform:rotate(-6deg);width:70vw;margin:0 auto 3vh;display:block}
+  .frame{width:auto;margin:0;transform:none}.s-web .a-cursor{display:none}
+  .s-salon .a-scissors{position:relative;right:auto;top:auto;width:70vw;margin:3vh auto 0;display:block}.s-salon .blk{margin-left:0}
+  .s-custom .q{font-size:80vw;opacity:.25}
+}
+</style>
 </head>
-<body>
+<body class="fx products">
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
 
 <div class="shell">
@@ -121,201 +241,77 @@
     </div>
   </aside>
 
-  <main class="content">
-    <div class="wrap">
+          <main class="content">
 
-      <section class="section" style="padding-top:104px;position:relative;overflow:hidden">
-        <div class="hero-grid">
-        <div>
-        <div class="dot-texture" aria-hidden="true"></div>
-        <div class="label">Products</div>
-        <h1 class="h-1" style="font-size:58px">Modules,<br>not monoliths.</h1>
-        <svg class="doodle-underline" width="180" height="14" viewBox="0 0 180 14" fill="none" aria-hidden="true">
-          <path d="M2 8c15-8 30 8 45 0s30-8 45 0 30 8 45 0 30-8 41 0" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
-        </svg>
-        <p class="lede">Turn on what your business needs. Nothing you don't.</p>
-        </div>
-        <div class="hero-art" role="presentation">
-          <img class="hero-art-logo" src="logo.png" alt="" aria-hidden="true">
-        </div>
-        </div>
-      </section>
+    <section class="lab" id="lab">
+      <canvas class="fx-field" data-shapes="flow" data-n="900" aria-hidden="true"></canvas>
+      <h1 class="lab-h" aria-label="Modules, not monoliths.">
+        <span class="giant outline lh1" aria-hidden="true">Modules,</span>
+        <span class="giant lh2" aria-hidden="true">not</span>
+        <span class="giant outline-m lh3" aria-hidden="true">monoliths.</span>
+      </h1>
+      <p class="lab-lede">Turn on what your business needs. Nothing you don't.</p>
+      <div class="bubbles" data-bubbles>
+        <a class="bub" href="#slab-pos" style="--s:15vmin"><svg data-art="pos" aria-hidden="true"></svg><b>POS</b></a>
+        <a class="bub" href="#slab-crm" style="--s:12.5vmin"><svg data-art="crm" aria-hidden="true"></svg><b>CRM</b></a>
+        <a class="bub" href="#slab-billing" style="--s:14vmin"><svg data-art="billing" aria-hidden="true"></svg><b>Billing</b></a>
+        <a class="bub" href="#slab-inventory" style="--s:13vmin"><svg data-art="inventory" aria-hidden="true"></svg><b>Stock</b></a>
+        <a class="bub" href="#slab-qr" style="--s:11.5vmin"><svg data-art="qr" aria-hidden="true"></svg><b>QR</b></a>
+        <a class="bub" href="#slab-payroll" style="--s:13vmin"><svg data-art="payroll" aria-hidden="true"></svg><b>Payroll</b></a>
+        <a class="bub" href="#slab-web" style="--s:14.5vmin"><svg data-art="website" aria-hidden="true"></svg><b>Website</b></a>
+        <a class="bub" href="#slab-salon" style="--s:12.5vmin"><svg data-art="salon" aria-hidden="true"></svg><b>Salon</b></a>
+        <a class="bub dash" href="#slab-custom" style="--s:10.5vmin"><b>+ yours</b></a>
+      </div>
+      <p class="hand lab-hint">grab one. throw it. tap to jump.</p>
+    </section>
 
-      <section class="section tight">
-        <div class="card" style="margin-bottom:20px" data-product="pos">
-          <span class="big-numeral">01</span>
-          <span class="tag">Live</span>
-          <div class="label" style="margin-top:14px">Front of house</div>
-          <div class="h-2" style="margin-top:4px;font-size:26px">POS</div>
-          <p class="p" style="margin-top:10px;max-width:520px">Everything the counter and kitchen touch during service, in one till.</p>
-          <ul class="uk-kit uk-linklist" style="margin-top:14px;border-top:none;max-width:520px">
-            <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Order taking, GST billing &amp; due/credit tracking</span></li>
-            <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Table floor plan, kitchen order tickets (KOT) &amp; kitchen display</span></li>
-            <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Token / queue display for counter service</span></li>
-            <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Day settlement, day &amp; KOT reports, a build-your-own report tool</span></li>
-            <li style="border-bottom:none"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Custom staff roles &amp; permissions &middot; barcode scanner support (optional hardware)</span></li>
-          </ul>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
-            <a href="pos.html" class="btn btn-ghost">Details</a>
-            <button class="btn btn-primary" data-cart-btn>Add to cart</button>
-          </div>
-        </div>
+<div class="band" data-marquee data-speed="46"><span>One login</span><i></i><span>Every module</span><i></i><span>Self-hosted</span><i></i><span>Works offline</span><i></i><span>Your data, your infrastructure</span><i></i></div>
+<section class="slab s-pos" id="slab-pos" data-product="pos">
+<span class="no" data-par=".12" aria-hidden="true">01</span><h2 class="nm giant" data-split="rise">POS</h2><div class="blk" data-reveal><div class="eye">01 &middot; Front of house</div><p class="sum">Everything the counter and kitchen touch during service, in one till.</p><ul class="feats"><li>Order taking, GST billing &amp; due/credit tracking</li><li>Table floor plan, kitchen order tickets (KOT) &amp; kitchen display</li><li>Token / queue display for counter service</li><li>Day settlement, day &amp; KOT reports, a build-your-own report tool</li><li>Custom staff roles &amp; permissions &middot; barcode scanner support (optional hardware)</li></ul><div class="acts"><a href="pos.html" class="btn btn-ghost">Details</a><button class="btn btn-primary" data-cart-btn>Add to cart</button></div></div><svg class="art a-big" data-art="pos" data-draw-in data-wob="1" data-par="-.08"></svg>
+</section>
+<section class="slab s-crm" id="slab-crm" data-product="crm">
+<span class="no" data-par=".12" aria-hidden="true">02</span><div class="blk" data-reveal><div class="eye">02 &middot; Customers &amp; growth</div><h2 class="nm giant tilt" data-split="rise">CRM</h2><p class="sum">Know who your customers are, and give them a reason to come back.</p><div class="acts"><a href="crm.html" class="btn btn-ghost">Details</a><button class="btn btn-primary" data-cart-btn>Add to cart</button></div></div><ul class="notes"><li style="--r:-4deg;--x:0"><i class="tape"></i>Customer profiles with full visit &amp; spend history</li><li style="--r:3deg;--x:6vw"><i class="tape"></i>Automatic segments: new, regular, at-risk, VIP</li><li style="--r:-2deg;--x:-3vw"><i class="tape"></i>Loyalty points &amp; coupons</li><li style="--r:5deg;--x:4vw"><i class="tape"></i>Post-purchase customer feedback, collected right off the receipt</li></ul><svg class="art a-left" data-art="crm" data-draw-in data-wob="1" data-par=".1"></svg>
+</section>
+<section class="slab s-billing" id="slab-billing" data-product="billing">
+<span class="no" data-par=".12" aria-hidden="true">03</span><h2 class="nm vert" aria-label="Billing &amp; Invoicing">Billing</h2><div class="receipt" data-reveal><div class="eye">03 &middot; Money &amp; tax</div><p class="sum">GST-ready invoices, automatic numbering and tax breakdowns.</p><ul class="feats lines"><li>GST invoices with automatic numbering &amp; tax breakdown</li><li>Shareable public receipt page: print, or send straight to WhatsApp</li><li>Due &amp; credit tracking</li></ul><div class="tot"><span>Total</span><b class="stamp">Paid</b></div><div class="acts"><a href="billing.html" class="btn btn-ghost">Details</a><button class="btn btn-primary" data-cart-btn>Add to cart</button></div></div><svg class="art a-corner" data-art="billing" data-draw-in data-wob="1" ></svg>
+</section>
+<div class="band" data-marquee data-speed="38" data-dir="r"><span>Stock</span><i></i><span>Billing</span><i></i><span>Orders</span><i></i><span>Payroll</span><i></i><span>Bookings</span><i></i><span>Clients</span><i></i></div>
+<section class="slab s-inventory" id="slab-inventory" data-product="inventory">
+<span class="no" data-par=".12" aria-hidden="true">04</span><h2 class="nm giant center" data-split="pop">Inventory</h2><svg class="art a-mid" data-art="inventory" data-draw-in data-wob="1" ></svg><p class="sum center" data-reveal>Stock tracking and purchasing, kept alongside your daily billing.</p><ul class="labels"><li style="--r:-3deg">Ingredient &amp; stock tracking</li><li style="--r:2deg">Purchase entry &amp; vendor tracking, wastage logging</li><li style="--r:-1deg">Stock movement reports &amp; reorder forecasting</li></ul><div class="acts"><a href="inventory.html" class="btn btn-ghost">Details</a><button class="btn btn-primary" data-cart-btn>Add to cart</button></div>
+</section>
+<section class="slab s-qr" id="slab-qr" data-product="self_order">
+<span class="no" data-par=".12" aria-hidden="true">05</span><svg class="art a-phone" data-art="qr" data-draw-in data-wob="1" ></svg><p class="orb o1" data-reveal><b>1</b>Table QR codes: guest self-ordering, straight to the kitchen</p><p class="orb o2" data-reveal><b>2</b>Your own public mini-website: menu, hours, location</p><p class="orb o3" data-reveal><b>3</b>Toggle it off any time, enforced everywhere, not just on screen</p><div class="blk" data-reveal><div class="eye">05 &middot; Online &amp; self-order</div><h2 class="nm giant" data-split="rise">QR<br>Ordering</h2><p class="sum">A QR code on every table. Guests browse and order from their own phone.</p><div class="acts"><a href="qr-ordering.html" class="btn btn-ghost">Details</a><button class="btn btn-primary" data-cart-btn>Add to cart</button></div></div>
+</section>
+<section class="slab s-payroll" id="slab-payroll" data-product="payroll">
+<span class="no" data-par=".12" aria-hidden="true">06</span><svg class="art a-clock" data-art="payroll" data-draw-in data-wob="1" ></svg><div class="blk" data-reveal><div class="eye">06 &middot; Your team</div><h2 class="nm giant" data-split="rise">Payroll</h2><p class="sum">Attendance-based staff pay, computed and marked paid from the same account.</p><ol class="tline"><li>A monthly rate per staffer, hours pulled from their own clock-ins</li><li>Adjustments with a note, and a payslip history you can export</li><li>Owner-only, kept off every other device on the account, not just off screen</li></ol><div class="acts"><a href="payroll.html" class="btn btn-ghost">Details</a><button class="btn btn-primary" data-cart-btn>Add to cart</button></div></div>
+</section>
+<div class="band" data-marquee data-speed="46"><span>Draft freely</span><i></i><span>Publish when ready</span><i></i><span>Drag to reorder</span><i></i></div>
+<section class="slab s-web" id="slab-web" data-product="website_builder">
+<span class="no" data-par=".12" aria-hidden="true">07</span><div class="frame" data-reveal><div class="bar"><i></i><i></i><i></i><span>yourbusiness.auzslab.in</span></div><div class="pg"><div class="eye">07 &middot; Your own site</div><h2 class="nm giant" data-split="rise">Website<br>Builder</h2><p class="sum">A real drag-and-drop editor for your own multi-page site, not just the mini-site your QR menu already gives you.</p><ul class="feats"><li>Drag to reorder sections: hero, text, images, galleries, buttons</li><li>Draft freely, publish when you're ready; visitors only ever see the published version</li><li>As many pages as you need: Home, About, Contact, anything</li></ul><div class="acts"><a href="website-builder.html" class="btn btn-ghost">Details</a><button class="btn btn-primary" data-cart-btn>Add to cart</button></div></div></div><svg class="art a-cursor" data-art="website" data-draw-in data-wob="1" ></svg>
+</section>
+<section class="slab s-salon" id="slab-salon" data-product="salon">
+<div class="band-bg" aria-hidden="true"></div><span class="no" data-par=".12" aria-hidden="true">08</span><div class="blk" data-reveal><div class="eye">08 &middot; For salons &amp; spas</div><h2 class="nm giant" data-split="rise">AUZslab<br><span class="hand">Salon</span></h2><p class="sum">Your salon's own website, online booking, billing, clients, expenses and analytics: one admin console, styled with your logo, colours and fonts. Add Payroll, Website Builder or any other product on top, any time.</p><ul class="feats"><li>Public site with service menu, gallery, stylists and a live booking form</li><li>Branded invoices shared as a link over WhatsApp, printable as PDF</li><li>Every word, price and photo editable from your phone, no developer needed</li></ul><div class="acts"><a href="business-salons.html" class="btn btn-ghost">Details</a><button class="btn btn-primary" data-cart-btn>Add to cart</button></div></div><svg class="art a-scissors" data-art="salon" data-draw-in data-wob="1" ></svg>
+</section>
+<section class="slab s-custom" id="slab-custom">
+  <span class="no" data-par=".12" aria-hidden="true">09</span>
+  <div class="q" aria-hidden="true">?</div>
+  <div class="blk" data-reveal>
+    <div class="eye">09 &middot; Beyond these eight &middot; On-demand</div>
+    <h2 class="nm giant" data-split="rise">Custom<br>build</h2>
+    <p class="sum">Need something outside these eight? We design and build custom software for your business.</p>
+    <div class="acts"><a href="custom-build.html" class="btn btn-ghost">Details</a><button class="btn btn-primary" data-open-contact>Let's talk</button></div>
+  </div>
+</section>
 
-        <div class="card" style="margin-bottom:20px" data-product="crm">
-          <span class="big-numeral">02</span>
-          <span class="tag">Live</span>
-          <div class="label" style="margin-top:14px">Customers &amp; growth</div>
-          <div class="h-2" style="margin-top:4px;font-size:26px">CRM</div>
-          <p class="p" style="margin-top:10px;max-width:520px">Know who your customers are, and give them a reason to come back.</p>
-          <ul class="uk-kit uk-linklist" style="margin-top:14px;border-top:none;max-width:520px">
-            <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Customer profiles with full visit &amp; spend history</span></li>
-            <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Automatic segments &mdash; new, regular, at-risk, VIP</span></li>
-            <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Loyalty points &amp; coupons</span></li>
-            <li style="border-bottom:none"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Post-purchase customer feedback, collected right off the receipt</span></li>
-          </ul>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
-            <a href="crm.html" class="btn btn-ghost">Details</a>
-            <button class="btn btn-primary" data-cart-btn>Add to cart</button>
-          </div>
-        </div>
+<section class="checkout" id="checkout">
+  <div class="eye">Your cart</div>
+  <h2 class="fx-h2" data-split="rise">Ready to get started?</h2>
+  <p class="fx-copy">Pick everything your business needs above, then head to your cart to create an account and send your requirements to us.</p>
+  <a href="cart.html" class="btn btn-primary" data-magnet>View cart <span class="cart-count"></span></a>
+  <div class="tags"><span class="tag">Self-hosted</span><span class="tag">Works offline</span><span class="tag">One login, every module</span><span class="tag">Your data, your infrastructure</span></div>
+</section>
 
-        <div class="card" style="margin-bottom:20px" data-product="billing">
-          <span class="big-numeral">03</span>
-          <span class="tag">Live</span>
-          <div class="label" style="margin-top:14px">Money &amp; tax</div>
-          <div class="h-2" style="margin-top:4px;font-size:26px">Billing &amp; Invoicing</div>
-          <p class="p" style="margin-top:10px;max-width:520px">GST-ready invoices, automatic numbering and tax breakdowns.</p>
-          <ul class="uk-kit uk-linklist" style="margin-top:14px;border-top:none;max-width:520px">
-            <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">GST invoices with automatic numbering &amp; tax breakdown</span></li>
-            <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Shareable public receipt page &mdash; print, or send straight to WhatsApp</span></li>
-            <li style="border-bottom:none"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Due &amp; credit tracking</span></li>
-          </ul>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
-            <a href="billing.html" class="btn btn-ghost">Details</a>
-            <button class="btn btn-primary" data-cart-btn>Add to cart</button>
-          </div>
-        </div>
-
-        <div class="card" style="margin-bottom:20px" data-product="inventory">
-          <span class="big-numeral">04</span>
-          <span class="tag">Live</span>
-          <div class="label" style="margin-top:14px">Stock &amp; purchasing</div>
-          <div class="h-2" style="margin-top:4px;font-size:26px">Inventory</div>
-          <p class="p" style="margin-top:10px;max-width:520px">Stock tracking and purchasing, kept alongside your daily billing.</p>
-          <ul class="uk-kit uk-linklist" style="margin-top:14px;border-top:none;max-width:520px">
-            <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Ingredient &amp; stock tracking</span></li>
-            <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Purchase entry &amp; vendor tracking, wastage logging</span></li>
-            <li style="border-bottom:none"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Stock movement reports &amp; reorder forecasting</span></li>
-          </ul>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
-            <a href="inventory.html" class="btn btn-ghost">Details</a>
-            <button class="btn btn-primary" data-cart-btn>Add to cart</button>
-          </div>
-        </div>
-
-        <div class="card" style="margin-bottom:20px" data-product="self_order">
-          <span class="big-numeral">05</span>
-          <span class="tag">Live</span>
-          <div class="label" style="margin-top:14px">Online &amp; self-order</div>
-          <div class="h-2" style="margin-top:4px;font-size:26px">QR Ordering</div>
-          <p class="p" style="margin-top:10px;max-width:520px">A QR code on every table &mdash; guests browse and order from their own phone.</p>
-          <ul class="uk-kit uk-linklist" style="margin-top:14px;border-top:none;max-width:520px">
-            <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Table QR codes &mdash; guest self-ordering, straight to the kitchen</span></li>
-            <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Your own public mini-website &mdash; menu, hours, location</span></li>
-            <li style="border-bottom:none"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Toggle it off any time &mdash; enforced everywhere, not just on screen</span></li>
-          </ul>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
-            <a href="qr-ordering.html" class="btn btn-ghost">Details</a>
-            <button class="btn btn-primary" data-cart-btn>Add to cart</button>
-          </div>
-        </div>
-
-        <div class="card" style="margin-bottom:20px" data-product="payroll">
-          <span class="big-numeral">06</span>
-          <span class="tag">Live</span>
-          <div class="label" style="margin-top:14px">Your team</div>
-          <div class="h-2" style="margin-top:4px;font-size:26px">Payroll</div>
-          <p class="p" style="margin-top:10px;max-width:520px">Attendance-based staff pay, computed and marked paid from the same account.</p>
-          <ul class="uk-kit uk-linklist" style="margin-top:14px;border-top:none;max-width:520px">
-            <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">A monthly rate per staffer, hours pulled from their own clock-ins</span></li>
-            <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Adjustments with a note, and a payslip history you can export</span></li>
-            <li style="border-bottom:none"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Owner-only &mdash; kept off every other device on the account, not just off screen</span></li>
-          </ul>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
-            <a href="payroll.html" class="btn btn-ghost">Details</a>
-            <button class="btn btn-primary" data-cart-btn>Add to cart</button>
-          </div>
-        </div>
-
-        <div class="card" style="margin-bottom:20px" data-product="website_builder">
-          <span class="big-numeral">07</span>
-          <span class="tag">Live</span>
-          <div class="label" style="margin-top:14px">Your own site</div>
-          <div class="h-2" style="margin-top:4px;font-size:26px">Website Builder</div>
-          <p class="p" style="margin-top:10px;max-width:520px">A real drag-and-drop editor for your own multi-page site &mdash; not just the mini-site your QR menu already gives you.</p>
-          <ul class="uk-kit uk-linklist" style="margin-top:14px;border-top:none;max-width:520px">
-            <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Drag to reorder sections &mdash; hero, text, images, galleries, buttons</span></li>
-            <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Draft freely, publish when you're ready &mdash; visitors only ever see the published version</span></li>
-            <li style="border-bottom:none"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">As many pages as you need &mdash; Home, About, Contact, anything</span></li>
-          </ul>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
-            <a href="website-builder.html" class="btn btn-ghost">Details</a>
-            <button class="btn btn-primary" data-cart-btn>Add to cart</button>
-          </div>
-        </div>
-
-        <div class="card" style="margin-bottom:20px" data-product="salon">
-          <span class="big-numeral">08</span>
-          <span class="tag">Live</span>
-          <div class="label" style="margin-top:14px">For salons &amp; spas</div>
-          <div class="h-2" style="margin-top:4px;font-size:26px">AUZslab Salon</div>
-          <p class="p" style="margin-top:10px;max-width:520px">Your salon's own website, online booking, billing, clients, expenses and analytics &mdash; one admin console, styled with your logo, colours and fonts. Add Payroll, Website Builder or any other product on top, any time.</p>
-          <ul class="uk-kit uk-linklist" style="margin-top:14px;border-top:none;max-width:520px">
-            <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Public site with service menu, gallery, stylists and a live booking form</span></li>
-            <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Branded invoices shared as a link over WhatsApp, printable as PDF</span></li>
-            <li style="border-bottom:none"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Every word, price and photo editable from your phone &mdash; no developer needed</span></li>
-          </ul>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
-            <a href="business-salons.html" class="btn btn-ghost">Details</a>
-            <button class="btn btn-primary" data-cart-btn>Add to cart</button>
-          </div>
-        </div>
-
-        <div class="card" style="scroll-margin-top:24px">
-          <span class="big-numeral">09</span>
-          <span class="tag" style="opacity:.6">On-demand</span>
-          <div class="label" style="margin-top:14px">Beyond these eight</div>
-          <div class="h-2" style="margin-top:4px;font-size:26px">Custom build or design</div>
-          <p class="p" style="margin-top:10px;max-width:520px">Need something outside these eight? We design and build custom software for your business.</p>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
-            <a href="custom-build.html" class="btn btn-ghost">Details</a>
-            <button class="btn btn-primary" data-open-contact>Let's talk</button>
-          </div>
-        </div>
-      </section>
-
-      <hr class="dash">
-
-      <section class="section tight">
-        <div class="label">Your cart</div>
-        <h2 class="h-2">Ready to get started?</h2>
-        <p class="p" style="margin-top:8px">Pick everything your business needs above, then head to your cart to create an account and send your requirements to us.</p>
-        <a href="cart.html" class="btn btn-primary" style="margin-top:14px">View cart <span class="cart-count"></span></a>
-      </section>
-
-      <hr class="dash">
-
-      <section class="section">
-        <div class="label">Every module, on one account</div>
-        <div style="display:flex;gap:12px;flex-wrap:wrap">
-          <span class="tag">Self-hosted</span>
-          <span class="tag">Works offline</span>
-          <span class="tag">One login, every module</span>
-          <span class="tag">Your data, your infrastructure</span>
-        </div>
-      </section>
-
-      <div class="stack">
+    <div class="stack">
 
       <section class="stack-panel stack-panel-dark" data-tab="CONNECT">
 

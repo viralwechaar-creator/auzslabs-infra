@@ -272,7 +272,7 @@
     if (!this.ready) { this.ready = true; this.el.setAttribute('data-ready', '1'); }
   };
   FX.scenes = scenes;
-  FX.scene = function (sel) { var el = typeof sel === 'string' ? doc.querySelector(sel) : sel; for (var i = 0; i < scenes.length; i++) if (scenes[i].el === el) return scenes[i]; return null; };
+  FX.scene = function (sel) { if (!sel) return null; var el = typeof sel === 'string' ? doc.querySelector(sel) : sel; for (var i = 0; i < scenes.length; i++) if (scenes[i].el === el) return scenes[i]; return null; };
   FX.measure = function () {
     FX.vw = window.innerWidth; FX.vh = window.innerHeight; FX.mobile = FX.vw < 700;
     scenes.forEach(function (s) { s.measure(); });
