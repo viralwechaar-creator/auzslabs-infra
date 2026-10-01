@@ -108,7 +108,7 @@ html.fx-hx .hx-card .hx-art{max-height:22svh;flex:0 1 auto}
 html.fx-hx .hx-card{justify-content:flex-start}
 
 /* ---- How we work: its own sheet (original look), pinned while the deck rises over it ---- */
-.hw{position:relative;z-index:1;background:var(--hx-bg);min-height:100vh;min-height:100svh;box-sizing:border-box;padding:calc(var(--cut) + var(--ch) + 76px) 8vw 56px;display:flex;align-items:center;--sl:calc(var(--cut) * .9)}
+.hw{position:relative;z-index:1;background:var(--hx-bg);min-height:calc(100svh - 104px);box-sizing:border-box;padding:calc(var(--cut) + var(--ch) + 24px) 8vw 56px;display:flex;align-items:center;--sl:calc(var(--cut) * .9)}
 .hw-in{width:min(100%,760px)}
 .hw+.hx{margin-top:0}
 .hx{background:transparent}

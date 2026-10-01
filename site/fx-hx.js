@@ -21,7 +21,7 @@
   doc.head.appendChild(kf);
   function T(d) { return 'translate3d(' + (d * 34 - 44).toFixed(1) + 'px,' + (d * -22 + 26).toFixed(1) + 'px,0) scale(' + (1 - d * .055).toFixed(3) + ')'; }
   var sheets = [].slice.call(doc.querySelectorAll('.hw,.vw'));
-  function pins() { sheets.forEach(function (el) { el.style.setProperty('--pin', Math.min(0, window.innerHeight - el.offsetHeight) + 'px'); }); }
+  function pins() { sheets.forEach(function (el) { el.style.setProperty('--pin', (el.classList.contains('hw') ? 104 : Math.min(0, window.innerHeight - el.offsetHeight)) + 'px'); }); }
   function measure() {
     var vw = window.innerWidth, sh = stage.offsetHeight;                    // stage is 100svh: does not change when the phone toolbar hides
     root.classList.remove('fx-hx'); hx.style.height = '';
