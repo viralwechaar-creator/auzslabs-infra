@@ -53,6 +53,7 @@
     envelope: '<rect class="f" x="30" y="68" width="172" height="106" rx="10"/><path d="M30 76l86 62 86-62"/><path class="a f" d="M148 34l60-22-24 62-16-22z"/><path class="a" d="M184 54l24-42"/><path class="h" d="M26 44q46-24 86 4"/>' + spark(30, 30, 8),
     tag: '<path class="f" d="M38 104l62-62h78v78l-62 62z"/><circle cx="150" cy="70" r="8"/><path d="M150 62C150 38 122 28 112 10"/><path class="a" d="M88 124l52-52"/><path class="h" d="M78 146l70-70"/>' + spark(40, 40, 9) + spark(208, 168, 8)
   };
+  ART.crate = '<rect class="f" x="36" y="56" width="168" height="120" rx="4"/><path d="M36 90h168M120 56v34"/><path class="a" d="M64 124h46M64 142h78"/><path class="h" d="M48 166h144"/><rect class="a" x="150" y="112" width="34" height="34" rx="3"/>';
   ART['default'] = ART.platform;
   window.FXART = { ART: ART, gear: gear, spark: spark };
 })();

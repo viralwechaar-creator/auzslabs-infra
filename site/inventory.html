@@ -20,14 +20,18 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="stylesheet" href="theme.css?v=44">
 <link rel="stylesheet" href="sketch.css?v=1">
+<link rel="stylesheet" href="fx.css?v=1">
+<link rel="stylesheet" href="fx-pages.css?v=1">
 <script src="sketch.js?v=1"></script>
-<script src="sketch-art.js?v=1" defer></script>
+<script src="fx-art.js?v=1" defer></script>
+<script src="fx.js?v=1" defer></script>
+<script src="fx-canvas.js?v=1" defer></script>
 <link rel="stylesheet" href="design-system/ui-kit.css?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 </head>
-<body>
+<body class="fx pg">
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
 
 <div class="shell">
@@ -105,33 +109,24 @@
     </div>
   </aside>
 
-  <main class="content">
-    <div class="wrap">
-
-      <section class="section" style="padding-top:104px">
-        <div class="hero-grid">
-        <div>
-        <div class="uk-kit uk-breadcrumb" style="margin-bottom:18px">
+      <main class="content">
+<div class="fx-scene pd pd-inv" data-scene style="--len:6"><div class="fx-stage">
+<div class="k crumbk tl" data-k="0:o1; .08:o0"><div class="uk-kit uk-breadcrumb" style="margin-bottom:18px">
           <a href="products.html">Products</a><span class="uk-breadcrumb-sep">/</span><span class="uk-breadcrumb-current">Inventory</span>
-        </div>
-        <div class="label">Stock &amp; inventory</div>
-        <h1 class="h-1" style="font-size:44px">Know what is left<br>before it runs out.</h1>
-        <p class="lede">Ingredient and stock levels tracked as you sell, with waste logging and purchase records kept alongside your daily billing.</p>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px">
-          <button class="btn btn-primary" id="addCartBtn">Add to cart</button>
-          <a href="cart.html" class="btn btn-ghost">View cart</a>
-        </div>
-        </div>
-        <div class="hero-art" role="presentation">
-          <img class="hero-art-logo" src="logo.png" alt="" aria-hidden="true">
-        </div>
-        </div>
-      </section>
-
-      <section class="section tight">
-        <div class="card" style="border-color:var(--accent);box-shadow:5px 5px 0 var(--accent)">
-          <span class="tag" style="background:var(--accent);color:#fff;border-color:var(--accent)">Hands-on</span>
-          <div class="h-2" style="margin-top:14px;font-size:22px">Skip the reading. Try it yourself.</div>
+        </div></div><div class="k eye tl2" data-k="0:o1; .08:o0">Stock &amp; inventory</div>
+<h1 class="hh"><span class="k giant l1" style="font-size:7.40vw" data-blast data-k="0:y-3,o1; .1:y-3,o1; .22:y-60,o0">Know what is left</span>
+<span class="k giant outline-m l2" style="font-size:7.40vw" data-blast data-k="0:y6,o1; .1:y6,o1; .22:y60,o0">before it runs out.</span></h1>
+<p class="k lede2 bl" data-k="0:o1; .08:o0">Ingredient and stock levels tracked as you sell, with waste logging and purchase records kept alongside your daily billing.</p><div class="k cta2" data-k="0:o1; .1:o0"><div class="acts"><button class="btn btn-primary" data-add data-magnet>Add to cart</button><a href="cart.html" class="btn btn-ghost">View cart</a></div></div>
+<div class="floor" aria-hidden="true"></div><div class="k crate c0" data-k=".1:y-120,r-40,o0; .22:y0,r2,o1"><svg data-art="crate" data-wob="1"></svg></div><div class="k crate c1" data-k=".2:y-130,r30,o0; .32:y0,r-2,o1"><svg data-art="crate" data-wob="1"></svg></div><div class="k crate c2" data-k=".3:y-140,r-20,o0; .42:y0,r1,o1"><svg data-art="crate" data-wob="1"></svg></div><div class="k crate c3" data-k=".4:y-120,r26,o0; .52:y0,r-1,o1"><svg data-art="crate" data-wob="1"></svg></div><div class="k crate c4" data-k=".5:y-130,r-30,o0; .62:y0,r2,o1"><svg data-art="crate" data-wob="1"></svg></div><div class="k crate c5" data-k=".6:y-140,r16,o0; .72:y0,r0,o1"><svg data-art="crate" data-wob="1"></svg></div>
+<div class="k meter" data-k=".15:o0,y6; .25:o1,y0,m1; .78:m0,o1; .86:o0"><span>on shelf</span><i><u></u></i><b>6 &rarr; 0</b></div>
+<div class="k note nl" data-k=".3:o0; .38:o1,r-4; .62:o1; .68:o0">sold one. stock moved.</div>
+<div class="k alarm" data-k=".74:o0,s.4; .8:o1,s1; .92:o1; .96:o0">reorder<br>before it runs out</div>
+<div class="k cta2 end" data-k=".86:o0,y6; .93:o1,y0"><div class="acts"><button class="btn btn-primary" data-add data-magnet>Add to cart</button><a href="cart.html" class="btn btn-ghost">View cart</a></div></div>
+</div></div>
+<section class="featsec labels"><div class="eye">What's included</div><ul><li data-reveal style="--r:-2deg"><span class="tg">Included</span><h3>Stock tracking</h3><p>Ingredient and product levels update automatically as orders go through.</p></li><li data-reveal style="--r:1.5deg"><span class="tg">Included</span><h3>Waste logging</h3><p>Record spoilage and write-offs separately from sales, so your numbers stay honest.</p></li><li data-reveal style="--r:-1deg"><span class="tg">Included</span><h3>Purchase records</h3><p>Log what came in, from whom, and at what cost.</p></li><li data-reveal style="--r:2deg"><span class="tg">Included</span><h3>Low-stock visibility</h3><p>See what is running low without digging through a spreadsheet.</p></li><li data-reveal style="--r:-1.5deg"><span class="tg">Included</span><h3>Reorder forecasting</h3><p>A suggested reorder quantity built off real sale velocity from the last two weeks, not a fixed threshold.</p></li><li data-reveal style="--r:1deg"><span class="tg">Included</span><h3>Stock movement reports</h3><p>Purchased, sold and wasted quantities over any date range, exportable to CSV.</p></li></ul></section>
+<section class="demo-wrap" data-reveal><div class="demo">
+          <span class="stamp">Hands-on</span>
+          <div class="dh">Skip the reading. Try it yourself.</div>
           <p class="p" style="margin-top:8px">The same real demo account, dropped straight into Stock. Sell an item in the POS demo and watch ingredient stock deduct in real time.</p>
           <div style="margin-top:14px;background:var(--bg-raised);border:1.5px solid var(--ink);border-radius:14px;padding:14px 16px;font-family:var(--font-mono);font-size:12.5px;line-height:1.9">
             <div>Password for both &nbsp; <b>Auzslab@Demo</b></div>
@@ -143,53 +138,10 @@
           <p class="p" style="margin-top:12px;font-size:11.5px;color:var(--ink-faint)">For evaluation only &mdash; please don't scrape or copy the software. See our <a href="terms.html" style="color:var(--ink-faint);text-decoration:underline">terms</a>.</p>
         </div>
       </section>
+<section class="pairs"><div class="eye">Pairs well with</div><div class="prow"><a href="pos.html" class="pair" data-magnet>POS <i>&rarr;</i></a><a href="billing.html" class="pair" data-magnet>Billing &amp; Invoicing <i>&rarr;</i></a></div></section>
+<section class="closer"><div class="eye">Ready?</div><h2 class="fx-h2" data-split="rise">Add it to your account.</h2><div class="acts"><button class="btn btn-primary" data-open-contact data-magnet>Let's talk</button><a href="pricing.html" class="btn btn-ghost">See pricing</a></div></section>
 
-      <section class="section tight">
-        <div class="grid-2">
-          <div class="card">
-            <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Stock tracking</div>
-            <p class="p" style="margin-top:8px">Ingredient and product levels update automatically as orders go through.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Waste logging</div>
-            <p class="p" style="margin-top:8px">Record spoilage and write-offs separately from sales, so your numbers stay honest.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Purchase records</div>
-            <p class="p" style="margin-top:8px">Log what came in, from whom, and at what cost.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Low-stock visibility</div>
-            <p class="p" style="margin-top:8px">See what is running low without digging through a spreadsheet.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Reorder forecasting</div>
-            <p class="p" style="margin-top:8px">A suggested reorder quantity built off real sale velocity from the last two weeks, not a fixed threshold.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Stock movement reports</div>
-            <p class="p" style="margin-top:8px">Purchased, sold and wasted quantities over any date range, exportable to CSV.</p>
-          </div>
-        </div>
-      </section>
-
-      <hr class="dash">
-
-      <section class="section">
-        <div class="label">Pairs well with</div>
-        <div style="display:flex;gap:12px;flex-wrap:wrap">
-<a href="pos.html" class="tag">POS</a>
-          <a href="billing.html" class="tag">Billing &amp; Invoicing</a>
-        </div>
-      </section>
-
-      <div class="stack">
+    <div class="stack">
 
       <section class="stack-panel stack-panel-dark" data-tab="CONNECT">
 
@@ -304,15 +256,16 @@
 (function () {
   var KEY = 'inventory';
   var sb = supabase.createClient(CFG.url, CFG.key);
-  var btn = document.getElementById('addCartBtn');
+  var btns = [].slice.call(document.querySelectorAll('[data-add]'));
   var owned = false;
   function refresh() {
-    if (owned) { btn.textContent = 'Already included ✓'; btn.disabled = true; return; }
-    btn.disabled = false;
-    var has = AUZcart.has(KEY);
-    btn.textContent = has ? 'Added ✓ — remove' : 'Add to cart';
+    btns.forEach(function (btn) {
+      if (owned) { btn.textContent = 'Already included ✓'; btn.disabled = true; return; }
+      btn.disabled = false;
+      btn.textContent = AUZcart.has(KEY) ? 'Added ✓ — remove' : 'Add to cart';
+    });
   }
-  btn.addEventListener('click', function () { if (owned) return; AUZcart.toggle(KEY); refresh(); });
+  btns.forEach(function (btn) { btn.addEventListener('click', function () { if (owned) return; AUZcart.toggle(KEY); refresh(); }); });
   var n = AUZcart.get().length;
   document.querySelectorAll('.cart-count').forEach(function (el) { el.textContent = n ? '(' + n + ')' : ''; });
   refresh();
