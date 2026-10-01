@@ -330,3 +330,11 @@ html.fx-flow svg.fx-art.a-big,html.fx-flow .slab svg.fx-art{width:min(100%,440px
 @media (min-width:1100px){html:not(.fx-live) .hp-rooms{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:2vh 2vw}html:not(.fx-live) .hp-rooms .room .fx-art{max-height:150px;width:auto;margin:0 auto}}
 @media (min-width:900px) and (max-width:1099px){html:not(.fx-live) .hp-rooms{grid-template-columns:repeat(3,minmax(0,1fr))!important}html:not(.fx-live) .hp-rooms .room .fx-art{max-height:130px;width:auto}}
 html.fx-flow .slab{min-height:0!important;height:auto!important}
+
+/* ---------- layered panels, not pinned (replaces the sticky stack): panels simply slide up over the previous one's rounded edge ---------- */
+html.fx-stacked .fx-panel,html.fx-stacked .stack-panel{position:relative!important;top:auto!important;min-height:0!important}
+html.fx-stacked .fx-panel:not(:first-of-type){margin-top:-26px;padding-top:88px!important;box-shadow:0 -16px 40px -26px rgba(0,0,0,.3)}
+html.fx-stacked .fx-panel:first-of-type{margin-top:0}
+.fx .stack .stack-panel-dark:not(.fx-panel){position:relative!important;top:auto!important;margin-top:-26px}
+.fx-panel{-webkit-backface-visibility:visible;backface-visibility:visible}
+.fx .stack .stack-panel-dark:not(.fx-panel){margin-top:-28px!important;z-index:4;position:relative!important}

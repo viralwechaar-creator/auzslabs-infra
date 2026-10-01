@@ -648,15 +648,16 @@ cursor trail), `fx-phys.js` (draggable bubbles), `fx-ui.js` (pricing stack build
   lays each scene's actors out top to bottom (desktop proportions in its `@media (min-width:900px)` block). The same sheet
   (`html:not(.fx-live)`) is the reduced-motion / no-JS layout. A new stage-only actor (backdrop, scanning line, duplicate CTA)
   must be hidden in `fx-flow.css`. `data-k` keyframes are ignored in flow.
-- **Stack panels:** `fx-stack.js` (on every fx page) wraps `main.content`'s blocks in `div.stack.fx-stack > section.stack-panel.fx-panel`
-  (the original sticky overlapping panels with the big tab word, WORK/BUILD/VIEW/...; short blocks are merged until a panel is
-  about a screen tall; `.closer` becomes the dark panel). `layout()` sets each panel's `top` to `min(base, innerHeight - panelHeight)`
-  so a panel taller than the viewport can still be read to its bottom. The homepage hero is the minimal editorial layout (`.hero2`: grey desk illustration + Business list, tagline, quick-link nav, giant AUZslab wordmark bottom-right), then the panels written by hand (`hp-*`). Panels are min-height 92svh and `layout()` only writes `top`/`z-index` when they change (writing them every frame made the scroll feel like it vibrated).
-  On phones: no `mix-blend-mode`, no SVG filters, no fixed full-screen overlays (they cost frames on iOS). The fx suite scrolls
-  every page at phone/tablet/desktop and checks overlapping text blocks (ignoring `.stack-panel`; scroll with `behavior:'instant'`
-  because theme.css sets smooth scrolling).
-- **Intro retired:** the cube loader/blast no longer runs (`SHOW_INTRO = false` in `sketch.js`); the page just opens. The homepage hero ends in the big pixel `logo.png` (`.h2-word`).
-- **Panels are split to fit a screen:** `fx-stack.js` splits any panel taller than a screen into continuation panels (`.fx-cont`; short first parts get `.fx-compact`) so each one pins, pauses and gets covered. `top` is only recomputed on width changes (phone toolbar resizes must not move sticky panels); a panel that still can't fit is left `position:relative` so it scrolls through. Reveal animations are fade + 14px rise only (sideways/rotating blocks inside sticky panels made scrolling shaky on iOS).
+- **Homepage (`site/index.html`, `body[data-no-stack]`)** is hand-built, not generated: hero (`.hero2`, ends in the big pixel `logo.png`), then **page 2 `.hx`**
+  (a pinned stage; `fx-hx.js` slides `.hx-track` sideways with the vertical scroll: How we work, "Eight modules, one login", 8 floating module cards, CTA),
+  **page 3 `.vw`** (four floating "doors" that slide up over page 2), `.tk` (Let's talk) and the dark CONNECT footer. Styles in `fx-hx.css`. Rules: one type
+  scale (`.hx-title`, `.hx-big`, `.hx-name`, 16-18px body), black/white/wine only, transforms only in the scroll loop (`measure()` runs on width changes only;
+  stage height is `100svh` so the phone toolbar can't move anything). Without JS / with reduced motion `.hx-track` is a swipeable row (`html:not(.fx-hx)`).
+- **Every other marketing page** is wrapped by `fx-stack.js` into layered panels (`.stack-panel.fx-panel`, big tab word, rounded top sliding over the previous
+  panel) but **nothing is sticky**: pinned/sticky stacks made the previous panels shake while scrolling on phones, and splitting them didn't help. The fx suite
+  fails if a sticky `.fx-panel` comes back. Don't reintroduce `position:sticky` panels.
+  On phones: no `mix-blend-mode`, no SVG filters, no fixed full-screen overlays (they cost frames on iOS).
+- **Intro retired:** the cube loader/blast no longer runs (`SHOW_INTRO = false` in `sketch.js`); the page just opens.
 - **Intro blast (old):** `sketch.js` flies particles to elements marked `[data-blast]` (falls back to headings/buttons).
 
 ## Staff apps: Apple HIG layer (`app/public/hig.css`)

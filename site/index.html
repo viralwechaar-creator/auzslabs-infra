@@ -23,12 +23,14 @@
 <link rel="stylesheet" href="theme.css?v=44">
 <link rel="stylesheet" href="sketch.css?v=1">
 <link rel="stylesheet" href="fx.css?v=1">
-<link rel="stylesheet" href="fx-flow.css?v=8">
+<link rel="stylesheet" href="fx-flow.css?v=10">
+<link rel="stylesheet" href="fx-hx.css?v=1">
 <script src="sketch.js?v=1"></script>
 <script src="fx-art.js?v=1" defer></script>
 <script src="fx.js?v=1" defer></script>
 <script src="fx-canvas.js?v=1" defer></script>
-<script src="fx-stack.js?v=9" defer></script>
+<script src="fx-stack.js?v=10" defer></script>
+<script src="fx-hx.js?v=1" defer></script>
 <link rel="stylesheet" href="design-system/ui-kit.css?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -112,7 +114,7 @@
 }
 </style>
 </head>
-<body class="fx home">
+<body class="fx home" data-no-stack>
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
 
 <div class="shell">
@@ -217,90 +219,51 @@
   </div>
   <div class="h2-word" role="img" aria-label="AUZslab"><img src="logo.png" alt="" width="534" height="194" data-blast></div>
 </section>
-<section class="fx-scene hp hp-work" data-tab="WORK"><div class="fx-stage"><div class="k eye ph" >How we work</div><!-- how we work -->
-        <div class="k giant outline hww" style="left:26%;top:50%" data-k=".28:y62,o0,r-6; .325:o1,y6,r-3; .36:y0,o1; .40:y-70,o0,r2">Build.</div>
-        <p class="k hww-copy" style="left:27%;top:66%" data-k=".30:y40,o0; .335:o1,y0; .365:y-3,o1; .40:y-62,o0">Custom-built for how your business actually runs, not a template with your logo on it.</p>
-        <div class="k giant hww" style="left:66%;top:47%;font-size:clamp(40px,9.5vw,210px)" data-k=".33:y70,o0,r6; .37:o1,y-6,r3; .405:y-10,o1; .44:y-74,o0">Connect.</div>
-        <p class="k hww-copy" style="left:68%;top:63%" data-k=".35:y40,o0; .385:o1,y0; .415:y-3,o1; .44:y-62,o0">Every part talks to every other part. No exports, no duct tape.</p>
-        <div class="k giant outline-m hww" style="left:42%;top:52%;font-size:clamp(40px,10.5vw,230px)" data-k=".37:y80,o0,r-3; .41:o1,y16,r-1; .435:y12,o1; .47:y-80,o0">Grow.</div>
-        <p class="k hww-copy" style="left:44%;top:70%" data-k=".39:y40,o0; .425:o1,y0; .445:y-3,o1; .47:y-66,o0">New tools as your business needs them, not before, not bundled in.</p>
-
-        </div></section>
-<section class="fx-scene hp hp-prod" data-tab="BUILD"><div class="fx-stage"><div class="k eye ph" >What we build</div><h2 class="k fx-h2 ph" data-split="rise">Eight modules, <span class="mk">one login.</span></h2><!-- fly through the products -->
-        <div class="fx-world hp-rooms">
-          <div class="fx-cam">
-            <a class="f room" href="pos.html" data-xyz="-19,4,1500" data-r="-3">
-              <span class="no">01 · Front of house</span><h3 class="nm">POS</h3>
-              <p>Everything the counter and kitchen touch during service, in one till.</p><span class="go">Details &rarr;</span>
-              <svg class="art" data-art="pos" data-wob="1" style="--aw:24vw;--ar:-13vw;--at:-16vh"></svg>
-            </a>
-            <a class="f room r" href="crm.html" data-xyz="21,-9,2550" data-r="3">
-              <span class="no">02 · Customers &amp; growth</span><h3 class="nm fill">CRM</h3>
-              <p>Know who your customers are, and give them a reason to come back.</p><span class="go">Details &rarr;</span>
-              <svg class="art" data-art="crm" data-wob="1" style="--aw:22vw;--al:-14vw;--ar:auto;--at:-14vh"></svg>
-            </a>
-            <a class="f room" href="billing.html" data-xyz="-23,-5,3600" data-r="-2">
-              <span class="no">03 · Money &amp; tax</span><h3 class="nm">Billing</h3>
-              <p>GST-ready invoices, automatic numbering and tax breakdowns.</p><span class="go">Details &rarr;</span>
-              <svg class="art" data-art="billing" data-wob="1" style="--aw:19vw;--ar:-9vw;--at:-22vh"></svg>
-            </a>
-            <a class="f room r" href="inventory.html" data-xyz="19,9,4650" data-r="5">
-              <span class="no">04 · Stock &amp; purchasing</span><h3 class="nm fill">Stock</h3>
-              <p>Stock tracking and purchasing, kept alongside your daily billing.</p><span class="go">Details &rarr;</span>
-              <svg class="art" data-art="inventory" data-wob="1" style="--aw:24vw;--al:-18vw;--ar:auto;--at:-10vh"></svg>
-            </a>
-            <a class="f room" href="qr-ordering.html" data-xyz="-21,-1,5700" data-r="-6">
-              <span class="no">05 · Online &amp; self-order</span><h3 class="nm">QR</h3>
-              <p>A QR code on every table. Guests browse and order from their own phone.</p><span class="go">Details &rarr;</span>
-              <svg class="art" data-art="qr" data-wob="1" style="--aw:20vw;--ar:-6vw;--at:-24vh"></svg>
-            </a>
-            <a class="f room r" href="payroll.html" data-xyz="22,5,6750" data-r="2">
-              <span class="no">06 · Your team</span><h3 class="nm fill">Payroll</h3>
-              <p>Attendance-based staff pay, computed and marked paid from the same account.</p><span class="go">Details &rarr;</span>
-              <svg class="art" data-art="payroll" data-wob="1" style="--aw:23vw;--al:-16vw;--ar:auto;--at:-18vh"></svg>
-            </a>
-            <a class="f room" href="website-builder.html" data-xyz="-22,8,7800" data-r="-3">
-              <span class="no">07 · Your own site</span><h3 class="nm">Website</h3>
-              <p>A real drag-and-drop editor for your own multi-page site.</p><span class="go">Details &rarr;</span>
-              <svg class="art" data-art="website" data-wob="1" style="--aw:25vw;--ar:-14vw;--at:-14vh"></svg>
-            </a>
-            <a class="f room r" href="business-salons.html" data-xyz="18,-10,8850" data-r="4">
-              <span class="no">08 · For salons &amp; spas</span><h3 class="nm fill">Salon</h3>
-              <p>Your salon's own website, online booking, billing and clients, in one admin console.</p><span class="go">Details &rarr;</span>
-              <svg class="art" data-art="salon" data-wob="1" style="--aw:22vw;--al:-15vw;--ar:auto;--at:-16vh"></svg>
-            </a>
-          </div>
-        </div>
-
-        </div></section>
-<section class="fx-scene hp hp-doors" data-tab="VIEW"><div class="fx-stage"><!-- four kinds of business, four doors -->
-        <p class="k note" style="left:33%;top:15%" data-k=".77:o0,y6,r-6; .82:o1,y0,r-4; .93:o1; .96:o0">built for your kind of business &darr;</p>
-        <a class="k doorway" href="business-cafes.html" style="left:27%;top:47%" data-k=".77:x-80,y30,r-28,o0; .84:x0,y0,r-5,o1; .935:y-1,o1; .965:y-70,r-10,o0">
-          <span class="tape"></span><svg data-art="cafe"></svg>
-          <h3 class="t">Caf&eacute;s &amp; restaurants</h3><p class="d">Tables, KOT &amp; kitchen display. Self-order from the table.</p>
-        </a>
-        <a class="k doorway" href="business-clothing.html" style="left:69%;top:40%" data-k=".785:x80,y-40,r30,o0; .85:x0,y0,r4,o1; .94:y-1,o1; .97:y-70,r8,o0">
-          <span class="tape"></span><svg data-art="retail"></svg>
-          <h3 class="t">Clothing &amp; apparel</h3><p class="d">Size/color stock, trial room, returns and exchanges.</p>
-        </a>
-        <a class="k doorway" href="business-retail.html" style="left:47%;top:76%" data-k=".795:y80,r-14,o0; .86:y0,r-2,o1; .945:y-1,o1; .975:y-70,r6,o0">
-          <span class="tape"></span><svg data-art="inventory"></svg>
-          <h3 class="t">Retail &amp; bookstores</h3><p class="d">Stock, barcode billing &amp; loyalty.</p>
-        </a>
-        <a class="k doorway" href="business-salons.html" style="left:84%;top:74%" data-k=".805:x60,y60,r20,o0; .87:x0,y0,r5,o1; .95:y-1,o1; .98:y-70,r-6,o0">
-          <span class="tape"></span><svg data-art="salon"></svg>
-          <h3 class="t">Salons &amp; spas</h3><p class="d">Website, online booking, billing and clients.</p>
-        </a>
-
-        </div></section>
-<section class="fx-scene hp hp-talk" data-tab="TALK"><div class="fx-stage"><!-- the portal -->
-                        <h2 class="k giant portal-h" data-k=".92:o0,s.55,y8; .975:o1,s1,y0">Let's talk.</h2>
-        <p class="k portal-p" style="left:50%;top:76%;text-align:center" data-k=".95:o0,y6; .985:o1,y0">Software that runs your business, creators that fill it. <a href="creatopz.html">Creatopz</a>, an influencer marketing agency, is AUZslab's marketing partner.</p>
-        <div class="k cta-row" style="left:50%;top:88%" data-k=".96:o0,y8; .99:o1,y0">
-          <button class="btn btn-light" data-open-contact data-magnet>Tell us about your business</button>
-          <a href="creatopz.html" class="btn btn-line">Meet Creatopz &rarr;</a>
-        </div>
-      </div></section>
+<section class="hx" id="how" aria-label="How we work and what we build">
+  <div class="hx-stage">
+    <div class="hx-track">
+      <article class="hx-s hx-how">
+        <p class="hx-eye">How we work</p>
+        <div class="hx-row"><h2 class="hx-big" data-split="rise">Build.</h2><p>Custom-built for how your business actually runs, not a template with your logo on it.</p></div>
+        <div class="hx-row"><h2 class="hx-big" data-split="rise">Connect.</h2><p>Every part talks to every other part. No exports, no duct tape.</p></div>
+        <div class="hx-row"><h2 class="hx-big hx-w" data-split="rise">Grow.</h2><p>New tools as your business needs them, not before, not bundled in.</p></div>
+      </article>
+      <article class="hx-s hx-head">
+        <p class="hx-eye">What we build</p>
+        <h2 class="hx-title" data-split="rise">Eight modules, one login.</h2>
+        <p class="hx-hint">Keep scrolling <span aria-hidden="true">&rarr;</span></p>
+      </article>
+    <a class="hx-card" href="pos.html"><span class="hx-no">01 / 08</span><svg class="hx-art" data-art="pos" data-wob="1" data-draw-in="1500"></svg><h3 class="hx-name" data-split="rise">POS</h3><p>Everything the counter and kitchen touch during service, in one till.</p><span class="hx-go">Details &rarr;</span></a>
+    <a class="hx-card" href="crm.html"><span class="hx-no">02 / 08</span><svg class="hx-art" data-art="crm" data-wob="1" data-draw-in="1500"></svg><h3 class="hx-name" data-split="rise">CRM</h3><p>Know who your customers are, and give them a reason to come back.</p><span class="hx-go">Details &rarr;</span></a>
+    <a class="hx-card" href="billing.html"><span class="hx-no">03 / 08</span><svg class="hx-art" data-art="billing" data-wob="1" data-draw-in="1500"></svg><h3 class="hx-name" data-split="rise">Billing</h3><p>GST-ready invoices, automatic numbering and tax breakdowns.</p><span class="hx-go">Details &rarr;</span></a>
+    <a class="hx-card" href="inventory.html"><span class="hx-no">04 / 08</span><svg class="hx-art" data-art="inventory" data-wob="1" data-draw-in="1500"></svg><h3 class="hx-name" data-split="rise">Stock</h3><p>Stock tracking and purchasing, kept alongside your daily billing.</p><span class="hx-go">Details &rarr;</span></a>
+    <a class="hx-card" href="qr-ordering.html"><span class="hx-no">05 / 08</span><svg class="hx-art" data-art="qr" data-wob="1" data-draw-in="1500"></svg><h3 class="hx-name" data-split="rise">QR</h3><p>A QR code on every table. Guests browse and order from their own phone.</p><span class="hx-go">Details &rarr;</span></a>
+    <a class="hx-card" href="payroll.html"><span class="hx-no">06 / 08</span><svg class="hx-art" data-art="payroll" data-wob="1" data-draw-in="1500"></svg><h3 class="hx-name" data-split="rise">Payroll</h3><p>Attendance-based staff pay, computed and marked paid from the same account.</p><span class="hx-go">Details &rarr;</span></a>
+    <a class="hx-card" href="website-builder.html"><span class="hx-no">07 / 08</span><svg class="hx-art" data-art="website" data-wob="1" data-draw-in="1500"></svg><h3 class="hx-name" data-split="rise">Website</h3><p>A real drag-and-drop editor for your own multi-page site.</p><span class="hx-go">Details &rarr;</span></a>
+    <a class="hx-card" href="business-salons.html"><span class="hx-no">08 / 08</span><svg class="hx-art" data-art="salon" data-wob="1" data-draw-in="1500"></svg><h3 class="hx-name" data-split="rise">Salon</h3><p>Your salon's own website, online booking, billing and clients, in one console.</p><span class="hx-go">Details &rarr;</span></a>
+      <article class="hx-s hx-end">
+        <h2 class="hx-title" data-split="rise">One login for all of it.</h2>
+        <div class="hx-acts"><a href="products.html" class="btn btn-primary">See all products</a><button class="btn btn-ghost" data-open-contact>Let's talk</button></div>
+      </article>
+    </div>
+    <div class="hx-bar" aria-hidden="true"><i></i></div>
+  </div>
+</section>
+<section class="vw" id="kinds">
+  <p class="hx-eye">Built for your kind of business</p>
+  <h2 class="hx-title" data-split="rise">Four doors in.</h2>
+  <div class="vw-grid">
+    <a class="vw-card" href="business-cafes.html" data-float=".07"><svg class="vw-art" data-art="cafe" data-wob="1" data-draw-in="1400"></svg><h3>Caf&eacute;s &amp; restaurants</h3><p>Tables, KOT &amp; kitchen display. Self-order from the table.</p></a>
+    <a class="vw-card" href="business-clothing.html" data-float="-.07"><svg class="vw-art" data-art="retail" data-wob="1" data-draw-in="1400"></svg><h3>Clothing &amp; apparel</h3><p>Size/color stock, trial room, returns and exchanges.</p></a>
+    <a class="vw-card" href="business-retail.html" data-float=".05"><svg class="vw-art" data-art="inventory" data-wob="1" data-draw-in="1400"></svg><h3>Retail &amp; bookstores</h3><p>Stock, barcode billing &amp; loyalty.</p></a>
+    <a class="vw-card" href="business-salons.html" data-float="-.05"><svg class="vw-art" data-art="salon" data-wob="1" data-draw-in="1400"></svg><h3>Salons &amp; spas</h3><p>Website, online booking, billing and clients.</p></a>
+  </div>
+</section>
+<section class="tk">
+  <h2 class="hx-title" data-split="rise">Let's talk.</h2>
+  <p class="tk-p">Software that runs your business, creators that fill it. <a href="creatopz.html">Creatopz</a>, an influencer marketing agency, is AUZslab's marketing partner.</p>
+  <div class="hx-acts"><button class="btn btn-primary" data-open-contact>Tell us about your business</button><a href="creatopz.html" class="btn btn-ghost">Meet Creatopz &rarr;</a></div>
+</section>
 
     <div class="stack">
       <section class="stack-panel stack-panel-dark" data-tab="CONNECT">
