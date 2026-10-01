@@ -36,7 +36,7 @@
   FX.live = !FX.reduce;
   FX.vw = window.innerWidth; FX.vh = window.innerHeight; FX.mobile = FX.vw < 700;
   FX.y = window.pageYOffset; FX.ty = FX.y; FX.v = 0; FX.t = 0; FX.dt = 16;
-  FX.mx = FX.vw / 2; FX.my = FX.vh / 2; FX.nx = 0; FX.ny = 0; FX.tnx = 0; FX.tny = 0; FX.down = false;
+  FX.mx = -9999; FX.my = -9999; FX.nx = 0; FX.ny = 0; FX.tnx = 0; FX.tny = 0; FX.down = false;
 
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
   function lerp(a, b, t) { return a + (b - a) * t; }

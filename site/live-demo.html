@@ -20,14 +20,18 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="stylesheet" href="theme.css?v=44">
 <link rel="stylesheet" href="sketch.css?v=1">
+<link rel="stylesheet" href="fx.css?v=1">
+<link rel="stylesheet" href="fx-pages.css?v=1">
 <script src="sketch.js?v=1"></script>
-<script src="sketch-art.js?v=1" defer></script>
+<script src="fx-art.js?v=1" defer></script>
+<script src="fx.js?v=1" defer></script>
+<script src="fx-canvas.js?v=1" defer></script>
 <link rel="stylesheet" href="design-system/ui-kit.css?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 </head>
-<body>
+<body class="fx pg">
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
 
 <div class="shell">
@@ -105,127 +109,29 @@
     </div>
   </aside>
 
-  <main class="content">
-    <div class="wrap">
-
-      <section class="section" style="padding-top:104px">
-        <div class="label">Live demo</div>
-        <h1 class="h-1" style="font-size:48px">Try AUZslab<br>before you buy.</h1>
-        <p class="lede">Real, working accounts, open to everyone. Pick the one closest to your business, sign in and click around. Nothing you do here touches your own business.</p>
-      </section>
-
-      <hr class="dash">
-
-      <section class="section tight">
-        <div class="card" style="margin-bottom:20px">
-          <span class="tag">Salons &amp; spas</span>
-          <div class="h-2" style="margin-top:14px;font-size:24px">AUZslab Salon</div>
-          <p class="p" style="margin-top:8px;max-width:560px">Your salon website, online booking, billing and clients. Sign in as the owner, or as a staff member to see the limited view your team gets. Resets every 12 hours.</p>
-          <div style="margin-top:14px;background:var(--bg-raised);border:1.5px solid var(--ink);border-radius:14px;padding:14px 16px;font-family:var(--font-mono);font-size:12.5px;line-height:1.9;word-break:break-word">
+    <main class="content">
+<div class="fx-scene pd pd-demo" data-scene style="--len:4.5" data-pointer><div class="fx-stage">
+<div class="k eye tl2" data-k="0:o1; .12:o0">Live demo</div>
+<h1 class="hh"><span class="k giant l1" style="font-size:12vw" data-blast data-k="0:x-4,y-3,o1; .16:x-6,o1; .3:x-70,o0">Try AUZslab</span>
+<span class="k giant outline-m l2" style="font-size:12vw" data-blast data-k="0:x4,y12,o1; .16:x8,o1; .3:x70,o0">before you buy.</span></h1>
+<p class="k lede2 bl" data-k="0:o1; .12:o0">Real, working accounts, open to everyone. Pick the one closest to your business, sign in and click around. Nothing you do here touches your own business.</p>
+<div class="k trio" data-k=".15:o0,y14; .4:o1,y0; .8:o1; .9:o0"><i class="dv d1"></i><i class="dv d2"></i><i class="dv d3"></i></div>
+<div class="k note nl" data-k=".4:o0,y6; .5:o1,y0; .8:o1; .86:o0">pick the closest one.</div>
+</div></div>
+<section class="devs"><article class="dev dv0" data-reveal><div class="bezel"><span class="tg">Salons &amp; spas</span><h3>AUZslab Salon</h3><p>Your salon website, online booking, billing and clients. Sign in as the owner, or as a staff member to see the limited view your team gets. Resets every 12 hours.</p><div class="cred">
           <div>Website &nbsp; <b>demo-salon.auzslab.in</b></div>
           <div>Owner console &nbsp; <b>demo-salon.auzslab.in/salon/admin/</b></div>
           <div>Owner password &nbsp; <b>Auzslab@Demo</b></div>
           <div>Staff sign in &nbsp; <b>phone 9000000001 &middot; password Auzslab@Demo</b></div>
-          </div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
-            <a href="https://demo-salon.auzslab.in/" target="_blank" rel="noopener" class="btn btn-primary">Open the salon website &rarr;</a>
-            <a href="https://demo-salon.auzslab.in/salon/admin/" target="_blank" rel="noopener" class="btn btn-ghost">Open the console</a>
-          </div>
-        </div>
-        <div class="card" style="margin-bottom:20px">
-          <span class="tag">Caf&eacute;s &amp; restaurants</span>
-          <div class="h-2" style="margin-top:14px;font-size:24px">AUZslab POS &mdash; Caf&eacute;</div>
-          <p class="p" style="margin-top:8px;max-width:560px">Tables, kitchen tickets, billing, CRM and inventory for a caf&eacute; or restaurant.</p>
-          <div style="margin-top:14px;background:var(--bg-raised);border:1.5px solid var(--ink);border-radius:14px;padding:14px 16px;font-family:var(--font-mono);font-size:12.5px;line-height:1.9;word-break:break-word">
+          </div><div class="acts"><a href="https://demo-salon.auzslab.in/" target="_blank" rel="noopener" class="btn btn-primary">Open the salon website &rarr;</a><a href="https://demo-salon.auzslab.in/salon/admin/" target="_blank" rel="noopener" class="btn btn-ghost">Open the console</a></div></div></article><article class="dev dv1" data-reveal><div class="bezel"><span class="tg">Caf&eacute;s &amp; restaurants</span><h3>AUZslab POS &mdash; Caf&eacute;</h3><p>Tables, kitchen tickets, billing, CRM and inventory for a caf&eacute; or restaurant.</p><div class="cred">
           <div>URL &nbsp; <b>demo-cafe.auzslab.in</b></div>
           <div>Email &nbsp; <b>demo-cafe@auzslab.in</b></div>
           <div>Password &nbsp; <b>Auzslab@Demo</b></div>
-          </div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
-            <a href="https://demo-cafe.auzslab.in/" target="_blank" rel="noopener" class="btn btn-primary">Launch the caf&eacute; demo &rarr;</a>
-          </div>
-        </div>
-        <div class="card" style="margin-bottom:20px">
-          <span class="tag">Retail</span>
-          <div class="h-2" style="margin-top:14px;font-size:24px">AUZslab POS &mdash; Retail</div>
-          <p class="p" style="margin-top:8px;max-width:560px">Size and colour stock, scan-to-bill, returns and exchanges for a clothing or retail shop.</p>
-          <div style="margin-top:14px;background:var(--bg-raised);border:1.5px solid var(--ink);border-radius:14px;padding:14px 16px;font-family:var(--font-mono);font-size:12.5px;line-height:1.9;word-break:break-word">
+          </div><div class="acts"><a href="https://demo-cafe.auzslab.in/" target="_blank" rel="noopener" class="btn btn-primary">Launch the caf&eacute; demo &rarr;</a></div></div></article><article class="dev dv2" data-reveal><div class="bezel"><span class="tg">Retail</span><h3>AUZslab POS &mdash; Retail</h3><p>Size and colour stock, scan-to-bill, returns and exchanges for a clothing or retail shop.</p><div class="cred">
           <div>URL &nbsp; <b>demo-retail.auzslab.in</b></div>
           <div>Email &nbsp; <b>demo-retail@auzslab.in</b></div>
           <div>Password &nbsp; <b>Auzslab@Demo</b></div>
-          </div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
-            <a href="https://demo-retail.auzslab.in/" target="_blank" rel="noopener" class="btn btn-primary">Launch the retail demo &rarr;</a>
-          </div>
-        </div>
-        <p class="p" style="margin-top:12px;font-size:11.5px;color:var(--ink-faint)">For evaluation only &mdash; please don't scrape or copy the software. See our <a href="terms.html" style="color:var(--ink-faint);text-decoration:underline">terms</a>.</p>
-      </section>
+          </div><div class="acts"><a href="https://demo-retail.auzslab.in/" target="_blank" rel="noopener" class="btn btn-primary">Launch the retail demo &rarr;</a></div></div></article></section>
+<section class="closer"><div class="eye">Not sure which one?</div><h2 class="fx-h2" data-split="rise">We'll walk you through it.</h2><div class="acts"><button class="btn btn-primary" data-open-contact data-magnet>Let's talk</button><a href="products.html" class="btn btn-ghost">See all products</a></div><p class="terms">For evaluation only. Please don't scrape or copy the software. See our <a href="terms.html">terms</a>.</p></section>
 
-      <hr class="dash">
-
-      <section class="section tight">
-        <div class="label">Not sure which one?</div>
-        <h2 class="h-2">We'll walk you through it.</h2>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
-          <button class="btn btn-primary" data-open-contact>Let's talk</button>
-          <a href="products.html" class="btn btn-ghost">See all products</a>
-        </div>
-      </section>
-
-    </div>
-  </main>
-
-  <button class="knock-btn" data-open-contact>
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3a2 2 0 0 0-2 2v3.17a3 3 0 0 0-2 2.83v6a5 5 0 0 0 5 5h4a5 5 0 0 0 5-5v-3M8 3a2 2 0 0 1 2 2v6M8 3v8M12 5a2 2 0 0 1 4 0v6M16 5a2 2 0 0 1 4 0v6"/></svg>
-    Knock, we'll answer
-  </button>
-
-  <div class="modal-overlay" id="modalOverlay">
-    <div class="modal" id="modal">
-      <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
-      <form id="formView" data-contact-form>
-        <div class="label" style="margin-bottom:14px">Reach us</div>
-        <h3 class="h-2" style="font-size:24px">Got a business? Let's talk.</h3>
-        <p class="p" style="margin-top:8px">Tell us a little about it &mdash; we'll get back to you within a day.</p>
-        <div class="field">
-          <label for="m-name">Name</label>
-          <input id="m-name" name="name" type="text" placeholder="Your name" required>
-        </div>
-        <div class="field">
-          <label for="m-business">Business</label>
-          <input id="m-business" name="business" type="text" placeholder="Business name">
-        </div>
-        <div class="field">
-          <label for="m-contact">Phone or email</label>
-          <input id="m-contact" name="contact" type="text" placeholder="How we reach you" required>
-        </div>
-        <div class="field">
-          <label for="m-niche">What are you running?</label>
-          <select id="m-niche" name="niche">
-            <option value="cafe">Café, restaurant, bar & more</option>
-            <option value="salon" selected>Salon</option>
-            <option value="retail">Retail (shoes, clothing, books)</option>
-            <option value="general">Something else</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="m-message">Message</label>
-          <textarea id="m-message" name="message" placeholder="What are you running today?"></textarea>
-        </div>
-        <button type="submit" class="btn btn-primary form-submit">Send</button>
-      </form>
-      <div class="success-view" id="successView">
-        <div class="success-mark">&check;</div>
-        <h3 class="h-2" style="font-size:22px">Got it.</h3>
-        <p class="p">We'll reach out to <span class="success-contact" id="successContact">you</span> shortly.</p>
-      </div>
-    </div>
-  </div>
-
-</div>
-<script src="/sb-client.js?v=2"></script>
-<script src="site.js?v=8"></script>
-<script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
-<script src="design-system/ui-kit.js?v=1"></script>
-</body>
-</html>
+    
