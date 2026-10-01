@@ -67,9 +67,13 @@ html.fx-hx .hx-bar i{animation:hxBar linear both;animation-timeline:--hx;animati
 @keyframes vwFloat{from{transform:translate3d(0,calc(var(--fk) * 1px),0)}to{transform:translate3d(0,calc(var(--fk) * -1px),0)}}
 }
 :root{--cut:38px;--ch:20px;--sl:calc(var(--cut) * .9)}
-.hw,.vw,.tk{border-radius:0!important;box-shadow:none;--sl:calc(var(--cut) * .9);
- clip-path:polygon(0 var(--ch),var(--ch) 0,var(--nx) 0,calc(var(--nx) + var(--sl)) var(--cut),calc(100% - var(--ch)) var(--cut),100% calc(var(--cut) + var(--ch)),100% 100%,0 100%)}
-.vw{clip-path:polygon(0 calc(var(--cut) + var(--ch)),var(--ch) var(--cut),calc(var(--nx) - var(--sl)) var(--cut),var(--nx) 0,calc(100% - var(--ch)) 0,100% var(--ch),100% 100%,0 100%)}
+.hw,.vw,.tk{border-radius:0!important;box-shadow:none;--sl:calc(var(--cut) * .9);background:transparent!important;isolation:isolate}
+.hw{--c:var(--hx-bg)}.vw{--c:var(--wine)}.tk{--c:#e9e4df}
+/* sheet colour is painted by two flat layers behind the content: a small clipped tab on top and a plain rectangle below it. The big sheet itself is not clipped (clip-path on tall sticky layers made iPhone scrolling vibrate). */
+.hw::before,.vw::before,.tk::before{content:"";position:absolute;z-index:-1;left:0;right:0;top:0;height:calc(var(--cut) + var(--ch));background:var(--c);pointer-events:none;
+ clip-path:polygon(0 var(--ch),var(--ch) 0,var(--nx) 0,calc(var(--nx) + var(--sl)) var(--cut),calc(100% - var(--ch)) var(--cut),100% 100%,0 100%)}
+.vw::before{clip-path:polygon(0 100%,var(--ch) var(--cut),calc(var(--nx) - var(--sl)) var(--cut),var(--nx) 0,calc(100% - var(--ch)) 0,100% var(--ch),100% 100%)}
+.hw::after,.vw::after,.tk::after{content:"";position:absolute;z-index:-1;left:0;right:0;top:calc(var(--cut) + var(--ch) - 1px);bottom:0;background:var(--c);pointer-events:none}
 .hw{--nx:40%}
 .vw{--nx:62%}
 .tk{--nx:44%}
@@ -117,7 +121,7 @@ html.fx-hx .vw-art{max-height:19svh}
 .hw-cta{margin-top:clamp(18px,3.5vh,34px);padding-top:clamp(14px,2.5vh,24px)}
 .hw-cta .hx-title{font-size:clamp(28px,8vw,38px)}
 .hw-cta .hx-acts{margin-top:16px}
-.tk{background:#e9e4df}
+
 html.fx-hx .stack-panel-dark{position:relative;z-index:6;min-height:calc(100svh - var(--pin,150px) + 28px)}
 .hw{flex-direction:column;align-items:flex-start;justify-content:center}
 .hw-in,.hw-cta{width:min(100%,760px)}

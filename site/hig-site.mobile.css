@@ -2,7 +2,7 @@
 body.fx{--hig-font:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display',Inter,system-ui,sans-serif;--hig-spring:cubic-bezier(.2,.9,.25,1.1);font-family:var(--hig-font);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 body.fx :is(.btn,.hamburger,.h2-nav a,.hx-eye,.hx-no,.footer-col-title,.footer-copy,.footer-top-btn,.sidebar-copy,.nav-link,.nav-sublink){font-family:var(--hig-font)}
 body.fx :is(h1,h2,h3){text-wrap:balance}
-html.fx-flow body.fx header.topbar,body.fx header.topbar{border-bottom:.5px solid rgba(23,23,23,.14)!important;background:rgba(246,244,241,.86);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);min-height:56px;box-sizing:border-box;padding-top:max(8px,env(safe-area-inset-top));padding-bottom:8px}
+html.fx-flow body.fx header.topbar,body.fx header.topbar{border-bottom:.5px solid rgba(23,23,23,.14)!important;background:rgba(246,244,241,.98);min-height:56px;box-sizing:border-box;padding-top:max(8px,env(safe-area-inset-top));padding-bottom:8px}
 body.fx .topbar-logo img{max-width:78px}
 body.fx .hamburger{min-height:44px;padding:0 18px;border:0;background:rgba(23,23,23,.07);font-size:15px;font-weight:600;letter-spacing:0;text-transform:none;transition:background .25s var(--hig-spring),transform .25s var(--hig-spring)}
 body.fx .hamburger:hover,body.fx .hamburger.is-open{background:var(--ink);color:#fff}
@@ -40,7 +40,7 @@ body.fx *{transition-duration:.01ms!important;animation-duration:.01ms!important
 body.fx header.topbar .btn{padding:0 18px!important;font-size:15px!important;border:0!important}
 body.fx header.topbar .btn-ghost{background:rgba(23,23,23,.07)}
 body.fx .btn::before,body.fx .btn::after{display:none!important}
-html.fx-flow body.fx header.topbar{background:rgba(246,244,241,.86)}
+html.fx-flow body.fx header.topbar{background:rgba(246,244,241,.98)}
 @media (max-width:700px){
 body.fx .knock-btn{font-size:0;gap:0;width:52px;height:52px;min-height:52px;padding:0;justify-content:center;right:14px;bottom:calc(14px + env(safe-area-inset-bottom))}
 body.fx .knock-btn svg{width:22px;height:22px}
@@ -49,21 +49,24 @@ html.fx-stacked{--pin:clamp(112px,20svh,190px);--cut:38px;--ch:20px;--sl:calc(va
 body.fx{background:#f6f4f1}
 html.fx-stacked body.fx .stack{position:relative}
 html.fx-stacked body.fx .fx-panel{position:sticky!important;top:min(var(--pin,150px),calc(100lvh - var(--h,0px)));border:0!important;border-radius:0!important;box-shadow:none!important;min-height:0!important;
- margin-top:calc((var(--cut) + var(--ch)) * -1)!important;padding:calc(var(--cut) + var(--ch) + 36px) 0 calc(var(--cut) + var(--ch) + 28px)!important;
- background:var(--sheet-a);--nx:40%;
- clip-path:polygon(0 var(--ch),var(--ch) 0,var(--nx) 0,calc(var(--nx) + var(--sl)) var(--cut),calc(100% - var(--ch)) var(--cut),100% calc(var(--cut) + var(--ch)),100% 100%,0 100%)}
-html.fx-stacked body.fx .fx-panel:first-of-type{margin-top:0!important;clip-path:none;padding-top:0!important}
+ margin-top:0!important;padding:36px 0 calc(var(--cut) + var(--ch) + 28px)!important;overflow:visible!important;overflow-x:clip!important;
+ background:var(--sheet-a);--nx:40%}
+html.fx-stacked body.fx .fx-panel:first-of-type{padding-top:0!important}
 html.fx-stacked body.fx .fx-panel:nth-of-type(even){background:var(--sheet-b)}
 html.fx-stacked body.fx .fx-panel:nth-of-type(3n){--nx:62%}
 html.fx-stacked body.fx .fx-panel:nth-of-type(3n+2){--nx:22%}
-html.fx-stacked body.fx .fx-panel::before{display:none!important}
+/* the folder-cut tab is a small pseudo-element above the sheet (the big sheet itself has no clip-path: clipping tall sticky layers made iPhone scrolling vibrate) */
+html.fx-stacked body.fx .fx-panel::before{content:""!important;display:block!important;position:absolute;left:0;right:0;top:calc((var(--cut) + var(--ch)) * -1 + 1px);height:calc(var(--cut) + var(--ch));background:inherit;pointer-events:none;
+ clip-path:polygon(0 var(--ch),var(--ch) 0,var(--nx) 0,calc(var(--nx) + var(--sl)) var(--cut),calc(100% - var(--ch)) var(--cut),100% 100%,0 100%);font-size:0;margin:0;transform:none}
+html.fx-stacked body.fx .fx-panel:first-of-type::before{display:none!important}
 html.fx-stacked body.fx .fx-panel.stack-panel-dark{background:var(--wine)!important;color:#fff}
 html.fx-stacked body.fx .fx-panel.stack-panel-dark :is(h1,h2,h3,.fx-h2,.eye,p,a:not(.btn)){color:#fff!important}
 html.fx-stacked body.fx .fx-panel.stack-panel-dark .eye{opacity:.8}
 html.fx-stacked body.fx .fx-panel.stack-panel-dark .btn-primary{background:#fff!important;color:var(--wine)!important}
 html.fx-stacked body.fx .fx-panel.stack-panel-dark .btn-ghost{background:rgba(255,255,255,.16)!important;color:#fff!important}
-html.fx-stacked body.fx .stack-panel-dark:not(.fx-panel){position:relative!important;margin-top:calc((var(--cut) + var(--ch)) * -1)!important;padding-top:calc(var(--cut) + var(--ch) + 18px)!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#171717;--nx:62%;
- clip-path:polygon(0 calc(var(--cut) + var(--ch)),var(--ch) var(--cut),calc(var(--nx) - var(--sl)) var(--cut),var(--nx) 0,calc(100% - var(--ch)) 0,100% var(--ch),100% 100%,0 100%)}
+html.fx-stacked body.fx .stack-panel-dark:not(.fx-panel){overflow:visible!important;overflow-x:clip!important;position:relative!important;margin-top:0!important;padding-top:18px!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#171717;--nx:62%}
+html.fx-stacked body.fx .stack-panel-dark:not(.fx-panel)::after{content:"";display:block;position:absolute;left:0;right:0;top:calc((var(--cut) + var(--ch)) * -1 + 1px);height:calc(var(--cut) + var(--ch));background:#171717;pointer-events:none;
+ clip-path:polygon(0 100%,var(--ch) var(--cut),calc(var(--nx) - var(--sl)) var(--cut),var(--nx) 0,calc(100% - var(--ch)) 0,100% var(--ch),100% 100%)}
 html.fx-stacked body.fx .stack-panel-dark:not(.fx-panel)::before{display:block!important;position:static!important;transform:none!important;margin:0 0 12px 5vw;font:600 clamp(40px,11vw,84px)/1 var(--hig-font);letter-spacing:-.04em;text-transform:none;color:#fff}
 html.fx-stacked body.fx .stack-panel-dark:not(.fx-panel) .footer-dark{margin-top:0;border-radius:0;padding-top:8px}
 html.fx-stacked body.fx .stack{margin-bottom:0}

@@ -2,7 +2,7 @@
 body.home{--hig-font:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display',Inter,system-ui,sans-serif;--hig-spring:cubic-bezier(.2,.9,.25,1.1);font-family:var(--hig-font);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 body.home :is(.btn,.hamburger,.h2-nav a,.hx-eye,.hx-no,.footer-col-title,.footer-copy,.footer-top-btn,.sidebar-copy,.nav-link,.nav-sublink){font-family:var(--hig-font)}
 body.home :is(h1,h2,h3){text-wrap:balance}
-html.fx-flow body.home.fx header.topbar,body.home header.topbar{border-bottom:.5px solid rgba(23,23,23,.14)!important;background:rgba(246,244,241,.86);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);min-height:56px;box-sizing:border-box;padding-top:max(8px,env(safe-area-inset-top));padding-bottom:8px}
+html.fx-flow body.home.fx header.topbar,body.home header.topbar{border-bottom:.5px solid rgba(23,23,23,.14)!important;background:rgba(246,244,241,.98);min-height:56px;box-sizing:border-box;padding-top:max(8px,env(safe-area-inset-top));padding-bottom:8px}
 body.home .topbar-logo img{max-width:78px}
 body.home .hamburger{min-height:44px;padding:0 18px;border:0;background:rgba(23,23,23,.07);font-size:15px;font-weight:600;letter-spacing:0;text-transform:none;transition:background .25s var(--hig-spring),transform .25s var(--hig-spring)}
 body.home .hamburger:hover,body.home .hamburger.is-open{background:var(--ink);color:#fff}
@@ -67,7 +67,7 @@ body.home *{transition-duration:.01ms!important;animation-duration:.01ms!importa
 body.home header.topbar .btn{padding:0 18px!important;font-size:15px!important;border:0!important}
 body.home header.topbar .btn-ghost{background:rgba(23,23,23,.07)}
 body.home .btn::before,body.home .btn::after{display:none!important}
-html.fx-flow body.home.fx header.topbar{background:rgba(246,244,241,.86)}
+html.fx-flow body.home.fx header.topbar{background:rgba(246,244,241,.98)}
 body.home .h2-img{display:none}
 body.home .h2-word{width:80%!important;margin-left:auto}
 body.home .h2-tag{font-size:clamp(28px,7.4vw,42px);font-weight:600;letter-spacing:-.025em;line-height:1.1}
