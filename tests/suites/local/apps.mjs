@@ -22,6 +22,20 @@ export default async function run({ browser, stack }) {
     assert(/Response\.error\(\)/.test(sw), 'no error response for non-POS pages');
     assert(['/payroll.html', '/backoffice.html', '/builder.html'].every((u) => sw.includes("'" + u + "'")), 'other apps are not precached');
   }, 'critical');
+  await s.check('Admin dashboard: owner signs in, sees the dashboard cards, and every Daily Operations page opens', async () => {
+    const ctx = await newCtx(browser, stack, { w: 1366, h: 900 }); const page = await ctx.newPage(); const errs = watch(page);
+    await page.goto(stack.url('testcafe', '/dashboard.html'), { waitUntil: 'load' }); await page.waitForSelector('input[type=password]', { timeout: 15000 });
+    await page.fill('input[type=email]', USERS.cafeOwner); await page.fill('input[type=password]', PASSWORD); await page.locator('button', { hasText: /sign in/i }).last().click();
+    await page.waitForSelector('.hello', { timeout: 15000 }); await page.waitForTimeout(1200);
+    const t = await page.locator('body').innerText();
+    for (const w of ['Order Channels', 'Online Orders Overview', 'Sales Trend', 'Top Performing Items', 'Business Health', 'Expenses & Cash Flow', 'Revenue Leakage', 'Daily Snapshot', 'Quick Actions']) assert(t.includes(w), 'dashboard is missing the "' + w + '" card');
+    for (const pg of ['Live Orders', 'All Orders', 'Online Orders', 'KOT', 'Due Payment']) {
+      await page.evaluate((x) => { [...document.querySelectorAll('.nb')].find((b) => b.textContent.trim().startsWith(x)).click(); }, pg); await page.waitForTimeout(500);
+      assert((await page.locator('.ph h1').first().innerText()).length > 2, pg + ' page did not render');
+    }
+    const bad = errs.filter((e) => !/WebSocket|ERR_CERT|tunnel|print/i.test(e)); assert(!bad.length, bad.slice(0, 3).join(' | '));
+    await ctx.close();
+  }, 'major');
   for (const dev of [{ name: 'phone', w: 390, h: 844, mobile: true }, { name: 'desktop', w: 1366, h: 800 }]) {
     for (const [name, p] of APPS) {
       const ctx = await newCtx(browser, stack, dev); const page = await ctx.newPage(); const errs = watch(page);
