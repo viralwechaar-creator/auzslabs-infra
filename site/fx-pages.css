@@ -105,12 +105,14 @@ html .pd-web .l1{top:30%}html .pd-web .l2{top:50%;left:10vw}
 .closer .acts{display:flex;gap:12px;flex-wrap:wrap}.closer p{color:rgba(244,238,226,.7)}
 @media (max-width:760px){
   html .pd .l1{left:5vw}html .pd .l2{left:8vw}html .pd .hh .giant{font-size:15vw}
-  .pd .lede2{display:none}
-  .pd-pos .till{width:70vw}html .pd-pos .strip{left:50%;width:62vw;top:62%}
-  .pd-billing .longrec{left:50%;width:78vw}html .pd-billing .stampbig{left:50%}html .pd-billing .gst{left:8%}
-  .pd-inv .crate{width:34vw}html .pd-inv .c0{left:56%}html .pd-inv .c1{left:72%}html .pd-inv .c2{left:88%}html .pd-inv .c3{left:64%;bottom:calc(19vh + 13.2vw)}html .pd-inv .c4{left:80%;bottom:calc(19vh + 13.2vw)}html .pd-inv .c5{left:72%;bottom:calc(19vh + 26.4vw)}
-  .pd-qr .phonebox{left:50%;width:46vw}html .pd-qr .table3d{left:50%;width:90vw}html .pd-qr .c1{left:6%;top:30%}html .pd-qr .c2{left:44%;top:60%}html .pd-qr .c3{left:8%;top:88%}
-  .pd-pay .clock{left:50%;width:62vw}html .pd-pay .cal{left:8%;top:78%;width:60vw}html .pd-pay .slip{left:12%;top:60%;width:60vw}
-  .pd-web .wb{left:50%;width:84vw}html .pd-crm .seg{font-size:11px}html .pd-crm .s1{left:5%}html .pd-crm .s2{left:42%}html .pd-crm .s3{left:5%}html .pd-crm .s4{left:42%}
+  html .pd .lede2{display:none}
+  html .pd-pos .till{width:70vw}html .pd-pos .strip{left:50%;width:62vw;top:62%}
+  html .pd-billing .longrec{left:50%;width:78vw}html .pd-billing .stampbig{left:50%}html .pd-billing .gst{left:8%}
+  html .pd-inv .crate{width:34vw}html .pd-inv .c0{left:56%}html .pd-inv .c1{left:72%}html .pd-inv .c2{left:88%}html .pd-inv .c3{left:64%;bottom:calc(19vh + 13.2vw)}html .pd-inv .c4{left:80%;bottom:calc(19vh + 13.2vw)}html .pd-inv .c5{left:72%;bottom:calc(19vh + 26.4vw)}
+  html .pd-qr .phonebox{left:50%;width:46vw}html .pd-qr .table3d{left:50%;width:90vw}html .pd-qr .c1{left:6%;top:30%}html .pd-qr .c2{left:44%;top:60%}html .pd-qr .c3{left:8%;top:88%}
+  html .pd-pay .clock{left:50%;width:62vw}html .pd-pay .cal{left:8%;top:78%;width:60vw}html .pd-pay .slip{left:12%;top:60%;width:60vw}
+  html .pd-web .wb{left:50%;width:84vw}html .pd-crm .seg{font-size:11px}html .pd-crm .s1{left:5%}html .pd-crm .s2{left:42%}html .pd-crm .s3{left:5%}html .pd-crm .s4{left:42%}
   .featsec.labels li{width:100%}.featsec.stairs .st{margin-left:calc(var(--i)*2vw)}.featsec.cols .cl,.featsec.orbit .ring{grid-template-columns:1fr}
+  html.fx-live .pd .k.note,html.fx-live .pd .k.call,html.fx-live .pd .k.seg,html.fx-live .pd .k.cal,html.fx-live .pd .k.slip,html.fx-live .pd .k.alarm,html.fx-live .pd .k.meter{translate:0 -50%}
+  html.fx-live .pd .k.note{font-size:24px}
 }
