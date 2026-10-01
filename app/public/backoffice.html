@@ -153,7 +153,9 @@ const ICONS={gift:'<rect x="4" y="9" width="16" height="11" rx="1"/><path d="M4 
  chevron:'<path d="M9 6l6 6-6 6"/>'};
 const icon=(name,sz)=>{const s=h('span',{style:'display:inline-flex;vertical-align:-3px'});s.innerHTML='<svg width="'+(sz||14)+'" height="'+(sz||14)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0">'+(ICONS[name]||'')+'</svg>';return s};
 const swatch=c=>h('span',{style:'width:9px;height:9px;border-radius:2px;background:'+c+';display:inline-block;vertical-align:-1px'});
-const L=k=>Object.values(R).filter(r=>r.kind==k&&!r.deleted).map(r=>r.data),tn=id=>{const t=R[id];return t&&!t.deleted?t.data.name:''};
+// Multi-outlet: records of these kinds belong to one outlet (data.outlet, 'main' when absent). The chosen outlet lives in localStorage so the POS, Back Office and Admin console agree.
+const OUTK=new Set(['order','kotlog','exp','cashmove','waste','adjustment','transfer','ing','po','purchase','shift','dayclose','table','voidlog','closing']),outletId=()=>{try{return localStorage.outlet||'main'}catch{return'main'}};
+const L=k=>{const a=Object.values(R).filter(r=>r.kind==k&&!r.deleted).map(r=>r.data),o=outletId();return OUTK.has(k)&&o!='all'?a.filter(d=>(d.outlet||'main')==o):a},tn=id=>{const t=R[id];return t&&!t.deleted?t.data.name:''};
 const cfg=()=>({name:'My Restaurant',addr:'',phone:'',gstin:'',tax:5,prefix:'INV',col:null,logo:'/logo.png',ftr:'Thank you!',w:80,sty:'mono',fs:12,gw:'Scan, order and relax. Your order goes straight to our kitchen.',bizType:'restaurant',loyaltyOn:true,loyaltyEarnRs:100,loyaltyRedeemRs:1,...(R.settings&&R.settings.data)});
 const isRestaurant=()=>['restaurant','cafe'].includes(effBizType()||'restaurant');
 const isRetail=()=>effBizType()=='retail';
@@ -188,7 +190,7 @@ const featureOn=k=>!S.features||(S.features[k]===true&&S.enabledFeatures[k]!==fa
 const idb=new Promise(r=>{const q=indexedDB.open('pos3',1);q.onupgradeneeded=()=>['rec','out','meta'].forEach(s=>q.result.createObjectStore(s,{keyPath:s=='meta'?'k':'id'}));q.onsuccess=()=>r(q.result)});
 const tx=async(s,m,f)=>{const d=await idb;return new Promise((res,rej)=>{const t=d.transaction(s,m),q=f(t.objectStore(s));t.oncomplete=()=>res(q.result);t.onerror=()=>rej(t.error)})};
 const all=s=>tx(s,'readonly',o=>o.getAll()),get=(s,k)=>tx(s,'readonly',o=>o.get(k)),put=(s,v)=>tx(s,'readwrite',o=>o.put(v)),del=(s,k)=>tx(s,'readwrite',o=>o.delete(k)),clr=s=>tx(s,'readwrite',o=>o.clear());
-async function save(kind,data,id=data.id||uid(),deleted=false){data.id=id;const base=(R[id]&&R[id].srv)||null,r={id,kind,data,deleted,updated_at:now(),srv:(R[id]&&R[id].srv)};R[id]=r;await put('rec',r);await put('out',{id,kind,data,deleted,updated_at:r.updated_at,base});sync();return r}
+async function save(kind,data,id=data.id||uid(),deleted=false){data.id=id;if(OUTK.has(kind)&&!data.outlet){const o=outletId();data.outlet=o=='all'?'main':o}const base=(R[id]&&R[id].srv)||null,r={id,kind,data,deleted,updated_at:now(),srv:(R[id]&&R[id].srv)};R[id]=r;await put('rec',r);await put('out',{id,kind,data,deleted,updated_at:r.updated_at,base});sync();return r}
 let lastSyncErrMsg='';
 async function setNote(){const n=(await all('out')).length,e=$('#net');if(!e)return;
  const bits=[];
