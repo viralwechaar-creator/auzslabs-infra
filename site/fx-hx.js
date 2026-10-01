@@ -19,7 +19,7 @@
 
   var items = [].slice.call(track.children), N = items.length, kf = doc.createElement('style');
   doc.head.appendChild(kf);
-  function T(d) { return 'translate3d(' + (d * 24).toFixed(1) + 'px,' + (d * -15).toFixed(1) + 'px,0) scale(' + (1 - d * .05).toFixed(3) + ')'; }
+  function T(d) { return 'translate3d(' + (d * 34 - 44).toFixed(1) + 'px,' + (d * -22 + 26).toFixed(1) + 'px,0) scale(' + (1 - d * .055).toFixed(3) + ')'; }
   function measure() {
     var vw = window.innerWidth, sh = stage.offsetHeight;                    // stage is 100svh: does not change when the phone toolbar hides
     root.classList.remove('fx-hx'); hx.style.height = '';
@@ -35,7 +35,7 @@
         if (i > 3) k += P(a - 3 * w) + '{transform:' + T(3) + ';opacity:1}';
         k += P(a) + '{transform:' + T(0) + ';opacity:1}';
       } else k += '0%{transform:' + T(0) + ';opacity:1}' + P(a) + '{transform:' + T(0) + ';opacity:1}';
-      if (i < N - 1) k += P(b) + '{transform:translate3d(-125vw,-20px,0) rotate(-9deg);opacity:1}100%{transform:translate3d(-125vw,-20px,0) rotate(-9deg);opacity:1}';
+      if (i < N - 1) k += P(b) + '{transform:translate3d(-125vw,0,0) rotate(-9deg);opacity:1}100%{transform:translate3d(-125vw,0,0) rotate(-9deg);opacity:1}';
       else k += '100%{transform:' + T(0) + ';opacity:1}';
       css += '@keyframes hxd' + i + '{' + k + '}.hx-track>:nth-child(' + (i + 1) + '){animation-name:hxd' + i + '}';
     });
