@@ -92,3 +92,9 @@ html,body{min-height:100%;min-height:-webkit-fill-available}
 .shell-body .cart-bar{bottom:calc(74px + env(safe-area-inset-bottom))}
 body.has-tabs .toast,.toast{bottom:calc(88px + env(safe-area-inset-bottom))!important}
 }
+
+/* The grey strip under the tab bar on iPhone is the canvas showing below the layout viewport (Safari toolbar / home-indicator zone).
+   Paint the canvas the same dark as the bar so the bar visually reaches the physical bottom; the page itself keeps its own light background. */
+html{background:#1d1a1a}
+body{background:#efeeed}
+@media (max-width:700px){.shell>.ios-tabs{padding-bottom:calc(6px + env(safe-area-inset-bottom))}.ios-tabs button{min-height:50px}}
