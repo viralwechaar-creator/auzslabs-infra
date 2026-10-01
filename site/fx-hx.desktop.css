@@ -1,7 +1,4 @@
-/* Homepage sheets. One system: every sheet has the same 28px rounded top, slides 28px over the one before, shares one type scale and one palette
-   (off-white / ink / wine). Colours: hero off-white -> page 2 ink -> page 3 wine -> talk off-white -> footer ink.
-   Motion: on touch screens there is NO scroll-linked motion at all (page 2 is a native swipe row: the OS scrolls it, so it can never lag or shake).
-   On mouse/trackpad screens page 2 pins and slides sideways with CSS scroll-linked animation (compositor). */
+/* desktop (900px and up). Independent of the mobile file: edit freely. */
 :root{--sheet-r:28px;--hx-bg:#171717;--hx-ink:#f6f4f1;--hx-dim:rgba(246,244,241,.66);--hx-line:rgba(246,244,241,.16);--wine-hi:#c2183f;--wine:#800020;--cream:#f6f4f1}
 .hx-eye{margin:0 0 14px;font-family:var(--font-mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--hx-dim);display:flex;align-items:center;gap:10px}
 .hx-eye::before{content:"";width:22px;height:1.5px;background:var(--wine-hi)}
@@ -10,8 +7,6 @@
 .hx-big.hx-w{color:var(--wine-hi)}
 .hx-acts{display:flex;gap:12px;flex-wrap:wrap;margin-top:26px}
 .hero2{padding-bottom:calc(var(--sheet-r) + 24px)!important}
-
-/* ---- page 2: ink sheet ---- */
 .hx{position:relative;z-index:2;margin-top:calc(var(--sheet-r) * -1);background:var(--hx-bg);border-radius:var(--sheet-r) var(--sheet-r) 0 0;box-shadow:0 -22px 50px -22px rgba(0,0,0,.5)}
 .hx-stage{background:var(--hx-bg);border-radius:var(--sheet-r) var(--sheet-r) 0 0;box-sizing:border-box;padding:calc(var(--sheet-r) + 56px) 0 clamp(48px,8vh,84px)}
 .hx-track{display:flex;align-items:flex-start;gap:clamp(18px,4vw,56px);padding:8px 8vw 28px;overflow-x:auto;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain}
@@ -23,10 +18,12 @@
 .hx-row p{margin:0;font-size:17px;line-height:1.45;color:var(--hx-dim);max-width:30em}
 .hx-head{width:min(84vw,600px);align-self:center}
 .hx-hint{margin:22px 0 0;font-size:15px;color:var(--hx-dim)}
-.hx-hint .hx-h-d{display:none}.hx-hint span:last-child{color:var(--wine-hi)}
+.hx-hint .hx-h-d{display:none}
+.hx-hint span:last-child{color:var(--wine-hi)}
 .hx-end{width:min(84vw,620px);align-self:center}
 .hx-card{flex:0 0 auto;width:min(76vw,330px);display:flex;flex-direction:column;gap:10px;padding:22px 22px 20px;background:#fff;border-radius:26px;box-shadow:0 0 0 .5px rgba(255,255,255,.12),0 18px 36px -24px rgba(0,0,0,.6);color:inherit;text-decoration:none;scroll-snap-align:center}
-.hx-card:nth-of-type(odd){margin-top:28px}.hx-card:nth-of-type(even){margin-top:0}
+.hx-card:nth-of-type(odd){margin-top:28px}
+.hx-card:nth-of-type(even){margin-top:0}
 .hx-no{font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;color:#6d6966}
 .hx-art{display:block;width:100%;height:auto;max-height:24vh;margin:2px 0 4px}
 .hx-name{margin:0;font-family:var(--font-display);font-weight:700;letter-spacing:-.03em;line-height:1.05;font-size:clamp(30px,3.4vw,42px);text-transform:none;color:#171717}
@@ -36,8 +33,6 @@
 .hx .btn-ghost{color:#f6f4f1;border-color:rgba(246,244,241,.35);background:transparent}
 .hx .btn-ghost:hover{background:#f6f4f1;color:#171717;border-color:#f6f4f1}
 .hx .btn-primary{background:var(--wine-hi);border-color:var(--wine-hi)}
-
-/* ---- page 3: wine sheet ---- */
 .vw{position:relative;z-index:3;margin-top:calc(var(--sheet-r) * -1);padding:calc(var(--sheet-r) + clamp(40px,7vh,72px)) 8vw clamp(64px,10vh,110px);background:var(--wine);border-radius:var(--sheet-r) var(--sheet-r) 0 0;box-shadow:0 -22px 50px -22px rgba(0,0,0,.55);--hx-ink:#fff;--hx-dim:rgba(255,255,255,.72);--hx-line:rgba(255,255,255,.2)}
 .vw .hx-eye::before{background:#fff}
 .vw-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(14px,2vw,28px);margin-top:clamp(28px,5vh,52px);align-items:start}
@@ -46,9 +41,6 @@
 .vw-art{display:block;width:100%;height:auto;max-height:150px}
 .vw-card h3{margin:6px 0 0;font-family:var(--font-display);font-weight:700;font-size:22px;letter-spacing:-.02em;line-height:1.15;text-transform:none;color:#171717}
 .vw-card p{margin:0;font-size:16px;line-height:1.45;color:#5b5754}
-@media (max-width:899px){.vw-grid{grid-template-columns:1fr}.vw-card:nth-child(even){margin-top:0;margin-left:8vw}.vw-card:nth-child(odd){margin-right:8vw}}
-
-/* ---- closing: off-white sheet ---- */
 .tk{position:relative;z-index:4;margin-top:calc(var(--sheet-r) * -1);padding:calc(var(--sheet-r) + clamp(44px,8vh,96px)) 8vw clamp(72px,12vh,130px);background:var(--cream);border-radius:var(--sheet-r) var(--sheet-r) 0 0;box-shadow:0 -22px 50px -22px rgba(0,0,0,.4);--hx-ink:#171717;--hx-dim:#5b5754;--hx-line:rgba(23,23,23,.14)}
 .tk .hx-eye::before{background:var(--wine)}
 .tk-p{margin:20px 0 0;max-width:34em;font-size:18px;line-height:1.5;color:var(--hx-dim)}
@@ -56,46 +48,40 @@
 .tk .btn-primary{background:var(--wine);border-color:var(--wine)}
 .hx-title .fx-w,.hx-name .fx-w{white-space:nowrap}
 .hx-card p,.hx-go{opacity:1}
-
-/* ---- page 2 pins and slides sideways on every device (CSS scroll-linked, compositor); card tilt / door float on mouse devices only ---- */
-@media all {
-  html.fx-hx .hx-hint .hx-h-d{display:inline}html.fx-hx .hx-hint .hx-h-t{display:none}
-  html.fx-hx .hx-stage{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;display:flex;align-items:center;padding:calc(66px + var(--sheet-r)) 0 calc(var(--cut) + var(--ch) + 8px)}
-  html.fx-hx .hx-bar{display:block;position:absolute;left:8vw;right:8vw;bottom:calc(5vh + env(safe-area-inset-bottom));height:2px;background:var(--hx-line);z-index:2}
-  html.fx-hx .hx-bar i{display:block;height:100%;transform-origin:0 50%;background:var(--wine-hi)}
-  .hx-card{--dir:1;--r0:0%;--r1:100%}
-  @supports (animation-timeline: view()) {
-    .hx{view-timeline:--hx block}
-    html.fx-hx .hx-bar i{animation:hxBar linear both;animation-timeline:--hx;animation-range:contain 0% contain 100%}
-    @keyframes hxBar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-    @media (hover:hover) and (pointer:fine){.vw-card{--fk:30;animation:vwFloat linear both;animation-timeline:view();animation-range:cover 0% cover 100%}}
-    @keyframes vwFloat{from{transform:translate3d(0,calc(var(--fk) * 1px),0)}to{transform:translate3d(0,calc(var(--fk) * -1px),0)}}
-  }
+html.fx-hx .hx-hint .hx-h-d{display:inline}
+html.fx-hx .hx-hint .hx-h-t{display:none}
+html.fx-hx .hx-stage{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;display:flex;align-items:center;padding:calc(66px + var(--sheet-r)) 0 calc(var(--cut) + var(--ch) + 8px)}
+html.fx-hx .hx-bar{display:block;position:absolute;left:8vw;right:8vw;bottom:calc(5vh + env(safe-area-inset-bottom));height:2px;background:var(--hx-line);z-index:2}
+html.fx-hx .hx-bar i{display:block;height:100%;transform-origin:0 50%;background:var(--wine-hi)}
+.hx-card{--dir:1;--r0:0%;--r1:100%}
+@supports (animation-timeline: view()){
+.hx{view-timeline:--hx block}
+html.fx-hx .hx-bar i{animation:hxBar linear both;animation-timeline:--hx;animation-range:contain 0% contain 100%}
+@keyframes hxBar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media (hover:hover) and (pointer:fine){
+.vw-card{--fk:30;animation:vwFloat linear both;animation-timeline:view();animation-range:cover 0% cover 100%}
 }
-
-/* folder-cut sheets: the top edge is clipped like a file divider (straight diagonal shoulders, chamfered corners); the previous sheet shows through */
+@keyframes vwFloat{from{transform:translate3d(0,calc(var(--fk) * 1px),0)}to{transform:translate3d(0,calc(var(--fk) * -1px),0)}}
+}
 :root{--cut:38px;--ch:20px;--sl:calc(var(--cut) * .9)}
 .hw,.vw,.tk{border-radius:0!important;box-shadow:none;--sl:calc(var(--cut) * .9);
  clip-path:polygon(0 var(--ch),var(--ch) 0,var(--nx) 0,calc(var(--nx) + var(--sl)) var(--cut),calc(100% - var(--ch)) var(--cut),100% calc(var(--cut) + var(--ch)),100% 100%,0 100%)}
 .vw{clip-path:polygon(0 calc(var(--cut) + var(--ch)),var(--ch) var(--cut),calc(var(--nx) - var(--sl)) var(--cut),var(--nx) 0,calc(100% - var(--ch)) 0,100% var(--ch),100% 100%,0 100%)}
-.hw{--nx:40%}.vw{--nx:62%}.tk{--nx:44%}
+.hw{--nx:40%}
+.vw{--nx:62%}
+.tk{--nx:44%}
 .hx-stage{border-radius:0!important}
 .hx-bar{display:none!important}
 .hero2{padding-bottom:calc(var(--sheet-r) + var(--cut) + 24px)!important}
-/* premium cards: soft tinted art panel, deep radius, layered shadow */
 .hx-card,.vw-card{border-radius:32px;box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 30px 60px -30px rgba(0,0,0,.65),0 8px 18px -10px rgba(0,0,0,.35)}
 .hx-card .hx-art{background:#f1eeea;border-radius:22px;padding:14px;box-sizing:border-box;width:100%}
 .hx-card .hx-no{align-self:flex-start;padding:5px 11px;border-radius:99px;background:#171717;color:#f6f4f1!important;font-size:12px;letter-spacing:.08em}
 .hw,.vw,.tk{margin-top:calc((var(--cut) + var(--ch)) * -1)}
 .hx{margin-top:0}
 .hero2{padding-bottom:calc(var(--cut) + var(--ch) + 28px)!important}
-
-/* foot of the pinned stage: the next (wine) sheet's folder cut, so the bottom is never blank and the page continues from exactly there */
 .hx-foot{display:none}
 html.fx-hx .hx-foot{display:block;position:absolute;left:0;right:0;bottom:0;height:calc(var(--cut) + var(--ch) + 1px);background:var(--wine);pointer-events:none;
  clip-path:polygon(0 calc(var(--cut) + var(--ch)),var(--ch) var(--cut),calc(62% - var(--sl)) var(--cut),62% 0,calc(100% - var(--ch)) 0,100% var(--ch),100% 100%,0 100%)}
-
-/* ---- card deck: while page 2 is pinned, scrolling down fans the stack sideways, one card after another (keyframes per card are written by fx-hx.js) ---- */
 html.fx-hx .hx-track{position:relative;display:block;overflow:visible;padding:0;gap:0;width:100%;height:100%}
 html.fx-hx .hx-track>.hx-s,html.fx-hx .hx-track>.hx-card{position:absolute;left:50%;top:50%;translate:-50% -50%;margin:0!important;width:min(74vw,320px);height:min(62svh,480px);box-sizing:border-box;overflow:hidden;border-radius:32px;transform-origin:50% 80%;animation-timing-function:linear;animation-fill-mode:both;animation-timeline:--hx;animation-range:contain 0% contain 100%}
 html.fx-hx .hx-track>.hx-s{display:flex;flex-direction:column;justify-content:center;padding:26px 24px;background:#242220;box-shadow:0 0 0 1px rgba(246,244,241,.1),0 30px 60px -30px rgba(0,0,0,.8)}
@@ -106,16 +92,13 @@ html.fx-hx .hx-row{padding:10px 0}
 html.fx-hx .hx-row p{font-size:15px}
 html.fx-hx .hx-card .hx-art{max-height:22svh;flex:0 1 auto}
 html.fx-hx .hx-card{justify-content:flex-start}
-
-/* ---- How we work: its own sheet (original look), pinned while the deck travels over it ---- */
 .hw{position:relative;z-index:1;background:var(--hx-bg);min-height:100vh;min-height:100svh;box-sizing:border-box;padding:calc(var(--cut) + var(--ch) + 56px) 8vw 56px;display:flex;align-items:center}
 .hw-in{width:min(100%,760px)}
 .hx{background:transparent}
 html:not(.fx-hx) .hx{background:var(--hx-bg)}
-.vw{z-index:3}.tk{z-index:4}
+.vw{z-index:3}
+.tk{z-index:4}
 .vw-pin{height:0}
-
-/* ---- pinned mode (every device): the three folder-cut sheets stop at one place under the header and cover each other ---- */
 html.fx-hx .hw,html.fx-hx .vw,html.fx-hx .tk{position:sticky;top:var(--pin,150px);min-height:calc(100vh - var(--pin,150px));min-height:calc(100svh - var(--pin,150px));box-sizing:border-box}
 html.fx-hx .hw{padding-top:calc(var(--cut) + var(--ch) + 24px);padding-bottom:24px;align-items:flex-start}
 html.fx-hx .vw{padding:calc(var(--cut) + var(--ch) + 22px) 8vw 24px;display:flex;flex-direction:column}
@@ -128,44 +111,33 @@ html.fx-hx .vw-grid{position:relative;display:block;flex:1;min-height:300px;marg
 html.fx-hx .vw-card{position:absolute;left:50%;top:50%;translate:-50% -50%;width:min(74vw,320px);margin:0!important;will-change:transform}
 html.fx-hx .vw .hx-title{font-size:clamp(30px,9vw,40px)}
 html.fx-hx .vw-art{max-height:19svh}
-
-/* the "One login for all of it" call to action lives on the How we work sheet (it is part of that page, so it never moves when the card deck ends) */
 .hw-cta{margin-top:clamp(18px,3.5vh,34px);padding-top:clamp(14px,2.5vh,24px)}
 .hw-cta .hx-title{font-size:clamp(28px,8vw,38px)}
 .hw-cta .hx-acts{margin-top:16px}
-/* Let's talk gets its own tone so its folder cut reads against the page background instead of looking like a hole */
 .tk{background:#e9e4df}
 html.fx-hx .stack-panel-dark{position:relative;z-index:6;min-height:calc(100svh - var(--pin,150px) + 28px)}
 .hw{flex-direction:column;align-items:flex-start;justify-content:center}
 .hw-in,.hw-cta{width:min(100%,760px)}
 .hx-foot{display:none!important}
-
-/* ---- wide screens: calm stacked sheets, no pinned deck. How we work in three columns, the eight modules as a grid, the four doors in a row ---- */
-@media (min-width:900px){
-  .hw{min-height:0;padding:calc(var(--cut) + var(--ch) + 70px) 8vw 90px}
-  .hw-in{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 clamp(28px,4vw,64px)}
-  .hw-in .hx-eye{grid-column:1/-1}
-  .hw-in .hx-big{font-size:clamp(40px,4.6vw,66px)}
-  .hw-cta .btn-ghost{color:#f6f4f1;border-color:rgba(246,244,241,.45)}
-  .hw-cta{width:100%;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-top:56px;padding-top:32px;border-top:1px solid var(--hx-line)}
-  .hw-cta .hx-title{font-size:clamp(34px,3.6vw,52px);margin:0}
-  .hw-cta .hx-acts{margin-top:0}
-  .hx{padding:20px 0 90px}
-  .hx-stage{padding:0 8vw}
-  .hx-track{flex-wrap:wrap;justify-content:center;overflow:visible;padding:0;gap:26px;scroll-snap-type:none}
-  .hx-head{flex:0 0 100%;width:100%;align-self:flex-start;margin-bottom:12px}
-  .hx-hint{display:none}
-  .hx-card{width:calc((100% - 78px) / 4);min-width:240px;margin:0!important;border-radius:28px}
-  .hx-card:nth-of-type(even){margin-top:36px!important}
-  .vw{padding:calc(var(--cut) + var(--ch) + 56px) 8vw 100px}
-  .vw-grid{margin-top:44px;align-items:start}
-  .vw-card:nth-child(even){margin-top:36px}
-  .tk{padding:calc(var(--cut) + var(--ch) + 80px) 8vw 130px;min-height:0}
-}
-
-/* doors -> Let's talk: no empty wine area under the last card; the next folder cut rises right under it */
+.hw{min-height:0;padding:calc(var(--cut) + var(--ch) + 70px) 8vw 90px}
+.hw-in{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 clamp(28px,4vw,64px)}
+.hw-in .hx-eye{grid-column:1/-1}
+.hw-in .hx-big{font-size:clamp(40px,4.6vw,66px)}
+.hw-cta .btn-ghost{color:#f6f4f1;border-color:rgba(246,244,241,.45)}
+.hw-cta{width:100%;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-top:56px;padding-top:32px;border-top:1px solid var(--hx-line)}
+.hw-cta .hx-title{font-size:clamp(34px,3.6vw,52px);margin:0}
+.hw-cta .hx-acts{margin-top:0}
+.hx{padding:20px 0 90px}
+.hx-stage{padding:0 8vw}
+.hx-track{flex-wrap:wrap;justify-content:center;overflow:visible;padding:0;gap:26px;scroll-snap-type:none}
+.hx-head{flex:0 0 100%;width:100%;align-self:flex-start;margin-bottom:12px}
+.hx-hint{display:none}
+.hx-card{width:calc((100% - 78px) / 4);min-width:240px;margin:0!important;border-radius:28px}
+.hx-card:nth-of-type(even){margin-top:36px!important}
+.vw{padding:calc(var(--cut) + var(--ch) + 56px) 8vw 100px}
+.vw-grid{margin-top:44px;align-items:start}
+.vw-card:nth-child(even){margin-top:36px}
+.tk{padding:calc(var(--cut) + var(--ch) + 80px) 8vw 130px;min-height:0}
 html.fx-hx .tk{margin-top:calc((var(--cut) + var(--ch)) * -1 - 9svh)}
-
-/* sheets always reach the bottom of the screen, even when the Safari toolbar collapses (svh is the small viewport; lvh the large one) */
 html.fx-hx .hw,html.fx-hx .vw,html.fx-hx .tk{min-height:calc(100vh - var(--pin,150px));min-height:calc(100lvh - var(--pin,150px))}
 html.fx-hx .stack-panel-dark{min-height:calc(100lvh - var(--pin,150px) + 28px)}

@@ -10,17 +10,15 @@
 <link rel="icon" href="/logo.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="theme.css?v=44">
-<link rel="stylesheet" href="sketch.css?v=1">
+<link rel="stylesheet" href="theme.mobile.css?v=44" media="(max-width:899px)"><link rel="stylesheet" href="theme.desktop.css?v=44" media="(min-width:900px)">
+<link rel="stylesheet" href="sketch.mobile.css?v=1" media="(max-width:899px)"><link rel="stylesheet" href="sketch.desktop.css?v=1" media="(min-width:900px)">
 <script src="sketch.js?v=1"></script>
 <script src="sketch-art.js?v=1" defer></script>
-<link rel="stylesheet" href="design-system/ui-kit.css?v=3">
+<link rel="stylesheet" href="design-system/ui-kit.mobile.css?v=3" media="(max-width:899px)"><link rel="stylesheet" href="design-system/ui-kit.desktop.css?v=3" media="(min-width:900px)">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<style>
-
-.acct-table-wrap{overflow-x:auto;border:2px solid var(--ink);border-radius:14px;margin-top:16px}
+<style media="(max-width:899px)">.acct-table-wrap{overflow-x:auto;border:2px solid var(--ink);border-radius:14px;margin-top:16px}
 .acct-table{width:100%;border-collapse:collapse;font-size:12.5px}
 .acct-table th{text-align:left;padding:10px 12px;background:var(--bg-raised);font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-dim);border-bottom:2px solid var(--ink)}
 .acct-table td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
@@ -46,14 +44,47 @@ input:disabled+.slider{opacity:.4;cursor:default}
 .section-pane.on{display:block}
 .pos-link-box{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--bg-raised);border:2px solid var(--ink);border-radius:14px;padding:12px 14px;margin-top:8px}
 .pos-link-box code{font-family:var(--font-mono);font-size:12px;word-break:break-all}
-
 #menuToggle{padding:9px;width:40px;height:40px;justify-content:center}
 #menuToggle svg{display:block}
 #sidebarDrawer{max-width:320px;box-shadow:-30px 0 70px -20px rgba(0,0,0,.5)}
-
-@media (max-width:860px){#sidebarDrawer{border-radius:26px 0 0 26px}}
+@media (max-width:860px){
+#sidebarDrawer{border-radius:26px 0 0 26px}
+}
 .acct-nav-btn{background:none;border:none;width:100%;cursor:pointer;font-family:inherit}
-
+#sidebarDrawer{background:rgba(20,20,22,.78);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%)}
+#notifBadge{font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,.4)}
+.nav-link.active #notifBadge{color:rgba(255,255,255,.7)}
+.sidebar-nav .nav-divider{border-top:1px solid rgba(255,255,255,.15);margin:14px 0 4px}
+</style><style media="(min-width:900px)">.acct-table-wrap{overflow-x:auto;border:2px solid var(--ink);border-radius:14px;margin-top:16px}
+.acct-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.acct-table th{text-align:left;padding:10px 12px;background:var(--bg-raised);font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-dim);border-bottom:2px solid var(--ink)}
+.acct-table td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+.acct-table tr:last-child td{border-bottom:none}
+.acct-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.acct-row:last-child{border-bottom:none}
+.switch{position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:var(--bg-raised);border:1.5px solid var(--ink);border-radius:999px;transition:.15s;cursor:pointer}
+.slider:before{content:"";position:absolute;height:14px;width:14px;left:2px;top:2px;background:#fff;border:1px solid var(--ink);border-radius:50%;transition:.15s}
+input:checked+.slider{background:var(--accent);border-color:var(--accent)}
+input:checked+.slider:before{transform:translateX(18px);border-color:var(--accent)}
+input:disabled+.slider{opacity:.4;cursor:default}
+.perm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:12px 0}
+.perm-grid label{display:flex;align-items:center;gap:6px;font-size:12.5px;background:var(--bg-raised);border-radius:8px;padding:7px 10px}
+.notif{padding:12px 0;border-bottom:1px solid var(--line)}
+.notif:last-child{border-bottom:none}
+.notif.unread{background:var(--bg-raised);margin:0 -18px;padding:12px 18px;border-radius:8px}
+.notif b{display:block;font-size:14px}
+.notif .muted{font-size:11px;color:var(--ink-dim)}
+.muted{color:var(--ink-dim);font-size:13px}
+.section-pane{display:none}
+.section-pane.on{display:block}
+.pos-link-box{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--bg-raised);border:2px solid var(--ink);border-radius:14px;padding:12px 14px;margin-top:8px}
+.pos-link-box code{font-family:var(--font-mono);font-size:12px;word-break:break-all}
+#menuToggle{padding:9px;width:40px;height:40px;justify-content:center}
+#menuToggle svg{display:block}
+#sidebarDrawer{max-width:320px;box-shadow:-30px 0 70px -20px rgba(0,0,0,.5)}
+.acct-nav-btn{background:none;border:none;width:100%;cursor:pointer;font-family:inherit}
 #sidebarDrawer{background:rgba(20,20,22,.78);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%)}
 #notifBadge{font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,.4)}
 .nav-link.active #notifBadge{color:rgba(255,255,255,.7)}

@@ -10,34 +10,29 @@
 <link rel="icon" href="/logo.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="theme.css?v=44">
-<link rel="stylesheet" href="sketch.css?v=1">
+<link rel="stylesheet" href="theme.mobile.css?v=44" media="(max-width:899px)"><link rel="stylesheet" href="theme.desktop.css?v=44" media="(min-width:900px)">
+<link rel="stylesheet" href="sketch.mobile.css?v=1" media="(max-width:899px)"><link rel="stylesheet" href="sketch.desktop.css?v=1" media="(min-width:900px)">
 <script src="sketch.js?v=1"></script>
 <script src="sketch-art.js?v=1" defer></script>
-<link rel="stylesheet" href="design-system/ui-kit.css?v=3">
+<link rel="stylesheet" href="design-system/ui-kit.mobile.css?v=3" media="(max-width:899px)"><link rel="stylesheet" href="design-system/ui-kit.desktop.css?v=3" media="(min-width:900px)">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<style>
-
-#sidebarDrawer{max-width:320px;box-shadow:-30px 0 70px -20px rgba(0,0,0,.5)}
-@media (max-width:860px){#sidebarDrawer{border-radius:26px 0 0 26px}}
-
+<style media="(max-width:899px)">#sidebarDrawer{max-width:320px;box-shadow:-30px 0 70px -20px rgba(0,0,0,.5)}
+@media (max-width:860px){
+#sidebarDrawer{border-radius:26px 0 0 26px}
+}
 .admin-table-wrap{overflow-x:auto;border:2px solid var(--ink);border-radius:14px;margin-top:16px}
 .admin-table{width:100%;border-collapse:collapse;font-size:12.5px;white-space:nowrap}
-.admin-table th{
-  text-align:left;padding:10px 12px;background:var(--bg-raised);
+.admin-table th{text-align:left;padding:10px 12px;background:var(--bg-raised);
   font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-dim);
-  border-bottom:2px solid var(--ink);
-}
+  border-bottom:2px solid var(--ink);}
 .admin-table td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top;white-space:normal}
 .admin-table tr:last-child td{border-bottom:none}
 .admin-table .row-actions{display:flex;gap:6px;flex-wrap:wrap}
 .admin-table .row-actions .btn{padding:7px 12px;font-size:9.5px}
-.status-pill{
-  display:inline-flex;padding:3px 10px;border-radius:999px;border:1.5px solid var(--ink);
-  font-family:var(--font-mono);font-size:9.5px;text-transform:uppercase;
-}
+.status-pill{display:inline-flex;padding:3px 10px;border-radius:999px;border:1.5px solid var(--ink);
+  font-family:var(--font-mono);font-size:9.5px;text-transform:uppercase;}
 .status-new{background:var(--accent);color:#fff;border-color:var(--accent)}
 .status-active{background:var(--success);color:#fff;border-color:var(--success)}
 .status-trial{background:var(--bg-raised);color:var(--ink-dim)}
@@ -46,16 +41,42 @@
 .renewal-overdue{color:var(--accent);font-weight:700;text-decoration:underline wavy}
 .feature-tag{display:inline-block;padding:2px 8px;margin:1px 2px 1px 0;border-radius:999px;border:1px solid var(--line);font-family:var(--font-mono);font-size:9px;color:var(--ink-dim)}
 .err{color:var(--accent);font-size:12.5px;margin-top:10px}
-.ok-box{
-  background:var(--bg-raised);border:2px solid var(--ink);border-radius:18px 8px 18px 8px;
-  padding:16px 18px;margin-top:16px;font-size:13px;line-height:1.7;
-}
+.ok-box{background:var(--bg-raised);border:2px solid var(--ink);border-radius:18px 8px 18px 8px;
+  padding:16px 18px;margin-top:16px;font-size:13px;line-height:1.7;}
 .ok-box b{word-break:break-word}
-
 .admin-nav-btn{background:none;border:none;width:100%;cursor:pointer;font-family:inherit}
 .admin-section{display:none}
 .admin-section.active{display:block}
-
+#sidebarDrawer{background:rgba(20,20,22,.78);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%)}
+.nav-link span[id^="notifBadge"]{font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,.4)}
+.nav-link.active span[id^="notifBadge"]{color:rgba(255,255,255,.7)}
+.sidebar-nav .nav-divider{border-top:1px solid rgba(255,255,255,.15);margin:14px 0 4px}
+</style><style media="(min-width:900px)">#sidebarDrawer{max-width:320px;box-shadow:-30px 0 70px -20px rgba(0,0,0,.5)}
+.admin-table-wrap{overflow-x:auto;border:2px solid var(--ink);border-radius:14px;margin-top:16px}
+.admin-table{width:100%;border-collapse:collapse;font-size:12.5px;white-space:nowrap}
+.admin-table th{text-align:left;padding:10px 12px;background:var(--bg-raised);
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-dim);
+  border-bottom:2px solid var(--ink);}
+.admin-table td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top;white-space:normal}
+.admin-table tr:last-child td{border-bottom:none}
+.admin-table .row-actions{display:flex;gap:6px;flex-wrap:wrap}
+.admin-table .row-actions .btn{padding:7px 12px;font-size:9.5px}
+.status-pill{display:inline-flex;padding:3px 10px;border-radius:999px;border:1.5px solid var(--ink);
+  font-family:var(--font-mono);font-size:9.5px;text-transform:uppercase;}
+.status-new{background:var(--accent);color:#fff;border-color:var(--accent)}
+.status-active{background:var(--success);color:#fff;border-color:var(--success)}
+.status-trial{background:var(--bg-raised);color:var(--ink-dim)}
+.status-suspended,.status-cancelled{background:var(--ink);color:#fff}
+.renewal-soon{color:var(--accent);font-weight:600}
+.renewal-overdue{color:var(--accent);font-weight:700;text-decoration:underline wavy}
+.feature-tag{display:inline-block;padding:2px 8px;margin:1px 2px 1px 0;border-radius:999px;border:1px solid var(--line);font-family:var(--font-mono);font-size:9px;color:var(--ink-dim)}
+.err{color:var(--accent);font-size:12.5px;margin-top:10px}
+.ok-box{background:var(--bg-raised);border:2px solid var(--ink);border-radius:18px 8px 18px 8px;
+  padding:16px 18px;margin-top:16px;font-size:13px;line-height:1.7;}
+.ok-box b{word-break:break-word}
+.admin-nav-btn{background:none;border:none;width:100%;cursor:pointer;font-family:inherit}
+.admin-section{display:none}
+.admin-section.active{display:block}
 #sidebarDrawer{background:rgba(20,20,22,.78);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%)}
 .nav-link span[id^="notifBadge"]{font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,.4)}
 .nav-link.active span[id^="notifBadge"]{color:rgba(255,255,255,.7)}

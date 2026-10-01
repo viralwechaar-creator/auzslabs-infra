@@ -10,51 +10,58 @@
 <link rel="icon" href="/logo.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="theme.css?v=44">
-<link rel="stylesheet" href="sketch.css?v=1">
+<link rel="stylesheet" href="theme.mobile.css?v=44" media="(max-width:899px)"><link rel="stylesheet" href="theme.desktop.css?v=44" media="(min-width:900px)">
+<link rel="stylesheet" href="sketch.mobile.css?v=1" media="(max-width:899px)"><link rel="stylesheet" href="sketch.desktop.css?v=1" media="(min-width:900px)">
 <script src="sketch.js?v=1"></script>
 <script src="sketch-art.js?v=1" defer></script>
-<link rel="stylesheet" href="design-system/ui-kit.css?v=3">
+<link rel="stylesheet" href="design-system/ui-kit.mobile.css?v=3" media="(max-width:899px)"><link rel="stylesheet" href="design-system/ui-kit.desktop.css?v=3" media="(min-width:900px)">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<style>
-.err{color:var(--accent);font-size:12.5px;margin-top:10px}
-
-.auth-combo{
-  display:flex;flex-wrap:wrap;max-width:1100px;min-height:460px;
+<style media="(max-width:899px)">.err{color:var(--accent);font-size:12.5px;margin-top:10px}
+.auth-combo{display:flex;flex-wrap:wrap;max-width:1100px;min-height:460px;
   background:#fff;border:2px solid var(--ink);border-radius:26px 12px 26px 12px;
-  box-shadow:5px 5px 0 var(--ink);overflow:hidden;
-}
-.auth-illustration{
-  
-  flex:3 1 260px;min-width:220px;position:relative;overflow:hidden;
-  background:var(--bg-raised);display:flex;align-items:center;justify-content:center;padding:40px 24px;
-}
+  box-shadow:5px 5px 0 var(--ink);overflow:hidden;}
+.auth-illustration{flex:3 1 260px;min-width:220px;position:relative;overflow:hidden;
+  background:var(--bg-raised);display:flex;align-items:center;justify-content:center;padding:40px 24px;}
 .auth-illustration-shape{position:absolute;border-radius:50%}
 .auth-illustration-shape.s1{width:240px;height:240px;background:var(--ink);opacity:.05;top:-80px;left:-70px}
-.auth-illustration-shape.s2{
-  width:180px;height:180px;background:var(--accent);opacity:.14;bottom:-60px;right:-50px;
-  animation:authBob 5.5s ease-in-out infinite;
-}
-.auth-illustration-shape.s3{
-  width:90px;height:90px;background:var(--ink);opacity:.07;bottom:30%;left:8%;
-  animation:authBob 7s ease-in-out infinite reverse;
-}
+.auth-illustration-shape.s2{width:180px;height:180px;background:var(--accent);opacity:.14;bottom:-60px;right:-50px;
+  animation:authBob 5.5s ease-in-out infinite;}
+.auth-illustration-shape.s3{width:90px;height:90px;background:var(--ink);opacity:.07;bottom:30%;left:8%;
+  animation:authBob 7s ease-in-out infinite reverse;}
 @keyframes authBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
 .auth-illustration-logo{position:relative;width:52%;max-width:220px;animation:authFloat 4.5s ease-in-out infinite}
 @keyframes authFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-.auth-form-col{
-  flex:1 1 300px;min-width:260px;max-width:420px;padding:32px 28px;
-  display:flex;flex-direction:column;justify-content:center;
-}
+.auth-form-col{flex:1 1 300px;min-width:260px;max-width:420px;padding:32px 28px;
+  display:flex;flex-direction:column;justify-content:center;}
 @media (prefers-reduced-motion:reduce){
-  .auth-illustration-shape.s2,.auth-illustration-shape.s3,.auth-illustration-logo{animation:none}
+.auth-illustration-shape.s2,.auth-illustration-shape.s3,.auth-illustration-logo{animation:none}
 }
-
 @media (min-width:861px){
-  .wrap{max-width:1180px;margin:0 auto}
+.wrap{max-width:1180px;margin:0 auto}
 }
+</style><style media="(min-width:900px)">.err{color:var(--accent);font-size:12.5px;margin-top:10px}
+.auth-combo{display:flex;flex-wrap:wrap;max-width:1100px;min-height:460px;
+  background:#fff;border:2px solid var(--ink);border-radius:26px 12px 26px 12px;
+  box-shadow:5px 5px 0 var(--ink);overflow:hidden;}
+.auth-illustration{flex:3 1 260px;min-width:220px;position:relative;overflow:hidden;
+  background:var(--bg-raised);display:flex;align-items:center;justify-content:center;padding:40px 24px;}
+.auth-illustration-shape{position:absolute;border-radius:50%}
+.auth-illustration-shape.s1{width:240px;height:240px;background:var(--ink);opacity:.05;top:-80px;left:-70px}
+.auth-illustration-shape.s2{width:180px;height:180px;background:var(--accent);opacity:.14;bottom:-60px;right:-50px;
+  animation:authBob 5.5s ease-in-out infinite;}
+.auth-illustration-shape.s3{width:90px;height:90px;background:var(--ink);opacity:.07;bottom:30%;left:8%;
+  animation:authBob 7s ease-in-out infinite reverse;}
+@keyframes authBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+.auth-illustration-logo{position:relative;width:52%;max-width:220px;animation:authFloat 4.5s ease-in-out infinite}
+@keyframes authFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.auth-form-col{flex:1 1 300px;min-width:260px;max-width:420px;padding:32px 28px;
+  display:flex;flex-direction:column;justify-content:center;}
+@media (prefers-reduced-motion:reduce){
+.auth-illustration-shape.s2,.auth-illustration-shape.s3,.auth-illustration-logo{animation:none}
+}
+.wrap{max-width:1180px;margin:0 auto}
 </style>
 </head>
 <body>

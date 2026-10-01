@@ -1,19 +1,12 @@
-/* Apple Human Interface Guidelines layer for the homepage (header to footer, sheets and cards).
-   Restyle only: system typeface and a real type scale (nothing under 12, body 17), 44pt hit targets, sentence-case labels instead of tiny
-   mono capitals, filled / tinted pill buttons, continuous large-radius cards with soft layered shadows, a translucent header, visible focus rings,
-   spring-like press feedback, reduced-motion support. Palette stays white / ink / wine. Loaded last on index.html only. */
+/* phone + tablet portrait (0-899px). Independent of the desktop file: edit freely. */
 body.fx{--hig-font:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display',Inter,system-ui,sans-serif;--hig-spring:cubic-bezier(.2,.9,.25,1.1);font-family:var(--hig-font);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 body.fx :is(.btn,.hamburger,.h2-nav a,.hx-eye,.hx-no,.footer-col-title,.footer-copy,.footer-top-btn,.sidebar-copy,.nav-link,.nav-sublink){font-family:var(--hig-font)}
 body.fx :is(h1,h2,h3){text-wrap:balance}
-
-/* ---- header: translucent bar with a hairline, 44pt controls ---- */
 html.fx-flow body.fx header.topbar,body.fx header.topbar{border-bottom:.5px solid rgba(23,23,23,.14)!important;background:rgba(246,244,241,.86);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);min-height:56px;box-sizing:border-box;padding-top:max(8px,env(safe-area-inset-top));padding-bottom:8px}
 body.fx .topbar-logo img{max-width:78px}
 body.fx .hamburger{min-height:44px;padding:0 18px;border:0;background:rgba(23,23,23,.07);font-size:15px;font-weight:600;letter-spacing:0;text-transform:none;transition:background .25s var(--hig-spring),transform .25s var(--hig-spring)}
 body.fx .hamburger:hover,body.fx .hamburger.is-open{background:var(--ink);color:#fff}
 body.fx .hamburger:active{transform:scale(.96)}
-
-/* ---- buttons: filled (primary) and tinted (secondary), 17pt semibold, 50pt tall ---- */
 body.fx .btn{min-height:50px;padding:0 26px;justify-content:center;font-size:17px;font-weight:600;letter-spacing:-.01em;text-transform:none;border:0;background:rgba(23,23,23,.07);color:var(--ink);transition:background .25s var(--hig-spring),transform .25s var(--hig-spring),box-shadow .25s ease}
 body.fx .btn:hover{background:rgba(23,23,23,.12);color:var(--ink);transform:none}
 body.fx .btn:active{transform:scale(.97)}
@@ -23,16 +16,12 @@ body.fx .topbar .btn{min-height:44px;padding:0 18px;font-size:15px}
 body.fx .hx .btn-ghost,body.fx .hx .btn-ghost:hover{background:rgba(246,244,241,.14);color:#f6f4f1;border:0}
 body.fx .hx .btn-ghost:hover{background:rgba(246,244,241,.24)}
 body.fx .hx .btn-primary{background:var(--wine-hi)}
-
-/* ---- drawer ---- */
 body.fx .nav-link{font-size:22px;font-weight:600;letter-spacing:-.02em;min-height:48px}
 body.fx .nav-sublink{font-size:17px;min-height:44px;display:flex;align-items:center}
 body.fx .nav-group-count{font-family:var(--hig-font)}
 body.fx .drawer-close{min-height:44px;font-family:var(--hig-font);font-size:15px;font-weight:600;text-transform:none;letter-spacing:0}
 body.fx .drawer-icon-link{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
 body.fx .sidebar-copy{font-size:13px;letter-spacing:0}
-
-/* ---- footer ---- */
 body.fx .footer-dark{border-radius:28px 28px 0 0}
 body.fx .footer-col-title{font-size:13px;font-weight:600;letter-spacing:0;text-transform:none;color:rgba(255,255,255,.55)}
 body.fx .footer-col{gap:0}
@@ -44,25 +33,20 @@ body.fx .footer-contact-inline a,body.fx .footer-copy,body.fx .footer-top-btn{fo
 body.fx .footer-top-btn{border:0;background:rgba(255,255,255,.12);font-size:15px;font-weight:600}
 body.fx .knock-btn{font-family:var(--hig-font);font-size:15px;font-weight:600;letter-spacing:0;text-transform:none;border:0;box-shadow:0 10px 24px -8px rgba(128,0,32,.55);min-height:48px}
 body.fx .knock-btn:hover{transform:none;box-shadow:0 12px 28px -8px rgba(128,0,32,.6)}
-
-/* ---- focus + motion ---- */
 body.fx :is(a,button,input,select,textarea,[tabindex]):focus-visible{outline:3px solid rgba(194,24,63,.55);outline-offset:3px;border-radius:12px}
-@media (prefers-reduced-motion:reduce){body.fx *{transition-duration:.01ms!important;animation-duration:.01ms!important}}
-
+@media (prefers-reduced-motion:reduce){
+body.fx *{transition-duration:.01ms!important;animation-duration:.01ms!important}
+}
 body.fx header.topbar .btn{padding:0 18px!important;font-size:15px!important;border:0!important}
 body.fx header.topbar .btn-ghost{background:rgba(23,23,23,.07)}
 body.fx .btn::before,body.fx .btn::after{display:none!important}
 html.fx-flow body.fx header.topbar{background:rgba(246,244,241,.86)}
-/* ---- Knock button: a small round button on phones so it never covers text ---- */
 @media (max-width:700px){
- body.fx .knock-btn{font-size:0;gap:0;width:52px;height:52px;min-height:52px;padding:0;justify-content:center;right:14px;bottom:calc(14px + env(safe-area-inset-bottom))}
- body.fx .knock-btn svg{width:22px;height:22px}
+body.fx .knock-btn{font-size:0;gap:0;width:52px;height:52px;min-height:52px;padding:0;justify-content:center;right:14px;bottom:calc(14px + env(safe-area-inset-bottom))}
+body.fx .knock-btn svg{width:22px;height:22px}
 }
-
-/* ================= subpages: folder-cut sheets, calm type, soft cards ================= */
 html.fx-stacked{--cut:38px;--ch:20px;--sl:calc(var(--cut) * .9);--sheet-a:#f6f4f1;--sheet-b:#ebe6e1;--wine:#800020}
 body.fx{background:#f6f4f1}
-/* sheets: each panel is a folder-cut sheet laid over the previous one (not sticky: pinned stacks shake on iPhone) */
 html.fx-stacked body.fx .stack{position:relative}
 html.fx-stacked body.fx .fx-panel{position:relative!important;border:0!important;border-radius:0!important;box-shadow:none!important;min-height:0!important;
  margin-top:calc((var(--cut) + var(--ch)) * -1)!important;padding:calc(var(--cut) + var(--ch) + 36px) 0 calc(var(--cut) + var(--ch) + 28px)!important;
@@ -73,21 +57,17 @@ html.fx-stacked body.fx .fx-panel:nth-of-type(even){background:var(--sheet-b)}
 html.fx-stacked body.fx .fx-panel:nth-of-type(3n){--nx:62%}
 html.fx-stacked body.fx .fx-panel:nth-of-type(3n+2){--nx:22%}
 html.fx-stacked body.fx .fx-panel::before{display:none!important}
-/* closing call to action: wine sheet, white type */
 html.fx-stacked body.fx .fx-panel.stack-panel-dark{background:var(--wine)!important;color:#fff}
 html.fx-stacked body.fx .fx-panel.stack-panel-dark :is(h1,h2,h3,.fx-h2,.eye,p,a:not(.btn)){color:#fff!important}
 html.fx-stacked body.fx .fx-panel.stack-panel-dark .eye{opacity:.8}
 html.fx-stacked body.fx .fx-panel.stack-panel-dark .btn-primary{background:#fff!important;color:var(--wine)!important}
 html.fx-stacked body.fx .fx-panel.stack-panel-dark .btn-ghost{background:rgba(255,255,255,.16)!important;color:#fff!important}
-/* footer sheet: ink, with the CONNECT word fully visible under its cut */
 html.fx-stacked body.fx .stack-panel-dark:not(.fx-panel){position:relative!important;margin-top:calc((var(--cut) + var(--ch)) * -1)!important;padding-top:calc(var(--cut) + var(--ch) + 18px)!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#171717;--nx:62%;
  clip-path:polygon(0 calc(var(--cut) + var(--ch)),var(--ch) var(--cut),calc(var(--nx) - var(--sl)) var(--cut),var(--nx) 0,calc(100% - var(--ch)) 0,100% var(--ch),100% 100%,0 100%)}
 html.fx-stacked body.fx .stack-panel-dark:not(.fx-panel)::before{display:block!important;position:static!important;transform:none!important;margin:0 0 12px 5vw;font:600 clamp(40px,11vw,84px)/1 var(--hig-font);letter-spacing:-.04em;text-transform:none;color:#fff}
 html.fx-stacked body.fx .stack-panel-dark:not(.fx-panel) .footer-dark{margin-top:0;border-radius:0;padding-top:8px}
 html.fx-stacked body.fx .stack{margin-bottom:0}
 html.fx-stacked body.fx .stack+.stack{margin-top:0}
-
-/* ---- type: sentence case, medium weight, modest size; no outlines, no giant numerals ---- */
 body.fx.pg :is(h1,h2,h3,.giant,.giant *,.nm,.fx-h2,.big-end),body.fx.products :is(h1,h2,h3,.giant,.giant *,.nm,.fx-h2,.big-end){font-weight:600!important;text-transform:none!important;letter-spacing:-.03em!important;-webkit-text-stroke:0!important;line-height:1.1}
 body.fx :is(h1,.giant){font-size:clamp(28px,7.6vw,46px)!important}
 body.fx :is(h2,.fx-h2,.nm,.big-end){font-size:clamp(24px,6.4vw,36px)!important}
@@ -99,22 +79,16 @@ body.fx .hand,body.fx .band,body.fx .tape,body.fx .k.gst,body.fx .q{display:none
 body.fx main p,body.fx main li{font-size:16px;line-height:1.5;letter-spacing:-.01em}
 body.fx :is(.no,b.n,span.no){font-size:22px!important;font-weight:600!important;-webkit-text-stroke:0!important;color:#9a948f!important}
 body.fx .crumbs,body.fx .crumb,body.fx nav.bc{font-family:var(--hig-font)!important;font-size:14px!important;letter-spacing:0!important;text-transform:none!important}
-
-/* ---- cards: soft, rounded, one gentle shadow (JS adds .hig-soft to anything that had a hard offset shadow or thick border) ---- */
 body.fx .hig-soft{border:0!important;border-radius:24px!important;box-shadow:0 1px 2px rgba(0,0,0,.06),0 18px 36px -24px rgba(0,0,0,.35)!important;transform:none!important}
 body.fx .hig-soft :is(h3,h4){font-weight:600!important}
 body.fx .hig-nostroke{-webkit-text-stroke:0!important;color:var(--wine)!important;font-weight:600!important}
 body.fx :is(.pcard,.tag,.pill,.chip){font-family:var(--hig-font)!important;letter-spacing:0!important;text-transform:none!important}
-
-/* ---- second pass ---- */
 html body.fx .k.hand,html body.fx .hand{display:inline!important;font-family:var(--hig-font)!important;font-style:normal!important;font-weight:600!important;font-size:inherit!important;color:var(--wine)!important;transform:none!important}
 html body.fx .k.note,html body.fx .note.nc{display:none!important}
 body.fx :is(.stamp,.tg,.tag,.badge,.kick,.kicker){font-family:var(--hig-font)!important;font-size:13px!important;font-weight:600!important;letter-spacing:0!important;text-transform:none!important;border:0!important;background:rgba(128,0,32,.09)!important;color:var(--wine)!important;border-radius:99px!important;padding:4px 12px!important;transform:none!important;box-shadow:none!important}
 body.fx .uk-breadcrumb,body.fx .uk-breadcrumb *{font-family:var(--hig-font)!important;letter-spacing:0!important;text-transform:none!important;font-size:14px!important}
 body.fx .btn{font-weight:500}
 body.fx .lede2,body.fx .lede{font-size:17px!important;line-height:1.45!important;color:#5b5754}
-
-/* ---- third pass: no letter-by-letter rise (clipped headings mid-animation); calm static type ---- */
 body.fx [data-split] .fx-c{transform:none!important;opacity:1!important;transition:none!important}
 body.fx [data-split] .fx-w{overflow:visible!important;padding:0!important;margin:0!important}
 body.fx main *:not(svg):not(svg *):not(code):not(.mono):not(.cred):not(.cred *){font-family:var(--hig-font)}
