@@ -40,19 +40,63 @@
       g.items.forEach(function (e) { p.appendChild(e); }); stack.appendChild(p); return p;
     });
     main.insertBefore(stack, main.firstChild);
+    var vw0 = 0;
     function layout() {
-      var vw = window.innerWidth, vhh = window.innerHeight, base = vw >= 861 ? 150 : 112, step = Math.min(55, Math.max(24, vw * .068));
+      var vw = window.innerWidth; if (vw === vw0) return; vw0 = vw;   // width only: the phone toolbar growing/shrinking must never move a sticky panel
+      var base = vw >= 861 ? 150 : 112, step = Math.min(55, Math.max(24, vw * .068));
       panels.forEach(function (p, i) {
-        var want = i === 0 ? 0 : base + Math.min(i - 1, 2) * step;
-        var t = Math.round(Math.min(want, vhh - p.offsetHeight)) + 'px';
-        if (p.style.top !== t) p.style.top = t;
-        if (p.style.zIndex !== String(i + 1)) p.style.zIndex = i + 1;
+        var top = (i === 0 ? 0 : base + Math.min(i - 1, 2) * step); p.style.top = top + 'px'; p.style.zIndex = i + 1;
+        var mh = p.style.minHeight; p.style.minHeight = '0'; var nat = p.offsetHeight; p.style.minHeight = mh;
+        p.style.position = nat > window.innerHeight - top + 170 ? 'relative' : '';   // too tall to pin: let it scroll through, the next panel still covers it
       });
     }
-    layout(); requestAnimationFrame(layout);
-    window.addEventListener('load', layout); var rt; window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(layout, 120); });
-    if (doc.fonts && doc.fonts.ready) doc.fonts.ready.then(layout);
-    if ('ResizeObserver' in window) { var rq = 0, ro = new ResizeObserver(function () { cancelAnimationFrame(rq); rq = requestAnimationFrame(layout); }); panels.forEach(function (p) { ro.observe(p); }); }
+    /* a panel taller than a screen would never "pause": split it into several panels, each about a screen, so every one stops and gets covered */
+    function split(p) {
+      var vhh = window.innerHeight, out = [p]; if (p.offsetHeight <= vhh * 1.04 || p.classList.contains('stack-panel-dark')) return out;
+      var path = [p], container = p, kids;
+      function vis(node) { return [].filter.call(node.children, function (c) { var cs = getComputedStyle(c); return cs.position !== 'absolute' && cs.display !== 'none' && c.offsetHeight > 0 && !/^(SCRIPT|STYLE)$/.test(c.tagName); }); }
+      for (;;) { kids = vis(container); if (kids.length !== 1) break; container = kids[0]; path.push(container); }
+      if (kids.length < 2) return out;
+      var vwn = window.innerWidth, budget = Math.max(260, vhh - (vwn >= 861 ? 150 + 2 * Math.min(55, vwn * .068) : 112 + 2 * Math.min(55, vwn * .068)) - (vwn >= 861 ? 92 : 76) - 36);
+      for (var pass = 0; pass < 3; pass++) {   // a child that alone is taller than a screen is replaced by its own children
+        var next = [], grew = false;
+        kids.forEach(function (k) { var ch = k.offsetHeight > budget ? vis(k) : []; if (ch.length > 1) { next = next.concat(ch); grew = true; } else next.push(k); });
+        kids = next; if (!grew) break;
+      }
+      var chunks = [[]], startTop = null, prevBottom = null;
+      kids.forEach(function (k) {
+        var r = k.getBoundingClientRect(), top = r.top + window.scrollY, bottom = r.bottom + window.scrollY;
+        if (startTop === null) startTop = top;
+        if (bottom - startTop > budget && chunks[chunks.length - 1].length && top >= prevBottom - 8) { chunks.push([]); startTop = top; }
+        chunks[chunks.length - 1].push(k); prevBottom = Math.max(prevBottom === null ? 0 : prevBottom, bottom);
+      });
+      if (chunks.length < 2) return out;
+      var c0 = chunks[0], c0h = c0.length ? (c0[c0.length - 1].getBoundingClientRect().bottom - c0[0].getBoundingClientRect().top) : 0;
+      if (c0h < budget * .45) p.classList.add('fx-compact');
+      var parent = p.parentNode, ref = p.nextSibling;
+      chunks.slice(1).forEach(function (chunk) {
+        var clone = null, cur = null, cache = new Map();
+        path.forEach(function (n, i) { var c = n.cloneNode(false); c.removeAttribute('id'); if (i === 0) clone = c; else cur.appendChild(c); cur = c; });
+        function target(par) { if (par === container) return cur; var c = cache.get(par); if (!c) { c = par.cloneNode(false); c.removeAttribute('id'); target(par.parentNode).appendChild(c); cache.set(par, c); } return c; }
+        clone.classList.add('fx-cont'); chunk.forEach(function (k) { target(k.parentNode).appendChild(k); });
+        parent.insertBefore(clone, ref); out.push(clone);
+      });
+      return out;
+    }
+    function resplit() {
+      for (var it = 0; it < 4; it++) {
+        var all = []; panels.forEach(function (p, i) { all = all.concat(i === 0 ? [p] : split(p)); });
+        var grew = all.length !== panels.length; panels = all; if (!grew) break;
+      }
+      panels.forEach(function (p, i) { p.classList.toggle('alt', i % 2 === 1 && !p.classList.contains('stack-panel-dark')); });
+      vw0 = 0; layout();
+    }
+    layout();
+    var did = false; function once() { if (did) return; did = true; setTimeout(resplit, 120); }
+    if (doc.readyState === 'complete') once(); else window.addEventListener('load', once);
+    window.addEventListener('load', function () { setTimeout(function () { vw0 = 0; layout(); }, 900); });
+    if (doc.fonts && doc.fonts.ready) doc.fonts.ready.then(function () { if (did) return; });
+    var rt; window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(layout, 150); });
     doc.documentElement.classList.add('fx-stacked');
   }
   if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', boot); else boot();

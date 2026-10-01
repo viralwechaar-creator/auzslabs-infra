@@ -307,3 +307,26 @@ html.fx-flow .fx .topbar::before,html.fx-flow .fx .topbar::after{display:none}
 /* ---------- stack: panels fill a screen and stop mid-way like the original; no JS-driven shifting unless a panel is taller than the screen ---------- */
 .fx-panel{min-height:92svh}
 .fx-panel:first-of-type{min-height:100svh}
+
+/* ---------- huge pixel logo at the bottom of the homepage hero (replaces the plain-text wordmark) ---------- */
+.h2-word{display:block;font-size:0;line-height:0;margin:0 0 0 auto;padding:6px 0 0;text-align:right;width:100%}
+.h2-word img{display:block;width:100%;height:auto;margin-left:auto;image-rendering:pixelated;image-rendering:crisp-edges}
+@media (min-width:900px){
+  .hero2{padding-bottom:10px}
+  .h2-img{aspect-ratio:1/.62}
+  .h2-list{flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:4px 16px}.h2-list b{margin:0 4px 0 0}
+  .h2-word{width:max(60vw,min(100%,calc((100svh - 450px)*2.75)))}
+}
+
+/* ---------- calmer scroll: blocks only fade/rise a little (no sideways flying or rotating inside sticky panels), panels get their own layer ---------- */
+html.fx-flow-ready .fx-stage .k,html.fx-flow-ready .hs-i{--fx0:0px!important;--fr:0deg!important;transform:translate3d(0,14px,0)}
+html.fx-flow-ready .fx-stage .k.in,html.fx-flow-ready .hs-i.in{transform:none}
+.fx-panel{-webkit-backface-visibility:hidden;backface-visibility:hidden}
+.fx-cont{margin-top:0}
+.fx-panel.fx-compact{min-height:0!important;padding-bottom:36px}
+
+/* ---------- compact artwork so every stacked panel fits a screen and can pause ---------- */
+html.fx-flow svg.fx-art.a-big,html.fx-flow .slab svg.fx-art{width:min(100%,440px)!important;height:auto!important;max-height:38vh!important;margin-left:auto!important;margin-right:auto!important}
+@media (min-width:1100px){html:not(.fx-live) .hp-rooms{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:2vh 2vw}html:not(.fx-live) .hp-rooms .room .fx-art{max-height:150px;width:auto;margin:0 auto}}
+@media (min-width:900px) and (max-width:1099px){html:not(.fx-live) .hp-rooms{grid-template-columns:repeat(3,minmax(0,1fr))!important}html:not(.fx-live) .hp-rooms .room .fx-art{max-height:130px;width:auto}}
+html.fx-flow .slab{min-height:0!important;height:auto!important}

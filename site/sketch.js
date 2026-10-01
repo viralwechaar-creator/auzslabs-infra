@@ -111,7 +111,8 @@
   /* ---------- loader: once per browser session, never on repeat page views ---------- */
   var seen = false;
   try { seen = !!sessionStorage.getItem('sk_loaded'); } catch (e) {}
-  if (!seen && !reduce) {
+  var SHOW_INTRO = false; // the cube intro was retired: the page just opens
+  if (SHOW_INTRO && !seen && !reduce) {
     root.classList.add('sk-loading');
     var L = document.createElement('div');
     L.className = 'sk-loader'; L.setAttribute('role', 'status'); L.setAttribute('aria-label', 'Loading');

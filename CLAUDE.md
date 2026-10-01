@@ -655,7 +655,9 @@ cursor trail), `fx-phys.js` (draggable bubbles), `fx-ui.js` (pricing stack build
   On phones: no `mix-blend-mode`, no SVG filters, no fixed full-screen overlays (they cost frames on iOS). The fx suite scrolls
   every page at phone/tablet/desktop and checks overlapping text blocks (ignoring `.stack-panel`; scroll with `behavior:'instant'`
   because theme.css sets smooth scrolling).
-- **Intro blast:** `sketch.js` flies particles to elements marked `[data-blast]` (falls back to headings/buttons).
+- **Intro retired:** the cube loader/blast no longer runs (`SHOW_INTRO = false` in `sketch.js`); the page just opens. The homepage hero ends in the big pixel `logo.png` (`.h2-word`).
+- **Panels are split to fit a screen:** `fx-stack.js` splits any panel taller than a screen into continuation panels (`.fx-cont`; short first parts get `.fx-compact`) so each one pins, pauses and gets covered. `top` is only recomputed on width changes (phone toolbar resizes must not move sticky panels); a panel that still can't fit is left `position:relative` so it scrolls through. Reveal animations are fade + 14px rise only (sideways/rotating blocks inside sticky panels made scrolling shaky on iOS).
+- **Intro blast (old):** `sketch.js` flies particles to elements marked `[data-blast]` (falls back to headings/buttons).
 
 ## Staff apps: Apple HIG layer (`app/public/hig.css`)
 
