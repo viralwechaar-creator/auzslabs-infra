@@ -119,6 +119,7 @@ html.fx-flow-ready .fx-stage .k.in .fx-c,html.fx-flow-ready [data-split].in .fx-
 .fx .sidebar:not(.open){box-shadow:none}
 
 /* ---------- products page on phones ---------- */
+@media (max-width:899px){
 html.fx-flow .lab{min-height:0;height:78svh;padding-top:0}
 html.fx-flow .lab-h{position:relative;left:auto;top:auto;padding:84px 5vw 0}
 html.fx-flow .lab-h .giant{font-size:12.6vw}html.fx-flow .lab-h .lh2{margin-left:26vw;font-size:8vw}html.fx-flow .lab-h .lh3{margin-left:6vw}
@@ -129,6 +130,7 @@ html.fx-flow .lab-hint{top:auto;bottom:1.6vh;left:5vw;font-size:22px}
 html.fx-flow .s-pos .nm{margin-bottom:2vh}html.fx-flow .s-pos .blk{margin-top:0}
 html.fx-flow .slab{min-height:0!important}
 html.fx-flow .slab>.eye,html.fx-flow .slab .blk .eye{margin-bottom:1.6vh}
+}
 
 html:not(.fx-live) .k.lede2{display:block!important}
 
@@ -136,3 +138,83 @@ html:not(.fx-live) .k.lede2{display:block!important}
 html:not(.fx-live) .hero-h1{flex:1 1 100%;display:flex;flex-direction:column;gap:.5vh;margin:0}
 html:not(.fx-live) .hero-h1 .k.giant{line-height:1.02;flex:none;white-space:normal}
 html:not(.fx-live) .hero-h1 .k.hand,html:not(.fx-live) .hh .k.hand{margin:0 0 0 14vw;line-height:1.1}
+
+/* ================= stacked panels (fx-stack.js) ================= */
+.fx-stack{margin-top:0;position:relative}
+.fx-panel{min-height:64svh;padding:84px 0 56px;background-color:var(--bg)}
+.fx-panel.alt{background-color:#efecea}
+.fx-panel:not(:first-of-type){padding-top:150px}
+.fx-panel:first-of-type{border-radius:0;border-top:0;padding-top:0;min-height:100svh}
+.fx-panel .fx-stage{padding-top:0}
+.fx-panel:first-of-type .fx-stage{padding-top:96px}
+.fx-panel.stack-panel-dark{background:#0e0d0c;top:auto;padding-top:150px;min-height:0}
+.fx-panel.stack-panel-dark::before{color:#fff}
+.fx-panel .closer{background:transparent;padding-top:0}
+.fx-panel .slab:first-child{padding-top:30px}
+.fx-panel>.band{margin:5vh -3vw 0}
+.fx-panel .ph{flex:1 1 100%}
+.fx-panel .fx-h2.ph{max-width:12em}
+@media (max-width:899px){.fx-panel{padding-bottom:40px}.fx-panel:not(:first-of-type){padding-top:132px}}
+
+/* label style (home does not load fx-pages.css) */
+.fx .eye{font:500 clamp(10px,.85vw,13px)/1 var(--font-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:10px}
+.fx .eye::before{content:"";width:28px;height:2px;background:var(--accent)}
+
+/* ================= desktop proportions for the flowing layout ================= */
+@media (min-width:900px){
+  html:not(.fx-live) .fx-stage{max-width:1240px;margin-inline:auto;padding-left:4vw;padding-right:4vw;column-gap:3vw;row-gap:4vh}
+  html:not(.fx-live) .fx-panel:first-of-type .fx-stage{padding-top:104px}
+  html:not(.fx-live) #story .hw,html:not(.fx-live) #story .hw-out,html:not(.fx-live) #story .hw-mid,html:not(.fx-live) #story .hw-big{font-size:min(7.2vw,104px)}
+  html:not(.fx-live) #story .hw-hand{font-size:min(4vw,56px)}
+  html:not(.fx-live) .hero-h1 .k.hand{margin-left:4vw}
+  html:not(.fx-live) .hero-h1 .k.giant{font-size:min(9vw,130px)}
+  html.fx-flow .lab-h .giant{font-size:min(11.5vw,200px)}
+  html:not(.fx-live) .hp-hero .heroctl{flex:1 1 100%}
+  html:not(.fx-live) .cubebox{--cs:min(46vw,520px);margin:2vh 0 0;align-self:flex-start}
+  html:not(.fx-live) .hp-hero .note{flex:0 0 auto;align-self:flex-end;margin-bottom:6vh}
+  html:not(.fx-live) .hp-work .fx-stage{flex-direction:column;align-items:flex-start;gap:0}
+  html:not(.fx-live) .hww{font-size:min(8.4vw,124px)!important;line-height:1;margin-top:4vh}
+  html:not(.fx-live) .hww-copy{font-size:clamp(20px,2vw,30px);max-width:24em;margin:0 0 2vh 4vw}
+  html:not(.fx-live) .hp-work .hww:nth-of-type(odd){align-self:flex-start}
+  html:not(.fx-live) .hp-prod .hp-rooms,html:not(.fx-live) .hp-prod .fx-cam{display:grid;grid-template-columns:1fr 1fr;gap:9vh 5vw}
+  html:not(.fx-live) .hp-prod .room:nth-child(even){margin-top:8vh}
+  html:not(.fx-live) .room .nm{font-size:min(9vw,130px)}
+  html:not(.fx-live) .room p{font-size:clamp(15px,1.3vw,20px)}
+  html:not(.fx-live) .room svg.art{width:min(18vw,240px)!important}
+  html:not(.fx-live) .hp-doors .fx-stage{align-items:stretch}
+  html:not(.fx-live) .hp-doors .note{flex:1 1 100%}
+  html:not(.fx-live) .doorway{flex:1 1 22%;width:auto!important;max-width:none;min-height:260px}
+  html:not(.fx-live) .doorway:nth-of-type(even){margin-left:0;margin-top:6vh}
+  html:not(.fx-live) .portal-h{font-size:min(9vw,140px)}
+  html:not(.fx-live) .portal-p{font-size:clamp(16px,1.4vw,22px);max-width:34em}
+  html:not(.fx-live) .fx-stage>svg.fx-art,html:not(.fx-live) .fx-stage>svg.k{flex:0 0 min(30vw,380px);width:min(30vw,380px)!important;margin-inline:0}
+  html:not(.fx-live) .fx-stage>svg.fx-art:nth-of-type(even){margin-left:auto}
+  html:not(.fx-live) .strip,html:not(.fx-live) .longrec{width:min(34vw,380px)!important}
+  html:not(.fx-live) .k.lede2{font-size:clamp(16px,1.35vw,21px)}
+  html:not(.fx-live) .k.note{font-size:clamp(28px,3vw,48px)}
+  html:not(.fx-live) .hh .k.giant{max-width:100%}
+  html:not(.fx-live) .fx-stage>.hh{margin-top:1vh}
+  html:not(.fx-live) .crate{flex:0 0 14vw;width:14vw!important}
+  html:not(.fx-live) .clock{width:min(26vw,340px)!important}
+  html:not(.fx-live) .phonebox{width:min(20vw,260px)!important}
+  html:not(.fx-live) .stack3d{width:min(24vw,320px)!important;height:min(24vw,320px)!important}
+  html:not(.fx-live) .coin{flex:0 0 12vw;width:12vw!important;font-size:5vw}
+  html:not(.fx-live) .wb{width:min(56vw,640px)!important;flex:0 0 auto;margin-left:auto}
+  html:not(.fx-live) .rail{width:min(60vw,800px)!important}
+  html:not(.fx-live) .matrix{width:min(40vw,520px)!important}
+  html:not(.fx-live) .chart,html:not(.fx-live) .roadsvg{width:min(60vw,720px)!important;flex:0 0 auto;margin-left:auto}
+  html:not(.fx-live) .seg{flex:1 1 20%}
+}
+
+/* widgets keep their own width (the generic "every actor is a full row" rule must not stretch them) */
+html:not(.fx-live) .fx-stage :is(.strip,.longrec,.kot,.phonebox,.clock,.slip,.stack3d,.plane,.phone3d,.mirror,.rtape,.alarm){flex:0 0 auto!important}
+html:not(.fx-live) .fx-stage :is(.crate){flex:0 0 28vw!important}
+html:not(.fx-live) .fx-stage :is(.coin){flex:0 0 26vw!important}
+@media (min-width:900px){
+  html:not(.fx-live) .fx-stage .doorway{flex:1 1 20%!important;width:auto!important;margin-left:0;max-width:none;min-height:280px}
+  html:not(.fx-live) .fx-stage .doorway:nth-of-type(even){margin-top:5vh}
+  html:not(.fx-live) .fx-stage :is(.crate){flex:0 0 14vw!important}
+  html:not(.fx-live) .fx-stage :is(.coin){flex:0 0 12vw!important}
+  html:not(.fx-live) .fx-stage .seg{flex:1 1 20%!important}
+  .fx-panel:not(:first-of-type){padding-top:132px}
+}

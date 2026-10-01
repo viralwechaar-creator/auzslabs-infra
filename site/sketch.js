@@ -7,7 +7,7 @@
   var fine = window.matchMedia && matchMedia('(hover: hover) and (pointer: fine)').matches;
   // desktop: pinned scroll scenes (fx-live). phones/tablets: a lighter flowing layout with scroll-in animation (fx-flow, fx-flow.css).
   // Neither class (reduced motion / no JS) = plain readable pages.
-  var FLOW_MAX = 900; // phones and portrait tablets
+  var FLOW_MAX = 99999; // the pinned 3D scroll scenes are retired: every screen gets the flowing layout (fx-flow) inside stacked panels
   var flow = !reduce && innerWidth < FLOW_MAX;
   if (!reduce) root.classList.add(flow ? 'fx-flow' : 'fx-live');
   if (!reduce) addEventListener('resize', (function () { var h; return function () { clearTimeout(h); h = setTimeout(function () { if ((innerWidth < FLOW_MAX) !== flow) location.reload(); }, 400); }; })());
