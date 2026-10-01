@@ -621,6 +621,29 @@ bookings/invoices as individual rows, so a save no longer rewrites the whole
   `docker compose up -d --build api`. Static `site/` and `app/public/` changes
   need no restart.
 
+## Marketing site: FX scroll worlds (fx-worlds)
+
+The marketing pages (everything in `site/` except the account tools) are scroll-driven scenes, not stacks of cards.
+Plain static files, no library: `fx.css` (layout + type), `fx.js` (engine), `fx-canvas.js` (pencil-particle field +
+cursor trail), `fx-phys.js` (draggable bubbles), `fx-ui.js` (pricing stack builder), `fx-art.js` (drawing library),
+`fx-pages.css` (per-page scene styling). `sketch.js` still owns the intro loader and sets `html.fx-live`.
+
+- **A scene** is `<div class="fx-scene" data-scene style="--len:6">` (6 screens tall) with a sticky `.fx-stage`
+  inside. Children with class `k` are actors: `data-k="p:prop value,...; p:..."` keyframes against scene progress
+  0..1 (props `x y` in vw/vh, `z`, `r rx ry`, `s sx sy`, `o`; any other name becomes a CSS variable `--name`, which is how
+  drawings scrub `--d` and charts grow `--gy`). `data-km` overrides on phones. A prop not yet mentioned holds its default
+  (0, or 1 for `o`/`s`), then holds its last value.
+- **Gotchas that cost time:** page rules that position an actor must beat `html.fx-live .k` (prefix with `html`, e.g.
+  `html .pd-pos .l1`); actors left/right-anchored need `translate:0 -50%` (the base `.k` centres itself); `sy`/`sx` are
+  transform props, so use a different name (`gy`) when you want a CSS variable; world items are selected by
+  `[data-xyz]`, not by class (the drawing library already uses `.f`); the camera layers must stay `pointer-events:none`
+  or they swallow clicks on the hero buttons; the floating header (z 40) must stay below the menu drawer (z 44).
+- **Pages** are generated from the original copy: every page's real text, links, cart buttons (`data-add`/`data-product`)
+  and demo credentials are kept; only the layout changed. Account/admin/cart/signup/terms/privacy keep the plain layout.
+- **Fallbacks:** with `prefers-reduced-motion` (or no JS) `html.fx-live` is absent and each stage is a normal column of
+  the same content; `tests/suites/local/fx.mjs` checks this and scrolls every page end to end.
+- **Intro blast:** `sketch.js` flies particles to elements marked `[data-blast]` (falls back to headings/buttons).
+
 ## Non-technical owner, deploy over SSH from a phone
 
 The person operating this project deploys by pasting commands into

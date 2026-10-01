@@ -2,7 +2,8 @@
    Everything scene-related is gated on html.fx-live so a page without JS / with reduced motion is a plain document. */
 :root{--hl:#ffd93b;--blue:#2747ff;--ease-out:cubic-bezier(.22,1,.36,1);--ease-io:cubic-bezier(.65,0,.35,1)}
 body.fx{--paper:#f4eee2;--hand:'Caveat','Bradley Hand','Segoe Script',cursive;background:#f4eee2}
-.fx .content{margin:0;position:relative;z-index:2}
+.fx .content{margin:0;position:relative;z-index:2;overflow-x:clip}
+html:has(body.fx),body.fx{overflow-x:clip}
 .fx .wrap{max-width:none;padding:0}
 .fx .stack-panel .wrap,.fx .footer-dark .wrap{padding:0 5vw}
 .fx .stack-panel-dark{padding-top:140px}
@@ -16,6 +17,9 @@ body.fx{--paper:#f4eee2;--hand:'Caveat','Bradley Hand','Segoe Script',cursive;ba
 .fx .hamburger:hover,.fx .hamburger.is-open{background:#fff;color:#000}
 .fx .topbar .btn-ghost{color:#fff;border-color:transparent}
 .fx .topbar .btn::before{border-color:#fff}
+/* the slide-in menu (and its dim layer) must sit above the floating header, or its own Close button is unreachable */
+.fx .drawer-overlay{z-index:43}
+.fx .sidebar{z-index:44}
 @media (min-width:861px){
   .fx .shell{flex-direction:column}
   .fx .topbar{display:flex}
@@ -49,9 +53,9 @@ html:not(.fx-live) .k{position:static}
 html:not(.fx-live) .fx-field,html:not(.fx-live) .fx-trail,html:not(.fx-live) .fx-only-live{display:none!important}
 html.fx-live .fx-only-static{display:none!important}
 
-.fx-world{position:absolute;inset:0;perspective:900px;perspective-origin:50% 50%}
-.fx-cam{position:absolute;inset:0;transform-style:preserve-3d}
-.fx-cam [data-xyz]{position:absolute;left:50%;top:50%;translate:-50% -50%;backface-visibility:hidden;visibility:hidden}
+.fx-world{position:absolute;inset:0;perspective:900px;perspective-origin:50% 50%;pointer-events:none}
+.fx-cam{position:absolute;inset:0;transform-style:preserve-3d;pointer-events:none}
+.fx-cam [data-xyz]{pointer-events:auto;position:absolute;left:50%;top:50%;translate:-50% -50%;backface-visibility:hidden;visibility:hidden}
 .fx-field{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:block}
 .fx-trail{position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:45;pointer-events:none}
 .fx-track{display:flex;align-items:center;height:100%;width:max-content;will-change:transform}
