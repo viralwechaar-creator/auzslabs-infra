@@ -338,3 +338,19 @@ html.fx-stacked .fx-panel:first-of-type{margin-top:0}
 .fx .stack .stack-panel-dark:not(.fx-panel){position:relative!important;top:auto!important;margin-top:-26px}
 .fx-panel{-webkit-backface-visibility:visible;backface-visibility:visible}
 .fx .stack .stack-panel-dark:not(.fx-panel){margin-top:-28px!important;z-index:4;position:relative!important}
+
+/* ---------- depth + colour for the layered panels (every page except the homepage) ---------- */
+html:has(body.fx){scroll-behavior:auto}
+html.fx-stacked .fx-panel{background-image:none!important;box-shadow:0 -26px 60px -26px rgba(0,0,0,.42)}
+html.fx-stacked .fx-panel:nth-of-type(3n+1){background-color:#f6f4f1}
+html.fx-stacked .fx-panel:nth-of-type(3n+2){background-color:#ece7e4}
+html.fx-stacked .fx-panel:nth-of-type(3n+3){background-color:#f1e4e6}   /* wine tint */
+html.fx-stacked .fx-panel:first-of-type{background-color:#fbfaf9;box-shadow:none}
+html.fx-stacked .fx-panel.alt{background-color:inherit}
+html.fx-stacked .fx-panel:nth-of-type(3n+2).fx-panel,html.fx-stacked .fx-panel:nth-of-type(3n+3).fx-panel{background-image:none!important}
+.fx .fx-panel::before{opacity:.92}
+@supports (animation-timeline: view()) {
+  /* each panel's content drifts slower than the panel itself, so the layers read as separate depths; compositor-only */
+  html.fx-stacked .fx-panel:not(:first-of-type)>*:not(.stack-panel-dark){animation:fxDepth linear both;animation-timeline:view();animation-range:entry 0% cover 60%}
+  @keyframes fxDepth{from{transform:translate3d(0,34px,0);opacity:.6}to{transform:none;opacity:1}}
+}

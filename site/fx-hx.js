@@ -7,7 +7,7 @@
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   var stage = hx.querySelector('.hx-stage'), track = hx.querySelector('.hx-track'), bar = hx.querySelector('.hx-bar i');
   var cards = [].slice.call(hx.querySelectorAll('.hx-card')), floats = [].slice.call(doc.querySelectorAll('[data-float]'));
-  var vw = 0, sh = 0, dist = 0, top = 0, centers = [], ticking = false, active = false;
+  var vw = 0, sh = 0, dist = 0, top = 0, centers = [], fgeo = [], ticking = false, active = false;
 
   // text/blocks fade in once when they first appear
   if ('IntersectionObserver' in window) {
@@ -22,6 +22,7 @@
     hx.style.height = (sh + dist) + 'px';
     top = hx.getBoundingClientRect().top + window.pageYOffset;
     centers = cards.map(function (c) { return c.offsetLeft + c.offsetWidth / 2; });
+    fgeo = floats.map(function (f) { f.style.transform = 'none'; var r = f.getBoundingClientRect(); return { mid: r.top + window.pageYOffset + r.height / 2, h: r.height }; });
     tick();
   }
   function frame() {
@@ -38,9 +39,9 @@
       }
     }
     for (var j = 0; j < floats.length; j++) {
-      var r = floats[j].getBoundingClientRect(); if (r.bottom < -80 || r.top > vh + 80) continue;
-      var k = parseFloat(floats[j].getAttribute('data-float')) || 0, c = (r.top + r.height / 2 - vh / 2) / vh;
-      floats[j].style.transform = 'translate3d(0,' + (c * k * -vh * .5).toFixed(1) + 'px,0)';
+      var g = fgeo[j]; if (!g) continue; var cy = g.mid - y - vh / 2; if (cy < -vh || cy > vh) continue;
+      var k = parseFloat(floats[j].getAttribute('data-float')) || 0;
+      floats[j].style.transform = 'translate3d(0,' + (cy / vh * k * -vh * .5).toFixed(1) + 'px,0)';
     }
   }
   function tick() { if (!ticking) { ticking = true; requestAnimationFrame(frame); } }
