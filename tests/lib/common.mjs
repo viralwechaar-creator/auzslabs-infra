@@ -10,10 +10,8 @@ export const DEVICES = [
 ];
 export const sitePages = () => fs.readdirSync(path.join(ROOT, 'site')).filter((f) => f.endsWith('.html')).sort();
 
-export async function newCtx(browser, stack, dev = { w: 1280, h: 800 }, opts = {}) {
+export async function newCtx(browser, stack, dev = { w: 1280, h: 800 }) {
   const ctx = await browser.newContext({ viewport: { width: dev.w, height: dev.h }, isMobile: !!dev.mobile, hasTouch: !!dev.mobile, deviceScaleFactor: 1 });
-  // The 3D intro loader shows once per browser session; skip it by default so tests don't wait on it (it has its own test).
-  if (!opts.loader) await ctx.addInitScript(() => { try { sessionStorage.setItem('sk_loaded', '1'); } catch {} });
   if (stack) await stack.attach(ctx);
   return ctx;
 }

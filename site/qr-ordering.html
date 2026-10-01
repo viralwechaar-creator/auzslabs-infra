@@ -18,23 +18,13 @@
 <link rel="icon" href="/logo.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="theme.mobile.css?v=44" media="(max-width:899px)"><link rel="stylesheet" href="theme.desktop.css?v=44" media="(min-width:900px)">
-<link rel="stylesheet" href="sketch.mobile.css?v=1" media="(max-width:899px)"><link rel="stylesheet" href="sketch.desktop.css?v=1" media="(min-width:900px)">
-<link rel="stylesheet" href="fx.mobile.css?v=2" media="(max-width:899px)"><link rel="stylesheet" href="fx.desktop.css?v=2" media="(min-width:900px)">
-<link rel="stylesheet" href="fx-pages.mobile.css?v=1" media="(max-width:899px)"><link rel="stylesheet" href="fx-pages.desktop.css?v=1" media="(min-width:900px)">
-<link rel="stylesheet" href="fx-flow.mobile.css?v=12" media="(max-width:899px)"><link rel="stylesheet" href="fx-flow.desktop.css?v=12" media="(min-width:900px)">
-<script src="sketch.js?v=1"></script>
-<script src="fx-art.js?v=1" defer></script>
-<script src="fx.js?v=2" defer></script>
-<script src="fx-canvas.js?v=1" defer></script>
-<script src="fx-stack.js?v=10" defer></script>
-<link rel="stylesheet" href="design-system/ui-kit.mobile.css?v=3" media="(max-width:899px)"><link rel="stylesheet" href="design-system/ui-kit.desktop.css?v=3" media="(min-width:900px)">
+<link rel="stylesheet" href="theme.css?v=44">
+<link rel="stylesheet" href="design-system/ui-kit.css?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="hig-site.mobile.css?v=8" media="(max-width:899px)"><link rel="stylesheet" href="hig-site.desktop.css?v=3" media="(min-width:900px)">
 </head>
-<body class="fx pg">
+<body>
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
 
 <div class="shell">
@@ -112,27 +102,33 @@
     </div>
   </aside>
 
-        <main class="content">
-<div class="fx-scene pd pd-qr" data-scene style="--len:6" data-pointer><div class="fx-stage">
-<div class="k crumbk tl" data-k="0:o1; .08:o0"><div class="uk-kit uk-breadcrumb" style="margin-bottom:18px">
+  <main class="content">
+    <div class="wrap">
+
+      <section class="section" style="padding-top:104px">
+        <div class="hero-grid">
+        <div>
+        <div class="uk-kit uk-breadcrumb" style="margin-bottom:18px">
           <a href="products.html">Products</a><span class="uk-breadcrumb-sep">/</span><span class="uk-breadcrumb-current">QR Ordering</span>
-        </div></div><div class="k eye tl2" data-k="0:o1; .08:o0">Self-order</div>
-<h1 class="hh"><span class="k giant l1" style="font-size:9.38vw" data-blast data-k="0:x-2,y-3,o1; .1:x-6,y-3,o1; .24:x-80,o0">Scan the table.</span>
-<span class="k giant outline l2" style="font-size:9.38vw" data-blast data-k="0:x4,y10,o1; .1:x8,y10,o1; .24:x80,o0">Skip the wait.</span></h1>
-<p class="k lede2 bl" data-k="0:o1; .08:o0">A QR code on every table opens your live menu in the guest&rsquo;s own browser &mdash; their order goes straight to the kitchen, no app, no waiter needed to take it down.</p><div class="k cta2" data-k="0:o1; .1:o0"><div class="acts"><button class="btn btn-primary" data-add data-magnet>Add to cart</button><a href="cart.html" class="btn btn-ghost">View cart</a></div></div>
-<div class="k table3d" aria-hidden="true" data-k="0:o0; .12:o1,rx60,y12; .3:rx54; .8:rx46,o1; .9:o0"></div>
-<div class="k phonebox" data-k="0:o0,s.5,ry-70,y10; .16:o1,s.9,ry-40,y0; .45:s1.15,ry35,rx6; .7:s1.15,ry-12,rx0; .84:s.9,ry0,o1; .9:o0">
-  <svg data-art="qr" data-wob="1"></svg><i class="beam" data-k=".3:y-3; .42:y58; .5:y-3; .62:y58; .7:y-3"></i></div>
-<div class="k qcall c1" data-k=".28:o0,x-4; .36:o1,x0; .62:o1; .68:o0">no app to download</div>
-<div class="k qcall c2" data-k=".38:o0,x4; .46:o1,x0; .66:o1; .72:o0">straight to the kitchen</div>
-<div class="k qcall c3" data-k=".5:o0,y4; .58:o1,y0; .7:o1; .76:o0">print-ready codes</div>
-<div class="k cta2 end" data-k=".84:o0,y6; .92:o1,y0"><div class="acts"><button class="btn btn-primary" data-add data-magnet>Add to cart</button><a href="cart.html" class="btn btn-ghost">View cart</a></div></div>
-<p class="k big-end" data-k=".84:o0,y8; .92:o1,y0">Scan. Order. Done.</p>
-</div></div>
-<section class="featsec cols"><div class="eye">What's included</div><div class="cl"><div class="c" data-reveal style="--i:0"><span>Included</span><h3>Table-side QR menus</h3><p>Each table gets its own code &mdash; scan it, see your live menu, order in seconds.</p></div><div class="c" data-reveal style="--i:1"><span>Included</span><h3>No app to download</h3><p>Opens straight in the phone&rsquo;s browser &mdash; nothing to install, nothing to explain.</p></div><div class="c" data-reveal style="--i:2"><span>Included</span><h3>Straight to the kitchen</h3><p>Orders land on the kitchen ticket the moment they are placed.</p></div><div class="c" data-reveal style="--i:3"><span>Included</span><h3>Print-ready QR codes</h3><p>Generate and print every table&rsquo;s code straight from the till.</p></div></div></section>
-<section class="demo-wrap" data-reveal><div class="demo">
-          <span class="stamp">Hands-on</span>
-          <div class="dh">See exactly what your customer sees.</div>
+        </div>
+        <div class="label">Self-order</div>
+        <h1 class="h-1" style="font-size:44px">Scan the table.<br>Skip the wait.</h1>
+        <p class="lede">A QR code on every table opens your live menu in the guest&rsquo;s own browser &mdash; their order goes straight to the kitchen, no app, no waiter needed to take it down.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px">
+          <button class="btn btn-primary" id="addCartBtn">Add to cart</button>
+          <a href="cart.html" class="btn btn-ghost">View cart</a>
+        </div>
+        </div>
+        <div class="hero-art" role="presentation">
+          <img class="hero-art-logo" src="logo.png" alt="" aria-hidden="true">
+        </div>
+        </div>
+      </section>
+
+      <section class="section tight">
+        <div class="card" style="border-color:var(--accent);box-shadow:5px 5px 0 var(--accent)">
+          <span class="tag" style="background:var(--accent);color:#fff;border-color:var(--accent)">Hands-on</span>
+          <div class="h-2" style="margin-top:14px;font-size:22px">See exactly what your customer sees.</div>
           <p class="p" style="margin-top:8px">This is the actual self-order page a table's QR code opens — no staff login needed, because your customer never has one.</p>
           <div style="margin-top:14px;background:var(--bg-raised);border:1.5px solid var(--ink);border-radius:14px;padding:14px 16px;font-family:var(--font-mono);font-size:12.5px;line-height:1.9">
             <div>Password for both &nbsp; <b>Auzslab@Demo</b></div>
@@ -143,10 +139,43 @@
           <p class="p" style="margin-top:12px;font-size:11.5px;color:var(--ink-faint)">For evaluation only &mdash; please don't scrape or copy the software. See our <a href="terms.html" style="color:var(--ink-faint);text-decoration:underline">terms</a>.</p>
         </div>
       </section>
-<section class="pairs"><div class="eye">Pairs well with</div><div class="prow"><a href="pos.html" class="pair" data-magnet>POS <i>&rarr;</i></a><a href="billing.html" class="pair" data-magnet>Billing &amp; Invoicing <i>&rarr;</i></a></div></section>
-<section class="closer"><div class="eye">Ready?</div><h2 class="fx-h2" data-split="rise">Add it to your account.</h2><div class="acts"><button class="btn btn-primary" data-open-contact data-magnet>Let's talk</button><a href="pricing.html" class="btn btn-ghost">See pricing</a></div></section>
 
-    <div class="stack">
+      <section class="section tight">
+        <div class="grid-2">
+          <div class="card">
+            <span class="tag">Included</span>
+            <div class="h-2" style="margin-top:14px">Table-side QR menus</div>
+            <p class="p" style="margin-top:8px">Each table gets its own code &mdash; scan it, see your live menu, order in seconds.</p>
+          </div>
+          <div class="card">
+            <span class="tag">Included</span>
+            <div class="h-2" style="margin-top:14px">No app to download</div>
+            <p class="p" style="margin-top:8px">Opens straight in the phone&rsquo;s browser &mdash; nothing to install, nothing to explain.</p>
+          </div>
+          <div class="card">
+            <span class="tag">Included</span>
+            <div class="h-2" style="margin-top:14px">Straight to the kitchen</div>
+            <p class="p" style="margin-top:8px">Orders land on the kitchen ticket the moment they are placed.</p>
+          </div>
+          <div class="card">
+            <span class="tag">Included</span>
+            <div class="h-2" style="margin-top:14px">Print-ready QR codes</div>
+            <p class="p" style="margin-top:8px">Generate and print every table&rsquo;s code straight from the till.</p>
+          </div>
+        </div>
+      </section>
+
+      <hr class="dash">
+
+      <section class="section">
+        <div class="label">Pairs well with</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+<a href="pos.html" class="tag">POS</a>
+          <a href="billing.html" class="tag">Billing &amp; Invoicing</a>
+        </div>
+      </section>
+
+      <div class="stack">
 
       <section class="stack-panel stack-panel-dark" data-tab="CONNECT">
 
@@ -254,23 +283,22 @@
 
 </div>
 <script src="/sb-client.js?v=2"></script>
-<script src="site.js?v=8"></script>
+<script src="site.js?v=7"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script src="design-system/ui-kit.js?v=1"></script>
 <script>
 (function () {
   var KEY = 'qr';
   var sb = supabase.createClient(CFG.url, CFG.key);
-  var btns = [].slice.call(document.querySelectorAll('[data-add]'));
+  var btn = document.getElementById('addCartBtn');
   var owned = false;
   function refresh() {
-    btns.forEach(function (btn) {
-      if (owned) { btn.textContent = 'Already included ✓'; btn.disabled = true; return; }
-      btn.disabled = false;
-      btn.textContent = AUZcart.has(KEY) ? 'Added ✓ — remove' : 'Add to cart';
-    });
+    if (owned) { btn.textContent = 'Already included ✓'; btn.disabled = true; return; }
+    btn.disabled = false;
+    var has = AUZcart.has(KEY);
+    btn.textContent = has ? 'Added ✓ — remove' : 'Add to cart';
   }
-  btns.forEach(function (btn) { btn.addEventListener('click', function () { if (owned) return; AUZcart.toggle(KEY); refresh(); }); });
+  btn.addEventListener('click', function () { if (owned) return; AUZcart.toggle(KEY); refresh(); });
   var n = AUZcart.get().length;
   document.querySelectorAll('.cart-count').forEach(function (el) { el.textContent = n ? '(' + n + ')' : ''; });
   refresh();
@@ -279,6 +307,5 @@
   });
 })();
 </script>
-<script src="hig-site.js?v=6" defer></script>
 </body>
 </html>

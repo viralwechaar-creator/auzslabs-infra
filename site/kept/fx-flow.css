@@ -1,4 +1,9 @@
-/* desktop (900px and up). Independent of the mobile file: edit freely. */
+/* AUZslab FX flow layout: what phones (html.fx-flow) and reduced-motion / no-JS visitors (neither class) get instead of the
+   desktop pinned scenes. Every scene's actors are laid out top to bottom in reading order, so nothing can overlap and nothing
+   floats in empty space. On phones each block animates in once as it scrolls into view (class .in, added by fx.js bootFlow).
+   Loaded after fx-pages.css; the !importants beat the desktop positioning rules, which are written for an absolute stage. */
+
+/* ---------- performance: nothing here may cost a frame on a phone ---------- */
 html.fx-flow .shell::after{display:none}
 html.fx-flow .btn::before,html.fx-flow .card::before,html.fx-flow .tag::before,html.fx-flow .dash,html.fx-flow .sk-divider i,html.fx-flow .sk-progress{filter:none!important}
 html.fx-flow .fx .topbar,html.fx-flow body.fx .topbar{mix-blend-mode:normal;background:rgba(246,244,241,.96);color:var(--ink);border-bottom:1.5px solid var(--ink)}
@@ -7,6 +12,8 @@ html.fx-flow .fx .hamburger{border-color:var(--ink);color:var(--ink)}
 html.fx-flow .fx .topbar .btn-ghost{color:var(--ink)}
 html.fx-flow .fx .topbar .btn::before{border-color:var(--ink)}
 html.fx-flow .fx-trail,html.fx-flow .fx-field{display:none!important}
+
+/* ---------- the stage becomes a wrapping column ---------- */
 html:not(.fx-live) .fx-scene{height:auto!important}
 html:not(.fx-live) .fx-stage{position:relative!important;height:auto!important;overflow:visible!important;display:flex;flex-direction:row;flex-wrap:wrap;align-items:flex-start;align-content:flex-start;column-gap:4vw;row-gap:3.2vh;padding:92px 5vw 44px}
 html:not(.fx-live) .fx-stage .k{position:static!important;translate:none!important;transform:none;margin:0;max-width:100%;flex:1 1 100%;visibility:visible;opacity:1;left:auto;top:auto;right:auto;bottom:auto}
@@ -20,16 +27,21 @@ html:not(.fx-live) .k.note{font-size:clamp(24px,7vw,40px);line-height:1.05;white
 html:not(.fx-live) .k.note.nr,html:not(.fx-live) .k.note:nth-of-type(even){rotate:2deg;margin-left:auto;text-align:right}
 html:not(.fx-live) .k.big-end,html:not(.fx-live) .k.big{font-size:clamp(34px,11vw,70px);white-space:normal;line-height:.9;margin-top:2vh}
 html:not(.fx-live) .k.eye{margin-bottom:-.6vh}
+/* decoration that only makes sense on a stage */
 html:not(.fx-live) .cta2.end,html:not(.fx-live) .gst,html:not(.fx-live) .floor,html:not(.fx-live) .table3d,html:not(.fx-live) .cursor,html:not(.fx-live) .cutline,
 html:not(.fx-live) .half,html:not(.fx-live) .laser,html:not(.fx-live) .kcol,html:not(.fx-live) .wash,html:not(.fx-live) .ring,html:not(.fx-live) .scrollhint,
 html:not(.fx-live) .stampbig,html:not(.fx-live) .rocket,html:not(.fx-live) .fx-field{display:none!important}
 html:not(.fx-live) .k.crumbk{font-size:12px}
+
+/* ---------- drawings ---------- */
 html:not(.fx-live) .fx-stage>svg.fx-art,html:not(.fx-live) .fx-stage>svg.k{flex:0 0 min(78vw,330px);width:min(78vw,330px)!important;height:auto;margin-inline:auto;overflow:visible}
 html:not(.fx-live) .fx-stage>svg.dr1,html:not(.fx-live) .fx-stage>svg.dr2,html:not(.fx-live) .fx-stage>svg.dr3,html:not(.fx-live) .fx-stage>svg.dr4,
 html:not(.fx-live) .fx-stage>svg.gr{flex:0 0 42vw;width:42vw!important;margin-inline:0}
 html:not(.fx-live) .fx-stage>svg.gr.g2{margin-left:auto}
 html:not(.fx-live) .fx-draw{--d:1}
 html:not(.fx-live) .ln path,html:not(.fx-live) .roadsvg path,html:not(.fx-live) .ring{--d:1}
+
+/* ---------- widgets that were choreographed: show their finished state ---------- */
 html:not(.fx-live) .strip{width:min(86vw,330px)!important;flex:0 0 auto;margin-inline:auto;align-self:center}
 html:not(.fx-live) .longrec{width:min(90vw,380px)!important;flex:0 0 auto;margin-inline:auto;padding:5vh 6vw 7vh}
 html:not(.fx-live) .seg{flex:1 1 44%;white-space:normal}
@@ -40,10 +52,8 @@ html:not(.fx-live) .alarm{flex:0 0 auto;margin-inline:auto}
 html:not(.fx-live) .phonebox{width:min(56vw,260px)!important;flex:0 0 auto;margin-inline:auto}
 html:not(.fx-live) .qcall{white-space:normal;font-size:clamp(22px,6.4vw,34px)}
 html:not(.fx-live) .clock{width:min(66vw,300px)!important;flex:0 0 auto;margin-inline:auto}
-html:not(.fx-live) .pd-pay .hand.h{--r:75deg}
-html:not(.fx-live) .pd-pay .hand.m{--r:190deg}
-html:not(.fx-live) .cal{width:100%!important}
-html:not(.fx-live) .cal .grid,html:not(.fx-live) .cal,html:not(.fx-live) .mx{--t:1}
+html:not(.fx-live) .pd-pay .hand.h{--r:75deg}html:not(.fx-live) .pd-pay .hand.m{--r:190deg}
+html:not(.fx-live) .cal{width:100%!important}html:not(.fx-live) .cal .grid,html:not(.fx-live) .cal,html:not(.fx-live) .mx{--t:1}
 html:not(.fx-live) .slip{width:min(72vw,300px)!important;flex:0 0 auto;margin-inline:auto}
 html:not(.fx-live) .wb{width:100%!important;flex:1 1 100%}
 html:not(.fx-live) .stack3d{width:min(62vw,280px)!important;height:min(62vw,280px)!important;flex:0 0 auto;margin:6vh auto 8vh;transform:perspective(1200px) rotateX(55deg) rotate(-35deg);--g:1.15}
@@ -60,19 +70,19 @@ html:not(.fx-live) .chart{width:100%!important;height:30vh;flex:1 1 100%}
 html:not(.fx-live) .roadsvg{width:100%!important;height:26vh;flex:1 1 100%}
 html:not(.fx-live) .stop{white-space:normal;font-size:clamp(17px,5vw,24px);flex:1 1 100%}
 html:not(.fx-live) .stk{transform-style:preserve-3d}
+
+/* ---------- homepage ---------- */
 html:not(.fx-live) #story .hw,html:not(.fx-live) #story .hw-out,html:not(.fx-live) #story .hw-mid,html:not(.fx-live) #story .hw-big{font-size:min(14.2vw,72px)}
 html:not(.fx-live) #story .hw-hand{font-size:min(10vw,44px)}
 html:not(.fx-live) .heroctl{order:0}
 html:not(.fx-live) .cubebox{--cs:min(86vw,360px);width:var(--cs)!important;height:auto!important;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:3vh auto;transform-style:flat}
 html:not(.fx-live) .cface{position:relative!important;transform:none!important;aspect-ratio:1;border-width:1.5px}
-html:not(.fx-live) .cface svg{width:86%}
-html:not(.fx-live) .cface b{font-size:calc(var(--cs)*.075)}
+html:not(.fx-live) .cface svg{width:86%}html:not(.fx-live) .cface b{font-size:calc(var(--cs)*.075)}
 html:not(.fx-live) .hww{font-size:min(15vw,72px)!important;white-space:normal}
 html:not(.fx-live) .hww-copy{max-width:22em;font-size:20px;white-space:normal}
 html:not(.fx-live) .fx-world,html:not(.fx-live) .fx-cam{position:static!important;perspective:none;transform:none!important;flex:1 1 100%;display:flex;flex-direction:column;gap:6vh;inset:auto}
 html:not(.fx-live) .fx-cam [data-xyz]{position:static!important;visibility:visible!important;transform:none!important;opacity:1!important;translate:none;width:100%!important}
-html:not(.fx-live) .room{width:100%!important}
-html:not(.fx-live) .room.r{margin-left:0}
+html:not(.fx-live) .room{width:100%!important}html:not(.fx-live) .room.r{margin-left:0}
 html:not(.fx-live) .room .nm{font-size:min(20vw,92px)}
 html:not(.fx-live) .room p{font-size:16px}
 html:not(.fx-live) .room svg.art{position:static!important;width:44vw!important;margin:2vh 0 0 auto;display:block}
@@ -83,33 +93,53 @@ html:not(.fx-live) .doorway .d{display:block}
 html:not(.fx-live) .portal-h{color:var(--ink);font-size:min(13.5vw,70px)}
 html:not(.fx-live) .portal-p{color:var(--ink-dim);text-align:left!important}
 html:not(.fx-live) .portal-p a{color:var(--ink)}
-html:not(.fx-live) .btn-light{background:var(--ink);color:#fff}
-html:not(.fx-live) .btn-light::before{border-color:var(--ink)!important}
-html:not(.fx-live) .btn-line{color:var(--ink)}
-html:not(.fx-live) .btn-line::before{border-color:var(--ink)!important}
+html:not(.fx-live) .btn-light{background:var(--ink);color:#fff}html:not(.fx-live) .btn-light::before{border-color:var(--ink)!important}
+html:not(.fx-live) .btn-line{color:var(--ink)}html:not(.fx-live) .btn-line::before{border-color:var(--ink)!important}
 html:not(.fx-live) .k.cta-row,html:not(.fx-live) .k.cta2,html:not(.fx-live) .k.heroctl{flex:1 1 100%}
+
+/* horizontal-scroll sections become a stack of cards */
 html:not(.fx-live) .hs .fx-stage{padding-top:60px}
 html:not(.fx-live) .hs-eye{position:static;margin-bottom:2vh}
 html:not(.fx-live) .hsx{height:auto;display:block}
 html:not(.fx-live) .hs .fx-track{display:flex;flex-direction:column;width:100%;transform:none!important;gap:3vh;padding:0}
 html:not(.fx-live) .hs-i{width:100%;transform:none;margin:0!important}
+
+/* ---------- phone-only: animate each block in once, as it arrives ---------- */
 html.fx-flow-ready .fx-stage .k,html.fx-flow-ready .hs-i{opacity:0;transform:translate3d(var(--fx0,0),28px,0) rotate(var(--fr,0deg));transition:opacity .7s var(--ease-out),transform .95s var(--ease-out)}
 html.fx-flow-ready .fx-stage .k:nth-child(odd){--fx0:-7vw;--fr:-1.4deg}
 html.fx-flow-ready .fx-stage .k:nth-child(even){--fx0:7vw;--fr:1.4deg}
 html.fx-flow-ready .fx-stage .k.in,html.fx-flow-ready .hs-i.in{opacity:1;transform:none}
 html.fx-flow-ready .fx-stage .hh .k{--fx0:-9vw;--fr:-2deg}
 html.fx-flow-ready .fx-stage .hh .k:nth-child(even){--fx0:9vw;--fr:2deg}
-html.fx-flow-ready .fx-stage .hh .k:nth-child(2){transition-delay:.08s}
-html.fx-flow-ready .fx-stage .hh .k:nth-child(3){transition-delay:.16s}
-html.fx-flow-ready .fx-stage .hh .k:nth-child(4){transition-delay:.24s}
-html.fx-flow-ready .fx-stage .hh .k:nth-child(5){transition-delay:.32s}
+html.fx-flow-ready .fx-stage .hh .k:nth-child(2){transition-delay:.08s}html.fx-flow-ready .fx-stage .hh .k:nth-child(3){transition-delay:.16s}html.fx-flow-ready .fx-stage .hh .k:nth-child(4){transition-delay:.24s}html.fx-flow-ready .fx-stage .hh .k:nth-child(5){transition-delay:.32s}
 html.fx-flow-ready .fx-stage>.hh{opacity:1}
 html.fx-flow-ready .fx-stage .k.in .fx-c,html.fx-flow-ready [data-split].in .fx-c{}
+
+/* the menu panel's shadow must not leak onto the page while the panel is closed */
 .fx .sidebar:not(.open){box-shadow:none}
+
+/* ---------- products page on phones ---------- */
+@media (max-width:899px){
+html.fx-flow .lab{min-height:0;height:78svh;padding-top:0}
+html.fx-flow .lab-h{position:relative;left:auto;top:auto;padding:84px 5vw 0}
+html.fx-flow .lab-h .giant{font-size:12.6vw}html.fx-flow .lab-h .lh2{margin-left:26vw;font-size:8vw}html.fx-flow .lab-h .lh3{margin-left:6vw}
+html.fx-flow .lab-lede{display:block;position:relative;right:auto;top:auto;text-align:left;max-width:none;padding:1.6vh 5vw 0;font-size:15px}
+html.fx-flow .lab .bubbles{top:31svh;bottom:0;height:auto}
+html.fx-flow .lab .bub{--s:25vw!important}html.fx-flow .lab .bub.dash{--s:19vw!important}html.fx-flow .lab .bub b{font-size:10px}
+html.fx-flow .lab-hint{top:auto;bottom:1.6vh;left:5vw;font-size:22px}
+html.fx-flow .s-pos .nm{margin-bottom:2vh}html.fx-flow .s-pos .blk{margin-top:0}
+html.fx-flow .slab{min-height:0!important}
+html.fx-flow .slab>.eye,html.fx-flow .slab .blk .eye{margin-bottom:1.6vh}
+}
+
 html:not(.fx-live) .k.lede2{display:block!important}
+
+/* homepage headline lines: breathing room between the words */
 html:not(.fx-live) .hero-h1{flex:1 1 100%;display:flex;flex-direction:column;gap:.5vh;margin:0}
 html:not(.fx-live) .hero-h1 .k.giant{line-height:1.02;flex:none;white-space:normal}
 html:not(.fx-live) .hero-h1 .k.hand,html:not(.fx-live) .hh .k.hand{margin:0 0 0 14vw;line-height:1.1}
+
+/* ================= stacked panels (fx-stack.js) ================= */
 .fx-stack{margin-top:0;position:relative}
 .fx-panel{min-height:64svh;padding:84px 0 56px;background-color:var(--bg)}
 .fx-panel.alt{background-color:#efecea}
@@ -124,59 +154,72 @@ html:not(.fx-live) .hero-h1 .k.hand,html:not(.fx-live) .hh .k.hand{margin:0 0 0 
 .fx-panel>.band{margin:5vh -3vw 0}
 .fx-panel .ph{flex:1 1 100%}
 .fx-panel .fx-h2.ph{max-width:12em}
+@media (max-width:899px){.fx-panel{padding-bottom:40px}.fx-panel:not(:first-of-type){padding-top:132px}}
+
+/* label style (home does not load fx-pages.css) */
 .fx .eye{font:500 clamp(10px,.85vw,13px)/1 var(--font-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:10px}
 .fx .eye::before{content:"";width:28px;height:2px;background:var(--accent)}
-html:not(.fx-live) .fx-stage{max-width:1240px;margin-inline:auto;padding-left:4vw;padding-right:4vw;column-gap:3vw;row-gap:4vh}
-html:not(.fx-live) .fx-panel:first-of-type .fx-stage{padding-top:104px}
-html:not(.fx-live) #story .hw,html:not(.fx-live) #story .hw-out,html:not(.fx-live) #story .hw-mid,html:not(.fx-live) #story .hw-big{font-size:min(7.2vw,104px)}
-html:not(.fx-live) #story .hw-hand{font-size:min(4vw,56px)}
-html:not(.fx-live) .hero-h1 .k.hand{margin-left:4vw}
-html:not(.fx-live) .hero-h1 .k.giant{font-size:min(9vw,130px)}
-html.fx-flow .lab-h .giant{font-size:min(11.5vw,200px)}
-html:not(.fx-live) .hp-hero .heroctl{flex:1 1 100%}
-html:not(.fx-live) .cubebox{--cs:min(46vw,520px);margin:2vh 0 0;align-self:flex-start}
-html:not(.fx-live) .hp-hero .note{flex:0 0 auto;align-self:flex-end;margin-bottom:6vh}
-html:not(.fx-live) .hp-work .fx-stage{flex-direction:column;align-items:flex-start;gap:0}
-html:not(.fx-live) .hww{font-size:min(8.4vw,124px)!important;line-height:1;margin-top:4vh}
-html:not(.fx-live) .hww-copy{font-size:clamp(20px,2vw,30px);max-width:24em;margin:0 0 2vh 4vw}
-html:not(.fx-live) .hp-work .hww:nth-of-type(odd){align-self:flex-start}
-html:not(.fx-live) .hp-prod .hp-rooms,html:not(.fx-live) .hp-prod .fx-cam{display:grid;grid-template-columns:1fr 1fr;gap:9vh 5vw}
-html:not(.fx-live) .hp-prod .room:nth-child(even){margin-top:8vh}
-html:not(.fx-live) .room .nm{font-size:min(9vw,130px)}
-html:not(.fx-live) .room p{font-size:clamp(15px,1.3vw,20px)}
-html:not(.fx-live) .room svg.art{width:min(18vw,240px)!important}
-html:not(.fx-live) .hp-doors .fx-stage{align-items:stretch}
-html:not(.fx-live) .hp-doors .note{flex:1 1 100%}
-html:not(.fx-live) .doorway{flex:1 1 22%;width:auto!important;max-width:none;min-height:260px}
-html:not(.fx-live) .doorway:nth-of-type(even){margin-left:0;margin-top:6vh}
-html:not(.fx-live) .portal-h{font-size:min(9vw,140px)}
-html:not(.fx-live) .portal-p{font-size:clamp(16px,1.4vw,22px);max-width:34em}
-html:not(.fx-live) .fx-stage>svg.fx-art,html:not(.fx-live) .fx-stage>svg.k{flex:0 0 min(30vw,380px);width:min(30vw,380px)!important;margin-inline:0}
-html:not(.fx-live) .fx-stage>svg.fx-art:nth-of-type(even){margin-left:auto}
-html:not(.fx-live) .strip,html:not(.fx-live) .longrec{width:min(34vw,380px)!important}
-html:not(.fx-live) .k.lede2{font-size:clamp(16px,1.35vw,21px)}
-html:not(.fx-live) .k.note{font-size:clamp(28px,3vw,48px)}
-html:not(.fx-live) .hh .k.giant{max-width:100%}
-html:not(.fx-live) .fx-stage>.hh{margin-top:1vh}
-html:not(.fx-live) .crate{flex:0 0 14vw;width:14vw!important}
-html:not(.fx-live) .clock{width:min(26vw,340px)!important}
-html:not(.fx-live) .phonebox{width:min(20vw,260px)!important}
-html:not(.fx-live) .stack3d{width:min(24vw,320px)!important;height:min(24vw,320px)!important}
-html:not(.fx-live) .coin{flex:0 0 12vw;width:12vw!important;font-size:5vw}
-html:not(.fx-live) .wb{width:min(56vw,640px)!important;flex:0 0 auto;margin-left:auto}
-html:not(.fx-live) .rail{width:min(60vw,800px)!important}
-html:not(.fx-live) .matrix{width:min(40vw,520px)!important}
-html:not(.fx-live) .chart,html:not(.fx-live) .roadsvg{width:min(60vw,720px)!important;flex:0 0 auto;margin-left:auto}
-html:not(.fx-live) .seg{flex:1 1 20%}
+
+/* ================= desktop proportions for the flowing layout ================= */
+@media (min-width:900px){
+  html:not(.fx-live) .fx-stage{max-width:1240px;margin-inline:auto;padding-left:4vw;padding-right:4vw;column-gap:3vw;row-gap:4vh}
+  html:not(.fx-live) .fx-panel:first-of-type .fx-stage{padding-top:104px}
+  html:not(.fx-live) #story .hw,html:not(.fx-live) #story .hw-out,html:not(.fx-live) #story .hw-mid,html:not(.fx-live) #story .hw-big{font-size:min(7.2vw,104px)}
+  html:not(.fx-live) #story .hw-hand{font-size:min(4vw,56px)}
+  html:not(.fx-live) .hero-h1 .k.hand{margin-left:4vw}
+  html:not(.fx-live) .hero-h1 .k.giant{font-size:min(9vw,130px)}
+  html.fx-flow .lab-h .giant{font-size:min(11.5vw,200px)}
+  html:not(.fx-live) .hp-hero .heroctl{flex:1 1 100%}
+  html:not(.fx-live) .cubebox{--cs:min(46vw,520px);margin:2vh 0 0;align-self:flex-start}
+  html:not(.fx-live) .hp-hero .note{flex:0 0 auto;align-self:flex-end;margin-bottom:6vh}
+  html:not(.fx-live) .hp-work .fx-stage{flex-direction:column;align-items:flex-start;gap:0}
+  html:not(.fx-live) .hww{font-size:min(8.4vw,124px)!important;line-height:1;margin-top:4vh}
+  html:not(.fx-live) .hww-copy{font-size:clamp(20px,2vw,30px);max-width:24em;margin:0 0 2vh 4vw}
+  html:not(.fx-live) .hp-work .hww:nth-of-type(odd){align-self:flex-start}
+  html:not(.fx-live) .hp-prod .hp-rooms,html:not(.fx-live) .hp-prod .fx-cam{display:grid;grid-template-columns:1fr 1fr;gap:9vh 5vw}
+  html:not(.fx-live) .hp-prod .room:nth-child(even){margin-top:8vh}
+  html:not(.fx-live) .room .nm{font-size:min(9vw,130px)}
+  html:not(.fx-live) .room p{font-size:clamp(15px,1.3vw,20px)}
+  html:not(.fx-live) .room svg.art{width:min(18vw,240px)!important}
+  html:not(.fx-live) .hp-doors .fx-stage{align-items:stretch}
+  html:not(.fx-live) .hp-doors .note{flex:1 1 100%}
+  html:not(.fx-live) .doorway{flex:1 1 22%;width:auto!important;max-width:none;min-height:260px}
+  html:not(.fx-live) .doorway:nth-of-type(even){margin-left:0;margin-top:6vh}
+  html:not(.fx-live) .portal-h{font-size:min(9vw,140px)}
+  html:not(.fx-live) .portal-p{font-size:clamp(16px,1.4vw,22px);max-width:34em}
+  html:not(.fx-live) .fx-stage>svg.fx-art,html:not(.fx-live) .fx-stage>svg.k{flex:0 0 min(30vw,380px);width:min(30vw,380px)!important;margin-inline:0}
+  html:not(.fx-live) .fx-stage>svg.fx-art:nth-of-type(even){margin-left:auto}
+  html:not(.fx-live) .strip,html:not(.fx-live) .longrec{width:min(34vw,380px)!important}
+  html:not(.fx-live) .k.lede2{font-size:clamp(16px,1.35vw,21px)}
+  html:not(.fx-live) .k.note{font-size:clamp(28px,3vw,48px)}
+  html:not(.fx-live) .hh .k.giant{max-width:100%}
+  html:not(.fx-live) .fx-stage>.hh{margin-top:1vh}
+  html:not(.fx-live) .crate{flex:0 0 14vw;width:14vw!important}
+  html:not(.fx-live) .clock{width:min(26vw,340px)!important}
+  html:not(.fx-live) .phonebox{width:min(20vw,260px)!important}
+  html:not(.fx-live) .stack3d{width:min(24vw,320px)!important;height:min(24vw,320px)!important}
+  html:not(.fx-live) .coin{flex:0 0 12vw;width:12vw!important;font-size:5vw}
+  html:not(.fx-live) .wb{width:min(56vw,640px)!important;flex:0 0 auto;margin-left:auto}
+  html:not(.fx-live) .rail{width:min(60vw,800px)!important}
+  html:not(.fx-live) .matrix{width:min(40vw,520px)!important}
+  html:not(.fx-live) .chart,html:not(.fx-live) .roadsvg{width:min(60vw,720px)!important;flex:0 0 auto;margin-left:auto}
+  html:not(.fx-live) .seg{flex:1 1 20%}
+}
+
+/* widgets keep their own width (the generic "every actor is a full row" rule must not stretch them) */
 html:not(.fx-live) .fx-stage :is(.strip,.longrec,.kot,.phonebox,.clock,.slip,.stack3d,.plane,.phone3d,.mirror,.rtape,.alarm){flex:0 0 auto!important}
 html:not(.fx-live) .fx-stage :is(.crate){flex:0 0 28vw!important}
 html:not(.fx-live) .fx-stage :is(.coin){flex:0 0 26vw!important}
-html:not(.fx-live) .fx-stage .doorway{flex:1 1 20%!important;width:auto!important;margin-left:0;max-width:none;min-height:280px}
-html:not(.fx-live) .fx-stage .doorway:nth-of-type(even){margin-top:5vh}
-html:not(.fx-live) .fx-stage :is(.crate){flex:0 0 14vw!important}
-html:not(.fx-live) .fx-stage :is(.coin){flex:0 0 12vw!important}
-html:not(.fx-live) .fx-stage .seg{flex:1 1 20%!important}
-.fx-panel:not(:first-of-type){padding-top:132px}
+@media (min-width:900px){
+  html:not(.fx-live) .fx-stage .doorway{flex:1 1 20%!important;width:auto!important;margin-left:0;max-width:none;min-height:280px}
+  html:not(.fx-live) .fx-stage .doorway:nth-of-type(even){margin-top:5vh}
+  html:not(.fx-live) .fx-stage :is(.crate){flex:0 0 14vw!important}
+  html:not(.fx-live) .fx-stage :is(.coin){flex:0 0 12vw!important}
+  html:not(.fx-live) .fx-stage .seg{flex:1 1 20%!important}
+  .fx-panel:not(:first-of-type){padding-top:132px}
+}
+
+/* ---------- calmer, more minimal type scale (everything one notch smaller) + hero logo ---------- */
 .hp-hero .fx-stage{position:relative}
 .hp-hero .hero-art{position:absolute;right:5vw;bottom:34px;margin:0;display:block;z-index:1}
 .hp-hero .hero-art-logo{width:clamp(96px,16vw,190px);max-width:none}
@@ -189,38 +232,46 @@ html:not(.fx-live) .hww{font-size:min(10vw,52px)!important}
 html:not(.fx-live) .room .nm{font-size:min(13vw,60px)}
 html:not(.fx-live) .portal-h{font-size:min(9.5vw,50px)}
 html:not(.fx-live) .k.note{font-size:clamp(20px,5.2vw,30px)}
-html.fx-flow .lab-h .giant{font-size:9vw}
-html.fx-flow .lab-h .lh2{font-size:6vw}
+html.fx-flow .lab-h .giant{font-size:9vw}html.fx-flow .lab-h .lh2{font-size:6vw}
 .fx-panel::before{font-size:clamp(46px,12vw,110px)}
-html:not(.fx-live) #story .hw,html:not(.fx-live) #story .hw-out,html:not(.fx-live) #story .hw-mid,html:not(.fx-live) #story .hw-big{font-size:min(5.2vw,76px)}
-html:not(.fx-live) #story .hw-hand{font-size:min(3vw,40px)}
-html:not(.fx-live) .hero-h1 .k.giant{font-size:min(6.4vw,92px)}
-html.fx-flow .giant{font-size:clamp(40px,6vw,96px)}
-html.fx-flow .lab-h .giant{font-size:min(8vw,130px)}
-html.fx-flow .lab-h .lh2{font-size:min(4.6vw,72px)}
-html:not(.fx-live) .hww{font-size:min(5.6vw,84px)!important}
-html:not(.fx-live) .hww-copy{font-size:clamp(17px,1.5vw,24px)}
-html:not(.fx-live) .room .nm{font-size:min(6vw,88px)}
-html:not(.fx-live) .room p{font-size:clamp(14px,1.05vw,17px)}
-html:not(.fx-live) .portal-h{font-size:min(6vw,92px)}
-html:not(.fx-live) .portal-p{font-size:clamp(15px,1.2vw,19px)}
-html:not(.fx-live) .k.note{font-size:clamp(22px,2.2vw,34px)}
-html.fx-flow .fx-h2{font-size:clamp(28px,3.8vw,56px)}
-.fx-panel::before{font-size:clamp(70px,9vw,140px)}
-.hp-hero .fx-stage{min-height:calc(100svh - 60px);align-content:flex-start}
-html:not(.fx-live) .hp-hero .hero-h1{flex:0 0 56%}
-html:not(.fx-live) .hp-hero .cubebox{--cs:min(28vw,360px);margin:6vh 0 0 auto;align-self:flex-start;flex:0 0 auto}
-html:not(.fx-live) .hp-hero .note{display:none}
-html:not(.fx-live) .hp-hero .cubebox{position:absolute!important;right:6vw;top:150px;margin:0!important}
-html:not(.fx-live) .hp-hero .fx-stage{height:calc(100svh - 60px)!important;min-height:560px}
+@media (min-width:900px){
+  html:not(.fx-live) #story .hw,html:not(.fx-live) #story .hw-out,html:not(.fx-live) #story .hw-mid,html:not(.fx-live) #story .hw-big{font-size:min(5.2vw,76px)}
+  html:not(.fx-live) #story .hw-hand{font-size:min(3vw,40px)}
+  html:not(.fx-live) .hero-h1 .k.giant{font-size:min(6.4vw,92px)}
+  html.fx-flow .giant{font-size:clamp(40px,6vw,96px)}
+  html.fx-flow .lab-h .giant{font-size:min(8vw,130px)}html.fx-flow .lab-h .lh2{font-size:min(4.6vw,72px)}
+  html:not(.fx-live) .hww{font-size:min(5.6vw,84px)!important}
+  html:not(.fx-live) .hww-copy{font-size:clamp(17px,1.5vw,24px)}
+  html:not(.fx-live) .room .nm{font-size:min(6vw,88px)}
+  html:not(.fx-live) .room p{font-size:clamp(14px,1.05vw,17px)}
+  html:not(.fx-live) .portal-h{font-size:min(6vw,92px)}
+  html:not(.fx-live) .portal-p{font-size:clamp(15px,1.2vw,19px)}
+  html:not(.fx-live) .k.note{font-size:clamp(22px,2.2vw,34px)}
+  html.fx-flow .fx-h2{font-size:clamp(28px,3.8vw,56px)}
+  .fx-panel::before{font-size:clamp(70px,9vw,140px)}
+}
+@media (min-width:900px){
+  .hp-hero .fx-stage{min-height:calc(100svh - 60px);align-content:flex-start}
+  html:not(.fx-live) .hp-hero .hero-h1{flex:0 0 56%}
+  html:not(.fx-live) .hp-hero .cubebox{--cs:min(28vw,360px);margin:6vh 0 0 auto;align-self:flex-start;flex:0 0 auto}
+  html:not(.fx-live) .hp-hero .note{display:none}
+}
+@media (min-width:900px){
+  html:not(.fx-live) .hp-hero .cubebox{position:absolute!important;right:6vw;top:150px;margin:0!important}
+  html:not(.fx-live) .hp-hero .fx-stage{height:calc(100svh - 60px)!important;min-height:560px}
+}
+
+/* footer panel corners blend into the dark closer above it; header is solid and every page leaves air below it */
 .fx .stack-panel-dark+.stack-panel-dark,.fx .stack .stack-panel-dark{border-color:var(--ink)}
 html.fx-flow .fx .topbar,html.fx-flow body.fx .topbar{background:#f6f4f1}
 html.fx-flow .fx .topbar::before,html.fx-flow .fx .topbar::after{display:none}
 .fx .fx-panel:first-of-type .fx-stage{padding-top:calc(max(16px,env(safe-area-inset-top)) + 96px)}
 .fx{scroll-padding-top:100px}
-.fx .fx-panel:first-of-type .fx-stage{padding-top:112px}
+@media (min-width:900px){.fx .fx-panel:first-of-type .fx-stage{padding-top:112px}}
 .fx .stack-panel-dark{border-radius:0!important;border-top:0}
 .fx .stack-panel-dark .eye{color:rgba(255,255,255,.55)}
+
+/* the closing call-to-action is a light panel so the dark CONNECT footer reads as its own separate piece */
 .fx .fx-panel.stack-panel-dark{background:#efecea;color:var(--ink-dim);border-color:var(--line);border-radius:0!important}
 .fx .fx-panel.stack-panel-dark::before{color:var(--ink)}
 .fx .fx-panel.stack-panel-dark .eye{color:var(--accent)}
@@ -228,71 +279,80 @@ html.fx-flow .fx .topbar::before,html.fx-flow .fx .topbar::after{display:none}
 .fx .fx-panel.stack-panel-dark .btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
 .fx .fx-panel.stack-panel-dark .btn-ghost{color:var(--ink);border-color:var(--ink)}
 .fx .stack-panel-dark:not(.fx-panel){border-radius:36px 36px 0 0!important;border-top:2px solid var(--ink);margin-top:-1px;box-shadow:0 -14px 30px rgba(0,0,0,.08)}
+
+/* ================= homepage hero: minimal editorial layout ================= */
 .hero2{position:relative;display:flex;flex-direction:column;justify-content:space-between;gap:18px;min-height:100svh;padding:calc(max(16px,env(safe-area-inset-top)) + 84px) 5vw 12px;overflow:hidden;box-sizing:border-box}
 .h2-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
 .h2-img{display:block;width:min(46vw,210px);aspect-ratio:1/.94;overflow:hidden;background:#d6d6d5}
 .h2-img svg{display:block;width:100%;height:100%}
 .h2-list{display:flex;flex-direction:column;gap:1px;margin-top:10px;font-size:15px;line-height:1.3}
 .h2-list b{font-weight:500;color:var(--ink);margin-bottom:2px}
-.h2-list a{color:#a5a29f;transition:color .2s}
-.h2-list a:hover{color:var(--ink)}
+.h2-list a{color:#a5a29f;transition:color .2s}.h2-list a:hover{color:var(--ink)}
 .h2-tag{margin:0;font-family:var(--font-display);font-weight:600;font-size:clamp(24px,7vw,34px);line-height:1.1;letter-spacing:-.025em;max-width:14em;color:var(--ink)}
 .h2-acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
 .h2-nav{display:none}
 .h2-word{font-family:var(--font-display);font-weight:800;text-transform:none;letter-spacing:-.06em;line-height:.8;font-size:min(22.5vw,330px);text-align:right;color:var(--ink);white-space:nowrap;margin:0 -.04em -.06em auto;padding-top:8px}
 .h2-word sup{font-size:.16em;letter-spacing:0;font-weight:700;vertical-align:top;position:relative;top:.1em;margin-left:.1em}
-.hero2{padding-top:104px;padding-bottom:0}
-.h2-grid{grid-template-columns:minmax(240px,26vw) minmax(0,1fr) auto;gap:3vw;align-items:start}
-.h2-img{width:100%;aspect-ratio:1/.82}
-.h2-mid{padding-top:6vh}
-.h2-tag{font-size:clamp(30px,3.4vw,50px)}
-.h2-nav{display:flex;flex-direction:column;gap:3px;font-family:var(--font-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding-top:2px;min-width:9em}
-.h2-nav a{color:var(--ink)}
-.h2-nav a:hover{color:var(--accent)}
-.h2-word{font-size:min(17vw,280px);line-height:.86;margin-bottom:0}
+@media (min-width:900px){
+  .hero2{padding-top:104px;padding-bottom:0}
+  .h2-grid{grid-template-columns:minmax(240px,26vw) minmax(0,1fr) auto;gap:3vw;align-items:start}
+  .h2-img{width:100%;aspect-ratio:1/.82}
+  .h2-mid{padding-top:6vh}
+  .h2-tag{font-size:clamp(30px,3.4vw,50px)}
+  .h2-nav{display:flex;flex-direction:column;gap:3px;font-family:var(--font-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding-top:2px;min-width:9em}
+  .h2-nav a{color:var(--ink)}.h2-nav a:hover{color:var(--accent)}
+  .h2-word{font-size:min(17vw,280px);line-height:.86;margin-bottom:0}
+}
+
+/* ---------- stack: panels fill a screen and stop mid-way like the original; no JS-driven shifting unless a panel is taller than the screen ---------- */
 .fx-panel{min-height:92svh}
 .fx-panel:first-of-type{min-height:100svh}
+
+/* ---------- huge pixel logo at the bottom of the homepage hero (replaces the plain-text wordmark) ---------- */
 .h2-word{display:block;font-size:0;line-height:0;margin:0 0 0 auto;padding:6px 0 0;text-align:right;width:100%}
 .h2-word img{display:block;width:100%;height:auto;margin-left:auto;image-rendering:pixelated;image-rendering:crisp-edges}
-.hero2{padding-bottom:10px}
-.h2-img{aspect-ratio:1/.62}
-.h2-list{flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:4px 16px}
-.h2-list b{margin:0 4px 0 0}
-.h2-word{width:max(60vw,min(100%,calc((100svh - 450px)*2.75)))}
+@media (min-width:900px){
+  .hero2{padding-bottom:10px}
+  .h2-img{aspect-ratio:1/.62}
+  .h2-list{flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:4px 16px}.h2-list b{margin:0 4px 0 0}
+  .h2-word{width:max(60vw,min(100%,calc((100svh - 450px)*2.75)))}
+}
+
+/* ---------- calmer scroll: blocks only fade/rise a little (no sideways flying or rotating inside sticky panels), panels get their own layer ---------- */
 html.fx-flow-ready .fx-stage .k,html.fx-flow-ready .hs-i{--fx0:0px!important;--fr:0deg!important;transform:translate3d(0,14px,0)}
 html.fx-flow-ready .fx-stage .k.in,html.fx-flow-ready .hs-i.in{transform:none}
 .fx-panel{-webkit-backface-visibility:hidden;backface-visibility:hidden}
 .fx-cont{margin-top:0}
 .fx-panel.fx-compact{min-height:0!important;padding-bottom:36px}
+
+/* ---------- compact artwork so every stacked panel fits a screen and can pause ---------- */
 html.fx-flow svg.fx-art.a-big,html.fx-flow .slab svg.fx-art{width:min(100%,440px)!important;height:auto!important;max-height:38vh!important;margin-left:auto!important;margin-right:auto!important}
-@media (min-width:1100px){
-html:not(.fx-live) .hp-rooms{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:2vh 2vw}
-html:not(.fx-live) .hp-rooms .room .fx-art{max-height:150px;width:auto;margin:0 auto}
-}
-@media (min-width:900px) and (max-width:1099px){
-html:not(.fx-live) .hp-rooms{grid-template-columns:repeat(3,minmax(0,1fr))!important}
-html:not(.fx-live) .hp-rooms .room .fx-art{max-height:130px;width:auto}
-}
+@media (min-width:1100px){html:not(.fx-live) .hp-rooms{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:2vh 2vw}html:not(.fx-live) .hp-rooms .room .fx-art{max-height:150px;width:auto;margin:0 auto}}
+@media (min-width:900px) and (max-width:1099px){html:not(.fx-live) .hp-rooms{grid-template-columns:repeat(3,minmax(0,1fr))!important}html:not(.fx-live) .hp-rooms .room .fx-art{max-height:130px;width:auto}}
 html.fx-flow .slab{min-height:0!important;height:auto!important}
+
+/* ---------- layered panels, not pinned (replaces the sticky stack): panels simply slide up over the previous one's rounded edge ---------- */
 html.fx-stacked .fx-panel,html.fx-stacked .stack-panel{position:relative!important;top:auto!important;min-height:0!important}
 html.fx-stacked .fx-panel:not(:first-of-type){margin-top:-26px;padding-top:88px!important;box-shadow:0 -16px 40px -26px rgba(0,0,0,.3)}
 html.fx-stacked .fx-panel:first-of-type{margin-top:0}
 .fx .stack .stack-panel-dark:not(.fx-panel){position:relative!important;top:auto!important;margin-top:-26px}
 .fx-panel{-webkit-backface-visibility:visible;backface-visibility:visible}
 .fx .stack .stack-panel-dark:not(.fx-panel){margin-top:-28px!important;z-index:4;position:relative!important}
+
+/* ---------- depth + colour for the layered panels (every page except the homepage) ---------- */
 html:has(body.fx){scroll-behavior:auto}
 html.fx-stacked .fx-panel{background-image:none!important;box-shadow:0 -26px 60px -26px rgba(0,0,0,.42)}
 html.fx-stacked .fx-panel:nth-of-type(3n+1){background-color:#f6f4f1}
 html.fx-stacked .fx-panel:nth-of-type(3n+2){background-color:#ece7e4}
-html.fx-stacked .fx-panel:nth-of-type(3n+3){background-color:#f1e4e6}
+html.fx-stacked .fx-panel:nth-of-type(3n+3){background-color:#f1e4e6}   /* wine tint */
 html.fx-stacked .fx-panel:first-of-type{background-color:#fbfaf9;box-shadow:none}
 html.fx-stacked .fx-panel.alt{background-color:inherit}
 html.fx-stacked .fx-panel:nth-of-type(3n+2).fx-panel,html.fx-stacked .fx-panel:nth-of-type(3n+3).fx-panel{background-image:none!important}
 .fx .fx-panel::before{opacity:.92}
-@media (hover:hover) and (pointer:fine){
-@supports (animation-timeline: view()){
-html.fx-stacked .fx-panel:not(:first-of-type)>*:not(.stack-panel-dark){animation:fxDepth linear both;animation-timeline:view();animation-range:entry 0% cover 60%}
-@keyframes fxDepth{from{transform:translate3d(0,34px,0);opacity:.6}to{transform:none;opacity:1}}
-}
-}
-.page-transition:not(.is-active){display:none}
+@media (hover:hover) and (pointer:fine) { @supports (animation-timeline: view()) {
+  /* each panel's content drifts slower than the panel itself, so the layers read as separate depths; compositor-only */
+  html.fx-stacked .fx-panel:not(:first-of-type)>*:not(.stack-panel-dark){animation:fxDepth linear both;animation-timeline:view();animation-range:entry 0% cover 60%}
+  @keyframes fxDepth{from{transform:translate3d(0,34px,0);opacity:.6}to{transform:none;opacity:1}}
+} }
+
+.page-transition:not(.is-active){display:none}   /* a full-screen fixed layer that is invisible 99% of the time still costs compositing on phones */

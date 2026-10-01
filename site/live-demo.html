@@ -18,23 +18,13 @@
 <link rel="icon" href="/logo.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="theme.mobile.css?v=44" media="(max-width:899px)"><link rel="stylesheet" href="theme.desktop.css?v=44" media="(min-width:900px)">
-<link rel="stylesheet" href="sketch.mobile.css?v=1" media="(max-width:899px)"><link rel="stylesheet" href="sketch.desktop.css?v=1" media="(min-width:900px)">
-<link rel="stylesheet" href="fx.mobile.css?v=2" media="(max-width:899px)"><link rel="stylesheet" href="fx.desktop.css?v=2" media="(min-width:900px)">
-<link rel="stylesheet" href="fx-pages.mobile.css?v=1" media="(max-width:899px)"><link rel="stylesheet" href="fx-pages.desktop.css?v=1" media="(min-width:900px)">
-<link rel="stylesheet" href="fx-flow.mobile.css?v=12" media="(max-width:899px)"><link rel="stylesheet" href="fx-flow.desktop.css?v=12" media="(min-width:900px)">
-<script src="sketch.js?v=1"></script>
-<script src="fx-art.js?v=1" defer></script>
-<script src="fx.js?v=2" defer></script>
-<script src="fx-canvas.js?v=1" defer></script>
-<script src="fx-stack.js?v=10" defer></script>
-<link rel="stylesheet" href="design-system/ui-kit.mobile.css?v=3" media="(max-width:899px)"><link rel="stylesheet" href="design-system/ui-kit.desktop.css?v=3" media="(min-width:900px)">
+<link rel="stylesheet" href="theme.css?v=44">
+<link rel="stylesheet" href="design-system/ui-kit.css?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="hig-site.mobile.css?v=8" media="(max-width:899px)"><link rel="stylesheet" href="hig-site.desktop.css?v=3" media="(min-width:900px)">
 </head>
-<body class="fx pg">
+<body>
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
 
 <div class="shell">
@@ -112,31 +102,74 @@
     </div>
   </aside>
 
-    <main class="content">
-<div class="fx-scene pd pd-demo" data-scene style="--len:4.5" data-pointer><div class="fx-stage">
-<div class="k eye tl2" data-k="0:o1; .12:o0">Live demo</div>
-<h1 class="hh"><span class="k giant l1" style="font-size:12vw" data-blast data-k="0:x-4,y-3,o1; .16:x-6,o1; .3:x-70,o0">Try AUZslab</span>
-<span class="k giant outline-m l2" style="font-size:12vw" data-blast data-k="0:x4,y12,o1; .16:x8,o1; .3:x70,o0">before you buy.</span></h1>
-<p class="k lede2 bl" data-k="0:o1; .12:o0">Real, working accounts, open to everyone. Pick the one closest to your business, sign in and click around. Nothing you do here touches your own business.</p>
-<div class="k trio" data-k=".15:o0,y14; .4:o1,y0; .8:o1; .9:o0"><i class="dv d1"><b>Caf&eacute; POS</b><u></u><u></u><u></u></i><i class="dv d2"><b>Retail</b><u></u><u></u></i><i class="dv d3"><b>Salon</b><u></u><u></u></i></div>
-<div class="k note nl" data-k=".4:o0,y6; .5:o1,y0; .8:o1; .86:o0">pick the closest one.</div>
-</div></div>
-<section class="devs"><article class="dev dv0" data-reveal><div class="bezel"><span class="tg">Salons &amp; spas</span><h3>AUZslab Salon</h3><p>Your salon website, online booking, billing and clients. Sign in as the owner, or as a staff member to see the limited view your team gets. Resets every 12 hours.</p><div class="cred">
+  <main class="content">
+    <div class="wrap">
+
+      <section class="section" style="padding-top:104px">
+        <div class="label">Live demo</div>
+        <h1 class="h-1" style="font-size:48px">Try AUZslab<br>before you buy.</h1>
+        <p class="lede">Real, working accounts, open to everyone. Pick the one closest to your business, sign in and click around. Nothing you do here touches your own business.</p>
+      </section>
+
+      <hr class="dash">
+
+      <section class="section tight">
+        <div class="card" style="margin-bottom:20px">
+          <span class="tag">Salons &amp; spas</span>
+          <div class="h-2" style="margin-top:14px;font-size:24px">AUZslab Salon</div>
+          <p class="p" style="margin-top:8px;max-width:560px">Your salon website, online booking, billing and clients. Sign in as the owner, or as a staff member to see the limited view your team gets. Resets every 12 hours.</p>
+          <div style="margin-top:14px;background:var(--bg-raised);border:1.5px solid var(--ink);border-radius:14px;padding:14px 16px;font-family:var(--font-mono);font-size:12.5px;line-height:1.9;word-break:break-word">
           <div>Website &nbsp; <b>demo-salon.auzslab.in</b></div>
           <div>Owner console &nbsp; <b>demo-salon.auzslab.in/salon/admin/</b></div>
           <div>Owner password &nbsp; <b>Auzslab@Demo</b></div>
           <div>Staff sign in &nbsp; <b>phone 9000000001 &middot; password Auzslab@Demo</b></div>
-          </div><div class="acts"><a href="https://demo-salon.auzslab.in/" target="_blank" rel="noopener" class="btn btn-primary">Open the salon website &rarr;</a><a href="https://demo-salon.auzslab.in/salon/admin/" target="_blank" rel="noopener" class="btn btn-ghost">Open the console</a></div></div></article><article class="dev dv1" data-reveal><div class="bezel"><span class="tg">Caf&eacute;s &amp; restaurants</span><h3>AUZslab POS &mdash; Caf&eacute;</h3><p>Tables, kitchen tickets, billing, CRM and inventory for a caf&eacute; or restaurant.</p><div class="cred">
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+            <a href="https://demo-salon.auzslab.in/" target="_blank" rel="noopener" class="btn btn-primary">Open the salon website &rarr;</a>
+            <a href="https://demo-salon.auzslab.in/salon/admin/" target="_blank" rel="noopener" class="btn btn-ghost">Open the console</a>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:20px">
+          <span class="tag">Caf&eacute;s &amp; restaurants</span>
+          <div class="h-2" style="margin-top:14px;font-size:24px">AUZslab POS &mdash; Caf&eacute;</div>
+          <p class="p" style="margin-top:8px;max-width:560px">Tables, kitchen tickets, billing, CRM and inventory for a caf&eacute; or restaurant.</p>
+          <div style="margin-top:14px;background:var(--bg-raised);border:1.5px solid var(--ink);border-radius:14px;padding:14px 16px;font-family:var(--font-mono);font-size:12.5px;line-height:1.9;word-break:break-word">
           <div>URL &nbsp; <b>demo-cafe.auzslab.in</b></div>
           <div>Email &nbsp; <b>demo-cafe@auzslab.in</b></div>
           <div>Password &nbsp; <b>Auzslab@Demo</b></div>
-          </div><div class="acts"><a href="https://demo-cafe.auzslab.in/" target="_blank" rel="noopener" class="btn btn-primary">Launch the caf&eacute; demo &rarr;</a></div></div></article><article class="dev dv2" data-reveal><div class="bezel"><span class="tg">Retail</span><h3>AUZslab POS &mdash; Retail</h3><p>Size and colour stock, scan-to-bill, returns and exchanges for a clothing or retail shop.</p><div class="cred">
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+            <a href="https://demo-cafe.auzslab.in/" target="_blank" rel="noopener" class="btn btn-primary">Launch the caf&eacute; demo &rarr;</a>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:20px">
+          <span class="tag">Retail</span>
+          <div class="h-2" style="margin-top:14px;font-size:24px">AUZslab POS &mdash; Retail</div>
+          <p class="p" style="margin-top:8px;max-width:560px">Size and colour stock, scan-to-bill, returns and exchanges for a clothing or retail shop.</p>
+          <div style="margin-top:14px;background:var(--bg-raised);border:1.5px solid var(--ink);border-radius:14px;padding:14px 16px;font-family:var(--font-mono);font-size:12.5px;line-height:1.9;word-break:break-word">
           <div>URL &nbsp; <b>demo-retail.auzslab.in</b></div>
           <div>Email &nbsp; <b>demo-retail@auzslab.in</b></div>
           <div>Password &nbsp; <b>Auzslab@Demo</b></div>
-          </div><div class="acts"><a href="https://demo-retail.auzslab.in/" target="_blank" rel="noopener" class="btn btn-primary">Launch the retail demo &rarr;</a></div></div></article></section>
-<section class="closer"><div class="eye">Not sure which one?</div><h2 class="fx-h2" data-split="rise">We'll walk you through it.</h2><div class="acts"><button class="btn btn-primary" data-open-contact data-magnet>Let's talk</button><a href="products.html" class="btn btn-ghost">See all products</a></div><p class="terms">For evaluation only. Please don't scrape or copy the software. See our <a href="terms.html">terms</a>.</p></section>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+            <a href="https://demo-retail.auzslab.in/" target="_blank" rel="noopener" class="btn btn-primary">Launch the retail demo &rarr;</a>
+          </div>
+        </div>
+        <p class="p" style="margin-top:12px;font-size:11.5px;color:var(--ink-faint)">For evaluation only &mdash; please don't scrape or copy the software. See our <a href="terms.html" style="color:var(--ink-faint);text-decoration:underline">terms</a>.</p>
+      </section>
 
+      <hr class="dash">
+
+      <section class="section tight">
+        <div class="label">Not sure which one?</div>
+        <h2 class="h-2">We'll walk you through it.</h2>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+          <button class="btn btn-primary" data-open-contact>Let's talk</button>
+          <a href="products.html" class="btn btn-ghost">See all products</a>
+        </div>
+      </section>
+
+    </div>
   </main>
 
   <button class="knock-btn" data-open-contact>
@@ -191,6 +224,5 @@
 <script src="site.js?v=7"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script src="design-system/ui-kit.js?v=1"></script>
-<script src="hig-site.js?v=6" defer></script>
 </body>
 </html>
