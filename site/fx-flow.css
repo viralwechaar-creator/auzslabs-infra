@@ -270,3 +270,12 @@ html.fx-flow .fx .topbar::before,html.fx-flow .fx .topbar::after{display:none}
 @media (min-width:900px){.fx .fx-panel:first-of-type .fx-stage{padding-top:112px}}
 .fx .stack-panel-dark{border-radius:0!important;border-top:0}
 .fx .stack-panel-dark .eye{color:rgba(255,255,255,.55)}
+
+/* the closing call-to-action is a light panel so the dark CONNECT footer reads as its own separate piece */
+.fx .fx-panel.stack-panel-dark{background:#efecea;color:var(--ink-dim);border-color:var(--line);border-radius:0!important}
+.fx .fx-panel.stack-panel-dark::before{color:var(--ink)}
+.fx .fx-panel.stack-panel-dark .eye{color:var(--accent)}
+.fx .fx-panel.stack-panel-dark :is(h1,h2,h3,.fx-h2){color:var(--ink)}
+.fx .fx-panel.stack-panel-dark .btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.fx .fx-panel.stack-panel-dark .btn-ghost{color:var(--ink);border-color:var(--ink)}
+.fx .stack-panel-dark:not(.fx-panel){border-radius:36px 36px 0 0!important;border-top:2px solid var(--ink);margin-top:-1px;box-shadow:0 -14px 30px rgba(0,0,0,.08)}
