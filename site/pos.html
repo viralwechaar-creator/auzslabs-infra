@@ -20,13 +20,18 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="stylesheet" href="theme.css?v=44">
 <link rel="stylesheet" href="sketch.css?v=1">
+<link rel="stylesheet" href="fx.css?v=1">
+<link rel="stylesheet" href="fx-pages.css?v=1">
 <script src="sketch.js?v=1"></script>
+<script src="fx-art.js?v=1" defer></script>
+<script src="fx.js?v=1" defer></script>
+<script src="fx-canvas.js?v=1" defer></script>
 <link rel="stylesheet" href="design-system/ui-kit.css?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 </head>
-<body>
+<body class="fx pg">
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
 
 <div class="shell">
@@ -104,33 +109,28 @@
     </div>
   </aside>
 
-  <main class="content">
-    <div class="wrap">
-
-      <section class="section" style="padding-top:104px">
-        <div class="hero-grid">
-        <div>
-        <div class="uk-kit uk-breadcrumb" style="margin-bottom:18px">
+        <main class="content">
+<div class="fx-scene pd pd-pos" data-scene style="--len:6" data-pointer><div class="fx-stage">
+<canvas class="fx-field" data-shapes="0:flow; .55:ring@.5,.5,.5,.9" data-n="500" data-kick="3" aria-hidden="true"></canvas>
+<div class="k crumbk tl" data-k="0:o1; .08:o0"><div class="uk-kit uk-breadcrumb" style="margin-bottom:18px">
           <a href="products.html">Products</a><span class="uk-breadcrumb-sep">/</span><span class="uk-breadcrumb-current">POS</span>
-        </div>
-        <div class="label">Point of sale</div>
-        <h1 class="h-1" style="font-size:44px">Billing that keeps<br>up with the rush.</h1>
-        <p class="lede">Ring up an order, print or share the bill, and send it to the kitchen &mdash; all from one till that keeps working even when the internet doesn't.</p>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px">
-          <button class="btn btn-primary" id="addCartBtn">Add to cart</button>
-          <a href="cart.html" class="btn btn-ghost">View cart</a>
-        </div>
-        </div>
-        <div class="hero-art" role="presentation">
-          <img class="hero-art-logo" src="logo.png" alt="" aria-hidden="true">
-        </div>
-        </div>
-      </section>
-
-      <section class="section tight">
-        <div class="card" style="border-color:var(--accent);box-shadow:5px 5px 0 var(--accent)">
-          <span class="tag" style="background:var(--accent);color:#fff;border-color:var(--accent)">Hands-on</span>
-          <div class="h-2" style="margin-top:14px;font-size:22px">Skip the reading. Try it yourself.</div>
+        </div></div>
+<div class="k eye tl2" data-k="0:o1; .1:o0">Point of sale</div>
+<h1 class="hh"><span class="k giant l1" style="font-size:7.81vw" data-blast data-k="0:x-4,y-3,o1; .1:x-8,y-3,o1; .2:x-70,y-30,o0">Billing that keeps</span>
+<span class="k giant outline l2" style="font-size:7.81vw" data-blast data-k="0:x4,y12,o1; .1:x8,y12,o1; .2:x70,y30,o0">up with the rush.</span></h1>
+<p class="k lede2 bl" data-k="0:o1,y0; .08:o0,y4">Ring up an order, print or share the bill, and send it to the kitchen &mdash; all from one till that keeps working even when the internet doesn't.</p>
+<svg class="k till" data-art="pos" data-wob="1" data-k="0:o0,s.6,y10,d0; .12:o1,s.8,y6,d.3; .3:s1.15,y2,d1; .62:s1.2,y0,d1; .8:s.5,y-10,o0">&nbsp;</svg>
+<div class="k strip" data-k=".22:o0,y-6,c0; .3:o1,c0; .62:c1,y0; .8:c1,y-8,o1; .9:o0,y-90">
+  <b>AUZslab · till 01</b><span>Billing &amp; checkout</span><span>Table management</span><span>Kitchen order tickets</span><span>Staff &amp; shifts</span><span>Size &amp; color billing</span><em>Total</em><u class="stamp">Paid</u></div>
+<div class="k note nl" data-k=".3:o0,y6,r-8; .38:o1,y0,r-6; .6:o1; .66:o0">tap, bill, print.</div>
+<div class="k note nr" data-k=".38:o0,y6,r6; .46:o1,y0,r4; .6:o1; .66:o0">kitchen already knows.</div>
+<div class="k cta2" data-k="0:o1; .1:o0,y4"><div class="acts"><button class="btn btn-primary" data-add data-magnet>Add to cart</button><a href="cart.html" class="btn btn-ghost">View cart</a></div></div>
+<div class="k cta2 end" data-k=".84:o0,y6; .92:o1,y0"><div class="acts"><button class="btn btn-primary" data-add data-magnet>Add to cart</button><a href="cart.html" class="btn btn-ghost">View cart</a></div></div>
+</div></div>
+<section class="featsec ticket"><div class="eye">What's included</div><div class="tk" data-reveal><div class="row"><h3>Billing &amp; checkout</h3><p>Fast line-item entry, discounts, split payments and instant receipts.</p><i>Included</i></div><div class="row"><h3>Table management</h3><p>See every table's status at a glance &mdash; open, occupied, billed &mdash; and move orders between them.</p><i>Included</i></div><div class="row"><h3>Kitchen order tickets</h3><p>Every order prints or displays in the kitchen the instant it's placed &mdash; no shouting across the counter.</p><i>Included</i></div><div class="row"><h3>Staff &amp; shifts</h3><p>Role-based logins for owners, managers and cashiers, with a shift log for every till session.</p><i>Included</i></div><div class="row"><h3>Size &amp; color billing</h3><p>Running a clothing or retail shop instead? The same till bills against size/color stock, with barcode scanning and returns/exchanges built in.</p><i>Included</i></div><div class="row"><h3>Barcode scanning</h3><p>Off by default &mdash; turn it on if you have a scanner, and scanning an item adds it to the bill instantly.</p><i>Optional</i></div></div></section>
+<section class="demo-wrap" data-reveal><div class="demo">
+          <span class="stamp">Hands-on</span>
+          <div class="dh">Skip the reading. Try it yourself.</div>
           <p class="p" style="margin-top:8px">A real, live AUZslab account, shared publicly for exactly this. Ring up an order, print a receipt, send it to the kitchen.</p>
           <div style="margin-top:14px;background:var(--bg-raised);border:1.5px solid var(--ink);border-radius:14px;padding:14px 16px;font-family:var(--font-mono);font-size:12.5px;line-height:1.9">
             <div>Password for both &nbsp; <b>Auzslab@Demo</b></div>
@@ -142,54 +142,10 @@
           <p class="p" style="margin-top:12px;font-size:11.5px;color:var(--ink-faint)">For evaluation only &mdash; please don't scrape or copy the software. See our <a href="terms.html" style="color:var(--ink-faint);text-decoration:underline">terms</a>.</p>
         </div>
       </section>
+<section class="pairs"><div class="eye">Pairs well with</div><div class="prow"><a href="billing.html" class="pair" data-magnet>Billing &amp; Invoicing <i>&rarr;</i></a><a href="inventory.html" class="pair" data-magnet>Inventory <i>&rarr;</i></a><a href="qr-ordering.html" class="pair" data-magnet>QR Ordering <i>&rarr;</i></a></div></section>
+<section class="closer"><div class="eye">Ready?</div><h2 class="fx-h2" data-split="rise">Add it to your account.</h2><div class="acts"><button class="btn btn-primary" data-open-contact data-magnet>Let's talk</button><a href="pricing.html" class="btn btn-ghost">See pricing</a></div></section>
 
-      <section class="section tight">
-        <div class="grid-2">
-          <div class="card">
-            <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Billing &amp; checkout</div>
-            <p class="p" style="margin-top:8px">Fast line-item entry, discounts, split payments and instant receipts.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Table management</div>
-            <p class="p" style="margin-top:8px">See every table's status at a glance &mdash; open, occupied, billed &mdash; and move orders between them.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Kitchen order tickets</div>
-            <p class="p" style="margin-top:8px">Every order prints or displays in the kitchen the instant it's placed &mdash; no shouting across the counter.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Staff &amp; shifts</div>
-            <p class="p" style="margin-top:8px">Role-based logins for owners, managers and cashiers, with a shift log for every till session.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Size &amp; color billing</div>
-            <p class="p" style="margin-top:8px">Running a clothing or retail shop instead? The same till bills against size/color stock, with barcode scanning and returns/exchanges built in.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Optional</span>
-            <div class="h-2" style="margin-top:14px">Barcode scanning</div>
-            <p class="p" style="margin-top:8px">Off by default &mdash; turn it on if you have a scanner, and scanning an item adds it to the bill instantly.</p>
-          </div>
-        </div>
-      </section>
-
-      <hr class="dash">
-
-      <section class="section">
-        <div class="label">Pairs well with</div>
-        <div style="display:flex;gap:12px;flex-wrap:wrap">
-          <a href="billing.html" class="tag">Billing &amp; Invoicing</a>
-          <a href="inventory.html" class="tag">Inventory</a>
-          <a href="qr-ordering.html" class="tag">QR Ordering</a>
-        </div>
-      </section>
-
-      <div class="stack">
+    <div class="stack">
 
       <section class="stack-panel stack-panel-dark" data-tab="CONNECT">
 
@@ -297,22 +253,23 @@
 
 </div>
 <script src="/sb-client.js?v=2"></script>
-<script src="site.js?v=7"></script>
+<script src="site.js?v=8"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script src="design-system/ui-kit.js?v=1"></script>
 <script>
 (function () {
   var KEY = 'pos';
   var sb = supabase.createClient(CFG.url, CFG.key);
-  var btn = document.getElementById('addCartBtn');
+  var btns = [].slice.call(document.querySelectorAll('[data-add]'));
   var owned = false;
   function refresh() {
-    if (owned) { btn.textContent = 'Already included ✓'; btn.disabled = true; return; }
-    btn.disabled = false;
-    var has = AUZcart.has(KEY);
-    btn.textContent = has ? 'Added ✓ — remove' : 'Add to cart';
+    btns.forEach(function (btn) {
+      if (owned) { btn.textContent = 'Already included ✓'; btn.disabled = true; return; }
+      btn.disabled = false;
+      btn.textContent = AUZcart.has(KEY) ? 'Added ✓ — remove' : 'Add to cart';
+    });
   }
-  btn.addEventListener('click', function () { if (owned) return; AUZcart.toggle(KEY); refresh(); });
+  btns.forEach(function (btn) { btn.addEventListener('click', function () { if (owned) return; AUZcart.toggle(KEY); refresh(); }); });
   var n = AUZcart.get().length;
   document.querySelectorAll('.cart-count').forEach(function (el) { el.textContent = n ? '(' + n + ')' : ''; });
   refresh();

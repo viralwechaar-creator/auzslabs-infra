@@ -22,7 +22,11 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="stylesheet" href="theme.css?v=44">
 <link rel="stylesheet" href="sketch.css?v=1">
+<link rel="stylesheet" href="fx.css?v=1">
 <script src="sketch.js?v=1"></script>
+<script src="fx-art.js?v=1" defer></script>
+<script src="fx.js?v=1" defer></script>
+<script src="fx-canvas.js?v=1" defer></script>
 <link rel="stylesheet" href="design-system/ui-kit.css?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,31 +35,82 @@
 {"@context":"https://schema.org","@type":"Organization","name":"AUZslab","url":"https://auzslab.in","logo":"https://auzslab.in/logo.png","description":"AUZslab builds point of sale, CRM, and business software in-house."}
 </script>
 <style>
+/* ---------- home: one continuous scroll story ---------- */
+#story{--len:11}
+#story .fx-stage{perspective:1400px;background:transparent}
+.hero-h1{margin:0;font:inherit}
+.hw{font-size:clamp(50px,15vw,330px)}
+.hw-hand{font-size:clamp(30px,8.2vw,190px);white-space:nowrap}
+.hw-out{font-size:clamp(36px,8.2vw,190px)}
+.hw-mid{font-size:clamp(32px,7.4vw,170px)}
+.hw-big{font-size:clamp(64px,18vw,400px)}
+.cta-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.heroctl{display:flex;flex-direction:column;gap:14px;align-items:flex-start}
+.scrollhint{font-family:var(--hand);font-size:clamp(20px,2.2vw,34px);color:var(--accent);display:flex;align-items:center;gap:10px;white-space:nowrap}
+.scrollhint svg{width:46px;height:46px;stroke:var(--accent);fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;animation:hint-bob 1.8s ease-in-out infinite}
+@keyframes hint-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(7px)}}
+.we-build{font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;display:flex;gap:.9em;align-items:center;white-space:nowrap}
+.we-build b{color:var(--accent);font-weight:700}
 
-@media (min-width:861px){
-  .shell{flex-direction:column}
-  .topbar{display:flex}
-  .sidebar{
-    position:fixed;top:0;right:0;left:auto;bottom:0;width:100%;max-width:420px;height:100%;
-    transform:translateX(100%);
-  }
-  .sidebar.open{transform:translateX(0)}
-  .content{margin-right:0}
-  .drawer-overlay{display:block}
-  .drawer-close{display:inline-flex}
+.cubebox{--cs:min(46vh,44vw);width:var(--cs);height:var(--cs);transform-style:preserve-3d}
+.cface{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);
+  background:#fffdf7 repeating-linear-gradient(135deg,transparent 0 9px,rgba(23,23,23,.055) 9px 10px)}
+.cface svg{width:80%;height:auto}
+.cface b{position:absolute;left:7%;bottom:5%;font:900 calc(var(--cs)*.115)/1 var(--font-display);letter-spacing:-.05em;text-transform:uppercase}
+.cface:nth-child(1){transform:translateZ(calc(var(--cs)*.5 + var(--ex,0)*1px))}
+.cface:nth-child(2){transform:rotateY(90deg) translateZ(calc(var(--cs)*.5 + var(--ex,0)*1px))}
+.cface:nth-child(3){transform:rotateY(180deg) translateZ(calc(var(--cs)*.5 + var(--ex,0)*1px))}
+.cface:nth-child(4){transform:rotateY(-90deg) translateZ(calc(var(--cs)*.5 + var(--ex,0)*1px))}
+.cface:nth-child(5){transform:rotateX(90deg) translateZ(calc(var(--cs)*.5 + var(--ex,0)*1px))}
+.cface:nth-child(6){transform:rotateX(-90deg) translateZ(calc(var(--cs)*.5 + var(--ex,0)*1px))}
+.note{font-family:var(--hand);font-weight:700;color:var(--accent);font-size:clamp(24px,3.4vw,58px);line-height:.95;white-space:nowrap}
+.note small{display:block;font:500 clamp(12px,1vw,16px)/1.4 var(--font-body);color:var(--ink-dim);max-width:19em;white-space:normal;margin-top:.5em}
+.note svg{width:clamp(50px,7vw,120px);fill:none;stroke:var(--accent);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;display:block}
 
-  
-  .home-hero{position:relative}
-  .home-hero .wrap{max-width:640px}
-  .home-hero .hero-art{
-    position:absolute;right:24px;bottom:90px;margin:0;
-    width:min(46vw,480px);justify-content:flex-end;pointer-events:none;
-  }
-  .home-hero .hero-art-logo{width:100%;max-width:none}
+.hww{font-size:clamp(54px,12vw,260px)}
+.hww-copy{font-family:var(--hand);font-weight:700;font-size:clamp(22px,2.6vw,46px);color:var(--accent);line-height:1.05;max-width:13em;white-space:normal}
+
+.room{display:block;width:min(58vw,860px);position:relative;color:var(--ink)}
+.room .no{font:500 clamp(10px,.9vw,14px)/1 var(--font-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:10px;margin-bottom:1.4vh}
+.room .no::before{content:"";width:28px;height:2px;background:var(--accent)}
+.room .nm{font:900 clamp(48px,12.5vw,240px)/.82 var(--font-display);letter-spacing:-.055em;text-transform:uppercase;color:transparent;-webkit-text-stroke:max(1.5px,.11vw) var(--ink);margin:0}
+.room .nm.fill{color:var(--ink);-webkit-text-stroke:0}
+.room p{font-size:clamp(14px,1.6vw,26px);line-height:1.5;max-width:22em;color:var(--ink-dim);margin:1.6vh 0 0}
+.room .go{display:inline-flex;margin-top:2vh;font:700 clamp(11px,.95vw,15px)/1 var(--font-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink);border-bottom:2px solid var(--accent);padding-bottom:5px}
+.room .go:hover{color:var(--accent)}
+.room svg.art{position:absolute;width:var(--aw,26vw);left:var(--al,auto);right:var(--ar,-16vw);top:var(--at,-18vh);pointer-events:none}
+.room.l{text-align:left}
+.room.r{margin-left:auto}
+
+.doorway{display:block;width:min(27vw,420px);padding:clamp(14px,1.6vw,26px);background:#fffdf7;border:2px solid var(--ink);box-shadow:10px 10px 0 var(--ink);position:relative;transition:transform .45s var(--ease-out),box-shadow .45s var(--ease-out)}
+.doorway:hover{transform:translate(-4px,-4px) rotate(0deg)!important;box-shadow:16px 16px 0 var(--accent)}
+.doorway .t{font:900 clamp(22px,2.6vw,46px)/.92 var(--font-display);letter-spacing:-.04em;margin:0}
+.doorway .d{font-size:clamp(12px,1vw,16px);line-height:1.5;color:var(--ink-dim);margin:1.2vh 0 0}
+.doorway svg{width:42%;margin:0 0 1vh auto;display:block}
+.doorway .tape{top:-13px;left:18%}
+
+.wash{background:#0e0d0c}
+.portal-h{color:#f6f4f1;font-size:clamp(54px,15.4vw,360px)}
+.portal-p{color:rgba(244,238,226,.72);font-size:clamp(14px,1.25vw,20px);line-height:1.6;max-width:30em;margin:0}
+.portal-p a{color:#f6f4f1;border-bottom:2px solid var(--accent)}
+.ring{width:min(92vh,78vw);height:auto;fill:none;stroke:#f6f4f1;stroke-width:1.2;stroke-dasharray:1;stroke-dashoffset:calc(1 - var(--d,0));opacity:.45}
+.btn-light{border-color:transparent;background:#f6f4f1;color:#0e0d0c}
+.btn-light::before{border-color:#f6f4f1!important}
+.btn-line{color:#f6f4f1;border-color:transparent}
+.btn-line::before{border-color:rgba(244,238,226,.7)!important}
+
+@media (max-width:700px){
+  .room{width:80vw}.room .nm{font-size:clamp(40px,15vw,120px)}.room svg.art{width:38vw;right:-10vw;top:-9vh}
+  .doorway{width:60vw;padding:12px}.doorway svg{width:26%}.doorway .d{display:none}
+  .doorway:nth-of-type(1){left:37%!important;top:27%!important}
+  .doorway:nth-of-type(2){left:63%!important;top:43%!important}
+  .doorway:nth-of-type(3){left:39%!important;top:60%!important}
+  .doorway:nth-of-type(4){left:62%!important;top:77%!important}
+  .hww{font-size:clamp(46px,17vw,120px)}
 }
 </style>
 </head>
-<body>
+<body class="fx home">
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
 
 <div class="shell">
@@ -149,133 +204,125 @@
     </div>
   </aside>
 
-  <main class="content">
+                <main class="content">
 
-    <div class="stack">
+    <div class="fx-scene" id="story" data-scene data-pointer>
+      <div class="fx-stage">
+        <canvas class="fx-field" data-shapes="0:flow; .085:ring@.5,.5,.92,.92; .3:flow; .34:flow; .8:flow; .92:ring@.5,.5,.8,.8" data-kick="7" aria-hidden="true"></canvas>
 
-      <section class="stack-panel home-hero">
-        <div class="wrap">
-          <div>
-            <h1 class="label">AUZslab</h1>
-            <p class="h-hero reveal in">Software, built for how you actually work.</p>
-            <div style="display:flex;align-items:center;gap:10px;margin-top:26px;flex-wrap:wrap" class="reveal in">
-              <a href="#quick-look" class="btn btn-primary">View products</a>
-              <button class="btn btn-ghost" data-open-contact>Let's talk</button>
-              <svg class="doodle-arrow" width="54" height="34" viewBox="0 0 54 34" fill="none" aria-hidden="true">
-                <path d="M2 6c14 2 30-2 40 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="1 7"/>
-                <path d="M35 6l7 6.5-8 3" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-            <div class="hero-services reveal in">
-              <span class="hero-services-label" data-sk-note="all one login">We build</span>
-              <span class="hero-service is-primary">POS</span>
-              <span class="hero-service">CRM</span>
-              <span class="hero-service">Booking</span>
-              <span class="hero-service">Payroll</span>
-            </div>
+        <h1 class="hero-h1" aria-label="Software, built for how you actually work.">
+          <span class="k giant hw al" style="top:23%" data-blast data-k="0:x0,y0,z0,r0,o1; .05:x-2,y-2,z-150,r-1,o1; .11:x-64,y-8,z-700,r-12,o0">Software,</span>
+          <span class="k hand hw-hand" style="left:73%;top:11%" data-blast data-k="0:r-7,y0,o1; .05:r-11,y-4,o1; .1:y-46,r-42,o0">built for</span>
+          <span class="k giant outline hw-out al" style="top:43%" data-blast data-k="0:x0,z0,o1; .05:x3,z-200,o1; .11:x-44,y22,z-1000,r5,o0">how you</span>
+          <span class="k giant hw-mid ar" style="top:47%" data-blast data-k="0:x0,o1; .05:x-3,o1; .11:x60,y-12,z-800,r9,o0">actually</span>
+          <span class="k giant hw-big al" style="top:68%;left:14vw" data-blast data-k="0:y0,o1; .05:y3,z-200,o1; .11:y42,z-1100,r-5,o0">work.</span>
+        </h1>
+
+        <div class="k bl heroctl" data-k="0:o1,y0; .07:o0,y8">
+          <div class="cta-row">
+            <a href="products.html" class="btn btn-primary" data-blast data-magnet>View products</a>
+            <button class="btn btn-ghost" data-open-contact data-magnet>Let's talk</button>
+          </div>
+          <div class="we-build"><b>We build</b> POS · CRM · Booking · Payroll</div>
+        </div>
+        <div class="k scrollhint ab" style="left:62%" data-k="0:o1,y0; .035:o0,y10">scroll <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 6v32M12 27l12 13 12-13"/></svg></div>
+
+        <!-- the cube: six drawings, assembled as you scroll, then blown apart -->
+        <div class="k cubebox" data-k="0:o0,s.25,ry-240,rx-30,d0,ex0; .07:o0,d0; .14:o1,s.75,ry-100,rx-24,d.35; .22:s1,ry160,rx-16,d1; .29:s1.12,ry340,rx-22,ex0; .37:s2.2,ry560,rx-34,ex700; .43:s4.4,ry700,ex1700,o0">
+          <div class="cface"><svg data-art="pos" data-draw></svg><b>POS</b></div>
+          <div class="cface"><svg data-art="crm" data-draw></svg><b>CRM</b></div>
+          <div class="cface"><svg data-art="booking" data-draw></svg><b>Book</b></div>
+          <div class="cface"><svg data-art="payroll" data-draw></svg><b>Pay</b></div>
+          <div class="cface"><svg data-art="website" data-draw></svg><b>Web</b></div>
+          <div class="cface"><svg data-art="qr" data-draw></svg><b>QR</b></div>
+        </div>
+        <div class="k note" style="left:21%;top:27%" data-k=".12:o0,y6,r-8; .17:o1,y0,r-6; .27:o1,y0; .31:o0,y-6">one account.<svg viewBox="0 0 120 70" aria-hidden="true"><path d="M6 8C40 2 92 18 108 58M108 58L92 50M108 58L111 40"/></svg></div>
+        <div class="k note" style="left:77%;top:76%" data-k=".14:o0,y8,r6; .19:o1,y0,r4; .28:o1,y0; .32:o0,y-6">every module.</div>
+
+        <!-- how we work -->
+        <div class="k giant outline hww" style="left:26%;top:50%" data-k=".28:y62,o0,r-6; .325:o1,y6,r-3; .36:y0,o1; .40:y-70,o0,r2">Build.</div>
+        <p class="k hww-copy" style="left:27%;top:66%" data-k=".30:y40,o0; .335:o1,y0; .365:y-3,o1; .40:y-62,o0">Custom-built for how your business actually runs, not a template with your logo on it.</p>
+        <div class="k giant hww" style="left:66%;top:47%;font-size:clamp(40px,9.5vw,210px)" data-k=".33:y70,o0,r6; .37:o1,y-6,r3; .405:y-10,o1; .44:y-74,o0">Connect.</div>
+        <p class="k hww-copy" style="left:68%;top:63%" data-k=".35:y40,o0; .385:o1,y0; .415:y-3,o1; .44:y-62,o0">Every part talks to every other part. No exports, no duct tape.</p>
+        <div class="k giant outline-m hww" style="left:42%;top:52%;font-size:clamp(40px,10.5vw,230px)" data-k=".37:y80,o0,r-3; .41:o1,y16,r-1; .435:y12,o1; .47:y-80,o0">Grow.</div>
+        <p class="k hww-copy" style="left:44%;top:70%" data-k=".39:y40,o0; .425:o1,y0; .445:y-3,o1; .47:y-66,o0">New tools as your business needs them, not before, not bundled in.</p>
+
+        <!-- fly through the products -->
+        <div class="fx-world" data-fly data-depth="9300" data-range=".49,.79" data-path="sway" data-far="1750" data-step="1050" data-stop="250">
+          <div class="fx-cam">
+            <a class="f room" href="pos.html" data-xyz="-19,4,1500" data-r="-3">
+              <span class="no">01 · Front of house</span><h3 class="nm">POS</h3>
+              <p>Everything the counter and kitchen touch during service, in one till.</p><span class="go">Details &rarr;</span>
+              <svg class="art" data-art="pos" data-wob="1" style="--aw:24vw;--ar:-13vw;--at:-16vh"></svg>
+            </a>
+            <a class="f room r" href="crm.html" data-xyz="21,-9,2550" data-r="3">
+              <span class="no">02 · Customers &amp; growth</span><h3 class="nm fill">CRM</h3>
+              <p>Know who your customers are, and give them a reason to come back.</p><span class="go">Details &rarr;</span>
+              <svg class="art" data-art="crm" data-wob="1" style="--aw:22vw;--al:-14vw;--ar:auto;--at:-14vh"></svg>
+            </a>
+            <a class="f room" href="billing.html" data-xyz="-23,-5,3600" data-r="-2">
+              <span class="no">03 · Money &amp; tax</span><h3 class="nm">Billing</h3>
+              <p>GST-ready invoices, automatic numbering and tax breakdowns.</p><span class="go">Details &rarr;</span>
+              <svg class="art" data-art="billing" data-wob="1" style="--aw:19vw;--ar:-9vw;--at:-22vh"></svg>
+            </a>
+            <a class="f room r" href="inventory.html" data-xyz="19,9,4650" data-r="5">
+              <span class="no">04 · Stock &amp; purchasing</span><h3 class="nm fill">Stock</h3>
+              <p>Stock tracking and purchasing, kept alongside your daily billing.</p><span class="go">Details &rarr;</span>
+              <svg class="art" data-art="inventory" data-wob="1" style="--aw:24vw;--al:-18vw;--ar:auto;--at:-10vh"></svg>
+            </a>
+            <a class="f room" href="qr-ordering.html" data-xyz="-21,-1,5700" data-r="-6">
+              <span class="no">05 · Online &amp; self-order</span><h3 class="nm">QR</h3>
+              <p>A QR code on every table. Guests browse and order from their own phone.</p><span class="go">Details &rarr;</span>
+              <svg class="art" data-art="qr" data-wob="1" style="--aw:20vw;--ar:-6vw;--at:-24vh"></svg>
+            </a>
+            <a class="f room r" href="payroll.html" data-xyz="22,5,6750" data-r="2">
+              <span class="no">06 · Your team</span><h3 class="nm fill">Payroll</h3>
+              <p>Attendance-based staff pay, computed and marked paid from the same account.</p><span class="go">Details &rarr;</span>
+              <svg class="art" data-art="payroll" data-wob="1" style="--aw:23vw;--al:-16vw;--ar:auto;--at:-18vh"></svg>
+            </a>
+            <a class="f room" href="website-builder.html" data-xyz="-22,8,7800" data-r="-3">
+              <span class="no">07 · Your own site</span><h3 class="nm">Website</h3>
+              <p>A real drag-and-drop editor for your own multi-page site.</p><span class="go">Details &rarr;</span>
+              <svg class="art" data-art="website" data-wob="1" style="--aw:25vw;--ar:-14vw;--at:-14vh"></svg>
+            </a>
+            <a class="f room r" href="business-salons.html" data-xyz="18,-10,8850" data-r="4">
+              <span class="no">08 · For salons &amp; spas</span><h3 class="nm fill">Salon</h3>
+              <p>Your salon's own website, online booking, billing and clients, in one admin console.</p><span class="go">Details &rarr;</span>
+              <svg class="art" data-art="salon" data-wob="1" style="--aw:22vw;--al:-15vw;--ar:auto;--at:-16vh"></svg>
+            </a>
           </div>
         </div>
-        <div class="hero-art reveal" role="presentation">
-          <img class="hero-art-logo" src="logo.png" alt="" aria-hidden="true">
-        </div>
-      </section>
 
-      <section class="stack-panel alt" data-tab="WORK">
-        <div class="dot-texture" aria-hidden="true"></div>
-        <div class="wrap">
-          <div class="label reveal">How we work</div>
-          <div class="grid-3 zigzag">
-            <div class="reveal work-step" style="border-top:1px dashed var(--line);padding-top:12px">
-              <span class="big-numeral">01</span>
-              <div class="h-2" style="margin-top:6px">Build</div>
-              <p class="p" style="margin-top:6px">Custom-built for how your business actually runs — not a template with your logo on it.</p>
-            </div>
-            <div class="reveal work-step" style="border-top:1px dashed var(--line);padding-top:12px">
-              <span class="big-numeral">02</span>
-              <div class="h-2" style="margin-top:6px">Connect</div>
-              <p class="p" style="margin-top:6px">Every part talks to every other part. No exports, no duct tape between tools.</p>
-            </div>
-            <div class="reveal work-step" style="border-top:1px dashed var(--line);padding-top:12px">
-              <span class="big-numeral">03</span>
-              <div class="h-2" style="margin-top:6px">Grow</div>
-              <p class="p" style="margin-top:6px">New tools, added as your business needs them — not before, not bundled in.</p>
-            </div>
-          </div>
-        </div>
-      </section>
+        <!-- four kinds of business, four doors -->
+        <p class="k note" style="left:33%;top:15%" data-k=".77:o0,y6,r-6; .82:o1,y0,r-4; .93:o1; .96:o0">built for your kind of business &darr;</p>
+        <a class="k doorway" href="business-cafes.html" style="left:27%;top:47%" data-k=".77:x-80,y30,r-28,o0; .84:x0,y0,r-5,o1; .935:y-1,o1; .965:y-70,r-10,o0">
+          <span class="tape"></span><svg data-art="cafe"></svg>
+          <h3 class="t">Caf&eacute;s &amp; restaurants</h3><p class="d">Tables, KOT &amp; kitchen display. Self-order from the table.</p>
+        </a>
+        <a class="k doorway" href="business-clothing.html" style="left:69%;top:40%" data-k=".785:x80,y-40,r30,o0; .85:x0,y0,r4,o1; .94:y-1,o1; .97:y-70,r8,o0">
+          <span class="tape"></span><svg data-art="retail"></svg>
+          <h3 class="t">Clothing &amp; apparel</h3><p class="d">Size/color stock, trial room, returns and exchanges.</p>
+        </a>
+        <a class="k doorway" href="business-retail.html" style="left:47%;top:76%" data-k=".795:y80,r-14,o0; .86:y0,r-2,o1; .945:y-1,o1; .975:y-70,r6,o0">
+          <span class="tape"></span><svg data-art="inventory"></svg>
+          <h3 class="t">Retail &amp; bookstores</h3><p class="d">Stock, barcode billing &amp; loyalty.</p>
+        </a>
+        <a class="k doorway" href="business-salons.html" style="left:84%;top:74%" data-k=".805:x60,y60,r20,o0; .87:x0,y0,r5,o1; .95:y-1,o1; .98:y-70,r-6,o0">
+          <span class="tape"></span><svg data-art="salon"></svg>
+          <h3 class="t">Salons &amp; spas</h3><p class="d">Website, online booking, billing and clients.</p>
+        </a>
 
-      <section class="stack-panel" data-tab="BUILD">
-        <div class="wrap">
-          <div class="label reveal">What we build</div>
-          <h2 class="h-1 reveal" style="max-width:9em">Modules, not monoliths.</h2>
-          <div class="uk-kit uk-bento reveal" style="margin-top:16px">
-            <a href="products.html" class="uk-bento-tile uk-dark uk-span-2">
-              <span class="uk-bento-code">.pos-till {<br>&nbsp;&nbsp;display: <b>flex</b>;<br>}</span>
-            </a>
-            <a href="products.html" class="uk-bento-tile uk-accent">
-              <span class="uk-bento-label">POS</span>
-              <span class="uk-bento-sub" style="color:rgba(255,255,255,.8)">Live</span>
-            </a>
-            <a href="products.html" class="uk-bento-tile">
-              <span class="uk-bento-label">CRM</span>
-              <span class="uk-bento-sub">Live</span>
-            </a>
-            <a href="products.html" class="uk-bento-tile uk-span-2-row uk-dark" style="justify-content:space-between;padding-top:14px">
-              <span class="uk-bento-sub" style="color:rgba(255,255,255,.55)">Every part talks to every other part</span>
-              <span class="uk-bento-label">One login,<br>every module</span>
-            </a>
-            <a href="products.html" class="uk-bento-tile uk-soon">
-              <span class="uk-bento-label">Booking</span>
-            </a>
-            <a href="products.html" class="uk-bento-tile">
-              <span class="uk-bento-label">Payroll</span>
-              <span class="uk-bento-sub">Live</span>
-            </a>
-          </div>
-          <a href="#quick-look" class="btn btn-ghost reveal" style="margin-top:16px">See all products</a>
+        <!-- the portal -->
+        <div class="k full wash" style="pointer-events:none" data-k="0:o0; .9:o0; .965:o1"></div>
+        <svg class="k ring" viewBox="0 0 200 200" aria-hidden="true" data-k=".9:o0,s.7,d0; .985:o1,s1,d1"><circle cx="100" cy="100" r="98" pathLength="1"/></svg>
+        <h2 class="k giant portal-h" data-k=".92:o0,s.55,y8; .975:o1,s1,y0">Let's talk.</h2>
+        <p class="k portal-p" style="left:50%;top:76%;text-align:center" data-k=".95:o0,y6; .985:o1,y0">Software that runs your business, creators that fill it. <a href="creatopz.html">Creatopz</a>, an influencer marketing agency, is AUZslab's marketing partner.</p>
+        <div class="k cta-row" style="left:50%;top:88%" data-k=".96:o0,y8; .99:o1,y0">
+          <button class="btn btn-light" data-open-contact data-magnet>Tell us about your business</button>
+          <a href="creatopz.html" class="btn btn-line">Meet Creatopz &rarr;</a>
         </div>
-      </section>
-
-      <section class="stack-panel alt" data-tab="VIEW" id="quick-look">
-        <div class="wrap">
-          <div class="label reveal in">Quick look</div>
-          <h2 class="h-1 reveal in" style="max-width:9em">Everything, at a glance.</h2>
-          <div class="grid-3" style="margin-top:24px">
-            <div class="card reveal in">
-              <span class="tag">Live</span>
-              <div class="h-2" style="margin-top:12px">POS</div>
-              <p class="p" style="margin-top:8px">Billing, kitchen orders, inventory, staff.</p>
-            </div>
-            <div class="card reveal in">
-              <span class="tag">Live</span>
-              <div class="h-2" style="margin-top:12px">CRM</div>
-              <p class="p" style="margin-top:8px">Know your customers, bring them back.</p>
-            </div>
-            <div class="card reveal in">
-              <span class="tag">Live</span>
-              <div class="h-2" style="margin-top:12px">Payroll</div>
-              <p class="p" style="margin-top:8px">Attendance-based pay, computed and marked paid in the same account.</p>
-            </div>
-          </div>
-          <a href="products.html" class="btn btn-primary reveal in" style="margin-top:24px">Full product details</a>
-          <div class="reveal in" style="margin-top:44px;padding-top:24px;border-top:1px dashed var(--line);display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between">
-            <div>
-              <div class="label">Marketing partner</div>
-              <p class="p" style="margin-top:8px;max-width:36em">Software that runs your business, creators that fill it. <b>Creatopz</b>, an influencer marketing agency, is AUZslab's marketing partner.</p>
-            </div>
-            <a href="creatopz.html" class="btn btn-ghost">Meet Creatopz &rarr;</a>
-          </div>
-        </div>
-      </section>
-
+      </div>
     </div>
-
-    <section class="mega-logo">
-      <svg class="mega-logo-blob" viewBox="0 0 200 200" aria-hidden="true">
-        <path fill="var(--accent)" d="M45.7,-58.8C58.4,-49.6,67.2,-34.2,70.9,-17.8C74.6,-1.4,73.2,16,65.6,30.2C58,44.4,44.2,55.4,28.8,62.1C13.4,68.8,-3.6,71.2,-19.6,67.3C-35.6,63.4,-50.6,53.2,-60.3,39.1C-70,25,-74.4,7,-71.8,-9.8C-69.2,-26.6,-59.6,-42.2,-46.2,-51.6C-32.8,-61,-16.4,-64.2,0.9,-65.4C18.2,-66.6,36.4,-65.8,45.7,-58.8Z" transform="translate(100 100)"/>
-      </svg>
-      <span class="brand-mark">AUZ<span class="brand-accent">slab</span></span>
-    </section>
 
     <div class="stack">
       <section class="stack-panel stack-panel-dark" data-tab="CONNECT">
@@ -382,7 +429,7 @@
 
 </div>
 <script src="/sb-client.js?v=2"></script>
-<script src="site.js?v=7"></script>
+<script src="site.js?v=8"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 </body>
 </html>

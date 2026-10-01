@@ -20,13 +20,18 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="stylesheet" href="theme.css?v=44">
 <link rel="stylesheet" href="sketch.css?v=1">
+<link rel="stylesheet" href="fx.css?v=1">
+<link rel="stylesheet" href="fx-pages.css?v=1">
 <script src="sketch.js?v=1"></script>
+<script src="fx-art.js?v=1" defer></script>
+<script src="fx.js?v=1" defer></script>
+<script src="fx-canvas.js?v=1" defer></script>
 <link rel="stylesheet" href="design-system/ui-kit.css?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 </head>
-<body>
+<body class="fx pg">
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
 
 <div class="shell">
@@ -120,30 +125,18 @@
     </div>
   </aside>
 
-  <main class="content">
-
-    <div class="stack">
-
-      <section class="stack-panel">
-        <div class="wrap">
-          <div class="label">Contact</div>
-          <h1 class="h-hero reveal in">Let's talk.</h1>
-          <p class="lede reveal in">Tell us about your business. We'll get back to you within a day.</p>
-        </div>
-      </section>
-
-      <section class="stack-panel alt" data-tab="REACH" id="form">
-        <div class="wrap">
-          <div class="grid-2 reveal in" style="align-items:start">
-            <div>
-              <div class="h-2">Reach us directly</div>
-              <p class="p" style="margin-top:14px">Prefer to skip the form? Write to us directly.</p>
-              <p class="p" style="margin-top:18px"><span class="accent">helloauzslab@gmail.com</span></p>
-            </div>
-
-            <div class="card">
-              <form id="formView" data-contact-form>
-                <div class="field" style="margin-top:0">
+    <main class="content">
+<div class="fx-scene pd pd-con" data-scene style="--len:3.2" data-pointer><div class="fx-stage">
+<canvas class="fx-field" data-shapes="0:flow; .35:text:HELLO@.62,.5,.7,.5; .8:flow" data-n="1100" data-kick="6" aria-hidden="true"></canvas>
+<div class="k eye tl2" data-k="0:o1; .12:o0">Contact</div>
+<h1 class="k giant l1" style="font-size:12.5vw" data-blast data-k="0:x-4,y-8,o1; .16:x-6,o1; .3:x-70,o0">Let's talk.</h1>
+<p class="k lede2 bl" data-k="0:o1; .1:o0">Tell us about your business. We'll get back to you within a day.</p>
+<div class="k note nl" data-k=".3:o0,y6; .4:o1,y0; .7:o1; .78:o0">say hello.</div>
+<svg class="k plane" viewBox="0 0 240 200" data-art="envelope" data-wob="1" data-k=".05:o0,x-30,y20,r-20,d0; .2:o1,x0,y0,r-6,d1; .5:x10,y-4,r4; .8:x40,y-30,r12,o1; .95:x90,y-60,r20,o0">&nbsp;</svg>
+</div></div>
+<section class="contact-form" id="form"><div class="cf-l"><div class="eye">Reach us directly</div><h2 class="fx-h2" data-split="rise">Prefer to skip the form?</h2><p class="fx-copy">Write to us directly.</p><p class="mailbig"><a href="mailto:helloauzslab@gmail.com">helloauzslab@gmail.com</a></p><p class="hand">we reply within a day, usually sooner.</p></div>
+<div class="cf-r paper"><form id="formView" data-contact-form>
+                <div class="field">
                   <label for="c-name">Name</label>
                   <input id="c-name" name="name" type="text" placeholder="Your name" required>
                 </div>
@@ -170,56 +163,12 @@
                   <textarea id="c-message" name="message" placeholder="What are you running today?"></textarea>
                 </div>
                 <button type="submit" class="btn btn-primary form-submit">Send</button>
-              </form>
-              <div class="success-view" id="successView">
+              </form><div class="success-view" id="successView">
                 <div class="success-mark">&check;</div>
                 <h3 class="h-2" style="font-size:22px">Got it.</h3>
                 <p class="p">We'll reach out to <span class="success-contact" id="successContact">you</span> shortly.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="stack-panel uk-kit" data-tab="FAQ">
-        <div class="wrap">
-          <div class="label reveal in">Before you write in</div>
-          <div class="h-2 reveal in" style="margin-bottom:6px">A few things people usually ask</div>
-          <div class="uk-accordion reveal in" style="margin-top:18px">
-            <div class="uk-accordion-item is-open">
-              <button class="uk-accordion-head">
-                <span>Can I run more than one outlet on this?</span>
-                <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-              </button>
-              <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Yes — every outlet shares one account, one login and one customer list. No separate sign-ups per branch.</p></div></div>
-            </div>
-            <div class="uk-accordion-item">
-              <button class="uk-accordion-head">
-                <span>Is my business data actually mine?</span>
-                <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-              </button>
-              <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>It lives on infrastructure we run for you — not rented from, or resold under, someone else's name.</p></div></div>
-            </div>
-            <div class="uk-accordion-item">
-              <button class="uk-accordion-head">
-                <span>We already use another POS — can we switch?</span>
-                <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-              </button>
-              <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Tell us what you're on today in the form above — we'll map out the switch before you commit to anything.</p></div></div>
-            </div>
-            <div class="uk-accordion-item">
-              <button class="uk-accordion-head">
-                <span>How fast do you reply?</span>
-                <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-              </button>
-              <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Within a day, usually sooner.</p></div></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-    </div>
-
+              </div></div></section>
+<section class="faq"><div class="eye">Before you write in</div><h2 class="fx-h2" data-split="rise">A few things people usually ask</h2></section>
     <div class="stack">
       <section class="stack-panel stack-panel-dark" data-tab="CONNECT">
       <div class="wrap">
@@ -276,7 +225,7 @@
   </main>
 </div>
 <script src="/sb-client.js?v=2"></script>
-<script src="site.js?v=7"></script>
+<script src="site.js?v=8"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script src="design-system/ui-kit.js?v=1"></script>
 </body>

@@ -324,7 +324,7 @@
             io.unobserve(entry.target);
           }
         });
-      }, { threshold: 0.15 });
+      }, { threshold: 0, rootMargin: '0px 0px -6% 0px' }); // any visible part counts: a 15% threshold never fires on very tall sections (e.g. the product list on a phone)
       revealEls.forEach(function (el) { io.observe(el); });
     }
 
