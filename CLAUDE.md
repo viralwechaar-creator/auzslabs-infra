@@ -649,10 +649,12 @@ cursor trail), `fx-phys.js` (draggable bubbles), `fx-ui.js` (pricing stack build
   (`html:not(.fx-live)`) is the reduced-motion / no-JS layout. A new stage-only actor (backdrop, scanning line, duplicate CTA)
   must be hidden in `fx-flow.css`. `data-k` keyframes are ignored in flow.
 - **Homepage (`site/index.html`, `body[data-no-stack]`)** is hand-built, not generated: hero (`.hero2`, ends in the big pixel `logo.png`), then **page 2 `.hx`**
-  (a pinned stage; `fx-hx.js` slides `.hx-track` sideways with the vertical scroll: How we work, "Eight modules, one login", 8 floating module cards, CTA),
-  **page 3 `.vw`** (four floating "doors" that slide up over page 2), `.tk` (Let's talk) and the dark CONNECT footer. Styles in `fx-hx.css`. Rules: one type
-  scale (`.hx-title`, `.hx-big`, `.hx-name`, 16-18px body), black/white/wine only, transforms only in the scroll loop (`measure()` runs on width changes only;
-  stage height is `100svh` so the phone toolbar can't move anything). Without JS / with reduced motion `.hx-track` is a swipeable row (`html:not(.fx-hx)`).
+  (a pinned stage: How we work, "Eight modules, one login", 8 floating module cards, CTA, with the previous sheet's edge under the header and the next sheets' edges at the
+  bottom), **page 3 `.vw`** (four floating "doors"), `.tk` (Let's talk) and the dark CONNECT footer. Styles in `fx-hx.css`. **All scroll motion is CSS scroll-linked
+  animation** (`view-timeline: --hx`, `animation-timeline`): the sideways slide, card float/tilt (`--r0/--r1/--dir` per card), progress line and the door float (`--fk`). It runs on the
+  compositor; there is deliberately NO scroll listener or per-frame JS (a JS-driven transform lagged behind iOS momentum scrolling and looked like vibration).
+  `fx-hx.js` only measures once (`--hx-dist`, card windows) and adds `html.fx-hx`. Browsers without `animation-timeline`, and reduced motion, get a swipeable row
+  (`html:not(.fx-hx)`). One type scale, black/white/wine only. Don't add scroll handlers back.
 - **Every other marketing page** is wrapped by `fx-stack.js` into layered panels (`.stack-panel.fx-panel`, big tab word, rounded top sliding over the previous
   panel) but **nothing is sticky**: pinned/sticky stacks made the previous panels shake while scrolling on phones, and splitting them didn't help. The fx suite
   fails if a sticky `.fx-panel` comes back. Don't reintroduce `position:sticky` panels.
