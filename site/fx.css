@@ -1,7 +1,7 @@
 /* AUZslab FX: layout + visual language for the scroll-world pages (<body class="fx">). Motion is fx.js.
    Everything scene-related is gated on html.fx-live so a page without JS / with reduced motion is a plain document. */
-:root{--hl:#ffd93b;--blue:#2747ff;--ease-out:cubic-bezier(.22,1,.36,1);--ease-io:cubic-bezier(.65,0,.35,1)}
-body.fx{--paper:#f4eee2;--hand:'Caveat','Bradley Hand','Segoe Script',cursive;background:#f4eee2}
+:root{--hl:#ece6e6;--blue:#800020;--ease-out:cubic-bezier(.22,1,.36,1);--ease-io:cubic-bezier(.65,0,.35,1)}
+body.fx{--paper:#f6f4f1;--hand:'Caveat','Bradley Hand','Segoe Script',cursive;background:#f6f4f1}
 .fx .content{margin:0;position:relative;z-index:2;overflow-x:clip}
 html:has(body.fx),body.fx{overflow-x:clip}
 .fx .wrap{max-width:none;padding:0}
@@ -90,7 +90,7 @@ html.fx-live .fx-only-static{display:none!important}
 .scrib{position:relative;white-space:nowrap}
 .scrib::after{content:"";position:absolute;left:-2%;right:-2%;bottom:-.14em;height:.3em;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 12' preserveAspectRatio='none'%3E%3Cpath d='M2 7 C 14 1, 24 11, 38 6 S 62 2, 78 7 S 104 9, 118 4' fill='none' stroke='%23800020' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat 0 0/100% 100%;
   clip-path:inset(0 calc((1 - var(--sc,1))*100%) 0 0)}
-.tape{position:absolute;width:5.2em;height:1.5em;background:rgba(255,217,59,.6);box-shadow:0 1px 0 rgba(0,0,0,.08);transform:rotate(-4deg)}
+.tape{position:absolute;width:5.2em;height:1.5em;background:rgba(128,0,32,.6);box-shadow:0 1px 0 rgba(0,0,0,.08);transform:rotate(-4deg)}
 .stamp{display:inline-block;padding:.22em .55em;border:.12em solid var(--accent);color:var(--accent);font:900 1em/1 var(--font-display);letter-spacing:.06em;text-transform:uppercase;border-radius:.18em;transform:rotate(-8deg)}
 .paper{background:#fffdf7;border:2px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
 
