@@ -4,6 +4,8 @@
 body.fx{--paper:#f4eee2;--hand:'Caveat','Bradley Hand','Segoe Script',cursive;background:#f4eee2}
 .fx .content{margin:0;position:relative;z-index:2}
 .fx .wrap{max-width:none;padding:0}
+.fx .stack-panel .wrap,.fx .footer-dark .wrap{padding:0 5vw}
+.fx .stack-panel-dark{padding-top:140px}
 .fx .stack{margin-top:0}
 
 /* ---------- chrome: a floating header that inverts itself over whatever it is on ---------- */
