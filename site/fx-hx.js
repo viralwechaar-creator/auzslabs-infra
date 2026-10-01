@@ -25,13 +25,13 @@
 
   // One card at a time travels across the screen: it enters from one side, crosses the centre, leaves on the other side; the last one stays centred.
   // dir = +1: enters from the right (page 2), -1: from the left (four doors). Keyframes are written once; the scroll position drives them (compositor).
-  function deckCss(sel, name, n, dir, A, B) {
-    var D = 2.2, w = .94 / (n - 1 + D), css = '';
+  function deckCss(sel, name, n, dir, A, B, exitAll) {
+    var D = 2.2, w = .94 / (n - 1 + (exitAll ? 2 * D : D)), css = '';
     function X(x, r) { return 'translate3d(' + (x * dir).toFixed(2) + 'vw,0,0) rotate(' + (r * dir).toFixed(2) + 'deg)'; }
     for (var i = 0; i < n; i++) {
       var s = i * w, c = s + D * w, e = s + 2 * D * w, k = '0%{transform:' + X(125, 7) + '}';
       k += (s * 100).toFixed(3) + '%{transform:' + X(125, 7) + '}' + (c * 100).toFixed(3) + '%{transform:' + X(0, 0) + '}';
-      if (i < n - 1) {
+      if (i < n - 1 || exitAll) {
         if (e <= 1) k += (e * 100).toFixed(3) + '%{transform:' + X(-125, -7) + '}100%{transform:' + X(-125, -7) + '}';
         else { var f = (1 - c) / (e - c); k += '100%{transform:' + X(-125 * f, -7 * f) + '}'; }
       } else k += '100%{transform:' + X(0, 0) + '}';
@@ -48,7 +48,7 @@
     hx.style.height = (sh + dist) + 'px';
     root.classList.add('fx-hx');                                            // layout (margins, sticky) now final
     var A = hx.getBoundingClientRect().top + window.pageYOffset;
-    css += deckCss('.hx-track>*', 'hxd', items.length, 1, A, A + dist);
+    css += deckCss('.hx-track>*', 'hxd', items.length, 1, A, A + dist, true);   // every card leaves: nothing is left on the stage when it unpins
     if (vwEl && vwItems.length) {
       var dv = perCard(sh, vwItems.length); spacer.style.height = dv + 'px';
       var flowTop = spacer.getBoundingClientRect().top + window.pageYOffset - vwEl.offsetHeight, Av = flowTop - pin;
