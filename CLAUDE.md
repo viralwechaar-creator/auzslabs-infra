@@ -651,7 +651,7 @@ cursor trail), `fx-phys.js` (draggable bubbles), `fx-ui.js` (pricing stack build
 - **Stack panels:** `fx-stack.js` (on every fx page) wraps `main.content`'s blocks in `div.stack.fx-stack > section.stack-panel.fx-panel`
   (the original sticky overlapping panels with the big tab word, WORK/BUILD/VIEW/...; short blocks are merged until a panel is
   about a screen tall; `.closer` becomes the dark panel). `layout()` sets each panel's `top` to `min(base, innerHeight - panelHeight)`
-  so a panel taller than the viewport can still be read to its bottom. The homepage is written as five panels by hand (`hp-*`).
+  so a panel taller than the viewport can still be read to its bottom. The homepage hero is the minimal editorial layout (`.hero2`: grey desk illustration + Business list, tagline, quick-link nav, giant AUZslab wordmark bottom-right), then the panels written by hand (`hp-*`). Panels are min-height 92svh and `layout()` only writes `top`/`z-index` when they change (writing them every frame made the scroll feel like it vibrated).
   On phones: no `mix-blend-mode`, no SVG filters, no fixed full-screen overlays (they cost frames on iOS). The fx suite scrolls
   every page at phone/tablet/desktop and checks overlapping text blocks (ignoring `.stack-panel`; scroll with `behavior:'instant'`
   because theme.css sets smooth scrolling).
