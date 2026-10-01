@@ -165,3 +165,7 @@ html.fx-hx .stack-panel-dark{position:relative;z-index:6;min-height:calc(100svh 
 
 /* doors -> Let's talk: no empty wine area under the last card; the next folder cut rises right under it */
 html.fx-hx .tk{margin-top:calc((var(--cut) + var(--ch)) * -1 - 9svh)}
+
+/* sheets always reach the bottom of the screen, even when the Safari toolbar collapses (svh is the small viewport; lvh the large one) */
+html.fx-hx .hw,html.fx-hx .vw,html.fx-hx .tk{min-height:calc(100vh - var(--pin,150px));min-height:calc(100lvh - var(--pin,150px))}
+html.fx-hx .stack-panel-dark{min-height:calc(100lvh - var(--pin,150px) + 28px)}

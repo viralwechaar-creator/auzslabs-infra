@@ -25,7 +25,7 @@ body.home .hx .btn-ghost:hover{background:rgba(246,244,241,.24)}
 body.home .hx .btn-primary{background:var(--wine-hi)}
 
 /* ---- hero ---- */
-body.home .h2-tag{font-weight:700;letter-spacing:-.035em;line-height:1.06;font-size:clamp(34px,6.2vw,64px);max-width:13em}
+body.home .h2-tag{font-weight:600;letter-spacing:-.035em;line-height:1.06;font-size:clamp(34px,6.2vw,64px);max-width:13em}
 body.home .h2-nav a{text-transform:none;font-size:17px;font-weight:500;min-height:44px;display:inline-flex;align-items:center;letter-spacing:-.01em}
 body.home .h2-list{font-size:17px;gap:2px 20px;flex-wrap:wrap}
 body.home .h2-list b{font-size:13px;font-weight:600;color:#6e6a67;margin-bottom:4px}
@@ -37,8 +37,8 @@ body.home .hx-eye{font-size:15px;font-weight:600;letter-spacing:-.005em;text-tra
 body.home .hx-eye::before{display:none}
 body.home .vw .hx-eye{color:rgba(255,255,255,.82)}
 body.home .tk .hx-eye{color:var(--wine)}
-body.home .hx-title{font-weight:700;letter-spacing:-.04em;line-height:1.04}
-body.home .hx-big{font-weight:700;letter-spacing:-.045em}
+body.home .hx-title{font-weight:600;letter-spacing:-.04em;line-height:1.04}
+body.home .hx-big{font-weight:600;letter-spacing:-.045em}
 body.home .hx-row{border-color:rgba(246,244,241,.14)}
 body.home .hx-row p,body.home .tk-p{font-size:19px;line-height:1.42;letter-spacing:-.012em}
 body.home .hx-hint{font-size:17px}
@@ -50,9 +50,9 @@ body.home :is(.hx-card,.vw-card){border-radius:28px;box-shadow:0 1px 2px rgba(0,
 body.home .hx-card:active,body.home .vw-card:active{transform:scale(.985)}
 body.home .hx-card .hx-art{background:#f4f1ed;border-radius:20px}
 body.home .hx-card .hx-no{background:rgba(23,23,23,.07);color:#5b5754!important;font-family:var(--hig-font);font-size:13px;font-weight:600;letter-spacing:0;padding:5px 12px}
-body.home .hx-name{font-weight:700;letter-spacing:-.035em}
+body.home .hx-name{font-weight:600;letter-spacing:-.035em}
 body.home .hx-card p,body.home .vw-card p{font-size:17px;line-height:1.4;letter-spacing:-.012em}
-body.home .vw-card h3{font-size:24px;font-weight:700;letter-spacing:-.03em}
+body.home .vw-card h3{font-size:24px;font-weight:600;letter-spacing:-.03em}
 body.home .hx-go{font-size:17px;min-height:44px;display:inline-flex;align-items:center}
 
 /* ---- drawer ---- */
@@ -68,7 +68,7 @@ body.home .footer-dark{border-radius:28px 28px 0 0}
 body.home .footer-col-title{font-size:13px;font-weight:600;letter-spacing:0;text-transform:none;color:rgba(255,255,255,.55)}
 body.home .footer-col{gap:0}
 body.home .footer-col a{font-size:17px;min-height:44px;display:flex;align-items:center;color:rgba(255,255,255,.82);letter-spacing:-.01em}
-body.home .footer-newsletter-label{font-weight:700;letter-spacing:-.03em}
+body.home .footer-newsletter-label{font-weight:600;letter-spacing:-.03em}
 body.home .footer-newsletter-form input{min-height:48px;font-size:17px;padding:0 20px;border:0;background:rgba(255,255,255,.1)}
 body.home .footer-newsletter-form button{width:48px;height:48px}
 body.home .footer-contact-inline a,body.home .footer-copy,body.home .footer-top-btn{font-size:13px;letter-spacing:0;min-height:44px;display:inline-flex;align-items:center}
@@ -87,3 +87,31 @@ html.fx-flow body.home.fx header.topbar{background:rgba(246,244,241,.86)}
 /* hero: no photo tile; the wordmark is a little smaller */
 body.home .h2-img{display:none}
 body.home .h2-word{width:80%!important;margin-left:auto}
+
+/* ---- calm type (iOS): medium weights, modest sizes ---- */
+body.home .h2-tag{font-size:clamp(28px,7.4vw,42px);font-weight:600;letter-spacing:-.025em;line-height:1.1}
+body.home .hx-title,html.fx-hx body.home .hx-title{font-size:clamp(28px,7.6vw,40px);font-weight:600;letter-spacing:-.03em;line-height:1.08}
+body.home .hx-big,html.fx-hx body.home .hx-big{font-size:clamp(32px,9vw,44px);font-weight:600;letter-spacing:-.035em}
+body.home .hx-name{font-size:clamp(24px,6.4vw,32px);font-weight:600}
+body.home .vw-card h3{font-weight:600}
+body.home .hx-row p,body.home .tk-p{font-size:17px;line-height:1.45}
+body.home .btn{font-weight:500}
+body.home .h2-list a{font-size:16px}
+@media (min-width:900px){body.home .hx-title{font-size:clamp(34px,4vw,52px)}body.home .hx-big{font-size:clamp(40px,4.2vw,60px)}body.home .h2-tag{font-size:clamp(36px,4.4vw,56px)}}
+
+/* ---- hero wordmark: fully inside the margins, clear of the next sheet ---- */
+body.home .h2-word{width:68%!important;margin:0 5vw 0 auto!important;padding-bottom:calc(var(--cut) + var(--ch) + 8px)}
+@media (min-width:900px){body.home .h2-word{width:62%!important;margin:0 4vw 0 auto!important}}
+
+/* ---- Let's talk: minimal, centred in its sheet ---- */
+body.home .tk{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:0}
+body.home .tk .hx-title{margin:0}
+body.home .tk-p{margin:12px 0 0;max-width:22em}
+body.home .tk .hx-acts{margin-top:22px;gap:10px}
+html.fx-hx body.home .tk{padding-bottom:calc(var(--cut) + 8vh)}
+
+/* ---- Knock button: a small round button on phones so it never covers text ---- */
+@media (max-width:700px){
+ body.home .knock-btn{font-size:0;gap:0;width:52px;height:52px;min-height:52px;padding:0;justify-content:center;right:14px;bottom:calc(14px + env(safe-area-inset-bottom))}
+ body.home .knock-btn svg{width:22px;height:22px}
+}
