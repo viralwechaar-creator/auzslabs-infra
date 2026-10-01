@@ -95,3 +95,7 @@ body.fx main *:not(svg):not(svg *):not(code):not(.mono):not(.cred):not(.cred *){
 body.fx :is(.stp,.st) b{font-size:26px!important;font-weight:600!important;color:var(--wine)!important;-webkit-text-stroke:0!important}
 body.fx .coin,body.fx .k.coin{display:none!important}
 body.fx main :is(h1,h2,h3){line-height:1.15!important}
+
+/* "What's included" lists live in .featsec.orbit .ring: fx-flow hid every .ring (decorative rings share the class), leaving an empty sheet */
+html body.fx .featsec.orbit .ring{display:grid!important;opacity:1!important;visibility:visible!important;height:auto!important}
+html body.fx .featsec.orbit .ring .o{opacity:1!important;transform:none!important}

@@ -91,3 +91,47 @@ body.fx main *:not(svg):not(svg *):not(code):not(.mono):not(.cred):not(.cred *){
 body.fx :is(.stp,.st) b{font-size:26px!important;font-weight:600!important;color:var(--wine)!important;-webkit-text-stroke:0!important}
 body.fx .coin,body.fx .k.coin{display:none!important}
 body.fx main :is(h1,h2,h3){line-height:1.15!important}
+
+/* "What's included" lists live in .featsec.orbit .ring: fx-flow hid every .ring (decorative rings share the class), leaving an empty sheet */
+html body.fx .featsec.orbit .ring{display:grid!important;opacity:1!important;visibility:visible!important;height:auto!important}
+html body.fx .featsec.orbit .ring .o{opacity:1!important;transform:none!important}
+
+/* ================= DESKTOP DESIGN (900px and up): its own layout, independent of the phone file ================= */
+html.fx-stacked{--cut:56px;--ch:26px;--sl:calc(var(--cut) * .9)}
+html.fx-stacked body.fx .fx-panel{padding-top:calc(var(--cut) + var(--ch) + 56px)!important;padding-bottom:calc(var(--cut) + var(--ch) + 48px)!important}
+/* type scale for a laptop screen: calm, medium weight */
+body.fx :is(h1,.giant){font-size:clamp(44px,4.6vw,68px)!important}
+body.fx :is(h2,.fx-h2,.big-end){font-size:clamp(32px,3.2vw,46px)!important}
+body.fx .nm{font-size:clamp(48px,6vw,96px)!important}
+body.fx h3{font-size:clamp(20px,1.6vw,24px)!important}
+body.fx main p,body.fx main li{font-size:18px;line-height:1.55}
+body.fx .lede2,body.fx .lede{font-size:21px!important;max-width:34em}
+body.fx .eye{font-size:15px!important}
+/* feature lists: a calm three-column grid of soft cards */
+body.fx .featsec.orbit .ring{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:20px!important;margin-top:28px}
+body.fx .featsec.orbit .o{background:#fff;border:0!important;border-radius:24px;padding:28px!important;margin-top:0!important;box-shadow:0 1px 2px rgba(0,0,0,.05),0 18px 36px -26px rgba(0,0,0,.3)}
+body.fx .featsec.orbit .o h3{margin:0 0 8px}
+body.fx .featsec.orbit .o p{margin:0;color:#5b5754}
+/* hero status chips and similar illustration cards: soft */
+body.fx .k.seg,body.fx .seg{border:0!important;border-radius:20px!important;box-shadow:0 1px 2px rgba(0,0,0,.05),0 14px 30px -22px rgba(0,0,0,.35)!important;background:#fff!important}
+body.fx .k.seg b{font-size:18px!important;text-transform:none!important}
+/* "mirror" / card columns: three across */
+body.fx .mcols{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:20px!important}
+body.fx .mcols .mr{margin:0!important}
+/* pairs-well-with and hands-on blocks */
+body.fx .demo{border-radius:32px!important;box-shadow:none!important;border:0!important}
+body.fx .demo .dh{font-size:clamp(28px,2.6vw,38px)!important;font-weight:600!important;text-transform:none!important}
+/* the Knock button keeps its label on desktop */
+body.fx .knock-btn{font-size:15px}
+body.fx .mcols{columns:auto!important}
+body.fx .mcols .mr{background:#fff!important;border:0!important;border-radius:24px!important;padding:28px!important;box-shadow:0 1px 2px rgba(0,0,0,.05),0 18px 36px -26px rgba(0,0,0,.3)!important;transform:none!important;margin:0!important}
+body.fx .mcols .mr h3{margin:12px 0 8px!important}
+body.fx .mirrors{padding-left:0;padding-right:0}
+
+/* pricing: three plain plan cards in a row (no overlapping tilted deck) */
+body.fx .plans .deck{position:static!important;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;padding:0!important;align-items:stretch;margin-top:28px}
+body.fx .plan{width:auto!important;transform:none!important;border:0!important;border-radius:28px!important;padding:32px!important;background:#fff!important;box-shadow:0 1px 2px rgba(0,0,0,.05),0 18px 36px -26px rgba(0,0,0,.3)!important}
+body.fx .plan.p1{background:#f3e3e7!important}
+body.fx .plan.p2{background:#171717!important;color:#f6f4f1}
+body.fx .plan h3{font-size:clamp(24px,2vw,30px)!important;font-weight:600!important}
+body.fx .plan.p2 .tg{background:rgba(255,255,255,.14)!important;color:#fff!important}
