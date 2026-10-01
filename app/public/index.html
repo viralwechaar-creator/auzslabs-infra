@@ -258,7 +258,7 @@ async function doSync(){if(busy||!navigator.onLine||!S.user)return;busy=1;confli
  try{
  const{data:{session}}=await sb.auth.getSession();if(!session){busy=0;return forceRelogin('Your session ended. Please sign in again.')}
  for(const r of await all('out')){try{
-  const{data:res,error}=await sb.rpc('push_record',{rid:r.id,rkind:r.kind,rdata:r.data,rdeleted:r.deleted,base:r.base||null,force:false});
+  const{data:res,error}=await sb.rpc('push_record',{rid:r.id,rkind:r.kind,rdata:r.data,rdeleted:r.deleted,base:(R[r.id]&&R[r.id].srv)||r.base||null,force:false});
   if(error){if(/JWT|expired|401|invalid/i.test(error.message||'')){busy=0;return forceRelogin('Your session ended. Please sign in again.')}throw error}
   let sv=res.server_updated_at;
   if(res.conflict){conflicts++;console.warn('sync conflict (auto-resolved, local write kept)',{kind:r.kind,id:r.id});const{data:res2,error:e2}=await sb.rpc('push_record',{rid:r.id,rkind:r.kind,rdata:r.data,rdeleted:r.deleted,base:null,force:true});if(e2)throw e2;sv=res2.server_updated_at}
@@ -269,13 +269,17 @@ async function doSync(){if(busy||!navigator.onLine||!S.user)return;busy=1;confli
  for(const row of data){if(await get('out',row.id)||(R[row.id]&&R[row.id].updated_at==row.updated_at))continue;const r={...row,srv:row.updated_at};R[row.id]=r;await put('rec',r);ch++}
  if(data.length)await put('meta',{k:'since',v:data[data.length-1].updated_at});if(ch)checkAlerts();if(ch&&!/INPUT|SELECT/.test(document.activeElement.tagName))render();if(data.length>=1000)setTimeout(sync,500)
  if(!hadError){syncErr=0;lastSyncErrMsg=''}
-}catch(e){hadError=true;syncErr++;lastSyncErrMsg=(e&&e.message)||String(e);console.warn('sync',e)}busy=0;setNote()}
-function sync(){if(navigator.locks)navigator.locks.request('pos-sync',{ifAvailable:true},lock=>lock?doSync():null);else doSync()}
+}catch(e){hadError=true;syncErr++;lastSyncErrMsg=(e&&e.message)||String(e);console.warn('sync',e)}busy=0;setNote();if(syncAgain){syncAgain=0;setTimeout(sync,50)}}
+let syncAgain=0;function sync(){if(busy){syncAgain=1;return}if(navigator.locks)navigator.locks.request('pos-sync',{ifAvailable:true},lock=>lock?doSync():null);else doSync()}
 function syncNow(){return navigator.locks?navigator.locks.request('pos-sync',{},()=>doSync()):doSync()}
 function tot(o){const sub=r2(o.lines.reduce((a,l)=>a+l.price*l.qty,0)),d=o.complimentary?sub:(o.disc?r2(Math.min(sub,o.disc.t=='%'?sub*o.disc.v/100:o.disc.v)):0),tax=r2((sub-d)*cfg().tax/100),ex=sub-d+tax,total=Math.round(ex);return{sub,d,tax,round:r2(total-ex),total}}
 function localNo(){const n=(+localStorage.n||0)+1;localStorage.n=n;const d=localStorage.dev||(localStorage.dev=Math.random().toString(36).slice(2,4).toUpperCase());return cfg().prefix+'-'+d+'-'+String(n).padStart(4,'0')}
 async function nextNo(){if(navigator.onLine){try{const{data,error}=await sb.rpc('next_invoice_no',{prefix:cfg().prefix});if(!error&&data)return data}catch{}}return localNo()+'~'}
 const newOrder=()=>({id:uid(),type:isRetail()?'Sale':'Dine-in',table:null,lines:[],status:'open',created:now(),by:S.user.id,cust:{}});
+// The kitchen and the cashier edit the same order record, but the cart (S.cur) is a clone taken when the order was opened. Without this, paying (or sending
+// another KOT) wrote the stale clone back over the kitchen's "preparing / ready / dispatched" updates and a paid order popped back into the kitchen queue.
+const KFIELDS=['kstat','preparingAt','readyAt','dispatchAt'];
+function freshCur(){const o=S.cur,live=o&&o.id&&R[o.id]&&R[o.id].data;if(!live)return;for(const k of KFIELDS)if(live[k]!==undefined)o[k]=live[k]}
 async function persist(){const o=S.cur;if(!o.no)o.no=await nextNo();o.t=tot(o);await save('order',o,o.id)}
 // A combo is one order line (one price) but the kitchen needs to see
 // what to actually cook -- expand it into its constituent items on the
@@ -428,7 +432,7 @@ function floorPlan(o){const secs=[...new Set(L('table').map(t=>t.sec||'Main'))];
 async function markTableDirty(o){if(!o.table)return;const tbl=L('table').find(x=>x.id==o.table);if(tbl&&tbl.cleaned!==false)await save('table',{...tbl,cleaned:false},tbl.id)}
 function pickTable(id){const ex=L('order').find(x=>x.status=='open'&&x.table==id&&x.lines.length);if(ex){if(S.cur.lines.length&&!S.cur.no&&!confirm('Discard the current unsaved order?'))return;S.cur=structuredClone(ex)}else S.cur.table=id||null;render()}
 function nextToken(){const day=today(),nums=L('order').filter(o=>o.token&&o.tokenDay==day).map(o=>o.token);return nums.length?Math.max(...nums)+1:1}
-async function kot(){const o=S.cur;if(!o.lines.some(l=>l.qty>l.sent))return alert('Nothing new to send');if(!o.no)o.no=await nextNo();
+async function kot(){const o=S.cur;freshCur();if(!o.lines.some(l=>l.qty>l.sent))return alert('Nothing new to send');if(!o.no)o.no=await nextNo();
  if(cfg().hwToken&&o.type!='Dine-in'&&!o.token){o.token=nextToken();o.tokenDay=today()}
  const n=mk(o);await persist();
  await save('kotlog',{orderId:o.id,orderNo:o.no,type:o.type,table:o.table,cust:o.cust,items:n,createdAt:now()},uid());
@@ -459,10 +463,14 @@ function cashDenomModal(amountDue,cb){
   else{let rem=change,parts=[];for(const d of CASH_DENOMS){const n=Math.floor(rem/d);if(n>0){parts.push(n+'× ₹'+d);rem=r2(rem-n*d)}}changeEl.textContent='Change to return: '+inr(change)+(parts.length?' ('+parts.join(', ')+')':'')}
  };
  const rows=CASH_DENOMS.map(d=>{const inp=h('input',{type:'number',min:0,placeholder:'0',style:'width:64px',oninput:()=>{counts[d]=+inp.value||0;recalc()}});return h('div',{class:'row'},'₹'+d,inp)});
- const x=modal(h('h3',{},'Cash received · due '+inr(amountDue)),...rows,h('div',{class:'row'},'Total tendered',totalEl),changeEl,
+ // one-tap cash: exact amount, or the next round notes up -- counting every note was the slowest step of a sale
+ const greedy=a=>{const c={};let r=a;for(const d of CASH_DENOMS){const n=Math.floor(r/d);if(n>0){c[d]=n;r=r-n*d}}return c};
+ const quick=[...new Set([amountDue,...[50,100,200,500,1000,2000].map(n=>Math.ceil(amountDue/n)*n)])].filter(v=>v>=amountDue).slice(0,5);
+ const quickRow=h('div',{style:'display:flex;gap:6px;flex-wrap:wrap'},...quick.map((v,i)=>h('button',{class:i==0?'p':'',onclick:()=>{x();cb(v,greedy(v))}},i==0?'Exact '+inr(v):inr(v))));
+ const x=modal(h('h3',{},'Cash received · due '+inr(amountDue)),quickRow,h('div',{style:'font-size:12px;color:var(--ink-dim)'},'or count the notes and coins:'),...rows,h('div',{class:'row'},'Total tendered',totalEl),changeEl,
   h('button',{class:'p',onclick:()=>{const tendered=CASH_DENOMS.reduce((a,d)=>a+d*(counts[d]||0),0);if(tendered<=0)return alert('Enter at least one note or coin.');x();cb(tendered,{...counts})}},'Confirm'));
 }
-function pay(){const o=S.cur;if(!o.lines.length)return;if(!(o.cust.name||'').trim()||!(o.cust.phone||'').trim())return alert('Customer name and phone number are required before payment.');
+function pay(){const o=S.cur;if(!o.lines.length)return;freshCur();if(!(o.cust.name||'').trim()||!(o.cust.phone||'').trim())return alert('Customer name and phone number are required before payment.');
  // Paying closes the order and frees the table (markTableDirty below), but
  // the kitchen tracks its own state (o.kstat) independently -- without this
  // check the table view would show "Available"/"Needs cleaning" while the
@@ -471,7 +479,7 @@ function pay(){const o=S.cur;if(!o.lines.length)return;if(!(o.cust.name||'').tri
  if(o.type=='Dine-in'&&(o.kstat=='new'||o.kstat=='preparing')&&!confirm('Kitchen still has this order marked as '+(o.kstat=='new'?'"sent to kitchen"':'"preparing"')+' in the KOT view — it hasn\'t been marked ready yet. Bill and free the table anyway?'))return;
  o.t=tot(o);
  const P=(o.pays||[]).slice(),due=()=>r2(o.t.total-P.reduce((a,x)=>a+x.amt,0));
- const amt=h('input',{type:'number',value:o.t.total}),info=h('b'),list=h('div'),done=h('button',{class:'p',disabled:true,onclick:async()=>{o.pays=P;if(o.loyaltyRedeemed)o.loyaltyRedeemed=o.t.d;o.change=Math.max(-due(),0);o.status='paid';o.paidAt=now();o.tok=o.tok||tok();if(!o.no||o.no.endsWith('~'))o.no=await nextNo();await dedu(o);await deduVariant(o);if(!isRetail())mk(o);o.printCount=(o.printCount||0)+1;await persist();await markTableDirty(o);x();prnInv(rcpt(o,false));
+ const amt=h('input',{type:'number',value:o.t.total}),info=h('b'),list=h('div'),done=h('button',{class:'p',disabled:true,onclick:async()=>{o.pays=P;if(o.loyaltyRedeemed)o.loyaltyRedeemed=o.t.d;o.change=Math.max(-due(),0);o.status='paid';o.paidAt=now();if(o.type=='Dine-in'&&o.kstat=='ready')o.kstat='served';/* billed and already out of the kitchen: clear it from the "Ready" bar */o.tok=o.tok||tok();if(!o.no||o.no.endsWith('~'))o.no=await nextNo();await dedu(o);await deduVariant(o);if(!isRetail())mk(o);o.printCount=(o.printCount||0)+1;await persist();await markTableDirty(o);x();prnInv(rcpt(o,false));
   const url=location.origin+'/i.html?o='+encodeURIComponent(o.tok),cm=modal(h('h3',{},'Payment complete · '+inrc(o.t.total)),h('div',{class:'row'},h('button',{class:'p',onclick:()=>wa(o)},'Send bill'),h('button',{onclick:()=>open(url,'_blank')},'Open'),h('button',{onclick:()=>cm()},'Done')));
   S.cur=null;render()}},'Complete and print');
  const asDue=h('button',{disabled:true,onclick:async()=>{o.pays=P;if(o.loyaltyRedeemed)o.loyaltyRedeemed=o.t.d;o.status='due';o.dueAt=now();o.tok=o.tok||tok();if(!o.no||o.no.endsWith('~'))o.no=await nextNo();if(!isRetail())mk(o);await persist();await markTableDirty(o);x();S.cur=null;render()}},'Save as due (credit)');
@@ -565,7 +573,7 @@ h('div',{class:'k'},...os.map(o=>{const batches=(o.kotBatches&&o.kotBatches.leng
  const mins=Math.max(0,Math.round((Date.now()-new Date(o.ktime))/60000)),over=mins>=KOT_LIMIT_MIN,secs=Math.max(0,Math.round((Date.now()-new Date(o.ktime))/1000)),mm=String(Math.floor(secs/60)).padStart(2,'0'),ss=String(secs%60).padStart(2,'0');
  const biller=(o.captain&&o.captain.name)||(STAFF_LIST.find(p=>p.id==o.by)||{}).name||(STAFF_LIST.find(p=>p.id==o.by)||{}).email;
  return h('div',{class:'card',style:'border-left:5px solid '+(over?'#c0392b':(KOT_TYPE_COLOR[o.type]||'#999'))},
-  h('div',{class:'row'},h('b',{},o.no+' · '+o.type+' '+tn(o.table)+(o.kstat=='preparing'?' · preparing':'')),h('b',{style:'font-family:\'Space Mono\',monospace;color:'+(over?'#c0392b':'var(--ink-dim)')},mm+':'+ss)),
+  h('div',{class:'row'},h('b',{},o.no+' · '+o.type+' '+tn(o.table)+(o.kstat=='preparing'?' · preparing':'')),h('b',{'data-kt':o.ktime,style:'font-family:\'Space Mono\',monospace;color:'+(over?'#c0392b':'var(--ink-dim)')},mm+':'+ss)),
   biller?h('div',{style:'font-size:11px;color:var(--ink-dim)'},icon('person'),' '+biller):null,
   ...batches.flatMap((b,i)=>[h('div',{style:'font-size:11px;color:var(--ink-dim);margin-top:6px'},'KOT '+(i+1)+' · '+new Date(b.time).toLocaleTimeString()),...b.items.map(x=>h('div',{class:'row'},x.q+'× '+x.n))]),
   o.kstat=='new'?h('button',{class:'p',onclick:async()=>{const c=structuredClone(o);c.kstat='preparing';c.preparingAt=now();await save('order',c,c.id);render()}},'Start preparing'):h('button',{class:'p',onclick:async()=>{const c=structuredClone(o);c.kstat='ready';c.readyAt=now();await save('order',c,c.id);await markKotBatchesReady(o.id);render()}},'Food is ready'))}),os.length?null:h('p',{},'No orders waiting.')))};
@@ -603,8 +611,8 @@ async function getG(){if(!navigator.onLine||!S.user)return;if(!featureOn('self_o
  const arrived=G.filter(g=>!prevIds.has(g.id));
  if(arrived.length)alertSound(arrived.some(g=>g.note=='Waiter called')?'waiter':'guest');
  if(arrived.length&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))render()}
-async function acceptG(g){let o=L('order').find(x=>x.status=='open'&&x.table==g.tbl&&x.lines.length);o=o?structuredClone(o):{...newOrder(),table:g.tbl};g.items.forEach(i=>{const it=R[i.id]&&R[i.id].data;if(!it)return;const sizeObj=i.size&&(it.sizes||[]).find(s=>s.l==i.size),price=sizeObj?sizeObj.p:it.price;const l=o.lines.find(x=>x.id==i.id&&x.size==i.size&&x.price==price&&!x.note);l?l.qty+=i.qty:o.lines.push({id:i.id,name:it.name,size:i.size,price,qty:i.qty,sent:0,st:it.st||'Kitchen'})});if(!(o.cust&&o.cust.name))o.cust={name:g.name,phone:g.phone};if(g.note)o.gn=g.note;const prev=S.cur;S.cur=o;mk(o);await persist();S.cur=prev;await sb.from('guest_orders').update({status:'done'}).eq('id',g.id);getG()}
-const guestBar=()=>G.length?h('div',{style:'background:var(--bg-raised);border-left:4px solid var(--accent);padding:8px;display:grid;gap:6px'},...G.map(g=>h('div',{class:'row'},h('span',{},icon(g.note=='Waiter called'?'bell':'phone'),' '+(tn(g.tbl)||'Table')+' · '+g.name+(g.phone?' '+g.phone:'')+' — '+g.items.map(i=>i.qty+'× '+i.name+(i.size?' ('+i.size+')':'')).join(', ')+(g.note?' · "'+g.note+'"':'')),h('span',{},h('button',{class:'p',onclick:()=>acceptG(g)},'Accept → kitchen'),h('button',{onclick:async()=>{await sb.from('guest_orders').update({status:'rejected'}).eq('id',g.id);getG()}},'Reject'))))):null;
+async function acceptG(g){if(!(g.items&&g.items.length)){/* a waiter call has nothing to cook: just acknowledge it, don't open an empty order on the table */await sb.from('guest_orders').update({status:'done'}).eq('id',g.id);getG();return}let o=L('order').find(x=>x.status=='open'&&x.table==g.tbl&&x.lines.length);o=o?structuredClone(o):{...newOrder(),table:g.tbl};const gone=[];g.items.forEach(i=>{const it=R[i.id]&&R[i.id].data;if(!it){gone.push(i.name||'item');return}const sizeObj=i.size&&(it.sizes||[]).find(s=>s.l==i.size),price=sizeObj?sizeObj.p:it.price;const l=o.lines.find(x=>x.id==i.id&&x.size==i.size&&x.price==price&&!x.note);l?l.qty+=i.qty:o.lines.push({id:i.id,name:it.name,size:i.size,price,qty:i.qty,sent:0,st:it.st||'Kitchen'})});if(!(o.cust&&o.cust.name))o.cust={name:g.name,phone:g.phone};if(g.note)o.gn=g.note;if(gone.length)alert('Not on the menu any more, left out of the order: '+gone.join(', '));const prev=S.cur;S.cur=o;mk(o);await persist();S.cur=(prev&&prev.id==o.id)?structuredClone(o):prev;/* the cashier may have this same order open: refresh it so the next save doesn't wipe the guest's items */await sb.from('guest_orders').update({status:'done'}).eq('id',g.id);getG()}
+const guestBar=()=>G.length?h('div',{style:'background:var(--bg-raised);border-left:4px solid var(--accent);padding:8px;display:grid;gap:6px'},...G.map(g=>h('div',{class:'row'},h('span',{},icon(g.note=='Waiter called'?'bell':'phone'),' '+(tn(g.tbl)||'Table')+' · '+g.name+(g.phone?' '+g.phone:'')+' — '+g.items.map(i=>i.qty+'× '+i.name+(i.size?' ('+i.size+')':'')).join(', ')+(g.note?' · "'+g.note+'"':'')),h('span',{},h('button',{class:'p',onclick:()=>acceptG(g)},(g.items&&g.items.length)?'Accept → kitchen':'Got it'),h('button',{onclick:async()=>{await sb.from('guest_orders').update({status:'rejected'}).eq('id',g.id);getG()}},'Reject'))))):null;
 let drawerEl=null,drawerOvEl=null;
 function syncDrawer(){if(!drawerOvEl)return;drawerOvEl.classList.toggle('show',!!S.drawerOpen);drawerEl.classList.toggle('open',!!S.drawerOpen)}
 const T_ICON={
@@ -630,7 +638,7 @@ function renderDrawer(T){
 }
 const ALL_T=[['pos','Sell','pos','pos'],['tabs','Orders','orders',null],['kds','Kitchen','kitchen','kds'],['kotrep','KOT','kitchen','kds'],['token','Token','kitchen',null],['staff','Staff','staff',null],['builder','Website','o','website_builder']];
 const visibleTabs=()=>ALL_T.filter(([k,,perm,feat])=>can(perm)&&(!feat||featureOn(feat))&&(k!='kotrep'||isRestaurant())&&(k!='token'||cfg().hwToken));
-function render(){if(S.authExpired||!S.user)return login('Your session ended. Please sign in again.');applyTheme();
+function render(){if(S.authExpired||!S.user)return login('Your session ended. Please sign in again.');applyTheme();freshCur();
  const T=visibleTabs().map(([k,n])=>[k,n]);
  if(S.role=='owner'||S.role=='manager'){if(can('reports'))T.push(['bo:rep','Reports & Analytics']);if(can('o'))T.push(['bo:menu','Menu'],['bo:set','Settings & Tables']);T.push(['backoffice','Back Office'])}
  const tabLabel=(T.find(([k])=>k==S.tab)||[,'AUZslab'])[1];
@@ -671,7 +679,7 @@ async function boot(){if(!C.url||C.url.includes('YOUR-PROJECT'))return $('#app')
  if(dash&&dash.features){S.features=dash.features;S.enabledFeatures=dash.enabled_features||{}}
  try{const reqTab=new URLSearchParams(location.search).get('tab');if(reqTab&&visibleTabs().some(([k])=>k==reqTab))S.tab=reqTab}catch{}
  S.authExpired=false;$('#app').textContent='Loading…';addEventListener('online',()=>{sync();setNote()});addEventListener('offline',setNote);
- sb.channel('r').on('postgres_changes',{event:'*',schema:'public',table:'records'},()=>sync()).subscribe();setInterval(sync,30000);sb.channel('g').on('postgres_changes',{event:'*',schema:'public',table:'guest_orders'},()=>getG()).subscribe();setInterval(getG,15000);sb.channel('n').on('postgres_changes',{event:'*',schema:'public',table:'notifications'},()=>refreshNotifCount()).subscribe();setInterval(refreshNotifCount,30000);setInterval(checkAlerts,5000);setInterval(()=>{if((S.tab=='kds'||S.tab=='pos')&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))render()},1000);await syncNow();getG();checkAlerts();if(can('o')&&!L('cat').length&&!localStorage.seeded)await seed();loadStaffList();render()}
+ sb.channel('r').on('postgres_changes',{event:'*',schema:'public',table:'records'},()=>sync()).subscribe();setInterval(sync,30000);sb.channel('g').on('postgres_changes',{event:'*',schema:'public',table:'guest_orders'},()=>getG()).subscribe();setInterval(getG,15000);sb.channel('n').on('postgres_changes',{event:'*',schema:'public',table:'notifications'},()=>refreshNotifCount()).subscribe();setInterval(refreshNotifCount,30000);setInterval(checkAlerts,5000);let lastMin=-1;setInterval(()=>{/* the screen used to be rebuilt every second, which swallowed taps and reset scroll; now only the kitchen clocks tick, and the page redraws once a minute */if(S.tab!='kds'&&S.tab!='pos')return;if(S.tab=='kds')document.querySelectorAll('[data-kt]').forEach(e=>{const t=Math.max(0,Math.round((Date.now()-new Date(e.dataset.kt))/1000));e.textContent=String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0')});const m=Math.floor(Date.now()/60000);if(m!==lastMin){lastMin=m;if(!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)&&!document.querySelector('.ov'))render()}},1000);await syncNow();getG();checkAlerts();if(can('o')&&!L('cat').length&&!localStorage.seeded)await seed();loadStaffList();render()}
 let STAFF_LIST=[];
 async function loadStaffList(){try{const{data}=await sb.from('profiles').select('id,email,name');STAFF_LIST=data||[];render()}catch{}}
 // A persistent customer profile (email/DOB/anniversary/tags/favourite),

@@ -195,7 +195,13 @@ async function handleSelect(client, table, cfg, query) {
   if (order && !cfg.columns.includes(order)) throw new HttpError(400, 'bad order column');
   const limit = query.get('limit') ? parseInt(query.get('limit'), 10) : null;
 
-  let sql = `select ${selectCols.join(',')} from ${table}`;
+  // records.updated_at is the optimistic-concurrency token (push_record compares it for exact equality). node-pg would hand it back as a JS Date,
+  // i.e. truncated to milliseconds, so every record pulled from the server looked "changed on another device" at the next push and was force-overwritten.
+  // Serve it as a microsecond-precision ISO string, the same shape push_record returns.
+  const stamp = (c) => `to_char(${c} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"+00:00"') as ${c}`;
+  let outCols = selectCols;
+  if (table === 'records') outCols = (selectCols[0] === '*' ? cfg.columns : selectCols).map((c) => (c === 'updated_at' ? stamp(c) : c));
+  let sql = `select ${outCols.join(',')} from ${table}`;
   const params = [];
   if (filters.length) {
     sql += ' where ' + filters.map((f) => { params.push(f.val); return `${f.col} ${OPS[f.op]} $${params.length}`; }).join(' and ');
