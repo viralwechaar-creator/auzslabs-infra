@@ -657,6 +657,7 @@ cursor trail), `fx-phys.js` (draggable bubbles), `fx-ui.js` (pricing stack build
   panel) but **nothing is sticky**: pinned/sticky stacks made the previous panels shake while scrolling on phones, and splitting them didn't help. The fx suite
   fails if a sticky `.fx-panel` comes back. Don't reintroduce `position:sticky` panels.
   On phones: no `mix-blend-mode`, no SVG filters, no fixed full-screen overlays (they cost frames on iOS).
+- **Depth + colour:** homepage sheets are off-white hero -> ink page 2 (`.hx`, rounded top sheet edge via `.hx::before`) -> wine page 3 (`.vw`) -> off-white `.tk` -> ink footer; other pages' layered panels cycle off-white / warm grey / wine tint (`fx-flow.css`, `html.fx-stacked`). Depth effects use CSS scroll-driven animations (`animation-timeline: view()`, compositor only, skipped where unsupported). `fx-hx.js` must never read layout (`getBoundingClientRect`) inside the scroll loop: geometry is cached in `measure()`.
 - **Intro retired:** the cube loader/blast no longer runs (`SHOW_INTRO = false` in `sketch.js`); the page just opens.
 - **Intro blast (old):** `sketch.js` flies particles to elements marked `[data-blast]` (falls back to headings/buttons).
 
