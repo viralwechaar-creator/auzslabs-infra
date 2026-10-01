@@ -74,11 +74,11 @@
 }
 
 /* folder-cut sheets: the top edge is clipped like a file divider (straight diagonal shoulders, chamfered corners); the previous sheet shows through */
-:root{--cut:38px;--ch:20px}
-.hx,.vw,.tk{border-radius:0!important;box-shadow:none;--sl:calc(var(--cut) * .9);
+:root{--cut:38px;--ch:20px;--sl:calc(var(--cut) * .9)}
+.hw,.vw,.tk{border-radius:0!important;box-shadow:none;--sl:calc(var(--cut) * .9);
  clip-path:polygon(0 var(--ch),var(--ch) 0,var(--nx) 0,calc(var(--nx) + var(--sl)) var(--cut),calc(100% - var(--ch)) var(--cut),100% calc(var(--cut) + var(--ch)),100% 100%,0 100%)}
 .vw{clip-path:polygon(0 calc(var(--cut) + var(--ch)),var(--ch) var(--cut),calc(var(--nx) - var(--sl)) var(--cut),var(--nx) 0,calc(100% - var(--ch)) 0,100% var(--ch),100% 100%,0 100%)}
-.hx{--nx:40%}.vw{--nx:62%}.tk{--nx:44%}
+.hw{--nx:40%}.vw{--nx:62%}.tk{--nx:44%}
 .hx-stage{border-radius:0!important}
 .hx-bar{display:none!important}
 .hero2{padding-bottom:calc(var(--sheet-r) + var(--cut) + 24px)!important}
@@ -86,8 +86,8 @@
 .hx-card,.vw-card{border-radius:32px;box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 30px 60px -30px rgba(0,0,0,.65),0 8px 18px -10px rgba(0,0,0,.35)}
 .hx-card .hx-art{background:#f1eeea;border-radius:22px;padding:14px;box-sizing:border-box;width:100%}
 .hx-card .hx-no{align-self:flex-start;padding:5px 11px;border-radius:99px;background:#171717;color:#f6f4f1!important;font-size:12px;letter-spacing:.08em}
-.hx,.vw,.tk{margin-top:calc(var(--cut) * -1)}
-.hx,.vw,.tk{margin-top:calc((var(--cut) + var(--ch)) * -1)}
+.hw,.vw,.tk{margin-top:calc((var(--cut) + var(--ch)) * -1)}
+.hx{margin-top:0}
 .hero2{padding-bottom:calc(var(--cut) + var(--ch) + 28px)!important}
 
 /* foot of the pinned stage: the next (wine) sheet's folder cut, so the bottom is never blank and the page continues from exactly there */
@@ -106,3 +106,15 @@ html.fx-hx .hx-row{padding:10px 0}
 html.fx-hx .hx-row p{font-size:15px}
 html.fx-hx .hx-card .hx-art{max-height:22svh;flex:0 1 auto}
 html.fx-hx .hx-card{justify-content:flex-start}
+
+/* ---- How we work: its own sheet (original look), pinned while the deck rises over it ---- */
+.hw{position:relative;z-index:1;background:var(--hx-bg);min-height:100vh;min-height:100svh;box-sizing:border-box;padding:calc(var(--cut) + var(--ch) + 76px) 8vw 56px;display:flex;align-items:center;--sl:calc(var(--cut) * .9)}
+.hw-in{width:min(100%,760px)}
+.hw+.hx{margin-top:0}
+.hx{background:transparent}
+html:not(.fx-hx) .hx{background:var(--hx-bg)}
+html.fx-hx .hw,html.fx-hx .vw{position:sticky;top:var(--pin,0px)}
+.hw,.vw{position:relative}
+.vw{z-index:3}.tk{z-index:4}
+html.fx-hx .hx{z-index:2}
+html.fx-hx .hx-stage{background:transparent}
