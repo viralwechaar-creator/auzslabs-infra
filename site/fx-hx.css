@@ -162,3 +162,6 @@ html.fx-hx .stack-panel-dark{position:relative;z-index:6;min-height:calc(100svh 
   .vw-card:nth-child(even){margin-top:36px}
   .tk{padding:calc(var(--cut) + var(--ch) + 80px) 8vw 130px;min-height:0}
 }
+
+/* doors -> Let's talk: no empty wine area under the last card; the next folder cut rises right under it */
+html.fx-hx .tk{margin-top:calc((var(--cut) + var(--ch)) * -1 - 9svh)}

@@ -84,3 +84,6 @@ body.home header.topbar .btn{padding:0 18px!important;font-size:15px!important;b
 body.home header.topbar .btn-ghost{background:rgba(23,23,23,.07)}
 body.home .btn::before,body.home .btn::after{display:none!important}
 html.fx-flow body.home.fx header.topbar{background:rgba(246,244,241,.86)}
+/* hero: no photo tile; the wordmark is a little smaller */
+body.home .h2-img{display:none}
+body.home .h2-word{width:80%!important;margin-left:auto}
