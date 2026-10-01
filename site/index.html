@@ -20,28 +20,26 @@
 <link rel="icon" href="/logo.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="theme.css?v=44">
-<link rel="stylesheet" href="sketch.css?v=1">
-<link rel="stylesheet" href="fx.css?v=2">
-<link rel="stylesheet" href="fx-flow.css?v=12">
-<link rel="stylesheet" href="fx-hx.css?v=22">
+<link rel="stylesheet" href="theme.mobile.css?v=44" media="(max-width:899px)"><link rel="stylesheet" href="theme.desktop.css?v=44" media="(min-width:900px)">
+<link rel="stylesheet" href="sketch.mobile.css?v=1" media="(max-width:899px)"><link rel="stylesheet" href="sketch.desktop.css?v=1" media="(min-width:900px)">
+<link rel="stylesheet" href="fx.mobile.css?v=2" media="(max-width:899px)"><link rel="stylesheet" href="fx.desktop.css?v=2" media="(min-width:900px)">
+<link rel="stylesheet" href="fx-flow.mobile.css?v=12" media="(max-width:899px)"><link rel="stylesheet" href="fx-flow.desktop.css?v=12" media="(min-width:900px)">
+<link rel="stylesheet" href="fx-hx.mobile.css?v=23" media="(max-width:899px)"><link rel="stylesheet" href="fx-hx.desktop.css?v=23" media="(min-width:900px)">
 <script src="sketch.js?v=1"></script>
 <script src="fx-art.js?v=1" defer></script>
 <script src="fx.js?v=2" defer></script>
 <script src="fx-canvas.js?v=1" defer></script>
 <script src="fx-stack.js?v=10" defer></script>
-<script src="fx-hx.js?v=14" defer></script>
-<link rel="stylesheet" href="design-system/ui-kit.css?v=3">
-<link rel="stylesheet" href="hig-home.css?v=2">
+<script src="fx-hx.js?v=15" defer></script>
+<link rel="stylesheet" href="design-system/ui-kit.mobile.css?v=3" media="(max-width:899px)"><link rel="stylesheet" href="design-system/ui-kit.desktop.css?v=3" media="(min-width:900px)">
+<link rel="stylesheet" href="hig-home.mobile.css?v=3" media="(max-width:899px)"><link rel="stylesheet" href="hig-home.desktop.css?v=3" media="(min-width:900px)">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"Organization","name":"AUZslab","url":"https://auzslab.in","logo":"https://auzslab.in/logo.png","description":"AUZslab builds point of sale, CRM, and business software in-house."}
 </script>
-<style>
-/* ---------- home: one continuous scroll story ---------- */
-#story{--len:11}
+<style media="(max-width:899px)">#story{--len:11}
 #story .fx-stage{perspective:1400px;background:transparent}
 .hero-h1{margin:0;font:inherit}
 .hw{font-size:clamp(50px,15vw,330px)}
@@ -56,7 +54,6 @@
 @keyframes hint-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(7px)}}
 .we-build{font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;display:flex;gap:.9em;align-items:center;white-space:nowrap}
 .we-build b{color:var(--accent);font-weight:700}
-
 .cubebox{--cs:min(46vh,44vw);width:var(--cs);height:var(--cs);transform-style:preserve-3d}
 .cface{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);
   background:#fffdf7 repeating-linear-gradient(135deg,transparent 0 9px,rgba(23,23,23,.055) 9px 10px)}
@@ -71,10 +68,8 @@
 .note{font-family:var(--hand);font-weight:700;color:var(--accent);font-size:clamp(24px,3.4vw,58px);line-height:.95;white-space:nowrap}
 .note small{display:block;font:500 clamp(12px,1vw,16px)/1.4 var(--font-body);color:var(--ink-dim);max-width:19em;white-space:normal;margin-top:.5em}
 .note svg{width:clamp(50px,7vw,120px);fill:none;stroke:var(--accent);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;display:block}
-
 .hww{font-size:clamp(54px,12vw,260px)}
 .hww-copy{font-family:var(--hand);font-weight:700;font-size:clamp(22px,2.6vw,46px);color:var(--accent);line-height:1.05;max-width:13em;white-space:normal}
-
 .room{display:block;width:min(58vw,860px);position:relative;color:var(--ink)}
 .room .no{font:500 clamp(10px,.9vw,14px)/1 var(--font-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:10px;margin-bottom:1.4vh}
 .room .no::before{content:"";width:28px;height:2px;background:var(--accent)}
@@ -86,14 +81,12 @@
 .room svg.art{position:absolute;width:var(--aw,26vw);left:var(--al,auto);right:var(--ar,-16vw);top:var(--at,-18vh);pointer-events:none}
 .room.l{text-align:left}
 .room.r{margin-left:auto}
-
 .doorway{display:block;width:min(27vw,420px);padding:clamp(14px,1.6vw,26px);background:#fffdf7;border:2px solid var(--ink);box-shadow:10px 10px 0 var(--ink);position:relative;transition:transform .45s var(--ease-out),box-shadow .45s var(--ease-out)}
 .doorway:hover{transform:translate(-4px,-4px) rotate(0deg)!important;box-shadow:16px 16px 0 var(--accent)}
 .doorway .t{font:900 clamp(22px,2.6vw,46px)/.92 var(--font-display);letter-spacing:-.04em;margin:0}
 .doorway .d{font-size:clamp(12px,1vw,16px);line-height:1.5;color:var(--ink-dim);margin:1.2vh 0 0}
 .doorway svg{width:42%;margin:0 0 1vh auto;display:block}
 .doorway .tape{top:-13px;left:18%}
-
 .wash{background:#0e0d0c}
 .portal-h{color:#f6f4f1;font-size:clamp(54px,15.4vw,360px)}
 .portal-p{color:rgba(244,238,226,.72);font-size:clamp(14px,1.25vw,20px);line-height:1.6;max-width:30em;margin:0}
@@ -103,16 +96,76 @@
 .btn-light::before{border-color:#f6f4f1!important}
 .btn-line{color:#f6f4f1;border-color:transparent}
 .btn-line::before{border-color:rgba(244,238,226,.7)!important}
-
 @media (max-width:700px){
-  .room{width:80vw}.room .nm{font-size:clamp(40px,15vw,120px)}.room svg.art{width:38vw;right:-10vw;top:-9vh}
-  .doorway{width:60vw;padding:12px}.doorway svg{width:26%}.doorway .d{display:none}
-  .doorway:nth-of-type(1){left:37%!important;top:27%!important}
-  .doorway:nth-of-type(2){left:63%!important;top:43%!important}
-  .doorway:nth-of-type(3){left:39%!important;top:60%!important}
-  .doorway:nth-of-type(4){left:62%!important;top:77%!important}
-  .hww{font-size:clamp(46px,17vw,120px)}
+.room{width:80vw}
+.room .nm{font-size:clamp(40px,15vw,120px)}
+.room svg.art{width:38vw;right:-10vw;top:-9vh}
+.doorway{width:60vw;padding:12px}
+.doorway svg{width:26%}
+.doorway .d{display:none}
+.doorway:nth-of-type(1){left:37%!important;top:27%!important}
+.doorway:nth-of-type(2){left:63%!important;top:43%!important}
+.doorway:nth-of-type(3){left:39%!important;top:60%!important}
+.doorway:nth-of-type(4){left:62%!important;top:77%!important}
+.hww{font-size:clamp(46px,17vw,120px)}
 }
+</style><style media="(min-width:900px)">#story{--len:11}
+#story .fx-stage{perspective:1400px;background:transparent}
+.hero-h1{margin:0;font:inherit}
+.hw{font-size:clamp(50px,15vw,330px)}
+.hw-hand{font-size:clamp(30px,8.2vw,190px);white-space:nowrap}
+.hw-out{font-size:clamp(36px,8.2vw,190px)}
+.hw-mid{font-size:clamp(32px,7.4vw,170px)}
+.hw-big{font-size:clamp(64px,18vw,400px)}
+.cta-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.heroctl{display:flex;flex-direction:column;gap:14px;align-items:flex-start}
+.scrollhint{font-family:var(--hand);font-size:clamp(20px,2.2vw,34px);color:var(--accent);display:flex;align-items:center;gap:10px;white-space:nowrap}
+.scrollhint svg{width:46px;height:46px;stroke:var(--accent);fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;animation:hint-bob 1.8s ease-in-out infinite}
+@keyframes hint-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(7px)}}
+.we-build{font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;display:flex;gap:.9em;align-items:center;white-space:nowrap}
+.we-build b{color:var(--accent);font-weight:700}
+.cubebox{--cs:min(46vh,44vw);width:var(--cs);height:var(--cs);transform-style:preserve-3d}
+.cface{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);
+  background:#fffdf7 repeating-linear-gradient(135deg,transparent 0 9px,rgba(23,23,23,.055) 9px 10px)}
+.cface svg{width:80%;height:auto}
+.cface b{position:absolute;left:7%;bottom:5%;font:900 calc(var(--cs)*.115)/1 var(--font-display);letter-spacing:-.05em;text-transform:uppercase}
+.cface:nth-child(1){transform:translateZ(calc(var(--cs)*.5 + var(--ex,0)*1px))}
+.cface:nth-child(2){transform:rotateY(90deg) translateZ(calc(var(--cs)*.5 + var(--ex,0)*1px))}
+.cface:nth-child(3){transform:rotateY(180deg) translateZ(calc(var(--cs)*.5 + var(--ex,0)*1px))}
+.cface:nth-child(4){transform:rotateY(-90deg) translateZ(calc(var(--cs)*.5 + var(--ex,0)*1px))}
+.cface:nth-child(5){transform:rotateX(90deg) translateZ(calc(var(--cs)*.5 + var(--ex,0)*1px))}
+.cface:nth-child(6){transform:rotateX(-90deg) translateZ(calc(var(--cs)*.5 + var(--ex,0)*1px))}
+.note{font-family:var(--hand);font-weight:700;color:var(--accent);font-size:clamp(24px,3.4vw,58px);line-height:.95;white-space:nowrap}
+.note small{display:block;font:500 clamp(12px,1vw,16px)/1.4 var(--font-body);color:var(--ink-dim);max-width:19em;white-space:normal;margin-top:.5em}
+.note svg{width:clamp(50px,7vw,120px);fill:none;stroke:var(--accent);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;display:block}
+.hww{font-size:clamp(54px,12vw,260px)}
+.hww-copy{font-family:var(--hand);font-weight:700;font-size:clamp(22px,2.6vw,46px);color:var(--accent);line-height:1.05;max-width:13em;white-space:normal}
+.room{display:block;width:min(58vw,860px);position:relative;color:var(--ink)}
+.room .no{font:500 clamp(10px,.9vw,14px)/1 var(--font-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:10px;margin-bottom:1.4vh}
+.room .no::before{content:"";width:28px;height:2px;background:var(--accent)}
+.room .nm{font:900 clamp(48px,12.5vw,240px)/.82 var(--font-display);letter-spacing:-.055em;text-transform:uppercase;color:transparent;-webkit-text-stroke:max(1.5px,.11vw) var(--ink);margin:0}
+.room .nm.fill{color:var(--ink);-webkit-text-stroke:0}
+.room p{font-size:clamp(14px,1.6vw,26px);line-height:1.5;max-width:22em;color:var(--ink-dim);margin:1.6vh 0 0}
+.room .go{display:inline-flex;margin-top:2vh;font:700 clamp(11px,.95vw,15px)/1 var(--font-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink);border-bottom:2px solid var(--accent);padding-bottom:5px}
+.room .go:hover{color:var(--accent)}
+.room svg.art{position:absolute;width:var(--aw,26vw);left:var(--al,auto);right:var(--ar,-16vw);top:var(--at,-18vh);pointer-events:none}
+.room.l{text-align:left}
+.room.r{margin-left:auto}
+.doorway{display:block;width:min(27vw,420px);padding:clamp(14px,1.6vw,26px);background:#fffdf7;border:2px solid var(--ink);box-shadow:10px 10px 0 var(--ink);position:relative;transition:transform .45s var(--ease-out),box-shadow .45s var(--ease-out)}
+.doorway:hover{transform:translate(-4px,-4px) rotate(0deg)!important;box-shadow:16px 16px 0 var(--accent)}
+.doorway .t{font:900 clamp(22px,2.6vw,46px)/.92 var(--font-display);letter-spacing:-.04em;margin:0}
+.doorway .d{font-size:clamp(12px,1vw,16px);line-height:1.5;color:var(--ink-dim);margin:1.2vh 0 0}
+.doorway svg{width:42%;margin:0 0 1vh auto;display:block}
+.doorway .tape{top:-13px;left:18%}
+.wash{background:#0e0d0c}
+.portal-h{color:#f6f4f1;font-size:clamp(54px,15.4vw,360px)}
+.portal-p{color:rgba(244,238,226,.72);font-size:clamp(14px,1.25vw,20px);line-height:1.6;max-width:30em;margin:0}
+.portal-p a{color:#f6f4f1;border-bottom:2px solid var(--accent)}
+.ring{width:min(92vh,78vw);height:auto;fill:none;stroke:#f6f4f1;stroke-width:1.2;stroke-dasharray:1;stroke-dashoffset:calc(1 - var(--d,0));opacity:.45}
+.btn-light{border-color:transparent;background:#f6f4f1;color:#0e0d0c}
+.btn-light::before{border-color:#f6f4f1!important}
+.btn-line{color:#f6f4f1;border-color:transparent}
+.btn-line::before{border-color:rgba(244,238,226,.7)!important}
 </style>
 </head>
 <body class="fx home" data-no-stack>
@@ -264,8 +317,8 @@
 </section>
 <section class="tk">
   <h2 class="hx-title" data-split="rise">Let's talk.</h2>
-  <p class="tk-p">Software that runs your business, creators that fill it. <a href="creatopz.html">Creatopz</a>, an influencer marketing agency, is AUZslab's marketing partner.</p>
-  <div class="hx-acts"><button class="btn btn-primary" data-open-contact>Tell us about your business</button><a href="creatopz.html" class="btn btn-ghost">Meet Creatopz &rarr;</a></div>
+  <p class="tk-p">Software for your business. <a href="creatopz.html">Creatopz</a>, our marketing partner, brings the customers.</p>
+  <div class="hx-acts"><button class="btn btn-primary" data-open-contact>Get in touch</button><a href="creatopz.html" class="btn btn-ghost">Meet Creatopz</a></div>
 </section>
 
     <div class="stack">

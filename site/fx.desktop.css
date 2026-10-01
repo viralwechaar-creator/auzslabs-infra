@@ -1,5 +1,4 @@
-/* AUZslab FX: layout + visual language for the scroll-world pages (<body class="fx">). Motion is fx.js.
-   Everything scene-related is gated on html.fx-live so a page without JS / with reduced motion is a plain document. */
+/* desktop (900px and up). Independent of the mobile file: edit freely. */
 :root{--hl:#ece6e6;--blue:#800020;--ease-out:cubic-bezier(.22,1,.36,1);--ease-io:cubic-bezier(.65,0,.35,1)}
 body.fx{--paper:#f6f4f1;--hand:'Caveat','Bradley Hand','Segoe Script',cursive;background:#f6f4f1}
 .fx .content{margin:0;position:relative;z-index:2;overflow-x:clip}
@@ -8,8 +7,6 @@ html:has(body.fx),body.fx{overflow-x:clip}
 .fx .stack-panel .wrap,.fx .footer-dark .wrap{padding:0 5vw}
 .fx .stack-panel-dark{padding-top:140px}
 .fx .stack{margin-top:0}
-
-/* ---------- chrome: a floating header that inverts itself over whatever it is on ---------- */
 .fx .topbar{position:fixed;top:0;left:0;right:0;z-index:40;background:transparent;border:0;mix-blend-mode:difference;color:#fff;
   padding:max(16px,env(safe-area-inset-top)) clamp(14px,3vw,38px) 14px}
 .fx .topbar-logo img{filter:invert(1);max-width:96px}
@@ -17,19 +14,14 @@ html:has(body.fx),body.fx{overflow-x:clip}
 .fx .hamburger:hover,.fx .hamburger.is-open{background:#fff;color:#000}
 .fx .topbar .btn-ghost{color:#fff;border-color:transparent}
 .fx .topbar .btn::before{border-color:#fff}
-/* the slide-in menu (and its dim layer) must sit above the floating header, or its own Close button is unreachable */
 .fx .drawer-overlay{z-index:43}
 .fx .sidebar{z-index:44}
-@media (min-width:861px){
-  .fx .shell{flex-direction:column}
-  .fx .topbar{display:flex}
-  .fx .sidebar{position:fixed;top:0;right:0;left:auto;bottom:0;width:100%;max-width:420px;height:100%;transform:translateX(100%)}
-  .fx .sidebar.open{transform:translateX(0)}
-  .fx .drawer-overlay{display:block}
-  .fx .drawer-close{display:inline-flex}
-}
-
-/* ---------- scenes ---------- */
+.fx .shell{flex-direction:column}
+.fx .topbar{display:flex}
+.fx .sidebar{position:fixed;top:0;right:0;left:auto;bottom:0;width:100%;max-width:420px;height:100%;transform:translateX(100%)}
+.fx .sidebar.open{transform:translateX(0)}
+.fx .drawer-overlay{display:block}
+.fx .drawer-close{display:inline-flex}
 .fx-scene{position:relative}
 html.fx-live .fx-scene[data-scene]{height:calc(var(--len,4)*100vh);height:calc(var(--len,4)*100svh)}
 html.fx-live .fx-stage{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden}
@@ -47,20 +39,16 @@ html.fx-live .k.bl{left:5vw;top:auto;bottom:7vh;translate:0 0}
 html.fx-live .k.br{left:auto;right:5vw;top:auto;bottom:7vh;translate:0 0}
 html.fx-live .k.raw{left:0;top:0;translate:none}
 html.fx-live .k.full{left:0;top:0;width:100%;height:100%;translate:none}
-/* no JS / reduced motion: the stage is just a column of the same content */
 html:not(.fx-live) .fx-stage{display:flex;flex-direction:column;align-items:flex-start;gap:26px;padding:110px 6vw 56px}
 html:not(.fx-live) .k{position:static}
 html:not(.fx-live) .fx-field,html:not(.fx-live) .fx-trail,html:not(.fx-live) .fx-only-live{display:none!important}
 html.fx-live .fx-only-static{display:none!important}
-
 .fx-world{position:absolute;inset:0;perspective:900px;perspective-origin:50% 50%;pointer-events:none}
 .fx-cam{position:absolute;inset:0;transform-style:preserve-3d;pointer-events:none}
 .fx-cam [data-xyz]{pointer-events:auto;position:absolute;left:50%;top:50%;translate:-50% -50%;backface-visibility:hidden;visibility:hidden}
 .fx-field{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:block}
 .fx-trail{position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:45;pointer-events:none}
 .fx-track{display:flex;align-items:center;height:100%;width:max-content;will-change:transform}
-
-/* ---------- type ---------- */
 .giant{font-family:var(--font-display);font-weight:900;letter-spacing:-.05em;line-height:.8;text-transform:uppercase;font-size:clamp(54px,14vw,300px);margin:0;white-space:nowrap;color:var(--ink)}
 .outline{color:transparent;-webkit-text-stroke:max(1.5px,.11vw) var(--ink)}
 .outline-m{color:transparent;-webkit-text-stroke:max(1.5px,.11vw) var(--accent)}
@@ -82,8 +70,6 @@ html.fx-live .fx-only-static{display:none!important}
   transform:translate3d(calc((1 - var(--c))*var(--rx)*3vw),calc((1 - var(--c))*5vh),0) rotate(calc((1 - var(--c))*var(--rr)*26deg))}
 [data-split="wave"] .fx-c{animation:fx-wave 2.6s ease-in-out infinite;animation-delay:calc(var(--i)*70ms)}
 @keyframes fx-wave{0%,100%{transform:translateY(0)}50%{transform:translateY(-.14em)}}
-
-/* hand-made marks */
 .mk{background:linear-gradient(transparent 58%,var(--hl) 58% 94%,transparent 94%) no-repeat 0 0/0 100%;transition:background-size .9s .25s var(--ease-out);padding:0 .08em}
 .in .mk,.mk.in,[data-reveal].in .mk{background-size:100% 100%}
 .mk.s{background-size:calc(var(--mk,0)*100%) 100%;transition:none}
@@ -93,8 +79,6 @@ html.fx-live .fx-only-static{display:none!important}
 .tape{position:absolute;width:5.2em;height:1.5em;background:rgba(128,0,32,.6);box-shadow:0 1px 0 rgba(0,0,0,.08);transform:rotate(-4deg)}
 .stamp{display:inline-block;padding:.22em .55em;border:.12em solid var(--accent);color:var(--accent);font:900 1em/1 var(--font-display);letter-spacing:.06em;text-transform:uppercase;border-radius:.18em;transform:rotate(-8deg)}
 .paper{background:#fffdf7;border:2px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
-
-/* ---------- drawings ---------- */
 .fx-art{display:block;width:100%;height:auto;overflow:visible;color:var(--ink)}
 .fx-art *{fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 .fx-art .f{fill:#fffdf7}
@@ -103,21 +87,19 @@ html.fx-live .fx-only-static{display:none!important}
 .fx-art .h{stroke-width:1.4;opacity:.5}
 .fx-draw *{stroke-dasharray:1;stroke-dashoffset:calc(1 - clamp(0,calc(var(--d,1)*(var(--n,1) + 1) - var(--i,0)),1))}
 .fx-art .tw{transform-box:fill-box;transform-origin:center}
-
-/* ---------- marquee ---------- */
 [data-marquee]{overflow:hidden;white-space:nowrap}
 .fx-mq-track{animation:fx-mq var(--mq-dur,40s) linear infinite}
 @keyframes fx-mq{from{transform:translate3d(0,0,0)}to{transform:translate3d(calc(var(--mq-w,0px) * -1),0,0)}}
-@media (prefers-reduced-motion:reduce){.fx-mq-track{animation:none}}
+@media (prefers-reduced-motion:reduce){
+.fx-mq-track{animation:none}
+}
 .fx-mq-track{display:flex;width:max-content;will-change:transform}
 .fx-mq-set{display:flex;align-items:center;flex-shrink:0}
-
-/* ---------- one-shot reveals ---------- */
 html.fx-live [data-reveal]{opacity:0;transform:translate3d(0,44px,0);transition:opacity .9s var(--ease-out),transform 1.1s var(--ease-out)}
 html.fx-live [data-reveal="wipe"]{transform:none;opacity:1;clip-path:inset(0 100% 0 0);transition:clip-path 1.1s var(--ease-io)}
 html.fx-live [data-reveal="scale"]{transform:scale(.86);transform-origin:50% 100%}
 html.fx-live [data-reveal].in{opacity:1;transform:none;clip-path:inset(0 0 0 0)}
-
-/* ---------- tilt + reduced-motion ---------- */
 [data-tilt]{transform:perspective(900px) rotateX(var(--tx,0deg)) rotateY(var(--ty,0deg));transition:transform .25s ease-out}
-@media (prefers-reduced-motion:reduce){.fx-trail{display:none}}
+@media (prefers-reduced-motion:reduce){
+.fx-trail{display:none}
+}
