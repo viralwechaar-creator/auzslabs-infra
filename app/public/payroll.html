@@ -1,4 +1,4 @@
-<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><title>AUZslab Payroll</title><link rel=manifest href=/manifest.json><link rel=icon href=/logo.png><link rel=apple-touch-icon href=/icon-512.png><meta name=theme-color content=#171717>
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><title>AUZslab Payroll</title><link rel=manifest href=/manifest-payroll.json><link rel=icon type=image/svg+xml href=/icon-payroll.svg><link rel=icon type=image/png href=/icon-payroll-512.png><link rel=apple-touch-icon href=/icon-payroll-512.png><meta name=theme-color content=#171717>
 <meta name=apple-mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-status-bar-style content=black-translucent><meta name=apple-mobile-web-app-title content=Payroll>
 <link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel=stylesheet>
@@ -705,7 +705,7 @@ function hrDrawer(tabs){
  return close;
 }
 function login(msg){const e=h('input',{type:'email',placeholder:'Email'}),p=h('input',{type:'password',placeholder:'Password'}),m=h('div',{},msg||'');
- $('#app').replaceChildren(h('div',{class:'md',style:'margin:12vh auto'},h('h2',{},'Payroll sign in'),h('p',{class:'note'},'Same login as your AUZslab account.'),e,p,m,
+ $('#app').replaceChildren(h('div',{class:'md',style:'margin:12vh auto'},h('img',{src:'/logo-payroll.svg',alt:'AUZslab Payroll',style:'height:84px;width:auto;justify-self:start;margin-bottom:6px'}),h('h2',{},'Payroll sign in'),h('p',{class:'note'},'Same login as your AUZslab account.'),e,p,m,
   h('button',{class:'p',onclick:async()=>{const{error}=await sb.auth.signInWithPassword({email:e.value.trim(),password:p.value});error?m.textContent=error.message:boot()}},'Sign in')))}
 async function boot(){
  let c=JSON.parse(localStorage.hru||'null'),ses=null;try{ses=(await sb.auth.getSession()).data.session}catch{}
