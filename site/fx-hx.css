@@ -128,3 +128,14 @@ html.fx-hx .vw-grid{position:relative;display:block;flex:1;min-height:300px;marg
 html.fx-hx .vw-card{position:absolute;left:50%;top:50%;translate:-50% -50%;width:min(74vw,320px);margin:0!important;will-change:transform}
 html.fx-hx .vw .hx-title{font-size:clamp(30px,9vw,40px)}
 html.fx-hx .vw-art{max-height:19svh}
+
+/* the "One login for all of it" call to action lives on the How we work sheet (it is part of that page, so it never moves when the card deck ends) */
+.hw-cta{margin-top:clamp(18px,3.5vh,34px);padding-top:clamp(14px,2.5vh,24px)}
+.hw-cta .hx-title{font-size:clamp(28px,8vw,38px)}
+.hw-cta .hx-acts{margin-top:16px}
+/* Let's talk gets its own tone so its folder cut reads against the page background instead of looking like a hole */
+.tk{background:#e9e4df}
+html.fx-hx .stack-panel-dark{position:relative;z-index:6;min-height:calc(100svh - var(--pin,150px) + 28px)}
+.hw{flex-direction:column;align-items:flex-start;justify-content:center}
+.hw-in,.hw-cta{width:min(100%,760px)}
+.hx-foot{display:none!important}
