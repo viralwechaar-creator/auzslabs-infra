@@ -642,14 +642,19 @@ cursor trail), `fx-phys.js` (draggable bubbles), `fx-ui.js` (pricing stack build
   and demo credentials are kept; only the layout changed. Account/admin/cart/signup/terms/privacy keep the plain layout.
 - **Fallbacks:** with `prefers-reduced-motion` (or no JS) `html.fx-live` is absent and each stage is a normal column of
   the same content; `tests/suites/local/fx.mjs` checks this and scrolls every page end to end.
-- **Phones and portrait tablets (< 900px) do not get the pinned scenes.** `sketch.js` sets `html.fx-flow` instead of
-  `fx-live`; `fx.js` runs `bootFlow()` (no scene engine, no per-frame transforms, no particle canvas) and `fx-flow.css`
-  lays each scene's actors out top to bottom, animating each block in once via an IntersectionObserver (`.in`). The same
-  stylesheet (`html:not(.fx-live)`) is the reduced-motion / no-JS layout. A new scene actor that only makes sense on a
-  stage (a backdrop, a scanning line, a duplicate CTA) must be hidden in `fx-flow.css`, or it will show up in the flow.
-  On phones: no `mix-blend-mode`, no SVG filters (`#sk-rough`), no fixed full-screen overlays: they cost frames on iOS.
-  Measure with CPU throttling (`Emulation.setCPUThrottlingRate` 4x) and look for frames over 50 ms; the fx suite also
-  checks every page for overlapping text blocks at phone and tablet width.
+- **No pinned/scrubbed scenes any more: every width uses the flowing layout inside stacked panels.** `sketch.js` sets
+  `html.fx-flow` (`FLOW_MAX` is 99999; `fx-live` only exists if someone lowers it); `fx.js` runs `bootFlow()` (reveal via
+  IntersectionObserver `.in`, marquee, counters, split text, draw-in; no scene engine, no particle canvas) and `fx-flow.css`
+  lays each scene's actors out top to bottom (desktop proportions in its `@media (min-width:900px)` block). The same sheet
+  (`html:not(.fx-live)`) is the reduced-motion / no-JS layout. A new stage-only actor (backdrop, scanning line, duplicate CTA)
+  must be hidden in `fx-flow.css`. `data-k` keyframes are ignored in flow.
+- **Stack panels:** `fx-stack.js` (on every fx page) wraps `main.content`'s blocks in `div.stack.fx-stack > section.stack-panel.fx-panel`
+  (the original sticky overlapping panels with the big tab word, WORK/BUILD/VIEW/...; short blocks are merged until a panel is
+  about a screen tall; `.closer` becomes the dark panel). `layout()` sets each panel's `top` to `min(base, innerHeight - panelHeight)`
+  so a panel taller than the viewport can still be read to its bottom. The homepage is written as five panels by hand (`hp-*`).
+  On phones: no `mix-blend-mode`, no SVG filters, no fixed full-screen overlays (they cost frames on iOS). The fx suite scrolls
+  every page at phone/tablet/desktop and checks overlapping text blocks (ignoring `.stack-panel`; scroll with `behavior:'instant'`
+  because theme.css sets smooth scrolling).
 - **Intro blast:** `sketch.js` flies particles to elements marked `[data-blast]` (falls back to headings/buttons).
 
 ## Non-technical owner, deploy over SSH from a phone

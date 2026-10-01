@@ -28,13 +28,13 @@ export default async function run({ browser, stack }) {
         });
         assert(!errs.length, errs.slice(0, 3).join(' | '));
         assert(info.live || info.flow, 'animation layer not switched on');
-        if (dev.mobile) assert(info.flow && info.scenes === 0, 'phone should use the light flowing layout, got scenes=' + info.scenes);
-        else assert(info.scenes > 0 || n === 'products', 'no scroll scene started (' + info.scenes + ')');
+        assert(info.flow && info.scenes === 0, 'expected the flowing stacked layout, got scenes=' + info.scenes);
+        assert(await page.evaluate(() => document.querySelectorAll('.stack-panel').length >= 2), 'stack panels missing');
         assert(info.over <= 2, 'page scrolls sideways by ' + info.over + 'px');
-        if (dev.mobile) {
-          await page.evaluate(async () => { await new Promise((r) => setTimeout(r, 900)); });
+        {
+          await page.evaluate(async () => { window.scrollTo({ top: 0, behavior: 'instant' }); await new Promise((r) => setTimeout(r, 900)); });
           const bad = await page.evaluate(() => {
-            const els = [...document.querySelectorAll('main .fx-stage .k')].filter((e) => { const r = e.getBoundingClientRect(), cs = getComputedStyle(e); return r.width > 4 && r.height > 4 && cs.display !== 'none' && cs.visibility !== 'hidden' && !e.closest('.hh') && !e.closest('.fx-world') && !e.matches('.cubebox, .stack3d, .doorway'); });
+            const els = [...document.querySelectorAll('main .fx-stage .k')].filter((e) => { const r = e.getBoundingClientRect(), cs = getComputedStyle(e); return r.width > 4 && r.height > 4 && cs.display !== 'none' && cs.visibility !== 'hidden' && !e.closest('.hh') && !e.closest('.fx-world') && !e.closest('.stack-panel') && !e.matches('.cubebox, .stack3d, .doorway'); });
             const it = els.map((e) => ({ e, r: e.getBoundingClientRect(), t: (e.className.baseVal ?? e.className).toString().split(' ').slice(0, 2).join('.') })), out = [];
             for (let i = 0; i < it.length; i++) for (let j = i + 1; j < it.length; j++) { const a = it[i], b = it[j]; if (a.e.contains(b.e) || b.e.contains(a.e)) continue; const x = Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left), y = Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top); if (x > 8 && y > 8 && x * y > .15 * Math.min(a.r.width * a.r.height, b.r.width * b.r.height)) out.push(a.t + ' overlaps ' + b.t); }
             return out.slice(0, 3);

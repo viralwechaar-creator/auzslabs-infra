@@ -28,6 +28,7 @@
 <script src="fx-art.js?v=1" defer></script>
 <script src="fx.js?v=1" defer></script>
 <script src="fx-canvas.js?v=1" defer></script>
+<script src="fx-stack.js?v=1" defer></script>
 <link rel="stylesheet" href="design-system/ui-kit.css?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -205,13 +206,8 @@
     </div>
   </aside>
 
-                <main class="content">
-
-    <div class="fx-scene" id="story" data-scene data-pointer>
-      <div class="fx-stage">
-        <canvas class="fx-field" data-shapes="0:flow; .085:ring@.5,.5,.92,.92; .3:flow; .34:flow; .8:flow; .92:ring@.5,.5,.8,.8" data-kick="7" aria-hidden="true"></canvas>
-
-        <h1 class="hero-h1" aria-label="Software, built for how you actually work.">
+                  <main class="content">
+<section class="fx-scene hp hp-hero"><div class="fx-stage"><h1 class="hero-h1" aria-label="Software, built for how you actually work.">
           <span class="k giant hw al" style="top:23%" data-blast data-k="0:x0,y0,z0,r0,o1; .05:x-2,y-2,z-150,r-1,o1; .11:x-64,y-8,z-700,r-12,o0">Software,</span>
           <span class="k hand hw-hand" style="left:73%;top:11%" data-blast data-k="0:r-7,y0,o1; .05:r-11,y-4,o1; .1:y-46,r-42,o0">built for</span>
           <span class="k giant outline hw-out al" style="top:43%" data-blast data-k="0:x0,z0,o1; .05:x3,z-200,o1; .11:x-44,y22,z-1000,r5,o0">how you</span>
@@ -226,8 +222,7 @@
           </div>
           <div class="we-build"><b>We build</b> POS · CRM · Booking · Payroll</div>
         </div>
-        <div class="k scrollhint ab" style="left:62%" data-k="0:o1,y0; .035:o0,y10">scroll <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 6v32M12 27l12 13 12-13"/></svg></div>
-
+        
         <!-- the cube: six drawings, assembled as you scroll, then blown apart -->
         <div class="k cubebox" data-k="0:o0,s.25,ry-240,rx-30,d0,ex0; .07:o0,d0; .14:o1,s.75,ry-100,rx-24,d.35; .22:s1,ry160,rx-16,d1; .29:s1.12,ry340,rx-22,ex0; .37:s2.2,ry560,rx-34,ex700; .43:s4.4,ry700,ex1700,o0">
           <div class="cface"><svg data-art="pos" data-draw></svg><b>POS</b></div>
@@ -240,7 +235,8 @@
         <div class="k note" style="left:21%;top:27%" data-k=".12:o0,y6,r-8; .17:o1,y0,r-6; .27:o1,y0; .31:o0,y-6">one account.<svg viewBox="0 0 120 70" aria-hidden="true"><path d="M6 8C40 2 92 18 108 58M108 58L92 50M108 58L111 40"/></svg></div>
         <div class="k note" style="left:77%;top:76%" data-k=".14:o0,y8,r6; .19:o1,y0,r4; .28:o1,y0; .32:o0,y-6">every module.</div>
 
-        <!-- how we work -->
+        <div class="hero-art" role="presentation"><img class="hero-art-logo" src="logo.png" alt="" aria-hidden="true"></div></div></section>
+<section class="fx-scene hp hp-work" data-tab="WORK"><div class="fx-stage"><div class="k eye ph" >How we work</div><!-- how we work -->
         <div class="k giant outline hww" style="left:26%;top:50%" data-k=".28:y62,o0,r-6; .325:o1,y6,r-3; .36:y0,o1; .40:y-70,o0,r2">Build.</div>
         <p class="k hww-copy" style="left:27%;top:66%" data-k=".30:y40,o0; .335:o1,y0; .365:y-3,o1; .40:y-62,o0">Custom-built for how your business actually runs, not a template with your logo on it.</p>
         <div class="k giant hww" style="left:66%;top:47%;font-size:clamp(40px,9.5vw,210px)" data-k=".33:y70,o0,r6; .37:o1,y-6,r3; .405:y-10,o1; .44:y-74,o0">Connect.</div>
@@ -248,8 +244,9 @@
         <div class="k giant outline-m hww" style="left:42%;top:52%;font-size:clamp(40px,10.5vw,230px)" data-k=".37:y80,o0,r-3; .41:o1,y16,r-1; .435:y12,o1; .47:y-80,o0">Grow.</div>
         <p class="k hww-copy" style="left:44%;top:70%" data-k=".39:y40,o0; .425:o1,y0; .445:y-3,o1; .47:y-66,o0">New tools as your business needs them, not before, not bundled in.</p>
 
-        <!-- fly through the products -->
-        <div class="fx-world" data-fly data-depth="9300" data-range=".49,.79" data-path="sway" data-far="1750" data-step="1050" data-stop="250">
+        </div></section>
+<section class="fx-scene hp hp-prod" data-tab="BUILD"><div class="fx-stage"><div class="k eye ph" >What we build</div><h2 class="k fx-h2 ph" data-split="rise">Eight modules, <span class="mk">one login.</span></h2><!-- fly through the products -->
+        <div class="fx-world hp-rooms">
           <div class="fx-cam">
             <a class="f room" href="pos.html" data-xyz="-19,4,1500" data-r="-3">
               <span class="no">01 · Front of house</span><h3 class="nm">POS</h3>
@@ -294,7 +291,8 @@
           </div>
         </div>
 
-        <!-- four kinds of business, four doors -->
+        </div></section>
+<section class="fx-scene hp hp-doors" data-tab="VIEW"><div class="fx-stage"><!-- four kinds of business, four doors -->
         <p class="k note" style="left:33%;top:15%" data-k=".77:o0,y6,r-6; .82:o1,y0,r-4; .93:o1; .96:o0">built for your kind of business &darr;</p>
         <a class="k doorway" href="business-cafes.html" style="left:27%;top:47%" data-k=".77:x-80,y30,r-28,o0; .84:x0,y0,r-5,o1; .935:y-1,o1; .965:y-70,r-10,o0">
           <span class="tape"></span><svg data-art="cafe"></svg>
@@ -313,17 +311,15 @@
           <h3 class="t">Salons &amp; spas</h3><p class="d">Website, online booking, billing and clients.</p>
         </a>
 
-        <!-- the portal -->
-        <div class="k full wash" style="pointer-events:none" data-k="0:o0; .9:o0; .965:o1"></div>
-        <svg class="k ring" viewBox="0 0 200 200" aria-hidden="true" data-k=".9:o0,s.7,d0; .985:o1,s1,d1"><circle cx="100" cy="100" r="98" pathLength="1"/></svg>
-        <h2 class="k giant portal-h" data-k=".92:o0,s.55,y8; .975:o1,s1,y0">Let's talk.</h2>
+        </div></section>
+<section class="fx-scene hp hp-talk" data-tab="TALK"><div class="fx-stage"><!-- the portal -->
+                        <h2 class="k giant portal-h" data-k=".92:o0,s.55,y8; .975:o1,s1,y0">Let's talk.</h2>
         <p class="k portal-p" style="left:50%;top:76%;text-align:center" data-k=".95:o0,y6; .985:o1,y0">Software that runs your business, creators that fill it. <a href="creatopz.html">Creatopz</a>, an influencer marketing agency, is AUZslab's marketing partner.</p>
         <div class="k cta-row" style="left:50%;top:88%" data-k=".96:o0,y8; .99:o1,y0">
           <button class="btn btn-light" data-open-contact data-magnet>Tell us about your business</button>
           <a href="creatopz.html" class="btn btn-line">Meet Creatopz &rarr;</a>
         </div>
-      </div>
-    </div>
+      </div></section>
 
     <div class="stack">
       <section class="stack-panel stack-panel-dark" data-tab="CONNECT">
