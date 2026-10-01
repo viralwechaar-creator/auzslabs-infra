@@ -123,6 +123,7 @@ input:disabled+.slider{opacity:.4;cursor:default}
       <a href="#" id="openPosAddonLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><span>Open POS (add-on)</span></a>
       <a href="#" id="openPayrollLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><span>Open Payroll</span></a>
       <a href="#" id="openBuilderLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><span>Open Website Builder</span></a>
+      <a href="#" id="openAccountsLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><span>Open Accounting</span></a>
     </nav>
     <div class="sidebar-foot">
       <button class="btn btn-ghost" id="signOutBtn" style="width:100%;justify-content:center">Sign out</button>
@@ -163,7 +164,7 @@ input:disabled+.slider{opacity:.4;cursor:default}
 const sb = supabase.createClient(CFG.url, CFG.key);
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const PERM_KEYS = [['pos','Sell (POS)'],['orders','Orders'],['kitchen','Kitchen Display'],['reports','Reports'],['staff','Staff (view)'],['inventory','Stock'],['crm','Customers'],['menu','Menu'],['settings','Business Settings'],['billing','Billing / Refunds']];
+const PERM_KEYS = [['pos','Sell (POS)'],['orders','Orders'],['kitchen','Kitchen Display'],['reports','Reports'],['staff','Staff (view)'],['inventory','Stock'],['crm','Customers'],['menu','Menu'],['settings','Business Settings'],['billing','Billing / Refunds'],['acc_view','Accounting: view'],['acc_sales','Accounting: sales and receipts'],['acc_purchase','Accounting: purchases and payments'],['acc_inventory','Accounting: products and stock'],['acc_banking','Accounting: banking'],['acc_post','Accounting: journals and assets'],['acc_approve','Accounting: approve documents'],['acc_cancel','Accounting: cancel and reverse'],['acc_reports','Accounting: reports and GST'],['acc_import','Accounting: import'],['acc_admin','Accounting: settings'],['acc_audit','Accounting: audit log']];
 
 let DASH = null, ROLES = [], STAFF = [], NOTIFS = [];
 
@@ -194,6 +195,8 @@ async function boot() {
   if (payrollOn) { $('#openPayrollLink').style.display = ''; $('#openPayrollLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in/payroll.html'; }
   const builderOn = (DASH.features || {}).website_builder === true && (DASH.enabled_features || {}).website_builder !== false;
   if (builderOn) { $('#openBuilderLink').style.display = ''; $('#openBuilderLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in/builder.html'; }
+  const accountingOn = (DASH.features || {}).accounting === true && (DASH.enabled_features || {}).accounting !== false;
+  if (accountingOn) { $('#openAccountsLink').style.display = ''; $('#openAccountsLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in/accounts.html'; }
 
   await loadRoles();
   if (DASH.my_role === 'owner') await loadStaff();
@@ -302,11 +305,13 @@ const SALON_SERVICE_GROUPS = [
   ['POS', ['pos', 'self_order', 'inventory', 'kds', 'reports', 'purchases']],
   ['Payroll', ['payroll']],
   ['Website Builder', ['website_builder']],
+  ['Accounting', ['accounting']],
 ];
 const SERVICE_GROUPS = [
   ['POS', ['pos', 'self_order', 'inventory', 'crm', 'kds', 'billing', 'reports', 'booking', 'expenses', 'membership', 'helpdesk', 'tasks', 'purchases']],
   ['Payroll', ['payroll']],
   ['Website Builder', ['website_builder']],
+  ['Accounting', ['accounting']],
 ];
 function renderServices() {
   const entitled = DASH.features || {}, enabled = DASH.enabled_features || {};

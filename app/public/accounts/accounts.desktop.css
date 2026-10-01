@@ -1,0 +1,47 @@
+/* AUZslab Accounting: desktop and tablet landscape (900px and up). Independent of accounts.mobile.css. */
+:root{--hit:40px}
+.shell{display:grid;grid-template-columns:268px minmax(0,1fr);min-height:100vh}
+.side{position:sticky;top:0;height:100vh;overflow:auto;padding:18px 12px 16px;background:var(--card2);border-right:.5px solid var(--sep);display:flex;flex-direction:column;gap:2px}
+@media (prefers-color-scheme:dark){.side{background:#111113}}
+.side .brand{display:flex;align-items:center;gap:10px;padding:2px 8px 14px}.side .brand img{height:30px}.side .brand b{display:block;font-size:15px;font-weight:700;line-height:1.15}.side .brand span{font-size:12px;color:var(--label2)}
+.side .gh{font-size:12px;font-weight:600;color:var(--label3);padding:14px 10px 4px}
+.side a,.side button.nav{display:flex;align-items:center;gap:10px;min-height:36px;padding:0 10px;border-radius:9px;color:var(--label);font-size:15px;font-weight:500;width:100%;text-align:left}
+.side a:hover,.side button.nav:hover{background:var(--fill)}
+.side a[aria-current=page]{background:var(--tint-soft);color:var(--tint);font-weight:600}
+.side a .ic svg{width:19px;height:19px}
+.side .foot{margin-top:auto;padding-top:14px;border-top:.5px solid var(--sep);display:grid;gap:4px;font-size:13px;color:var(--label2)}
+.main{min-width:0}
+.topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px;min-height:60px;padding:10px 28px;background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:.5px solid var(--sep)}
+.topbar .l{display:flex;align-items:center;gap:6px}.topbar .tt{font-size:22px;font-weight:700;letter-spacing:-.02em;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar .r{display:flex;gap:8px;align-items:center}
+.topbar .gsearch{width:min(320px,28vw)}
+.page{max-width:1280px;margin:0 auto;padding:24px 28px 56px;display:grid;gap:24px;align-content:start}
+.large-title,.page-sub{display:none}
+.tabbar{display:none}
+.kpis{grid-template-columns:repeat(4,1fr)}
+.kpis.k3{grid-template-columns:repeat(3,1fr)}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;align-items:start}
+.two.wide-left{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+.sheet{left:50%;top:50%;transform:translate(-50%,-50%);width:min(640px,92vw);max-height:88vh;border-radius:18px;animation:sheetPop .3s var(--ease)}
+.sheet.wide{width:min(1000px,94vw)}.sheet.full{width:min(1100px,96vw);height:90vh}
+@keyframes sheetPop{from{opacity:0;transform:translate(-50%,-48%) scale(.97)}}
+.menu{animation:menuIn .18s var(--ease)}
+.toast{bottom:28px}
+.mob-only{display:none!important}
+.dock{position:sticky;bottom:0;z-index:20;display:flex;justify-content:flex-end;gap:10px;padding:12px 0;background:linear-gradient(to top,var(--bg) 70%,transparent)}
+.card.pad-s{padding:14px}
+.list .li{padding:10px 18px}
+.btn.sm{min-height:32px}
+@media (hover:hover){.kpi:hover{box-shadow:0 0 0 .5px var(--sep),0 4px 16px rgba(0,0,0,.08)}}
+
+.lines{gap:6px}
+.line,.lines-head{display:grid;grid-template-columns:minmax(150px,3fr) 92px 72px 64px 104px 64px 84px 104px 40px;gap:8px;align-items:start}
+.lines-head{padding:0 12px;font-size:13px;font-weight:600;color:var(--label2)}.lines-head .r{text-align:right}
+.line{padding:8px 12px;border-radius:12px}
+.line .lf-l{display:none}.lf{display:grid;gap:4px;min-width:0}
+.line .r input{text-align:right}.line .amt{text-align:right}
+.line .input,.line .select{min-height:38px;padding:4px 10px;font-size:15px;border-radius:8px}
+.line .del{align-self:start}
+
+@media (max-width:1300px){.topbar .gsearch{width:44px}.topbar .gsearch .gs-t{display:none}}
+.topbar .r{min-width:0;flex-wrap:nowrap}.topbar .btn{flex:none}

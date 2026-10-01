@@ -26,8 +26,11 @@ export const USERS = {
   salonOwner: 'owner-salon@test.local',
   retailOwner: 'owner-retail@test.local',
   plain: 'plain@test.local',
+  acctOwner: 'owner-acct@test.local',
+  acctManager: 'manager-acct@test.local',
+  acctCashier: 'cashier-acct@test.local',
 };
-export const TENANTS = { cafe: 'testcafe', salon: 'testsalon', retail: 'testretail' };
+export const TENANTS = { cafe: 'testcafe', salon: 'testsalon', retail: 'testretail', acct: 'testacct' };
 
 export async function connect(database) {
   const c = new pg.Client({ host: PG.host, port: PG.port, user: PG.user, password: PG.password, database });
@@ -85,6 +88,11 @@ async function seed(c) {
   await user(c, USERS.cafeOwner, { tenant_id: cafe, role: 'owner' });
   await user(c, USERS.salonOwner, { tenant_id: salon, role: 'owner' });
   await user(c, USERS.retailOwner, { tenant_id: retail, role: 'owner' });
+  // Accounting: one tenant entitled to it (owner, manager, cashier logins) and the cafe, which is not.
+  const acct = await tenant(c, TENANTS.acct, 'Test Accounts', 'general', { accounting: true });
+  await user(c, USERS.acctOwner, { tenant_id: acct, role: 'owner' });
+  await user(c, USERS.acctManager, { tenant_id: acct, role: 'manager' });
+  await user(c, USERS.acctCashier, { tenant_id: acct, role: 'cashier' });
   await user(c, USERS.plain);
   const adminId = await user(c, USERS.admin);
   await c.query('insert into platform_admins (id) values ($1) on conflict do nothing', [adminId]);
