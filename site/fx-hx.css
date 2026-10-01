@@ -78,3 +78,16 @@
     @keyframes vwFloat{from{transform:translate3d(0,calc(var(--fk) * 1px),0)}to{transform:translate3d(0,calc(var(--fk) * -1px),0)}}
   }
 }
+
+/* folder-tab sheets: each sheet carries a tab like a file divider (static, no scroll motion) */
+:root{--tab-h:34px}
+.hx,.vw,.tk{--tab-w:132px;--fl:14px}
+.hx{--sc:var(--hx-bg);--tc:#f6f4f1;--tl:7vw}
+.vw{--sc:var(--wine);--tc:#fff;--tl:auto;--tr:7vw}
+.tk{--sc:var(--cream);--tc:#171717;--tl:34vw}
+.hx::before,.vw::before,.tk::before,.hx::after,.vw::after,.tk::after{content:"";position:absolute;top:calc(var(--tab-h) * -1 + 1px);left:max(var(--tl),44px);right:auto;width:var(--tab-w);height:var(--tab-h);pointer-events:none}
+.vw::before,.vw::after{left:auto;right:max(var(--tr),44px)}
+.hx::before,.vw::before,.tk::before{content:attr(data-tab);box-sizing:border-box;background:var(--sc);color:var(--tc);border-radius:14px 14px 0 0;display:flex;align-items:center;padding:0 18px;font:600 13px/1 var(--mono,ui-monospace,monospace);letter-spacing:.12em;text-transform:uppercase}
+.hx::after,.vw::after,.tk::after{top:calc(-1px);height:var(--fl);margin:0 calc(var(--fl) * -1);width:calc(var(--tab-w) + var(--fl) * 2);background:radial-gradient(circle at 0 0,transparent calc(var(--fl) - .5px),var(--sc) var(--fl)) left top/var(--fl) var(--fl) no-repeat,radial-gradient(circle at 100% 0,transparent calc(var(--fl) - .5px),var(--sc) var(--fl)) right top/var(--fl) var(--fl) no-repeat;top:calc(var(--fl) * -1 + 1px);margin:0}
+.hx::after,.vw::after,.tk::after{transform:translateX(calc(var(--fl) * -1));width:calc(var(--tab-w) + var(--fl) * 2)}
+.hero2{padding-bottom:calc(var(--sheet-r) + var(--tab-h) + 24px)!important}

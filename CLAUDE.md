@@ -717,3 +717,4 @@ trusting "I ran it."
 - The marquee is a CSS animation (`--mq-w`/`--mq-dur` set once in `measure()`), and flow mode runs no rAF loop. Do not add scroll listeners,
   per-frame `getBoundingClientRect`, fixed full-screen layers, or `will-change` sprinkling.
 - Every homepage sheet shares `--sheet-r:28px` (rounded top, 28px overlap, shadow). No extra edge bars or `::before` overlaps (they cut the hero logo).
+- Sheets carry folder-style tabs (`data-tab` label on `.hx`/`.vw`/`.tk`, drawn by `::before`/`::after` in `fx-hx.css`, staggered left/right/middle like file dividers). `--tab-h` lives on `:root` because `.hero2` uses it for bottom padding; static, no scroll motion.
