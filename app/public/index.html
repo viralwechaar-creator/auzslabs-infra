@@ -135,7 +135,7 @@ input[type=date],input[type=time],input[type=month]{width:156px}
 .drawer button.grp{margin-top:14px;position:relative}
 .drawer button.grp::before{content:"";position:absolute;left:14px;right:14px;top:-8px;height:1px;background:var(--l)}
 .drawer{overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-bottom:max(14px,env(safe-area-inset-bottom))}
-</style><link rel=stylesheet href=/hig.css?v=2></head><body><div id=app></div>
+</style><link rel=stylesheet href=/hig.css?v=3></head><body><div id=app></div>
 <script src=/sb-client.js?v=2></script>
 <script src=/config.js></script>
 <script src=/tenant.js></script>
@@ -652,25 +652,24 @@ function render(){if(S.authExpired||!S.user)return login('Your session ended. Pl
  const T=visibleTabs().map(([k,n])=>[k,n]);
  if(S.role=='owner'||S.role=='manager'){if(can('reports'))T.push(['bo:rep','Reports & Analytics']);if(can('o'))T.push(['bo:menu','Menu'],['bo:set','Settings & Tables']);T.push(['backoffice','Back Office'])}
  const tabLabel=(T.find(([k])=>k==S.tab)||[,'AUZslab'])[1];
- $('#app').replaceChildren(
+ const oldBody=document.querySelector('.shell-body'),keepTop=oldBody?oldBody.scrollTop:0;
+ $('#app').replaceChildren(h('div',{class:'shell'},
   h('div',{class:'top-bar'},
    h('button',{class:'hamburger-btn',onclick:()=>{S.drawerOpen=!S.drawerOpen;syncDrawer()}},'☰'),
    h('h1',{},tabLabel),
    h('span',{id:'net'}),
    h('span',{class:'bell-wrap'},h('button',{id:'notifBell',onclick:()=>location.href='https://auzslab.in/account.html#notifications'},icon('bell',16)),h('span',{id:'notifCount'}))
   ),
-  ...[guestBar(),readyBar(),dispatchedBar()].filter(Boolean),
-  V[S.tab](),
-  h('div',{class:'powered'},'Powered by ',h('a',{href:'https://auzslab.in',target:'_blank',rel:'noopener'},'AUZslab'))
- );renderDrawer(T);iosTabs(T);setNote();refreshNotifCount()}
+  h('div',{class:'shell-body'},...[guestBar(),readyBar(),dispatchedBar()].filter(Boolean),
+   V[S.tab](),
+   h('div',{class:'powered'},'Powered by ',h('a',{href:'https://auzslab.in',target:'_blank',rel:'noopener'},'AUZslab'))),
+  iosTabs(T)
+ ));const nb=document.querySelector('.shell-body');if(nb)nb.scrollTop=keepTop;renderDrawer(T);setNote();refreshNotifCount()}
 // iOS-style tab bar (phones): the four most-used screens + "More", which opens the full menu
-let tabsEl=null;
 function iosTabs(T){
- if(!tabsEl){tabsEl=h('nav',{class:'ios-tabs','aria-label':'Main'});document.body.append(tabsEl)}
  const main=T.filter(([k])=>!k.startsWith('bo:')&&k!='backoffice'&&k!='builder').slice(0,4);
  const mk=(k,n,fn,on)=>{const b=h('button',{class:on?'on':'','aria-current':on?'page':null,onclick:fn});b.innerHTML='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+(T_ICON[k]||'')+'</svg><span>'+esc(n)+'</span>';return b};
- tabsEl.replaceChildren(...main.map(([k,n])=>mk(k,n,()=>{S.tab=k;S.drawerOpen=false;syncDrawer();render()},S.tab==k)),mk('more','More',()=>{S.drawerOpen=!S.drawerOpen;syncDrawer()},!main.some(([k])=>k==S.tab)));
- document.body.classList.toggle('has-tabs',main.length>0)}
+ return h('nav',{class:'ios-tabs','aria-label':'Main'},...main.map(([k,n])=>mk(k,n,()=>{S.tab=k;S.drawerOpen=false;syncDrawer();render()},S.tab==k)),mk('more','More',()=>{S.drawerOpen=!S.drawerOpen;syncDrawer()},!main.some(([k])=>k==S.tab)))}
 function login(msg){
  S.drawerOpen=false;syncDrawer();
  const e=h('input',{type:'email',placeholder:'Email'}),p=h('input',{type:'password',placeholder:'Password'}),m=h('div',{},msg||'');$('#app').replaceChildren(h('div',{class:'md',style:'margin:12vh auto'},h('img',{src:'/logo-pos.svg',alt:'AUZslab POS',style:'height:64px;width:auto;justify-self:start;margin-bottom:8px'}),h('h2',{},'Sign in'),e,p,m,h('button',{class:'p',onclick:async()=>{const{error}=await sb.auth.signInWithPassword({email:e.value.trim(),password:p.value});error?m.textContent=error.message:boot()}},'Sign in')))}

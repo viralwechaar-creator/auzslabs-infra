@@ -71,16 +71,21 @@ small,.sm{font-size:13px}
 @keyframes hSheetUp{from{transform:translateY(100%)}to{transform:none}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
-/* ---- iOS tab bar (POS, phones): the main screens one tap away, "More" opens the full menu ---- */
+/* ---- App shell (POS): the header and the tab bar are fixed parts of a viewport-high column, only the middle scrolls ---- */
+.shell{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:100%}
+.shell>.top-bar{flex:0 0 auto;position:relative;z-index:20}
+.shell-body{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:clip;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
+.shell-body .cart-bar{position:sticky;left:auto;right:auto;bottom:0;z-index:5}
+.shell-body .pos-g{padding-bottom:12px}
+html,body{height:100%}
+body:has(.shell){overflow:hidden}
 .ios-tabs{display:none}
 @media (max-width:700px){
-  body.has-tabs .ios-tabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;position:fixed;left:0;right:0;bottom:0;z-index:30;padding:6px 6px calc(6px + env(safe-area-inset-bottom));background:rgba(246,244,241,.86);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid var(--hig-sep,rgba(60,60,67,.29))}
+  .shell>.ios-tabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;flex:0 0 auto;padding:6px 6px calc(6px + env(safe-area-inset-bottom));background:rgba(246,244,241,.94);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid var(--hig-sep,rgba(60,60,67,.29));z-index:20}
   .ios-tabs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:49px;padding:2px 0;border:0;border-radius:10px;background:transparent;color:#8a8680;font:500 11px/1.1 var(--hig-font,system-ui);box-shadow:none}
   .ios-tabs button.on{color:var(--accent,#800020)}
   .ios-tabs button span{font-size:11px}
-  body.has-tabs{padding-bottom:calc(64px + env(safe-area-inset-bottom))}
-  body.has-tabs .cart-bar{bottom:calc(60px + env(safe-area-inset-bottom))}
-  body.has-tabs .powered{display:none}
+  .shell-body .powered{display:none}
 }
 /* live strip on the Orders screen (Running orders, tables, kitchen, ready, delivery, advance) */
 .live-chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
