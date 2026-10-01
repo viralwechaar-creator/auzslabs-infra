@@ -34,15 +34,6 @@ export default async function run({ browser, stack }) {
     assert(!bad.length, bad.slice(0, 8).join(' | '));
   }, 'critical');
 
-  await s.check('First visit opens the page straight away (no intro cube), no errors, not locked', async () => {
-    const lc = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }, { loader: true }); const lp = await lc.newPage(); const le = watch(lp);
-    await lp.goto(stack.url('', '/index.html'), { waitUntil: 'load' }); await lp.waitForTimeout(600);
-    assert((await lp.locator('.sk-loader').count()) === 0, 'intro loader is back');
-    assert(!(await lp.evaluate(() => document.documentElement.classList.contains('sk-loading'))), 'page locked');
-    assert(await lp.locator('h1').first().isVisible(), 'headline not visible on first paint');
-    assert(!le.length, le.slice(0, 2).join(' | '));
-    await lc.close();
-  }, 'major');
   const page = await ctx.newPage(); const errs = watch(page);
   await page.goto(stack.url('', '/index.html')); await page.waitForTimeout(500);
   await s.check('Homepage on a phone: hamburger menu opens and closes', async () => {

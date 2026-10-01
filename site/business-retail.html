@@ -18,23 +18,13 @@
 <link rel="icon" href="/logo.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="theme.mobile.css?v=44" media="(max-width:899px)"><link rel="stylesheet" href="theme.desktop.css?v=44" media="(min-width:900px)">
-<link rel="stylesheet" href="sketch.mobile.css?v=1" media="(max-width:899px)"><link rel="stylesheet" href="sketch.desktop.css?v=1" media="(min-width:900px)">
-<link rel="stylesheet" href="fx.mobile.css?v=2" media="(max-width:899px)"><link rel="stylesheet" href="fx.desktop.css?v=2" media="(min-width:900px)">
-<link rel="stylesheet" href="fx-pages.mobile.css?v=1" media="(max-width:899px)"><link rel="stylesheet" href="fx-pages.desktop.css?v=1" media="(min-width:900px)">
-<link rel="stylesheet" href="fx-flow.mobile.css?v=12" media="(max-width:899px)"><link rel="stylesheet" href="fx-flow.desktop.css?v=12" media="(min-width:900px)">
-<script src="sketch.js?v=1"></script>
-<script src="fx-art.js?v=1" defer></script>
-<script src="fx.js?v=2" defer></script>
-<script src="fx-canvas.js?v=1" defer></script>
-<script src="fx-stack.js?v=10" defer></script>
-<link rel="stylesheet" href="design-system/ui-kit.mobile.css?v=3" media="(max-width:899px)"><link rel="stylesheet" href="design-system/ui-kit.desktop.css?v=3" media="(min-width:900px)">
+<link rel="stylesheet" href="theme.css?v=44">
+<link rel="stylesheet" href="design-system/ui-kit.css?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="hig-site.mobile.css?v=8" media="(max-width:899px)"><link rel="stylesheet" href="hig-site.desktop.css?v=3" media="(min-width:900px)">
 </head>
-<body class="fx pg">
+<body>
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
 
 <div class="shell">
@@ -112,31 +102,104 @@
     </div>
   </aside>
 
-      <main class="content">
-<div class="fx-scene pd pd-ret" data-scene style="--len:7" data-pointer><div class="fx-stage">
-<div class="k crumbk tl" data-k="0:o1; .08:o0"><div class="uk-kit uk-breadcrumb" style="margin-bottom:18px">
+  <main class="content">
+    <div class="wrap">
+
+      <section class="section" style="padding-top:104px">
+        <div class="hero-grid">
+        <div>
+        <div class="uk-kit uk-breadcrumb" style="margin-bottom:18px">
           <a href="platform.html">Business types</a><span class="uk-breadcrumb-sep">/</span><span class="uk-breadcrumb-current">Shoe shops, bookstores &amp; retail</span>
-        </div></div><div class="k eye tl2" data-k="0:o1; .08:o0">Shoe shops, bookstores &amp; retail</div>
-<h1 class="hh"><span class="k giant l1" style="font-size:8.79vw" data-blast data-k="0:x-4,y-3,o1; .1:x-6,y-3,o1; .2:x-70,o0">Know your stock,</span>
-<span class="k giant outline l2" style="font-size:8.79vw" data-blast data-k="0:x4,y12,o1; .1:x8,y12,o1; .2:x70,o0">bill in seconds.</span></h1>
-<p class="k lede2 bl" data-k="0:o1; .08:o0">Scan a barcode, print or WhatsApp the receipt, and always know what's actually on the shelf &mdash; without a spreadsheet on the side. Same system for a shoe shop, a bookstore, or general retail.</p><div class="k cta2" data-k="0:o1; .1:o0"><div class="acts"><button class="btn btn-primary" data-open-contact data-magnet>Let's talk</button><a href="products.html" class="btn btn-ghost">See all products</a></div></div>
-<div class="k shelf" data-k=".16:o0,y10; .26:o1,y0; .8:o1; .9:o0"><div class="row"><svg class="bx b0" data-art="crate" data-wob="1"></svg><svg class="bx b1" data-art="crate" data-wob="1"></svg><svg class="bx b2" data-art="crate" data-wob="1"></svg><svg class="bx b3" data-art="crate" data-wob="1"></svg><svg class="bx b4" data-art="crate" data-wob="1"></svg></div><div class="plank"></div></div>
-<i class="k laser" data-k=".28:o0,y-30; .34:o1,y-30; .46:y26; .54:y-30; .66:y26; .74:y-30; .8:o0"></i>
-<div class="k rtape" data-k=".3:o0,x4; .38:o1,x0,t0; .78:o1,t1; .86:o0"><b>scan</b><span data-k=".3:t0; .78:t1" class="cnt">&#8203;</span><em>&times;1</em></div>
-<div class="k note nl" data-k=".3:o0,y6; .36:o1,y0; .6:o1; .66:o0">beep.</div>
-<div class="k note nr" data-k=".5:o0,y6; .56:o1,y0; .72:o1; .78:o0">stock moved. bill done.</div>
-<div class="k cta2 end" data-k=".86:o0,y6; .93:o1,y0"><div class="acts"><button class="btn btn-primary" data-open-contact data-magnet>Let's talk</button><a href="products.html" class="btn btn-ghost">See all products</a></div></div>
-</div></div>
-<section class="tapes"><div class="eye">Counting stock by hand, every single time</div><div class="strip" data-reveal><h3>Stock counted by hand</h3><p>A physical count is the only way to know what's actually left, because nothing tracks it automatically as you sell.</p></div><div class="strip" data-reveal><h3>Billing that takes longer than it should</h3><p>Typing out each item at the counter instead of scanning it, with a customer waiting.</p></div></section>
-<section class="pipe"><div class="eye">The stock-to-till pipeline</div><div class="rcpt" data-reveal><div class="rl" style="--i:0"><i>POS</i><div><h3>Barcode billing</h3><p>Scan an item and it's on the bill &mdash; works with any USB/Bluetooth scanner already set to keyboard-emulation mode.</p></div><b>&#8377; 120</b></div><div class="rl" style="--i:1"><i>Inventory</i><div><h3>Stock tracking &amp; reorder alerts</h3><p>Stock updates automatically as sales go through, with a reorder forecast built off real velocity, not a fixed threshold.</p></div><b>&#8377; 240</b></div><div class="rl" style="--i:2"><i>Billing</i><div><h3>GST invoices, print or WhatsApp</h3><p>Every bill numbered and tax-broken-down, handed over printed or sent straight to a customer's phone.</p></div><b>&#8377; 360</b></div><div class="rl" style="--i:3"><i>CRM</i><div><h3>Loyalty, coupons &amp; feedback</h3><p>Points redeemable at billing, a coupon for a slow week, and feedback collected right off the receipt.</p></div><b>&#8377; 480</b></div><div class="rl" style="--i:4"><i>Billing</i><div><h3>Due &amp; credit sales</h3><p>Let a trusted customer settle later &mdash; the sale still logs now, and the balance shows up as due.</p></div><b>&#8377; 600</b></div><div class="rl" style="--i:5"><i>Payroll</i><div><h3>Staff pay, off their own clock-ins</h3><p>A rate per staffer, hours computed from real attendance, one button to mark a month paid.</p></div><b>&#8377; 720</b></div><div class="rtot"><span>Total</span><u class="stamp">Synced</u></div></div></section>
-<section class="call" data-reveal><div class="eye">Try before you decide</div><h2 class="fx-h2" data-split="rise">Scan a barcode and watch the stock move &mdash; for real.</h2>
-        <p class="p">A live, shared account seeded with sample products &mdash; scan a barcode, ring up a sale, print a receipt.</p>
-        <a href="https://demo-retail.auzslab.in" target="_blank" rel="noopener" class="btn btn-primary" >Scan something &rarr;</a>
+        </div>
+        <div class="label">Shoe shops, bookstores &amp; retail</div>
+        <h1 class="h-1" style="font-size:48px">Know your stock,<br>bill in seconds.</h1>
+        <p class="lede">Scan a barcode, print or WhatsApp the receipt, and always know what's actually on the shelf &mdash; without a spreadsheet on the side. Same system for a shoe shop, a bookstore, or general retail.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px">
+          <button class="btn btn-primary" data-open-contact>Let's talk</button>
+          <a href="products.html" class="btn btn-ghost">See all products</a>
+        </div>
+        </div>
+        <div class="hero-art" role="presentation">
+          <img class="hero-art-logo" src="logo.png" alt="" aria-hidden="true">
+        </div>
+        </div>
       </section>
 
-<section class="closer"><div class="eye">Ready?</div><h2 class="fx-h2" data-split="rise">Your shelf and your till, finally in sync.</h2><div class="acts"><button class="btn btn-primary" data-open-contact data-magnet>Let's talk</button><a href="pricing.html" class="btn btn-ghost">See pricing</a></div></section>
+      <hr class="dash">
 
-    <div class="stack">
+      <section class="section tight">
+        <div class="label">Counting stock by hand, every single time</div>
+        <div class="grid-2" style="margin-top:12px">
+          <div style="border-top:1px dashed var(--line);padding-top:20px">
+            <div class="h-2" style="font-size:19px">Stock counted by hand</div>
+            <p class="p" style="margin-top:10px">A physical count is the only way to know what's actually left, because nothing tracks it automatically as you sell.</p>
+          </div>
+          <div style="border-top:1px dashed var(--line);padding-top:20px">
+            <div class="h-2" style="font-size:19px">Billing that takes longer than it should</div>
+            <p class="p" style="margin-top:10px">Typing out each item at the counter instead of scanning it, with a customer waiting.</p>
+          </div>
+        </div>
+      </section>
+
+      <hr class="dash">
+
+      <section class="section tight">
+        <div class="label">The stock-to-till pipeline</div>
+        <div class="grid-2" style="margin-top:12px">
+          <div class="card">
+            <span class="tag">POS</span>
+            <div class="h-2" style="margin-top:12px;font-size:19px">Barcode billing</div>
+            <p class="p" style="margin-top:8px">Scan an item and it's on the bill &mdash; works with any USB/Bluetooth scanner already set to keyboard-emulation mode.</p>
+          </div>
+          <div class="card">
+            <span class="tag">Inventory</span>
+            <div class="h-2" style="margin-top:12px;font-size:19px">Stock tracking &amp; reorder alerts</div>
+            <p class="p" style="margin-top:8px">Stock updates automatically as sales go through, with a reorder forecast built off real velocity, not a fixed threshold.</p>
+          </div>
+          <div class="card">
+            <span class="tag">Billing</span>
+            <div class="h-2" style="margin-top:12px;font-size:19px">GST invoices, print or WhatsApp</div>
+            <p class="p" style="margin-top:8px">Every bill numbered and tax-broken-down, handed over printed or sent straight to a customer's phone.</p>
+          </div>
+          <div class="card">
+            <span class="tag">CRM</span>
+            <div class="h-2" style="margin-top:12px;font-size:19px">Loyalty, coupons &amp; feedback</div>
+            <p class="p" style="margin-top:8px">Points redeemable at billing, a coupon for a slow week, and feedback collected right off the receipt.</p>
+          </div>
+          <div class="card">
+            <span class="tag">Billing</span>
+            <div class="h-2" style="margin-top:12px;font-size:19px">Due &amp; credit sales</div>
+            <p class="p" style="margin-top:8px">Let a trusted customer settle later &mdash; the sale still logs now, and the balance shows up as due.</p>
+          </div>
+          <div class="card">
+            <span class="tag">Payroll</span>
+            <div class="h-2" style="margin-top:12px;font-size:19px">Staff pay, off their own clock-ins</div>
+            <p class="p" style="margin-top:8px">A rate per staffer, hours computed from real attendance, one button to mark a month paid.</p>
+          </div>
+        </div>
+      </section>
+
+      <hr class="dash">
+
+      <section class="section tight">
+        <div class="label">Try before you decide</div>
+        <h2 class="h-2">Scan a barcode and watch the stock move &mdash; for real.</h2>
+        <p class="p" style="margin-top:8px">A live, shared account seeded with sample products &mdash; scan a barcode, ring up a sale, print a receipt.</p>
+        <a href="https://demo-retail.auzslab.in" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top:14px">Scan something &rarr;</a>
+      </section>
+
+      <hr class="dash">
+
+      <section class="section tight">
+        <div class="label">Know what's on the shelf</div>
+        <h2 class="h-2">Your shelf and your till, finally in sync.</h2>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+          <button class="btn btn-primary" data-open-contact>Let's talk</button>
+          <a href="pricing.html" class="btn btn-ghost">See pricing</a>
+        </div>
+      </section>
+
+      <div class="stack">
 
       <section class="stack-panel stack-panel-dark" data-tab="CONNECT">
 
@@ -243,9 +306,8 @@
 
 </div>
 <script src="/sb-client.js?v=2"></script>
-<script src="site.js?v=8"></script>
+<script src="site.js?v=7"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script src="design-system/ui-kit.js?v=1"></script>
-<script src="hig-site.js?v=6" defer></script>
 </body>
 </html>

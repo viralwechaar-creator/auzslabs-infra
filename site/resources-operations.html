@@ -18,23 +18,13 @@
 <link rel="icon" href="/logo.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="theme.mobile.css?v=44" media="(max-width:899px)"><link rel="stylesheet" href="theme.desktop.css?v=44" media="(min-width:900px)">
-<link rel="stylesheet" href="sketch.mobile.css?v=1" media="(max-width:899px)"><link rel="stylesheet" href="sketch.desktop.css?v=1" media="(min-width:900px)">
-<link rel="stylesheet" href="fx.mobile.css?v=2" media="(max-width:899px)"><link rel="stylesheet" href="fx.desktop.css?v=2" media="(min-width:900px)">
-<link rel="stylesheet" href="fx-pages.mobile.css?v=1" media="(max-width:899px)"><link rel="stylesheet" href="fx-pages.desktop.css?v=1" media="(min-width:900px)">
-<link rel="stylesheet" href="fx-flow.mobile.css?v=12" media="(max-width:899px)"><link rel="stylesheet" href="fx-flow.desktop.css?v=12" media="(min-width:900px)">
-<script src="sketch.js?v=1"></script>
-<script src="fx-art.js?v=1" defer></script>
-<script src="fx.js?v=2" defer></script>
-<script src="fx-canvas.js?v=1" defer></script>
-<script src="fx-stack.js?v=10" defer></script>
-<link rel="stylesheet" href="design-system/ui-kit.mobile.css?v=3" media="(max-width:899px)"><link rel="stylesheet" href="design-system/ui-kit.desktop.css?v=3" media="(min-width:900px)">
+<link rel="stylesheet" href="theme.css?v=44">
+<link rel="stylesheet" href="design-system/ui-kit.css?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="hig-site.mobile.css?v=8" media="(max-width:899px)"><link rel="stylesheet" href="hig-site.desktop.css?v=3" media="(min-width:900px)">
 </head>
-<body class="fx pg">
+<body>
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
 
 <div class="shell">
@@ -128,17 +118,76 @@
     </div>
   </aside>
 
-    <main class="content">
-<div class="fx-scene pd pd-ops" data-scene style="--len:6"><div class="fx-stage">
-<div class="k eye tl2" data-k="0:o1; .08:o0">Resources · Operations &amp; workflows</div><h1 class="hh"><span class="k giant l1" style="font-size:7.03vw" data-blast data-k="0:x-4,y-3,o1; .1:x-6,y-3,o1; .2:x-70,o0">What a shift</span><span class="k giant outline l2" style="font-size:7.03vw" data-blast data-k="0:x4,y12,o1; .1:x8,y12,o1; .2:x70,o0">actually looks like.</span></h1>
-<p class="k lede2 bl" data-k="0:o1; .08:o0">Day-to-day workflows differ by business type — here's what each one sees on the floor.</p>
-<svg class="k gr g1" viewBox="0 0 240 200" data-art="gear" data-wob="1" data-k=".05:o0,s.6,d0,r0; .24:o1,s1,d1,r120; .9:r900,o1; .98:o0">&nbsp;</svg>
-<svg class="k gr g2" viewBox="0 0 240 200" data-art="gear" data-wob="1" data-k=".1:o0,s.5,d0,r0; .3:o1,s.8,d1,r-180; .9:r-1350,o1; .98:o0">&nbsp;</svg>
-<div class="k note nl" data-k=".3:o0,y6; .38:o1,y0; .58:o1; .64:o0">tables &amp; tickets.</div>
-<div class="k note nr" data-k=".64:o0,y6; .72:o1,y0; .88:o1; .94:o0">size, colour &amp; returns.</div>
-</div></div><section class="shift s0"><div class="eye">If you run a café or restaurant</div><div class="sh" data-reveal style="--i:0"><h3>Tables &amp; kitchen tickets</h3><p>A floor plan grouped by section (AC, Garden, Terrace — whatever you call them), coloured by whether a table's running a bill. Sending an order prints a kitchen ticket and moves it through new → preparing → ready → served on the kitchen display, with a bell when something's ready.</p></div><div class="sh" data-reveal style="--i:1"><h3>Day settlement &amp; KOT report</h3><p>Close a day once its bills are settled — an owner can reopen it if a correction's needed. The KOT report keeps a searchable log of every kitchen ticket sent, by date and order number.</p></div></section><section class="shift s1"><div class="eye">If you run a retail or clothing shop</div><div class="sh" data-reveal style="--i:0"><h3>Size &amp; color billing</h3><p>Every product's stock is tracked by size and color, not just as one number. Tap a product, pick the size/color a customer wants (or scan its own barcode), and the sale comes straight off that exact variant's stock.</p></div><div class="sh" data-reveal style="--i:1"><h3>Trial room &amp; returns</h3><p>Garments a customer's trying on go into their own Trial room queue, kept apart from actual sales until they decide. A sold item can later be returned or exchanged against its original invoice, restocking or swapping the exact variant.</p></div></section><div class="band" data-marquee data-speed="46"><span>Custom staff roles</span><i></i><span>Barcode scanning (optional)</span><i></i><span>Due / credit sales</span><i></i><span>Offline-first sync</span><i></i><span>GST invoices</span><i></i></div><section class="closer"><div class="eye">Next</div><h2 class="fx-h2" data-split="rise">See what brings customers back — and what management sees at the end of the month.</h2><div class="acts"><a href="resources-growth.html" class="btn btn-primary" data-magnet>Growth &amp; scaling →</a></div></section>
+  <main class="content">
+    <div class="wrap">
 
-    <div class="stack">
+      <section class="section" style="padding-top:104px">
+        <div class="hero-grid">
+        <div>
+        <div class="label">Resources · Operations &amp; workflows</div>
+        <h1 class="h-1" style="font-size:52px">What a shift<br>actually looks like.</h1>
+        <p class="lede">Day-to-day workflows differ by business type — here's what each one sees on the floor.</p>
+        </div>
+        <div class="hero-art" role="presentation">
+          <img class="hero-art-logo" src="logo.png" alt="" aria-hidden="true">
+        </div>
+        </div>
+      </section>
+
+      <hr class="dash">
+
+      <section class="section tight">
+        <div class="label">If you run a café or restaurant</div>
+        <div class="grid-2" style="margin-top:12px">
+          <div style="border-top:1px dashed var(--line);padding-top:20px">
+            <div class="h-2" style="font-size:19px">Tables &amp; kitchen tickets</div>
+            <p class="p" style="margin-top:10px">A floor plan grouped by section (AC, Garden, Terrace — whatever you call them), coloured by whether a table's running a bill. Sending an order prints a kitchen ticket and moves it through new → preparing → ready → served on the kitchen display, with a bell when something's ready.</p>
+          </div>
+          <div style="border-top:1px dashed var(--line);padding-top:20px">
+            <div class="h-2" style="font-size:19px">Day settlement &amp; KOT report</div>
+            <p class="p" style="margin-top:10px">Close a day once its bills are settled — an owner can reopen it if a correction's needed. The KOT report keeps a searchable log of every kitchen ticket sent, by date and order number.</p>
+          </div>
+        </div>
+      </section>
+
+      <hr class="dash">
+
+      <section class="section tight">
+        <div class="label">If you run a retail or clothing shop</div>
+        <div class="grid-2" style="margin-top:12px">
+          <div style="border-top:1px dashed var(--line);padding-top:20px">
+            <div class="h-2" style="font-size:19px">Size &amp; color billing</div>
+            <p class="p" style="margin-top:10px">Every product's stock is tracked by size and color, not just as one number. Tap a product, pick the size/color a customer wants (or scan its own barcode), and the sale comes straight off that exact variant's stock.</p>
+          </div>
+          <div style="border-top:1px dashed var(--line);padding-top:20px">
+            <div class="h-2" style="font-size:19px">Trial room &amp; returns</div>
+            <p class="p" style="margin-top:10px">Garments a customer's trying on go into their own Trial room queue, kept apart from actual sales until they decide. A sold item can later be returned or exchanged against its original invoice, restocking or swapping the exact variant.</p>
+          </div>
+        </div>
+      </section>
+
+      <hr class="dash">
+
+      <section class="section">
+        <div class="label">Common to both</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <span class="tag">Custom staff roles</span>
+          <span class="tag">Barcode scanning (optional)</span>
+          <span class="tag">Due / credit sales</span>
+          <span class="tag">Offline-first sync</span>
+          <span class="tag">GST invoices</span>
+        </div>
+      </section>
+
+      <hr class="dash">
+
+      <section class="section tight">
+        <div class="label">Next</div>
+        <h2 class="h-2">See what brings customers back — and what management sees at the end of the month.</h2>
+        <a href="resources-growth.html" class="btn btn-primary" style="margin-top:14px">Growth &amp; scaling →</a>
+      </section>
+
+      <div class="stack">
 
       <section class="stack-panel stack-panel-dark" data-tab="CONNECT">
 
@@ -246,8 +295,7 @@
 
 </div>
 <script src="/sb-client.js?v=2"></script>
-<script src="site.js?v=8"></script>
+<script src="site.js?v=7"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
-<script src="hig-site.js?v=6" defer></script>
 </body>
 </html>
