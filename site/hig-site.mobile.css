@@ -125,3 +125,8 @@ body.fx .sw-row{display:flex!important;flex-direction:row!important;flex-wrap:no
 body.fx .sw-row::-webkit-scrollbar{display:none}
 body.fx .sw-row>.sw-card{flex:0 0 78%!important;max-width:78%!important;width:78%!important;scroll-snap-align:center;margin:0!important;animation:none!important;transform:none!important;opacity:1!important;box-sizing:border-box}
 body.fx .sw-hint{font:500 13px/1 var(--hig-font);color:#8a8680;margin:2px 0 0;letter-spacing:0}
+
+
+/* tighter vertical rhythm: sections inside a sheet no longer add ~100px of their own padding on top of the sheet's */
+html.fx-stacked body.fx .fx-panel>section,html.fx-stacked body.fx .fx-panel>.demo-wrap{padding-top:14px!important;padding-bottom:14px!important}
+html.fx-stacked body.fx .fx-panel>.closer{padding-top:8px!important;padding-bottom:20px!important}

@@ -129,3 +129,29 @@ html.fx-hx .stack-panel-dark{position:relative;z-index:6;min-height:calc(100svh 
 html.fx-hx .tk{margin-top:calc((var(--cut) + var(--ch)) * -1 - 9svh)}
 html.fx-hx .hw,html.fx-hx .vw,html.fx-hx .tk{min-height:calc(100vh - var(--pin,150px));min-height:calc(100lvh - var(--pin,150px))}
 html.fx-hx .stack-panel-dark{min-height:calc(100lvh - var(--pin,150px) + 28px)}
+
+
+/* ================= phones: pinned folder-cut sheets, swipe rows, no scroll-linked card motion (fx-stk) ================= */
+html.fx-stk .hw,html.fx-stk .hx,html.fx-stk .vw,html.fx-stk .tk{position:sticky!important;top:min(var(--pin,150px),calc(100lvh - var(--h,0px)));margin-top:calc((var(--cut) + var(--ch)) * -1)!important;background:transparent!important;border-radius:0!important;box-shadow:none!important;clip-path:none!important;isolation:isolate;min-height:0!important;box-sizing:border-box;--sl:calc(var(--cut) * .9)}
+html.fx-stk .hw{--c:#171717;--nx:40%;padding:calc(var(--cut) + var(--ch) + 44px) 8vw calc(var(--cut) + var(--ch) + 28px)!important;display:block}
+html.fx-stk .hx{--c:var(--wine);--nx:62%;z-index:2;padding:0!important}
+html.fx-stk .vw{--c:#171717;--nx:30%;padding:calc(var(--cut) + var(--ch) + 40px) 0 calc(var(--cut) + var(--ch) + 36px)!important}
+html.fx-stk .tk{--c:#e9e4df;--nx:50%;min-height:55svh!important;padding:calc(var(--cut) + var(--ch) + 56px) 8vw 72px!important}
+html.fx-stk .hx::before,html.fx-stk .hx::after{content:"";position:absolute;z-index:-1;left:0;right:0;background:var(--c);pointer-events:none}
+html.fx-stk .hx::before{top:0;height:calc(var(--cut) + var(--ch));clip-path:polygon(0 var(--ch),var(--ch) 0,var(--nx) 0,calc(var(--nx) + var(--sl)) var(--cut),calc(100% - var(--ch)) var(--cut),100% 100%,0 100%)}
+html.fx-stk .hx::after{top:calc(var(--cut) + var(--ch) - 1px);bottom:0}
+html.fx-stk .hx-stage{position:static;height:auto;background:transparent!important;border-radius:0!important;padding:calc(var(--cut) + var(--ch) + 40px) 0 calc(var(--cut) + var(--ch) + 28px)!important;display:block;overflow:visible}
+html.fx-stk .hx-foot,html.fx-stk .hx-bar{display:none!important}
+html.fx-stk .hx-track{position:static;display:flex;overflow-x:auto;height:auto;padding:8px 8vw 20px;gap:16px;scroll-snap-type:x mandatory}
+html.fx-stk .hx-track>.hx-s,html.fx-stk .hx-track>.hx-card{position:static;translate:none;width:min(78vw,320px);height:auto;margin:0!important;scroll-snap-align:center;flex:0 0 auto;animation:none!important}
+html.fx-stk .hx-track>.hx-head{background:transparent;padding:0;align-self:center;width:min(78vw,320px)}
+html.fx-stk .hx-track>.hx-end{background:transparent;padding:0;align-self:center}
+html.fx-stk .hx-hint .hx-h-d{display:none}html.fx-stk .hx-hint .hx-h-t{display:inline}
+html.fx-stk .vw-grid{position:static;display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:14px;padding:6px 8vw 18px;margin:20px 0 0}
+html.fx-stk .vw-card{position:static;translate:none;flex:0 0 min(78vw,320px);margin:0!important;scroll-snap-align:center;animation:none!important}
+html.fx-stk .vw-grid::-webkit-scrollbar{display:none}html.fx-stk .vw-grid{scrollbar-width:none}
+html.fx-stk .vw .hx-eye,html.fx-stk .vw .hx-title{margin-left:8vw;margin-right:8vw}
+html.fx-stk .hw::before,html.fx-stk .vw::before,html.fx-stk .tk::before{background:var(--c)}
+html.fx-stk .hw::after,html.fx-stk .vw::after,html.fx-stk .tk::after{background:var(--c)}
+html.fx-stk .vw-pin{display:none}
+html.fx-stk .stack-panel-dark{min-height:0}

@@ -83,12 +83,12 @@ body:has(.shell){overflow:hidden}
 .shell{position:fixed;inset:0;height:auto;width:100%;max-width:100%}
 html,body{min-height:100%;min-height:-webkit-fill-available}
 @media (max-width:700px){
-.shell>.ios-tabs{position:absolute;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom));padding:6px;gap:2px;background:#1d1a1a;border:0;border-radius:30px;box-shadow:0 18px 40px -14px rgba(0,0,0,.55),0 0 0 .5px rgba(255,255,255,.08) inset;-webkit-backdrop-filter:none;backdrop-filter:none;z-index:30}
+.shell>.ios-tabs{position:absolute;left:0;right:0;bottom:0;padding:8px 8px calc(8px + env(safe-area-inset-bottom));gap:2px;background:#1d1a1a;border:0;border-radius:22px 22px 0 0;box-shadow:0 -10px 30px -12px rgba(0,0,0,.45);-webkit-backdrop-filter:none;backdrop-filter:none;z-index:30}
 .ios-tabs button{min-height:54px;border-radius:24px;color:rgba(255,255,255,.58);transition:background .3s var(--hig-ease),color .3s var(--hig-ease),transform .2s var(--hig-ease)}
 .ios-tabs button:active{transform:scale(.95)}
 .ios-tabs button.on{background:rgba(255,255,255,.14);color:#fff}
 .ios-tabs button.on svg{color:#ffb3c2}
-.shell-body{padding-bottom:calc(94px + env(safe-area-inset-bottom))}
-.shell-body .cart-bar{bottom:calc(90px + env(safe-area-inset-bottom))}
-body.has-tabs .toast,.toast{bottom:calc(100px + env(safe-area-inset-bottom))!important}
+.shell-body{padding-bottom:calc(78px + env(safe-area-inset-bottom))}
+.shell-body .cart-bar{bottom:calc(74px + env(safe-area-inset-bottom))}
+body.has-tabs .toast,.toast{bottom:calc(88px + env(safe-area-inset-bottom))!important}
 }
