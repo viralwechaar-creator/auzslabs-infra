@@ -15,7 +15,7 @@
     var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }); }, { threshold: .2 });
     [].forEach.call(doc.querySelectorAll('.hx-card,.vw-card,.hx-row'), function (el) { io.observe(el); });
   } else [].forEach.call(doc.querySelectorAll('.hx-card,.vw-card,.hx-row'), function (el) { el.classList.add('in'); });
-  if (reduce || !ok) return;
+  if (reduce || !ok) return;   // wide screens (>= 900px) skip the pinned deck: they get the plain stacked layout (see fx-hx.css)
 
   var items = [].slice.call(track.children), vwEl = doc.querySelector('.vw'), vwItems = vwEl ? [].slice.call(vwEl.querySelectorAll('.vw-card')) : [];
   var sheets = [].slice.call(doc.querySelectorAll('.hw,.vw,.tk'));
@@ -42,6 +42,7 @@
   function perCard(sh, n) { return Math.round(sh * .5 * (n - 1 + 2.2) / .94); }   // total scroll length: about half a screen per card
 
   function measure() {
+    if (window.innerWidth >= 900) { root.classList.remove('fx-hx'); hx.style.height = ''; spacer.style.height = '0px'; kf.textContent = ''; return; }
     var sh = stage.offsetHeight, pin = Math.round(Math.max(120, Math.min(200, window.innerHeight * .2)));   // stage is 100svh: stable when the phone toolbar hides
     root.classList.remove('fx-hx'); hx.style.height = ''; spacer.style.height = '0px'; root.style.setProperty('--pin', pin + 'px');
     var dist = perCard(sh, items.length), css = '';
