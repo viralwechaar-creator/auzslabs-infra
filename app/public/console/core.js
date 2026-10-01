@@ -76,6 +76,7 @@ function formModal(title,fields,onSave,opts={}){
  const grid=h('div',{class:'fgrid'});
  fields.forEach(f=>{
   if(f.type=='note'){grid.append(h('div',{class:'fld s2'},h('div',{class:'note'},f.label)));return}
+  if(f.type=='node'){grid.append(h('div',{class:'fld s2'},f.node));return}
   if(f.type=='sep'){grid.append(h('div',{class:'fld s2'},h('b',{style:'font-size:14px;margin-top:6px'},f.label)));return}
   const v=f.value;let el;
   if(f.type=='select')el=h('select',{},...(f.options||[]).map(o=>{const[val,lab]=Array.isArray(o)?o:[o,o];return h('option',{value:val,selected:String(val)==String(v??'')},lab)}));
@@ -87,7 +88,7 @@ function formModal(title,fields,onSave,opts={}){
   else el=h('input',{type:f.type=='datetime'?'datetime-local':(f.type||'text'),value:v??'',placeholder:f.placeholder||'',step:f.step||(f.type=='number'?'any':null)});
   els[f.k]=el;
   grid.append(h('div',{class:'fld'+(f.span==2?' s2':'')},h('label',{},f.label+(f.req?' *':'')),el,f.hint?h('div',{class:'hint'},f.hint):null))});
- const read=()=>{const o={};fields.forEach(f=>{if(f.type=='note'||f.type=='sep')return;const el=els[f.k];if(f.type=='check')o[f.k]=el.checked;else if(f.type=='image'||f.type=='chips'||f.type=='multi')o[f.k]=el.get();else if(f.type=='number')o[f.k]=el.value===''?null:+el.value;else o[f.k]=el.value.trim?el.value.trim():el.value});return o};
+ const read=()=>{const o={};fields.forEach(f=>{if(f.type=='note'||f.type=='sep'||f.type=='node')return;const el=els[f.k];if(f.type=='check')o[f.k]=el.checked;else if(f.type=='image'||f.type=='chips'||f.type=='multi')o[f.k]=el.get();else if(f.type=='number')o[f.k]=el.value===''?null:+el.value;else o[f.k]=el.value.trim?el.value.trim():el.value});return o};
  let close;const save2=async()=>{const o=read();for(const f of fields)if(f.req&&(o[f.k]==null||o[f.k]===''||o[f.k]===false)){toast((f.label||f.k)+' is required');return}
   const r=await onSave(o);if(r===false)return;close();if(opts.after)opts.after(o)};
  close=modal(title,[grid,h('div',{class:'mf'},opts.onDelete?h('button',{class:'btn d l',onclick:async()=>{if(!confirm(opts.deleteMsg||'Delete this? This cannot be undone.'))return;await opts.onDelete();close();opts.after&&opts.after()}},'Delete'):null,h('button',{class:'btn',onclick:()=>close()},'Cancel'),h('button',{class:'btn p',onclick:save2},opts.saveLabel||'Save'))],{wide:opts.wide});

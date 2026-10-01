@@ -22,7 +22,7 @@ create policy r_ins on records for insert
     and (
       kind in ('order', 'exp', 'shift', 'ing', 'waste', 'voidlog', 'kotlog', 'membership', 'checkin', 'ticket', 'ticketnote', 'task', 'vendor', 'purchase', 'adjustment', 'transfer', 'customer', 'cashmove')
       or (me()->>'role') = 'owner'
-      or ((me()->>'role') = 'manager' and kind in ('hr_settings', 'hr_employee', 'hr_shift', 'hr_advance', 'hr_attendance', 'hr_leave', 'hr_payslip', 'hr_announcement', 'hr_document', 'hr_regularization', 'hr_holiday', 'hr_profile', 'plan', 'outlet', 'device', 'addongrp', 'tax', 'settlement', 'platform', 'giftcard', 'segment', 'campaign', 'closing', 'quicklink'))
+      or ((me()->>'role') = 'manager' and kind in ('hr_settings', 'hr_employee', 'hr_shift', 'hr_advance', 'hr_attendance', 'hr_leave', 'hr_payslip', 'hr_announcement', 'hr_document', 'hr_regularization', 'hr_holiday', 'hr_profile', 'plan', 'outlet', 'variant', 'po', 'device', 'addongrp', 'tax', 'settlement', 'platform', 'giftcard', 'segment', 'campaign', 'closing', 'quicklink'))
       or (kind = 'hr_attendance' and data->>'empId' = my_employee_id())
       or (kind = 'hr_leave' and data->>'empId' = my_employee_id() and data->>'status' = 'pending')
       or (kind = 'hr_document' and data->>'empId' = my_employee_id())
@@ -39,7 +39,7 @@ create policy r_upd on records for update
     and (
       kind in ('order', 'exp', 'shift', 'ing', 'waste', 'voidlog', 'kotlog', 'membership', 'checkin', 'ticket', 'ticketnote', 'task', 'vendor', 'purchase', 'adjustment', 'transfer', 'customer', 'cashmove')
       or (me()->>'role') = 'owner'
-      or ((me()->>'role') = 'manager' and kind in ('hr_settings', 'hr_employee', 'hr_shift', 'hr_advance', 'hr_attendance', 'hr_leave', 'hr_payslip', 'hr_announcement', 'hr_document', 'hr_regularization', 'hr_holiday', 'hr_profile', 'plan', 'outlet', 'device', 'addongrp', 'tax', 'settlement', 'platform', 'giftcard', 'segment', 'campaign', 'closing', 'quicklink'))
+      or ((me()->>'role') = 'manager' and kind in ('hr_settings', 'hr_employee', 'hr_shift', 'hr_advance', 'hr_attendance', 'hr_leave', 'hr_payslip', 'hr_announcement', 'hr_document', 'hr_regularization', 'hr_holiday', 'hr_profile', 'plan', 'outlet', 'variant', 'po', 'device', 'addongrp', 'tax', 'settlement', 'platform', 'giftcard', 'segment', 'campaign', 'closing', 'quicklink'))
       or (kind in ('hr_attendance', 'hr_leave') and data->>'empId' = my_employee_id())
       or (kind = 'hr_document' and data->>'empId' = my_employee_id())
       or (kind = 'hr_regularization' and data->>'empId' = my_employee_id() and data->>'status' = 'pending')
@@ -52,7 +52,7 @@ create policy r_upd on records for update
     and (
       kind in ('order', 'exp', 'shift', 'ing', 'waste', 'voidlog', 'kotlog', 'membership', 'checkin', 'ticket', 'ticketnote', 'task', 'vendor', 'purchase', 'adjustment', 'transfer', 'customer', 'cashmove')
       or (me()->>'role') = 'owner'
-      or ((me()->>'role') = 'manager' and kind in ('hr_settings', 'hr_employee', 'hr_shift', 'hr_advance', 'hr_attendance', 'hr_leave', 'hr_payslip', 'hr_announcement', 'hr_document', 'hr_regularization', 'hr_holiday', 'hr_profile', 'plan', 'outlet', 'device', 'addongrp', 'tax', 'settlement', 'platform', 'giftcard', 'segment', 'campaign', 'closing', 'quicklink'))
+      or ((me()->>'role') = 'manager' and kind in ('hr_settings', 'hr_employee', 'hr_shift', 'hr_advance', 'hr_attendance', 'hr_leave', 'hr_payslip', 'hr_announcement', 'hr_document', 'hr_regularization', 'hr_holiday', 'hr_profile', 'plan', 'outlet', 'variant', 'po', 'device', 'addongrp', 'tax', 'settlement', 'platform', 'giftcard', 'segment', 'campaign', 'closing', 'quicklink'))
       or (kind = 'hr_attendance' and data->>'empId' = my_employee_id())
       or (kind = 'hr_leave' and data->>'empId' = my_employee_id() and data->>'status' = 'pending')
       or (kind = 'hr_document' and data->>'empId' = my_employee_id())
@@ -73,7 +73,7 @@ begin
     authorized := true;
   elsif myrole = 'owner' then
     authorized := true;
-  elsif myrole = 'manager' and rkind in ('hr_settings', 'hr_employee', 'hr_shift', 'hr_advance', 'hr_attendance', 'hr_leave', 'hr_payslip', 'hr_announcement', 'hr_document', 'hr_regularization', 'hr_holiday', 'hr_profile', 'plan', 'outlet', 'device', 'addongrp', 'tax', 'settlement', 'platform', 'giftcard', 'segment', 'campaign', 'closing', 'quicklink') then
+  elsif myrole = 'manager' and rkind in ('hr_settings', 'hr_employee', 'hr_shift', 'hr_advance', 'hr_attendance', 'hr_leave', 'hr_payslip', 'hr_announcement', 'hr_document', 'hr_regularization', 'hr_holiday', 'hr_profile', 'plan', 'outlet', 'variant', 'po', 'device', 'addongrp', 'tax', 'settlement', 'platform', 'giftcard', 'segment', 'campaign', 'closing', 'quicklink') then
     authorized := true;
   elsif rkind = 'hr_attendance' then
     myemp := my_employee_id();
