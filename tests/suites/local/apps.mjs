@@ -48,6 +48,11 @@ export default async function run({ browser, stack }) {
       const h1 = await page.locator('.ph h1, .hello').first().innerText().catch(() => ''); assert(h1.length > 2, id + ' did not render a heading');
       const body = await page.locator('.content').innerText(); assert(!/undefined|NaN|\[object/.test(body), id + ' shows undefined/NaN/[object]');
     }
+    for (const fn of ['palette', 'alertsModal', 'quickAdd']) {
+      await page.evaluate((f) => window[f] ? window[f]() : eval(f + '()'), fn); await page.waitForTimeout(150);
+      assert(await page.locator('.mwrap').count(), fn + ' did not open'); await page.evaluate(() => document.querySelectorAll('.mwrap').forEach((m) => m.remove()));
+    }
+    assert(await page.locator('.ph .pt').count(), 'page tools (star/print/share) missing');
     const made = await page.evaluate(async () => {
       await save('outlet', { name: 'Second branch', active: true }, 'out2'); await save('exp', { amt: 111, cat: 'Test', d: today() }, 'e-main');
       setOutlet('out2'); await save('exp', { amt: 222, cat: 'Test', d: today() }, 'e-out2');
