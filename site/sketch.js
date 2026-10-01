@@ -5,10 +5,13 @@
   var root = document.documentElement;
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   var fine = window.matchMedia && matchMedia('(hover: hover) and (pointer: fine)').matches;
+  if (!reduce) root.classList.add('fx-live'); // switches the scroll-scene layouts on (fx.css); absent = plain readable pages
 
   /* ---------- the blast: cube goes hot, bursts, particles fly to the real logo/text/buttons and the page opens ---------- */
   function pickTargets() {
-    var sel = '.topbar-logo, .content .h-hero, .content h1, .content .label, .content .lede, .content .btn-primary, .content .btn-ghost, .hero-art-logo, .hero-services, .topbar .btn';
+    // pages built as scroll scenes mark the exact words the particles should land on with [data-blast]
+    var marked = document.querySelectorAll('[data-blast]');
+    var sel = marked.length ? '[data-blast], .topbar-logo' : '.topbar-logo, .content .h-hero, .content h1, .content .label, .content .lede, .content .btn-primary, .content .btn-ghost, .hero-art-logo, .hero-services, .topbar .btn';
     var vw = innerWidth, vh = innerHeight, out = [];
     [].forEach.call(document.querySelectorAll(sel), function (el) {
       var r = el.getBoundingClientRect();
