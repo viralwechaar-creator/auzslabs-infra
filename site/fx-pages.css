@@ -276,6 +276,7 @@ html .pd-demo .d1{left:0;bottom:0;width:62%;height:68%;border-radius:8px;backgro
 /* left/right-anchored handwritten notes must not keep the centering translate */
 html.fx-live .pd .k.note.nl,html.fx-live .pd .k.note.nr{translate:0 -50%}
 html.fx-live .pd .k.note.nc{translate:-50% -50%}
+html.fx-live .plans .k.note{top:9vh}
 html.fx-live .pd .k.call.c1,html.fx-live .pd .k.call.c2,html.fx-live .pd .k.call.c3{translate:0 -50%}
 html .pd-demo .trio .dv{padding:1.2em;display:flex;flex-direction:column;gap:.7em}
 .pd-demo .trio .dv b{font:900 clamp(14px,1.6vw,24px)/1 var(--font-display);text-transform:uppercase;letter-spacing:-.02em;font-style:normal}
