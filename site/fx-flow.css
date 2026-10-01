@@ -131,3 +131,8 @@ html.fx-flow .slab{min-height:0!important}
 html.fx-flow .slab>.eye,html.fx-flow .slab .blk .eye{margin-bottom:1.6vh}
 
 html:not(.fx-live) .k.lede2{display:block!important}
+
+/* homepage headline lines: breathing room between the words */
+html:not(.fx-live) .hero-h1{flex:1 1 100%;display:flex;flex-direction:column;gap:.5vh;margin:0}
+html:not(.fx-live) .hero-h1 .k.giant{line-height:1.02;flex:none;white-space:normal}
+html:not(.fx-live) .hero-h1 .k.hand,html:not(.fx-live) .hh .k.hand{margin:0 0 0 14vw;line-height:1.1}
