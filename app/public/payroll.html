@@ -705,7 +705,7 @@ function hrDrawer(tabs){
  return close;
 }
 function login(msg){const e=h('input',{type:'email',placeholder:'Email'}),p=h('input',{type:'password',placeholder:'Password'}),m=h('div',{},msg||'');
- $('#app').replaceChildren(h('div',{class:'md',style:'margin:12vh auto'},h('img',{src:'/logo-payroll.svg',alt:'AUZslab Payroll',style:'height:84px;width:auto;justify-self:start;margin-bottom:6px'}),h('h2',{},'Payroll sign in'),h('p',{class:'note'},'Same login as your AUZslab account.'),e,p,m,
+ $('#app').replaceChildren(h('div',{class:'md',style:'margin:12vh auto'},h('img',{src:'/logo-payroll.svg',alt:'AUZslab Payroll',style:'height:64px;width:auto;justify-self:start;margin-bottom:8px'}),h('h2',{},'Payroll sign in'),h('p',{class:'note'},'Same login as your AUZslab account.'),e,p,m,
   h('button',{class:'p',onclick:async()=>{const{error}=await sb.auth.signInWithPassword({email:e.value.trim(),password:p.value});error?m.textContent=error.message:boot()}},'Sign in')))}
 async function boot(){
  let c=JSON.parse(localStorage.hru||'null'),ses=null;try{ses=(await sb.auth.getSession()).data.session}catch{}

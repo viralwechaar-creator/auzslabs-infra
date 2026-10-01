@@ -621,7 +621,7 @@ const T_GROUP_START=new Set(['kds']);
 function renderDrawer(T){
  if(!drawerEl){drawerOvEl=h('div',{class:'drawer-ov',onclick:()=>{S.drawerOpen=false;syncDrawer()}});drawerEl=h('div',{class:'drawer'});document.body.append(drawerOvEl,drawerEl)}
  drawerEl.replaceChildren(
-  h('img',{src:'/logo-pos.svg',alt:'AUZslab POS',style:'height:60px;width:auto;align-self:flex-start;margin:2px 10px 12px'}),
+  h('img',{src:'/logo-pos.svg',alt:'AUZslab POS',style:'height:46px;width:auto;align-self:flex-start;margin:4px 10px 14px'}),
   ...T.map(([k,n])=>{const btn=h('button',{class:(S.tab==k?'on':'')+(T_GROUP_START.has(k)?' grp':''),style:'display:flex;align-items:center;gap:10px',onclick:()=>{if(k=='builder'){location.href='/builder.html';return}if(k=='backoffice'){location.href='/backoffice.html';return}if(k.startsWith('bo:')){location.href='/backoffice.html?tab='+k.slice(3);return}S.tab=k;S.drawerOpen=false;syncDrawer();render()}});btn.innerHTML='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0">'+(T_ICON[k]||'')+'</svg><span>'+esc(n)+'</span>';return btn}),
   h('button',{class:'warn',style:'margin-top:12px',onclick:async()=>{await sb.auth.signOut();localStorage.removeItem('u');location.reload()}},'Sign out'),
   h('div',{style:'margin-top:auto;padding:10px 12px;font-size:11px;color:var(--ink-faint);font-family:\'Space Mono\',monospace'},'Signed in as '+S.role)
@@ -647,7 +647,7 @@ function render(){if(S.authExpired||!S.user)return login('Your session ended. Pl
  );renderDrawer(T);setNote();refreshNotifCount()}
 function login(msg){
  S.drawerOpen=false;syncDrawer();
- const e=h('input',{type:'email',placeholder:'Email'}),p=h('input',{type:'password',placeholder:'Password'}),m=h('div',{},msg||'');$('#app').replaceChildren(h('div',{class:'md',style:'margin:12vh auto'},h('img',{src:'/logo-pos.svg',alt:'AUZslab POS',style:'height:84px;width:auto;justify-self:start;margin-bottom:6px'}),h('h2',{},'Sign in'),e,p,m,h('button',{class:'p',onclick:async()=>{const{error}=await sb.auth.signInWithPassword({email:e.value.trim(),password:p.value});error?m.textContent=error.message:boot()}},'Sign in')))}
+ const e=h('input',{type:'email',placeholder:'Email'}),p=h('input',{type:'password',placeholder:'Password'}),m=h('div',{},msg||'');$('#app').replaceChildren(h('div',{class:'md',style:'margin:12vh auto'},h('img',{src:'/logo-pos.svg',alt:'AUZslab POS',style:'height:64px;width:auto;justify-self:start;margin-bottom:8px'}),h('h2',{},'Sign in'),e,p,m,h('button',{class:'p',onclick:async()=>{const{error}=await sb.auth.signInWithPassword({email:e.value.trim(),password:p.value});error?m.textContent=error.message:boot()}},'Sign in')))}
 async function seed(){localStorage.seeded=1;const c=uid();await save('cat',{name:'Tea',n:1},c);await save('item',{name:'Masala Tea',cat:c,price:25,sizes:[]});await save('item',{name:'Coffee',cat:c,price:49,sizes:[{l:'M',p:29},{l:'L',p:49}]});for(let i=1;i<=6;i++)await save('table',{name:'T'+i})}
 async function boot(){if(!C.url||C.url.includes('YOUR-PROJECT'))return $('#app').replaceChildren(h('div',{class:'md',style:'margin:12vh auto'},h('h3',{},'Setup needed'),'Open config.js and add your Supabase URL and key. See SETUP-GUIDE.md.'));navigator.storage&&navigator.storage.persist&&navigator.storage.persist();navigator.serviceWorker&&navigator.serviceWorker.register('/sw.js');
  let c=JSON.parse(localStorage.u||'null'),ses=null;try{ses=(await sb.auth.getSession()).data.session}catch{}
