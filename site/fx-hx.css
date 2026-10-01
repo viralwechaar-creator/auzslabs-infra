@@ -30,7 +30,7 @@
 .hx-card p{margin:0;font-size:16px;line-height:1.45;color:#5b5754;opacity:0;transform:translateY(10px);transition:opacity .6s .15s,transform .7s .15s cubic-bezier(.22,1,.36,1)}
 .hx-go{margin-top:2px;font-size:15px;font-weight:600;color:var(--wine);opacity:0;transition:opacity .6s .3s}
 .hx-card.in p,.hx-card.in .hx-go{opacity:1;transform:none}
-.hx-bar{position:absolute;left:8vw;right:8vw;bottom:calc(4.5vh + env(safe-area-inset-bottom));height:2px;background:var(--hx-line)}
+.hx-bar{position:absolute;left:8vw;right:8vw;bottom:calc(7vh + 34px + env(safe-area-inset-bottom));height:2px;background:var(--hx-line);z-index:2}
 .hx-bar i{display:block;height:100%;transform-origin:0 50%;transform:scaleX(var(--p,0));background:var(--accent)}
 /* before the script runs, and for reduced motion: a plain swipeable row */
 html:not(.fx-hx) .hx-stage{position:relative;height:auto;padding:96px 0 56px;display:block}
@@ -76,3 +76,28 @@ html:not(.fx-hx) .hx-card p,html:not(.fx-hx) .hx-go{opacity:1;transform:none}
   .vw,.tk{animation:hxRiseIn linear both;animation-timeline:view();animation-range:entry 0% entry 55%}
   @keyframes hxRiseIn{from{transform:translate3d(0,46px,0) scale(.985);opacity:.55}to{transform:none;opacity:1}}
 }
+
+/* ---- scroll-linked motion (compositor): slide, card float, progress ---- */
+.hx-card{--dir:1;--r0:0%;--r1:100%}
+@supports (animation-timeline: view()) {
+  .hx{view-timeline:--hx block}
+  html.fx-hx .hx-track{animation:hxSlide linear both;animation-timeline:--hx;animation-range:contain 0% contain 100%}
+  @keyframes hxSlide{to{transform:translate3d(calc(var(--hx-dist) * -1),0,0)}}
+  html.fx-hx .hx-bar i{animation:hxBar linear both;animation-timeline:--hx;animation-range:contain 0% contain 100%}
+  @keyframes hxBar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+  html.fx-hx .hx-card{animation:hxCard linear both;animation-timeline:--hx;animation-range:contain var(--r0) contain var(--r1)}
+  @keyframes hxCard{from{transform:translate3d(0,calc(46px * var(--dir)),0) rotate(calc(3.2deg * var(--dir)))}to{transform:translate3d(0,calc(-46px * var(--dir)),0) rotate(calc(-3.2deg * var(--dir)))}}
+  .vw-card{--fk:30;animation:vwFloat linear both;animation-timeline:view();animation-range:cover 0% cover 100%}
+  @keyframes vwFloat{from{transform:translate3d(0,calc(var(--fk) * 1px),0)}to{transform:translate3d(0,calc(var(--fk) * -1px),0)}}
+}
+html:not(.fx-hx) .hx-card{animation:none}
+
+/* ---- the edges of the neighbouring sheets, so the pinned page is never an empty box: the hero's lower edge under the header, the next sheets rising at the bottom ---- */
+.hx-edge{position:absolute;left:0;right:0;z-index:3;pointer-events:none}
+.hx-t1{top:calc(66px + env(safe-area-inset-top)*0);height:26px;background:#f6f4f1;border-radius:0 0 28px 28px;box-shadow:0 16px 28px -14px rgba(0,0,0,.7)}
+.hx-t2{top:calc(66px + 26px);height:14px;left:7%;right:7%;background:#e6e1dd;border-radius:0 0 22px 22px;z-index:2;opacity:.9}
+.hx-b2{bottom:0;height:calc(7vh * .45);background:#f6f4f1;border-radius:26px 26px 0 0;z-index:5;box-shadow:0 -10px 24px -14px rgba(0,0,0,.6)}
+.hx-b1{bottom:0;height:7vh;min-height:44px;background:var(--wine);color:#fff;border-radius:28px 28px 0 0;z-index:4;pointer-events:auto;display:flex;align-items:flex-start;justify-content:space-between;padding:12px 8vw 0;font-family:var(--font-mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;box-shadow:0 -16px 30px -16px rgba(0,0,0,.75)}
+.hx-b1 i{font-style:normal}
+.hx-stage{padding-top:calc(66px + 26px)}
+@media (min-width:900px){.hx-b1{height:6vh;min-height:48px}.hx-b2{height:calc(6vh * .45)}}
