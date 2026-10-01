@@ -33,6 +33,15 @@
         var n = seen.get(c.parentNode) || 0; seen.set(c.parentNode, n + 1);
         c.classList.add('sw-card'); c.style.setProperty('--sw', n % 2 ? -1 : 1);
       });
+      // 3+ cards in one container: wrap them in a sideways swipe row (cards stay in order; other children stay where they are)
+      seen.forEach(function (n, parent) {
+        if (n < 3 || parent.classList.contains('sw-row')) return;
+        var cs = [].filter.call(parent.children, function (k) { return k.classList.contains('sw-card'); });
+        if (cs.length < 3) return;
+        if (cs.length === parent.children.length) { parent.classList.add('sw-row'); return; }
+        var row = doc.createElement('div'); row.className = 'sw-row'; parent.insertBefore(row, cs[0]);
+        cs.forEach(function (k) { row.appendChild(k); });
+      });
     });
   }
   // sticky sheets: each sheet's top is min(pin, viewport - its height), so a tall sheet scrolls until its bottom shows, then pauses
