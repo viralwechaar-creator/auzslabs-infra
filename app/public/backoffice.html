@@ -130,7 +130,7 @@ input[type=date],input[type=time],input[type=month]{width:156px}
 .drawer button.grp{margin-top:14px;position:relative}
 .drawer button.grp::before{content:"";position:absolute;left:14px;right:14px;top:-8px;height:1px;background:var(--l)}
 .drawer{overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-bottom:max(14px,env(safe-area-inset-bottom))}
-</style><link rel=stylesheet href=/hig.css?v=1></head><body><div id=app></div>
+</style><link rel=stylesheet href=/hig.css?v=2></head><body><div id=app></div>
 <script src=/sb-client.js?v=2></script>
 <script src=https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js integrity="sha384-8FWZA6BGMXhsfO+BLtrJK0We6gg5o1JyO8xQm6peWDEUs17ACA5ziE/NIAkl9z2k" crossorigin=anonymous></script>
 <script src=/config.js></script>
@@ -235,8 +235,8 @@ function closeDay(d,expected,sales,bills){
   const counted=+cnt.value||0,variance=r2(counted-expected),finish=async reason=>{await save('dayclose',{d,sales,bills,expectedCash:expected,countedCash:counted,variance,varianceReason:reason||null,by:S.user.email||S.user.id,at:now()});x();render()};
   if(Math.abs(variance)>0.5)pickReason(reason=>finish(reason));else finish(null);
  }},'Close day')))}
-V.rep=()=>{const tabs=[['day','Day report'],['custom','Custom report'],['analytics','Analytics']],rt=S.repTab||'day';
- return h('div',{},h('div',{class:'tabbar'},...tabs.map(([k,n])=>h('button',{class:rt==k?'on':'',onclick:()=>{S.repTab=k;render()}},n))),rt=='custom'?V.dynrep():rt=='analytics'?analyticsPane():dayReportPane())};
+V.rep=()=>{const tabs=[['day','Day report'],['custom','Custom report'],['analytics','Analytics'],['activity','Activity log']],rt=S.repTab||'day';
+ return h('div',{},h('div',{class:'tabbar'},...tabs.map(([k,n])=>h('button',{class:rt==k?'on':'',onclick:()=>{S.repTab=k;render()}},n))),rt=='custom'?V.dynrep():rt=='analytics'?analyticsPane():rt=='activity'?activityPane():dayReportPane())};
 function unitCost(i){
  if(i.combo&&i.comboText)return r2(i.comboText.split(',').reduce((a,p)=>{const parts=p.split(':'),cn=parts[0],cq=+parts[1]||1,ci=L('item').find(x=>x.name.toLowerCase()==(cn||'').trim().toLowerCase());return a+(ci?unitCost(ci)*cq:0)},0));
  if(i.rec)return r2(i.rec.split(',').reduce((a,p)=>{const parts=p.split(':'),n=parts[0],qn=+parts[1],g=L('ing').find(x=>x.name.toLowerCase()==n.trim().toLowerCase());return a+(g?(g.cost||0)*qn:0)},0));
@@ -362,17 +362,40 @@ function analyticsPane(){
   bottom5.length?h('div',{class:'card'},h('h3',{},'Lower-selling'),h('p',{style:'font-size:12px;color:var(--ink-dim)'},'Numbers only — doesn\'t mean cut it.'),...bottom5.map(p=>barRow(p.name,p.rev,bottom5[0].rev||1,p.qty+' · '+inr(p.rev)+' · '+inr(p.profit)+' profit','#c98a00'))):null,
   feedbackCard());
 }
+const CASH_IN_FROM=['Owner','Manager','Bank'],CASH_OUT_TO=['Owner','Supplier','Bank deposit','Cheque given','Salary advance'];
+function cashDrawerCard(dc,cm){
+ const type=h('select',{},h('option',{value:'in'},'Cash top-up (add to drawer)'),h('option',{value:'out'},'Withdrawal (take from drawer)')),who=h('select',{}),amt=h('input',{type:'number',inputmode:'decimal',placeholder:'Amount'}),note=h('input',{placeholder:'Note (optional)'});
+ const fill=()=>{who.replaceChildren(...(type.value=='in'?CASH_IN_FROM:CASH_OUT_TO).map(x=>h('option',{value:x},(type.value=='in'?'From ':'To ')+x)))};fill();type.onchange=fill;
+ return h('div',{class:'card'},h('h3',{},'Cash drawer'),
+  dc?h('p',{},'Day is closed. '+(can('o')?'Reopen it to record cash movements.':'Ask an owner to reopen it.')):h('div',{class:'row'},type,who,amt,note,h('button',{class:'p',onclick:async()=>{const a=+amt.value;if(!(a>0))return alert('Enter an amount above zero.');await save('cashmove',{d:S.d,type:type.value,who:who.value,amt:a,note:note.value.trim(),by:S.user.email||S.user.id,at:now()});render()}},'Record')),
+  ...cm.sort((a,b)=>(b.at||'')>(a.at||'')?1:-1).map(c=>h('div',{class:'row'},(c.type=='in'?'Top-up from ':'Withdrawal to ')+c.who+(c.note?' · '+c.note:'')+' · '+new Date(c.at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),h('b',{style:c.type=='out'?'color:var(--accent)':''},(c.type=='in'?'+':'−')+inr(c.amt)))),
+  cm.length?null:h('p',{style:'font-size:12.5px;color:var(--ink-dim)'},'No top-ups or withdrawals on this day. Expected cash = cash sales + top-ups − expenses − withdrawals.'))}
+function activityPane(){
+ const ev=[];
+ L('voidlog').forEach(v=>ev.push({at:v.at,t:'Void',txt:(v.no||'')+' '+(v.item?v.item+' · ':'')+(v.reason||''),by:v.by}));
+ L('cashmove').forEach(c=>ev.push({at:c.at,t:c.type=='in'?'Cash top-up':'Withdrawal',txt:c.who+' · '+inr(c.amt)+(c.note?' · '+c.note:''),by:c.by}));
+ L('dayclose').forEach(d=>ev.push({at:d.at,t:'Day closed',txt:d.d+' · sales '+inr(d.sales)+(d.variance?' · variance '+inr(d.variance)+(d.varianceReason?' ('+d.varianceReason+')':''):''),by:d.by}));
+ L('exp').forEach(e=>ev.push({at:e.at||(e.d+'T12:00:00'),t:'Expense',txt:e.note+' · '+(e.cat||'Other')+' · '+inr(e.amt),by:e.by||''}));
+ L('waste').forEach(w=>ev.push({at:w.at||(w.d+'T12:00:00'),t:'Wastage',txt:(w.ing||'')+' · '+(w.q||'')+(w.reason?' · '+w.reason:''),by:w.by}));
+ L('adjustment').forEach(a=>ev.push({at:a.at,t:'Stock adjustment',txt:a.ing+' · '+(a.q>0?'+':'')+a.q+(a.reason?' ('+a.reason+')':''),by:a.by}));
+ L('transfer').forEach(a=>ev.push({at:a.at,t:'Stock transfer',txt:a.ing+' · '+a.q+' '+a.from+' → '+a.to,by:a.by}));
+ const f=S.actF||'All',types=['All',...new Set(ev.map(e=>e.t))],rows=ev.filter(e=>e.at&&(f=='All'||e.t==f)).sort((a,b)=>b.at>a.at?1:-1).slice(0,150);
+ return h('div',{class:'g1'},h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Activity log'),h('button',{onclick:()=>csv([['When','Event','Detail','By'],...rows.map(e=>[e.at,e.t,e.txt,e.by])],'activity-log.csv')},'Export CSV')),
+  h('div',{class:'row',style:'justify-content:flex-start;flex-wrap:wrap;gap:8px'},...types.map(t=>h('button',{class:f==t?'on':'',onclick:()=>{S.actF=t;render()}},t))),
+  ...rows.map(e=>h('div',{class:'row'},h('span',{},h('b',{},e.t),' · '+e.txt,h('div',{style:'font-size:12px;color:var(--ink-dim)'},new Date(e.at).toLocaleString()+(e.by?' · '+e.by:''))))),
+  rows.length?null:h('p',{},'Nothing logged yet. Voids, cash movements, expenses, wastage, stock changes and day closes show up here.')))}
 function dayReportPane(){const dc=L('dayclose').find(x=>x.d==S.d),os=L('order').filter(o=>o.status=='paid'&&new Date(o.paidAt).toLocaleDateString('en-CA')==S.d),ex=L('exp').filter(e=>e.d==S.d),m={cash:0,upi:0,card:0},it={},src={},sm=f=>r2(os.reduce((a,o)=>a+f(o),0));
  os.forEach(o=>{o.pays.forEach(p=>m[p.m]+=p.amt-(p.m=='cash'?o.change||0:0));o.lines.forEach(l=>{const k=l.name+(l.size?' ('+l.size+')':'');(it[k]=it[k]||{q:0,a:0}).q+=l.qty;it[k].a+=l.price*l.qty});if(o.src)src[o.src]=r2((src[o.src]||0)+o.t.total)});
- const refunds=r2(os.reduce((a,o)=>a+(o.refunds||[]).reduce((b,r)=>b+r.amt,0),0)),et=r2(ex.reduce((a,e)=>a+e.amt,0)),ec=h('input',{placeholder:'Expense (e.g. milk)'}),ea=h('input',{type:'number',placeholder:'Amount'}),R_=(a,b)=>h('div',{class:'row'},a,h('b',{},b));
+ const refunds=r2(os.reduce((a,o)=>a+(o.refunds||[]).reduce((b,r)=>b+r.amt,0),0)),cm=L('cashmove').filter(c=>c.d==S.d),cin=r2(cm.filter(c=>c.type=='in').reduce((x,c)=>x+c.amt,0)),cout=r2(cm.filter(c=>c.type=='out').reduce((x,c)=>x+c.amt,0)),et=r2(ex.reduce((a,e)=>a+e.amt,0)),ec=h('input',{placeholder:'Expense (e.g. milk)'}),ea=h('input',{type:'number',placeholder:'Amount'}),R_=(a,b)=>h('div',{class:'row'},a,h('b',{},b));
  const expCats=[...new Set(L('exp').map(e=>e.cat).filter(Boolean))].sort(),eCat=h('input',{list:'expcatlist',placeholder:'Category (e.g. Rent, Utilities)'}),eCatDl=h('datalist',{id:'expcatlist'},...expCats.map(c=>h('option',{value:c})));
  const byCat={};ex.forEach(e=>{const k=e.cat||'Other';byCat[k]=r2((byCat[k]||0)+e.amt)});
- return h('div',{class:'g1'},h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Day report',dc?[' ',icon('lock'),' closed']:null),h('input',{type:'date',value:S.d,onchange:e=>{S.d=e.target.value;render()}})),R_('Bills',os.length),R_('Sales',inr(sm(o=>o.t.total))),R_('Discounts',inr(sm(o=>o.t.d))),R_('GST collected',inr(sm(o=>o.t.tax))),R_('Refunds',inr(refunds)),R_('Cash',inr(m.cash)),R_('UPI',inr(m.upi)),R_('Card',inr(m.card)),...Object.entries(src).map(([k,v])=>R_(k,inr(v))),R_('Expenses',inr(et)),R_('Cash expected in drawer',inr(m.cash-et)),
+ return h('div',{class:'g1'},h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Day report',dc?[' ',icon('lock'),' closed']:null),h('input',{type:'date',value:S.d,onchange:e=>{S.d=e.target.value;render()}})),R_('Bills',os.length),R_('Sales',inr(sm(o=>o.t.total))),R_('Discounts',inr(sm(o=>o.t.d))),R_('GST collected',inr(sm(o=>o.t.tax))),R_('Refunds',inr(refunds)),R_('Cash',inr(m.cash)),R_('UPI',inr(m.upi)),R_('Card',inr(m.card)),...Object.entries(src).map(([k,v])=>R_(k,inr(v))),R_('Expenses',inr(et)),R_('Cash top-ups',inr(cin)),R_('Withdrawals',inr(cout)),R_('Cash expected in drawer',inr(m.cash+cin-et-cout)),
   dc&&dc.countedCash!=null?R_('Cash counted',inr(dc.countedCash)):null,
   dc&&dc.variance?h('div',{class:'row'},'Variance'+(dc.varianceReason?' ('+dc.varianceReason+')':''),h('b',{style:'color:var(--accent)'},(dc.variance>0?'+':'')+inr(dc.variance))):null,
   h('div',{class:'row'},h('button',{onclick:()=>csv([['No','Type','Customer','Phone','Total','Paid via'],...os.map(o=>[o.no,o.type,(o.cust||{}).name,(o.cust||{}).phone,o.t.total,(o.pays||[]).map(p=>p.m).join('+')])],'orders-'+S.d+'.csv')},'Export orders CSV'),
-   can('o')?h('button',{class:dc?'':'p',onclick:async()=>{if(dc){if(!confirm('Reopen this day for edits?'))return;await save('dayclose',dc,dc.id,true)}else closeDay(S.d,m.cash-et,sm(o=>o.t.total),os.length)}},dc?'Reopen day':'Close day'):null)),
+   can('o')?h('button',{class:dc?'':'p',onclick:async()=>{if(dc){if(!confirm('Reopen this day for edits?'))return;await save('dayclose',dc,dc.id,true)}else closeDay(S.d,m.cash+cin-et-cout,sm(o=>o.t.total),os.length)}},dc?'Reopen day':'Close day'):null)),
  h('div',{class:'card'},h('h3',{},'Add expense'),dc?h('p',{},'Day is closed. '+(can('o')?'Reopen it to add expenses.':'Ask an owner to reopen it.')):h('div',{class:'row'},ec,eCat,eCatDl,ea,h('button',{onclick:async()=>{if(!ec.value||!(+ea.value>0))return;await save('exp',{note:ec.value,cat:eCat.value.trim()||'Other',amt:+ea.value,d:S.d});render()}},'Add')),...ex.map(e=>h('div',{class:'row'},e.note+' · '+(e.cat||'Other'),inr(e.amt))),Object.keys(byCat).length>1?h('div',{style:'margin-top:8px'},h('b',{style:'font-size:12px'},'By category'),...Object.entries(byCat).sort((a,b)=>b[1]-a[1]).map(([k,v])=>h('div',{class:'row'},k,inr(v)))):null),
+ cashDrawerCard(dc,cm),
  h('div',{class:'card'},h('div',{class:'row'},h('h3',{},'Items sold'),h('button',{onclick:()=>csv([['Item','Qty','Amount'],...Object.entries(it).map(([k,v])=>[k,v.q,v.a])],'items-'+S.d+'.csv')},'Export CSV')),h('table',{},...Object.entries(it).sort((a,b)=>b[1].a-a[1].a).map(([k,v])=>h('tr',{},h('td',{},k),h('td',{},v.q),h('td',{},inr(v.a)))))),
  feedbackCard())};
 function dynRows(from,to,dim,metric){
@@ -490,16 +513,32 @@ function catModal(c){
    await save('cat',{...c,name:nm.value.trim(),n:c.n??Date.now(),gender:gen.value,priceLabels,note:note.value.trim()},c.id);x();render()}},'Save'),
    c.id?h('button',{onclick:async()=>{await save('cat',c,c.id,true);x();render()}},'Delete'):null));
 }
+const bulkSel=()=>(S.bulk=S.bulk||new Set());
+async function bulkApply(label,fn){
+ const ids=[...bulkSel()];if(!ids.length)return;
+ if(!confirm(label+' for '+ids.length+' item'+(ids.length>1?'s':'')+'?'))return;
+ for(const id of ids){const i=L('item').find(x=>x.id==id);if(!i)continue;const c=structuredClone(i);fn(c);await save('item',c,c.id)}
+ S.bulk=new Set();render()}
+const bulkPrice=(c,f)=>{const g=v=>r2(Math.max(0,f(+v||0)));c.price=g(c.price);if(c.sizes&&c.sizes.length)c.sizes=c.sizes.map(z=>({...z,p:g(z.p)}));if(c.price2!=null&&c.price2!=='')c.price2=g(c.price2)};
+function bulkBar(){
+ const n=bulkSel().size,isR=isRetail();
+ const pct=sign=>()=>{const v=parseFloat(prompt((sign>0?'Increase':'Decrease')+' prices by what percent?','10'));if(!(v>0))return;bulkApply((sign>0?'Increase':'Decrease')+' prices by '+v+'%',c=>bulkPrice(c,x=>x*(1+sign*v/100)))};
+ const amt=sign=>()=>{const v=parseFloat(prompt((sign>0?'Add':'Subtract')+' how many rupees from each price?','10'));if(!(v>0))return;bulkApply((sign>0?'Add ':'Subtract ')+inr(v)+(sign>0?' to':' from')+' prices',c=>bulkPrice(c,x=>x+sign*v))};
+ return h('div',{class:'card',style:'grid-column:1/-1;position:sticky;top:8px;z-index:5'},h('div',{class:'row'},h('b',{},n+' selected'),h('button',{onclick:()=>{S.bulk=new Set();render()}},'Clear')),
+  h('div',{class:'row',style:'justify-content:flex-start;flex-wrap:wrap;gap:8px'},
+   h('button',{onclick:pct(1)},'Price +%'),h('button',{onclick:pct(-1)},'Price −%'),h('button',{onclick:amt(1)},'Price +₹'),h('button',{onclick:amt(-1)},'Price −₹'),
+   h('button',{onclick:()=>bulkApply('Mark sold out',c=>{c.off=true;c.offUntil=null})},'Mark sold out'),h('button',{onclick:()=>bulkApply('Mark available',c=>{c.off=false;c.offUntil=null})},'Mark available'),
+   isR?null:h('button',{onclick:()=>bulkApply('Mark veg',c=>{c.veg='veg'})},[swatch(VEG_COLOR.veg),' Veg']),isR?null:h('button',{onclick:()=>bulkApply('Mark non-veg',c=>{c.veg='nonveg'})},[swatch(VEG_COLOR.nonveg),' Non-veg']),isR?null:h('button',{onclick:()=>bulkApply('Mark contains egg',c=>{c.veg='egg'})},[swatch(VEG_COLOR.egg),' Egg'])))}
 V.menu=()=>{const isR=isRetail(),previewing=cfg().isDemo&&S.previewNiche;if(!S.menuOpen)S.menuOpen={};
  const cats=effCats().sort((a,b)=>a.n-b.n);
- return h('div',{class:'g1'}, previewing?h('p',{style:'color:var(--accent);font-size:13px'},'Previewing a sample '+S.previewNiche+' menu — read only. Pick "Current" in Settings → Business to go back to editing your real menu.'):null,
- h('div',{class:'card',style:'grid-column:1/-1'},h('div',{class:'row'},h('h3',{},isR?'Products':'Menu'),previewing?null:h('span',{},h('button',{onclick:()=>catModal({})},'Add category'),h('button',{class:'p',onclick:()=>item({})},isR?'Add product':'Add item'))),
+ return h('div',{class:'g1'}, S.bulkMode&&bulkSel().size?bulkBar():null, previewing?h('p',{style:'color:var(--accent);font-size:13px'},'Previewing a sample '+S.previewNiche+' menu — read only. Pick "Current" in Settings → Business to go back to editing your real menu.'):null,
+ h('div',{class:'card',style:'grid-column:1/-1'},h('div',{class:'row'},h('h3',{},isR?'Products':'Menu'),previewing?null:h('span',{},h('button',{class:S.bulkMode?'on':'',onclick:()=>{S.bulkMode=!S.bulkMode;if(!S.bulkMode)S.bulk=new Set();render()}},S.bulkMode?'Done selecting':'Select'),h('button',{onclick:()=>catModal({})},'Add category'),h('button',{class:'p',onclick:()=>item({})},isR?'Add product':'Add item'))),
   ...cats.map(c=>{const its=effItems().filter(i=>i.cat==c.id),open=!!S.menuOpen[c.id];
    return h('div',{style:'border-top:1px solid var(--l)'},
     h('div',{class:'row',style:'cursor:pointer;padding:10px 0',onclick:()=>{S.menuOpen[c.id]=!open;render()}},
      h('span',{style:'display:flex;align-items:center;gap:8px'},h('span',{style:'display:inline-flex;transition:transform .15s var(--ease);transform:rotate('+(open?90:0)+'deg)'},icon('chevron')),h('b',{},c.name),h('span',{style:'font-size:11.5px;color:var(--ink-faint)'},'('+its.length+')')),
-     previewing?null:h('button',{onclick:e=>{e.stopPropagation();catModal(c)}},'Edit')),
-    open?h('div',{style:'padding:0 0 8px 26px;display:grid'},...its.map(i=>h('div',{class:'row'},h('span',{},isR?null:[swatch(VEG_COLOR[i.veg||'veg']),' '],i.name,i.combo?[' ',icon('gift')]:null,itemOff(i)?' (sold out'+(i.offUntil?' until '+new Date(i.offUntil).toLocaleString():'')+')':''),isR?inr(i.price)+' · '+variantQty(i)+' in stock':(i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price)),previewing?null:h('button',{onclick:()=>item(i)},'Edit')))):null)
+     previewing?null:h('span',{},S.bulkMode?h('button',{onclick:e=>{e.stopPropagation();const sl=bulkSel(),all=its.every(i=>sl.has(i.id));its.forEach(i=>all?sl.delete(i.id):sl.add(i.id));S.menuOpen[c.id]=true;render()}},'Select all'):null,h('button',{onclick:e=>{e.stopPropagation();catModal(c)}},'Edit'))),
+    open?h('div',{style:'padding:0 0 8px 26px;display:grid'},...its.map(i=>h('div',{class:'row'},h('span',{},S.bulkMode?h('input',{type:'checkbox',style:'margin-right:10px;width:22px;height:22px;vertical-align:middle',checked:bulkSel().has(i.id),onchange:e=>{e.target.checked?bulkSel().add(i.id):bulkSel().delete(i.id);render()}}):null,isR?null:[swatch(VEG_COLOR[i.veg||'veg']),' '],i.name,i.combo?[' ',icon('gift')]:null,itemOff(i)?' (sold out'+(i.offUntil?' until '+new Date(i.offUntil).toLocaleString():'')+')':''),isR?inr(i.price)+' · '+variantQty(i)+' in stock':(i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+s.p).join(' / '):inr(i.price)),previewing?null:h('button',{onclick:()=>item(i)},'Edit')))):null)
   })))};
 V.set=()=>{const s=cfg(),F={},sel=(k,l,o)=>h('label',{},l,h('select',{style:'width:100%',onchange:e=>F[k]=e.target.value},...o.map(([v,n])=>h('option',{value:v,selected:String(s[k]||o[0][0])==String(v)},n)))),f=(k,l,t)=>h('label',{},l,h('input',{type:t||'text',value:s[k],style:'width:100%',oninput:e=>F[k]=t=='number'?+e.target.value:e.target.value})),ta=(k,l)=>h('label',{},l,h('textarea',{style:'width:100%;min-height:70px',oninput:e=>F[k]=e.target.value},s[k]||''));
  const sw=(k,title,desc)=>h('div',{class:'hw-row'},h('div',{class:'hw-text'},h('b',{},title),h('span',{},desc)),h('label',{class:'switch'},h('input',{type:'checkbox',checked:!!s[k],onchange:async e=>{await save('settings',{...cfg(),[k]:e.target.checked},'settings');render()}}),h('div',{class:'track'})));

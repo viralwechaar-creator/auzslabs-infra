@@ -70,3 +70,20 @@ small,.sm{font-size:13px}
 }
 @keyframes hSheetUp{from{transform:translateY(100%)}to{transform:none}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* ---- iOS tab bar (POS, phones): the main screens one tap away, "More" opens the full menu ---- */
+.ios-tabs{display:none}
+@media (max-width:700px){
+  body.has-tabs .ios-tabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;position:fixed;left:0;right:0;bottom:0;z-index:30;padding:6px 6px calc(6px + env(safe-area-inset-bottom));background:rgba(246,244,241,.86);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid var(--hig-sep,rgba(60,60,67,.29))}
+  .ios-tabs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:49px;padding:2px 0;border:0;border-radius:10px;background:transparent;color:#8a8680;font:500 11px/1.1 var(--hig-font,system-ui);box-shadow:none}
+  .ios-tabs button.on{color:var(--accent,#800020)}
+  .ios-tabs button span{font-size:11px}
+  body.has-tabs{padding-bottom:calc(64px + env(safe-area-inset-bottom))}
+  body.has-tabs .cart-bar{bottom:calc(60px + env(safe-area-inset-bottom))}
+  body.has-tabs .powered{display:none}
+}
+/* live strip on the Orders screen (Running orders, tables, kitchen, ready, delivery, advance) */
+.live-chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
+.live-chip{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:16px;background:var(--hig-fill,rgba(120,120,128,.12))}
+.live-chip b{font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.live-chip span{font-size:12.5px;color:var(--ink-dim,#6b6560)}
