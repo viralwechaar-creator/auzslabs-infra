@@ -128,3 +128,37 @@ html.fx-hx .vw-grid{position:relative;display:block;flex:1;min-height:300px;marg
 html.fx-hx .vw-card{position:absolute;left:50%;top:50%;translate:-50% -50%;width:min(74vw,320px);margin:0!important;will-change:transform}
 html.fx-hx .vw .hx-title{font-size:clamp(30px,9vw,40px)}
 html.fx-hx .vw-art{max-height:19svh}
+
+/* the "One login for all of it" call to action lives on the How we work sheet (it is part of that page, so it never moves when the card deck ends) */
+.hw-cta{margin-top:clamp(18px,3.5vh,34px);padding-top:clamp(14px,2.5vh,24px)}
+.hw-cta .hx-title{font-size:clamp(28px,8vw,38px)}
+.hw-cta .hx-acts{margin-top:16px}
+/* Let's talk gets its own tone so its folder cut reads against the page background instead of looking like a hole */
+.tk{background:#e9e4df}
+html.fx-hx .stack-panel-dark{position:relative;z-index:6;min-height:calc(100svh - var(--pin,150px) + 28px)}
+.hw{flex-direction:column;align-items:flex-start;justify-content:center}
+.hw-in,.hw-cta{width:min(100%,760px)}
+.hx-foot{display:none!important}
+
+/* ---- wide screens: calm stacked sheets, no pinned deck. How we work in three columns, the eight modules as a grid, the four doors in a row ---- */
+@media (min-width:900px){
+  .hw{min-height:0;padding:calc(var(--cut) + var(--ch) + 70px) 8vw 90px}
+  .hw-in{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 clamp(28px,4vw,64px)}
+  .hw-in .hx-eye{grid-column:1/-1}
+  .hw-in .hx-big{font-size:clamp(40px,4.6vw,66px)}
+  .hw-cta .btn-ghost{color:#f6f4f1;border-color:rgba(246,244,241,.45)}
+  .hw-cta{width:100%;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-top:56px;padding-top:32px;border-top:1px solid var(--hx-line)}
+  .hw-cta .hx-title{font-size:clamp(34px,3.6vw,52px);margin:0}
+  .hw-cta .hx-acts{margin-top:0}
+  .hx{padding:20px 0 90px}
+  .hx-stage{padding:0 8vw}
+  .hx-track{flex-wrap:wrap;justify-content:center;overflow:visible;padding:0;gap:26px;scroll-snap-type:none}
+  .hx-head{flex:0 0 100%;width:100%;align-self:flex-start;margin-bottom:12px}
+  .hx-hint{display:none}
+  .hx-card{width:calc((100% - 78px) / 4);min-width:240px;margin:0!important;border-radius:28px}
+  .hx-card:nth-of-type(even){margin-top:36px!important}
+  .vw{padding:calc(var(--cut) + var(--ch) + 56px) 8vw 100px}
+  .vw-grid{margin-top:44px;align-items:start}
+  .vw-card:nth-child(even){margin-top:36px}
+  .tk{padding:calc(var(--cut) + var(--ch) + 80px) 8vw 130px;min-height:0}
+}
