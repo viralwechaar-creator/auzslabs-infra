@@ -57,34 +57,28 @@
 .hx-title .fx-w,.hx-name .fx-w{white-space:nowrap}
 .hx-card p,.hx-go{opacity:1}
 
-/* ---- mouse / trackpad screens only: page 2 pins and slides sideways, cards float, sheets rise (CSS scroll-linked, compositor) ---- */
-@media (hover:hover) and (pointer:fine) {
+/* ---- page 2 pins and slides sideways on every device (CSS scroll-linked, compositor); card tilt / door float on mouse devices only ---- */
+@media all {
   html.fx-hx .hx-hint .hx-h-d{display:inline}html.fx-hx .hx-hint .hx-h-t{display:none}
-  html.fx-hx .hx-stage{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;display:flex;align-items:center;padding-top:calc(66px + var(--sheet-r))}
-  html.fx-hx .hx-track{overflow:visible;padding:0 8vw;height:100%;align-items:center;will-change:transform;scroll-snap-type:none}
-  html.fx-hx .hx-card:nth-of-type(odd){margin-top:9vh}html.fx-hx .hx-card:nth-of-type(even){margin-top:-9vh}
+  html.fx-hx .hx-stage{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;display:flex;align-items:center;padding:calc(66px + var(--sheet-r)) 0 calc(var(--cut) + var(--ch) + 8px)}
   html.fx-hx .hx-bar{display:block;position:absolute;left:8vw;right:8vw;bottom:calc(5vh + env(safe-area-inset-bottom));height:2px;background:var(--hx-line);z-index:2}
   html.fx-hx .hx-bar i{display:block;height:100%;transform-origin:0 50%;background:var(--wine-hi)}
   .hx-card{--dir:1;--r0:0%;--r1:100%}
   @supports (animation-timeline: view()) {
     .hx{view-timeline:--hx block}
-    html.fx-hx .hx-track{animation:hxSlide linear both;animation-timeline:--hx;animation-range:contain 0% contain 100%}
-    @keyframes hxSlide{to{transform:translate3d(calc(var(--hx-dist) * -1),0,0)}}
     html.fx-hx .hx-bar i{animation:hxBar linear both;animation-timeline:--hx;animation-range:contain 0% contain 100%}
     @keyframes hxBar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-    html.fx-hx .hx-card{animation:hxCard linear both;animation-timeline:--hx;animation-range:contain var(--r0) contain var(--r1)}
-    @keyframes hxCard{from{transform:translate3d(0,calc(46px * var(--dir)),0) rotate(calc(3.2deg * var(--dir)))}to{transform:translate3d(0,calc(-46px * var(--dir)),0) rotate(calc(-3.2deg * var(--dir)))}}
-    .vw-card{--fk:30;animation:vwFloat linear both;animation-timeline:view();animation-range:cover 0% cover 100%}
+    @media (hover:hover) and (pointer:fine){.vw-card{--fk:30;animation:vwFloat linear both;animation-timeline:view();animation-range:cover 0% cover 100%}}
     @keyframes vwFloat{from{transform:translate3d(0,calc(var(--fk) * 1px),0)}to{transform:translate3d(0,calc(var(--fk) * -1px),0)}}
   }
 }
 
 /* folder-cut sheets: the top edge is clipped like a file divider (straight diagonal shoulders, chamfered corners); the previous sheet shows through */
-:root{--cut:38px;--ch:20px}
-.hx,.vw,.tk{border-radius:0!important;box-shadow:none;--sl:calc(var(--cut) * .9);
+:root{--cut:38px;--ch:20px;--sl:calc(var(--cut) * .9)}
+.hw,.vw,.tk{border-radius:0!important;box-shadow:none;--sl:calc(var(--cut) * .9);
  clip-path:polygon(0 var(--ch),var(--ch) 0,var(--nx) 0,calc(var(--nx) + var(--sl)) var(--cut),calc(100% - var(--ch)) var(--cut),100% calc(var(--cut) + var(--ch)),100% 100%,0 100%)}
 .vw{clip-path:polygon(0 calc(var(--cut) + var(--ch)),var(--ch) var(--cut),calc(var(--nx) - var(--sl)) var(--cut),var(--nx) 0,calc(100% - var(--ch)) 0,100% var(--ch),100% 100%,0 100%)}
-.hx{--nx:40%}.vw{--nx:62%}.tk{--nx:44%}
+.hw{--nx:40%}.vw{--nx:62%}.tk{--nx:44%}
 .hx-stage{border-radius:0!important}
 .hx-bar{display:none!important}
 .hero2{padding-bottom:calc(var(--sheet-r) + var(--cut) + 24px)!important}
@@ -92,6 +86,35 @@
 .hx-card,.vw-card{border-radius:32px;box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 30px 60px -30px rgba(0,0,0,.65),0 8px 18px -10px rgba(0,0,0,.35)}
 .hx-card .hx-art{background:#f1eeea;border-radius:22px;padding:14px;box-sizing:border-box;width:100%}
 .hx-card .hx-no{align-self:flex-start;padding:5px 11px;border-radius:99px;background:#171717;color:#f6f4f1!important;font-size:12px;letter-spacing:.08em}
-.hx,.vw,.tk{margin-top:calc(var(--cut) * -1)}
-.hx,.vw,.tk{margin-top:calc((var(--cut) + var(--ch)) * -1)}
+.hw,.vw,.tk{margin-top:calc((var(--cut) + var(--ch)) * -1)}
+.hx{margin-top:0}
 .hero2{padding-bottom:calc(var(--cut) + var(--ch) + 28px)!important}
+
+/* foot of the pinned stage: the next (wine) sheet's folder cut, so the bottom is never blank and the page continues from exactly there */
+.hx-foot{display:none}
+html.fx-hx .hx-foot{display:block;position:absolute;left:0;right:0;bottom:0;height:calc(var(--cut) + var(--ch) + 1px);background:var(--wine);pointer-events:none;
+ clip-path:polygon(0 calc(var(--cut) + var(--ch)),var(--ch) var(--cut),calc(62% - var(--sl)) var(--cut),62% 0,calc(100% - var(--ch)) 0,100% var(--ch),100% 100%,0 100%)}
+
+/* ---- card deck: while page 2 is pinned, scrolling down fans the stack sideways, one card after another (keyframes per card are written by fx-hx.js) ---- */
+html.fx-hx .hx-track{position:relative;display:block;overflow:visible;padding:0;gap:0;width:100%;height:100%}
+html.fx-hx .hx-track>.hx-s,html.fx-hx .hx-track>.hx-card{position:absolute;left:50%;top:50%;translate:-50% -50%;margin:0!important;width:min(74vw,320px);height:min(62svh,480px);box-sizing:border-box;overflow:hidden;border-radius:32px;transform-origin:50% 80%;animation-timing-function:linear;animation-fill-mode:both;animation-timeline:--hx;animation-range:contain 0% contain 100%}
+html.fx-hx .hx-track>.hx-s{display:flex;flex-direction:column;justify-content:center;padding:26px 24px;background:#242220;box-shadow:0 0 0 1px rgba(246,244,241,.1),0 30px 60px -30px rgba(0,0,0,.8)}
+html.fx-hx .hx-track>.hx-head{background:var(--wine)}
+html.fx-hx .hx-big{font-size:clamp(34px,10.5vw,44px)}
+html.fx-hx .hx-title{font-size:clamp(30px,9vw,40px)}
+html.fx-hx .hx-row{padding:10px 0}
+html.fx-hx .hx-row p{font-size:15px}
+html.fx-hx .hx-card .hx-art{max-height:22svh;flex:0 1 auto}
+html.fx-hx .hx-card{justify-content:flex-start}
+
+/* ---- How we work: its own sheet (original look), pinned while the deck rises over it ---- */
+.hw{position:relative;z-index:1;background:var(--hx-bg);min-height:calc(100svh - 104px);box-sizing:border-box;padding:calc(var(--cut) + var(--ch) + 24px) 8vw 56px;display:flex;align-items:center;--sl:calc(var(--cut) * .9)}
+.hw-in{width:min(100%,760px)}
+.hw+.hx{margin-top:0}
+.hx{background:transparent}
+html:not(.fx-hx) .hx{background:var(--hx-bg)}
+html.fx-hx .hw,html.fx-hx .vw{position:sticky;top:var(--pin,0px)}
+.hw,.vw{position:relative}
+.vw{z-index:3}.tk{z-index:4}
+html.fx-hx .hx{z-index:2}
+html.fx-hx .hx-stage{background:transparent}
