@@ -18,49 +18,102 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<style media="(max-width:899px)">.err{color:var(--accent);font-size:12.5px;margin-top:10px}
-.auth-combo{display:flex;flex-wrap:wrap;max-width:1100px;min-height:460px;
-  background:#fff;border:2px solid var(--ink);border-radius:26px 12px 26px 12px;
-  box-shadow:5px 5px 0 var(--ink);overflow:hidden;}
-.auth-illustration{flex:3 1 260px;min-width:220px;position:relative;overflow:hidden;
-  background:var(--bg-raised);display:flex;align-items:center;justify-content:center;padding:40px 24px;}
-.auth-illustration-shape{position:absolute;border-radius:50%}
-.auth-illustration-shape.s1{width:240px;height:240px;background:var(--ink);opacity:.05;top:-80px;left:-70px}
-.auth-illustration-shape.s2{width:180px;height:180px;background:var(--accent);opacity:.14;bottom:-60px;right:-50px;
-  animation:authBob 5.5s ease-in-out infinite;}
-.auth-illustration-shape.s3{width:90px;height:90px;background:var(--ink);opacity:.07;bottom:30%;left:8%;
-  animation:authBob 7s ease-in-out infinite reverse;}
-@keyframes authBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
-.auth-illustration-logo{position:relative;width:52%;max-width:220px;animation:authFloat 4.5s ease-in-out infinite}
-@keyframes authFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-.auth-form-col{flex:1 1 300px;min-width:260px;max-width:420px;padding:32px 28px;
+<style media="(max-width:899px)">
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.err{color:var(--accent);font-size:12.5px;margin-top:10px}
+.auth-combo{display:flex;flex-wrap:wrap;max-width:420px;margin:0 auto;
+  background:#fff;border-radius:28px;overflow:hidden;
+  box-shadow:0 1px 2px rgba(23,23,23,.04),0 24px 56px -28px rgba(23,23,23,.32);}
+.auth-illustration{display:none}
+.auth-form-col{flex:1 1 300px;min-width:260px;padding:34px 26px 30px;
   display:flex;flex-direction:column;justify-content:center;}
-@media (prefers-reduced-motion:reduce){
-.auth-illustration-shape.s2,.auth-illustration-shape.s3,.auth-illustration-logo{animation:none}
-}
+.auth-brand{display:flex;align-items:center;gap:9px;margin-bottom:24px}
+.auth-brand img{height:24px;width:auto}
+.auth-toggle{display:flex;background:var(--bg-raised);border-radius:999px;padding:4px;margin-bottom:20px}
+.auth-toggle button{flex:1;border:none;background:none;padding:10px 12px;border-radius:999px;
+  font-family:var(--font-mono);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--ink-dim);cursor:pointer;transition:background .18s ease,color .18s ease}
+.auth-toggle button.active{background:var(--ink);color:#fff}
+.auth-method-toggle{display:flex;gap:6px;margin-bottom:18px}
+.auth-method-toggle button{flex:1;border:1.5px solid var(--line);background:none;padding:8px 10px;border-radius:999px;
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--ink-dim);cursor:pointer;transition:all .18s ease}
+.auth-method-toggle button.active{background:var(--ink);border-color:var(--ink);color:#fff}
+.auth-social{display:flex;flex-direction:column;gap:9px;margin-bottom:16px}
+.auth-social-btn{width:100%;box-sizing:border-box;justify-content:center;padding:13px;border-radius:999px;
+  border:1.5px solid var(--line);background:#fff;font-family:var(--font-body);font-weight:600;font-size:13.5px;
+  color:var(--ink);display:flex;align-items:center;gap:9px;cursor:pointer;transition:border-color .15s ease,background .15s ease}
+.auth-social-btn:hover{border-color:var(--ink);background:var(--bg-raised)}
+.auth-divider{display:flex;align-items:center;gap:10px;margin:2px 0 18px;
+  color:var(--ink-dim);font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase}
+.auth-divider .ln{flex:1;height:1px;background:var(--line)}
+.auth-form-col .field{margin-bottom:14px}
+.auth-form-col .field input{width:100%;box-sizing:border-box;border:1.5px solid transparent;
+  background:var(--bg-raised);border-radius:14px;padding:14px 16px;
+  font-family:var(--font-body);font-size:14.5px;color:var(--ink);
+  transition:border-color .15s ease,background .15s ease}
+.auth-form-col .field input:focus{outline:none;border-color:var(--accent);background:#fff}
+.auth-forgot{text-align:right;margin:-6px 0 16px}
+.auth-forgot button{background:none;border:none;padding:0;font-family:var(--font-body);
+  font-size:12.5px;color:var(--ink-dim);text-decoration:underline;cursor:pointer}
+.auth-submit{width:100%;box-sizing:border-box;justify-content:center;padding:15px;
+  font-size:12.5px;border-radius:999px;margin-top:4px}
 @media (min-width:861px){
 .wrap{max-width:1180px;margin:0 auto}
 }
-</style><style media="(min-width:900px)">.err{color:var(--accent);font-size:12.5px;margin-top:10px}
-.auth-combo{display:flex;flex-wrap:wrap;max-width:1100px;min-height:460px;
-  background:#fff;border:2px solid var(--ink);border-radius:26px 12px 26px 12px;
-  box-shadow:5px 5px 0 var(--ink);overflow:hidden;}
-.auth-illustration{flex:3 1 260px;min-width:220px;position:relative;overflow:hidden;
-  background:var(--bg-raised);display:flex;align-items:center;justify-content:center;padding:40px 24px;}
+</style><style media="(min-width:900px)">
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.err{color:var(--accent);font-size:12.5px;margin-top:10px}
+.auth-combo{display:flex;flex-wrap:wrap;max-width:880px;min-height:480px;margin:0 auto;
+  background:#fff;border-radius:28px;overflow:hidden;
+  box-shadow:0 1px 2px rgba(23,23,23,.04),0 32px 72px -32px rgba(23,23,23,.34);}
+.auth-illustration{flex:1 1 260px;min-width:240px;position:relative;overflow:hidden;
+  background:linear-gradient(160deg,var(--bg-raised) 0%,#efe9e9 100%);
+  display:flex;align-items:center;justify-content:center;padding:40px 24px;}
 .auth-illustration-shape{position:absolute;border-radius:50%}
-.auth-illustration-shape.s1{width:240px;height:240px;background:var(--ink);opacity:.05;top:-80px;left:-70px}
-.auth-illustration-shape.s2{width:180px;height:180px;background:var(--accent);opacity:.14;bottom:-60px;right:-50px;
+.auth-illustration-shape.s1{width:240px;height:240px;background:var(--ink);opacity:.045;top:-80px;left:-70px}
+.auth-illustration-shape.s2{width:200px;height:200px;background:var(--accent);opacity:.1;bottom:-70px;right:-60px;
   animation:authBob 5.5s ease-in-out infinite;}
-.auth-illustration-shape.s3{width:90px;height:90px;background:var(--ink);opacity:.07;bottom:30%;left:8%;
+.auth-illustration-shape.s3{width:90px;height:90px;background:var(--ink);opacity:.06;bottom:30%;left:8%;
   animation:authBob 7s ease-in-out infinite reverse;}
 @keyframes authBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
-.auth-illustration-logo{position:relative;width:52%;max-width:220px;animation:authFloat 4.5s ease-in-out infinite}
+.auth-illustration-logo{position:relative;width:46%;max-width:190px;animation:authFloat 4.5s ease-in-out infinite}
 @keyframes authFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-.auth-form-col{flex:1 1 300px;min-width:260px;max-width:420px;padding:32px 28px;
+.auth-form-col{flex:1 1 320px;min-width:280px;max-width:420px;padding:44px 40px;
   display:flex;flex-direction:column;justify-content:center;}
 @media (prefers-reduced-motion:reduce){
 .auth-illustration-shape.s2,.auth-illustration-shape.s3,.auth-illustration-logo{animation:none}
 }
+.auth-brand{display:none}
+.auth-toggle{display:flex;background:var(--bg-raised);border-radius:999px;padding:4px;margin-bottom:22px}
+.auth-toggle button{flex:1;border:none;background:none;padding:11px 14px;border-radius:999px;
+  font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--ink-dim);cursor:pointer;transition:background .18s ease,color .18s ease}
+.auth-toggle button.active{background:var(--ink);color:#fff}
+.auth-method-toggle{display:flex;gap:6px;margin-bottom:18px}
+.auth-method-toggle button{flex:1;border:1.5px solid var(--line);background:none;padding:8px 10px;border-radius:999px;
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--ink-dim);cursor:pointer;transition:all .18s ease}
+.auth-method-toggle button.active{background:var(--ink);border-color:var(--ink);color:#fff}
+.auth-social{display:flex;flex-direction:column;gap:9px;margin-bottom:16px}
+.auth-social-btn{width:100%;box-sizing:border-box;justify-content:center;padding:13px;border-radius:999px;
+  border:1.5px solid var(--line);background:#fff;font-family:var(--font-body);font-weight:600;font-size:13.5px;
+  color:var(--ink);display:flex;align-items:center;gap:9px;cursor:pointer;transition:border-color .15s ease,background .15s ease}
+.auth-social-btn:hover{border-color:var(--ink);background:var(--bg-raised)}
+.auth-divider{display:flex;align-items:center;gap:10px;margin:2px 0 18px;
+  color:var(--ink-dim);font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase}
+.auth-divider .ln{flex:1;height:1px;background:var(--line)}
+.auth-form-col .field{margin-bottom:15px}
+.auth-form-col .field input{width:100%;box-sizing:border-box;border:1.5px solid transparent;
+  background:var(--bg-raised);border-radius:14px;padding:14px 16px;
+  font-family:var(--font-body);font-size:14.5px;color:var(--ink);
+  transition:border-color .15s ease,background .15s ease}
+.auth-form-col .field input:focus{outline:none;border-color:var(--accent);background:#fff}
+.auth-forgot{text-align:right;margin:-7px 0 18px}
+.auth-forgot button{background:none;border:none;padding:0;font-family:var(--font-body);
+  font-size:12.5px;color:var(--ink-dim);text-decoration:underline;cursor:pointer}
+.auth-submit{width:100%;box-sizing:border-box;justify-content:center;padding:16px;
+  font-size:12.5px;border-radius:999px;margin-top:4px}
 .wrap{max-width:1180px;margin:0 auto}
 </style>
 </head>
@@ -89,55 +142,55 @@
               <img class="auth-illustration-logo" src="logo.png" alt="" aria-hidden="true">
             </div>
             <div class="auth-form-col">
+              <div class="auth-brand"><img src="logo.png" alt="AUZslab"></div>
+
               <div id="authSection">
-                <div style="display:flex;gap:8px;margin-bottom:6px">
-                  <button class="btn btn-ghost" id="modeNew" style="flex:1;justify-content:center">New account</button>
-                  <button class="btn btn-ghost" id="modeLogin" style="flex:1;justify-content:center">Log in</button>
+                <div class="auth-toggle">
+                  <button id="modeNew">New account</button>
+                  <button id="modeLogin">Log in</button>
                 </div>
 
-                <div id="socialRow" style="display:none;flex-direction:column;gap:8px;margin:4px 0 14px">
+                <div id="socialRow" class="auth-social" style="display:none">
                   <div id="googleBtnHost"></div>
-                  <button id="appleBtn" class="btn btn-ghost form-submit" style="display:none;justify-content:center;gap:8px">
+                  <button id="appleBtn" class="auth-social-btn" type="button" style="display:none">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.365 1.43c0 1.14-.46 2.1-1.17 2.83-.78.8-2.03 1.42-3.09 1.33-.12-1.1.46-2.25 1.15-2.97.78-.83 2.17-1.46 3.11-1.19ZM20.6 17.17c-.46 1.06-.68 1.53-1.27 2.47-.82 1.3-1.98 2.93-3.41 2.94-1.27.02-1.6-.83-3.33-.82-1.73.01-2.09.84-3.36.82-1.43-.02-2.53-1.48-3.35-2.78-2.3-3.63-2.54-7.89-1.12-10.16.99-1.6 2.56-2.54 4.03-2.54 1.5 0 2.44.84 3.68.84 1.2 0 1.93-.85 3.66-.85 1.32 0 2.71.72 3.7 1.96-3.25 1.78-2.72 6.42.77 8.12Z"/></svg>
                     Continue with Apple
                   </button>
-                  <div class="hr-or" style="display:flex;align-items:center;gap:10px;margin:6px 0;color:var(--ink-dim,#8a8680);font-size:12.5px">
-                    <span style="flex:1;height:1px;background:var(--l,#e5e2dd)"></span>or<span style="flex:1;height:1px;background:var(--l,#e5e2dd)"></span>
-                  </div>
+                  <div class="auth-divider"><span class="ln"></span>or<span class="ln"></span></div>
                 </div>
 
-                <div style="display:flex;gap:6px;margin-bottom:10px">
-                  <button class="btn btn-ghost" id="methodEmail" style="flex:1;justify-content:center;padding:8px;font-size:13px">Email</button>
-                  <button class="btn btn-ghost" id="methodPhone" style="flex:1;justify-content:center;padding:8px;font-size:13px">Phone</button>
+                <div class="auth-method-toggle">
+                  <button id="methodEmail" type="button">Email</button>
+                  <button id="methodPhone" type="button">Phone</button>
                 </div>
 
                 <div id="emailFields">
                   <div class="field">
-                    <label for="email">Email</label>
-                    <input id="email" type="email" required autocomplete="email">
+                    <label for="email" class="sr-only">Email</label>
+                    <input id="email" type="email" placeholder="Email address" required autocomplete="email">
                   </div>
                   <div class="field">
-                    <label for="password">Password</label>
-                    <input id="password" type="password" required minlength="8" autocomplete="new-password">
+                    <label for="password" class="sr-only">Password</label>
+                    <input id="password" type="password" placeholder="Password" required minlength="8" autocomplete="new-password">
                   </div>
-                  <div id="forgotRow" style="display:none;text-align:right;margin:-6px 0 10px">
-                    <button id="forgotLink" type="button" style="background:none;border:none;padding:0;color:var(--ink-dim,#8a8680);font-size:12.5px;text-decoration:underline;cursor:pointer">Forgot your password?</button>
+                  <div id="forgotRow" class="auth-forgot" style="display:none">
+                    <button id="forgotLink" type="button">Forgot your password?</button>
                   </div>
-                  <button id="submitBtn" class="btn btn-primary form-submit">Create account</button>
+                  <button id="submitBtn" class="btn btn-primary auth-submit form-submit">Create account</button>
                 </div>
 
                 <div id="phoneFields" style="display:none">
                   <div class="field">
-                    <label for="phoneNum">Phone number</label>
+                    <label for="phoneNum" class="sr-only">Phone number</label>
                     <input id="phoneNum" type="tel" placeholder="+91 98765 43210" autocomplete="tel">
                   </div>
-                  <button id="sendCodeBtn" class="btn btn-primary form-submit" type="button">Send code</button>
+                  <button id="sendCodeBtn" class="btn btn-primary auth-submit form-submit" type="button">Send code</button>
                   <div id="codeStep" style="display:none">
-                    <div class="field">
-                      <label for="phoneCode">6-digit code</label>
-                      <input id="phoneCode" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+                    <div class="field" style="margin-top:14px">
+                      <label for="phoneCode" class="sr-only">6-digit code</label>
+                      <input id="phoneCode" type="text" placeholder="6-digit code" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
                     </div>
-                    <button id="verifyCodeBtn" class="btn btn-primary form-submit" type="button">Verify &amp; continue</button>
+                    <button id="verifyCodeBtn" class="btn btn-primary auth-submit form-submit" type="button">Verify &amp; continue</button>
                   </div>
                 </div>
 
@@ -147,17 +200,17 @@
               <div id="resetSection" style="display:none">
                 <p class="p">Set a new password.</p>
                 <div class="field">
-                  <label for="newPassword">New password</label>
-                  <input id="newPassword" type="password" required minlength="8" autocomplete="new-password">
+                  <label for="newPassword" class="sr-only">New password</label>
+                  <input id="newPassword" type="password" placeholder="New password" required minlength="8" autocomplete="new-password">
                 </div>
-                <button id="resetSubmitBtn" class="btn btn-primary form-submit">Set new password</button>
+                <button id="resetSubmitBtn" class="btn btn-primary auth-submit form-submit">Set new password</button>
                 <div id="resetErr" class="err"></div>
               </div>
 
               <div id="loggedInSection" style="display:none">
                 <p class="p">You're signed in as <b id="loggedInEmail"></b>.</p>
-                <a href="cart.html" class="btn btn-primary form-submit">Go to your cart</a>
-                <button id="signOutBtn" class="btn btn-ghost form-submit">Sign out</button>
+                <a href="cart.html" class="btn btn-primary auth-submit form-submit">Go to your cart</a>
+                <button id="signOutBtn" class="btn btn-ghost auth-submit form-submit" style="margin-top:10px">Sign out</button>
               </div>
             </div>
           </div>
@@ -184,10 +237,8 @@ let authMethod = 'email';
 
 function setMode(m) {
   mode = m;
-  document.getElementById('modeNew').style.background = m === 'signup' ? 'var(--ink)' : '';
-  document.getElementById('modeNew').style.color = m === 'signup' ? '#fff' : '';
-  document.getElementById('modeLogin').style.background = m === 'login' ? 'var(--ink)' : '';
-  document.getElementById('modeLogin').style.color = m === 'login' ? '#fff' : '';
+  document.getElementById('modeNew').classList.toggle('active', m === 'signup');
+  document.getElementById('modeLogin').classList.toggle('active', m === 'login');
   document.getElementById('submitBtn').textContent = m === 'signup' ? 'Create account' : 'Log in';
   document.getElementById('pageTitle').textContent = m === 'signup' ? 'Create your account' : 'Sign in';
   document.getElementById('forgotRow').style.display = m === 'login' ? 'block' : 'none';
@@ -198,10 +249,8 @@ setMode('signup');
 
 function setAuthMethod(m) {
   authMethod = m;
-  document.getElementById('methodEmail').style.background = m === 'email' ? 'var(--ink)' : '';
-  document.getElementById('methodEmail').style.color = m === 'email' ? '#fff' : '';
-  document.getElementById('methodPhone').style.background = m === 'phone' ? 'var(--ink)' : '';
-  document.getElementById('methodPhone').style.color = m === 'phone' ? '#fff' : '';
+  document.getElementById('methodEmail').classList.toggle('active', m === 'email');
+  document.getElementById('methodPhone').classList.toggle('active', m === 'phone');
   document.getElementById('emailFields').style.display = m === 'email' ? 'block' : 'none';
   document.getElementById('phoneFields').style.display = m === 'phone' ? 'block' : 'none';
   document.getElementById('authErr').textContent = '';
