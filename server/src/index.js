@@ -4,6 +4,7 @@ import {
   login, verifyToken, bearerFrom, createUser, resetToRandomPassword, signToken,
   loginWithGoogle, loginWithApple, createPhoneOtp, loginWithPhone,
   createPasswordReset, resetPassword, deleteOwnAccount,
+  listSessions, revokeSession,
 } from './auth.js';
 import { saveSiteUpload, saveDocUpload, readDocUpload, getUploadsDiskUsage } from './storage.js';
 import { startRealtime } from './realtime.js';
@@ -12,6 +13,9 @@ import { sendStaffInviteEmail, sendPasswordResetEmail } from './mail.js';
 import { sendOtpSms } from './sms.js';
 import { handleSalon } from './salon.js';
 import { paymentConfig, createOrder, verifyWebhookSignature, handleWebhookEvent } from './payments.js';
+import { initErrorTracking, captureError } from './errors.js';
+
+initErrorTracking(); // dormant unless SENTRY_DSN is set -- see errors.js
 
 const PORT = process.env.PORT || 3000;
 const DOMAIN = process.env.DOMAIN || '';
@@ -434,6 +438,7 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://internal');
   const user = verifyToken(bearerFrom(req) || '');
   const ip = clientIp(req);
+  const meta = { ip, userAgent: req.headers['user-agent'] || '' }; // threaded into every sign-in, so it gets its own row in auth_sessions (db/071)
 
   try {
     // ---- auth ----
@@ -449,7 +454,7 @@ const server = http.createServer(async (req, res) => {
       const bucket = isDemo ? `demologin:${ip}` : `login:${ip}`;
       const limit = isDemo ? 300 : 20;
       if (rateLimited(bucket, limit, 15 * 60_000)) throw new HttpError(429, 'too many login attempts, try again later');
-      const result = await login(email, password);
+      const result = await login(email, password, meta);
       if (!result) throw new HttpError(401, 'invalid credentials');
       if (result.unverified) throw new HttpError(403, 'Please verify your email first -- check your inbox for the verification link, or ask your manager to resend it.');
       return reply(200, result);
@@ -472,7 +477,7 @@ const server = http.createServer(async (req, res) => {
         if (err.code === '23505') throw new HttpError(409, 'an account with that email already exists');
         throw err;
       }
-      return reply(200, { access_token: signToken(created), user: created });
+      return reply(200, { access_token: await signToken(created, meta), user: created });
     }
     // ---- Google / Apple / phone sign-in (db/069) -- each finds or
     // creates an auth_users row via findOrCreateIdentityUser and returns
@@ -484,7 +489,7 @@ const server = http.createServer(async (req, res) => {
       if (!id_token) throw new HttpError(400, 'id_token is required');
       let result;
       try {
-        result = await loginWithGoogle(id_token);
+        result = await loginWithGoogle(id_token, meta);
       } catch (err) {
         throw new HttpError(401, err.message || 'Google sign-in failed');
       }
@@ -496,7 +501,7 @@ const server = http.createServer(async (req, res) => {
       if (!code) throw new HttpError(400, 'code is required');
       let result;
       try {
-        result = await loginWithApple(code);
+        result = await loginWithApple(code, meta);
       } catch (err) {
         throw new HttpError(401, err.message || 'Apple sign-in failed');
       }
@@ -518,7 +523,7 @@ const server = http.createServer(async (req, res) => {
       if (rateLimited(`phoneverify:${ip}`, 30, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
       const { phone, code } = await readJsonBody(req);
       if (!phone || !code) throw new HttpError(400, 'phone and code are required');
-      const result = await loginWithPhone(phone, code);
+      const result = await loginWithPhone(phone, code, meta);
       if (!result) throw new HttpError(401, 'that code is invalid or has expired');
       return reply(200, result);
     }
@@ -570,6 +575,24 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/auth/session' && req.method === 'GET') {
       if (!user) throw new HttpError(401, 'no session');
       return reply(200, { user });
+    }
+
+    // ---- single-device session revocation (db/071) ----
+    if (url.pathname === '/auth/sessions' && req.method === 'GET') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      const sessions = await listSessions(user.id);
+      return reply(200, { sessions: sessions.map((s) => ({ ...s, current: s.jti === user.jti })) });
+    }
+    const revokeMatch = url.pathname.match(/^\/auth\/sessions\/([0-9a-f-]{36})\/revoke$/);
+    if (revokeMatch && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      if (rateLimited(`revokesess:${user.id}`, 30, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      try {
+        await revokeSession(user.id, revokeMatch[1]);
+      } catch (err) {
+        throw new HttpError(404, err.message || 'session not found');
+      }
+      return reply(200, { ok: true });
     }
 
     // ---- Razorpay payments (db/070) -- dormant until RAZORPAY_KEY_ID/SECRET
@@ -812,7 +835,10 @@ const server = http.createServer(async (req, res) => {
       else if (err.code === '42501') { status = 403; message = err.message; }
       else if (err.code === '28000') { status = 401; message = err.message; }
     }
-    if (status === 500) console.error(err);
+    if (status === 500) {
+      console.error(err);
+      captureError(err, { method: req.method, path: url.pathname, user_id: user?.id || null });
+    }
     reply(status, { error: message });
   }
 });

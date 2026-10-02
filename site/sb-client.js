@@ -146,6 +146,15 @@
         if (!error) { session = null; saveSession(null); }
         return { data, error };
       },
+      // Single-device session revocation (db/071) -- "sign out just this
+      // device" without touching any other device's session or the password.
+      async listSessions() {
+        const { data, error } = await request('/auth/sessions', { method: 'GET' });
+        return { data: data?.sessions || null, error };
+      },
+      async revokeSession(jti) {
+        return request(`/auth/sessions/${encodeURIComponent(jti)}/revoke`, { method: 'POST' });
+      },
     };
 
     // ---- Razorpay payments (db/070) -- dormant until the owner sets

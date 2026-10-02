@@ -8,6 +8,7 @@
     "start": "node src/index.js"
   },
   "dependencies": {
+    "@sentry/node": "^11.4.0",
     "bcryptjs": "^2.4.3",
     "google-auth-library": "^11.1.0",
     "jose": "^6.2.12",

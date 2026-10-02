@@ -166,7 +166,7 @@ const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const PERM_KEYS = [['pos','Sell (POS)'],['orders','Orders'],['kitchen','Kitchen Display'],['reports','Reports'],['staff','Staff (view)'],['inventory','Stock'],['crm','Customers'],['menu','Menu'],['settings','Business Settings'],['billing','Billing / Refunds'],['acc_view','Accounting: view'],['acc_sales','Accounting: sales and receipts'],['acc_purchase','Accounting: purchases and payments'],['acc_inventory','Accounting: products and stock'],['acc_banking','Accounting: banking'],['acc_post','Accounting: journals and assets'],['acc_approve','Accounting: approve documents'],['acc_cancel','Accounting: cancel and reverse'],['acc_reports','Accounting: reports and GST'],['acc_import','Accounting: import'],['acc_admin','Accounting: settings'],['acc_audit','Accounting: audit log']];
 
-let DASH = null, ROLES = [], STAFF = [], NOTIFS = [];
+let DASH = null, ROLES = [], STAFF = [], NOTIFS = [], SESSIONS = [];
 
 async function boot() {
   const { data: { session } } = await sb.auth.getSession();
@@ -201,6 +201,7 @@ async function boot() {
   await loadRoles();
   if (DASH.my_role === 'owner') await loadStaff();
   await loadNotifications();
+  await loadSessions();
 
   document.querySelectorAll('.acct-nav-btn').forEach((b) => {
     b.onclick = () => {
@@ -262,6 +263,19 @@ function renderAccount() {
       <div class="acct-row"><span class="muted">Role</span><b>${esc(DASH.my_role)}</b></div>
     </div>
     <div class="card">
+      <h3 class="h-2">Where you're signed in</h3>
+      <p class="muted">Every device currently signed in to your account. Don't recognise one, or lost a phone? Sign it out here -- it won't affect any other device.</p>
+      ${SESSIONS.length ? SESSIONS.map((s) => `
+        <div class="acct-row" data-session="${esc(s.jti)}">
+          <span>
+            <b>${esc(s.device_label || 'Unknown device')}</b>${s.current ? ' <span class="status-pill status-active">this device</span>' : ''}<br>
+            <span class="muted">Signed in ${new Date(s.created_at).toLocaleString()}${s.last_seen_at ? ' &middot; last active ' + new Date(s.last_seen_at).toLocaleString() : ''}${s.ip ? ' &middot; ' + esc(s.ip) : ''}</span>
+          </span>
+          <button class="btn btn-ghost" data-revoke-session="${esc(s.jti)}">Sign out</button>
+        </div>
+      `).join('') : '<p class="muted">No active sessions found.</p>'}
+    </div>
+    <div class="card">
       <h3 class="h-2">Change password</h3>
       <div class="field"><label>Current password</label><input id="pwOld" type="password"></div>
       <div class="field"><label>New password (min 8 characters)</label><input id="pwNew" type="password"></div>
@@ -306,6 +320,18 @@ function renderAccount() {
     if (error) { msg.className = 'err'; msg.textContent = error.message; return; }
     window.location.href = 'signup.html';
   };
+  document.querySelectorAll('[data-revoke-session]').forEach((btn) => {
+    btn.onclick = async () => {
+      const jti = btn.dataset.revokeSession;
+      const isCurrent = btn.closest('[data-session]').querySelector('.status-active');
+      if (!window.confirm(isCurrent ? 'Sign out this device? You will need to sign in again here.' : 'Sign out that device? It will need to sign in again there.')) return;
+      const { error } = await sb.auth.revokeSession(jti);
+      if (error) { window.alert(error.message); return; }
+      if (isCurrent) { await sb.auth.signOut(); window.location.href = 'signup.html'; return; }
+      await loadSessions();
+      renderAccount();
+    };
+  });
 }
 
 // Products the marketing site (products.html) actually sells are POS,
@@ -535,6 +561,10 @@ function renderRoles() {
   });
 }
 
+async function loadSessions() {
+  const { data } = await sb.auth.listSessions();
+  SESSIONS = data || [];
+}
 async function loadNotifications() {
   const { data } = await sb.from('notifications').select('*').order('created_at');
   NOTIFS = (data || []).slice().reverse();

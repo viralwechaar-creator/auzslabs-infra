@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { randomInt } from 'node:crypto';
+import { randomInt, randomUUID } from 'node:crypto';
 import { OAuth2Client } from 'google-auth-library';
 import { SignJWT, importPKCS8, createRemoteJWKSet, jwtVerify } from 'jose';
 import { pool } from './db.js';
@@ -9,22 +9,112 @@ const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) throw new Error('JWT_SECRET is required');
 const JWT_EXPIRY = '7d';
 
-export function signToken(user) {
+// =========================================================
+// Single-device session revocation (db/071). A JWT carries a `jti` --
+// one row per issued token in auth_sessions -- so a single lost phone
+// or an ex-employee's device can be signed out without touching
+// anyone else's session or the account's password. verifyToken() below
+// stays the fast, stateless, no-DB-hit operation it was deliberately
+// built as (see its own comment) by checking an in-memory Set of
+// revoked jti's instead of querying on every request -- loaded once at
+// boot, updated synchronously the instant revokeSession() runs. Only
+// revocations younger than the JWT's own lifetime are worth holding in
+// memory at all (an older one is moot -- that token already expired on
+// its own), so the boot-time preload is bounded.
+// =========================================================
+const revokedJtis = new Set();
+(async () => {
+  try {
+    const { rows } = await pool.query(
+      `select jti from auth_sessions where revoked_at is not null and revoked_at > now() - interval '8 days'`,
+    );
+    rows.forEach((r) => revokedJtis.add(r.jti));
+  } catch (err) {
+    console.warn('could not preload revoked sessions', err.message);
+  }
+})();
+
+// A short, human-readable label ("Chrome on Windows") from the
+// request's own User-Agent -- good enough for someone to recognise
+// "that's my laptop" vs "that's not me" in a sessions list; not meant
+// to be a precise device fingerprint.
+function describeDevice(ua) {
+  if (!ua) return 'Unknown device';
+  const os = /windows/i.test(ua) ? 'Windows' : /mac os/i.test(ua) ? 'Mac'
+    : /iphone/i.test(ua) ? 'iPhone' : /ipad/i.test(ua) ? 'iPad'
+    : /android/i.test(ua) ? 'Android' : /linux/i.test(ua) ? 'Linux' : 'an unknown device';
+  const browser = /edg\//i.test(ua) ? 'Edge' : /opr\//i.test(ua) ? 'Opera'
+    : /chrome\//i.test(ua) ? 'Chrome' : /crios\//i.test(ua) ? 'Chrome'
+    : /firefox\//i.test(ua) ? 'Firefox' : /safari\//i.test(ua) ? 'Safari' : 'a browser';
+  return `${browser} on ${os}`;
+}
+
+async function createSession(userId, meta = {}) {
+  const jti = randomUUID();
+  await pool.query(
+    `insert into auth_sessions (jti, user_id, device_label, ip) values ($1, $2, $3, $4)`,
+    [jti, userId, describeDevice(meta.userAgent), meta.ip || null],
+  );
+  return jti;
+}
+
+// Fire-and-forget, throttled to at most once every 5 minutes per
+// session -- this runs on every authenticated request, so an unthrottled
+// UPDATE on every single one would turn a read into a write storm for
+// no real benefit ("last seen 2 seconds ago" vs "3 minutes ago" tells a
+// user the same thing: this device is active).
+const lastSeenThrottle = new Map();
+function touchSession(jti) {
+  const now = Date.now();
+  if (now - (lastSeenThrottle.get(jti) || 0) < 5 * 60_000) return;
+  lastSeenThrottle.set(jti, now);
+  pool.query(`update auth_sessions set last_seen_at = now() where jti = $1`, [jti]).catch(() => {});
+}
+
+export async function listSessions(userId) {
+  const { rows } = await pool.query(
+    `select jti, device_label, ip, created_at, last_seen_at from auth_sessions
+     where user_id = $1 and revoked_at is null order by coalesce(last_seen_at, created_at) desc`,
+    [userId],
+  );
+  return rows;
+}
+
+// Only ever lets someone revoke their OWN session -- userId comes from
+// the caller's own verified token, never from the request body.
+export async function revokeSession(userId, jti) {
+  const { rows } = await pool.query(
+    `update auth_sessions set revoked_at = now() where jti = $1 and user_id = $2 and revoked_at is null returning jti`,
+    [jti, userId],
+  );
+  if (!rows[0]) throw new Error('session not found');
+  revokedJtis.add(jti);
+}
+
+// meta ({ip, userAgent}) is optional so every existing internal caller
+// (e.g. a context with no real HTTP request) keeps working unchanged --
+// a token signed without it just has no jti, and is valid exactly as
+// every token was before this migration (not individually revocable,
+// same as today). Every real sign-in path in this file passes meta.
+export async function signToken(user, meta) {
+  const jti = meta ? await createSession(user.id, meta) : undefined;
   return jwt.sign(
-    { sub: user.id, email: user.email, app_metadata: user.app_metadata },
+    { sub: user.id, email: user.email, app_metadata: user.app_metadata, ...(jti ? { jti } : {}) },
     JWT_SECRET,
     { expiresIn: JWT_EXPIRY },
   );
 }
 
-// Returns {id,email,app_metadata} from a valid Bearer token, or null.
-// Deliberately does NOT touch the database -- the token itself already
-// carries everything a request needs (same as a Supabase JWT did), so
-// verifying it is a pure, fast, local operation.
+// Returns {id,email,app_metadata,jti} from a valid, non-revoked Bearer
+// token, or null. The revocation check is a plain in-memory Set lookup,
+// not a query -- verifying a token stays the fast, local operation it
+// was deliberately built as (see db/069's own comment on this).
 export function verifyToken(token) {
   try {
     const payload = jwt.verify(token, JWT_SECRET);
-    return { id: payload.sub, email: payload.email, app_metadata: payload.app_metadata || {} };
+    if (payload.jti && revokedJtis.has(payload.jti)) return null;
+    if (payload.jti) touchSession(payload.jti);
+    return { id: payload.sub, email: payload.email, app_metadata: payload.app_metadata || {}, jti: payload.jti };
   } catch {
     return null;
   }
@@ -38,7 +128,7 @@ export function bearerFrom(req) {
 // login: looks up auth_users directly with the pool (no app.uid needed
 // yet -- there's no authenticated caller until this succeeds), checks
 // the password, and returns a signed token plus the user record.
-export async function login(email, password) {
+export async function login(email, password, meta) {
   const { rows } = await pool.query(
     `select au.id, au.email, au.password_hash, au.app_metadata, au.user_metadata, p.email_verified
      from auth_users au left join profiles p on p.id = au.id
@@ -59,7 +149,7 @@ export async function login(email, password) {
   // (see db/044_staff_email_verification.sql), so null/true both pass.
   if (row.email_verified === false) return { unverified: true };
   const user = { id: row.id, email: row.email, app_metadata: row.app_metadata, user_metadata: row.user_metadata };
-  return { access_token: signToken(user), user };
+  return { access_token: await signToken(user, meta), user };
 }
 
 export async function createUser({ email, password, app_metadata = {}, user_metadata = {} }) {
@@ -144,9 +234,9 @@ async function findOrCreateIdentityUser({ provider, providerId, email }) {
   return created.rows[0];
 }
 
-function identitySession(row) {
+async function identitySession(row, meta) {
   const user = { id: row.id, email: row.email, app_metadata: row.app_metadata, user_metadata: row.user_metadata };
-  return { access_token: signToken(user), user };
+  return { access_token: await signToken(user, meta), user };
 }
 
 // ---- Google ----
@@ -157,7 +247,7 @@ const googleClient = GOOGLE_CLIENT_ID ? new OAuth2Client(GOOGLE_CLIENT_ID) : nul
 // idToken: the credential Google Identity Services hands the browser
 // directly (https://accounts.google.com/gsi/client) -- verified here,
 // server-side, never trusted as-is from the client.
-export async function loginWithGoogle(idToken) {
+export async function loginWithGoogle(idToken, meta) {
   if (!googleClient) throw new Error('Google sign-in is not configured yet');
   const ticket = await googleClient.verifyIdToken({ idToken, audience: GOOGLE_CLIENT_ID });
   const payload = ticket.getPayload();
@@ -167,7 +257,7 @@ export async function loginWithGoogle(idToken) {
     providerId: payload.sub,
     email: payload.email_verified ? payload.email : null,
   });
-  return identitySession(row);
+  return identitySession(row, meta);
 }
 
 // ---- Apple ----
@@ -198,7 +288,7 @@ async function appleClientSecret() {
 // hands the browser -- exchanged here for an id_token, which is then
 // verified against Apple's own published signing keys (JWKS), never
 // trusted as a bare claim from the client.
-export async function loginWithApple(code) {
+export async function loginWithApple(code, meta) {
   if (!APPLE_TEAM_ID || !APPLE_KEY_ID || !APPLE_CLIENT_ID || !APPLE_PRIVATE_KEY) {
     throw new Error('Sign in with Apple is not configured yet');
   }
@@ -226,7 +316,7 @@ export async function loginWithApple(code) {
     providerId: payload.sub,
     email: emailVerified ? payload.email : null,
   });
-  return identitySession(row);
+  return identitySession(row, meta);
 }
 
 // ---- Phone / OTP ----
@@ -245,7 +335,7 @@ export async function createPhoneOtp(phone) {
 // the /auth/phone/verify endpoint itself) -- a 6-digit code is only
 // ~1,000,000 possibilities, so limiting attempts matters more here than
 // it does for a real password.
-export async function loginWithPhone(phone, code) {
+export async function loginWithPhone(phone, code, meta) {
   const { rows } = await pool.query(
     `select id, code_hash, attempts from phone_otps
      where phone = $1 and used_at is null and expires_at > now()
@@ -259,7 +349,7 @@ export async function loginWithPhone(phone, code) {
   if (!ok) return null;
   await pool.query('update phone_otps set used_at = now() where id = $1', [row.id]);
   const user = await findOrCreateIdentityUser({ provider: 'phone', providerId: phone, email: null });
-  return identitySession(user);
+  return identitySession(user, meta);
 }
 
 // ---- Self-service password reset ----
