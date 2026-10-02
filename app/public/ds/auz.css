@@ -53,3 +53,11 @@
   --sh1:0 0 0 .5px var(--sep);--sh2:0 0 0 .5px var(--sep),0 10px 30px -14px rgba(0,0,0,.6);--sh3:0 0 0 .5px var(--sep2),0 30px 80px -20px rgba(0,0,0,.8);
   color-scheme:dark}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+/* ---------- scrolling under overlays ---------- */
+/* the page behind an open sheet, dialog or menu is pinned (ds/lock.js); sheets scroll on their own and never chain into it */
+html.auz-lock body{position:fixed;left:0;right:0;width:100%;overflow:hidden}
+html.auz-lock .shell .body,html.auz-lock .items-scroll,html.auz-lock .cats-col,html.auz-lock .content{overflow:hidden!important}
+.ov:not(#ov),.scrim,.mwrap{overscroll-behavior:none;touch-action:none}
+.md,.md-b,.sheet,.sheet-b,.menu,.alert,.mf,.modal{overscroll-behavior:contain}
+.md-b,.sheet-b,.menu,.mf,.md .tk-lines{touch-action:pan-y;-webkit-overflow-scrolling:touch}
