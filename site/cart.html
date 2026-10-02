@@ -179,6 +179,8 @@ function inr(n) {
 // so every render() before they load falls back to the existing
 // request-only behaviour, exactly as if Razorpay were never configured.
 let PRICES = new Map();
+let BUNDLES = [];
+let ADDON_OVERRIDES = [];
 let PAY = { enabled: false, keyId: null };
 let razorpayScriptPromise = null;
 function loadRazorpayScript() {
@@ -195,15 +197,32 @@ function loadRazorpayScript() {
 }
 
 async function loadPricing() {
-  const [{ data: prices }, { data: cfg }] = await Promise.all([sb.rpc('public_product_prices'), sb.payments.config()]);
+  const [{ data: prices }, { data: bundles }, { data: overrides }, { data: cfg }] = await Promise.all([
+    sb.rpc('public_product_prices'), sb.rpc('public_bundles'), sb.rpc('public_addon_price_overrides'), sb.payments.config(),
+  ]);
   PRICES = new Map((prices || []).map((p) => [p.key, Number(p.monthly_price)]));
+  BUNDLES = bundles || [];
+  ADDON_OVERRIDES = overrides || [];
   PAY = cfg || { enabled: false, keyId: null };
 }
 
-// null when any item in `keys` isn't priced yet (or the list is empty) --
-// callers treat null as "no online checkout for this combination".
-function priceTotal(keys) {
+// Mirrors payments.js's priceFeatures() exactly (db/072), so what this
+// page shows is what Razorpay will actually charge, not just a naive
+// sum: an exact bundle match first, then an addon-with-existing-product
+// override (tenantFeatures only set in the addon flow, from DASH),
+// otherwise the flat sum -- null (no online checkout) if anything in
+// the mix isn't priced yet, or for an unpriced single-item addon override miss.
+function priceTotal(keys, tenantFeatures) {
   if (!keys.length) return null;
+  const sortedKeys = keys.slice().sort().join(',');
+  const bundleMatch = BUNDLES.find((b) => b.feature_keys.slice().sort().join(',') === sortedKeys);
+  if (bundleMatch) return Number(bundleMatch.monthly_price);
+
+  if (keys.length === 1 && tenantFeatures) {
+    const override = ADDON_OVERRIDES.find((o) => o.key === keys[0] && tenantFeatures[o.requires] === true);
+    if (override) return Number(override.monthly_price);
+  }
+
   let total = 0;
   for (const k of keys) {
     const p = PRICES.get(k);
@@ -259,7 +278,7 @@ function updatePayButtons() {
 
   const entitled = (DASH && DASH.features) || {};
   const requestable = items.filter((k) => entitled[k] !== true);
-  const addonTotal = PAY.enabled ? priceTotal(requestable) : null;
+  const addonTotal = PAY.enabled ? priceTotal(requestable, entitled) : null;
   document.getElementById('addonPayTotalWrap').style.display = addonTotal !== null ? 'block' : 'none';
   document.getElementById('addonPayBtn').style.display = addonTotal !== null ? 'block' : 'none';
   document.getElementById('addonPayNote').style.display = addonTotal !== null ? 'block' : 'none';

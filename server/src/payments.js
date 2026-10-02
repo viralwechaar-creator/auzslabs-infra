@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { pool } from './db.js';
+import { pool, withAuth } from './db.js';
 
 // Razorpay (cards/UPI/netbanking for Indian customers). Same
 // dormant-until-configured pattern as mail.js/sms.js/the Google+Apple
@@ -33,15 +33,35 @@ async function razorpayApi(path, body) {
   return data;
 }
 
-// Sums product_prices for exactly the keys that are `true` in a
-// features object (a signup_request's or addon_request's own
-// `features` column) -- a key with no row, or a price of 0 ("not
-// priced yet" -- see db/070's own comment), makes the WHOLE request
-// ineligible for online payment rather than silently charging a
-// partial amount; the caller falls back to the manual flow for that case.
-async function priceFeatures(client, features) {
+// Prices a cart (db/072). Three tiers, checked in order:
+//  1. An exact bundle match (db/072's `bundles`, e.g. AuzsPOS+AuzsPay at
+//     the Starter price) -- bundles are NOT simple sums of the individual
+//     prices, so this has to be checked before summing anything.
+//  2. A single-product addon_request for a tenant that already owns a
+//     product the sheet prices differently for (`addon_price_overrides`,
+//     e.g. AuzsPay is Rs 999 standalone but Rs 1,399 for an existing
+//     AuzsPOS customer) -- only meaningful when `tenantFeatures` is passed
+//     (an addon_request always has a target tenant; a signup_request,
+//     a brand-new tenant, never does).
+//  3. The flat sum of product_prices -- a key with no row, or a price of
+//     0 ("not priced yet", db/070's own comment), makes the WHOLE
+//     request ineligible for online payment rather than silently
+//     charging a partial amount; the caller falls back to the manual flow.
+async function priceFeatures(client, features, { tenantFeatures } = {}) {
   const keys = Object.keys(features || {}).filter((k) => features[k] === true);
   if (!keys.length) return null;
+  const sortedKeys = [...keys].sort().join(',');
+
+  const { rows: bundleRows } = await client.query('select feature_keys, monthly_price from bundles');
+  const bundleMatch = bundleRows.find((b) => [...b.feature_keys].sort().join(',') === sortedKeys);
+  if (bundleMatch) return Number(bundleMatch.monthly_price);
+
+  if (keys.length === 1 && tenantFeatures) {
+    const { rows: overrideRows } = await client.query('select requires, monthly_price from addon_price_overrides where key = $1', [keys[0]]);
+    const override = overrideRows.find((o) => tenantFeatures[o.requires] === true);
+    if (override) return Number(override.monthly_price);
+  }
+
   const { rows } = await client.query('select key, monthly_price from product_prices where key = any($1)', [keys]);
   const priced = new Map(rows.map((r) => [r.key, Number(r.monthly_price)]));
   let total = 0;
@@ -64,26 +84,44 @@ export async function createOrder({ userId, signupRequestId, addonRequestId }) {
     throw new Error('exactly one of signupRequestId or addonRequestId is required');
   }
 
-  let features, receipt;
+  // Both branches read through withAuth (app.uid set to the caller), not a bare
+  // pool.query -- signup_requests/addon_requests are RLS-protected on exactly
+  // that ("user_id = app_uid()" / tenant ownership, db/007 and db/027), and a
+  // bare pool.query (app.uid unset) would silently see zero rows for every
+  // real caller, not just an attacker. Caught in testing before this ever
+  // shipped against a real database -- see db/072's own comment on the
+  // tenant_settings half of this same bug.
+  let features, tenantFeatures, receipt;
   if (signupRequestId) {
-    const { rows } = await pool.query(
-      `select features from signup_requests where id = $1 and user_id = $2 and status = 'pending'`,
-      [signupRequestId, userId],
-    );
-    if (!rows[0]) throw new Error('That request was not found, is not yours, or has already been handled.');
-    features = rows[0].features;
+    const row = await withAuth(userId, async (client) => {
+      const { rows } = await client.query(
+        `select features from signup_requests where id = $1 and user_id = $2 and status = 'pending'`,
+        [signupRequestId, userId],
+      );
+      return rows[0];
+    });
+    if (!row) throw new Error('That request was not found, is not yours, or has already been handled.');
+    features = row.features;
     receipt = `signup_${signupRequestId}`;
   } else {
-    const { rows } = await pool.query(
-      `select features from addon_requests where id = $1 and user_id = $2 and status = 'pending'`,
-      [addonRequestId, userId],
-    );
-    if (!rows[0]) throw new Error('That request was not found, is not yours, or has already been handled.');
-    features = rows[0].features;
+    // addon_request_pricing_context (db/072) is SECURITY DEFINER, specifically
+    // because tenant_settings has no owner-read RLS policy at all (admin-only)
+    // -- it does its own ownership check (ar.user_id = app_uid(), which withAuth
+    // below makes resolve correctly) and only then reads past that RLS to get
+    // the target tenant's current features, needed for addon_price_overrides
+    // (e.g. AuzsPay costs more as an add-on for an existing AuzsPOS tenant
+    // than it does standalone).
+    const ctx = await withAuth(userId, async (client) => {
+      const { rows } = await client.query('select addon_request_pricing_context($1) as result', [addonRequestId]);
+      return rows[0]?.result;
+    });
+    if (!ctx) throw new Error('That request was not found, is not yours, or has already been handled.');
+    features = ctx.features;
+    tenantFeatures = ctx.tenant_features;
     receipt = `addon_${addonRequestId}`;
   }
 
-  const amount = await priceFeatures(pool, features);
+  const amount = await priceFeatures(pool, features, { tenantFeatures });
   if (amount === null) throw new Error('One or more of these products is not available for online payment yet -- use the request form instead.');
 
   const order = await razorpayApi('orders', {

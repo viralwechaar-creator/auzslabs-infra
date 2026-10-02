@@ -115,6 +115,10 @@ const RPC = {
   payment_status: { params: ['p_order_id'], auth: true },
   admin_list_payments: { params: [], auth: true },
   admin_set_product_price: { params: ['p_key', 'p_monthly_price'], auth: true },
+  // --- Bundle pricing (db/072) ---
+  public_bundles: { params: [], auth: false },
+  admin_set_bundle_price: { params: ['p_key', 'p_monthly_price'], auth: true },
+  public_addon_price_overrides: { params: [], auth: false },
   // provision_from_payment / provision_addon_from_payment deliberately NOT
   // registered here -- they skip the is_platform_admin() check that every
   // other provisioning path requires, trusting instead that the only
