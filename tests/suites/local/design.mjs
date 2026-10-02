@@ -111,6 +111,7 @@ export default async function run({ browser, stack }) {
   }, 'major');
   await s.check('Payroll layout tiers: bottom tab bar on phones, icon rail at 900-1199, sidebar from 1200', async () => {
     const { ctx, page } = await open(APPS[3], 390, 844);
+    await page.waitForTimeout(500); if (await page.locator('.sheet').count()) { await page.keyboard.press('Escape'); await page.waitForTimeout(400); } // first visit opens the setup guide
     assert(await vis(page, '.tabbar') && !(await vis(page, '.side')), 'phone: expected the tab bar only');
     await page.setViewportSize({ width: 1024, height: 768 }); await page.waitForTimeout(300);
     assert((await sideW(page, '.side')) === 72 && !(await vis(page, '.tabbar')), 'expanded: expected the icon rail, sidebar is ' + (await sideW(page, '.side')));
@@ -200,6 +201,7 @@ export default async function run({ browser, stack }) {
 
   await s.check('Payroll (phone): tab bar sits on the bottom edge and More opens the full section list and switches section', async () => {
     const { ctx, page } = await open(APPS[3], 390, 844);
+    await page.waitForTimeout(500); if (await page.locator('.sheet').count()) { await page.keyboard.press('Escape'); await page.waitForTimeout(400); } // first visit opens the setup guide
     const gap = await page.evaluate(() => innerHeight - document.querySelector('.tabbar').getBoundingClientRect().bottom); assert(gap <= 1, 'tab bar is ' + gap + 'px above the bottom edge');
     await page.locator('.tabbar button', { hasText: 'More' }).click(); await page.waitForTimeout(500);
     assert(await vis(page, '.sheet'), 'More did not open the menu');
