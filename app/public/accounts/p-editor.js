@@ -82,16 +82,35 @@ async function pickParty(kind, current) {
 function productInput(line, sales, onPick, onType) {
   const inp = h('input', { class: 'input', placeholder: 'Item or service', value: line.description || '', 'aria-label': 'Item', autocomplete: 'off' });
   const pop = h('div', { class: 'pop hidden', role: 'listbox' });
-  let idx = 0, list = [];
-  const show = () => {
-    const q = inp.value.trim().toLowerCase();
-    list = (S.products || []).filter((p) => p.active && (!q || p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || (p.barcode || '') === inp.value.trim() || (p.hsn || '') === q)).slice(0, 8);
+  let idx = 0, list = [], seq = 0, timer = null;
+  const newBtn = () => (can('acc_inventory') ? h('button', { type: 'button', role: 'option', class: 'new', onmousedown: (e) => { e.preventDefault(); newProduct(); } }, h('div', null, h('div', null, '+ New product' + (inp.value.trim() ? ': ' + inp.value.trim() : '')), h('div', { class: 's' }, 'Add it to your products, then pick it here'))) : null);
+  const draw = () => {
     clear(pop);
-    if (!list.length) { pop.classList.add('hidden'); return; }
     list.forEach((p, i) => pop.append(h('button', { type: 'button', role: 'option', class: i === idx ? 'on' : '', onmousedown: (e) => { e.preventDefault(); pick(p); } }, h('div', null, h('div', null, p.name), h('div', { class: 's' }, p.sku + (p.hsn ? ' · HSN ' + p.hsn : ''))), h('div', { style: { textAlign: 'right' } }, h('div', { class: 'num' }, inr(sales ? p.sale_price : p.purchase_price)), h('div', { class: 's' }, p.is_service || !p.track_stock ? 'Service' : qty(p.stock) + ' in stock')))));
-    pop.classList.remove('hidden');
+    const nb = !sales ? newBtn() : null;
+    if (nb) pop.append(nb);
+    pop.classList.toggle('hidden', !list.length && !nb);
+  };
+  const local = () => { const q = inp.value.trim().toLowerCase(); return (S.products || []).filter((p) => p.active && (!q || p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || (p.barcode || '') === inp.value.trim() || (p.hsn || '') === q)).slice(0, 8); };
+  const show = () => {
+    list = local(); draw();
+    if (S.productsPartial && inp.value.trim().length >= 2) {
+      const my = ++seq; clearTimeout(timer);
+      timer = setTimeout(async () => { try { const rows = (await searchProducts(inp.value.trim())).filter((p) => p.active); if (my === seq) { list = rows; idx = 0; draw(); } } catch (e) { /* keep local matches */ } }, 220);
+    }
   };
   const pick = (p) => { pop.classList.add('hidden'); inp.value = p.name; onPick(p); };
+  const newProduct = () => {
+    const typed = inp.value.trim(); pop.classList.add('hidden');
+    productSheet(null, async (r, sku) => {
+      try {
+        await products(true);
+        let p = (S.products || []).find((x) => x.id === (r && r.id));
+        if (!p) p = (await searchProducts(sku || typed)).find((x) => x.id === (r && r.id)) || null;
+        if (p) pick(p);
+      } catch (e) { toast(e.message || 'Could not load the new product', { err: true }); }
+    }, typed);
+  };
   inp.addEventListener('input', () => { idx = 0; onType(inp.value); show(); });
   inp.addEventListener('focus', () => { if (!line.product_id) show(); });
   inp.addEventListener('blur', () => setTimeout(() => pop.classList.add('hidden'), 120));
@@ -188,7 +207,7 @@ async function docEditor(v, type, existing) {
     }, (txt) => { l.description = txt; if (!txt) l.product_id = ''; });
     const rates = taxRates().map(String); if (!rates.includes(String(l.tax_rate))) rates.push(String(l.tax_rate));
     const taxSel = selectEl(rates.map((r) => [r, r + '%']), String(l.tax_rate), { label: 'GST rate', onchange: () => { l.tax_rate = taxSel.value; recalc(); } });
-    const stock = (S.products.find((p) => p.id === l.product_id) || {});
+    const stock = ((S.products || []).find((p) => p.id === l.product_id) || {});
     const accSel = !l.product_id && !sales ? selectEl([['', isExpense ? 'Choose category' : 'Purchases'], ...S.accounts.filter((a) => a.type === 'expense' && a.active).map((a) => [a.id, a.name])], l.account_id, { label: 'Expense account', onchange: () => { l.account_id = accSel.value; recalc(); } }) : null;
     const node = h('div', { class: 'line' },
       h('div', { class: 'lf item' }, h('label', { class: 'lf-l' }, 'Item'), prod, stock.id && stock.track_stock && !stock.is_service ? h('div', { class: 'cap stk' }, qty(stock.stock) + ' ' + (stock.unit || '') + ' in stock') : null, accSel ? h('div', { style: { marginTop: '6px' } }, accSel) : null),

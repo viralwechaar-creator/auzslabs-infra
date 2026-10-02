@@ -141,7 +141,11 @@ async function loadCtx() {
   S.ctx = c; S.org = c.org; S.perms = c.perms; S.accounts = c.accounts; S.taxcodes = c.taxcodes; S.branches = c.branches; S.warehouses = c.warehouses; S.masters = c.masters; S.fys = c.fys;
   return c;
 }
-async function products(force) { if (!S.products || force) S.products = (await api('acc_list_products', { limit: 5000 })).rows; return S.products; }
+const PRODUCT_CAP = 5000;
+async function products(force) { if (!S.products || force) { S.products = (await api('acc_list_products', { limit: PRODUCT_CAP })).rows; S.productsPartial = S.products.length >= PRODUCT_CAP; } return S.products; }
+// big catalogues (more than PRODUCT_CAP items) are searched on the server and merged into the local list
+function rememberProducts(rows) { S.products = S.products || []; rows.forEach((r) => { const i = S.products.findIndex((x) => x.id === r.id); if (i >= 0) S.products[i] = r; else S.products.push(r); }); }
+async function searchProducts(q) { const rows = (await api('acc_list_products', { search: q, limit: 8 })).rows; rememberProducts(rows); return rows; }
 async function parties(force) { if (!S.parties || force) S.parties = (await api('acc_list_parties', { limit: 5000, include_inactive: true })).rows; return S.parties; }
 const bust = (...k) => { if (k.includes('products') || !k.length) S.products = null; if (k.includes('parties') || !k.length) S.parties = null; };
 const orgState = () => S.org && S.org.state_code;

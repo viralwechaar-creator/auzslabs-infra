@@ -42,8 +42,8 @@ function bulkProducts(ids, done) {
     const r = await api('acc_bulk_update', { p_entity: 'products', p_ids: ids, p_changes: ch }); c(); toast(r.updated + ' updated'); bust('products'); done(); } }] });
 }
 
-function productSheet(p, onSaved) {
-  const isNew = !p; p = p || {};
+function productSheet(p, onSaved, prefillName) {
+  const isNew = !p; p = p || {}; if (isNew && prefillName) p.name = prefillName;
   const st = { is_service: !!p.is_service, track_stock: p.track_stock !== false, tax_inclusive: !!p.tax_inclusive, track_batch: !!p.track_batch, track_serial: !!p.track_serial, active: p.active !== false };
   const name = input({ value: p.name || '', placeholder: 'Name', label: 'Name' }), sku = input({ value: p.sku || '', placeholder: 'Unique code', label: 'SKU' }), bc = input({ value: p.barcode || '', placeholder: 'Barcode (optional)' });
   const catList = h('datalist', { id: 'catlist' }, master('category').map((c) => h('option', { value: c }))), brList = h('datalist', { id: 'brlist' }, master('brand').map((c) => h('option', { value: c })));
@@ -67,7 +67,7 @@ function productSheet(p, onSaved) {
       const price_lists = {}; pls.forEach((n) => { if (plIn[n].value) price_lists[n] = N(plIn[n].value); });
       const r = await api('acc_save_product', { p: { id: p.id || null, name: name.value, sku: sku.value, barcode: bc.value, category: cat.value, brand: brand.value, unit: unit.value, hsn: hsn.value, tax_rate: gst.value, tax_inclusive: st.tax_inclusive, sale_price: sale.value || 0, purchase_price: buy.value || 0, mrp: mrp.value || 0,
         is_service: st.is_service, track_stock: st.track_stock, track_batch: st.track_batch, track_serial: st.track_serial, reorder_level: rl.value || 0, reorder_qty: rq.value || 0, notes: nt.value, active: st.active, price_lists } });
-      bust('products'); await loadCtx(); c(); toast(isNew ? 'Product added' : 'Saved'); onSaved && onSaved(r);
+      bust('products'); await loadCtx(); c(); toast(isNew ? 'Product added' : 'Saved'); onSaved && onSaved(r, sku.value);
     } }] });
   name.focus();
 }

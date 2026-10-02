@@ -259,6 +259,16 @@ export default async function run({ browser, stack }) {
     await page.waitForURL(/#\/doc\//, { timeout: 10000 }); await page.waitForSelector('.card');
     const t = await page.locator('body').innerText(); assert(/INV\/\d{4}-\d{2}\/\d{5}/.test(t) && /Paid/.test(t), 'document not posted/paid'); await s.shot(page, 'desktop-invoice'); await integrity();
   }, 'critical');
+  await s.check('Screens: a new product can be created from inside a bill and is picked straight away', async () => {
+    await page.evaluate(() => { location.hash = '#/new/bill'; }); await page.waitForSelector('.line');
+    await page.locator('.line input[aria-label=Item]').first().fill('Brand new gadget');
+    await page.locator('.picker .pop button.new').click();
+    await page.waitForSelector('.sheet input[placeholder="Unique code"]');
+    assert(await page.locator('.sheet input[placeholder=Name]').inputValue() === 'Brand new gadget', 'name not prefilled');
+    await page.locator('.sheet input[placeholder="Unique code"]').fill('NEW-GADGET'); await page.locator('.sheet .btn.fill, .sheet .btn.primary').last().click();
+    await page.waitForFunction(() => document.querySelector('.line input[aria-label=Item]').value === 'Brand new gadget', null, { timeout: 8000 });
+    const n = (await q("select count(*)::int n from acc_products where tenant_id=$1 and sku='NEW-GADGET'", [tid]))[0].n; assert(n === 1, 'product not saved');
+  });
   await s.check('Screens: a business-rule error is shown to the user, not swallowed', async () => {
     await page.evaluate(() => { location.hash = '#/new/invoice'; }); await page.waitForSelector('.line');
     await page.locator('.line input[aria-label=Item]').first().fill('T-Sh'); await page.locator('.picker .pop button').first().click(); await page.locator('.line input[aria-label=qty]').first().fill('5000');
