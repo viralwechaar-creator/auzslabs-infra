@@ -195,5 +195,15 @@ export default async function run({ browser, stack }) {
     assert(await page.evaluate(() => getComputedStyle(document.querySelector('.drawer-ov')).visibility === 'hidden'), 'dim layer still visible after closing');
     await ctx.close();
   }, 'major');
+
+  await s.check('Payroll (phone): tab bar sits on the bottom edge and More opens the full section list and switches section', async () => {
+    const { ctx, page } = await open(APPS[3], 390, 844);
+    const gap = await page.evaluate(() => innerHeight - document.querySelector('.ax-tabs').getBoundingClientRect().bottom); assert(gap <= 1, 'tab bar is ' + gap + 'px above the bottom edge');
+    await page.locator('.ax-tabs button', { hasText: 'More' }).click(); await page.waitForTimeout(500);
+    const vis = await page.evaluate(() => { const d = document.querySelector('.drawer'), o = document.querySelector('.drawer-ov'); return !!d && getComputedStyle(o).visibility !== 'hidden' && d.getBoundingClientRect().width > 100; }); assert(vis, 'More did not open the menu');
+    await page.locator('.drawer .ditem', { hasText: 'Holidays' }).click(); await page.waitForTimeout(500);
+    assert((await page.locator('.top-bar h1').innerText()) === 'Holidays', 'menu item did not switch the section'); assert(!(await page.locator('.drawer').count()), 'menu stayed open');
+    await ctx.close();
+  }, 'major');
   s.done();
 }
