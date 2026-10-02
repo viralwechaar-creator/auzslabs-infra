@@ -17,7 +17,7 @@
 .sheet{left:0;right:0;bottom:0;max-height:94dvh;border-radius:16px 16px 0 0;animation:sheetUp .38s var(--ease)}
 .sheet.full{top:calc(var(--safe-t) + 10px);max-height:none}
 @keyframes sheetUp{from{transform:translateY(100%)}}
-@media (max-width:599px){.menu{left:12px!important;right:12px!important;top:auto!important;bottom:calc(12px + var(--safe-b))!important;max-width:none}}
+@media (max-width:599px){.menu{left:12px!important;right:12px!important;top:auto!important;bottom:calc(62px + var(--safe-b))!important;max-width:none;max-height:min(60dvh,520px)}}
 .toolbar{display:grid;gap:10px}
 .toolbar .row{flex-wrap:wrap}
 .desk-only{display:none!important}

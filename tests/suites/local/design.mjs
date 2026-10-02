@@ -156,5 +156,44 @@ export default async function run({ browser, stack }) {
       await ctx.close();
     }, 'major');
   }
+
+  await s.check('Open sheets pin the page behind them: scrolling inside a sheet never moves the page (POS and Accounting, phone)', async () => {
+    const pos = APPS[0]; { const { ctx, page } = await open(pos, 390, 844);
+      await page.evaluate(() => go('more')); await page.waitForTimeout(500);
+      await page.evaluate(() => { const b = document.querySelector('#body'); b.scrollTop = 40; sheet({ title: 'Long', body: h('div', null, ...Array.from({ length: 60 }, (_, i) => h('p', null, 'line ' + i))) }); });
+      await page.waitForTimeout(500);
+      const before = await page.evaluate(() => document.querySelector('#body').scrollTop);
+      await page.locator('.md-b').evaluate((e) => { e.scrollTop = 9999; }); await page.mouse.move(195, 500); await page.mouse.wheel(0, 600); await page.waitForTimeout(300);
+      const after = await page.evaluate(() => ({ bg: document.querySelector('#body').scrollTop, sheet: document.querySelector('.md-b').scrollTop, locked: document.documentElement.classList.contains('auz-lock') }));
+      assert(after.locked, 'page was not locked while the sheet is open'); assert(after.sheet > 0, 'sheet did not scroll'); assert(after.bg === before, 'background scrolled from ' + before + ' to ' + after.bg);
+      await page.keyboard.press('Escape'); await page.waitForTimeout(500);
+      assert(!(await page.evaluate(() => document.documentElement.classList.contains('auz-lock'))), 'page stayed locked after the sheet closed');
+      await ctx.close(); }
+    const acc = APPS[4]; { const { ctx, page } = await open(acc, 390, 844);
+      await page.evaluate(() => go('reports')); await page.waitForTimeout(600); await page.evaluate(() => window.scrollTo(0, 120)); await page.waitForTimeout(200);
+      const y0 = await page.evaluate(() => scrollY);
+      await page.evaluate(() => sheet({ title: 'Long', body: h('div', null, ...Array.from({ length: 60 }, (_, i) => h('p', null, 'line ' + i))) })); await page.waitForTimeout(500);
+      await page.mouse.move(195, 500); await page.mouse.wheel(0, 800); await page.waitForTimeout(300);
+      const st = await page.evaluate(() => ({ locked: document.documentElement.classList.contains('auz-lock'), fixed: getComputedStyle(document.body).position, top: document.body.style.top }));
+      assert(st.locked && st.fixed === 'fixed', 'page not pinned behind the sheet'); assert(st.top === '-' + y0 + 'px', 'page jumped: ' + st.top);
+      await page.keyboard.press('Escape'); await page.locator('.sheet-h button').first().click({ timeout: 1500 }).catch(() => {}); await page.waitForTimeout(500);
+      assert(Math.abs((await page.evaluate(() => scrollY)) - y0) <= 2, 'scroll position not restored after closing');
+      await ctx.close(); }
+  }, 'major');
+
+  await s.check('Back Office menu (phone): header on top, nothing clipped, Settings opens and closes its sub-menu, no stuck dim layer', async () => {
+    const { ctx, page } = await open(APPS[2], 390, 844);
+    await page.locator('.hamburger-btn').click(); await page.waitForTimeout(600);
+    const r = await page.evaluate(() => { const d = document.querySelector('.drawer').getBoundingClientRect(), h = document.querySelector('.drawer .dh').getBoundingClientRect(), f = document.querySelector('.drawer .dl button').getBoundingClientRect(); return { top: Math.round(d.top), headTop: Math.round(h.top), firstBelow: f.top >= h.bottom, subOpen: document.querySelector('.drawer .dsub').classList.contains('open') }; });
+    assert(r.top === 0 && r.headTop === 0, 'drawer does not start at the top: ' + JSON.stringify(r)); assert(r.firstBelow, 'first item is under the header');
+    assert(await page.locator('.drawer .dq', { hasText: 'Open POS' }).count() && await page.locator('.drawer .dq', { hasText: 'Sign out' }).count(), 'Open POS / Sign out missing under the header');
+    await page.locator('.drawer .dsec').click(); await page.waitForTimeout(300);
+    const nowOpen = await page.evaluate(() => document.querySelector('.drawer .dsub').classList.contains('open')); assert(nowOpen !== r.subOpen, 'Settings did not toggle');
+    await page.locator('.drawer .dsec').click(); await page.waitForTimeout(300);
+    assert((await page.evaluate(() => document.querySelector('.drawer .dsub').classList.contains('open'))) === r.subOpen, 'Settings did not toggle back');
+    await page.locator('.drawer .dx').click(); await page.waitForTimeout(500);
+    assert(await page.evaluate(() => getComputedStyle(document.querySelector('.drawer-ov')).visibility === 'hidden'), 'dim layer still visible after closing');
+    await ctx.close();
+  }, 'major');
   s.done();
 }
