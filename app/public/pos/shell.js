@@ -81,7 +81,7 @@ function tabBar(navs) {
 }
 function navbar(navs) {
   const n = navs.find((x) => x.k === S.tab) || { label: 'AUZslab' };
-  return h('header', { class: 'navbar' }, h('div', { class: 'title grow ellip' }, S.tab === 'sell' && S.cur && S.cur.table ? 'Sell · ' + tn(S.cur.table) : n.label === 'More' ? 'More' : n.label),
+  return h('header', { class: 'navbar' }, h('div', { class: 'title grow ellip' + (S.tab === 'sell' ? ' keep' : '') }, S.tab === 'sell' && S.cur && S.cur.table ? 'Sell · ' + tn(S.cur.table) : n.label === 'More' ? 'More' : n.label),
     h('span', { id: 'net', class: 'status' }),
     h('button', { class: 'iconbtn', 'aria-label': 'Notifications', onclick: () => (location.href = 'https://auzslab.in/account.html#notifications') }, icon('bell', 22), h('span', { id: 'notifCount', class: 'dot hidden' })));
 }

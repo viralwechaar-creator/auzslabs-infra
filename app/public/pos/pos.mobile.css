@@ -1,8 +1,8 @@
 /* phones and tablet portrait (0-899px): bottom tab bar, single-column selling screen with a cart bar, bottom sheets */
 .shell{flex-direction:column}
 .side,.only-desk{display:none!important}
-.tabbar{flex:none;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:6px 4px calc(4px + env(safe-area-inset-bottom));background:var(--bar);border-top:.5px solid var(--sep);position:relative;z-index:20}
-.tabbar button{flex-direction:column;justify-content:center;gap:2px;min-height:50px;font-size:12px;font-weight:500;position:relative;color:var(--label3)}
+.tabbar{flex:none;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:4px 4px max(2px,calc(env(safe-area-inset-bottom) - 14px));background:var(--bar);border-top:.5px solid var(--sep);position:relative;z-index:20}
+.tabbar button{flex-direction:column;justify-content:center;gap:2px;min-height:46px;font-size:12px;font-weight:500;position:relative;color:var(--label3)}
 .tabbar button svg{color:inherit}
 .tabbar button.on{color:var(--accent-text)}
 .tabbar .badge{position:absolute;top:2px;left:calc(50% + 6px);margin:0;min-width:18px;height:18px;line-height:18px;font-size:12px}
@@ -43,7 +43,7 @@
 .tables{grid-template-columns:repeat(auto-fill,minmax(136px,1fr));gap:10px}
 .tbl-tile{min-height:100px}
 .grid2.stack-phone{grid-template-columns:1fr}
-.toast{bottom:calc(84px + env(safe-area-inset-bottom))}
+.toast{bottom:calc(72px + env(safe-area-inset-bottom))}
 @media (max-width:380px){.items{grid-template-columns:1fr 1fr}.tables{grid-template-columns:1fr 1fr}}
 .md-f{flex-wrap:wrap}
 .md-f>.btn{flex:1 1 100%}
@@ -82,3 +82,6 @@
 
 /* touch: even small buttons keep a 44pt target */
 @media (pointer:coarse){.btn.sm{min-height:44px}}
+
+/* phones: the large page title already names the screen, so the bar above it stays slim and only carries status */
+@media (max-width:599px){.navbar{min-height:40px}.navbar .title{opacity:0;width:0;flex:0 0 0;overflow:hidden}.navbar .title.keep{opacity:1;width:auto;flex:1 1 auto}.page{padding-top:4px}}

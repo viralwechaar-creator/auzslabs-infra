@@ -32,7 +32,7 @@ svg.i{flex:none;display:block}
 /* ---------- shell ---------- */
 .shell{position:fixed;inset:0;display:flex;min-width:0;background:var(--bg)}
 .main{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;min-height:0}
-.navbar{flex:none;display:flex;align-items:center;gap:10px;min-height:52px;padding:max(6px,env(safe-area-inset-top)) 16px 6px;background:var(--bar);border-bottom:.5px solid var(--sep);position:relative;z-index:20}
+.navbar{flex:none;display:flex;align-items:center;gap:10px;min-height:44px;padding:max(4px,env(safe-area-inset-top)) 16px 4px;background:var(--bar);border-bottom:.5px solid var(--sep);position:relative;z-index:20}
 .navbar .title{font-size:17px;font-weight:600;min-width:0}
 .navbar .lg{font-size:22px;font-weight:700;letter-spacing:-.02em}
 .body{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:clip;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}

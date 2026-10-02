@@ -25,10 +25,13 @@ button.p,button.on{background:var(--accent);color:var(--on-accent)}
 .drawer button.on{background:var(--accent-soft)!important;color:var(--accent-text)!important;box-shadow:none!important}
 .drawer button.on svg{color:var(--accent-text)}
 
+/* phones: slim top bar (no duplicate hamburger; More is in the tab bar) */
+@media (max-width:899px){.ax-shell .top-bar{padding:max(4px,env(safe-area-inset-top)) 14px 4px;min-height:44px;gap:8px}.ax-shell .top-bar .ax-menu:first-child{display:none}.ax-shell .top-bar button{min-height:40px}}
+
 /* ---------- shared shell (Payroll) ---------- */
 .ax-shell{display:flex;min-height:100vh;min-height:100dvh}
 .ax-main{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}
-.ax-body{flex:1 1 auto;padding:14px 0 calc(64px + env(safe-area-inset-bottom))}
+.ax-body{flex:1 1 auto;padding:10px 0 calc(54px + env(safe-area-inset-bottom))}
 .ax-body>.g{padding-bottom:40px}
 .ax-side{display:none}
 .ax-side .brand{display:flex;align-items:center;padding:4px 8px 16px}.ax-side .brand img{height:30px;width:auto}
@@ -40,11 +43,11 @@ button.p,button.on{background:var(--accent);color:var(--on-accent)}
 .ax-side nav button.on{background:var(--accent-soft);color:var(--accent-text);font-weight:600;box-shadow:none}
 .ax-side nav button.on .ic{color:var(--accent-text)}
 .ax-side .foot{margin-top:auto;display:grid;gap:2px;padding-top:12px;border-top:.5px solid var(--sep)}
-.ax-tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:4px 4px calc(4px + env(safe-area-inset-bottom));background:var(--bar);border-top:.5px solid var(--sep);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px)}
-.ax-tabs button{display:grid;place-items:center;align-content:center;gap:2px;min-height:50px;padding:0;border-radius:0;background:none!important;box-shadow:none;color:var(--label3);font-size:12px;font-weight:500}
+.ax-tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:2px 4px max(2px,calc(env(safe-area-inset-bottom) - 14px));background:var(--bar);border-top:.5px solid var(--sep);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px)}
+.ax-tabs button{display:grid;place-items:center;align-content:center;gap:2px;min-height:46px;padding:0;border-radius:0;background:none!important;box-shadow:none;color:var(--label3);font-size:12px;font-weight:500}
 .ax-tabs button .ic{display:inline-flex}.ax-tabs button .ic svg{width:24px;height:24px}
 .ax-tabs button.on{color:var(--accent-text)}
-.ax-shell .powered{bottom:calc(58px + env(safe-area-inset-bottom))}
+.ax-shell .powered{display:none}
 @media (min-width:600px){
   .ax-body{padding:18px 12px calc(64px + env(safe-area-inset-bottom))}
   .ax-tabs button{grid-auto-flow:column;gap:8px;font-size:13px}
