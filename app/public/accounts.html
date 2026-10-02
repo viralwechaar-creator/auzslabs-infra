@@ -19,8 +19,18 @@
 <link rel="stylesheet" href="/accounts/accounts.css?v=2">
 <link rel="stylesheet" href="/accounts/accounts.mobile.css?v=4" media="(max-width:899px)">
 <link rel="stylesheet" href="/accounts/accounts.desktop.css?v=2" media="(min-width:900px)">
+<link rel="stylesheet" href="/boot-splash.css?v=1">
 </head>
 <body>
+<div id="boot-splash" aria-hidden="true"><div class="bsp-mark">
+<svg viewBox="0 0 512 512">
+<rect class="bl bl1" x="76" y="36" width="304" height="344" rx="36" fill="#5c3340" stroke="#171717" stroke-width="8"/>
+<rect class="bl bl2" x="106" y="66" width="272" height="312" rx="34" fill="#8c2840" stroke="#171717" stroke-width="8"/>
+<path class="bl bl3" d="M184,112 L304,112 L360,168 L360,368 Q360,400 328,400 L184,400 Q152,400 152,368 L152,144 Q152,112 184,112 Z" fill="#c2183f" stroke="#171717" stroke-width="8" stroke-linejoin="round"/>
+</svg>
+<div class="bsp-word">AUZs<span>Ledger</span></div>
+</div></div>
+<script src="/boot-splash.js?v=1"></script>
 <div id="app" aria-live="polite"></div>
 <noscript>AUZslab Accounting needs JavaScript.</noscript>
 <script src="/vendor/qrcode.js"></script>
