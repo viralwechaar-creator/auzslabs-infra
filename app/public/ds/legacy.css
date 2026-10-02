@@ -80,27 +80,36 @@ button.p,button.on{background:var(--accent);color:var(--on-accent)}
 
 /* ---------- Back Office menu: header, quick actions, scrolling list, collapsible Settings ---------- */
 html,body{background:var(--bg)}
+/* iOS home-screen apps: -webkit-fill-available (from hig.css) leaves a blank strip under fixed bars */
+html,body{min-height:0!important}
 .top-bar{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:var(--bg)!important}
-.drawer-ov{visibility:hidden;transition:opacity .25s var(--ease),visibility 0s .25s}
-.drawer-ov.show{visibility:visible;transition:opacity .25s var(--ease)}
-.drawer::before{display:none!important;content:none!important}
-.drawer{padding:0!important;gap:0!important;overflow:hidden!important;background:var(--card);border-radius:0 22px 22px 0;display:flex;flex-direction:column}
-.drawer .dh{flex:none;display:flex;align-items:center;justify-content:space-between;padding:max(12px,env(safe-area-inset-top)) 8px 8px 18px;border-bottom:.5px solid var(--sep)}
-.drawer .dh b{font-size:20px;font-weight:700;letter-spacing:-.02em}
-.drawer .dx{width:44px;height:44px;border-radius:12px;font-size:28px;line-height:1;color:var(--label2);display:grid;place-items:center;padding:0;min-height:44px}
-.drawer .dqs{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 14px 4px}
-.drawer .dq{display:flex!important;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 10px!important;border-radius:12px;background:var(--fill2);color:var(--label);font-size:15px!important;font-weight:600}
-.drawer .dq.warn{color:var(--red)}
-.drawer .dl{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;display:grid;align-content:start;gap:2px;padding:8px 10px calc(8px + env(safe-area-inset-bottom))}
-.drawer .dl button{display:flex;align-items:center;gap:12px;width:100%;min-height:46px;padding:0 12px;border-radius:12px;font-size:16px;font-weight:500;color:var(--label);text-align:left;background:none;box-shadow:none;position:relative;margin:0}
-.drawer .dl button::before{display:none!important}
-.drawer .dl button .grow{flex:1 1 auto;min-width:0}
-.drawer .dl button svg{color:var(--label2)}
-.drawer .dl button.on{background:var(--accent-soft)!important;color:var(--accent-text)!important;box-shadow:none!important;font-weight:600}
-.drawer .dl button.on svg{color:var(--accent-text)}
-.drawer .dsec .chev{transition:transform .25s var(--ease)}
-.drawer .dsec[aria-expanded=true] .chev{transform:rotate(180deg)}
-.drawer .dsub{display:none;margin:0 0 6px 22px;padding-left:10px;border-left:1.5px solid var(--sep);gap:2px}
-.drawer .dsub.open{display:grid}
-.drawer .dsub button{min-height:40px!important;font-size:15px!important;font-weight:500!important;padding:0 10px!important}
-.drawer .dwho{flex:none;padding:8px 18px calc(10px + env(safe-area-inset-bottom));font-size:13px;color:var(--label3);border-top:.5px solid var(--sep)}
+html.ax-bo .drawer-ov{visibility:hidden;transition:opacity .25s var(--ease),visibility 0s .25s}
+html.ax-bo .drawer-ov.show{visibility:visible;transition:opacity .25s var(--ease)}
+html.ax-bo .drawer::before{display:none!important;content:none!important}
+html.ax-bo .drawer{padding:0!important;gap:0!important;overflow:hidden!important;background:var(--card);border-radius:0 22px 22px 0;display:flex;flex-direction:column}
+html.ax-bo .drawer .dh{flex:none;display:flex;align-items:center;justify-content:space-between;padding:max(12px,env(safe-area-inset-top)) 8px 8px 18px;border-bottom:.5px solid var(--sep)}
+html.ax-bo .drawer .dh b{font-size:20px;font-weight:700;letter-spacing:-.02em}
+html.ax-bo .drawer .dx{width:44px;height:44px;border-radius:12px;font-size:28px;line-height:1;color:var(--label2);display:grid;place-items:center;padding:0;min-height:44px}
+html.ax-bo .drawer .dqs{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 14px 4px}
+html.ax-bo .drawer .dq{display:flex!important;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 10px!important;border-radius:12px;background:var(--fill2);color:var(--label);font-size:15px!important;font-weight:600}
+html.ax-bo .drawer .dq.warn{color:var(--red)}
+html.ax-bo .drawer .dl{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;display:grid;align-content:start;gap:2px;padding:8px 10px calc(8px + env(safe-area-inset-bottom))}
+html.ax-bo .drawer .dl button{display:flex;align-items:center;gap:12px;width:100%;min-height:46px;padding:0 12px;border-radius:12px;font-size:16px;font-weight:500;color:var(--label);text-align:left;background:none;box-shadow:none;position:relative;margin:0}
+html.ax-bo .drawer .dl button::before{display:none!important}
+html.ax-bo .drawer .dl button .grow{flex:1 1 auto;min-width:0}
+html.ax-bo .drawer .dl button svg{color:var(--label2)}
+html.ax-bo .drawer .dl button.on{background:var(--accent-soft)!important;color:var(--accent-text)!important;box-shadow:none!important;font-weight:600}
+html.ax-bo .drawer .dl button.on svg{color:var(--accent-text)}
+html.ax-bo .drawer .dsec .chev{transition:transform .25s var(--ease)}
+html.ax-bo .drawer .dsec[aria-expanded=true] .chev{transform:rotate(180deg)}
+html.ax-bo .drawer .dsub{display:none;margin:0 0 6px 22px;padding-left:10px;border-left:1.5px solid var(--sep);gap:2px}
+html.ax-bo .drawer .dsub.open{display:grid}
+html.ax-bo .drawer .dsub button{min-height:40px!important;font-size:15px!important;font-weight:500!important;padding:0 10px!important}
+html.ax-bo .drawer .dwho{flex:none;padding:8px 18px calc(10px + env(safe-area-inset-bottom));font-size:13px;color:var(--label3);border-top:.5px solid var(--sep)}
+
+/* ---------- Payroll menu sheet (More): header, 44px rows, soft current state ---------- */
+.drawer-ov{background:rgba(0,0,0,.4)}
+html:not(.ax-bo) .drawer{background:var(--card);padding:0 0 max(12px,env(safe-area-inset-bottom));gap:0;align-content:start;overflow-y:auto;overscroll-behavior:contain}
+html:not(.ax-bo) .drawer .dhead{position:sticky;top:0;background:var(--card);z-index:1;padding:max(12px,env(safe-area-inset-top)) 8px 8px 18px;margin:0}
+html:not(.ax-bo) .drawer .ditem{min-height:48px;padding:0 18px;font-size:16px;font-weight:500;border-radius:0}
+html:not(.ax-bo) .drawer .ditem.on{background:var(--accent-soft);color:var(--accent-text);font-weight:600}
