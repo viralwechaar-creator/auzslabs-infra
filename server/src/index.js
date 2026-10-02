@@ -11,6 +11,7 @@ import { handlePushEvent } from './push.js';
 import { sendStaffInviteEmail, sendPasswordResetEmail } from './mail.js';
 import { sendOtpSms } from './sms.js';
 import { handleSalon } from './salon.js';
+import { paymentConfig, createOrder, verifyWebhookSignature, handleWebhookEvent } from './payments.js';
 
 const PORT = process.env.PORT || 3000;
 const DOMAIN = process.env.DOMAIN || '';
@@ -104,6 +105,18 @@ const RPC = {
   submit_signup_request: { params: ['p_business_name', 'p_slug', 'p_features', 'p_notes', 'p_contact_name', 'p_phone', 'p_niche', 'p_address'], jsonb: ['p_features'], auth: true },
   approve_signup_request: { params: ['p_request_id', 'p_niche'], auth: true },
   decline_signup_request: { params: ['p_request_id'], auth: true },
+
+  // --- Razorpay payments (db/070): dormant until RAZORPAY_KEY_ID/SECRET are set, see payments.js ---
+  public_product_prices: { params: [], auth: false },
+  payment_status: { params: ['p_order_id'], auth: true },
+  admin_list_payments: { params: [], auth: true },
+  admin_set_product_price: { params: ['p_key', 'p_monthly_price'], auth: true },
+  // provision_from_payment / provision_addon_from_payment deliberately NOT
+  // registered here -- they skip the is_platform_admin() check that every
+  // other provisioning path requires, trusting instead that the only
+  // caller is the webhook handler below, which already verified real
+  // money was captured. Registering them would let anyone free-provision
+  // a tenant by POSTing a fake payment id to /rpc/provision_from_payment.
 
   // --- Phase 1: Booking & Appointments / Reports & Analytics ---
   convert_booking_to_order: { params: ['p_booking_id', 'p_invoice_prefix'], auth: true },
@@ -557,6 +570,41 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/auth/session' && req.method === 'GET') {
       if (!user) throw new HttpError(401, 'no session');
       return reply(200, { user });
+    }
+
+    // ---- Razorpay payments (db/070) -- dormant until RAZORPAY_KEY_ID/SECRET
+    // are set (see payments.js). /payments/config tells the cart page
+    // whether to even offer online checkout. ----
+    if (url.pathname === '/payments/config' && req.method === 'GET') {
+      return reply(200, paymentConfig());
+    }
+    if (url.pathname === '/payments/create-order' && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      // Each call hits Razorpay's own API -- worth a modest per-caller cap.
+      if (rateLimited(`payorder:${ip}`, 20, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      const { signup_request_id, addon_request_id } = await readJsonBody(req);
+      let result;
+      try {
+        result = await createOrder({ userId: user.id, signupRequestId: signup_request_id, addonRequestId: addon_request_id });
+      } catch (err) {
+        throw new HttpError(400, err.message || 'could not start payment');
+      }
+      return reply(200, result);
+    }
+    // Razorpay calls this directly, server-to-server -- no Bearer token,
+    // no Origin, no rate limit by IP (it's always Razorpay's own IPs).
+    // The signature check below is the only authentication this endpoint
+    // has, and it is the ONLY thing allowed to ever mark a payment paid
+    // and auto-provision a tenant -- see payments.js's own comment.
+    if (url.pathname === '/payments/webhook' && req.method === 'POST') {
+      const raw = await readRawBody(req, 1_000_000);
+      if (!verifyWebhookSignature(raw, req.headers['x-razorpay-signature'])) {
+        throw new HttpError(400, 'invalid signature');
+      }
+      let event;
+      try { event = JSON.parse(raw.toString('utf8')); } catch { throw new HttpError(400, 'bad json'); }
+      await handleWebhookEvent(event);
+      return reply(200, { ok: true });
     }
 
     // ---- generic data API (records/profiles/guest_orders/push_subs/leads/signup_requests/bookings) ----

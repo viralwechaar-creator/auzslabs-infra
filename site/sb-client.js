@@ -148,6 +148,21 @@
       },
     };
 
+    // ---- Razorpay payments (db/070) -- dormant until the owner sets
+    // RAZORPAY_KEY_ID/SECRET; config().enabled tells the cart page
+    // whether to offer online checkout at all. ----
+    const payments = {
+      async config() {
+        return request('/payments/config', { method: 'GET', auth: false });
+      },
+      async createOrder({ signupRequestId, addonRequestId } = {}) {
+        return request('/payments/create-order', {
+          method: 'POST',
+          body: { signup_request_id: signupRequestId || undefined, addon_request_id: addonRequestId || undefined },
+        });
+      },
+    };
+
     // The server picks the actual stored filename (never a client-
     // supplied one, to keep paths unpredictable/uncollidable) -- so
     // getPublicUrl(path) can't derive a URL from the path it's given
@@ -202,7 +217,7 @@
       };
     }
 
-    return { auth, from, rpc, storage, channel };
+    return { auth, from, rpc, storage, channel, payments };
   }
 
   window.supabase = { createClient };
