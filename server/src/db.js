@@ -2,6 +2,10 @@ import pg from 'pg';
 
 const { Pool } = pg;
 
+// A DATE column (bookings.date) stays the plain 'YYYY-MM-DD' it is in the database. node-pg would turn it into a
+// JS Date at the API process's local midnight, which serialises as a timestamp and can land on the previous day.
+pg.types.setTypeParser(1082, (v) => v);
+
 // Connects as the "app" role (see db/000b_create_app_role.sh) --
 // NEVER as POSTGRES_USER. The Docker postgres image always makes
 // POSTGRES_USER a superuser, and a superuser silently bypasses every

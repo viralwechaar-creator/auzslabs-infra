@@ -72,24 +72,25 @@ const id=new URLSearchParams(location.search).get('o');
   if(b.fontUrl){const l=document.createElement('link');l.rel='stylesheet';l.href=b.fontUrl;document.head.appendChild(l)}
   if(b.font)document.body.style.fontFamily='"'+b.font+'",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif';
  }
- const rows=o.lines.map(l=>`<tr><td>${esc(l.name)}${l.size?' ('+esc(l.size)+')':''}</td><td class=c>${l.qty}</td><td class=r>${inr(l.price)}</td><td class=r>${inr(l.price*l.qty)}</td></tr>`).join('');
+ const rows=o.lines.map(l=>`<tr><td>${esc(l.name)}${l.size?' ('+esc(l.size)+')':''}${l.note?'<br><small style="color:var(--mute)">'+esc(l.note)+'</small>':''}</td><td class=c>${l.qty}</td><td class=r>${inr(l.price)}</td><td class=r>${inr(l.price*l.qty)}</td></tr>`).join('');
  A.innerHTML=`<div class=hd><div class=mark>${(s.logo||b)?'<img src="'+esc(logo)+'">':'Invoice'}</div><div class=meta-r><b>Invoice No.</b> ${esc(o.no)}<br>${new Date(o.paidAt||o.created).toLocaleDateString()}</div></div>
  ${b&&b.doodle?'<img src="'+esc(b.doodle)+'" style="position:absolute;right:18px;bottom:120px;width:90px;opacity:.5;pointer-events:none">':''}
 <hr>
-<div class=billto><b>Billed to</b>${esc((o.cust||{}).name)}<br>${esc((o.cust||{}).phone)}</div>
+<div class=billto><b>Billed to</b>${esc((o.cust||{}).name)}<br>${esc((o.cust||{}).phone)}${(o.cust||{}).gst?'<br>GSTIN '+esc(o.cust.gst):''}</div>
 <hr>
 <table><thead><tr><th>Item</th><th class=c>Qty</th><th class=r>Unit price</th><th class=r>Amount</th></tr></thead><tbody>${rows}</tbody></table>
 <div class=tot><table>
 <tr><td>Subtotal</td><td>${inr(t.sub)}</td></tr>
 ${t.d?`<tr><td>Discount</td><td>-${inr(t.d)}</td></tr>`:''}
-<tr><td>CGST</td><td>${inr(t.tax/2)}</td></tr>
-<tr><td>SGST</td><td>${inr(t.tax/2)}</td></tr>
+${t.svc?`<tr><td>Service charge</td><td>${inr(t.svc)}</td></tr>`:''}${t.pack?`<tr><td>Packing</td><td>${inr(t.pack)}</td></tr>`:''}${t.deliv?`<tr><td>Delivery</td><td>${inr(t.deliv)}</td></tr>`:''}
+${(t.rates&&Object.keys(t.rates).some(r=>+r>0&&t.rates[r].tax>0)?Object.entries(t.rates).filter(([r,x])=>+r>0&&x.tax>0).flatMap(([r,x])=>[['CGST '+(+r/2)+'%',x.tax/2],['SGST '+(+r/2)+'%',x.tax/2]]):[['CGST',t.tax/2],['SGST',t.tax/2]]).map(([a,v])=>`<tr><td>${a}</td><td>${inr(v)}</td></tr>`).join('')}
 ${t.round?`<tr><td>Round off</td><td>${t.round>=0?'+':'-'}${inr(Math.abs(t.round))}</td></tr>`:''}
 <tr class=big><td>Total</td><td>${inr(t.total)}</td></tr>
+${(o.refunds||[]).length?`<tr><td>Refunded</td><td>-${inr(o.refunds.reduce((a,r)=>a+(+r.amt||0),0))}</td></tr>`:''}
 </table></div>
 <p class=thanks>${esc(s.ftr||'Thank you!')}</p>
 <hr style="margin-top:24px">
-<div class=ft><div><b>Paid via</b>${(o.pays||[]).map(p=>p.m.toUpperCase()+' — '+inr(p.amt)).join('<br>')||'—'}</div><div class=sig><b>${esc(s.name)}</b><br>${esc(s.addr)}${s.gstin?'<br>GSTIN '+esc(s.gstin):''}</div></div>
+<div class=ft><div><b>Paid via</b>${(o.pays||[]).map(p=>({cash:'Cash',upi:'UPI',card:'Card',giftcard:'Gift card',other:'Other'}[p.m]||p.m.toUpperCase())+' — '+inr(p.amt)).join('<br>')||'—'}</div><div class=sig><b>${esc(s.name)}</b><br>${esc(s.addr)}${s.gstin?'<br>GSTIN '+esc(s.gstin):''}</div></div>
 <div class=fb id=fb><h4>How was your experience at ${esc(s.name)}?</h4>
 <div class=stars id=stars>${[1,2,3,4,5].map(n=>`<button type=button data-v=${n}>★</button>`).join('')}</div>
 <textarea id=fbComment placeholder="Anything you'd like to tell us? (optional)" maxlength=1000></textarea>
