@@ -1,0 +1,50 @@
+/* AUZslab Payroll: compact (phones, under 600px) and medium (600-899px: tablet portrait, open foldables). Independent of payroll.desktop.css. */
+.shell{min-height:100dvh;padding-bottom:calc(54px + var(--safe-b))}
+.side{display:none}
+.topbar{position:sticky;top:0;z-index:30;display:grid;grid-template-columns:76px 1fr 76px;align-items:center;min-height:calc(48px + var(--safe-t));padding:var(--safe-t) 8px 0;background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:.5px solid transparent;transition:border-color .2s}
+.topbar.scrolled{border-bottom-color:var(--sep)}
+.topbar .tt{font-size:17px;font-weight:600;text-align:center;opacity:0;transition:opacity .2s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar.scrolled .tt{opacity:1}
+.topbar .l{justify-self:start;display:flex}.topbar .r{justify-self:end;display:flex;gap:2px}
+.topbar .btn.plain{min-width:44px}
+.page{padding:0 16px 28px;display:grid;gap:22px;align-content:start}
+.large-title{font-size:34px;line-height:1.12;font-weight:700;letter-spacing:-.03em;padding:2px 0 0}
+.page-sub{margin-top:-14px;color:var(--label2);font-size:15px}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(5,1fr);background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid var(--sep);padding-bottom:max(2px,calc(var(--safe-b) - 14px))}
+.tabbar button{display:grid;place-items:center;align-content:center;gap:2px;min-height:46px;padding:4px 0 3px;color:var(--label3);font-size:12px;font-weight:500}
+.tabbar button[aria-current=page]{color:var(--tint-text)}
+.tabbar .ic svg{width:25px;height:25px}
+.sheet{left:0;right:0;bottom:0;max-height:94dvh;border-radius:16px 16px 0 0;animation:sheetUp .38s var(--ease)}
+.sheet.full{top:calc(var(--safe-t) + 10px);max-height:none}
+@keyframes sheetUp{from{transform:translateY(100%)}}
+@media (max-width:599px){.menu{left:12px!important;right:12px!important;top:auto!important;bottom:calc(62px + var(--safe-b))!important;max-width:none;max-height:min(60dvh,520px)}}
+.toolbar{display:grid;gap:10px}
+.toolbar .row{flex-wrap:wrap}
+.desk-only{display:none!important}
+.dock{position:sticky;bottom:calc(46px + max(2px,calc(var(--safe-b) - 14px)));z-index:20;display:flex;gap:10px;padding:10px 0;background:linear-gradient(to top,var(--bg) 70%,transparent)}
+.dock .btn{flex:1 1 0;min-width:0;white-space:normal;line-height:1.2;text-align:center}
+.two{display:grid;gap:14px}
+.kpi .n{font-size:22px}
+.toolbar .btn{padding:0 12px;flex:1}
+.btn.sm{min-height:44px}
+.steps .lbl{font-size:12px}
+.punch{width:168px;height:168px}
+.slip .net .n{font-size:26px}
+.kgrid{grid-template-columns:repeat(2,1fr)}
+@media (max-width:380px){.page{padding:0 12px 24px}.kpis{gap:10px}}
+
+/* medium (600-899px): wider gutters, two-column cards, centred sheets, a tab bar with labels beside icons */
+@media (min-width:600px){
+  .page{padding:0 28px 32px;gap:24px}
+  .two{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+  .sheet{left:50%;right:auto;top:50%;bottom:auto;transform:translate(-50%,-50%);width:min(620px,92vw);max-height:88dvh;border-radius:18px;animation:sheetPop .3s var(--ease)}
+  .sheet.full{top:50%;width:min(760px,94vw);height:90dvh}
+  .tabbar button{grid-auto-flow:column;gap:8px;font-size:13px;min-height:52px}
+  .dock .btn{flex:0 1 auto}.dock{justify-content:flex-end}
+  .toolbar .btn{flex:0 1 auto}
+  .kgrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+  .cal button{min-height:52px}
+}
+@keyframes sheetPop{from{opacity:0;transform:translate(-50%,-48%) scale(.97)}}
+.kpis.k3>:last-child{grid-column:1/-1}
+.page>*{min-width:0}
