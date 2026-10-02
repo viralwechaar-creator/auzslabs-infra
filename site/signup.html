@@ -46,11 +46,6 @@
 .auth-social-btn:hover{border-color:var(--ink);background:var(--bg-raised)}
 .auth-or{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--ink-dim);font-size:12px}
 .auth-or .ln{flex:1;height:1px;background:var(--line)}
-.auth-method-toggle{display:flex;gap:6px;margin-bottom:20px}
-.auth-method-toggle button{flex:1;border:1.5px solid var(--line);background:none;padding:8px 10px;border-radius:999px;
-  font-family:var(--font-mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;
-  color:var(--ink-dim);cursor:pointer;transition:all .18s ease}
-.auth-method-toggle button.active{background:var(--ink);border-color:var(--ink);color:#fff}
 .field{margin-bottom:16px}
 .field label{display:block;font-family:var(--font-body);font-weight:700;font-size:13.5px;color:var(--ink);margin-bottom:7px}
 .field input{width:100%;box-sizing:border-box;border:1.5px solid var(--line);background:#fff;border-radius:14px;
@@ -101,11 +96,6 @@
 .auth-social-btn:hover{border-color:var(--ink);background:var(--bg-raised)}
 .auth-or{display:flex;align-items:center;gap:10px;margin:18px 0;color:var(--ink-dim);font-size:12.5px}
 .auth-or .ln{flex:1;height:1px;background:var(--line)}
-.auth-method-toggle{display:flex;gap:6px;margin-bottom:22px}
-.auth-method-toggle button{flex:1;border:1.5px solid var(--line);background:none;padding:9px 10px;border-radius:999px;
-  font-family:var(--font-mono);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;
-  color:var(--ink-dim);cursor:pointer;transition:all .18s ease}
-.auth-method-toggle button.active{background:var(--ink);border-color:var(--ink);color:#fff}
 .field{margin-bottom:17px}
 .field label{display:block;font-family:var(--font-body);font-weight:700;font-size:14px;color:var(--ink);margin-bottom:8px}
 .field input{width:100%;box-sizing:border-box;border:1.5px solid var(--line);background:#fff;border-radius:14px;
@@ -208,7 +198,7 @@
           </div>
           <div id="socialOr" class="auth-or" style="display:none"><span class="ln"></span>or<span class="ln"></span></div>
 
-          <div class="auth-method-toggle">
+          <div class="auth-seg" style="margin-bottom:20px">
             <button id="methodEmail" type="button">Email</button>
             <button id="methodPhone" type="button">Phone</button>
           </div>
