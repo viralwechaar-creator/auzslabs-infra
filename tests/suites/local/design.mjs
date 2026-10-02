@@ -9,7 +9,7 @@ const APPS = [
   { name: 'POS', host: 'testcafe', path: '/index.html', email: USERS.cafeOwner, ready: '.tbl-tile, .items .tile', fill: 'btn fill' },
   { name: 'Admin console', host: 'testcafe', path: '/dashboard.html', email: USERS.cafeOwner, ready: '.hello', fill: 'btn p' },
   { name: 'Back Office', host: 'testcafe', path: '/backoffice.html', email: USERS.cafeOwner, ready: '.top-bar h1', fill: 'p', tag: 'button' },
-  { name: 'Payroll', host: 'testcafe', path: '/payroll.html', email: USERS.cafeOwner, ready: '.ax-shell', fill: 'p', tag: 'button' },
+  { name: 'Payroll', host: 'testcafe', path: '/payroll.html', email: USERS.cafeOwner, ready: '.shell', fill: 'btn fill' },
   { name: 'Accounting', host: 'testacct', path: '/accounts.html', email: USERS.acctOwner, ready: '.shell', fill: 'btn fill' },
 ];
 const WIDTHS = [360, 600, 768, 900, 1024, 1200, 1440];
@@ -109,19 +109,22 @@ export default async function run({ browser, stack }) {
     assert(['Sales', 'Purchases', 'Accounts', 'Financial reports'].every((g) => groups.includes(g)), 'groups: ' + groups.join(', '));
     await ctx.close();
   }, 'major');
-  await s.check('Payroll layout tiers: bottom tab bar on phones, sidebar on desktop', async () => {
+  await s.check('Payroll layout tiers: bottom tab bar on phones, icon rail at 900-1199, sidebar from 1200', async () => {
     const { ctx, page } = await open(APPS[3], 390, 844);
-    assert(await vis(page, '.ax-tabs') && !(await vis(page, '.ax-side')), 'phone: expected the tab bar only');
+    await page.waitForTimeout(500); if (await page.locator('.sheet').count()) { await page.keyboard.press('Escape'); await page.waitForTimeout(400); } // first visit opens the setup guide
+    assert(await vis(page, '.tabbar') && !(await vis(page, '.side')), 'phone: expected the tab bar only');
     await page.setViewportSize({ width: 1024, height: 768 }); await page.waitForTimeout(300);
-    assert((await sideW(page, '.ax-side')) === 72 && !(await vis(page, '.ax-tabs')), 'expanded: expected the icon rail');
+    assert((await sideW(page, '.side')) === 72 && !(await vis(page, '.tabbar')), 'expanded: expected the icon rail, sidebar is ' + (await sideW(page, '.side')));
     await page.setViewportSize({ width: 1440, height: 900 }); await page.waitForTimeout(300);
-    assert((await sideW(page, '.ax-side')) === 240, 'wide: sidebar ' + (await sideW(page, '.ax-side')));
-    await page.locator('.ax-side nav button', { hasText: 'Payroll run' }).click(); await page.waitForTimeout(400);
-    assert((await page.locator('.top-bar h1').innerText()) === 'Payroll run', 'sidebar did not switch section');
+    assert((await sideW(page, '.side')) === 240, 'wide: sidebar ' + (await sideW(page, '.side')));
+    const groups = await page.locator('.side .gh').allInnerTexts();
+    assert(['People', 'Pay', 'More'].every((g) => groups.includes(g)), 'groups: ' + groups.join(', '));
+    await page.locator('.side a[data-nav="pay"]').click(); await page.waitForTimeout(600);
+    assert((await page.locator('#tb-t').innerText()) === 'Payroll', 'sidebar did not switch section');
     await ctx.close();
   }, 'major');
 
-  for (const app of [APPS[0], APPS[1], APPS[4]]) {
+  for (const app of [APPS[0], APPS[1], APPS[3], APPS[4]]) {
     await s.check(`${app.name} (phone): text is at least 12px and controls are at least 44px tall`, async () => {
       const { ctx, page } = await open(app, 390, 844);
       const r = await page.evaluate(() => {
@@ -141,7 +144,7 @@ export default async function run({ browser, stack }) {
     }, 'minor');
   }
 
-  for (const app of [APPS[0], APPS[1], APPS[4]]) {
+  for (const app of [APPS[0], APPS[1], APPS[3], APPS[4]]) {
     await s.check(`${app.name}: dark appearance is really dark and body text stays readable (contrast 4.5:1 or more)`, async () => {
       const { ctx, page } = await open(app, 1440, 900, { dark: true });
       const r = await page.evaluate(() => {
@@ -198,11 +201,12 @@ export default async function run({ browser, stack }) {
 
   await s.check('Payroll (phone): tab bar sits on the bottom edge and More opens the full section list and switches section', async () => {
     const { ctx, page } = await open(APPS[3], 390, 844);
-    const gap = await page.evaluate(() => innerHeight - document.querySelector('.ax-tabs').getBoundingClientRect().bottom); assert(gap <= 1, 'tab bar is ' + gap + 'px above the bottom edge');
-    await page.locator('.ax-tabs button', { hasText: 'More' }).click(); await page.waitForTimeout(500);
-    const vis = await page.evaluate(() => { const d = document.querySelector('.drawer'), o = document.querySelector('.drawer-ov'); return !!d && getComputedStyle(o).visibility !== 'hidden' && d.getBoundingClientRect().width > 100; }); assert(vis, 'More did not open the menu');
-    await page.locator('.drawer .ditem', { hasText: 'Holidays' }).click(); await page.waitForTimeout(500);
-    assert((await page.locator('.top-bar h1').innerText()) === 'Holidays', 'menu item did not switch the section'); assert(!(await page.locator('.drawer').count()), 'menu stayed open');
+    await page.waitForTimeout(500); if (await page.locator('.sheet').count()) { await page.keyboard.press('Escape'); await page.waitForTimeout(400); } // first visit opens the setup guide
+    const gap = await page.evaluate(() => innerHeight - document.querySelector('.tabbar').getBoundingClientRect().bottom); assert(gap <= 1, 'tab bar is ' + gap + 'px above the bottom edge');
+    await page.locator('.tabbar button', { hasText: 'More' }).click(); await page.waitForTimeout(500);
+    assert(await vis(page, '.sheet'), 'More did not open the menu');
+    await page.locator('.sheet .li', { hasText: 'Reports' }).click(); await page.waitForTimeout(800);
+    assert((await page.locator('#tb-t').innerText()) === 'Reports', 'menu item did not switch the section'); assert(!(await page.locator('.sheet').count()), 'menu stayed open');
     await ctx.close();
   }, 'major');
   s.done();

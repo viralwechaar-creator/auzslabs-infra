@@ -266,6 +266,108 @@ const RPC = {
   acc_share_document: { params: ['p_doc', 'p_enable'], defaults: {'p_enable': true}, auth: true },
   public_acc_document: { params: ['p_token'], auth: false },
   acc_remove_attachment: { params: ['p_id'], auth: true },
+
+  // --- AUZslab Payroll v2 (db/073-077). Every one of these starts with pay_guard()/pay_tenant() in SQL, which re-checks the
+  // 'payroll' entitlement, the caller's permission and field-level security; employees reach their own data through pay_me_*.
+  // Internal helpers (pay_calc_item, pay_import_legacy, pay_demo_seed, ...) are deliberately not listed here.
+  pay_bootstrap: { params: [], auth: true },
+  pay_dashboard: { params: [], auth: true },
+  pay_save_org: { params: ['p'], jsonb: ['p'], auth: true },
+  pay_save_location: { params: ['p'], jsonb: ['p'], auth: true },
+  pay_save_master: { params: ['p'], jsonb: ['p'], auth: true },
+  pay_save_shift: { params: ['p'], jsonb: ['p'], auth: true },
+  pay_save_holiday: { params: ['p'], jsonb: ['p'], auth: true },
+  pay_delete_holiday: { params: ['p_id'], auth: true },
+  pay_save_leave_type: { params: ['p'], jsonb: ['p'], auth: true },
+  pay_save_component: { params: ['p'], jsonb: ['p'], auth: true },
+  pay_preview_structure: { params: ['p'], jsonb: ['p'], auth: true },
+  pay_save_structure: { params: ['p'], jsonb: ['p'], auth: true },
+  pay_save_rule: { params: ['p'], jsonb: ['p'], auth: true },
+  pay_list_rules: { params: [], auth: true },
+  pay_list_employees: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
+  pay_get_employee: { params: ['p_id'], auth: true },
+  pay_save_employee: { params: ['p'], jsonb: ['p'], auth: true },
+  pay_save_job: { params: ['p_emp', 'p'], jsonb: ['p'], auth: true },
+  pay_save_salary: { params: ['p_emp', 'p'], jsonb: ['p'], auth: true },
+  pay_delete_salary: { params: ['p_id'], auth: true },
+  pay_save_bank: { params: ['p_emp', 'p'], jsonb: ['p'], auth: true },
+  pay_bank_decide: { params: ['p_id', 'p_approve'], auth: true },
+  pay_set_status: { params: ['p_emp', 'p'], jsonb: ['p'], auth: true },
+  pay_link_login: { params: ['p_emp', 'p_email'], auth: true },
+  pay_set_kiosk_pin: { params: ['p_emp', 'p_pin'], auth: true },
+  pay_save_asset: { params: ['p'], jsonb: ['p'], auth: true },
+  pay_add_document: { params: ['p'], jsonb: ['p'], auth: true },
+  pay_delete_document: { params: ['p_id'], auth: true },
+  pay_import_check: { params: ['p_rows', 'p_commit'], jsonb: ['p_rows'], defaults: { p_commit: false }, auth: true },
+  pay_attendance_day: { params: ['p_date'], auth: true },
+  pay_attendance_month: { params: ['p_emp', 'p_month'], auth: true },
+  pay_attendance_grid: { params: ['p_month'], auth: true },
+  pay_mark_attendance: { params: ['p_emp', 'p_date', 'p'], jsonb: ['p'], auth: true },
+  pay_mark_bulk: { params: ['p_date', 'p_rows', 'p_reason'], jsonb: ['p_rows'], auth: true },
+  pay_add_punch: { params: ['p_emp', 'p'], jsonb: ['p'], auth: true },
+  pay_void_punch: { params: ['p_id', 'p_reason'], auth: true },
+  pay_save_roster: { params: ['p_rows'], jsonb: ['p_rows'], auth: true },
+  pay_roster_week: { params: ['p_from'], auth: true },
+  pay_leave_decide: { params: ['p_id', 'p_approve', 'p_note'], auth: true },
+  pay_leave_cancel: { params: ['p_id', 'p_reason'], auth: true },
+  pay_leave_add: { params: ['p_emp', 'p'], jsonb: ['p'], auth: true },
+  pay_leave_adjust: { params: ['p_emp', 'p_type', 'p_days', 'p_note', 'p_opening'], defaults: { p_opening: false }, auth: true },
+  pay_leave_ledger_list: { params: ['p_emp', 'p_type'], auth: true },
+  pay_reg_decide: { params: ['p_id', 'p_approve', 'p_note'], auth: true },
+  pay_list_requests: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
+  pay_save_loan: { params: ['p'], jsonb: ['p'], auth: true },
+  pay_loan_decide: { params: ['p_id', 'p_approve', 'p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
+  pay_loan_update: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
+  pay_list_loans: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
+  pay_claim_decide: { params: ['p_id', 'p_approve', 'p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
+  pay_claim_pay: { params: ['p_id', 'p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
+  pay_save_claim: { params: ['p_emp', 'p'], jsonb: ['p'], auth: true },
+  pay_list_claims: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
+  pay_save_tax: { params: ['p_emp', 'p'], jsonb: ['p'], auth: true },
+  pay_get_tax: { params: ['p_emp'], auth: true },
+  pay_list_runs: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
+  pay_get_run: { params: ['p_id'], auth: true },
+  pay_get_item: { params: ['p_id'], auth: true },
+  pay_save_inputs: { params: ['p_run', 'p_rows'], jsonb: ['p_rows'], auth: true },
+  pay_get_batch: { params: ['p_id'], auth: true },
+  pay_run_create: { params: ['p'], jsonb: ['p'], auth: true },
+  pay_run_calculate: { params: ['p_run'], auth: true },
+  pay_run_submit: { params: ['p_run'], auth: true },
+  pay_run_approve: { params: ['p_run', 'p_note'], auth: true },
+  pay_run_send_back: { params: ['p_run', 'p_reason'], auth: true },
+  pay_run_cancel: { params: ['p_run', 'p_reason'], auth: true },
+  pay_run_finalize: { params: ['p_run'], auth: true },
+  pay_run_lock: { params: ['p_run'], auth: true },
+  pay_item_hold: { params: ['p_item', 'p_hold', 'p_reason'], auth: true },
+  pay_batch_create: { params: ['p_run', 'p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
+  pay_batch_mark: { params: ['p_batch', 'p'], jsonb: ['p'], auth: true },
+  pay_batch_cancel: { params: ['p_batch'], auth: true },
+  pay_stat_pay: { params: ['p'], jsonb: ['p'], auth: true },
+  pay_list_stat_payments: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
+  pay_acc_post_run: { params: ['p_run'], auth: true },
+  pay_integrity_check: { params: [], auth: true },
+  pay_list_audit: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
+  pay_search: { params: ['p_q'], auth: true },
+  pay_console_summary: { params: [], auth: true },
+  pay_report: { params: ['p_kind', 'p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
+  pay_save_announcement: { params: ['p'], jsonb: ['p'], auth: true },
+  pay_list_announcements: { params: [], auth: true },
+  pay_kiosk_list: { params: [], auth: true },
+  pay_kiosk_punch: { params: ['p_emp', 'p_pin'], auth: true },
+  pay_me: { params: [], auth: true },
+  pay_me_punch: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
+  pay_me_attendance: { params: ['p_month'], auth: true },
+  pay_me_leave_apply: { params: ['p'], jsonb: ['p'], auth: true },
+  pay_me_regularize: { params: ['p'], jsonb: ['p'], auth: true },
+  pay_me_cancel: { params: ['p_type', 'p_id'], auth: true },
+  pay_me_payslips: { params: [], auth: true },
+  pay_me_loan_request: { params: ['p'], jsonb: ['p'], auth: true },
+  pay_me_claim: { params: ['p'], jsonb: ['p'], auth: true },
+  pay_me_bank_request: { params: ['p'], jsonb: ['p'], auth: true },
+  pay_me_profile: { params: ['p'], jsonb: ['p'], auth: true },
+  pay_me_tax: { params: [], auth: true },
+  pay_me_tax_save: { params: ['p'], jsonb: ['p'], auth: true },
+  pay_me_documents: { params: [], auth: true },
 };
 
 class HttpError extends Error {
@@ -689,13 +791,11 @@ const server = http.createServer(async (req, res) => {
     }
 
     // ---- storage: employee documents (private -- never under
-    // Caddy's public /uploads/* file_server rule, see storage.js). An
-    // owner/manager can upload/view any employee's docs in their
-    // tenant; a plain employee only their own -- checked by asking
-    // Postgres "can this session read hr_employee row :empId", which
-    // r_read's existing policy already answers correctly for both
-    // cases, so there's no separate authorization rule to keep in
-    // sync here. ----
+    // Caddy's public /uploads/* file_server rule, see storage.js).
+    // Payroll v2 decides with pay_doc_check(): people staff of the
+    // business, or the employee themself. The old check (can this
+    // session read the hr_employee record) is kept for documents of
+    // the old Payroll. ----
     if (url.pathname === '/storage/doc' && req.method === 'POST') {
       if (!user) throw new HttpError(401, 'authentication required');
       const profile = await myProfile(user.id);
@@ -703,7 +803,7 @@ const server = http.createServer(async (req, res) => {
       const empId = url.searchParams.get('empId');
       if (!tenantId || !empId) throw new HttpError(400, !tenantId ? 'could not resolve your tenant -- sign in again' : 'empId is required');
       const { rows } = await withAuth(user.id, (client) =>
-        client.query(`select 1 from records where tenant_id = $1 and kind = 'hr_employee' and id = $2 and not deleted`, [tenantId, empId]),
+        client.query(`select 1 where pay_doc_check($2) or exists (select 1 from records where tenant_id = $1 and kind = 'hr_employee' and id = $2 and not deleted)`, [tenantId, empId]),
       );
       if (!rows.length) throw new HttpError(403, 'not authorized for this employee');
       const buffer = await readRawBody(req, 10_000_000);
@@ -717,7 +817,7 @@ const server = http.createServer(async (req, res) => {
       const profile = await myProfile(user.id);
       if (profile?.tenant_id !== tenantId) throw new HttpError(403, 'not authorized');
       const { rows } = await withAuth(user.id, (client) =>
-        client.query(`select 1 from records where tenant_id = $1 and kind = 'hr_employee' and id = $2 and not deleted`, [tenantId, empId]),
+        client.query(`select 1 where pay_doc_check($2) or exists (select 1 from records where tenant_id = $1 and kind = 'hr_employee' and id = $2 and not deleted)`, [tenantId, empId]),
       );
       if (!rows.length) throw new HttpError(403, 'not authorized for this employee');
       const doc = await readDocUpload({ tenantId, empId, filename });
@@ -835,7 +935,7 @@ const server = http.createServer(async (req, res) => {
     // Accounting raises ordinary business-rule errors from SQL (locked period, insufficient stock, credit limit,
     // unbalanced journal, ...). Those are the caller's to fix, not server faults: 400 (or 401/403), and no stack in the log.
     if (status === 500 && typeof err.code === 'string') {
-      if (err.code === 'P0001' || /^AC\d{3}$/.test(err.code) || /^(22|23)/.test(err.code)) { status = 400; message = err.message; }
+      if (err.code === 'P0001' || /^(AC|PY)\d{3}$/.test(err.code) || /^(22|23)/.test(err.code)) { status = 400; message = err.message; }
       else if (err.code === '42501') { status = 403; message = err.message; }
       else if (err.code === '28000') { status = 401; message = err.message; }
     }
