@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>AUZslab Salon — for salons and spas</title>
-<meta name="description" content="AUZslab Salon: your own branded website, online booking, WhatsApp invoices, clients, expenses and analytics in one admin console.">
-<link rel="canonical" href="https://auzslab.in/business-salons.html">
+<title>Accounting — AUZslab</title>
+<meta name="description" content="AUZslab Accounting: GST invoicing, purchases, stock, bank reconciliation and financial reports on a real double-entry ledger, built for Indian businesses.">
+<link rel="canonical" href="https://auzslab.in/accounting.html">
 <meta name="robots" content="index,follow">
 <meta property="og:type" content="website">
-<meta property="og:title" content="AUZslab Salon — for salons and spas">
-<meta property="og:description" content="Your salon website, online booking and billing in one admin console.">
-<meta property="og:url" content="https://auzslab.in/business-salons.html">
+<meta property="og:title" content="Accounting — AUZslab">
+<meta property="og:description" content="GST invoicing, stock, banking and reports on a real double-entry ledger.">
+<meta property="og:url" content="https://auzslab.in/accounting.html">
 <meta property="og:image" content="https://auzslab.in/og-image.png">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="/logo.png">
@@ -54,7 +54,7 @@
 
       <div class="nav-group">
         <button class="nav-link nav-group-toggle" aria-expanded="false">
-          <span>Products <sup class="nav-group-count">(+8)</sup></span>
+          <span>Products <sup class="nav-group-count">(+7)</sup></span>
           <span class="nav-group-indicator" aria-hidden="true"></span>
         </button>
         <div class="nav-submenu">
@@ -66,7 +66,7 @@
             <a href="qr-ordering.html" class="nav-sublink"><span>QR Ordering</span></a>
             <a href="payroll.html" class="nav-sublink"><span>Payroll</span></a>
             <a href="website-builder.html" class="nav-sublink"><span>Website Builder</span></a>
-            <a href="accounting.html" class="nav-sublink"><span>Accounting</span></a>
+            <a href="accounting.html" class="nav-sublink active"><span>Accounting</span></a>
             <a href="custom-build.html" class="nav-sublink"><span>Custom build — on-demand</span></a>
           </div>
         </div>
@@ -74,13 +74,13 @@
 
       <div class="nav-group">
         <button class="nav-link nav-group-toggle" aria-expanded="false">
-          <span>Business types <sup class="nav-group-count">(+3)</sup></span>
+          <span>Business types <sup class="nav-group-count">(+4)</sup></span>
           <span class="nav-group-indicator" aria-hidden="true"></span>
         </button>
         <div class="nav-submenu">
           <div class="nav-submenu-inner">
             <a href="business-cafes.html" class="nav-sublink"><span>Caf&eacute;s &amp; restaurants</span></a>
-            <a href="business-salons.html" class="nav-sublink active"><span>Salons</span></a>
+            <a href="business-salons.html" class="nav-sublink"><span>Salons</span></a>
             <a href="business-retail.html" class="nav-sublink"><span>Retail &amp; bookstores</span></a>
             <a href="business-clothing.html" class="nav-sublink"><span>Clothing &amp; apparel</span></a>
           </div>
@@ -110,14 +110,14 @@
         <div class="hero-grid">
         <div>
         <div class="uk-kit uk-breadcrumb" style="margin-bottom:18px">
-          <a href="platform.html">Business types</a><span class="uk-breadcrumb-sep">/</span><span class="uk-breadcrumb-current">Salons</span>
+          <a href="products.html">Products</a><span class="uk-breadcrumb-sep">/</span><span class="uk-breadcrumb-current">Accounting</span>
         </div>
-        <div class="label">AUZslab Salon</div>
-        <h1 class="h-1" style="font-size:48px">Your salon, online<br>and in your pocket.</h1>
-        <p class="lede">A website that looks like your salon, online booking that fills your chairs, and billing, clients and expenses in one admin console you run from your phone.</p>
+        <div class="label">Accounting</div>
+        <h1 class="h-1" style="font-size:44px">Books you can trust,<br>GST included.</h1>
+        <p class="lede">Invoicing, purchases, stock, banking and reports on a real double-entry ledger, made for Indian businesses. Every figure traces back to the bill behind it.</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px">
-          <button class="btn btn-primary" data-open-contact>Let's talk</button>
-          <a href="products.html" class="btn btn-ghost">See all products</a>
+          <button class="btn btn-primary" id="addCartBtn">Add to cart</button>
+          <a href="https://demo-accounts.auzslab.in/accounts.html" class="btn btn-ghost" target="_blank" rel="noopener">Try the demo</a>
         </div>
         </div>
         <div class="hero-art" role="presentation">
@@ -126,111 +126,77 @@
         </div>
       </section>
 
-      <hr class="dash">
-
       <section class="section tight">
-        <div class="label">What salons struggle with</div>
-        <div class="grid-2" style="margin-top:12px">
-          <div style="border-top:1px dashed var(--line);padding-top:20px">
-            <div class="h-2" style="font-size:19px">Bookings lost in WhatsApp chats</div>
-            <p class="p" style="margin-top:10px">Appointments scattered across calls and messages, with double-bookings and no-shows nobody can trace.</p>
+        <div class="grid-2">
+          <div class="card">
+            <span class="tag">Included</span>
+            <div class="h-2" style="margin-top:14px">GST that works itself out</div>
+            <p class="p" style="margin-top:8px">CGST and SGST within your state, IGST across states, reverse charge and input credit. Rates are a setting, and every invoice remembers the rate it used.</p>
           </div>
-          <div style="border-top:1px dashed var(--line);padding-top:20px">
-            <div class="h-2" style="font-size:19px">A website that never gets updated</div>
-            <p class="p" style="margin-top:10px">Old prices and missing photos online because every change means calling a developer.</p>
+          <div class="card">
+            <span class="tag">Included</span>
+            <div class="h-2" style="margin-top:14px">One entry, everywhere</div>
+            <p class="p" style="margin-top:8px">Post an invoice and the ledger, stock, cost of goods, receivable and GST update together, in one step. If anything fails, nothing is saved.</p>
+          </div>
+          <div class="card">
+            <span class="tag">Included</span>
+            <div class="h-2" style="margin-top:14px">Quotes to cash</div>
+            <p class="p" style="margin-top:8px">Quotation, order, challan, invoice, receipt. Part payments, advances and credit notes all settle against the right invoice.</p>
+          </div>
+          <div class="card">
+            <span class="tag">Included</span>
+            <div class="h-2" style="margin-top:14px">Purchases and suppliers</div>
+            <p class="p" style="margin-top:8px">Bills with supplier invoice numbers, debit notes, payments, and a GSTR-2B match so you claim only the credit you are owed.</p>
+          </div>
+          <div class="card">
+            <span class="tag">Included</span>
+            <div class="h-2" style="margin-top:14px">Stock and warehouses</div>
+            <p class="p" style="margin-top:8px">Average cost, batches and expiry, transfers between godowns, stock counts and reorder alerts, tied to the ledger.</p>
+          </div>
+          <div class="card">
+            <span class="tag">Included</span>
+            <div class="h-2" style="margin-top:14px">Bank reconciliation</div>
+            <p class="p" style="margin-top:8px">Import your statement from net banking, match it to your books, and reconcile to zero. Bank charges post in one tap.</p>
+          </div>
+          <div class="card">
+            <span class="tag">Included</span>
+            <div class="h-2" style="margin-top:14px">Reports that drill down</div>
+            <p class="p" style="margin-top:8px">Trial balance, profit and loss, balance sheet, cash flow, ageing and GST registers. Tap any figure to reach the invoice behind it.</p>
+          </div>
+          <div class="card">
+            <span class="tag">Included</span>
+            <div class="h-2" style="margin-top:14px">Nothing silently changes</div>
+            <p class="p" style="margin-top:8px">Posted entries can't be edited, only reversed. Dates can be locked, every action is logged, and a health check proves the books balance.</p>
+          </div>
+          <div class="card">
+            <span class="tag">Included</span>
+            <div class="h-2" style="margin-top:14px">Phone and desktop</div>
+            <p class="p" style="margin-top:8px">Built for Apple's design guidelines: a tab bar and sheets on your phone, a sidebar and tables on your computer, light and dark.</p>
+          </div>
+          <div class="card">
+            <span class="tag">Included</span>
+            <div class="h-2" style="margin-top:14px">Roles and approvals</div>
+            <p class="p" style="margin-top:8px">Owner, manager, cashier or a custom role. Set an approval limit so large bills wait for a manager.</p>
           </div>
         </div>
       </section>
 
       <hr class="dash">
 
-      <section class="section tight">
-        <div class="label">Everything a salon needs, in one console</div>
-        <div class="grid-2" style="margin-top:12px">
-          <div class="card">
-            <span class="tag">Website</span>
-            <div class="h-2" style="margin-top:12px;font-size:19px">A site that looks like yours</div>
-            <p class="p" style="margin-top:8px">Your logo, colours, fonts, hero photo, gallery, stylists and service menu on a fast public site. Edit every word and price from the admin.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Booking</span>
-            <div class="h-2" style="margin-top:12px;font-size:19px">Online booking with live slots</div>
-            <p class="p" style="margin-top:8px">Clients pick services, a date and a time. You set opening hours, closed days, slot length and how many chairs share a slot.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Billing</span>
-            <div class="h-2" style="margin-top:12px;font-size:19px">Branded invoices over WhatsApp</div>
-            <p class="p" style="margin-top:8px">Build a bill in seconds, send a short link on WhatsApp, and clients can print or save it as a PDF with your logo and footer.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Clients</span>
-            <div class="h-2" style="margin-top:12px;font-size:19px">Every client remembered</div>
-            <p class="p" style="margin-top:8px">Bookings and bills build a client list automatically &mdash; visits, total billed and last visit, without a separate notebook.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Expenses</span>
-            <div class="h-2" style="margin-top:12px;font-size:19px">Rent, salaries and bills tracked</div>
-            <p class="p" style="margin-top:8px">Log what goes out as easily as what comes in, so you always know what the month really earned.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Analytics</span>
-            <div class="h-2" style="margin-top:12px;font-size:19px">Numbers that make sense</div>
-            <p class="p" style="margin-top:8px">Today&apos;s bookings, monthly billing and trends on one screen, built for a phone.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Staff</span>
-            <div class="h-2" style="margin-top:12px;font-size:19px">Staff logins with limited access</div>
-            <p class="p" style="margin-top:8px">Your team signs in with their phone number to take bookings, make bills and send them on WhatsApp. They can't touch prices, the website, expenses or other people's bills.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Payroll</span>
-            <div class="h-2" style="margin-top:12px;font-size:19px">Clock-ins flow into AUZslab Payroll</div>
-            <p class="p" style="margin-top:8px">Staff clock in and out from their phone. Hours become attendance in AUZslab Payroll, ready for the month's pay run.</p>
-          </div>
+      <section class="section">
+        <div class="label">Pairs well with</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <a href="inventory.html" class="tag">Inventory</a>
+          <a href="payroll.html" class="tag">Payroll</a>
+          <a href="pos.html" class="tag">POS</a>
         </div>
       </section>
 
       <hr class="dash">
 
       <section class="section tight">
-        <div class="label">Live client</div>
-        <h2 class="h-2">Showoff Salon, Jodhpur &mdash; running on AUZslab Salon.</h2>
-        <p class="p" style="margin-top:8px">A unisex salon with a 67-service menu, its own logo, colours and typography, online booking, WhatsApp invoices and a full admin console. Open their site and see what yours would look like.</p>
-        <a href="https://showoffsalon.auzslab.in" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top:14px">Visit Showoff Salon &rarr;</a>
-      </section>
-
-      <hr class="dash">
-
-      <section class="section tight">
-        <div class="label">Try it yourself</div>
-        <h2 class="h-2">A live demo salon, open to everyone.</h2>
-        <p class="p" style="margin-top:8px">Browse the public website, then sign in to the owner console and to the staff view, make a bill, add a booking and see what your team gets. The demo resets itself every 12 hours.</p>
-        <div style="margin-top:14px;background:var(--bg-raised);border:1.5px solid var(--ink);border-radius:14px;padding:14px 16px;font-family:var(--font-mono);font-size:12.5px;line-height:1.9">
-          <div>Website &nbsp; <b>demo-salon.auzslab.in</b></div>
-          <div>Owner console &nbsp; <b>demo-salon.auzslab.in/salon/admin/</b> &nbsp; password <b>Auzslab@Demo</b></div>
-          <div>Staff sign in &nbsp; phone <b>9000000001</b> &nbsp; password <b>Auzslab@Demo</b></div>
-        </div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
-          <a href="https://demo-salon.auzslab.in" target="_blank" rel="noopener" class="btn btn-primary">Open the demo website &rarr;</a>
-          <a href="https://demo-salon.auzslab.in/salon/admin/" target="_blank" rel="noopener" class="btn btn-ghost">Open the console</a>
-        </div>
-        <p class="p" style="margin-top:12px;font-size:11.5px">For evaluation only. Staff see just Today, Bookings, Billing and Clients, and their clock-ins flow into AUZslab Payroll.</p>
-      </section>
-
-      <hr class="dash">
-
-      <section class="section tight">
-        <div class="label">Get found</div>
-        <h2 class="h-2">Want more people booking?</h2>
-        <p class="p" style="margin-top:8px;max-width:560px">Our marketing partner <b>Creatopz</b> is an influencer marketing agency. Creators bring new customers in; AUZslab Salon turns them into bookings.</p>
-        <a href="creatopz.html" class="btn btn-ghost" style="margin-top:14px">Meet Creatopz &rarr;</a>
-      </section>
-
-      <hr class="dash">
-
-      <section class="section tight">
-        <div class="label">Get started</div>
-        <h2 class="h-2">Put your salon online with AUZslab Salon.</h2>
+        <div class="label">Ready?</div>
+        <h2 class="h-2">Run your books properly, from the first invoice.</h2>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
           <button class="btn btn-primary" data-open-contact>Let's talk</button>
           <a href="pricing.html" class="btn btn-ghost">See pricing</a>
@@ -322,8 +288,9 @@
         <div class="field">
           <label for="m-niche">What are you running?</label>
           <select id="m-niche" name="niche">
+            <option value="">Not sure yet</option>
             <option value="cafe">Café, restaurant, bar & more</option>
-            <option value="salon" selected>Salon</option>
+            <option value="salon">Salon / spa</option>
             <option value="retail">Retail (shoes, clothing, books)</option>
             <option value="general">Something else</option>
           </select>
@@ -347,5 +314,26 @@
 <script src="site.js?v=7"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script src="design-system/ui-kit.js?v=1"></script>
+<script>
+(function () {
+  var KEY = 'accounting';
+  var sb = supabase.createClient(CFG.url, CFG.key);
+  var btn = document.getElementById('addCartBtn');
+  var owned = false;
+  function refresh() {
+    if (owned) { btn.textContent = 'Already included ✓'; btn.disabled = true; return; }
+    btn.disabled = false;
+    var has = AUZcart.has(KEY);
+    btn.textContent = has ? 'Added ✓ — remove' : 'Add to cart';
+  }
+  btn.addEventListener('click', function () { if (owned) return; AUZcart.toggle(KEY); refresh(); });
+  var n = AUZcart.get().length;
+  document.querySelectorAll('.cart-count').forEach(function (el) { el.textContent = n ? '(' + n + ')' : ''; });
+  refresh();
+  AUZaccount.fetch(sb).then(function (dash) {
+    if (dash && dash.features && dash.features[KEY] === true) { owned = true; refresh(); }
+  });
+})();
+</script>
 </body>
 </html>
