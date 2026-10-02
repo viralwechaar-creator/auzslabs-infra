@@ -788,3 +788,44 @@ Owner asked to undo every marketing-site design change made after PR #79 (FX wor
 - `pos.html`, `billing.html`, `business-cafes.html`, `products.html` are restored to their last pre-Apple scroll-scene versions (till receipt, tax invoice, KOT ticket, "Pairs well with", the physics Products page with every product on one page). Their private copies of CSS/JS live in `site/kept/` (do not merge them into the root files: the root `theme.css` is the #79 one).
 - Tool pages `account/admin/cart/signup/terms/privacy/demo` keep their current feature code and use current asset copies in `site/tool/` (split `theme.mobile/desktop.css`, etc.).
 - The `fx` test suite was removed (`tests/suites/local/fx.mjs`); `marketing.mjs` is the #79 version. Everything under `app/`, `server/`, `db/` is unchanged (POS, Payroll, console, Back Office keep all current design). The notes above about FX worlds, homepage sheets, hig-site/hig-home and subpage stacking describe code that is no longer on the live site; it remains in git history (before PR for branch `revert-site`).
+
+## AUZslab Accounting (feature key `accounting`): a real double-entry system, not the `records` engine
+
+Built from the owner's "Complete Accounting Software Architecture and Master Prompt" PDF. Standalone staff app at `app/public/accounts.html`
+(+ `app/public/accounts/`), public share page `app/public/bill.html`. Needs a connection (it is NOT offline-first: posting is server-authoritative).
+- **Database (db/059-065)** uses real tables, not `records`: `acc_org`, `acc_fy`, `acc_accounts` (chart of accounts, posting engine finds accounts by `system_key`),
+  `acc_parties` (customers + suppliers), `acc_products`, `acc_documents` + `acc_doc_lines` (invoice, credit_note, bill, debit_note, expense; non-posting quotation,
+  sales_order, delivery_challan, purchase_request/order, goods_receipt), `acc_journals` + `acc_journal_lines`, `acc_payments` + `acc_allocations`, `acc_stock_moves`,
+  bank (`acc_bank_txns`, `acc_recons`), `acc_fixed_assets`, `acc_einvoice`/`acc_eway`/`acc_gst_periods`/`acc_gst_recon`, `acc_audit`, `acc_recurring`, ...
+  Money is `numeric(16,2)`, qty `numeric(16,3)`, never floats. All tables are tenant-scoped with read-only RLS; **nothing is written except through SECURITY DEFINER
+  functions**, each starting with `acc_guard(perm)` (re-checks entitlement `features.accounting` AND the owner's `enabled_features` switch AND the role: lesson from db/018).
+- **Posting is one transaction**: `acc_save_document` -> `acc_do_post` builds the journal, stock moves, COGS, GST lines, allocations; any failure rolls everything back.
+  A deferred constraint trigger requires every journal to balance; triggers make journals, journal lines, stock moves, audit and depreciation rows append-only and
+  stop edits to posted documents. Cancel = reversing journal (`acc_cancel_document`), never delete. Draft posting documents get `DRAFT-xxxx` and take the gapless
+  number (`INV/2026-27/00001`) only when posted. Period lock (`acc_org.lock_date`), closed years and GST return periods marked filed all refuse postings.
+- **GST is configuration**: rates come from `acc_taxcodes`; every line stores the rate it used. Intra vs inter-state from org/branch state vs place of supply; reverse charge,
+  ITC eligibility, composition/unregistered orgs (no tax), overseas (zero tax). Reports are working papers; AUZslab does not call the GST portal. E-invoice/e-way: the DB
+  builds the NIC JSON payload and records the IRN/EWB you paste back (idempotent, cannot be overwritten); no provider is called.
+- **Inventory** is perpetual, moving weighted-average cost across warehouses; the inventory ledger account moves only with stock (manual journals to it are refused).
+  `acc_integrity_check()` (Settings > Books health check) proves: journals balance, ledgers tie to documents, AR/AP control = party outstanding, inventory = stock valuation,
+  output GST reproduces from documents. The test suite runs it after every scenario.
+- **Permissions** (`acc_perm`): owner all; manager all but `acc_admin`; default cashier `acc_view`+`acc_sales`; a custom role (profiles.role_id -> roles.permissions) gets exactly
+  the `acc_*` keys ticked (keys added to `PERM_KEYS` in site/account.html). Approval limit: `settings.approval_threshold`.
+- **API**: every `acc_*` function is registered in `server/src/index.js`'s `RPC` object (generated from the SQL signatures; `defaults` carries SQL defaults because callRpc sends
+  null for missing args). Add a new function => add it there or it 404s. Internal helpers (`acc_do_post`, `acc_post_journal`, ...) are deliberately NOT registered.
+  Business-rule errors (SQLSTATE P0001/ACxxx/22/23) now return HTTP 400 (42501 -> 403, 28000 -> 401), not 500. Attachments: `POST/GET /storage/acc` (private, tenant from session).
+  Public RPC `public_acc_document(token)` backs `bill.html` (unguessable share link, revocable).
+- **Imports** are `acc_import(entity, rows, commit, strict)`: the dry run is the same code path rolled back (`AC999`), strict mode is all-or-nothing. XLSX is read/written in the browser
+  (`core.js`, zip via DecompressionStream), CSV likewise. No background worker exists: imports are synchronous (chunked by the UI), recurring documents are created when someone
+  opens Accounting (or "Run due now"), reminders/emails open WhatsApp or the mail app and are logged in `acc_comms` (no SMTP is configured, so nothing claims "sent").
+- **Demo**: db/064 creates tenant `demo-accounts` (demo-accounts@auzslab.in / Auzslab@Demo), seeded through the real engine with clearly marked demo data; `acc_bootstrap()` rebuilds it
+  every 12 h (`acc_reset_demo`, the only code allowed to delete from the append-only tables, and only for `is_demo` tenants).
+- **UI** is Apple HIG from the start (it does not link `hig.css`; it has its own tokens): `accounts.css` (tokens, components, dark mode, print) + `accounts.mobile.css` (tab bar, bottom sheets,
+  large titles, lists instead of tables) + `accounts.desktop.css` (sidebar, toolbar, tables, centred sheets). 44px targets on touch (40px under a pointer), nothing under 12px, sentence case,
+  segmented controls, sheets, alerts for irreversible actions (post/cancel ask first). Pages register with `page(id, {title, icon, perm, render(view)})` in `p-*.js`; `dataView()` renders a
+  sortable table on desktop and a grouped list on phones; `h()` never uses innerHTML.
+- **Deploy**: `git pull`; then `psql ... < db/059_accounting_schema.sql` ... through `065` IN ORDER (use `<`, not `-f`); `docker compose up -d --build api` (server changed);
+  enable per tenant: `update tenant_settings set features = features || '{"accounting":true}' where tenant_id = (select id from tenants where slug='<slug>');` (or tick Accounting in the platform
+  admin's client editor). The tenant owner opens `https://<slug>.auzslab.in/accounts.html` once to set it up.
+- **Known limits (honest list)**: no MFA; no real background jobs or outbound email; no GST-portal/IRP calls; no multi-currency; bank feeds are statement-file imports; the demo-account
+  bootstrap and the 12 h reset run lazily on the next visit; tests: `node tests/run-local.mjs accounts` (49 checks including the integrity invariants, permissions, GST, import, phone/desktop/dark screens).

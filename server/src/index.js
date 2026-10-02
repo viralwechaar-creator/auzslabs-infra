@@ -126,6 +126,110 @@ const RPC = {
   submit_addon_request: { params: ['p_features', 'p_notes'], jsonb: ['p_features'], auth: true },
   approve_addon_request: { params: ['p_request_id'], auth: true },
   decline_addon_request: { params: ['p_request_id'], auth: true },
+
+  // --- AUZslab Accounting (db/059-065). Every one of these starts with acc_guard() in SQL, which re-checks the
+  // 'accounting' entitlement and the caller's permission server side; being listed here only makes it reachable.
+  // `defaults` fills a parameter the client left out (callRpc otherwise sends null, which would defeat the SQL default).
+  acc_save_document: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_post_document: { params: ['p_doc_id', 'p_payments'], jsonb: ['p_payments'], defaults: {'p_payments': []}, auth: true },
+  acc_delete_document: { params: ['p_doc_id'], auth: true },
+  acc_cancel_document: { params: ['p_doc_id', 'p_reason'], auth: true },
+  acc_convert_document: { params: ['p_src', 'p_to'], auth: true },
+  acc_save_payment: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_allocate: { params: ['p_payment', 'p_doc', 'p_amount'], auth: true },
+  acc_apply_credit: { params: ['p_note', 'p_doc', 'p_amount'], auth: true },
+  acc_unallocate: { params: ['p_allocation'], auth: true },
+  acc_cancel_payment: { params: ['p_payment', 'p_reason'], auth: true },
+  acc_save_voucher: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_post_opening: { params: ['p_date', 'p_lines'], jsonb: ['p_lines'], auth: true },
+  acc_set_party_opening: { params: ['p_party', 'p_amount', 'p_date'], auth: true },
+  acc_stock_adjust: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_stock_transfer: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_context: { params: [], auth: true },
+  acc_bootstrap: { params: [], auth: true },
+  acc_save_org: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_save_fy: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_set_lock: { params: ['p_date'], auth: true },
+  acc_mark_gst_filed: { params: ['p_period', 'p_filed', 'p_ref'], auth: true },
+  acc_close_fy: { params: ['p_fy'], auth: true },
+  acc_save_account: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_save_party: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_save_product: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_save_master: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_save_warehouse: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_save_branch: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_save_taxcode: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_list_documents: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_get_document: { params: ['p_id'], auth: true },
+  acc_list_payments: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_get_payment: { params: ['p_id'], auth: true },
+  acc_list_parties: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_list_products: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_product_stock: { params: ['p_product'], auth: true },
+  acc_list_audit: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_search: { params: ['p_q'], auth: true },
+  acc_trial_balance: { params: ['p_from', 'p_to', 'p_all'], defaults: {'p_all': false}, auth: true },
+  acc_ledger: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_party_statement: { params: ['p_party', 'p_from', 'p_to'], auth: true },
+  acc_daybook: { params: ['p_from', 'p_to', 'p_type'], auth: true },
+  acc_journal_detail: { params: ['p_id'], auth: true },
+  acc_book: { params: ['p_kind', 'p_from', 'p_to', 'p_account'], auth: true },
+  acc_pnl: { params: ['p_from', 'p_to'], auth: true },
+  acc_balance_sheet: { params: ['p_asof'], auth: true },
+  acc_cash_flow: { params: ['p_from', 'p_to'], auth: true },
+  acc_ageing: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_register: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_payment_mode_sales: { params: ['p_from', 'p_to'], auth: true },
+  acc_stock_summary: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_stock_movement: { params: ['p_from', 'p_to'], auth: true },
+  acc_stock_velocity: { params: ['p_days'], defaults: {'p_days': 90}, auth: true },
+  acc_stock_batches: { params: ['p_before'], auth: true },
+  acc_gst_summary: { params: ['p_from', 'p_to'], auth: true },
+  acc_gst_register: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_gst_exceptions: { params: ['p_from', 'p_to'], auth: true },
+  acc_dashboard: { params: ['p'], jsonb: ['p'], defaults: {'p': {}}, auth: true },
+  acc_integrity_check: { params: [], auth: true },
+  acc_bank_import: { params: ['p_account', 'p_rows', 'p_batch'], jsonb: ['p_rows'], auth: true },
+  acc_bank_list: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_bank_book_lines: { params: ['p_account', 'p_upto'], auth: true },
+  acc_bank_match: { params: ['p_txn', 'p_line'], auth: true },
+  acc_bank_unmatch: { params: ['p_txn'], auth: true },
+  acc_bank_ignore: { params: ['p_txn', 'p_ignore'], defaults: {'p_ignore': true}, auth: true },
+  acc_bank_create_entry: { params: ['p_txn', 'p'], jsonb: ['p'], auth: true },
+  acc_bank_reconcile: { params: ['p_account', 'p_date', 'p_balance', 'p_commit'], defaults: {'p_commit': false}, auth: true },
+  acc_bank_recons: { params: ['p_account'], auth: true },
+  acc_save_asset: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_run_depreciation: { params: ['p_month'], auth: true },
+  acc_dispose_asset: { params: ['p_asset', 'p_date', 'p_amount', 'p_account'], auth: true },
+  acc_list_assets: { params: [], auth: true },
+  acc_import: { params: ['p_entity', 'p_rows', 'p_commit', 'p_strict', 'p_options'], jsonb: ['p_rows', 'p_options'], defaults: {'p_commit': false, 'p_strict': true, 'p_options': {}}, auth: true },
+  acc_list_imports: { params: [], auth: true },
+  acc_bulk_update: { params: ['p_entity', 'p_ids', 'p_changes'], jsonb: ['p_changes'], auth: true },
+  acc_bulk_post: { params: ['p_ids'], auth: true },
+  acc_due_reminders: { params: ['p_side'], defaults: {'p_side': 'receivable'}, auth: true },
+  acc_log_comm: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_retry_comm: { params: ['p_id', 'p_status'], auth: true },
+  acc_list_comms: { params: ['p'], jsonb: ['p'], defaults: {'p': {}}, auth: true },
+  acc_save_budget: { params: ['p_fy', 'p_rows'], jsonb: ['p_rows'], auth: true },
+  acc_budget_report: { params: ['p_fy'], auth: true },
+  acc_add_attachment: { params: ['p_entity', 'p_id', 'p_name', 'p_url', 'p_size'], auth: true },
+  acc_einvoice_payload: { params: ['p_doc'], auth: true },
+  acc_einvoice_record: { params: ['p_doc', 'p_irn', 'p_ack_no', 'p_ack_date', 'p_qr'], auth: true },
+  acc_einvoice_cancel: { params: ['p_doc', 'p_reason'], auth: true },
+  acc_eway_payload: { params: ['p_doc', 'p_transport'], jsonb: ['p_transport'], defaults: {'p_transport': {}}, auth: true },
+  acc_eway_record: { params: ['p_doc', 'p_ewb', 'p_valid_upto'], auth: true },
+  acc_gst2b_import: { params: ['p_period', 'p_rows'], jsonb: ['p_rows'], auth: true },
+  acc_gst_recon_list: { params: ['p_period'], auth: true },
+  acc_save_view: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_list_views: { params: ['p_scope'], auth: true },
+  acc_delete_view: { params: ['p_id'], auth: true },
+  acc_save_recurring: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_list_recurring: { params: [], auth: true },
+  acc_delete_recurring: { params: ['p_id'], auth: true },
+  acc_run_recurring: { params: ['p_upto'], auth: true },
+  acc_share_document: { params: ['p_doc', 'p_enable'], defaults: {'p_enable': true}, auth: true },
+  public_acc_document: { params: ['p_token'], auth: false },
+  acc_remove_attachment: { params: ['p_id'], auth: true },
 };
 
 class HttpError extends Error {
@@ -250,7 +354,7 @@ async function callRpc(client, fnName, args) {
   if (!cfg) throw new HttpError(404, 'unknown function');
   const jsonbParams = cfg.jsonb || [];
   const values = cfg.params.map((p) => {
-    const v = args[p] !== undefined ? args[p] : null;
+    const v = args[p] !== undefined ? args[p] : (cfg.defaults && p in cfg.defaults ? cfg.defaults[p] : null);
     return jsonbParams.includes(p) && v !== null ? JSON.stringify(v) : v;
   });
   const placeholders = cfg.params.map((_, i) => `$${i + 1}`);
@@ -439,6 +543,32 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // ---- accounting attachments: private storage (never under Caddy's public /uploads), tenant resolved from the session.
+    // acc_storage_check() raises unless accounting is on for the tenant and the caller's role may attach. ----
+    if (url.pathname === '/storage/acc' && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      const profile = await myProfile(user.id);
+      const tenantId = profile?.tenant_id;
+      if (!tenantId) throw new HttpError(400, 'could not resolve your tenant -- sign in again');
+      await withAuth(user.id, (client) => client.query('select acc_storage_check() as ok'));
+      const buffer = await readRawBody(req, 10_000_000);
+      const saved = await saveDocUpload({ tenantId, empId: 'acc', buffer });
+      return reply(200, { url: `/storage/acc/${saved.path.split('/')[0]}/${saved.path.split('/')[2]}`, contentType: saved.contentType });
+    }
+    const accMatch = url.pathname.match(/^\/storage\/acc\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_.-]+)$/);
+    if (accMatch && req.method === 'GET') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      const [, tenantId, filename] = accMatch;
+      const profile = await myProfile(user.id);
+      if (profile?.tenant_id !== tenantId) throw new HttpError(403, 'not authorized');
+      await withAuth(user.id, (client) => client.query(`select acc_guard('acc_view')`));
+      const doc = await readDocUpload({ tenantId, empId: 'acc', filename });
+      if (!doc) throw new HttpError(404, 'not found');
+      res.writeHead(200, { 'Content-Type': doc.type, 'Cache-Control': 'private, max-age=31536000', ...(origin ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : {}) });
+      res.end(doc.buffer);
+      return;
+    }
+
     // ---- admin: provision-owner (was a Supabase Edge Function) ----
     if (url.pathname === '/admin/provision-owner' && req.method === 'POST') {
       if (!user) throw new HttpError(401, 'unauthorized');
@@ -517,6 +647,13 @@ const server = http.createServer(async (req, res) => {
     if (err.code === '23505' && err.constraint === 'auth_users_email_key') {
       status = 409;
       message = 'An account with that email already exists.';
+    }
+    // Accounting raises ordinary business-rule errors from SQL (locked period, insufficient stock, credit limit,
+    // unbalanced journal, ...). Those are the caller's to fix, not server faults: 400 (or 401/403), and no stack in the log.
+    if (status === 500 && typeof err.code === 'string') {
+      if (err.code === 'P0001' || /^AC\d{3}$/.test(err.code) || /^(22|23)/.test(err.code)) { status = 400; message = err.message; }
+      else if (err.code === '42501') { status = 403; message = err.message; }
+      else if (err.code === '28000') { status = 401; message = err.message; }
     }
     if (status === 500) console.error(err);
     reply(status, { error: message });
