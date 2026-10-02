@@ -3,8 +3,26 @@
     email {$ACME_EMAIL}
 }
 
+# Browser hardening headers, reused on every site below via `import security_headers`.
+# No page anywhere in this project embeds another page in an iframe (checked: zero
+# <iframe> tags in site/ or app/public/), so frame-ancestors 'self' is safe -- it still
+# lets a tenant's own pages sit inside each other if that's ever needed, just blocks a
+# third-party site from framing this one (clickjacking). geolocation stays unrestricted
+# (self) because payroll.html's clock-in uses navigator.geolocation on the same origin.
+(security_headers) {
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), payment=(), usb=(), magnetometer=(), gyroscope=(), geolocation=(self)"
+        Content-Security-Policy "frame-ancestors 'self'"
+        -Server
+    }
+}
+
 # The root domain is the AUZlabs marketing site.
 {$DOMAIN} {
+    import security_headers
     root * /srv/site
     # iOS Safari (especially a Home Screen web-clip) has been seen serving
     # a stale cached copy of a page's own HTML even after a fresh deploy --
@@ -36,6 +54,7 @@
         propagation_delay 2m
         propagation_timeout 5m
     }
+    import security_headers
     root * /srv/app
     # a stale cached service worker can pin clients to old code indefinitely
     header /sw.js Cache-Control "no-cache"
@@ -86,6 +105,7 @@
 
 # Monitoring dashboard, kept on its own subdomain
 status.{$DOMAIN} {
+    import security_headers
     reverse_proxy uptime-kuma:3001
 }
 
@@ -97,6 +117,7 @@ status.{$DOMAIN} {
 # api service itself (every response already carries
 # Access-Control-Allow-Origin), not duplicated here.
 api.{$DOMAIN} {
+    import security_headers
     handle_path /uploads/* {
         root * /srv/uploads
         file_server

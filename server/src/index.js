@@ -451,6 +451,7 @@ const server = http.createServer(async (req, res) => {
       if (rateLimited(`signup:${ip}`, 10, 60 * 60_000)) throw new HttpError(429, 'too many signups from this network, try again later');
       const { email, password } = await readJsonBody(req);
       if (!email || !password) throw new HttpError(400, 'email and password are required');
+      if (password.length < 8) throw new HttpError(400, 'password must be at least 8 characters');
       let created;
       try {
         created = await createUser({ email, password });
@@ -540,6 +541,10 @@ const server = http.createServer(async (req, res) => {
     // ---- self-service account deletion (Apple Guideline 5.1.1(v)) ----
     if (url.pathname === '/auth/delete-account' && req.method === 'POST') {
       if (!user) throw new HttpError(401, 'authentication required');
+      // A leaked/stolen JWT (e.g. an XSS token theft) shouldn't let an
+      // attacker brute-force the password confirmation unlimited times --
+      // same discipline as every other password check in this file.
+      if (rateLimited(`delacct:${user.id}`, 10, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
       const { password } = await readJsonBody(req);
       try {
         await deleteOwnAccount(user.id, password);
