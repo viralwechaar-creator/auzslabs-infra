@@ -2,12 +2,14 @@
 'use strict';
 const PAGES = {};
 const page = (id, def) => { PAGES[id] = def; };
+// Overview, transactions (sales, purchases), accounts, financial reports first; inventory and tools after.
 const NAV = [
   { group: '', items: ['home'] },
   { group: 'Sales', items: ['sales', 'customers', 'receipts'] },
   { group: 'Purchases', items: ['purchases', 'suppliers', 'payments', 'expenses'] },
+  { group: 'Accounts', items: ['books', 'banking', 'assets'] },
+  { group: 'Financial reports', items: ['reports', 'gst'] },
   { group: 'Inventory', items: ['products', 'stock'] },
-  { group: 'Accounting', items: ['banking', 'books', 'assets', 'gst', 'reports'] },
   { group: 'Tools', items: ['data', 'messages', 'settings'] },
 ];
 const TABS = ['home', 'sales', 'receipts', 'expenses'];
@@ -51,9 +53,10 @@ async function boot() {
   const slug = window.TENANT_SLUG;
   if (slug && dash.tenant.slug !== slug) { await sb.auth.signOut(); return showLogin('This login belongs to a different business (' + dash.tenant.slug + '.auzslab.in). Sign in at your own business link.'); }
   if (!(dash.features || {}).accounting || (dash.enabled_features || {}).accounting === false) return blocked('Accounting is not enabled', 'AUZslab Accounting is not part of this business’s plan. You can request it from your account page, or ask the AUZslab team.');
-  S.user = { email: dash.my_email, role: dash.my_role };
+  S.user = { email: dash.my_email, role: dash.my_role }; S.dash = dash;
   try { await loadCtx(); } catch (e) { return blocked('Could not open Accounting', e.message); }
   buildShell();
+  if (window.auzBrandLoad) auzBrandLoad(sb);
   window.addEventListener('hashchange', route_);
   route_();
   runDueRecurring();
@@ -63,21 +66,31 @@ async function runDueRecurring() { // no background worker: due recurring docume
 }
 
 // ---------- shell ----------
+// sidebar width: an icon rail below 1200px wide, the full sidebar above; the toggle remembers the other choice
+const sidePref = () => { try { return localStorage['acc.side'] || ''; } catch { return ''; } };
+function toggleSide() {
+  const sh = $('#shell'), mini = sh.classList.contains('min') || (!sh.classList.contains('full') && !matchMedia('(min-width:1200px)').matches);
+  try { localStorage['acc.side'] = mini ? 'full' : 'min'; } catch {}
+  sh.classList.remove('min', 'full'); sh.classList.add(mini ? 'full' : 'min');
+}
 function navItem(id, el = 'a') {
   const p = PAGES[id]; if (!p || (p.perm && !can(p.perm))) return null;
-  return h('a', { href: '#/' + id, 'data-nav': id, class: 'nav-i' }, icon(p.icon, 20), h('span', null, p.title));
+  return h('a', { href: '#/' + id, 'data-nav': id, class: 'nav-i', title: p.title }, icon(p.icon, 20), h('span', { class: 'lbl-t' }, p.title));
 }
 function buildShell() {
+  const apps = [['/index.html', 'POS', 'bag', 'pos'], ['/payroll.html', 'Payroll', 'users', 'payroll']].filter((a) => (S.dash.features || {})[a[3]] && (S.dash.enabled_features || {})[a[3]] !== false && ['owner', 'manager'].includes(S.user.role));
   const side = h('aside', { class: 'side', 'aria-label': 'Sections' },
-    h('div', { class: 'brand' }, h('img', { src: '/icon-accounts.svg', alt: '', width: 30, height: 30 }), h('div', null, h('b', null, 'Accounting'), h('span', null, S.org.trade_name || S.org.legal_name || S.ctx.tenant.name))),
-    NAV.map((g) => [g.group ? h('div', { class: 'gh' }, g.group) : null, g.items.map((i) => navItem(i))]),
+    h('div', { class: 'brand' }, h('img', { src: '/icon-accounts.svg', alt: '', width: 30, height: 30 }), h('div', { class: 'lbl-t grow' }, h('b', null, 'Accounting'), h('span', null, S.org.trade_name || S.org.legal_name || S.ctx.tenant.name)),
+      h('button', { class: 'side-tg', type: 'button', title: 'Collapse or expand the sidebar', 'aria-label': 'Collapse or expand the sidebar', onclick: toggleSide }, icon('sidebar', 20))),
+    NAV.map((g) => [g.group ? h('div', { class: 'gh' }, h('span', { class: 'lbl-t' }, g.group)) : null, g.items.map((i) => navItem(i))]),
+    apps.length ? [h('div', { class: 'gh' }, h('span', { class: 'lbl-t' }, 'Other apps')), apps.map(([href, t, ic]) => h('a', { href, class: 'nav-i', title: t }, icon(ic, 20), h('span', { class: 'lbl-t' }, t)))] : null,
     h('div', { class: 'foot' }, S.ctx.tenant.is_demo ? h('span', { class: 'badge orange' }, 'Demo data') : null, h('span', null, S.user.email), h('span', null, cap1(S.user.role)),
       h('div', { class: 'row', style: { gap: '6px', marginTop: '6px' } }, h('button', { class: 'btn sm', type: 'button', onclick: shortcutsSheet }, 'Shortcuts'), h('button', { class: 'btn sm', type: 'button', onclick: signOut }, 'Sign out'))));
   const topbar = h('header', { class: 'topbar', id: 'topbar' }, h('div', { class: 'l', id: 'tb-l' }), h('div', { class: 'tt', id: 'tb-t', 'aria-live': 'polite' }), h('div', { class: 'r', id: 'tb-r' }));
   const tabbar = h('nav', { class: 'tabbar', 'aria-label': 'Main' },
     TABS.map((id) => h('button', { type: 'button', 'data-tab': id, onclick: () => go(id) }, icon(PAGES[id].icon, 25), h('span', null, PAGES[id].tabLabel || PAGES[id].title))),
     h('button', { type: 'button', 'data-tab': 'more', onclick: moreSheet }, icon('more', 25), h('span', null, 'More')));
-  clear($('#app')).append(h('div', { class: 'shell', id: 'shell' }, side, h('div', { class: 'main' }, topbar, h('main', { id: 'main', tabindex: '-1' })), tabbar));
+  clear($('#app')).append(h('div', { class: 'shell' + (sidePref() ? ' ' + sidePref() : ''), id: 'shell' }, side, h('div', { class: 'main' }, topbar, h('main', { id: 'main', tabindex: '-1' })), tabbar));
   document.addEventListener('keydown', globalKeys);
   matchMedia('(min-width:900px)').addEventListener('change', () => route_());
 }

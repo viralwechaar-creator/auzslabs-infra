@@ -2,10 +2,10 @@
 .shell{flex-direction:column}
 .side,.only-desk{display:none!important}
 .tabbar{flex:none;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:6px 4px calc(4px + env(safe-area-inset-bottom));background:var(--bar);border-top:.5px solid var(--sep);position:relative;z-index:20}
-.tabbar button{flex-direction:column;justify-content:center;gap:2px;min-height:50px;font-size:10.5px;font-weight:500;position:relative;color:var(--label3)}
+.tabbar button{flex-direction:column;justify-content:center;gap:2px;min-height:50px;font-size:12px;font-weight:500;position:relative;color:var(--label3)}
 .tabbar button svg{color:inherit}
 .tabbar button.on{color:var(--accent-text)}
-.tabbar .badge{position:absolute;top:2px;left:calc(50% + 6px);margin:0;min-width:18px;height:18px;line-height:18px;font-size:11px}
+.tabbar .badge{position:absolute;top:2px;left:calc(50% + 6px);margin:0;min-width:18px;height:18px;line-height:18px;font-size:12px}
 .navbar{padding-left:16px;padding-right:6px}
 
 /* selling screen */
@@ -52,3 +52,33 @@
 .kpis.strip{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x proximity;scroll-padding:0 16px;scrollbar-width:none;margin:0 -16px;padding:1px 16px}
 .kpis.strip::-webkit-scrollbar{display:none}
 .kpis.strip .kpi{flex:0 0 128px;scroll-snap-align:start}
+
+/* medium (600-899px: tablet portrait, open foldables, split-screen windows): items and the order side by side,
+   so the cart never hides behind a sheet; centred sheets instead of bottom sheets; bigger tiles */
+@media (min-width:600px){
+  .sell{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,44%)}
+  .sell .ticket-pane{display:flex;flex-direction:column;min-height:0;border-left:.5px solid var(--sep);background:var(--card)}
+  .sell .ticket-pane .ticket{flex:1 1 auto}
+  .cart-bar{display:none}
+  .items{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .tables{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+  .kds{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+  .split2{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
+  .grid2.stack-phone{grid-template-columns:1fr 1fr}
+  .page{padding:16px 24px 28px}
+  .ov{align-items:center;padding:24px}
+  .md{width:560px;max-width:100%;max-height:min(88%,900px);border-radius:18px;animation:mdIn .4s var(--ease)}
+  .md.full{height:auto}
+  .md-h::before{display:none}
+  .md.wide{width:720px}.md.narrow{width:420px}
+  .ov.closing .md{animation:mdOut .22s var(--ease) forwards}
+  .md-f{flex-wrap:nowrap}.md-f>.btn{flex:0 1 auto}.md-f>.btn.fill{order:0}
+  .kpis.strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible;margin:0;padding:0}
+  .kpis.strip .kpi{flex:none}
+  .tabbar button{flex-direction:row;gap:8px;font-size:13px;min-height:52px}
+}
+@keyframes mdIn{from{opacity:0;transform:translateY(16px) scale(.98)}}
+@keyframes mdOut{to{opacity:0;transform:translateY(10px) scale(.98)}}
+
+/* touch: even small buttons keep a 44pt target */
+@media (pointer:coarse){.btn.sm{min-height:44px}}

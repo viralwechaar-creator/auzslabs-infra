@@ -893,3 +893,33 @@ The full audit, the 42-area gap matrix (before/after with evidence), the build l
 - **Deploy:** `git pull`, then `psql ... -v ON_ERROR_STOP=1 < db/068_pos_rebuild.sql` (after 065-067), then
   `docker compose up -d --build api`. Each owner/manager then sets an approval PIN once (POS > Staff & settings).
 
+
+## AUZslab design system for the staff apps (`app/public/ds/`): one look for POS, console, Back Office, Payroll, Accounting
+
+Owner request: one consistent, minimal, Apple-HIG experience across the POS, Payroll and Accounting, with consistent colour.
+Full audit, navigation map, layout tiers, the feature-parity register and the known gaps are in `docs/UI_REDESIGN.md`.
+- **`ds/auz.css` holds every token** (accent, warm-neutral surfaces `--bg #f5f4f2`, charcoal `--label`, state colours,
+  type scale, spacing, radii, shadows, `--hit`, `--side-w`/`--rail-w`, dark mode). Every staff page loads it first. App CSS
+  must not define its own colours: use the tokens, and add a token there if one is missing.
+- **The accent is the business colour.** `ds/brand.js` exposes `auzBrand(colour)`, `auzBrandFrom(settings)` (colour, else
+  the niche default, else wine `#800020`) and `auzBrandLoad(sb)` (reads the `settings` record, for Accounting). It remembers
+  the last colour in `localStorage['auz.brand']`. POS, console, Back Office and Payroll call it from their settings, so a
+  business sees the same accent in every app. The design suite asserts this.
+- **Each app maps its own names to the tokens.** POS: none left. Accounting: `--tint` (fill) / `--tint-text` (text, lifted
+  in dark mode). Console: `retoken`ed (no hex colours left in `console/*.css|js` except the logo). Back Office, Payroll,
+  Builder: `ds/legacy.css` (loaded last) maps `--ink`, `--l`, `--g`, `--hig-*` and adds the shared shell. These three are
+  `<html data-theme=light>` until their inline colours are retokened.
+- **Layout tiers:** compact < 600, medium 600-899 (tablet split views: the POS shows items and the order side by side),
+  expanded 900-1199 (72px icon rail), wide >= 1200 (240px grouped sidebar). The POS and Accounting have a sidebar toggle
+  (`pos.side` / `acc.side`). The files are still split at 900 (`*.mobile.css` / `*.desktop.css`), and the 600 and 1200 tiers
+  are `@media` blocks inside them.
+- **Navigation is grouped by task.**
+  - POS: Service / More / Back office (deep links to console Overview, Inventory, Reports, Menu, plus Payroll and Accounting).
+  - Console: Overview / POS & Orders / Inventory & reports / Manage / Other apps (`['href',...]` NAV entries are plain links).
+  - Accounting: Sales / Purchases / Accounts / Financial reports / Inventory / Tools / Other apps.
+  - Payroll: People / Pay / Settings (`PNAV`).
+- **POS keyboard:** `?` shortcuts, `/` item search, `N` new order, `Alt+1..9` sections.
+- **Tests:** `node tests/run-local.mjs design` (tokens, the same accent across apps, no sideways scroll at 7 widths, tiers,
+  dark-mode contrast, 12px text and 44px targets on phones, POS shortcuts). Screenshots of every app at four widths:
+  `node tests/shots.mjs <dir>` (`SCHEME=dark`, `ONLY=pos,accounts`).
+- When you bump `pos/*` or `ds/*` files, bump their `?v=` in the HTML and the `V` version plus file list in `sw.js`.

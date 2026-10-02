@@ -1,4 +1,4 @@
-/* AUZs LAB admin console: core (state, data engine, UI kit, charts, shell). Pages register themselves in PAGES (see p-*.js). */
+/* AUZslab admin console: core (state, data engine, UI kit, charts, shell). Pages register themselves in PAGES (see p-*.js). */
 const C=window.CFG||{},sb=supabase.createClient(C.url,C.key);
 const S={user:null,role:'cashier',perms:null,date:new Date().toLocaleDateString('en-CA'),page:'dashboard',lastSync:null,syncOk:true,sideOpen:false,collapsed:false,open:{},q:'',f:{},outlet:null,features:null,enabledFeatures:{},tenant:null};
 const R={},PAGES={},TITLES={};
@@ -141,13 +141,13 @@ const svgEl=(w,h2,inner)=>{const e=document.createElement('div');e.innerHTML='<s
 function smooth(pts){if(pts.length<2)return'';let d='M'+pts[0][0]+' '+pts[0][1];for(let i=1;i<pts.length;i++){const p=pts[i-1],q=pts[i],cx=(p[0]+q[0])/2;d+=' C'+cx+' '+p[1]+' '+cx+' '+q[1]+' '+q[0]+' '+q[1]}return d}
 let gid=0;
 function sparkline(vals,w=300,hh=96){const mx=Math.max(...vals,1),n=Math.max(2,vals.length),pts=(vals.length>1?vals:[0,0]).map((v,i)=>[i*(w/(n-1)),hh-8-(v/mx)*(hh-22)]),flat=Math.max(...vals)==0,line=smooth(pts),area=line+' L'+w+' '+hh+' L0 '+hh+'Z',id='sg'+(++gid);
- return svgEl(w,hh,'<defs><linearGradient id="'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6f93ff" stop-opacity=".35"/><stop offset="1" stop-color="#6f93ff" stop-opacity="0"/></linearGradient></defs><path d="'+area+'" fill="url(#'+id+')"/><path d="'+line+'" fill="none" stroke="#4b78f5" stroke-width="2.4" stroke-linecap="round" vector-effect="non-scaling-stroke" '+(flat?'opacity=".45"':'')+'/>')}
-function miniBars(vals){const mx=Math.max(...vals,1),w=140,hh=62,bw=w/vals.length;return svgEl(w,hh,vals.map((v,i)=>{const bh=Math.max(4,(v/mx)*(hh-4));return'<rect x="'+(i*bw+2)+'" y="'+(hh-bh)+'" width="'+(bw-5)+'" height="'+bh+'" rx="2" fill="'+(i%3==1?'#cddcff':'#bcd0ff')+'"/>'}).join(''))}
+ return svgEl(w,hh,'<defs><linearGradient id="'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--accent)" stop-opacity=".35"/><stop offset="1" style="stop-color:var(--accent)" stop-opacity="0"/></linearGradient></defs><path d="'+area+'" fill="url(#'+id+')"/><path d="'+line+'" fill="none" style="stroke:var(--accent)" stroke-width="2.4" stroke-linecap="round" vector-effect="non-scaling-stroke" '+(flat?'opacity=".45"':'')+'/>')}
+function miniBars(vals){const mx=Math.max(...vals,1),w=140,hh=62,bw=w/vals.length;return svgEl(w,hh,vals.map((v,i)=>{const bh=Math.max(4,(v/mx)*(hh-4));return'<rect x="'+(i*bw+2)+'" y="'+(hh-bh)+'" width="'+(bw-5)+'" height="'+bh+'" rx="2" style="fill:'+(i%3==1?'var(--accent-soft2)':'var(--accent-line)')+'"/>'}).join(''))}
 function lineChartX(vals,labels,fmt=v=>'₹ '+Math.round(v)){
  const W=640,H=210,pl=48,pb=26,pt=10,mx=Math.max(100,Math.ceil(Math.max(...vals,1)/100)*100),n=Math.max(2,vals.length),X=i=>pl+i*((W-pl-8)/(n-1)),Y=v=>pt+(H-pt-pb)*(1-v/mx),pts=vals.map((v,i)=>[X(i),Y(v)]);let g='';
- [0,1,2].forEach(k=>{const v=mx/2*k,y=Y(v);g+='<line x1="'+pl+'" x2="'+(W-8)+'" y1="'+y+'" y2="'+y+'" stroke="#eceae7" stroke-dasharray="3 4"/><text x="'+(pl-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="11" fill="#8a9099">'+fmt(v)+'</text>'});
- labels.forEach(([i,t])=>{g+='<text x="'+X(i)+'" y="'+(H-6)+'" text-anchor="middle" font-size="11" fill="#8a9099">'+t+'</text>'});
- const line=smooth(pts),id='tg'+(++gid),el=svgEl(W,H,'<defs><linearGradient id="'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6f93ff" stop-opacity=".3"/><stop offset="1" stop-color="#6f93ff" stop-opacity="0"/></linearGradient></defs>'+g+'<path d="'+line+' L'+X(n-1)+' '+Y(0)+' L'+X(0)+' '+Y(0)+'Z" fill="url(#'+id+')"/><path d="'+line+'" fill="none" stroke="#4b78f5" stroke-width="2.4" vector-effect="non-scaling-stroke"/>');
+ [0,1,2].forEach(k=>{const v=mx/2*k,y=Y(v);g+='<line x1="'+pl+'" x2="'+(W-8)+'" y1="'+y+'" y2="'+y+'" style="stroke:var(--sep)" stroke-dasharray="3 4"/><text x="'+(pl-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="12" style="fill:var(--label3)">'+fmt(v)+'</text>'});
+ labels.forEach(([i,t])=>{g+='<text x="'+X(i)+'" y="'+(H-6)+'" text-anchor="middle" font-size="12" style="fill:var(--label3)">'+t+'</text>'});
+ const line=smooth(pts),id='tg'+(++gid),el=svgEl(W,H,'<defs><linearGradient id="'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--accent)" stop-opacity=".3"/><stop offset="1" style="stop-color:var(--accent)" stop-opacity="0"/></linearGradient></defs>'+g+'<path d="'+line+' L'+X(n-1)+' '+Y(0)+' L'+X(0)+' '+Y(0)+'Z" fill="url(#'+id+')"/><path d="'+line+'" fill="none" style="stroke:var(--accent)" stroke-width="2.4" vector-effect="non-scaling-stroke"/>');
  el.dataset.pts=JSON.stringify(pts);el.dataset.w=W;el.dataset.h=H;return el}
 function chartBox(chart,vals,tipFn){const tip=h('div',{class:'tip'}),w=h('div',{class:'chart'},chart,tip);
  w.addEventListener('mousemove',e=>{const r=chart.getBoundingClientRect(),pts=JSON.parse(chart.dataset.pts),W=+chart.dataset.w,H=+chart.dataset.h,x=(e.clientX-r.left)/r.width*W;let b=0;pts.forEach((p,i)=>{if(Math.abs(p[0]-x)<Math.abs(pts[b][0]-x))b=i});tip.style.display='block';tip.style.left=(pts[b][0]/W*r.width)+'px';tip.style.top=(pts[b][1]/H*r.height)+'px';tip.textContent=tipFn(b,vals[b])});
@@ -155,31 +155,37 @@ function chartBox(chart,vals,tipFn){const tip=h('div',{class:'tip'}),w=h('div',{
 function barList(rows,fmt=v=>v){const mx=Math.max(1,...rows.map(r=>r[1]));return h('div',{class:'top5'},...rows.map(([n,v],i)=>h('div',{class:'r'},h('span',{class:'rk'},String(i+1)),h('span',{class:'nm'},n),h('span',{class:'tr'},h('i',{style:'width:'+Math.max(2,v/mx*100)+'%'})),h('span',{class:'pc'},fmt(v)))))}
 // ---------- navigation ----------
 const NAV=[
- ['dashboard','Dashboard','home'],
- ['lbl','Daily Operations'],
+ ['dashboard','Overview','home'],
+ ['lbl','POS & Orders'],
+ ['href','/index.html','Billing POS','store'],
  ['daily/live','Live Orders','live'],['daily/all','All Orders','orders'],['daily/online','Online Orders','online'],['daily/kot','KOT','kot'],['daily/due','Due Payment','due'],
- ['g:menu','Menu Management','menu',[['menu/overview','Menu & Discounts'],['menu/items','Items'],['menu/categories','Categories'],['menu/variants','Variants'],['menu/addons','Add-ons'],['menu/tables','Tables & Areas'],['menu/taxes','Taxes'],['menu/discounts','Discounts'],['menu/availability','Menu Availability'],['menu/preferences','Order Preferences'],['menu/commission','Item Commission'],['menu/physical','Physical Menu'],['menu/images','Bulk Image Upload']]],
+ ['lbl','Inventory & reports'],
  ['g:inv','Inventory','inv',[['inv/raw','Raw Materials'],['inv/stock','Stock Management'],['inv/purchase','Purchase Orders'],['inv/vendors','Vendors'],['inv/recipes','Recipes'],['inv/consumption','Consumption Tracking'],['inv/reports','Inventory Reports']]],
- ['g:mkt','Marketing','mkt',[['mkt/campaigns','Campaigns'],['mkt/segments','Segments'],['mkt/offers','Offers'],['mkt/whatsapp','WhatsApp Marketing'],['mkt/promotions','Promotions'],['mkt/loyaltycamp','Loyalty Campaigns']],'New'],
- ['g:fin','Finance','fin',[['fin/expenses','Expenses'],['fin/withdrawals','Withdrawals & Top-ups'],['fin/cash','Cash Management'],['fin/settlements','Settlements'],['fin/accounting','Accounting'],['fin/reconcile','Payment Reconciliation']]],
  ['g:rep','Reports','rep',[['rep/sales','Sales Reports'],['rep/orders','Order Reports'],['rep/items','Item Reports'],['rep/inventory','Inventory Reports'],['rep/customers','Customer Reports'],['rep/staff','Staff Reports'],['rep/analytics','Analytics Dashboard']]],
- ['g:team','Team Management','team',[['team/users','Users & Roles'],['team/attendance','Attendance'],['team/payroll','Payroll'],['team/tasks','Tasks']]],
- ['g:mgmt','Management','gear',[['mgmt/config','Configuration'],['mgmt/outlets','Outlets'],['mgmt/devices','Device Mapping'],['mgmt/logs','User Logs'],['mgmt/audit','Audit Trail'],['mgmt/data','Data Management']]],
+ ['lbl','Manage'],
+ ['g:menu','Menu Management','menu',[['menu/overview','Menu & Discounts'],['menu/items','Items'],['menu/categories','Categories'],['menu/variants','Variants'],['menu/addons','Add-ons'],['menu/tables','Tables & Areas'],['menu/taxes','Taxes'],['menu/discounts','Discounts'],['menu/availability','Menu Availability'],['menu/preferences','Order Preferences'],['menu/commission','Item Commission'],['menu/physical','Physical Menu'],['menu/images','Bulk Image Upload']]],
  ['g:crm','CRM','crm',[['crm/customers','Customers'],['crm/loyalty','Loyalty Program'],['crm/giftcards','Gift Cards'],['crm/feedback','Feedback'],['crm/membership','Membership Programs'],['crm/support','Support Tickets']]],
+ ['g:team','Team Management','team',[['team/users','Users & Roles'],['team/attendance','Attendance'],['team/payroll','Payroll'],['team/tasks','Tasks']]],
+ ['g:fin','Finance','fin',[['fin/expenses','Expenses'],['fin/withdrawals','Withdrawals & Top-ups'],['fin/cash','Cash Management'],['fin/settlements','Settlements'],['fin/accounting','Accounting'],['fin/reconcile','Payment Reconciliation']]],
+ ['g:mkt','Marketing','mkt',[['mkt/campaigns','Campaigns'],['mkt/segments','Segments'],['mkt/offers','Offers'],['mkt/whatsapp','WhatsApp Marketing'],['mkt/promotions','Promotions'],['mkt/loyaltycamp','Loyalty Campaigns']],'New'],
  ['g:int','Integrations','plug',[['agg/swiggy','Swiggy'],['agg/zomato','Zomato'],['agg/ondc','ONDC'],['agg/dunzo','Dunzo'],['agg/ubereats','Uber Eats'],['agg/settings','Platform Settings'],['int/apps','Explore Products']]],
+ ['g:mgmt','Management','gear',[['mgmt/config','Configuration'],['mgmt/outlets','Outlets'],['mgmt/devices','Device Mapping'],['mgmt/logs','User Logs'],['mgmt/audit','Audit Trail'],['mgmt/data','Data Management']]],
  ['g:ql','Quick Links','star',[['ql/favorites','Favourite Pages'],['ql/shortcuts','Shortcuts'],['ql/custom','Custom Links']]]
 ];
-const flatNav=()=>NAV.flatMap(n=>n[0]=='lbl'?[]:n[0].startsWith('g:')?n[3].map(c=>[c[0],c[1],n[1]]):[[n[0],n[1],'']]);
+const flatNav=()=>NAV.flatMap(n=>n[0]=='lbl'||n[0]=='href'?[]:n[0].startsWith('g:')?n[3].map(c=>[c[0],c[1],n[1]]):[[n[0],n[1],'']]);
 const titleOf=p=>{const f=flatNav().find(x=>x[0]==p);return f?f[1]:'Dashboard'};
 function go(p){S.page=p;S.sideOpen=false;S.q='';S.f={};const g=NAV.find(n=>n[0].startsWith('g:')&&n[3].some(c=>c[0]==p));if(g)S.open[g[0]]=true;try{location.hash='#'+p}catch{}render();const c=$('.content');if(c)c.scrollTop=0}
 function sideNav(){
  const nav=h('div',{class:'nav'});
  NAV.forEach(n=>{
   if(n[0]=='lbl'){nav.append(h('div',{class:'nav-lbl'},n[1]));return}
+  if(n[0]=='href'){nav.append(h('a',{class:'nb',href:n[1]},ic(n[3]),h('span',{},n[2])));return}
   if(n[0].startsWith('g:')){const id=n[0],open=!!S.open[id];
    nav.append(h('button',{class:'nb',onclick:()=>{S.open[id]=!open;render()}},ic(n[2]),h('span',{},n[1]),n[4]?h('span',{class:'badge'},n[4]):null,h('span',{class:'chev'+(open?' open':'')},ic('chr',14))),
     h('div',{class:'sub'+(open?' open':'')},...n[3].map(([pid,t])=>h('a',{class:S.page==pid?'on':'',href:'#'+pid,onclick:e=>{e.preventDefault();go(pid)}},t))));return}
   nav.append(h('button',{class:'nb'+(S.page==n[0]?' on':''),onclick:()=>go(n[0])},ic(n[2]),h('span',{},n[1])))});
+ const apps=[['payroll','/payroll.html','Payroll','team'],['accounting','/accounts.html','Accounting','fin']].filter(a=>S.features&&S.features[a[0]]===true&&S.enabledFeatures[a[0]]!==false);
+ if(apps.length){nav.append(h('div',{class:'nav-lbl'},'Other apps'));apps.forEach(a=>nav.append(h('a',{class:'nb',href:a[1]},ic(a[3]),h('span',{},a[2]))))}
  return nav}
 function syncCard(){const ago=S.lastSync?Math.max(0,Math.round((Date.now()-S.lastSync)/60000)):null;
  return h('div',{class:'sync'+(S.syncOk?'':' bad'),'data-sync':1},h('i'),h('div',{},h('b',{},S.syncOk?'POS Connected':'POS Offline'),h('span',{},ago==null?'Syncing…':'Last synced '+(ago<1?'just now':ago+' min ago'))))}
@@ -199,11 +205,12 @@ function topBar(){
   h('a',{class:'disc',href:'https://auzslab.in/products.html'},ic('store',18),h('span',{},'Discover Apps')))}
 function sidebar(){
  return h('aside',{class:'side'+(S.sideOpen?' open':'')+(S.collapsed?' hide':'')},
-  h('div',{class:'brand'},h('div',{class:'logo'},(()=>{const s=document.createElement('span');s.innerHTML='<svg width="26" height="26" viewBox="0 0 26 26"><path d="M4 22 12 4h3l-8 18z" fill="#fff"/><rect x="14" y="10" width="7" height="7" fill="#fff" opacity=".9"/><rect x="18" y="16" width="5" height="5" fill="#c2183f"/></svg>';return s.firstChild})()),h('div',{},h('b',{},'AUZs LAB'),h('span',{},'POS'))),
+  h('div',{class:'brand'},h('div',{class:'logo'},h('img',{src:'/icon-pos.svg',alt:'',width:42,height:42})),h('div',{},h('b',{},'AUZslab'),h('span',{},'Admin console'))),
   sideNav(),
-  h('div',{class:'upg'},h('div',{class:'t'},h('span',{class:'bolt'},ic('bolt',18)),h('span',{},'Upgrade to ',h('b',{},'AUZs Pro'))),h('p',{},'Unlock advanced reports, automation and more.'),h('a',{class:'dbtn',href:'https://auzslab.in/pricing.html'},'Upgrade Now')))}
+  h('div',{class:'upg'},h('div',{class:'t'},h('span',{class:'bolt'},ic('bolt',18)),h('span',{},'Upgrade to ',h('b',{},'AUZslab Pro'))),h('p',{},'Unlock advanced reports, automation and more.'),h('a',{class:'dbtn',href:'https://auzslab.in/pricing.html'},'Upgrade Now')))}
 function render(){
  if(!S.user)return login();
+ if(window.auzBrandFrom)auzBrandFrom(cfg());
  if(!(S.role=='owner'||S.role=='manager'))return $('#app').replaceChildren(h('div',{class:'login'},h('h2',{style:'margin:0'},'Owner access only'),h('p',{class:'sm'},'The admin console is for owners and managers. Staff use the billing POS.'),h('a',{class:'dbtn',href:'/index.html'},'Open billing POS')));
  const keep=document.querySelector('.content'),top=keep?keep.scrollTop:0,fn=PAGES[S.page]||PAGES.dashboard;let body;
  try{body=fn()}catch(e){console.error(e);body=[card(h('b',{},'This page hit an error'),h('p',{class:'sm'},String(e&&e.message||e)))]}
@@ -211,7 +218,7 @@ function render(){
  $('#ov').className='ov'+(S.sideOpen?' show':'');
  const c=document.querySelector('.content');if(c)c.scrollTop=top}
 function login(msg){
- const e=h('input',{type:'email',placeholder:'Email',autocomplete:'username'}),p=h('input',{type:'password',placeholder:'Password',autocomplete:'current-password'}),m=h('div',{class:'sm',style:'color:#b33a3a'},msg||'');
+ const e=h('input',{type:'email',placeholder:'Email',autocomplete:'username'}),p=h('input',{type:'password',placeholder:'Password',autocomplete:'current-password'}),m=h('div',{class:'sm',style:'color:var(--red)'},msg||'');
  $('#app').replaceChildren(h('form',{class:'login',onsubmit:async ev=>{ev.preventDefault();const{error}=await sb.auth.signInWithPassword({email:e.value.trim(),password:p.value});error?m.textContent=error.message:boot()}},h('b',{style:'font-size:20px'},'AUZs LAB Admin'),h('span',{class:'sm'},'Sign in with your owner or manager account.'),e,p,m,h('button',{type:'submit'},'Sign in')))}
 async function boot(){
  if(!C.url||C.url.includes('YOUR-PROJECT'))return $('#app').replaceChildren(h('div',{class:'login'},'Setup needed: open config.js and add your Supabase URL and key.'));

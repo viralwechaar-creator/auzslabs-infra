@@ -263,7 +263,7 @@ export default async function run({ browser, stack }) {
   }, 'major');
 
   await s.check('Menu (back office): select items and raise their prices by 10 percent; each change is audited', async () => {
-    await page.goto(stack.url('testcafe', '/backoffice.html?tab=menu')); await page.waitForSelector('button', { timeout: 15000 }); await page.waitForTimeout(800);
+    await page.goto(stack.url('testcafe', '/backoffice.html?tab=menu')); await page.waitForSelector('.top-bar h1', { timeout: 15000 }); await page.waitForTimeout(800);
     const prices = () => q("select data->>'name' n, (data->>'price')::numeric p from records where tenant_id=$1 and kind='item' and not deleted order by 1", [tid]).then((r) => r.map((x) => x.n + ':' + +x.p));
     const before = await prices();
     page.removeAllListeners('dialog'); page.on('dialog', (d) => (d.type() === 'prompt' ? d.accept('10') : d.accept()).catch(() => {}));

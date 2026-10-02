@@ -1,0 +1,55 @@
+/* AUZslab design system: the one set of tokens every staff app reads (POS, admin console, Back Office, Payroll,
+   Website Builder, Accounting). Apps keep their own component CSS but take every colour, size, radius and shadow
+   from here, so a change made here reaches all of them. Built to Apple's Human Interface Guidelines: system type,
+   44pt touch targets, warm-neutral surfaces, charcoal text, one accent (the business colour, AUZslab wine by
+   default), colour reserved for state and action, light and dark appearance.
+   Layout tiers (each app's own CSS): compact < 600, medium 600-899, expanded 900-1199, wide >= 1200. */
+:root{
+  /* accent: --brand is set per business by ds/brand.js; everything else derives from it */
+  --accent:var(--brand,#800020);--on-accent:#fff;--accent-text:var(--accent);
+  --accent-soft:color-mix(in srgb,var(--accent) 10%,transparent);
+  --accent-soft2:color-mix(in srgb,var(--accent) 17%,transparent);
+  --accent-line:color-mix(in srgb,var(--accent) 38%,transparent);
+  /* surfaces and text */
+  --bg:#f5f4f2;--bg2:#efedea;--card:#fff;--elev:#fff;--card2:#faf9f7;--bar:rgba(250,249,247,.92);--thumb:#fff;
+  --fill:rgba(118,112,104,.12);--fill2:rgba(118,112,104,.08);--fill3:rgba(118,112,104,.045);
+  --label:#1d1d1f;--label2:rgba(60,56,52,.66);--label3:rgba(60,56,52,.42);
+  --sep:rgba(60,52,44,.14);--sep2:rgba(60,52,44,.24);
+  /* state colours (text / tinted background) */
+  --green:#1f8a3d;--green-bg:rgba(52,199,89,.15);
+  --orange:#a85a00;--orange-bg:rgba(255,149,0,.17);
+  --red:#d70015;--red-bg:rgba(255,59,48,.12);
+  --blue:#0a64cf;--blue-bg:rgba(0,122,255,.12);
+  --purple:#7b3bbf;--purple-bg:rgba(175,82,222,.14);
+  --yellow:#8a6a00;--yellow-bg:rgba(255,204,0,.22);
+  --teal:#0b7a80;--teal-bg:rgba(48,176,199,.15);
+  --gray-bg:rgba(118,112,104,.14);
+  --veg:#2e7d32;--nonveg:#c62828;--egg:#c98a00;
+  /* type (Apple text styles) */
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",system-ui,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  --fs-cap:12px;--fs-foot:13px;--fs-sub:15px;--fs-body:16px;--fs-head:17px;--fs-t3:20px;--fs-t2:22px;--fs-t1:28px;--fs-large:34px;
+  /* space, shape, depth, motion */
+  --s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:20px;--s6:24px;--s8:32px;
+  --r1:8px;--r2:12px;--r3:16px;--r4:22px;
+  --hit:44px;--side-w:240px;--rail-w:72px;
+  --sh1:0 0 0 .5px var(--sep),0 1px 2px rgba(40,30,20,.04);
+  --sh2:0 0 0 .5px var(--sep),0 10px 30px -14px rgba(40,30,20,.2);
+  --sh3:0 0 0 .5px var(--sep),0 30px 80px -24px rgba(40,30,20,.38);
+  --ease:cubic-bezier(.32,.72,0,1);
+  color-scheme:light;
+}
+@media (pointer:fine){:root{--hit:36px}}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){
+  --accent:var(--brand-dark,var(--brand,#a3324f));--on-accent:#fff;
+  --accent-text:var(--brand-dark-text,color-mix(in srgb,var(--accent) 55%,#fff));
+  --accent-soft:color-mix(in srgb,var(--accent) 28%,transparent);--accent-soft2:color-mix(in srgb,var(--accent) 40%,transparent);--accent-line:color-mix(in srgb,var(--accent) 60%,transparent);
+  --bg:#000;--bg2:#0d0d0e;--card:#1c1c1e;--elev:#2c2c2e;--card2:#242426;--bar:rgba(22,22,24,.92);--thumb:#636366;
+  --fill:rgba(118,118,128,.26);--fill2:rgba(118,118,128,.18);--fill3:rgba(118,118,128,.1);
+  --label:#f5f5f7;--label2:rgba(235,235,245,.64);--label3:rgba(235,235,245,.36);
+  --sep:rgba(84,84,88,.55);--sep2:rgba(110,110,115,.7);
+  --green:#4cd964;--green-bg:rgba(48,209,88,.18);--orange:#ffb340;--orange-bg:rgba(255,159,10,.2);--red:#ff6961;--red-bg:rgba(255,69,58,.2);
+  --blue:#64a8ff;--blue-bg:rgba(10,132,255,.2);--purple:#d4a5ff;--purple-bg:rgba(191,90,242,.2);--yellow:#ffd60a;--yellow-bg:rgba(255,214,10,.16);--teal:#6ad8e0;--teal-bg:rgba(64,200,224,.18);--gray-bg:rgba(118,118,128,.3);
+  --sh1:0 0 0 .5px var(--sep);--sh2:0 0 0 .5px var(--sep),0 10px 30px -14px rgba(0,0,0,.6);--sh3:0 0 0 .5px var(--sep2),0 30px 80px -20px rgba(0,0,0,.8);
+  color-scheme:dark}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}

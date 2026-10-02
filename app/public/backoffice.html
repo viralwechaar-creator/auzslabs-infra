@@ -1,6 +1,6 @@
-<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><title>AUZslab Back Office</title><link rel=manifest href=/manifest.json><link rel=icon href=/logo.png><link rel=apple-touch-icon href=/icon-512.png><meta name=theme-color content=#171717>
+<!doctype html><html lang=en class=ax-bo data-theme=light><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><title>AUZslab Back Office</title><link rel=manifest href=/manifest.json><link rel=icon href=/logo.png><link rel=apple-touch-icon href=/icon-512.png><meta name=theme-color content=#171717>
 <meta name=apple-mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-status-bar-style content=black-translucent><meta name=apple-mobile-web-app-title content="Back Office">
-<link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
+<link rel=stylesheet href="/ds/auz.css?v=1"><script src="/ds/brand.js?v=1"></script><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel=stylesheet>
 <style media="(max-width:899px)">:root{--ink:#171717;--ink-dim:#4d4d4d;--ink-faint:#8c8c8c;--accent:#800020;--g:var(--accent);--l:rgba(23,23,23,.14);--bg-raised:#dedede;--radius-sm:14px;--radius-md:18px;--radius-lg:26px;--shadow-sm:0 1px 2px rgba(23,23,23,.06),0 6px 20px -10px rgba(23,23,23,.14);--shadow-md:0 4px 12px rgba(23,23,23,.08),0 20px 44px -16px rgba(23,23,23,.22);--shadow-lift:0 10px 26px -8px rgba(23,23,23,.34),0 3px 8px rgba(23,23,23,.16);--accent-glow:0 4px 14px -2px rgba(128,0,32,.45);--ease:cubic-bezier(.4,0,.2,1)}
 *{box-sizing:border-box}
@@ -236,7 +236,7 @@ input[type=date],input[type=time],input[type=month]{width:156px}
 .drawer button.grp{margin-top:14px;position:relative}
 .drawer button.grp::before{content:"";position:absolute;left:14px;right:14px;top:-8px;height:1px;background:var(--l)}
 .drawer{overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-bottom:max(14px,env(safe-area-inset-bottom))}
-</style><link rel="stylesheet" href="/hig.mobile.css?v=9" media="(max-width:899px)"><link rel="stylesheet" href="/hig.desktop.css?v=3" media="(min-width:900px)"></head><body><div id=app></div>
+</style><link rel="stylesheet" href="/hig.mobile.css?v=9" media="(max-width:899px)"><link rel="stylesheet" href="/hig.desktop.css?v=3" media="(min-width:900px)"><link rel="stylesheet" href="/ds/legacy.css?v=1"></head><body><div id=app></div>
 <script src=/sb-client.js?v=2></script>
 <script src=https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js integrity="sha384-8FWZA6BGMXhsfO+BLtrJK0We6gg5o1JyO8xQm6peWDEUs17ACA5ziE/NIAkl9z2k" crossorigin=anonymous></script>
 <script src=/config.js></script>
@@ -289,7 +289,7 @@ const effCats=()=>cfg().isDemo&&S.previewNiche?PREVIEW_CATALOGS[S.previewNiche].
 const effItems=()=>cfg().isDemo&&S.previewNiche?PREVIEW_CATALOGS[S.previewNiche].items:L('item');
 const NICHE_ACCENT={restaurant:'#800020',salon:'#7a3b6e',retail:'#1f3d6b'};
 const themeAccent=()=>{const niche=effBizType();if(cfg().isDemo&&S.previewNiche)return NICHE_ACCENT[niche]||'#800020';return cfg().col||NICHE_ACCENT[niche]||'#800020'};
-function applyTheme(){document.documentElement.style.setProperty('--accent',themeAccent())}
+function applyTheme(){const c=themeAccent();if(window.auzBrand)auzBrand(c);document.documentElement.style.setProperty('--accent',c)}
 const DEFAULT_PERMS={pos:true,orders:true,kitchen:true,reports:true,staff:true,inventory:true,crm:true,menu:false,settings:false,billing:false};
 const can=x=>{if(S.role=='owner')return true;if(x=='o')return false;const p=S.perms||(S.role=='manager'?{...DEFAULT_PERMS,billing:true}:DEFAULT_PERMS);return x=='m'?!!p.billing:!!p[x]};
 const featureOn=k=>!S.features||(S.features[k]===true&&S.enabledFeatures[k]!==false);

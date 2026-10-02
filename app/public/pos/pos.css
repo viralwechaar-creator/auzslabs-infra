@@ -1,46 +1,8 @@
 /* AUZslab POS design system, built to Apple's Human Interface Guidelines: system type, 44pt targets, grouped
    lists, segmented controls, sheets, one accent colour (the business's own), light and dark appearance.
-   Device layout lives in pos.mobile.css (0-899px) and pos.desktop.css (900px and up). */
-:root{
-  --accent:var(--brand,#800020);--on-accent:#fff;
-  --accent-text:var(--accent);
-  --bg:#f2f2f7;--card:#fff;--elev:#fff;--bar:rgba(249,249,251,.94);--thumb:#fff;
-  --fill:rgba(118,118,128,.12);--fill2:rgba(118,118,128,.08);--fill3:rgba(118,118,128,.045);
-  --label:#1d1d1f;--label2:rgba(60,60,67,.64);--label3:rgba(60,60,67,.38);
-  --sep:rgba(60,60,67,.15);--sep2:rgba(60,60,67,.26);
-  --green:#1f8a3d;--green-bg:rgba(52,199,89,.15);
-  --orange:#a85a00;--orange-bg:rgba(255,149,0,.17);
-  --red:#d70015;--red-bg:rgba(255,59,48,.12);
-  --blue:#0a64cf;--blue-bg:rgba(0,122,255,.12);
-  --purple:#7b3bbf;--purple-bg:rgba(175,82,222,.14);
-  --yellow:#8a6a00;--yellow-bg:rgba(255,204,0,.22);
-  --tint:color-mix(in srgb,var(--accent) 10%,transparent);
-  --tint2:color-mix(in srgb,var(--accent) 17%,transparent);
-  --veg:#2e7d32;--nonveg:#c62828;--egg:#c98a00;
-  --r1:8px;--r2:12px;--r3:16px;--r4:22px;
-  --sh1:0 0 0 .5px var(--sep),0 1px 2px rgba(0,0,0,.04);
-  --sh2:0 0 0 .5px var(--sep),0 10px 30px -14px rgba(0,0,0,.2);
-  --sh3:0 0 0 .5px var(--sep),0 30px 80px -24px rgba(0,0,0,.4);
-  --ease:cubic-bezier(.32,.72,0,1);
-  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",Inter,system-ui,"Segoe UI",Roboto,sans-serif;
-  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
-  color-scheme:light;
-}
-@media (prefers-color-scheme:dark){
-  :root{
-    --accent:var(--brand-dark,var(--brand,#800020));
-    --accent-text:var(--brand-dark-text,color-mix(in srgb,var(--accent) 55%,#fff));
-    --bg:#000;--card:#1c1c1e;--elev:#2c2c2e;--bar:rgba(22,22,24,.94);--thumb:#636366;
-    --fill:rgba(118,118,128,.26);--fill2:rgba(118,118,128,.18);--fill3:rgba(118,118,128,.1);
-    --label:#f5f5f7;--label2:rgba(235,235,245,.62);--label3:rgba(235,235,245,.32);
-    --sep:rgba(84,84,88,.55);--sep2:rgba(110,110,115,.7);
-    --green:#4cd964;--green-bg:rgba(48,209,88,.18);--orange:#ffb340;--orange-bg:rgba(255,159,10,.2);--red:#ff6961;--red-bg:rgba(255,69,58,.2);
-    --blue:#64a8ff;--blue-bg:rgba(10,132,255,.2);--purple:#d4a5ff;--purple-bg:rgba(191,90,242,.2);--yellow:#ffd60a;--yellow-bg:rgba(255,214,10,.16);
-    --tint:color-mix(in srgb,var(--accent) 28%,transparent);--tint2:color-mix(in srgb,var(--accent) 40%,transparent);
-    --sh1:0 0 0 .5px var(--sep);--sh2:0 0 0 .5px var(--sep),0 10px 30px -14px rgba(0,0,0,.6);--sh3:0 0 0 .5px var(--sep2),0 30px 80px -20px rgba(0,0,0,.8);
-    color-scheme:dark;
-  }
-}
+   Device layout lives in pos.mobile.css (0-899px: phone, and tablet split view from 600px) and pos.desktop.css
+   (900px and up: icon rail to 1199px, full sidebar from 1200px). */
+/* Every colour, size and shadow comes from /ds/auz.css (the AUZslab design system shared with the other apps). */
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;height:100%}
 body{margin:0;height:100%;overflow:hidden;font:16px/1.4 var(--font);color:var(--label);background:var(--bg);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;letter-spacing:-.01em}
@@ -84,11 +46,11 @@ svg.i{flex:none;display:block}
 .iconbtn{width:44px;height:44px;flex:none;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;color:var(--accent-text);position:relative;transition:background .2s var(--ease)}
 .iconbtn:hover{background:var(--fill2)}
 .iconbtn:active{background:var(--fill)}
-.iconbtn .dot{position:absolute;top:7px;right:7px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--red);color:#fff;font-size:11px;font-weight:700;line-height:17px;text-align:center}
+.iconbtn .dot{position:absolute;top:7px;right:7px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:var(--red);color:#fff;font-size:12px;font-weight:700;line-height:17px;text-align:center}
 
 /* ---------- navigation (sidebar on desktop, tab bar on phones: see the device files) ---------- */
 .nav button,.tabbar button{display:flex;align-items:center;gap:10px;text-align:left;color:var(--label2);transition:background .2s var(--ease),color .2s var(--ease)}
-.nav button.on{color:var(--accent-text);background:var(--tint)}
+.nav button.on{color:var(--accent-text);background:var(--accent-soft)}
 .tabbar button.on{color:var(--accent-text)}
 .nav .badge,.tabbar .badge{margin-left:auto}
 
@@ -96,7 +58,7 @@ svg.i{flex:none;display:block}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border-radius:var(--r2);background:var(--fill);color:var(--label);font-weight:600;font-size:16px;white-space:nowrap;transition:background .2s var(--ease),transform .2s var(--ease),opacity .2s;min-width:0}
 .btn:active:not(:disabled){transform:scale(.97);opacity:.88}
 .btn.fill{background:var(--accent);color:var(--on-accent)}
-.btn.tinted{background:var(--tint);color:var(--accent-text)}
+.btn.tinted{background:var(--accent-soft);color:var(--accent-text)}
 .btn.plain{background:none;color:var(--accent-text);padding:0 10px}
 .btn.plain:hover{background:var(--fill2)}
 .btn.danger{color:var(--red)}
@@ -142,7 +104,7 @@ svg.i{flex:none;display:block}
 .pill.red{background:var(--red-bg);color:var(--red)}
 .pill.blue{background:var(--blue-bg);color:var(--blue)}
 .pill.purple{background:var(--purple-bg);color:var(--purple)}
-.pill.accent{background:var(--tint);color:var(--accent-text)}
+.pill.accent{background:var(--accent-soft);color:var(--accent-text)}
 .badge{min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--red);color:#fff;font-size:12px;font-weight:700;line-height:20px;text-align:center}
 
 /* ---------- cards, grouped lists ---------- */
@@ -266,7 +228,7 @@ button.kpi.on{box-shadow:0 0 0 2px var(--accent)}
 .tk-h .ttl b{font-size:20px;font-weight:700;letter-spacing:-.02em}
 .tk-meta{display:flex;gap:8px;flex-wrap:wrap}
 .tk-meta .chip{min-height:32px;font-size:14px;padding:0 12px;background:var(--fill2)}
-.tk-meta .chip.set{background:var(--tint);color:var(--accent-text)}
+.tk-meta .chip.set{background:var(--accent-soft);color:var(--accent-text)}
 .tk-lines{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .ln{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;padding:10px 16px;border-bottom:.5px solid var(--sep);text-align:left;width:100%;min-width:0}
 .ln .lt{min-width:0;display:grid;gap:1px}

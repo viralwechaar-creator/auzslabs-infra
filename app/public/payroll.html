@@ -1,6 +1,6 @@
-<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><title>AUZslab Payroll</title><link rel=manifest href=/manifest-payroll.json><link rel=icon type=image/svg+xml href=/icon-payroll.svg><link rel=icon type=image/png href=/icon-payroll-512.png><link rel=apple-touch-icon href=/icon-payroll-512.png><meta name=theme-color content=#171717>
+<!doctype html><html lang=en data-theme=light><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><title>AUZslab Payroll</title><link rel=manifest href=/manifest-payroll.json><link rel=icon type=image/svg+xml href=/icon-payroll.svg><link rel=icon type=image/png href=/icon-payroll-512.png><link rel=apple-touch-icon href=/icon-payroll-512.png><meta name=theme-color content=#171717>
 <meta name=apple-mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-status-bar-style content=black-translucent><meta name=apple-mobile-web-app-title content=Payroll>
-<link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
+<link rel=stylesheet href="/ds/auz.css?v=1"><script src="/ds/brand.js?v=1"></script><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel=stylesheet>
 <style media="(max-width:899px)">:root{--ink:#171717;--ink-dim:#4d4d4d;--ink-faint:#8c8c8c;--accent:#800020;--g:var(--accent);--l:rgba(23,23,23,.14);--bg-raised:#dedede;--radius-sm:14px;--radius-md:18px;--radius-lg:26px;--shadow-sm:0 1px 2px rgba(23,23,23,.06),0 6px 20px -10px rgba(23,23,23,.14);--shadow-md:0 4px 12px rgba(23,23,23,.08),0 20px 44px -16px rgba(23,23,23,.22);--shadow-lift:0 10px 26px -8px rgba(23,23,23,.34),0 3px 8px rgba(23,23,23,.16);--accent-glow:0 4px 14px -2px rgba(128,0,32,.45);--ease:cubic-bezier(.4,0,.2,1)}
 *{box-sizing:border-box}
@@ -239,7 +239,7 @@ body{max-width:100%;overflow-x:clip}
 input,select,textarea{max-width:100%;min-width:0}
 input[type=date],input[type=time],input[type=month]{max-width:100%}
 .card a:not([class]){color:var(--accent);font-weight:600;text-decoration:none}
-</style><link rel="stylesheet" href="/hig.mobile.css?v=9" media="(max-width:899px)"><link rel="stylesheet" href="/hig.desktop.css?v=3" media="(min-width:900px)">
+</style><link rel="stylesheet" href="/hig.mobile.css?v=9" media="(max-width:899px)"><link rel="stylesheet" href="/hig.desktop.css?v=3" media="(min-width:900px)"><link rel="stylesheet" href="/ds/legacy.css?v=1">
 </head><body>
 <div id=app></div>
 <script src="/sb-client.js?v=2"></script>
@@ -275,6 +275,8 @@ function forceRelogin(msg){S.user=null;localStorage.removeItem('hru');login(msg)
 function modal(...k){const o=h('div',{class:'ov',onclick:e=>e.target==o&&o.remove()},h('div',{class:'md'},...k));document.body.append(o);return()=>o.remove()}
 function drawer(...k){const o=h('div',{class:'drawer-ov',onclick:e=>e.target==o&&o.remove()},h('div',{class:'drawer'},...k));document.body.append(o);return()=>o.remove()}
 const ICONS={
+ users:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.2 3.2 0 0 1 0 6.2M18 14.2a6.5 6.5 0 0 1 3.5 5.8"/></svg>',
+ gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg>',
  menu:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>',
  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>',
  megaphone:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10v4a1 1 0 001 1h2l4 4V5L6 9H4a1 1 0 00-1 1z"/><path d="M14 8a4 4 0 010 8"/></svg>',
@@ -809,20 +811,33 @@ V.settings=()=>{const s=hrSettings(),nm=h('input',{value:s.companyName,placehold
     h('button',{class:'warn',onclick:async()=>{await save('hr_announcement',a,a.id,true);render()}},'Remove')))));
 };
 
+// Payroll shell: grouped sidebar (icon rail 900-1199px, full from 1200px), bottom tab bar + More on phones
+const PNAV=[['People',[['employees','Employees','users'],['attendance','Attendance','clock'],['shifts','Shifts','sun'],['leave','Leave','leave'],['holidays','Holidays','calendar']]],['Pay',[['run','Payroll run','wallet'],['reports','Reports','doc']]],['',[['settings','Settings','gear']]]];
+const PTABS=['attendance','employees','run'];
+const signOutHR=async()=>{await sb.auth.signOut();localStorage.removeItem('hru');location.reload()};
 function render(){
  const hr=isHR();
  if(!hr){$('#app').replaceChildren(empApp());return}
  if(S._tick){clearInterval(S._tick);S._tick=null}
- const tabs=[['attendance','Attendance'],['employees','Employees'],['shifts','Shifts'],['holidays','Holidays'],['leave','Leave'],['run','Payroll run'],['reports','Reports'],['settings','Settings']];
- if(!tabs.some(([k])=>k==S.tab))S.tab=tabs[0][0];
- $('#app').replaceChildren(
+ const tabs=PNAV.flatMap(g=>g[1]);
+ if(window.auzBrandFrom){if(R.settings)auzBrandFrom(R.settings.data);else if(!S._brand){S._brand=1;auzBrandLoad(sb)}}
+ if(!tabs.some(([k])=>k==S.tab))S.tab='attendance';
+ const go=k=>{S.tab=k;render();scrollTo(0,0)};
+ const role=(JSON.parse(localStorage.hru||'null')||{}).role,boss=role=='owner'||role=='manager';
+ const side=h('aside',{class:'ax-side','aria-label':'Sections'},
+  h('div',{class:'brand'},h('img',{src:'/logo-payroll.svg',alt:'AUZslab Payroll'})),
+  h('nav',{'aria-label':'Main'},...PNAV.flatMap(([g,items])=>[g?h('div',{class:'grp'},h('span',{class:'lbl-t'},g)):h('div',{class:'grp'}),...items.map(([k,n,ic])=>h('button',{class:S.tab==k?'on':'',title:n,'aria-current':S.tab==k?'page':null,onclick:()=>go(k)},icon(ic),h('span',{class:'lbl-t'},n)))])),
+  h('div',{class:'foot'},boss?h('a',{href:'/dashboard.html',title:'Admin console'},icon('home'),h('span',{class:'lbl-t'},'Admin console')):null,
+   h('button',{title:'Sign out',onclick:signOutHR},icon('signout'),h('span',{class:'lbl-t'},'Sign out'))));
+ const tabbar=h('nav',{class:'ax-tabs','aria-label':'Main'},...PTABS.map(k=>{const t=tabs.find(x=>x[0]==k);return h('button',{class:S.tab==k?'on':'','aria-current':S.tab==k?'page':null,onclick:()=>go(k)},icon(t[2]),h('span',{},t[1]))}),
+  h('button',{class:PTABS.includes(S.tab)?'':'on',onclick:()=>hrDrawer(tabs)},icon('menu'),h('span',{},'More')));
+ $('#app').replaceChildren(h('div',{class:'ax-shell'},side,h('div',{class:'ax-main'},
   h('div',{class:'top-bar'},
-   h('button',{class:'ic-btn',onclick:()=>hrDrawer(tabs)},icon('menu')),
+   h('button',{class:'ic-btn ax-menu','aria-label':'All sections',onclick:()=>hrDrawer(tabs)},icon('menu')),
    h('h1',{},tabs.find(([k])=>k==S.tab)[1]),
-   h('button',{onclick:async()=>{await sb.auth.signOut();localStorage.removeItem('hru');location.reload()}},'Sign out')),
-  V[S.tab](),
-  h('div',{class:'powered'},'Powered by ',h('a',{href:'https://auzslab.in',target:'_blank',rel:'noopener'},'AUZslab'))
- );
+   h('button',{class:'ax-menu',onclick:signOutHR},'Sign out')),
+  h('div',{class:'ax-body'},V[S.tab]()),
+  h('div',{class:'powered'},'Powered by ',h('a',{href:'https://auzslab.in',target:'_blank',rel:'noopener'},'AUZslab'))),tabbar));
 }
 function hrDrawer(tabs){
  const close=drawer(

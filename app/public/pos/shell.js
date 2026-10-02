@@ -26,16 +26,55 @@ const navBadge = (k) => { if (k === 'kitchen') return L('order').filter((o) => o
 
 // the wordmark is ink on a light page; dark mode swaps in the white-type lockup
 const posLogo = () => h('picture', null, h('source', { media: '(prefers-color-scheme: dark)', srcset: '/logo-pos-light.svg' }), h('img', { src: '/logo-pos.svg', alt: 'AUZslab POS' }));
-function sideNav(navs) {
-  const main = navs.filter((n) => !n.grp), more = navs.filter((n) => n.grp && n.k !== 'more');
-  const btn = (n) => h('button', { class: S.tab === n.k ? 'on' : '', 'data-nav': n.k, 'aria-current': S.tab === n.k ? 'page' : null, onclick: () => go(n.k) }, icon(n.ic, 20), h('span', { class: 'grow ellip' }, n.label), navBadge(n.k) ? h('span', { class: 'badge' }, String(navBadge(n.k))) : null);
-  return h('aside', { class: 'side' },
-    h('div', { class: 'brand' }, posLogo()),
-    h('nav', { class: 'nav', 'aria-label': 'Main' }, main.map(btn), more.length ? h('div', { class: 'grp' }, 'More') : null, more.map(btn), btn({ k: 'more', label: 'Staff & settings', ic: 'staff' })),
-    h('div', { class: 'foot' }, L('outlet').length ? h('button', { onclick: pickOutlet }, icon('building', 16), outletName()) : null,
-      S.role === 'owner' || S.role === 'manager' ? h('button', { onclick: () => (location.href = '/dashboard.html') }, icon('home', 16), 'Admin console') : null,
-      h('div', { class: 'who ellip' }, myName() + ' · ' + cap1(S.role))));
+// Back office: the admin console's main areas and the other AUZslab apps, one tap from the till (owner and manager)
+function officeLinks() {
+  if (!(S.role === 'owner' || S.role === 'manager')) return [];
+  return [
+    { label: 'Overview', ic: 'home', href: '/dashboard.html#dashboard' },
+    { label: 'Inventory', ic: 'box', href: '/dashboard.html#inv/stock' },
+    { label: 'Reports', ic: 'chart', href: '/dashboard.html#rep/sales' },
+    { label: 'Menu', ic: 'book', href: '/dashboard.html#menu/items' },
+    featureOn('payroll') ? { label: 'Payroll', ic: 'payroll', href: '/payroll.html' } : null,
+    featureOn('accounting') ? { label: 'Accounting', ic: 'ledger', href: '/accounts.html' } : null,
+  ].filter(Boolean);
 }
+// sidebar width: an icon rail below 1200px wide, the full sidebar above; the toggle remembers the other choice
+const sidePref = () => { try { return localStorage['pos.side'] || ''; } catch { return ''; } };
+function toggleSide() {
+  const wide = matchMedia('(min-width:1200px)').matches, cur = sidePref(), mini = cur ? cur === 'min' : !wide;
+  try { localStorage['pos.side'] = mini ? 'full' : 'min'; } catch {}
+  render();
+}
+function sideNav(navs) {
+  const main = navs.filter((n) => !n.grp), more = navs.filter((n) => n.grp && n.k !== 'more'), office = officeLinks();
+  const btn = (n) => h('button', { class: S.tab === n.k ? 'on' : '', 'data-nav': n.k, title: n.label, 'aria-current': S.tab === n.k ? 'page' : null, onclick: () => go(n.k) }, icon(n.ic, 20), h('span', { class: 'grow ellip lbl-t' }, n.label), navBadge(n.k) ? h('span', { class: 'badge' }, String(navBadge(n.k))) : null);
+  const link = (n) => h('a', { href: n.href, title: n.label, class: 'navlink' }, icon(n.ic, 20), h('span', { class: 'grow ellip lbl-t' }, n.label));
+  const pref = sidePref();
+  return h('aside', { class: 'side' + (pref ? ' ' + pref : ''), 'aria-label': 'Sections' },
+    h('div', { class: 'brand' }, h('span', { class: 'brand-logo' }, posLogo()), h('img', { class: 'brand-mark', src: '/icon-pos.svg', alt: 'AUZslab POS' }),
+      h('button', { class: 'side-tg', title: 'Collapse or expand the sidebar', 'aria-label': 'Collapse or expand the sidebar', onclick: toggleSide }, icon('sidebar', 20))),
+    h('nav', { class: 'nav', 'aria-label': 'Main' }, h('div', { class: 'grp' }, h('span', { class: 'lbl-t' }, 'Service')), main.map(btn),
+      h('div', { class: 'grp' }, h('span', { class: 'lbl-t' }, 'More')), more.map(btn), btn({ k: 'more', label: 'Staff & settings', ic: 'staff' }),
+      office.length ? h('div', { class: 'grp' }, h('span', { class: 'lbl-t' }, 'Back office')) : null, office.map(link)),
+    h('div', { class: 'foot' }, L('outlet').length ? h('button', { onclick: pickOutlet, title: 'Outlet' }, icon('building', 18), h('span', { class: 'lbl-t ellip' }, outletName())) : null,
+      h('button', { onclick: shortcutsSheet, title: 'Keyboard shortcuts', class: 'only-kb' }, icon('keyboard', 18), h('span', { class: 'lbl-t' }, 'Shortcuts')),
+      h('div', { class: 'who ellip lbl-t' }, myName() + ' · ' + cap1(S.role))));
+}
+// keyboard: / search items, Alt+1..9 sections, N new order, ? this list (Escape already closes sheets)
+const SHORTCUTS = [['/', 'Search items (Sell)'], ['N', 'New order'], ['Alt + 1 to 9', 'Go to a section, in sidebar order'], ['Esc', 'Close the open sheet'], ['?', 'Show these shortcuts']];
+function shortcutsSheet() {
+  sheet({ title: 'Keyboard shortcuts', cls: 'narrow', closeLabel: 'Done', body: h('div', { class: 'list' }, SHORTCUTS.map(([k, t]) => liRow({ title: t, right: h('kbd', null, k) }))) });
+}
+addEventListener('keydown', (e) => {
+  if (!S.user || e.ctrlKey || e.metaKey || document.querySelector('.ov')) return;
+  if (/INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || '')) return;
+  const navs = navItems().filter((n) => n.k !== 'more');
+  if (e.altKey && /^Digit[1-9]$/.test(e.code)) { const n = navs[+e.code.slice(5) - 1]; if (n) { e.preventDefault(); go(n.k); } return; }
+  if (e.altKey) return;
+  if (e.key === '?') { e.preventDefault(); shortcutsSheet(); }
+  else if (e.key === '/' && navs.some((n) => n.k === 'sell')) { e.preventDefault(); if (S.tab !== 'sell') go('sell'); setTimeout(() => { const i = $('.sell input[type=search]'); if (i) i.focus(); }, 30); }
+  else if ((e.key === 'n' || e.key === 'N') && navs.some((n) => n.k === 'sell') && !cfg().hwBarcode) { e.preventDefault(); S.cur = null; go('sell'); }
+});
 function tabBar(navs) {
   return h('nav', { class: 'tabbar', 'aria-label': 'Main' }, tabBarItems(navs).filter(Boolean).map((n) => h('button', { class: S.tab === n.k || (n.k === 'more' && !tabBarItems(navs).some((x) => x && x.k === S.tab)) ? 'on' : '', 'data-tab': n.k, 'aria-current': S.tab === n.k ? 'page' : null, onclick: () => go(n.k) },
     icon(n.ic, 24, 1.7), h('span', null, n.label), navBadge(n.k) ? h('span', { class: 'badge' }, String(navBadge(n.k))) : null)));
