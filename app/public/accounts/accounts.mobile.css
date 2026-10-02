@@ -1,5 +1,5 @@
 /* AUZslab Accounting: compact (phones, under 600px) and medium (600-899px: tablet portrait, open foldables). Independent of accounts.desktop.css. */
-.shell{min-height:100dvh;padding-bottom:calc(64px + var(--safe-b))}
+.shell{min-height:100dvh;padding-bottom:calc(54px + var(--safe-b))}
 .side{display:none}
 .topbar{position:sticky;top:0;z-index:30;display:grid;grid-template-columns:72px 1fr 72px;align-items:center;min-height:calc(48px + var(--safe-t));padding:var(--safe-t) 8px 0;background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:.5px solid transparent;transition:border-color .2s}
 .topbar.scrolled{border-bottom-color:var(--sep)}
@@ -10,8 +10,8 @@
 .page{padding:0 16px 28px;display:grid;gap:22px;align-content:start}
 .large-title{font-size:34px;line-height:1.12;font-weight:700;letter-spacing:-.03em;padding:2px 0 0}
 .page-sub{margin-top:-14px;color:var(--label2);font-size:15px}
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(5,1fr);background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid var(--sep);padding-bottom:var(--safe-b)}
-.tabbar button{display:grid;place-items:center;align-content:center;gap:2px;min-height:49px;padding:4px 0 3px;color:var(--label3);font-size:12px;font-weight:500}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(5,1fr);background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid var(--sep);padding-bottom:max(2px,calc(var(--safe-b) - 14px))}
+.tabbar button{display:grid;place-items:center;align-content:center;gap:2px;min-height:46px;padding:4px 0 3px;color:var(--label3);font-size:12px;font-weight:500}
 .tabbar button[aria-current=page]{color:var(--tint-text)}
 .tabbar .ic svg{width:25px;height:25px}
 .sheet{left:0;right:0;bottom:0;max-height:94dvh;border-radius:16px 16px 0 0;animation:sheetUp .38s var(--ease)}
@@ -21,7 +21,7 @@
 .toolbar{display:grid;gap:10px}
 .toolbar .row{flex-wrap:wrap}
 .desk-only{display:none!important}
-.dock{position:sticky;bottom:calc(49px + var(--safe-b));z-index:20;display:flex;gap:10px;padding:10px 0;background:linear-gradient(to top,var(--bg) 70%,transparent)}
+.dock{position:sticky;bottom:calc(46px + max(2px,calc(var(--safe-b) - 14px)));z-index:20;display:flex;gap:10px;padding:10px 0;background:linear-gradient(to top,var(--bg) 70%,transparent)}
 .dock .btn{flex:1}
 .two{display:grid;gap:14px}
 .card.pad-s{padding:12px}
