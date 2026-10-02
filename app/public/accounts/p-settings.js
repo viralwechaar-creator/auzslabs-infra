@@ -24,15 +24,41 @@ page('settings', {
   },
 });
 
+// shrink a picked image to a small data URL so it can travel inside the organisation record (and the public invoice link)
+function shrinkImage(file, maxW, maxH) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => { const k = Math.min(1, maxW / img.width, maxH / img.height), c = document.createElement('canvas'); c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k)); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url); const out = c.toDataURL('image/png'); out.length > 250000 ? rej(new Error('That image is too detailed. Use a simpler or smaller one.')) : res(out); };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('Could not read that image')); };
+    img.src = url;
+  });
+}
+function imageField(label, hint, br, key, maxW, maxH) {
+  const prev = h('div', { class: 'row', style: { gap: '12px', alignItems: 'center' } }), file = h('input', { type: 'file', accept: 'image/*', class: 'hidden' });
+  const draw = () => { clear(prev); if (br[key]) prev.append(h('img', { src: br[key], alt: label, style: { maxHeight: '64px', maxWidth: '160px', background: '#fff', borderRadius: '8px', border: '1px solid var(--line, #0002)' } }), h('button', { class: 'btn sm', type: 'button', onclick: () => { delete br[key]; draw(); } }, 'Remove')); prev.append(h('button', { class: 'btn sm', type: 'button', onclick: () => file.click() }, icon('upload', 16), br[key] ? 'Change' : 'Upload')); };
+  file.addEventListener('change', async () => { const f = file.files[0]; file.value = ''; if (!f) return; try { br[key] = await shrinkImage(f, maxW, maxH); draw(); } catch (e) { toast(e.message, { err: true }); } });
+  draw();
+  return h('div', { class: 'grid', style: { gap: '6px' } }, h('div', { class: 'lbl' }, label), prev, file, h('div', { class: 'hint' }, hint));
+}
 function setOrg(v) {
-  const o = S.org, gst = input({ value: o.gstin || '', max: 15, placeholder: '15-character GSTIN' }), msg = h('div', { class: 'hint' }, 'Needed on invoices if you are GST-registered.');
+  const o = S.org, br = JSON.parse(JSON.stringify((o.settings && o.settings.brand) || {})); br.bank = br.bank || {}; br.regs = br.regs || [];
+  const bf = { upi: input({ value: br.upi || '', placeholder: 'name@bank', label: 'UPI ID' }), web: input({ value: br.website || '', placeholder: 'www.example.com' }), hold: input({ value: br.bank.holder || '' }), bname: input({ value: br.bank.name || '' }), acno: input({ value: br.bank.account || '', mode: 'numeric' }), ifsc: input({ value: br.bank.ifsc || '', max: 11 }), brn: input({ value: br.bank.branch || '' }) };
+  const regHost = h('div', { class: 'grid' });
+  const drawRegs = () => { clear(regHost); br.regs.forEach((r, i) => regHost.append(h('div', { class: 'row', style: { gap: '8px' } }, h('div', { class: 'grow' }, (() => { const e = input({ value: r.k, placeholder: 'e.g. Udyam, CIN, FSSAI' }); e.addEventListener('input', () => { r.k = e.value; }); return e; })()), h('div', { class: 'grow' }, (() => { const e = input({ value: r.v, placeholder: 'Number' }); e.addEventListener('input', () => { r.v = e.value; }); return e; })()), h('button', { class: 'btn sm', type: 'button', 'aria-label': 'Remove', onclick: () => { br.regs.splice(i, 1); drawRegs(); } }, icon('x', 16))))); regHost.append(h('button', { class: 'btn sm', type: 'button', onclick: () => { br.regs.push({ k: '', v: '' }); drawRegs(); } }, icon('plus', 16), 'Add registration number')); };
+  drawRegs();
+  const gst = input({ value: o.gstin || '', max: 15, placeholder: '15-character GSTIN' }), msg = h('div', { class: 'hint' }, 'Needed on invoices if you are GST-registered.');
   const val = () => { const g = gst.value.trim().toUpperCase(); gst.value = g; gst.classList.remove('err'); if (!g) { msg.textContent = 'Needed on invoices if you are GST-registered.'; return; } if (g.length < 15) { msg.textContent = g.length + ' of 15 characters'; return; } if (gstinValid(g)) { msg.textContent = 'Valid · ' + (STATES[g.slice(0, 2)] || ''); if (!st.value) st.value = g.slice(0, 2); } else { gst.classList.add('err'); msg.textContent = 'Not a valid GSTIN. Check the characters and the last check digit.'; } };
   const st = selectEl([['', 'Choose state'], ...Object.keys(STATES).map((c) => [c, stateName(c)])], o.state_code || ''); gst.addEventListener('input', val);
   const f = { legal: input({ value: o.legal_name || '' }), trade: input({ value: o.trade_name || '' }), pan: input({ value: o.pan || '', max: 10 }), addr: h('textarea', { class: 'textarea', style: { minHeight: '70px' } }, o.address || ''), city: input({ value: o.city || '' }), pin: input({ value: o.pincode || '', mode: 'numeric', max: 6 }), ph: input({ value: o.phone || '' }), em: input({ value: o.email || '', type: 'email' }),
     reg: selectEl([['regular', 'Regular (charges GST)'], ['composition', 'Composition scheme (no GST on invoices)'], ['unregistered', 'Not registered (no GST on invoices)']], o.reg_type), terms: h('textarea', { class: 'textarea' }, o.invoice_terms || ''), bank: h('textarea', { class: 'textarea', style: { minHeight: '70px' } }, o.bank_details || ''), foot: input({ value: o.invoice_footer || '' }) };
   v.root.append(h('div', { class: 'card grid' }, field('Legal name', f.legal), field('Trade name (shown on documents)', f.trade), field('GSTIN', gst), msg, h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('State', st), field('Registration', f.reg)), field('PAN', f.pan), field('Address', f.addr), h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('City', f.city), field('Pincode', f.pin)), h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Phone', f.ph), field('Email', f.em))),
     h('div', { class: 'card grid' }, h('h3', null, 'On invoices'), field('Terms and conditions', f.terms), field('Bank details', f.bank), field('Footer line', f.foot)),
-    h('div', { class: 'dock' }, h('button', { class: 'btn fill', onclick: async (e) => { e.currentTarget.disabled = true; try { const r = await api('acc_save_org', { p: { legal_name: f.legal.value, trade_name: f.trade.value, gstin: gst.value, pan: f.pan.value, state_code: st.value, reg_type: f.reg.value, address: f.addr.value, city: f.city.value, pincode: f.pin.value, phone: f.ph.value, email: f.em.value, invoice_terms: f.terms.value, bank_details: f.bank.value, invoice_footer: f.foot.value } }); S.org = r; toast('Saved'); } catch (x) { fail(x); } e.currentTarget.disabled = false; } }, 'Save')));
+    h('div', { class: 'card grid' }, h('h3', null, 'Business identity'), h('p', { class: 'muted small' }, 'Shown on every printed and shared invoice.'),
+      imageField('Logo', 'Appears at the top left. A simple PNG works best.', br, 'logo', 360, 160), imageField('Signature', 'Appears above "Authorised signatory".', br, 'signature', 300, 120), imageField('Stamp or seal', 'Optional. Appears next to the signature.', br, 'stamp', 240, 240),
+      field('Website', bf.web), h('div', { class: 'lbl' }, 'Other registration numbers'), regHost),
+    h('div', { class: 'card grid' }, h('h3', null, 'Bank and UPI'), h('p', { class: 'muted small' }, 'Customers see these on the invoice. A UPI ID adds a pay-now QR with the balance filled in.'),
+      field('Account name', bf.hold), h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Bank', bf.bname), field('Branch', bf.brn)), h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Account number', bf.acno), field('IFSC', bf.ifsc)), field('UPI ID', bf.upi)),
+    h('div', { class: 'dock' }, h('button', { class: 'btn fill', onclick: async (e) => { e.currentTarget.disabled = true; try { br.upi = bf.upi.value.trim(); br.website = bf.web.value.trim(); br.bank = { holder: bf.hold.value.trim(), name: bf.bname.value.trim(), account: bf.acno.value.trim(), ifsc: bf.ifsc.value.trim().toUpperCase(), branch: bf.brn.value.trim() }; br.regs = br.regs.filter((r) => r.k.trim() && r.v.trim()); const r = await api('acc_save_org', { p: { settings: { brand: br }, legal_name: f.legal.value, trade_name: f.trade.value, gstin: gst.value, pan: f.pan.value, state_code: st.value, reg_type: f.reg.value, address: f.addr.value, city: f.city.value, pincode: f.pin.value, phone: f.ph.value, email: f.em.value, invoice_terms: f.terms.value, bank_details: f.bank.value, invoice_footer: f.foot.value } }); S.org = r; toast('Saved'); } catch (x) { fail(x); } e.currentTarget.disabled = false; } }, 'Save')));
 }
 function setYears(v) {
   const o = S.org;

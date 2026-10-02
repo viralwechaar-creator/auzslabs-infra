@@ -269,6 +269,18 @@ export default async function run({ browser, stack }) {
     await page.waitForFunction(() => document.querySelector('.line input[aria-label=Item]').value === 'Brand new gadget', null, { timeout: 8000 });
     const n = (await q("select count(*)::int n from acc_products where tenant_id=$1 and sku='NEW-GADGET'", [tid]))[0].n; assert(n === 1, 'product not saved');
   });
+  await s.check('Business identity: logo, UPI, bank and registrations are saved and reach the public invoice link', async () => {
+    const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+    await ok(owner, 'acc_save_org', { p: { settings: { brand: { logo: png, upi: 'shop@okbank', website: 'www.example.com', bank: { holder: 'Test Co', name: 'Test Bank', account: '123456789', ifsc: 'TEST0001234' }, regs: [{ k: 'Udyam', v: 'UDYAM-XX-00-0000001' }] } } } });
+    const doc = (await q("select id from acc_documents where tenant_id=$1 and doc_type='invoice' and status='posted' limit 1", [tid]))[0].id;
+    const tok = (await ok(owner, 'acc_share_document', { p_doc: doc, p_enable: true })).token;
+    const pub = await call(null, 'public_acc_document', { p_token: tok }); const b = pub.data.org.brand;
+    assert(b.logo === png && b.upi === 'shop@okbank' && b.bank.account === '123456789' && b.regs[0].k === 'Udyam', 'brand missing from the public document');
+    const pp = await ctxD.newPage(); await pp.goto(stack.url('testacct', '/bill.html?t=' + tok)); await pp.waitForSelector('table'); const t = await pp.locator('body').innerText();
+    assert(/Udyam UDYAM-XX/.test(t) && /Account no\.: 123456789/.test(t) && /UPI: shop@okbank/.test(t), 'identity not shown on the shared bill: ' + t.slice(0, 200));
+    assert(await pp.locator('img[alt="UPI QR"]').count() === 1, 'UPI QR missing'); await pp.close();
+    await ok(owner, 'acc_share_document', { p_doc: doc, p_enable: false });
+  });
   await s.check('Screens: a business-rule error is shown to the user, not swallowed', async () => {
     await page.evaluate(() => { location.hash = '#/new/invoice'; }); await page.waitForSelector('.line');
     await page.locator('.line input[aria-label=Item]').first().fill('T-Sh'); await page.locator('.picker .pop button').first().click(); await page.locator('.line input[aria-label=qty]').first().fill('5000');
