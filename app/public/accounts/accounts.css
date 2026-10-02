@@ -169,6 +169,7 @@ table.tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:15px}
 .picker .pop button{display:flex;justify-content:space-between;gap:10px;align-items:center;width:100%;min-height:44px;padding:6px 10px;border-radius:8px;text-align:left}
 .picker .pop button:hover,.picker .pop button.on{background:var(--tint-soft)}
 .picker .pop .s{font-size:13px;color:var(--label2)}
+.picker .pop button.new{color:var(--accent);font-weight:600;border-top:1px solid var(--line,#0001);border-radius:0 0 8px 8px}
 .totals{display:grid;gap:6px}.totals .t{display:flex;justify-content:space-between;gap:12px}.totals .big{font-size:22px;font-weight:700;padding-top:8px;border-top:.5px solid var(--sep)}
 .effect{font-size:14px}.effect table{width:100%;border-collapse:collapse}.effect td{padding:5px 0;border-bottom:.5px solid var(--sep)}.effect td.r{text-align:right}
 .banner{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--orange-bg);color:var(--label);font-size:15px}

@@ -279,11 +279,28 @@ function ewbSheet(d, done) {
 
 // ---------- print, share, message ----------
 function docLines(r) { return r.lines.map((l, i) => [i + 1, l.description || '', l.hsn || '', qty(l.qty) + ' ' + (l.unit || ''), nf2.format(l.rate), l.tax_rate + '%', nf2.format(l.taxable), nf2.format(l.total)]); }
+// ---------- business identity blocks (logo, registrations, bank, UPI, signature) shared by print and the public page ----------
+function brandOf(o) { return (o && o.brand) || {}; }
+function bankLines(b) { const k = b.bank || {}; return [k.holder && ['Account name', k.holder], k.name && ['Bank', k.name], k.account && ['Account no.', k.account], k.ifsc && ['IFSC', k.ifsc], k.branch && ['Branch', k.branch]].filter(Boolean); }
+function upiQr(b, org, d) {
+  if (!b.upi || typeof qrcode !== 'function') return null;
+  const due = d.paid != null ? Number(d.total) - Number(d.paid) : 0;
+  const uri = 'upi://pay?pa=' + encodeURIComponent(b.upi) + '&pn=' + encodeURIComponent(org.name || org.legal_name || '') + (due > 0 ? '&am=' + due.toFixed(2) : '') + '&cu=INR&tn=' + encodeURIComponent(d.number || '');
+  try { const q = qrcode(0, 'M'); q.addData(uri); q.make(); return q.createDataURL(4, 0); } catch (e) { return null; }
+}
+function identityFoot(o, d) {
+  const b = brandOf(o), bl = bankLines(b), qr = d.type === 'invoice' && !d.cancelled ? upiQr(b, o, d) : null;
+  const left = [bl.length ? h('div', null, h('b', null, 'Bank details'), bl.map(([k, v]) => h('div', null, k + ': ' + v))) : (o.bank_details ? h('p', null, h('b', null, 'Bank details: '), o.bank_details) : null),
+    b.upi ? h('div', null, 'UPI: ' + b.upi) : null];
+  const right = (b.signature || b.stamp) ? h('div', { style: { textAlign: 'right' } }, h('div', { style: { display: 'flex', gap: '12px', justifyContent: 'flex-end', alignItems: 'flex-end' } }, b.stamp ? h('img', { src: b.stamp, alt: '', style: { maxHeight: '80px', maxWidth: '110px' } }) : null, b.signature ? h('img', { src: b.signature, alt: '', style: { maxHeight: '60px', maxWidth: '150px' } }) : null), h('div', { style: { fontSize: '12px' } }, 'Authorised signatory for ' + (o.name || o.legal_name))) : null;
+  if (!bl.length && !b.upi && !right && !o.bank_details) return null;
+  return h('div', { style: { display: 'flex', justifyContent: 'space-between', gap: '16px', alignItems: 'flex-end', margin: '10px 0' } }, h('div', null, left, qr ? h('img', { src: qr, alt: 'UPI QR', style: { width: '96px', height: '96px', marginTop: '6px' } }) : null), right);
+}
 function invoiceSheetNode(data) { // data: {org, doc, lines} shapes of public_acc_document (also used in-app)
   const o = data.org, d = data.doc;
   const adr = [o.address, [o.city, o.pincode].filter(Boolean).join(' ')].filter(Boolean).join(', ');
   return h('div', null,
-    h('div', { style: { display: 'flex', justifyContent: 'space-between', gap: '16px' } }, h('div', null, h('h1', null, o.name || o.legal_name), h('div', null, adr), o.gstin ? h('div', null, 'GSTIN ' + o.gstin) : null, o.phone ? h('div', null, o.phone) : null),
+    h('div', { style: { display: 'flex', justifyContent: 'space-between', gap: '16px' } }, h('div', null, brandOf(o).logo ? h('img', { src: brandOf(o).logo, alt: '', style: { maxHeight: '56px', maxWidth: '200px', display: 'block', marginBottom: '6px' } }) : null, h('h1', null, o.name || o.legal_name), h('div', null, adr), o.gstin ? h('div', null, 'GSTIN ' + o.gstin) : null, (brandOf(o).regs || []).map((r) => h('div', null, r.k + ' ' + r.v)), o.phone ? h('div', null, o.phone) : null, brandOf(o).website ? h('div', null, brandOf(o).website) : null),
       h('div', { style: { textAlign: 'right' } }, h('h1', null, DOC_LABEL[d.type].toUpperCase()), h('div', null, d.number), h('div', null, 'Date ' + fmtD(d.date)), d.due_date ? h('div', null, 'Due ' + fmtD(d.due_date)) : null)),
     h('div', { class: 'rule' }),
     h('div', { style: { display: 'flex', justifyContent: 'space-between', gap: '16px' } }, h('div', null, h('b', null, 'Bill to'), h('div', null, d.party_name || 'Walk-in'), d.party_gstin ? h('div', null, 'GSTIN ' + d.party_gstin) : null, d.billing_address ? h('div', null, d.billing_address) : null),
@@ -293,12 +310,12 @@ function invoiceSheetNode(data) { // data: {org, doc, lines} shapes of public_ac
     h('div', { style: { display: 'flex', justifyContent: 'flex-end', marginTop: '10px' } }, h('table', { style: { width: '260px' } }, h('tbody', null,
       [['Taxable value', d.taxable], Number(d.cgst) ? ['CGST', d.cgst] : null, Number(d.sgst) ? ['SGST', d.sgst] : null, Number(d.igst) ? ['IGST', d.igst] : null, Number(d.cess) ? ['Cess', d.cess] : null, Number(d.roundoff) ? ['Round off', d.roundoff] : null].filter(Boolean).map(([a, b]) => h('tr', null, h('td', null, a), h('td', { class: 'r' }, nf2.format(b)))),
       h('tr', null, h('td', null, h('b', null, 'Total')), h('td', { class: 'r' }, h('b', null, '₹' + nf2.format(d.total)))), Number(d.paid) ? h('tr', null, h('td', null, 'Received'), h('td', { class: 'r' }, nf2.format(d.paid))) : null, Number(d.paid) ? h('tr', null, h('td', null, 'Balance due'), h('td', { class: 'r' }, nf2.format(d.total - d.paid))) : null))),
-    d.notes ? h('p', null, h('b', null, 'Notes: '), d.notes) : null, o.bank_details ? h('p', null, h('b', null, 'Bank details: '), o.bank_details) : null, d.terms ? h('p', { style: { fontSize: '11px' } }, d.terms) : null,
+    d.notes ? h('p', null, h('b', null, 'Notes: '), d.notes) : null, identityFoot(o, d), d.terms ? h('p', { style: { fontSize: '11px' } }, d.terms) : null,
     data.einvoice && data.einvoice.irn ? h('p', { style: { fontSize: '11px', wordBreak: 'break-all' } }, 'IRN: ' + data.einvoice.irn + (data.einvoice.ack_no ? ' · Ack ' + data.einvoice.ack_no : '')) : null, o.footer ? h('p', { style: { textAlign: 'center' } }, o.footer) : null);
 }
 function printDoc(r) {
   const d = r.doc, o = S.org;
-  const data = { org: { name: o.trade_name || o.legal_name, legal_name: o.legal_name, gstin: o.gstin, address: o.address, city: o.city, pincode: o.pincode, phone: o.phone, bank_details: o.bank_details, footer: o.invoice_footer },
+  const data = { org: { name: o.trade_name || o.legal_name, legal_name: o.legal_name, gstin: o.gstin, address: o.address, city: o.city, pincode: o.pincode, phone: o.phone, bank_details: o.bank_details, footer: o.invoice_footer, brand: (o.settings && o.settings.brand) || {} },
     doc: { type: d.doc_type, number: d.number.startsWith('DRAFT') ? 'DRAFT' : d.number, date: d.doc_date, due_date: d.due_date, party_name: d.party_name, party_gstin: d.party_gstin, billing_address: d.billing_address, place_of_supply: d.place_of_supply, reverse_charge: d.reverse_charge,
       taxable: d.taxable, cgst: d.cgst, sgst: d.sgst, igst: d.igst, cess: d.cess, roundoff: d.roundoff, total: d.total, paid: d.paid, notes: d.notes, terms: d.terms, cancelled: d.status === 'cancelled' },
     lines: r.lines.map((l) => ({ n: l.line_no, description: l.description, hsn: l.hsn, qty: l.qty, unit: l.unit, rate: l.rate, tax_rate: l.tax_rate, taxable: l.taxable, total: l.total })), einvoice: r.einvoice && r.einvoice.status === 'generated' ? r.einvoice : null };
