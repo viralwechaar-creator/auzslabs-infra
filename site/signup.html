@@ -18,49 +18,102 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<style media="(max-width:899px)">.err{color:var(--accent);font-size:12.5px;margin-top:10px}
-.auth-combo{display:flex;flex-wrap:wrap;max-width:1100px;min-height:460px;
-  background:#fff;border:2px solid var(--ink);border-radius:26px 12px 26px 12px;
-  box-shadow:5px 5px 0 var(--ink);overflow:hidden;}
-.auth-illustration{flex:3 1 260px;min-width:220px;position:relative;overflow:hidden;
-  background:var(--bg-raised);display:flex;align-items:center;justify-content:center;padding:40px 24px;}
-.auth-illustration-shape{position:absolute;border-radius:50%}
-.auth-illustration-shape.s1{width:240px;height:240px;background:var(--ink);opacity:.05;top:-80px;left:-70px}
-.auth-illustration-shape.s2{width:180px;height:180px;background:var(--accent);opacity:.14;bottom:-60px;right:-50px;
-  animation:authBob 5.5s ease-in-out infinite;}
-.auth-illustration-shape.s3{width:90px;height:90px;background:var(--ink);opacity:.07;bottom:30%;left:8%;
-  animation:authBob 7s ease-in-out infinite reverse;}
-@keyframes authBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
-.auth-illustration-logo{position:relative;width:52%;max-width:220px;animation:authFloat 4.5s ease-in-out infinite}
-@keyframes authFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-.auth-form-col{flex:1 1 300px;min-width:260px;max-width:420px;padding:32px 28px;
-  display:flex;flex-direction:column;justify-content:center;}
-@media (prefers-reduced-motion:reduce){
-.auth-illustration-shape.s2,.auth-illustration-shape.s3,.auth-illustration-logo{animation:none}
-}
+<style media="(max-width:899px)">
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.err{color:var(--accent);font-size:12.5px;margin-top:10px}
+.auth-wrap{max-width:440px;margin:0 auto;padding:22px 0 56px}
+.auth-h1{font-family:var(--font-display);font-weight:800;font-size:36px;line-height:1.08;letter-spacing:-.02em;margin:0 0 14px}
+.auth-accent{position:relative;display:inline-block;color:var(--accent)}
+.auth-accent .squiggle{position:absolute;left:0;bottom:-7px;width:100%;height:11px;color:var(--accent)}
+.auth-tag{font-size:14.5px;line-height:1.6;color:var(--ink-dim);max-width:30em;margin:0 0 22px}
+.auth-doodle{margin:0 0 20px}
+.auth-doodle svg{width:100%;height:auto;display:block}
+.auth-dash{border-top:1.5px dashed var(--line);margin:0 0 20px}
+.auth-badge{display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:22px}
+.auth-badge .dot{width:7px;height:7px;border-radius:50%;border:1.5px solid var(--accent);flex-shrink:0}
+.auth-seg{display:flex;background:var(--bg-raised);border-radius:999px;padding:4px;margin-bottom:26px}
+.auth-seg button{flex:1;border:none;background:none;padding:12px 14px;border-radius:999px;
+  font-family:var(--font-body);font-weight:600;font-size:14.5px;color:var(--ink-dim);cursor:pointer;
+  transition:background .18s ease,color .18s ease,box-shadow .18s ease}
+.auth-seg button.active{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(23,23,23,.14)}
+.auth-h2{font-family:var(--font-display);font-weight:800;font-size:25px;letter-spacing:-.01em;margin:0 0 6px}
+.auth-sub{font-size:13.5px;color:var(--ink-dim);margin:0 0 20px}
+.auth-social{display:flex;flex-direction:column;gap:9px;margin-bottom:4px}
+.auth-social-btn{width:100%;box-sizing:border-box;justify-content:center;padding:13px;border-radius:999px;
+  border:1.5px solid var(--line);background:#fff;font-family:var(--font-body);font-weight:600;font-size:13.5px;
+  color:var(--ink);display:flex;align-items:center;gap:9px;cursor:pointer;transition:border-color .15s ease,background .15s ease}
+.auth-social-btn:hover{border-color:var(--ink);background:var(--bg-raised)}
+.auth-or{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--ink-dim);font-size:12px}
+.auth-or .ln{flex:1;height:1px;background:var(--line)}
+.field{margin-bottom:16px}
+.field label{display:block;font-family:var(--font-body);font-weight:700;font-size:13.5px;color:var(--ink);margin-bottom:7px}
+.field input{width:100%;box-sizing:border-box;border:1.5px solid var(--line);background:#fff;border-radius:14px;
+  padding:14px 16px;font-family:var(--font-body);font-size:14.5px;color:var(--ink);transition:border-color .15s ease}
+.field input:focus{outline:none;border-color:var(--ink)}
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:46px}
+.pw-eye{position:absolute;right:4px;top:4px;width:40px;height:calc(100% - 8px);border:none;background:none;
+  display:flex;align-items:center;justify-content:center;color:var(--ink-dim);cursor:pointer;border-radius:10px}
+.pw-eye:hover{background:var(--bg-raised)}
+.auth-forgot{text-align:right;margin:-8px 0 20px}
+.auth-forgot button{background:none;border:none;padding:0;font-family:var(--font-body);font-weight:700;
+  font-size:13px;color:var(--accent);cursor:pointer}
+.auth-cta{width:100%;box-sizing:border-box;justify-content:center;padding:17px;
+  font-family:var(--font-body);font-weight:700;font-size:15px;text-transform:none;letter-spacing:0;
+  border-radius:999px;margin-top:2px}
+.auth-terms{font-size:12px;color:var(--ink-dim);line-height:1.6;margin:0}
+.auth-terms a{color:var(--ink);font-weight:600;text-decoration:none;border-bottom:1px solid var(--line)}
+.wrap{padding-left:20px;padding-right:20px;box-sizing:border-box}
 @media (min-width:861px){
 .wrap{max-width:1180px;margin:0 auto}
 }
-</style><style media="(min-width:900px)">.err{color:var(--accent);font-size:12.5px;margin-top:10px}
-.auth-combo{display:flex;flex-wrap:wrap;max-width:1100px;min-height:460px;
-  background:#fff;border:2px solid var(--ink);border-radius:26px 12px 26px 12px;
-  box-shadow:5px 5px 0 var(--ink);overflow:hidden;}
-.auth-illustration{flex:3 1 260px;min-width:220px;position:relative;overflow:hidden;
-  background:var(--bg-raised);display:flex;align-items:center;justify-content:center;padding:40px 24px;}
-.auth-illustration-shape{position:absolute;border-radius:50%}
-.auth-illustration-shape.s1{width:240px;height:240px;background:var(--ink);opacity:.05;top:-80px;left:-70px}
-.auth-illustration-shape.s2{width:180px;height:180px;background:var(--accent);opacity:.14;bottom:-60px;right:-50px;
-  animation:authBob 5.5s ease-in-out infinite;}
-.auth-illustration-shape.s3{width:90px;height:90px;background:var(--ink);opacity:.07;bottom:30%;left:8%;
-  animation:authBob 7s ease-in-out infinite reverse;}
-@keyframes authBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
-.auth-illustration-logo{position:relative;width:52%;max-width:220px;animation:authFloat 4.5s ease-in-out infinite}
-@keyframes authFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-.auth-form-col{flex:1 1 300px;min-width:260px;max-width:420px;padding:32px 28px;
-  display:flex;flex-direction:column;justify-content:center;}
-@media (prefers-reduced-motion:reduce){
-.auth-illustration-shape.s2,.auth-illustration-shape.s3,.auth-illustration-logo{animation:none}
-}
+</style><style media="(min-width:900px)">
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.err{color:var(--accent);font-size:12.5px;margin-top:10px}
+.auth-wrap{max-width:480px;margin:0 auto;padding:36px 0 72px}
+.auth-h1{font-family:var(--font-display);font-weight:800;font-size:46px;line-height:1.06;letter-spacing:-.02em;margin:0 0 16px}
+.auth-accent{position:relative;display:inline-block;color:var(--accent)}
+.auth-accent .squiggle{position:absolute;left:0;bottom:-8px;width:100%;height:13px;color:var(--accent)}
+.auth-tag{font-size:15.5px;line-height:1.6;color:var(--ink-dim);max-width:30em;margin:0 0 26px}
+.auth-doodle{margin:0 0 24px}
+.auth-doodle svg{width:100%;height:auto;display:block}
+.auth-dash{border-top:1.5px dashed var(--line);margin:0 0 22px}
+.auth-badge{display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11px;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:24px}
+.auth-badge .dot{width:7px;height:7px;border-radius:50%;border:1.5px solid var(--accent);flex-shrink:0}
+.auth-seg{display:flex;background:var(--bg-raised);border-radius:999px;padding:4px;margin-bottom:28px}
+.auth-seg button{flex:1;border:none;background:none;padding:13px 16px;border-radius:999px;
+  font-family:var(--font-body);font-weight:600;font-size:15px;color:var(--ink-dim);cursor:pointer;
+  transition:background .18s ease,color .18s ease,box-shadow .18s ease}
+.auth-seg button.active{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(23,23,23,.14)}
+.auth-h2{font-family:var(--font-display);font-weight:800;font-size:28px;letter-spacing:-.01em;margin:0 0 7px}
+.auth-sub{font-size:14.5px;color:var(--ink-dim);margin:0 0 24px}
+.auth-social{display:flex;flex-direction:column;gap:9px;margin-bottom:4px}
+.auth-social-btn{width:100%;box-sizing:border-box;justify-content:center;padding:13px;border-radius:999px;
+  border:1.5px solid var(--line);background:#fff;font-family:var(--font-body);font-weight:600;font-size:13.5px;
+  color:var(--ink);display:flex;align-items:center;gap:9px;cursor:pointer;transition:border-color .15s ease,background .15s ease}
+.auth-social-btn:hover{border-color:var(--ink);background:var(--bg-raised)}
+.auth-or{display:flex;align-items:center;gap:10px;margin:18px 0;color:var(--ink-dim);font-size:12.5px}
+.auth-or .ln{flex:1;height:1px;background:var(--line)}
+.field{margin-bottom:17px}
+.field label{display:block;font-family:var(--font-body);font-weight:700;font-size:14px;color:var(--ink);margin-bottom:8px}
+.field input{width:100%;box-sizing:border-box;border:1.5px solid var(--line);background:#fff;border-radius:14px;
+  padding:15px 16px;font-family:var(--font-body);font-size:15px;color:var(--ink);transition:border-color .15s ease}
+.field input:focus{outline:none;border-color:var(--ink)}
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:46px}
+.pw-eye{position:absolute;right:4px;top:4px;width:42px;height:calc(100% - 8px);border:none;background:none;
+  display:flex;align-items:center;justify-content:center;color:var(--ink-dim);cursor:pointer;border-radius:10px}
+.pw-eye:hover{background:var(--bg-raised)}
+.auth-forgot{text-align:right;margin:-9px 0 22px}
+.auth-forgot button{background:none;border:none;padding:0;font-family:var(--font-body);font-weight:700;
+  font-size:13.5px;color:var(--accent);cursor:pointer}
+.auth-cta{width:100%;box-sizing:border-box;justify-content:center;padding:18px;
+  font-family:var(--font-body);font-weight:700;font-size:15.5px;text-transform:none;letter-spacing:0;
+  border-radius:999px;margin-top:2px}
+.auth-terms{font-size:12.5px;color:var(--ink-dim);line-height:1.6;margin:0}
+.auth-terms a{color:var(--ink);font-weight:600;text-decoration:none;border-bottom:1px solid var(--line)}
 .wrap{max-width:1180px;margin:0 auto}
 </style>
 </head>
@@ -74,71 +127,305 @@
 
   <main class="content">
     <div class="wrap">
+      <div class="auth-wrap">
 
-      <section class="section" style="padding-top:56px">
-        <div class="label">Your account</div>
-        <h1 class="h-1" id="pageTitle">Sign in</h1>
-        <p class="lede" id="pageLede">Create an account or sign in to build your cart and send us your requirements.</p>
+        <h1 class="auth-h1">Sell more.<br><span class="auth-accent">Chase less.
+          <svg class="squiggle" viewBox="0 0 160 14" preserveAspectRatio="none" aria-hidden="true"><path d="M2 8 Q20 2 38 8 T74 8 T110 8 T146 8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+        </span></h1>
+        <p class="auth-tag">One login for billing, staff, stock and your own QR menu — set up once, never chase a spreadsheet again.</p>
 
-        <section class="section tight" style="padding-top:24px">
-          <div class="auth-combo">
-            <div class="auth-illustration" role="presentation">
-              <div class="auth-illustration-shape s1"></div>
-              <div class="auth-illustration-shape s2"></div>
-              <div class="auth-illustration-shape s3"></div>
-              <img class="auth-illustration-logo" src="logo.png" alt="" aria-hidden="true">
+        <div class="auth-doodle">
+          <svg viewBox="0 0 420 170" fill="none" aria-hidden="true">
+            <path d="M18 44 Q50 28 86 52" stroke="#171717" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="1 7"/>
+            <path d="M81 46 L88 53 L79 57" stroke="#171717" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <text x="12" y="32" font-family="Inter, sans-serif" font-style="italic" font-size="12" fill="#171717">next sale &#8595;</text>
+
+            <path d="M30 78 L33 86 L41 89 L33 92 L30 100 L27 92 L19 89 L27 86 Z" fill="#800020"/>
+            <path d="M376 40 L378 46 L384 48 L378 50 L376 56 L374 50 L368 48 L374 46 Z" fill="#800020"/>
+            <circle cx="344" cy="26" r="2.4" fill="#171717"/>
+
+            <path d="M18 150 L402 150" stroke="#171717" stroke-width="2" stroke-linecap="round"/>
+
+            <circle cx="68" cy="96" r="13" stroke="#171717" stroke-width="2.2"/>
+            <path d="M68 109 L68 134" stroke="#171717" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M68 116 L90 102" stroke="#171717" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M68 118 L50 130" stroke="#171717" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M68 134 L56 150" stroke="#171717" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M68 134 L80 150" stroke="#171717" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M32 150 L32 132 L70 132 L70 150" stroke="#171717" stroke-width="2"/>
+
+            <g transform="rotate(-9 205 85)">
+              <rect x="168" y="52" width="72" height="68" rx="6" stroke="#171717" stroke-width="2.2"/>
+              <path d="M180 70 L228 70" stroke="#171717" stroke-width="2" stroke-linecap="round"/>
+              <path d="M180 82 L222 82" stroke="#171717" stroke-width="2" stroke-linecap="round"/>
+              <path d="M180 94 L212 94" stroke="#171717" stroke-width="2" stroke-linecap="round"/>
+              <path d="M180 106 Q190 100 200 106 T220 106" stroke="#800020" stroke-width="2" stroke-linecap="round" fill="none"/>
+            </g>
+
+            <circle cx="340" cy="104" r="12" stroke="#171717" stroke-width="2.2"/>
+            <path d="M340 116 L340 138" stroke="#171717" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M340 122 L322 134" stroke="#171717" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M340 124 L358 118" stroke="#171717" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M340 138 L328 150" stroke="#171717" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M340 138 L352 150" stroke="#171717" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M316 128 L312 148 L332 148 L328 128 Z" stroke="#171717" stroke-width="2"/>
+            <path d="M319 128 Q322 120 325 128" stroke="#171717" stroke-width="2" fill="none"/>
+
+            <text x="46" y="168" font-family="Inter, sans-serif" font-size="11" fill="#6a6a6a">sell</text>
+            <text x="183" y="168" font-family="Inter, sans-serif" font-size="11" fill="#6a6a6a">bill</text>
+            <text x="316" y="168" font-family="Inter, sans-serif" font-size="11" fill="#6a6a6a">done</text>
+          </svg>
+        </div>
+
+        <div class="auth-dash"></div>
+        <div class="auth-badge"><span class="dot"></span>One login for all of it</div>
+
+        <div class="auth-seg">
+          <button id="modeLogin" type="button">Log in</button>
+          <button id="modeNew" type="button">Sign up</button>
+        </div>
+
+        <h2 class="auth-h2" id="pageTitle">Welcome back.</h2>
+        <p class="auth-sub" id="pageLede">Pick up where you left off.</p>
+
+        <div id="authSection">
+          <div id="socialRow" class="auth-social" style="display:none">
+            <div id="googleBtnHost"></div>
+            <button id="appleBtn" class="auth-social-btn" type="button" style="display:none">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.365 1.43c0 1.14-.46 2.1-1.17 2.83-.78.8-2.03 1.42-3.09 1.33-.12-1.1.46-2.25 1.15-2.97.78-.83 2.17-1.46 3.11-1.19ZM20.6 17.17c-.46 1.06-.68 1.53-1.27 2.47-.82 1.3-1.98 2.93-3.41 2.94-1.27.02-1.6-.83-3.33-.82-1.73.01-2.09.84-3.36.82-1.43-.02-2.53-1.48-3.35-2.78-2.3-3.63-2.54-7.89-1.12-10.16.99-1.6 2.56-2.54 4.03-2.54 1.5 0 2.44.84 3.68.84 1.2 0 1.93-.85 3.66-.85 1.32 0 2.71.72 3.7 1.96-3.25 1.78-2.72 6.42.77 8.12Z"/></svg>
+              Continue with Apple
+            </button>
+          </div>
+          <div id="socialOr" class="auth-or" style="display:none"><span class="ln"></span>or<span class="ln"></span></div>
+
+          <div class="auth-seg" style="margin-bottom:20px">
+            <button id="methodEmail" type="button">Email</button>
+            <button id="methodPhone" type="button">Phone</button>
+          </div>
+
+          <div id="emailFields">
+            <div class="field">
+              <label for="email">Email</label>
+              <input id="email" type="email" placeholder="you@business.com" required autocomplete="email">
             </div>
-            <div class="auth-form-col">
-              <div id="authSection">
-                <div style="display:flex;gap:8px;margin-bottom:6px">
-                  <button class="btn btn-ghost" id="modeNew" style="flex:1;justify-content:center">New account</button>
-                  <button class="btn btn-ghost" id="modeLogin" style="flex:1;justify-content:center">Log in</button>
-                </div>
-                <div class="field">
-                  <label for="email">Email</label>
-                  <input id="email" type="email" required autocomplete="email">
-                </div>
-                <div class="field">
-                  <label for="password">Password</label>
-                  <input id="password" type="password" required minlength="8" autocomplete="new-password">
-                </div>
-                <button id="submitBtn" class="btn btn-primary form-submit">Create account</button>
-                <div id="authErr" class="err"></div>
-              </div>
+            <div class="field pw-wrap">
+              <label for="password">Password</label>
+              <input id="password" type="password" placeholder="Enter your password" required minlength="8" autocomplete="new-password">
+              <button type="button" class="pw-eye" id="pwEyeToggle" aria-label="Show password">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            <div id="forgotRow" class="auth-forgot" style="display:none">
+              <button id="forgotLink" type="button">Forgot password?</button>
+            </div>
+            <button id="submitBtn" class="btn btn-primary auth-cta form-submit">Log in</button>
+          </div>
 
-              <div id="loggedInSection" style="display:none">
-                <p class="p">You're signed in as <b id="loggedInEmail"></b>.</p>
-                <a href="cart.html" class="btn btn-primary form-submit">Go to your cart</a>
-                <button id="signOutBtn" class="btn btn-ghost form-submit">Sign out</button>
+          <div id="phoneFields" style="display:none">
+            <div class="field">
+              <label for="phoneNum">Phone number</label>
+              <input id="phoneNum" type="tel" placeholder="+91 98765 43210" autocomplete="tel">
+            </div>
+            <button id="sendCodeBtn" class="btn btn-primary auth-cta form-submit" type="button">Send code</button>
+            <div id="codeStep" style="display:none">
+              <div class="field" style="margin-top:16px">
+                <label for="phoneCode">6-digit code</label>
+                <input id="phoneCode" type="text" placeholder="123456" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
               </div>
+              <button id="verifyCodeBtn" class="btn btn-primary auth-cta form-submit" type="button">Verify &amp; continue</button>
             </div>
           </div>
-        </section>
-      </section>
 
+          <div id="authErr" class="err"></div>
+        </div>
+
+        <div id="resetSection" style="display:none">
+          <div class="field">
+            <label for="newPassword">New password</label>
+            <input id="newPassword" type="password" placeholder="Enter a new password" required minlength="8" autocomplete="new-password">
+          </div>
+          <button id="resetSubmitBtn" class="btn btn-primary auth-cta form-submit">Set new password</button>
+          <div id="resetErr" class="err"></div>
+        </div>
+
+        <div id="loggedInSection" style="display:none">
+          <p class="p">You're signed in as <b id="loggedInEmail"></b>.</p>
+          <a href="cart.html" class="btn btn-primary auth-cta form-submit">Go to your cart</a>
+          <button id="signOutBtn" class="btn btn-ghost auth-cta form-submit" style="margin-top:10px">Sign out</button>
+        </div>
+
+        <div class="auth-dash" style="margin-top:28px"></div>
+        <p class="auth-terms">By continuing you agree to the <a href="terms.html">Terms</a> and <a href="privacy.html">Privacy Policy</a>.</p>
+
+      </div>
     </div>
   </main>
 </div>
 
 <script src="/sb-client.js?v=2"></script>
 <script src="tool/site.js?v=8"></script>
-<script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
+<script>
+// googleClientId/appleClientId: empty until the owner creates them (see
+// CLAUDE.md / the deploy notes for exactly where) -- every social button
+// below stays hidden until its own id is filled in, so this page never
+// shows a button that can't actually work yet.
+window.CFG = { url: 'https://api.auzslab.in', key: '', googleClientId: '', appleClientId: '' };
+</script>
 <script>
 const sb = supabase.createClient(CFG.url, CFG.key);
 let mode = 'signup';
+let authMethod = 'email';
 
 function setMode(m) {
   mode = m;
-  document.getElementById('modeNew').style.background = m === 'signup' ? 'var(--ink)' : '';
-  document.getElementById('modeNew').style.color = m === 'signup' ? '#fff' : '';
-  document.getElementById('modeLogin').style.background = m === 'login' ? 'var(--ink)' : '';
-  document.getElementById('modeLogin').style.color = m === 'login' ? '#fff' : '';
+  document.getElementById('modeNew').classList.toggle('active', m === 'signup');
+  document.getElementById('modeLogin').classList.toggle('active', m === 'login');
   document.getElementById('submitBtn').textContent = m === 'signup' ? 'Create account' : 'Log in';
-  document.getElementById('pageTitle').textContent = m === 'signup' ? 'Create your account' : 'Sign in';
+  document.getElementById('pageTitle').textContent = m === 'signup' ? 'Create your account.' : 'Welcome back.';
+  document.getElementById('pageLede').textContent = m === 'signup' ? 'Takes less than a minute to get started.' : 'Pick up where you left off.';
+  document.getElementById('forgotRow').style.display = m === 'login' ? 'block' : 'none';
 }
 document.getElementById('modeNew').onclick = () => setMode('signup');
 document.getElementById('modeLogin').onclick = () => setMode('login');
 setMode('signup');
+
+function setAuthMethod(m) {
+  authMethod = m;
+  document.getElementById('methodEmail').classList.toggle('active', m === 'email');
+  document.getElementById('methodPhone').classList.toggle('active', m === 'phone');
+  document.getElementById('emailFields').style.display = m === 'email' ? 'block' : 'none';
+  document.getElementById('phoneFields').style.display = m === 'phone' ? 'block' : 'none';
+  document.getElementById('authErr').textContent = '';
+}
+document.getElementById('methodEmail').onclick = () => setAuthMethod('email');
+document.getElementById('methodPhone').onclick = () => setAuthMethod('phone');
+setAuthMethod('email');
+
+const EYE_OPEN = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_CLOSED = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3l18 18"/><path d="M10.6 5.2A10.7 10.7 0 0 1 12 5c6.4 0 10 7 10 7a15.6 15.6 0 0 1-3.2 4.1M6.6 6.6C3.8 8.4 2 12 2 12s3.6 7 10 7a9.8 9.8 0 0 0 3.6-.7"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+document.getElementById('pwEyeToggle').onclick = () => {
+  const pw = document.getElementById('password');
+  const btn = document.getElementById('pwEyeToggle');
+  const showing = pw.type === 'text';
+  pw.type = showing ? 'password' : 'text';
+  btn.innerHTML = showing ? EYE_OPEN : EYE_CLOSED;
+  btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+};
+
+// ---- after any successful sign-in, by whatever method ----
+async function afterSignIn(user) {
+  if (user && await hasOwnTenant(user.id)) { window.location.href = 'account.html'; return; }
+  if (await isPlatformAdmin()) { window.location.href = 'admin.html'; return; }
+  window.location.href = 'cart.html';
+}
+
+// ---- Google Sign-In (Google Identity Services) ----
+if (CFG.googleClientId) {
+  const gs = document.createElement('script');
+  gs.src = 'https://accounts.google.com/gsi/client';
+  gs.async = true; gs.defer = true;
+  gs.onload = () => {
+    document.getElementById('socialRow').style.display = 'flex';
+    document.getElementById('socialOr').style.display = 'flex';
+    google.accounts.id.initialize({
+      client_id: CFG.googleClientId,
+      callback: async (resp) => {
+        const errEl = document.getElementById('authErr');
+        const { data, error } = await sb.auth.signInWithGoogle(resp.credential);
+        if (error) { errEl.textContent = error.message; return; }
+        afterSignIn(data.user);
+      },
+    });
+    google.accounts.id.renderButton(document.getElementById('googleBtnHost'), { theme: 'outline', size: 'large', width: 320 });
+  };
+  document.head.appendChild(gs);
+}
+
+// ---- Sign in with Apple ----
+if (CFG.appleClientId) {
+  const as = document.createElement('script');
+  as.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
+  as.onload = () => {
+    document.getElementById('socialRow').style.display = 'flex';
+    document.getElementById('socialOr').style.display = 'flex';
+    const appleBtn = document.getElementById('appleBtn');
+    appleBtn.style.display = 'flex';
+    AppleID.auth.init({
+      clientId: CFG.appleClientId,
+      scope: 'email name',
+      redirectURI: window.location.origin + '/signup.html',
+      usePopup: true,
+    });
+    appleBtn.onclick = async () => {
+      const errEl = document.getElementById('authErr');
+      errEl.textContent = '';
+      try {
+        const resp = await AppleID.auth.signIn();
+        const { data, error } = await sb.auth.signInWithApple(resp.authorization.code);
+        if (error) { errEl.textContent = error.message; return; }
+        afterSignIn(data.user);
+      } catch (e) {
+        if (e && e.error === 'popup_closed_by_user') return;
+        errEl.textContent = 'Apple sign-in failed.';
+      }
+    };
+  };
+  document.head.appendChild(as);
+}
+
+// ---- Phone / OTP ----
+document.getElementById('sendCodeBtn').onclick = async () => {
+  const phone = document.getElementById('phoneNum').value.trim();
+  const errEl = document.getElementById('authErr');
+  errEl.textContent = '';
+  if (!/^\+[1-9]\d{6,14}$/.test(phone)) { errEl.textContent = 'Enter your number with a country code, e.g. +91 98765 43210.'; return; }
+  const { data, error } = await sb.auth.sendPhoneOtp(phone);
+  if (error) { errEl.textContent = error.message; return; }
+  if (data && data.sent === false) { errEl.textContent = data.reason || 'Could not send a code right now.'; return; }
+  document.getElementById('codeStep').style.display = 'block';
+  document.getElementById('sendCodeBtn').textContent = 'Resend code';
+};
+document.getElementById('verifyCodeBtn').onclick = async () => {
+  const phone = document.getElementById('phoneNum').value.trim();
+  const code = document.getElementById('phoneCode').value.trim();
+  const errEl = document.getElementById('authErr');
+  errEl.textContent = '';
+  const { data, error } = await sb.auth.verifyPhoneOtp(phone, code);
+  if (error) { errEl.textContent = error.message; return; }
+  afterSignIn(data.user);
+};
+
+// ---- Forgot / reset password ----
+document.getElementById('forgotLink').onclick = async () => {
+  const email = document.getElementById('email').value.trim();
+  const errEl = document.getElementById('authErr');
+  errEl.textContent = '';
+  if (!email) { errEl.textContent = 'Enter your email above first, then tap "Forgot your password?" again.'; return; }
+  const resetLinkBase = window.location.origin + '/signup.html';
+  const { error } = await sb.auth.forgotPassword(email, resetLinkBase);
+  errEl.style.color = 'var(--ink-dim, #666)';
+  errEl.textContent = error ? error.message : 'If an account exists for that email, a reset link is on its way.';
+};
+
+// A reset link lands back on this same page as ?token=... -- show the
+// "set a new password" form instead of the normal sign-in form.
+const resetToken = new URLSearchParams(window.location.search).get('token');
+if (resetToken) {
+  document.querySelector('.auth-seg').style.display = 'none';
+  document.getElementById('authSection').style.display = 'none';
+  document.getElementById('resetSection').style.display = 'block';
+  document.getElementById('pageTitle').textContent = 'Reset your password.';
+  document.getElementById('pageLede').textContent = 'Choose something you\'ll remember this time.';
+  document.getElementById('resetSubmitBtn').onclick = async () => {
+    const password = document.getElementById('newPassword').value;
+    const errEl = document.getElementById('resetErr');
+    errEl.textContent = '';
+    if (!password || password.length < 8) { errEl.textContent = 'Password must be at least 8 characters.'; return; }
+    const { error } = await sb.auth.resetPassword(resetToken, password);
+    if (error) { errEl.textContent = error.message; return; }
+    window.location.href = 'signup.html';
+  };
+}
 
 // Whether to send someone to account.html or cart.html has to come
 // from their actual profiles row, not user.app_metadata off the JWT --
@@ -173,7 +460,10 @@ async function checkSession() {
       window.location.href = 'admin.html';
       return;
     }
+    document.querySelector('.auth-seg').style.display = 'none';
     document.getElementById('authSection').style.display = 'none';
+    document.getElementById('pageTitle').textContent = 'You\'re in.';
+    document.getElementById('pageLede').textContent = 'Already signed in.';
     document.getElementById('loggedInSection').style.display = 'block';
     document.getElementById('loggedInEmail').textContent = session.user.email;
   }
@@ -193,15 +483,7 @@ document.getElementById('submitBtn').onclick = async () => {
     : await sb.auth.signInWithPassword({ email, password });
   if (error) { errEl.textContent = error.message; return; }
   const user = data && (data.user || (data.session && data.session.user));
-  if (user && await hasOwnTenant(user.id)) {
-    window.location.href = 'account.html';
-    return;
-  }
-  if (mode === 'login' && await isPlatformAdmin()) {
-    window.location.href = 'admin.html';
-    return;
-  }
-  window.location.href = 'cart.html';
+  afterSignIn(user);
 };
 
 document.getElementById('signOutBtn').onclick = async () => {

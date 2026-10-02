@@ -1,14 +1,14 @@
 -- =========================================================
 -- AUZslab Payroll v2: core engine. Permissions and guard, helpers, the salary formula engine, daily attendance,
 -- leave ledger and accrual, and the statutory rules (seeded, versioned, with their sources) plus PF / ESI / PT / TDS
--- calculations. The payroll run itself (items, state machine, payments, accounting) is db/071.
+-- calculations. The payroll run itself (items, state machine, payments, accounting) is db/075.
 -- =========================================================
 
 -- ---------- permissions ----------
 -- Keys: pay_view pay_people pay_time pay_salary pay_run pay_approve pay_pay pay_reports pay_admin pay_audit
 -- owner: everything. manager (default role): people, time, non-salary reports; salaries and payroll only when the owner
 -- switches on Settings > Access > "Managers handle salaries". A custom role (profiles.role_id -> roles.permissions) is
--- honoured exactly: a missing key means no access. Employees reach their own data through pay_me_* (db/072), not these.
+-- honoured exactly: a missing key means no access. Employees reach their own data through pay_me_* (db/076), not these.
 create function pay_perm(k text) returns boolean language plpgsql stable security definer set search_path = public as $$
 declare r text; rid uuid; perms jsonb; tid uuid; ms boolean;
 begin

@@ -104,6 +104,72 @@
         saveSession(null);
         return { error: null };
       },
+      // ---- real identity providers (db/069) -- same {session,user}/
+      // {data,error} shape as signInWithPassword/signUp above, so a page
+      // treats every sign-in method identically from here on. ----
+      async signInWithGoogle(idToken) {
+        const { data, error } = await request('/auth/google', { method: 'POST', body: { id_token: idToken }, auth: false });
+        if (error) return { data: { session: null }, error };
+        session = { access_token: data.access_token, user: data.user };
+        saveSession(session);
+        return { data: { session, user: data.user }, error: null };
+      },
+      async signInWithApple(code) {
+        const { data, error } = await request('/auth/apple', { method: 'POST', body: { code }, auth: false });
+        if (error) return { data: { session: null }, error };
+        session = { access_token: data.access_token, user: data.user };
+        saveSession(session);
+        return { data: { session, user: data.user }, error: null };
+      },
+      async sendPhoneOtp(phone) {
+        return request('/auth/phone/send', { method: 'POST', body: { phone }, auth: false });
+      },
+      async verifyPhoneOtp(phone, code) {
+        const { data, error } = await request('/auth/phone/verify', { method: 'POST', body: { phone, code }, auth: false });
+        if (error) return { data: { session: null }, error };
+        session = { access_token: data.access_token, user: data.user };
+        saveSession(session);
+        return { data: { session, user: data.user }, error: null };
+      },
+      // resetLinkBase: the page the reset link should open (this page's
+      // own URL, typically) -- the server appends ?token=... to it.
+      async forgotPassword(email, resetLinkBase) {
+        return request('/auth/forgot', { method: 'POST', body: { email, reset_link_base: resetLinkBase }, auth: false });
+      },
+      async resetPassword(token, password) {
+        return request('/auth/reset', { method: 'POST', body: { token, password }, auth: false });
+      },
+      // Apple App Store Guideline 5.1.1(v): self-service account deletion.
+      // password is only checked server-side for an account that has one.
+      async deleteAccount(password) {
+        const { data, error } = await request('/auth/delete-account', { method: 'POST', body: { password } });
+        if (!error) { session = null; saveSession(null); }
+        return { data, error };
+      },
+      // Single-device session revocation (db/071) -- "sign out just this
+      // device" without touching any other device's session or the password.
+      async listSessions() {
+        const { data, error } = await request('/auth/sessions', { method: 'GET' });
+        return { data: data?.sessions || null, error };
+      },
+      async revokeSession(jti) {
+        return request(`/auth/sessions/${encodeURIComponent(jti)}/revoke`, { method: 'POST' });
+      },
+    };
+
+    // ---- Razorpay payments (db/070) -- dormant until the owner sets
+    // RAZORPAY_KEY_ID/SECRET; config().enabled tells the cart page
+    // whether to offer online checkout at all. ----
+    const payments = {
+      async config() {
+        return request('/payments/config', { method: 'GET', auth: false });
+      },
+      async createOrder({ signupRequestId, addonRequestId } = {}) {
+        return request('/payments/create-order', {
+          method: 'POST',
+          body: { signup_request_id: signupRequestId || undefined, addon_request_id: addonRequestId || undefined },
+        });
+      },
     };
 
     // The server picks the actual stored filename (never a client-
@@ -160,7 +226,7 @@
       };
     }
 
-    return { auth, from, rpc, storage, channel };
+    return { auth, from, rpc, storage, channel, payments };
   }
 
   window.supabase = { createClient };

@@ -6,12 +6,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Pricing — AUZslab</title>
-<meta name="description" content="One flat quote for exactly what your business uses — no per-seat fees, no feature-gated tiers. AUZslab POS and CRM, self-hosted.">
+<meta name="description" content="AuzsPOS, AuzsPOS QR, AuzsPay and AuzsLedger — real monthly pricing, plus bundle plans that save you money. Business software, built simply.">
 <link rel="canonical" href="https://auzslab.in/pricing.html">
 <meta name="robots" content="index,follow">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Pricing — AUZslab">
-<meta property="og:description" content="One quote, everything included. No per-seat fees, no feature-gated tiers.">
+<meta property="og:description" content="Real monthly pricing for AuzsPOS, AuzsPOS QR, AuzsPay and AuzsLedger, plus bundle plans that save you money.">
 <meta property="og:url" content="https://auzslab.in/pricing.html">
 <meta property="og:image" content="https://auzslab.in/og-image.png">
 <meta name="twitter:card" content="summary">
@@ -23,6 +23,26 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* Minimal pricing cards -- icon, name, price, one line, one button.
+   Full feature lists live on each product's own detail page (Details
+   link) instead of being repeated here -- keeps the grid scannable. */
+.price-card{text-align:center;transform:none !important;padding:28px 22px}
+.price-card:hover{transform:translate(-2px,-2px) !important;box-shadow:7px 7px 0 var(--ink)}
+.price-card-icon{width:52px;height:52px;border-radius:14px;display:block;margin:0 auto 14px}
+.price-card-name{font-family:var(--font-display);font-weight:700;font-size:15px}
+.price-card-price{font-family:var(--font-display);font-weight:700;font-size:28px;margin-top:10px}
+.price-card-price span{font-size:12.5px;color:var(--ink-faint);font-weight:500}
+.price-card-price s{font-size:14px;color:var(--ink-faint);font-weight:500;margin-right:4px}
+.price-card-sub{font-size:12.5px;color:var(--ink-dim);margin-top:8px;min-height:32px}
+.price-card .acts{justify-content:center;margin-top:16px;flex-wrap:wrap}
+.price-card .btn{padding:9px 16px;font-size:11px}
+.price-card-icons{display:flex;justify-content:center;margin-bottom:14px}
+.price-card-icons img{width:42px;height:42px;border-radius:12px;border:3px solid #fff;box-shadow:0 0 0 1px var(--line)}
+.price-card-icons img:not(:first-child){margin-left:-14px}
+.price-card-badge{display:inline-block;font-size:10px;font-family:var(--font-mono);letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:99px;border:1px solid var(--line);color:var(--ink-dim)}
+.price-card-badge.hot{background:var(--accent);color:#fff;border-color:var(--accent)}
+</style>
 </head>
 <body>
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
@@ -126,8 +146,8 @@
         <div class="hero-grid">
         <div>
         <div class="label">Pricing</div>
-        <h1 class="h-1" style="font-size:clamp(36px,11vw,58px)">One quote,<br>everything included.</h1>
-        <p class="lede">No per-seat fees. No feature-gated tiers. Tell us your business and how many outlets — we'll quote one flat monthly price for exactly what you use.</p>
+        <h1 class="h-1" style="font-size:clamp(36px,11vw,58px)">Simple software<br>for modern businesses.</h1>
+        <p class="lede">Real monthly pricing. No hidden per-seat fees. All prices are exclusive of applicable GST.</p>
         </div>
         <div class="hero-art" role="presentation">
           <img class="hero-art-logo" src="logo.png" alt="" aria-hidden="true">
@@ -136,45 +156,101 @@
       </section>
 
       <section class="section tight">
-        <div class="grid-3">
-          <div class="card">
-            <span class="tag">Starter</span>
-            <div class="h-2" style="margin-top:16px;font-size:22px">One module, one outlet</div>
-            <p class="p" style="margin-top:10px">For a single café, salon or shop just getting off paper and spreadsheets.</p>
-            <ul class="uk-kit uk-linklist" style="margin-top:18px;border-top:none">
-              <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">POS <em style="font-style:normal;color:var(--ink-faint)">or</em> CRM — your choice</span></li>
-              <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Unlimited staff logins</span></li>
-              <li style="border-bottom:none"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Self-hosted on your infrastructure</span></li>
-            </ul>
-            <button class="btn btn-ghost" data-open-contact style="width:100%;justify-content:center;margin-top:20px">Let's talk</button>
+        <div class="label">Individual products</div>
+        <div class="h-2" style="margin-bottom:18px">Pick exactly what you need.</div>
+        <div class="grid-2">
+
+          <div class="card price-card" data-price-card>
+            <img src="icon-pos.svg" alt="" class="price-card-icon">
+            <div class="price-card-name">AuzsPOS</div>
+            <div class="price-card-price">&#8377;999<span>/mo + GST</span></div>
+            <p class="price-card-sub">Billing, inventory, customers &amp; staff.</p>
+            <div class="acts">
+              <a href="pos.html" class="btn btn-ghost">Details</a>
+              <button class="btn btn-primary" data-add-plan="pos">Get it</button>
+            </div>
           </div>
 
-          <div class="card" style="border-color:var(--accent);box-shadow:5px 5px 0 var(--accent)">
-            <span class="tag" style="background:var(--accent);color:#fff;border-color:var(--accent)">Most common</span>
-            <svg class="doodle-sparkle" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" style="margin-left:6px;vertical-align:middle">
-              <path d="M10 1v6M10 13v6M1 10h6M13 10h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-            </svg>
-            <div class="h-2" style="margin-top:16px;font-size:22px">Growth</div>
-            <p class="p" style="margin-top:10px">For a business running more than one outlet, or ready to bring customers back on purpose.</p>
-            <ul class="uk-kit uk-linklist" style="margin-top:18px;border-top:none">
-              <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">POS <b>and</b> CRM together</span></li>
-              <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Multi-outlet, one login</span></li>
-              <li style="border-bottom:none"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Priority support</span></li>
-            </ul>
-            <button class="btn btn-primary" data-open-contact style="width:100%;justify-content:center;margin-top:20px">Let's talk</button>
+          <div class="card price-card" data-price-card>
+            <img src="icon-pos-qr.svg" alt="" class="price-card-icon">
+            <div class="price-card-name">AuzsPOS QR</div>
+            <div class="price-card-price">&#8377;1,299<span>/mo + GST</span></div>
+            <p class="price-card-sub">AuzsPOS, plus customer self-ordering.</p>
+            <div class="acts">
+              <a href="qr-ordering.html" class="btn btn-ghost">Details</a>
+              <button class="btn btn-primary" data-add-plan="pos,self_order">Get it</button>
+            </div>
           </div>
 
-          <div class="card">
-            <span class="tag">Scale</span>
-            <div class="h-2" style="margin-top:16px;font-size:22px">Everything, as it ships</div>
-            <p class="p" style="margin-top:10px">For a chain or a business ready to grow into every module we build.</p>
-            <ul class="uk-kit uk-linklist" style="margin-top:18px;border-top:none">
-              <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Everything in Growth</span></li>
-              <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Payroll, plus early access to Booking as it ships</span></li>
-              <li style="border-bottom:none"><span style="padding:8px 2px;font-size:12.5px;color:var(--ink-dim)">Dedicated onboarding &amp; support SLA</span></li>
-            </ul>
-            <button class="btn btn-ghost" data-open-contact style="width:100%;justify-content:center;margin-top:20px">Let's talk</button>
+          <div class="card price-card" data-price-card>
+            <img src="icon-payroll.svg" alt="" class="price-card-icon">
+            <div class="price-card-name">AuzsPay</div>
+            <div class="price-card-price">&#8377;999<span>/mo + GST</span></div>
+            <p class="price-card-sub">Payroll &amp; employee management.</p>
+            <div class="acts">
+              <a href="payroll.html" class="btn btn-ghost">Details</a>
+              <button class="btn btn-primary" data-add-plan="payroll">Get it</button>
+            </div>
           </div>
+
+          <div class="card price-card" data-price-card>
+            <img src="icon-accounts.svg" alt="" class="price-card-icon">
+            <div class="price-card-name">AuzsLedger</div>
+            <div class="price-card-price">&#8377;1,599<span>/mo + GST</span></div>
+            <p class="price-card-sub">Complete accounting &amp; financials.</p>
+            <div class="acts">
+              <a href="accounting.html" class="btn btn-ghost">Details</a>
+              <button class="btn btn-primary" data-add-plan="accounting">Get it</button>
+            </div>
+          </div>
+
+        </div>
+        <p class="p" style="margin-top:16px;font-size:12.5px;color:var(--ink-faint)">Already on AuzsPOS and want to add AuzsPay? The add-on price for existing AuzsPOS customers is &#8377;1,399/month + GST — add it from your <a href="account.html" style="color:var(--accent)">account page</a>.</p>
+      </section>
+
+      <hr class="dash">
+
+      <section class="section tight">
+        <div class="label">Bundle plans</div>
+        <div class="h-2" style="margin-bottom:18px">Save by bundling. One login, one bill.</div>
+        <div class="grid-2">
+
+          <div class="card price-card" data-price-card>
+            <div class="price-card-icons"><img src="icon-pos.svg" alt=""><img src="icon-payroll.svg" alt=""></div>
+            <div class="price-card-badge">Starter business</div>
+            <div class="price-card-name" style="margin-top:10px">AuzsPOS + AuzsPay</div>
+            <div class="price-card-price">&#8377;2,398<span>/mo + GST</span></div>
+            <p class="price-card-sub">Retail, small businesses &amp; growing local shops.</p>
+            <div class="acts"><button class="btn btn-primary" data-add-plan="pos,payroll">Get Starter</button></div>
+          </div>
+
+          <div class="card price-card" data-price-card>
+            <div class="price-card-icons"><img src="icon-pos-qr.svg" alt=""><img src="icon-payroll.svg" alt=""></div>
+            <div class="price-card-badge">Growing business</div>
+            <div class="price-card-name" style="margin-top:10px">AuzsPOS QR + AuzsPay</div>
+            <div class="price-card-price">&#8377;2,698<span>/mo + GST</span></div>
+            <p class="price-card-sub">Restaurants, caf&eacute;s &amp; customer-facing businesses.</p>
+            <div class="acts"><button class="btn btn-primary" data-add-plan="pos,self_order,payroll">Get Growing</button></div>
+          </div>
+
+          <div class="card price-card" style="border-color:var(--accent);box-shadow:5px 5px 0 var(--accent)" data-price-card>
+            <div class="price-card-icons"><img src="icon-pos.svg" alt=""><img src="icon-payroll.svg" alt=""><img src="icon-accounts.svg" alt=""></div>
+            <div class="price-card-badge hot">Most popular</div>
+            <div class="price-card-name" style="margin-top:10px">Complete business</div>
+            <div class="price-card-price"><s>&#8377;3,997</s> &#8377;3,499<span>/mo + GST</span></div>
+            <p class="price-card-sub">Save &#8377;498/month vs. buying separately.</p>
+            <div class="acts"><button class="btn btn-primary" data-add-plan="pos,payroll,accounting">Get Complete</button></div>
+          </div>
+
+          <div class="card price-card" data-price-card>
+            <div class="price-card-icons"><img src="icon-pos-qr.svg" alt=""><img src="icon-payroll.svg" alt=""><img src="icon-accounts.svg" alt=""></div>
+            <div class="price-card-badge">Complete QR business</div>
+            <div class="price-card-name" style="margin-top:10px">AuzsPOS QR + AuzsPay + AuzsLedger</div>
+            <div class="price-card-price"><s>&#8377;4,297</s> &#8377;3,799<span>/mo + GST</span></div>
+            <p class="price-card-sub">One system for ops, staff &amp; finances.</p>
+            <div class="acts"><button class="btn btn-primary" data-add-plan="pos,self_order,payroll,accounting">Get Complete QR</button></div>
+          </div>
+
         </div>
       </section>
 
@@ -183,41 +259,151 @@
       <section class="section">
         <div class="label">Every plan, always</div>
         <div style="display:flex;gap:12px;flex-wrap:wrap">
-          <span class="tag">Self-hosted</span>
-          <span class="tag">Works offline</span>
+          <span class="tag">GST-ready billing</span>
+          <span class="tag">Data backup</span>
+          <span class="tag">Software updates</span>
+          <span class="tag">Standard customer support</span>
           <span class="tag">No lock-in contracts</span>
-          <span class="tag">Your data, your infrastructure</span>
+        </div>
+      </section>
+
+      <hr class="dash">
+
+      <section class="section tight">
+        <div class="grid-2">
+          <div class="card">
+            <div class="label">Pay yearly, save monthly</div>
+            <div class="h-2" style="margin-top:6px;margin-bottom:14px;font-size:20px">Annual plans</div>
+            <ul class="uk-kit uk-linklist" style="border-top:none">
+              <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:13px;color:var(--ink-dim);display:flex;justify-content:space-between"><b>AuzsPOS</b> <span>&#8377;9,990/year + GST</span></span></li>
+              <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:13px;color:var(--ink-dim);display:flex;justify-content:space-between"><b>AuzsPOS QR</b> <span>&#8377;12,990/year + GST</span></span></li>
+              <li style="border-bottom:1px dashed var(--line)"><span style="padding:8px 2px;font-size:13px;color:var(--ink-dim);display:flex;justify-content:space-between"><b>AuzsPay</b> <span>&#8377;9,990/year + GST</span></span></li>
+              <li style="border-bottom:none"><span style="padding:8px 2px;font-size:13px;color:var(--ink-dim);display:flex;justify-content:space-between"><b>AuzsLedger</b> <span>&#8377;15,990/year + GST</span></span></li>
+            </ul>
+            <p class="p" style="margin-top:14px;font-size:12px;color:var(--ink-faint)">Annual plans are prepaid and non-refundable once the subscription period begins, except where required by applicable law. Write in to switch to annual billing.</p>
+            <button class="btn btn-ghost" data-open-contact style="width:100%;justify-content:center;margin-top:12px">Ask about annual billing</button>
+          </div>
+
+          <div class="card">
+            <div class="label">One-time</div>
+            <div class="h-2" style="margin-top:6px;margin-bottom:14px;font-size:20px">Setup &amp; onboarding</div>
+            <div class="acct-row" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px dashed var(--line)">
+              <span style="font-size:13px;color:var(--ink-dim)">Standard setup — account, business profile, initial users</span>
+              <b style="white-space:nowrap;margin-left:10px">&#8377;999</b>
+            </div>
+            <div class="acct-row" style="display:flex;justify-content:space-between;padding:10px 0">
+              <span style="font-size:13px;color:var(--ink-dim)">Data migration (Excel/CSV, old software, historical records)</span>
+              <b style="white-space:nowrap;margin-left:10px">Quoted separately</b>
+            </div>
+            <p class="p" style="margin-top:10px;font-size:12px;color:var(--ink-faint)">A standard subscription does not automatically include extensive data migration or custom development.</p>
+            <button class="btn btn-ghost" data-open-contact style="width:100%;justify-content:center;margin-top:12px">Ask about migration</button>
+          </div>
+        </div>
+      </section>
+
+      <hr class="dash">
+
+      <section class="section tight">
+        <div class="card" style="border-color:var(--accent);box-shadow:5px 5px 0 var(--accent);text-align:center;padding:40px 24px">
+          <span class="tag" style="background:var(--accent);color:#fff;border-color:var(--accent)">Custom software</span>
+          <div class="h-2" style="margin-top:16px">Need something different?<br>We'll build it for you.</div>
+          <p class="p" style="margin-top:10px;max-width:520px;margin-left:auto;margin-right:auto">Business websites, salon CRM, booking systems, custom dashboards, WhatsApp &amp; API integrations, internal tools — every custom project gets its own quotation, based on requirements, modules, integrations and hosting. Not included in standard subscriptions unless agreed in writing.</p>
+          <div class="acts" style="justify-content:center;margin-top:20px">
+            <a href="custom-build.html" class="btn btn-ghost">See examples</a>
+            <button class="btn btn-primary" data-open-contact>Let's talk</button>
+          </div>
         </div>
       </section>
 
       <hr class="dash">
 
       <section class="section uk-kit">
-        <div class="label">Before you write in</div>
-        <div class="h-2" style="margin-bottom:6px">Pricing, answered</div>
+        <div class="label">The fine print</div>
+        <div class="h-2" style="margin-bottom:6px">Software terms &amp; conditions</div>
+        <p class="p" style="margin-top:4px">A summary of how billing, cancellation, support and data ownership work. This is a plain-language summary, not a substitute for your own legal review.</p>
         <div class="uk-accordion" style="margin-top:18px">
-          <div class="uk-accordion-item is-open">
-            <button class="uk-accordion-head">
-              <span>Why no listed price?</span>
-              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-            </button>
-            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Because "one price for everyone" usually means either you're overpaying for modules you don't use, or someone else is underpaying for support you're funding. We quote based on your outlets and modules, not a generic seat count.</p></div></div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head"><span>1. Subscription</span><svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>AUZslab software is provided on a subscription basis. The subscription grants access to the selected software plan during the active subscription period. The customer does not purchase ownership of the underlying software.</p></div></div>
           </div>
           <div class="uk-accordion-item">
-            <button class="uk-accordion-head">
-              <span>Is there a contract or lock-in?</span>
-              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-            </button>
-            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>No. It's a monthly arrangement — you keep your data and can leave anytime, since everything runs on infrastructure you can take with you.</p></div></div>
+            <button class="uk-accordion-head"><span>2. Billing</span><svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Subscriptions are billed monthly or annually according to the selected plan. Applicable GST and statutory taxes are charged separately. The subscription must be paid before the beginning of the applicable billing period unless otherwise agreed in writing.</p></div></div>
           </div>
           <div class="uk-accordion-item">
-            <button class="uk-accordion-head">
-              <span>Can I move between tiers later?</span>
-              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-            </button>
-            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Yes — turn on CRM, add an outlet, or move up to Scale whenever your business is actually ready for it, not before.</p></div></div>
+            <button class="uk-accordion-head"><span>3. Automatic renewal</span><svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Monthly subscriptions continue on a recurring basis unless cancelled before the next billing cycle. Annual subscriptions continue according to the selected renewal arrangement.</p></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head"><span>4. Late payment</span><svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>If payment remains outstanding, AUZslab may temporarily restrict access after providing reasonable notice. Access is restored once outstanding payments are cleared.</p></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head"><span>5. Cancellation</span><svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Customers may request cancellation at any time. Cancellation prevents future billing but does not automatically refund the unused portion of an already-paid period, unless required by applicable law or specifically agreed in writing.</p></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head"><span>6. Data ownership</span><svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Business data entered by the customer remains the customer's data. AUZslab does not claim ownership of customer business records. The customer is responsible for ensuring information entered is accurate and lawful.</p></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head"><span>7. Data backup</span><svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>AUZslab maintains reasonable backup mechanisms appropriate to the software architecture. Customers should not treat the software as their sole archival system for legally or financially important records, and should maintain independent exports where applicable.</p></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head"><span>8. Software updates</span><svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>AUZslab may periodically release bug fixes, security updates, performance improvements, UI improvements, new features and compatibility updates. Updates may change the appearance or functionality of parts of the software.</p></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head"><span>9. Support</span><svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Standard plans include standard technical support — software issues, account assistance, basic configuration and troubleshooting. Support does not automatically include custom development, extensive data entry, business consulting, third-party software problems, customer hardware repair, or internet/network troubleshooting.</p></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head"><span>10. Customization</span><svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Minor configuration may be included depending on the plan. New modules, special workflows, custom reports, integrations or substantial UI changes may incur additional charges, and will be quoted separately.</p></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head"><span>11. Third-party services</span><svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>AUZslab may integrate with third-party services such as payment gateways, WhatsApp, SMS, email, hosting and tax/GST services. Third-party charges are not included unless explicitly stated, and availability depends on the respective provider.</p></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head"><span>12. Internet &amp; hardware</span><svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>The customer is responsible for internet connectivity, compatible devices, printers, barcode scanners, POS hardware, network equipment and other physical infrastructure, unless specifically supplied by AUZslab under a separate agreement.</p></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head"><span>13. GST &amp; tax compliance</span><svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>AUZslab software may provide GST-related functionality where supported. The software is a technology tool and does not constitute professional tax, accounting or legal advice — the customer remains responsible for the accuracy of their financial and tax information and for their statutory obligations.</p></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head"><span>14. Security</span><svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>AUZslab takes reasonable technical measures to protect customer accounts and data. Customers are responsible for keeping passwords confidential, managing employee access, using secure devices, not sharing credentials, and immediately reporting suspected unauthorized access.</p></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head"><span>15. Account sharing</span><svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Customers must not intentionally share accounts beyond the permitted users or licenses of their plan. Additional users or locations may require an upgraded plan.</p></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head"><span>16. Service availability</span><svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>AUZslab aims to maintain reliable availability but cannot guarantee uninterrupted service in every circumstance. Temporary interruptions may occur due to maintenance, infrastructure failures, internet outages, third-party service failures, security incidents or events outside reasonable control.</p></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head"><span>17. Prohibited use</span><svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Customers must not use AUZslab software for unlawful activities, unauthorized access, fraud, abuse, malicious activity or activities that violate applicable law.</p></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head"><span>18. Custom software ownership</span><svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>For custom projects, ownership and licensing terms are defined in the individual project agreement. Unless specifically transferred in writing, AUZslab retains ownership of its pre-existing software, frameworks, reusable components, libraries and general-purpose technology.</p></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head"><span>19. Changes to pricing</span><svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>AUZslab may revise pricing for future subscription periods. Existing customers will receive reasonable notice of material pricing changes.</p></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head"><span>20. Agreement</span><svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>By subscribing to an AUZslab product or service, the customer acknowledges that they have reviewed and accepted the applicable pricing and terms.</p></div></div>
           </div>
         </div>
+        <p class="p" style="margin-top:18px;font-size:12px;color:var(--ink-faint);max-width:640px">These terms are provided as a plain-language reference. See <a href="terms.html" style="color:var(--accent)">Terms &amp; Conditions</a> for the complete platform agreement.</p>
       </section>
 
       <div class="stack">
@@ -331,5 +517,16 @@
 <script src="site.js?v=7"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script src="design-system/ui-kit.js?v=1"></script>
+<script>
+// Each pricing/bundle card's CTA adds that plan's product keys to the
+// shared cart (AUZcart, same localStorage key every page reads) and sends
+// the visitor straight to checkout -- no separate "add to cart" step.
+document.querySelectorAll('[data-add-plan]').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    btn.dataset.addPlan.split(',').forEach(function (key) { window.AUZcart.add(key); });
+    window.location.href = 'cart.html';
+  });
+});
+</script>
 </body>
 </html>

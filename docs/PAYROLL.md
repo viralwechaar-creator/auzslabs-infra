@@ -1,6 +1,6 @@
 # AUZslab Payroll v2
 
-The rebuilt Payroll app (`app/public/payroll.html` + `app/public/payroll/`) and its database (`db/069`-`073`).
+The rebuilt Payroll app (`app/public/payroll.html` + `app/public/payroll/`) and its database (`db/077`-`077`).
 It replaces the old single-file Payroll that stored everything as `records` kinds `hr_*`. The old data is imported automatically and the old records are left untouched.
 
 ## The flow
@@ -78,8 +78,8 @@ The first time the owner opens Payroll, a five-question setup guide runs.
 
 ## Files
 
-- `db/069_payroll_schema.sql`: 41 `pay_*` tables. RLS is on with no policies, so they are only reachable through SECURITY DEFINER functions. Append-only and guard triggers protect the history.
-- `db/070_payroll_engine.sql`:
+- `db/073_payroll_schema.sql`: 41 `pay_*` tables. RLS is on with no policies, so they are only reachable through SECURITY DEFINER functions. Append-only and guard triggers protect the history.
+- `db/074_payroll_engine.sql`:
   - permissions;
   - helpers;
   - the formula engine (whitelisted, dependency-ordered);
@@ -87,7 +87,7 @@ The first time the owner opens Payroll, a five-question setup guide runs.
   - leave;
   - PF / ESI / PT / income-tax calculators;
   - the first set of government rules.
-- `db/071_payroll_run.sql`:
+- `db/075_payroll_run.sql`:
   - setup defaults;
   - the per-person calculation (`pay_calc_item`);
   - the payroll state machine;
@@ -95,8 +95,8 @@ The first time the owner opens Payroll, a five-question setup guide runs.
   - payment batches;
   - the accounting subledger and posting;
   - the integrity check.
-- `db/072_payroll_api.sql`: the API used by the screens: settings, people, import, time, leave, loans, claims, tax, runs, payslips, dashboard, search.
-- `db/073_payroll_ess.sql`:
+- `db/076_payroll_api.sql`: the API used by the screens: settings, people, import, time, leave, loans, claims, tax, runs, payslips, dashboard, search.
+- `db/077_payroll_ess.sql`:
   - staff self-service and the kiosk;
   - reports;
   - the import from the old Payroll;
@@ -129,7 +129,7 @@ The first time the owner opens Payroll, a five-question setup guide runs.
 ```bash
 cd auzslabs-infra && git pull origin main
 set -a; source .env; set +a
-for f in db/069_payroll_schema.sql db/070_payroll_engine.sql db/071_payroll_run.sql db/072_payroll_api.sql db/073_payroll_ess.sql; do
+for f in db/073_payroll_schema.sql db/074_payroll_engine.sql db/075_payroll_run.sql db/076_payroll_api.sql db/077_payroll_ess.sql; do
   docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 < "$f" || break
 done
 docker compose up -d --build api

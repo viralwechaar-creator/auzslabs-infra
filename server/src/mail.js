@@ -34,6 +34,36 @@ export async function sendStaffInviteEmail({ to, name, verifyLink }) {
   return { sent: true };
 }
 
+// Same shape as sendStaffInviteEmail -- the caller (index.js's
+// /auth/forgot) always replies with a generic "if that email exists..."
+// message regardless of sent:true/false, so a missing RESEND_API_KEY
+// fails quietly server-side rather than leaking whether the address
+// exists via a different-looking error.
+export async function sendPasswordResetEmail({ to, resetLink }) {
+  if (!RESEND_API_KEY) {
+    console.warn('RESEND_API_KEY not set -- skipping password reset email to', to);
+    return { sent: false, reason: 'email sending is not configured yet' };
+  }
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${RESEND_API_KEY}` },
+    body: JSON.stringify({
+      from: MAIL_FROM,
+      to: [to],
+      subject: 'Reset your AUZslab password',
+      html: `<p>Someone asked to reset the password on this AUZslab account.</p>
+<p><a href="${resetLink}">${resetLink}</a></p>
+<p>This link expires in 1 hour. If you didn't ask for this, you can ignore it -- your password hasn't changed.</p>`,
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    console.warn('Resend send failed', res.status, body);
+    return { sent: false, reason: 'the email could not be sent' };
+  }
+  return { sent: true };
+}
+
 function escapeHtml(s) {
   return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }

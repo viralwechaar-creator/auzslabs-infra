@@ -28,10 +28,26 @@ V.more = () => {
       h('div', { class: 'search' }, icon('search', 18), h('input', { class: 'input', placeholder: 'Search a dish', value: S.recipeQ || '', 'aria-label': 'Search recipes', onchange: (e) => { S.recipeQ = e.target.value; render(); } })),
       h('div', { class: 'list' }, recipes.slice(0, 30).map((i) => liRow({ title: i.name, sub: h('span', { style: { whiteSpace: 'pre-wrap' } }, i.recipeText) })))) : null,
     links.length ? h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, 'Business tools')), h('div', { class: 'list' }, links)) : null,
-    h('div', { class: 'list' }, liRow({ ic: 'logout', tone: 'red', title: 'Sign out', onclick: signOut })),
+    h('div', { class: 'list' },
+      liRow({ ic: 'logout', tone: 'red', title: 'Sign out', onclick: signOut }),
+      liRow({ ic: 'trash', tone: 'red', title: 'Delete my account', onclick: deleteAccountFlow })),
     h('div', { class: 'powered' }, 'Powered by ', h('a', { href: 'https://auzslab.in', target: '_blank', rel: 'noopener' }, 'AUZslab')));
 };
 async function signOut() { if (!(await confirmBox('Sign out?', 'Unsynced changes stay on this device and sync when you sign in again.', 'Sign out', true))) return; await sb.auth.signOut(); localStorage.removeItem('u'); location.reload(); }
+// Apple Guideline 5.1.1(v): self-service account deletion, reachable from inside the app.
+async function deleteAccountFlow() {
+  const pw = await alertBox({
+    title: 'Delete your account?',
+    msg: 'This cannot be undone. Enter your password to confirm (leave blank if you sign in with Google, Apple or phone).',
+    input: { type: 'password', placeholder: 'Password' },
+    buttons: [{ label: 'Cancel', value: null }, { label: 'Delete account', value: '__input', def: true, dest: true }],
+  });
+  if (pw === null) return;
+  const { error } = await sb.auth.deleteAccount(pw);
+  if (error) { await alertBox({ title: 'Could not delete account', msg: error.message }); return; }
+  localStorage.removeItem('u');
+  location.href = '/index.html';
+}
 async function loadPinStatus() { if (!navigator.onLine || !S.user) return; try { const { data } = await sb.rpc('pos_pin_status'); if (data) S.pinStatus = data; } catch {} }
 function setPinFlow() {
   let first = null, pin = '';

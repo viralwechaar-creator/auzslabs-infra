@@ -8,9 +8,12 @@
     "start": "node src/index.js"
   },
   "dependencies": {
-    "pg": "^8.13.0",
+    "@sentry/node": "^11.4.0",
     "bcryptjs": "^2.4.3",
+    "google-auth-library": "^11.1.0",
+    "jose": "^6.2.12",
     "jsonwebtoken": "^9.0.2",
+    "pg": "^8.13.0",
     "ws": "^8.18.0"
   }
 }

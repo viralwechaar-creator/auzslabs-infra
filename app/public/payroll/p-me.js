@@ -204,7 +204,7 @@ page('my-profile', {
       section(h('div', { class: 'row sp' }, h('h3', null, 'Contact'), h('button', { class: 'btn sm plain', type: 'button', onclick: () => myEditSheet(e, v) }, 'Edit')), kvList([['Phone', e.phone], ['Email', e.email], ['Address', e.address], ['Emergency contact', e.emergency_name ? e.emergency_name + (e.emergency_phone ? ', ' + e.emergency_phone : '') : null]])),
       section('Salary account', h('div', { class: 'list' }, liRow({ icon: 'bank', title: 'Change my bank account', sub: 'Checked and approved before your next salary', onclick: () => myBankSheet(v) }))),
       docs.length ? section('Documents', h('div', { class: 'list' }, docs.map((x) => liRow({ icon: 'file', title: x.title || x.doc_type || 'Document', sub: fmtD(String(x.created_at).slice(0, 10)), onclick: () => openDoc(x.path).catch(fail) })))) : null,
-      h('div', { class: 'list' }, liRow({ icon: 'logout', tone: 'gray', title: 'Sign out', onclick: signOut })));
+      h('div', { class: 'list' }, liRow({ icon: 'logout', tone: 'gray', title: 'Sign out', onclick: signOut }), liRow({ icon: 'trash', tone: 'red', title: 'Delete my account', onclick: deleteAccountFlow })));
   },
 });
 function myEditSheet(e, v) {

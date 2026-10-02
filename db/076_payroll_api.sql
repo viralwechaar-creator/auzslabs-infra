@@ -3,7 +3,7 @@
 -- pay_guard(permission) or pay_tenant(); salary, bank, PAN, UAN, ESI and tax details are only returned to roles with
 -- pay_salary (field-level security), and line managers see their own team's time and leave, never pay.
 -- Employee self-service (pay_me_*), the shared-device kiosk, the import of the old Payroll, the salon and POS hooks and
--- the demo are in db/073.
+-- the demo are in db/077.
 -- =========================================================
 
 -- may see pay amounts: pay_salary, or any role that runs, approves or pays payroll

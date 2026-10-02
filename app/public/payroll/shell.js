@@ -34,19 +34,122 @@ function allowed(def) {
 }
 
 // ---------- sign in / boot ----------
+// Google/Apple/phone sign-in (db/069) alongside email+password -- phone has
+// to be here too: a staff member who only ever signed up by phone has no
+// password and no email of their own to fall back on.
 function showLogin(msg) {
   const e = h('input', { class: 'input', type: 'email', placeholder: 'Email', autocomplete: 'username', 'aria-label': 'Email' });
   const p = h('input', { class: 'input', type: 'password', placeholder: 'Password', autocomplete: 'current-password', 'aria-label': 'Password' });
   const m = h('div', { class: 'small', role: 'alert', style: { color: 'var(--red)', minHeight: '18px' } }, msg || '');
   const btn = h('button', { class: 'btn fill wide', type: 'submit' }, 'Sign in');
-  const form = h('form', { class: 'card', onsubmit: async (ev) => {
+
+  const eyeBtn = h('button', { type: 'button', class: 'btn icon plain', 'aria-label': 'Show password', style: { position: 'absolute', right: '2px', top: '50%', transform: 'translateY(-50%)' } }, icon('eye', 18));
+  eyeBtn.onclick = () => { const showing = p.type === 'text'; p.type = showing ? 'password' : 'text'; eyeBtn.replaceChildren(icon(showing ? 'eye' : 'eyeOff', 18)); };
+  const pwWrap = h('div', { style: { position: 'relative' } }, p, eyeBtn);
+
+  const forgotBtn = h('button', { type: 'button', class: 'btn plain small', style: { justifySelf: 'end', color: 'var(--red)', fontWeight: '700' } }, 'Forgot password?');
+  forgotBtn.onclick = async () => {
+    const email = e.value.trim();
+    if (!email) { m.textContent = 'Enter your email above first.'; return; }
+    m.style.color = ''; m.textContent = 'Sending…';
+    const { error } = await sb.auth.forgotPassword(email, 'https://auzslab.in/signup.html');
+    m.style.color = error ? 'var(--red)' : ''; m.textContent = error ? error.message : 'If that email has an account, a reset link is on its way.';
+  };
+  const emailWrap = h('div', { style: { display: 'grid', gap: '10px' } }, e, pwWrap, forgotBtn);
+
+  const phoneNum = h('input', { class: 'input', type: 'tel', placeholder: '+91 98765 43210', autocomplete: 'tel', 'aria-label': 'Phone number' });
+  const phoneCode = h('input', { class: 'input', type: 'text', placeholder: '6-digit code', inputmode: 'numeric', maxlength: 6, autocomplete: 'one-time-code' });
+  const verifyBtn = h('button', { type: 'button', class: 'btn fill wide' }, 'Verify & continue');
+  verifyBtn.onclick = async () => {
+    m.style.color = ''; m.textContent = 'Verifying…';
+    const { error } = await sb.auth.verifyPhoneOtp(phoneNum.value.trim(), phoneCode.value.trim());
+    if (error) { m.style.color = 'var(--red)'; m.textContent = error.message; return; }
+    boot();
+  };
+  const codeStep = h('div', { style: { display: 'none', gap: '10px' } }, phoneCode, verifyBtn);
+  const sendCodeBtn = h('button', { type: 'button', class: 'btn fill wide' }, 'Send code');
+  sendCodeBtn.onclick = async () => {
+    const phone = phoneNum.value.trim();
+    if (!/^\+[1-9]\d{6,14}$/.test(phone)) { m.style.color = 'var(--red)'; m.textContent = 'Enter your number with a country code, e.g. +91 98765 43210.'; return; }
+    m.style.color = ''; m.textContent = 'Sending…';
+    const { data, error } = await sb.auth.sendPhoneOtp(phone);
+    if (error) { m.style.color = 'var(--red)'; m.textContent = error.message; return; }
+    if (data && data.sent === false) { m.style.color = 'var(--red)'; m.textContent = data.reason || 'Could not send a code right now.'; return; }
+    m.style.color = ''; m.textContent = ''; codeStep.style.display = 'grid'; sendCodeBtn.textContent = 'Resend code';
+  };
+  const phoneWrap = h('div', { style: { display: 'none', gap: '10px' } }, phoneNum, sendCodeBtn, codeStep);
+
+  const methodEmailBtn = h('button', { type: 'button', 'aria-selected': 'true' }, 'Email');
+  const methodPhoneBtn = h('button', { type: 'button', 'aria-selected': 'false' }, 'Phone');
+  const setMethod = (which) => {
+    emailWrap.style.display = which === 'email' ? 'grid' : 'none';
+    phoneWrap.style.display = which === 'phone' ? 'grid' : 'none';
+    methodEmailBtn.setAttribute('aria-selected', String(which === 'email'));
+    methodPhoneBtn.setAttribute('aria-selected', String(which === 'phone'));
+    m.style.color = ''; m.textContent = '';
+  };
+  methodEmailBtn.onclick = () => setMethod('email');
+  methodPhoneBtn.onclick = () => setMethod('phone');
+  const methodRow = h('div', { class: 'seg full' }, methodEmailBtn, methodPhoneBtn);
+
+  const googleHost = h('div');
+  const appleBtn = h('button', { type: 'button', class: 'btn wide', style: { display: 'none', gap: '8px' } }, icon('apple', 18), 'Continue with Apple');
+  const socialDivider = h('div', { class: 'small muted', style: { display: 'none', textAlign: 'center' } }, 'or');
+  const socialWrap = h('div', { style: { display: 'none', gap: '10px' } }, googleHost, appleBtn);
+
+  btn.onclick = async (ev) => {
     ev.preventDefault(); btn.disabled = true; m.textContent = '';
     const { error } = await sb.auth.signInWithPassword({ email: e.value.trim(), password: p.value });
     btn.disabled = false;
-    if (error) m.textContent = error.message; else boot();
-  } }, h('img', { src: '/logo-payroll.svg', alt: 'AUZslab Payroll' }), h('h1', null, 'Sign in'), h('p', { class: 'muted' }, 'Use the email and password of your AUZslab login. Staff use the login their employer gave them.'), e, p, m, btn);
+    if (error) { m.style.color = 'var(--red)'; m.textContent = error.message; } else boot();
+  };
+  emailWrap.append(btn);
+
+  const form = h('form', { class: 'card', onsubmit: (ev) => ev.preventDefault() },
+    h('img', { src: '/logo-payroll.svg', alt: 'AUZslab Payroll' }), h('h1', null, 'Sign in'), h('p', { class: 'muted' }, 'Use your AUZslab login. Staff use the login their employer gave them.'),
+    socialWrap, socialDivider, methodRow, emailWrap, phoneWrap, m);
   clear($('#app')).append(h('div', { class: 'login' }, form));
   e.focus();
+
+  if (CFG.googleClientId && !document.getElementById('gsiScript')) {
+    const gs = document.createElement('script'); gs.id = 'gsiScript'; gs.src = 'https://accounts.google.com/gsi/client'; gs.async = true; gs.defer = true;
+    document.head.appendChild(gs);
+  }
+  if (CFG.googleClientId) {
+    const initG = () => {
+      if (!window.google) return setTimeout(initG, 50);
+      socialWrap.style.display = 'grid'; socialDivider.style.display = 'block';
+      google.accounts.id.initialize({ client_id: CFG.googleClientId, callback: async (resp) => {
+        m.style.color = ''; m.textContent = 'Signing in…';
+        const { error } = await sb.auth.signInWithGoogle(resp.credential);
+        if (error) { m.style.color = 'var(--red)'; m.textContent = error.message; return; }
+        boot();
+      } });
+      google.accounts.id.renderButton(googleHost, { theme: 'outline', size: 'large', width: 332 });
+    };
+    initG();
+  }
+  if (CFG.appleClientId && !document.getElementById('appleSdkScript')) {
+    const as = document.createElement('script'); as.id = 'appleSdkScript'; as.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
+    document.head.appendChild(as);
+  }
+  if (CFG.appleClientId) {
+    const initA = () => {
+      if (!window.AppleID) return setTimeout(initA, 50);
+      socialWrap.style.display = 'grid'; socialDivider.style.display = 'block'; appleBtn.style.display = 'flex';
+      AppleID.auth.init({ clientId: CFG.appleClientId, scope: 'email name', redirectURI: location.origin + '/payroll.html', usePopup: true });
+      appleBtn.onclick = async () => {
+        try {
+          const resp = await AppleID.auth.signIn();
+          m.style.color = ''; m.textContent = 'Signing in…';
+          const { error } = await sb.auth.signInWithApple(resp.authorization.code);
+          if (error) { m.style.color = 'var(--red)'; m.textContent = error.message; return; }
+          boot();
+        } catch (err) { if (err && err.error === 'popup_closed_by_user') return; m.style.color = 'var(--red)'; m.textContent = 'Apple sign-in failed.'; }
+      };
+    };
+    initA();
+  }
 }
 function blocked(title, text) {
   clear($('#app')).append(h('div', { class: 'login' }, h('div', { class: 'card' }, h('img', { src: '/logo-payroll.svg', alt: 'AUZslab Payroll' }), h('h1', null, title), h('p', { class: 'muted' }, text),
@@ -107,6 +210,15 @@ function buildShell() {
 }
 const roleLabel = () => S.user.role === 'owner' ? 'Owner' : S.user.role === 'manager' ? 'Manager' : isHR() ? cap1(S.user.role) : 'Employee';
 function signOut() { sb.auth.signOut().then(() => location.reload()); }
+// Apple Guideline 5.1.1(v): self-service account deletion, reachable from inside the app.
+async function deleteAccountFlow() {
+  const pw = h('input', { class: 'input', type: 'password', placeholder: 'Password (leave blank if you use Google, Apple or phone sign-in)', style: { marginTop: '8px' } });
+  const ok = await alertBox({ title: 'Delete your account?', message: 'This cannot be undone.', body: pw, confirm: 'Delete account', actions: [{ label: 'Delete account', value: true, role: 'danger' }, { label: 'Cancel', value: false }] });
+  if (!ok) return;
+  const { error } = await sb.auth.deleteAccount(pw.value);
+  if (error) { await alertBox({ title: 'Could not delete account', message: error.message, cancel: false }); return; }
+  location.href = '/payroll.html';
+}
 function moreSheet() {
   const tabs = tabsFor();
   const groups = [...(isHR() ? NAV_HR : []), ...(S.ctx.me ? NAV_ME : [])];
@@ -115,7 +227,7 @@ function moreSheet() {
     return items.length ? section(g.group || 'Main', h('div', { class: 'list' }, items.map((i) => liRow({ icon: PAGES[i].icon, title: PAGES[i].title, chevron: true, onclick: () => { s.close(); go(i); } })))) : null;
   }),
     isHR() && can('pay_time') ? h('div', { class: 'list' }, liRow({ icon: 'tablet', title: 'Clock-in kiosk', sub: 'Turn this device into a shared clock-in screen', onclick: () => { s.close(); go('kiosk'); } })) : null,
-    h('div', { class: 'list' }, liRow({ icon: 'user', tone: 'gray', title: S.user.email, sub: roleLabel() + (S.ctx.tenant.is_demo ? ' · demo data' : '') }), liRow({ icon: 'logout', tone: 'gray', title: 'Sign out', onclick: signOut })));
+    h('div', { class: 'list' }, liRow({ icon: 'user', tone: 'gray', title: S.user.email, sub: roleLabel() + (S.ctx.tenant.is_demo ? ' · demo data' : '') }), liRow({ icon: 'logout', tone: 'gray', title: 'Sign out', onclick: signOut }), liRow({ icon: 'trash', tone: 'red', title: 'Delete my account', onclick: () => { s.close(); deleteAccountFlow(); } })));
   const s = sheet({ title: 'More', closeLabel: 'Done', body, noFocus: true });
 }
 function globalKeys(e) {

@@ -1,11 +1,21 @@
 import http from 'node:http';
 import { pool, withAuth } from './db.js';
-import { login, verifyToken, bearerFrom, createUser, resetToRandomPassword, signToken } from './auth.js';
+import {
+  login, verifyToken, bearerFrom, createUser, resetToRandomPassword, signToken,
+  loginWithGoogle, loginWithApple, createPhoneOtp, loginWithPhone,
+  createPasswordReset, resetPassword, deleteOwnAccount,
+  listSessions, revokeSession,
+} from './auth.js';
 import { saveSiteUpload, saveDocUpload, readDocUpload, getUploadsDiskUsage } from './storage.js';
 import { startRealtime } from './realtime.js';
 import { handlePushEvent } from './push.js';
-import { sendStaffInviteEmail } from './mail.js';
+import { sendStaffInviteEmail, sendPasswordResetEmail } from './mail.js';
+import { sendOtpSms } from './sms.js';
 import { handleSalon } from './salon.js';
+import { paymentConfig, createOrder, verifyWebhookSignature, handleWebhookEvent } from './payments.js';
+import { initErrorTracking, captureError } from './errors.js';
+
+initErrorTracking(); // dormant unless SENTRY_DSN is set -- see errors.js
 
 const PORT = process.env.PORT || 3000;
 const DOMAIN = process.env.DOMAIN || '';
@@ -99,6 +109,22 @@ const RPC = {
   submit_signup_request: { params: ['p_business_name', 'p_slug', 'p_features', 'p_notes', 'p_contact_name', 'p_phone', 'p_niche', 'p_address'], jsonb: ['p_features'], auth: true },
   approve_signup_request: { params: ['p_request_id', 'p_niche'], auth: true },
   decline_signup_request: { params: ['p_request_id'], auth: true },
+
+  // --- Razorpay payments (db/070): dormant until RAZORPAY_KEY_ID/SECRET are set, see payments.js ---
+  public_product_prices: { params: [], auth: false },
+  payment_status: { params: ['p_order_id'], auth: true },
+  admin_list_payments: { params: [], auth: true },
+  admin_set_product_price: { params: ['p_key', 'p_monthly_price'], auth: true },
+  // --- Bundle pricing (db/072) ---
+  public_bundles: { params: [], auth: false },
+  admin_set_bundle_price: { params: ['p_key', 'p_monthly_price'], auth: true },
+  public_addon_price_overrides: { params: [], auth: false },
+  // provision_from_payment / provision_addon_from_payment deliberately NOT
+  // registered here -- they skip the is_platform_admin() check that every
+  // other provisioning path requires, trusting instead that the only
+  // caller is the webhook handler below, which already verified real
+  // money was captured. Registering them would let anyone free-provision
+  // a tenant by POSTing a fake payment id to /rpc/provision_from_payment.
 
   // --- Phase 1: Booking & Appointments / Reports & Analytics ---
   convert_booking_to_order: { params: ['p_booking_id', 'p_invoice_prefix'], auth: true },
@@ -241,7 +267,7 @@ const RPC = {
   public_acc_document: { params: ['p_token'], auth: false },
   acc_remove_attachment: { params: ['p_id'], auth: true },
 
-  // --- AUZslab Payroll v2 (db/069-073). Every one of these starts with pay_guard()/pay_tenant() in SQL, which re-checks the
+  // --- AUZslab Payroll v2 (db/073-077). Every one of these starts with pay_guard()/pay_tenant() in SQL, which re-checks the
   // 'payroll' entitlement, the caller's permission and field-level security; employees reach their own data through pay_me_*.
   // Internal helpers (pay_calc_item, pay_import_legacy, pay_demo_seed, ...) are deliberately not listed here.
   pay_bootstrap: { params: [], auth: true },
@@ -518,6 +544,7 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://internal');
   const user = verifyToken(bearerFrom(req) || '');
   const ip = clientIp(req);
+  const meta = { ip, userAgent: req.headers['user-agent'] || '' }; // threaded into every sign-in, so it gets its own row in auth_sessions (db/071)
 
   try {
     // ---- auth ----
@@ -533,7 +560,7 @@ const server = http.createServer(async (req, res) => {
       const bucket = isDemo ? `demologin:${ip}` : `login:${ip}`;
       const limit = isDemo ? 300 : 20;
       if (rateLimited(bucket, limit, 15 * 60_000)) throw new HttpError(429, 'too many login attempts, try again later');
-      const result = await login(email, password);
+      const result = await login(email, password, meta);
       if (!result) throw new HttpError(401, 'invalid credentials');
       if (result.unverified) throw new HttpError(403, 'Please verify your email first -- check your inbox for the verification link, or ask your manager to resend it.');
       return reply(200, result);
@@ -548,6 +575,7 @@ const server = http.createServer(async (req, res) => {
       if (rateLimited(`signup:${ip}`, 10, 60 * 60_000)) throw new HttpError(429, 'too many signups from this network, try again later');
       const { email, password } = await readJsonBody(req);
       if (!email || !password) throw new HttpError(400, 'email and password are required');
+      if (password.length < 8) throw new HttpError(400, 'password must be at least 8 characters');
       let created;
       try {
         created = await createUser({ email, password });
@@ -555,11 +583,157 @@ const server = http.createServer(async (req, res) => {
         if (err.code === '23505') throw new HttpError(409, 'an account with that email already exists');
         throw err;
       }
-      return reply(200, { access_token: signToken(created), user: created });
+      return reply(200, { access_token: await signToken(created, meta), user: created });
     }
+    // ---- Google / Apple / phone sign-in (db/069) -- each finds or
+    // creates an auth_users row via findOrCreateIdentityUser and returns
+    // the exact same {access_token,user} shape /auth/login does, so the
+    // client treats every sign-in method identically from here on. ----
+    if (url.pathname === '/auth/google' && req.method === 'POST') {
+      if (rateLimited(`oauth:${ip}`, 30, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      const { id_token } = await readJsonBody(req);
+      if (!id_token) throw new HttpError(400, 'id_token is required');
+      let result;
+      try {
+        result = await loginWithGoogle(id_token, meta);
+      } catch (err) {
+        throw new HttpError(401, err.message || 'Google sign-in failed');
+      }
+      return reply(200, result);
+    }
+    if (url.pathname === '/auth/apple' && req.method === 'POST') {
+      if (rateLimited(`oauth:${ip}`, 30, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      const { code } = await readJsonBody(req);
+      if (!code) throw new HttpError(400, 'code is required');
+      let result;
+      try {
+        result = await loginWithApple(code, meta);
+      } catch (err) {
+        throw new HttpError(401, err.message || 'Apple sign-in failed');
+      }
+      return reply(200, result);
+    }
+    // 5 codes / 10 min per phone number, on top of the per-IP bucket --
+    // a phone number is the actual scarce resource worth brute-forcing
+    // here (an attacker rotating IPs still can't out-text the phone).
+    if (url.pathname === '/auth/phone/send' && req.method === 'POST') {
+      if (rateLimited(`phonesend:${ip}`, 20, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      const { phone } = await readJsonBody(req);
+      if (!phone || !/^\+[1-9]\d{6,14}$/.test(phone)) throw new HttpError(400, 'a phone number in +<countrycode><number> format is required');
+      if (rateLimited(`phonesend:${phone}`, 5, 10 * 60_000)) throw new HttpError(429, 'too many codes sent to this number, try again later');
+      const code = await createPhoneOtp(phone);
+      const sent = await sendOtpSms(phone, code);
+      return reply(200, sent);
+    }
+    if (url.pathname === '/auth/phone/verify' && req.method === 'POST') {
+      if (rateLimited(`phoneverify:${ip}`, 30, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      const { phone, code } = await readJsonBody(req);
+      if (!phone || !code) throw new HttpError(400, 'phone and code are required');
+      const result = await loginWithPhone(phone, code, meta);
+      if (!result) throw new HttpError(401, 'that code is invalid or has expired');
+      return reply(200, result);
+    }
+
+    // ---- self-service password reset (db/069) ----
+    // Always replies the same way whether or not the email exists --
+    // only createPasswordReset itself (and the server log) knows which.
+    // reset_link_base is the page the CALLER wants the link to open
+    // (e.g. https://auzslab.in/reset-password.html) -- same split as
+    // /staff/send-invite-email, so the server never hardcodes a frontend
+    // path.
+    if (url.pathname === '/auth/forgot' && req.method === 'POST') {
+      if (rateLimited(`forgot:${ip}`, 10, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      const { email, reset_link_base } = await readJsonBody(req);
+      if (!email || !reset_link_base) throw new HttpError(400, 'email and reset_link_base are required');
+      const token = await createPasswordReset(email);
+      if (token) {
+        const resetLink = `${reset_link_base}${reset_link_base.includes('?') ? '&' : '?'}token=${token}`;
+        await sendPasswordResetEmail({ to: email, resetLink }).catch((err) => console.warn('password reset email failed', err));
+      }
+      return reply(200, { ok: true, message: 'If an account exists for that email, a reset link has been sent.' });
+    }
+    if (url.pathname === '/auth/reset' && req.method === 'POST') {
+      if (rateLimited(`reset:${ip}`, 20, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      const { token, password } = await readJsonBody(req);
+      if (!token || !password) throw new HttpError(400, 'token and password are required');
+      if (password.length < 8) throw new HttpError(400, 'password must be at least 8 characters');
+      const ok = await resetPassword(token, password);
+      if (!ok) throw new HttpError(400, 'this reset link is invalid or has expired');
+      return reply(200, { ok: true });
+    }
+
+    // ---- self-service account deletion (Apple Guideline 5.1.1(v)) ----
+    if (url.pathname === '/auth/delete-account' && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      // A leaked/stolen JWT (e.g. an XSS token theft) shouldn't let an
+      // attacker brute-force the password confirmation unlimited times --
+      // same discipline as every other password check in this file.
+      if (rateLimited(`delacct:${user.id}`, 10, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      const { password } = await readJsonBody(req);
+      try {
+        await deleteOwnAccount(user.id, password);
+      } catch (err) {
+        throw new HttpError(err.message === 'incorrect password' ? 401 : 400, err.message);
+      }
+      return reply(200, { ok: true });
+    }
+
     if (url.pathname === '/auth/session' && req.method === 'GET') {
       if (!user) throw new HttpError(401, 'no session');
       return reply(200, { user });
+    }
+
+    // ---- single-device session revocation (db/071) ----
+    if (url.pathname === '/auth/sessions' && req.method === 'GET') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      const sessions = await listSessions(user.id);
+      return reply(200, { sessions: sessions.map((s) => ({ ...s, current: s.jti === user.jti })) });
+    }
+    const revokeMatch = url.pathname.match(/^\/auth\/sessions\/([0-9a-f-]{36})\/revoke$/);
+    if (revokeMatch && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      if (rateLimited(`revokesess:${user.id}`, 30, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      try {
+        await revokeSession(user.id, revokeMatch[1]);
+      } catch (err) {
+        throw new HttpError(404, err.message || 'session not found');
+      }
+      return reply(200, { ok: true });
+    }
+
+    // ---- Razorpay payments (db/070) -- dormant until RAZORPAY_KEY_ID/SECRET
+    // are set (see payments.js). /payments/config tells the cart page
+    // whether to even offer online checkout. ----
+    if (url.pathname === '/payments/config' && req.method === 'GET') {
+      return reply(200, paymentConfig());
+    }
+    if (url.pathname === '/payments/create-order' && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      // Each call hits Razorpay's own API -- worth a modest per-caller cap.
+      if (rateLimited(`payorder:${ip}`, 20, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      const { signup_request_id, addon_request_id } = await readJsonBody(req);
+      let result;
+      try {
+        result = await createOrder({ userId: user.id, signupRequestId: signup_request_id, addonRequestId: addon_request_id });
+      } catch (err) {
+        throw new HttpError(400, err.message || 'could not start payment');
+      }
+      return reply(200, result);
+    }
+    // Razorpay calls this directly, server-to-server -- no Bearer token,
+    // no Origin, no rate limit by IP (it's always Razorpay's own IPs).
+    // The signature check below is the only authentication this endpoint
+    // has, and it is the ONLY thing allowed to ever mark a payment paid
+    // and auto-provision a tenant -- see payments.js's own comment.
+    if (url.pathname === '/payments/webhook' && req.method === 'POST') {
+      const raw = await readRawBody(req, 1_000_000);
+      if (!verifyWebhookSignature(raw, req.headers['x-razorpay-signature'])) {
+        throw new HttpError(400, 'invalid signature');
+      }
+      let event;
+      try { event = JSON.parse(raw.toString('utf8')); } catch { throw new HttpError(400, 'bad json'); }
+      await handleWebhookEvent(event);
+      return reply(200, { ok: true });
     }
 
     // ---- generic data API (records/profiles/guest_orders/push_subs/leads/signup_requests/bookings) ----
@@ -765,7 +939,10 @@ const server = http.createServer(async (req, res) => {
       else if (err.code === '42501') { status = 403; message = err.message; }
       else if (err.code === '28000') { status = 401; message = err.message; }
     }
-    if (status === 500) console.error(err);
+    if (status === 500) {
+      console.error(err);
+      captureError(err, { method: req.method, path: url.pathname, user_id: user?.id || null });
+    }
     reply(status, { error: message });
   }
 });

@@ -4,6 +4,7 @@ import path from 'node:path';
 import bcrypt from 'bcryptjs';
 import { pool } from './db.js';
 import { makeSeed, makeTemplate, makeDemo, DEMO_STAFF_PHONE } from './salon-seed.js';
+import { captureError } from './errors.js';
 
 // Salon Suite API: the original Showoff Salon /api/* surface (see the
 // app/public/salon/ front-end, a verbatim port), multi-tenant. The
@@ -801,7 +802,10 @@ export async function handleSalon(req, res, ip) {
     fail(404, 'Not found.');
   } catch (e) {
     const status = Number(e && e.status) || 500;
-    if (status >= 500) console.error(e);
+    // method/p are declared inside the try block above (block-scoped,
+    // not visible here) -- re-derive the same minimal context directly
+    // from req instead of reaching into that scope.
+    if (status >= 500) { console.error(e); captureError(e, { method: req.method, path: req.url }); }
     if (res.headersSent) return res.end();
     sendJson(res, status, { error: status >= 500 ? 'Something went wrong. Please try again.' : String(e.message || 'Request failed.') });
   }

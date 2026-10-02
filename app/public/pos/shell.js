@@ -175,12 +175,118 @@ function checkAlerts() {
 async function refreshNotifCount() { try { const { data } = await sb.from('notifications').select('id').eq('read', false); const el = $('#notifCount'); if (el) { el.textContent = data && data.length ? String(data.length) : ''; el.classList.toggle('hidden', !(data && data.length)); } } catch {} }
 
 // ---------- sign in, start ----------
+// Google/Apple/phone sign-in (db/069) alongside the original email+password
+// form -- same sb.auth.* methods site/signup.html already uses. Phone has
+// to be here, not just on the marketing site: a staff member who only ever
+// signed up by phone has no password and no email of their own (a
+// synthetic placeholder address is what findOrCreateIdentityUser gives
+// them), so phone/OTP is their only way back in.
 function login(msg) {
   const e = h('input', { class: 'input', type: 'email', placeholder: 'Email', autocomplete: 'username', 'aria-label': 'Email' }), p = h('input', { class: 'input', type: 'password', placeholder: 'Password', autocomplete: 'current-password', 'aria-label': 'Password' });
   const m = h('div', { class: 'hint' + (msg ? ' err' : '') }, msg || '');
   const go1 = async () => { m.className = 'hint'; m.textContent = 'Signing in…'; const { error } = await sb.auth.signInWithPassword({ email: e.value.trim(), password: p.value }); if (error) { m.className = 'hint err'; m.textContent = error.message; } else boot(); };
   p.onkeydown = (ev) => { if (ev.key === 'Enter') go1(); };
-  $('#app').replaceChildren(h('div', { class: 'login' }, h('div', { class: 'card' }, posLogo(), h('h2', null, 'Sign in'), h('p', { class: 'sub' }, 'Use the email and password your business gave you.'), e, p, m, h('button', { class: 'btn fill lg wide', onclick: go1 }, 'Sign in'))));
+
+  const eyeBtn = h('button', { type: 'button', style: 'position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--label3);display:flex;padding:8px', 'aria-label': 'Show password' });
+  eyeBtn.append(icon('eye', 18));
+  eyeBtn.onclick = () => { const showing = p.type === 'text'; p.type = showing ? 'password' : 'text'; eyeBtn.replaceChildren(icon(showing ? 'eye' : 'eyeOff', 18)); };
+  const pwWrap = h('div', { style: 'position:relative' }, p, eyeBtn);
+
+  const forgotBtn = h('button', { type: 'button', class: 'hint', style: 'background:none;border:none;padding:0;color:var(--accent);font-weight:600;justify-self:end;cursor:pointer' }, 'Forgot password?');
+  forgotBtn.onclick = async () => {
+    const email = e.value.trim();
+    if (!email) { m.className = 'hint err'; m.textContent = 'Enter your email above first.'; return; }
+    m.className = 'hint'; m.textContent = 'Sending…';
+    const { error } = await sb.auth.forgotPassword(email, 'https://auzslab.in/signup.html');
+    m.className = 'hint'; m.textContent = error ? error.message : 'If that email has an account, a reset link is on its way.';
+  };
+
+  const phoneNum = h('input', { class: 'input', type: 'tel', placeholder: '+91 98765 43210', autocomplete: 'tel', 'aria-label': 'Phone number' });
+  const phoneCode = h('input', { class: 'input', type: 'text', placeholder: '6-digit code', inputmode: 'numeric', maxlength: 6, autocomplete: 'one-time-code' });
+  const sendCodeBtn = h('button', { type: 'button', class: 'btn fill lg wide' }, 'Send code');
+  const verifyBtn = h('button', { type: 'button', class: 'btn fill lg wide' }, 'Verify & continue');
+  const codeStep = h('div', { style: 'display:none;gap:10px' }, phoneCode, verifyBtn);
+  sendCodeBtn.onclick = async () => {
+    const phone = phoneNum.value.trim();
+    if (!/^\+[1-9]\d{6,14}$/.test(phone)) { m.className = 'hint err'; m.textContent = 'Enter your number with a country code, e.g. +91 98765 43210.'; return; }
+    m.className = 'hint'; m.textContent = 'Sending…';
+    const { data, error } = await sb.auth.sendPhoneOtp(phone);
+    if (error) { m.className = 'hint err'; m.textContent = error.message; return; }
+    if (data && data.sent === false) { m.className = 'hint err'; m.textContent = data.reason || 'Could not send a code right now.'; return; }
+    m.className = 'hint'; m.textContent = ''; codeStep.style.display = 'grid'; sendCodeBtn.textContent = 'Resend code';
+  };
+  verifyBtn.onclick = async () => {
+    m.className = 'hint'; m.textContent = 'Verifying…';
+    const { error } = await sb.auth.verifyPhoneOtp(phoneNum.value.trim(), phoneCode.value.trim());
+    if (error) { m.className = 'hint err'; m.textContent = error.message; return; }
+    boot();
+  };
+  const phoneWrap = h('div', { style: 'display:none;gap:10px' }, phoneNum, sendCodeBtn, codeStep);
+  const submitBtn = h('button', { class: 'btn fill lg wide' }, 'Sign in');
+  submitBtn.onclick = go1;
+  const emailWrap = h('div', { style: 'display:grid;gap:10px' }, e, pwWrap, forgotBtn, submitBtn);
+  const methodEmailBtn = h('button', { type: 'button', class: 'on' }, 'Email');
+  const methodPhoneBtn = h('button', { type: 'button' }, 'Phone');
+  const setMethod = (which) => {
+    emailWrap.style.display = which === 'email' ? 'grid' : 'none';
+    phoneWrap.style.display = which === 'phone' ? 'grid' : 'none';
+    methodEmailBtn.classList.toggle('on', which === 'email');
+    methodPhoneBtn.classList.toggle('on', which === 'phone');
+    m.className = 'hint'; m.textContent = '';
+  };
+  methodEmailBtn.onclick = () => setMethod('email');
+  methodPhoneBtn.onclick = () => setMethod('phone');
+  const methodRow = h('div', { class: 'seg' }, methodEmailBtn, methodPhoneBtn);
+
+  const googleHost = h('div');
+  const appleBtn = h('button', { type: 'button', class: 'btn wide', style: 'display:none;gap:8px' });
+  appleBtn.append(icon('apple', 18), document.createTextNode('Continue with Apple'));
+  const socialDivider = h('div', { class: 'hint', style: 'display:none;text-align:center' }, 'or');
+  const socialWrap = h('div', { style: 'display:none;gap:10px' }, googleHost, appleBtn);
+
+  const card = h('div', { class: 'card' }, posLogo(), h('h2', null, 'Sign in'), h('p', { class: 'sub' }, 'Use the email and password your business gave you.'),
+    socialWrap, socialDivider, methodRow, emailWrap, phoneWrap, m);
+  $('#app').replaceChildren(h('div', { class: 'login' }, card));
+
+  if (C.googleClientId && !document.getElementById('gsiScript')) {
+    const gs = document.createElement('script'); gs.id = 'gsiScript'; gs.src = 'https://accounts.google.com/gsi/client'; gs.async = true; gs.defer = true;
+    document.head.appendChild(gs);
+  }
+  if (C.googleClientId) {
+    const initGoogle = () => {
+      if (!window.google) return setTimeout(initGoogle, 50);
+      socialWrap.style.display = 'grid'; socialDivider.style.display = 'block';
+      google.accounts.id.initialize({ client_id: C.googleClientId, callback: async (resp) => {
+        m.className = 'hint'; m.textContent = 'Signing in…';
+        const { error } = await sb.auth.signInWithGoogle(resp.credential);
+        if (error) { m.className = 'hint err'; m.textContent = error.message; return; }
+        boot();
+      } });
+      google.accounts.id.renderButton(googleHost, { theme: 'outline', size: 'large', width: 332 });
+    };
+    initGoogle();
+  }
+  if (C.appleClientId && !document.getElementById('appleSdkScript')) {
+    const as = document.createElement('script'); as.id = 'appleSdkScript'; as.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
+    document.head.appendChild(as);
+  }
+  if (C.appleClientId) {
+    const initApple = () => {
+      if (!window.AppleID) return setTimeout(initApple, 50);
+      socialWrap.style.display = 'grid'; socialDivider.style.display = 'block'; appleBtn.style.display = 'flex';
+      AppleID.auth.init({ clientId: C.appleClientId, scope: 'email name', redirectURI: location.origin + '/index.html', usePopup: true });
+      appleBtn.onclick = async () => {
+        try {
+          const resp = await AppleID.auth.signIn();
+          m.className = 'hint'; m.textContent = 'Signing in…';
+          const { error } = await sb.auth.signInWithApple(resp.authorization.code);
+          if (error) { m.className = 'hint err'; m.textContent = error.message; return; }
+          boot();
+        } catch (err) { if (err && err.error === 'popup_closed_by_user') return; m.className = 'hint err'; m.textContent = 'Apple sign-in failed.'; }
+      };
+    };
+    initApple();
+  }
 }
 async function seed() { localStorage.seeded = 1; const c = uid(); await save('cat', { name: 'Tea', n: 1 }, c); await save('item', { name: 'Masala Tea', cat: c, price: 25, sizes: [] }); await save('item', { name: 'Coffee', cat: c, price: 49, sizes: [{ l: 'M', p: 29 }, { l: 'L', p: 49 }] }); for (let i = 1; i <= 6; i++) await save('table', { name: 'T' + i }); }
 async function loadStaffList() { try { const { data } = await sb.from('profiles').select('id,email,name'); STAFF_LIST = data || []; render(); } catch {} }

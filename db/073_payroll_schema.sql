@@ -4,9 +4,9 @@
 -- Replaces the old browser-side Payroll (records kinds hr_*, db/024-036), whose
 -- numbers were computed in the browser and could be edited after payment. Here the
 -- server is authoritative: every number on a payslip is calculated by the
--- database (db/070), every payroll run follows a state machine, finalised runs are
+-- database (db/074), every payroll run follows a state machine, finalised runs are
 -- frozen, and corrections go through a new run (adjustment / arrears), never by
--- editing history. The old hr_* records are imported once by db/071 (ids kept) and
+-- editing history. The old hr_* records are imported once by db/075 (ids kept) and
 -- left in place untouched as a backup.
 --
 -- The flow the tables follow: organisation -> employee (identity) -> job (effective
@@ -17,7 +17,7 @@
 --
 -- Access model: RLS is ON for every table and there are NO policies and NO grants
 -- to the app role, so nothing can be read or written directly, by anyone. Every
--- read and write goes through the SECURITY DEFINER pay_* functions (db/070-071),
+-- read and write goes through the SECURITY DEFINER pay_* functions (db/074-075),
 -- which call pay_guard(): entitlement to 'payroll' (and not switched off by the
 -- owner), the caller's role/permission, and field-level security (salary, bank
 -- and PAN only with pay_salary). Employees reach their own data only through

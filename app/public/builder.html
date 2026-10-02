@@ -122,7 +122,8 @@ input[type=date],input[type=time],input[type=month]{max-width:100%}
 </head><body>
 <div id=app></div>
 <script src="/sb-client.js?v=2"></script>
-<script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
+<script>window.CFG = { url: 'https://api.auzslab.in', key: '', sentryDsn: '' };</script>
+<script src="/ds/errors.js?v=1"></script>
 <script src=/tenant.js></script>
 <script>
 const C=window.CFG||{},sb=supabase.createClient(C.url,C.key),S={pages:[],curSlug:null,drag:null},R={};let busy=0;
