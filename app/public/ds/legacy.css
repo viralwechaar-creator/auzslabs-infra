@@ -1,0 +1,76 @@
+/* AUZslab design system: bridge for the older single-file staff apps (Back Office, Payroll, Website Builder).
+   Loaded last, after each app's own <style> and hig.*.css. It points their colour names at the shared tokens in
+   ds/auz.css (one accent, warm-neutral surfaces, charcoal text) and adds the shared app shell (sidebar from 900px,
+   bottom tab bar on phones). These apps stay in light appearance (<html data-theme=light>) until their own inline
+   colours are moved to tokens; POS, the admin console and Accounting follow the system appearance. */
+:root{
+  --accent:var(--brand,#800020);--g:var(--accent);
+  --ink:var(--label);--ink-dim:var(--label2);--ink-faint:var(--label3);--l:var(--sep);--bg-raised:var(--bg);
+  --hig-sep:var(--sep);--hig-fill:var(--fill);--hig-label2:var(--label2);--hig-font:var(--font);--hig-r:var(--r3);
+  --radius-sm:var(--r2);--radius-md:var(--r3);--radius-lg:var(--r4);
+  --shadow-sm:var(--sh1);--shadow-md:var(--sh2);--shadow-lift:var(--sh2);--accent-glow:none;
+}
+body{font-family:var(--font)!important;background:var(--bg)!important;color:var(--label)}
+.top-bar{background:var(--bar)!important;color:var(--label)!important;box-shadow:none!important;border-bottom:.5px solid var(--sep);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px)}
+.top-bar h1,.top-bar button,.top-bar .hamburger-btn,.top-bar a{color:var(--label)!important}
+.top-bar .hamburger-btn:hover,.top-bar button:hover{background:var(--fill2)!important}
+.card,.md,.drawer{background:var(--card)}
+input,select,textarea{background:var(--card);color:var(--label)}
+button.p,button.on{background:var(--accent);color:var(--on-accent)}
+.powered{background:var(--bg)!important;color:var(--label3)}
+.powered a{color:var(--label2)}
+.tabbar button.on{background:var(--card)}
+
+/* sidebars: the current section is a soft tint, as in POS, the console and Accounting */
+.drawer button.on{background:var(--accent-soft)!important;color:var(--accent-text)!important;box-shadow:none!important}
+.drawer button.on svg{color:var(--accent-text)}
+
+/* ---------- shared shell (Payroll) ---------- */
+.ax-shell{display:flex;min-height:100vh;min-height:100dvh}
+.ax-main{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}
+.ax-body{flex:1 1 auto;padding:14px 0 calc(64px + env(safe-area-inset-bottom))}
+.ax-body>.g{padding-bottom:40px}
+.ax-side{display:none}
+.ax-side .brand{display:flex;align-items:center;padding:4px 8px 16px}.ax-side .brand img{height:30px;width:auto}
+.ax-side .grp{font-size:12px;font-weight:600;color:var(--label3);padding:14px 10px 4px}
+.ax-side nav{display:grid;gap:2px}
+.ax-side nav button,.ax-side .foot a,.ax-side .foot button{display:flex;align-items:center;gap:10px;width:100%;min-height:40px;padding:0 10px;border-radius:10px;font-size:15px;font-weight:500;color:var(--label);background:none;box-shadow:none;text-align:left;text-decoration:none}
+.ax-side nav button .ic,.ax-side .foot .ic{display:inline-flex;width:20px;height:20px;color:var(--label2)}.ax-side .ic svg{width:20px;height:20px}
+.ax-side nav button:hover,.ax-side .foot a:hover,.ax-side .foot button:hover{background:var(--fill2)}
+.ax-side nav button.on{background:var(--accent-soft);color:var(--accent-text);font-weight:600;box-shadow:none}
+.ax-side nav button.on .ic{color:var(--accent-text)}
+.ax-side .foot{margin-top:auto;display:grid;gap:2px;padding-top:12px;border-top:.5px solid var(--sep)}
+.ax-tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:4px 4px calc(4px + env(safe-area-inset-bottom));background:var(--bar);border-top:.5px solid var(--sep);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px)}
+.ax-tabs button{display:grid;place-items:center;align-content:center;gap:2px;min-height:50px;padding:0;border-radius:0;background:none!important;box-shadow:none;color:var(--label3);font-size:12px;font-weight:500}
+.ax-tabs button .ic{display:inline-flex}.ax-tabs button .ic svg{width:24px;height:24px}
+.ax-tabs button.on{color:var(--accent-text)}
+.ax-shell .powered{bottom:calc(58px + env(safe-area-inset-bottom))}
+@media (min-width:600px){
+  .ax-body{padding:18px 12px calc(64px + env(safe-area-inset-bottom))}
+  .ax-tabs button{grid-auto-flow:column;gap:8px;font-size:13px}
+}
+@media (min-width:900px){
+  .ax-side{display:flex;flex-direction:column;flex:none;width:var(--rail-w);position:sticky;top:0;height:100vh;overflow-y:auto;padding:14px 10px 12px;background:var(--card);border-right:.5px solid var(--sep)}
+  .ax-side .lbl-t,.ax-side .brand{display:none}
+  .ax-side nav button,.ax-side .foot a,.ax-side .foot button{justify-content:center;padding:0;min-height:44px}
+  .ax-side .grp{height:1px;padding:0;margin:10px 6px;background:var(--sep)}
+  .ax-tabs,.ax-menu{display:none!important}
+  .ax-body{padding:22px 12px 40px;max-width:1280px;width:100%}
+  .ax-shell .powered{position:static;background:none!important}
+}
+@media (min-width:1200px){
+  .ax-side{width:var(--side-w);padding:16px 12px 12px}
+  .ax-side .lbl-t{display:inline}.ax-side .brand{display:flex}
+  .ax-side nav button,.ax-side .foot a,.ax-side .foot button{justify-content:flex-start;padding:0 10px;min-height:40px}
+  .ax-side .grp{height:auto;padding:14px 10px 4px;margin:0;background:none}
+}
+
+/* ---------- Back Office: the drawer becomes a pinned sidebar on wide screens ---------- */
+@media (min-width:1200px){
+  html.ax-bo .drawer{transform:none!important;width:var(--side-w);max-width:none;border-radius:0!important;box-shadow:none!important;border-right:.5px solid var(--sep);z-index:10;animation:none}
+  html.ax-bo .drawer-ov{display:none!important}
+  html.ax-bo #app{margin-left:var(--side-w)}
+  html.ax-bo .shell{left:var(--side-w)!important;width:auto!important}
+  html.ax-bo .hamburger-btn{display:none!important}
+  html.ax-bo .powered{left:var(--side-w)}
+}

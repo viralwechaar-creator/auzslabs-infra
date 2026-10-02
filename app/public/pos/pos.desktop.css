@@ -1,7 +1,34 @@
-/* desktop and tablet landscape (900px and up): sidebar navigation, three-pane selling screen, centred sheets */
-.side{flex:none;width:232px;display:flex;flex-direction:column;background:var(--card);border-right:.5px solid var(--sep);padding:max(14px,env(safe-area-inset-top)) 12px 12px;gap:4px;min-height:0;overflow-y:auto}
-.side .brand{display:flex;align-items:center;gap:10px;padding:2px 8px 14px}
-.side .brand img{height:30px;width:auto}
+/* expanded (900-1199px: icon rail, two-pane selling screen) and wide (1200px and up: full sidebar, three panes); centred sheets */
+.side{flex:none;width:var(--side-w);transition:width .3s var(--ease);display:flex;flex-direction:column;background:var(--card);border-right:.5px solid var(--sep);padding:max(14px,env(safe-area-inset-top)) 12px 12px;gap:4px;min-height:0;overflow-y:auto}
+.side .brand{display:flex;align-items:center;gap:8px;padding:2px 2px 14px 8px;min-height:48px}
+.side .brand-logo{flex:1 1 auto;min-width:0;display:flex}.side .brand-logo img{height:30px;width:auto}
+.side .brand-mark{display:none;width:34px;height:34px}
+.side-tg{flex:none;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--label2)}
+.side-tg:hover{background:var(--fill2);color:var(--label)}
+.nav a.navlink{display:flex;align-items:center;gap:10px;min-height:40px;padding:0 10px;border-radius:10px;font-size:15px;font-weight:500;color:var(--label);text-decoration:none}
+.nav a.navlink svg{color:var(--label2)}
+@media (hover:hover){.nav a.navlink:hover{background:var(--fill2)}}
+kbd{font:600 13px var(--font);padding:3px 8px;border-radius:6px;background:var(--fill);color:var(--label2);white-space:nowrap}
+@media (pointer:coarse){.only-kb{display:none!important}}
+/* icon rail: automatic below 1200px, or chosen with the toggle */
+.side.min{width:var(--rail-w);padding-left:10px;padding-right:10px}
+@media (max-width:1199px){.side:not(.full){width:var(--rail-w);padding-left:10px;padding-right:10px}}
+.side.min .lbl-t,.side.min .brand-logo{display:none}
+.side.min .brand{flex-direction:column;padding:2px 0 10px;gap:6px}.side.min .brand-mark{display:block}
+.side.min .nav button,.side.min .nav a.navlink,.side.min .foot button{justify-content:center;padding:0;min-height:44px}
+.side.min .nav .grp{height:1px;margin:10px 6px;padding:0;background:var(--sep)}
+.side.min .badge{position:absolute;top:4px;right:4px;min-width:18px;height:18px;line-height:18px;font-size:12px;padding:0 4px}
+.side.min .nav button{position:relative}
+.side.min .who{display:none}
+@media (max-width:1199px){
+  .side:not(.full) .lbl-t,.side:not(.full) .brand-logo{display:none}
+  .side:not(.full) .brand{flex-direction:column;padding:2px 0 10px;gap:6px}.side:not(.full) .brand-mark{display:block}
+  .side:not(.full) .nav button,.side:not(.full) .nav a.navlink,.side:not(.full) .foot button{justify-content:center;padding:0;min-height:44px}
+  .side:not(.full) .nav .grp{height:1px;margin:10px 6px;padding:0;background:var(--sep)}
+  .side:not(.full) .badge{position:absolute;top:4px;right:4px;min-width:18px;height:18px;line-height:18px;font-size:12px;padding:0 4px}
+  .side:not(.full) .nav button{position:relative}
+  .side:not(.full) .who{display:none}
+}
 .nav{display:grid;gap:2px}
 .nav button{justify-content:flex-start;min-height:40px;padding:0 10px;border-radius:10px;font-size:15px;font-weight:500;color:var(--label)}
 .nav button svg{color:var(--accent-text)}
@@ -18,6 +45,7 @@
 /* selling screen: categories | items | ticket */
 .body.fixed{overflow:hidden;display:flex}
 .sell{flex:1 1 auto;display:grid;grid-template-columns:200px minmax(0,1fr) minmax(360px,400px);min-height:0;min-width:0}
+@media (max-width:1199px){.sell{grid-template-columns:minmax(0,1fr) minmax(340px,38%)}.sell .cats-col{display:none}.sell .cat-chips{display:flex!important}}
 .sell .cats-col{min-height:0;overflow-y:auto;padding:14px 10px;border-right:.5px solid var(--sep)}
 .sell .items-col{min-height:0;display:flex;flex-direction:column;min-width:0}
 .sell .items-head{flex:none;display:grid;gap:10px;padding:14px 16px 10px}

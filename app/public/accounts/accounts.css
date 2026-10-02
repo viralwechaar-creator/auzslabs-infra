@@ -3,29 +3,19 @@
    Rules: system typeface, nothing under 12px, body 17px, 44pt touch targets (36px under a pointer),
    sentence-case labels, grouped lists, segmented controls, sheets, visible focus, dark mode, reduced motion. */
 :root{
-  --tint:#800020;--tint-fg:#fff;--tint-soft:rgba(128,0,32,.1);--tint-line:rgba(128,0,32,.35);
-  --bg:#f2f2f7;--card:#fff;--card2:#f9f9fb;--label:#1c1c1e;--label2:#55555b;--label3:#78787e;
-  --sep:rgba(60,60,67,.16);--fill:rgba(120,120,128,.12);--fill2:rgba(120,120,128,.2);
-  --green:#1d7a38;--green-bg:rgba(36,138,61,.13);--orange:#b34100;--orange-bg:rgba(201,52,0,.11);--red:#c4001a;--red-bg:rgba(215,0,21,.1);--blue:#0a5ec2;--blue-bg:rgba(10,94,194,.1);--gray-bg:rgba(120,120,128,.14);
-  --r:12px;--r-lg:16px;--shadow:0 0 0 .5px rgba(0,0,0,.06),0 6px 24px rgba(0,0,0,.1);--bar:rgba(249,249,251,.88);
-  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",system-ui,"Segoe UI",Roboto,sans-serif;
-  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--ease:cubic-bezier(.32,.72,0,1);
-  --hit:44px;--safe-b:env(safe-area-inset-bottom,0px);--safe-t:env(safe-area-inset-top,0px);
-  color-scheme:light dark;
+  /* every colour, size and shadow comes from /ds/auz.css (the AUZslab design system shared with POS, Payroll and the
+     console); these names are this app's aliases for it. --tint fills, --tint-text writes (lifted in dark mode). */
+  --tint:var(--accent);--tint-text:var(--accent-text);--tint-fg:var(--on-accent);--tint-soft:var(--accent-soft);--tint-line:var(--accent-line);
+  --r:var(--r2);--r-lg:var(--r3);--shadow:var(--sh2);
+  --safe-b:env(safe-area-inset-bottom,0px);--safe-t:env(safe-area-inset-top,0px);
 }
-@media (prefers-color-scheme:dark){:root{
-  --tint:#ff6b88;--tint-fg:#1a0007;--tint-soft:rgba(255,107,136,.16);--tint-line:rgba(255,107,136,.4);
-  --bg:#000;--card:#1c1c1e;--card2:#2c2c2e;--label:#f5f5f7;--label2:#b4b4ba;--label3:#8e8e93;
-  --sep:rgba(84,84,88,.55);--fill:rgba(120,120,128,.24);--fill2:rgba(120,120,128,.36);
-  --green:#32d74b;--green-bg:rgba(50,215,75,.16);--orange:#ff9f0a;--orange-bg:rgba(255,159,10,.16);--red:#ff6961;--red-bg:rgba(255,69,58,.18);--blue:#64a8ff;--blue-bg:rgba(10,132,255,.2);--gray-bg:rgba(120,120,128,.28);
-  --shadow:0 0 0 .5px rgba(255,255,255,.08),0 10px 40px rgba(0,0,0,.6);--bar:rgba(28,28,30,.88)}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{-webkit-text-size-adjust:100%;background:var(--bg)}
-body{margin:0;background:var(--bg);color:var(--label);font:17px/1.4 var(--font);-webkit-font-smoothing:antialiased;letter-spacing:-.01em;overscroll-behavior-y:none}
+body{margin:0;background:var(--bg);color:var(--label);font:var(--fs-body)/1.4 var(--font);-webkit-font-smoothing:antialiased;letter-spacing:-.01em;overscroll-behavior-y:none}
 h1,h2,h3,h4,p{margin:0}
 button,input,select,textarea{font:inherit;color:inherit;letter-spacing:inherit}
 button{cursor:pointer;border:0;background:none}
-a{color:var(--tint);text-decoration:none}
+a{color:var(--tint-text);text-decoration:none}
 .num,.money{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 .money{white-space:nowrap}
 .neg{color:var(--red)}
@@ -39,7 +29,7 @@ a{color:var(--tint);text-decoration:none}
 .ic{display:inline-flex;flex:none;line-height:0}.ic svg{display:block;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 
 /* ---------- buttons ---------- */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:var(--hit);padding:0 16px;border-radius:12px;background:var(--fill);color:var(--tint);font-weight:600;font-size:17px;white-space:nowrap;transition:background .2s var(--ease),transform .25s var(--ease),opacity .2s;user-select:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:var(--hit);padding:0 16px;border-radius:12px;background:var(--fill);color:var(--tint-text);font-weight:600;font-size:17px;white-space:nowrap;transition:background .2s var(--ease),transform .25s var(--ease),opacity .2s;user-select:none}
 .btn:hover{background:var(--fill2)}.btn:active{transform:scale(.97);opacity:.85}
 .btn.fill{background:var(--tint);color:var(--tint-fg)}.btn.fill:hover{background:var(--tint);opacity:.9}
 .btn.plain{background:none;padding:0 10px}.btn.plain:hover{background:var(--fill)}
@@ -149,7 +139,7 @@ table.tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:15px}
 .sheet-f .btn{flex:1}
 .alert{position:fixed;z-index:70;left:50%;top:50%;transform:translate(-50%,-50%);width:min(320px,calc(100vw - 48px));background:var(--card);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);text-align:center;animation:pop .3s var(--ease)}
 .alert .m{padding:20px 18px 16px;display:grid;gap:6px}.alert h3{font-size:17px;font-weight:600}.alert p{font-size:15px;color:var(--label2)}
-.alert .acts{display:grid;border-top:.5px solid var(--sep)}.alert .acts button{min-height:46px;font-size:17px;color:var(--tint);border-top:.5px solid var(--sep)}.alert .acts button:first-child{border-top:0}.alert .acts .danger{color:var(--red);font-weight:600}.alert .acts .def{font-weight:600}
+.alert .acts{display:grid;border-top:.5px solid var(--sep)}.alert .acts button{min-height:46px;font-size:17px;color:var(--tint-text);border-top:.5px solid var(--sep)}.alert .acts button:first-child{border-top:0}.alert .acts .danger{color:var(--red);font-weight:600}.alert .acts .def{font-weight:600}
 .alert.wide{width:min(420px,calc(100vw - 48px))}
 .menu{position:fixed;z-index:65;min-width:220px;max-width:320px;background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:6px;animation:pop .2s var(--ease);max-height:70vh;overflow:auto}
 .menu button,.menu a{display:flex;align-items:center;gap:12px;width:100%;min-height:var(--hit);padding:0 12px;border-radius:9px;text-align:left;color:var(--label);font-size:16px}

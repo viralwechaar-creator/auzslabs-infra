@@ -53,6 +53,12 @@ const clear = (el) => { el.replaceChildren(); return el; };
 
 // line icons (static markup, 24px grid, stroke follows the text colour)
 const ICONS = {
+  box: '<path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/>',
+  book: '<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/>',
+  sidebar: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/>',
+  ledger: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+  payroll: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M17 8v8M15 10h3a1.5 1.5 0 0 1 0 3h-2a1.5 1.5 0 0 0 0 3h3"/>',
+  keyboard: '<rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>',
   sell: '<path d="M6 7h12l-1.2 12.2a2 2 0 0 1-2 1.8H9.2a2 2 0 0 1-2-1.8z"/><path d="M9 7a3 3 0 0 1 6 0"/>',
   tables: '<rect x="3" y="4" width="18" height="6" rx="2"/><path d="M6 10v10M18 10v10M3 15h18"/>',
   orders: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/>',
@@ -116,24 +122,8 @@ const bizType = () => cfg().bizType || 'restaurant';
 const isRetail = () => bizType() === 'retail';
 const isRestaurant = () => ['restaurant', 'cafe'].includes(bizType());
 const NICHE_ACCENT = { restaurant: '#800020', salon: '#7a3b6e', retail: '#1f3d6b' };
-// The business colour is --brand; pos.css turns it into --accent. Dark mode uses the same hue lifted (--brand-dark,
-// --brand-dark-text), the way Apple's dark system colours are lighter versions, so a deep green or wine still reads on black.
-function hexHsl(hex) {
-  const m = /^#?([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(String(hex || '').trim()); if (!m) return null;
-  const x = m[1].length === 3 ? m[1].replace(/./g, '$&$&') : m[1], [r, g, b] = [0, 2, 4].map((i) => parseInt(x.slice(i, i + 2), 16) / 255);
-  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
-  if (!d) return [0, 0, Math.round(l * 100)];
-  const s = d / (1 - Math.abs(2 * l - 1)), hh = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
-  return [Math.round((hh * 60 + 360) % 360), Math.round(s * 100), Math.round(l * 100)];
-}
-function applyTheme() {
-  const c = cfg().col || NICHE_ACCENT[bizType()] || '#800020', st = document.documentElement.style, hsl = hexHsl(c);
-  st.setProperty('--brand', c);
-  if (!hsl) { st.removeProperty('--brand-dark'); st.removeProperty('--brand-dark-text'); return; }
-  const [hu, sa, li] = hsl, s2 = sa < 8 ? sa : Math.max(sa, 30);
-  st.setProperty('--brand-dark', 'hsl(' + hu + ' ' + s2 + '% ' + Math.min(Math.max(li, 36), 52) + '%)');
-  st.setProperty('--brand-dark-text', 'hsl(' + hu + ' ' + (sa < 8 ? sa : Math.max(sa, 45)) + '% 74%)');
-}
+// The business colour: ds/brand.js sets --brand (and the lifted dark-mode versions) and remembers it for the other apps.
+function applyTheme() { auzBrand(cfg().col || NICHE_ACCENT[bizType()] || '#800020'); }
 
 // ---------- permissions ----------
 const DEFAULT_PERMS = { pos: true, orders: true, kitchen: true, reports: true, staff: true, inventory: true, crm: true, menu: false, settings: false, billing: false };
