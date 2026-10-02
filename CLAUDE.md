@@ -682,7 +682,7 @@ visible focus rings, reduced-motion support. It was built from Apple's Human Int
 `references/foundations/typography.md`, `components/menus-and-actions/buttons.md`). Tenant colours (`--accent`/`--g`) are untouched. The
 marketing site (`site/`) deliberately does NOT use it.
 
-**Standing rule: every staff-facing app, current or future (POS, Back Office, Payroll, Website Builder, and any new software the owner adds), links `/hig.css`
+**Standing rule (extended by the design system at the bottom of this file: every staff app also loads `/ds/auz.css` first and `/ds/legacy.css` last when it still uses hig.css): every staff-facing app, current or future (POS, Back Office, Payroll, Website Builder, and any new software the owner adds), links `/hig.css`
 after its own `<style>` and is built to the HIG from the start: 44pt hit targets, body 16+, sentence-case labels in the system font (no tiny mono
 uppercase), segmented controls for tabs, bottom sheets for modals on phones, no light/heavy weights. When starting a new app, copy the link tags from
 `backoffice.html` (or build on `app/public/pos/pos.css` the way the POS does), then check it on a phone-width screenshot. Exceptions: the marketing site and the Showoff-style salon console (`app/public/salon/`, a client's own design). Customer-facing pages (`site.html`, `booking.html`, `order.html`, `i.html`) don't either.
@@ -757,7 +757,7 @@ The owner's "AUZS LAB POS" admin dashboard design (reference screenshot + clicka
 
 ## Admin console (`app/public/dashboard.html` + `app/public/console/`) — full back-office in the owner's reference design
 
-`dashboard.html` is now only a shell; the app is `console/` (`console.css` + plain scripts, no build): `core.js` (state `S`/`R`, `PAGES` registry, `NAV`, hash routing, UI kit: `formModal` with field types incl. `node`/`multi`/`chips`/`image`, `table`, `kpis`, charts, outlet switcher, sync engine) and one module per sidebar group: `p-dashboard` (Dashboard + Daily Operations), `p-menu`, `p-inventory`, `p-finance`, `p-reports`, `p-team`, `p-crm`, `p-marketing` (Marketing + Aggregator centre + Integrations), `p-mgmt` (Management + Quick Links). A page = `PAGES['group/name']=()=>[nodes]`; add it to `NAV` in `core.js`. Owner/manager only. Look follows the owner's reference (blue accent, pastel tiles), no hig.css.
+`dashboard.html` is now only a shell; the app is `console/` (`console.css` + plain scripts, no build): `core.js` (state `S`/`R`, `PAGES` registry, `NAV`, hash routing, UI kit: `formModal` with field types incl. `node`/`multi`/`chips`/`image`, `table`, `kpis`, charts, outlet switcher, sync engine) and one module per sidebar group: `p-dashboard` (Dashboard + Daily Operations), `p-menu`, `p-inventory`, `p-finance`, `p-reports`, `p-team`, `p-crm`, `p-marketing` (Marketing + Aggregator centre + Integrations), `p-mgmt` (Management + Quick Links). A page = `PAGES['group/name']=()=>[nodes]`; add it to `NAV` in `core.js`. Owner/manager only. Look follows the owner's reference layout, but SUPERSEDED for colour: the console now uses the shared design-system tokens and the business accent (no blue theme), see the design-system section at the bottom.
 - **Own IndexedDB `dash2`** (rec/out/meta) with an outbox that pushes through `push_record` (same as the POS) so it never moves the POS's sync cursor. Everything is `records` kinds; settings writes (`saveSettings`) are owner-only.
 - **Multi-outlet:** `OUTK` lists per-outlet kinds (order, kotlog, exp, cashmove, waste, adjustment, transfer, ing, po, purchase, shift, dayclose, table, voidlog, closing). They carry `data.outlet` (`'main'` when absent). `L(kind)` filters by `localStorage.outlet` (`'all'` = unfiltered), `rawL` never does, `save` stamps the outlet. Outlets are `kind='outlet'`; items can override per outlet with `outletPrice{}`/`outletOff{}`. The POS (`index.html`) and Back Office carry the same `OUTK`/`L`/`save` logic and the POS has an outlet picker in its drawer. New per-outlet kind: add it to `OUTK` in all three files.
 - **db/058_admin_console_kinds.sql** allow-lists the new kinds for managers (outlet, variant, po, device, addongrp, tax, settlement, platform, giftcard, segment, campaign, closing, quicklink). Deploy: `git pull`, run 058 with the `< file` redirect form; no API rebuild.
@@ -923,3 +923,54 @@ Full audit, navigation map, layout tiers, the feature-parity register and the kn
   dark-mode contrast, 12px text and 44px targets on phones, POS shortcuts). Screenshots of every app at four widths:
   `node tests/shots.mjs <dir>` (`SCHEME=dark`, `ONLY=pos,accounts`).
 - When you bump `pos/*` or `ds/*` files, bump their `?v=` in the HTML and the `V` version plus file list in `sw.js`.
+
+
+## SESSION LOG (read this first when you open the repo on a new account): everything done in the POS rebuild + design-system session
+
+Order of work, with PRs on `main` (all squash-merged; deploy for every one of them is just `git pull origin main` unless a DB step is named):
+
+1. **POS audit and rebuild (PR #115, `db/068_pos_rebuild.sql`).** Owner's "Restaurant POS Master Audit Build Prompt" PDF: audit 42 areas, gap matrix,
+   build highest-value gaps, Apple-HIG "easy, minimal, premium" UI on phone and desktop. Result: `app/public/index.html` is a 42-line shell; code is in
+   `app/public/pos/` (core, ui, print, sell, pay, tables, kitchen, orders, reserve, register, staff, shell + `pos.css/.mobile.css/.desktop.css`).
+   Server rules in db/068 (kind-change check in `push_record`, `records_order_guard` trigger freezing paid/void bills, manager PIN approvals with HMAC tokens,
+   append-only `pos_audit`, `next_kot_no`, `claim_guest_order`, `redeem_giftcard`, reservations on `bookings`). Settings that used to be saved-but-ignored now apply
+   (service/packing/delivery charges, tax-inclusive prices, round off, require phone, tip prompt, discount limit). Full details: "Restaurant POS rebuild" section above and
+   `docs/POS_AUDIT.md`. **Deploy needs `psql ... -v ON_ERROR_STOP=1 < db/068_pos_rebuild.sql`, `docker compose up -d --build api`, then each owner/manager sets an approval PIN
+   (POS > Staff & settings) or cashiers cannot give discounts/cancel/credit.** Tests: `node tests/run-local.mjs pos` (26 checks).
+   Features checked as still present after the rebuild (owner asked): table clean marking, QR guest orders, kitchen, reservations, register, gift cards. The public
+   website/QR ordering page (`site.html`) is separate from the POS and unchanged.
+2. **Unified design system (PR #116).** Owner: "theme consistency, Apple HIG, design POS + Payroll + Accounting, keep colour consistent", plus a long master prompt
+   (audit, parity register, shared tokens, 4 breakpoints, no business-logic changes). Done: `app/public/ds/auz.css` (all tokens), `ds/brand.js` (business accent via `auzBrand*`),
+   `ds/legacy.css` (bridge for Back Office / Payroll / Builder). Console retokened (no blue theme), nav grouped by task in every app, POS tablet split view, 72px icon rail
+   at 900-1199px, 240px sidebar from 1200px, sidebar toggles, POS keyboard shortcuts, Payroll grouped sidebar + phone tab bar. Docs: `docs/UI_REDESIGN.md` (audit, IA,
+   tiers, feature-parity register, known gaps, release/rollback). Tests: `tests/suites/local/design.mjs`; screenshots: `node tests/shots.mjs <dir>`.
+3. **iPhone home-screen fixes (owner sends screenshots from a real iPhone; no device is available here, so say what is unverified).**
+   - PR #117: slimmer phone header/tab bars (POS navbar 44px, title hidden where a big page title exists except on Sell; tab bars shorter, bottom padding
+     `max(2px, env(safe-area-inset-bottom) - 14px)`; Payroll lost its duplicate hamburger and floating "Powered by" strip).
+   - PR #118: `ds/lock.js` pins the page behind any open sheet/dialog/menu/scrim (iOS-safe `body{position:fixed}` + restore scroll) and sheets use
+     `overscroll-behavior:contain`; Accounting phone menu sits above the tab bar; Back Office menu rebuilt (header, Open POS / Sign out under it, scrolling list,
+     collapsible Settings accordion, no clipped first item: the old `.drawer::before` sticky white block was the cause, no stuck dim layer, no `backdrop-filter` on the top bar).
+   - PR #119: Payroll More button did nothing because my Back Office drawer CSS was global (now scoped to `html.ax-bo`); the blank strip under bottom bars on Payroll/Back Office/Builder came
+     from `hig.css` `min-height:-webkit-fill-available` on html/body (switched off in `ds/legacy.css`; POS/Accounting never loaded hig.css, which is why only these had it).
+   - After deploying, the owner must delete the app from the iPhone home screen and add it again (old cached copy). Current `main` after these PRs: `104584a`.
+4. **Deploy habit.** Owner deploys from an iPhone over SSH (Termius), server `auzslab-app-1`, repo at `/root/auzslabs-infra`: `cd auzslabs-infra && git pull origin main && git log -1 --oneline`. Always give exact commands and the
+   expected last commit so the owner can verify. Static changes need no restart; `server/` changes need `docker compose up -d --build api`; `db/` changes need the migration run by hand with `<`.
+
+### Lessons that cost time (do not relearn them)
+- **Verify with the real stack:** `node tests/run-local.mjs [suite]` builds a scratch DB, starts the API and a Caddy-like static server, drives Chromium. Needs Postgres running (`service postgresql start`).
+  Full run is about 10 minutes (use `run_in_background` and wait for the notification; do not poll with sleeps). Suites: marketing, responsive, journeys, salon, cafe, pos, apps, accounts, design, security, load.
+  Last full run: 560 passed, 0 failed, then design 24/24 and apps 28/28 after the Payroll fix.
+- **Run two suites at once and they fight over the one test database.** Run them one after another.
+- **Staff apps that load hig.css (Back Office, Payroll, Builder) behave differently from POS/Accounting.** Anything global you put in `ds/legacy.css` hits all three; scope with `html.ax-bo` (Back Office) or `html:not(.ax-bo)`.
+  `ds/lock.js` selectors: the console has a permanent `#ov` element, so it is matched as `#ov.show` only.
+- **Two staff apps still locked to light appearance** (`data-theme=light`): Back Office, Payroll, Builder, until their inline colours are retokened (listed in `docs/UI_REDESIGN.md`, "Known gaps").
+- **Never claim an iPhone fix works from a desktop screenshot alone.** State what the tests assert and what only the owner can confirm on the device.
+- **Git:** work on a branch from `origin/main`, commit with the attribution lines the session reminder gives, push, open a PR with the GitHub MCP tools, then squash-merge. The "squash-merge SHA divergence" note above applies to long-lived branches only; fresh
+  branches from `origin/main` merge cleanly. A stop-hook asks for committed + pushed work at the end of every turn.
+- **Owner preferences (standing):** build a lot, talk little; one summary at the end; plain language (the owner is not a developer); give copy-paste deploy commands; ask before inventing features; reference screenshots are references, not specs.
+
+### Open items (nothing blocked on code, all need the owner or a decision)
+- Retoken Back Office / Payroll / Builder inline colours so they can follow dark mode and drop `ds/legacy.css` overrides.
+- Console has no automatic icon rail at 900-1199px; no hinge-aware foldable layouts; no saved views / pinned modules in POS or Accounting.
+- Real-device confirmation of the iPhone fixes above (blank strip, scroll lock, menus). Ask for a new screenshot if anything still looks wrong.
+- From earlier in the project and still open: historical Showoff Salon data import (needs an export from the owner), Zomato/Swiggy API integration, server-side stock ledger and posting POS sales into Accounting (POS_AUDIT backlog), renumber the duplicate db/049 / db/050 files.
