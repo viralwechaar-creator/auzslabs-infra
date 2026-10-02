@@ -268,6 +268,15 @@ function renderAccount() {
       <button class="btn btn-primary form-submit" id="pwBtn" style="margin-top:12px">Update password</button>
       <div id="pwMsg"></div>
     </div>
+    <div class="card" style="border-color:var(--accent)">
+      <h3 class="h-2">Delete account</h3>
+      <p class="muted">${DASH.my_role === 'owner'
+        ? 'This deletes your own login immediately -- you will not be able to sign in again. It does not erase ' + esc(t.name) + '\'s business data by itself; contact us afterward if you want the whole account closed and its data removed.'
+        : 'This deletes your login immediately -- you will not be able to sign in again. Ask your manager if you need access restored.'}</p>
+      <div class="field" id="delPwField"><label>Confirm your password</label><input id="delPw" type="password"></div>
+      <button class="btn btn-ghost form-submit" id="delBtn" style="margin-top:4px;color:var(--accent);border-color:var(--accent)">Delete my account</button>
+      <div id="delMsg"></div>
+    </div>
   `;
   $('#copyPosLink').onclick = async () => {
     const url = staffUrl;
@@ -288,6 +297,14 @@ function renderAccount() {
     if (error) { msg.className = 'err'; msg.textContent = error.message; return; }
     msg.className = 'ok-box'; msg.textContent = 'Password updated.';
     $('#pwOld').value = ''; $('#pwNew').value = '';
+  };
+  $('#delBtn').onclick = async () => {
+    const msg = $('#delMsg');
+    msg.className = ''; msg.textContent = '';
+    if (!window.confirm('Delete your AUZslab login? This cannot be undone from here.')) return;
+    const { error } = await sb.auth.deleteAccount($('#delPw').value);
+    if (error) { msg.className = 'err'; msg.textContent = error.message; return; }
+    window.location.href = 'signup.html';
   };
 }
 

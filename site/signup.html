@@ -94,16 +94,64 @@
                   <button class="btn btn-ghost" id="modeNew" style="flex:1;justify-content:center">New account</button>
                   <button class="btn btn-ghost" id="modeLogin" style="flex:1;justify-content:center">Log in</button>
                 </div>
-                <div class="field">
-                  <label for="email">Email</label>
-                  <input id="email" type="email" required autocomplete="email">
+
+                <div id="socialRow" style="display:none;flex-direction:column;gap:8px;margin:4px 0 14px">
+                  <div id="googleBtnHost"></div>
+                  <button id="appleBtn" class="btn btn-ghost form-submit" style="display:none;justify-content:center;gap:8px">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.365 1.43c0 1.14-.46 2.1-1.17 2.83-.78.8-2.03 1.42-3.09 1.33-.12-1.1.46-2.25 1.15-2.97.78-.83 2.17-1.46 3.11-1.19ZM20.6 17.17c-.46 1.06-.68 1.53-1.27 2.47-.82 1.3-1.98 2.93-3.41 2.94-1.27.02-1.6-.83-3.33-.82-1.73.01-2.09.84-3.36.82-1.43-.02-2.53-1.48-3.35-2.78-2.3-3.63-2.54-7.89-1.12-10.16.99-1.6 2.56-2.54 4.03-2.54 1.5 0 2.44.84 3.68.84 1.2 0 1.93-.85 3.66-.85 1.32 0 2.71.72 3.7 1.96-3.25 1.78-2.72 6.42.77 8.12Z"/></svg>
+                    Continue with Apple
+                  </button>
+                  <div class="hr-or" style="display:flex;align-items:center;gap:10px;margin:6px 0;color:var(--ink-dim,#8a8680);font-size:12.5px">
+                    <span style="flex:1;height:1px;background:var(--l,#e5e2dd)"></span>or<span style="flex:1;height:1px;background:var(--l,#e5e2dd)"></span>
+                  </div>
                 </div>
-                <div class="field">
-                  <label for="password">Password</label>
-                  <input id="password" type="password" required minlength="8" autocomplete="new-password">
+
+                <div style="display:flex;gap:6px;margin-bottom:10px">
+                  <button class="btn btn-ghost" id="methodEmail" style="flex:1;justify-content:center;padding:8px;font-size:13px">Email</button>
+                  <button class="btn btn-ghost" id="methodPhone" style="flex:1;justify-content:center;padding:8px;font-size:13px">Phone</button>
                 </div>
-                <button id="submitBtn" class="btn btn-primary form-submit">Create account</button>
+
+                <div id="emailFields">
+                  <div class="field">
+                    <label for="email">Email</label>
+                    <input id="email" type="email" required autocomplete="email">
+                  </div>
+                  <div class="field">
+                    <label for="password">Password</label>
+                    <input id="password" type="password" required minlength="8" autocomplete="new-password">
+                  </div>
+                  <div id="forgotRow" style="display:none;text-align:right;margin:-6px 0 10px">
+                    <button id="forgotLink" type="button" style="background:none;border:none;padding:0;color:var(--ink-dim,#8a8680);font-size:12.5px;text-decoration:underline;cursor:pointer">Forgot your password?</button>
+                  </div>
+                  <button id="submitBtn" class="btn btn-primary form-submit">Create account</button>
+                </div>
+
+                <div id="phoneFields" style="display:none">
+                  <div class="field">
+                    <label for="phoneNum">Phone number</label>
+                    <input id="phoneNum" type="tel" placeholder="+91 98765 43210" autocomplete="tel">
+                  </div>
+                  <button id="sendCodeBtn" class="btn btn-primary form-submit" type="button">Send code</button>
+                  <div id="codeStep" style="display:none">
+                    <div class="field">
+                      <label for="phoneCode">6-digit code</label>
+                      <input id="phoneCode" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+                    </div>
+                    <button id="verifyCodeBtn" class="btn btn-primary form-submit" type="button">Verify &amp; continue</button>
+                  </div>
+                </div>
+
                 <div id="authErr" class="err"></div>
+              </div>
+
+              <div id="resetSection" style="display:none">
+                <p class="p">Set a new password.</p>
+                <div class="field">
+                  <label for="newPassword">New password</label>
+                  <input id="newPassword" type="password" required minlength="8" autocomplete="new-password">
+                </div>
+                <button id="resetSubmitBtn" class="btn btn-primary form-submit">Set new password</button>
+                <div id="resetErr" class="err"></div>
               </div>
 
               <div id="loggedInSection" style="display:none">
@@ -122,10 +170,17 @@
 
 <script src="/sb-client.js?v=2"></script>
 <script src="tool/site.js?v=8"></script>
-<script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
+<script>
+// googleClientId/appleClientId: empty until the owner creates them (see
+// CLAUDE.md / the deploy notes for exactly where) -- every social button
+// below stays hidden until its own id is filled in, so this page never
+// shows a button that can't actually work yet.
+window.CFG = { url: 'https://api.auzslab.in', key: '', googleClientId: '', appleClientId: '' };
+</script>
 <script>
 const sb = supabase.createClient(CFG.url, CFG.key);
 let mode = 'signup';
+let authMethod = 'email';
 
 function setMode(m) {
   mode = m;
@@ -135,10 +190,136 @@ function setMode(m) {
   document.getElementById('modeLogin').style.color = m === 'login' ? '#fff' : '';
   document.getElementById('submitBtn').textContent = m === 'signup' ? 'Create account' : 'Log in';
   document.getElementById('pageTitle').textContent = m === 'signup' ? 'Create your account' : 'Sign in';
+  document.getElementById('forgotRow').style.display = m === 'login' ? 'block' : 'none';
 }
 document.getElementById('modeNew').onclick = () => setMode('signup');
 document.getElementById('modeLogin').onclick = () => setMode('login');
 setMode('signup');
+
+function setAuthMethod(m) {
+  authMethod = m;
+  document.getElementById('methodEmail').style.background = m === 'email' ? 'var(--ink)' : '';
+  document.getElementById('methodEmail').style.color = m === 'email' ? '#fff' : '';
+  document.getElementById('methodPhone').style.background = m === 'phone' ? 'var(--ink)' : '';
+  document.getElementById('methodPhone').style.color = m === 'phone' ? '#fff' : '';
+  document.getElementById('emailFields').style.display = m === 'email' ? 'block' : 'none';
+  document.getElementById('phoneFields').style.display = m === 'phone' ? 'block' : 'none';
+  document.getElementById('authErr').textContent = '';
+}
+document.getElementById('methodEmail').onclick = () => setAuthMethod('email');
+document.getElementById('methodPhone').onclick = () => setAuthMethod('phone');
+setAuthMethod('email');
+
+// ---- after any successful sign-in, by whatever method ----
+async function afterSignIn(user) {
+  if (user && await hasOwnTenant(user.id)) { window.location.href = 'account.html'; return; }
+  if (await isPlatformAdmin()) { window.location.href = 'admin.html'; return; }
+  window.location.href = 'cart.html';
+}
+
+// ---- Google Sign-In (Google Identity Services) ----
+if (CFG.googleClientId) {
+  const gs = document.createElement('script');
+  gs.src = 'https://accounts.google.com/gsi/client';
+  gs.async = true; gs.defer = true;
+  gs.onload = () => {
+    document.getElementById('socialRow').style.display = 'flex';
+    google.accounts.id.initialize({
+      client_id: CFG.googleClientId,
+      callback: async (resp) => {
+        const errEl = document.getElementById('authErr');
+        const { data, error } = await sb.auth.signInWithGoogle(resp.credential);
+        if (error) { errEl.textContent = error.message; return; }
+        afterSignIn(data.user);
+      },
+    });
+    google.accounts.id.renderButton(document.getElementById('googleBtnHost'), { theme: 'outline', size: 'large', width: 320 });
+  };
+  document.head.appendChild(gs);
+}
+
+// ---- Sign in with Apple ----
+if (CFG.appleClientId) {
+  const as = document.createElement('script');
+  as.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
+  as.onload = () => {
+    document.getElementById('socialRow').style.display = 'flex';
+    const appleBtn = document.getElementById('appleBtn');
+    appleBtn.style.display = 'flex';
+    AppleID.auth.init({
+      clientId: CFG.appleClientId,
+      scope: 'email name',
+      redirectURI: window.location.origin + '/signup.html',
+      usePopup: true,
+    });
+    appleBtn.onclick = async () => {
+      const errEl = document.getElementById('authErr');
+      errEl.textContent = '';
+      try {
+        const resp = await AppleID.auth.signIn();
+        const { data, error } = await sb.auth.signInWithApple(resp.authorization.code);
+        if (error) { errEl.textContent = error.message; return; }
+        afterSignIn(data.user);
+      } catch (e) {
+        if (e && e.error === 'popup_closed_by_user') return;
+        errEl.textContent = 'Apple sign-in failed.';
+      }
+    };
+  };
+  document.head.appendChild(as);
+}
+
+// ---- Phone / OTP ----
+document.getElementById('sendCodeBtn').onclick = async () => {
+  const phone = document.getElementById('phoneNum').value.trim();
+  const errEl = document.getElementById('authErr');
+  errEl.textContent = '';
+  if (!/^\+[1-9]\d{6,14}$/.test(phone)) { errEl.textContent = 'Enter your number with a country code, e.g. +91 98765 43210.'; return; }
+  const { data, error } = await sb.auth.sendPhoneOtp(phone);
+  if (error) { errEl.textContent = error.message; return; }
+  if (data && data.sent === false) { errEl.textContent = data.reason || 'Could not send a code right now.'; return; }
+  document.getElementById('codeStep').style.display = 'block';
+  document.getElementById('sendCodeBtn').textContent = 'Resend code';
+};
+document.getElementById('verifyCodeBtn').onclick = async () => {
+  const phone = document.getElementById('phoneNum').value.trim();
+  const code = document.getElementById('phoneCode').value.trim();
+  const errEl = document.getElementById('authErr');
+  errEl.textContent = '';
+  const { data, error } = await sb.auth.verifyPhoneOtp(phone, code);
+  if (error) { errEl.textContent = error.message; return; }
+  afterSignIn(data.user);
+};
+
+// ---- Forgot / reset password ----
+document.getElementById('forgotLink').onclick = async () => {
+  const email = document.getElementById('email').value.trim();
+  const errEl = document.getElementById('authErr');
+  errEl.textContent = '';
+  if (!email) { errEl.textContent = 'Enter your email above first, then tap "Forgot your password?" again.'; return; }
+  const resetLinkBase = window.location.origin + '/signup.html';
+  const { error } = await sb.auth.forgotPassword(email, resetLinkBase);
+  errEl.style.color = 'var(--ink-dim, #666)';
+  errEl.textContent = error ? error.message : 'If an account exists for that email, a reset link is on its way.';
+};
+
+// A reset link lands back on this same page as ?token=... -- show the
+// "set a new password" form instead of the normal sign-in form.
+const resetToken = new URLSearchParams(window.location.search).get('token');
+if (resetToken) {
+  document.getElementById('authSection').style.display = 'none';
+  document.getElementById('resetSection').style.display = 'block';
+  document.getElementById('pageTitle').textContent = 'Reset your password';
+  document.getElementById('resetSubmitBtn').onclick = async () => {
+    const password = document.getElementById('newPassword').value;
+    const errEl = document.getElementById('resetErr');
+    errEl.textContent = '';
+    if (!password || password.length < 8) { errEl.textContent = 'Password must be at least 8 characters.'; return; }
+    const { error } = await sb.auth.resetPassword(resetToken, password);
+    if (error) { errEl.textContent = error.message; return; }
+    window.location.href = 'signup.html';
+  };
+}
 
 // Whether to send someone to account.html or cart.html has to come
 // from their actual profiles row, not user.app_metadata off the JWT --
@@ -193,15 +374,7 @@ document.getElementById('submitBtn').onclick = async () => {
     : await sb.auth.signInWithPassword({ email, password });
   if (error) { errEl.textContent = error.message; return; }
   const user = data && (data.user || (data.session && data.session.user));
-  if (user && await hasOwnTenant(user.id)) {
-    window.location.href = 'account.html';
-    return;
-  }
-  if (mode === 'login' && await isPlatformAdmin()) {
-    window.location.href = 'admin.html';
-    return;
-  }
-  window.location.href = 'cart.html';
+  afterSignIn(user);
 };
 
 document.getElementById('signOutBtn').onclick = async () => {

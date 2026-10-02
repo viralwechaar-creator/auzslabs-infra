@@ -1,10 +1,15 @@
 import http from 'node:http';
 import { pool, withAuth } from './db.js';
-import { login, verifyToken, bearerFrom, createUser, resetToRandomPassword, signToken } from './auth.js';
+import {
+  login, verifyToken, bearerFrom, createUser, resetToRandomPassword, signToken,
+  loginWithGoogle, loginWithApple, createPhoneOtp, loginWithPhone,
+  createPasswordReset, resetPassword, deleteOwnAccount,
+} from './auth.js';
 import { saveSiteUpload, saveDocUpload, readDocUpload, getUploadsDiskUsage } from './storage.js';
 import { startRealtime } from './realtime.js';
 import { handlePushEvent } from './push.js';
-import { sendStaffInviteEmail } from './mail.js';
+import { sendStaffInviteEmail, sendPasswordResetEmail } from './mail.js';
+import { sendOtpSms } from './sms.js';
 import { handleSalon } from './salon.js';
 
 const PORT = process.env.PORT || 3000;
@@ -455,6 +460,95 @@ const server = http.createServer(async (req, res) => {
       }
       return reply(200, { access_token: signToken(created), user: created });
     }
+    // ---- Google / Apple / phone sign-in (db/069) -- each finds or
+    // creates an auth_users row via findOrCreateIdentityUser and returns
+    // the exact same {access_token,user} shape /auth/login does, so the
+    // client treats every sign-in method identically from here on. ----
+    if (url.pathname === '/auth/google' && req.method === 'POST') {
+      if (rateLimited(`oauth:${ip}`, 30, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      const { id_token } = await readJsonBody(req);
+      if (!id_token) throw new HttpError(400, 'id_token is required');
+      let result;
+      try {
+        result = await loginWithGoogle(id_token);
+      } catch (err) {
+        throw new HttpError(401, err.message || 'Google sign-in failed');
+      }
+      return reply(200, result);
+    }
+    if (url.pathname === '/auth/apple' && req.method === 'POST') {
+      if (rateLimited(`oauth:${ip}`, 30, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      const { code } = await readJsonBody(req);
+      if (!code) throw new HttpError(400, 'code is required');
+      let result;
+      try {
+        result = await loginWithApple(code);
+      } catch (err) {
+        throw new HttpError(401, err.message || 'Apple sign-in failed');
+      }
+      return reply(200, result);
+    }
+    // 5 codes / 10 min per phone number, on top of the per-IP bucket --
+    // a phone number is the actual scarce resource worth brute-forcing
+    // here (an attacker rotating IPs still can't out-text the phone).
+    if (url.pathname === '/auth/phone/send' && req.method === 'POST') {
+      if (rateLimited(`phonesend:${ip}`, 20, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      const { phone } = await readJsonBody(req);
+      if (!phone || !/^\+[1-9]\d{6,14}$/.test(phone)) throw new HttpError(400, 'a phone number in +<countrycode><number> format is required');
+      if (rateLimited(`phonesend:${phone}`, 5, 10 * 60_000)) throw new HttpError(429, 'too many codes sent to this number, try again later');
+      const code = await createPhoneOtp(phone);
+      const sent = await sendOtpSms(phone, code);
+      return reply(200, sent);
+    }
+    if (url.pathname === '/auth/phone/verify' && req.method === 'POST') {
+      if (rateLimited(`phoneverify:${ip}`, 30, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      const { phone, code } = await readJsonBody(req);
+      if (!phone || !code) throw new HttpError(400, 'phone and code are required');
+      const result = await loginWithPhone(phone, code);
+      if (!result) throw new HttpError(401, 'that code is invalid or has expired');
+      return reply(200, result);
+    }
+
+    // ---- self-service password reset (db/069) ----
+    // Always replies the same way whether or not the email exists --
+    // only createPasswordReset itself (and the server log) knows which.
+    // reset_link_base is the page the CALLER wants the link to open
+    // (e.g. https://auzslab.in/reset-password.html) -- same split as
+    // /staff/send-invite-email, so the server never hardcodes a frontend
+    // path.
+    if (url.pathname === '/auth/forgot' && req.method === 'POST') {
+      if (rateLimited(`forgot:${ip}`, 10, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      const { email, reset_link_base } = await readJsonBody(req);
+      if (!email || !reset_link_base) throw new HttpError(400, 'email and reset_link_base are required');
+      const token = await createPasswordReset(email);
+      if (token) {
+        const resetLink = `${reset_link_base}${reset_link_base.includes('?') ? '&' : '?'}token=${token}`;
+        await sendPasswordResetEmail({ to: email, resetLink }).catch((err) => console.warn('password reset email failed', err));
+      }
+      return reply(200, { ok: true, message: 'If an account exists for that email, a reset link has been sent.' });
+    }
+    if (url.pathname === '/auth/reset' && req.method === 'POST') {
+      if (rateLimited(`reset:${ip}`, 20, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      const { token, password } = await readJsonBody(req);
+      if (!token || !password) throw new HttpError(400, 'token and password are required');
+      if (password.length < 8) throw new HttpError(400, 'password must be at least 8 characters');
+      const ok = await resetPassword(token, password);
+      if (!ok) throw new HttpError(400, 'this reset link is invalid or has expired');
+      return reply(200, { ok: true });
+    }
+
+    // ---- self-service account deletion (Apple Guideline 5.1.1(v)) ----
+    if (url.pathname === '/auth/delete-account' && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      const { password } = await readJsonBody(req);
+      try {
+        await deleteOwnAccount(user.id, password);
+      } catch (err) {
+        throw new HttpError(err.message === 'incorrect password' ? 401 : 400, err.message);
+      }
+      return reply(200, { ok: true });
+    }
+
     if (url.pathname === '/auth/session' && req.method === 'GET') {
       if (!user) throw new HttpError(401, 'no session');
       return reply(200, { user });
