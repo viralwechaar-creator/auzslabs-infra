@@ -1,0 +1,54 @@
+/* phones and tablet portrait (0-899px): bottom tab bar, single-column selling screen with a cart bar, bottom sheets */
+.shell{flex-direction:column}
+.side,.only-desk{display:none!important}
+.tabbar{flex:none;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:6px 4px calc(4px + env(safe-area-inset-bottom));background:var(--bar);border-top:.5px solid var(--sep);position:relative;z-index:20}
+.tabbar button{flex-direction:column;justify-content:center;gap:2px;min-height:50px;font-size:10.5px;font-weight:500;position:relative;color:var(--label3)}
+.tabbar button svg{color:inherit}
+.tabbar button.on{color:var(--accent-text)}
+.tabbar .badge{position:absolute;top:2px;left:calc(50% + 6px);margin:0;min-width:18px;height:18px;line-height:18px;font-size:11px}
+.navbar{padding-left:16px;padding-right:6px}
+
+/* selling screen */
+.body.fixed{display:flex;flex-direction:column;overflow:hidden}
+.sell{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;min-width:0}
+.sell .cats-col,.sell .ticket-pane{display:none}
+.sell .items-col{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;min-width:0}
+.sell .items-head{flex:none;display:grid;gap:10px;padding:12px 16px 8px}
+.sell .items-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 16px 16px}
+.items{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.tile{min-height:84px}
+.cart-bar{flex:none;display:flex;align-items:center;gap:10px;margin:0 12px 10px;padding:8px 8px 8px 16px;border-radius:16px;background:var(--label);color:var(--bg);box-shadow:0 10px 30px -10px rgba(0,0,0,.45)}
+.cart-bar.empty{display:none}
+.cart-bar .ct{flex:1 1 auto;min-width:0;display:grid;line-height:1.2}
+.cart-bar .ct b{font-size:17px;font-variant-numeric:tabular-nums}
+.cart-bar .ct span{font-size:13px;opacity:.7}
+.cart-bar .btn{background:var(--accent);color:var(--on-accent);min-height:44px}
+.cart-bar .btn.ghost{background:rgba(255,255,255,.14);color:inherit}
+
+/* bottom sheets */
+.ov{align-items:flex-end}
+.md{width:100%;max-height:calc(100% - 44px - env(safe-area-inset-top));border-radius:14px 14px 0 0;animation:sheetUp .45s var(--ease)}
+.md.full{height:calc(100% - 44px - env(safe-area-inset-top))}
+.ov.closing .md{animation:sheetDown .25s var(--ease) forwards}
+.md-h{position:relative;padding-top:14px}
+.md-h::before{content:"";position:absolute;top:5px;left:50%;width:36px;height:5px;margin-left:-18px;border-radius:3px;background:var(--sep2)}
+@keyframes sheetUp{from{transform:translateY(100%)}}
+@keyframes sheetDown{to{transform:translateY(100%)}}
+.md .ticket{min-height:100%}
+
+.page{padding:12px 16px 24px}
+.page-head h1{font-size:28px}
+.split2{display:grid;gap:16px}
+.kds{grid-template-columns:1fr}
+.tables{grid-template-columns:repeat(auto-fill,minmax(136px,1fr));gap:10px}
+.tbl-tile{min-height:100px}
+.grid2.stack-phone{grid-template-columns:1fr}
+.toast{bottom:calc(84px + env(safe-area-inset-bottom))}
+@media (max-width:380px){.items{grid-template-columns:1fr 1fr}.tables{grid-template-columns:1fr 1fr}}
+.md-f{flex-wrap:wrap}
+.md-f>.btn{flex:1 1 100%}
+.md-f>.btn.fill{order:-1}
+/* more than four numbers: one swipeable row instead of a tall grid */
+.kpis.strip{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x proximity;scroll-padding:0 16px;scrollbar-width:none;margin:0 -16px;padding:1px 16px}
+.kpis.strip::-webkit-scrollbar{display:none}
+.kpis.strip .kpi{flex:0 0 128px;scroll-snap-align:start}

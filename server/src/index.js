@@ -60,10 +60,12 @@ const TABLES = {
   // push_subs.tenant_id already uses. order_id is likewise excluded
   // from both lists: it's only ever set by convert_booking_to_order.
   bookings: {
-    columns: ['id', 'tenant_id', 'resource_id', 'customer_name', 'customer_phone', 'date', 'time', 'end_time', 'status', 'items', 'total', 'order_id', 'created_at'],
-    insertable: ['resource_id', 'customer_name', 'customer_phone', 'date', 'time', 'end_time', 'items', 'total'],
-    writable: ['resource_id', 'customer_name', 'customer_phone', 'date', 'time', 'end_time', 'status', 'items', 'total'],
+    columns: ['id', 'tenant_id', 'resource_id', 'customer_name', 'customer_phone', 'date', 'time', 'end_time', 'status', 'items', 'total', 'order_id', 'created_at', 'party_size', 'note', 'source', 'outlet'],
+    insertable: ['resource_id', 'customer_name', 'customer_phone', 'date', 'time', 'end_time', 'items', 'total', 'status', 'party_size', 'note', 'source', 'outlet'],
+    writable: ['resource_id', 'customer_name', 'customer_phone', 'date', 'time', 'end_time', 'status', 'items', 'total', 'party_size', 'note', 'source', 'outlet'],
   },
+  // append-only audit log written by a trigger on records (db/068); readable by owners and managers through RLS
+  pos_audit: { columns: ['id', 'tenant_id', 'at', 'actor', 'actor_role', 'action', 'kind', 'record_id', 'ref', 'amount', 'reason', 'approved_by', 'outlet', 'before', 'after'], insertable: [], writable: [] },
 };
 
 const OPS = { eq: '=', gte: '>=', lte: '<=', gt: '>', lt: '<' };
@@ -100,6 +102,14 @@ const RPC = {
 
   // --- Phase 1: Booking & Appointments / Reports & Analytics ---
   convert_booking_to_order: { params: ['p_booking_id', 'p_invoice_prefix'], auth: true },
+  // POS rebuild (db/068_pos_rebuild.sql): KOT numbers, manager approval PINs, QR orders claimed once, gift-card tender
+  next_kot_no: { params: ['p_day', 'p_outlet'], auth: true },
+  pos_pin_status: { params: [], auth: true },
+  pos_set_pin: { params: ['p_pin'], auth: true },
+  pos_verify_pin: { params: ['p_pin', 'p_action', 'p_ref'], auth: true },
+  pos_sign_approval: { params: ['p_action', 'p_ref'], auth: true },
+  claim_guest_order: { params: ['p_id', 'p_status'], auth: true },
+  redeem_giftcard: { params: ['p_code', 'p_amount', 'p_order'], auth: true },
   report_dashboard: { params: ['p_from', 'p_to'], auth: true },
 
   // --- Admin: reset a client's forgotten password ---

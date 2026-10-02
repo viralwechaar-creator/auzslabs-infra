@@ -221,13 +221,18 @@ standalone app on the tenant's own login, not a tab inside `index.html`:
 
 ## Local-first sync (the POS app specifically)
 
-`app/public/index.html` is offline-first: writes go to IndexedDB first
+The POS (`app/public/index.html`, code in `app/public/pos/core.js` since the
+rebuild) is offline-first: writes go to IndexedDB first
 (`save()`), then an outbox syncs to the server via the `push_record` RPC
 (optimistic concurrency, conflict-resolves by re-pushing with `force:true`
 on a version mismatch) — see `doSync()`. `sync()` is fire-and-forget, not
 awaited by the UI, so a "Saved" alert firing does **not** mean the server
 write actually succeeded; check `push_record`'s error handling / the
-`syncErr` counter, not just what the button said.
+`syncErr` counter, not just what the button said. Since db/068 the server
+can refuse a write outright (400/403/409, e.g. an unapproved discount or a
+change to a paid bill): the POS then drops that outbox item, reloads the
+server's copy and shows "Not saved: ..." (`rejectLocal()` in `core.js`),
+instead of retrying it forever.
 
 ## Known stale doc
 
@@ -278,7 +283,8 @@ the rest of the product uses. **Do not introduce a new emoji character
 into any button/label/card.** Adding a new icon means adding an SVG path
 string to that file's own `ICONS` map and calling `icon('name')` as a
 child alongside the text, not writing an emoji into the string.
-Color-coding (veg/non-veg, order type, table status) uses `swatch(color)`
+The rebuilt POS keeps its `ICONS` map and `icon()` in `app/public/pos/core.js`
+(built with `createElementNS`, so it is a real `<svg>`). Color-coding (veg/non-veg, order type, table status) uses `swatch(color)`
 (a small colored square) or a `border-left` stripe on the row/card, never
 a colored emoji dot. One case wasn't just a rendering choice: `db/045`'s
 `call_waiter()` RPC used to store the literal string `'🔔 Waiter called'`
@@ -327,7 +333,11 @@ open('/tmp/idx_check.js','w').write(scripts[-1] if scripts else '')
 node --check /tmp/idx_check.js
 ```
 
-Do this for every file touched (`index.html`, `backoffice.html`,
+The POS is the exception since the rebuild: its code is plain files in
+`app/public/pos/`, so check them directly with
+`for f in app/public/pos/*.js; do node --check "$f"; done`.
+
+Do this for every file touched (`backoffice.html`,
 `payroll.html`, `builder.html`/`w.html`, etc.) before every commit — a
 syntax error in one of these ships straight to production the moment
 someone runs `git pull` on the VPS, with no build/CI step to catch it
@@ -665,7 +675,7 @@ cursor trail), `fx-phys.js` (draggable bubbles), `fx-ui.js` (pricing stack build
 
 ## Staff apps: Apple HIG layer (`app/public/hig.css`)
 
-POS (`index.html`), Back Office, Payroll and Website Builder link `/hig.css` right after their own inline `<style>`. It is a restyle only
+Back Office, Payroll and Website Builder link `/hig.css` right after their own inline `<style>` (the POS did too until its rebuild; it now has its own HIG system, see "Restaurant POS rebuild" below). It is a restyle only
 (no markup or behaviour): system typeface and a real type scale (body 16, nothing under 12), 44pt minimum hit targets on buttons/inputs/tabs,
 segmented-control tabs, grouped rounded cards with hairline separators, a bottom-sheet for `.md` modals on phones, soft spring motion,
 visible focus rings, reduced-motion support. It was built from Apple's Human Interface Guidelines (repo `NutshellEngineering/apple-design-skill`,
@@ -674,18 +684,18 @@ marketing site (`site/`) deliberately does NOT use it.
 
 **Standing rule: every staff-facing app, current or future (POS, Back Office, Payroll, Website Builder, and any new software the owner adds), links `/hig.css`
 after its own `<style>` and is built to the HIG from the start: 44pt hit targets, body 16+, sentence-case labels in the system font (no tiny mono
-uppercase), segmented controls for tabs, bottom sheets for modals on phones, no light/heavy weights. When starting a new app, copy the link tag from
-`index.html`, then check it on a phone-width screenshot. Exceptions: the marketing site and the Showoff-style salon console (`app/public/salon/`, a client's own design). Customer-facing pages (`site.html`, `booking.html`, `order.html`, `i.html`) don't either.
+uppercase), segmented controls for tabs, bottom sheets for modals on phones, no light/heavy weights. When starting a new app, copy the link tags from
+`backoffice.html` (or build on `app/public/pos/pos.css` the way the POS does), then check it on a phone-width screenshot. Exceptions: the marketing site and the Showoff-style salon console (`app/public/salon/`, a client's own design). Customer-facing pages (`site.html`, `booking.html`, `order.html`, `i.html`) don't either.
 
 ## POS hand-over rules (cashier <-> kitchen <-> sync)
 
 Found by `tests/suites/local/pos.mjs`; keep them true:
 - **`records.updated_at` is the concurrency token** (`push_record` compares it for exact equality), so `GET /db/records` serves it as a microsecond ISO string (`handleSelect` in `server/src/index.js`).
   node-pg's default Date (milliseconds) made every pulled record look "changed elsewhere" and pushes were force-overwritten. Never return it as a JS Date.
-- **Sync requests that arrive while a sync is running are remembered** (`syncAgain` in `index.html`), not dropped: back-to-back saves (order then kotlog) used to leave the second one waiting up to 30 s.
-- **The cart (`S.cur`) is a clone**, the kitchen edits the same order record: `freshCur()` copies the kitchen-owned fields (`kstat`, `preparingAt`, `readyAt`, `dispatchAt`) into it before pay / KOT / render.
+- **Sync requests that arrive while a sync is running are remembered** (`syncAgain` in `pos/core.js`), not dropped: back-to-back saves (order then kotlog) used to leave the second one waiting up to 30 s.
+- **The cart (`S.cur`) is a clone**, the kitchen edits the same order record: `freshCur()` copies the kitchen-owned fields (`kstat`, `preparingAt`, `readyAt`, `dispatchAt`, `deliveredAt`, `servedAt`) into it before pay / KOT / render.
   Otherwise paying wrote the stale clone over the kitchen's state and a paid order re-appeared in the kitchen queue. Any new kitchen-owned field goes in `KFIELDS`.
-- The POS screen redraws once a minute, not every second (taps were swallowed); kitchen clocks tick via `data-kt` text nodes.
+- The POS never redraws on a timer while someone may be tapping (taps were swallowed): kitchen clocks tick via `data-kt` text nodes and table/occupancy minutes via `data-since`; the only timed `render()` is the 2-minute reservations refresh on Tables/Reservations, skipped while typing.
 - Guest orders: a "Waiter called" alert (empty `items`) is only acknowledged, never turned into an order; accepting a guest order refreshes the cashier's open cart if it is the same order.
 - Cash payment has one-tap "Exact" / round-note buttons above the denomination counter.
 
@@ -732,12 +742,12 @@ The owner's `Pos_workflow.pdf` (a reverse-engineering study of PetPooja) was com
 - **Advance orders**: POS order card -> "Schedule for later" sets `order.adv` (ISO time); held orders with `adv` list under "Advance orders" on the Orders screen (not in "Open orders") and "Start now" opens them in the cart.
 - **Live strip** on Orders: running orders/tables, in kitchen, ready, out for delivery, advance.
 - **Bulk menu actions** (Back Office -> Menu -> Select): price +/-% or +/-rupees (also sizes, price2), sold out / available, veg / non-veg / egg.
-- **Apple HIG**: iOS tab bar on phones in the POS (`iosTabs()` in `index.html`, `.ios-tabs` in `hig.css`; four main screens + More). Anything fixed to the bottom must sit above it (`body.has-tabs`).
+- **Apple HIG**: iOS tab bar on phones in the POS (superseded by the POS rebuild: `tabBar()` in `pos/shell.js`, `.tabbar` in `pos/pos.mobile.css`).
 - Not built (needs aggregator integrations or multi-outlet): Zomato/Swiggy channels and commissions, per-channel menus and area prices, multi-outlet / device mapping, production masters, 2FA. If asked, plan them as separate pieces.
 Deploy: `psql ... < db/057_cash_drawer_moves.sql` (no API rebuild; static files only).
 - **Sheets, final model (owner screenshots):** `html.fx-hx` pins the three folder-cut sheets `.hw` (How we work), `.vw` (four doors) and `.tk` (Let's talk) with `position:sticky; top:var(--pin)` (`--pin` = 20% of the viewport, 120-200px, set in `fx-hx.js`), so their cuts stack at one place under the header and each new sheet covers the previous. `.hx` (the card deck) is pulled up by `100svh` so its transparent stage is already pinned over `.hw`; cards travel across the screen one at a time (enter from the RIGHT, cross the centre, leave left, partial overlap, last stays centred). The four-door cards do the same from the LEFT inside `.vw` (`.vw-pin` spacer after `.vw` supplies the scroll length). All keyframes are generated once by `deckCss()` in `fx-hx.js` and driven by `animation-timeline: scroll(root block)` with pixel ranges (A..B) computed in `measure()`; there is no scroll listener or per-frame JS. Anything that changes layout above these sheets must keep `measure()` re-running (it already runs on resize, load and fonts ready).
 
-- **POS app shell (fixes the floating tab bar):** `render()` in `index.html` builds `.shell` = fixed `.top-bar` + scrolling `.shell-body` + `.ios-tabs`, a `100dvh` flex column, instead of fixed-positioning the bar over a page that scrolls (on iPhone the fixed bar floated above the bottom edge). The scroll position of `.shell-body` is saved and restored across `render()`. The cart bar is `position:sticky` inside the body, not fixed. Don't add `position:fixed; bottom:0` elements to the POS; put them in the shell.
+- **POS app shell (superseded by the POS rebuild; kept for history):** `render()` in the old `index.html` built `.shell` = fixed `.top-bar` + scrolling `.shell-body` + `.ios-tabs`, a `100dvh` flex column, instead of fixed-positioning the bar over a page that scrolls (on iPhone the fixed bar floated above the bottom edge). The scroll position of `.shell-body` is saved and restored across `render()`. The cart bar is `position:sticky` inside the body, not fixed. Don't add `position:fixed; bottom:0` elements to the POS; put them in the shell.
 - **Fix (owner screenshots):** the "One login for all of it" call to action now lives inside the pinned `.hw` sheet (`.hw-cta`), every deck card leaves at the end (`deckCss(..., exitAll)`), and `.hx-foot` is hidden: anything left on the `.hx` stage scrolls up with it when it unpins and looked like a folder cut going upward. `.tk` has its own warm-grey tone (`#e9e4df`) so its cut reads against the page background, and the footer (`.stack-panel-dark`, z 6, min-height viewport minus `--pin`) rises over and hides all pinned cuts.
 
 ## Admin dashboard (`app/public/dashboard.html`) — separate from the billing POS
@@ -763,7 +773,7 @@ Owner asked for the marketing homepage to follow Apple's HIG header to footer (t
 
 Every `body.fx` page except the homepage loads `hig-site.css` (last in `<head>`) and `hig-site.js` (deferred, after `fx-stack.js`). It restyles only: translucent hairline header, filled/tinted pills, sentence-case labels, medium-weight type at phone sizes (no giant caps, no outlined text, no letter-by-letter split animation), 44pt footer links, and the **homepage's folder-cut sheets for every stacked panel** (`html.fx-stacked .fx-panel`: clip-path cut, 58px overlap, `--nx` cycles 40/62/22%, NOT sticky). Colours: off-white / warm grey alternating, the closing panel (`.stack-panel-dark.fx-panel`) is wine with white type, the footer panel is ink with a visible CONNECT word. The JS adds `.hig-soft` (soft rounded card) to anything that had a hard offset shadow or a 2px+ border (not `.k` illustration actors), removes text strokes, and cuts long plain paragraphs to their first sentence (full text kept in `title`; skipped inside faq/details/footer/forms/demo/legal and anything with `.keep`). To keep a paragraph whole, add `data-keep` or `class="keep"`.
 - Homepage on phones: sheets use `100lvh` min-height (svh left a gap when Safari's toolbar collapsed); the first door card is centred when the doors sheet pins (`deckCss(..., centreFirst)`); Let's talk rises 9svh under the last door; the Knock button is a 52px round icon (font-size 0) on phones.
-- POS: `.shell` is `position:fixed; inset:0` (100dvh left a strip under the tab bar on iPhone), the tab bar is a floating dark pill (`.shell>.ios-tabs`), `.shell-body` and the cart bar clear it; the drawer is a fixed `.drawer-head` (logo) + scrolling `.drawer-list` (no sticky strip). `h()` in the POS prints `null` children as text: pass `[]`/spread instead of `null`.
+- POS (old single-file version, superseded by the POS rebuild): `.shell` was `position:fixed; inset:0`, a floating pill tab bar and a drawer. The rebuilt POS keeps `.shell{position:fixed;inset:0}` and its `h()` skips `null` children.
 
 ## Separate phone and desktop designs: every stylesheet is two files (`*.mobile.css` / `*.desktop.css`)
 
@@ -772,7 +782,7 @@ Every `body.fx` page except the homepage loads `hig-site.css` (last in `<head>`)
 - `tools/split-css.mjs` is the one-off splitter (idempotent; skips already-split pages). Only re-run it on a page that still has a combined `<link>`/`<style>`.
 - The service worker precaches `/hig.mobile.css` and `/hig.desktop.css`.
 - Desktop marketing design lives in `site/hig-site.desktop.css` (type scale, three-column card grids, plain pricing cards, larger folder cuts); phone design in `site/hig-site.mobile.css` + `hig-home.mobile.css` (homepage). Product pages' "What's included" lists (`.featsec.orbit .ring`) were hidden on every device by the `.ring` decorative-actor rule in `fx-flow`; both hig-site files now force them visible.
-- Not yet redesigned per device: the POS, Back Office, Payroll, Builder and console have separate phone/desktop files but still share today's layout; their desktop-specific design is the next step (screenshot-driven).
+- Not yet redesigned per device: Back Office, Payroll, Builder and console have separate phone/desktop files but still share today's layout; their desktop-specific design is the next step (screenshot-driven). The POS has its own phone and desktop layouts since its rebuild (`pos.mobile.css` / `pos.desktop.css`).
 
 ### Subpage sheets pause and cards float in from the side (phones)
 Owner request: on phones every stacked sheet after the hero is `position:sticky` (`hig-site.mobile.css`) with `top:min(var(--pin), 100lvh - var(--h))`, so the next folder-cut sheet slides up over a paused one (a sheet taller than the screen scrolls until its bottom shows, then pauses). `hig-site.js` `pins()` writes each sheet's `--h` once (load, fonts ready, width change; no scroll listener). Cards (`.sw-card`, marked by `cards()` in `hig-site.js`) float in from alternating sides with a CSS scroll-driven animation (`swIn`, `animation-timeline:view()`, compositor only, skipped under reduced motion). Desktop keeps plain stacked sheets (the fx suite now asserts pinned on phones, not pinned on desktop; the old "never sticky" rule is superseded). If iPhone scrolling shakes again, remove the `position:sticky` rule from `hig-site.mobile.css` and nothing else.
@@ -781,7 +791,7 @@ Owner request: on phones every stacked sheet after the hero is `position:sticky`
 
 ### Homepage on phones: `fx-stk` (supersedes the pinned card deck on phones)
 Owner reported continuous vibration on the homepage on iPhone. On widths < 900 `fx-hx.js` no longer runs the scroll-linked card deck (no `html.fx-hx`, no `deckCss`, no `.vw-pin`); it adds `html.fx-stk` and writes `--pin` and each sheet's `--h` once. The four homepage sheets `.hw` (ink), `.hx` (wine, modules as a swipe row), `.vw` (ink, doors as a swipe row), `.tk` (cream) are CSS-sticky with `top:min(var(--pin),100lvh - var(--h))`, flat rectangles plus a small clipped tab pseudo-element (see smooth-scroll rules above), and contain **no scroll-linked animation at all**. Desktop (>= 900) is unchanged. The old `html.fx-hx` rules in `fx-hx.mobile.css` are now dead on phones. Subpage sections inside a sheet have only 14px of their own vertical padding (was ~100px) so there are no big gaps between sheets.
-- POS bottom tab bar is attached to the bottom edge (rounded top corners, dark), not floating: a floating bar left a grey strip under it on iPhone.
+- POS bottom tab bar is attached to the bottom edge, not floating: a floating bar left a grey strip under it on iPhone (still true in the rebuilt POS: `.tabbar` is the last row of the `.shell` flex column).
 
 ## Marketing site reverted to the PR #79 design (owner request); what is kept
 Owner asked to undo every marketing-site design change made after PR #79 (FX worlds, stacked folder-cut sheets, Apple HIG layers, split stylesheets, desktop layer) while leaving all software untouched. **The `site/` folder is now the PR #79 state** (single `theme.css` etc., plain pages), except:
@@ -831,3 +841,55 @@ Built from the owner's "Complete Accounting Software Architecture and Master Pro
   bootstrap and the 12 h reset run lazily on the next visit; tests: `node tests/run-local.mjs accounts` (49 checks including the integrity invariants, permissions, GST, import, phone/desktop/dark screens).
 
 - **Business identity on documents (Accounting):** Settings -> Organisation holds `acc_org.settings.brand` = `{logo, signature, stamp (small PNG data URLs, shrunk in the browser), upi, website, bank:{holder,name,account,ifsc,branch}, regs:[{k,v}]}`. It is drawn by `invoiceSheetNode()` / `identityFoot()` in `p-docs.js` (print) and by `bill.js` (public link; `public_acc_document` returns `org.brand`, db/067). The UPI pay-now QR (balance due filled in) uses the vendored `app/public/vendor/qrcode.js` (qrcode-generator, MIT), no CDN. Images live inside the org row on purpose so the logged-out share link can show them.
+
+## Restaurant POS rebuild (`app/public/pos/`, db/068)
+
+Built from the owner's "Restaurant POS Master Audit Build Prompt" with an Apple HIG look ("easy, minimal, premium").
+The full audit, the 42-area gap matrix (before/after with evidence), the build log and the backlog are in
+`docs/POS_AUDIT.md`: read it before changing the POS, and keep its "After" column honest when you close a gap.
+
+- **Files.** `app/public/index.html` is now a 42-line shell; the code is one plain script per area in `app/public/pos/`
+  (no modules, no build; loaded in order, sharing globals): `core.js` (state, `h()`, `icon()`, records/outlets, settings
+  defaults, permissions, IndexedDB `pos3` + outbox sync, numbering, `tot()` billing math, order helpers), `ui.js` (sheets,
+  alerts, toasts, segmented controls, steppers, keypad, `approve()` manager PIN), `print.js`, `sell.js`, `pay.js`,
+  `tables.js`, `kitchen.js`, `orders.js`, `reserve.js`, `register.js`, `staff.js`, `shell.js` (navigation, banners, QR
+  guest orders, sign in, boot). Record shapes and the sync protocol did not change, so Back Office, the console,
+  the dashboard, QR ordering and `i.html` read the same data. Bump the `?v=` on the script/CSS tags in `index.html`
+  and the `V` version in `sw.js` when you change these files (the service worker precaches them).
+- **Design.** `pos/pos.css` (tokens, light and dark, every component) + `pos.mobile.css` (0-899px: tab bar, single-column
+  selling screen with a cart bar, bottom sheets) + `pos.desktop.css` (sidebar, three-pane selling screen, centred
+  sheets). It does NOT link `hig.css`: it is its own HIG implementation. The business colour is set as `--brand`
+  (`applyTheme()` in `core.js`); CSS derives `--accent` from it, and dark mode uses `--brand-dark`/`--brand-dark-text`
+  (same hue, lifted) so deep colours stay readable on black. No `prompt()`/`confirm()`/`alert()`: use `sheet()`,
+  `alertBox()`, `confirmBox()`, `promptBox()`. No emoji.
+- **Server rules (db/068), enforced in the database, not the UI:**
+  - `push_record` checks the stored kind as well as the new one (only the owner may change a record's kind) and asks
+    `pos_kind_ok()` per role (the RLS insert/update policies use it too). New staff kinds: `register`, `waitlist`.
+    Staff field-level exceptions: marking a table clean, and retail variant stock (`variants[].qty/usage`).
+  - Trigger `records_order_guard`: paid and void bills are frozen; refunds/exchanges are append-only and capped at
+    the bill; void, refund, return, credit, complimentary, manual discount above `maxDiscountPct` (0 = every manual
+    discount) and removing items already sent to the kitchen need billing permission or a signed approval. Splits
+    are allowed because they log a `moves` entry. The approval fields it reads: `voidApprovedBy`,
+    `refunds[].approvedBy`, `returnApprovedBy`, `lastCancelApprovedBy`, `creditApprovedBy`, `compApprovedBy`,
+    `disc.approvedBy`. A new money action on orders needs a field here and a check in the trigger, not just a UI gate.
+  - Approvals: `pos_set_pin` (owner/manager, 4-8 digits, bcrypt), `pos_verify_pin` (throttled 5 per 5 min) and
+    `pos_sign_approval` return `{id,name,role,action,exp,token}`; the token is an HMAC over approver, action, record id
+    and expiry with a per-tenant secret (`pos_secrets`). `pos_pin_status()` tells the POS whether anyone has a PIN.
+  - `pos_audit` is append-only and filled by a trigger on `records` (bills, refunds, discounts, voids, moves, kitchen
+    cancellations, settings, prices, coupons, gift cards, cash, registers, day close). A failure to audit writes an
+    `audit_error` row instead of blocking the sale. Console: Management > Audit log.
+  - `next_kot_no(day, outlet)`, `claim_guest_order(id, status)` (one till wins), `redeem_giftcard(code, amount, order)`
+    (row lock, idempotent per order + amount). All registered in `server/src/index.js` `RPC`.
+  - Reservations use `bookings` (+ `party_size`, `note`, `source`, `outlet`; statuses `seated`, `no_show`); the
+    overlap constraint ignores cancelled/no-show/completed; a clash is HTTP 409. `server/src/db.js` returns Postgres
+    `date` as `'YYYY-MM-DD'` (a JS Date shifted reservation days in IST).
+- **Billing math** lives in one place, `tot()` in `core.js`: line tax from the tax master (or the default rate),
+  inclusive prices (`tax.inclusive` or `settings.taxInclusive`), service charge on dine-in (`serviceChargePct`, removable
+  per bill), packing on takeaway/delivery, delivery charge, all taxed at `chargesTax ?? tax`, round off unless
+  `roundOff === false`. Returns `{sub,d,tax,round,total,net,rates,svc,pack,deliv}`; `i.html` and `rcpt()` print the
+  same fields.
+- **Test:** `node tests/run-local.mjs pos` (26 checks: workflow, approvals, server refusals by direct RPC, phone layout
+  on every tab, audit rows). Before committing, `node --check` every file in `app/public/pos/`.
+- **Deploy:** `git pull`, then `psql ... -v ON_ERROR_STOP=1 < db/068_pos_rebuild.sql` (after 065-067), then
+  `docker compose up -d --build api`. Each owner/manager then sets an approval PIN once (POS > Staff & settings).
+
