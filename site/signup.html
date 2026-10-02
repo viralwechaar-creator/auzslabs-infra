@@ -21,99 +21,109 @@
 <style media="(max-width:899px)">
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .err{color:var(--accent);font-size:12.5px;margin-top:10px}
-.auth-combo{display:flex;flex-wrap:wrap;max-width:420px;margin:0 auto;
-  background:#fff;border-radius:28px;overflow:hidden;
-  box-shadow:0 1px 2px rgba(23,23,23,.04),0 24px 56px -28px rgba(23,23,23,.32);}
-.auth-illustration{display:none}
-.auth-form-col{flex:1 1 300px;min-width:260px;padding:34px 26px 30px;
-  display:flex;flex-direction:column;justify-content:center;}
-.auth-brand{display:flex;align-items:center;gap:9px;margin-bottom:24px}
-.auth-brand img{height:24px;width:auto}
-.auth-toggle{display:flex;background:var(--bg-raised);border-radius:999px;padding:4px;margin-bottom:20px}
-.auth-toggle button{flex:1;border:none;background:none;padding:10px 12px;border-radius:999px;
-  font-family:var(--font-mono);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;
-  color:var(--ink-dim);cursor:pointer;transition:background .18s ease,color .18s ease}
-.auth-toggle button.active{background:var(--ink);color:#fff}
-.auth-method-toggle{display:flex;gap:6px;margin-bottom:18px}
-.auth-method-toggle button{flex:1;border:1.5px solid var(--line);background:none;padding:8px 10px;border-radius:999px;
-  font-family:var(--font-mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;
-  color:var(--ink-dim);cursor:pointer;transition:all .18s ease}
-.auth-method-toggle button.active{background:var(--ink);border-color:var(--ink);color:#fff}
-.auth-social{display:flex;flex-direction:column;gap:9px;margin-bottom:16px}
+.auth-wrap{max-width:440px;margin:0 auto;padding:22px 0 56px}
+.auth-h1{font-family:var(--font-display);font-weight:800;font-size:36px;line-height:1.08;letter-spacing:-.02em;margin:0 0 14px}
+.auth-accent{position:relative;display:inline-block;color:var(--accent)}
+.auth-accent .squiggle{position:absolute;left:0;bottom:-7px;width:100%;height:11px;color:var(--accent)}
+.auth-tag{font-size:14.5px;line-height:1.6;color:var(--ink-dim);max-width:30em;margin:0 0 22px}
+.auth-doodle{margin:0 0 20px}
+.auth-doodle svg{width:100%;height:auto;display:block}
+.auth-dash{border-top:1.5px dashed var(--line);margin:0 0 20px}
+.auth-badge{display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:22px}
+.auth-badge .dot{width:7px;height:7px;border-radius:50%;border:1.5px solid var(--accent);flex-shrink:0}
+.auth-seg{display:flex;background:var(--bg-raised);border-radius:999px;padding:4px;margin-bottom:26px}
+.auth-seg button{flex:1;border:none;background:none;padding:12px 14px;border-radius:999px;
+  font-family:var(--font-body);font-weight:600;font-size:14.5px;color:var(--ink-dim);cursor:pointer;
+  transition:background .18s ease,color .18s ease,box-shadow .18s ease}
+.auth-seg button.active{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(23,23,23,.14)}
+.auth-h2{font-family:var(--font-display);font-weight:800;font-size:25px;letter-spacing:-.01em;margin:0 0 6px}
+.auth-sub{font-size:13.5px;color:var(--ink-dim);margin:0 0 20px}
+.auth-social{display:flex;flex-direction:column;gap:9px;margin-bottom:4px}
 .auth-social-btn{width:100%;box-sizing:border-box;justify-content:center;padding:13px;border-radius:999px;
   border:1.5px solid var(--line);background:#fff;font-family:var(--font-body);font-weight:600;font-size:13.5px;
   color:var(--ink);display:flex;align-items:center;gap:9px;cursor:pointer;transition:border-color .15s ease,background .15s ease}
 .auth-social-btn:hover{border-color:var(--ink);background:var(--bg-raised)}
-.auth-divider{display:flex;align-items:center;gap:10px;margin:2px 0 18px;
-  color:var(--ink-dim);font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase}
-.auth-divider .ln{flex:1;height:1px;background:var(--line)}
-.auth-form-col .field{margin-bottom:14px}
-.auth-form-col .field input{width:100%;box-sizing:border-box;border:1.5px solid transparent;
-  background:var(--bg-raised);border-radius:14px;padding:14px 16px;
-  font-family:var(--font-body);font-size:14.5px;color:var(--ink);
-  transition:border-color .15s ease,background .15s ease}
-.auth-form-col .field input:focus{outline:none;border-color:var(--accent);background:#fff}
-.auth-forgot{text-align:right;margin:-6px 0 16px}
-.auth-forgot button{background:none;border:none;padding:0;font-family:var(--font-body);
-  font-size:12.5px;color:var(--ink-dim);text-decoration:underline;cursor:pointer}
-.auth-submit{width:100%;box-sizing:border-box;justify-content:center;padding:15px;
-  font-size:12.5px;border-radius:999px;margin-top:4px}
+.auth-or{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--ink-dim);font-size:12px}
+.auth-or .ln{flex:1;height:1px;background:var(--line)}
+.auth-method-toggle{display:flex;gap:6px;margin-bottom:20px}
+.auth-method-toggle button{flex:1;border:1.5px solid var(--line);background:none;padding:8px 10px;border-radius:999px;
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--ink-dim);cursor:pointer;transition:all .18s ease}
+.auth-method-toggle button.active{background:var(--ink);border-color:var(--ink);color:#fff}
+.field{margin-bottom:16px}
+.field label{display:block;font-family:var(--font-body);font-weight:700;font-size:13.5px;color:var(--ink);margin-bottom:7px}
+.field input{width:100%;box-sizing:border-box;border:1.5px solid var(--line);background:#fff;border-radius:14px;
+  padding:14px 16px;font-family:var(--font-body);font-size:14.5px;color:var(--ink);transition:border-color .15s ease}
+.field input:focus{outline:none;border-color:var(--ink)}
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:46px}
+.pw-eye{position:absolute;right:4px;top:4px;width:40px;height:calc(100% - 8px);border:none;background:none;
+  display:flex;align-items:center;justify-content:center;color:var(--ink-dim);cursor:pointer;border-radius:10px}
+.pw-eye:hover{background:var(--bg-raised)}
+.auth-forgot{text-align:right;margin:-8px 0 20px}
+.auth-forgot button{background:none;border:none;padding:0;font-family:var(--font-body);font-weight:700;
+  font-size:13px;color:var(--accent);cursor:pointer}
+.auth-cta{width:100%;box-sizing:border-box;justify-content:center;padding:17px;
+  font-family:var(--font-body);font-weight:700;font-size:15px;text-transform:none;letter-spacing:0;
+  border-radius:999px;margin-top:2px}
+.auth-terms{font-size:12px;color:var(--ink-dim);line-height:1.6;margin:0}
+.auth-terms a{color:var(--ink);font-weight:600;text-decoration:none;border-bottom:1px solid var(--line)}
+.wrap{padding-left:20px;padding-right:20px;box-sizing:border-box}
 @media (min-width:861px){
 .wrap{max-width:1180px;margin:0 auto}
 }
 </style><style media="(min-width:900px)">
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .err{color:var(--accent);font-size:12.5px;margin-top:10px}
-.auth-combo{display:flex;flex-wrap:wrap;max-width:880px;min-height:480px;margin:0 auto;
-  background:#fff;border-radius:28px;overflow:hidden;
-  box-shadow:0 1px 2px rgba(23,23,23,.04),0 32px 72px -32px rgba(23,23,23,.34);}
-.auth-illustration{flex:1 1 260px;min-width:240px;position:relative;overflow:hidden;
-  background:linear-gradient(160deg,var(--bg-raised) 0%,#efe9e9 100%);
-  display:flex;align-items:center;justify-content:center;padding:40px 24px;}
-.auth-illustration-shape{position:absolute;border-radius:50%}
-.auth-illustration-shape.s1{width:240px;height:240px;background:var(--ink);opacity:.045;top:-80px;left:-70px}
-.auth-illustration-shape.s2{width:200px;height:200px;background:var(--accent);opacity:.1;bottom:-70px;right:-60px;
-  animation:authBob 5.5s ease-in-out infinite;}
-.auth-illustration-shape.s3{width:90px;height:90px;background:var(--ink);opacity:.06;bottom:30%;left:8%;
-  animation:authBob 7s ease-in-out infinite reverse;}
-@keyframes authBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
-.auth-illustration-logo{position:relative;width:46%;max-width:190px;animation:authFloat 4.5s ease-in-out infinite}
-@keyframes authFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-.auth-form-col{flex:1 1 320px;min-width:280px;max-width:420px;padding:44px 40px;
-  display:flex;flex-direction:column;justify-content:center;}
-@media (prefers-reduced-motion:reduce){
-.auth-illustration-shape.s2,.auth-illustration-shape.s3,.auth-illustration-logo{animation:none}
-}
-.auth-brand{display:none}
-.auth-toggle{display:flex;background:var(--bg-raised);border-radius:999px;padding:4px;margin-bottom:22px}
-.auth-toggle button{flex:1;border:none;background:none;padding:11px 14px;border-radius:999px;
-  font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;text-transform:uppercase;
-  color:var(--ink-dim);cursor:pointer;transition:background .18s ease,color .18s ease}
-.auth-toggle button.active{background:var(--ink);color:#fff}
-.auth-method-toggle{display:flex;gap:6px;margin-bottom:18px}
-.auth-method-toggle button{flex:1;border:1.5px solid var(--line);background:none;padding:8px 10px;border-radius:999px;
-  font-family:var(--font-mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;
-  color:var(--ink-dim);cursor:pointer;transition:all .18s ease}
-.auth-method-toggle button.active{background:var(--ink);border-color:var(--ink);color:#fff}
-.auth-social{display:flex;flex-direction:column;gap:9px;margin-bottom:16px}
+.auth-wrap{max-width:480px;margin:0 auto;padding:36px 0 72px}
+.auth-h1{font-family:var(--font-display);font-weight:800;font-size:46px;line-height:1.06;letter-spacing:-.02em;margin:0 0 16px}
+.auth-accent{position:relative;display:inline-block;color:var(--accent)}
+.auth-accent .squiggle{position:absolute;left:0;bottom:-8px;width:100%;height:13px;color:var(--accent)}
+.auth-tag{font-size:15.5px;line-height:1.6;color:var(--ink-dim);max-width:30em;margin:0 0 26px}
+.auth-doodle{margin:0 0 24px}
+.auth-doodle svg{width:100%;height:auto;display:block}
+.auth-dash{border-top:1.5px dashed var(--line);margin:0 0 22px}
+.auth-badge{display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11px;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:24px}
+.auth-badge .dot{width:7px;height:7px;border-radius:50%;border:1.5px solid var(--accent);flex-shrink:0}
+.auth-seg{display:flex;background:var(--bg-raised);border-radius:999px;padding:4px;margin-bottom:28px}
+.auth-seg button{flex:1;border:none;background:none;padding:13px 16px;border-radius:999px;
+  font-family:var(--font-body);font-weight:600;font-size:15px;color:var(--ink-dim);cursor:pointer;
+  transition:background .18s ease,color .18s ease,box-shadow .18s ease}
+.auth-seg button.active{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(23,23,23,.14)}
+.auth-h2{font-family:var(--font-display);font-weight:800;font-size:28px;letter-spacing:-.01em;margin:0 0 7px}
+.auth-sub{font-size:14.5px;color:var(--ink-dim);margin:0 0 24px}
+.auth-social{display:flex;flex-direction:column;gap:9px;margin-bottom:4px}
 .auth-social-btn{width:100%;box-sizing:border-box;justify-content:center;padding:13px;border-radius:999px;
   border:1.5px solid var(--line);background:#fff;font-family:var(--font-body);font-weight:600;font-size:13.5px;
   color:var(--ink);display:flex;align-items:center;gap:9px;cursor:pointer;transition:border-color .15s ease,background .15s ease}
 .auth-social-btn:hover{border-color:var(--ink);background:var(--bg-raised)}
-.auth-divider{display:flex;align-items:center;gap:10px;margin:2px 0 18px;
-  color:var(--ink-dim);font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase}
-.auth-divider .ln{flex:1;height:1px;background:var(--line)}
-.auth-form-col .field{margin-bottom:15px}
-.auth-form-col .field input{width:100%;box-sizing:border-box;border:1.5px solid transparent;
-  background:var(--bg-raised);border-radius:14px;padding:14px 16px;
-  font-family:var(--font-body);font-size:14.5px;color:var(--ink);
-  transition:border-color .15s ease,background .15s ease}
-.auth-form-col .field input:focus{outline:none;border-color:var(--accent);background:#fff}
-.auth-forgot{text-align:right;margin:-7px 0 18px}
-.auth-forgot button{background:none;border:none;padding:0;font-family:var(--font-body);
-  font-size:12.5px;color:var(--ink-dim);text-decoration:underline;cursor:pointer}
-.auth-submit{width:100%;box-sizing:border-box;justify-content:center;padding:16px;
-  font-size:12.5px;border-radius:999px;margin-top:4px}
+.auth-or{display:flex;align-items:center;gap:10px;margin:18px 0;color:var(--ink-dim);font-size:12.5px}
+.auth-or .ln{flex:1;height:1px;background:var(--line)}
+.auth-method-toggle{display:flex;gap:6px;margin-bottom:22px}
+.auth-method-toggle button{flex:1;border:1.5px solid var(--line);background:none;padding:9px 10px;border-radius:999px;
+  font-family:var(--font-mono);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--ink-dim);cursor:pointer;transition:all .18s ease}
+.auth-method-toggle button.active{background:var(--ink);border-color:var(--ink);color:#fff}
+.field{margin-bottom:17px}
+.field label{display:block;font-family:var(--font-body);font-weight:700;font-size:14px;color:var(--ink);margin-bottom:8px}
+.field input{width:100%;box-sizing:border-box;border:1.5px solid var(--line);background:#fff;border-radius:14px;
+  padding:15px 16px;font-family:var(--font-body);font-size:15px;color:var(--ink);transition:border-color .15s ease}
+.field input:focus{outline:none;border-color:var(--ink)}
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:46px}
+.pw-eye{position:absolute;right:4px;top:4px;width:42px;height:calc(100% - 8px);border:none;background:none;
+  display:flex;align-items:center;justify-content:center;color:var(--ink-dim);cursor:pointer;border-radius:10px}
+.pw-eye:hover{background:var(--bg-raised)}
+.auth-forgot{text-align:right;margin:-9px 0 22px}
+.auth-forgot button{background:none;border:none;padding:0;font-family:var(--font-body);font-weight:700;
+  font-size:13.5px;color:var(--accent);cursor:pointer}
+.auth-cta{width:100%;box-sizing:border-box;justify-content:center;padding:18px;
+  font-family:var(--font-body);font-weight:700;font-size:15.5px;text-transform:none;letter-spacing:0;
+  border-radius:999px;margin-top:2px}
+.auth-terms{font-size:12.5px;color:var(--ink-dim);line-height:1.6;margin:0}
+.auth-terms a{color:var(--ink);font-weight:600;text-decoration:none;border-bottom:1px solid var(--line)}
 .wrap{max-width:1180px;margin:0 auto}
 </style>
 </head>
@@ -127,96 +137,137 @@
 
   <main class="content">
     <div class="wrap">
+      <div class="auth-wrap">
 
-      <section class="section" style="padding-top:56px">
-        <div class="label">Your account</div>
-        <h1 class="h-1" id="pageTitle">Sign in</h1>
-        <p class="lede" id="pageLede">Create an account or sign in to build your cart and send us your requirements.</p>
+        <h1 class="auth-h1">Sell more.<br><span class="auth-accent">Chase less.
+          <svg class="squiggle" viewBox="0 0 160 14" preserveAspectRatio="none" aria-hidden="true"><path d="M2 8 Q20 2 38 8 T74 8 T110 8 T146 8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+        </span></h1>
+        <p class="auth-tag">One login for billing, staff, stock and your own QR menu — set up once, never chase a spreadsheet again.</p>
 
-        <section class="section tight" style="padding-top:24px">
-          <div class="auth-combo">
-            <div class="auth-illustration" role="presentation">
-              <div class="auth-illustration-shape s1"></div>
-              <div class="auth-illustration-shape s2"></div>
-              <div class="auth-illustration-shape s3"></div>
-              <img class="auth-illustration-logo" src="logo.png" alt="" aria-hidden="true">
+        <div class="auth-doodle">
+          <svg viewBox="0 0 420 170" fill="none" aria-hidden="true">
+            <path d="M18 44 Q50 28 86 52" stroke="#171717" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="1 7"/>
+            <path d="M81 46 L88 53 L79 57" stroke="#171717" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <text x="12" y="32" font-family="Inter, sans-serif" font-style="italic" font-size="12" fill="#171717">next sale &#8595;</text>
+
+            <path d="M30 78 L33 86 L41 89 L33 92 L30 100 L27 92 L19 89 L27 86 Z" fill="#800020"/>
+            <path d="M376 40 L378 46 L384 48 L378 50 L376 56 L374 50 L368 48 L374 46 Z" fill="#800020"/>
+            <circle cx="344" cy="26" r="2.4" fill="#171717"/>
+
+            <path d="M18 150 L402 150" stroke="#171717" stroke-width="2" stroke-linecap="round"/>
+
+            <circle cx="68" cy="96" r="13" stroke="#171717" stroke-width="2.2"/>
+            <path d="M68 109 L68 134" stroke="#171717" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M68 116 L90 102" stroke="#171717" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M68 118 L50 130" stroke="#171717" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M68 134 L56 150" stroke="#171717" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M68 134 L80 150" stroke="#171717" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M32 150 L32 132 L70 132 L70 150" stroke="#171717" stroke-width="2"/>
+
+            <g transform="rotate(-9 205 85)">
+              <rect x="168" y="52" width="72" height="68" rx="6" stroke="#171717" stroke-width="2.2"/>
+              <path d="M180 70 L228 70" stroke="#171717" stroke-width="2" stroke-linecap="round"/>
+              <path d="M180 82 L222 82" stroke="#171717" stroke-width="2" stroke-linecap="round"/>
+              <path d="M180 94 L212 94" stroke="#171717" stroke-width="2" stroke-linecap="round"/>
+              <path d="M180 106 Q190 100 200 106 T220 106" stroke="#800020" stroke-width="2" stroke-linecap="round" fill="none"/>
+            </g>
+
+            <circle cx="340" cy="104" r="12" stroke="#171717" stroke-width="2.2"/>
+            <path d="M340 116 L340 138" stroke="#171717" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M340 122 L322 134" stroke="#171717" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M340 124 L358 118" stroke="#171717" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M340 138 L328 150" stroke="#171717" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M340 138 L352 150" stroke="#171717" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M316 128 L312 148 L332 148 L328 128 Z" stroke="#171717" stroke-width="2"/>
+            <path d="M319 128 Q322 120 325 128" stroke="#171717" stroke-width="2" fill="none"/>
+
+            <text x="46" y="168" font-family="Inter, sans-serif" font-size="11" fill="#6a6a6a">sell</text>
+            <text x="183" y="168" font-family="Inter, sans-serif" font-size="11" fill="#6a6a6a">bill</text>
+            <text x="316" y="168" font-family="Inter, sans-serif" font-size="11" fill="#6a6a6a">done</text>
+          </svg>
+        </div>
+
+        <div class="auth-dash"></div>
+        <div class="auth-badge"><span class="dot"></span>One login for all of it</div>
+
+        <div class="auth-seg">
+          <button id="modeLogin" type="button">Log in</button>
+          <button id="modeNew" type="button">Sign up</button>
+        </div>
+
+        <h2 class="auth-h2" id="pageTitle">Welcome back.</h2>
+        <p class="auth-sub" id="pageLede">Pick up where you left off.</p>
+
+        <div id="authSection">
+          <div id="socialRow" class="auth-social" style="display:none">
+            <div id="googleBtnHost"></div>
+            <button id="appleBtn" class="auth-social-btn" type="button" style="display:none">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.365 1.43c0 1.14-.46 2.1-1.17 2.83-.78.8-2.03 1.42-3.09 1.33-.12-1.1.46-2.25 1.15-2.97.78-.83 2.17-1.46 3.11-1.19ZM20.6 17.17c-.46 1.06-.68 1.53-1.27 2.47-.82 1.3-1.98 2.93-3.41 2.94-1.27.02-1.6-.83-3.33-.82-1.73.01-2.09.84-3.36.82-1.43-.02-2.53-1.48-3.35-2.78-2.3-3.63-2.54-7.89-1.12-10.16.99-1.6 2.56-2.54 4.03-2.54 1.5 0 2.44.84 3.68.84 1.2 0 1.93-.85 3.66-.85 1.32 0 2.71.72 3.7 1.96-3.25 1.78-2.72 6.42.77 8.12Z"/></svg>
+              Continue with Apple
+            </button>
+          </div>
+          <div id="socialOr" class="auth-or" style="display:none"><span class="ln"></span>or<span class="ln"></span></div>
+
+          <div class="auth-method-toggle">
+            <button id="methodEmail" type="button">Email</button>
+            <button id="methodPhone" type="button">Phone</button>
+          </div>
+
+          <div id="emailFields">
+            <div class="field">
+              <label for="email">Email</label>
+              <input id="email" type="email" placeholder="you@business.com" required autocomplete="email">
             </div>
-            <div class="auth-form-col">
-              <div class="auth-brand"><img src="logo.png" alt="AUZslab"></div>
+            <div class="field pw-wrap">
+              <label for="password">Password</label>
+              <input id="password" type="password" placeholder="Enter your password" required minlength="8" autocomplete="new-password">
+              <button type="button" class="pw-eye" id="pwEyeToggle" aria-label="Show password">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            <div id="forgotRow" class="auth-forgot" style="display:none">
+              <button id="forgotLink" type="button">Forgot password?</button>
+            </div>
+            <button id="submitBtn" class="btn btn-primary auth-cta form-submit">Log in</button>
+          </div>
 
-              <div id="authSection">
-                <div class="auth-toggle">
-                  <button id="modeNew">New account</button>
-                  <button id="modeLogin">Log in</button>
-                </div>
-
-                <div id="socialRow" class="auth-social" style="display:none">
-                  <div id="googleBtnHost"></div>
-                  <button id="appleBtn" class="auth-social-btn" type="button" style="display:none">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.365 1.43c0 1.14-.46 2.1-1.17 2.83-.78.8-2.03 1.42-3.09 1.33-.12-1.1.46-2.25 1.15-2.97.78-.83 2.17-1.46 3.11-1.19ZM20.6 17.17c-.46 1.06-.68 1.53-1.27 2.47-.82 1.3-1.98 2.93-3.41 2.94-1.27.02-1.6-.83-3.33-.82-1.73.01-2.09.84-3.36.82-1.43-.02-2.53-1.48-3.35-2.78-2.3-3.63-2.54-7.89-1.12-10.16.99-1.6 2.56-2.54 4.03-2.54 1.5 0 2.44.84 3.68.84 1.2 0 1.93-.85 3.66-.85 1.32 0 2.71.72 3.7 1.96-3.25 1.78-2.72 6.42.77 8.12Z"/></svg>
-                    Continue with Apple
-                  </button>
-                  <div class="auth-divider"><span class="ln"></span>or<span class="ln"></span></div>
-                </div>
-
-                <div class="auth-method-toggle">
-                  <button id="methodEmail" type="button">Email</button>
-                  <button id="methodPhone" type="button">Phone</button>
-                </div>
-
-                <div id="emailFields">
-                  <div class="field">
-                    <label for="email" class="sr-only">Email</label>
-                    <input id="email" type="email" placeholder="Email address" required autocomplete="email">
-                  </div>
-                  <div class="field">
-                    <label for="password" class="sr-only">Password</label>
-                    <input id="password" type="password" placeholder="Password" required minlength="8" autocomplete="new-password">
-                  </div>
-                  <div id="forgotRow" class="auth-forgot" style="display:none">
-                    <button id="forgotLink" type="button">Forgot your password?</button>
-                  </div>
-                  <button id="submitBtn" class="btn btn-primary auth-submit form-submit">Create account</button>
-                </div>
-
-                <div id="phoneFields" style="display:none">
-                  <div class="field">
-                    <label for="phoneNum" class="sr-only">Phone number</label>
-                    <input id="phoneNum" type="tel" placeholder="+91 98765 43210" autocomplete="tel">
-                  </div>
-                  <button id="sendCodeBtn" class="btn btn-primary auth-submit form-submit" type="button">Send code</button>
-                  <div id="codeStep" style="display:none">
-                    <div class="field" style="margin-top:14px">
-                      <label for="phoneCode" class="sr-only">6-digit code</label>
-                      <input id="phoneCode" type="text" placeholder="6-digit code" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
-                    </div>
-                    <button id="verifyCodeBtn" class="btn btn-primary auth-submit form-submit" type="button">Verify &amp; continue</button>
-                  </div>
-                </div>
-
-                <div id="authErr" class="err"></div>
+          <div id="phoneFields" style="display:none">
+            <div class="field">
+              <label for="phoneNum">Phone number</label>
+              <input id="phoneNum" type="tel" placeholder="+91 98765 43210" autocomplete="tel">
+            </div>
+            <button id="sendCodeBtn" class="btn btn-primary auth-cta form-submit" type="button">Send code</button>
+            <div id="codeStep" style="display:none">
+              <div class="field" style="margin-top:16px">
+                <label for="phoneCode">6-digit code</label>
+                <input id="phoneCode" type="text" placeholder="123456" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
               </div>
-
-              <div id="resetSection" style="display:none">
-                <p class="p">Set a new password.</p>
-                <div class="field">
-                  <label for="newPassword" class="sr-only">New password</label>
-                  <input id="newPassword" type="password" placeholder="New password" required minlength="8" autocomplete="new-password">
-                </div>
-                <button id="resetSubmitBtn" class="btn btn-primary auth-submit form-submit">Set new password</button>
-                <div id="resetErr" class="err"></div>
-              </div>
-
-              <div id="loggedInSection" style="display:none">
-                <p class="p">You're signed in as <b id="loggedInEmail"></b>.</p>
-                <a href="cart.html" class="btn btn-primary auth-submit form-submit">Go to your cart</a>
-                <button id="signOutBtn" class="btn btn-ghost auth-submit form-submit" style="margin-top:10px">Sign out</button>
-              </div>
+              <button id="verifyCodeBtn" class="btn btn-primary auth-cta form-submit" type="button">Verify &amp; continue</button>
             </div>
           </div>
-        </section>
-      </section>
 
+          <div id="authErr" class="err"></div>
+        </div>
+
+        <div id="resetSection" style="display:none">
+          <div class="field">
+            <label for="newPassword">New password</label>
+            <input id="newPassword" type="password" placeholder="Enter a new password" required minlength="8" autocomplete="new-password">
+          </div>
+          <button id="resetSubmitBtn" class="btn btn-primary auth-cta form-submit">Set new password</button>
+          <div id="resetErr" class="err"></div>
+        </div>
+
+        <div id="loggedInSection" style="display:none">
+          <p class="p">You're signed in as <b id="loggedInEmail"></b>.</p>
+          <a href="cart.html" class="btn btn-primary auth-cta form-submit">Go to your cart</a>
+          <button id="signOutBtn" class="btn btn-ghost auth-cta form-submit" style="margin-top:10px">Sign out</button>
+        </div>
+
+        <div class="auth-dash" style="margin-top:28px"></div>
+        <p class="auth-terms">By continuing you agree to the <a href="terms.html">Terms</a> and <a href="privacy.html">Privacy Policy</a>.</p>
+
+      </div>
     </div>
   </main>
 </div>
@@ -240,7 +291,8 @@ function setMode(m) {
   document.getElementById('modeNew').classList.toggle('active', m === 'signup');
   document.getElementById('modeLogin').classList.toggle('active', m === 'login');
   document.getElementById('submitBtn').textContent = m === 'signup' ? 'Create account' : 'Log in';
-  document.getElementById('pageTitle').textContent = m === 'signup' ? 'Create your account' : 'Sign in';
+  document.getElementById('pageTitle').textContent = m === 'signup' ? 'Create your account.' : 'Welcome back.';
+  document.getElementById('pageLede').textContent = m === 'signup' ? 'Takes less than a minute to get started.' : 'Pick up where you left off.';
   document.getElementById('forgotRow').style.display = m === 'login' ? 'block' : 'none';
 }
 document.getElementById('modeNew').onclick = () => setMode('signup');
@@ -259,6 +311,17 @@ document.getElementById('methodEmail').onclick = () => setAuthMethod('email');
 document.getElementById('methodPhone').onclick = () => setAuthMethod('phone');
 setAuthMethod('email');
 
+const EYE_OPEN = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_CLOSED = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3l18 18"/><path d="M10.6 5.2A10.7 10.7 0 0 1 12 5c6.4 0 10 7 10 7a15.6 15.6 0 0 1-3.2 4.1M6.6 6.6C3.8 8.4 2 12 2 12s3.6 7 10 7a9.8 9.8 0 0 0 3.6-.7"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+document.getElementById('pwEyeToggle').onclick = () => {
+  const pw = document.getElementById('password');
+  const btn = document.getElementById('pwEyeToggle');
+  const showing = pw.type === 'text';
+  pw.type = showing ? 'password' : 'text';
+  btn.innerHTML = showing ? EYE_OPEN : EYE_CLOSED;
+  btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+};
+
 // ---- after any successful sign-in, by whatever method ----
 async function afterSignIn(user) {
   if (user && await hasOwnTenant(user.id)) { window.location.href = 'account.html'; return; }
@@ -273,6 +336,7 @@ if (CFG.googleClientId) {
   gs.async = true; gs.defer = true;
   gs.onload = () => {
     document.getElementById('socialRow').style.display = 'flex';
+    document.getElementById('socialOr').style.display = 'flex';
     google.accounts.id.initialize({
       client_id: CFG.googleClientId,
       callback: async (resp) => {
@@ -293,6 +357,7 @@ if (CFG.appleClientId) {
   as.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
   as.onload = () => {
     document.getElementById('socialRow').style.display = 'flex';
+    document.getElementById('socialOr').style.display = 'flex';
     const appleBtn = document.getElementById('appleBtn');
     appleBtn.style.display = 'flex';
     AppleID.auth.init({
@@ -356,9 +421,11 @@ document.getElementById('forgotLink').onclick = async () => {
 // "set a new password" form instead of the normal sign-in form.
 const resetToken = new URLSearchParams(window.location.search).get('token');
 if (resetToken) {
+  document.querySelector('.auth-seg').style.display = 'none';
   document.getElementById('authSection').style.display = 'none';
   document.getElementById('resetSection').style.display = 'block';
-  document.getElementById('pageTitle').textContent = 'Reset your password';
+  document.getElementById('pageTitle').textContent = 'Reset your password.';
+  document.getElementById('pageLede').textContent = 'Choose something you\'ll remember this time.';
   document.getElementById('resetSubmitBtn').onclick = async () => {
     const password = document.getElementById('newPassword').value;
     const errEl = document.getElementById('resetErr');
@@ -403,7 +470,10 @@ async function checkSession() {
       window.location.href = 'admin.html';
       return;
     }
+    document.querySelector('.auth-seg').style.display = 'none';
     document.getElementById('authSection').style.display = 'none';
+    document.getElementById('pageTitle').textContent = 'You\'re in.';
+    document.getElementById('pageLede').textContent = 'Already signed in.';
     document.getElementById('loggedInSection').style.display = 'block';
     document.getElementById('loggedInEmail').textContent = session.user.email;
   }
