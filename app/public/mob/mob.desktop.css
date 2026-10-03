@@ -1,0 +1,56 @@
+/* AUZsMob: expanded (900-1199px: icon rail) and wide (1200px and up: full sidebar). Independent of payroll.mobile.css. */
+:root{--hit:40px}
+.shell{display:grid;grid-template-columns:var(--side-w) minmax(0,1fr);min-height:100vh;transition:grid-template-columns .3s var(--ease)}
+.side{position:sticky;top:0;height:100vh;overflow:auto;padding:18px 12px 16px;background:var(--card2);border-right:.5px solid var(--sep);display:flex;flex-direction:column;gap:2px}
+.side .brand{display:flex;align-items:center;gap:10px;padding:2px 2px 14px 8px}.side .brand .grow{flex:1 1 auto;min-width:0}
+.side-tg{flex:none;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--label2)}.side-tg:hover{background:var(--fill);color:var(--label)}.side .brand img{height:30px}.side .brand b{display:block;font-size:15px;font-weight:700;line-height:1.15}.side .brand span{font-size:12px;color:var(--label2)}
+.side .gh{font-size:12px;font-weight:600;color:var(--label3);padding:14px 10px 4px}
+.side a,.side button.nav{display:flex;align-items:center;gap:10px;min-height:36px;padding:0 10px;border-radius:9px;color:var(--label);font-size:15px;font-weight:500;width:100%;text-align:left}
+.side a:hover,.side button.nav:hover{background:var(--fill)}
+.side a[aria-current=page]{background:var(--tint-soft);color:var(--tint-text);font-weight:600}
+.side a .ic svg{width:19px;height:19px}
+.side a .cnt{margin-left:auto;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--tint);color:var(--tint-fg);font-size:12px;font-weight:700;display:grid;place-items:center}
+.side .foot{margin-top:auto;padding-top:14px;border-top:.5px solid var(--sep);display:grid;gap:4px;font-size:13px;color:var(--label2)}
+.main{min-width:0}
+.topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px;min-height:60px;padding:10px 28px;background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:.5px solid var(--sep)}
+.topbar .l{display:flex;align-items:center;gap:6px}.topbar .tt{font-size:22px;font-weight:700;letter-spacing:-.02em;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar .r{display:flex;gap:8px;align-items:center;min-width:0;flex-wrap:nowrap}.topbar .btn{flex:none}
+.topbar .gsearch{width:min(300px,26vw)}
+.page{max-width:1240px;margin:0 auto;padding:24px 28px 56px;display:grid;gap:24px;align-content:start}
+.large-title,.page-sub{display:none}
+.tabbar{display:none}
+.kpis{grid-template-columns:repeat(4,1fr)}
+.kpis.k3{grid-template-columns:repeat(3,1fr)}.kpis.k5{grid-template-columns:repeat(5,1fr)}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;align-items:start}
+.two.wide-left{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+.sheet{left:50%;top:50%;transform:translate(-50%,-50%);width:min(640px,92vw);max-height:88vh;border-radius:18px;animation:sheetPop .3s var(--ease)}
+.sheet.wide{width:min(980px,94vw)}.sheet.full{width:min(1100px,96vw);height:90vh}
+@keyframes sheetPop{from{opacity:0;transform:translate(-50%,-48%) scale(.97)}}
+.toast{bottom:28px}
+.mob-only{display:none!important}
+.dock{position:sticky;bottom:0;z-index:20;display:flex;justify-content:flex-end;gap:10px;padding:12px 0;background:linear-gradient(to top,var(--bg) 70%,transparent)}
+.list .li{padding:10px 18px}
+.btn.sm{min-height:32px}
+@media (hover:hover){.kpi:hover{box-shadow:0 0 0 .5px var(--sep),0 4px 16px rgba(0,0,0,.08)}.kperson:hover{box-shadow:0 0 0 1px var(--tint)}}
+.cal{gap:6px}.cal button{min-height:58px}
+.kiosk{max-width:1100px;margin:0 auto}
+@media (max-width:1300px){.topbar .gsearch{width:44px}.topbar .gsearch .gs-t{display:none}}
+
+/* icon rail: automatic below 1200px wide, or chosen with the sidebar toggle */
+.shell.min{grid-template-columns:var(--rail-w) minmax(0,1fr)}
+.shell.min .side{padding-left:10px;padding-right:10px}
+.shell.min .lbl-t,.shell.min .side .foot,.shell.min .side .cnt{display:none}
+.shell.min .side .brand{flex-direction:column;padding:2px 0 10px}
+.shell.min .side a{justify-content:center;padding:0;min-height:44px}
+.shell.min .side .gh{height:1px;padding:0;margin:10px 6px;background:var(--sep)}
+@media (max-width:1199px){
+  .shell:not(.full){grid-template-columns:var(--rail-w) minmax(0,1fr)}
+  .shell:not(.full) .side{padding-left:10px;padding-right:10px}
+  .shell:not(.full) .lbl-t,.shell:not(.full) .side .foot,.shell:not(.full) .side .cnt{display:none}
+  .shell:not(.full) .side .brand{flex-direction:column;padding:2px 0 10px}
+  .shell:not(.full) .side a{justify-content:center;padding:0;min-height:44px}
+  .shell:not(.full) .side .gh{height:1px;padding:0;margin:10px 6px;background:var(--sep)}
+  .page{padding:20px 22px 48px}
+  .kpis{grid-template-columns:repeat(2,1fr)}.kpis.k5{grid-template-columns:repeat(3,1fr)}
+}
+.page>*{min-width:0}

@@ -33,8 +33,12 @@ export const USERS = {
   payManager: 'manager-pay@test.local',
   payStaff: 'staff-pay@test.local',
   payStaff2: 'staff2-pay@test.local',
+  mobOwner: 'owner-mob@test.local',
+  mobManager: 'manager-mob@test.local',
+  mobStaff: 'staff-mob@test.local',
+  mobStaff2: 'staff2-mob@test.local',
 };
-export const TENANTS = { cafe: 'testcafe', salon: 'testsalon', retail: 'testretail', acct: 'testacct', pay: 'testpay' };
+export const TENANTS = { cafe: 'testcafe', salon: 'testsalon', retail: 'testretail', acct: 'testacct', pay: 'testpay', mob: 'testmob' };
 
 export async function connect(database) {
   const c = new pg.Client({ host: PG.host, port: PG.port, user: PG.user, password: PG.password, database });
@@ -103,6 +107,12 @@ async function seed(c) {
   await user(c, USERS.payManager, { tenant_id: pay, role: 'manager' });
   await user(c, USERS.payStaff, { tenant_id: pay, role: 'cashier' });
   await user(c, USERS.payStaff2, { tenant_id: pay, role: 'cashier' });
+  // AUZsMob: its own mobile-retail-and-repair business, an owner, a manager and two plain staff logins
+  const mob = await tenant(c, TENANTS.mob, 'Test Mobile Shop', 'mobile');
+  await user(c, USERS.mobOwner, { tenant_id: mob, role: 'owner' });
+  await user(c, USERS.mobManager, { tenant_id: mob, role: 'manager' });
+  await user(c, USERS.mobStaff, { tenant_id: mob, role: 'cashier' });
+  await user(c, USERS.mobStaff2, { tenant_id: mob, role: 'cashier' });
   await user(c, USERS.plain);
   const adminId = await user(c, USERS.admin);
   await c.query('insert into platform_admins (id) values ($1) on conflict do nothing', [adminId]);

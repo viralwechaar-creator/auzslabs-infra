@@ -157,6 +157,7 @@ const BILLING_BULLETS = ['GST invoices with automatic numbering &amp; tax breakd
 const QR_BULLETS = ['Table QR codes &mdash; guest self-ordering, straight to the kitchen', 'Your own public mini-website &mdash; menu, hours, location'];
 const PAYROLL_BULLETS = ['A monthly rate per staffer, hours pulled from their own clock-ins', 'Adjustments with a note, and an exportable payslip history', 'Owner-only &mdash; kept off every other device on the account'];
 const BOOKING_BULLETS = ['A public booking page &mdash; services, a live slot picker, your hours', 'Set your own slot length and how many chairs can take a slot at once', 'Every booking becomes a client profile automatically'];
+const MOB_BULLETS = ['Every handset tracked by IMEI/serial, with condition and warranty', 'A real repair-ticket workflow &mdash; intake, status, parts used, payment', 'Works with no internet: sales and purchases save on the phone first', 'Each staff member sees only their own sales and jobs; the owner sees everyone'];
 
 function flavor(niche) { return niche === 'retail' ? 'retail' : niche === 'cafe' ? 'restaurant' : 'general'; }
 
@@ -178,7 +179,7 @@ function render(ctx) {
   const hasFeatures = ctx.features && Object.keys(ctx.features).length > 0;
   const defaults = NICHE_DEFAULTS[ctx.niche] || NICHE_DEFAULTS.general;
   const on = (k) => hasFeatures ? !!ctx.features[k] : defaults[k];
-  const showPos = on('pos'), showCrm = on('crm'), showBilling = on('billing'), showInventory = on('inventory'), showQr = on('self_order'), showBooking = on('booking');
+  const showPos = on('pos'), showCrm = on('crm'), showBilling = on('billing'), showInventory = on('inventory'), showQr = on('self_order'), showBooking = on('booking'), showMob = on('mobile');
 
   document.getElementById('kicker').textContent = 'A look at what ' + ctx.business_name + ' gets';
   document.getElementById('heroTitle').textContent = 'Everything ' + ctx.business_name + ' runs on.';
@@ -202,6 +203,7 @@ function render(ctx) {
   if (showInventory) html += modCard('Inventory &amp; stock', INV_BULLETS[fl] || INV_BULLETS.general);
   if (showQr) html += modCard('Online &amp; self-order', QR_BULLETS);
   if (showBooking) html += modCard('Booking &amp; scheduling', BOOKING_BULLETS);
+  if (showMob) html += modCard('AUZsMob &mdash; mobile retail &amp; repair', MOB_BULLETS);
   html += modCard('Payroll', PAYROLL_BULLETS);
 
   const label = '<div class="label" style="margin-bottom:14px">Or, if you\'d rather read first</div>';
