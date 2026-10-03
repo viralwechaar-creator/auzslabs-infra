@@ -51,7 +51,12 @@
       '<path class="a" d="M34 112L98 76l36-8 66-40M178 28h24v24"/>',
     rocket: '<path class="f" d="M120 20c30 24 40 66 27 112H93C80 86 90 44 120 20z"/><circle class="f" cx="120" cy="76" r="15"/><path class="f" d="M93 110l-30 34 30-3zM147 110l30 34-30-3z"/><path class="a" d="M107 136q13 44 13 44t13-44"/>' + spark(40, 50, 9) + spark(204, 70, 8) + spark(190, 168, 7),
     envelope: '<rect class="f" x="30" y="68" width="172" height="106" rx="10"/><path d="M30 76l86 62 86-62"/><path class="a f" d="M148 34l60-22-24 62-16-22z"/><path class="a" d="M184 54l24-42"/><path class="h" d="M26 44q46-24 86 4"/>' + spark(30, 30, 8),
-    tag: '<path class="f" d="M38 104l62-62h78v78l-62 62z"/><circle cx="150" cy="70" r="8"/><path d="M150 62C150 38 122 28 112 10"/><path class="a" d="M88 124l52-52"/><path class="h" d="M78 146l70-70"/>' + spark(40, 40, 9) + spark(208, 168, 8)
+    tag: '<path class="f" d="M38 104l62-62h78v78l-62 62z"/><circle cx="150" cy="70" r="8"/><path d="M150 62C150 38 122 28 112 10"/><path class="a" d="M88 124l52-52"/><path class="h" d="M78 146l70-70"/>' + spark(40, 40, 9) + spark(208, 168, 8),
+    mobile: '<rect class="f" x="72" y="18" width="80" height="152" rx="12"/><path d="M98 28h28"/><circle cx="112" cy="160" r="6"/>' +
+      '<path class="a" d="M88 56l18 24-14 18 22 28"/>' +
+      '<rect class="f" x="20" y="136" width="44" height="36" rx="3"/><path d="M20 150h44M36 136v14M50 136v14"/>' +
+      '<g transform="rotate(32 180 110)"><rect class="a f" x="160" y="102" width="62" height="16" rx="8"/><circle class="h" cx="166" cy="110" r="9"/></g>' +
+      spark(206, 36, 9) + spark(28, 40, 7)
   };
   ART.crate = '<rect class="f" x="36" y="56" width="168" height="120" rx="4"/><path d="M36 90h168M120 56v34"/><path class="a" d="M64 124h46M64 142h78"/><path class="h" d="M48 166h144"/><rect class="a" x="150" y="112" width="34" height="34" rx="3"/>';
   ART['default'] = ART.platform;

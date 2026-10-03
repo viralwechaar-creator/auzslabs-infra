@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>CRM — AUZslab</title>
-<meta name="description" content="AUZslab CRM — know who your customers are and bring them back. Visit history, spend tracking and repeat-visit outreach.">
-<link rel="canonical" href="https://auzslab.in/crm.html">
+<title>AUZsGSM — for mobile retail &amp; repair shops</title>
+<meta name="description" content="AUZsGSM: IMEI-level phone inventory, accessory stock, full repair job tracking and staff sales records that stay private between staff — in one simple console.">
+<link rel="canonical" href="https://auzslab.in/business-mobile-repair.html">
 <meta name="robots" content="index,follow">
 <meta property="og:type" content="website">
-<meta property="og:title" content="CRM — AUZslab">
-<meta property="og:description" content="Know who your customers are, and bring them back.">
-<meta property="og:url" content="https://auzslab.in/crm.html">
+<meta property="og:title" content="AUZsGSM — for mobile retail &amp; repair shops">
+<meta property="og:description" content="Phone inventory by IMEI, accessory stock, repair tickets and staff-isolated sales, in one console.">
+<meta property="og:url" content="https://auzslab.in/business-mobile-repair.html">
 <meta property="og:image" content="https://auzslab.in/og-image.png">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="/logo.png">
@@ -74,7 +74,7 @@
 
       <div class="nav-group">
         <button class="nav-link nav-group-toggle" aria-expanded="false">
-          <span>Business types <sup class="nav-group-count">(+5)</sup></span>
+          <span>Business types <sup class="nav-group-count">(+4)</sup></span>
           <span class="nav-group-indicator" aria-hidden="true"></span>
         </button>
         <div class="nav-submenu">
@@ -83,7 +83,7 @@
             <a href="business-salons.html" class="nav-sublink"><span>Salons</span></a>
             <a href="business-retail.html" class="nav-sublink"><span>Retail &amp; bookstores</span></a>
             <a href="business-clothing.html" class="nav-sublink"><span>Clothing &amp; apparel</span></a>
-            <a href="business-mobile-repair.html" class="nav-sublink"><span>Mobile retail &amp; repair</span></a>
+            <a href="business-mobile-repair.html" class="nav-sublink active"><span>Mobile retail &amp; repair</span></a>
           </div>
         </div>
       </div>
@@ -116,14 +116,14 @@
         <div class="hero-grid">
         <div>
         <div class="uk-kit uk-breadcrumb" style="margin-bottom:18px">
-          <a href="products.html">Products</a><span class="uk-breadcrumb-sep">/</span><span class="uk-breadcrumb-current">CRM</span>
+          <a href="platform.html">Business types</a><span class="uk-breadcrumb-sep">/</span><span class="uk-breadcrumb-current">Mobile retail &amp; repair</span>
         </div>
-        <div class="label">Customer relationship management</div>
-        <h1 class="h-1" style="font-size:44px">Know your regulars.<br>Bring them back.</h1>
-        <p class="lede">Every visit, every rupee spent, every repeat customer &mdash; tracked automatically from the same orders your till already rings up.</p>
+        <div class="label">AUZsGSM</div>
+        <h1 class="h-1" style="font-size:48px">Every phone, every repair,<br>tracked to the staffer.</h1>
+        <p class="lede">Sell phones and accessories, track every repair job start to finish, and know exactly who sold or fixed what — without any staffer seeing another's numbers.</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px">
-          <button class="btn btn-primary" id="addCartBtn">Add to cart</button>
-          <a href="cart.html" class="btn btn-ghost">View cart</a>
+          <button class="btn btn-primary" data-open-contact>Let's talk</button>
+          <a href="products.html" class="btn btn-ghost">See all products</a>
         </div>
         </div>
         <div class="hero-art" role="presentation">
@@ -132,63 +132,86 @@
         </div>
       </section>
 
-      <section class="section tight">
-        <div class="card" style="border-color:var(--accent);box-shadow:5px 5px 0 var(--accent)">
-          <span class="tag" style="background:var(--accent);color:#fff;border-color:var(--accent)">Hands-on</span>
-          <div class="h-2" style="margin-top:14px;font-size:22px">Skip the reading. Try it yourself.</div>
-          <p class="p" style="margin-top:8px">The same real demo account, dropped straight into Customers. Place an order first (in the POS demo) and it shows up here.</p>
-          <div style="margin-top:14px;background:var(--bg-raised);border:1.5px solid var(--ink);border-radius:14px;padding:14px 16px;font-family:var(--font-mono);font-size:12.5px;line-height:1.9">
-            <div>Password &nbsp; <b>Auzslab@Demo</b></div>
-          </div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
-            <a href="https://demo.auzslab.in/?tab=crm" target="_blank" rel="noopener" class="btn btn-primary">Launch CRM &rarr;</a><span class="p" style="font-size:11.5px;color:var(--ink-dim);align-self:center">demo@auzslab.in</span>
-          </div>
-          <p class="p" style="margin-top:12px;font-size:11.5px;color:var(--ink-faint)">For evaluation only &mdash; please don't scrape or copy the software. See our <a href="terms.html" style="color:var(--ink-faint);text-decoration:underline">terms</a>.</p>
-        </div>
-      </section>
+      <hr class="dash">
 
       <section class="section tight">
-        <div class="grid-2">
-          <div class="card">
-            <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Customer profiles</div>
-            <p class="p" style="margin-top:8px">A running record for every customer &mdash; contact details, order history, notes &mdash; built up automatically as they visit.</p>
+        <div class="label">What mobile shops struggle with</div>
+        <div class="grid-2" style="margin-top:12px">
+          <div style="border-top:1px dashed var(--line);padding-top:20px">
+            <div class="h-2" style="font-size:19px">Stock nobody can actually trust</div>
+            <p class="p" style="margin-top:10px">A notebook or a spreadsheet can't tell two identical phones apart — so a swapped or returned handset just disappears into the count.</p>
           </div>
-          <div class="card">
-            <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Visit history</div>
-            <p class="p" style="margin-top:8px">See exactly what someone ordered last time, and when, right from the billing screen.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Repeat-visit tracking</div>
-            <p class="p" style="margin-top:8px">Spot your regulars automatically &mdash; who's coming back, who's gone quiet.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Spend insight</div>
-            <p class="p" style="margin-top:8px">Total spend per customer, at a glance &mdash; no spreadsheet exports needed.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Loyalty &amp; coupons</div>
-            <p class="p" style="margin-top:8px">Points redeemable at billing, and coupon codes with an expiry or use-limit whenever you want to run one.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Customer feedback</div>
-            <p class="p" style="margin-top:8px">A star rating and comment box on every printed or shared receipt &mdash; feedback comes back to you, not a review site.</p>
+          <div style="border-top:1px dashed var(--line);padding-top:20px">
+            <div class="h-2" style="font-size:19px">No real picture of who did what</div>
+            <p class="p" style="margin-top:10px">Multiple staff billing and repairing off one shared login means the owner can't see — and staff can see each other's — sales and work.</p>
           </div>
         </div>
       </section>
 
       <hr class="dash">
 
-      <section class="section">
-        <div class="label">Pairs well with</div>
-        <div style="display:flex;gap:12px;flex-wrap:wrap">
-          <a href="pos.html" class="tag">POS</a>
-          <a href="billing.html" class="tag">Billing &amp; Invoicing</a>
+      <section class="section tight">
+        <div class="label">Everything a mobile retail &amp; repair shop needs</div>
+        <div class="grid-2" style="margin-top:12px">
+          <div class="card">
+            <span class="tag">Inventory</span>
+            <div class="h-2" style="margin-top:12px;font-size:19px">Every phone tracked by its own IMEI</div>
+            <p class="p" style="margin-top:8px">Each handset is its own unit with its own IMEI/serial, condition and warranty — not just a number in a stock count. Accessories stay simple plain-quantity stock.</p>
+          </div>
+          <div class="card">
+            <span class="tag">Repairs</span>
+            <div class="h-2" style="margin-top:12px;font-size:19px">A real repair-ticket workflow</div>
+            <p class="p" style="margin-top:8px">Intake a device, log the issue, track status through to done, record parts used and take payment — a genuine job tracker, not a sticky note.</p>
+          </div>
+          <div class="card">
+            <span class="tag">Staff isolation</span>
+            <div class="h-2" style="margin-top:12px;font-size:19px">Each staffer sees only their own</div>
+            <p class="p" style="margin-top:8px">Sales and repair jobs are recorded under the staffer who made them, and enforced on the server — one staff member can't see another's numbers, full stop.</p>
+          </div>
+          <div class="card">
+            <span class="tag">Admin view</span>
+            <div class="h-2" style="margin-top:12px;font-size:19px">The owner sees everything, always</div>
+            <p class="p" style="margin-top:8px">Every staffer's sales, repairs and totals roll up for the owner/admin — full visibility at the top, isolation everywhere else.</p>
+          </div>
+          <div class="card">
+            <span class="tag">Purchasing</span>
+            <div class="h-2" style="margin-top:12px;font-size:19px">Suppliers, purchases &amp; stock movement</div>
+            <p class="p" style="margin-top:8px">Record what came in and from whom, with low-stock alerts and a full movement log behind every change in stock.</p>
+          </div>
+          <div class="card">
+            <span class="tag">Setup</span>
+            <div class="h-2" style="margin-top:12px;font-size:19px">Picks its wording to match your shop</div>
+            <p class="p" style="margin-top:8px">Mobile &amp; repair, electronics retail, computer repair, or general retail — chosen once at setup, no clutter from features you don't run.</p>
+          </div>
+        </div>
+      </section>
+
+      <hr class="dash">
+
+      <section class="section tight">
+        <div class="label">Built simple, on purpose</div>
+        <h2 class="h-2">A focused tool for a small shop, not a bloated platform.</h2>
+        <p class="p" style="margin-top:8px;max-width:620px">AUZsGSM is a standalone app, built specifically for small mobile retail and repair shops that need an easy, no-fuss way to run inventory, sales and repairs — designed to Apple's Human Interface Guidelines so it's genuinely easy to pick up on day one.</p>
+        <a href="https://gsm.auzslab.in" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top:14px">Open AUZsGSM &rarr;</a>
+      </section>
+
+      <hr class="dash">
+
+      <section class="section tight">
+        <div class="label">Get found</div>
+        <h2 class="h-2">Want more people walking in?</h2>
+        <p class="p" style="margin-top:8px;max-width:560px">Our marketing partner <b>Creatopz</b> is an influencer marketing agency. Creators bring new customers in; AUZsGSM keeps your stock and staff straight once they do.</p>
+        <a href="creatopz.html" class="btn btn-ghost" style="margin-top:14px">Meet Creatopz &rarr;</a>
+      </section>
+
+      <hr class="dash">
+
+      <section class="section tight">
+        <div class="label">Get started</div>
+        <h2 class="h-2">Put your mobile shop on AUZsGSM.</h2>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+          <button class="btn btn-primary" data-open-contact>Let's talk</button>
+          <a href="https://gsm.auzslab.in" target="_blank" rel="noopener" class="btn btn-ghost">Open AUZsGSM</a>
         </div>
       </section>
 
@@ -277,11 +300,10 @@
         <div class="field">
           <label for="m-niche">What are you running?</label>
           <select id="m-niche" name="niche">
-            <option value="">Not sure yet</option>
             <option value="cafe">Café, restaurant, bar & more</option>
-            <option value="salon">Salon / spa</option>
+            <option value="salon">Salon</option>
             <option value="retail">Retail (shoes, clothing, books)</option>
-            <option value="mobile">Mobile retail &amp; repair</option>
+            <option value="mobile" selected>Mobile retail &amp; repair</option>
             <option value="general">Something else</option>
           </select>
         </div>
@@ -304,26 +326,5 @@
 <script src="site.js?v=7"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script src="design-system/ui-kit.js?v=1"></script>
-<script>
-(function () {
-  var KEY = 'crm';
-  var sb = supabase.createClient(CFG.url, CFG.key);
-  var btn = document.getElementById('addCartBtn');
-  var owned = false;
-  function refresh() {
-    if (owned) { btn.textContent = 'Already included ✓'; btn.disabled = true; return; }
-    btn.disabled = false;
-    var has = AUZcart.has(KEY);
-    btn.textContent = has ? 'Added ✓ — remove' : 'Add to cart';
-  }
-  btn.addEventListener('click', function () { if (owned) return; AUZcart.toggle(KEY); refresh(); });
-  var n = AUZcart.get().length;
-  document.querySelectorAll('.cart-count').forEach(function (el) { el.textContent = n ? '(' + n + ')' : ''; });
-  refresh();
-  AUZaccount.fetch(sb).then(function (dash) {
-    if (dash && dash.features && dash.features[KEY] === true) { owned = true; refresh(); }
-  });
-})();
-</script>
 </body>
 </html>
