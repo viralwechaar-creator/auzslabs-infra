@@ -1,0 +1,200 @@
+/* AUZsMob: all user-facing text, English and simple everyday-shop Hindi, in one place (section 4 of the
+   spec: "All text in one translations file so more languages can be added later"). t(key, vars) looks up
+   S.lang (set from mob_context().my_language, changeable from Settings). A missing key falls back to the
+   key itself in dev so a gap is obvious instead of silently blank. */
+'use strict';
+const STR = {
+  // ---------- nav / shell ----------
+  appName: { en: 'AUZsMob', hi: 'AUZsMob' },
+  home: { en: 'Home', hi: 'होम' },
+  sell: { en: 'New sale', hi: 'नई बिक्री' },
+  purchase: { en: 'Add purchase', hi: 'खरीद जोड़ें' },
+  repairs: { en: 'Repairs', hi: 'मरम्मत' },
+  stock: { en: 'Stock', hi: 'स्टॉक' },
+  dues: { en: 'Dues', hi: 'उधार' },
+  reports: { en: 'Reports', hi: 'रिपोर्ट' },
+  settings: { en: 'Settings', hi: 'सेटिंग्स' },
+  more: { en: 'More', hi: 'और' },
+  signOut: { en: 'Sign out', hi: 'साइन आउट करें' },
+  signIn: { en: 'Sign in', hi: 'साइन इन करें' },
+
+  // ---------- common ----------
+  save: { en: 'Save', hi: 'सेव करें' },
+  cancel: { en: 'Cancel', hi: 'रद्द करें' },
+  delete: { en: 'Delete', hi: 'हटाएं' },
+  add: { en: 'Add', hi: 'जोड़ें' },
+  edit: { en: 'Edit', hi: 'बदलें' },
+  close: { en: 'Close', hi: 'बंद करें' },
+  search: { en: 'Search', hi: 'खोजें' },
+  name: { en: 'Name', hi: 'नाम' },
+  phone: { en: 'Phone', hi: 'फ़ोन' },
+  total: { en: 'Total', hi: 'कुल' },
+  subtotal: { en: 'Subtotal', hi: 'उप-कुल' },
+  discount: { en: 'Discount', hi: 'छूट' },
+  paid: { en: 'Paid', hi: 'जमा' },
+  balance: { en: 'Balance', hi: 'बाकी' },
+  qty: { en: 'Qty', hi: 'मात्रा' },
+  price: { en: 'Price', hi: 'कीमत' },
+  rate: { en: 'Rate', hi: 'भाव' },
+  note: { en: 'Note', hi: 'नोट' },
+  today: { en: 'Today', hi: 'आज' },
+  thisWeek: { en: 'This week', hi: 'इस हफ्ते' },
+  thisMonth: { en: 'This month', hi: 'इस महीने' },
+  saved: { en: 'Saved', hi: 'सेव हो गया' },
+  noneYet: { en: 'Nothing here yet', hi: 'अभी कुछ नहीं है' },
+  tryAgain: { en: 'Try again', hi: 'फिर कोशिश करें' },
+  loading: { en: 'Loading…', hi: 'लोड हो रहा है…' },
+
+  // ---------- sync status ----------
+  savedOnPhone: { en: 'Saved on phone', hi: 'फ़ोन में सेव हो गया' },
+  synced: { en: 'Synced', hi: 'सिंक हो गया' },
+  waitingForInternet: { en: 'Waiting for internet ({n})', hi: 'इंटरनेट का इंतज़ार ({n})' },
+  offline: { en: 'Offline', hi: 'ऑफ़लाइन' },
+
+  // ---------- home ----------
+  myWorkToday: { en: 'My work today', hi: 'आज का मेरा काम' },
+  newSale: { en: 'New sale', hi: 'नई बिक्री' },
+  addPurchase: { en: 'Add purchase', hi: 'खरीद जोड़ें' },
+  newRepair: { en: 'New repair', hi: 'नई मरम्मत' },
+  buyUsedPhone: { en: 'Buy used phone', hi: 'पुराना फ़ोन खरीदें' },
+  todaysSales: { en: "Today's sales", hi: 'आज की बिक्री' },
+  pendingRepairs: { en: 'Pending repairs', hi: 'बाकी मरम्मत' },
+  customerDues: { en: 'Customer dues', hi: 'ग्राहक उधार' },
+  lowStock: { en: 'Low stock', hi: 'कम स्टॉक' },
+  whoDidWhat: { en: 'Who did what', hi: 'किसने क्या किया' },
+
+  // ---------- sale ----------
+  findItem: { en: 'Search by name, IMEI or serial', hi: 'नाम, IMEI या सीरियल से खोजें' },
+  cart: { en: 'Cart', hi: 'कार्ट' },
+  cartEmpty: { en: 'Cart is empty', hi: 'कार्ट खाली है' },
+  customer: { en: 'Customer', hi: 'ग्राहक' },
+  customerOptional: { en: 'Customer name (optional)', hi: 'ग्राहक का नाम (वैकल्पिक)' },
+  paymentMode: { en: 'Payment mode', hi: 'भुगतान का तरीका' },
+  cash: { en: 'Cash', hi: 'नकद' },
+  upi: { en: 'UPI', hi: 'यूपीआई' },
+  card: { en: 'Card', hi: 'कार्ड' },
+  credit: { en: 'Credit (udhaar)', hi: 'उधार' },
+  checkout: { en: 'Checkout', hi: 'बिल बनाएं' },
+  saleComplete: { en: 'Sale complete', hi: 'बिक्री पूरी हुई' },
+  billNo: { en: 'Bill no.', hi: 'बिल नंबर' },
+  voidSale: { en: 'Void sale', hi: 'बिल रद्द करें' },
+  voided: { en: 'voided', hi: 'रद्द' },
+  shareWhatsapp: { en: 'Share on WhatsApp', hi: 'व्हाट्सऐप पर भेजें' },
+  printBill: { en: 'Print / save as PDF', hi: 'प्रिंट करें / PDF सेव करें' },
+  saleHistory: { en: 'Sale history', hi: 'बिक्री का इतिहास' },
+
+  // ---------- purchase ----------
+  itemName: { en: 'Item name', hi: 'सामान का नाम' },
+  vendor: { en: 'Vendor', hi: 'विक्रेता' },
+  purchaseRate: { en: 'Purchase rate', hi: 'खरीद भाव' },
+  sellingPrice: { en: 'Selling price', hi: 'बिक्री कीमत' },
+  profit: { en: 'Profit', hi: 'मुनाफ़ा' },
+  serialNo: { en: 'IMEI / serial', hi: 'IMEI / सीरियल नंबर' },
+  serialized: { en: 'Tracked one by one (IMEI)', hi: 'एक-एक करके ट्रैक करें (IMEI)' },
+  linkToRepair: { en: 'Link to a repair job (optional)', hi: 'मरम्मत से जोड़ें (वैकल्पिक)' },
+  purchaseSaved: { en: 'Purchase saved', hi: 'खरीद सेव हो गई' },
+
+  // ---------- second-hand ----------
+  buyUsed: { en: 'Buy used phone', hi: 'पुराना फ़ोन खरीदें' },
+  sellerName: { en: 'Seller name', hi: 'बेचने वाले का नाम' },
+  sellerPhone: { en: 'Seller phone', hi: 'बेचने वाले का फ़ोन' },
+  condition: { en: 'Condition', hi: 'हालत' },
+  conditionNew: { en: 'Like new', hi: 'नए जैसा' },
+  conditionGood: { en: 'Good', hi: 'ठीक' },
+  conditionFair: { en: 'Fair', hi: 'ठीक-ठाक' },
+  conditionPoor: { en: 'Poor', hi: 'खराब' },
+  idProof: { en: 'ID proof photo', hi: 'पहचान पत्र की फ़ोटो' },
+  accessoriesIncluded: { en: 'Accessories included', hi: 'साथ में क्या-क्या है' },
+  pricePaid: { en: 'Price paid', hi: 'दी गई कीमत' },
+  duplicateImei: { en: 'This IMEI is already in your stock or was sold before.', hi: 'यह IMEI पहले से स्टॉक में है या पहले बिक चुका है।' },
+
+  // ---------- repairs ----------
+  repairJob: { en: 'Repair job', hi: 'मरम्मत का काम' },
+  device: { en: 'Device', hi: 'डिवाइस' },
+  deviceModel: { en: 'Phone model', hi: 'फ़ोन का मॉडल' },
+  problem: { en: 'Problem', hi: 'खराबी' },
+  advance: { en: 'Advance', hi: 'एडवांस' },
+  estimate: { en: 'Estimate', hi: 'अनुमानित कीमत' },
+  finalCharge: { en: 'Final charge', hi: 'आखिरी कीमत' },
+  warrantyDays: { en: 'Warranty (days)', hi: 'वारंटी (दिन)' },
+  statusReceived: { en: 'Received', hi: 'मिला' },
+  statusInRepair: { en: 'In repair', hi: 'मरम्मत चल रही है' },
+  statusReady: { en: 'Ready', hi: 'तैयार' },
+  statusDelivered: { en: 'Delivered', hi: 'दे दिया' },
+  statusCancelled: { en: 'Cancelled', hi: 'रद्द' },
+  partsUsed: { en: 'Parts used', hi: 'इस्तेमाल किए गए पार्ट्स' },
+  addPart: { en: 'Add part', hi: 'पार्ट जोड़ें' },
+  addPayment: { en: 'Add payment', hi: 'भुगतान जोड़ें' },
+  payments: { en: 'Payments', hi: 'भुगतान' },
+  whatsappReady: { en: 'Send "ready" message', hi: '"तैयार है" संदेश भेजें' },
+  newTicket: { en: 'New repair', hi: 'नई मरम्मत' },
+  openJobs: { en: 'Open', hi: 'चालू' },
+  closedJobs: { en: 'Closed', hi: 'बंद' },
+
+  // ---------- stock ----------
+  catalog: { en: 'Catalog', hi: 'सामान की सूची' },
+  units: { en: 'IMEI / serial units', hi: 'IMEI / सीरियल यूनिट' },
+  vendors: { en: 'Vendors', hi: 'विक्रेता' },
+  addItem: { en: 'Add item', hi: 'सामान जोड़ें' },
+  category: { en: 'Category', hi: 'श्रेणी' },
+  catPhoneNew: { en: 'New phone', hi: 'नया फ़ोन' },
+  catPhoneUsed: { en: 'Used phone', hi: 'पुराना फ़ोन' },
+  catAccessory: { en: 'Accessory', hi: 'एक्सेसरी' },
+  catWatch: { en: 'Watch', hi: 'घड़ी' },
+  catEarbuds: { en: 'Earbuds', hi: 'ईयरबड्स' },
+  catHeadphone: { en: 'Headphone', hi: 'हेडफ़ोन' },
+  catCable: { en: 'Cable', hi: 'केबल' },
+  catCharger: { en: 'Charger', hi: 'चार्जर' },
+  catOther: { en: 'Other', hi: 'अन्य' },
+  lowStockAlertAt: { en: 'Low-stock alert at', hi: 'कम स्टॉक की चेतावनी यहां से' },
+  inStock: { en: 'In stock', hi: 'स्टॉक में' },
+  sold: { en: 'Sold', hi: 'बिक गया' },
+  returned: { en: 'Returned', hi: 'वापस आया' },
+  adjustStock: { en: 'Correct stock count', hi: 'स्टॉक गिनती ठीक करें' },
+  stockHistory: { en: 'In / out history', hi: 'अंदर / बाहर का इतिहास' },
+
+  // ---------- dues ----------
+  customerDue: { en: 'Customer owes you', hi: 'ग्राहक से लेना है' },
+  vendorDue: { en: 'You owe vendor', hi: 'विक्रेता को देना है' },
+  settlePayment: { en: 'Record payment', hi: 'भुगतान दर्ज करें' },
+  amount: { en: 'Amount', hi: 'रकम' },
+
+  // ---------- reports ----------
+  revenue: { en: 'Revenue', hi: 'कुल बिक्री' },
+  byStaff: { en: 'By staff', hi: 'स्टाफ़ के हिसाब से' },
+  byItem: { en: 'By item', hi: 'सामान के हिसाब से' },
+  cashInHand: { en: 'Cash in hand', hi: 'हाथ में नकद' },
+  exportData: { en: 'Export all data', hi: 'सारा डेटा निकालें' },
+  activityFeed: { en: 'Staff activity', hi: 'स्टाफ़ की गतिविधि' },
+
+  // ---------- settings ----------
+  shopDetails: { en: 'Shop details', hi: 'दुकान की जानकारी' },
+  shopName: { en: 'Shop name', hi: 'दुकान का नाम' },
+  address: { en: 'Address', hi: 'पता' },
+  billFooter: { en: 'Bill footer message', hi: 'बिल के नीचे का संदेश' },
+  language: { en: 'Language', hi: 'भाषा' },
+  staffSeeRates: { en: 'Staff can see purchase rates', hi: 'स्टाफ़ खरीद भाव देख सकता है' },
+  staff: { en: 'Staff', hi: 'स्टाफ़' },
+  integrityCheck: { en: 'Data health check', hi: 'डेटा जांच' },
+  allGood: { en: 'Everything checks out', hi: 'सब ठीक है' },
+  problemsFound: { en: 'Problems found', hi: 'कुछ गड़बड़ी मिली' },
+
+  // ---------- errors / messages ----------
+  errNotEnabled: { en: 'AUZsMob is not switched on for this business.', hi: 'इस दुकान के लिए AUZsMob अभी चालू नहीं है।' },
+  errNoAccess: { en: 'Your role does not allow this.', hi: 'आपकी भूमिका को इसकी अनुमति नहीं है।' },
+  errOffline: { en: 'You are offline. This will sync once you have internet.', hi: 'आप ऑफ़लाइन हैं। इंटरनेट आने पर यह सिंक हो जाएगा।' },
+  errGeneric: { en: 'Something went wrong. Please try again.', hi: 'कुछ गड़बड़ हुई। फिर कोशिश करें।' },
+  errAlreadySold: { en: 'That unit is no longer available for sale.', hi: 'यह यूनिट अब बिक्री के लिए उपलब्ध नहीं है।' },
+  errNotEnoughStock: { en: 'Not enough stock.', hi: 'पर्याप्त स्टॉक नहीं है।' },
+  errNameRequired: { en: 'Name is required', hi: 'नाम ज़रूरी है' },
+  errAtLeastOneItem: { en: 'Add at least one item', hi: 'कम से कम एक सामान जोड़ें' },
+  confirmVoid: { en: 'This brings the items back into stock. This cannot be undone.', hi: 'इससे सामान वापस स्टॉक में आ जाएगा। इसे वापस नहीं किया जा सकता।' },
+};
+let S_LANG = 'en';
+function setLang(l) { S_LANG = (l === 'hi') ? 'hi' : 'en'; try { localStorage['mob.lang'] = S_LANG; } catch { /* private mode */ } document.documentElement.lang = S_LANG; }
+function t(key, vars) {
+  const row = STR[key];
+  let s = row ? (row[S_LANG] || row.en) : key;
+  if (vars) for (const k in vars) s = s.replace('{' + k + '}', vars[k]);
+  return s;
+}

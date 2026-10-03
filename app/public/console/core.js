@@ -185,7 +185,7 @@ function sideNav(){
    nav.append(h('button',{class:'nb',onclick:()=>{S.open[id]=!open;render()}},ic(n[2]),h('span',{},n[1]),n[4]?h('span',{class:'badge'},n[4]):null,h('span',{class:'chev'+(open?' open':'')},ic('chr',14))),
     h('div',{class:'sub'+(open?' open':'')},...n[3].map(([pid,t])=>h('a',{class:S.page==pid?'on':'',href:'#'+pid,onclick:e=>{e.preventDefault();go(pid)}},t))));return}
   nav.append(h('button',{class:'nb'+(S.page==n[0]?' on':''),onclick:()=>go(n[0])},ic(n[2]),h('span',{},n[1])))});
- const apps=[['payroll','/payroll.html','Payroll','team'],['accounting','/accounts.html','Accounting','fin']].filter(a=>S.features&&S.features[a[0]]===true&&S.enabledFeatures[a[0]]!==false);
+ const apps=[['payroll','/payroll.html','Payroll','team'],['accounting','/accounts.html','Accounting','fin'],['mobile','/mob.html','AUZsMob','box']].filter(a=>S.features&&S.features[a[0]]===true&&S.enabledFeatures[a[0]]!==false);
  if(apps.length){nav.append(h('div',{class:'nav-lbl'},'Other apps'));apps.forEach(a=>nav.append(h('a',{class:'nb',href:a[1]},ic(a[3]),h('span',{},a[2]))))}
  return nav}
 function syncCard(){const ago=S.lastSync?Math.max(0,Math.round((Date.now()-S.lastSync)/60000)):null;

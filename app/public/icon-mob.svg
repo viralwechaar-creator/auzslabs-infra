@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Minimal, same family as AUZslab's other app icons: ink tile, a single white mark, one bright-wine
+       accent detail (the "stepped squares" motif the sibling icons use) -- no literal iconography. -->
+  <rect width="512" height="512" rx="115" fill="#171717"/>
+  <rect x="176" y="96" width="160" height="320" rx="30" fill="#fff"/>
+  <rect x="176" y="96" width="160" height="320" rx="30" fill="none" stroke="#171717" stroke-width="6"/>
+  <rect x="222" y="358" width="68" height="10" rx="5" fill="#171717" opacity=".22"/>
+  <rect x="306" y="356" width="54" height="54" fill="#c2183f"/>
+  <rect x="352" y="302" width="54" height="54" fill="#c2183f"/>
+</svg>

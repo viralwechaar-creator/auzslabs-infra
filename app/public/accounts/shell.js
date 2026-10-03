@@ -181,7 +181,7 @@ function navItem(id, el = 'a') {
   return h('a', { href: '#/' + id, 'data-nav': id, class: 'nav-i', title: p.title }, icon(p.icon, 20), h('span', { class: 'lbl-t' }, p.title));
 }
 function buildShell() {
-  const apps = [['/index.html', 'POS', 'bag', 'pos'], ['/payroll.html', 'Payroll', 'users', 'payroll']].filter((a) => (S.dash.features || {})[a[3]] && (S.dash.enabled_features || {})[a[3]] !== false && ['owner', 'manager'].includes(S.user.role));
+  const apps = [['/index.html', 'POS', 'bag', 'pos'], ['/payroll.html', 'Payroll', 'users', 'payroll'], ['/mob.html', 'AUZsMob', 'box', 'mobile']].filter((a) => (S.dash.features || {})[a[3]] && (S.dash.enabled_features || {})[a[3]] !== false && ['owner', 'manager'].includes(S.user.role));
   const side = h('aside', { class: 'side', 'aria-label': 'Sections' },
     h('div', { class: 'brand' }, h('img', { src: '/icon-accounts.svg', alt: '', width: 30, height: 30 }), h('div', { class: 'lbl-t grow' }, h('b', null, 'Accounting'), h('span', null, S.org.trade_name || S.org.legal_name || S.ctx.tenant.name)),
       h('button', { class: 'side-tg', type: 'button', title: 'Collapse or expand the sidebar', 'aria-label': 'Collapse or expand the sidebar', onclick: toggleSide }, icon('sidebar', 20))),

@@ -11,6 +11,7 @@ const APPS = [
   { name: 'Back Office', host: 'testcafe', path: '/backoffice.html', email: USERS.cafeOwner, ready: '.top-bar h1', fill: 'p', tag: 'button' },
   { name: 'Payroll', host: 'testcafe', path: '/payroll.html', email: USERS.cafeOwner, ready: '.shell', fill: 'btn fill' },
   { name: 'Accounting', host: 'testacct', path: '/accounts.html', email: USERS.acctOwner, ready: '.shell', fill: 'btn fill' },
+  { name: 'AUZsMob', host: 'testmob', path: '/mob.html', email: USERS.mobOwner, ready: '.shell', fill: 'btn fill' },
 ];
 const WIDTHS = [360, 600, 768, 900, 1024, 1200, 1440];
 
