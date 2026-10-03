@@ -28,16 +28,19 @@
   Object.assign(window, { auzTheme, auzThemeGet, auzThemeToggle });
   apply(auzThemeGet());
 
-  // Wires any [data-theme-opt="system|light|dark"] buttons in the nav drawer -- no per-page script needed.
+  // Wires any [data-theme-opt="system|light|dark"] buttons and any [data-theme-toggle] on/off
+  // switches (the header control) -- no per-page script needed.
   function syncUI() {
     const cur = auzThemeGet();
+    const dark = cur === 'dark' || (cur === 'system' && matchMedia('(prefers-color-scheme:dark)').matches);
     document.querySelectorAll('[data-theme-opt]').forEach((b) => b.setAttribute('aria-selected', String(b.getAttribute('data-theme-opt') === cur)));
+    document.querySelectorAll('[data-theme-toggle]').forEach((b) => b.setAttribute('aria-checked', String(dark)));
   }
   document.addEventListener('click', (e) => {
-    const b = e.target.closest('[data-theme-opt]');
-    if (!b) return;
-    auzTheme(b.getAttribute('data-theme-opt'));
-    syncUI();
+    const opt = e.target.closest('[data-theme-opt]');
+    if (opt) { auzTheme(opt.getAttribute('data-theme-opt')); syncUI(); return; }
+    const toggle = e.target.closest('[data-theme-toggle]');
+    if (toggle) { auzThemeToggle(); syncUI(); }
   });
   document.addEventListener('DOMContentLoaded', syncUI);
 })();

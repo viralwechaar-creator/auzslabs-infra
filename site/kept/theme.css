@@ -45,6 +45,10 @@ input,select,textarea{font-size:16px}
   transition:background .15s ease,color .15s ease;
 }
 .hamburger:hover,.hamburger.is-open{background:var(--ink);color:#fff}
+.theme-toggle{flex-shrink:0;width:34px;height:20px;padding:1.5px;box-sizing:border-box;border-radius:999px;border:1.5px solid var(--ink);background:transparent;cursor:pointer;display:inline-flex;align-items:center;transition:background .15s ease}
+.theme-toggle::before{content:'';display:block;width:14px;height:14px;border-radius:50%;background:var(--ink);transition:transform .2s ease}
+.theme-toggle[aria-checked="true"]{background:var(--ink)}
+.theme-toggle[aria-checked="true"]::before{transform:translateX(15px);background:#fff}
 .topbar-logo{order:1}
 
 .topbar-logo img{
