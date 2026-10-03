@@ -71,7 +71,7 @@ export async function build(log = () => {}) {
 
 async function user(c, email, meta = {}) {
   const hash = bcrypt.hashSync(PASSWORD, 4);
-  const { rows } = await c.query('insert into auth_users (email, password_hash, app_metadata) values ($1, $2, $3) on conflict (email) do update set password_hash = excluded.password_hash returning id', [email, hash, meta]);
+  const { rows } = await c.query('insert into auth_users (email, password_hash, app_metadata) values ($1, $2, $3) on conflict (email) where deleted_at is null do update set password_hash = excluded.password_hash returning id', [email, hash, meta]);
   return rows[0].id;
 }
 
