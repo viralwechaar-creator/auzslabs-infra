@@ -33,6 +33,7 @@ function add(e, kids) {
 const clear = (e) => { while (e.firstChild) e.removeChild(e.firstChild); return e; };
 
 const ICONS = {
+  moon: '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/>',
   sidebar: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/>',
   home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h4.5v-5.5h4v5.5h4.5V10"/>',
   users: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c.4-3.2 2.8-5 6-5s5.6 1.8 6 5"/><path d="M16 5a3 3 0 0 1 0 6M18 15c1.8.6 3 2 3.2 5"/>',

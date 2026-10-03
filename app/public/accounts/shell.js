@@ -188,6 +188,7 @@ function buildShell() {
     NAV.map((g) => [g.group ? h('div', { class: 'gh' }, h('span', { class: 'lbl-t' }, g.group)) : null, g.items.map((i) => navItem(i))]),
     apps.length ? [h('div', { class: 'gh' }, h('span', { class: 'lbl-t' }, 'Other apps')), apps.map(([href, t, ic]) => h('a', { href, class: 'nav-i', title: t }, icon(ic, 20), h('span', { class: 'lbl-t' }, t)))] : null,
     h('div', { class: 'foot' }, S.ctx.tenant.is_demo ? h('span', { class: 'badge orange' }, 'Demo data') : null, h('span', null, S.user.email), h('span', null, cap1(S.user.role)),
+      seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v), { full: true }),
       h('div', { class: 'row', style: { gap: '6px', marginTop: '6px' } }, h('button', { class: 'btn sm', type: 'button', onclick: shortcutsSheet }, 'Shortcuts'), h('button', { class: 'btn sm', type: 'button', onclick: signOut }, 'Sign out'))));
   const topbar = h('header', { class: 'topbar', id: 'topbar' }, h('div', { class: 'l', id: 'tb-l' }), h('div', { class: 'tt', id: 'tb-t', 'aria-live': 'polite' }), h('div', { class: 'r', id: 'tb-r' }));
   const tabbar = h('nav', { class: 'tabbar', 'aria-label': 'Main' },
@@ -210,6 +211,7 @@ async function deleteAccountFlow() {
 function moreSheet() {
   const body = h('div', { class: 'grid' }, NAV.filter((g) => g.group).map((g) => h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, g.group)), h('div', { class: 'list' },
     g.items.map((i) => PAGES[i] && (!PAGES[i].perm || can(PAGES[i].perm)) ? liRow({ icon: PAGES[i].icon, title: PAGES[i].title, chevron: true, onclick: () => { s.close(); go(i); } }) : null)))),
+    h('div', { class: 'list' }, liRow({ icon: 'moon', tone: 'gray', title: 'Appearance', badge: seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v)) })),
     h('div', { class: 'list' }, liRow({ icon: 'user', tone: 'gray', title: S.user.email, sub: cap1(S.user.role) + (S.ctx.tenant.is_demo ? ' · demo data' : '') }), liRow({ icon: 'lock', tone: 'gray', title: 'Sign out', onclick: signOut }), liRow({ icon: 'trash', tone: 'red', title: 'Delete my account', onclick: () => { s.close(); deleteAccountFlow(); } })));
   const s = sheet({ title: 'More', closeLabel: 'Done', full: true, body });
 }

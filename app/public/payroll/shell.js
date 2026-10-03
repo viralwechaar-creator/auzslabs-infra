@@ -199,6 +199,7 @@ function buildShell() {
     groups.map((g) => { const items = g.items.map((i) => navItem(i)).filter(Boolean); return items.length ? [g.group ? h('div', { class: 'gh' }, h('span', { class: 'lbl-t' }, g.group)) : null, items] : null; }),
     apps.length ? [h('div', { class: 'gh' }, h('span', { class: 'lbl-t' }, 'Other apps')), apps.map(([href, t, ic]) => h('a', { href, class: 'nav-i', title: t }, icon(ic, 20), h('span', { class: 'lbl-t' }, t)))] : null,
     h('div', { class: 'foot' }, S.ctx.tenant.is_demo ? h('span', { class: 'badge orange' }, 'Demo data') : null, h('span', null, S.user.email), h('span', null, roleLabel()),
+      seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v), { full: true }),
       h('div', { class: 'row', style: { gap: '6px', marginTop: '6px' } }, h('button', { class: 'btn sm', type: 'button', onclick: signOut }, 'Sign out'))));
   const topbar = h('header', { class: 'topbar', id: 'topbar' }, h('div', { class: 'l', id: 'tb-l' }), h('div', { class: 'tt', id: 'tb-t', 'aria-live': 'polite' }), h('div', { class: 'r', id: 'tb-r' }));
   const tabbar = h('nav', { class: 'tabbar', 'aria-label': 'Main' },
@@ -227,6 +228,7 @@ function moreSheet() {
     return items.length ? section(g.group || 'Main', h('div', { class: 'list' }, items.map((i) => liRow({ icon: PAGES[i].icon, title: PAGES[i].title, chevron: true, onclick: () => { s.close(); go(i); } })))) : null;
   }),
     isHR() && can('pay_time') ? h('div', { class: 'list' }, liRow({ icon: 'tablet', title: 'Clock-in kiosk', sub: 'Turn this device into a shared clock-in screen', onclick: () => { s.close(); go('kiosk'); } })) : null,
+    h('div', { class: 'list' }, liRow({ icon: 'moon', tone: 'gray', title: 'Appearance', badge: seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v)) })),
     h('div', { class: 'list' }, liRow({ icon: 'user', tone: 'gray', title: S.user.email, sub: roleLabel() + (S.ctx.tenant.is_demo ? ' · demo data' : '') }), liRow({ icon: 'logout', tone: 'gray', title: 'Sign out', onclick: signOut }), liRow({ icon: 'trash', tone: 'red', title: 'Delete my account', onclick: () => { s.close(); deleteAccountFlow(); } })));
   const s = sheet({ title: 'More', closeLabel: 'Done', body, noFocus: true });
 }

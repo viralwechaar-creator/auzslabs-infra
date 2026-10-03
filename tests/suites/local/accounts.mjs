@@ -297,7 +297,7 @@ export default async function run({ browser, stack }) {
   await s.check('Phone: sign in, tab bar navigation, no horizontal scrolling on the main screens', async () => {
     await ownerLogin(mp, 'testacct'); await mp.waitForSelector('.kpi'); assert(await mp.locator('.tabbar').isVisible() && !(await mp.locator('.side').isVisible()), 'tab bar / sidebar');
     for (const r of ['home', 'sales', 'receipts', 'expenses', 'customers', 'products', 'reports', 'gst', 'settings', 'new/invoice', 'new/expense']) { await mp.evaluate((h) => { location.hash = '#/' + h; }, r); await mp.waitForTimeout(350); const ov = await mp.evaluate(() => document.documentElement.scrollWidth - innerWidth); assert(ov <= 2, r + ' scrolls sideways by ' + ov + 'px'); }
-    await mp.locator('.tabbar button', { hasText: 'Sales' }).click(); await mp.waitForSelector('.seg'); await s.shot(mp, 'phone-sales'); await mp.locator('.tabbar button', { hasText: 'More' }).click(); await mp.waitForSelector('.sheet'); await s.shot(mp, 'phone-more');
+    await mp.locator('.tabbar button', { hasText: 'Sales' }).click(); await mp.waitForSelector('#main .seg'); await s.shot(mp, 'phone-sales'); await mp.locator('.tabbar button', { hasText: 'More' }).click(); await mp.waitForSelector('.sheet'); await s.shot(mp, 'phone-more');
     assert(!merrs.length, merrs.slice(0, 3).join(' | '));
   }, 'critical');
   await s.check('Phone: touch targets are at least 44px and text is at least 12px on the main screens', async () => {
