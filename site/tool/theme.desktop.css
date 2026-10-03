@@ -292,7 +292,7 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
 .nav-link.active{box-shadow:inset -3px 0 0 var(--accent);padding-left:4px;padding-right:14px}
 .content{margin-left:0;margin-right:var(--sidebar-w)}
 .nav-group{position:relative}
-.nav-submenu{display:block;max-height:none;overflow:visible;
+.nav-submenu{display:block;max-height:min(480px,calc(100vh - 40px));overflow-y:auto;overflow-x:hidden;
     position:absolute;left:auto;bottom:auto;top:-10px;right:100%;margin-right:16px;
     width:264px;background:#fff;border:2px solid var(--ink);border-radius:18px;
     padding:14px;box-shadow:10px 10px 0 var(--ink);
