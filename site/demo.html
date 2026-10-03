@@ -183,7 +183,7 @@ function render(ctx) {
     ? "Here's exactly what you picked, walked through one module at a time."
     : "Here's what a business like yours typically runs on AUZslab. Your account manager will confirm the final list with you.";
 
-  const demoSlug = ctx.niche === 'retail' ? 'demo-retail' : ctx.niche === 'salon' ? 'demo-salon' : 'demo-cafe';
+  const demoSlug = ctx.niche === 'salon' ? 'demo-salon' : 'demo';
   const demoUrl = 'https://' + demoSlug + '.auzslab.in' + (ctx.niche === 'salon' ? '/salon/admin/' : '');
   if (ctx.niche === 'salon') document.getElementById('liveDemoExtra').style.display = 'block';
   document.getElementById('liveDemoUrl').textContent = demoUrl;

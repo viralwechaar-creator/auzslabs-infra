@@ -8,7 +8,7 @@ import { DEVICES, layoutIssues } from './lib/common.mjs';
 
 const BASE = (process.env.BASE_URL || 'https://auzslab.in').replace(/\/$/, '');
 const HOST = new URL(BASE).hostname;
-const DEMOS = (process.env.DEMO_TENANTS || 'demo-salon,demo-cafe,demo-retail').split(',').filter(Boolean);
+const DEMOS = (process.env.DEMO_TENANTS || 'demo-salon,demo').split(',').filter(Boolean);
 const SAFE_POST = /\/rpc\/(public_menu|public_page|public_invoice|my_dashboard)\b|\/salon-api\/(slots|site)\b|\/auth\/login\b/;
 reset('live site (read-only)');
 const blocked = [];

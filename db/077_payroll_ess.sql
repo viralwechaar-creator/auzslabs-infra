@@ -781,7 +781,7 @@ end $$;
 
 create function pay_demo_seed(tid uuid) returns void language plpgsql security definer set search_path = public as $$
 declare t tenants; td date; lm text; loc uuid; sh uuid; e record; d date; h int; ins timestamptz; outs timestamptz; tz text; rid uuid; ppl jsonb; st uuid;
-  pl uuid; sl uuid; k int := 0; x record; reg uuid; stylist text;
+  pl uuid; sl uuid; k int := 0; x record; reg text; stylist text;
 begin
   select * into t from tenants where id = tid;
   perform pay_setup_defaults(tid);

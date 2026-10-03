@@ -25,7 +25,7 @@ const DOMAIN = process.env.DOMAIN || '';
 // or office IP within the same 15 minutes is expected traffic, not an
 // attack, so they get their own much looser rate-limit bucket below
 // instead of sharing login's tight one.
-const DEMO_LOGIN_EMAILS = new Set(['demo-cafe@auzslab.in', 'demo-retail@auzslab.in']);
+const DEMO_LOGIN_EMAILS = new Set(['demo@auzslab.in', 'demo-salon@auzslab.in']);
 
 // user.app_metadata.tenant_id/role come from the JWT -- a snapshot from
 // whenever that token was issued. profiles is the actual live source of
