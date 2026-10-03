@@ -191,7 +191,7 @@ function tabsFor() {
 }
 function buildShell() {
   const role = S.user.role;
-  const apps = [['/index.html', 'POS', 'bag', 'pos'], ['/accounts.html', 'Accounting', 'book', 'accounting']].filter((a) => (S.dash.features || {})[a[3]] && (S.dash.enabled_features || {})[a[3]] !== false && ['owner', 'manager'].includes(role));
+  const apps = [['/index.html', 'POS', 'bag', 'pos'], ['/accounts.html', 'Accounting', 'book', 'accounting'], ['/mob.html', 'AUZsMob', 'tablet', 'mobile']].filter((a) => (S.dash.features || {})[a[3]] && (S.dash.enabled_features || {})[a[3]] !== false && ['owner', 'manager'].includes(role));
   const groups = [...(isHR() ? NAV_HR : []), ...(S.ctx.me ? NAV_ME : [])];
   const side = h('aside', { class: 'side', 'aria-label': 'Sections' },
     h('div', { class: 'brand' }, h('img', { src: '/icon-payroll.svg', alt: '', width: 30, height: 30 }), h('div', { class: 'lbl-t grow' }, h('b', null, 'Payroll'), h('span', null, org().display_name || S.ctx.tenant.name)),

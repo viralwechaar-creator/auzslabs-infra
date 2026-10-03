@@ -368,6 +368,30 @@ const RPC = {
   pay_me_tax: { params: [], auth: true },
   pay_me_tax_save: { params: ['p'], jsonb: ['p'], auth: true },
   pay_me_documents: { params: [], auth: true },
+
+  // --- AUZsMob (db/080-082): mobile phone retail & repair shops. Own real tables (mob_*), not the generic
+  // records engine. Every one of these starts with mob_guard()/mob_tenant() in SQL, which re-checks the
+  // 'mobile' entitlement and the caller's permission server side; being listed here only makes it reachable.
+  mob_context: { params: [], auth: true },
+  mob_save_settings: { params: ['p'], jsonb: ['p'], auth: true },
+  mob_save_my_language: { params: ['p_lang'], auth: true },
+  mob_save_item: { params: ['p_id', 'p', 'p_base'], jsonb: ['p'], defaults: { p_base: null }, auth: true },
+  mob_save_vendor: { params: ['p_id', 'p', 'p_base'], jsonb: ['p'], defaults: { p_base: null }, auth: true },
+  mob_save_customer: { params: ['p_id', 'p', 'p_base'], jsonb: ['p'], defaults: { p_base: null }, auth: true },
+  mob_save_unit: { params: ['p_id', 'p', 'p_base'], jsonb: ['p'], defaults: { p_base: null }, auth: true },
+  mob_push_purchase: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
+  mob_push_sale: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
+  mob_void_sale: { params: ['p_sale_id', 'p_reason'], defaults: { p_reason: null }, auth: true },
+  mob_create_repair: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
+  mob_push_repair_event: { params: ['p_id', 'p_repair_id', 'p'], jsonb: ['p'], auth: true },
+  mob_push_payment: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
+  mob_adjust_stock: { params: ['p_id', 'p_item_id', 'p_qty_delta', 'p_note'], defaults: { p_note: null }, auth: true },
+  mob_staff_list: { params: [], auth: true },
+  mob_sync_pull: { params: ['p_since'], defaults: { p_since: null }, auth: true },
+  mob_report_dashboard: { params: ['p_from', 'p_to'], defaults: { p_from: null, p_to: null }, auth: true },
+  mob_report_activity: { params: ['p_from', 'p_to'], defaults: { p_from: null, p_to: null }, auth: true },
+  mob_integrity_check: { params: [], auth: true },
+  mob_export_all: { params: [], auth: true },
 };
 
 class HttpError extends Error {

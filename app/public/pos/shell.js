@@ -36,6 +36,7 @@ function officeLinks() {
     { label: 'Menu', ic: 'book', href: '/dashboard.html#menu/items' },
     featureOn('payroll') ? { label: 'Payroll', ic: 'payroll', href: '/payroll.html' } : null,
     featureOn('accounting') ? { label: 'Accounting', ic: 'ledger', href: '/accounts.html' } : null,
+    featureOn('mobile') ? { label: 'AUZsMob', ic: 'phone', href: '/mob.html' } : null,
   ].filter(Boolean);
 }
 // sidebar width: an icon rail below 1200px wide, the full sidebar above; the toggle remembers the other choice
