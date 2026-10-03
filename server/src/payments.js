@@ -16,10 +16,11 @@ export const razorpayConfigured = () => !!(RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRE
 
 // Every AuzsPOS/AuzsPay/AuzsLedger price on the pricing sheet is quoted "+ GST" (db/072's own
 // comment) but nothing actually charged it until now. 18% is the standard GST rate for software
-// services in India. ₹2,179 is a one-time setup fee, charged once alongside the FIRST payment on
-// a brand-new signup only (never on an addon_request -- an existing tenant was already set up).
-// Both are plain constants, not admin-editable yet (same bar as addon_price_overrides' original
-// seed values) -- revisit if the owner wants to tune them without a deploy.
+// services in India, charged on the subscription only -- the one-time ₹2,179 setup fee is a flat
+// amount with no GST added, charged once alongside the FIRST payment on a brand-new signup only
+// (never on an addon_request -- an existing tenant was already set up). Both are plain constants,
+// not admin-editable yet (same bar as addon_price_overrides' original seed values) -- revisit if
+// the owner wants to tune them without a deploy.
 const GST_RATE = 0.18;
 const SETUP_FEE = 2179;
 
@@ -27,16 +28,16 @@ const SETUP_FEE = 2179;
 const round2 = (n) => Math.round(n * 100) / 100;
 
 // Builds the exact itemized bill for a cart: subscription subtotal (bundle-aware, from
-// priceFeatures), the one-time setup fee (signup only), GST on each, and what's actually due
-// today vs. the recurring monthly amount from month 2. cart.html's own bill preview mirrors this
-// exactly, so what a visitor sees is what Razorpay actually charges -- never a naive sum.
+// priceFeatures), GST on the subscription, the flat one-time setup fee (signup only, no GST on
+// it), and what's actually due today vs. the recurring monthly amount from month 2. cart.html's
+// own bill preview mirrors this exactly, so what a visitor sees is what Razorpay actually
+// charges -- never a naive sum.
 function billFor(subtotal, { isSignup }) {
   const setupFee = isSignup ? SETUP_FEE : 0;
   const subtotalGst = round2(subtotal * GST_RATE);
-  const setupGst = round2(setupFee * GST_RATE);
   const monthlyTotal = round2(subtotal + subtotalGst);
-  const dueToday = round2(subtotal + subtotalGst + setupFee + setupGst);
-  return { subtotal, subtotalGst, setupFee, setupGst, monthlyTotal, dueToday };
+  const dueToday = round2(subtotal + subtotalGst + setupFee);
+  return { subtotal, subtotalGst, setupFee, monthlyTotal, dueToday };
 }
 
 // The publishable half (key_id) is safe to hand to the browser --
@@ -151,12 +152,12 @@ export async function createOrder({ userId, signupRequestId, addonRequestId }) {
   const bill = billFor(subtotal, { isSignup: !!signupRequestId });
 
   const order = await razorpayApi('orders', {
-    amount: Math.round(bill.dueToday * 100), // paise -- subtotal + GST + (signup only) setup fee + its GST
+    amount: Math.round(bill.dueToday * 100), // paise -- subtotal + GST + (signup only) flat setup fee, no GST on the fee
     currency: 'INR',
     receipt,
     notes: {
       signup_request_id: signupRequestId || '', addon_request_id: addonRequestId || '',
-      subtotal: String(bill.subtotal), gst: String(bill.subtotalGst), setup_fee: String(bill.setupFee), setup_fee_gst: String(bill.setupGst),
+      subtotal: String(bill.subtotal), gst: String(bill.subtotalGst), setup_fee: String(bill.setupFee),
     },
   });
 
