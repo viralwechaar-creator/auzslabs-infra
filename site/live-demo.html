@@ -18,7 +18,7 @@
 <link rel="icon" href="/logo.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="theme.css?v=44">
+<link rel="stylesheet" href="theme.css?v=44"><script src="theme.js?v=1"></script>
 <link rel="stylesheet" href="design-system/ui-kit.css?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -94,6 +94,11 @@
       <a href="contact.html" class="nav-link">Contact</a>
     </nav>
     <div class="sidebar-foot">
+      <div class="theme-switch" role="group" aria-label="Appearance">
+        <button type="button" data-theme-opt="system">Auto</button>
+        <button type="button" data-theme-opt="light">Light</button>
+        <button type="button" data-theme-opt="dark">Dark</button>
+      </div>
       <div style="display:flex;gap:10px">
         <a href="signup.html" class="btn btn-ghost" data-signin-link style="flex:1;justify-content:center">Get started</a>
         <button class="btn btn-ghost" data-open-contact style="flex:1;justify-content:center">Let's talk</button>

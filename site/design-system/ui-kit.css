@@ -21,6 +21,20 @@
   --uk-font-body:'Inter',sans-serif;
   --uk-font-mono:'Space Mono',monospace;
 }
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme=light]){
+    --uk-ink:#f2f2f0;--uk-ink-dim:#b8b8b6;--uk-ink-faint:#7a7a78;
+    --uk-bg:#121212;--uk-bg-raised:#1e1e1e;--uk-bg-sunken:#1e1e1e;
+    --uk-line:rgba(255,255,255,.14);--uk-line-soft:rgba(255,255,255,.07);
+    --uk-accent:#a3324f;
+  }
+}
+:root[data-theme=dark]{
+  --uk-ink:#f2f2f0;--uk-ink-dim:#b8b8b6;--uk-ink-faint:#7a7a78;
+  --uk-bg:#121212;--uk-bg-raised:#1e1e1e;--uk-bg-sunken:#1e1e1e;
+  --uk-line:rgba(255,255,255,.14);--uk-line-soft:rgba(255,255,255,.07);
+  --uk-accent:#a3324f;
+}
 .uk-kit,.uk-kit *{box-sizing:border-box}
 .uk-kit{font-family:var(--uk-font-body);color:var(--uk-ink)}
 .uk-kit button{font-family:inherit;-webkit-tap-highlight-color:transparent}

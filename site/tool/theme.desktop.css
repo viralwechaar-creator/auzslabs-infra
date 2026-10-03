@@ -1,5 +1,6 @@
 /* desktop (900px and up). Independent of the mobile file: edit freely. */
 :root{--ink:#171717;
+  --ink-solid:#171717;--ink-dim-solid:#4d4d4d;--ink-faint-solid:#8c8c8c;
   --ink-dim:#4d4d4d;
   --ink-faint:#8c8c8c;
   --bg:#ffffff;
@@ -14,6 +15,22 @@
   --font-mono:'Space Mono',monospace;
   
   --tab-step: clamp(24px, 6.8vw, 55px);}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme=light]){
+    --ink:#f2f2f0;--ink-dim:#b8b8b6;--ink-faint:#7a7a78;
+    --bg:#121212;--bg-raised:#1e1e1e;
+    --line:rgba(255,255,255,.16);--line-soft:rgba(255,255,255,.07);
+    --accent:#a3324f;--success:#3fa968;
+    color-scheme:dark;
+  }
+}
+:root[data-theme=dark]{
+  --ink:#f2f2f0;--ink-dim:#b8b8b6;--ink-faint:#7a7a78;
+  --bg:#121212;--bg-raised:#1e1e1e;
+  --line:rgba(255,255,255,.16);--line-soft:rgba(255,255,255,.07);
+  --accent:#a3324f;--success:#3fa968;
+  color-scheme:dark;
+}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);-webkit-font-smoothing:antialiased}
@@ -30,7 +47,7 @@ input,select,textarea{font-size:16px}
   background:transparent;color:var(--ink);cursor:pointer;
   font-family:var(--font-mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;
   transition:background .15s ease,color .15s ease;}
-.hamburger:hover,.hamburger.is-open{background:var(--ink);color:#fff}
+.hamburger:hover,.hamburger.is-open{background:var(--ink-solid);color:#fff}
 .topbar-logo{order:1}
 .topbar-logo img{max-width:84px;display:block;
   image-rendering:pixelated;image-rendering:-moz-crisp-edges;image-rendering:crisp-edges;}
@@ -90,7 +107,7 @@ input,select,textarea{font-size:16px}
 .sidebar-foot{display:flex;flex-direction:column;gap:14px;margin-top:auto;padding:20px 20px 0;border-top:1px solid rgba(255,255,255,.15)}
 .sidebar-copy{font-family:var(--font-mono);font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.02em}
 .sidebar .btn-ghost{border-color:rgba(255,255,255,.3);color:#fff}
-.sidebar .btn-ghost:hover{background:#fff;color:var(--ink);border-color:#fff}
+.sidebar .btn-ghost:hover{background:#fff;color:var(--ink-solid);border-color:#fff}
 .content{margin-left:0;flex:1;min-width:0;position:relative;z-index:2}
 .wrap{max-width:760px;padding:0 22px}
 .section{padding:44px 0}
@@ -109,19 +126,20 @@ input,select,textarea{font-size:16px}
   font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;text-transform:uppercase;
   border:2px solid var(--ink);cursor:pointer;background:transparent;color:var(--ink);
   transition:transform .2s cubic-bezier(.22,1,.36,1), box-shadow .2s cubic-bezier(.22,1,.36,1), background .2s ease, border-color .2s ease;}
-.btn:hover{background:var(--ink);color:#fff;transform:translateY(-1px)}
+.btn:hover{background:var(--ink-solid);color:#fff;transform:translateY(-1px)}
 .btn-primary{background:var(--accent);color:#fff;border-color:var(--accent);}
 .btn-primary:hover{background:var(--accent);box-shadow:0 8px 24px -6px rgba(128,0,32,.5);transform:translateY(-1px)}
 .btn-ghost{border-color:var(--line);color:var(--ink-dim)}
-.btn-ghost:hover{background:var(--ink);border-color:var(--ink);color:#fff}
-.card{background:#fff;
-  border:2px solid var(--ink);border-radius:26px 12px 26px 12px;padding:22px;
-  box-shadow:5px 5px 0 var(--ink);
+.btn-ghost:hover{background:var(--ink-solid);border-color:var(--ink-solid);color:#fff}
+.card{--ink:var(--ink-solid);--ink-dim:var(--ink-dim-solid);--ink-faint:var(--ink-faint-solid);color:var(--ink-solid);
+  background:#fff;
+  border:2px solid var(--ink-solid);border-radius:26px 12px 26px 12px;padding:22px;
+  box-shadow:5px 5px 0 var(--ink-solid);
   position:relative;overflow:hidden;
   transition:transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s cubic-bezier(.22,1,.36,1);}
 .card:nth-of-type(odd){transform:rotate(-.5deg)}
 .card:nth-of-type(even){transform:rotate(.4deg);border-radius:12px 26px 12px 26px}
-.card:hover{transform:translate(-2px,-2px) rotate(0deg);box-shadow:7px 7px 0 var(--ink)}
+.card:hover{transform:translate(-2px,-2px) rotate(0deg);box-shadow:7px 7px 0 var(--ink-solid)}
 .grid-3{display:grid;grid-template-columns:1fr;gap:12px}
 .work-step{position:relative;overflow:hidden;z-index:0}
 .zigzag{gap:8px}
@@ -132,7 +150,7 @@ input,select,textarea{font-size:16px}
 .grid-2{display:grid;grid-template-columns:1fr;gap:12px}
 .dash{border-top:2px dashed var(--line);margin:0}
 .tag{display:inline-flex;padding:6px 12px;border-radius:999px;border:1.5px solid var(--ink);
-  font-family:var(--font-mono);font-size:10px;color:var(--ink);background:#fff;}
+  font-family:var(--font-mono);font-size:10px;color:var(--ink-solid);background:#fff;}
 .big-numeral{position:absolute;top:2px;right:8px;z-index:-1;
   font-family:var(--font-display);font-weight:700;
   font-size:clamp(56px,16vw,110px);line-height:1;
@@ -179,7 +197,7 @@ input,select,textarea{font-size:16px}
 .doodle-empty{text-align:center;padding:28px 12px}
 .doodle-empty svg{color:var(--ink-faint);animation:doodleFloat 4s ease-in-out infinite}
 .doodle-empty p{margin-top:14px}
-.footer-dark{background:var(--ink);color:rgba(255,255,255,.6);
+.footer-dark{background:var(--ink-solid);color:rgba(255,255,255,.6);
   border-radius:28px 28px 0 0;margin-top:40px;
   padding:32px 0 22px;}
 .footer-top{display:grid;grid-template-columns:1fr 1fr;gap:20px 16px;padding-bottom:22px;border-bottom:1px solid rgba(255,255,255,.14)}
@@ -207,7 +225,7 @@ input,select,textarea{font-size:16px}
   font-family:var(--font-mono);font-size:11px;letter-spacing:.03em;cursor:pointer;
   transition:background .15s ease;}
 .footer-top-btn:hover{background:rgba(255,255,255,.16)}
-.footer-top-icon{width:24px;height:24px;border-radius:999px;background:#fff;color:var(--ink);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.footer-top-icon{width:24px;height:24px;border-radius:999px;background:#fff;color:var(--ink-solid);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .footer-copy{font-family:var(--font-mono);font-size:10px;color:rgba(255,255,255,.35)}
 .knock-btn{position:fixed;right:16px;bottom:16px;z-index:40;
   display:flex;align-items:center;gap:8px;padding:13px 18px;border-radius:999px;
@@ -225,7 +243,7 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
 .modal-close{position:absolute;top:18px;right:18px;width:30px;height:30px;border-radius:999px;
   border:2px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer;
   display:flex;align-items:center;justify-content:center;font-size:14px;}
-.modal-close:hover{background:var(--ink);color:#fff}
+.modal-close:hover{background:var(--ink-solid);color:#fff}
 .field{display:flex;flex-direction:column;gap:5px;margin-top:14px}
 .field label{font-family:var(--font-mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-dim)}
 .field input,.field textarea,.field select{background:var(--bg-raised);border:2px solid var(--ink);border-radius:14px;padding:11px 14px;
@@ -266,8 +284,8 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
 .reveal{opacity:0;transform:translateY(16px);transition:opacity .7s ease, transform .7s ease}
 .reveal.in{opacity:1;transform:translateY(0)}
 .stack-panel.stack-panel-dark{position:sticky;top:112px;z-index:2;min-height:0;
-  background:var(--ink);color:rgba(255,255,255,.6);
-  border-color:var(--ink);padding-top:128px;}
+  background:var(--ink-solid);color:rgba(255,255,255,.6);
+  border-color:var(--ink-solid);padding-top:128px;}
 .stack-panel-dark::before{content:attr(data-tab);
   position:absolute;top:0;left:20px;
   font-family:var(--font-display);font-weight:700;
@@ -294,8 +312,9 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
 .nav-group{position:relative}
 .nav-submenu{display:block;max-height:min(480px,calc(100vh - 40px));overflow-y:auto;overflow-x:hidden;
     position:absolute;left:auto;bottom:auto;top:-10px;right:100%;margin-right:16px;
-    width:264px;background:#fff;border:2px solid var(--ink);border-radius:18px;
-    padding:14px;box-shadow:10px 10px 0 var(--ink);
+    --ink:var(--ink-solid);--ink-dim:var(--ink-dim-solid);--ink-faint:var(--ink-faint-solid);
+    width:264px;background:#fff;border:2px solid var(--ink-solid);border-radius:18px;
+    padding:14px;box-shadow:10px 10px 0 var(--ink-solid);
     opacity:0;pointer-events:none;transform:translateX(10px) scale(.97);transform-origin:top right;
     transition:opacity .18s ease,transform .18s ease;}
 .nav-group:hover .nav-submenu,
@@ -339,7 +358,7 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
 .stack-panel-dark::before{left:56px}
 .mega-logo{padding-left:56px}
 .page-transition{position:fixed;inset:0;z-index:999;pointer-events:none;
-  background:var(--ink);
+  background:var(--ink-solid);
   clip-path:circle(0% at var(--ox,50%) var(--oy,50%));
   
   transition:clip-path .32s cubic-bezier(.4,0,.2,1);}
@@ -350,4 +369,20 @@ html{scroll-behavior:auto}
 .card,.btn,.btn-primary,.knock-btn,.sidebar{transition:none}
 .doodle-arrow,.doodle-sparkle,.doodle-empty svg{animation:none}
 .page-transition{transition:none}
+}
+
+/* ---------- light/dark toggle widget (site/theme.js) ---------- */
+.theme-switch{display:flex;gap:4px;padding:3px;border:2px solid var(--ink);border-radius:999px;margin-bottom:14px}
+.theme-switch button{flex:1;border:none;background:none;font-family:var(--font-display);font-size:12px;font-weight:700;padding:7px 0;border-radius:999px;color:var(--ink-dim);cursor:pointer;transition:background .15s ease,color .15s ease}
+.theme-switch button[aria-selected=true]{background:var(--ink);color:var(--bg)}
+.theme-fab{position:fixed;left:18px;bottom:18px;z-index:30;width:44px;height:44px;border-radius:999px;border:2px solid var(--ink);background:var(--bg);color:var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:4px 4px 0 var(--ink)}
+
+/* the pixel wordmark logo is flat black-on-transparent -- invert it in dark mode so it stays visible */
+:root[data-theme=dark] .topbar-logo img,
+:root[data-theme=dark] .drawer-topbar-logo img,
+:root[data-theme=dark] .hero-art-logo{filter:invert(1)}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme=light]) .topbar-logo img,
+  :root:not([data-theme=light]) .drawer-topbar-logo img,
+  :root:not([data-theme=light]) .hero-art-logo{filter:invert(1)}
 }
