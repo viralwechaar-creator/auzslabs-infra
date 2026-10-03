@@ -298,9 +298,15 @@
       });
     });
 
+    function closeOtherNavGroups(except) {
+      $all('.nav-group-toggle[aria-expanded="true"]').forEach(function (t) {
+        if (t !== except) t.setAttribute('aria-expanded', 'false');
+      });
+    }
     $all('.nav-group-toggle').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var expanded = btn.getAttribute('aria-expanded') === 'true';
+        closeOtherNavGroups(btn);
         btn.setAttribute('aria-expanded', String(!expanded));
       });
     });
@@ -309,6 +315,16 @@
         var toggle = back.closest('.nav-group').querySelector('.nav-group-toggle');
         if (toggle) toggle.setAttribute('aria-expanded', 'false');
       });
+    });
+    // Desktop flyouts (:hover/:focus-within in CSS) stay pinned open via aria-expanded once
+    // clicked, with no way to dismiss one left open except clicking its own toggle again -- which
+    // a second, now-overlapping flyout can cover up entirely. Clicking anywhere outside every
+    // .nav-group, or pressing Escape, always closes all of them.
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('.nav-group')) closeOtherNavGroups(null);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeOtherNavGroups(null);
     });
 
     $all('.section:not(.reveal)').forEach(function (el) {
