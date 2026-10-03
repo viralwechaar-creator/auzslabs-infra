@@ -208,12 +208,14 @@
               <label for="email">Email</label>
               <input id="email" type="email" placeholder="you@business.com" required autocomplete="email">
             </div>
-            <div class="field pw-wrap">
+            <div class="field">
               <label for="password">Password</label>
+              <div class="pw-wrap">
               <input id="password" type="password" placeholder="Enter your password" required minlength="8" autocomplete="new-password">
               <button type="button" class="pw-eye" id="pwEyeToggle" aria-label="Show password">
                 <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
               </button>
+              </div>
             </div>
             <div id="forgotRow" class="auth-forgot" style="display:none">
               <button id="forgotLink" type="button">Forgot password?</button>
