@@ -675,7 +675,7 @@ cursor trail), `fx-phys.js` (draggable bubbles), `fx-ui.js` (pricing stack build
 
 ## Staff apps: Apple HIG layer (`app/public/hig.css`)
 
-Back Office, Payroll and Website Builder link `/hig.css` right after their own inline `<style>` (the POS did too until its rebuild; it now has its own HIG system, see "Restaurant POS rebuild" below). It is a restyle only
+Back Office and Website Builder link `/hig.css` right after their own inline `<style>` (the POS and Payroll did too until their rebuilds; both now have their own HIG system, see "Restaurant POS rebuild" and "AUZslab Payroll v2" below). It is a restyle only
 (no markup or behaviour): system typeface and a real type scale (body 16, nothing under 12), 44pt minimum hit targets on buttons/inputs/tabs,
 segmented-control tabs, grouped rounded cards with hairline separators, a bottom-sheet for `.md` modals on phones, soft spring motion,
 visible focus rings, reduced-motion support. It was built from Apple's Human Interface Guidelines (repo `NutshellEngineering/apple-design-skill`,
@@ -782,7 +782,7 @@ Every `body.fx` page except the homepage loads `hig-site.css` (last in `<head>`)
 - `tools/split-css.mjs` is the one-off splitter (idempotent; skips already-split pages). Only re-run it on a page that still has a combined `<link>`/`<style>`.
 - The service worker precaches `/hig.mobile.css` and `/hig.desktop.css`.
 - Desktop marketing design lives in `site/hig-site.desktop.css` (type scale, three-column card grids, plain pricing cards, larger folder cuts); phone design in `site/hig-site.mobile.css` + `hig-home.mobile.css` (homepage). Product pages' "What's included" lists (`.featsec.orbit .ring`) were hidden on every device by the `.ring` decorative-actor rule in `fx-flow`; both hig-site files now force them visible.
-- Not yet redesigned per device: Back Office, Payroll, Builder and console have separate phone/desktop files but still share today's layout; their desktop-specific design is the next step (screenshot-driven). The POS has its own phone and desktop layouts since its rebuild (`pos.mobile.css` / `pos.desktop.css`).
+- Not yet redesigned per device: Back Office, Builder and console have separate phone/desktop files but still share today's layout; their desktop-specific design is the next step (screenshot-driven). The POS has its own phone and desktop layouts since its rebuild (`pos.mobile.css` / `pos.desktop.css`).
 
 ### Subpage sheets pause and cards float in from the side (phones)
 Owner request: on phones every stacked sheet after the hero is `position:sticky` (`hig-site.mobile.css`) with `top:min(var(--pin), 100lvh - var(--h))`, so the next folder-cut sheet slides up over a paused one (a sheet taller than the screen scrolls until its bottom shows, then pauses). `hig-site.js` `pins()` writes each sheet's `--h` once (load, fonts ready, width change; no scroll listener). Cards (`.sw-card`, marked by `cards()` in `hig-site.js`) float in from alternating sides with a CSS scroll-driven animation (`swIn`, `animation-timeline:view()`, compositor only, skipped under reduced motion). Desktop keeps plain stacked sheets (the fx suite now asserts pinned on phones, not pinned on desktop; the old "never sticky" rule is superseded). If iPhone scrolling shakes again, remove the `position:sticky` rule from `hig-site.mobile.css` and nothing else.
@@ -906,7 +906,7 @@ Full audit, navigation map, layout tiers, the feature-parity register and the kn
   the last colour in `localStorage['auz.brand']`. POS, console, Back Office and Payroll call it from their settings, so a
   business sees the same accent in every app. The design suite asserts this.
 - **Each app maps its own names to the tokens.** POS: none left. Accounting: `--tint` (fill) / `--tint-text` (text, lifted
-  in dark mode). Console: `retoken`ed (no hex colours left in `console/*.css|js` except the logo). Back Office, Payroll,
+  in dark mode). Console: `retoken`ed (no hex colours left in `console/*.css|js` except the logo). Back Office and
   Builder: `ds/legacy.css` (loaded last) maps `--ink`, `--l`, `--g`, `--hig-*` and adds the shared shell. These three are
   `<html data-theme=light>` until their inline colours are retokened.
 - **Layout tiers:** compact < 600, medium 600-899 (tablet split views: the POS shows items and the order side by side),
@@ -917,7 +917,7 @@ Full audit, navigation map, layout tiers, the feature-parity register and the kn
   - POS: Service / More / Back office (deep links to console Overview, Inventory, Reports, Menu, plus Payroll and Accounting).
   - Console: Overview / POS & Orders / Inventory & reports / Manage / Other apps (`['href',...]` NAV entries are plain links).
   - Accounting: Sales / Purchases / Accounts / Financial reports / Inventory / Tools / Other apps.
-  - Payroll: People / Pay / Settings (`PNAV`).
+  - Payroll (v2, `shell.js`): HR `NAV_HR` = Today / People (People, Time, Leave) / Pay (Payroll, Advances and loans, Expense claims, Government dues) / More (Reports, Settings); staff `NAV_ME` = Today, My time, My leave, My pay, Profile, My team.
 - **POS keyboard:** `?` shortcuts, `/` item search, `N` new order, `Alt+1..9` sections.
 - **Tests:** `node tests/run-local.mjs design` (tokens, the same accent across apps, no sideways scroll at 7 widths, tiers,
   dark-mode contrast, 12px text and 44px targets on phones, POS shortcuts). Screenshots of every app at four widths:
@@ -961,16 +961,16 @@ Order of work, with PRs on `main` (all squash-merged; deploy for every one of th
   Full run is about 10 minutes (use `run_in_background` and wait for the notification; do not poll with sleeps). Suites: marketing, responsive, journeys, salon, cafe, pos, apps, accounts, design, security, load.
   Last full run: 560 passed, 0 failed, then design 24/24 and apps 28/28 after the Payroll fix.
 - **Run two suites at once and they fight over the one test database.** Run them one after another.
-- **Staff apps that load hig.css (Back Office, Payroll, Builder) behave differently from POS/Accounting.** Anything global you put in `ds/legacy.css` hits all three; scope with `html.ax-bo` (Back Office) or `html:not(.ax-bo)`.
+- **Staff apps that load hig.css (Back Office, Builder; Payroll until v2) behave differently from POS/Accounting.** Anything global you put in `ds/legacy.css` hits all three; scope with `html.ax-bo` (Back Office) or `html:not(.ax-bo)`.
   `ds/lock.js` selectors: the console has a permanent `#ov` element, so it is matched as `#ov.show` only.
-- **Two staff apps still locked to light appearance** (`data-theme=light`): Back Office, Payroll, Builder, until their inline colours are retokened (listed in `docs/UI_REDESIGN.md`, "Known gaps").
+- **Staff apps still locked to light appearance** (`data-theme=light`): Back Office and Builder (Payroll v2 has dark mode), until their inline colours are retokened (listed in `docs/UI_REDESIGN.md`, "Known gaps").
 - **Never claim an iPhone fix works from a desktop screenshot alone.** State what the tests assert and what only the owner can confirm on the device.
 - **Git:** work on a branch from `origin/main`, commit with the attribution lines the session reminder gives, push, open a PR with the GitHub MCP tools, then squash-merge. The "squash-merge SHA divergence" note above applies to long-lived branches only; fresh
   branches from `origin/main` merge cleanly. A stop-hook asks for committed + pushed work at the end of every turn.
 - **Owner preferences (standing):** build a lot, talk little; one summary at the end; plain language (the owner is not a developer); give copy-paste deploy commands; ask before inventing features; reference screenshots are references, not specs.
 
 ### Open items (nothing blocked on code, all need the owner or a decision)
-- Retoken Back Office / Payroll / Builder inline colours so they can follow dark mode and drop `ds/legacy.css` overrides.
+- Retoken Back Office / Builder inline colours so they can follow dark mode and drop `ds/legacy.css` overrides.
 - Console has no automatic icon rail at 900-1199px; no hinge-aware foldable layouts; no saved views / pinned modules in POS or Accounting.
 - Real-device confirmation of the iPhone fixes above (blank strip, scroll lock, menus). Ask for a new screenshot if anything still looks wrong.
 - From earlier in the project and still open: historical Showoff Salon data import (needs an export from the owner), Zomato/Swiggy API integration, server-side stock ledger and posting POS sales into Accounting (POS_AUDIT backlog), renumber the duplicate db/049 / db/050 files.
@@ -1070,3 +1070,32 @@ Owner request: one single demo account that shows off POS, Payroll and Accountin
 - **A real bug this surfaced, unrelated to the consolidation itself but caught while exercising `pay_demo_seed` for the first time against a tenant that already had legacy-imported employees**: `pay_demo_seed`'s own `reg` variable was declared `uuid` but assigned from `pay_employees.id` (a `text` column, e.g. `'demo-pay-4'`) — a guaranteed crash ("invalid input syntax for type uuid") on every single call, it just happened never to have been exercised in production yet (payroll's demo-reseed only fires lazily, the first time someone with `pay_run` opens Payroll on a demo tenant). Fixed by declaring it `text` to match the column (`reg` was dead code either way — never read after being assigned). **Lesson, same shape as the Razorpay bug found earlier this session: a function that's only ever exercised lazily/on a schedule can ship with a guaranteed crash and nobody notices until something finally calls it for real — test the actual call path, not just that the file parses.**
 - **Verified against a full local scratch-DB rebuild** of the entire migration chain (db/000 through db/078, in order): one `demo` tenant with all three features on and a non-empty catalog/payroll run/accounting books, zero orphaned rows in any table, `demo-retail`/`demo-accounts` and their logins fully gone, `demo-salon` completely untouched.
 - **Deploy:** `git pull`, then `psql ... -v ON_ERROR_STOP=1 < db/078_consolidate_demo_tenant.sql` (after 077). No API rebuild (the function changes are SQL-only); static `site/*.html` changes need no restart either.
+
+### SESSION LOG, continued: Payroll v2 session (PR #120, PR #121)
+
+5. **CLAUDE.md session log (PR #120).** Owner asked for one file describing everything, so a second Claude account can carry on.
+6. **Payroll v2 (PR #121, squash-merged as `d42d327`).** Owner: "Rebuild complete payroll software, Apple design, ultra minimal, easy even for a starter", plus the 106-section AUZsPay HR + payroll specification. Details are in the "AUZslab Payroll v2" section above and `docs/PAYROLL.md`. Summary:
+   - Database `db/073`-`077` (schema, engines, payroll run, API, self-service + kiosk + reports + old-Payroll import + salon/POS hooks + demo). 41 `pay_*` tables, all access through `pay_*` SECURITY DEFINER functions, all registered in `server/src/index.js`.
+   - New app: `app/public/payroll.html` (shell) + `app/public/payroll/` (`core.js`, `shell.js`, `p-home.js`, `p-people.js`, `p-time.js`, `p-pay.js`, `p-reports.js`, `p-settings.js`, `p-me.js`, `payroll.css`/`.mobile.css`/`.desktop.css`). The old single-file Payroll is gone (still in git history).
+   - Console `team/payroll` page now reads `pay_console_summary()`; `site/account.html` `PERM_KEYS` gained the ten `pay_*` keys.
+   - Tests: new suite `node tests/run-local.mjs payroll` (32 checks); `tests/lib/db.mjs` seeds tenant `testpay` with logins `owner-pay@`, `manager-pay@`, `staff-pay@`, `staff2-pay@test.local`; design suite updated for the new layout. Full run after merging main: **596 passed, 0 failed**.
+   - Owner deploy (in this order; 069-072 are the other session's sign-in/payments/sessions/pricing migrations and must go first if not yet applied):
+     ```bash
+     cd auzslabs-infra && git pull origin main && git log -1 --oneline
+     set -a; source .env; set +a
+     for f in db/069_real_auth_providers.sql db/070_razorpay_payments.sql db/071_session_revocation.sql db/072_real_pricing_and_bundles.sql db/073_payroll_schema.sql db/074_payroll_engine.sql db/075_payroll_run.sql db/076_payroll_api.sql db/077_payroll_ess.sql; do docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 < "$f" || break; done
+     docker compose up -d --build api
+     ```
+     Then delete Payroll from the iPhone home screen and add it again. Not yet confirmed by the owner that this deploy was run.
+
+### Lessons from the Payroll v2 session
+- **Two sessions can work on `main` at once.** While Payroll v2 was being built, another session merged sign-in providers, Razorpay, session revocation and pricing (db/069-072). Before opening a PR: `git fetch origin main`, merge it in, and check for **migration number clashes** (`ls db/`). The Payroll files were renumbered from 069-073 to 073-077 for this reason. Pick the next free number at merge time, not at start.
+- **After merging main, run `npm ci` in `server/`** if `server/package.json` changed (the test stack failed to start with `ERR_MODULE_NOT_FOUND: google-auth-library` until it was).
+- **Payroll opens a five-question setup guide on first visit** for an owner whose `pay_org.setup_done` is false. UI tests that tap buttons must close it first (press Escape), or the sheet's scrim swallows the click (this caused two design-suite timeouts).
+- **plpgsql variables must not share a name with a column used in the same statement** (`days` in `pay_leave_decide` made approving leave fail with "column reference is ambiguous"). Prefix variables with `v_`.
+- **Screenshots of real sample data catch what tests miss.** A throwaway script that seeds `testpay` through the RPCs and screenshots key pages at 390 and 1440 px (light and dark) found the overflowing phone action bar, a per-person "month not over" warning on every payslip, empty sections and stretched segmented controls. Delete such scripts before committing.
+
+### Open items after Payroll v2
+- Owner to run the deploy above and send iPhone screenshots of Payroll (owner view and a staff login) for real-device checks.
+- Gratuity and bonus rule values in `pay_stat_rules` have not been re-checked against the current Acts; verify before relying on them. No labour welfare fund rule is seeded for any state (a business adds its own).
+- Not built (needs outside services or an owner decision): filing directly with EPFO/ESIC/TRACES, biometric devices, real background jobs (accrual and demo reset run when someone opens the app), cleaning up old `hr_*` records after the import.
