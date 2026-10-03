@@ -16,6 +16,108 @@
 -- hash as every other demo tenant, db/025_demo_password_reset.sql).
 -- =========================================================
 
+-- Safety net: db/077 (as originally written) had a real bug in
+-- pay_demo_seed -- `reg` was declared uuid but assigned from a text
+-- column, a guaranteed crash on every call. db/077 was fixed in the
+-- same commit as this file, but `create or replace` here too so the
+-- fix lands correctly on a server that already ran the old db/077
+-- (where plain `create function` would just error "already exists" if
+-- re-run) as well as on one that hasn't yet.
+create or replace function pay_demo_seed(tid uuid) returns void language plpgsql security definer set search_path = public as $$
+declare t tenants; td date; lm text; loc uuid; sh uuid; e record; d date; h int; ins timestamptz; outs timestamptz; tz text; rid uuid; ppl jsonb; st uuid;
+  pl uuid; sl uuid; k int := 0; x record; reg text; stylist text;
+begin
+  select * into t from tenants where id = tid;
+  perform pay_setup_defaults(tid);
+  td := pay_today(tid); tz := pay_tz(tid); lm := pay_month_add(pay_month_of(td), -1);
+  update pay_org set legal_name = t.name, display_name = t.name, state_code = '08', city = 'Jodhpur', setup_done = true, stat_mode = 'rules', attendance_mode = 'punch',
+    pf_code = 'RJJOD0012345000', esi_code = '15000123450000999',
+    settings = settings || '{"pf":{"enabled":true},"esi":{"enabled":true},"pt":{"enabled":true},"tds":{"enabled":true},"att":{"geofence":"off"}}'::jsonb
+  where tenant_id = tid;
+  select id into loc from pay_locations where tenant_id = tid and name = 'Main branch';
+  if loc is null then insert into pay_locations (tenant_id, name, state_code, address) values (tid, 'Main branch', '08', 'Sardarpura, Jodhpur') returning id into loc; end if;
+  select id into sh from pay_shifts where tenant_id = tid and name = 'Day';
+  if sh is null then insert into pay_shifts (tenant_id, name, start_time, end_time, break_mins) values (tid, 'Day', '10:00', '19:00', 60) returning id into sh; end if;
+  select id into st from pay_structures where tenant_id = tid and is_default limit 1;
+  select id into pl from pay_leave_types where tenant_id = tid and code = 'PL';
+  select id into sl from pay_leave_types where tenant_id = tid and code = 'SL';
+  ppl := '[{"id":"demo-pay-1","name":"Kavita Rao","code":"E001","designation":"Manager","dept":"Front desk","pay":42000,"g":"female","pan":"ABCPR1234K","uan":"101234567890","joined":-900},
+           {"id":"demo-pay-2","name":"Rahul Verma","code":"E002","designation":"Senior stylist","dept":"Hair","pay":28000,"g":"male","uan":"101234567891","joined":-620},
+           {"id":"demo-pay-3","name":"Neha Joshi","code":"E003","designation":"Stylist","dept":"Hair","pay":18000,"g":"female","joined":-300},
+           {"id":"demo-pay-4","name":"Arjun Singh","code":"E004","designation":"Receptionist","dept":"Front desk","pay":14000,"g":"male","joined":-200},
+           {"id":"demo-pay-5","name":"Imran Khan","code":"E005","designation":"Helper","dept":"Hair","pay":11000,"g":"male","joined":-40}]';
+  for x in select * from jsonb_array_elements(ppl) loop
+    insert into pay_employees (id, tenant_id, code, name, phone, gender, status, joined_on, dob, pan, uan, attendance_mode, source)
+    values (x.value->>'id', tid, x.value->>'code', x.value->>'name', '90000000' || lpad((10 + k)::text, 2, '0'), x.value->>'g', 'active', td + (x.value->>'joined')::int,
+            make_date(1990 + k * 2, 1 + (k * 3) % 12, 5 + k * 4), x.value->>'pan', x.value->>'uan', 'punch', 'demo')
+    on conflict (id) do update set status = 'active', joined_on = excluded.joined_on, last_day = null;
+    insert into pay_jobs (tenant_id, employee_id, eff_from, location_id, department, designation, shift_id, manager_id, reason)
+    values (tid, x.value->>'id', td + (x.value->>'joined')::int, loc, x.value->>'dept', x.value->>'designation', sh, case when x.value->>'id' <> 'demo-pay-1' then 'demo-pay-1' end, 'joining')
+    on conflict do nothing;
+    insert into pay_salaries (tenant_id, employee_id, eff_from, structure_id, amount, ot_rate, reason)
+    values (tid, x.value->>'id', td + (x.value->>'joined')::int, st, (x.value->>'pay')::numeric, round((x.value->>'pay')::numeric / 26 / 8 * 2), 'joining') on conflict do nothing;
+    update pay_salaries set breakup = pay_salary_breakup(tid, s, null) from pay_salaries s where pay_salaries.id = s.id and s.employee_id = x.value->>'id';
+    if k < 3 then
+      insert into pay_bank_accounts (tenant_id, employee_id, mode, holder, bank_name, account_no, ifsc, status)
+      values (tid, x.value->>'id', 'bank', x.value->>'name', 'State Bank of India', '3' || lpad((7812345 + k)::text, 10, '0'), 'SBIN0001234', 'active');
+    end if;
+    k := k + 1;
+  end loop;
+  -- the salon's demo staff login (Priya) is a payroll employee too
+  if t.niche = 'salon' then
+    stylist := salon_hr_ensure(tid, 'Priya', '9000000001', 'Senior hair stylist');
+    update pay_employees set joined_on = least(joined_on, td - 400), gender = 'female', status = 'active', last_day = null where id = stylist;
+    update pay_jobs set eff_from = td - 400, location_id = loc, shift_id = sh, manager_id = 'demo-pay-1' where employee_id = stylist;
+    insert into pay_salaries (tenant_id, employee_id, eff_from, structure_id, amount, ot_rate, reason) values (tid, stylist, td - 400, st, 24000, 180, 'joining') on conflict do nothing;
+    update pay_salaries set breakup = pay_salary_breakup(tid, s, null) from pay_salaries s where pay_salaries.id = s.id and s.employee_id = stylist;
+  end if;
+  perform pay_leave_accrue(tid);
+  -- six weeks of clock-ins: mostly on time, a few late, an absence, a half day, Sundays off
+  for e in select id, joined_on from pay_employees where tenant_id = tid and status = 'active' loop
+    d := greatest(e.joined_on, td - 45);
+    while d < td loop
+      if extract(dow from d) <> 0 then
+        h := abs(hashtext(e.id || d::text)) % 100;
+        if h >= 3 then
+          ins := (d::timestamp + time '09:52' + make_interval(mins => case when h < 12 then 25 + h else h % 9 end)) at time zone tz;
+          outs := case when h between 3 and 5 then ins + interval '4 hours 10 minutes' else (d::timestamp + time '19:00' + make_interval(mins => h % 40)) at time zone tz end;
+          insert into pay_punches (tenant_id, employee_id, at, kind, source) values (tid, e.id, ins, 'in', 'demo'), (tid, e.id, outs, 'out', 'demo');
+        end if;
+      end if;
+      d := d + 1;
+    end loop;
+  end loop;
+  -- today: most people are in
+  for e in select id from pay_employees where tenant_id = tid and status = 'active' and id <> 'demo-pay-4' loop
+    if now() > ((td::timestamp + time '10:05') at time zone tz) then
+      insert into pay_punches (tenant_id, employee_id, at, kind, source) values (tid, e.id, (td::timestamp + time '09:55' + make_interval(mins => abs(hashtext(e.id)) % 20)) at time zone tz, 'in', 'demo');
+    end if;
+  end loop;
+  -- leave: approved last month, one waiting
+  insert into pay_leave_requests (tenant_id, employee_id, leave_type_id, from_date, to_date, days, reason, status, decided_at)
+  values (tid, 'demo-pay-3', pl, pay_month_from(lm) + 9, pay_month_from(lm) + 10, 2, 'Family function', 'approved', now()) returning id into rid;
+  insert into pay_leave_ledger (tenant_id, employee_id, leave_type_id, on_date, kind, days, request_id, note) values (tid, 'demo-pay-3', pl, pay_month_from(lm) + 9, 'opening', 2, rid, 'Sample balance'),
+    (tid, 'demo-pay-3', pl, pay_month_from(lm) + 9, 'debit', -2, rid, 'Leave');
+  insert into pay_leave_requests (tenant_id, employee_id, leave_type_id, from_date, to_date, days, reason, status)
+  values (tid, 'demo-pay-2', sl, td + 3, td + 3, 1, 'Doctor''s appointment', 'pending');
+  select id into reg from pay_employees where id = 'demo-pay-4';
+  insert into pay_regularizations (tenant_id, employee_id, att_date, in_at, out_at, reason)
+  values (tid, 'demo-pay-4', td - 2, ((td - 2)::timestamp + time '10:00') at time zone tz, ((td - 2)::timestamp + time '19:05') at time zone tz, 'Forgot to clock in, phone was charging');
+  -- an advance being recovered, a claim waiting
+  insert into pay_loans (tenant_id, employee_id, kind, amount, emi, start_month, status, reason, disbursed_on, disbursed_via, decided_at)
+  values (tid, 'demo-pay-4', 'advance', 5000, 1000, lm, 'active', 'Rent deposit', pay_month_from(lm) + 2, 'cash', now()) returning id into rid;
+  insert into pay_loan_ledger (tenant_id, loan_id, on_date, kind, amount, note) values (tid, rid, pay_month_from(lm) + 2, 'disburse', 5000, 'Given');
+  insert into pay_claims (tenant_id, employee_id, claim_date, category, amount, description) values (tid, 'demo-pay-2', td - 4, 'Travel', 450, 'Auto fare to the supplier for colour stock');
+  insert into pay_announcements (tenant_id, title, body) values (tid, 'Team meeting on Monday', 'A short meeting at 9:30 before opening. New service menu and the festive rota.');
+  -- last month's payroll, finalised and paid in cash
+  rid := pay_run_create(jsonb_build_object('kind', 'regular', 'month', lm));
+  perform pay_run_calculate(rid);
+  perform pay_run_approve(rid, 'Checked');
+  perform pay_run_finalize(rid);
+  perform pay_batch_create(rid, jsonb_build_object('mode', 'cash', 'mark_paid', true, 'paid_on', least(td, pay_month_to(lm) + 1)::text, 'ref', 'Cash'));
+  update pay_org set settings = settings || jsonb_build_object('_demo_at', now()) where tenant_id = tid;
+end $$;
+
 do $$
 declare
   cafe_tid uuid;
