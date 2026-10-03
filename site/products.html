@@ -199,7 +199,7 @@ html:not(.fx-live):not(.fx-flow) .lab-h,html:not(.fx-live):not(.fx-flow) .lab-le
 
       <div class="nav-group">
         <button class="nav-link nav-group-toggle" aria-expanded="false">
-          <span>Business types <sup class="nav-group-count">(+4)</sup></span>
+          <span>Business types <sup class="nav-group-count">(+5)</sup></span>
           <span class="nav-group-indicator" aria-hidden="true"></span>
         </button>
         <div class="nav-submenu">
@@ -208,6 +208,7 @@ html:not(.fx-live):not(.fx-flow) .lab-h,html:not(.fx-live):not(.fx-flow) .lab-le
             <a href="business-salons.html" class="nav-sublink"><span>Salons</span></a>
             <a href="business-retail.html" class="nav-sublink"><span>Retail &amp; bookstores</span></a>
             <a href="business-clothing.html" class="nav-sublink"><span>Clothing &amp; apparel</span></a>
+            <a href="business-mobile-repair.html" class="nav-sublink"><span>Mobile retail &amp; repair</span></a>
           </div>
         </div>
       </div>
@@ -263,6 +264,7 @@ html:not(.fx-live):not(.fx-flow) .lab-h,html:not(.fx-live):not(.fx-flow) .lab-le
         <a class="bub" href="#slab-payroll" style="--s:13vmin"><svg data-art="payroll" aria-hidden="true"></svg><b>Payroll</b></a>
         <a class="bub" href="#slab-web" style="--s:14.5vmin"><svg data-art="website" aria-hidden="true"></svg><b>Website</b></a>
         <a class="bub" href="#slab-salon" style="--s:12.5vmin"><svg data-art="salon" aria-hidden="true"></svg><b>Salon</b></a>
+        <a class="bub" href="#slab-mobile" style="--s:12.5vmin"><svg data-art="mobile" aria-hidden="true"></svg><b>GSM</b></a>
         <a class="bub dash" href="#slab-custom" style="--s:10.5vmin"><b>+ yours</b></a>
       </div>
       <p class="hand lab-hint">grab one. throw it. tap to jump.</p>
@@ -298,13 +300,16 @@ html:not(.fx-live):not(.fx-flow) .lab-h,html:not(.fx-live):not(.fx-flow) .lab-le
 <section class="slab s-web" id="slab-accounting" data-product="accounting">
 <span class="no" data-par=".12" aria-hidden="true">09</span><div class="blk" data-reveal><div class="eye">09 &middot; Your books</div><h2 class="nm giant" data-split="rise">Accounting</h2><p class="sum">GST invoicing, purchases, stock, bank reconciliation and financial reports on a real double-entry ledger. Every figure drills down to the bill behind it.</p><ul class="feats"><li>CGST, SGST and IGST worked out for you, with input credit and GSTR-2B matching</li><li>One posting updates the ledger, stock and receivables together; posted entries are only ever reversed</li><li>Trial balance, profit and loss, balance sheet and ageing, on your phone or computer</li></ul><div class="acts"><a href="accounting.html" class="btn btn-ghost">Details</a><button class="btn btn-primary" data-cart-btn>Add to cart</button></div></div>
 </section>
+<section class="slab s-salon" id="slab-mobile">
+<div class="band-bg" aria-hidden="true"></div><span class="no" data-par=".12" aria-hidden="true">10</span><div class="blk" data-reveal><div class="eye">10 &middot; For mobile retail &amp; repair shops</div><h2 class="nm giant" data-split="rise">AUZs<br><span class="hand">GSM</span></h2><p class="sum">A standalone app for mobile retail and repair shops: phones tracked by IMEI, accessory stock, a full repair-ticket workflow, and staff sales/work kept private between staff.</p><ul class="feats"><li>Every handset its own IMEI/serial unit, with condition and warranty</li><li>Repair tickets: intake, status, parts used, payment — a real job tracker</li><li>Each staffer sees only their own sales and jobs; the owner sees everyone's</li></ul><div class="acts"><a href="business-mobile-repair.html" class="btn btn-ghost">Details</a><a href="https://gsm.auzslab.in" target="_blank" rel="noopener" class="btn btn-primary">Open AUZsGSM</a></div></div><svg class="art a-scissors" data-art="mobile" data-draw-in data-wob="1" data-par="-.08"></svg>
+</section>
 <section class="slab s-custom" id="slab-custom">
-  <span class="no" data-par=".12" aria-hidden="true">10</span>
+  <span class="no" data-par=".12" aria-hidden="true">11</span>
   <div class="q" aria-hidden="true">?</div>
   <div class="blk" data-reveal>
-    <div class="eye">10 &middot; Beyond these nine &middot; On-demand</div>
+    <div class="eye">11 &middot; Beyond these ten &middot; On-demand</div>
     <h2 class="nm giant" data-split="rise">Custom<br>build</h2>
-    <p class="sum">Need something outside these nine? We design and build custom software for your business.</p>
+    <p class="sum">Need something outside these ten? We design and build custom software for your business.</p>
     <div class="acts"><a href="custom-build.html" class="btn btn-ghost">Details</a><button class="btn btn-primary" data-open-contact>Let's talk</button></div>
   </div>
 </section>
@@ -406,6 +411,7 @@ html:not(.fx-live):not(.fx-flow) .lab-h,html:not(.fx-live):not(.fx-flow) .lab-le
             <option value="cafe">Café, restaurant, bar & more</option>
             <option value="salon">Salon / spa</option>
             <option value="retail">Retail (shoes, clothing, books)</option>
+            <option value="mobile">Mobile retail &amp; repair</option>
             <option value="general">Something else</option>
           </select>
         </div>
