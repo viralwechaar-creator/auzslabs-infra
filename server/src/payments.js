@@ -14,6 +14,31 @@ const RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || '';
 
 export const razorpayConfigured = () => !!(RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET);
 
+// Every AuzsPOS/AuzsPay/AuzsLedger price on the pricing sheet is quoted "+ GST" (db/072's own
+// comment) but nothing actually charged it until now. 18% is the standard GST rate for software
+// services in India. ₹2,179 is a one-time setup fee, charged once alongside the FIRST payment on
+// a brand-new signup only (never on an addon_request -- an existing tenant was already set up).
+// Both are plain constants, not admin-editable yet (same bar as addon_price_overrides' original
+// seed values) -- revisit if the owner wants to tune them without a deploy.
+const GST_RATE = 0.18;
+const SETUP_FEE = 2179;
+
+// Rounds to the paisa (2 decimals), same convention as priceFeatures()'s own total.
+const round2 = (n) => Math.round(n * 100) / 100;
+
+// Builds the exact itemized bill for a cart: subscription subtotal (bundle-aware, from
+// priceFeatures), the one-time setup fee (signup only), GST on each, and what's actually due
+// today vs. the recurring monthly amount from month 2. cart.html's own bill preview mirrors this
+// exactly, so what a visitor sees is what Razorpay actually charges -- never a naive sum.
+function billFor(subtotal, { isSignup }) {
+  const setupFee = isSignup ? SETUP_FEE : 0;
+  const subtotalGst = round2(subtotal * GST_RATE);
+  const setupGst = round2(setupFee * GST_RATE);
+  const monthlyTotal = round2(subtotal + subtotalGst);
+  const dueToday = round2(subtotal + subtotalGst + setupFee + setupGst);
+  return { subtotal, subtotalGst, setupFee, setupGst, monthlyTotal, dueToday };
+}
+
 // The publishable half (key_id) is safe to hand to the browser --
 // Checkout.js needs it to open the payment modal. key_secret and the
 // webhook secret never leave this file.
@@ -121,20 +146,24 @@ export async function createOrder({ userId, signupRequestId, addonRequestId }) {
     receipt = `addon_${addonRequestId}`;
   }
 
-  const amount = await priceFeatures(pool, features, { tenantFeatures });
-  if (amount === null) throw new Error('One or more of these products is not available for online payment yet -- use the request form instead.');
+  const subtotal = await priceFeatures(pool, features, { tenantFeatures });
+  if (subtotal === null) throw new Error('One or more of these products is not available for online payment yet -- use the request form instead.');
+  const bill = billFor(subtotal, { isSignup: !!signupRequestId });
 
   const order = await razorpayApi('orders', {
-    amount: Math.round(amount * 100), // paise
+    amount: Math.round(bill.dueToday * 100), // paise -- subtotal + GST + (signup only) setup fee + its GST
     currency: 'INR',
     receipt,
-    notes: { signup_request_id: signupRequestId || '', addon_request_id: addonRequestId || '' },
+    notes: {
+      signup_request_id: signupRequestId || '', addon_request_id: addonRequestId || '',
+      subtotal: String(bill.subtotal), gst: String(bill.subtotalGst), setup_fee: String(bill.setupFee), setup_fee_gst: String(bill.setupGst),
+    },
   });
 
   await pool.query(
     `insert into payments (razorpay_order_id, user_id, signup_request_id, addon_request_id, amount, status)
      values ($1, $2, $3, $4, $5, 'created')`,
-    [order.id, userId, signupRequestId || null, addonRequestId || null, amount],
+    [order.id, userId, signupRequestId || null, addonRequestId || null, bill.dueToday],
   );
 
   return { orderId: order.id, amount: order.amount, currency: order.currency, keyId: RAZORPAY_KEY_ID };

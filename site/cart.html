@@ -27,6 +27,11 @@
 .cart-item b{font-family:var(--font-display);font-size:15px}
 .cart-item .price{font-size:13px;color:var(--ink-faint);margin-left:10px;white-space:nowrap}
 .cart-total{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;font-family:var(--font-display);font-size:16px;margin-bottom:14px}
+.bill-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:5px 16px;font-size:13.5px;color:var(--ink-faint)}
+.bill-row b{color:var(--ink);font-weight:600}
+.bill-row i{font-style:normal;font-size:11px}
+.bundle-note{display:flex;align-items:center;gap:8px;padding:8px 16px 12px;font-size:12.5px;color:var(--accent);font-weight:600}
+.bundle-note .tag{background:var(--accent);color:#fff;font-size:10px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:3px 8px;border-radius:999px;white-space:nowrap}
 .pay-note{font-size:12.5px;color:var(--ink-faint);margin-top:8px}
 .paying-overlay{position:fixed;inset:0;background:rgba(255,255,255,.92);display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;z-index:999;text-align:center;padding:24px}
 .paying-overlay.open{display:flex}
@@ -80,7 +85,11 @@
             <textarea id="addonNotes" placeholder="When you'd like this live, number of staff who'll use it, etc. (optional)"></textarea>
           </div>
           <div id="addonPayTotalWrap" class="card" style="display:none;margin-top:8px">
-            <div class="cart-total"><span>Total</span><b id="addonPayTotalAmount"></b></div>
+            <div id="addonBundleNote" style="display:none"></div>
+            <div class="bill-row"><span>Subscription</span><b id="addonBillSubtotal"></b></div>
+            <div class="bill-row"><span>GST (18%)</span><b id="addonBillGst"></b></div>
+            <div class="cart-total" style="border-top:2px solid var(--ink);margin-top:6px;padding-top:12px"><span>Due today</span><b id="addonPayTotalAmount"></b></div>
+            <p class="pay-note" style="margin-top:0">No setup fee -- your account is already set up. This is the recurring monthly amount, charged from today.</p>
           </div>
           <button id="addonPayBtn" class="btn btn-primary form-submit" style="display:none">Pay &amp; activate instantly</button>
           <p id="addonPayNote" class="pay-note" style="display:none">Card, UPI or netbanking -- these go live the moment payment is confirmed.</p>
@@ -130,10 +139,17 @@
             <textarea id="bizNotes" placeholder="Current billing software, number of outlets, etc. (optional)"></textarea>
           </div>
           <div id="payTotalWrap" class="card" style="display:none;margin-top:8px">
-            <div class="cart-total"><span>Total</span><b id="payTotalAmount"></b></div>
+            <div id="payBundleNote" style="display:none"></div>
+            <div class="bill-row"><span>Subscription</span><b id="payBillSubtotal"></b></div>
+            <div class="bill-row"><span>GST (18%)</span><b id="payBillGst"></b></div>
+            <div class="bill-row"><span>One-time setup fee <i>(mandatory)</i></span><b id="payBillSetup"></b></div>
+            <div class="bill-row"><span>GST on setup fee (18%)</span><b id="payBillSetupGst"></b></div>
+            <div class="cart-total" style="border-top:2px solid var(--ink);margin-top:6px;padding-top:12px"><span>Due today</span><b id="payTotalAmount"></b></div>
+            <p class="pay-note" id="payThenNote" style="margin-top:0"></p>
           </div>
           <button id="payBtn" class="btn btn-primary form-submit" style="display:none">Pay &amp; activate instantly</button>
           <p id="payNote" class="pay-note" style="display:none">Card, UPI or netbanking -- your account goes live the moment payment is confirmed, no waiting for review.</p>
+          <p class="pay-note">A one-time setup fee of ₹2,179 + 18% GST is mandatory for every new AUZslab account, collected together with your first month's payment.</p>
           <button id="submitBtn" class="btn btn-primary form-submit">Send to AUZslab</button>
           <div id="submitErr" class="err"></div>
         </div>
@@ -173,6 +189,22 @@ function slugify(s) {
 
 function inr(n) {
   return '₹' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+}
+
+// Mirrors payments.js's billFor() exactly (db/072 pricing + the GST/setup-fee pass) so this
+// preview is what Razorpay will actually charge, never a naive guess. 18% GST, same rate on
+// every line; the one-time ₹2,179 setup fee only ever applies to a brand-new signup, never to
+// an addon purchase on an existing (already set up) tenant.
+const GST_RATE = 0.18;
+const SETUP_FEE = 2179;
+const round2 = (n) => Math.round(n * 100) / 100;
+function billFor(subtotal, isSignup) {
+  const setupFee = isSignup ? SETUP_FEE : 0;
+  const subtotalGst = round2(subtotal * GST_RATE);
+  const setupGst = round2(setupFee * GST_RATE);
+  const dueToday = round2(subtotal + subtotalGst + setupFee + setupGst);
+  const monthlyTotal = round2(subtotal + subtotalGst);
+  return { subtotal, subtotalGst, setupFee, setupGst, dueToday, monthlyTotal };
 }
 
 // Prices + whether online checkout is even possible -- both start empty/off
@@ -232,6 +264,21 @@ function priceTotal(keys, tenantFeatures) {
   return total;
 }
 
+// Whichever products are in the cart right now, regardless of the order they were added in --
+// AUZcart.get() just returns the current set, and the sorted-key match above doesn't care about
+// order either. Returns {label, savings} when the exact combination matches a bundle, else null,
+// so the UI can actually show "Growing bundle applied" instead of a silently lower number.
+function matchedBundleNote(keys) {
+  if (keys.length < 2) return null;
+  const sortedKeys = keys.slice().sort().join(',');
+  const bundle = BUNDLES.find((b) => b.feature_keys.slice().sort().join(',') === sortedKeys);
+  if (!bundle) return null;
+  let naiveSum = 0;
+  for (const k of keys) { const p = PRICES.get(k); if (!p) return null; naiveSum += p; }
+  const savings = naiveSum - Number(bundle.monthly_price);
+  return { label: bundle.label, savings };
+}
+
 function renderCart() {
   const items = AUZcart.get();
   const el = document.getElementById('cartItems');
@@ -270,19 +317,42 @@ function renderCart() {
 // (unchanged) is all either section shows.
 function updatePayButtons() {
   const items = AUZcart.get();
-  const total = PAY.enabled ? priceTotal(items) : null;
+  const subtotal = PAY.enabled ? priceTotal(items) : null;
+  const total = subtotal !== null ? billFor(subtotal, true) : null;
   document.getElementById('payTotalWrap').style.display = total !== null ? 'block' : 'none';
   document.getElementById('payBtn').style.display = total !== null ? 'block' : 'none';
   document.getElementById('payNote').style.display = total !== null ? 'block' : 'none';
-  if (total !== null) document.getElementById('payTotalAmount').textContent = inr(total) + '/mo';
+  if (total !== null) {
+    const bundle = matchedBundleNote(items);
+    const bundleNoteEl = document.getElementById('payBundleNote');
+    bundleNoteEl.style.display = bundle ? 'flex' : 'none';
+    bundleNoteEl.className = 'bundle-note';
+    if (bundle) bundleNoteEl.innerHTML = `<span class="tag">Bundle applied</span><span>${bundle.label} -- you're saving ${inr(bundle.savings)}/mo vs. buying separately.</span>`;
+    document.getElementById('payBillSubtotal').textContent = inr(total.subtotal) + '/mo';
+    document.getElementById('payBillGst').textContent = inr(total.subtotalGst);
+    document.getElementById('payBillSetup').textContent = inr(total.setupFee);
+    document.getElementById('payBillSetupGst').textContent = inr(total.setupGst);
+    document.getElementById('payTotalAmount').textContent = inr(total.dueToday);
+    document.getElementById('payThenNote').textContent = 'Then ' + inr(total.monthlyTotal) + '/mo from month 2 (no setup fee again).';
+  }
 
   const entitled = (DASH && DASH.features) || {};
   const requestable = items.filter((k) => entitled[k] !== true);
-  const addonTotal = PAY.enabled ? priceTotal(requestable, entitled) : null;
+  const addonSubtotal = PAY.enabled ? priceTotal(requestable, entitled) : null;
+  const addonTotal = addonSubtotal !== null ? billFor(addonSubtotal, false) : null;
   document.getElementById('addonPayTotalWrap').style.display = addonTotal !== null ? 'block' : 'none';
   document.getElementById('addonPayBtn').style.display = addonTotal !== null ? 'block' : 'none';
   document.getElementById('addonPayNote').style.display = addonTotal !== null ? 'block' : 'none';
-  if (addonTotal !== null) document.getElementById('addonPayTotalAmount').textContent = inr(addonTotal) + '/mo';
+  if (addonTotal !== null) {
+    const addonBundle = matchedBundleNote(requestable);
+    const addonBundleNoteEl = document.getElementById('addonBundleNote');
+    addonBundleNoteEl.style.display = addonBundle ? 'flex' : 'none';
+    addonBundleNoteEl.className = 'bundle-note';
+    if (addonBundle) addonBundleNoteEl.innerHTML = `<span class="tag">Bundle applied</span><span>${addonBundle.label} -- you're saving ${inr(addonBundle.savings)}/mo vs. buying separately.</span>`;
+    document.getElementById('addonBillSubtotal').textContent = inr(addonTotal.subtotal) + '/mo';
+    document.getElementById('addonBillGst').textContent = inr(addonTotal.subtotalGst);
+    document.getElementById('addonPayTotalAmount').textContent = inr(addonTotal.dueToday);
+  }
 }
 
 let DASH = null;
