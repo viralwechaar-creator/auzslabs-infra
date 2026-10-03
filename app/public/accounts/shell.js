@@ -211,7 +211,7 @@ function moreSheet() {
   const body = h('div', { class: 'grid' }, NAV.filter((g) => g.group).map((g) => h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, g.group)), h('div', { class: 'list' },
     g.items.map((i) => PAGES[i] && (!PAGES[i].perm || can(PAGES[i].perm)) ? liRow({ icon: PAGES[i].icon, title: PAGES[i].title, chevron: true, onclick: () => { s.close(); go(i); } }) : null)))),
     h('div', { class: 'list' }, liRow({ icon: 'user', tone: 'gray', title: S.user.email, sub: cap1(S.user.role) + (S.ctx.tenant.is_demo ? ' · demo data' : '') }), liRow({ icon: 'lock', tone: 'gray', title: 'Sign out', onclick: signOut }), liRow({ icon: 'trash', tone: 'red', title: 'Delete my account', onclick: () => { s.close(); deleteAccountFlow(); } })));
-  const s = sheet({ title: 'More', closeLabel: 'Done', body });
+  const s = sheet({ title: 'More', closeLabel: 'Done', full: true, body });
 }
 function shortcutsSheet() {
   const rows = [['Search everything', '⌘K  or  Ctrl K  or  /'], ['New invoice', 'N then I'], ['New bill', 'N then B'], ['Save a draft (in a document)', '⌘S  or  Ctrl S'], ['Post a document', '⌘↵  or  Ctrl Enter'], ['Add a line (in a document)', 'Enter in the last cell'], ['Close a sheet', 'Esc']];
