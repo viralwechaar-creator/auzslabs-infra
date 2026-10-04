@@ -67,3 +67,33 @@ export async function sendPasswordResetEmail({ to, resetLink }) {
 function escapeHtml(s) {
   return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
+
+export function mailConfigured() { return !!RESEND_API_KEY; }
+
+// Same shape and quiet-failure behaviour as the other senders. Sent by /auth/signup and /auth/resend-verification.
+export async function sendEmailVerification({ to, verifyLink }) {
+  if (!RESEND_API_KEY) {
+    console.warn('RESEND_API_KEY not set -- skipping verification email to', to);
+    return { sent: false, reason: 'email sending is not configured yet' };
+  }
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${RESEND_API_KEY}` },
+    body: JSON.stringify({
+      from: MAIL_FROM,
+      to: [to],
+      subject: 'Confirm your email for AUZslab',
+      html: `<p>Welcome to AUZslab.</p>
+<p>Please confirm this is your email address:</p>
+<p><a href="${verifyLink}">Confirm my email</a></p>
+<p style="color:#666;font-size:13px">Or copy this link into your browser:<br>${verifyLink}</p>
+<p style="color:#666;font-size:13px">This link expires in 24 hours. If you didn't create an AUZslab account, you can ignore this email.</p>`,
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    console.warn('Resend send failed', res.status, body);
+    return { sent: false, reason: 'the email could not be sent' };
+  }
+  return { sent: true };
+}
