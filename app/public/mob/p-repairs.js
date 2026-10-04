@@ -20,13 +20,18 @@ async function renderRepairs(v) {
   const withStatus = mine.map((r) => ({ ...r, _status: latestStatus(r.id, events) })).sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
   const open = withStatus.filter((r) => !['delivered', 'cancelled'].includes(r._status));
   const closed = withStatus.filter((r) => ['delivered', 'cancelled'].includes(r._status));
-  const cols = [{ key: 'dev', title: true, label: '', render: (r) => deviceLabel(r) }, { key: 'cust', sub: true, label: '', render: (r) => r.customer_name || '' }, { key: 'st', badge: true, label: '', render: (r) => badge(t('status' + cap1(r._status))) }];
+  const cols = [{ key: 'dev', title: true, label: '', render: (r) => deviceLabel(r) }, { key: 'cust', sub: true, label: '', render: (r) => r.customer_name || '' }, { key: 'st', badge: true, label: '', render: (r) => badge(statusLabel(r._status)) }];
   add(v.root, [
     section(t('openJobs'), dataView(cols, open, { onRow: (r) => go('repairs/' + r.id), emptyText: t('noneYet') })),
     closed.length ? section(t('closedJobs'), dataView(cols, closed.slice(0, 20), { onRow: (r) => go('repairs/' + r.id) })) : null,
   ]);
 }
 function cap1(s) { return String(s || '').replace(/^./, (c) => c.toUpperCase()); }
+// statuses are snake_case ('in_repair') but the i18n dict keys are camelCase ('statusInRepair') --
+// cap1() alone only capitalizes the first letter, leaving the underscore in, so 'status' + cap1('in_repair')
+// built the key 'statusIn_repair', which isn't in STR and fell back to printing that raw key on screen.
+const STATUS_KEY = { received: 'statusReceived', in_repair: 'statusInRepair', ready: 'statusReady', delivered: 'statusDelivered', cancelled: 'statusCancelled' };
+function statusLabel(st) { return t(STATUS_KEY[st] || st); }
 
 async function renderRepairDetail(v, id) {
   const [repairs, events] = await Promise.all([idbGetAll('repairs'), idbGetAll('repairEvents')]);
@@ -44,8 +49,8 @@ async function renderRepairDetail(v, id) {
   ] : [] });
 
   add(v.root, [
-    h('div', { class: 'row sp' }, badge(t('status' + cap1(status))), h('span', { class: 'muted small' }, fmtDT(r.created_at))),
-    canAct ? h('div', { class: 'seg full', style: { marginTop: '10px' } }, ...['received', 'in_repair', 'ready', 'delivered', 'cancelled'].map((st) => h('button', { type: 'button', 'aria-selected': String(st === status), onclick: () => pushStatus(id, st, v) }, t('status' + cap1(st))))) : null,
+    h('div', { class: 'row sp' }, badge(statusLabel(status)), h('span', { class: 'muted small' }, fmtDT(r.created_at))),
+    canAct ? h('div', { class: 'seg full', style: { marginTop: '10px' } }, ...['received', 'in_repair', 'ready', 'delivered', 'cancelled'].map((st) => h('button', { type: 'button', 'aria-selected': String(st === status), onclick: () => pushStatus(id, st, v) }, statusLabel(st)))) : null,
     section(t('customer'), h('div', { class: 'card' }, h('div', null, r.customer_name || '—'), h('div', { class: 'muted small' }, r.customer_phone))),
     section(t('problem'), h('div', { class: 'card' }, r.problem || '—')),
     parts.length ? section(t('partsUsed'), h('div', { class: 'list' }, parts.map((p) => liRow({ icon: 'box', title: itemNameSync(p.item_id), sub: t('qty') + ' ' + p.qty, value: money(p.cost * p.qty) })))) : null,

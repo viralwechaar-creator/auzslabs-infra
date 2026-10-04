@@ -65,6 +65,7 @@ const ICONS = {
   refresh: '<path d="M20 11a8 8 0 0 0-14-4M4 4v4h4M4 13a8 8 0 0 0 14 4M20 20v-4h-4"/>',
   cloudOff: '<path d="M3 3l18 18"/><path d="M17.5 17H6a4 4 0 0 1-1-7.87M9.3 7.3A5.5 5.5 0 0 1 19 10.5a4 4 0 0 1 1.3 7"/>',
   cloudCheck: '<path d="M7 17a4 4 0 0 1 0-8 5.5 5.5 0 0 1 10.8-1.2A4 4 0 0 1 17 17H7Z"/><path d="M9.5 13l2 2 3.5-3.5"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
 };
 function icon(name, size = 22) {
   const s = document.createElement('span');

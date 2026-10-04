@@ -85,6 +85,14 @@ button.li,a.li{color:inherit;cursor:pointer}button.li:active,a.li:active{backgro
 .tile{width:32px;height:32px;border-radius:8px;display:grid;place-content:center;background:var(--tint);color:var(--tint-fg);flex:none}
 .tile.gray{background:var(--fill2);color:var(--label2)}.tile.green{background:var(--green);color:#fff}.tile.blue{background:var(--blue);color:#fff}.tile.orange{background:var(--orange);color:#fff}
 
+/* staff ledger cards */
+.ledger-card{display:grid;gap:10px;text-align:left;width:100%;cursor:pointer}
+.ledger-card .t{font-size:16px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ledger-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.ledger-grid .v{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:1px}
+.ledger-grid .v.up{color:var(--green)}.ledger-grid .v.down{color:var(--red)}
+@media (max-width:420px){.ledger-grid{grid-template-columns:repeat(2,1fr);row-gap:12px}}
+
 /* kpi */
 .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
 .kpi{background:var(--card);border-radius:var(--r-lg);padding:14px 16px;box-shadow:0 0 0 .5px var(--sep);display:grid;gap:3px;text-align:left;min-width:0}
