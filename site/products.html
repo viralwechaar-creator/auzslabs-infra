@@ -47,9 +47,11 @@
 .bub:hover{background:var(--hl)}
 .bub.grab{cursor:grabbing;box-shadow:10px 10px 0 var(--accent)}
 .bub.dash{border-style:dashed;border-color:var(--accent);box-shadow:none;background:transparent;color:var(--accent)}
-html:not(.fx-live):not(.fx-flow) .bubbles{position:static;display:flex;flex-wrap:wrap;gap:14px;padding:30vh 5vw 40px}
-html:not(.fx-live):not(.fx-flow) .bub{position:static}
-html:not(.fx-live):not(.fx-flow) .lab-h,html:not(.fx-live):not(.fx-flow) .lab-lede{position:static;padding:90px 5vw 0}
+html:not(.fx-live) .bubbles{position:static;display:flex;flex-wrap:wrap;gap:14px;padding:6vh 5vw 40px}
+html:not(.fx-live) .bub{position:static}
+html:not(.fx-live) .lab-h,html:not(.fx-live) .lab-lede{position:static;padding:90px 5vw 0}
+html:not(.fx-live) .lab{min-height:0;height:auto}
+html:not(.fx-live) .lab-hint{position:static;padding:3vh 5vw 5vh;transform:none}
 .lab-hint{position:absolute;left:5vw;bottom:5vh;font-size:clamp(22px,2.6vw,42px);z-index:2;transform:rotate(-3deg)}
 
 .band{background:var(--ink);color:#f6f4f1;padding:1.1em 0;font:900 clamp(22px,4vw,64px)/1 var(--font-display);letter-spacing:-.04em;text-transform:uppercase;transform:rotate(-1.6deg);margin:5vh -3vw;position:relative;z-index:4}
