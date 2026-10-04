@@ -30,7 +30,7 @@ body.admin-shell{display:flex;flex-direction:column;background:var(--bg)}
 .a-shell{display:flex;flex-direction:column;height:100dvh;overflow:hidden}
 .a-topbar{flex:none;display:flex;align-items:center;gap:10px;height:44px;padding:0 14px;padding-top:env(safe-area-inset-top);border-bottom:1px solid var(--line);background:var(--bg);position:relative;z-index:5}
 .a-topbar-back{display:flex;align-items:center;gap:2px;background:none;border:none;color:var(--accent);font:600 15px var(--font-body);padding:6px 2px 6px 0;margin-left:-4px;cursor:pointer}
-.a-topbar-title{font:700 16px var(--font-display);letter-spacing:-.01em;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.a-topbar-title{margin:0;font:700 16px var(--font-display);letter-spacing:-.01em;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .a-topbar-actions{display:flex;align-items:center;gap:8px;flex:none}
 .a-iconbtn{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;background:none;border:none;color:var(--ink);border-radius:999px;cursor:pointer}
 .a-iconbtn:hover{background:var(--bg-raised)}
@@ -123,7 +123,7 @@ body.admin-shell .field:first-child{margin-top:0}
     <button type="button" class="a-topbar-back" id="aBack" style="display:none" aria-label="Back">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>More
     </button>
-    <div class="a-topbar-title" id="pageTitle">Admin</div>
+    <h1 class="a-topbar-title" id="pageTitle">Admin</h1>
     <div class="a-topbar-actions">
       <button type="button" class="theme-toggle" data-theme-toggle role="switch" aria-checked="false" aria-label="Dark mode"></button>
       <button class="a-iconbtn" id="signOutBtn" aria-label="Sign out" style="display:none">
