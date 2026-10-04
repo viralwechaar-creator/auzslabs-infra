@@ -1,7 +1,7 @@
 /* phone + tablet portrait (0-899px). Independent of the desktop file: edit freely. */
 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&display=swap');
 :root{--paper:#f6f4f1;
-  --pencil:rgba(23,23,23,.055);
+  --pencil:rgba(46,44,42,.055);
   --hand:'Caveat','Bradley Hand','Segoe Script',cursive;
   --ease-out:cubic-bezier(.22,1,.36,1);
   --ease-spring:cubic-bezier(.34,1.56,.64,1);}
@@ -22,7 +22,7 @@ body{overflow-x:clip}
 .card:nth-of-type(even){--r:.4deg;transform:perspective(900px) rotate(var(--r)) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translate3d(var(--tx,0),var(--ty,0),0)}
 .card:hover,.card:nth-of-type(odd):hover,.card:nth-of-type(even):hover{--r:0deg;--tx:-2px;--ty:-2px;
   transform:perspective(900px) rotate(0deg) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translate3d(-2px,-2px,0)}
-.card::before,.btn::before,.tag::before{content:"";position:absolute;inset:-1px;border:2px solid var(--ink);border-radius:inherit;
+.card::before,.btn::before,.tag::before{content:"";position:absolute;inset:-1px;border:1px solid var(--ink);border-radius:inherit;
   filter:url(#sk-rough);pointer-events:none;z-index:3;}
 .card::before{inset:2px}
 .btn,.tag{position:relative}
@@ -69,8 +69,8 @@ body{overflow-x:clip}
 .sk-cube{position:absolute;inset:0;transform-style:preserve-3d;animation:sk-spin 7s linear infinite}
 .sk-cube.in{inset:40px;animation:sk-spin-rev 5s linear infinite}
 .sk-f{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  border:2px solid var(--ink);background-color:rgba(255,255,255,.6);
-  background-image:repeating-linear-gradient(135deg,transparent 0 7px,rgba(23,23,23,.09) 7px 8px);
+  border:1px solid var(--ink);background-color:rgba(255,255,255,.6);
+  background-image:repeating-linear-gradient(135deg,transparent 0 7px,rgba(46,44,42,.09) 7px 8px);
   font-family:var(--font-mono);font-size:15px;font-weight:700;letter-spacing:.12em;
   backface-visibility:visible;}
 .sk-cube .sk-f:nth-child(1){transform:translateZ(75px)}
@@ -90,7 +90,7 @@ body{overflow-x:clip}
 @keyframes sk-spin{from{transform:rotateX(-24deg) rotateY(0deg)}to{transform:rotateX(-24deg) rotateY(360deg)}}
 @keyframes sk-spin-rev{from{transform:rotateX(18deg) rotateY(360deg) rotateZ(10deg)}to{transform:rotateX(18deg) rotateY(0deg) rotateZ(10deg)}}
 .sk-shadow{position:absolute;left:50%;bottom:-34px;width:120px;height:18px;margin-left:-60px;border-radius:50%;
-  background:radial-gradient(closest-side,rgba(23,23,23,.28),transparent);animation:sk-shadow 3.5s ease-in-out infinite}
+  background:radial-gradient(closest-side,rgba(46,44,42,.28),transparent);animation:sk-shadow 3.5s ease-in-out infinite}
 @keyframes sk-shadow{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(.82);opacity:.6}}
 .sk-brand{font-family:var(--font-display);font-weight:700;font-size:22px;letter-spacing:-.01em;text-align:center}
 .sk-line{font-family:var(--hand);font-weight:700;font-size:24px;color:var(--accent);margin-top:2px;text-align:center}

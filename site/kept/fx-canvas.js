@@ -20,7 +20,7 @@
     x.font = '900 ' + fs + 'px ' + FONT;
     wmax = 0; lines.forEach(function (l) { wmax = Math.max(wmax, x.measureText(l).width); });
     if (wmax > W * .97) fs *= W * .97 / wmax;
-    x.font = '900 ' + fs + 'px ' + FONT; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#000';
+    x.font = '900 ' + fs + 'px ' + FONT; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#2e2c2a';
     lines.forEach(function (l, li) { x.fillText(l, W / 2, H / 2 + (li - (lines.length - 1) / 2) * fs * .98 + fs * .04); });
     var d = x.getImageData(0, 0, W, H).data, st = 2, edge = [], inner = [], px, py;
     function on(a, b) { return a >= 0 && b >= 0 && a < W && b < H && d[(b * W + a) * 4 + 3] > 128; }
@@ -56,7 +56,7 @@
     opt = opt || {};
     this.cv = cv; this.ctx = cv.getContext('2d');
     this.N = opt.count || (FX.mobile ? 650 : 1500);
-    this.ink = opt.ink || '#171717'; this.accent = opt.accent || '#800020';
+    this.ink = opt.ink || '#2e2c2a'; this.accent = opt.accent || '#800020';
     this.dpr = Math.min(window.devicePixelRatio || 1, FX.mobile ? 1.25 : 1.5);
     this.kick = opt.kick == null ? 6 : opt.kick;
     this.P = []; this.order = []; this.kind = 'flow'; this.box = [.5, .5, .8, .7]; this.pts = null; this.M = 0; this.proj = null;
@@ -179,7 +179,7 @@
     size(); window.addEventListener('resize', size);
     window.addEventListener('pointerdown', function (e) { pulses.push({ x: e.clientX, y: e.clientY, t: 0 }); }, { passive: true });
     FX.tick(function (t, dt) {
-      ctx.globalCompositeOperation = 'destination-out'; ctx.fillStyle = 'rgba(0,0,0,' + Math.min(.4, dt / 16.7 * .07) + ')'; ctx.fillRect(0, 0, FX.vw, FX.vh);
+      ctx.globalCompositeOperation = 'destination-out'; ctx.fillStyle = 'rgba(46,44,42,' + Math.min(.4, dt / 16.7 * .07) + ')'; ctx.fillRect(0, 0, FX.vw, FX.vh);
       ctx.globalCompositeOperation = 'source-over';
       var x = FX.mx, y = FX.my;
       if (px >= 0) {
@@ -187,7 +187,7 @@
         if (sp > .5 && sp < 300) {
           ctx.lineCap = 'round'; ctx.strokeStyle = 'rgba(128,0,32,.62)'; ctx.lineWidth = 1 + Math.min(2.2, sp * .06);
           ctx.beginPath(); ctx.moveTo(px + (rnd() - .5) * .9, py + (rnd() - .5) * .9); ctx.lineTo(x, y); ctx.stroke();
-          if (sp > 14) { ctx.strokeStyle = 'rgba(23,23,23,.35)'; ctx.lineWidth = .8; ctx.beginPath(); ctx.moveTo(px + (rnd() - .5) * 5, py + (rnd() - .5) * 5); ctx.lineTo(x + (rnd() - .5) * 5, y + (rnd() - .5) * 5); ctx.stroke(); }
+          if (sp > 14) { ctx.strokeStyle = 'rgba(46,44,42,.35)'; ctx.lineWidth = .8; ctx.beginPath(); ctx.moveTo(px + (rnd() - .5) * 5, py + (rnd() - .5) * 5); ctx.lineTo(x + (rnd() - .5) * 5, y + (rnd() - .5) * 5); ctx.stroke(); }
         }
       }
       px = x; py = y;
