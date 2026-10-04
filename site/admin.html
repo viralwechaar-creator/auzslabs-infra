@@ -144,6 +144,114 @@ body.admin-shell .field:first-child{margin-top:0}
   .a-topbar-title{font-size:18px}
   .a-kpis{grid-template-columns:repeat(4,1fr)}
 }
+
+/* =========================================================
+   Premium layer: AUZslab wine + warm neutrals as layered colour, soft depth, and motion.
+   Everything below is additive (colour, shadow, animation); layout is untouched. No backdrop-filter and no
+   will-change (they cause stuck layers and jank on iOS). All motion is switched off for prefers-reduced-motion.
+   ========================================================= */
+:root{
+  --card-bg:#fff;--card-bg2:#fdfbf9;
+  --wine:#800020;--wine-soft:rgba(128,0,32,.08);--wine-glow:rgba(128,0,32,.14);
+  --sand:#b8955a;--sand-soft:rgba(184,149,90,.14);--sage:#2f7a52;--sage-soft:rgba(47,122,82,.12);
+  --slate:#4f6275;--slate-soft:rgba(79,98,117,.12);--amber:#a96a12;--amber-soft:rgba(201,138,28,.15);
+  --lift:0 1px 2px rgba(46,44,42,.05),0 10px 26px -14px rgba(46,44,42,.28);
+  --lift-hi:0 2px 4px rgba(46,44,42,.06),0 18px 38px -16px rgba(46,44,42,.34);
+  --out:cubic-bezier(.22,.8,.24,1);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--card-bg:#2d2b29;--card-bg2:#33312f;--wine-soft:rgba(190,60,90,.16);--wine-glow:rgba(190,60,90,.2);--sand-soft:rgba(220,185,120,.14);--sage:#58b784;--sage-soft:rgba(88,183,132,.16);--slate:#8fa5ba;--slate-soft:rgba(143,165,186,.16);--amber:#e0a550;--amber-soft:rgba(224,165,80,.16);--lift:0 1px 2px rgba(0,0,0,.3),0 10px 26px -14px rgba(0,0,0,.6);--lift-hi:0 2px 4px rgba(0,0,0,.3),0 18px 38px -16px rgba(0,0,0,.7)}}
+:root[data-theme=dark]{--card-bg:#2d2b29;--card-bg2:#33312f;--wine-soft:rgba(190,60,90,.16);--wine-glow:rgba(190,60,90,.2);--sand-soft:rgba(220,185,120,.14);--sage:#58b784;--sage-soft:rgba(88,183,132,.16);--slate:#8fa5ba;--slate-soft:rgba(143,165,186,.16);--amber:#e0a550;--amber-soft:rgba(224,165,80,.16);--lift:0 1px 2px rgba(0,0,0,.3),0 10px 26px -14px rgba(0,0,0,.6);--lift-hi:0 2px 4px rgba(0,0,0,.3),0 18px 38px -16px rgba(0,0,0,.7)}
+
+/* layer 1: a soft wine and sand glow behind the content (a plain pseudo-element, so it never scrolls or repaints) */
+.a-body{position:relative;isolation:isolate}
+.a-body::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(520px 340px at 100% 0%,var(--wine-soft),transparent 70%),radial-gradient(460px 320px at 0% 100%,var(--sand-soft),transparent 70%)}
+.a-main{background:transparent;scroll-behavior:smooth;overscroll-behavior-y:contain;scroll-padding-top:12px}
+
+/* layer 2: bars */
+.a-topbar{box-shadow:0 8px 22px -20px rgba(46,44,42,.45);background:linear-gradient(180deg,var(--bg),color-mix(in srgb,var(--bg) 92%,var(--wine)))}
+.a-topbar-title{letter-spacing:-.015em}
+.a-tabbar{box-shadow:0 -8px 22px -20px rgba(46,44,42,.45)}
+.a-tab-btn{transition:color .25s var(--out),transform .2s var(--out)}
+.a-tab-btn svg{transition:transform .3s var(--out)}
+.a-tab-btn.on::before{content:'';position:absolute;top:-3px;left:30%;right:30%;height:3px;border-radius:0 0 3px 3px;background:var(--accent);animation:aGrow .35s var(--out) both}
+.a-tab-btn.on svg{transform:translateY(-1px) scale(1.1)}
+.a-tab-btn:active{transform:scale(.92)}
+
+/* layer 3: page headings get a wine eyebrow and a calmer rhythm */
+.a-page .label{color:var(--accent)}
+.a-page h2.h-2{letter-spacing:-.02em}
+
+/* layer 4: cards, tiles and rows lifted off the page, with a status-coloured edge */
+.a-kpi{background:linear-gradient(160deg,var(--card-bg),var(--card-bg2));box-shadow:var(--lift);border:1px solid var(--line-soft);position:relative;overflow:hidden;transition:transform .25s var(--out),box-shadow .25s var(--out)}
+.a-kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--wine)}
+.a-kpi:nth-child(2)::before{background:var(--sage)}.a-kpi:nth-child(3)::before{background:var(--sand)}
+.a-kpi:nth-child(4)::before{background:var(--slate)}.a-kpi:nth-child(5)::before{background:var(--amber)}
+.a-kpi .n{letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.admin-table tr{--stripe:var(--wine)}
+.admin-table tr:has(.status-active){--stripe:var(--sage)}
+.admin-table tr:has(.status-trial){--stripe:var(--amber)}
+.admin-table tr:has(.status-suspended),.admin-table tr:has(.status-cancelled){--stripe:var(--slate)}
+@media (max-width:639px){
+  .admin-table tr{background:linear-gradient(160deg,var(--card-bg),var(--card-bg2));border:1px solid var(--line-soft);box-shadow:var(--lift),inset 3px 0 0 var(--stripe);transition:transform .25s var(--out),box-shadow .25s var(--out)}
+  .admin-table tr:active{transform:scale(.985)}
+}
+.admin-table-wrap{background:transparent}
+.admin-table th{background:linear-gradient(180deg,var(--bg-raised),var(--card-bg2))}
+@media (min-width:640px){
+  /* an empty cell hidden for the phone cards must still take its place in the desktop table, or the columns shift */
+  .admin-table td[hidden]{display:table-cell}
+  .admin-table-wrap{background:var(--card-bg);border:1px solid var(--line-soft);box-shadow:var(--lift);border-radius:16px;overflow:hidden}
+  .admin-table tbody tr{transition:background .2s var(--out),box-shadow .2s var(--out)}
+  .admin-table tbody tr:hover{background:var(--wine-soft);box-shadow:inset 3px 0 0 var(--stripe)}
+}
+body.admin-shell .card{background:var(--card-bg);border:1px solid var(--line-soft);box-shadow:var(--lift)}
+.ok-box{background:var(--sage-soft);border:1px solid var(--line-soft);border-radius:16px}
+
+/* layer 5: pills and chips in the AUZslab palette */
+.status-pill{border-width:1px;letter-spacing:.04em;font-weight:700}
+.status-new{background:linear-gradient(135deg,#9a0a2e,var(--wine));box-shadow:0 4px 12px -5px var(--wine-glow)}
+.status-active{background:var(--sage-soft);color:var(--sage);border-color:transparent}
+.status-trial{background:var(--amber-soft);color:var(--amber);border-color:transparent}
+.status-suspended,.status-cancelled{background:var(--slate-soft);color:var(--slate);border-color:transparent}
+.feature-tag{background:var(--wine-soft);color:var(--wine);border-color:transparent}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .feature-tag{color:#e8a0b2}}
+:root[data-theme=dark] .feature-tag{color:#e8a0b2}
+
+/* layer 6: buttons */
+body.admin-shell .btn{transition:transform .2s var(--out),box-shadow .25s var(--out),background .2s}
+body.admin-shell .btn:active{transform:scale(.96)}
+body.admin-shell .btn-primary{background:linear-gradient(180deg,#940a2c,var(--wine));box-shadow:0 8px 20px -10px var(--wine-glow),inset 0 1px 0 rgba(255,255,255,.16)}
+body.admin-shell .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px 26px -10px rgba(128,0,32,.5),inset 0 1px 0 rgba(255,255,255,.2)}
+.a-search{box-shadow:inset 0 0 0 1px var(--line-soft);transition:box-shadow .2s var(--out),background .2s}
+.a-search:focus{outline:none;background:var(--card-bg);box-shadow:0 0 0 2px var(--wine-soft),inset 0 0 0 1px var(--accent)}
+.a-nav-row{transition:background .2s,padding .25s var(--out)}
+.a-nav-row:active{background:var(--wine-soft)}
+
+/* layer 7: desktop sidebar */
+@media (min-width:860px){
+  .a-side{background:var(--card-bg);box-shadow:1px 0 0 var(--line-soft),12px 0 30px -26px rgba(46,44,42,.4)}
+  .a-side-btn{position:relative;transition:background .2s var(--out),color .2s,transform .2s var(--out)}
+  .a-side-btn:hover{background:var(--wine-soft);color:var(--ink);transform:translateX(2px)}
+  .a-side-btn.on{background:var(--wine-soft);color:var(--accent)}
+  .a-side-btn.on::before{content:'';position:absolute;left:-12px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--accent);animation:aGrowY .3s var(--out) both}
+  .a-kpi:hover{transform:translateY(-2px);box-shadow:var(--lift-hi)}
+}
+
+/* motion: pages fade up, their cards and rows rise in one after another, sheets and the scrim ease in */
+@keyframes aPageIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes aRise{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes aFade{from{opacity:0}to{opacity:1}}
+@keyframes aGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes aGrowY{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+.a-page.active{animation:aPageIn .45s var(--out) both}
+.a-page.active .admin-table tr,.a-page.active .a-kpi,.a-page.active .a-nav-row,.a-page.active .card{animation:aRise .55s var(--out) both;animation-delay:calc(var(--i,0) * 55ms)}
+.a-page.active .admin-table tr:first-child{animation:none}
+.a-page.active .admin-table tr:nth-child(2){--i:1}.a-page.active .admin-table tr:nth-child(3){--i:2}.a-page.active .admin-table tr:nth-child(4){--i:3}.a-page.active .admin-table tr:nth-child(5){--i:4}.a-page.active .admin-table tr:nth-child(6){--i:5}.a-page.active .admin-table tr:nth-child(7){--i:6}.a-page.active .admin-table tr:nth-child(8){--i:7}.a-page.active .admin-table tr:nth-child(9){--i:8}.a-page.active .admin-table tr:nth-child(10){--i:9}.a-page.active .admin-table tr:nth-child(11){--i:10}.a-page.active .admin-table tr:nth-child(12){--i:11}.a-page.active .admin-table tr:nth-child(13){--i:12}.a-page.active .a-kpi:nth-child(1){--i:1}.a-page.active .a-kpi:nth-child(2){--i:2}.a-page.active .a-kpi:nth-child(3){--i:3}.a-page.active .a-kpi:nth-child(4){--i:4}.a-page.active .a-kpi:nth-child(5){--i:5}.a-page.active .a-kpi:nth-child(6){--i:6}.a-page.active .a-kpi:nth-child(7){--i:7}.a-page.active .a-kpi:nth-child(8){--i:8}.a-page.active .a-nav-row:nth-child(1){--i:1}.a-page.active .a-nav-row:nth-child(2){--i:2}.a-page.active .a-nav-row:nth-child(3){--i:3}.a-page.active .a-nav-row:nth-child(4){--i:4}.a-page.active .a-nav-row:nth-child(5){--i:5}.a-page.active .a-nav-row:nth-child(6){--i:6}.a-page.active .a-nav-row:nth-child(7){--i:7}.a-page.active .a-nav-row:nth-child(8){--i:8}.a-page.active .a-nav-row:nth-child(9){--i:9}.a-page.active .a-nav-row:nth-child(10){--i:10}.a-page.active .a-nav-row:nth-child(11){--i:11}.a-page.active .a-nav-row:nth-child(12){--i:12}
+.modal-overlay{animation:aFade .25s var(--out) both}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+}
 </style>
 </head>
 <body class="admin-shell">
@@ -478,10 +586,11 @@ function isDeskNav() { return innerWidth >= 860; }
 // at the top. Toggling overflow off kills the in-flight momentum before the reset, so it actually sticks.
 function resetMainScroll() {
   const el = document.getElementById('aMain');
+  el.style.scrollBehavior = 'auto'; // the reset must be instant even though the page scrolls smoothly
   el.scrollTop = 0;
   const prevOverflow = el.style.overflowY;
   el.style.overflowY = 'hidden';
-  requestAnimationFrame(() => { el.scrollTop = 0; el.style.overflowY = prevOverflow; });
+  requestAnimationFrame(() => { el.scrollTop = 0; el.style.overflowY = prevOverflow; el.style.scrollBehavior = ''; });
 }
 function openSection(name, opts = {}) {
   currentSection = name;
@@ -1251,6 +1360,23 @@ async function loadAuditLog() {
   var main = document.getElementById('aMain'); if (!main) return;
   new MutationObserver(function () { tidy(main); }).observe(main, { childList: true, subtree: true });
   tidy(main);
+})();
+</script>
+<script>
+/* numbers in the stat tiles count up to their value when they appear (skipped for reduced motion) */
+(function () {
+  var main = document.getElementById('aMain'); if (!main) return;
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  function run(el) {
+    if (el.dataset.counted) return; el.dataset.counted = '1';
+    var m = /^(\s*)([\d,]*\.?\d+)(.*)$/.exec(el.textContent); if (!m) return;
+    var raw = m[2], target = parseFloat(raw.replace(/,/g, '')); if (!isFinite(target) || target === 0) return;
+    var dec = (raw.split('.')[1] || '').length, comma = raw.indexOf(',') > -1, t0 = null, dur = 700;
+    function fmt(v) { var s = v.toFixed(dec); return comma ? Number(s).toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec }) : s; }
+    function step(ts) { if (t0 === null) t0 = ts; var p = Math.min(1, (ts - t0) / dur), e = 1 - Math.pow(1 - p, 3); el.textContent = m[1] + fmt(target * e) + m[3]; if (p < 1) requestAnimationFrame(step); }
+    requestAnimationFrame(step);
+  }
+  new MutationObserver(function () { main.querySelectorAll('.a-kpi .n').forEach(run); }).observe(main, { childList: true, subtree: true });
 })();
 </script>
 </body>
