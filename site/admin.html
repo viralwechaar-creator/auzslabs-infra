@@ -506,8 +506,8 @@ async function checkSession() {
     return;
   }
 
-  document.getElementById('adminSide').style.display = 'flex';
-  document.getElementById('adminTabbar').style.display = 'grid';
+  document.getElementById('adminSide').removeAttribute('style');
+  document.getElementById('adminTabbar').removeAttribute('style');
   openSection('leads', { silent: true });
   loadLeads();
   loadSignupRequests();
