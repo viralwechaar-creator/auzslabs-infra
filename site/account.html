@@ -122,7 +122,7 @@ input:disabled+.slider{opacity:.4;cursor:default}
       <button class="nav-link acct-nav-btn" data-tab="roles" id="tabRolesBtn" style="display:none"><span>Roles</span></button>
       <button class="nav-link acct-nav-btn" data-tab="notifications"><span>Notifications</span><span id="notifBadge"></span></button>
       <div class="nav-divider"></div>
-      <a href="#" id="openPosLink" target="_blank" rel="noopener" class="nav-link"><span id="openPosLabel">Open POS system</span></a>
+      <a href="#" id="openPosLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><span id="openPosLabel">Open POS system</span></a>
       <a href="#" id="openPosAddonLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><span>Open POS (add-on)</span></a>
       <a href="#" id="openPayrollLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><span>Open Payroll</span></a>
       <a href="#" id="openBuilderLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><span>Open Website Builder</span></a>
@@ -162,6 +162,7 @@ input:disabled+.slider{opacity:.4;cursor:default}
 </div>
 
 <script src="/sb-client.js?v=2"></script>
+<script src="tool/lock.js?v=1"></script>
 <script src="tool/site.js?v=8"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script>
@@ -171,6 +172,31 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&':'
 const PERM_KEYS = [['pos','Sell (POS)'],['orders','Orders'],['kitchen','Kitchen Display'],['reports','Reports'],['staff','Staff (view)'],['inventory','Stock'],['crm','Customers'],['menu','Menu'],['settings','Business Settings'],['billing','Billing / Refunds'],['acc_view','Accounting: view'],['acc_sales','Accounting: sales and receipts'],['acc_purchase','Accounting: purchases and payments'],['acc_inventory','Accounting: products and stock'],['acc_banking','Accounting: banking'],['acc_post','Accounting: journals and assets'],['acc_approve','Accounting: approve documents'],['acc_cancel','Accounting: cancel and reverse'],['acc_reports','Accounting: reports and GST'],['acc_import','Accounting: import'],['acc_admin','Accounting: settings'],['acc_audit','Accounting: audit log'],['pay_view','Payroll: view people'],['pay_people','Payroll: add and edit people'],['pay_time','Payroll: attendance and leave'],['pay_salary','Payroll: salaries and bank details'],['pay_run','Payroll: calculate payroll'],['pay_approve','Payroll: approve payroll'],['pay_pay','Payroll: pay salaries'],['pay_reports','Payroll: reports'],['pay_admin','Payroll: settings'],['pay_audit','Payroll: change history'],['mob_view','AUZsMob: view'],['mob_sell','AUZsMob: sell'],['mob_purchase','AUZsMob: purchase / buy used'],['mob_repair','AUZsMob: repairs'],['mob_reports','AUZsMob: reports (see all staff data)'],['mob_manage','AUZsMob: catalog, vendors, settings, void, adjust']];
 
 let DASH = null, ROLES = [], STAFF = [], NOTIFS = [], SESSIONS = [];
+
+// A role's permission checklist should only ever offer what this business
+// actually owns -- a mobile-only client's "Create a role" used to list every
+// POS/Accounting/Payroll permission in the product too, which both confused
+// owners (that software was never theirs) and let them grant access to
+// something the server would refuse anyway (every *_guard() function still
+// checks the tenant's own feature entitlement independently -- this is a
+// display-only fix, not a new access boundary).
+function permKeyGroup(k) {
+  if (k.startsWith('acc_')) return 'accounting';
+  if (k.startsWith('pay_')) return 'payroll';
+  if (k.startsWith('mob_')) return 'mobile';
+  return 'pos';
+}
+function visiblePermKeys() {
+  const f = DASH.features || {}, e = DASH.enabled_features || {};
+  const on = (k) => f[k] === true && e[k] !== false;
+  return PERM_KEYS.filter(([k]) => {
+    const g = permKeyGroup(k);
+    if (g === 'accounting') return on('accounting');
+    if (g === 'payroll') return on('payroll');
+    if (g === 'mobile') return on('mobile');
+    return on('pos');
+  });
+}
 
 async function boot() {
   const { data: { session } } = await sb.auth.getSession();
@@ -188,11 +214,21 @@ async function boot() {
   $('#acctNav').style.display = 'flex';
   if (DASH.my_role === 'owner') { $('#tabStaffBtn').style.display = ''; $('#tabRolesBtn').style.display = ''; }
   // Salon tenants run AUZslab Salon (app/public/salon/), not the POS -- its
-  // staff/owner console lives at /salon/admin/.
-  if (DASH.tenant.niche === 'salon') $('#openPosLabel').textContent = 'Open AUZslab Salon';
-  $('#openPosLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in' + (DASH.tenant.niche === 'salon' ? '/salon/admin/' : '');
+  // staff/owner console lives at /salon/admin/. Everyone else only gets this
+  // link when they actually have the pos feature -- it used to show
+  // unconditionally for every tenant, including e.g. a mobile-shop-only
+  // client with no POS entitlement at all.
+  const posOn = (DASH.features || {}).pos === true && (DASH.enabled_features || {}).pos !== false;
+  if (DASH.tenant.niche === 'salon') {
+    $('#openPosLabel').textContent = 'Open AUZslab Salon';
+    $('#openPosLink').style.display = '';
+    $('#openPosLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in/salon/admin/';
+  } else if (posOn) {
+    $('#openPosLink').style.display = '';
+    $('#openPosLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in';
+  }
   // A salon that added the POS product keeps AUZslab Salon as its main app; the POS is a second link.
-  if (DASH.tenant.niche === 'salon' && (DASH.features || {}).pos === true && (DASH.enabled_features || {}).pos !== false) {
+  if (DASH.tenant.niche === 'salon' && posOn) {
     $('#openPosAddonLink').style.display = ''; $('#openPosAddonLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in/index.html';
   }
   const payrollOn = (DASH.features || {}).payroll === true && (DASH.enabled_features || {}).payroll !== false;
@@ -534,7 +570,7 @@ function renderRoles() {
       <h3 class="h-2">Create a role</h3>
       <div class="field"><label>Role name</label><input id="roleName" placeholder="e.g. Chef, Manager"></div>
       <p class="muted">Choose which parts of the system this role can see:</p>
-      <div class="perm-grid">${PERM_KEYS.map(([k, l]) => `<label><input type="checkbox" data-perm="${k}"> ${esc(l)}</label>`).join('')}</div>
+      <div class="perm-grid">${visiblePermKeys().map(([k, l]) => `<label><input type="checkbox" data-perm="${k}"> ${esc(l)}</label>`).join('')}</div>
       <button class="btn btn-primary form-submit" id="roleAdd">Create role</button>
       <div id="roleMsg"></div>
     </div>
