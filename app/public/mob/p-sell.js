@@ -21,7 +21,6 @@ async function renderSell(v) {
     if (!q) return;
     const unitMatches = available.filter((u) => (u.imei || '').includes(q) || (u.imei2 || '').includes(q) || itemName(items, u.item_id).toLowerCase().includes(q)).slice(0, 8);
     const prodMatches = activeItems.filter((i) => !i.serialized && i.name.toLowerCase().includes(q)).slice(0, 8);
-    if (!unitMatches.length && !prodMatches.length) { results.append(h('div', { class: 'li' }, h('div', { class: 's grow' }, t('noneYet')))); return; }
     unitMatches.forEach((u) => results.append(liRow({ icon: 'phone', title: itemName(items, u.item_id), sub: u.imei || u.imei2, value: money(u.selling_price || itemOf(items, u.item_id).selling_price), onclick: () => addUnit(u) })));
     prodMatches.forEach((i) => {
       const stock = computeStock(i.id);
@@ -30,6 +29,11 @@ async function renderSell(v) {
       const oos = left <= 0;
       results.append(liRow({ icon: 'box', title: i.name, sub: oos ? t('outOfStock') : qty(left) + ' ' + t('inStock').toLowerCase(), value: money(i.selling_price), onclick: oos ? null : () => addProduct(i) }));
     });
+    // a staffer can log a brand-new item (a one-off accessory, a trade-in, anything never
+    // catalogued) and sell it in the same step: quickAddSellSheet creates the item plus an
+    // opening stock entry (same mechanism Add purchase's own "New: ..." quick-add uses), then
+    // drops it straight into the cart.
+    results.append(liRow({ icon: 'plus', title: (S_LANG === 'hi' ? 'नया: ' : 'New: ') + '"' + q + '"', onclick: () => quickAddSellSheet(q) }));
   }
   // movements is fetched once above, not re-pulled live -- a sale added to the cart this session is
   // reflected via the inCart subtraction in paintResults/addProduct, same as the server's own check
@@ -52,6 +56,46 @@ async function renderSell(v) {
     if (wantQty > computeStock(i.id)) { toast(t('errNotEnoughStock'), { err: true }); return; }
     if (row) row.qty += 1; else cart.push({ itemId: i.id, name: i.name, qty: 1, price: N(i.selling_price) });
     paintCart();
+  }
+
+  // Creates a never-catalogued item plus an opening purchase/stock entry (qty = what the staffer
+  // says is in hand), the same real mob_push_purchase path Add purchase uses -- so it still shows
+  // up in Purchases/Reports with a real cost basis, not an untracked stock-less sale -- then adds
+  // one straight to the cart. Needs mob_purchase or mob_sell (db/088: any staffer, not just a
+  // manager, same trust Add purchase's own quick-add already had).
+  function quickAddSellSheet(q) {
+    const name = input({ value: q, label: t('itemName'), autofocus: true });
+    const sellPrice = input({ value: '', label: t('sellingPrice'), mode: 'decimal' });
+    const cost = input({ value: '', label: t('purchaseRate'), mode: 'decimal' });
+    const onHand = input({ value: 1, label: t('qty'), mode: 'decimal' });
+    sheet({
+      title: (S_LANG === 'hi' ? 'नया: ' : 'New: ') + '"' + q + '"',
+      body: h('div', { class: 'grid' }, field(t('itemName'), name),
+        h('div', { class: 'two' }, field(t('sellingPrice'), sellPrice), field(t('purchaseRate'), cost)),
+        field(t('qty'), onHand)),
+      actions: [{ label: t('save'), primary: true, onclick: async (close) => {
+        if (!name.value.trim()) { fail(new Error(t('errNameRequired'))); return false; }
+        const itemId = uid();
+        const haveQty = Math.max(1, N(onHand.value) || 1);
+        const itemData = { name: name.value.trim(), category: 'other', serialized: false, sellingPrice: N(sellPrice.value), costPrice: N(cost.value) };
+        const newItem = { id: itemId, name: itemData.name, category: 'other', serialized: false, selling_price: itemData.sellingPrice, cost_price: itemData.costPrice, low_stock_at: 0, active: true };
+        await idbPut('items', { ...newItem, _pending: true });
+        await outboxAdd('mob_save_item', { p_id: itemId, p: itemData, p_base: null });
+        items.push(newItem);
+        activeItems.push(newItem);
+
+        const pid = uid();
+        const now = new Date().toISOString();
+        const purchaseArgs = { itemId, vendorId: null, qty: haveQty, rate: itemData.costPrice, imei: null, sellingPrice: itemData.sellingPrice, unitId: null };
+        const movement = { id: uid(), item_id: itemId, unit_id: null, qty: haveQty, type: 'purchase', ref_id: pid, staff_id: S.user.id, created_at: now };
+        await idbPut('stockMovements', movement);
+        movements.push(movement);
+        await localPush('purchases', { id: pid, item_id: itemId, vendor_id: null, qty: haveQty, rate: itemData.costPrice, total: haveQty * itemData.costPrice, staff_id: S.user.id, created_at: now }, 'mob_push_purchase', { p_id: pid, p: purchaseArgs });
+
+        close();
+        addProduct(newItem);
+      } }],
+    });
   }
 
   const custName = input({ placeholder: t('customerOptional') });
