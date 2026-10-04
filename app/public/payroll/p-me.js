@@ -262,12 +262,22 @@ function openKiosk() {
       avatar(e.name, 56), h('b', null, e.name), h('span', { class: 's' }, e.state && e.state.open ? 'In since ' + fmtT(e.state.in) : 'Not in'))));
     if (!grid.childNodes.length) grid.append(h('p', { class: 'muted' }, 'Nobody found.'));
   };
+  // The kiosk overlay is a plain full-screen DOM overlay, not a route -- the hash never changes
+  // while it's open. A phone's swipe-back gesture still changes location.hash underneath it
+  // though, silently re-rendering the page behind the (still visible, still opaque) overlay,
+  // which looked like "pressing back does nothing, I'm stuck on the same screen." Since leaving
+  // the kiosk is deliberately password-gated (a shared device shouldn't let anyone just swipe
+  // their way back into the real app), a back gesture snaps the hash back to the kiosk instead
+  // of silently going nowhere, with a toast explaining why.
+  const kioskHash = location.hash;
+  const guardBack = () => { if (location.hash !== kioskHash) { location.hash = kioskHash; toast('Tap Exit to leave the kiosk'); } };
+  window.addEventListener('hashchange', guardBack);
   const exit = async () => {
     const pw = await askText('Exit kiosk', 'Enter the password of ' + S.user.email + ' to leave the kiosk.', 'Password', '', { confirm: 'Exit' });
     if (pw === null) return;
     const { error } = await sb.auth.signInWithPassword({ email: S.user.email, password: pw });
     if (error) return toast('Wrong password', { err: true });
-    clearInterval(timer); clearInterval(refresher); ov.remove(); document.removeEventListener('keydown', esc, true); go('time');
+    clearInterval(timer); clearInterval(refresher); window.removeEventListener('hashchange', guardBack); ov.remove(); document.removeEventListener('keydown', esc, true); go('time');
   };
   const esc = (e) => { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); } };
   document.addEventListener('keydown', esc, true);
