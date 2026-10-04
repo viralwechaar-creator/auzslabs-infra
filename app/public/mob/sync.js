@@ -54,6 +54,31 @@ async function outboxAdd(fn, args) {
 async function outboxAll() { const db = await openDb(); return reqP(tx(db, ['outbox'], 'readonly').objectStore('outbox').getAll()); }
 async function updateOutboxCount() { S.outboxCount = (await outboxAll()).length; window.dispatchEvent(new CustomEvent('mob:sync')); }
 
+// Undoes the optimistic local write a rejected outbox item made, so a refused sale or purchase doesn't
+// keep sitting in IndexedDB looking saved. Only the two money-moving writes need this (everything else
+// localPush writes -- items/vendors/customers -- uses the platform's p_base optimistic-concurrency
+// contract, which returns {ok:false,conflict:true} as a normal success response, never reaches this path).
+async function rejectLocal(fn, args) {
+  const p = args && args.p;
+  if (fn === 'mob_push_sale') {
+    await idbDelete('sales', args.p_id);
+    if (p && Array.isArray(p.items)) {
+      const units = await idbGetAll('units');
+      for (const it of p.items) {
+        if (!it.unitId) continue;
+        const u = units.find((x) => x.id === it.unitId);
+        if (u && u.status === 'sold') { u.status = 'in_stock'; u.updated_at = new Date().toISOString(); await idbPut('units', u); }
+      }
+    }
+  } else if (fn === 'mob_push_purchase') {
+    await idbDelete('purchases', args.p_id);
+    if (p && p.unitId) await idbDelete('units', p.unitId);
+    const movements = await idbGetAll('stockMovements');
+    for (const m of movements) if (m.ref_id === args.p_id) await idbDelete('stockMovements', m.id);
+  }
+  window.dispatchEvent(new CustomEvent('mob:pulled'));
+}
+
 let syncing = false;
 async function trySync() {
   if (syncing) return;
@@ -67,9 +92,17 @@ async function trySync() {
         await api(it.fn, it.args);
       } catch (e) {
         if (e.status === 401 || e.message === t('errOffline')) break; // stop: session dead or truly offline, leave the rest queued
-        // a real business-rule refusal (bad data, entitlement off, day closed): drop it, it will never succeed by
-        // itself retrying -- same "server can refuse a write outright" handling the POS sync lesson calls for
+        // a real business-rule refusal (bad data, entitlement off, day closed, not enough stock): it will
+        // never succeed by itself retrying, so it's dropped -- but unlike before, the optimistic local
+        // write localPush already made (the "Saved on phone" row, and for a sale, the unit it flipped to
+        // 'sold') is rolled back here too, and the staffer is told. Previously this just logged a console
+        // warning and moved on: a sale that the server correctly refused (e.g. selling more of a loose-stock
+        // item than the shop actually has) still sat in the local sales list looking saved, with no sign it
+        // never reached the server -- the exact silent-failure shape "no restriction on selling what isn't
+        // in stock" was reported as.
         console.warn('outbox item refused, dropping:', it.fn, e.message);
+        await rejectLocal(it.fn, it.args);
+        toast(t('notSaved') + ': ' + e.message, { err: true });
       }
       await reqP(tx(db, ['outbox'], 'readwrite').objectStore('outbox').delete(it.oid));
     }
