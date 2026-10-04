@@ -82,6 +82,7 @@ async function renderLedger(body, range, staffId, setStaff) {
       kpi(t('totalCost'), money(data.total_cost)),
       kpi(t('totalProfit'), money(data.total_profit), null, null, N(data.total_profit) < 0 ? 'red' : 'green'),
     ),
+    data.truncated ? h('p', { class: 'hint' }, t('ledgerShowingNewest').replace('{n}', String(rows.length)).replace('{total}', String(data.total_rows))) : null,
     ledgerCards(rows),
   ]);
 }
@@ -136,7 +137,7 @@ function csvEscape(v) {
 }
 async function exportData() {
   try {
-    const data = await api('mob_report_ledger', { p_from: '2000-01-01', p_to: new Date().toISOString().slice(0, 10) });
+    const data = await api('mob_report_ledger', { p_from: '2000-01-01', p_to: new Date().toISOString().slice(0, 10), p_limit: 1000000 });
     const rows = data.rows || [];
     const head = ['Date', 'Item', 'IMEI / Serial', 'Qty', 'Purchased From', 'Purchased By', 'Purchase Price', 'Sold To', 'Sold By', 'Selling Price', 'Profit'];
     const body = rows.map((r) => [fmtDT(r.sold_at), r.item_name, r.imei || '', r.qty, r.vendor_name || '', r.purchased_by || '', r.cost_total, r.customer_name || '', r.sold_by || '', r.sale_total, r.profit]);

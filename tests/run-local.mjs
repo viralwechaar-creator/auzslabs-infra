@@ -7,14 +7,14 @@ import { writeReport, verdict, printFailures } from './lib/report.mjs';
 import { summary } from './lib/harness.mjs';
 
 const only = process.argv[2];
-const suites = ['marketing', 'responsive', 'journeys', 'salon', 'cafe', 'pos', 'apps', 'accounts', 'payroll', 'mobile', 'design', 'security', 'load'];
+const suites = ['marketing', 'responsive', 'journeys', 'salon', 'cafe', 'pos', 'apps', 'accounts', 'payroll', 'mobile', 'design', 'security', 'load', 'loadmob'];
 reset('local test copy');
 console.log('Building test database...'); await build(console.log);
 const stack = await startStack({ log: console.log });
 const browser = await chromium.launch(launchOptions());
 const t0 = Date.now();
 for (const name of suites) {
-  if (only && only !== name) continue;
+  if (only ? only !== name : name === 'loadmob') continue; // loadmob only runs when named (it is heavy)
   process.stdout.write('Running ' + name + '... ');
   try { const mod = await import('./suites/local/' + name + '.mjs'); await mod.default({ browser, stack }); console.log('done'); }
   catch (e) { console.log('CRASHED: ' + e.message); const { suite } = await import('./lib/harness.mjs'); const s = suite(name + ' (suite crashed)'); await s.check('suite ran to the end', () => { throw e; }, 'critical'); }

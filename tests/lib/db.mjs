@@ -135,3 +135,22 @@ export async function q(sql, params = []) {
   const c = await connect(PG.db);
   try { return (await c.query(sql, params)).rows; } finally { await c.end(); }
 }
+
+// Load test only: n extra mobile shops (slug ls01..), each with one owner and `staffPer` plain staff logins.
+// Returns [{ slug, tid, owner, staff: [email...] }].
+export async function seedShops(n, staffPer = 4) {
+  const c = await connect(PG.db);
+  const out = [];
+  try {
+    for (let i = 1; i <= n; i++) {
+      const slug = 'ls' + String(i).padStart(2, '0');
+      const tid = await tenant(c, slug, 'Load Shop ' + i, 'mobile');
+      const owner = `owner-${slug}@load.local`;
+      await user(c, owner, { tenant_id: tid, role: 'owner' });
+      const staff = [];
+      for (let k = 1; k <= staffPer; k++) { const e = `staff${k}-${slug}@load.local`; await user(c, e, { tenant_id: tid, role: 'cashier' }); staff.push(e); }
+      out.push({ slug, tid, owner, staff });
+    }
+  } finally { await c.end(); }
+  return out;
+}
