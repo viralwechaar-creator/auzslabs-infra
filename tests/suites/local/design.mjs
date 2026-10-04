@@ -43,7 +43,7 @@ export default async function run({ browser, stack }) {
       assert(x.ds, 'does not link /ds/auz.css');
       assert(/-apple-system|system-ui/.test(x.font) && !/^Inter/.test(x.font), 'body font is ' + x.font);
       assert(x.bg === 'rgb(245, 244, 242)', 'page background is ' + x.bg + ', not the shared --bg');
-      assert(x.label === '#1d1d1f', 'text token is ' + x.label);
+      assert(x.label === '#2e2c2a', 'text token is ' + x.label);
       const bad = errs.filter((e) => !/WebSocket|ERR_CERT|tunnel|ERR_FAILED|print/i.test(e)); assert(!bad.length, bad.slice(0, 2).join(' | '));
       await ctx.close();
     }, 'major');

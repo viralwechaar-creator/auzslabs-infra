@@ -1,20 +1,20 @@
 /* desktop (900px and up). Independent of the mobile file: edit freely. */
-:root{--uk-ink:#171717;
+:root{--uk-ink:#2e2c2a;
   --uk-ink-dim:#4d4d4d;
   --uk-ink-faint:#8c8c8c;
   --uk-bg:#ffffff;
   --uk-bg-raised:#dedede;
   --uk-bg-sunken:#dedede;
-  --uk-line:rgba(23,23,23,.12);
-  --uk-line-soft:rgba(23,23,23,.06);
+  --uk-line:rgba(46,44,42,.12);
+  --uk-line-soft:rgba(46,44,42,.06);
   --uk-accent:#800020;
   --uk-radius-sm:10px;
   --uk-radius-md:16px;
   --uk-radius-lg:22px;
   --uk-radius-full:999px;
-  --uk-shadow-sm:0 2px 8px -4px rgba(23,23,23,.16);
-  --uk-shadow-md:0 12px 28px -12px rgba(23,23,23,.20);
-  --uk-shadow-lg:0 24px 48px -20px rgba(23,23,23,.24);
+  --uk-shadow-sm:0 2px 8px -4px rgba(46,44,42,.16);
+  --uk-shadow-md:0 12px 28px -12px rgba(46,44,42,.20);
+  --uk-shadow-lg:0 24px 48px -20px rgba(46,44,42,.24);
   --uk-ease:cubic-bezier(.4,0,.2,1);
   --uk-font-display:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif;
   --uk-font-body:'Inter',sans-serif;

@@ -14,7 +14,7 @@ html:has(body.fx),body.fx{overflow-x:clip}
   padding:max(16px,env(safe-area-inset-top)) clamp(14px,3vw,38px) 14px}
 .fx .topbar-logo img{filter:invert(1);max-width:96px}
 .fx .hamburger{border-color:#fff;color:#fff;background:transparent}
-.fx .hamburger:hover,.fx .hamburger.is-open{background:#fff;color:#000}
+.fx .hamburger:hover,.fx .hamburger.is-open{background:#fff;color:#2e2c2a}
 .fx .topbar .btn-ghost{color:#fff;border-color:transparent}
 .fx .topbar .btn::before{border-color:#fff}
 /* the slide-in menu (and its dim layer) must sit above the floating header, or its own Close button is unreachable */
@@ -90,9 +90,9 @@ html.fx-live .fx-only-static{display:none!important}
 .scrib{position:relative;white-space:nowrap}
 .scrib::after{content:"";position:absolute;left:-2%;right:-2%;bottom:-.14em;height:.3em;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 12' preserveAspectRatio='none'%3E%3Cpath d='M2 7 C 14 1, 24 11, 38 6 S 62 2, 78 7 S 104 9, 118 4' fill='none' stroke='%23800020' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat 0 0/100% 100%;
   clip-path:inset(0 calc((1 - var(--sc,1))*100%) 0 0)}
-.tape{position:absolute;width:5.2em;height:1.5em;background:rgba(128,0,32,.6);box-shadow:0 1px 0 rgba(0,0,0,.08);transform:rotate(-4deg)}
+.tape{position:absolute;width:5.2em;height:1.5em;background:rgba(128,0,32,.6);box-shadow:0 1px 0 rgba(46,44,42,.08);transform:rotate(-4deg)}
 .stamp{display:inline-block;padding:.22em .55em;border:.12em solid var(--accent);color:var(--accent);font:900 1em/1 var(--font-display);letter-spacing:.06em;text-transform:uppercase;border-radius:.18em;transform:rotate(-8deg)}
-.paper{background:#fffdf7;border:2px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
+.paper{background:#fffdf7;border:1px solid var(--ink);box-shadow:0 10px 28px -12px rgba(46,44,42,.30)}
 
 /* ---------- drawings ---------- */
 .fx-art{display:block;width:100%;height:auto;overflow:visible;color:var(--ink)}
