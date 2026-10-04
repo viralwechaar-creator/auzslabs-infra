@@ -105,6 +105,21 @@ The public demo is `https://demo.auzslab.in/mob.html` (same login as the POS/Pay
 
 `node tests/run-local.mjs mobile` runs 31 checks: access for logged-out users and another business, catalog, purchase (idempotency and duplicate-IMEI rejection), sell and void (and the stock move back), staff isolation through `mob_sync_pull` (not just the RPC access checks), repairs (parts decrementing stock, authorization by job owner or `mob_reports`), dues and reports, the `staff_see_purchase_rates` switch, day close, export, the integrity check, and every screen on phone and desktop for the owner and for staff — including a real Save button flow (Add purchase, end to end through the actual UI) and the Hindi/English toggle. It is also in the `design` suite's app list (tokens, accent, layout tiers, dark mode, 12 px/44 px sizing).
 
+## Scale: how many shops one server carries (db/091, `loadmob` suite)
+
+`node tests/run-local.mjs loadmob` pretends to be 60 shops (an owner and 4 staff each) selling, buying, opening repairs and syncing at once, then adds a full busy year (about 110,000 bills) to one shop. It runs on its own, not in the default full run. Result on a 4-core test machine with the database and API on the same box (a ₹3,000 VPS is the same shape):
+
+- about 700 to 1,000 requests per second flat out, median 60 ms, slowest 5% under 120 ms. A real launch month is under 5 per second, so there is more than 100 times headroom.
+- 60 shops with a year of history each is roughly 2 to 6 GB, mostly bills and stock movements.
+
+The test found three real problems, fixed in `db/091_mob_scale.sql`:
+
+1. **Deadlock on sales.** Two staff selling the same items in a different order each locked item rows one at a time and waited on each other. `mob_push_sale` now locks every row it needs first, in one fixed order, with `FOR NO KEY UPDATE`.
+2. **A new phone downloaded the whole history** (88 MB, 17 s for a very busy year). `mob_sync_pull` now answers a first sync, or one from a phone away more than 90 days, with a window: the last 90 days, everything still open (customer dues, vendor dues, unfinished repairs, units in stock), and one opening-balance stock row per item for everything older. The answer carries `full: true`, and `pull()` in `sync.js` then replaces the phone's old stock rows so nothing is counted twice. Everyday catch-ups are unchanged. A phone therefore only holds recent bills; older ones are still in the owner's reports and the export.
+3. **Staff ledger was slow** (4 s for 9,000 rows). Totals now come from the table, the rows are capped (`p_limit`, default 2,000, newest first) with a `truncated` flag and a note on screen. The CSV export asks for every row.
+
+Not done, on purpose: AUZsMob does not upload photos yet (`id_proof_url` is always empty), so no photo limit exists for it. Other apps' site uploads are already capped at 8 MB and compressed in the browser.
+
 ## Known limits (honest list)
 
 - **Camera barcode/IMEI scanning is not built.** IMEI entry is manual only; the spec allows this as a v1 gap.
@@ -114,3 +129,22 @@ The public demo is `https://demo.auzslab.in/mob.html` (same login as the POS/Pay
 - **No Bluetooth-printer hook** (the spec says this is fine for v1 — just leave room for it later; nothing currently assumes a printer).
 - **Vendor dues are an aggregate, not a per-purchase balance.** `mob_purchases` carries no paid/balance columns of its own; a vendor's due is `sum(purchases.total) − sum(payments where kind='vendor_due')` for that vendor. This is correct in total but cannot show which specific purchase is still owed.
 - No real background jobs: the demo's 12-hour refresh runs lazily, the next time anyone with `mob_reports` opens AUZsMob on that tenant (same pattern as every other demo tenant's reset).
+
+## Feature switches (db/093)
+
+Owner: Settings -> Features. Stored in `mob_settings.features` (jsonb, merged over `mob_feature_defaults()`: everything on, repairs `full`).
+Keys: `sell`, `purchase`, `stock`, `serials`, `customers`, `vendors`, `dayclose` (on/off) and `repairs` (`off` | `simple` | `full`).
+Only the owner may change them (`mob_save_settings`, audit-logged). **Every switch is enforced in the database** (error code `MB010`,
+"... is switched off for this shop"), not just hidden in the app; the app also hides the screens (`feat()` / `repairsMode()` in `core.js`).
+
+- `stock` off: no stock check, no stock movements for plain items, no low-stock alerts. IMEI units still move stock if `serials` is on.
+- `serials` off: no IMEI/serial entry, no used-phone buying, no Units tab.
+- `customers` off: no customer name/phone, no credit sales (every sale is paid in full), no customer dues.
+- `vendors` off: no vendor picker, no vendor dues.
+- `repairs` = `simple`: a repair is a sale line on a `service` item. The staffer enters what was repaired, the amount charged and the part cost (and, if vendors are on, where the part came from). The sale stores the part cost as the line's cost and writes a matching "Part for repair" purchase row, so Staff ledger / profit show charge - part. `full` = job cards (status, parts, advance), `off` = no repairs at all.
+- `dayclose` off: days are never locked.
+- "Simple" preset (Settings): sell + purchase on, repairs simple, everything else off, staff may see purchase rates.
+- Other phones pick up a changed switch within about 5 minutes of their next sync.
+- Tests: `node tests/run-local.mjs mobile` (36 checks, includes server refusals for every switch and the simple-repair ledger row).
+- Also fixed here: Settings saves were sent without the `p` wrapper and silently did nothing (shop details, staff-rates switch).
+- Deploy: `git pull`, apply `db/091_mob_scale.sql` then `db/093_mob_feature_switches.sql` (skip 092 unless that branch is merged), no API rebuild needed.

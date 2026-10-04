@@ -119,12 +119,29 @@ async function pull() {
   const since = await metaGet('cursor');
   let r;
   try { r = await api('mob_sync_pull', { p_since: since }); } catch { return; }
+  if (r.full) {
+    // A first sync (new phone, cleared data, or away over 90 days) is a window: the last 90 days, everything still
+    // open, and ONE opening stock row per item for older history. Drop the stock rows this phone already held, or
+    // they would be counted twice on top of the opening row. Rows for entries still waiting in the outbox stay.
+    const waiting = new Set((await outboxAll()).map((o) => o.args && o.args.p_id).filter(Boolean));
+    for (const m of await idbGetAll('stockMovements')) if (!waiting.has(m.ref_id)) await idbDelete('stockMovements', m.id);
+  }
   for (const [store, key] of [['items', 'items'], ['units', 'units'], ['vendors', 'vendors'], ['customers', 'customers'],
     ['purchases', 'purchases'], ['sales', 'sales'], ['repairs', 'repairs'], ['repairEvents', 'repair_events'],
     ['payments', 'payments'], ['stockMovements', 'stock_movements']]) {
     await idbPutMany(store, r[key] || []);
   }
   await metaSet('cursor', r.server_time);
+  // pick up owner changes to the feature switches / rates (at most every 5 minutes) so other phones follow
+  if (S.ctx && Date.now() - (S._ctxAt || 0) > 300000) {
+    S._ctxAt = Date.now();
+    try {
+      const c = await api('mob_context');
+      const changed = JSON.stringify(c.settings && c.settings.features) !== JSON.stringify(S.ctx.settings && S.ctx.settings.features);
+      S.ctx = c;
+      if (changed && typeof buildShell === 'function') buildShell();
+    } catch { /* offline: keep the last known switches */ }
+  }
   window.dispatchEvent(new CustomEvent('mob:pulled'));
 }
 

@@ -33,15 +33,15 @@ async function renderPurchase(v) {
   const fieldsBox = h('div', { class: 'grid' });
   function paintFields() {
     if (!pickedItem) { clear(fieldsBox); return; }
-    serialSw.checked = !!pickedItem.serialized;
+    serialSw.checked = feat('serials') && !!pickedItem.serialized;
     const serialRow = h('div', { class: 'li', style: { cursor: 'pointer' } }, h('div', { class: 'grow' }, h('div', { class: 't' }, t('serialized'))), h('span', { class: 'switch' }, serialSw));
     const imeiField = h('div', { class: serialSw.checked ? '' : 'hidden' }, field(t('serialNo'), imeiI));
     serialSw.onchange = () => { imeiField.classList.toggle('hidden', !serialSw.checked); };
     clear(fieldsBox).append(
-      h('div', { class: 'two' }, field(t('vendor'), vendorSel), field(t('vendor'), newVendor, (S_LANG === 'hi' ? 'या नया नाम लिखें' : 'or type a new one'))),
+      feat('vendors') ? h('div', { class: 'two' }, field(t('vendor'), vendorSel), field(t('vendor'), newVendor, (S_LANG === 'hi' ? 'या नया नाम लिखें' : 'or type a new one'))) : null,
       h('div', { class: 'two' }, field(t('purchaseRate'), rate), field(t('sellingPrice'), sellPrice)),
       field(t('qty'), qtyI),
-      serialRow, imeiField,
+      feat('serials') ? serialRow : null, feat('serials') ? imeiField : null,
     );
   }
 
@@ -54,18 +54,18 @@ async function renderPurchase(v) {
       if (pickedItem._new) {
         await localSaveItem(itemId, { name: pickedItem.name, category: 'other', serialized: serialSw.checked, sellingPrice: N(sellPrice.value), costPrice: N(rate.value) });
       }
-      let vendorId = vendorSel.value || null;
-      if (!vendorId && newVendor.value.trim()) { vendorId = uid(); await localSaveVendor(vendorId, { name: newVendor.value.trim() }); }
+      let vendorId = feat('vendors') ? (vendorSel.value || null) : null;
+      if (feat('vendors') && !vendorId && newVendor.value.trim()) { vendorId = uid(); await localSaveVendor(vendorId, { name: newVendor.value.trim() }); }
       const pid = uid();
-      const unitId = serialSw.checked ? uid() : null;
-      const args = { itemId, vendorId, qty: N(qtyI.value) || 1, rate: N(rate.value), imei: serialSw.checked ? imeiI.value.trim() || null : null, sellingPrice: sellPrice.value ? N(sellPrice.value) : null, unitId };
+      const unitId = feat('serials') && serialSw.checked ? uid() : null;
+      const args = { itemId, vendorId, qty: N(qtyI.value) || 1, rate: N(rate.value), imei: unitId ? imeiI.value.trim() || null : null, sellingPrice: sellPrice.value ? N(sellPrice.value) : null, unitId };
       // mirror mob_push_purchase locally so a just-bought serialized phone can be sold offline right away,
       // instead of only becoming sellable after a round trip through mob_sync_pull
       const now = new Date().toISOString();
       if (unitId) {
         await idbPut('units', { id: unitId, item_id: itemId, imei: args.imei, imei2: null, source: 'new', condition: null, seller_name: null, seller_phone: null, id_proof_url: null, accessories_included: null, cost_price: args.rate, selling_price: args.sellingPrice, status: 'in_stock', created_at: now, updated_at: now });
         await idbPut('stockMovements', { id: uid(), item_id: itemId, unit_id: unitId, qty: 1, type: 'purchase', ref_id: pid, staff_id: S.user.id, created_at: now });
-      } else {
+      } else if (feat('stock')) {
         await idbPut('stockMovements', { id: uid(), item_id: itemId, unit_id: null, qty: args.qty, type: 'purchase', ref_id: pid, staff_id: S.user.id, created_at: now });
       }
       await localPush('purchases', { id: pid, item_id: itemId, vendor_id: vendorId, qty: args.qty, rate: args.rate, total: args.qty * args.rate, staff_id: S.user.id, created_at: now }, 'mob_push_purchase', { p_id: pid, p: args });

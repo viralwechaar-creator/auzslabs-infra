@@ -91,6 +91,11 @@ const isDesk = () => matchMedia('(min-width:900px)').matches;
 // ---------- state ----------
 const S = { ctx: null, perms: {}, user: null, dash: null, online: navigator.onLine, outboxCount: 0 };
 const can = (k) => !!S.perms[k];
+// Shop feature switches (db/093). Unknown/unset keys fall back to the full-featured defaults, same as the server.
+const FEAT_DEFAULTS = { sell: true, purchase: true, repairs: 'full', stock: true, serials: true, customers: true, vendors: true, dayclose: true };
+const feats = () => ({ ...FEAT_DEFAULTS, ...((S.ctx && S.ctx.settings && S.ctx.settings.features) || {}) });
+const feat = (k) => feats()[k] !== false && feats()[k] !== 'off';
+const repairsMode = () => { const r = feats().repairs; return r === 'off' || r === 'simple' ? r : r === false ? 'off' : 'full'; };
 
 // ---------- toasts, alerts, menus, sheets (same convention as Payroll/Accounting) ----------
 let toastEl;

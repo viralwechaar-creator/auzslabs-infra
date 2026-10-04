@@ -164,6 +164,53 @@ export default async function run({ browser, stack }) {
   }, 'major');
   await s.check('Integrity holds after every step', integrity, 'critical');
 
+  // ---------- feature switches (db/093): each switch is enforced by the server, not just hidden ----------
+  const setFeat = (f) => ok(owner, 'mob_save_settings', { p: { features: f } });
+  const ALL_ON = { sell: true, purchase: true, repairs: 'full', stock: true, serials: true, customers: true, vendors: true, dayclose: true };
+  await s.check('Feature switches: only the owner may change them, bad values are refused, defaults are all-on', async () => {
+    const c0 = await ok(owner, 'mob_context'); assert(c0.settings.features && c0.settings.features.stock === true && c0.settings.features.repairs === 'full', 'defaults: ' + JSON.stringify(c0.settings.features));
+    await fails(manager, 'mob_save_settings', { p: { features: { stock: false } } });
+    await fails(owner, 'mob_save_settings', { p: { features: { repairs: 'weird' } } }, /MB005|repairs/i);
+    await fails(owner, 'mob_save_settings', { p: { features: { nonsense: true } } });
+  }, 'critical');
+  await s.check('Simple mode: stock/serials/customers/vendors/dayclose off, repairs simple -> the simple flow works and each off feature is refused (MB010)', async () => {
+    await setFeat({ ...ALL_ON, stock: false, serials: false, customers: false, vendors: false, dayclose: false, repairs: 'simple' });
+    const svc = uid(), gadget = uid();
+    await ok(staff, 'mob_save_item', { p_id: svc, p: { name: 'Repair / service', category: 'service', serialized: false, sellingPrice: 0, costPrice: 0 } });
+    await ok(staff, 'mob_save_item', { p_id: gadget, p: { name: 'Tempered glass', category: 'accessory', serialized: false, sellingPrice: 150, costPrice: 40 } });
+    // a sale of a never-purchased item is allowed with stock off (no stock check, no movement)
+    await ok(staff, 'mob_push_sale', { p_id: uid(), p: { items: [{ itemId: gadget, name: 'Tempered glass', qty: 2, price: 150 }], paid: 300, paymentMode: 'cash' } });
+    assert((await stockOf(gadget)) === 0, 'stock moved with stock switched off');
+    // a repair is a sale line carrying the part cost; credit and customer details are ignored with customers off
+    const rs = uid();
+    const r = await ok(staff, 'mob_push_sale', { p_id: rs, p: { items: [{ itemId: svc, name: 'Screen change', qty: 1, price: 2500, partCost: 1200, partName: 'Screen change' }], customerName: 'Ignored', paid: 100, paymentMode: 'credit' } });
+    const row = (await q('select total::float8 total, paid::float8 paid, balance::float8 balance, customer_id from mob_sales where id=$1', [rs]))[0];
+    assert(row.total === 2500 && row.paid === 2500 && row.balance === 0 && !row.customer_id, 'simple repair sale row: ' + JSON.stringify(row));
+    const part = await q("select total::float8 total, note from mob_purchases where tenant_id=$1 and note like 'Part for repair:%'", [tid]);
+    assert(part.length === 1 && part[0].total === 1200, 'part purchase row: ' + JSON.stringify(part));
+    const led = await ok(owner, 'mob_report_ledger', { p_from: '2000-01-01', p_to: '2100-01-01' });
+    const lr = (led.rows || led).find((x) => /Screen change/.test(x.item_name || '') || x.is_repair);
+    assert(lr && Number(lr.cost_total) === 1200 && Number(lr.sale_total) === 2500 && Number(lr.profit) === 1300, 'ledger row for the repair: ' + JSON.stringify(lr));
+    await fails(staff, 'mob_create_repair', { p_id: uid(), p: { deviceModel: 'x', problem: 'y' } }, /switched off/i);
+    await fails(staff, 'mob_save_customer', { p_id: uid(), p: { name: 'A', phone: '1' } }, /switched off/i);
+    await fails(staff, 'mob_save_vendor', { p_id: uid(), p: { name: 'V' } }, /switched off/i);
+    await fails(staff, 'mob_push_purchase', { p_id: uid(), p: { itemId: phone, qty: 1, rate: 1, imei: '100000000000099', unitId: uid(), source: 'secondhand' } }, /switched off/i);
+    await fails(owner, 'mob_adjust_stock', { p_id: uid(), p_item_id: gadget, p_qty_delta: 1 }, /switched off/i);
+    await integrity();
+  }, 'critical');
+  await s.check('Sell and Purchase switches: off means the server refuses', async () => {
+    await setFeat({ ...ALL_ON, sell: false });
+    await fails(staff, 'mob_push_sale', { p_id: uid(), p: { items: [{ itemId: cable, qty: 1, price: 199 }], paid: 199, paymentMode: 'cash' } }, /switched off/i);
+    await setFeat({ ...ALL_ON, purchase: false });
+    await fails(staff, 'mob_push_purchase', { p_id: uid(), p: { itemId: cable, qty: 1, rate: 90 } }, /switched off/i);
+    await setFeat(ALL_ON);
+    await ok(staff, 'mob_push_purchase', { p_id: uid(), p: { itemId: cable, qty: 1, rate: 90 } });
+  }, 'critical');
+  await s.check('Switching everything back on restores the full flow (stock counted again)', async () => {
+    const c1 = await ok(owner, 'mob_context'); assert(c1.settings.features.stock === true && c1.settings.features.repairs === 'full', 'features did not reset');
+    await integrity();
+  }, 'major');
+
   // ---------- screens ----------
   const open = async (email, dev) => {
     const c = await newCtx(browser, stack, dev); const page = await c.newPage(); const errs = watch(page);
@@ -217,6 +264,22 @@ export default async function run({ browser, stack }) {
     assert(row, 'purchase item was not saved through the real UI');
     await c.close();
   }, 'critical');
+  await s.check('Simple mode screens: no Repairs/Stock/Dues tabs, Sell offers Repair / service and adds it to the cart, Settings shows the Features card', async () => {
+    await setFeat({ ...ALL_ON, stock: false, serials: false, customers: false, vendors: false, dayclose: false, repairs: 'simple' });
+    const { c, page } = await open(USERS.mobOwner, { w: 390, h: 844, mobile: true });
+    await page.evaluate(() => { location.hash = '#/sell'; }); await page.waitForTimeout(600);
+    const tabs = await page.locator('.tabbar, .a-tabbar, nav').allInnerTexts();
+    assert(!/repairs/i.test(tabs.join(' ')) && !/dues/i.test(tabs.join(' ')), 'switched-off tabs still shown: ' + tabs.join('|'));
+    await page.locator('button', { hasText: /Repair \/ service/ }).first().click(); await page.waitForTimeout(300);
+    await page.fill('.input[aria-label="What was repaired"]', 'Screen change');
+    await page.fill('.input[aria-label="Charged to customer"]', '2500');
+    await page.locator('button', { hasText: /^Add to cart$/ }).click(); await page.waitForTimeout(500);
+    assert(/Screen change/.test(await page.content()), 'repair line not in cart');
+    await page.evaluate(() => { location.hash = '#/settings'; }); await page.waitForTimeout(600);
+    assert(/Features/.test(await page.locator('body').innerText()), 'Features card missing from Settings');
+    await c.close();
+    await setFeat(ALL_ON);
+  }, 'major');
   await s.check('Hindi toggle changes the Settings title, and switches back', async () => {
     const { c, page } = await open(USERS.mobOwner, { w: 1366, h: 860 });
     await page.evaluate(() => { location.hash = '#/settings'; }); await page.waitForTimeout(600);

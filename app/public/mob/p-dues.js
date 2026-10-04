@@ -5,9 +5,9 @@
 page('dues', { title: 'dues', perm: 'mob_sell', render: renderDues });
 
 async function renderDues(v) {
-  const tab = v.args[0] || 'customer';
+  const tab = v.args[0] || (feat('customers') ? 'customer' : 'vendor');
   v.header({ title: t('dues') });
-  v.root.append(seg([['customer', t('customerDue')], ['vendor', t('vendorDue')]], tab, (tb) => go('dues/' + tb), { full: !isDesk() }));
+  v.root.append(seg([...(feat('customers') ? [['customer', t('customerDue')]] : []), ...(feat('vendors') ? [['vendor', t('vendorDue')]] : [])], tab, (tb) => go('dues/' + tb), { full: !isDesk() }));
   const body = h('div', { style: { marginTop: '16px' } });
   v.root.append(body);
   if (tab === 'vendor') await renderVendorDues(body, v); else await renderCustomerDues(body, v);

@@ -6,11 +6,11 @@ page('stock', { title: 'stock', perm: 'mob_view', render: renderStock });
 async function renderStock(v) {
   const tab = v.args[0] || 'catalog';
   v.header({ title: t('stock'), actions: can('mob_manage') ? [tab === 'units' ? null : tab === 'vendors' ? { label: t('add'), icon: 'plus', primary: true, run: () => vendorSheet(v) } : { label: t('addItem'), icon: 'plus', primary: true, run: () => itemSheet(v) }] : [] });
-  v.root.append(seg([['catalog', t('catalog')], ['units', t('units')], ['vendors', t('vendors')]], tab, (tb) => go('stock/' + tb), { full: !isDesk() }));
+  v.root.append(seg([['catalog', t('catalog')], ...(feat('serials') ? [['units', t('units')]] : []), ...(feat('vendors') ? [['vendors', t('vendors')]] : [])], tab, (tb) => go('stock/' + tb), { full: !isDesk() }));
   const body = h('div', { style: { marginTop: '16px' } });
   v.root.append(body);
-  if (tab === 'units') await renderUnits(body, v);
-  else if (tab === 'vendors') await renderVendors(body, v);
+  if (tab === 'units' && feat('serials')) await renderUnits(body, v);
+  else if (tab === 'vendors' && feat('vendors')) await renderVendors(body, v);
   else await renderCatalog(body, v);
 }
 
@@ -21,12 +21,12 @@ async function renderCatalog(body, v) {
   add(body, [dataView(
     [{ key: 'name', title: true, label: '', render: (r) => r.name },
       { key: 'cat', sub: true, label: '', render: (r) => t('cat' + catKey(r.category)) },
-      { key: 'stock', value: true, r: true, label: '', render: (r) => r.serialized ? badge(t('units')) : (stockOf(r.id) <= N(r.low_stock_at) ? badge(qty(stockOf(r.id)), 'red') : qty(stockOf(r.id))) },
+      { key: 'stock', value: true, r: true, label: '', render: (r) => (!feat('stock') || r.category === 'service') ? '' : r.serialized ? badge(t('units')) : (stockOf(r.id) <= N(r.low_stock_at) ? badge(qty(stockOf(r.id)), 'red') : qty(stockOf(r.id))) },
       { key: 'price', value: true, r: true, label: '', render: (r) => canSeeRate ? h('span', null, money(r.selling_price), ' / ', money(r.cost_price)) : money(r.selling_price) }],
     items.filter((i) => i.active !== false), { onRow: can('mob_manage') ? (r) => itemSheet(v, r) : null, emptyText: t('noneYet') },
   )]);
 }
-function catKey(c) { return { phone_new: 'PhoneNew', phone_used: 'PhoneUsed', accessory: 'Accessory', watch: 'Watch', earbuds: 'Earbuds', headphone: 'Headphone', cable: 'Cable', charger: 'Charger', other: 'Other' }[c] || 'Other'; }
+function catKey(c) { return { service: 'Service', phone_new: 'PhoneNew', phone_used: 'PhoneUsed', accessory: 'Accessory', watch: 'Watch', earbuds: 'Earbuds', headphone: 'Headphone', cable: 'Cable', charger: 'Charger', other: 'Other' }[c] || 'Other'; }
 
 async function renderUnits(body, v) {
   const [units, items] = await Promise.all([idbGetAll('units'), idbGetAll('items')]);
@@ -48,7 +48,7 @@ async function renderVendors(body, v) {
 function itemSheet(v, rec) {
   const d = rec || { serialized: false, selling_price: 0, cost_price: 0, low_stock_at: 0 };
   const name = input({ value: d.name, label: t('itemName'), autofocus: true });
-  const category = selectEl([['phone_new', t('catPhoneNew')], ['phone_used', t('catPhoneUsed')], ['accessory', t('catAccessory')], ['watch', t('catWatch')], ['earbuds', t('catEarbuds')], ['headphone', t('catHeadphone')], ['cable', t('catCable')], ['charger', t('catCharger')], ['other', t('catOther')]], d.category || 'other');
+  const category = selectEl([['service', t('catService')], ['phone_new', t('catPhoneNew')], ['phone_used', t('catPhoneUsed')], ['accessory', t('catAccessory')], ['watch', t('catWatch')], ['earbuds', t('catEarbuds')], ['headphone', t('catHeadphone')], ['cable', t('catCable')], ['charger', t('catCharger')], ['other', t('catOther')]], d.category || 'other');
   const serialSw = h('input', { type: 'checkbox', role: 'switch', checked: !!d.serialized });
   const price = input({ value: d.selling_price, label: t('sellingPrice'), mode: 'decimal' });
   const cost = input({ value: d.cost_price, label: t('purchaseRate'), mode: 'decimal' });
@@ -56,9 +56,9 @@ function itemSheet(v, rec) {
   const s = sheet({
     title: rec ? t('edit') : t('addItem'),
     body: h('div', { class: 'grid' }, field(t('itemName'), name), field(t('category'), category),
-      h('label', { class: 'li', style: { cursor: 'pointer' } }, h('div', { class: 'grow' }, h('div', { class: 't' }, t('serialized'))), h('span', { class: 'switch' }, serialSw)),
+      feat('serials') ? h('label', { class: 'li', style: { cursor: 'pointer' } }, h('div', { class: 'grow' }, h('div', { class: 't' }, t('serialized'))), h('span', { class: 'switch' }, serialSw)) : null,
       h('div', { class: 'two' }, field(t('sellingPrice'), price), field(t('purchaseRate'), cost)),
-      field(t('lowStockAlertAt'), lowAt)),
+      feat('stock') ? field(t('lowStockAlertAt'), lowAt) : null),
     actions: [{ label: t('save'), primary: true, onclick: async (close) => {
       if (!name.value.trim()) { fail(new Error(t('errNameRequired'))); return false; }
       const id = rec ? rec.id : uid();

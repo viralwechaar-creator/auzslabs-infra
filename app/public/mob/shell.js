@@ -16,9 +16,13 @@ function parseHash() {
 const go = (path) => { const tgt = '#/' + path.replace(/^#?\/?/, ''); if (location.hash === tgt) route_(); else location.hash = tgt; };
 function allowed(def) { if (!def) return false; if (!def.perm) return true; return typeof def.perm === 'function' ? def.perm() : can(def.perm); }
 function navList() {
-  const items = [['home', 'home', 'home'], ['sell', 'sell', 'cash'], ['repairs', 'repairs', 'wrench'], ['stock', 'stock', 'box']];
+  const items = [['home', 'home', 'home']];
+  if (feat('sell')) items.push(['sell', 'sell', 'cash']);
+  if (repairsMode() === 'full') items.push(['repairs', 'repairs', 'wrench']);
+  if (feat('stock') || can('mob_manage')) items.push(['stock', 'stock', 'box']);
   if (can('mob_reports')) items.push(['reports', 'reports', 'chart']);
-  items.push(['dues', 'dues', 'wallet'], ['settings', 'settings', 'gear']);
+  if (feat('customers') || feat('vendors')) items.push(['dues', 'dues', 'wallet']);
+  items.push(['settings', 'settings', 'gear']);
   return items.filter(([id]) => allowed(PAGES[id]));
 }
 function tabsFor() { return navList().slice(0, 4).map((x) => x[0]); }
