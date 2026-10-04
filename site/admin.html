@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#faf9f7">
 <title>Admin — AUZslab</title>
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="/logo.png">
@@ -33,7 +34,7 @@ html{height:100%;background:var(--bg)}
    to fill it exactly, so there's no second measurement that can disagree with the first. */
 /* Pinned to all four screen edges (the same way the POS shell is) so the app always fills the whole screen,
    status bar to home indicator, with nothing left showing below the tab bar on a home-screen iPhone. */
-body.admin-shell{position:fixed;inset:0;height:var(--app-h,auto);margin:0;overscroll-behavior:none;display:flex;flex-direction:column;background:var(--bg);overflow:hidden}
+body.admin-shell{position:fixed;inset:0;height:auto;margin:0;overscroll-behavior:none;display:flex;flex-direction:column;background:var(--bg);overflow:hidden}
 .a-shell{display:flex;flex-direction:column;flex:1 1 auto;min-height:0}
 .a-topbar{flex:none;display:flex;align-items:center;gap:10px;box-sizing:border-box;min-height:calc(48px + env(safe-area-inset-top));padding:env(safe-area-inset-top) 14px 0;border-bottom:1px solid var(--line);background:var(--bg);position:relative;z-index:5}
 .a-topbar-back{display:flex;align-items:center;gap:2px;background:none;border:none;color:var(--accent);font:600 15px var(--font-body);padding:6px 2px 6px 0;margin-left:-4px;cursor:pointer}
@@ -1377,28 +1378,6 @@ async function loadAuditLog() {
     requestAnimationFrame(step);
   }
   new MutationObserver(function () { main.querySelectorAll('.a-kpi .n').forEach(run); }).observe(main, { childList: true, subtree: true });
-})();
-</script>
-<script>
-/* Home-screen app on iPhone: size the app to the real screen height. iOS can report a layout viewport a little
-   shorter than the screen in a standalone web app, which left an empty strip under the tab bar. Only acts when
-   running from the home screen, never while a text field is focused (the keyboard shrinks the viewport). */
-(function () {
-  if (!navigator.standalone) return;
-  var root = document.documentElement;
-  function fit() {
-    var a = document.activeElement;
-    if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
-    var portrait = window.matchMedia('(orientation: portrait)').matches;
-    var full = portrait ? Math.max(screen.height, screen.width) : Math.min(screen.height, screen.width);
-    var h = Math.max(window.innerHeight, full);
-    if (h - window.innerHeight > 2 && h - window.innerHeight < 160) root.style.setProperty('--app-h', h + 'px');
-    else root.style.removeProperty('--app-h');
-  }
-  fit();
-  window.addEventListener('resize', fit);
-  window.addEventListener('orientationchange', function () { setTimeout(fit, 300); });
-  document.addEventListener('focusout', function () { setTimeout(fit, 350); });
 })();
 </script>
 </body>
