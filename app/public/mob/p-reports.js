@@ -1,8 +1,10 @@
 /* AUZsMob: Reports -- owner/manager only. Server-side aggregates (a staff phone only ever has its own
    data locally, so these can't be computed client-side for anyone but mob_reports).
-   Two tabs: Dashboard (the existing KPIs/activity feed) and Staff ledger -- the owner's actual ask: one
-   row per thing sold, chaining who bought it from whom for how much to who sold it to whom for how much,
-   with a profit column and a grand total, so a staffer under/over-reporting either leg shows up at a glance. */
+   Three tabs: Dashboard (KPIs + a by-staff summary), Staff ledger (the owner's core ask: one row per
+   thing sold, chaining who bought it from whom for how much to who sold it to whom for how much, with a
+   profit column and a grand total, so a staffer under/over-reporting either leg shows up at a glance),
+   and Staff updates -- its own dedicated space for the chronological feed of every sale/purchase/repair,
+   filterable to one staffer at a time, moved out of Dashboard so it isn't buried under the KPIs. */
 'use strict';
 page('reports', { title: 'reports', perm: 'mob_reports', render: renderReports });
 
@@ -19,18 +21,19 @@ async function renderReports(v) {
     return 'reports/' + nextTab + (qs ? '?' + qs : '');
   };
   add(v.root, [
-    seg([['dashboard', t('dashboard')], ['ledger', t('staffLedger')]], tab, (tb) => go(link(tb, range, staffId)), { full: !isDesk() }),
+    seg([['dashboard', t('dashboard')], ['ledger', t('staffLedger')], ['updates', t('staffUpdates')]], tab, (tb) => go(link(tb, range, staffId)), { full: !isDesk() }),
     seg([['today', t('today')], ['week', t('thisWeek')], ['month', t('thisMonth')]], range, (r) => go(link(tab, r, staffId)), { full: !isDesk() }),
   ]);
   const body = h('div', { style: { marginTop: '14px' } });
   v.root.append(body);
   if (tab === 'ledger') await renderLedger(body, range, staffId, (sId) => go(link('ledger', range, sId)));
+  else if (tab === 'updates') await renderUpdates(body, range, staffId, (sId) => go(link('updates', range, sId)));
   else await renderDashboard(body, range);
 }
 
 async function renderDashboard(body, range) {
   const [from, to] = rangeDates(range);
-  const [dash, activity, names] = await Promise.all([api('mob_report_dashboard', { p_from: from, p_to: to }), api('mob_report_activity', { p_from: from, p_to: to }), api('mob_staff_list')]);
+  const [dash, names] = await Promise.all([api('mob_report_dashboard', { p_from: from, p_to: to }), api('mob_staff_list')]);
   const nameOf = (id) => (names.find((n) => n.id === id) || {}).name || id;
   add(body, [
     h('div', { class: 'kpis' },
@@ -47,12 +50,23 @@ async function renderDashboard(body, range) {
       dash.by_staff, { emptyText: t('noneYet') },
     )),
     dash.low_stock.length ? section(t('lowStock'), h('div', { class: 'list' }, dash.low_stock.map((x) => liRow({ icon: 'box', title: x.name, value: qty(x.qty) })))) : null,
-    section(t('activityFeed'), dataView(
+  ]);
+}
+
+async function renderUpdates(body, range, staffId, setStaff) {
+  const [from, to] = rangeDates(range);
+  const [activity, names] = await Promise.all([api('mob_report_activity', { p_from: from, p_to: to }), api('mob_staff_list')]);
+  const nameOf = (id) => (names.find((n) => n.id === id) || {}).name || id;
+  const rows = staffId ? activity.filter((r) => r.staff_id === staffId) : activity;
+  add(body, [
+    h('div', { class: 'field' }, selectEl([['', t('allStaff')], ...names.map((n) => [n.id, n.name])], staffId, { onchange: (e) => setStaff(e.target.value) })),
+    h('p', { class: 'hint' }, t('staffUpdatesHint')),
+    dataView(
       [{ key: 'w', title: true, label: '', render: (r) => (r.kind === 'sale' ? t('sell') : r.kind === 'purchase' ? t('purchase') : t('repairJob')) + ' — ' + nameOf(r.staff_id) },
         { key: 's', sub: true, label: '', render: (r) => fmtDT(r.at) },
         { key: 'a', value: true, r: true, label: '', render: (r) => money(r.amount) }],
-      activity, { emptyText: t('noneYet') },
-    )),
+      rows, { emptyText: t('noneYet') },
+    ),
   ]);
 }
 

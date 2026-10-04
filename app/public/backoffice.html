@@ -1155,7 +1155,8 @@ function renderDrawer(T){
    b.innerHTML=ico(k)+'<span class="grow">'+esc(n)+'</span><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
    return[b,h('div',{class:'dsub'+(setOpen?' open':'')},...subs.map(([sk,sn])=>h('button',{class:(S.tab=='set'&&(S.setTab||'biz')==sk)?'on':'',onclick:()=>{S.tab='set';S.setTab=sk;S.setOpen=true;close();render()}},sn)))]}
   const btn=h('button',{class:(S.tab==k?'on':''),onclick:()=>{S.tab=k;close();render()}});btn.innerHTML=ico(k)+'<span class="grow">'+esc(n)+'</span>';return[btn]};
- const pos=h('button',{class:'dq',onclick:()=>{location.href='/index.html'}});pos.innerHTML=ico('pos')+'<span>Open POS</span>';
+ const pos=featureOn('pos')?h('button',{class:'dq',onclick:()=>{location.href='/index.html'}}):null;
+ if(pos)pos.innerHTML=ico('pos')+'<span>Open POS</span>';
  const out=h('button',{class:'dq warn',onclick:async()=>{await sb.auth.signOut();localStorage.removeItem('u');location.reload()}},'Sign out');
  drawerEl.replaceChildren(
   h('div',{class:'dh'},h('b',{},'Back Office'),h('button',{class:'dx','aria-label':'Close menu',onclick:close},'\u00d7')),

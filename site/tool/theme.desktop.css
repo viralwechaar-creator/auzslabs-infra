@@ -108,7 +108,7 @@ input,select,textarea{font-size:16px}
   transition:color .15s ease;}
 .nav-sublink:hover{color:#fff;background:none}
 .nav-sublink.is-disabled{color:rgba(255,255,255,.25);cursor:default;pointer-events:none}
-.sidebar-foot{display:flex;flex-direction:column;gap:14px;margin-top:auto;padding:20px 20px 0;border-top:1px solid rgba(255,255,255,.15)}
+.sidebar-foot{display:flex;flex-direction:column;gap:14px;margin-top:28px;padding:20px 20px 0;border-top:1px solid rgba(255,255,255,.15)}
 .sidebar-copy{font-family:var(--font-mono);font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.02em}
 .sidebar .btn-ghost{border-color:rgba(255,255,255,.3);color:#fff}
 .sidebar .btn-ghost:hover{background:#fff;color:var(--ink-solid);border-color:#fff}
@@ -238,6 +238,7 @@ input,select,textarea{font-size:16px}
   transition:transform .18s ease, box-shadow .18s ease, opacity .2s ease;}
 .knock-btn:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink)}
 body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14px)}
+html.auz-lock body{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 .modal-overlay{position:fixed;inset:0;background:rgba(23,23,23,.5);backdrop-filter:blur(4px);
   display:none;align-items:center;justify-content:center;z-index:50;}
 .modal-overlay.open{display:flex;animation:fadeIn .18s ease}
