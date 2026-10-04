@@ -11,201 +11,221 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
 <link rel="stylesheet" href="tool/theme.mobile.css?v=44" media="(max-width:899px)"><link rel="stylesheet" href="tool/theme.desktop.css?v=44" media="(min-width:900px)"><script src="theme.js?v=1"></script>
-<link rel="stylesheet" href="tool/sketch.mobile.css?v=1" media="(max-width:899px)"><link rel="stylesheet" href="tool/sketch.desktop.css?v=1" media="(min-width:900px)">
-<script src="tool/sketch.js?v=1"></script>
-<script src="tool/sketch-art.js?v=1" defer></script>
-<link rel="stylesheet" href="tool/design-system/ui-kit.mobile.css?v=3" media="(max-width:899px)"><link rel="stylesheet" href="tool/design-system/ui-kit.desktop.css?v=3" media="(min-width:900px)">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<style media="(max-width:899px)">#sidebarDrawer{max-width:320px;box-shadow:-30px 0 70px -20px rgba(0,0,0,.5)}
-@media (max-width:860px){
-#sidebarDrawer{border-radius:26px 0 0 26px}
+<style>
+/* =========================================================
+   Admin panel shell -- rebuilt on Apple HIG lines, matching the staff apps
+   (POS/Payroll/Accounting/AUZsMob): a compact top bar, a bottom tab bar on
+   phones (icon rail + sidebar from tablet width up), bottom sheets instead
+   of centered dialogs on phones, and dense spacing throughout so a page is
+   mostly content, not whitespace. Built directly on the marketing site's
+   own --ink/--bg/--accent tokens (tool/theme.*.css) rather than importing
+   app/public/ds/auz.css, which lives on a different origin (tenant
+   subdomains, not auzslab.in) and can't be reached from here.
+   ========================================================= */
+html,body.admin-shell{height:100%;overscroll-behavior:none}
+body.admin-shell{display:flex;flex-direction:column;background:var(--bg)}
+.a-shell{display:flex;flex-direction:column;height:100dvh;overflow:hidden}
+.a-topbar{flex:none;display:flex;align-items:center;gap:10px;height:44px;padding:0 14px;padding-top:env(safe-area-inset-top);border-bottom:1px solid var(--line);background:var(--bg);position:relative;z-index:5}
+.a-topbar-back{display:flex;align-items:center;gap:2px;background:none;border:none;color:var(--accent);font:600 15px var(--font-body);padding:6px 2px 6px 0;margin-left:-4px;cursor:pointer}
+.a-topbar-title{font:700 16px var(--font-display);letter-spacing:-.01em;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.a-topbar-actions{display:flex;align-items:center;gap:8px;flex:none}
+.a-iconbtn{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;background:none;border:none;color:var(--ink);border-radius:999px;cursor:pointer}
+.a-iconbtn:hover{background:var(--bg-raised)}
+.a-body{flex:1 1 auto;display:flex;min-height:0}
+.a-main{flex:1 1 auto;min-width:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px calc(18px + env(safe-area-inset-bottom))}
+.a-side{display:none}
+.a-tabbar{flex:none;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:3px 2px max(2px,calc(env(safe-area-inset-bottom) - 10px));background:var(--bg);border-top:1px solid var(--line);position:relative;z-index:5}
+.a-tab-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:46px;font:500 10.5px var(--font-body);color:var(--ink-faint);background:none;border:none;position:relative;cursor:pointer}
+.a-tab-btn.on{color:var(--accent)}
+.a-tab-btn svg{width:22px;height:22px;flex:none}
+.a-tab-badge{position:absolute;top:0;right:calc(50% - 19px);min-width:16px;height:16px;border-radius:999px;background:var(--accent);color:#fff;font:700 10px var(--font-mono);display:flex;align-items:center;justify-content:center;padding:0 3px}
+.a-page{display:none}
+.a-page.active{display:block}
+.a-page .label{margin:0}
+.a-page h2.h-2{font-size:19px;margin-top:3px;margin-bottom:4px}
+.a-page>p.p{font-size:13px;color:var(--ink-faint);margin-top:2px;margin-bottom:14px;max-width:46em}
+.a-login-wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:20px 0}
+.a-login-card{width:100%;max-width:360px}
+.a-brand-row{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+.a-brand-row img{width:32px;height:32px;image-rendering:pixelated}
+.a-brand-row b{font:700 17px var(--font-display)}
+body.admin-shell .card{padding:16px}
+body.admin-shell .field{margin-top:12px}
+body.admin-shell .field:first-child{margin-top:0}
+.a-nav-list{display:flex;flex-direction:column;gap:2px}
+.a-nav-row{display:flex;align-items:center;gap:12px;width:100%;background:none;border:none;text-align:left;padding:11px 4px;min-height:44px;font:500 15px var(--font-body);color:var(--ink);cursor:pointer;border-bottom:1px solid var(--line-soft)}
+.a-nav-row:last-child{border-bottom:none}
+.a-nav-row svg{width:20px;height:20px;flex:none;color:var(--ink-faint)}
+.a-nav-row .grow{flex:1 1 auto}
+.a-nav-row .chev{width:16px;height:16px;flex:none;color:var(--ink-faint)}
+.a-nav-row .a-row-badge{min-width:20px;height:20px;border-radius:999px;background:var(--accent);color:#fff;font:700 11px var(--font-mono);display:flex;align-items:center;justify-content:center;padding:0 5px;flex:none}
+.a-search{width:100%;background:var(--bg-raised);border:none;border-radius:11px;padding:9px 12px;font:14px var(--font-body);color:var(--ink)}
+.a-search::placeholder{color:var(--ink-faint)}
+.a-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:2px 0 16px}
+.a-kpi{background:var(--bg-raised);border-radius:14px;padding:12px 14px}
+.a-kpi .k{font:500 11px var(--font-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--ink-faint)}
+.a-kpi .n{font:700 22px var(--font-display);margin-top:2px}
+/* responsive table -> stacked card list on phones */
+.admin-table-wrap{overflow-x:auto;border:1.5px solid var(--line);border-radius:14px;margin-top:0}
+.admin-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.admin-table th{text-align:left;padding:9px 12px;background:var(--bg-raised);font-family:var(--font-mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-dim);border-bottom:1.5px solid var(--line)}
+.admin-table td{padding:9px 12px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+.admin-table tr:last-child td{border-bottom:none}
+.admin-table .row-actions{display:flex;gap:6px;flex-wrap:wrap}
+.admin-table .row-actions .btn{padding:7px 11px;font-size:9.5px;min-height:30px}
+.status-pill{display:inline-flex;padding:3px 9px;border-radius:999px;border:1.5px solid var(--ink);font-family:var(--font-mono);font-size:9px;text-transform:uppercase}
+.status-new{background:var(--accent);color:#fff;border-color:var(--accent)}
+.status-active{background:var(--success);color:#fff;border-color:var(--success)}
+.status-trial{background:var(--bg-raised);color:var(--ink-dim)}
+.status-suspended,.status-cancelled{background:var(--ink);color:#fff}
+.renewal-soon{color:var(--accent);font-weight:600}
+.renewal-overdue{color:var(--accent);font-weight:700;text-decoration:underline wavy}
+.feature-tag{display:inline-block;padding:2px 7px;margin:1px 2px 1px 0;border-radius:999px;border:1px solid var(--line);font-family:var(--font-mono);font-size:8.5px;color:var(--ink-dim)}
+.err{color:var(--accent);font-size:12.5px;margin-top:8px}
+.ok-box{background:var(--bg-raised);border:1.5px solid var(--ink);border-radius:16px 8px 16px 8px;padding:14px 16px;margin-top:12px;font-size:12.5px;line-height:1.6}
+.ok-box b{word-break:break-word}
+.doodle-empty{padding:24px 0}
+.doodle-empty svg{width:56px;height:56px}
+.doodle-empty .p{font-size:13px;margin-top:8px}
+/* modal becomes a bottom sheet on phones */
+.modal-overlay{align-items:flex-end;justify-content:center;padding:0}
+.modal{width:100%;max-width:none;border-radius:18px 18px 0 0;max-height:min(86vh,86dvh);overflow-y:auto;-webkit-overflow-scrolling:touch;padding:18px 18px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px -10px rgba(0,0,0,.3);animation:aSheetUp .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes aSheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@media (min-width:600px){
+  .a-tabbar{display:none}
+  .a-main{padding:20px 24px 24px}
+  .modal-overlay{align-items:center;padding:20px}
+  .modal{width:420px;max-width:calc(100vw - 40px);border-radius:22px 10px 22px 10px;max-height:calc(100vh - 80px);animation:none;box-shadow:8px 8px 0 var(--ink)}
 }
-.admin-table-wrap{overflow-x:auto;border:2px solid var(--ink);border-radius:14px;margin-top:16px}
-.admin-table{width:100%;border-collapse:collapse;font-size:12.5px;white-space:nowrap}
-.admin-table th{text-align:left;padding:10px 12px;background:var(--bg-raised);
-  font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-dim);
-  border-bottom:2px solid var(--ink);}
-.admin-table td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top;white-space:normal}
-.admin-table tr:last-child td{border-bottom:none}
-.admin-table .row-actions{display:flex;gap:6px;flex-wrap:wrap}
-.admin-table .row-actions .btn{padding:7px 12px;font-size:9.5px}
-.status-pill{display:inline-flex;padding:3px 10px;border-radius:999px;border:1.5px solid var(--ink);
-  font-family:var(--font-mono);font-size:9.5px;text-transform:uppercase;}
-.status-new{background:var(--accent);color:#fff;border-color:var(--accent)}
-.status-active{background:var(--success);color:#fff;border-color:var(--success)}
-.status-trial{background:var(--bg-raised);color:var(--ink-dim)}
-.status-suspended,.status-cancelled{background:var(--ink);color:#fff}
-.renewal-soon{color:var(--accent);font-weight:600}
-.renewal-overdue{color:var(--accent);font-weight:700;text-decoration:underline wavy}
-.feature-tag{display:inline-block;padding:2px 8px;margin:1px 2px 1px 0;border-radius:999px;border:1px solid var(--line);font-family:var(--font-mono);font-size:9px;color:var(--ink-dim)}
-.err{color:var(--accent);font-size:12.5px;margin-top:10px}
-.ok-box{background:var(--bg-raised);border:2px solid var(--ink);border-radius:18px 8px 18px 8px;
-  padding:16px 18px;margin-top:16px;font-size:13px;line-height:1.7;}
-.ok-box b{word-break:break-word}
-.admin-nav-btn{background:none;border:none;width:100%;cursor:pointer;font-family:inherit}
-.admin-section{display:none}
-.admin-section.active{display:block}
-#sidebarDrawer{background:rgba(20,20,22,.78);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%)}
-.nav-link span[id^="notifBadge"]{font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,.4)}
-.nav-link.active span[id^="notifBadge"]{color:rgba(255,255,255,.7)}
-.sidebar-nav .nav-divider{border-top:1px solid rgba(255,255,255,.15);margin:14px 0 4px}
-</style><style media="(min-width:900px)">#sidebarDrawer{max-width:320px;box-shadow:-30px 0 70px -20px rgba(0,0,0,.5)}
-.admin-table-wrap{overflow-x:auto;border:2px solid var(--ink);border-radius:14px;margin-top:16px}
-.admin-table{width:100%;border-collapse:collapse;font-size:12.5px;white-space:nowrap}
-.admin-table th{text-align:left;padding:10px 12px;background:var(--bg-raised);
-  font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-dim);
-  border-bottom:2px solid var(--ink);}
-.admin-table td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top;white-space:normal}
-.admin-table tr:last-child td{border-bottom:none}
-.admin-table .row-actions{display:flex;gap:6px;flex-wrap:wrap}
-.admin-table .row-actions .btn{padding:7px 12px;font-size:9.5px}
-.status-pill{display:inline-flex;padding:3px 10px;border-radius:999px;border:1.5px solid var(--ink);
-  font-family:var(--font-mono);font-size:9.5px;text-transform:uppercase;}
-.status-new{background:var(--accent);color:#fff;border-color:var(--accent)}
-.status-active{background:var(--success);color:#fff;border-color:var(--success)}
-.status-trial{background:var(--bg-raised);color:var(--ink-dim)}
-.status-suspended,.status-cancelled{background:var(--ink);color:#fff}
-.renewal-soon{color:var(--accent);font-weight:600}
-.renewal-overdue{color:var(--accent);font-weight:700;text-decoration:underline wavy}
-.feature-tag{display:inline-block;padding:2px 8px;margin:1px 2px 1px 0;border-radius:999px;border:1px solid var(--line);font-family:var(--font-mono);font-size:9px;color:var(--ink-dim)}
-.err{color:var(--accent);font-size:12.5px;margin-top:10px}
-.ok-box{background:var(--bg-raised);border:2px solid var(--ink);border-radius:18px 8px 18px 8px;
-  padding:16px 18px;margin-top:16px;font-size:13px;line-height:1.7;}
-.ok-box b{word-break:break-word}
-.admin-nav-btn{background:none;border:none;width:100%;cursor:pointer;font-family:inherit}
-.admin-section{display:none}
-.admin-section.active{display:block}
-#sidebarDrawer{background:rgba(20,20,22,.78);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%)}
-.nav-link span[id^="notifBadge"]{font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,.4)}
-.nav-link.active span[id^="notifBadge"]{color:rgba(255,255,255,.7)}
-.sidebar-nav .nav-divider{border-top:1px solid rgba(255,255,255,.15);margin:14px 0 4px}
+@media (min-width:860px){
+  .a-side{display:flex;flex-direction:column;width:232px;flex:none;border-right:1px solid var(--line);padding:16px 12px;overflow-y:auto}
+  .a-side-brand{display:flex;align-items:center;gap:8px;padding:6px 8px 14px}
+  .a-side-brand img{width:26px;height:26px;image-rendering:pixelated}
+  .a-side-brand b{font:700 15px var(--font-display)}
+  .a-side-nav{display:flex;flex-direction:column;gap:1px}
+  .a-side-btn{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;text-align:left;padding:9px 10px;border-radius:9px;font:500 14px var(--font-body);color:var(--ink-dim);cursor:pointer}
+  .a-side-btn svg{width:18px;height:18px;flex:none}
+  .a-side-btn .a-row-badge{margin-left:auto;min-width:18px;height:18px;border-radius:999px;background:var(--accent);color:#fff;font:700 10px var(--font-mono);display:flex;align-items:center;justify-content:center;padding:0 5px}
+  .a-side-btn.on{background:var(--bg-raised);color:var(--ink);font-weight:700}
+  .a-side-div{height:1px;background:var(--line);margin:10px 4px}
+  .a-side-link{display:flex;align-items:center;gap:10px;padding:9px 10px;font:500 13px var(--font-body);color:var(--ink-faint);text-decoration:none}
+  .a-topbar-title{font-size:18px}
+  .a-kpis{grid-template-columns:repeat(4,1fr)}
+}
 </style>
 </head>
-<body>
-<div id="pageTransition" class="page-transition" aria-hidden="true"></div>
-<div class="shell">
-  <header class="topbar">
-    <div style="display:flex;gap:8px;align-items:center;order:2">
+<body class="admin-shell">
+<div class="a-shell">
+  <header class="a-topbar">
+    <button type="button" class="a-topbar-back" id="aBack" style="display:none" aria-label="Back">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>More
+    </button>
+    <div class="a-topbar-title" id="pageTitle">Admin</div>
+    <div class="a-topbar-actions">
       <button type="button" class="theme-toggle" data-theme-toggle role="switch" aria-checked="false" aria-label="Dark mode"></button>
-      <button class="hamburger" id="menuToggle" aria-label="Open menu" aria-expanded="false">
-        <span class="menu-btn-label">Menu</span>
+      <button class="a-iconbtn" id="signOutBtn" aria-label="Sign out" style="display:none">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8"/><path d="M10 12h11m0 0-3.5-3.5M21 12l-3.5 3.5"/></svg>
       </button>
     </div>
-    <a href="index.html" class="topbar-logo"><img src="logo.png" alt="AUZslab"></a>
   </header>
 
-  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <div class="a-body">
+    <aside class="a-side" id="adminSide" style="display:none">
+      <div class="a-side-brand"><img src="logo.png" alt=""><b>AUZslab</b></div>
+      <nav class="a-side-nav" aria-label="Admin sections">
+        <button class="a-side-btn active" data-section="leads"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l2 3h6l2-3h4"/><path d="M5 5h14l2 7v7a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-7l2-7Z"/></svg>Leads<span class="a-row-badge" id="notifBadgeLeadsSide" style="display:none"></span></button>
+        <button class="a-side-btn" data-section="signupRequests"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>Signup requests<span class="a-row-badge" id="notifBadgeSignupSide" style="display:none"></span></button>
+        <button class="a-side-btn" data-section="addonRequests"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Add-on requests<span class="a-row-badge" id="notifBadgeAddonSide" style="display:none"></span></button>
+        <button class="a-side-btn" data-section="pricing"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 12.5 12.5 20 4 11.5V4h7.5L20 12.5Z"/><circle cx="8" cy="8" r="1.4"/></svg>Pricing &amp; payments</button>
+        <button class="a-side-btn" data-section="clients"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10v11h16V10"/><path d="M2 10l2-6h16l2 6"/><path d="M9 21v-6h6v6"/></svg>Clients</button>
+        <button class="a-side-btn" data-section="onboard"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/><path d="M19 4v4M17 6h4"/></svg>Onboard new</button>
+        <button class="a-side-btn" data-section="setup"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l2.5 2.5L16 9"/></svg>Client setup<span class="a-row-badge" id="notifBadgeSetupSide" style="display:none"></span></button>
+        <div class="a-side-div"></div>
+        <button class="a-side-btn" data-section="users"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 8a3 3 0 1 1 0 6"/><path d="M15.5 14.3A5.9 5.9 0 0 1 21 20"/></svg>Users</button>
+        <button class="a-side-btn" data-section="systemStats"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="7" rx="1.6"/><rect x="4" y="13" width="16" height="7" rx="1.6"/><circle cx="8" cy="7.5" r=".9" fill="currentColor" stroke="none"/><circle cx="8" cy="16.5" r=".9" fill="currentColor" stroke="none"/></svg>System resources</button>
+        <button class="a-side-btn" data-section="auditLog"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>Audit log</button>
+      </nav>
+      <a href="design-system/nav-kit.html" target="_blank" rel="noopener" class="a-side-link" style="margin-top:auto">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1.2"/><rect x="13" y="4" width="7" height="7" rx="1.2"/><rect x="4" y="13" width="7" height="7" rx="1.2"/><rect x="13" y="13" width="7" height="7" rx="1.2"/></svg>UI Kit
+      </a>
+    </aside>
 
-  <aside class="sidebar" id="sidebarDrawer">
-    <div class="drawer-topbar">
-      <button class="drawer-close" id="drawerClose" aria-label="Close menu"><span aria-hidden="true">&times;</span> Close</button>
-      <a href="index.html" class="drawer-topbar-logo"><img src="logo.png" alt="AUZslab"></a>
-      <div class="drawer-topbar-icons">
-        <a href="cart.html" class="drawer-icon-link" aria-label="Cart"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 7h12l-1 13H7L6 7Z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg></a>
-        <a href="signup.html" class="drawer-icon-link" aria-label="Account"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></a>
-      </div>
-      </div>
-    <nav class="sidebar-nav" id="adminNav" aria-label="Admin sections" style="display:none">
-      <button class="nav-link admin-nav-btn active" data-section="leads"><span>Leads</span><span id="notifBadgeLeads"></span></button>
-      <button class="nav-link admin-nav-btn" data-section="signupRequests"><span>Signup requests</span><span id="notifBadgeSignup"></span></button>
-      <button class="nav-link admin-nav-btn" data-section="addonRequests"><span>Add-on requests</span><span id="notifBadgeAddon"></span></button>
-      <button class="nav-link admin-nav-btn" data-section="pricing"><span>Pricing &amp; payments</span></button>
-      <button class="nav-link admin-nav-btn" data-section="clients"><span>Clients</span></button>
-      <button class="nav-link admin-nav-btn" data-section="onboard"><span>Onboard new</span></button>
-      <button class="nav-link admin-nav-btn" data-section="setup"><span>Client setup</span><span id="notifBadgeSetup"></span></button>
-      <button class="nav-link admin-nav-btn" data-section="systemStats"><span>System resources</span></button>
-      <div class="nav-divider"></div>
-      <a href="design-system/nav-kit.html" target="_blank" rel="noopener" class="nav-link"><span>UI Kit</span></a>
-    </nav>
-    <div class="sidebar-foot">
-      <button class="btn btn-ghost" id="signOutBtn" style="width:100%;justify-content:center;display:none">Sign out</button>
-      <div class="sidebar-copy">&copy; 2026 AUZslab</div>
-    </div>
-  </aside>
+    <main class="a-main" id="aMain">
 
-  <main class="content">
-    <div class="wrap">
-
-      <section class="section" style="padding-top:56px">
-        <div class="hero-grid">
-        <div>
-        <div class="label">AUZlabs internal</div>
-        <h1 class="h-1" id="pageTitle">Admin</h1>
-        <p class="lede" id="pageLede">Sign in to review leads and onboard new clients.</p>
-        </div>
-        <div class="hero-art" role="presentation">
-          <img class="hero-art-logo" src="logo.png" alt="" aria-hidden="true">
-        </div>
-        </div>
-      </section>
-
-      <section class="section tight" id="loginSection">
-        <div class="card" style="max-width:380px">
-          <div class="field">
-            <label for="email">Email</label>
-            <input id="email" type="email">
+      <div class="a-login-wrap" id="loginSection">
+        <div class="a-login-card">
+          <div class="a-brand-row"><img src="logo.png" alt=""><b>AUZslab Admin</b></div>
+          <div class="card">
+            <div class="field">
+              <label for="email">Email</label>
+              <input id="email" type="email">
+            </div>
+            <div class="field">
+              <label for="password">Password</label>
+              <input id="password" type="password">
+            </div>
+            <button id="signin" class="btn btn-primary form-submit">Sign in</button>
+            <div id="loginErr" class="err"></div>
           </div>
-          <div class="field">
-            <label for="password">Password</label>
-            <input id="password" type="password">
+        </div>
+      </div>
+
+      <div class="a-login-wrap" id="notAuthorizedSection" style="display:none">
+        <div class="a-login-card">
+          <div class="card">
+            <span class="tag">Restricted</span>
+            <div class="h-2" style="margin-top:12px;font-size:18px">For AUZslab admin access only</div>
+            <p class="p" style="margin-top:8px;font-size:13px">This account doesn't have access to the admin dashboard. If you're looking for your own business's dashboard, use <a href="account.html" style="color:var(--accent)">account.html</a> instead.</p>
           </div>
-          <button id="signin" class="btn btn-primary form-submit">Sign in</button>
-          <div id="loginErr" class="err"></div>
         </div>
-      </section>
+      </div>
 
-      <section class="section tight" id="notAuthorizedSection" style="display:none">
-        <div class="card" style="max-width:420px">
-          <span class="tag">Restricted</span>
-          <div class="h-2" style="margin-top:14px;font-size:20px">For AUZslab admin access only</div>
-          <p class="p" style="margin-top:10px">This account doesn't have access to the admin dashboard. If you're looking for your own business's dashboard, use <a href="account.html" style="color:var(--accent)">account.html</a> instead.</p>
-        </div>
-      </section>
-
-      <section class="section tight admin-section" id="leadsSection">
+      <section class="a-page" id="leadsSection" data-title="Leads">
         <div class="label">Leads</div>
         <h2 class="h-2">Get-in-touch submissions</h2>
         <div id="leadsList">Loading&hellip;</div>
       </section>
 
-      <section class="section tight admin-section" id="signupRequestsSection">
+      <section class="a-page" id="signupRequestsSection" data-title="Signup requests" data-parent="more">
         <div class="label">Self-serve signups</div>
         <h2 class="h-2">Cart requests</h2>
         <div id="signupRequestsList">Loading&hellip;</div>
       </section>
 
-      
-      <section class="section tight admin-section" id="addonRequestsSection">
+      <section class="a-page" id="addonRequestsSection" data-title="Add-on requests" data-parent="more">
         <div class="label">Existing clients</div>
         <h2 class="h-2">Add-on requests</h2>
         <div id="addonRequestsList">Loading&hellip;</div>
       </section>
 
-      <section class="section tight admin-section" id="pricingSection">
+      <section class="a-page" id="pricingSection" data-title="Pricing">
         <div class="label">Online checkout</div>
         <h2 class="h-2">Pricing</h2>
-        <p class="p" style="margin-top:-8px;margin-bottom:16px">A product only gets a "Pay &amp; activate instantly" button on the cart page once it has a real price here. Leave it at &#8377;0 to keep it on the request-and-we'll-call-you flow.</p>
+        <p class="p">A product only gets a "Pay &amp; activate instantly" button on the cart page once it has a real price here. Leave it at &#8377;0 to keep it on the request-and-we'll-call-you flow.</p>
         <div id="pricingList">Loading&hellip;</div>
 
-        <div class="label" style="margin-top:36px">Bundle plans</div>
+        <div class="label" style="margin-top:28px">Bundle plans</div>
         <h2 class="h-2">Bundles</h2>
-        <p class="p" style="margin-top:-8px;margin-bottom:16px">A bundle's price only applies when a cart's products exactly match its set -- e.g. the Starter bundle only fires when the cart contains exactly AuzsPOS + AuzsPay, nothing more, nothing less. Everything else still prices as a flat sum of the individual products above.</p>
+        <p class="p">A bundle's price only applies when a cart's products exactly match its set. Everything else still prices as a flat sum of the individual products above.</p>
         <div id="bundlesList">Loading&hellip;</div>
 
-        <div class="label" style="margin-top:36px">Razorpay</div>
+        <div class="label" style="margin-top:28px">Razorpay</div>
         <h2 class="h-2">Recent payments</h2>
         <div id="paymentsList">Loading&hellip;</div>
       </section>
 
-      <section class="section tight admin-section" id="clientsSection">
+      <section class="a-page" id="clientsSection" data-title="Clients">
         <div class="label">Your clients</div>
-        <h2 class="h-2">Dashboard</h2>
+        <h2 class="h-2" style="display:flex;align-items:center;gap:10px">Dashboard
+          <button type="button" class="btn btn-ghost" id="goOnboardBtn" style="font-size:11px;padding:6px 12px;min-height:0">+ New client</button>
+        </h2>
         <div id="clientsList">Loading&hellip;</div>
       </section>
 
-      <section class="section tight admin-section" id="onboardSection">
+      <section class="a-page" id="onboardSection" data-title="Onboard new" data-parent="more">
         <div class="label">New client</div>
         <h2 class="h-2">Onboard a new client</h2>
         <div class="card" style="max-width:420px">
@@ -238,65 +258,152 @@
         <div id="result"></div>
       </section>
 
-      <section class="section tight admin-section" id="setupSection">
+      <section class="a-page" id="setupSection" data-title="Client setup" data-parent="more">
         <div class="label">Handoff queue</div>
         <h2 class="h-2">Client setup</h2>
-        <p class="p" style="max-width:640px;color:var(--ink-faint)">Every client below has a working login but hasn't been marked "delivered" yet. Log in as their owner, build out their menu/catalog, tables, staff and (if they have it) Payroll employees using the real app -- then generate a fresh handoff password and send it over.</p>
+        <p class="p">Every client below has a working login but hasn't been marked "delivered" yet. Log in as their owner, build out their menu/catalog, tables, staff and (if they have it) Payroll employees using the real app -- then generate a fresh handoff password and send it over.</p>
         <div id="setupHandoffResult"></div>
         <div id="setupList">Loading&hellip;</div>
       </section>
 
-      <section class="section tight admin-section" id="systemStatsSection">
+      <section class="a-page" id="usersSection" data-title="Users">
+        <div class="label">Every tenant, one directory</div>
+        <h2 class="h-2">Users</h2>
+        <p class="p">Look up one specific person by email, name or business -- not just a whole client at a time. Suspending a user blocks their login immediately (every device, every app) without touching the rest of their business; it's reversible and separate from a self-service account deletion.</p>
+        <input id="userSearch" class="a-search" type="search" placeholder="Search by email, name or business">
+        <div id="usersList" style="margin-top:14px">Loading&hellip;</div>
+      </section>
+
+      <section class="a-page" id="systemStatsSection" data-title="System resources" data-parent="more">
         <div class="label">Droplet: 2 vCPU / 4GB RAM / 75GB disk</div>
         <h2 class="h-2">System resources</h2>
         <div id="systemStatsList">Loading&hellip;</div>
       </section>
 
-    </div>
-  </main>
+      <section class="a-page" id="auditLogSection" data-title="Audit log" data-parent="more">
+        <div class="label">Who did what, when</div>
+        <h2 class="h-2">Audit log</h2>
+        <p class="p">Every admin action that changes a client or a user's access -- editing a client, granting or revoking features, deleting a client, suspending a user, signing a user out everywhere.</p>
+        <div id="auditLogList">Loading&hellip;</div>
+      </section>
 
-  <div class="modal-overlay" id="editOverlay">
-    <div class="modal" id="editModal">
-      <button class="modal-close" id="editClose" aria-label="Close">&times;</button>
-      <div class="label" style="margin-bottom:10px">Edit client</div>
-      <h3 class="h-2" id="editClientName" style="font-size:20px"></h3>
-      <form id="editForm">
-        <div class="field">
-          <label for="editFee">Monthly fee (INR)</label>
-          <input id="editFee" type="number" step="0.01" placeholder="Leave blank to clear">
+      <section class="a-page" id="moreSection" data-title="More">
+        <div class="a-nav-list" id="moreNav">
+          <button class="a-nav-row" data-section="signupRequests">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+            <span class="grow">Signup requests</span><span class="a-row-badge" id="notifBadgeSignupMore" style="display:none"></span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <button class="a-nav-row" data-section="addonRequests">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>
+            <span class="grow">Add-on requests</span><span class="a-row-badge" id="notifBadgeAddonMore" style="display:none"></span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <button class="a-nav-row" data-section="onboard">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/><path d="M19 4v4M17 6h4"/></svg>
+            <span class="grow">Onboard new client</span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <button class="a-nav-row" data-section="setup">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l2.5 2.5L16 9"/></svg>
+            <span class="grow">Client setup</span><span class="a-row-badge" id="notifBadgeSetupMore" style="display:none"></span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <button class="a-nav-row" data-section="systemStats">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="7" rx="1.6"/><rect x="4" y="13" width="16" height="7" rx="1.6"/><circle cx="8" cy="7.5" r=".9" fill="currentColor" stroke="none"/><circle cx="8" cy="16.5" r=".9" fill="currentColor" stroke="none"/></svg>
+            <span class="grow">System resources</span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <button class="a-nav-row" data-section="auditLog">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+            <span class="grow">Audit log</span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <a class="a-nav-row" href="design-system/nav-kit.html" target="_blank" rel="noopener">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1.2"/><rect x="13" y="4" width="7" height="7" rx="1.2"/><rect x="4" y="13" width="7" height="7" rx="1.2"/><rect x="13" y="13" width="7" height="7" rx="1.2"/></svg>
+            <span class="grow">UI Kit</span>
+          </a>
+          <button class="a-nav-row" id="signOutRow" style="color:var(--accent)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8"/><path d="M10 12h11m0 0-3.5-3.5M21 12l-3.5 3.5"/></svg>
+            <span class="grow">Sign out</span>
+          </button>
         </div>
-        <div class="field">
-          <label for="editRenewal">Renewal date</label>
-          <input id="editRenewal" type="date">
-        </div>
-        <div class="field">
-          <label for="editStatus">Status</label>
-          <select id="editStatus">
-            <option value="trial">Trial</option>
-            <option value="active">Active</option>
-            <option value="suspended">Suspended</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="editNotes">Notes</label>
-          <textarea id="editNotes" placeholder="Anything worth remembering about this client"></textarea>
-        </div>
-        <div class="field">
-          <label>Services entitled</label>
-          <div id="editFeatures" style="display:flex;flex-wrap:wrap;gap:10px"></div>
-        </div>
-        <button type="submit" class="btn btn-primary form-submit">Save</button>
-        <div id="editErr" class="err"></div>
-      </form>
-    </div>
+      </section>
+
+    </main>
   </div>
 
+  <nav class="a-tabbar" id="adminTabbar" style="display:none" aria-label="Main">
+    <button class="a-tab-btn on" data-section="leads">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l2 3h6l2-3h4"/><path d="M5 5h14l2 7v7a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-7l2-7Z"/></svg>
+      <span>Leads</span><span class="a-tab-badge" id="notifBadgeLeadsTab" style="display:none"></span>
+    </button>
+    <button class="a-tab-btn" data-section="clients">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10v11h16V10"/><path d="M2 10l2-6h16l2 6"/><path d="M9 21v-6h6v6"/></svg>
+      <span>Clients</span>
+    </button>
+    <button class="a-tab-btn" data-section="pricing">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 12.5 12.5 20 4 11.5V4h7.5L20 12.5Z"/><circle cx="8" cy="8" r="1.4"/></svg>
+      <span>Pricing</span>
+    </button>
+    <button class="a-tab-btn" data-section="users">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 8a3 3 0 1 1 0 6"/><path d="M15.5 14.3A5.9 5.9 0 0 1 21 20"/></svg>
+      <span>Users</span>
+    </button>
+    <button class="a-tab-btn" data-section="more">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg>
+      <span>More</span><span class="a-tab-badge" id="notifBadgeMoreTab" style="display:none"></span>
+    </button>
+  </nav>
+</div>
+
+<div class="modal-overlay" id="editOverlay">
+  <div class="modal" id="editModal">
+    <button class="modal-close" id="editClose" aria-label="Close">&times;</button>
+    <div class="label" style="margin-bottom:10px">Edit client</div>
+    <h3 class="h-2" id="editClientName" style="font-size:20px"></h3>
+    <form id="editForm">
+      <div class="field">
+        <label for="editFee">Monthly fee (INR)</label>
+        <input id="editFee" type="number" step="0.01" placeholder="Leave blank to clear">
+      </div>
+      <div class="field">
+        <label for="editRenewal">Renewal date</label>
+        <input id="editRenewal" type="date">
+      </div>
+      <div class="field">
+        <label for="editStatus">Status</label>
+        <select id="editStatus">
+          <option value="trial">Trial</option>
+          <option value="active">Active</option>
+          <option value="suspended">Suspended</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="editNotes">Notes</label>
+        <textarea id="editNotes" placeholder="Anything worth remembering about this client"></textarea>
+      </div>
+      <div class="field">
+        <label>Services entitled</label>
+        <div id="editFeatures" style="display:flex;flex-wrap:wrap;gap:10px"></div>
+      </div>
+      <button type="submit" class="btn btn-primary form-submit">Save</button>
+      <div id="editErr" class="err"></div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="userOverlay">
+  <div class="modal" id="userModal">
+    <button class="modal-close" id="userClose" aria-label="Close">&times;</button>
+    <div class="label" style="margin-bottom:10px">User</div>
+    <h3 class="h-2" id="userModalName" style="font-size:20px"></h3>
+    <div id="userModalBody" style="margin-top:14px"></div>
+  </div>
 </div>
 
 <script src="/sb-client.js?v=2"></script>
-<script src="tool/lock.js?v=1"></script>
-<script src="tool/site.js?v=8"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script>
 const sb = supabase.createClient(CFG.url, CFG.key);
@@ -307,7 +414,7 @@ function esc(s) {
 
 function emptyDoodle(text) {
   return `<div class="doodle-empty">
-    <svg width="88" height="88" viewBox="0 0 88 88" fill="none" aria-hidden="true">
+    <svg width="56" height="56" viewBox="0 0 88 88" fill="none" aria-hidden="true">
       <path d="M14 34 44 22 74 34 44 46Z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
       <path d="M14 34v28l30 12V46" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
       <path d="M74 34v28L44 74V46" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
@@ -329,34 +436,57 @@ async function copyDemoLink(kind, id, btn) {
   }
 }
 
-document.querySelectorAll('.admin-nav-btn').forEach((btn) => {
-  btn.onclick = () => {
-    document.querySelectorAll('.admin-nav-btn').forEach((b) => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.querySelectorAll('.admin-section').forEach((s) => s.classList.remove('active'));
-    document.getElementById(btn.dataset.section + 'Section').classList.add('active');
-    const drawer = document.getElementById('sidebarDrawer');
-    const overlay = document.getElementById('drawerOverlay');
-    const toggle = document.getElementById('menuToggle');
-    if (drawer) drawer.classList.remove('open');
-    if (overlay) overlay.classList.remove('open');
-    if (toggle) toggle.classList.remove('is-open');
-    if (btn.dataset.section === 'leads') markAdminNotifsRead('lead');
-    if (btn.dataset.section === 'signupRequests') markAdminNotifsRead('signup_request');
-    if (btn.dataset.section === 'addonRequests') markAdminNotifsRead('addon_request');
-  };
+// ---------- navigation: tab bar (phone) + flat sidebar (tablet/desktop) + a "More" page for overflow ----------
+const PRIMARY = ['leads', 'clients', 'pricing', 'users'];
+let currentSection = 'leads';
+
+function isDeskNav() { return innerWidth >= 860; }
+
+function openSection(name, opts = {}) {
+  currentSection = name;
+  document.querySelectorAll('.a-page').forEach((s) => s.classList.remove('active'));
+  const target = document.getElementById(name + 'Section');
+  if (target) target.classList.add('active');
+
+  const title = target ? (target.dataset.title || 'Admin') : 'Admin';
+  document.getElementById('pageTitle').textContent = title;
+
+  const secondary = target && target.dataset.parent === 'more';
+  document.getElementById('aBack').style.display = (secondary && !isDeskNav()) ? 'flex' : 'none';
+
+  document.querySelectorAll('.a-tab-btn').forEach((b) => {
+    const on = b.dataset.section === name || (b.dataset.section === 'more' && (name === 'more' || secondary));
+    b.classList.toggle('on', on);
+  });
+  document.querySelectorAll('.a-side-btn').forEach((b) => b.classList.toggle('on', b.dataset.section === name));
+
+  if (!opts.silent) document.getElementById('aMain').scrollTop = 0;
+  if (name === 'leads') markAdminNotifsRead('lead');
+  if (name === 'signupRequests') markAdminNotifsRead('signup_request');
+  if (name === 'addonRequests') markAdminNotifsRead('addon_request');
+}
+document.querySelectorAll('[data-section]').forEach((btn) => {
+  btn.addEventListener('click', () => openSection(btn.dataset.section));
 });
+document.getElementById('aBack').onclick = () => openSection('more');
+document.getElementById('goOnboardBtn').onclick = () => openSection('onboard');
+document.getElementById('signOutRow').onclick = () => document.getElementById('signOutBtn').click();
 
 async function refreshAdminNotifBadges() {
   const { data } = await sb.from('notifications').select('id,type').eq('read', false);
   const counts = {};
   (data || []).forEach((n) => { counts[n.type] = (counts[n.type] || 0) + 1; });
-  const leadsBadge = document.getElementById('notifBadgeLeads');
-  const signupBadge = document.getElementById('notifBadgeSignup');
-  const addonBadge = document.getElementById('notifBadgeAddon');
-  if (leadsBadge) leadsBadge.textContent = counts.lead ? ' (' + counts.lead + ')' : '';
-  if (signupBadge) signupBadge.textContent = counts.signup_request ? ' (' + counts.signup_request + ')' : '';
-  if (addonBadge) addonBadge.textContent = counts.addon_request ? ' (' + counts.addon_request + ')' : '';
+  const setBadge = (ids, n) => ids.forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = n ? '' : 'none';
+    el.textContent = n ? (el.classList.contains('a-tab-badge') || el.classList.contains('a-row-badge') ? String(n) : ' (' + n + ')') : '';
+  });
+  setBadge(['notifBadgeLeadsSide', 'notifBadgeLeadsTab'], counts.lead || 0);
+  setBadge(['notifBadgeSignupSide', 'notifBadgeSignupMore'], counts.signup_request || 0);
+  setBadge(['notifBadgeAddonSide', 'notifBadgeAddonMore'], counts.addon_request || 0);
+  const moreTotal = (counts.signup_request || 0) + (counts.addon_request || 0) + (document.querySelectorAll('#notifBadgeSetupSide:not([style*="display: none"])').length ? Number(document.getElementById('notifBadgeSetupSide').textContent) || 0 : 0);
+  setBadge(['notifBadgeMoreTab'], moreTotal);
 }
 async function markAdminNotifsRead(type) {
   const { data } = await sb.from('notifications').select('id').eq('read', false).eq('type', type);
@@ -372,14 +502,13 @@ async function checkSession() {
 
   const { data: clients, error: gateErr } = await sb.rpc('list_clients', {});
   if (gateErr) {
-    document.getElementById('pageLede').textContent = 'Signed in as ' + session.user.email + '.';
-    document.getElementById('notAuthorizedSection').style.display = 'block';
+    document.getElementById('notAuthorizedSection').style.display = 'flex';
     return;
   }
 
-  document.getElementById('pageLede').textContent = 'Signed in as ' + session.user.email;
-  document.getElementById('adminNav').style.display = 'flex';
-  document.getElementById('leadsSection').classList.add('active');
+  document.getElementById('adminSide').style.display = 'flex';
+  document.getElementById('adminTabbar').style.display = 'grid';
+  openSection('leads', { silent: true });
   loadLeads();
   loadSignupRequests();
   loadAddonRequests();
@@ -388,6 +517,8 @@ async function checkSession() {
   loadPricing();
   loadBundles();
   loadPayments();
+  loadUsers();
+  loadAuditLog();
   refreshAdminNotifBadges();
   setInterval(refreshAdminNotifBadges, 20000);
 }
@@ -418,11 +549,11 @@ async function loadLeads() {
   if (!data || !data.length) { listEl.innerHTML = emptyDoodle('No leads yet.'); return; }
   const rows = data.slice().reverse().map((l) => `
     <tr data-id="${l.id}">
-      <td><b>${esc(l.name)}</b>${l.business ? '<br>' + esc(l.business) : ''}</td>
-      <td>${esc(l.contact)}</td>
-      <td>${esc(l.niche || '&mdash;')}</td>
-      <td>${esc(l.message || '')}</td>
-      <td><span class="status-pill ${l.status === 'new' ? 'status-new' : ''}">${esc(l.status)}</span></td>
+      <td data-label="Name"><b>${esc(l.name)}</b>${l.business ? '<br>' + esc(l.business) : ''}</td>
+      <td data-label="Contact">${esc(l.contact)}</td>
+      <td data-label="Niche">${esc(l.niche || '&mdash;')}</td>
+      <td data-label="Message">${esc(l.message || '')}</td>
+      <td data-label="Status"><span class="status-pill ${l.status === 'new' ? 'status-new' : ''}">${esc(l.status)}</span></td>
       <td class="row-actions">
         <button class="btn btn-ghost" data-use>Use for onboarding</button>
         <button class="btn btn-ghost" data-demo>Copy demo link</button>
@@ -439,7 +570,7 @@ async function loadLeads() {
     const lead = data.find((l) => l.id === id);
     const useBtn = tr.querySelector('[data-use]');
     if (useBtn) useBtn.onclick = () => {
-      document.querySelector('[data-section="onboard"]').click();
+      openSection('onboard');
       document.getElementById('name').value = lead.business || lead.name;
       document.getElementById('niche').value = lead.niche || 'general';
       document.getElementById('ownerEmail').value = lead.contact.includes('@') ? lead.contact : '';
@@ -462,6 +593,7 @@ async function loadSignupRequests() {
   const { data, error } = await sb.from('signup_requests').select('*').order('created_at');
   if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
   const pending = (data || []).filter((r) => r.status === 'pending');
+  const badgeEls = ['notifBadgeSetupSide'];
   if (!pending.length) { listEl.innerHTML = emptyDoodle('No pending signup requests.'); return; }
 
   const rows = pending.slice().reverse().map((r) => {
@@ -469,16 +601,16 @@ async function loadSignupRequests() {
       .map(([k]) => `<span class="feature-tag">${esc(FEATURE_LABEL[k] || k)}</span>`).join('') || '&mdash;';
     return `
     <tr data-id="${r.id}">
-      <td>
+      <td data-label="Business">
         <b>${esc(r.business_name)}</b><br><span style="color:var(--ink-faint)">${esc(r.slug)}.auzslab.in</span><br>
         <span style="color:var(--ink-faint)">${esc(NICHE_LABEL[r.niche] || r.niche || 'Type not given')}${r.address ? ' &middot; ' + esc(r.address) : ''}</span>
       </td>
-      <td>
+      <td data-label="Contact">
         <b>${r.contact_name ? esc(r.contact_name) : '&mdash;'}</b><br>
         <span style="color:var(--ink-faint)">${r.phone ? esc(r.phone) : 'No phone given'}</span>
       </td>
-      <td>${services}</td>
-      <td>${r.notes ? esc(r.notes) : '&mdash;'}</td>
+      <td data-label="Requested">${services}</td>
+      <td data-label="Notes">${r.notes ? esc(r.notes) : '&mdash;'}</td>
       <td class="row-actions">
         <button class="btn btn-primary" data-approve>Approve</button>
         <button class="btn btn-ghost" data-demo>Copy demo link</button>
@@ -527,9 +659,9 @@ async function loadAddonRequests() {
       .map(([k]) => `<span class="feature-tag">${esc(FEATURE_LABEL[k] || k)}</span>`).join('') || '&mdash;';
     return `
     <tr data-id="${r.id}">
-      <td><b>${esc(r.tenant_name)}</b><br><span style="color:var(--ink-faint)">${esc(r.tenant_slug)}.auzslab.in</span></td>
-      <td>${services}</td>
-      <td>${r.notes ? esc(r.notes) : '&mdash;'}</td>
+      <td data-label="Client"><b>${esc(r.tenant_name)}</b><br><span style="color:var(--ink-faint)">${esc(r.tenant_slug)}.auzslab.in</span></td>
+      <td data-label="Requested">${services}</td>
+      <td data-label="Notes">${r.notes ? esc(r.notes) : '&mdash;'}</td>
       <td class="row-actions">
         <button class="btn btn-primary" data-approve>Approve</button>
         <button class="btn btn-ghost" data-decline>Decline</button>
@@ -580,25 +712,23 @@ async function loadSystemStats() {
   const connWarn = conns >= APP_POOL_MAX ? ' style="color:var(--accent)"' : '';
   const topRows = (data.top_tenants_by_rows || []).map((t) => `
     <tr>
-      <td><b>${esc(t.name)}</b><br><span style="color:var(--ink-faint)">${esc(t.slug)}.auzslab.in</span></td>
-      <td>${t.row_count.toLocaleString()}</td>
+      <td data-label="Client"><b>${esc(t.name)}</b><br><span style="color:var(--ink-faint)">${esc(t.slug)}.auzslab.in</span></td>
+      <td data-label="Rows">${t.row_count.toLocaleString()}</td>
     </tr>`).join('');
 
   listEl.innerHTML = `
-    <div class="card" style="max-width:640px">
-      <div class="stat-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px 24px">
-        <div><div class="label">Tenants</div><div class="h-2" style="font-size:26px">${data.tenant_count}</div></div>
-        <div><div class="label">DB connections (app pool)</div><div class="h-2" style="font-size:26px"${connWarn}>${conns} / ${APP_POOL_MAX}</div></div>
-        <div><div class="label">Database size</div><div class="h-2" style="font-size:26px">${formatBytes(data.db_size_bytes)}</div></div>
-        <div><div class="label">Records (all tenants)</div><div class="h-2" style="font-size:26px">${data.records_total.toLocaleString()}</div></div>
-        <div><div class="label">Uploads storage</div><div class="h-2" style="font-size:26px" id="uploadsUsageVal">&hellip;</div></div>
-      </div>
+    <div class="a-kpis" style="grid-template-columns:repeat(2,1fr)">
+      <div class="a-kpi"><div class="k">Tenants</div><div class="n">${data.tenant_count}</div></div>
+      <div class="a-kpi"><div class="k">DB connections</div><div class="n"${connWarn}>${conns} / ${APP_POOL_MAX}</div></div>
+      <div class="a-kpi"><div class="k">Database size</div><div class="n">${formatBytes(data.db_size_bytes)}</div></div>
+      <div class="a-kpi"><div class="k">Records (all tenants)</div><div class="n">${data.records_total.toLocaleString()}</div></div>
+      <div class="a-kpi"><div class="k">Uploads storage</div><div class="n" id="uploadsUsageVal">&hellip;</div></div>
     </div>
-    <div class="label" style="margin-top:22px">Largest tenants by row count</div>
+    <div class="label" style="margin-top:18px">Largest tenants by row count</div>
     ${topRows
-      ? `<div class="admin-table-wrap"><table class="admin-table"><tr><th>Client</th><th>Rows</th></tr>${topRows}</table></div>`
+      ? `<div class="admin-table-wrap" style="margin-top:8px"><table class="admin-table"><tr><th>Client</th><th>Rows</th></tr>${topRows}</table></div>`
       : emptyDoodle('No tenant data yet.')}
-    <p class="p" style="color:var(--ink-faint);margin-top:14px">Droplet is 2 vCPU / 4GB RAM / 75GB disk.</p>
+    <p class="p" style="margin-top:12px">Droplet is 2 vCPU / 4GB RAM / 75GB disk.</p>
   `;
 
   const uploadsEl = document.getElementById('uploadsUsageVal');
@@ -621,10 +751,10 @@ async function loadPricing() {
 
   const rows = (data || []).map((p) => `
     <tr data-key="${esc(p.key)}">
-      <td><b>${esc(p.label)}</b></td>
-      <td>
+      <td data-label="Product"><b>${esc(p.label)}</b></td>
+      <td data-label="Monthly price">
         <span style="display:inline-flex;align-items:center;gap:6px">
-          &#8377; <input class="input" data-price type="number" min="0" step="1" value="${Number(p.monthly_price)}" style="width:110px">
+          &#8377; <input class="input" data-price type="number" min="0" step="1" value="${Number(p.monthly_price)}" style="width:100px">
           <span style="color:var(--ink-faint)">/mo</span>
         </span>
       </td>
@@ -654,10 +784,10 @@ async function loadBundles() {
 
   const rows = (data || []).map((b) => `
     <tr data-key="${esc(b.key)}">
-      <td><b>${esc(b.label)}</b><br><span style="color:var(--ink-faint)">${b.feature_keys.map((k) => esc(FEATURE_LABEL[k] || k)).join(' + ')}</span></td>
-      <td>
+      <td data-label="Bundle"><b>${esc(b.label)}</b><br><span style="color:var(--ink-faint)">${b.feature_keys.map((k) => esc(FEATURE_LABEL[k] || k)).join(' + ')}</span></td>
+      <td data-label="Monthly price">
         <span style="display:inline-flex;align-items:center;gap:6px">
-          &#8377; <input class="input" data-price type="number" min="0" step="1" value="${Number(b.monthly_price)}" style="width:110px">
+          &#8377; <input class="input" data-price type="number" min="0" step="1" value="${Number(b.monthly_price)}" style="width:100px">
           <span style="color:var(--ink-faint)">/mo</span>
         </span>
       </td>
@@ -688,11 +818,11 @@ async function loadPayments() {
 
   const rows = data.map((p) => `
     <tr>
-      <td><b>${esc(p.target_name)}</b><br><span style="color:var(--ink-faint)">${esc(p.kind === 'signup' ? 'New signup' : 'Add-on')}</span></td>
-      <td>${esc(p.user_email)}</td>
-      <td>&#8377;${Number(p.amount).toLocaleString('en-IN')}</td>
-      <td><span class="tag" style="background:${p.status === 'paid' ? 'var(--accent)' : 'transparent'};color:${p.status === 'paid' ? '#fff' : 'inherit'}">${esc(p.status)}</span></td>
-      <td style="color:var(--ink-faint)">${new Date(p.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</td>
+      <td data-label="For"><b>${esc(p.target_name)}</b><br><span style="color:var(--ink-faint)">${esc(p.kind === 'signup' ? 'New signup' : 'Add-on')}</span></td>
+      <td data-label="Customer">${esc(p.user_email)}</td>
+      <td data-label="Amount">&#8377;${Number(p.amount).toLocaleString('en-IN')}</td>
+      <td data-label="Status"><span class="tag" style="background:${p.status === 'paid' ? 'var(--accent)' : 'transparent'};color:${p.status === 'paid' ? '#fff' : 'inherit'}">${esc(p.status)}</span></td>
+      <td data-label="When" style="color:var(--ink-faint)">${new Date(p.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</td>
     </tr>`).join('');
 
   listEl.innerHTML = `<div class="admin-table-wrap"><table class="admin-table">
@@ -713,7 +843,7 @@ async function loadClients(preFetched) {
   }
   clientsCache = data || [];
   loadSetupQueue();
-  if (!clientsCache.length) { listEl.innerHTML = emptyDoodle('No clients yet &mdash; onboard one below.'); return; }
+  if (!clientsCache.length) { listEl.innerHTML = emptyDoodle('No clients yet &mdash; onboard one above.'); return; }
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const rows = clientsCache.map((c) => {
@@ -728,13 +858,13 @@ async function loadClients(preFetched) {
     }
     return `
     <tr data-id="${c.id}">
-      <td><b>${esc(c.name)}</b><br><span style="color:var(--ink-faint)">${esc(c.slug)}.auzslab.in</span></td>
-      <td>${esc(NICHE_LABEL[c.niche] || c.niche)}</td>
-      <td>${services}</td>
-      <td>${c.monthly_fee != null ? '&#8377;' + esc(c.monthly_fee) : '&mdash;'}</td>
-      <td>${renewalHtml}</td>
-      <td><span class="status-pill status-${esc(c.status)}">${esc(c.status)}</span></td>
-      <td>${c.notes ? esc(c.notes) : '&mdash;'}</td>
+      <td data-label="Client"><b>${esc(c.name)}</b><br><span style="color:var(--ink-faint)">${esc(c.slug)}.auzslab.in</span></td>
+      <td data-label="Niche">${esc(NICHE_LABEL[c.niche] || c.niche)}</td>
+      <td data-label="Services">${services}</td>
+      <td data-label="Fee">${c.monthly_fee != null ? '&#8377;' + esc(c.monthly_fee) : '&mdash;'}</td>
+      <td data-label="Renewal">${renewalHtml}</td>
+      <td data-label="Status"><span class="status-pill status-${esc(c.status)}">${esc(c.status)}</span></td>
+      <td data-label="Notes">${c.notes ? esc(c.notes) : '&mdash;'}</td>
       <td class="row-actions">
         <button class="btn btn-ghost" data-edit>Edit</button>
         <button class="btn btn-ghost" data-reset-pw>Reset password</button>
@@ -791,15 +921,19 @@ async function loadClients(preFetched) {
 function loadSetupQueue() {
   const listEl = document.getElementById('setupList');
   const pending = clientsCache.filter((c) => !c.delivered_at);
-  const badge = document.getElementById('notifBadgeSetup');
-  if (badge) badge.textContent = pending.length ? ' (' + pending.length + ')' : '';
+  ['notifBadgeSetupSide', 'notifBadgeSetupMore'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = pending.length ? '' : 'none';
+    el.textContent = pending.length ? String(pending.length) : '';
+  });
   if (!pending.length) { listEl.innerHTML = emptyDoodle('Nothing waiting -- every client has been set up and handed over.'); return; }
 
   listEl.innerHTML = pending.map((c) => {
     const services = Object.entries(c.features || {}).filter(([, on]) => on)
       .map(([k]) => `<span class="feature-tag">${esc(FEATURE_LABEL[k] || k)}</span>`).join('') || '&mdash;';
     return `
-    <div class="card" data-id="${c.id}" style="max-width:640px;margin-bottom:14px">
+    <div class="card" data-id="${c.id}" style="max-width:640px;margin-bottom:12px">
       <b>${esc(c.name)}</b> &mdash; <span style="color:var(--ink-faint)">${esc(c.slug)}.auzslab.in</span><br>
       <span style="color:var(--ink-faint)">${esc(NICHE_LABEL[c.niche] || c.niche)}</span> &middot; ${services}
       <div class="row-actions" style="margin-top:10px">
@@ -823,7 +957,7 @@ function loadSetupQueue() {
           Open <a href="https://${esc(c.slug)}.auzslab.in" target="_blank" rel="noopener"><b>${esc(c.slug)}.auzslab.in</b></a> and sign in as owner to build out their setup:<br>
           Email: <b>${esc(data.email)}</b><br>
           Password: <b>${esc(data.temp_password)}</b><br>
-          <span style="color:var(--ink-faint);font-size:12.5px">This is a working password just for you to set things up with -- generate a fresh one below once you're done.</span>
+          <span style="color:var(--ink-faint);font-size:12px">This is a working password just for you to set things up with -- generate a fresh one below once you're done.</span>
         </div>`;
     };
   });
@@ -839,9 +973,9 @@ function loadSetupQueue() {
       if (delErr) { alert(delErr.message); return; }
       const msg = `Your AUZslab account for ${c.name} is ready!\n\nLog in here: https://auzslab.in/signup.html (use the "Log in" tab)\nEmail: ${pw.email}\nPassword: ${pw.temp_password}\n\nOnce you're in, open "Your dashboard" to see your live site -- and please change your password from there.`;
       document.getElementById('setupHandoffResult').innerHTML = `
-        <div class="ok-box" style="margin-bottom:14px">
+        <div class="ok-box" style="margin-bottom:12px">
           <b>${esc(c.name)}</b> marked as delivered. Copy this and send it to them directly (WhatsApp, SMS, etc.):
-          <textarea readonly rows="6" style="width:100%;margin-top:8px;font:inherit;padding:10px;border:1.5px solid var(--l);border-radius:10px" onclick="this.select()">${esc(msg)}</textarea>
+          <textarea readonly rows="6" style="width:100%;margin-top:8px;font:inherit;padding:10px;border:1.5px solid var(--line);border-radius:10px" onclick="this.select()">${esc(msg)}</textarea>
           <button class="btn btn-primary" style="margin-top:8px" data-copy-handoff>Copy message</button>
         </div>`;
       document.querySelector('#setupHandoffResult [data-copy-handoff]').onclick = async (e) => {
@@ -944,6 +1078,130 @@ document.getElementById('form').onsubmit = async (e) => {
   e.target.reset();
   loadClients();
 };
+
+// ---------- Users directory + audit log (db/087) ----------
+let usersCache = [];
+
+async function loadUsers(query) {
+  const listEl = document.getElementById('usersList');
+  const { data, error } = await sb.rpc('admin_list_users', { p_query: query || null, p_limit: 50 });
+  if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  usersCache = data || [];
+  if (!usersCache.length) { listEl.innerHTML = emptyDoodle(query ? 'No users match that search.' : 'No users yet.'); return; }
+
+  const rows = usersCache.map((u) => `
+    <tr data-id="${u.id}">
+      <td data-label="User"><b>${esc(u.name || u.email)}</b><br><span style="color:var(--ink-faint)">${esc(u.email)}</span></td>
+      <td data-label="Business">${u.tenant_name ? `<b>${esc(u.tenant_name)}</b><br><span style="color:var(--ink-faint)">${esc(u.tenant_slug)}.auzslab.in</span>` : '&mdash;'}</td>
+      <td data-label="Role">${u.role ? esc(u.role) : (u.is_platform_admin ? 'platform admin' : '&mdash;')}</td>
+      <td data-label="Status">${u.disabled_at ? '<span class="status-pill status-suspended">suspended</span>' : u.deleted_at ? '<span class="status-pill status-cancelled">deleted</span>' : '<span class="status-pill status-active">active</span>'}</td>
+      <td class="row-actions"><button class="btn btn-ghost" data-view>View</button></td>
+    </tr>`).join('');
+
+  listEl.innerHTML = `<div class="admin-table-wrap"><table class="admin-table">
+    <tr><th>User</th><th>Business</th><th>Role</th><th>Status</th><th></th></tr>
+    ${rows}
+  </table></div>`;
+
+  listEl.querySelectorAll('[data-view]').forEach((btn) => {
+    btn.onclick = () => openUserModal(btn.closest('tr').dataset.id);
+  });
+}
+
+let userSearchTimer = 0;
+document.getElementById('userSearch').addEventListener('input', (e) => {
+  clearTimeout(userSearchTimer);
+  const q = e.target.value.trim();
+  userSearchTimer = setTimeout(() => loadUsers(q), 250);
+});
+
+async function openUserModal(id) {
+  const u = usersCache.find((x) => x.id === id);
+  if (!u) return;
+  document.getElementById('userModalName').textContent = u.name || u.email;
+  const bodyEl = document.getElementById('userModalBody');
+  bodyEl.innerHTML = '<p class="p">Loading sessions&hellip;</p>';
+  document.getElementById('userOverlay').classList.add('open');
+
+  const { data: session } = await sb.auth.getSession();
+  const token = session.session.access_token;
+  let sessions = [];
+  try {
+    const res = await fetch(CFG.url + '/admin/users/' + id + '/sessions', { headers: { Authorization: 'Bearer ' + token } });
+    const body = await res.json();
+    if (res.ok) sessions = body.sessions || [];
+  } catch {}
+
+  const statusLine = u.disabled_at ? 'Suspended -- cannot sign in anywhere until reactivated.' : u.deleted_at ? 'This account was self-deleted.' : 'Active.';
+  bodyEl.innerHTML = `
+    <div class="ok-box" style="margin-top:0">
+      <b>${esc(u.email)}</b><br>
+      ${u.tenant_name ? `${esc(u.tenant_name)} (${esc(u.tenant_slug)}.auzslab.in) &middot; ${esc(u.role || '')}<br>` : (u.is_platform_admin ? 'Platform admin<br>' : '')}
+      <span style="color:var(--ink-faint)">${statusLine}</span>
+    </div>
+    <div class="label" style="margin-top:16px">Active sessions (${sessions.length})</div>
+    ${sessions.length
+      ? `<div class="a-nav-list" style="margin-top:6px">${sessions.map((s) => `<div class="a-nav-row" style="cursor:default"><span class="grow">${esc(s.device_label || 'Unknown device')}<br><span style="color:var(--ink-faint);font-size:11.5px">${s.ip ? esc(s.ip) + ' &middot; ' : ''}last seen ${new Date(s.last_seen_at || s.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</span></span></div>`).join('')}</div>`
+      : '<p class="p">No active sessions.</p>'}
+    <div class="row-actions" style="margin-top:16px;flex-wrap:wrap;gap:8px">
+      ${sessions.length ? '<button class="btn btn-ghost" id="userRevokeBtn">Sign out everywhere</button>' : ''}
+      ${u.disabled_at
+        ? '<button class="btn btn-primary" id="userToggleBtn">Reactivate</button>'
+        : `<button class="btn btn-ghost" id="userToggleBtn" style="color:var(--accent);border-color:var(--accent)">Suspend</button>`}
+    </div>
+    <div id="userModalErr" class="err"></div>
+  `;
+
+  const revokeBtn = document.getElementById('userRevokeBtn');
+  if (revokeBtn) revokeBtn.onclick = async () => {
+    if (!confirm(`Sign "${u.email}" out of every device right now?`)) return;
+    try {
+      const res = await fetch(CFG.url + '/admin/users/' + id + '/revoke-sessions', { method: 'POST', headers: { Authorization: 'Bearer ' + token } });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || 'failed');
+      openUserModal(id);
+    } catch (err) { document.getElementById('userModalErr').textContent = err.message; }
+  };
+  document.getElementById('userToggleBtn').onclick = async () => {
+    const disabling = !u.disabled_at;
+    if (disabling && !confirm(`Suspend "${u.email}"? They won't be able to sign in anywhere until you reactivate them.`)) return;
+    const { error } = await sb.rpc('admin_set_user_disabled', { p_user_id: id, p_disabled: disabling });
+    if (error) { document.getElementById('userModalErr').textContent = error.message; return; }
+    document.getElementById('userOverlay').classList.remove('open');
+    loadUsers(document.getElementById('userSearch').value.trim());
+    loadAuditLog();
+  };
+}
+document.getElementById('userClose').onclick = () => document.getElementById('userOverlay').classList.remove('open');
+document.getElementById('userOverlay').onclick = (e) => { if (e.target.id === 'userOverlay') e.currentTarget.classList.remove('open'); };
+
+const AUDIT_ACTION_LABEL = {
+  suspend_user: 'Suspended a user', reactivate_user: 'Reactivated a user', revoke_sessions: 'Signed a user out everywhere',
+  update_client: 'Edited a client', set_tenant_features: 'Changed a client’s services', delete_client: 'Deleted a client',
+};
+async function loadAuditLog() {
+  const listEl = document.getElementById('auditLogList');
+  const { data, error } = await sb.rpc('admin_list_audit', { p_limit: 100 });
+  if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  if (!data || !data.length) { listEl.innerHTML = emptyDoodle('No admin actions logged yet.'); return; }
+
+  const rows = data.map((a) => {
+    const d = a.detail || {};
+    const detail = d.slug ? `${esc(d.slug)}.auzslab.in` : d.email ? esc(d.email) : '';
+    return `
+    <tr>
+      <td data-label="Action">${esc(AUDIT_ACTION_LABEL[a.action] || a.action)}</td>
+      <td data-label="Target">${detail || '&mdash;'}</td>
+      <td data-label="Admin">${esc(a.admin_name)}</td>
+      <td data-label="When" style="color:var(--ink-faint)">${new Date(a.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</td>
+    </tr>`;
+  }).join('');
+
+  listEl.innerHTML = `<div class="admin-table-wrap"><table class="admin-table">
+    <tr><th>Action</th><th>Target</th><th>Admin</th><th>When</th></tr>
+    ${rows}
+  </table></div>`;
+}
 </script>
 </body>
 </html>
