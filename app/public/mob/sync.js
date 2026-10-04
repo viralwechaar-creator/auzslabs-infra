@@ -75,6 +75,10 @@ async function rejectLocal(fn, args) {
     if (p && p.unitId) await idbDelete('units', p.unitId);
     const movements = await idbGetAll('stockMovements');
     for (const m of movements) if (m.ref_id === args.p_id) await idbDelete('stockMovements', m.id);
+  } else if (fn === 'mob_push_repair_event') {
+    // a status/part/payment/note tap that the server refused (e.g. not the job's staffer) would otherwise
+    // keep showing locally forever -- the job looking updated on this phone while the server never recorded it
+    await idbDelete('repairEvents', args.p_id);
   }
   window.dispatchEvent(new CustomEvent('mob:pulled'));
 }

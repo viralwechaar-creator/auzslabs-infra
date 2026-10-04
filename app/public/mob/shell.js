@@ -128,7 +128,18 @@ async function boot() {
   let ctx;
   try { ctx = await api('mob_context'); } catch (e) { return blocked('Could not open AUZsMob', e.message); }
   S.ctx = ctx; S.perms = ctx.perms || {};
-  setLang(ctx.my_language || 'en');
+  // Carry the language picked at the (pre-login) sign-in screen into the app itself. mob_context's
+  // my_language is only ever a real preference once this staffer (or their shop) has explicitly saved
+  // one -- my_language_set says whether that's happened yet. Until then, trust whatever was picked at
+  // login (localStorage) over the 'en' fallback, and save it so it's their real preference from here on;
+  // once it's been set for real, always defer to the saved value, the way Settings expects.
+  let localLang; try { localLang = localStorage['mob.lang']; } catch { /* private mode */ }
+  if (!ctx.my_language_set && (localLang === 'hi' || localLang === 'en') && localLang !== ctx.my_language) {
+    setLang(localLang);
+    api('mob_save_my_language', { p_lang: localLang }).catch(() => { /* syncs next time Settings is opened */ });
+  } else {
+    setLang(ctx.my_language || 'en');
+  }
   if (window.auzBrandLoad) auzBrandLoad(sb);
   await openDb(); // warm up IndexedDB before the first screen needs it
   trySync();
@@ -183,7 +194,9 @@ function moreSheet() {
   const nav = navList().filter(([id]) => !tabs.includes(id));
   const body = h('div', { class: 'grid' },
     nav.length ? section(t('more'), h('div', { class: 'list' }, nav.map(([id, , ic]) => liRow({ icon: ic, title: t(id), chevron: true, onclick: () => { s.close(); go(id); } })))) : null,
-    h('div', { class: 'list' }, liRow({ icon: 'moon', tone: 'gray', title: 'Appearance', badge: seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v)) })),
+    h('div', { class: 'list' },
+      liRow({ icon: 'globe', tone: 'gray', title: t('language'), badge: seg([['en', 'EN'], ['hi', 'HI']], S_LANG, (v) => saveLang(v)) }),
+      liRow({ icon: 'moon', tone: 'gray', title: 'Appearance', badge: seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v)) })),
     h('div', { class: 'list' }, liRow({ icon: 'user', tone: 'gray', title: S.user.email, sub: S.user.role }), liRow({ icon: 'logout', tone: 'gray', title: t('signOut'), onclick: signOut })));
   const s = sheet({ title: t('more'), closeLabel: 'Done', body });
 }

@@ -82,19 +82,25 @@ async function renderLedger(body, range, staffId, setStaff) {
       kpi(t('totalCost'), money(data.total_cost)),
       kpi(t('totalProfit'), money(data.total_profit), null, null, N(data.total_profit) < 0 ? 'red' : 'green'),
     ),
-    dataView(
-      [{ key: 'item', title: true, label: '', render: (r) => r.item_name + (r.imei ? ' · ' + r.imei : '') },
-        { key: 'when', sub: true, label: '', render: (r) => fmtDT(r.sold_at) },
-        { key: 'vendor', label: '', render: (r) => r.vendor_name || t('noVendorLink') },
-        { key: 'boughtBy', label: '', render: (r) => r.purchased_by || '—' },
-        { key: 'cost', r: true, label: '', render: (r) => money(r.cost_total) },
-        { key: 'soldBy', label: '', render: (r) => r.sold_by || '—' },
-        { key: 'customer', label: '', render: (r) => r.customer_name },
-        { key: 'sale', value: true, r: true, label: '', render: (r) => money(r.sale_total) },
-        { key: 'profit', badge: true, r: true, label: '', render: (r) => badge(money(r.profit), N(r.profit) < 0 ? 'red' : 'green') }],
-      rows, { onRow: (r) => ledgerDetailSheet(r), emptyText: t('noneYet') },
-    ),
+    ledgerCards(rows),
   ]);
+}
+
+// One card per sold item, item name/qty/purchase price/selling price/profit all visible at once --
+// previously these were spread across table columns that mobile's generic dataView only shows one or two
+// of at a time (title/sub/value/badge), pushing qty and purchase price behind a tap into the detail sheet.
+// Vendor/customer/who-bought/who-sold chain still lives in ledgerDetailSheet() on tap, unchanged.
+function ledgerCards(rows) {
+  if (!rows.length) return empty('box', t('noneYet'));
+  return h('div', { class: 'grid', style: { gap: '10px' } }, rows.map((r) => h('button', { type: 'button', class: 'card ledger-card', onclick: () => ledgerDetailSheet(r) },
+    h('div', { class: 'row sp' }, h('div', { class: 't' }, r.item_name + (r.imei ? ' · ' + r.imei : '')), h('span', { class: 'muted small' }, fmtDT(r.sold_at))),
+    h('div', { class: 'ledger-grid' },
+      h('div', null, h('div', { class: 'cap' }, t('qty')), h('div', { class: 'v' }, r.qty)),
+      h('div', null, h('div', { class: 'cap' }, t('purchaseRate')), h('div', { class: 'v' }, money(r.cost_total))),
+      h('div', null, h('div', { class: 'cap' }, t('sellingPrice')), h('div', { class: 'v' }, money(r.sale_total))),
+      h('div', null, h('div', { class: 'cap' }, t('profit')), h('div', { class: 'v ' + (N(r.profit) < 0 ? 'down' : 'up') }, money(r.profit))),
+    ),
+  )));
 }
 
 function ledgerDetailSheet(r) {
@@ -120,11 +126,24 @@ function rangeDates(range) {
   if (range === 'month') { const m = new Date(d); m.setDate(m.getDate() - 29); return [m.toISOString().slice(0, 10), today]; }
   return [today, today];
 }
+// Owner's "export data" was a raw JSON dump of every table (UUIDs, snake_case columns, nested item arrays) --
+// a technical backup, not something a shop owner could open and read. This builds the same report the Staff
+// ledger tab already shows (names resolved, totals computed server-side by mob_report_ledger), across all
+// time, as a CSV that Excel/Sheets opens directly as a normal spreadsheet with plain column headers.
+function csvEscape(v) {
+  const s = v === null || v === undefined ? '' : String(v);
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
 async function exportData() {
   try {
-    const data = await api('mob_export_all');
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const a = h('a', { href: URL.createObjectURL(blob), download: 'auzsmob-export-' + new Date().toISOString().slice(0, 10) + '.json' });
+    const data = await api('mob_report_ledger', { p_from: '2000-01-01', p_to: new Date().toISOString().slice(0, 10) });
+    const rows = data.rows || [];
+    const head = ['Date', 'Item', 'IMEI / Serial', 'Qty', 'Purchased From', 'Purchased By', 'Purchase Price', 'Sold To', 'Sold By', 'Selling Price', 'Profit'];
+    const body = rows.map((r) => [fmtDT(r.sold_at), r.item_name, r.imei || '', r.qty, r.vendor_name || '', r.purchased_by || '', r.cost_total, r.customer_name || '', r.sold_by || '', r.sale_total, r.profit]);
+    const totals = ['', '', '', '', '', 'Total', data.total_cost, '', '', data.total_sale, data.total_profit];
+    const csv = '﻿' + [head, ...body, [], totals].map((row) => row.map(csvEscape).join(',')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const a = h('a', { href: URL.createObjectURL(blob), download: 'auzsmob-report-' + new Date().toISOString().slice(0, 10) + '.csv' });
     document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
     toast(t('saved'));
   } catch (e) { fail(e); }
