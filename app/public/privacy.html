@@ -7,37 +7,78 @@ body{margin:0;background:#f6f2e9;color:#2a2822;font:16px/1.7 Inter,system-ui,san
 h1{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif;font-weight:600;font-size:32px;margin:0 0 6px}
 h2{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif;font-weight:600;font-size:20px;margin:34px 0 10px}
 p,li{color:#4a4638}
+ul{padding-left:22px;display:grid;gap:6px}
 .back{font-size:14px;text-decoration:none;color:#5f6d4f}
-.note{background:#fff3c4;border-radius:10px;padding:14px 16px;font-size:14px;margin:20px 0}
+.small{font-size:14px;color:#6a6556}
 </style></head><body><div class=wrap>
-<a class=back href=/site.html>← Back</a>
+<a class=back href=/site.html>&larr; Back</a>
 <h1 id=t>Privacy Policy</h1>
-<p id=sub>Last updated: <span id=d></span></p>
-<div class=note>This is a starting template, not legal advice — it hasn't been reviewed by a lawyer. Please have it checked before relying on it, and update the contact details below for your business.</div>
+<p class=small>Last updated: 4 October 2026</p>
+<p>This notice explains how <b class=shop>this business</b> (&ldquo;we&rdquo;) handles your personal data when you buy from us, book or order with us, or leave a phone for repair. It is written to follow India&rsquo;s Digital Personal Data Protection Act, 2023. We decide why and how your data is used, so we are responsible for it.</p>
 
 <h2>What we collect</h2>
-<p>When you order in person, self-order by scanning a table QR code, or ask us to send your bill on WhatsApp, we collect the name and phone number you give us, along with your order details. We do not require an account or password to place an order.</p>
+<p>Depending on what you do with us, we may collect:</p>
+<ul>
+<li>your name and phone number, and your email address if you give it;</li>
+<li>what you ordered, bought, booked or had repaired, the bill, and how you paid (cash, UPI or card &mdash; we do not keep your card or UPI details);</li>
+<li>for a phone repair or sale: the phone model and IMEI number, the problem you describe, and any parts used;</li>
+<li>if you sell us a used phone: your name, phone number, the phone&rsquo;s IMEI, and a copy or photo of an ID proof, as the law and our checks against stolen phones require;</li>
+<li>any customer-credit (udhaar) amount you owe or have paid.</li>
+</ul>
+<p>You never need an account or password to order or to get a bill.</p>
 
 <h2>Why we collect it</h2>
-<p>To take and prepare your order, print or send your receipt, and — if you visit again — recognise you as a returning customer so we can serve you better. We do not sell your information to anyone.</p>
+<ul>
+<li>to take and prepare your order, fix your phone, make your booking, or complete your purchase;</li>
+<li>to give you a bill and receipt, including by WhatsApp if you ask;</li>
+<li>to give you warranty or repair support, and to message you when your order or repair is ready;</li>
+<li>to check that a used phone is not stolen and to keep the records the law requires;</li>
+<li>to keep tax and accounting records; and</li>
+<li>to recognise you as a returning customer. We will send you offers only if you have agreed, and you can say stop at any time.</li>
+</ul>
+<p>We do not sell your information to anyone.</p>
 
 <h2>Who can see it</h2>
-<p>Only our own staff, through our point-of-sale system, for the purpose of running the business. Our point-of-sale software is provided by <a href="https://auzslab.in" target=_blank rel=noopener>AUZslab</a>, who host the underlying database on our behalf but do not use your data for their own purposes.</p>
+<p>Our own staff, according to their role, through our billing software. The software is provided by <a href="https://auzslab.in" target=_blank rel=noopener>AUZslab</a>, which stores the data on our behalf and may use it only to run the service for us. Our payment provider handles online payments, and WhatsApp is used only if you ask us to send you something there. We share your data with the police or other authorities only where the law requires.</p>
 
 <h2>How long we keep it</h2>
-<p>Order and billing records are kept for as long as needed for accounting and tax purposes, in line with applicable law.</p>
+<ul>
+<li>Bills and tax records: as long as tax and accounting law require, generally six to eight years.</li>
+<li>Repair and warranty records: for the warranty period and a reasonable time afterwards.</li>
+<li>ID proofs from used-phone purchases: for as long as the law and our stolen-phone checks require, then we delete or destroy them.</li>
+<li>Everything else: until you ask us to delete it, unless we need it for one of the reasons above.</li>
+</ul>
 
-<h2>Your choices</h2>
-<p>You can ask us at any time what information we hold about you, or ask us to delete it, subject to what we're legally required to keep for tax records.</p>
+<h2>Keeping it safe</h2>
+<p>Your data sits in a system protected by sign-in, role-based access, encrypted connections and backups. Only people who need it for their work can see it. If your personal data is ever put at risk in a way that the law says we must report, we will tell you and the authorities as the law requires.</p>
 
-<h2>Contact</h2>
+<h2>Your rights</h2>
+<p>You may ask us what personal data we hold about you, ask us to correct it, ask us to erase it (except what the law requires us to keep), withdraw any consent you gave, and nominate someone to exercise these rights for you if you cannot. Ask any member of our staff or use the contact details below. We will reply within 7 days and complete your request within 30 days, or sooner if the law requires. If you are not satisfied, you can complain to the Data Protection Board of India after first raising it with us.</p>
+
+<h2>Children</h2>
+<p>If you are under 18, please have a parent or guardian share your details with us. We do not knowingly collect a child&rsquo;s data without a parent or guardian&rsquo;s consent.</p>
+
+<h2>Changes</h2>
+<p>We may update this notice. The date at the top shows the latest version.</p>
+
+<h2>Contact and complaints</h2>
 <p id=contact>Contact us at the address or phone number on this website.</p>
 </div>
 <script src=/sb-client.js?v=2></script>
 <script src=/config.js></script>
 <script src=/tenant.js></script>
 <script>
-document.getElementById('d').textContent=new Date().toLocaleDateString();
-(async()=>{try{const sb=supabase.createClient(CFG.url,CFG.key);const{data}=await sb.rpc('public_menu',{tenant_slug:TENANT_SLUG});const cfg=(data&&data.cfg)||{};if(cfg.name){document.title=cfg.name+' — Privacy Policy';document.getElementById('t').textContent=cfg.name+' Privacy Policy'}if(cfg.addr||cfg.phone)document.getElementById('contact').textContent='Contact us: '+[cfg.addr,cfg.phone].filter(Boolean).join(' · ')}catch{}})();
+(async()=>{try{
+  const sb=supabase.createClient(CFG.url,CFG.key);
+  const{data}=await sb.rpc('public_menu',{tenant_slug:TENANT_SLUG});
+  const cfg=(data&&data.cfg)||{};
+  if(cfg.name){
+    document.title=cfg.name+' — Privacy Policy';
+    document.getElementById('t').textContent=cfg.name+' Privacy Policy';
+    document.querySelectorAll('.shop').forEach(e=>e.textContent=cfg.name);
+  }
+  const bits=[cfg.addr,cfg.phone].filter(Boolean);
+  if(bits.length)document.getElementById('contact').textContent='Contact us: '+bits.join(' · ');
+}catch(e){}})();
 </script>
 </body></html>

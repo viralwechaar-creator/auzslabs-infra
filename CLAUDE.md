@@ -1202,3 +1202,11 @@ A rapid sequence of screenshot bug reports across three different apps, each dia
 ### Open items after this session
 - PR #134 (knock-btn corner-clipping fix) was reported still open as of the PRs in this log, but `main` has since separately picked up a different, unrelated commit touching the same button ("hide knock button while open") from outside this session — worth checking PR #134's diff against current `main` before merging it, in case it now conflicts with or duplicates that later change.
 - The owner asked about a "red line glitch" across the whole AUZsMob app with no screenshot attached; a follow-up screenshot clarified it was the owner's own red-pen screenshot annotation, not an actual rendering bug — nothing was changed for this report.
+
+## Privacy policy and terms (rewritten 4 October 2026; see `docs/LEGAL.md`)
+
+The four legal pages were thin templates (the old in-app ones even said "this is a starting template, not legal advice" and showed *today's* date as "last updated"). Rewritten for DPDP Act 2023 and the product's real behaviour: `site/privacy.html` + `site/terms.html` (AUZslab as fiduciary for visitors/account holders and processor for shop data; sub-processors named; retention periods; rights; grievance contact; fees/refunds/cancellation; payroll/accounting outputs are aids, not advice) and `app/public/privacy.html` + `terms.html` (served on every `<slug>.auzslab.in`; written for a shop's own customers across cafe, salon and mobile-shop use; shop name/address/phone are filled in at load from the `public_menu` RPC's `cfg`).
+- **They are drafts, not lawyer-reviewed.** `docs/LEGAL.md` lists what the owner must supply (legal entity, registered address, named grievance officer, GST, jurisdiction city, refund rules) and the promises the team must actually keep (30-day purge after account deletion, 30-day export window, 6-month backup retention, response times).
+- **The "last updated" date and version are hard-coded in each page.** Change them whenever the text changes, and keep the sub-processor list in step with the code (Resend, Razorpay, Sentry, Backblaze, Google/Apple, SMS provider, host).
+- Two product facts the policy depends on: deletion is a *soft delete* purged by hand today (db/069), and the demo/test accounts are not real users.
+
