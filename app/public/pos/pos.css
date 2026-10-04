@@ -300,7 +300,7 @@ table.tbl td.r,table.tbl th.r{text-align:right}
 .login .card{width:380px;max-width:100%;padding:28px 24px;display:grid;gap:14px}
 .login img{height:56px;width:auto;justify-self:start}
 picture{display:contents}
-.hint-bar{flex:none;background:#1d1d1f;color:#fff;font-size:13px;padding:10px 16px;display:flex;align-items:center;gap:10px;justify-content:space-between}
+.hint-bar{flex:none;background:#2e2c2a;color:#fff;font-size:13px;padding:10px 16px;display:flex;align-items:center;gap:10px;justify-content:space-between}
 .hint-bar button{color:#fff;font-size:20px;line-height:1;padding:0 4px}
 .powered{font-size:12px;color:var(--label3);text-align:center;padding:8px 0 4px}
 .powered a{color:inherit}

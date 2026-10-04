@@ -13,7 +13,7 @@
   /* surfaces and text */
   --bg:#f5f4f2;--bg2:#efedea;--card:#fff;--elev:#fff;--card2:#faf9f7;--bar:rgba(250,249,247,.92);--thumb:#fff;
   --fill:rgba(118,112,104,.12);--fill2:rgba(118,112,104,.08);--fill3:rgba(118,112,104,.045);
-  --label:#1d1d1f;--label2:rgba(60,56,52,.66);--label3:rgba(60,56,52,.42);
+  --label:#2e2c2a;--label2:rgba(60,56,52,.66);--label3:rgba(60,56,52,.42);
   --sep:rgba(60,52,44,.14);--sep2:rgba(60,52,44,.24);
   /* state colours (text / tinted background) */
   --green:#1f8a3d;--green-bg:rgba(52,199,89,.15);
@@ -44,7 +44,7 @@
   --accent:var(--brand-dark,var(--brand,#a3324f));--on-accent:#fff;
   --accent-text:var(--brand-dark-text,color-mix(in srgb,var(--accent) 55%,#fff));
   --accent-soft:color-mix(in srgb,var(--accent) 28%,transparent);--accent-soft2:color-mix(in srgb,var(--accent) 40%,transparent);--accent-line:color-mix(in srgb,var(--accent) 60%,transparent);
-  --bg:#000;--bg2:#0d0d0e;--card:#1c1c1e;--elev:#2c2c2e;--card2:#242426;--bar:rgba(22,22,24,.92);--thumb:#636366;
+  --bg:#1f1e1c;--bg2:#252422;--card:#2b2a28;--elev:#363432;--card2:#302f2d;--bar:rgba(36,35,33,.92);--thumb:#636366;
   --fill:rgba(118,118,128,.26);--fill2:rgba(118,118,128,.18);--fill3:rgba(118,118,128,.1);
   --label:#f5f5f7;--label2:rgba(235,235,245,.64);--label3:rgba(235,235,245,.36);
   --sep:rgba(84,84,88,.55);--sep2:rgba(110,110,115,.7);
@@ -59,7 +59,7 @@
   --accent:var(--brand-dark,var(--brand,#a3324f));--on-accent:#fff;
   --accent-text:var(--brand-dark-text,color-mix(in srgb,var(--accent) 55%,#fff));
   --accent-soft:color-mix(in srgb,var(--accent) 28%,transparent);--accent-soft2:color-mix(in srgb,var(--accent) 40%,transparent);--accent-line:color-mix(in srgb,var(--accent) 60%,transparent);
-  --bg:#000;--bg2:#0d0d0e;--card:#1c1c1e;--elev:#2c2c2e;--card2:#242426;--bar:rgba(22,22,24,.92);--thumb:#636366;
+  --bg:#1f1e1c;--bg2:#252422;--card:#2b2a28;--elev:#363432;--card2:#302f2d;--bar:rgba(36,35,33,.92);--thumb:#636366;
   --fill:rgba(118,118,128,.26);--fill2:rgba(118,118,128,.18);--fill3:rgba(118,118,128,.1);
   --label:#f5f5f7;--label2:rgba(235,235,245,.64);--label3:rgba(235,235,245,.36);
   --sep:rgba(84,84,88,.55);--sep2:rgba(110,110,115,.7);

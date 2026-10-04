@@ -278,7 +278,7 @@ html.fx-flow .fx .topbar::before,html.fx-flow .fx .topbar::after{display:none}
 .fx .fx-panel.stack-panel-dark :is(h1,h2,h3,.fx-h2){color:var(--ink)}
 .fx .fx-panel.stack-panel-dark .btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
 .fx .fx-panel.stack-panel-dark .btn-ghost{color:var(--ink);border-color:var(--ink)}
-.fx .stack-panel-dark:not(.fx-panel){border-radius:36px 36px 0 0!important;border-top:2px solid var(--ink);margin-top:-1px;box-shadow:0 -14px 30px rgba(0,0,0,.08)}
+.fx .stack-panel-dark:not(.fx-panel){border-radius:36px 36px 0 0!important;border-top:2px solid var(--ink);margin-top:-1px;box-shadow:0 -14px 30px rgba(46,44,42,.08)}
 
 /* ================= homepage hero: minimal editorial layout ================= */
 .hero2{position:relative;display:flex;flex-direction:column;justify-content:space-between;gap:18px;min-height:100svh;padding:calc(max(16px,env(safe-area-inset-top)) + 84px) 5vw 12px;overflow:hidden;box-sizing:border-box}
@@ -333,7 +333,7 @@ html.fx-flow .slab{min-height:0!important;height:auto!important}
 
 /* ---------- layered panels, not pinned (replaces the sticky stack): panels simply slide up over the previous one's rounded edge ---------- */
 html.fx-stacked .fx-panel,html.fx-stacked .stack-panel{position:relative!important;top:auto!important;min-height:0!important}
-html.fx-stacked .fx-panel:not(:first-of-type){margin-top:-26px;padding-top:88px!important;box-shadow:0 -16px 40px -26px rgba(0,0,0,.3)}
+html.fx-stacked .fx-panel:not(:first-of-type){margin-top:-26px;padding-top:88px!important;box-shadow:0 -16px 40px -26px rgba(46,44,42,.3)}
 html.fx-stacked .fx-panel:first-of-type{margin-top:0}
 .fx .stack .stack-panel-dark:not(.fx-panel){position:relative!important;top:auto!important;margin-top:-26px}
 .fx-panel{-webkit-backface-visibility:visible;backface-visibility:visible}
@@ -341,7 +341,7 @@ html.fx-stacked .fx-panel:first-of-type{margin-top:0}
 
 /* ---------- depth + colour for the layered panels (every page except the homepage) ---------- */
 html:has(body.fx){scroll-behavior:auto}
-html.fx-stacked .fx-panel{background-image:none!important;box-shadow:0 -26px 60px -26px rgba(0,0,0,.42)}
+html.fx-stacked .fx-panel{background-image:none!important;box-shadow:0 -26px 60px -26px rgba(46,44,42,.42)}
 html.fx-stacked .fx-panel:nth-of-type(3n+1){background-color:#f6f4f1}
 html.fx-stacked .fx-panel:nth-of-type(3n+2){background-color:#ece7e4}
 html.fx-stacked .fx-panel:nth-of-type(3n+3){background-color:#f1e4e6}   /* wine tint */
