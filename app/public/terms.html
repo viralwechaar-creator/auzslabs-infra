@@ -1,4 +1,4 @@
-<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Terms</title>
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Terms of Use</title>
 <link rel=icon href=/logo.png><link rel=apple-touch-icon href=/icon-512.png>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel=stylesheet>
 <style>
@@ -7,25 +7,43 @@ body{margin:0;background:#f6f2e9;color:#2a2822;font:16px/1.7 Inter,system-ui,san
 h1{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif;font-weight:600;font-size:32px;margin:0 0 6px}
 h2{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif;font-weight:600;font-size:20px;margin:34px 0 10px}
 p,li{color:#4a4638}
+ul{padding-left:22px;display:grid;gap:6px}
 .back{font-size:14px;text-decoration:none;color:#5f6d4f}
-.note{background:#fff3c4;border-radius:10px;padding:14px 16px;font-size:14px;margin:20px 0}
+.small{font-size:14px;color:#6a6556}
 </style></head><body><div class=wrap>
-<a class=back href=/site.html>← Back</a>
+<a class=back href=/site.html>&larr; Back</a>
 <h1 id=t>Terms of Use</h1>
-<p id=sub>Last updated: <span id=d></span></p>
-<div class=note>This is a starting template, not legal advice — it hasn't been reviewed by a lawyer. Please have it checked before relying on it.</div>
+<p class=small>Last updated: 4 October 2026</p>
+<p>These terms apply when you order from, book with, buy from, or leave a device for repair with <b class=shop>this business</b> (&ldquo;we&rdquo;). Which parts apply depends on what we offer and what you do. They do not take away any right you have under the Consumer Protection Act, 2019 or other law.</p>
 
-<h2>Placing an order</h2>
-<p>Orders placed in person or via a table QR code are requests to us, which we confirm once received. Prices shown include applicable taxes unless stated otherwise. We reserve the right to decline an order, for example if an item is out of stock.</p>
+<h2>Orders, bookings and QR self-ordering</h2>
+<p>Orders and bookings you make in person, by phone, or from a table QR code are requests to us, which we confirm once received. A staff member may confirm your order before it is prepared. We may decline or limit an order or booking, for example if an item is out of stock or a slot is full, and we may limit how many orders can be sent from one table in a short time to prevent accidental duplicates.</p>
 
-<h2>Payment</h2>
-<p>Payment is due at the time of ordering or on presentation of your bill, by cash, UPI, or card as available.</p>
+<h2>Prices and payment</h2>
+<p>Prices include applicable taxes unless we say otherwise. We try to keep prices and menus up to date, but mistakes can happen; we will tell you before charging you if a price has changed. Payment is due when you order or when your bill is presented, by cash, UPI or card as available. Any credit (udhaar) is only by agreement and must be repaid as agreed.</p>
 
-<h2>Self-ordering by QR code</h2>
-<p>The self-order page lets you browse our menu and send an order to our kitchen from your own device while seated at a table. A staff member will confirm your order before it's prepared. We may limit the number of orders a table can place in a short period to prevent accidental duplicate submissions.</p>
+<h2>Phone repairs</h2>
+<ul>
+<li>We will give an estimate where we can. Tell us what you want fixed, and we will ask you before doing work that costs more than the estimate.</li>
+<li>Repairs can involve the risk of damage or data loss, especially for phones that are already faulty or water-damaged. <b>Please back up your data before leaving a phone.</b> We are not responsible for data on the phone.</li>
+<li>Replaced parts and the repair itself carry the warranty stated on your bill or job card, if any. Warranty does not cover new damage, liquid damage, tampering by others, or unrelated faults.</li>
+<li>Please collect your phone when we tell you it is ready and pay the bill. If you do not collect it within the time stated on your job card, we may charge reasonable storage or dispose of it only as the law allows and after trying to reach you.</li>
+</ul>
 
-<h2>Accuracy</h2>
-<p>We try to keep our menu and prices up to date, but occasional errors may occur; we'll let you know before charging you if a price has changed.</p>
+<h2>Buying and selling phones</h2>
+<ul>
+<li>If you sell us a phone, you confirm you are its owner or are allowed to sell it, that the details you give (including the IMEI) are correct, and that it is not stolen or blocked. We may ask for an ID proof and may refuse a purchase.</li>
+<li>If you buy a phone or accessory from us, check it before you leave. Returns, replacements and refunds follow the policy shown at the shop or on your bill, and your rights under law.</li>
+</ul>
+
+<h2>Our responsibility</h2>
+<p>We take care in what we do, but, as far as the law allows, we are not responsible for indirect losses, and our responsibility for any claim is limited to the amount you paid us for the item or service concerned. Nothing here limits responsibility that the law does not allow us to limit.</p>
+
+<h2>Your information</h2>
+<p>How we use your personal data is explained in our <a href=/privacy.html>Privacy Policy</a>.</p>
+
+<h2>Law and disputes</h2>
+<p>These terms follow the laws of India. If you have a problem, please speak to us first and we will try to put it right. Any dispute is subject to the courts at the place where this business operates.</p>
 
 <h2>Contact</h2>
 <p id=contact>Contact us at the address or phone number on this website.</p>
@@ -34,7 +52,17 @@ p,li{color:#4a4638}
 <script src=/config.js></script>
 <script src=/tenant.js></script>
 <script>
-document.getElementById('d').textContent=new Date().toLocaleDateString();
-(async()=>{try{const sb=supabase.createClient(CFG.url,CFG.key);const{data}=await sb.rpc('public_menu',{tenant_slug:TENANT_SLUG});const cfg=(data&&data.cfg)||{};if(cfg.name){document.title=cfg.name+' — Terms';document.getElementById('t').textContent=cfg.name+' Terms of Use'}if(cfg.addr||cfg.phone)document.getElementById('contact').textContent='Contact us: '+[cfg.addr,cfg.phone].filter(Boolean).join(' · ')}catch{}})();
+(async()=>{try{
+  const sb=supabase.createClient(CFG.url,CFG.key);
+  const{data}=await sb.rpc('public_menu',{tenant_slug:TENANT_SLUG});
+  const cfg=(data&&data.cfg)||{};
+  if(cfg.name){
+    document.title=cfg.name+' — Terms of Use';
+    document.getElementById('t').textContent=cfg.name+' Terms of Use';
+    document.querySelectorAll('.shop').forEach(e=>e.textContent=cfg.name);
+  }
+  const bits=[cfg.addr,cfg.phone].filter(Boolean);
+  if(bits.length)document.getElementById('contact').textContent='Contact us: '+bits.join(' · ');
+}catch(e){}})();
 </script>
 </body></html>
