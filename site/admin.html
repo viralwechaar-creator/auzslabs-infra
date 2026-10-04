@@ -2,15 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#faf9f7">
 <title>Admin — AUZslab</title>
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="/logo.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="manifest" href="/manifest.json">
+<link rel="manifest" href="/admin-manifest.json">
 <link rel="stylesheet" href="tool/theme.mobile.css?v=44" media="(max-width:899px)"><link rel="stylesheet" href="tool/theme.desktop.css?v=44" media="(min-width:900px)"><script src="theme.js?v=1"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -43,7 +41,7 @@ body.admin-shell{position:fixed;inset:0;height:auto;margin:0;overscroll-behavior
 .a-iconbtn{width:36px;height:36px;flex:none;display:inline-flex;align-items:center;justify-content:center;background:none;border:none;color:var(--ink);border-radius:999px;cursor:pointer}
 .a-iconbtn:hover{background:var(--bg-raised)}
 .a-body{flex:1 1 auto;display:flex;min-height:0}
-.a-main{flex:1 1 auto;min-width:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px calc(18px + env(safe-area-inset-bottom))}
+.a-main{flex:1 1 auto;min-width:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px calc(96px + env(safe-area-inset-bottom))}
 .a-side{display:none}
 .a-tabbar{flex:none;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:3px 2px max(2px,calc(env(safe-area-inset-bottom) - 10px));background:var(--bg);border-top:1px solid var(--line);position:relative;z-index:5}
 .a-tab-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:46px;font:500 10.5px var(--font-body);color:var(--ink-faint);background:none;border:none;position:relative;cursor:pointer}
@@ -249,6 +247,20 @@ body.admin-shell .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px
 .a-page.active .admin-table tr,.a-page.active .a-kpi,.a-page.active .a-nav-row,.a-page.active .card{animation:aRise .55s var(--out) both;animation-delay:calc(var(--i,0) * 55ms)}
 .a-page.active .admin-table tr:first-child{animation:none}
 .a-page.active .admin-table tr:nth-child(2){--i:1}.a-page.active .admin-table tr:nth-child(3){--i:2}.a-page.active .admin-table tr:nth-child(4){--i:3}.a-page.active .admin-table tr:nth-child(5){--i:4}.a-page.active .admin-table tr:nth-child(6){--i:5}.a-page.active .admin-table tr:nth-child(7){--i:6}.a-page.active .admin-table tr:nth-child(8){--i:7}.a-page.active .admin-table tr:nth-child(9){--i:8}.a-page.active .admin-table tr:nth-child(10){--i:9}.a-page.active .admin-table tr:nth-child(11){--i:10}.a-page.active .admin-table tr:nth-child(12){--i:11}.a-page.active .admin-table tr:nth-child(13){--i:12}.a-page.active .a-kpi:nth-child(1){--i:1}.a-page.active .a-kpi:nth-child(2){--i:2}.a-page.active .a-kpi:nth-child(3){--i:3}.a-page.active .a-kpi:nth-child(4){--i:4}.a-page.active .a-kpi:nth-child(5){--i:5}.a-page.active .a-kpi:nth-child(6){--i:6}.a-page.active .a-kpi:nth-child(7){--i:7}.a-page.active .a-kpi:nth-child(8){--i:8}.a-page.active .a-nav-row:nth-child(1){--i:1}.a-page.active .a-nav-row:nth-child(2){--i:2}.a-page.active .a-nav-row:nth-child(3){--i:3}.a-page.active .a-nav-row:nth-child(4){--i:4}.a-page.active .a-nav-row:nth-child(5){--i:5}.a-page.active .a-nav-row:nth-child(6){--i:6}.a-page.active .a-nav-row:nth-child(7){--i:7}.a-page.active .a-nav-row:nth-child(8){--i:8}.a-page.active .a-nav-row:nth-child(9){--i:9}.a-page.active .a-nav-row:nth-child(10){--i:10}.a-page.active .a-nav-row:nth-child(11){--i:11}.a-page.active .a-nav-row:nth-child(12){--i:12}
+/* ===== Floating pill tab bar (phones): the salon admin's navigation, in AUZslab charcoal and sand ===== */
+@media (max-width:599px){
+  .a-tabbar{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:40;display:flex;gap:2px;
+    padding:6px;border-radius:22px;border:0;background:#2e2c2a;box-shadow:0 16px 32px -12px rgba(46,44,42,.55),0 0 0 1px rgba(255,255,255,.04)}
+  .a-tab-btn{flex:1;min-height:0;padding:8px 2px 7px;border-radius:16px;gap:3px;color:#f5efe6;opacity:.82;font:500 11px var(--font-body);
+    transition:opacity .2s var(--out),background .25s var(--out),color .2s,transform .12s var(--out)}
+  .a-tab-btn svg{width:21px;height:21px}
+  .a-tab-btn.on{opacity:1;background:rgba(245,239,230,.14);color:#ecd6a8}
+  .a-tab-btn.on::before{display:none}
+  .a-tab-btn.on svg{transform:none}
+  .a-tab-btn:active{transform:scale(.92)}
+  .a-tab-badge{top:3px;right:calc(50% - 20px);background:#ecd6a8;color:#2e2c2a}
+}
+
 .modal-overlay{animation:aFade .25s var(--out) both}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}

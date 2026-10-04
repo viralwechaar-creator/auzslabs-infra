@@ -1,0 +1,17 @@
+{
+ "name": "AUZslab Admin",
+ "short_name": "AUZ Admin",
+ "start_url": "/admin.html",
+ "scope": "/",
+ "display": "standalone",
+ "background_color": "#faf9f7",
+ "theme_color": "#faf9f7",
+ "icons": [
+  {
+   "src": "/apple-touch-icon.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any"
+  }
+ ]
+}
