@@ -25,9 +25,14 @@
    app/public/ds/auz.css, which lives on a different origin (tenant
    subdomains, not auzslab.in) and can't be reached from here.
    ========================================================= */
-html,body.admin-shell{height:100%;overscroll-behavior:none}
-body.admin-shell{display:flex;flex-direction:column;background:var(--bg)}
-.a-shell{display:flex;flex-direction:column;height:100dvh;overflow:hidden}
+html{height:100%}
+/* body and .a-shell used to size themselves independently (body: static height:100%, .a-shell: dynamic
+   100dvh) -- on iOS Safari those two viewport metrics differ whenever the toolbar is showing, so .a-shell
+   (which ends in the tab bar) could come up shorter than body, leaving a sliver of body's own background
+   exposed below the tab bar. Only body now takes an explicit viewport-relative height; .a-shell just flexes
+   to fill it exactly, so there's no second measurement that can disagree with the first. */
+body.admin-shell{height:100dvh;overscroll-behavior:none;display:flex;flex-direction:column;background:var(--bg);overflow:hidden}
+.a-shell{display:flex;flex-direction:column;flex:1 1 auto;min-height:0}
 .a-topbar{flex:none;display:flex;align-items:center;gap:10px;height:44px;padding:0 14px;padding-top:env(safe-area-inset-top);border-bottom:1px solid var(--line);background:var(--bg);position:relative;z-index:5}
 .a-topbar-back{display:flex;align-items:center;gap:2px;background:none;border:none;color:var(--accent);font:600 15px var(--font-body);padding:6px 2px 6px 0;margin-left:-4px;cursor:pointer}
 .a-topbar-title{margin:0;font:700 16px var(--font-display);letter-spacing:-.01em;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -83,11 +88,16 @@ body.admin-shell .field:first-child{margin-top:0}
   .admin-table-wrap{overflow-x:visible;border:none;border-radius:0;margin-top:14px}
   .admin-table{display:block}
   .admin-table tr:first-child{display:none}
-  .admin-table tr{display:block;background:var(--bg-raised);border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px}
+  /* fields sit two to a row (Name next to Contact, Niche next to Status, etc.) instead of each on its
+     own full-width line -- cuts a card's height roughly in half. Free-text fields (a message, an address,
+     a note) span both columns since they don't read well squeezed to a half-width line. */
+  .admin-table tr{display:grid;grid-template-columns:1fr 1fr;column-gap:14px;background:var(--bg-raised);border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px}
   .admin-table tr:last-child{margin-bottom:0}
-  .admin-table td{display:block;padding:6px 0;border-bottom:none}
-  .admin-table td[data-label]::before{content:attr(data-label);display:block;font:600 10px var(--font-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--ink-faint);margin-bottom:2px}
-  .admin-table td.row-actions{margin-top:8px;padding-top:10px;border-top:1px solid var(--line-soft)}
+  .admin-table td{display:block;padding:5px 0;border-bottom:none;min-width:0}
+  .admin-table td[data-label]::before{content:attr(data-label);display:block;font:600 9.5px var(--font-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--ink-faint);margin-bottom:1px}
+  .admin-table td[data-label=Message],.admin-table td[data-label=Note],.admin-table td[data-label=Address],
+  .admin-table td[data-label=Problem],.admin-table td[data-label=Description],.admin-table td[data-label=Business]{grid-column:1/-1}
+  .admin-table td.row-actions{grid-column:1/-1;margin-top:6px;padding-top:10px;border-top:1px solid var(--line-soft)}
 }
 .status-pill{display:inline-flex;padding:3px 9px;border-radius:999px;border:1.5px solid var(--ink);font-family:var(--font-mono);font-size:9px;text-transform:uppercase}
 .status-new{background:var(--accent);color:#fff;border-color:var(--accent)}
@@ -455,6 +465,18 @@ let currentSection = 'leads';
 
 function isDeskNav() { return innerWidth >= 860; }
 
+// A plain `scrollTop = 0` can lose to iOS Safari's own momentum scrolling: if the tab is tapped while the
+// previous page is still decelerating from a fling, the browser's own inertia resumes right after and
+// re-applies a few pixels of scroll on top of our reset -- just enough to tuck the new page's first line
+// (its eyebrow label) up under the sticky top bar, so the page looks like it opened mid-scroll instead of
+// at the top. Toggling overflow off kills the in-flight momentum before the reset, so it actually sticks.
+function resetMainScroll() {
+  const el = document.getElementById('aMain');
+  el.scrollTop = 0;
+  const prevOverflow = el.style.overflowY;
+  el.style.overflowY = 'hidden';
+  requestAnimationFrame(() => { el.scrollTop = 0; el.style.overflowY = prevOverflow; });
+}
 function openSection(name, opts = {}) {
   currentSection = name;
   document.querySelectorAll('.a-page').forEach((s) => s.classList.remove('active'));
@@ -473,7 +495,7 @@ function openSection(name, opts = {}) {
   });
   document.querySelectorAll('.a-side-btn').forEach((b) => b.classList.toggle('on', b.dataset.section === name));
 
-  if (!opts.silent) document.getElementById('aMain').scrollTop = 0;
+  if (!opts.silent) resetMainScroll();
   if (name === 'leads') markAdminNotifsRead('lead');
   if (name === 'signupRequests') markAdminNotifsRead('signup_request');
   if (name === 'addonRequests') markAdminNotifsRead('addon_request');
