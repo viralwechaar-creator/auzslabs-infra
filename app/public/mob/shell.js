@@ -216,6 +216,10 @@ function header(o, root) {
   const desk = isDesk();
   const acts = (o.actions || []).filter(Boolean);
   acts.forEach((a) => r.append(h('button', { class: 'btn ' + (desk ? (a.primary ? 'fill' : '') : 'plain') + (!desk ? ' icon' : ''), type: 'button', 'aria-label': a.label, title: a.label, onclick: a.run }, a.icon ? icon(a.icon, 20) : null, desk ? a.label : null)));
+  // header() is called twice per page load -- once by route_() with a fallback title before def.render()
+  // runs, then again by the page's own v.header() call with the real title -- so any previous large-title
+  // node must be removed first, or the two calls stack into a visible duplicate title.
+  if (root) { const old = root.querySelector(':scope > .large-title'); if (old) old.remove(); }
   if (!desk && root && !o.noLarge) root.prepend(h('h1', { class: 'large-title' }, o.title));
   if (!desk && !r.childNodes.length) r.append(h('span'));
 }
