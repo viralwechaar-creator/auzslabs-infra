@@ -9,7 +9,7 @@ let cart = [];
 async function renderSell(v) {
   if (v.args[0] === 'history') return renderSaleHistory(v);
   v.header({ title: t('sell'), actions: [{ label: t('saleHistory'), icon: 'wallet', run: () => go('sell/history') }] });
-  const [items, units] = await Promise.all([idbGetAll('items'), idbGetAll('units')]);
+  const [items, units, movements] = await Promise.all([idbGetAll('items'), idbGetAll('units'), idbGetAll('stockMovements')]);
   const activeItems = items.filter((i) => i.active !== false);
   const available = units.filter((u) => u.status === 'in_stock');
 
@@ -23,8 +23,18 @@ async function renderSell(v) {
     const prodMatches = activeItems.filter((i) => !i.serialized && i.name.toLowerCase().includes(q)).slice(0, 8);
     if (!unitMatches.length && !prodMatches.length) { results.append(h('div', { class: 'li' }, h('div', { class: 's grow' }, t('noneYet')))); return; }
     unitMatches.forEach((u) => results.append(liRow({ icon: 'phone', title: itemName(items, u.item_id), sub: u.imei || u.imei2, value: money(u.selling_price || itemOf(items, u.item_id).selling_price), onclick: () => addUnit(u) })));
-    prodMatches.forEach((i) => results.append(liRow({ icon: 'box', title: i.name, sub: qty(computeStock(i.id)) + ' ' + t('inStock').toLowerCase(), value: money(i.selling_price), onclick: () => addProduct(i) })));
+    prodMatches.forEach((i) => {
+      const stock = computeStock(i.id);
+      const inCart = cart.find((l) => l.itemId === i.id && !l.unitId);
+      const left = stock - (inCart ? inCart.qty : 0);
+      const oos = left <= 0;
+      results.append(liRow({ icon: 'box', title: i.name, sub: oos ? t('outOfStock') : qty(left) + ' ' + t('inStock').toLowerCase(), value: money(i.selling_price), onclick: oos ? null : () => addProduct(i) }));
+    });
   }
+  // movements is fetched once above, not re-pulled live -- a sale added to the cart this session is
+  // reflected via the inCart subtraction in paintResults/addProduct, same as the server's own check
+  // (mob_push_sale: sum(mob_stock_movements) must cover the qty being sold) so a staffer can never add
+  // more of a loose-stock item to the cart than the shop actually has, whether or not it's serialized.
   function computeStock(itemId) { return movements.filter((m) => m.item_id === itemId).reduce((a, m) => a + N(m.qty), 0); }
   function itemOf(list, id) { return list.find((x) => x.id === id) || {}; }
   function itemName(list, id) { return itemOf(list, id).name || id; }
@@ -38,6 +48,8 @@ async function renderSell(v) {
   }
   function addProduct(i) {
     const row = cart.find((l) => l.itemId === i.id && !l.unitId);
+    const wantQty = (row ? row.qty : 0) + 1;
+    if (wantQty > computeStock(i.id)) { toast(t('errNotEnoughStock'), { err: true }); return; }
     if (row) row.qty += 1; else cart.push({ itemId: i.id, name: i.name, qty: 1, price: N(i.selling_price) });
     paintCart();
   }
