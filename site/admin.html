@@ -25,19 +25,21 @@
    app/public/ds/auz.css, which lives on a different origin (tenant
    subdomains, not auzslab.in) and can't be reached from here.
    ========================================================= */
-html{height:100%}
+html{height:100%;background:var(--bg)}
 /* body and .a-shell used to size themselves independently (body: static height:100%, .a-shell: dynamic
    100dvh) -- on iOS Safari those two viewport metrics differ whenever the toolbar is showing, so .a-shell
    (which ends in the tab bar) could come up shorter than body, leaving a sliver of body's own background
    exposed below the tab bar. Only body now takes an explicit viewport-relative height; .a-shell just flexes
    to fill it exactly, so there's no second measurement that can disagree with the first. */
-body.admin-shell{height:100dvh;overscroll-behavior:none;display:flex;flex-direction:column;background:var(--bg);overflow:hidden}
+/* Pinned to all four screen edges (the same way the POS shell is) so the app always fills the whole screen,
+   status bar to home indicator, with nothing left showing below the tab bar on a home-screen iPhone. */
+body.admin-shell{position:fixed;inset:0;height:auto;margin:0;overscroll-behavior:none;display:flex;flex-direction:column;background:var(--bg);overflow:hidden}
 .a-shell{display:flex;flex-direction:column;flex:1 1 auto;min-height:0}
-.a-topbar{flex:none;display:flex;align-items:center;gap:10px;height:44px;padding:0 14px;padding-top:env(safe-area-inset-top);border-bottom:1px solid var(--line);background:var(--bg);position:relative;z-index:5}
+.a-topbar{flex:none;display:flex;align-items:center;gap:10px;box-sizing:border-box;min-height:calc(48px + env(safe-area-inset-top));padding:env(safe-area-inset-top) 14px 0;border-bottom:1px solid var(--line);background:var(--bg);position:relative;z-index:5}
 .a-topbar-back{display:flex;align-items:center;gap:2px;background:none;border:none;color:var(--accent);font:600 15px var(--font-body);padding:6px 2px 6px 0;margin-left:-4px;cursor:pointer}
 .a-topbar-title{margin:0;font:700 16px var(--font-display);letter-spacing:-.01em;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .a-topbar-actions{display:flex;align-items:center;gap:8px;flex:none}
-.a-iconbtn{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;background:none;border:none;color:var(--ink);border-radius:999px;cursor:pointer}
+.a-iconbtn{width:36px;height:36px;flex:none;display:inline-flex;align-items:center;justify-content:center;background:none;border:none;color:var(--ink);border-radius:999px;cursor:pointer}
 .a-iconbtn:hover{background:var(--bg-raised)}
 .a-body{flex:1 1 auto;display:flex;min-height:0}
 .a-main{flex:1 1 auto;min-width:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px calc(18px + env(safe-area-inset-bottom))}
@@ -50,7 +52,7 @@ body.admin-shell{height:100dvh;overscroll-behavior:none;display:flex;flex-direct
 .a-page{display:none}
 .a-page.active{display:block}
 .a-page .label{margin:0}
-.a-page h2.h-2{font-size:19px;margin-top:3px;margin-bottom:4px}
+.a-page h2.h-2{font-size:19px;margin-top:3px;margin-bottom:10px}
 .a-page>p.p{font-size:13px;color:var(--ink-faint);margin-top:2px;margin-bottom:14px;max-width:46em}
 .a-login-wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:20px 0}
 .a-login-card{width:100%;max-width:360px}
@@ -69,10 +71,11 @@ body.admin-shell .field:first-child{margin-top:0}
 .a-nav-row .a-row-badge{min-width:20px;height:20px;border-radius:999px;background:var(--accent);color:#fff;font:700 11px var(--font-mono);display:flex;align-items:center;justify-content:center;padding:0 5px;flex:none}
 .a-search{width:100%;background:var(--bg-raised);border:none;border-radius:11px;padding:9px 12px;font:14px var(--font-body);color:var(--ink)}
 .a-search::placeholder{color:var(--ink-faint)}
-.a-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:2px 0 16px}
-.a-kpi{background:var(--bg-raised);border-radius:14px;padding:12px 14px}
+.a-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:2px 0 12px}
+.a-kpi{background:var(--bg-raised);border-radius:12px;padding:9px 12px}
+.a-kpi:last-child:nth-child(odd){grid-column:1/-1}
 .a-kpi .k{font:500 11px var(--font-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--ink-faint)}
-.a-kpi .n{font:700 22px var(--font-display);margin-top:2px}
+.a-kpi .n{font:700 19px var(--font-display);margin-top:1px}
 /* responsive table -> stacked card list on phones */
 .admin-table-wrap{overflow-x:auto;border:1.5px solid var(--line);border-radius:14px;margin-top:0}
 .admin-table{width:100%;border-collapse:collapse;font-size:12.5px}
@@ -86,18 +89,21 @@ body.admin-shell .field:first-child{margin-top:0}
    no <thead>, is hidden by position rather than tag) */
 @media (max-width:639px){
   .admin-table-wrap{overflow-x:visible;border:none;border-radius:0;margin-top:14px}
-  .admin-table{display:block}
+  .admin-table,.admin-table tbody{display:block;width:100%}
   .admin-table tr:first-child{display:none}
   /* fields sit two to a row (Name next to Contact, Niche next to Status, etc.) instead of each on its
      own full-width line -- cuts a card's height roughly in half. Free-text fields (a message, an address,
      a note) span both columns since they don't read well squeezed to a half-width line. */
-  .admin-table tr{display:grid;grid-template-columns:1fr 1fr;column-gap:14px;background:var(--bg-raised);border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px}
+  .admin-table tr{display:grid;grid-template-columns:1fr 1fr;column-gap:12px;row-gap:0;background:var(--bg-raised);border:1px solid var(--line);border-radius:12px;padding:8px 12px;margin-bottom:8px;width:auto}
   .admin-table tr:last-child{margin-bottom:0}
-  .admin-table td{display:block;padding:5px 0;border-bottom:none;min-width:0}
+  .admin-table td{display:block;padding:3px 0;border-bottom:none;min-width:0;font-size:13px;line-height:1.35}
+  .admin-table td[hidden]{display:none}
   .admin-table td[data-label]::before{content:attr(data-label);display:block;font:600 9.5px var(--font-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--ink-faint);margin-bottom:1px}
   .admin-table td[data-label=Message],.admin-table td[data-label=Note],.admin-table td[data-label=Address],
   .admin-table td[data-label=Problem],.admin-table td[data-label=Description],.admin-table td[data-label=Business]{grid-column:1/-1}
-  .admin-table td.row-actions{grid-column:1/-1;margin-top:6px;padding-top:10px;border-top:1px solid var(--line-soft)}
+  .admin-table td[data-label=Message],.admin-table td[data-label=Note]{order:5}
+  .admin-table td.row-actions{grid-column:1/-1;order:9;margin-top:4px;padding-top:8px;border-top:1px solid var(--line-soft);gap:6px}
+  body.admin-shell .admin-table .row-actions .btn{padding:5px 11px;min-height:30px;font-size:10px;letter-spacing:.03em;border-width:1.5px;border-radius:999px;box-shadow:none;transform:none;margin:0}
 }
 .status-pill{display:inline-flex;padding:3px 9px;border-radius:999px;border:1px solid var(--ink);font-family:var(--font-mono);font-size:9px;text-transform:uppercase}
 .status-new{background:var(--accent);color:#fff;border-color:var(--accent)}
@@ -1237,6 +1243,15 @@ async function loadAuditLog() {
     ${rows}
   </table></div>`;
 }
+</script>
+<script>
+/* a cell with nothing in it (an empty Message, a missing note) is hidden on phones instead of showing a bare label */
+(function () {
+  function tidy(root) { (root.querySelectorAll ? root.querySelectorAll('.admin-table td[data-label]') : []).forEach((td) => { td.hidden = !td.children.length && !td.textContent.trim(); }); }
+  var main = document.getElementById('aMain'); if (!main) return;
+  new MutationObserver(function () { tidy(main); }).observe(main, { childList: true, subtree: true });
+  tidy(main);
+})();
 </script>
 </body>
 </html>
