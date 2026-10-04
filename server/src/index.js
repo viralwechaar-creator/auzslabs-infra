@@ -390,6 +390,7 @@ const RPC = {
   mob_sync_pull: { params: ['p_since'], defaults: { p_since: null }, auth: true },
   mob_report_dashboard: { params: ['p_from', 'p_to'], defaults: { p_from: null, p_to: null }, auth: true },
   mob_report_activity: { params: ['p_from', 'p_to'], defaults: { p_from: null, p_to: null }, auth: true },
+  mob_report_ledger: { params: ['p_from', 'p_to', 'p_staff_id'], defaults: { p_from: null, p_to: null, p_staff_id: null }, auth: true },
   mob_integrity_check: { params: [], auth: true },
   mob_export_all: { params: [], auth: true },
 };
