@@ -4,7 +4,7 @@ import {
   login, verifyToken, bearerFrom, createUser, resetToRandomPassword, signToken,
   loginWithGoogle, loginWithApple, createPhoneOtp, loginWithPhone,
   createPasswordReset, resetPassword, deleteOwnAccount,
-  listSessions, revokeSession,
+  listSessions, revokeSession, revokeAllSessionsForUser,
 } from './auth.js';
 import { saveSiteUpload, saveDocUpload, readDocUpload, getUploadsDiskUsage } from './storage.js';
 import { startRealtime } from './realtime.js';
@@ -144,6 +144,12 @@ const RPC = {
   mark_client_delivered: { params: ['p_tenant_id'], auth: true },
   delete_client: { params: ['p_tenant_id'], auth: true },
   admin_system_stats: { params: [], auth: true },
+
+  // --- Admin: Users directory + audit log (db/087) ---
+  admin_list_users: { params: ['p_query', 'p_limit'], defaults: { p_query: null, p_limit: 50 }, auth: true },
+  admin_user_detail: { params: ['p_user_id'], auth: true },
+  admin_set_user_disabled: { params: ['p_user_id', 'p_disabled'], auth: true },
+  admin_list_audit: { params: ['p_limit'], defaults: { p_limit: 100 }, auth: true },
 
   // --- Client dashboard: own account, staff, feature toggles ---
   my_dashboard: { params: [], auth: true },
@@ -624,6 +630,7 @@ const server = http.createServer(async (req, res) => {
       } catch (err) {
         throw new HttpError(401, err.message || 'Google sign-in failed');
       }
+      if (!result) throw new HttpError(401, 'this account has been suspended');
       return reply(200, result);
     }
     if (url.pathname === '/auth/apple' && req.method === 'POST') {
@@ -636,6 +643,7 @@ const server = http.createServer(async (req, res) => {
       } catch (err) {
         throw new HttpError(401, err.message || 'Apple sign-in failed');
       }
+      if (!result) throw new HttpError(401, 'this account has been suspended');
       return reply(200, result);
     }
     // 5 codes / 10 min per phone number, on top of the per-IP bucket --
@@ -931,6 +939,40 @@ const server = http.createServer(async (req, res) => {
       );
       if (!rows.length) throw new HttpError(403, 'forbidden -- not a platform admin');
       return reply(200, await getUploadsDiskUsage());
+    }
+
+    // ---- admin: Users directory -- list a user's active sessions (same
+    // data as their own "Where you're signed in" card, listSessions is
+    // already a plain function with no owner-check built in). ----
+    const userSessionsMatch = url.pathname.match(/^\/admin\/users\/([0-9a-f-]{36})\/sessions$/);
+    if (userSessionsMatch && req.method === 'GET') {
+      if (!user) throw new HttpError(401, 'unauthorized');
+      const { rows } = await withAuth(user.id, (client) =>
+        client.query('select 1 from platform_admins where id = $1', [user.id]),
+      );
+      if (!rows.length) throw new HttpError(403, 'forbidden -- not a platform admin');
+      return reply(200, { sessions: await listSessions(userSessionsMatch[1]) });
+    }
+
+    // ---- admin: Users directory -- sign a user out of every device at once
+    // (db/087). Not a Postgres RPC: revoking has to update auth.js's
+    // in-memory revokedJtis Set synchronously (see revokeSession's own
+    // comment) or the running server keeps honouring the token until its
+    // next restart -- the same reason the self-service version
+    // (/auth/sessions/:jti/revoke) isn't a generic RPC either. ----
+    const revokeUserSessionsMatch = url.pathname.match(/^\/admin\/users\/([0-9a-f-]{36})\/revoke-sessions$/);
+    if (revokeUserSessionsMatch && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'unauthorized');
+      const { rows } = await withAuth(user.id, (client) =>
+        client.query('select 1 from platform_admins where id = $1', [user.id]),
+      );
+      if (!rows.length) throw new HttpError(403, 'forbidden -- not a platform admin');
+      const targetId = revokeUserSessionsMatch[1];
+      const count = await revokeAllSessionsForUser(targetId);
+      await withAuth(user.id, (client) =>
+        client.query('select admin_log($1, $2, $3, $4::jsonb)', ['revoke_sessions', 'user', targetId, JSON.stringify({ count })]),
+      );
+      return reply(200, { ok: true, count });
     }
 
     throw new HttpError(404, 'not found');

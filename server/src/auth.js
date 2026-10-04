@@ -91,6 +91,23 @@ export async function revokeSession(userId, jti) {
   revokedJtis.add(jti);
 }
 
+// Admin-side equivalent of revokeSession, for the Users directory's "sign
+// out everywhere" action (a lost device, an ex-employee) -- scoped by the
+// TARGET user's id instead of the caller's own, so this is never exported
+// to a route a plain user can reach (only server/src/index.js's
+// /admin/users/:id/revoke-sessions endpoint, platform-admin gated, calls
+// it). Kills every active session at once, same in-memory update as a
+// single revokeSession so verifyToken() rejects them on the very next
+// request, not after the next server restart.
+export async function revokeAllSessionsForUser(userId) {
+  const { rows } = await pool.query(
+    `update auth_sessions set revoked_at = now() where user_id = $1 and revoked_at is null returning jti`,
+    [userId],
+  );
+  rows.forEach((r) => revokedJtis.add(r.jti));
+  return rows.length;
+}
+
 // meta ({ip, userAgent}) is optional so every existing internal caller
 // (e.g. a context with no real HTTP request) keeps working unchanged --
 // a token signed without it just has no jti, and is valid exactly as
@@ -132,7 +149,7 @@ export async function login(email, password, meta) {
   const { rows } = await pool.query(
     `select au.id, au.email, au.password_hash, au.app_metadata, au.user_metadata, p.email_verified
      from auth_users au left join profiles p on p.id = au.id
-     where au.email = $1 and au.deleted_at is null`,
+     where au.email = $1 and au.deleted_at is null and au.disabled_at is null`,
     [email],
   );
   const row = rows[0];
@@ -235,6 +252,14 @@ async function findOrCreateIdentityUser({ provider, providerId, email }) {
 }
 
 async function identitySession(row, meta) {
+  // findOrCreateIdentityUser's own lookups already exclude a deleted account
+  // (its queries filter deleted_at is null); disabled_at (admin suspension,
+  // db/087) is checked here instead, at the one place all three providers
+  // (Google/Apple/phone) converge, rather than threading it through every
+  // lookup branch above (including the brand-new-account branch, where it
+  // would always be null anyway).
+  const { rows } = await pool.query('select disabled_at from auth_users where id = $1', [row.id]);
+  if (rows[0]?.disabled_at) return null;
   const user = { id: row.id, email: row.email, app_metadata: row.app_metadata, user_metadata: row.user_metadata };
   return { access_token: await signToken(user, meta), user };
 }
