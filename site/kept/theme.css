@@ -324,7 +324,7 @@ input,select,textarea{font-size:16px}
 .footer-copy{font-family:var(--font-mono);font-size:10px;color:rgba(255,255,255,.35)}
 
 .knock-btn{
-  position:fixed;right:16px;bottom:16px;z-index:40;
+  position:fixed;right:max(20px, env(safe-area-inset-right) + 20px);bottom:max(22px, env(safe-area-inset-bottom) + 22px);z-index:40;
   display:flex;align-items:center;gap:8px;padding:13px 18px;border-radius:999px;
   background:var(--accent);color:#fff;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;
   border:2px solid var(--ink);cursor:pointer;box-shadow:4px 4px 0 var(--ink);
