@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Screen black-translucent">
+<meta name="robots" content="noindex,nofollow">
+<title>Screen test (black-translucent)</title>
+<style>
+html,body{margin:0;height:100%;background:#fff;font:15px/1.45 -apple-system,system-ui,sans-serif;color:#222}
+.frame{position:fixed;inset:0;border:5px solid #1a73e8;box-sizing:border-box;pointer-events:none;z-index:9}
+.top,.bot{position:fixed;left:0;right:0;height:28px;display:flex;align-items:center;justify-content:center;color:#fff;font:700 12px sans-serif;z-index:10}
+.top{top:0;background:#d93025}.bot{bottom:0;background:#188038}
+.mid{position:fixed;left:0;right:0;top:50%;height:2px;background:#f9ab00;z-index:10}
+.probe{position:fixed;visibility:hidden;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
+main{position:absolute;inset:0;overflow:auto;padding:44px 16px 44px}
+pre{white-space:pre-wrap;word-break:break-word;background:#f3f3f3;border-radius:10px;padding:12px;font:12.5px/1.5 ui-monospace,Menlo,monospace}
+h1{font-size:18px;margin:0 0 6px}
+</style>
+</head>
+<body>
+<div class="frame"></div><div class="top">TOP EDGE OF THE PAGE (red)</div><div class="bot">BOTTOM EDGE OF THE PAGE (green)</div><div class="mid"></div>
+<div class="probe" id="probe"></div>
+<main>
+<h1>Screen test: status bar style "black-translucent"</h1>
+<p>Take a screenshot of this whole screen and send it. Blue frame = the page's edges.</p>
+<pre id="out">measuring...</pre>
+</main>
+<script>
+function show() {
+  var cs = getComputedStyle(document.getElementById('probe'));
+  var vv = window.visualViewport || {};
+  var lines = [
+    'status bar style : black-translucent',
+    'opened from home screen (navigator.standalone): ' + navigator.standalone,
+    'display-mode standalone: ' + matchMedia('(display-mode: standalone)').matches,
+    'innerWidth x innerHeight : ' + innerWidth + ' x ' + innerHeight,
+    'outerWidth x outerHeight : ' + outerWidth + ' x ' + outerHeight,
+    'screen width x height    : ' + screen.width + ' x ' + screen.height,
+    'visualViewport h / top   : ' + vv.height + ' / ' + vv.offsetTop,
+    'html clientHeight        : ' + document.documentElement.clientHeight,
+    'safe area top / bottom   : ' + cs.paddingTop + ' / ' + cs.paddingBottom,
+    'safe area left / right   : ' + cs.paddingLeft + ' / ' + cs.paddingRight,
+    'pixel ratio              : ' + devicePixelRatio,
+    'orientation              : ' + (matchMedia('(orientation: portrait)').matches ? 'portrait' : 'landscape'),
+    'user agent               : ' + navigator.userAgent
+  ];
+  document.getElementById('out').textContent = lines.join('\n');
+}
+show(); addEventListener('resize', show); addEventListener('orientationchange', function(){ setTimeout(show, 300); });
+</script>
+</body>
+</html>
