@@ -166,6 +166,18 @@ const STR = {
   cashInHand: { en: 'Cash in hand', hi: 'हाथ में नकद' },
   exportData: { en: 'Export all data', hi: 'सारा डेटा निकालें' },
   activityFeed: { en: 'Staff activity', hi: 'स्टाफ़ की गतिविधि' },
+  staffLedger: { en: 'Staff ledger', hi: 'स्टाफ़ हिसाब' },
+  dashboard: { en: 'Dashboard', hi: 'डैशबोर्ड' },
+  allStaff: { en: 'All staff', hi: 'सभी स्टाफ़' },
+  boughtFrom: { en: 'Bought from', hi: 'से खरीदा' },
+  boughtBy: { en: 'Bought by', hi: 'किसने खरीदा' },
+  soldTo: { en: 'Sold to', hi: 'किसे बेचा' },
+  soldBy: { en: 'Sold by', hi: 'किसने बेचा' },
+  totalProfit: { en: 'Total profit', hi: 'कुल मुनाफ़ा' },
+  totalSales: { en: 'Total sales', hi: 'कुल बिक्री' },
+  totalCost: { en: 'Total cost', hi: 'कुल लागत' },
+  noVendorLink: { en: 'Loose stock (no single vendor)', hi: 'खुला स्टॉक (एक विक्रेता नहीं)' },
+  staffLedgerHint: { en: 'Every phone and item sold, with what it cost and what it sold for, side by side.', hi: 'बिका हुआ हर फ़ोन और सामान, उसकी लागत और बिक्री कीमत साथ-साथ।' },
 
   // ---------- settings ----------
   shopDetails: { en: 'Shop details', hi: 'दुकान की जानकारी' },

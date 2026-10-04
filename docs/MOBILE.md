@@ -13,7 +13,7 @@ A standalone, offline-first app for mobile phone retail and repair shops (`app/p
 | Selling | Home → New sale → cart → checkout | `mob_push_sale`, `mob_void_sale` |
 | Repairs | Home → New repair, Repairs → job | `mob_create_repair`, `mob_push_repair_event` |
 | Settling a due | Dues → customer/vendor → settle | `mob_push_payment` |
-| Reports | Reports (owner/manager) | `mob_report_dashboard`, `mob_report_activity` |
+| Reports | Reports (owner/manager) | `mob_report_dashboard`, `mob_report_activity`, `mob_report_ledger` |
 | Settings | Settings (shop details, language, staff rates, staff, data health, export) | `mob_save_settings`, `mob_integrity_check`, `mob_export_all` |
 | Sync | automatic, with a status pill | `mob_sync_pull` |
 
@@ -45,6 +45,24 @@ Every phone keeps its own copy in IndexedDB (database `mob1`: items, units, vend
 - **Second-hand phones** live in the same `mob_item_units` table as new serialized stock, distinguished by `source` (`'new'`/`'secondhand'`), with seller name/phone/ID-proof/accessories columns populated only for second-hand intake.
 - `mob_integrity_check()` (Settings → Data health check) proves: every sold unit has exactly one matching stock movement, every sale's total equals subtotal minus discount, bill numbers are unique, and no item's stock has gone negative. It runs after every step in the test suite.
 
+## The staff accountability ledger
+
+The owner's stated reason this app exists at all: in a real shop, the staffer running the counter can buy
+stock cheap and tell the owner they paid more, or sell high and tell the owner they sold for less — pocketing
+the gap either way. Reports → **Staff ledger** (`mob_report_ledger`, `p-reports.js`'s `renderLedger`) is the
+direct answer: one row per unit sold, the whole chain in one place — who bought it, from whom, for how much;
+who sold it, to whom, for how much; the profit that chain actually produced — with a staff filter and a grand
+total (total sales / total cost / total profit) at the top. Nothing in it is staff-editable after the fact:
+every figure is read straight from the append-only `mob_sales`/`mob_purchases` rows, and `costPrice` is a
+server-side snapshot taken by `mob_push_sale` at the moment of sale, never something a staffer can later change.
+
+Serialized units (phones, by IMEI) trace exactly: `mob_purchases.unit_id` links back to the one purchase that
+brought that exact unit in, so the vendor and the staffer who entered the purchase show up alongside the
+staffer who made the sale and the customer. Non-serialized stock (accessories, bought in fungible batches) has
+no single matching purchase, so those rows show "Loose stock (no single vendor)" instead of a vendor/bought-by
+— but the cost figure is still the real snapshot, never blank. Tapping a row (phone) opens the full breakdown
+as a sheet; the desktop table shows every column at once.
+
 ## The screens
 
 Apple HIG, same discipline as Payroll v2 and Accounting: plain words, 44 pt touch targets, segmented controls, bottom sheets, a tab bar on phones and a sidebar from 1200 px, dark mode, the business's own accent colour (`ds/brand.js`), no emoji, `h()` never uses `innerHTML`.
@@ -58,6 +76,7 @@ Home is four big thumb-friendly actions (New sale, Add purchase, New repair, Buy
 - `db/082_mobile_sync_reports.sql`: `mob_sync_pull`, owner reports, the integrity check, export, the demo seed (original).
 - `db/083_mobile_pricing.sql`: lists AUZsMob in `product_prices` (starts at ₹0 — "not priced yet" — a platform admin sets the real number).
 - `db/084_mobile_demo.sql`: folds AUZsMob into the one consolidated demo tenant, with a richer seed (a phone in stock, one sold on credit, an open repair job) and the 12-hour auto-refresh check inside `mob_context()`.
+- `db/086_mobile_staff_ledger.sql`: `mob_report_ledger(p_from, p_to, p_staff_id)`, the staff accountability ledger above.
 - `server/src/index.js`: every public `mob_*` function is in the `RPC` list.
 - `app/public/mob/`:
   - `i18n.js`: the English/Hindi dictionary and `t()`.
@@ -71,7 +90,7 @@ Home is four big thumb-friendly actions (New sale, Add purchase, New repair, Buy
 ```bash
 cd auzslabs-infra && git pull origin main
 set -a; source .env; set +a
-for f in db/080_mobile_schema.sql db/081_mobile_engine.sql db/082_mobile_sync_reports.sql db/083_mobile_pricing.sql db/084_mobile_demo.sql; do
+for f in db/080_mobile_schema.sql db/081_mobile_engine.sql db/082_mobile_sync_reports.sql db/083_mobile_pricing.sql db/084_mobile_demo.sql db/086_mobile_staff_ledger.sql; do
   docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 < "$f" || break
 done
 docker compose up -d --build api
