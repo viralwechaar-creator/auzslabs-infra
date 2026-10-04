@@ -129,3 +129,22 @@ Not done, on purpose: AUZsMob does not upload photos yet (`id_proof_url` is alwa
 - **No Bluetooth-printer hook** (the spec says this is fine for v1 — just leave room for it later; nothing currently assumes a printer).
 - **Vendor dues are an aggregate, not a per-purchase balance.** `mob_purchases` carries no paid/balance columns of its own; a vendor's due is `sum(purchases.total) − sum(payments where kind='vendor_due')` for that vendor. This is correct in total but cannot show which specific purchase is still owed.
 - No real background jobs: the demo's 12-hour refresh runs lazily, the next time anyone with `mob_reports` opens AUZsMob on that tenant (same pattern as every other demo tenant's reset).
+
+## Feature switches (db/093)
+
+Owner: Settings -> Features. Stored in `mob_settings.features` (jsonb, merged over `mob_feature_defaults()`: everything on, repairs `full`).
+Keys: `sell`, `purchase`, `stock`, `serials`, `customers`, `vendors`, `dayclose` (on/off) and `repairs` (`off` | `simple` | `full`).
+Only the owner may change them (`mob_save_settings`, audit-logged). **Every switch is enforced in the database** (error code `MB010`,
+"... is switched off for this shop"), not just hidden in the app; the app also hides the screens (`feat()` / `repairsMode()` in `core.js`).
+
+- `stock` off: no stock check, no stock movements for plain items, no low-stock alerts. IMEI units still move stock if `serials` is on.
+- `serials` off: no IMEI/serial entry, no used-phone buying, no Units tab.
+- `customers` off: no customer name/phone, no credit sales (every sale is paid in full), no customer dues.
+- `vendors` off: no vendor picker, no vendor dues.
+- `repairs` = `simple`: a repair is a sale line on a `service` item. The staffer enters what was repaired, the amount charged and the part cost (and, if vendors are on, where the part came from). The sale stores the part cost as the line's cost and writes a matching "Part for repair" purchase row, so Staff ledger / profit show charge - part. `full` = job cards (status, parts, advance), `off` = no repairs at all.
+- `dayclose` off: days are never locked.
+- "Simple" preset (Settings): sell + purchase on, repairs simple, everything else off, staff may see purchase rates.
+- Other phones pick up a changed switch within about 5 minutes of their next sync.
+- Tests: `node tests/run-local.mjs mobile` (36 checks, includes server refusals for every switch and the simple-repair ledger row).
+- Also fixed here: Settings saves were sent without the `p` wrapper and silently did nothing (shop details, staff-rates switch).
+- Deploy: `git pull`, apply `db/091_mob_scale.sql` then `db/093_mob_feature_switches.sql` (skip 092 unless that branch is merged), no API rebuild needed.

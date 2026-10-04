@@ -132,6 +132,16 @@ async function pull() {
     await idbPutMany(store, r[key] || []);
   }
   await metaSet('cursor', r.server_time);
+  // pick up owner changes to the feature switches / rates (at most every 5 minutes) so other phones follow
+  if (S.ctx && Date.now() - (S._ctxAt || 0) > 300000) {
+    S._ctxAt = Date.now();
+    try {
+      const c = await api('mob_context');
+      const changed = JSON.stringify(c.settings && c.settings.features) !== JSON.stringify(S.ctx.settings && S.ctx.settings.features);
+      S.ctx = c;
+      if (changed && typeof buildShell === 'function') buildShell();
+    } catch { /* offline: keep the last known switches */ }
+  }
   window.dispatchEvent(new CustomEvent('mob:pulled'));
 }
 

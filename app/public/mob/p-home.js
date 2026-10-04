@@ -10,10 +10,10 @@ function bigAction(labelKey, ic, go_) {
 async function renderHome(v) {
   v.header({ title: t('home'), noLarge: true });
   const actions = h('div', { class: 'big-actions' },
-    can('mob_sell') ? bigAction('newSale', 'cash', () => go('sell')) : null,
-    can('mob_purchase') ? bigAction('addPurchase', 'box', () => go('purchase')) : null,
-    can('mob_repair') ? bigAction('newRepair', 'wrench', () => repairSheet()) : null,
-    can('mob_purchase') ? bigAction('buyUsedPhone', 'phone', () => go('purchase/used')) : null,
+    (can('mob_sell') && feat('sell')) ? bigAction('newSale', 'cash', () => go('sell')) : null,
+    (can('mob_purchase') && feat('purchase')) ? bigAction('addPurchase', 'box', () => go('purchase')) : null,
+    (can('mob_repair') && repairsMode() === 'full') ? bigAction('newRepair', 'wrench', () => repairSheet()) : null,
+    (can('mob_purchase') && feat('purchase') && feat('serials')) ? bigAction('buyUsedPhone', 'phone', () => go('purchase/used')) : null,
   );
 
   const [sales, purchases, repairs] = await Promise.all([idbGetAll('sales'), idbGetAll('purchases'), idbGetAll('repairs')]);
@@ -47,10 +47,10 @@ async function renderHome(v) {
         section(t('todaysSales'), h('div', { class: 'kpis' },
           kpi(t('revenue'), money(dash.sales_total, {}), dash.sales_count + ' ' + (S_LANG === 'hi' ? 'बिल' : 'bills')),
           kpi(t('profit'), money(dash.profit_total)),
-          kpi(t('pendingRepairs'), String(dash.repairs_pending), null, () => go('repairs')),
-          kpi(t('customerDues'), money(dash.customer_dues), null, () => go('dues')),
+          repairsMode() === 'full' ? kpi(t('pendingRepairs'), String(dash.repairs_pending), null, () => go('repairs')) : null,
+          feat('customers') ? kpi(t('customerDues'), money(dash.customer_dues), null, () => go('dues')) : null,
         )),
-        dash.low_stock.length ? banner('bad', 'alert', h('b', null, dash.low_stock.length + ' ' + t('lowStock')), h('div', { class: 'small' }, dash.low_stock.slice(0, 5).map((x) => x.name).join(', '))) : null,
+        (feat('stock') && dash.low_stock.length) ? banner('bad', 'alert', h('b', null, dash.low_stock.length + ' ' + t('lowStock')), h('div', { class: 'small' }, dash.low_stock.slice(0, 5).map((x) => x.name).join(', '))) : null,
         section(t('whoDidWhat'), activity.length ? dataView(
           [{ key: 'w', title: true, label: '', render: (r) => (r.kind === 'sale' ? t('sell') : r.kind === 'purchase' ? t('purchase') : t('repairJob')) + ' — ' + nameOf(r.staff_id) },
             { key: 's', sub: true, label: '', render: (r) => fmtDT(r.at) },

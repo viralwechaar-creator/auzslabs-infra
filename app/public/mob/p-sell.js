@@ -9,7 +9,9 @@ let cart = [];
 async function renderSell(v) {
   if (v.args[0] === 'history') return renderSaleHistory(v);
   v.header({ title: t('sell'), actions: [{ label: t('saleHistory'), icon: 'wallet', run: () => go('sell/history') }] });
-  const [items, units, movements] = await Promise.all([idbGetAll('items'), idbGetAll('units'), idbGetAll('stockMovements')]);
+  const [items, units, movements, vendors] = await Promise.all([idbGetAll('items'), idbGetAll('units'), idbGetAll('stockMovements'), idbGetAll('vendors')]);
+  // stock is only counted when the shop has Stock switched on, and never for service/repair items
+  const tracked = (i) => feat('stock') && i.category !== 'service';
   const activeItems = items.filter((i) => i.active !== false);
   const available = units.filter((u) => u.status === 'in_stock');
 
@@ -20,14 +22,14 @@ async function renderSell(v) {
     clear(results);
     if (!q) return;
     const unitMatches = available.filter((u) => (u.imei || '').includes(q) || (u.imei2 || '').includes(q) || itemName(items, u.item_id).toLowerCase().includes(q)).slice(0, 8);
-    const prodMatches = activeItems.filter((i) => !i.serialized && i.name.toLowerCase().includes(q)).slice(0, 8);
+    const prodMatches = activeItems.filter((i) => (!i.serialized || !feat('serials')) && i.name.toLowerCase().includes(q)).slice(0, 8);
     unitMatches.forEach((u) => results.append(liRow({ icon: 'phone', title: itemName(items, u.item_id), sub: u.imei || u.imei2, value: money(u.selling_price || itemOf(items, u.item_id).selling_price), onclick: () => addUnit(u) })));
     prodMatches.forEach((i) => {
       const stock = computeStock(i.id);
       const inCart = cart.find((l) => l.itemId === i.id && !l.unitId);
       const left = stock - (inCart ? inCart.qty : 0);
-      const oos = left <= 0;
-      results.append(liRow({ icon: 'box', title: i.name, sub: oos ? t('outOfStock') : qty(left) + ' ' + t('inStock').toLowerCase(), value: money(i.selling_price), onclick: oos ? null : () => addProduct(i) }));
+      const oos = tracked(i) && left <= 0;
+      results.append(liRow({ icon: 'box', title: i.name, sub: oos ? t('outOfStock') : tracked(i) ? qty(left) + ' ' + t('inStock').toLowerCase() : null, value: money(i.selling_price), onclick: oos ? null : () => addProduct(i) }));
     });
     // a staffer can log a brand-new item (a one-off accessory, a trade-in, anything never
     // catalogued) and sell it in the same step: quickAddSellSheet creates the item plus an
@@ -53,7 +55,7 @@ async function renderSell(v) {
   function addProduct(i) {
     const row = cart.find((l) => l.itemId === i.id && !l.unitId);
     const wantQty = (row ? row.qty : 0) + 1;
-    if (wantQty > computeStock(i.id)) { toast(t('errNotEnoughStock'), { err: true }); return; }
+    if (tracked(i) && wantQty > computeStock(i.id)) { toast(t('errNotEnoughStock'), { err: true }); return; }
     if (row) row.qty += 1; else cart.push({ itemId: i.id, name: i.name, qty: 1, price: N(i.selling_price) });
     paintCart();
   }
@@ -88,8 +90,7 @@ async function renderSell(v) {
         const now = new Date().toISOString();
         const purchaseArgs = { itemId, vendorId: null, qty: haveQty, rate: itemData.costPrice, imei: null, sellingPrice: itemData.sellingPrice, unitId: null };
         const movement = { id: uid(), item_id: itemId, unit_id: null, qty: haveQty, type: 'purchase', ref_id: pid, staff_id: S.user.id, created_at: now };
-        await idbPut('stockMovements', movement);
-        movements.push(movement);
+        if (feat('stock')) { await idbPut('stockMovements', movement); movements.push(movement); }
         await localPush('purchases', { id: pid, item_id: itemId, vendor_id: null, qty: haveQty, rate: itemData.costPrice, total: haveQty * itemData.costPrice, staff_id: S.user.id, created_at: now }, 'mob_push_purchase', { p_id: pid, p: purchaseArgs });
 
         close();
@@ -101,10 +102,10 @@ async function renderSell(v) {
   const custName = input({ placeholder: t('customerOptional') });
   const custPhone = input({ placeholder: t('phone'), mode: 'tel' });
   const discount = input({ value: 0, label: t('discount'), mode: 'decimal' });
-  const payMethod = selectEl([['cash', t('cash')], ['upi', t('upi')], ['card', t('card')], ['credit', t('credit')]], 'cash');
+  const payMethod = selectEl([['cash', t('cash')], ['upi', t('upi')], ['card', t('card')], ...(feat('customers') ? [['credit', t('credit')]] : [])], 'cash');
   const totalsBox = h('div', { class: 'card' });
   const checkoutBtn = h('button', { class: 'btn fill wide', type: 'button', disabled: true }, t('checkout'));
-  const checkoutSection = section(t('customer'), h('div', { class: 'two' }, field(t('customer'), custName), field(t('phone'), custPhone)),
+  const checkoutSection = section(t('customer'), feat('customers') ? h('div', { class: 'two' }, field(t('customer'), custName), field(t('phone'), custPhone)) : null,
     h('div', { class: 'two' }, field(t('discount'), discount), field(t('paymentMode'), payMethod)), totalsBox, checkoutBtn);
 
   function paintCart() {
@@ -127,7 +128,7 @@ async function renderSell(v) {
     checkoutBtn.disabled = true;
     const id = uid();
     const subtotal = cart.reduce((a, l) => a + l.price * l.qty, 0) - N(discount.value);
-    const args = { items: cart.map((l) => ({ unitId: l.unitId, itemId: l.itemId, name: l.name, qty: l.qty, price: l.price })), customerName: custName.value.trim(), customerPhone: custPhone.value.trim(), discount: N(discount.value), paid: Math.max(0, subtotal), paymentMode: payMethod.value };
+    const args = { items: cart.map((l) => ({ unitId: l.unitId, itemId: l.itemId, name: l.name, qty: l.qty, price: l.price, ...(l.service ? { partCost: l.partCost, partName: l.partName, vendorId: l.vendorId || null } : {}) })), customerName: feat('customers') ? custName.value.trim() : '', customerPhone: feat('customers') ? custPhone.value.trim() : '', discount: N(discount.value), paid: Math.max(0, subtotal), paymentMode: payMethod.value };
     const localRow = { id, tenant_id: null, bill_no: null, customer_name: args.customerName, customer_phone: args.customerPhone, items: args.items.map((l) => ({ ...l, costPrice: 0 })), subtotal, discount: N(discount.value), total: Math.max(0, subtotal), paid: args.paid, balance: 0, payment_mode: payMethod.value, voided: false, staff_id: S.user.id, created_at: new Date().toISOString() };
     // optimistic local stock move so the next search doesn't offer an already-sold unit before syncing
     for (const l of cart) if (l.unitId) { const u = units.find((x) => x.id === l.unitId); if (u) { u.status = 'sold'; await idbPut('units', u); } }
@@ -137,8 +138,35 @@ async function renderSell(v) {
     v.refresh();
   };
 
+  // Simple repairs: a repair is just a sale line (what you charged) with the cost of the part you bought for it.
+  function serviceSheet() {
+    const desc = input({ value: '', label: t('repairWhat'), autofocus: true });
+    const charge = input({ value: '', label: t('repairCharge'), mode: 'decimal' });
+    const part = input({ value: '', label: t('partCost'), mode: 'decimal' });
+    const vend = feat('vendors') ? selectEl([['', t('vendor') + '…'], ...vendors.map((x) => [x.id, x.name])], '') : null;
+    sheet({
+      title: t('repairService'),
+      body: h('div', { class: 'grid' }, field(t('repairWhat'), desc), h('div', { class: 'two' }, field(t('repairCharge'), charge), field(t('partCost'), part)), vend ? field(t('partFrom'), vend) : null),
+      actions: [{ label: t('addToCart'), primary: true, onclick: async (close) => {
+        if (!desc.value.trim() || !(N(charge.value) > 0)) { fail(new Error(t('errNameRequired'))); return false; }
+        let svc = items.find((i) => i.category === 'service' && i.active !== false);
+        if (!svc) {
+          const sid = uid();
+          const data = { name: 'Repair / service', category: 'service', serialized: false, sellingPrice: 0, costPrice: 0 };
+          svc = { id: sid, name: data.name, category: 'service', serialized: false, selling_price: 0, cost_price: 0, low_stock_at: 0, active: true };
+          await idbPut('items', { ...svc, _pending: true });
+          await outboxAdd('mob_save_item', { p_id: sid, p: data, p_base: null });
+          items.push(svc);
+        }
+        cart.push({ itemId: svc.id, name: desc.value.trim(), qty: 1, price: N(charge.value), service: true, partCost: N(part.value), partName: desc.value.trim(), vendorId: vend ? vend.value || null : null });
+        close(); paintCart();
+      } }],
+    });
+  }
+  const serviceBtn = repairsMode() === 'simple' ? h('button', { class: 'btn wide', type: 'button', style: { marginTop: '8px' }, onclick: serviceSheet }, icon('wrench', 18), t('repairService')) : null;
+
   add(v.root, [
-    section(t('findItem'), searchBox, results),
+    section(t('findItem'), searchBox, serviceBtn, results),
     section(t('cart'), cartBox),
     checkoutSection,
   ]);
