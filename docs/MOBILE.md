@@ -105,6 +105,21 @@ The public demo is `https://demo.auzslab.in/mob.html` (same login as the POS/Pay
 
 `node tests/run-local.mjs mobile` runs 31 checks: access for logged-out users and another business, catalog, purchase (idempotency and duplicate-IMEI rejection), sell and void (and the stock move back), staff isolation through `mob_sync_pull` (not just the RPC access checks), repairs (parts decrementing stock, authorization by job owner or `mob_reports`), dues and reports, the `staff_see_purchase_rates` switch, day close, export, the integrity check, and every screen on phone and desktop for the owner and for staff — including a real Save button flow (Add purchase, end to end through the actual UI) and the Hindi/English toggle. It is also in the `design` suite's app list (tokens, accent, layout tiers, dark mode, 12 px/44 px sizing).
 
+## Scale: how many shops one server carries (db/091, `loadmob` suite)
+
+`node tests/run-local.mjs loadmob` pretends to be 60 shops (an owner and 4 staff each) selling, buying, opening repairs and syncing at once, then adds a full busy year (about 110,000 bills) to one shop. It runs on its own, not in the default full run. Result on a 4-core test machine with the database and API on the same box (a ₹3,000 VPS is the same shape):
+
+- about 700 to 1,000 requests per second flat out, median 60 ms, slowest 5% under 120 ms. A real launch month is under 5 per second, so there is more than 100 times headroom.
+- 60 shops with a year of history each is roughly 2 to 6 GB, mostly bills and stock movements.
+
+The test found three real problems, fixed in `db/091_mob_scale.sql`:
+
+1. **Deadlock on sales.** Two staff selling the same items in a different order each locked item rows one at a time and waited on each other. `mob_push_sale` now locks every row it needs first, in one fixed order, with `FOR NO KEY UPDATE`.
+2. **A new phone downloaded the whole history** (88 MB, 17 s for a very busy year). `mob_sync_pull` now answers a first sync, or one from a phone away more than 90 days, with a window: the last 90 days, everything still open (customer dues, vendor dues, unfinished repairs, units in stock), and one opening-balance stock row per item for everything older. The answer carries `full: true`, and `pull()` in `sync.js` then replaces the phone's old stock rows so nothing is counted twice. Everyday catch-ups are unchanged. A phone therefore only holds recent bills; older ones are still in the owner's reports and the export.
+3. **Staff ledger was slow** (4 s for 9,000 rows). Totals now come from the table, the rows are capped (`p_limit`, default 2,000, newest first) with a `truncated` flag and a note on screen. The CSV export asks for every row.
+
+Not done, on purpose: AUZsMob does not upload photos yet (`id_proof_url` is always empty), so no photo limit exists for it. Other apps' site uploads are already capped at 8 MB and compressed in the browser.
+
 ## Known limits (honest list)
 
 - **Camera barcode/IMEI scanning is not built.** IMEI entry is manual only; the spec allows this as a v1 gap.

@@ -119,6 +119,13 @@ async function pull() {
   const since = await metaGet('cursor');
   let r;
   try { r = await api('mob_sync_pull', { p_since: since }); } catch { return; }
+  if (r.full) {
+    // A first sync (new phone, cleared data, or away over 90 days) is a window: the last 90 days, everything still
+    // open, and ONE opening stock row per item for older history. Drop the stock rows this phone already held, or
+    // they would be counted twice on top of the opening row. Rows for entries still waiting in the outbox stay.
+    const waiting = new Set((await outboxAll()).map((o) => o.args && o.args.p_id).filter(Boolean));
+    for (const m of await idbGetAll('stockMovements')) if (!waiting.has(m.ref_id)) await idbDelete('stockMovements', m.id);
+  }
   for (const [store, key] of [['items', 'items'], ['units', 'units'], ['vendors', 'vendors'], ['customers', 'customers'],
     ['purchases', 'purchases'], ['sales', 'sales'], ['repairs', 'repairs'], ['repairEvents', 'repair_events'],
     ['payments', 'payments'], ['stockMovements', 'stock_movements']]) {

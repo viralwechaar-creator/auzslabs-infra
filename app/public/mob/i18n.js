@@ -178,6 +178,7 @@ const STR = {
   totalSales: { en: 'Total sales', hi: 'कुल बिक्री' },
   totalCost: { en: 'Total cost', hi: 'कुल लागत' },
   noVendorLink: { en: 'Loose stock (no single vendor)', hi: 'खुला स्टॉक (एक विक्रेता नहीं)' },
+  ledgerShowingNewest: { en: 'Showing the newest {n} of {total} items. The totals above count all of them. Export for the full list.', hi: '{total} में से सबसे नए {n} आइटम दिख रहे हैं। ऊपर का कुल सभी का है। पूरी सूची के लिए एक्सपोर्ट करें।' },
   staffLedgerHint: { en: 'Every phone and item sold, with what it cost and what it sold for, side by side.', hi: 'बिका हुआ हर फ़ोन और सामान, उसकी लागत और बिक्री कीमत साथ-साथ।' },
   staffUpdates: { en: 'Staff updates', hi: 'स्टाफ़ अपडेट' },
   staffUpdatesHint: { en: 'Every sale, purchase and repair job, as it happens -- filter to one staffer to see just their work.', hi: 'हर बिक्री, खरीद और रिपेयर जॉब, जैसे-जैसे होती है -- किसी एक स्टाफ़ का काम देखने के लिए उसे चुनें।' },
