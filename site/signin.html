@@ -27,7 +27,7 @@
 // Central Google sign-in. Google only allows fixed web addresses, not one per shop, so every app sends its users here
 // (https://auzslab.in/signin.html?app=pos&return=<where to go back to>). After Google confirms, the session is handed back to
 // the app in the URL fragment (#auz_gt=...), which browsers never send to a server. The return address must be an AUZslab address.
-window.CFG = { url: 'https://api.auzslab.in', key: '', googleClientId: '264113646597-b73419r8cfav1okvopin0qt1kojknf08.apps.googleusercontent.com' };
+window.CFG = { url: 'https://api.auzslab.in', key: '', googleClientId: '264113646597-b734l9r8cfav1okvopin0qt1kojknf08.apps.googleusercontent.com' };
 (function () {
   var q = new URLSearchParams(location.search), ret = q.get('return') || '', app = q.get('app') || '';
   var local = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) || /\.localhost$/.test(location.hostname);
