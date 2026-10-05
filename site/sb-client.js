@@ -16,6 +16,17 @@
     try { s ? localStorage.setItem(LS_KEY, JSON.stringify(s)) : localStorage.removeItem(LS_KEY); } catch {}
   }
 
+  // Google sign-in happens on https://auzslab.in/signin.html (Google cannot allow every shop subdomain). It sends the user back
+  // here with the session in the URL fragment (#auz_gt=...), which never reaches any server or log. Take it once, then remove it.
+  (function takeHandoff() {
+    try {
+      const m = /[#&]auz_gt=([^&]+)/.exec(location.hash || ''); if (!m) return;
+      const p = JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g, '+').replace(/_/g, '/')))));
+      if (p && p.t && p.u) saveSession({ access_token: p.t, user: p.u });
+      history.replaceState(null, '', location.pathname + location.search);
+    } catch {}
+  })();
+
   function createClient(url, _key) {
     const base = url.replace(/\/$/, '');
     let session = loadSession();
