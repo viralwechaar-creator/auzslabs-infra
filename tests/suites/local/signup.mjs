@@ -15,6 +15,15 @@ export default async function run({ stack }) {
   let token, userId;
   const flag = (v) => q(`update platform_flags set value = $1 where key = 'require_email_verification'`, [v]);
 
+  await s.check('With the Google-only switch off, direct email sign-up is refused (403) and creates nothing', async () => {
+    await q(`update platform_flags set value = 'off' where key = 'password_signup'`);
+    try {
+      const em = `blocked-${Date.now()}@test.local`;
+      const r = await api('/auth/signup', { method: 'POST', body: { email: em, password: 'Sup3rSecret!' } });
+      assert(r.status === 403, 'status ' + r.status);
+      assert(!(await q(`select 1 from auth_users where lower(email) = $1`, [em])).length, 'an account was created');
+    } finally { await q(`update platform_flags set value = 'on' where key = 'password_signup'`); }
+  }, 'critical');
   await s.check('The health check answers for uptime monitors (and says the database is reachable)', async () => {
     const r = await api('/health'); const j = await r.json();
     assert(r.status === 200 && j.ok === true && j.db === true, JSON.stringify(j));
