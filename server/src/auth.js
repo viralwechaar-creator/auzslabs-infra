@@ -220,6 +220,13 @@ export async function emailVerificationState(userId) {
 
 // The runtime switch the owner flips in SQL (platform_flags). Off by default so nobody is locked out before the
 // email sender is verified. Read each time (it is one tiny row, and only on the few guarded actions).
+export async function passwordSignupAllowed() {
+  try {
+    const { rows } = await pool.query(`select value from platform_flags where key = 'password_signup'`);
+    return rows[0]?.value === 'on';
+  } catch { return false; }
+}
+
 export async function emailVerificationRequired() {
   try {
     const { rows } = await pool.query(`select value from platform_flags where key = 'require_email_verification'`);

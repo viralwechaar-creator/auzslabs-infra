@@ -4,7 +4,7 @@ import {
   login, verifyToken, bearerFrom, createUser, resetToRandomPassword, signToken,
   loginWithGoogle, loginWithApple, createPhoneOtp, loginWithPhone,
   createPasswordReset, resetPassword, deleteOwnAccount,
-  listSessions, revokeSession, revokeAllSessionsForUser, staffLogin, createEmailVerification, confirmEmailVerification, emailVerificationState, emailVerificationRequired,
+  listSessions, revokeSession, revokeAllSessionsForUser, staffLogin, createEmailVerification, confirmEmailVerification, emailVerificationState, emailVerificationRequired, passwordSignupAllowed,
 } from './auth.js';
 import { saveSiteUpload, saveDocUpload, readDocUpload, getUploadsDiskUsage } from './storage.js';
 import { startRealtime } from './realtime.js';
@@ -642,6 +642,7 @@ const server = http.createServer(async (req, res) => {
       // 10 accounts / hour per IP -- loose enough for a shared cafe/office
       // IP, tight enough to block scripted account-spam.
       if (rateLimited(`signup:${ip}`, 10, 60 * 60_000)) throw new HttpError(429, 'too many signups from this network, try again later');
+      if (!(await passwordSignupAllowed())) throw new HttpError(403, 'Email sign-up is switched off. Please sign up with Google.');
       const { email, password, captcha_token } = await readJsonBody(req);
       if (!email || !password) throw new HttpError(400, 'email and password are required');
       if (password.length < 8) throw new HttpError(400, 'password must be at least 8 characters');
