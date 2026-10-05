@@ -100,6 +100,7 @@ export default async function run({ browser, stack }) {
 
   // staff
   const staffApi = salonClient(stack, host);
+  let pinStaff = null;
   await s.check('Owner can add a staff login', async () => {
     const r = await owner.call('POST', '/admin/staff', { name: 'Riya Staff', phone: '9700000001', password: 'staffpass1', designation: 'Stylist' });
     assert(r.status === 201, r.status + ' ' + JSON.stringify(r.data));
@@ -114,6 +115,7 @@ export default async function run({ browser, stack }) {
     const mk0 = await rpc(stack, 'staff_create', { p_name: 'Pin Staff', p_phone: '' }, tok);
     const mk = { status: mk0.status, data: (mk0.data && mk0.data.data) || mk0.data || {} };
     assert(mk.status === 200 && mk.data.username && mk.data.pin, 'staff_create: ' + JSON.stringify(mk));
+    pinStaff = mk.data;
     const bad = await salonClient(stack, host).call('POST', '/admin/login', { username: mk.data.username, pin: mk.data.pin === '0000' ? '1111' : '0000' });
     assert(bad.status === 401, 'wrong pin accepted ' + bad.status);
     const c = salonClient(stack, host);
@@ -146,7 +148,7 @@ export default async function run({ browser, stack }) {
   await s.check('Staff console in browser shows only Today, Bookings, Billing, Clients', async () => {
     const c2 = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const p2 = await c2.newPage();
     await p2.goto(stack.url(host, '/salon/admin/')); await p2.waitForTimeout(500);
-    await p2.click('#staffToggle'); await p2.fill('#staffPhone', '9700000001'); await p2.fill('#pw', 'staffpass1'); await p2.click('#loginForm button[type=submit]'); await p2.waitForTimeout(1200);
+    await p2.click('#staffToggle'); await p2.fill('#staffPhone', pinStaff.username); await p2.fill('#pw', pinStaff.pin); await p2.click('#loginForm button[type=submit]'); await p2.waitForTimeout(1200);
     assert(await p2.locator('#app').isVisible(), 'staff console did not open');
     const t = (await p2.locator('#tabbar, #sideNav').allInnerTexts()).join(' ').toLowerCase();
     for (const no of ['menu and prices', 'gallery', 'website text', 'settings', 'expenses', 'analytics']) assert(!t.includes(no), 'staff can see the "' + no + '" tab');
