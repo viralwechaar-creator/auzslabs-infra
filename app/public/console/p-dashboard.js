@@ -8,7 +8,7 @@ PAGES.dashboard=()=>{
  const hello=h('div',{class:'hello'},
   h('div',{},h('h1',{},greeting()),h('p',{},"Here's what's happening at ",h('b',{},outletId()=='all'?'all your outlets':outletNameOf(outletId())),' '+(d==today()?'today.':'on '+fmtD(d)+'.'))),
   h('div',{class:'hrow'},
-   h('label',{class:'datep'},ic('cal',17),h('span',{class:'t'},fmtD(d)),ic('chd',15),h('input',{type:'date',value:d,onchange:e=>{if(e.target.value){S.date=e.target.value;render()}}})),
+   h('label',{class:'datep'},ic('cal',17),h('span',{class:'t'},fmtD(d)),ic('chd',15),h('input',{type:'date',value:d,onclick:e=>{try{e.target.showPicker()}catch(_){}},onchange:e=>{if(e.target.value){S.date=e.target.value;render()}}})),
    h('button',{class:'ib',title:'Refresh',onclick:()=>{sync();render()}},ic('ref',18)),syncCard(),
    h('div',{class:'sync'},h('i'),h('div',{},h('b',{},'Orders Synced'),h('span',{},S.lastSync?'Last synced just now':'Syncing…')))));
  const revCard=h('div',{class:'card'},h('div',{class:'hd'},h('h3',{},"Today's Revenue",delta!=null?h('span',{class:'chip'+(delta<0?' dn':'')},(delta<0?'↓ ':'↑ ')+Math.abs(delta)+'%'):null),h('a',{href:'#rep/sales',onclick:e=>{e.preventDefault();go('rep/sales')}},ic('chr',16))),h('div',{class:'rev'},h('div',{},h('div',{class:'big'},inr(st.rev)),h('div',{class:'sm'},'vs. '+inr(y.rev)+' yesterday')),sparkline(cum.filter((_,i)=>i%2==0))));
