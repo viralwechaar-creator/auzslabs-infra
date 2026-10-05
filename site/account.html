@@ -203,6 +203,14 @@ async function boot() {
   if (!session) { window.location.href = 'signup.html'; return; }
   const { data, error } = await sb.rpc('my_dashboard');
   if (error) {
+    // A login that no longer exists (account removed) or an expired session: clear it and start again at sign-in,
+    // instead of leaving a dead page. Sign out always works, even when the account could not load.
+    $('#signOutBtn').onclick = async () => { await sb.auth.signOut(); window.location.href = 'signup.html'; };
+    if (error.status === 401 || /authentication required|not a tenant member/i.test(error.message || '')) {
+      if (error.status === 401 || /authentication required/i.test(error.message || '')) { await sb.auth.signOut(); window.location.href = 'signup.html'; return; }
+      // signed in but no business yet: that is a normal new customer, send them to the homepage
+      window.location.href = 'index.html'; return;
+    }
     $('#pageTitle').textContent = 'Could not load your account';
     $('#pageLede').textContent = error.message;
     return;
