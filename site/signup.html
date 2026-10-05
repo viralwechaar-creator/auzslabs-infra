@@ -191,6 +191,16 @@
         <h2 class="auth-h2" id="pageTitle">Welcome back.</h2>
         <p class="auth-sub" id="pageLede">Pick up where you left off.</p>
 
+        <div id="verifySection" style="display:none">
+          <div class="ok-box" style="margin:6px 0 16px;padding:16px 18px;border:1px solid var(--line);border-radius:16px;background:var(--bg-raised);font-size:14px;line-height:1.6">
+            <b>Almost there. Check your email.</b><br>
+            <span id="verifyMsg">We sent a confirmation link to your email address.</span>
+          </div>
+          <button id="verifyContinue" class="btn btn-primary auth-cta form-submit" type="button">Continue</button>
+          <p style="margin:14px 0 0;font-size:13px;color:var(--ink-dim)">Nothing arrived? Check spam, or <button id="verifyResend" type="button" style="background:none;border:none;padding:0;font:inherit;font-weight:700;color:var(--accent);cursor:pointer;text-decoration:underline">send it again</button>.</p>
+          <div id="verifyErr" class="err" style="min-height:18px"></div>
+        </div>
+
         <div id="authSection">
           <div id="socialRow" class="auth-social" style="display:none">
             <div id="googleBtnHost"></div>
@@ -223,6 +233,7 @@
             <div id="forgotRow" class="auth-forgot" style="display:none">
               <button id="forgotLink" type="button">Forgot password?</button>
             </div>
+            <div id="captchaBox" style="display:none;margin:0 0 14px"></div>
             <button id="submitBtn" class="btn btn-primary auth-cta form-submit">Log in</button>
           </div>
 
@@ -275,7 +286,7 @@
 // CLAUDE.md / the deploy notes for exactly where) -- every social button
 // below stays hidden until its own id is filled in, so this page never
 // shows a button that can't actually work yet.
-window.CFG = { url: 'https://api.auzslab.in', key: '', googleClientId: '', appleClientId: '' };
+window.CFG = { url: 'https://api.auzslab.in', key: '', googleClientId: '', appleClientId: '', turnstileSiteKey: '' };
 </script>
 <script>
 const sb = supabase.createClient(CFG.url, CFG.key);
@@ -290,6 +301,27 @@ function setMode(m) {
   document.getElementById('pageTitle').textContent = m === 'signup' ? 'Create your account.' : 'Welcome back.';
   document.getElementById('pageLede').textContent = m === 'signup' ? 'Takes less than a minute to get started.' : 'Pick up where you left off.';
   document.getElementById('forgotRow').style.display = m === 'login' ? 'block' : 'none';
+  showCaptcha(m === 'signup');
+}
+// ---- CAPTCHA (Cloudflare Turnstile): only shown on sign-up, and only if a site key is configured ----
+let captchaToken = '', captchaWidget = null;
+function showCaptcha(on) {
+  const box = document.getElementById('captchaBox');
+  if (!CFG.turnstileSiteKey) return;
+  box.style.display = on ? 'block' : 'none';
+  if (!on) return;
+  if (!window.turnstile) {
+    if (!document.getElementById('tsScript')) {
+      const sc = document.createElement('script');
+      sc.id = 'tsScript'; sc.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'; sc.async = true;
+      sc.onload = () => showCaptcha(true);
+      document.head.appendChild(sc);
+    }
+    return;
+  }
+  if (captchaWidget === null) {
+    captchaWidget = window.turnstile.render('#captchaBox', { sitekey: CFG.turnstileSiteKey, callback: (t) => { captchaToken = t; }, 'expired-callback': () => { captchaToken = ''; }, 'error-callback': () => { captchaToken = ''; } });
+  }
 }
 document.getElementById('modeNew').onclick = () => setMode('signup');
 document.getElementById('modeLogin').onclick = () => setMode('login');
@@ -484,12 +516,39 @@ document.getElementById('submitBtn').onclick = async () => {
   if (!email) { errEl.textContent = 'Enter your email address.'; return; }
   if (!password) { errEl.textContent = 'Enter a password.'; return; }
   if (mode === 'signup' && password.length < 8) { errEl.textContent = 'Password must be at least 8 characters.'; return; }
+  if (mode === 'signup' && CFG.turnstileSiteKey && !captchaToken) { errEl.textContent = 'Please complete the verification check above.'; return; }
   const { data, error } = mode === 'signup'
-    ? await sb.auth.signUp({ email, password })
+    ? await sb.auth.signUp({ email, password, captchaToken })
     : await sb.auth.signInWithPassword({ email, password });
-  if (error) { errEl.textContent = error.message; return; }
+  if (error) {
+    errEl.textContent = error.message;
+    if (mode === 'signup' && window.turnstile && captchaWidget !== null) { captchaToken = ''; window.turnstile.reset(captchaWidget); }
+    return;
+  }
   const user = data && (data.user || (data.session && data.session.user));
+  // a brand-new account: say that a confirmation link was sent, then let them carry on
+  if (mode === 'signup' && data && data.emailVerification && !data.emailVerification.verified) {
+    pendingUser = user;
+    document.getElementById('authSection').style.display = 'none';
+    document.querySelector('.auth-seg').style.display = 'none';
+    document.getElementById('pageTitle').textContent = 'Confirm your email.';
+    document.getElementById('pageLede').textContent = '';
+    document.getElementById('verifyMsg').textContent = data.emailVerification.sent
+      ? 'We sent a confirmation link to ' + email + '. Open it on this phone or computer to confirm your address.'
+      : 'Your account is created. Confirmation emails are not switched on yet, so you can carry on now.';
+    document.getElementById('verifySection').style.display = 'block';
+    return;
+  }
   afterSignIn(user);
+};
+
+let pendingUser = null;
+document.getElementById('verifyContinue').onclick = () => afterSignIn(pendingUser);
+document.getElementById('verifyResend').onclick = async () => {
+  const errEl = document.getElementById('verifyErr'); errEl.textContent = '';
+  const { data, error } = await sb.auth.resendVerification();
+  if (error) { errEl.textContent = error.message; return; }
+  errEl.textContent = data && data.sent ? 'Sent. Check your inbox.' : 'Email sending is not switched on yet.';
 };
 
 document.getElementById('signOutBtn').onclick = async () => {

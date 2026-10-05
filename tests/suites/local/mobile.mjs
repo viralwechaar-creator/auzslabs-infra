@@ -211,6 +211,76 @@ export default async function run({ browser, stack }) {
     await integrity();
   }, 'major');
 
+  // ---------- adding staff without any custom role (a new business has none) ----------
+  await s.check('Owner adds staff with no custom role: gets everyday access; manager built-in works; duplicate email is explained', async () => {
+    const stamp = Date.now();
+    const loginRaw = async (email, password) => (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password }) })).json());
+    const inv = await ok(owner, 'invite_staff', { p_email: `noRole${stamp}@test.local`, p_name: 'No Role', p_phone: '9000000000' });
+    assert(inv.temp_password && inv.verify_token, 'invite did not return a login: ' + JSON.stringify(inv));
+    await ok(null, 'confirm_staff_email', { p_token: inv.verify_token });
+    const l = await loginRaw(`norole${stamp}@test.local`, inv.temp_password);
+    const tok = l.access_token || (l.data && l.data.access_token);
+    assert(tok, 'verified staff could not sign in: ' + JSON.stringify(l));
+    const c = await ok(tok, 'mob_context');
+    assert(c.perms.mob_sell && c.perms.mob_purchase && !c.perms.mob_manage && !c.perms.mob_reports, 'default staff perms: ' + JSON.stringify(c.perms));
+    const inv2 = await ok(owner, 'invite_staff', { p_email: `mgr${stamp}@test.local`, p_name: 'Mgr', p_phone: '', p_builtin: 'manager' });
+    await ok(null, 'confirm_staff_email', { p_token: inv2.verify_token });
+    const l2 = await loginRaw(`mgr${stamp}@test.local`, inv2.temp_password);
+    const c2 = await ok(l2.access_token || (l2.data && l2.data.access_token), 'mob_context');
+    assert(c2.perms.mob_manage && c2.perms.mob_reports, 'built-in manager perms: ' + JSON.stringify(c2.perms));
+    await fails(owner, 'invite_staff', { p_email: `NOROLE${stamp}@test.local`, p_name: 'Dup', p_phone: '' }, /already has an AUZslab login/i);
+    await fails(owner, 'invite_staff', { p_email: 'not-an-email', p_name: 'X', p_phone: '' }, /valid email/i);
+    await fails(staff, 'invite_staff', { p_email: `x${stamp}@test.local`, p_name: 'X', p_phone: '' }, /owner only/i);
+  }, 'critical');
+
+  // ---------- staff username + PIN sign in (db/096) ----------
+  await s.check('Username + PIN: created by the owner, signs in, company-bound username, PIN lockout, reset, turn off', async () => {
+    const stamp = Date.now();
+    const pinLogin = async (username, pin) => { const r = await fetch(stack.apiBase + '/auth/staff-login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username, pin }) }); return { status: r.status, body: await r.json().catch(() => ({})) }; };
+    const st1 = await ok(owner, 'staff_create', { p_name: 'Ravi Kumar ' + stamp, p_phone: '9000000001' });
+    assert(/^ravi\.testmob$/.test(st1.username) || /^ravi\d+\.testmob$/.test(st1.username), 'username shape: ' + st1.username);
+    assert(/^\d{4}$/.test(st1.pin) && st1.pin_len === 4, 'cashier PIN should be 4 digits: ' + JSON.stringify(st1));
+    const ok1 = await pinLogin(st1.username.toUpperCase(), st1.pin);
+    assert(ok1.status === 200 && ok1.body.access_token, 'staff could not sign in: ' + JSON.stringify(ok1));
+    const c = await ok(ok1.body.access_token, 'mob_context');
+    assert(c.perms.mob_sell && !c.perms.mob_manage, 'PIN staff perms: ' + JSON.stringify(c.perms));
+    // a second Ravi in the same company gets a different username; PIN is unique within the company
+    const st2 = await ok(owner, 'staff_create', { p_name: 'Ravi Singh', p_phone: '' });
+    assert(st2.username !== st1.username && st2.pin !== st1.pin, 'second Ravi clashed: ' + JSON.stringify([st1, st2]));
+    // wrong PIN: generic error; email login can't be used with the PIN
+    const bad = await pinLogin(st1.username, st1.pin === '0000' ? '1111' : '0000');
+    assert(bad.status === 401 && /Wrong username or PIN/.test(bad.body.error || bad.body.message || JSON.stringify(bad.body)), 'wrong pin: ' + JSON.stringify(bad));
+    const unknown = await pinLogin('nobody.testmob', '1234');
+    assert(unknown.status === 401, 'unknown username should look like a wrong PIN');
+    const asEmail = await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: st1.username + '@staff.auzslab.in', password: st1.pin }) });
+    assert(asEmail.status !== 200, 'PIN worked as an email password');
+    // lockout after 5 wrong PINs, even the right PIN is refused, then the owner resets
+    const wrongPin = st2.pin === '0001' ? '0002' : '0001';
+    for (let i = 0; i < 5; i++) await pinLogin(st2.username, wrongPin);
+    const locked = await pinLogin(st2.username, st2.pin);
+    assert(locked.status === 429, 'login should be locked: ' + JSON.stringify(locked));
+    const row2 = (await q('select id from auth_users where username = $1', [st2.username]))[0];
+    const reset = await ok(owner, 'staff_reset_pin', { p_staff_id: row2.id });
+    assert(/^\d{4}$/.test(reset.pin), 'reset pin shape');
+    assert((await pinLogin(st2.username, reset.pin)).status === 200, 'new PIN should work and clear the lockout');
+    await fails(owner, 'staff_reset_pin', { p_staff_id: row2.id, p_pin: '12' }, /exactly 4 digits/i);
+    await fails(owner, 'staff_reset_pin', { p_staff_id: row2.id, p_pin: st1.pin }, /already uses that PIN/i);
+    // turning the login off blocks sign in, on restores it
+    await ok(owner, 'staff_set_active', { p_staff_id: row2.id, p_active: false });
+    assert((await pinLogin(st2.username, reset.pin)).status === 401, 'disabled staff signed in');
+    await ok(owner, 'staff_set_active', { p_staff_id: row2.id, p_active: true });
+    assert((await pinLogin(st2.username, reset.pin)).status === 200, 'enabled staff could not sign in');
+    // manager gets a 6-digit PIN; only the owner may create / reset; another business cannot touch these staff
+    const mg = await ok(owner, 'staff_create', { p_name: 'Meena', p_builtin: 'manager' });
+    assert(/^\d{6}$/.test(mg.pin) && mg.pin_len === 6, 'manager PIN should be 6 digits: ' + JSON.stringify(mg));
+    const mc = await ok((await pinLogin(mg.username, mg.pin)).body.access_token, 'mob_context');
+    assert(mc.perms.mob_manage, 'manager perms');
+    await fails(staff, 'staff_create', { p_name: 'X' }, /owner only/i);
+    await fails(cafe, 'staff_reset_pin', { p_staff_id: row2.id }, /not found|owner only/i);
+    const other = await ok(cafe, 'staff_create', { p_name: 'Ravi' });
+    assert(other.username.endsWith('.testcafe') && other.username !== st1.username, 'other company username: ' + other.username);
+  }, 'critical');
+
   // ---------- screens ----------
   const open = async (email, dev) => {
     const c = await newCtx(browser, stack, dev); const page = await c.newPage(); const errs = watch(page);
@@ -280,6 +350,16 @@ export default async function run({ browser, stack }) {
     await c.close();
     await setFeat(ALL_ON);
   }, 'major');
+  await s.check('Staff tab on the AUZsMob sign-in screen: username + PIN opens the app', async () => {
+    const st = await ok(owner, 'staff_create', { p_name: 'Screen Test ' + Date.now() });
+    const c = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await c.newPage(); const errs = watch(page);
+    await page.goto(stack.url('testmob', '/mob.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
+    await page.locator('.seg button', { hasText: /^Staff$/ }).click();
+    await page.fill('input[aria-label="Staff username"]', st.username); await page.fill('input[aria-label="PIN"]', st.pin);
+    await page.locator('button', { hasText: /^Continue$/ }).click();
+    await page.waitForSelector('.shell', { timeout: 20000 });
+    await c.close();
+  }, 'critical');
   await s.check('Hindi toggle changes the Settings title, and switches back', async () => {
     const { c, page } = await open(USERS.mobOwner, { w: 1366, h: 860 });
     await page.evaluate(() => { location.hash = '#/settings'; }); await page.waitForTimeout(600);
@@ -287,6 +367,33 @@ export default async function run({ browser, stack }) {
     assert(/सेटिंग्स/.test(await page.content()), 'Hindi label did not render anywhere on the Settings page');
     await page.locator('.seg button', { hasText: 'English' }).click(); await page.waitForTimeout(300);
     await c.close();
+  }, 'major');
+  await s.check('Plan and renewal: sign-in links to the AUZslab site, banner when the plan ends soon, plan sheet, renewal notifications', async () => {
+    const c0 = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const p0 = await c0.newPage();
+    await p0.goto(stack.url('testmob', '/mob.html')); await p0.waitForSelector('input[type=password]', { timeout: 20000 }); await p0.waitForTimeout(2200);
+    const hrefs = await p0.locator('#auz-newacct a').evaluateAll((a) => a.map((x) => x.href));
+    assert(hrefs.some((h) => /auzslab\.in\/cart\.html\?add=mobile&from=mob/.test(h)) && hrefs.some((h) => /pricing\.html/.test(h)), 'sign-in screen has no Create an account / See plans links: ' + hrefs);
+    await c0.close();
+    await q("update tenants set renewal_date = current_date + 3 where slug='testmob'");
+    const { c, page } = await open(USERS.mobOwner, { w: 390, h: 844, mobile: true });
+    await page.waitForSelector('text=Your plan ends in 3 days', { timeout: 12000 });
+    await page.locator('button', { hasText: /^Renew$/ }).click();
+    await page.waitForSelector('text=Plan & account'); const sheet = await page.locator('[aria-label="Plan and account"]').innerText();
+    assert(/Renew now/.test(sheet) && /Create a new account/.test(sheet) && /See all plans/.test(sheet), 'plan sheet missing actions: ' + sheet.slice(0, 200));
+    await c.close();
+    const n1 = (await q("select renewal_notify_run() r"))[0].r; assert(n1.some((x) => x.tenant === 'Test Mobile Shop' && x.stage === 'd3'), 'no renewal notice created');
+    assert((await q("select renewal_notify_run() r"))[0].r.length === 0, 'renewal notices repeated');
+    assert((await q("select count(*)::int c from notifications where type='renewal' and tenant_id=$1", [tid]))[0].c === 1, 'owner notification missing');
+    await q("update tenants set renewal_date = null where slug='testmob'");
+  }, 'major');
+  await s.check('Phone tab bar: with features switched off the remaining buttons share the width equally', async () => {
+    await setFeat({ sell: false, purchase: false, repairs: 'off', stock: false, serials: false, customers: false, vendors: false, dayclose: false });
+    const { c, page } = await open(USERS.mobStaff, { w: 390, h: 844, mobile: true });
+    const boxes = await page.locator('.tabbar button').evaluateAll((b) => b.map((x) => { const r = x.getBoundingClientRect(); return { l: r.left, w: r.width }; }));
+    assert(boxes.length >= 2 && boxes.length < 5, 'expected fewer than 5 tabs, got ' + boxes.length);
+    assert(boxes.every((b) => Math.abs(b.w - boxes[0].w) < 1.5), 'tab widths differ: ' + boxes.map((b) => Math.round(b.w)));
+    assert(Math.abs(boxes.reduce((n, b) => n + b.w, 0) - 390) < 3, 'tabs do not fill the bar: ' + boxes.map((b) => Math.round(b.w)));
+    await c.close(); await setFeat(ALL_ON);
   }, 'major');
   await s.check('Integrity still holds at the very end', integrity, 'critical');
   s.done();

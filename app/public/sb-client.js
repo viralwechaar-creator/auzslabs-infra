@@ -118,6 +118,14 @@
       // ---- real identity providers (db/069) -- same {session,user}/
       // {data,error} shape as signInWithPassword/signUp above, so a page
       // treats every sign-in method identically from here on. ----
+      // staff: username + PIN (db/096), no email involved
+      async signInWithStaffPin(username, pin) {
+        const { data, error } = await request('/auth/staff-login', { method: 'POST', body: { username, pin }, auth: false });
+        if (error) return { data: { session: null }, error };
+        session = { access_token: data.access_token, user: data.user };
+        saveSession(session);
+        return { data: { session, user: data.user }, error: null };
+      },
       async signInWithGoogle(idToken) {
         const { data, error } = await request('/auth/google', { method: 'POST', body: { id_token: idToken }, auth: false });
         if (error) return { data: { session: null }, error };

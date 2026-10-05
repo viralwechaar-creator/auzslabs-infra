@@ -81,16 +81,18 @@ function showLogin(msg) {
 
   const methodEmailBtn = h('button', { type: 'button', 'aria-selected': 'true' }, 'Email');
   const methodPhoneBtn = h('button', { type: 'button', 'aria-selected': 'false' }, 'Phone');
+  const methodStaffBtn = h('button', { type: 'button', 'aria-selected': 'false' }, 'Staff');
+  const staffWrap = auzStaffPinForm(sb, () => boot());
   const setMethod = (which) => {
     emailWrap.style.display = which === 'email' ? 'grid' : 'none';
-    phoneWrap.style.display = which === 'phone' ? 'grid' : 'none';
+    phoneWrap.style.display = which === 'phone' ? 'grid' : 'none'; staffWrap.style.display = which === 'staff' ? 'grid' : 'none'; methodStaffBtn.setAttribute('aria-selected', String(which === 'staff'));
     methodEmailBtn.setAttribute('aria-selected', String(which === 'email'));
     methodPhoneBtn.setAttribute('aria-selected', String(which === 'phone'));
     m.style.color = ''; m.textContent = '';
   };
   methodEmailBtn.onclick = () => setMethod('email');
-  methodPhoneBtn.onclick = () => setMethod('phone');
-  const methodRow = h('div', { class: 'seg full' }, methodEmailBtn, methodPhoneBtn);
+  methodPhoneBtn.onclick = () => setMethod('phone'); methodStaffBtn.onclick = () => setMethod('staff');
+  const methodRow = h('div', { class: 'seg full' }, methodEmailBtn, methodPhoneBtn, methodStaffBtn);
 
   const googleHost = h('div');
   const appleBtn = h('button', { type: 'button', class: 'btn wide', style: { display: 'none', gap: '8px' } }, icon('apple', 18), 'Continue with Apple');
@@ -107,7 +109,7 @@ function showLogin(msg) {
 
   const form = h('form', { class: 'card', onsubmit: (ev) => ev.preventDefault() },
     h('img', { src: '/logo-payroll.svg', alt: 'AUZslab Payroll' }), h('h1', null, 'Sign in'), h('p', { class: 'muted' }, 'Use your AUZslab login. Staff use the login their employer gave them.'),
-    socialWrap, socialDivider, methodRow, emailWrap, phoneWrap, m);
+    socialWrap, socialDivider, methodRow, emailWrap, phoneWrap, staffWrap, m);
   clear($('#app')).append(h('div', { class: 'login' }, form));
   e.focus();
 
@@ -229,7 +231,7 @@ function moreSheet() {
   }),
     isHR() && can('pay_time') ? h('div', { class: 'list' }, liRow({ icon: 'tablet', title: 'Clock-in kiosk', sub: 'Turn this device into a shared clock-in screen', onclick: () => { s.close(); go('kiosk'); } })) : null,
     h('div', { class: 'list' }, liRow({ icon: 'moon', tone: 'gray', title: 'Appearance', badge: seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v)) })),
-    h('div', { class: 'list' }, liRow({ icon: 'user', tone: 'gray', title: S.user.email, sub: roleLabel() + (S.ctx.tenant.is_demo ? ' · demo data' : '') }), S.user.role === 'owner' ? liRow({ icon: 'download', tone: 'gray', title: 'Backup, export or clear data', onclick: () => { s.close(); auzMyData(sb); } }) : null, liRow({ icon: 'logout', tone: 'gray', title: 'Sign out', onclick: signOut }), liRow({ icon: 'trash', tone: 'red', title: 'Delete my account', onclick: () => { s.close(); deleteAccountFlow(); } })));
+    h('div', { class: 'list' }, liRow({ icon: 'user', tone: 'gray', title: S.user.email, sub: roleLabel() + (S.ctx.tenant.is_demo ? ' · demo data' : '') }), liRow({ icon: 'user', tone: 'gray', title: 'Plan & account', onclick: () => { s.close(); auzPlan.open(sb); } }), S.user.role === 'owner' ? liRow({ icon: 'download', tone: 'gray', title: 'Backup, export or clear data', onclick: () => { s.close(); auzMyData(sb); } }) : null, liRow({ icon: 'logout', tone: 'gray', title: 'Sign out', onclick: signOut }), liRow({ icon: 'trash', tone: 'red', title: 'Delete my account', onclick: () => { s.close(); deleteAccountFlow(); } })));
   const s = sheet({ title: 'More', closeLabel: 'Done', body, noFocus: true });
 }
 function globalKeys(e) {

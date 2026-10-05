@@ -10,7 +10,7 @@
 .page{padding:0 16px 28px;display:grid;gap:22px;align-content:start}
 .large-title{font-size:34px;line-height:1.12;font-weight:700;letter-spacing:-.03em;padding:2px 0 0}
 .page-sub{margin-top:-14px;color:var(--label2);font-size:15px}
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(5,1fr);background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid var(--sep);padding-bottom:max(2px,calc(var(--safe-b) - 14px))}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid var(--sep);padding-bottom:max(2px,calc(var(--safe-b) - 14px))}
 .tabbar button{display:grid;place-items:center;align-content:center;gap:2px;min-height:46px;padding:4px 0 3px;color:var(--label3);font-size:12px;font-weight:500}
 .tabbar button[aria-current=page]{color:var(--tint-text)}
 .tabbar .ic svg{width:25px;height:25px}

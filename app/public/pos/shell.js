@@ -228,16 +228,19 @@ function login(msg) {
   const emailWrap = h('div', { style: 'display:grid;gap:10px' }, e, pwWrap, forgotBtn, submitBtn);
   const methodEmailBtn = h('button', { type: 'button', class: 'on' }, 'Email');
   const methodPhoneBtn = h('button', { type: 'button' }, 'Phone');
+  const methodStaffBtn = h('button', { type: 'button' }, 'Staff');
+  const staffWrap = auzStaffPinForm(sb, () => boot());
   const setMethod = (which) => {
     emailWrap.style.display = which === 'email' ? 'grid' : 'none';
     phoneWrap.style.display = which === 'phone' ? 'grid' : 'none';
+    staffWrap.style.display = which === 'staff' ? 'grid' : 'none'; methodStaffBtn.classList.toggle('on', which === 'staff');
     methodEmailBtn.classList.toggle('on', which === 'email');
     methodPhoneBtn.classList.toggle('on', which === 'phone');
     m.className = 'hint'; m.textContent = '';
   };
   methodEmailBtn.onclick = () => setMethod('email');
-  methodPhoneBtn.onclick = () => setMethod('phone');
-  const methodRow = h('div', { class: 'seg' }, methodEmailBtn, methodPhoneBtn);
+  methodPhoneBtn.onclick = () => setMethod('phone'); methodStaffBtn.onclick = () => setMethod('staff');
+  const methodRow = h('div', { class: 'seg' }, methodEmailBtn, methodPhoneBtn, methodStaffBtn);
 
   const googleHost = h('div');
   const appleBtn = h('button', { type: 'button', class: 'btn wide', style: 'display:none;gap:8px' });
@@ -246,7 +249,7 @@ function login(msg) {
   const socialWrap = h('div', { style: 'display:none;gap:10px' }, googleHost, appleBtn);
 
   const card = h('div', { class: 'card' }, posLogo(), h('h2', null, 'Sign in'), h('p', { class: 'sub' }, 'Use the email and password your business gave you.'),
-    socialWrap, socialDivider, methodRow, emailWrap, phoneWrap, m);
+    socialWrap, socialDivider, methodRow, emailWrap, phoneWrap, staffWrap, m);
   $('#app').replaceChildren(h('div', { class: 'login' }, card));
 
   if (C.googleClientId && !document.getElementById('gsiScript')) {
@@ -300,7 +303,7 @@ async function boot() {
   const id = ses ? ses.user.id : c && c.id;
   if (id) { const meta = await get('meta', 'lastUser'); if (meta && meta.v && meta.v !== id) { await clr('rec'); await clr('out'); await del('meta', 'since'); } await put('meta', { k: 'lastUser', v: id }); }
   (await all('rec')).forEach((r) => (R[r.id] = r));
-  if (ses) { S.user = ses.user; try { const { data } = await sb.from('profiles').select('role,role_id').eq('id', ses.user.id).single(); if (data) localStorage.u = JSON.stringify((c = { id: ses.user.id, role: data.role, role_id: data.role_id })); } catch {} } else if (c) S.user = { id: c.id };
+  if (ses) { S.user = ses.user; try { const { data } = await sb.from('profiles').select('role,role_id,outlet_id').eq('id', ses.user.id).single(); if (data && data.outlet_id && data.role !== 'owner') { try { localStorage.outlet = data.outlet_id; } catch {} } if (data) localStorage.u = JSON.stringify((c = { id: ses.user.id, role: data.role, role_id: data.role_id })); } catch {} } else if (c) S.user = { id: c.id };
   if (!S.user) return login();
   S.role = (c && c.role) || 'cashier'; S.role_id = (c && c.role_id) || null; S.perms = null;
   if (S.role_id) { try { const { data } = await sb.from('roles').select('permissions').eq('id', S.role_id).single(); S.perms = data && data.permissions; } catch {} }

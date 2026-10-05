@@ -66,6 +66,10 @@ export async function build(log = () => {}) {
     try { await c.query(fs.readFileSync(path.join(root, 'db', f), 'utf8')); }
     catch (e) { warn.push(f + ': ' + e.message.split('\n')[0]); }
   }
+  // Production ran 999_app_grants.sql long before the pay_/mob_/acc_ tables existed, so `app` has NO rights on them
+  // there (they are only reachable through SECURITY DEFINER functions). In a fresh build 999 runs last and would grant
+  // everything, hiding any non-definer trigger/helper that touches those tables. Mirror production.
+  await c.query(`do $$ declare t text; begin for t in select tablename from pg_tables where schemaname = 'public' and (tablename like 'pay\\_%' or tablename like 'mob\\_%' or tablename like 'acc\\_%') loop execute format('revoke all on %I from app', t); end loop; end $$`);
   log('migrations applied' + (warn.length ? ' with ' + warn.length + ' warning(s): ' + warn.join(' | ') : ''));
   if (warn.length) throw new Error('Migration failures: ' + warn.join(' | '));
   await seed(c);
