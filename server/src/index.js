@@ -4,7 +4,7 @@ import {
   login, verifyToken, bearerFrom, createUser, resetToRandomPassword, signToken,
   loginWithGoogle, loginWithApple, createPhoneOtp, loginWithPhone,
   createPasswordReset, resetPassword, deleteOwnAccount,
-  listSessions, revokeSession, revokeAllSessionsForUser,
+  listSessions, revokeSession, revokeAllSessionsForUser, staffLogin,
 } from './auth.js';
 import { saveSiteUpload, saveDocUpload, readDocUpload, getUploadsDiskUsage } from './storage.js';
 import { startRealtime } from './realtime.js';
@@ -47,7 +47,7 @@ async function myProfile(userId) {
 // index.html/site.html/i.html) -- not a generic open-ended DB proxy. ----
 const TABLES = {
   records: { columns: ['id', 'tenant_id', 'kind', 'data', 'deleted', 'author', 'updated_at'] }, // read-only here; writes go through the push_record RPC (optimistic concurrency)
-  profiles: { columns: ['id', 'tenant_id', 'email', 'role', 'role_id', 'name', 'phone'], writable: ['role', 'role_id', 'name', 'phone'] },
+  profiles: { columns: ['id', 'tenant_id', 'email', 'role', 'role_id', 'name', 'phone', 'username', 'outlet_id', 'login_off'], writable: ['role', 'role_id', 'name', 'phone'] },
   guest_orders: { columns: ['id', 'tenant_id', 'tbl', 'name', 'phone', 'note', 'items', 'status', 'created_at'], writable: ['status'] },
   push_subs: { columns: ['id', 'tenant_id', 'user_id', 'endpoint', 'p256dh', 'auth', 'created_at'], insertable: ['user_id', 'endpoint', 'p256dh', 'auth'] },
   leads: { columns: ['id', 'name', 'business', 'contact', 'message', 'niche', 'status', 'created_at'], writable: ['status'] }, // admin-only via RLS (is_platform_admin())
@@ -155,6 +155,10 @@ const RPC = {
   my_dashboard: { params: [], auth: true },
   update_my_features: { params: ['p_enabled'], jsonb: ['p_enabled'], auth: true },
   change_my_password: { params: ['p_old_password', 'p_new_password'], auth: true },
+  staff_create: { params: ['p_name', 'p_phone', 'p_role_id', 'p_builtin', 'p_outlet', 'p_username'], defaults: { p_phone: null, p_role_id: null, p_builtin: null, p_outlet: null, p_username: null }, auth: true },
+  staff_reset_pin: { params: ['p_staff_id', 'p_pin'], defaults: { p_pin: null }, auth: true },
+  staff_set_active: { params: ['p_staff_id', 'p_active'], auth: true },
+  staff_set_outlet: { params: ['p_staff_id', 'p_outlet'], auth: true },
   invite_staff: { params: ['p_email', 'p_name', 'p_phone', 'p_role_id', 'p_builtin'], defaults: { p_role_id: null, p_builtin: null }, auth: true },
   confirm_staff_email: { params: ['p_token'], auth: false },
   remove_staff: { params: ['p_staff_id'], auth: true },
@@ -579,6 +583,15 @@ const server = http.createServer(async (req, res) => {
 
   try {
     // ---- auth ----
+    // ---- staff sign-in: username + PIN (db/096). Same reply shape as /auth/login. ----
+    if (url.pathname === '/auth/staff-login' && req.method === 'POST') {
+      const { username, pin } = await readJsonBody(req);
+      if (rateLimited(`staffpin:${ip}`, 40, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      const result = await staffLogin(username, pin, meta);
+      if (!result) throw new HttpError(401, 'Wrong username or PIN');
+      if (result.locked) throw new HttpError(429, 'Too many wrong PINs. Try again in 15 minutes, or ask your owner to reset your PIN.');
+      return reply(200, result);
+    }
     if (url.pathname === '/auth/login' && req.method === 'POST') {
       const { email, password } = await readJsonBody(req);
       // 20 attempts / 15 min per IP for real accounts -- bcrypt is

@@ -477,7 +477,9 @@ function renderStaff() {
       ${DASH.tenant.niche === 'salon' ? '<p class="muted" style="margin-bottom:10px;font-size:12.5px">For your salon team (bookings, billing, clients), add staff inside your AUZslab Salon console under Staff &mdash; they sign in with a phone number. This page is for people who need an AUZslab login for Payroll or the POS add-on.</p>' : ''}
       <div class="field"><label>Name</label><input id="stName"></div>
       <div class="field"><label>Mobile number</label><input id="stPhone" type="tel"></div>
-      <div class="field"><label>Email (their login)</label><input id="stEmail" type="email"></div>
+      <div class="field"><label>How will they sign in?</label><select id="stMethod"><option value="pin">Username + PIN (easiest for shop staff)</option><option value="email">Email + password</option></select></div>
+      <div class="field" id="stEmailWrap" style="display:none"><label>Email (their login)</label><input id="stEmail" type="email"></div>
+      <div class="field" id="stOutletWrap" style="display:none"><label>Outlet</label><select id="stOutlet"><option value="">Main outlet</option></select></div>
       <div class="field"><label>Role</label><select id="stRole"><option value="">Staff (everyday access)</option><option value="builtin:manager">Manager (reports and management)</option>${ROLES.map((r) => `<option value="${r.id}">${esc(r.name)}</option>`).join('')}</select></div>
       <button class="btn btn-primary form-submit" id="stAdd" style="margin-top:12px">Add staff</button>
       <div id="stMsg"></div>
@@ -489,7 +491,7 @@ function renderStaff() {
         <div class="acct-row">
           <span>
             <b>${esc(p.name || p.email)}</b><br>
-            <span class="muted">${esc(p.email)}${p.phone ? ' · ' + esc(p.phone) : ''}</span>
+            <span class="muted">${p.username ? 'Username: <b>' + esc(p.username) + '</b>' + (p.login_off ? ' · <b>login off</b>' : '') + (p.outlet_id ? ' · outlet ' + esc(p.outlet_id) : '') : esc(p.email)}${p.phone ? ' · ' + esc(p.phone) : ''}</span>
           </span>
           ${p.role === 'owner' ? '<span class="status-pill">owner</span>' : `
             <span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
@@ -497,7 +499,9 @@ function renderStaff() {
                 <option value="" ${!p.role_id && p.role !== 'manager' ? 'selected' : ''}>Staff (everyday access)</option><option value="builtin:manager" ${!p.role_id && p.role === 'manager' ? 'selected' : ''}>Manager</option>
                 ${ROLES.map((r) => `<option value="${r.id}" ${p.role_id === r.id ? 'selected' : ''}>${esc(r.name)}</option>`).join('')}
               </select>
-              <button class="btn btn-ghost" data-reset-pw="${p.id}" data-email="${esc(p.email)}">Set/reset password</button>
+              ${p.username
+                ? `<button class="btn btn-ghost" data-reset-pin="${p.id}" data-user="${esc(p.username)}">Reset PIN</button><button class="btn btn-ghost" data-toggle-login="${p.id}" data-off="${p.login_off ? '1' : ''}">${p.login_off ? 'Turn on' : 'Turn off'}</button>`
+                : `<button class="btn btn-ghost" data-reset-pw="${p.id}" data-email="${esc(p.email)}">Set/reset password</button>`}
               <button class="btn btn-ghost" data-remove="${p.id}">Remove</button>
             </span>
           `}
@@ -508,7 +512,18 @@ function renderStaff() {
   $('#stAdd').onclick = async () => {
     const name = $('#stName').value.trim(), phone = $('#stPhone').value.trim(), email = $('#stEmail').value.trim(), roleId = $('#stRole').value, msg = $('#stMsg');
     msg.className = ''; msg.textContent = '';
-    if (!name || !email) { msg.className = 'err'; msg.textContent = 'Name and email are required.'; return; }
+    if ($('#stMethod').value === 'pin') {
+      if (!name) { msg.className = 'err'; msg.textContent = 'Enter their name.'; return; }
+      const { data: d, error: e2 } = await sb.rpc('staff_create', { p_name: name, p_phone: phone, p_role_id: /^[0-9a-f-]{36}$/.test(roleId) ? roleId : null, p_builtin: roleId === 'builtin:manager' ? 'manager' : null, p_outlet: $('#stOutlet').value || null });
+      if (e2) { msg.className = 'err'; msg.textContent = e2.message; return; }
+      msg.className = 'ok-box';
+      msg.innerHTML = `Added. Give them these to sign in (they do not need an email):<br><br>Username: <b>${esc(d.username)}</b><br>PIN: <b>${esc(d.pin)}</b><br><br>They open the app, tap <b>Staff</b>, and type the username and PIN. Write the PIN down now: you can see it only this once, but you can reset it any time.`;
+      $('#stName').value = ''; $('#stPhone').value = '';
+      await loadStaff(); renderStaff(); $('#stMsg').className = 'ok-box'; $('#stMsg').innerHTML = msg.innerHTML;
+      return;
+    }
+    if (!email) { msg.className = 'err'; msg.textContent = 'Enter their email.'; return; }
+    if (!name) { msg.className = 'err'; msg.textContent = 'Name and email are required.'; return; }
     const { data, error } = await sb.rpc('invite_staff', { p_email: email, p_name: name, p_phone: phone, p_role_id: /^[0-9a-f-]{36}$/.test(roleId) ? roleId : null, p_builtin: roleId === 'builtin:manager' ? 'manager' : null });
     if (error) { msg.className = 'err'; msg.textContent = error.message; return; }
     const verifyLink = 'https://' + DASH.tenant.slug + '.auzslab.in/verify.html?token=' + data.verify_token;
@@ -531,6 +546,32 @@ function renderStaff() {
     $('#stName').value = ''; $('#stPhone').value = ''; $('#stEmail').value = '';
     await loadStaff(); renderStaff();
   };
+  $('#stMethod').onchange = () => { $('#stEmailWrap').style.display = $('#stMethod').value === 'email' ? '' : 'none'; };
+  (async () => {
+    try {
+      const { data: outs } = await sb.from('records').select('id,data').eq('kind', 'outlet');
+      const list = (outs || []).map((r) => ({ id: r.id, name: (r.data && (r.data.name || r.data.n)) || r.id }));
+      if (list.length) { $('#stOutlet').innerHTML = '<option value="">Main outlet</option>' + list.map((o) => `<option value="${esc(o.id)}">${esc(o.name)}</option>`).join(''); $('#stOutletWrap').style.display = ''; }
+    } catch {}
+  })();
+  document.querySelectorAll('[data-reset-pin]').forEach((btn) => {
+    btn.onclick = async () => {
+      const typed = prompt(`New PIN for ${btn.dataset.user}: type 4 digits (6 for managers), or leave blank to make a random one.`);
+      if (typed === null) return;
+      const { data, error } = await sb.rpc('staff_reset_pin', { p_staff_id: btn.dataset.resetPin, p_pin: typed.trim() || null });
+      if (error) { alert(error.message); return; }
+      alert(`New PIN set. Give them:\n\nUsername: ${data.username}\nPIN: ${data.pin}`);
+    };
+  });
+  document.querySelectorAll('[data-toggle-login]').forEach((btn) => {
+    btn.onclick = async () => {
+      const turnOn = btn.dataset.off === '1';
+      if (!turnOn && !confirm('Turn this login off? They will not be able to sign in until you turn it on again.')) return;
+      const { error } = await sb.rpc('staff_set_active', { p_staff_id: btn.dataset.toggleLogin, p_active: turnOn });
+      if (error) { alert(error.message); return; }
+      await loadStaff(); renderStaff();
+    };
+  });
   document.querySelectorAll('[data-role]').forEach((sel) => {
     sel.onchange = async () => {
       const role = ROLES.find((r) => r.id === sel.value);
