@@ -516,11 +516,14 @@ export async function handleSalon(req, res, ip) {
         const um = r.user.user_metadata || {};
         const name = cleanString(um.full_name || um.name || uname.split('.')[0], 80);
         let st;
-        await mutateKey(tid, 'staff', (d) => {
+        const payOn = await payrollOn(tid);
+        await mutateKey(tid, 'staff', async (d) => {
           d.list = d.list || [];
           st = d.list.find((x) => x.userId === r.user.id);
           if (!st) { st = { id: crypto.randomUUID(), userId: r.user.id, name, phone: '', designation: prof.role === 'manager' ? 'Manager' : 'Staff', active: true, employeeId: null, createdAt: new Date().toISOString() }; d.list.push(st); }
-          else if (st.active === false) st = null;
+          else if (st.active === false) { st = null; return; }
+          // Payroll add-on on: link this person to a payroll employee once, so they can clock in (owner sets salary in Payroll).
+          if (payOn && !st.employeeId) st.employeeId = (await pool.query('select salon_hr_ensure($1, $2, $3, $4) as id', [tid, st.name, '', st.designation])).rows[0].id;
         }, { list: [] });
         if (!st) fail(401, 'This login is turned off.');
         setSession(res, tid, { role: 'staff', sid: st.id, name: st.name });
