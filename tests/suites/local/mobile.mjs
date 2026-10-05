@@ -420,6 +420,12 @@ export default async function run({ browser, stack }) {
     await p4.goto(stack.url('', '/signin.html') + '#id_token=a.b.c&state=bad'); await p4.waitForTimeout(500);
     assert(/did not finish/i.test(await p4.locator('body').innerText()), 'a bad Google answer was not refused');
     await c4.close();
+    const pl = await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: USERS.plain, password: PASSWORD }) })).json();
+    const pd = pl.data !== undefined ? pl.data : pl;
+    const pf = Buffer.from(unescape(encodeURIComponent(JSON.stringify({ t: pd.access_token, u: pd.user })))).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const c5 = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const p5 = await c5.newPage();
+    await p5.goto(stack.url('', '/signup.html') + '#auz_gt=' + pf); await p5.waitForURL(/\/index\.html/, { timeout: 15000 });
+    await c5.close();
   }, 'critical');
   await s.check('Integrity still holds at the very end', integrity, 'critical');
   s.done();

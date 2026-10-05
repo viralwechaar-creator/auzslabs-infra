@@ -22,7 +22,7 @@
     try {
       const m = /[#&]auz_gt=([^&]+)/.exec(location.hash || ''); if (!m) return;
       const p = JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g, '+').replace(/_/g, '/')))));
-      if (p && p.t && p.u) saveSession({ access_token: p.t, user: p.u });
+      if (p && p.t && p.u) { saveSession({ access_token: p.t, user: p.u }); try { sessionStorage.setItem('auz.justSignedIn', '1'); } catch (e) {} }
       history.replaceState(null, '', location.pathname + location.search);
     } catch {}
   })();
