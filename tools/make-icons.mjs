@@ -1,0 +1,135 @@
+// Generates every app icon from one definition so the family stays consistent:
+//   node tools/make-icons.mjs
+// Writes app/public/icon-<app>.svg (rounded, for browser tabs) and icon-<app>-512.png / -180.png
+// (full-bleed square: iOS and Android round it themselves, a pre-rounded PNG shows black corners).
+// The same mark is reused by the launch animation (app/public/ds/launch.js), keep them in step.
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { chromium } from '../tests/lib/pw.mjs';
+
+const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'app', 'public');
+const INK = '#171717', L1 = '#5c3340', L2 = '#8c2840', WINE = '#c2183f';
+const st = `stroke="${INK}" stroke-width="8" stroke-linejoin="round"`;
+
+// each mark is drawn inside a 512 box and centred by hand (visual centre = 256,256)
+const MARKS = {
+  // three stacked receipts with a torn edge
+  pos: [
+    `<g transform="translate(8 24)"><rect x="112" y="76" width="216" height="270" rx="30" fill="${L1}" ${st}/>`,
+    `<rect x="140" y="104" width="216" height="270" rx="30" fill="${L2}" ${st}/>`,
+    `<path d="M168,134 Q168,132 190,132 L350,132 Q384,132 384,160 L384,364 L362,392 L340,364 L318,392 L296,364 L274,392 L252,364 L230,392 L208,364 L186,392 L168,364 Z" fill="${WINE}" ${st}/></g>`,
+  ],
+  // three stacked coins
+  payroll: [
+    `<g transform="translate(28 28)"><circle cx="212" cy="212" r="132" fill="${L1}" ${st}/>`,
+    `<circle cx="238" cy="238" r="124" fill="${L2}" ${st}/>`,
+    `<circle cx="264" cy="264" r="116" fill="${WINE}" ${st}/></g>`,
+  ],
+  // ledger page with a folded corner and lines
+  accounts: [
+    `<g transform="translate(26 18)"><rect x="104" y="64" width="232" height="300" rx="30" fill="${L1}" ${st}/>`,
+    `<path d="M156,100 L286,100 L354,168 L354,380 Q354,412 322,412 L156,412 Q124,412 124,380 L124,132 Q124,100 156,100 Z" fill="${WINE}" ${st}/>`,
+    `<path d="M286,100 L286,168 L354,168" fill="none" ${st}/>`,
+    `<rect x="156" y="234" width="152" height="14" rx="7" fill="${INK}" opacity=".55"/><rect x="156" y="284" width="152" height="14" rx="7" fill="${INK}" opacity=".55"/><rect x="156" y="334" width="96" height="14" rx="7" fill="${INK}" opacity=".55"/></g>`,
+  ],
+  // phone + two stepped squares
+  mob: [
+    `<g transform="translate(-34 0)"><rect x="164" y="88" width="168" height="336" rx="32" fill="#fff"/>`,
+    `<rect x="214" y="372" width="68" height="10" rx="5" fill="${INK}" opacity=".22"/>`,
+    `<rect x="310" y="350" width="62" height="62" fill="${WINE}"/><rect x="360" y="296" width="62" height="62" fill="${WINE}"/></g>`,
+  ],
+  // four dashboard tiles
+  backoffice: [
+    `<rect x="116" y="116" width="128" height="128" rx="26" fill="#fff"/>`,
+    `<rect x="268" y="116" width="128" height="128" rx="26" fill="${L2}"/>`,
+    `<rect x="116" y="268" width="128" height="128" rx="26" fill="${L1}"/>`,
+    `<rect x="268" y="268" width="128" height="128" rx="26" fill="${WINE}"/>`,
+  ],
+  // rising bars (the analytics console)
+  console: [
+    `<rect x="110" y="276" width="84" height="130" rx="20" fill="${L1}"/>`,
+    `<rect x="214" y="206" width="84" height="200" rx="20" fill="${L2}"/>`,
+    `<rect x="318" y="110" width="84" height="296" rx="20" fill="${WINE}"/>`,
+  ],
+  // a page layout: header bar, hero block, two columns
+  builder: [
+    `<rect x="100" y="104" width="312" height="62" rx="22" fill="#fff"/>`,
+    `<rect x="100" y="190" width="312" height="104" rx="26" fill="${WINE}"/>`,
+    `<rect x="100" y="318" width="146" height="90" rx="24" fill="${L2}"/>`,
+    `<rect x="266" y="318" width="146" height="90" rx="24" fill="${L1}"/>`,
+  ],
+};
+
+const svg = (key, rx) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"><rect width="512" height="512" rx="${rx}" fill="${INK}"/>${MARKS[key].join('')}</svg>\n`;
+
+const browser = await chromium.launch({ executablePath: fs.existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : undefined });
+const page = await browser.newPage({ viewport: { width: 512, height: 512 } });
+for (const key of Object.keys(MARKS)) {
+  fs.writeFileSync(path.join(OUT, `icon-${key}.svg`), svg(key, 115));
+  const flat = svg(key, 0);
+  for (const size of [512, 180]) {
+    await page.setViewportSize({ width: size, height: size });
+    await page.setContent(`<style>html,body{margin:0;background:${INK}}svg{display:block;width:${size}px;height:${size}px}</style>${flat}`);
+    const name = key === 'pos' && size === 512 ? 'icon-512.png' : `icon-${key}-${size}.png`;
+    await page.screenshot({ path: path.join(OUT, name), omitBackground: false });
+  }
+  console.log('icon', key);
+}
+await browser.close();
+
+// ---- launch animation: one script, every app, the mark drawn piece by piece ----
+const NAMES = { pos: 'POS', payroll: 'Pay', accounts: 'Ledger', mob: 'Mob', backoffice: 'Office', console: 'Console', builder: 'Builder' };
+const marks = Object.fromEntries(Object.entries(MARKS).map(([k, v]) => [k, v.join('')]));
+const launch = `/* AUZslab launch animation (generated by tools/make-icons.mjs, do not edit by hand).
+   <script src="/ds/launch.js?v=1" data-app="mob"></script> in <head>. Draws the app's mark piece by piece on ink,
+   shows the name, then lifts away once the app has rendered (never longer than 4 s). */
+(function () {
+  var MARKS = ${JSON.stringify(marks)};
+  var NAMES = ${JSON.stringify(NAMES)};
+  var me = document.currentScript, app = (me && me.getAttribute('data-app')) || 'pos';
+  if (!MARKS[app] || document.getElementById('auz-launch')) return;
+  var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var css = document.createElement('style');
+  css.textContent = '#auz-launch{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:22px;background:#171717;overflow:hidden;transition:opacity .45s ease,transform .45s cubic-bezier(.4,0,.2,1)}'
+    + '#auz-launch.out{opacity:0;transform:scale(1.04);pointer-events:none}'
+    + '#auz-launch .glow{position:absolute;width:520px;height:520px;border-radius:50%;background:radial-gradient(closest-side,rgba(194,24,63,.34),rgba(194,24,63,0));opacity:0;animation:al-glow 1.8s ease-out .15s forwards}'
+    + '#auz-launch svg{position:relative;width:116px;height:116px;display:block;animation:al-tile .6s cubic-bezier(.2,.9,.3,1) both}'
+    + '#auz-launch .p{opacity:0;transform-box:fill-box;transform-origin:50% 50%;animation:al-piece .62s cubic-bezier(.3,1.3,.4,1) forwards}'
+    + '#auz-launch .w{position:relative;font:600 21px/1 -apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif;letter-spacing:-.2px;color:#f6f4f1;white-space:nowrap;display:flex}'
+    + '#auz-launch .w i{font-style:normal;opacity:0;transform:translateY(8px);animation:al-ch .45s ease forwards}'
+    + '#auz-launch .w i.s{color:#e8365d;font-weight:700}'
+    + '#auz-launch .bar{position:relative;width:64px;height:3px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden;opacity:0;animation:al-fade .4s ease .9s forwards}'
+    + '#auz-launch .bar:after{content:"";position:absolute;inset:0;width:40%;border-radius:2px;background:#c2183f;animation:al-run 1s ease-in-out 1s infinite}'
+    + '@keyframes al-tile{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:scale(1)}}'
+    + '@keyframes al-piece{0%{opacity:0;transform:translateY(26px) scale(.72) rotate(-4deg)}100%{opacity:1;transform:none}}'
+    + '@keyframes al-ch{to{opacity:1;transform:none}}'
+    + '@keyframes al-glow{0%{opacity:0;transform:scale(.6)}40%{opacity:1}100%{opacity:.55;transform:scale(1)}}'
+    + '@keyframes al-fade{to{opacity:1}}'
+    + '@keyframes al-run{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}'
+    + '@media (prefers-reduced-motion:reduce){#auz-launch *,#auz-launch svg{animation:none!important;opacity:1!important;transform:none!important}}';
+  document.head.appendChild(css);
+  var el = document.createElement('div'); el.id = 'auz-launch'; el.setAttribute('aria-hidden', 'true');
+  var word = 'AUZs' + NAMES[app], chars = '';
+  for (var i = 0; i < word.length; i++) chars += '<i' + (i >= 4 ? ' class="s"' : '') + ' style="animation-delay:' + (0.75 + i * 0.045).toFixed(3) + 's">' + word[i] + '</i>';
+  el.innerHTML = '<div class="glow"></div><svg viewBox="0 0 512 512"><rect width="512" height="512" rx="115" fill="#1d1d1f" stroke="#2c2c2f" stroke-width="3"/>' + MARKS[app] + '</svg><div class="w">' + chars + '</div><div class="bar"></div>';
+  document.documentElement.appendChild(el);
+  var parts = el.querySelectorAll('svg rect, svg circle, svg path'), n = 0;
+  Array.prototype.forEach.call(parts, function (p, i) { if (!i) return; p.setAttribute('class', (p.getAttribute('class') || '') + ' p'); p.style.animationDelay = (0.18 + n * 0.09).toFixed(2) + 's'; n++; });
+  var minDone = false, appDone = false, gone = false;
+  function hide() { if (gone) return; gone = true; el.classList.add('out'); setTimeout(function () { el.remove(); css.remove(); }, 520); }
+  function tryHide() { if (minDone && appDone) hide(); }
+  setTimeout(function () { minDone = true; tryHide(); }, still ? 300 : 1500);
+  setTimeout(hide, 4000);
+  function watch() {
+    var a = document.getElementById('app');
+    if (a && !a.children.length) { new MutationObserver(function (m, o) { if (a.children.length) { o.disconnect(); appDone = true; tryHide(); } }).observe(a, { childList: true }); }
+    else if (document.readyState === 'complete') { appDone = true; tryHide(); }
+    else window.addEventListener('load', function () { appDone = true; tryHide(); });
+  }
+  if (document.body) watch(); else document.addEventListener('DOMContentLoaded', watch);
+})();
+`;
+fs.mkdirSync(path.join(OUT, 'ds'), { recursive: true });
+fs.writeFileSync(path.join(OUT, 'ds', 'launch.js'), launch);
+console.log('launch.js');
