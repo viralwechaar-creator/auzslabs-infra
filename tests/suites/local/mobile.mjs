@@ -395,6 +395,24 @@ export default async function run({ browser, stack }) {
     assert(Math.abs(boxes.reduce((n, b) => n + b.w, 0) - 390) < 3, 'tabs do not fill the bar: ' + boxes.map((b) => Math.round(b.w)));
     await c.close(); await setFeat(ALL_ON);
   }, 'major');
+  await s.check('Google sign-in: apps link to the central page, the hand-off logs the user in, a bad return address is refused', async () => {
+    const c = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await c.newPage();
+    await page.goto(stack.url('testmob', '/mob.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
+    const g = await page.locator('a[aria-label="Continue with Google"]').getAttribute('href');
+    assert(/^https:\/\/auzslab\.in\/signin\.html\?app=mob&return=/.test(g || ''), 'Google button does not point at the central page: ' + g);
+    await c.close();
+    const lr = await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: USERS.mobOwner, password: PASSWORD }) })).json();
+    const d = lr.data !== undefined ? lr.data : lr;
+    const frag = Buffer.from(unescape(encodeURIComponent(JSON.stringify({ t: d.access_token, u: d.user })))).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const c2 = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const p2 = await c2.newPage();
+    await p2.goto(stack.url('testmob', '/mob.html') + '#auz_gt=' + frag); await p2.waitForSelector('.shell', { timeout: 20000 });
+    assert(!/auz_gt/.test(p2.url()), 'hand-off token left in the address bar');
+    await c2.close();
+    const c3 = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const p3 = await c3.newPage();
+    await p3.goto(stack.url('', '/signin.html') + '?app=mob&return=' + encodeURIComponent('https://evil.example/steal')); await p3.waitForTimeout(800);
+    assert(/not valid/i.test(await p3.locator('body').innerText()), 'a non-AUZslab return address was accepted');
+    await c3.close();
+  }, 'critical');
   await s.check('Integrity still holds at the very end', integrity, 'critical');
   s.done();
 }

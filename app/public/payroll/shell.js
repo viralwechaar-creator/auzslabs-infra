@@ -113,24 +113,7 @@ function showLogin(msg) {
   clear($('#app')).append(h('div', { class: 'login' }, form));
   e.focus();
 
-  if (CFG.googleClientId && !document.getElementById('gsiScript')) {
-    const gs = document.createElement('script'); gs.id = 'gsiScript'; gs.src = 'https://accounts.google.com/gsi/client'; gs.async = true; gs.defer = true;
-    document.head.appendChild(gs);
-  }
-  if (CFG.googleClientId) {
-    const initG = () => {
-      if (!window.google) return setTimeout(initG, 50);
-      socialWrap.style.display = 'grid'; socialDivider.style.display = 'block';
-      google.accounts.id.initialize({ client_id: CFG.googleClientId, callback: async (resp) => {
-        m.style.color = ''; m.textContent = 'Signing in…';
-        const { error } = await sb.auth.signInWithGoogle(resp.credential);
-        if (error) { m.style.color = 'var(--red)'; m.textContent = error.message; return; }
-        boot();
-      } });
-      google.accounts.id.renderButton(googleHost, { theme: 'outline', size: 'large', width: 332 });
-    };
-    initG();
-  }
+  if (CFG.googleClientId) { socialWrap.style.display = 'grid'; socialDivider.style.display = 'block'; auzGoogleLink(googleHost, 'payroll'); }
   if (CFG.appleClientId && !document.getElementById('appleSdkScript')) {
     const as = document.createElement('script'); as.id = 'appleSdkScript'; as.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
     document.head.appendChild(as);

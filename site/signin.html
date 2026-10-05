@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign in with Google — AUZslab</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="/logo.png">
+<link rel="stylesheet" href="tool/theme.mobile.css?v=44" media="(max-width:899px)"><link rel="stylesheet" href="tool/theme.desktop.css?v=44" media="(min-width:900px)"><script src="theme.js?v=1"></script>
+<style>
+.vwrap{min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:24px}
+.vcard{width:100%;max-width:420px;background:var(--bg);border:1px solid var(--line);border-radius:22px;padding:30px 26px;box-shadow:0 10px 28px -12px rgba(46,44,42,.30);text-align:center}
+.vcard h1{font:700 24px var(--font-display);letter-spacing:-.02em;margin:0 0 8px}
+.vcard p{color:var(--ink-dim);line-height:1.6;margin:0 0 20px}
+#gHost{display:flex;justify-content:center;min-height:44px}
+#gErr{color:var(--accent);margin-top:14px;min-height:20px}
+</style>
+</head>
+<body>
+<div class="vwrap"><div class="vcard">
+  <h1>Sign in with Google</h1>
+  <p id="gText">Use your Google account to continue to <b id="gApp">AUZslab</b>.</p>
+  <div id="gHost"></div>
+  <div id="gErr" role="alert"></div>
+</div></div>
+<script>
+// Central Google sign-in. Google only allows fixed web addresses, not one per shop, so every app sends its users here
+// (https://auzslab.in/signin.html?app=pos&return=<where to go back to>). After Google confirms, the session is handed back to
+// the app in the URL fragment (#auz_gt=...), which browsers never send to a server. The return address must be an AUZslab address.
+window.CFG = { url: 'https://api.auzslab.in', key: '', googleClientId: '264113646597-b734l9r8cfav1okvopin0qt1kojknf08.apps.googleusercontent.com' };
+(function () {
+  var q = new URLSearchParams(location.search), ret = q.get('return') || '', app = q.get('app') || '';
+  var local = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) || /\.localhost$/.test(location.hostname);
+  var okRet = /^https:\/\/([a-z0-9-]+\.)*auzslab\.in(\/|$)/i.test(ret) || (local && /^http:\/\/([a-z0-9-]+\.)*localhost(:\d+)?(\/|$)/i.test(ret));
+  var err = document.getElementById('gErr');
+  var names = { pos: 'AUZsPOS', payroll: 'AUZsPay', accounts: 'AUZsLedger', mob: 'AUZsMob' };
+  if (names[app]) document.getElementById('gApp').textContent = names[app];
+  if (!okRet) { document.getElementById('gText').textContent = 'This sign-in link is not valid.'; err.textContent = 'Open the app again and tap Continue with Google.'; return; }
+  function b64u(o) { return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+  var s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.async = true; s.defer = true;
+  s.onload = function () {
+    google.accounts.id.initialize({ client_id: CFG.googleClientId, callback: function (resp) {
+      err.textContent = 'Signing you in...';
+      fetch(CFG.url + '/auth/google', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id_token: resp.credential }) })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (x) {
+          var d = x.j && x.j.data !== undefined ? x.j.data : x.j;
+          if (!x.ok || !d || !d.access_token) { err.textContent = (x.j && x.j.error) || 'Google sign-in did not work. Please try again.'; return; }
+          var base = ret.split('#')[0];
+          location.replace(base + '#auz_gt=' + b64u({ t: d.access_token, u: d.user }));
+        }).catch(function () { err.textContent = 'Could not reach AUZslab. Check your internet and try again.'; });
+    } });
+    google.accounts.id.renderButton(document.getElementById('gHost'), { theme: 'outline', size: 'large', width: 300 });
+  };
+  s.onerror = function () { err.textContent = 'Could not load Google sign-in. Check your internet and try again.'; };
+  document.head.appendChild(s);
+})();
+</script>
+</body>
+</html>
