@@ -179,7 +179,7 @@ export default async function run({ browser, stack }) {
   }, 'major');
 
   // ---------- a cashier, a manager PIN, and the server rules ----------
-  await q("insert into auth_users (email, password_hash, app_metadata) values ('cashier-cafe@test.local', crypt($1, gen_salt('bf', 4)), jsonb_build_object('tenant_id', $2::text, 'role', 'cashier')) on conflict (email) do nothing", [PASSWORD, tid]);
+  await q("insert into auth_users (email, password_hash, app_metadata) values ('cashier-cafe@test.local', crypt($1, gen_salt('bf', 4)), jsonb_build_object('tenant_id', $2::text, 'role', 'cashier')) on conflict do nothing", [PASSWORD, tid]);
   const login = async (email) => (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password: PASSWORD }) })).json()).access_token;
   const ownerTok = await login(USERS.cafeOwner), cashTok = await login('cashier-cafe@test.local');
 

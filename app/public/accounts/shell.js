@@ -73,16 +73,18 @@ function showLogin(msg) {
 
   const methodEmailBtn = h('button', { type: 'button', 'aria-selected': 'true' }, 'Email');
   const methodPhoneBtn = h('button', { type: 'button', 'aria-selected': 'false' }, 'Phone');
+  const methodStaffBtn = h('button', { type: 'button', 'aria-selected': 'false' }, 'Staff');
+  const staffWrap = auzStaffPinForm(sb, () => boot());
   const setMethod = (which) => {
     emailWrap.style.display = which === 'email' ? 'grid' : 'none';
-    phoneWrap.style.display = which === 'phone' ? 'grid' : 'none';
+    phoneWrap.style.display = which === 'phone' ? 'grid' : 'none'; staffWrap.style.display = which === 'staff' ? 'grid' : 'none'; methodStaffBtn.setAttribute('aria-selected', String(which === 'staff'));
     methodEmailBtn.setAttribute('aria-selected', String(which === 'email'));
     methodPhoneBtn.setAttribute('aria-selected', String(which === 'phone'));
     m.style.color = ''; m.textContent = '';
   };
   methodEmailBtn.onclick = () => setMethod('email');
-  methodPhoneBtn.onclick = () => setMethod('phone');
-  const methodRow = h('div', { class: 'seg full' }, methodEmailBtn, methodPhoneBtn);
+  methodPhoneBtn.onclick = () => setMethod('phone'); methodStaffBtn.onclick = () => setMethod('staff');
+  const methodRow = h('div', { class: 'seg full' }, methodEmailBtn, methodPhoneBtn, methodStaffBtn);
 
   const googleHost = h('div');
   const appleBtn = h('button', { type: 'button', class: 'btn wide', style: { display: 'none', gap: '8px' } }, icon('apple', 18), 'Continue with Apple');
@@ -99,7 +101,7 @@ function showLogin(msg) {
 
   const form = h('form', { class: 'card', onsubmit: (ev) => ev.preventDefault() },
     h('img', { src: '/logo-accounts.svg', alt: 'AUZslab Accounting' }), h('h1', null, 'Sign in'), h('p', { class: 'muted' }, 'Use the email and password you use for your AUZslab account.'),
-    socialWrap, socialDivider, methodRow, emailWrap, phoneWrap, m);
+    socialWrap, socialDivider, methodRow, emailWrap, phoneWrap, staffWrap, m);
   clear($('#app')).append(h('div', { class: 'login' }, form));
   e.focus();
 
