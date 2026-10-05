@@ -14,4 +14,4 @@
 // sentryDsn: same pattern, for client-side error tracking (ds/errors.js) --
 // empty until a Sentry DSN is added (see .env.example), payroll.html and
 // builder.html carry their own copy of this same key in their own inline CFG.
-window.CFG={url:'https://api.auzslab.in',key:'',googleClientId:'264113646597-b734l9r8cfav1okvopin0qt1kojknf08.apps.googleusercontent.com',appleClientId:'',sentryDsn:'https://f5b1f37df2453739b1f37434858dab05@o4512197520261120.ingest.us.sentry.io/4512197531009024'};
+window.CFG={url:'https://api.auzslab.in',key:'',googleClientId:'264113646597-b73419r8cfav1okvopin0qt1kojknf08.apps.googleusercontent.com',appleClientId:'',sentryDsn:'https://f5b1f37df2453739b1f37434858dab05@o4512197520261120.ingest.us.sentry.io/4512197531009024'};
