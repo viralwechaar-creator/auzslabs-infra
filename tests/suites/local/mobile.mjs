@@ -426,6 +426,15 @@ export default async function run({ browser, stack }) {
     const c5 = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const p5 = await c5.newPage();
     await p5.goto(stack.url('', '/signup.html') + '#auz_gt=' + pf); await p5.waitForURL(/\/index\.html/, { timeout: 15000 });
     await c5.close();
+    // a login whose account was deleted (e.g. by the clean-up) must not leave a dead account page
+    const sr = await (await fetch(stack.apiBase + '/auth/signup', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'stale-' + Date.now() + '@test.local', password: PASSWORD }) })).json();
+    const sd = sr.data !== undefined ? sr.data : sr;
+    assert(sd.access_token, 'test signup failed: ' + JSON.stringify(sr).slice(0, 120));
+    await q('delete from auth_users where id = $1', [sd.user.id]);
+    const c6 = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const p6 = await c6.newPage();
+    await p6.addInitScript((v) => { try { localStorage.setItem('auz_session', v); } catch (e) {} }, JSON.stringify({ access_token: sd.access_token, user: sd.user }));
+    await p6.goto(stack.url('', '/account.html')); await p6.waitForURL(/\/signup\.html/, { timeout: 15000 });
+    await c6.close();
   }, 'critical');
   await s.check('Integrity still holds at the very end', integrity, 'critical');
   s.done();
