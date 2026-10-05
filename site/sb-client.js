@@ -92,12 +92,19 @@
       },
       // Public self-serve account creation (POST /auth/signup) -- distinct
       // from admin-provisioned tenant-staff logins, which never call this.
-      async signUp({ email, password }) {
-        const { data, error } = await request('/auth/signup', { method: 'POST', body: { email, password }, auth: false });
+      async signUp({ email, password, captchaToken }) {
+        const { data, error } = await request('/auth/signup', { method: 'POST', body: { email, password, captcha_token: captchaToken || undefined }, auth: false });
         if (error) return { data: { session: null }, error };
         session = { access_token: data.access_token, user: data.user };
         saveSession(session);
-        return { data: { session, user: data.user }, error: null };
+        return { data: { session, user: data.user, emailVerification: data.email_verification || null }, error: null };
+      },
+      // Email verification: the link in the signup email opens verify-email.html, which calls verifyEmail(token).
+      async verifyEmail(token) {
+        return request('/auth/verify-email', { method: 'POST', body: { token }, auth: false });
+      },
+      async resendVerification() {
+        return request('/auth/resend-verification', { method: 'POST', body: {} });
       },
       async signOut() {
         session = null;

@@ -4,12 +4,14 @@ import {
   login, verifyToken, bearerFrom, createUser, resetToRandomPassword, signToken,
   loginWithGoogle, loginWithApple, createPhoneOtp, loginWithPhone,
   createPasswordReset, resetPassword, deleteOwnAccount,
-  listSessions, revokeSession, revokeAllSessionsForUser, staffLogin,
+  listSessions, revokeSession, revokeAllSessionsForUser, staffLogin, createEmailVerification, confirmEmailVerification, emailVerificationState, emailVerificationRequired,
 } from './auth.js';
 import { saveSiteUpload, saveDocUpload, readDocUpload, getUploadsDiskUsage } from './storage.js';
 import { startRealtime } from './realtime.js';
 import { handlePushEvent } from './push.js';
-import { sendStaffInviteEmail, sendPasswordResetEmail } from './mail.js';
+import { sendStaffInviteEmail, sendPasswordResetEmail, sendEmailVerification } from './mail.js';
+import { verifyCaptcha, captchaEnabled } from './captcha.js';
+import { startMaintenance } from './maintenance.js';
 import { sendOtpSms } from './sms.js';
 import { handleSalon } from './salon.js';
 import { paymentConfig, createOrder, verifyWebhookSignature, handleWebhookEvent } from './payments.js';
@@ -19,6 +21,8 @@ initErrorTracking(); // dormant unless SENTRY_DSN is set -- see errors.js
 
 const PORT = process.env.PORT || 3000;
 const DOMAIN = process.env.DOMAIN || '';
+// where links in emails point (the marketing site)
+const SITE_URL = process.env.PUBLIC_SITE_URL || (DOMAIN && DOMAIN !== 'localhost' ? `https://${DOMAIN}` : 'http://localhost');
 // The two logins seeded by db/023_demo_tenants.sql and published on
 // site/demo.html on purpose -- unlike a real tenant's login, lots of
 // unrelated strangers trying these from behind the same mobile-carrier
@@ -411,6 +415,14 @@ class HttpError extends Error {
   constructor(status, message) { super(message); this.status = status; }
 }
 
+// Actions that start a real business relationship (a signup request, an add-on request, a payment) need a proven
+// email address, once the owner has switched the requirement on (platform_flags, db/092). Off by default.
+async function requireVerifiedEmail(userId) {
+  if (!userId || !(await emailVerificationRequired())) return;
+  const st = await emailVerificationState(userId);
+  if (st && !st.verified) throw new HttpError(403, 'Please confirm your email address first. We sent you a link when you signed up; you can ask for a new one from your account page.');
+}
+
 // ---- CORS: reflect the request's Origin only when it's this domain,
 // a subdomain of it (every tenant), or localhost (local dev) -- never
 // the wildcard '*' every response used to send unconditionally. ----
@@ -584,6 +596,16 @@ const server = http.createServer(async (req, res) => {
   const meta = { ip, userAgent: req.headers['user-agent'] || '' }; // threaded into every sign-in, so it gets its own row in auth_sessions (db/071)
 
   try {
+    // ---- health: for uptime monitors (UptimeRobot etc.). Public on purpose and carries nothing sensitive: it only
+    // says whether the API is up and can reach the database. ----
+    if (url.pathname === '/health' && (req.method === 'GET' || req.method === 'HEAD')) {
+      try {
+        await pool.query('select 1');
+        return reply(200, { ok: true, db: true, uptime_s: Math.round(process.uptime()) });
+      } catch {
+        return reply(503, { ok: false, db: false });
+      }
+    }
     // ---- auth ----
     // ---- staff sign-in: username + PIN (db/096). Same reply shape as /auth/login. ----
     if (url.pathname === '/auth/staff-login' && req.method === 'POST') {
@@ -619,9 +641,10 @@ const server = http.createServer(async (req, res) => {
       // 10 accounts / hour per IP -- loose enough for a shared cafe/office
       // IP, tight enough to block scripted account-spam.
       if (rateLimited(`signup:${ip}`, 10, 60 * 60_000)) throw new HttpError(429, 'too many signups from this network, try again later');
-      const { email, password } = await readJsonBody(req);
+      const { email, password, captcha_token } = await readJsonBody(req);
       if (!email || !password) throw new HttpError(400, 'email and password are required');
       if (password.length < 8) throw new HttpError(400, 'password must be at least 8 characters');
+      if (!(await verifyCaptcha(captcha_token, ip))) throw new HttpError(400, 'Please complete the verification check and try again.');
       let created;
       try {
         created = await createUser({ email, password });
@@ -629,12 +652,33 @@ const server = http.createServer(async (req, res) => {
         if (err.code === '23505') throw new HttpError(409, 'an account with that email already exists');
         throw err;
       }
-      return reply(200, { access_token: await signToken(created, meta), user: created });
+      // mail the confirmation link (quietly does nothing if no mail sender is configured yet)
+      const vtoken = await createEmailVerification(created.id, created.email);
+      const vmail = await sendEmailVerification({ to: created.email, verifyLink: `${SITE_URL}/verify-email.html?token=${vtoken}` }).catch(() => ({ sent: false }));
+      return reply(200, { access_token: await signToken(created, meta), user: created, email_verification: { sent: !!vmail.sent, verified: false } });
     }
     // ---- Google / Apple / phone sign-in (db/069) -- each finds or
     // creates an auth_users row via findOrCreateIdentityUser and returns
     // the exact same {access_token,user} shape /auth/login does, so the
     // client treats every sign-in method identically from here on. ----
+    // ---- email verification (db/092) ----
+    if (url.pathname === '/auth/verify-email' && req.method === 'POST') {
+      if (rateLimited(`verifyemail:${ip}`, 30, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      const { token } = await readJsonBody(req);
+      const r = await confirmEmailVerification(token);
+      if (!r.ok) throw new HttpError(400, 'This confirmation link is invalid or has expired. Sign in and ask for a new one.');
+      return reply(200, { ok: true, email: r.email });
+    }
+    if (url.pathname === '/auth/resend-verification' && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      if (rateLimited(`resendverify:${user.id}`, 3, 60 * 60_000)) throw new HttpError(429, 'we already sent you a few links; check your inbox and spam folder, or try again in an hour');
+      const st = await emailVerificationState(user.id);
+      if (!st) throw new HttpError(404, 'account not found');
+      if (st.verified) return reply(200, { ok: true, verified: true, sent: false });
+      const vtoken = await createEmailVerification(user.id, st.email);
+      const vmail = await sendEmailVerification({ to: st.email, verifyLink: `${SITE_URL}/verify-email.html?token=${vtoken}` }).catch(() => ({ sent: false }));
+      return reply(200, { ok: true, verified: false, sent: !!vmail.sent });
+    }
     if (url.pathname === '/auth/google' && req.method === 'POST') {
       if (rateLimited(`oauth:${ip}`, 30, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
       const { id_token } = await readJsonBody(req);
@@ -728,7 +772,8 @@ const server = http.createServer(async (req, res) => {
 
     if (url.pathname === '/auth/session' && req.method === 'GET') {
       if (!user) throw new HttpError(401, 'no session');
-      return reply(200, { user });
+      const vs = await emailVerificationState(user.id);
+      return reply(200, { user, email_verified: vs ? vs.verified : true, captcha: captchaEnabled() });
     }
 
     // ---- single-device session revocation (db/071) ----
@@ -759,6 +804,7 @@ const server = http.createServer(async (req, res) => {
       if (!user) throw new HttpError(401, 'authentication required');
       // Each call hits Razorpay's own API -- worth a modest per-caller cap.
       if (rateLimited(`payorder:${ip}`, 20, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      await requireVerifiedEmail(user.id);
       const { signup_request_id, addon_request_id } = await readJsonBody(req);
       let result;
       try {
@@ -821,6 +867,7 @@ const server = http.createServer(async (req, res) => {
       // Authenticated calls aren't limited here: a logged-in session
       // already required passing the login rate limit above.
       if (!cfg.auth && rateLimited(`public:${ip}`, 300, 5 * 60_000)) throw new HttpError(429, 'too many requests, please slow down');
+      if (fnName === 'submit_signup_request' || fnName === 'submit_addon_request') await requireVerifiedEmail(user.id);
       const args = await readJsonBody(req);
       const uid = user?.id || null;
       const result = await withAuth(uid, (client) => callRpc(client, fnName, args));
@@ -1032,3 +1079,4 @@ const server = http.createServer(async (req, res) => {
 startRealtime(server, { onPushEvent: handlePushEvent });
 
 server.listen(PORT, () => console.log(`auzlabs-api listening on :${PORT}`));
+startMaintenance(); // daily cleanup of expired sessions / codes / links (see maintenance.js)

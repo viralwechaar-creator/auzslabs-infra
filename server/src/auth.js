@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { randomInt, randomUUID } from 'node:crypto';
+import { randomInt, randomUUID, randomBytes, createHash } from 'node:crypto';
 import { OAuth2Client } from 'google-auth-library';
 import { SignJWT, importPKCS8, createRemoteJWKSet, jwtVerify } from 'jose';
 import { pool } from './db.js';
@@ -169,14 +169,62 @@ export async function login(email, password, meta) {
   return { access_token: await signToken(user, meta), user };
 }
 
-export async function createUser({ email, password, app_metadata = {}, user_metadata = {} }) {
+export async function createUser({ email, password, app_metadata = {}, user_metadata = {}, verified = false }) {
   const password_hash = await bcrypt.hash(password, 12);
   const { rows } = await pool.query(
-    `insert into auth_users (email, password_hash, app_metadata, user_metadata)
-     values ($1, $2, $3, $4) returning id, email, app_metadata, user_metadata`,
-    [email, password_hash, app_metadata, user_metadata],
+    `insert into auth_users (email, password_hash, app_metadata, user_metadata, email_verified_at)
+     values ($1, $2, $3, $4, case when $5 then now() end) returning id, email, app_metadata, user_metadata`,
+    [email, password_hash, app_metadata, user_metadata, verified],
   );
   return rows[0];
+}
+
+// =========================================================
+// Email verification (db/092). A self-serve signup starts unverified; a one-time link proves the address.
+// Only a SHA-256 of the token is stored. The link is good for 24 hours; asking again replaces nothing, it just
+// adds a newer link (older unused ones keep working until they expire, so a slow inbox never strands someone).
+// =========================================================
+const sha256 = (v) => createHash('sha256').update(String(v)).digest('hex');
+
+export async function createEmailVerification(userId, email) {
+  const token = randomBytes(32).toString('base64url');
+  await pool.query(
+    `insert into email_verifications (token_hash, user_id, email, expires_at) values ($1, $2, $3, now() + interval '24 hours')`,
+    [sha256(token), userId, email],
+  );
+  return token;
+}
+
+// returns { ok:true, email } or { ok:false } -- the same answer for unknown, used and expired tokens
+export async function confirmEmailVerification(token) {
+  if (!token || typeof token !== 'string' || token.length > 200) return { ok: false };
+  const { rows } = await pool.query(
+    `update email_verifications set used_at = coalesce(used_at, now())
+     where token_hash = $1 and expires_at > now()
+     returning user_id, email`,
+    [sha256(token)],
+  );
+  if (!rows[0]) return { ok: false };
+  // only verify the address that was actually mailed (the account's email could have changed since)
+  await pool.query(
+    `update auth_users set email_verified_at = coalesce(email_verified_at, now()) where id = $1 and email = $2 and deleted_at is null`,
+    [rows[0].user_id, rows[0].email],
+  );
+  return { ok: true, email: rows[0].email };
+}
+
+export async function emailVerificationState(userId) {
+  const { rows } = await pool.query('select email, email_verified_at from auth_users where id = $1 and deleted_at is null', [userId]);
+  return rows[0] ? { email: rows[0].email, verified: !!rows[0].email_verified_at } : null;
+}
+
+// The runtime switch the owner flips in SQL (platform_flags). Off by default so nobody is locked out before the
+// email sender is verified. Read each time (it is one tiny row, and only on the few guarded actions).
+export async function emailVerificationRequired() {
+  try {
+    const { rows } = await pool.query(`select value from platform_flags where key = 'require_email_verification'`);
+    return rows[0]?.value === 'on';
+  } catch { return false; }
 }
 
 // Sets a brand-new random password for an existing user and returns it
@@ -230,6 +278,15 @@ async function findOrCreateIdentityUser({ provider, providerId, email }) {
          on conflict (provider, provider_id) do nothing`,
         [byEmail.rows[0].id, provider, providerId, email],
       );
+      // Pre-hijack guard: if this address was only ever signed up with a password (never proven), someone else
+      // may have registered it first. The provider has now proven the real owner, so drop that password and any
+      // sessions it opened; the real owner can set a new one with "forgot password".
+      const un = await pool.query(
+        `update auth_users set email_verified_at = now(), password_hash = null
+         where id = $1 and email_verified_at is null returning id`,
+        [byEmail.rows[0].id],
+      );
+      if (un.rows[0]) await revokeAllSessionsForUser(byEmail.rows[0].id).catch(() => {});
       return byEmail.rows[0];
     }
   }
@@ -240,7 +297,7 @@ async function findOrCreateIdentityUser({ provider, providerId, email }) {
   // keeps the row valid without ever colliding with a real address.
   const placeholderEmail = email || `${provider}.${providerId}@users.auzslab.in`;
   const created = await pool.query(
-    `insert into auth_users (email, password_hash, app_metadata) values ($1, null, '{}')
+    `insert into auth_users (email, password_hash, app_metadata, email_verified_at) values ($1, null, '{}', now())
      returning id, email, app_metadata, user_metadata`,
     [placeholderEmail],
   );

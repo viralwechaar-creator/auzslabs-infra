@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Confirm your email — AUZslab</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="/logo.png">
+<link rel="stylesheet" href="tool/theme.mobile.css?v=44" media="(max-width:899px)"><link rel="stylesheet" href="tool/theme.desktop.css?v=44" media="(min-width:900px)"><script src="theme.js?v=1"></script>
+<style>
+.vwrap{min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:24px}
+.vcard{width:100%;max-width:420px;background:var(--bg);border:1px solid var(--line);border-radius:22px;padding:30px 26px;box-shadow:0 10px 28px -12px rgba(46,44,42,.30);text-align:center}
+.vcard h1{font:700 24px var(--font-display);letter-spacing:-.02em;margin:14px 0 8px}
+.vcard p{color:var(--ink-dim);line-height:1.6;margin:0 0 20px}
+.vicon{width:56px;height:56px;border-radius:50%;display:inline-grid;place-items:center;background:rgba(128,0,32,.1);color:var(--accent)}
+.vicon.ok{background:rgba(31,107,58,.12);color:var(--success)}
+</style>
+</head>
+<body>
+<div class="vwrap"><div class="vcard">
+  <div class="vicon" id="vIcon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></div>
+  <h1 id="vTitle">Confirming your email…</h1>
+  <p id="vText">One moment.</p>
+  <a class="btn btn-primary" id="vBtn" href="signup.html" style="display:none">Continue</a>
+</div></div>
+<script src="/sb-client.js?v=2"></script>
+<script>
+window.CFG = { url: 'https://api.auzslab.in', key: '' };
+const sb = supabase.createClient(CFG.url, CFG.key);
+(async () => {
+  const token = new URLSearchParams(location.search).get('token');
+  const t = document.getElementById('vTitle'), p = document.getElementById('vText'), b = document.getElementById('vBtn'), ic = document.getElementById('vIcon');
+  if (!token) { t.textContent = 'This link is incomplete.'; p.textContent = 'Open the confirmation link from your email again.'; return; }
+  const { data, error } = await sb.auth.verifyEmail(token);
+  if (error) {
+    t.textContent = 'This link did not work.';
+    p.textContent = error.message || 'It may have expired. Sign in and ask for a new one.';
+    b.textContent = 'Sign in'; b.style.display = 'inline-flex';
+    return;
+  }
+  ic.classList.add('ok');
+  ic.innerHTML = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  t.textContent = 'Email confirmed.';
+  p.textContent = (data && data.email ? data.email + ' is confirmed. ' : '') + 'You can carry on with your account now.';
+  b.textContent = 'Continue'; b.style.display = 'inline-flex';
+})();
+</script>
+</body>
+</html>
