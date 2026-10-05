@@ -66,7 +66,7 @@
     if (!pw || document.getElementById('auz-newacct')) return;
     var card = pw.closest('form') || pw.closest('.card') || pw.parentElement.parentElement;
     if (!card) return;
-    var a = 'color:var(--accent,#800020);font-weight:600;text-decoration:none';
+    var a = 'color:var(--tint-text,var(--accent-text,var(--accent,#800020)));font-weight:600;text-decoration:none';
     card.appendChild(el('p', { id: 'auz-newacct', style: 'margin:14px 0 0;text-align:center;font-size:14px' },
       'New to AUZslab? ',
       el('a', { href: SITE + '/cart.html?add=' + (KEY[APP] || 'pos') + '&from=' + APP, target: '_blank', rel: 'noopener', style: a }, 'Create an account'),

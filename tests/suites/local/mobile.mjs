@@ -387,8 +387,8 @@ export default async function run({ browser, stack }) {
     await q("update tenants set renewal_date = null where slug='testmob'");
   }, 'major');
   await s.check('Phone tab bar: with features switched off the remaining buttons share the width equally', async () => {
-    await setFeat({ ...ALL_ON, stock: false, serials: false, customers: false, vendors: false, dayclose: false, repairs: 'off' });
-    const { c, page } = await open(USERS.mobOwner, { w: 390, h: 844, mobile: true });
+    await setFeat({ sell: false, purchase: false, repairs: 'off', stock: false, serials: false, customers: false, vendors: false, dayclose: false });
+    const { c, page } = await open(USERS.mobStaff, { w: 390, h: 844, mobile: true });
     const boxes = await page.locator('.tabbar button').evaluateAll((b) => b.map((x) => { const r = x.getBoundingClientRect(); return { l: r.left, w: r.width }; }));
     assert(boxes.length >= 2 && boxes.length < 5, 'expected fewer than 5 tabs, got ' + boxes.length);
     assert(boxes.every((b) => Math.abs(b.w - boxes[0].w) < 1.5), 'tab widths differ: ' + boxes.map((b) => Math.round(b.w)));
