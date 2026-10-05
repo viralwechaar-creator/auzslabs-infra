@@ -30,6 +30,7 @@ V.more = () => {
       h('div', { class: 'list' }, recipes.slice(0, 30).map((i) => liRow({ title: i.name, sub: h('span', { style: { whiteSpace: 'pre-wrap' } }, i.recipeText) })))) : null,
     links.length ? h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, 'Business tools')), h('div', { class: 'list' }, links)) : null,
     h('div', { class: 'list' },
+      S.role === 'owner' ? liRow({ ic: 'chart', tone: 'gray', title: 'Backup, export or clear data', onclick: () => auzMyData(sb) }) : null,
       liRow({ ic: 'logout', tone: 'red', title: 'Sign out', onclick: signOut }),
       liRow({ ic: 'trash', tone: 'red', title: 'Delete my account', onclick: deleteAccountFlow })),
     h('div', { class: 'powered' }, 'Powered by ', h('a', { href: 'https://auzslab.in', target: '_blank', rel: 'noopener' }, 'AUZslab')));

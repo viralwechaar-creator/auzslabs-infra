@@ -229,7 +229,7 @@ function moreSheet() {
   }),
     isHR() && can('pay_time') ? h('div', { class: 'list' }, liRow({ icon: 'tablet', title: 'Clock-in kiosk', sub: 'Turn this device into a shared clock-in screen', onclick: () => { s.close(); go('kiosk'); } })) : null,
     h('div', { class: 'list' }, liRow({ icon: 'moon', tone: 'gray', title: 'Appearance', badge: seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v)) })),
-    h('div', { class: 'list' }, liRow({ icon: 'user', tone: 'gray', title: S.user.email, sub: roleLabel() + (S.ctx.tenant.is_demo ? ' · demo data' : '') }), liRow({ icon: 'logout', tone: 'gray', title: 'Sign out', onclick: signOut }), liRow({ icon: 'trash', tone: 'red', title: 'Delete my account', onclick: () => { s.close(); deleteAccountFlow(); } })));
+    h('div', { class: 'list' }, liRow({ icon: 'user', tone: 'gray', title: S.user.email, sub: roleLabel() + (S.ctx.tenant.is_demo ? ' · demo data' : '') }), S.user.role === 'owner' ? liRow({ icon: 'download', tone: 'gray', title: 'Backup, export or clear data', onclick: () => { s.close(); auzMyData(sb); } }) : null, liRow({ icon: 'logout', tone: 'gray', title: 'Sign out', onclick: signOut }), liRow({ icon: 'trash', tone: 'red', title: 'Delete my account', onclick: () => { s.close(); deleteAccountFlow(); } })));
   const s = sheet({ title: 'More', closeLabel: 'Done', body, noFocus: true });
 }
 function globalKeys(e) {
