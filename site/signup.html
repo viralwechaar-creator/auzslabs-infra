@@ -266,7 +266,8 @@
 
         <div id="loggedInSection" style="display:none">
           <p class="p">You're signed in as <b id="loggedInEmail"></b>.</p>
-          <a href="cart.html" class="btn btn-primary auth-cta form-submit">Go to your cart</a>
+          <a href="index.html" class="btn btn-primary auth-cta form-submit">Go to the homepage</a>
+          <a href="cart.html" class="btn btn-ghost auth-cta form-submit" style="margin-top:10px">Choose your apps (cart)</a>
           <button id="signOutBtn" class="btn btn-ghost auth-cta form-submit" style="margin-top:10px">Sign out</button>
         </div>
 
@@ -278,7 +279,7 @@
   </main>
 </div>
 
-<script src="/sb-client.js?v=3"></script>
+<script src="/sb-client.js?v=4"></script>
 <script src="tool/lock.js?v=1"></script>
 <script src="tool/site.js?v=8"></script>
 <script>
@@ -354,7 +355,7 @@ document.getElementById('pwEyeToggle').onclick = () => {
 async function afterSignIn(user) {
   if (user && await hasOwnTenant(user.id)) { window.location.href = 'account.html'; return; }
   if (await isPlatformAdmin()) { window.location.href = 'admin.html'; return; }
-  window.location.href = 'cart.html';
+  window.location.href = 'index.html';
 }
 
 // ---- Google Sign-In: full-page redirect through https://auzslab.in/signin.html (see that page), then back here signed in ----
@@ -487,6 +488,8 @@ async function checkSession() {
       window.location.href = 'admin.html';
       return;
     }
+    // Just signed in (Google hand-off): a customer with no business yet starts at the homepage, not the cart.
+    try { if (sessionStorage.getItem('auz.justSignedIn') === '1') { sessionStorage.removeItem('auz.justSignedIn'); window.location.href = 'index.html'; return; } } catch (e) {}
     document.querySelector('.auth-seg').style.display = 'none';
     document.getElementById('authSection').style.display = 'none';
     document.getElementById('pageTitle').textContent = 'You\'re in.';
