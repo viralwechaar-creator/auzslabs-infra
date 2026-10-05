@@ -26,3 +26,13 @@
 @media (min-width:1000px) and (prefers-reduced-motion:no-preference){
   .grid-2>*,.grid-3>*{transition:transform .25s ease}
 }
+
+/* pricing: four product / bundle cards in one compact row on desktop */
+@media (min-width:1000px){
+  .grid-4{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:14px!important;padding-bottom:0}
+  .grid-4>*,.grid-4>*:nth-child(even){margin-top:0}
+  .grid-4>.card{padding:20px 16px}
+  .grid-4 .price-card-icon{width:44px;height:44px}
+  .grid-4 .price-card-price{font-size:26px}
+  .grid-4 .acts{flex-wrap:wrap;justify-content:center}
+}
