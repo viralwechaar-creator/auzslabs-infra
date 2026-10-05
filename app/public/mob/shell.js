@@ -73,7 +73,7 @@ function showLogin(msg) {
   const staffWrap = auzStaffPinForm(sb, () => boot());
   const setMethod = (which) => { emailWrap.style.display = which === 'email' ? 'grid' : 'none'; phoneWrap.style.display = which === 'phone' ? 'grid' : 'none'; staffWrap.style.display = which === 'staff' ? 'grid' : 'none'; methodStaffBtn.setAttribute('aria-selected', String(which === 'staff')); methodEmailBtn.setAttribute('aria-selected', String(which === 'email')); methodPhoneBtn.setAttribute('aria-selected', String(which === 'phone')); m.style.color = ''; m.textContent = ''; };
   methodEmailBtn.onclick = () => setMethod('email'); methodPhoneBtn.onclick = () => setMethod('phone'); methodStaffBtn.onclick = () => setMethod('staff');
-  const methodRow = h('div', { class: 'seg full' }, methodEmailBtn, methodPhoneBtn, methodStaffBtn);
+  const methodRow = h('div', { class: 'seg full' }, methodEmailBtn, methodStaffBtn);
 
   const googleHost = h('div');
   const appleBtn = h('button', { type: 'button', class: 'btn wide', style: { display: 'none', gap: '8px' } }, icon('apple', 18), 'Continue with Apple');

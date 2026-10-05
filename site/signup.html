@@ -248,7 +248,7 @@
           </div>
           <div id="socialOr" class="auth-or" style="display:none"><span class="ln"></span>or<span class="ln"></span></div>
 
-          <div class="auth-seg" style="margin-bottom:20px">
+          <div class="auth-seg" style="margin-bottom:20px;display:none">
             <button id="methodEmail" type="button">Email</button>
             <button id="methodPhone" type="button">Phone</button>
           </div>
@@ -338,7 +338,8 @@ function setMode(m) {
   document.getElementById('modeLogin').classList.toggle('active', m === 'login');
   document.getElementById('submitBtn').textContent = m === 'signup' ? 'Create account' : 'Log in';
   document.getElementById('pageTitle').textContent = m === 'signup' ? 'Create your account.' : 'Welcome back.';
-  document.getElementById('pageLede').textContent = m === 'signup' ? 'Takes less than a minute to get started.' : 'Pick up where you left off.';
+  document.getElementById('pageLede').textContent = m === 'signup' ? 'Sign up with your Google account. Google confirms your email, so there is nothing else to verify.' : 'Pick up where you left off.';
+  setAuthMethod('email');
   document.getElementById('forgotRow').style.display = m === 'login' ? 'block' : 'none';
   showCaptcha(m === 'signup');
 }
@@ -370,7 +371,9 @@ function setAuthMethod(m) {
   authMethod = m;
   document.getElementById('methodEmail').classList.toggle('active', m === 'email');
   document.getElementById('methodPhone').classList.toggle('active', m === 'phone');
-  document.getElementById('emailFields').style.display = m === 'email' ? 'block' : 'none';
+  document.getElementById('emailFields').style.display = (m === 'email' && mode === 'login') ? 'block' : 'none';
+  const orEl = document.getElementById('socialOr'); if (orEl) orEl.dataset.hideInSignup = mode === 'signup' ? '1' : '';
+  if (orEl && mode === 'signup') orEl.style.display = 'none'; else if (orEl && document.getElementById('googleBtnHost').childElementCount) orEl.style.display = 'flex';
   document.getElementById('phoneFields').style.display = m === 'phone' ? 'block' : 'none';
   document.getElementById('authErr').textContent = '';
 }
@@ -399,7 +402,7 @@ async function afterSignIn(user) {
 // ---- Google Sign-In: full-page redirect through https://auzslab.in/signin.html (see that page), then back here signed in ----
 if (CFG.googleClientId) {
   document.getElementById('socialRow').style.display = 'flex';
-  document.getElementById('socialOr').style.display = 'flex';
+  if (mode === 'login') document.getElementById('socialOr').style.display = 'flex';
   const ga = document.createElement('a');
   ga.className = 'auth-social-btn';
   ga.href = 'signin.html?app=site&return=' + encodeURIComponent(location.origin + '/signup.html');
@@ -413,7 +416,7 @@ if (CFG.appleClientId) {
   as.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
   as.onload = () => {
     document.getElementById('socialRow').style.display = 'flex';
-    document.getElementById('socialOr').style.display = 'flex';
+    if (mode === 'login') document.getElementById('socialOr').style.display = 'flex';
     const appleBtn = document.getElementById('appleBtn');
     appleBtn.style.display = 'flex';
     AppleID.auth.init({

@@ -240,7 +240,7 @@ function login(msg) {
   };
   methodEmailBtn.onclick = () => setMethod('email');
   methodPhoneBtn.onclick = () => setMethod('phone'); methodStaffBtn.onclick = () => setMethod('staff');
-  const methodRow = h('div', { class: 'seg' }, methodEmailBtn, methodPhoneBtn, methodStaffBtn);
+  const methodRow = h('div', { class: 'seg' }, methodEmailBtn, methodStaffBtn);
 
   const googleHost = h('div');
   const appleBtn = h('button', { type: 'button', class: 'btn wide', style: 'display:none;gap:8px' });

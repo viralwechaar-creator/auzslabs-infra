@@ -92,7 +92,7 @@ function showLogin(msg) {
   };
   methodEmailBtn.onclick = () => setMethod('email');
   methodPhoneBtn.onclick = () => setMethod('phone'); methodStaffBtn.onclick = () => setMethod('staff');
-  const methodRow = h('div', { class: 'seg full' }, methodEmailBtn, methodPhoneBtn, methodStaffBtn);
+  const methodRow = h('div', { class: 'seg full' }, methodEmailBtn, methodStaffBtn);
 
   const googleHost = h('div');
   const appleBtn = h('button', { type: 'button', class: 'btn wide', style: { display: 'none', gap: '8px' } }, icon('apple', 18), 'Continue with Apple');
