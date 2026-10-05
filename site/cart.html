@@ -190,6 +190,8 @@
 <script>
 const sb = supabase.createClient(CFG.url, CFG.key);
 const PRODUCT_LABEL = { salon: 'AUZslab Salon', pos: 'POS', crm: 'CRM', billing: 'Billing & Invoicing', inventory: 'Inventory', self_order: 'QR Ordering', payroll: 'Payroll', website_builder: 'Website Builder', accounting: 'Accounting', gsm: 'AUZsGSM', mobile: 'AUZsMob' };
+// Apps link here as cart.html?add=<product key>: pre-select that product so a new customer lands on their bill + signup form.
+try { const pre = new URLSearchParams(location.search).get('add'); if (pre && PRODUCT_LABEL[pre]) AUZcart.add(pre); } catch (e) {}
 
 function slugify(s) {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '').slice(0, 40);

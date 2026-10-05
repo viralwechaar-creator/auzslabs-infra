@@ -1,6 +1,6 @@
 <!doctype html><html lang=en class=ax-bo data-theme=light><head><script src="/ds/launch.js?v=1" data-app="backoffice"></script><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><title>AUZslab Back Office</title><link rel="manifest" href="/manifest-backoffice.json"><link rel=icon type=image/svg+xml href=/icon-backoffice.svg><link rel="apple-touch-icon" sizes="180x180" href="/icon-backoffice-180.png"><meta name=theme-color content=#171717>
 <meta name=apple-mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-status-bar-style content=black-translucent><meta name="apple-mobile-web-app-title" content="Back Office">
-<link rel=stylesheet href="/ds/auz.css?v=2"><script src="/ds/brand.js?v=1"></script><script src="/ds/lock.js?v=1"></script><script src="/ds/mydata.js?v=1"></script><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
+<link rel=stylesheet href="/ds/auz.css?v=2"><script src="/ds/brand.js?v=1"></script><script src="/ds/lock.js?v=1"></script><script src="/ds/mydata.js?v=1"></script><script src="/ds/plan.js?v=1" data-app="backoffice"></script><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel=stylesheet>
 <style media="(max-width:899px)">:root{--ink:#171717;--ink-dim:#4d4d4d;--ink-faint:#8c8c8c;--accent:#800020;--g:var(--accent);--l:rgba(23,23,23,.14);--bg-raised:#dedede;--radius-sm:14px;--radius-md:18px;--radius-lg:26px;--shadow-sm:0 1px 2px rgba(23,23,23,.06),0 6px 20px -10px rgba(23,23,23,.14);--shadow-md:0 4px 12px rgba(23,23,23,.08),0 20px 44px -16px rgba(23,23,23,.22);--shadow-lift:0 10px 26px -8px rgba(23,23,23,.34),0 3px 8px rgba(23,23,23,.16);--accent-glow:0 4px 14px -2px rgba(128,0,32,.45);--ease:cubic-bezier(.4,0,.2,1)}
 *{box-sizing:border-box}
@@ -1157,11 +1157,12 @@ function renderDrawer(T){
   const btn=h('button',{class:(S.tab==k?'on':''),onclick:()=>{S.tab=k;close();render()}});btn.innerHTML=ico(k)+'<span class="grow">'+esc(n)+'</span>';return[btn]};
  const pos=featureOn('pos')?h('button',{class:'dq',onclick:()=>{location.href='/index.html'}}):null;
  if(pos)pos.innerHTML=ico('pos')+'<span>Open POS</span>';
+ const pln=h('button',{class:'dq',onclick:()=>{close();auzPlan.open(sb)}},'Plan & account');
  const dat=h('button',{class:'dq',onclick:()=>{close();auzMyData(sb)}},'Backup, export or clear data');
  const out=h('button',{class:'dq warn',onclick:async()=>{await sb.auth.signOut();localStorage.removeItem('u');location.reload()}},'Sign out');
  drawerEl.replaceChildren(
   h('div',{class:'dh'},h('b',{},'Back Office'),h('button',{class:'dx','aria-label':'Close menu',onclick:close},'\u00d7')),
-  h('div',{class:'dqs'},pos,can('o')?dat:null,out),
+  h('div',{class:'dqs'},pos,pln,can('o')?dat:null,out),
   h('div',{class:'dl'},...T.flatMap(item)),
   h('div',{class:'dwho'},'Signed in as '+S.role));
  syncDrawer();

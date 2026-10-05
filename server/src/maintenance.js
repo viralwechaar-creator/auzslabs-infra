@@ -2,6 +2,7 @@
 // Only deletes rows that can no longer matter: a session token lasts 7 days (30 is generous), one-time codes and
 // links are useless once expired. Failures are logged and never stop the server.
 import { pool } from './db.js';
+import { sendRenewalEmail } from './mail.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -22,7 +23,18 @@ export async function runMaintenance() {
   }
 }
 
+// Renewal reminders (db/098): creates the in-app notifications, then emails each owner for the stages that are new today.
+export async function runRenewals() {
+  try {
+    const { rows } = await pool.query('select renewal_notify_run() as r');
+    for (const n of rows[0]?.r || []) {
+      console.log(`renewal: ${n.tenant} stage ${n.stage}`);
+      for (const to of n.emails || []) await sendRenewalEmail({ to, business: n.tenant, days: n.days, renewalDate: n.renewal_date }).catch(() => {});
+    }
+  } catch (err) { console.warn('renewal run failed:', err.message); }
+}
+
 export function startMaintenance() {
   if (process.env.DISABLE_MAINTENANCE === '1') return;
-  setTimeout(() => { runMaintenance(); setInterval(runMaintenance, DAY).unref(); }, 60_000).unref();
+  setTimeout(() => { runMaintenance(); runRenewals(); setInterval(() => { runMaintenance(); runRenewals(); }, DAY).unref(); }, 60_000).unref();
 }

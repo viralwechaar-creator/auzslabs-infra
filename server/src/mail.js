@@ -97,3 +97,21 @@ export async function sendEmailVerification({ to, verifyLink }) {
   }
   return { sent: true };
 }
+
+// Renewal reminder to a business owner (sent by the daily job in maintenance.js). Quiet no-op without RESEND_API_KEY:
+// the in-app notification and banner are created either way.
+export async function sendRenewalEmail({ to, business, days, renewalDate }) {
+  if (!RESEND_API_KEY) return { sent: false, reason: 'email sending is not configured yet' };
+  const when = days < 0 ? 'has expired' : days === 0 ? 'ends today' : days === 1 ? 'ends tomorrow' : `ends in ${days} days`;
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${RESEND_API_KEY}` },
+    body: JSON.stringify({
+      from: MAIL_FROM, to: [to], subject: `Your AUZslab plan ${when}`,
+      html: `<p>Hi,</p><p>The AUZslab plan for <b>${escapeHtml(business)}</b> ${when} (renewal date ${escapeHtml(String(renewalDate).slice(0, 10))}).</p>
+<p>To keep your apps working without a break, please renew from <a href="https://auzslab.in/account.html">your account page</a> or reply to this email.</p><p>- Team AUZslab</p>`,
+    }),
+  });
+  if (!res.ok) { console.warn('Resend renewal send failed', res.status); return { sent: false, reason: 'the email could not be sent' }; }
+  return { sent: true };
+}

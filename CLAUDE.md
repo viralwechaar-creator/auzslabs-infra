@@ -1243,3 +1243,7 @@ Owner request: the sign-up had no real email check (a fake address worked everyw
 - **`tools/restore-test.sh`** restores the newest backup into a scratch database, compares row counts with the live one, prints PASS/FAIL, drops the scratch copy, and shows the newest off-site (Backblaze) file. It never touches live data. Run it weekly. `PSQL_CMD`/`BACKUP_DIR`/`LIVE_DB` let it run away from the server (that is how it was tested).
 - **Tests:** `node tests/run-local.mjs signup` (12 checks). The load test `loadmob` (see `docs/MOBILE.md`, "Scale") runs only when named.
 - **Deploy:** `git pull`, `psql ... < db/092_email_verification.sql`, `docker compose up -d --build api` (server changed). Static pages need nothing.
+
+## Renewals + plan in every app (db/098)
+See `docs/RENEWALS.md`: `my_subscription()`, daily `renewal_notify_run()` (in-app notices + owner email), `ds/plan.js` (reminder pill, Plan & account sheet, sign-in links to `cart.html?add=<product>&from=<app>`).
+Also merged from old branches (release-1): staff username+PIN login (db/095-096), Payroll grants fix (db/094), email verification/CAPTCHA/health/cleanup job (db/092, dormant until keys), API pool 35.

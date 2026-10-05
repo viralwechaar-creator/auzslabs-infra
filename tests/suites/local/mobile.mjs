@@ -368,6 +368,24 @@ export default async function run({ browser, stack }) {
     await page.locator('.seg button', { hasText: 'English' }).click(); await page.waitForTimeout(300);
     await c.close();
   }, 'major');
+  await s.check('Plan and renewal: sign-in links to the AUZslab site, banner when the plan ends soon, plan sheet, renewal notifications', async () => {
+    const c0 = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const p0 = await c0.newPage();
+    await p0.goto(stack.url('testmob', '/mob.html')); await p0.waitForSelector('input[type=password]', { timeout: 20000 }); await p0.waitForTimeout(2200);
+    const hrefs = await p0.locator('#auz-newacct a').evaluateAll((a) => a.map((x) => x.href));
+    assert(hrefs.some((h) => /auzslab\.in\/cart\.html\?add=mobile&from=mob/.test(h)) && hrefs.some((h) => /pricing\.html/.test(h)), 'sign-in screen has no Create an account / See plans links: ' + hrefs);
+    await c0.close();
+    await q("update tenants set renewal_date = current_date + 3 where slug='testmob'");
+    const { c, page } = await open(USERS.mobOwner, { w: 390, h: 844, mobile: true });
+    await page.waitForSelector('text=Your plan ends in 3 days', { timeout: 12000 });
+    await page.locator('button', { hasText: /^Renew$/ }).click();
+    await page.waitForSelector('text=Plan & account'); const sheet = await page.locator('[aria-label="Plan and account"]').innerText();
+    assert(/Renew now/.test(sheet) && /Create a new account/.test(sheet) && /See all plans/.test(sheet), 'plan sheet missing actions: ' + sheet.slice(0, 200));
+    await c.close();
+    const n1 = (await q("select renewal_notify_run() r"))[0].r; assert(n1.some((x) => x.tenant === 'Test Mobile Shop' && x.stage === 'd3'), 'no renewal notice created');
+    assert((await q("select renewal_notify_run() r"))[0].r.length === 0, 'renewal notices repeated');
+    assert((await q("select count(*)::int c from notifications where type='renewal' and tenant_id=$1", [tid]))[0].c === 1, 'owner notification missing');
+    await q("update tenants set renewal_date = null where slug='testmob'");
+  }, 'major');
   await s.check('Integrity still holds at the very end', integrity, 'critical');
   s.done();
 }
