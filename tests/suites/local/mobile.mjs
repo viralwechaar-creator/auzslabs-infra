@@ -412,6 +412,14 @@ export default async function run({ browser, stack }) {
     await p3.goto(stack.url('', '/signin.html') + '?app=mob&return=' + encodeURIComponent('https://evil.example/steal')); await p3.waitForTimeout(800);
     assert(/not valid/i.test(await p3.locator('body').innerText()), 'a non-AUZslab return address was accepted');
     await c3.close();
+    const c4 = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const p4 = await c4.newPage();
+    let gurl = ''; await p4.route(/accounts\.google\.com/, (r) => { gurl = r.request().url(); r.abort(); });
+    await p4.goto(stack.url('', '/signin.html') + '?app=mob&return=' + encodeURIComponent(stack.url('testmob', '/mob.html'))); await p4.waitForTimeout(1500);
+    const gu = new URL(gurl || 'http://none/');
+    assert(gu.pathname === '/o/oauth2/v2/auth' && gu.searchParams.get('response_type') === 'id_token' && /apps\.googleusercontent\.com$/.test(gu.searchParams.get('client_id') || '') && /\/signin\.html$/.test(gu.searchParams.get('redirect_uri') || '') && gu.searchParams.get('nonce'), 'sign-in page did not send the browser to Google correctly: ' + gurl);
+    await p4.goto(stack.url('', '/signin.html') + '#id_token=a.b.c&state=bad'); await p4.waitForTimeout(500);
+    assert(/did not finish/i.test(await p4.locator('body').innerText()), 'a bad Google answer was not refused');
+    await c4.close();
   }, 'critical');
   await s.check('Integrity still holds at the very end', integrity, 'critical');
   s.done();
