@@ -1,0 +1,28 @@
+/* Desktop balance layer: headings and cards cross the page instead of all hugging the left edge.
+   Phone layout untouched. Linked after theme.css on the content pages (not the homepage). */
+@media (min-width:1000px){
+  /* hero without art: title left, intro text bottom-right */
+  .wrap>.section:first-of-type:not(:has(.hero-grid)){display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);column-gap:64px;align-items:end}
+  .wrap>.section:first-of-type:not(:has(.hero-grid))>.label,
+  .wrap>.section:first-of-type:not(:has(.hero-grid))>.h-1{grid-column:1}
+  .wrap>.section:first-of-type:not(:has(.hero-grid))>.lede,
+  .wrap>.section:first-of-type:not(:has(.hero-grid))>.p,
+  .wrap>.section:first-of-type:not(:has(.hero-grid))>div:not(.label){grid-column:2;grid-row:1 / span 2;align-self:end;margin:0 0 6px;max-width:30em}
+  /* every second section: heading block sits on the right */
+  .wrap>.section:nth-of-type(even)>.label,
+  .wrap>.section:nth-of-type(even)>.h-2,
+  .wrap>.section:nth-of-type(even)>.h-1,
+  .wrap>.section:nth-of-type(even)>.lede{margin-left:auto;text-align:right;max-width:34em}
+  .wrap>.section:nth-of-type(even)>.label{justify-content:flex-end}
+  /* cards: staggered like a zig-zag */
+  .grid-2>*:nth-child(even){margin-top:40px}
+  .grid-3>*:nth-child(3n+2){margin-top:32px}
+  .grid-3>*:nth-child(3n){margin-top:64px}
+  .grid-2,.grid-3{padding-bottom:40px}
+  /* single wide cards alternate sides */
+  .wrap>.section>.card{width:88%}
+  .wrap>.section>.card:nth-of-type(even){margin-left:auto}
+}
+@media (min-width:1000px) and (prefers-reduced-motion:no-preference){
+  .grid-2>*,.grid-3>*{transition:transform .25s ease}
+}
