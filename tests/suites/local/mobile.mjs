@@ -386,6 +386,15 @@ export default async function run({ browser, stack }) {
     assert((await q("select count(*)::int c from notifications where type='renewal' and tenant_id=$1", [tid]))[0].c === 1, 'owner notification missing');
     await q("update tenants set renewal_date = null where slug='testmob'");
   }, 'major');
+  await s.check('Phone tab bar: with features switched off the remaining buttons share the width equally', async () => {
+    await setFeat({ ...ALL_ON, stock: false, serials: false, customers: false, vendors: false, dayclose: false, repairs: 'off' });
+    const { c, page } = await open(USERS.mobOwner, { w: 390, h: 844, mobile: true });
+    const boxes = await page.locator('.tabbar button').evaluateAll((b) => b.map((x) => { const r = x.getBoundingClientRect(); return { l: r.left, w: r.width }; }));
+    assert(boxes.length >= 2 && boxes.length < 5, 'expected fewer than 5 tabs, got ' + boxes.length);
+    assert(boxes.every((b) => Math.abs(b.w - boxes[0].w) < 1.5), 'tab widths differ: ' + boxes.map((b) => Math.round(b.w)));
+    assert(Math.abs(boxes.reduce((n, b) => n + b.w, 0) - 390) < 3, 'tabs do not fill the bar: ' + boxes.map((b) => Math.round(b.w)));
+    await c.close(); await setFeat(ALL_ON);
+  }, 'major');
   await s.check('Integrity still holds at the very end', integrity, 'critical');
   s.done();
 }
