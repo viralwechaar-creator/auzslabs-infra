@@ -1202,3 +1202,11 @@ A rapid sequence of screenshot bug reports across three different apps, each dia
 ### Open items after this session
 - PR #134 (knock-btn corner-clipping fix) was reported still open as of the PRs in this log, but `main` has since separately picked up a different, unrelated commit touching the same button ("hide knock button while open") from outside this session — worth checking PR #134's diff against current `main` before merging it, in case it now conflicts with or duplicates that later change.
 - The owner asked about a "red line glitch" across the whole AUZsMob app with no screenshot attached; a follow-up screenshot clarified it was the owner's own red-pen screenshot annotation, not an actual rendering bug — nothing was changed for this report.
+
+## App identity: icons, manifests and the launch animation (`tools/make-icons.mjs`)
+
+Every staff app has its **own** manifest (own `id`, `start_url`, `scope`), own touch icon and own launch animation. Before this, Back Office, the console and the Builder all linked the POS manifest (`/manifest.json`, `start_url:"/"`) and POS icon, so a home-screen icon added from them opened the POS. Apps: POS (`manifest.json`), Payroll, Accounting, AUZsMob, Back Office, Console (`dashboard.html`), Builder: `manifest-<app>.json`, `icon-<app>-512.png` / `-180.png` (full-bleed square: the OS rounds it; a pre-rounded PNG shows black corners), `icon-<app>.svg` (rounded, for tabs).
+- **`node tools/make-icons.mjs` regenerates all icons AND `app/public/ds/launch.js`** from one definition (the marks), so icon and animation stay identical. Edit the marks there, never the generated files.
+- **`ds/launch.js`** (`<script src="/ds/launch.js?v=1" data-app="mob">` first thing in `<head>`): draws the mark piece by piece on ink, glow, name letters, then lifts away once `#app` has content (min 1.5 s, max 4 s, 0.3 s under reduced motion). It replaced the old `boot-splash.css/js`.
+- Deploy: static only. Owners must delete the old home-screen icon and add it again (iOS caches the old icon/manifest). Add the icon from the app's own address (`<slug>.auzslab.in/mob.html`), not from the bare shop address.
+- Test note: in the sandbox the `apps` suite shows 2 failures from the Sentry CDN being unreachable (`ERR_TUNNEL_CONNECTION_FAIL`); that is the network, not the app.
