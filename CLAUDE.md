@@ -1247,3 +1247,8 @@ Owner request: the sign-up had no real email check (a fake address worked everyw
 ## Renewals + plan in every app (db/098)
 See `docs/RENEWALS.md`: `my_subscription()`, daily `renewal_notify_run()` (in-app notices + owner email), `ds/plan.js` (reminder pill, Plan & account sheet, sign-in links to `cart.html?add=<product>&from=<app>`).
 Also merged from old branches (release-1): staff username+PIN login (db/095-096), Payroll grants fix (db/094), email verification/CAPTCHA/health/cleanup job (db/092, dormant until keys), API pool 35.
+
+## Google sign-in: one central page (site/signin.html)
+Google OAuth cannot list every `<shop>.auzslab.in`, so it only knows `https://auzslab.in` and `https://www.auzslab.in` (Google Cloud project `auzslab`, OAuth client "AUZslab web", external, published; client ID in `app/public/config.js`, `site/signup.html`, `site/signin.html`).
+Apps show "Continue with Google" via `ds/gsignin.js` (`auzGoogleLink`), which links to `https://auzslab.in/signin.html?app=<app>&return=<app page>`. That page runs Google Identity Services, calls `POST /auth/google`, and returns the session to the app in the URL fragment `#auz_gt=<base64url {t,u}>` (never sent to servers); `sb-client.js` (`takeHandoff`) saves it and clears the fragment. The return address must be `https://*.auzslab.in` (or localhost when the page itself runs on localhost): anything else is refused.
+The server needs `GOOGLE_CLIENT_ID` in `.env` (same ID) to verify tokens, then `docker compose up -d api` (restart is enough, no rebuild).
