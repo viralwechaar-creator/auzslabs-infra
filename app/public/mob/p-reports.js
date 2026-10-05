@@ -139,19 +139,18 @@ async function exportData() {
   try {
     const data = await api('mob_report_ledger', { p_from: '2000-01-01', p_to: new Date().toISOString().slice(0, 10), p_limit: 1000000 });
     const rows = data.rows || [];
-    const head = ['Date', 'Item', 'IMEI / Serial', 'Qty', 'Purchased From', 'Purchased By', 'Purchase Price', 'Sold To', 'Sold By', 'Selling Price', 'Profit'];
-    const line = (r) => [fmtDT(r.sold_at), r.item_name, r.imei || '', r.qty, r.vendor_name || '', r.purchased_by || '', r.cost_total, r.customer_name || '', r.sold_by || '', r.sale_total, r.profit];
-    // one separate block per staff member (never mixed), then a summary of everyone at the top
+    const head = ['Sold By', 'Purchased By', 'Item Name', 'Qty', 'Purchase Price', 'Selling Price', 'Profit'];
+    const line = (r) => [r.sold_by || '', r.purchased_by || '', r.item_name, r.qty, r.cost_total, r.sale_total, r.profit];
+    // one separate block per staff member (never mixed)
     const byStaff = new Map();
     for (const r of rows) { const k = r.sold_by || '—'; if (!byStaff.has(k)) byStaff.set(k, []); byStaff.get(k).push(r); }
     const sum = (list, k) => list.reduce((a, r) => a + (Number(r[k]) || 0), 0);
-    const out = [['Staff summary'], ['Staff', 'Entries', 'Purchase Price', 'Selling Price', 'Profit']];
-    for (const [name, list] of byStaff) out.push([name, list.length, sum(list, 'cost_total'), sum(list, 'sale_total'), sum(list, 'profit')]);
-    out.push(['All staff', rows.length, data.total_cost, data.total_sale, data.total_profit]);
+    const out = [];
     for (const [name, list] of byStaff) {
-      out.push([], ['Staff: ' + name], head, ...list.map(line), ['', '', '', '', '', 'Total for ' + name, sum(list, 'cost_total'), '', '', sum(list, 'sale_total'), sum(list, 'profit')]);
+      if (out.length) out.push([]);
+      out.push(head, ...list.map(line), ['', '', 'Total', sum(list, 'qty'), sum(list, 'cost_total'), sum(list, 'sale_total'), sum(list, 'profit')]);
     }
-    const csv = '﻿' + out.map((row) => row.map(csvEscape).join(',')).join('\r\n');
+    const csv = '\ufeff' + out.map((row) => row.map(csvEscape).join(',')).join('\r\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const a = h('a', { href: URL.createObjectURL(blob), download: 'auzsmob-report-' + new Date().toISOString().slice(0, 10) + '.csv' });
     document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
