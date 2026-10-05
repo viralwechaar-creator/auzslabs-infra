@@ -155,7 +155,7 @@ const RPC = {
   my_dashboard: { params: [], auth: true },
   update_my_features: { params: ['p_enabled'], jsonb: ['p_enabled'], auth: true },
   change_my_password: { params: ['p_old_password', 'p_new_password'], auth: true },
-  invite_staff: { params: ['p_email', 'p_name', 'p_phone', 'p_role_id'], auth: true },
+  invite_staff: { params: ['p_email', 'p_name', 'p_phone', 'p_role_id', 'p_builtin'], defaults: { p_role_id: null, p_builtin: null }, auth: true },
   confirm_staff_email: { params: ['p_token'], auth: false },
   remove_staff: { params: ['p_staff_id'], auth: true },
   reset_staff_password: { params: ['p_staff_id', 'p_new_password'], auth: true },

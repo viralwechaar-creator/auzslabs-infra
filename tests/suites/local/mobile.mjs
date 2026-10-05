@@ -211,6 +211,28 @@ export default async function run({ browser, stack }) {
     await integrity();
   }, 'major');
 
+  // ---------- adding staff without any custom role (a new business has none) ----------
+  await s.check('Owner adds staff with no custom role: gets everyday access; manager built-in works; duplicate email is explained', async () => {
+    const stamp = Date.now();
+    const loginRaw = async (email, password) => (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password }) })).json());
+    const inv = await ok(owner, 'invite_staff', { p_email: `noRole${stamp}@test.local`, p_name: 'No Role', p_phone: '9000000000' });
+    assert(inv.temp_password && inv.verify_token, 'invite did not return a login: ' + JSON.stringify(inv));
+    await ok(null, 'confirm_staff_email', { p_token: inv.verify_token });
+    const l = await loginRaw(`norole${stamp}@test.local`, inv.temp_password);
+    const tok = l.access_token || (l.data && l.data.access_token);
+    assert(tok, 'verified staff could not sign in: ' + JSON.stringify(l));
+    const c = await ok(tok, 'mob_context');
+    assert(c.perms.mob_sell && c.perms.mob_purchase && !c.perms.mob_manage && !c.perms.mob_reports, 'default staff perms: ' + JSON.stringify(c.perms));
+    const inv2 = await ok(owner, 'invite_staff', { p_email: `mgr${stamp}@test.local`, p_name: 'Mgr', p_phone: '', p_builtin: 'manager' });
+    await ok(null, 'confirm_staff_email', { p_token: inv2.verify_token });
+    const l2 = await loginRaw(`mgr${stamp}@test.local`, inv2.temp_password);
+    const c2 = await ok(l2.access_token || (l2.data && l2.data.access_token), 'mob_context');
+    assert(c2.perms.mob_manage && c2.perms.mob_reports, 'built-in manager perms: ' + JSON.stringify(c2.perms));
+    await fails(owner, 'invite_staff', { p_email: `NOROLE${stamp}@test.local`, p_name: 'Dup', p_phone: '' }, /already has an AUZslab login/i);
+    await fails(owner, 'invite_staff', { p_email: 'not-an-email', p_name: 'X', p_phone: '' }, /valid email/i);
+    await fails(staff, 'invite_staff', { p_email: `x${stamp}@test.local`, p_name: 'X', p_phone: '' }, /owner only/i);
+  }, 'critical');
+
   // ---------- screens ----------
   const open = async (email, dev) => {
     const c = await newCtx(browser, stack, dev); const page = await c.newPage(); const errs = watch(page);
