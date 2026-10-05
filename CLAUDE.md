@@ -600,7 +600,7 @@ bookings/invoices as individual rows, so a save no longer rewrites the whole
   can't be per-tenant without server-rendered HTML).
 - **Demo** (`db/055_demo_salon.sql`): tenant `demo-salon` (is_demo) with
   owner login `demo-salon@auzslab.in` / `Auzslab@Demo` (same as the other
-  demos) and a staff login `9000000001` / `Auzslab@Demo`. `makeDemo()` adds a
+  demos) and a staff login `priya.demo-salon` / PIN `1234` (db/099). `makeDemo()` adds a
   week of sample bookings, bills and expenses dated relative to today; `salon.js`
   re-seeds the demo (plus its staff login and payroll employee) every 12 h. Demo
   tenants cannot upload files, change passwords, or add staff. Linked from
@@ -1253,3 +1253,6 @@ Google OAuth cannot list every `<shop>.auzslab.in`, so it only knows `https://au
 Apps show "Continue with Google" via `ds/gsignin.js` (`auzGoogleLink`), which links to `https://auzslab.in/signin.html?app=<app>&return=<app page>`. That page runs Google Identity Services, calls `POST /auth/google`, and returns the session to the app in the URL fragment `#auz_gt=<base64url {t,u}>` (never sent to servers); `sb-client.js` (`takeHandoff`) saves it and clears the fragment. The return address must be `https://*.auzslab.in` (or localhost when the page itself runs on localhost): anything else is refused.
 The server needs `GOOGLE_CLIENT_ID` in `.env` (same ID) to verify tokens, then `docker compose up -d api` (restart is enough, no rebuild).
 - **Update (redirect flow):** the popup widget (Google Identity Services) failed on iPhone browsers, so `site/signin.html` now does a full-page redirect: app/signup -> `signin.html?app=..&return=..` -> `accounts.google.com/o/oauth2/v2/auth?response_type=id_token` -> back to `signin.html#id_token=..&state=..` (nonce checked against sessionStorage) -> `POST /auth/google` -> app with `#auz_gt=`. **Google Cloud > Clients > "AUZslab web" must list `https://auzslab.in/signin.html` under Authorized redirect URIs.** `site/sb-client.js` also consumes `#auz_gt`. `www.auzslab.in/signin.html` hops to the apex first (sessionStorage is per origin).
+
+## Standing rule: a change is not done until everything linked to it is changed too (owner instruction)
+When a behaviour changes (a login method, a field, a price, a URL), search the whole repo for every other place that mentions or depends on the old way and change those in the same piece of work: marketing and demo pages (`site/*.html`), demo accounts and seed data (`db/`, `server/src/salon-seed.js`), tests, docs, CLAUDE.md, the service-worker file list. Example that was missed once: the salon console moved to username + PIN but the live-demo, demo and salons pages still told people to use a phone number and password. Grep for the old wording before finishing, and say in the summary what else was updated.

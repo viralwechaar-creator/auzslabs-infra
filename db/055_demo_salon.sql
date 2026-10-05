@@ -3,7 +3,7 @@
 -- demo-retail): a real salon tenant a prospect can open and use.
 --   Public site:   https://demo-salon.auzslab.in/
 --   Owner console: https://demo-salon.auzslab.in/salon/admin/   password Auzslab@Demo
---   Staff console: same page, "Staff sign in"  phone 9000000001 / password Auzslab@Demo
+--   Staff console: same page, "Staff sign in"  username priya.demo-salon / PIN 1234 (db/099)
 --   Payroll:       https://demo-salon.auzslab.in/payroll.html   demo-salon@auzslab.in / Auzslab@Demo
 -- Its sample bookings/bills/expenses, staff login and payroll employee are
 -- (re)created by server/src/salon.js every 12 hours, dated relative to
