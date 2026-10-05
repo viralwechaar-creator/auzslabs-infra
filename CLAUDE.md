@@ -1259,3 +1259,8 @@ When a behaviour changes (a login method, a field, a price, a URL), search the w
 
 ## Sign-up is Google only (db/100)
 `site/signup.html`: the Sign up tab offers only "Continue with Google" (Google proves the email, so no confirmation mail); Log in keeps Google plus email + password with Forgot password. The Phone tab is gone from the site and from the POS, Payroll, Accounting and AUZsMob logins (staff username + PIN stays). The server also refuses direct `POST /auth/signup` while `platform_flags.password_signup = 'off'` (the db/100 default; tests switch it on in `tests/lib/db.mjs`). `require_email_verification` stays off. Re-enable email sign-up: `update platform_flags set value = 'on' where key = 'password_signup';`.
+
+## Launch prep notes
+- `docs/LAUNCH_CHECKLIST.md` is the owner's go-live list; `docs/DEVELOPER_GUIDE.md` is the hand-over guide; `README.md` was rewritten (it used to describe a never-built Next.js stack).
+- Password-reset links: `/auth/forgot` no longer trusts the caller's `reset_link_base`; `safeResetBase()` in `server/src/index.js` only allows our own domain (or localhost when running locally), else falls back to `/signup.html`.
+- Salon staff signing in with username + PIN are linked to a payroll employee automatically on first sign-in when the Payroll add-on is on (`salon.js`, `salon_hr_ensure` with no phone); if Payroll was off at the time, the owner's existing "Link to payroll" button still works.

@@ -23,6 +23,18 @@ const PORT = process.env.PORT || 3000;
 const DOMAIN = process.env.DOMAIN || '';
 // where links in emails point (the marketing site)
 const SITE_URL = process.env.PUBLIC_SITE_URL || (DOMAIN && DOMAIN !== 'localhost' ? `https://${DOMAIN}` : 'http://localhost');
+
+// Where a password-reset link may point: our own site or one of its shop subdomains (or localhost when running locally). Anything else falls back to the sign-in page.
+function safeResetBase(candidate) {
+  const fallback = `${SITE_URL}/signup.html`;
+  try {
+    const u = new URL(String(candidate));
+    const host = u.hostname.toLowerCase();
+    const own = DOMAIN && DOMAIN !== 'localhost' ? (host === DOMAIN || host.endsWith('.' + DOMAIN)) : (host === 'localhost' || host === '127.0.0.1');
+    if (own && (u.protocol === 'https:' || (u.protocol === 'http:' && (host === 'localhost' || host === '127.0.0.1')))) return u.origin + u.pathname + u.search;
+  } catch {}
+  return fallback;
+}
 // The two logins seeded by db/023_demo_tenants.sql and published on
 // site/demo.html on purpose -- unlike a real tenant's login, lots of
 // unrelated strangers trying these from behind the same mobile-carrier
@@ -741,7 +753,9 @@ const server = http.createServer(async (req, res) => {
       if (!email || !reset_link_base) throw new HttpError(400, 'email and reset_link_base are required');
       const token = await createPasswordReset(email);
       if (token) {
-        const resetLink = `${reset_link_base}${reset_link_base.includes('?') ? '&' : '?'}token=${token}`;
+        // Never trust the caller's page: a reset link must open on our own site, or an attacker could get a victim a real reset email that points at their own page.
+        const base = safeResetBase(reset_link_base);
+        const resetLink = `${base}${base.includes('?') ? '&' : '?'}token=${token}`;
         await sendPasswordResetEmail({ to: email, resetLink }).catch((err) => console.warn('password reset email failed', err));
       }
       return reply(200, { ok: true, message: 'If an account exists for that email, a reset link has been sent.' });
