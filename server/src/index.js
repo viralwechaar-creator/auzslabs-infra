@@ -153,6 +153,8 @@ const RPC = {
 
   // --- Client dashboard: own account, staff, feature toggles ---
   my_dashboard: { params: [], auth: true },
+  my_data_export: { params: [], auth: true },
+  my_data_clear: { params: ['p_confirm'], auth: true },
   update_my_features: { params: ['p_enabled'], jsonb: ['p_enabled'], auth: true },
   change_my_password: { params: ['p_old_password', 'p_new_password'], auth: true },
   invite_staff: { params: ['p_email', 'p_name', 'p_phone', 'p_role_id'], auth: true },

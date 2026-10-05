@@ -162,7 +162,7 @@ input:disabled+.slider{opacity:.4;cursor:default}
 </div>
 
 <script src="/sb-client.js?v=2"></script>
-<script src="tool/lock.js?v=1"></script>
+<script src="tool/lock.js?v=1"></script><script src="tool/mydata.js?v=1"></script>
 <script src="tool/site.js?v=8"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script>
@@ -324,6 +324,11 @@ function renderAccount() {
       <button class="btn btn-primary form-submit" id="pwBtn" style="margin-top:12px">Update password</button>
       <div id="pwMsg"></div>
     </div>
+    ${DASH.my_role === 'owner' ? `<div class="card">
+      <h3 class="h-2">Your data</h3>
+      <p class="muted">Download a full backup, export everything to Excel, or clear all data for ${esc(t.name)} across every app. Only the owner can do this.</p>
+      <button class="btn btn-ghost form-submit" id="myDataBtn" style="margin-top:4px">Backup, export or clear data</button>
+    </div>` : ''}
     <div class="card" style="border-color:var(--accent)">
       <h3 class="h-2">Delete account</h3>
       <p class="muted">${DASH.my_role === 'owner'
@@ -354,6 +359,7 @@ function renderAccount() {
     msg.className = 'ok-box'; msg.textContent = 'Password updated.';
     $('#pwOld').value = ''; $('#pwNew').value = '';
   };
+  if ($('#myDataBtn')) $('#myDataBtn').onclick = () => auzMyData(sb);
   $('#delBtn').onclick = async () => {
     const msg = $('#delMsg');
     msg.className = ''; msg.textContent = '';

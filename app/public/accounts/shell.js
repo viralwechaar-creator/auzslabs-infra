@@ -212,7 +212,7 @@ function moreSheet() {
   const body = h('div', { class: 'grid' }, NAV.filter((g) => g.group).map((g) => h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, g.group)), h('div', { class: 'list' },
     g.items.map((i) => PAGES[i] && (!PAGES[i].perm || can(PAGES[i].perm)) ? liRow({ icon: PAGES[i].icon, title: PAGES[i].title, chevron: true, onclick: () => { s.close(); go(i); } }) : null)))),
     h('div', { class: 'list' }, liRow({ icon: 'moon', tone: 'gray', title: 'Appearance', badge: seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v)) })),
-    h('div', { class: 'list' }, liRow({ icon: 'user', tone: 'gray', title: S.user.email, sub: cap1(S.user.role) + (S.ctx.tenant.is_demo ? ' · demo data' : '') }), liRow({ icon: 'lock', tone: 'gray', title: 'Sign out', onclick: signOut }), liRow({ icon: 'trash', tone: 'red', title: 'Delete my account', onclick: () => { s.close(); deleteAccountFlow(); } })));
+    h('div', { class: 'list' }, liRow({ icon: 'user', tone: 'gray', title: S.user.email, sub: cap1(S.user.role) + (S.ctx.tenant.is_demo ? ' · demo data' : '') }), S.user.role === 'owner' ? liRow({ icon: 'download', tone: 'gray', title: 'Backup, export or clear data', onclick: () => { s.close(); auzMyData(sb); } }) : null, liRow({ icon: 'lock', tone: 'gray', title: 'Sign out', onclick: signOut }), liRow({ icon: 'trash', tone: 'red', title: 'Delete my account', onclick: () => { s.close(); deleteAccountFlow(); } })));
   const s = sheet({ title: 'More', closeLabel: 'Done', full: true, body });
 }
 function shortcutsSheet() {

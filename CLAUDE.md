@@ -1210,3 +1210,8 @@ Every staff app has its **own** manifest (own `id`, `start_url`, `scope`), own t
 - **`ds/launch.js`** (`<script src="/ds/launch.js?v=1" data-app="mob">` first thing in `<head>`): draws the mark piece by piece on ink, glow, name letters, then lifts away once `#app` has content (min 1.5 s, max 4 s, 0.3 s under reduced motion). It replaced the old `boot-splash.css/js`.
 - Deploy: static only. Owners must delete the old home-screen icon and add it again (iOS caches the old icon/manifest). Add the icon from the app's own address (`<slug>.auzslab.in/mob.html`), not from the bare shop address.
 - Test note: in the sandbox the `apps` suite shows 2 failures from the Sentry CDN being unreachable (`ERR_TUNNEL_CONNECTION_FAIL`); that is the network, not the app.
+
+## Clean-up wipe + owner Backup/Export/Clear (db/097)
+See `docs/DATA_WIPE.md`. `db_data/wipe_all_but_demo.sql` (dry run by default, `-v confirm=yes` to delete) removed all clients except `showoffsalon`, `demo-salon`, `demo`.
+`my_data_export` / `my_data_clear` (owner only, demo refused, typed slug + forced backup in the UI `ds/mydata.js`) are in every staff app and `account.html`.
+Clear keeps logins, settings/setup and audit tables; it bypasses append-only guards via `session_replication_role = replica` inside a SECURITY DEFINER function.

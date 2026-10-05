@@ -201,7 +201,7 @@ function moreSheet() {
     h('div', { class: 'list' },
       liRow({ icon: 'globe', tone: 'gray', title: t('language'), badge: seg([['en', 'EN'], ['hi', 'HI']], S_LANG, (v) => saveLang(v)) }),
       liRow({ icon: 'moon', tone: 'gray', title: 'Appearance', badge: seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v)) })),
-    h('div', { class: 'list' }, liRow({ icon: 'user', tone: 'gray', title: S.user.email, sub: S.user.role }), liRow({ icon: 'logout', tone: 'gray', title: t('signOut'), onclick: signOut })));
+    h('div', { class: 'list' }, liRow({ icon: 'user', tone: 'gray', title: S.user.email, sub: S.user.role }), S.user.role === 'owner' ? liRow({ icon: 'download', tone: 'gray', title: 'Backup, export or clear data', onclick: () => { s.close(); auzMyData(sb); } }) : null, liRow({ icon: 'logout', tone: 'gray', title: t('signOut'), onclick: signOut })));
   const s = sheet({ title: t('more'), closeLabel: 'Done', body });
 }
 
