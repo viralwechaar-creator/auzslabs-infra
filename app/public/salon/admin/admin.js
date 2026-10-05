@@ -50,7 +50,10 @@
     e.preventDefault(); $('#loginError').textContent = '';
     try {
       const body = { password: $('#pw').value };
-      if (!$('#phoneField').hidden) body.phone = $('#staffPhone').value;
+      if (!$('#phoneField').hidden) {
+        const v = $('#staffPhone').value.trim();
+        if (/[a-z]/i.test(v)) { body.username = v; body.pin = $('#pw').value; } else body.phone = v;
+      }
       await api('POST', '/api/admin/login', body); $('#pw').value = ''; await boot();
     }
     catch (ex) { $('#loginError').textContent = ex.message; }
@@ -59,7 +62,7 @@
     const staff = $('#phoneField').hidden; $('#phoneField').hidden = !staff;
     $('#staffToggle').textContent = staff ? 'Owner sign in' : 'Staff sign in';
     $('#loginTitle').textContent = staff ? 'Staff sign in' : 'Admin';
-    $('#pwLabel').textContent = staff ? 'Password' : 'Password';
+    $('#pwLabel').textContent = staff ? 'PIN or password' : 'Password';
     (staff ? $('#staffPhone') : $('#pw')).focus();
   });
   $('#logout').addEventListener('click', async () => { await api('POST', '/api/admin/logout', {}).catch(() => {}); D = null; showLogin(); });

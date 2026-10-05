@@ -1,8 +1,8 @@
 // AUZslab Salon: public site, real booking, owner console, staff limits, invoices, payroll gating.
 import { suite, watch, assert } from '../../lib/harness.mjs';
 import { newCtx } from '../../lib/common.mjs';
-import { salonClient } from '../../lib/api.mjs';
-import { PASSWORD, TENANTS } from '../../lib/db.mjs';
+import { salonClient, rpc } from '../../lib/api.mjs';
+import { PASSWORD, TENANTS, USERS } from '../../lib/db.mjs';
 
 const tomorrow = () => { const d = new Date(Date.now() + 2 * 864e5); return d.toISOString().slice(0, 10); };
 
@@ -107,6 +107,20 @@ export default async function run({ browser, stack }) {
   await s.check('Staff can sign in with phone + password; wrong password refused', async () => {
     assert((await salonClient(stack, host).call('POST', '/admin/login', { phone: '9700000001', password: 'bad' })).status === 401, 'wrong password accepted');
     assert((await staffApi.call('POST', '/admin/login', { phone: '9700000001', password: 'staffpass1' })).status === 200);
+  }, 'critical');
+  await s.check('Staff can sign in with the username + PIN made in the client dashboard; wrong PIN refused', async () => {
+    const lg = await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: USERS.salonOwner, password: PASSWORD }) }).then((r) => r.json());
+    const tok = lg.access_token; assert(tok, 'owner login failed');
+    const mk0 = await rpc(stack, 'staff_create', { p_name: 'Pin Staff', p_phone: '' }, tok);
+    const mk = { status: mk0.status, data: (mk0.data && mk0.data.data) || mk0.data || {} };
+    assert(mk.status === 200 && mk.data.username && mk.data.pin, 'staff_create: ' + JSON.stringify(mk));
+    const bad = await salonClient(stack, host).call('POST', '/admin/login', { username: mk.data.username, pin: mk.data.pin === '0000' ? '1111' : '0000' });
+    assert(bad.status === 401, 'wrong pin accepted ' + bad.status);
+    const c = salonClient(stack, host);
+    const good = await c.call('POST', '/admin/login', { username: mk.data.username, pin: mk.data.pin });
+    assert(good.status === 200 && good.data.role === 'staff', 'pin login: ' + JSON.stringify(good));
+    assert((await c.call('GET', '/admin/data')).status === 200, 'data');
+    assert((await c.call('GET', '/admin/staff')).status !== 200, 'PIN staff reached owner-only staff list');
   }, 'critical');
   await s.check('Staff CAN: read Today data, make a bill, add/update bookings', async () => {
     assert((await staffApi.call('GET', '/admin/data')).status === 200, 'data');

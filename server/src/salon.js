@@ -2,9 +2,10 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import bcrypt from 'bcryptjs';
-import { pool } from './db.js';
+import { pool, withAuth } from './db.js';
 import { makeSeed, makeTemplate, makeDemo, DEMO_STAFF_PHONE } from './salon-seed.js';
 import { captureError } from './errors.js';
+import { staffLogin } from './auth.js';
 
 // Salon Suite API: the original Showoff Salon /api/* surface (see the
 // app/public/salon/ front-end, a verbatim port), multi-tenant. The
@@ -501,15 +502,36 @@ export async function handleSalon(req, res, ip) {
 
     if (method === 'POST' && p === '/admin/login') {
       if (limited(`salonlogin:${ip}`, 30, 15 * 60_000)) fail(429, 'Too many attempts. Try again later.');
-      const password = String(body.password || '');
+      const password = String(body.password || body.pin || '');
       if (!password) fail(400, 'Password is required.');
       await loadSite(tenant);
+      if (body.username) {
+        // Staff sign-in with the username + PIN the owner created under Staff in the client dashboard (db/096).
+        const r = await staffLogin(body.username, password, { ip, userAgent: req.headers['user-agent'] });
+        if (r && r.locked) fail(429, 'Too many wrong PINs. Try again in 15 minutes.');
+        if (!r) fail(401, 'Wrong username or PIN.');
+        const prof = await withAuth(r.user.id, async (c) => (await c.query('select tenant_id, role, login_off from profiles where id = $1', [r.user.id])).rows[0]);
+        if (!prof || prof.tenant_id !== tid || prof.login_off) fail(401, 'Wrong username or PIN.');
+        const uname = String(body.username).trim().toLowerCase();
+        const um = r.user.user_metadata || {};
+        const name = cleanString(um.full_name || um.name || uname.split('.')[0], 80);
+        let st;
+        await mutateKey(tid, 'staff', (d) => {
+          d.list = d.list || [];
+          st = d.list.find((x) => x.userId === r.user.id);
+          if (!st) { st = { id: crypto.randomUUID(), userId: r.user.id, name, phone: '', designation: prof.role === 'manager' ? 'Manager' : 'Staff', active: true, employeeId: null, createdAt: new Date().toISOString() }; d.list.push(st); }
+          else if (st.active === false) st = null;
+        }, { list: [] });
+        if (!st) fail(401, 'This login is turned off.');
+        setSession(res, tid, { role: 'staff', sid: st.id, name: st.name });
+        return send(200, { ok: true, role: 'staff' });
+      }
       if (body.phone) {
         // Staff sign-in: phone number + the password the owner set for them.
         const phone = staffPhone(body.phone);
         if (phone.length < 6 || limited(`stafflogin:${tid}:${phone}`, 8, 15 * 60_000)) fail(429, 'Too many attempts. Try again later.');
         const st = ((await readKey(pool, tid, 'staff')) || { list: [] }).list.find((x) => x.phone === phone && x.active !== false);
-        if (!st || !verifyScrypt(password, st.passwordHash)) fail(401, 'Invalid phone number or password.');
+        if (!st || !st.passwordHash || !verifyScrypt(password, st.passwordHash)) fail(401, 'Invalid phone number or password.');
         setSession(res, tid, { role: 'staff', sid: st.id, name: st.name });
         return send(200, { ok: true, role: 'staff' });
       }
