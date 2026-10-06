@@ -265,6 +265,12 @@ body.admin-shell .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
 }
+
+.svc-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--line,#e6e1dc);font-size:14px;font-weight:400;cursor:pointer}
+.svc-row input{margin-top:3px;width:18px;height:18px;flex:none}
+.svc-row b{display:block;font-weight:600}
+.svc-row small{display:block;color:var(--ink-faint,#777);font-size:12.5px;line-height:1.4;margin-top:2px}
+#editFeatures{display:block!important}
 </style>
 </head>
 <body class="admin-shell">
@@ -749,7 +755,7 @@ async function loadLeads() {
 }
 
 const NICHE_LABEL = { cafe: 'Café / restaurant / bar / bakery / hotel', salon: 'Salon / spa', retail: 'Retail (shoes, clothing, books)', general: 'General' };
-const FEATURE_LABEL = { salon: 'AUZslab Salon', pos: 'POS', crm: 'CRM', booking: 'Booking', billing: 'Billing', self_order: 'Self-order', kds: 'Kitchen display', inventory: 'Inventory', qr: 'QR Ordering', payroll: 'Payroll', membership: 'Memberships', helpdesk: 'Helpdesk', tasks: 'Tasks', purchases: 'Purchases', accounting: 'Accounting', gsm: 'AUZsGSM (standalone -- manual setup)', mobile: 'AUZsMob' };
+const FEATURE_LABEL = { salon: 'AUZslab Salon', pos: 'AuzsPOS', crm: 'CRM', booking: 'Booking', billing: 'Billing', self_order: 'AuzsPOS QR', kds: 'Kitchen display', inventory: 'Inventory', website_builder: 'Website Builder', payroll: 'AuzsPay', membership: 'Memberships', helpdesk: 'Helpdesk', tasks: 'Tasks', purchases: 'Purchases', accounting: 'AuzsLedger', gsm: 'AUZsGSM (standalone)', mobile: 'AUZsMob' };
 
 async function loadSignupRequests() {
   const listEl = document.getElementById('signupRequestsList');
@@ -1153,6 +1159,19 @@ function loadSetupQueue() {
   });
 }
 
+// What a client can be given, as products (not internal switches). Each product turns on every module it contains,
+// so CRM, billing, inventory, kitchen display etc. are never ticked separately. keys[0] is the product's own key.
+const SELLABLE = [
+  { id: 'pos', label: 'AuzsPOS', keys: ['pos', 'crm', 'billing', 'inventory', 'kds', 'purchases', 'membership', 'tasks', 'helpdesk'], note: 'Includes billing, inventory, customers (CRM), kitchen display, purchases, memberships, tasks, helpdesk' },
+  { id: 'qr', label: 'AuzsPOS QR', keys: ['self_order'], note: 'Customers scan a table QR and order themselves' },
+  { id: 'pay', label: 'AuzsPay', keys: ['payroll'], note: 'Payroll and attendance' },
+  { id: 'ledger', label: 'AuzsLedger', keys: ['accounting'], note: 'Accounting and GST books' },
+  { id: 'mob', label: 'AUZsMob', keys: ['mobile'], note: 'Mobile shop: stock, sales, repairs' },
+  { id: 'salon', label: 'AUZslab Salon', keys: ['salon', 'booking', 'crm', 'billing'], note: 'Website, booking, customers (CRM) and billing are always included' },
+  { id: 'web', label: 'Website Builder', keys: ['website_builder'], note: 'Drag-and-drop website editor' },
+  { id: 'gsm', label: 'AUZsGSM (separate app)', keys: ['gsm'], note: 'Set up by hand' },
+];
+
 function openEditModal(id) {
   const c = clientsCache.find((x) => x.id === id);
   if (!c) return;
@@ -1163,9 +1182,10 @@ function openEditModal(id) {
   document.getElementById('editStatus').value = c.status;
   document.getElementById('editNotes').value = c.notes || '';
   const entitled = c.features || {};
-  document.getElementById('editFeatures').innerHTML = Object.entries(FEATURE_LABEL).map(([k, label]) => `
-    <label style="display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:400">
-      <input type="checkbox" data-feat-key="${esc(k)}" ${entitled[k] === true ? 'checked' : ''}> ${esc(label)}
+  document.getElementById('editFeatures').innerHTML = SELLABLE.map((p) => `
+    <label class="svc-row">
+      <input type="checkbox" data-prod="${esc(p.id)}" ${entitled[p.keys[0]] === true ? 'checked' : ''}>
+      <span><b>${esc(p.label)}</b><small>${esc(p.note)}</small></span>
     </label>`).join('');
   document.getElementById('editErr').textContent = '';
   document.getElementById('editOverlay').classList.add('open');
@@ -1189,8 +1209,11 @@ document.getElementById('editForm').onsubmit = async (e) => {
     p_status: status,
   });
   if (error) { errEl.textContent = error.message; return; }
+  // A module stays on while any ticked product contains it (CRM is in both AuzsPOS and Salon).
+  const on = new Set();
+  document.querySelectorAll('#editFeatures [data-prod]').forEach((cb) => { if (cb.checked) SELLABLE.find((p) => p.id === cb.dataset.prod).keys.forEach((k) => on.add(k)); });
   const features = {};
-  document.querySelectorAll('#editFeatures [data-feat-key]').forEach((cb) => { features[cb.dataset.featKey] = cb.checked; });
+  SELLABLE.forEach((p) => p.keys.forEach((k) => { features[k] = on.has(k); }));
   const { error: featErr } = await sb.rpc('admin_set_tenant_features', { p_tenant_id: id, p_features: features });
   if (featErr) { errEl.textContent = featErr.message; return; }
   document.getElementById('editOverlay').classList.remove('open');
