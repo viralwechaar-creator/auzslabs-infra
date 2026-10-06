@@ -15,7 +15,7 @@ function parseHash() {
 }
 const go = (path) => { const tgt = '#/' + path.replace(/^#?\/?/, ''); if (location.hash === tgt) route_(); else location.hash = tgt; };
 function allowed(def) { if (!def) return false; if (!def.perm) return true; return typeof def.perm === 'function' ? def.perm() : can(def.perm); }
-function navList() {
+function allNav() {
   const items = [['home', 'home', 'home']];
   if (feat('sell')) items.push(['sell', 'sell', 'cash']);
   if (repairsMode() === 'full') items.push(['repairs', 'repairs', 'wrench']);
@@ -25,7 +25,19 @@ function navList() {
   items.push(['settings', 'settings', 'gear']);
   return items.filter(([id]) => allowed(PAGES[id]));
 }
-function tabsFor() { return navList().slice(0, 4).map((x) => x[0]); }
+// The owner can pick which buttons the menu shows and their order (Settings > Menu buttons, saved as
+// features.nav). No saved list = the automatic menu (first four on the bottom bar, the rest under More).
+function customNav() { const n = feats().nav; return Array.isArray(n) && n.length ? n : null; }
+function navList() {
+  const all = allNav(), c = customNav();
+  if (!c) return all;
+  const picked = c.map((id) => all.find((x) => x[0] === id)).filter(Boolean);
+  // The owner must always be able to get back to Settings to change this again.
+  if (!picked.some((x) => x[0] === 'settings') && !c.includes('more')) { const st = all.find((x) => x[0] === 'settings'); if (st) picked.push(st); }
+  return picked.length ? picked : all;
+}
+const showMore = () => { const c = customNav(); return !c || c.includes('more'); };
+function tabsFor() { const l = navList().map((x) => x[0]); return customNav() ? l : l.slice(0, 4); }
 
 // ---------- sign in / boot (same shape as the other apps' shell.js) ----------
 function showLogin(msg) {
@@ -179,7 +191,7 @@ function buildShell() {
   const topbar = h('header', { class: 'topbar', id: 'topbar' }, h('div', { class: 'l', id: 'tb-l' }), h('div', { class: 'tt', id: 'tb-t' }), h('div', { class: 'r', id: 'tb-r' }));
   const tabbar = h('nav', { class: 'tabbar', 'aria-label': 'Main' },
     tabsFor().map((id) => h('button', { type: 'button', 'data-tab': id, onclick: () => go(id) }, icon(nav.find((n) => n[0] === id)[2], 25), h('span', null, t(id)))),
-    h('button', { type: 'button', 'data-tab': 'more', onclick: moreSheet }, icon('more', 25), h('span', null, t('more'))));
+    showMore() ? h('button', { type: 'button', 'data-tab': 'more', onclick: moreSheet }, icon('more', 25), h('span', null, t('more'))) : null);
   clear($('#app')).append(h('div', { class: 'shell' + (sidePref() ? ' ' + sidePref() : ''), id: 'shell' }, side, h('div', { class: 'main' }, topbar, h('main', { id: 'main', tabindex: '-1' })), tabbar));
   matchMedia('(min-width:900px)').addEventListener('change', () => route_());
 }
@@ -188,7 +200,7 @@ function updateSyncPill() { const el = $('.sync-pill'); if (el) el.replaceWith(s
 function signOut() { sb.auth.signOut().then(() => location.reload()); }
 function moreSheet() {
   const tabs = tabsFor();
-  const nav = navList().filter(([id]) => !tabs.includes(id));
+  const nav = customNav() ? [] : navList().filter(([id]) => !tabs.includes(id));
   const body = h('div', { class: 'grid' },
     nav.length ? section(t('more'), h('div', { class: 'list' }, nav.map(([id, , ic]) => liRow({ icon: ic, title: t(id), chevron: true, onclick: () => { s.close(); go(id); } })))) : null,
     h('div', { class: 'list' },

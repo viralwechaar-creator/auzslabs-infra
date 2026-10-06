@@ -13,6 +13,7 @@ async function renderSettings(v) {
     section(t('language'), seg([['en', 'English'], ['hi', 'हिंदी']], S_LANG, (val) => saveLang(val), { full: true })),
     isOwner ? shopDetailsCard(s, v) : null,
     isOwner ? featuresCard(v) : null,
+    isOwner ? navCard(v) : null,
     isOwner ? h('div', { class: 'list' }, liRow({ icon: 'gear', title: t('staffSeeRates'), right: h('span', { class: 'switch' }, h('input', { type: 'checkbox', checked: !!s.staffSeePurchaseRates, onchange: async (e) => { await api('mob_save_settings', { p: { staffSeePurchaseRates: e.target.checked } }); S.ctx = await api('mob_context'); toast(t('saved')); } })) })) : null,
     can('mob_reports') ? h('div', { id: 'staff-box' }, h('div', { class: 'skel', style: { height: '80px' } })) : null,
     can('mob_reports') ? h('div', { id: 'integrity-box' }) : null,
@@ -78,4 +79,39 @@ function featuresCard(v) {
       sw('dayclose', t('featDayclose'), t('featDaycloseHint'))),
     section(t('featRepairs'), seg([['off', t('repairsOff')], ['simple', t('repairsSimple')], ['full', t('repairsFull')]], repairsMode(), (val) => save({ ...cur, repairs: val }), { full: true }),
       h('div', { class: 'small muted', style: { marginTop: '6px' } }, t('featRepairsHint'))));
+}
+
+// Menu buttons (owner only): choose which sections get a button in the bottom bar / sidebar and their order.
+// Saved as features.nav; "Use automatic menu" clears it. Pages stay reachable from Home; this only changes the menu.
+function navCard(v) {
+  const all = allNav().map(([id, , ic]) => [id, ic]);
+  const MAX = 5; // what fits on a phone bar
+  const saved = customNav();
+  let order = saved ? saved.filter((id) => id === 'more' || all.some((a) => a[0] === id)) : navList().map((x) => x[0]).slice(0, 4).concat('more');
+  const rest = all.map((a) => a[0]).concat('more').filter((id) => !order.includes(id));
+  const rows = order.concat(rest).map((id) => ({ id, on: order.includes(id) }));
+  const iconOf = (id) => (id === 'more' ? 'more' : all.find((a) => a[0] === id)[1]);
+  const box = h('div');
+  const draw = () => {
+    clear(box).append(h('div', { class: 'list' }, rows.map((r, i) => liRow({
+      icon: iconOf(r.id), title: t(r.id), sub: r.id === 'settings' ? t('navRequired') : null,
+      right: h('span', { class: 'row', style: { gap: '4px' } },
+        h('button', { class: 'btn plain icon', type: 'button', 'aria-label': 'Move up', disabled: i === 0, onclick: () => { [rows[i - 1], rows[i]] = [rows[i], rows[i - 1]]; draw(); } }, icon('chevU', 18)),
+        h('button', { class: 'btn plain icon', type: 'button', 'aria-label': 'Move down', disabled: i === rows.length - 1, onclick: () => { [rows[i + 1], rows[i]] = [rows[i], rows[i + 1]]; draw(); } }, icon('chevD', 18)),
+        h('span', { class: 'switch' }, h('input', { type: 'checkbox', role: 'switch', checked: r.on, disabled: r.id === 'settings', onchange: (e) => {
+          if (e.target.checked && rows.filter((x) => x.on).length >= MAX) { e.target.checked = false; toast(t('navMax')); return; }
+          r.on = e.target.checked; draw();
+        } }))) }))));
+  };
+  const save = async (list) => {
+    try {
+      await api('mob_save_settings', { p: { features: { nav: list } } });
+      S.ctx = await api('mob_context'); buildShell(); toast(t('saved')); v.refresh();
+    } catch (e) { fail(e); }
+  };
+  draw();
+  return section(t('navTitle'), h('div', { class: 'small muted', style: { marginBottom: '8px' } }, t('navHint')), box,
+    h('div', { class: 'row', style: { gap: '8px', marginTop: '10px' } },
+      h('button', { class: 'btn fill', type: 'button', onclick: () => { const l = rows.filter((r) => r.on).map((r) => r.id); if (!l.length) return toast(t('navNone')); save(l); } }, t('save')),
+      saved ? h('button', { class: 'btn', type: 'button', onclick: () => save([]) }, t('navAuto')) : null));
 }
