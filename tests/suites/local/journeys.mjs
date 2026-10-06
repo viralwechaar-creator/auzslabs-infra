@@ -7,16 +7,19 @@ export default async function run({ browser, stack }) {
   const s = suite('Buying journey: sign up, choose products, request account, admin review', 'Real browser flow through signup.html, cart.html and the platform admin dashboard.');
   const ctx = await newCtx(browser, stack); const page = await ctx.newPage(); const errs = watch(page);
   const email = 'newclient-' + Date.now() + '@test.local';
-  await s.check('New visitor can create an account', async () => {
-    await page.goto(stack.url('', '/signup.html')); await page.waitForTimeout(700);
-    await page.fill('#email', email); await page.fill('#password', PASSWORD); await page.click('#submitBtn'); await page.waitForTimeout(2000);
-    const r = await q('select count(*)::int n from auth_users where email = $1', [email]); assert(r[0].n === 1, 'account not created; page says: ' + (await page.locator('#authErr').innerText().catch(() => '')));
+  await s.check('Sign up tab is Google-only (no email or password boxes)', async () => {
+    await page.goto(stack.url('', '/signup.html')); await page.waitForTimeout(900);
+    assert(!(await page.locator('#email').isVisible()), 'email box is shown on the Sign up tab');
+    assert(!(await page.locator('#password').isVisible()), 'password box is shown on the Sign up tab');
+    assert(await page.locator('#googleBtnHost *').count() > 0, 'no Continue with Google button');
   }, 'critical');
-  await s.check('Signup refuses a weak/short password', async () => {
-    const cw = await newCtx(browser, stack); const p = await cw.newPage(); await p.goto(stack.url('', '/signup.html')); await p.waitForTimeout(500);
-    await p.fill('#email', 'weak-' + Date.now() + '@test.local'); await p.fill('#password', '123'); await p.click('#submitBtn'); await p.waitForTimeout(1000);
-    const r = await q("select count(*)::int n from auth_users where email like 'weak-%'"); assert(r[0].n === 0, 'short password accepted'); await cw.close();
-  });
+  await s.check('Direct email sign-up is refused while sign-up is Google-only', async () => {
+    await q("update platform_flags set value = 'off' where key = 'password_signup'");
+    try {
+      const r = await fetch(stack.apiBase + '/auth/signup', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'direct-' + Date.now() + '@test.local', password: PASSWORD }) });
+      assert(r.status >= 400, 'direct sign-up was accepted, status ' + r.status);
+    } finally { await q("update platform_flags set value = 'on' where key = 'password_signup'"); }
+  }, 'major');
   await s.check('Existing account can sign in again (login mode)', async () => {
     const c2 = await newCtx(browser, stack); const p = await c2.newPage();
     await p.goto(stack.url('', '/signup.html')); await p.waitForTimeout(500); await p.click('#modeLogin'); await p.fill('#email', USERS.plain); await p.fill('#password', PASSWORD); await p.click('#submitBtn'); await p.waitForTimeout(2000);

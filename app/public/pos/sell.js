@@ -67,6 +67,7 @@ function ticketView(o, inSheet) {
   if (o.type === 'Dine-in' && isRestaurant()) meta.push(h('button', { class: 'chip' + (o.table ? ' set' : ''), onclick: () => tableSheet(o) }, icon('tables', 16), o.table ? tn(o.table) : 'Choose table'));
   if (o.type === 'Dine-in' && isRestaurant()) meta.push(h('button', { class: 'chip' + (o.covers ? ' set' : ''), onclick: () => coversSheet(o) }, icon('people', 16), o.covers ? plural(o.covers, 'guest') : 'Guests'));
   if (o.type === 'Delivery') meta.push(h('button', { class: 'chip' + (o.addr ? ' set' : ''), onclick: () => deliverySheet(o) }, icon('truck', 16), o.addr ? (o.src ? o.src + ' · ' : '') + (o.eta ? 'by ' + o.eta : 'Address set') : 'Delivery details'));
+  if (o.type === 'Takeaway') meta.push(h('button', { class: 'chip' + (o.src ? ' set' : ''), onclick: () => pickupSourceSheet(o) }, icon('sell', 16), o.src ? o.src + (o.extRef ? ' #' + o.extRef : '') : 'Order from'));
   if (o.captain) meta.push(h('button', { class: 'chip set', onclick: () => captainSheet(o) }, icon('person', 16), o.captain.name));
   if (o.adv) meta.push(h('button', { class: 'chip set', onclick: () => scheduleSheet(o) }, icon('clock', 16), advLabel(o.adv)));
   if (o.comment) meta.push(h('button', { class: 'chip set', onclick: () => commentSheet(o) }, icon('note', 16), o.comment));
@@ -363,14 +364,23 @@ function coversSheet(o, then) {
   const s = sheet({ title: 'How many guests?', narrow: true, closeLabel: 'Skip', onClose: () => {}, body: h('div', { class: 'stack s20' }, chips, h('div', { class: 'row sp' }, h('span', { class: 'lbl' }, 'Or'), stepper(n, (v) => (n = v), 1, 60))),
     actions: [{ label: 'Done', primary: true, run: () => { o.covers = n; render(); then && then(); } }] });
 }
+// Takeaway orders that arrive from Zomato / Swiggy etc.: tag the source and the platform's own order number so
+// the console's platform pages (commission, payout) count it.
+function pickupSourceSheet(o) {
+  let src = o.src || '';
+  const ext = input({ value: o.extRef || '', placeholder: 'Zomato / Swiggy order number' });
+  sheet({ title: 'Order from', closeLabel: 'Cancel', narrow: true, body: h('div', { class: 'stack s20' },
+    field('Source', seg([['', 'Walk-in'], ...DELIVERY_SOURCES.filter((x) => x !== 'Phone').map((x) => [x, x])], src, (v) => (src = v))), field('Platform order number (optional)', ext)),
+    actions: [{ label: 'Save', primary: true, run: () => { o.src = src || undefined; o.extRef = ext.value.trim() || undefined; render(); } }] });
+}
 function deliverySheet(o) {
-  const addr = textarea({ value: o.addr || '', placeholder: 'House, street, area, landmark' }), eta = input({ type: 'time', value: o.eta || '' });
+  const addr = textarea({ value: o.addr || '', placeholder: 'House, street, area, landmark' }), eta = input({ type: 'time', value: o.eta || '' }), ext = input({ value: o.extRef || '', placeholder: 'Zomato / Swiggy order number' });
   let src = o.src || 'Phone', rider = o.rider ? o.rider.id || '' : '';
   const riderSel = selectEl([['', 'Not assigned'], ...STAFF_LIST.map((p) => [p.id, p.name || p.email])], rider, (e) => (rider = e.target.value));
   sheet({ title: 'Delivery details', closeLabel: 'Cancel', body: h('div', { class: 'stack s20' },
-    field('Order from', seg(DELIVERY_SOURCES.map((x) => [x, x]), src, (v) => (src = v))), field('Address', addr), h('div', { class: 'grid2' }, field('Promised by', eta), field('Rider', riderSel)),
+    field('Order from', seg(DELIVERY_SOURCES.map((x) => [x, x]), src, (v) => (src = v))), field('Platform order number (optional)', ext), field('Address', addr), h('div', { class: 'grid2' }, field('Promised by', eta), field('Rider', riderSel)),
     h('div', { class: 'hint' }, cfg().deliveryCharge ? 'Delivery charge ' + inr(cfg().deliveryCharge) + ' is added to the bill.' : '')),
-    actions: [{ label: 'Save', primary: true, run: () => { o.addr = addr.value.trim() || undefined; o.eta = eta.value || undefined; o.src = src; o.rider = rider ? { id: rider, name: staffName(rider) } : undefined; render(); } }] });
+    actions: [{ label: 'Save', primary: true, run: () => { o.addr = addr.value.trim() || undefined; o.eta = eta.value || undefined; o.src = src; o.extRef = ext.value.trim() || undefined; o.rider = rider ? { id: rider, name: staffName(rider) } : undefined; render(); } }] });
 }
 
 // barcode scanners type the code and press Enter (Settings -> Hardware -> Barcode scanner)

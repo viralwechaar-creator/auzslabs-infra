@@ -184,6 +184,19 @@ async function renderSaleHistory(v) {
   ));
 }
 
+// Opens WhatsApp with the bill text ready to send (the cashier taps Send). Free: no WhatsApp Business account needed.
+function waBillText(s) {
+  const st = (S.ctx && S.ctx.settings) || {};
+  const lines = [(st.shopName || '') + (st.address ? ', ' + st.address : ''), t('bill') + ' ' + (s.bill_no || '')].filter(Boolean);
+  (s.items || []).forEach((it) => lines.push(it.name + ' x' + it.qty + '  ' + inr(it.price * it.qty)));
+  lines.push(t('total') + ': ' + inr(s.total));
+  if (st.billFooter) lines.push(st.billFooter); else lines.push(t('thankYou'));
+  return lines.join('\n');
+}
+function waShareSale(s) {
+  let d = String(s.customer_phone || '').replace(/\D/g, ''); if (d.length === 10) d = '91' + d;
+  window.open('https://wa.me/' + d + '?text=' + encodeURIComponent(waBillText(s)), '_blank');
+}
 function saleDetailSheet(v, s) {
   sheet({
     title: s.bill_no || t('sell'),
@@ -193,12 +206,12 @@ function saleDetailSheet(v, s) {
       h('div', { class: 'card' }, h('div', { class: 'row sp' }, h('b', null, t('total')), h('b', null, money(s.total)))),
       s.customer_name ? h('div', { class: 'small muted' }, s.customer_name + (s.customer_phone ? ' · ' + s.customer_phone : '')) : null,
     ),
-    actions: can('mob_manage') && !s.voided ? [{ label: t('voidSale'), danger: true, onclick: async (close) => {
+    actions: [!s.voided ? { label: t('shareWhatsApp'), onclick: async () => { waShareSale(s); return false; } } : null].concat(can('mob_manage') && !s.voided ? [{ label: t('voidSale'), danger: true, onclick: async (close) => {
       const ok = await confirmBox(t('voidSale'), t('confirmVoid'), t('voidSale'), true);
       if (!ok) return false;
       await api('mob_void_sale', { p_sale_id: s.id, p_reason: null });
       s.voided = true; await idbPut('sales', s);
       toast(t('saved')); close(); v.refresh();
-    } }] : [],
+    } }] : []),
   });
 }
