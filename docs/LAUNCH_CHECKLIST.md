@@ -18,6 +18,8 @@ Tick these in order. "You" = the owner, "Partner" = registration/tax/bank, "Dev"
 - [ ] Google Cloud OAuth client lists `https://auzslab.in/signin.html` as a redirect address and the consent screen is Published
 
 ## C. Money (you + partner)
+- [ ] Until Razorpay is live, customers pay by the UPI QR on the cart page (`CFG.upiId` in `site/cart.html`; replace the personal id with the business id before public launch). Match each payment's UTR in your bank app, then Approve the request in the platform admin
+- [ ] AUZsMob is Rs 199 a month or Rs 1,999 for the first year (Rs 1,599 from year two), no GST, no setup fee
 - [ ] Razorpay account approved (KYC), live keys in `.env`, webhook URL `https://api.auzslab.in/payments/webhook` with its secret in `.env`
 - [ ] One real small payment made end to end: the business activates by itself and a receipt is available
 - [ ] Prices in the platform admin (Pricing and payments) match the pricing page. GST 18% and the Rs 2,179 setup fee are in `server/src/payments.js`

@@ -37,6 +37,9 @@
 .paying-overlay.open{display:flex}
 .paying-spin{width:40px;height:40px;border:3px solid var(--ink-faint);border-top-color:var(--accent);border-radius:50%;animation:paying-spin .8s linear infinite}
 @keyframes paying-spin{to{transform:rotate(360deg)}}
+.period-seg{gap:8px;margin:12px 0 4px;flex-wrap:wrap}
+.period-seg button{flex:1;min-width:140px;border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:12px 14px;font:600 14px var(--font-body);color:var(--ink-dim);cursor:pointer}
+.period-seg button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
 </style>
 </head>
 <body>
@@ -74,6 +77,11 @@
         <div class="card">
           <div class="label">Your complete bill</div>
           <div id="topBundleNote" style="display:none;margin-top:8px"></div>
+          <div id="periodRow" class="period-seg" style="display:none">
+            <button id="periodMonth" type="button" class="active">Monthly</button>
+            <button id="periodYear" type="button">Yearly</button>
+          </div>
+          <p class="pay-note" id="periodNote" style="margin:0 0 6px"></p>
           <div class="bill-row" style="padding-left:0;padding-right:0"><span>Subscription</span><b id="topBillSubtotal"></b></div>
           <div class="bill-row" style="padding-left:0;padding-right:0"><span>GST (18%)</span><b id="topBillGst"></b></div>
           <div class="bill-row" id="topBillSetupRow" style="padding-left:0;padding-right:0"><span>One-time setup fee <i>(mandatory, no GST)</i></span><b id="topBillSetup"></b></div>
@@ -207,10 +215,10 @@
 
 </div>
 
-<script src="/sb-client.js?v=4"></script>
+<script src="/sb-client.js?v=5"></script>
 <script src="tool/lock.js?v=1"></script>
 <script src="tool/site.js?v=8"></script>
-<script>window.CFG = { url: 'https://api.auzslab.in', key: '', upiId: '', upiName: 'AUZslab' };</script>
+<script>window.CFG = { url: 'https://api.auzslab.in', key: '', upiId: '9216558097@ybl', upiName: 'Ashish Kumar Meena' };</script>
 <script src="vendor/qrcode.js"></script>
 <script>
 const sb = supabase.createClient(CFG.url, CFG.key);
@@ -233,18 +241,33 @@ function inr(n) {
 const GST_RATE = 0.18;
 const SETUP_FEE = 2179;
 const round2 = (n) => Math.round(n * 100) / 100;
-function billFor(subtotal, isSignup) {
-  const setupFee = isSignup ? SETUP_FEE : 0;
-  const subtotalGst = round2(subtotal * GST_RATE);
+function billFor(subtotal, isSignup, keys) {
+  const k = keys || [];
+  const bundled = k.length > 0 && matchedBundle(k);
+  const flags = k.map((x) => FLAGS.get(x) || {});
+  const exempt = !bundled && k.length ? k.reduce((a, key) => a + ((FLAGS.get(key) || {}).gstExempt ? Number((PERIOD === 'year' ? (FLAGS.get(key) || {}).yearly : PRICES.get(key)) || 0) : 0), 0) : 0;
+  const setupExempt = !bundled && k.length > 0 && flags.every((f) => f.setupExempt);
+  const setupFee = isSignup && !setupExempt ? SETUP_FEE : 0;
+  const subtotalGst = round2((subtotal - exempt) * GST_RATE);
   const dueToday = round2(subtotal + subtotalGst + setupFee);
   const monthlyTotal = round2(subtotal + subtotalGst);
-  return { subtotal, subtotalGst, setupFee, dueToday, monthlyTotal };
+  return { subtotal, subtotalGst, setupFee, dueToday, monthlyTotal, period: PERIOD, exempt };
+}
+function matchedBundle(keys) {
+  const sorted = keys.slice().sort().join(',');
+  return BUNDLES.find((b) => b.feature_keys.slice().sort().join(',') === sorted) || null;
+}
+// Yearly billing is offered only when no bundle applies and every product in the cart has a yearly price.
+function yearlyEligible(keys) {
+  return keys.length > 0 && !matchedBundle(keys) && keys.every((k) => (FLAGS.get(k) || {}).yearly > 0);
 }
 
 // Prices + whether online checkout is even possible -- both start empty/off
 // so every render() before they load falls back to the existing
 // request-only behaviour, exactly as if Razorpay were never configured.
 let PRICES = new Map();
+let FLAGS = new Map();
+let PERIOD = 'month';   // 'month' | 'year' (yearly only for carts whose products all have a yearly price)
 let BUNDLES = [];
 let ADDON_OVERRIDES = [];
 let PAY = { enabled: false, keyId: null };
@@ -267,6 +290,7 @@ async function loadPricing() {
     sb.rpc('public_product_prices'), sb.rpc('public_bundles'), sb.rpc('public_addon_price_overrides'), sb.payments.config(),
   ]);
   PRICES = new Map((prices || []).map((p) => [p.key, Number(p.monthly_price)]));
+  FLAGS = new Map((prices || []).map((p) => [p.key, { yearly: Number(p.yearly_price || 0), renewal: Number(p.renewal_yearly_price || 0), gstExempt: !!p.gst_exempt, setupExempt: !!p.setup_fee_exempt }]));
   BUNDLES = bundles || [];
   ADDON_OVERRIDES = overrides || [];
   PAY = cfg || { enabled: false, keyId: null };
@@ -280,6 +304,7 @@ async function loadPricing() {
 // the mix isn't priced yet, or for an unpriced single-item addon override miss.
 function priceTotal(keys, tenantFeatures) {
   if (!keys.length) return null;
+  if (PERIOD === 'year' && yearlyEligible(keys)) return keys.reduce((a, k) => a + (FLAGS.get(k).yearly), 0);
   const sortedKeys = keys.slice().sort().join(',');
   const bundleMatch = BUNDLES.find((b) => b.feature_keys.slice().sort().join(',') === sortedKeys);
   if (bundleMatch) return Number(bundleMatch.monthly_price);
@@ -353,6 +378,9 @@ function renderCart() {
 // item in the cart is priced -- it doesn't need Razorpay configured, it's just arithmetic. Only
 // the "Pay & activate instantly" BUTTON itself is gated on PAY.enabled (online checkout actually
 // being turned on); the request-only flow underneath is unaffected either way.
+document.getElementById('periodMonth').onclick = () => { PERIOD = 'month'; updatePayButtons(); };
+document.getElementById('periodYear').onclick = () => { PERIOD = 'year'; updatePayButtons(); };
+
 // ---- Pay by UPI QR (manual route, used while online payment is off) ----
 // Shown only when CFG.upiId is set and Razorpay checkout is not on. The QR carries the exact amount; the customer
 // pastes the UPI reference (UTR) and it travels with the request notes so the admin can match it in the bank app.
@@ -370,6 +398,10 @@ function showUpi(prefix, total) {
 }
 function upiNote(prefix, total) {
   const card = document.getElementById(prefix + 'UpiCard');
+  if (total !== null && PERIOD === 'year') return `\n[Billing: YEARLY plan]` + upiNote2(card, prefix, total);
+  return upiNote2(card, prefix, total);
+}
+function upiNote2(card, prefix, total) {
   if (!card || card.style.display === 'none' || total === null) return '';
   const ref = document.getElementById(prefix + 'UpiRef').value.trim();
   return ref ? `\n[UPI payment of ${inr(total.dueToday)} claimed, reference ${ref}]` : `\n[UPI: nothing paid yet, ${inr(total.dueToday)} due]`;
@@ -384,8 +416,9 @@ function updatePayButtons() {
   // items matter, priced as an addon (no setup fee -- that tenant is already set up).
   const isAddonContext = !!DASH;
   const topKeys = isAddonContext ? requestable : items;
+  if (PERIOD === 'year' && !yearlyEligible(topKeys)) PERIOD = 'month';
   const topSubtotal = priceTotal(topKeys, isAddonContext ? entitled : undefined);
-  const topTotal = topSubtotal !== null ? billFor(topSubtotal, !isAddonContext) : null;
+  const topTotal = topSubtotal !== null ? billFor(topSubtotal, !isAddonContext, topKeys) : null;
 
   document.getElementById('billSummarySection').style.display = topTotal !== null ? 'block' : 'none';
   if (topTotal !== null) {
@@ -396,19 +429,32 @@ function updatePayButtons() {
     if (bundle) bundleNoteEl.innerHTML = bundle.savings !== null
       ? `<span class="tag">Bundle applied</span><span>${bundle.label} -- you're saving ${inr(bundle.savings)}/mo vs. buying separately.</span>`
       : `<span class="tag">Bundle applied</span><span>${bundle.label}</span>`;
-    document.getElementById('topBillSubtotal').textContent = inr(topTotal.subtotal) + '/mo';
-    document.getElementById('topBillGst').textContent = inr(topTotal.subtotalGst);
-    document.getElementById('topBillSetupRow').style.display = isAddonContext ? 'none' : 'flex';
+    const yr = PERIOD === 'year' && yearlyEligible(topKeys);
+    document.getElementById('topBillSubtotal').textContent = inr(topTotal.subtotal) + (yr ? '/year' : '/mo');
+    document.getElementById('topBillGst').textContent = topTotal.exempt >= topTotal.subtotal ? 'No GST' : inr(topTotal.subtotalGst);
+    document.getElementById('topBillSetupRow').style.display = isAddonContext || topTotal.setupFee === 0 ? 'none' : 'flex';
+    const elig = yearlyEligible(topKeys);
+    document.getElementById('periodRow').style.display = elig ? 'flex' : 'none';
+    if (!elig) PERIOD = 'month';
+    document.getElementById('periodMonth').classList.toggle('active', PERIOD !== 'year');
+    document.getElementById('periodYear').classList.toggle('active', PERIOD === 'year');
+    if (elig) {
+      const f = FLAGS.get(topKeys[0]) || {};
+      const monthly = topKeys.reduce((a, k) => a + Number(PRICES.get(k) || 0), 0), yearly = topKeys.reduce((a, k) => a + (FLAGS.get(k).yearly), 0), renew = topKeys.reduce((a, k) => a + (FLAGS.get(k).renewal || FLAGS.get(k).yearly), 0);
+      document.getElementById('periodMonth').textContent = 'Monthly ' + inr(monthly);
+      document.getElementById('periodYear').textContent = 'Yearly ' + inr(yearly) + (yearly < monthly * 12 ? ' (save ' + inr(monthly * 12 - yearly) + ')' : '');
+      document.getElementById('periodNote').textContent = PERIOD === 'year' ? 'Year one ' + inr(yearly) + ', then ' + inr(renew) + ' a year from year two.' : 'Switch to yearly and pay less over the year.';
+    }
     if (!isAddonContext) document.getElementById('topBillSetup').textContent = inr(topTotal.setupFee);
     document.getElementById('topBillTotal').textContent = inr(topTotal.dueToday);
     document.getElementById('topBillThenNote').textContent = isAddonContext
       ? 'Charged monthly from today.'
-      : 'Then ' + inr(topTotal.monthlyTotal) + '/mo from month 2 (no setup fee again).';
+      : (yr ? 'Renews yearly (see above).' : 'Then ' + inr(topTotal.monthlyTotal) + '/mo from month 2' + (topTotal.setupFee ? ' (no setup fee again).' : '.'));
   }
 
   // "Pay & activate instantly" buttons: same math, only shown when Razorpay is actually on.
   const subtotal = PAY.enabled ? priceTotal(items) : null;
-  const total = subtotal !== null ? billFor(subtotal, true) : null;
+  const total = subtotal !== null ? billFor(subtotal, true, items) : null;
   document.getElementById('payTotalWrap').style.display = total !== null ? 'block' : 'none';
   document.getElementById('payBtn').style.display = total !== null ? 'block' : 'none';
   document.getElementById('payNote').style.display = total !== null ? 'block' : 'none';
@@ -418,7 +464,7 @@ function updatePayButtons() {
   }
 
   const addonSubtotal = PAY.enabled ? priceTotal(requestable, entitled) : null;
-  const addonTotal = addonSubtotal !== null ? billFor(addonSubtotal, false) : null;
+  const addonTotal = addonSubtotal !== null ? billFor(addonSubtotal, false, requestable) : null;
   document.getElementById('addonPayTotalWrap').style.display = addonTotal !== null ? 'block' : 'none';
   document.getElementById('addonPayBtn').style.display = addonTotal !== null ? 'block' : 'none';
   document.getElementById('addonPayNote').style.display = addonTotal !== null ? 'block' : 'none';
@@ -426,9 +472,9 @@ function updatePayButtons() {
 
   // UPI QR card: priced from the same cart, whether or not Razorpay is on
   const upiSignupSubtotal = priceTotal(items);
-  showUpi('', !isAddonContext && upiSignupSubtotal !== null ? billFor(upiSignupSubtotal, true) : null);
+  showUpi('', !isAddonContext && upiSignupSubtotal !== null ? billFor(upiSignupSubtotal, true, items) : null);
   const upiAddonSubtotal = priceTotal(requestable, entitled);
-  showUpi('addon', isAddonContext && upiAddonSubtotal !== null ? billFor(upiAddonSubtotal, false) : null);
+  showUpi('addon', isAddonContext && upiAddonSubtotal !== null ? billFor(upiAddonSubtotal, false, requestable) : null);
 }
 
 let DASH = null;
@@ -528,7 +574,7 @@ document.getElementById('submitBtn').onclick = async () => {
 
   const upiSub = priceTotal(AUZcart.get());
   const { error } = await sb.rpc('submit_signup_request', {
-    p_business_name: f.name, p_slug: f.slug, p_features: features, p_notes: f.notes + upiNote('', upiSub !== null ? billFor(upiSub, true) : null),
+    p_business_name: f.name, p_slug: f.slug, p_features: features, p_notes: f.notes + upiNote('', upiSub !== null ? billFor(upiSub, true, AUZcart.get()) : null),
     p_contact_name: f.contactName, p_phone: f.contactPhone, p_niche: f.niche, p_address: f.address,
   });
   if (error) {
@@ -619,7 +665,7 @@ document.getElementById('payBtn').onclick = async () => {
 
     const { data: { session } } = await sb.auth.getSession();
     await payAndActivate({
-      createOrderArgs: { signupRequestId: reqId },
+      createOrderArgs: { signupRequestId: reqId, period: PERIOD },
       prefill: { name: f.contactName, email: session?.user?.email || '', contact: f.contactPhone },
       overlayText: 'Payment received -- activating your account...',
       onPaid: (result) => {
@@ -648,7 +694,7 @@ document.getElementById('addonSubmitBtn').onclick = async () => {
   const features = {};
   requestable.forEach((key) => { features[key] = true; });
 
-  const { error } = await sb.rpc('submit_addon_request', { p_features: features, p_notes: notes + upiNote('addon', (() => { const t = priceTotal(requestable, entitled); return t !== null ? billFor(t, false) : null; })()) });
+  const { error } = await sb.rpc('submit_addon_request', { p_features: features, p_notes: notes + upiNote('addon', (() => { const t = priceTotal(requestable, entitled); return t !== null ? billFor(t, false, requestable) : null; })()) });
   if (error) {
     errEl.textContent = error.message;
     if (error.status === 401) checkSession();
@@ -680,7 +726,7 @@ document.getElementById('addonPayBtn').onclick = async () => {
 
     const { data: { session } } = await sb.auth.getSession();
     await payAndActivate({
-      createOrderArgs: { addonRequestId: reqId },
+      createOrderArgs: { addonRequestId: reqId, period: PERIOD },
       prefill: { name: session?.user?.email || '', email: session?.user?.email || '', contact: '' },
       overlayText: 'Payment received -- adding these to your account...',
       onPaid: () => {

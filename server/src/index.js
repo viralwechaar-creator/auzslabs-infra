@@ -821,10 +821,10 @@ const server = http.createServer(async (req, res) => {
       // Each call hits Razorpay's own API -- worth a modest per-caller cap.
       if (rateLimited(`payorder:${ip}`, 20, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
       await requireVerifiedEmail(user.id);
-      const { signup_request_id, addon_request_id } = await readJsonBody(req);
+      const { signup_request_id, addon_request_id, period } = await readJsonBody(req);
       let result;
       try {
-        result = await createOrder({ userId: user.id, signupRequestId: signup_request_id, addonRequestId: addon_request_id });
+        result = await createOrder({ userId: user.id, signupRequestId: signup_request_id, addonRequestId: addon_request_id, period: period === 'year' ? 'year' : 'month' });
       } catch (err) {
         throw new HttpError(400, err.message || 'could not start payment');
       }
