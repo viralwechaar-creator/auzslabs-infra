@@ -1192,7 +1192,7 @@ const server = http.createServer(async (req, res) => {
     // Accounting raises ordinary business-rule errors from SQL (locked period, insufficient stock, credit limit,
     // unbalanced journal, ...). Those are the caller's to fix, not server faults: 400 (or 401/403), and no stack in the log.
     if (status === 500 && typeof err.code === 'string') {
-      if (err.code === 'P0001' || /^(AC|PY)\d{3}$/.test(err.code) || /^(22|23)/.test(err.code)) { status = 400; message = err.message; }
+      if (err.code === 'P0001' || /^(AC|PY|MB)\d{3}$/.test(err.code) || /^(22|23)/.test(err.code)) { status = 400; message = err.message; }
       else if (err.code === '42501') { status = 403; message = err.message; }
       else if (err.code === '28000') { status = 401; message = err.message; }
     }

@@ -1423,3 +1423,12 @@ Two real gaps found and fixed:
 - No deep links -- password-reset/email-verification/WhatsApp-invoice links open in the phone's regular browser, never the installed app.
 - Background sync is weaker inside a WebView than on an open browser tab, since the offline-first sync model assumes the page's own JS keeps running.
 - Still never run on a real device or emulator -- no Android SDK exists in this sandbox; the cloud GitHub Action build (and now a real phone) are the only things that have ever actually compiled or installed it.
+
+## Local-first hardening pass (see `LOCAL-FIRST-IMPLEMENTATION.md`)
+Audit found AUZsPOS and AUZsMob already offline-first (IndexedDB + outbox + idempotent RPCs); Ledger and Pay stay server-authoritative on purpose. Fixed instead of rewritten:
+- **AUZsMob outbox dropped queued sales on a server 5xx / unreachable server** (only `401` or `navigator.onLine === false` kept the queue). `mob/sync.js` now keeps the write on any *transient* failure (`isTransient`: no status, >= 500, 408, 429) with exponential back-off, and only rolls back a real 4xx refusal. The sync pill is tappable ("Not synced (n) - tap to retry").
+- **`MBxxx` SQL error codes are HTTP 400** (`server/src/index.js`), so a business refusal is never mistaken for an outage. Any new module with its own error-code prefix must be added to that regex.
+- POS: back-off after failed syncs (`retryAt`/`retryMs`), tappable status, and invoice/KOT numbering gives up after 2.5 s (`withTimeout`) so a dead server never stalls billing.
+- AUZsMob registers `sw.js` itself (before, only the POS did, so it could not cold-start offline).
+- Suite `node tests/run-local.mjs offline` (10 checks: 503, refused connection, lost reply, restart, refusal, retry pill; POS 503 / lost reply / restart / numbering). In Playwright tests the browser reaches `api.auzslab.in` through a host mapping, so a route handler cannot `route.fetch()` it: replay the request from the test runner with `rpc(stack, ...)` instead, and let the route handle only the real POST (`OPTIONS` preflight must `continue()`).
+- Not done: offline Ledger/Pay drafts, direct ESC/POS printing, object storage, performance numbers, a single `POST /sync` endpoint (reasons in the doc).

@@ -263,6 +263,7 @@ const STR = {
   // ---------- errors / messages ----------
   errNotEnabled: { en: 'AUZsMob is not switched on for this business.', hi: 'इस दुकान के लिए AUZsMob अभी चालू नहीं है।' },
   errNoAccess: { en: 'Your role does not allow this.', hi: 'आपकी भूमिका को इसकी अनुमति नहीं है।' },
+  syncProblemRetry: { en: 'Not synced ({n}) · tap to retry', hi: 'सिंक नहीं हुआ ({n}) · दोबारा कोशिश करें' },
   errOffline: { en: 'You are offline. This will sync once you have internet.', hi: 'आप ऑफ़लाइन हैं। इंटरनेट आने पर यह सिंक हो जाएगा।' },
   errGeneric: { en: 'Something went wrong. Please try again.', hi: 'कुछ गड़बड़ हुई। फिर कोशिश करें।' },
   errAlreadySold: { en: 'That unit is no longer available for sale.', hi: 'यह यूनिट अब बिक्री के लिए उपलब्ध नहीं है।' },

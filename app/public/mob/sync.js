@@ -89,7 +89,18 @@ async function rejectLocal(fn, args) {
   window.dispatchEvent(new CustomEvent('mob:pulled'));
 }
 
-let syncing = false;
+let syncing = false, retryDelay = 5000, retryTimer = null;
+// A failure that says nothing about the data itself: no answer at all (server down, bad wifi, a lost reply),
+// a gateway/server error (the API restarting during a deploy answers 502/503), a timeout or "slow down".
+// These must NEVER drop a queued write: it stays in the outbox and is retried with a growing delay.
+const isTransient = (e) => !e.status || e.status >= 500 || e.status === 408 || e.status === 429;
+function scheduleRetry() {
+  clearTimeout(retryTimer);
+  retryTimer = setTimeout(() => { if (navigator.onLine) trySync(); }, retryDelay);
+  retryDelay = Math.min(retryDelay * 2, 300000);
+}
+// manual "tap to retry" (and the browser's online event): forget the back-off and try right now
+function retrySyncNow() { retryDelay = 5000; return trySync(); }
 async function trySync() {
   if (syncing) return;
   if (!navigator.onLine) { await updateOutboxCount(); return; }
@@ -101,7 +112,16 @@ async function trySync() {
       try {
         await api(it.fn, it.args);
       } catch (e) {
-        if (e.status === 401 || e.message === t('errOffline')) break; // stop: session dead or truly offline, leave the rest queued
+        if (e.status === 401) { S.syncFailing = false; break; } // session dead: leave the rest queued until the next sign-in
+        if (e.message === t('errOffline')) break;              // truly offline: leave the rest queued
+        if (isTransient(e)) {
+          // server unreachable / 5xx / timeout: keep this write AND everything behind it, tell the user, retry later.
+          // Before this, only a dead session or navigator.onLine === false kept the queue; a 503 (the API restarting
+          // during a deploy) or a phone that "has wifi" but no route to the server fell through to the branch below
+          // and the sale was rolled back off the phone as if the server had refused it.
+          S.syncFailing = true; S.lastSyncError = e.message; scheduleRetry();
+          break;
+        }
         // a real business-rule refusal (bad data, entitlement off, day closed, not enough stock): it will
         // never succeed by itself retrying, so it's dropped -- but unlike before, the optimistic local
         // write localPush already made (the "Saved on phone" row, and for a sale, the unit it flipped to
@@ -114,11 +134,12 @@ async function trySync() {
         await rejectLocal(it.fn, it.args);
         toast(t('notSaved') + ': ' + e.message, { err: true });
       }
+      S.syncFailing = false; retryDelay = 5000;
       await reqP(tx(db, ['outbox'], 'readwrite').objectStore('outbox').delete(it.oid));
     }
     await updateOutboxCount();
-    await pull();
-  } finally { syncing = false; }
+    if (!S.syncFailing) await pull();
+  } finally { syncing = false; window.dispatchEvent(new CustomEvent('mob:sync')); }
 }
 
 async function pull() {
@@ -158,13 +179,14 @@ async function localPush(store, row, fn, args) {
   window.dispatchEvent(new CustomEvent('mob:pulled'));
 }
 
-window.addEventListener('online', () => { S.online = true; window.dispatchEvent(new CustomEvent('mob:sync')); trySync(); });
+window.addEventListener('online', () => { S.online = true; window.dispatchEvent(new CustomEvent('mob:sync')); retrySyncNow(); });
 window.addEventListener('offline', () => { S.online = false; window.dispatchEvent(new CustomEvent('mob:sync')); });
 setInterval(() => { if (navigator.onLine) trySync(); }, 60_000);
 
 function syncStatusNode() {
   const n = S.outboxCount;
   if (!S.online) return h('span', { class: 'sync-pill off' }, icon('cloudOff', 15), t('offline'));
-  if (n > 0) return h('span', { class: 'sync-pill wait' }, icon('refresh', 15), t('waitingForInternet', { n }));
+  if (S.syncFailing && n > 0) return h('span', { class: 'sync-pill off', role: 'button', tabindex: 0, style: 'cursor:pointer', title: S.lastSyncError || '', onclick: retrySyncNow }, icon('refresh', 15), t('syncProblemRetry', { n }));
+  if (n > 0) return h('span', { class: 'sync-pill wait', role: 'button', tabindex: 0, style: 'cursor:pointer', onclick: retrySyncNow }, icon('refresh', 15), t('waitingForInternet', { n }));
   return h('span', { class: 'sync-pill ok' }, icon('cloudCheck', 15), t('synced'));
 }
