@@ -423,6 +423,42 @@ export default async function run({ browser, stack }) {
     assert(!/Owner's share/.test(await p3.locator('body').innerText()), 'split still shown when switched off');
     await c3.close();
   }, 'critical');
+  await s.check('Reports by any period (db/110 + UI): last month / this year / last year / pick dates all open, a custom range includes only its dates; My sales too; Settings has the clear-data button', async () => {
+    const { c, page } = await open(USERS.mobOwner, { w: 390, h: 844, mobile: true });
+    const yr = new Date().getFullYear();
+    const got = await page.evaluate(() => ({ ly: rangeDates('lastyear'), y: rangeDates('year'), lm: rangeDates('lastmonth'), m: rangeDates('month') }));
+    assert(got.ly[0] === (yr - 1) + '-01-01' && got.ly[1] === (yr - 1) + '-12-31' && got.y[0] === yr + '-01-01', 'year ranges: ' + JSON.stringify(got));
+    assert(got.lm[0].endsWith('-01') && got.m[0].endsWith('-01') && got.lm[1] >= got.lm[0] && got.lm[1] < got.m[0], 'month ranges: ' + JSON.stringify(got));
+    const today = await page.evaluate(() => ymd(new Date()));
+    for (const [q, expectItems] of [['range=custom&from=' + today + '&to=' + today, true], ['range=custom&from=2020-01-01&to=2020-01-31', false], ['range=lastyear', false], ['range=year', true], ['range=lastmonth', null]]) {
+      await page.evaluate((qq) => { location.hash = '#/reports/ledger?' + qq; }, q); await page.waitForTimeout(2200);
+      const txt = await page.locator('body').innerText();
+      assert(/Total sales/i.test(txt), q + ': ledger did not render: ' + txt.slice(0, 150));
+      if (expectItems === true) assert(/Mine Cable|Priceask Charger/.test(txt), q + ': expected sales in range');
+      if (expectItems === false) assert(!/Mine Cable|Priceask Charger/.test(txt), q + ': sales leaked into an empty range');
+    }
+    await page.evaluate(() => { location.hash = '#/settings'; }); await page.waitForTimeout(1500);
+    assert(/Backup or clear all data/.test(await page.locator('body').innerText()), 'Settings lacks the clear-data button');
+    await c.close();
+    const { c: c2, page: p2 } = await open(USERS.mobStaff, { w: 390, h: 844, mobile: true });
+    await p2.evaluate(() => { location.hash = '#/myreport?range=custom&from=2020-01-01&to=2020-01-31'; }); await p2.waitForTimeout(2200);
+    assert(/Total sales/i.test(await p2.locator('body').innerText()), 'My sales custom range did not render');
+    await c2.close();
+  }, 'critical');
+  await s.check('After the owner clears all data every phone drops its offline copy (mob_data_epoch)', async () => {
+    const { c, page } = await open(USERS.mobOwner, { w: 390, h: 844, mobile: true });
+    await page.waitForTimeout(800);
+    await page.evaluate(() => idbPut('items', { id: 'ghost-1', name: 'Ghost item', selling_price: 1, cost_price: 1, active: true }));
+    assert((await page.evaluate(() => idbGetAll('items'))).some((i) => i.id === 'ghost-1'), 'ghost not planted');
+    await q("insert into tenant_data_actions(tenant_id, action, detail) values ($1, 'clear', '{}'::jsonb)", [tid]);
+    const ep = await ok(owner, 'mob_data_epoch'); assert(ep && ep.epoch, 'epoch rpc: ' + JSON.stringify(ep));
+    const ls0 = await page.evaluate(() => JSON.stringify(Object.keys(localStorage).filter((k) => /epoch/.test(k)).map((k) => [k, localStorage[k]])));
+    try {
+      await page.reload(); await page.waitForSelector('.shell', { timeout: 20000 }); await page.waitForTimeout(2500);
+      assert(!(await page.evaluate(() => idbGetAll('items'))).some((i) => i.id === 'ghost-1'), 'old offline data survived a clear; epoch keys before reload: ' + ls0 + ' after: ' + await page.evaluate(async () => JSON.stringify({ ls: Object.keys(localStorage).filter((k) => /epoch/.test(k)).map((k) => [k, localStorage[k]]), api: await api('mob_data_epoch').catch((e) => String(e)) })));
+    } finally { await q("delete from tenant_data_actions where tenant_id=$1 and action='clear'", [tid]); }
+    await c.close();
+  }, 'critical');
   await s.check('Simple mode screens: no Repairs/Stock/Dues tabs, Sell offers Repair / service and adds it to the cart, Settings shows the Features card', async () => {
     await setFeat({ ...ALL_ON, stock: false, serials: false, customers: false, vendors: false, dayclose: false, repairs: 'simple' });
     const { c, page } = await open(USERS.mobOwner, { w: 390, h: 844, mobile: true });

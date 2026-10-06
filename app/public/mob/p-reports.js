@@ -13,16 +13,17 @@ async function renderReports(v) {
   const range = v.q.get('range') || 'today';
   const staffId = v.q.get('staff') || '';
   v.header({ title: t('reports'), actions: tab === 'dashboard' ? [{ label: t('exportData'), icon: 'download', run: exportData }] : [] });
-  const link = (nextTab, nextRange, nextStaff) => {
+  const link = (nextTab, nextRange, nextStaff, f, tt) => {
     const p = new URLSearchParams();
     if (nextRange) p.set('range', nextRange);
     if (nextStaff) p.set('staff', nextStaff);
+    if (nextRange === 'custom') { p.set('from', f || v.q.get('from') || ''); p.set('to', tt || v.q.get('to') || ''); }
     const qs = p.toString();
     return 'reports/' + nextTab + (qs ? '?' + qs : '');
   };
   add(v.root, [
     seg([['dashboard', t('dashboard')], ['ledger', t('staffLedger')], ['updates', t('staffUpdates')]], tab, (tb) => go(link(tb, range, staffId)), { full: !isDesk() }),
-    seg([['today', t('today')], ['week', t('thisWeek')], ['month', t('thisMonth')]], range, (r) => go(link(tab, r, staffId)), { full: !isDesk() }),
+    rangePicker(range, (r, f, tt) => go(link(tab, r, staffId, f, tt))),
   ]);
   const body = h('div', { style: { marginTop: '14px' } });
   v.root.append(body);
@@ -122,11 +123,42 @@ function ledgerDetailSheet(r) {
   });
 }
 
+// Date ranges for Reports and My sales. Local dates (not UTC) so "today" is the shop's today.
+const ymd = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+const RANGE_OPTIONS = [['today', 'today'], ['week', 'thisWeek'], ['month', 'thisMonth'], ['lastmonth', 'lastMonth'], ['year', 'thisYear'], ['lastyear', 'lastYear'], ['custom', 'customDates']];
 function rangeDates(range) {
-  const d = new Date(); const today = d.toISOString().slice(0, 10);
-  if (range === 'week') { const w = new Date(d); w.setDate(w.getDate() - 6); return [w.toISOString().slice(0, 10), today]; }
-  if (range === 'month') { const m = new Date(d); m.setDate(m.getDate() - 29); return [m.toISOString().slice(0, 10), today]; }
+  const d = new Date(), today = ymd(d), y = d.getFullYear(), m = d.getMonth();
+  if (range === 'week') { const w = new Date(d); w.setDate(w.getDate() - 6); return [ymd(w), today]; }
+  if (range === 'month') return [ymd(new Date(y, m, 1)), today];
+  if (range === 'lastmonth') return [ymd(new Date(y, m - 1, 1)), ymd(new Date(y, m, 0))];
+  if (range === 'year') return [ymd(new Date(y, 0, 1)), today];
+  if (range === 'lastyear') return [ymd(new Date(y - 1, 0, 1)), ymd(new Date(y - 1, 11, 31))];
+  if (range === 'custom') {
+    const q = route.q, ok = (x) => /^\d{4}-\d{2}-\d{2}$/.test(x || '');
+    let a = q.get('from'), b = q.get('to');
+    if (!ok(a) && !ok(b)) return [today, today];
+    if (!ok(a)) a = b; if (!ok(b)) b = a;
+    return a <= b ? [a, b] : [b, a];
+  }
   return [today, today];
+}
+// Range picker used by Reports and My sales: a dropdown of ready-made periods, plus "Pick dates" with a from/to
+// pair. onPick(range, from, to) navigates; from/to only for custom.
+function rangePicker(range, onPick) {
+  const [from, to] = rangeDates(range);
+  const sel = selectEl(RANGE_OPTIONS.map(([k, key]) => [k, t(key)]), range, { label: t('period'), onchange: (e) => { if (e.target.value === 'custom') draw(true); else onPick(e.target.value); } });
+  const box = h('div');
+  const draw = (custom) => {
+    clear(box);
+    if (custom || range === 'custom') {
+      const a = h('input', { class: 'input', type: 'date', value: from, 'aria-label': t('dateFrom'), max: ymd(new Date()) });
+      const b = h('input', { class: 'input', type: 'date', value: to, 'aria-label': t('dateTo'), max: ymd(new Date()) });
+      box.append(h('div', { class: 'two', style: { marginTop: '8px' } }, field(t('dateFrom'), a), field(t('dateTo'), b)),
+        h('button', { class: 'btn fill', type: 'button', style: { marginTop: '8px' }, onclick: () => { if (!a.value || !b.value) return toast(t('pickDates')); onPick('custom', a.value, b.value); } }, t('applyRange')));
+    } else if (range !== 'today') box.append(h('div', { class: 'small muted', style: { marginTop: '6px' } }, from + '  →  ' + to));
+  };
+  draw(false);
+  return h('div', null, sel, box);
 }
 // Owner's "export data" was a raw JSON dump of every table (UUIDs, snake_case columns, nested item arrays) --
 // a technical backup, not something a shop owner could open and read. This builds the same report the Staff
