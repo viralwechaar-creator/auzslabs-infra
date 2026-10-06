@@ -395,6 +395,22 @@ export default async function run({ browser, stack }) {
     assert(Math.abs(boxes.reduce((n, b) => n + b.w, 0) - 390) < 3, 'tabs do not fill the bar: ' + boxes.map((b) => Math.round(b.w)));
     await c.close(); await setFeat(ALL_ON);
   }, 'major');
+  await s.check('Menu buttons (db/105): owner picks and orders the buttons; bad lists and non-owners are refused; the phone bar shows exactly those', async () => {
+    await fails(manager, 'mob_save_settings', { p: { features: { nav: ['home'] } } });
+    await fails(owner, 'mob_save_settings', { p: { features: { nav: ['home', 'bogus'] } } }, /MB005|nav/i);
+    await fails(owner, 'mob_save_settings', { p: { features: { nav: ['home', 'home'] } } }, /MB005|nav/i);
+    await fails(owner, 'mob_save_settings', { p: { features: { nav: 'home' } } }, /MB005|nav/i);
+    await setFeat({ nav: ['home', 'reports', 'settings'] });
+    const c1 = await ok(owner, 'mob_context'); assert(JSON.stringify(c1.settings.features.nav) === '["home","reports","settings"]', 'nav not saved');
+    const { c, page } = await open(USERS.mobOwner, { w: 390, h: 844, mobile: true });
+    const labels = await page.locator('.tabbar button').allInnerTexts();
+    assert(labels.length === 3 && /home/i.test(labels[0]) && /report/i.test(labels[1]) && /setting/i.test(labels[2]), 'tab bar is ' + JSON.stringify(labels));
+    await c.close();
+    await setFeat({ nav: [] });
+    const { c: c2, page: p2 } = await open(USERS.mobOwner, { w: 390, h: 844, mobile: true });
+    assert((await p2.locator('.tabbar button').count()) === 5, 'automatic menu should show 4 buttons + More');
+    await c2.close();
+  }, 'major');
   await s.check('Google sign-in: apps link to the central page, the hand-off logs the user in, a bad return address is refused', async () => {
     const c = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await c.newPage();
     await page.goto(stack.url('testmob', '/mob.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
