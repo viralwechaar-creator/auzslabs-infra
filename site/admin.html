@@ -759,6 +759,14 @@ async function loadProfiles() {
   </table></div>`;
 }
 
+async function permanentDelete(kind, id, label) {
+  if (!confirm(`Permanently delete "${label}"?\n\nThis cannot be undone.`)) return false;
+  const { error } = await sb.rpc('admin_delete_lead', { p_kind: kind, p_id: id });
+  if (error) { alert(error.message); return false; }
+  loadAuditLog && loadAuditLog();
+  return true;
+}
+
 async function loadLeads() {
   loadProfiles();
   const listEl = document.getElementById('leadsList');
@@ -776,6 +784,7 @@ async function loadLeads() {
         <button class="btn btn-ghost" data-use>Use for onboarding</button>
         <button class="btn btn-ghost" data-demo>Copy demo link</button>
         ${STATUS_NEXT[l.status] ? `<button class="btn btn-ghost" data-advance="${STATUS_NEXT[l.status]}">Mark ${STATUS_NEXT[l.status]}</button>` : ''}
+        <button class="btn btn-ghost" data-del style="color:var(--accent);border-color:var(--accent)">Delete</button>
       </td>
     </tr>`).join('');
   listEl.innerHTML = `<div class="admin-table-wrap"><table class="admin-table">
@@ -800,6 +809,7 @@ async function loadLeads() {
       await sb.from('leads').update({ status: advBtn.dataset.advance }).eq('id', id);
       loadLeads();
     };
+    tr.querySelector('[data-del]').onclick = async () => { if (await permanentDelete('lead', id, lead.business || lead.name)) loadLeads(); };
   });
 }
 
@@ -837,6 +847,7 @@ async function loadSignupRequests() {
         <button class="btn btn-primary" data-approve>Approve</button>
         <button class="btn btn-ghost" data-demo>Copy demo link</button>
         <button class="btn btn-ghost" data-decline>Decline</button>
+        <button class="btn btn-ghost" data-del style="color:var(--accent);border-color:var(--accent)">Delete</button>
       </td>
     </tr>`;
   }).join('');
@@ -866,6 +877,7 @@ async function loadSignupRequests() {
       if (decErr) { alert(decErr.message); return; }
       loadSignupRequests();
     };
+    tr.querySelector('[data-del]').onclick = async () => { if (await permanentDelete('signup_request', id, req.business_name)) loadSignupRequests(); };
   });
 }
 
@@ -887,6 +899,7 @@ async function loadAddonRequests() {
       <td class="row-actions">
         <button class="btn btn-primary" data-approve>Approve</button>
         <button class="btn btn-ghost" data-decline>Decline</button>
+        <button class="btn btn-ghost" data-del style="color:var(--accent);border-color:var(--accent)">Delete</button>
       </td>
     </tr>`;
   }).join('');
@@ -910,6 +923,7 @@ async function loadAddonRequests() {
       if (decErr) { alert(decErr.message); return; }
       loadAddonRequests();
     };
+    tr.querySelector('[data-del]').onclick = async () => { const nm = tr.querySelector('td b')?.textContent || 'this request'; if (await permanentDelete('addon_request', id, nm)) loadAddonRequests(); };
   });
 }
 
@@ -1389,6 +1403,7 @@ async function openUserModal(id) {
       ${u.disabled_at
         ? '<button class="btn btn-primary" id="userToggleBtn">Reactivate</button>'
         : `<button class="btn btn-ghost" id="userToggleBtn" style="color:var(--accent);border-color:var(--accent)">Suspend</button>`}
+      ${u.is_platform_admin ? '' : '<button class="btn btn-ghost" id="userDeleteBtn" style="color:var(--accent);border-color:var(--accent)">Delete permanently</button>'}
     </div>
     <div id="userModalErr" class="err"></div>
   `;
@@ -1402,6 +1417,16 @@ async function openUserModal(id) {
       if (!res.ok) throw new Error(body.error || 'failed');
       openUserModal(id);
     } catch (err) { document.getElementById('userModalErr').textContent = err.message; }
+  };
+  const delBtn = document.getElementById('userDeleteBtn');
+  if (delBtn) delBtn.onclick = async () => {
+    const typed = prompt(`This permanently deletes the account ${u.email}: login, sessions, profile and requests. It cannot be undone.\n\nType the email address to confirm.`);
+    if (typed === null) return;
+    const { error } = await sb.rpc('admin_delete_user', { p_user_id: id, p_confirm_email: typed.trim() });
+    if (error) { document.getElementById('userModalErr').textContent = error.message; return; }
+    document.getElementById('userOverlay').classList.remove('open');
+    loadUsers(document.getElementById('userSearch').value.trim());
+    loadAuditLog();
   };
   document.getElementById('userToggleBtn').onclick = async () => {
     const disabling = !u.disabled_at;
@@ -1418,7 +1443,7 @@ document.getElementById('userOverlay').onclick = (e) => { if (e.target.id === 'u
 
 const AUDIT_ACTION_LABEL = {
   suspend_user: 'Suspended a user', reactivate_user: 'Reactivated a user', revoke_sessions: 'Signed a user out everywhere',
-  update_client: 'Edited a client', set_tenant_features: 'Changed a client’s services', delete_client: 'Deleted a client',
+  update_client: 'Edited a client', set_tenant_features: 'Changed a client’s services', delete_client: 'Deleted a client', delete_user: 'Deleted an account', delete_lead: 'Deleted a lead', delete_signup_request: 'Deleted a signup request', delete_addon_request: 'Deleted an add-on request', delete_profile: 'Deleted a customer profile',
 };
 async function loadAuditLog() {
   const listEl = document.getElementById('auditLogList');

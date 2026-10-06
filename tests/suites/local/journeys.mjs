@@ -91,5 +91,42 @@ export default async function run({ browser, stack }) {
     await p.click('.a-side-btn[data-section=signupRequests]'); await p.waitForTimeout(1500); // sections load when opened
     assert(/QA Business/.test(await p.locator('#signupRequestsList').innerText()), 'request not listed'); await c6.close();
   }, 'critical');
+  await s.check('Admin permanent delete: leads, requests, accounts and a whole client (every app\'s data); guarded against owners, self and non-admins', async () => {
+    const login = async (email) => (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password: PASSWORD }) })).json());
+    const call = async (fn, args, tok) => fetch(stack.apiBase + '/rpc/' + fn, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok }, body: JSON.stringify(args) });
+    const tk = async (email) => { const d = await login(email); return (d.data || d).access_token; };
+    const adm = await tk(USERS.admin), plain = await tk(USERS.plain);
+    // lead
+    await q("insert into leads(name, contact) values ('Del Lead', 'del@x.test')");
+    const lid = (await q("select id from leads where name='Del Lead'"))[0].id;
+    assert((await call('admin_delete_lead', { p_kind: 'lead', p_id: lid }, plain)).status >= 400, 'non-admin deleted a lead');
+    assert((await call('admin_delete_lead', { p_kind: 'lead', p_id: lid }, adm)).status === 200, 'admin could not delete a lead');
+    assert((await q("select count(*)::int n from leads where id=$1", [lid]))[0].n === 0, 'lead still there');
+    assert((await call('admin_delete_lead', { p_kind: 'bogus', p_id: lid }, adm)).status >= 400, 'unknown kind accepted');
+    // signup request (the one created earlier in this suite)
+    const sr = (await q("select id from signup_requests where business_name='QA Business' limit 1"))[0];
+    if (sr) { assert((await call('admin_delete_lead', { p_kind: 'signup_request', p_id: sr.id }, adm)).status === 200, 'signup request not deleted'); }
+    // account: refused for self, platform admin, owner; works for a plain account (needs the typed email)
+    const adminId = (await q("select id from auth_users where email=$1", [USERS.admin]))[0].id;
+    assert((await call('admin_delete_user', { p_user_id: adminId, p_confirm_email: USERS.admin }, adm)).status >= 400, 'admin deleted themselves');
+    const ownerId = (await q("select id from auth_users where email=$1", [USERS.payOwner || USERS.mobOwner]))[0].id;
+    assert((await call('admin_delete_user', { p_user_id: ownerId, p_confirm_email: USERS.payOwner || USERS.mobOwner }, adm)).status >= 400, 'a business owner was deleted as a bare account');
+    const plainId = (await q("select id from auth_users where email=$1", [USERS.plain]))[0].id;
+    assert((await call('admin_delete_user', { p_user_id: plainId, p_confirm_email: 'wrong@x.test' }, adm)).status >= 400, 'wrong typed email accepted');
+    assert((await call('admin_delete_user', { p_user_id: plainId, p_confirm_email: USERS.plain }, adm)).status === 200, 'plain account not deleted');
+    assert((await q("select count(*)::int n from auth_users where id=$1", [plainId]))[0].n === 0, 'account still there');
+    // a whole client with Payroll + AUZsMob data: tenant, logins and every tenant table are empty afterwards
+    const tid = (await q("select id from tenants where slug='testmob'"))[0].id;
+    const owner = (await q("select id from auth_users where email=$1", [USERS.mobOwner]))[0].id;
+    await q("insert into mob_items(id, tenant_id, name, created_by) values (gen_random_uuid(), $1, 'Delete me', $2)", [tid, owner]);
+    await q("insert into pay_org(tenant_id) values ($1) on conflict do nothing", [tid]);
+    await q("insert into records(tenant_id, id, kind, data) values ($1, 'del1', 'item', '{}'::jsonb)", [tid]);
+    assert((await call('delete_client', { p_tenant_id: tid }, plain)).status >= 400, 'non-admin deleted a client');
+    const r = await call('delete_client', { p_tenant_id: tid }, adm); assert(r.status === 200, 'delete_client failed: ' + (await r.text()).slice(0, 200));
+    assert((await q("select count(*)::int n from tenants where id=$1", [tid]))[0].n === 0, 'tenant row still there');
+    assert((await q("select count(*)::int n from mob_items where tenant_id=$1", [tid]))[0].n === 0 && (await q("select count(*)::int n from pay_org where tenant_id=$1", [tid]))[0].n === 0 && (await q("select count(*)::int n from records where tenant_id=$1", [tid]))[0].n === 0, 'app data left behind');
+    assert((await q("select count(*)::int n from profiles where tenant_id=$1", [tid]))[0].n === 0, 'profiles left behind');
+    assert((await q("select count(*)::int n from admin_audit where action in ('delete_client','delete_user','delete_lead')"))[0].n >= 3, 'deletes were not audit-logged');
+  }, 'critical');
   await ctx.close(); s.done();
 }
