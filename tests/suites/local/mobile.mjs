@@ -334,6 +334,32 @@ export default async function run({ browser, stack }) {
     assert(row, 'purchase item was not saved through the real UI');
     await c.close();
   }, 'critical');
+  await s.check('Sell asks for the price every time: staff can bill the same product at different prices (catalogue price untouched), optional vendor shows', async () => {
+    const itm = uid(), vnd = uid();
+    await ok(owner, 'mob_save_item', { p_id: itm, p: { name: 'Priceask Charger', category: 'accessory', serialized: false, sellingPrice: 500, costPrice: 300, lowStockAt: 0 } });
+    await ok(owner, 'mob_save_vendor', { p_id: vnd, p: { name: 'Askvendor Traders' } });
+    await ok(owner, 'mob_push_purchase', { p_id: uid(), p: { itemId: itm, vendorId: vnd, qty: 10, rate: 300, imei: null, sellingPrice: 500, unitId: null } });
+    const { c, page } = await open(USERS.mobOwner, { w: 390, h: 844, mobile: true });
+    await page.evaluate(() => { location.hash = '#/sell'; }); await page.waitForTimeout(800);
+    for (const price of ['450', '620']) {
+      await page.fill('input[aria-label="Search by name, IMEI or serial"]', 'Priceask'); await page.waitForTimeout(500);
+      await page.locator('.li', { hasText: /Priceask Charger/ }).first().click(); await page.waitForTimeout(300);
+      const pr = page.locator('.input[aria-label="Selling price (this bill)"]');
+      assert(await pr.count() === 1 && (await pr.inputValue()) !== undefined, 'price question not shown');
+      assert(/Vendor \(optional\)/.test(await page.locator('body').innerText()), 'optional vendor not offered');
+      await pr.fill(price);
+      await page.locator('button', { hasText: /^Add to cart$/ }).click(); await page.waitForTimeout(400);
+    }
+    const body = await page.locator('body').innerText();
+    assert(/450/.test(body) && /620/.test(body), 'both prices should be separate cart lines: ' + body.slice(0, 300));
+    await page.locator('button', { hasText: /^Checkout$/ }).first().click().catch(() => {}); await page.waitForTimeout(1500);
+    await c.close();
+    const sale = (await q("select items from mob_sales where tenant_id=$1 and items::text like '%Priceask Charger%' order by created_at desc limit 1", [tid]))[0];
+    assert(sale, 'sale not saved');
+    const prices = sale.items.map((l) => Number(l.price)).sort();
+    assert(prices.join() === '450,620', 'billed prices: ' + prices);
+    assert((await q("select selling_price from mob_items where id=$1", [itm]))[0].selling_price == 500, 'catalogue price changed');
+  }, 'major');
   await s.check('Simple mode screens: no Repairs/Stock/Dues tabs, Sell offers Repair / service and adds it to the cart, Settings shows the Features card', async () => {
     await setFeat({ ...ALL_ON, stock: false, serials: false, customers: false, vendors: false, dayclose: false, repairs: 'simple' });
     const { c, page } = await open(USERS.mobOwner, { w: 390, h: 844, mobile: true });

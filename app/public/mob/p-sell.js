@@ -47,17 +47,45 @@ async function renderSell(v) {
 
   const searchBox = searchField(t('findItem'), debounce((q) => paintResults(q), 120));
 
+  // Every sale line asks for its price first (pre-filled with the catalogue price). It only changes THIS bill:
+  // the catalogue price is untouched, so two staff can bill the same product at different prices. The vendor is
+  // an optional note on the line (where this piece came from).
+  function askPrice({ title, price, vendorId, onDone }) {
+    const pr = input({ value: price || '', label: t('sellPriceNow'), mode: 'decimal', autofocus: true });
+    const vend = feat('vendors') && vendors.length ? selectEl([['', t('vendorOptional')], ...vendors.map((x) => [x.id, x.name])], vendorId || '') : null;
+    sheet({
+      title,
+      body: h('div', { class: 'grid' }, field(t('sellPriceNow'), pr), h('div', { class: 'small muted' }, t('sellPriceHint')), vend ? field(t('vendorOptional'), vend) : null),
+      actions: [{ label: t('addToCart'), primary: true, onclick: async (close) => {
+        const val = N(pr.value);
+        if (pr.value.trim() === '' || !(val >= 0)) { fail(new Error(t('errPriceRequired'))); return false; }
+        close(); onDone(val, vend ? vend.value || null : null);
+      } }],
+    });
+  }
   function addUnit(u) {
     if (cart.some((l) => l.unitId === u.id)) { toast(t('errAlreadySold')); return; }
-    cart.push({ unitId: u.id, itemId: u.item_id, name: itemName(items, u.item_id) + ' — ' + (u.imei || u.imei2), qty: 1, price: N(u.selling_price || itemOf(items, u.item_id).selling_price) });
-    paintCart();
+    const name = itemName(items, u.item_id) + ' — ' + (u.imei || u.imei2);
+    askPrice({ title: name, price: N(u.selling_price || itemOf(items, u.item_id).selling_price) || '', onDone: (price, vendorId) => {
+      if (cart.some((l) => l.unitId === u.id)) return;
+      cart.push({ unitId: u.id, itemId: u.item_id, name, qty: 1, price, vendorId });
+      paintCart();
+    } });
   }
-  function addProduct(i) {
-    const row = cart.find((l) => l.itemId === i.id && !l.unitId);
-    const wantQty = (row ? row.qty : 0) + 1;
-    if (tracked(i) && wantQty > computeStock(i.id)) { toast(t('errNotEnoughStock'), { err: true }); return; }
-    if (row) row.qty += 1; else cart.push({ itemId: i.id, name: i.name, qty: 1, price: N(i.selling_price) });
-    paintCart();
+  function addProduct(i, fixed) {
+    const put = (price, vendorId) => {
+      const inCart = cart.filter((l) => l.itemId === i.id && !l.unitId).reduce((a, l) => a + l.qty, 0);
+      if (tracked(i) && inCart + 1 > computeStock(i.id)) { toast(t('errNotEnoughStock'), { err: true }); return; }
+      const row = cart.find((l) => l.itemId === i.id && !l.unitId && l.price === price && (l.vendorId || null) === (vendorId || null));
+      if (row) row.qty += 1; else cart.push({ itemId: i.id, name: i.name, qty: 1, price, vendorId });
+      paintCart();
+    };
+    if (fixed) return put(fixed.price, fixed.vendorId || null);
+    const last = cart.filter((l) => l.itemId === i.id && !l.unitId).pop();
+    askPrice({ title: i.name, price: last ? last.price : N(i.selling_price) || '', vendorId: last && last.vendorId, onDone: put });
+  }
+  function editLine(l) {
+    askPrice({ title: l.name, price: l.price, vendorId: l.vendorId, onDone: (price, vendorId) => { l.price = price; l.vendorId = vendorId; paintCart(); } });
   }
 
   // Creates a never-catalogued item plus an opening purchase/stock entry (qty = what the staffer
@@ -70,11 +98,12 @@ async function renderSell(v) {
     const sellPrice = input({ value: '', label: t('sellingPrice'), mode: 'decimal' });
     const cost = input({ value: '', label: t('purchaseRate'), mode: 'decimal' });
     const onHand = input({ value: 1, label: t('qty'), mode: 'decimal' });
+    const qvend = feat('vendors') && vendors.length ? selectEl([['', t('vendorOptional')], ...vendors.map((x) => [x.id, x.name])], '') : null;
     sheet({
       title: (S_LANG === 'hi' ? 'नया: ' : 'New: ') + '"' + q + '"',
       body: h('div', { class: 'grid' }, field(t('itemName'), name),
         h('div', { class: 'two' }, field(t('sellingPrice'), sellPrice), field(t('purchaseRate'), cost)),
-        field(t('qty'), onHand)),
+        field(t('qty'), onHand), qvend ? field(t('vendorOptional'), qvend) : null),
       actions: [{ label: t('save'), primary: true, onclick: async (close) => {
         if (!name.value.trim()) { fail(new Error(t('errNameRequired'))); return false; }
         const itemId = uid();
@@ -88,13 +117,14 @@ async function renderSell(v) {
 
         const pid = uid();
         const now = new Date().toISOString();
-        const purchaseArgs = { itemId, vendorId: null, qty: haveQty, rate: itemData.costPrice, imei: null, sellingPrice: itemData.sellingPrice, unitId: null };
+        const vendorId = qvend ? qvend.value || null : null;
+        const purchaseArgs = { itemId, vendorId, qty: haveQty, rate: itemData.costPrice, imei: null, sellingPrice: itemData.sellingPrice, unitId: null };
         const movement = { id: uid(), item_id: itemId, unit_id: null, qty: haveQty, type: 'purchase', ref_id: pid, staff_id: S.user.id, created_at: now };
         if (feat('stock')) { await idbPut('stockMovements', movement); movements.push(movement); }
-        await localPush('purchases', { id: pid, item_id: itemId, vendor_id: null, qty: haveQty, rate: itemData.costPrice, total: haveQty * itemData.costPrice, staff_id: S.user.id, created_at: now }, 'mob_push_purchase', { p_id: pid, p: purchaseArgs });
+        await localPush('purchases', { id: pid, item_id: itemId, vendor_id: vendorId, qty: haveQty, rate: itemData.costPrice, total: haveQty * itemData.costPrice, staff_id: S.user.id, created_at: now }, 'mob_push_purchase', { p_id: pid, p: purchaseArgs });
 
         close();
-        addProduct(newItem);
+        addProduct(newItem, { price: itemData.sellingPrice, vendorId });
       } }],
     });
   }
@@ -113,8 +143,8 @@ async function renderSell(v) {
     checkoutSection.classList.toggle('hidden', !cart.length);
     if (!cart.length) { cartBox.append(empty('cash', t('cartEmpty'))); checkoutBtn.disabled = true; paintTotals(); return; }
     checkoutBtn.disabled = false;
-    cartBox.append(h('div', { class: 'list' }, cart.map((l, i) => liRow({ icon: l.unitId ? 'phone' : 'box', title: l.name, sub: l.unitId ? null : t('qty') + ' ' + l.qty, value: money(l.price * l.qty),
-      right: h('button', { class: 'btn plain icon sm', type: 'button', 'aria-label': 'x', onclick: () => { cart.splice(i, 1); paintCart(); } }, icon('x', 16)) }))));
+    cartBox.append(h('div', { class: 'list' }, cart.map((l, i) => liRow({ icon: l.unitId ? 'phone' : 'box', title: l.name, sub: (l.unitId ? '' : t('qty') + ' ' + l.qty + ' × ') + inr(l.price) + (l.vendorId ? ' · ' + ((vendors.find((x) => x.id === l.vendorId) || {}).name || '') : ''), value: money(l.price * l.qty),
+      right: h('span', { class: 'row', style: { gap: '2px' } }, h('button', { class: 'btn plain icon sm', type: 'button', 'aria-label': t('sellPriceNow'), onclick: () => editLine(l) }, icon('edit', 16)), h('button', { class: 'btn plain icon sm', type: 'button', 'aria-label': 'x', onclick: () => { cart.splice(i, 1); paintCart(); } }, icon('x', 16))) }))));
     paintTotals();
   }
   function paintTotals() {
@@ -128,7 +158,7 @@ async function renderSell(v) {
     checkoutBtn.disabled = true;
     const id = uid();
     const subtotal = cart.reduce((a, l) => a + l.price * l.qty, 0) - N(discount.value);
-    const args = { items: cart.map((l) => ({ unitId: l.unitId, itemId: l.itemId, name: l.name, qty: l.qty, price: l.price, ...(l.service ? { partCost: l.partCost, partName: l.partName, vendorId: l.vendorId || null } : {}) })), customerName: feat('customers') ? custName.value.trim() : '', customerPhone: feat('customers') ? custPhone.value.trim() : '', discount: N(discount.value), paid: Math.max(0, subtotal), paymentMode: payMethod.value };
+    const args = { items: cart.map((l) => ({ unitId: l.unitId, itemId: l.itemId, name: l.name, qty: l.qty, price: l.price, ...(l.vendorId && !l.service ? { vendorId: l.vendorId } : {}), ...(l.service ? { partCost: l.partCost, partName: l.partName, vendorId: l.vendorId || null } : {}) })), customerName: feat('customers') ? custName.value.trim() : '', customerPhone: feat('customers') ? custPhone.value.trim() : '', discount: N(discount.value), paid: Math.max(0, subtotal), paymentMode: payMethod.value };
     const localRow = { id, tenant_id: null, bill_no: null, customer_name: args.customerName, customer_phone: args.customerPhone, items: args.items.map((l) => ({ ...l, costPrice: 0 })), subtotal, discount: N(discount.value), total: Math.max(0, subtotal), paid: args.paid, balance: 0, payment_mode: payMethod.value, voided: false, staff_id: S.user.id, created_at: new Date().toISOString() };
     // optimistic local stock move so the next search doesn't offer an already-sold unit before syncing
     for (const l of cart) if (l.unitId) { const u = units.find((x) => x.id === l.unitId); if (u) { u.status = 'sold'; await idbPut('units', u); } }
