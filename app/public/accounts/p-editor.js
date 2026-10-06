@@ -126,6 +126,31 @@ function productInput(line, sales, onPick, onType) {
 page('new', { title: 'New document', navAs: 'sales', icon: 'doc', nav: false, async render(v) { return docEditor(v, v.args[0], null); } });
 page('edit', { title: 'Edit document', navAs: 'sales', icon: 'doc', nav: false, async render(v) { const r = await api('acc_get_document', { p_id: v.args[0] }); return docEditor(v, r.doc.doc_type, r); } });
 
+// ---------- scanned-invoice draft: fill the editor from what auzDocRead found (every value stays editable) ----------
+const normName = (x) => String(x || '').toLowerCase().replace(/\b(m\/s|messrs|pvt|private|ltd|limited|llp|and|the)\b/g, '').replace(/[^a-z0-9]/g, '');
+function applyScan(D, dr, type) {
+  const org = S.org || {}, parties = S.parties || [], sup = dr.supplier || {};
+  const byG = sup.gstin && parties.find((p) => (p.gstin || '').toUpperCase() === sup.gstin), n = normName(sup.name);
+  const byN = !byG && n.length >= 3 && parties.find((p) => p.kind !== 'customer' && (normName(p.name) === n || (n.length >= 6 && normName(p.name).startsWith(n))));
+  const p = byG || byN; if (p) D.party_id = p.id;
+  if (dr.date) D.doc_date = dr.date; if (dr.due_date) D.due_date = dr.due_date; if (dr.invoice_no) D.supplier_ref = dr.invoice_no; if (dr.date) D.supplier_ref_date = dr.date;
+  D.price_includes_tax = !!dr.price_includes_tax;
+  const prods = (S.products || []).filter((x) => x.active), dflt = defaultTaxRate();
+  const lines = (dr.lines || []).map((l) => { const m = prods.find((x) => normName(x.name) === normName(l.description));
+    return { ...blankLine(type), product_id: m ? m.id : '', description: l.description, hsn: l.hsn || (m && m.hsn) || '', qty: String(l.qty), unit: (m && m.unit) || l.unit || '', rate: String(l.rate), tax_rate: String(l.tax_rate != null && !isNaN(l.tax_rate) ? l.tax_rate : (m && m.tax_rate != null ? m.tax_rate : dflt)) }; });
+  if (lines.length) D.lines = lines;
+  if (type === 'expense' && sup.name && !p) D.notes = 'Supplier: ' + sup.name + (sup.gstin ? ' (' + sup.gstin + ')' : '') + (dr.invoice_no ? ', invoice ' + dr.invoice_no : '');
+  dr._matched = !!p;
+}
+function scanBanner(scan, v) {
+  const dr = scan.draft, sup = dr.supplier || {}, notes = dr.notes.slice();
+  const out = [h('div', { style: { fontWeight: 600 } }, 'Draft read from ' + (scan.file.name || 'your file') + (scan.method === 'ocr' ? ' (photo reading: expect more mistakes)' : '')), h('div', { class: 'small' }, 'Check every name, quantity, rate and tax before you save. Nothing has been posted.')];
+  if (sup.name) out.push(h('div', { class: 'small' }, 'Supplier on the invoice: ' + sup.name + (sup.gstin ? ' · ' + sup.gstin : '') + (dr._matched ? ' (matched)' : ' (not in your suppliers yet)')));
+  if (!dr._matched && sup.name && can('acc_purchase')) out.push(h('div', { style: { marginTop: '6px' } }, h('button', { class: 'btn sm', type: 'button', onclick: () => partySheet('supplier', { name: sup.name, gstin: sup.gstin, phone: sup.phone, state_code: sup.gstin ? sup.gstin.slice(0, 2) : '', reg_type: sup.gstin ? 'regular' : 'unregistered', kind: 'supplier' }, () => { bust('parties'); v.refresh(); }) }, 'Add this supplier')));
+  if (notes.length) out.push(h('ul', { class: 'small', style: { margin: '6px 0 0 18px' } }, notes.map((n) => h('li', null, n))));
+  return h('div', { class: 'banner info' }, icon('info', 18), h('div', null, out));
+}
+
 async function docEditor(v, type, existing) {
   if (!DOC_LABEL[type]) throw new Error('Unknown document type');
   const sales = SALES_TYPES.includes(type), perm = docPerm(type), posting = POSTING.includes(type), isExpense = type === 'expense';
@@ -147,6 +172,8 @@ async function docEditor(v, type, existing) {
   if (existing) await fromDoc(existing, false);
   else if (q.get('copy')) await fromDoc(await api('acc_get_document', { p_id: q.get('copy') }), true);
   else if (q.get('ref')) { const r = await api('acc_get_document', { p_id: q.get('ref') }); await fromDoc(r, true); D.ref_doc_id = r.doc.id; D.notes = (type === 'credit_note' ? 'Return against ' : 'Debit against ') + r.doc.number; D.lines.forEach((l) => { l.qty = l.qty; }); }
+  let scan = null;
+  if (q.get('scan') && window.__scan && !existing && window.__scan.type === type) { scan = window.__scan; applyScan(D, scan.draft, type); }
   if (q.get('party') && !D.party_id) D.party_id = q.get('party');
   if (!D.id && !D.lines[0].rate && !q.get('copy') && !q.get('ref')) D.lines = [blankLine(type)];
   if (!existing && !D.terms && sales && S.org.invoice_terms && type === 'invoice') D.terms = S.org.invoice_terms;
@@ -157,6 +184,7 @@ async function docEditor(v, type, existing) {
   const root = v.root, totalsEl = h('div', { class: 'card totals' }), effectEl = h('div', { class: 'effect' }), warnEl = h('div', { class: 'grid', style: { gap: '8px' } }), linesEl = h('div', { class: 'lines' });
   let C = calcDoc(D);
   const amountCells = [];
+  if (scan) root.append(scanBanner(scan, v));
 
   // ----- details form -----
   const partyBtn = h('button', { class: 'li', type: 'button', style: { borderRadius: '16px', background: 'var(--card)', boxShadow: '0 0 0 .5px var(--sep)' }, onclick: async () => { const p = await pickParty(sales ? 'customer' : 'supplier', D.party_id); if (p) { D.party_id = p.id; D.place_of_supply = ''; if (!D.due_date && p.credit_days) D.due_date = addDays(D.doc_date, p.credit_days); drawParty(); recalc(); } } });
@@ -307,6 +335,7 @@ async function docEditor(v, type, existing) {
     try {
       const r = await api('acc_save_document', { p: build(post) });
       dirty = false; bust('products', 'parties');
+      if (scan && scan.file) { try { await uploadAttachment('document', r.id, scan.file); } catch (e) { toast('Saved, but the invoice file could not be attached', { err: true }); } window.__scan = null; }
       if (r.pending_approval) { toast('Saved. It needs a manager’s approval before it can be posted.'); go('doc/' + r.id); return; }
       toast(r.posted ? 'Posted ' + r.number : 'Draft saved'); go('doc/' + r.id);
     } catch (e) { fail(e); btns.forEach((b) => (b.disabled = false)); }
