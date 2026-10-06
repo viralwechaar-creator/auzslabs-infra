@@ -98,7 +98,7 @@ body.admin-shell .field:first-child{margin-top:0}
   .admin-table td{display:block;padding:3px 0;border-bottom:none;min-width:0;font-size:13px;line-height:1.35}
   .admin-table td[hidden]{display:none}
   .admin-table td[data-label]::before{content:attr(data-label);display:block;font:600 9.5px var(--font-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--ink-faint);margin-bottom:1px}
-  .admin-table td[data-label=Message],.admin-table td[data-label=Note],.admin-table td[data-label=Address],
+  .admin-table td[data-label=Needs],.admin-table td[data-label=Message],.admin-table td[data-label=Note],.admin-table td[data-label=Address],
   .admin-table td[data-label=Problem],.admin-table td[data-label=Description],.admin-table td[data-label=Business]{grid-column:1/-1}
   .admin-table td[data-label=Message],.admin-table td[data-label=Note]{order:5}
   .admin-table td.row-actions{grid-column:1/-1;order:9;margin-top:4px;padding-top:8px;border-top:1px solid var(--line-soft);gap:6px}
@@ -358,6 +358,9 @@ body.admin-shell .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px
         <div class="label">Leads</div>
         <h2 class="h-2">Get-in-touch submissions</h2>
         <div id="leadsList">Loading&hellip;</div>
+        <div class="label" style="margin-top:36px">Customer profiles</div>
+        <h2 class="h-2">People who filled in their profile</h2>
+        <div id="profilesList">Loading&hellip;</div>
       </section>
 
       <section class="a-page" id="signupRequestsSection" data-title="Signup requests" data-parent="more">
@@ -726,7 +729,31 @@ document.getElementById('signOutBtn').onclick = async () => {
 
 const STATUS_NEXT = { new: 'contacted', contacted: 'converted' };
 
+const PROFILE_PRODUCT_LABEL = { pos: 'AuzsPOS', self_order: 'AuzsPOS QR', payroll: 'AuzsPay', accounting: 'AuzsLedger', mobile: 'AUZsMob', salon: 'AUZslab Salon', website_builder: 'Website Builder', whatsapp: 'WhatsApp automation', aggregators: 'Zomato/Swiggy', custom: 'Custom software' };
+const START_LABEL = { now: 'As soon as possible', month: 'Within a month', quarter: '2 to 3 months', exploring: 'Just exploring' };
+async function loadProfiles() {
+  const el = document.getElementById('profilesList');
+  const { data, error } = await sb.rpc('admin_list_profiles', {});
+  if (error) { el.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  if (!data || !data.length) { el.innerHTML = emptyDoodle('No profiles yet.'); return; }
+  const rows = data.map((p) => `
+    <tr>
+      <td data-label="Name"><b>${esc(p.name)}</b>${p.business_name ? '<br>' + esc(p.business_name) : ''}${p.is_client ? '<br><span class="status-pill">client</span>' : ''}</td>
+      <td data-label="Contact">${esc(p.phone || '')}<br>${esc(p.contact_email || p.login_email || '')}</td>
+      <td data-label="Type">${esc(p.business_type || '&mdash;')}${p.niche ? '<br>' + esc(p.niche) : ''}</td>
+      <td data-label="City">${esc(p.city || '&mdash;')}</td>
+      <td data-label="Size">${p.outlets == null ? '&mdash;' : esc(p.outlets) + ' outlet(s)'}${p.staff_count == null ? '' : '<br>' + esc(p.staff_count) + ' staff'}</td>
+      <td data-label="Needs">${(p.products || []).map((k) => `<span class="feature-tag">${esc(PROFILE_PRODUCT_LABEL[k] || k)}</span>`).join('') || '&mdash;'}${p.current_software ? '<br>Uses: ' + esc(p.current_software) : ''}${p.notes ? '<br>' + esc(p.notes) : ''}</td>
+      <td data-label="Start">${esc(START_LABEL[p.start_when] || '&mdash;')}</td>
+    </tr>`).join('');
+  el.innerHTML = `<div class="admin-table-wrap"><table class="admin-table">
+    <tr><th>Name</th><th>Contact</th><th>Type</th><th>City</th><th>Size</th><th>Needs</th><th>Start</th></tr>
+    ${rows}
+  </table></div>`;
+}
+
 async function loadLeads() {
+  loadProfiles();
   const listEl = document.getElementById('leadsList');
   const { data, error } = await sb.from('leads').select('*').order('created_at');
   if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
