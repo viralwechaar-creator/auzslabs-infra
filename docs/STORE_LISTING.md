@@ -19,8 +19,8 @@ Suggested plan: publish **one combined app first ("AUZslab", `hub`)**, which ask
 - Full description:
   AUZslab is business software for Indian shops, cafes, salons and mobile-phone stores.
   Bill customers, track stock, manage staff attendance and salary, keep your accounts and take bookings, from your phone.
-  What you get (depending on your plan): AuzsPOS for billing, kitchen and customers; AuzsPay for attendance and payroll;
-  AuzsLedger for accounting and GST books; AUZsMob for mobile shops (stock, sales, repairs); AUZslab Salon for bookings, billing and your own website.
+  What you get (depending on your plan): AUZsPOS for billing, kitchen and customers; AUZsPay for attendance and payroll;
+  AUZsLedger for accounting and GST books; AUZsMob for mobile shops (stock, sales, repairs); AUZslab Salon for bookings, billing and your own website.
   Works with poor internet: billing and mobile-shop entries are saved on the phone and sent when you are back online.
   Your data is private to your business. Staff sign in with their own username and PIN.
   You need an AUZslab account. Start with the free demo at auzslab.in.
@@ -30,10 +30,10 @@ Suggested plan: publish **one combined app first ("AUZslab", `hub`)**, which ask
 - Account deletion URL (Play requires it): https://auzslab.in/delete-account.html
 
 ## Single-app names (later)
-- AuzsPOS: "Billing, kitchen, stock and customers"
+- AUZsPOS: "Billing, kitchen, stock and customers"
 - AUZsMob: "Stock, sales and repairs for mobile shops" (English and Hindi)
-- AuzsPay: "Attendance and payroll made simple"
-- AuzsLedger: "Accounting and GST books"
+- AUZsPay: "Attendance and payroll made simple"
+- AUZsLedger: "Accounting and GST books"
 
 ## Data safety form (answers)
 - Collects: name, email, phone number (account and customer records the shop enters); financial info the shop enters (bills, expenses, payroll); photos only if the shop uploads logos or item pictures.

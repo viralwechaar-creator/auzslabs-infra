@@ -32,7 +32,7 @@ Tick these in order. "You" = the owner, "Partner" = registration/tax/bank, "Dev"
 ## E. The fake-customer test (you, on your phone, 30 minutes)
 Use a brand-new Google account that has never used AUZslab.
 1. [ ] Open auzslab.in, tap Sign up, Continue with Google. You land on the homepage, signed in.
-2. [ ] Open Products or Pricing, add AuzsPOS, go to the cart. The bill shows subscription + 18% GST + Rs 2,179 setup fee.
+2. [ ] Open Products or Pricing, add AUZsPOS, go to the cart. The bill shows subscription + 18% GST + Rs 2,179 setup fee.
 3. [ ] Pay (use a real small amount or Razorpay Test Mode). Within a minute the business exists.
 4. [ ] Open `<your-shop>.auzslab.in`. Sign in with Google. The POS opens.
 5. [ ] Add a menu item, make a bill, print or share it. Open the bill link in a private tab.

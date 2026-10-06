@@ -205,7 +205,7 @@ function visiblePermKeys() {
   });
 }
 
-const PRODUCT_CHOICES = [['pos', 'AuzsPOS (billing, kitchen, stock, customers)'], ['self_order', 'AuzsPOS QR (table QR ordering)'], ['payroll', 'AuzsPay (attendance and payroll)'], ['accounting', 'AuzsLedger (accounting and GST)'], ['mobile', 'AUZsMob (mobile shop)'], ['salon', 'AUZslab Salon (booking, billing, website)'], ['website_builder', 'Website Builder'], ['whatsapp', 'WhatsApp automation (add-on)'], ['aggregators', 'Zomato / Swiggy orders (add-on)'], ['custom', 'Custom software']];
+const PRODUCT_CHOICES = [['pos', 'AUZsPOS (billing, kitchen, stock, customers)'], ['self_order', 'AUZsPOS QR (table QR ordering)'], ['payroll', 'AUZsPay (attendance and payroll)'], ['accounting', 'AUZsLedger (accounting and GST)'], ['mobile', 'AUZsMob (mobile shop)'], ['salon', 'AUZslab Salon (booking, billing, website)'], ['website_builder', 'Website Builder'], ['whatsapp', 'WhatsApp automation (add-on)'], ['aggregators', 'Zomato / Swiggy orders (add-on)'], ['custom', 'Custom software']];
 const BIZ_TYPES = ['Cafe / restaurant / bar', 'Salon / spa', 'Retail shop', 'Clothing / boutique', 'Mobile phone shop', 'Office / services', 'Other'];
 const START_WHEN = [['', 'Choose'], ['now', 'As soon as possible'], ['month', 'Within a month'], ['quarter', 'In 2 to 3 months'], ['exploring', 'Just exploring']];
 let PROFILE = null, LOGIN_EMAIL = '';
@@ -478,17 +478,17 @@ function renderAccount() {
 // add-on they can request from the products page.
 const SALON_SERVICE_GROUPS = [
   ['AUZslab Salon', ['salon', 'booking', 'crm', 'billing', 'expenses', 'membership', 'helpdesk', 'tasks']],
-  ['POS', ['pos', 'self_order', 'inventory', 'kds', 'reports', 'purchases']],
-  ['Payroll', ['payroll']],
+  ['AUZsPOS', ['pos', 'self_order', 'inventory', 'kds', 'reports', 'purchases']],
+  ['AUZsPay', ['payroll']],
   ['Website Builder', ['website_builder']],
-  ['Accounting', ['accounting']],
+  ['AUZsLedger', ['accounting']],
   ['AUZsMob', ['mobile']],
 ];
 const SERVICE_GROUPS = [
-  ['POS', ['pos', 'self_order', 'inventory', 'crm', 'kds', 'billing', 'reports', 'booking', 'expenses', 'membership', 'helpdesk', 'tasks', 'purchases']],
-  ['Payroll', ['payroll']],
+  ['AUZsPOS', ['pos', 'self_order', 'inventory', 'crm', 'kds', 'billing', 'reports', 'booking', 'expenses', 'membership', 'helpdesk', 'tasks', 'purchases']],
+  ['AUZsPay', ['payroll']],
   ['Website Builder', ['website_builder']],
-  ['Accounting', ['accounting']],
+  ['AUZsLedger', ['accounting']],
   ['AUZsMob', ['mobile']],
 ];
 function renderServices() {

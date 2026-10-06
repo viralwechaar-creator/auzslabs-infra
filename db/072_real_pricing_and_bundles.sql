@@ -1,12 +1,12 @@
 -- =========================================================
--- Real prices, set from the owner's own pricing sheet (AuzsPOS,
--- AuzsPOS QR, AuzsPay, AuzsLedger, plus discounted bundles) -- the
+-- Real prices, set from the owner's own pricing sheet (AUZsPOS,
+-- AUZsPOS QR, AUZsPay, AUZsLedger, plus discounted bundles) -- the
 -- first real numbers db/070's product_prices table has ever held.
 --
 -- Individual prices alone aren't enough to charge correctly: the
 -- pricing sheet's bundles are NOT simple sums of the individual prices
--- (e.g. Starter = AuzsPOS + AuzsPay priced together at Rs 2,398, which
--- uses AuzsPay's Rs 1,399 "already on AuzsPOS" add-on rate, not its
+-- (e.g. Starter = AUZsPOS + AUZsPay priced together at Rs 2,398, which
+-- uses AUZsPay's Rs 1,399 "already on AUZsPOS" add-on rate, not its
 -- Rs 999 standalone rate -- and Complete/Complete QR are further
 -- discounted below even that). Without this migration, a customer
 -- whose cart happened to contain exactly a bundle's products would be
@@ -18,11 +18,11 @@
 -- =========================================================
 
 update product_prices set monthly_price = 999 where key = 'pos';
-update product_prices set monthly_price = 300 where key = 'self_order'; -- pos(999) + self_order(300) = AuzsPOS QR's 1,299
+update product_prices set monthly_price = 300 where key = 'self_order'; -- pos(999) + self_order(300) = AUZsPOS QR's 1,299
 update product_prices set monthly_price = 999 where key = 'payroll';
 update product_prices set monthly_price = 1599 where key = 'accounting';
 -- crm/billing/inventory/website_builder/salon stay at 0 (unpriced) --
--- they aren't part of this pricing sheet (folded into AuzsPOS, or a
+-- they aren't part of this pricing sheet (folded into AUZsPOS, or a
 -- separate product line entirely) and stay on the manual request flow.
 
 create table bundles (
@@ -33,10 +33,10 @@ create table bundles (
   updated_at         timestamptz not null default now()
 );
 insert into bundles (key, label, feature_keys, monthly_price) values
-  ('starter',     'Starter business (AuzsPOS + AuzsPay)',                       array['pos','payroll'],                        2398),
-  ('growing',     'Growing business (AuzsPOS QR + AuzsPay)',                    array['pos','self_order','payroll'],           2698),
-  ('complete',    'Complete business (AuzsPOS + AuzsPay + AuzsLedger)',         array['pos','payroll','accounting'],           3499),
-  ('complete_qr', 'Complete QR business (AuzsPOS QR + AuzsPay + AuzsLedger)',   array['pos','self_order','payroll','accounting'], 3799);
+  ('starter',     'Starter business (AUZsPOS + AUZsPay)',                       array['pos','payroll'],                        2398),
+  ('growing',     'Growing business (AUZsPOS QR + AUZsPay)',                    array['pos','self_order','payroll'],           2698),
+  ('complete',    'Complete business (AUZsPOS + AUZsPay + AUZsLedger)',         array['pos','payroll','accounting'],           3499),
+  ('complete_qr', 'Complete QR business (AUZsPOS QR + AUZsPay + AUZsLedger)',   array['pos','self_order','payroll','accounting'], 3799);
 
 -- Anon-callable, same reasoning as public_product_prices() -- the cart
 -- page needs to price a combination correctly before anyone signs in.
@@ -65,8 +65,8 @@ begin
 end;
 $$;
 
--- AuzsPay's price depends on who's buying it: Rs 999/month standalone,
--- but Rs 1,399/month as an add-on for a tenant that already has AuzsPOS
+-- AUZsPay's price depends on who's buying it: Rs 999/month standalone,
+-- but Rs 1,399/month as an add-on for a tenant that already has AUZsPOS
 -- (the pricing sheet's "AUZSPAY ADD-ON" tier) -- not expressible as a
 -- flat product_prices row or a bundle (those are for buying several
 -- products together in ONE purchase; this is "the price of buying ONE

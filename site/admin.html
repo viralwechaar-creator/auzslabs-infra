@@ -729,7 +729,7 @@ document.getElementById('signOutBtn').onclick = async () => {
 
 const STATUS_NEXT = { new: 'contacted', contacted: 'converted' };
 
-const PROFILE_PRODUCT_LABEL = { pos: 'AuzsPOS', self_order: 'AuzsPOS QR', payroll: 'AuzsPay', accounting: 'AuzsLedger', mobile: 'AUZsMob', salon: 'AUZslab Salon', website_builder: 'Website Builder', whatsapp: 'WhatsApp automation', aggregators: 'Zomato/Swiggy', custom: 'Custom software' };
+const PROFILE_PRODUCT_LABEL = { pos: 'AUZsPOS', self_order: 'AUZsPOS QR', payroll: 'AUZsPay', accounting: 'AUZsLedger', mobile: 'AUZsMob', salon: 'AUZslab Salon', website_builder: 'Website Builder', whatsapp: 'WhatsApp automation', aggregators: 'Zomato/Swiggy', custom: 'Custom software' };
 const START_LABEL = { now: 'As soon as possible', month: 'Within a month', quarter: '2 to 3 months', exploring: 'Just exploring' };
 async function loadProfiles() {
   const el = document.getElementById('profilesList');
@@ -797,11 +797,11 @@ async function loadLeads() {
 }
 
 const NICHE_LABEL = { cafe: 'Café / restaurant / bar / bakery / hotel', salon: 'Salon / spa', retail: 'Retail (shoes, clothing, books)', general: 'General' };
-// Colour groups for module tags, all from the brand palette: wine = AuzsPOS family, sand = salon/website,
+// Colour groups for module tags, all from the brand palette: wine = AUZsPOS family, sand = salon/website,
 // sage = money, slate = people/ops, amber = mobile shop.
 const TONE = { pos: 'wine', crm: 'wine', billing: 'wine', inventory: 'wine', kds: 'wine', purchases: 'wine', membership: 'wine', self_order: 'wine', salon: 'sand', booking: 'sand', website_builder: 'sand', payroll: 'slate', tasks: 'slate', helpdesk: 'slate', accounting: 'sage', mobile: 'amber' };
 const featTone = (k) => 'tone-' + (TONE[k] || 'slate');
-const FEATURE_LABEL = { salon: 'AUZslab Salon', pos: 'AuzsPOS', crm: 'CRM', booking: 'Booking', billing: 'Billing', self_order: 'AuzsPOS QR', kds: 'Kitchen display', inventory: 'Inventory', website_builder: 'Website Builder', payroll: 'AuzsPay', membership: 'Memberships', helpdesk: 'Helpdesk', tasks: 'Tasks', purchases: 'Purchases', accounting: 'AuzsLedger', mobile: 'AUZsMob' };
+const FEATURE_LABEL = { salon: 'AUZslab Salon', pos: 'AUZsPOS', crm: 'CRM', booking: 'Booking', billing: 'Billing', self_order: 'AUZsPOS QR', kds: 'Kitchen display', inventory: 'Inventory', website_builder: 'Website Builder', payroll: 'AUZsPay', membership: 'Memberships', helpdesk: 'Helpdesk', tasks: 'Tasks', purchases: 'Purchases', accounting: 'AUZsLedger', mobile: 'AUZsMob' };
 
 async function loadSignupRequests() {
   const listEl = document.getElementById('signupRequestsList');
@@ -969,7 +969,7 @@ async function loadPricing() {
       <td data-label="Product"><b>${esc(p.label)}</b></td>
       <td data-label="Monthly price">
         ${['crm', 'billing', 'inventory'].includes(p.key)
-          ? '<span style="color:var(--ink-faint)">Included in AuzsPOS and the other apps &mdash; not sold separately (stays &#8377;0)</span>'
+          ? '<span style="color:var(--ink-faint)">Included in AUZsPOS and the other apps &mdash; not sold separately (stays &#8377;0)</span>'
           : `<span style="display:inline-flex;align-items:center;gap:6px">
           &#8377; <input class="input" data-price type="number" min="0" step="1" value="${Number(p.monthly_price)}" style="width:100px">
           <span style="color:var(--ink-faint)">/mo</span>
@@ -1208,10 +1208,10 @@ function loadSetupQueue() {
 // What a client can be given, as products (not internal switches). Each product turns on every module it contains,
 // so CRM, billing, inventory, kitchen display etc. are never ticked separately. keys[0] is the product's own key.
 const SELLABLE = [
-  { id: 'pos', label: 'AuzsPOS', keys: ['pos', 'crm', 'billing', 'inventory', 'kds', 'purchases', 'membership', 'tasks', 'helpdesk'], note: 'Includes billing, inventory, customers (CRM), kitchen display, purchases, memberships, tasks, helpdesk' },
-  { id: 'qr', label: 'AuzsPOS QR', keys: ['self_order'], note: 'Customers scan a table QR and order themselves' },
-  { id: 'pay', label: 'AuzsPay', keys: ['payroll'], note: 'Payroll and attendance' },
-  { id: 'ledger', label: 'AuzsLedger', keys: ['accounting'], note: 'Accounting and GST books' },
+  { id: 'pos', label: 'AUZsPOS', keys: ['pos', 'crm', 'billing', 'inventory', 'kds', 'purchases', 'membership', 'tasks', 'helpdesk'], note: 'Includes billing, inventory, customers (CRM), kitchen display, purchases, memberships, tasks, helpdesk' },
+  { id: 'qr', label: 'AUZsPOS QR', keys: ['self_order'], note: 'Customers scan a table QR and order themselves' },
+  { id: 'pay', label: 'AUZsPay', keys: ['payroll'], note: 'Payroll and attendance' },
+  { id: 'ledger', label: 'AUZsLedger', keys: ['accounting'], note: 'Accounting and GST books' },
   { id: 'mob', label: 'AUZsMob', keys: ['mobile'], note: 'Mobile shop: stock, sales, repairs' },
   { id: 'salon', label: 'AUZslab Salon', keys: ['salon', 'booking', 'crm', 'billing'], note: 'Website, booking, customers (CRM) and billing are always included' },
   { id: 'web', label: 'Website Builder', keys: ['website_builder'], note: 'Drag-and-drop website editor' },
@@ -1254,7 +1254,7 @@ document.getElementById('editForm').onsubmit = async (e) => {
     p_status: status,
   });
   if (error) { errEl.textContent = error.message; return; }
-  // A module stays on while any ticked product contains it (CRM is in both AuzsPOS and Salon).
+  // A module stays on while any ticked product contains it (CRM is in both AUZsPOS and Salon).
   const on = new Set();
   document.querySelectorAll('#editFeatures [data-prod]').forEach((cb) => { if (cb.checked) SELLABLE.find((p) => p.id === cb.dataset.prod).keys.forEach((k) => on.add(k)); });
   const features = {};

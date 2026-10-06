@@ -14,7 +14,7 @@ const RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || '';
 
 export const razorpayConfigured = () => !!(RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET);
 
-// Every AuzsPOS/AuzsPay/AuzsLedger price on the pricing sheet is quoted "+ GST" (db/072's own
+// Every AUZsPOS/AUZsPay/AUZsLedger price on the pricing sheet is quoted "+ GST" (db/072's own
 // comment) but nothing actually charged it until now. 18% is the standard GST rate for software
 // services in India, charged on the subscription only -- the one-time ₹2,179 setup fee is a flat
 // amount with no GST added, charged once alongside the FIRST payment on a brand-new signup only
@@ -67,13 +67,13 @@ async function razorpayApi(path, body) {
 }
 
 // Prices a cart (db/072). Three tiers, checked in order:
-//  1. An exact bundle match (db/072's `bundles`, e.g. AuzsPOS+AuzsPay at
+//  1. An exact bundle match (db/072's `bundles`, e.g. AUZsPOS+AUZsPay at
 //     the Starter price) -- bundles are NOT simple sums of the individual
 //     prices, so this has to be checked before summing anything.
 //  2. A single-product addon_request for a tenant that already owns a
 //     product the sheet prices differently for (`addon_price_overrides`,
-//     e.g. AuzsPay is Rs 999 standalone but Rs 1,399 for an existing
-//     AuzsPOS customer) -- only meaningful when `tenantFeatures` is passed
+//     e.g. AUZsPay is Rs 999 standalone but Rs 1,399 for an existing
+//     AUZsPOS customer) -- only meaningful when `tenantFeatures` is passed
 //     (an addon_request always has a target tenant; a signup_request,
 //     a brand-new tenant, never does).
 //  3. The flat sum of product_prices -- a key with no row, or a price of
@@ -154,7 +154,7 @@ export async function createOrder({ userId, signupRequestId, addonRequestId, per
     // -- it does its own ownership check (ar.user_id = app_uid(), which withAuth
     // below makes resolve correctly) and only then reads past that RLS to get
     // the target tenant's current features, needed for addon_price_overrides
-    // (e.g. AuzsPay costs more as an add-on for an existing AuzsPOS tenant
+    // (e.g. AUZsPay costs more as an add-on for an existing AUZsPOS tenant
     // than it does standalone).
     const ctx = await withAuth(userId, async (client) => {
       const { rows } = await client.query('select addon_request_pricing_context($1) as result', [addonRequestId]);
