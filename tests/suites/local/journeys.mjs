@@ -46,6 +46,16 @@ export default async function run({ browser, stack }) {
     assert((await p.locator('#pfName').inputValue()) === 'QA Person', 'saved name not loaded');
     assert(await p.locator('#cartNavLink').isVisible(), 'cart link missing'); await c9.close();
   }, 'critical');
+  await s.check('Admin panel is light: signing in makes few requests, each section loads when opened', async () => {
+    const ca = await newCtx(browser, stack); const p = await ca.newPage(); const calls = [];
+    p.on('request', (r) => { const u = r.url(); if (/\/(rpc|db)\//.test(u) && r.method() !== 'OPTIONS') calls.push(u.split('/').slice(-2).join('/')); });
+    await p.goto(stack.url('', '/admin.html')); await p.waitForTimeout(800); await p.fill('#email', USERS.admin); await p.fill('#password', PASSWORD); await p.click('#signin'); await p.waitForTimeout(3500);
+    const atLogin = calls.length; assert(atLogin <= 9, 'sign-in made ' + atLogin + ' requests: ' + calls.join(', '));
+    const before = calls.length; await p.click('.a-side-btn[data-section=pricing]'); await p.waitForTimeout(1500);
+    assert(calls.length > before, 'opening Pricing loaded nothing');
+    assert(await p.locator('#pricingSection tr[data-key]').count() > 0 || /Pricing/i.test(await p.locator('#pageTitle').innerText()), 'pricing not shown');
+    await ca.close();
+  }, 'major');
   await s.check('Platform admin signing in lands on the admin dashboard', async () => {
     const c3 = await newCtx(browser, stack); const p = await c3.newPage(); const e3 = watch(p);
     await p.goto(stack.url('', '/signup.html')); await p.waitForTimeout(500); await p.click('#modeLogin'); await p.fill('#email', USERS.admin); await p.fill('#password', PASSWORD); await p.click('#submitBtn');
@@ -78,6 +88,7 @@ export default async function run({ browser, stack }) {
   await s.check('Submitted request is visible to the platform admin', async () => {
     const c6 = await newCtx(browser, stack); const p = await c6.newPage();
     await p.goto(stack.url('', '/admin.html')); await p.waitForTimeout(800); await p.fill('#email', USERS.admin); await p.fill('#password', PASSWORD); await p.click('#signin'); await p.waitForTimeout(2500);
+    await p.click('.a-side-btn[data-section=signupRequests]'); await p.waitForTimeout(1500); // sections load when opened
     assert(/QA Business/.test(await p.locator('#signupRequestsList').innerText()), 'request not listed'); await c6.close();
   }, 'critical');
   await ctx.close(); s.done();
