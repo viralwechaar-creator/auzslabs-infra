@@ -58,6 +58,8 @@
     root * /srv/app
     # a stale cached service worker can pin clients to old code indefinitely
     header /sw.js Cache-Control "no-cache"
+    # tenant.js decides which business (or shared address) a page belongs to: a stale cached copy once kept auzsmob.auzslab.in on the POS
+    header /tenant.js Cache-Control "no-cache"
     # same reasoning, for the actual app-shell HTML itself (index.html,
     # payroll.html, builder.html, site.html, ...) -- see the root domain
     # block above for the full story on why this exists.
