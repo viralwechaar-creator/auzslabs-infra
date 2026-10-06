@@ -906,9 +906,9 @@ async function loadAddonRequests() {
   });
 }
 
-// server/src/db.js's pg.Pool is unconfigured, so it defaults to 10 --
-// not read from anywhere in the DB, hence the constant here.
-const APP_POOL_MAX = 10;
+// server/src/db.js sets the API's connection pool to 35 (PG_POOL_MAX; Postgres itself allows 100).
+// It is not readable from the database, hence the constant here: keep it equal to db.js.
+const APP_POOL_MAX = 35;
 
 function formatBytes(n) {
   if (n == null) return '&mdash;';
