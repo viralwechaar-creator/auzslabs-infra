@@ -199,7 +199,7 @@ function buildShell() {
     h('div', { class: 'foot' }, h('span', null, syncStatusNode()), h('span', null, S.user.email),
       seg([['en', 'EN'], ['hi', 'HI']], S_LANG, (v) => saveLang(v), { full: true }),
       seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v), { full: true }),
-      h('div', { class: 'row', style: { gap: '6px', marginTop: '6px' } }, h('button', { class: 'btn sm', type: 'button', onclick: signOut }, t('signOut')))));
+      h('div', { class: 'row', style: { gap: '6px', marginTop: '6px' } }, h('button', { class: 'btn sm', type: 'button', onclick: () => auzHelp.open(sb) }, 'Help'), h('button', { class: 'btn sm', type: 'button', onclick: signOut }, t('signOut')))));
   const topbar = h('header', { class: 'topbar', id: 'topbar' }, h('div', { class: 'l', id: 'tb-l' }), h('div', { class: 'tt', id: 'tb-t' }), h('div', { class: 'r', id: 'tb-r' }));
   const tabbar = h('nav', { class: 'tabbar', 'aria-label': 'Main' },
     tabsFor().map((id) => h('button', { type: 'button', 'data-tab': id, onclick: () => go(id) }, icon(nav.find((n) => n[0] === id)[2], 25), h('span', null, t(id)))),
@@ -219,7 +219,7 @@ function moreSheet() {
     h('div', { class: 'list' },
       liRow({ icon: 'globe', tone: 'gray', title: t('language'), badge: seg([['en', 'EN'], ['hi', 'HI']], S_LANG, (v) => saveLang(v)) }),
       liRow({ icon: 'moon', tone: 'gray', title: 'Appearance', badge: seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v)) })),
-    h('div', { class: 'list' }, liRow({ icon: 'user', tone: 'gray', title: S.user.email, sub: S.user.role }), liRow({ icon: 'user', tone: 'gray', title: 'Plan & account', onclick: () => { s.close(); auzPlan.open(sb); } }), S.user.role === 'owner' ? liRow({ icon: 'download', tone: 'gray', title: 'Backup, export or clear data', onclick: () => { s.close(); auzMyData(sb); } }) : null, liRow({ icon: 'logout', tone: 'gray', title: t('signOut'), onclick: signOut })));
+    h('div', { class: 'list' }, liRow({ icon: 'user', tone: 'gray', title: S.user.email, sub: S.user.role }), liRow({ icon: 'user', tone: 'gray', title: 'Plan & account', onclick: () => { s.close(); auzPlan.open(sb); } }), liRow({ icon: 'user', tone: 'gray', title: 'Help & report a problem', onclick: () => { s.close(); auzHelp.open(sb); } }), S.user.role === 'owner' ? liRow({ icon: 'download', tone: 'gray', title: 'Backup, export or clear data', onclick: () => { s.close(); auzMyData(sb); } }) : null, liRow({ icon: 'logout', tone: 'gray', title: t('signOut'), onclick: signOut })));
   const s = sheet({ title: t('more'), closeLabel: 'Done', body });
 }
 

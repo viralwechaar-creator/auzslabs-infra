@@ -31,6 +31,7 @@ V.more = () => {
     links.length ? h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, 'Business tools')), h('div', { class: 'list' }, links)) : null,
     h('div', { class: 'list' },
       liRow({ ic: 'chart', tone: 'gray', title: 'Plan & account', onclick: () => auzPlan.open(sb) }),
+      liRow({ ic: 'chart', tone: 'gray', title: 'Help & report a problem', onclick: () => auzHelp.open(sb) }),
       S.role === 'owner' ? liRow({ ic: 'chart', tone: 'gray', title: 'Backup, export or clear data', onclick: () => auzMyData(sb) }) : null,
       liRow({ ic: 'logout', tone: 'red', title: 'Sign out', onclick: signOut }),
       liRow({ ic: 'trash', tone: 'red', title: 'Delete my account', onclick: deleteAccountFlow })),

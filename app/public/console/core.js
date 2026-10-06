@@ -187,7 +187,7 @@ function sideNav(){
   nav.append(h('button',{class:'nb'+(S.page==n[0]?' on':''),onclick:()=>go(n[0])},ic(n[2]),h('span',{},n[1])))});
  const apps=[['payroll','/payroll.html','Payroll','team'],['accounting','/accounts.html','Accounting','fin'],['mobile','/mob.html','AUZsMob','box']].filter(a=>S.features&&S.features[a[0]]===true&&S.enabledFeatures[a[0]]!==false);
  if(apps.length){nav.append(h('div',{class:'nav-lbl'},'Other apps'));apps.forEach(a=>nav.append(h('a',{class:'nb',href:a[1]},ic(a[3]),h('span',{},a[2]))))}
- nav.append(h('div',{class:'nav-lbl'},'Account'));nav.append(h('a',{class:'nb',href:'#',onclick:e=>{e.preventDefault();auzPlan.open(sb)}},h('span',{},'Plan & account')));
+ nav.append(h('div',{class:'nav-lbl'},'Account'));nav.append(h('a',{class:'nb',href:'#',onclick:e=>{e.preventDefault();auzPlan.open(sb)}},h('span',{},'Plan & account')));nav.append(h('a',{class:'nb',href:'#',onclick:e=>{e.preventDefault();auzHelp.open(sb)}},h('span',{},'Help & report a problem')));
  if(S.role=='owner'){nav.append(h('div',{class:'nav-lbl'},'Data'));nav.append(h('a',{class:'nb',href:'#',onclick:e=>{e.preventDefault();auzMyData(sb)}},h('span',{},'Backup, export or clear data')))}
  return nav}
 function syncCard(){const ago=S.lastSync?Math.max(0,Math.round((Date.now()-S.lastSync)/60000)):null;

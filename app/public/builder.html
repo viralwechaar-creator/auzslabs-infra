@@ -1,6 +1,6 @@
 <!doctype html><html lang=en data-theme=light><head><script src="/ds/launch.js?v=1" data-app="builder"></script><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><title>AUZslab Website Builder</title><link rel="manifest" href="/manifest-builder.json"><link rel=icon type=image/svg+xml href=/icon-builder.svg><link rel="apple-touch-icon" sizes="180x180" href="/icon-builder-180.png"><meta name=theme-color content=#f5f4f2>
 <meta name=apple-mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-status-bar-style content=black-translucent><meta name="apple-mobile-web-app-title" content="Builder">
-<link rel=stylesheet href="/ds/auz.css?v=2"><script src="/ds/brand.js?v=1"></script><script src="/ds/lock.js?v=1"></script><script src="/ds/mydata.js?v=1"></script><script src="/ds/plan.js?v=2" data-app="builder"></script><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
+<link rel=stylesheet href="/ds/auz.css?v=2"><script src="/ds/brand.js?v=1"></script><script src="/ds/lock.js?v=1"></script><script src="/ds/help.js?v=1"></script><script src="/ds/mydata.js?v=1"></script><script src="/ds/plan.js?v=2" data-app="builder"></script><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel=stylesheet>
 <style media="(max-width:899px)">:root{--ink:#171717;--ink-dim:#4d4d4d;--ink-faint:#8c8c8c;--accent:#800020;--g:var(--accent);--l:rgba(23,23,23,.14);--bg-raised:#dedede;--radius-sm:14px;--radius-md:18px;--radius-lg:26px;--shadow-sm:0 1px 2px rgba(23,23,23,.06),0 6px 20px -10px rgba(23,23,23,.14);--shadow-md:0 4px 12px rgba(23,23,23,.08),0 20px 44px -16px rgba(23,23,23,.22);--ease:cubic-bezier(.4,0,.2,1)}
 *{box-sizing:border-box}
@@ -330,7 +330,7 @@ function drawer(){
 function render(){
  if(!S.user)return;
  $('#app').replaceChildren(
-  h('div',{class:'top-bar'},h('h1',{},'Website Builder'),S.user?h('button',{class:'btn',style:'margin-left:auto',onclick:()=>auzPlan.open(sb)},'Plan'):null,S.user?h('button',{class:'btn',onclick:()=>auzMyData(sb)},'My data'):null),
+  h('div',{class:'top-bar'},h('h1',{},'Website Builder'),S.user?h('button',{class:'btn',style:'margin-left:auto',onclick:()=>auzPlan.open(sb)},'Plan'):null,S.user?h('button',{class:'btn',onclick:()=>auzHelp.open(sb)},'Help'):null,S.user?h('button',{class:'btn',onclick:()=>auzMyData(sb)},'My data'):null),
   h('div',{class:'g',style:'padding-top:0'},h('div',{class:'card'},drawer())),
   editorView(),
   h('div',{class:'powered'},'Powered by ',h('a',{href:'https://auzslab.in',target:'_blank',rel:'noopener'},'AUZslab'))
