@@ -398,9 +398,9 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
   box-shadow:0 -30px 60px -30px rgba(46,44,42,.2);
 }
 .stack-panel:nth-of-type(1){top:0;z-index:1}
-.stack-panel:nth-of-type(2){top:calc(112px + env(safe-area-inset-top));z-index:2}
-.stack-panel:nth-of-type(3){top:calc(112px + env(safe-area-inset-top) + var(--tab-step));z-index:3}
-.stack-panel:nth-of-type(4){top:calc(112px + env(safe-area-inset-top) + (var(--tab-step) * 2));z-index:4}
+.stack-panel:nth-of-type(2){top:min(calc(112px + env(safe-area-inset-top)), calc(100svh - var(--h, 0px)));z-index:2}
+.stack-panel:nth-of-type(3){top:min(calc(112px + env(safe-area-inset-top) + var(--tab-step)), calc(100svh - var(--h, 0px)));z-index:3}
+.stack-panel:nth-of-type(4){top:min(calc(112px + env(safe-area-inset-top) + (var(--tab-step) * 2)), calc(100svh - var(--h, 0px)));z-index:4}
 .stack-panel.alt{background-color:var(--bg-raised);background-blend-mode:normal}
 .stack-panel{overflow:hidden}
 
@@ -498,9 +498,9 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
   .stack{margin-top:0}
   .stack-panel{border-radius:10px 36px 0 0;padding:96px 0 80px}
   .stack-panel:not(:first-of-type){padding-top:190px}
-  .stack-panel:nth-of-type(2){top:150px}
-  .stack-panel:nth-of-type(3){top:calc(150px + var(--tab-step))}
-  .stack-panel:nth-of-type(4){top:calc(150px + (var(--tab-step) * 2))}
+  .stack-panel:nth-of-type(2){top:min(150px, calc(100svh - var(--h, 0px)))}
+  .stack-panel:nth-of-type(3){top:min(calc(150px + var(--tab-step)), calc(100svh - var(--h, 0px)))}
+  .stack-panel:nth-of-type(4){top:min(calc(150px + (var(--tab-step) * 2)), calc(100svh - var(--h, 0px)))}
   .stack-panel:not(:first-of-type)::before{left:56px}
   .stack-panel.stack-panel-dark{padding-top:160px}
   .stack-panel-dark::before{left:56px}
@@ -538,4 +538,11 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
   :root:not([data-theme=light]) .topbar-logo img,
   :root:not([data-theme=light]) .drawer-topbar-logo img,
   :root:not([data-theme=light]) .hero-art-logo{filter:invert(1)}
+}
+
+/* A panel taller than the screen would stay pinned with its bottom out of reach (the Send button on Contact).
+   site.js writes each panel's height to --h, so the pin point moves up until the whole panel can be seen. */
+@media (max-height:780px){
+  .stack-panel:not(:first-of-type){padding-top:120px}
+  .stack-panel:not(:first-of-type)::before{font-size:clamp(44px,10vh,84px)}
 }

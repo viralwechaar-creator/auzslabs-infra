@@ -2,6 +2,16 @@
   function $(sel, root) { return (root || document).querySelector(sel); }
   function $all(sel) { return document.querySelectorAll(sel); }
 
+  // Stacked panels: tell the CSS how tall each one is (once on load, resize and after fonts), so a panel taller than
+  // the screen is not pinned with its bottom unreachable. No scroll listener.
+  (function () {
+    function measure() { document.querySelectorAll('.stack-panel').forEach(function (p) { p.style.removeProperty('--h'); p.style.setProperty('--h', p.offsetHeight + 'px'); }); }
+    var t; function later() { clearTimeout(t); t = setTimeout(measure, 120); }
+    window.addEventListener('load', measure); window.addEventListener('resize', later);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
+    if (document.readyState !== 'loading') measure(); else document.addEventListener('DOMContentLoaded', measure);
+  })();
+
   var CART_KEY = 'auz_cart';
   // CRM, Billing & Invoicing and Inventory come inside AuzsPOS (and the other apps): shown on the site, never sold or carted separately.
   var INCLUDED = ['crm', 'billing', 'inventory'];
