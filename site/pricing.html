@@ -539,7 +539,7 @@
 <script src="site.js?v=7"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script src="design-system/ui-kit.js?v=1"></script>
-<script>try{sb.payments.config().then(function(r){var c=r&&r.data;if(c&&c.gstPct>0)document.querySelectorAll(".gst-t").forEach(function(e){e.hidden=false})})}catch(e){}</script>
+<script>try{supabase.createClient(CFG.url,CFG.key).payments.config().then(function(r){var c=r&&r.data;if(c&&c.gstPct>0)document.querySelectorAll(".gst-t").forEach(function(e){e.hidden=false})})}catch(e){}</script>
 <script>
 // Each pricing/bundle card's CTA adds that plan's product keys to the
 // shared cart (AUZcart, same localStorage key every page reads) and sends
