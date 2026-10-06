@@ -13,7 +13,7 @@
   })();
 
   var CART_KEY = 'auz_cart';
-  // CRM, Billing & Invoicing and Inventory come inside AuzsPOS (and the other apps): shown on the site, never sold or carted separately.
+  // CRM, Billing & Invoicing and Inventory come inside AUZsPOS (and the other apps): shown on the site, never sold or carted separately.
   var INCLUDED = ['crm', 'billing', 'inventory'];
   function readCart() {
     try { return JSON.parse(localStorage.getItem(CART_KEY) || '[]').filter(function (k) { return INCLUDED.indexOf(k) === -1; }); } catch (e) { return []; }

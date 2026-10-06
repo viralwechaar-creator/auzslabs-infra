@@ -60,15 +60,13 @@
         </button>
         <div class="nav-submenu">
           <div class="nav-submenu-inner">
-            <a href="pos.html" class="nav-sublink"><span>POS</span></a>
-            <a href="crm.html" class="nav-sublink"><span>CRM</span></a>
-            <a href="billing.html" class="nav-sublink"><span>Billing &amp; Invoicing</span></a>
-            <a href="inventory.html" class="nav-sublink"><span>Inventory</span></a>
-            <a href="qr-ordering.html" class="nav-sublink"><span>QR Ordering</span></a>
-            <a href="payroll.html" class="nav-sublink"><span>Payroll</span></a>
+            <a href="pos.html" class="nav-sublink"><span>AUZsPOS</span></a>
+            <a href="qr-ordering.html" class="nav-sublink"><span>AUZsPOS QR</span></a>
+            <a href="payroll.html" class="nav-sublink"><span>AUZsPay</span></a>
+            <a href="accounting.html" class="nav-sublink"><span>AUZsLedger</span></a>
+            <a href="products.html#slab-mobile" class="nav-sublink"><span>AUZsMob</span></a>
             <a href="website-builder.html" class="nav-sublink"><span>Website Builder</span></a>
-            <a href="accounting.html" class="nav-sublink"><span>Accounting</span></a>
-            <a href="custom-build.html" class="nav-sublink"><span>Custom build — on-demand</span></a>
+            <a href="custom-build.html" class="nav-sublink"><span>Custom build &mdash; on-demand</span></a>
           </div>
         </div>
       </div>
@@ -134,7 +132,7 @@
           <div class="h-2" style="margin-top:14px;font-size:22px">Know your customers, whatever you sell.</div>
           <p class="p" style="margin-top:8px">The same customer record works for every kind of shop. What you track is simply what matters in your business:</p>
           <ul class="p" style="margin:12px 0 0;padding:0;list-style:none"><li style="padding:9px 0;border-bottom:1px dashed var(--line)"><b>Cafe or restaurant</b> &mdash; favourite order and the days they come in</li><li style="padding:9px 0;border-bottom:1px dashed var(--line)"><b>Salon</b> &mdash; service history and preferred stylist</li><li style="padding:9px 0;border-bottom:1px dashed var(--line)"><b>Bookstore or retail</b> &mdash; past purchases, favourite brands or authors, special orders</li><li style="padding:9px 0;border-bottom:1px dashed var(--line)"><b>Clothing</b> &mdash; sizes and styles they like</li><li style="padding:9px 0;border-bottom:1px dashed var(--line)"><b>Mobile shop</b> &mdash; phones bought and repairs done</li></ul>
-          <p class="p" style="margin-top:12px;font-size:12.5px;color:var(--ink-faint)">CRM comes included with AuzsPOS and the AUZslab Salon app. There is nothing separate to buy.</p>
+          <p class="p" style="margin-top:12px;font-size:12.5px;color:var(--ink-faint)">CRM comes included with AUZsPOS and the AUZslab Salon app. There is nothing separate to buy.</p>
         </div>
       </section>
 
@@ -197,10 +195,10 @@
             </div>
             <div class="footer-col">
               <div class="footer-col-title">Products</div>
-              <a href="pos.html">AuzsPOS</a>
-              <a href="qr-ordering.html">AuzsPOS QR</a>
-              <a href="payroll.html">AuzsPay</a>
-              <a href="accounting.html">AuzsLedger</a>
+              <a href="pos.html">AUZsPOS</a>
+              <a href="qr-ordering.html">AUZsPOS QR</a>
+              <a href="payroll.html">AUZsPay</a>
+              <a href="accounting.html">AUZsLedger</a>
               <a href="products.html">AUZsMob</a>
               <a href="website-builder.html">Website Builder</a>
               <a href="products.html">All products</a>
@@ -332,7 +330,7 @@
   var btn = document.getElementById('addCartBtn');
   var owned = false;
   function refresh() {
-    if (AUZcart.isIncluded(KEY)) { btn.textContent = 'Included with AuzsPOS'; btn.disabled = true; return; }
+    if (AUZcart.isIncluded(KEY)) { btn.textContent = 'Included with AUZsPOS'; btn.disabled = true; return; }
     if (owned) { btn.textContent = 'Already included ✓'; btn.disabled = true; return; }
     btn.disabled = false;
     var has = AUZcart.has(KEY);

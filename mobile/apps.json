@@ -6,7 +6,7 @@
     "icon": "icon-512.png"
   },
   "pos": {
-    "name": "AuzsPOS",
+    "name": "AUZsPOS",
     "id": "in.auzslab.pos",
     "url": "https://auzslab.in/open.html?app=pos",
     "icon": "icon-512.png"
@@ -18,13 +18,13 @@
     "icon": "icon-mob-512.png"
   },
   "payroll": {
-    "name": "AuzsPay",
+    "name": "AUZsPay",
     "id": "in.auzslab.payroll",
     "url": "https://auzslab.in/open.html?app=payroll",
     "icon": "icon-payroll-512.png"
   },
   "accounts": {
-    "name": "AuzsLedger",
+    "name": "AUZsLedger",
     "id": "in.auzslab.accounts",
     "url": "https://auzslab.in/open.html?app=accounts",
     "icon": "icon-accounts-512.png"
