@@ -916,12 +916,14 @@ async function loadPricing() {
     <tr data-key="${esc(p.key)}">
       <td data-label="Product"><b>${esc(p.label)}</b></td>
       <td data-label="Monthly price">
-        <span style="display:inline-flex;align-items:center;gap:6px">
+        ${['crm', 'billing', 'inventory'].includes(p.key)
+          ? '<span style="color:var(--ink-faint)">Included in AuzsPOS and the other apps &mdash; not sold separately (stays &#8377;0)</span>'
+          : `<span style="display:inline-flex;align-items:center;gap:6px">
           &#8377; <input class="input" data-price type="number" min="0" step="1" value="${Number(p.monthly_price)}" style="width:100px">
           <span style="color:var(--ink-faint)">/mo</span>
-        </span>
+        </span>`}
       </td>
-      <td class="row-actions"><button class="btn btn-primary" data-save>Save</button></td>
+      <td class="row-actions">${['crm', 'billing', 'inventory'].includes(p.key) ? '' : '<button class="btn btn-primary" data-save>Save</button>'}</td>
     </tr>`).join('');
 
   listEl.innerHTML = `<div class="admin-table-wrap"><table class="admin-table">
@@ -930,7 +932,8 @@ async function loadPricing() {
   </table></div>`;
 
   listEl.querySelectorAll('tr[data-key]').forEach((tr) => {
-    tr.querySelector('[data-save]').onclick = async () => {
+    const saveBtn = tr.querySelector('[data-save]'); if (!saveBtn) return;
+    saveBtn.onclick = async () => {
       const price = Number(tr.querySelector('[data-price]').value);
       if (!(price >= 0)) { alert('Enter a price of 0 or more.'); return; }
       const { error: saveErr } = await sb.rpc('admin_set_product_price', { p_key: tr.dataset.key, p_monthly_price: price });

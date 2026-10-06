@@ -261,7 +261,7 @@
 
 </div>
 <script src="/sb-client.js?v=4"></script>
-<script src="kept/site.js?v=8"></script>
+<script src="kept/site.js?v=9"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script src="kept/design-system/ui-kit.js?v=1"></script>
 <script>
@@ -272,7 +272,8 @@
   var owned = false;
   function refresh() {
     btns.forEach(function (btn) {
-      if (owned) { btn.textContent = 'Already included ✓'; btn.disabled = true; return; }
+      if (AUZcart.isIncluded(KEY)) { btn.textContent = 'Included with AuzsPOS'; btn.disabled = true; return; }
+    if (owned) { btn.textContent = 'Already included ✓'; btn.disabled = true; return; }
       btn.disabled = false;
       btn.textContent = AUZcart.has(KEY) ? 'Added ✓ — remove' : 'Add to cart';
     });

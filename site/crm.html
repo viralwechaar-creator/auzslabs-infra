@@ -298,7 +298,7 @@
 
 </div>
 <script src="/sb-client.js?v=4"></script>
-<script src="site.js?v=7"></script>
+<script src="site.js?v=9"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script src="design-system/ui-kit.js?v=1"></script>
 <script>
@@ -308,6 +308,7 @@
   var btn = document.getElementById('addCartBtn');
   var owned = false;
   function refresh() {
+    if (AUZcart.isIncluded(KEY)) { btn.textContent = 'Included with AuzsPOS'; btn.disabled = true; return; }
     if (owned) { btn.textContent = 'Already included ✓'; btn.disabled = true; return; }
     btn.disabled = false;
     var has = AUZcart.has(KEY);

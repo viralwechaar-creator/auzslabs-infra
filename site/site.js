@@ -3,8 +3,10 @@
   function $all(sel) { return document.querySelectorAll(sel); }
 
   var CART_KEY = 'auz_cart';
+  // CRM, Billing & Invoicing and Inventory come inside AuzsPOS (and the other apps): shown on the site, never sold or carted separately.
+  var INCLUDED = ['crm', 'billing', 'inventory'];
   function readCart() {
-    try { return JSON.parse(localStorage.getItem(CART_KEY) || '[]'); } catch (e) { return []; }
+    try { return JSON.parse(localStorage.getItem(CART_KEY) || '[]').filter(function (k) { return INCLUDED.indexOf(k) === -1; }); } catch (e) { return []; }
   }
   function writeCart(items) {
     try { localStorage.setItem(CART_KEY, JSON.stringify(items)); } catch (e) {}
@@ -12,7 +14,9 @@
   window.AUZcart = {
     get: readCart,
     has: function (key) { return readCart().indexOf(key) !== -1; },
+    isIncluded: function (key) { return INCLUDED.indexOf(key) !== -1; },
     add: function (key) {
+      if (INCLUDED.indexOf(key) !== -1) return;
       var items = readCart();
       if (items.indexOf(key) === -1) items.push(key);
       writeCart(items);

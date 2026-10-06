@@ -185,6 +185,10 @@ export default async function run({ browser, stack }) {
     const d = await own.call('GET', '/admin/data'); const st = { ...d.data.settings, logo: up.data.src, logoLight: '' };
     assert((await own.call('PUT', '/admin/settings', { settings: st })).status === 200, 'settings save');
     const b = await png(); assert(b.subarray(1, 4).toString() === 'PNG' && !b.equals(a), 'icon did not change with the logo');
+    const sh = await (await get('/share')).text();
+    assert(/og:title/.test(sh) && /og:image" content="https:\/\/[^"]+\/api\/og\.png"/.test(sh) && !/Showoff/.test(sh), 'share page: ' + sh.slice(0, 200));
+    const og = await get('/og.png'); const ob = Buffer.from(await og.arrayBuffer());
+    assert(og.status === 200 && ob.subarray(1, 4).toString() === 'PNG', 'og image ' + og.status);
   }, 'major');
   await ctx.close(); s.done();
 }

@@ -435,7 +435,7 @@ html:not(.fx-live) .lab-hint{position:static;padding:3vh 5vw 5vh;transform:none}
 
 </div>
 <script src="/sb-client.js?v=4"></script>
-<script src="kept/site.js?v=8"></script>
+<script src="kept/site.js?v=9"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script>
 (function () {
@@ -447,7 +447,8 @@ html:not(.fx-live) .lab-hint{position:static;padding:3vh 5vw 5vh;transform:none}
     if (!btn) return;
     var entry = { key: key, btn: btn, owned: false };
     function refresh() {
-      if (entry.owned) { btn.textContent = 'Already included ✓'; btn.disabled = true; return; }
+      if (AUZcart.isIncluded(key)) { btn.textContent = 'Included with AuzsPOS'; btn.disabled = true; return; }
+    if (entry.owned) { btn.textContent = 'Already included ✓'; btn.disabled = true; return; }
       btn.disabled = false;
       btn.textContent = AUZcart.has(key) ? 'Added ✓ — remove' : 'Add to cart';
     }
