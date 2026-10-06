@@ -170,7 +170,7 @@ const NAV=[
  ['g:fin','Finance','fin',[['fin/expenses','Expenses'],['fin/withdrawals','Withdrawals & Top-ups'],['fin/cash','Cash Management'],['fin/settlements','Settlements'],['fin/accounting','Accounting'],['fin/reconcile','Payment Reconciliation']]],
  ['g:mkt','Marketing','mkt',[['mkt/campaigns','Campaigns'],['mkt/segments','Segments'],['mkt/offers','Offers'],['mkt/whatsapp','WhatsApp Marketing'],['mkt/promotions','Promotions'],['mkt/loyaltycamp','Loyalty Campaigns']],'New'],
  ['g:int','Integrations','plug',[['agg/swiggy','Swiggy'],['agg/zomato','Zomato'],['agg/ondc','ONDC'],['agg/dunzo','Dunzo'],['agg/ubereats','Uber Eats'],['agg/settings','Platform Settings'],['int/apps','Explore Products']]],
- ['g:mgmt','Management','gear',[['mgmt/config','Configuration'],['mgmt/website','Website & Booking'],['mgmt/reasons','Cancellation Reasons'],['mgmt/outlets','Outlets'],['mgmt/devices','Device Mapping'],['mgmt/logs','User Logs'],['mgmt/audit','Audit Trail'],['mgmt/data','Data Management']]],
+ ['g:mgmt','Management','gear',[['mgmt/config','Configuration'],['mgmt/website','Website & Booking'],['mgmt/reasons','Cancellation Reasons'],['mgmt/outlets','Outlets'],['mgmt/devices','Device Mapping'],['mgmt/hardware','Hardware'],['mgmt/logs','User Logs'],['mgmt/audit','Audit Trail'],['mgmt/data','Data Management']]],
  ['g:ql','Quick Links','star',[['ql/favorites','Favourite Pages'],['ql/shortcuts','Shortcuts'],['ql/custom','Custom Links']]]
 ];
 const flatNav=()=>NAV.flatMap(n=>n[0]=='lbl'||n[0]=='href'?[]:n[0].startsWith('g:')?n[3].map(c=>[c[0],c[1],n[1]]):[[n[0],n[1],'']]);

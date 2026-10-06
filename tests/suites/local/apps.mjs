@@ -1,4 +1,4 @@
-// Staff apps (POS, back office, payroll, website builder): sign in through the real login screen, then open every tab.
+// Staff apps (POS, payroll, website builder): sign in through the real login screen, then open every tab.
 import { suite, watch, assert } from '../../lib/harness.mjs';
 import { newCtx, layoutIssues } from '../../lib/common.mjs';
 import { PASSWORD, USERS } from '../../lib/db.mjs';
@@ -6,17 +6,17 @@ import http from 'node:http';
 // plain GET against the tenant host (static app files are served per subdomain)
 const getText = (stack, path) => new Promise((ok, no) => http.get({ host: '127.0.0.1', port: stack.webPort, path, headers: { host: 'testcafe.localhost:' + stack.webPort } }, (r) => { let b = ''; r.on('data', (c) => (b += c)); r.on('end', () => ok(b)); }).on('error', no));
 
-const APPS = [['POS', '/index.html'], ['Back office', '/backoffice.html'], ['Payroll', '/payroll.html'], ['Website builder', '/builder.html']];
+const APPS = [['POS', '/index.html'], ['Payroll', '/payroll.html'], ['Website builder', '/builder.html']];
 
 export default async function run({ browser, stack }) {
-  const s = suite('Staff apps: POS, back office, payroll, website builder', 'Logs in through the UI and opens every menu tab on a phone and a desktop; looks for crashes and layout breaks.');
+  const s = suite('Staff apps: POS, payroll, website builder', 'Logs in through the UI and opens every menu tab on a phone and a desktop; looks for crashes and layout breaks.');
   await s.check('Payroll is its own app: its manifest opens /payroll.html (not the POS) and has its own id', async () => {
     const pm = JSON.parse(await getText(stack, '/manifest-payroll.json')), m = JSON.parse(await getText(stack, '/manifest.json'));
     assert(pm.start_url === '/payroll.html', 'payroll manifest start_url is ' + pm.start_url + ' (home-screen app would open the POS)');
     assert(pm.id && pm.id !== m.id, 'payroll and POS manifests share an app id');
     assert(/manifest-payroll\.json/.test(await getText(stack, '/payroll.html')), 'payroll.html does not link its own manifest');
   }, 'critical');
-  await s.check('Service worker never answers Payroll / Back Office / Builder with the POS page', async () => {
+  await s.check('Service worker never answers Payroll / Admin console / Builder with the POS page', async () => {
     const sw = await getText(stack, '/sw.js');
     assert(!/caches\.match\('\/index\.html'\)\)\)\)\};/.test(sw.replace(/\s+/g, '')) || /pathname==='\/'/.test(sw.replace(/\s+/g, '')) || /u\.pathname=='\/'/.test(sw), 'unconditional index.html fallback');
     assert(/Response\.error\(\)/.test(sw), 'no error response for non-POS pages');

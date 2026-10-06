@@ -1,5 +1,5 @@
 /* More: attendance, the manager approval PIN, this device (outlet, notifications), staff manual and recipes,
-   links to the back office tools, sign out. On phones it also lists the screens that are not in the tab bar. */
+   the link to the admin console, sign out. On phones it also lists the screens that are not in the tab bar. */
 'use strict';
 V.more = () => {
   const navs = navItems(), tabKeys = tabBarItems(navs).map((n) => n.k), extra = navs.filter((n) => !tabKeys.includes(n.k) && n.k !== 'more');
@@ -7,7 +7,9 @@ V.more = () => {
   const ps = S.pinStatus, rq = (S.recipeQ || '').toLowerCase(), recipes = L('item').filter((i) => i.recipeText && (!rq || i.name.toLowerCase().includes(rq)));
   const links = [];
   if (S.role === 'owner' || S.role === 'manager') {
-    links.push(liRow({ ic: 'chart', tone: 'blue', title: 'Reports', chev: true, onclick: () => (location.href = '/backoffice.html?tab=rep') }), liRow({ ic: 'home', tone: 'purple', title: 'Admin console', chev: true, onclick: () => (location.href = '/dashboard.html') }), liRow({ ic: 'building', tone: 'gray', title: 'Back office', chev: true, onclick: () => (location.href = '/backoffice.html') }));
+    links.push(liRow({ ic: 'home', tone: 'purple', title: 'Admin console', sub: 'Reports, menu, stock, customers, team, settings', chev: true, onclick: () => (location.href = '/dashboard.html') }));
+    if (featureOn('payroll') && S.features && S.features.payroll) links.push(liRow({ ic: 'payroll', tone: 'orange', title: 'Payroll', chev: true, onclick: () => (location.href = '/payroll.html') }));
+    if (featureOn('mobile') && S.features && S.features.mobile) links.push(liRow({ ic: 'phone', tone: 'blue', title: 'AUZsMob', chev: true, onclick: () => (location.href = '/mob.html') }));
     if (featureOn('accounting') && S.features && S.features.accounting) links.push(liRow({ ic: 'receipt', tone: 'green', title: 'Accounting', chev: true, onclick: () => (location.href = '/accounts.html') }));
     if (can('o') && featureOn('website_builder')) links.push(liRow({ ic: 'globe', tone: 'teal', title: 'Website builder', chev: true, onclick: () => (location.href = '/builder.html') }));
   }

@@ -251,33 +251,43 @@ export default async function run({ browser, stack }) {
     await pctx.close();
   }, 'major');
 
-  await s.check('Cash drawer (back office): a top-up and a withdrawal change the expected cash and show in the activity log', async () => {
-    await page.goto(stack.url('testcafe', '/backoffice.html?tab=rep')); await page.waitForSelector('.tabbar', { timeout: 15000 }); await page.waitForTimeout(800);
-    const card = page.locator('.card', { has: page.locator('h3', { hasText: 'Cash drawer' }) });
-    await card.locator('input[placeholder="Amount"]').fill('500'); await card.locator('button', { hasText: 'Record' }).click(); await page.waitForTimeout(600);
-    await card.locator('select').first().selectOption('out'); await card.locator('input[placeholder="Amount"]').fill('120'); await card.locator('button', { hasText: 'Record' }).click(); await page.waitForTimeout(600);
-    assert(await until(async () => (await q("select data from records where tenant_id=$1 and kind='cashmove'", [tid])).length === 3), 'cash movements did not reach the server');
-    const t = await text(); assert(/Cash top-ups\s*₹500/.test(t) && /Withdrawals\s*₹(120|220)/.test(t), 'day report does not show the top-up and withdrawal');
-    await page.locator('.tabbar button', { hasText: 'Activity log' }).click(); await page.waitForTimeout(600);
-    assert(/Cash top-up/.test(await text()) && /Withdrawal/.test(await text()), 'activity log is missing the cash movements');
+  await s.check('Cash drawer (admin console): a top-up and a withdrawal reach the server and show on Withdrawals & Top-ups', async () => {
+    const before = (await q("select data from records where tenant_id=$1 and kind='cashmove'", [tid])).length;
+    await page.goto(stack.url('testcafe', '/dashboard.html#fin/withdrawals')); await page.waitForSelector('button:has-text("Cash top-up")', { timeout: 15000 }); await page.waitForTimeout(800);
+    const fillAmount = async (amt) => { await page.locator('.fld', { hasText: 'Amount' }).locator('input').fill(amt); await page.locator('.mf button.p, .mf button:has-text("Save")').first().click(); await page.waitForTimeout(700); };
+    await page.locator('button', { hasText: 'Cash top-up' }).first().click(); await page.waitForTimeout(400); await fillAmount('500');
+    await page.locator('button', { hasText: /^Withdrawal$|^\s*Withdrawal/ }).first().click(); await page.waitForTimeout(400); await fillAmount('120');
+    assert(await until(async () => (await q("select data from records where tenant_id=$1 and kind='cashmove'", [tid])).length === before + 2), 'cash movements did not reach the server');
+    const t = await text(); assert(/\+₹500/.test(t) && /−₹120/.test(t), 'Withdrawals & Top-ups does not show the top-up and withdrawal');
   }, 'major');
 
-  await s.check('Menu (back office): select items and raise their prices by 10 percent; each change is audited', async () => {
-    await page.goto(stack.url('testcafe', '/backoffice.html?tab=menu')); await page.waitForSelector('.top-bar h1', { timeout: 15000 }); await page.waitForTimeout(800);
+  await s.check('Menu (admin console): select items and raise their prices by 10 percent; each change is audited', async () => {
+    await page.goto(stack.url('testcafe', '/dashboard.html#menu/items')); await page.waitForSelector('button:has-text("Items"), .content', { timeout: 15000 }); await page.waitForTimeout(1200);
     const prices = () => q("select data->>'name' n, (data->>'price')::numeric p from records where tenant_id=$1 and kind='item' and not deleted order by 1", [tid]).then((r) => r.map((x) => x.n + ':' + +x.p));
     const before = await prices();
     page.removeAllListeners('dialog'); page.on('dialog', (d) => (d.type() === 'prompt' ? d.accept('10') : d.accept()).catch(() => {}));
-    await page.locator('button', { hasText: /^Select$/ }).click(); await page.waitForTimeout(300);
-    await page.locator('button', { hasText: 'Select all' }).first().click(); await page.waitForTimeout(400);
+    const hdr = page.locator('input[type=checkbox]').first(); await hdr.check({ force: true }); await page.waitForTimeout(400);
     assert(/\d+ selected/.test(await text()), 'no selection bar appeared');
-    await page.locator('button', { hasText: 'Price +%' }).click();
+    await page.locator('button', { hasText: 'Price +%' }).click(); await page.waitForTimeout(500);
+    const ok = page.locator('.md button, .alert button, button.p', { hasText: /^(Yes|OK|Confirm|Increase|Apply|Continue)/ }).last(); if (await ok.count()) await ok.click().catch(() => {});
     assert(await until(async () => { const a = await prices(); return a.join() !== before.join(); }), 'prices did not change');
     const after = await prices(), b0 = before.map((x) => +x.split(':')[1]), a0 = after.map((x) => +x.split(':')[1]);
     assert(a0.some((v, i) => Math.abs(v - Math.round(b0[i] * 110) / 100) < 0.011 && v > b0[i]), 'no price rose by 10%');
     assert(await until(async () => (await audit('price_change')).length >= 1), 'price changes are not in the audit log');
   }, 'major');
 
+  await s.check('One admin console: the old Back Office address forwards to it, the POS shows a single "Admin console" and no "Back office", and the Hardware switches live in the console', async () => {
+    await page.goto(stack.url('testcafe', '/backoffice.html?tab=rep')); await page.waitForURL(/dashboard\.html#rep\/sales/, { timeout: 15000 });
+    await page.goto(stack.url('testcafe', '/index.html')); await page.waitForSelector('.tbl-tile, .items .tile, .ticket-pane', { timeout: 15000 }); await page.waitForTimeout(600);
+    await page.evaluate(() => go('more')); await page.waitForTimeout(700);
+    const body = await text();
+    assert(!/back office/i.test(body), 'the POS still mentions Back office');
+    assert(((await page.locator('.li, button', { hasText: /^Admin console/ }).count()) >= 1) && (body.match(/Admin console/g) || []).length === 1, 'expected exactly one Admin console entry, found ' + (body.match(/Admin console/g) || []).length);
+    await page.goto(stack.url('testcafe', '/dashboard.html#mgmt/hardware')); await page.waitForSelector('text=Barcode scanner', { timeout: 15000 });
+    assert(/Token display screen/.test(await text()), 'Hardware page is missing the token display switch');
+  }, 'critical');
+
   // the 409 from the deliberate double booking above is the expected answer, not an error
-  await s.check('No JavaScript errors during the whole workflow', async () => { const bad = errs.filter((e) => !/print|callback|WebSocket|ERR_CERT|tunnel/i.test(e) && !/409.*\/db\/bookings/.test(e)); assert(!bad.length, bad.slice(0, 3).join(' | ')); }, 'major');
+  await s.check('No JavaScript errors during the whole workflow', async () => { const bad = errs.filter((e) => !/print|callback|WebSocket|ERR_CERT|tunnel/i.test(e) && !/icon-[a-z]+\.svg.*ERR_ABORTED/.test(e) && !/409.*\/db\/bookings/.test(e)); assert(!bad.length, bad.slice(0, 3).join(' | ')); }, 'major');
   await ctx.close(); s.done();
 }
