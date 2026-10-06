@@ -423,6 +423,44 @@ async function saveUpload(tenant, buf, ext) {
   return `/uploads/salon/${tenant.slug}/${name}`;
 }
 
+
+// ---- Per-salon home-screen identity: a web manifest and icons built from the salon's own logo and
+// brand colour (so "Add to home screen" shows their logo, not Showoff's). The icon is the logo centred on a
+// tile in the brand colour; with no uploaded logo it is the salon's initials, so every salon still gets
+// its own. Cached in memory by logo + colour + size. ----
+const iconCache = new Map();
+const hex6 = (v, d) => (/^#[0-9a-fA-F]{6}$/.test(v || '') ? v : d);
+async function salonIcon(tenant, site, size) {
+  const S = site.settings || {}, t = S.theme || {};
+  const bg = hex6(t.plum, '#391D21'), fg = hex6(t.cream, '#F3E6C8');
+  const logo = typeof S.logoLight === 'string' && S.logoLight.startsWith('/uploads/salon/' + tenant.slug + '/') ? S.logoLight
+    : typeof S.logo === 'string' && S.logo.startsWith('/uploads/salon/' + tenant.slug + '/') ? S.logo : null;
+  const key = [tenant.slug, logo, S.salonName, bg, fg, size].join('|');
+  if (iconCache.has(key)) return iconCache.get(key);
+  const sharp = (await import('sharp')).default;
+  let out;
+  const tile = { create: { width: size, height: size, channels: 4, background: bg } };
+  if (logo) {
+    const file = path.join(UPLOAD_ROOT, 'salon', tenant.slug, path.basename(logo));
+    const inner = Math.round(size * 0.66);
+    const lg = await sharp(await fs.readFile(file), { density: 300 }).resize(inner, inner, { fit: 'inside', background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toBuffer();
+    // A dark logo on a dark tile would vanish: if the logo's average is close to the tile colour, put it on a light tile.
+    const { channels } = await sharp(lg).stats();
+    const lum = (channels[0].mean * 0.3 + channels[1].mean * 0.59 + channels[2].mean * 0.11);
+    const bgL = parseInt(bg.slice(1, 3), 16) * 0.3 + parseInt(bg.slice(3, 5), 16) * 0.59 + parseInt(bg.slice(5, 7), 16) * 0.11;
+    const base = Math.abs(lum - bgL) < 60 ? { create: { width: size, height: size, channels: 4, background: fg } } : tile;
+    out = await sharp(base).composite([{ input: lg, gravity: 'centre' }]).png().toBuffer();
+  } else {
+    const words = String(S.salonName || 'Salon').replace(/[^\p{L}\p{N} ]/gu, '').split(/\s+/).filter(Boolean);
+    const ini = (words.length > 1 ? words[0][0] + words[1][0] : (words[0] || 'S').slice(0, 2)).toUpperCase().replace(/[<>&]/g, '');
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><rect width="100%" height="100%" fill="${bg}"/><text x="50%" y="50%" dy=".35em" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-weight="600" font-size="${Math.round(size * 0.42)}" fill="${fg}">${ini}</text></svg>`;
+    out = await sharp(Buffer.from(svg)).png().toBuffer();
+  }
+  if (iconCache.size > 300) iconCache.clear();
+  iconCache.set(key, out);
+  return out;
+}
+
 const rl = new Map();
 function limited(key, limit, windowMs) {
   const now = Date.now();
@@ -474,6 +512,27 @@ export async function handleSalon(req, res, ip) {
     const send = (s, d) => sendJson(res, s, d);
 
     // Public reads touch only the cached website half; the private bookings/bills are never loaded for them.
+    if (method === 'GET' && p === '/manifest.json') {
+      const S = (await loadSite(tenant)).settings || {}, t = S.theme || {};
+      const adm = url.searchParams.get('app') === 'admin';
+      const name = String(S.salonName || tenant.name || 'Salon').slice(0, 38) + (adm ? ' Admin' : '');
+      res.writeHead(200, { 'Content-Type': 'application/manifest+json; charset=utf-8', 'Cache-Control': 'public, max-age=300' });
+      return res.end(JSON.stringify({
+        name, short_name: adm ? 'Salon Admin' : name.slice(0, 12), start_url: adm ? '/salon/admin/' : '/salon/', scope: '/salon/', display: 'standalone',
+        background_color: hex6(t.cream, '#F3E6C8'), theme_color: hex6(t.plum, '#391D21'),
+        icons: [192, 512].flatMap((n) => ['any', 'maskable'].map((purpose) => ({ src: `/api/icon/${n}.png`, sizes: `${n}x${n}`, type: 'image/png', purpose }))),
+      }));
+    }
+    const ic = p.match(/^\/icon\/(32|180|192|512)\.png$/);
+    if (method === 'GET' && ic) {
+      // Showoff Salon keeps its original hand-made icons (static files); every other salon gets a generated one.
+      if (tenant.slug === 'showoffsalon') { res.writeHead(302, { Location: `/salon/assets/${ic[1] === '32' ? 'favicon' : 'icon-' + ic[1]}.png`, 'Cache-Control': 'public, max-age=300' }); return res.end(); }
+      let png;
+      try { png = await salonIcon(tenant, await loadSite(tenant), Number(ic[1])); }
+      catch (e) { res.writeHead(302, { Location: `/salon/assets/icon-${ic[1] === '32' ? '192' : ic[1]}.png` }); return res.end(); }
+      res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=300' });
+      return res.end(png);
+    }
     if (method === 'GET' && p === '/site') return send(200, publicSite(await loadSite(tenant)));
     if (method === 'GET' && p === '/slots') return send(200, computeSlots(await loadSite(tenant), await bookingCounts(tenant), String(url.searchParams.get('date') || '')));
     if (method === 'GET' && p === '/admin/me') {

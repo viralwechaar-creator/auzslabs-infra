@@ -170,5 +170,21 @@ export default async function run({ browser, stack }) {
     for (let i = 0; i < 40; i++) { const r = await c.call('POST', '/admin/login', { password: 'wrong' + i }); if (r.status === 429) { hit = true; break; } }
     assert(hit, 'no lockout after 40 bad attempts');
   }, 'major');
+
+  await s.check('Each salon has its own home-screen icon and install settings (initials, then its uploaded logo)', async () => {
+    const get = (path) => fetch(stack.apiBase + '/salon-api' + path, { headers: { 'x-tenant-slug': host } });
+    const man = await (await get('/manifest.json')).json();
+    assert(man.name && man.name !== 'Showoff Salon' && man.start_url === '/salon/', 'manifest not per salon: ' + JSON.stringify(man).slice(0, 120));
+    assert((await (await get('/manifest.json?app=admin')).json()).start_url === '/salon/admin/', 'admin manifest start_url');
+    const png = async () => { const r = await get('/icon/192.png'); assert(r.status === 200 && r.headers.get('content-type') === 'image/png', 'icon status ' + r.status); return Buffer.from(await r.arrayBuffer()); };
+    const a = await png(); assert(a.subarray(1, 4).toString() === 'PNG', 'not a PNG');
+    // upload a small white PNG as the logo and check the icon changes
+    const white = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+    const own = owner;
+    const up = await own.call('POST', '/admin/upload', { dataUrl: white }); assert(up.status === 201, 'upload ' + up.status);
+    const d = await own.call('GET', '/admin/data'); const st = { ...d.data.settings, logo: up.data.src, logoLight: '' };
+    assert((await own.call('PUT', '/admin/settings', { settings: st })).status === 200, 'settings save');
+    const b = await png(); assert(b.subarray(1, 4).toString() === 'PNG' && !b.equals(a), 'icon did not change with the logo');
+  }, 'major');
   await ctx.close(); s.done();
 }
