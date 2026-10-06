@@ -269,9 +269,11 @@ function matchedBundle(keys) {
   const sorted = keys.slice().sort().join(',');
   return BUNDLES.find((b) => b.feature_keys.slice().sort().join(',') === sorted) || null;
 }
-// Yearly billing is offered only when no bundle applies and every product in the cart has a yearly price.
+// Yearly billing is offered when the cart is a bundle with a yearly price, or every product in the cart has a yearly price.
 function yearlyEligible(keys) {
-  return keys.length > 0 && !matchedBundle(keys) && keys.every((k) => (FLAGS.get(k) || {}).yearly > 0);
+  const b = matchedBundle(keys);
+  if (b) return Number(b.yearly_price) > 0;
+  return keys.length > 0 && keys.every((k) => (FLAGS.get(k) || {}).yearly > 0);
 }
 
 // Prices + whether online checkout is even possible -- both start empty/off
@@ -317,7 +319,10 @@ async function loadPricing() {
 // the mix isn't priced yet, or for an unpriced single-item addon override miss.
 function priceTotal(keys, tenantFeatures) {
   if (!keys.length) return null;
-  if (PERIOD === 'year' && yearlyEligible(keys)) return keys.reduce((a, k) => a + (FLAGS.get(k).yearly), 0);
+  if (PERIOD === 'year' && yearlyEligible(keys)) {
+    const yb = matchedBundle(keys);
+    return yb ? Number(yb.yearly_price) : keys.reduce((a, k) => a + (FLAGS.get(k).yearly), 0);
+  }
   const sortedKeys = keys.slice().sort().join(',');
   const bundleMatch = BUNDLES.find((b) => b.feature_keys.slice().sort().join(',') === sortedKeys);
   if (bundleMatch) return Number(bundleMatch.monthly_price);
@@ -455,7 +460,8 @@ function updatePayButtons() {
     document.getElementById('periodYear').classList.toggle('active', PERIOD === 'year');
     if (elig) {
       const f = FLAGS.get(topKeys[0]) || {};
-      const monthly = topKeys.reduce((a, k) => a + Number(PRICES.get(k) || 0), 0), yearly = topKeys.reduce((a, k) => a + (FLAGS.get(k).yearly), 0), renew = topKeys.reduce((a, k) => a + (FLAGS.get(k).renewal || FLAGS.get(k).yearly), 0);
+      const pb = matchedBundle(topKeys);
+      const monthly = pb ? Number(pb.monthly_price) : topKeys.reduce((a, k) => a + Number(PRICES.get(k) || 0), 0), yearly = pb ? Number(pb.yearly_price) : topKeys.reduce((a, k) => a + (FLAGS.get(k).yearly), 0), renew = pb ? yearly : topKeys.reduce((a, k) => a + (FLAGS.get(k).renewal || FLAGS.get(k).yearly), 0);
       document.getElementById('periodMonth').textContent = 'Monthly ' + inr(monthly);
       document.getElementById('periodYear').textContent = 'Yearly ' + inr(yearly) + (yearly < monthly * 12 ? ' (save ' + inr(monthly * 12 - yearly) + ')' : '');
       document.getElementById('periodNote').textContent = PERIOD === 'year' ? 'Year one ' + inr(yearly) + ', then ' + inr(renew) + ' a year from year two.' : 'Switch to yearly and pay less over the year.';

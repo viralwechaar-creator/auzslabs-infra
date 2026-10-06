@@ -93,9 +93,12 @@ async function priceInfo(client, features, { tenantFeatures, period = 'month' } 
   if (!keys.length) return null;
   const sortedKeys = [...keys].sort().join(',');
 
-  const { rows: bundleRows } = await client.query('select feature_keys, monthly_price from bundles');
+  const { rows: bundleRows } = await client.query('select feature_keys, monthly_price, yearly_price from bundles where active');
   const bundleMatch = bundleRows.find((b) => [...b.feature_keys].sort().join(',') === sortedKeys);
-  if (bundleMatch) return period === 'year' ? null : { subtotal: Number(bundleMatch.monthly_price), exempt: 0, setupExempt: false };
+  if (bundleMatch) {
+    const bp = Number(period === 'year' ? bundleMatch.yearly_price : bundleMatch.monthly_price);
+    return bp > 0 ? { subtotal: bp, exempt: 0, setupExempt: false } : null; // no yearly price on this bundle -> monthly only
+  }
 
   if (keys.length === 1 && tenantFeatures) {
     const { rows: overrideRows } = await client.query('select requires, monthly_price from addon_price_overrides where key = $1', [keys[0]]);

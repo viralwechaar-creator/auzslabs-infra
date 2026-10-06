@@ -56,6 +56,29 @@ export default async function run({ browser, stack }) {
     assert(await p.locator('#pricingSection tr[data-key]').count() > 0 || /Pricing/i.test(await p.locator('#pageTitle').innerText()), 'pricing not shown');
     await ca.close();
   }, 'major');
+  await s.check('Admin bundles + yearly prices: create, shown live on the pricing page, refused for non-admins, deleted', async () => {
+    const login = async (email) => (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password: PASSWORD }) })).json()).access_token;
+    const call = async (fn, args, tok) => { const r = await fetch(stack.apiBase + '/rpc/' + fn, { method: 'POST', headers: { 'content-type': 'application/json', ...(tok ? { authorization: 'Bearer ' + tok } : {}) }, body: JSON.stringify(args) }); return { status: r.status, body: await r.json().catch(() => null) }; };
+    const adm = await login(USERS.admin), plain = await login(USERS.plain);
+    const args = { p_key: null, p_label: 'QA Duo', p_feature_keys: ['pos', 'accounting'], p_monthly_price: 2222, p_list_price: 2598, p_yearly_price: 22000, p_badge: 'QA badge', p_blurb: 'QA blurb', p_active: true };
+    assert((await call('admin_save_bundle', args, plain)).status >= 400, 'non-admin created a bundle');
+    const made = await call('admin_save_bundle', args, adm); assert(made.status === 200, 'create failed ' + JSON.stringify(made.body));
+    const key = made.body.data || made.body;
+    assert((await call('admin_save_bundle', { ...args, p_label: 'Dup' }, adm)).status >= 400, 'duplicate product set accepted');
+    assert((await call('admin_save_bundle', { ...args, p_key: 'x1', p_feature_keys: ['pos'] }, adm)).status >= 400, 'single-product bundle accepted');
+    const pub = await call('public_bundles', {}); const list = pub.body.data || pub.body;
+    const b = list.find((x) => x.key === key); assert(b && Number(b.yearly_price) === 22000 && Number(b.list_price) === 2598, 'public bundle missing fields');
+    assert((await call('admin_set_product_yearly', { p_key: 'payroll', p_yearly_price: 9000, p_renewal_yearly_price: 8000 }, adm)).status === 200, 'yearly set failed');
+    await call('admin_set_product_price', { p_key: 'payroll', p_monthly_price: 1234 }, adm);
+    const c5 = await newCtx(browser, stack); const p = await c5.newPage();
+    await p.goto(stack.url('', '/pricing.html')); await p.waitForTimeout(2500);
+    const txt = await p.locator('body').innerText();
+    assert(txt.includes('QA Duo') && txt.includes('2,222') && txt.includes('22,000'), 'new bundle not on pricing page');
+    assert(txt.includes('1,234'), 'edited AUZsPay price not on pricing page'); await c5.close();
+    assert((await call('admin_delete_bundle', { p_key: key }, plain)).status >= 400, 'non-admin deleted a bundle');
+    assert((await call('admin_delete_bundle', { p_key: key }, adm)).status === 200, 'delete failed');
+    await call('admin_set_product_price', { p_key: 'payroll', p_monthly_price: 999 }, adm);
+  }, 'critical');
   await s.check('Platform admin signing in lands on the admin dashboard', async () => {
     const c3 = await newCtx(browser, stack); const p = await c3.newPage(); const e3 = watch(p);
     await p.goto(stack.url('', '/signup.html')); await p.waitForTimeout(500); await p.click('#modeLogin'); await p.fill('#email', USERS.admin); await p.fill('#password', PASSWORD); await p.click('#submitBtn');
