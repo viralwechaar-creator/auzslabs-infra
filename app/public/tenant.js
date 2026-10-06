@@ -18,6 +18,7 @@ window.TENANT_SLUG = (() => {
   }
   // app.auzslab.in is the one shared address for every business: no business is chosen by the address, the signed-in
   // user's own business is used (apps skip their "this login belongs to another business" check when this is empty).
+  // auzspos / auzsmob / auzspay / auzsledger.auzslab.in are the same shared address, each opening its own app (see land.html).
   var sub = host.split('.')[0];
-  return sub === 'app' ? '' : sub;
+  return ['app', 'auzspos', 'auzsmob', 'auzspay', 'auzsledger'].indexOf(sub) >= 0 ? '' : sub;
 })();

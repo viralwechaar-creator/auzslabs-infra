@@ -21,7 +21,11 @@
 */
 const LANDING = { salon: '/salon/' };
 (async () => {
- if (!TENANT_SLUG) return location.replace(location.hostname.split('.')[0] === 'app' ? '/start.html' : '/index.html');
+ if (!TENANT_SLUG) {
+  // shared addresses: app.auzslab.in = every app, the others open their own app (the sign-in screen finds the user's business)
+  const HOME = { app: '/start.html', auzspos: '/index.html', auzsmob: '/mob.html', auzspay: '/payroll.html', auzsledger: '/accounts.html' };
+  return location.replace(HOME[location.hostname.split('.')[0]] || '/index.html');
+ }
  const sb = supabase.createClient(CFG.url, CFG.key);
  let bizType = 'restaurant';
  try {
