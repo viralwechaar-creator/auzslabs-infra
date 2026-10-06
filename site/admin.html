@@ -577,7 +577,7 @@ body.admin-shell .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px
   </div>
 </div>
 
-<script src="/sb-client.js?v=4"></script><script src="tool/twofa.js?v=1"></script>
+<script src="/sb-client.js?v=4"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script>
 const sb = supabase.createClient(CFG.url, CFG.key);
@@ -721,10 +721,16 @@ checkSession();
 document.getElementById('signin').onclick = async () => {
   const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value;
-  let r = await sb.auth.signInWithPassword({ email, password });
-  r = await auz2fa.resolve(sb, r);
-  if (r.error) {
-    document.getElementById('loginErr').textContent = r.error.message;
+  // Deliberately NOT routed through auz2fa.resolve: this is the owner's
+  // own platform-admin tool for onboarding new clients, and it must
+  // never be the thing that can lock the owner out. (In practice a bare
+  // platform-admin account -- no profiles row -- has no UI to turn 2FA
+  // on anyway, since site/account.html's setup card only renders for a
+  // signed-in tenant owner/manager. This keeps it true by construction,
+  // not by coincidence.)
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) {
+    document.getElementById('loginErr').textContent = error.message;
     return;
   }
   checkSession();

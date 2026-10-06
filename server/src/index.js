@@ -826,13 +826,20 @@ const server = http.createServer(async (req, res) => {
       if (!user) throw new HttpError(401, 'authentication required');
       return reply(200, await my2faStatus(user.id));
     }
-    // Setup is gated to owner/manager -- this protects the login of the
-    // person who can do the most damage if it's compromised, not every
-    // staff login (shop-floor username+PIN logins are untouched by 2FA).
+    // Setup is gated to a tenant owner/manager -- this protects the
+    // login of the person who can do the most damage if it's
+    // compromised, not every staff login (shop-floor username+PIN
+    // logins are untouched by 2FA). A platform admin account is
+    // explicitly refused too, not just left unsupported in the UI:
+    // site/admin.html and app/public/admin/onboard.html (the owner's own
+    // client-onboarding tools) are deliberately never routed through a
+    // 2FA prompt, and this check makes it true at the server, not just
+    // by missing UI -- the owner's own ability to onboard a new client
+    // must never depend on a second factor surviving on this account.
     if (url.pathname === '/auth/2fa/setup' && req.method === 'POST') {
       if (!user) throw new HttpError(401, 'authentication required');
       const { rows } = await pool.query('select role from profiles where id = $1', [user.id]);
-      if (rows[0] && !['owner', 'manager'].includes(rows[0].role)) throw new HttpError(403, 'Two-factor authentication is only available to owners and managers.');
+      if (!rows[0] || !['owner', 'manager'].includes(rows[0].role)) throw new HttpError(403, 'Two-factor authentication is only available to a business\'s own owner or manager account.');
       if (rateLimited(`2fasetup:${user.id}`, 10, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
       return reply(200, await generate2faSecret(user.id, user.email));
     }
