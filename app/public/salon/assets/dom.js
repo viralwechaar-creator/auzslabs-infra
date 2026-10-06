@@ -90,6 +90,12 @@ window.applyBrand = function applyBrand(S) {
   const map = { plum: '--plum', cream: '--cream', gold: '--gold', goldD: '--gold-d', taupe: '--taupe', tint: '--tint' };
   for (const [k, cssVar] of Object.entries(map)) { const c = colour(t[k]); if (c) root.setProperty(cssVar, c); }
   if (colour(t.plum)) { const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', t.plum); }
+  /* Look presets: corner shape and typeface (system fonts only, so nothing extra to load). */
+  const SHAPES = { square: ['2px', '4px', '6px', '8px'], soft: null, pill: ['16px', '28px', '36px', 'clamp(28px,3.4vw,44px)'] };
+  const sh = SHAPES[t.shape];
+  if (sh) ['--r-sm', '--r-md', '--r-lg', '--r-xl'].forEach((v, i) => root.setProperty(v, sh[i]));
+  const FONTS = { classic: 'Georgia, "Times New Roman", Times, serif', friendly: 'ui-rounded, "SF Pro Rounded", "Nunito", "Segoe UI", system-ui, sans-serif' };
+  if (FONTS[t.font]) root.setProperty('--font', FONTS[t.font]);
   const safeSrc = v => typeof v === 'string' && /^(\/uploads\/|\/salon\/assets\/)[\w./-]+$/.test(v) ? v : null;
   const dark = safeSrc(S.logo), light = safeSrc(S.logoLight);
   if (dark) document.querySelectorAll('img[src$="logo-plum.png"]').forEach(i => { i.src = dark; });

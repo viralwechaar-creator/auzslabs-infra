@@ -666,6 +666,12 @@
         colourRow('plum', 'Main colour (header, buttons, invoice)', '#391D21'),
         colourRow('gold', 'Accent colour (badges, highlights)', '#E8CF7F'),
         colourRow('cream', 'Text on the main colour', '#F3E6C8')),
+      h('div', { class: 'field', style: 'margin-top:16px' }, h('label', { text: 'Style' }),
+        h('div', { style: 'display:flex;gap:12px;flex-wrap:wrap' },
+          h('label', {}, 'Corners ', h('select', { onchange: e => { S.theme.shape = e.target.value; } },
+            [['', 'Soft (default)'], ['square', 'Sharp'], ['pill', 'Very round']].map(([v, l]) => h('option', { value: v, text: l, selected: (S.theme.shape || '') === v })))),
+          h('label', {}, 'Lettering ', h('select', { onchange: e => { S.theme.font = e.target.value; } },
+            [['', 'Modern (default)'], ['classic', 'Classic serif'], ['friendly', 'Friendly rounded']].map(([v, l]) => h('option', { value: v, text: l, selected: (S.theme.font || '') === v })))))),
       h('p', { class: 'a-note', text: 'Save, then open your website to see the new look.' }));
 
     const MUSIC_MODES = { off: 'Off', upload: 'Uploaded track', spotify: 'Spotify' };
