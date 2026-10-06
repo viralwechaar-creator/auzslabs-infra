@@ -337,7 +337,7 @@ html.fx-stacked .fx-panel:not(:first-of-type){margin-top:-26px;padding-top:88px!
 html.fx-stacked .fx-panel:first-of-type{margin-top:0}
 .fx .stack .stack-panel-dark:not(.fx-panel){position:relative!important;top:auto!important;margin-top:-26px}
 .fx-panel{-webkit-backface-visibility:visible;backface-visibility:visible}
-.fx .stack .stack-panel-dark:not(.fx-panel){margin-top:-28px!important;z-index:4;position:relative!important}
+.fx .stack .stack-panel-dark:not(.fx-panel){margin-top:-28px!important;z-index:30;position:relative!important}
 
 /* ---------- depth + colour for the layered panels (every page except the homepage) ---------- */
 html:has(body.fx){scroll-behavior:auto}
