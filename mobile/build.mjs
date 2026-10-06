@@ -19,6 +19,23 @@ if (fs.existsSync(png)) {
       execSync(`python3 -c "from PIL import Image;Image.open('${png}').convert('RGBA').resize((${s},${s})).save('android/app/src/main/res/mipmap-${d}/${n}.png')"`);
   }
 }
+// Payroll's clock-in (and the hub app, which can navigate into Payroll in the same WebView -- allowNavigation
+// above covers the whole domain) calls plain navigator.geolocation. Capacitor's own WebView already answers that
+// call (BridgeWebChromeClient grants the runtime permission automatically, no extra npm plugin needed) -- but
+// only once the permission actually exists in the manifest; `cap add android`'s template never includes it, so
+// without this the browser call always silently fails (position unavailable) inside the packaged app, with no
+// error a user could act on. Declared for every app, not just payroll, since it costs nothing when unused and the
+// hub app can end up showing the Payroll pages in its own WebView.
+const manifestPath = 'android/app/src/main/AndroidManifest.xml';
+let manifest = fs.readFileSync(manifestPath, 'utf8');
+if (!manifest.includes('ACCESS_FINE_LOCATION')) {
+  manifest = manifest.replace('</manifest>',
+    '    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n' +
+    '    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n' +
+    '</manifest>');
+  fs.writeFileSync(manifestPath, manifest);
+}
+
 const g='android/app/build.gradle'; let t=fs.readFileSync(g,'utf8');
 t=t.replace(/versionCode \d+/,'versionCode '+(process.env.VERSION_CODE||1)).replace(/versionName "[^"]*"/,'versionName "'+(process.env.VERSION_NAME||'1.0.0')+'"');
 // Release signing (only when the keystore secrets are present): Play re-signs with its own key (Play App Signing),
