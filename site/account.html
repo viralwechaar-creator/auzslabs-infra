@@ -90,6 +90,10 @@ input:disabled+.slider{opacity:.4;cursor:default}
 .nav-link.active #notifBadge{color:rgba(255,255,255,.7)}
 .sidebar-nav .nav-divider{border-top:1px solid rgba(255,255,255,.15);margin:14px 0 4px}
 </style>
+<style>
+@media (min-width:900px){#pane-profile .card{display:grid;grid-template-columns:1fr 1fr;column-gap:20px;align-content:start}#pane-profile .card>h3,#pane-profile .card>p,#pane-profile .card>.field.wide,#pane-profile .card>button,#pane-profile .card>a,#pane-profile .card>#pfMsg{grid-column:1/-1}}
+#pfProducts{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));column-gap:20px}
+</style>
 </head>
 <body>
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
@@ -116,11 +120,13 @@ input:disabled+.slider{opacity:.4;cursor:default}
       </div>
       </div>
     <nav class="sidebar-nav" id="acctNav" aria-label="Account sections" style="display:none">
-      <button class="nav-link acct-nav-btn active" data-tab="account"><span>Account</span></button>
-      <button class="nav-link acct-nav-btn" data-tab="services"><span>Services</span></button>
+      <button class="nav-link acct-nav-btn" data-tab="profile"><span>My profile</span></button>
+      <a href="cart.html" class="nav-link" id="cartNavLink"><span>My cart</span><span id="cartNavCount"></span></a>
+      <button class="nav-link acct-nav-btn tenant-only active" data-tab="account"><span>Account</span></button>
+      <button class="nav-link acct-nav-btn tenant-only" data-tab="services"><span>Services</span></button>
       <button class="nav-link acct-nav-btn" data-tab="staff" id="tabStaffBtn" style="display:none"><span>Staff</span></button>
       <button class="nav-link acct-nav-btn" data-tab="roles" id="tabRolesBtn" style="display:none"><span>Roles</span></button>
-      <button class="nav-link acct-nav-btn" data-tab="notifications"><span>Notifications</span><span id="notifBadge"></span></button>
+      <button class="nav-link acct-nav-btn tenant-only" data-tab="notifications"><span>Notifications</span><span id="notifBadge"></span></button>
       <div class="nav-divider"></div>
       <a href="#" id="openPosLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><span id="openPosLabel">Open POS system</span></a>
       <a href="#" id="openPosAddonLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><span>Open POS (add-on)</span></a>
@@ -151,6 +157,7 @@ input:disabled+.slider{opacity:.4;cursor:default}
       </section>
 
       <section class="section tight" id="tabsSection" style="display:none">
+        <div class="section-pane" id="pane-profile"></div>
         <div class="section-pane" id="pane-account"></div>
         <div class="section-pane" id="pane-services"></div>
         <div class="section-pane" id="pane-staff"></div>
@@ -198,6 +205,69 @@ function visiblePermKeys() {
   });
 }
 
+const PRODUCT_CHOICES = [['pos', 'AuzsPOS (billing, kitchen, stock, customers)'], ['self_order', 'AuzsPOS QR (table QR ordering)'], ['payroll', 'AuzsPay (attendance and payroll)'], ['accounting', 'AuzsLedger (accounting and GST)'], ['mobile', 'AUZsMob (mobile shop)'], ['salon', 'AUZslab Salon (booking, billing, website)'], ['website_builder', 'Website Builder'], ['whatsapp', 'WhatsApp automation (add-on)'], ['aggregators', 'Zomato / Swiggy orders (add-on)'], ['custom', 'Custom software']];
+const BIZ_TYPES = ['Cafe / restaurant / bar', 'Salon / spa', 'Retail shop', 'Clothing / boutique', 'Mobile phone shop', 'Office / services', 'Other'];
+const START_WHEN = [['', 'Choose'], ['now', 'As soon as possible'], ['month', 'Within a month'], ['quarter', 'In 2 to 3 months'], ['exploring', 'Just exploring']];
+let PROFILE = null, LOGIN_EMAIL = '';
+
+async function loadProfile() {
+  const { data } = await sb.rpc('my_profile');
+  LOGIN_EMAIL = (data && data.login_email) || ''; PROFILE = (data && data.profile) || {};
+}
+
+function renderProfile() {
+  const P = PROFILE || {}, chosen = new Set(Array.isArray(P.products) ? P.products : []);
+  const opt = (arr, v) => arr.map((x) => { const val = Array.isArray(x) ? x[0] : x, lab = Array.isArray(x) ? x[1] : x; return `<option value="${esc(val)}" ${String(v || '') === String(val) ? 'selected' : ''}>${esc(lab)}</option>`; }).join('');
+  $('#pane-profile').innerHTML = `
+    <div class="card">
+      <h3 class="h-2">Your profile</h3>
+      <p class="muted">Tell us about you and your business. This helps us suggest the right products and get back to you with the right plan.</p>
+      <div class="field"><label>Full name *</label><input id="pfName" value="${esc(P.name)}" autocomplete="name"></div>
+      <div class="field"><label>Phone number *</label><input id="pfPhone" type="tel" value="${esc(P.phone)}" autocomplete="tel" placeholder="9876543210"></div>
+      <div class="field"><label>Login email</label><input value="${esc(LOGIN_EMAIL)}" disabled></div>
+      <div class="field"><label>Contact email (if different)</label><input id="pfEmail" type="email" value="${esc(P.contact_email)}" placeholder="optional"></div>
+      <div class="field"><label>Business name</label><input id="pfBiz" value="${esc(P.business_name || (DASH && DASH.tenant && DASH.tenant.name) || '')}"></div>
+      <div class="field"><label>Business type</label><select id="pfType"><option value="">Choose</option>${opt(BIZ_TYPES, P.business_type)}</select></div>
+      <div class="field"><label>Niche (what exactly do you do or sell?)</label><input id="pfNiche" value="${esc(P.niche)}" placeholder="e.g. unisex salon, bakery, mobile repair"></div>
+      <div class="field"><label>City</label><input id="pfCity" value="${esc(P.city)}"></div>
+      <div class="field wide"><label>Address (optional)</label><textarea id="pfAddr" rows="2">${esc(P.address)}</textarea></div>
+      <div class="field"><label>Number of outlets</label><input id="pfOutlets" type="number" min="0" value="${P.outlets == null ? '' : esc(P.outlets)}"></div>
+      <div class="field"><label>Number of staff</label><input id="pfStaff" type="number" min="0" value="${P.staff_count == null ? '' : esc(P.staff_count)}"></div>
+      <div class="field wide"><label>Products you need</label>
+        <div id="pfProducts">${PRODUCT_CHOICES.map(([k, l]) => `<label style="display:flex;gap:10px;align-items:flex-start;padding:6px 0;font-weight:400"><input type="checkbox" value="${esc(k)}" ${chosen.has(k) ? 'checked' : ''} style="width:18px;height:18px;margin-top:2px"> <span>${esc(l)}</span></label>`).join('')}</div></div>
+      <div class="field"><label>Software you use today (if any)</label><input id="pfCurrent" value="${esc(P.current_software)}" placeholder="e.g. PetPooja, Tally, a notebook"></div>
+      <div class="field"><label>When do you want to start?</label><select id="pfWhen">${opt(START_WHEN, P.start_when)}</select></div>
+      <div class="field wide"><label>Anything else we should know</label><textarea id="pfNotes" rows="3">${esc(P.notes)}</textarea></div>
+      <button class="btn btn-primary form-submit" id="pfSave" style="margin-top:12px">Save profile</button>
+      <a href="cart.html" class="btn btn-ghost form-submit" style="margin-top:8px">Go to my cart</a>
+      <div id="pfMsg" class="muted" style="margin-top:10px"></div>
+    </div>`;
+  $('#pfSave').onclick = async () => {
+    const btn = $('#pfSave'), msg = $('#pfMsg'); msg.textContent = '';
+    const body = { name: $('#pfName').value, phone: $('#pfPhone').value, contact_email: $('#pfEmail').value, business_name: $('#pfBiz').value, business_type: $('#pfType').value, niche: $('#pfNiche').value,
+      city: $('#pfCity').value, address: $('#pfAddr').value, outlets: $('#pfOutlets').value, staff_count: $('#pfStaff').value, current_software: $('#pfCurrent').value, start_when: $('#pfWhen').value, notes: $('#pfNotes').value,
+      products: [...document.querySelectorAll('#pfProducts input:checked')].map((i) => i.value) };
+    btn.disabled = true;
+    const { error } = await sb.rpc('save_my_profile', { p: body });
+    btn.disabled = false;
+    if (error) { msg.textContent = error.message; msg.style.color = 'var(--accent)'; return; }
+    PROFILE = { ...body, outlets: body.outlets === '' ? null : Number(body.outlets), staff_count: body.staff_count === '' ? null : Number(body.staff_count) };
+    msg.style.color = ''; msg.textContent = 'Saved. Thank you!';
+  };
+}
+
+async function bootProspect(session) {
+  $('#signOutBtn').onclick = async () => { await sb.auth.signOut(); window.location.href = 'signup.html'; };
+  document.querySelectorAll('.tenant-only').forEach((e) => { e.style.display = 'none'; });
+  $('#pageTitle').textContent = 'Welcome';
+  $('#pageLede').textContent = 'Complete your profile and review your cart.';
+  $('#tabsSection').style.display = 'block'; $('#acctNav').style.display = 'flex';
+  await loadProfile();
+  const n = (window.AUZcart && AUZcart.get().length) || 0; $('#cartNavCount').textContent = n ? ' (' + n + ')' : '';
+  document.querySelectorAll('.acct-nav-btn').forEach((b) => { b.onclick = () => { showTab(b.dataset.tab); const d = $('#sidebarDrawer'); if (d) d.classList.remove('open'); const o = $('#drawerOverlay'); if (o) o.classList.remove('open'); }; });
+  showTab('profile');
+}
+
 async function boot() {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) { window.location.href = 'signup.html'; return; }
@@ -207,9 +277,13 @@ async function boot() {
     // instead of leaving a dead page. Sign out always works, even when the account could not load.
     $('#signOutBtn').onclick = async () => { await sb.auth.signOut(); window.location.href = 'signup.html'; };
     if (error.status === 401 || /authentication required|not a tenant member/i.test(error.message || '')) {
+      // A signed-in person with no business yet gets "authentication required" here too (they have no staff record),
+      // so ask a function that only needs the login: if it works, they are a new customer, not a dead session.
+      const probe = await sb.rpc('my_profile');
+      if (!probe.error) return bootProspect(session);
       if (error.status === 401 || /authentication required/i.test(error.message || '')) { await sb.auth.signOut(); window.location.href = 'signup.html'; return; }
-      // signed in but no business yet: that is a normal new customer, send them to the homepage
-      window.location.href = 'index.html'; return;
+      // signed in but no business yet: a new customer. They get the lighter dashboard: profile and cart.
+      return bootProspect(session);
     }
     $('#pageTitle').textContent = 'Could not load your account';
     $('#pageLede').textContent = error.message;
@@ -252,6 +326,8 @@ async function boot() {
   if (DASH.my_role === 'owner') await loadStaff();
   await loadNotifications();
   await loadSessions();
+  await loadProfile();
+  { const n = (window.AUZcart && AUZcart.get().length) || 0; $('#cartNavCount').textContent = n ? ' (' + n + ')' : ''; }
 
   document.querySelectorAll('.acct-nav-btn').forEach((b) => {
     b.onclick = () => {
@@ -264,7 +340,7 @@ async function boot() {
       if (toggle) toggle.classList.remove('is-open');
     };
   });
-  const hashTab = { '#notifications': 'notifications', '#staff': 'staff', '#roles': 'roles' }[location.hash];
+  const hashTab = { '#notifications': 'notifications', '#staff': 'staff', '#roles': 'roles', '#profile': 'profile' }[location.hash];
   showTab(hashTab && document.getElementById('pane-' + hashTab) ? hashTab : 'account');
   setInterval(async () => { await loadNotifications(); if ($('#pane-notifications').classList.contains('on')) renderNotifications(); }, 20000);
 
@@ -278,6 +354,7 @@ function showTab(tab) {
   document.querySelectorAll('.acct-nav-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
   document.querySelectorAll('.section-pane').forEach((s) => s.classList.remove('on'));
   $('#pane-' + tab).classList.add('on');
+  if (tab === 'profile') renderProfile();
   if (tab === 'account') renderAccount();
   if (tab === 'services') renderServices();
   if (tab === 'staff') renderStaff();

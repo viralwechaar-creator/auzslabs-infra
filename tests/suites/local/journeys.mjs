@@ -25,6 +25,27 @@ export default async function run({ browser, stack }) {
     await p.goto(stack.url('', '/signup.html')); await p.waitForTimeout(500); await p.click('#modeLogin'); await p.fill('#email', USERS.plain); await p.fill('#password', PASSWORD); await p.click('#submitBtn'); await p.waitForTimeout(2000);
     assert(!/invalid|incorrect/i.test(await p.locator('#authErr').innerText().catch(() => '')), 'login rejected'); await c2.close();
   }, 'critical');
+  await s.check('Profile: a new customer can save and read back their details; admin sees them; bad phone is refused', async () => {
+    const login = async (email) => (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password: PASSWORD }) })).json()).access_token;
+    const call = async (fn, args, tok) => (await fetch(stack.apiBase + '/rpc/' + fn, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok }, body: JSON.stringify(args) }));
+    const tok = await login(USERS.plain), adm = await login(USERS.admin);
+    const bad = await call('save_my_profile', { p: { name: 'QA Person', phone: 'abc' } }, tok); assert(bad.status >= 400, 'bad phone accepted');
+    const ok = await call('save_my_profile', { p: { name: 'QA Person', phone: '9876543210', business_name: 'QA Cafe', business_type: 'Cafe / restaurant / bar', niche: 'bakery', city: 'Jodhpur', outlets: '2', staff_count: '8', products: ['pos', 'payroll'], start_when: 'month' } }, tok);
+    assert(ok.status === 200, 'save failed ' + ok.status);
+    const me = await (await call('my_profile', {}, tok)).json(); const P = (me.data || me).profile || {};
+    assert(P.name === 'QA Person' && P.outlets === 2 && (P.products || []).length === 2, 'read back wrong: ' + JSON.stringify(me).slice(0, 200));
+    const list = await (await call('admin_list_profiles', {}, adm)).json(); const arr = list.data || list;
+    assert(Array.isArray(arr) && arr.some((x) => x.business_name === 'QA Cafe'), 'admin cannot see the profile');
+    const denied = await call('admin_list_profiles', {}, tok); assert(denied.status >= 400, 'non-admin could list profiles');
+  }, 'critical');
+  await s.check('Account page for a customer without a business shows the profile form and a cart link', async () => {
+    const c9 = await newCtx(browser, stack); const p = await c9.newPage();
+    await p.goto(stack.url('', '/signup.html')); await p.waitForTimeout(500); await p.click('#modeLogin'); await p.fill('#email', USERS.plain); await p.fill('#password', PASSWORD); await p.click('#submitBtn'); await p.waitForTimeout(2500);
+    await p.goto(stack.url('', '/account.html')); await p.waitForTimeout(2500);
+    assert(await p.locator('#pfName').isVisible(), 'profile form not shown; url ' + p.url());
+    assert((await p.locator('#pfName').inputValue()) === 'QA Person', 'saved name not loaded');
+    assert(await p.locator('#cartNavLink').isVisible(), 'cart link missing'); await c9.close();
+  }, 'critical');
   await s.check('Platform admin signing in lands on the admin dashboard', async () => {
     const c3 = await newCtx(browser, stack); const p = await c3.newPage(); const e3 = watch(p);
     await p.goto(stack.url('', '/signup.html')); await p.waitForTimeout(500); await p.click('#modeLogin'); await p.fill('#email', USERS.admin); await p.fill('#password', PASSWORD); await p.click('#submitBtn');

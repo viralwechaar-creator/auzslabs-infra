@@ -41,6 +41,12 @@
 .period-seg button{flex:1;min-width:140px;border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:12px 14px;font:600 14px var(--font-body);color:var(--ink-dim);cursor:pointer}
 .period-seg button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
 </style>
+<style>
+/* Cart: items and bill on the left, details form on the right (desktop); one column on phones. */
+.cart-cols{display:block}
+.cart-cols .section{max-width:none!important}
+@media (min-width:1000px){.cart-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px;align-items:start}.cart-right{position:sticky;top:90px}}
+</style>
 </head>
 <body>
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
@@ -69,6 +75,8 @@
         </div>
       </section>
 
+      <div class="cart-cols">
+      <div class="cart-left">
       <section class="section tight" style="max-width:640px">
         <div id="cartItems"></div>
       </section>
@@ -98,6 +106,8 @@
       </section>
 
       
+      </div>
+      <div class="cart-right">
       <section class="section tight" id="addonSection" style="display:none;max-width:640px">
         <div class="card">
           <p class="p" style="margin-bottom:8px">Signed in as <b id="addonWhoami"></b> — adding to <b id="addonTenant"></b></p>
@@ -132,7 +142,7 @@
 
       <section class="section tight" id="requestSection" style="display:none;max-width:640px">
         <div class="card">
-          <p class="p" style="margin-bottom:8px">Signed in as <b id="whoami"></b></p>
+          <p class="p" style="margin-bottom:8px">Signed in as <b id="whoami"></b> &middot; <a href="account.html#profile">Edit my profile</a></p>
 
           <p class="label" style="margin-top:4px">About you</p>
           <div class="field">
@@ -193,6 +203,8 @@
           <div id="submitErr" class="err"></div>
         </div>
       </section>
+      </div>
+      </div>
 
     </div>
   </main>
@@ -532,6 +544,14 @@ async function checkSession() {
     document.getElementById('addonSection').style.display = 'none';
     document.getElementById('requestSection').style.display = 'block';
     document.getElementById('whoami').textContent = session.user.email;
+    // Fill the form from the saved profile (account page) so nobody types the same details twice.
+    try {
+      const { data: pr } = await sb.rpc('my_profile'); const P = (pr && pr.profile) || {};
+      const put = (id, v) => { const el = document.getElementById(id); if (el && !el.value && v) el.value = v; };
+      put('contactName', P.name); put('contactPhone', P.phone); put('bizName', P.business_name);
+      const t = String(P.business_type || '').toLowerCase(), sel = document.getElementById('bizNiche');
+      if (sel && t) sel.value = /salon|spa/.test(t) ? 'salon' : /cafe|restaurant|bar/.test(t) ? 'cafe' : /retail|cloth|mobile/.test(t) ? 'retail' : sel.value;
+    } catch (e) { /* the form just stays empty */ }
   }
   updatePayButtons();
 }
