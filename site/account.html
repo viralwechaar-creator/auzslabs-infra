@@ -132,6 +132,7 @@ input:disabled+.slider{opacity:.4;cursor:default}
       <a href="#" id="openPosAddonLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><span>Open POS (add-on)</span></a>
       <a href="#" id="openPayrollLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><span>Open Payroll</span></a>
       <a href="#" id="openBuilderLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><span>Open Website Builder</span></a>
+      <button class="nav-link" id="helpLink" type="button"><span>Help &amp; report a problem</span></button>
       <a href="#" id="openAccountsLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><span>Open Accounting</span></a>
       <a href="#" id="openMobLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><span>Open AUZsMob</span></a>
     </nav>
@@ -169,8 +170,9 @@ input:disabled+.slider{opacity:.4;cursor:default}
 </div>
 
 <script src="/sb-client.js?v=4"></script>
-<script src="tool/lock.js?v=1"></script><script src="tool/mydata.js?v=1"></script>
+<script src="tool/lock.js?v=1"></script><script src="tool/mydata.js?v=1"></script><script src="tool/help.js?v=1"></script>
 <script src="tool/site.js?v=10"></script>
+<script>document.addEventListener("click", function (e) { if (e.target.closest && e.target.closest("#helpLink")) { try { auzHelp.open(typeof sb !== "undefined" ? sb : null); } catch (x) {} } });</script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script>
 const sb = supabase.createClient(CFG.url, CFG.key);

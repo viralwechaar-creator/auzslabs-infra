@@ -110,6 +110,7 @@
           icon(ICONS[k]), TITLES[k], k === 'bookings' && pending ? h('span', { class: 'badge', text: pending }) : null)),
         h('div', { class: 'a-more-sep' }),
         h('a', { href: '/salon/', target: '_blank', rel: 'noopener' }, icon('doc'), 'View website'),
+        h('button', { type: 'button', onclick: () => { d.close(); window.auzHelp && auzHelp.open(null); } }, icon('doc'), 'Help & report a problem'),
         h('button', { type: 'button', onclick: () => { d.close(); $('#logout').click(); } }, icon('logout'), 'Sign out')));
     d.addEventListener('click', e => { if (e.target === d) d.close(); });
     d.addEventListener('close', () => d.remove());

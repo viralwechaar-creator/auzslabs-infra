@@ -459,6 +459,21 @@ export default async function run({ browser, stack }) {
     } finally { await q("delete from tenant_data_actions where tenant_id=$1 and action='clear'", [tid]); }
     await c.close();
   }, 'critical');
+  await s.check('Help & report a problem (every app): the helper loads on all staff apps and the sheet opens from AUZsMob with email, screenshot and details', async () => {
+    for (const path of ['/index.html', '/backoffice.html', '/dashboard.html', '/payroll.html', '/accounts.html', '/builder.html', '/mob.html']) {
+      const c = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const pg = await c.newPage();
+      await pg.goto(stack.url('testmob', path)); await pg.waitForTimeout(800);
+      assert(await pg.evaluate(() => !!(window.auzHelp && typeof window.auzHelp.open === 'function')), path + ' does not load the help helper');
+      await c.close();
+    }
+    const { c, page } = await open(USERS.mobOwner, { w: 390, h: 844, mobile: true });
+    await page.locator('.tabbar button', { hasText: /more/i }).click(); await page.waitForTimeout(500);
+    await page.locator('button, .li', { hasText: /Help & report a problem/ }).first().click(); await page.waitForTimeout(600);
+    const txt = await page.locator('[aria-label="Help and report a problem"]').innerText();
+    assert(/Send by email/.test(txt) && /Add a screenshot/.test(txt) && /Copy the details/.test(txt), 'help sheet: ' + txt.slice(0, 200));
+    assert(await page.locator('textarea[aria-label="What went wrong"]').count() === 1, 'no description box');
+    await c.close();
+  }, 'critical');
   await s.check('Simple mode screens: no Repairs/Stock/Dues tabs, Sell offers Repair / service and adds it to the cart, Settings shows the Features card', async () => {
     await setFeat({ ...ALL_ON, stock: false, serials: false, customers: false, vendors: false, dayclose: false, repairs: 'simple' });
     const { c, page } = await open(USERS.mobOwner, { w: 390, h: 844, mobile: true });
