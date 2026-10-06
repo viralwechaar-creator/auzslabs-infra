@@ -492,7 +492,12 @@ export default async function run({ browser, stack }) {
     await p2.locator('.tile', { hasText: 'AUZsPOS' }).click(); await p2.waitForURL(/index\.html/, { timeout: 15000 }); await p2.waitForSelector('.shell, .tbl-tile, .items', { timeout: 20000 });
     assert(!/different business/i.test(await p2.locator('body').innerText()), 'POS refused the login on the shared address');
     await c2.close();
-    let refused = false; try { await q("insert into signup_requests (user_id, business_name, slug) select id, 'X', 'app' from auth_users limit 1"); } catch (e) { refused = /slug_not_reserved/.test(String(e.message)); }
+    for (const [host, re] of [['auzsmob', /\/mob\.html/], ['auzspos', /\/index\.html/], ['auzspay', /\/payroll\.html/], ['auzsledger', /\/accounts\.html/]]) {
+      const cx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const px = await cx.newPage();
+      await px.goto(stack.url(host, '/')); await px.waitForURL(re, { timeout: 20000 }); await px.waitForSelector('input[type=password]', { timeout: 20000 });
+      await cx.close();
+    }
+    let refused = false; try { await q("insert into signup_requests (user_id, business_name, slug) select id, 'X', 'auzsmob' from auth_users limit 1"); } catch (e) { refused = /slug_not_reserved/.test(String(e.message)); }
     assert(refused, 'the reserved address "app" was accepted for a business');
   }, 'critical');
   await s.check('Simple mode screens: no Repairs/Stock/Dues tabs, Sell offers Repair / service and adds it to the cart, Settings shows the Features card', async () => {
