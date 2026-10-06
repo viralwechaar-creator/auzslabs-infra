@@ -21,7 +21,14 @@ export const razorpayConfigured = () => !!(RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRE
 // (never on an addon_request -- an existing tenant was already set up). Both are plain constants,
 // not admin-editable yet (same bar as addon_price_overrides' original seed values) -- revisit if
 // the owner wants to tune them without a deploy.
-const GST_RATE = 0.18;
+// GST is a runtime switch (platform_flags 'gst_rate_pct', 0 until AUZslab is GST-registered, db/102).
+export async function gstPct() {
+  try {
+    const { rows } = await pool.query(`select value from platform_flags where key = 'gst_rate_pct'`);
+    const n = Number(rows[0]?.value);
+    return Number.isFinite(n) && n >= 0 && n <= 40 ? n : 0;
+  } catch { return 0; }
+}
 const SETUP_FEE = 2179;
 
 // Rounds to the paisa (2 decimals), same convention as priceFeatures()'s own total.
@@ -32,9 +39,9 @@ const round2 = (n) => Math.round(n * 100) / 100;
 // it), and what's actually due today vs. the recurring monthly amount from month 2. cart.html's
 // own bill preview mirrors this exactly, so what a visitor sees is what Razorpay actually
 // charges -- never a naive sum.
-function billFor(subtotal, { isSignup, exempt = 0, setupExempt = false }) {
+function billFor(subtotal, { isSignup, exempt = 0, setupExempt = false, gstRate = 0 }) {
   const setupFee = isSignup && !setupExempt ? SETUP_FEE : 0;
-  const subtotalGst = round2((subtotal - exempt) * GST_RATE);
+  const subtotalGst = round2((subtotal - exempt) * gstRate);
   const monthlyTotal = round2(subtotal + subtotalGst);
   const dueToday = round2(subtotal + subtotalGst + setupFee);
   return { subtotal, subtotalGst, setupFee, monthlyTotal, dueToday };
@@ -161,7 +168,7 @@ export async function createOrder({ userId, signupRequestId, addonRequestId, per
 
   const info = await priceInfo(pool, features, { tenantFeatures, period });
   if (info === null) throw new Error(period === 'year' ? 'Yearly billing is not available for this combination of products -- choose monthly.' : 'One or more of these products is not available for online payment yet -- use the request form instead.');
-  const bill = billFor(info.subtotal, { isSignup: !!signupRequestId, exempt: info.exempt, setupExempt: info.setupExempt });
+  const bill = billFor(info.subtotal, { isSignup: !!signupRequestId, exempt: info.exempt, setupExempt: info.setupExempt, gstRate: (await gstPct()) / 100 });
 
   const order = await razorpayApi('orders', {
     amount: Math.round(bill.dueToday * 100), // paise -- subtotal + GST + (signup only) flat setup fee, no GST on the fee

@@ -83,8 +83,8 @@
           </div>
           <p class="pay-note" id="periodNote" style="margin:0 0 6px"></p>
           <div class="bill-row" style="padding-left:0;padding-right:0"><span>Subscription</span><b id="topBillSubtotal"></b></div>
-          <div class="bill-row" style="padding-left:0;padding-right:0"><span>GST (18%)</span><b id="topBillGst"></b></div>
-          <div class="bill-row" id="topBillSetupRow" style="padding-left:0;padding-right:0"><span>One-time setup fee <i>(mandatory, no GST)</i></span><b id="topBillSetup"></b></div>
+          <div class="bill-row" id="topBillGstRow" style="padding-left:0;padding-right:0"><span id="topBillGstLabel">GST</span><b id="topBillGst"></b></div>
+          <div class="bill-row" id="topBillSetupRow" style="padding-left:0;padding-right:0"><span>One-time setup fee <i>(mandatory)</i></span><b id="topBillSetup"></b></div>
           <div class="cart-total" style="border-top:2px solid var(--ink);margin-top:6px;padding-top:12px;padding-left:0;padding-right:0"><span>Total due today</span><b id="topBillTotal"></b></div>
           <p class="pay-note" id="topBillThenNote" style="margin-top:0"></p>
         </div>
@@ -176,7 +176,7 @@
           </div>
           <button id="payBtn" class="btn btn-primary form-submit" style="display:none">Pay &amp; activate instantly</button>
           <p id="payNote" class="pay-note" style="display:none">Card, UPI or netbanking -- your account goes live the moment payment is confirmed, no waiting for review.</p>
-          <p class="pay-note">A one-time setup fee of ₹2,179 (no GST) is mandatory for every new AUZslab account, collected together with your first month's payment.</p>
+          <p class="pay-note">A one-time setup fee of ₹2,179 is mandatory for every new AUZslab account, collected together with your first month's payment.</p>
           <div id="UpiCard" class="card" style="display:none;margin-top:8px;text-align:center">
             <div class="label" style="justify-content:center">Pay by UPI</div>
             <div class="cart-total"><span>Amount</span><b id="UpiAmount"></b></div>
@@ -238,7 +238,7 @@ function inr(n) {
 // preview is what Razorpay will actually charge, never a naive guess. 18% GST on the
 // subscription only; the one-time ₹2,179 setup fee is flat, no GST added to it, and only ever
 // applies to a brand-new signup, never to an addon purchase on an existing (already set up) tenant.
-const GST_RATE = 0.18;
+let GST_RATE = 0; // set from the server (platform_flags gst_rate_pct); 0 until AUZslab is GST-registered
 const SETUP_FEE = 2179;
 const round2 = (n) => Math.round(n * 100) / 100;
 function billFor(subtotal, isSignup, keys) {
@@ -294,6 +294,7 @@ async function loadPricing() {
   BUNDLES = bundles || [];
   ADDON_OVERRIDES = overrides || [];
   PAY = cfg || { enabled: false, keyId: null };
+  GST_RATE = Number(PAY.gstPct || 0) / 100;
 }
 
 // Mirrors payments.js's priceFeatures() exactly (db/072), so what this
@@ -431,6 +432,8 @@ function updatePayButtons() {
       : `<span class="tag">Bundle applied</span><span>${bundle.label}</span>`;
     const yr = PERIOD === 'year' && yearlyEligible(topKeys);
     document.getElementById('topBillSubtotal').textContent = inr(topTotal.subtotal) + (yr ? '/year' : '/mo');
+    document.getElementById('topBillGstRow').style.display = GST_RATE > 0 ? 'flex' : 'none';
+    document.getElementById('topBillGstLabel').textContent = 'GST (' + Math.round(GST_RATE * 100) + '%)';
     document.getElementById('topBillGst').textContent = topTotal.exempt >= topTotal.subtotal ? 'No GST' : inr(topTotal.subtotalGst);
     document.getElementById('topBillSetupRow').style.display = isAddonContext || topTotal.setupFee === 0 ? 'none' : 'flex';
     const elig = yearlyEligible(topKeys);

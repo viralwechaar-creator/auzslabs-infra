@@ -14,7 +14,7 @@ import { verifyCaptcha, captchaEnabled } from './captcha.js';
 import { startMaintenance } from './maintenance.js';
 import { sendOtpSms } from './sms.js';
 import { handleSalon } from './salon.js';
-import { paymentConfig, createOrder, verifyWebhookSignature, handleWebhookEvent } from './payments.js';
+import { paymentConfig, gstPct, createOrder, verifyWebhookSignature, handleWebhookEvent } from './payments.js';
 import { initErrorTracking, captureError } from './errors.js';
 
 initErrorTracking(); // dormant unless SENTRY_DSN is set -- see errors.js
@@ -814,7 +814,7 @@ const server = http.createServer(async (req, res) => {
     // are set (see payments.js). /payments/config tells the cart page
     // whether to even offer online checkout. ----
     if (url.pathname === '/payments/config' && req.method === 'GET') {
-      return reply(200, paymentConfig());
+      return reply(200, { ...paymentConfig(), gstPct: await gstPct() });
     }
     if (url.pathname === '/payments/create-order' && req.method === 'POST') {
       if (!user) throw new HttpError(401, 'authentication required');
