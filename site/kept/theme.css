@@ -511,3 +511,8 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
   .stack-panel:not(:first-of-type){padding-top:120px}
   .stack-panel:not(:first-of-type)::before{font-size:clamp(44px,10vh,84px)}
 }
+
+/* Footer: five link columns on desktop, two on phones; the address line only shows once company.js fills it. */
+.footer-tag{font-size:13px;line-height:1.5;color:rgba(255,255,255,.6);margin:10px 0 0;max-width:260px}
+.footer-tag:empty{display:none}
+@media (min-width:900px){.footer-top{grid-template-columns:1.3fr repeat(5,1fr);gap:28px}.footer-col-brand{grid-column:auto}}
