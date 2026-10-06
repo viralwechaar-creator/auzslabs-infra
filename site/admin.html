@@ -383,7 +383,7 @@ body.admin-shell .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px
 
         <div class="label" style="margin-top:28px">Bundle plans</div>
         <h2 class="h-2">Bundles</h2>
-        <p class="p">A bundle's price only applies when a cart's products exactly match its set. Everything else still prices as a flat sum of the individual products above.</p>
+        <p class="p">Create bundles from any two or more products. A bundle's price (monthly, or the whole-year price if set) applies when a cart's products exactly match its set; everything else is a flat sum of the products above.</p>
         <div id="bundlesList">Loading&hellip;</div>
 
         <div class="label" style="margin-top:28px">Razorpay</div>
@@ -996,11 +996,18 @@ async function loadPricing() {
           <span style="color:var(--ink-faint)">/mo</span>
         </span>`}
       </td>
+      <td data-label="Whole year">
+        ${['crm', 'billing', 'inventory'].includes(p.key) ? '' : `<span style="display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap">
+          &#8377; <input class="input" data-yearly type="number" min="0" step="1" value="${Number(p.yearly_price || 0)}" style="width:100px" title="Price if paid for the whole year (0 = no yearly option)">
+          <span style="color:var(--ink-faint)">/yr, then</span>
+          &#8377; <input class="input" data-renew type="number" min="0" step="1" value="${Number(p.renewal_yearly_price || 0)}" style="width:100px" title="Yearly renewal price from year two (0 = same as year one)">
+        </span>`}
+      </td>
       <td class="row-actions">${['crm', 'billing', 'inventory'].includes(p.key) ? '' : '<button class="btn btn-primary" data-save>Save</button>'}</td>
     </tr>`).join('');
 
   listEl.innerHTML = `<div class="admin-table-wrap"><table class="admin-table">
-    <tr><th>Product</th><th>Monthly price</th><th></th></tr>
+    <tr><th>Product</th><th>Monthly price</th><th>Whole year (year one, then renewal)</th><th></th></tr>
     ${rows}
   </table></div>`;
 
@@ -1009,8 +1016,12 @@ async function loadPricing() {
     saveBtn.onclick = async () => {
       const price = Number(tr.querySelector('[data-price]').value);
       if (!(price >= 0)) { alert('Enter a price of 0 or more.'); return; }
+      const yearly = Number(tr.querySelector('[data-yearly]').value || 0), renew = Number(tr.querySelector('[data-renew]').value || 0);
+      if (!(yearly >= 0) || !(renew >= 0)) { alert('Yearly prices must be 0 or more.'); return; }
       const { error: saveErr } = await sb.rpc('admin_set_product_price', { p_key: tr.dataset.key, p_monthly_price: price });
       if (saveErr) { alert(saveErr.message); return; }
+      const { error: yErr } = await sb.rpc('admin_set_product_yearly', { p_key: tr.dataset.key, p_yearly_price: yearly, p_renewal_yearly_price: renew });
+      if (yErr) { alert(yErr.message); return; }
       loadPricing();
     };
   });
@@ -1018,32 +1029,83 @@ async function loadPricing() {
 
 async function loadBundles() {
   const listEl = document.getElementById('bundlesList');
-  const { data, error } = await sb.rpc('public_bundles', {});
+  const [{ data, error }, { data: prods }, { data: addons }] = await Promise.all([
+    sb.rpc('admin_list_bundles', {}), sb.rpc('public_product_prices', {}), sb.rpc('public_addon_price_overrides', {}),
+  ]);
   if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  const sellable = (prods || []).filter((p) => !['crm', 'billing', 'inventory'].includes(p.key));
+  const card = (b) => {
+    const isNew = !b.key;
+    const sum = (b.feature_keys || []).reduce((a, k) => a + Number((sellable.find((p) => p.key === k) || {}).monthly_price || 0), 0);
+    return `<div class="a-card" data-bkey="${esc(b.key || '')}" style="border:1px solid var(--line,#ddd);border-radius:12px;padding:14px;margin-bottom:12px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <input class="input" data-f="label" placeholder="Bundle name" value="${esc(b.label || '')}" style="flex:1;min-width:200px">
+        <input class="input" data-f="badge" placeholder="Badge (e.g. Most popular)" value="${esc(b.badge || '')}" style="width:190px">
+      </div>
+      <div style="margin:10px 0;display:flex;gap:12px;flex-wrap:wrap">${sellable.map((p) => `<label style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" data-prod="${esc(p.key)}" ${(b.feature_keys || []).includes(p.key) ? 'checked' : ''}> ${esc(p.label)}</label>`).join('')}</div>
+      <input class="input" data-f="blurb" placeholder="One line shown on the pricing page" value="${esc(b.blurb || '')}" style="width:100%;margin-bottom:10px">
+      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end">
+        <label>Monthly price<br>&#8377; <input class="input" data-f="monthly_price" type="number" min="0" step="1" value="${Number(b.monthly_price || 0)}" style="width:110px"></label>
+        <label>Total if bought separately<br>&#8377; <input class="input" data-f="list_price" type="number" min="0" step="1" value="${Number(b.list_price || 0)}" style="width:110px"></label>
+        <label>Whole-year price<br>&#8377; <input class="input" data-f="yearly_price" type="number" min="0" step="1" value="${Number(b.yearly_price || 0)}" style="width:110px"></label>
+        <label><input type="checkbox" data-f="active" ${b.active === false ? '' : 'checked'}> Show on site</label>
+      </div>
+      <div class="p" data-disc style="margin:8px 0 0;font-size:13px"></div>
+      <div style="margin-top:10px;display:flex;gap:8px"><button class="btn btn-primary" data-save>${isNew ? 'Create bundle' : 'Save'}</button>${isNew ? '<button class="btn" data-cancel>Cancel</button>' : '<button class="btn" data-del>Delete</button>'}</div>
+      <input type="hidden" data-sum value="${sum}">
+    </div>`;
+  };
+  const addonRows = (addons || []).map((o) => `<div style="display:flex;gap:8px;align-items:center;margin:6px 0" data-addon data-akey="${esc(o.key)}" data-areq="${esc(o.requires)}">
+      <span><b>${esc(FEATURE_LABEL[o.key] || o.key)}</b> as an add-on for clients who already have <b>${esc(FEATURE_LABEL[o.requires] || o.requires)}</b>: &#8377; <input class="input" data-aprice type="number" min="0" step="1" value="${Number(o.monthly_price)}" style="width:100px">/mo</span>
+      <button class="btn btn-primary" data-asave>Save</button></div>`).join('');
+  listEl.innerHTML = (data || []).map(card).join('') +
+    `<div id="newBundleBox"></div><button class="btn" id="addBundleBtn">+ New bundle</button>
+     ${addonRows ? `<div class="label" style="margin-top:22px">Add-on prices</div>${addonRows}` : ''}`;
 
-  const rows = (data || []).map((b) => `
-    <tr data-key="${esc(b.key)}">
-      <td data-label="Bundle"><b>${esc(b.label)}</b><br><span style="color:var(--ink-faint)">${b.feature_keys.map((k) => esc(FEATURE_LABEL[k] || k)).join(' + ')}</span></td>
-      <td data-label="Monthly price">
-        <span style="display:inline-flex;align-items:center;gap:6px">
-          &#8377; <input class="input" data-price type="number" min="0" step="1" value="${Number(b.monthly_price)}" style="width:100px">
-          <span style="color:var(--ink-faint)">/mo</span>
-        </span>
-      </td>
-      <td class="row-actions"><button class="btn btn-primary" data-save>Save</button></td>
-    </tr>`).join('');
-
-  listEl.innerHTML = `<div class="admin-table-wrap"><table class="admin-table">
-    <tr><th>Bundle</th><th>Monthly price</th><th></th></tr>
-    ${rows}
-  </table></div>`;
-
-  listEl.querySelectorAll('tr[data-key]').forEach((tr) => {
-    tr.querySelector('[data-save]').onclick = async () => {
-      const price = Number(tr.querySelector('[data-price]').value);
-      if (!(price >= 0)) { alert('Enter a price of 0 or more.'); return; }
-      const { error: saveErr } = await sb.rpc('admin_set_bundle_price', { p_key: tr.dataset.key, p_monthly_price: price });
-      if (saveErr) { alert(saveErr.message); return; }
+  const refreshDisc = (c) => {
+    const keys = [...c.querySelectorAll('[data-prod]:checked')].map((x) => x.dataset.prod);
+    const sep = keys.reduce((a, k) => a + Number((sellable.find((p) => p.key === k) || {}).monthly_price || 0), 0);
+    const m = Number(c.querySelector('[data-f=monthly_price]').value || 0), l = Number(c.querySelector('[data-f=list_price]').value || 0) || sep;
+    const y = Number(c.querySelector('[data-f=yearly_price]').value || 0);
+    const bits = [`Separately these cost ${'₹'}${sep.toLocaleString('en-IN')}/mo`];
+    if (l > m) bits.push(`bundle discount ${'₹'}${(l - m).toLocaleString('en-IN')}/mo (${Math.round((l - m) / l * 100)}%)`);
+    if (y > 0 && m > 0) bits.push(y < m * 12 ? `whole year ${'₹'}${y.toLocaleString('en-IN')} saves ${'₹'}${(m * 12 - y).toLocaleString('en-IN')} (${Math.round((m * 12 - y) / (m * 12) * 100)}%) vs 12 months` : `whole year ${'₹'}${y.toLocaleString('en-IN')}`);
+    c.querySelector('[data-disc]').textContent = bits.join(' · ');
+  };
+  const wire = (c) => {
+    c.querySelectorAll('input').forEach((i) => { i.oninput = () => refreshDisc(c); i.onchange = () => refreshDisc(c); });
+    refreshDisc(c);
+    c.querySelector('[data-save]').onclick = async () => {
+      const f = (n) => c.querySelector('[data-f=' + n + ']');
+      const keys = [...c.querySelectorAll('[data-prod]:checked')].map((x) => x.dataset.prod);
+      const { error: e } = await sb.rpc('admin_save_bundle', {
+        p_key: c.dataset.bkey || null, p_label: f('label').value, p_feature_keys: keys,
+        p_monthly_price: Number(f('monthly_price').value || 0), p_list_price: Number(f('list_price').value || 0),
+        p_yearly_price: Number(f('yearly_price').value || 0), p_badge: f('badge').value, p_blurb: f('blurb').value, p_active: f('active').checked,
+      });
+      if (e) { alert(e.message); return; }
+      loadBundles();
+    };
+    const del = c.querySelector('[data-del]');
+    if (del) del.onclick = async () => {
+      if (!confirm('Delete this bundle? Carts with these products will price as separate items again.')) return;
+      const { error: e } = await sb.rpc('admin_delete_bundle', { p_key: c.dataset.bkey });
+      if (e) { alert(e.message); return; }
+      loadBundles();
+    };
+    const cancel = c.querySelector('[data-cancel]');
+    if (cancel) cancel.onclick = () => { document.getElementById('newBundleBox').innerHTML = ''; };
+  };
+  listEl.querySelectorAll('[data-bkey]').forEach(wire);
+  document.getElementById('addBundleBtn').onclick = () => {
+    const box = document.getElementById('newBundleBox');
+    box.innerHTML = card({ active: true });
+    wire(box.firstElementChild);
+  };
+  listEl.querySelectorAll('[data-addon]').forEach((r) => {
+    r.querySelector('[data-asave]').onclick = async () => {
+      const { error: e } = await sb.rpc('admin_set_addon_price', { p_key: r.dataset.akey, p_requires: r.dataset.areq, p_monthly_price: Number(r.querySelector('[data-aprice]').value) });
+      if (e) { alert(e.message); return; }
       loadBundles();
     };
   });

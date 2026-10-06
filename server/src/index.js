@@ -135,6 +135,12 @@ const RPC = {
   public_bundles: { params: [], auth: false },
   admin_set_bundle_price: { params: ['p_key', 'p_monthly_price'], auth: true },
   public_addon_price_overrides: { params: [], auth: false },
+  // --- Admin-managed bundles + yearly prices (db/113) ---
+  admin_list_bundles: { params: [], auth: true },
+  admin_save_bundle: { params: ['p_key', 'p_label', 'p_feature_keys', 'p_monthly_price', 'p_list_price', 'p_yearly_price', 'p_badge', 'p_blurb', 'p_active'], auth: true },
+  admin_delete_bundle: { params: ['p_key'], auth: true },
+  admin_set_product_yearly: { params: ['p_key', 'p_yearly_price', 'p_renewal_yearly_price'], auth: true },
+  admin_set_addon_price: { params: ['p_key', 'p_requires', 'p_monthly_price'], auth: true },
   // provision_from_payment / provision_addon_from_payment deliberately NOT
   // registered here -- they skip the is_platform_admin() check that every
   // other provisioning path requires, trusting instead that the only
