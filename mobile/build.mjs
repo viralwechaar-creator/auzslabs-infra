@@ -21,5 +21,20 @@ if (fs.existsSync(png)) {
 }
 const g='android/app/build.gradle'; let t=fs.readFileSync(g,'utf8');
 t=t.replace(/versionCode \d+/,'versionCode '+(process.env.VERSION_CODE||1)).replace(/versionName "[^"]*"/,'versionName "'+(process.env.VERSION_NAME||'1.0.0')+'"');
+// Release signing (only when the keystore secrets are present): Play re-signs with its own key (Play App Signing),
+// this is the upload key.
+if (process.env.KEYSTORE_PATH) {
+  t = t.replace(/android \{/, `android {
+    signingConfigs {
+        release {
+            storeFile file(System.getenv('KEYSTORE_PATH'))
+            storePassword System.getenv('KEYSTORE_PASSWORD')
+            keyAlias System.getenv('KEY_ALIAS')
+            keyPassword System.getenv('KEY_PASSWORD')
+        }
+    }`);
+  t = t.replace(/buildTypes \{\s*release \{/, m => m + `
+            signingConfig signingConfigs.release`);
+}
 fs.writeFileSync(g,t);
 console.log('ready:',app);

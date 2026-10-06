@@ -1,11 +1,30 @@
 name: Android build
+# Run from the Actions tab. app = hub, pos, mob, payroll, accounts or all.
+# Always builds a test APK. If the four signing secrets exist (see docs/ANDROID_RELEASE.md) it also builds the signed
+# release bundle (.aab) that you upload to Google Play.
 on:
   workflow_dispatch:
     inputs:
-      app: {description: "hub, pos, mob, payroll or accounts", default: hub}
+      app: {description: "hub, pos, mob, payroll, accounts or all", default: all}
 jobs:
-  build:
+  plan:
     runs-on: ubuntu-latest
+    outputs:
+      apps: ${{ steps.p.outputs.apps }}
+    steps:
+      - id: p
+        run: |
+          if [ "${{ inputs.app }}" = "all" ]; then echo 'apps=["hub","pos","mob","payroll","accounts"]' >> $GITHUB_OUTPUT; else echo 'apps=["${{ inputs.app }}"]' >> $GITHUB_OUTPUT; fi
+  build:
+    needs: plan
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJson(needs.plan.outputs.apps) }}
+    env:
+      VERSION_CODE: ${{ github.run_number }}
+      VERSION_NAME: 1.0.${{ github.run_number }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -13,11 +32,31 @@ jobs:
       - uses: actions/setup-java@v4
         with: {distribution: temurin, java-version: 17}
       - run: pip install pillow
+      - name: Restore upload key (if provided)
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS" ]; then echo "$KS" | base64 -d > "$RUNNER_TEMP/upload.jks"; echo "KEYSTORE_PATH=$RUNNER_TEMP/upload.jks" >> $GITHUB_ENV; echo "HAVE_KEY=1" >> $GITHUB_ENV; fi
       - working-directory: mobile
-        run: npm install && node build.mjs ${{ inputs.app }}
-      - working-directory: mobile/android
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: npm install && node build.mjs ${{ matrix.app }}
+      - name: Test APK
+        working-directory: mobile/android
         run: ./gradlew assembleDebug
+      - name: Signed release bundle
+        if: env.HAVE_KEY == '1'
+        working-directory: mobile/android
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew bundleRelease
       - uses: actions/upload-artifact@v4
         with:
-          name: auzslab-${{ inputs.app }}-debug
-          path: mobile/android/app/build/outputs/apk/debug/*.apk
+          name: auzslab-${{ matrix.app }}
+          path: |
+            mobile/android/app/build/outputs/apk/debug/*.apk
+            mobile/android/app/build/outputs/bundle/release/*.aab
