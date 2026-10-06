@@ -105,6 +105,18 @@
           </div>
           <button id="addonPayBtn" class="btn btn-primary form-submit" style="display:none">Pay &amp; activate instantly</button>
           <p id="addonPayNote" class="pay-note" style="display:none">Card, UPI or netbanking -- these go live the moment payment is confirmed.</p>
+          <div id="addonUpiCard" class="card" style="display:none;margin-top:8px;text-align:center">
+            <div class="label" style="justify-content:center">Pay by UPI</div>
+            <div class="cart-total"><span>Amount</span><b id="addonUpiAmount"></b></div>
+            <img id="addonUpiQr" alt="UPI QR code" width="190" height="190" style="margin:10px auto;display:block;border-radius:12px;background:#fff">
+            <p class="pay-note" style="margin:0">Scan with any UPI app, or pay to <b id="addonUpiId"></b> (<span id="addonUpiName"></span>).</p>
+            <a id="addonUpiOpen" class="btn btn-ghost" style="margin-top:10px" href="#">Open my UPI app</a>
+            <div class="field" style="text-align:left;margin-top:14px">
+              <label for="addonUpiRef">UPI reference number (UTR) after paying</label>
+              <input id="addonUpiRef" inputmode="numeric" placeholder="12-digit number from your UPI app" autocomplete="off">
+            </div>
+            <p class="pay-note" style="margin:0">We switch your account on as soon as we see the payment, usually within a few hours.</p>
+          </div>
           <button id="addonSubmitBtn" class="btn btn-primary form-submit">Request these add-ons</button>
           <div id="addonErr" class="err"></div>
         </div>
@@ -157,6 +169,18 @@
           <button id="payBtn" class="btn btn-primary form-submit" style="display:none">Pay &amp; activate instantly</button>
           <p id="payNote" class="pay-note" style="display:none">Card, UPI or netbanking -- your account goes live the moment payment is confirmed, no waiting for review.</p>
           <p class="pay-note">A one-time setup fee of ₹2,179 (no GST) is mandatory for every new AUZslab account, collected together with your first month's payment.</p>
+          <div id="UpiCard" class="card" style="display:none;margin-top:8px;text-align:center">
+            <div class="label" style="justify-content:center">Pay by UPI</div>
+            <div class="cart-total"><span>Amount</span><b id="UpiAmount"></b></div>
+            <img id="UpiQr" alt="UPI QR code" width="190" height="190" style="margin:10px auto;display:block;border-radius:12px;background:#fff">
+            <p class="pay-note" style="margin:0">Scan with any UPI app, or pay to <b id="UpiId"></b> (<span id="UpiName"></span>).</p>
+            <a id="UpiOpen" class="btn btn-ghost" style="margin-top:10px" href="#">Open my UPI app</a>
+            <div class="field" style="text-align:left;margin-top:14px">
+              <label for="UpiRef">UPI reference number (UTR) after paying</label>
+              <input id="UpiRef" inputmode="numeric" placeholder="12-digit number from your UPI app" autocomplete="off">
+            </div>
+            <p class="pay-note" style="margin:0">We switch your account on as soon as we see the payment, usually within a few hours.</p>
+          </div>
           <button id="submitBtn" class="btn btn-primary form-submit">Send to AUZslab</button>
           <div id="submitErr" class="err"></div>
         </div>
@@ -186,7 +210,8 @@
 <script src="/sb-client.js?v=4"></script>
 <script src="tool/lock.js?v=1"></script>
 <script src="tool/site.js?v=8"></script>
-<script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
+<script>window.CFG = { url: 'https://api.auzslab.in', key: '', upiId: '', upiName: 'AUZslab' };</script>
+<script src="vendor/qrcode.js"></script>
 <script>
 const sb = supabase.createClient(CFG.url, CFG.key);
 const PRODUCT_LABEL = { salon: 'AUZslab Salon', pos: 'POS', crm: 'CRM', billing: 'Billing & Invoicing', inventory: 'Inventory', self_order: 'QR Ordering', payroll: 'Payroll', website_builder: 'Website Builder', accounting: 'Accounting', gsm: 'AUZsGSM', mobile: 'AUZsMob' };
@@ -328,6 +353,28 @@ function renderCart() {
 // item in the cart is priced -- it doesn't need Razorpay configured, it's just arithmetic. Only
 // the "Pay & activate instantly" BUTTON itself is gated on PAY.enabled (online checkout actually
 // being turned on); the request-only flow underneath is unaffected either way.
+// ---- Pay by UPI QR (manual route, used while online payment is off) ----
+// Shown only when CFG.upiId is set and Razorpay checkout is not on. The QR carries the exact amount; the customer
+// pastes the UPI reference (UTR) and it travels with the request notes so the admin can match it in the bank app.
+function showUpi(prefix, total) {
+  const card = document.getElementById(prefix + 'UpiCard');
+  if (!CFG.upiId || PAY.enabled || total === null || typeof qrcode !== 'function') { card.style.display = 'none'; return; }
+  const amt = Number(total.dueToday).toFixed(2);
+  const uri = 'upi://pay?pa=' + encodeURIComponent(CFG.upiId) + '&pn=' + encodeURIComponent(CFG.upiName || 'AUZslab') + '&am=' + amt + '&cu=INR&tn=' + encodeURIComponent('AUZslab plan');
+  try { const q = qrcode(0, 'M'); q.addData(uri); q.make(); document.getElementById(prefix + 'UpiQr').src = q.createDataURL(5, 2); } catch (e) { card.style.display = 'none'; return; }
+  document.getElementById(prefix + 'UpiAmount').textContent = inr(total.dueToday);
+  document.getElementById(prefix + 'UpiId').textContent = CFG.upiId;
+  document.getElementById(prefix + 'UpiName').textContent = CFG.upiName || 'AUZslab';
+  document.getElementById(prefix + 'UpiOpen').href = uri;
+  card.style.display = 'block';
+}
+function upiNote(prefix, total) {
+  const card = document.getElementById(prefix + 'UpiCard');
+  if (!card || card.style.display === 'none' || total === null) return '';
+  const ref = document.getElementById(prefix + 'UpiRef').value.trim();
+  return ref ? `\n[UPI payment of ${inr(total.dueToday)} claimed, reference ${ref}]` : `\n[UPI: nothing paid yet, ${inr(total.dueToday)} due]`;
+}
+
 function updatePayButtons() {
   const items = AUZcart.get();
   const entitled = (DASH && DASH.features) || {};
@@ -376,6 +423,12 @@ function updatePayButtons() {
   document.getElementById('addonPayBtn').style.display = addonTotal !== null ? 'block' : 'none';
   document.getElementById('addonPayNote').style.display = addonTotal !== null ? 'block' : 'none';
   if (addonTotal !== null) document.getElementById('addonPayTotalAmount').textContent = inr(addonTotal.dueToday);
+
+  // UPI QR card: priced from the same cart, whether or not Razorpay is on
+  const upiSignupSubtotal = priceTotal(items);
+  showUpi('', !isAddonContext && upiSignupSubtotal !== null ? billFor(upiSignupSubtotal, true) : null);
+  const upiAddonSubtotal = priceTotal(requestable, entitled);
+  showUpi('addon', isAddonContext && upiAddonSubtotal !== null ? billFor(upiAddonSubtotal, false) : null);
 }
 
 let DASH = null;
@@ -473,8 +526,9 @@ document.getElementById('submitBtn').onclick = async () => {
   const features = {};
   AUZcart.get().forEach((key) => { features[key] = true; });
 
+  const upiSub = priceTotal(AUZcart.get());
   const { error } = await sb.rpc('submit_signup_request', {
-    p_business_name: f.name, p_slug: f.slug, p_features: features, p_notes: f.notes,
+    p_business_name: f.name, p_slug: f.slug, p_features: features, p_notes: f.notes + upiNote('', upiSub !== null ? billFor(upiSub, true) : null),
     p_contact_name: f.contactName, p_phone: f.contactPhone, p_niche: f.niche, p_address: f.address,
   });
   if (error) {
@@ -594,7 +648,7 @@ document.getElementById('addonSubmitBtn').onclick = async () => {
   const features = {};
   requestable.forEach((key) => { features[key] = true; });
 
-  const { error } = await sb.rpc('submit_addon_request', { p_features: features, p_notes: notes });
+  const { error } = await sb.rpc('submit_addon_request', { p_features: features, p_notes: notes + upiNote('addon', (() => { const t = priceTotal(requestable, entitled); return t !== null ? billFor(t, false) : null; })()) });
   if (error) {
     errEl.textContent = error.message;
     if (error.status === 401) checkSession();
