@@ -32,8 +32,25 @@ if (!manifest.includes('ACCESS_FINE_LOCATION')) {
   manifest = manifest.replace('</manifest>',
     '    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n' +
     '    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n' +
+    // Android 13+ (API 33) requires this to be requested at runtime before any
+    // notification (including a push one) can actually show -- @capacitor/push-notifications'
+    // requestPermissions() call does that, but only works at all once this is declared.
+    '    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n' +
     '</manifest>');
   fs.writeFileSync(manifestPath, manifest);
+}
+
+// Native push (Firebase Cloud Messaging, db/119/server/src/fcm.js). Same
+// dormant-until-configured discipline as every other optional integration:
+// without a GOOGLE_SERVICES_JSON secret, this file is never written and the
+// app builds exactly as before (no push, nothing broken). Confirmed by hand:
+// once @capacitor/push-notifications is installed, `cap add android` itself
+// already writes a try/catch into android/app/build.gradle that applies the
+// google-services Gradle plugin only if google-services.json exists and is
+// non-empty -- so writing the file here is the only step this script needs;
+// the plugin side is already handled by Capacitor's own template.
+if (process.env.GOOGLE_SERVICES_JSON) {
+  fs.writeFileSync('android/app/google-services.json', Buffer.from(process.env.GOOGLE_SERVICES_JSON, 'base64'));
 }
 
 const g='android/app/build.gradle'; let t=fs.readFileSync(g,'utf8');

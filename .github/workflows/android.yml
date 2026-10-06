@@ -42,6 +42,11 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          # Native push (Firebase, db/119) -- add every app's package name (mobile/apps.json's "id")
+          # as an Android app inside one Firebase project and its google-services.json covers all of
+          # them, so one secret is enough here. Optional: without it the app builds exactly as
+          # before, it just never asks for notification permission (see .env.example).
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: npm install && node build.mjs ${{ matrix.app }}
       - name: Test APK
         working-directory: mobile/android

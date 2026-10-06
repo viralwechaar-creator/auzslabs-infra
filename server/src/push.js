@@ -4,6 +4,7 @@
 // RFC 8291 aes128gcm encryption + VAPID JWT signing logic is identical
 // -- Node's global crypto.subtle is the same Web Crypto API Deno used.
 import { pool } from './db.js';
+import { fcmConfigured, sendFcm } from './fcm.js';
 
 const VAPID_PUBLIC = process.env.VAPID_PUBLIC;
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE;
@@ -116,19 +117,35 @@ async function sendWebPush(endpoint, p256dh, authKey, payload) {
 // arrives (see realtime.js) -- no HTTP round-trip to a separate
 // function, no shared secret to guard that round-trip with.
 export async function handlePushEvent({ tenant_id, title, body }) {
-  if (!VAPID_PUBLIC || !VAPID_PRIVATE) return; // push not configured yet -- skip quietly
-  const { rows: subs } = await pool.query('select * from push_subs where tenant_id = $1', [tenant_id]);
-
-  await Promise.allSettled(subs.map(async (s) => {
-    try {
-      const res = await sendWebPush(s.endpoint, s.p256dh, s.auth, { title: title || 'AUZslab', body: body || '' });
-      if (!res.ok && (res.status === 404 || res.status === 410)) {
-        await pool.query('delete from push_subs where id = $1', [s.id]);
-      } else if (!res.ok) {
-        console.error('push failed', s.endpoint, res.status, await res.text().catch(() => ''));
+  if (VAPID_PUBLIC && VAPID_PRIVATE) {
+    const { rows: subs } = await pool.query('select * from push_subs where tenant_id = $1', [tenant_id]);
+    await Promise.allSettled(subs.map(async (s) => {
+      try {
+        const res = await sendWebPush(s.endpoint, s.p256dh, s.auth, { title: title || 'AUZslab', body: body || '' });
+        if (!res.ok && (res.status === 404 || res.status === 410)) {
+          await pool.query('delete from push_subs where id = $1', [s.id]);
+        } else if (!res.ok) {
+          console.error('push failed', s.endpoint, res.status, await res.text().catch(() => ''));
+        }
+      } catch (e) {
+        console.error('push error', s.endpoint, e.message);
       }
-    } catch (e) {
-      console.error('push error', s.endpoint, e.message);
-    }
-  }));
+    }));
+  }
+
+  // Native push for the Android app (db/119) -- same tenant, same
+  // title/body, a completely separate delivery path (FCM, not Web
+  // Push), since a device inside the packaged app registers a
+  // fcm_tokens row instead of a push_subs one.
+  if (fcmConfigured()) {
+    const { rows: tokens } = await pool.query('select * from fcm_tokens where tenant_id = $1', [tenant_id]);
+    await Promise.allSettled(tokens.map(async (t) => {
+      try {
+        const res = await sendFcm(t.token, { title, body });
+        if (!res.ok && res.unregistered) await pool.query('delete from fcm_tokens where id = $1', [t.id]);
+      } catch (e) {
+        console.error('fcm push error', t.id, e.message);
+      }
+    }));
+  }
 }
