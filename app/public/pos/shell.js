@@ -294,6 +294,7 @@ async function boot() {
   // one email is one login across every business: refuse a login from another business's address instead of showing it under this one's branding
   if (dash && window.TENANT_SLUG && dash.tenant && dash.tenant.slug !== window.TENANT_SLUG) { await sb.auth.signOut(); S.user = null; localStorage.removeItem('u'); return login('This login belongs to a different business (' + dash.tenant.slug + '.auzslab.in). Sign in at your own business\'s link.'); }
   if (dash && dash.features) { S.features = dash.features; S.enabledFeatures = dash.enabled_features || {}; }
+  if (window.auzGate && auzGate('pos', 'AUZsPOS', dash, sb)) return; // not bought (or switched off): do not open the POS
   let askedTab = null; try { const q = new URLSearchParams(location.search).get('tab'); const map = { pos: 'sell', tabs: 'orders', kds: 'kitchen', staff: 'more' }; if (q) askedTab = map[q] || q; } catch {}
   S.authExpired = false; $('#app').replaceChildren(h('div', { class: 'login' }, h('div', { class: 'sub' }, 'Loading…')));
   if (!booted) {
