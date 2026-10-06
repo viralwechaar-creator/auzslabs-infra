@@ -170,7 +170,7 @@ async function refreshNotifCount() { try { const { data } = await sb.from('notif
 function login(msg) {
   const e = h('input', { class: 'input', type: 'email', placeholder: 'Email', autocomplete: 'username', 'aria-label': 'Email' }), p = h('input', { class: 'input', type: 'password', placeholder: 'Password', autocomplete: 'current-password', 'aria-label': 'Password' });
   const m = h('div', { class: 'hint' + (msg ? ' err' : '') }, msg || '');
-  const go1 = async () => { m.className = 'hint'; m.textContent = 'Signing in…'; const { error } = await sb.auth.signInWithPassword({ email: e.value.trim(), password: p.value }); if (error) { m.className = 'hint err'; m.textContent = error.message; } else boot(); };
+  const go1 = async () => { m.className = 'hint'; m.textContent = 'Signing in…'; let r = await sb.auth.signInWithPassword({ email: e.value.trim(), password: p.value }); r = await auz2fa.resolve(sb, r); if (r.error) { m.className = 'hint err'; m.textContent = r.error.message; } else boot(); };
   p.onkeydown = (ev) => { if (ev.key === 'Enter') go1(); };
 
   const eyeBtn = h('button', { type: 'button', style: 'position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--label3);display:flex;padding:8px', 'aria-label': 'Show password' });

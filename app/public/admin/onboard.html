@@ -43,7 +43,7 @@ button{margin-top:20px;padding:10px 16px;font-size:15px;cursor:pointer}
  <div id=leadsList>Loading…</div>
 </div>
 
-<script src=/sb-client.js></script>
+<script src=/sb-client.js></script><script src="/ds/twofa.js?v=1"></script>
 <script src=/config.js></script>
 <script>
 const sb = supabase.createClient(CFG.url, CFG.key);
@@ -105,9 +105,10 @@ function esc(s) {
 document.getElementById('signin').onclick = async () => {
   const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value;
-  const { error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) {
-    document.getElementById('loginErr').textContent = error.message;
+  let r = await sb.auth.signInWithPassword({ email, password });
+  r = await auz2fa.resolve(sb, r);
+  if (r.error) {
+    document.getElementById('loginErr').textContent = r.error.message;
     return;
   }
   checkSession();
