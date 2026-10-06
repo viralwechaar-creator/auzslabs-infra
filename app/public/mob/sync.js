@@ -26,6 +26,12 @@ function openDb() {
   });
   return dbp;
 }
+// Empties this phone's offline copy (every store, the unsent outbox and the sync cursor). Used after the owner clears all
+// data; a transaction rather than deleteDatabase, which can be blocked by a still-open connection.
+async function wipeLocal() {
+  const db = await openDb(), names = [...STORES, 'outbox', 'meta'];
+  await new Promise((resolve, reject) => { const t = db.transaction(names, 'readwrite'); names.forEach((n) => t.objectStore(n).clear()); t.oncomplete = resolve; t.onerror = () => reject(t.error); });
+}
 function tx(db, stores, mode) { return db.transaction(stores, mode); }
 function reqP(req) { return new Promise((resolve, reject) => { req.onsuccess = () => resolve(req.result); req.onerror = () => reject(req.error); }); }
 

@@ -6,7 +6,7 @@ page('myreport', { title: 'myreport', perm: () => can('mob_sell') && !can('mob_r
 async function renderMyReport(v) {
   const range = v.q.get('range') || 'today';
   v.header({ title: t('myreport') });
-  add(v.root, [seg([['today', t('today')], ['week', t('thisWeek')], ['month', t('thisMonth')]], range, (r) => go('myreport?range=' + r), { full: !isDesk() })]);
+  add(v.root, [rangePicker(range, (r, f, tt) => go('myreport?range=' + r + (r === 'custom' ? '&from=' + f + '&to=' + tt : '')))]);
   const body = h('div', { style: { marginTop: '14px' } }, h('div', { class: 'skel', style: { height: '120px' } }));
   v.root.append(body);
   const [from, to] = rangeDates(range);

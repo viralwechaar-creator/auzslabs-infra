@@ -153,6 +153,15 @@ async function boot() {
     setLang(ctx.my_language || 'en');
   }
   if (window.auzBrandLoad) auzBrandLoad(sb);
+  // The owner can clear all data (Backup/Clear). Every phone keeps an offline copy, so a phone that sees a newer
+  // "cleared at" time than the one it last recorded deletes its local copy (and its unsent entries, which point at
+  // deleted data) before it starts. A phone that has never recorded one just records it.
+  try {
+    const ep = (await api('mob_data_epoch')).epoch || '', key = 'mob.epoch.' + (S.dash.tenant ? S.dash.tenant.slug : '');
+    let seen = null; try { seen = localStorage.getItem(key); } catch { /* private mode */ }
+    if (seen !== null && seen !== ep) await wipeLocal();
+    try { localStorage.setItem(key, ep); } catch { /* private mode */ }
+  } catch { /* offline: try again next time */ }
   await openDb(); // warm up IndexedDB before the first screen needs it
   trySync();
   buildShell();

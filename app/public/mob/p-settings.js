@@ -18,6 +18,7 @@ async function renderSettings(v) {
     isOwner ? h('div', { class: 'list' }, liRow({ icon: 'gear', title: t('staffSeeRates'), right: h('span', { class: 'switch' }, h('input', { type: 'checkbox', checked: !!s.staffSeePurchaseRates, onchange: async (e) => { await api('mob_save_settings', { p: { staffSeePurchaseRates: e.target.checked } }); S.ctx = await api('mob_context'); toast(t('saved')); } })) })) : null,
     can('mob_reports') ? h('div', { id: 'staff-box' }, h('div', { class: 'skel', style: { height: '80px' } })) : null,
     can('mob_reports') ? h('div', { id: 'integrity-box' }) : null,
+    isOwner ? section(t('clearDataBtn'), h('div', { class: 'small muted', style: { marginBottom: '8px' } }, t('clearDataHint')), h('button', { class: 'btn wide', type: 'button', style: { color: 'var(--red)' }, onclick: () => auzMyData(sb) }, icon('download', 18), t('clearDataBtn'))) : null,
     isOwner ? h('button', { class: 'btn wide', type: 'button', onclick: async () => { const data = await api('mob_export_all'); const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); const a = h('a', { href: URL.createObjectURL(blob), download: 'auzsmob-export.json' }); document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); } }, icon('download', 18), t('exportData')) : null,
   ]);
 
