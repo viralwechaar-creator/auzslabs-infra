@@ -14,6 +14,7 @@ const S = {
 };
 const R = {}, V = {};
 let busy = 0, conflicts = 0, syncErr = 0, lastSyncErrMsg = '', syncAgain = 0, STAFF_LIST = [];
+let retryAt = 0, retryMs = 5000;   // exponential back-off after a failed sync (5 s, 10 s ... 5 min); a manual retry or the browser's online event resets it
 
 // ---------- small helpers ----------
 const $ = (s, el) => (el || document).querySelector(s), $$ = (s, el) => [...(el || document).querySelectorAll(s)];
@@ -206,11 +207,14 @@ async function doSync() {
     if (data.length >= 1000) setTimeout(sync, 500);
     if (!hadError) { syncErr = 0; lastSyncErrMsg = ''; }
   } catch (e) { hadError = true; syncErr++; lastSyncErrMsg = (e && e.message) || String(e); console.warn('sync', e); }
-  busy = 0; setNote();
+  busy = 0;
+  if (hadError) { retryAt = Date.now() + retryMs; setTimeout(sync, retryMs + 100); retryMs = Math.min(retryMs * 2, 300000); }
+  else { retryMs = 5000; retryAt = 0; }
+  setNote();
   if (syncAgain) { syncAgain = 0; setTimeout(sync, 50); }
 }
-function sync() { if (busy) { syncAgain = 1; return; } if (navigator.locks) navigator.locks.request('pos-sync', { ifAvailable: true }, (lock) => (lock ? doSync() : null)); else doSync(); }
-function syncNow() { return navigator.locks ? navigator.locks.request('pos-sync', {}, () => doSync()) : doSync(); }
+function sync() { if (busy) { syncAgain = 1; return; } if (Date.now() < retryAt) return; if (navigator.locks) navigator.locks.request('pos-sync', { ifAvailable: true }, (lock) => (lock ? doSync() : null)); else doSync(); }
+function syncNow() { retryAt = 0; retryMs = 5000; return navigator.locks ? navigator.locks.request('pos-sync', {}, () => doSync()) : doSync(); }
 const isTyping = () => /INPUT|SELECT|TEXTAREA/.test((document.activeElement || {}).tagName || '') || !!document.querySelector('.ov');
 async function setNote() {
   const n = (await all('out')).length, e = $('#net'); if (!e) return;
@@ -218,15 +222,18 @@ async function setNote() {
   e.className = 'status' + (off ? ' off' : bad ? ' err' : '');
   e.replaceChildren(h('i'), off ? 'Offline' + (n ? ' · ' + n + ' to sync' : '') : bad ? 'Sync problem' + (lastSyncErrMsg ? ': ' + lastSyncErrMsg : '') : n ? n + ' to sync' : 'Synced');
   e.title = conflicts ? conflicts + ' edit conflict(s) resolved' : '';
+  if (!e.onclick) { e.style.cursor = 'pointer'; e.onclick = () => { if (navigator.onLine) syncNow(); }; }
 }
 function forceRelogin(msg) { S.user = null; S.authExpired = false; localStorage.removeItem('u'); login(msg); }
 
 // ---------- numbering ----------
 function localNo() { const n = (+localStorage.n || 0) + 1; localStorage.n = n; const d = localStorage.dev || (localStorage.dev = Math.random().toString(36).slice(2, 4).toUpperCase()); return cfg().prefix + '-' + d + '-' + String(n).padStart(4, '0'); }
-async function nextNo() { if (navigator.onLine) { try { const { data, error } = await sb.rpc('next_invoice_no', { prefix: cfg().prefix }); if (!error && data) return data; } catch {} } return localNo() + '~'; }
+// An unreachable server must never stall billing: numbering calls give up after 2.5 s and use the local number
+const withTimeout = (p, ms = 2500) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
+async function nextNo() { if (navigator.onLine) { try { const { data, error } = await withTimeout(sb.rpc('next_invoice_no', { prefix: cfg().prefix })); if (!error && data) return data; } catch {} } return localNo() + '~'; }
 async function nextKot() {
   const day = today();
-  if (navigator.onLine) { try { const { data, error } = await sb.rpc('next_kot_no', { p_day: day, p_outlet: outletKey() }); if (!error && data) return String(data); } catch {} }
+  if (navigator.onLine) { try { const { data, error } = await withTimeout(sb.rpc('next_kot_no', { p_day: day, p_outlet: outletKey() })); if (!error && data) return String(data); } catch {} }
   const k = 'kot.' + day, n = (+localStorage[k] || 0) + 1; localStorage[k] = n; return 'L' + n;  // offline: a device-local number, marked L
 }
 function nextToken() { const day = today(), nums = L('order').filter((o) => o.token && o.tokenDay === day).map((o) => o.token); return nums.length ? Math.max(...nums) + 1 : 1; }

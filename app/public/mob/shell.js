@@ -127,6 +127,10 @@ function blocked(title, text) {
   clear($('#app')).append(h('div', { class: 'login' }, h('div', { class: 'card' }, h('div', { style: { fontWeight: 800, fontSize: '20px' } }, 'AUZs', h('span', { style: { color: 'var(--accent)' } }, 'Mob')), h('h1', null, title), h('p', { class: 'muted' }, text),
     h('button', { class: 'btn wide', onclick: async () => { await sb.auth.signOut(); location.reload(); } }, t('signOut')))));
 }
+// Offline-first needs the app itself to open with no internet: install the shared service worker from AUZsMob too
+// (it used to be registered only by the POS, so a phone that never opened the POS could not start AUZsMob offline).
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+
 async function boot() {
   try { setLang(localStorage['mob.lang'] || 'en'); } catch { setLang('en'); }
   clear($('#app')).append(h('div', { class: 'login' }, h('div', { class: 'spin', style: { color: 'var(--tint)', width: '28px', height: '28px' } })));

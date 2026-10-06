@@ -284,7 +284,7 @@ async function boot() {
   S.authExpired = false; $('#app').replaceChildren(h('div', { class: 'login' }, h('div', { class: 'sub' }, 'Loading…')));
   if (!booted) {
     booted = true;
-    addEventListener('online', () => { sync(); setNote(); }); addEventListener('offline', setNote);
+    addEventListener('online', () => { syncNow(); setNote(); }); addEventListener('offline', setNote);
     sb.channel('r').on('postgres_changes', { event: '*', schema: 'public', table: 'records' }, () => sync()).subscribe();
     sb.channel('g').on('postgres_changes', { event: '*', schema: 'public', table: 'guest_orders' }, () => getG()).subscribe();
     sb.channel('n').on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => refreshNotifCount()).subscribe();
