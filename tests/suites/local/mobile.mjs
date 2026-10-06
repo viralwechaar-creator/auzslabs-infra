@@ -432,6 +432,11 @@ export default async function run({ browser, stack }) {
     const labels = await page.locator('.tabbar button').allInnerTexts();
     assert(labels.length === 3 && /home/i.test(labels[0]) && /report/i.test(labels[1]) && /setting/i.test(labels[2]), 'tab bar is ' + JSON.stringify(labels));
     await c.close();
+    await setFeat({ nav: ['home', 'reports', 'more'] });
+    const { c: cm, page: pm } = await open(USERS.mobOwner, { w: 390, h: 844, mobile: true });
+    await pm.locator('.tabbar button', { hasText: /more/i }).click(); await pm.waitForTimeout(400);
+    assert(/settings/i.test(await pm.locator('body').innerText()), 'Settings unreachable from More when it is not on the bar');
+    await cm.close();
     await setFeat({ nav: [] });
     const { c: c2, page: p2 } = await open(USERS.mobOwner, { w: 390, h: 844, mobile: true });
     assert((await p2.locator('.tabbar button').count()) === 5, 'automatic menu should show 4 buttons + More');

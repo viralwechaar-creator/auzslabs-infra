@@ -200,7 +200,8 @@ function updateSyncPill() { const el = $('.sync-pill'); if (el) el.replaceWith(s
 function signOut() { sb.auth.signOut().then(() => location.reload()); }
 function moreSheet() {
   const tabs = tabsFor();
-  const nav = customNav() ? [] : navList().filter(([id]) => !tabs.includes(id));
+  // With a custom menu, hidden sections stay hidden, but Settings must always be reachable (it holds the menu editor).
+  const nav = (customNav() ? allNav().filter(([id]) => id === 'settings') : navList()).filter(([id]) => !tabs.includes(id));
   const body = h('div', { class: 'grid' },
     nav.length ? section(t('more'), h('div', { class: 'list' }, nav.map(([id, , ic]) => liRow({ icon: ic, title: t(id), chevron: true, onclick: () => { s.close(); go(id); } })))) : null,
     h('div', { class: 'list' },
