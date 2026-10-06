@@ -1,0 +1,7 @@
+{
+  "hub":     {"name":"AUZslab",          "id":"in.auzslab.app",      "url":"https://auzslab.in/open.html?app=hub",     "icon":"icon-512.png"},
+  "pos":     {"name":"AUZslab POS",      "id":"in.auzslab.pos",      "url":"https://auzslab.in/open.html?app=pos",     "icon":"icon-512.png"},
+  "mob":     {"name":"AUZsMob",          "id":"in.auzslab.mob",      "url":"https://auzslab.in/open.html?app=mob",     "icon":"icon-mob-512.png"},
+  "payroll": {"name":"AUZslab Payroll",  "id":"in.auzslab.payroll",  "url":"https://auzslab.in/open.html?app=payroll", "icon":"icon-payroll-512.png"},
+  "accounts":{"name":"AUZslab Accounts", "id":"in.auzslab.accounts", "url":"https://auzslab.in/open.html?app=accounts","icon":"icon-accounts-512.png"}
+}
