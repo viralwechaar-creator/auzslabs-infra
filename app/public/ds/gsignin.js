@@ -3,6 +3,13 @@
 (function () {
   window.auzGoogleLink = function (host, app) {
     if (!host) return;
+    // Inside the store apps Google blocks sign-in in an embedded web view, so show how to use the app instead.
+    if (/AUZslabApp/.test(navigator.userAgent)) {
+      var n = document.createElement('p');
+      n.style.cssText = 'margin:0;font-size:13px;line-height:1.5;color:var(--label2,#6a625b);text-align:center';
+      n.textContent = 'Signed up with Google? On the AUZslab website choose Log in, then Forgot password, to create a password for this app. Staff can use the Staff tab.';
+      host.textContent = ''; host.appendChild(n); return;
+    }
     var back = location.origin + location.pathname + location.search;
     var a = document.createElement('a');
     a.href = 'https://auzslab.in/signin.html?app=' + encodeURIComponent(app || '') + '&return=' + encodeURIComponent(back);

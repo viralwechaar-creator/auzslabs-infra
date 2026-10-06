@@ -1,0 +1,23 @@
+name: Android build
+on:
+  workflow_dispatch:
+    inputs:
+      app: {description: "hub, pos, mob, payroll or accounts", default: hub}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 20}
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: 17}
+      - run: pip install pillow
+      - working-directory: mobile
+        run: npm install && node build.mjs ${{ inputs.app }}
+      - working-directory: mobile/android
+        run: ./gradlew assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: auzslab-${{ inputs.app }}-debug
+          path: mobile/android/app/build/outputs/apk/debug/*.apk
