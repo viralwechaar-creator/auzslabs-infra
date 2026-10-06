@@ -369,6 +369,19 @@ export default async function run({ browser, stack }) {
     const srow = (await q("select items from mob_sales where id=$1", [sid]))[0].items[0];
     assert(Number(srow.costPrice) === 300, 'staff cost override was not ignored: ' + srow.costPrice);
   }, 'major');
+  await s.check('A business without AUZsPOS cannot open the POS, Back Office or console by changing the address; the account page links to the app it has', async () => {
+    for (const path of ['/index.html', '/backoffice.html', '/dashboard.html']) {
+      const c = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await c.newPage();
+      await page.goto(stack.url('testmob', path)); await page.waitForSelector('input[type=password]', { timeout: 20000 });
+      await page.fill('input[type=email]', USERS.mobOwner); await page.fill('input[type=password]', PASSWORD);
+      await page.locator('button', { hasText: /sign in|log in/i }).last().click();
+      await page.waitForFunction(() => /not part of your plan/i.test(document.body.innerText), null, { timeout: 20000 }).catch(() => {});
+      const txt = await page.locator('body').innerText();
+      assert(/not part of your plan/i.test(txt), path + ' opened for a business without AUZsPOS: ' + txt.slice(0, 120));
+      assert(await page.locator('a', { hasText: /Open AUZsMob/ }).count() === 1, path + ' did not offer the AUZsMob app');
+      await c.close();
+    }
+  }, 'critical');
   await s.check('Simple mode screens: no Repairs/Stock/Dues tabs, Sell offers Repair / service and adds it to the cart, Settings shows the Features card', async () => {
     await setFeat({ ...ALL_ON, stock: false, serials: false, customers: false, vendors: false, dayclose: false, repairs: 'simple' });
     const { c, page } = await open(USERS.mobOwner, { w: 390, h: 844, mobile: true });

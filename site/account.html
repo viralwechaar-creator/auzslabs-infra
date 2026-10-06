@@ -365,7 +365,15 @@ function showTab(tab) {
 function renderAccount() {
   const t = DASH.tenant;
   const isSalon = t.niche === 'salon';
-  const staffUrl = 'https://' + t.slug + '.auzslab.in' + (isSalon ? '/salon/admin/' : '');
+  // The staff login link and its title follow what the business actually has: salon app, POS, or (if no POS)
+  // the first of AUZsMob / AUZsPay / AUZsLedger it was given. No app at all = no link card.
+  const own = (k) => (DASH.features || {})[k] === true && (DASH.enabled_features || {})[k] !== false;
+  const mainApp = isSalon ? { name: 'AUZslab Salon', path: '/salon/admin/' }
+    : own('pos') ? { name: 'POS system', path: '' }
+    : own('mobile') ? { name: 'AUZsMob', path: '/mob.html' }
+    : own('accounting') ? { name: 'AUZsLedger', path: '/accounts.html' }
+    : own('payroll') ? { name: 'AUZsPay', path: '/payroll.html' } : null;
+  const staffUrl = 'https://' + t.slug + '.auzslab.in' + (mainApp ? mainApp.path : '');
   $('#pane-account').innerHTML = `
     <div class="card">
       <h3 class="h-2">Your business</h3>
@@ -375,15 +383,15 @@ function renderAccount() {
       <div class="acct-row"><span class="muted">Status</span><span class="status-pill status-${esc(t.status)}">${esc(t.status)}</span></div>
       <div class="acct-row"><span class="muted">Renewal date</span><b>${t.renewal_date ? esc(t.renewal_date) : 'Not set — ask AUZslab'}</b></div>
     </div>
-    <div class="card">
-      <h3 class="h-2">${isSalon ? 'Your AUZslab Salon' : 'Your POS system'}</h3>
+    ${mainApp ? `<div class="card">
+      <h3 class="h-2">${isSalon ? 'Your AUZslab Salon' : 'Your ' + mainApp.name}</h3>
       <p class="muted">${isSalon ? 'This is your salon console — bookings, billing, clients, expenses and your website text. Your public website is at ' + esc(t.slug) + '.auzslab.in.' : "This is your staff's login page — share it with them along with the login you create for them under Staff."}</p>
       <div class="pos-link-box">
         <code>${staffUrl}</code>
         <button class="btn btn-ghost" id="copyPosLink" type="button">Copy link</button>
       </div>
-      <a href="${staffUrl}" target="_blank" rel="noopener" class="btn btn-primary form-submit" style="margin-top:12px">${isSalon ? 'Open AUZslab Salon' : 'Open POS system'} &#8599;</a>
-    </div>
+      <a href="${staffUrl}" target="_blank" rel="noopener" class="btn btn-primary form-submit" style="margin-top:12px">${isSalon ? 'Open AUZslab Salon' : 'Open ' + mainApp.name} &#8599;</a>
+    </div>` : ''}
     <div class="card">
       <h3 class="h-2">Your login</h3>
       <div class="acct-row"><span class="muted">Email</span><b>${esc(DASH.my_email)}</b></div>
@@ -424,7 +432,7 @@ function renderAccount() {
       <div id="delMsg"></div>
     </div>
   `;
-  $('#copyPosLink').onclick = async () => {
+  if ($('#copyPosLink')) $('#copyPosLink').onclick = async () => {
     const url = staffUrl;
     const btn = $('#copyPosLink');
     try {
