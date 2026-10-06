@@ -461,6 +461,36 @@ async function salonIcon(tenant, site, size) {
   return out;
 }
 
+// Link-preview card (WhatsApp, Facebook ...): brand colour, logo or initials, salon name and tagline.
+async function salonOgImage(tenant, site) {
+  const S = site.settings || {}, t = S.theme || {};
+  const bg = hex6(t.plum, '#391D21'), fg = hex6(t.cream, '#F3E6C8');
+  const key = ['og', tenant.slug, S.logo, S.logoLight, S.salonName, S.tagline, bg, fg].join('|');
+  if (iconCache.has(key)) return iconCache.get(key);
+  const sharp = (await import('sharp')).default;
+  const esc = (v) => String(v || '').replace(/[<>&"]/g, '');
+  const name = esc(S.salonName || tenant.name || 'Salon').slice(0, 34), tag = esc(S.tagline || '').slice(0, 60);
+  const logo = [S.logoLight, S.logo].find((v) => typeof v === 'string' && v.startsWith('/uploads/salon/' + tenant.slug + '/'));
+  const layers = [];
+  let top = 150;
+  if (logo) {
+    const lg = await sharp(await fs.readFile(path.join(UPLOAD_ROOT, 'salon', tenant.slug, path.basename(logo))), { density: 300 }).resize(280, 280, { fit: 'inside' }).png().toBuffer();
+    const { channels } = await sharp(lg).stats();
+    const lum = channels[0].mean * 0.3 + channels[1].mean * 0.59 + channels[2].mean * 0.11;
+    const bgL = parseInt(bg.slice(1, 3), 16) * 0.3 + parseInt(bg.slice(3, 5), 16) * 0.59 + parseInt(bg.slice(5, 7), 16) * 0.11;
+    const lt = sharp(lg); layers.push({ input: Math.abs(lum - bgL) < 60 ? await lt.negate({ alpha: false }).png().toBuffer() : lg, top: 90, left: Math.round((1200 - (await sharp(lg).metadata()).width) / 2) });
+    top = 440;
+  }
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630"><rect width="100%" height="100%" fill="${bg}"/>
+    <text x="600" y="${top + (logo ? 0 : 150)}" text-anchor="middle" font-family="DejaVu Sans,Helvetica,Arial,sans-serif" font-weight="700" font-size="${name.length > 20 ? 64 : 82}" fill="${fg}">${name}</text>
+    <text x="600" y="${top + (logo ? 70 : 230)}" text-anchor="middle" font-family="DejaVu Sans,Helvetica,Arial,sans-serif" font-size="34" fill="${fg}" fill-opacity=".8">${tag}</text></svg>`;
+  const out = await sharp(Buffer.from(svg)).composite(layers).png().toBuffer();
+  if (iconCache.size > 300) iconCache.clear();
+  iconCache.set(key, out);
+  return out;
+}
+const htmlEsc = (v) => String(v || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
 const rl = new Map();
 function limited(key, limit, windowMs) {
   const now = Date.now();
@@ -530,6 +560,28 @@ export async function handleSalon(req, res, ip) {
       let png;
       try { png = await salonIcon(tenant, await loadSite(tenant), Number(ic[1])); }
       catch (e) { res.writeHead(302, { Location: `/salon/assets/icon-${ic[1] === '32' ? '192' : ic[1]}.png` }); return res.end(); }
+      res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=300' });
+      return res.end(png);
+    }
+    // Served only to link-preview crawlers (Caddy matches their User-Agent): the salon's own title, text and picture.
+    if (method === 'GET' && p === '/share') {
+      const S = (await loadSite(tenant)).settings || {}, C = (await loadSite(tenant)).content || {};
+      const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].replace(/[^a-z0-9.:-]/gi, '');
+      const origin = 'https://' + host;
+      const name = S.salonName || tenant.name || 'Salon';
+      const title = [name, S.tagline].filter(Boolean).join(' | ').slice(0, 110);
+      const desc = String(C.heroText || S.tagline || ('Book an appointment at ' + name)).replace(/\s+/g, ' ').slice(0, 200);
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=300' });
+      return res.end(`<!doctype html><html><head><meta charset="utf-8"><title>${htmlEsc(title)}</title><meta name="description" content="${htmlEsc(desc)}">
+<meta property="og:type" content="website"><meta property="og:site_name" content="${htmlEsc(name)}"><meta property="og:title" content="${htmlEsc(title)}"><meta property="og:description" content="${htmlEsc(desc)}">
+<meta property="og:url" content="${htmlEsc(origin + '/')}"><meta property="og:image" content="${htmlEsc(origin + '/api/og.png')}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${htmlEsc(title)}"><meta name="twitter:description" content="${htmlEsc(desc)}"><meta name="twitter:image" content="${htmlEsc(origin + '/api/og.png')}">
+</head><body><a href="/salon/">${htmlEsc(name)}</a></body></html>`);
+    }
+    if (method === 'GET' && p === '/og.png') {
+      if (tenant.slug === 'showoffsalon') { res.writeHead(302, { Location: '/salon/assets/og-image.jpg' }); return res.end(); }
+      let png;
+      try { png = await salonOgImage(tenant, await loadSite(tenant)); } catch (e) { res.writeHead(302, { Location: '/salon/assets/og-image.jpg' }); return res.end(); }
       res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=300' });
       return res.end(png);
     }

@@ -78,6 +78,25 @@
         root * /srv/uploads
         file_server
     }
+    # Link-preview bots (WhatsApp, Facebook, Telegram ...) do not run JavaScript, so they get a small
+    # page with this salon's own title, text and picture (server/src/salon.js /share) instead of the
+    # static template. Everyone else is unaffected.
+    @previewBot {
+        header User-Agent *WhatsApp*
+        path / /salon/ /salon/index.html
+    }
+    @previewBot2 {
+        header_regexp ua User-Agent (?i)(facebookexternalhit|twitterbot|telegrambot|linkedinbot|slackbot|discordbot)
+        path / /salon/ /salon/index.html
+    }
+    handle @previewBot {
+        rewrite * /salon-api/share
+        reverse_proxy api:3000
+    }
+    handle @previewBot2 {
+        rewrite * /salon-api/share
+        reverse_proxy api:3000
+    }
     # Everything else. Wrapped in handle so the /api and /uploads blocks
     # above win: Caddy runs try_files BEFORE handle in its fixed directive
     # order, so a bare top-level try_files would rewrite /api/site to
