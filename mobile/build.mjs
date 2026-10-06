@@ -19,6 +19,40 @@ if (fs.existsSync(png)) {
       execSync(`python3 -c "from PIL import Image;Image.open('${png}').convert('RGBA').resize((${s},${s})).save('android/app/src/main/res/mipmap-${d}/${n}.png')"`);
   }
 }
+// Payroll's clock-in (and the hub app, which can navigate into Payroll in the same WebView -- allowNavigation
+// above covers the whole domain) calls plain navigator.geolocation. Capacitor's own WebView already answers that
+// call (BridgeWebChromeClient grants the runtime permission automatically, no extra npm plugin needed) -- but
+// only once the permission actually exists in the manifest; `cap add android`'s template never includes it, so
+// without this the browser call always silently fails (position unavailable) inside the packaged app, with no
+// error a user could act on. Declared for every app, not just payroll, since it costs nothing when unused and the
+// hub app can end up showing the Payroll pages in its own WebView.
+const manifestPath = 'android/app/src/main/AndroidManifest.xml';
+let manifest = fs.readFileSync(manifestPath, 'utf8');
+if (!manifest.includes('ACCESS_FINE_LOCATION')) {
+  manifest = manifest.replace('</manifest>',
+    '    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n' +
+    '    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n' +
+    // Android 13+ (API 33) requires this to be requested at runtime before any
+    // notification (including a push one) can actually show -- @capacitor/push-notifications'
+    // requestPermissions() call does that, but only works at all once this is declared.
+    '    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n' +
+    '</manifest>');
+  fs.writeFileSync(manifestPath, manifest);
+}
+
+// Native push (Firebase Cloud Messaging, db/119/server/src/fcm.js). Same
+// dormant-until-configured discipline as every other optional integration:
+// without a GOOGLE_SERVICES_JSON secret, this file is never written and the
+// app builds exactly as before (no push, nothing broken). Confirmed by hand:
+// once @capacitor/push-notifications is installed, `cap add android` itself
+// already writes a try/catch into android/app/build.gradle that applies the
+// google-services Gradle plugin only if google-services.json exists and is
+// non-empty -- so writing the file here is the only step this script needs;
+// the plugin side is already handled by Capacitor's own template.
+if (process.env.GOOGLE_SERVICES_JSON) {
+  fs.writeFileSync('android/app/google-services.json', Buffer.from(process.env.GOOGLE_SERVICES_JSON, 'base64'));
+}
+
 const g='android/app/build.gradle'; let t=fs.readFileSync(g,'utf8');
 t=t.replace(/versionCode \d+/,'versionCode '+(process.env.VERSION_CODE||1)).replace(/versionName "[^"]*"/,'versionName "'+(process.env.VERSION_NAME||'1.0.0')+'"');
 // Release signing (only when the keystore secrets are present): Play re-signs with its own key (Play App Signing),

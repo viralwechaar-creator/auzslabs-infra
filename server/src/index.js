@@ -5,6 +5,7 @@ import {
   loginWithGoogle, loginWithApple, createPhoneOtp, loginWithPhone,
   createPasswordReset, resetPassword, deleteOwnAccount,
   listSessions, revokeSession, revokeAllSessionsForUser, staffLogin, createEmailVerification, confirmEmailVerification, emailVerificationState, emailVerificationRequired, passwordSignupAllowed,
+  verify2faChallenge, my2faStatus, generate2faSecret, confirm2fa, disable2fa,
 } from './auth.js';
 import { saveSiteUpload, saveDocUpload, readDocUpload, getUploadsDiskUsage } from './storage.js';
 import { startRealtime } from './realtime.js';
@@ -15,6 +16,7 @@ import { startMaintenance } from './maintenance.js';
 import { sendOtpSms } from './sms.js';
 import { handleSalon } from './salon.js';
 import { paymentConfig, gstPct, createOrder, verifyWebhookSignature, handleWebhookEvent } from './payments.js';
+import { cashfreeConfigured, startAutorenew, cancelAutorenew, verifyWebhookSignature as verifyCashfreeSignature, handleWebhookEvent as handleCashfreeWebhookEvent } from './cashfree.js';
 import { initErrorTracking, captureError } from './errors.js';
 
 initErrorTracking(); // dormant unless SENTRY_DSN is set -- see errors.js
@@ -66,6 +68,7 @@ const TABLES = {
   profiles: { columns: ['id', 'tenant_id', 'email', 'role', 'role_id', 'name', 'phone', 'username', 'outlet_id', 'login_off'], writable: ['role', 'role_id', 'name', 'phone'] },
   guest_orders: { columns: ['id', 'tenant_id', 'tbl', 'name', 'phone', 'note', 'items', 'status', 'created_at'], writable: ['status'] },
   push_subs: { columns: ['id', 'tenant_id', 'user_id', 'endpoint', 'p256dh', 'auth', 'created_at'], insertable: ['user_id', 'endpoint', 'p256dh', 'auth'] },
+  fcm_tokens: { columns: ['id', 'tenant_id', 'user_id', 'token', 'platform', 'created_at'], insertable: ['user_id', 'token', 'platform'] },
   leads: { columns: ['id', 'name', 'business', 'contact', 'message', 'niche', 'status', 'created_at'], writable: ['status'] }, // admin-only via RLS (is_platform_admin())
   signup_requests: { columns: ['id', 'user_id', 'business_name', 'slug', 'features', 'notes', 'contact_name', 'phone', 'niche', 'address', 'status', 'created_at'] }, // read-only here; state changes go through approve/decline_signup_request
   addon_requests: { columns: ['id', 'tenant_id', 'tenant_name', 'tenant_slug', 'user_id', 'features', 'notes', 'status', 'created_at'] }, // read-only here; state changes go through approve/decline_addon_request
@@ -181,6 +184,7 @@ const RPC = {
   save_my_profile: { params: ['p'], jsonb: ['p'], auth: true },
   admin_list_profiles: { params: ['p_limit'], defaults: { p_limit: 200 }, auth: true },
   my_subscription: { params: [], auth: true },
+  my_autorenew: { params: [], auth: true },
   my_data_export: { params: [], auth: true },
   my_data_clear: { params: ['p_confirm'], auth: true },
   update_my_features: { params: ['p_enabled'], jsonb: ['p_enabled'], auth: true },
@@ -805,6 +809,58 @@ const server = http.createServer(async (req, res) => {
       return reply(200, { user, email_verified: vs ? vs.verified : true, captcha: captchaEnabled() });
     }
 
+    // ---- two-factor authentication (TOTP, db/117) ----
+    // /auth/login, /auth/google, /auth/apple and /auth/phone/verify above
+    // already pass whatever login()/loginWithGoogle()/etc. return straight
+    // through to the client, so a {requires2fa, challenge} reply needs no
+    // change there -- this is the one new step a client takes in between:
+    // show a 6-digit code box, then call this with the challenge it got.
+    if (url.pathname === '/auth/2fa/challenge' && req.method === 'POST') {
+      if (rateLimited(`2fa:${ip}`, 20, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      const { challenge, code } = await readJsonBody(req);
+      if (!challenge || !code) throw new HttpError(400, 'challenge and code are required');
+      const result = await verify2faChallenge(challenge, code, meta);
+      if (!result) throw new HttpError(401, 'that code is wrong or has expired');
+      return reply(200, result);
+    }
+    if (url.pathname === '/auth/2fa/status' && req.method === 'GET') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      return reply(200, await my2faStatus(user.id));
+    }
+    // Setup is gated to a tenant owner/manager -- this protects the
+    // login of the person who can do the most damage if it's
+    // compromised, not every staff login (shop-floor username+PIN
+    // logins are untouched by 2FA). A platform admin account is
+    // explicitly refused too, not just left unsupported in the UI:
+    // site/admin.html and app/public/admin/onboard.html (the owner's own
+    // client-onboarding tools) are deliberately never routed through a
+    // 2FA prompt, and this check makes it true at the server, not just
+    // by missing UI -- the owner's own ability to onboard a new client
+    // must never depend on a second factor surviving on this account.
+    if (url.pathname === '/auth/2fa/setup' && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      const { rows } = await pool.query('select role from profiles where id = $1', [user.id]);
+      if (!rows[0] || !['owner', 'manager'].includes(rows[0].role)) throw new HttpError(403, 'Two-factor authentication is only available to a business\'s own owner or manager account.');
+      if (rateLimited(`2fasetup:${user.id}`, 10, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      return reply(200, await generate2faSecret(user.id, user.email));
+    }
+    if (url.pathname === '/auth/2fa/confirm' && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      if (rateLimited(`2faconfirm:${user.id}`, 10, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      const { code } = await readJsonBody(req);
+      const result = await confirm2fa(user.id, code);
+      if (!result) throw new HttpError(400, 'that code did not match -- scan the QR code again and try the newest code shown');
+      return reply(200, result);
+    }
+    if (url.pathname === '/auth/2fa/disable' && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      if (rateLimited(`2fadisable:${user.id}`, 10, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      const { password, code } = await readJsonBody(req);
+      const ok = await disable2fa(user.id, { password, code });
+      if (!ok) throw new HttpError(401, 'enter your password or a valid code to turn this off');
+      return reply(200, { ok: true });
+    }
+
     // ---- single-device session revocation (db/071) ----
     if (url.pathname === '/auth/sessions' && req.method === 'GET') {
       if (!user) throw new HttpError(401, 'authentication required');
@@ -856,6 +912,49 @@ const server = http.createServer(async (req, res) => {
       let event;
       try { event = JSON.parse(raw.toString('utf8')); } catch { throw new HttpError(400, 'bad json'); }
       await handleWebhookEvent(event);
+      return reply(200, { ok: true });
+    }
+
+    // ---- Cashfree auto-renewal (db/116) -- dormant until CASHFREE_APP_ID/
+    // CASHFREE_SECRET_KEY are set (see cashfree.js). Offered to every
+    // tenant, not just new signups; a failed charge only flags the
+    // business for the owner to chase, never suspends anything. ----
+    if (url.pathname === '/payments/cashfree/config' && req.method === 'GET') {
+      return reply(200, { enabled: cashfreeConfigured() });
+    }
+    if (url.pathname === '/payments/cashfree/start' && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      if (rateLimited(`cfautorenew:${ip}`, 10, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      const prof = await withAuth(user.id, (client) => client.query('select tenant_id, role from profiles where id = $1', [user.id]));
+      const p = prof.rows[0];
+      if (!p || p.role !== 'owner') throw new HttpError(403, 'owner access required');
+      const tr = await pool.query('select name from tenants where id = $1', [p.tenant_id]);
+      let result;
+      try {
+        result = await startAutorenew({ userId: user.id, tenantId: p.tenant_id, tenantName: tr.rows[0]?.name || 'business', email: user.email, phone: user.phone });
+      } catch (err) {
+        throw new HttpError(400, err.message || 'could not start auto-renewal');
+      }
+      return reply(200, result);
+    }
+    if (url.pathname === '/payments/cashfree/cancel' && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      const prof = await withAuth(user.id, (client) => client.query('select tenant_id, role from profiles where id = $1', [user.id]));
+      const p = prof.rows[0];
+      if (!p || p.role !== 'owner') throw new HttpError(403, 'owner access required');
+      await cancelAutorenew({ tenantId: p.tenant_id });
+      return reply(200, { ok: true });
+    }
+    // Cashfree calls this server-to-server -- the signature check is the
+    // only authentication it has, same discipline as the Razorpay webhook above.
+    if (url.pathname === '/payments/cashfree/webhook' && req.method === 'POST') {
+      const raw = await readRawBody(req, 1_000_000);
+      if (!verifyCashfreeSignature(raw, req.headers['x-webhook-signature'], req.headers['x-webhook-timestamp'])) {
+        throw new HttpError(400, 'invalid signature');
+      }
+      let event;
+      try { event = JSON.parse(raw.toString('utf8')); } catch { throw new HttpError(400, 'bad json'); }
+      await handleCashfreeWebhookEvent(event);
       return reply(200, { ok: true });
     }
 

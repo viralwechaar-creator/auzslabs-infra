@@ -1,0 +1,22 @@
+-- Fixes a real bug shipped in db/116: `subscriptions` had
+-- "enable row level security" with zero policies, which -- confirmed by
+-- hand against a real scratch database -- blocks every statement for a
+-- non-owner, non-superuser role, including the api's own "app" role.
+-- The API connects as app (server/src/db.js), so startAutorenew()'s own
+-- insert into subscriptions would have failed with "new row violates
+-- row-level security policy for table subscriptions" the first time a
+-- real owner clicked "Turn on" -- this was never caught because the
+-- Cashfree flow was never driven against a real app-role connection
+-- (only the pricing math inside it was unit-tested, with createOrder's
+-- fetch call to Razorpay/Cashfree mocked out).
+--
+-- phone_otps/auth_sessions/payments -- the tables this one's own
+-- migration comment said it was following -- do not actually have RLS
+-- enabled either (checked directly: relrowsecurity is false on all
+-- three). The real, working pattern for a raw-pool-only table is no RLS
+-- at all, relying only on never being exposed through the generic
+-- /db/:table allow-list. db/117_two_factor_auth.sql's own auth_totp
+-- table was written the same (wrong) way and fixed before it ever
+-- shipped; this migration is the fix-after-the-fact for subscriptions,
+-- which had already been merged.
+alter table subscriptions disable row level security;

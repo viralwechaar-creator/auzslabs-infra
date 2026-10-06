@@ -721,6 +721,13 @@ checkSession();
 document.getElementById('signin').onclick = async () => {
   const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value;
+  // Deliberately NOT routed through auz2fa.resolve: this is the owner's
+  // own platform-admin tool for onboarding new clients, and it must
+  // never be the thing that can lock the owner out. (In practice a bare
+  // platform-admin account -- no profiles row -- has no UI to turn 2FA
+  // on anyway, since site/account.html's setup card only renders for a
+  // signed-in tenant owner/manager. This keeps it true by construction,
+  // not by coincidence.)
   const { error } = await sb.auth.signInWithPassword({ email, password });
   if (error) {
     document.getElementById('loginErr').textContent = error.message;

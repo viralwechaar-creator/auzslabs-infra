@@ -44,6 +44,7 @@
       m.textContent = ''; go.disabled = true;
       try {
         var r = await sb.auth.signInWithPassword({ email: email.value.trim(), password: pw.value });
+        r = await auz2fa.resolve(sb, r);
         if (r.error) { m.textContent = r.error.message || 'Wrong email or password'; return; }
         boot();
       } finally { go.disabled = false; }

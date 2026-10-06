@@ -78,6 +78,13 @@ function pickOutlet() {
 }
 function b64ToArr(s) { const p = '='.repeat((4 - (s.length % 4)) % 4), b = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')), a = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a; }
 async function enablePush() {
+  // Inside the installed Android app, Web Push below never works (the
+  // WebView there never registers a push service) -- FCM (ds/nativepush.js)
+  // is the real mechanism once packaged.
+  if (window.auzNativePush && window.auzNativePush.isNative()) {
+    const r = await window.auzNativePush.enable(sb, S.user.id);
+    return r.ok ? toast(r.message) : info('Notifications are off', r.message);
+  }
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return info('Not available here', 'This browser cannot show notifications when the app is closed.');
   const perm = await Notification.requestPermission(); if (perm !== 'granted') return info('Notifications are off', 'Allow notifications for this site in the browser settings.');
   const reg = await navigator.serviceWorker.ready;

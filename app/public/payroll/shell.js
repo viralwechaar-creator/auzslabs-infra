@@ -101,9 +101,10 @@ function showLogin(msg) {
 
   btn.onclick = async (ev) => {
     ev.preventDefault(); btn.disabled = true; m.textContent = '';
-    const { error } = await sb.auth.signInWithPassword({ email: e.value.trim(), password: p.value });
+    let r = await sb.auth.signInWithPassword({ email: e.value.trim(), password: p.value });
+    r = await auz2fa.resolve(sb, r);
     btn.disabled = false;
-    if (error) { m.style.color = 'var(--red)'; m.textContent = error.message; } else boot();
+    if (r.error) { m.style.color = 'var(--red)'; m.textContent = r.error.message; } else boot();
   };
   emailWrap.append(btn);
 

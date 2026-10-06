@@ -170,7 +170,8 @@ input:disabled+.slider{opacity:.4;cursor:default}
 </div>
 
 <script src="/sb-client.js?v=4"></script>
-<script src="tool/lock.js?v=1"></script><script src="tool/mydata.js?v=1"></script><script src="tool/help.js?v=1"></script>
+<script src="vendor/qrcode.js"></script>
+<script src="tool/lock.js?v=1"></script><script src="tool/mydata.js?v=1"></script><script src="tool/help.js?v=1"></script><script src="tool/twofa.js?v=1"></script>
 <script src="tool/site.js?v=10"></script>
 <script>document.addEventListener("click", function (e) { if (e.target.closest && e.target.closest("#helpLink")) { try { auzHelp.open(typeof sb !== "undefined" ? sb : null); } catch (x) {} } });</script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
@@ -427,6 +428,7 @@ function renderAccount() {
       <button class="btn btn-primary form-submit" id="pwBtn" style="margin-top:12px">Update password</button>
       <div id="pwMsg"></div>
     </div>
+    ${['owner', 'manager'].includes(DASH.my_role) ? `<div class="card" id="tfaCard"><p class="muted">Loading...</p></div>` : ''}
     ${DASH.my_role === 'owner' ? `<div class="card">
       <h3 class="h-2">Your data</h3>
       <p class="muted">Download a full backup, export everything to Excel, or clear all data for ${esc(t.name)} across every app. Only the owner can do this.</p>
@@ -484,6 +486,63 @@ function renderAccount() {
       renderAccount();
     };
   });
+  if ($('#tfaCard')) render2fa();
+}
+
+// Two-factor authentication (db/117): owner/manager only -- see server/src/auth.js's own comment.
+// Loaded async into its own card so the rest of the account page renders immediately either way.
+async function render2fa() {
+  const card = $('#tfaCard');
+  const { data: st, error } = await sb.auth.get2faStatus();
+  if (error || !card) { if (card) card.remove(); return; }
+  card.innerHTML = `
+    <h3 class="h-2">Two-factor authentication</h3>
+    <p class="muted">${st.enabled
+      ? 'On -- signing in also asks for a code from your authenticator app.' + (st.backupCodesLeft ? ' ' + st.backupCodesLeft + ' backup code' + (st.backupCodesLeft === 1 ? '' : 's') + ' left.' : ' No backup codes left -- turn it off and on again to get new ones.')
+      : 'Adds a second step to sign-in: a 6-digit code from an app like Google Authenticator, Authy or 1Password, on top of your password. Recommended for owners and managers.'}</p>
+    <div id="tfaBody"></div>
+  `;
+  const body = $('#tfaBody');
+  if (!st.enabled) {
+    body.innerHTML = '<button class="btn btn-primary form-submit" id="tfaStart" style="margin-top:4px">Turn on two-factor authentication</button><div id="tfaMsg"></div>';
+    $('#tfaStart').onclick = async () => {
+      const { data, error: e } = await sb.auth.setup2fa();
+      if (e) { $('#tfaMsg').className = 'err'; $('#tfaMsg').textContent = e.message; return; }
+      body.innerHTML = `
+        <p class="muted">1. Scan this with your authenticator app:</p>
+        <img id="tfaQr" style="display:block;margin:10px 0;border-radius:12px;max-width:220px" alt="QR code for two-factor authentication">
+        <p class="muted" style="word-break:break-all">Or enter this key by hand: <code>${esc(data.secret)}</code></p>
+        <p class="muted">2. Then enter the 6-digit code it shows:</p>
+        <div class="field"><input id="tfaCode" type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code" style="max-width:160px"></div>
+        <button class="btn btn-primary form-submit" id="tfaConfirm" style="margin-top:4px">Confirm & turn on</button>
+        <div id="tfaMsg"></div>
+      `;
+      try { const q = qrcode(0, 'M'); q.addData(data.otpauth); q.make(); $('#tfaQr').src = q.createDataURL(6, 2); } catch (e2) { $('#tfaQr').remove(); }
+      $('#tfaConfirm').onclick = async () => {
+        const { data: cd, error: ce } = await sb.auth.confirm2faSetup($('#tfaCode').value.trim());
+        if (ce) { $('#tfaMsg').className = 'err'; $('#tfaMsg').textContent = ce.message; return; }
+        body.innerHTML = `
+          <p class="ok-box">Two-factor authentication is on. Save these one-time backup codes somewhere safe -- each works once if you ever lose access to your authenticator app. They are shown only this one time.</p>
+          <pre style="background:var(--surface-2,#f4f3f1);padding:12px 16px;border-radius:12px;font:600 15px/1.6 monospace">${cd.backupCodes.map(esc).join('\n')}</pre>
+          <button class="btn btn-primary form-submit" id="tfaDone" style="margin-top:4px">Done</button>
+        `;
+        $('#tfaDone').onclick = () => renderAccount();
+      };
+    };
+  } else {
+    body.innerHTML = `
+      <div class="field"><label>Your password (or leave blank and enter a code instead)</label><input id="tfaOffPw" type="password"></div>
+      <div class="field"><label>Current 6-digit code or a backup code</label><input id="tfaOffCode" type="text"></div>
+      <button class="btn btn-ghost form-submit" id="tfaOff" style="margin-top:4px">Turn off two-factor authentication</button>
+      <div id="tfaMsg"></div>
+    `;
+    $('#tfaOff').onclick = async () => {
+      if (!window.confirm('Turn off two-factor authentication? Your account will only need a password to sign in.')) return;
+      const { error: e } = await sb.auth.disable2fa($('#tfaOffPw').value || undefined, $('#tfaOffCode').value.trim() || undefined);
+      if (e) { $('#tfaMsg').className = 'err'; $('#tfaMsg').textContent = e.message; return; }
+      renderAccount();
+    };
+  }
 }
 
 // Products the marketing site (products.html) actually sells are POS,

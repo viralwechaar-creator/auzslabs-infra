@@ -105,6 +105,10 @@ function esc(s) {
 document.getElementById('signin').onclick = async () => {
   const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value;
+  // Deliberately NOT routed through auz2fa.resolve -- see site/admin.html's
+  // own comment on the same line: this is the owner's own tool for
+  // onboarding new clients, and it must never be the thing that can
+  // lock the owner out.
   const { error } = await sb.auth.signInWithPassword({ email, password });
   if (error) {
     document.getElementById('loginErr').textContent = error.message;

@@ -222,7 +222,7 @@ function render(){
  const c=document.querySelector('.content');if(c)c.scrollTop=top}
 function login(msg){
  const e=h('input',{type:'email',placeholder:'Email',autocomplete:'username'}),p=h('input',{type:'password',placeholder:'Password',autocomplete:'current-password'}),m=h('div',{class:'sm',style:'color:var(--red)'},msg||'');
- $('#app').replaceChildren(h('form',{class:'login',onsubmit:async ev=>{ev.preventDefault();const{error}=await sb.auth.signInWithPassword({email:e.value.trim(),password:p.value});error?m.textContent=error.message:boot()}},h('b',{style:'font-size:20px'},'AUZs LAB Admin'),h('span',{class:'sm'},'Sign in with your owner or manager account.'),e,p,m,h('button',{type:'submit'},'Sign in')))}
+ $('#app').replaceChildren(h('form',{class:'login',onsubmit:async ev=>{ev.preventDefault();let r=await sb.auth.signInWithPassword({email:e.value.trim(),password:p.value});r=await auz2fa.resolve(sb,r);r.error?m.textContent=r.error.message:boot()}},h('b',{style:'font-size:20px'},'AUZs LAB Admin'),h('span',{class:'sm'},'Sign in with your owner or manager account.'),e,p,m,h('button',{type:'submit'},'Sign in')))}
 async function boot(){
  if(!C.url||C.url.includes('YOUR-PROJECT'))return $('#app').replaceChildren(h('div',{class:'login'},'Setup needed: open config.js and add your Supabase URL and key.'));
  let ses=null;try{ses=(await sb.auth.getSession()).data.session}catch{}

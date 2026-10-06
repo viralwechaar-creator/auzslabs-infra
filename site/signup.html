@@ -317,7 +317,7 @@
   </main>
 </div>
 
-<script src="/sb-client.js?v=4"></script>
+<script src="/sb-client.js?v=4"></script><script src="tool/twofa.js?v=1"></script>
 <script src="tool/lock.js?v=1"></script>
 <script src="tool/site.js?v=10"></script>
 <script>
@@ -550,9 +550,10 @@ document.getElementById('submitBtn').onclick = async () => {
   if (!password) { errEl.textContent = 'Enter a password.'; return; }
   if (mode === 'signup' && password.length < 8) { errEl.textContent = 'Password must be at least 8 characters.'; return; }
   if (mode === 'signup' && CFG.turnstileSiteKey && !captchaToken) { errEl.textContent = 'Please complete the verification check above.'; return; }
-  const { data, error } = mode === 'signup'
+  let { data, error } = mode === 'signup'
     ? await sb.auth.signUp({ email, password, captchaToken })
     : await sb.auth.signInWithPassword({ email, password });
+  if (mode !== 'signup') { const r = await auz2fa.resolve(sb, { data, error }); data = r.data; error = r.error; }
   if (error) {
     errEl.textContent = error.message;
     if (mode === 'signup' && window.turnstile && captchaWidget !== null) { captchaToken = ''; window.turnstile.reset(captchaWidget); }

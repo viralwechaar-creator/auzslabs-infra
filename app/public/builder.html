@@ -121,7 +121,7 @@ input[type=date],input[type=time],input[type=month]{max-width:100%}
 </style><link rel="stylesheet" href="/hig.mobile.css?v=9" media="(max-width:899px)"><link rel="stylesheet" href="/hig.desktop.css?v=3" media="(min-width:900px)"><link rel="stylesheet" href="/ds/legacy.css?v=4">
 </head><body>
 <div id=app></div>
-<script src="/sb-client.js?v=3"></script>
+<script src="/sb-client.js?v=3"></script><script src="/ds/twofa.js?v=1"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '', sentryDsn: 'https://f5b1f37df2453739b1f37434858dab05@o4512197520261120.ingest.us.sentry.io/4512197531009024' };</script>
 <script src="/ds/errors.js?v=1"></script>
 <script src="/tenant.js?v=2"></script>
@@ -339,7 +339,7 @@ function render(){
 
 function login(msg){
  const e=h('input',{type:'email',placeholder:'Email'}),p=h('input',{type:'password',placeholder:'Password'}),m=h('div',{class:'note'},msg||'');
- $('#app').replaceChildren(h('div',{class:'md',style:'margin:12vh auto'},h('h2',{},'Sign in'),e,p,m,h('button',{class:'p',onclick:async()=>{const{error}=await sb.auth.signInWithPassword({email:e.value.trim(),password:p.value});error?m.textContent=error.message:boot()}},'Sign in')));
+ $('#app').replaceChildren(h('div',{class:'md',style:'margin:12vh auto'},h('h2',{},'Sign in'),e,p,m,h('button',{class:'p',onclick:async()=>{let r=await sb.auth.signInWithPassword({email:e.value.trim(),password:p.value});r=await auz2fa.resolve(sb,r);r.error?m.textContent=r.error.message:boot()}},'Sign in')));
 }
 
 function notEntitled(){

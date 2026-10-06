@@ -90,16 +90,44 @@
       return request(`/rpc/${fn}`, { method: 'POST', body: args || {}, auth: true });
     }
 
+    // Two-factor authentication (db/117): every sign-in method below can
+    // come back with {requires2fa:true, challenge} instead of a real
+    // session -- this one place decides which, so a page that already
+    // checks `.data.session` for "signed in" doesn't need to change at
+    // all; it just also gets `.data.requires2fa` to show a code box when
+    // the account has 2FA turned on.
+    function applySignInResult(data, error) {
+      if (error) return { data: { session: null }, error };
+      if (data.requires2fa) return { data: { session: null, requires2fa: true, challenge: data.challenge }, error: null };
+      session = { access_token: data.access_token, user: data.user };
+      saveSession(session);
+      return { data: { session, user: data.user }, error: null };
+    }
+
     const auth = {
       async getSession() {
         return { data: { session } };
       },
       async signInWithPassword({ email, password }) {
         const { data, error } = await request('/auth/login', { method: 'POST', body: { email, password }, auth: false });
-        if (error) return { data: { session: null }, error };
-        session = { access_token: data.access_token, user: data.user };
-        saveSession(session);
-        return { data: { session, user: data.user }, error: null };
+        return applySignInResult(data, error);
+      },
+      // Step 2 of a 2FA sign-in: the challenge + code from any method above that returned requires2fa.
+      async confirm2fa(challenge, code) {
+        const { data, error } = await request('/auth/2fa/challenge', { method: 'POST', body: { challenge, code }, auth: false });
+        return applySignInResult(data, error);
+      },
+      async get2faStatus() {
+        return request('/auth/2fa/status', { method: 'GET' });
+      },
+      async setup2fa() {
+        return request('/auth/2fa/setup', { method: 'POST', body: {} });
+      },
+      async confirm2faSetup(code) {
+        return request('/auth/2fa/confirm', { method: 'POST', body: { code } });
+      },
+      async disable2fa(password, code) {
+        return request('/auth/2fa/disable', { method: 'POST', body: { password, code } });
       },
       // Public self-serve account creation (POST /auth/signup) -- distinct
       // from admin-provisioned tenant-staff logins, which never call this.
@@ -135,27 +163,18 @@
       },
       async signInWithGoogle(idToken) {
         const { data, error } = await request('/auth/google', { method: 'POST', body: { id_token: idToken }, auth: false });
-        if (error) return { data: { session: null }, error };
-        session = { access_token: data.access_token, user: data.user };
-        saveSession(session);
-        return { data: { session, user: data.user }, error: null };
+        return applySignInResult(data, error);
       },
       async signInWithApple(code) {
         const { data, error } = await request('/auth/apple', { method: 'POST', body: { code }, auth: false });
-        if (error) return { data: { session: null }, error };
-        session = { access_token: data.access_token, user: data.user };
-        saveSession(session);
-        return { data: { session, user: data.user }, error: null };
+        return applySignInResult(data, error);
       },
       async sendPhoneOtp(phone) {
         return request('/auth/phone/send', { method: 'POST', body: { phone }, auth: false });
       },
       async verifyPhoneOtp(phone, code) {
         const { data, error } = await request('/auth/phone/verify', { method: 'POST', body: { phone, code }, auth: false });
-        if (error) return { data: { session: null }, error };
-        session = { access_token: data.access_token, user: data.user };
-        saveSession(session);
-        return { data: { session, user: data.user }, error: null };
+        return applySignInResult(data, error);
       },
       // resetLinkBase: the page the reset link should open (this page's
       // own URL, typically) -- the server appends ?token=... to it.

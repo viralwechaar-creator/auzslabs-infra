@@ -4,6 +4,7 @@ import { randomInt, randomUUID, randomBytes, createHash } from 'node:crypto';
 import { OAuth2Client } from 'google-auth-library';
 import { SignJWT, importPKCS8, createRemoteJWKSet, jwtVerify } from 'jose';
 import { pool } from './db.js';
+import { generateSecret, otpauthUri, verifyTotp, generateBackupCodes } from './totp.js';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) throw new Error('JWT_SECRET is required');
@@ -33,6 +34,20 @@ const revokedJtis = new Set();
     console.warn('could not preload revoked sessions', err.message);
   }
 })();
+
+// Closes the one real gap left in "instantly kill a stolen device's
+// session": the HTTP/RPC side is already instant (verifyToken() rejects
+// a revoked jti on its very next request), but the live-sync WebSocket
+// (realtime.js) is only authenticated once, at connect -- a device that
+// already has a socket open keeps it open, and keeps receiving bare
+// "something changed, go refetch" pings, until it naturally disconnects.
+// realtime.js can't import revokeSession/revokeAllSessionsForUser
+// directly without a circular import (it already imports verifyToken
+// from here), so it registers a listener here instead and this module
+// never needs to know realtime.js exists.
+const revocationListeners = [];
+export function onSessionRevoked(fn) { revocationListeners.push(fn); }
+function notifyRevoked(jti) { for (const fn of revocationListeners) { try { fn(jti); } catch (err) { console.warn('revocation listener failed', err.message); } } }
 
 // A short, human-readable label ("Chrome on Windows") from the
 // request's own User-Agent -- good enough for someone to recognise
@@ -89,6 +104,7 @@ export async function revokeSession(userId, jti) {
   );
   if (!rows[0]) throw new Error('session not found');
   revokedJtis.add(jti);
+  notifyRevoked(jti);
 }
 
 // Admin-side equivalent of revokeSession, for the Users directory's "sign
@@ -104,7 +120,7 @@ export async function revokeAllSessionsForUser(userId) {
     `update auth_sessions set revoked_at = now() where user_id = $1 and revoked_at is null returning jti`,
     [userId],
   );
-  rows.forEach((r) => revokedJtis.add(r.jti));
+  rows.forEach((r) => { revokedJtis.add(r.jti); notifyRevoked(r.jti); });
   return rows.length;
 }
 
@@ -122,6 +138,116 @@ export async function signToken(user, meta) {
   );
 }
 
+// =========================================================
+// Two-factor authentication (db/117). The one place every identity
+// path (password, Google, Apple, phone) converges on *after* proving
+// who someone is but *before* actually issuing a real session -- so a
+// 2FA check added once here covers every sign-in method automatically,
+// rather than threading it through login()/loginWithGoogle()/etc.
+// individually. A "challenge" is a short-lived (5 min), purpose-scoped
+// JWT -- it can never be used as a real Bearer token (verifyToken()
+// only accepts tokens it itself signed via signToken(), which never
+// sets purpose:'2fa'), so there is no way to skip the code check by
+// just replaying this token at a normal endpoint.
+// =========================================================
+async function sessionOrChallenge(user, meta) {
+  const { rows } = await pool.query('select enabled from auth_totp where user_id = $1', [user.id]);
+  if (!rows[0]?.enabled) return { access_token: await signToken(user, meta), user };
+  const challenge = jwt.sign({ sub: user.id, purpose: '2fa' }, JWT_SECRET, { expiresIn: '5m' });
+  return { requires2fa: true, challenge };
+}
+
+// Completes a sign-in that returned requires2fa: verifies the challenge
+// token (purpose + not expired), then either a fresh TOTP code or an
+// unused backup code (consumed on use, one-time by design). Returns the
+// normal {access_token,user} shape on success, or null -- same "null
+// means wrong credentials, no further detail" discipline as login().
+export async function verify2faChallenge(challenge, code, meta) {
+  let payload;
+  try { payload = jwt.verify(challenge, JWT_SECRET); } catch { return null; }
+  if (payload.purpose !== '2fa' || !payload.sub) return null;
+  const { rows } = await pool.query(
+    `select au.id, au.email, au.app_metadata, au.user_metadata, t.secret, t.backup_codes
+     from auth_users au join auth_totp t on t.user_id = au.id
+     where au.id = $1 and au.deleted_at is null and au.disabled_at is null and t.enabled = true`,
+    [payload.sub],
+  );
+  const row = rows[0];
+  if (!row) return null;
+  const clean = String(code || '').trim();
+  if (verifyTotp(row.secret, clean)) {
+    const user = { id: row.id, email: row.email, app_metadata: row.app_metadata, user_metadata: row.user_metadata };
+    return { access_token: await signToken(user, meta), user };
+  }
+  // Not a valid TOTP code -- try it as a backup code (bcrypt-hashed, one-time).
+  for (const hash of row.backup_codes || []) {
+    if (await bcrypt.compare(clean, hash)) {
+      await pool.query(
+        `update auth_totp set backup_codes = array_remove(backup_codes, $1) where user_id = $2`,
+        [hash, row.id],
+      );
+      const user = { id: row.id, email: row.email, app_metadata: row.app_metadata, user_metadata: row.user_metadata };
+      return { access_token: await signToken(user, meta), user };
+    }
+  }
+  return null;
+}
+
+export async function my2faStatus(userId) {
+  const { rows } = await pool.query('select enabled, array_length(backup_codes, 1) as codes_left from auth_totp where user_id = $1', [userId]);
+  return { enabled: !!rows[0]?.enabled, backupCodesLeft: rows[0]?.codes_left || 0 };
+}
+
+// Step 1 of setup: generates a fresh secret (overwriting any unconfirmed
+// one from an abandoned earlier attempt) and returns the QR-code URI --
+// NOT enabled yet. Gated to owner/manager by the caller (index.js),
+// since this is an account-security feature for the person who can do
+// the most damage if their login is compromised, not every staff login.
+export async function generate2faSecret(userId, email) {
+  const secret = generateSecret();
+  await pool.query(
+    `insert into auth_totp (user_id, secret, enabled) values ($1, $2, false)
+     on conflict (user_id) do update set secret = $2, enabled = false, backup_codes = '{}', confirmed_at = null`,
+    [userId, secret],
+  );
+  return { secret, otpauth: otpauthUri(secret, email) };
+}
+
+// Step 2: proves the owner's authenticator app actually has the secret
+// (not just that the setup call succeeded) before turning it on --
+// otherwise a typo'd/never-scanned secret would lock the owner out on
+// their very next login. Generates backup codes only now, once, and
+// returns them in plaintext exactly this one time.
+export async function confirm2fa(userId, code) {
+  const { rows } = await pool.query('select secret from auth_totp where user_id = $1 and enabled = false', [userId]);
+  if (!rows[0] || !verifyTotp(rows[0].secret, code)) return null;
+  const backupCodes = generateBackupCodes();
+  const hashes = await Promise.all(backupCodes.map((c) => bcrypt.hash(c, 10)));
+  await pool.query(
+    `update auth_totp set enabled = true, confirmed_at = now(), backup_codes = $1 where user_id = $2`,
+    [hashes, userId],
+  );
+  return { backupCodes };
+}
+
+// Requires the account's current password (if it has one -- a
+// Google/Apple/phone-only account just needs its current session, same
+// bar deleteOwnAccount already uses) OR a valid TOTP/backup code, so
+// turning 2FA off needs proof of at least one of the two factors, never
+// just a bare "I'm signed in right now" click.
+export async function disable2fa(userId, { password, code } = {}) {
+  const { rows } = await pool.query('select password_hash from auth_users where id = $1', [userId]);
+  let ok = !rows[0]?.password_hash; // no password on the account -- session alone is enough, same as deleteOwnAccount
+  if (!ok && password) ok = await bcrypt.compare(password, rows[0].password_hash);
+  if (!ok && code) {
+    const { rows: tr } = await pool.query('select secret from auth_totp where user_id = $1 and enabled = true', [userId]);
+    if (tr[0]) ok = verifyTotp(tr[0].secret, code);
+  }
+  if (!ok) return false;
+  await pool.query('delete from auth_totp where user_id = $1', [userId]);
+  return true;
+}
+
 // Returns {id,email,app_metadata,jti} from a valid, non-revoked Bearer
 // token, or null. The revocation check is a plain in-memory Set lookup,
 // not a query -- verifying a token stays the fast, local operation it
@@ -129,6 +255,14 @@ export async function signToken(user, meta) {
 export function verifyToken(token) {
   try {
     const payload = jwt.verify(token, JWT_SECRET);
+    // A 2FA challenge token (sessionOrChallenge/verify2faChallenge above)
+    // is signed with this same JWT_SECRET and carries a real `sub`, so
+    // without this check it would pass as a normal Bearer token despite
+    // never having passed the second factor -- confirmed by hand against
+    // a real running server before this check was added. A real session
+    // token never sets `purpose` (signToken() never sets it), so this
+    // only ever rejects a challenge token, never a normal one.
+    if (payload.purpose) return null;
     if (payload.jti && revokedJtis.has(payload.jti)) return null;
     if (payload.jti) touchSession(payload.jti);
     return { id: payload.sub, email: payload.email, app_metadata: payload.app_metadata || {}, jti: payload.jti };
@@ -166,7 +300,7 @@ export async function login(email, password, meta) {
   // (see db/044_staff_email_verification.sql), so null/true both pass.
   if (row.email_verified === false) return { unverified: true };
   const user = { id: row.id, email: row.email, app_metadata: row.app_metadata, user_metadata: row.user_metadata };
-  return { access_token: await signToken(user, meta), user };
+  return sessionOrChallenge(user, meta);
 }
 
 export async function createUser({ email, password, app_metadata = {}, user_metadata = {}, verified = false }) {
@@ -325,7 +459,7 @@ async function identitySession(row, meta) {
   const { rows } = await pool.query('select disabled_at from auth_users where id = $1', [row.id]);
   if (rows[0]?.disabled_at) return null;
   const user = { id: row.id, email: row.email, app_metadata: row.app_metadata, user_metadata: row.user_metadata };
-  return { access_token: await signToken(user, meta), user };
+  return sessionOrChallenge(user, meta);
 }
 
 // ---- Google ----
