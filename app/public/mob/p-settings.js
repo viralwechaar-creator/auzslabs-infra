@@ -13,6 +13,7 @@ async function renderSettings(v) {
     section(t('language'), seg([['en', 'English'], ['hi', 'हिंदी']], S_LANG, (val) => saveLang(val), { full: true })),
     isOwner ? shopDetailsCard(s, v) : null,
     isOwner ? featuresCard(v) : null,
+    isOwner ? profitShareCard(v) : null,
     isOwner ? navCard(v) : null,
     isOwner ? h('div', { class: 'list' }, liRow({ icon: 'gear', title: t('staffSeeRates'), right: h('span', { class: 'switch' }, h('input', { type: 'checkbox', checked: !!s.staffSeePurchaseRates, onchange: async (e) => { await api('mob_save_settings', { p: { staffSeePurchaseRates: e.target.checked } }); S.ctx = await api('mob_context'); toast(t('saved')); } })) })) : null,
     can('mob_reports') ? h('div', { id: 'staff-box' }, h('div', { class: 'skel', style: { height: '80px' } })) : null,
@@ -114,4 +115,16 @@ function navCard(v) {
     h('div', { class: 'row', style: { gap: '8px', marginTop: '10px' } },
       h('button', { class: 'btn fill', type: 'button', onclick: () => { const l = rows.filter((r) => r.on).map((r) => r.id); if (!l.length) return toast(t('navNone')); save(l); } }, t('save')),
       saved ? h('button', { class: 'btn', type: 'button', onclick: () => save([]) }, t('navAuto')) : null));
+}
+
+// Profit sharing (owner only): what % of each staffer's profit goes to the shop owner. 0 = off. Saved as features.profitSharePct.
+function profitShareCard(v) {
+  const pct = input({ value: sharePct() || '', label: t('profitSharePct'), mode: 'decimal' });
+  return section(t('profitShareTitle'), h('div', { class: 'small muted', style: { marginBottom: '8px' } }, t('profitShareHint')), h('div', { class: 'grid' },
+    field(t('profitSharePct'), pct),
+    h('button', { class: 'btn fill', type: 'button', onclick: async () => {
+      const n = pct.value.trim() === '' ? 0 : Number(pct.value);
+      if (!(n >= 0 && n <= 100)) { fail(new Error(t('profitShareBad'))); return; }
+      try { await api('mob_save_settings', { p: { features: { profitSharePct: n } } }); S.ctx = await api('mob_context'); toast(t('saved')); v.refresh(); } catch (e) { fail(e); }
+    } }, t('save'))));
 }
