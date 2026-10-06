@@ -772,9 +772,9 @@ async function loadLeads() {
 const NICHE_LABEL = { cafe: 'Café / restaurant / bar / bakery / hotel', salon: 'Salon / spa', retail: 'Retail (shoes, clothing, books)', general: 'General' };
 // Colour groups for module tags, all from the brand palette: wine = AuzsPOS family, sand = salon/website,
 // sage = money, slate = people/ops, amber = mobile shop.
-const TONE = { pos: 'wine', crm: 'wine', billing: 'wine', inventory: 'wine', kds: 'wine', purchases: 'wine', membership: 'wine', self_order: 'wine', salon: 'sand', booking: 'sand', website_builder: 'sand', payroll: 'slate', tasks: 'slate', helpdesk: 'slate', accounting: 'sage', mobile: 'amber', gsm: 'amber' };
+const TONE = { pos: 'wine', crm: 'wine', billing: 'wine', inventory: 'wine', kds: 'wine', purchases: 'wine', membership: 'wine', self_order: 'wine', salon: 'sand', booking: 'sand', website_builder: 'sand', payroll: 'slate', tasks: 'slate', helpdesk: 'slate', accounting: 'sage', mobile: 'amber' };
 const featTone = (k) => 'tone-' + (TONE[k] || 'slate');
-const FEATURE_LABEL = { salon: 'AUZslab Salon', pos: 'AuzsPOS', crm: 'CRM', booking: 'Booking', billing: 'Billing', self_order: 'AuzsPOS QR', kds: 'Kitchen display', inventory: 'Inventory', website_builder: 'Website Builder', payroll: 'AuzsPay', membership: 'Memberships', helpdesk: 'Helpdesk', tasks: 'Tasks', purchases: 'Purchases', accounting: 'AuzsLedger', gsm: 'AUZsGSM (standalone)', mobile: 'AUZsMob' };
+const FEATURE_LABEL = { salon: 'AUZslab Salon', pos: 'AuzsPOS', crm: 'CRM', booking: 'Booking', billing: 'Billing', self_order: 'AuzsPOS QR', kds: 'Kitchen display', inventory: 'Inventory', website_builder: 'Website Builder', payroll: 'AuzsPay', membership: 'Memberships', helpdesk: 'Helpdesk', tasks: 'Tasks', purchases: 'Purchases', accounting: 'AuzsLedger', mobile: 'AUZsMob' };
 
 async function loadSignupRequests() {
   const listEl = document.getElementById('signupRequestsList');
@@ -1188,7 +1188,6 @@ const SELLABLE = [
   { id: 'mob', label: 'AUZsMob', keys: ['mobile'], note: 'Mobile shop: stock, sales, repairs' },
   { id: 'salon', label: 'AUZslab Salon', keys: ['salon', 'booking', 'crm', 'billing'], note: 'Website, booking, customers (CRM) and billing are always included' },
   { id: 'web', label: 'Website Builder', keys: ['website_builder'], note: 'Drag-and-drop website editor' },
-  { id: 'gsm', label: 'AUZsGSM (separate app)', keys: ['gsm'], note: 'Set up by hand' },
 ];
 
 function openEditModal(id) {
