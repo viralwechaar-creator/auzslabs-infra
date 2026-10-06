@@ -71,7 +71,7 @@ PAGES['menu/items']=()=>{
   isR?null:btn('Veg',()=>bulkApply('Mark veg',c=>{c.veg='veg'}),'sm2'),isR?null:btn('Non-veg',()=>bulkApply('Mark non-veg',c=>{c.veg='nonveg'}),'sm2'),isR?null:btn('Egg',()=>bulkApply('Mark contains egg',c=>{c.veg='egg'}),'sm2'),
   btn('Move to category…',()=>formModal('Move items',[{k:'cat',label:'Category',type:'select',options:cats().map(c=>[c.id,c.name]),req:true}],async v=>{for(const id of [...sel]){const it=rec(id);if(it)await save('item',{...it,cat:v.cat},it.id)}S.bulk=new Set();render()}),'sm2'),
   btn('Delete',()=>confirmBox('Delete '+sel.size+' items? This cannot be undone.',async()=>{for(const id of [...sel]){const it=rec(id);if(it)await remove('item',it)}S.bulk=new Set();render()},'Delete'),'sm2 d'),btn('Clear',()=>{S.bulk=new Set();render()},'sm2'))):null;
- return[pageHead('Items',isR?'Products, sizes, prices and stock.':'Manage products, pricing, recipes and availability.',btn('Import CSV',importItems,'','up'),btn('Export CSV',()=>csvDl([['Name','Short code','Category','Type','Price','Sizes','Description','Tax','HSN','Cost','Sold out'],...rows.map(i=>[i.name,i.short||'',catName(i.cat),i.veg||'veg',i.price,(i.sizes||[]).map(s=>s.l+':'+s.p).join('; '),i.desc||'',i.taxId?(rec(i.taxId)||{}).name:'',i.hsn||'',i.cost||'',itemOffNow(i)?'yes':''])],'items.csv'),'','dl'),btn('Add item',()=>itemForm(),'p','plus')),
+ return[pageHead('Items',isR?'Products, sizes, prices and stock.':'Manage products, pricing, recipes and availability.',btn('Import CSV',importItems,'','up'),btn('Read menu file',readMenuFile,'','up'),btn('Export CSV',()=>csvDl([['Name','Short code','Category','Type','Price','Sizes','Description','Tax','HSN','Cost','Sold out'],...rows.map(i=>[i.name,i.short||'',catName(i.cat),i.veg||'veg',i.price,(i.sizes||[]).map(s=>s.l+':'+s.p).join('; '),i.desc||'',i.taxId?(rec(i.taxId)||{}).name:'',i.hsn||'',i.cost||'',itemOffNow(i)?'yes':''])],'items.csv'),'','dl'),btn('Add item',()=>itemForm(),'p','plus')),
   h('div',{class:'bar-row'},search('Search items, short codes, categories…'),h('label',{class:'sel'},h('select',{onchange:e=>{S.f.cat=e.target.value;render()}},h('option',{value:''},'All categories'),...cats().map(c=>h('option',{value:c.id,selected:c.id==cf},c.name))),ic('chd',14)),
    isR?null:h('label',{class:'sel'},h('select',{onchange:e=>{S.f.veg=e.target.value;render()}},...[['','All types'],['veg','Veg'],['nonveg','Non-veg'],['egg','Egg']].map(([v,l])=>h('option',{value:v,selected:v==vf},l))),ic('chd',14)),h('span',{class:'sm'},rows.length+' items')),
   bulkBar,card(table([
@@ -80,6 +80,37 @@ PAGES['menu/items']=()=>{
    {label:'Category',get:i=>catName(i.cat)},{label:'Price',get:priceText},{label:'Tax',get:i=>i.taxId?((rec(i.taxId)||{}).name||'—'):'Default'},
    {label:'Status',get:i=>itemOffNow(i)?pill('Sold out','r'):(i.chOff&&Object.keys(i.chOff).length?pill('Limited','a'):pill('Available','g'))},
    {label:'',get:i=>actBtns(btn('Edit',()=>itemForm(i),'sm2'),btn('Copy',()=>{const c={...i};delete c.id;c.name=i.name+' (copy)';itemForm(c)},'sm2'))}],rows,{empty:'No items yet',emptyText:'Add your first item, or import a CSV.',onRow:i=>itemForm(i)}))]};
+// ---------- read a menu from a PDF or photo (free, on this device) -> draft to check -> items ----------
+const loadDocRead=()=>window.auzDocRead?Promise.resolve():new Promise((res,rej)=>{const s=h('script',{src:'/ds/docread.js?v=1',onload:res,onerror:()=>rej(new Error('Could not load the reader'))});document.head.append(s)});
+function readMenuFile(){pickFile('application/pdf,image/*',async f=>{
+ if(f.size>10e6)return toast('Files can be up to 10 MB');
+ const msg=h('p',{style:'color:var(--muted)'},'Starting…');let gone=false;
+ const close=modal('Reading your menu',[h('div',{class:'mb',style:'display:grid;gap:10px'},msg,h('p',{style:'font-size:13px;color:var(--muted)'},'Everything is read on this device. Nothing is added until you check the draft and press Create.'))],{onClose:()=>{gone=true}});
+ try{await loadDocRead();const r=await auzDocRead.extract(f,{onStatus:t=>{msg.textContent=t}});if(gone)return;close();
+  const d=auzDocRead.parseMenu(r.text);if(!d.categories.length)return toast('No items with prices could be found. Try a clearer photo or the original PDF.');
+  menuDraft(d,r.method)}catch(e){close();toast(e.message||'Could not read that file')}})}
+function menuDraft(d,method){
+ const existing={};cats().forEach(c=>existing[c.name.toLowerCase()]=c);const have=new Map();rawL('item').forEach(i=>have.set((i.cat||'')+'|'+i.name.toLowerCase(),i));
+ const rows=[];d.categories.forEach(c=>c.items.forEach(it=>rows.push({cat:c.name,...it,on:true})));
+ const box=h('div',{style:'display:grid;gap:8px'});
+ const draw=()=>{box.innerHTML='';let last=null;rows.forEach((r,ix)=>{
+   if(r.cat!==last){last=r.cat;const cn=h('input',{class:'inp',value:r.cat,'aria-label':'Category',style:'font-weight:700',onchange:e=>{const old=r.cat,nv=e.target.value.trim()||'Menu';rows.forEach(x=>{if(x.cat===old)x.cat=nv});draw()}});box.append(h('div',{style:'margin-top:8px'},cn,existing[r.cat.toLowerCase()]?h('span',{style:'font-size:12px;color:var(--muted);margin-left:8px'},'existing category'):h('span',{style:'font-size:12px;color:var(--muted);margin-left:8px'},'new category')))}
+   const ex=have.get((existing[r.cat.toLowerCase()]||{}).id+'|'+r.name.toLowerCase());
+   box.append(h('div',{style:'display:grid;grid-template-columns:auto 1fr 84px 96px;gap:8px;align-items:center'},
+    h('input',{type:'checkbox',checked:r.on,'aria-label':'Include',onchange:e=>{r.on=e.target.checked}}),
+    h('input',{class:'inp',value:r.name,'aria-label':'Item name',onchange:e=>{r.name=e.target.value}}),
+    h('input',{class:'inp',value:r.price,inputmode:'decimal','aria-label':'Price',onchange:e=>{r.price=+e.target.value||0}}),
+    h('select',{class:'inp','aria-label':'Type',onchange:e=>{r.veg=e.target.value}},...[['veg','Veg'],['nonveg','Non-veg'],['egg','Egg']].map(([v,l])=>h('option',{value:v,selected:r.veg==v},l)))),
+    ex?h('div',{style:'font-size:12px;color:var(--muted);margin:-4px 0 0 28px'},'Already on your menu: the price will be updated'):null,
+    r.sizes&&r.sizes.length?h('div',{style:'font-size:12px;color:var(--muted);margin:-4px 0 0 28px'},'Sizes: '+r.sizes.map(s=>s.l+' '+s.p).join(', ')):null)})};
+ draw();
+ const go=btn('Create menu',async()=>{go.disabled=true;let n=0,u=0;const byName={...existing};
+  for(const r of rows){if(!r.on||!r.name.trim())continue;const key=r.cat.toLowerCase();let c=byName[key];if(!c){c={name:r.cat,n:Date.now()+n};await save('cat',c);byName[key]=c}
+   const ex=rawL('item').find(i=>i.cat==c.id&&i.name.toLowerCase()==r.name.trim().toLowerCase());
+   await save('item',{...(ex||{}),name:r.name.trim(),cat:c.id,veg:r.veg||'veg',price:+r.price||0,sizes:r.sizes&&r.sizes.length?r.sizes:((ex&&ex.sizes)||[]),desc:r.desc||(ex&&ex.desc)||''},ex?ex.id:undefined);ex?u++:n++}
+  close2();toast('Added '+n+' items'+(u?', updated '+u:''));render()},'p');
+ const close2=modal('Check the menu we read',[h('div',{class:'mb',style:'display:grid;gap:10px;max-height:70vh;overflow:auto'},
+  h('p',{style:'font-size:13px;color:var(--muted)'},(method==='ocr'?'Read from a photo, so expect mistakes. ':'')+'Fix any name or price, untick what you do not want, then press Create. Recipes and raw materials are added afterwards on each item.'),box),h('div',{class:'mf'},go)],{wide:true,sticky:true})}
 function importItems(){pickFile('.csv,text/csv',async file=>{const rows=parseCSV(await file.text());if(rows.length<2)return toast('That file is empty');const hd=rows[0].map(x=>x.trim().toLowerCase()),ix=n=>hd.indexOf(n);if(ix('name')<0)return toast('The first row must have a "Name" column');
  const byName={};cats().forEach(c=>byName[c.name.toLowerCase()]=c);let n=0;
  for(const r of rows.slice(1)){const g=k=>ix(k)>=0?(r[ix(k)]||'').trim():'';if(!g('name'))continue;let cn=g('category')||'Menu',c=byName[cn.toLowerCase()];if(!c){c={name:cn,n:Date.now()+n};await save('cat',c);byName[cn.toLowerCase()]=c}

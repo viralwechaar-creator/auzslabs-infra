@@ -11,6 +11,29 @@ const docPath = (d) => (d.status === 'draft' || (d.status === 'open' && !POSTING
 function statusOptions(type) {
   return POSTING.includes(type) ? [['', 'All'], ['unpaid', 'Unpaid'], ['overdue', 'Overdue'], ['paid', 'Paid'], ['draft', 'Draft'], ['cancelled', 'Cancelled']] : [['', 'All'], ['open', 'Open'], ['converted', 'Converted'], ['cancelled', 'Cancelled']];
 }
+// ---------- scan a supplier invoice (PDF or photo) into a draft bill / expense: free, on the device; the editor then shows the draft to check ----------
+function scanInvoice(type) {
+  const file = h('input', { type: 'file', accept: 'application/pdf,image/jpeg,image/png,image/webp,image/*', class: 'vh', 'aria-label': 'Invoice file' });
+  file.addEventListener('change', async () => {
+    const f = file.files[0]; file.remove(); if (!f) return;
+    if (f.size > 10e6) return toast('Files can be up to 10 MB', { err: true });
+    const msg = h('p', { class: 'muted' }, 'Starting…'); let closed = false;
+    const sh = sheet({ title: 'Reading your invoice', body: h('div', { class: 'grid' }, msg, h('p', { class: 'small muted' }, 'Everything is read on this device. Nothing is saved until you check the draft and press Save.')), onClose: () => { closed = true; } });
+    try {
+      await loadDocRead();
+      const r = await auzDocRead.extract(f, { onStatus: (t) => { msg.textContent = t; } });
+      if (closed) return;
+      if (r.text.replace(/\s/g, '').length < 20) { sh.close(); return alertBox('Could not read any text', 'Try a clearer photo (flat, well lit) or the original PDF.'); }
+      const draft = auzDocRead.parseInvoice(r.text, { ownGstin: (S.org && S.org.gstin) || '' });
+      window.__scan = { draft, file: f, method: r.method, type };
+      sh.close(); go('new/' + type + '?scan=1');
+    } catch (e) { sh.close(); fail(e); }
+  });
+  document.body.append(file); file.click();
+}
+let docReadLoaded = null;
+function loadDocRead() { return window.auzDocRead ? Promise.resolve() : (docReadLoaded = docReadLoaded || new Promise((res, rej) => { const s = document.createElement('script'); s.src = '/ds/docread.js?v=1'; s.onload = res; s.onerror = () => rej(new Error('Could not load the invoice reader')); document.head.appendChild(s); })); }
+
 function docsPage(id, title, icon, tabs, perm, tabLabel) {
   page(id, {
     title, icon, perm: 'acc_view', tabLabel,
@@ -18,7 +41,7 @@ function docsPage(id, title, icon, tabs, perm, tabLabel) {
       const tab = v.q.get('tab') || tabs[0][0];
       const newType = tab === 'recurring' ? tabs[0][0] : tab;
       const writable = can(perm);
-      v.header({ title, actions: [writable && tab !== 'recurring' ? { label: 'New ' + DOC_LABEL[newType].toLowerCase(), icon: 'plus', primary: true, run: () => go('new/' + newType) } : null, writable && tab === 'recurring' ? { label: 'New schedule', icon: 'plus', primary: true, run: () => go('new/' + tabs[0][0] + '?recurring=1') } : null].filter(Boolean) });
+      v.header({ title, actions: [writable && tab !== 'recurring' ? { label: 'New ' + DOC_LABEL[newType].toLowerCase(), icon: 'plus', primary: true, run: () => go('new/' + newType) } : null, writable && tab === 'bill' ? { label: 'Scan invoice', icon: 'upload', run: () => scanInvoice('bill') } : null, writable && tab === 'recurring' ? { label: 'New schedule', icon: 'plus', primary: true, run: () => go('new/' + tabs[0][0] + '?recurring=1') } : null].filter(Boolean) });
       v.root.append(seg(tabs, tab, (t) => go(id + '?tab=' + t), { label: title + ' views' }));
       if (tab === 'recurring') return recurringList(v, tabs[0][0]);
       return docList(v, { types: [tab], scope: id + ':' + tab, status: v.q.get('status') || '', writable });
@@ -30,7 +53,7 @@ docsPage('purchases', 'Purchases', 'receipt', PURCH_TABS, 'acc_purchase');
 page('expenses', {
   title: 'Expenses', tabLabel: 'Expenses', icon: 'cash', perm: 'acc_view',
   async render(v) {
-    v.header({ title: 'Expenses', actions: [can('acc_purchase') ? { label: 'New expense', icon: 'plus', primary: true, run: () => go('new/expense') } : null, can('acc_purchase') ? { label: 'Recurring expenses', icon: 'repeat', run: () => go('expenses?tab=recurring') } : null].filter(Boolean) });
+    v.header({ title: 'Expenses', actions: [can('acc_purchase') ? { label: 'New expense', icon: 'plus', primary: true, run: () => go('new/expense') } : null, can('acc_purchase') ? { label: 'Scan bill', icon: 'upload', run: () => scanInvoice('expense') } : null, can('acc_purchase') ? { label: 'Recurring expenses', icon: 'repeat', run: () => go('expenses?tab=recurring') } : null].filter(Boolean) });
     if (v.q.get('tab') === 'recurring') { v.root.append(seg([['', 'All expenses'], ['recurring', 'Recurring']], 'recurring', (t) => go('expenses' + (t ? '?tab=' + t : '')))); return recurringList(v, 'expense'); }
     v.root.append(seg([['', 'All expenses'], ['recurring', 'Recurring']], '', (t) => go('expenses' + (t ? '?tab=' + t : ''))));
     return docList(v, { types: ['expense'], scope: 'expenses', status: v.q.get('status') || '', writable: can('acc_purchase') });
