@@ -165,6 +165,8 @@ const RPC = {
   admin_list_users: { params: ['p_query', 'p_limit'], defaults: { p_query: null, p_limit: 50 }, auth: true },
   admin_user_detail: { params: ['p_user_id'], auth: true },
   admin_set_user_disabled: { params: ['p_user_id', 'p_disabled'], auth: true },
+  admin_delete_lead: { params: ['p_kind', 'p_id'], auth: true },
+  admin_delete_user: { params: ['p_user_id', 'p_confirm_email'], auth: true },
   admin_list_audit: { params: ['p_limit'], defaults: { p_limit: 100 }, auth: true },
 
   // --- Client dashboard: own account, staff, feature toggles ---
