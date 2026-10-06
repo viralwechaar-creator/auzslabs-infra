@@ -1,0 +1,14 @@
+{
+  "name": "Chapter One — Jodhpur",
+  "short_name": "Chapter One",
+  "description": "Coffee, brunch and a story worth staying for. Order ahead, reserve a table, or scan the code on yours.",
+  "start_url": "/chapterone/index.html",
+  "scope": "/chapterone/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f1e3",
+  "theme_color": "#f7f1e3",
+  "icons": [
+    { "src": "/chapterone/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
