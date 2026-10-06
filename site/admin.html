@@ -629,6 +629,21 @@ function resetMainScroll() {
   el.style.overflowY = 'hidden';
   requestAnimationFrame(() => { el.scrollTop = 0; el.style.overflowY = prevOverflow; el.style.scrollBehavior = ''; });
 }
+// Each section loads when it is opened (and again if its data is older than 20 seconds), not all at once at sign-in:
+// signing in used to fire about 11 database requests together; now it is 2.
+const SECTION_LOADERS = {
+  leads: () => loadLeads(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(),
+  pricing: () => { loadPricing(); loadBundles(); loadPayments(); },
+  users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(),
+};
+const sectionLoadedAt = {};
+function ensureSectionLoaded(name) {
+  const f = SECTION_LOADERS[name]; if (!f) return;
+  const now = Date.now();
+  if (sectionLoadedAt[name] && now - sectionLoadedAt[name] < 20000) return;
+  sectionLoadedAt[name] = now; f();
+}
+
 function openSection(name, opts = {}) {
   currentSection = name;
   document.querySelectorAll('.a-page').forEach((s) => s.classList.remove('active'));
@@ -648,6 +663,7 @@ function openSection(name, opts = {}) {
   document.querySelectorAll('.a-side-btn').forEach((b) => b.classList.toggle('on', b.dataset.section === name));
 
   if (!opts.silent) resetMainScroll();
+  ensureSectionLoaded(name);
   if (name === 'leads') markAdminNotifsRead('lead');
   if (name === 'signupRequests') markAdminNotifsRead('signup_request');
   if (name === 'addonRequests') markAdminNotifsRead('addon_request');
@@ -695,17 +711,8 @@ async function checkSession() {
 
   document.getElementById('adminSide').removeAttribute('style');
   document.getElementById('adminTabbar').removeAttribute('style');
-  openSection('leads', { silent: true });
-  loadLeads();
-  loadSignupRequests();
-  loadAddonRequests();
-  loadClients(clients);
-  loadSystemStats();
-  loadPricing();
-  loadBundles();
-  loadPayments();
-  loadUsers();
-  loadAuditLog();
+  loadClients(clients); // already fetched by the access check above: no extra request
+  openSection('leads', { silent: true }); // loads Leads (and customer profiles); every other section loads when opened
   refreshAdminNotifBadges();
   setInterval(refreshAdminNotifBadges, 20000);
 }
