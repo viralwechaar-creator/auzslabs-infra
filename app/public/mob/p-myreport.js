@@ -18,6 +18,8 @@ async function renderMyReport(v) {
     h('div', { class: 'kpis' },
       kpi(t('totalSales'), money(data.total_sale), data.bills + ' ' + t('bills')),
       kpi(t('totalProfit'), money(data.total_profit), null, null, N(data.total_profit) < 0 ? 'red' : 'green')),
+    sharePct() ? (() => { const sp = splitProfit(data.total_profit); return h('div', { class: 'kpis', style: { marginTop: '10px' } },
+      kpi(t('shopShare') + ' (' + sp.pct + '%)', money(sp.shop)), kpi(t('youKeep'), money(sp.staff), null, null, 'green')); })() : null,
     rows.length ? h('div', { class: 'grid', style: { gap: '10px', marginTop: '12px' } }, rows.map((r) => h('div', { class: 'card ledger-card' },
       h('div', { class: 'row sp' }, h('div', { class: 't' }, r.item_name), h('span', { class: 'muted small' }, fmtDT(r.sold_at))),
       h('div', { class: 'ledger-grid' },

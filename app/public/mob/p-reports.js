@@ -82,6 +82,7 @@ async function renderLedger(body, range, staffId, setStaff) {
       kpi(t('totalCost'), money(data.total_cost)),
       kpi(t('totalProfit'), money(data.total_profit), null, null, N(data.total_profit) < 0 ? 'red' : 'green'),
     ),
+    shareCard(rows, names),
     data.truncated ? h('p', { class: 'hint' }, t('ledgerShowingNewest').replace('{n}', String(rows.length)).replace('{total}', String(data.total_rows))) : null,
     ledgerCards(rows),
   ]);
@@ -156,4 +157,18 @@ async function exportData() {
     document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
     toast(t('saved'));
   } catch (e) { fail(e); }
+}
+
+// Profit sharing summary (only when the owner set a % in Settings): per staffer, profit -> shop's share -> what they keep.
+function shareCard(rows, names) {
+  const pct = sharePct(); if (!pct) return null;
+  const by = {};
+  rows.forEach((r) => { if (r.sold_by_id) by[r.sold_by_id] = (by[r.sold_by_id] || 0) + N(r.profit); });
+  const list = Object.entries(by).filter(([id]) => ((names.find((n) => n.id === id) || {}).role) !== 'owner')
+    .map(([id, pr]) => ({ id, name: (names.find((n) => n.id === id) || {}).name || id, profit: r2(pr), ...splitProfit(pr) }));
+  if (!list.length) return null;
+  const tot = list.reduce((a, x) => ({ profit: a.profit + x.profit, shop: a.shop + x.shop, staff: a.staff + x.staff }), { profit: 0, shop: 0, staff: 0 });
+  return section(t('profitShareTitle') + ' (' + pct + '%)',
+    h('div', { class: 'kpis' }, kpi(t('shopShare'), money(r2(tot.shop)), null, null, 'green'), kpi(t('staffKeep'), money(r2(tot.staff)))),
+    h('div', { class: 'list' }, list.map((x) => liRow({ icon: 'user', title: x.name, sub: t('totalProfit') + ' ' + inr(x.profit), value: money(x.shop), valueSub: t('shopShare') + ' · ' + t('staffKeep') + ' ' + inr(x.staff) }))));
 }

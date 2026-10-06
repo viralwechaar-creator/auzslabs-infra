@@ -95,6 +95,9 @@ const can = (k) => !!S.perms[k];
 const FEAT_DEFAULTS = { sell: true, purchase: true, repairs: 'full', stock: true, serials: true, customers: true, vendors: true, dayclose: true };
 const feats = () => ({ ...FEAT_DEFAULTS, ...((S.ctx && S.ctx.settings && S.ctx.settings.features) || {}) });
 const feat = (k) => feats()[k] !== false && feats()[k] !== 'off';
+// Optional profit sharing (Settings): sharePct% of each staffer's profit goes to the shop owner, the rest is the staffer's.
+const sharePct = () => { const n = Number(feats().profitSharePct); return n > 0 && n <= 100 ? n : 0; };
+const splitProfit = (profit) => { const pct = sharePct(), shop = r2(Math.max(0, Number(profit) || 0) * pct / 100); return { pct, shop, staff: r2((Number(profit) || 0) - shop) }; };
 const repairsMode = () => { const r = feats().repairs; return r === 'off' || r === 'simple' ? r : r === false ? 'off' : 'full'; };
 
 // ---------- toasts, alerts, menus, sheets (same convention as Payroll/Accounting) ----------

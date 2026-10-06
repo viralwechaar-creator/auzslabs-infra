@@ -401,6 +401,28 @@ export default async function run({ browser, stack }) {
     assert(await page.locator('.tabbar button', { hasText: /my sales/i }).count() === 1 || await page.locator('a[data-nav=myreport]').count() >= 0, 'nav entry');
     await c.close();
   }, 'critical');
+  await s.check('Profit sharing (db/109): the owner sets a % of each staffer\'s profit; staff and the Staff ledger show owner\'s share and what staff keep; bad values and non-owners are refused', async () => {
+    await fails(manager, 'mob_save_settings', { p: { features: { profitSharePct: 50 } } });
+    await fails(owner, 'mob_save_settings', { p: { features: { profitSharePct: 150 } } }, /MB005|profitSharePct/i);
+    await fails(owner, 'mob_save_settings', { p: { features: { profitSharePct: 'half' } } }, /MB005|profitSharePct/i);
+    await setFeat({ profitSharePct: 50 });
+    const c0 = await ok(owner, 'mob_context'); assert(Number(c0.settings.features.profitSharePct) === 50, 'not saved');
+    const { c, page } = await open(USERS.mobStaff, { w: 390, h: 844, mobile: true });
+    await page.evaluate(() => { location.hash = '#/myreport?range=month'; }); await page.waitForTimeout(3000);
+    const txt = await page.locator('body').innerText();
+    assert(/Owner's share \(50%\)/.test(txt) && /You keep/.test(txt), 'staff page lacks the split: ' + JSON.stringify(txt.slice(0, 250)));
+    await c.close();
+    const { c: c2, page: p2 } = await open(USERS.mobOwner, { w: 390, h: 844, mobile: true });
+    await p2.evaluate(() => { location.hash = '#/reports/ledger?range=month'; }); await p2.waitForTimeout(3000);
+    const t2 = await p2.locator('body').innerText();
+    assert(/Profit sharing \(50%\)/.test(t2) && /Staff keep/.test(t2), 'ledger lacks profit sharing: ' + JSON.stringify(t2.slice(0, 300)));
+    await c2.close();
+    await setFeat({ profitSharePct: 0 });
+    const { c: c3, page: p3 } = await open(USERS.mobStaff, { w: 390, h: 844, mobile: true });
+    await p3.evaluate(() => { location.hash = '#/myreport?range=month'; }); await p3.waitForTimeout(2500);
+    assert(!/Owner's share/.test(await p3.locator('body').innerText()), 'split still shown when switched off');
+    await c3.close();
+  }, 'critical');
   await s.check('Simple mode screens: no Repairs/Stock/Dues tabs, Sell offers Repair / service and adds it to the cart, Settings shows the Features card', async () => {
     await setFeat({ ...ALL_ON, stock: false, serials: false, customers: false, vendors: false, dayclose: false, repairs: 'simple' });
     const { c, page } = await open(USERS.mobOwner, { w: 390, h: 844, mobile: true });
