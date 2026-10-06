@@ -1282,3 +1282,6 @@ When a behaviour changes (a login method, a field, a price, a URL), search the w
 
 ## AUZsGSM removed
 The standalone AUZsGSM listing is gone (owner decision): no `gsm` feature in the admin client editor, account page or cart, and the `gsm.<domain>` Caddy block and the caddy `extra_hosts` entry that served it were removed. AUZsMob is the only mobile-shop product. If the old standalone stack is still running on the VPS, stop it there by hand (`docker compose down` in its own folder). `gsm.auzslab.in` now falls through to the wildcard (no tenant).
+
+## UPI QR removed from the cart
+The owner's personal UPI id was taken out of `site/cart.html` (`CFG.upiId`/`upiName` are blank, so the QR card stays hidden). Until Razorpay is on, the cart only sends a request and the owner contacts the customer. Put a business UPI id back in the same two fields to re-enable the manual QR route.
