@@ -21,7 +21,7 @@
 */
 const LANDING = { salon: '/salon/' };
 (async () => {
- if (!TENANT_SLUG) return location.replace('/index.html');
+ if (!TENANT_SLUG) return location.replace(location.hostname.split('.')[0] === 'app' ? '/start.html' : '/index.html');
  const sb = supabase.createClient(CFG.url, CFG.key);
  let bizType = 'restaurant';
  try {

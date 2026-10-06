@@ -474,6 +474,27 @@ export default async function run({ browser, stack }) {
     assert(await page.locator('textarea[aria-label="What went wrong"]').count() === 1, 'no description box');
     await c.close();
   }, 'critical');
+  await s.check('One address for every app (app.auzslab.in): owner signs in once, is taken to their own business\'s app; several apps show tiles; staff PIN tab is there; reserved names cannot be used as a business address', async () => {
+    const c1 = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const p1 = await c1.newPage();
+    await p1.goto(stack.url('app', '/start.html')); await p1.waitForSelector('input[type=password]', { timeout: 20000 });
+    const t0 = await p1.locator('body').innerText();
+    assert(/Owner or manager/.test(t0) && /Staff/.test(t0), 'sign-in tabs missing: ' + t0.slice(0, 120));
+    await p1.fill('input[type=email]', USERS.mobOwner); await p1.fill('input[type=password]', PASSWORD); await p1.locator('button', { hasText: /^Sign in$/ }).click();
+    await p1.waitForURL(/\/mob\.html/, { timeout: 20000 }); await p1.waitForSelector('.shell', { timeout: 20000 });
+    assert(!/different business/i.test(await p1.locator('body').innerText()), 'the app refused the login on the shared address');
+    await c1.close();
+    const c2 = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const p2 = await c2.newPage();
+    await p2.goto(stack.url('app', '/start.html')); await p2.waitForSelector('input[type=password]', { timeout: 20000 });
+    await p2.fill('input[type=email]', USERS.cafeOwner); await p2.fill('input[type=password]', PASSWORD); await p2.locator('button', { hasText: /^Sign in$/ }).click();
+    await p2.waitForSelector('.tile', { timeout: 20000 });
+    const tiles = await p2.locator('.tile b').allInnerTexts();
+    assert(tiles.includes('AUZsPOS') && tiles.includes('Admin console'), 'tiles: ' + tiles.join(', '));
+    await p2.locator('.tile', { hasText: 'AUZsPOS' }).click(); await p2.waitForURL(/index\.html/, { timeout: 15000 }); await p2.waitForSelector('.shell, .tbl-tile, .items', { timeout: 20000 });
+    assert(!/different business/i.test(await p2.locator('body').innerText()), 'POS refused the login on the shared address');
+    await c2.close();
+    let refused = false; try { await q("insert into signup_requests (user_id, business_name, slug) select id, 'X', 'app' from auth_users limit 1"); } catch (e) { refused = /slug_not_reserved/.test(String(e.message)); }
+    assert(refused, 'the reserved address "app" was accepted for a business');
+  }, 'critical');
   await s.check('Simple mode screens: no Repairs/Stock/Dues tabs, Sell offers Repair / service and adds it to the cart, Settings shows the Features card', async () => {
     await setFeat({ ...ALL_ON, stock: false, serials: false, customers: false, vendors: false, dayclose: false, repairs: 'simple' });
     const { c, page } = await open(USERS.mobOwner, { w: 390, h: 844, mobile: true });

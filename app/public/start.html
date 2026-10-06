@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AUZslab</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#f5f4f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#161618" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="AUZslab">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="/manifest-start.json">
+<link rel="icon" type="image/png" href="/icon-hub-180.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/icon-hub-180.png">
+<link rel="stylesheet" href="/ds/auz.css?v=4">
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--bg,#f5f4f2);color:var(--label,#171717);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding:max(20px,env(safe-area-inset-top)) 18px max(20px,env(safe-area-inset-bottom));display:flex;justify-content:center}
+main{width:100%;max-width:440px;margin:auto 0}
+.brand{display:flex;align-items:center;gap:10px;margin:0 4px 16px;font-weight:800;font-size:20px}
+.brand img{width:36px;height:36px;border-radius:9px}
+.card{background:var(--surface,#fff);border:1px solid var(--sep,#e4dfda);border-radius:22px;padding:22px;box-shadow:0 8px 30px rgba(0,0,0,.06)}
+h1{margin:0 0 4px;font-size:24px;line-height:1.2}
+p.sub{margin:0 0 16px;color:var(--label2,#6a625b);font-size:15px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--fill,#eceae6);border-radius:12px;padding:3px;margin-bottom:14px}
+.seg button{border:0;background:transparent;color:inherit;font:600 15px inherit;min-height:42px;border-radius:10px;cursor:pointer}
+.seg button[aria-selected=true]{background:var(--surface,#fff);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.input{width:100%;min-height:48px;padding:0 14px;border:1px solid var(--sep,#d8d4cf);border-radius:12px;background:var(--surface,#fff);color:inherit;font:16px inherit}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;border-radius:12px;border:1px solid var(--sep,#d8d4cf);background:var(--fill,#eceae6);color:inherit;font:700 16px inherit;cursor:pointer;text-decoration:none;width:100%}
+.btn.fill{background:var(--accent,#800020);border-color:transparent;color:#fff}
+.grid{display:grid;gap:10px}
+.sep{display:flex;align-items:center;gap:10px;color:var(--label2,#6a625b);font-size:13px;margin:4px 0}
+.sep:before,.sep:after{content:"";flex:1;height:1px;background:var(--sep,#ddd)}
+.msg{min-height:18px;font-size:14px;color:#c2183f}
+.tiles{display:grid;gap:10px;margin-top:12px}
+.tile{display:flex;flex-direction:column;gap:2px;padding:16px;border:1px solid var(--sep,#e4dfda);border-radius:16px;background:var(--surface,#fff);color:inherit;text-decoration:none}
+.tile b{font-size:17px}.tile span{font-size:13px;color:var(--label2,#6a625b)}
+.tile:active{transform:scale(.99)}
+.links{display:flex;justify-content:space-between;margin:14px 4px 0;font-size:14px}
+.links a,.links button{color:inherit;background:none;border:0;font:inherit;text-decoration:underline;cursor:pointer;padding:0}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <div class="brand"><img src="/icon-hub-180.png" alt="">AUZslab</div>
+  <div class="card" id="box"><p class="sub">Loading…</p></div>
+  <div class="links" id="foot"></div>
+</main>
+<script src="/config.js"></script>
+<script src="/sb-client.js?v=3"></script>
+<script src="/ds/staffpin.js?v=1"></script>
+<script src="/ds/gsignin.js?v=2"></script>
+<script src="/start.js?v=1"></script>
+</body>
+</html>
