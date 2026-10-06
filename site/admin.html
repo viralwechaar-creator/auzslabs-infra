@@ -1045,6 +1045,8 @@ async function loadBundles() {
       <div style="margin:10px 0;display:flex;gap:12px;flex-wrap:wrap">${sellable.map((p) => `<label style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" data-prod="${esc(p.key)}" ${(b.feature_keys || []).includes(p.key) ? 'checked' : ''}> ${esc(p.label)}</label>`).join('')}</div>
       <input class="input" data-f="blurb" placeholder="One line shown on the pricing page" value="${esc(b.blurb || '')}" style="width:100%;margin-bottom:10px">
       <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end">
+        <label title="Price follows the products' prices minus the discount"><input type="checkbox" data-f="auto" ${b.auto ? 'checked' : ''}> Follow product prices</label>
+        <label>Discount %<br><input class="input" data-f="discount_pct" type="number" min="0" max="90" step="0.5" value="${Number(b.discount_pct || 0)}" style="width:80px"></label>
         <label>Monthly price<br>&#8377; <input class="input" data-f="monthly_price" type="number" min="0" step="1" value="${Number(b.monthly_price || 0)}" style="width:110px"></label>
         <label>Total if bought separately<br>&#8377; <input class="input" data-f="list_price" type="number" min="0" step="1" value="${Number(b.list_price || 0)}" style="width:110px"></label>
         <label>Whole-year price<br>&#8377; <input class="input" data-f="yearly_price" type="number" min="0" step="1" value="${Number(b.yearly_price || 0)}" style="width:110px"></label>
@@ -1073,15 +1075,16 @@ async function loadBundles() {
     c.querySelector('[data-disc]').textContent = bits.join(' · ');
   };
   const wire = (c) => {
-    c.querySelectorAll('input').forEach((i) => { i.oninput = () => refreshDisc(c); i.onchange = () => refreshDisc(c); });
-    refreshDisc(c);
+    const syncAuto = () => { const a = c.querySelector('[data-f=auto]').checked; ['monthly_price', 'list_price', 'yearly_price'].forEach((n) => { c.querySelector('[data-f=' + n + ']').disabled = a; }); };
+    c.querySelectorAll('input').forEach((i) => { i.oninput = () => refreshDisc(c); i.onchange = () => { syncAuto(); refreshDisc(c); }; });
+    syncAuto(); refreshDisc(c);
     c.querySelector('[data-save]').onclick = async () => {
       const f = (n) => c.querySelector('[data-f=' + n + ']');
       const keys = [...c.querySelectorAll('[data-prod]:checked')].map((x) => x.dataset.prod);
       const { error: e } = await sb.rpc('admin_save_bundle', {
         p_key: c.dataset.bkey || null, p_label: f('label').value, p_feature_keys: keys,
         p_monthly_price: Number(f('monthly_price').value || 0), p_list_price: Number(f('list_price').value || 0),
-        p_yearly_price: Number(f('yearly_price').value || 0), p_badge: f('badge').value, p_blurb: f('blurb').value, p_active: f('active').checked,
+        p_yearly_price: Number(f('yearly_price').value || 0), p_badge: f('badge').value, p_blurb: f('blurb').value, p_active: f('active').checked, p_auto: f('auto').checked, p_discount_pct: Number(f('discount_pct').value || 0),
       });
       if (e) { alert(e.message); return; }
       loadBundles();

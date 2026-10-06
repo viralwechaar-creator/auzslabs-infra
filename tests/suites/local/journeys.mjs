@@ -75,6 +75,13 @@ export default async function run({ browser, stack }) {
     const txt = await p.locator('body').innerText();
     assert(txt.includes('QA Duo') && txt.includes('2,222') && txt.includes('22,000'), 'new bundle not on pricing page');
     assert(txt.includes('1,234'), 'edited AUZsPay price not on pricing page'); await c5.close();
+    const au = await call('admin_save_bundle', { ...args, p_key: key, p_auto: true, p_discount_pct: 10 }, adm); assert(au.status === 200, 'auto save failed ' + JSON.stringify(au.body));
+    const eff = async () => ((await call('public_bundles', {})).body.data || []).find((x) => x.key === key);
+    const pp = Number(((await call('public_product_prices', {})).body.data || []).find((x) => x.key === 'pos').monthly_price), pa = Number(((await call('public_product_prices', {})).body.data || []).find((x) => x.key === 'accounting').monthly_price);
+    assert(Number((await eff()).monthly_price) === Math.round((pp + pa) * 0.9), 'auto bundle price wrong: ' + JSON.stringify(await eff()));
+    await call('admin_set_product_price', { p_key: 'pos', p_monthly_price: pp + 1000 }, adm);
+    assert(Number((await eff()).monthly_price) === Math.round((pp + 1000 + pa) * 0.9), 'bundle did not follow the product price change');
+    await call('admin_set_product_price', { p_key: 'pos', p_monthly_price: pp }, adm);
     assert((await call('admin_delete_bundle', { p_key: key }, plain)).status >= 400, 'non-admin deleted a bundle');
     assert((await call('admin_delete_bundle', { p_key: key }, adm)).status === 200, 'delete failed');
     await call('admin_set_product_price', { p_key: 'payroll', p_monthly_price: 999 }, adm);

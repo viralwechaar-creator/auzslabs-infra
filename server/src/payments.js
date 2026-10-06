@@ -93,7 +93,8 @@ async function priceInfo(client, features, { tenantFeatures, period = 'month' } 
   if (!keys.length) return null;
   const sortedKeys = [...keys].sort().join(',');
 
-  const { rows: bundleRows } = await client.query('select feature_keys, monthly_price, yearly_price from bundles where active');
+  const { rows: br } = await client.query('select public_bundles() as r');
+  const bundleRows = br[0]?.r || []; // effective prices (follow product prices when a bundle is in auto mode)
   const bundleMatch = bundleRows.find((b) => [...b.feature_keys].sort().join(',') === sortedKeys);
   if (bundleMatch) {
     const bp = Number(period === 'year' ? bundleMatch.yearly_price : bundleMatch.monthly_price);

@@ -137,7 +137,7 @@ const RPC = {
   public_addon_price_overrides: { params: [], auth: false },
   // --- Admin-managed bundles + yearly prices (db/113) ---
   admin_list_bundles: { params: [], auth: true },
-  admin_save_bundle: { params: ['p_key', 'p_label', 'p_feature_keys', 'p_monthly_price', 'p_list_price', 'p_yearly_price', 'p_badge', 'p_blurb', 'p_active'], auth: true },
+  admin_save_bundle: { params: ['p_key', 'p_label', 'p_feature_keys', 'p_monthly_price', 'p_list_price', 'p_yearly_price', 'p_badge', 'p_blurb', 'p_active', 'p_auto', 'p_discount_pct'], auth: true },
   admin_delete_bundle: { params: ['p_key'], auth: true },
   admin_set_product_yearly: { params: ['p_key', 'p_yearly_price', 'p_renewal_yearly_price'], auth: true },
   admin_set_addon_price: { params: ['p_key', 'p_requires', 'p_monthly_price'], auth: true },
