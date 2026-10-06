@@ -15,6 +15,7 @@ import { startMaintenance } from './maintenance.js';
 import { sendOtpSms } from './sms.js';
 import { handleSalon } from './salon.js';
 import { paymentConfig, gstPct, createOrder, verifyWebhookSignature, handleWebhookEvent } from './payments.js';
+import { cashfreeConfigured, startAutorenew, cancelAutorenew, verifyWebhookSignature as verifyCashfreeSignature, handleWebhookEvent as handleCashfreeWebhookEvent } from './cashfree.js';
 import { initErrorTracking, captureError } from './errors.js';
 
 initErrorTracking(); // dormant unless SENTRY_DSN is set -- see errors.js
@@ -181,6 +182,7 @@ const RPC = {
   save_my_profile: { params: ['p'], jsonb: ['p'], auth: true },
   admin_list_profiles: { params: ['p_limit'], defaults: { p_limit: 200 }, auth: true },
   my_subscription: { params: [], auth: true },
+  my_autorenew: { params: [], auth: true },
   my_data_export: { params: [], auth: true },
   my_data_clear: { params: ['p_confirm'], auth: true },
   update_my_features: { params: ['p_enabled'], jsonb: ['p_enabled'], auth: true },
@@ -856,6 +858,49 @@ const server = http.createServer(async (req, res) => {
       let event;
       try { event = JSON.parse(raw.toString('utf8')); } catch { throw new HttpError(400, 'bad json'); }
       await handleWebhookEvent(event);
+      return reply(200, { ok: true });
+    }
+
+    // ---- Cashfree auto-renewal (db/116) -- dormant until CASHFREE_APP_ID/
+    // CASHFREE_SECRET_KEY are set (see cashfree.js). Offered to every
+    // tenant, not just new signups; a failed charge only flags the
+    // business for the owner to chase, never suspends anything. ----
+    if (url.pathname === '/payments/cashfree/config' && req.method === 'GET') {
+      return reply(200, { enabled: cashfreeConfigured() });
+    }
+    if (url.pathname === '/payments/cashfree/start' && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      if (rateLimited(`cfautorenew:${ip}`, 10, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      const prof = await withAuth(user.id, (client) => client.query('select tenant_id, role from profiles where id = $1', [user.id]));
+      const p = prof.rows[0];
+      if (!p || p.role !== 'owner') throw new HttpError(403, 'owner access required');
+      const tr = await pool.query('select name from tenants where id = $1', [p.tenant_id]);
+      let result;
+      try {
+        result = await startAutorenew({ userId: user.id, tenantId: p.tenant_id, tenantName: tr.rows[0]?.name || 'business', email: user.email, phone: user.phone });
+      } catch (err) {
+        throw new HttpError(400, err.message || 'could not start auto-renewal');
+      }
+      return reply(200, result);
+    }
+    if (url.pathname === '/payments/cashfree/cancel' && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      const prof = await withAuth(user.id, (client) => client.query('select tenant_id, role from profiles where id = $1', [user.id]));
+      const p = prof.rows[0];
+      if (!p || p.role !== 'owner') throw new HttpError(403, 'owner access required');
+      await cancelAutorenew({ tenantId: p.tenant_id });
+      return reply(200, { ok: true });
+    }
+    // Cashfree calls this server-to-server -- the signature check is the
+    // only authentication it has, same discipline as the Razorpay webhook above.
+    if (url.pathname === '/payments/cashfree/webhook' && req.method === 'POST') {
+      const raw = await readRawBody(req, 1_000_000);
+      if (!verifyCashfreeSignature(raw, req.headers['x-webhook-signature'], req.headers['x-webhook-timestamp'])) {
+        throw new HttpError(400, 'invalid signature');
+      }
+      let event;
+      try { event = JSON.parse(raw.toString('utf8')); } catch { throw new HttpError(400, 'bad json'); }
+      await handleCashfreeWebhookEvent(event);
       return reply(200, { ok: true });
     }
 
