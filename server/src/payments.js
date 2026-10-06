@@ -32,9 +32,9 @@ const round2 = (n) => Math.round(n * 100) / 100;
 // it), and what's actually due today vs. the recurring monthly amount from month 2. cart.html's
 // own bill preview mirrors this exactly, so what a visitor sees is what Razorpay actually
 // charges -- never a naive sum.
-function billFor(subtotal, { isSignup }) {
-  const setupFee = isSignup ? SETUP_FEE : 0;
-  const subtotalGst = round2(subtotal * GST_RATE);
+function billFor(subtotal, { isSignup, exempt = 0, setupExempt = false }) {
+  const setupFee = isSignup && !setupExempt ? SETUP_FEE : 0;
+  const subtotalGst = round2((subtotal - exempt) * GST_RATE);
   const monthlyTotal = round2(subtotal + subtotalGst);
   const dueToday = round2(subtotal + subtotalGst + setupFee);
   return { subtotal, subtotalGst, setupFee, monthlyTotal, dueToday };
@@ -73,30 +73,41 @@ async function razorpayApi(path, body) {
 //     0 ("not priced yet", db/070's own comment), makes the WHOLE
 //     request ineligible for online payment rather than silently
 //     charging a partial amount; the caller falls back to the manual flow.
-async function priceFeatures(client, features, { tenantFeatures } = {}) {
+async function priceFeatures(client, features, { tenantFeatures, period = 'month' } = {}) {
+  const info = await priceInfo(client, features, { tenantFeatures, period });
+  return info ? info.subtotal : null;
+}
+
+// Prices a cart and says which part of it is GST-exempt and whether the one-time setup fee applies.
+// A bundle or an add-on override replaces the per-product prices, so nothing in it is exempt (none of today's
+// bundles contain an exempt product). Yearly pricing only exists for carts of products that have a yearly price.
+async function priceInfo(client, features, { tenantFeatures, period = 'month' } = {}) {
   const keys = Object.keys(features || {}).filter((k) => features[k] === true);
   if (!keys.length) return null;
   const sortedKeys = [...keys].sort().join(',');
 
   const { rows: bundleRows } = await client.query('select feature_keys, monthly_price from bundles');
   const bundleMatch = bundleRows.find((b) => [...b.feature_keys].sort().join(',') === sortedKeys);
-  if (bundleMatch) return Number(bundleMatch.monthly_price);
+  if (bundleMatch) return period === 'year' ? null : { subtotal: Number(bundleMatch.monthly_price), exempt: 0, setupExempt: false };
 
   if (keys.length === 1 && tenantFeatures) {
     const { rows: overrideRows } = await client.query('select requires, monthly_price from addon_price_overrides where key = $1', [keys[0]]);
     const override = overrideRows.find((o) => tenantFeatures[o.requires] === true);
-    if (override) return Number(override.monthly_price);
+    if (override) return period === 'year' ? null : { subtotal: Number(override.monthly_price), exempt: 0, setupExempt: false };
   }
 
-  const { rows } = await client.query('select key, monthly_price from product_prices where key = any($1)', [keys]);
-  const priced = new Map(rows.map((r) => [r.key, Number(r.monthly_price)]));
-  let total = 0;
+  const { rows } = await client.query('select key, monthly_price, yearly_price, gst_exempt, setup_fee_exempt from product_prices where key = any($1)', [keys]);
+  const byKey = new Map(rows.map((r) => [r.key, r]));
+  let total = 0, exempt = 0, setupExempt = true;
   for (const k of keys) {
-    const p = priced.get(k);
-    if (!p || p <= 0) return null; // unpriced product in the mix -- no online checkout for this request
+    const r = byKey.get(k);
+    const p = r ? Number(period === 'year' ? r.yearly_price : r.monthly_price) : 0;
+    if (!p || p <= 0) return null; // unpriced (or no yearly price) product in the mix -- no online checkout for this request
     total += p;
+    if (r.gst_exempt) exempt += p;
+    if (!r.setup_fee_exempt) setupExempt = false;
   }
-  return Math.round(total * 100) / 100;
+  return { subtotal: Math.round(total * 100) / 100, exempt: Math.round(exempt * 100) / 100, setupExempt };
 }
 
 // Creates a Razorpay order for a pending signup_request or
@@ -104,7 +115,8 @@ async function priceFeatures(client, features, { tenantFeatures } = {}) {
 // Returns what the client needs to open Checkout.js. Throws a plain
 // Error with a user-facing message on any failure (unpriced cart,
 // wrong owner, Razorpay itself down) -- index.js wraps it as a 400.
-export async function createOrder({ userId, signupRequestId, addonRequestId }) {
+export async function createOrder({ userId, signupRequestId, addonRequestId, period = 'month' }) {
+  if (period !== 'month' && period !== 'year') throw new Error('unknown billing period');
   if (!razorpayConfigured()) throw new Error('Online payment is not set up yet -- use the request form instead.');
   if ((signupRequestId && addonRequestId) || (!signupRequestId && !addonRequestId)) {
     throw new Error('exactly one of signupRequestId or addonRequestId is required');
@@ -147,9 +159,9 @@ export async function createOrder({ userId, signupRequestId, addonRequestId }) {
     receipt = `addon_${addonRequestId}`;
   }
 
-  const subtotal = await priceFeatures(pool, features, { tenantFeatures });
-  if (subtotal === null) throw new Error('One or more of these products is not available for online payment yet -- use the request form instead.');
-  const bill = billFor(subtotal, { isSignup: !!signupRequestId });
+  const info = await priceInfo(pool, features, { tenantFeatures, period });
+  if (info === null) throw new Error(period === 'year' ? 'Yearly billing is not available for this combination of products -- choose monthly.' : 'One or more of these products is not available for online payment yet -- use the request form instead.');
+  const bill = billFor(info.subtotal, { isSignup: !!signupRequestId, exempt: info.exempt, setupExempt: info.setupExempt });
 
   const order = await razorpayApi('orders', {
     amount: Math.round(bill.dueToday * 100), // paise -- subtotal + GST + (signup only) flat setup fee, no GST on the fee
@@ -157,14 +169,14 @@ export async function createOrder({ userId, signupRequestId, addonRequestId }) {
     receipt,
     notes: {
       signup_request_id: signupRequestId || '', addon_request_id: addonRequestId || '',
-      subtotal: String(bill.subtotal), gst: String(bill.subtotalGst), setup_fee: String(bill.setupFee),
+      subtotal: String(bill.subtotal), gst: String(bill.subtotalGst), setup_fee: String(bill.setupFee), period,
     },
   });
 
   await pool.query(
-    `insert into payments (razorpay_order_id, user_id, signup_request_id, addon_request_id, amount, status)
-     values ($1, $2, $3, $4, $5, 'created')`,
-    [order.id, userId, signupRequestId || null, addonRequestId || null, bill.dueToday],
+    `insert into payments (razorpay_order_id, user_id, signup_request_id, addon_request_id, amount, status, period)
+     values ($1, $2, $3, $4, $5, 'created', $6)`,
+    [order.id, userId, signupRequestId || null, addonRequestId || null, bill.dueToday, period],
   );
 
   return { orderId: order.id, amount: order.amount, currency: order.currency, keyId: RAZORPAY_KEY_ID };
