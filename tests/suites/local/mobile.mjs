@@ -369,8 +369,8 @@ export default async function run({ browser, stack }) {
     const srow = (await q("select items from mob_sales where id=$1", [sid]))[0].items[0];
     assert(Number(srow.costPrice) === 300, 'staff cost override was not ignored: ' + srow.costPrice);
   }, 'major');
-  await s.check('A business without AUZsPOS cannot open the POS, Back Office or console by changing the address; the account page links to the app it has', async () => {
-    for (const path of ['/index.html', '/backoffice.html', '/dashboard.html']) {
+  await s.check('A business without AUZsPOS cannot open the POS or admin console by changing the address; the account page links to the app it has', async () => {
+    for (const path of ['/index.html', '/dashboard.html']) {
       const c = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await c.newPage();
       await page.goto(stack.url('testmob', path)); await page.waitForSelector('input[type=password]', { timeout: 20000 });
       await page.fill('input[type=email]', USERS.mobOwner); await page.fill('input[type=password]', PASSWORD);
@@ -460,7 +460,7 @@ export default async function run({ browser, stack }) {
     await c.close();
   }, 'critical');
   await s.check('Help & report a problem (every app): the helper loads on all staff apps and the sheet opens from AUZsMob with email, screenshot and details', async () => {
-    for (const path of ['/index.html', '/backoffice.html', '/dashboard.html', '/payroll.html', '/accounts.html', '/builder.html', '/mob.html']) {
+    for (const path of ['/index.html', '/dashboard.html', '/payroll.html', '/accounts.html', '/builder.html', '/mob.html']) {
       const c = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const pg = await c.newPage();
       await pg.goto(stack.url('testmob', path)); await pg.waitForTimeout(800);
       assert(await pg.evaluate(() => !!(window.auzHelp && typeof window.auzHelp.open === 'function')), path + ' does not load the help helper');

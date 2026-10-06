@@ -8,7 +8,6 @@ import { PASSWORD, USERS } from '../../lib/db.mjs';
 const APPS = [
   { name: 'POS', host: 'testcafe', path: '/index.html', email: USERS.cafeOwner, ready: '.tbl-tile, .items .tile', fill: 'btn fill' },
   { name: 'Admin console', host: 'testcafe', path: '/dashboard.html', email: USERS.cafeOwner, ready: '.hello', fill: 'btn p' },
-  { name: 'Back Office', host: 'testcafe', path: '/backoffice.html', email: USERS.cafeOwner, ready: '.top-bar h1', fill: 'p', tag: 'button' },
   { name: 'Payroll', host: 'testcafe', path: '/payroll.html', email: USERS.cafeOwner, ready: '.shell', fill: 'btn fill' },
   { name: 'Accounting', host: 'testacct', path: '/accounts.html', email: USERS.acctOwner, ready: '.shell', fill: 'btn fill' },
   { name: 'AUZsMob', host: 'testmob', path: '/mob.html', email: USERS.mobOwner, ready: '.shell', fill: 'btn fill' },
@@ -16,7 +15,7 @@ const APPS = [
 const WIDTHS = [360, 600, 768, 900, 1024, 1200, 1440];
 
 export default async function run({ browser, stack }) {
-  const s = suite('Design system: one look across the staff apps, at every width', 'Checks that POS, admin console, Back Office, Payroll and Accounting share the AUZslab tokens and accent, adapt at every layout tier, and stay readable and usable.');
+  const s = suite('Design system: one look across the staff apps, at every width', 'Checks that POS, admin console, Payroll and Accounting share the AUZslab tokens and accent, adapt at every layout tier, and stay readable and usable.');
   const open = async (app, w, h = 900, opts = {}) => {
     let c2;
     if (opts.dark) { c2 = await browser.newContext({ viewport: { width: w, height: h }, colorScheme: 'dark' }); await stack.attach(c2); }
@@ -48,8 +47,8 @@ export default async function run({ browser, stack }) {
       await ctx.close();
     }, 'major');
   }
-  await s.check('Same business, same accent: POS, admin console, Back Office and Payroll paint primary buttons in one colour', () => {
-    const cafe = ['POS', 'Admin console', 'Back Office', 'Payroll'].map((n) => fills[n]);
+  await s.check('Same business, same accent: POS, admin console and Payroll paint primary buttons in one colour', () => {
+    const cafe = ['POS', 'Admin console', 'Payroll'].map((n) => fills[n]);
     assert(cafe.every((c) => c && c === cafe[0]), 'primary colours differ: ' + JSON.stringify(fills));
     assert(cafe[0] === 'rgb(31, 61, 46)', 'accent is not the business colour #1f3d2e: ' + cafe[0]);
     assert(fills.Accounting === 'rgb(128, 0, 32)', 'Accounting (no business colour set) is not AUZslab wine: ' + fills.Accounting);
@@ -83,8 +82,8 @@ export default async function run({ browser, stack }) {
     await page.locator('.side-tg').click(); await page.waitForTimeout(400);
     assert((await sideW(page, '.side')) === 240, 'toggle did not expand the sidebar again');
     const groups = await page.locator('.side .grp').allInnerTexts();
-    assert(['Service', 'More', 'Back office'].every((g) => groups.some((x) => x.toLowerCase() === g.toLowerCase())), 'sidebar groups: ' + groups.join(', '));
-    assert(await page.locator('.side a.navlink', { hasText: 'Inventory' }).count(), 'no Inventory link to the back office');
+    assert(['Service', 'More'].every((g) => groups.some((x) => x.toLowerCase() === g.toLowerCase())) && !groups.some((x) => /back office/i.test(x)), 'sidebar groups: ' + groups.join(', '));
+    assert((await page.locator('.side a.navlink').count()) === 0, 'the POS sidebar still has Back office links');
     await ctx.close();
   }, 'major');
   await s.check('POS keyboard: ? lists shortcuts, Alt+number switches section, / jumps to item search', async () => {
@@ -100,7 +99,7 @@ export default async function run({ browser, stack }) {
     await ctx.close();
   }, 'minor');
   await s.check('Accounting layout tiers: tab bar on phones, centred sheets on tablets, icon rail to 1199px, full sidebar from 1200px', async () => {
-    const acc = APPS[4]; const { ctx, page } = await open(acc, 390, 844);
+    const acc = APPS[3]; const { ctx, page } = await open(acc, 390, 844);
     assert(await vis(page, '.tabbar') && !(await vis(page, '.side')), 'phone: expected tab bar only');
     await page.setViewportSize({ width: 1024, height: 768 }); await page.waitForTimeout(400);
     assert((await sideW(page, '.side')) === 72, 'expanded: sidebar is ' + (await sideW(page, '.side')) + 'px');
@@ -111,7 +110,7 @@ export default async function run({ browser, stack }) {
     await ctx.close();
   }, 'major');
   await s.check('Payroll layout tiers: bottom tab bar on phones, icon rail at 900-1199, sidebar from 1200', async () => {
-    const { ctx, page } = await open(APPS[3], 390, 844);
+    const { ctx, page } = await open(APPS[2], 390, 844);
     await page.waitForTimeout(500); if (await page.locator('.sheet').count()) { await page.keyboard.press('Escape'); await page.waitForTimeout(400); } // first visit opens the setup guide
     assert(await vis(page, '.tabbar') && !(await vis(page, '.side')), 'phone: expected the tab bar only');
     await page.setViewportSize({ width: 1024, height: 768 }); await page.waitForTimeout(300);
@@ -125,7 +124,7 @@ export default async function run({ browser, stack }) {
     await ctx.close();
   }, 'major');
 
-  for (const app of [APPS[0], APPS[1], APPS[3], APPS[4]]) {
+  for (const app of [APPS[0], APPS[1], APPS[2], APPS[3]]) {
     await s.check(`${app.name} (phone): text is at least 12px and controls are at least 44px tall`, async () => {
       const { ctx, page } = await open(app, 390, 844);
       const r = await page.evaluate(() => {
@@ -145,7 +144,7 @@ export default async function run({ browser, stack }) {
     }, 'minor');
   }
 
-  for (const app of [APPS[0], APPS[1], APPS[3], APPS[4]]) {
+  for (const app of [APPS[0], APPS[1], APPS[2], APPS[3]]) {
     await s.check(`${app.name}: dark appearance is really dark and body text stays readable (contrast 4.5:1 or more)`, async () => {
       const { ctx, page } = await open(app, 1440, 900, { dark: true });
       const r = await page.evaluate(() => {
@@ -173,7 +172,7 @@ export default async function run({ browser, stack }) {
       await page.keyboard.press('Escape'); await page.waitForTimeout(500);
       assert(!(await page.evaluate(() => document.documentElement.classList.contains('auz-lock'))), 'page stayed locked after the sheet closed');
       await ctx.close(); }
-    const acc = APPS[4]; { const { ctx, page } = await open(acc, 390, 844);
+    const acc = APPS[3]; { const { ctx, page } = await open(acc, 390, 844);
       await page.evaluate(() => go('reports')); await page.waitForTimeout(600); await page.evaluate(() => window.scrollTo(0, 120)); await page.waitForTimeout(200);
       const y0 = await page.evaluate(() => scrollY);
       await page.evaluate(() => sheet({ title: 'Long', body: h('div', null, ...Array.from({ length: 60 }, (_, i) => h('p', null, 'line ' + i))) })); await page.waitForTimeout(500);
@@ -185,23 +184,8 @@ export default async function run({ browser, stack }) {
       await ctx.close(); }
   }, 'major');
 
-  await s.check('Back Office menu (phone): header on top, nothing clipped, Settings opens and closes its sub-menu, no stuck dim layer', async () => {
-    const { ctx, page } = await open(APPS[2], 390, 844);
-    await page.locator('.hamburger-btn').click(); await page.waitForTimeout(600);
-    const r = await page.evaluate(() => { const d = document.querySelector('.drawer').getBoundingClientRect(), h = document.querySelector('.drawer .dh').getBoundingClientRect(), f = document.querySelector('.drawer .dl button').getBoundingClientRect(); return { top: Math.round(d.top), headTop: Math.round(h.top), firstBelow: f.top >= h.bottom, subOpen: document.querySelector('.drawer .dsub').classList.contains('open') }; });
-    assert(r.top === 0 && r.headTop === 0, 'drawer does not start at the top: ' + JSON.stringify(r)); assert(r.firstBelow, 'first item is under the header');
-    assert(await page.locator('.drawer .dq', { hasText: 'Open POS' }).count() && await page.locator('.drawer .dq', { hasText: 'Sign out' }).count(), 'Open POS / Sign out missing under the header');
-    await page.locator('.drawer .dsec').click(); await page.waitForTimeout(300);
-    const nowOpen = await page.evaluate(() => document.querySelector('.drawer .dsub').classList.contains('open')); assert(nowOpen !== r.subOpen, 'Settings did not toggle');
-    await page.locator('.drawer .dsec').click(); await page.waitForTimeout(300);
-    assert((await page.evaluate(() => document.querySelector('.drawer .dsub').classList.contains('open'))) === r.subOpen, 'Settings did not toggle back');
-    await page.locator('.drawer .dx').click(); await page.waitForTimeout(500);
-    assert(await page.evaluate(() => getComputedStyle(document.querySelector('.drawer-ov')).visibility === 'hidden'), 'dim layer still visible after closing');
-    await ctx.close();
-  }, 'major');
-
   await s.check('Payroll (phone): tab bar sits on the bottom edge and More opens the full section list and switches section', async () => {
-    const { ctx, page } = await open(APPS[3], 390, 844);
+    const { ctx, page } = await open(APPS[2], 390, 844);
     await page.waitForTimeout(500); if (await page.locator('.sheet').count()) { await page.keyboard.press('Escape'); await page.waitForTimeout(400); } // first visit opens the setup guide
     const gap = await page.evaluate(() => innerHeight - document.querySelector('.tabbar').getBoundingClientRect().bottom); assert(gap <= 1, 'tab bar is ' + gap + 'px above the bottom edge');
     await page.locator('.tabbar button', { hasText: 'More' }).click(); await page.waitForTimeout(500);

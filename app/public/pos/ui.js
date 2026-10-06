@@ -77,7 +77,7 @@ function liRow({ ic, tone, title, sub, value, chev, onclick, cls, right }) {
 const empty = (ic, title, text, action) => h('div', { class: 'empty' }, icon(ic, 44, 1.4), h('b', null, title), text ? h('div', null, text) : null, action || null);
 const pill = (txt, tone) => h('span', { class: 'pill' + (tone ? ' ' + tone : '') }, txt);
 
-// pick one reason (Back office -> Settings -> Reasons), or type another
+// pick one reason (Admin console -> Management -> Cancellation Reasons), or type another
 function pickReason(title = 'Reason') {
   return new Promise((res) => {
     const reasons = L('reason').map((r) => r.name).filter(Boolean);

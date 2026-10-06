@@ -1,3 +1,5 @@
+> **Update:** Back Office (`backoffice.html`) was retired and merged into the admin console; it now only forwards old links. Rows below that mention it are historical. See CLAUDE.md, "One admin console".
+
 # AUZslab staff apps: unified design system and responsive redesign
 
 This covers the AUZslab POS and its back office: the billing POS (`index.html` + `pos/`), the admin console

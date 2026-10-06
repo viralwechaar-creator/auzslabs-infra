@@ -62,7 +62,7 @@ function cashMoveSheet(type, reg) {
   const a = h('input', { class: 'input', type: 'number', inputmode: 'decimal', placeholder: '0', 'aria-label': 'Amount', autofocus: true }), note = input({ placeholder: type === 'in' ? 'e.g. change from bank' : 'e.g. milk, auto fare, bank deposit' });
   let asExp = false;
   sheet({ title: type === 'in' ? 'Cash in' : 'Cash out', narrow: true, closeLabel: 'Cancel', body: h('div', { class: 'stack s20' }, field('Amount', a), field('What for', note),
-    type === 'out' ? h('div', { class: 'list' }, liRow({ title: 'Record as an expense', sub: 'Shows under Expenses in the back office', right: switchEl(false, (v) => (asExp = v)) })) : null),
+    type === 'out' ? h('div', { class: 'list' }, liRow({ title: 'Record as an expense', sub: 'Shows under Expenses in the admin console', right: switchEl(false, (v) => (asExp = v)) })) : null),
     actions: [{ label: 'Record', primary: true, run: async () => {
       const v = r2(+a.value); if (!(v > 0)) { toast('Enter an amount', { err: true }); return false; }
       await save('cashmove', { d: today(), type, who: myName(), amt: v, note: note.value.trim(), by: S.user.id, at: now(), register: reg.id, expense: asExp || undefined });
