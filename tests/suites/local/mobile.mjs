@@ -348,6 +348,7 @@ export default async function run({ browser, stack }) {
       assert(await pr.count() === 1 && (await pr.inputValue()) !== undefined, 'price question not shown');
       assert(/Vendor \(optional\)/.test(await page.locator('body').innerText()), 'optional vendor not offered');
       await pr.fill(price);
+      if (price === '620') { const co = page.locator('.input[aria-label="Purchase price (this bill)"]'); assert(await co.count() === 1, 'purchase price box missing for the owner'); await co.fill('400'); }
       await page.locator('button', { hasText: /^Add to cart$/ }).click(); await page.waitForTimeout(400);
     }
     const body = await page.locator('body').innerText();
@@ -359,6 +360,14 @@ export default async function run({ browser, stack }) {
     const prices = sale.items.map((l) => Number(l.price)).sort();
     assert(prices.join() === '450,620', 'billed prices: ' + prices);
     assert((await q("select selling_price from mob_items where id=$1", [itm]))[0].selling_price == 500, 'catalogue price changed');
+    const costs = sale.items.map((l) => Number(l.price) + ':' + Number(l.costPrice)).sort();
+    assert(costs.join() === '450:300,620:400', 'line costs: ' + costs);
+    assert((await q("select cost_price from mob_items where id=$1", [itm]))[0].cost_price == 300, 'catalogue cost changed');
+    // staff who may not see purchase rates cannot set a cost: it is ignored
+    const sid = uid();
+    await ok(staff, 'mob_push_sale', { p_id: sid, p: { items: [{ itemId: itm, name: 'Priceask Charger', qty: 1, price: 500, costOverride: 1 }], paid: 500, paymentMode: 'cash' } });
+    const srow = (await q("select items from mob_sales where id=$1", [sid]))[0].items[0];
+    assert(Number(srow.costPrice) === 300, 'staff cost override was not ignored: ' + srow.costPrice);
   }, 'major');
   await s.check('Simple mode screens: no Repairs/Stock/Dues tabs, Sell offers Repair / service and adds it to the cart, Settings shows the Features card', async () => {
     await setFeat({ ...ALL_ON, stock: false, serials: false, customers: false, vendors: false, dayclose: false, repairs: 'simple' });
