@@ -1301,3 +1301,6 @@ The owner's personal UPI id was taken out of `site/cart.html` (`CFG.upiId`/`upiN
 
 ## Footer + sitemap
 The marketing footer (every `site/*.html` with `<footer class="footer-dark">`, 22 pages) now has six link columns (Products, Who it's for, Explore, Connect, Legal + the brand column with a one-line description). The brand column's address line is filled from `site/company.js` (`address`) and hidden while empty, so those pages also load `company.js`. A human sitemap page is `site/sitemap.html` (linked from the footer, listed in `sitemap.xml`). When a new public page is added: add it to the footer if it matters, to `sitemap.html` and to `sitemap.xml`. The footer block is repeated per page (no include), so change it with a script across all 22 files.
+
+## CRM / Billing / Inventory pages: no demo, any-business copy
+`crm.html`, `billing.html`, `inventory.html` no longer have a "Try it yourself" demo block (the demo opened the cafe POS, wrong for bookstores, salons etc.). In its place each has an "Any business" card listing how the module fits a cafe, salon, bookstore/retail, clothing and mobile shop (only claims features that exist), plus "included with AuzsPOS (and the Salon app), nothing separate to buy". The AuzsPOS page keeps its demo. Don't add a demo back to these three.
