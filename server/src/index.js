@@ -5,6 +5,7 @@ import {
   loginWithGoogle, loginWithApple, createPhoneOtp, loginWithPhone,
   createPasswordReset, resetPassword, deleteOwnAccount,
   listSessions, revokeSession, revokeAllSessionsForUser, staffLogin, createEmailVerification, confirmEmailVerification, emailVerificationState, emailVerificationRequired, passwordSignupAllowed,
+  verify2faChallenge, my2faStatus, generate2faSecret, confirm2fa, disable2fa,
 } from './auth.js';
 import { saveSiteUpload, saveDocUpload, readDocUpload, getUploadsDiskUsage } from './storage.js';
 import { startRealtime } from './realtime.js';
@@ -805,6 +806,51 @@ const server = http.createServer(async (req, res) => {
       if (!user) throw new HttpError(401, 'no session');
       const vs = await emailVerificationState(user.id);
       return reply(200, { user, email_verified: vs ? vs.verified : true, captcha: captchaEnabled() });
+    }
+
+    // ---- two-factor authentication (TOTP, db/117) ----
+    // /auth/login, /auth/google, /auth/apple and /auth/phone/verify above
+    // already pass whatever login()/loginWithGoogle()/etc. return straight
+    // through to the client, so a {requires2fa, challenge} reply needs no
+    // change there -- this is the one new step a client takes in between:
+    // show a 6-digit code box, then call this with the challenge it got.
+    if (url.pathname === '/auth/2fa/challenge' && req.method === 'POST') {
+      if (rateLimited(`2fa:${ip}`, 20, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      const { challenge, code } = await readJsonBody(req);
+      if (!challenge || !code) throw new HttpError(400, 'challenge and code are required');
+      const result = await verify2faChallenge(challenge, code, meta);
+      if (!result) throw new HttpError(401, 'that code is wrong or has expired');
+      return reply(200, result);
+    }
+    if (url.pathname === '/auth/2fa/status' && req.method === 'GET') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      return reply(200, await my2faStatus(user.id));
+    }
+    // Setup is gated to owner/manager -- this protects the login of the
+    // person who can do the most damage if it's compromised, not every
+    // staff login (shop-floor username+PIN logins are untouched by 2FA).
+    if (url.pathname === '/auth/2fa/setup' && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      const { rows } = await pool.query('select role from profiles where id = $1', [user.id]);
+      if (rows[0] && !['owner', 'manager'].includes(rows[0].role)) throw new HttpError(403, 'Two-factor authentication is only available to owners and managers.');
+      if (rateLimited(`2fasetup:${user.id}`, 10, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      return reply(200, await generate2faSecret(user.id, user.email));
+    }
+    if (url.pathname === '/auth/2fa/confirm' && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      if (rateLimited(`2faconfirm:${user.id}`, 10, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      const { code } = await readJsonBody(req);
+      const result = await confirm2fa(user.id, code);
+      if (!result) throw new HttpError(400, 'that code did not match -- scan the QR code again and try the newest code shown');
+      return reply(200, result);
+    }
+    if (url.pathname === '/auth/2fa/disable' && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      if (rateLimited(`2fadisable:${user.id}`, 10, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      const { password, code } = await readJsonBody(req);
+      const ok = await disable2fa(user.id, { password, code });
+      if (!ok) throw new HttpError(401, 'enter your password or a valid code to turn this off');
+      return reply(200, { ok: true });
     }
 
     // ---- single-device session revocation (db/071) ----
