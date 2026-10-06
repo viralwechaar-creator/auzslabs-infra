@@ -2,31 +2,31 @@
   "hub": {
     "name": "AUZslab",
     "id": "in.auzslab.app",
-    "url": "https://auzslab.in/open.html?app=hub",
+    "url": "https://app.auzslab.in/start.html",
     "icon": "icon-512.png"
   },
   "pos": {
     "name": "AUZsPOS",
     "id": "in.auzslab.pos",
-    "url": "https://auzslab.in/open.html?app=pos",
+    "url": "https://app.auzslab.in/index.html",
     "icon": "icon-512.png"
   },
   "mob": {
     "name": "AUZsMob",
     "id": "in.auzslab.mob",
-    "url": "https://auzslab.in/open.html?app=mob",
+    "url": "https://app.auzslab.in/mob.html",
     "icon": "icon-mob-512.png"
   },
   "payroll": {
     "name": "AUZsPay",
     "id": "in.auzslab.payroll",
-    "url": "https://auzslab.in/open.html?app=payroll",
+    "url": "https://app.auzslab.in/payroll.html",
     "icon": "icon-payroll-512.png"
   },
   "accounts": {
     "name": "AUZsLedger",
     "id": "in.auzslab.accounts",
-    "url": "https://auzslab.in/open.html?app=accounts",
+    "url": "https://app.auzslab.in/accounts.html",
     "icon": "icon-accounts-512.png"
   }
 }

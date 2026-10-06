@@ -395,6 +395,14 @@ function renderAccount() {
       <a href="${staffUrl}" target="_blank" rel="noopener" class="btn btn-primary form-submit" style="margin-top:12px">${isSalon ? 'Open AUZslab Salon' : 'Open ' + mainApp.name} &#8599;</a>
     </div>` : ''}
     <div class="card">
+      <h3 class="h-2">One address for every app</h3>
+      <p class="muted">Your whole team can use <b>app.auzslab.in</b> for every app. Owners sign in with Google or email, staff with their username and PIN, and the right app opens. Add it to the phone home screen once.</p>
+      <div class="pos-link-box">
+        <code>https://app.auzslab.in</code>
+        <button class="btn btn-ghost" id="copyHubLink" type="button">Copy link</button>
+      </div>
+    </div>
+    <div class="card">
       <h3 class="h-2">Your login</h3>
       <div class="acct-row"><span class="muted">Email</span><b>${esc(DASH.my_email)}</b></div>
       <div class="acct-row"><span class="muted">Role</span><b>${esc(DASH.my_role)}</b></div>
@@ -434,6 +442,7 @@ function renderAccount() {
       <div id="delMsg"></div>
     </div>
   `;
+  $('#copyHubLink').onclick = async () => { const b = $('#copyHubLink'); try { await navigator.clipboard.writeText('https://app.auzslab.in'); b.textContent = 'Copied!'; } catch { window.prompt('Copy this link:', 'https://app.auzslab.in'); } setTimeout(() => { b.textContent = 'Copy link'; }, 2000); };
   if ($('#copyPosLink')) $('#copyPosLink').onclick = async () => {
     const url = staffUrl;
     const btn = $('#copyPosLink');

@@ -16,5 +16,8 @@ window.TENANT_SLUG = (() => {
   if (host === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(host)) {
     return new URLSearchParams(location.search).get('tenant') || '';
   }
-  return host.split('.')[0];
+  // app.auzslab.in is the one shared address for every business: no business is chosen by the address, the signed-in
+  // user's own business is used (apps skip their "this login belongs to another business" check when this is empty).
+  var sub = host.split('.')[0];
+  return sub === 'app' ? '' : sub;
 })();
