@@ -88,7 +88,7 @@ async function priceFeatures(client, features, { tenantFeatures, period = 'month
 // Prices a cart and says which part of it is GST-exempt and whether the one-time setup fee applies.
 // A bundle or an add-on override replaces the per-product prices, so nothing in it is exempt (none of today's
 // bundles contain an exempt product). Yearly pricing only exists for carts of products that have a yearly price.
-async function priceInfo(client, features, { tenantFeatures, period = 'month' } = {}) {
+export async function priceInfo(client, features, { tenantFeatures, period = 'month' } = {}) {
   const keys = Object.keys(features || {}).filter((k) => features[k] === true);
   if (!keys.length) return null;
   const sortedKeys = [...keys].sort().join(',');

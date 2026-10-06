@@ -17,6 +17,48 @@
   function when(s) { var d = s.days_left; return d == null ? '' : d < 0 ? 'expired ' + (-d) + ' day' + (d === -1 ? '' : 's') + ' ago' : d === 0 ? 'ends today' : d === 1 ? 'ends tomorrow' : 'ends in ' + d + ' days'; }
   function fmt(d) { try { return new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); } catch (e) { return d; } }
   var btnCss = 'display:block;width:100%;box-sizing:border-box;text-align:center;text-decoration:none;min-height:48px;line-height:48px;margin:10px 0 0;border-radius:14px;border:1px solid var(--sep,#ddd);background:var(--fill,#f2f2f2);color:inherit;font:600 16px var(--font,system-ui);cursor:pointer';
+
+  // Auto-renewal (Cashfree, db/116). Only an owner can actually turn this
+  // on/off server-side (my_autorenew/cancel are owner-gated) -- a manager
+  // or staff member opening this sheet just never sees the box filled in
+  // (status() 403s silently, same spirit as the rest of this file's
+  // "fail quiet, never block the sheet" style).
+  function autorenewBox(sb) {
+    var box = el('div', { style: 'margin:14px 0 0;padding:12px 14px;border-radius:14px;background:var(--fill,#f2f2f2)' });
+    if (!sb.autorenew) return box; // older app shell without this sb-client.js update yet
+    sb.autorenew.config().then(function (cfgRes) {
+      if (!cfgRes || cfgRes.error || !cfgRes.data || !cfgRes.data.enabled) return; // not configured -- show nothing, manual renewal only
+      sb.autorenew.status().then(function (r) {
+        if (!r || r.error || !r.data) return; // not an owner, or a load error -- stay silent
+        paint(r.data);
+      }).catch(function () {});
+    }).catch(function () {});
+    function paint(s) {
+      box.textContent = '';
+      var busy = false;
+      var toggleBtn = el('button', { type: 'button', style: 'border:0;border-radius:999px;padding:8px 16px;font:700 13px var(--font,system-ui);cursor:pointer;white-space:nowrap;' + (s.on ? 'background:var(--fill,#e8e8e8);color:inherit' : 'background:var(--accent,#800020);color:#fff') },
+        s.on ? 'Turn off' : 'Turn on');
+      toggleBtn.onclick = function () {
+        if (busy) return; busy = true; var was = toggleBtn.textContent; toggleBtn.textContent = '...';
+        var call = s.on ? sb.autorenew.cancel() : sb.autorenew.start();
+        call.then(function (r) {
+          busy = false;
+          if (r && r.error) { toggleBtn.textContent = was; alert((r.error && r.error.message) || 'Could not update auto-renewal.'); return; }
+          if (!s.on && r && r.data && r.data.authLink) { window.open(r.data.authLink, '_blank', 'noopener'); }
+          paint(s.on ? { on: false } : { on: true, status: 'created' });
+        }).catch(function () { busy = false; toggleBtn.textContent = was; });
+      };
+      box.append(el('div', { style: 'display:flex;align-items:center;justify-content:space-between;gap:10px' },
+        el('div', null,
+          el('p', { style: 'margin:0;font-weight:600;font-size:14px' }, 'Auto-renewal'),
+          el('p', { style: 'margin:2px 0 0;font-size:13px;opacity:.75' },
+            !s.on ? 'Off -- you pay each renewal yourself' :
+            s.status === 'created' ? 'Waiting for you to approve the recurring payment' :
+            s.status === 'payment_failed' ? 'Last charge failed -- pay manually, or fix your card/UPI' :
+            s.next_charge_on ? 'On -- next charge ' + fmt(s.next_charge_on) : 'On')),
+        toggleBtn));
+    }
+  }
   var pri = btnCss.replace('background:var(--fill,#f2f2f2);color:inherit', 'background:var(--accent,#800020);color:#fff;border-color:transparent');
 
   function open(sb) {
@@ -37,6 +79,7 @@
         el('p', { style: 'margin:14px 0 0;font:700 18px var(--font,system-ui);text-transform:capitalize' }, (s.plan || 'plan') + ' plan'),
         el('p', { style: 'margin:2px 0 0;color:' + tone + ';font-weight:600' }, s.renewal_date ? (s.is_demo ? 'Demo account' : 'Renews ' + fmt(s.renewal_date) + ' - ' + when(s)) : 'No renewal date set yet'),
         names.length ? el('p', { style: 'margin:10px 0 0;font-size:14px' }, 'Included: ' + names.join(', ')) : null,
+        s.is_demo ? null : autorenewBox(sb),
         el('a', { href: SITE + '/account.html', target: '_blank', rel: 'noopener', style: late ? pri : btnCss }, late ? 'Renew now' : 'Manage plan & billing'),
         el('a', { href: SITE + '/pricing.html?from=' + APP, target: '_blank', rel: 'noopener', style: btnCss }, 'See all plans & add apps'),
         el('a', { href: SITE + '/cart.html?add=' + (KEY[APP] || 'pos') + '&from=' + APP, target: '_blank', rel: 'noopener', style: btnCss }, 'Create a new account'),

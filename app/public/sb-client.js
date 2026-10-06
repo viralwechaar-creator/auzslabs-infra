@@ -232,7 +232,17 @@
       };
     }
 
-    return { auth, from, rpc, storage, channel };
+    // ---- Cashfree auto-renewal (db/116) -- dormant until the owner sets
+    // CASHFREE_APP_ID/SECRET_KEY; ds/plan.js's "Plan & account" sheet
+    // checks config().enabled before showing the toggle at all. ----
+    const autorenew = {
+      async config() { return request('/payments/cashfree/config', { method: 'GET', auth: false }); },
+      async status() { return rpc('my_autorenew'); },
+      async start() { return request('/payments/cashfree/start', { method: 'POST' }); },
+      async cancel() { return request('/payments/cashfree/cancel', { method: 'POST' }); },
+    };
+
+    return { auth, from, rpc, storage, channel, autorenew };
   }
 
   window.supabase = { createClient };
