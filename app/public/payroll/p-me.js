@@ -4,7 +4,43 @@
    ever touch the signed-in person's own record. */
 'use strict';
 let ME = null;
-async function me(force) { if (!ME || force) { ME = await api('pay_me'); S.me = ME; } return ME; }
+async function me(force) {
+  if (!ME || force) {
+    try { ME = await api('pay_me'); S.me = ME; try { localStorage['pay.me'] = JSON.stringify(ME); } catch {} }
+    catch (e) {
+      // no connection (a failure with no HTTP status): show the last saved day so a clock-in can still be taken
+      let c = null; if (!e.status) { try { c = JSON.parse(localStorage['pay.me'] || 'null'); } catch {} }
+      if (!c) throw e;
+      ME = c; ME._offline = true; S.me = ME;
+    }
+  }
+  if (ME && ME._offline) { const q = punchQueue(); if (q.length && ME.punch) ME.punch = { ...ME.punch, open: (q.length % 2 === 1) ? !ME.punch.open : ME.punch.open, last: q[q.length - 1].at, ...((q.length % 2 === 1 && !ME.punch.open) ? { in: q[q.length - 1].at } : {}) }; }
+  return ME;
+}
+// ---- offline clock-ins: kept on this phone with the real time, sent when the connection is back (db/120) ----
+const punchQueue = () => { try { return JSON.parse(localStorage['pay.punchq'] || '[]'); } catch { return []; } };
+const savePunchQueue = (q) => { try { localStorage['pay.punchq'] = JSON.stringify(q); } catch {} };
+let flushing = false;
+async function flushPunchQueue() {
+  if (flushing || !navigator.onLine) return;
+  flushing = true;
+  try {
+    for (const it of punchQueue()) {
+      try {
+        await api('pay_me_punch_offline', { p: it });
+        savePunchQueue(punchQueue().filter((x) => x.op !== it.op));
+      } catch (e) {
+        if (!e.status || e.status >= 500 || e.status === 401 || e.status === 408 || e.status === 429) break;   // still offline / server busy / signed out: keep the rest
+        savePunchQueue(punchQueue().filter((x) => x.op !== it.op));                                          // refused for a real reason: tell the person once
+        toast('A clock-in saved offline was not accepted: ' + e.message, { err: true });
+      }
+    }
+    if (!punchQueue().length && ME) { ME._offline = false; if (typeof renderCurrent === 'function') { /* page refreshes itself on its next visit */ } }
+  } finally { flushing = false; }
+}
+addEventListener('online', flushPunchQueue);
+setInterval(flushPunchQueue, 60000);
+setTimeout(flushPunchQueue, 3000);
 const LEAVE_HALF = [['none', 'Full days'], ['first', 'Morning off'], ['second', 'Afternoon off']];
 
 // ---------- Today ----------
@@ -13,6 +49,7 @@ page('today', {
   async render(v) {
     const d = await me(true), e = d.employee, p = d.punch || {}, t = d.today || {};
     v.header({ title: 'Hi, ' + e.name.split(' ')[0], sub: fmtD(d.date, { weekday: true }) + (e.designation ? ' · ' + e.designation : '') });
+    if (d._offline) v.root.append(banner('orange', 'alert', 'You are offline. Showing your last saved day. Clock-ins are kept on this phone with the right time and sent when you are back online.'));
     if (e.status === 'exited') { v.root.append(banner('info', 'info', 'Your last day was ' + fmtD(e.last_day) + '. Your payslips stay here.')); }
     if (e.mode === 'punch' && ['active', 'notice'].includes(e.status)) v.root.append(punchCard(d, v));
     else if (['active', 'notice'].includes(e.status)) v.root.append(h('div', { class: 'card row', style: { gap: '12px' } }, h('span', { class: 'tile ' + ((ATT[t.status] || [])[1] || 'gray') }, icon('calendar', 20)),
@@ -47,13 +84,19 @@ async function doPunch(d, btn, v) {
   btn.disabled = true;
   const geo = d.org && d.org.has_site && d.org.geofence !== 'off' && navigator.geolocation;
   const go_ = async (pos) => {
+    const place = pos ? { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: Math.round(pos.coords.accuracy) } : {};
+    const keepOffline = () => {
+      const q = punchQueue(); q.push({ op: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2)), at: new Date().toISOString(), ...place }); savePunchQueue(q);
+      toast('Saved on this phone at ' + fmtT(new Date()) + '. It will be sent when you are back online.'); if (navigator.vibrate) navigator.vibrate(30); ME = null; v.refresh();
+    };
+    if (!navigator.onLine) return keepOffline();
     try {
-      const r = await api('pay_me_punch', { p: pos ? { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: Math.round(pos.coords.accuracy) } : {} });
+      const r = await api('pay_me_punch', { p: place });
       if (r.duplicate) toast('Already done a moment ago');
       else toast((r.open ? 'Clocked in at ' : 'Clocked out at ') + fmtT(new Date()) + (r.out_of_range ? '. You seem to be away from work, so your manager will see a note.' : ''));
       if (navigator.vibrate) navigator.vibrate(30);
       v.refresh();
-    } catch (e) { btn.disabled = false; fail(e); }
+    } catch (e) { if (!e.status) return keepOffline(); btn.disabled = false; fail(e); }   // no answer at all: keep it on the phone
   };
   if (!geo) return go_(null);
   navigator.geolocation.getCurrentPosition((pos) => go_(pos), () => go_(null), { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 });

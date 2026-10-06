@@ -11,7 +11,7 @@ AUZslab was already local-first in two of its five apps. Nothing here was rewrit
 | AUZsPOS (`app/public/pos/`) | IndexedDB `pos3` (`rec`, `out`, `meta`) | outbox -> `push_record` RPC (optimistic concurrency, record id is the idempotency key), pull by `updated_at` cursor, 30 s timer + online event | sell, KOT, tables, orders, payments, history, receipts; local invoice/KOT numbers (`~`, `L`) when the server is unreachable |
 | AUZsMob (`app/public/mob/`) | IndexedDB `mob1` + `outbox` | outbox -> real `mob_*` RPCs (client generated `p_id`, idempotent), `mob_sync_pull` | sell, purchase, repairs, customers, stock, reports from the local copy |
 | AUZsLedger (`accounts/`) | none (server authoritative on purpose) | n/a | shows "You are offline. Accounting needs a connection to save and post." |
-| AUZsPay (`payroll/`) | none (server authoritative on purpose) | n/a | same message |
+| AUZsPay (`payroll/`) | server authoritative; **staff clock-in/out is queued on the phone** (`localStorage pay.punchq`, last day cached in `pay.me`) | queue -> `pay_me_punch_offline` (db/120), 60 s timer + online event | clock in/out with the real time; everything else needs a connection |
 | Admin console (`console/`) | IndexedDB `dash2` + outbox through `push_record` | same engine as the POS | works from the local copy |
 
 Printing is the browser/OS print dialog (`pos/print.js`); it never calls the cloud.
@@ -39,6 +39,12 @@ Printing is the browser/OS print dialog (`pos/print.js`); it never calls the clo
    and the POS equivalents (503, lost reply, restart, numbering timeout). The database must hold exactly one copy.
    Verified to fail against the old behaviour (5 of 6 AUZsMob checks failed with the old drop-on-error logic).
 
+8. **AUZsPay offline clock-in (db/120, `payroll/p-me.js`).** With no connection (or no answer), the big clock button saves
+   `{op, at, lat, lng}` on the phone and shows the last saved day with an offline banner. `pay_me_punch_offline` stores the
+   punch at the phone's time (refused if in the future by over 2 min or older than 3 days), decides in/out from the previous
+   punch, and is idempotent on `op` (`pay_punches.client_op`, unique per business). Geofence rules are the same as online.
+   Test: payroll suite ("Offline clock-in"). The browser queue itself was not driven in a real browser test.
+
 ## Conflict strategy (unchanged, documented)
 
 - Sales, orders, payments, purchases: append-only, client generated unique id; replay is a no-op / same-state overwrite.
@@ -54,7 +60,7 @@ authenticated RPCs, and a dead session stops the queue (`401`) until sign-in.
 
 ## NOT done (decisions, not omissions)
 
-- **AUZsLedger and AUZsPay stay server-authoritative.** Gapless document numbers, period locks, double-entry balancing,
+- **AUZsLedger and AUZsPay stay server-authoritative** (except Pay's clock-in above). Gapless document numbers, period locks, double-entry balancing,
   approval limits and frozen payroll are enforced in one database transaction; an offline copy would have to *propose*
   entries that the server may refuse. A safe design (offline drafts that are posted on reconnect, never silently
   overwritten) is possible but is a separate feature with its own rules; not started.

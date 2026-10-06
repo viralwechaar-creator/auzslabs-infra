@@ -304,6 +304,18 @@ export default async function run({ browser, stack }) {
     await c.close();
     await ok(owner, 'pay_save_org', { p: { attendance_mode: 'manual' } });
   }, 'major');
+  await s.check('Offline clock-in: sent later with its real time, once only; future and very old times are refused', async () => {
+    await ok(owner, 'pay_save_org', { p: { attendance_mode: 'punch' } });
+    const op = 'test-op-' + Date.now(), at = new Date().toISOString();
+    const a = await ok(staff, 'pay_me_punch_offline', { p: { op, at } });
+    assert(a.open === false && a.kind === 'out', 'expected clock-out after the open clock-in, got ' + JSON.stringify(a));
+    const b = await ok(staff, 'pay_me_punch_offline', { p: { op, at } });
+    assert(b.duplicate === true && b.open === false, 'replay must change nothing: ' + JSON.stringify(b));
+    await fails(staff, 'pay_me_punch_offline', { p: { op: op + 'f', at: new Date(Date.now() + 600000).toISOString() } }, /future|clock|time/i);
+    await fails(staff, 'pay_me_punch_offline', { p: { op: op + 'o', at: new Date(Date.now() - 4 * 86400000).toISOString() } }, /old|days|time/i);
+    await fails(staff, 'pay_me_punch_offline', { p: { at } }, /op|id|reference/i);
+    await ok(owner, 'pay_save_org', { p: { attendance_mode: 'manual' } });
+  }, 'major');
   await s.check('Integrity holds at the end of the run', integrity, 'critical');
   s.done();
 }
