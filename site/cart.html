@@ -222,7 +222,7 @@
 <script src="vendor/qrcode.js"></script>
 <script>
 const sb = supabase.createClient(CFG.url, CFG.key);
-const PRODUCT_LABEL = { salon: 'AUZslab Salon', pos: 'POS', crm: 'CRM', billing: 'Billing & Invoicing', inventory: 'Inventory', self_order: 'QR Ordering', payroll: 'Payroll', website_builder: 'Website Builder', accounting: 'Accounting', gsm: 'AUZsGSM', mobile: 'AUZsMob' };
+const PRODUCT_LABEL = { salon: 'AUZslab Salon', pos: 'POS', crm: 'CRM', billing: 'Billing & Invoicing', inventory: 'Inventory', self_order: 'QR Ordering', payroll: 'Payroll', website_builder: 'Website Builder', accounting: 'Accounting', mobile: 'AUZsMob' };
 // Apps link here as cart.html?add=<product key>: pre-select that product so a new customer lands on their bill + signup form.
 try { const pre = new URLSearchParams(location.search).get('add'); if (pre && PRODUCT_LABEL[pre]) AUZcart.add(pre); } catch (e) {}
 

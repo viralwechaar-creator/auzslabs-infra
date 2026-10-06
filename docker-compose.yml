@@ -13,13 +13,6 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    # Lets the Caddyfile's gsm.$DOMAIN block reach AUZsGSM's api container, a *separate* docker-compose
-    # project (its own repo, own stack -- see that project's infra/README.md) running on this same VPS,
-    # whose API is bound to 127.0.0.1:4100 (host-only, not publicly exposed). host.docker.internal is
-    # the standard way a container reaches a port bound on the host itself; host-gateway is the magic
-    # value Docker resolves to the actual host IP for this (needs Docker Engine 20.10+).
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./site:/srv/site:ro

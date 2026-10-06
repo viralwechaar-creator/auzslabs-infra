@@ -145,13 +145,3 @@ api.{$DOMAIN} {
         reverse_proxy api:3000
     }
 }
-
-# AUZsGSM -- a separate standalone product (own repo, own database, own docker-compose project;
-# not part of this platform) that happens to run on this same VPS. Its api container serves both
-# the API and the static frontend on 127.0.0.1:4100 (host-only -- see that project's docker-compose.yml);
-# this is the only way it's reachable from outside. The extra_hosts entry on the caddy service above
-# is what lets host.docker.internal resolve from inside this container.
-gsm.{$DOMAIN} {
-    import security_headers
-    reverse_proxy host.docker.internal:4100
-}
