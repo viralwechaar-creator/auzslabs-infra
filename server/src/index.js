@@ -68,6 +68,7 @@ const TABLES = {
   profiles: { columns: ['id', 'tenant_id', 'email', 'role', 'role_id', 'name', 'phone', 'username', 'outlet_id', 'login_off'], writable: ['role', 'role_id', 'name', 'phone'] },
   guest_orders: { columns: ['id', 'tenant_id', 'tbl', 'name', 'phone', 'note', 'items', 'status', 'created_at'], writable: ['status'] },
   push_subs: { columns: ['id', 'tenant_id', 'user_id', 'endpoint', 'p256dh', 'auth', 'created_at'], insertable: ['user_id', 'endpoint', 'p256dh', 'auth'] },
+  fcm_tokens: { columns: ['id', 'tenant_id', 'user_id', 'token', 'platform', 'created_at'], insertable: ['user_id', 'token', 'platform'] },
   leads: { columns: ['id', 'name', 'business', 'contact', 'message', 'niche', 'status', 'created_at'], writable: ['status'] }, // admin-only via RLS (is_platform_admin())
   signup_requests: { columns: ['id', 'user_id', 'business_name', 'slug', 'features', 'notes', 'contact_name', 'phone', 'niche', 'address', 'status', 'created_at'] }, // read-only here; state changes go through approve/decline_signup_request
   addon_requests: { columns: ['id', 'tenant_id', 'tenant_name', 'tenant_slug', 'user_id', 'features', 'notes', 'status', 'created_at'] }, // read-only here; state changes go through approve/decline_addon_request

@@ -24,3 +24,6 @@ When it finishes, open the run and download each app's artifact: it holds the te
 Play Console > your app > Release > Testing (closed testing first) > Create release > upload the `.aab`. Choose "Play App Signing" when asked (recommended: Google keeps the real signing key; yours is only the upload key).
 
 Each build gets a higher version number automatically (the run number), which Play requires for every upload.
+
+## 5. Order alerts inside the app (optional, Firebase push)
+Without this, the app builds and works fine -- it just never shows a notification for a new order while the app is in the background (Web Push, the way the website does it, does not work inside a packaged app). Full setup steps: `.env.example`'s own `FCM_PROJECT_ID`/`FCM_SERVICE_ACCOUNT_JSON`/`GOOGLE_SERVICES_JSON` section. Short version: one Firebase project, register every app's package name in it, download its one `google-services.json`, base64 it into a `GOOGLE_SERVICES_JSON` repository secret (same place as the four keys above) -- the next build picks it up automatically, no code change needed.
