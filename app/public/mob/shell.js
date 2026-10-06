@@ -21,6 +21,7 @@ function allNav() {
   if (repairsMode() === 'full') items.push(['repairs', 'repairs', 'wrench']);
   if (feat('stock') || can('mob_manage')) items.push(['stock', 'stock', 'box']);
   if (can('mob_reports')) items.push(['reports', 'reports', 'chart']);
+  if (can('mob_sell') && !can('mob_reports')) items.push(['myreport', 'myreport', 'chart']);
   if (feat('customers') || feat('vendors')) items.push(['dues', 'dues', 'wallet']);
   items.push(['settings', 'settings', 'gear']);
   return items.filter(([id]) => allowed(PAGES[id]));
@@ -32,6 +33,8 @@ function navList() {
   const all = allNav(), c = customNav();
   if (!c) return all;
   const picked = c.map((id) => all.find((x) => x[0] === id)).filter(Boolean);
+  // A staffer's own sales/profit page is always theirs, whatever the owner arranged for the rest of the menu.
+  const mine = all.find((x) => x[0] === 'myreport'); if (mine && !picked.includes(mine)) picked.push(mine);
   // The owner must always be able to get back to Settings to change this again.
   if (!picked.some((x) => x[0] === 'settings') && !c.includes('more')) { const st = all.find((x) => x[0] === 'settings'); if (st) picked.push(st); }
   return picked.length ? picked : all;

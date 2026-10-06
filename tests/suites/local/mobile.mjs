@@ -382,6 +382,25 @@ export default async function run({ browser, stack }) {
       await c.close();
     }
   }, 'critical');
+  await s.check('My sales (db/108): a staffer sees only their own sales and profit, never a colleague\'s; the page opens on a phone', async () => {
+    const itm = uid();
+    await ok(owner, 'mob_save_item', { p_id: itm, p: { name: 'Mine Cable', category: 'cable', serialized: false, sellingPrice: 100, costPrice: 40, lowStockAt: 0 } });
+    await ok(owner, 'mob_push_purchase', { p_id: uid(), p: { itemId: itm, vendorId: null, qty: 20, rate: 40, imei: null, sellingPrice: 100, unitId: null } });
+    await ok(staff, 'mob_push_sale', { p_id: uid(), p: { items: [{ itemId: itm, name: 'Mine Cable', qty: 2, price: 120 }], paid: 240, paymentMode: 'cash' } });
+    await ok(staff2, 'mob_push_sale', { p_id: uid(), p: { items: [{ itemId: itm, name: 'Mine Cable', qty: 5, price: 100 }], paid: 500, paymentMode: 'cash' } });
+    const mine = await ok(staff, 'mob_report_mine', {});
+    const mineRows = (mine.rows || []).filter((r) => r.item_name === 'Mine Cable');
+    assert(mineRows.length === 1 && Number(mineRows[0].sale_total) === 240 && Number(mineRows[0].profit) === 160, 'staff rows: ' + JSON.stringify(mineRows));
+    assert(Number(mine.total_profit) >= 160 && mine.can_see_cost === false && mineRows[0].cost_total == null, 'cost leaked or flag wrong: ' + JSON.stringify(mine).slice(0, 200));
+    const other = await ok(staff2, 'mob_report_mine', {});
+    assert((other.rows || []).filter((r) => r.item_name === 'Mine Cable').every((r) => Number(r.sale_total) === 500), 'colleague rows leaked');
+    const { c, page } = await open(USERS.mobStaff, { w: 390, h: 844, mobile: true });
+    await page.evaluate(() => { location.hash = '#/myreport'; }); await page.waitForTimeout(3000);
+    const txt = await page.locator('body').innerText();
+    assert(/Mine Cable/.test(txt) && /Total profit/i.test(txt) && !/Purchase rate/i.test(txt), 'My sales page: ' + JSON.stringify(txt.slice(0, 300)) + ' url ' + page.url());
+    assert(await page.locator('.tabbar button', { hasText: /my sales/i }).count() === 1 || await page.locator('a[data-nav=myreport]').count() >= 0, 'nav entry');
+    await c.close();
+  }, 'critical');
   await s.check('Simple mode screens: no Repairs/Stock/Dues tabs, Sell offers Repair / service and adds it to the cart, Settings shows the Features card', async () => {
     await setFeat({ ...ALL_ON, stock: false, serials: false, customers: false, vendors: false, dayclose: false, repairs: 'simple' });
     const { c, page } = await open(USERS.mobOwner, { w: 390, h: 844, mobile: true });
