@@ -1,6 +1,6 @@
 import { WebSocketServer } from 'ws';
 import pg from 'pg';
-import { verifyToken } from './auth.js';
+import { verifyToken, onSessionRevoked } from './auth.js';
 
 // Replaces Supabase Realtime's postgres_changes: the client's shim just
 // needs "something in table X changed for my tenant" to trigger its own
@@ -16,6 +16,7 @@ import { verifyToken } from './auth.js';
 export function startRealtime(server, { onPushEvent }) {
   const wss = new WebSocketServer({ noServer: true });
   const clientsByTenant = new Map(); // tenant_id -> Set<ws>
+  const clientsByJti = new Map(); // jti -> Set<ws> -- lets a revoked session's own live socket be closed immediately, not just left to die on its own
 
   server.on('upgrade', (req, socket, head) => {
     const url = new URL(req.url, 'http://internal');
@@ -26,10 +27,29 @@ export function startRealtime(server, { onPushEvent }) {
     if (!tenantId) { socket.destroy(); return; }
     wss.handleUpgrade(req, socket, head, (ws) => {
       ws.tenantId = tenantId;
+      ws.jti = user.jti || null; // a token signed without meta (see signToken's own comment) has no jti -- nothing to track here, same as it isn't individually revocable
       if (!clientsByTenant.has(tenantId)) clientsByTenant.set(tenantId, new Set());
       clientsByTenant.get(tenantId).add(ws);
-      ws.on('close', () => clientsByTenant.get(tenantId)?.delete(ws));
+      if (ws.jti) {
+        if (!clientsByJti.has(ws.jti)) clientsByJti.set(ws.jti, new Set());
+        clientsByJti.get(ws.jti).add(ws);
+      }
+      ws.on('close', () => {
+        clientsByTenant.get(tenantId)?.delete(ws);
+        if (ws.jti) clientsByJti.get(ws.jti)?.delete(ws);
+      });
     });
+  });
+
+  // Fires synchronously the instant revokeSession()/revokeAllSessionsForUser()
+  // runs (self-revoke from account.html, or a platform admin's force
+  // sign-out) -- closes that device's own live socket right away instead
+  // of leaving it connected until it next reconnects on its own.
+  onSessionRevoked((jti) => {
+    const set = clientsByJti.get(jti);
+    if (!set) return;
+    for (const ws of set) { try { ws.close(4001, 'session revoked'); } catch {} }
+    clientsByJti.delete(jti);
   });
 
   const listenClient = new pg.Client({

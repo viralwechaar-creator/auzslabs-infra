@@ -35,6 +35,20 @@ const revokedJtis = new Set();
   }
 })();
 
+// Closes the one real gap left in "instantly kill a stolen device's
+// session": the HTTP/RPC side is already instant (verifyToken() rejects
+// a revoked jti on its very next request), but the live-sync WebSocket
+// (realtime.js) is only authenticated once, at connect -- a device that
+// already has a socket open keeps it open, and keeps receiving bare
+// "something changed, go refetch" pings, until it naturally disconnects.
+// realtime.js can't import revokeSession/revokeAllSessionsForUser
+// directly without a circular import (it already imports verifyToken
+// from here), so it registers a listener here instead and this module
+// never needs to know realtime.js exists.
+const revocationListeners = [];
+export function onSessionRevoked(fn) { revocationListeners.push(fn); }
+function notifyRevoked(jti) { for (const fn of revocationListeners) { try { fn(jti); } catch (err) { console.warn('revocation listener failed', err.message); } } }
+
 // A short, human-readable label ("Chrome on Windows") from the
 // request's own User-Agent -- good enough for someone to recognise
 // "that's my laptop" vs "that's not me" in a sessions list; not meant
@@ -90,6 +104,7 @@ export async function revokeSession(userId, jti) {
   );
   if (!rows[0]) throw new Error('session not found');
   revokedJtis.add(jti);
+  notifyRevoked(jti);
 }
 
 // Admin-side equivalent of revokeSession, for the Users directory's "sign
@@ -105,7 +120,7 @@ export async function revokeAllSessionsForUser(userId) {
     `update auth_sessions set revoked_at = now() where user_id = $1 and revoked_at is null returning jti`,
     [userId],
   );
-  rows.forEach((r) => revokedJtis.add(r.jti));
+  rows.forEach((r) => { revokedJtis.add(r.jti); notifyRevoked(r.jti); });
   return rows.length;
 }
 
