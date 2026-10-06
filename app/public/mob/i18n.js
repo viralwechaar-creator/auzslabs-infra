@@ -37,6 +37,8 @@ const STR = {
   price: { en: 'Price', hi: 'कीमत' },
   rate: { en: 'Rate', hi: 'भाव' },
   note: { en: 'Note', hi: 'नोट' },
+  myreport: { en: 'My sales', hi: 'मेरी बिक्री' },
+  bills: { en: 'bills', hi: 'बिल' },
   today: { en: 'Today', hi: 'आज' },
   thisWeek: { en: 'This week', hi: 'इस हफ्ते' },
   thisMonth: { en: 'This month', hi: 'इस महीने' },
