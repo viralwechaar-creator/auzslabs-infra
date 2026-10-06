@@ -32,7 +32,7 @@ p,li{color:#4a4638}
 </div>
 <script src=/sb-client.js?v=3></script>
 <script src=/config.js></script>
-<script src=/tenant.js></script>
+<script src="/tenant.js?v=2"></script>
 <script>
 document.getElementById('d').textContent=new Date().toLocaleDateString();
 (async()=>{try{const sb=supabase.createClient(CFG.url,CFG.key);const{data}=await sb.rpc('public_menu',{tenant_slug:TENANT_SLUG});const cfg=(data&&data.cfg)||{};if(cfg.name){document.title=cfg.name+' — Terms';document.getElementById('t').textContent=cfg.name+' Terms of Use'}if(cfg.addr||cfg.phone)document.getElementById('contact').textContent='Contact us: '+[cfg.addr,cfg.phone].filter(Boolean).join(' · ')}catch{}})();

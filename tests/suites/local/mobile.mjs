@@ -494,6 +494,8 @@ export default async function run({ browser, stack }) {
     await c2.close();
     for (const [host, re] of [['auzsmob', /\/mob\.html/], ['auzspos', /\/index\.html/], ['auzspay', /\/payroll\.html/], ['auzsledger', /\/accounts\.html/]]) {
       const cx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const px = await cx.newPage();
+      // even with an old cached tenant.js (which thinks the address is a business name) the address decides
+      await px.route(/\/tenant\.js/, (r) => r.fulfill({ contentType: 'application/javascript', body: "window.TENANT_SLUG='" + host + "';" }));
       await px.goto(stack.url(host, '/')); await px.waitForURL(re, { timeout: 20000 }); await px.waitForSelector('input[type=password]', { timeout: 20000 });
       await cx.close();
     }
