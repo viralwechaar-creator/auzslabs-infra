@@ -96,13 +96,13 @@ function menuDraft(d,method){
  const draw=()=>{box.innerHTML='';let last=null;rows.forEach((r,ix)=>{
    if(r.cat!==last){last=r.cat;const cn=h('input',{class:'inp',value:r.cat,'aria-label':'Category',style:'font-weight:700',onchange:e=>{const old=r.cat,nv=e.target.value.trim()||'Menu';rows.forEach(x=>{if(x.cat===old)x.cat=nv});draw()}});box.append(h('div',{style:'margin-top:8px'},cn,existing[r.cat.toLowerCase()]?h('span',{style:'font-size:12px;color:var(--muted);margin-left:8px'},'existing category'):h('span',{style:'font-size:12px;color:var(--muted);margin-left:8px'},'new category')))}
    const ex=have.get((existing[r.cat.toLowerCase()]||{}).id+'|'+r.name.toLowerCase());
-   box.append(h('div',{style:'display:grid;grid-template-columns:auto 1fr 84px 96px;gap:8px;align-items:center'},
+   box.append(...[h('div',{style:'display:grid;grid-template-columns:auto 1fr 84px 96px;gap:8px;align-items:center'},
     h('input',{type:'checkbox',checked:r.on,'aria-label':'Include',onchange:e=>{r.on=e.target.checked}}),
     h('input',{class:'inp',value:r.name,'aria-label':'Item name',onchange:e=>{r.name=e.target.value}}),
     h('input',{class:'inp',value:r.price,inputmode:'decimal','aria-label':'Price',onchange:e=>{r.price=+e.target.value||0}}),
     h('select',{class:'inp','aria-label':'Type',onchange:e=>{r.veg=e.target.value}},...[['veg','Veg'],['nonveg','Non-veg'],['egg','Egg']].map(([v,l])=>h('option',{value:v,selected:r.veg==v},l)))),
     ex?h('div',{style:'font-size:12px;color:var(--muted);margin:-4px 0 0 28px'},'Already on your menu: the price will be updated'):null,
-    r.sizes&&r.sizes.length?h('div',{style:'font-size:12px;color:var(--muted);margin:-4px 0 0 28px'},'Sizes: '+r.sizes.map(s=>s.l+' '+s.p).join(', ')):null)})};
+    r.sizes&&r.sizes.length?h('div',{style:'font-size:12px;color:var(--muted);margin:-4px 0 0 28px'},'Sizes: '+r.sizes.map(s=>s.l+' '+s.p).join(', ')):null].filter(Boolean))})};
  draw();
  const go=btn('Create menu',async()=>{go.disabled=true;let n=0,u=0;const byName={...existing};
   for(const r of rows){if(!r.on||!r.name.trim())continue;const key=r.cat.toLowerCase();let c=byName[key];if(!c){c={name:r.cat,n:Date.now()+n};await save('cat',c);byName[key]=c}
