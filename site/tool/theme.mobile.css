@@ -394,3 +394,12 @@ html{scroll-behavior:auto}
   :root:not([data-theme=light]) .drawer-topbar-logo img,
   :root:not([data-theme=light]) .hero-art-logo{filter:invert(1)}
 }
+
+/* Touch comfort (phones/tablets): 44px tap areas without changing how things look, and no text under 11px. */
+@media (max-width:899px){
+  .theme-toggle,.drawer-icon-link,.topbar-logo{position:relative}
+  .theme-toggle::after,.drawer-icon-link::after,.topbar-logo::after{content:"";position:absolute;inset:-12px -8px}
+  .drawer-close{min-height:44px}
+  .topbar .btn,.sidebar-foot .btn{min-height:44px;font-size:12px}
+  .label,.eye,.price-card-badge,.sidebar-copy,.hero-services-label,.uk-bento-sub{font-size:11px}
+}

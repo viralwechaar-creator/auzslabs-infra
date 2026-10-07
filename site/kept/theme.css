@@ -519,3 +519,12 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
 
 /* The closing CONNECT footer panel always sits above the panels before it (on pages where an earlier dark panel had a higher z-index its top was covered). */
 .stack-panel.stack-panel-dark:not(.fx-panel){z-index:30}
+
+/* Touch comfort (phones/tablets): 44px tap areas without changing how things look, and no text under 11px. */
+@media (max-width:899px){
+  .theme-toggle,.drawer-icon-link,.topbar-logo{position:relative}
+  .theme-toggle::after,.drawer-icon-link::after,.topbar-logo::after{content:"";position:absolute;inset:-12px -8px}
+  .drawer-close{min-height:44px}
+  .topbar .btn,.sidebar-foot .btn{min-height:44px;font-size:12px}
+  .label,.eye,.price-card-badge,.sidebar-copy,.hero-services-label,.uk-bento-sub{font-size:11px}
+}
