@@ -16,6 +16,25 @@ async function loadBookings(day) {
 const addMinutes = (t, m) => { const [hh, mm] = t.split(':').map(Number), x = Math.min(hh * 60 + mm + m, 23 * 60 + 59); return String(Math.floor(x / 60)).padStart(2, '0') + ':' + String(x % 60).padStart(2, '0'); };
 const resErr = (e) => (e && e.status === 409 ? 'That table is already reserved for an overlapping time. Choose another table or time.' : (e && e.message) || 'Could not save');
 
+// A new reservation request (public_create_reservation, db/127 -- e.g. a customer booking a table
+// from the business's own public website) used to only ever show up as a "notification" in the
+// guest-order inbox and never in the real Reservations list at all. Now it's a real bookings row,
+// so the realtime "something changed" ping on that table (subscribed in shell.js) just needs to
+// refetch and, for a genuinely new customer-made request, say so -- same spirit as getG()'s alert
+// for a new guest order, just for the Reservations screen instead.
+async function onBookingsChanged() {
+  if (!navigator.onLine || !S.user) return;
+  const days = new Set([today(), S.resDay || today()]);
+  for (const day of days) {
+    const before = S.resByDay[day] || [];
+    const beforeIds = new Set(before.map((b) => b.id));
+    const after = await loadBookings(day);
+    const fresh = after.filter((b) => !beforeIds.has(b.id) && b.status === 'pending');
+    fresh.forEach((b) => toast('New reservation request · ' + b.customer_name + (b.time ? ' · ' + b.time.slice(0, 5) : '')));
+  }
+  if (['tables', 'reserve'].includes(S.tab) && !isTyping()) render();
+}
+
 V.reserve = () => {
   const day = S.resDay || today(), seg0 = S.resSeg || 'res';
   const rows = S.resByDay[day];

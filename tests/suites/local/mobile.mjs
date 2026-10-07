@@ -329,9 +329,30 @@ export default async function run({ browser, stack }) {
     await page.locator('.li', { hasText: /^New:/ }).click(); await page.waitForTimeout(300);
     await page.fill('.input[aria-label="Purchase rate"]', '5000'); await page.fill('.input[aria-label="Selling price"]', '6999');
     await page.fill('.input[aria-label="Qty"]', '3');
-    await page.locator('button', { hasText: /^Save$/ }).click(); await page.waitForTimeout(1500);
+    await page.locator('button', { hasText: /^Add to purchase$/ }).click(); await page.waitForTimeout(300);
+    await page.locator('button', { hasText: /^Save purchase$/ }).click(); await page.waitForTimeout(1500);
     const row = (await q("select id from mob_items where tenant_id=$1 and name='Phone test item'", [tid]))[0];
     assert(row, 'purchase item was not saved through the real UI');
+    await c.close();
+  }, 'critical');
+  await s.check('Phone: a purchase bill can hold several different items at once', async () => {
+    const { c, page, errs } = await open(USERS.mobOwner, { w: 390, h: 844, mobile: true });
+    await page.locator('.big-action', { hasText: /add purchase/i }).click(); await page.waitForTimeout(300);
+    for (const name of ['Multi item A', 'Multi item B']) {
+      await page.fill('input[aria-label="Item name"]', name); await page.waitForTimeout(400);
+      await page.locator('.li', { hasText: /^New:/ }).click(); await page.waitForTimeout(400);
+      await page.fill('.input[aria-label="Purchase rate"]', '100'); await page.fill('.input[aria-label="Qty"]', '2');
+      await page.locator('button', { hasText: /^Add to purchase$/ }).click(); await page.waitForTimeout(400);
+    }
+    const body = await page.locator('body').innerText();
+    assert(/Multi item A/.test(body) && /Multi item B/.test(body), 'both cart lines should show: ' + body.slice(0, 300));
+    await page.locator('button', { hasText: /^Save purchase$/ }).click(); await page.waitForTimeout(1500);
+    let rows = [];
+    for (let i = 0; i < 6 && rows.length < 2; i++) {
+      rows = await q("select name from mob_items where tenant_id=$1 and name in ('Multi item A','Multi item B')", [tid]);
+      if (rows.length < 2) await page.waitForTimeout(1000);
+    }
+    assert(rows.length === 2, 'both items should have been saved from one purchase bill: ' + JSON.stringify(rows) + ' errs: ' + JSON.stringify(errs));
     await c.close();
   }, 'critical');
   await s.check('Sell asks for the price every time: staff can bill the same product at different prices (catalogue price untouched), optional vendor shows', async () => {

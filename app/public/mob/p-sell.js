@@ -237,14 +237,15 @@ async function renderSell(v) {
 }
 
 async function renderSaleHistory(v) {
-  v.header({ title: t('saleHistory'), back: 'sell' });
   const sales = (await idbGetAll('sales')).filter((s) => can('mob_reports') || s.staff_id === S.user.id).sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
-  v.root.append(dataView(
-    [{ key: 'inv', title: true, label: '', render: (r) => (r.bill_no || '…') + (r.voided ? ' (' + t('voided') + ')' : '') },
-      { key: 'cust', sub: true, label: '', render: (r) => r.customer_name || 'Walk-in' },
-      { key: 'total', value: true, r: true, label: '', render: (r) => money(r.total) }],
-    sales, { onRow: (r) => saleDetailSheet(v, r), emptyText: t('noneYet') },
-  ));
+  voidableHistory(v, {
+    title: t('saleHistory'), back: 'sell', canVoid: can('mob_manage'),
+    rows: () => sales, idOf: (r) => r.id, isVoided: (r) => r.voided,
+    lineFor: (r) => ({ title: (r.bill_no || '…') + (r.voided ? ' (' + t('voided') + ')' : ''), sub: r.customer_name || 'Walk-in', value: money(r.total) }),
+    onOpen: (r) => saleDetailSheet(v, r),
+    rpcBulk: 'mob_void_sales_bulk', idsParam: 'p_sale_ids', confirmKey: 'confirmBulkVoidSale',
+    applyVoided: async (id) => { const r = sales.find((s) => s.id === id); if (r) { r.voided = true; await idbPut('sales', r); } },
+  });
 }
 
 // Opens WhatsApp with the bill text ready to send (the cashier taps Send). Free: no WhatsApp Business account needed.

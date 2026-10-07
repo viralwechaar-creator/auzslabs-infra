@@ -5,9 +5,15 @@ page('purchase', { title: 'purchase', perm: 'mob_purchase', render: renderPurcha
 
 async function renderPurchase(v) {
   if (v.args[0] === 'used') return renderBuyUsed(v);
-  v.header({ title: t('addPurchase') });
+  if (v.args[0] === 'history') return renderPurchaseHistory(v);
+  v.header({ title: t('addPurchase'), actions: can('mob_manage') ? [{ label: t('purchaseHistory'), icon: 'wallet', run: () => go('purchase/history') }] : [] });
   const [items, vendors] = await Promise.all([idbGetAll('items'), idbGetAll('vendors')]);
   const activeItems = items.filter((i) => i.active !== false);
+  // A whole bill can hold several different items now (owner request: purchase used to force one item
+  // per bill, save, start over) -- each stays its own mob_purchases row server-side (the schema is
+  // already append-only per item, db/080's own design), the UI just lets several be queued up locally
+  // and submitted together with one tap, same cart-then-checkout shape Sell already uses.
+  const cart = [];
 
   let pickedItem = null;
   const itemSearch = searchField(t('itemName'), debounce((q) => paintItemResults(q), 100));
@@ -21,7 +27,7 @@ async function renderPurchase(v) {
     matches.forEach((i) => itemResults.append(liRow({ icon: 'box', title: i.name, sub: i.category, onclick: () => pickItem(i) })));
     itemResults.append(liRow({ icon: 'plus', title: (S_LANG === 'hi' ? 'नया: ' : 'New: ') + '"' + q + '"', onclick: () => pickItem({ id: uid(), name: q, category: 'other', serialized: false, _new: true }) }));
   }
-  function pickItem(i) { pickedItem = i; clear(itemResults); itemSearch.input.value = ''; clear(pickedBox).append(liRow({ icon: 'box', title: i.name, right: h('button', { class: 'btn plain sm', type: 'button', onclick: () => { pickedItem = null; clear(pickedBox); saveBtn.classList.add('hidden'); } }, t('cancel')) })); paintFields(); saveBtn.classList.remove('hidden'); }
+  function pickItem(i) { pickedItem = i; clear(itemResults); itemSearch.input.value = ''; clear(pickedBox).append(liRow({ icon: 'box', title: i.name, right: h('button', { class: 'btn plain sm', type: 'button', onclick: () => { pickedItem = null; clear(pickedBox); addBtn.classList.add('hidden'); } }, t('cancel')) })); paintFields(); addBtn.classList.remove('hidden'); }
 
   const vendorSel = selectEl([['', t('vendor') + '…'], ...vendors.map((x) => [x.id, x.name])], '');
   const newVendor = input({ placeholder: t('vendor') });
@@ -45,39 +51,61 @@ async function renderPurchase(v) {
     );
   }
 
-  const saveBtn = h('button', { class: 'btn fill wide', type: 'button' }, t('save'));
-  saveBtn.onclick = async () => {
+  const cartBox = h('div', { class: 'list' });
+  function paintCart() {
+    clear(cartBox);
+    cart.forEach((l, i) => cartBox.append(liRow({ icon: 'box', title: l.name, sub: t('qty') + ' ' + l.qty + ' × ' + inr(l.rate), value: money(l.qty * l.rate),
+      right: h('button', { class: 'btn plain icon sm', type: 'button', 'aria-label': 'x', onclick: () => { cart.splice(i, 1); paintCart(); } }, icon('x', 16)) })));
+    saveBtn.classList.toggle('hidden', !cart.length);
+  }
+
+  const addBtn = h('button', { class: 'btn wide', type: 'button' }, t('addToPurchase'));
+  addBtn.onclick = () => {
     if (!pickedItem) { fail(new Error(t('errNameRequired'))); return; }
+    cart.push({ item: pickedItem, vendorId: feat('vendors') ? (vendorSel.value || null) : null, newVendorName: feat('vendors') ? newVendor.value.trim() : '',
+      name: pickedItem.name, rate: N(rate.value), sellPrice: sellPrice.value ? N(sellPrice.value) : null, qty: N(qtyI.value) || 1,
+      serialized: feat('serials') && serialSw.checked, imei: imeiI.value.trim() || null });
+    pickedItem = null; clear(pickedBox); addBtn.classList.add('hidden'); clear(fieldsBox);
+    vendorSel.value = ''; newVendor.value = ''; rate.value = ''; sellPrice.value = ''; qtyI.value = 1; serialSw.checked = false; imeiI.value = '';
+    paintCart();
+  };
+
+  const saveBtn = h('button', { class: 'btn fill wide', type: 'button' }, t('savePurchase'));
+  saveBtn.onclick = async () => {
+    if (!cart.length) return;
     saveBtn.disabled = true;
     try {
-      const itemId = pickedItem.id;
-      if (pickedItem._new) {
-        await localSaveItem(itemId, { name: pickedItem.name, category: 'other', serialized: serialSw.checked, sellingPrice: N(sellPrice.value), costPrice: N(rate.value) });
+      for (const l of cart) {
+        const itemId = l.item.id;
+        if (l.item._new) await localSaveItem(itemId, { name: l.item.name, category: 'other', serialized: l.serialized, sellingPrice: l.sellPrice, costPrice: l.rate });
+        let vendorId = l.vendorId;
+        if (feat('vendors') && !vendorId && l.newVendorName) { vendorId = uid(); await localSaveVendor(vendorId, { name: l.newVendorName }); }
+        const pid = uid();
+        const unitId = l.serialized ? uid() : null;
+        const args = { itemId, vendorId, qty: l.qty, rate: l.rate, imei: unitId ? l.imei : null, sellingPrice: l.sellPrice, unitId };
+        // mirror mob_push_purchase locally so a just-bought serialized phone can be sold offline right
+        // away, instead of only becoming sellable after a round trip through mob_sync_pull
+        const now = new Date().toISOString();
+        if (unitId) {
+          await idbPut('units', { id: unitId, item_id: itemId, imei: args.imei, imei2: null, source: 'new', condition: null, seller_name: null, seller_phone: null, id_proof_url: null, accessories_included: null, cost_price: args.rate, selling_price: args.sellingPrice, status: 'in_stock', created_at: now, updated_at: now });
+          await idbPut('stockMovements', { id: uid(), item_id: itemId, unit_id: unitId, qty: 1, type: 'purchase', ref_id: pid, staff_id: S.user.id, created_at: now });
+        } else if (feat('stock')) {
+          await idbPut('stockMovements', { id: uid(), item_id: itemId, unit_id: null, qty: args.qty, type: 'purchase', ref_id: pid, staff_id: S.user.id, created_at: now });
+        }
+        await localPush('purchases', { id: pid, item_id: itemId, vendor_id: vendorId, qty: args.qty, rate: args.rate, total: args.qty * args.rate, staff_id: S.user.id, created_at: now }, 'mob_push_purchase', { p_id: pid, p: args });
       }
-      let vendorId = feat('vendors') ? (vendorSel.value || null) : null;
-      if (feat('vendors') && !vendorId && newVendor.value.trim()) { vendorId = uid(); await localSaveVendor(vendorId, { name: newVendor.value.trim() }); }
-      const pid = uid();
-      const unitId = feat('serials') && serialSw.checked ? uid() : null;
-      const args = { itemId, vendorId, qty: N(qtyI.value) || 1, rate: N(rate.value), imei: unitId ? imeiI.value.trim() || null : null, sellingPrice: sellPrice.value ? N(sellPrice.value) : null, unitId };
-      // mirror mob_push_purchase locally so a just-bought serialized phone can be sold offline right away,
-      // instead of only becoming sellable after a round trip through mob_sync_pull
-      const now = new Date().toISOString();
-      if (unitId) {
-        await idbPut('units', { id: unitId, item_id: itemId, imei: args.imei, imei2: null, source: 'new', condition: null, seller_name: null, seller_phone: null, id_proof_url: null, accessories_included: null, cost_price: args.rate, selling_price: args.sellingPrice, status: 'in_stock', created_at: now, updated_at: now });
-        await idbPut('stockMovements', { id: uid(), item_id: itemId, unit_id: unitId, qty: 1, type: 'purchase', ref_id: pid, staff_id: S.user.id, created_at: now });
-      } else if (feat('stock')) {
-        await idbPut('stockMovements', { id: uid(), item_id: itemId, unit_id: null, qty: args.qty, type: 'purchase', ref_id: pid, staff_id: S.user.id, created_at: now });
-      }
-      await localPush('purchases', { id: pid, item_id: itemId, vendor_id: vendorId, qty: args.qty, rate: args.rate, total: args.qty * args.rate, staff_id: S.user.id, created_at: now }, 'mob_push_purchase', { p_id: pid, p: args });
       toast(t('purchaseSaved'));
       go('home');
     } catch (e) { fail(e); } finally { saveBtn.disabled = false; }
   };
 
+  addBtn.classList.add('hidden');
   saveBtn.classList.add('hidden');
   v.root.append(
     section(t('itemName'), itemSearch, itemResults, pickedBox),
     fieldsBox,
+    addBtn,
+    section(t('purchase'), cartBox),
     saveBtn,
   );
 }
@@ -131,4 +159,38 @@ async function renderBuyUsed(v) {
     ),
     saveBtn,
   );
+}
+
+async function renderPurchaseHistory(v) {
+  const [purchases, items, vendors] = await Promise.all([idbGetAll('purchases'), idbGetAll('items'), idbGetAll('vendors')]);
+  const sorted = purchases.filter((p) => can('mob_reports') || p.staff_id === S.user.id).sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+  const nameOf = (id) => (items.find((i) => i.id === id) || {}).name || '';
+  const vendorOf = (id) => (vendors.find((x) => x.id === id) || {}).name || '';
+  function detail(p) {
+    sheet({
+      title: nameOf(p.item_id) || t('addPurchase'),
+      body: h('div', { class: 'grid' },
+        p.voided ? banner('bad', 'alert', t('voided')) : null,
+        h('div', { class: 'list' },
+          liRow({ icon: 'box', title: nameOf(p.item_id), sub: t('qty') + ' ' + p.qty + ' × ' + inr(p.rate), value: money(p.total) }),
+          p.vendor_id ? liRow({ title: t('vendorOptional'), value: vendorOf(p.vendor_id) }) : null,
+          p.note ? liRow({ title: t('note'), value: p.note }) : null),
+      ),
+      actions: can('mob_manage') && !p.voided ? [{ label: t('voidPurchase'), danger: true, onclick: async (close) => {
+        const ok = await confirmBox(t('voidPurchase'), t('confirmVoid'), t('voidPurchase'), true);
+        if (!ok) return false;
+        await api('mob_void_purchase', { p_purchase_id: p.id, p_reason: null });
+        p.voided = true; await idbPut('purchases', p);
+        toast(t('saved')); close(); v.refresh();
+      } }] : [],
+    });
+  }
+  voidableHistory(v, {
+    title: t('purchaseHistory'), back: 'purchase', canVoid: can('mob_manage'),
+    rows: () => sorted, idOf: (r) => r.id, isVoided: (r) => r.voided,
+    lineFor: (r) => ({ title: nameOf(r.item_id) + (r.voided ? ' (' + t('voided') + ')' : ''), sub: vendorOf(r.vendor_id) || (t('qty') + ' ' + r.qty), value: money(r.total) }),
+    onOpen: detail,
+    rpcBulk: 'mob_void_purchases_bulk', idsParam: 'p_purchase_ids', confirmKey: 'confirmBulkVoidPurchase',
+    applyVoided: async (id) => { const r = sorted.find((p) => p.id === id); if (r) { r.voided = true; await idbPut('purchases', r); } },
+  });
 }

@@ -98,6 +98,8 @@ const STR = {
   serialized: { en: 'Tracked one by one (IMEI)', hi: 'एक-एक करके ट्रैक करें (IMEI)' },
   linkToRepair: { en: 'Link to a repair job (optional)', hi: 'मरम्मत से जोड़ें (वैकल्पिक)' },
   purchaseSaved: { en: 'Purchase saved', hi: 'खरीद सेव हो गई' },
+  addToPurchase: { en: 'Add to purchase', hi: 'खरीद में जोड़ें' },
+  savePurchase: { en: 'Save purchase', hi: 'खरीद सेव करें' },
 
   // ---------- second-hand ----------
   buyUsed: { en: 'Buy used phone', hi: 'पुराना फ़ोन खरीदें' },
@@ -272,6 +274,18 @@ const STR = {
   errNameRequired: { en: 'Name is required', hi: 'नाम ज़रूरी है' },
   errAtLeastOneItem: { en: 'Add at least one item', hi: 'कम से कम एक सामान जोड़ें' },
   confirmVoid: { en: 'This brings the items back into stock. This cannot be undone.', hi: 'इससे सामान वापस स्टॉक में आ जाएगा। इसे वापस नहीं किया जा सकता।' },
+
+  // ---------- bulk void (sale/purchase history) ----------
+  select: { en: 'Select', hi: 'चुनें' },
+  cancel2: { en: 'Done', hi: 'हो गया' },
+  nSelected: { en: '{n} selected', hi: '{n} चुने गए' },
+  voidSelected: { en: 'Void selected', hi: 'चुने हुए रद्द करें' },
+  confirmBulkVoidSale: { en: 'Void {n} sale(s)? This brings their items back into stock. This cannot be undone.', hi: '{n} बिल रद्द करें? इससे सामान वापस स्टॉक में आ जाएगा। इसे वापस नहीं किया जा सकता।' },
+  confirmBulkVoidPurchase: { en: 'Void {n} purchase(s)? This cannot be undone.', hi: '{n} खरीद रद्द करें? इसे वापस नहीं किया जा सकता।' },
+  bulkVoidResult: { en: 'Voided {n}', hi: '{n} रद्द किए गए' },
+  bulkVoidResultPartial: { en: 'Voided {n}, {m} could not be voided (already voided or already sold on)', hi: '{n} रद्द हुए, {m} रद्द नहीं हो सके (पहले से रद्द या आगे बिक चुके)' },
+  purchaseHistory: { en: 'Purchase history', hi: 'खरीद का इतिहास' },
+  voidPurchase: { en: 'Void purchase', hi: 'खरीद रद्द करें' },
 };
 let S_LANG = 'en';
 function setLang(l) { S_LANG = (l === 'hi') ? 'hi' : 'en'; try { localStorage['mob.lang'] = S_LANG; } catch { /* private mode */ } document.documentElement.lang = S_LANG; }

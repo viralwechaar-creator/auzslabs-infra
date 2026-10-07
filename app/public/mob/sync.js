@@ -121,42 +121,55 @@ async function trySync() {
   syncing = true;
   try {
     const db = await openDb();
-    let items = await outboxAll();
-    const batch = await tryBatch(items);
-    for (const it of items) {
-      try {
-        const br = batch && batch.get(Number(it.oid));
-        if (br && br.ok) { /* sent in the batch */ }
-        else if (br && br.skipped) { S.syncFailing = true; scheduleRetry(); break; }   // an earlier write hit a temporary failure
-        else if (br) { const be = new Error(br.error || t('errGeneric')); be.status = br.status; throw be; }
-        else await api(it.fn, it.args);
-      } catch (e) {
-        if (e.status === 401) { S.syncFailing = false; break; } // session dead: leave the rest queued until the next sign-in
-        if (e.message === t('errOffline')) break;              // truly offline: leave the rest queued
-        if (isTransient(e)) {
-          // server unreachable / 5xx / timeout: keep this write AND everything behind it, tell the user, retry later.
-          // Before this, only a dead session or navigator.onLine === false kept the queue; a 503 (the API restarting
-          // during a deploy) or a phone that "has wifi" but no route to the server fell through to the branch below
-          // and the sale was rolled back off the phone as if the server had refused it.
-          S.syncFailing = true; S.lastSyncError = e.message; scheduleRetry();
-          break;
+    // Keeps draining the outbox, not just one snapshot of it: outboxAdd() fires trySync() itself but
+    // never awaits it, so a save that queues several outbox entries back to back (a purchase bill with
+    // several items, each its own mob_save_item + mob_push_purchase entry) can add later entries AFTER
+    // this run already took its items = await outboxAll() snapshot -- and since the `syncing` guard above
+    // drops every one of those later, concurrent trySync() calls as a no-op, those entries would otherwise
+    // sit queued until something else happened to call trySync() again (a reload, the online event...),
+    // which may be never. Looping until the outbox is actually empty (or a stop condition hits) closes
+    // that gap, instead of only ever sending whatever was queued at the exact moment this run started.
+    let stop = false;
+    for (;;) {
+      let items = await outboxAll();
+      if (!items.length) break;
+      const batch = await tryBatch(items);
+      for (const it of items) {
+        try {
+          const br = batch && batch.get(Number(it.oid));
+          if (br && br.ok) { /* sent in the batch */ }
+          else if (br && br.skipped) { S.syncFailing = true; scheduleRetry(); stop = true; break; }   // an earlier write hit a temporary failure
+          else if (br) { const be = new Error(br.error || t('errGeneric')); be.status = br.status; throw be; }
+          else await api(it.fn, it.args);
+        } catch (e) {
+          if (e.status === 401) { S.syncFailing = false; stop = true; break; } // session dead: leave the rest queued until the next sign-in
+          if (e.message === t('errOffline')) { stop = true; break; }          // truly offline: leave the rest queued
+          if (isTransient(e)) {
+            // server unreachable / 5xx / timeout: keep this write AND everything behind it, tell the user, retry later.
+            // Before this, only a dead session or navigator.onLine === false kept the queue; a 503 (the API restarting
+            // during a deploy) or a phone that "has wifi" but no route to the server fell through to the branch below
+            // and the sale was rolled back off the phone as if the server had refused it.
+            S.syncFailing = true; S.lastSyncError = e.message; scheduleRetry();
+            stop = true; break;
+          }
+          // a real business-rule refusal (bad data, entitlement off, day closed, not enough stock): it will
+          // never succeed by itself retrying, so it's dropped -- but unlike before, the optimistic local
+          // write localPush already made (the "Saved on phone" row, and for a sale, the unit it flipped to
+          // 'sold') is rolled back here too, and the staffer is told. Previously this just logged a console
+          // warning and moved on: a sale that the server correctly refused (e.g. selling more of a loose-stock
+          // item than the shop actually has) still sat in the local sales list looking saved, with no sign it
+          // never reached the server -- the exact silent-failure shape "no restriction on selling what isn't
+          // in stock" was reported as.
+          console.warn('outbox item refused, dropping:', it.fn, e.message);
+          await rejectLocal(it.fn, it.args);
+          toast(t('notSaved') + ': ' + e.message, { err: true });
         }
-        // a real business-rule refusal (bad data, entitlement off, day closed, not enough stock): it will
-        // never succeed by itself retrying, so it's dropped -- but unlike before, the optimistic local
-        // write localPush already made (the "Saved on phone" row, and for a sale, the unit it flipped to
-        // 'sold') is rolled back here too, and the staffer is told. Previously this just logged a console
-        // warning and moved on: a sale that the server correctly refused (e.g. selling more of a loose-stock
-        // item than the shop actually has) still sat in the local sales list looking saved, with no sign it
-        // never reached the server -- the exact silent-failure shape "no restriction on selling what isn't
-        // in stock" was reported as.
-        console.warn('outbox item refused, dropping:', it.fn, e.message);
-        await rejectLocal(it.fn, it.args);
-        toast(t('notSaved') + ': ' + e.message, { err: true });
+        S.syncFailing = false; retryDelay = 5000;
+        await reqP(tx(db, ['outbox'], 'readwrite').objectStore('outbox').delete(it.oid));
       }
-      S.syncFailing = false; retryDelay = 5000;
-      await reqP(tx(db, ['outbox'], 'readwrite').objectStore('outbox').delete(it.oid));
+      await updateOutboxCount();
+      if (stop) break;
     }
-    await updateOutboxCount();
     if (!S.syncFailing) await pull();
   } finally { syncing = false; window.dispatchEvent(new CustomEvent('mob:sync')); }
 }

@@ -179,6 +179,18 @@ async function sendOrder(t, note, name, phone) {
     return { ok: true };
   } catch (e) { return isUnprovisioned(e) ? { ok: true, demo: true } : { ok: false, error: e }; }
 }
+// A real booking, not the guest-order note trick sendOrder('Reservation', ...) used to use --
+// that landed in the POS's guest-order inbox (so staff saw a "notification") but was never an
+// actual bookings row, so it could never show up in the real Reservations screen. This writes
+// the real thing via public_create_reservation (db/127).
+async function sendReservation(name, phone, date, time, partySize, note) {
+  if (!LIVE) { await new Promise((r) => setTimeout(r, 650)); return { ok: true, demo: true }; }
+  try {
+    const { error } = await sb.rpc('public_create_reservation', { tenant_slug: TENANT_SLUG, p_name: name, p_phone: phone, p_date: date, p_time: time, p_party_size: partySize, p_note: note });
+    if (error) return isUnprovisioned(error) ? { ok: true, demo: true } : { ok: false, error };
+    return { ok: true };
+  } catch (e) { return isUnprovisioned(e) ? { ok: true, demo: true } : { ok: false, error: e }; }
+}
 async function callWaiter() {
   if (!LIVE) { toast('Preview only — once live, this calls a real staff member to the table.'); return; }
   try {

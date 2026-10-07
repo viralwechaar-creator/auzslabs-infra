@@ -120,6 +120,7 @@ const RPC = {
   // already sent as a native array literal by default (see the comment
   // on RPC/jsonb above), so it's deliberately absent from a jsonb list here.
   public_create_booking: { params: ['tenant_slug', 'p_name', 'p_phone', 'p_email', 'p_date', 'p_time', 'p_service_ids'], auth: false },
+  public_create_reservation: { params: ['tenant_slug', 'p_name', 'p_phone', 'p_date', 'p_time', 'p_party_size', 'p_note'], auth: false },
   place_order: { params: ['tenant_slug', 't', 'n', 'p', 'nt', 'its'], jsonb: ['its'], auth: false },
   call_waiter: { params: ['tenant_slug', 't'], auth: false },
   public_invoice: { params: ['oid'], auth: false },
@@ -442,6 +443,9 @@ const RPC = {
   mob_push_purchase: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
   mob_push_sale: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
   mob_void_sale: { params: ['p_sale_id', 'p_reason'], defaults: { p_reason: null }, auth: true },
+  mob_void_purchase: { params: ['p_purchase_id', 'p_reason'], defaults: { p_reason: null }, auth: true },
+  mob_void_sales_bulk: { params: ['p_sale_ids', 'p_reason'], defaults: { p_reason: null }, auth: true },
+  mob_void_purchases_bulk: { params: ['p_purchase_ids', 'p_reason'], defaults: { p_reason: null }, auth: true },
   mob_create_repair: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
   mob_push_repair_event: { params: ['p_id', 'p_repair_id', 'p'], jsonb: ['p'], auth: true },
   mob_push_payment: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },

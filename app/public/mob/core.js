@@ -227,3 +227,39 @@ function dataView(columns, rows, o = {}) {
   return wrap;
 }
 function banner(tone, ic, ...kids) { return h('div', { class: 'banner ' + (tone || '') }, icon(ic || 'info', 20), h('div', { class: 'grow' }, ...kids)); }
+
+// A history list (sale or purchase) that owner/manager can put into "Select" mode and bulk-void several
+// rows at once -- never a hard delete (see db/126's own comment): the server-side bulk RPC just calls the
+// existing single-void function per id, so one already-voided or already-sold-on row in the batch never
+// blocks the rest; `failed` in its result says which ones it could not touch and why.
+function voidableHistory(v, o) {
+  // o: { title, back, canVoid, rows() -> array, idOf(r), isVoided(r), lineFor(r) -> {icon,title,sub,value},
+  //      onOpen(r) (detail sheet when not selecting), rpcBulk, idsParam, confirmKey, applyVoided(id) }
+  let mode = false; const sel = new Set();
+  const paint = () => {
+    v.header({ title: o.title, back: o.back, actions: o.canVoid ? [{ label: mode ? t('cancel2') : t('select'), run: () => { mode = !mode; sel.clear(); paint(); } }] : [] });
+    const rows = o.rows();
+    clear(v.root);
+    v.root.append(h('div', { class: 'list' }, rows.length ? rows.map((r) => {
+      const id = o.idOf(r), voided = o.isVoided(r), ln = o.lineFor(r);
+      return liRow({ icon: ln.icon || 'box', title: ln.title, sub: ln.sub, value: ln.value,
+        right: mode && !voided ? h('input', { type: 'checkbox', checked: sel.has(id), onclick: (e) => e.stopPropagation(), onchange: (e) => { if (e.target.checked) sel.add(id); else sel.delete(id); paint(); } }) : null,
+        onclick: mode ? (voided ? null : () => { if (sel.has(id)) sel.delete(id); else sel.add(id); paint(); }) : () => o.onOpen(r) });
+    }) : [empty('box', t('noneYet'))]));
+    if (mode) v.root.append(h('div', { class: 'dock' },
+      h('div', { class: 'grow small muted' }, t('nSelected', { n: sel.size })),
+      h('button', { class: 'btn fill danger', type: 'button', disabled: !sel.size, onclick: async () => {
+        const n = sel.size;
+        const ok = await confirmBox(t('voidSelected'), t(o.confirmKey, { n }), t('voidSelected'), true);
+        if (!ok) return false;
+        const ids = [...sel];
+        const r = await api(o.rpcBulk, { [o.idsParam]: ids, p_reason: null });
+        const failedIds = new Set((r.failed || []).map((f) => f.id));
+        for (const id of ids) { if (!failedIds.has(id)) await o.applyVoided(id); }
+        sel.clear(); mode = false;
+        toast(r.failed && r.failed.length ? t('bulkVoidResultPartial', { n: r.voided, m: r.failed.length }) : t('bulkVoidResult', { n: r.voided }));
+        v.refresh();
+      } }, t('voidSelected'))));
+  };
+  paint();
+}
