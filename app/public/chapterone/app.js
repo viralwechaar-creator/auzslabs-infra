@@ -48,6 +48,14 @@ function applyBranding(cfg) {
     const p = document.querySelector('#story .story-text p');
     if (p) p.textContent = cfg.siteAbout;
   }
+  // The owner's own hero/about photos (Management console -> Website & Booking -> Hero
+  // photo / About-section photo) replace the hand-drawn logo mark and the "C" founder
+  // monogram once uploaded -- until then both keep their current placeholder look.
+  if (cfg.siteHero) { const m = $('heroMark'); if (m) m.src = cfg.siteHero; }
+  if (cfg.siteAboutImg) {
+    const av = $('founderAvatar');
+    if (av) av.innerHTML = '<img src="' + esc(cfg.siteAboutImg) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+  }
 }
 
 /* ---------------- toast / cart badge wiring ---------------- */
