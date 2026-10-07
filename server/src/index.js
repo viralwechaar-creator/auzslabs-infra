@@ -6,11 +6,13 @@ import {
   createPasswordReset, resetPassword, deleteOwnAccount,
   listSessions, revokeSession, revokeAllSessionsForUser, staffLogin, createEmailVerification, confirmEmailVerification, emailVerificationState, emailVerificationRequired, passwordSignupAllowed,
   verify2faChallenge, my2faStatus, generate2faSecret, confirm2fa, disable2fa,
+  verifyPassword, emailInUse, createEmailChange, confirmEmailChange,
+  createRecoveryEmailVerification, confirmRecoveryEmail, removeRecoveryEmail,
 } from './auth.js';
 import { saveSiteUpload, saveDocUpload, readDocUpload, getUploadsDiskUsage } from './storage.js';
 import { startRealtime } from './realtime.js';
 import { handlePushEvent } from './push.js';
-import { sendStaffInviteEmail, sendPasswordResetEmail, sendEmailVerification } from './mail.js';
+import { sendStaffInviteEmail, sendPasswordResetEmail, sendEmailVerification, sendEmailChangeVerification, sendRecoveryEmailVerification, mailConfigured } from './mail.js';
 import { verifyCaptcha, captchaEnabled } from './captcha.js';
 import { startMaintenance } from './maintenance.js';
 import { sendOtpSms } from './sms.js';
@@ -174,6 +176,7 @@ const RPC = {
   admin_list_users: { params: ['p_query', 'p_limit'], defaults: { p_query: null, p_limit: 50 }, auth: true },
   admin_user_detail: { params: ['p_user_id'], auth: true },
   admin_set_user_disabled: { params: ['p_user_id', 'p_disabled'], auth: true },
+  admin_set_user_email: { params: ['p_user_id', 'p_new_email'], auth: true },
   admin_delete_lead: { params: ['p_kind', 'p_id'], auth: true },
   admin_delete_user: { params: ['p_user_id', 'p_confirm_email'], auth: true },
   admin_list_audit: { params: ['p_limit'], defaults: { p_limit: 100 }, auth: true },
@@ -710,6 +713,49 @@ const server = http.createServer(async (req, res) => {
       const vtoken = await createEmailVerification(user.id, st.email);
       const vmail = await sendEmailVerification({ to: st.email, verifyLink: `${SITE_URL}/verify-email.html?token=${vtoken}` }).catch(() => ({ sent: false }));
       return reply(200, { ok: true, verified: false, sent: !!vmail.sent });
+    }
+    // ---- login-email change + recovery email (db/121) ----
+    const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+    if (url.pathname === '/auth/change-email/request' && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      if (rateLimited(`changeemail:${user.id}`, 5, 60 * 60_000)) throw new HttpError(429, 'too many attempts, try again in an hour');
+      const { new_email, password } = await readJsonBody(req);
+      if (!new_email || !EMAIL_RE.test(new_email)) throw new HttpError(400, 'that does not look like a valid email address');
+      if (!(await verifyPassword(user.id, password))) throw new HttpError(401, 'your current password is incorrect');
+      if (await emailInUse(new_email, user.id)) throw new HttpError(409, 'that email is already in use by another account');
+      const token = await createEmailChange(user.id, new_email);
+      const link = `${SITE_URL}/confirm-email.html?type=change&token=${token}`;
+      const mail = await sendEmailChangeVerification({ to: new_email, verifyLink: link }).catch(() => ({ sent: false }));
+      return reply(200, { ok: true, sent: !!mail.sent, link: mailConfigured() ? undefined : link });
+    }
+    if (url.pathname === '/auth/change-email/confirm' && req.method === 'POST') {
+      if (rateLimited(`changeemailconfirm:${ip}`, 30, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      const { token } = await readJsonBody(req);
+      const r = await confirmEmailChange(token);
+      if (!r.ok) throw new HttpError(400, r.reason === 'taken' ? 'That email was taken by another account before this link was opened. Please start again with a different address.' : 'This confirmation link is invalid or has expired. Please ask for a new one.');
+      return reply(200, { ok: true, email: r.email });
+    }
+    if (url.pathname === '/auth/recovery-email/request' && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      if (rateLimited(`recoveryemail:${user.id}`, 5, 60 * 60_000)) throw new HttpError(429, 'too many attempts, try again in an hour');
+      const { email } = await readJsonBody(req);
+      if (!email || !EMAIL_RE.test(email)) throw new HttpError(400, 'that does not look like a valid email address');
+      const token = await createRecoveryEmailVerification(user.id, email);
+      const link = `${SITE_URL}/confirm-email.html?type=recovery&token=${token}`;
+      const mail = await sendRecoveryEmailVerification({ to: email, verifyLink: link }).catch(() => ({ sent: false }));
+      return reply(200, { ok: true, sent: !!mail.sent, link: mailConfigured() ? undefined : link });
+    }
+    if (url.pathname === '/auth/recovery-email/confirm' && req.method === 'POST') {
+      if (rateLimited(`recoveryemailconfirm:${ip}`, 30, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+      const { token } = await readJsonBody(req);
+      const r = await confirmRecoveryEmail(token);
+      if (!r.ok) throw new HttpError(400, 'This confirmation link is invalid or has expired. Please ask for a new one.');
+      return reply(200, { ok: true, email: r.email });
+    }
+    if (url.pathname === '/auth/recovery-email/remove' && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      await removeRecoveryEmail(user.id);
+      return reply(200, { ok: true });
     }
     if (url.pathname === '/auth/google' && req.method === 'POST') {
       if (rateLimited(`oauth:${ip}`, 30, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');

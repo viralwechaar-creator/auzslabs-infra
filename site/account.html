@@ -407,6 +407,26 @@ function renderAccount() {
       <h3 class="h-2">Your login</h3>
       <div class="acct-row"><span class="muted">Email</span><b>${esc(DASH.my_email)}</b></div>
       <div class="acct-row"><span class="muted">Role</span><b>${esc(DASH.my_role)}</b></div>
+      <button class="btn btn-ghost" id="emChangeToggle" style="margin-top:8px">Change email</button>
+      <div id="emChangeForm" style="display:none;margin-top:12px">
+        <p class="muted">We'll email a confirmation link to the new address -- nothing changes until you open it.</p>
+        <div class="field"><label>New email</label><input id="emNew" type="email" autocomplete="email"></div>
+        <div class="field"><label>Current password</label><input id="emPw" type="password"></div>
+        <button class="btn btn-primary form-submit" id="emChangeBtn" style="margin-top:4px">Send confirmation link</button>
+        <div id="emChangeMsg"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3 class="h-2">Recovery email</h3>
+      <p class="muted">A backup contact if you ever lose access to your main inbox. It is never used to sign in and never replaces resetting your password.</p>
+      ${DASH.my_recovery_email ? `
+        <div class="acct-row"><span class="muted">${DASH.my_recovery_email_verified ? 'Email' : 'Email (check your inbox to confirm)'}</span><b>${esc(DASH.my_recovery_email)}</b></div>
+        <button class="btn btn-ghost" id="recRemoveBtn" style="margin-top:8px">Remove recovery email</button>
+      ` : `
+        <div class="field"><label>Recovery email</label><input id="recNew" type="email" autocomplete="email"></div>
+        <button class="btn btn-primary form-submit" id="recAddBtn" style="margin-top:4px">Send confirmation link</button>
+      `}
+      <div id="recMsg"></div>
     </div>
     <div class="card">
       <h3 class="h-2">Where you're signed in</h3>
@@ -464,6 +484,44 @@ function renderAccount() {
     if (error) { msg.className = 'err'; msg.textContent = error.message; return; }
     msg.className = 'ok-box'; msg.textContent = 'Password updated.';
     $('#pwOld').value = ''; $('#pwNew').value = '';
+  };
+  if ($('#emChangeToggle')) $('#emChangeToggle').onclick = () => {
+    const f = $('#emChangeForm');
+    f.style.display = f.style.display === 'none' ? 'block' : 'none';
+  };
+  if ($('#emChangeBtn')) $('#emChangeBtn').onclick = async () => {
+    const msg = $('#emChangeMsg');
+    msg.className = ''; msg.textContent = '';
+    const newEmail = $('#emNew').value.trim(), pw = $('#emPw').value;
+    if (!newEmail) { msg.className = 'err'; msg.textContent = 'Enter the new email address.'; return; }
+    if (!pw) { msg.className = 'err'; msg.textContent = 'Enter your current password.'; return; }
+    const { data, error } = await sb.auth.requestEmailChange(newEmail, pw);
+    if (error) { msg.className = 'err'; msg.textContent = error.message; return; }
+    msg.className = 'ok-box';
+    msg.textContent = data.sent
+      ? `Check ${newEmail} for a confirmation link. Your login stays as ${DASH.my_email} until you open it.`
+      : `Mail is not set up on this server yet -- open this link to confirm: ${data.link}`;
+    $('#emPw').value = '';
+  };
+  if ($('#recAddBtn')) $('#recAddBtn').onclick = async () => {
+    const msg = $('#recMsg');
+    msg.className = ''; msg.textContent = '';
+    const email = $('#recNew').value.trim();
+    if (!email) { msg.className = 'err'; msg.textContent = 'Enter a recovery email address.'; return; }
+    const { data, error } = await sb.auth.requestRecoveryEmail(email);
+    if (error) { msg.className = 'err'; msg.textContent = error.message; return; }
+    msg.className = 'ok-box';
+    msg.textContent = data.sent
+      ? `Check ${email} for a confirmation link.`
+      : `Mail is not set up on this server yet -- open this link to confirm: ${data.link}`;
+  };
+  if ($('#recRemoveBtn')) $('#recRemoveBtn').onclick = async () => {
+    if (!window.confirm('Remove your recovery email?')) return;
+    const { error } = await sb.auth.removeRecoveryEmail();
+    if (error) { window.alert(error.message); return; }
+    DASH.my_recovery_email = null;
+    DASH.my_recovery_email_verified = false;
+    renderAccount();
   };
   if ($('#myDataBtn')) $('#myDataBtn').onclick = () => auzMyData(sb);
   $('#delBtn').onclick = async () => {

@@ -1472,6 +1472,7 @@ async function openUserModal(id) {
       : '<p class="p">No active sessions.</p>'}
     <div class="row-actions" style="margin-top:16px;flex-wrap:wrap;gap:8px">
       ${sessions.length ? '<button class="btn btn-ghost" id="userRevokeBtn">Sign out everywhere</button>' : ''}
+      ${u.is_platform_admin ? '' : '<button class="btn btn-ghost" id="userEmailBtn">Change login email</button>'}
       ${u.disabled_at
         ? '<button class="btn btn-primary" id="userToggleBtn">Reactivate</button>'
         : `<button class="btn btn-ghost" id="userToggleBtn" style="color:var(--accent);border-color:var(--accent)">Suspend</button>`}
@@ -1489,6 +1490,15 @@ async function openUserModal(id) {
       if (!res.ok) throw new Error(body.error || 'failed');
       openUserModal(id);
     } catch (err) { document.getElementById('userModalErr').textContent = err.message; }
+  };
+  const emailBtn = document.getElementById('userEmailBtn');
+  if (emailBtn) emailBtn.onclick = async () => {
+    const newEmail = prompt(`New login email for ${u.email}:`, u.email);
+    if (newEmail === null || !newEmail.trim() || newEmail.trim() === u.email) return;
+    const { error } = await sb.rpc('admin_set_user_email', { p_user_id: id, p_new_email: newEmail.trim() });
+    if (error) { document.getElementById('userModalErr').textContent = error.message; return; }
+    await loadUsers(document.getElementById('userSearch').value.trim());
+    openUserModal(id);
   };
   const delBtn = document.getElementById('userDeleteBtn');
   if (delBtn) delBtn.onclick = async () => {

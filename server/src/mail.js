@@ -102,6 +102,33 @@ export const sendEmailVerification = ({ to, verifyLink }) => send({
   }),
 });
 
+// Sent by /auth/change-email/request, to the NEW address only (db/121) -- the
+// old address is never notified, there is no recovery value in it for this flow.
+export const sendEmailChangeVerification = ({ to, verifyLink }) => send({
+  to, label: 'email change', subject: 'Confirm your new AUZslab sign-in email',
+  html: emailLayout({
+    preheader: 'Confirm this address to make it your new sign-in email.', kicker: 'Email change',
+    title: 'Confirm your new email address',
+    body: `<p style="margin:0 0 12px">Someone asked to change the sign-in email for an AUZslab account to this address (${escapeHtml(to)}).</p><p style="margin:0">Tap the button below to make this your new sign-in email. Your old email will stop working for sign-in the moment you confirm.</p>`,
+    button: { label: 'Confirm new email', href: verifyLink },
+    note: 'This link works for 24 hours. If you did not ask for this, ignore the email: nothing changes until this link is opened.',
+  }),
+});
+
+// Sent by /auth/recovery-email/request (db/121). A recovery email is a backup
+// contact only -- it is never used to sign in and never replaces the normal
+// forgot-password flow by itself.
+export const sendRecoveryEmailVerification = ({ to, verifyLink }) => send({
+  to, label: 'recovery email', subject: 'Confirm your AUZslab recovery email',
+  html: emailLayout({
+    preheader: 'Confirm this as a backup contact for your AUZslab account.', kicker: 'Recovery email',
+    title: 'Confirm this recovery email',
+    body: '<p style="margin:0">Someone added this address as a backup contact for an AUZslab account. It will never be used to sign in -- it just gives our team another way to reach you if you ever lose access to your main inbox.</p>',
+    button: { label: 'Confirm recovery email', href: verifyLink },
+    note: 'This link works for 24 hours. If you did not ask for this, ignore the email.',
+  }),
+});
+
 // Renewal reminder to a business owner (daily job in maintenance.js). Quiet no-op without RESEND_API_KEY.
 export function sendRenewalEmail({ to, business, days, renewalDate }) {
   const when = days < 0 ? 'has expired' : days === 0 ? 'ends today' : days === 1 ? 'ends tomorrow' : `ends in ${days} days`;
