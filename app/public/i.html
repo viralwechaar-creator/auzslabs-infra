@@ -92,29 +92,29 @@ const id=new URLSearchParams(location.search).get('o');
  if(data.slug==='chapterone'){
   document.getElementById('coFont')||document.head.insertAdjacentHTML('beforeend','<link id=coFont rel=stylesheet href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=DM+Sans:wght@400;500;600;700&display=swap">');
   document.head.insertAdjacentHTML('beforeend',`<style>
-  body{background:#f7f1e3}
+  body{background:#faedcd}
   .wrap{max-width:420px;padding:40px 16px}
-  .co-r{background:#fbf7ec;box-shadow:0 2px 4px rgba(42,41,24,.08),0 24px 48px -18px rgba(42,41,24,.3);position:relative;padding:40px 30px 34px;font-family:"DM Sans",Arial,sans-serif;color:#2a2918}
-  .co-r::before{content:"";position:absolute;top:-10px;left:0;right:0;height:20px;background:radial-gradient(circle at 10px 10px,transparent 10px,#f7f1e3 10.5px) 0 -10px/20px 20px repeat-x}
+  .co-r{background:#ffffff;box-shadow:0 2px 4px rgba(42,41,24,.08),0 24px 48px -18px rgba(42,41,24,.3);position:relative;padding:40px 30px 34px;font-family:"DM Sans",Arial,sans-serif;color:#3c423c}
+  .co-r::before{content:"";position:absolute;top:-10px;left:0;right:0;height:20px;background:radial-gradient(circle at 10px 10px,transparent 10px,#faedcd 10.5px) 0 -10px/20px 20px repeat-x}
   .co-stamp{text-align:center;margin-bottom:22px}
   .co-stamp img{height:46px;margin-bottom:10px}
-  .co-stamp b{display:block;font:500 13px/1 "DM Sans",Arial,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:#9c5a2e}
+  .co-stamp b{display:block;font:500 13px/1 "DM Sans",Arial,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:#e59898}
   .co-meta{display:flex;justify-content:space-between;margin:24px 0 18px;font-size:12px}
-  .co-meta div b{display:block;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#75745c;margin-bottom:3px;font-weight:600}
+  .co-meta div b{display:block;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#8a8f89;margin-bottom:3px;font-weight:600}
   .co-block{margin-bottom:16px;font-size:13.5px}
-  .co-block b{display:block;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#75745c;margin-bottom:3px}
+  .co-block b{display:block;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#8a8f89;margin-bottom:3px}
   .co-r table{width:100%;border-collapse:collapse;margin-top:18px}
-  .co-r th{text-align:left;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#75745c;border-bottom:1px solid rgba(42,41,24,.18);padding-bottom:8px;font-weight:600}
+  .co-r th{text-align:left;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#8a8f89;border-bottom:1px solid rgba(42,41,24,.18);padding-bottom:8px;font-weight:600}
   .co-r th:last-child,.co-r td:last-child{text-align:right}
   .co-r td{padding:9px 0;border-bottom:1px solid rgba(42,41,24,.18);font-size:13.5px}
   .co-totals div{display:flex;justify-content:space-between;padding:6px 0;font-size:13.5px}
-  .co-totals .grand{border-top:1px solid #4b4a2e;margin-top:6px;padding-top:12px;font:600 17px "Fraunces",Georgia,serif}
+  .co-totals .grand{border-top:1px solid #798478;margin-top:6px;padding-top:12px;font:600 17px "Fraunces",Georgia,serif}
   .co-thanks{margin-top:30px;display:flex;justify-content:space-between;align-items:flex-end}
-  .co-invno{font-size:11px;color:#75745c;line-height:1.8}
-  .co-seal{width:76px;height:76px;border:1.4px dashed #9c5a2e;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;color:#9c5a2e;font:600 9.5px/1.3 "DM Sans",Arial,sans-serif;letter-spacing:.06em;text-transform:uppercase;transform:rotate(-8deg);flex-shrink:0}
+  .co-invno{font-size:11px;color:#8a8f89;line-height:1.8}
+  .co-seal{width:76px;height:76px;border:1.4px dashed #e59898;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;color:#e59898;font:600 9.5px/1.3 "DM Sans",Arial,sans-serif;letter-spacing:.06em;text-transform:uppercase;transform:rotate(-8deg);flex-shrink:0}
   .co-r .fb{margin-top:34px;padding-top:28px;border-top:1px solid rgba(42,41,24,.18)}
   .co-r .fb h4{font-size:15px;font-weight:700;margin:0 0 12px;font-family:"DM Sans",Arial,sans-serif}
-  .co-r .submit{background:#4b4a2e;color:#fbf7ec}
+  .co-r .submit{background:#798478;color:#ffffff}
   @media print{.co-r{box-shadow:none}}
   </style>`);
   A.innerHTML=`<div class=co-r>
