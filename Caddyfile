@@ -64,6 +64,14 @@
     # payroll.html, builder.html, site.html, ...) -- see the root domain
     # block above for the full story on why this exists.
     header /*.html Cache-Control "no-cache"
+    # ds/docread.js dynamically `import()`s vendor/pdfjs/pdf.min.mjs (and its worker) to read a
+    # PDF's own text -- a browser refuses to run a dynamically imported module unless it is
+    # served with a JavaScript Content-Type, and does not fall back to sniffing one, so a server
+    # (or proxy) that serves .mjs with the wrong or no Content-Type breaks the import outright
+    # ("Failed to fetch dynamically imported module"), never a 404 or anything else visible in
+    # the console. Forced explicitly rather than trusting Caddy's own extension guess.
+    @mjs path_regexp \.mjs$
+    header @mjs Content-Type "text/javascript; charset=utf-8"
     # Salon Suite (app/public/salon/ -- Showoff Salon's original site,
     # admin console and invoice page, run for 'salon'-niche tenants):
     #  - /api/* is that app's own same-origin API (server/src/salon.js),
