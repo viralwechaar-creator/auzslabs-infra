@@ -12,6 +12,8 @@ V.more = () => {
     if (featureOn('mobile') && S.features && S.features.mobile) links.push(liRow({ ic: 'phone', tone: 'blue', title: 'AUZsMob', chev: true, onclick: () => (location.href = '/mob.html') }));
     if (featureOn('accounting') && S.features && S.features.accounting) links.push(liRow({ ic: 'receipt', tone: 'green', title: 'Accounting', chev: true, onclick: () => (location.href = '/accounts.html') }));
     if (can('o') && featureOn('website_builder')) links.push(liRow({ ic: 'globe', tone: 'teal', title: 'Website builder', chev: true, onclick: () => (location.href = '/builder.html') }));
+    // Chapter One's bespoke one-off website (app/public/chapterone/), not the generic Website Builder.
+    if (window.TENANT_SLUG === 'chapterone') links.push(liRow({ ic: 'globe', tone: 'teal', title: 'Our website', sub: 'Menu, reservations and takeaway ordering', chev: true, onclick: () => (location.href = '/chapterone/index.html') }));
   }
   return h('div', { class: 'page', style: { maxWidth: '760px' } },
     h('div', { class: 'page-head' }, h('div', null, h('h1', null, 'More'), h('div', { class: 'sub' }, myName() + ' · ' + cap1(S.role)))),
