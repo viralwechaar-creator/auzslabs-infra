@@ -13,7 +13,16 @@ function printFrame(css, html) {
   }, 60);
 }
 // thermal: KOT, cancellation slips, register summary
-function prn(html) {
+// With a receipt printer connected on this device (Staff & settings -> Receipt printer) the slip goes straight to it;
+// otherwise, or if the printer does not answer, the normal print window opens.
+const directReady = () => typeof auzPrinter !== 'undefined' && auzPrinter.ready();
+const slipWidth = () => (+cfg().w === 58 ? 32 : 48);
+function viaPrinter(makeBytes, fallback) {
+  let bytes; try { bytes = makeBytes(); } catch (e) { return fallback(); }
+  auzPrinter.print(bytes).catch((e) => { toast('Printer did not answer: ' + (e && e.message ? e.message : e) + ' Opening the print window instead.', { err: true }); fallback(); });
+}
+function prn(html) { if (directReady()) return viaPrinter(() => auzEsc.htmlToEsc(html, slipWidth()), () => browserPrn(html)); browserPrn(html); }
+function browserPrn(html) {
   const c = cfg();
   printFrame('body{font:' + (c.fs || 12) + 'px ' + (c.sty === 'sans' ? 'system-ui,sans-serif' : 'ui-monospace,Menlo,monospace') + ';width:' + (+c.w === 58 ? 48 : 72) + 'mm;margin:0}td{padding:1px 0;vertical-align:top}.r{text-align:right}.c{text-align:center}.big{font-size:1.5em;font-weight:700}.hd{text-align:center;border:2px solid #000;padding:2px;margin-bottom:4px;font-weight:700}hr{border:0;border-top:1px dashed #000;margin:6px 0}.note{padding-left:12px;font-style:italic}', html);
 }
@@ -80,6 +89,72 @@ ${o.tip && o.tip.amt ? tr('Tip (not part of the bill)', inr(o.tip.amt)) : ''}
 <hr style="margin-top:20px">
 <div class=ft><div><b>${provisional ? 'Payment' : 'Paid via'}</b>${provisional ? 'Not paid yet' : (o.pays || []).map((p) => esc(PAY_LABEL[p.m] || p.m) + ' · ' + inr(p.amt)).join('<br>') || '—'}</div><div class=sig><b>${esc(s.name)}</b><br>${esc(s.addr)}${s.gstin ? '<br>GSTIN ' + esc(s.gstin) : ''}${s.phone ? '<br>' + esc(s.phone) : ''}</div></div>`;
 }
+// customer bill: straight to the receipt printer when one is connected, else the invoice print window
+function prnReceipt(o, dup, provisional) {
+  if (directReady()) return viaPrinter(() => escReceipt(o, dup, provisional), () => prnInv(rcpt(o, dup, provisional)));
+  prnInv(rcpt(o, dup, provisional));
+}
+function escReceipt(o, dup, prov) {
+  const s = cfg(), t = o.t || tot(o), refunded = refundedOf(o), cust = o.cust || {}, w = slipWidth(), e = new auzEsc.Esc(w), wrap = auzEsc.wrap;
+  const lr = (a, b) => e.lr(a, b);
+  if (prov) e.align('center').bold(true).line('PROVISIONAL BILL').line('not a tax invoice').bold(false).align('left').nl();
+  else if (dup) e.align('center').bold(true).line('DUPLICATE - REPRINT').bold(false).align('left').nl();
+  e.align('center').bold(true).size(2, 2); for (const p of wrap(auzEsc.ascii(s.name || ''), Math.floor(w / 2))) e.line(p); e.size(1, 1).bold(false);
+  if (s.addr) e.wrapLine(s.addr); if (s.phone) e.line('Ph ' + s.phone); if (s.gstin) e.line('GSTIN ' + s.gstin);
+  e.align('left').hr();
+  lr(prov ? 'Bill' : 'Invoice', String(o.no || '')); lr('Date', fmtDate(o.paidAt || o.created) + ' ' + new Date(o.paidAt || o.created || Date.now()).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }));
+  if (cust.name || cust.phone) lr('Customer', [cust.name, cust.phone].filter(Boolean).join(' '));
+  if (cust.gst) lr('Cust GSTIN', cust.gst);
+  if (o.type) lr('Order', o.type + (o.table ? ' ' + tn(o.table) : '') + (o.token ? ' #' + o.token : ''));
+  if (o.captain) lr('Served by', o.captain.name);
+  e.hr();
+  for (const l of o.lines) {
+    e.wrapLine(l.name + (l.size ? ' (' + l.size + ')' : ''));
+    lr('  ' + l.qty + ' x ' + inr(l.price), inr(l.price * l.qty));
+    if (l.note) e.wrapLine(l.note, 4);
+  }
+  e.hr();
+  lr('Subtotal', inr(t.sub));
+  if (t.d) lr('Discount' + (o.coupon ? ' (' + o.coupon + ')' : ''), '-' + inr(t.d));
+  if (t.svc) lr('Service charge', inr(t.svc)); if (t.pack) lr('Packing', inr(t.pack)); if (t.deliv) lr('Delivery', inr(t.deliv));
+  for (const [a, b] of gstRows(t)) lr(a, inr(b));
+  if (t.round) lr('Round off', (t.round >= 0 ? '+' : '-') + inr(Math.abs(t.round)));
+  e.hr('=').bold(true).size(1, 2); lr('TOTAL', inr(t.total)); e.size(1, 1).bold(false);
+  if (refunded) lr('Refunded', '-' + inr(refunded));
+  if (o.tip && o.tip.amt) lr('Tip (not in the bill)', inr(o.tip.amt));
+  e.hr();
+  if (prov) e.line('Payment: not paid yet'); else for (const p of (o.pays || [])) lr(PAY_LABEL[p.m] || p.m, inr(p.amt));
+  if (s.ftr) { e.nl().align('center').wrapLine(s.ftr).align('left'); }
+  if (!prov && !dup && localStorage['pos.drawer'] === '1' && (o.pays || []).some((p) => p.m === 'cash')) e.drawer();
+  e.cut();
+  return e.bytes();
+}
+// Staff & settings -> Receipt printer: connect, test, forget (WebUSB / Web Serial / Web Bluetooth; see ds/escpos.js)
+function printerSheet() {
+  const P = window.auzPrinter;
+  if (!P) return toast('Direct printing is not available here', { err: true });
+  const sup = P.supported(), any = P.anySupported();
+  const s = sheet({ title: 'Receipt printer', body: '', actions: [] });
+  const draw = () => {
+    const inf = P.info(), rows = [];
+    rows.push(liRow({ ic: 'printer', tone: inf && inf.connected ? 'green' : 'gray', title: inf ? inf.name : 'Print window (default)', sub: inf ? (inf.connected ? 'Connected (' + inf.kind + ')' : 'Chosen on this device, reconnects when you print (' + inf.kind + ')') : 'Bills and kitchen tickets open the normal print window' }));
+    if (!any) rows.push(h('p', { class: 'muted', style: { padding: '8px 4px' } }, 'This browser cannot print straight to a receipt printer. Use Chrome or Edge on a computer or Android phone, not Safari, not an iPhone and not the packaged Android app. The print window keeps working everywhere.'));
+    const conn = (kind, label, sub) => liRow({ ic: 'plus', tone: 'blue', title: label, sub, chev: true, onclick: async () => { try { await P.pair(kind); toast('Printer connected'); } catch (e) { if (!/cancel|chosen|no device selected|aborted/i.test(String(e && e.message))) toast(String(e && e.message || e), { err: true }); } draw(); } });
+    if (sup.usb) rows.push(conn('usb', 'Connect a USB printer', 'Plug it into this device, then choose it'));
+    if (sup.bluetooth) rows.push(conn('bluetooth', 'Connect a Bluetooth printer', 'Switch the printer on, then choose it'));
+    if (sup.serial) rows.push(conn('serial', 'Connect a serial printer', 'Older receipt printers on a USB-serial cable'));
+    if (inf) {
+      rows.push(liRow({ ic: 'receipt', tone: 'purple', title: 'Print a test slip', chev: true, onclick: async () => { try { const e = new auzEsc.Esc(slipWidth()); e.align('center').bold(true).size(2, 2).line('TEST').size(1, 1).bold(false).line(cfg().name || 'AUZslab').line('Printer works.').align('left').hr().lr('Width', slipWidth() + ' characters').cut(); await P.print(e.bytes()); toast('Test slip sent'); } catch (e) { toast(String(e && e.message || e), { err: true }); } draw(); } }));
+      rows.push(liRow({ ic: 'cash', tone: 'orange', title: 'Open the cash drawer on cash bills', sub: 'For a drawer wired to the printer', right: seg([['0', 'Off'], ['1', 'On']], localStorage['pos.drawer'] === '1' ? '1' : '0', (v) => { try { localStorage['pos.drawer'] = v; } catch {} }) }));
+      rows.push(liRow({ ic: 'trash', tone: 'red', title: 'Disconnect and use the print window', chev: true, onclick: async () => { await P.forget(); draw(); } }));
+    }
+    rows.push(h('p', { class: 'muted', style: { padding: '10px 4px', fontSize: '13px' } }, 'Prints plain English text (₹ prints as Rs). The paper width (58 or 80 mm) is set in the admin console, Settings. A printer that does not answer falls back to the print window.'));
+    s.setBody(h('div', { class: 'list' }, rows));
+  };
+  P.onchange(() => { if (s.el.isConnected) draw(); });
+  draw();
+}
+const printerLabel = () => { const i = typeof auzPrinter !== 'undefined' ? auzPrinter.info() : null; return i ? i.name : 'Print window'; };
 const PAY_LABEL = { cash: 'Cash', upi: 'UPI', card: 'Card', giftcard: 'Gift card', other: 'Other', wallet: 'Wallet' };
 
 async function wa(o) {

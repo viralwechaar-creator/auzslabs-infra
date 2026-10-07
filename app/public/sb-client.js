@@ -259,7 +259,9 @@
       async cancel() { return request('/payments/cashfree/cancel', { method: 'POST' }); },
     };
 
-    return { auth, from, rpc, storage, channel, autorenew };
+    // One request for a whole queue (POST /sync): see server/src/index.js. Resolves {data:{results:[{id,ok,data|status,error|skipped}]}}.
+    async function sync(ops) { return request('/sync', { method: 'POST', body: { ops }, auth: true }); }
+    return { auth, from, rpc, sync, storage, channel, autorenew };
   }
 
   window.supabase = { createClient };

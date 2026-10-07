@@ -256,7 +256,7 @@ function orderMenu(o) {
       o.table ? liRow({ ic: 'merge', tone: 'gray', title: 'Merge another table into this', chev: true, onclick: () => { s.close(); mergeIntoSheet(o); } }) : null,
       liRow({ ic: 'split', tone: 'gray', title: 'Split bill', chev: true, onclick: () => { s.close(); splitSheet(o); } })) : !dine && o.lines.length && o.no ? h('div', { class: 'list' }, liRow({ ic: 'split', tone: 'gray', title: 'Split bill', chev: true, onclick: () => { s.close(); splitSheet(o); } })) : null,
     o.lines.length ? h('div', { class: 'list' },
-      liRow({ ic: 'printer', tone: 'gray', title: 'Print bill for the guest', sub: 'Provisional, before payment', chev: true, onclick: () => { s.close(); o.t = t; prnInv(rcpt(o, false, true)); } }),
+      liRow({ ic: 'printer', tone: 'gray', title: 'Print bill for the guest', sub: 'Provisional, before payment', chev: true, onclick: () => { s.close(); o.t = t; prnReceipt(o, false, true); } }),
       sent ? liRow({ ic: 'kot', tone: 'orange', title: 'Reprint kitchen ticket', chev: true, onclick: () => { s.close(); reprintKot(o); } }) : null) : null,
     h('div', { class: 'list' }, liRow({ ic: 'trash', tone: 'red', title: o.no ? 'Cancel order' : 'Clear order', onclick: () => { s.close(); cancelOrder(o); } }))) });
 }

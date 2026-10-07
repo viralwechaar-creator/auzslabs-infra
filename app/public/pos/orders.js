@@ -45,7 +45,7 @@ function orderSheet(o0) {
   if (st === 'due') acts.push({ label: 'Settle ' + inr(r2(t.total - paidSoFar(o))), primary: true, run: () => { S.cur = structuredClone(o); go('sell'); setTimeout(() => payFlow(S.cur), 200); } });
   const more = [];
   if (st === 'paid' || st === 'due') more.push(liRow({ ic: 'printer', tone: 'gray', title: 'Print bill', chev: true, onclick: () => { s.close(); reprint(o); } }), liRow({ ic: 'chat', tone: 'green', title: 'Send on WhatsApp', chev: true, onclick: () => { s.close(); wa(o); } }));
-  if (st === 'open') more.push(liRow({ ic: 'printer', tone: 'gray', title: 'Print bill for the guest', sub: 'Provisional', chev: true, onclick: () => { s.close(); prnInv(rcpt({ ...o, t }, false, true)); } }));
+  if (st === 'open') more.push(liRow({ ic: 'printer', tone: 'gray', title: 'Print bill for the guest', sub: 'Provisional', chev: true, onclick: () => { s.close(); prnReceipt({ ...o, t }, false, true); } }));
   if ((o.kotBatches || []).length && st !== 'void') more.push(liRow({ ic: 'kot', tone: 'orange', title: 'Reprint kitchen ticket', chev: true, onclick: () => { s.close(); reprintKot(o); } }));
   if (st === 'paid' && netOf(o) > 0) more.push(liRow({ ic: 'undo', tone: 'orange', title: 'Refund', chev: true, onclick: () => { s.close(); refundSheet(o); } }));
   if (st === 'paid' && isRetail()) more.push(liRow({ ic: 'move', tone: 'purple', title: 'Return or exchange', chev: true, onclick: () => { s.close(); returnSheet(o); } }));

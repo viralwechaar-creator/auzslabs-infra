@@ -115,7 +115,7 @@ async function completePay(o, P, tip, s) {
   if (c.printOnPay !== false) o.printCount = (o.printCount || 0) + 1;
   o.t = tot(o);
   await persist(o); await markTableDirty(o);
-  if (c.printOnPay !== false) prnInv(rcpt(o, false));
+  if (c.printOnPay !== false) prnReceipt(o, false);
   S.cur = null; render();
   doneSheet(o);
 }
@@ -141,7 +141,7 @@ function doneSheet(o) {
 async function markTableDirty(o) { if (!o.table) return; const tb = L('table').find((x) => x.id === o.table); if (tb && tb.cleaned !== false) await save('table', { ...tb, cleaned: false }, tb.id); }
 
 // ---------- after payment ----------
-async function reprint(o) { const c = structuredClone(rec(o.id) || o), dup = (c.printCount || 0) > 0; c.printCount = (c.printCount || 0) + 1; await save('order', c, c.id); prnInv(rcpt(c, dup)); }
+async function reprint(o) { const c = structuredClone(rec(o.id) || o), dup = (c.printCount || 0) > 0; c.printCount = (c.printCount || 0) + 1; await save('order', c, c.id); prnReceipt(c, dup); }
 function refundSheet(o) {
   const max = r2(o.t.total - refundedOf(o)); if (max <= 0) return info('Nothing left to refund', 'This bill has already been refunded in full.');
   if (dayLocked(localDay(o.paidAt)) && !can('o')) return info('This day is closed', 'Ask the owner to reopen ' + fmtDay(localDay(o.paidAt)) + ' first.');
