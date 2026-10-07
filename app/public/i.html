@@ -73,6 +73,69 @@ const id=new URLSearchParams(location.search).get('o');
   if(b.font)document.body.style.fontFamily='"'+b.font+'",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif';
  }
  const rows=o.lines.map(l=>`<tr><td>${esc(l.name)}${l.size?' ('+esc(l.size)+')':''}${l.note?'<br><small style="color:var(--mute)">'+esc(l.note)+'</small>':''}</td><td class=c>${l.qty}</td><td class=r>${inr(l.price)}</td><td class=r>${inr(l.price*l.qty)}</td></tr>`).join('');
+ const taxRows=(t.rates&&Object.keys(t.rates).some(r=>+r>0&&t.rates[r].tax>0)?Object.entries(t.rates).filter(([r,x])=>+r>0&&x.tax>0).flatMap(([r,x])=>[['CGST '+(+r/2)+'%',x.tax/2],['SGST '+(+r/2)+'%',x.tax/2]]):[['CGST',t.tax/2],['SGST',t.tax/2]]);
+ const feedbackHtml=`<div class=fb id=fb><h4>How was your experience at ${esc(s.name)}?</h4>
+<div class=stars id=stars>${[1,2,3,4,5].map(n=>`<button type=button data-v=${n}>★</button>`).join('')}</div>
+<textarea id=fbComment placeholder="Anything you'd like to tell us? (optional)" maxlength=1000></textarea>
+<button class=submit id=fbSubmit disabled>Submit feedback</button>
+</div>`;
+ // A fully bespoke, one-off invoice page exists for a specific tenant
+ // (app/public/chapterone/invoice.html, the "postage-stamp" design) but
+ // that page is only ever reached from that tenant's own bespoke
+ // website -- a real bill shared from the POS over WhatsApp always goes
+ // through THIS one shared page, regardless of tenant, so it never
+ // showed that design. public_invoice() now also returns the tenant's
+ // own slug (db/124) so this one page can render a bespoke layout for
+ // one specific tenant without a second, separately-maintained invoice
+ // template or a new settings field -- every other tenant's generic/
+ // brand-driven render below is completely unchanged.
+ if(data.slug==='chapterone'){
+  document.getElementById('coFont')||document.head.insertAdjacentHTML('beforeend','<link id=coFont rel=stylesheet href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=DM+Sans:wght@400;500;600;700&display=swap">');
+  document.head.insertAdjacentHTML('beforeend',`<style>
+  body{background:#f7f1e3}
+  .wrap{max-width:420px;padding:40px 16px}
+  .co-r{background:#fbf7ec;box-shadow:0 2px 4px rgba(42,41,24,.08),0 24px 48px -18px rgba(42,41,24,.3);position:relative;padding:40px 30px 34px;font-family:"DM Sans",Arial,sans-serif;color:#2a2918}
+  .co-r::before{content:"";position:absolute;top:-10px;left:0;right:0;height:20px;background:radial-gradient(circle at 10px 10px,transparent 10px,#f7f1e3 10.5px) 0 -10px/20px 20px repeat-x}
+  .co-stamp{text-align:center;margin-bottom:22px}
+  .co-stamp img{height:46px;margin-bottom:10px}
+  .co-stamp b{display:block;font:500 13px/1 "DM Sans",Arial,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:#9c5a2e}
+  .co-meta{display:flex;justify-content:space-between;margin:24px 0 18px;font-size:12px}
+  .co-meta div b{display:block;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#75745c;margin-bottom:3px;font-weight:600}
+  .co-block{margin-bottom:16px;font-size:13.5px}
+  .co-block b{display:block;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#75745c;margin-bottom:3px}
+  .co-r table{width:100%;border-collapse:collapse;margin-top:18px}
+  .co-r th{text-align:left;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#75745c;border-bottom:1px solid rgba(42,41,24,.18);padding-bottom:8px;font-weight:600}
+  .co-r th:last-child,.co-r td:last-child{text-align:right}
+  .co-r td{padding:9px 0;border-bottom:1px solid rgba(42,41,24,.18);font-size:13.5px}
+  .co-totals div{display:flex;justify-content:space-between;padding:6px 0;font-size:13.5px}
+  .co-totals .grand{border-top:1px solid #4b4a2e;margin-top:6px;padding-top:12px;font:600 17px "Fraunces",Georgia,serif}
+  .co-thanks{margin-top:30px;display:flex;justify-content:space-between;align-items:flex-end}
+  .co-invno{font-size:11px;color:#75745c;line-height:1.8}
+  .co-seal{width:76px;height:76px;border:1.4px dashed #9c5a2e;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;color:#9c5a2e;font:600 9.5px/1.3 "DM Sans",Arial,sans-serif;letter-spacing:.06em;text-transform:uppercase;transform:rotate(-8deg);flex-shrink:0}
+  .co-r .fb{margin-top:34px;padding-top:28px;border-top:1px solid rgba(42,41,24,.18)}
+  .co-r .fb h4{font-size:15px;font-weight:700;margin:0 0 12px;font-family:"DM Sans",Arial,sans-serif}
+  .co-r .submit{background:#4b4a2e;color:#fbf7ec}
+  @media print{.co-r{box-shadow:none}}
+  </style>`);
+  A.innerHTML=`<div class=co-r>
+  <div class=co-stamp><img src="/chapterone/logo-full.png" alt="Chapter One"><b>Invoice</b></div>
+  <div class=co-meta><div><b>Billed to</b>${esc((o.cust||{}).name)||'Guest'}<br>${esc((o.cust||{}).phone)}</div><div style="text-align:right"><b>Invoice No.</b>${esc(o.no)}<br>${new Date(o.paidAt||o.created).toLocaleDateString()}</div></div>
+  <table><thead><tr><th>Item</th><th>Qty</th><th>Amount</th></tr></thead><tbody>${rows}</tbody></table>
+  <div class=co-totals>
+  <div><span>Subtotal</span><span>${inr(t.sub)}</span></div>
+  ${t.d?`<div><span>Discount</span><span>-${inr(t.d)}</span></div>`:''}
+  ${t.svc?`<div><span>Service charge</span><span>${inr(t.svc)}</span></div>`:''}${t.pack?`<div><span>Packing</span><span>${inr(t.pack)}</span></div>`:''}${t.deliv?`<div><span>Delivery</span><span>${inr(t.deliv)}</span></div>`:''}
+  ${taxRows.map(([a,v])=>`<div><span>${a}</span><span>${inr(v)}</span></div>`).join('')}
+  ${t.round?`<div><span>Round off</span><span>${t.round>=0?'+':'-'}${inr(Math.abs(t.round))}</span></div>`:''}
+  <div class=grand><span>Total</span><span>${inr(t.total)}</span></div>
+  ${(o.refunds||[]).length?`<div><span>Refunded</span><span>-${inr(o.refunds.reduce((a,r)=>a+(+r.amt||0),0))}</span></div>`:''}
+  </div>
+  <div class=co-thanks><div class=co-invno>PAID VIA<br>${(o.pays||[]).map(p=>({cash:'Cash',upi:'UPI',card:'Card',giftcard:'Gift card',other:'Other'}[p.m]||p.m.toUpperCase())+' — '+inr(p.amt)).join('<br>')||'—'}</div><div class=co-seal>Thank<br>You</div></div>
+  ${feedbackHtml}
+  </div>`;
+  wireFeedback();
+  return;
+ }
  A.innerHTML=`<div class=hd><div class=mark>${(s.logo||b)?'<img src="'+esc(logo)+'">':'Invoice'}</div><div class=meta-r><b>Invoice No.</b> ${esc(o.no)}<br>${new Date(o.paidAt||o.created).toLocaleDateString()}</div></div>
  ${b&&b.doodle?'<img src="'+esc(b.doodle)+'" style="position:absolute;right:18px;bottom:120px;width:90px;opacity:.5;pointer-events:none">':''}
 <hr>
@@ -83,7 +146,7 @@ const id=new URLSearchParams(location.search).get('o');
 <tr><td>Subtotal</td><td>${inr(t.sub)}</td></tr>
 ${t.d?`<tr><td>Discount</td><td>-${inr(t.d)}</td></tr>`:''}
 ${t.svc?`<tr><td>Service charge</td><td>${inr(t.svc)}</td></tr>`:''}${t.pack?`<tr><td>Packing</td><td>${inr(t.pack)}</td></tr>`:''}${t.deliv?`<tr><td>Delivery</td><td>${inr(t.deliv)}</td></tr>`:''}
-${(t.rates&&Object.keys(t.rates).some(r=>+r>0&&t.rates[r].tax>0)?Object.entries(t.rates).filter(([r,x])=>+r>0&&x.tax>0).flatMap(([r,x])=>[['CGST '+(+r/2)+'%',x.tax/2],['SGST '+(+r/2)+'%',x.tax/2]]):[['CGST',t.tax/2],['SGST',t.tax/2]]).map(([a,v])=>`<tr><td>${a}</td><td>${inr(v)}</td></tr>`).join('')}
+${taxRows.map(([a,v])=>`<tr><td>${a}</td><td>${inr(v)}</td></tr>`).join('')}
 ${t.round?`<tr><td>Round off</td><td>${t.round>=0?'+':'-'}${inr(Math.abs(t.round))}</td></tr>`:''}
 <tr class=big><td>Total</td><td>${inr(t.total)}</td></tr>
 ${(o.refunds||[]).length?`<tr><td>Refunded</td><td>-${inr(o.refunds.reduce((a,r)=>a+(+r.amt||0),0))}</td></tr>`:''}
@@ -91,13 +154,11 @@ ${(o.refunds||[]).length?`<tr><td>Refunded</td><td>-${inr(o.refunds.reduce((a,r)
 <p class=thanks>${esc(s.ftr||'Thank you!')}</p>
 <hr style="margin-top:24px">
 <div class=ft><div><b>Paid via</b>${(o.pays||[]).map(p=>({cash:'Cash',upi:'UPI',card:'Card',giftcard:'Gift card',other:'Other'}[p.m]||p.m.toUpperCase())+' — '+inr(p.amt)).join('<br>')||'—'}</div><div class=sig><b>${esc(s.name)}</b><br>${esc(s.addr)}${s.gstin?'<br>GSTIN '+esc(s.gstin):''}</div></div>
-<div class=fb id=fb><h4>How was your experience at ${esc(s.name)}?</h4>
-<div class=stars id=stars>${[1,2,3,4,5].map(n=>`<button type=button data-v=${n}>★</button>`).join('')}</div>
-<textarea id=fbComment placeholder="Anything you'd like to tell us? (optional)" maxlength=1000></textarea>
-<button class=submit id=fbSubmit disabled>Submit feedback</button>
-</div>
+${feedbackHtml}
 <div class=powered>Powered by <a href="https://auzslab.in" target=_blank rel=noopener>AUZslab</a></div>`;
  if(s.logo){const im=A.querySelector('.mark img');if(im)im.onerror=()=>im.replaceWith(document.createTextNode('Invoice'))}
+ wireFeedback();
+ function wireFeedback(){
  let rating=0;const starsEl=document.getElementById('stars'),submitBtn=document.getElementById('fbSubmit');
  starsEl.querySelectorAll('button').forEach(btn=>btn.onclick=()=>{
   rating=+btn.dataset.v;submitBtn.disabled=false;
@@ -110,5 +171,6 @@ ${(o.refunds||[]).length?`<tr><td>Refunded</td><td>-${inr(o.refunds.reduce((a,r)
   if(error){fbErr.textContent='Could not submit right now — please try again.';submitBtn.disabled=false;submitBtn.textContent='Submit feedback'}
   else document.getElementById('fb').innerHTML='<p class=thanks-msg>Thank you for your feedback!</p>';
  };
+ }
 })();
 </script></body></html>
