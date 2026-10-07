@@ -1,9 +1,8 @@
 /* Chapter One — bespoke one-off client site (like Showoff Salon's app/public/salon/, this is
    NOT the shared design system: one client, one look, maintained on its own going forward).
-   Palette + type taken from the client's own logo/brand references: warm olive + cream, a
-   soft elegant serif for display type, a plain grotesque for body/UI. Replace --logo-* below
-   and /chapterone/logo.svg once the client's real logo file is supplied — right now the
-   wordmark is drawn in CSS from the same palette, not a guess at their actual mark. */
+   Palette matches the client's own real logo (logo-full.png / logo.jpg, exactly as supplied,
+   not a recreation): warm olive + cream, a soft elegant serif for display type, a plain
+   grotesque for body/UI. */
 :root{
   --cream:#f7f1e3; --cream2:#efe6cd; --paper:#fbf7ec;
   --olive:#4b4a2e; --olive2:#5f5e3c; --olive3:#8a8a5c; --olive-pale:#d9d8bd;
@@ -40,9 +39,8 @@ button{font:inherit;color:inherit}
 header{position:sticky;top:0;z-index:60;background:rgba(247,241,227,.88);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transition:box-shadow .35s}
 header.stuck{box-shadow:0 1px 0 var(--line)}
 .nav{display:flex;align-items:center;gap:28px;padding:16px clamp(20px,5vw,56px)}
-.brand{display:flex;align-items:baseline;gap:8px;margin-right:auto}
-.brand .b1{font:500 23px/1 var(--serif);letter-spacing:-.01em}
-.brand .b2{font:italic 400 15px/1 var(--serif);color:var(--rust)}
+.brand{display:flex;align-items:center;margin-right:auto}
+.brand-logo{height:38px;width:auto;display:block}
 .nav a.l{font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;opacity:.72;padding:6px 0;background:linear-gradient(var(--ink),var(--ink)) left bottom/0 1px no-repeat;transition:opacity .25s,background-size .4s var(--ease)}
 .nav a.l:hover{opacity:1;background-size:100% 1px}
 @media (max-width:840px){.nav a.l{display:none}}
@@ -93,11 +91,27 @@ header.stuck{box-shadow:0 1px 0 var(--line)}
 .hero .ctas{display:flex;gap:14px;margin-top:30px;flex-wrap:wrap}
 @media (max-width:900px){.hero .ctas{justify-content:center}}
 .hero-art{position:relative;display:flex;align-items:center;justify-content:center;min-height:360px}
-.hero-art .bag{width:min(260px,70%);filter:drop-shadow(0 30px 40px rgba(42,41,24,.28));animation:float 6s ease-in-out infinite}
-@keyframes float{0%,100%{transform:translateY(0) rotate(-1.2deg)}50%{transform:translateY(-14px) rotate(1deg)}}
-.hero-art .beans{position:absolute;inset:0;opacity:.9}
-.hero-art .beans svg{position:absolute}
-@media (prefers-reduced-motion:reduce){.hero-art .bag{animation:none}}
+.hero-mark{width:min(380px,82%);filter:drop-shadow(0 24px 36px rgba(42,41,24,.22));animation:float 6s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-0.6deg)}50%{transform:translateY(-12px) rotate(0.6deg)}}
+@media (prefers-reduced-motion:reduce){.hero-mark{animation:none}}
+
+/* ---- 3-scene scroll ritual: Ground -> Poured -> Served. Each panel is sticky and the next
+   one scrolls up to cover the last -- plain CSS position:sticky, no scroll listener, no
+   per-frame JS (same discipline the rest of this codebase insists on for scroll effects). ---- */
+.brew{position:relative}
+.bscene{position:sticky;top:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:60px 20px}
+.bscene-1{background:var(--paper);z-index:1}
+.bscene-2{background:var(--olive-pale);z-index:2}
+.bscene-3{background:var(--olive);color:var(--cream);z-index:3}
+.bscene-3 .eyebrow{color:var(--olive-pale)}
+.bwrap{max-width:460px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px}
+.bwrap h2{font-size:clamp(34px,6vw,52px)}
+.bcopy{color:var(--muted);font-size:16px;max-width:360px}
+.bscene-3 .bcopy{color:rgba(247,241,227,.78)}
+.bart{width:84px;height:84px;margin-top:6px;color:var(--olive3)}
+.bscene-3 .bart{color:var(--olive-pale)}
+.bart svg{width:100%;height:100%}
+@media (max-width:640px){.bscene{min-height:72vh}}
 
 /* ---- feature strip ---- */
 .feat{padding:50px 0}
@@ -247,3 +261,17 @@ footer a.fl:hover{color:var(--cream)}
 /* ---- demo-mode banner ---- */
 .demo-banner{background:var(--rust);color:var(--cream);text-align:center;font:600 12px/1 var(--sans);letter-spacing:.04em;padding:9px 14px}
 .demo-banner b{text-decoration:underline;text-decoration-color:rgba(247,241,227,.5)}
+
+/* ---- item sub-page (item.html): a real page, not a modal -- reuses .item-img/.stepper/
+   .related/.rc from the (now-removed) slide-over panel almost verbatim. ---- */
+.ibc{font-size:13px;color:var(--muted);margin-bottom:22px}
+.ibc a{color:var(--rust)}
+.ibc a:hover{text-decoration:underline}
+.igrid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:flex-start}
+@media (max-width:760px){.igrid{grid-template-columns:1fr;gap:28px}}
+.igrid .item-img{margin:0;height:380px}
+@media (max-width:760px){.igrid .item-img{height:280px}}
+.iinfo h1{font-size:clamp(28px,4vw,38px);margin-bottom:8px}
+.ipills{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}
+.ipill{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:10px 18px;font:500 13.5px/1 var(--sans);cursor:pointer;transition:all .2s}
+.ipill.on{background:var(--olive);color:var(--cream);border-color:var(--olive)}
