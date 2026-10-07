@@ -401,6 +401,7 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
 .stack-panel:nth-of-type(2){top:min(calc(112px + env(safe-area-inset-top)), calc(100svh - var(--h, 0px)));z-index:2}
 .stack-panel:nth-of-type(3){top:min(calc(112px + env(safe-area-inset-top) + var(--tab-step)), calc(100svh - var(--h, 0px)));z-index:3}
 .stack-panel:nth-of-type(4){top:min(calc(112px + env(safe-area-inset-top) + (var(--tab-step) * 2)), calc(100svh - var(--h, 0px)));z-index:4}
+.stack-panel:nth-of-type(5){top:min(calc(112px + env(safe-area-inset-top) + (var(--tab-step) * 3)), calc(100svh - var(--h, 0px)));z-index:5}
 .stack-panel.alt{background-color:var(--bg-raised);background-blend-mode:normal}
 .stack-panel{overflow:hidden}
 
@@ -501,6 +502,7 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
   .stack-panel:nth-of-type(2){top:min(150px, calc(100svh - var(--h, 0px)))}
   .stack-panel:nth-of-type(3){top:min(calc(150px + var(--tab-step)), calc(100svh - var(--h, 0px)))}
   .stack-panel:nth-of-type(4){top:min(calc(150px + (var(--tab-step) * 2)), calc(100svh - var(--h, 0px)))}
+  .stack-panel:nth-of-type(5){top:min(calc(150px + (var(--tab-step) * 3)), calc(100svh - var(--h, 0px)))}
   .stack-panel:not(:first-of-type)::before{left:56px}
   .stack-panel.stack-panel-dark{padding-top:160px}
   .stack-panel-dark::before{left:56px}
