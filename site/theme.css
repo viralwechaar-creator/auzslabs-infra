@@ -418,6 +418,29 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
 .reveal{opacity:0;transform:translateY(16px);transition:opacity .7s ease, transform .7s ease}
 .reveal.in{opacity:1;transform:translateY(0)}
 
+/* VIEW sheet (#quick-look): on phones this grew taller than one screen (3 stacked cards +
+   the Creatopz block), which broke the sheet's pin/stack (a sheet pins only once its bottom
+   shows -- see "Homepage sheet stack" in CLAUDE.md). Smaller spacing/type on phones only;
+   desktop values match what used to be inline on these elements, unchanged. */
+.ql-grid{margin-top:24px}
+.ql-card-h{margin-top:12px}
+.ql-card-p{margin-top:8px}
+.ql-cta{margin-top:24px}
+.ql-partner{margin-top:44px;padding-top:24px;border-top:1px dashed var(--line);display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
+.ql-partner-p{margin-top:8px;max-width:36em}
+@media (max-width:860px){
+  #quick-look .label{margin-bottom:10px}
+  #quick-look .h-1{font-size:22px}
+  #quick-look .ql-grid{margin-top:12px;gap:8px}
+  #quick-look .card{padding:12px}
+  #quick-look .ql-card-h{margin-top:6px;font-size:14px}
+  #quick-look .ql-card-p{margin-top:3px;font-size:11px;line-height:1.4}
+  #quick-look .tag{padding:3px 9px;font-size:9px}
+  #quick-look .ql-cta{margin-top:10px}
+  #quick-look .ql-partner{margin-top:14px;padding-top:10px;gap:8px}
+  #quick-look .ql-partner-p{margin-top:3px;font-size:11px;line-height:1.4}
+}
+
 .stack-panel.stack-panel-dark{
   position:relative;z-index:2;min-height:0;
   background:var(--ink-solid);color:rgba(255,255,255,.6);
