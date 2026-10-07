@@ -1,13 +1,14 @@
 /* Chapter One — bespoke one-off client site (like Showoff Salon's app/public/salon/, this is
    NOT the shared design system: one client, one look, maintained on its own going forward).
-   Palette matches the client's own real logo (logo-full.png / logo.jpg, exactly as supplied,
-   not a recreation): warm olive + cream, a soft elegant serif for display type, a plain
-   grotesque for body/UI. */
+   Palette is the owner's own reference swatch (white / peach / soft coral / cream / olive,
+   @logoideabook): cream page background, white cards, olive for ink/accents, soft coral for
+   prices/CTAs, peach as the secondary warm fill. A soft elegant serif for display type, a
+   plain grotesque for body/UI. */
 :root{
-  --cream:#f7f1e3; --cream2:#efe6cd; --paper:#fbf7ec;
-  --olive:#4b4a2e; --olive2:#5f5e3c; --olive3:#8a8a5c; --olive-pale:#d9d8bd;
-  --ink:#2a2918; --rust:#9c5a2e; --rust-pale:#efe0d1;
-  --muted:#75745c; --line:rgba(42,41,24,.14); --line2:rgba(247,241,227,.18);
+  --cream:#faedcd; --cream2:#fde4bc; --paper:#ffffff;
+  --olive:#798478; --olive2:#8b958a; --olive3:#a9b0a5; --olive-pale:#e7eae5;
+  --ink:#3c423c; --rust:#e59898; --rust-pale:#f6dede;
+  --muted:#8a8f89; --line:rgba(60,66,60,.16); --line2:rgba(250,237,205,.18);
   --r:3px; --rl:18px;
   --ease:cubic-bezier(.22,.7,.2,1);
   --serif:"Fraunces","Iowan Old Style",Georgia,serif;

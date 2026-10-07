@@ -96,6 +96,14 @@ drawTabs();
 drawMenu();
 drawCartBadge();
 
+/* Without this hook, loadLiveMenu() (shared.js) happily swaps CATS/ITEMS from the demo
+   catalogue to the owner's real one the instant the tenant exists, but nothing ever told
+   THIS page to redraw -- the homepage kept showing the demo menu forever, with every card
+   still linking to a demo item id. item.html (which does redraw on load) would then look
+   that demo id up in the real catalogue, find nothing, and show "not found" -- not a race,
+   a guaranteed miss the moment a real menu exists. */
+function onMenuLoaded() { activeCat = CATS[0].id; drawTabs(); drawMenu(); }
+
 /* ---------------- cart drawer ---------------- */
 const cartOv = $('cartOv');
 function openCart() { drawCartItems(); cartOv.classList.add('open'); document.documentElement.classList.add('lock'); }

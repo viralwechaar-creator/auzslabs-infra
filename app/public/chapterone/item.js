@@ -57,6 +57,7 @@ function renderItem() {
     $('ibcName').textContent = 'Not found';
     document.title = 'Chapter One — Item not found';
     $('relLabel').style.display = 'none';
+    $('relatedGrid').innerHTML = '';
     return;
   }
   document.title = i.name + ' — Chapter One';
