@@ -145,6 +145,27 @@
       async resendVerification() {
         return request('/auth/resend-verification', { method: 'POST', body: {} });
       },
+      // Login-email change + recovery email (db/121). requestEmailChange/
+      // requestRecoveryEmail mail a confirm link (confirmEmailChange/
+      // confirmRecoveryEmail) -- nothing actually changes until that link is
+      // opened. If no mail sender is configured yet, `link` is returned
+      // directly so the page can show it to copy/paste, same fallback as
+      // invite_staff already uses.
+      async requestEmailChange(newEmail, password) {
+        return request('/auth/change-email/request', { method: 'POST', body: { new_email: newEmail, password } });
+      },
+      async confirmEmailChange(token) {
+        return request('/auth/change-email/confirm', { method: 'POST', body: { token }, auth: false });
+      },
+      async requestRecoveryEmail(email) {
+        return request('/auth/recovery-email/request', { method: 'POST', body: { email } });
+      },
+      async confirmRecoveryEmail(token) {
+        return request('/auth/recovery-email/confirm', { method: 'POST', body: { token }, auth: false });
+      },
+      async removeRecoveryEmail() {
+        return request('/auth/recovery-email/remove', { method: 'POST', body: {} });
+      },
       async signOut() {
         session = null;
         saveSession(null);
