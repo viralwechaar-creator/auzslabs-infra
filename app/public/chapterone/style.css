@@ -1,14 +1,15 @@
 /* Chapter One — bespoke one-off client site (like Showoff Salon's app/public/salon/, this is
    NOT the shared design system: one client, one look, maintained on its own going forward).
-   Palette is the owner's own reference swatch (white / peach / soft coral / cream / olive,
-   @logoideabook): cream page background, white cards, olive for ink/accents, soft coral for
-   prices/CTAs, peach as the secondary warm fill. A soft elegant serif for display type, a
-   plain grotesque for body/UI. */
+   Palette matches the main AUZslab marketing site's own tokens (site/theme.css): white/off-white
+   background and cards, near-black ink for text/accents, wine for prices/CTAs. A soft elegant
+   serif for display type, a plain grotesque for body/UI. (Variable names below are kept as
+   --cream/--olive/--rust for the least code churn, even though the colours they hold are now
+   white/ink/wine, not cream/olive/rust.) */
 :root{
-  --cream:#faedcd; --cream2:#fde4bc; --paper:#ffffff;
-  --olive:#798478; --olive2:#8b958a; --olive3:#a9b0a5; --olive-pale:#e7eae5;
-  --ink:#3c423c; --rust:#e59898; --rust-pale:#f6dede;
-  --muted:#8a8f89; --line:rgba(60,66,60,.16); --line2:rgba(250,237,205,.18);
+  --cream:#faf9f7; --cream2:#efece8; --paper:#ffffff;
+  --olive:#2e2c2a; --olive2:#4a4845; --olive3:#625d58; --olive-pale:#efece8;
+  --ink:#2e2c2a; --rust:#800020; --rust-pale:#f2dde3;
+  --muted:#8f8a84; --line:rgba(46,44,42,.16); --line2:rgba(250,249,247,.18);
   --r:3px; --rl:18px;
   --ease:cubic-bezier(.22,.7,.2,1);
   --serif:"Fraunces","Iowan Old Style",Georgia,serif;
