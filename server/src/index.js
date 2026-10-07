@@ -1,4 +1,5 @@
 import http from 'node:http';
+import { createHash } from 'node:crypto';
 import { pool, withAuth } from './db.js';
 import {
   login, verifyToken, bearerFrom, createUser, resetToRandomPassword, signToken,
@@ -505,7 +506,8 @@ setInterval(() => {
 
 function clientIp(req) {
   const fwd = req.headers['x-forwarded-for'];
-  if (fwd) return fwd.split(',')[0].trim();
+  // Caddy (the only thing in front of this server) puts the real address in X-Forwarded-For; take the LAST entry, the one our own proxy wrote, never the first, which a caller can set to anything to dodge the rate limits.
+  if (fwd) { const parts = String(fwd).split(',').map((x) => x.trim()).filter(Boolean); if (parts.length) return parts[parts.length - 1]; }
   return req.socket.remoteAddress || 'unknown';
 }
 
@@ -707,6 +709,8 @@ const server = http.createServer(async (req, res) => {
       const bucket = isDemo ? `demologin:${ip}` : `login:${ip}`;
       const limit = isDemo ? 300 : 20;
       if (rateLimited(bucket, limit, 15 * 60_000)) throw new HttpError(429, 'too many login attempts, try again later');
+      // Also limit per account, so a crowd of different addresses cannot take turns guessing one person's password.
+      if (!isDemo && typeof email === 'string' && rateLimited(`loginacct:${email.trim().toLowerCase()}`, 30, 15 * 60_000)) throw new HttpError(429, 'too many login attempts for this account, try again later');
       const result = await login(email, password, meta);
       if (!result) throw new HttpError(401, 'invalid credentials');
       if (result.unverified) throw new HttpError(403, 'Please verify your email first -- check your inbox for the verification link, or ask your manager to resend it.');
@@ -860,6 +864,8 @@ const server = http.createServer(async (req, res) => {
       if (rateLimited(`forgot:${ip}`, 10, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
       const { email, reset_link_base } = await readJsonBody(req);
       if (!email || !reset_link_base) throw new HttpError(400, 'email and reset_link_base are required');
+      // At most 3 reset mails per address per hour, so nobody can fill a stranger's inbox. Same reply either way (no way to tell which addresses exist).
+      if (rateLimited(`forgotmail:${String(email).trim().toLowerCase()}`, 3, 60 * 60_000)) return reply(200, { ok: true, message: 'If an account exists for that email, a reset link has been sent.' });
       const token = await createPasswordReset(email);
       if (token) {
         // Never trust the caller's page: a reset link must open on our own site, or an attacker could get a victim a real reset email that points at their own page.
@@ -911,6 +917,8 @@ const server = http.createServer(async (req, res) => {
       if (rateLimited(`2fa:${ip}`, 20, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
       const { challenge, code } = await readJsonBody(req);
       if (!challenge || !code) throw new HttpError(400, 'challenge and code are required');
+      // Each sign-in challenge gets only a few guesses in total (a 6-digit code must not be guessable from many networks at once).
+      if (rateLimited(`2fach:${createHash('sha256').update(String(challenge)).digest('hex')}`, 8, 10 * 60_000)) throw new HttpError(429, 'too many wrong codes, sign in again');
       const result = await verify2faChallenge(challenge, code, meta);
       if (!result) throw new HttpError(401, 'that code is wrong or has expired');
       return reply(200, result);
@@ -1126,7 +1134,13 @@ const server = http.createServer(async (req, res) => {
       if (fnName === 'submit_signup_request' || fnName === 'submit_addon_request') await requireVerifiedEmail(user.id);
       const args = await readJsonBody(req);
       const uid = user?.id || null;
+      // Anything that checks a password or sets someone's PIN/password is limited per person, so a stolen session token cannot be used to guess the current password.
+      if (user && ['change_my_password', 'reset_staff_password', 'staff_reset_pin', 'admin_reset_client_password'].includes(fnName) && rateLimited(`pwrpc:${user.id}`, 10, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
       const result = await withAuth(uid, (client) => callRpc(client, fnName, args));
+      // After a password / PIN change, old sessions must stop working at once (the person changing their own password keeps the one they are using).
+      if (user && fnName === 'change_my_password') await revokeAllSessionsForUser(user.id, user.jti || null).catch(() => {});
+      if (user && ['reset_staff_password', 'staff_reset_pin'].includes(fnName) && args && /^[0-9a-f-]{36}$/i.test(String(args.p_staff_id || ''))) await revokeAllSessionsForUser(args.p_staff_id).catch(() => {});
+      if (user && fnName === 'staff_set_active' && args && args.p_active === false && /^[0-9a-f-]{36}$/i.test(String(args.p_staff_id || ''))) await revokeAllSessionsForUser(args.p_staff_id).catch(() => {});
       return reply(200, { data: result });
     }
 
@@ -1241,6 +1255,9 @@ const server = http.createServer(async (req, res) => {
       if (profile?.role !== 'owner') throw new HttpError(403, 'owner only');
       const body = await readJsonBody(req);
       if (!body.email || !body.verify_link) throw new HttpError(400, 'email and verify_link are required');
+      // Not an open mail relay: the link in the mail must open on our own site, and one owner can only send so many a day.
+      if (rateLimited(`staffinvite:${user.id}`, 30, 24 * 60 * 60_000)) throw new HttpError(429, 'too many invites sent today');
+      if (safeResetBase(body.verify_link) !== (() => { try { const u = new URL(String(body.verify_link)); return u.origin + u.pathname + u.search; } catch { return null; } })()) throw new HttpError(400, 'invalid link');
       const sent = await sendStaffInviteEmail({ to: body.email, name: body.name || '', verifyLink: body.verify_link });
       return reply(200, sent);
     }
