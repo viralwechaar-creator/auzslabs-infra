@@ -3,14 +3,14 @@
 // An empty value leaves the plain fallback sentence that is already written in the page.
 (function () {
   var CO = {
-    legalName: '',          // e.g. "AUZslab Technologies Private Limited"
-    address: '',            // registered office address
-    gstin: '',              // GST number, if registered
-    cin: '',                // company registration number (CIN / LLPIN), if any
-    grievanceName: 'Ashish Kumar Meena',
+    legalName: 'Mahendra, trading as AUZslab (sole proprietorship)',
+    address: '3/21 DDP Nagar, Madhuban, Jodhpur 342005, Rajasthan',
+    gstin: '08KALPM2374C1ZH',
+    cin: '',                // company registration number (CIN / LLPIN) — not applicable, sole proprietorship
+    grievanceName: 'Mahendra',
     grievanceEmail: 'helloauzslab@gmail.com',
-    phone: '',              // support phone / WhatsApp
-    court: ''               // city whose courts decide disputes, e.g. "Jodhpur, Rajasthan"
+    phone: '',              // support phone / WhatsApp — add once a company number is set up
+    court: 'Jodhpur, Rajasthan'
   };
   var nodes = document.querySelectorAll('[data-co]');
   for (var i = 0; i < nodes.length; i++) {
