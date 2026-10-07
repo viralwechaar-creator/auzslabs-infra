@@ -1576,3 +1576,9 @@ A separate app that lives in `agents-office/` of this repo (own Dockerfile, logi
 - `site/pricing.html` has a live "first payment" calculator (`#firstBill`): subscription + 18% GST (unless `gst_exempt`) + the flat Rs 2,179 setup fee (unless `setup_fee_exempt`), read from `public_product_prices`. Keep the 18% / 2,179 in step with `server/src/payments.js` and `cart.html`.
 - `<a data-wa="message">` links ("Talk to us on WhatsApp") stay hidden until `phone` is filled in `site/company.js`.
 - Not built yet from the friction list: automatic trial, in-app first-run checklist, funnel counter, case studies (need owner input; never invent reviews).
+
+## Friction audit (2026-10-07): menu, touch size, products wording
+- **One menu everywhere:** the `<nav class="sidebar-nav" aria-label="Primary">` block was different on 8 variants (about 17 product/business pages had no Resources menu at all; Studio, contact, sitemap and platform each lacked links). It is now the identical block from `index.html` on every marketing page, with `active` set on the page's own link. When a menu link changes, rewrite the block on all pages with a script (like the footer), never by hand on one page. Tool pages (account, admin, signup...) keep their own nav.
+- **Touch comfort block** appended to `site/theme.css`, `site/kept/theme.css`, `site/tool/theme.mobile.css`: 44px hit areas around the theme switch, drawer icons and logo (invisible `::after`), 44px header buttons, nothing under 11px. Stylesheet links are `?v=47` / `?v=45`; bump when editing.
+- Phone audit result: no sideways scroll on any marketing page at 390 or 1440 wide, no images without `alt`.
+- Still open (needs owner decisions): `products.html` slab headings still say POS / CRM / Billing / Inventory as if sold separately (they are included with AUZsPOS) and use the short names, not AUZsPOS etc.; the cart has no free-trial path; Google-only sign-up excludes people without a Google account.

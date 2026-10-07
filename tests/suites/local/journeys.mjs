@@ -142,7 +142,7 @@ export default async function run({ browser, stack }) {
     await p.check('input[name=buildType][value=custom]');
     assert(!(await p.locator('#stdFields').isVisible()) && await p.locator('#customFields').isVisible(), 'custom fields not shown');
     const agentsHref = await p.locator('#agentsLinkSide').getAttribute('href'); const agentsTarget = await p.locator('#agentsLinkSide').getAttribute('target');
-    assert(agentsHref === 'https://agents.auzslab.in' && agentsTarget === '_blank', 'Agents Office link missing in the admin sidebar: ' + agentsHref);
+    assert(agentsHref === 'https://agents.auzslab.in' && !agentsTarget, 'Agents Office link missing in the admin sidebar: ' + agentsHref);
     assert((await p.locator('#agentsLinkMore').count()) === 1, 'Agents Office link missing in the admin More list');
     await s.shot(p, 'admin-onboard-custom');
     assert(!errs.length, errs.join(' | ')); await c.close();
