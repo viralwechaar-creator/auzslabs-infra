@@ -287,6 +287,7 @@ async function boot() {
     addEventListener('online', () => { syncNow(); setNote(); }); addEventListener('offline', setNote);
     sb.channel('r').on('postgres_changes', { event: '*', schema: 'public', table: 'records' }, () => sync()).subscribe();
     sb.channel('g').on('postgres_changes', { event: '*', schema: 'public', table: 'guest_orders' }, () => getG()).subscribe();
+    sb.channel('bk').on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => onBookingsChanged()).subscribe();
     sb.channel('n').on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => refreshNotifCount()).subscribe();
     setInterval(sync, 30000); setInterval(getG, 15000); setInterval(refreshNotifCount, 60000); setInterval(checkAlerts, 5000);
     setInterval(() => { if (navigator.onLine && S.user && isRestaurant()) loadBookings(today()).then(() => { if ((S.tab === 'tables' || S.tab === 'reserve') && !isTyping()) render(); }); }, 120000);

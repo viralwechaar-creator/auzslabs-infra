@@ -223,22 +223,17 @@ function openPayment(amount, note, tbl, name, phone) {
   };
 }
 
-/* ---------------- reservations (reuses the guest-order inbox -- same trick call_waiter()
-   already uses for a note-only entry, so no new backend is needed at all) ---------------- */
+/* ---------------- reservations: a real booking (public_create_reservation, db/127), shows up
+   in the staff's actual Reservations screen -- not the old guest-order-note trick ---------------- */
 $('resForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const f = e.target, name = f.rname.value.trim(), phone = f.rphone.value.trim(), date = f.rdate.value, time = f.rtime.value, guests = f.rguests.value, note = f.rnote.value.trim();
+  const f = e.target, name = f.rname.value.trim(), phone = f.rphone.value.trim(), date = f.rdate.value, time = f.rtime.value, guests = Number(f.rguests.value) || 1, note = f.rnote.value.trim();
   if (!name || !phone || !date || !time) { toast('Please fill in name, phone, date and time'); return; }
   const btn = f.querySelector('button[type=submit]');
   btn.disabled = true; btn.textContent = 'Sending…';
-  const nt = 'Table reservation · ' + date + ' ' + time + ' · ' + guests + ' guest' + (guests > 1 ? 's' : '') + (note ? ' · ' + note : '');
-  const prevCart = { ...cart };
-  clearCart(); // reservations carry no items
-  let r;
-  try { r = await sendOrder('Reservation', nt, name, phone); }
-  finally { cart = prevCart; saveCart(); drawCartBadge(); }
+  const r = await sendReservation(name, phone, date, time, guests, note);
   btn.disabled = false; btn.textContent = 'Reserve a table';
-  if (r.ok) { f.reset(); showOk('Table requested', r.demo ? 'Preview only for now — once live, this lands straight in the staff’s order screen, the same place a QR order would.' : 'We’ve received your request — our team will confirm shortly.'); }
+  if (r.ok) { f.reset(); showOk('Table requested', r.demo ? 'Preview only for now — once live, this lands straight in the staff’s reservations list, ready for them to confirm.' : 'We’ve received your request — our team will confirm shortly.'); }
   else toast('Could not send your request. Please call us instead.');
 });
 
