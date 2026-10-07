@@ -51,11 +51,23 @@ function applyBranding(cfg) {
   // The owner's own hero/about photos (Management console -> Website & Booking -> Hero
   // photo / About-section photo) replace the hand-drawn logo mark and the "C" founder
   // monogram once uploaded -- until then both keep their current placeholder look.
-  if (cfg.siteHero) { const m = $('heroMark'); if (m) m.src = cfg.siteHero; }
+  if (cfg.siteHero) { const m = $('heroMark'); if (m) m.src = cfg.siteHero; const art = $('heroArt'); if (art) art.classList.add('has-photo'); }
   if (cfg.siteAboutImg) {
     const av = $('founderAvatar');
     if (av) av.innerHTML = '<img src="' + esc(cfg.siteAboutImg) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
   }
+  // The 3-step "Ground / Poured / Served" scenes each get a real photo from the owner's
+  // gallery (Website & Booking -> Gallery photos), in upload order, once there are enough --
+  // the decorative line-art icon keeps showing in any slot that has none yet.
+  const gal = (cfg.siteGallery || '').split(',').map((s) => s.trim()).filter(Boolean);
+  [1, 2, 3].forEach((n, i) => {
+    const url = gal[i];
+    if (!url) return;
+    const el = $('bphoto' + n);
+    if (!el) return;
+    el.style.backgroundImage = 'url(' + url.replace(/[()]/g, '') + ')';
+    el.classList.add('has-photo');
+  });
 }
 
 /* ---------------- toast / cart badge wiring ---------------- */
