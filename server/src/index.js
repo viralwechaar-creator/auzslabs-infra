@@ -1145,6 +1145,11 @@ const server = http.createServer(async (req, res) => {
       if (user && fnName === 'change_my_password') await revokeAllSessionsForUser(user.id, user.jti || null).catch(() => {});
       if (user && ['reset_staff_password', 'staff_reset_pin'].includes(fnName) && args && /^[0-9a-f-]{36}$/i.test(String(args.p_staff_id || ''))) await revokeAllSessionsForUser(args.p_staff_id).catch(() => {});
       if (user && fnName === 'staff_set_active' && args && args.p_active === false && /^[0-9a-f-]{36}$/i.test(String(args.p_staff_id || ''))) await revokeAllSessionsForUser(args.p_staff_id).catch(() => {});
+      // admin_reset_client_password (db/130) now returns the owner's user_id specifically so this can run: a platform admin
+      // "logging in as owner" to do setup, then generating the final handoff password, must not leave their own setup
+      // session still valid after telling the owner "your old password stops working" -- that sentence was only true of
+      // the password, never the still-open session, until this line.
+      if (fnName === 'admin_reset_client_password' && result && /^[0-9a-f-]{36}$/i.test(String(result.user_id || ''))) await revokeAllSessionsForUser(result.user_id).catch(() => {});
       return reply(200, { data: result });
     }
 
