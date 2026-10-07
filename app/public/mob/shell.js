@@ -200,6 +200,11 @@ function buildShell() {
     h('div', { class: 'brand' }, icon('phone', 28), h('div', { class: 'lbl-t grow' }, h('b', null, 'AUZsMob'), h('span', null, S.dash.tenant ? S.dash.tenant.name : '')),
       h('button', { class: 'side-tg', type: 'button', 'aria-label': 'Toggle sidebar', onclick: toggleSide }, icon('sidebar', 20))),
     nav.map(([id, , ic]) => navItem(id, t(id), ic)),
+    // The phone tab bar's "More" button (everything the owner's custom menu left off, plus Settings,
+    // which must always be reachable) had no desktop equivalent -- on a wide screen the sidebar just
+    // rendered navList() and stopped, so a custom menu that put Settings under More made Settings
+    // unreachable on desktop entirely, not just hidden until tapped. moreSheet() works from any width.
+    showMore() ? h('a', { href: '#', class: 'nav-i', title: t('more'), onclick: (e) => { e.preventDefault(); moreSheet(); } }, icon('more', 20), h('span', { class: 'lbl-t' }, t('more'))) : null,
     otherApps(),
     h('div', { class: 'foot' }, h('span', null, syncStatusNode()), h('span', null, S.user.email),
       seg([['en', 'EN'], ['hi', 'HI']], S_LANG, (v) => saveLang(v), { full: true }),
