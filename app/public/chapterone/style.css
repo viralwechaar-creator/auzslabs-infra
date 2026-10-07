@@ -92,28 +92,41 @@ header.stuck{box-shadow:0 1px 0 var(--line)}
 @media (max-width:900px){.hero .sub{margin-inline:auto}}
 .hero .ctas{display:flex;gap:14px;margin-top:30px;flex-wrap:wrap}
 @media (max-width:900px){.hero .ctas{justify-content:center}}
-.hero-art{position:relative;display:flex;align-items:center;justify-content:center;min-height:360px}
+.hero-art{position:relative;display:flex;align-items:center;justify-content:center;min-height:460px;border-radius:28px;overflow:hidden;background:var(--cream2)}
 .hero-mark{width:min(380px,82%);filter:drop-shadow(0 24px 36px rgba(42,41,24,.22));animation:float 6s ease-in-out infinite}
+.hero-art.has-photo{background-size:cover;background-position:center}
+.hero-art.has-photo .hero-mark{width:100%;height:100%;object-fit:cover;filter:none;animation:none;border-radius:0}
 @keyframes float{0%,100%{transform:translateY(0) rotate(-0.6deg)}50%{transform:translateY(-12px) rotate(0.6deg)}}
 @media (prefers-reduced-motion:reduce){.hero-mark{animation:none}}
+@media (max-width:900px){.hero-art{min-height:320px}}
 
 /* ---- 3-scene scroll ritual: Ground -> Poured -> Served. Each panel is sticky and the next
    one scrolls up to cover the last -- plain CSS position:sticky, no scroll listener, no
-   per-frame JS (same discipline the rest of this codebase insists on for scroll effects). ---- */
+   per-frame JS (same discipline the rest of this codebase insists on for scroll effects). Each
+   scene pairs a photo (owner's first three gallery photos, Website & Booking -> Gallery photos;
+   the decorative line-art icon shows until the owner uploads any) with its text, left/right
+   alternating per scene -- the DOM order itself decides the side, flipped on phones where the
+   photo always shows first regardless of which side it reads on desktop. ---- */
 .brew{position:relative}
 .bscene{position:sticky;top:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:60px 20px}
 .bscene-1{background:var(--paper);z-index:1}
 .bscene-2{background:var(--olive-pale);z-index:2}
 .bscene-3{background:var(--olive);color:var(--cream);z-index:3}
 .bscene-3 .eyebrow{color:var(--olive-pale)}
-.bwrap{max-width:460px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px}
-.bwrap h2{font-size:clamp(34px,6vw,52px)}
-.bcopy{color:var(--muted);font-size:16px;max-width:360px}
+.bwrap{max-width:980px;width:100%;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;text-align:left}
+.btext{display:flex;flex-direction:column;gap:14px;align-items:flex-start}
+.bwrap h2{font-size:clamp(34px,5vw,48px)}
+.bcopy{color:var(--muted);font-size:16px;max-width:420px}
 .bscene-3 .bcopy{color:rgba(247,241,227,.78)}
-.bart{width:84px;height:84px;margin-top:6px;color:var(--olive3)}
+.bphoto{position:relative;aspect-ratio:4/3;border-radius:24px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--cream2)}
+.bscene-3 .bphoto{background:rgba(247,241,227,.08)}
+.bphoto.has-photo{background-size:cover;background-position:center}
+.bart{width:84px;height:84px;color:var(--olive3)}
 .bscene-3 .bart{color:var(--olive-pale)}
+.bphoto.has-photo .bart{display:none}
 .bart svg{width:100%;height:100%}
 @media (max-width:640px){.bscene{min-height:72vh}}
+@media (max-width:899px){.bwrap{grid-template-columns:1fr;text-align:center;gap:20px;max-width:420px}.btext{align-items:center}.bphoto{order:-1;width:100%}}
 
 /* ---- feature strip ---- */
 .feat{padding:50px 0}
@@ -241,8 +254,9 @@ section{padding:66px 0}
 .toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,16px);background:var(--ink);color:var(--cream);padding:12px 20px;border-radius:999px;font-size:13.5px;z-index:99;opacity:0;transition:all .35s var(--ease);pointer-events:none}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 
-/* ---- footer ---- */
-footer{background:var(--ink);color:var(--cream);padding:56px 0 30px}
+/* ---- footer: a rounded card floating above the page edge, not a flush rectangle ---- */
+footer{background:var(--ink);color:var(--cream);padding:56px 0 30px;margin:0 16px 16px;border-radius:32px}
+@media (max-width:760px){footer{margin:0 8px 8px;border-radius:22px}}
 .foot-grid{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:34px}
 @media (max-width:760px){.foot-grid{grid-template-columns:1fr;text-align:center}}
 footer .b1{font:500 24px var(--serif)}
