@@ -19,7 +19,7 @@
  customer-facing page later -> just add its bizType here, nothing
  else (this file, not the Caddyfile) is the one place that mapping lives.
 */
-const LANDING = { salon: '/salon/' };
+const LANDING = { salon: '/salon/', custom: '/custom.html' };
 (async () => {
  // Shared addresses are decided from the address itself (not from tenant.js, which a browser may still have cached):
  // app.auzslab.in = every app; auzspos / auzsmob / auzspay / auzsledger open their own app (the sign-in screen finds the user's business).

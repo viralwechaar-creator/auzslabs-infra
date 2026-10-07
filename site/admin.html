@@ -406,6 +406,13 @@ body.admin-shell .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px
         <div class="card" style="max-width:420px">
           <form id="form">
             <div class="field">
+              <label>What kind of client?</label>
+              <div class="svc-row-group" style="display:grid;gap:8px">
+                <label class="svc-row"><input type="radio" name="buildType" value="standard" checked><span><b>Standard</b><small>Uses the standard AUZslab products. Pick the products below.</small></span></label>
+                <label class="svc-row"><input type="radio" name="buildType" value="custom"><span><b>Custom-built</b><small>A specially designed system made to their demand. No standard products.</small></span></label>
+              </div>
+            </div>
+            <div class="field">
               <label for="name">Business name</label>
               <input id="name" required placeholder="OG Book Cafe">
             </div>
@@ -413,14 +420,27 @@ body.admin-shell .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px
               <label for="slug">Subdomain</label>
               <input id="slug" required placeholder="ogbookcafe" pattern="[a-z0-9-]+">
             </div>
-            <div class="field">
-              <label for="niche">Niche</label>
-              <select id="niche">
-                <option value="cafe">Café, restaurant, bar & more</option>
-                <option value="salon">Salon / spa</option>
-                <option value="retail">Retail (shoes, clothing, books)</option>
-                <option value="general">General</option>
-              </select>
+            <div id="stdFields">
+              <div class="field">
+                <label for="niche">Niche</label>
+                <select id="niche">
+                  <option value="cafe">Café, restaurant, bar & more</option>
+                  <option value="salon">Salon / spa</option>
+                  <option value="retail">Retail (shoes, clothing, books)</option>
+                  <option value="general">General</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Standard products</label>
+                <div id="onbProducts" style="display:flex;flex-wrap:wrap;gap:10px"></div>
+                <small style="color:var(--ink-faint)">Leave all unticked to use the defaults for the niche.</small>
+              </div>
+            </div>
+            <div id="customFields" hidden>
+              <div class="field">
+                <label for="customBrief">What are we building for them?</label>
+                <textarea id="customBrief" rows="5" placeholder="Their requirements, design ideas, agreed scope. Saved in the client's notes."></textarea>
+              </div>
             </div>
             <div class="field">
               <label for="ownerEmail">Owner's email (their first login)</label>
@@ -835,7 +855,7 @@ async function loadLeads() {
   });
 }
 
-const NICHE_LABEL = { cafe: 'Café / restaurant / bar / bakery / hotel', salon: 'Salon / spa', retail: 'Retail (shoes, clothing, books)', general: 'General' };
+const NICHE_LABEL = { custom: 'Custom-built', cafe: 'Café / restaurant / bar / bakery / hotel', salon: 'Salon / spa', retail: 'Retail (shoes, clothing, books)', general: 'General' };
 // Colour groups for module tags, all from the brand palette: wine = AUZsPOS family, sand = salon/website,
 // sage = money, slate = people/ops, amber = mobile shop.
 const TONE = { pos: 'wine', crm: 'wine', billing: 'wine', inventory: 'wine', kds: 'wine', purchases: 'wine', membership: 'wine', self_order: 'wine', salon: 'sand', booking: 'sand', website_builder: 'sand', payroll: 'slate', tasks: 'slate', helpdesk: 'slate', accounting: 'sage', mobile: 'amber' };
@@ -1185,7 +1205,7 @@ async function loadClients(preFetched) {
     return `
     <tr data-id="${c.id}">
       <td data-label="Client"><b>${esc(c.name)}</b><br><span style="color:var(--ink-faint)">${esc(c.slug)}.auzslab.in</span></td>
-      <td data-label="Niche">${esc(NICHE_LABEL[c.niche] || c.niche)}</td>
+      <td data-label="Niche">${c.build_type === 'custom' ? '<b>Custom-built</b>' : esc(NICHE_LABEL[c.niche] || c.niche)}</td>
       <td data-label="Services">${services}</td>
       <td data-label="Fee">${c.monthly_fee != null ? '&#8377;' + esc(c.monthly_fee) : '&mdash;'}</td>
       <td data-label="Renewal">${renewalHtml}</td>
@@ -1335,6 +1355,9 @@ function openEditModal(id) {
   document.getElementById('editStatus').value = c.status;
   document.getElementById('editNotes').value = c.notes || '';
   const entitled = c.features || {};
+  const isCustomClient = c.build_type === 'custom';
+  document.getElementById('editFeatures').parentElement.hidden = isCustomClient;
+  document.getElementById('editModal').dataset.custom = isCustomClient ? '1' : '';
   document.getElementById('editFeatures').innerHTML = SELLABLE.map((p) => `
     <label class="svc-row">
       <input type="checkbox" data-prod="${esc(p.id)}" ${entitled[p.keys[0]] === true ? 'checked' : ''}>
@@ -1367,26 +1390,47 @@ document.getElementById('editForm').onsubmit = async (e) => {
   document.querySelectorAll('#editFeatures [data-prod]').forEach((cb) => { if (cb.checked) SELLABLE.find((p) => p.id === cb.dataset.prod).keys.forEach((k) => on.add(k)); });
   const features = {};
   SELLABLE.forEach((p) => p.keys.forEach((k) => { features[k] = on.has(k); }));
+  if (document.getElementById('editModal').dataset.custom) { document.getElementById('editOverlay').classList.remove('open'); loadClients(); return; }   // custom-built clients have no standard products to set
   const { error: featErr } = await sb.rpc('admin_set_tenant_features', { p_tenant_id: id, p_features: features });
   if (featErr) { errEl.textContent = featErr.message; return; }
   document.getElementById('editOverlay').classList.remove('open');
   loadClients();
 };
 
+
+// ---------- onboarding: standard vs custom-built ----------
+function onbType() { const r = document.querySelector('input[name=buildType]:checked'); return r ? r.value : 'standard'; }
+function onbPickedFeatures() {
+  const on = new Set(); let any = false;
+  document.querySelectorAll('#onbProducts [data-prod]').forEach((cb) => { if (cb.checked) { any = true; SELLABLE.find((p) => p.id === cb.dataset.prod).keys.forEach((k) => on.add(k)); } });
+  if (!any) return null;
+  const f = {}; SELLABLE.forEach((p) => p.keys.forEach((k) => { f[k] = on.has(k); })); return f;
+}
+function initOnboardChoice() {
+  document.getElementById('onbProducts').innerHTML = SELLABLE.map((p) => `
+    <label class="svc-row"><input type="checkbox" data-prod="${esc(p.id)}"><span><b>${esc(p.label)}</b><small>${esc(p.note)}</small></span></label>`).join('');
+  const apply = () => { const c = onbType() === 'custom'; document.getElementById('stdFields').hidden = c; document.getElementById('customFields').hidden = !c; };
+  document.querySelectorAll('input[name=buildType]').forEach((r) => r.addEventListener('change', apply));
+  document.getElementById('form').addEventListener('reset', () => setTimeout(apply, 0));
+  apply();
+}
+initOnboardChoice();
+
 document.getElementById('form').onsubmit = async (e) => {
   e.preventDefault();
   const name = document.getElementById('name').value.trim();
   const slug = document.getElementById('slug').value.trim().toLowerCase();
-  const niche = document.getElementById('niche').value;
+  const isCustom = onbType() === 'custom';
+  const niche = isCustom ? 'custom' : document.getElementById('niche').value;
   const ownerEmail = document.getElementById('ownerEmail').value.trim();
   const errEl = document.getElementById('formErr');
   const resultEl = document.getElementById('result');
   errEl.textContent = '';
   resultEl.innerHTML = '<p class="p">Creating tenant&hellip;</p>';
 
-  const { data: tenantId, error: rpcErr } = await sb.rpc('provision_tenant', {
-    p_name: name, p_slug: slug, p_niche: niche
-  });
+  const { data: tenantId, error: rpcErr } = isCustom
+    ? await sb.rpc('provision_custom_tenant', { p_name: name, p_slug: slug, p_brief: document.getElementById('customBrief').value.trim() || null })
+    : await sb.rpc('provision_tenant', { p_name: name, p_slug: slug, p_niche: niche });
   if (rpcErr) {
     errEl.textContent = rpcErr.message;
     resultEl.innerHTML = '';
@@ -1410,9 +1454,16 @@ document.getElementById('form').onsubmit = async (e) => {
     return;
   }
 
+  if (!isCustom) {
+    const picked = onbPickedFeatures();
+    if (picked) {
+      const { error: fe } = await sb.rpc('admin_set_tenant_features', { p_tenant_id: tenantId, p_features: picked });
+      if (fe) { errEl.textContent = 'Client created, but choosing products failed: ' + fe.message + ' (set them from Clients -> Edit).'; }
+    }
+  }
   resultEl.innerHTML = `
     <div class="ok-box">
-      <b>${esc(name)}</b> is live at <b>${esc(slug)}.auzslab.in</b><br><br>
+      <b>${esc(name)}</b> (${isCustom ? 'custom-built' : 'standard'}) is live at <b>${esc(slug)}.auzslab.in</b><br><br>
       Share these with the owner directly (e.g. over WhatsApp) so they can sign in and change it:<br>
       Email: <b>${esc(ownerEmail)}</b><br>
       Temporary password: <b>${esc(body.temp_password)}</b>

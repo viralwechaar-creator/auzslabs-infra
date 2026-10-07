@@ -121,6 +121,29 @@ export default async function run({ browser, stack }) {
     await p.click('.a-side-btn[data-section=signupRequests]'); await p.waitForTimeout(1500); // sections load when opened
     assert(/QA Business/.test(await p.locator('#signupRequestsList').innerText()), 'request not listed'); await c6.close();
   }, 'critical');
+  await s.check('Onboarding has two kinds: Standard (pick products) and Custom-built (no standard products); the choice is stored and shown', async () => {
+    const login = async (email) => { const d = await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password: PASSWORD }) })).json(); return (d.data || d).access_token; };
+    const call = async (fn, args, tok) => fetch(stack.apiBase + '/rpc/' + fn, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok }, body: JSON.stringify(args) });
+    const adm = await login(USERS.admin), plain = await login(USERS.plain);
+    assert((await call('provision_custom_tenant', { p_name: 'Nope', p_slug: 'nope-custom', p_brief: 'x' }, plain)).status >= 400, 'a non-admin created a custom client');
+    const r1 = await call('provision_custom_tenant', { p_name: 'Bespoke Co', p_slug: 'bespokeco', p_brief: 'Design a booking system with our own look' }, adm); assert(r1.status === 200, 'custom create ' + r1.status);
+    const t = (await q("select t.build_type, t.niche, t.notes, ts.features from tenants t join tenant_settings ts on ts.tenant_id=t.id where t.slug='bespokeco'"))[0];
+    assert(t.build_type === 'custom' && t.niche === 'custom' && /booking system/.test(t.notes) && Object.values(t.features).every((v) => v !== true), JSON.stringify(t));
+    const r2 = await call('provision_tenant', { p_name: 'Std Co', p_slug: 'stdco', p_niche: 'cafe' }, adm); assert(r2.status === 200, 'standard create ' + r2.status);
+    assert((await q("select build_type from tenants where slug='stdco'"))[0].build_type === 'standard', 'standard not stored');
+    const lc = await (await call('list_clients', {}, adm)).json(); const rows = lc.data || lc.result || lc;
+    assert(Array.isArray(rows) && rows.find((x) => x.slug === 'bespokeco')?.build_type === 'custom', 'list_clients lacks build_type');
+    const c = await newCtx(browser, stack); const p = await c.newPage(); const errs = [];
+    p.on('pageerror', (e) => errs.push(String(e)));
+    await p.goto(stack.url('', '/admin.html')); await p.waitForTimeout(800); await p.fill('#email', USERS.admin); await p.fill('#password', PASSWORD); await p.click('#signin'); await p.waitForTimeout(2500);
+    await p.evaluate(() => openSection('onboard')); await p.waitForTimeout(500);
+    assert(await p.locator('#stdFields').isVisible() && !(await p.locator('#customFields').isVisible()), 'standard fields not shown by default');
+    assert((await p.locator('#onbProducts [data-prod]').count()) >= 5, 'product list missing');
+    await p.check('input[name=buildType][value=custom]');
+    assert(!(await p.locator('#stdFields').isVisible()) && await p.locator('#customFields').isVisible(), 'custom fields not shown');
+    await s.shot(p, 'admin-onboard-custom');
+    assert(!errs.length, errs.join(' | ')); await c.close();
+  }, 'critical');
   await s.check('Admin permanent delete: leads, requests, accounts and a whole client (every app\'s data); guarded against owners, self and non-admins', async () => {
     const login = async (email) => (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password: PASSWORD }) })).json());
     const call = async (fn, args, tok) => fetch(stack.apiBase + '/rpc/' + fn, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok }, body: JSON.stringify(args) });
