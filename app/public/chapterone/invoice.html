@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapter One — Receipt</title>
+<link rel="icon" type="image/svg+xml" href="/chapterone/icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--cream:#f7f1e3;--paper:#fbf7ec;--olive:#4b4a2e;--rust:#9c5a2e;--ink:#2a2918;--line:rgba(42,41,24,.18);--muted:#75745c;--serif:"Fraunces",Georgia,serif;--sans:"DM Sans",Arial,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--cream);color:var(--ink);font:400 14px/1.6 var(--sans);padding:40px 16px;display:flex;justify-content:center}
+.receipt{width:100%;max-width:420px;background:var(--paper);box-shadow:0 2px 4px rgba(42,41,24,.08),0 24px 48px -18px rgba(42,41,24,.3);position:relative;padding:40px 30px 34px}
+.receipt::before{content:"";position:absolute;top:-10px;left:0;right:0;height:20px;background:
+  radial-gradient(circle at 10px 10px, transparent 10px, var(--cream) 10.5px) 0 -10px/20px 20px repeat-x;}
+.stampwrap{text-align:center;margin-bottom:22px}
+.monogram{width:52px;height:52px;margin:0 auto 10px;border:1.6px solid var(--olive);border-radius:50%;display:flex;align-items:center;justify-content:center}
+.monogram svg{width:26px;height:26px;stroke:var(--olive);fill:none;stroke-width:2}
+.word{font:italic 500 30px/1 var(--serif);color:var(--olive)}
+.word b{display:block;font:500 13px/1 var(--sans);letter-spacing:.22em;text-transform:uppercase;color:var(--rust);margin-top:6px;font-style:normal}
+.meta{display:flex;justify-content:space-between;margin:24px 0 18px;font-size:12px}
+.meta div b{display:block;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:3px;font-weight:600}
+.block{margin-bottom:16px}
+.block b.lbl{display:block;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+table{width:100%;border-collapse:collapse;margin-top:18px}
+th{text-align:left;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:8px;font-weight:600}
+th:last-child,td:last-child{text-align:right}
+td{padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.totals{margin-top:4px}
+.totals div{display:flex;justify-content:space-between;padding:6px 0;font-size:13.5px}
+.totals .grand{border-top:1px solid var(--olive);margin-top:6px;padding-top:12px;font:600 17px var(--serif)}
+.thanks{margin-top:30px;display:flex;justify-content:space-between;align-items:flex-end}
+.inv-no{font-size:11px;color:var(--muted);line-height:1.8}
+.seal{width:76px;height:76px;border:1.4px dashed var(--rust);border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--rust);font:600 9.5px/1.3 var(--sans);letter-spacing:.06em;text-transform:uppercase;transform:rotate(-8deg)}
+.printbar{max-width:420px;margin:0 auto 14px;text-align:right}
+.printbar button{border:1px solid var(--olive);background:none;color:var(--olive);border-radius:999px;padding:8px 16px;font:600 11.5px var(--sans);letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+@media print{.printbar{display:none}body{padding:0;background:#fff}.receipt{box-shadow:none}}
+</style>
+</head>
+<body>
+<div style="width:100%;max-width:420px">
+<div class="printbar"><button onclick="print()">Print / Save PDF</button></div>
+<div class="receipt" id="r">
+  <div class="stampwrap">
+    <div class="monogram"><svg viewBox="0 0 24 24"><path d="M12 4C9 2 5 1 2 2v16c3-1 7 0 10 2 3-2 7-3 10-2V2c-3-1-7 0-10 2Z"/><path d="M12 4v16"/></svg></div>
+    <div class="word">Chapter One<b>Invoice</b></div>
+  </div>
+  <div class="meta">
+    <div><b>Served to</b><span id="iName">Guest</span></div>
+    <div style="text-align:right"><b>Order type</b><span id="iType">Takeaway</span></div>
+  </div>
+  <div class="block"><b class="lbl">From</b>Chapter One, Jodhpur &middot; @chapterone_india</div>
+  <table>
+    <thead><tr><th>Item</th><th>Qty</th><th>Amount</th></tr></thead>
+    <tbody id="iRows"></tbody>
+  </table>
+  <div class="totals" id="iTotals"></div>
+  <div class="thanks">
+    <div class="inv-no">INVOICE NO: <span id="iNo">—</span><br>DATE: <span id="iDate">—</span></div>
+    <div class="seal">Thank<br>You</div>
+  </div>
+</div>
+</div>
+<script>
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function inr(n){return '₹'+Math.round(n).toLocaleString('en-IN')}
+const q=new URLSearchParams(location.search);
+let order=null;
+try{order=JSON.parse(q.get('o')||localStorage.getItem('chapterone_last_order')||'null')}catch(e){}
+order=order||{name:'Guest',type:'Takeaway',items:[{name:'Chapter One Latte',qty:1,price:230},{name:'Carrot Walnut Cake',qty:1,price:180}],no:'DEMO-0001',date:new Date().toISOString().slice(0,10)};
+document.getElementById('iName').textContent=order.name||'Guest';
+document.getElementById('iType').textContent=order.type||'Takeaway';
+document.getElementById('iNo').textContent=order.no||'—';
+document.getElementById('iDate').textContent=order.date||new Date().toISOString().slice(0,10);
+const sub=(order.items||[]).reduce((t,i)=>t+i.price*i.qty,0),tax=Math.round(sub*0.05),tot=sub+tax;
+document.getElementById('iRows').innerHTML=(order.items||[]).map(i=>'<tr><td>'+esc(i.name)+'</td><td>'+i.qty+'</td><td>'+inr(i.price*i.qty)+'</td></tr>').join('');
+document.getElementById('iTotals').innerHTML='<div><span>Subtotal</span><span>'+inr(sub)+'</span></div><div><span>Tax (5%)</span><span>'+inr(tax)+'</span></div><div class="grand"><span>Total</span><span>'+inr(tot)+'</span></div>';
+</script>
+</body>
+</html>
