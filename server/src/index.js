@@ -414,6 +414,7 @@ const RPC = {
   pay_me: { params: [], auth: true },
   pay_me_punch: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
   pay_me_punch_offline: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_save_draft_offline: { params: ['p'], jsonb: ['p'], auth: true },
   pay_me_attendance: { params: ['p_month'], auth: true },
   pay_me_leave_apply: { params: ['p'], jsonb: ['p'], auth: true },
   pay_me_regularize: { params: ['p'], jsonb: ['p'], auth: true },
@@ -591,6 +592,39 @@ async function callRpc(client, fnName, args) {
   const placeholders = cfg.params.map((_, i) => `$${i + 1}`);
   const { rows } = await client.query(`select ${fnName}(${placeholders.join(',')}) as result`, values);
   return rows[0]?.result;
+}
+
+function httpFromError(err) {
+  let status = err.status || 500;
+  let message = err.message || 'internal error';
+  // Phase 1: bookings_no_overlap is a Postgres EXCLUDE constraint
+  // (see 008_phase1_...sql) -- surface its violation as a normal
+  // 409, not a raw 500. Verified against a real Postgres 16 (see
+  // that migration's own testing notes).
+  if (err.code === '23P01') {
+    status = 409;
+    message = 'That resource is already booked for an overlapping time.';
+  }
+  // A stale/cached login token whose auth_users row no longer exists
+  // (e.g. an admin cleanup deleted it) hits this FK, not a bad
+  // password -- surface it as "please sign in again", not a raw
+  // constraint-violation string.
+  if (err.code === '23503' && /user_id_fkey/.test(err.constraint || '')) {
+    status = 401;
+    message = 'Your session is no longer valid. Please sign in again.';
+  }
+  if (err.code === '23505' && err.constraint === 'auth_users_email_key') {
+    status = 409;
+    message = 'An account with that email already exists.';
+  }
+  // Accounting raises ordinary business-rule errors from SQL (locked period, insufficient stock, credit limit,
+  // unbalanced journal, ...). Those are the caller's to fix, not server faults: 400 (or 401/403), and no stack in the log.
+  if (status === 500 && typeof err.code === 'string') {
+    if (err.code === 'P0001' || /^(AC|PY|MB)\d{3}$/.test(err.code) || /^(22|23)/.test(err.code)) { status = 400; message = err.message; }
+    else if (err.code === '42501') { status = 403; message = err.message; }
+    else if (err.code === '28000') { status = 401; message = err.message; }
+  }
+  return { status, message };
 }
 
 function readJsonBody(req) {
@@ -1038,6 +1072,42 @@ const server = http.createServer(async (req, res) => {
       return reply(200, { data: result });
     }
 
+    // ---- batch sync: POST /sync { ops: [{ id, fn, args }] } ----
+    // Lets a phone send everything it queued while offline in one request instead of one request per record. It adds no
+    // new door: every op goes through exactly the same allow-list, login check and per-function permission checks as
+    // POST /rpc/<fn> (anonymous functions are refused here), each op in its own transaction so one refusal never undoes
+    // the others. Ops run in order. After a failure that may be temporary (500s, 401, 429, 408) the rest are not tried
+    // ({skipped:true}) so the client keeps them queued and the order is preserved; a refusal (4xx business rule) only
+    // fails that op. The functions are idempotent on their client-generated ids, so resending a batch is safe.
+    if (url.pathname === '/sync' && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      const body = await readJsonBody(req);
+      const ops = Array.isArray(body && body.ops) ? body.ops : null;
+      if (!ops || !ops.length) throw new HttpError(400, 'ops must be a non-empty list');
+      if (ops.length > 50) throw new HttpError(413, 'at most 50 ops per request');
+      const results = []; let stopped = false;
+      for (const op of ops) {
+        const id = op && op.id != null ? String(op.id).slice(0, 80) : null;
+        if (stopped) { results.push({ id, ok: false, skipped: true }); continue; }
+        try {
+          const fnName = op && typeof op.fn === 'string' ? op.fn : '';
+          const cfg = RPC[fnName];
+          if (!cfg) throw new HttpError(404, 'unknown function');
+          if (!cfg.auth) throw new HttpError(400, 'this function cannot be sent in a batch');
+          if (fnName === 'submit_signup_request' || fnName === 'submit_addon_request') await requireVerifiedEmail(user.id);
+          const args = op.args && typeof op.args === 'object' ? op.args : {};
+          const data = await withAuth(user.id, (client) => callRpc(client, fnName, args));
+          results.push({ id, ok: true, data });
+        } catch (e) {
+          const { status, message } = httpFromError(e);
+          if (status === 500) { console.error(e); captureError(e, { method: 'POST', path: '/sync', user_id: user.id }); }
+          results.push({ id, ok: false, status, error: message });
+          if (status >= 500 || status === 401 || status === 408 || status === 429) stopped = true;
+        }
+      }
+      return reply(200, { results });
+    }
+
     // ---- rpc ----
     const rpcMatch = url.pathname.match(/^\/rpc\/([a-z_]+)$/);
     if (rpcMatch && req.method === 'POST') {
@@ -1224,35 +1294,7 @@ const server = http.createServer(async (req, res) => {
 
     throw new HttpError(404, 'not found');
   } catch (err) {
-    let status = err.status || 500;
-    let message = err.message || 'internal error';
-    // Phase 1: bookings_no_overlap is a Postgres EXCLUDE constraint
-    // (see 008_phase1_...sql) -- surface its violation as a normal
-    // 409, not a raw 500. Verified against a real Postgres 16 (see
-    // that migration's own testing notes).
-    if (err.code === '23P01') {
-      status = 409;
-      message = 'That resource is already booked for an overlapping time.';
-    }
-    // A stale/cached login token whose auth_users row no longer exists
-    // (e.g. an admin cleanup deleted it) hits this FK, not a bad
-    // password -- surface it as "please sign in again", not a raw
-    // constraint-violation string.
-    if (err.code === '23503' && /user_id_fkey/.test(err.constraint || '')) {
-      status = 401;
-      message = 'Your session is no longer valid. Please sign in again.';
-    }
-    if (err.code === '23505' && err.constraint === 'auth_users_email_key') {
-      status = 409;
-      message = 'An account with that email already exists.';
-    }
-    // Accounting raises ordinary business-rule errors from SQL (locked period, insufficient stock, credit limit,
-    // unbalanced journal, ...). Those are the caller's to fix, not server faults: 400 (or 401/403), and no stack in the log.
-    if (status === 500 && typeof err.code === 'string') {
-      if (err.code === 'P0001' || /^(AC|PY|MB)\d{3}$/.test(err.code) || /^(22|23)/.test(err.code)) { status = 400; message = err.message; }
-      else if (err.code === '42501') { status = 403; message = err.message; }
-      else if (err.code === '28000') { status = 401; message = err.message; }
-    }
+    const { status, message } = httpFromError(err);
     if (status === 500) {
       console.error(err);
       captureError(err, { method: req.method, path: url.pathname, user_id: user?.id || null });

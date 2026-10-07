@@ -239,6 +239,22 @@ export default async function run({ browser, stack }) {
     await q("update profiles set role_id = null where id = (select id from auth_users where email=$1)", [USERS.acctCashier]);
   }, 'major');
   await s.check('Business-rule failures come back as 400 with a plain message, not 500', async () => { const r = await call(owner, 'acc_save_document', { p: { doc_type: 'invoice', post: true, lines: [{ product_id: tee, qty: 9999, rate: 1 }] } }); assert(r.status === 400 && /insufficient/i.test(r.error), r.status + ' ' + r.error); }, 'major');
+  await s.check('Offline drafts: saved once per operation id, always a draft (never posted), no numbers or stock used, limited types and roles', async () => {
+    const op = 'off-' + Date.now(), body = { op, doc_type: 'bill', party_id: supp, supplier_ref: 'OFF/1', post: true, id: '00000000-0000-0000-0000-000000000000', payments: [{ amount: 999, mode: 'cash' }], lines: [{ description: 'Offline cartons', qty: 3, rate: 100, tax_rate: 18 }] };
+    const before = Number((await q('select count(*)::int n from acc_journals where tenant_id=$1', [tid]))[0].n), stockBefore = Number((await q('select count(*)::int n from acc_stock_moves where tenant_id=$1', [tid]))[0].n);
+    const a = await ok(owner, 'acc_save_draft_offline', { p: body });
+    assert(a.posted === false && a.status === 'draft' && /^DRAFT-/.test(a.number) && a.duplicate === false, JSON.stringify(a));
+    const b = await ok(owner, 'acc_save_draft_offline', { p: body }); assert(b.duplicate === true && b.id === a.id, 'replay should return the same draft: ' + JSON.stringify(b));
+    assert(Number((await q("select count(*)::int n from acc_documents where tenant_id=$1 and client_op=$2", [tid, op]))[0].n) === 1, 'duplicated');
+    assert(Number((await q('select count(*)::int n from acc_journals where tenant_id=$1', [tid]))[0].n) === before && Number((await q('select count(*)::int n from acc_stock_moves where tenant_id=$1', [tid]))[0].n) === stockBefore, 'an offline draft moved the books or stock');
+    const d = (await ok(owner, 'acc_get_document', { p_id: a.id })).doc; assert(d.status === 'draft' && d.supplier_ref === 'OFF/1', JSON.stringify(d));
+    assert((await q("select meta->>'offline_draft' f from acc_documents where id=$1", [a.id]))[0].f === 'true', 'not marked as an offline draft');
+    await fails(owner, 'acc_save_draft_offline', { p: { ...body, op: '' } }, /operation id/i);
+    await fails(owner, 'acc_save_draft_offline', { p: { ...body, op: 'x' + op, doc_type: 'quotation' } }, /only invoices/i);
+    await fails(cashier, 'acc_save_draft_offline', { p: { ...body, op: 'c' + op } }, /role does not allow/i);                 // a cashier has sales, not purchases
+    const inv = await ok(cashier, 'acc_save_draft_offline', { p: { op: 'i' + op, doc_type: 'invoice', lines: [{ description: 'Counter sale', qty: 1, rate: 50, tax_rate: 18 }] } }); assert(inv.status === 'draft', 'cashier invoice draft');
+    const out = await call(null, 'acc_save_draft_offline', { p: body }); assert(out.status === 401, 'logged out: ' + out.status);
+  }, 'critical');
   await s.check('After all of that, every invariant still holds', async () => { const r = await integrity(); assert(r.checks.length >= 10, 'checks missing'); }, 'critical');
 
   // ---------- screens ----------

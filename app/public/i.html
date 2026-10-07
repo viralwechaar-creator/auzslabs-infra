@@ -47,7 +47,7 @@ th.c,td.c{text-align:center}th.r,td.r{text-align:right}
 </style></head><body>
 <div class=bar><button onclick="print()">Print / Download</button></div>
 <div class=wrap id=a>Loading…</div>
-<script src=/sb-client.js?v=3></script><script src=/config.js></script><script>
+<script src=/sb-client.js?v=4></script><script src=/config.js></script><script>
 const sb=supabase.createClient(CFG.url,CFG.key),A=document.getElementById('a'),esc=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';'),r2=n=>Math.round(n*100)/100,inr=n=>'₹'+r2(n).toLocaleString('en-IN');
 const id=new URLSearchParams(location.search).get('o');
 (async()=>{

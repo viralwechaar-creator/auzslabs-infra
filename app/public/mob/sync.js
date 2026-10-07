@@ -101,6 +101,20 @@ function scheduleRetry() {
 }
 // manual "tap to retry" (and the browser's online event): forget the back-off and try right now
 function retrySyncNow() { retryDelay = 5000; return trySync(); }
+// Send the front of the queue in ONE request (POST /sync) instead of one request per write: after a long time offline
+// a phone can hold dozens of sales. Returns Map(oid -> result) or null when batching is not possible (older server,
+// one item, no answer, signed out): the loop below then sends item by item exactly as before.
+async function tryBatch(items) {
+  if (items.length < 2 || !sb.sync) return null;
+  try {
+    const chunk = items.slice(0, 50);
+    const r = await sb.sync(chunk.map((it) => ({ id: String(it.oid), fn: it.fn, args: it.args })));
+    if (r.error || !r.data || !Array.isArray(r.data.results)) return null;
+    const m = new Map();
+    for (const x of r.data.results) m.set(Number(x.id), x);
+    return m;
+  } catch (e) { return null; }
+}
 async function trySync() {
   if (syncing) return;
   if (!navigator.onLine) { await updateOutboxCount(); return; }
@@ -108,9 +122,14 @@ async function trySync() {
   try {
     const db = await openDb();
     let items = await outboxAll();
+    const batch = await tryBatch(items);
     for (const it of items) {
       try {
-        await api(it.fn, it.args);
+        const br = batch && batch.get(Number(it.oid));
+        if (br && br.ok) { /* sent in the batch */ }
+        else if (br && br.skipped) { S.syncFailing = true; scheduleRetry(); break; }   // an earlier write hit a temporary failure
+        else if (br) { const be = new Error(br.error || t('errGeneric')); be.status = br.status; throw be; }
+        else await api(it.fn, it.args);
       } catch (e) {
         if (e.status === 401) { S.syncFailing = false; break; } // session dead: leave the rest queued until the next sign-in
         if (e.message === t('errOffline')) break;              // truly offline: leave the rest queued

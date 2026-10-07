@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pool } from './db.js';
+import { s3Enabled, s3Put, s3Get } from './s3.js';
 
 // Replaces Supabase Storage's 'site' bucket. Files live on disk under
 // ./uploads/site/<tenant-slug>/<prefix>/<file>, written here and served
@@ -54,10 +55,13 @@ export async function saveDocUpload({ tenantId, empId, buffer }) {
     err.status = 400;
     throw err;
   }
-  const dir = path.join(DOC_ROOT, safeSegment(tenantId), safeSegment(empId));
-  await fs.mkdir(dir, { recursive: true });
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${kind.ext}`;
-  await fs.writeFile(path.join(dir, filename), buffer);
+  if (s3Enabled()) await s3Put(`private/${safeSegment(tenantId)}/${safeSegment(empId)}/${filename}`, buffer, kind.type);
+  else {
+    const dir = path.join(DOC_ROOT, safeSegment(tenantId), safeSegment(empId));
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(path.join(dir, filename), buffer);
+  }
   return { path: `${safeSegment(tenantId)}/${safeSegment(empId)}/${filename}`, contentType: kind.type };
 }
 
@@ -71,7 +75,12 @@ export async function readDocUpload({ tenantId, empId, filename }) {
     const buffer = await fs.readFile(file);
     return { buffer, type };
   } catch {
-    return null;
+    // not on disk: it may be in object storage (files written before it was switched on stay on disk and are found above)
+    if (!s3Enabled()) return null;
+    try {
+      const buffer = await s3Get(`private/${safeSegment(tenantId)}/${safeSegment(empId)}/${base}${ext}`);
+      return buffer ? { buffer, type } : null;
+    } catch { return null; }
   }
 }
 

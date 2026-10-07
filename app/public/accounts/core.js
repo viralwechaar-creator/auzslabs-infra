@@ -147,11 +147,23 @@ async function loadCtx() {
   return c;
 }
 const PRODUCT_CAP = 5000;
-async function products(force) { if (!S.products || force) { S.products = (await api('acc_list_products', { limit: PRODUCT_CAP })).rows; S.productsPartial = S.products.length >= PRODUCT_CAP; } return S.products; }
+async function products(force) {
+  if (!S.products || force) {
+    try { S.products = (await api('acc_list_products', { limit: PRODUCT_CAP })).rows; S.productsPartial = S.products.length >= PRODUCT_CAP; if (window.offSave) offSave('products', S.products); }
+    catch (e) { if (e.status || !window.offLoad) throw e; const c = await offLoad('products'); if (!c) throw e; S.products = c; S.productsPartial = false; }   // no connection: the copy kept on this device
+  }
+  return S.products;
+}
 // big catalogues (more than PRODUCT_CAP items) are searched on the server and merged into the local list
 function rememberProducts(rows) { S.products = S.products || []; rows.forEach((r) => { const i = S.products.findIndex((x) => x.id === r.id); if (i >= 0) S.products[i] = r; else S.products.push(r); }); }
 async function searchProducts(q) { const rows = (await api('acc_list_products', { search: q, limit: 8 })).rows; rememberProducts(rows); return rows; }
-async function parties(force) { if (!S.parties || force) S.parties = (await api('acc_list_parties', { limit: 5000, include_inactive: true })).rows; return S.parties; }
+async function parties(force) {
+  if (!S.parties || force) {
+    try { S.parties = (await api('acc_list_parties', { limit: 5000, include_inactive: true })).rows; if (window.offSave) offSave('parties', S.parties); }
+    catch (e) { if (e.status || !window.offLoad) throw e; const c = await offLoad('parties'); if (!c) throw e; S.parties = c; }
+  }
+  return S.parties;
+}
 const bust = (...k) => { if (k.includes('products') || !k.length) S.products = null; if (k.includes('parties') || !k.length) S.parties = null; };
 const orgState = () => S.org && S.org.state_code;
 const curFY = () => S.fys.find((f) => f.start_date <= today() && today() <= f.end_date) || S.fys[0];
