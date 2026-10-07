@@ -398,10 +398,20 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
   box-shadow:0 -30px 60px -30px rgba(46,44,42,.2);
 }
 .stack-panel:nth-of-type(1){top:0;z-index:1}
-.stack-panel:nth-of-type(2){top:min(calc(112px + env(safe-area-inset-top)), calc(100svh - var(--h, 0px)));z-index:2}
-.stack-panel:nth-of-type(3){top:min(calc(112px + env(safe-area-inset-top) + var(--tab-step)), calc(100svh - var(--h, 0px)));z-index:3}
-.stack-panel:nth-of-type(4){top:min(calc(112px + env(safe-area-inset-top) + (var(--tab-step) * 2)), calc(100svh - var(--h, 0px)));z-index:4}
-.stack-panel:nth-of-type(5){top:min(calc(112px + env(safe-area-inset-top) + (var(--tab-step) * 3)), calc(100svh - var(--h, 0px)));z-index:5}
+/* Each sheet should pin --tab-step below the last, so the one behind it peeks out above
+   (the folder-stack effect) -- UNLESS the sheet is tall enough to overflow one screen, in
+   which case its offset shrinks (down to negative) so its own bottom still reaches the
+   viewport bottom once pinned, instead of leaving a gap. --h (sync.js's measure()) is the
+   panel's own full offsetHeight, always >= 100svh (min-height:100svh forces that), so
+   "100svh - var(--h)" is 0 for a sheet that fits one screen and negative for one that
+   doesn't -- adding the offset back (`calc(OFFSET + min(0, 100svh - var(--h)))`) is what
+   actually keeps OFFSET for the common case instead of the old `min(OFFSET, 100svh - var(--h))`,
+   which always collapsed to 0/negative and pinned every sheet flush under the header with
+   no stagger at all (reported as "sheets scrolling till header, no overlap"). */
+.stack-panel:nth-of-type(2){top:calc((112px + env(safe-area-inset-top)) + min(0px, 100svh - var(--h, 0px)));z-index:2}
+.stack-panel:nth-of-type(3){top:calc((112px + env(safe-area-inset-top) + var(--tab-step)) + min(0px, 100svh - var(--h, 0px)));z-index:3}
+.stack-panel:nth-of-type(4){top:calc((112px + env(safe-area-inset-top) + (var(--tab-step) * 2)) + min(0px, 100svh - var(--h, 0px)));z-index:4}
+.stack-panel:nth-of-type(5){top:calc((112px + env(safe-area-inset-top) + (var(--tab-step) * 3)) + min(0px, 100svh - var(--h, 0px)));z-index:5}
 .stack-panel.alt{background-color:var(--bg-raised);background-blend-mode:normal}
 .stack-panel{overflow:hidden}
 
@@ -522,10 +532,10 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
   .stack{margin-top:0}
   .stack-panel{border-radius:10px 36px 0 0;padding:96px 0 80px}
   .stack-panel:not(:first-of-type){padding-top:190px}
-  .stack-panel:nth-of-type(2){top:min(150px, calc(100svh - var(--h, 0px)))}
-  .stack-panel:nth-of-type(3){top:min(calc(150px + var(--tab-step)), calc(100svh - var(--h, 0px)))}
-  .stack-panel:nth-of-type(4){top:min(calc(150px + (var(--tab-step) * 2)), calc(100svh - var(--h, 0px)))}
-  .stack-panel:nth-of-type(5){top:min(calc(150px + (var(--tab-step) * 3)), calc(100svh - var(--h, 0px)))}
+  .stack-panel:nth-of-type(2){top:calc(150px + min(0px, 100svh - var(--h, 0px)))}
+  .stack-panel:nth-of-type(3){top:calc(150px + var(--tab-step) + min(0px, 100svh - var(--h, 0px)))}
+  .stack-panel:nth-of-type(4){top:calc(150px + (var(--tab-step) * 2) + min(0px, 100svh - var(--h, 0px)))}
+  .stack-panel:nth-of-type(5){top:calc(150px + (var(--tab-step) * 3) + min(0px, 100svh - var(--h, 0px)))}
   .stack-panel:not(:first-of-type)::before{left:56px}
   .stack-panel.stack-panel-dark{padding-top:160px}
   .stack-panel-dark::before{left:56px}
