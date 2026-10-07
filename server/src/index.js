@@ -111,6 +111,7 @@ const RPC = {
   push_record: { params: ['rid', 'rkind', 'rdata', 'rdeleted', 'base', 'force'], jsonb: ['rdata'], auth: true },
   next_invoice_no: { params: ['prefix'], auth: true },
   provision_tenant: { params: ['p_name', 'p_slug', 'p_niche'], auth: true },
+  provision_custom_tenant: { params: ['p_name', 'p_slug', 'p_brief'], auth: true },
   public_menu: { params: ['tenant_slug'], auth: false },
   public_page: { params: ['tenant_slug', 'page_slug'], auth: false },
   public_salon_page: { params: ['tenant_slug'], auth: false },
