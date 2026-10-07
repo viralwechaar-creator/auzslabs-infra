@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { pool } from './db.js';
+import { pool, withAuth } from './db.js';
 import { s3Enabled, s3Put, s3Get } from './s3.js';
 
 // Replaces Supabase Storage's 'site' bucket. Files live on disk under
@@ -114,14 +114,19 @@ export async function getUploadsDiskUsage() {
   return { site_bytes: siteBytes, doc_bytes: docBytes, total_bytes: siteBytes + docBytes };
 }
 
-export async function saveSiteUpload({ tenantId, prefix, buffer }) {
+export async function saveSiteUpload({ tenantId, uid, prefix, buffer }) {
   if (!looksLikeImage(buffer)) {
     const err = new Error('file does not look like a supported image (jpeg/png/webp)');
     err.status = 400;
     throw err;
   }
 
-  const { rows } = await pool.query('select slug from tenants where id = $1', [tenantId]);
+  // tenants has owner-read RLS (db/013, keyed on app_uid()) -- a bare pool.query here never
+  // set app.uid, so this always returned zero rows and every upload failed with "unknown
+  // tenant", for every tenant, the whole time that policy has existed (the exact same bug
+  // shape CLAUDE.md already documents for the Razorpay createOrder() fix and the
+  // subscriptions table). Routing through withAuth(uid, ...) is the fix used there too.
+  const { rows } = await withAuth(uid, (client) => client.query('select slug from tenants where id = $1', [tenantId]));
   const slug = rows[0]?.slug;
   if (!slug) throw new Error('unknown tenant');
 
