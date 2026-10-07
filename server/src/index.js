@@ -1136,7 +1136,7 @@ const server = http.createServer(async (req, res) => {
       const profile = await myProfile(user.id);
       if (!profile?.tenant_id || profile.role !== 'owner') throw new HttpError(403, 'owner only');
       const buffer = await readRawBody(req, 8_000_000); // 8MB cap -- client already compresses to well under this
-      const result = await saveSiteUpload({ tenantId: profile.tenant_id, prefix: storageMatch[1], buffer });
+      const result = await saveSiteUpload({ tenantId: profile.tenant_id, uid: user.id, prefix: storageMatch[1], buffer });
       return reply(200, result);
     }
 
