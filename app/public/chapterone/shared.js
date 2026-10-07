@@ -68,6 +68,23 @@ const itemPrice = (i, size) => { if (!i.sizes || !i.sizes.length) return i.price
 
 let CATS = DEMO_CATS, ITEMS = DEMO_ITEMS, usingLiveMenu = false, SITE_CFG = {};
 
+/* Logo everywhere on this bespoke site (header/nav overlay/footer, every page) reads from the
+   tenant's own `settings.logo` the moment the owner uploads one from the admin console
+   (Management -> Configuration -> Logo) -- same field every other tenant's site already uses.
+   `.co-logo-dark` marks the two usages drawn light-on-dark via filter:invert(1); an uploaded
+   logo already has its own real colours, so that filter is dropped for it (it would otherwise
+   invert a real photo/logo into something wrong). Until a logo is set, every page keeps
+   rendering the owner's real supplied file (logo-full.png) exactly as before. */
+function applyLogo(cfg) {
+  if (!cfg.logo) return;
+  document.querySelectorAll('.co-logo').forEach((img) => {
+    img.src = cfg.logo;
+    if (img.classList.contains('co-logo-dark')) img.style.filter = 'none';
+  });
+  const og = document.querySelector('meta[property="og:image"]');
+  if (og) og.setAttribute('content', cfg.logo);
+}
+
 /* ---------------- live menu + content: loads the owner's real catalogue AND the same
    "Website & Booking" fields the admin console's mgmt/website page already edits
    (siteKicker/siteTag/siteSub/siteAbout/siteHours/siteInsta/addr/phone/logo), so that page
@@ -80,6 +97,7 @@ async function loadLiveMenu() {
     const { data, error } = await sb.rpc('public_menu', { tenant_slug: TENANT_SLUG });
     if (error || !data) return;
     SITE_CFG = data.cfg || {};
+    applyLogo(SITE_CFG);
     if (typeof applyBranding === 'function') applyBranding(SITE_CFG);
     if (!data.items || !data.items.length) return;
     const cats = (data.cats || []).slice().sort((a, b) => (a.n || 0) - (b.n || 0));
