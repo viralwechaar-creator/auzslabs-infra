@@ -216,10 +216,12 @@ function render(){
  if(window.auzBrandFrom)auzBrandFrom(cfg());
  if(!(S.role=='owner'||S.role=='manager'))return $('#app').replaceChildren(h('div',{class:'login'},h('h2',{style:'margin:0'},'Owner access only'),h('p',{class:'sm'},'The admin console is for owners and managers. Staff use the billing POS.'),h('a',{class:'dbtn',href:'/index.html'},'Open billing POS')));
  const keep=document.querySelector('.content'),top=keep?keep.scrollTop:0,fn=PAGES[S.page]||PAGES.dashboard;let body;
+ const navKeep=document.querySelector('.side .nav'),navTop=navKeep?navKeep.scrollTop:0;
  try{body=fn()}catch(e){console.error(e);body=[card(h('b',{},'This page hit an error'),h('p',{class:'sm'},String(e&&e.message||e)))]}
  $('#app').replaceChildren(sidebar(),h('main',{class:'main'},topBar(),h('section',{class:'content'},...[].concat(body))));
  $('#ov').className='ov'+(S.sideOpen?' show':'');
- const c=document.querySelector('.content');if(c)c.scrollTop=top}
+ const c=document.querySelector('.content');if(c)c.scrollTop=top;
+ const nv=document.querySelector('.side .nav');if(nv)nv.scrollTop=navTop}
 function login(msg){
  const e=h('input',{type:'email',placeholder:'Email',autocomplete:'username'}),p=h('input',{type:'password',placeholder:'Password',autocomplete:'current-password'}),m=h('div',{class:'sm',style:'color:var(--red)'},msg||'');
  $('#app').replaceChildren(h('form',{class:'login',onsubmit:async ev=>{ev.preventDefault();let r=await sb.auth.signInWithPassword({email:e.value.trim(),password:p.value});r=await auz2fa.resolve(sb,r);r.error?m.textContent=r.error.message:boot()}},h('b',{style:'font-size:20px'},'AUZs LAB Admin'),h('span',{class:'sm'},'Sign in with your owner or manager account.'),e,p,m,h('button',{type:'submit'},'Sign in')))}
