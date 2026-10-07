@@ -318,6 +318,7 @@ body.admin-shell .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px
         <button class="a-side-btn" data-section="users"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 8a3 3 0 1 1 0 6"/><path d="M15.5 14.3A5.9 5.9 0 0 1 21 20"/></svg>Users</button>
         <button class="a-side-btn" data-section="systemStats"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="7" rx="1.6"/><rect x="4" y="13" width="16" height="7" rx="1.6"/><circle cx="8" cy="7.5" r=".9" fill="currentColor" stroke="none"/><circle cx="8" cy="16.5" r=".9" fill="currentColor" stroke="none"/></svg>System resources</button>
         <button class="a-side-btn" data-section="auditLog"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>Audit log</button>
+        <button class="a-side-btn" data-section="privacyReq"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3Z"/><path d="M9.5 12l2 2 3.5-4"/></svg>Privacy requests<span class="a-row-badge" id="privReqBadge" style="display:none"></span></button>
       </nav>
       <a href="design-system/nav-kit.html" target="_blank" rel="noopener" class="a-side-link" style="margin-top:auto">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1.2"/><rect x="13" y="4" width="7" height="7" rx="1.2"/><rect x="4" y="13" width="7" height="7" rx="1.2"/><rect x="13" y="13" width="7" height="7" rx="1.2"/></svg>UI Kit
@@ -461,6 +462,14 @@ body.admin-shell .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px
         <div id="auditLogList">Loading&hellip;</div>
       </section>
 
+      <section class="a-page" id="privacyReqSection" data-title="Privacy requests" data-parent="more">
+        <div class="label">Data Protection Act</div>
+        <h2 class="h-2">Privacy requests</h2>
+        <p class="p">People asking to see, correct or delete their data, to withdraw consent, or to complain. Acknowledge each within 2 days and answer within 30 days. Closing a request needs a short reply the person can read.</p>
+        <div class="row" style="gap:8px;margin:12px 0;flex-wrap:wrap"><button class="btn btn-primary" data-pr="active">Open</button><button class="btn btn-ghost" data-pr="done">Done</button><button class="btn btn-ghost" data-pr="all">All</button></div>
+        <div id="privacyReqList">Loading&hellip;</div>
+      </section>
+
       <section class="a-page" id="moreSection" data-title="More">
         <div class="a-nav-list" id="moreNav">
           <button class="a-nav-row" data-section="signupRequests">
@@ -491,6 +500,11 @@ body.admin-shell .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px
           <button class="a-nav-row" data-section="auditLog">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
             <span class="grow">Audit log</span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <button class="a-nav-row" data-section="privacyReq">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3Z"/><path d="M9.5 12l2 2 3.5-4"/></svg>
+            <span class="grow">Privacy requests</span>
             <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
           </button>
           <a class="a-nav-row" href="design-system/nav-kit.html" target="_blank" rel="noopener">
@@ -634,7 +648,7 @@ function resetMainScroll() {
 const SECTION_LOADERS = {
   leads: () => loadLeads(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(),
   pricing: () => { loadPricing(); loadBundles(); loadPayments(); },
-  users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(),
+  users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(), privacyReq: () => loadPrivacyReq(),
 };
 const sectionLoadedAt = {};
 function ensureSectionLoaded(name) {
@@ -690,6 +704,7 @@ async function refreshAdminNotifBadges() {
   setBadge(['notifBadgeAddonSide', 'notifBadgeAddonMore'], counts.addon_request || 0);
   const moreTotal = (counts.signup_request || 0) + (counts.addon_request || 0) + (document.querySelectorAll('#notifBadgeSetupSide:not([style*="display: none"])').length ? Number(document.getElementById('notifBadgeSetupSide').textContent) || 0 : 0);
   setBadge(['notifBadgeMoreTab'], moreTotal);
+  try { const pr = await sb.rpc('admin_open_data_request_count'); if (!pr.error) setBadge(['privReqBadge'], Number(pr.data) || 0); } catch (e) { /* the badge is only a hint */ }
 }
 async function markAdminNotifsRead(type) {
   const { data } = await sb.from('notifications').select('id').eq('read', false).eq('type', type);
@@ -1550,6 +1565,31 @@ async function loadAuditLog() {
     ${rows}
   </table></div>`;
 }
+
+// ---- Privacy requests (DPDP): the queue behind Account -> Privacy & my data ----
+const PR_KIND = { access: 'See my data', correction: 'Correct my data', erasure: 'Delete my data', withdraw: 'Withdraw consent', nominee: 'Nominee', grievance: 'Complaint', other: 'Other' };
+let prFilter = 'active';
+async function loadPrivacyReq() {
+  const listEl = document.getElementById('privacyReqList');
+  const { data, error } = await sb.rpc('admin_list_data_requests', { p_status: prFilter });
+  if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  const open = (data || []).filter((r) => !r.closed_at).length;
+  const b = document.getElementById('privReqBadge'); if (b && prFilter === 'active') { b.style.display = open ? '' : 'none'; b.textContent = open ? String(open) : ''; }
+  if (!data || !data.length) { listEl.innerHTML = emptyDoodle('No requests here.'); return; }
+  const when = (t) => new Date(t).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  listEl.innerHTML = `<div class="admin-table-wrap"><table class="admin-table"><tr><th>Request</th><th>Person</th><th>Message</th><th>Status</th><th>Due</th><th></th></tr>${data.map((r) => `<tr>
+    <td data-label="Request">${esc(PR_KIND[r.kind] || r.kind)}<div style="color:var(--ink-faint)">${when(r.created_at)}</div></td>
+    <td data-label="Person">${esc(r.name || r.login_email)}<div style="color:var(--ink-faint)">${esc(r.login_email)}${r.phone ? ' &middot; ' + esc(r.phone) : ''}${r.business ? '<br>' + esc(r.business) : ''}</div></td>
+    <td data-label="Message">${esc(r.message || '')}${r.response ? '<div style="color:var(--ink-faint)">Reply: ' + esc(r.response) + '</div>' : ''}</td>
+    <td data-label="Status">${esc({ open: 'Received', in_progress: 'Being handled', done: 'Done', rejected: 'Closed' }[r.status])}${r.ack_overdue ? '<div style="color:var(--accent)">Not acknowledged (2 days)</div>' : ''}</td>
+    <td data-label="Due" style="${r.overdue ? 'color:var(--accent)' : ''}">${r.closed_at ? '&mdash;' : when(r.due_at)}${r.overdue ? ' (late)' : ''}</td>
+    <td>${r.closed_at ? '' : `<button class="btn btn-ghost" data-pr-ack="${r.id}">Acknowledge</button> <button class="btn btn-primary" data-pr-close="${r.id}" data-st="done">Reply &amp; done</button> <button class="btn btn-ghost" data-pr-close="${r.id}" data-st="rejected">Decline</button>`}</td></tr>`).join('')}</table></div>`;
+  listEl.querySelectorAll('[data-pr-ack]').forEach((el) => { el.onclick = async () => { const { error: e } = await sb.rpc('admin_update_data_request', { p_id: el.dataset.prAck, p_status: 'in_progress', p_response: null }); if (e) return alert(e.message); loadPrivacyReq(); }; });
+  listEl.querySelectorAll('[data-pr-close]').forEach((el) => { el.onclick = async () => {
+    const txt = window.prompt(el.dataset.st === 'done' ? 'Reply to the person (they will see this). Example: "We have emailed your data file."' : 'Why can this not be done? (they will see this)'); if (txt === null) return;
+    const { error: e } = await sb.rpc('admin_update_data_request', { p_id: el.dataset.prClose, p_status: el.dataset.st, p_response: txt }); if (e) return alert(e.message); loadPrivacyReq(); }; });
+}
+document.querySelectorAll('[data-pr]').forEach((c) => { c.addEventListener('click', () => { prFilter = c.dataset.pr; document.querySelectorAll('[data-pr]').forEach((x) => { x.className = 'btn ' + (x === c ? 'btn-primary' : 'btn-ghost'); }); loadPrivacyReq(); }); });
 </script>
 <script>
 /* a cell with nothing in it (an empty Message, a missing note) is hidden on phones instead of showing a bare label */

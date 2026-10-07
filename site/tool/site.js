@@ -94,8 +94,8 @@
       if (!a) return;
       var href = a.getAttribute('href');
       if (!href || href.charAt(0) === '#') return;
-      if (a.target === '_blank') return;
-      if (/^(mailto:|tel:|https?:)/i.test(href)) return;
+      if (a.target === '_blank' || a.hasAttribute('download')) return;
+      if (/^(mailto:|tel:|https?:|blob:|data:)/i.test(href)) return;
 
       e.preventDefault();
       var rect = a.getBoundingClientRect();

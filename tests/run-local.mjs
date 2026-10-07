@@ -7,7 +7,7 @@ import { writeReport, verdict, printFailures } from './lib/report.mjs';
 import { summary } from './lib/harness.mjs';
 
 const only = process.argv[2];
-const suites = ['marketing', 'responsive', 'journeys', 'salon', 'cafe', 'pos', 'apps', 'accounts', 'payroll', 'mobile', 'offline', 'docread', 'signup', 'design', 'security', 'load', 'loadmob'];
+const suites = ['marketing', 'responsive', 'journeys', 'salon', 'cafe', 'pos', 'apps', 'accounts', 'payroll', 'mobile', 'offline', 'docread', 'dpdp', 'signup', 'design', 'security', 'load', 'loadmob'];
 reset('local test copy');
 console.log('Building test database...'); await build(console.log);
 const stack = await startStack({ log: console.log });
