@@ -1299,7 +1299,8 @@ const server = http.createServer(async (req, res) => {
       console.error(err);
       captureError(err, { method: req.method, path: url.pathname, user_id: user?.id || null });
     }
-    reply(status, { error: message });
+    // an unexpected failure never shows its internal text (table names, SQL, paths) to the caller; it is in the server log / error tracker
+    reply(status, { error: status === 500 ? 'Something went wrong on our side. Please try again.' : message });
   }
 });
 
