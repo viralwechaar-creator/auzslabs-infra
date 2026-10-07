@@ -58,7 +58,12 @@ window.CFG = { url: 'https://api.auzslab.in', key: '', googleClientId: '26411364
         var d = x.j && x.j.data !== undefined ? x.j.data : x.j;
         if (!x.ok || !d || !d.access_token) return fail((x.j && x.j.error) || 'AUZslab did not accept the Google sign-in.');
         text.textContent = 'Signed in. Taking you back...';
-        location.replace(st.r.split('#')[0] + '#auz_gt=' + b64u({ t: d.access_token, u: d.user }));
+        var go = function () { location.replace(st.r.split('#')[0] + '#auz_gt=' + b64u({ t: d.access_token, u: d.user })); };
+        if (!st.c) return go();
+        // signed up here: record the privacy choice made on the sign-up page against the new account, then go on
+        var timer = setTimeout(go, 4000);
+        fetch(CFG.url + '/rpc/record_my_consent', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + d.access_token }, body: JSON.stringify({ p_purposes: { service: true, updates: st.c === 2 }, p_source: 'signup' }) })
+          .catch(function () {}).then(function () { clearTimeout(timer); go(); });
       }).catch(function () { fail('Could not reach AUZslab. Check your internet and try again.'); });
     return;
   }
@@ -70,7 +75,7 @@ window.CFG = { url: 'https://api.auzslab.in', key: '', googleClientId: '26411364
   ss('auz.nonce', nonce);
   var url = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=' + encodeURIComponent(CFG.googleClientId) + '&redirect_uri=' + encodeURIComponent(REDIRECT)
     + '&response_type=id_token&scope=' + encodeURIComponent('openid email profile') + '&nonce=' + encodeURIComponent(nonce)
-    + '&state=' + encodeURIComponent(b64u({ r: ret, a: app, n: nonce })) + '&prompt=select_account';
+    + '&state=' + encodeURIComponent(b64u({ r: ret, a: app, n: nonce, c: q.get('consent') === '1' ? (q.get('upd') === '1' ? 2 : 1) : 0 })) + '&prompt=select_account';
   var a = document.createElement('a'); a.href = url; a.className = 'btn btn-primary'; a.textContent = 'Continue with Google'; host.appendChild(a);
   text.textContent = 'Opening Google...';
   setTimeout(function () { location.href = url; }, 400);

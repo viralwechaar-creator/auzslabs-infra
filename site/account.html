@@ -121,6 +121,7 @@ input:disabled+.slider{opacity:.4;cursor:default}
       </div>
     <nav class="sidebar-nav" id="acctNav" aria-label="Account sections" style="display:none">
       <button class="nav-link acct-nav-btn" data-tab="profile"><span>My profile</span></button>
+      <button class="nav-link acct-nav-btn" data-tab="privacy"><span>Privacy &amp; my data</span></button>
       <a href="cart.html" class="nav-link" id="cartNavLink"><span>My cart</span><span id="cartNavCount"></span></a>
       <button class="nav-link acct-nav-btn tenant-only active" data-tab="account"><span>Account</span></button>
       <button class="nav-link acct-nav-btn tenant-only" data-tab="services"><span>Services</span></button>
@@ -159,6 +160,7 @@ input:disabled+.slider{opacity:.4;cursor:default}
 
       <section class="section tight" id="tabsSection" style="display:none">
         <div class="section-pane" id="pane-profile"></div>
+        <div class="section-pane" id="pane-privacy"></div>
         <div class="section-pane" id="pane-account"></div>
         <div class="section-pane" id="pane-services"></div>
         <div class="section-pane" id="pane-staff"></div>
@@ -172,7 +174,7 @@ input:disabled+.slider{opacity:.4;cursor:default}
 <script src="/sb-client.js?v=4"></script>
 <script src="vendor/qrcode.js"></script>
 <script src="tool/lock.js?v=1"></script><script src="tool/mydata.js?v=1"></script><script src="tool/help.js?v=1"></script><script src="tool/twofa.js?v=1"></script>
-<script src="tool/site.js?v=10"></script>
+<script src="tool/site.js?v=11"></script>
 <script>document.addEventListener("click", function (e) { if (e.target.closest && e.target.closest("#helpLink")) { try { auzHelp.open(typeof sb !== "undefined" ? sb : null); } catch (x) {} } });</script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script>
@@ -259,6 +261,72 @@ function renderProfile() {
   };
 }
 
+// ---- Privacy & my data (DPDP Act 2023): consent record, download my data, rights requests ----
+const REQ_KINDS = [['access', 'Show me the personal data you hold about me'], ['correction', 'Correct my personal data'], ['erasure', 'Delete my personal data'], ['nominee', 'Name someone to act for me'], ['grievance', 'Make a complaint'], ['other', 'Something else']];
+const REQ_STATUS = { open: 'Received', in_progress: 'Being handled', done: 'Done', rejected: 'Closed' };
+const fmtD = (t) => t ? new Date(t).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+async function renderPrivacy() {
+  const pane = $('#pane-privacy'); pane.innerHTML = '<div class="card"><p class="muted">Loading...</p></div>';
+  const [c, r] = await Promise.all([sb.rpc('my_consents'), sb.rpc('my_data_requests')]);
+  if (c.error) { pane.innerHTML = '<div class="card"><p class="muted">' + esc(c.error.message) + '</p></div>'; return; }
+  const C = c.data || {}, reqs = r.data || [], upd = !!(C.purposes && C.purposes.updates);
+  pane.innerHTML = `
+    <div class="card">
+      <h3 class="h-2">Your consent</h3>
+      <p class="muted">${C.accepted_at ? 'You agreed to our <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a> (version ' + esc(C.accepted_version) + ') on ' + esc(fmtD(C.accepted_at)) + '.' : 'You have not yet confirmed that you have read our <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>.'}
+        ${C.up_to_date ? '' : ' It was updated (version ' + esc(C.current_version) + ').'}</p>
+      ${C.up_to_date ? '' : '<button class="btn btn-primary form-submit" id="prAccept" style="margin-top:8px">I have read it and agree</button>'}
+      <label style="display:flex;gap:10px;align-items:flex-start;padding:12px 0 4px;font-weight:400"><input type="checkbox" id="prUpdates" ${upd ? 'checked' : ''} ${C.accepted_at ? '' : 'disabled'}><span>Send me product updates by email (optional)</span></label>
+      <p class="muted" style="font-size:13px">Consent to use your details for running your account is needed for the service to work. You can withdraw it by deleting your account, or <button id="prWithdraw" type="button" class="linkbtn" style="background:none;border:none;padding:0;font:inherit;color:var(--accent);text-decoration:underline;cursor:pointer">ask us to stop processing your data</button>.</p>
+      <div id="prMsg" class="muted" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <h3 class="h-2">Download my data</h3>
+      <p class="muted">A file with the personal data we hold about you: login details, profile, sign-in devices, consents and requests. Passwords are never included. If you own a business, your business records are in your business backup (Account, Your data).</p>
+      <button class="btn btn-ghost form-submit" id="prDownload" style="margin-top:4px">Download my data</button>
+    </div>
+    <div class="card">
+      <h3 class="h-2">Ask us about your data</h3>
+      <p class="muted">You can ask to see, correct or delete your data, name someone to act for you, or complain. We acknowledge within 2 days and answer within 30 days. Grievance officer: see the <a href="privacy.html#grievance" target="_blank" rel="noopener">Privacy policy</a>.</p>
+      <div class="field"><label>What do you want to ask?</label><select id="prKind">${REQ_KINDS.map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join('')}</select></div>
+      <div class="field wide"><label>Details (optional for access and delete)</label><textarea id="prText" rows="3" maxlength="2000"></textarea></div>
+      <button class="btn btn-primary form-submit" id="prSend" style="margin-top:8px">Send request</button>
+      <p class="muted" style="font-size:13px;margin-top:10px">To delete your login straight away, use <a href="delete-account.html">Delete your account</a>.</p>
+    </div>
+    <div class="card" id="prList">
+      <h3 class="h-2">Your requests</h3>
+      ${reqs.length ? reqs.map((x) => `<div style="padding:10px 0;border-top:1px solid var(--line,#e5e5e5)"><b>${esc((REQ_KINDS.find((k) => k[0] === x.kind) || [0, x.kind === 'withdraw' ? 'Withdraw consent' : x.kind])[1])}</b> <span class="muted">· ${esc(REQ_STATUS[x.status] || x.status)} · sent ${esc(fmtD(x.created_at))}${x.closed_at ? '' : ' · reply due by ' + esc(fmtD(x.due_at))}</span>${x.message ? '<div class="muted" style="margin-top:4px">' + esc(x.message) + '</div>' : ''}${x.response ? '<div style="margin-top:4px">Our reply: ' + esc(x.response) + '</div>' : ''}</div>`).join('') : '<p class="muted">No requests yet.</p>'}
+    </div>`;
+  const msg = (t, bad) => { const m = $('#prMsg'); if (m) { m.textContent = t; m.style.color = bad ? 'var(--accent)' : ''; } };
+  if ($('#prAccept')) $('#prAccept').onclick = async () => { const { error } = await sb.rpc('record_my_consent', { p_purposes: { service: true, updates: upd }, p_source: 'account' }); if (error) return msg(error.message, true); hideConsentBanner(); renderPrivacy(); };
+  $('#prUpdates').onchange = async (e) => { const { error } = await sb.rpc('record_my_consent', { p_purposes: { service: true, updates: e.target.checked }, p_source: 'account' }); msg(error ? error.message : 'Saved.', !!error); };
+  $('#prWithdraw').onclick = async () => { const { data, error } = await sb.rpc('withdraw_my_consent', { p_purpose: 'service' }); if (error) return msg(error.message, true); renderPrivacy(); setTimeout(() => msg((data && data.note) || 'Request logged.'), 400); };
+  $('#prDownload').onclick = async () => {
+    const { data, error } = await sb.rpc('my_personal_data'); if (error) return msg(error.message, true);
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })); a.download = 'my-auzslab-data.json'; document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+  };
+  $('#prSend').onclick = async () => {
+    const btn = $('#prSend'); btn.disabled = true;
+    const { error } = await sb.rpc('submit_data_request', { p_kind: $('#prKind').value, p_message: $('#prText').value });
+    btn.disabled = false; if (error) return msg(error.message, true);
+    await renderPrivacy(); setTimeout(() => msg('Request sent. We will acknowledge it within 2 days.'), 400);
+  };
+}
+// A one-time notice when the privacy policy changed (or was never confirmed): shown above the tabs on any page of the account.
+function hideConsentBanner() { const b = $('#consentBanner'); if (b) b.remove(); }
+async function checkConsent() {
+  try {
+    const { data } = await sb.rpc('my_consents'); if (!data || data.up_to_date) return;
+    if ($('#consentBanner')) return;
+    const b = document.createElement('div'); b.id = 'consentBanner';
+    b.style.cssText = 'margin:0 0 16px;padding:14px 16px;border:1px solid var(--accent);border-radius:14px;font-size:14px;line-height:1.5';
+    b.innerHTML = 'Please read our <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a> (' + (data.accepted_at ? 'updated, version ' + esc(data.current_version) : 'how we use your data') + ') and confirm. <button type="button" id="cbAgree" class="btn btn-primary" style="margin-left:8px;padding:6px 14px">I agree</button> <button type="button" id="cbOpen" class="btn btn-ghost" style="padding:6px 14px">Choices</button>';
+    const host = $('#tabsSection'); host.parentNode.insertBefore(b, host);
+    $('#cbAgree').onclick = async () => { await sb.rpc('record_my_consent', { p_purposes: { service: true, updates: !!(data.purposes && data.purposes.updates) }, p_source: 'account' }); hideConsentBanner(); };
+    $('#cbOpen').onclick = () => showTab('privacy');
+  } catch (e) { /* never block the account page for this */ }
+}
+
 async function bootProspect(session) {
   $('#signOutBtn').onclick = async () => { await sb.auth.signOut(); window.location.href = 'signup.html'; };
   document.querySelectorAll('.tenant-only').forEach((e) => { e.style.display = 'none'; });
@@ -268,7 +336,8 @@ async function bootProspect(session) {
   await loadProfile();
   const n = (window.AUZcart && AUZcart.get().length) || 0; $('#cartNavCount').textContent = n ? ' (' + n + ')' : '';
   document.querySelectorAll('.acct-nav-btn').forEach((b) => { b.onclick = () => { showTab(b.dataset.tab); const d = $('#sidebarDrawer'); if (d) d.classList.remove('open'); const o = $('#drawerOverlay'); if (o) o.classList.remove('open'); }; });
-  showTab('profile');
+  showTab(location.hash === '#privacy' ? 'privacy' : 'profile');
+  checkConsent();
 }
 
 async function boot() {
@@ -343,8 +412,9 @@ async function boot() {
       if (toggle) toggle.classList.remove('is-open');
     };
   });
-  const hashTab = { '#notifications': 'notifications', '#staff': 'staff', '#roles': 'roles', '#profile': 'profile' }[location.hash];
+  const hashTab = { '#notifications': 'notifications', '#staff': 'staff', '#roles': 'roles', '#profile': 'profile', '#privacy': 'privacy' }[location.hash];
   showTab(hashTab && document.getElementById('pane-' + hashTab) ? hashTab : 'account');
+  checkConsent();
   setInterval(async () => { await loadNotifications(); if ($('#pane-notifications').classList.contains('on')) renderNotifications(); }, 20000);
 
   $('#signOutBtn').onclick = async () => {
@@ -358,6 +428,7 @@ function showTab(tab) {
   document.querySelectorAll('.section-pane').forEach((s) => s.classList.remove('on'));
   $('#pane-' + tab).classList.add('on');
   if (tab === 'profile') renderProfile();
+  if (tab === 'privacy') renderPrivacy();
   if (tab === 'account') renderAccount();
   if (tab === 'services') renderServices();
   if (tab === 'staff') renderStaff();
