@@ -12,6 +12,33 @@ async function renderSell(v) {
   const [items, units, movements, vendors] = await Promise.all([idbGetAll('items'), idbGetAll('units'), idbGetAll('stockMovements'), idbGetAll('vendors')]);
   // stock is only counted when the shop has Stock switched on, and never for service/repair items
   const tracked = (i) => feat('stock') && i.category !== 'service';
+  // A vendor picker that also lets a staffer add a brand-new vendor right here, instead of
+  // hiding the whole field whenever the shop has none yet (db/107's "price asked on every line"
+  // promise was never kept for a shop with zero vendors -- the field just vanished).
+  const ADD_VENDOR = '__add_vendor__';
+  function vendorOptions() { return [['', t('vendorOptional')], ...vendors.map((x) => [x.id, x.name]), [ADD_VENDOR, S_LANG === 'hi' ? '+ नया वेंडर…' : '+ Add vendor…']]; }
+  function vendorSelect(selected) {
+    const s = selectEl(vendorOptions(), selected || '');
+    s.onchange = () => {
+      if (s.value !== ADD_VENDOR) return;
+      const name = input({ value: '', label: t('name'), autofocus: true });
+      const phone = input({ value: '', label: t('phone'), mode: 'tel' });
+      sheet({
+        title: t('add'), body: h('div', { class: 'grid' }, field(t('name'), name), field(t('phone'), phone)),
+        actions: [{ label: t('save'), primary: true, onclick: async (close) => {
+          if (!name.value.trim()) { fail(new Error(t('errNameRequired'))); return false; }
+          const id = uid(), data = { name: name.value.trim(), phone: phone.value.trim() };
+          await idbPut('vendors', { id, name: data.name, phone: data.phone, _pending: true });
+          await outboxAdd('mob_save_vendor', { p_id: id, p: data, p_base: null });
+          vendors.push({ id, name: data.name, phone: data.phone });
+          s.innerHTML = ''; vendorOptions().forEach(([v, l]) => s.append(h('option', { value: v }, l))); s.value = id;
+          close();
+        } }],
+        onClose: () => { if (s.value === ADD_VENDOR) s.value = ''; },
+      });
+    };
+    return s;
+  }
   const activeItems = items.filter((i) => i.active !== false);
   const available = units.filter((u) => u.status === 'in_stock');
 
@@ -54,7 +81,7 @@ async function renderSell(v) {
     const pr = input({ value: price || '', label: t('sellPriceNow'), mode: 'decimal', autofocus: true });
     // Purchase price for this bill (the vendor may have raised it): only for people who may see purchase rates.
     const co = cost !== undefined && S.ctx.can_see_rates ? input({ value: cost === null ? '' : cost, label: t('costPriceNow'), mode: 'decimal' }) : null;
-    const vend = feat('vendors') && vendors.length ? selectEl([['', t('vendorOptional')], ...vendors.map((x) => [x.id, x.name])], vendorId || '') : null;
+    const vend = feat('vendors') ? vendorSelect(vendorId) : null;
     sheet({
       title,
       body: h('div', { class: 'grid' }, field(t('sellPriceNow'), pr), co ? field(t('costPriceNow'), co) : null, h('div', { class: 'small muted' }, t(co ? 'sellCostHint' : 'sellPriceHint')), vend ? field(t('vendorOptional'), vend) : null),
@@ -104,7 +131,7 @@ async function renderSell(v) {
     const sellPrice = input({ value: '', label: t('sellingPrice'), mode: 'decimal' });
     const cost = input({ value: '', label: t('purchaseRate'), mode: 'decimal' });
     const onHand = input({ value: 1, label: t('qty'), mode: 'decimal' });
-    const qvend = feat('vendors') && vendors.length ? selectEl([['', t('vendorOptional')], ...vendors.map((x) => [x.id, x.name])], '') : null;
+    const qvend = feat('vendors') ? vendorSelect('') : null;
     sheet({
       title: (S_LANG === 'hi' ? 'नया: ' : 'New: ') + '"' + q + '"',
       body: h('div', { class: 'grid' }, field(t('itemName'), name),
@@ -179,7 +206,7 @@ async function renderSell(v) {
     const desc = input({ value: '', label: t('repairWhat'), autofocus: true });
     const charge = input({ value: '', label: t('repairCharge'), mode: 'decimal' });
     const part = input({ value: '', label: t('partCost'), mode: 'decimal' });
-    const vend = feat('vendors') ? selectEl([['', t('vendor') + '…'], ...vendors.map((x) => [x.id, x.name])], '') : null;
+    const vend = feat('vendors') ? vendorSelect('') : null;
     sheet({
       title: t('repairService'),
       body: h('div', { class: 'grid' }, field(t('repairWhat'), desc), h('div', { class: 'two' }, field(t('repairCharge'), charge), field(t('partCost'), part)), vend ? field(t('partFrom'), vend) : null),
