@@ -1,0 +1,11 @@
+{
+  "businessName": "AUZslab",
+  "brainPath": "./brain",
+  "port": 3100,
+  "model": "claude-sonnet-5-5",
+  "routerModel": "claude-haiku-4-5-20251001",
+  "maxTokens": 2500,
+  "timezone": "Asia/Kolkata",
+  "maxOpenTasks": 30,
+  "concurrency": 2
+}

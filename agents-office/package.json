@@ -1,0 +1,13 @@
+{
+  "name": "auzslab-agents-office",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A visual dashboard where one owner types a task, the right AI agent drafts it from the company notes, and the result is saved back as a note.",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test",
+    "set-password": "node scripts/set-password.js"
+  }
+}

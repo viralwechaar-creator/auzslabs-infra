@@ -1,0 +1,29 @@
+[Unit]
+Description=AUZslab Agents Office
+After=network.target
+
+[Service]
+Type=simple
+User=agentsoffice
+Group=agentsoffice
+WorkingDirectory=/opt/auzslab-agents-office
+EnvironmentFile=/etc/auzslab-agents-office.env
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=3
+
+# Hardening: the service can only write to its brain and data folders
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+CapabilityBoundingSet=
+ReadWritePaths=/opt/auzslab-agents-office/brain /opt/auzslab-agents-office/data
+MemoryMax=512M
+
+[Install]
+WantedBy=multi-user.target
