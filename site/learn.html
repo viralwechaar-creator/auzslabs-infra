@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Learn AUZslab, beginner manual — AUZslab</title>
+<meta name="description" content="A plain, step-by-step manual for beginners: sign in, set up your shop, and use AUZsPOS, AUZsMob, AUZsPay, AUZsLedger and the salon app.">
+<link rel="canonical" href="https://auzslab.in/learn.html">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Learn AUZslab, beginner manual — AUZslab">
+<meta property="og:description" content="A plain manual for beginners.">
+<meta property="og:url" content="https://auzslab.in/learn.html">
+<meta property="og:image" content="https://auzslab.in/og-image.png">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="/logo.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="stylesheet" href="theme.css?v=47"><link rel="stylesheet" href="balance.css?v=3" media="(min-width:1000px)"><script src="theme.js?v=1"></script>
+<link rel="stylesheet" href="design-system/ui-kit.css?v=3">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div id="pageTransition" class="page-transition" aria-hidden="true"></div>
+
+<div class="shell">
+  <header class="topbar">
+    <div style="display:flex;gap:8px;align-items:center;order:2">
+      <button type="button" class="theme-toggle" data-theme-toggle role="switch" aria-checked="false" aria-label="Dark mode"></button>
+      <a href="signup.html" class="btn btn-ghost" data-signin-link style="padding:9px 14px;font-size:10px">Get started</a>
+      <button class="hamburger" id="menuToggle" aria-label="Open menu" aria-expanded="false">
+        <span class="menu-btn-label">Menu</span>
+      </button>
+    </div>
+    <a href="index.html" class="topbar-logo"><img src="logo.png" alt="AUZslab"></a>
+  </header>
+
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+
+  <aside class="sidebar" id="sidebarDrawer">
+    <div class="drawer-topbar">
+      <button class="drawer-close" id="drawerClose" aria-label="Close menu"><span aria-hidden="true">&times;</span> Close</button>
+      <a href="index.html" class="drawer-topbar-logo"><img src="logo.png" alt="AUZslab"></a>
+      <div class="drawer-topbar-icons">
+        <a href="cart.html" class="drawer-icon-link" aria-label="Cart"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 7h12l-1 13H7L6 7Z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg></a>
+        <a href="signup.html" class="drawer-icon-link" aria-label="Account"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></a>
+      </div>
+      </div>
+    <nav class="sidebar-nav" aria-label="Primary">
+      <a href="index.html" class="nav-link">Home</a>
+
+      <div class="nav-group">
+        <button class="nav-link nav-group-toggle" aria-expanded="false">
+          <span>Products <sup class="nav-group-count">(+8)</sup></span>
+          <span class="nav-group-indicator" aria-hidden="true"></span>
+        </button>
+        <div class="nav-submenu">
+          <div class="nav-submenu-inner">
+            <a href="pos.html" class="nav-sublink"><span>AUZsPOS</span></a>
+            <a href="qr-ordering.html" class="nav-sublink"><span>AUZsPOS QR</span></a>
+            <a href="payroll.html" class="nav-sublink"><span>AUZsPay</span></a>
+            <a href="accounting.html" class="nav-sublink"><span>AUZsLedger</span></a>
+            <a href="products.html#slab-mobile" class="nav-sublink"><span>AUZsMob</span></a>
+            <a href="website-builder.html" class="nav-sublink"><span>Website Builder</span></a>
+            <a href="custom-build.html" class="nav-sublink"><span>Custom build &mdash; on-demand</span></a>
+            <a href="studio.html" class="nav-sublink"><span>Studio &mdash; bespoke software</span></a>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button class="nav-link nav-group-toggle" aria-expanded="false">
+          <span>Business types <sup class="nav-group-count">(+5)</sup></span>
+          <span class="nav-group-indicator" aria-hidden="true"></span>
+        </button>
+        <div class="nav-submenu">
+          <div class="nav-submenu-inner">
+            <a href="business-cafes.html" class="nav-sublink"><span>Caf&eacute;s &amp; restaurants</span></a>
+            <a href="business-salons.html" class="nav-sublink"><span>Salons</span></a>
+            <a href="business-retail.html" class="nav-sublink"><span>Retail &amp; bookstores</span></a>
+            <a href="business-clothing.html" class="nav-sublink"><span>Clothing &amp; apparel</span></a>
+            <a href="business-mobile-repair.html" class="nav-sublink"><span>Mobile retail &amp; repair</span></a>
+          </div>
+        </div>
+      </div>
+
+      <a href="platform.html" class="nav-link">Platform</a>
+      <a href="live-demo.html" class="nav-link">Live demo</a>
+      <a href="pricing.html" class="nav-link">Pricing</a>
+      <a href="cart.html" class="nav-link">Cart <span class="cart-count"></span></a>
+
+      <div class="nav-group">
+        <button class="nav-link nav-group-toggle" aria-expanded="false">
+          <span>Resources <sup class="nav-group-count">(+5)</sup></span>
+          <span class="nav-group-indicator" aria-hidden="true"></span>
+        </button>
+        <div class="nav-submenu">
+          <div class="nav-submenu-inner">
+            <a href="resources-getting-started.html" class="nav-sublink"><span>Getting started</span></a>
+            <a href="learn.html" class="nav-sublink active"><span>Learn: beginner manual</span></a>
+            <a href="resources-operations.html" class="nav-sublink"><span>Operations &amp; workflows</span></a>
+            <a href="resources-growth.html" class="nav-sublink"><span>Growth &amp; scaling</span></a>
+            <a href="creatopz.html" class="nav-sublink"><span>Creatopz, marketing partner</span></a>
+          </div>
+        </div>
+      </div>
+
+      <a href="contact.html" class="nav-link">Contact</a>
+    </nav>
+    <div class="sidebar-foot">
+      <div style="display:flex;gap:10px">
+        <a href="signup.html" class="btn btn-ghost" data-signin-link style="flex:1;justify-content:center">Get started</a>
+        <button class="btn btn-ghost" data-open-contact style="flex:1;justify-content:center">Let's talk</button>
+      </div>
+      <a href="creatopz.html" class="sidebar-copy" style="display:block;margin-bottom:6px;text-decoration:underline">Marketing partner: Creatopz</a>
+      <div class="sidebar-copy">&copy; 2026 AUZslab</div>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="wrap">
+
+      <section class="section" style="padding-top:104px">
+        <div class="label">Learn · Beginner manual</div>
+        <h1 class="h-1" style="font-size:52px">Learn AUZslab,<br>step by step.</h1>
+        <p class="lede">Plain steps for people who have never used business software. Pick what you use.</p>
+        <div class="acts" style="margin-top:18px;flex-wrap:wrap">
+          <a class="btn btn-ghost" href="#start">Start here</a><a class="btn btn-ghost" href="#owner">Owners</a><a class="btn btn-ghost" href="#pos">AUZsPOS</a><a class="btn btn-ghost" href="#mob">AUZsMob</a><a class="btn btn-ghost" href="#pay">AUZsPay</a><a class="btn btn-ghost" href="#ledger">AUZsLedger</a><a class="btn btn-ghost" href="#salon">Salon</a>
+        </div>
+        <div class="acts" style="margin-top:14px"><a class="btn btn-primary" data-wa="Hi AUZslab, I need help getting started" href="contact.html" target="_blank" rel="noopener">Talk to us on WhatsApp</a><a class="btn btn-ghost" href="live-demo.html">Try the live demo</a></div>
+      </section>
+
+      <hr class="dash">
+      <section class="section tight uk-kit" id="start">
+        <div class="label">Start here</div>
+        <div class="h-2" style="margin-bottom:10px">Signing in and getting around</div>
+        <p class="p" style="max-width:640px">Everything works on a phone, tablet or computer. Nothing to install.</p>
+        <div class="uk-accordion" style="margin-top:18px">
+          <div class="uk-accordion-item is-open">
+            <button class="uk-accordion-head">
+              <span>How do I sign in?</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><ol><li>Open <b>app.auzslab.in</b> (or your own business address).</li><li>Owners and managers: choose <b>Continue with Google</b>, or use email and password.</li><li>Staff: open the <b>Staff</b> tab and type the username and PIN your owner gave you.</li><li>After sign in you see tiles for the apps your plan includes. Tap one to open it.</li></ol></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head">
+              <span>Put it on your phone like an app</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><ol><li>Open the app address in Safari (iPhone) or Chrome (Android).</li><li>iPhone: tap Share, then <b>Add to Home Screen</b>. Android: tap the menu, then <b>Install app</b> or <b>Add to Home screen</b>.</li><li>Add each app you use from its own page, so its icon opens that app.</li></ol></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head">
+              <span>I forgot my password or PIN</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Owners: use <b>Forgot password</b> on the sign-in screen. Staff: ask your owner to reset your PIN from their dashboard under Staff. Never share a PIN.</p></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head">
+              <span>Where do I get help?</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Every app has <b>Help &amp; report a problem</b> in its menu. It collects the details for you and sends a message to our team. You can also use the <a href="contact.html" style="color:var(--accent)">contact page</a>.</p></div></div>
+          </div>
+        </div>
+      </section>
+      <hr class="dash">
+      <section class="section tight uk-kit" id="owner">
+        <div class="label">For owners</div>
+        <div class="h-2" style="margin-bottom:10px">Your first day, in order</div>
+        <p class="p" style="max-width:640px">Do these once. It takes about half an hour.</p>
+        <div class="uk-accordion" style="margin-top:18px">
+          <div class="uk-accordion-item is-open">
+            <button class="uk-accordion-head">
+              <span>1. Add your business details</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><ol><li>Sign in and open the <b>Admin console</b> (or Settings in your app).</li><li>Fill in business name, phone, address and opening hours.</li><li>Upload your logo. The apps and printed bills use it.</li></ol></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head">
+              <span>2. Add your menu, items or services</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><ol><li>Open <b>Menu</b> (cafes and restaurants), <b>Stock</b> (AUZsMob) or <b>Menu and prices</b> (salon).</li><li>Add a category, then add items with a name and price.</li><li>Already have a PDF menu? In the admin console, Menu, tap <b>Read menu file</b>. Check the draft it makes, then create.</li></ol></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head">
+              <span>3. Add your staff</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><ol><li>Open your <b>account page</b>, then <b>Staff</b>.</li><li>Tap Add staff and choose <b>Username + PIN</b>.</li><li>Write down the PIN. It is shown once. The owner can reset it any time.</li><li>Give each person only the permissions their job needs.</li></ol></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head">
+              <span>4. Make your first bill</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Open your app, add one item, take a payment and print or share the bill. Do it once as a test so staff see what customers will see. You can void a test bill afterwards if your permissions allow it.</p></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head">
+              <span>5. Check your plan and renewal</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Open <b>Plan &amp; account</b> in any app to see your plan, renewal date and, if available, auto-renewal.</p></div></div>
+          </div>
+        </div>
+      </section>
+      <hr class="dash">
+      <section class="section tight uk-kit" id="pos">
+        <div class="label">AUZsPOS</div>
+        <div class="h-2" style="margin-bottom:10px">Taking orders and bills</div>
+        <p class="p" style="max-width:640px">For cafes, restaurants and shops.</p>
+        <div class="uk-accordion" style="margin-top:18px">
+          <div class="uk-accordion-item is-open">
+            <button class="uk-accordion-head">
+              <span>Make a bill</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><ol><li>Tap <b>Sell</b>.</li><li>Tap items to add them. Use the plus and minus to change quantity.</li><li>Choose dine-in, takeaway or delivery. For dine-in, pick the table.</li><li>Tap <b>Pay</b>, choose cash, UPI or card, and finish.</li><li>Print the bill or share it on WhatsApp.</li></ol></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head">
+              <span>Send to the kitchen</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Tap <b>Send to kitchen</b> before payment. The kitchen screen shows the order. When the kitchen marks it ready, the cashier sees it.</p></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head">
+              <span>Discounts, voids and refunds</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>These need approval. A manager types an approval PIN. Owners and managers set their PIN once in <b>Staff &amp; settings</b>. This protects your cash.</p></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head">
+              <span>End of day</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><ol><li>Open <b>Register</b> and count the cash.</li><li>Check the day report in the admin console under Reports.</li></ol></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head">
+              <span>Works without internet?</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Yes. Bills are saved on the device and sent when the internet returns. A small status line shows what is waiting.</p></div></div>
+          </div>
+        </div>
+      </section>
+      <hr class="dash">
+      <section class="section tight uk-kit" id="mob">
+        <div class="label">AUZsMob</div>
+        <div class="h-2" style="margin-bottom:10px">Mobile shops and repairs</div>
+        <p class="p" style="max-width:640px">Buy, sell and repair phones, with staff accountability. A short Hindi and English owner guide also exists, see the language switch inside the app.</p>
+        <div class="uk-accordion" style="margin-top:18px">
+          <div class="uk-accordion-item is-open">
+            <button class="uk-accordion-head">
+              <span>Sell a phone or accessory</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><ol><li>Tap <b>New sale</b> and search the item or IMEI.</li><li>Confirm the selling price for this bill.</li><li>Take payment: cash, UPI, card or credit.</li><li>Share the receipt on WhatsApp.</li></ol></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head">
+              <span>Add stock (purchase)</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><ol><li>Tap <b>Add purchase</b>.</li><li>Pick or add the item and the vendor.</li><li>Enter quantity and purchase price. For phones, enter each IMEI.</li></ol></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head">
+              <span>Repairs</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><ol><li>Tap <b>New repair</b>.</li><li>Enter the customer, device, problem and advance paid.</li><li>Update the status as the job moves along, and record parts and payments.</li></ol></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head">
+              <span>Staff and profit</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Each staff member sees only their own sales. The owner sees every staff member in <b>Reports</b>, with the profit table. The owner can also set a profit share under Settings.</p></div></div>
+          </div>
+        </div>
+      </section>
+      <hr class="dash">
+      <section class="section tight uk-kit" id="pay">
+        <div class="label">AUZsPay</div>
+        <div class="h-2" style="margin-bottom:10px">Staff attendance and salary</div>
+        <p class="p" style="max-width:640px"></p>
+        <div class="uk-accordion" style="margin-top:18px">
+          <div class="uk-accordion-item is-open">
+            <button class="uk-accordion-head">
+              <span>Clock in and out (staff)</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><ol><li>Open AUZsPay on your phone.</li><li>Tap the big <b>Clock in</b> button. Tap it again when you leave.</li><li>No internet? It saves your punch with the real time and sends it later.</li></ol></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head">
+              <span>Run salary (owner)</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><ol><li>Add each person under <b>People</b> with their salary.</li><li>At month end open <b>Payroll</b>, check the numbers and finalise.</li><li>Staff see their payslip under <b>My pay</b>.</li></ol></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head">
+              <span>Leave</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Staff ask for leave under <b>My leave</b>. The owner or manager approves it.</p></div></div>
+          </div>
+        </div>
+      </section>
+      <hr class="dash">
+      <section class="section tight uk-kit" id="ledger">
+        <div class="label">AUZsLedger</div>
+        <div class="h-2" style="margin-bottom:10px">Accounts and GST</div>
+        <p class="p" style="max-width:640px"></p>
+        <div class="uk-accordion" style="margin-top:18px">
+          <div class="uk-accordion-item is-open">
+            <button class="uk-accordion-head">
+              <span>Make an invoice</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><ol><li>Open <b>Sales</b>, then <b>New invoice</b>.</li><li>Pick the customer, add items and check the tax.</li><li>Save as a draft or <b>Post</b>. Posted invoices get a number and cannot be edited, only cancelled.</li></ol></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head">
+              <span>Record a supplier bill</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Open <b>Purchases</b> and tap <b>Scan invoice</b> to read a PDF or photo, or enter it by hand. Always check the details before saving.</p></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head">
+              <span>Reports</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Open <b>Financial reports</b> for profit and loss, balance sheet and GST summaries. They are working papers for you and your accountant.</p></div></div>
+          </div>
+        </div>
+      </section>
+      <hr class="dash">
+      <section class="section tight uk-kit" id="salon">
+        <div class="label">Salon app</div>
+        <div class="h-2" style="margin-bottom:10px">Bookings, bills and staff</div>
+        <p class="p" style="max-width:640px"></p>
+        <div class="uk-accordion" style="margin-top:18px">
+          <div class="uk-accordion-item is-open">
+            <button class="uk-accordion-head">
+              <span>Take a booking</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><ol><li>Open the salon console and go to <b>Bookings</b>.</li><li>Add the customer, service, date and time.</li><li>Change the status as the visit goes on.</li></ol></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head">
+              <span>Bill and share</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Create the bill from the booking and send it to the customer on WhatsApp.</p></div></div>
+          </div>
+          <div class="uk-accordion-item">
+            <button class="uk-accordion-head">
+              <span>Your look</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Under Settings, then Branding, add your logo, colours and hero photo.</p></div></div>
+          </div>
+        </div>
+      </section>
+      <hr class="dash">
+      <section class="section tight uk-kit" id="safe">
+        <div class="label">Good habits</div>
+        <div class="h-2" style="margin-bottom:10px">Keep your business safe</div>
+        <p class="p" style="max-width:640px"></p>
+        <div class="uk-accordion" style="margin-top:18px">
+          <div class="uk-accordion-item is-open">
+            <button class="uk-accordion-head">
+              <span>Five simple rules</span>
+              <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><ol><li>Give every person their own login. Never share one.</li><li>Never write PINs on the counter.</li><li>Remove a login the day someone leaves.</li><li>Take a backup now and then from your account page.</li><li>Use a long unique password for the owner login.</li></ol></div></div>
+          </div>
+        </div>
+      </section>
+
+      <hr class="dash">
+      <section class="section tight">
+        <div class="label">Staff login card</div>
+        <div class="h-2" style="margin-bottom:10px">Give each staff member a card.</div>
+        <p class="p" style="max-width:640px">Print this, fill it in by hand and hand it over. The PIN is shown only once when you add a staff member.</p>
+        <div class="card" style="max-width:420px;margin-top:14px;padding:22px">
+          <div class="label">AUZslab staff login</div>
+          <p class="p" style="margin:10px 0">1. Open <b>app.auzslab.in</b><br>2. Tap the <b>Staff</b> tab<br>3. Type your username and PIN</p>
+          <p class="p" style="margin:6px 0">Username: ______________________</p>
+          <p class="p" style="margin:6px 0">PIN: __________ <span style="color:var(--ink-faint);font-size:12px">(keep it private)</span></p>
+          <button class="btn btn-ghost no-print" type="button" onclick="window.print()" style="margin-top:10px">Print</button>
+        </div>
+      </section>
+
+      <footer class="footer-dark">
+        <div class="wrap">
+          <div class="footer-top">
+            <div class="footer-col footer-col-brand">
+              <span class="brand-mark">AUZ<span class="brand-accent">slab</span></span>
+              <p class="footer-tag">Business software for shops, cafes, salons and mobile stores.</p>
+              <p class="footer-tag footer-addr" data-co="address"></p>
+            </div>
+            <div class="footer-col">
+              <div class="footer-col-title">Products</div>
+              <a href="pos.html">AUZsPOS</a>
+              <a href="qr-ordering.html">AUZsPOS QR</a>
+              <a href="payroll.html">AUZsPay</a>
+              <a href="accounting.html">AUZsLedger</a>
+              <a href="products.html">AUZsMob</a>
+              <a href="website-builder.html">Website Builder</a>
+              <a href="products.html">All products</a>
+            </div>
+            <div class="footer-col">
+              <div class="footer-col-title">Who it's for</div>
+              <a href="business-cafes.html">Cafes &amp; restaurants</a>
+              <a href="business-salons.html">Salons &amp; spas</a>
+              <a href="business-retail.html">Retail</a>
+              <a href="business-clothing.html">Clothing</a>
+              <a href="business-mobile-repair.html">Mobile shops</a>
+            </div>
+            <div class="footer-col">
+              <div class="footer-col-title">Explore</div>
+              <a href="index.html">Home</a>
+              <a href="platform.html">Platform</a>
+              <a href="pricing.html">Pricing</a>
+              <a href="live-demo.html">Live demo</a>
+              <a href="custom-build.html">Custom build</a>
+              <a href="studio.html">Studio (bespoke)</a>
+              <a href="resources-getting-started.html">Getting started</a>
+              <a href="learn.html">Learn: beginner manual</a>
+              <a href="resources-operations.html">Operations guide</a>
+              <a href="resources-growth.html">Growth guide</a>
+            </div>
+            <div class="footer-col">
+              <div class="footer-col-title">Connect</div>
+              <a href="contact.html">Contact</a>
+              <a href="signup.html">Sign in</a>
+              <a href="account.html">My account</a>
+              <a href="cart.html">Cart</a>
+              <a href="https://instagram.com/auzslab.in" target="_blank" rel="noopener noreferrer">Instagram</a>
+              <a href="mailto:helloauzslab@gmail.com">Email</a>
+              <a href="tel:+918005673683">Call</a>
+            </div>
+            <div class="footer-col">
+              <div class="footer-col-title">Legal</div>
+              <a href="terms.html">Terms &amp; Conditions</a>
+              <a href="privacy.html">Privacy Policy</a>
+              <a href="refund.html">Refund Policy</a>
+              <a href="delete-account.html">Delete my account</a>
+              <a href="sitemap.html">Sitemap</a>
+            </div>
+          </div>
+
+          <div class="footer-newsletter">
+            <div class="footer-newsletter-label">AUZslab<br>in your inbox</div>
+            <form class="footer-newsletter-form" data-newsletter-form>
+              <input type="email" placeholder="name@example.com" required>
+              <button type="submit" aria-label="Subscribe">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </button>
+            </form>
+          </div>
+
+          <div class="footer-bottom">
+            <button class="footer-top-btn" data-scroll-top>
+              Back to top
+              <span class="footer-top-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
+            </button>
+            <span class="footer-copy">&copy; 2026 AUZslab. All rights reserved.</span>
+          </div>
+        </div>
+      </footer>
+
+      </section>
+
+      </div>
+
+    </div>
+  </main>
+
+  <button class="knock-btn" data-open-contact>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3a2 2 0 0 0-2 2v3.17a3 3 0 0 0-2 2.83v6a5 5 0 0 0 5 5h4a5 5 0 0 0 5-5v-3M8 3a2 2 0 0 1 2 2v6M8 3v8M12 5a2 2 0 0 1 4 0v6M16 5a2 2 0 0 1 4 0v6"/></svg>
+    Knock, we'll answer
+  </button>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modal">
+      <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+      <form id="formView" data-contact-form>
+        <div class="label" style="margin-bottom:14px">Reach us</div>
+        <h3 class="h-2" style="font-size:24px">Got a business? Let's talk.</h3>
+        <p class="p" style="margin-top:8px">Tell us a little about it — we'll get back to you within a day.</p>
+        <div class="field">
+          <label for="m-name">Name</label>
+          <input id="m-name" name="name" type="text" placeholder="Your name" required>
+        </div>
+        <div class="field">
+          <label for="m-business">Business</label>
+          <input id="m-business" name="business" type="text" placeholder="Business name">
+        </div>
+        <div class="field">
+          <label for="m-contact">Phone or email</label>
+          <input id="m-contact" name="contact" type="text" placeholder="How we reach you" required>
+        </div>
+        <div class="field">
+          <label for="m-niche">What are you running?</label>
+          <select id="m-niche" name="niche">
+            <option value="">Not sure yet</option>
+            <option value="cafe">Café, restaurant, bar & more</option>
+            <option value="salon">Salon / spa</option>
+            <option value="retail">Retail (shoes, clothing, books)</option>
+            <option value="mobile">Mobile retail &amp; repair</option>
+            <option value="general">Something else</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="m-message">Message</label>
+          <textarea id="m-message" name="message" placeholder="What are you running today?"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary form-submit">Send</button>
+      </form>
+      <div class="success-view" id="successView">
+        <div class="success-mark">&check;</div>
+        <h3 class="h-2" style="font-size:22px">Got it.</h3>
+        <p class="p">We'll reach out to <span class="success-contact" id="successContact">you</span> shortly.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script src="/sb-client.js?v=4"></script>
+<script src="site.js?v=11"></script>
+<script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
+<script src="company.js"></script>
+</body>
+</html>

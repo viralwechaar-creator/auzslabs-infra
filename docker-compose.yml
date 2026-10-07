@@ -9,7 +9,12 @@ services:
   caddy:
     build: ./caddy   # stock caddy + the GoDaddy DNS plugin (needed for the wildcard cert's DNS-01 challenge) -- see caddy/Dockerfile
     restart: unless-stopped
-    env_file: .env
+    # Caddy faces the internet, so it gets only the three values the Caddyfile actually uses, NOT the whole .env
+    # (database passwords, JWT_SECRET and every API key used to be passed in here too).
+    environment:
+      DOMAIN: ${DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+      GODADDY_API_TOKEN: ${GODADDY_API_TOKEN}
     ports:
       - "80:80"
       - "443:443"
@@ -42,6 +47,8 @@ services:
   api:
     build: ./server
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     env_file: .env
     environment:
       PGHOST: postgres
@@ -90,8 +97,9 @@ services:
   offsite-backup:
     image: rclone/rclone:latest
     restart: unless-stopped
-    env_file: .env
+    # only the backup-bucket name from .env; the account/key below are interpolated explicitly
     environment:
+      B2_BUCKET: ${B2_BUCKET}
       RCLONE_CONFIG_B2_TYPE: b2
       RCLONE_CONFIG_B2_ACCOUNT: ${B2_KEY_ID}
       RCLONE_CONFIG_B2_KEY: ${B2_APPLICATION_KEY}
@@ -124,10 +132,30 @@ services:
     expose:
       - "3001"
 
+  # ---- Agents Office: the owner's AI team dashboard (separate repo, own login/key/notes; no access to customer data) ----
+  # Off by default (profile). Start with: docker compose --profile agents up -d --build agents-office
+  # Code lives in ./agents-office (see its README).
+  agents-office:
+    profiles: ["agents"]
+    build:
+      context: ./agents-office
+    restart: unless-stopped
+    env_file:
+      - ./agents-office/.env
+    environment:
+      OFFICE_HOST: 0.0.0.0
+      OFFICE_TRUST_PROXY: "1"
+    volumes:
+      - ./agents-office/brain:/app/brain
+      - agents_office_data:/app/data
+    expose:
+      - "3100"
+
 volumes:
   postgres_data:
   caddy_data:
   caddy_config:
   uptime_kuma_data:
+  agents_office_data:
   uploads_data:
   private_uploads_data:

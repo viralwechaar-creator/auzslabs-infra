@@ -47,6 +47,26 @@ export default async function run({ stack }) {
     const r = await call('POST', '/rpc/public_menu', { tenant_slug: "x'; drop table records; --" }); assert(r.status < 500, 'server error ' + r.status);
     const t = await q("select count(*)::int n from records"); assert(t[0].n > 0, 'records table damaged');
   }, 'critical');
+  await s.check('Changing your password signs out your other devices (and keeps the one you are using)', async () => {
+    const a = await login(USERS.plain), b = await login(USERS.plain);
+    assert((await call('GET', '/auth/session', null, b)).status === 200, 'second session not valid to begin with');
+    const ch = await call('POST', '/rpc/change_my_password', { p_old_password: PASSWORD, p_new_password: PASSWORD + 'x' }, a); assert(ch.status === 200, 'change failed ' + ch.status);
+    assert((await call('GET', '/auth/session', null, b)).status === 401, 'the other device stayed signed in after a password change');
+    assert((await call('GET', '/auth/session', null, a)).status === 200, 'the device that changed the password was signed out');
+    await call('POST', '/rpc/change_my_password', { p_old_password: PASSWORD + 'x', p_new_password: PASSWORD }, a);
+  }, 'major');
+  await s.check('A password reset signs every device out', async () => {
+    const a = await login(USERS.plain); const u = (await q("select id from auth_users where email = $1", [USERS.plain]))[0].id;
+    const t1 = (await q('insert into password_resets (user_id) values ($1) returning token', [u]))[0].token;
+    assert((await call('POST', '/auth/reset', { token: t1, password: PASSWORD + 'y' })).status === 200, 'reset failed');
+    assert((await call('GET', '/auth/session', null, a)).status === 401, 'old session survived a password reset');
+    const t2 = (await q('insert into password_resets (user_id) values ($1) returning token', [u]))[0].token;
+    await call('POST', '/auth/reset', { token: t2, password: PASSWORD });
+  }, 'major');
+  await s.check('The staff-invite mail cannot be used to send a link to someone else\'s website', async () => {
+    const r = await call('POST', '/staff/send-invite-email', { email: 'victim@example.com', name: 'x', verify_link: 'https://evil.example/login?x=1' }, cafe);
+    assert(r.status === 400, 'accepted a link on a foreign domain: ' + r.status);
+  }, 'major');
   await s.check('Oversized request body is rejected', async () => {
     const big = 'a'.repeat(6 * 1024 * 1024); const r = await call('POST', '/auth/login', { email: big, password: 'x' }).catch(() => ({ status: 413 })); assert(r.status >= 400, 'accepted ' + r.status);
   }, 'minor');

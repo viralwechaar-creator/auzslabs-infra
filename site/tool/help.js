@@ -87,6 +87,7 @@
 
     box.appendChild(el('h2', 'margin:0 0 4px;font:700 20px system-ui,sans-serif', 'Help & report a problem'));
     box.appendChild(el('p', 'margin:0;font-size:14px;opacity:.75', 'Tell us what went wrong and we will fix it. Add a screenshot if you can.'));
+    var guide = el('a', BTN, 'Beginner guide: how to use the apps'); guide.href = 'https://auzslab.in/learn.html'; guide.target = '_blank'; guide.rel = 'noopener'; box.appendChild(guide);
     if (SUPPORT.phone) { var call = el('a', PRI, 'Call us  ' + SUPPORT.phone); call.href = 'tel:' + SUPPORT.phone.replace(/[^+\d]/g, ''); box.appendChild(call); }
     if (SUPPORT.whatsapp) { var wa = el('a', BTN, 'WhatsApp us'); wa.target = '_blank'; wa.rel = 'noopener'; wa.href = 'https://wa.me/' + SUPPORT.whatsapp; wa.onclick = function () { wa.href = 'https://wa.me/' + SUPPORT.whatsapp + '?text=' + encodeURIComponent(subject() + '\n' + (what.value.trim() || '')); }; box.appendChild(wa); }
     [what, pick, file, thumb, email, copy, msg].forEach(function (n) { box.appendChild(n); });

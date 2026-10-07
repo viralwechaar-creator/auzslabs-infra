@@ -115,10 +115,10 @@ export async function revokeSession(userId, jti) {
 // it). Kills every active session at once, same in-memory update as a
 // single revokeSession so verifyToken() rejects them on the very next
 // request, not after the next server restart.
-export async function revokeAllSessionsForUser(userId) {
+export async function revokeAllSessionsForUser(userId, exceptJti = null) {
   const { rows } = await pool.query(
-    `update auth_sessions set revoked_at = now() where user_id = $1 and revoked_at is null returning jti`,
-    [userId],
+    `update auth_sessions set revoked_at = now() where user_id = $1 and revoked_at is null and ($2::text is null or jti::text <> $2::text) returning jti`,
+    [userId, exceptJti],
   );
   rows.forEach((r) => { revokedJtis.add(r.jti); notifyRevoked(r.jti); });
   return rows.length;
@@ -690,6 +690,8 @@ export async function resetPassword(token, newPassword) {
   const password_hash = await bcrypt.hash(newPassword, 12);
   await pool.query('update auth_users set password_hash = $1 where id = $2', [password_hash, rows[0].user_id]);
   await pool.query('update password_resets set used_at = now() where token = $1', [token]);
+  // A password reset is what a person does when they think someone else has access: every device that was signed in must be signed out.
+  await revokeAllSessionsForUser(rows[0].user_id);
   return true;
 }
 

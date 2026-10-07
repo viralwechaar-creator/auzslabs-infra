@@ -17,4 +17,11 @@
     var v = CO[nodes[i].getAttribute('data-co')];
     if (v) nodes[i].textContent = v;
   }
+  // <a data-wa> links ("Talk to us on WhatsApp") stay hidden until a support number is filled in above.
+  var digits = String(CO.phone || '').replace(/\D/g, '');
+  var was = document.querySelectorAll('[data-wa]');
+  for (var j = 0; j < was.length; j++) {
+    if (digits.length >= 10) was[j].href = 'https://wa.me/' + (digits.length === 10 ? '91' + digits : digits) + '?text=' + encodeURIComponent(was[j].getAttribute('data-wa') || 'Hi AUZslab');
+    else was[j].hidden = true;
+  }
 })();

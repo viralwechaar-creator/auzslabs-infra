@@ -15,7 +15,8 @@
         X-Content-Type-Options "nosniff"
         Referrer-Policy "strict-origin-when-cross-origin"
         Permissions-Policy "camera=(), microphone=(), payment=(), usb=(), magnetometer=(), gyroscope=(), geolocation=(self)"
-        Content-Security-Policy "frame-ancestors 'self'"
+        # frame-ancestors: nobody else may frame us. object-src: no plugins. base-uri: a injected <base> tag cannot redirect our relative links.
+        Content-Security-Policy "frame-ancestors 'self'; object-src 'none'; base-uri 'self'"
         -Server
     }
 }
@@ -32,6 +33,11 @@
     # the /sw.js rule below already uses).
     header /*.html Cache-Control "no-cache"
     file_server
+    # a mistyped or old link shows a branded page (still answers 404 so search engines drop it) instead of a bare "404 Not Found"
+    handle_errors {
+        rewrite * /404.html
+        file_server
+    }
 }
 
 # Every client's subdomain serves the POS app. Which client it is gets
@@ -136,6 +142,13 @@
 status.{$DOMAIN} {
     import security_headers
     reverse_proxy uptime-kuma:3001
+}
+
+# Agents Office (the owner's AI team dashboard): a separate app with its own login, AI key and notes folder,
+# started only with `docker compose --profile agents up -d --build agents-office`. Until then this address shows 502.
+agents.{$DOMAIN} {
+    import security_headers
+    reverse_proxy agents-office:3100
 }
 
 # This project's own API (server/) -- auth, the data API, RPC, realtime
