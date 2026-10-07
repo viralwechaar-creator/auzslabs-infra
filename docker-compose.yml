@@ -124,10 +124,30 @@ services:
     expose:
       - "3001"
 
+  # ---- Agents Office: the owner's AI team dashboard (separate repo, own login/key/notes; no access to customer data) ----
+  # Off by default (profile). Start with: docker compose --profile agents up -d --build agents-office
+  # Needs ../auzslab-agents-office next to this folder. See that project's README ("Run with the AUZslab stack").
+  agents-office:
+    profiles: ["agents"]
+    build:
+      context: ../auzslab-agents-office
+    restart: unless-stopped
+    env_file:
+      - ../auzslab-agents-office/.env
+    environment:
+      OFFICE_HOST: 0.0.0.0
+      OFFICE_TRUST_PROXY: "1"
+    volumes:
+      - ../auzslab-agents-office/brain:/app/brain
+      - agents_office_data:/app/data
+    expose:
+      - "3100"
+
 volumes:
   postgres_data:
   caddy_data:
   caddy_config:
   uptime_kuma_data:
+  agents_office_data:
   uploads_data:
   private_uploads_data:
