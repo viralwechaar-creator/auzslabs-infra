@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#171717">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Agents Office">
+<title>__BUSINESS__ Agents Office</title>
+<style nonce="__NONCE__">
+:root{--bg:#f5f4f2;--card:#fff;--ink:#171717;--mute:#6b6560;--line:#e4dfd9;--wine:#800020;--wine-soft:#80002014;--ok:#1b7f4b;--warn:#b26a00;--bad:#b00020;--bar:#ffffffee;--shadow:0 1px 3px rgba(0,0,0,.08)}
+@media (prefers-color-scheme:dark){:root{--bg:#121110;--card:#1c1a19;--ink:#f3efea;--mute:#a39c95;--line:#33302d;--wine:#e0607e;--wine-soft:#e0607e22;--ok:#4cc38a;--warn:#e0a040;--bad:#ff6b81;--bar:#1c1a19ee;--shadow:none}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{font:16px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;overscroll-behavior-y:none}
+[hidden]{display:none!important}
+button,select,textarea,input{font:inherit;color:inherit}
+button{cursor:pointer}
+.hdr{position:sticky;top:0;z-index:5;background:var(--bar);backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);padding:max(10px,env(safe-area-inset-top)) 14px 10px;border-bottom:1px solid var(--line)}
+.hdr-row{display:flex;align-items:center;gap:10px}
+.hdr h1{font-size:19px;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icon-btn{min-width:44px;min-height:44px;border:0;background:transparent;border-radius:12px;color:var(--mute);font-size:14px;font-weight:600}
+.seg{display:flex;background:var(--line);border-radius:12px;padding:3px;gap:3px;margin-top:8px}
+.seg.flush{margin:0 0 12px}
+.lnk{color:var(--wine);font-weight:600}
+.seg button{flex:1;min-height:40px;border:0;border-radius:10px;background:transparent;font-weight:600;font-size:14px;color:var(--mute);white-space:nowrap}
+.seg button[aria-pressed=true]{background:var(--card);color:var(--ink);box-shadow:var(--shadow)}
+.seg .n{display:inline-block;min-width:20px;padding:0 6px;margin-left:4px;border-radius:10px;background:var(--wine-soft);color:var(--wine);font-size:12px;line-height:20px}
+main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px calc(168px + env(safe-area-inset-bottom))}
+.banner{background:#fff4e0;color:#7a4a00;border:1px solid #f0d49a;border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:14px}
+@media (prefers-color-scheme:dark){.banner{background:#3a2c10;color:#f2c879;border-color:#5b4416}}
+.pods{display:grid;gap:14px}
+.pod{background:var(--card);border-radius:18px;padding:14px;box-shadow:var(--shadow)}
+.pod h2{margin:0 0 2px;font-size:17px;display:flex;align-items:center;gap:8px}
+.pod .sub{color:var(--mute);font-size:13px;margin-bottom:10px}
+.agents{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.agent{display:flex;align-items:center;gap:10px;text-align:left;min-height:64px;padding:10px;border:1.5px solid var(--line);border-radius:14px;background:transparent}
+.agent:active{background:var(--wine-soft)}
+.av{position:relative;flex:none;width:42px;height:42px;border-radius:50%;background:var(--wine-soft);color:var(--wine);display:grid;place-items:center;font-weight:700;font-size:15px}
+.av i{position:absolute;right:-1px;bottom:-1px;width:12px;height:12px;border-radius:50%;background:var(--line);border:2px solid var(--card)}
+.agent.working .av i{background:var(--ok);animation:pulse 1.2s infinite}
+.agent.working{border-color:var(--ok)}
+@keyframes pulse{50%{opacity:.35}}
+.agent b{display:block;font-size:14px;line-height:1.2}
+.agent small{color:var(--mute);font-size:12px}
+.tasks{display:grid;gap:10px}
+.task{display:block;width:100%;text-align:left;background:var(--card);border:0;border-radius:16px;padding:12px 14px;box-shadow:var(--shadow);min-height:64px}
+.task .t{font-weight:600;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.task .m{color:var(--mute);font-size:13px;margin-top:4px;display:flex;flex-wrap:wrap;gap:4px 10px}
+.tag{display:inline-block;padding:1px 8px;border-radius:9px;font-size:12px;font-weight:600;background:var(--wine-soft);color:var(--wine)}
+.tag.warn{background:#b26a0022;color:var(--warn)}.tag.bad{background:#b0002022;color:var(--bad)}.tag.ok{background:#1b7f4b22;color:var(--ok)}
+.empty{color:var(--mute);text-align:center;padding:36px 12px}
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--bar);backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);border-top:1px solid var(--line);padding:10px 12px max(10px,env(safe-area-inset-bottom));display:grid;gap:8px}
+.bar .row{display:flex;gap:8px;min-width:0}
+.bar .add{flex:none}
+.bar select{flex:1;min-width:0;min-height:44px;border:1.5px solid var(--line);border-radius:12px;background:var(--card);padding:0 10px;font-size:16px}
+.bar textarea{flex:1;min-width:0;width:0;min-height:52px;max-height:110px;resize:none;border:1.5px solid var(--line);border-radius:12px;background:var(--card);padding:10px 12px;font-size:16px}
+.bar textarea:focus,.bar select:focus,.chat-in input:focus{outline:3px solid var(--wine-soft);border-color:var(--wine)}
+.add{flex:none;min-width:84px;min-height:52px;border:0;border-radius:14px;background:var(--wine);color:#fff;font-weight:700}
+.add:disabled{opacity:.5}
+.scrim{position:fixed;inset:0;z-index:20;background:#0008;display:none}
+.scrim.on{display:block}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;max-height:92%;background:var(--card);border-radius:22px 22px 0 0;display:none;flex-direction:column;box-shadow:0 -4px 30px #0004;padding-bottom:env(safe-area-inset-bottom)}
+.sheet.on{display:flex}
+.sheet-h{display:flex;align-items:center;gap:8px;padding:14px 16px 8px}
+.sheet-h h3{margin:0;flex:1;font-size:18px;line-height:1.25}
+.sheet-b{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 16px 16px;overscroll-behavior:contain}
+.sheet-f{display:flex;gap:8px;flex-wrap:wrap;padding:10px 16px 14px;border-top:1px solid var(--line)}
+.btn{min-height:46px;padding:0 16px;border:1.5px solid var(--line);border-radius:13px;background:transparent;font-weight:600}
+.btn.pri{background:var(--wine);border-color:var(--wine);color:#fff}
+.btn.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.kv{color:var(--mute);font-size:13px;margin:0 0 10px;display:flex;flex-wrap:wrap;gap:4px 12px}
+.box{border-radius:12px;padding:10px 12px;margin:0 0 12px;font-size:14px}
+.box.warn{background:#b26a001c;color:var(--warn)}.box.bad{background:#b000201a;color:var(--bad)}
+.md h1{font-size:20px;margin:12px 0 6px}.md h2{font-size:17px;margin:12px 0 6px}.md h3{font-size:15px;margin:10px 0 4px}
+.md p{margin:0 0 10px}.md ul,.md ol{margin:0 0 10px;padding-left:22px}.md li{margin-bottom:3px}
+.md code{background:var(--line);padding:1px 5px;border-radius:5px;font-size:.92em}
+.md pre{background:var(--line);padding:10px;border-radius:10px;overflow-x:auto;font-size:13px}
+.md blockquote{margin:0 0 10px;padding-left:12px;border-left:3px solid var(--wine);color:var(--mute)}
+.md table{border-collapse:collapse;display:block;overflow-x:auto;margin:0 0 10px;font-size:14px}.md th,.md td{border:1px solid var(--line);padding:5px 8px;text-align:left}
+.md hr{border:0;border-top:1px solid var(--line);margin:12px 0}
+.wl{background:var(--wine-soft);color:var(--wine);border-radius:6px;padding:0 5px;font-size:.92em;white-space:nowrap}
+.chat{display:grid;gap:8px;margin-bottom:8px}
+.msg{max-width:88%;padding:9px 12px;border-radius:16px;font-size:15px;white-space:pre-wrap;word-wrap:break-word}
+.msg.you{justify-self:end;background:var(--wine);color:#fff;border-bottom-right-radius:4px}
+.msg.agent{justify-self:start;background:var(--line);border-bottom-left-radius:4px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:0 16px 8px}
+.chips button{flex:none;min-height:40px;padding:0 14px;border:1.5px solid var(--line);border-radius:20px;background:transparent;font-size:14px}
+.chat-in{display:flex;gap:8px;padding:8px 16px 14px;border-top:1px solid var(--line)}
+.chat-in input{flex:1;min-width:0;min-height:48px;border:1.5px solid var(--line);border-radius:14px;padding:0 12px;background:var(--card);font-size:16px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 76px);z-index:30;background:#171717;color:#fff;padding:10px 16px;border-radius:14px;font-size:14px;max-width:90%;display:none}
+.toast.on{display:block}
+
+.wide-only{display:none}
+.floor{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:16px;align-items:start}
+.stage{position:relative;background:#0c0908;border-radius:20px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column;height:calc(100vh - 150px);min-height:560px;touch-action:none}
+.stage svg.map{display:block;flex:1;min-height:0;width:100%;cursor:grab;user-select:none;-webkit-user-select:none}
+.stage svg.map.drag{cursor:grabbing}
+.stage text{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;fill:#efe6d8}
+.stage .nm{font-size:9.5px;font-weight:700;letter-spacing:.02em}
+.stage .sign{letter-spacing:.14em}
+.stage .lab{cursor:pointer}
+.stage .lab rect{fill:#17110fe6;stroke:#5a4a41}
+.stage .lab.on rect{stroke:#4cc38a;fill:#10281c}
+.stage .lab.hot rect{stroke:#fff;stroke-width:1.6}
+.stage .desk{cursor:pointer;outline:none}
+.stage .desk:focus-visible{outline:none}
+.stage .desk:focus-visible .scr{stroke:#fff;stroke-width:2}
+.stage .room{transition:opacity .25s}.stage .room.dim{opacity:.28}
+.stage .head{transform-box:fill-box;transform-origin:center}
+.stage .desk.on .head{animation:bob 1.1s ease-in-out infinite}
+.stage .desk.on .ln{animation:type 1.6s linear infinite}
+.stage .desk.on .pool{animation:glow 2.4s ease-in-out infinite}
+.stage .dot{animation:blink 1s steps(2,jump-none) infinite}.stage .dot:nth-child(3){animation-delay:.25s}.stage .dot:nth-child(4){animation-delay:.5s}
+.stage .hubring{transform-box:fill-box;transform-origin:center;animation:spin 14s linear infinite}
+.stage .orb{animation:floaty 3.2s ease-in-out infinite}
+.stage .pulse{animation:glow 2.2s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-1.6px)}}
+@keyframes type{0%{stroke-dashoffset:0}100%{stroke-dashoffset:-26}}
+@keyframes glow{50%{opacity:.45}}
+@keyframes blink{50%{opacity:.15}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes floaty{50%{transform:translateY(-4px)}}
+.podcards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;padding:0 10px 10px}
+.podcard{text-align:left;background:#17110f;border:1px solid #3a2f29;border-top:3px solid var(--c);border-radius:12px;padding:8px 10px;color:#efe6d8;min-height:78px}
+.podcard[aria-pressed=true]{background:#241a16;border-color:var(--c);box-shadow:0 0 0 1px var(--c) inset}
+.podcard b{display:block;font-size:11px;letter-spacing:.04em;text-transform:uppercase;line-height:1.2;min-height:26px}
+.podcard .big{font:600 20px/1.1 Georgia,serif}
+.podcard small{color:#a39c95;font-size:11px;display:block;margin-top:2px}
+.podcard .bar2{display:flex;height:5px;border-radius:3px;overflow:hidden;background:#33291f;margin-top:6px}
+.podcard .bar2 i{display:block;height:100%}
+.zoom{position:absolute;right:12px;top:12px;display:grid;gap:8px}
+.zoom button{width:44px;height:44px;border-radius:50%;border:1px solid #4a3d35;background:#17110fcc;color:#efe6d8;font-size:20px;font-weight:600}
+.stageinfo{position:absolute;left:14px;top:12px;max-width:46%;color:#cfc6bb;font-size:12px;line-height:1.35;pointer-events:none}
+.stageinfo i{display:inline-block;width:9px;height:9px;border-radius:50%;background:#4cc38a;margin-right:5px}
+aside.side{display:grid;gap:14px;align-content:start}
+.bar.inpanel{padding:12px!important;position:static;border:0;border-radius:18px;background:var(--card);box-shadow:var(--shadow);padding:12px;backdrop-filter:none;-webkit-backdrop-filter:none}
+.panel{background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:14px}
+.panel h2{margin:0 0 10px;font-size:15px;letter-spacing:.04em;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.live{font-size:11px;font-weight:700;color:var(--ok);background:#1b7f4b22;padding:2px 8px;border-radius:9px}
+.chiprow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.chiprow button{min-height:36px;padding:0 12px;border:1.5px solid var(--line);border-radius:18px;background:transparent;font-size:13px;font-weight:600;color:var(--mute)}
+.chiprow button[aria-pressed=true]{border-color:var(--wine);color:var(--wine);background:var(--wine-soft)}
+.side .tasks{max-height:calc(100vh - 430px);min-height:160px;overflow-y:auto}
+@media (min-width:1000px){.wide-only{display:block}main.floorpage{padding-bottom:20px;max-width:1500px;width:100%;margin:0 auto}}
+@media (prefers-reduced-motion:reduce){.stage *{animation:none!important}}
+@media (min-width:760px){main{max-width:880px;width:100%;margin:0 auto}.bar{padding-left:max(12px,calc((100vw - 880px)/2));padding-right:max(12px,calc((100vw - 880px)/2))}.sheet{left:50%;right:auto;width:600px;transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.agent.working .av i{animation:none}}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <div class="hdr-row"><h1 id="biz">Agents Office</h1><button class="icon-btn" id="out" type="button" aria-label="Log out">Log out</button></div>
+  <div class="seg" id="views" role="group" aria-label="View">
+    <button type="button" class="wide-only" data-v="floor" aria-pressed="false">Floor</button>
+    <button type="button" data-v="office" aria-pressed="true">Office</button>
+    <button type="button" data-v="board" aria-pressed="false">Board <span class="n" id="openN">0</span></button>
+  </div>
+</header>
+<main id="main"></main>
+
+<div class="bar" id="bar">
+  <div class="row">
+    <select id="dept" aria-label="Department"></select>
+    <select id="agentPick" aria-label="Agent"></select>
+  </div>
+  <div class="row">
+    <textarea id="text" rows="2" placeholder="Type the task in plain words…" maxlength="4000" aria-label="Task"></textarea>
+    <button class="add" id="add" type="button">Add</button>
+  </div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetT">
+  <div class="sheet-h"><h3 id="sheetT"></h3><button class="icon-btn" id="sheetX" type="button" aria-label="Close">Close</button></div>
+  <div class="sheet-b" id="sheetB"></div>
+  <div class="chips" id="sheetChips" hidden></div>
+  <div class="chat-in" id="sheetIn" hidden><input id="chatText" placeholder="revise: shorter" aria-label="Message to the agent" maxlength="1500" autocomplete="off"><button class="btn pri" id="chatSend" type="button">Send</button></div>
+  <div class="sheet-f" id="sheetF" hidden></div>
+</section>
+<div class="toast" id="toast" role="status"></div>
+
+<script nonce="__NONCE__">
+'use strict';
+const $ = (id) => document.getElementById(id);
+const WIDE = window.matchMedia('(min-width:1000px)');
+const S = { focus: null, data: null, view: WIDE.matches ? 'floor' : 'office', pf: 'all', zoom: 1, pan: { x: 0, y: 0 }, filter: 'waiting_approval', open: null, openType: null, poll: null, lastSig: '' };
+const STATUS = [['backlog', 'Backlog'], ['in_progress', 'In progress'], ['waiting_approval', 'Waiting approval'], ['done', 'Done']];
+const STATUS_LABEL = Object.fromEntries(STATUS);
+
+function el(tag, props, ...kids) {
+  const e = document.createElement(tag);
+  if (props) for (const [k, v] of Object.entries(props)) { if (k === 'class') e.className = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else if (v !== false && v != null) e.setAttribute(k, v === true ? '' : v); }
+  for (const k of kids.flat()) if (k != null && k !== false) e.append(k.nodeType ? k : document.createTextNode(String(k)));
+  return e;
+}
+const clear = (n) => { while (n.firstChild) n.removeChild(n.firstChild); return n; };
+const initials = (name) => name.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+
+async function api(method, path, body) {
+  const r = await fetch(path, { method, headers: { ...(body !== undefined ? { 'content-type': 'application/json' } : {}), ...(method !== 'GET' ? { 'x-office': '1' } : {}) }, body: body === undefined ? undefined : JSON.stringify(body) });
+  if (r.status === 401) { location.reload(); throw new Error('Logged out'); }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || 'Something went wrong.');
+  return j;
+}
+
+let toastTimer;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), 3200); }
+
+function ago(iso) {
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return 'just now'; if (s < 3600) return Math.floor(s / 60) + ' min ago'; if (s < 86400) return Math.floor(s / 3600) + ' h ago';
+  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
+
+/* ---------- tiny safe Markdown (builds DOM nodes, never innerHTML) ---------- */
+function inline(text) {
+  const out = []; const re = /(\[\[[^\]]+\]\]|\*\*[^*]+\*\*|`[^`]+`|\*[^*\s][^*]*\*)/g; let last = 0, m;
+  while ((m = re.exec(text))) {
+    if (m.index > last) out.push(text.slice(last, m.index));
+    const t = m[0];
+    if (t.startsWith('[[')) out.push(el('span', { class: 'wl' }, t.slice(2, -2)));
+    else if (t.startsWith('**')) out.push(el('strong', null, t.slice(2, -2)));
+    else if (t.startsWith('`')) out.push(el('code', null, t.slice(1, -1)));
+    else out.push(el('em', null, t.slice(1, -1)));
+    last = m.index + t.length;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return out;
+}
+function md(text) {
+  const root = el('div', { class: 'md' }); const lines = String(text).replace(/\r/g, '').split('\n'); let i = 0;
+  while (i < lines.length) {
+    const ln = lines[i];
+    if (/^```/.test(ln)) { const buf = []; i++; while (i < lines.length && !/^```/.test(lines[i])) buf.push(lines[i++]); i++; root.append(el('pre', null, buf.join('\n'))); continue; }
+    let m;
+    if ((m = ln.match(/^(#{1,3})\s+(.*)$/))) { root.append(el('h' + m[1].length, null, inline(m[2]))); i++; continue; }
+    if (/^\s*([-*_])\1\1+\s*$/.test(ln)) { root.append(el('hr')); i++; continue; }
+    if (/^\s*[-*]\s+/.test(ln)) { const ul = el('ul'); while (i < lines.length && /^\s*[-*]\s+/.test(lines[i])) ul.append(el('li', null, inline(lines[i++].replace(/^\s*[-*]\s+/, '')))); root.append(ul); continue; }
+    if (/^\s*\d+[.)]\s+/.test(ln)) { const ol = el('ol'); while (i < lines.length && /^\s*\d+[.)]\s+/.test(lines[i])) ol.append(el('li', null, inline(lines[i++].replace(/^\s*\d+[.)]\s+/, '')))); root.append(ol); continue; }
+    if (/^>\s?/.test(ln)) { const buf = []; while (i < lines.length && /^>\s?/.test(lines[i])) buf.push(lines[i++].replace(/^>\s?/, '')); root.append(el('blockquote', null, inline(buf.join(' ')))); continue; }
+    if (/^\|.*\|\s*$/.test(ln)) {
+      const rows = []; while (i < lines.length && /^\|.*\|\s*$/.test(lines[i])) rows.push(lines[i++]);
+      const cells = (r) => r.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
+      const body = rows.filter((r) => !/^\|?\s*:?-{2,}/.test(r.trim().replace(/^\|\s*/, '')));
+      const table = el('table'); body.forEach((r, idx) => table.append(el('tr', null, cells(r).map((c) => el(idx === 0 ? 'th' : 'td', null, inline(c))))));
+      root.append(table); continue;
+    }
+    if (!ln.trim()) { i++; continue; }
+    const buf = []; while (i < lines.length && lines[i].trim() && !/^(#{1,3}\s|\s*[-*]\s|\s*\d+[.)]\s|>|\||```)/.test(lines[i])) buf.push(lines[i++]);
+    root.append(el('p', null, inline(buf.join(' '))));
+  }
+  return root;
+}
+
+
+/* ---------- the floor: a drawn night-time office (our own drawing) ---------- */
+const NS = 'http://www.w3.org/2000/svg';
+const U = 20;
+const P = (x, y, z = 0) => [(x - y) * U * 0.866, (x + y) * U * 0.5 - z * U];
+const f1 = (n) => n.toFixed(1);
+const pts = (a) => a.map(([x, y, z]) => P(x, y, z).map(f1).join(',')).join(' ');
+function ns(tag, attrs, ...kids) {
+  const e = document.createElementNS(NS, tag);
+  if (attrs) for (const [k, v] of Object.entries(attrs)) if (v != null) e.setAttribute(k, v);
+  for (const k of kids.flat()) if (k != null && k !== false) e.append(k.nodeType ? k : document.createTextNode(String(k)));
+  return e;
+}
+const poly = (a, fill, extra) => ns('polygon', { points: pts(a), fill, ...extra });
+function box(g, x0, y0, w, h, z0, zh, top, left, right) {
+  const x1 = x0 + w, y1 = y0 + h, z1 = z0 + zh;
+  g.append(poly([[x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]], left));
+  g.append(poly([[x1, y0, z0], [x1, y1, z0], [x1, y1, z1], [x1, y0, z1]], right));
+  g.append(poly([[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]], top));
+}
+function shade(hex, k) {
+  const n = parseInt(hex.slice(1), 16); const ch = [n >> 16, (n >> 8) & 255, n & 255].map((c) => Math.max(0, Math.min(255, Math.round(k < 0 ? c * (1 + k) : c + (255 - c) * k))));
+  return '#' + ch.map((c) => c.toString(16).padStart(2, '0')).join('');
+}
+const COLORS = { engineering: '#e0607e', operations: '#f2a65a', product: '#9a8cff', growth: '#5ec2d6', business: '#7bd88f' };
+const ROOM_SCREEN = { engineering: [0, -262], operations: [-305, -92], product: [305, -92], growth: [-190, 128], business: [190, 128] };
+const toWorld = (dx, dy) => { const a = dx / (0.866 * U), b = dy / (0.5 * U); return [(a + b) / 2, (b - a) / 2]; };
+const SHIRTS = ['#4f7cac', '#c0504d', '#6a9e5b', '#8e6bb0', '#d6963a', '#3f8f8f', '#b5578a', '#5b6b8a'];
+const HAIR = ['#1f1a17', '#3b2a1e', '#5a3a22', '#241c2a', '#7a5a2e'];
+const SKIN = ['#f0cfa8', '#e0ae82', '#c68b5e', '#a8714a', '#f3d9bd'];
+const VB = { x: -430, y: -420, w: 860, h: 646 };
+const SLOTS = [[0.6, 1.2], [2.7, 1.2], [4.8, 1.2], [1.65, 3.7], [3.75, 3.7]];
+const hash = (str) => [...str].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
+const shortName = (n) => n.replace(/^AI /, '').replace(/ Agent$/, '');
+
+function deptStats(depId) {
+  const t = S.data.tasks.filter((x) => x.department === depId);
+  const n = (st) => t.filter((x) => x.status === st).length;
+  return { doing: n('in_progress'), next: n('backlog'), waiting: n('waiting_approval'), done: n('done'), notes: t.filter((x) => x.note).length, total: t.length };
+}
+
+function makeDefs() {
+  const d = ns('defs');
+  const stops = (a) => a.map(([o, c, op]) => ns('stop', { offset: o, 'stop-color': c, 'stop-opacity': op == null ? 1 : op }));
+  const lg = (id, x1, y1, x2, y2, a) => d.append(ns('linearGradient', { id, x1, y1, x2, y2 }, stops(a)));
+  const rg = (id, a, at) => d.append(ns('radialGradient', { id, ...(at || {}) }, stops(a)));
+  rg('g-bg', [[0, '#2b211c'], [0.55, '#17110e'], [1, '#080605']], { cx: '50%', cy: '42%', r: '78%' });
+  lg('g-floor', 0, 0, 1, 1, [[0, '#f1e7d6'], [1, '#d6c8b0']]);
+  lg('g-slabl', 0, 0, 0, 1, [[0, '#b9a891'], [1, '#85765f']]); lg('g-slabr', 0, 0, 0, 1, [[0, '#9d8d76'], [1, '#6e614e']]);
+  lg('g-walll', 0, 0, 0, 1, [[0, '#f4ede1'], [1, '#e0d4bf']]); lg('g-wallr', 0, 0, 0, 1, [[0, '#e3d8c4'], [1, '#c7b9a0']]);
+  lg('g-wood', 0, 0, 1, 1, [[0, '#dcb67e'], [1, '#b68a52']]);
+  lg('g-scr-on', 0, 0, 0, 1, [[0, '#8bf0bb'], [1, '#2f9a6d']]); lg('g-scr-off', 0, 0, 0, 1, [[0, '#3b4552'], [1, '#222830']]);
+  lg('g-glass', 0, 0, 1, 1, [[0, '#2b4a72'], [0.6, '#16283f'], [1, '#0d1829']]);
+  lg('g-cyl', 0, 0, 1, 0, [[0, '#8f8372'], [0.45, '#e2d7c4'], [1, '#6f6455']]);
+  rg('g-pool', [[0, '#4cc38a', 0.55], [1, '#4cc38a', 0]]);
+  rg('g-orb', [[0, '#fff6f8'], [0.3, '#ff86a4'], [0.7, '#c2183f', 0.55], [1, '#c2183f', 0]]);
+  rg('g-vig', [[0.6, '#000', 0], [1, '#000', 0.6]], { cx: '50%', cy: '50%', r: '72%' });
+  d.append(ns('filter', { id: 'f-shadow', x: '-30%', y: '-30%', width: '160%', height: '160%' }, ns('feGaussianBlur', { stdDeviation: 7 })));
+  d.append(ns('filter', { id: 'f-glow', x: '-80%', y: '-80%', width: '260%', height: '260%' }, ns('feGaussianBlur', { stdDeviation: 5 })));
+  return d;
+}
+
+function plant(g, wx, wy) {
+  box(g, wx - 0.25, wy - 0.25, 0.5, 0.5, 0.5, 0.45, '#cf7c50', '#b4673f', '#9a5530');
+  const [px, py] = P(wx, wy, 1.05);
+  [-70, -35, 0, 35, 70, 18, -18].forEach((ang, i) => g.append(ns('ellipse', { cx: px, cy: py - 8, rx: 3.6, ry: 12, fill: i % 2 ? '#58b06a' : '#3f8f55', transform: `rotate(${ang} ${f1(px)} ${f1(py)})` })));
+}
+
+function drawDesk(g, a, idx, dx, dy, on, col, task) {
+  const sd = hash(a.id); const shirt = SHIRTS[sd % SHIRTS.length], hair = HAIR[(sd >> 3) % HAIR.length], skin = SKIN[(sd >> 5) % SKIN.length];
+  const grp = ns('g', { class: 'desk' + (on ? ' on' : ''), tabindex: '0', role: 'button', 'aria-label': a.name + (on ? ', working' : ''), 'data-agent': a.id });
+  const T = 0.5;
+  if (on) { const [px, py] = P(dx + 0.8, dy + 1.1, T + 0.02); grp.append(ns('ellipse', { class: 'pool', cx: px, cy: py, rx: 52, ry: 26, fill: 'url(#g-pool)' })); }
+  box(grp, dx + 0.05, dy + 0.08, 0.1, 0.8, T, 0.62, '#a98249', '#98723f', '#85602f');
+  box(grp, dx + 1.45, dy + 0.08, 0.1, 0.8, T, 0.62, '#a98249', '#98723f', '#85602f');
+  box(grp, dx, dy, 1.6, 0.95, T + 0.62, 0.08, 'url(#g-wood)', '#9c7440', '#86602f');
+  const mz = T + 0.7;
+  box(grp, dx + 0.65, dy + 0.2, 0.3, 0.12, mz, 0.16, '#3a3330', '#3a3330', '#2a2523');
+  box(grp, dx + 0.25, dy + 0.12, 1.1, 0.1, mz + 0.16, 0.74, '#2a2523', '#2a2523', '#1b1715');
+  const sy = dy + 0.22;
+  grp.append(poly([[dx + 0.31, sy, mz + 0.22], [dx + 1.29, sy, mz + 0.22], [dx + 1.29, sy, mz + 0.84], [dx + 0.31, sy, mz + 0.84]], on ? 'url(#g-scr-on)' : 'url(#g-scr-off)', { class: 'scr' }));
+  if (on) [0.74, 0.6, 0.46, 0.32].forEach((z, i) => grp.append(ns('polyline', { class: 'ln', points: pts([[dx + 0.4, sy, mz + z], [dx + 0.4 + [0.7, 0.45, 0.62, 0.3][i], sy, mz + z]]), stroke: '#effff6', 'stroke-width': 1.6, opacity: 0.85, 'stroke-dasharray': '9 4', fill: 'none' })));
+  else { const [lx, ly] = P(dx + 1.2, sy, mz + 0.27); grp.append(ns('circle', { cx: lx, cy: ly, r: 1.2, fill: '#e0a040' })); }
+  box(grp, dx + 0.4, dy + 0.52, 0.8, 0.28, T + 0.7, 0.04, '#dcd6cc', '#bdb6aa', '#a39d92');
+  box(grp, dx + 1.3, dy + 0.56, 0.14, 0.2, T + 0.7, 0.04, '#dcd6cc', '#bdb6aa', '#a39d92');
+  box(grp, dx + 0.12, dy + 0.5, 0.18, 0.18, T + 0.7, 0.2, '#ffffff', shade(col, -0.1), col);
+  const cx0 = dx + 0.8, cy0 = dy + 1.6;
+  const [bx, by] = P(cx0, cy0, T + 0.02); grp.append(ns('ellipse', { cx: bx, cy: by, rx: 15, ry: 7.5, fill: '#16120f', opacity: 0.85 }));
+  box(grp, cx0 - 0.08, cy0 - 0.08, 0.16, 0.16, T, 0.35, '#2a2523', '#2a2523', '#1b1715');
+  box(grp, cx0 - 0.42, cy0 - 0.42, 0.84, 0.84, T + 0.35, 0.12, '#4a4440', '#3b3532', '#2d2826');
+  const st = T + 0.47;
+  box(grp, cx0 - 0.28, cy0 - 0.2, 0.56, 0.4, st, 0.72, shirt, shade(shirt, -0.18), shade(shirt, -0.32));
+  box(grp, cx0 - 0.4, cy0 - 0.72, 0.12, 0.55, st + 0.38, 0.14, shirt, shade(shirt, -0.18), shade(shirt, -0.32));
+  box(grp, cx0 + 0.28, cy0 - 0.72, 0.12, 0.55, st + 0.38, 0.14, shirt, shade(shirt, -0.18), shade(shirt, -0.32));
+  box(grp, cx0 - 0.4, cy0 + 0.22, 0.8, 0.1, st, 0.6, '#4a4440', '#3b3532', '#2d2826');
+  const [hx, hy] = P(cx0, cy0 - 0.05, st + 1.05);
+  const head = ns('g', { class: 'head' }, ns('circle', { cx: hx, cy: hy, r: 6.6, fill: hair }), ns('ellipse', { cx: hx, cy: hy + 4.6, rx: 3.8, ry: 2.3, fill: skin }), ns('circle', { cx: hx - 6.4, cy: hy + 1, r: 1.7, fill: skin }), ns('circle', { cx: hx + 6.4, cy: hy + 1, r: 1.7, fill: skin }));
+  grp.append(head);
+  if (on) {
+    const bub = ns('g', { transform: `translate(${f1(hx + 16)} ${f1(hy - 20)})` }, ns('rect', { x: -16, y: -9, width: 32, height: 17, rx: 8.5, fill: '#efe6d8' }), ...[-7, 0, 7].map((x, i) => ns('circle', { class: 'dot', cx: x, cy: 0, r: 2, fill: '#2a2420', style: null, 'data-i': i })));
+    grp.append(bub);
+  }
+  return { grp, head: [hx, hy] };
+}
+
+function drawRoom(layer, dep) {
+  const col = COLORS[dep.id] || '#e0607e';
+  const [cx, cy] = toWorld(...ROOM_SCREEN[dep.id]);
+  const W = 7, D = 6, H = 2.6, T = 0.5, ox = cx - W / 2, oy = cy - D / 2;
+  const g = ns('g', { class: 'room' + (S.focus && S.focus !== dep.id ? ' dim' : ''), 'data-dept': dep.id });
+  g.append(ns('polygon', { points: pts([[ox + 0.5, oy + 0.5, 0], [ox + W + 1, oy + 0.5, 0], [ox + W + 1, oy + D + 1, 0], [ox + 0.5, oy + D + 1, 0]]), fill: '#000', opacity: 0.6, filter: 'url(#f-shadow)' }));
+  box(g, ox, oy, W, D, 0, T, 'url(#g-floor)', 'url(#g-slabl)', 'url(#g-slabr)');
+  for (let i = 1; i < W; i++) g.append(ns('polyline', { points: pts([[ox + i, oy, T], [ox + i, oy + D, T]]), stroke: '#fff', 'stroke-opacity': 0.14, fill: 'none' }));
+  for (let j = 1; j < D; j++) g.append(ns('polyline', { points: pts([[ox, oy + j, T], [ox + W, oy + j, T]]), stroke: '#fff', 'stroke-opacity': 0.14, fill: 'none' }));
+  g.append(poly([[ox + 0.7, oy + 0.9, T + 0.01], [ox + W - 0.7, oy + 0.9, T + 0.01], [ox + W - 0.7, oy + D - 0.5, T + 0.01], [ox + 0.7, oy + D - 0.5, T + 0.01]], col, { opacity: 0.18, stroke: col, 'stroke-opacity': 0.45 }));
+  g.append(ns('polyline', { points: pts([[ox, oy + D, T], [ox + W, oy + D, T], [ox + W, oy, T]]), fill: 'none', stroke: col, 'stroke-width': 3, 'stroke-linejoin': 'round' }));
+  // walls (back-right along x, back-left along y)
+  box(g, ox, oy - 0.25, W, 0.25, T, H, '#cdbfa7', 'url(#g-walll)', '#bfb299');
+  box(g, ox - 0.25, oy, 0.25, D, T, H, '#cdbfa7', '#bfb299', 'url(#g-wallr)');
+  const wA = (x0, x1, z0, z1, fill, ex) => g.append(poly([[x0, oy, z0], [x1, oy, z0], [x1, oy, z1], [x0, oy, z1]], fill, ex));
+  const wB = (y0, y1, z0, z1, fill, ex) => g.append(poly([[ox, y0, z0], [ox, y1, z0], [ox, y1, z1], [ox, y0, z1]], fill, ex));
+  wA(ox, ox + W, T, T + 0.2, col); wB(oy, oy + D, T, T + 0.2, col);
+  wA(ox, ox + W, T + H - 0.38, T + H, '#2a2420'); wA(ox, ox + W, T + H - 0.42, T + H - 0.38, col);
+  const [tx, ty] = P(ox + 0.5, oy, T + H - 0.27);
+  g.append(ns('text', { class: 'sign', transform: `translate(${f1(tx)} ${f1(ty)}) matrix(0.866 0.5 0 1 0 0)`, 'font-size': 8.5, 'font-weight': 700 }, dep.name.toUpperCase()));
+  [[0.6, 2.2], [2.7, 4.3], [4.8, 6.4]].forEach(([a, b]) => { wA(ox + a, ox + b, 1.6, 2.8, 'url(#g-glass)', { stroke: '#efe6d8', 'stroke-width': 1.5 }); wA(ox + a, ox + a + (b - a) * 0.45, 2.0, 2.8, '#fff', { opacity: 0.07 }); g.append(ns('polyline', { points: pts([[ox + (a + b) / 2, oy, 1.6], [ox + (a + b) / 2, oy, 2.8]]), stroke: '#efe6d8', 'stroke-width': 1, fill: 'none' })); });
+  wB(oy + 0.6, oy + 2.1, 1.6, 2.8, 'url(#g-glass)', { stroke: '#efe6d8', 'stroke-width': 1.5 });
+  wB(oy + 2.5, oy + 4.1, 1.6, 2.8, '#f8f5ef', { stroke: '#b9b0a2', 'stroke-width': 1.5 });
+  [[2.7, 2.55, 3.5, 2.55, col], [2.7, 2.3, 3.8, 2.3, '#4a4440'], [2.7, 2.05, 3.2, 2.05, '#4a4440'], [3.0, 1.85, 3.9, 1.85, col]].forEach(([y0, z0, y1, z1, c]) => g.append(ns('polyline', { points: pts([[ox, oy + y0, z0], [ox, oy + y1, z1]]), stroke: c, 'stroke-width': 1.6, fill: 'none', 'stroke-linecap': 'round' })));
+  box(g, ox + 0.05, oy + 4.4, 0.55, 1.4, T, 1.9, '#8c6a3a', '#7a5a30', '#6a4c28');
+  const BK = ['#c0504d', '#4f7cac', '#d6963a', '#6a9e5b', '#8e6bb0', '#e9dfcf', '#3f8f8f'];
+  [0.62, 1.22, 1.82].forEach((zb, r) => { for (let i = 0; i < 9; i++) { const y = oy + 4.46 + i * 0.145, z1 = zb + 0.38 + ((i * 7 + r * 3) % 3) * 0.06; g.append(poly([[ox + 0.6, y, zb + 0.5], [ox + 0.6, y + 0.1, zb + 0.5], [ox + 0.6, y + 0.1, z1 + 0.5 - 0.0], [ox + 0.6, y, z1 + 0.5]], BK[(i + r * 2) % 7], { opacity: 0.95 })); } });
+  plant(g, ox + 0.6, oy + D - 0.6); plant(g, ox + W - 0.6, oy + 0.7);
+  // desks, back to front
+  const slots = dep.agents.map((a, i) => ({ a, i, dx: ox + SLOTS[i % 5][0], dy: oy + SLOTS[i % 5][1] })).sort((p, q) => (p.dx + p.dy) - (q.dx + q.dy));
+  const labs = [];
+  for (const { a, i, dx, dy } of slots) {
+    const on = working(a.id); const task = S.data.tasks.find((t) => t.agentId === a.id && t.status === 'in_progress');
+    const { grp, head } = drawDesk(g, a, i, dx, dy, on, col, task);
+    g.append(grp);
+    const act = () => openChat(a.id);
+    grp.addEventListener('click', act); grp.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); act(); } });
+    const name = shortName(a.name); const w = name.length * 5.5 + 26;
+    labs.push({ a, on, name, w, x: head[0], y: head[1] - 20, grp, act });
+  }
+  layer.append(g);
+  return labs;
+}
+
+function placeLabels(labs) {
+  const placed = [];
+  for (const l of labs.sort((p, q) => p.y - q.y)) {
+    let guard = 0;
+    while (guard++ < 8 && placed.some((o) => Math.abs(o.x - l.x) < (o.w + l.w) / 2 + 3 && Math.abs(o.y - l.y) < 17)) l.y -= 17;
+    placed.push(l);
+  }
+  return placed.map((l) => {
+    const n = ns('g', { class: 'lab' + (l.on ? ' on' : ''), transform: `translate(${f1(l.x)} ${f1(l.y)})` },
+      ns('rect', { x: -l.w / 2, y: -9, width: l.w, height: 17, rx: 8.5 }),
+      ns('circle', { cx: -l.w / 2 + 9, cy: 0, r: 3, fill: l.on ? '#4cc38a' : '#6b5f57' }),
+      ns('text', { class: 'nm', x: -l.w / 2 + 17, y: 3.2 }, l.name));
+    n.addEventListener('click', l.act);
+    const info = (on) => { n.classList.toggle('hot', on); const el2 = $('stageInfo'); if (el2) { clear(el2); if (on) el2.append(el('i'), l.a.name + ' · ' + l.a.job); } if (on) n.parentNode.appendChild(n); };
+    for (const t of [n, l.grp]) { t.addEventListener('mouseenter', () => info(true)); t.addEventListener('mouseleave', () => info(false)); t.addEventListener('focus', () => info(true)); t.addEventListener('blur', () => info(false)); }
+    return n;
+  });
+}
+
+function drawHub(layer, notes) {
+  const g = ns('g'); const [cx, cy] = P(0, 0, 0); const R = 1.7;
+  const rx = 1.2247 * R * U, ry = 0.7071 * R * U;
+  g.append(ns('ellipse', { cx: cx + 6, cy: cy + 10, rx: rx + 14, ry: ry + 8, fill: '#000', opacity: 0.6, filter: 'url(#f-shadow)' }));
+  const zt = 0.7 * U;
+  g.append(ns('path', { d: `M ${f1(cx - rx)} ${f1(cy - zt)} L ${f1(cx - rx)} ${f1(cy)} A ${f1(rx)} ${f1(ry)} 0 0 0 ${f1(cx + rx)} ${f1(cy)} L ${f1(cx + rx)} ${f1(cy - zt)} Z`, fill: 'url(#g-cyl)' }));
+  g.append(ns('ellipse', { cx, cy: cy - zt, rx, ry, fill: '#efe6d8', stroke: '#e0607e', 'stroke-width': 2 }));
+  g.append(ns('ellipse', { cx, cy: cy - zt, rx: rx * 0.7, ry: ry * 0.7, fill: '#2a2420' }));
+  const oy2 = cy - zt - 34;
+  g.append(ns('ellipse', { class: 'pulse', cx, cy: cy - zt, rx: rx * 0.7, ry: ry * 0.7, fill: '#e0607e', opacity: 0.35, filter: 'url(#f-glow)' }));
+  const nodes = [[-46, -12], [40, -20], [-30, -52], [34, -58], [0, -78], [-58, -40], [58, -42]].map(([x, y]) => [cx + x, oy2 + y + 24]);
+  nodes.forEach(([x, y], i) => g.append(ns('line', { class: 'pulse', x1: cx, y1: oy2, x2: x, y2: y, stroke: '#e0607e', 'stroke-opacity': 0.7, 'stroke-width': 1.3, style: null, 'data-i': i })));
+  nodes.forEach(([x, y]) => g.append(ns('circle', { cx: x, cy: y, r: 3.2, fill: '#efe6d8' })));
+  const orb = ns('g', { class: 'orb' }, ns('circle', { cx, cy: oy2, r: 22, fill: 'url(#g-orb)', filter: 'url(#f-glow)' }), ns('circle', { cx, cy: oy2, r: 11, fill: 'url(#g-orb)' }));
+  g.append(orb, ns('ellipse', { class: 'hubring', cx, cy: oy2, rx: 30, ry: 11, fill: 'none', stroke: '#ffd0dc', 'stroke-opacity': 0.7, 'stroke-width': 1.2 }));
+  layer.append(g);
+  const label = `THE BRAIN · ${notes} NOTES`; const w = label.length * 6.6 + 24;
+  return ns('g', { class: 'lab', transform: `translate(0 ${f1(cy + 28)})`, 'pointer-events': 'none' }, ns('rect', { x: -w / 2, y: -10, width: w, height: 20, rx: 10 }), ns('text', { 'text-anchor': 'middle', y: 3.5, 'font-size': 10, 'font-weight': 700 }, label));
+}
+
+function viewBoxStr() {
+  const w = VB.w / S.zoom, h = VB.h / S.zoom;
+  const maxX = (VB.w - w) / 2, maxY = (VB.h - h) / 2;
+  S.pan.x = Math.max(-maxX, Math.min(maxX, S.pan.x)); S.pan.y = Math.max(-maxY, Math.min(maxY, S.pan.y));
+  return `${VB.x + (VB.w - w) / 2 + S.pan.x} ${VB.y + (VB.h - h) / 2 + S.pan.y} ${w} ${h}`;
+}
+
+function buildStage() {
+  const svg = ns('svg', { class: 'map', viewBox: viewBoxStr(), role: 'img', 'aria-label': 'Office floor with five pods of five agents' });
+  svg.append(makeDefs());
+  svg.append(ns('rect', { x: -2000, y: -2000, width: 4000, height: 4000, fill: 'url(#g-bg)' }));
+  const grid = ns('g', { opacity: 0.07 });
+  for (let i = -30; i <= 30; i += 2) { grid.append(ns('polyline', { points: pts([[i, -30, 0], [i, 30, 0]]), stroke: '#efe6d8', fill: 'none' }), ns('polyline', { points: pts([[-30, i, 0], [30, i, 0]]), stroke: '#efe6d8', fill: 'none' })); }
+  svg.append(grid);
+  const ground = ns('g'), rooms = ns('g'), over = ns('g');
+  const [hx, hy] = P(0, 0, 0.1);
+  S.data.departments.forEach((d, k) => {
+    const [x, y] = [ROOM_SCREEN[d.id][0], ROOM_SCREEN[d.id][1] + 3]; const c = COLORS[d.id];
+    ground.append(ns('line', { x1: hx, y1: hy, x2: x, y2: y, stroke: '#1e1815', 'stroke-width': 30, 'stroke-linecap': 'round' }), ns('line', { x1: hx, y1: hy, x2: x, y2: y, stroke: '#3b302a', 'stroke-width': 24, 'stroke-linecap': 'round' }), ns('line', { x1: hx, y1: hy, x2: x, y2: y, stroke: c, 'stroke-opacity': 0.55, 'stroke-width': 2, 'stroke-dasharray': '3 9' }));
+    const path = `M ${f1(hx)} ${f1(hy)} L ${f1(x)} ${f1(y)}`;
+    [0, 1.6].forEach((delay, j) => ground.append(ns('circle', { r: 3.3, fill: c }, ns('animateMotion', { dur: '4.5s', begin: `${delay + k * 0.5}s`, repeatCount: 'indefinite', path, keyPoints: j ? '1;0' : '0;1', keyTimes: '0;1', calcMode: 'linear' }))));
+  });
+  const items = S.data.departments.map((d) => ({ d, k: toWorld(...ROOM_SCREEN[d.id]).reduce((a, b) => a + b, 0) })); items.push({ hub: true, k: 0 });
+  items.sort((a, b) => a.k - b.k);
+  const labs = []; let hubLabel = null;
+  for (const it of items) { if (it.hub) hubLabel = drawHub(rooms, S.data.brainNotes || 0); else labs.push(...drawRoom(rooms, it.d)); }
+  if (hubLabel) over.append(hubLabel);
+  placeLabels(labs).forEach((n) => over.append(n));
+  svg.append(ground, rooms, over, ns('rect', { x: -2000, y: -2000, width: 4000, height: 4000, fill: 'url(#g-vig)', 'pointer-events': 'none' }));
+  let drag = null;
+  svg.addEventListener('pointerdown', (e) => { if (S.zoom <= 1 || e.target.closest('.desk,.lab')) return; drag = { x: e.clientX, y: e.clientY, px: S.pan.x, py: S.pan.y }; svg.classList.add('drag'); svg.setPointerCapture(e.pointerId); });
+  svg.addEventListener('pointermove', (e) => { if (!drag) return; const k = (VB.w / S.zoom) / svg.getBoundingClientRect().width; S.pan.x = drag.px - (e.clientX - drag.x) * k; S.pan.y = drag.py - (e.clientY - drag.y) * k; svg.setAttribute('viewBox', viewBoxStr()); });
+  const end = () => { drag = null; svg.classList.remove('drag'); };
+  svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
+  return svg;
+}
+
+function renderFloor(main) {
+  const stage = el('div', { class: 'stage' });
+  const svg = buildStage(); stage.append(svg);
+  const zoomTo = (z) => { S.zoom = Math.max(1, Math.min(2.4, z)); if (S.zoom === 1) S.pan = { x: 0, y: 0 }; svg.setAttribute('viewBox', viewBoxStr()); };
+  stage.append(el('div', { class: 'stageinfo', id: 'stageInfo' }),
+    el('div', { class: 'zoom' }, el('button', { type: 'button', 'aria-label': 'Zoom in', onclick: () => zoomTo(S.zoom + 0.4) }, '+'), el('button', { type: 'button', 'aria-label': 'Zoom out', onclick: () => zoomTo(S.zoom - 0.4) }, '−'), el('button', { type: 'button', 'aria-label': 'Reset view', onclick: () => zoomTo(1) }, '⌂')));
+  const cards = el('div', { class: 'podcards' }, S.data.departments.map((d) => {
+    const st = deptStats(d.id); const tot = Math.max(1, st.total); const c = COLORS[d.id];
+    const bar = el('div', { class: 'bar2' });
+    [[st.done, '#4cc38a'], [st.doing, '#e0a040'], [st.waiting, '#e0607e'], [st.next, '#6b5f57']].forEach(([n, col]) => { const i = document.createElement('i'); i.style.width = (n / tot * 100) + '%'; i.style.background = col; bar.append(i); });
+    const card = el('button', { class: 'podcard', type: 'button', 'aria-pressed': String(S.focus === d.id), title: 'Focus this pod', onclick: () => { S.focus = S.focus === d.id ? null : d.id; render(); } },
+      el('b', null, d.name), el('span', { class: 'big' }, d.agents.length + ' agents'),
+      el('small', null, `Doing ${st.doing} · Next ${st.next}`), el('small', null, `Waiting ${st.waiting} · Done ${st.done}`), bar);
+    card.style.setProperty('--c', c); return card;
+  }));
+  stage.append(cards);
+  const c = counts(); const base = S.focus ? S.data.tasks.filter((t) => t.department === S.focus) : S.data.tasks;
+  const n = (st) => base.filter((t) => t.status === st).length;
+  const chips = [['all', 'All', base.length], ['backlog', 'Backlog', n('backlog')], ['in_progress', 'In progress', n('in_progress')], ['waiting_approval', 'Waiting', n('waiting_approval')], ['done', 'Done', n('done')]];
+  const list = base.filter((t) => S.pf === 'all' || t.status === S.pf);
+  const podName = S.focus ? S.data.departments.find((d) => d.id === S.focus).name : null;
+  const side = el('aside', { class: 'side' }, el('div', { id: 'barSlot' }),
+    el('section', { class: 'panel' }, el('h2', null, 'Task status', el('span', { class: 'live' }, 'LIVE'), podName ? el('span', { class: 'tag' }, podName) : null),
+      el('div', { class: 'chiprow' }, chips.map(([k, label, cnt]) => el('button', { type: 'button', 'aria-pressed': String(S.pf === k), onclick: () => { S.pf = k; render(); } }, label + ' ' + cnt))),
+      list.length ? el('div', { class: 'tasks' }, list.map(taskCard)) : el('div', { class: 'empty' }, 'No tasks here yet. Add one above.')));
+  main.append(el('div', { class: 'floor' }, stage, side));
+}
+
+/* ---------- rendering ---------- */
+const allAgents = () => S.data.departments.flatMap((d) => d.agents.map((a) => ({ ...a, dept: d })));
+const working = (agentId) => S.data.tasks.some((t) => t.agentId === agentId && t.status === 'in_progress');
+const counts = () => Object.fromEntries(STATUS.map(([k]) => [k, S.data.tasks.filter((t) => t.status === k).length]));
+
+function renderHeader() {
+  $('biz').textContent = S.data.businessName + ' Agents Office';
+  const c = counts(); $('openN').textContent = c.backlog + c.in_progress + c.waiting_approval;
+  document.querySelectorAll('#views button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === S.view)));
+}
+
+function renderOffice(main) {
+  const pods = el('div', { class: 'pods' });
+  for (const d of S.data.departments) {
+    const busy = d.agents.filter((a) => working(a.id)).length;
+    pods.append(el('section', { class: 'pod' },
+      el('h2', null, d.name, busy ? el('span', { class: 'tag ok' }, busy + ' working') : null),
+      el('div', { class: 'sub' }, d.agents.length + ' agents · tap one to chat'),
+      el('div', { class: 'agents' }, d.agents.map((a) => el('button', { class: 'agent' + (working(a.id) ? ' working' : ''), type: 'button', onclick: () => openChat(a.id) },
+        el('span', { class: 'av' }, initials(a.name), el('i')),
+        el('span', null, el('b', null, a.name), el('small', null, a.role)))))));
+  }
+  main.append(pods);
+}
+
+function taskCard(t) {
+  const tags = [];
+  if (t.status === 'waiting_approval') tags.push(el('span', { class: 'tag warn' }, 'needs your tap'));
+  if (t.error) tags.push(el('span', { class: 'tag bad' }, 'problem'));
+  if (t.status === 'in_progress') tags.push(el('span', { class: 'tag ok' }, 'working'));
+  return el('button', { class: 'task', type: 'button', onclick: () => openTask(t.id) },
+    el('div', { class: 't' }, t.title || t.text),
+    el('div', { class: 'm' }, el('span', null, t.agentName || 'Choosing an agent…'), el('span', null, ago(t.updatedAt)), tags));
+}
+
+function renderBoard(main) {
+  const c = counts();
+  const seg = el('div', { class: 'seg flush', role: 'group', 'aria-label': 'Status' },
+    STATUS.map(([k, label]) => el('button', { type: 'button', 'aria-pressed': String(S.filter === k), onclick: () => { S.filter = k; render(); } }, label.replace('Waiting approval', 'Approval'), el('span', { class: 'n' }, c[k]))));
+  main.append(seg);
+  const list = S.data.tasks.filter((t) => t.status === S.filter);
+  if (!list.length) { main.append(el('div', { class: 'empty' }, S.filter === 'waiting_approval' ? 'Nothing needs your tap right now.' : 'No tasks here yet.')); return; }
+  main.append(el('div', { class: 'tasks' }, list.map(taskCard)));
+}
+
+function render() {
+  if (!S.data) return;
+  renderHeader();
+  const main = $('main'); const top = main.scrollTop;
+  const bar = $('bar'); document.body.appendChild(bar); bar.classList.remove('inpanel'); // park the task bar before the page is rebuilt
+  clear(main); main.classList.toggle('floorpage', S.view === 'floor');
+  if (!S.data.keyConfigured) main.append(el('div', { class: 'banner' }, 'The AI key is not set on the server yet, so tasks will wait in Backlog. See the deploy steps.'));
+  (S.view === 'floor' ? renderFloor : S.view === 'office' ? renderOffice : renderBoard)(main);
+  const slot = $('barSlot'); if (slot) { slot.appendChild(bar); bar.classList.add('inpanel'); }
+  main.scrollTop = top;
+  if (S.open) refreshSheet();
+}
+
+/* ---------- sheets ---------- */
+function showSheet(on) { $('scrim').classList.toggle('on', on); $('sheet').classList.toggle('on', on); document.body.style.overflow = on ? 'hidden' : ''; if (!on) { S.open = null; S.openType = null; } }
+function closeSheet() { showSheet(false); }
+
+function openTask(id) { S.open = id; S.openType = 'task'; S.sheetKey = ''; showSheet(true); refreshSheet(true); }
+function openChat(agentId) { S.open = agentId; S.openType = 'chat'; S.sheetKey = ''; showSheet(true); refreshSheet(true); }
+
+async function refreshSheet(force) {
+  if (S.openType === 'task') {
+    const t = S.data.tasks.find((x) => x.id === S.open); if (!t) return closeSheet();
+    const key = [t.status, t.updatedAt, t.revisions].join('|');
+    if (!force && S.sheetKey === key) return; S.sheetKey = key;
+    $('sheetT').textContent = t.title || t.text.slice(0, 80);
+    $('sheetChips').hidden = true; $('sheetIn').hidden = true;
+    const body = clear($('sheetB'));
+    body.append(el('p', { class: 'kv' }, el('span', null, 'Task: ' + t.text)));
+    body.append(el('p', { class: 'kv' },
+      el('span', { class: 'tag' + (t.status === 'done' ? ' ok' : t.status === 'waiting_approval' ? ' warn' : '') }, STATUS_LABEL[t.status]),
+      el('span', null, (t.agentName || 'No agent yet') + (t.routedBy === 'ai' ? ' (picked by the router)' : t.routedBy === 'manual' ? ' (chosen by you)' : t.routedBy === 'keywords' ? ' (matched by words)' : '')),
+      t.revisions ? el('span', null, 'version ' + (t.revisions + 1)) : null));
+    if (t.reason && t.routedBy === 'ai') body.append(el('p', { class: 'kv' }, 'Why: ' + t.reason));
+    if (t.status === 'waiting_approval' && t.approvalReason) body.append(el('div', { class: 'box warn' }, t.approvalReason));
+    if (t.error) body.append(el('div', { class: 'box bad' }, t.error));
+    if (t.note) {
+      const holder = el('div', null, 'Loading note…'); body.append(holder);
+      try { const n = await api('GET', `/api/tasks/${t.id}/note`); if (S.open === t.id) { clear(holder).append(md(n.markdown), el('p', { class: 'kv' }, 'Saved as: ' + n.path)); } } catch (e) { holder.textContent = e.message; }
+    } else if (t.status === 'in_progress') body.append(el('p', { class: 'kv' }, 'The agent is reading the notes and writing…'));
+    const f = clear($('sheetF')); f.hidden = false;
+    if (t.status === 'waiting_approval') f.append(el('button', { class: 'btn ok', type: 'button', onclick: () => act(`/api/tasks/${t.id}/approve`, 'Marked done.') }, 'Approve: I did it / it is fine'));
+    if (t.status === 'backlog' && t.error) f.append(el('button', { class: 'btn pri', type: 'button', onclick: () => act(`/api/tasks/${t.id}/retry`, 'Trying again…') }, 'Try again'));
+    if (t.agentId) f.append(el('button', { class: 'btn', type: 'button', onclick: () => openChat(t.agentId) }, 'Chat with ' + t.agentName));
+    f.append(el('button', { class: 'btn', type: 'button', onclick: closeSheet }, 'Close'));
+  } else if (S.openType === 'chat') {
+    const a = allAgents().find((x) => x.id === S.open); if (!a) return closeSheet();
+    const msgs = S.data.chats[a.id] || [];
+    const key = 'chat|' + msgs.length + '|' + (working(a.id) ? 1 : 0);
+    if (!force && S.sheetKey === key) return; S.sheetKey = key;
+    $('sheetT').textContent = a.name;
+    const body = clear($('sheetB'));
+    body.append(el('p', { class: 'kv' }, a.role + ' · ' + a.job));
+    const last = S.data.tasks.find((t) => t.agentId === a.id && t.note);
+    if (last) body.append(el('p', { class: 'kv' }, 'Latest note: ', el('a', { href: '#', class: 'lnk', onclick: (e) => { e.preventDefault(); openTask(last.id); } }, last.title || last.text.slice(0, 40))));
+    const chat = el('div', { class: 'chat' });
+    if (!msgs.length) chat.append(el('div', { class: 'msg agent' }, 'Hi, I am ' + a.name + '. Send “revise: shorter” to change my latest note, or “note: …” to teach me something for next time.'));
+    for (const m of msgs) chat.append(el('div', { class: 'msg ' + m.role }, m.text));
+    if (working(a.id)) chat.append(el('div', { class: 'msg agent' }, 'Working…'));
+    body.append(chat); body.scrollTop = body.scrollHeight;
+    $('sheetF').hidden = true; $('sheetIn').hidden = false;
+    const chips = clear($('sheetChips')); chips.hidden = false;
+    for (const c of ['revise: shorter', 'revise: simpler English', 'revise: friendlier tone', 'note: ']) chips.append(el('button', { type: 'button', onclick: () => { const i = $('chatText'); i.value = c; i.focus(); } }, c.trim().replace(/:$/, ':…')));
+  }
+}
+
+async function act(path, msg) { try { await api('POST', path, {}); toast(msg); await load(); } catch (e) { toast(e.message); } }
+
+async function sendChat() {
+  const input = $('chatText'); const message = input.value.trim(); if (!message || S.openType !== 'chat') return;
+  $('chatSend').disabled = true;
+  try { await api('POST', `/api/agents/${S.open}/chat`, { message }); input.value = ''; await load(); } catch (e) { toast(e.message); }
+  $('chatSend').disabled = false;
+}
+
+/* ---------- task bar ---------- */
+function fillDepts() {
+  const d = $('dept'); const keep = d.value; clear(d);
+  for (const x of S.data.departments) d.append(el('option', { value: x.id }, x.name));
+  if (keep) d.value = keep; fillAgents();
+}
+function fillAgents() {
+  const dep = S.data.departments.find((x) => x.id === $('dept').value); const p = $('agentPick'); clear(p);
+  p.append(el('option', { value: '' }, 'Agent: auto'));
+  for (const a of dep.agents) p.append(el('option', { value: a.id }, a.name));
+}
+async function addTask() {
+  const text = $('text').value.trim(); if (text.length < 3) { toast('Type the task in a few words.'); return; }
+  $('add').disabled = true;
+  try {
+    await api('POST', '/api/tasks', { department: $('dept').value, text, agentId: $('agentPick').value || undefined });
+    $('text').value = ''; toast('Added. The router is picking an agent.'); if (S.view !== 'floor') { S.view = 'board'; S.filter = 'in_progress'; } else S.pf = 'all'; await load();
+  } catch (e) { toast(e.message); }
+  $('add').disabled = false;
+}
+
+/* ---------- loading + polling ---------- */
+async function load() {
+  S.data = await api('GET', '/api/state');
+  if (!$('dept').options.length) fillDepts();
+  const sig = JSON.stringify([S.data.tasks.map((t) => [t.id, t.status, t.updatedAt]), Object.fromEntries(Object.entries(S.data.chats).map(([k, v]) => [k, v.length]))]);
+  if (sig !== S.lastSig) { S.lastSig = sig; render(); }
+  schedule();
+}
+function schedule() {
+  clearTimeout(S.poll);
+  if (document.hidden) return;
+  const busy = S.data.tasks.some((t) => t.status === 'in_progress' || (t.status === 'backlog' && !t.error));
+  S.poll = setTimeout(() => load().catch(() => schedule()), busy ? 2500 : 10000);
+}
+
+$('views').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { S.view = b.dataset.v; render(); $('main').scrollTop = 0; } });
+$('dept').addEventListener('change', fillAgents);
+$('add').addEventListener('click', addTask);
+$('text').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) addTask(); });
+$('scrim').addEventListener('click', closeSheet); $('sheetX').addEventListener('click', closeSheet);
+$('chatSend').addEventListener('click', sendChat);
+$('chatText').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); sendChat(); } });
+$('out').addEventListener('click', async () => { try { await api('POST', '/api/logout', {}); } catch { /* reload anyway */ } location.reload(); });
+WIDE.addEventListener('change', () => { if (WIDE.matches && S.view === 'office') S.view = 'floor'; if (!WIDE.matches && S.view === 'floor') S.view = 'office'; render(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) load().catch(() => {}); else clearTimeout(S.poll); });
+load().catch((e) => { clear($('main')).append(el('div', { class: 'empty' }, e.message)); });
+</script>
+</body>
+</html>
