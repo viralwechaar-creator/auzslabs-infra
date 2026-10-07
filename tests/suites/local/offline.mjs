@@ -281,4 +281,27 @@ export default async function run({ browser, stack }) {
     assert(r.b.slice(0, 2).join(',') === '27,64' && r.b.join(',').includes('27,112,0,25,250') && r.b.slice(-4).join(',') === '29,86,66,0', 'init / drawer / cut bytes');
     await c.close();
   });
+  await s.check('Service worker list covers every file Accounting loads (so it can start with no connection)', async () => {
+    const fs = await import('node:fs'); const html = fs.readFileSync(new URL('../../../app/public/accounts.html', import.meta.url), 'utf8'), sw = fs.readFileSync(new URL('../../../app/public/sw.js', import.meta.url), 'utf8');
+    const urls = [...html.matchAll(/(?:src|href)="(\/[^"#]+)"/g)].map((m) => m[1]).filter((u) => !u.startsWith('//'));
+    const missing = ['/accounts.html', ...urls].filter((u) => !sw.includes("'" + u + "'")); assert(!missing.length, 'not precached: ' + missing.join(', '));
+  }, 'major');
+  await s.check('Object storage: signing matches the AWS published example; upload and read round-trip against an S3-style server; dormant without settings', async () => {
+    const { signS3, s3Enabled, s3Put, s3Get } = await import('../../../server/src/s3.js');
+    const r = signS3({ method: 'GET', host: 'examplebucket.s3.amazonaws.com', path: '/test.txt', region: 'us-east-1', key: 'AKIAIOSFODNN7EXAMPLE', secret: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY', now: new Date('2013-05-24T00:00:00Z'), extra: { range: 'bytes=0-9' } });
+    assert(r.signature === 'f0e8bdb87c964420e857bd35b5d6ed310bd44f0170aba48dd91039c6036bdb41', 'signature ' + r.signature);
+    assert(!s3Enabled(), 'should be dormant without settings');
+    const http = await import('node:http'); const store = new Map();
+    const srv = http.createServer((q, res) => { const ch = []; q.on('data', (d) => ch.push(d)); q.on('end', () => {
+      if (!/^AWS4-HMAC-SHA256 Credential=AK\//.test(q.headers.authorization || '')) { res.statusCode = 403; return res.end(); }
+      if (q.method === 'PUT') { store.set(q.url, Buffer.concat(ch)); res.end(); } else if (store.has(q.url)) res.end(store.get(q.url)); else { res.statusCode = 404; res.end(); } }); });
+    await new Promise((ok) => srv.listen(0, '127.0.0.1', ok));
+    Object.assign(process.env, { S3_BUCKET: 'b', S3_ACCESS_KEY_ID: 'AK', S3_SECRET_ACCESS_KEY: 'sk', S3_ENDPOINT: 'http://127.0.0.1:' + srv.address().port });
+    try {
+      assert(s3Enabled(), 'should be on');
+      await s3Put('private/t/e/a.pdf', Buffer.from('hello'), 'application/pdf');
+      assert((await s3Get('private/t/e/a.pdf')).toString() === 'hello', 'read back');
+      assert((await s3Get('private/t/e/none.pdf')) === null, 'missing is null');
+    } finally { for (const k of ['S3_BUCKET', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY', 'S3_ENDPOINT']) delete process.env[k]; srv.close(); }
+  }, 'major');
 }

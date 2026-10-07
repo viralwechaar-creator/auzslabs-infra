@@ -134,21 +134,37 @@ function blocked(title, text) {
     h('button', { class: 'btn wide', onclick: async () => { await sb.auth.signOut(); location.reload(); } }, 'Sign out'))));
 }
 async function boot() {
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});     // lets Accounting start with no connection (offline drafts)
   clear($('#app')).append(h('div', { class: 'login' }, h('div', { class: 'spin', style: { color: 'var(--tint)', width: '28px', height: '28px' } })));
   const { data: { session } } = await sb.auth.getSession();
   if (!session) return showLogin();
   let dash;
-  try { dash = await api('my_dashboard'); } catch (e) { if (e.status === 401) return showLogin('Your session ended. Please sign in again.'); return blocked('Could not load', e.message); }
+  try { dash = await api('my_dashboard'); } catch (e) {
+    if (e.status === 401) return showLogin('Your session ended. Please sign in again.');
+    if (!e.status) { const c = await offBootCache(session); if (c) return bootOffline(c); }     // no connection: start from the copy kept on this device
+    return blocked('Could not load', e.message);
+  }
   const slug = window.TENANT_SLUG;
   if (slug && dash.tenant.slug !== slug) { await sb.auth.signOut(); return showLogin('This login belongs to a different business (' + dash.tenant.slug + '.auzslab.in). Sign in at your own business link.'); }
   if (!(dash.features || {}).accounting || (dash.enabled_features || {}).accounting === false) return blocked('Accounting is not enabled', 'AUZslab Accounting is not part of this business’s plan. You can request it from your account page, or ask the AUZslab team.');
   S.user = { email: dash.my_email, role: dash.my_role }; S.dash = dash;
   try { await loadCtx(); } catch (e) { return blocked('Could not open Accounting', e.message); }
+  cacheBoot(); parties().catch(() => {}); products().catch(() => {});     // keep a copy for offline drafts
   buildShell();
   if (window.auzBrandLoad) auzBrandLoad(sb);
   window.addEventListener('hashchange', route_);
   route_();
   runDueRecurring();
+  updateOffBar(); flushDrafts();
+}
+// Starting with no connection (or the server unreachable): the setup, people and products come from the copy saved at the
+// last online visit. Only writing new drafts works; everything else says it needs a connection, as before.
+function bootOffline(c) {
+  S.offline = true; S.dash = c.dash; S.user = c.user; applyCtx(c.ctx);
+  buildShell();
+  window.addEventListener('hashchange', route_);
+  if (!location.hash || /^#\/?(home)?$/.test(location.hash)) location.hash = '#/offline';
+  route_(); updateOffBar();
 }
 async function runDueRecurring() { // no background worker: due recurring documents are created when someone opens the app
   try { if (!(can('acc_sales') || can('acc_purchase'))) return; const r = await api('acc_run_recurring'); if (r && r.created) toast(r.created + ' recurring document' + (r.created > 1 ? 's' : '') + ' created'); if (r && r.failed) toast(r.failed + ' recurring schedule(s) need attention', { err: true }); } catch { /* shown on the Recurring page */ }
@@ -180,7 +196,7 @@ function buildShell() {
   const tabbar = h('nav', { class: 'tabbar', 'aria-label': 'Main' },
     TABS.map((id) => h('button', { type: 'button', 'data-tab': id, onclick: () => go(id) }, icon(PAGES[id].icon, 25), h('span', null, PAGES[id].tabLabel || PAGES[id].title))),
     h('button', { type: 'button', 'data-tab': 'more', onclick: moreSheet }, icon('more', 25), h('span', null, 'More')));
-  clear($('#app')).append(h('div', { class: 'shell' + (sidePref() ? ' ' + sidePref() : ''), id: 'shell' }, side, h('div', { class: 'main' }, topbar, h('main', { id: 'main', tabindex: '-1' })), tabbar));
+  clear($('#app')).append(h('div', { class: 'shell' + (sidePref() ? ' ' + sidePref() : ''), id: 'shell' }, side, h('div', { class: 'main' }, topbar, h('div', { class: 'banner info', id: 'offbar', hidden: true, style: { margin: '8px 16px 0' } }), h('main', { id: 'main', tabindex: '-1' })), tabbar));
   document.addEventListener('keydown', globalKeys);
   matchMedia('(min-width:900px)').addEventListener('change', () => route_());
 }

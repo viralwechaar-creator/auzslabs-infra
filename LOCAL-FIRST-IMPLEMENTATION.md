@@ -58,16 +58,30 @@ Printing is the browser/OS print dialog (`pos/print.js`); it never calls the clo
 and permissions from the session. Offline does not add a new door: the queue only replays through the same
 authenticated RPCs, and a dead session stops the queue (`401`) until sign-in.
 
+9. **Batch `POST /sync`** (server/src/index.js). Runs a list of existing RPCs in order, each in its own transaction, same login and
+   allow-list as `/rpc/` (no new privileges, size capped). A refusal fails only that op; after a temporary failure the rest
+   come back `{skipped:true}` so the phone keeps them queued in order. AUZsMob's outbox (`mob/sync.js`) sends its queue this way;
+   POS and the other apps still use per-record calls.
+10. **Local search numbers.** The offline suite measures POS search/browse/repaint at 1k, 5k, 10k and 50k local items
+    (it prints them; asserts a loose ceiling up to 10k). Run `node tests/run-local.mjs offline` to see this machine's figures;
+    they are headless-Chromium numbers, not a phone.
+11. **Direct receipt printing (`ds/escpos.js`, POS Staff & settings -> Receipt printer).** ESC/POS over WebUSB, Web Serial or
+    Web Bluetooth, with the print window as fallback if the printer fails. Works only in Chrome/Edge (desktop) and Android
+    Chrome; NOT in the Android wrapper's WebView, Safari or iPhone. Tested with a fake device, never on real hardware.
+12. **AUZsLedger offline drafts (db/123, `accounts/offline.js`).** Accounting starts with no connection from a saved copy of
+    setup, people and products (service worker is precaching its files), and a bill, expense, invoice or note can be written
+    and kept on the device. On reconnect it is sent through `acc_save_draft_offline` (idempotent on `op`, stored as a DRAFT
+    with `client_op`, never posted, no document number). Posting and editing need a connection. A draft the books refuse is
+    kept with the reason (Retry / Discard). Test: `accoffline` suite.
+13. **Object storage (`server/src/s3.js`).** Private files (employee documents, accounting attachments) go to any S3-compatible
+    bucket when `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` (and `S3_ENDPOINT`/`S3_REGION` for R2/B2/MinIO) are set;
+    otherwise disk as before, and old files on disk keep working. SigV4 checked against AWS's published example and a fake
+    server; not run against a real provider. Public site images stay on disk (Caddy serves them).
+
 ## NOT done (decisions, not omissions)
 
-- **AUZsLedger and AUZsPay stay server-authoritative** (except Pay's clock-in above). Gapless document numbers, period locks, double-entry balancing,
-  approval limits and frozen payroll are enforced in one database transaction; an offline copy would have to *propose*
-  entries that the server may refuse. A safe design (offline drafts that are posted on reconnect, never silently
-  overwritten) is possible but is a separate feature with its own rules; not started.
-- **Direct thermal printing (ESC/POS over Bluetooth/USB/LAN)** does not exist today (print dialog only). It needs
-  WebUSB/WebBluetooth in the browser or a native plugin in the Android wrapper, plus real printers to test on.
-- **Object storage (Spaces/S3)** for images and attachments: not started; uploads still live on the server volume.
-- **Performance numbers** (10k/50k product search, load): not measured in this pass; there is a `load` and `loadmob`
-  suite for scale; run them before claiming figures.
-- **A single `POST /sync` batch endpoint**: not added. The existing per-record idempotent RPCs already give batching
-  by looping; a batch endpoint would add a second path to secure without fixing a failure found in testing.
+- **AUZsLedger posting, and AUZsPay beyond clock-in, stay server-authoritative**: gapless numbers, period locks and balancing
+  need the database. Only drafts are offline.
+- **Direct printing on iPhone / Android wrapper**, and on real printers: see item 11.
+- **Public site images in object storage**, moving existing disk files into a bucket, and signed download links.
+- **Phone-measured performance** and a real-provider object-storage run.

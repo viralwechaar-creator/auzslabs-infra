@@ -328,8 +328,21 @@ async function docEditor(v, type, existing) {
     if (isExpense && !party() && D.pay === 'later') return 'Choose where the money was paid from';
     return '';
   };
+  // Offline (or the server cannot be reached): a NEW bill / expense / invoice / note is kept on this device as an offline draft and
+  // sent to the books as a draft when the connection is back (accounts/offline.js). Posting and editing need a connection.
+  const keepOffline = async () => {
+    const r = await queueDraft(build(false), C.total);
+    dirty = false; window.__scan = null;
+    toast('Saved on this device. It will be sent to your books as a draft when you are back online.'); go('offline'); return r;
+  };
   const save = async (post) => {
     const err = validate(); if (err) return toast(err, { err: true });
+    if (offlineNow()) {
+      if (post) return toast('Posting needs a connection. Save it as a draft now and post it when you are back online.', { err: true });
+      if (D.id) return toast('Changing a saved document needs a connection.', { err: true });
+      if (!OFFLINE_TYPES.includes(type)) return toast('This kind of document needs a connection.', { err: true });
+      return keepOffline();
+    }
     if (post && !(await confirmBox('Post ' + DOC_LABEL[type].toLowerCase() + ' for ' + inr(C.total) + '?', 'This creates ledger' + (posting ? ', stock and GST' : '') + ' entries and gives it its final number. You can cancel it later with a reversal but not edit it.', 'Post'))) return;
     btns.forEach((b) => (b.disabled = true));
     try {
@@ -338,7 +351,11 @@ async function docEditor(v, type, existing) {
       if (scan && scan.file) { try { await uploadAttachment('document', r.id, scan.file); } catch (e) { toast('Saved, but the invoice file could not be attached', { err: true }); } window.__scan = null; }
       if (r.pending_approval) { toast('Saved. It needs a manager’s approval before it can be posted.'); go('doc/' + r.id); return; }
       toast(r.posted ? 'Posted ' + r.number : 'Draft saved'); go('doc/' + r.id);
-    } catch (e) { fail(e); btns.forEach((b) => (b.disabled = false)); }
+    } catch (e) {
+      // the server did not answer at all (not a refusal): keep a new draft on this device instead of losing the work
+      if (!e.status && !post && !D.id && OFFLINE_TYPES.includes(type)) { try { await keepOffline(); return; } catch (e2) { /* fall through to the error */ } }
+      fail(e); btns.forEach((b) => (b.disabled = false));
+    }
   };
   const saveSchedule = () => {
     const err = validate(); if (err) return toast(err, { err: true });
