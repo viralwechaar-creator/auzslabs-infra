@@ -100,20 +100,28 @@ export default async function run({ browser, stack }) {
     const vis = await p.locator('#clientsList').isVisible().catch(() => false); const txt = await p.locator('#clientsList').innerText().catch(() => '');
     assert(!vis || !/testcafe|Test Cafe/i.test(txt), 'a normal customer can see the client list'); await c4.close();
   }, 'critical');
-  await s.check('Cart page lets a signed-in visitor pick products and submit a request', async () => {
+  await s.check('Cart page redirects to the profile first, then lets a signed-in visitor pick products and submit a request on checkout.html', async () => {
     const c5 = await newCtx(browser, stack); const p = await c5.newPage(); const e5 = watch(p);
     await p.goto(stack.url('', '/signup.html')); await p.waitForTimeout(500); await p.click('#modeLogin'); await p.fill('#email', USERS.plain); await p.fill('#password', PASSWORD); await p.click('#submitBtn'); await p.waitForTimeout(1500);
     await p.goto(stack.url('', '/products.html')); await p.waitForTimeout(800);
     const adds = p.locator('[data-cart-btn]'); assert((await adds.count()) >= 3, 'products page has too few Add to cart buttons');
     await adds.first().click(); await p.waitForTimeout(400);
     await p.goto(stack.url('', '/cart.html')); await p.waitForTimeout(1200);
+    assert(/account\.html/.test(p.url()), 'visiting the cart with no saved profile did not redirect to account.html, landed on ' + p.url());
+    await p.waitForSelector('#pfName', { timeout: 15000 });
+    await p.fill('#pfName', 'QA Owner'); await p.fill('#pfPhone', '9811100011'); await p.fill('#pfBiz', 'QA Business ' + (Date.now() % 10000));
+    await p.click('#pfSave'); await p.waitForTimeout(1200);
+    assert(/saved/i.test(await p.locator('#pfMsg').innerText().catch(() => '')), 'profile save did not confirm');
+    assert(await p.locator('#pfContinue').isVisible(), 'Continue to products link did not appear after saving');
+    await p.goto(stack.url('', '/cart.html')); await p.waitForTimeout(1200);
+    assert(!/account\.html/.test(p.url()), 'cart redirected to account.html even after a profile was saved');
     assert(/\S/.test(await p.locator('#cartItems').innerText()), 'cart is empty after adding a product');
-    await p.fill('#contactName', 'QA Owner'); await p.fill('#contactPhone', '9811100011'); await p.fill('#bizName', 'QA Business'); await p.fill('#bizSlug', 'qabusiness' + (Date.now() % 10000));
-    await p.selectOption('#bizNiche', { index: 1 }).catch(() => {}); await p.fill('#bizAddress', '1 Test Road').catch(() => {});
+    await p.click('#continuePayBtn'); await p.waitForTimeout(1500);
+    assert(/checkout\.html/.test(p.url()), 'Continue to payment did not reach checkout.html, landed on ' + p.url());
     await p.click('#submitBtn'); await p.waitForTimeout(2000);
-    const r = await q("select count(*)::int n from signup_requests where business_name = 'QA Business'").catch(async () => q("select count(*)::int n from signup_requests"));
+    const r = await q("select count(*)::int n from signup_requests where business_name like 'QA Business%'").catch(async () => q("select count(*)::int n from signup_requests"));
     assert(r[0].n >= 1, 'no signup request stored; page says: ' + (await p.locator('#submitErr').innerText().catch(() => '')));
-    await s.shot(p, 'cart-submitted'); assert(!e5.some((x) => /JS error/.test(x)), e5.join(' | ')); await c5.close();
+    await s.shot(p, 'checkout-submitted'); assert(!e5.some((x) => /JS error/.test(x)), e5.join(' | ')); await c5.close();
   }, 'critical');
   await s.check('Submitted request is visible to the platform admin', async () => {
     const c6 = await newCtx(browser, stack); const p = await c6.newPage();

@@ -240,6 +240,7 @@ function renderProfile() {
       <div class="field"><label>Login email</label><input value="${esc(LOGIN_EMAIL)}" disabled></div>
       <div class="field"><label>Contact email (if different)</label><input id="pfEmail" type="email" value="${esc(P.contact_email)}" placeholder="optional"></div>
       <div class="field"><label>Business name</label><input id="pfBiz" value="${esc(P.business_name || (DASH && DASH.tenant && DASH.tenant.name) || '')}"></div>
+      <div class="field"><label>Desired subdomain</label><input id="pfSlug" value="${esc(P.biz_slug)}" placeholder="ogbookcafe" pattern="[a-z0-9-]+"></div>
       <div class="field"><label>Business type</label><select id="pfType"><option value="">Choose</option>${opt(BIZ_TYPES, P.business_type)}</select></div>
       <div class="field"><label>Niche (what exactly do you do or sell?)</label><input id="pfNiche" value="${esc(P.niche)}" placeholder="e.g. unisex salon, bakery, mobile repair"></div>
       <div class="field"><label>City</label><input id="pfCity" value="${esc(P.city)}"></div>
@@ -252,12 +253,17 @@ function renderProfile() {
       <div class="field"><label>When do you want to start?</label><select id="pfWhen">${opt(START_WHEN, P.start_when)}</select></div>
       <div class="field wide"><label>Anything else we should know</label><textarea id="pfNotes" rows="3">${esc(P.notes)}</textarea></div>
       <button class="btn btn-primary form-submit" id="pfSave" style="margin-top:12px">Save profile</button>
-      <a href="cart.html" class="btn btn-ghost form-submit" style="margin-top:8px">Go to my cart</a>
+      <a href="products.html" class="btn btn-ghost form-submit" id="pfContinue" style="margin-top:8px;${P.name && P.phone ? '' : 'display:none'}">Continue to products &rarr;</a>
       <div id="pfMsg" class="muted" style="margin-top:10px"></div>
     </div>`;
+  $('#pfBiz').addEventListener('input', (e) => {
+    const slugEl = $('#pfSlug');
+    if (!slugEl.dataset.touched) slugEl.value = e.target.value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '').slice(0, 40);
+  });
+  $('#pfSlug').addEventListener('input', (e) => { e.target.dataset.touched = '1'; });
   $('#pfSave').onclick = async () => {
     const btn = $('#pfSave'), msg = $('#pfMsg'); msg.textContent = '';
-    const body = { name: $('#pfName').value, phone: $('#pfPhone').value, contact_email: $('#pfEmail').value, business_name: $('#pfBiz').value, business_type: $('#pfType').value, niche: $('#pfNiche').value,
+    const body = { name: $('#pfName').value, phone: $('#pfPhone').value, contact_email: $('#pfEmail').value, business_name: $('#pfBiz').value, biz_slug: $('#pfSlug').value, business_type: $('#pfType').value, niche: $('#pfNiche').value,
       city: $('#pfCity').value, address: $('#pfAddr').value, outlets: $('#pfOutlets').value, staff_count: $('#pfStaff').value, current_software: $('#pfCurrent').value, start_when: $('#pfWhen').value, notes: $('#pfNotes').value,
       products: [...document.querySelectorAll('#pfProducts input:checked')].map((i) => i.value) };
     btn.disabled = true;
@@ -266,6 +272,12 @@ function renderProfile() {
     if (error) { msg.textContent = error.message; msg.style.color = 'var(--accent)'; return; }
     PROFILE = { ...body, outlets: body.outlets === '' ? null : Number(body.outlets), staff_count: body.staff_count === '' ? null : Number(body.staff_count) };
     msg.style.color = ''; msg.textContent = 'Saved. Thank you!';
+    const cont = $('#pfContinue');
+    if (cont) {
+      cont.style.display = 'block';
+      const ret = new URLSearchParams(location.search).get('return');
+      cont.href = ret || 'products.html';
+    }
   };
 }
 

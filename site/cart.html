@@ -41,10 +41,6 @@
 .bundle-note{display:flex;align-items:center;gap:8px;padding:8px 16px 12px;font-size:12.5px;color:var(--accent);font-weight:600}
 .bundle-note .tag{background:var(--accent);color:#fff;font-size:10px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:3px 8px;border-radius:999px;white-space:nowrap}
 .pay-note{font-size:12.5px;color:var(--ink-faint);margin-top:8px}
-.paying-overlay{position:fixed;inset:0;background:rgba(255,255,255,.92);display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;z-index:999;text-align:center;padding:24px}
-.paying-overlay.open{display:flex}
-.paying-spin{width:40px;height:40px;border:3px solid var(--ink-faint);border-top-color:var(--accent);border-radius:50%;animation:paying-spin .8s linear infinite}
-@keyframes paying-spin{to{transform:rotate(360deg)}}
 .period-seg{gap:8px;margin:12px 0 4px;flex-wrap:wrap}
 .period-seg button{flex:1;min-width:140px;border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:12px 14px;font:600 14px var(--font-body);color:var(--ink-dim);cursor:pointer}
 .period-seg button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
@@ -122,97 +118,25 @@
           <div id="addonAlreadyOwned"></div>
           <div id="addonItems"></div>
 
-          <div id="addonPayTotalWrap" class="card" style="display:none;margin-top:8px">
-            <div class="cart-total"><span>Due today</span><b id="addonPayTotalAmount"></b></div>
-            <p class="pay-note" style="margin-top:0">No setup fee -- your account is already set up. This is the recurring monthly amount, charged from today.</p>
-          </div>
-          <button id="addonPayBtn" class="btn btn-primary form-submit" style="display:none">Pay &amp; activate instantly</button>
-          <p id="addonPayNote" class="pay-note" style="display:none">Card, UPI or netbanking -- these go live the moment payment is confirmed.</p>
-          <div id="addonUpiCard" class="card" style="display:none;margin-top:8px;text-align:center">
-            <div class="label" style="justify-content:center">Pay by UPI</div>
-            <div class="cart-total"><span>Amount</span><b id="addonUpiAmount"></b></div>
-            <img id="addonUpiQr" alt="UPI QR code" width="190" height="190" style="margin:10px auto;display:block;border-radius:12px;background:#fff">
-            <p class="pay-note" style="margin:0">Scan with any UPI app, or pay to <b id="addonUpiId"></b> (<span id="addonUpiName"></span>).</p>
-            <a id="addonUpiOpen" class="btn btn-ghost" style="margin-top:10px" href="#">Open my UPI app</a>
-            <div class="field" style="text-align:left;margin-top:14px">
-              <label for="addonUpiRef">UPI reference number (UTR) after paying</label>
-              <input id="addonUpiRef" inputmode="numeric" placeholder="12-digit number from your UPI app" autocomplete="off">
-            </div>
-            <p class="pay-note" style="margin:0">We switch your account on as soon as we see the payment, usually within a few hours.</p>
-          </div>
-
           <div class="field">
             <label for="addonNotes">Anything else we should know?</label>
             <textarea id="addonNotes" placeholder="When you'd like this live, number of staff who'll use it, etc. (optional)"></textarea>
           </div>
-          <button id="addonSubmitBtn" class="btn btn-primary form-submit">Request these add-ons</button>
+          <a href="checkout.html" id="continueAddonPayBtn" class="btn btn-primary form-submit">Continue to payment &rarr;</a>
           <div id="addonErr" class="err"></div>
         </div>
       </section>
 
       <section class="section tight" id="requestSection" style="display:none;max-width:640px">
         <div class="card">
-          <p class="p" style="margin-bottom:8px">Signed in as <b id="whoami"></b> &middot; <a href="account.html#profile">Edit my profile</a></p>
+          <p class="p" style="margin-bottom:8px">Signed in as <b id="whoami"></b></p>
+          <div id="profileSummary" class="p" style="margin-bottom:12px"></div>
 
-          <!-- Pay/UPI sits right at the top, before the signup form, so it's visible the moment
-               this card opens -- no scrolling past "About you"/"About your business" to find it. -->
-          <div id="payTotalWrap" class="card" style="display:none;margin-top:8px">
-            <div class="cart-total"><span>Due today</span><b id="payTotalAmount"></b></div>
-            <p class="pay-note" id="payThenNote" style="margin-top:0"></p>
-          </div>
-          <button id="payBtn" class="btn btn-primary form-submit" style="display:none">Pay &amp; activate instantly</button>
-          <p id="payNote" class="pay-note" style="display:none">Card, UPI or netbanking -- your account goes live the moment payment is confirmed, no waiting for review.</p>
-          <p class="pay-note">A one-time setup fee of ₹2,179 is mandatory for every new AUZslab account, collected together with your first month's payment.</p>
-          <div id="UpiCard" class="card" style="display:none;margin-top:8px;text-align:center">
-            <div class="label" style="justify-content:center">Pay by UPI</div>
-            <div class="cart-total"><span>Amount</span><b id="UpiAmount"></b></div>
-            <img id="UpiQr" alt="UPI QR code" width="190" height="190" style="margin:10px auto;display:block;border-radius:12px;background:#fff">
-            <p class="pay-note" style="margin:0">Scan with any UPI app, or pay to <b id="UpiId"></b> (<span id="UpiName"></span>).</p>
-            <a id="UpiOpen" class="btn btn-ghost" style="margin-top:10px" href="#">Open my UPI app</a>
-            <div class="field" style="text-align:left;margin-top:14px">
-              <label for="UpiRef">UPI reference number (UTR) after paying</label>
-              <input id="UpiRef" inputmode="numeric" placeholder="12-digit number from your UPI app" autocomplete="off">
-            </div>
-            <p class="pay-note" style="margin:0">We switch your account on as soon as we see the payment, usually within a few hours.</p>
-          </div>
-
-          <p class="label" style="margin-top:4px">About you</p>
           <div class="field">
-            <label for="contactName">Your name</label>
-            <input id="contactName" placeholder="Full name">
+            <label for="bizNotes">Anything else we should know about this order?</label>
+            <textarea id="bizNotes" placeholder="When you'd like this live, number of outlets, etc. (optional)"></textarea>
           </div>
-          <div class="field">
-            <label for="contactPhone">Phone number</label>
-            <input id="contactPhone" type="tel" placeholder="9876543210">
-          </div>
-
-          <p class="label" style="margin-top:18px">About your business</p>
-          <div class="field">
-            <label for="bizName">Business name</label>
-            <input id="bizName" placeholder="OG Book Cafe">
-          </div>
-          <div class="field">
-            <label for="bizSlug">Desired subdomain</label>
-            <input id="bizSlug" placeholder="ogbookcafe" pattern="[a-z0-9-]+">
-          </div>
-          <div class="field">
-            <label for="bizNiche">Type of business</label>
-            <select id="bizNiche">
-              <option value="cafe">Café, restaurant, bar & more</option>
-              <option value="retail">Retail (shoes, clothing, books)</option>
-              <option value="salon">Salon / spa</option>
-              <option value="general">Other</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="bizAddress">Business address / city</label>
-            <input id="bizAddress" placeholder="City, State">
-          </div>
-          <div class="field">
-            <label for="bizNotes">Anything else we should know?</label>
-            <textarea id="bizNotes" placeholder="Current billing software, number of outlets, etc. (optional)"></textarea>
-          </div>
-          <button id="submitBtn" class="btn btn-primary form-submit">Send to AUZslab</button>
+          <a href="checkout.html" id="continuePayBtn" class="btn btn-primary form-submit">Continue to payment &rarr;</a>
           <div id="submitErr" class="err"></div>
         </div>
       </section>
@@ -222,38 +146,17 @@
     </div>
   </main>
 
-  <div class="paying-overlay" id="payingOverlay">
-    <div class="paying-spin" aria-hidden="true"></div>
-    <p class="p" id="payingText">Payment received -- activating your account...</p>
-  </div>
-
-  <div class="modal-overlay" id="modalOverlay">
-    <div class="modal" id="modal">
-      <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
-      <div class="success-view show">
-        <div class="success-mark">&check;</div>
-        <h3 class="h-2" style="font-size:22px" id="successTitle">Request sent.</h3>
-        <p class="p" id="successBody">The AUZslab team is verifying your requirements and will reach out to you shortly.</p>
-      </div>
-    </div>
-  </div>
-
 </div>
 
 <script src="/sb-client.js?v=5"></script>
 <script src="tool/lock.js?v=1"></script>
 <script src="tool/site.js?v=12"></script>
-<script>window.CFG = { url: 'https://api.auzslab.in', key: '', upiId: '8005673683-2@ybl', upiName: 'Mahendra' }; // manual UPI route, while Razorpay/Cashfree is off -- swap to the business's own UPI id once Cashfree is live</script>
-<script src="vendor/qrcode.js"></script>
+<script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script>
 const sb = supabase.createClient(CFG.url, CFG.key);
 const PRODUCT_LABEL = { salon: 'AUZslab Salon', pos: 'AUZsPOS', crm: 'CRM', billing: 'Billing & Invoicing', inventory: 'Inventory', self_order: 'AUZsPOS QR', payroll: 'AUZsPay', website_builder: 'Website Builder', accounting: 'AUZsLedger', mobile: 'AUZsMob' };
-// Apps link here as cart.html?add=<product key>: pre-select that product so a new customer lands on their bill + signup form.
+// Apps link here as cart.html?add=<product key>: pre-select that product so a new customer lands on their bill + notes.
 try { const pre = new URLSearchParams(location.search).get('add'); if (pre && PRODUCT_LABEL[pre]) AUZcart.add(pre); } catch (e) {}
-
-function slugify(s) {
-  return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '').slice(0, 40);
-}
 
 function inr(n) {
   return '₹' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 0 });
@@ -298,19 +201,6 @@ let PERIOD = 'month';   // 'month' | 'year' (yearly only for carts whose product
 let BUNDLES = [];
 let ADDON_OVERRIDES = [];
 let PAY = { enabled: false, keyId: null };
-let razorpayScriptPromise = null;
-function loadRazorpayScript() {
-  if (razorpayScriptPromise) return razorpayScriptPromise;
-  razorpayScriptPromise = new Promise((resolve, reject) => {
-    if (window.Razorpay) return resolve();
-    const s = document.createElement('script');
-    s.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error('Could not load the payment form -- check your connection and try again.'));
-    document.head.appendChild(s);
-  });
-  return razorpayScriptPromise;
-}
 
 async function loadPricing() {
   const [{ data: prices }, { data: bundles }, { data: overrides }, { data: cfg }] = await Promise.all([
@@ -412,32 +302,7 @@ function renderCart() {
 document.getElementById('periodMonth').onclick = () => { PERIOD = 'month'; updatePayButtons(); };
 document.getElementById('periodYear').onclick = () => { PERIOD = 'year'; updatePayButtons(); };
 
-// ---- Pay by UPI QR (manual route, used while online payment is off) ----
-// Shown only when CFG.upiId is set and Razorpay checkout is not on. The QR carries the exact amount; the customer
-// pastes the UPI reference (UTR) and it travels with the request notes so the admin can match it in the bank app.
-function showUpi(prefix, total) {
-  const card = document.getElementById(prefix + 'UpiCard');
-  if (!CFG.upiId || PAY.enabled || total === null || typeof qrcode !== 'function') { card.style.display = 'none'; return; }
-  const amt = Number(total.dueToday).toFixed(2);
-  const uri = 'upi://pay?pa=' + encodeURIComponent(CFG.upiId) + '&pn=' + encodeURIComponent(CFG.upiName || 'AUZslab') + '&am=' + amt + '&cu=INR&tn=' + encodeURIComponent('AUZslab plan');
-  try { const q = qrcode(0, 'M'); q.addData(uri); q.make(); document.getElementById(prefix + 'UpiQr').src = q.createDataURL(5, 2); } catch (e) { card.style.display = 'none'; return; }
-  document.getElementById(prefix + 'UpiAmount').textContent = inr(total.dueToday);
-  document.getElementById(prefix + 'UpiId').textContent = CFG.upiId;
-  document.getElementById(prefix + 'UpiName').textContent = CFG.upiName || 'AUZslab';
-  document.getElementById(prefix + 'UpiOpen').href = uri;
-  card.style.display = 'block';
-}
-function upiNote(prefix, total) {
-  const card = document.getElementById(prefix + 'UpiCard');
-  if (total !== null && PERIOD === 'year') return `\n[Billing: YEARLY plan]` + upiNote2(card, prefix, total);
-  return upiNote2(card, prefix, total);
-}
-function upiNote2(card, prefix, total) {
-  if (!card || card.style.display === 'none' || total === null) return '';
-  const ref = document.getElementById(prefix + 'UpiRef').value.trim();
-  return ref ? `\n[UPI payment of ${inr(total.dueToday)} claimed, reference ${ref}]` : `\n[UPI: nothing paid yet, ${inr(total.dueToday)} due]`;
-}
-
+// Read-only preview only -- no payment action lives on this page any more (that's checkout.html).
 function updatePayButtons() {
   const items = AUZcart.get();
   const entitled = (DASH && DASH.features) || {};
@@ -472,7 +337,6 @@ function updatePayButtons() {
     document.getElementById('periodMonth').classList.toggle('active', PERIOD !== 'year');
     document.getElementById('periodYear').classList.toggle('active', PERIOD === 'year');
     if (elig) {
-      const f = FLAGS.get(topKeys[0]) || {};
       const pb = matchedBundle(topKeys);
       const monthly = pb ? Number(pb.monthly_price) : topKeys.reduce((a, k) => a + Number(PRICES.get(k) || 0), 0), yearly = pb ? Number(pb.yearly_price) : topKeys.reduce((a, k) => a + (FLAGS.get(k).yearly), 0), renew = pb ? yearly : topKeys.reduce((a, k) => a + (FLAGS.get(k).renewal || FLAGS.get(k).yearly), 0);
       document.getElementById('periodMonth').textContent = 'Monthly ' + inr(monthly);
@@ -485,30 +349,6 @@ function updatePayButtons() {
       ? 'Charged monthly from today.'
       : (yr ? 'Renews yearly (see above).' : 'Then ' + inr(topTotal.monthlyTotal) + '/mo from month 2' + (topTotal.setupFee ? ' (no setup fee again).' : '.'));
   }
-
-  // "Pay & activate instantly" buttons: same math, only shown when Razorpay is actually on.
-  const subtotal = PAY.enabled ? priceTotal(items) : null;
-  const total = subtotal !== null ? billFor(subtotal, true, items) : null;
-  document.getElementById('payTotalWrap').style.display = total !== null ? 'block' : 'none';
-  document.getElementById('payBtn').style.display = total !== null ? 'block' : 'none';
-  document.getElementById('payNote').style.display = total !== null ? 'block' : 'none';
-  if (total !== null) {
-    document.getElementById('payTotalAmount').textContent = inr(total.dueToday);
-    document.getElementById('payThenNote').textContent = 'Then ' + inr(total.monthlyTotal) + '/mo from month 2 (no setup fee again).';
-  }
-
-  const addonSubtotal = PAY.enabled ? priceTotal(requestable, entitled) : null;
-  const addonTotal = addonSubtotal !== null ? billFor(addonSubtotal, false, requestable) : null;
-  document.getElementById('addonPayTotalWrap').style.display = addonTotal !== null ? 'block' : 'none';
-  document.getElementById('addonPayBtn').style.display = addonTotal !== null ? 'block' : 'none';
-  document.getElementById('addonPayNote').style.display = addonTotal !== null ? 'block' : 'none';
-  if (addonTotal !== null) document.getElementById('addonPayTotalAmount').textContent = inr(addonTotal.dueToday);
-
-  // UPI QR card: priced from the same cart, whether or not Razorpay is on
-  const upiSignupSubtotal = priceTotal(items);
-  showUpi('', !isAddonContext && upiSignupSubtotal !== null ? billFor(upiSignupSubtotal, true, items) : null);
-  const upiAddonSubtotal = priceTotal(requestable, entitled);
-  showUpi('addon', isAddonContext && upiAddonSubtotal !== null ? billFor(upiAddonSubtotal, false, requestable) : null);
 }
 
 let DASH = null;
@@ -543,6 +383,8 @@ function renderAddonItems() {
   updatePayButtons();
 }
 
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 async function checkSession() {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) {
@@ -561,16 +403,18 @@ async function checkSession() {
     renderAddonItems();
   } else {
     document.getElementById('addonSection').style.display = 'none';
+    // New customer: step 1 (sign up, save profile) comes before this page -- see account.html's
+    // "My profile" tab. Block anyone who hasn't saved one yet, rather than asking for the same
+    // details again here, so profile-filling and paying are never the same screen.
+    const { data: pr } = await sb.rpc('my_profile').catch(() => ({ data: null }));
+    const P = (pr && pr.profile) || null;
+    if (!P || !P.name || !P.phone || !P.business_name || !P.biz_slug) {
+      window.location.href = 'account.html?return=' + encodeURIComponent('cart.html') + '#profile';
+      return;
+    }
     document.getElementById('requestSection').style.display = 'block';
     document.getElementById('whoami').textContent = session.user.email;
-    // Fill the form from the saved profile (account page) so nobody types the same details twice.
-    try {
-      const { data: pr } = await sb.rpc('my_profile'); const P = (pr && pr.profile) || {};
-      const put = (id, v) => { const el = document.getElementById(id); if (el && !el.value && v) el.value = v; };
-      put('contactName', P.name); put('contactPhone', P.phone); put('bizName', P.business_name);
-      const t = String(P.business_type || '').toLowerCase(), sel = document.getElementById('bizNiche');
-      if (sel && t) sel.value = /salon|spa/.test(t) ? 'salon' : /cafe|restaurant|bar/.test(t) ? 'cafe' : /retail|cloth|mobile/.test(t) ? 'retail' : sel.value;
-    } catch (e) { /* the form just stays empty */ }
+    document.getElementById('profileSummary').innerHTML = esc(P.business_name) + ' &middot; ' + esc(P.biz_slug) + '.auzslab.in &middot; <a href="account.html#profile">Edit my profile</a>';
   }
   updatePayButtons();
 }
@@ -581,234 +425,18 @@ async function checkSession() {
   await checkSession();
 })();
 
-document.getElementById('bizName').addEventListener('input', (e) => {
-  const slugEl = document.getElementById('bizSlug');
-  if (!slugEl.dataset.touched) slugEl.value = slugify(e.target.value);
-});
-document.getElementById('bizSlug').addEventListener('input', (e) => { e.target.dataset.touched = '1'; });
-
-function readSignupForm() {
-  return {
-    contactName: document.getElementById('contactName').value.trim(),
-    contactPhone: document.getElementById('contactPhone').value.trim(),
-    name: document.getElementById('bizName').value.trim(),
-    slug: document.getElementById('bizSlug').value.trim().toLowerCase(),
-    niche: document.getElementById('bizNiche').value,
-    address: document.getElementById('bizAddress').value.trim(),
-    notes: document.getElementById('bizNotes').value.trim(),
-  };
+// Order notes (this cart, this order) are separate from the profile's own notes (account.html) --
+// carried to checkout.html via localStorage, the same pattern AUZcart itself already uses, since
+// navigating to a new page loses in-memory JS state. Saved on every keystroke so a stray
+// navigation (back button, "Continue to payment") never silently drops what was typed.
+const NOTES_KEY = 'auz_cart_notes';
+function wireNotes(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  try { el.value = localStorage.getItem(NOTES_KEY) || ''; } catch (e) {}
+  el.addEventListener('input', () => { try { localStorage.setItem(NOTES_KEY, el.value); } catch (e) {} });
 }
-function validateSignupForm(f, errEl) {
-  errEl.textContent = '';
-  if (!f.contactName || !f.contactPhone) { errEl.textContent = 'Your name and phone number are required.'; return false; }
-  if (!f.name || !f.slug) { errEl.textContent = 'Business name and subdomain are required.'; return false; }
-  if (!AUZcart.get().length) { errEl.textContent = 'Pick at least one product above before sending -- or tell us in the notes and we\'ll help you choose.'; return false; }
-  return true;
-}
-
-document.getElementById('submitBtn').onclick = async () => {
-  const f = readSignupForm();
-  const errEl = document.getElementById('submitErr');
-  if (!validateSignupForm(f, errEl)) return;
-
-  const features = {};
-  AUZcart.get().forEach((key) => { features[key] = true; });
-
-  const upiSub = priceTotal(AUZcart.get());
-  const { error } = await sb.rpc('submit_signup_request', {
-    p_business_name: f.name, p_slug: f.slug, p_features: features, p_notes: f.notes + upiNote('', upiSub !== null ? billFor(upiSub, true, AUZcart.get()) : null),
-    p_contact_name: f.contactName, p_phone: f.contactPhone, p_niche: f.niche, p_address: f.address,
-  });
-  if (error) {
-    errEl.textContent = error.message;
-    if (error.status === 401) checkSession();
-    return;
-  }
-
-  AUZcart.clear();
-  document.getElementById('successTitle').textContent = 'Request sent.';
-  document.getElementById('successBody').textContent = 'The AUZslab team is verifying your requirements and will reach out to you shortly.';
-  modalRedirect = 'index.html';
-  document.getElementById('modalOverlay').classList.add('open');
-};
-
-// Polls payment_status after Razorpay's own checkout handler fires --
-// that handler is just a UI hint that the modal closed successfully,
-// never trusted on its own (see payments.js). Only the server-verified
-// webhook can ever actually flip a payment to 'paid'.
-async function pollPaymentStatus(orderId, timeoutMs = 45000) {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    const { data } = await sb.rpc('payment_status', { p_order_id: orderId });
-    if (data && data.status === 'paid') return data;
-    if (data && data.status === 'failed') return data;
-    await new Promise((r) => setTimeout(r, 2000));
-  }
-  return null;
-}
-
-function setBusy(btn, busy, label) {
-  btn.disabled = busy;
-  btn.dataset.label = btn.dataset.label || btn.textContent;
-  btn.textContent = busy ? (label || 'Please wait...') : btn.dataset.label;
-}
-
-async function payAndActivate({ createOrderArgs, prefill, overlayText, onPaid }) {
-  const overlay = document.getElementById('payingOverlay');
-  const overlayTextEl = document.getElementById('payingText');
-  try {
-    await loadRazorpayScript();
-  } catch (e) {
-    throw new Error(e.message);
-  }
-  const { data: order, error: orderErr } = await sb.payments.createOrder(createOrderArgs);
-  if (orderErr) throw new Error(orderErr.message);
-
-  await new Promise((resolve, reject) => {
-    const rzp = new Razorpay({
-      key: order.keyId,
-      amount: order.amount,
-      currency: order.currency,
-      order_id: order.orderId,
-      name: 'AUZslab',
-      description: 'Subscription activation',
-      prefill,
-      theme: { color: '#800020' },
-      handler: () => resolve(),
-      modal: { ondismiss: () => reject(new Error('cancelled')) },
-    });
-    rzp.open();
-  });
-
-  overlayTextEl.textContent = overlayText;
-  overlay.classList.add('open');
-  const result = await pollPaymentStatus(order.orderId);
-  overlay.classList.remove('open');
-  if (!result || result.status !== 'paid') {
-    throw new Error('Payment received, but activation is taking longer than expected -- refresh this page in a minute, or check your email. If anything looks wrong, contact us and mention order ' + order.orderId + '.');
-  }
-  onPaid(result);
-}
-
-document.getElementById('payBtn').onclick = async () => {
-  const f = readSignupForm();
-  const errEl = document.getElementById('submitErr');
-  if (!validateSignupForm(f, errEl)) return;
-  const btn = document.getElementById('payBtn');
-  setBusy(btn, true, 'Opening payment...');
-  try {
-    const features = {};
-    AUZcart.get().forEach((key) => { features[key] = true; });
-    const { data: reqId, error: reqErr } = await sb.rpc('submit_signup_request', {
-      p_business_name: f.name, p_slug: f.slug, p_features: features, p_notes: f.notes,
-      p_contact_name: f.contactName, p_phone: f.contactPhone, p_niche: f.niche, p_address: f.address,
-    });
-    if (reqErr) { errEl.textContent = reqErr.message; if (reqErr.status === 401) checkSession(); return; }
-
-    const { data: { session } } = await sb.auth.getSession();
-    await payAndActivate({
-      createOrderArgs: { signupRequestId: reqId, period: PERIOD },
-      prefill: { name: f.contactName, email: session?.user?.email || '', contact: f.contactPhone },
-      overlayText: 'Payment received -- activating your account...',
-      onPaid: (result) => {
-        AUZcart.clear();
-        document.getElementById('successTitle').textContent = "You're live!";
-        document.getElementById('successBody').textContent = 'Your account is ready. Redirecting you to sign in...';
-        modalRedirect = result.tenant_slug ? ('https://' + result.tenant_slug + '.auzslab.in') : 'index.html';
-        document.getElementById('modalOverlay').classList.add('open');
-      },
-    });
-  } catch (e) {
-    if (e.message !== 'cancelled') errEl.textContent = e.message;
-  } finally {
-    setBusy(btn, false);
-  }
-};
-
-document.getElementById('addonSubmitBtn').onclick = async () => {
-  const notes = document.getElementById('addonNotes').value.trim();
-  const errEl = document.getElementById('addonErr');
-  errEl.textContent = '';
-  const entitled = (DASH && DASH.features) || {};
-  const requestable = AUZcart.get().filter((k) => entitled[k] !== true);
-  if (!requestable.length) { errEl.textContent = 'Pick at least one new product above before sending.'; return; }
-
-  const features = {};
-  requestable.forEach((key) => { features[key] = true; });
-
-  const { error } = await sb.rpc('submit_addon_request', { p_features: features, p_notes: notes + upiNote('addon', (() => { const t = priceTotal(requestable, entitled); return t !== null ? billFor(t, false, requestable) : null; })()) });
-  if (error) {
-    errEl.textContent = error.message;
-    if (error.status === 401) checkSession();
-    return;
-  }
-
-  AUZcart.clear();
-  document.getElementById('successTitle').textContent = 'Add-on request sent.';
-  document.getElementById('successBody').textContent = 'The AUZslab team will review it and add it to your account shortly -- you\'ll get a notification the moment it\'s live.';
-  modalRedirect = 'account.html';
-  document.getElementById('modalOverlay').classList.add('open');
-};
-
-document.getElementById('addonPayBtn').onclick = async () => {
-  const notes = document.getElementById('addonNotes').value.trim();
-  const errEl = document.getElementById('addonErr');
-  errEl.textContent = '';
-  const entitled = (DASH && DASH.features) || {};
-  const requestable = AUZcart.get().filter((k) => entitled[k] !== true);
-  if (!requestable.length) { errEl.textContent = 'Pick at least one new product above before sending.'; return; }
-
-  const btn = document.getElementById('addonPayBtn');
-  setBusy(btn, true, 'Opening payment...');
-  try {
-    const features = {};
-    requestable.forEach((key) => { features[key] = true; });
-    const { data: reqId, error: reqErr } = await sb.rpc('submit_addon_request', { p_features: features, p_notes: notes });
-    if (reqErr) { errEl.textContent = reqErr.message; if (reqErr.status === 401) checkSession(); return; }
-
-    const { data: { session } } = await sb.auth.getSession();
-    await payAndActivate({
-      createOrderArgs: { addonRequestId: reqId, period: PERIOD },
-      prefill: { name: session?.user?.email || '', email: session?.user?.email || '', contact: '' },
-      overlayText: 'Payment received -- adding these to your account...',
-      onPaid: () => {
-        AUZcart.clear();
-        document.getElementById('successTitle').textContent = "You're all set!";
-        document.getElementById('successBody').textContent = 'The new product is live on your account.';
-        modalRedirect = 'account.html';
-        document.getElementById('modalOverlay').classList.add('open');
-      },
-    });
-  } catch (e) {
-    if (e.message !== 'cancelled') errEl.textContent = e.message;
-  } finally {
-    setBusy(btn, false);
-  }
-};
-
-let modalRedirect = 'index.html';
-document.getElementById('modalClose').onclick = () => {
-  document.getElementById('modalOverlay').classList.remove('open');
-  window.location.href = modalRedirect;
-};
-
-// If the server refuses because the email address is not confirmed yet, offer to send the link again.
-(function () {
-  const MARK = 'confirm your email address';
-  function decorate(el) {
-    if (!el || !el.textContent || el.textContent.indexOf(MARK) === -1 || el.querySelector('[data-resend]')) return;
-    const b = document.createElement('button');
-    b.type = 'button'; b.setAttribute('data-resend', '1'); b.textContent = 'Send me a new link';
-    b.style.cssText = 'display:block;margin-top:8px;background:none;border:none;padding:0;font:inherit;font-weight:700;color:var(--accent);cursor:pointer;text-decoration:underline';
-    b.onclick = async () => {
-      b.disabled = true; b.textContent = 'Sending...';
-      const { data, error } = await sb.auth.resendVerification();
-      b.textContent = error ? error.message : (data && data.sent ? 'Sent. Check your inbox.' : 'Email sending is not switched on yet.');
-    };
-    el.appendChild(b);
-  }
-  new MutationObserver(() => document.querySelectorAll('.err').forEach(decorate)).observe(document.body, { childList: true, subtree: true, characterData: true });
-})();
+wireNotes('bizNotes'); wireNotes('addonNotes');
 </script>
 <button type="button" class="theme-fab" onclick="auzThemeToggle()" aria-label="Toggle dark mode" title="Toggle dark mode"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg></button>
 </body>
