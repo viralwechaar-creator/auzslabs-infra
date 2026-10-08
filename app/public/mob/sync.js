@@ -6,7 +6,7 @@
 
    This never claims "saved to server" before it is: a local write is "Saved on phone" the instant it's in
    IndexedDB; it only becomes "Synced" after the matching outbox entry's RPC call actually succeeds (the
-   same lesson CLAUDE.md records from the old POS sync bug). */
+   same lesson learned from the old POS sync bug). */
 'use strict';
 const DB_NAME = 'mob1', DB_VERSION = 1;
 const STORES = ['items', 'units', 'vendors', 'customers', 'purchases', 'sales', 'repairs', 'repairEvents', 'payments', 'stockMovements'];
