@@ -53,7 +53,7 @@
 /* Cart: items and bill on the left, details form on the right (desktop); one column on phones. */
 .cart-cols{display:block}
 .cart-cols .section{max-width:none!important}
-@media (min-width:1000px){.cart-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px;align-items:start}.cart-right{position:sticky;top:90px}}
+@media (min-width:1000px){.cart-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px;align-items:start}}
 </style>
 </head>
 <body>
@@ -121,10 +121,7 @@
           <p class="p" style="margin-bottom:8px">Signed in as <b id="addonWhoami"></b> — adding to <b id="addonTenant"></b></p>
           <div id="addonAlreadyOwned"></div>
           <div id="addonItems"></div>
-          <div class="field">
-            <label for="addonNotes">Anything else we should know?</label>
-            <textarea id="addonNotes" placeholder="When you'd like this live, number of staff who'll use it, etc. (optional)"></textarea>
-          </div>
+
           <div id="addonPayTotalWrap" class="card" style="display:none;margin-top:8px">
             <div class="cart-total"><span>Due today</span><b id="addonPayTotalAmount"></b></div>
             <p class="pay-note" style="margin-top:0">No setup fee -- your account is already set up. This is the recurring monthly amount, charged from today.</p>
@@ -143,6 +140,11 @@
             </div>
             <p class="pay-note" style="margin:0">We switch your account on as soon as we see the payment, usually within a few hours.</p>
           </div>
+
+          <div class="field">
+            <label for="addonNotes">Anything else we should know?</label>
+            <textarea id="addonNotes" placeholder="When you'd like this live, number of staff who'll use it, etc. (optional)"></textarea>
+          </div>
           <button id="addonSubmitBtn" class="btn btn-primary form-submit">Request these add-ons</button>
           <div id="addonErr" class="err"></div>
         </div>
@@ -151,6 +153,28 @@
       <section class="section tight" id="requestSection" style="display:none;max-width:640px">
         <div class="card">
           <p class="p" style="margin-bottom:8px">Signed in as <b id="whoami"></b> &middot; <a href="account.html#profile">Edit my profile</a></p>
+
+          <!-- Pay/UPI sits right at the top, before the signup form, so it's visible the moment
+               this card opens -- no scrolling past "About you"/"About your business" to find it. -->
+          <div id="payTotalWrap" class="card" style="display:none;margin-top:8px">
+            <div class="cart-total"><span>Due today</span><b id="payTotalAmount"></b></div>
+            <p class="pay-note" id="payThenNote" style="margin-top:0"></p>
+          </div>
+          <button id="payBtn" class="btn btn-primary form-submit" style="display:none">Pay &amp; activate instantly</button>
+          <p id="payNote" class="pay-note" style="display:none">Card, UPI or netbanking -- your account goes live the moment payment is confirmed, no waiting for review.</p>
+          <p class="pay-note">A one-time setup fee of ₹2,179 is mandatory for every new AUZslab account, collected together with your first month's payment.</p>
+          <div id="UpiCard" class="card" style="display:none;margin-top:8px;text-align:center">
+            <div class="label" style="justify-content:center">Pay by UPI</div>
+            <div class="cart-total"><span>Amount</span><b id="UpiAmount"></b></div>
+            <img id="UpiQr" alt="UPI QR code" width="190" height="190" style="margin:10px auto;display:block;border-radius:12px;background:#fff">
+            <p class="pay-note" style="margin:0">Scan with any UPI app, or pay to <b id="UpiId"></b> (<span id="UpiName"></span>).</p>
+            <a id="UpiOpen" class="btn btn-ghost" style="margin-top:10px" href="#">Open my UPI app</a>
+            <div class="field" style="text-align:left;margin-top:14px">
+              <label for="UpiRef">UPI reference number (UTR) after paying</label>
+              <input id="UpiRef" inputmode="numeric" placeholder="12-digit number from your UPI app" autocomplete="off">
+            </div>
+            <p class="pay-note" style="margin:0">We switch your account on as soon as we see the payment, usually within a few hours.</p>
+          </div>
 
           <p class="label" style="margin-top:4px">About you</p>
           <div class="field">
@@ -187,25 +211,6 @@
           <div class="field">
             <label for="bizNotes">Anything else we should know?</label>
             <textarea id="bizNotes" placeholder="Current billing software, number of outlets, etc. (optional)"></textarea>
-          </div>
-          <div id="payTotalWrap" class="card" style="display:none;margin-top:8px">
-            <div class="cart-total"><span>Due today</span><b id="payTotalAmount"></b></div>
-            <p class="pay-note" id="payThenNote" style="margin-top:0"></p>
-          </div>
-          <button id="payBtn" class="btn btn-primary form-submit" style="display:none">Pay &amp; activate instantly</button>
-          <p id="payNote" class="pay-note" style="display:none">Card, UPI or netbanking -- your account goes live the moment payment is confirmed, no waiting for review.</p>
-          <p class="pay-note">A one-time setup fee of ₹2,179 is mandatory for every new AUZslab account, collected together with your first month's payment.</p>
-          <div id="UpiCard" class="card" style="display:none;margin-top:8px;text-align:center">
-            <div class="label" style="justify-content:center">Pay by UPI</div>
-            <div class="cart-total"><span>Amount</span><b id="UpiAmount"></b></div>
-            <img id="UpiQr" alt="UPI QR code" width="190" height="190" style="margin:10px auto;display:block;border-radius:12px;background:#fff">
-            <p class="pay-note" style="margin:0">Scan with any UPI app, or pay to <b id="UpiId"></b> (<span id="UpiName"></span>).</p>
-            <a id="UpiOpen" class="btn btn-ghost" style="margin-top:10px" href="#">Open my UPI app</a>
-            <div class="field" style="text-align:left;margin-top:14px">
-              <label for="UpiRef">UPI reference number (UTR) after paying</label>
-              <input id="UpiRef" inputmode="numeric" placeholder="12-digit number from your UPI app" autocomplete="off">
-            </div>
-            <p class="pay-note" style="margin:0">We switch your account on as soon as we see the payment, usually within a few hours.</p>
           </div>
           <button id="submitBtn" class="btn btn-primary form-submit">Send to AUZslab</button>
           <div id="submitErr" class="err"></div>
