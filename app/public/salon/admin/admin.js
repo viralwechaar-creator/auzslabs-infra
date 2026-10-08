@@ -448,35 +448,242 @@
       h('div', { class: 'a-section' }, expenseTable(all)));
   }
 
-  /* ---------- analytics ---------- */
-  function serviceStats() {
+  /* ---------- analytics ----------
+     A date-range dashboard: KPIs vs the matching previous period, a billed/spent trend
+     (daily, or monthly once the range is long), top services, the busiest weekday,
+     team performance (by who was billed as serving, since invoices don't carry a
+     stylist id -- only free text), a booking-status funnel, new-vs-returning clients
+     and top clients -- plus a CSV export of the same range. Everything is computed
+     here from the full D.invoices/D.expenses/D.bookings the owner's own /admin/data
+     call already returned; there is no separate stats endpoint (see server/src/salon.js). */
+  const toISO = d => d.toLocaleDateString('en-CA');
+  const PERIODS = { today: 'Today', week: 'This week', month: 'This month', lastMonth: 'Last month', year: 'This year', all: 'All time', custom: 'Pick dates' };
+  function periodRange(key) {
+    const base = new Date(D.today + 'T00:00:00');
+    if (key === 'today') return [D.today, D.today];
+    if (key === 'week') { const start = new Date(base); start.setDate(base.getDate() - base.getDay()); return [toISO(start), D.today]; }
+    if (key === 'month') return [D.today.slice(0, 7) + '-01', D.today];
+    if (key === 'lastMonth') { const first = new Date(base.getFullYear(), base.getMonth() - 1, 1); const last = new Date(base.getFullYear(), base.getMonth(), 0); return [toISO(first), toISO(last)]; }
+    if (key === 'year') return [D.today.slice(0, 4) + '-01-01', D.today];
+    const dates = D.invoices.map(i => i.date).concat((D.expenses || []).map(e => e.date), D.bookings.map(b => b.date));
+    return [dates.length ? dates.reduce((a, b) => (b < a ? b : a)) : D.today, D.today];
+  }
+  function prevRange(from, to) {
+    const f = new Date(from + 'T00:00:00'), t = new Date(to + 'T00:00:00');
+    const days = Math.round((t - f) / 86400000) + 1;
+    const pTo = new Date(f); pTo.setDate(f.getDate() - 1);
+    const pFrom = new Date(pTo); pFrom.setDate(pTo.getDate() - (days - 1));
+    return [toISO(pFrom), toISO(pTo)];
+  }
+  function pctDelta(cur, prev) {
+    if (!prev) return cur ? { dir: 'up', text: 'New' } : { dir: 'flat', text: '—' };
+    const d = Math.round((cur - prev) / prev * 100);
+    return d === 0 ? { dir: 'flat', text: '0%' } : { dir: d > 0 ? 'up' : 'down', text: (d > 0 ? '+' : '') + d + '%' };
+  }
+  function statTile(value, label, delta) {
+    return h('div', { class: 'a-stat' }, h('b', {}, String(value), delta ? h('span', { class: 'a-stat-delta ' + delta.dir, text: delta.text }) : null), h('span', { text: label }));
+  }
+  function firstSeenMap() {
+    const m = new Map();
+    for (const inv of D.invoices) {
+      if (inv.void || !inv.client || !inv.client.phone) continue;
+      const p = inv.client.phone;
+      if (!m.has(p) || inv.date < m.get(p)) m.set(p, inv.date);
+    }
+    return m;
+  }
+  function kpiSet(from, to) {
+    const invs = D.invoices.filter(i => !i.void && i.date >= from && i.date <= to);
+    const exps = (D.expenses || []).filter(e => e.date >= from && e.date <= to);
+    const revenue = invs.reduce((a, i) => a + i.total, 0), spent = exps.reduce((a, e) => a + e.amount, 0), bills = invs.length;
+    let newClients = 0; for (const [, d] of firstSeenMap()) if (d >= from && d <= to) newClients++;
+    return { revenue, spent, net: revenue - spent, bills, avg: bills ? revenue / bills : 0, newClients };
+  }
+  function clientSplit(from, to) {
+    const fs = firstSeenMap();
+    let newCount = 0, newRevenue = 0, retCount = 0, retRevenue = 0;
+    for (const inv of D.invoices) {
+      if (inv.void || inv.date < from || inv.date > to) continue;
+      const p = inv.client && inv.client.phone, d = p ? fs.get(p) : null;
+      if (d && d >= from && d <= to) { newCount++; newRevenue += inv.total; } else { retCount++; retRevenue += inv.total; }
+    }
+    return { newCount, newRevenue, retCount, retRevenue };
+  }
+  function topClients(from, to, n) {
     const stats = new Map();
     for (const inv of D.invoices) {
-      if (inv.void) continue;
+      if (inv.void || inv.date < from || inv.date > to || !inv.client || !inv.client.phone) continue;
+      const p = inv.client.phone, cur = stats.get(p) || { name: inv.client.name || p, bills: 0, revenue: 0 };
+      cur.bills++; cur.revenue += inv.total; stats.set(p, cur);
+    }
+    return [...stats.values()].sort((a, b) => b.revenue - a.revenue).slice(0, n || 5);
+  }
+  function serviceStats(from, to) {
+    const stats = new Map();
+    for (const inv of D.invoices) {
+      if (inv.void || inv.date < from || inv.date > to) continue;
       for (const it of inv.items) {
         const cur = stats.get(it.name) || { name: it.name, qty: 0, revenue: 0 };
         cur.qty += it.qty; cur.revenue += it.qty * it.price;
         stats.set(it.name, cur);
       }
     }
-    return [...stats.values()].sort((a, b) => b.qty - a.qty);
+    return [...stats.values()];
   }
-  function barList(rows) {
-    if (!rows.length) return emptyNote('Nothing billed yet. Analytics appear once you create invoices.', 'sparkle');
-    const max = Math.max(...rows.map(r => r.qty), 1);
-    return h('div', {}, rows.map(r => h('div', { class: 'a-bar-item' },
-      h('div', { class: 'a-bar-top' }, h('span', { class: 'a-bar-name', text: r.name }), h('span', { class: 'a-bar-meta', text: r.qty + (r.qty === 1 ? ' time' : ' times') + '  ' + inr(r.revenue) })),
-      h('div', { class: 'a-bar-track' }, h('div', { class: 'a-bar-fill', style: 'width:' + Math.round(r.qty / max * 100) + '%' })))));
+  function stylistStats(from, to) {
+    const stats = new Map();
+    for (const inv of D.invoices) {
+      if (inv.void || inv.date < from || inv.date > to) continue;
+      const name = (inv.servedBy || '').trim();
+      if (!name) continue;
+      const cur = stats.get(name) || { name, bills: 0, revenue: 0 };
+      cur.bills++; cur.revenue += inv.total; stats.set(name, cur);
+    }
+    return [...stats.values()].sort((a, b) => b.revenue - a.revenue);
+  }
+  function weekdayStats(from, to) {
+    const sums = Array.from({ length: 7 }, () => 0);
+    for (const inv of D.invoices) { if (inv.void || inv.date < from || inv.date > to) continue; sums[new Date(inv.date + 'T00:00:00').getDay()] += inv.total; }
+    return sums.map((v, i) => ({ name: DAYS[i].slice(0, 3), value: v }));
+  }
+  function bookingFunnel(from, to) {
+    const counts = { pending: 0, confirmed: 0, completed: 0, cancelled: 0 };
+    for (const b of D.bookings) { if (b.date < from || b.date > to) continue; counts[b.status] = (counts[b.status] || 0) + 1; }
+    return counts;
+  }
+  function rangeDays(from, to) {
+    const out = []; let d = new Date(from + 'T00:00:00'); const end = new Date(to + 'T00:00:00');
+    while (d <= end) { out.push(toISO(d)); d.setDate(d.getDate() + 1); }
+    return out;
+  }
+  function monthsBetween(from, to) {
+    const out = []; let d = new Date(from.slice(0, 7) + '-01T00:00:00'); const end = new Date(to.slice(0, 7) + '-01T00:00:00');
+    while (d <= end) { out.push(toISO(d).slice(0, 7)); d.setMonth(d.getMonth() + 1); }
+    return out;
+  }
+  function periodSeries(from, to) {
+    const days = rangeDays(from, to), monthly = days.length > 45, keys = monthly ? monthsBetween(from, to) : days;
+    const map = new Map(keys.map(k => [k, { key: k, revenue: 0, spent: 0 }]));
+    for (const inv of D.invoices) { if (inv.void || inv.date < from || inv.date > to) continue; const row = map.get(monthly ? inv.date.slice(0, 7) : inv.date); if (row) row.revenue += inv.total; }
+    for (const e of (D.expenses || [])) { if (e.date < from || e.date > to) continue; const row = map.get(monthly ? e.date.slice(0, 7) : e.date); if (row) row.spent += e.amount; }
+    return { monthly, rows: keys.map(k => map.get(k)) };
+  }
+  function rankedBars(rows, opts) {
+    opts = opts || {};
+    const filtered = rows.filter(r => r.value > 0);
+    if (!filtered.length) return emptyNote(opts.emptyText || 'Nothing billed yet. Analytics appear once you create invoices.', opts.doodle || 'sparkle');
+    const max = Math.max(...filtered.map(r => r.value), 1);
+    return h('div', {}, filtered.map(r => h('div', { class: 'a-bar-item' },
+      h('div', { class: 'a-bar-top' }, h('span', { class: 'a-bar-name', text: r.name }), h('span', { class: 'a-bar-meta', text: opts.meta ? opts.meta(r) : inr(r.value) })),
+      h('div', { class: 'a-bar-track' }, h('div', { class: 'a-bar-fill', style: 'width:' + Math.round(r.value / max * 100) + '%' })))));
+  }
+  function trendChart(series) {
+    const rows = series.rows, max = Math.max(...rows.flatMap(r => [r.revenue, r.spent]), 1);
+    const step = rows.length <= 14 ? 1 : rows.length <= 31 ? 3 : rows.length <= 60 ? 5 : Math.ceil(rows.length / 10);
+    return h('div', {},
+      h('div', { class: 'a-trend-legend' }, h('span', {}, h('i', { class: 'rev' }), 'Billed'), h('span', {}, h('i', { class: 'exp' }), 'Spent')),
+      h('div', { class: 'a-trend' }, rows.map((r, i) => {
+        const dt = new Date((series.monthly ? r.key + '-01' : r.key) + 'T00:00:00');
+        const label = series.monthly ? dt.toLocaleDateString('en-IN', { month: 'short' }) : dt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+        const tip = (series.monthly ? dt.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) : fmtDate(r.key)) + ' · Billed ' + inr(r.revenue) + ' · Spent ' + inr(r.spent);
+        return h('div', { class: 'a-trend-col', title: tip },
+          h('div', { class: 'a-trend-bars' },
+            h('div', { class: 'a-trend-bar rev', style: 'height:' + Math.max(2, Math.round(r.revenue / max * 100)) + '%' }),
+            h('div', { class: 'a-trend-bar exp', style: 'height:' + Math.max(2, Math.round(r.spent / max * 100)) + '%' })),
+          h('div', { class: 'a-trend-label', text: (series.monthly || i % step === 0 || i === rows.length - 1) ? label : '' }));
+      })));
+  }
+  function exportAnalyticsCsv(from, to) {
+    const series = periodSeries(from, to);
+    const rows = [['AUZslab Salon analytics'], ['Period', from + ' to ' + to], [],
+      [series.monthly ? 'Month' : 'Date', 'Billed', 'Spent', 'Net']];
+    for (const r of series.rows) rows.push([r.key, r.revenue.toFixed(2), r.spent.toFixed(2), (r.revenue - r.spent).toFixed(2)]);
+    rows.push([], ['Service', 'Visits', 'Revenue']);
+    for (const s of serviceStats(from, to).sort((a, b) => b.revenue - a.revenue)) rows.push([s.name, s.qty, s.revenue.toFixed(2)]);
+    const csv = '﻿' + rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\r\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    const a = document.createElement('a'); a.href = url; a.download = 'salon-analytics-' + from + '-to-' + to + '.csv'; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
   }
   function viewAnalytics() {
-    const t = D.today.slice(0, 7);
-    const revenue = D.invoices.filter(i => !i.void && i.date.startsWith(t)).reduce((a, i) => a + i.total, 0);
-    const spent = (D.expenses || []).filter(e => e.date.startsWith(t)).reduce((a, e) => a + e.amount, 0);
-    view().replaceChildren(
-      h('div', { class: 'a-stats' }, [[inr(revenue), 'Billed this month'], [inr(spent), 'Spent this month'], [inr(revenue - spent), 'Net this month']].map(([n, l]) => h('div', { class: 'a-stat' }, h('b', { text: n }), h('span', { text: l })))),
-      h('div', { class: 'a-section' }, h('h2', { class: 'a-h2', text: 'Most used services' }),
-        h('p', { class: 'a-note', style: 'margin:0 0 16px', text: 'Ranked by how many times each service has been billed, all time.' }),
-        barList(serviceStats())));
+    let periodKey = 'month';
+    const custom = { from: D.today, to: D.today }, box = h('div', {});
+    const seg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Period' });
+    const fromInp = h('input', { type: 'date', max: D.today, value: custom.from, onchange: e => { custom.from = e.target.value; draw(); } });
+    const toInp = h('input', { type: 'date', max: D.today, value: custom.to, onchange: e => { custom.to = e.target.value; draw(); } });
+    const customRow = h('div', { class: 'a-period-custom', hidden: true }, h('span', { class: 'muted', text: 'From' }), fromInp, h('span', { class: 'muted', text: 'to' }), toInp);
+    let svcSort = 'revenue';
+    const range = () => periodKey === 'custom' ? (custom.from <= custom.to ? [custom.from, custom.to] : [custom.to, custom.from]) : periodRange(periodKey);
+
+    function draw() {
+      seg.replaceChildren(...Object.entries(PERIODS).map(([k, t]) => h('button', { type: 'button', 'aria-pressed': k === periodKey, onclick: () => { periodKey = k; draw(); } }, t)));
+      customRow.hidden = periodKey !== 'custom';
+      const [from, to] = range(), [pFrom, pTo] = prevRange(from, to);
+      const cur = kpiSet(from, to), prev = kpiSet(pFrom, pTo);
+
+      const stats = h('div', { class: 'a-stats' },
+        statTile(inr(cur.revenue), 'Billed', pctDelta(cur.revenue, prev.revenue)),
+        statTile(inr(cur.spent), 'Spent', pctDelta(cur.spent, prev.spent)),
+        statTile(inr(cur.net), 'Net', pctDelta(cur.net, prev.net)),
+        statTile(cur.bills, 'Bills', pctDelta(cur.bills, prev.bills)),
+        statTile(inr(cur.avg), 'Average bill', pctDelta(cur.avg, prev.avg)),
+        statTile(cur.newClients, 'New clients', pctDelta(cur.newClients, prev.newClients)));
+
+      const trendSection = h('div', { class: 'a-section' }, h('h2', { class: 'a-h2', text: 'Billed vs spent' }), trendChart(periodSeries(from, to)));
+
+      const svcSeg = h('div', { class: 'seg' },
+        h('button', { type: 'button', 'aria-pressed': svcSort === 'revenue', onclick: () => { svcSort = 'revenue'; draw(); } }, 'By revenue'),
+        h('button', { type: 'button', 'aria-pressed': svcSort === 'visits', onclick: () => { svcSort = 'visits'; draw(); } }, 'By visits'));
+      const svcRows = serviceStats(from, to).sort((a, b) => svcSort === 'revenue' ? b.revenue - a.revenue : b.qty - a.qty).slice(0, 10)
+        .map(r => ({ name: r.name, value: svcSort === 'revenue' ? r.revenue : r.qty, qty: r.qty, revenue: r.revenue }));
+      const svcSection = h('div', { class: 'a-section' },
+        h('div', { class: 'a-sub' }, h('h2', { class: 'a-h2', style: 'margin:0', text: 'Top services' }), svcSeg),
+        h('p', { class: 'a-note', style: 'margin:0 0 16px', text: 'For the selected period.' }),
+        rankedBars(svcRows, { meta: r => svcSort === 'revenue' ? inr(r.revenue) : (r.qty + (r.qty === 1 ? ' time' : ' times')) }));
+
+      const weekdaySection = h('div', { class: 'a-section' }, h('h2', { class: 'a-h2', text: 'Busiest day of the week' }),
+        h('p', { class: 'a-note', style: 'margin:0 0 16px', text: 'Total billed on each weekday, for the selected period.' }),
+        rankedBars(weekdayStats(from, to).sort((a, b) => b.value - a.value), { emptyText: 'Nothing billed in this period yet.' }));
+
+      const team = stylistStats(from, to);
+      const teamSection = team.length ? h('div', { class: 'a-section' }, h('h2', { class: 'a-h2', text: 'Team performance' }),
+        h('p', { class: 'a-note', style: 'margin:0 0 16px', text: 'By who was billed as serving the client. Based on the name entered at billing, not a linked stylist profile.' }),
+        h('div', { class: 'a-scroll' }, h('table', { class: 'a-table' },
+          h('thead', {}, h('tr', {}, ['Stylist', 'Bills', 'Revenue', 'Average'].map(t => h('th', { text: t })))),
+          h('tbody', {}, team.map(s => h('tr', {}, h('td', { 'data-label': 'Stylist', text: s.name }), h('td', { 'data-label': 'Bills', text: s.bills }),
+            h('td', { 'data-label': 'Revenue', class: 'r', text: inr(s.revenue) }), h('td', { 'data-label': 'Average', class: 'r', text: inr(s.revenue / s.bills) }))))))) : null;
+
+      const funnel = bookingFunnel(from, to), funnelTotal = Object.values(funnel).reduce((a, b) => a + b, 0);
+      const FUNNEL_COLOR = { pending: 'var(--gold)', confirmed: 'var(--plum)', completed: '#3F7A52', cancelled: '#A3241F' };
+      const funnelSection = h('div', { class: 'a-section' }, h('h2', { class: 'a-h2', text: 'Booking funnel' }),
+        h('p', { class: 'a-note', style: 'margin:0 0 14px', text: 'Appointments requested in this period, by status.' }),
+        funnelTotal ? h('div', {},
+          h('div', { class: 'a-funnel' }, STATUSES.map(s => funnel[s] ? h('i', { style: 'width:' + Math.round(funnel[s] / funnelTotal * 100) + '%;background:' + FUNNEL_COLOR[s] }) : null)),
+          h('div', { class: 'a-funnel-legend' }, STATUSES.map(s => h('span', {}, h('i', { style: 'background:' + FUNNEL_COLOR[s] }), STATUS_LABEL[s] + ' · ' + funnel[s]))))
+          : emptyNote('No bookings in this period.', 'calendar'));
+
+      const split = clientSplit(from, to), splitTotal = split.newCount + split.retCount;
+      const splitSection = splitTotal ? h('div', { class: 'a-section' }, h('h2', { class: 'a-h2', text: 'New vs returning clients' }),
+        h('p', { class: 'a-note', style: 'margin:0 0 14px', text: 'A client counts as "new" if their very first bill ever falls in this period.' }),
+        h('div', { class: 'a-split' },
+          split.newCount ? h('i', { style: 'width:' + Math.round(split.newCount / splitTotal * 100) + '%;background:var(--gold-d)' }) : null,
+          split.retCount ? h('i', { style: 'width:' + Math.round(split.retCount / splitTotal * 100) + '%;background:var(--plum)' }) : null),
+        h('div', { class: 'a-funnel-legend' },
+          h('span', {}, h('i', { style: 'background:var(--gold-d)' }), 'New · ' + split.newCount + ' bills · ' + inr(split.newRevenue)),
+          h('span', {}, h('i', { style: 'background:var(--plum)' }), 'Returning · ' + split.retCount + ' bills · ' + inr(split.retRevenue)))) : null;
+
+      const topC = topClients(from, to);
+      const topClientsSection = topC.length ? h('div', { class: 'a-section' }, h('h2', { class: 'a-h2', text: 'Top clients' }),
+        h('div', { class: 'a-scroll' }, h('table', { class: 'a-table' },
+          h('thead', {}, h('tr', {}, ['Client', 'Bills', 'Revenue'].map(t => h('th', { text: t })))),
+          h('tbody', {}, topC.map(c => h('tr', {}, h('td', { 'data-label': 'Client', text: c.name }), h('td', { 'data-label': 'Bills', text: c.bills }),
+            h('td', { 'data-label': 'Revenue', class: 'r', text: inr(c.revenue) }))))))) : null;
+
+      box.replaceChildren(stats, trendSection, svcSection, weekdaySection, teamSection, funnelSection, splitSection, topClientsSection);
+    }
+    setActions(btn('Export CSV', () => exportAnalyticsCsv(...range()), 'btn-sm btn-alt'));
+    draw();
+    view().replaceChildren(h('div', { class: 'a-period' }, seg, customRow), box);
   }
 
   /* ---------- clients ---------- */

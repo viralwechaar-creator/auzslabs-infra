@@ -125,6 +125,41 @@ dialog.a-dialog h2 { font-size: 28px; margin-bottom: 16px; }
 .a-bar-track { height: 8px; border-radius: 99px; background: var(--tint); overflow: hidden; }
 .a-bar-fill { height: 100%; background: var(--plum); border-radius: 99px; }
 
+/* analytics: period picker, KPI deltas, trend/weekday charts, funnel, performance tables */
+.a-period { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+.a-period .seg { flex-wrap: wrap; border: 0; padding: 0; gap: 8px; }
+.a-period .seg button { border: 1px solid var(--line); background: #fff; }
+.a-period .seg button[aria-pressed="true"] { border-color: var(--plum); }
+.a-period-custom { display: flex; align-items: center; gap: 8px; }
+.a-period-custom input[type="date"] { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 14px; background: #fff; min-height: 38px; }
+.a-stat-delta { display: inline-block; font-size: 13px; font-weight: 500; margin-left: 6px; }
+.a-stat-delta.up { color: #3F7A52; }
+.a-stat-delta.down { color: #A3241F; }
+.a-stat-delta.flat { color: var(--muted); }
+.a-sub { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.a-sub .seg { transform: scale(.92); transform-origin: right center; }
+
+.a-trend { display: flex; align-items: flex-end; gap: 3px; height: 160px; margin: 4px 0 10px; }
+.a-trend-col { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; cursor: default; }
+.a-trend-bars { display: flex; align-items: flex-end; gap: 2px; width: 100%; max-width: 30px; height: 100%; }
+.a-trend-bar { flex: 1; border-radius: 3px 3px 0 0; min-height: 2px; transition: height .25s var(--ease); }
+.a-trend-bar.rev { background: var(--plum); }
+.a-trend-bar.exp { background: var(--gold); }
+.a-trend-label { font-size: 10.5px; color: var(--muted); margin-top: 6px; white-space: nowrap; }
+.a-trend-legend { display: flex; gap: 18px; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+.a-trend-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.a-trend-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.a-trend-legend i.rev { background: var(--plum); }
+.a-trend-legend i.exp { background: var(--gold); }
+
+.a-funnel { display: flex; height: 14px; border-radius: 99px; overflow: hidden; background: var(--tint); margin-bottom: 12px; }
+.a-funnel i { display: block; height: 100%; }
+.a-funnel-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.a-funnel-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.a-funnel-legend i { width: 9px; height: 9px; border-radius: 99px; display: inline-block; }
+.a-split { display: flex; height: 14px; border-radius: 99px; overflow: hidden; background: var(--tint); margin-bottom: 10px; }
+.a-split i { display: block; height: 100%; }
+
 /* mobile bottom tab bar */
 .a-tabbar { display: none; }
 .a-more-list { display: grid; gap: 2px; margin: 4px -8px 0; }
