@@ -8,8 +8,8 @@
 (function () {
   var SUPPORT = {
     email: 'helloauzslab@gmail.com',
-    phone: '',       // e.g. '+91 98xxxxxxxx' (shows a Call button when filled in)
-    whatsapp: ''     // digits only with country code, e.g. '9198xxxxxxxx' (shows a WhatsApp button)
+    phone: '+91 8302723179',
+    whatsapp: '918302723179'
   };
   var recent = [];
   function note(s) { recent.push(String(s).slice(0, 200)); if (recent.length > 6) recent.shift(); }

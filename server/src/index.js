@@ -126,7 +126,7 @@ const RPC = {
   call_waiter: { params: ['tenant_slug', 't'], auth: false },
   public_invoice: { params: ['oid'], auth: false },
   submit_feedback: { params: ['oid', 'rating', 'comment'], auth: false },
-  submit_lead: { params: ['p_name', 'p_contact', 'p_business', 'p_message', 'p_niche'], auth: false },
+  submit_lead: { params: ['p_name', 'p_contact', 'p_business', 'p_message', 'p_niche', 'p_hp'], auth: false },
   demo_context: { params: ['p_kind', 'p_id'], auth: false },
   list_clients: { params: [], auth: true },
   update_client: { params: ['p_tenant_id', 'p_monthly_fee', 'p_renewal_date', 'p_notes', 'p_status'], auth: true },
@@ -1135,6 +1135,10 @@ const server = http.createServer(async (req, res) => {
       // Authenticated calls aren't limited here: a logged-in session
       // already required passing the login rate limit above.
       if (!cfg.auth && rateLimited(`public:${ip}`, 300, 5 * 60_000)) throw new HttpError(429, 'too many requests, please slow down');
+      // The contact form shares the generous public-RPC bucket above (sized for QR self-ordering, not a "get in
+      // touch" form), so it also gets its own tighter cap -- a real visitor never submits this more than a
+      // couple of times; this bounds the spam a bot can push into leads even if it clears the honeypot (db/131).
+      if (fnName === 'submit_lead' && rateLimited(`lead:${ip}`, 5, 60 * 60_000)) throw new HttpError(429, 'too many requests, try again later');
       if (fnName === 'submit_signup_request' || fnName === 'submit_addon_request') await requireVerifiedEmail(user.id);
       const args = await readJsonBody(req);
       const uid = user?.id || null;

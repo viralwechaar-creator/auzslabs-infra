@@ -241,6 +241,7 @@
             p_business: businessField ? businessField.value : '',
             p_message: messageField ? messageField.value : '',
             p_niche: nicheField ? nicheField.value : '',
+            p_hp: (form.querySelector('[name="hp"]') || {}).value || '',
           }),
         }).then(showSuccess).catch(showSuccess); // still show success even if offline -- don't block on network errors, the person already typed it
       });
