@@ -535,6 +535,18 @@ async function callWaiter(){
  $('railL').textContent=cfg.siteKicker||name;$('railR').textContent=cfg.siteHours||'Open daily';
  // Owner's brand colour becomes the calm accent (prices, eyebrows); surfaces stay paper, sage and charcoal.
  if(/^#[0-9a-fA-F]{6}$/.test(cfg.col||''))document.documentElement.style.setProperty('--accent',cfg.col);
+ // A tenant's own full palette (the same settings.brand object i.html and
+ // the salon niche already know how to render -- see i.html's own comment)
+ // re-themes this same site instead of just the single accent above.
+ if(cfg.brand){
+  const broot=document.documentElement.style,b=cfg.brand;
+  if(/^#[0-9a-fA-F]{6}$/.test(b.plum||''))broot.setProperty('--accent',b.plum);
+  if(/^#[0-9a-fA-F]{6}$/.test(b.tint||''))broot.setProperty('--paper',b.tint);
+  if(/^#[0-9a-fA-F]{6}$/.test(b.muted||''))broot.setProperty('--muted',b.muted);
+  if(/^#[0-9a-fA-F]{6}$/.test(b.line||''))broot.setProperty('--line',b.line);
+  if(b.fontUrl){const fl=document.createElement('link');fl.rel='stylesheet';fl.href=b.fontUrl;document.head.appendChild(fl)}
+  if(b.font)document.body.style.fontFamily='"'+b.font+'",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif';
+ }
  if(cfg.logo){$('navlogo').src=cfg.logo;$('ovlogo').src=cfg.logo}
  const wa=waLink(cfg.phone,'Hi '+name+', I would like to place an order.');
  ['orderCta','ovWa','galWa'].forEach(i=>$(i).href=wa);

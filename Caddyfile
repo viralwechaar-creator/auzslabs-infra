@@ -90,6 +90,18 @@
         uri replace /api /salon-api 1
         reverse_proxy api:3000
     }
+    # Per-tenant home-screen icon/manifest for the main app shell (POS,
+    # console, Payroll, Accounting, AUZsMob) -- server/src/appicon.js
+    # resolves the tenant from this same Host header and composites their
+    # own logo + colour (set from salesman.html or Settings), same idea as
+    # the Salon niche's own /api/manifest.json above, generalised. Cached
+    # for 5 minutes; a fresh logo/colour save shows up within that window.
+    handle /app-manifest.json {
+        reverse_proxy api:3000
+    }
+    handle /app-icon/* {
+        reverse_proxy api:3000
+    }
     handle_path /uploads/* {
         root * /srv/uploads
         file_server
