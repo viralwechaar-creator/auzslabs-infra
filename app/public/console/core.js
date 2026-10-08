@@ -161,17 +161,17 @@ const NAV=[
  ['href','/index.html','Billing POS','store'],
  ['daily/live','Live Orders','live'],['daily/all','All Orders','orders'],['daily/online','Online Orders','online'],['daily/kot','KOT','kot'],['daily/due','Due Payment','due'],
  ['lbl','Inventory & reports'],
- ['g:inv','Inventory','inv',[['inv/raw','Raw Materials'],['inv/stock','Stock Management'],['inv/purchase','Purchase Orders'],['inv/vendors','Vendors'],['inv/recipes','Recipes'],['inv/consumption','Consumption Tracking'],['inv/reports','Inventory Reports']]],
- ['g:rep','Reports','rep',[['rep/sales','Sales Reports'],['rep/orders','Order Reports'],['rep/items','Item Reports'],['rep/inventory','Inventory Reports'],['rep/customers','Customer Reports'],['rep/staff','Staff Reports'],['rep/analytics','Analytics Dashboard']]],
+ ['g:inv','Inventory','inv',[['inv/raw','Raw Materials'],['inv/stock','Stock'],['inv/purchase','Purchases'],['inv/vendors','Vendors'],['inv/recipes','Recipes'],['inv/consumption','Consumption']]],
+ ['g:rep','Reports','rep',[['rep/sales','Sales'],['rep/orders','Orders'],['rep/items','Items'],['rep/inventory','Inventory'],['rep/customers','Customers'],['rep/staff','Staff'],['rep/analytics','Analytics'],['rep/gst','GST Summary']]],
  ['lbl','Manage'],
- ['g:menu','Menu Management','menu',[['menu/overview','Menu & Discounts'],['menu/items','Items'],['menu/categories','Categories'],['menu/variants','Variants'],['menu/addons','Add-ons'],['menu/tables','Tables & Areas'],['menu/taxes','Taxes'],['menu/discounts','Discounts'],['menu/availability','Menu Availability'],['menu/preferences','Order Preferences'],['menu/commission','Item Commission'],['menu/physical','Physical Menu'],['menu/images','Bulk Image Upload']]],
- ['g:crm','CRM','crm',[['crm/customers','Customers'],['crm/loyalty','Loyalty Program'],['crm/giftcards','Gift Cards'],['crm/feedback','Feedback'],['crm/membership','Membership Programs'],['crm/support','Support Tickets']]],
+ ['g:menu','Menu Management','menu',[['menu/overview','Overview'],['menu/items','Items'],['menu/categories','Categories'],['menu/variants','Variants'],['menu/addons','Add-ons'],['menu/tables','Tables'],['menu/taxes','Taxes'],['menu/discounts','Discounts'],['menu/availability','Availability'],['menu/preferences','Preferences'],['menu/commission','Commission'],['menu/physical','Physical Menu'],['menu/images','Bulk Images']]],
+ ['g:crm','CRM','crm',[['crm/customers','Customers'],['crm/loyalty','Loyalty'],['crm/giftcards','Gift Cards'],['crm/feedback','Feedback'],['crm/membership','Membership'],['crm/support','Support']]],
  ['g:team','Team Management','team',[['team/users','Users & Roles'],['team/attendance','Attendance'],['team/payroll','Payroll'],['team/tasks','Tasks']]],
- ['g:fin','Finance','fin',[['fin/expenses','Expenses'],['fin/withdrawals','Withdrawals & Top-ups'],['fin/cash','Cash Management'],['fin/settlements','Settlements'],['fin/accounting','Accounting'],['fin/reconcile','Payment Reconciliation']]],
- ['g:mkt','Marketing','mkt',[['mkt/campaigns','Campaigns'],['mkt/segments','Segments'],['mkt/offers','Offers'],['mkt/whatsapp','WhatsApp Marketing'],['mkt/promotions','Promotions'],['mkt/loyaltycamp','Loyalty Campaigns']],'New'],
- ['g:int','Integrations','plug',[['agg/swiggy','Swiggy'],['agg/zomato','Zomato'],['agg/ondc','ONDC'],['agg/dunzo','Dunzo'],['agg/ubereats','Uber Eats'],['agg/settings','Platform Settings'],['int/apps','Explore Products']]],
- ['g:mgmt','Management','gear',[['mgmt/config','Configuration'],['mgmt/website','Website & Booking'],['mgmt/reasons','Cancellation Reasons'],['mgmt/outlets','Outlets'],['mgmt/devices','Device Mapping'],['mgmt/hardware','Hardware'],['mgmt/logs','User Logs'],['mgmt/audit','Audit Trail'],['mgmt/data','Data Management']]],
- ['g:ql','Quick Links','star',[['ql/favorites','Favourite Pages'],['ql/shortcuts','Shortcuts'],['ql/custom','Custom Links']]]
+ ['g:fin','Finance','fin',[['fin/expenses','Expenses'],['fin/withdrawals','Withdrawals'],['fin/cash','Cash'],['fin/settlements','Settlements'],['fin/accounting','Accounting'],['fin/reconcile','Reconciliation']]],
+ ['g:mkt','Marketing','mkt',[['mkt/campaigns','Campaigns'],['mkt/segments','Segments'],['mkt/offers','Offers'],['mkt/whatsapp','WhatsApp'],['mkt/promotions','Promotions'],['mkt/loyaltycamp','Loyalty Campaigns']],'New'],
+ ['g:int','Integrations','plug',[['agg/swiggy','Swiggy'],['agg/zomato','Zomato'],['agg/ondc','ONDC'],['agg/dunzo','Dunzo'],['agg/ubereats','Uber Eats'],['agg/settings','Platform Settings']]],
+ ['g:mgmt','Management','gear',[['mgmt/config','Configuration'],['mgmt/website','Website & Booking'],['mgmt/reasons','Cancellations'],['mgmt/outlets','Outlets'],['mgmt/devices','Devices'],['mgmt/hardware','Hardware'],['mgmt/logs','Logs'],['mgmt/audit','Audit Trail'],['mgmt/data','Data']]],
+ ['g:ql','Quick Links','star',[['int/apps','Explore Apps'],['ql/favorites','Favourites'],['ql/shortcuts','Shortcuts'],['ql/custom','Custom Links']]]
 ];
 const flatNav=()=>NAV.flatMap(n=>n[0]=='lbl'||n[0]=='href'?[]:n[0].startsWith('g:')?n[3].map(c=>[c[0],c[1],n[1]]):[[n[0],n[1],'']]);
 const titleOf=p=>{const f=flatNav().find(x=>x[0]==p);return f?f[1]:'Dashboard'};

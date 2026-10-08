@@ -8,6 +8,7 @@ V.more = () => {
   const links = [];
   if (S.role === 'owner' || S.role === 'manager') {
     links.push(liRow({ ic: 'home', tone: 'purple', title: 'Admin console', sub: 'Reports, menu, stock, customers, team, settings', chev: true, onclick: () => (location.href = '/dashboard.html') }));
+    if (featureOn('self_order') && S.features && S.features.self_order) links.push(liRow({ ic: 'globe', tone: 'teal', title: 'QR Ordering', sub: 'Customize what customers see when they scan a table', chev: true, onclick: () => (location.href = '/dashboard.html#qr/ordering') }));
     if (featureOn('payroll') && S.features && S.features.payroll) links.push(liRow({ ic: 'payroll', tone: 'orange', title: 'Payroll', chev: true, onclick: () => (location.href = '/payroll.html') }));
     if (featureOn('mobile') && S.features && S.features.mobile) links.push(liRow({ ic: 'phone', tone: 'blue', title: 'AUZsMob', chev: true, onclick: () => (location.href = '/mob.html') }));
     if (featureOn('accounting') && S.features && S.features.accounting) links.push(liRow({ ic: 'receipt', tone: 'green', title: 'Accounting', chev: true, onclick: () => (location.href = '/accounts.html') }));
