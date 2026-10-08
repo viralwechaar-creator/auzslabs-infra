@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { randomInt, randomUUID, randomBytes, createHash } from 'node:crypto';
+import { randomInt, randomUUID, randomBytes, createHash, createCipheriv, createDecipheriv, hkdfSync } from 'node:crypto';
 import { OAuth2Client } from 'google-auth-library';
 import { SignJWT, importPKCS8, createRemoteJWKSet, jwtVerify } from 'jose';
 import { pool } from './db.js';
@@ -9,6 +9,32 @@ import { generateSecret, otpauthUri, verifyTotp, generateBackupCodes } from './t
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) throw new Error('JWT_SECRET is required');
 const JWT_EXPIRY = '7d';
+
+// auth_totp.secret at rest (db/135): a TOTP secret has to be decryptable (the
+// server re-derives the 6-digit code from it on every login), so unlike a
+// password it can never just be hashed -- it's encrypted instead, with a key
+// derived from JWT_SECRET via HKDF into its own, separate-purpose subkey
+// (never JWT_SECRET directly, which stays scoped to signing). An `enc:`
+// prefix makes the new format unambiguous against a legacy plaintext base32
+// secret (which can never start with "enc:", lowercase+colon aren't in the
+// base32 alphabet) -- decryptTotpSecret() falls back to reading a value
+// without that prefix as-is, so an account whose secret predates this change
+// keeps working with zero migration, and gets upgraded to encrypted the next
+// time its 2FA is set up again (disable + re-enable to upgrade sooner).
+const TOTP_KEY = Buffer.from(hkdfSync('sha256', Buffer.from(JWT_SECRET), Buffer.alloc(0), 'auzslab-auth-totp-secret-v1', 32));
+function encryptTotpSecret(secret) {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv('aes-256-gcm', TOTP_KEY, iv);
+  const enc = Buffer.concat([cipher.update(String(secret), 'utf8'), cipher.final()]);
+  return `enc:${iv.toString('base64')}:${cipher.getAuthTag().toString('base64')}:${enc.toString('base64')}`;
+}
+function decryptTotpSecret(value) {
+  if (!value || !value.startsWith('enc:')) return value; // legacy plaintext row, read as-is
+  const [, ivB64, tagB64, dataB64] = value.split(':');
+  const decipher = createDecipheriv('aes-256-gcm', TOTP_KEY, Buffer.from(ivB64, 'base64'));
+  decipher.setAuthTag(Buffer.from(tagB64, 'base64'));
+  return Buffer.concat([decipher.update(Buffer.from(dataB64, 'base64')), decipher.final()]).toString('utf8');
+}
 
 // =========================================================
 // Single-device session revocation (db/071). A JWT carries a `jti` --
@@ -175,7 +201,7 @@ export async function verify2faChallenge(challenge, code, meta) {
   const row = rows[0];
   if (!row) return null;
   const clean = String(code || '').trim();
-  if (verifyTotp(row.secret, clean)) {
+  if (verifyTotp(decryptTotpSecret(row.secret), clean)) {
     const user = { id: row.id, email: row.email, app_metadata: row.app_metadata, user_metadata: row.user_metadata };
     return { access_token: await signToken(user, meta), user };
   }
@@ -208,9 +234,9 @@ export async function generate2faSecret(userId, email) {
   await pool.query(
     `insert into auth_totp (user_id, secret, enabled) values ($1, $2, false)
      on conflict (user_id) do update set secret = $2, enabled = false, backup_codes = '{}', confirmed_at = null`,
-    [userId, secret],
+    [userId, encryptTotpSecret(secret)],
   );
-  return { secret, otpauth: otpauthUri(secret, email) };
+  return { secret, otpauth: otpauthUri(secret, email) }; // the raw secret for this one response (the QR code) only -- never stored
 }
 
 // Step 2: proves the owner's authenticator app actually has the secret
@@ -220,7 +246,7 @@ export async function generate2faSecret(userId, email) {
 // returns them in plaintext exactly this one time.
 export async function confirm2fa(userId, code) {
   const { rows } = await pool.query('select secret from auth_totp where user_id = $1 and enabled = false', [userId]);
-  if (!rows[0] || !verifyTotp(rows[0].secret, code)) return null;
+  if (!rows[0] || !verifyTotp(decryptTotpSecret(rows[0].secret), code)) return null;
   const backupCodes = generateBackupCodes();
   const hashes = await Promise.all(backupCodes.map((c) => bcrypt.hash(c, 10)));
   await pool.query(
@@ -241,7 +267,7 @@ export async function disable2fa(userId, { password, code } = {}) {
   if (!ok && password) ok = await bcrypt.compare(password, rows[0].password_hash);
   if (!ok && code) {
     const { rows: tr } = await pool.query('select secret from auth_totp where user_id = $1 and enabled = true', [userId]);
-    if (tr[0]) ok = verifyTotp(tr[0].secret, code);
+    if (tr[0]) ok = verifyTotp(decryptTotpSecret(tr[0].secret), code);
   }
   if (!ok) return false;
   await pool.query('delete from auth_totp where user_id = $1', [userId]);
@@ -674,22 +700,22 @@ export async function loginWithPhone(phone, code, meta) {
 export async function createPasswordReset(email) {
   const { rows } = await pool.query('select id from auth_users where email = $1 and deleted_at is null', [email]);
   if (!rows[0]) return null;
-  const { rows: tokenRows } = await pool.query(
-    'insert into password_resets (user_id) values ($1) returning token',
-    [rows[0].id],
-  );
-  return tokenRows[0].token;
+  // Only the hash is ever stored (db/134) -- same discipline as email_verifications -- so the
+  // raw token below is the one and only copy, good for this request's reply, never written anywhere.
+  const token = randomBytes(32).toString('base64url');
+  await pool.query('insert into password_resets (user_id, token_hash) values ($1, $2)', [rows[0].id, sha256(token)]);
+  return token;
 }
 
 export async function resetPassword(token, newPassword) {
   const { rows } = await pool.query(
-    'select user_id from password_resets where token = $1 and used_at is null and expires_at > now()',
-    [token],
+    'select user_id from password_resets where token_hash = $1 and used_at is null and expires_at > now()',
+    [sha256(token)],
   );
   if (!rows[0]) return false;
   const password_hash = await bcrypt.hash(newPassword, 12);
   await pool.query('update auth_users set password_hash = $1 where id = $2', [password_hash, rows[0].user_id]);
-  await pool.query('update password_resets set used_at = now() where token = $1', [token]);
+  await pool.query('update password_resets set used_at = now() where token_hash = $1', [sha256(token)]);
   // A password reset is what a person does when they think someone else has access: every device that was signed in must be signed out.
   await revokeAllSessionsForUser(rows[0].user_id);
   return true;

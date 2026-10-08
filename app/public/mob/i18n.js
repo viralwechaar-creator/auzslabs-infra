@@ -226,6 +226,12 @@ const STR = {
   vendorDue: { en: 'You owe vendor', hi: 'विक्रेता को देना है' },
   settlePayment: { en: 'Record payment', hi: 'भुगतान दर्ज करें' },
   amount: { en: 'Amount', hi: 'रकम' },
+  due: { en: 'Due', hi: 'बकाया' },
+  totalPurchased: { en: 'Total purchased', hi: 'कुल खरीद' },
+  totalPaidToVendor: { en: 'Total paid', hi: 'कुल भुगतान' },
+  unpaidPurchases: { en: 'Unpaid purchases', hi: 'बिना भुगतान की खरीद' },
+  paidInFull: { en: 'Paid in full', hi: 'पूरा भुगतान हो गया' },
+  oldestFirstNote: { en: 'A payment is applied to the oldest purchase first.', hi: 'भुगतान सबसे पुरानी खरीद में सबसे पहले जमा होता है.' },
 
   // ---------- reports ----------
   revenue: { en: 'Revenue', hi: 'कुल बिक्री' },
