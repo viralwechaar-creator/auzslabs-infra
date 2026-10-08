@@ -1,0 +1,270 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>AUZslab — Salesman</title>
+<meta name=robots content="noindex,nofollow">
+<style>
+:root{--ink:#2e2c2a;--accent:#800020;--bg:#f5f4f2;--line:#e2dcd4;--muted:#7a756d}
+*{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,Inter,Helvetica,Arial,sans-serif;margin:0;background:var(--bg);color:var(--ink);line-height:1.5}
+.wrap{max-width:720px;margin:0 auto;padding:24px 18px 80px}
+h1{font-size:20px;margin:0 0 4px}
+h2{font-size:15px;margin:28px 0 10px}
+p.sub{color:var(--muted);margin:0 0 20px;font-size:14px}
+label{display:block;margin-top:12px;font-size:13px;color:var(--muted)}
+input,select,textarea{width:100%;padding:11px;margin-top:4px;font-size:15px;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;font-family:inherit;background:#fff;color:var(--ink)}
+input[type=color]{padding:3px;height:44px}
+button{margin-top:16px;padding:12px 18px;font-size:14px;font-weight:600;cursor:pointer;border:none;border-radius:10px;background:var(--accent);color:#fff}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button:disabled{opacity:.5;cursor:default}
+.err{color:#b00020;margin-top:10px;font-size:13px}
+.ok{background:#eef7ee;border:1px solid #bfe3bf;padding:12px;margin-top:16px;border-radius:10px;font-size:13px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;margin-top:14px}
+.trial-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.trial-row:last-child{border-bottom:none}
+.trial-row img{width:40px;height:40px;border-radius:8px;object-fit:cover;background:var(--bg)}
+.trial-row .meta{flex:1;min-width:0}
+.trial-row .name{font-weight:600;font-size:14px}
+.trial-row .sub{font-size:12.5px;color:var(--muted)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.colrow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.colrow label{text-align:center}
+.link{color:var(--accent);text-decoration:none;font-size:13px;font-weight:600}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+.hidden{display:none}
+</style>
+</head><body>
+<div class=wrap>
+  <h1>AUZslab — Salesman</h1>
+  <p class=sub>Upload a logo, set the colours and the business details once — it updates the prospect's website, invoice and bill instantly.</p>
+
+  <div id=login class=card>
+    <label>Email<input id=email type=email autocomplete=username></label>
+    <label>Password<input id=password type=password autocomplete=current-password></label>
+    <button id=signinBtn>Sign in</button>
+    <div id=loginErr class=err></div>
+  </div>
+
+  <div id=notSalesman class="card hidden">
+    <p>This login isn't set up as a salesman account yet. Ask the owner to add your email from the admin panel's Salesmen section.</p>
+    <button class=ghost id=signOutBtn2>Sign out</button>
+  </div>
+
+  <div id=app class=hidden>
+    <div class=card>
+      <h2 style="margin-top:0">New prospect</h2>
+      <label>Business name<input id=newName placeholder="e.g. Chapter One Cafe"></label>
+      <label>Desired address (subdomain)<input id=newSlug placeholder="chapterone" pattern="[a-z0-9-]+"></label>
+      <label>Type of business<select id=newNiche>
+        <option value=cafe>Café / restaurant / bakery</option>
+        <option value=salon>Salon / spa</option>
+        <option value=gym>Gym</option>
+        <option value=retail>Retail</option>
+        <option value=mobile>Mobile phone shop</option>
+        <option value=general>General</option>
+      </select></label>
+      <button id=createBtn>Create trial + brand it</button>
+      <div id=createErr class=err></div>
+    </div>
+
+    <h2>Your prospects</h2>
+    <div id=trialsList class=card>Loading…</div>
+
+    <div id=brandPanel class="card hidden">
+      <h2 style="margin-top:0" id=bpTitle>Brand this business</h2>
+      <p class=sub id=bpLink></p>
+
+      <label>Logo (PNG)<input id=bLogoFile type=file accept="image/png,image/jpeg,image/webp"></label>
+      <div id=bLogoPrev style="margin-top:8px"></div>
+
+      <label>Business name<input id=bName></label>
+      <div class=row2>
+        <div><label>Phone<input id=bPhone></label></div>
+        <div><label>GSTIN<input id=bGstin></label></div>
+      </div>
+      <label>Address<textarea id=bAddr rows=2></textarea></label>
+      <label>Opening hours (shown on the website)<input id=bHours placeholder="Mon–Sun · 9am – 11pm"></label>
+      <div class=row2>
+        <div><label>Invoice number prefix<input id=bPrefix placeholder="INV"></label></div>
+        <div><label>Invoice footer note<input id=bFtr placeholder="Thank you!"></label></div>
+      </div>
+
+      <h2>Website text</h2>
+      <label>Tagline / kicker<input id=bKicker placeholder="Our story"></label>
+      <label>Headline<input id=bTag placeholder="Quiet coffee. Calm experience."></label>
+      <label>Short description<textarea id=bSub rows=2></textarea></label>
+      <label>About section<textarea id=bAbout rows=3></textarea></label>
+      <label>Instagram handle<input id=bInsta placeholder="chapterone_india"></label>
+
+      <h2>Colour theme</h2>
+      <p class=sub style="margin-top:-6px">The full palette — used on their website and invoice. The first colour also becomes the accent in the POS and every other app.</p>
+      <div class=colrow>
+        <label>Primary<input id=bPlum type=color value="#800020"></label>
+        <label>Background<input id=bTint type=color value="#f5f4f2"></label>
+        <label>Muted text<input id=bMuted type=color value="#7a756d"></label>
+        <label>Lines<input id=bLine type=color value="#e2dcd4"></label>
+      </div>
+
+      <button id=saveBrandBtn>Save — updates everywhere instantly</button>
+      <button class=ghost id=openSiteBtn>Open their website ↗</button>
+      <button class=ghost id=ownerLoginBtn>Create owner login for the POS</button>
+      <div id=brandErr class=err></div>
+      <div id=brandOk class="ok hidden"></div>
+    </div>
+  </div>
+</div>
+<div class=toast id=toast></div>
+
+<script src=/sb-client.js></script>
+<script src=/config.js></script>
+<script>
+const sb = supabase.createClient(CFG.url, CFG.key);
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => '&#' + c.charCodeAt(0) + ';');
+let trials = [], current = null;
+
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('on'); setTimeout(() => t.classList.remove('on'), 2200); }
+function slugify(s) { return String(s || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30); }
+
+async function checkSession() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return;
+  const { data, error } = await sb.rpc('salesman_my_trials');
+  if (error) { $('login').classList.add('hidden'); $('notSalesman').classList.remove('hidden'); return; }
+  $('login').classList.add('hidden');
+  $('app').classList.remove('hidden');
+  trials = data || [];
+  renderTrials();
+}
+checkSession();
+
+$('signinBtn').onclick = async () => {
+  $('loginErr').textContent = '';
+  let r = await sb.auth.signInWithPassword({ email: $('email').value.trim(), password: $('password').value });
+  if (r.error) { $('loginErr').textContent = r.error.message; return; }
+  checkSession();
+};
+$('signOutBtn2').onclick = async () => { await sb.auth.signOut(); location.reload(); };
+
+$('newName').addEventListener('input', () => { if (!$('newSlug').dataset.touched) $('newSlug').value = slugify($('newName').value); });
+$('newSlug').addEventListener('input', () => { $('newSlug').dataset.touched = '1'; });
+
+$('createBtn').onclick = async () => {
+  $('createErr').textContent = '';
+  const name = $('newName').value.trim(), slug = slugify($('newSlug').value), niche = $('newNiche').value;
+  if (!name) { $('createErr').textContent = 'Business name is required.'; return; }
+  if (!slug || slug.length < 2) { $('createErr').textContent = 'Pick a short address, e.g. "chapterone".'; return; }
+  $('createBtn').disabled = true;
+  const { data, error } = await sb.rpc('salesman_provision_trial', { p_business_name: name, p_slug: slug, p_niche: niche });
+  $('createBtn').disabled = false;
+  if (error) { $('createErr').textContent = error.message; return; }
+  trials.unshift({ id: data, name, slug, niche, created_at: new Date().toISOString(), has_owner: false, logo: null, col: null });
+  $('newName').value = ''; $('newSlug').value = ''; $('newSlug').dataset.touched = '';
+  renderTrials();
+  openBrand(data);
+};
+
+function renderTrials() {
+  const el = $('trialsList');
+  if (!trials.length) { el.innerHTML = 'No prospects yet — create one above.'; return; }
+  el.innerHTML = trials.map((t) => `
+    <div class=trial-row data-id="${t.id}">
+      ${t.logo ? `<img src="${esc(t.logo)}">` : `<div style="width:40px;height:40px;border-radius:8px;background:${esc(t.col || '#800020')}"></div>`}
+      <div class=meta>
+        <div class=name>${esc(t.name)}</div>
+        <div class=sub>${esc(t.slug)}.auzslab.in · ${esc(t.niche)}${t.has_owner ? ' · owner login set' : ''}</div>
+      </div>
+    </div>`).join('');
+  el.querySelectorAll('.trial-row').forEach((row) => row.onclick = () => openBrand(row.dataset.id));
+}
+
+async function openBrand(tenantId) {
+  const t = trials.find((x) => x.id === tenantId);
+  if (!t) return;
+  current = t;
+  $('brandErr').textContent = ''; $('brandOk').classList.add('hidden');
+  const { data, error } = await sb.rpc('salesman_branding_get', { p_tenant_id: tenantId });
+  if (error) { $('brandErr').textContent = error.message; return; }
+  $('bpTitle').textContent = 'Brand ' + t.name;
+  $('bpLink').innerHTML = `<a class=link href="https://${esc(t.slug)}.auzslab.in/site.html" target=_blank>${esc(t.slug)}.auzslab.in</a> — scan a table QR or open this on the client's phone`;
+  $('bName').value = data.name || ''; $('bPhone').value = data.phone || ''; $('bGstin').value = data.gstin || '';
+  $('bAddr').value = data.addr || ''; $('bHours').value = data.siteHours || '';
+  $('bPrefix').value = data.prefix || ''; $('bFtr').value = data.ftr || '';
+  $('bKicker').value = data.siteKicker || ''; $('bTag').value = data.siteTag || '';
+  $('bSub').value = data.siteSub || ''; $('bAbout').value = data.siteAbout || ''; $('bInsta').value = data.siteInsta || '';
+  const b = data.brand || {};
+  $('bPlum').value = /^#[0-9a-f]{6}$/i.test(b.plum || '') ? b.plum : (data.col || '#800020');
+  $('bTint').value = /^#[0-9a-f]{6}$/i.test(b.tint || '') ? b.tint : '#f5f4f2';
+  $('bMuted').value = /^#[0-9a-f]{6}$/i.test(b.muted || '') ? b.muted : '#7a756d';
+  $('bLine').value = /^#[0-9a-f]{6}$/i.test(b.line || '') ? b.line : '#e2dcd4';
+  $('bLogoPrev').innerHTML = data.logo ? `<img src="${esc(data.logo)}" style="height:52px;border-radius:8px">` : '';
+  current.logoUrl = data.logo || null;
+  $('brandPanel').classList.remove('hidden');
+  $('brandPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+$('bLogoFile').onchange = async () => {
+  const file = $('bLogoFile').files[0];
+  if (!file || !current) return;
+  $('brandErr').textContent = '';
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const res = await fetch(CFG.url + '/storage/salesman/' + current.id + '/brand', {
+      method: 'POST',
+      headers: { 'Content-Type': file.type || 'application/octet-stream', 'Authorization': 'Bearer ' + session.access_token },
+      body: file,
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'upload failed');
+    current.logoUrl = CFG.url + body.path;
+    $('bLogoPrev').innerHTML = `<img src="${esc(current.logoUrl)}" style="height:52px;border-radius:8px">`;
+    toast('Logo uploaded — click Save to make it live');
+  } catch (e) { $('brandErr').textContent = e.message; }
+};
+
+$('saveBrandBtn').onclick = async () => {
+  if (!current) return;
+  $('brandErr').textContent = ''; $('brandOk').classList.add('hidden');
+  const patch = {
+    name: $('bName').value.trim(), phone: $('bPhone').value.trim(), gstin: $('bGstin').value.trim(),
+    addr: $('bAddr').value.trim(), siteHours: $('bHours').value.trim(),
+    prefix: $('bPrefix').value.trim(), ftr: $('bFtr').value.trim(),
+    siteKicker: $('bKicker').value.trim(), siteTag: $('bTag').value.trim(),
+    siteSub: $('bSub').value.trim(), siteAbout: $('bAbout').value.trim(), siteInsta: $('bInsta').value.trim(),
+    brand: { plum: $('bPlum').value, tint: $('bTint').value, muted: $('bMuted').value, line: $('bLine').value },
+  };
+  if (current.logoUrl) patch.logo = current.logoUrl;
+  $('saveBrandBtn').disabled = true;
+  const { data, error } = await sb.rpc('salesman_branding_save', { p_tenant_id: current.id, p_patch: patch });
+  $('saveBrandBtn').disabled = false;
+  if (error) { $('brandErr').textContent = error.message; return; }
+  current.name = patch.name || current.name; current.logo = data.logo; current.col = data.col;
+  const idx = trials.findIndex((t) => t.id === current.id); if (idx > -1) trials[idx] = { ...trials[idx], ...current };
+  renderTrials();
+  $('brandOk').textContent = 'Saved — live on their website, invoice and bill now.';
+  $('brandOk').classList.remove('hidden');
+  toast('Saved — updated everywhere instantly');
+};
+
+$('openSiteBtn').onclick = () => { if (current) window.open('https://' + current.slug + '.auzslab.in/site.html', '_blank'); };
+
+$('ownerLoginBtn').onclick = async () => {
+  if (!current) return;
+  const email = prompt("Owner's email for their first login:");
+  if (!email) return;
+  $('brandErr').textContent = '';
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const res = await fetch(CFG.url + '/admin/salesman-provision-owner', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+      body: JSON.stringify({ tenant_id: current.id, email, name: current.name }),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'failed');
+    alert('Owner login created.\n\nEmail: ' + email + '\nTemporary password: ' + body.temp_password + '\n\nShare this with the client directly.');
+    current.has_owner = true;
+    const idx = trials.findIndex((t) => t.id === current.id); if (idx > -1) trials[idx].has_owner = true;
+    renderTrials();
+  } catch (e) { $('brandErr').textContent = e.message; }
+};
+</script>
+</body></html>

@@ -21,6 +21,7 @@ import { handleSalon } from './salon.js';
 import { paymentConfig, gstPct, createOrder, verifyWebhookSignature, handleWebhookEvent } from './payments.js';
 import { cashfreeConfigured, startAutorenew, cancelAutorenew, verifyWebhookSignature as verifyCashfreeSignature, handleWebhookEvent as handleCashfreeWebhookEvent } from './cashfree.js';
 import { initErrorTracking, captureError } from './errors.js';
+import { tenantForIcon, tenantSettings, appIcon, appManifest } from './appicon.js';
 
 initErrorTracking(); // dormant unless SENTRY_DSN is set -- see errors.js
 
@@ -183,6 +184,17 @@ const RPC = {
   admin_delete_lead: { params: ['p_kind', 'p_id'], auth: true },
   admin_delete_user: { params: ['p_user_id', 'p_confirm_email'], auth: true },
   admin_list_audit: { params: ['p_limit'], defaults: { p_limit: 100 }, auth: true },
+
+  // --- Admin: salesmen (db/137) ---
+  admin_add_salesman: { params: ['p_email', 'p_name'], defaults: { p_name: null }, auth: true },
+  admin_list_salesmen: { params: [], auth: true },
+  admin_set_salesman_active: { params: ['p_id', 'p_active'], auth: true },
+
+  // --- Salesman: provision + brand one real trial tenant per sales pitch (db/137) ---
+  salesman_provision_trial: { params: ['p_business_name', 'p_slug', 'p_niche'], defaults: { p_niche: 'cafe' }, auth: true },
+  salesman_my_trials: { params: [], auth: true },
+  salesman_branding_get: { params: ['p_tenant_id'], auth: true },
+  salesman_branding_save: { params: ['p_tenant_id', 'p_patch'], jsonb: ['p_patch'], auth: true },
 
   // --- Client dashboard: own account, staff, feature toggles ---
   my_dashboard: { params: [], auth: true },
@@ -691,6 +703,33 @@ const server = http.createServer(async (req, res) => {
         return reply(503, { ok: false, db: false });
       }
     }
+
+    // ---- per-tenant home-screen icon/manifest for the main app shell
+    // (POS, console, Payroll, Accounting, AUZsMob). Public on purpose, no
+    // session needed -- a browser asks for these before anyone is signed
+    // in. See server/src/appicon.js. Falls back to the static, shared
+    // AUZslab icon/manifest for a shared address (app., auzsmob., ...) or
+    // an unknown subdomain. ----
+    if (url.pathname === '/app-manifest.json' && req.method === 'GET') {
+      const tenant = await tenantForIcon(req);
+      if (!tenant) { res.writeHead(302, { Location: '/manifest.json' }); res.end(); return; }
+      const settings = await tenantSettings(tenant.id);
+      res.writeHead(200, { 'Content-Type': 'application/manifest+json; charset=utf-8', 'Cache-Control': 'public, max-age=300' });
+      res.end(JSON.stringify(appManifest(tenant, settings)));
+      return;
+    }
+    const appIconMatch = url.pathname.match(/^\/app-icon\/(\d+)\.png$/);
+    if (appIconMatch && req.method === 'GET') {
+      const size = Math.min(512, Math.max(32, parseInt(appIconMatch[1], 10) || 192));
+      const tenant = await tenantForIcon(req);
+      if (!tenant) { res.writeHead(302, { Location: '/icon-512.png' }); res.end(); return; }
+      const settings = await tenantSettings(tenant.id);
+      const buf = await appIcon(tenant, settings, size);
+      res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=300' });
+      res.end(buf);
+      return;
+    }
+
     // ---- auth ----
     // ---- staff sign-in: username + PIN (db/096). Same reply shape as /auth/login. ----
     if (url.pathname === '/auth/staff-login' && req.method === 'POST') {
@@ -1261,6 +1300,48 @@ const server = http.createServer(async (req, res) => {
       // resetToRandomPassword's own note on why this replaces a
       // recovery-link email.
       return reply(200, { user_id: created.id, temp_password: tempPassword });
+    }
+
+    // ---- salesman: owner login for a trial tenant they created, so they can
+    // also open the POS itself during a pitch, not just show the branded
+    // website/invoice (db/137). Same discipline as /admin/provision-owner
+    // above, but gated on is_salesman() + actually owning this exact trial.
+    if (url.pathname === '/admin/salesman-provision-owner' && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'unauthorized');
+      const body = await readJsonBody(req);
+      if (!body.tenant_id || !body.email) throw new HttpError(400, 'tenant_id and email are required');
+      const { rows } = await withAuth(user.id, (client) =>
+        client.query('select is_salesman($1) as ok, exists(select 1 from tenants where id = $2 and created_by_salesman = $1) as owns', [user.id, body.tenant_id]),
+      );
+      if (!rows[0]?.ok) throw new HttpError(403, 'forbidden -- not a salesman account');
+      if (!rows[0]?.owns) throw new HttpError(403, 'not your trial tenant');
+      const created = await createUser({
+        email: body.email,
+        password: crypto.randomUUID(),
+        app_metadata: { tenant_id: body.tenant_id, role: 'owner' },
+        user_metadata: { name: body.name || '' },
+      });
+      const tempPassword = await resetToRandomPassword(created.id);
+      return reply(200, { user_id: created.id, temp_password: tempPassword });
+    }
+
+    // ---- salesman: upload a logo (or any other branding image) for a
+    // trial tenant they created (db/137). Reuses saveSiteUpload() exactly
+    // as the owner's own /storage/site/:prefix route does -- its internal
+    // tenant-slug lookup already goes through withAuth(uid,...), and the
+    // t_salesman_read policy on tenants (db/137) is what makes that lookup
+    // succeed for a salesman's own uid instead of only an owner's.
+    const salesmanUploadMatch = url.pathname.match(/^\/storage\/salesman\/([0-9a-f-]{36})\/([a-zA-Z0-9_-]+)$/);
+    if (salesmanUploadMatch && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      const [, tenantId, prefix] = salesmanUploadMatch;
+      const { rows } = await withAuth(user.id, (client) =>
+        client.query('select exists(select 1 from tenants where id = $1 and created_by_salesman = $2) as owns', [tenantId, user.id]),
+      );
+      if (!rows[0]?.owns) throw new HttpError(403, 'not your trial tenant');
+      const buffer = await readRawBody(req, 8_000_000);
+      const result = await saveSiteUpload({ tenantId, uid: user.id, prefix, buffer });
+      return reply(200, result);
     }
 
     // ---- staff invite: send the verification email (Resend) ----
