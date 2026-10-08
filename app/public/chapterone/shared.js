@@ -19,9 +19,9 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':
 const inr = (n) => '₹' + Math.round(n).toLocaleString('en-IN');
 const qs = (k) => new URLSearchParams(location.search).get(k);
 
-/* table-QR dine-in: a table's own code points here as ?t=<id>. guest_orders.tbl is plain text
-   (CLAUDE.md's own note on place_order), so whatever string a table's QR encodes is exactly
-   what staff see -- no table-list sync needed between this page and the POS. */
+/* table-QR dine-in: a table's own code points here as ?t=<id>. guest_orders.tbl is plain text,
+   so whatever string a table's QR encodes is exactly what staff see -- no table-list sync
+   needed between this page and the POS. */
 const TABLE_ID = qs('t');
 
 /* ---------------- demo menu: shown until the real catalogue loads from the owner's own POS via
