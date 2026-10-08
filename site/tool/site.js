@@ -5,6 +5,9 @@
   var CART_KEY = 'auz_cart';
   // CRM, Billing & Invoicing and Inventory come inside AUZsPOS (and the other apps): shown on the site, never sold or carted separately.
   var INCLUDED = ['crm', 'billing', 'inventory'];
+  // AUZsPOS QR is an add-on to AUZsPOS, never a standalone product: adding it pulls AUZsPOS in
+  // automatically, and removing AUZsPOS while QR is in the cart removes QR too.
+  var REQUIRES = { self_order: 'pos' };
   function readCart() {
     try { return JSON.parse(localStorage.getItem(CART_KEY) || '[]').filter(function (k) { return INCLUDED.indexOf(k) === -1; }); } catch (e) { return []; }
   }
@@ -19,10 +22,14 @@
       if (INCLUDED.indexOf(key) !== -1) return;
       var items = readCart();
       if (items.indexOf(key) === -1) items.push(key);
+      var req = REQUIRES[key];
+      if (req && items.indexOf(req) === -1) items.push(req);
       writeCart(items);
     },
     remove: function (key) {
-      writeCart(readCart().filter(function (k) { return k !== key; }));
+      var items = readCart().filter(function (k) { return k !== key; });
+      for (var dep in REQUIRES) { if (REQUIRES[dep] === key) items = items.filter(function (k) { return k !== dep; }); }
+      writeCart(items);
     },
     toggle: function (key) {
       if (window.AUZcart.has(key)) window.AUZcart.remove(key); else window.AUZcart.add(key);

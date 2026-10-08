@@ -500,7 +500,9 @@ html:not(.fx-live) .lab-hint{position:static;padding:3vh 5vw 5vh;transform:none}
       btn.textContent = AUZcart.has(key) ? 'Added ✓ — remove' : 'Add to cart';
     }
     entry.refresh = refresh;
-    btn.addEventListener('click', function () { if (entry.owned) return; AUZcart.toggle(key); refresh(); refreshCount(); });
+    // AUZsPOS QR auto-adds/removes AUZsPOS (AUZcart.add/remove, site.js) -- refresh every card,
+    // not just the one clicked, so AUZsPOS's own button reflects that right away.
+    btn.addEventListener('click', function () { if (entry.owned) return; AUZcart.toggle(key); cards.forEach(function (c) { c.refresh(); }); refreshCount(); });
     refresh();
     cards.push(entry);
   });
