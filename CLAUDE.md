@@ -443,14 +443,14 @@ client reuses all of this with zero new code, just their own settings.
 - **`bizType` must actually be set, or every tenant silently defaults to
   `'restaurant'`.** `cfg()` in `index.html` hardcodes that default;
   `niche_presets.default_business_rules` (db/001) never set a `bizType`
-  key for any niche until `db/050_fix_biztype_by_niche.sql` fixed it
+  key for any niche until `db/133_fix_biztype_by_niche.sql` fixed it
   (preset going forward + a backfill for already-provisioned tenants,
   gated on `bizType is null` so a deliberately hand-picked value is
   never overwritten). This is what actually caused "salon redirects to
   the staff POS login" the first time a real salon tenant went live —
   the `land.html` router above only works once this field is real.
 - **`public_salon_page(tenant_slug)` / `public_salon_slots(tenant_slug,
-  date)` / `public_create_booking(...)`** (db/049_salon_public_booking.sql)
+  date)` / `public_create_booking(...)`** (db/132_salon_public_booking.sql)
   are the anon-callable RPCs `booking.html` runs on — same
   SECURITY DEFINER / tenant-resolved-from-slug pattern as
   `public_menu`/`place_order`. Services/categories are the same
@@ -513,13 +513,21 @@ client reuses all of this with zero new code, just their own settings.
   which happened to double as real starter menu data), not an export of
   their live Vercel Blob store's actual runtime data. Needs a real data
   export from the owner before this can proceed.
-- **Numbering collision, not yet cleaned up:** `db/049_salon_public_booking.sql`
-  /`db/050_fix_biztype_by_niche.sql` (this work) and
-  `db/049_import_mannat_cafe.sql`/`db/050_mannat_cafe_real_menu.sql`
-  (see the Mannat Cafe section above) landed on `main` with duplicate
-  numbers from two different sessions' work. Not actually broken (both
-  run, in alphabetical sub-order, on a fresh install) but worth
-  renumbering one set for clarity before it happens a third time.
+- **Numbering collision, resolved.** The salon pair that originally shipped as
+  `db/049_salon_public_booking.sql`/`db/050_fix_biztype_by_niche.sql` collided
+  with the Mannat Cafe pair (`db/049_import_mannat_cafe.sql`/
+  `db/050_mannat_cafe_real_menu.sql`, see the Mannat Cafe section above) —
+  both landed on `main` with the same numbers from two different sessions'
+  work. Renumbered the salon pair to `db/132_salon_public_booking.sql`/
+  `db/133_fix_biztype_by_niche.sql` (the Mannat pair had to stay put: later
+  migrations `db/051_mannat_veg_markers.sql`/`db/052_mannat_enable_kds.sql`
+  hard-code `where slug = 'mannatcafe'` and assume that tenant and its real
+  catalogue already exist — moving Mannat's pair later would make both of
+  those no-ops on a fresh install). Checked first that nothing between
+  db/051 and the current head depends on the salon pair's specific position:
+  the only other files referencing `bizType` (db/023, db/055) set it
+  explicitly on their own demo tenant, never relying on `050`'s niche-preset
+  backfill having already run.
 
 ## Salon Suite: Showoff Salon's original app, run as-is (supersedes booking.html)
 
@@ -973,7 +981,7 @@ Order of work, with PRs on `main` (all squash-merged; deploy for every one of th
 - Retoken Back Office / Builder inline colours so they can follow dark mode and drop `ds/legacy.css` overrides.
 - Console has no automatic icon rail at 900-1199px; no hinge-aware foldable layouts; no saved views / pinned modules in POS or Accounting.
 - Real-device confirmation of the iPhone fixes above (blank strip, scroll lock, menus). Ask for a new screenshot if anything still looks wrong.
-- From earlier in the project and still open: historical Showoff Salon data import (needs an export from the owner), Zomato/Swiggy API integration, server-side stock ledger and posting POS sales into Accounting (POS_AUDIT backlog), renumber the duplicate db/049 / db/050 files.
+- From earlier in the project and still open: historical Showoff Salon data import (needs an export from the owner), Zomato/Swiggy API integration, server-side stock ledger and posting POS sales into Accounting (POS_AUDIT backlog).
 
 ## Real sign-in providers: Google, Apple, phone/OTP, password reset, account deletion (db/069)
 
@@ -1150,7 +1158,7 @@ Owner request, after an earlier attempt landed wrong ("a restaurant POS with pho
 ### Open items after AUZsMob
 - Camera barcode/IMEI scanning, WhatsApp-share/printed bills, spreadsheet item import, a first-run setup guide and a Bluetooth-printer hook are flagged, not built — see `docs/MOBILE.md`'s "Known limits".
 - No marketing landing page (business-type page + `products.html` slab) was built for AUZsMob, specifically because `business-mobile-repair.html`/`products.html`'s existing `gsm` slab already markets a different, already-shipped product to the exact same audience (mobile phone shops) — adding a second, competing listing for the same audience without the owner's steer on how the two should coexist (replace it, run both, merge the copy) felt likely to create a confusing storefront rather than fix anything. Needs an owner decision before it's built.
-- Vendor dues are an aggregate (`sum(purchases) - sum(payments)` per vendor), not traceable to one specific unpaid purchase — a known simplification, not a bug.
+- Vendor dues now have a per-purchase FIFO breakdown (see the dedicated section lower in this file) -- resolved, not open any more.
 - Deploy not yet confirmed run by the owner.
 
 ## SESSION LOG, continued: AUZsMob staff-accountability + admin panel redesign session (PR #130-136)
@@ -1473,7 +1481,7 @@ Marketing pages (`site/*.html`) never mention hosting model, infrastructure, ten
 - Help button phone/WhatsApp numbers (`SUPPORT` in `ds/help.js` and `site/tool/help.js`), a business UPI id for the cart QR, a real Cashfree/Razorpay Test Mode run, Firebase `google-services.json` for Android push.
 - Confirm on a real phone: `app.auzslab.in` and `auzsmob.auzslab.in` sign-in, the offline clock-in queue, a photo scan of a real invoice.
 - Not built (reasons in `LOCAL-FIRST-IMPLEMENTATION.md`): AUZsLedger offline drafts, direct ESC/POS printing, object storage, a batch `/sync` endpoint, 10k-50k product search timings. Not built for reading: POS / AUZsMob purchase and expense scanning, recipes from a recipe sheet, an AI reader for messy files.
-- Sentry error review needs the owner's screenshots; renumber the duplicate db/049 / db/050 files; Retoken Back Office/Builder colours.
+- Sentry error review needs the owner's screenshots.
 
 ## Chapter One (cafe, Jodhpur, Instagram `chapterone_india`): a bespoke site, handover-ready, no tenant yet
 
@@ -1568,7 +1576,7 @@ A separate app that lives in `agents-office/` of this repo (own Dockerfile, logi
 - **Docker:** Caddy (internet-facing) gets only `DOMAIN`, `ACME_EMAIL`, `GODADDY_API_TOKEN` via `environment:`, no longer the whole `.env` (database passwords, `JWT_SECRET`, every API key). The off-site backup container gets only `B2_BUCKET` plus the two B2 values. The API has `no-new-privileges`. **After pulling this, recreate caddy and offsite-backup once** (`docker compose up -d --force-recreate caddy offsite-backup`); a plain restart keeps the old environment.
 - **Caddyfile:** CSP now also sets `object-src 'none'; base-uri 'self'` (no `script-src`: the tool pages still use inline scripts, so a script policy would break them). New branded `site/404.html` via `handle_errors` on the root domain (still answers 404). Validate the Caddyfile locally with a stock `caddy` binary after removing the `dns godaddy` line (that plugin is only in the real image).
 - **Checked and fine:** every public-schema table the generic `/db/:table` API can reach has RLS (the tables without it are server-only: auth_*, payments, subscriptions, phone_otps, platform_flags, product_prices, salon_store, ...); every `SECURITY DEFINER` function sets `search_path`; uploads accept only JPEG/PNG/WebP/PDF by magic bytes (no SVG), 5xx errors never leak internals, CORS reflects only our own domain, all internal links in `site/` resolve, `sitemap.xml` lists only real pages.
-- **Known gaps, not changed (need a decision or a migration):** `password_resets.token` is stored in plain text (a uuid column; hash it with a migration); `auth_totp.secret` is plain text (encrypt with a key derived from `JWT_SECRET`, but rotating that secret would then break 2FA); the API container runs as root (switching to `USER node` needs the existing volumes re-owned); owner/manager sessions are 7-day bearer tokens kept in `localStorage` (the XSS defence is `h()` never using `innerHTML`; a real `script-src` CSP needs the inline scripts moved out first); platform-admin accounts deliberately have no 2FA (see the 2FA section) so their password must be long and unique; Google/Apple sign-in does not go through the 2FA prompt.
+- **Known gaps at the time of this pass, since closed in the "Security cleanup batch" section below**: `password_resets.token` plaintext, `auth_totp.secret` plaintext, the API container running as root. **Still open:** owner/manager sessions are 7-day bearer tokens kept in `localStorage` (the XSS defence is `h()` never using `innerHTML`; a real `script-src` CSP needs the inline scripts moved out first); platform-admin accounts deliberately have no 2FA (see the 2FA section) so their password must be long and unique; Google/Apple sign-in does not go through the 2FA prompt.
 - Tests added to the security suite: password change and password reset sign out other devices; the invite mail refuses a foreign link.
 
 ## Beginner manual + friction fixes (`site/learn.html`)
@@ -1602,3 +1610,22 @@ The homepage's first `.stack` is sticky sheets styled by `.stack-panel:nth-of-ty
 - **Deploy for all of it:** static only, `cd /root/auzslabs-infra && git pull origin main && git log -1 --oneline` (expect `766a47b` or later). Owner has not confirmed running the earlier server steps (PR #254: `docker compose up -d --build api`, `docker compose up -d --force-recreate caddy offsite-backup`).
 - **Open (owner decisions or input):** support phone/WhatsApp number (`site/company.js`, `SUPPORT` in both `help.js` copies); free-trial path; Google-only sign-up excludes non-Google users; case studies need permission (never invent reviews); real insight engine for Intelligence if wanted inside the apps; re-enter lost `.env` keys and back them up; change the Agents Office password pasted in chat; add the Anthropic key.
 - **Test notes:** run `service postgresql start` as its own command before `node tests/run-local.mjs` (starting it in the same command as `pkill -f http.server` killed the shell). Marketing suite is now 133 checks, journeys 13.
+
+## Security cleanup batch: hashed reset tokens, encrypted TOTP secrets, non-root API container (db/134) -- plus a real 2FA bug found while fixing it
+
+Closing four items this file had been carrying as "known gaps, need a decision or a migration" since the earlier security review pass.
+
+- **`password_resets.token` is no longer stored in plaintext.** Mirrors `email_verifications` (db/092) exactly: `createPasswordReset()` now generates the raw token in Node (`randomBytes(32).toString('base64url')`), mails it, and stores only `sha256(token)` in a new `token_hash` column; `resetPassword()` hashes the incoming token the same way to match. `db/134_hash_password_reset_tokens.sql` drops the old plaintext `token` primary key and promotes `token_hash` to it -- since these rows expire in 1 hour, there was nothing worth backfilling, so the migration just expires every currently-outstanding link outright (`update ... set expires_at = now() where used_at is null`) rather than attempt to hash something already in flight.
+- **`auth_totp.secret` is no longer stored in plaintext**, but with **no migration needed at all** -- the fix is entirely in `server/src/auth.js`. `encryptTotpSecret()`/`decryptTotpSecret()` use AES-256-GCM with a key derived from `JWT_SECRET` via HKDF into its own distinct subkey (`hkdfSync('sha256', JWT_SECRET, '', 'auzslab-auth-totp-secret-v1', 32)` -- never reusing `JWT_SECRET` directly, which stays scoped to signing). The stored format is `enc:<iv>:<tag>:<ciphertext>` (base64 each); `decryptTotpSecret()` checks for the `enc:` prefix first and returns the value as-is if absent -- a base32 TOTP secret can never start with `enc:` (lowercase + colon aren't in its alphabet), so this is an unambiguous, zero-downtime, backward-compatible switch: every new `generate2faSecret()` call encrypts, every existing plaintext row (if any real account had 2FA on before this) keeps working untouched and only gets upgraded to encrypted the next time that account's 2FA is set up again (disable + re-enable to upgrade sooner, same as the file's past precedent for similar low-stakes gaps).
+- **The API container (`server/Dockerfile`) no longer runs as root.** `node:22-alpine` ships a built-in non-root `node` user (uid/gid 1000); the two upload volumes (`uploads_data`, `private_uploads_data`) are plain named Docker volumes Docker creates owned by root on first use, and an already-deployed instance's volumes are root-owned from running as root before this. `server/docker-entrypoint.sh` is the standard fix for exactly this (the same pattern official postgres/redis alpine images use): the container still starts as root for one moment, `chown -R node:node` on those two mount points, then `exec su-exec node "$@"` drops to the non-root user to actually run the server -- root is never the process serving a request. `apk add su-exec` added alongside the existing `fontconfig ttf-dejavu`. **Verified as far as this sandbox's network allows**: `apk add` itself couldn't be exercised (the sandbox's egress allowlist blocks `dl-cdn.alpinelinux.org`, same category as every other "network restricted here" note in this file), but the actual privilege-drop mechanism was verified directly against the real `node:22-alpine` base image pulled fresh: a root-owned file in a volume-mount-equivalent directory, chowned, then written to successfully as the `node` user via `su` (confirmed `id` shows uid 1000 and a write to `/root` is correctly refused) -- proving the ownership-fix-then-drop sequence actually works, only the one new `apk` package's installability in this exact sandbox is unconfirmed.
+- **A real, previously undetected bug found and fixed while verifying the TOTP encryption end to end: `/auth/2fa/setup` gave every real owner/manager a 403, always.** Its own role check (`select role from profiles where id = $1`) used a bare `pool.query`, never wrapped in `withAuth()` -- `profiles` has owner-read-only RLS (db/002's `p_read` policy, `using (id = app_uid() or ...)`), and `app_uid()` is null without `app.uid` set, so the policy hid the row 100% of the time under the API's own `app` role. This is the exact same bug shape this file now documents a fourth time (`createOrder()`'s RLS read, `storage.js`'s `saveSiteUpload`, the `subscriptions` table) -- caught only by actually driving the real HTTP endpoint with a real owner login rather than trusting the 2FA section's own earlier "verified against a real running server" claim, which it turns out never exercised this specific call path end to end. Fixed with the same `withAuth(user.id, (client) => client.query(...))` wrap already used at the other `profiles` read sites in `index.js`. A committed regression test now drives the full real setup -> confirm -> login-challenge -> disable flow (independent RFC 6238 code computation, not reusing `totp.js`) in `tests/suites/local/security.mjs`.
+- Deploy: `git pull`, `psql ... -v ON_ERROR_STOP=1 < db/134_hash_password_reset_tokens.sql`, `docker compose up -d --build api` (Dockerfile and server/src both changed).
+
+## products.html: Inventory's "included with AUZsPOS" framing made consistent with CRM/Billing
+`products.html`'s CRM and Billing slabs already carried an eye-line badge ("02 · Customers · included with AUZsPOS", "03 · Billing · included with AUZsPOS") above their giant heading; Inventory's slab had no eye-line at all, just "Included with AUZsPOS." buried in its summary paragraph -- the one inconsistency left from the "use AUZsPOS, not the short names" open item. Added the matching eye-line (`04 · Stock · included with AUZsPOS`) as a direct child of `.slab` (the CSS already supports an `.eye` either nested in `.blk` or directly under `.slab` -- `html.fx-flow .slab>.eye,html.fx-flow .slab .blk .eye{...}` -- so no new rule was needed) and trimmed the now-redundant sentence from the paragraph. Also added the `aria-label="AUZsMob"` the other three AUZs-branded headings (POS/Pay/Ledger) already had, which AUZsMob's heading was missing. The cart button logic itself was already correct (`AUZcart`'s `INCLUDED` list already disables these three buttons client-side with "Included with AUZsPOS" text) -- this was purely a static-copy consistency fix, verified with a real-browser screenshot.
+
+## AUZsMob vendor dues: a per-purchase FIFO breakdown, computed client-side, no new table
+Vendor payable was a flat aggregate (`sum(purchases) - sum(payments)` per vendor) with no way to see which specific purchase was still unpaid -- flagged as a known simplification in the AUZsMob session log. `mob_payments` has no column tying a payment to one purchase (only a vendor-level bucket, per db/080's own schema comment), and building a real allocation table (mirroring Accounting's `acc_allocations`) would mean maintaining allocation rows across every purchase edit/void -- heavier than the ask. Instead, `vendorPurchaseDues()` in `app/public/mob/p-dues.js` computes a FIFO breakdown fresh every time, entirely client-side from data already synced to the device (purchases + vendor_due payments for that one vendor): sort the vendor's non-voided purchases oldest first, walk them consuming the vendor's total payments as a running balance, and the per-purchase `due` is whatever's left after the running balance is exhausted. No new table, no server call, works offline -- consistent with the rest of AUZsMob. Tapping a vendor in Dues now opens a detail sheet (`vendorDueDetail`) showing total purchased / paid / due plus the list of still-unpaid purchases (item, qty×rate, remaining due), with "Record payment" still one tap away. The file's own header comment is explicit that this is a best-effort traceability view, not a real ledger: editing a purchase after some of a vendor's other purchases have already "used up" the FIFO order can shuffle which purchase a payment looks allocated to, even though the vendor-level total is always exactly right either way.
+- **A real bug fixed along the way**: the vendor-level aggregate itself never excluded voided purchases (`for (const p of purchases) { if (!p.vendor_id) continue; ...}` had no `p.voided` check) -- a voided purchase inflated a vendor's "you owe" total forever. Fixed in the same pass (both the aggregate and the new FIFO calc skip `p.voided`).
+- New i18n keys (`due`, `totalPurchased`, `totalPaidToVendor`, `unpaidPurchases`, `paidInFull`, `oldestFirstNote`) in both English and Hindi. Bumped `?v=` on `mob/i18n.js` and `mob/p-dues.js` in `mob.html`, and `sw.js`'s `V` + precache list.
+- **Verified against a real running server with seeded data**: a vendor with three purchases (₹100/₹200/₹150) and a ₹250 payment correctly shows total purchased ₹450, paid ₹250, due ₹200, with the first purchase fully settled (not listed as unpaid), the second showing ₹50 still due, the third showing its full ₹150 -- and a separately-voided ₹1,000 purchase correctly excluded from every total. `node tests/run-local.mjs mobile` (52/52, no regression).

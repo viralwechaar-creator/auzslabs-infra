@@ -943,7 +943,13 @@ const server = http.createServer(async (req, res) => {
     // must never depend on a second factor surviving on this account.
     if (url.pathname === '/auth/2fa/setup' && req.method === 'POST') {
       if (!user) throw new HttpError(401, 'authentication required');
-      const { rows } = await pool.query('select role from profiles where id = $1', [user.id]);
+      // profiles has owner-read-only RLS (db/002's p_read policy, using id = app_uid() or...) -- a bare
+      // pool.query here never sets app.uid, so app_uid() is null and the policy hides every row, meaning
+      // this check always returned "not found" for a real owner/manager under the app role (confirmed
+      // against a real running server: a real owner login got 403 "not available" every single time).
+      // Same bug shape this file has already hit twice before (createOrder()'s RLS read, storage.js's
+      // saveSiteUpload) -- wrap in withAuth so the policy actually sees who is asking.
+      const { rows } = await withAuth(user.id, (client) => client.query('select role from profiles where id = $1', [user.id]));
       if (!rows[0] || !['owner', 'manager'].includes(rows[0].role)) throw new HttpError(403, 'Two-factor authentication is only available to a business\'s own owner or manager account.');
       if (rateLimited(`2fasetup:${user.id}`, 10, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
       return reply(200, await generate2faSecret(user.id, user.email));
