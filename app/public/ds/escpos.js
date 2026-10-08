@@ -135,6 +135,26 @@
       async write(b) { const w = port.writable.getWriter(); try { await w.write(b); } finally { w.releaseLock(); } },
       async close() { try { await port.close(); } catch {} } };
   }
+  /** AUZslab Bridge Server: a small program running on a PC at the restaurant (see bridge/README.md)
+   *  that forwards raw bytes to a network/LAN printer. The browser only ever talks to it over
+   *  http://127.0.0.1:<port> (loopback), which is the one http:// address an https:// page is
+   *  allowed to call without a mixed-content warning -- so this only works when the POS and the
+   *  Bridge Server run on the same PC. The Bridge Server itself then reaches printers anywhere
+   *  on the LAN; that part is not limited to this one device. */
+  async function bridgeTransport(port, token, printer) {
+    const base = 'http://127.0.0.1:' + port;
+    const health = await fetch(base + '/health').catch(() => null);
+    if (!health || !health.ok) throw new Error('Could not reach the Bridge Server on port ' + port + '. Is it running on this PC?');
+    const check = await fetch(base + '/printers', { headers: { Authorization: 'Bearer ' + token } });
+    if (check.status === 401) throw new Error('Wrong access token.');
+    if (!check.ok) throw new Error('The Bridge Server answered with an error.');
+    return { kind: 'bridge', name: printer + ' (Bridge Server)', key: { port, token, printer },
+      async write(b) {
+        const r = await fetch(base + '/print?printer=' + encodeURIComponent(printer), { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/octet-stream' }, body: b });
+        if (!r.ok) { let m = 'The Bridge Server could not print.'; try { m = (await r.json()).error || m; } catch {} throw new Error(m); }
+      },
+      async close() {} };
+  }
   async function bleTransport(dev) {
     const server = await dev.gatt.connect();
     let ch = null;
@@ -146,8 +166,8 @@
   }
 
   const auzPrinter = {
-    supported() { return { usb: !!(root.navigator && navigator.usb), serial: !!(root.navigator && navigator.serial), bluetooth: !!(root.navigator && navigator.bluetooth) }; },
-    anySupported() { const s = this.supported(); return s.usb || s.serial || s.bluetooth; },
+    supported() { return { usb: !!(root.navigator && navigator.usb), serial: !!(root.navigator && navigator.serial), bluetooth: !!(root.navigator && navigator.bluetooth), bridge: true }; },
+    anySupported() { const s = this.supported(); return s.usb || s.serial || s.bluetooth || s.bridge; },
     info() { const s = store.get(); return T ? { connected: true, kind: T.kind, name: T.name } : s ? { connected: false, kind: s.kind, name: s.name } : null; },
     /** true when a direct printer has been chosen on this device (it is reconnected when needed) */
     ready() { return !!(T || store.get()); },
@@ -157,6 +177,7 @@
       if (kind === 'usb') { if (!navigator.usb) throw new Error('This browser cannot use USB printers.'); t = await usbTransport(await navigator.usb.requestDevice({ filters: [{ classCode: 7 }] })); }
       else if (kind === 'serial') { if (!navigator.serial) throw new Error('This browser cannot use serial printers.'); t = await serialTransport(await navigator.serial.requestPort(), opt && opt.baud); }
       else if (kind === 'bluetooth') { if (!navigator.bluetooth) throw new Error('This browser cannot use Bluetooth printers.'); t = await bleTransport(await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: BLE_SERVICES })); }
+      else if (kind === 'bridge') { t = await bridgeTransport(opt.port, opt.token, opt.printer); }
       else throw new Error('Unknown printer type');
       if (T) await T.close();
       T = t; store.set({ kind: t.kind, name: t.name, key: t.key }); changed(); return this.info();
@@ -169,6 +190,7 @@
       try {
         if (s.kind === 'usb' && navigator.usb) { const d = (await navigator.usb.getDevices()).find((x) => !s.key || (x.vendorId === s.key.vendorId && x.productId === s.key.productId)); if (d) { T = await usbTransport(d); changed(); return true; } }
         if (s.kind === 'serial' && navigator.serial) { const p = (await navigator.serial.getPorts()).find((x) => { const i = x.getInfo ? x.getInfo() : {}; return !s.key || (i.usbVendorId === s.key.usbVendorId && i.usbProductId === s.key.usbProductId); }); if (p) { T = await serialTransport(p, s.key && s.key.baud); changed(); return true; } }
+        if (s.kind === 'bridge' && s.key) { T = await bridgeTransport(s.key.port, s.key.token, s.key.printer); changed(); return true; }
       } catch (e) { T = null; }
       return false;                                                                                  // Bluetooth needs a tap on "Connect" again after the page was closed
     },
