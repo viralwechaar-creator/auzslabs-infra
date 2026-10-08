@@ -143,6 +143,7 @@ function printerSheet() {
     if (sup.usb) rows.push(conn('usb', 'Connect a USB printer', 'Plug it into this device, then choose it'));
     if (sup.bluetooth) rows.push(conn('bluetooth', 'Connect a Bluetooth printer', 'Switch the printer on, then choose it'));
     if (sup.serial) rows.push(conn('serial', 'Connect a serial printer', 'Older receipt printers on a USB-serial cable'));
+    if (sup.bridge) rows.push(liRow({ ic: 'plus', tone: 'blue', title: 'Bridge Server (network printer)', sub: 'A kitchen or network printer, via the small program running on this PC', chev: true, onclick: bridgeForm }));
     if (inf) {
       rows.push(liRow({ ic: 'receipt', tone: 'purple', title: 'Print a test slip', chev: true, onclick: async () => { try { const e = new auzEsc.Esc(slipWidth()); e.align('center').bold(true).size(2, 2).line('TEST').size(1, 1).bold(false).line(cfg().name || 'AUZslab').line('Printer works.').align('left').hr().lr('Width', slipWidth() + ' characters').cut(); await P.print(e.bytes()); toast('Test slip sent'); } catch (e) { toast(String(e && e.message || e), { err: true }); } draw(); } }));
       rows.push(liRow({ ic: 'cash', tone: 'orange', title: 'Open the cash drawer on cash bills', sub: 'For a drawer wired to the printer', right: seg([['0', 'Off'], ['1', 'On']], localStorage['pos.drawer'] === '1' ? '1' : '0', (v) => { try { localStorage['pos.drawer'] = v; } catch {} }) }));
@@ -151,6 +152,28 @@ function printerSheet() {
     rows.push(h('p', { class: 'muted', style: { padding: '10px 4px', fontSize: '13px' } }, 'Prints plain English text (₹ prints as Rs). The paper width (58 or 80 mm) is set in the admin console, Settings. A printer that does not answer falls back to the print window.'));
     s.setBody(h('div', { class: 'list' }, rows));
   };
+  // The Bridge Server's own setup (bridge/README.md) prints a port, a token and the printer
+  // names from config.json -- this form is just those three values, typed once.
+  function bridgeForm() {
+    const portEl = h('input', { value: '7777', inputmode: 'numeric', placeholder: '7777' });
+    const tokenEl = h('input', { placeholder: 'From the Bridge Server\'s first run' });
+    const printerEl = h('input', { placeholder: 'The printer\'s name in config.json' });
+    const errEl = h('p', { class: 'muted', style: { color: 'var(--danger,#c2183f)', minHeight: '18px' } });
+    const connectBtn = h('button', { class: 'btn btn-primary', onclick: async () => {
+      const port = (portEl.value || '').trim() || '7777', token = (tokenEl.value || '').trim(), printer = (printerEl.value || '').trim();
+      if (!token || !printer) { errEl.textContent = 'Enter the token and the printer name.'; return; }
+      connectBtn.disabled = true; errEl.textContent = '';
+      try { await P.pair('bridge', { port, token, printer }); toast('Bridge Server connected'); draw(); }
+      catch (e) { errEl.textContent = String(e && e.message || e); connectBtn.disabled = false; }
+    } }, 'Connect');
+    s.setBody(h('div', { class: 'list', style: { padding: '0 4px' } }, [
+      field('Bridge Server port', portEl, 'The port it printed when you first ran it (7777 unless you changed it)'),
+      field('Access token', tokenEl),
+      field('Printer name', printerEl, 'Exactly as it appears in the Bridge Server\'s config.json'),
+      errEl,
+      h('div', { style: { display: 'flex', gap: '10px', marginTop: '4px' } }, [connectBtn, h('button', { class: 'btn', onclick: draw }, 'Back')]),
+    ]));
+  }
   P.onchange(() => { if (s.el.isConnected) draw(); });
   draw();
 }
