@@ -22,7 +22,15 @@
 -- Salsa, Pasta Alfredo, and every dessert -- none of the supplied photos
 -- show a dessert) get no `img` at all rather than a mismatched one.
 
-create or replace function salesman_provision_trial(p_business_name text, p_slug text, p_niche text default 'cafe')
+-- Production's copy of this function may still predate db/139's uuid->jsonb
+-- return-type change (that migration may not have been run there yet, or
+-- ran before an earlier failed attempt left the old signature in place) --
+-- `create or replace` cannot change a function's return type, so drop it
+-- first (safe: it is recreated immediately below with the same jsonb shape
+-- db/139 introduced).
+drop function if exists salesman_provision_trial(text, text, text);
+
+create function salesman_provision_trial(p_business_name text, p_slug text, p_niche text default 'cafe')
 returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
