@@ -268,6 +268,20 @@ export default async function run({ browser, stack }) {
     const c2 = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const p2 = await c2.newPage(); await p2.goto(stack.url('newbookworld', '/bill.html?t=' + tok)); await p2.waitForSelector('.ti', { timeout: 15000 });
     assert(await p2.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'sideways scroll on a phone'); await s.shot(p2, 'classic-tax-invoice-phone'); await c2.close();
   });
+  await s.check('A plain item list with no codes, GST or prices (the template columns, 600 rows, odd units) imports after Check, with codes made automatically and no stray "null" text', async () => {
+    const real = process.env.BUSY_CSV && (await import('fs')).existsSync(process.env.BUSY_CSV) ? (await import('fs')).readFileSync(process.env.BUSY_CSV, 'utf8') : null;
+    let csv = real; if (!csv) { csv = 'SKU,Name,HSN/SAC,GST rate %,Unit,Sale price,Purchase price,MRP,Category,Brand,Reorder level,Barcode,Service (true/false)\n'; for (let i = 0; i < 600; i++) csv += `,"Plainlist Item ${i} ${i % 7 ? '' : 'A, B'}",,,${['PCS', 'Pcs.', 'children b'][i % 3]},,,,${['STATIONERY', 'NOVEL'][i % 2]},,,${i % 5 ? '' : 978100000000 + i},\n`; }
+    const { c, page } = await openPage('/scan.html', USERS.acctOwner, { w: 390, h: 844, mobile: true });
+    await page.evaluate(() => { location.hash = '#/data?entity=products'; }); await page.waitForSelector('input[type=file]');
+    await page.setInputFiles('input[type=file]', { name: 'items.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+    await page.waitForSelector('text=Match your columns', { timeout: 10000 });
+    assert(!/(^|\n)null(\n|$)/.test(await page.locator('main').innerText()), 'stray null text before the check: ' + (await page.locator('main').innerText()).replace(/\s+/g, ' ').slice(-120));
+    await page.locator('button', { hasText: 'Check the file' }).click(); await page.waitForSelector('text=Looks good', { timeout: 60000 }).catch(async (e) => { throw new Error('check did not pass: ' + (await page.locator('main').innerText()).replace(/\\s+/g, ' ').slice(-900)); });
+    assert(!/(^|\n)null(\n|$)/.test(await page.locator('main').innerText()), 'stray null text after the check');
+    await page.locator('button.fill', { hasText: /^Import$/ }).click(); await page.locator('button', { hasText: /^Import$/ }).last().click({ timeout: 5000 }).catch(() => {}); await page.waitForTimeout(real ? 15000 : 6000);
+    const n = (await q("select count(*)::int n from acc_products p join tenants t on t.id = p.tenant_id where t.slug = 'testacct' and p.name like $1", [real ? '%' : 'Plainlist%']))[0].n;
+    assert(n >= (real ? 2000 : 600), 'imported ' + n); await c.close();
+  });
   await s.check('The standalone AUZsScan app (scan.html): short menu, scan screen first, installable manifest, no horizontal scroll on a phone', async () => {
     const a = await openPage('/scan.html', USERS.acctOwner);
     await a.page.waitForSelector('.scan-hero', { timeout: 15000 });
