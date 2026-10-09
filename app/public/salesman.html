@@ -96,6 +96,13 @@ button:disabled{opacity:.5;cursor:default}
       <label>About section<textarea id=bAbout rows=3></textarea></label>
       <label>Instagram handle<input id=bInsta placeholder="chapterone_india"></label>
 
+      <h2>Website photos</h2>
+      <p class=sub style="margin-top:-6px">Without these the website still works — it just shows a plain drawn icon instead of a real photo. Upload the client's own when you have them.</p>
+      <label>Hero photo (top of the page)<input id=bHeroFile type=file accept="image/png,image/jpeg,image/webp"></label>
+      <div id=bHeroPrev style="margin-top:8px"></div>
+      <label>Gallery photos (add one at a time)<input id=bGalFile type=file accept="image/png,image/jpeg,image/webp"></label>
+      <div id=bGalPrev style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"></div>
+
       <h2>Colour theme</h2>
       <p class=sub style="margin-top:-6px">The full palette — used on their website and invoice. The first colour also becomes the accent in the POS and every other app.</p>
       <div class=colrow>
@@ -216,8 +223,34 @@ async function openBrand(tenantId) {
   $('bLine').value = /^#[0-9a-f]{6}$/i.test(b.line || '') ? b.line : '#e2dcd4';
   $('bLogoPrev').innerHTML = data.logo ? `<img src="${esc(data.logo)}" style="height:52px;border-radius:8px">` : '';
   current.logoUrl = data.logo || null;
+  $('bHeroPrev').innerHTML = data.siteHero ? `<img src="${esc(data.siteHero)}" style="height:70px;border-radius:8px">` : '';
+  current.heroUrl = data.siteHero || null;
+  current.galleryUrls = (data.siteGallery || '').split(',').map((s) => s.trim()).filter(Boolean);
+  renderGalleryPrev();
   $('brandPanel').classList.remove('hidden');
   $('brandPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function uploadBrandImage(file, prefix) {
+  const { data: { session } } = await sb.auth.getSession();
+  const res = await fetch(CFG.url + '/storage/salesman/' + current.id + '/' + prefix, {
+    method: 'POST',
+    headers: { 'Content-Type': file.type || 'application/octet-stream', 'Authorization': 'Bearer ' + session.access_token },
+    body: file,
+  });
+  const body = await res.json();
+  if (!res.ok) throw new Error(body.error || 'upload failed');
+  return CFG.url + body.path;
+}
+
+function renderGalleryPrev() {
+  $('bGalPrev').innerHTML = (current.galleryUrls || []).map((u, i) =>
+    `<span style="position:relative;display:inline-block"><img src="${esc(u)}" style="height:60px;border-radius:8px;display:block"><button type=button data-rm="${i}" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;padding:0;border-radius:50%;font-size:12px;line-height:1;margin:0">×</button></span>`
+  ).join('');
+  $('bGalPrev').querySelectorAll('[data-rm]').forEach((b) => b.onclick = () => {
+    current.galleryUrls.splice(+b.dataset.rm, 1);
+    renderGalleryPrev();
+  });
 }
 
 $('bLogoFile').onchange = async () => {
@@ -225,18 +258,37 @@ $('bLogoFile').onchange = async () => {
   if (!file || !current) return;
   $('brandErr').textContent = '';
   try {
-    const { data: { session } } = await sb.auth.getSession();
-    const res = await fetch(CFG.url + '/storage/salesman/' + current.id + '/brand', {
-      method: 'POST',
-      headers: { 'Content-Type': file.type || 'application/octet-stream', 'Authorization': 'Bearer ' + session.access_token },
-      body: file,
-    });
-    const body = await res.json();
-    if (!res.ok) throw new Error(body.error || 'upload failed');
-    current.logoUrl = CFG.url + body.path;
+    current.logoUrl = await uploadBrandImage(file, 'brand');
     $('bLogoPrev').innerHTML = `<img src="${esc(current.logoUrl)}" style="height:52px;border-radius:8px">`;
     toast('Logo uploaded — click Save to make it live');
   } catch (e) { $('brandErr').textContent = e.message; }
+  $('bLogoFile').value = '';
+};
+
+$('bHeroFile').onchange = async () => {
+  const file = $('bHeroFile').files[0];
+  if (!file || !current) return;
+  $('brandErr').textContent = '';
+  try {
+    current.heroUrl = await uploadBrandImage(file, 'hero');
+    $('bHeroPrev').innerHTML = `<img src="${esc(current.heroUrl)}" style="height:70px;border-radius:8px">`;
+    toast('Hero photo uploaded — click Save to make it live');
+  } catch (e) { $('brandErr').textContent = e.message; }
+  $('bHeroFile').value = '';
+};
+
+$('bGalFile').onchange = async () => {
+  const file = $('bGalFile').files[0];
+  if (!file || !current) return;
+  $('brandErr').textContent = '';
+  try {
+    const url = await uploadBrandImage(file, 'gallery');
+    current.galleryUrls = current.galleryUrls || [];
+    current.galleryUrls.push(url);
+    renderGalleryPrev();
+    toast('Photo added — click Save to make it live');
+  } catch (e) { $('brandErr').textContent = e.message; }
+  $('bGalFile').value = '';
 };
 
 $('saveBrandBtn').onclick = async () => {
@@ -251,6 +303,8 @@ $('saveBrandBtn').onclick = async () => {
     brand: { plum: $('bPlum').value, tint: $('bTint').value, muted: $('bMuted').value, line: $('bLine').value },
   };
   if (current.logoUrl) patch.logo = current.logoUrl;
+  if (current.heroUrl) patch.siteHero = current.heroUrl;
+  if (current.galleryUrls) patch.siteGallery = current.galleryUrls.join(',');
   $('saveBrandBtn').disabled = true;
   const { data, error } = await sb.rpc('salesman_branding_save', { p_tenant_id: current.id, p_patch: patch });
   $('saveBrandBtn').disabled = false;
