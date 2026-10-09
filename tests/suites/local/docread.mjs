@@ -59,8 +59,8 @@ export default async function run({ browser, stack }) {
     await page.evaluate(() => { location.hash = '#/purchases'; }); await page.waitForTimeout(500);
     const before = Number((await q('select count(*)::int n from acc_documents where tenant_id=$1', [tid]))[0].n);
     await scan({ name: 'fruits.pdf', mimeType: 'application/pdf', buffer: inv.pdf });
-    await page.waitForFunction(() => /new\/bill/.test(location.hash) && document.querySelector('.banner.info'), null, { timeout: 40000 });
-    const t = await page.locator('.banner.info').first().innerText(); assert(/Draft read from fruits\.pdf/.test(t) && /Fresh Fruits Traders/.test(t) && /not in your suppliers/.test(t), t);
+    await page.waitForFunction(() => /new\/bill/.test(location.hash) && document.querySelector('.banner.info:not([hidden])'), null, { timeout: 40000 });
+    const t = await page.locator('.banner.info:not([hidden])').first().innerText(); assert(/Draft read from fruits\.pdf/.test(t) && /Fresh Fruits Traders/.test(t) && /not in your suppliers/.test(t), t);
     const descs = await page.$$eval('.lines input[aria-label="Item"]', (els) => els.map((e) => e.value)); assert(descs.length === 3 && /Mango/.test(descs[0]), JSON.stringify(descs));
     const after = Number((await q('select count(*)::int n from acc_documents where tenant_id=$1', [tid]))[0].n); assert(after === before, 'a document was saved before the person pressed Save');
     await s.shot(page, 'scanned-invoice-draft');
@@ -76,8 +76,8 @@ export default async function run({ browser, stack }) {
   await s.check('Accounting: a photo is read by the free reader (slower, may have mistakes) and still opens as a draft', async () => {
     await page.evaluate(() => { location.hash = '#/purchases'; }); await page.waitForTimeout(500);
     await scan({ name: 'fruits.png', mimeType: 'image/png', buffer: inv.png });
-    await page.waitForFunction(() => /new\/bill/.test(location.hash) && document.querySelector('.banner.info'), null, { timeout: 150000 });
-    const t = await page.locator('.banner.info').first().innerText(); assert(/photo reading/.test(t), t);
+    await page.waitForFunction(() => /new\/bill/.test(location.hash) && document.querySelector('.banner.info:not([hidden])'), null, { timeout: 150000 });
+    const t = await page.locator('.banner.info:not([hidden])').first().innerText(); assert(/photo reading/.test(t), t);
     const descs = await page.$$eval('.lines input[aria-label="Item"]', (els) => els.map((e) => e.value)); assert(descs.some((d) => /mango/i.test(d)), 'photo rows: ' + JSON.stringify(descs));
   }, 'major');
   await s.check('Accounting: no script errors on the way', async () => { assert(!errs.filter((e) => !/sentry/i.test(e)).length, errs.slice(0, 3).join(' | ')); });

@@ -40,6 +40,8 @@ const SRC = {
     hints: { name: /^item name$|^name$|print name|^item$/, sku: /item code|^code$|^alias|short name/, category: /item group|^group|under group|category/, unit: /main unit|^unit|uom/, sale_price: /sale.?s? price|selling|sale rate|^s\.? ?price/, purchase_price: /purchase price|purch.*rate|cost price|^cost/, mrp: /^mrp|m\.r\.p/, hsn: /hsn|sac/, tax_rate: /tax categ|gst ?%|gst rate|tax ?%|igst|rate of tax/, barcode: /bar ?code/, qty: /opening.*(qty|stock|bal)|^qty|quantity|stock qty|closing.*(qty|stock)/, cost: /opening.*(rate|price|cost)|stock rate|avg/ } },
   tally: { label: 'Tally', how: 'In Tally, open the list of Stock Items and export it (Alt+E) as Excel or CSV. A Masters export in XML works too. Items without a code get one made from the item name.',
     hints: { name: /^particulars$|stock item|item name|^name$/, sku: /part ?no|part number|^alias|item code/, category: /^under$|^parent$|stock group|^group/, unit: /^units?$|base units?|^uom/, sale_price: /standard sell|selling price|sale/, purchase_price: /standard cost|purchase|cost/, mrp: /^mrp|m\.r\.p/, hsn: /hsn|sac/, tax_rate: /gst rate|rate of tax|integrated|igst|tax ?%/, barcode: /bar ?code/, qty: /opening (balance|qty)|^quantity$|^qty$|closing (balance|qty)/, cost: /opening rate|^rate$|avg|average/ } },
+  pdf: { label: 'PDF or photo', how: 'A PDF or photo of a price or stock list. Lines are read on this phone (nothing is uploaded). Check the column match below: photos and handwriting can be misread.',
+    hints: { name: /^(item|product|particulars|description|name|goods|article)\b/, sku: /^(sku|code|item code|barcode)$/, hsn: /hsn|sac/, tax_rate: /gst|tax/, unit: /^(unit|uom)s?$/, sale_price: /^(rate|price|selling|sale|mrp|amount)/, purchase_price: /purchase|cost/, qty: /^(qty|quantity|stock|nos|balance)/, mrp: /^m\.?r\.?p/ } },
 };
 const numClean = (x) => { const m = String(x ?? '').replace(/,/g, '').match(/-?\d+(\.\d+)?/); return m ? m[0] : ''; };
 const skuOf = (name) => String(name || '').toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24);
@@ -69,7 +71,7 @@ async function importWizard(host, entity, v) {
   const opts = { on_duplicate: 'skip', create_missing: true, strict: true, date: curFY().start_date, src: 'generic', autoSku: false, openingStock: true };
   const EXTRA = entity === 'products' ? [['qty', 'Opening stock quantity', 0], ['cost', 'Opening stock rate (cost each)', 0]] : [];
   const isReq = (f) => f[2] && !(entity === 'products' && f[0] === 'sku' && opts.autoSku);
-  const fileIn = h('input', { type: 'file', accept: '.csv,.xlsx,.txt,.xml', class: 'input', 'aria-label': 'File to import' });
+  const fileIn = h('input', { type: 'file', accept: entity === 'products' ? '.csv,.xlsx,.txt,.xml,.pdf,.png,.jpg,.jpeg' : '.csv,.xlsx,.txt,.xml', class: 'input', 'aria-label': 'File to import' });
   const mapEl = h('div', { class: 'grid' }), resEl = h('div', { class: 'grid' }), optEl = h('div', { class: 'grid' });
   const sigKey = () => 'acc_imp_' + entity + '_' + hdr.join('|').slice(0, 200);
   const guess = () => {
@@ -91,15 +93,15 @@ async function importWizard(host, entity, v) {
       entity === 'products' && map.qty >= 0 ? toggleRow('Also add the opening stock from this file', opts.openingStock, (x) => { opts.openingStock = x; }, S.productsPartial ? 'Switched off: your list is too large to check which items are new.' : 'Only for items that are new. Items you already have keep their current stock, so nothing is counted twice.') : null,
       toggleRow('Stop if any row has an error', opts.strict, (x) => { opts.strict = x; }, 'On: nothing is imported unless every row is valid. Off: valid rows are imported and the rest are reported.'))));
   };
-  const stockRows = [];
-  const rowsFor = () => { stockRows.length = 0; const seen = {}; return table.slice(1).map((r, i) => { const o = { _row: i + 2 }; E.fields.forEach(([k]) => { const ix = map[k]; if (ix >= 0) o[k] = String(r[ix] ?? '').trim(); });
+  const stockRows = []; stockRows.noCost = 0;
+  const rowsFor = () => { stockRows.length = 0; stockRows.noCost = 0; const seen = {}; return table.slice(1).map((r, i) => { const o = { _row: i + 2 }; E.fields.forEach(([k]) => { const ix = map[k]; if (ix >= 0) o[k] = String(r[ix] ?? '').trim(); });
     if (entity === 'products') {
       if (opts.src !== 'generic' && /^(grand\s+)?total$/i.test(o.name || '')) return {};
       if (/exempt|nil|zero/i.test(o.tax_rate || '')) o.tax_rate = '0';
       ['tax_rate', 'sale_price', 'purchase_price', 'mrp', 'reorder_level'].forEach((k) => { if (o[k] != null) o[k] = numClean(o[k]); });
       if (o.hsn) o.hsn = o.hsn.replace(/\D/g, ''); if (o.unit) o.unit = o.unit.replace(/\.+$/, '').trim() || 'Nos';
       if (!o.sku && opts.autoSku && o.name) { let b = skuOf(o.name) || 'ITEM', n = (seen[b] = (seen[b] || 0) + 1); o.sku = n > 1 ? b + '-' + n : b; }
-      if (map.qty >= 0 && o.sku) { const q = numClean(r[map.qty]); if (Number(q) > 0) stockRows.push({ _row: i + 2, sku: o.sku, qty: q, unit_cost: map.cost >= 0 ? numClean(r[map.cost]) : '', date: opts.date }); }
+      if (map.qty >= 0 && o.sku) { const q = numClean(r[map.qty]); if (Number(q) > 0) { const uc = map.cost >= 0 ? numClean(r[map.cost]) : (map.purchase_price >= 0 ? numClean(r[map.purchase_price]) : ''); if (Number(uc) > 0) stockRows.push({ _row: i + 2, sku: o.sku, qty: q, unit_cost: uc, date: opts.date }); else stockRows.noCost = (stockRows.noCost || 0) + 1; } }
     }
     return o; }).filter((o) => Object.entries(o).some(([k, x]) => k !== '_row' && x !== '')); };
   const run = async (commit) => {
@@ -116,6 +118,7 @@ async function importWizard(host, entity, v) {
         if (entity === 'products' && opts.openingStock && stockRows.length && !S.productsPartial) {
           try { const fresh = stockRows.filter((x) => !before.has(x.sku)); if (fresh.length) { const sr = await api('acc_import', { p_entity: 'opening_stock', p_rows: fresh, p_commit: true, p_strict: false, p_options: { date: opts.date } }); toast('Opening stock added for ' + sr.ok + ' item(s)' + (sr.failed ? ', ' + sr.failed + ' could not be added (see Stock)' : '')); } } catch (e) { toast('Items were imported, but the opening stock was not added: ' + (e.message || e), { err: true }); }
         }
+        if (entity === 'products' && opts.openingStock && stockRows.noCost > 0) toast('Stock quantity not added for ' + stockRows.noCost + ' item(s): the file has no purchase price. Add stock from the Stock page.');
         await loadCtx().catch(() => {});
       }
     } catch (e) { fail(e); }
@@ -132,7 +135,11 @@ async function importWizard(host, entity, v) {
   const how = h('p', { class: 'muted small' }, SRC.generic.how);
   const tplBtn = h('button', { class: 'btn sm', onclick: () => exportCSV(entity + '-template', E.fields.map((f) => f[1]), [E.sample]) }, icon('download', 16), 'Download template');
   fileIn.onchange = async () => {
-    try { const f = fileIn.files[0]; table = /\.xml$/i.test(f.name) ? await readTallyXml(f) : await readTable(f); if (/\.xml$/i.test(f.name) && opts.src === 'generic') { opts.src = 'tally'; how.textContent = SRC.tally.how; } if (table.length < 2) throw new Error('The file has no data rows'); hdr = table[0].map((x) => String(x ?? '')); map = guess(); try { const saved = JSON.parse(localStorage.getItem(sigKey()) || 'null'); if (saved) map = { ...map, ...saved }; } catch { /* ignore */ } result = null; drawMap(); drawRes(); } catch (e) { fail(e); table = null; clear(mapEl); clear(resEl); }
+    try { const f = fileIn.files[0]; if (entity === 'products' && (/\.pdf$/i.test(f.name) || /^image\//.test(f.type) || /\.(png|jpe?g)$/i.test(f.name))) {
+        await loadDocRead(); const ex = await auzDocRead.extract(f, { onStatus: (t) => { how.textContent = t; } }); const pr = auzDocRead.parseProducts(ex.lines);
+        opts.src = 'pdf'; how.textContent = SRC.pdf.how; opts.autoSku = true; table = pr.table; if (pr.table.length < 2) throw new Error('No products could be read from this ' + (ex.method === 'ocr' ? 'photo' : 'PDF') + '. Try a clearer file, or a spreadsheet.');
+        toast('Read ' + (pr.table.length - 1) + ' lines from the ' + (ex.method === 'ocr' ? 'photo' : 'PDF') + '. Check the columns below.'); if (pr.notes.length) toast(pr.notes[0]);
+      } else table = /\.xml$/i.test(f.name) ? await readTallyXml(f) : await readTable(f); if (/\.xml$/i.test(f.name) && opts.src === 'generic') { opts.src = 'tally'; how.textContent = SRC.tally.how; } if (table.length < 2) throw new Error('The file has no data rows'); hdr = table[0].map((x) => String(x ?? '')); map = guess(); try { const saved = JSON.parse(localStorage.getItem(sigKey()) || 'null'); if (saved) map = { ...map, ...saved }; } catch { /* ignore */ } result = null; drawMap(); drawRes(); } catch (e) { fail(e); table = null; clear(mapEl); clear(resEl); }
   };
   host.append(h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, '1. Choose your file'), tplBtn), h('div', { class: 'card grid' }, entity === 'products' ? seg(Object.entries(SRC).map(([k, x]) => [k, x.label]), opts.src, (x) => { opts.src = x; how.textContent = SRC[x].how; if (table) { map = guess(); result = null; drawMap(); drawRes(); } }, { full: true, label: 'Where is your list from' }) : null, how, fileIn)), mapEl, optEl, resEl,
     ['sales', 'purchases'].includes(entity) ? h('p', { class: 'cap' }, 'History is posted through the normal engine, so stock and GST are affected. Import opening stock first, and make sure the financial year for each date exists. Original invoice numbers are kept on sales.') : null);

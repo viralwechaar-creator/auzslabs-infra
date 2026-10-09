@@ -81,7 +81,7 @@ PAGES['menu/items']=()=>{
    {label:'Status',get:i=>itemOffNow(i)?pill('Sold out','r'):(i.chOff&&Object.keys(i.chOff).length?pill('Limited','a'):pill('Available','g'))},
    {label:'',get:i=>actBtns(btn('Edit',()=>itemForm(i),'sm2'),btn('Copy',()=>{const c={...i};delete c.id;c.name=i.name+' (copy)';itemForm(c)},'sm2'))}],rows,{empty:'No items yet',emptyText:'Add your first item, or import a CSV.',onRow:i=>itemForm(i)}))]};
 // ---------- read a menu from a PDF or photo (free, on this device) -> draft to check -> items ----------
-const loadDocRead=()=>window.auzDocRead?Promise.resolve():new Promise((res,rej)=>{const s=h('script',{src:'/ds/docread.js?v=1',onload:res,onerror:()=>rej(new Error('Could not load the reader'))});document.head.append(s)});
+const loadDocRead=()=>window.auzDocRead?Promise.resolve():new Promise((res,rej)=>{const s=h('script',{src:'/ds/docread.js?v=2',onload:res,onerror:()=>rej(new Error('Could not load the reader'))});document.head.append(s)});
 function readMenuFile(){pickFile('application/pdf,image/*',async f=>{
  if(f.size>10e6)return toast('Files can be up to 10 MB');
  const msg=h('p',{style:'color:var(--muted)'},'Starting…');let gone=false;
