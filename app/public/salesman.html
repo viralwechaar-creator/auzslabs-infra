@@ -37,6 +37,8 @@ button:disabled{opacity:.5;cursor:default}
   <p class=sub>Upload a logo, set the colours and the business details once — it updates the prospect's website, invoice and bill instantly.</p>
 
   <div id=login class=card>
+    <div id=googleHost></div>
+    <p class=sub style="margin:14px 0 0;text-align:center">or sign in with email</p>
     <label>Email<input id=email type=email autocomplete=username></label>
     <label>Password<input id=password type=password autocomplete=current-password></label>
     <button id=signinBtn>Sign in</button>
@@ -115,6 +117,7 @@ button:disabled{opacity:.5;cursor:default}
 
 <script src=/sb-client.js></script>
 <script src=/config.js></script>
+<script src=/ds/gsignin.js?v=2></script>
 <script>
 const sb = supabase.createClient(CFG.url, CFG.key);
 const $ = (id) => document.getElementById(id);
@@ -135,6 +138,7 @@ async function checkSession() {
   renderTrials();
 }
 checkSession();
+if (window.auzGoogleLink) auzGoogleLink($('googleHost'), 'salesman');
 
 $('signinBtn').onclick = async () => {
   $('loginErr').textContent = '';
