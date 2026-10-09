@@ -21,7 +21,7 @@ import { handleSalon } from './salon.js';
 import { paymentConfig, gstPct, createOrder, verifyWebhookSignature, handleWebhookEvent } from './payments.js';
 import { cashfreeConfigured, startAutorenew, cancelAutorenew, verifyWebhookSignature as verifyCashfreeSignature, handleWebhookEvent as handleCashfreeWebhookEvent } from './cashfree.js';
 import { initErrorTracking, captureError } from './errors.js';
-import { tenantForIcon, tenantSettings, appIcon, appManifest } from './appicon.js';
+import { tenantForIconContext, appIcon, appManifest } from './appicon.js';
 
 initErrorTracking(); // dormant unless SENTRY_DSN is set -- see errors.js
 
@@ -712,20 +712,18 @@ const server = http.createServer(async (req, res) => {
     // AUZslab icon/manifest for a shared address (app., auzsmob., ...) or
     // an unknown subdomain. ----
     if (url.pathname === '/app-manifest.json' && req.method === 'GET') {
-      const tenant = await tenantForIcon(req);
+      const tenant = await tenantForIconContext(req);
       if (!tenant) { res.writeHead(302, { Location: '/manifest.json' }); res.end(); return; }
-      const settings = await tenantSettings(tenant.id);
       res.writeHead(200, { 'Content-Type': 'application/manifest+json; charset=utf-8', 'Cache-Control': 'public, max-age=300' });
-      res.end(JSON.stringify(appManifest(tenant, settings)));
+      res.end(JSON.stringify(appManifest(tenant, tenant.settings)));
       return;
     }
     const appIconMatch = url.pathname.match(/^\/app-icon\/(\d+)\.png$/);
     if (appIconMatch && req.method === 'GET') {
       const size = Math.min(512, Math.max(32, parseInt(appIconMatch[1], 10) || 192));
-      const tenant = await tenantForIcon(req);
+      const tenant = await tenantForIconContext(req);
       if (!tenant) { res.writeHead(302, { Location: '/icon-512.png' }); res.end(); return; }
-      const settings = await tenantSettings(tenant.id);
-      const buf = await appIcon(tenant, settings, size);
+      const buf = await appIcon(tenant, tenant.settings, size);
       res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=300' });
       res.end(buf);
       return;

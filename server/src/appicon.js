@@ -15,21 +15,22 @@ const UPLOAD_ROOT = process.env.UPLOAD_ROOT || '/data/uploads';
 const DOMAIN = process.env.DOMAIN || '';
 const RESERVED = new Set(['app', 'www', 'api', 'auzspos', 'auzsmob', 'auzspay', 'auzsledger', 'auzsqr', 'auzslab', 'hub', 'agents', 'status']);
 
-export async function tenantForIcon(req) {
+// tenants and records both have RLS, and `pool` connects as the `app` role
+// (db.js) -- a bare pool.query against either, with no app.uid set (there is
+// no session at all for this public, unauthenticated request), returns zero
+// rows every single time regardless of what's actually there. Resolved
+// through public_app_icon_context() (db/142) instead, the same "one
+// SECURITY DEFINER call, no session needed" shape public_menu()/
+// public_invoice() already use for exactly this kind of lookup.
+export async function tenantForIconContext(req) {
   const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(':')[0].toLowerCase();
   let slug = null;
   if (DOMAIN && host.endsWith('.' + DOMAIN)) slug = host.slice(0, -(DOMAIN.length + 1));
   if (!slug || slug.includes('.') || RESERVED.has(slug)) return null;
-  const { rows } = await pool.query('select id, slug, name from tenants where slug = $1', [slug]);
-  return rows[0] || null;
-}
-
-export async function tenantSettings(tenantId) {
-  const { rows } = await pool.query(
-    "select data from records where tenant_id = $1 and kind = 'settings' and id = 'settings'",
-    [tenantId],
-  );
-  return rows[0]?.data || {};
+  const { rows } = await pool.query('select public_app_icon_context($1) as ctx', [slug]);
+  const ctx = rows[0]?.ctx;
+  if (!ctx || !ctx.id) return null;
+  return { id: ctx.id, slug, name: ctx.name, settings: ctx.settings || {} };
 }
 
 const hex6 = (v, d) => (/^#[0-9a-fA-F]{6}$/.test(v || '') ? v : d);
@@ -39,7 +40,14 @@ export async function appIcon(tenant, settings, size) {
   const s = settings || {};
   const bg = hex6((s.brand || {}).plum || s.col, '#800020');
   const fg = '#F5F4F2';
-  const logo = typeof s.logo === 'string' && s.logo.startsWith('/uploads/') ? s.logo : null;
+  // settings.logo is saved as an ABSOLUTE url (https://api.<domain>/uploads/...
+  // -- every uploader, console's own uploadImage() and salesman.html's logo
+  // upload alike, builds it as `base + path`), never a bare /uploads/... path
+  // -- so a literal startsWith('/uploads/') on the raw string never matched
+  // anything and every tenant's real logo silently fell through to initials
+  // on their own home-screen icon. Parse out the path instead.
+  const logoPath = (() => { try { return typeof s.logo === 'string' && s.logo ? new URL(s.logo, 'https://x').pathname : null; } catch { return null; } })();
+  const logo = logoPath && logoPath.startsWith('/uploads/') ? logoPath : null;
   const key = [tenant.slug, logo, s.name, bg, size].join('|');
   if (iconCache.has(key)) return iconCache.get(key);
   const sharp = (await import('sharp')).default;
