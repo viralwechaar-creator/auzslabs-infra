@@ -13,14 +13,14 @@
 </script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>AUZsLedger — accounting software that knows your business</title>
-<meta name="description" content="AUZsLedger: double-entry accounting and GST software connected to your sales, purchases and stock, so every number has the business behind it.">
-<link rel="canonical" href="https://auzslab.in/accounting.html">
+<title>AUZsScan — scan, bill and add stock from your phone</title>
+<meta name="description" content="AUZsScan: point your phone at a barcode to bill it with GST, take payment, add stock and send the invoice on WhatsApp. Included with AUZsLedger.">
+<link rel="canonical" href="https://auzslab.in/scan-and-bill.html">
 <meta name="robots" content="index,follow">
 <meta property="og:type" content="website">
-<meta property="og:title" content="AUZsLedger — accounting software that knows your business">
-<meta property="og:description" content="Accounting that understands the business behind the numbers.">
-<meta property="og:url" content="https://auzslab.in/accounting.html">
+<meta property="og:title" content="AUZsScan — scan, bill and add stock from your phone">
+<meta property="og:description" content="Scan a barcode, bill it with GST, send it on WhatsApp.">
+<meta property="og:url" content="https://auzslab.in/scan-and-bill.html">
 <meta property="og:image" content="https://auzslab.in/og-image.png">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="/logo.png">
@@ -71,8 +71,8 @@
             <a href="pos.html" class="nav-sublink"><span>AUZsPOS</span></a>
             <a href="qr-ordering.html" class="nav-sublink"><span>AUZsPOS QR</span></a>
             <a href="payroll.html" class="nav-sublink"><span>AUZsPay</span></a>
-            <a href="accounting.html" class="nav-sublink active"><span>AUZsLedger</span></a>
-            <a href="scan-and-bill.html" class="nav-sublink"><span>AUZsScan</span></a>
+            <a href="accounting.html" class="nav-sublink"><span>AUZsLedger</span></a>
+            <a href="scan-and-bill.html" class="nav-sublink active"><span>AUZsScan</span></a>
             <a href="products.html#slab-mobile" class="nav-sublink"><span>AUZsMob</span></a>
             <a href="website-builder.html" class="nav-sublink"><span>Website Builder</span></a>
             <a href="custom-build.html" class="nav-sublink"><span>Custom build &mdash; on-demand</span></a>
@@ -138,14 +138,14 @@
         <div class="hero-grid">
         <div>
         <div class="uk-kit uk-breadcrumb" style="margin-bottom:18px">
-          <a href="products.html">Products</a><span class="uk-breadcrumb-sep">/</span><span class="uk-breadcrumb-current">Accounting</span>
+          <a href="products.html">Products</a><span class="uk-breadcrumb-sep">/</span><span class="uk-breadcrumb-current">Scan and bill</span>
         </div>
-        <div class="label">AUZsLedger</div>
-        <h1 class="h-1" style="font-size:44px">Accounting that knows<br>the business behind it.</h1>
-        <p class="lede">A real double-entry ledger with GST, connected to your sales, purchases and stock. Every figure traces back to the bill behind it, so the reports tell you what is actually happening.</p>
+        <div class="label">AUZsScan</div>
+        <h1 class="h-1" style="font-size:44px">Point. Scan.<br>Bill it.</h1>
+        <p class="lede">Scan a barcode with your phone and the item is on the bill, with its price and GST. Take payment, post a real invoice, and send it on WhatsApp. Scan stock in the same way when new goods arrive.</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px">
-          <button class="btn btn-primary" id="addCartBtn">Add to cart</button>
-          <a href="https://demo.auzslab.in/accounts.html" class="btn btn-ghost" target="_blank" rel="noopener">Try the demo</a>
+          <a href="accounting.html" class="btn btn-primary">See AUZsLedger</a>
+          <a href="https://demo.auzslab.in/scan.html" class="btn btn-ghost" target="_blank" rel="noopener">Try the demo</a>
         </div>
         </div>
         <div class="hero-art" role="presentation">
@@ -156,10 +156,10 @@
 
       <section class="section tight">
         <div class="card" style="border-color:var(--accent);box-shadow:5px 5px 0 var(--accent)">
-          <span class="tag" style="background:var(--accent);color:#fff;border-color:var(--accent)">In testing &mdash; free for early testers</span>
-          <div class="h-2" style="margin-top:14px;font-size:22px">AUZsLedger is in testing. Join free.</div>
-          <p class="p" style="margin-top:8px">We're still refining AUZsLedger with real businesses. Sign up as an early tester and your first month is free, with the one-time setup fee waived too &mdash; no cost to try it on your own books.</p>
-          <button class="btn btn-primary" data-open-contact style="margin-top:12px">Request free tester access</button>
+          <span class="tag" style="background:var(--accent);color:#fff;border-color:var(--accent)">Included with AUZsLedger</span>
+          <div class="h-2" style="margin-top:14px;font-size:22px">Nothing separate to buy.</div>
+          <p class="p" style="margin-top:8px">AUZsScan runs on your AUZsLedger books, so it has no price of its own. Every scan sale is a real invoice in the same ledger, with the same stock and the same GST.</p>
+          <button class="btn btn-primary" data-open-contact style="margin-top:12px">Ask about AUZsLedger</button>
         </div>
       </section>
 
@@ -167,63 +167,43 @@
         <div class="grid-2">
           <div class="card">
             <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">GST that works itself out</div>
-            <p class="p" style="margin-top:8px">CGST and SGST within your state, IGST across states, reverse charge and input credit. Rates are a setting, and every invoice remembers the rate it used.</p>
+            <div class="h-2" style="margin-top:14px">Your phone is the scanner</div>
+            <p class="p" style="margin-top:8px">Open the camera, point at the barcode, done. It works on Android and iPhone. You can also type a code, or use a Bluetooth or USB scanner.</p>
           </div>
           <div class="card">
             <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">One entry, everywhere</div>
-            <p class="p" style="margin-top:8px">Post an invoice and the ledger, stock, cost of goods, receivable and GST update together, in one step. If anything fails, nothing is saved.</p>
+            <div class="h-2" style="margin-top:14px">A real GST invoice</div>
+            <p class="p" style="margin-top:8px">Each scan fills in the price, HSN and GST from your product. Charging posts a numbered invoice, takes stock down and updates your books in one step.</p>
           </div>
           <div class="card">
             <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Quotes to cash</div>
-            <p class="p" style="margin-top:8px">Quotation, order, challan, invoice, receipt. Part payments, advances and credit notes all settle against the right invoice.</p>
+            <div class="h-2" style="margin-top:14px">A new barcode? Add it once</div>
+            <p class="p" style="margin-top:8px">It asks for the name, price, GST, unit, HSN and stock one time. Next time the scan fills everything in.</p>
           </div>
           <div class="card">
             <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Purchases and suppliers</div>
-            <p class="p" style="margin-top:8px">Bills with supplier invoice numbers, debit notes, payments, and a GSTR-2B match so you claim only the credit you are owed.</p>
+            <div class="h-2" style="margin-top:14px">Scan stock in</div>
+            <p class="p" style="margin-top:8px">Switch to Add stock, scan what arrived, set the quantity and cost, and post it as one stock entry.</p>
           </div>
           <div class="card">
             <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Stock and warehouses</div>
-            <p class="p" style="margin-top:8px">Average cost, batches and expiry, transfers between godowns, stock counts and reorder alerts, tied to the ledger.</p>
+            <div class="h-2" style="margin-top:14px">Cash, UPI, bank or credit</div>
+            <p class="p" style="margin-top:8px">Cash shows the change to give back. A sale on credit needs a named customer, so the balance lands on the right account.</p>
           </div>
           <div class="card">
             <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Bank reconciliation</div>
-            <p class="p" style="margin-top:8px">Import your statement from net banking, match it to your books, and reconcile to zero. Bank charges post in one tap.</p>
+            <div class="h-2" style="margin-top:14px">Send it on WhatsApp</div>
+            <p class="p" style="margin-top:8px">One tap opens WhatsApp with the invoice link ready to send. Or print it, or save it as a PDF.</p>
           </div>
           <div class="card">
             <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Reports that drill down</div>
-            <p class="p" style="margin-top:8px">Trial balance, profit and loss, balance sheet, cash flow, ageing and GST registers. Tap any figure to reach the invoice behind it.</p>
+            <div class="h-2" style="margin-top:14px">Never oversell</div>
+            <p class="p" style="margin-top:8px">If a product is not in stock, the scan says so. Stock can only be sold once.</p>
           </div>
           <div class="card">
             <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Nothing silently changes</div>
-            <p class="p" style="margin-top:8px">Posted entries can't be edited, only reversed. Dates can be locked, every action is logged, and a health check proves the books balance.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Phone and desktop</div>
-            <p class="p" style="margin-top:8px">Built for Apple's design guidelines: a tab bar and sheets on your phone, a sidebar and tables on your computer, light and dark.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Roles and approvals</div>
-            <p class="p" style="margin-top:8px">Owner, manager, cashier or a custom role. Set an approval limit so large bills wait for a manager.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">Scan to bill</div>
-            <p class="p" style="margin-top:8px">Point your phone camera at a barcode to add the item, take cash, UPI or credit, and post a GST invoice. Send it on WhatsApp in one tap. A Bluetooth scanner works too.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Included</span>
-            <div class="h-2" style="margin-top:14px">AUZsScan, the small app</div>
-            <p class="p" style="margin-top:8px">Want only the counter? AUZsScan is a simple screen to scan and sell, and to scan stock in. It uses the same books, so nothing is entered twice.</p>
+            <div class="h-2" style="margin-top:14px">Install it like an app</div>
+            <p class="p" style="margin-top:8px">Add AUZsScan to your home screen. If the connection drops, a sale can be saved on the phone as a draft and sent to your books later.</p>
           </div>
         </div>
       </section>
@@ -233,9 +213,9 @@
       <section class="section">
         <div class="label">Pairs well with</div>
         <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <a href="accounting.html" class="tag">AUZsLedger</a>
           <a href="inventory.html" class="tag">Inventory</a>
-          <a href="payroll.html" class="tag">Payroll</a>
-          <a href="pos.html" class="tag">POS</a>
+          <a href="pos.html" class="tag">AUZsPOS</a>
         </div>
       </section>
 
@@ -243,7 +223,7 @@
 
       <section class="section tight">
         <div class="label">Ready?</div>
-        <h2 class="h-2">Run your books properly, from the first invoice.</h2>
+        <h2 class="h-2">Make the counter faster, from the first scan.</h2>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
           <button class="btn btn-primary" data-open-contact>Let's talk</button>
           <a href="pricing.html" class="btn btn-ghost">See pricing</a>
@@ -404,23 +384,8 @@
 <script src="design-system/ui-kit.js?v=1"></script>
 <script>
 (function () {
-  var KEY = 'accounting';
-  var sb = supabase.createClient(CFG.url, CFG.key);
-  var btn = document.getElementById('addCartBtn');
-  var owned = false;
-  function refresh() {
-    if (owned) { btn.textContent = 'Already included ✓'; btn.disabled = true; return; }
-    btn.disabled = false;
-    var has = AUZcart.has(KEY);
-    btn.textContent = has ? 'Added ✓ — remove' : 'Add to cart';
-  }
-  btn.addEventListener('click', function () { if (owned) return; AUZcart.toggle(KEY); refresh(); });
   var n = AUZcart.get().length;
   document.querySelectorAll('.cart-count').forEach(function (el) { el.textContent = n ? '(' + n + ')' : ''; });
-  refresh();
-  AUZaccount.fetch(sb).then(function (dash) {
-    if (dash && dash.features && dash.features[KEY] === true) { owned = true; refresh(); }
-  });
 })();
 </script>
 <script src="company.js"></script>
