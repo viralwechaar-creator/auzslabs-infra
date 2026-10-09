@@ -7,7 +7,7 @@
 'use strict';
 ICONS.scan = '<path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M7.5 9v6M11 9v6M14.5 9v6M17 9v6"/>';
 
-const SC = { mode: 'sell', cart: [], recv: [], party: null, pay: 'cash', acct: {}, ref: '', got: '', incl: null, phone: '' };
+const SC = { mode: 'sell', cart: [], recv: [], party: null, pay: 'cash', acct: {}, ref: '', got: '', incl: null, phone: '', name: '' };
 const SC_METHOD = { cash: 'Cash', upi: 'UPI', bank: 'NEFT/RTGS' };
 const SC_KEY = 'scan.cart';
 
@@ -55,20 +55,23 @@ function scNewProduct(code, o = {}) {
       return;
     }
     let done = false, incl = true;
-    const name = input({ placeholder: 'Product name', label: 'Name' }), sale = input({ mode: 'decimal', placeholder: '0.00', label: 'Selling price' }), buy = input({ mode: 'decimal', placeholder: '0.00', label: 'Purchase price' });
+    const name = input({ placeholder: 'Product name', label: 'Name' }), sale = input({ mode: 'decimal', placeholder: '0.00', label: 'Selling price' }), buy = input({ mode: 'decimal', placeholder: '0.00', label: 'Purchase price' }), mrp = input({ mode: 'decimal', placeholder: '0.00', label: 'MRP' });
+    mrp.addEventListener('blur', () => { if (!sale.value && N(mrp.value) > 0) sale.value = mrp.value; });
     const gst = selectEl(taxRates().map((r) => [String(r), r + '%']), String(defaultTaxRate())), unit = selectEl(uniq([...UNITS_DEFAULT, ...master('unit')]), 'Nos'), hsn = input({ mode: 'numeric', placeholder: 'Optional', label: 'HSN' });
     const stock = input({ mode: 'decimal', value: '1', label: o.add ? 'Quantity received' : 'Number in stock' });
     const s = sheet({ title: 'New product', closeLabel: 'Cancel', onClose: () => { if (!done) resolve(null); },
       body: h('div', { class: 'grid' }, h('div', { class: 'banner info' }, icon('info', 18), 'Barcode ' + code + ' is new. Add the details once; next time the scan fills everything in.'),
-        field('Name', name), h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Selling price', sale), field('Purchase price', buy)),
+        field('Name', name), h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('MRP', mrp), field('Selling price', sale)),
+        h('div', { style: { display: 'grid', gridTemplateColumns: '1fr', gap: '12px' } }, field('Purchase price', buy)),
         toggleRow('Selling price includes GST', true, (x) => { incl = x; }, 'Most packed goods are priced at MRP, tax included.'),
         h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('GST rate', gst), field('Unit', unit)),
         h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('HSN code', hsn), field(o.add ? 'Quantity received' : 'Number in stock', stock))),
       actions: [{ label: 'Save and continue', primary: true, onclick: async (c) => {
         if (!name.value.trim()) { toast('Enter the product name', { err: true }); return false; }
         if (!(N(sale.value) > 0)) { toast('Enter the selling price', { err: true }); return false; }
+        if (N(mrp.value) > 0 && N(sale.value) > N(mrp.value)) { toast('The selling price is above the MRP', { err: true }); return false; }
         try {
-          const r = await api('acc_save_product', { p: { id: null, name: name.value.trim(), sku: code, barcode: code, category: '', brand: '', unit: unit.value, hsn: hsn.value.trim(), tax_rate: gst.value, tax_inclusive: incl, sale_price: sale.value, purchase_price: buy.value || 0, mrp: 0,
+          const r = await api('acc_save_product', { p: { id: null, name: name.value.trim(), sku: code, barcode: code, category: '', brand: '', unit: unit.value, hsn: hsn.value.trim(), tax_rate: gst.value, tax_inclusive: incl, sale_price: sale.value, purchase_price: buy.value || 0, mrp: mrp.value || 0,
             is_service: false, track_stock: true, track_batch: false, track_serial: false, reorder_level: 0, reorder_qty: 0, notes: '', active: true, price_lists: {} } });
           bust('products'); await products(true);
           const p = (S.products || []).find((x) => x.id === (r && r.id)) || (await scLookup(code))[0];
@@ -132,7 +135,7 @@ function scStart(v) {
       else { const r = await scNewProduct(code, { add: SC.mode === 'add' }); if (r) { p = r.p; extra = r; } }
       if (p) {
         const res = SC.mode === 'add' && extra ? scRecvAdd(p, extra.qty > 0 ? extra.qty : 1) : scAdd(p);
-        toast(res.text, { err: res.bad }); v.refresh(); if (!res.bad) scStart(v); return;
+        auzScanner.beep(!res.bad); toast(res.text, { err: res.bad }); v.refresh(); if (!res.bad) scStart(v); return;
       }
       v.refresh();
     },
@@ -141,13 +144,40 @@ function scStart(v) {
 }
 
 // ---------- editing one line ----------
+// The first block changes this bill only. "Product prices" changes the saved product itself (selling price, purchase price, MRP), for
+// every future scan too, even for a product saved long ago. It needs the same permission as editing the product under Products.
+async function scSaveProductPrices(p, sale, buy, mrp) {
+  const r = await api('acc_save_product', { p: { id: p.id, name: p.name, sku: p.sku, barcode: p.barcode || '', category: p.category || '', brand: p.brand || '', unit: p.unit, hsn: p.hsn || '', tax_rate: p.tax_rate, tax_inclusive: p.tax_inclusive,
+    sale_price: sale, purchase_price: buy, mrp, is_service: p.is_service, track_stock: p.track_stock, track_batch: p.track_batch, track_serial: p.track_serial, reorder_level: p.reorder_level || 0, reorder_qty: p.reorder_qty || 0, notes: p.notes || '', active: p.active !== false, price_lists: p.price_lists || {} } });
+  bust('products'); await products(true);
+  return (S.products || []).find((x) => x.id === p.id) || p;
+}
 function scLineSheet(l, done) {
   const sell = SC.mode === 'sell', q = input({ mode: 'decimal', value: l.qty, label: 'Quantity' }), r = input({ mode: 'decimal', value: sell ? l.rate : l.cost, label: sell ? 'Price' : 'Cost' }), d = input({ mode: 'decimal', value: l.disc || '', placeholder: '0', label: 'Discount' });
   let dt = l.dtype;
-  const list = sell ? SC.cart : SC.recv;
-  const body = h('div', { class: 'grid' }, h('div', { class: 'muted small' }, l.p.sku + (l.p.hsn ? ' · HSN ' + l.p.hsn : '') + ' · GST ' + l.p.tax_rate + '%' + (l.p.is_service ? '' : ' · ' + qty(l.p.stock) + ' ' + l.p.unit + ' in stock')),
-    h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Quantity', q), field(sell ? 'Price each' : 'Cost each', r)),
-    sell ? h('div', { class: 'grid' }, field('Discount on this item', d), seg([['pct', 'Percent'], ['amt', 'Rupees']], dt, (x) => { dt = x; }, { full: true })) : null);
+  const list = sell ? SC.cart : SC.recv, p = l.p, canEdit = can('acc_inventory');
+  const mrpNote = h('div', { class: 'small', style: { fontWeight: 600, minHeight: '18px' } });
+  const showMrp = () => { const m = Number(p.mrp) || 0, x = N(r.value); mrpNote.textContent = m > 0 ? 'MRP ' + inr(m) + (sell && x > m ? '  ·  above MRP' : '') : ''; mrpNote.style.color = m > 0 && sell && x > m ? 'var(--red, #c0392b)' : ''; };
+  r.addEventListener('input', showMrp); showMrp();
+  const ps = input({ mode: 'decimal', value: Number(p.sale_price) || '', placeholder: '0.00', label: 'Selling price' }), pb = input({ mode: 'decimal', value: Number(p.purchase_price) || '', placeholder: '0.00', label: 'Purchase price' }), pm = input({ mode: 'decimal', value: Number(p.mrp) || '', placeholder: '0.00', label: 'MRP' });
+  const body = h('div', { class: 'grid' }, h('div', { class: 'muted small' }, p.sku + (p.hsn ? ' · HSN ' + p.hsn : '') + ' · GST ' + p.tax_rate + '%' + (p.is_service ? '' : ' · ' + qty(p.stock) + ' ' + p.unit + ' in stock')),
+    h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Quantity', q), field(sell ? 'Price each (this bill)' : 'Cost each', r)), mrpNote,
+    sell ? h('div', { class: 'grid' }, field('Discount on this item', d), seg([['pct', 'Percent'], ['amt', 'Rupees']], dt, (x) => { dt = x; }, { full: true })) : null,
+    canEdit ? h('div', { class: 'grid', style: { gap: '10px', borderTop: '1px solid var(--sep, #ddd)', paddingTop: '12px' } }, h('h3', null, 'Product prices'),
+      h('p', { class: 'small muted' }, 'Change the saved prices of this product for every future bill. This is not limited to this bill.'),
+      h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' } }, field('Selling', ps), field('Purchase', pb), field('MRP', pm)),
+      h('button', { class: 'btn', type: 'button', onclick: async (e) => {
+        if (!(N(ps.value) >= 0) || !(N(pb.value) >= 0) || !(N(pm.value) >= 0)) return toast('Enter valid prices', { err: true });
+        if (N(pm.value) > 0 && N(ps.value) > N(pm.value)) return toast('The selling price is above the MRP', { err: true });
+        const btn = e.currentTarget; btn.disabled = true;
+        try {
+          const old = Number(p.sale_price), np = await scSaveProductPrices(p, ps.value || 0, pb.value || 0, pm.value || 0);
+          l.p = np; SC.cart.concat(SC.recv).forEach((x) => { if (x.p.id === np.id) x.p = np; });
+          if (sell && N(l.rate) === old) { l.rate = String(np.sale_price); r.value = l.rate; }
+          if (!sell && Number(np.purchase_price) > 0) { l.cost = String(np.purchase_price); r.value = l.cost; }
+          scPersist(); showMrp(); toast('Product prices saved');
+        } catch (er) { fail(er); } finally { btn.disabled = false; }
+      } }, 'Save product prices')) : null);
   sheet({ title: l.p.name, closeLabel: 'Cancel', body, actions: [
     { label: 'Save', primary: true, onclick: (c) => {
       const nq = N(q.value); if (!(nq > 0)) { toast('Quantity must be more than zero', { err: true }); return false; }
@@ -172,13 +202,24 @@ function scPayload(post, C) {
   return { id: null, doc_type: 'invoice', doc_date: today(), due_date: null, party_id: SC.party ? SC.party.id : null, branch_id: S.branches.length === 1 ? S.branches[0].id : null, warehouse_id: null, place_of_supply: null, reverse_charge: false, itc_eligible: true,
     price_includes_tax: !!SC.incl, supplier_ref: null, supplier_ref_date: null, ref_doc_id: null, source_doc_id: null, notes: '', terms: '', roundoff: null, lines, payments, post };
 }
-function scReset() { SC.cart = []; SC.recv = []; SC.ref = ''; SC.got = ''; SC.incl = null; SC.phone = ''; SC.pay = 'cash'; scPersist(); }
+function scReset() { SC.cart = []; SC.recv = []; SC.ref = ''; SC.got = ''; SC.incl = null; SC.phone = ''; SC.name = ''; SC.pay = 'cash'; scPersist(); }
+// A walk-in whose name was typed becomes a real customer (found by phone number if we already know it), so the bill carries the name,
+// a credit sale has someone to owe it, and the same person is found next time.
+async function scEnsureParty() {
+  const nm = SC.name.trim(); if (!nm || (SC.party && !SC.party.is_walkin)) return;
+  const ph = SC.phone.replace(/\D/g, '').slice(-10);
+  let c = ph.length >= 8 ? (S.parties || []).find((x) => x.kind !== 'supplier' && String(x.phone || '').replace(/\D/g, '').slice(-10) === ph && x.active !== false) : null;
+  if (!c) { const r = await api('acc_save_party', { p: { id: null, kind: 'customer', name: nm, phone: SC.phone.trim(), reg_type: 'unregistered' } }); bust('parties'); const list = await parties(true); c = list.find((x) => x.id === r.id); }
+  if (c) SC.party = c;
+}
 async function scCharge(v, post) {
   if (!SC.cart.length) return toast('Scan or add an item first', { err: true });
   const C = scTotals();
   if (post && C.total <= 0) return toast('The total must be more than zero', { err: true });
-  if (post && SC.pay === 'credit' && (!SC.party || SC.party.is_walkin)) return toast('Choose a customer for a sale on credit', { err: true });
+  if (post && SC.pay === 'credit' && (!SC.party || SC.party.is_walkin) && !SC.name.trim()) return toast('Enter the customer’s name for a sale on credit', { err: true });
   if (post && SC.pay !== 'credit' && !(SC.acct[SC.pay] || scPayAccounts(SC.pay)[0])) return toast('No cash or bank account is set up. Add one in Accounting, Settings.', { err: true });
+  if (offlineNow() && SC.name.trim() && (!SC.party || SC.party.is_walkin)) toast('Offline: the bill will be saved without the name ' + SC.name.trim() + '. Add it after you reconnect.');
+  if (!offlineNow()) { try { await scEnsureParty(); } catch (e) { return fail(e); } }
   const payload = scPayload(post, C);
   if (offlineNow()) {
     if (post) return toast('Posting needs a connection. Save it as a draft now and post it when you are back online.', { err: true });
@@ -261,12 +302,12 @@ page('scan', {
     const addFromText = async (q) => {
       q = q.trim(); if (!q) return;
       const m = await scLookup(q);
-      if (m.length === 1) { const r = scAdd(m[0]); toast(r.text, { err: r.bad }); box.input.value = ''; find(''); v.refresh(); return; }
+      if (m.length === 1) { const r = scAdd(m[0]); auzScanner.beep(!r.bad); toast(r.text, { err: r.bad }); box.input.value = ''; find(''); v.refresh(); return; }
       if (m.length > 1) { const p = await scChoose(m, q); if (p) { const r = scAdd(p); toast(r.text, { err: r.bad }); box.input.value = ''; v.refresh(); } return; }
       const list = textMatches(q);
-      if (list.length === 1) { const r = scAdd(list[0]); toast(r.text, { err: r.bad }); box.input.value = ''; find(''); v.refresh(); return; }
+      if (list.length === 1) { const r = scAdd(list[0]); auzScanner.beep(!r.bad); toast(r.text, { err: r.bad }); box.input.value = ''; find(''); v.refresh(); return; }
       if (/^[A-Za-z0-9\-_.\/]{5,}$/.test(q) && !list.length) { const r = await scNewProduct(q, { add: !sell }); if (r) { const res = !sell ? scRecvAdd(r.p, r.qty > 0 ? r.qty : 1) : scAdd(r.p); toast(res.text, { err: res.bad }); box.input.value = ''; v.refresh(); } return; }
-      if (!list.length) toast('No product matches “' + q + '”', { err: true });
+      if (!list.length) { auzScanner.beep(false); toast('No product matches “' + q + '”', { err: true }); }
     };
     const textMatches = (q) => { const t = q.toLowerCase(); return (S.products || []).filter((p) => p.active && (p.name.toLowerCase().includes(t) || p.sku.toLowerCase().includes(t) || String(p.barcode || '') === q)).slice(0, 8); };
     const find = (q) => {
@@ -288,7 +329,7 @@ page('scan', {
         h('button', { class: 'btn icon', type: 'button', 'aria-label': 'One more of ' + l.p.name, onclick: () => { const r = scAdd(l.p); if (r.bad) toast(r.text, { err: true }); v.refresh(); } }, icon('plus', 18)));
       const line = sell ? Math.max(N(l.rate) * l.qty - (l.dtype === 'pct' ? N(l.rate) * l.qty * N(l.disc) / 100 : N(l.disc)), 0) : N(l.cost) * l.qty;
       lines.append(h('div', { class: 'li scan-line' }, h('div', { class: 'grow', onclick: () => scLineSheet(l, () => v.refresh()), style: { cursor: 'pointer' } }, h('div', { class: 't' }, l.p.name),
-        h('div', { class: 's' }, sell ? inr(l.rate) + ' each · GST ' + l.p.tax_rate + '%' + (N(l.disc) > 0 ? ' · ' + (l.dtype === 'pct' ? l.disc + '% off' : inr(l.disc) + ' off') : '') : (N(l.cost) > 0 ? 'Cost ' + inr(l.cost) + ' each' : 'Cost not entered'))),
+        h('div', { class: 's' }, sell ? inr(l.rate) + ' each' + (Number(l.p.mrp) > 0 ? ' · MRP ' + inr(l.p.mrp) : '') + ' · GST ' + l.p.tax_rate + '%' + (N(l.disc) > 0 ? ' · ' + (l.dtype === 'pct' ? l.disc + '% off' : inr(l.disc) + ' off') : '') : (N(l.cost) > 0 ? 'Cost ' + inr(l.cost) + ' each' : 'Cost not entered'))),
         stepper, h('div', { class: 'v scan-amt' }, h('div', { class: 't' }, inr(line)))));
     });
     const listCard = rows.length ? lines : empty('scan', 'Nothing scanned yet', 'Tap the button above and point the camera at a barcode. You can also type a name or code, or use a Bluetooth scanner.');
@@ -303,7 +344,7 @@ page('scan', {
         h('div', { style: { borderTop: '1px solid var(--sep, #ddd)' } }), trow('Total', inr(C.total), true), toggleRow('Prices include GST', !!SC.incl, (x) => { SC.incl = x; scPersist(); v.refresh(); }, S.org.reg_type === 'regular' ? 'Turn on when the price you scan already has the tax in it.' : 'Your registration type charges no GST.'),
         Object.keys(C.byRate).length && !C.zero ? h('details', null, h('summary', { class: 'small muted' }, 'GST by rate'), h('table', { class: 'small', style: { width: '100%', marginTop: '6px' } }, h('tbody', null, Object.entries(C.byRate).map(([r, x]) => h('tr', null, h('td', null, r + '%'), h('td', { class: 'r num' }, inr(x.taxable)), h('td', { class: 'r num' }, inr(x.tax))))))) : null);
       const cust = h('button', { class: 'li card', type: 'button', style: { textAlign: 'left' }, onclick: async () => { const p = await pickParty('customer', SC.party && SC.party.id); if (p) { SC.party = p; if (SC.pay === 'credit' && p.is_walkin) SC.pay = 'cash'; v.refresh(); } } },
-        h('span', { class: 'tile gray' }, icon('user', 18)), h('div', { class: 'grow' }, h('div', { class: 't' }, SC.party && !SC.party.is_walkin ? SC.party.name : 'Walk-in customer'), h('div', { class: 's' }, SC.party && !SC.party.is_walkin ? [SC.party.phone, SC.party.gstin].filter(Boolean).join(' · ') || 'Tap to change' : 'Tap to choose a customer')), h('span', { class: 'chev' }, icon('chevR', 18)));
+        h('span', { class: 'tile gray' }, icon('user', 18)), h('div', { class: 'grow' }, h('div', { class: 't' }, SC.party && !SC.party.is_walkin ? SC.party.name : 'Walk-in customer'), h('div', { class: 's' }, SC.party && !SC.party.is_walkin ? [SC.party.phone, SC.party.gstin].filter(Boolean).join(' · ') || 'Tap to change' : 'Tap to choose an existing customer')), h('span', { class: 'chev' }, icon('chevR', 18)));
       const accts = SC.pay === 'credit' ? [] : scPayAccounts(SC.pay);
       if (accts.length && !SC.acct[SC.pay]) SC.acct[SC.pay] = accts[0].id;
       const got = input({ mode: 'decimal', value: SC.got, placeholder: 'Amount handed over', label: 'Cash received', oninput: (e) => { SC.got = e.target.value; const g = N(SC.got); chg.textContent = g > 0 ? (g >= C.total ? 'Change to give: ' + inr(r2(g - C.total)) : 'Short by ' + inr(r2(C.total - g))) : ''; } });
@@ -313,8 +354,8 @@ page('scan', {
         SC.pay === 'cash' ? h('div', { class: 'grid', style: { gap: '6px' } }, field('Cash received (optional)', got), chg) : null,
         SC.pay === 'upi' || SC.pay === 'bank' ? input({ value: SC.ref, placeholder: 'Reference or UTR (optional)', label: 'Reference', oninput: (e) => { SC.ref = e.target.value; } }) : null,
         accts.length > 1 ? field('Received in', selectEl(accts.map((a) => [a.id, a.name]), SC.acct[SC.pay], { onchange: (e) => { SC.acct[SC.pay] = e.target.value; } })) : null,
-        SC.pay === 'credit' ? h('p', { class: 'small muted' }, SC.party && !SC.party.is_walkin ? inr(C.total) + ' will be added to what ' + SC.party.name + ' owes you.' : 'Choose a customer above. A sale on credit needs a name.') : null,
-        !SC.party || SC.party.is_walkin ? input({ type: 'tel', mode: 'tel', value: SC.phone, placeholder: 'Customer’s WhatsApp number (optional)', label: 'WhatsApp number', oninput: (e) => { SC.phone = e.target.value; } }) : null);
+        SC.pay === 'credit' ? h('p', { class: 'small muted' }, SC.party && !SC.party.is_walkin ? inr(C.total) + ' will be added to what ' + SC.party.name + ' owes you.' : 'Enter the customer’s name below, or choose a customer above. A sale on credit needs a name.') : null,
+        !SC.party || SC.party.is_walkin ? h('div', { class: 'grid', style: { gap: '10px' } }, field('Customer name', input({ value: SC.name, placeholder: 'Customer’s name', label: 'Customer name', oninput: (e) => { SC.name = e.target.value; } }), 'Optional for cash sales. Saved as a customer so you find them next time.'), field('WhatsApp number', input({ type: 'tel', mode: 'tel', value: SC.phone, placeholder: 'Customer’s WhatsApp number (optional)', label: 'WhatsApp number', oninput: (e) => { SC.phone = e.target.value; } }))) : null);
       side = [cust, totals, pay];
     } else {
       const val = SC.recv.reduce((s, l) => s + N(l.cost) * l.qty, 0);

@@ -146,6 +146,33 @@ export default async function run({ browser, stack }) {
   await s.check('No script errors in AUZsLedger', async () => { const bad = own.errs.filter((e) => !/sentry|ERR_FAILED|ERR_ABORTED|net::|Failed to fetch/i.test(e)); assert(!bad.length, bad.slice(0, 3).join(' | ')); });
   await own.c.close();
 
+  await s.check('MRP, changing the saved prices of an old product from the scan line, a typed customer name becoming a real customer, and the beep', async () => {
+    const { c, page } = await openPage('/accounts.html', USERS.acctOwner, { w: 1280, h: 900 });
+    await toScan(page);
+    // the beep: wake the audio and count the oscillators the page makes
+    const beeps = await page.evaluate(async () => { let n = 0; const AC = window.AudioContext || window.webkitAudioContext, orig = AC.prototype.createOscillator; AC.prototype.createOscillator = function () { n++; return orig.call(this); }; await new Promise((r) => setTimeout(r, 50)); document.body.click(); auzScanner.beep(true); auzScanner.beep(false); return n; });
+    assert(beeps >= 3, 'beep did not play: ' + beeps);
+    await typeCode(page, '4006381333931');
+    assert(await page.locator('.scan-line', { hasText: 'Camera Pen' }).count() === 1, 'pen not in bill');
+    await page.locator('.scan-line .grow').first().click(); await page.waitForSelector('.sheet input', { timeout: 5000 });
+    const sheet = page.locator('.sheet').last();
+    const ins = sheet.locator('input'); // quantity, price, discount, selling, purchase, mrp
+    await ins.nth(3).fill('55'); await ins.nth(4).fill('25'); await ins.nth(5).fill('60');
+    await sheet.locator('button', { hasText: 'Save product prices' }).click(); await page.waitForTimeout(900);
+    const row = (await rpc(stack, 'acc_list_products', { limit: 500 }, owner)).data.data.rows.find((p) => p.id === pen);
+    assert(Number(row.sale_price) === 55 && Number(row.purchase_price) === 25 && Number(row.mrp) === 60, 'saved prices: ' + JSON.stringify([row.sale_price, row.purchase_price, row.mrp]));
+    assert(Number(await sheet.locator('input').nth(1).inputValue()) === 55, 'this bill price did not follow the new selling price');
+    await sheet.locator('button', { hasText: /^Save$/ }).click(); await page.waitForTimeout(400);
+    assert(/MRP/.test(await page.locator('.scan-line').first().innerText()), 'MRP not shown on the line');
+    await page.locator('input[placeholder="Customer’s name"]').fill('Ravi Kumar'); await page.locator('input[placeholder^="Customer’s WhatsApp"]').fill('9876543210');
+    await page.locator('.scan-dock .btn.fill').click(); await page.locator('.alert button, .dialog button', { hasText: 'Charge' }).last().click({ timeout: 5000 }).catch(() => {});
+    await page.waitForSelector('text=Paid', { timeout: 15000 });
+    const party = await q("select name, phone from acc_parties where tenant_id=$1 and name='Ravi Kumar'", [tid]);
+    assert(party.length === 1 && /9876543210/.test(party[0].phone), 'customer not created: ' + JSON.stringify(party));
+    const inv = await q("select party_id from acc_documents where tenant_id=$1 and doc_type='invoice' order by created_at desc limit 1", [tid]);
+    assert(inv[0].party_id, 'invoice has no customer');
+    await c.close();
+  });
   await s.check('The standalone AUZsScan app (scan.html): short menu, scan screen first, installable manifest, no horizontal scroll on a phone', async () => {
     const a = await openPage('/scan.html', USERS.acctOwner);
     await a.page.waitForSelector('.scan-hero', { timeout: 15000 });
