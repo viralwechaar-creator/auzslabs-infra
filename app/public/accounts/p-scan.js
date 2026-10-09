@@ -51,17 +51,17 @@ function scChoose(matches, code) {
 function scNewProduct(code, o = {}) {
   return new Promise((resolve) => {
     if (!can('acc_inventory')) {
-      alertBox({ title: 'Not in your products', message: 'The code ' + code + ' is not a product yet, and your role cannot add products. Ask the owner to add it (Products, then New product).', cancel: false, confirm: 'OK' }).then(() => resolve(null));
+      alertBox({ title: 'Not in your products', message: (code ? 'The code ' + code + ' is not a product yet, and your role cannot add products.' : 'Your role cannot add products.') + ' Ask the owner to add it (Products, then New product).', cancel: false, confirm: 'OK' }).then(() => resolve(null));
       return;
     }
     let done = false, incl = true;
-    const name = input({ placeholder: 'Product name', label: 'Name' }), sale = input({ mode: 'decimal', placeholder: '0.00', label: 'Selling price' }), buy = input({ mode: 'decimal', placeholder: '0.00', label: 'Purchase price' }), mrp = input({ mode: 'decimal', placeholder: '0.00', label: 'MRP' });
+    const name = input({ placeholder: 'Product name', label: 'Name', value: o.name || '' }), bc = code ? null : input({ placeholder: 'Optional', label: 'Barcode', mode: 'numeric' }), sale = input({ mode: 'decimal', placeholder: '0.00', label: 'Selling price' }), buy = input({ mode: 'decimal', placeholder: '0.00', label: 'Purchase price' }), mrp = input({ mode: 'decimal', placeholder: '0.00', label: 'MRP' });
     mrp.addEventListener('blur', () => { if (!sale.value && N(mrp.value) > 0) sale.value = mrp.value; });
     const gst = selectEl(taxRates().map((r) => [String(r), r + '%']), String(defaultTaxRate())), unit = selectEl(uniq([...UNITS_DEFAULT, ...master('unit')]), 'Nos'), hsn = input({ mode: 'numeric', placeholder: 'Optional', label: 'HSN' });
     const stock = input({ mode: 'decimal', value: '1', label: o.add ? 'Quantity received' : 'Number in stock' });
     const s = sheet({ title: 'New product', closeLabel: 'Cancel', onClose: () => { if (!done) resolve(null); },
-      body: h('div', { class: 'grid' }, h('div', { class: 'banner info' }, icon('info', 18), 'Barcode ' + code + ' is new. Add the details once; next time the scan fills everything in.'),
-        field('Name', name), h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('MRP', mrp), field('Selling price', sale)),
+      body: h('div', { class: 'grid' }, h('div', { class: 'banner info' }, icon('info', 18), code ? 'Barcode ' + code + ' is new. Add the details once; next time the scan fills everything in.' : 'Add the product once. It is saved to your products and added to this bill.'),
+        field('Name', name), bc ? field('Barcode (if it has one)', bc) : null, h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('MRP', mrp), field('Selling price', sale)),
         h('div', { style: { display: 'grid', gridTemplateColumns: '1fr', gap: '12px' } }, field('Purchase price', buy)),
         toggleRow('Selling price includes GST', true, (x) => { incl = x; }, 'Most packed goods are priced at MRP, tax included.'),
         h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('GST rate', gst), field('Unit', unit)),
@@ -70,11 +70,12 @@ function scNewProduct(code, o = {}) {
         if (!name.value.trim()) { toast('Enter the product name', { err: true }); return false; }
         if (!(N(sale.value) > 0)) { toast('Enter the selling price', { err: true }); return false; }
         if (N(mrp.value) > 0 && N(sale.value) > N(mrp.value)) { toast('The selling price is above the MRP', { err: true }); return false; }
+        if (!o.add && N(stock.value) > 0 && !(N(buy.value) > 0)) { toast('Enter the purchase price so the stock can be valued, or set the number in stock to 0', { err: true }); return false; }
         try {
-          const r = await api('acc_save_product', { p: { id: null, name: name.value.trim(), sku: code, barcode: code, category: '', brand: '', unit: unit.value, hsn: hsn.value.trim(), tax_rate: gst.value, tax_inclusive: incl, sale_price: sale.value, purchase_price: buy.value || 0, mrp: mrp.value || 0,
+          const r = await api('acc_save_product', { p: { id: null, name: name.value.trim(), sku: code || ('NP-' + Date.now().toString(36).toUpperCase()), barcode: code || (bc ? bc.value.trim() : ''), category: '', brand: '', unit: unit.value, hsn: hsn.value.trim(), tax_rate: gst.value, tax_inclusive: incl, sale_price: sale.value, purchase_price: buy.value || 0, mrp: mrp.value || 0,
             is_service: false, track_stock: true, track_batch: false, track_serial: false, reorder_level: 0, reorder_qty: 0, notes: '', active: true, price_lists: {} } });
           bust('products'); await products(true);
-          const p = (S.products || []).find((x) => x.id === (r && r.id)) || (await scLookup(code))[0];
+          const p = (S.products || []).find((x) => x.id === (r && r.id)) || (code ? (await scLookup(code))[0] : null);
           if (!p) throw new Error('The product was saved but could not be loaded. Search for it by name.');
           const q = N(stock.value);
           if (!o.add && q > 0) {
@@ -300,7 +301,8 @@ page('scan', {
     const sell = SC.mode === 'sell';
 
     const hits = h('div', { class: 'list' }), box = searchField('Type a name or barcode', (q) => find(q));
-    const searchRow = h('div', { class: 'grid', style: { gap: '8px' } }, box, hits);
+    const newFromBill = async (nm) => { const r = await scNewProduct('', { add: !sell, name: nm || '' }); if (r) { const res = !sell ? scBad(scRecvAdd(r.p, r.qty > 0 ? r.qty : 1)) : scAdd(r.p); toast(res.text, { err: res.bad }); box.input.value = ''; clear(hits); v.refresh(); } };
+    const searchRow = h('div', { class: 'grid', style: { gap: '8px' } }, box, hits, can('acc_inventory') ? h('button', { class: 'btn', type: 'button', onclick: () => newFromBill(box.input.value.trim()) }, icon('plus', 18), 'New product') : null);
     const addFromText = async (q) => {
       q = q.trim(); if (!q) return;
       auzScanner.beep(true);                                  // a typed or Bluetooth-scanned code beeps the moment it arrives
@@ -315,6 +317,7 @@ page('scan', {
     const textMatches = (q) => { const t = q.toLowerCase(); return (S.products || []).filter((p) => p.active && (p.name.toLowerCase().includes(t) || p.sku.toLowerCase().includes(t) || String(p.barcode || '') === q)).slice(0, 8); };
     const find = (q) => {
       clear(hits); q = (q || '').trim(); if (q.length < 2) return;
+      if (can('acc_inventory')) hits.append(liRow({ title: 'New product: ' + q, sub: 'Not in your list? Create it and add it to this bill', icon: 'plus', onclick: () => newFromBill(q) }));
       textMatches(q).forEach((p) => hits.append(liRow({ title: p.name, sub: [p.sku, p.is_service || !p.track_stock ? 'Service' : qty(p.stock) + ' ' + p.unit + ' in stock'].join(' · '), value: inr(sell ? p.sale_price : p.purchase_price), onclick: () => { const r = scAdd(p); toast(r.text, { err: r.bad }); box.input.value = ''; clear(hits); v.refresh(); } })));
     };
     box.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addFromText(box.input.value); } });     // a Bluetooth/USB scanner types the code and presses Enter

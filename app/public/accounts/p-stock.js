@@ -11,18 +11,29 @@ page('products', {
     let q = '', cat = v.q.get('cat') || '', low = v.q.get('low') === '1', type = '';
     const host = h('div'), bulk = h('div', { class: 'row sp hidden banner info' });
     const cats = uniq(rows.map((r) => r.category).filter(Boolean)).sort();
+    const cur = { list: [], dv: null };
     const draw = () => {
       const list = rows.filter((p) => (p.active || type === 'inactive') && (type !== 'inactive' || !p.active) && (!q || p.name.toLowerCase().includes(q.toLowerCase()) || p.sku.toLowerCase().includes(q.toLowerCase()) || (p.barcode || '') === q || (p.hsn || '') === q) && (!cat || p.category === cat) && (!low || (p.track_stock && !p.is_service && Number(p.reorder_level) > 0 && Number(p.stock) <= Number(p.reorder_level))) && (type === 'goods' ? !p.is_service : type === 'services' ? p.is_service : true));
       clear(host);
       if (!list.length) { host.append(empty('box', rows.length ? 'No matches' : 'No products yet', rows.length ? 'Try another search or filter.' : 'Add the things you sell and buy, goods or services.', writable && !rows.length ? h('button', { class: 'btn fill', onclick: () => productSheet(null, () => v.refresh()) }, 'New product') : null)); return; }
-      host.append(dataView([
+      const dv = dataView([
         { key: 'name', label: 'Item', title: true, render: (p) => h('div', null, h('div', { class: 't' }, p.name), h('div', { class: 's' }, [p.sku, p.category].filter(Boolean).join(' · '))) },
         { key: 'hsn', label: 'HSN/SAC', render: (p) => p.hsn || '' }, { key: 'tax_rate', label: 'GST', r: true, render: (p) => p.tax_rate + '%' },
         { key: 'sale_price', label: 'Sale price', r: true, render: (p) => money(p.sale_price), sortVal: (p) => Number(p.sale_price) }, { key: 'avg_cost', label: 'Avg cost', r: true, render: (p) => (p.is_service ? '' : money(p.avg_cost)), sortVal: (p) => Number(p.avg_cost) },
         { key: 'stock', label: 'In stock', r: true, value: true, sortVal: (p) => Number(p.stock), render: (p) => (p.is_service || !p.track_stock ? h('span', { class: 'muted' }, 'Service') : h('span', null, qty(p.stock) + ' ' + p.unit, Number(p.reorder_level) > 0 && Number(p.stock) <= Number(p.reorder_level) ? h('div', null, badge('Low stock', 'orange')) : null)) },
         { key: 'stock_value', label: 'Value', r: true, hideMobile: true, render: (p) => (p.is_service ? '' : money(p.stock_value)), sortVal: (p) => Number(p.stock_value) },
         { key: 'price', label: '', sub: true, hideDesk: true, render: (p) => inr(p.sale_price) + ' · GST ' + p.tax_rate + '%' },
-      ], list, { onRow: (p) => go('product/' + p.id), selectable: writable, onSelect: (s) => { bulk.classList.toggle('hidden', !s.size); bulk.replaceChildren(h('span', null, s.size + ' selected'), h('button', { class: 'btn sm fill', onclick: () => bulkProducts([...s], () => v.refresh()) }, 'Edit selected')); } }));
+      ], list, { onRow: (p) => go('product/' + p.id), selectable: writable, onSelect: (s) => barUpdate(s) });
+      cur.list = list; cur.dv = dv; host.append(dv); if (writable) barUpdate(dv._sel);
+    };
+    const barUpdate = (s) => {
+      bulk.classList.remove('hidden');
+      bulk.replaceChildren(h('span', null, s.size ? s.size + ' selected' : 'Select products to edit or delete'),
+        h('div', { class: 'row wrap', style: { gap: '8px' } },
+          h('button', { class: 'btn sm', onclick: () => { cur.list.forEach((p) => s.add(p.id)); cur.dv._repaint(); barUpdate(s); } }, 'Select all (' + cur.list.length + ')'),
+          s.size ? h('button', { class: 'btn sm', onclick: () => { s.clear(); cur.dv._repaint(); barUpdate(s); } }, 'Clear') : null,
+          s.size ? h('button', { class: 'btn sm fill', onclick: () => bulkProducts([...s], () => v.refresh()) }, 'Edit selected') : null,
+          s.size ? h('button', { class: 'btn sm', style: { color: 'var(--red)' }, onclick: () => deleteProducts([...s], () => v.refresh()) }, 'Delete selected') : null));
     };
     const val = rows.reduce((s, p) => s + Number(p.stock_value), 0);
     v.root.append(h('div', { class: 'kpis k3' }, kpi('Items', String(rows.filter((p) => p.active).length) + (S.productsPartial ? '+' : ''), rows.filter((p) => p.is_service).length + ' services'), kpi('Stock value', inr(val, 0), 'At average cost', () => go('stock')), kpi('Low on stock', String(rows.filter((p) => p.track_stock && !p.is_service && Number(p.reorder_level) > 0 && Number(p.stock) <= Number(p.reorder_level)).length), 'At or below reorder level', () => go('products?low=1'))),
@@ -33,6 +44,15 @@ page('products', {
   },
 });
 
+async function deleteProducts(ids, done) {
+  if (!(await confirmBox('Delete ' + ids.length + ' product' + (ids.length === 1 ? '' : 's') + '?', 'Products that were never used are deleted for good. Any that already appear on a bill or in stock are switched off (hidden from selling) instead, so your books stay correct.', 'Delete'))) return;
+  try {
+    const r = await api('acc_delete_products', { p_ids: ids });
+    bust('products'); await products(true);
+    toast((r.deleted ? r.deleted + ' deleted' : '') + (r.deleted && r.deactivated ? ', ' : '') + (r.deactivated ? r.deactivated + ' switched off (already used)' : '') || 'Nothing changed');
+    done();
+  } catch (e) { fail(e); }
+}
 function bulkProducts(ids, done) {
   const gst = selectEl([['', 'No change'], ...taxRates().map((r) => [String(r), r + '%'])], ''), hsn = input({ placeholder: 'No change' }), cat = input({ placeholder: 'No change' }), sp = input({ type: 'number', placeholder: 'e.g. 5 or -10', mode: 'decimal' }), pp = input({ type: 'number', placeholder: 'e.g. 5', mode: 'decimal' }), st = selectEl([['', 'No change'], ['true', 'Active'], ['false', 'Inactive']], '');
   sheet({ title: 'Edit ' + ids.length + ' items', body: h('div', { class: 'grid' }, field('GST rate', gst), field('HSN/SAC code', hsn), field('Category', cat), field('Change sale prices by %', sp, 'Positive raises, negative lowers.'), field('Change purchase prices by %', pp), field('Status', st)), actions: [{ label: 'Apply', primary: true, onclick: async (c) => {

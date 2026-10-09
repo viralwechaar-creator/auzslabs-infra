@@ -302,6 +302,25 @@ export default async function run({ browser, stack }) {
     const hit = await page.evaluate(() => searchProducts('Zbig Item 02599')); assert(hit.length === 1 && hit[0].sku === 'BIG-02599', 'server search: ' + JSON.stringify(hit.map((x) => x.sku)));
     await c.close();
   });
+  await s.check('Products: Select all, Delete selected (unused deleted, used switched off), Edit selected; and a new product can be created in the middle of a bill', async () => {
+    const mkp = async (nm) => (await rpc(stack, 'acc_save_product', { p: { id: null, name: nm, sku: nm.replace(/\W/g, '-'), barcode: '', category: '', brand: '', unit: 'Nos', hsn: '', tax_rate: '0', tax_inclusive: false, sale_price: '10', purchase_price: '5', mrp: 0, is_service: false, track_stock: true, track_batch: false, track_serial: false, reorder_level: 0, reorder_qty: 0, notes: '', active: true, price_lists: {} } }, owner)).data.data.id;
+    const a = await mkp('Zdel Unused One'), b = await mkp('Zdel Used Two');
+    await rpc(stack, 'acc_stock_adjust', { p: { mode: 'delta', warehouse_id: wh, date: new Date().toISOString().slice(0, 10), reason: 'x', opening: false, lines: [{ product_id: b, qty: '4', unit_cost: '5' }] } }, owner);
+    const r = (await rpc(stack, 'acc_delete_products', { p_ids: [a, b] }, owner)).data.data;
+    assert(r.deleted === 1 && r.deactivated === 1, 'delete result: ' + JSON.stringify(r));
+    const left = await q("select name, active from acc_products where name like 'Zdel %' order by name"); assert(left.length === 1 && left[0].name === 'Zdel Used Two' && left[0].active === false, 'after delete: ' + JSON.stringify(left));
+    const { c, page } = await openPage('/scan.html', USERS.acctOwner, { w: 1280, h: 900 });
+    await page.evaluate(() => { location.hash = '#/products'; }); await page.waitForSelector('button:has-text("Select all")', { timeout: 15000 });
+    await page.locator('button', { hasText: /^Select all/ }).click(); await page.waitForSelector('text=selected', { timeout: 5000 });
+    assert(await page.locator('button', { hasText: 'Delete selected' }).count() === 1 && await page.locator('button', { hasText: 'Edit selected' }).count() === 1, 'bulk buttons missing');
+    const n = Number((await page.locator('text=/\\d+ selected/').first().innerText()).match(/(\d+) selected/)[1]); assert(n > 10, 'select all selected only ' + n);
+    await page.evaluate(() => { location.hash = '#/scan'; }); await page.waitForSelector('.scan-hero', { timeout: 10000 });
+    await page.locator('button', { hasText: 'New product' }).first().click(); await page.waitForSelector('.sheet input', { timeout: 5000 });
+    await page.locator('.sheet').getByLabel('Name', { exact: true }).fill('Zbill Made Mid Bill'); await page.locator('.sheet').getByLabel('Selling price', { exact: true }).fill('30'); await page.locator('.sheet').getByLabel('Number in stock', { exact: true }).fill('2'); await page.locator('.sheet').getByLabel('Purchase price', { exact: true }).fill('20');
+    await page.locator('button', { hasText: 'Save and continue' }).click(); await page.waitForSelector('.scan-line:has-text("Zbill Made Mid Bill")', { timeout: 10000 }).catch(async () => { throw new Error('line missing; toasts: ' + await toasts(page) + ' | page: ' + (await page.locator('main').innerText()).replace(/\\s+/g, ' ').slice(0, 400)); });
+    const row = (await q("select sale_price, barcode from acc_products where name = 'Zbill Made Mid Bill'"))[0]; assert(row && Number(row.sale_price) === 30, 'new product row: ' + JSON.stringify(row));
+    await c.close();
+  });
   await s.check('The standalone AUZsScan app (scan.html): short menu, scan screen first, installable manifest, no horizontal scroll on a phone', async () => {
     const a = await openPage('/scan.html', USERS.acctOwner);
     await a.page.waitForSelector('.scan-hero', { timeout: 15000 });
