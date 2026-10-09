@@ -320,6 +320,7 @@ const RPC = {
   acc_list_imports: { params: [], auth: true },
   acc_bulk_update: { params: ['p_entity', 'p_ids', 'p_changes'], jsonb: ['p_changes'], auth: true },
   acc_bulk_post: { params: ['p_ids'], auth: true },
+  acc_delete_products: { params: ['p_ids'], auth: true },
   acc_due_reminders: { params: ['p_side'], defaults: {'p_side': 'receivable'}, auth: true },
   acc_log_comm: { params: ['p'], jsonb: ['p'], auth: true },
   acc_retry_comm: { params: ['p_id', 'p_status'], auth: true },
