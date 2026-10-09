@@ -866,7 +866,7 @@ document.getElementById('signOutBtn').onclick = async () => {
 
 const STATUS_NEXT = { new: 'contacted', contacted: 'converted' };
 
-const PROFILE_PRODUCT_LABEL = { pos: 'AUZsPOS', self_order: 'AUZsPOS QR', payroll: 'AUZsPay', accounting: 'AUZsLedger', mobile: 'AUZsMob', salon: 'AUZslab Salon', website_builder: 'Website Builder', whatsapp: 'WhatsApp automation', aggregators: 'Zomato/Swiggy', custom: 'Custom software' };
+const PROFILE_PRODUCT_LABEL = { pos: 'AUZsPOS', self_order: 'AUZsPOS QR', payroll: 'AUZsPay', accounting: 'AUZsLedger', mobile: 'AUZsMob', scan: 'AUZsScan', salon: 'AUZslab Salon', website_builder: 'Website Builder', whatsapp: 'WhatsApp automation', aggregators: 'Zomato/Swiggy', custom: 'Custom software' };
 const START_LABEL = { now: 'As soon as possible', month: 'Within a month', quarter: '2 to 3 months', exploring: 'Just exploring' };
 async function loadProfiles() {
   const el = document.getElementById('profilesList');
@@ -948,7 +948,7 @@ const NICHE_LABEL = { custom: 'Custom-built', cafe: 'Café / restaurant / bar / 
 // sage = money, slate = people/ops, amber = mobile shop.
 const TONE = { pos: 'wine', crm: 'wine', billing: 'wine', inventory: 'wine', kds: 'wine', purchases: 'wine', membership: 'wine', self_order: 'wine', salon: 'sand', booking: 'sand', website_builder: 'sand', payroll: 'slate', tasks: 'slate', helpdesk: 'slate', accounting: 'sage', mobile: 'amber' };
 const featTone = (k) => 'tone-' + (TONE[k] || 'slate');
-const FEATURE_LABEL = { salon: 'AUZslab Salon', pos: 'AUZsPOS', crm: 'CRM', booking: 'Booking', billing: 'Billing', self_order: 'AUZsPOS QR', kds: 'Kitchen display', inventory: 'Inventory', website_builder: 'Website Builder', payroll: 'AUZsPay', membership: 'Memberships', helpdesk: 'Helpdesk', tasks: 'Tasks', purchases: 'Purchases', accounting: 'AUZsLedger', mobile: 'AUZsMob' };
+const FEATURE_LABEL = { salon: 'AUZslab Salon', pos: 'AUZsPOS', crm: 'CRM', booking: 'Booking', billing: 'Billing', self_order: 'AUZsPOS QR', kds: 'Kitchen display', inventory: 'Inventory', website_builder: 'Website Builder', payroll: 'AUZsPay', membership: 'Memberships', helpdesk: 'Helpdesk', tasks: 'Tasks', purchases: 'Purchases', accounting: 'AUZsLedger', mobile: 'AUZsMob', scan: 'AUZsScan' };
 
 async function loadSignupRequests() {
   const listEl = document.getElementById('signupRequestsList');
@@ -1432,6 +1432,7 @@ const SELLABLE = [
   { id: 'qr', label: 'AUZsPOS QR', keys: ['self_order'], note: 'Customers scan a table QR and order themselves' },
   { id: 'pay', label: 'AUZsPay', keys: ['payroll'], note: 'Payroll and attendance' },
   { id: 'ledger', label: 'AUZsLedger', keys: ['accounting'], note: 'Accounting and GST books' },
+  { id: 'scan', label: 'AUZsScan', keys: ['scan'], note: 'Scan, bill and add stock (runs on AUZsLedger books)' },
   { id: 'mob', label: 'AUZsMob', keys: ['mobile'], note: 'Mobile shop: stock, sales, repairs' },
   { id: 'salon', label: 'AUZslab Salon', keys: ['salon', 'booking', 'crm', 'billing'], note: 'Website, booking, customers (CRM) and billing are always included' },
   { id: 'web', label: 'Website Builder', keys: ['website_builder'], note: 'Drag-and-drop website editor' },
