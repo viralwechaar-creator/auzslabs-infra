@@ -45,6 +45,12 @@
 .paying-overlay.open{display:flex}
 .paying-spin{width:40px;height:40px;border:3px solid var(--ink-faint);border-top-color:var(--accent);border-radius:50%;animation:paying-spin .8s linear infinite}
 @keyframes paying-spin{to{transform:rotate(360deg)}}
+.co-cols{max-width:640px}
+@media(min-width:900px){
+  .co-cols{max-width:none;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
+  .co-cols .section{margin:0}
+  #payCard{position:sticky;top:96px}
+}
 .period-seg{gap:8px;margin:12px 0 4px;flex-wrap:wrap}
 .period-seg button{flex:1;min-width:140px;border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:12px 14px;font:600 14px var(--font-body);color:var(--ink-dim);cursor:pointer}
 .period-seg button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
@@ -81,7 +87,8 @@
         <div class="card"><p class="p">Loading...</p></div>
       </section>
 
-      <section class="section tight" id="billSummarySection" style="display:none;max-width:640px">
+      <div class="co-cols">
+      <section class="section tight" id="billSummarySection" style="display:none">
         <div class="card">
           <div class="label">Your complete bill</div>
           <div id="topBundleNote" style="display:none;margin-top:8px"></div>
@@ -98,7 +105,7 @@
         </div>
       </section>
 
-      <section class="section tight" id="payCard" style="display:none;max-width:640px">
+      <section class="section tight" id="payCard" style="display:none">
         <div class="card">
           <div id="payTotalWrap" class="card" style="display:none;margin-top:0">
             <div class="cart-total"><span>Due today</span><b id="payTotalAmount"></b></div>
@@ -123,6 +130,7 @@
           <div id="submitErr" class="err"></div>
         </div>
       </section>
+      </div>
 
     </div>
   </main>
