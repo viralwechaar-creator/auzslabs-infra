@@ -49,14 +49,19 @@
 @media(prefers-reduced-motion:reduce){.asc-frame{transition:none}}`;
     document.head.append(s);
   };
+  // The beep. The audio context is made (and woken) inside the first tap, because iPhone and Chrome keep audio silent until a tap has
+  // happened; a context first made later by the camera loop stayed suspended and played nothing. ok = one clear beep, not ok = low double.
   let audio = null;
+  const wake = () => {
+    try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); } catch (e) { /* no audio */ }
+  };
+  const tone = (at, hz, len, vol) => {
+    const o = audio.createOscillator(), g = audio.createGain(), t = audio.currentTime + at;
+    o.type = 'square'; o.frequency.value = hz; g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + len); o.connect(g); g.connect(audio.destination); o.start(t); o.stop(t + len + 0.02);
+  };
   const beep = (ok) => {
-    try {
-      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
-      const o = audio.createOscillator(), g = audio.createGain();
-      o.frequency.value = ok ? 1040 : 220; g.gain.value = 0.08; o.connect(g); g.connect(audio.destination); o.start(); o.stop(audio.currentTime + (ok ? 0.09 : 0.25));
-    } catch (e) { /* silent is fine */ }
-    try { navigator.vibrate && navigator.vibrate(ok ? 30 : [60, 40, 60]); } catch (e) { /* not on iPhone */ }
+    try { wake(); if (ok === false) { tone(0, 220, 0.16, 0.25); tone(0.2, 180, 0.22, 0.25); } else { tone(0, 1800, 0.12, 0.3); } } catch (e) { /* silent is fine */ }
+    try { navigator.vibrate && navigator.vibrate(ok === false ? [60, 40, 60] : 30); } catch (e) { /* not on iPhone */ }
   };
 
   // ---------- decoding ----------
@@ -82,6 +87,7 @@
   // ---------- the scanner ----------
   function open(opts) {
     opts = opts || {};
+    wake();
     injectCss();
     let stream = null, track = null, raf = 0, timer = 0, closed = false, paused = false, detector = null, zx = null;
     let lastCode = '', lastAt = 0, lastAny = 0, torchOn = false, busy = false;
@@ -199,5 +205,6 @@
 
   // 12-digit UPC-A and the same code as 13-digit EAN-13 with a leading 0 are the same product
   const variants = (code) => { const c = String(code || '').trim(), v = [c]; if (/^\d{12}$/.test(c)) v.push('0' + c); if (/^0\d{12}$/.test(c)) v.push(c.slice(1)); return v; };
-  root.auzScanner = { open, variants, _decode: async (imgData) => zxingDecode(await loadZXing(), imgData) };
+  ['pointerdown', 'keydown', 'touchend'].forEach((ev) => addEventListener(ev, wake, { once: true, passive: true }));     // a typed or Bluetooth scan can beep too
+  root.auzScanner = { open, variants, beep, _decode: async (imgData) => zxingDecode(await loadZXing(), imgData) };
 })(window);
