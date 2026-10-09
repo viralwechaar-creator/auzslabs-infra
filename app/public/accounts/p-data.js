@@ -68,7 +68,7 @@ async function readTallyXml(file) {
 async function importWizard(host, entity, v) {
   const E = ENT[entity]; v.header({ title: 'Import ' + E.label.toLowerCase(), back: 'data' });
   let table = null, hdr = [], map = {}, result = null;
-  const opts = { on_duplicate: 'skip', create_missing: true, strict: true, date: curFY().start_date, src: 'generic', autoSku: false, openingStock: true };
+  const opts = { on_duplicate: 'skip', create_missing: true, strict: false, date: curFY().start_date, src: 'generic', autoSku: false, openingStock: true };
   const EXTRA = entity === 'products' ? [['qty', 'Opening stock quantity', 0], ['cost', 'Opening stock rate (cost each)', 0]] : [];
   const isReq = (f) => f[2] && !(entity === 'products' && f[0] === 'sku' && opts.autoSku);
   const fileIn = h('input', { type: 'file', accept: entity === 'products' ? '.csv,.xlsx,.txt,.xml,.pdf,.png,.jpg,.jpeg' : '.csv,.xlsx,.txt,.xml', class: 'input', 'aria-label': 'File to import' });

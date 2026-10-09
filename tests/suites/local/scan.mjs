@@ -163,8 +163,8 @@ export default async function run({ browser, stack }) {
     assert(Number(row.sale_price) === 55 && Number(row.purchase_price) === 25 && Number(row.mrp) === 60, 'saved prices: ' + JSON.stringify([row.sale_price, row.purchase_price, row.mrp]));
     assert(Number(await sheet.locator('input[aria-label="Price"]').inputValue()) === 55, 'this bill price did not follow the new selling price');
     await sheet.locator('button', { hasText: /^Save$/ }).click(); await page.waitForTimeout(400);
-    await page.waitForFunction(() => /MRP/.test(document.querySelector('.scan-line')?.innerText || ''), null, { timeout: 8000 }).catch(() => {});
-    assert(/MRP/.test(await page.locator('.scan-line').first().innerText()), 'MRP not shown on the line');
+    await page.waitForFunction(() => [...document.querySelectorAll('.scan-line')].some((e) => /MRP/.test(e.innerText)), null, { timeout: 8000 }).catch(() => {});
+    assert((await page.locator('.scan-line').allInnerTexts()).some((t) => /MRP/.test(t)), 'MRP not shown on the line');
     await page.locator('input[placeholder="Customer’s name"]').fill('Ravi Kumar'); await page.locator('input[placeholder^="Customer’s WhatsApp"]').fill('9876543210');
     await page.locator('.scan-dock .btn.fill').click(); await page.locator('.alert button, .dialog button', { hasText: 'Charge' }).last().click({ timeout: 5000 }).catch(() => {});
     await page.waitForSelector('text=Paid', { timeout: 15000 });
@@ -281,6 +281,16 @@ export default async function run({ browser, stack }) {
     await page.locator('button.fill', { hasText: /^Import$/ }).click(); await page.locator('button', { hasText: /^Import$/ }).last().click({ timeout: 5000 }).catch(() => {}); await page.waitForTimeout(real ? 15000 : 6000);
     const n = (await q("select count(*)::int n from acc_products p join tenants t on t.id = p.tenant_id where t.slug = 'testacct' and p.name like $1", [real ? '%' : 'Plainlist%']))[0].n;
     assert(n >= (real ? 2000 : 600), 'imported ' + n); await c.close();
+  });
+  await s.check('Import (server): blank cells (even an empty true/false or number cell) are "not given", and with one bad row the good rows still import when "stop on error" is off', async () => {
+    const rows = [{ _row: 2, sku: 'BL-1', name: 'Blank Cells A', hsn: '', tax_rate: '', unit: 'Pcs.', sale_price: '', purchase_price: '', mrp: '', category: 'X', brand: '', reorder_level: '', barcode: '', is_service: '' },
+      { _row: 3, sku: 'BL-2', name: '', unit: 'Pcs.' }, { _row: 4, sku: 'BL-3', name: 'Blank Cells C', is_service: '', tax_rate: '12', sale_price: '99' }];
+    const dry = (await rpc(stack, 'acc_import', { p_entity: 'products', p_rows: rows, p_commit: false, p_strict: false, p_options: {} }, owner)).data.data;
+    assert(dry.ok === 2 && dry.failed === 1, 'dry run: ' + JSON.stringify(dry).slice(0, 300));
+    const done = (await rpc(stack, 'acc_import', { p_entity: 'products', p_rows: rows, p_commit: true, p_strict: false, p_options: {} }, owner)).data.data;
+    assert(done.ok === 2 && done.committed !== false, 'commit: ' + JSON.stringify(done).slice(0, 300));
+    const got = await q("select sku, sale_price from acc_products p join tenants t on t.id = p.tenant_id where t.slug = 'testacct' and sku like 'BL-%'");
+    assert(got.find((x) => x.sku === 'BL-1') && Number(got.find((x) => x.sku === 'BL-3').sale_price) === 99 && !got.find((x) => x.sku === 'BL-2'), 'rows: ' + JSON.stringify(got.filter((x) => /^BL-/.test(x.sku)).map((x) => x.sku)));
   });
   await s.check('The standalone AUZsScan app (scan.html): short menu, scan screen first, installable manifest, no horizontal scroll on a phone', async () => {
     const a = await openPage('/scan.html', USERS.acctOwner);
