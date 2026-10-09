@@ -1342,7 +1342,7 @@ const server = http.createServer(async (req, res) => {
       if (!body.tenant_id) throw new HttpError(400, 'tenant_id is required');
       const { rows } = await withAuth(user.id, (client) =>
         client.query(
-          `select is_salesman($1) as ok, t.name as tenant_name,
+          `select is_salesman($1) as ok, t.name as tenant_name, t.niche as niche,
              (t.created_by_salesman = $1) as owns,
              au.id as owner_id, au.email as owner_email, au.app_metadata as owner_meta
            from tenants t
@@ -1366,8 +1366,10 @@ const server = http.createServer(async (req, res) => {
           verified: true,
         });
       }
+      // A mobile-shop trial opens AUZsMob, which needs something to show (db/147).
+      if (rows[0].niche === 'mobile') await pool.query('select mob_trial_seed($1)', [body.tenant_id]);
       const access_token = await signToken(owner, meta);
-      return reply(200, { access_token, user: { id: owner.id, email: owner.email, app_metadata: owner.app_metadata } });
+      return reply(200, { access_token, niche: rows[0].niche, user: { id: owner.id, email: owner.email, app_metadata: owner.app_metadata } });
     }
 
     // ---- salesman: upload a logo (or any other branding image) for a

@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 import { pool, withAuth } from './db.js';
 import { makeSeed, makeTemplate, makeDemo, DEMO_STAFF_PHONE } from './salon-seed.js';
 import { captureError } from './errors.js';
-import { staffLogin } from './auth.js';
+import { staffLogin, verifyToken } from './auth.js';
 
 // Salon Suite API: the original Showoff Salon /api/* surface (see the
 // app/public/salon/ front-end, a verbatim port), multi-tenant. The
@@ -675,6 +675,18 @@ export async function handleSalon(req, res, ip) {
       })();
       if (result.status !== 200) fail(result.status, result.error);
       setSession(res, tid);
+      return send(200, { ok: true, role: 'owner' });
+    }
+    // A salesman's "Open their admin console" (salesman.html): the page passes the trial owner's
+    // AUZslab session in the URL fragment, the console posts it here, and if it really is the owner
+    // of THIS salon we start the console session. Nothing else changes about how sign-in works.
+    if (method === 'POST' && p === '/admin/handoff') {
+      if (limited(`salonhand:${ip}`, 30, 15 * 60_000)) fail(429, 'Too many attempts. Try again later.');
+      const u = verifyToken(String(body.token || ''));
+      if (!u) fail(401, 'This link has expired. Open it again from the salesman page.');
+      const prof = await withAuth(u.id, async (c) => (await c.query('select tenant_id, role from profiles where id = $1', [u.id])).rows[0]);
+      if (!prof || prof.tenant_id !== tid || prof.role !== 'owner') fail(403, 'Not the owner of this salon.');
+      setSession(res, tid, { role: 'owner' });
       return send(200, { ok: true, role: 'owner' });
     }
     if (method === 'POST' && p === '/admin/logout') { clearSession(res); return send(200, { ok: true }); }

@@ -73,6 +73,8 @@ button:disabled{opacity:.5;cursor:default}
     <div id=brandPanel class="card hidden">
       <h2 style="margin-top:0" id=bpTitle>Brand this business</h2>
       <p class=sub id=bpLink></p>
+      <p class="sub hidden" id=bpNote></p>
+      <div id=brandForm>
 
       <label>Logo (PNG)<input id=bLogoFile type=file accept="image/png,image/jpeg,image/webp"></label>
       <div id=bLogoPrev style="margin-top:8px"></div>
@@ -116,8 +118,10 @@ button:disabled{opacity:.5;cursor:default}
       <div id=brandErr class=err></div>
       <div id=brandOk class="ok hidden"></div>
 
+      </div>
+
       <h2>Show the client</h2>
-      <p class=sub style="margin-top:-6px">Open the real POS and the real QR ordering page, already loaded with their logo, colours and a 24-item menu — for the pitch, in one tap.</p>
+      <p class=sub id=showSub style="margin-top:-6px">Open the real POS and the real QR ordering page, already loaded with their logo, colours and a 24-item menu — for the pitch, in one tap.</p>
       <button id=openPosBtn>Open their POS ↗</button>
       <button class=ghost id=openQrBtn>Open QR order demo ↗</button>
       <button class=ghost id=openSiteBtn>Open their website ↗</button>
@@ -203,15 +207,44 @@ function renderTrials() {
   el.querySelectorAll('.trial-row').forEach((row) => row.onclick = () => openBrand(row.dataset.id));
 }
 
+// What each business type opens. cafe = POS + QR website; salon = its own salon suite;
+// mobile = AUZsMob; everything else = the POS only (no cafe website or QR table).
+const NICHE_APP = {
+  cafe:   { main: 'Open their POS ↗',          page: '/index.html', site: '/site.html', qr: true,  demo: true,  brand: true },
+  salon:  { main: 'Open their admin console ↗', page: '/salon/admin/', site: '/salon/', qr: false, demo: false, brand: false,
+            sub: 'Open their salon website, or sign straight into their salon console (bookings, billing, menu) — no password needed from here.',
+            note: 'Salons are branded inside the salon console: Settings → Branding (logo, colours, photos) and Website text.' },
+  mobile: { main: 'Open their AUZsMob ↗',      page: '/mob.html', site: null, qr: false, demo: false, brand: false,
+            sub: 'Open their AUZsMob (sell, repairs, stock, reports) already signed in, with a sample phone, a sale and a repair to show.',
+            note: 'AUZsMob has no public website. Set the shop name, phone and address inside AUZsMob → Settings.' },
+};
+const nicheApp = (t) => NICHE_APP[t.niche] || { main: 'Open their POS ↗', page: '/index.html', site: null, qr: false, demo: false, brand: true,
+  sub: 'Open their POS already signed in. Add the client\'s own items inside it for the pitch.' };
+const cafeSub = $('showSub') ? $('showSub').textContent : '';
+
+function applyNiche(t) {
+  const a = nicheApp(t);
+  $('openPosBtn').textContent = a.main;
+  $('openQrBtn').classList.toggle('hidden', !a.qr);
+  $('openSiteBtn').classList.toggle('hidden', !a.site);
+  $('applyDemoBtn').classList.toggle('hidden', !a.demo);
+  $('brandForm').classList.toggle('hidden', !a.brand);
+  $('bpNote').textContent = a.note || '';
+  $('bpNote').classList.toggle('hidden', !a.note);
+  $('showSub').textContent = a.sub || cafeSub;
+}
+
 async function openBrand(tenantId) {
   const t = trials.find((x) => x.id === tenantId);
   if (!t) return;
   current = t;
   $('brandErr').textContent = ''; $('brandOk').classList.add('hidden');
+  applyNiche(t);
   const { data, error } = await sb.rpc('salesman_branding_get', { p_tenant_id: tenantId });
   if (error) { $('brandErr').textContent = error.message; return; }
-  $('bpTitle').textContent = 'Brand ' + t.name;
-  $('bpLink').innerHTML = `<a class=link href="https://${esc(t.slug)}.auzslab.in/site.html" target=_blank>${esc(t.slug)}.auzslab.in</a> — scan a table QR or open this on the client's phone`;
+  $('bpTitle').textContent = (nicheApp(t).brand ? 'Brand ' : '') + t.name;
+  const site = nicheApp(t).site;
+  $('bpLink').innerHTML = site ? `<a class=link href="https://${esc(t.slug)}.auzslab.in${site}" target=_blank>${esc(t.slug)}.auzslab.in</a>${t.niche === 'cafe' ? " — scan a table QR or open this on the client's phone" : ''}` : `${esc(t.slug)}.auzslab.in`;
   $('bName').value = data.name || ''; $('bPhone').value = data.phone || ''; $('bGstin').value = data.gstin || '';
   $('bAddr').value = data.addr || ''; $('bHours').value = data.siteHours || '';
   $('bPrefix').value = data.prefix || ''; $('bFtr').value = data.ftr || '';
@@ -318,7 +351,7 @@ $('saveBrandBtn').onclick = async () => {
   toast('Saved — updated everywhere instantly');
 };
 
-$('openSiteBtn').onclick = () => { if (current) window.open('https://' + current.slug + '.auzslab.in/site.html', '_blank'); };
+$('openSiteBtn').onclick = () => { if (current && nicheApp(current).site) window.open('https://' + current.slug + '.auzslab.in' + nicheApp(current).site, '_blank'); };
 
 // Same {access_token,user} -> URL-fragment handoff every app's sb-client.js already
 // consumes (see site/signin.html's own Google sign-in, identical encoding).
@@ -352,9 +385,9 @@ $('openPosBtn').onclick = async () => {
       body: JSON.stringify({ tenant_id: current.id }),
     });
     const body = await res.json();
-    if (!res.ok) throw new Error(body.error || 'could not open the POS');
+    if (!res.ok) throw new Error(body.error || 'could not open it');
     const frag = b64u({ t: body.access_token, u: body.user });
-    window.open('https://' + current.slug + '.auzslab.in/index.html#auz_gt=' + frag, '_blank');
+    window.open('https://' + current.slug + '.auzslab.in' + nicheApp(current).page + '#auz_gt=' + frag, '_blank');
   } catch (e) { $('demoErr').textContent = e.message; }
   $('openPosBtn').disabled = false;
 };
