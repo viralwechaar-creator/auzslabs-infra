@@ -106,10 +106,19 @@ button:disabled{opacity:.5;cursor:default}
       </div>
 
       <button id=saveBrandBtn>Save — updates everywhere instantly</button>
-      <button class=ghost id=openSiteBtn>Open their website ↗</button>
-      <button class=ghost id=ownerLoginBtn>Create owner login for the POS</button>
       <div id=brandErr class=err></div>
       <div id=brandOk class="ok hidden"></div>
+
+      <h2>Show the client</h2>
+      <p class=sub style="margin-top:-6px">Open the real POS and the real QR ordering page, already loaded with their logo, colours and a 24-item menu — for the pitch, in one tap.</p>
+      <button id=openPosBtn>Open their POS ↗</button>
+      <button class=ghost id=openQrBtn>Open QR order demo ↗</button>
+      <button class=ghost id=openSiteBtn>Open their website ↗</button>
+      <div id=demoErr class=err></div>
+
+      <h2>Once they buy</h2>
+      <p class=sub style="margin-top:-6px">A real login with a password, to hand over to the owner.</p>
+      <button class=ghost id=ownerLoginBtn>Create a real owner login</button>
     </div>
   </div>
 </div>
@@ -160,10 +169,11 @@ $('createBtn').onclick = async () => {
   const { data, error } = await sb.rpc('salesman_provision_trial', { p_business_name: name, p_slug: slug, p_niche: niche });
   $('createBtn').disabled = false;
   if (error) { $('createErr').textContent = error.message; return; }
-  trials.unshift({ id: data, name, slug, niche, created_at: new Date().toISOString(), has_owner: false, logo: null, col: null });
+  const tenantId = data.tenant_id;
+  trials.unshift({ id: tenantId, name, slug, niche, created_at: new Date().toISOString(), has_owner: false, logo: null, col: null, table_id: data.table_id });
   $('newName').value = ''; $('newSlug').value = ''; $('newSlug').dataset.touched = '';
   renderTrials();
-  openBrand(data);
+  openBrand(tenantId);
 };
 
 function renderTrials() {
@@ -249,6 +259,35 @@ $('saveBrandBtn').onclick = async () => {
 };
 
 $('openSiteBtn').onclick = () => { if (current) window.open('https://' + current.slug + '.auzslab.in/site.html', '_blank'); };
+
+// Same {access_token,user} -> URL-fragment handoff every app's sb-client.js already
+// consumes (see site/signin.html's own Google sign-in, identical encoding).
+function b64u(o) { return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+
+$('openQrBtn').onclick = () => {
+  if (!current) return;
+  if (!current.table_id) { $('demoErr').textContent = 'No table set up for this business yet (only cafe trials get one automatically).'; return; }
+  window.open('https://' + current.slug + '.auzslab.in/site.html?t=' + current.table_id, '_blank');
+};
+
+$('openPosBtn').onclick = async () => {
+  if (!current) return;
+  $('demoErr').textContent = '';
+  $('openPosBtn').disabled = true;
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const res = await fetch(CFG.url + '/admin/salesman-open-pos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+      body: JSON.stringify({ tenant_id: current.id }),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'could not open the POS');
+    const frag = b64u({ t: body.access_token, u: body.user });
+    window.open('https://' + current.slug + '.auzslab.in/index.html#auz_gt=' + frag, '_blank');
+  } catch (e) { $('demoErr').textContent = e.message; }
+  $('openPosBtn').disabled = false;
+};
 
 $('ownerLoginBtn').onclick = async () => {
   if (!current) return;

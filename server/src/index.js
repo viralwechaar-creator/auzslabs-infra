@@ -1325,6 +1325,51 @@ const server = http.createServer(async (req, res) => {
       return reply(200, { user_id: created.id, temp_password: tempPassword });
     }
 
+    // ---- salesman: open the POS directly, already signed in -- no email
+    // prompt, no password to copy (db/139). Reuses the real owner login if
+    // the salesman already made one with /admin/salesman-provision-owner
+    // above (never creates a second one for the same trial); otherwise
+    // creates a throwaway owner login on the spot. Either way this mints a
+    // real, revocable session (signToken(), same as every other sign-in
+    // path) and hands it back for the client to drop straight into the
+    // #auz_gt= handoff fragment every app's sb-client.js already knows how
+    // to consume (see site/signin.html's own Google handoff for the exact
+    // same shape) -- so opening the returned link signs them straight into
+    // the real POS, with real seeded data, with zero further taps.
+    if (url.pathname === '/admin/salesman-open-pos' && req.method === 'POST') {
+      if (!user) throw new HttpError(401, 'unauthorized');
+      const body = await readJsonBody(req);
+      if (!body.tenant_id) throw new HttpError(400, 'tenant_id is required');
+      const { rows } = await withAuth(user.id, (client) =>
+        client.query(
+          `select is_salesman($1) as ok, t.name as tenant_name,
+             (t.created_by_salesman = $1) as owns,
+             au.id as owner_id, au.email as owner_email, au.app_metadata as owner_meta
+           from tenants t
+           left join profiles p on p.tenant_id = t.id and p.role = 'owner'
+           left join auth_users au on au.id = p.id
+           where t.id = $2`,
+          [user.id, body.tenant_id],
+        ),
+      );
+      if (!rows[0]?.ok) throw new HttpError(403, 'forbidden -- not a salesman account');
+      if (!rows[0]?.owns) throw new HttpError(403, 'not your trial tenant');
+      let owner;
+      if (rows[0].owner_id) {
+        owner = { id: rows[0].owner_id, email: rows[0].owner_email, app_metadata: rows[0].owner_meta };
+      } else {
+        owner = await createUser({
+          email: `pos-demo-${crypto.randomUUID().slice(0, 8)}@trial.auzslab.in`,
+          password: crypto.randomUUID(),
+          app_metadata: { tenant_id: body.tenant_id, role: 'owner' },
+          user_metadata: { name: rows[0].tenant_name || '' },
+          verified: true,
+        });
+      }
+      const access_token = await signToken(owner, meta);
+      return reply(200, { access_token, user: { id: owner.id, email: owner.email, app_metadata: owner.app_metadata } });
+    }
+
     // ---- salesman: upload a logo (or any other branding image) for a
     // trial tenant they created (db/137). Reuses saveSiteUpload() exactly
     // as the owner's own /storage/site/:prefix route does -- its internal
