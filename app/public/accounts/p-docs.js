@@ -321,6 +321,7 @@ function identityFoot(o, d) {
 }
 function invoiceSheetNode(data) { // data: {org, doc, lines} shapes of public_acc_document (also used in-app)
   const o = data.org, d = data.doc;
+  if (brandOf(o).invoiceStyle === 'classic' && window.auzTaxInvoice) return auzTaxInvoice.build(data);
   const adr = [o.address, [o.city, o.pincode].filter(Boolean).join(' ')].filter(Boolean).join(', ');
   return h('div', null,
     h('div', { style: { display: 'flex', justifyContent: 'space-between', gap: '16px' } }, h('div', null, brandOf(o).logo ? h('img', { src: brandOf(o).logo, alt: '', style: { maxHeight: '56px', maxWidth: '200px', display: 'block', marginBottom: '6px' } }) : null, h('h1', null, o.name || o.legal_name), h('div', null, adr), o.gstin ? h('div', null, 'GSTIN ' + o.gstin) : null, (brandOf(o).regs || []).map((r) => h('div', null, r.k + ' ' + r.v)), o.phone ? h('div', null, o.phone) : null, brandOf(o).website ? h('div', null, brandOf(o).website) : null),
@@ -336,12 +337,13 @@ function invoiceSheetNode(data) { // data: {org, doc, lines} shapes of public_ac
     d.notes ? h('p', null, h('b', null, 'Notes: '), d.notes) : null, identityFoot(o, d), d.terms ? h('p', { style: { fontSize: '11px' } }, d.terms) : null,
     data.einvoice && data.einvoice.irn ? h('p', { style: { fontSize: '11px', wordBreak: 'break-all' } }, 'IRN: ' + data.einvoice.irn + (data.einvoice.ack_no ? ' · Ack ' + data.einvoice.ack_no : '')) : null, o.footer ? h('p', { style: { textAlign: 'center' } }, o.footer) : null);
 }
-function printDoc(r) {
+async function printDoc(r) {
   const d = r.doc, o = S.org;
-  const data = { org: { name: o.trade_name || o.legal_name, legal_name: o.legal_name, gstin: o.gstin, address: o.address, city: o.city, pincode: o.pincode, phone: o.phone, bank_details: o.bank_details, footer: o.invoice_footer, brand: (o.settings && o.settings.brand) || {} },
-    doc: { type: d.doc_type, number: d.number.startsWith('DRAFT') ? 'DRAFT' : d.number, date: d.doc_date, due_date: d.due_date, party_name: d.party_name, party_gstin: d.party_gstin, billing_address: d.billing_address, place_of_supply: d.place_of_supply, reverse_charge: d.reverse_charge,
+  const pm = {}; try { (await products()).forEach((x) => { pm[x.id] = x; }); } catch (e) { /* MRP is optional */ }
+  const data = { org: { name: o.trade_name || o.legal_name, legal_name: o.legal_name, gstin: o.gstin, address: o.address, city: o.city, pincode: o.pincode, phone: o.phone, email: o.email, state_code: o.state_code, bank_details: o.bank_details, footer: o.invoice_footer, brand: (o.settings && o.settings.brand) || {} },
+    doc: { type: d.doc_type, number: d.number.startsWith('DRAFT') ? 'DRAFT' : d.number, date: d.doc_date, due_date: d.due_date, party_name: d.party_name, party_gstin: d.party_gstin, billing_address: d.billing_address, place_of_supply: d.place_of_supply, reverse_charge: d.reverse_charge, discount: d.discount, party_phone: (r.party || {}).phone || '',
       taxable: d.taxable, cgst: d.cgst, sgst: d.sgst, igst: d.igst, cess: d.cess, roundoff: d.roundoff, total: d.total, paid: d.paid, notes: d.notes, terms: d.terms, cancelled: d.status === 'cancelled' },
-    lines: r.lines.map((l) => ({ n: l.line_no, description: l.description, hsn: l.hsn, qty: l.qty, unit: l.unit, rate: l.rate, tax_rate: l.tax_rate, taxable: l.taxable, total: l.total })), einvoice: r.einvoice && r.einvoice.status === 'generated' ? r.einvoice : null };
+    lines: r.lines.map((l) => ({ n: l.line_no, description: l.description, hsn: l.hsn, qty: l.qty, unit: l.unit, rate: l.rate, disc_amt: l.disc_amt, tax_rate: l.tax_rate, taxable: l.taxable, tax: Number(l.cgst) + Number(l.sgst) + Number(l.igst) + Number(l.cess), total: l.total, mrp: (pm[l.product_id] || {}).mrp })), einvoice: r.einvoice && r.einvoice.status === 'generated' ? r.einvoice : null };
   let ps = $('#printSheet'); if (!ps) { ps = h('div', { id: 'printSheet', class: 'print-only' }); document.body.append(ps); }
   clear(ps).append(invoiceSheetNode(data));
   setTimeout(() => window.print(), 50);

@@ -14,6 +14,7 @@ body{padding:16px;display:grid;justify-items:center}
 .bill h1{font-size:22px}.bill table{width:100%;border-collapse:collapse}.bill th,.bill td{padding:8px 6px;border-bottom:.5px solid var(--sep);text-align:left;font-size:14px}.bill .r{text-align:right}
 .bill .row2{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .bar{display:flex;gap:10px;margin-top:6px}
+.bill.classic{background:transparent;box-shadow:none;padding:0;width:min(820px,100%)}.bill.classic .bar{justify-content:center}
 @media print{body{padding:0}.bill{box-shadow:none;padding:0}.bar{display:none}}
 </style>
 </head>
@@ -21,6 +22,7 @@ body{padding:16px;display:grid;justify-items:center}
 <main id="app" class="bill" aria-live="polite"><div class="skel" style="height:200px"></div></main>
 <script src="/vendor/qrcode.js"></script>
 <script src="/config.js"></script>
-<script src="/accounts/bill.js?v=1"></script>
+<script src="/accounts/taxinv.js?v=3"></script>
+<script src="/accounts/bill.js?v=3"></script>
 </body>
 </html>
