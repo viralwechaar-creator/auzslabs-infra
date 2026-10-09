@@ -3,7 +3,7 @@
 import { suite, watch, assert } from '../../lib/harness.mjs';
 import { newCtx } from '../../lib/common.mjs';
 import { rpc } from '../../lib/api.mjs';
-import { q, PASSWORD, USERS } from '../../lib/db.mjs';
+import { q, connect, PG, PASSWORD, USERS } from '../../lib/db.mjs';
 
 // EAN-13 bars as a string of 0/1 modules (start 101, six left digits by parity, 01010, six right digits, 101)
 function ean13(code) {
@@ -158,7 +158,7 @@ export default async function run({ browser, stack }) {
     const sheet = page.locator('.sheet').last();
     const want = { 'Selling price': '55', 'Purchase price': '25', 'MRP': '60' };
     for (let tries = 0; tries < 6; tries++) { for (const [l, v] of Object.entries(want)) await sheet.getByLabel(l, { exact: true }).fill(v); await page.waitForTimeout(300); const got = await Promise.all(Object.keys(want).map((l) => sheet.getByLabel(l, { exact: true }).inputValue())); if (got.join() === Object.values(want).join()) break; }
-    await sheet.locator('button', { hasText: 'Save product prices' }).click(); await page.waitForTimeout(900);
+    await sheet.locator('button', { hasText: 'Save product prices' }).click(); await page.waitForSelector('.toast:has-text("Product prices saved")', { timeout: 10000 });
     const row = (await rpc(stack, 'acc_list_products', { limit: 500 }, owner)).data.data.rows.find((p) => p.id === pen);
     assert(Number(row.sale_price) === 55 && Number(row.purchase_price) === 25 && Number(row.mrp) === 60, 'saved prices: ' + JSON.stringify([row.sale_price, row.purchase_price, row.mrp]));
     assert(Number(await sheet.locator('input[aria-label="Price"]').inputValue()) === 55, 'this bill price did not follow the new selling price');
@@ -239,6 +239,34 @@ export default async function run({ browser, stack }) {
     assert(st && Number(st.sale_price) === 85 && Number(st.tax_rate) === 18 && st.hsn === '8472' && Number(st.stock) === 12, 'stapler: ' + JSON.stringify(st && [st.sale_price, st.tax_rate, st.hsn, st.stock]) + ' toasts: ' + tmsg);
     assert(gl && Number(gl.sale_price) === 20 && Number(gl.tax_rate) === 12 && Number(gl.stock) === 0 && /no purchase price/.test(tmsg), 'glue: ' + JSON.stringify(gl && [gl.sale_price, gl.tax_rate, gl.stock]));
     await c.close();
+  });
+  await s.check('New Book World setup script + classic tax invoice: the shared bill link shows their exact layout, details, logo, MRP, tax summary, amount in words and a "1/FY" number', async () => {
+    await q("insert into auth_users (email, password_hash, app_metadata) select 'viralwechaar@gmail.com', password_hash, '{}'::jsonb from auth_users where email = $1 and deleted_at is null limit 1 on conflict do nothing", [USERS.acctOwner]);
+    const sql = (await import('fs')).readFileSync(new URL('../../../db_data/new_book_world_setup.sql', import.meta.url), 'utf8');
+    for (let i = 0; i < 2; i++) { const cl = await connect(PG.db); try { await cl.query(sql); } finally { await cl.end(); } }   // twice: it must be safe to run again
+    const nb = await login('viralwechaar@gmail.com'); const ctx = (await rpc(stack, 'acc_bootstrap', {}, nb)).data.data;
+    const prods = (await rpc(stack, 'acc_list_products', { limit: 50 }, nb)).data.data.rows, nbk = prods.find((x) => x.sku === 'PAT-NB-172');
+    assert(nbk && Number(nbk.mrp) === 60 && Number(nbk.sale_price) === 45, 'notebook product: ' + JSON.stringify(nbk));
+    assert((await q("select features from tenant_settings ts join tenants t on t.id = ts.tenant_id where t.slug = 'newbookworld'"))[0].features.scan === true, 'scan feature missing');
+    const wh2 = (ctx.warehouses.find((w) => w.is_default) || ctx.warehouses[0]).id;
+    const adj = await rpc(stack, 'acc_stock_adjust', { p: { mode: 'delta', warehouse_id: wh2, date: new Date().toISOString().slice(0, 10), reason: 'test stock', opening: false, lines: [{ product_id: nbk.id, qty: '10', unit_cost: '30' }] } }, nb); assert(adj.status === 200, 'stock: ' + JSON.stringify(adj.data));
+    const cash = (await q("select a.id from acc_accounts a join tenants t on t.id = a.tenant_id where t.slug = 'newbookworld' and a.system_key = 'cash'"))[0].id;
+    const today = new Date().toISOString().slice(0, 10);
+    const sv = await rpc(stack, 'acc_save_document', { p: { id: null, doc_type: 'invoice', doc_date: today, due_date: null, party_id: null, branch_id: null, warehouse_id: null, place_of_supply: null, reverse_charge: false, itc_eligible: true, price_includes_tax: false, supplier_ref: null, supplier_ref_date: null, ref_doc_id: null, source_doc_id: null, notes: '', terms: '', roundoff: null,
+      lines: [{ product_id: nbk.id, description: nbk.name, hsn: '', qty: '1', unit: 'Nos', rate: '45', disc_pct: null, disc_amt: null, tax_rate: '0', account_id: null, batch_no: '', expiry: null, warehouse_id: null }], payments: [{ account_id: cash, amount: 45, mode: 'cash', reference: '' }], post: true } }, nb);
+    assert(sv.status === 200, 'invoice: ' + JSON.stringify(sv.data).slice(0, 300));
+    const id = sv.data.data.id || (sv.data.data.doc && sv.data.data.doc.id); const num = sv.data.data.number || (sv.data.data.doc && sv.data.data.doc.number);
+    assert(/^1\/20\d\d(-\d\d)?$/.test(num), 'number style: ' + num);
+    const sh = await rpc(stack, 'acc_share_document', { p_doc: id, p_enable: true }, nb); const tok = sh.data.data.token;
+    const c = await newCtx(browser, stack, { w: 1000, h: 1400 }); const page = await c.newPage();
+    await page.goto(stack.url('newbookworld', '/bill.html?t=' + tok)); await page.waitForSelector('.ti', { timeout: 15000 });
+    const t = await page.locator('.ti').innerText();
+    for (const w of ['TAX INVOICE', 'New Book World', 'GSTIN : 08AAVFN9235H1ZL', 'Near Shanichar Ji Ka Than', 'Tel. : 8595977777', 'newbookworldjodhpur@gmail.com', 'Invoice No.', 'Place of Supply', 'Rajasthan (08)', 'Reverse Charge', 'Billed to', 'Shipped to', 'Cash', 'Description of Goods', 'HSN/SAC Cod', 'Patanjali Notebook 172pg 60/-', '60.00', '45.00', 'Less : Discount', 'Grand Total', 'Exempt', 'Rupees Forty Five Only', 'STATE BANK OF INDIA', '00000042694307337', 'SBIN0031201', 'Goods once sold will not be taken back.', "Receiver's Signature", 'For New Book World', 'Authorised Signatory', 'Original Copy']) assert(t.includes(w), 'missing "' + w + '" in: ' + t.replace(/\s+/g, ' ').slice(0, 900));
+    assert(await page.locator('.ti .lg img').evaluate((i) => i.complete && i.naturalWidth > 100), 'logo not shown');
+    assert(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'sideways scroll');
+    await s.shot(page, 'classic-tax-invoice'); await c.close();
+    const c2 = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const p2 = await c2.newPage(); await p2.goto(stack.url('newbookworld', '/bill.html?t=' + tok)); await p2.waitForSelector('.ti', { timeout: 15000 });
+    assert(await p2.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'sideways scroll on a phone'); await s.shot(p2, 'classic-tax-invoice-phone'); await c2.close();
   });
   await s.check('The standalone AUZsScan app (scan.html): short menu, scan screen first, installable manifest, no horizontal scroll on a phone', async () => {
     const a = await openPage('/scan.html', USERS.acctOwner);

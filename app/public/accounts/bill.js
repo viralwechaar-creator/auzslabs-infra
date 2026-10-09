@@ -16,6 +16,7 @@
   if (!data) { app.append(el('h1', null, 'This link is not valid'), el('p', { class: 'muted' }, 'The invoice may have been withdrawn, or the link is incomplete. Ask the sender for a new one.')); return; }
   const o = data.org, d = data.doc, adr = [o.address, [o.city, o.pincode].filter(Boolean).join(' ')].filter(Boolean).join(', ');
   document.title = (LABEL[d.type] || 'Document') + ' ' + d.number + ' · ' + (o.name || '');
+  if ((o.brand || {}).invoiceStyle === 'classic' && window.auzTaxInvoice) { app.classList.add('classic'); app.append(auzTaxInvoice.build(data), el('div', { class: 'bar' }, el('button', { class: 'btn fill', style: 'background:#111;color:#fff;border:0;border-radius:10px;padding:10px 18px;font:600 14px Arial,sans-serif;cursor:pointer', onclick: () => window.print() }, 'Print or save as PDF'))); return; }
   const b = o.brand || {}, k = b.bank || {}, bl = [k.holder && ['Account name', k.holder], k.name && ['Bank', k.name], k.account && ['Account no.', k.account], k.ifsc && ['IFSC', k.ifsc], k.branch && ['Branch', k.branch]].filter(Boolean);
   let qrSrc = null;
   if (b.upi && d.type === 'invoice' && !d.cancelled && typeof qrcode === 'function') { try { const due = Number(d.total) - Number(d.paid || 0); const q = qrcode(0, 'M'); q.addData('upi://pay?pa=' + encodeURIComponent(b.upi) + '&pn=' + encodeURIComponent(o.name || '') + (due > 0 ? '&am=' + due.toFixed(2) : '') + '&cu=INR&tn=' + encodeURIComponent(d.number || '')); q.make(); qrSrc = q.createDataURL(4, 0); } catch { /* no QR */ } }
