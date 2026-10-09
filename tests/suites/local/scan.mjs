@@ -270,7 +270,7 @@ export default async function run({ browser, stack }) {
   });
   await s.check('A plain item list with no codes, GST or prices (the template columns, 600 rows, odd units) imports after Check, with codes made automatically and no stray "null" text', async () => {
     const real = process.env.BUSY_CSV && (await import('fs')).existsSync(process.env.BUSY_CSV) ? (await import('fs')).readFileSync(process.env.BUSY_CSV, 'utf8') : null;
-    let csv = real; if (!csv) { csv = 'SKU,Name,HSN/SAC,GST rate %,Unit,Sale price,Purchase price,MRP,Category,Brand,Reorder level,Barcode,Service (true/false)\n'; for (let i = 0; i < 600; i++) csv += `,Plainlist Item ${i} ${i % 7 ? '' : 'A, B'},,,${['PCS', 'Pcs.', 'children b'][i % 3]},,,,${['STATIONERY', 'NOVEL'][i % 2]},,,${i % 5 ? '' : 978100000000 + i},\n`.replace(/,A, B/, ',"A, B"'); }
+    let csv = real; if (!csv) { csv = 'SKU,Name,HSN/SAC,GST rate %,Unit,Sale price,Purchase price,MRP,Category,Brand,Reorder level,Barcode,Service (true/false)\n'; for (let i = 0; i < 600; i++) csv += `,"Plainlist Item ${i} ${i % 7 ? '' : 'A, B'}",,,${['PCS', 'Pcs.', 'children b'][i % 3]},,,,${['STATIONERY', 'NOVEL'][i % 2]},,,${i % 5 ? '' : 978100000000 + i},\n`; }
     const { c, page } = await openPage('/scan.html', USERS.acctOwner, { w: 390, h: 844, mobile: true });
     await page.evaluate(() => { location.hash = '#/data?entity=products'; }); await page.waitForSelector('input[type=file]');
     await page.setInputFiles('input[type=file]', { name: 'items.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
