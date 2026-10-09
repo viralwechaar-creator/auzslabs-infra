@@ -15,14 +15,14 @@ const SC_KEY = 'scan.cart';
 
 // ---------- keep the cart if the page is refreshed by accident ----------
 function scPersist() {
-  try { sessionStorage[SC_KEY] = JSON.stringify({ cart: SC.cart.map((l) => ({ id: l.p.id, qty: l.qty, rate: l.rate, disc: l.disc, dtype: l.dtype })), recv: SC.recv.map((l) => ({ id: l.p.id, qty: l.qty, cost: l.cost })), incl: SC.incl }); } catch (e) { /* private mode */ }
+  try { sessionStorage[SC_KEY] = JSON.stringify({ cart: SC.cart.map((l) => ({ id: l.p.id, qty: l.qty, rate: l.rate, disc: l.disc, dtype: l.dtype, gst: l.gst })), recv: SC.recv.map((l) => ({ id: l.p.id, qty: l.qty, cost: l.cost })), incl: SC.incl }); } catch (e) { /* private mode */ }
 }
 function scRestore() {
   if (SC.cart.length || SC.recv.length) return;
   try {
     const s = JSON.parse(sessionStorage[SC_KEY] || 'null'); if (!s) return;
     const by = (id) => (S.products || []).find((p) => p.id === id);
-    SC.cart = (s.cart || []).map((l) => ({ p: by(l.id), qty: l.qty, rate: l.rate, disc: l.disc, dtype: l.dtype || 'pct' })).filter((l) => l.p);
+    SC.cart = (s.cart || []).map((l) => ({ p: by(l.id), qty: l.qty, rate: l.rate, disc: l.disc, dtype: l.dtype || 'pct', gst: l.gst })).filter((l) => l.p);
     SC.recv = (s.recv || []).map((l) => ({ p: by(l.id), qty: l.qty, cost: l.cost })).filter((l) => l.p);
     SC.incl = s.incl == null ? null : s.incl;
   } catch (e) { /* ignore a bad copy */ }
@@ -105,6 +105,8 @@ function scNewProduct(code, o = {}) {
 }
 
 // ---------- adding to the cart / the receive list ----------
+// GST for one bill line: what the cashier chose for this bill, else the product's own rate
+const scRate = (l) => (l.gst != null && l.gst !== '' ? l.gst : l.p.tax_rate);
 const scLimited = (p) => !S.org.allow_negative_stock && p.track_stock && !p.is_service;
 const scBad = (r) => { if (r && r.bad) auzScanner.beep(false); return r; };
 function scSellAdd(p, n = 1) {
@@ -128,7 +130,7 @@ const scAdd = (p, n) => scBad(scAddRaw(p, n));
 // ---------- the totals ----------
 function scDoc() {
   return { doc_type: 'invoice', party_id: SC.party ? SC.party.id : '', branch_id: S.branches.length === 1 ? S.branches[0].id : '', place_of_supply: '', price_includes_tax: !!SC.incl, reverse_charge: false, roundoff: '',
-    lines: SC.cart.map((l) => ({ product_id: l.p.id, description: l.p.name, hsn: l.p.hsn || '', qty: String(l.qty), unit: l.p.unit || '', rate: String(l.rate), disc_pct: l.dtype === 'pct' ? String(l.disc || '') : '', disc_amt: l.dtype === 'amt' ? String(l.disc || '') : '', tax_rate: String(l.p.tax_rate) })) };
+    lines: SC.cart.map((l) => ({ product_id: l.p.id, description: l.p.name, hsn: l.p.hsn || '', qty: String(l.qty), unit: l.p.unit || '', rate: String(l.rate), disc_pct: l.dtype === 'pct' ? String(l.disc || '') : '', disc_amt: l.dtype === 'amt' ? String(l.disc || '') : '', tax_rate: String(scRate(l)) })) };
 }
 const scTotals = () => calcDoc(scDoc());
 const scCount = () => (SC.mode === 'sell' ? SC.cart : SC.recv).reduce((s, l) => s + l.qty, 0);
@@ -172,6 +174,7 @@ async function scSaveProductPrices(p, sale, buy, mrp) {
 function scLineSheet(l, done) {
   const sell = SC.mode === 'sell', q = input({ mode: 'decimal', value: l.qty, label: 'Quantity' }), r = input({ mode: 'decimal', value: sell ? l.rate : l.cost, label: sell ? 'Price' : 'Cost' }), d = input({ mode: 'decimal', value: l.disc || '', placeholder: '0', label: 'Discount' });
   let dt = l.dtype;
+  const gstSel = selectEl(uniq([...taxRates(), Number(scRate(l))]).sort((a, b) => a - b).map((r2) => [String(r2), r2 + '%']), String(Number(scRate(l))));
   const list = sell ? SC.cart : SC.recv, p = l.p, canEdit = can('acc_inventory');
   const mrpNote = h('div', { class: 'small', style: { fontWeight: 600, minHeight: '18px' } });
   const showMrp = () => { const m = Number(p.mrp) || 0, x = N(r.value); mrpNote.textContent = m > 0 ? 'MRP ' + inr(m) + (sell && x > m ? '  ·  above MRP' : '') : ''; mrpNote.style.color = m > 0 && sell && x > m ? 'var(--red, #c0392b)' : ''; };
@@ -179,6 +182,7 @@ function scLineSheet(l, done) {
   const ps = input({ mode: 'decimal', value: Number(p.sale_price) || '', placeholder: '0.00', label: 'Selling price' }), pb = input({ mode: 'decimal', value: Number(p.purchase_price) || '', placeholder: '0.00', label: 'Purchase price' }), pm = input({ mode: 'decimal', value: Number(p.mrp) || '', placeholder: '0.00', label: 'MRP' });
   const body = h('div', { class: 'grid' }, h('div', { class: 'muted small' }, p.sku + (p.hsn ? ' · HSN ' + p.hsn : '') + ' · GST ' + p.tax_rate + '%' + (p.is_service ? '' : ' · ' + qty(p.stock) + ' ' + p.unit + ' in stock')),
     h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Quantity', q), field(sell ? 'Price each (this bill)' : 'Cost each', r)), mrpNote,
+    sell ? field('GST on this item (this bill only)', gstSel, 'Choose 0% for an item that carries no GST. The saved product is not changed.') : null,
     sell ? h('div', { class: 'grid' }, field('Discount on this item', d), seg([['pct', 'Percent'], ['amt', 'Rupees']], dt, (x) => { dt = x; }, { full: true })) : null,
     canEdit ? h('div', { class: 'grid', style: { gap: '10px', borderTop: '1px solid var(--sep, #ddd)', paddingTop: '12px' } }, h('h3', null, 'Product prices'),
       h('p', { class: 'small muted' }, 'Change the saved prices of this product for every future bill. This is not limited to this bill.'),
@@ -199,7 +203,7 @@ function scLineSheet(l, done) {
     { label: 'Save', primary: true, onclick: (c) => {
       const nq = N(q.value); if (!(nq > 0)) { toast('Quantity must be more than zero', { err: true }); return false; }
       if (sell && scLimited(l.p) && nq > Number(l.p.stock)) { toast('Only ' + qty(l.p.stock) + ' ' + l.p.unit + ' in stock', { err: true }); return false; }
-      if (sell) { if (N(r.value) < 0) { toast('Price cannot be negative', { err: true }); return false; } l.rate = r.value; l.disc = d.value; l.dtype = dt; } else l.cost = r.value;
+      if (sell) { if (N(r.value) < 0) { toast('Price cannot be negative', { err: true }); return false; } l.rate = r.value; l.disc = d.value; l.dtype = dt; l.gst = gstSel.value; } else l.cost = r.value;
       l.qty = nq; scPersist(); c(); done();
     } },
     { label: 'Remove', danger: true, onclick: (c) => { list.splice(list.indexOf(l), 1); scPersist(); c(); done(); } }] });
@@ -213,7 +217,7 @@ function scPayAccounts(kind) {
 }
 function scPayload(post, C) {
   const lines = SC.cart.map((l) => ({ product_id: l.p.id, description: l.p.name, hsn: l.p.hsn || '', qty: String(l.qty), unit: l.p.unit || '', rate: String(l.rate), disc_pct: l.dtype === 'pct' && l.disc ? String(l.disc) : null, disc_amt: l.dtype === 'amt' && l.disc ? String(l.disc) : null,
-    tax_rate: String(l.p.tax_rate), account_id: null, batch_no: '', expiry: null, warehouse_id: null }));
+    tax_rate: String(scRate(l)), account_id: null, batch_no: '', expiry: null, warehouse_id: null }));
   const acct = SC.acct[SC.pay] || (scPayAccounts(SC.pay)[0] || {}).id;
   const payments = post && SC.pay !== 'credit' && acct ? [{ account_id: acct, amount: C.total, mode: SC_METHOD[SC.pay], reference: SC.ref }] : [];
   return { id: null, doc_type: 'invoice', doc_date: today(), due_date: null, party_id: SC.party ? SC.party.id : null, branch_id: S.branches.length === 1 ? S.branches[0].id : null, warehouse_id: null, place_of_supply: null, reverse_charge: false, itc_eligible: true,
@@ -411,7 +415,7 @@ page('scan', {
         h('button', { class: 'btn icon', type: 'button', 'aria-label': 'One more of ' + l.p.name, onclick: () => { const r = scAdd(l.p); if (r.bad) toast(r.text, { err: true }); v.refresh(); } }, icon('plus', 18)));
       const line = sell ? Math.max(N(l.rate) * l.qty - (l.dtype === 'pct' ? N(l.rate) * l.qty * N(l.disc) / 100 : N(l.disc)), 0) : N(l.cost) * l.qty;
       lines.append(h('div', { class: 'li scan-line' }, h('div', { class: 'grow', onclick: () => scLineSheet(l, () => v.refresh()), style: { cursor: 'pointer' } }, h('div', { class: 't' }, l.p.name),
-        h('div', { class: 's' }, sell ? inr(l.rate) + ' each' + (Number(l.p.mrp) > 0 ? ' · MRP ' + inr(l.p.mrp) : '') + ' · GST ' + l.p.tax_rate + '%' + (N(l.disc) > 0 ? ' · ' + (l.dtype === 'pct' ? l.disc + '% off' : inr(l.disc) + ' off') : '') : (N(l.cost) > 0 ? 'Cost ' + inr(l.cost) + ' each' : 'Cost not entered'))),
+        h('div', { class: 's' }, sell ? inr(l.rate) + ' each' + (Number(l.p.mrp) > 0 ? ' · MRP ' + inr(l.p.mrp) : '') + ' · GST ' + scRate(l) + '%' + (N(l.disc) > 0 ? ' · ' + (l.dtype === 'pct' ? l.disc + '% off' : inr(l.disc) + ' off') : '') : (N(l.cost) > 0 ? 'Cost ' + inr(l.cost) + ' each' : 'Cost not entered'))),
         stepper, h('div', { class: 'v scan-amt' }, h('div', { class: 't' }, inr(line)))));
     });
     const listCard = rows.length ? lines : empty('scan', 'Nothing scanned yet', 'Tap the button above and point the camera at a barcode. You can also type a name or code, or use a Bluetooth scanner.');

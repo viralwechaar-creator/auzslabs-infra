@@ -350,6 +350,23 @@ export default async function run({ browser, stack }) {
     assert(boxes && boxes.r >= boxes.l - 2, 'not side by side: ' + JSON.stringify(boxes));
     await s.shot(a.page, 'scan-app-desktop'); await a.c.close();
   });
+  await s.check('A cashier can change the GST of one item on the bill (e.g. 0% for an item with no GST); totals and the posted invoice follow, the saved product is not changed', async () => {
+    const nog = await mk('No GST Notebook', 'NOGST1', '8907770003330', 100, 40, 5);
+    const a = await openPage('/scan.html', USERS.acctCashier); await a.page.waitForSelector('.scan-hero', { timeout: 15000 });
+    await a.page.evaluate(() => { window.open = () => null; });
+    await a.page.locator('input[type=search]').first().fill('8907770003330'); await a.page.locator('input[type=search]').first().press('Enter'); await a.page.waitForSelector('.scan-line');
+    assert(/GST 18%/.test(await a.page.locator('.scan-line').first().innerText()), 'starts at the product GST');
+    await a.page.locator('.scan-line .scan-q').first().click(); await a.page.waitForSelector('.sheet select');
+    assert(await a.page.locator('.sheet button', { hasText: 'Save product prices' }).count() === 0, 'a cashier must not see the saved-prices block');
+    await a.page.locator('.sheet select').first().selectOption('0'); await a.page.locator('.sheet .btn.fill').last().click(); await a.page.waitForTimeout(500);
+    assert(/GST 0%/.test(await a.page.locator('.scan-line').first().innerText()), 'line shows 0%: ' + await a.page.locator('.scan-line').first().innerText());
+    await a.page.locator('.scan-dock .btn.fill').click(); await a.page.waitForSelector('.alert'); await a.page.locator('.alert .def').click();
+    await a.page.waitForFunction(() => /Paid/.test(document.querySelector('.sheet')?.innerText || ''), null, { timeout: 15000 });
+    const d = (await q("select total::float8 t, cgst::float8 c, sgst::float8 g from acc_documents where tenant_id=$1 and doc_type='invoice' and status='posted' order by created_at desc limit 1", [tid]))[0];
+    assert(d && Math.abs(d.t - 100) < 0.05 && d.c === 0 && d.g === 0, 'posted: ' + JSON.stringify(d));
+    assert(Number((await q("select tax_rate::float8 r from acc_products where id=$1", [nog]))[0].r) === 18, 'the saved product changed');
+    await a.c.close();
+  });
   await s.check('A cashier (can sell, cannot add products): no "Add stock" switch, and an unknown barcode explains instead of failing', async () => {
     const a = await openPage('/scan.html', USERS.acctCashier); await a.page.waitForSelector('.scan-hero', { timeout: 15000 });
     assert(await a.page.locator('.seg button', { hasText: 'Add stock' }).count() === 0, 'add stock offered');
