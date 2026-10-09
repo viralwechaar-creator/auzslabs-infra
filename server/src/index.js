@@ -188,6 +188,10 @@ const RPC = {
   // --- Admin: salesmen (db/137) ---
   admin_add_salesman: { params: ['p_email', 'p_name'], defaults: { p_name: null }, auth: true },
   admin_list_salesmen: { params: [], auth: true },
+  admin_add_client_payment: { params: ['p_tenant_id', 'p_amount', 'p_paid_on', 'p_mode', 'p_utr', 'p_purpose', 'p_note'], auth: true, defaults: { p_paid_on: null, p_mode: 'upi', p_utr: null, p_purpose: null, p_note: null } },
+  admin_list_client_payments: { params: ['p_tenant_id'], auth: true, defaults: { p_tenant_id: null } },
+  admin_delete_client_payment: { params: ['p_id'], auth: true },
+  admin_salesman_work: { params: ['p_days'], auth: true, defaults: { p_days: 0 } },
   admin_set_salesman_active: { params: ['p_id', 'p_active'], auth: true },
 
   // --- Salesman: provision + brand one real trial tenant per sales pitch (db/137) ---
