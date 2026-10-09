@@ -75,6 +75,15 @@ export default async function run({ browser, stack }) {
   const owner = salonClient(stack, host);
   await s.check('Owner cannot sign in with a wrong password', async () => { assert((await owner.call('POST', '/admin/login', { password: 'nope-nope' })).status === 401); }, 'critical');
   await s.check('Owner signs in with the AUZslab account password', async () => { assert((await owner.call('POST', '/admin/login', { password: PASSWORD })).status === 200); }, 'critical');
+  await s.check('Salesman hand-over: the trial owner\'s AUZslab session opens the console; a stranger\'s or a bad token does not', async () => {
+    const login = async (email) => (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password: PASSWORD }) })).json()).access_token;
+    const good = await login(USERS.salonOwner);
+    const h = salonClient(stack, host);
+    assert((await h.call('POST', '/admin/handoff', { token: 'garbage' })).status === 401, 'bad token accepted');
+    assert((await h.call('POST', '/admin/handoff', { token: await login(USERS.cafeOwner) })).status === 403, 'another business owner accepted');
+    assert((await h.call('POST', '/admin/handoff', { token: good })).status === 200, 'owner refused');
+    assert((await h.call('GET', '/admin/me')).data.admin, 'no console session after hand-over');
+  }, 'critical');
   await s.check('Owner console opens in the browser and every tab renders', async () => {
     await page.goto(stack.url(host, '/salon/admin/')); await page.waitForTimeout(600);
     await page.fill('#pw', PASSWORD); await page.click('#loginForm button[type=submit]'); await page.waitForTimeout(1200);
