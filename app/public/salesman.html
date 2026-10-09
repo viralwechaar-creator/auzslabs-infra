@@ -119,6 +119,11 @@ button:disabled{opacity:.5;cursor:default}
       <h2>Once they buy</h2>
       <p class=sub style="margin-top:-6px">A real login with a password, to hand over to the owner.</p>
       <button class=ghost id=ownerLoginBtn>Create a real owner login</button>
+
+      <h2 style="color:#b00020">Delete this prospect</h2>
+      <p class=sub style="margin-top:-6px">Permanent — removes the tenant and everything in it (menu, logo, any owner login). Cannot be undone.</p>
+      <button style="background:#b00020" id=deleteTrialBtn>Delete permanently</button>
+      <div id=deleteErr class=err></div>
     </div>
   </div>
 </div>
@@ -308,6 +313,22 @@ $('ownerLoginBtn').onclick = async () => {
     const idx = trials.findIndex((t) => t.id === current.id); if (idx > -1) trials[idx].has_owner = true;
     renderTrials();
   } catch (e) { $('brandErr').textContent = e.message; }
+};
+
+$('deleteTrialBtn').onclick = async () => {
+  if (!current) return;
+  $('deleteErr').textContent = '';
+  const typed = prompt('This permanently deletes "' + current.name + '" and everything in it.\n\nType its address to confirm: ' + current.slug);
+  if (typed === null) return;
+  $('deleteTrialBtn').disabled = true;
+  const { error } = await sb.rpc('salesman_delete_trial', { p_tenant_id: current.id, p_confirm_slug: typed.trim() });
+  $('deleteTrialBtn').disabled = false;
+  if (error) { $('deleteErr').textContent = error.message; return; }
+  trials = trials.filter((t) => t.id !== current.id);
+  current = null;
+  $('brandPanel').classList.add('hidden');
+  renderTrials();
+  toast('Deleted permanently');
 };
 </script>
 </body></html>
