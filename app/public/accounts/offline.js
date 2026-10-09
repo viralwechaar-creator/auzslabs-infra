@@ -10,8 +10,8 @@ const offlineNow = () => !!(S.offline || navigator.onLine === false);
 let _odb = null;
 function offDb() {
   return _odb || (_odb = new Promise((resolve, reject) => {
-    const r = indexedDB.open('acc1', 1);
-    r.onupgradeneeded = () => { const d = r.result; d.createObjectStore('kv', { keyPath: 'k' }); d.createObjectStore('q', { keyPath: 'op' }); };
+    const r = indexedDB.open('acc1', 2);
+    r.onupgradeneeded = () => { const d = r.result; if (!d.objectStoreNames.contains('kv')) d.createObjectStore('kv', { keyPath: 'k' }); if (!d.objectStoreNames.contains('q')) d.createObjectStore('q', { keyPath: 'op' }); if (!d.objectStoreNames.contains('sq')) d.createObjectStore('sq', { keyPath: 'op' }); };
     r.onsuccess = () => resolve(r.result); r.onerror = () => reject(r.error);
   }));
 }
@@ -71,18 +71,18 @@ let _offCount = { waiting: 0, refused: 0 };
 function offChanged() { window.dispatchEvent(new CustomEvent('acc:drafts')); updateOffBar(); }
 async function updateOffBar() {
   const bar = document.getElementById('offbar'); if (!bar) return;
-  const q = await draftQueue(); _offCount = { waiting: q.filter((x) => x.state !== 'refused').length, refused: q.filter((x) => x.state === 'refused').length };
+  const q = (await draftQueue()).concat(window.sqItems ? sqItems() : []); _offCount = { waiting: q.filter((x) => x.state !== 'refused').length, refused: q.filter((x) => x.state === 'refused').length };
   const off = offlineNow(); let text = '', act = null;
   if (S.offline && !off) { text = 'You are back online. Reload to use everything again.'; act = { label: 'Reload', run: () => location.reload() }; }
-  else if (off) { text = 'You are offline. You can still write bills, expenses and invoices: they are kept on this device and sent as drafts when you are back online.' + (_offCount.waiting ? ' Waiting: ' + _offCount.waiting + '.' : ''); act = { label: 'Offline drafts', run: () => go('offline') }; }
+  else if (off) { text = (window.AUZ_SCAN ? 'You are offline. Keep scanning and selling: everything is saved on this phone and sent to your books when you are back online.' : 'You are offline. You can still write bills, expenses and invoices: they are kept on this device and sent as drafts when you are back online.') + (_offCount.waiting ? ' Waiting: ' + _offCount.waiting + '.' : ''); act = window.AUZ_SCAN ? null : { label: 'Offline drafts', run: () => go('offline') }; }
   else if (_offCount.refused) { text = _offCount.refused + ' offline draft' + (_offCount.refused > 1 ? 's were' : ' was') + ' refused by the books. Open Offline drafts to see why.'; act = { label: 'Open', run: () => go('offline') }; }
   else if (_offCount.waiting) { text = _offCount.waiting + ' offline draft' + (_offCount.waiting > 1 ? 's' : '') + ' waiting to be sent.'; act = { label: 'Send now', run: () => flushDrafts() }; }
   bar.hidden = !text; clear(bar);
   if (text) bar.append(icon(off ? 'alert' : 'info', 18), h('span', { class: 'grow' }, text), act ? h('button', { class: 'btn sm', type: 'button', onclick: act.run }, act.label) : null);
 }
-window.addEventListener('online', () => { flushDrafts().then(() => { updateOffBar(); if (S.offline && route && route.id === 'offline') location.reload(); }); });
+window.addEventListener('online', () => { if (window.sqFlush) sqFlush(); flushDrafts().then(() => { updateOffBar(); if (S.offline && route && route.id === 'offline') location.reload(); }); });
 window.addEventListener('offline', updateOffBar);
-setInterval(() => { if (navigator.onLine !== false && !S.offline) flushDrafts(); }, 60000);
+setInterval(() => { if (navigator.onLine !== false && !S.offline) { flushDrafts(); if (window.sqFlush) sqFlush(); } }, 60000);
 
 page('offline', {
   title: 'Offline drafts', icon: 'upload', nav: false,

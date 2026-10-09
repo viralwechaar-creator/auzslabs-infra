@@ -149,8 +149,8 @@ async function loadCtx() {
 const PRODUCT_CAP = 5000;
 async function products(force) {
   if (!S.products || force) {
-    try { S.products = (await api('acc_list_products', { p: { limit: PRODUCT_CAP } })).rows; S.productsPartial = S.products.length >= PRODUCT_CAP; if (window.offSave) offSave('products', S.products); }
-    catch (e) { if (e.status || !window.offLoad) throw e; const c = await offLoad('products'); if (!c) throw e; S.products = c; S.productsPartial = false; }   // no connection: the copy kept on this device
+    try { const rows = (await api('acc_list_products', { p: { limit: PRODUCT_CAP } })).rows; S.productsPartial = rows.length >= PRODUCT_CAP; if (window.offSave) offSave('products', rows); S.products = window.sqSetBase ? sqSetBase(rows) : rows; }
+    catch (e) { if (e.status || !window.offLoad) throw e; const c = await offLoad('products'); if (!c) throw e; S.products = window.sqSetBase ? sqSetBase(c) : c; S.productsPartial = false; }   // no connection: the copy kept on this device, with the waiting offline entries applied
   }
   return S.products;
 }
