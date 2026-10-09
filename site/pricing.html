@@ -220,6 +220,17 @@
             </div>
           </div>
 
+          <div class="card price-card" data-price-card>
+            <img src="icon-scan.svg" alt="" class="price-card-icon">
+            <div class="price-card-name">AUZsScan</div>
+            <div class="price-card-price">&#8377;460<span>/mo<span class="gst-t" hidden> + GST</span></span></div>
+            <p class="price-card-sub">Scan, bill with GST and add stock from your phone.</p>
+            <div class="acts">
+              <a href="scan-and-bill.html" class="btn btn-ghost">Details</a>
+              <button class="btn btn-primary" data-add-plan="scan">Get it</button>
+            </div>
+          </div>
+
         </div>
         <p class="p" style="margin-top:16px;font-size:12.5px;color:var(--ink-faint)"><b>CRM, Billing &amp; Invoicing and Inventory</b> are included inside the apps above at no extra cost &mdash; there is nothing separate to buy.</p>
         <p class="p" style="margin-top:16px;font-size:12.5px;color:var(--ink-faint)">Already on AUZsPOS and want to add AUZsPay? The add-on price for existing AUZsPOS customers is <span data-addon-price>&#8377;1,399</span>/month<span class="gst-t" hidden> + GST</span> — add it from your <a href="account.html" style="color:var(--accent)">account page</a>.</p>
@@ -556,8 +567,8 @@ document.querySelectorAll('[data-add-plan]').forEach(function (btn) {
 // Pricing section show up here without a deploy.
 (function () {
   var inr = function (n) { return '₹' + Number(n).toLocaleString('en-IN'); };
-  var ICON = { pos: 'icon-pos.svg', self_order: 'icon-pos-qr.svg', payroll: 'icon-payroll.svg', accounting: 'icon-accounts.svg', mobile: 'icon-mob.svg' };
-  var LABEL = { pos: 'AUZsPOS', self_order: 'AUZsPOS QR', payroll: 'AUZsPay', accounting: 'AUZsLedger', mobile: 'AUZsMob', website_builder: 'Website Builder' };
+  var ICON = { pos: 'icon-pos.svg', self_order: 'icon-pos-qr.svg', payroll: 'icon-payroll.svg', accounting: 'icon-accounts.svg', mobile: 'icon-mob.svg', scan: 'icon-scan.svg' };
+  var LABEL = { pos: 'AUZsPOS', self_order: 'AUZsPOS QR', payroll: 'AUZsPay', accounting: 'AUZsLedger', mobile: 'AUZsMob', scan: 'AUZsScan', website_builder: 'Website Builder' };
   var sb; try { sb = supabase.createClient(CFG.url, CFG.key); } catch (e) { return; }
   Promise.all([sb.rpc('public_product_prices'), sb.rpc('public_bundles'), sb.rpc('public_addon_price_overrides')]).then(function (r) {
     var prices = {}; ((r[0] && r[0].data) || []).forEach(function (p) { prices[p.key] = p; });
@@ -630,7 +641,7 @@ document.querySelectorAll('[data-add-plan]').forEach(function (btn) {
 (function () {
   var sel = document.getElementById('fbProd'), rows = document.getElementById('fbRows'); if (!sel) return;
   var inr = function (n) { return '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 }); };
-  var LABEL = { pos: 'AUZsPOS', self_order: 'AUZsPOS QR', payroll: 'AUZsPay', accounting: 'AUZsLedger', mobile: 'AUZsMob' };
+  var LABEL = { pos: 'AUZsPOS', self_order: 'AUZsPOS QR', payroll: 'AUZsPay', accounting: 'AUZsLedger', mobile: 'AUZsMob', scan: 'AUZsScan' };
   var sb; try { sb = supabase.createClient(CFG.url, CFG.key); } catch (e) { document.getElementById('firstBill').hidden = true; return; }
   sb.rpc('public_product_prices').then(function (r) {
     var list = ((r && r.data) || []).filter(function (p) { return LABEL[p.key] && Number(p.monthly_price) > 0; });

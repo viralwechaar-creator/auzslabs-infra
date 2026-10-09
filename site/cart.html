@@ -154,7 +154,7 @@
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script>
 const sb = supabase.createClient(CFG.url, CFG.key);
-const PRODUCT_LABEL = { salon: 'AUZslab Salon', pos: 'AUZsPOS', crm: 'CRM', billing: 'Billing & Invoicing', inventory: 'Inventory', self_order: 'AUZsPOS QR', payroll: 'AUZsPay', website_builder: 'Website Builder', accounting: 'AUZsLedger', mobile: 'AUZsMob' };
+const PRODUCT_LABEL = { salon: 'AUZslab Salon', pos: 'AUZsPOS', crm: 'CRM', billing: 'Billing & Invoicing', inventory: 'Inventory', self_order: 'AUZsPOS QR', payroll: 'AUZsPay', website_builder: 'Website Builder', accounting: 'AUZsLedger', mobile: 'AUZsMob', scan: 'AUZsScan' };
 // Apps link here as cart.html?add=<product key>: pre-select that product so a new customer lands on their bill + notes.
 try { const pre = new URLSearchParams(location.search).get('add'); if (pre && PRODUCT_LABEL[pre]) AUZcart.add(pre); } catch (e) {}
 

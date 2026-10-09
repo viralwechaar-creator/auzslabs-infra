@@ -152,7 +152,8 @@ async function boot() {
   }
   const slug = window.TENANT_SLUG;
   if (slug && dash.tenant.slug !== slug) { await sb.auth.signOut(); return showLogin('This login belongs to a different business (' + dash.tenant.slug + '.auzslab.in). Sign in at your own business link.'); }
-  if (!(dash.features || {}).accounting || (dash.enabled_features || {}).accounting === false) return blocked('Accounting is not enabled', 'AUZslab Accounting is not part of this business’s plan. You can request it from your account page, or ask the AUZslab team.');
+  const fOn = (k) => (dash.features || {})[k] === true && (dash.enabled_features || {})[k] !== false;
+  if (!(SCANAPP ? fOn('accounting') || fOn('scan') : fOn('accounting'))) return blocked('Accounting is not enabled', 'AUZslab Accounting is not part of this business’s plan. You can request it from your account page, or ask the AUZslab team.');
   S.user = { email: dash.my_email, role: dash.my_role }; S.dash = dash;
   try { await loadCtx(); } catch (e) { return blocked('Could not open Accounting', e.message); }
   cacheBoot(); parties().catch(() => {}); products().catch(() => {});     // keep a copy for offline drafts
