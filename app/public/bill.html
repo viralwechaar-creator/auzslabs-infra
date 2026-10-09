@@ -15,14 +15,14 @@ body{padding:16px;display:grid;justify-items:center}
 .bill .row2{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .bar{display:flex;gap:10px;margin-top:6px}
 .bill.classic{background:transparent;box-shadow:none;padding:0;width:min(820px,100%)}.bill.classic .bar{justify-content:center}
-@media print{body{padding:0}.bill{box-shadow:none;padding:0}.bar{display:none}}
+@media print{body{padding:0;display:block}body>main#app{display:block!important}.bill{box-shadow:none;padding:0;width:auto;display:block}.bar{display:none}}
 </style>
 </head>
 <body>
 <main id="app" class="bill" aria-live="polite"><div class="skel" style="height:200px"></div></main>
 <script src="/vendor/qrcode.js"></script>
 <script src="/config.js"></script>
-<script src="/accounts/taxinv.js?v=3"></script>
-<script src="/accounts/bill.js?v=3"></script>
+<script src="/accounts/taxinv.js?v=5"></script>
+<script src="/accounts/bill.js?v=4"></script>
 </body>
 </html>
