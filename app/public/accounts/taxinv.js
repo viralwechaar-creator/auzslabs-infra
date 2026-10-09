@@ -39,10 +39,10 @@
       '.ti .r2{border-bottom:1px solid #111;min-height:141px;font-size:15.5px}.ti .r2>div{padding:8px 10px;display:flex;flex-direction:column}' +
       '.ti .kv{display:grid;grid-template-columns:111px 14px 1fr;margin:1px 0}.ti .bt{font-weight:700;font-style:italic;font-size:17px}.ti .mu{flex:1;min-height:56px;padding-top:4px}' +
       '.ti .strip{height:26px;border-bottom:1px solid #111}' +
-      '.ti .itw{flex:1;display:flex;flex-direction:column;min-height:200px}.ti table.it{width:100%;flex:1;border-collapse:collapse;table-layout:fixed;height:100%}' +
-      '.ti table.it th{border-bottom:1px solid #111;border-right:1px solid #111;padding:7px 7px;font-size:15px;height:36px}.ti table.it th:last-child,.ti table.it td:last-child{border-right:0}' +
+      '.ti .itw{flex:1;display:flex;flex-direction:column;min-height:200px}.ti table.it{width:100%;flex:1;border-collapse:separate;border-spacing:0;table-layout:fixed;height:100%}' +
+      '.ti table.it th{border-bottom:var(--bw,1px) solid #111;border-right:var(--bw,1px) solid #111;padding:7px 7px;font-size:15px;height:36px}.ti table.it th:last-child,.ti table.it td:last-child{border-right:0}' +
       '.ti table.it th.sn{font-size:11px;text-align:left}.ti table.it th.hs{font-size:10px}' +
-      '.ti table.it td{border-right:1px solid #111;padding:6px 8px;vertical-align:top;font-size:15px;word-wrap:break-word}.ti .r{text-align:right}.ti table.it tr.fill td{height:auto}' +
+      '.ti table.it td{border-right:var(--bw,1px) solid #111;padding:6px 8px;vertical-align:top;font-size:15px;word-wrap:break-word}.ti table.it td.nw{white-space:nowrap;padding-left:4px;padding-right:6px}.ti .r{text-align:right}.ti table.it tr.fill td{height:auto}' +
       '.ti .sum{display:grid;grid-template-columns:1fr 14.9%;border-top:1px solid #111;min-height:49px}.ti .sum .l{text-align:center;font-style:italic;display:flex;align-items:center;justify-content:center;padding-right:70px;font-size:15px}' +
       '.ti .sum .rr{border-left:1px solid #111;padding:4px 8px}.ti .sum .rr div{text-align:right;font-size:15px}' +
       '.ti .gt{display:grid;grid-template-columns:1fr 14.9%;border-top:1px solid #111;border-bottom:1px solid #111;font-weight:700;font-size:15px;min-height:30px}.ti .gt .a{display:flex;justify-content:center;align-items:center;gap:22px;padding-left:110px}' +
@@ -80,7 +80,7 @@
     const blk = (label) => el('div', null, el('div', { class: 'bt' }, label + ' :'), el('div', { class: 'mu' }, billTo, d.billing_address ? el('div', null, d.billing_address) : null), kv('Party Mobile No', phone), kv('GSTIN / UIN', d.party_gstin || ''));
     const terms = String(d.terms || o.terms || b.terms || '').split('\n').map((x) => x.trim()).filter(Boolean);
     const hasBank = k.name || k.account || k.ifsc;
-    const W = ['5.2%', '40.1%', '8.7%', '8.3%', '7.2%', '15.5%', '14.9%'];
+    const W = ['5.2%', '38.9%', '8.7%', '8.3%', '9.4%', '14.6%', '14.9%'];
     const th = (txt, cls, st) => el('th', { class: cls || '', style: st || '' }, txt);
     const fr = el('div', { class: 'fr' },
       opts.copy === false ? null : el('div', { class: 'cp' }, opts.copy || 'Original Copy'),
@@ -93,7 +93,7 @@
       el('div', { class: 'strip' }),
       el('div', { class: 'itw' }, el('table', { class: 'it' }, el('colgroup', null, W.map((w) => el('col', { style: 'width:' + w }))),
         el('thead', null, el('tr', null, th('S.N.', 'sn'), th('Description of Goods', '', 'text-align:left'), th('HSN/SAC Cod', 'hs'), th('Qty.', 'r'), th('MRP', 'r'), th('Price', 'r'), th('Amount(₹)', 'r'))),
-        el('tbody', null, lines.map((l, i) => el('tr', null, [(l.n || i + 1) + '.', l.description || '', l.hsn || '', q3.format(n(l.qty)), n(l.mrp) ? nf.format(n(l.mrp)) : '', nf.format(n(l.rate)), nf.format(n(l.qty) * n(l.rate))].map((x, j) => el('td', { class: j > 2 || j === 0 ? 'r' : '' }, x)))),
+        el('tbody', null, lines.map((l, i) => el('tr', null, [(l.n || i + 1) + '.', l.description || '', l.hsn || '', q3.format(n(l.qty)), n(l.mrp) ? nf.format(n(l.mrp)) : '', nf.format(n(l.rate)), nf.format(n(l.qty) * n(l.rate))].map((x, j) => el('td', { class: (j > 2 || j === 0 ? 'r' : '') + (j > 2 ? ' nw' : '') }, x)))),
           el('tr', { class: 'fill' }, [0, 1, 2, 3, 4, 5, 6].map(() => el('td', null)))))),
       el('div', { class: 'sum' }, el('div', { class: 'l' }, 'Less : Discount'), el('div', { class: 'rr' }, el('div', { style: 'font-weight:700' }, nf.format(gross)), el('div', null, nf.format(disc)), addRows.map(([a, v]) => el('div', null, el('span', { style: 'float:left;font-style:italic;font-size:11px' }, a), nf.format(n(v)))))),
       el('div', { class: 'gt' }, el('div', { class: 'a' }, el('span', null, 'Grand Total'), el('i', null, nf.format(qtySum)), el('span', { class: 'rs' }, '₹')), el('div', { class: 'b' }, nf.format(n(d.total)))),
@@ -106,7 +106,8 @@
       d.cancelled ? el('div', { style: 'text-align:center;color:#b00;font-weight:700;padding:6px;border-top:1px solid #111' }, 'CANCELLED') : null);
     const ti = el('div', { class: 'ti' }, fr), wrap = el('div', { class: 'ti-wrap' }, ti);
     // scale the A4 page to the width it is shown in (never above 100%)
-    const fit = () => { const w = wrap.clientWidth || wrap.parentNode && wrap.parentNode.clientWidth || 794; ti.style.zoom = String(Math.min(1, Math.max(0.3, w / 794))); };
+    // lines are widened as the page is scaled down so they stay about one screen pixel (phones drop sub-pixel table lines)
+    const fit = () => { const w = wrap.clientWidth || wrap.parentNode && wrap.parentNode.clientWidth || 794; const z = Math.min(1, Math.max(0.3, w / 794)); ti.style.zoom = String(z); ti.style.setProperty('--bw', Math.min(3, Math.max(1, 1.1 / z)).toFixed(2) + 'px'); };
     setTimeout(fit, 0); window.addEventListener('resize', fit); if (window.ResizeObserver) { try { new ResizeObserver(fit).observe(wrap); } catch (e) { /* ignore */ } }
     return wrap;
   }
