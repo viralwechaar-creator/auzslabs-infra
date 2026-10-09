@@ -3,27 +3,33 @@
 const PAGES = {};
 const page = (id, def) => { PAGES[id] = def; };
 // Overview, transactions (sales, purchases), accounts, financial reports first; inventory and tools after.
-const NAV = [
+// scan.html (the standalone AUZsScan app, window.AUZ_SCAN) runs this same shell with a short menu: scan, sales, products, stock.
+const SCANAPP = !!window.AUZ_SCAN, HOME = SCANAPP ? 'scan' : 'home';
+const BRAND = SCANAPP ? { name: 'Scan & bill', title: 'AUZsScan', logo: '/logo-scan.svg', icon: '/icon-scan.svg' } : { name: 'Accounting', title: 'AUZslab Accounting', logo: '/logo-accounts.svg', icon: '/icon-accounts.svg' };
+const NAV = SCANAPP ? [
+  { group: '', items: ['scan'] },
+  { group: 'Records', items: ['sales', 'products', 'stock'] },
+] : [
   { group: '', items: ['home'] },
-  { group: 'Sales', items: ['sales', 'customers', 'receipts'] },
+  { group: 'Sales', items: ['scan', 'sales', 'customers', 'receipts'] },
   { group: 'Purchases', items: ['purchases', 'suppliers', 'payments', 'expenses'] },
   { group: 'Accounts', items: ['books', 'banking', 'assets'] },
   { group: 'Financial reports', items: ['reports', 'gst'] },
   { group: 'Inventory', items: ['products', 'stock'] },
   { group: 'Tools', items: ['data', 'messages', 'settings'] },
 ];
-const TABS = ['home', 'sales', 'receipts', 'expenses'];
-let route = { id: 'home', args: [], q: new URLSearchParams() };
+const TABS = SCANAPP ? ['scan', 'sales', 'products', 'stock'] : ['home', 'sales', 'receipts', 'expenses'];
+let route = { id: HOME, args: [], q: new URLSearchParams() };
 let cleanup = [];
 
 function parseHash() {
-  const raw = (location.hash || '#/home').replace(/^#\/?/, '');
+  const raw = (location.hash || '#/' + HOME).replace(/^#\/?/, '');
   const [path, qs] = raw.split('?');
   const parts = path.split('/').filter(Boolean).map(decodeURIComponent);
-  return { id: parts[0] || 'home', args: parts.slice(1), q: new URLSearchParams(qs || '') };
+  return { id: parts[0] || HOME, args: parts.slice(1), q: new URLSearchParams(qs || '') };
 }
 const go = (path) => { const t = '#/' + path.replace(/^#?\/?/, ''); if (location.hash === t) route_(); else location.hash = t; };
-const back = (fallback) => { if (history.length > 1 && document.referrer !== '' || history.length > 2) history.back(); else go(fallback || 'home'); };
+const back = (fallback) => { if (history.length > 1 && document.referrer !== '' || history.length > 2) history.back(); else go(fallback || HOME); };
 
 // ---------- login / boot ----------
 // Google/Apple/phone sign-in (db/069) alongside email+password -- phone has
@@ -101,7 +107,7 @@ function showLogin(msg) {
   emailWrap.append(btn);
 
   const form = h('form', { class: 'card', onsubmit: (ev) => ev.preventDefault() },
-    h('img', { src: '/logo-accounts.svg', alt: 'AUZslab Accounting' }), h('h1', null, 'Sign in'), h('p', { class: 'muted' }, 'Use the email and password you use for your AUZslab account.'),
+    h('img', { src: BRAND.logo, alt: BRAND.title }), h('h1', null, 'Sign in'), h('p', { class: 'muted' }, 'Use the email and password you use for your AUZslab account.'),
     socialWrap, socialDivider, methodRow, emailWrap, phoneWrap, staffWrap, m);
   clear($('#app')).append(h('div', { class: 'login' }, form));
   e.focus();
@@ -130,7 +136,7 @@ function showLogin(msg) {
   }
 }
 function blocked(title, text) {
-  clear($('#app')).append(h('div', { class: 'login' }, h('div', { class: 'card' }, h('img', { src: '/logo-accounts.svg', alt: 'AUZslab Accounting' }), h('h1', null, title), h('p', { class: 'muted' }, text),
+  clear($('#app')).append(h('div', { class: 'login' }, h('div', { class: 'card' }, h('img', { src: BRAND.logo, alt: BRAND.title }), h('h1', null, title), h('p', { class: 'muted' }, text),
     h('button', { class: 'btn wide', onclick: async () => { await sb.auth.signOut(); location.reload(); } }, 'Sign out'))));
 }
 async function boot() {
@@ -154,7 +160,7 @@ async function boot() {
   if (window.auzBrandLoad) auzBrandLoad(sb);
   window.addEventListener('hashchange', route_);
   route_();
-  runDueRecurring();
+  if (!SCANAPP) runDueRecurring();
   updateOffBar(); flushDrafts();
 }
 // Starting with no connection (or the server unreachable): the setup, people and products come from the copy saved at the
@@ -163,7 +169,7 @@ function bootOffline(c) {
   S.offline = true; S.dash = c.dash; S.user = c.user; applyCtx(c.ctx);
   buildShell();
   window.addEventListener('hashchange', route_);
-  if (!location.hash || /^#\/?(home)?$/.test(location.hash)) location.hash = '#/offline';
+  if (!SCANAPP && (!location.hash || /^#\/?(home)?$/.test(location.hash))) location.hash = '#/offline';
   route_(); updateOffBar();
 }
 async function runDueRecurring() { // no background worker: due recurring documents are created when someone opens the app
@@ -183,9 +189,9 @@ function navItem(id, el = 'a') {
   return h('a', { href: '#/' + id, 'data-nav': id, class: 'nav-i', title: p.title }, icon(p.icon, 20), h('span', { class: 'lbl-t' }, p.title));
 }
 function buildShell() {
-  const apps = [['/index.html', 'POS', 'bag', 'pos'], ['/payroll.html', 'Payroll', 'users', 'payroll'], ['/mob.html', 'AUZsMob', 'box', 'mobile']].filter((a) => (S.dash.features || {})[a[3]] && (S.dash.enabled_features || {})[a[3]] !== false && ['owner', 'manager'].includes(S.user.role));
+  const apps = (SCANAPP ? [['/accounts.html', 'AUZsLedger', 'book', 'accounting']] : [['/index.html', 'POS', 'bag', 'pos'], ['/payroll.html', 'Payroll', 'users', 'payroll'], ['/mob.html', 'AUZsMob', 'box', 'mobile']]).filter((a) => (S.dash.features || {})[a[3]] && (S.dash.enabled_features || {})[a[3]] !== false && ['owner', 'manager'].includes(S.user.role));
   const side = h('aside', { class: 'side', 'aria-label': 'Sections' },
-    h('div', { class: 'brand' }, h('img', { src: '/icon-accounts.svg', alt: '', width: 30, height: 30 }), h('div', { class: 'lbl-t grow' }, h('b', null, 'Accounting'), h('span', null, S.org.trade_name || S.org.legal_name || S.ctx.tenant.name)),
+    h('div', { class: 'brand' }, h('img', { src: BRAND.icon, alt: '', width: 30, height: 30 }), h('div', { class: 'lbl-t grow' }, h('b', null, BRAND.name), h('span', null, S.org.trade_name || S.org.legal_name || S.ctx.tenant.name)),
       h('button', { class: 'side-tg', type: 'button', title: 'Collapse or expand the sidebar', 'aria-label': 'Collapse or expand the sidebar', onclick: toggleSide }, icon('sidebar', 20))),
     NAV.map((g) => [g.group ? h('div', { class: 'gh' }, h('span', { class: 'lbl-t' }, g.group)) : null, g.items.map((i) => navItem(i))]),
     apps.length ? [h('div', { class: 'gh' }, h('span', { class: 'lbl-t' }, 'Other apps')), apps.map(([href, t, ic]) => h('a', { href, class: 'nav-i', title: t }, icon(ic, 20), h('span', { class: 'lbl-t' }, t)))] : null,
@@ -208,7 +214,7 @@ async function deleteAccountFlow() {
   if (!ok) return;
   const { error } = await sb.auth.deleteAccount(pw.value);
   if (error) { await alertBox({ title: 'Could not delete account', message: error.message, cancel: false }); return; }
-  location.href = '/accounts.html';
+  location.href = location.pathname;
 }
 function moreSheet() {
   const body = h('div', { class: 'grid' }, NAV.filter((g) => g.group).map((g) => h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, g.group)), h('div', { class: 'list' },
@@ -235,7 +241,7 @@ function globalKeys(e) {
 }
 function quickMenu(anchor) {
   const it = [];
-  if (can('acc_sales')) it.push({ header: 'Sell' }, { label: 'Invoice', icon: 'doc', run: () => go('new/invoice') }, { label: 'Quotation', icon: 'file', run: () => go('new/quotation') }, { label: 'Receipt (money in)', icon: 'wallet', run: () => receiptSheet('receipt') }, { label: 'New customer', icon: 'user', run: () => partySheet('customer') });
+  if (can('acc_sales')) it.push({ header: 'Sell' }, { label: 'Scan to bill', icon: 'scan', run: () => go('scan') }, { label: 'Invoice', icon: 'doc', run: () => go('new/invoice') }, { label: 'Quotation', icon: 'file', run: () => go('new/quotation') }, { label: 'Receipt (money in)', icon: 'wallet', run: () => receiptSheet('receipt') }, { label: 'New customer', icon: 'user', run: () => partySheet('customer') });
   if (can('acc_purchase')) it.push({ header: 'Buy' }, { label: 'Bill', icon: 'receipt', run: () => go('new/bill') }, { label: 'Expense', icon: 'cash', run: () => go('new/expense') }, { label: 'Payment (money out)', icon: 'wallet', run: () => receiptSheet('payment') }, { label: 'New supplier', icon: 'building', run: () => partySheet('supplier') });
   if (can('acc_inventory')) it.push({ header: 'Stock' }, { label: 'New product', icon: 'box', run: () => productSheet() }, { label: 'Stock adjustment', icon: 'layers', run: () => stockAdjustSheet() });
   if (can('acc_post')) it.push({ header: 'Books' }, { label: 'Journal voucher', icon: 'book', run: () => voucherSheet('journal') }, { label: 'Transfer between accounts', icon: 'swap', run: () => voucherSheet('contra') });
@@ -248,7 +254,7 @@ async function route_() {
   cleanup.forEach((f) => { try { f(); } catch { /* ignore */ } }); cleanup = [];
   route = parseHash();
   let def = PAGES[route.id];
-  if (!def) { route = { id: 'home', args: [], q: new URLSearchParams() }; def = PAGES.home; }
+  if (!def) { route = { id: HOME, args: [], q: new URLSearchParams() }; def = PAGES[HOME]; }
   const main = $('#main'); if (!main) return;
   const root = h('div', { class: 'page' }, h('div', { class: 'skel', style: { height: '44px', width: '55%' } }), h('div', { class: 'skel', style: { height: '120px' } }), h('div', { class: 'skel', style: { height: '220px' } }));
   clear(main).append(root);
@@ -268,7 +274,7 @@ function header(o, root) {
   const l = $('#tb-l'), t = $('#tb-t'), r = $('#tb-r'); if (!l) return;
   clear(l); clear(r);
   t.textContent = o.title || '';
-  document.title = (o.title ? o.title + ' · ' : '') + 'AUZslab Accounting';
+  document.title = (o.title ? o.title + ' · ' : '') + BRAND.title;
   if (o.back) l.append(h('button', { class: 'btn plain', type: 'button', 'aria-label': 'Back', onclick: () => (typeof o.back === 'function' ? o.back() : go(o.back)) }, icon('chevL', 22), h('span', { class: 'desk-only' }, 'Back')));
   const desk = isDesk();
   if (desk) { r.append(h('div', { class: 'gsearch' }, h('button', { class: 'input', type: 'button', style: { textAlign: 'left', color: 'var(--label3)', display: 'flex', alignItems: 'center', gap: '8px' }, onclick: openPalette, 'aria-label': 'Search everything' }, icon('search', 18), h('span', { class: 'gs-t' }, 'Search'), h('span', { class: 'muted small gs-t', style: { marginLeft: 'auto' } }, '⌘K')))); }

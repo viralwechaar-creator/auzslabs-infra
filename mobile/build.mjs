@@ -39,6 +39,16 @@ if (!manifest.includes('ACCESS_FINE_LOCATION')) {
     '</manifest>');
   fs.writeFileSync(manifestPath, manifest);
 }
+// Barcode scanning (AUZsLedger Scan to bill / AUZsScan, ds/scanner.js) opens the camera with getUserMedia. Capacitor's WebView
+// answers that prompt itself, but only once CAMERA is declared. camera is not "required", so phones without one are not filtered out.
+manifest = fs.readFileSync(manifestPath, 'utf8');
+if (!manifest.includes('android.permission.CAMERA')) {
+  manifest = manifest.replace('</manifest>',
+    '    <uses-permission android:name="android.permission.CAMERA" />\n' +
+    '    <uses-feature android:name="android.hardware.camera" android:required="false" />\n' +
+    '</manifest>');
+  fs.writeFileSync(manifestPath, manifest);
+}
 
 // Native push (Firebase Cloud Messaging, db/119/server/src/fcm.js). Same
 // dormant-until-configured discipline as every other optional integration:
