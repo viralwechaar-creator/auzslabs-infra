@@ -162,6 +162,7 @@ table.tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:15px}
 .picker .pop button.new{color:var(--accent);font-weight:600;border-top:1px solid var(--line,#0001);border-radius:0 0 8px 8px}
 .totals{display:grid;gap:6px}.totals .t{display:flex;justify-content:space-between;gap:12px}.totals .big{font-size:22px;font-weight:700;padding-top:8px;border-top:.5px solid var(--sep)}
 .effect{font-size:14px}.effect table{width:100%;border-collapse:collapse}.effect td{padding:5px 0;border-bottom:.5px solid var(--sep)}.effect td.r{text-align:right}
+.banner[hidden]{display:none}
 .banner{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--orange-bg);color:var(--label);font-size:15px}
 .banner.info{background:var(--blue-bg)}.banner.ok{background:var(--green-bg)}.banner.bad{background:var(--red-bg)}.banner .ic{margin-top:2px}
 
@@ -193,3 +194,13 @@ table.tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:15px}
 .toolbar>*,.row>*,.search{min-width:0}
 .row.wrap>*{min-width:auto}
 html,body{max-width:100%;overflow-x:clip}
+
+/* ---------- Scan to bill (p-scan.js) ---------- */
+.scan-hero{width:100%;min-height:64px;gap:12px;font-size:19px;font-weight:600;border-radius:18px}
+.scan-cols{display:grid;gap:16px;margin-top:12px}
+.scan-line{gap:10px;align-items:center}
+.scan-step{display:flex;align-items:center;gap:2px;flex:none}
+.scan-q{min-width:44px;min-height:44px;padding:0 6px;border:0;background:none;color:var(--label);font:inherit;font-weight:600;font-variant-numeric:tabular-nums;border-radius:10px;cursor:pointer}
+.scan-q:hover{background:var(--fill)}
+.scan-amt{min-width:78px;text-align:right}
+@media (min-width:900px){.scan-cols{grid-template-columns:minmax(0,1.5fr) minmax(320px,1fr);align-items:start}.scan-side{position:sticky;top:76px}}
