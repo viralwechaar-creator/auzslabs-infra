@@ -321,6 +321,17 @@ export default async function run({ browser, stack }) {
     const row = (await q("select sale_price, barcode from acc_products where name = 'Zbill Made Mid Bill'"))[0]; assert(row && Number(row.sale_price) === 30, 'new product row: ' + JSON.stringify(row));
     await c.close();
   });
+  await s.check('Stock page lists imported products that have no stock yet (switchable), and works for an AUZsScan-only business', async () => {
+    const id = (await rpc(stack, 'acc_save_product', { p: { id: null, name: 'Zempty Imported Item', sku: 'ZEMPTY-1', barcode: '', category: '', brand: '', unit: 'Nos', hsn: '', tax_rate: '0', tax_inclusive: false, sale_price: '10', purchase_price: '0', mrp: 0, is_service: false, track_stock: true, track_batch: false, track_serial: false, reorder_level: 0, reorder_qty: 0, notes: '', active: true, price_lists: {} } }, owner)).data.data.id;
+    const off = (await rpc(stack, 'acc_stock_summary', { p: { include_zero: false } }, owner)).data.data, on = (await rpc(stack, 'acc_stock_summary', { p: { include_zero: true } }, owner)).data.data;
+    assert(!off.rows.some((x) => x.id === id) && on.rows.some((x) => x.id === id), 'include_zero not honoured');
+    assert(Number(on.in_stock) === off.rows.length, 'items in stock count: ' + on.in_stock + ' vs ' + off.rows.length);
+    await q("update tenant_settings set features = (features - 'accounting') || '{\"scan\":true}'::jsonb where tenant_id=$1", [tid]);
+    try { const sc = await rpc(stack, 'acc_stock_summary', { p: { include_zero: true } }, owner); assert(sc.status === 200 && sc.data.data.rows.some((x) => x.id === id), 'scan-only stock page: ' + JSON.stringify(sc.data).slice(0, 200)); }
+    finally { await q("update tenant_settings set features = (features - 'scan') || '{\"accounting\":true}'::jsonb where tenant_id=$1", [tid]); }
+    const { c, page } = await openPage('/scan.html', USERS.acctOwner, { w: 1280, h: 900 });
+    await page.evaluate(() => { location.hash = '#/stock'; }); await page.waitForSelector('text=Zempty Imported Item', { timeout: 15000 }); await c.close();
+  });
   await s.check('The standalone AUZsScan app (scan.html): short menu, scan screen first, installable manifest, no horizontal scroll on a phone', async () => {
     const a = await openPage('/scan.html', USERS.acctOwner);
     await a.page.waitForSelector('.scan-hero', { timeout: 15000 });
