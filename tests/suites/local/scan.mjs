@@ -292,6 +292,16 @@ export default async function run({ browser, stack }) {
     const got = await q("select sku, sale_price from acc_products p join tenants t on t.id = p.tenant_id where t.slug = 'testacct' and sku like 'BL-%'");
     assert(got.find((x) => x.sku === 'BL-1') && Number(got.find((x) => x.sku === 'BL-3').sale_price) === 99 && !got.find((x) => x.sku === 'BL-2'), 'rows: ' + JSON.stringify(got.filter((x) => /^BL-/.test(x.sku)).map((x) => x.sku)));
   });
+  await s.check('A catalogue bigger than 2,000 products is fully loaded (up to 5,000 on the phone) and a product beyond that is found by searching the server', async () => {
+    const rows = []; for (let i = 0; i < 2600; i++) rows.push({ _row: i + 2, sku: 'BIG-' + String(i).padStart(5, '0'), name: 'Zbig Item ' + String(i).padStart(5, '0'), unit: 'Pcs' });
+    const r = (await rpc(stack, 'acc_import', { p_entity: 'products', p_rows: rows, p_commit: true, p_strict: false, p_options: {} }, owner)).data.data; assert(r.ok === 2600, 'import: ' + JSON.stringify(r).slice(0, 200));
+    const { c, page } = await openPage('/scan.html', USERS.acctOwner, { w: 390, h: 844, mobile: true });
+    await page.evaluate(() => { location.hash = '#/products'; });
+    await page.waitForFunction(() => /Items/.test(document.body.innerText) && /\b[3-9]\d{3}\b/.test(document.querySelector('.kpis')?.innerText || ''), null, { timeout: 20000 });
+    const n = await page.evaluate(() => S.products.length); assert(n > 2000, 'only ' + n + ' products loaded on the phone');
+    const hit = await page.evaluate(() => searchProducts('Zbig Item 02599')); assert(hit.length === 1 && hit[0].sku === 'BIG-02599', 'server search: ' + JSON.stringify(hit.map((x) => x.sku)));
+    await c.close();
+  });
   await s.check('The standalone AUZsScan app (scan.html): short menu, scan screen first, installable manifest, no horizontal scroll on a phone', async () => {
     const a = await openPage('/scan.html', USERS.acctOwner);
     await a.page.waitForSelector('.scan-hero', { timeout: 15000 });
