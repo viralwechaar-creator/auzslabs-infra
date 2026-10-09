@@ -437,6 +437,7 @@ const RPC = {
   pay_me_punch: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
   pay_me_punch_offline: { params: ['p'], jsonb: ['p'], auth: true },
   acc_save_draft_offline: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_offline_apply: { params: ['p'], jsonb: ['p'], auth: true },
   pay_me_attendance: { params: ['p_month'], auth: true },
   pay_me_leave_apply: { params: ['p'], jsonb: ['p'], auth: true },
   pay_me_regularize: { params: ['p'], jsonb: ['p'], auth: true },

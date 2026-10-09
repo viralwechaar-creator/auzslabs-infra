@@ -2,8 +2,10 @@
    Used inside AUZsLedger (#/scan) and as the standalone AUZsScan app (scan.html). It adds no server code: it uses the same
    functions as the invoice editor and the stock screens (acc_list_products, acc_save_product, acc_stock_adjust,
    acc_save_document, acc_share_document), and the same GST maths (calcDoc in p-editor.js), so the books cannot disagree.
-   A barcode is only an ID. Price, HSN and GST always come from the product. Needs a connection to POST; offline it keeps
-   a draft (queueDraft) like the editor does. Loaded after p-docs.js, p-editor.js, p-parties.js and p-stock.js. */
+   A barcode is only an ID. Price, HSN and GST always come from the product. OFFLINE-FIRST: with no connection (or a connection too
+   slow to answer) a sale, a new product and received stock are kept on the phone (scan-sync.js: sqEnqueue) and sent later through
+   acc_offline_apply, idempotent on the operation id. A sale made offline shows a PROVISIONAL number (OFF-xxx-n); the books give the
+   real gapless invoice number when it syncs. Loaded after scan-sync.js, p-docs.js, p-editor.js, p-parties.js and p-stock.js. */
 'use strict';
 ICONS.scan = '<path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M7.5 9v6M11 9v6M14.5 9v6M17 9v6"/>';
 
@@ -71,9 +73,21 @@ function scNewProduct(code, o = {}) {
         if (!(N(sale.value) > 0)) { toast('Enter the selling price', { err: true }); return false; }
         if (N(mrp.value) > 0 && N(sale.value) > N(mrp.value)) { toast('The selling price is above the MRP', { err: true }); return false; }
         if (!o.add && N(stock.value) > 0 && !(N(buy.value) > 0)) { toast('Enter the purchase price so the stock can be valued, or set the number in stock to 0', { err: true }); return false; }
+        const body = { id: null, name: name.value.trim(), sku: code || ('NP-' + Date.now().toString(36).toUpperCase()), barcode: code || (bc ? bc.value.trim() : ''), category: '', brand: '', unit: unit.value, hsn: hsn.value.trim(), tax_rate: gst.value, tax_inclusive: incl, sale_price: sale.value, purchase_price: buy.value || 0, mrp: mrp.value || 0,
+          is_service: false, track_stock: true, track_batch: false, track_serial: false, reorder_level: 0, reorder_qty: 0, notes: '', active: true, price_lists: {} };
+        // no connection: keep the product (and its opening stock) on this phone; it reaches the books when the connection is back
+        if (offlineNow()) {
+          try {
+            const tmp = { ...body, id: sqTempId(), tax_rate: Number(gst.value), avg_cost: Number(buy.value) || 0 }, q0 = N(stock.value);
+            await sqEnqueue('product', body, { temp: tmp });
+            if (!o.add && q0 > 0) { const wh0 = S.warehouses.find((w) => w.is_default) || S.warehouses[0]; await sqEnqueue('stock', { mode: 'delta', warehouse_id: wh0 && wh0.id, date: today(), reason: 'Stock added while scanning', opening: false, lines: [{ product_id: tmp.id, qty: q0, unit_cost: buy.value || null }] }); }
+            sqRefreshLocal(); done = true; c(); toast('Saved on this phone. It reaches your books when you are back online.');
+            resolve({ p: (S.products || []).find((x) => x.id === tmp.id) || tmp, qty: q0 });
+          } catch (e) { fail(e); return false; }
+          return;
+        }
         try {
-          const r = await api('acc_save_product', { p: { id: null, name: name.value.trim(), sku: code || ('NP-' + Date.now().toString(36).toUpperCase()), barcode: code || (bc ? bc.value.trim() : ''), category: '', brand: '', unit: unit.value, hsn: hsn.value.trim(), tax_rate: gst.value, tax_inclusive: incl, sale_price: sale.value, purchase_price: buy.value || 0, mrp: mrp.value || 0,
-            is_service: false, track_stock: true, track_batch: false, track_serial: false, reorder_level: 0, reorder_qty: 0, notes: '', active: true, price_lists: {} } });
+          const r = await api('acc_save_product', { p: body });
           bust('products'); await products(true);
           const p = (S.products || []).find((x) => x.id === (r && r.id)) || (code ? (await scLookup(code))[0] : null);
           if (!p) throw new Error('The product was saved but could not be loaded. Search for it by name.');
@@ -221,29 +235,85 @@ async function scCharge(v, post) {
   if (post && C.total <= 0) return toast('The total must be more than zero', { err: true });
   if (post && SC.pay === 'credit' && (!SC.party || SC.party.is_walkin) && !SC.name.trim()) return toast('Enter the customer’s name for a sale on credit', { err: true });
   if (post && SC.pay !== 'credit' && !(SC.acct[SC.pay] || scPayAccounts(SC.pay)[0])) return toast('No cash or bank account is set up. Add one in Accounting, Settings.', { err: true });
-  if (offlineNow() && SC.name.trim() && (!SC.party || SC.party.is_walkin)) toast('Offline: the bill will be saved without the name ' + SC.name.trim() + '. Add it after you reconnect.');
-  if (!offlineNow()) { try { await scEnsureParty(); } catch (e) { return fail(e); } }
+  if (!offlineNow()) { try { await scEnsureParty(); } catch (e) { if (!sqTransient(e)) return fail(e); } }   // no answer: the name travels with the sale and the books make the customer
   const payload = scPayload(post, C);
+  if (post) return scSell(v, payload, C);
   if (offlineNow()) {
-    if (post) return toast('Posting needs a connection. Save it as a draft now and post it when you are back online.', { err: true });
     try { await queueDraft(payload, C.total); scReset(); toast('Saved on this device. It will be sent to your books as a draft when you are back online.'); v.refresh(); } catch (e) { fail(e); }
     return;
   }
   const how = SC.pay === 'credit' ? 'the amount as owed by ' + ((SC.party && SC.party.name) || 'the customer') : 'the ' + ({ cash: 'cash', upi: 'UPI', bank: 'bank' }[SC.pay]) + ' payment';
-  if (post && !(await confirmBox('Charge ' + inr(C.total) + '?', 'This posts a GST invoice, reduces stock and records ' + how + '. You can cancel it later with a reversal but not edit it.', 'Charge'))) return;
   dockBusy(true);
   try {
     const r = await api('acc_save_document', { p: payload });
     bust('products', 'parties'); products(true).catch(() => {});
     if (r.pending_approval) { toast('Saved. It needs a manager’s approval before it can be posted.'); scReset(); v.refresh(); return; }
-    if (!post) { scReset(); toast('Draft saved'); v.refresh(); return; }
-    const full = await api('acc_get_document', { p_id: r.id });
-    const phone = SC.party && !SC.party.is_walkin ? SC.party.phone || '' : SC.phone, total = C.total, mode = SC.pay;
-    scReset(); v.refresh(); scDone(full, total, mode, phone);
+    scReset(); toast('Draft saved'); v.refresh();
   } catch (e) {
-    if (!e.status && !post) { try { await queueDraft(payload, C.total); scReset(); toast('Saved on this device as a draft.'); v.refresh(); return; } catch (e2) { /* fall through */ } }
+    if (!e.status) { try { await queueDraft(payload, C.total); scReset(); toast('Saved on this device as a draft.'); v.refresh(); return; } catch (e2) { /* fall through */ } }
     fail(e);
   } finally { dockBusy(false); }
+}
+
+// A real sale. Online it is posted at once (through acc_offline_apply, so a lost reply can never make a second bill); with no
+// connection, or no answer within 10 s, the same operation is kept on the phone with a provisional number and sent later.
+async function scSell(v, payload, C) {
+  const off = offlineNow(), party = SC.party && !SC.party.is_walkin ? SC.party : null;
+  const pname = party ? party.name : SC.name.trim(), pphone = party ? party.phone || '' : SC.phone.trim(), mode = SC.pay;
+  const how = mode === 'credit' ? 'the amount as owed by ' + (pname || 'the customer') : 'the ' + ({ cash: 'cash', upi: 'UPI', bank: 'bank' }[mode]) + ' payment';
+  const ok = off
+    ? await confirmBox('Charge ' + inr(C.total) + '?', 'You are offline. The sale is kept on this phone and goes to your books, with its final GST invoice number, when the connection is back. Stock and ' + how + ' are counted then.', 'Charge')
+    : await confirmBox('Charge ' + inr(C.total) + '?', 'This posts a GST invoice, reduces stock and records ' + how + '. You can cancel it later with a reversal but not edit it.', 'Charge');
+  if (!ok) return;
+  const receipt = { items: SC.cart.map((l) => ({ name: l.p.name, qty: l.qty, amt: Math.max(N(l.rate) * l.qty - (l.dtype === 'pct' ? N(l.rate) * l.qty * N(l.disc) / 100 : N(l.disc)), 0) })), total: C.total, mode, name: pname, phone: pphone };
+  const sale = { ...payload, party_name: party ? '' : pname, party_phone: party ? '' : pphone }, op = sqNewOp();
+  const queueIt = async () => {
+    const ref = sqNextRef();
+    await sqEnqueue('sale', { ...sale, offline: true, offline_ref: ref }, { ref, name: pname, total: C.total }, op);
+    sqRefreshLocal(); scReset(); v.refresh(); scDoneOffline(ref, receipt);
+  };
+  dockBusy(true);
+  try {
+    if (off) return await queueIt();
+    let r;
+    try { r = await sqWithin(api('acc_offline_apply', { p: { op, kind: 'sale', payload: sale } }), 10000); }
+    catch (e) { if (sqTransient(e) || e.timeout) return await queueIt(); throw e; }
+    bust('products', 'parties'); products(true).catch(() => {});
+    if (r.pending_approval) { toast('Saved. It needs a manager’s approval before it can be posted.'); scReset(); v.refresh(); return; }
+    let full = null;
+    try { full = await api('acc_get_document', { p_id: r.id }); } catch (e) { /* the sale is posted; only the receipt could not be loaded */ }
+    scReset(); v.refresh();
+    if (full) scDone(full, C.total, mode, party ? party.phone || '' : SC.phone || pphone);
+    else toast('Sale posted as ' + (r.number || 'an invoice') + '. Open Sales to see it.');
+  } catch (e) { fail(e); } finally { dockBusy(false); }
+}
+
+// The receipt for a sale kept on the phone: a plain WhatsApp message with the items and a provisional number.
+function scDoneOffline(ref, r) {
+  const org = S.org.trade_name || S.org.legal_name || S.ctx.tenant.name;
+  const ph = input({ type: 'tel', mode: 'tel', value: r.phone || '', placeholder: 'Customer’s WhatsApp number', label: 'WhatsApp number' });
+  const text = () => `Hello${r.name ? ' ' + r.name : ''}, thank you for shopping with ${org}.\nBill ${ref} (the GST invoice number follows)\n` + r.items.map((i) => `${i.name} x ${qty(i.qty)}  ${inr(i.amt)}`).join('\n') + `\nTotal ${inr(r.total)} (${r.mode === 'credit' ? 'on credit' : 'paid by ' + ({ cash: 'cash', upi: 'UPI', bank: 'bank transfer' }[r.mode])})`;
+  sheet({ title: 'Saved on this phone', closeLabel: 'New sale', body: h('div', { class: 'grid', style: { textAlign: 'center', justifyItems: 'center', gap: '10px' } },
+    h('span', { class: 'tile green', style: { width: '56px', height: '56px', borderRadius: '28px' } }, icon('check', 30)),
+    h('div', null, h('div', { class: 'mono' }, ref), h('div', { style: { fontSize: '30px', fontWeight: 700, letterSpacing: '-.5px' } }, inr(r.total)), h('div', { class: 'muted' }, r.mode === 'credit' ? 'On credit' : 'Received by ' + ({ cash: 'cash', upi: 'UPI', bank: 'bank transfer' }[r.mode]))),
+    h('div', { class: 'banner info', style: { textAlign: 'left' } }, icon('info', 18), 'You are offline. This sale is safe on the phone and goes to your books automatically when the connection is back. The final GST invoice number is given then.'),
+    h('div', { style: { width: '100%', textAlign: 'left' } }, field('WhatsApp number', ph, 'Leave empty to choose the contact inside WhatsApp.')),
+    h('div', { class: 'grid', style: { width: '100%' } },
+      h('button', { class: 'btn fill', type: 'button', onclick: () => window.open(waLink(ph.value, text()), '_blank') }, icon('chat', 18), 'Send on WhatsApp'),
+      h('button', { class: 'btn', type: 'button', onclick: async () => { try { await navigator.clipboard.writeText(text()); toast('Receipt copied'); } catch (e) { fail(e); } } }, icon('link', 18), 'Copy receipt text'))) });
+}
+
+// What is waiting on this phone (sales, new products, stock received) and what the books refused.
+function scPendingCard(v) {
+  const items = sqItems(); if (!items.length) return null;
+  const label = (it) => it.kind === 'sale' ? { t: (it.meta && it.meta.ref) || 'Sale', s: 'Sale' + (it.meta && it.meta.name ? ' to ' + it.meta.name : ''), v: it.meta && it.meta.total != null ? inr(it.meta.total) : '' }
+    : it.kind === 'product' ? { t: 'New product: ' + ((it.meta && it.meta.temp && it.meta.temp.name) || ''), s: 'Product', v: '' } : { t: 'Stock received', s: (it.payload.lines || []).length + ' item(s)', v: '' };
+  const waiting = items.filter((x) => x.state !== 'refused').length;
+  return h('div', { class: 'card grid', style: { gap: '8px' } },
+    h('div', { class: 'row sp' }, h('h3', null, 'On this phone, not yet in your books (' + items.length + ')'), waiting && !offlineNow() ? h('button', { class: 'btn sm', type: 'button', onclick: async () => { await sqFlush(); v.refresh(); } }, 'Send now') : null),
+    h('details', { open: items.some((x) => x.state === 'refused') }, h('summary', { class: 'small muted' }, 'Show what is waiting'), h('div', { class: 'list' }, items.map((it) => { const l = label(it); return liRow({ icon: it.state === 'refused' ? 'alert' : 'doc', tone: it.state === 'refused' ? 'red' : '', title: l.t, sub: (it.state === 'refused' ? 'Refused: ' + it.error : l.s + ' · saved ' + fmtDT(it.at) + ', waiting'), value: l.v,
+      badge: it.state === 'refused' ? h('span', { class: 'row', style: { gap: '6px' } }, h('button', { class: 'btn sm', type: 'button', onclick: async (e) => { e.stopPropagation(); await sqRetry(it.op); v.refresh(); } }, 'Retry'),
+        h('button', { class: 'btn sm danger', type: 'button', onclick: async (e) => { e.stopPropagation(); if (await confirmBox('Discard this?', 'It has not reached your books and cannot be brought back.', 'Discard', true)) { await sqDiscard(it.op); v.refresh(); } } }, 'Discard')) : null }); }))));
 }
 const dockBusy = (b) => document.querySelectorAll('.scan-dock .btn').forEach((x) => { x.disabled = b; });
 
@@ -275,12 +345,17 @@ function scDone(full, total, mode, phone) {
 async function scReceive(v) {
   if (!SC.recv.length) return toast('Scan an item first', { err: true });
   const bad = SC.recv.find((l) => !(l.qty > 0)); if (bad) return toast(bad.p.name + ': quantity must be more than zero', { err: true });
-  if (offlineNow()) return toast('Adding stock needs a connection.', { err: true });
-  if (!(await confirmBox('Add ' + SC.recv.length + (SC.recv.length === 1 ? ' item' : ' items') + ' to stock?', 'This changes stock and the inventory ledger. It cannot be edited afterwards.', 'Add to stock'))) return;
+  const off = offlineNow();
+  if (!(await confirmBox('Add ' + SC.recv.length + (SC.recv.length === 1 ? ' item' : ' items') + ' to stock?', off ? 'You are offline. The stock is kept on this phone and goes to your books when the connection is back.' : 'This changes stock and the inventory ledger. It cannot be edited afterwards.', 'Add to stock'))) return;
   dockBusy(true);
+  const wh = S.warehouses.find((w) => w.is_default) || S.warehouses[0], op = sqNewOp();
+  const payload = { mode: 'delta', warehouse_id: wh && wh.id, date: today(), reason: 'Stock received (scanned)', opening: false, lines: SC.recv.map((l) => ({ product_id: l.p.id, qty: l.qty, unit_cost: l.cost || null })) };
+  const queueIt = async () => { await sqEnqueue('stock', payload, {}, op); sqRefreshLocal(); scReset(); toast('Saved on this phone. The stock goes to your books when you are back online.'); v.refresh(); };
   try {
-    const wh = S.warehouses.find((w) => w.is_default) || S.warehouses[0];
-    const r = await api('acc_stock_adjust', { p: { mode: 'delta', warehouse_id: wh && wh.id, date: today(), reason: 'Stock received (scanned)', opening: false, lines: SC.recv.map((l) => ({ product_id: l.p.id, qty: l.qty, unit_cost: l.cost || null })) } });
+    if (off) return await queueIt();
+    let r;
+    try { r = await sqWithin(api('acc_offline_apply', { p: { op, kind: 'stock', payload } }), 10000); }
+    catch (e) { if (sqTransient(e) || e.timeout) return await queueIt(); throw e; }
     bust('products'); products(true).catch(() => {});
     scReset(); toast('Added ' + r.lines + ' item(s) to stock, value ' + inr(r.value)); v.refresh();
   } catch (e) { fail(e); } finally { dockBusy(false); }
@@ -293,6 +368,7 @@ page('scan', {
     v.header({ title: 'Scan to bill' });
     const canSell = can('acc_sales'), canAdd = can('acc_inventory');
     if (!canSell && !canAdd) { v.root.append(empty('lock', 'No access', 'Your role cannot sell or add stock. Ask the owner to change your role.')); return; }
+    if (!SQ.loaded) await sqLoad();
     await Promise.all([products(), parties()]);
     if (SC.mode === 'sell' && !canSell) SC.mode = 'add';
     if (SC.mode === 'add' && !canAdd) SC.mode = 'sell';
@@ -375,7 +451,10 @@ page('scan', {
       : [h('button', { class: 'btn fill', type: 'button', disabled: !SC.recv.length, onclick: () => scReceive(v) }, SC.recv.length ? 'Add ' + SC.recv.length + (SC.recv.length === 1 ? ' item' : ' items') + ' to stock' : 'Add to stock')]);
     const clearBtn = rows.length ? h('button', { class: 'btn plain sm', type: 'button', onclick: async () => { if (await confirmBox('Clear everything?', 'The scanned items will be removed. Nothing has been posted.', 'Clear', true)) { scReset(); v.refresh(); } } }, 'Clear all') : null;
 
-    v.root.append(modes, h('div', { class: 'scan-cols' }, h('div', { class: 'grid' }, hero, searchRow, h('div', { class: 'row sp' }, h('h3', null, sell ? 'Bill' : 'To add'), clearBtn), listCard), h('div', { class: 'grid scan-side' }, side)), dock);
+    const pend = h('div', { id: 'scpend' }, scPendingCard(v) || '');
+    window._scPend = () => { const el = document.getElementById('scpend'); if (el && route && route.id === 'scan') { clear(el); const c = scPendingCard(v); if (c) el.append(c); } };
+    if (!window._scQ) { window._scQ = true; window.addEventListener('scan:queue', () => window._scPend && window._scPend()); }
+    v.root.append(pend, modes || '', h('div', { class: 'scan-cols' }, h('div', { class: 'grid' }, hero, searchRow, h('div', { class: 'row sp' }, h('h3', null, sell ? 'Bill' : 'To add'), clearBtn), listCard), h('div', { class: 'grid scan-side' }, side)), dock);
     if (isDesk() && !('ontouchstart' in window)) box.input.focus();
   },
 });

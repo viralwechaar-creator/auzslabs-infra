@@ -370,5 +370,74 @@ export default async function run({ browser, stack }) {
       const b = await openPage('/scan.html', USERS.acctOwner); await b.page.waitForSelector('.scan-hero', { timeout: 15000 }).catch(async (e) => { throw new Error('scan page: ' + (await b.page.locator('body').innerText()).slice(0, 200)); }); await b.c.close();
     } finally { await q("update tenant_settings set features = (features - 'scan') || '{\"accounting\":true}'::jsonb where tenant_id=$1", [tid]); }
   });
+
+  await s.check('OFFLINE-FIRST: with no connection a sale, a new product and received stock are kept on the phone with a provisional number; when the connection returns each reaches the books exactly once with a real invoice number', async () => {
+    const cup = await mk('Offline Cup', 'OFFCUP1', '8907770001110', 100, 40, 5);
+    const opsNow = async () => JSON.stringify(await q("select kind, count(*)::int n from acc_offline_ops where tenant_id=$1 group by kind order by kind", [tid])), ops0 = await opsNow();
+    const { c, page, errs } = await openPage('/scan.html', USERS.acctOwner, { w: 390, h: 844, mobile: true }); page.setDefaultTimeout(20000);
+    await toScan(page); await page.waitForTimeout(2500);                       // the copy of the setup and products is saved
+    let down = false; await page.route('https://api.auzslab.in/**', (r) => (down ? r.abort() : r.fallback()));
+    down = true; await c.setOffline(true); await page.evaluate(() => window.dispatchEvent(new Event('offline')));
+    // 1. a sale, offline
+    await typeCode(page, '8907770001110'); await typeCode(page, '8907770001110');
+    assert(/2/.test(await page.locator('.scan-q').first().innerText()), 'qty offline');
+    await page.locator('.scan-dock .btn.fill').click(); await page.waitForSelector('.alert'); await page.locator('.alert .def').click();
+    await page.waitForFunction(() => /Saved on this phone/.test(document.querySelector('.sheet')?.innerText || ''), null, { timeout: 20000 });
+    const t = await page.locator('.sheet').innerText(); const ref = (/OFF-[A-Z0-9]+-\d+/.exec(t) || [])[0]; assert(ref, 'no provisional number: ' + t);
+    assert(await opsNow() === ops0, 'it reached the books while offline');
+    await s.shot(page, 'scan-offline-saved');
+    await page.locator('.sheet button', { hasText: 'New sale' }).click(); await page.waitForTimeout(400);
+    // the local stock estimate went down (5 -> 3), so a third sale of 4 is refused on the phone
+    await typeCode(page, '8907770001110'); await typeCode(page, '8907770001110'); await typeCode(page, '8907770001110'); await typeCode(page, '8907770001110');
+    assert(/Only 3/.test(await toasts(page)) || await page.locator('.scan-q').first().innerText() === '3', 'local stock cap: ' + await toasts(page));
+    await page.locator('button', { hasText: 'Clear all' }).click(); await page.waitForSelector('.alert'); await page.locator('.alert button', { hasText: /^Clear$/ }).click(); await page.waitForTimeout(300);
+    // 2. a new product (with 4 in stock), offline, then sell one of it
+    await page.locator('button', { hasText: 'New product' }).first().click(); await page.waitForSelector('.sheet input', { timeout: 5000 });
+    await page.locator('.sheet').getByLabel('Name', { exact: true }).fill('Offline Made Notebook'); await page.locator('.sheet').getByLabel('Selling price', { exact: true }).fill('45');
+    await page.locator('.sheet').getByLabel('Purchase price', { exact: true }).fill('30'); await page.locator('.sheet').getByLabel('Number in stock', { exact: true }).fill('4');
+    await page.locator('button', { hasText: 'Save and continue' }).click(); await page.waitForSelector('.scan-line:has-text("Offline Made Notebook")', { timeout: 20000 });
+    await page.locator('.scan-dock .btn.fill').click(); await page.waitForSelector('.alert'); await page.locator('.alert .def').click();
+    await page.waitForFunction(() => /Saved on this phone/.test(document.querySelector('.sheet')?.innerText || ''), null, { timeout: 20000 });
+    await page.locator('.sheet button', { hasText: 'New sale' }).click(); await page.waitForTimeout(400);
+    // 3. stock received, offline
+    await page.locator('.seg button', { hasText: 'Add stock' }).click(); await page.waitForTimeout(300); await typeCode(page, '8907770001110');
+    await page.locator('.scan-dock .btn.fill').click(); await page.waitForSelector('.alert'); await page.locator('.alert .def').click(); await page.waitForTimeout(800);
+    assert(/Saved on this phone/.test(await toasts(page)), 'stock offline: ' + await toasts(page));
+    await page.waitForFunction(() => /On this phone, not yet in your books \(5\)/.test(document.body.innerText), null, { timeout: 8000 }).catch(async () => { throw new Error('pending card: ' + (await page.evaluate(() => document.body.innerText)).slice(0, 200) + ' | errs: ' + JSON.stringify(errs.slice(-4)).slice(0, 600)); });
+    await s.shot(page, 'scan-offline-pending');
+    assert(await opsNow() === ops0, 'something reached the books while offline');
+    // 4. back online: everything is sent once
+    down = false; await c.setOffline(false); await page.evaluate(() => window.dispatchEvent(new Event('online')));
+    await page.waitForFunction(() => !(window.sqItems && sqItems().length), null, { timeout: 30000 }).catch(async () => { throw new Error('queue not empty: ' + JSON.stringify(await page.evaluate(() => sqItems().map((x) => [x.kind, x.state, x.error])))); });
+    const before = JSON.parse(ops0), cnt = async (k) => JSON.parse(await opsNow()).filter((x) => x.kind === k).reduce((a, x) => a + x.n, 0) - before.filter((x) => x.kind === k).reduce((a, x) => a + x.n, 0);
+    assert(await cnt('product') === 1 && await cnt('sale') === 2 && await cnt('stock') === 2, 'ops: ' + await opsNow() + ' was ' + ops0);
+    const inv = await q("select number, total::float8 t, status from acc_documents where tenant_id=$1 and meta->>'offline_sale'='true' and created_at > now() - interval '10 minutes' order by created_at", [tid]);
+    assert(inv.length === 2 && inv.every((d) => d.status === 'posted' && /^INV\//.test(d.number)), 'invoices: ' + JSON.stringify(inv));
+    assert(Math.abs(inv[0].t - 200) < 0.05, 'first sale total ' + inv[0].t);
+    assert(await stockOf(cup) === 4, 'cup stock (5 - 2 sold + 1 received) = ' + await stockOf(cup));
+    const nb = (await q("select id, name from acc_products where tenant_id=$1 and name='Offline Made Notebook'", [tid]))[0]; assert(nb, 'new product missing'); assert(await stockOf(nb.id) === 3, 'notebook stock (4 - 1) = ' + await stockOf(nb.id));
+    const chk = (await rpc(stack, 'acc_integrity_check', {}, owner)).data; assert(!/"ok":false/.test(JSON.stringify(chk)), 'integrity: ' + JSON.stringify(chk).slice(0, 300));
+    // 5. the same operation sent again is a duplicate, not a second bill
+    const op = (await q("select op from acc_offline_ops where tenant_id=$1 and kind='sale' limit 1", [tid]))[0].op;
+    const again = await rpc(stack, 'acc_offline_apply', { p: { op, kind: 'sale', payload: { doc_type: 'invoice', lines: [] } } }, owner); assert(again.data.data && again.data.data.duplicate === true, 'replay: ' + JSON.stringify(again.data));
+    await c.close();
+  }, 'critical');
+  await s.check('OFFLINE-FIRST: a sale made while the phone THINKS it is online but the server does not answer is kept and sent later; a sale that would overdraw stock on another phone is still posted', async () => {
+    const dud = await mk('Dud Lamp', 'DUD1', '8907770002220', 80, 30, 1);
+    const { c, page } = await openPage('/scan.html', USERS.acctOwner, { w: 390, h: 844, mobile: true });
+    await toScan(page); await page.waitForTimeout(2000);
+    let down = true; await page.route('https://api.auzslab.in/**', (r) => (down ? r.abort() : r.fallback()));
+    await typeCode(page, '8907770002220');
+    await page.locator('.scan-dock .btn.fill').click(); await page.waitForSelector('.alert'); await page.locator('.alert .def').click();
+    await page.waitForFunction(() => /Saved on this phone/.test(document.querySelector('.sheet')?.innerText || ''), null, { timeout: 20000 });
+    await page.locator('.sheet button', { hasText: 'New sale' }).click();
+    // meanwhile another phone sells the only lamp
+    const other = await rpc(stack, 'acc_save_document', { p: { id: null, doc_type: 'invoice', doc_date: new Date().toISOString().slice(0, 10), party_id: null, price_includes_tax: true, lines: [{ product_id: dud, description: 'Dud Lamp', qty: '1', rate: '80', tax_rate: '18' }], payments: [], post: true } }, owner);
+    assert(other.status === 200, 'other phone: ' + JSON.stringify(other.data));
+    down = false; await page.evaluate(() => sqFlush());
+    await page.waitForFunction(() => !sqItems().length, null, { timeout: 20000 });
+    assert(await stockOf(dud) === -1, 'the real sale was posted even though stock is now ' + await stockOf(dud));
+    await c.close();
+  }, 'critical');
   s.done();
 }
