@@ -121,6 +121,7 @@ button:disabled{opacity:.5;cursor:default}
       <button id=openPosBtn>Open their POS ↗</button>
       <button class=ghost id=openQrBtn>Open QR order demo ↗</button>
       <button class=ghost id=openSiteBtn>Open their website ↗</button>
+      <button class=ghost id=applyDemoBtn>Menu/website looks empty? Add demo photos</button>
       <div id=demoErr class=err></div>
 
       <h2>Once they buy</h2>
@@ -327,6 +328,16 @@ $('openQrBtn').onclick = () => {
   if (!current) return;
   if (!current.table_id) { $('demoErr').textContent = 'No table set up for this business yet (only cafe trials get one automatically).'; return; }
   window.open('https://' + current.slug + '.auzslab.in/site.html?t=' + current.table_id, '_blank');
+};
+
+$('applyDemoBtn').onclick = async () => {
+  if (!current) return;
+  $('demoErr').textContent = '';
+  $('applyDemoBtn').disabled = true;
+  const { data, error } = await sb.rpc('salesman_apply_demo_content', { p_tenant_id: current.id });
+  $('applyDemoBtn').disabled = false;
+  if (error) { $('demoErr').textContent = error.message; return; }
+  toast(data.added_menu ? 'Demo menu + photos added — open the POS or site to see it' : (data.photos_backfilled ? `Added photos to ${data.photos_backfilled} item(s)` : 'Already had photos — nothing to add'));
 };
 
 $('openPosBtn').onclick = async () => {
