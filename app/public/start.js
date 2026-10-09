@@ -75,6 +75,10 @@
     if (r.error || !r.data) {
       var s = r.error && (r.error.status || 0);
       if (s === 401) { await sb.auth.signOut(); return login('Your session ended. Please sign in again.'); }
+      // A salesman login (db/137) has no business of its own -- my_dashboard() always falls
+      // into this same "no business" branch for them. Check before showing that dead end.
+      var sm = await sb.rpc('salesman_my_trials');
+      if (!sm.error) { location.replace('/salesman.html'); return; }
       foot.textContent = ''; foot.append(el('button', { type: 'button', onclick: signOut, text: 'Sign out' }));
       return set([el('h1', { text: 'No business yet' }), el('p', { class: 'sub', text: 'This login is not linked to a business. Create one, or ask your owner to add you as staff.' }), el('a', { class: 'btn fill', href: 'https://auzslab.in/account.html', text: 'Open my account' })]);
     }
