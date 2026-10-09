@@ -78,7 +78,7 @@ async function importWizard(host, entity, v) {
     const g = {}, hn = hdr.map((n) => String(n).toLowerCase().trim()), H = SRC[opts.src].hints, used = new Set(), all = [...E.fields, ...EXTRA];
     all.forEach(([k]) => { g[k] = H[k] ? hn.findIndex((n, j) => !used.has(j) && H[k].test(n)) : -1; if (g[k] >= 0) used.add(g[k]); });            // 1. the names the chosen program uses
     all.forEach(([k, , , re]) => { if (g[k] >= 0 || !re || (opts.src !== 'generic' && k === 'sku')) return; g[k] = hn.findIndex((n, j) => !used.has(j) && (re.test(n) || n.replace(/[^a-z0-9]/g, '') === k.replace(/_/g, ''))); if (g[k] >= 0) used.add(g[k]); });   // 2. generic names, only on columns nobody else took
-    if (entity === 'products' && opts.src !== 'generic') opts.autoSku = true;   // Busy and Tally items often have no code, or a code column that is empty on some rows
+    if (entity === 'products' && (opts.src !== 'generic' || g.sku < 0 || table.slice(1).filter((r) => !String(r[g.sku] ?? '').trim()).length > 0)) opts.autoSku = true;   // a code column that is missing or empty on some rows: make codes from the names   // Busy and Tally items often have no code, or a code column that is empty on some rows
     return g;
   };
   const drawMap = () => {
@@ -94,7 +94,7 @@ async function importWizard(host, entity, v) {
       toggleRow('Stop if any row has an error', opts.strict, (x) => { opts.strict = x; }, 'On: nothing is imported unless every row is valid. Off: valid rows are imported and the rest are reported.'))));
   };
   const stockRows = []; stockRows.noCost = 0;
-  const rowsFor = () => { stockRows.length = 0; stockRows.noCost = 0; const seen = {}; return table.slice(1).map((r, i) => { const o = { _row: i + 2 }; E.fields.forEach(([k]) => { const ix = map[k]; if (ix >= 0) o[k] = String(r[ix] ?? '').trim(); });
+  const rowsFor = () => { stockRows.length = 0; stockRows.noCost = 0; const seen = {}; return table.slice(1).map((r, i) => { const o = { _row: i + 2 }; E.fields.forEach(([k]) => { const ix = map[k]; if (ix >= 0) { const v = String(r[ix] ?? '').trim(); if (v !== '' || !['is_service', 'reorder_level'].includes(k)) o[k] = v; } });
     if (entity === 'products') {
       if (opts.src !== 'generic' && /^(grand\s+)?total$/i.test(o.name || '')) return {};
       if (/exempt|nil|zero/i.test(o.tax_rate || '')) o.tax_rate = '0';
@@ -128,9 +128,10 @@ async function importWizard(host, entity, v) {
     const r = result;
     resEl.append(h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, '4. Check, then import')),
       h('div', { class: 'row wrap' }, h('button', { class: 'btn', onclick: () => run(false) }, icon('check', 18), 'Check the file (no changes)'), h('button', { class: 'btn fill', disabled: !r || !r.dry || r.ok === 0 || (opts.strict && r.failed > 0), onclick: async () => { if (await confirmBox('Import ' + r.ok + ' ' + E.label.toLowerCase() + '?', opts.strict ? 'Everything is checked and will be imported together.' : 'Valid rows are imported; rows with errors are skipped and reported.', 'Import')) run(true); } }, icon('upload', 18), 'Import')),
+      h('p', { class: 'cap' }, !r || !r.dry ? 'Press “Check the file” first. Import turns on once the check passes.' : ''),
       r ? h('div', { class: 'card grid' }, h('div', { class: 'kpis' }, kpi(r.dry ? 'Would import' : 'Imported', String(r.ok), r.created + ' new · ' + r.updated + ' updated'), kpi('Duplicates', String(r.duplicates), 'Skipped'), kpi('Errors', String(r.failed), r.failed ? 'Fix and check again' : 'None', null, r.failed ? 'down' : 'up')),
         r.dry ? h('div', { class: 'banner ' + (r.failed ? (opts.strict ? 'bad' : '') : 'ok') }, icon(r.failed ? 'alert' : 'check', 18), r.failed ? (opts.strict ? 'Fix these rows first, or turn off “Stop if any row has an error”.' : 'These rows will be skipped.') : 'Looks good. Nothing has been changed yet.') : h('div', { class: 'banner ' + (r.committed ? 'ok' : 'bad') }, icon(r.committed ? 'check' : 'alert', 18), r.committed ? 'Imported.' : 'Nothing was imported.'),
-        r.errors.length ? h('div', { class: 'grid' }, h('div', { class: 'row sp' }, h('b', null, 'Row errors'), h('button', { class: 'btn sm', onclick: () => exportCSV('import-errors-' + entity, ['Row', 'Key', 'Message'], r.errors.map((x) => [x.row, x.key || '', x.message])) }, 'Download error report')), h('div', { class: 'list' }, r.errors.slice(0, 40).map((x) => liRow({ icon: 'alert', tone: 'orange', title: 'Row ' + x.row + (x.key ? ' · ' + x.key : ''), sub: x.message })))) : null) : null));
+        r.errors.length ? h('div', { class: 'grid' }, h('div', { class: 'row sp' }, h('b', null, 'Row errors'), h('button', { class: 'btn sm', onclick: () => exportCSV('import-errors-' + entity, ['Row', 'Key', 'Message'], r.errors.map((x) => [x.row, x.key || '', x.message])) }, 'Download error report')), h('div', { class: 'list' }, r.errors.slice(0, 40).map((x) => liRow({ icon: 'alert', tone: 'orange', title: 'Row ' + x.row + (x.key ? ' · ' + x.key : ''), sub: x.message })))) : null) : ''));
   };
   const how = h('p', { class: 'muted small' }, SRC.generic.how);
   const tplBtn = h('button', { class: 'btn sm', onclick: () => exportCSV(entity + '-template', E.fields.map((f) => f[1]), [E.sample]) }, icon('download', 16), 'Download template');
@@ -142,7 +143,7 @@ async function importWizard(host, entity, v) {
       } else table = /\.xml$/i.test(f.name) ? await readTallyXml(f) : await readTable(f); if (/\.xml$/i.test(f.name) && opts.src === 'generic') { opts.src = 'tally'; how.textContent = SRC.tally.how; } if (table.length < 2) throw new Error('The file has no data rows'); hdr = table[0].map((x) => String(x ?? '')); map = guess(); try { const saved = JSON.parse(localStorage.getItem(sigKey()) || 'null'); if (saved) map = { ...map, ...saved }; } catch { /* ignore */ } result = null; drawMap(); drawRes(); } catch (e) { fail(e); table = null; clear(mapEl); clear(resEl); }
   };
   host.append(h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, '1. Choose your file'), tplBtn), h('div', { class: 'card grid' }, entity === 'products' ? seg(Object.entries(SRC).map(([k, x]) => [k, x.label]), opts.src, (x) => { opts.src = x; how.textContent = SRC[x].how; if (table) { map = guess(); result = null; drawMap(); drawRes(); } }, { full: true, label: 'Where is your list from' }) : null, how, fileIn)), mapEl, optEl, resEl,
-    ['sales', 'purchases'].includes(entity) ? h('p', { class: 'cap' }, 'History is posted through the normal engine, so stock and GST are affected. Import opening stock first, and make sure the financial year for each date exists. Original invoice numbers are kept on sales.') : null);
+    ['sales', 'purchases'].includes(entity) ? h('p', { class: 'cap' }, 'History is posted through the normal engine, so stock and GST are affected. Import opening stock first, and make sure the financial year for each date exists. Original invoice numbers are kept on sales.') : '');
 }
 
 async function exportTab(host) {
