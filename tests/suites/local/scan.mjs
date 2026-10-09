@@ -191,7 +191,7 @@ export default async function run({ browser, stack }) {
     globalThis.__st=7; await page.setInputFiles('input[type=file]', { name: 'busy-items.csv', mimeType: 'text/csv', buffer: Buffer.from(busy) });
     globalThis.__st=8; await page.waitForSelector('text=Match your columns', { timeout: 8000 });
     globalThis.__st=9; await page.locator('button', { hasText: 'Check the file' }).click(); globalThis.__st=10; await page.waitForSelector('text=Looks good', { timeout: 15000 });
-    globalThis.__st=11; await page.locator('button.fill', { hasText: /^Import$/ }).click(); await page.locator('button', { hasText: /^Import$/ }).last().click({ timeout: 5000 }).catch(() => {}); await page.waitForTimeout(2500);
+    globalThis.__st=11; await page.locator('button.fill', { hasText: /^Import$/ }).click(); await page.locator('button', { hasText: /^Import$/ }).last().click({ timeout: 5000 }).catch(() => {}); await page.waitForTimeout(2500); const tmsg = await toasts(page);
     const rows = (await rpc(stack, 'acc_list_products', { limit: 500 }, owner)).data.data.rows;
     const rice = rows.find((p) => p.name === 'Busy Rice 5kg'), soap = rows.find((p) => p.name === 'Busy Soap');
     assert(rice && soap, 'Busy items not created: ' + rows.map((x) => x.name).join(','));
@@ -220,6 +220,26 @@ export default async function run({ browser, stack }) {
     assert(tp && tp.sku === 'TALLY-PEN' && Number(tp.tax_rate) === 18 && tp.hsn === '9608' && Number(tp.stock) === 25, 'tally pen: ' + JSON.stringify(tp && [tp.sku, tp.tax_rate, tp.hsn, tp.stock]));
     await c.close();
   } catch (e) { let dump = ''; try { dump = page.url() + ' ## ' + (await page.locator('body').innerText({ timeout: 3000 })).replace(/\s+/g, ' ').slice(0, 900); await page.screenshot({ path: 'tests/report/shots/dbg-import.png', timeout: 3000 }); dump += ' @@ ' + await page.evaluate(() => [...document.querySelectorAll('button')].map((b) => b.innerText.trim() + (b.disabled ? '(off)' : '')).filter(Boolean).join(' | ') + ' || ' + [...document.querySelectorAll('.banner,.toast,.err')].map((b) => b.innerText).join(' / ')); } catch {} throw new Error('step ' + globalThis.__st + ': ' + e.message.split('\n')[0] + ' :: ' + dump); } });
+  await s.check('Products can be imported from a PDF price list too: columns read from the headings, checked, imported with stock; a list with no headings reads name and price', async () => {
+    const { createRequire } = await import('module'); const dr = createRequire(import.meta.url)('../../../app/public/ds/docread.js');
+    const plain = dr.parseProducts(['Pdf Notebook   120.00', 'Pdf Marker  18%  45', 'Total  165']);
+    assert(plain.mode === 'plain' && plain.table.length === 3 && plain.table[1][0] === 'Pdf Notebook' && plain.table[1][3] === '120' && plain.table[2][2] === '18', 'plain: ' + JSON.stringify(plain.table));
+    const hd = dr.parseProducts(['Acme Stationers', 'Item  HSN  Qty  Rate  GST %', 'Pdf Stapler  8472  12  85.00  18', 'Pdf Glue Stick  3506  30  20.00  12', 'Total  42  105']);
+    assert(hd.mode === 'header' && hd.table.length === 3 && hd.table[0].length === 5 && hd.table[2][0] === 'Pdf Glue Stick', 'header: ' + JSON.stringify(hd.table));
+    const pc = await newCtx(browser, null, { w: 900, h: 1100 }); const pp = await pc.newPage();
+    await pp.setContent('<html><body style="font:16px Arial"><h2>Price list</h2><table cellpadding="10" style="width:100%"><tr><th align="left">Item</th><th>HSN</th><th>Qty</th><th>Rate</th><th>Cost</th><th>GST %</th></tr><tr><td>Pdf Stapler</td><td align="center">8472</td><td align="center">12</td><td align="center">85.00</td><td align="center">60.00</td><td align="center">18</td></tr><tr><td>Pdf Glue Stick</td><td align="center">3506</td><td align="center">30</td><td align="center">20.00</td><td align="center">0</td><td align="center">12</td></tr></table></body></html>');
+    const pdf = await pp.pdf({ format: 'A4' }); await pc.close();
+    const { c, page } = await openPage('/scan.html', USERS.acctOwner, { w: 1280, h: 900 });
+    await page.evaluate(() => { location.hash = '#/data?entity=products'; }); await page.waitForSelector('input[type=file]');
+    await page.setInputFiles('input[type=file]', { name: 'price-list.pdf', mimeType: 'application/pdf', buffer: pdf });
+    await page.waitForSelector('text=Match your columns', { timeout: 30000 });
+    await page.locator('button', { hasText: 'Check the file' }).click(); await page.waitForSelector('text=Looks good', { timeout: 15000 });
+    await page.locator('button.fill', { hasText: /^Import$/ }).click(); await page.locator('button', { hasText: /^Import$/ }).last().click({ timeout: 5000 }).catch(() => {}); await page.waitForTimeout(2500); const tmsg = await toasts(page);
+    const rows = (await rpc(stack, 'acc_list_products', { limit: 500 }, owner)).data.data.rows, st = rows.find((x) => x.name === 'Pdf Stapler'), gl = rows.find((x) => x.name === 'Pdf Glue Stick');
+    assert(st && Number(st.sale_price) === 85 && Number(st.tax_rate) === 18 && st.hsn === '8472' && Number(st.stock) === 12, 'stapler: ' + JSON.stringify(st && [st.sale_price, st.tax_rate, st.hsn, st.stock]) + ' toasts: ' + tmsg);
+    assert(gl && Number(gl.sale_price) === 20 && Number(gl.tax_rate) === 12 && Number(gl.stock) === 0 && /no purchase price/.test(tmsg), 'glue: ' + JSON.stringify(gl && [gl.sale_price, gl.tax_rate, gl.stock]));
+    await c.close();
+  });
   await s.check('The standalone AUZsScan app (scan.html): short menu, scan screen first, installable manifest, no horizontal scroll on a phone', async () => {
     const a = await openPage('/scan.html', USERS.acctOwner);
     await a.page.waitForSelector('.scan-hero', { timeout: 15000 });

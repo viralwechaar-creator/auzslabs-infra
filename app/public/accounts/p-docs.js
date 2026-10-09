@@ -32,7 +32,7 @@ function scanInvoice(type) {
   document.body.append(file); file.click();
 }
 let docReadLoaded = null;
-function loadDocRead() { return window.auzDocRead ? Promise.resolve() : (docReadLoaded = docReadLoaded || new Promise((res, rej) => { const s = document.createElement('script'); s.src = '/ds/docread.js?v=1'; s.onload = res; s.onerror = () => rej(new Error('Could not load the invoice reader')); document.head.appendChild(s); })); }
+function loadDocRead() { return window.auzDocRead ? Promise.resolve() : (docReadLoaded = docReadLoaded || new Promise((res, rej) => { const s = document.createElement('script'); s.src = '/ds/docread.js?v=2'; s.onload = res; s.onerror = () => rej(new Error('Could not load the invoice reader')); document.head.appendChild(s); })); }
 
 function docsPage(id, title, icon, tabs, perm, tabLabel) {
   page(id, {

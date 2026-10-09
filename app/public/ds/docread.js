@@ -221,7 +221,42 @@
     return { categories: cats.filter((c) => c.items.length) };
   }
 
-  const api = { extract, parseInvoice, parseMenu, findDates, parseLine };
+  // A product / price list (a PDF or photo of a stock or rate list) -> a table: first row = column names, then one row per product.
+  // With a header line (Item, Qty, Rate, MRP, HSN, GST...) the columns follow it; without one, name + HSN + GST % + the last number as the price.
+  // Always a draft: the caller shows the column matching and a dry run before anything is saved.
+  function parseProducts(lines) {
+    const HEAD = /\b(item|product|description|particulars|name|goods|article)\b/i, HEAD2 = /\b(rate|price|mrp|qty|quantity|stock|hsn|sac|gst|unit|amount|cost|barcode|sku|code)\b/i;
+    const NOISE = /^(\s*(sub\s*-?total|total|grand total|page\s*\d|printed|generated|date\b|gstin|phone|mobile|email|address|continued)\b)/i;
+    const cells = (l) => clean(l).split(/\s{2,}|\t|\|/).map((x) => x.trim()).filter(Boolean);
+    let hi = lines.findIndex((l) => HEAD.test(l) && HEAD2.test(l) && cells(l).length >= 2);
+    const notes = [];
+    if (hi >= 0) {
+      const hdr = cells(lines[hi]), n = hdr.length, rows = [];
+      for (const l of lines.slice(hi + 1)) {
+        if (NOISE.test(l) || (HEAD.test(l) && HEAD2.test(l) && cells(l).length === n)) continue;   // repeated header on the next page
+        let c = cells(l);
+        if (c.length > n) c = [c.slice(0, c.length - n + 1).join(' '), ...c.slice(c.length - n + 1)];
+        if (c.length !== n) { if (/[A-Za-z]{2}/.test(l) && /\d/.test(l)) notes.push('Skipped: ' + clean(l).slice(0, 60)); continue; }
+        if (!/[A-Za-z]{2}/.test(c[0])) { const k = c.findIndex((x) => /[A-Za-z]{2}/.test(x)); if (k < 0) continue; }
+        rows.push(c);
+      }
+      return { table: [hdr, ...rows], notes, mode: 'header' };
+    }
+    const rows = [];
+    for (const l0 of lines) {
+      const l = clean(l0); if (!l || NOISE.test(l) || SKIP.test(l)) continue;
+      const m = [...l.matchAll(/(\d[\d,]*(?:\.\d+)?)\s*(%)?/g)]; if (!m.length) continue;
+      const last = m[m.length - 1], price = num(last[1]); if (last[2] || isNaN(price) || !(price > 0)) continue;
+      let name = clean(l.slice(0, m[0].index)).replace(/^\d+[.)]?\s+(?=[A-Za-z])/, '').replace(/[\s|:\-,*₹]+$/, '');
+      if (name.length < 2 || !/[A-Za-z]{2}/.test(name)) continue;
+      const pct = m.find((x) => x[2] && TAXES.includes(num(x[1]))), hs = m.find((x) => /^\d{4,8}$/.test(x[1]) && x !== last);
+      rows.push([name, hs ? hs[1] : '', pct ? String(num(pct[1])) : '', String(price)]);
+    }
+    if (rows.length) notes.push('No column headings found: every line was read as name and price (last number on the line). Check the prices.');
+    return { table: [['Name', 'HSN/SAC', 'GST rate %', 'Selling price'], ...rows], notes, mode: 'plain' };
+  }
+
+  const api = { extract, parseInvoice, parseMenu, parseProducts, findDates, parseLine };
   root.auzDocRead = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
