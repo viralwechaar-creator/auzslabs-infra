@@ -196,6 +196,7 @@ const RPC = {
   salesman_branding_get: { params: ['p_tenant_id'], auth: true },
   salesman_branding_save: { params: ['p_tenant_id', 'p_patch'], jsonb: ['p_patch'], auth: true },
   salesman_delete_trial: { params: ['p_tenant_id', 'p_confirm_slug'], auth: true },
+  salesman_apply_demo_content: { params: ['p_tenant_id'], auth: true },
 
   // --- Client dashboard: own account, staff, feature toggles ---
   my_dashboard: { params: [], auth: true },
