@@ -128,6 +128,7 @@ a.a-nav-row,a.a-side-btn{text-decoration:none}
 .doodle-empty svg{width:56px;height:56px}
 .doodle-empty .p{font-size:13px;margin-top:8px}
 /* modal becomes a bottom sheet on phones */
+.hidden{display:none!important}
 .modal-overlay{align-items:flex-end;justify-content:center;padding:0}
 .modal{width:100%;max-width:none;border-radius:18px 18px 0 0;max-height:min(86vh,86dvh);overflow-y:auto;-webkit-overflow-scrolling:touch;padding:18px 18px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px -10px rgba(46,44,42,.3);animation:aSheetUp .28s cubic-bezier(.2,.8,.2,1)}
 @keyframes aSheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
@@ -326,6 +327,8 @@ body.admin-shell .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px
         <div class="a-side-div"></div>
         <button class="a-side-btn" data-section="users"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 8a3 3 0 1 1 0 6"/><path d="M15.5 14.3A5.9 5.9 0 0 1 21 20"/></svg>Users</button>
         <button class="a-side-btn" data-section="salesmen"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="7" r="3.4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/><path d="M15.5 4.5 17 3l1.5 1.5L17 6l1.5 1.5L17 9"/></svg>Salesmen</button>
+        <button class="a-side-btn" data-section="salesWork"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Salesman work</button>
+        <button class="a-side-btn" data-section="clientPay"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3"/></svg>Client payments</button>
         <button class="a-side-btn" data-section="systemStats"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="7" rx="1.6"/><rect x="4" y="13" width="16" height="7" rx="1.6"/><circle cx="8" cy="7.5" r=".9" fill="currentColor" stroke="none"/><circle cx="8" cy="16.5" r=".9" fill="currentColor" stroke="none"/></svg>System resources</button>
         <button class="a-side-btn" data-section="auditLog"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>Audit log</button>
         <button class="a-side-btn" data-section="privacyReq"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3Z"/><path d="M9.5 12l2 2 3.5-4"/></svg>Privacy requests<span class="a-row-badge" id="privReqBadge" style="display:none"></span></button>
@@ -495,6 +498,24 @@ body.admin-shell .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px
         <div id="salesmenList" style="margin-top:16px">Loading&hellip;</div>
       </section>
 
+            <section class="a-page" id="salesWorkSection" data-title="Salesman work" data-parent="more">
+        <div class="label">Work updates</div>
+        <h2 class="h-2">Salesman work</h2>
+        <p class="p">Who created which prospects, who became a paying client, and the money received from them. A prospect counts as converted once a payment is recorded for it.</p>
+        <label class="lbl" style="max-width:220px">Period
+          <select id="swDays" class="inp"><option value="0">All time</option><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option></select>
+        </label>
+        <div id="salesWorkBody" style="margin-top:16px">Loading&hellip;</div>
+      </section>
+
+      <section class="a-page" id="clientPaySection" data-title="Client payments" data-parent="more">
+        <div class="label">Money received</div>
+        <h2 class="h-2">Client payments</h2>
+        <p class="p">Every payment recorded with its UTR. Add one from <b>Clients &rarr; Payments</b>.</p>
+        <div id="clientPayTotals" class="p"></div>
+        <div id="clientPayList" style="margin-top:12px">Loading&hellip;</div>
+      </section>
+
       <section class="a-page" id="systemStatsSection" data-title="System resources" data-parent="more">
         <div class="label">Droplet: 2 vCPU / 4GB RAM / 75GB disk</div>
         <h2 class="h-2">System resources</h2>
@@ -556,6 +577,16 @@ body.admin-shell .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px
           <button class="a-nav-row" data-section="salesmen">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="7" r="3.4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/><path d="M15.5 4.5 17 3l1.5 1.5L17 6l1.5 1.5L17 9"/></svg>
             <span class="grow">Salesmen</span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <button class="a-nav-row" data-section="salesWork">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+            <span class="grow">Salesman work</span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <button class="a-nav-row" data-section="clientPay">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3"/></svg>
+            <span class="grow">Client payments</span>
             <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
           </button>
           <a class="a-nav-row" href="https://agents.auzslab.in" id="agentsLinkMore">
@@ -638,6 +669,26 @@ body.admin-shell .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px
   </div>
 </div>
 
+<div class="modal-overlay" id="payOverlay">
+  <div class="modal" id="payModal">
+    <button class="modal-close" id="payClose" aria-label="Close">&times;</button>
+    <div class="label" style="margin-bottom:10px">Payments</div>
+    <h3 class="h-2" id="payModalName" style="font-size:20px"></h3>
+    <div id="payModalList" style="margin-top:14px"></div>
+    <form id="payForm" style="margin-top:16px">
+      <div class="label" style="margin-bottom:6px">Record a payment</div>
+      <label class="lbl">Amount received (&#8377;)<input id="payAmt" class="inp" type="number" min="1" step="0.01" required></label>
+      <label class="lbl" style="margin-top:10px">How<select id="payMode" class="inp"><option value="upi">UPI</option><option value="bank">Bank transfer</option><option value="cash">Cash</option><option value="cheque">Cheque</option><option value="card">Card</option><option value="other">Other</option></select></label>
+      <label class="lbl" style="margin-top:10px">UTR / reference number<input id="payUtr" class="inp" type="text" autocomplete="off" placeholder="12-digit UTR for UPI / bank"></label>
+      <label class="lbl" style="margin-top:10px">Date received<input id="payDate" class="inp" type="date" required></label>
+      <label class="lbl" style="margin-top:10px">For<input id="payFor" class="inp" type="text" placeholder="e.g. First month + setup, renewal Nov"></label>
+      <label class="lbl" style="margin-top:10px">Note (optional)<input id="payNote" class="inp" type="text"></label>
+      <button class="btn btn-primary" type="submit" style="margin-top:14px">Save payment</button>
+      <div id="payErr" class="err"></div>
+    </form>
+  </div>
+</div>
+
 <div class="modal-overlay" id="userOverlay">
   <div class="modal" id="userModal">
     <button class="modal-close" id="userClose" aria-label="Close">&times;</button>
@@ -705,7 +756,7 @@ const SECTION_LOADERS = {
   leads: () => loadLeads(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(),
   pricing: () => { loadPricing(); loadBundles(); loadPayments(); },
   users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(), privacyReq: () => loadPrivacyReq(),
-  salesmen: () => loadSalesmen(),
+  salesmen: () => loadSalesmen(), salesWork: () => loadSalesWork(), clientPay: () => loadClientPay(),
 };
 const sectionLoadedAt = {};
 function ensureSectionLoaded(name) {
@@ -1250,6 +1301,7 @@ async function loadClients(preFetched) {
       <td data-label="Notes">${c.notes ? esc(c.notes) : '&mdash;'}</td>
       <td class="row-actions">
         <button class="btn btn-ghost" data-edit>Edit</button>
+        <button class="btn btn-ghost" data-pay>Payments</button>
         <button class="btn btn-ghost" data-reset-pw>Reset password</button>
         <button class="btn btn-ghost" data-message>Message</button>
         <button class="btn btn-ghost" data-delete style="color:var(--accent);border-color:var(--accent)">Delete</button>
@@ -1264,6 +1316,9 @@ async function loadClients(preFetched) {
 
   listEl.querySelectorAll('[data-edit]').forEach((btn) => {
     btn.onclick = () => openEditModal(btn.closest('tr').dataset.id);
+  });
+  listEl.querySelectorAll('[data-pay]').forEach((btn) => {
+    btn.onclick = () => openPayModal(btn.closest('tr').dataset.id);
   });
   listEl.querySelectorAll('[data-reset-pw]').forEach((btn) => {
     btn.onclick = async () => {
@@ -1580,6 +1635,109 @@ document.getElementById('salesmanForm').onsubmit = async (e) => {
   e.target.reset();
   loadSalesmen();
 };
+
+// ---------- Client payments (db/148) ----------
+const MODE_LABEL = { upi: 'UPI', bank: 'Bank transfer', cash: 'Cash', cheque: 'Cheque', card: 'Card', other: 'Other' };
+const inr = (n) => '&#8377;' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+function payTable(rows, withClient) {
+  if (!rows.length) return '<p class="p">No payments recorded yet.</p>';
+  return `<div class="admin-table-wrap"><table class="admin-table">
+    <tr><th>Date</th>${withClient ? '<th>Client</th>' : ''}<th>Amount</th><th>How</th><th>UTR / reference</th><th>For</th><th></th></tr>
+    ${rows.map((r) => `<tr data-pid="${r.id}">
+      <td data-label="Date">${esc(r.paid_on)}</td>${withClient ? `<td data-label="Client"><b>${esc(r.client)}</b><br><span style="color:var(--ink-faint)">${esc(r.slug)}</span></td>` : ''}
+      <td data-label="Amount"><b>${inr(r.amount)}</b></td>
+      <td data-label="How">${esc(MODE_LABEL[r.mode] || r.mode)}</td>
+      <td data-label="UTR / reference">${r.utr ? '<code>' + esc(r.utr) + '</code>' : '&mdash;'}</td>
+      <td data-label="For">${esc([r.purpose, r.note].filter(Boolean).join(' · ') || '—')}</td>
+      <td class="row-actions"><button class="btn btn-ghost" data-pdel>Delete</button></td></tr>`).join('')}
+  </table></div>`;
+}
+function wirePayDelete(root, reload) {
+  root.querySelectorAll('[data-pdel]').forEach((b) => {
+    b.onclick = async () => {
+      if (!confirm('Delete this payment record? It is kept in the audit log.')) return;
+      const { error } = await sb.rpc('admin_delete_client_payment', { p_id: b.closest('tr').dataset.pid });
+      if (error) { alert(error.message); return; }
+      reload();
+    };
+  });
+}
+let payTenant = null;
+async function loadPayModalList() {
+  const el = document.getElementById('payModalList');
+  const { data, error } = await sb.rpc('admin_list_client_payments', { p_tenant_id: payTenant });
+  if (error) { el.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  const total = (data || []).reduce((a, r) => a + Number(r.amount), 0);
+  el.innerHTML = (data && data.length ? `<p class="p"><b>Total received: ${inr(total)}</b></p>` : '') + payTable(data || [], false);
+  wirePayDelete(el, () => { loadPayModalList(); sectionLoadedAt.clientPay = 0; });
+}
+function openPayModal(id) {
+  const c = clientsCache.find((x) => x.id === id); if (!c) return;
+  payTenant = id;
+  document.getElementById('payModalName').textContent = c.name;
+  document.getElementById('payForm').reset();
+  document.getElementById('payDate').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('payErr').textContent = '';
+  document.getElementById('payModalList').innerHTML = 'Loading&hellip;';
+  document.getElementById('payOverlay').classList.add('open');
+  loadPayModalList();
+}
+document.getElementById('payClose').onclick = () => document.getElementById('payOverlay').classList.remove('open');
+document.getElementById('payOverlay').onclick = (e) => { if (e.target.id === 'payOverlay') e.currentTarget.classList.remove('open'); };
+document.getElementById('payForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById('payErr'); errEl.textContent = '';
+  const { error } = await sb.rpc('admin_add_client_payment', {
+    p_tenant_id: payTenant, p_amount: Number(document.getElementById('payAmt').value),
+    p_paid_on: document.getElementById('payDate').value || null, p_mode: document.getElementById('payMode').value,
+    p_utr: document.getElementById('payUtr').value.trim() || null, p_purpose: document.getElementById('payFor').value.trim() || null,
+    p_note: document.getElementById('payNote').value.trim() || null,
+  });
+  if (error) { errEl.textContent = error.message; return; }
+  e.target.reset(); document.getElementById('payDate').value = new Date().toISOString().slice(0, 10);
+  loadPayModalList(); sectionLoadedAt.clientPay = 0;
+};
+async function loadClientPay() {
+  const listEl = document.getElementById('clientPayList');
+  const { data, error } = await sb.rpc('admin_list_client_payments', {});
+  if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  const rows = data || [];
+  const month = new Date().toISOString().slice(0, 7);
+  const sum = (a) => a.reduce((t, r) => t + Number(r.amount), 0);
+  document.getElementById('clientPayTotals').innerHTML = `This month: <b>${inr(sum(rows.filter((r) => String(r.paid_on).startsWith(month))))}</b> &middot; All recorded: <b>${inr(sum(rows))}</b>`;
+  listEl.innerHTML = payTable(rows, true);
+  wirePayDelete(listEl, loadClientPay);
+}
+
+// ---------- Salesman work dashboard (db/148) ----------
+async function loadSalesWork() {
+  const el = document.getElementById('salesWorkBody');
+  const { data, error } = await sb.rpc('admin_salesman_work', { p_days: Number(document.getElementById('swDays').value) });
+  if (error) { el.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  if (!data || !data.length) { el.innerHTML = emptyDoodle('No salesmen yet.'); return; }
+  const ago = (t) => { if (!t) return '—'; const d = Math.floor((Date.now() - new Date(t)) / 864e5); return d <= 0 ? 'today' : d + 'd ago'; };
+  const tot = data.reduce((a, s) => ({ c: a.c + s.created, v: a.v + s.converted, p: a.p + Number(s.paid_total) }), { c: 0, v: 0, p: 0 });
+  el.innerHTML = `<p class="p">Prospects created: <b>${tot.c}</b> &middot; Converted: <b>${tot.v}</b> &middot; Received from them: <b>${inr(tot.p)}</b></p>
+  <div class="admin-table-wrap"><table class="admin-table">
+    <tr><th>Salesman</th><th>Prospects</th><th>Converted</th><th>Received</th><th>Last prospect</th><th></th></tr>
+    ${data.map((s) => `<tr data-sid="${s.id}">
+      <td data-label="Salesman"><b>${esc(s.name)}</b>${s.active ? '' : ' <span class="status-pill status-suspended">off</span>'}<br><span style="color:var(--ink-faint)">${esc(s.email)}</span></td>
+      <td data-label="Prospects">${s.created}</td><td data-label="Converted">${s.converted}</td>
+      <td data-label="Received">${inr(s.paid_total)}</td><td data-label="Last prospect">${ago(s.last_activity)}</td>
+      <td class="row-actions"><button class="btn btn-ghost" data-sw>Prospects</button></td></tr>
+      <tr class="hidden" data-detail="${s.id}"><td colspan="6">${s.prospects.length ? `<div class="admin-table-wrap"><table class="admin-table">
+        <tr><th>Business</th><th>Type</th><th>Created</th><th>Status</th><th>Received</th></tr>
+        ${s.prospects.map((p) => `<tr><td data-label="Business"><b>${esc(p.name)}</b><br><span style="color:var(--ink-faint)">${esc(p.slug)}.auzslab.in</span></td>
+          <td data-label="Type">${esc(NICHE_LABEL[p.niche] || p.niche)}</td><td data-label="Created">${esc(String(p.created_at).slice(0, 10))}</td>
+          <td data-label="Status"><span class="status-pill ${p.status === 'converted' ? 'status-active' : ''}">${p.status}${p.has_owner ? ' · owner login' : ''}</span></td>
+          <td data-label="Received">${p.paid ? inr(p.paid) : '&mdash;'}</td></tr>`).join('')}
+      </table></div>` : '<p class="p">No prospects in this period.</p>'}</td></tr>`).join('')}
+  </table></div>`;
+  el.querySelectorAll('[data-sw]').forEach((b) => {
+    b.onclick = () => { const id = b.closest('tr').dataset.sid; el.querySelector(`[data-detail="${id}"]`).classList.toggle('hidden'); };
+  });
+}
+document.getElementById('swDays').onchange = loadSalesWork;
 
 async function openUserModal(id) {
   const u = usersCache.find((x) => x.id === id);
