@@ -91,6 +91,7 @@ function scNewProduct(code, o = {}) {
 
 // ---------- adding to the cart / the receive list ----------
 const scLimited = (p) => !S.org.allow_negative_stock && p.track_stock && !p.is_service;
+const scBad = (r) => { if (r && r.bad) auzScanner.beep(false); return r; };
 function scSellAdd(p, n = 1) {
   const ex = SC.cart.find((l) => l.p.id === p.id), next = (ex ? ex.qty : 0) + n;
   if (scLimited(p) && next > Number(p.stock)) return { text: Number(p.stock) <= 0 ? p.name + ' is out of stock' : 'Only ' + qty(p.stock) + ' ' + p.unit + ' of ' + p.name + ' in stock', bad: true };
@@ -106,7 +107,8 @@ function scRecvAdd(p, n = 1) {
   scPersist();
   return { text: p.name + '  ×  ' + qty(next), bad: false };
 }
-const scAdd = (p, n) => (SC.mode === 'sell' ? scSellAdd(p, n) : scRecvAdd(p, n));
+const scAddRaw = (p, n) => (SC.mode === 'sell' ? scSellAdd(p, n) : scRecvAdd(p, n));
+const scAdd = (p, n) => scBad(scAddRaw(p, n));
 
 // ---------- the totals ----------
 function scDoc() {
@@ -128,14 +130,14 @@ function scStart(v) {
     title: SC.mode === 'sell' ? 'Scan to sell' : 'Scan to add stock', doneLabel: 'Done', footer: sum,
     onCode: async (code, ctl) => {
       const m = await scLookup(code);
-      if (m.length === 1) { const r = scAdd(m[0]); sum.textContent = scSummary(); return r; }
+      if (m.length === 1) { const r = scAddRaw(m[0]); sum.textContent = scSummary(); return r; }   // the camera overlay beeps low itself for a refusal
       ctl.pause(); ctl.close();                                    // the next step is a sheet: leave the camera, come back after
       let p = null, extra = null;
       if (m.length > 1) p = await scChoose(m, code);
       else { const r = await scNewProduct(code, { add: SC.mode === 'add' }); if (r) { p = r.p; extra = r; } }
       if (p) {
-        const res = SC.mode === 'add' && extra ? scRecvAdd(p, extra.qty > 0 ? extra.qty : 1) : scAdd(p);
-        auzScanner.beep(!res.bad); toast(res.text, { err: res.bad }); v.refresh(); if (!res.bad) scStart(v); return;
+        const res = SC.mode === 'add' && extra ? scBad(scRecvAdd(p, extra.qty > 0 ? extra.qty : 1)) : scAdd(p);
+        toast(res.text, { err: res.bad }); v.refresh(); if (!res.bad) scStart(v); return;
       }
       v.refresh();
     },
@@ -301,12 +303,13 @@ page('scan', {
     const searchRow = h('div', { class: 'grid', style: { gap: '8px' } }, box, hits);
     const addFromText = async (q) => {
       q = q.trim(); if (!q) return;
+      auzScanner.beep(true);                                  // a typed or Bluetooth-scanned code beeps the moment it arrives
       const m = await scLookup(q);
-      if (m.length === 1) { const r = scAdd(m[0]); auzScanner.beep(!r.bad); toast(r.text, { err: r.bad }); box.input.value = ''; find(''); v.refresh(); return; }
+      if (m.length === 1) { const r = scAdd(m[0]); toast(r.text, { err: r.bad }); box.input.value = ''; find(''); v.refresh(); return; }
       if (m.length > 1) { const p = await scChoose(m, q); if (p) { const r = scAdd(p); toast(r.text, { err: r.bad }); box.input.value = ''; v.refresh(); } return; }
       const list = textMatches(q);
-      if (list.length === 1) { const r = scAdd(list[0]); auzScanner.beep(!r.bad); toast(r.text, { err: r.bad }); box.input.value = ''; find(''); v.refresh(); return; }
-      if (/^[A-Za-z0-9\-_.\/]{5,}$/.test(q) && !list.length) { const r = await scNewProduct(q, { add: !sell }); if (r) { const res = !sell ? scRecvAdd(r.p, r.qty > 0 ? r.qty : 1) : scAdd(r.p); toast(res.text, { err: res.bad }); box.input.value = ''; v.refresh(); } return; }
+      if (list.length === 1) { const r = scAdd(list[0]); toast(r.text, { err: r.bad }); box.input.value = ''; find(''); v.refresh(); return; }
+      if (/^[A-Za-z0-9\-_.\/]{5,}$/.test(q) && !list.length) { const r = await scNewProduct(q, { add: !sell }); if (r) { const res = !sell ? scBad(scRecvAdd(r.p, r.qty > 0 ? r.qty : 1)) : scAdd(r.p); toast(res.text, { err: res.bad }); box.input.value = ''; v.refresh(); } return; }
       if (!list.length) { auzScanner.beep(false); toast('No product matches “' + q + '”', { err: true }); }
     };
     const textMatches = (q) => { const t = q.toLowerCase(); return (S.products || []).filter((p) => p.active && (p.name.toLowerCase().includes(t) || p.sku.toLowerCase().includes(t) || String(p.barcode || '') === q)).slice(0, 8); };

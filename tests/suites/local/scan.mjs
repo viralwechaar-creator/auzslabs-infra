@@ -156,13 +156,14 @@ export default async function run({ browser, stack }) {
     assert(await page.locator('.scan-line', { hasText: 'Camera Pen' }).count() === 1, 'pen not in bill');
     await page.locator('.scan-line .grow').first().click(); await page.waitForSelector('.sheet input', { timeout: 5000 });
     const sheet = page.locator('.sheet').last();
-    const ins = sheet.locator('input'); // quantity, price, discount, selling, purchase, mrp
-    await ins.nth(3).fill('55'); await ins.nth(4).fill('25'); await ins.nth(5).fill('60');
+    const want = { 'Selling price': '55', 'Purchase price': '25', 'MRP': '60' };
+    for (let tries = 0; tries < 6; tries++) { for (const [l, v] of Object.entries(want)) await sheet.getByLabel(l, { exact: true }).fill(v); await page.waitForTimeout(300); const got = await Promise.all(Object.keys(want).map((l) => sheet.getByLabel(l, { exact: true }).inputValue())); if (got.join() === Object.values(want).join()) break; }
     await sheet.locator('button', { hasText: 'Save product prices' }).click(); await page.waitForTimeout(900);
     const row = (await rpc(stack, 'acc_list_products', { limit: 500 }, owner)).data.data.rows.find((p) => p.id === pen);
     assert(Number(row.sale_price) === 55 && Number(row.purchase_price) === 25 && Number(row.mrp) === 60, 'saved prices: ' + JSON.stringify([row.sale_price, row.purchase_price, row.mrp]));
-    assert(Number(await sheet.locator('input').nth(1).inputValue()) === 55, 'this bill price did not follow the new selling price');
+    assert(Number(await sheet.locator('input[aria-label="Price"]').inputValue()) === 55, 'this bill price did not follow the new selling price');
     await sheet.locator('button', { hasText: /^Save$/ }).click(); await page.waitForTimeout(400);
+    await page.waitForFunction(() => /MRP/.test(document.querySelector('.scan-line')?.innerText || ''), null, { timeout: 8000 }).catch(() => {});
     assert(/MRP/.test(await page.locator('.scan-line').first().innerText()), 'MRP not shown on the line');
     await page.locator('input[placeholder="Customer’s name"]').fill('Ravi Kumar'); await page.locator('input[placeholder^="Customer’s WhatsApp"]').fill('9876543210');
     await page.locator('.scan-dock .btn.fill').click(); await page.locator('.alert button, .dialog button', { hasText: 'Charge' }).last().click({ timeout: 5000 }).catch(() => {});
@@ -173,6 +174,52 @@ export default async function run({ browser, stack }) {
     assert(inv[0].party_id, 'invoice has no customer');
     await c.close();
   });
+  await s.check('The beep sounds the moment a code is read, before the new-product form is saved; and Busy / Tally lists import with codes made and opening stock added once', async () => { try {
+    const { c, page } = await openPage('/accounts.html', USERS.acctOwner, { w: 1280, h: 900 });
+    page.on('console', () => {}); globalThis.__st = 0;
+    await toScan(page);
+    await page.evaluate(() => { window.__osc = 0; const AC = window.AudioContext || window.webkitAudioContext, orig = AC.prototype.createOscillator; AC.prototype.createOscillator = function () { window.__osc++; return orig.call(this); }; navigator.mediaDevices.getUserMedia = async () => { const e = new Error('no'); e.name = 'NotAllowedError'; throw e; }; });
+    globalThis.__st=1; await page.locator('.scan-hero').click(); globalThis.__st=2; await page.waitForSelector('.asc-blocked', { timeout: 5000 });
+    await page.fill('.asc-in', '5551234500011'); globalThis.__st=3; await page.locator('.asc .asc-btn', { hasText: 'Add' }).click();
+    globalThis.__st=4; await page.waitForSelector('text=Add the details once', { timeout: 8000 });         // the unknown-code form is open and NOT saved
+    assert(await page.evaluate(() => window.__osc) >= 1, 'no beep before the product was saved');
+    await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+    await page.evaluate(() => { location.hash = '#/data?entity=products'; }); globalThis.__st=5; await page.waitForSelector('input[type=file]', { timeout: 8000 });
+    // Busy-style Excel/CSV: its own column names, no item code column, GST written as text, a Total row
+    const busy = 'Item Name,Item Group,Main Unit,Sale Price,Purchase Price,MRP,HSN Code,Tax Category,Opening Stock Qty,Opening Stock Rate\nBusy Rice 5kg,Grocery,Bag,300,250,320,1006,GST 5%,12,250\nBusy Soap,Personal Care,Pcs.,45,30,50,3401,GST 18%,40,30\nTotal,,,,,,,,52,\n';
+    globalThis.__st=6; await page.locator('.seg button', { hasText: 'Busy' }).click();
+    globalThis.__st=7; await page.setInputFiles('input[type=file]', { name: 'busy-items.csv', mimeType: 'text/csv', buffer: Buffer.from(busy) });
+    globalThis.__st=8; await page.waitForSelector('text=Match your columns', { timeout: 8000 });
+    globalThis.__st=9; await page.locator('button', { hasText: 'Check the file' }).click(); globalThis.__st=10; await page.waitForSelector('text=Looks good', { timeout: 15000 });
+    globalThis.__st=11; await page.locator('button.fill', { hasText: /^Import$/ }).click(); await page.locator('button', { hasText: /^Import$/ }).last().click({ timeout: 5000 }).catch(() => {}); await page.waitForTimeout(2500);
+    const rows = (await rpc(stack, 'acc_list_products', { limit: 500 }, owner)).data.data.rows;
+    const rice = rows.find((p) => p.name === 'Busy Rice 5kg'), soap = rows.find((p) => p.name === 'Busy Soap');
+    assert(rice && soap, 'Busy items not created: ' + rows.map((x) => x.name).join(','));
+    assert(rice.sku === 'BUSY-RICE-5KG' && Number(rice.tax_rate) === 5 && Number(rice.mrp) === 320 && rice.hsn === '1006', 'rice: ' + JSON.stringify([rice.sku, rice.tax_rate, rice.mrp, rice.hsn]));
+    assert(soap.unit === 'Pcs' && Number(soap.tax_rate) === 18, 'soap: ' + JSON.stringify([soap.unit, soap.tax_rate]));
+    assert(!rows.some((x) => /^total$/i.test(x.name)), 'the Total row became a product');
+    assert(Number(rice.stock) === 12 && Number(soap.stock) === 40, 'opening stock: ' + rice.stock + '/' + soap.stock);
+    // the same list again: nothing is duplicated and stock is not counted twice
+    await page.evaluate(() => { location.hash = '#/data'; }); await page.evaluate(() => { location.hash = '#/data?entity=products'; }); globalThis.__st=12; await page.waitForSelector('input[type=file]');
+    globalThis.__st=13; await page.locator('.seg button', { hasText: 'Busy' }).click();
+    globalThis.__st=14; await page.setInputFiles('input[type=file]', { name: 'busy-items.csv', mimeType: 'text/csv', buffer: Buffer.from(busy) });
+    globalThis.__st=15; await page.waitForSelector('text=Match your columns', { timeout: 8000 });
+    globalThis.__st=16; await page.locator('button', { hasText: 'Check the file' }).click(); globalThis.__st=17; await page.waitForSelector('text=Looks good', { timeout: 15000 });
+          await page.waitForTimeout(500); assert(await page.locator('button.fill', { hasText: /^Import$/ }).isDisabled(), 'a list that is already imported can be imported again');
+    const again = (await rpc(stack, 'acc_list_products', { limit: 500 }, owner)).data.data.rows;
+    assert(again.filter((x) => x.name === 'Busy Soap').length === 1 && Number(again.find((x) => x.name === 'Busy Soap').stock) === 40, 'second import changed things: ' + JSON.stringify(again.filter((x) => /Busy/.test(x.name)).map((x) => [x.name, x.stock])));
+    // Tally XML (UTF-16 like Tally writes it), stock items with GST rate details
+    const xml = '<ENVELOPE><BODY><IMPORTDATA><REQUESTDATA><TALLYMESSAGE xmlns:UDF="TallyUDF"><STOCKITEM NAME="Tally Pen" RESERVEDNAME=""><PARENT>Stationery</PARENT><BASEUNITS>Nos</BASEUNITS><OPENINGBALANCE>25 Nos</OPENINGBALANCE><OPENINGRATE>8.00/Nos</OPENINGRATE><HSNDETAILS.LIST><HSNCODE>9608</HSNCODE></HSNDETAILS.LIST><GSTDETAILS.LIST><STATEWISEDETAILS.LIST><RATEDETAILS.LIST><GSTRATEDUTYHEAD>Integrated Tax</GSTRATEDUTYHEAD><GSTRATE>18</GSTRATE></RATEDETAILS.LIST></STATEWISEDETAILS.LIST></GSTDETAILS.LIST></STOCKITEM></TALLYMESSAGE></REQUESTDATA></IMPORTDATA></BODY></ENVELOPE>';
+    const u16 = Buffer.concat([Buffer.from([0xFF, 0xFE]), Buffer.from(xml, 'utf16le')]);
+    await page.evaluate(() => { location.hash = '#/data'; }); await page.evaluate(() => { location.hash = '#/data?entity=products'; }); globalThis.__st=19; await page.waitForSelector('input[type=file]');
+    globalThis.__st=20; await page.setInputFiles('input[type=file]', { name: 'tally-masters.xml', mimeType: 'text/xml', buffer: u16 });
+    globalThis.__st=21; await page.waitForSelector('text=Match your columns', { timeout: 8000 });
+    globalThis.__st=22; await page.locator('button', { hasText: 'Check the file' }).click(); globalThis.__st=23; await page.waitForSelector('text=Looks good', { timeout: 15000 });
+    globalThis.__st=24; await page.locator('button.fill', { hasText: /^Import$/ }).click(); await page.locator('button', { hasText: /^Import$/ }).last().click({ timeout: 5000 }).catch(() => {}); await page.waitForTimeout(2500);
+    const tp = (await rpc(stack, 'acc_list_products', { limit: 500 }, owner)).data.data.rows.find((x) => x.name === 'Tally Pen');
+    assert(tp && tp.sku === 'TALLY-PEN' && Number(tp.tax_rate) === 18 && tp.hsn === '9608' && Number(tp.stock) === 25, 'tally pen: ' + JSON.stringify(tp && [tp.sku, tp.tax_rate, tp.hsn, tp.stock]));
+    await c.close();
+  } catch (e) { let dump = ''; try { dump = page.url() + ' ## ' + (await page.locator('body').innerText({ timeout: 3000 })).replace(/\s+/g, ' ').slice(0, 900); await page.screenshot({ path: 'tests/report/shots/dbg-import.png', timeout: 3000 }); dump += ' @@ ' + await page.evaluate(() => [...document.querySelectorAll('button')].map((b) => b.innerText.trim() + (b.disabled ? '(off)' : '')).filter(Boolean).join(' | ') + ' || ' + [...document.querySelectorAll('.banner,.toast,.err')].map((b) => b.innerText).join(' / ')); } catch {} throw new Error('step ' + globalThis.__st + ': ' + e.message.split('\n')[0] + ' :: ' + dump); } });
   await s.check('The standalone AUZsScan app (scan.html): short menu, scan screen first, installable manifest, no horizontal scroll on a phone', async () => {
     const a = await openPage('/scan.html', USERS.acctOwner);
     await a.page.waitForSelector('.scan-hero', { timeout: 15000 });

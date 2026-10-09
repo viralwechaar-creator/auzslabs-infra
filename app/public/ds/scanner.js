@@ -122,8 +122,9 @@
       }
       lastCode = code; lastAt = lastAny = now;
       frame.classList.add('ok'); setTimeout(() => frame.classList.remove('ok'), 350);
+      beep(true);                                           // the beep is the scan acknowledgement: it sounds the instant a code is read, not after anything is saved
       let out; try { out = opts.onCode && opts.onCode(code, ctl, from); } catch (e) { ctl.show(e.message || 'Could not use that code', true); beep(false); return; }
-      Promise.resolve(out).then((t) => { if (t && typeof t === 'object') { ctl.show(t.text, t.bad); beep(!t.bad); } else { if (t) ctl.show(t); beep(true); } }, (e) => { ctl.show(e.message || 'Could not use that code', true); beep(false); });
+      Promise.resolve(out).then((t) => { if (t && typeof t === 'object') { ctl.show(t.text, t.bad); if (t.bad) beep(false); } else if (t) ctl.show(t); }, (e) => { ctl.show(e.message || 'Could not use that code', true); beep(false); });
     }
     function submitManual() { const v = manual.value.trim(); if (!v) return; manual.value = ''; accept(v, 'manual'); manual.focus(); }
     manual.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submitManual(); } });

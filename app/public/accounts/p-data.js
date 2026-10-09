@@ -31,34 +31,93 @@ page('data', {
   },
 });
 
+// ---------- coming from Busy or Tally ----------
+// Header names those programs use in their item / stock exports. They are tried first for the chosen source, then the generic names.
+// Nothing here is a guaranteed format: the person always sees (and can change) the match before anything is imported.
+const SRC = {
+  generic: { label: 'Any spreadsheet', how: 'CSV or Excel (.xlsx). The first row must be column names. Dates like 2026-04-10 or 10/04/2026 both work.', hints: {} },
+  busy: { label: 'Busy', how: 'In Busy, open your Item list and export it to Excel or CSV, then choose that file here. Items without a code get one made from the item name.',
+    hints: { name: /^item name$|^name$|print name|^item$/, sku: /item code|^code$|^alias|short name/, category: /item group|^group|under group|category/, unit: /main unit|^unit|uom/, sale_price: /sale.?s? price|selling|sale rate|^s\.? ?price/, purchase_price: /purchase price|purch.*rate|cost price|^cost/, mrp: /^mrp|m\.r\.p/, hsn: /hsn|sac/, tax_rate: /tax categ|gst ?%|gst rate|tax ?%|igst|rate of tax/, barcode: /bar ?code/, qty: /opening.*(qty|stock|bal)|^qty|quantity|stock qty|closing.*(qty|stock)/, cost: /opening.*(rate|price|cost)|stock rate|avg/ } },
+  tally: { label: 'Tally', how: 'In Tally, open the list of Stock Items and export it (Alt+E) as Excel or CSV. A Masters export in XML works too. Items without a code get one made from the item name.',
+    hints: { name: /^particulars$|stock item|item name|^name$/, sku: /part ?no|part number|^alias|item code/, category: /^under$|^parent$|stock group|^group/, unit: /^units?$|base units?|^uom/, sale_price: /standard sell|selling price|sale/, purchase_price: /standard cost|purchase|cost/, mrp: /^mrp|m\.r\.p/, hsn: /hsn|sac/, tax_rate: /gst rate|rate of tax|integrated|igst|tax ?%/, barcode: /bar ?code/, qty: /opening (balance|qty)|^quantity$|^qty$|closing (balance|qty)/, cost: /opening rate|^rate$|avg|average/ } },
+};
+const numClean = (x) => { const m = String(x ?? '').replace(/,/g, '').match(/-?\d+(\.\d+)?/); return m ? m[0] : ''; };
+const skuOf = (name) => String(name || '').toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24);
+// Tally "Export masters" as XML: stock items only. Tally writes UTF-16 and a few control characters that a strict XML reader rejects.
+async function readTallyXml(file) {
+  const buf = new Uint8Array(await file.arrayBuffer());
+  let txt = buf[0] === 0xFF && buf[1] === 0xFE ? new TextDecoder('utf-16le').decode(buf) : buf[0] === 0xFE && buf[1] === 0xFF ? new TextDecoder('utf-16be').decode(buf) : new TextDecoder('utf-8').decode(buf);
+  txt = txt.replace(/&#(?:[0-9]|1[0-9]|2[0-9]|3[01]);/g, '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+  const doc = new DOMParser().parseFromString(txt, 'text/xml');
+  if (doc.querySelector('parsererror')) throw new Error('This XML file could not be read. Export it again from Tally, or export to Excel instead.');
+  const items = [...doc.getElementsByTagName('STOCKITEM')];
+  if (!items.length) throw new Error('No stock items were found in this XML. In Tally export Masters with Stock Items, or export the item list to Excel.');
+  const kid = (el, tag) => { const c = [...el.children].find((x) => x.tagName === tag); return c ? c.textContent.trim() : ''; };
+  const deep = (el, tag) => { const x = el.getElementsByTagName(tag)[0]; return x ? x.textContent.trim() : ''; };
+  const rows = items.map((el) => {
+    const names = [...el.querySelectorAll('NAME.LIST > NAME')].map((n) => n.textContent.trim()).filter(Boolean);
+    const rate = [...el.getElementsByTagName('RATEDETAILS.LIST')].find((r) => /integrated/i.test(deep(r, 'GSTRATEDUTYHEAD')));
+    const std = [...el.getElementsByTagName('STANDARDPRICELIST.LIST')].map((x) => deep(x, 'RATE')).filter(Boolean).pop() || '';
+    return [el.getAttribute('NAME') || names[0] || '', kid(el, 'PARENT'), kid(el, 'BASEUNITS'), kid(el, 'OPENINGBALANCE'), kid(el, 'OPENINGRATE'), deep(el, 'HSNCODE'), rate ? deep(rate, 'GSTRATE') : '', kid(el, 'PARTNUMBER'), names.length > 1 ? names[1] : '', std];
+  });
+  return [['Name', 'Group', 'Unit', 'Opening qty', 'Opening rate', 'HSN/SAC', 'GST rate %', 'Part no', 'Alias', 'Selling price'], ...rows];
+}
+
 async function importWizard(host, entity, v) {
   const E = ENT[entity]; v.header({ title: 'Import ' + E.label.toLowerCase(), back: 'data' });
   let table = null, hdr = [], map = {}, result = null;
-  const opts = { on_duplicate: 'skip', create_missing: true, strict: true, date: curFY().start_date };
-  const fileIn = h('input', { type: 'file', accept: '.csv,.xlsx,.txt', class: 'input', 'aria-label': 'File to import' });
+  const opts = { on_duplicate: 'skip', create_missing: true, strict: true, date: curFY().start_date, src: 'generic', autoSku: false, openingStock: true };
+  const EXTRA = entity === 'products' ? [['qty', 'Opening stock quantity', 0], ['cost', 'Opening stock rate (cost each)', 0]] : [];
+  const isReq = (f) => f[2] && !(entity === 'products' && f[0] === 'sku' && opts.autoSku);
+  const fileIn = h('input', { type: 'file', accept: '.csv,.xlsx,.txt,.xml', class: 'input', 'aria-label': 'File to import' });
   const mapEl = h('div', { class: 'grid' }), resEl = h('div', { class: 'grid' }), optEl = h('div', { class: 'grid' });
   const sigKey = () => 'acc_imp_' + entity + '_' + hdr.join('|').slice(0, 200);
-  const guess = () => { const g = {}; E.fields.forEach(([k, , , re]) => { g[k] = hdr.findIndex((n) => re.test(String(n).toLowerCase()) || String(n).toLowerCase().replace(/[^a-z0-9]/g, '') === k.replace(/_/g, '')); }); return g; };
+  const guess = () => {
+    const g = {}, hn = hdr.map((n) => String(n).toLowerCase().trim()), H = SRC[opts.src].hints, used = new Set(), all = [...E.fields, ...EXTRA];
+    all.forEach(([k]) => { g[k] = H[k] ? hn.findIndex((n, j) => !used.has(j) && H[k].test(n)) : -1; if (g[k] >= 0) used.add(g[k]); });            // 1. the names the chosen program uses
+    all.forEach(([k, , , re]) => { if (g[k] >= 0 || !re || (opts.src !== 'generic' && k === 'sku')) return; g[k] = hn.findIndex((n, j) => !used.has(j) && (re.test(n) || n.replace(/[^a-z0-9]/g, '') === k.replace(/_/g, ''))); if (g[k] >= 0) used.add(g[k]); });   // 2. generic names, only on columns nobody else took
+    if (entity === 'products' && opts.src !== 'generic') opts.autoSku = true;   // Busy and Tally items often have no code, or a code column that is empty on some rows
+    return g;
+  };
   const drawMap = () => {
     clear(mapEl); if (!table) return;
     mapEl.append(h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, '2. Match your columns'), h('span', { class: 'muted small' }, (table.length - 1) + ' rows')),
-      h('div', { class: 'card grid' }, E.fields.map(([k, l, req]) => { const s = selectEl([['-1', req ? 'Choose column' : 'Not in my file'], ...hdr.map((n, i) => [String(i), String(n || 'Column ' + (i + 1))])], String(map[k] ?? -1), { label: l, cls: req && map[k] < 0 ? 'err' : '', onchange: () => { map[k] = Number(s.value); s.classList.toggle('err', req && map[k] < 0); result = null; drawRes(); try { localStorage.setItem(sigKey(), JSON.stringify(map)); } catch { /* ignore */ } } }); return field(l + (req ? ' *' : ''), s); }))));
+      h('div', { class: 'card grid' }, [...E.fields, ...EXTRA].map(([k, l, req0], fi) => { const req = fi < E.fields.length ? isReq(E.fields[fi]) : false; const s = selectEl([['-1', req ? 'Choose column' : 'Not in my file'], ...hdr.map((n, i) => [String(i), String(n || 'Column ' + (i + 1))])], String(map[k] ?? -1), { label: l, cls: req && map[k] < 0 ? 'err' : '', onchange: () => { map[k] = Number(s.value); s.classList.toggle('err', req && map[k] < 0); if (k === 'sku') { drawMap(); } result = null; drawRes(); try { localStorage.setItem(sigKey(), JSON.stringify(map)); } catch { /* ignore */ } } }); return field(l + (req ? ' *' : ''), s); }))));
     optEl.replaceChildren(h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, '3. Rules')), h('div', { class: 'card grid' },
       ['customers', 'suppliers', 'products', 'accounts'].includes(entity) ? field('If it already exists', selectEl([['skip', 'Skip it'], ['update', 'Update it']], opts.on_duplicate, { onchange: (e) => { opts.on_duplicate = e.target.value; result = null; drawRes(); } })) : null,
       ['sales', 'purchases'].includes(entity) ? toggleRow('Create missing ' + (entity === 'sales' ? 'customers' : 'suppliers'), opts.create_missing, (x) => { opts.create_missing = x; result = null; drawRes(); }) : null,
       ['party_openings', 'account_openings'].includes(entity) ? field('Opening date', dateInput(opts.date, { onchange: (e) => { opts.date = e.target.value; } })) : null,
+      entity === 'products' ? toggleRow('Make a code for items that have none', opts.autoSku, (x) => { opts.autoSku = x; result = null; drawMap(); drawRes(); }, 'The code is made from the item name, so importing the same list again finds the same items.') : null,
+      entity === 'products' && map.qty >= 0 ? toggleRow('Also add the opening stock from this file', opts.openingStock, (x) => { opts.openingStock = x; }, S.productsPartial ? 'Switched off: your list is too large to check which items are new.' : 'Only for items that are new. Items you already have keep their current stock, so nothing is counted twice.') : null,
       toggleRow('Stop if any row has an error', opts.strict, (x) => { opts.strict = x; }, 'On: nothing is imported unless every row is valid. Off: valid rows are imported and the rest are reported.'))));
   };
-  const rowsFor = () => table.slice(1).map((r, i) => { const o = { _row: i + 2 }; E.fields.forEach(([k]) => { const ix = map[k]; if (ix >= 0) o[k] = String(r[ix] ?? '').trim(); }); return o; }).filter((o) => Object.entries(o).some(([k, x]) => k !== '_row' && x !== ''));
+  const stockRows = [];
+  const rowsFor = () => { stockRows.length = 0; const seen = {}; return table.slice(1).map((r, i) => { const o = { _row: i + 2 }; E.fields.forEach(([k]) => { const ix = map[k]; if (ix >= 0) o[k] = String(r[ix] ?? '').trim(); });
+    if (entity === 'products') {
+      if (opts.src !== 'generic' && /^(grand\s+)?total$/i.test(o.name || '')) return {};
+      if (/exempt|nil|zero/i.test(o.tax_rate || '')) o.tax_rate = '0';
+      ['tax_rate', 'sale_price', 'purchase_price', 'mrp', 'reorder_level'].forEach((k) => { if (o[k] != null) o[k] = numClean(o[k]); });
+      if (o.hsn) o.hsn = o.hsn.replace(/\D/g, ''); if (o.unit) o.unit = o.unit.replace(/\.+$/, '').trim() || 'Nos';
+      if (!o.sku && opts.autoSku && o.name) { let b = skuOf(o.name) || 'ITEM', n = (seen[b] = (seen[b] || 0) + 1); o.sku = n > 1 ? b + '-' + n : b; }
+      if (map.qty >= 0 && o.sku) { const q = numClean(r[map.qty]); if (Number(q) > 0) stockRows.push({ _row: i + 2, sku: o.sku, qty: q, unit_cost: map.cost >= 0 ? numClean(r[map.cost]) : '', date: opts.date }); }
+    }
+    return o; }).filter((o) => Object.entries(o).some(([k, x]) => k !== '_row' && x !== '')); };
   const run = async (commit) => {
-    const missing = E.fields.filter((f) => f[2] && !(map[f[0]] >= 0)); if (missing.length) { toast('Choose a column for ' + missing.map((m) => m[1]).join(', '), { err: true }); return; }
+    const missing = E.fields.filter((f) => isReq(f) && !(map[f[0]] >= 0)); if (missing.length) { toast('Choose a column for ' + missing.map((m) => m[1]).join(', '), { err: true }); return; }
     const rows = rowsFor(); if (!rows.length) { toast('No data rows found', { err: true }); return; }
+    const before = new Set(commit && entity === 'products' ? ((await products(true)) || []).map((p) => p.sku) : []);
     const size = ['sales', 'purchases', 'opening_stock', 'account_openings'].includes(entity) ? rows.length : 1500, agg = { total: 0, ok: 0, created: 0, updated: 0, duplicates: 0, failed: 0, errors: [], preview: [] };
     if (JSON.stringify(rows).length > 4.5e6) { toast('This file is too large for one import. Split it into smaller files.', { err: true }); return; }
     try {
       for (let i = 0; i < rows.length; i += size) { const r = await api('acc_import', { p_entity: entity, p_rows: rows.slice(i, i + size), p_commit: commit, p_strict: opts.strict, p_options: { on_duplicate: opts.on_duplicate, create_missing: opts.create_missing, date: opts.date } }); ['total', 'ok', 'created', 'updated', 'duplicates', 'failed'].forEach((k) => (agg[k] += r[k])); agg.errors.push(...r.errors); if (agg.preview.length < 20) agg.preview.push(...r.preview); if (commit && r.failed && opts.strict) break; }
       agg.committed = commit && agg.ok > 0 && (agg.failed === 0 || !opts.strict); agg.dry = !commit; result = agg; drawRes();
-      if (commit && agg.committed) { toast('Imported ' + agg.created + ' new, ' + agg.updated + ' updated'); bust(); await loadCtx().catch(() => {}); }
+      if (commit && agg.committed) {
+        toast('Imported ' + agg.created + ' new, ' + agg.updated + ' updated'); bust();
+        if (entity === 'products' && opts.openingStock && stockRows.length && !S.productsPartial) {
+          try { const fresh = stockRows.filter((x) => !before.has(x.sku)); if (fresh.length) { const sr = await api('acc_import', { p_entity: 'opening_stock', p_rows: fresh, p_commit: true, p_strict: false, p_options: { date: opts.date } }); toast('Opening stock added for ' + sr.ok + ' item(s)' + (sr.failed ? ', ' + sr.failed + ' could not be added (see Stock)' : '')); } } catch (e) { toast('Items were imported, but the opening stock was not added: ' + (e.message || e), { err: true }); }
+        }
+        await loadCtx().catch(() => {});
+      }
     } catch (e) { fail(e); }
   };
   const drawRes = () => {
@@ -70,11 +129,12 @@ async function importWizard(host, entity, v) {
         r.dry ? h('div', { class: 'banner ' + (r.failed ? (opts.strict ? 'bad' : '') : 'ok') }, icon(r.failed ? 'alert' : 'check', 18), r.failed ? (opts.strict ? 'Fix these rows first, or turn off “Stop if any row has an error”.' : 'These rows will be skipped.') : 'Looks good. Nothing has been changed yet.') : h('div', { class: 'banner ' + (r.committed ? 'ok' : 'bad') }, icon(r.committed ? 'check' : 'alert', 18), r.committed ? 'Imported.' : 'Nothing was imported.'),
         r.errors.length ? h('div', { class: 'grid' }, h('div', { class: 'row sp' }, h('b', null, 'Row errors'), h('button', { class: 'btn sm', onclick: () => exportCSV('import-errors-' + entity, ['Row', 'Key', 'Message'], r.errors.map((x) => [x.row, x.key || '', x.message])) }, 'Download error report')), h('div', { class: 'list' }, r.errors.slice(0, 40).map((x) => liRow({ icon: 'alert', tone: 'orange', title: 'Row ' + x.row + (x.key ? ' · ' + x.key : ''), sub: x.message })))) : null) : null));
   };
+  const how = h('p', { class: 'muted small' }, SRC.generic.how);
   const tplBtn = h('button', { class: 'btn sm', onclick: () => exportCSV(entity + '-template', E.fields.map((f) => f[1]), [E.sample]) }, icon('download', 16), 'Download template');
   fileIn.onchange = async () => {
-    try { table = await readTable(fileIn.files[0]); if (table.length < 2) throw new Error('The file has no data rows'); hdr = table[0].map((x) => String(x ?? '')); map = guess(); try { const saved = JSON.parse(localStorage.getItem(sigKey()) || 'null'); if (saved) map = { ...map, ...saved }; } catch { /* ignore */ } result = null; drawMap(); drawRes(); } catch (e) { fail(e); table = null; clear(mapEl); clear(resEl); }
+    try { const f = fileIn.files[0]; table = /\.xml$/i.test(f.name) ? await readTallyXml(f) : await readTable(f); if (/\.xml$/i.test(f.name) && opts.src === 'generic') { opts.src = 'tally'; how.textContent = SRC.tally.how; } if (table.length < 2) throw new Error('The file has no data rows'); hdr = table[0].map((x) => String(x ?? '')); map = guess(); try { const saved = JSON.parse(localStorage.getItem(sigKey()) || 'null'); if (saved) map = { ...map, ...saved }; } catch { /* ignore */ } result = null; drawMap(); drawRes(); } catch (e) { fail(e); table = null; clear(mapEl); clear(resEl); }
   };
-  host.append(h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, '1. Choose your file'), tplBtn), h('div', { class: 'card grid' }, h('p', { class: 'muted small' }, 'CSV or Excel (.xlsx). The first row must be column names. Dates like 2026-04-10 or 10/04/2026 both work.'), fileIn)), mapEl, optEl, resEl,
+  host.append(h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, '1. Choose your file'), tplBtn), h('div', { class: 'card grid' }, entity === 'products' ? seg(Object.entries(SRC).map(([k, x]) => [k, x.label]), opts.src, (x) => { opts.src = x; how.textContent = SRC[x].how; if (table) { map = guess(); result = null; drawMap(); drawRes(); } }, { full: true, label: 'Where is your list from' }) : null, how, fileIn)), mapEl, optEl, resEl,
     ['sales', 'purchases'].includes(entity) ? h('p', { class: 'cap' }, 'History is posted through the normal engine, so stock and GST are affected. Import opening stock first, and make sure the financial year for each date exists. Original invoice numbers are kept on sales.') : null);
 }
 
