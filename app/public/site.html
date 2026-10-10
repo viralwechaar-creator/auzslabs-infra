@@ -441,6 +441,7 @@ header.stuck{box-shadow:0 1px 0 var(--line)}
 <script src=/sb-client.js?v=4></script>
 <script src=/config.js></script>
 <script src="/tenant.js?v=2"></script>
+<script src="/vendor/qrcode.js"></script>
 <script>
 /* ---- tiny inline-icon helper (no emoji anywhere in this UI) ---- */
 const ICONS={
@@ -618,17 +619,30 @@ async function callWaiter(){
  if(cats.length)drawMenu();else gridEl.innerHTML='<p class=empty>Menu coming soon.</p>';
 
  $('cartBarBtn').onclick=openCheckout;
+ function upiQrSvg(amount,note){
+  if(!cfg.upiId||typeof qrcode!='function')return'';
+  const uri='upi://pay?pa='+encodeURIComponent(cfg.upiId)+'&pn='+encodeURIComponent(cfg.upiName||cfg.name||'')+'&am='+Number(amount).toFixed(2)+'&cu=INR&tn='+encodeURIComponent(note||'');
+  try{const q=qrcode(0,'M');q.addData(uri);q.make();return q.createSvgTag(5)}catch(e){return''}
+ }
  function openCheckout(){
   const{t}=cartTotal(),so=document.createElement('div');so.className='sheet-ov';so.onclick=e=>{if(e.target===so)so.remove()};
   const rows=Object.keys(cart).map(k=>{const[i,sz,p]=priceOf(k);return '<div class=sline><span>'+cart[k].q+'× '+esc(i.name)+(sz?' ('+esc(sz)+')':'')+'</span><span>'+inr(p*cart[k].q)+'</span></div>'}).join('');
-  so.innerHTML='<div class=sht><h3>Your order'+(tb?' · '+esc(tb.name):' · Takeaway')+'</h3>'+rows+'<div class="sline tot"><b>Estimated total</b><b>'+inr(t)+'</b></div><input id=coName placeholder="Your name *" autocomplete=name><input id=coPhone type=tel placeholder="Mobile number *" autocomplete=tel><textarea id=coNote placeholder="Notes (e.g. less spicy, no onion)" rows=2></textarea><div class=row><button class="pill line" id=coBack>Back</button><button class="pill dark" id=coGo>Place order</button></div></div>';
+  const payRow=cfg.upiId?'<div class="row" style="gap:8px;margin:4px 0"><button class="dchip on" id=payCounter type=button>Pay at counter</button><button class="dchip" id=payUpi type=button>Pay by UPI</button></div><div id=upiBox style="display:none;text-align:center;padding:12px 0">'+upiQrSvg(t,(cfg.name||'')+' order')+'<p style="font-size:13px;color:var(--muted);margin-top:8px">Scan with any UPI app to pay '+inr(t)+', then place your order below.</p></div>':'';
+  so.innerHTML='<div class=sht><h3>Your order'+(tb?' · '+esc(tb.name):' · Takeaway')+'</h3>'+rows+'<div class="sline tot"><b>Estimated total</b><b>'+inr(t)+'</b></div>'+payRow+'<input id=coName placeholder="Your name *" autocomplete=name><input id=coPhone type=tel placeholder="Mobile number *" autocomplete=tel><textarea id=coNote placeholder="Notes (e.g. less spicy, no onion)" rows=2></textarea><div class=row><button class="pill line" id=coBack>Back</button><button class="pill dark" id=coGo>Place order</button></div></div>';
   document.body.append(so);
+  let payUpi=false;
+  if(cfg.upiId){
+   const cBtn=so.querySelector('#payCounter'),uBtn=so.querySelector('#payUpi'),box=so.querySelector('#upiBox');
+   cBtn.onclick=()=>{payUpi=false;cBtn.classList.add('on');uBtn.classList.remove('on');box.style.display='none'};
+   uBtn.onclick=()=>{payUpi=true;uBtn.classList.add('on');cBtn.classList.remove('on');box.style.display='block'};
+  }
   so.querySelector('#coBack').onclick=()=>so.remove();
   so.querySelector('#coGo').onclick=async e=>{
    const n=so.querySelector('#coName').value.trim(),p=so.querySelector('#coPhone').value.trim();
    if(!n)return alert('Please enter your name');if(!p)return alert('Please enter your mobile number');
    e.target.disabled=true;e.target.textContent='Placing order…';
-   const{error}=await sb.rpc('place_order',{tenant_slug:TENANT_SLUG,t:T,n,p,nt:so.querySelector('#coNote').value.trim(),its:Object.values(cart).map(c=>({id:c.id,size:c.size,qty:c.q}))});
+   const noteTxt=so.querySelector('#coNote').value.trim(),nt=payUpi?('Paid by UPI (self-reported, please verify)'+(noteTxt?' — '+noteTxt:'')):noteTxt;
+   const{error}=await sb.rpc('place_order',{tenant_slug:TENANT_SLUG,t:T,n,p,nt,its:Object.values(cart).map(c=>({id:c.id,size:c.size,qty:c.q}))});
    if(error){e.target.disabled=false;e.target.textContent='Place order';return alert(/busy/.test(error.message)?'Too many pending orders right now. Please call us or try again shortly.':'Could not place the order. Please try again or call our staff.')}
    for(const k in cart)delete cart[k];so.remove();drawMenu();drawCartBar();
    const ok=document.createElement('div');ok.className='sheet-ov';ok.innerHTML='<div class=sht style="text-align:center"><div class=okmark><svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div><h3>Order sent</h3><p style="color:var(--muted)">Thank you '+esc(n)+'. Our staff will confirm it shortly.</p><button class="pill dark" id=okClose style="width:100%">Order more</button></div>';document.body.append(ok);ok.onclick=e=>{if(e.target===ok||e.target.id=='okClose')ok.remove()}
