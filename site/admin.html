@@ -672,6 +672,14 @@ body.admin-shell .btn-primary:hover{background:#940a2c}
     <h3 class="h-2" id="editClientName" style="font-size:20px"></h3>
     <form id="editForm">
       <div class="field">
+        <label for="editSlug">Subdomain</label>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input id="editSlug" pattern="[a-z0-9-]{3,30}" placeholder="mannatcafe" style="flex:1">
+          <span style="color:var(--ink-faint);white-space:nowrap">.auzslab.in</span>
+        </div>
+        <small style="color:var(--ink-faint)">Changing this changes their login address. Tell them the new one.</small>
+      </div>
+      <div class="field">
         <label for="editFee">Monthly fee (INR)</label>
         <input id="editFee" type="number" step="0.01" placeholder="Leave blank to clear">
       </div>
@@ -1557,6 +1565,7 @@ function openEditModal(id) {
   if (!c) return;
   document.getElementById('editModal').dataset.id = id;
   document.getElementById('editClientName').textContent = c.name;
+  document.getElementById('editSlug').value = c.slug;
   document.getElementById('editFee').value = c.monthly_fee != null ? c.monthly_fee : '';
   document.getElementById('editRenewal').value = c.renewal_date || '';
   document.getElementById('editStatus').value = c.status;
@@ -1584,6 +1593,12 @@ document.getElementById('editForm').onsubmit = async (e) => {
   const status = document.getElementById('editStatus').value;
   const notes = document.getElementById('editNotes').value;
   const errEl = document.getElementById('editErr');
+  const newSlug = document.getElementById('editSlug').value.trim().toLowerCase();
+  const c0 = clientsCache.find((x) => x.id === id);
+  if (c0 && newSlug !== c0.slug) {
+    const { error: slugErr } = await sb.rpc('admin_set_tenant_slug', { p_tenant_id: id, p_slug: newSlug });
+    if (slugErr) { errEl.textContent = slugErr.message; return; }
+  }
   const { error } = await sb.rpc('update_client', {
     p_tenant_id: id,
     p_monthly_fee: fee ? Number(fee) : null,
@@ -2062,7 +2077,8 @@ function calcQuote(Q, stateCode) {
   if (Q.setup && Q.setup.on) { const r = Math.max(num(Q.setup.amount), 0); add('setup', 'One-time setup and onboarding', r, 0, Math.max(num(Q.setup.gst), 0)); }
   (Q.custom || []).forEach((c) => { if (String(c.label || '').trim()) add('custom', c.label, num(c.amount), 0, Math.max(num(c.gst), 0)); });
   g = Math.round(g * 100) / 100;
-  return { lines, subtotal: sub, discount: dis, taxable: tax, intra, cgst: intra ? Math.round(g * 50) / 100 : 0, sgst: intra ? g - Math.round(g * 50) / 100 : 0, igst: intra ? 0 : g, gst: g, total: Math.round((tax + g) * 100) / 100 };
+  const raw = Math.round((tax + g) * 100) / 100, total = Math.round(raw), round = Math.round((total - raw) * 100) / 100;
+  return { lines, subtotal: sub, discount: dis, taxable: tax, intra, cgst: intra ? Math.round(g * 50) / 100 : 0, sgst: intra ? g - Math.round(g * 50) / 100 : 0, igst: intra ? 0 : g, gst: g, round, total };
 }
 
 async function ensurePrices() {
@@ -2176,7 +2192,7 @@ function paintTotals() {
   if (document.getElementById('qItems')) ordQ = readQuote();
   const p = calcQuote(ordQ, document.getElementById('odState') ? document.getElementById('odState').value : ordCur.state_code);
   const T = (ordCur.totals && ordCur.status === 'paid') ? ordCur.totals : p;
-  el.innerHTML = `<div class="tr"><span>Total before GST</span><b>${money2(T.taxable)}</b></div>${T.intra ? `<div class="tr"><span>CGST</span><b>${money2(T.cgst)}</b></div><div class="tr"><span>SGST</span><b>${money2(T.sgst)}</b></div>` : `<div class="tr"><span>IGST</span><b>${money2(T.igst)}</b></div>`}<div class="tr big"><span>Total</span><b>${money2(T.total)}</b></div>`;
+  el.innerHTML = `<div class="tr"><span>Total before GST</span><b>${money2(T.taxable)}</b></div>${T.intra ? `<div class="tr"><span>CGST</span><b>${money2(T.cgst)}</b></div><div class="tr"><span>SGST</span><b>${money2(T.sgst)}</b></div>` : `<div class="tr"><span>IGST</span><b>${money2(T.igst)}</b></div>`}${T.round ? `<div class="tr"><span>Round off</span><b>${T.round > 0 ? '+' : ''}${money2(T.round)}</b></div>` : ''}<div class="tr big"><span>Total</span><b>${money2(T.total)}</b></div>`;
 }
 async function ordAct(fn, args, after) {
   const err = document.getElementById('ordErr'); err.textContent = '';

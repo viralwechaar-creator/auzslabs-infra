@@ -157,7 +157,8 @@ async function apiFile(path, opts = {}) {
 // employee documents and receipts: private storage, checked by pay_doc_check() on the server
 async function uploadDoc(empId, file) {
   if (file.size > 10e6) throw new Error('Files can be up to 10 MB');
-  const res = await apiFile('/storage/doc?empId=' + encodeURIComponent(empId), { method: 'POST', body: file, headers: { 'Content-Type': 'application/octet-stream' } });
+  const toSend = window.auzCompressImage ? await window.auzCompressImage(file) : file;
+  const res = await apiFile('/storage/doc?empId=' + encodeURIComponent(empId), { method: 'POST', body: toSend, headers: { 'Content-Type': 'application/octet-stream' } });
   return res.json();
 }
 async function openDoc(path) { const res = await apiFile('/storage/doc/' + path); const b = await res.blob(); const u = URL.createObjectURL(b); window.open(u, '_blank'); setTimeout(() => URL.revokeObjectURL(u), 60000); }

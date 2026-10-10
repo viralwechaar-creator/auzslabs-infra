@@ -27,6 +27,37 @@
     } catch {}
   })();
 
+
+  // Auto-compress an image blob before it leaves the device -- payment
+  // screenshots, logos, gallery/hero photos, product images, etc. all
+  // go through storage.from().upload() below, so this one place covers
+  // nearly every image upload in every app. PNG stays PNG (logos,
+  // signatures, stamps rely on transparency); everything else becomes
+  // a smaller JPEG. Never blocks an upload: any failure just falls
+  // back to the original file. Also exposed as window.auzCompressImage
+  // for the handful of upload paths that post raw bytes directly
+  // (pay.html's payment screenshot, salesman.html's branding uploads)
+  // instead of going through storage.from().upload().
+  async function compressUploadBlob(blob, opts) {
+    try {
+      if (!blob || typeof blob.type !== 'string' || !blob.type.startsWith('image/') || blob.type === 'image/svg+xml') return blob;
+      if (blob.size <= 180000) return blob;
+      const maxW = (opts && opts.maxW) || 1600;
+      const quality = (opts && opts.quality) || 0.82;
+      const keepPng = blob.type === 'image/png';
+      const url = URL.createObjectURL(blob);
+      const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('bad image')); i.src = url; });
+      const sc = Math.min(1, maxW / img.width);
+      const w = Math.max(1, Math.round(img.width * sc)), h = Math.max(1, Math.round(img.height * sc));
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      const out = await new Promise((res) => c.toBlob((b) => res(b), keepPng ? 'image/png' : 'image/jpeg', keepPng ? undefined : quality));
+      return (out && out.size < blob.size) ? out : blob;
+    } catch { return blob; }
+  }
+  try { window.auzCompressImage = compressUploadBlob; } catch {}
+
   function createClient(url, _key) {
     const base = url.replace(/\/$/, '');
     let session = loadSession();
@@ -253,7 +284,7 @@
           async upload(clientPath, blob) {
             const prefix = (clientPath.split('/')[0] || 'file').replace(/[^a-zA-Z0-9_-]/g, '') || 'file';
             const { data, error } = await request(`/storage/${bucket}/${prefix}`, {
-              method: 'POST', body: blob, raw: true,
+              method: 'POST', body: await compressUploadBlob(blob), raw: true,
             });
             if (data?.path) lastUploadedPath = data.path;
             return { data, error };

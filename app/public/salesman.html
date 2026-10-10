@@ -267,10 +267,11 @@ async function openBrand(tenantId) {
 
 async function uploadBrandImage(file, prefix) {
   const { data: { session } } = await sb.auth.getSession();
+  const toSend = window.auzCompressImage ? await window.auzCompressImage(file) : file;
   const res = await fetch(CFG.url + '/storage/salesman/' + current.id + '/' + prefix, {
     method: 'POST',
-    headers: { 'Content-Type': file.type || 'application/octet-stream', 'Authorization': 'Bearer ' + session.access_token },
-    body: file,
+    headers: { 'Content-Type': toSend.type || file.type || 'application/octet-stream', 'Authorization': 'Bearer ' + session.access_token },
+    body: toSend,
   });
   const body = await res.json();
   if (!res.ok) throw new Error(body.error || 'upload failed');
