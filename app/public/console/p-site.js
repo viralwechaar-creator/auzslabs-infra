@@ -42,5 +42,7 @@ PAGES['qr/ordering']=()=>{
  card(cardHead('Ordering banners'),note('Shown above the menu right after the scan -- combos, today\'s offer, anything worth putting in front of someone about to order.'),
   h('div',{class:'fgrid'},siteGallery('qrBanners','Banner photos','qrbanner'))),
  card(cardHead('Table QR codes'),note('Print or re-print the QR codes customers scan at each table.'),
-  h('div',{class:'mf'},h('a',{class:'btn',href:'#',onclick:e=>{e.preventDefault();go('menu/tables')}},'Open Tables & Areas')))];
+  h('div',{class:'mf'},h('a',{class:'btn',href:'#',onclick:e=>{e.preventDefault();go('menu/tables')}},'Open Tables & Areas'))),
+ card(cardHead('Pay by UPI'),note('When set, a customer ordering online (dine-in or takeaway) can choose "Pay by UPI" and gets a QR code already filled in with the exact order amount, paying straight to this UPI ID -- the same scan-and-pay a shop sticker uses, not a payment gateway. We cannot confirm the payment automatically: check it reached your account the same way you would any UPI payment, before handing over the order. Leave blank to only offer "Pay at counter / on pickup".'),
+  h('div',{class:'fgrid'},siteField('upiId','UPI ID (e.g. yourshop@okaxis)'),siteField('upiName','Name shown to the payer',{hint:'Defaults to your business name if left blank'})))];
 };
