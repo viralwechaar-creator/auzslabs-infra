@@ -348,7 +348,7 @@ async function printDoc(r) {
   clear(ps).append(invoiceSheetNode(data));
   setTimeout(() => window.print(), 50);
 }
-async function shareLink(doc) { const o = await api('acc_share_document', { p_doc: doc.id, p_enable: true }); return location.origin + '/bill.html?t=' + o.token; }
+async function shareLink(doc) { const o = await api('acc_share_document', { p_doc: doc.id, p_enable: true }); return tenantOrigin() + '/bill.html?t=' + o.token; }
 function shareMenu(anchor, r) {
   const d = r.doc, p = r.party || {};
   const msg = (link) => `Hello ${d.party_name || ''}, here is your ${DOC_LABEL[d.doc_type].toLowerCase()} ${d.number} from ${S.org.trade_name || S.org.legal_name} for ${inr(d.total)}${Number(d.outstanding) > 0 && d.status === 'posted' ? ' (balance ' + inr(d.outstanding) + (d.due_date ? ', due ' + fmtD(d.due_date) : '') + ')' : ''}.\n${link}`;
