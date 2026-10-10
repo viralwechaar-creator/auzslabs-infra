@@ -20,7 +20,7 @@ const siteGallery=(k,label,prefix,hint)=>{const n=(cfg()[k]||'').split(',').filt
  return h('div',{class:'fld s2'},h('label',{},label),hint?h('div',{class:'hint',style:'margin-bottom:4px'},hint):null,h('div',{class:'bar-row'},inp,clearBtn),prev)};
 const brandField=(k,label)=>h('div',{class:'fld'},h('label',{},label),h('input',{disabled:S.role!='owner',value:(cfg().brand||{})[k]||'',onchange:e=>saveSettings({brand:{...(cfg().brand||{}),[k]:e.target.value}}).then(r=>r!==false&&toast('Saved'))}));
 PAGES['mgmt/website']=()=>{const c=cfg(),isSalon=c.bizType=='salon',isBespoke=window.TENANT_SLUG=='chapterone';
- return[pageHead('Website & Booking','Content for your public mini-site'+(isSalon?' and booking page':'')+'.'+(isBespoke?' Your website has its own custom design -- these fields fill in its headline, hero photo, about text and photo, hours and contact details. Your logo (Management -> Configuration) appears there too.':''),h('a',{class:'btn',href:isSalon?'/booking.html':isBespoke?'/chapterone/index.html':'/site.html'},'Preview ↗')),ownerOnly(),
+ return[pageHead('Website & Booking','Content for your public mini-site'+(isSalon?' and booking page':'')+'.'+(isBespoke?' Your website has its own custom design -- these fields fill in its headline, hero photo, about text and photo, hours and contact details. Your logo (Management -> Configuration) appears there too.':''),h('a',{class:'btn',href:tenantOrigin()+(isSalon?'/booking.html':isBespoke?'/chapterone/index.html':'/site.html')},'Preview ↗')),ownerOnly(),
  card(cardHead('Website'),h('div',{class:'fgrid'},
   siteField('siteKicker','Small tagline above headline'),siteField('siteTag','Headline',{wide:true,area:true,hint:'Press Enter for a line break'}),siteField('siteSub','Subheading'),
   siteField('siteHours','Opening hours text'),siteField('siteInsta','Instagram link (optional)'),siteField('siteMaps','Google Maps link (optional)'),
@@ -38,7 +38,7 @@ PAGES['qr/ordering']=()=>{
  if(!selfOrderOn())return[pageHead('QR Ordering','Let customers scan a table\'s QR code and order straight from their phone.'),
   card(cardHead('Not part of your plan'),note('AUZsPOS QR adds customer self-ordering by QR code, plus this page to customize what they see.'),
    h('div',{class:'mf'},h('a',{class:'btn',href:'https://auzslab.in/qr-ordering.html',target:'_blank',rel:'noopener'},'Learn more'),h('a',{class:'btn p',href:'https://auzslab.in/pricing.html',target:'_blank',rel:'noopener'},'See pricing')))];
- return[pageHead('QR Ordering','What customers see the moment they scan a table\'s QR code.',h('a',{class:'btn',href:'/site.html'},'Preview ↗')),ownerOnly(),
+ return[pageHead('QR Ordering','What customers see the moment they scan a table\'s QR code.',h('a',{class:'btn',href:tenantOrigin()+'/site.html'},'Preview ↗')),ownerOnly(),
  card(cardHead('Ordering banners'),note('Shown above the menu right after the scan -- combos, today\'s offer, anything worth putting in front of someone about to order.'),
   h('div',{class:'fgrid'},siteGallery('qrBanners','Banner photos','qrbanner'))),
  card(cardHead('Table QR codes'),note('Print or re-print the QR codes customers scan at each table.'),

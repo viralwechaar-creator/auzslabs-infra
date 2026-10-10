@@ -35,6 +35,13 @@ const outletId=()=>{try{return localStorage.outlet||'main'}catch{return'main'}};
 const setOutlet=id=>{try{localStorage.outlet=id}catch{}};
 const settingsRec=()=>R.settings&&R.settings.data||{};
 const cfg=()=>({name:'My Business',tax:5,...settingsRec()});
+// The real customer-facing origin for this business's public pages (site.html, booking.html,
+// the chapterone bespoke site). Console pages can be opened from the tenant's own subdomain OR
+// the shared app.auzslab.in address (every app, one login -- see CLAUDE.md "One address for every
+// app"), which has no business tied to it. A public page needs the REAL subdomain regardless of
+// which address the console itself was opened from, or a QR code / Preview link built from
+// location.origin would send a customer to app.auzslab.in with no business -- an empty page.
+const tenantOrigin=()=>{if(window.TENANT_SLUG)return location.origin;const slug=S.tenant&&S.tenant.slug;if(!slug)return location.origin;const parts=location.host.split('.');return location.protocol+'//'+slug+'.'+(parts.length>1?parts.slice(1).join('.'):parts[0])};
 const rawL=k=>Object.values(R).filter(r=>r.kind==k&&!r.deleted).map(r=>r.data);
 const outlets=()=>[{id:'main',name:cfg().name||'Main outlet',main:true},...rawL('outlet').filter(o=>o.active!==false)];
 const outletNameOf=id=>{const o=outlets().find(x=>x.id==(id||'main'));return o?o.name:'Main outlet'};
