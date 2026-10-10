@@ -62,6 +62,11 @@ async function sqRemember(done) {
   const l = (await offLoad('scan.done')) || []; l.unshift(done); await offSave('scan.done', l.slice(0, 40));
 }
 async function sqRecent() { return (await offLoad('scan.done')) || []; }
+// Marks a synced offline sale as "its real invoice link has been sent" so the "send now it's ready" card
+// does not keep offering it forever once the owner has actually shared it.
+async function sqMarkSent(ref) {
+  const l = (await offLoad('scan.done')) || []; const it = l.find((x) => x.ref === ref); if (it) { it.sent = true; await offSave('scan.done', l); sqChanged(); }
+}
 
 async function sqFlush() {
   if (SQ.busy || navigator.onLine === false) return { sent: 0, refused: 0 };
@@ -75,7 +80,7 @@ async function sqFlush() {
         const payload = sqSubst(it.payload, map);
         const r = await api('acc_offline_apply', { p: { op: it.op, kind: it.kind, payload } });
         if (it.kind === 'product' && it.meta && it.meta.temp && r && r.id) { map[it.meta.temp.id] = r.id; await offSave('scan.map', map); }
-        if (it.kind === 'sale') { sales++; await sqRemember({ ref: it.meta && it.meta.ref, number: r.number, total: r.total, at: it.at, name: it.meta && it.meta.name }); }
+        if (it.kind === 'sale') { sales++; await sqRemember({ ref: it.meta && it.meta.ref, id: r.id, number: r.number, total: r.total, at: it.at, name: it.meta && it.meta.name, phone: it.meta && it.meta.phone }); }
         await sqDel(it.op); sent++;
       } catch (e) {
         if (sqTransient(e)) break;                                         // still offline / server busy / signed out: keep everything, try again later

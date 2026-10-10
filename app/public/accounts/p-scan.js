@@ -273,7 +273,7 @@ async function scSell(v, payload, C) {
   const sale = { ...payload, party_name: party ? '' : pname, party_phone: party ? '' : pphone }, op = sqNewOp();
   const queueIt = async () => {
     const ref = sqNextRef();
-    await sqEnqueue('sale', { ...sale, offline: true, offline_ref: ref }, { ref, name: pname, total: C.total }, op);
+    await sqEnqueue('sale', { ...sale, offline: true, offline_ref: ref }, { ref, name: pname, total: C.total, phone: pphone }, op);
     sqRefreshLocal(); scReset(); v.refresh(); scDoneOffline(ref, receipt);
   };
   dockBusy(true);
@@ -320,6 +320,30 @@ function scPendingCard(v) {
         h('button', { class: 'btn sm danger', type: 'button', onclick: async (e) => { e.stopPropagation(); if (await confirmBox('Discard this?', 'It has not reached your books and cannot be brought back.', 'Discard', true)) { await sqDiscard(it.op); v.refresh(); } } }, 'Discard')) : null }); }))));
 }
 const dockBusy = (b) => document.querySelectorAll('.scan-dock .btn').forEach((x) => { x.disabled = b; });
+
+// Offline sales that have now reached the books and have a real invoice link worth sending -- the customer only ever got
+// the plain-text provisional receipt while this phone was offline (scDoneOffline), so this is the one place that WhatsApp
+// link with the real, designed invoice actually goes out, once it exists.
+async function scSyncedCard(onchange) {
+  const all = await sqRecent(), items = all.filter((x) => x.id && x.phone && !x.sent);
+  if (!items.length) return null;
+  const org = S.org.trade_name || S.org.legal_name || S.ctx.tenant.name;
+  return h('div', { class: 'card grid', style: { gap: '8px' } },
+    h('h3', null, 'Ready to send: the real invoice link (' + items.length + ')'),
+    h('p', { class: 'small muted' }, 'These sales were made offline and have now reached your books with a real GST invoice number -- the customer still only has the plain text receipt.'),
+    h('div', { class: 'list' }, items.map((it) => liRow({ icon: 'chat', title: it.number || it.ref, sub: (it.name ? 'Sale to ' + it.name : 'Sale') + ' · ' + inr(it.total || 0),
+      badge: h('button', { class: 'btn sm fill', type: 'button', onclick: async (e) => {
+        e.stopPropagation();
+        const w = window.open('', '_blank');   // opened inside the tap, pointed at WhatsApp once the link exists -- iPhone blocks a window opened after a wait
+        try {
+          const link = await shareLink({ id: it.id });
+          const msg = `Hello${it.name ? ' ' + it.name : ''}, thank you for shopping with ${org}. Your invoice ${it.number} for ${inr(it.total || 0)} is here:\n${link}`;
+          const url = waLink(it.phone, msg);
+          if (w && !w.closed) w.location.href = url; else window.open(url, '_blank');
+          await sqMarkSent(it.ref); onchange && onchange();
+        } catch (e2) { try { if (w) w.close(); } catch (e3) { /* already closed */ } fail(e2); }
+      } }, 'Send real invoice') }))));
+}
 
 // ---------- after the sale: WhatsApp, print, copy ----------
 function scDone(full, total, mode, phone) {
@@ -457,8 +481,11 @@ page('scan', {
 
     const pend = h('div', { id: 'scpend' }, scPendingCard(v) || '');
     window._scPend = () => { const el = document.getElementById('scpend'); if (el && route && route.id === 'scan') { clear(el); const c = scPendingCard(v); if (c) el.append(c); } };
-    if (!window._scQ) { window._scQ = true; window.addEventListener('scan:queue', () => window._scPend && window._scPend()); }
-    v.root.append(pend, modes || '', h('div', { class: 'scan-cols' }, h('div', { class: 'grid' }, hero, searchRow, h('div', { class: 'row sp' }, h('h3', null, sell ? 'Bill' : 'To add'), clearBtn), listCard), h('div', { class: 'grid scan-side' }, side)), dock);
+    const synced = h('div', { id: 'scsynced' });
+    window._scSynced = () => { const el = document.getElementById('scsynced'); if (el && route && route.id === 'scan') scSyncedCard(window._scSynced).then((c) => { if (document.getElementById('scsynced')) { clear(el); if (c) el.append(c); } }); };
+    window._scSynced();
+    if (!window._scQ) { window._scQ = true; window.addEventListener('scan:queue', () => { window._scPend && window._scPend(); window._scSynced && window._scSynced(); }); }
+    v.root.append(pend, synced, modes || '', h('div', { class: 'scan-cols' }, h('div', { class: 'grid' }, hero, searchRow, h('div', { class: 'row sp' }, h('h3', null, sell ? 'Bill' : 'To add'), clearBtn), listCard), h('div', { class: 'grid scan-side' }, side)), dock);
     if (isDesk() && !('ontouchstart' in window)) box.input.focus();
   },
 });
