@@ -416,10 +416,12 @@ $('ownerLoginBtn').onclick = async () => {
 $('deleteTrialBtn').onclick = async () => {
   if (!current) return;
   $('deleteErr').textContent = '';
-  const typed = prompt('This permanently deletes "' + current.name + '" and everything in it.\n\nType its address to confirm: ' + current.slug);
+  const typed = prompt('This permanently deletes "' + current.name + '" and everything in it.\n\nType its name or address to confirm: ' + current.name + '  /  ' + current.slug);
   if (typed === null) return;
+  const norm = (x) => String(x || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (!norm(typed) || (norm(typed) !== norm(current.slug) && norm(typed) !== norm(current.name))) { $('deleteErr').textContent = 'That does not match the name or address, nothing was deleted.'; return; }
   $('deleteTrialBtn').disabled = true;
-  const { error } = await sb.rpc('salesman_delete_trial', { p_tenant_id: current.id, p_confirm_slug: typed.trim() });
+  const { error } = await sb.rpc('salesman_delete_trial', { p_tenant_id: current.id, p_confirm_slug: current.slug });
   $('deleteTrialBtn').disabled = false;
   if (error) { $('deleteErr').textContent = error.message; return; }
   trials = trials.filter((t) => t.id !== current.id);
