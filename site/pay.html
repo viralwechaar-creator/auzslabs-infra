@@ -105,6 +105,7 @@ function billHtml(D) {
   <div style="margin-top:12px">
     <div class="tot-row"><span>Total before GST</span><b>${inr(t.taxable)}</b></div>
     ${t.intra ? `<div class="tot-row"><span>CGST</span><b>${inr(t.cgst)}</b></div><div class="tot-row"><span>SGST</span><b>${inr(t.sgst)}</b></div>` : `<div class="tot-row"><span>IGST</span><b>${inr(t.igst)}</b></div>`}
+    ${t.round ? `<div class="tot-row"><span>Round off</span><b>${t.round > 0 ? '+' : ''}${inr(t.round)}</b></div>` : ''}
     <div class="tot-row big"><span>Total to pay</span><b>${inr(t.total)}</b></div>
   </div>${q.note ? `<p class="pay-note">${esc(q.note)}</p>` : ''}`;
 }
@@ -166,11 +167,14 @@ async function send() {
   if (!$('agree').checked) { err.textContent = 'Please tick the box to accept the terms, privacy policy and refund policy.'; $('agree').scrollIntoView({ block: 'center' }); return; }
   const file = $('shot').files[0];
   if (!file && !D.payment.proof) { err.textContent = 'Please choose the screenshot of your payment.'; return; }
-  if (file && file.size > 5_500_000) { err.textContent = 'That file is too big (5 MB at most). Please send a smaller screenshot.'; return; }
   const btn = $('send'); btn.disabled = true; const old = btn.textContent; btn.textContent = 'Sending...';
   try {
     if (file) {
-      const buf = await file.arrayBuffer();
+      // auto-compress on the device before it ever leaves (window.auzCompressImage, from sb-client.js) -- a
+      // PDF or an already-small file passes through unchanged; a phone photo is shrunk to a smaller JPEG
+      const toSend = window.auzCompressImage ? await window.auzCompressImage(file) : file;
+      if (toSend.size > 5_500_000) { throw new Error('That file is too big (5 MB at most, even after compressing). Please send a smaller screenshot.'); }
+      const buf = await toSend.arrayBuffer();
       const r = await fetch(CFG.url + '/storage/order-proof/' + encodeURIComponent(TOKEN), { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: buf });
       if (!r.ok) { let m = 'The screenshot could not be sent.'; try { m = (await r.json()).error || m; } catch (e) {} throw new Error(m); }
     }

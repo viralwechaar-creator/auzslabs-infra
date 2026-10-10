@@ -131,6 +131,7 @@ const RPC = {
   demo_context: { params: ['p_kind', 'p_id'], auth: false },
   list_clients: { params: [], auth: true },
   update_client: { params: ['p_tenant_id', 'p_monthly_fee', 'p_renewal_date', 'p_notes', 'p_status'], auth: true },
+  admin_set_tenant_slug: { params: ['p_tenant_id', 'p_slug'], auth: true },
   submit_signup_request: { params: ['p_business_name', 'p_slug', 'p_features', 'p_notes', 'p_contact_name', 'p_phone', 'p_niche', 'p_address'], jsonb: ['p_features'], auth: true },
   approve_signup_request: { params: ['p_request_id', 'p_niche'], auth: true },
   decline_signup_request: { params: ['p_request_id'], auth: true },

@@ -454,8 +454,9 @@ function printTable(title, head, rows) {
 // ---------- attachments (private storage) ----------
 async function uploadAttachment(entity, id, file) {
   if (file.size > 10e6) throw new Error('Files can be up to 10 MB');
-  const res = await apiFile('/storage/acc', { method: 'POST', body: file, headers: { 'Content-Type': 'application/octet-stream' } });
+  const toSend = window.auzCompressImage ? await window.auzCompressImage(file) : file;
+  const res = await apiFile('/storage/acc', { method: 'POST', body: toSend, headers: { 'Content-Type': 'application/octet-stream' } });
   const j = await res.json();
-  await api('acc_add_attachment', { p_entity: entity, p_id: id, p_name: file.name, p_url: j.url, p_size: file.size });
+  await api('acc_add_attachment', { p_entity: entity, p_id: id, p_name: file.name, p_url: j.url, p_size: toSend.size });
 }
 async function openAttachment(a) { const res = await apiFile(a.url.replace(/^.*?(\/storage\/)/, '/storage/')); const b = await res.blob(); const u = URL.createObjectURL(b); window.open(u, '_blank'); setTimeout(() => URL.revokeObjectURL(u), 60000); }

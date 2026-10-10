@@ -78,6 +78,7 @@ html,body{margin:0;background:#e9e7e4;color:#161616;font-family:Inter,-apple-sys
 <div id="msg">Loading your bill...</div>
 <div id="wrap" hidden><div class="sheet" id="sheet"></div></div>
 <div class="bar" id="bar" hidden><button class="go" id="printBtn" type="button">Print or save as PDF</button><a href="#" id="backLink">Back to payment page</a></div>
+<p id="printHint" hidden style="max-width:420px;margin:0 auto 20px;padding:0 20px;text-align:center;font-size:12.5px;color:#8a8a8a;line-height:1.5">If the button above doesn't open a Print/Save box, this page may be opened inside WhatsApp's own browser. Tap the <b>⋯</b> or <b>Share</b> icon at the top or bottom of this screen, choose <b>Open in Safari/Chrome</b>, then try again.</p>
 <script src="company.js?v=3"></script>
 <script src="orderterms.js?v=1"></script>
 <script>
@@ -136,6 +137,7 @@ function build(D) {
       ${t.discount > 0 ? `<div class="tr"><span>Discount</span><b>−${esc(money(t.discount))}</b></div>` : ''}
       <div class="tr"><span>Taxable value</span><b>${esc(money(t.taxable))}</b></div>
       ${t.intra ? `<div class="tr"><span>CGST</span><b>${esc(money(t.cgst))}</b></div><div class="tr"><span>SGST</span><b>${esc(money(t.sgst))}</b></div>` : `<div class="tr"><span>IGST</span><b>${esc(money(t.igst))}</b></div>`}
+      ${t.round ? `<div class="tr"><span>Round off</span><b>${t.round > 0 ? '+' : ''}${esc(money(t.round))}</b></div>` : ''}
       <div class="tr big"><span>Total</span><b>${esc(money(t.total))}</b></div>
       <div class="words">${esc(words(Number(t.total || 0)))}</div>
     </div>
@@ -165,7 +167,10 @@ function fit() {
   msg.hidden = true; document.getElementById('wrap').hidden = false; document.getElementById('bar').hidden = false;
   document.title = 'Invoice ' + D.invoice_no + ' — AUZslab';
   document.getElementById('backLink').href = 'pay.html?t=' + encodeURIComponent(TOKEN);
-  document.getElementById('printBtn').onclick = () => window.print();
+  document.getElementById('printHint').hidden = false;
+  document.getElementById('printBtn').onclick = () => {
+    try { window.print(); } catch (e) { alert('Could not open the print box here. Tap the ⋯ or Share icon at the top or bottom of this screen, choose "Open in Safari/Chrome", then try again.'); }
+  };
   fit(); window.addEventListener('resize', fit); window.addEventListener('beforeprint', () => { const s = document.getElementById('sheet'); s.style.transform = 'none'; s.style.marginBottom = '0'; }); window.addEventListener('afterprint', fit);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
 })();
