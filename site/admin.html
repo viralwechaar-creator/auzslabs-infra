@@ -1790,11 +1790,34 @@ function mkTotal() {
   const el = document.getElementById('mkSum'); el.innerHTML = `Bill total <b>${inr(t.total)}</b> (GST ${inr(t.gst)}) &middot; payment received <b>${inr(want)}</b> &middot; <b style="color:${ok ? 'var(--accent)' : '#b00020'}">${ok ? 'matches' : 'does not match yet'}</b>`;
   return ok;
 }
+// Picking a different product (or plan) used to always re-derive "Amount before GST" by dividing the
+// ORIGINAL payment total by the new GST rate (Math.round(mkPay.amount/(1+g/100)...) -- so it silently kept
+// the bill "matching" the amount received, but showed a number with no connection to that product's real
+// price (e.g. switching Rs460/AUZsScan to AUZsLedger Yearly showed Rs389.83, not AUZsLedger's real yearly
+// price). The real catalog price for that product+plan (ordPrices[key].monthly_price/.yearly_price, from
+// public_product_prices) is what the owner actually expects to see -- if it doesn't match what was paid,
+// mkTotal()'s "does not match yet" warning already says so, and the owner can adjust it by hand.
+function mkRealPrice(key, plan) {
+  const pr = (ordPrices && ordPrices[key]) || {};
+  const p = Number(plan === 'year' ? pr.yearly_price : pr.monthly_price);
+  return Number.isFinite(p) && p > 0 ? p : null;
+}
 function mkDraw(items) {
   document.getElementById('mkItems').innerHTML = items.map((it, i) => mkRow(i, it)).join('');
   document.querySelectorAll('#mkItems [data-mk]').forEach((r) => {
     r.querySelectorAll('input,select').forEach((e) => { e.oninput = mkTotal; e.onchange = mkTotal; });
-    r.querySelector('[data-mkk]').onchange = (e) => { const pr = ordPrices && ordPrices[e.target.value] || {}; r.querySelector('[data-mkg]').value = pr.gst_exempt ? 0 : 18; if (document.querySelectorAll('#mkItems [data-mk]').length === 1) { const g = pr.gst_exempt ? 0 : 18; r.querySelector('[data-mkr]').value = Math.round(Number(mkPay.amount) / (1 + g / 100) * 100) / 100; } mkTotal(); };
+    const applyProduct = () => {
+      const key = r.querySelector('[data-mkk]').value, plan = r.querySelector('[data-mkp]').value;
+      const pr = (ordPrices && ordPrices[key]) || {}, gst = pr.gst_exempt ? 0 : 18;
+      r.querySelector('[data-mkg]').value = gst;
+      if (document.querySelectorAll('#mkItems [data-mk]').length === 1) {
+        const real = mkRealPrice(key, plan);
+        r.querySelector('[data-mkr]').value = real !== null ? real : Math.round(Number(mkPay.amount) / (1 + gst / 100) * 100) / 100;
+      }
+      mkTotal();
+    };
+    r.querySelector('[data-mkk]').onchange = applyProduct;
+    r.querySelector('[data-mkp]').onchange = applyProduct;
     r.querySelector('[data-mkx]').onclick = () => { const cur = mkRead(); cur.splice(Number(r.dataset.mk), 1); mkDraw(cur); };
   });
   mkTotal();
