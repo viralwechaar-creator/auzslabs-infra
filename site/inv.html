@@ -16,7 +16,7 @@ html,body{margin:0;background:#e9e7e4;color:#161616;font-family:Inter,-apple-sys
 .bar a,.bar button{font:600 14px Inter,Arial,sans-serif;padding:11px 18px;border-radius:999px;border:1.5px solid #161616;background:#fff;color:#161616;cursor:pointer;text-decoration:none}
 .bar button.go{background:#161616;color:#fff}
 #msg{max-width:520px;margin:60px auto;padding:0 20px;text-align:center;font-size:15px;line-height:1.6}
-#wrap{display:flex;justify-content:center;padding:0 0 28px;overflow:hidden}
+#wrap{display:flex;justify-content:center;padding:max(24px, env(safe-area-inset-top) + 16px) 0 28px;overflow:hidden}
 /* one fixed A4 sheet (794 x 1123 CSS px), scaled to the screen width, real A4 when printed -- bill and
    terms both on the one page (owner explicitly asked to go back to this after trying the two-page split) */
 /* flex-shrink:0 matters here: #wrap is a flex container, and a flex item's declared width is only a
