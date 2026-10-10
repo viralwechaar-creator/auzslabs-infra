@@ -16,7 +16,7 @@ export const razorpayConfigured = () => !!(RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRE
 
 // Every AUZsPOS/AUZsPay/AUZsLedger price on the pricing sheet is quoted "+ GST" (db/072's own
 // comment) but nothing actually charged it until now. 18% is the standard GST rate for software
-// services in India, charged on the subscription only -- the one-time ₹2,179 setup fee is a flat
+// services in India, charged on the subscription only -- the one-time ₹2,190 setup fee is a flat
 // amount with no GST added, charged once alongside the FIRST payment on a brand-new signup only
 // (never on an addon_request -- an existing tenant was already set up). Both are plain constants,
 // not admin-editable yet (same bar as addon_price_overrides' original seed values) -- revisit if
@@ -29,7 +29,7 @@ export async function gstPct() {
     return Number.isFinite(n) && n >= 0 && n <= 40 ? n : 0;
   } catch { return 0; }
 }
-const SETUP_FEE = 2179;
+const SETUP_FEE = 2190;
 
 // Rounds to the paisa (2 decimals), same convention as priceFeatures()'s own total.
 const round2 = (n) => Math.round(n * 100) / 100;
