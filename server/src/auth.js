@@ -164,6 +164,26 @@ export async function signToken(user, meta) {
   );
 }
 
+// Silent session renewal (owner report: POS clients got "logged out again
+// and again" -- traced to the 7-day JWT cliff: nothing ever refreshed a
+// token, so it expired exactly 7 days after the LAST login regardless of
+// how actively someone kept using the app since). sb-client.js calls
+// POST /auth/refresh periodically while a session exists; this reuses the
+// SAME jti rather than creating a new auth_sessions row, so a) the
+// "Where you're signed in" device list doesn't grow with every refresh,
+// and b) revoking that one session (lost phone, ex-employee) still kills
+// every refreshed copy of it, not just the original token. A session
+// that genuinely goes unused still expires 7 days after whatever its
+// last sign-in or refresh was -- this only keeps an actively-used one
+// alive, it doesn't disable expiry.
+export function refreshToken(user) {
+  return jwt.sign(
+    { sub: user.id, email: user.email, app_metadata: user.app_metadata, ...(user.jti ? { jti: user.jti } : {}) },
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRY },
+  );
+}
+
 // =========================================================
 // Two-factor authentication (db/117). The one place every identity
 // path (password, Google, Apple, phone) converges on *after* proving

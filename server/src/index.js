@@ -2,7 +2,7 @@ import http from 'node:http';
 import { createHash } from 'node:crypto';
 import { pool, withAuth } from './db.js';
 import {
-  login, verifyToken, bearerFrom, createUser, resetToRandomPassword, signToken,
+  login, verifyToken, bearerFrom, createUser, resetToRandomPassword, signToken, refreshToken,
   loginWithGoogle, loginWithApple, createPhoneOtp, loginWithPhone,
   createPasswordReset, resetPassword, deleteOwnAccount,
   listSessions, revokeSession, revokeAllSessionsForUser, staffLogin, createEmailVerification, confirmEmailVerification, emailVerificationState, emailVerificationRequired, passwordSignupAllowed,
@@ -780,6 +780,18 @@ const server = http.createServer(async (req, res) => {
       if (!result) throw new HttpError(401, 'invalid credentials');
       if (result.unverified) throw new HttpError(403, 'Please verify your email first -- check your inbox for the verification link, or ask your manager to resend it.');
       return reply(200, result);
+    }
+    // ---- silent session renewal (owner report: POS clients got logged out
+    // "again and again" mid-shift -- nothing ever refreshed a token before
+    // this, so it expired exactly 7 days after the last LOGIN regardless of
+    // how actively someone kept using the app). Needs an already-valid,
+    // non-expired, non-revoked token -- a session that's truly gone stale
+    // still gets a plain 401 here and has to sign in again, same as today. ----
+    if (url.pathname === '/auth/refresh' && req.method === 'POST') {
+      await readJsonBody(req).catch(() => {});
+      if (!user) throw new HttpError(401, 'Your session is no longer valid. Please sign in again.');
+      if (rateLimited(`refresh:${user.id}`, 60, 15 * 60_000)) throw new HttpError(429, 'too many refresh attempts, try again later');
+      return reply(200, { access_token: refreshToken(user), user: { id: user.id, email: user.email, app_metadata: user.app_metadata } });
     }
     // ---- public self-serve signup: creates a bare login with no
     // tenant_id yet (on_signup's guard skips the profiles row for it,
