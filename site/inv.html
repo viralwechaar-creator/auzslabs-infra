@@ -67,6 +67,7 @@ html,body{margin:0;background:#e9e7e4;color:#161616;font-family:Inter,-apple-sys
 @media print{
   html,body{background:#fff}
   .bar{display:none!important}
+  #printHint{display:none!important}
   #wrap{padding:0;display:block}
   .sheet{box-shadow:none;transform:none!important;margin:0}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -116,7 +117,7 @@ function build(D) {
   const t = D.totals || {}, lines = t.lines || [], st = (O.states || {})[D.state_code] || '';
   const prods = lines.filter((l) => l.type === 'product');
   const bankTxt = (O.bank && O.bank.account) ? `<span>Bank</span><b>${esc(O.bank.bank)}</b><span>Account</span><b>${esc(O.bank.holder)} · ${esc(O.bank.account)}</b><span>IFSC</span><b>${esc(O.bank.ifsc)}</b>` : '';
-  const svcRows = lines.map((l) => `<div class="line"><div>${esc(l.label)}<small>${l.type === 'product' ? (l.plan === 'year' ? 'Yearly plan' : 'Monthly plan') + (l.renewal ? ' · renews ' + esc(dmy(l.renewal)) : '') + ' · SAC ' + esc(O.sac) : (l.type === 'setup' ? 'SAC ' + esc(O.sac) : '')}${l.gst ? ' · GST ' + l.gst + '%' : ''}${l.discount > 0 ? ' · discount ' + esc(money(l.discount)) : ''}</small></div><div class="r">1</div><div class="r">${esc(money(l.rate))}</div><div class="r">${esc(money(l.net))}</div></div>`).join('');
+  const svcRows = lines.map((l) => `<div class="line"><div>${esc(l.label)}<small>${l.type === 'product' ? (l.plan === 'year' ? 'Yearly plan' : 'Monthly plan') + (l.renewal ? ' · renews ' + esc(dmy(l.renewal)) : '') + ' · SAC ' + esc(O.sac) : (l.type === 'setup' || l.type === 'onboarding' ? 'SAC ' + esc(O.sac) : '')}${l.gst ? ' · GST ' + l.gst + '%' : ''}${l.discount > 0 ? ' · discount ' + esc(money(l.discount)) : ''}</small></div><div class="r">1</div><div class="r">${esc(money(l.rate))}</div><div class="r">${esc(money(l.net))}</div></div>`).join('');
   const renRows = prods.map((l) => `<tr><td>${esc(l.label)}</td><td>${l.plan === 'year' ? 'Yearly' : 'Monthly'}</td><td>${esc(longDate(l.renewal))}</td><td class="r">${esc(money(l.net + l.gst_amt))} ${l.plan === 'year' ? 'per year' : 'per month'}</td></tr>`).join('');
   const fromAddr = esc(CO.address || ''), co = esc(CO.legalName || 'AUZslab');
   return `

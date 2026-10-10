@@ -342,15 +342,31 @@
             <div class="label">One-time</div>
             <div class="h-2" style="margin-top:6px;margin-bottom:14px;font-size:20px">Setup &amp; onboarding</div>
             <div class="acct-row" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px dashed var(--line)">
-              <span style="font-size:13px;color:var(--ink-dim)">Standard setup — account, business profile, initial users <b style="color:var(--accent)">(mandatory)</b></span>
+              <span style="font-size:13px;color:var(--ink-dim)">Onboarding fee — account creation and verification <b style="color:var(--accent)">(every new client)</b></span>
+              <b style="white-space:nowrap;margin-left:10px">&#8377;1,460</b>
+            </div>
+            <div class="acct-row" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px dashed var(--line)">
+              <span style="font-size:13px;color:var(--ink-dim)">Setup fee — installing and configuring the till, menu and tables <b style="color:var(--accent)">(AUZsPOS / AUZsPOS QR only)</b></span>
               <b style="white-space:nowrap;margin-left:10px">&#8377;2,190</b>
+            </div>
+            <div class="acct-row" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px dashed var(--line)">
+              <span style="font-size:13px;color:var(--ink-dim)">AUZslab Salon setup (console, services, stylists) &amp; a custom salon website</span>
+              <b style="white-space:nowrap;margin-left:10px">Quoted separately</b>
+            </div>
+            <div class="acct-row" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px dashed var(--line)">
+              <span style="font-size:13px;color:var(--ink-dim)">Integrations (Zomato, Swiggy, payment gateways and other third-party platforms)</span>
+              <b style="white-space:nowrap;margin-left:10px">Quoted separately</b>
+            </div>
+            <div class="acct-row" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px dashed var(--line)">
+              <span style="font-size:13px;color:var(--ink-dim)">Hardware — printers, barcode scanners, tablets, routers</span>
+              <b style="white-space:nowrap;margin-left:10px">Charged additionally</b>
             </div>
             <div class="acct-row" style="display:flex;justify-content:space-between;padding:10px 0">
               <span style="font-size:13px;color:var(--ink-dim)">Data migration (Excel/CSV, old software, historical records)</span>
               <b style="white-space:nowrap;margin-left:10px">Quoted separately</b>
             </div>
-            <p class="p" style="margin-top:10px;font-size:12px;color:var(--ink-faint)">The one-time setup fee applies to every new account and is collected together with your first month's payment. A standard subscription does not automatically include extensive data migration or custom development.</p>
-            <button class="btn btn-ghost" data-open-contact style="width:100%;justify-content:center;margin-top:12px">Ask about migration</button>
+            <p class="p" style="margin-top:10px;font-size:12px;color:var(--ink-faint)">The onboarding fee applies to every new account, collected with your first payment. The setup fee only applies when AUZsPOS or AUZsPOS QR is part of your order — other products need no manual installation. Products exempt from a setup fee (like AUZsMob and AUZsScan) show none. Hardware, integrations and large data migrations are never bundled into a subscription price — each is quoted and agreed with you before any charge.</p>
+            <button class="btn btn-ghost" data-open-contact style="width:100%;justify-content:center;margin-top:12px">Ask about setup, hardware or integrations</button>
           </div>
         </div>
       </section>
@@ -364,7 +380,7 @@
           <label class="p" for="fbProd" style="font-size:13px">Pick a product</label>
           <select id="fbProd" style="width:100%;padding:12px;margin:6px 0 14px;border:1px solid var(--line);border-radius:10px;font:inherit"></select>
           <div id="fbRows"></div>
-          <p class="p" style="margin-top:10px;font-size:12px;color:var(--ink-faint)">GST is 18% on the subscription only. The one-time setup fee has no GST. Products that are exempt (like AUZsMob) show no GST or setup fee. The cart shows the final total for your exact choice.</p>
+          <p class="p" style="margin-top:10px;font-size:12px;color:var(--ink-faint)">GST is 18% on the subscription only. The onboarding fee and setup fee have no GST. The setup fee only applies to AUZsPOS/AUZsPOS QR; GST-exempt products (like AUZsMob and AUZsScan) show no GST either. The cart shows the final total for your exact choice.</p>
         </div>
       </section>
 
@@ -650,9 +666,9 @@ document.querySelectorAll('[data-add-plan]').forEach(function (btn) {
     function row(a, b, bold) { var d = document.createElement('div'); d.style.cssText = 'display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px dashed var(--line);font-size:14px' + (bold ? ';font-weight:700' : ''); var x = document.createElement('span'); x.textContent = a; var y = document.createElement('span'); y.textContent = b; d.appendChild(x); d.appendChild(y); rows.appendChild(d); }
     function draw() {
       var p = list.filter(function (x) { return x.key === sel.value; })[0]; rows.textContent = ''; if (!p) return;
-      var sub = Number(p.monthly_price), gst = p.gst_exempt ? 0 : Math.round(sub * 18) / 100, setup = p.setup_fee_exempt ? 0 : 2190;
-      row('Subscription, first month', inr(sub)); if (gst) row('GST (18%)', inr(gst)); if (setup) row('One-time setup (no GST)', inr(setup));
-      row('Pay today', inr(sub + gst + setup), true); row('Every month after that', inr(sub + gst));
+      var sub = Number(p.monthly_price), gst = p.gst_exempt ? 0 : Math.round(sub * 18) / 100, setup = p.setup_fee_exempt ? 0 : 2190, onboarding = 1460;
+      row('Subscription, first month', inr(sub)); if (gst) row('GST (18%)', inr(gst)); row('Onboarding fee (no GST)', inr(onboarding)); if (setup) row('Setup fee (no GST)', inr(setup));
+      row('Pay today', inr(sub + gst + setup + onboarding), true); row('Every month after that', inr(sub + gst));
     }
     sel.onchange = draw; draw();
   }).catch(function () { document.getElementById('firstBill').hidden = true; });
