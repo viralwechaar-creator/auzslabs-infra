@@ -1763,3 +1763,6 @@ Owner's "New Pricing List" is data in `product_prices` / `bundles`, so it only g
 
 ## Reset password gives a 10-digit temporary password (db/157)
 Admin -> Clients -> Reset password (`admin_reset_client_password`) now returns a 10-digit number (random bytes, digits only) instead of a 40-character string, so it can be read out or typed easily. It is temporary (the owner changes it; login attempts are rate limited and the old sessions are revoked). Deploy: `psql ... -v ON_ERROR_STOP=1 < db/157_reset_password_10_digits.sql` (no API rebuild).
+
+## Salesman: deleting a prospect accepts the name or the address
+`salesman.html` delete used to need the exact address (slug) and sent whatever was typed to the server, so typing the business name failed with "Typed address does not match". Now the page checks the typed text against the prospect's name OR address (case and spaces ignored) and sends the real slug to `salesman_delete_trial`, which stays strict. Static only: `git pull`.
