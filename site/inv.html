@@ -16,12 +16,10 @@ html,body{margin:0;background:#e9e7e4;color:#161616;font-family:Inter,-apple-sys
 .bar a,.bar button{font:600 14px Inter,Arial,sans-serif;padding:11px 18px;border-radius:999px;border:1.5px solid #161616;background:#fff;color:#161616;cursor:pointer;text-decoration:none}
 .bar button.go{background:#161616;color:#fff}
 #msg{max-width:520px;margin:60px auto;padding:0 20px;text-align:center;font-size:15px;line-height:1.6}
-#wrap{display:flex;flex-direction:column;align-items:center;padding:0 0 28px;overflow:hidden}
-/* two fixed A4 sheets (794 x 1123 CSS px each), scaled together to the screen width, real A4 pages when
-   printed: page 1 is the bill itself (who/what/how much/renewal), page 2 is the terms, kept apart so a long
-   terms block never has to fight the bill for space on one crowded page. */
-.sheet{position:relative;width:794px;min-height:1118px;background:#fff;padding:36px 46px 28px;box-shadow:0 2px 24px rgba(0,0,0,.14);transform-origin:top center;display:flex;flex-direction:column;font-size:11px;line-height:1.45;margin-bottom:24px}
-.sheet:last-child{margin-bottom:0}
+#wrap{display:flex;justify-content:center;padding:0 0 28px;overflow:hidden}
+/* one fixed A4 sheet (794 x 1123 CSS px), scaled to the screen width, real A4 when printed -- bill and
+   terms both on the one page (owner explicitly asked to go back to this after trying the two-page split) */
+.sheet{position:relative;width:794px;min-height:1118px;background:#fff;padding:36px 46px 28px;box-shadow:0 2px 24px rgba(0,0,0,.14);transform-origin:top center;display:flex;flex-direction:column;font-size:11px;line-height:1.45}
 .row{display:flex;justify-content:space-between;align-items:flex-start;gap:30px}
 .h1{font-size:46px;line-height:1;font-weight:500;letter-spacing:-2px;margin:0}
 .no{font-size:12px;line-height:1.2;font-weight:500;letter-spacing:.2px;margin:2px 0 0;color:#555;white-space:nowrap}
@@ -66,8 +64,7 @@ html,body{margin:0;background:#e9e7e4;color:#161616;font-family:Inter,-apple-sys
   html,body{background:#fff}
   .bar{display:none!important}
   #wrap{padding:0;display:block}
-  .sheet{box-shadow:none;transform:none!important;margin:0;break-after:page;page-break-after:always}
-  .sheet:last-child{break-after:auto;page-break-after:auto}
+  .sheet{box-shadow:none;transform:none!important;margin:0}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 </style>
@@ -76,7 +73,7 @@ html,body{margin:0;background:#e9e7e4;color:#161616;font-family:Inter,-apple-sys
 <div class="bar" id="bar" hidden><button class="go" id="printBtn" type="button">Print or save as PDF</button><a href="#" id="backLink">Back to payment page</a></div>
 <h1 class="sr" style="position:absolute;left:-9999px">Your bill</h1>
 <div id="msg">Loading your bill...</div>
-<div id="wrap" hidden><div class="sheet" id="sheet1"></div><div class="sheet" id="sheet2"></div></div>
+<div id="wrap" hidden><div class="sheet" id="sheet"></div></div>
 <script src="company.js?v=3"></script>
 <script src="orderterms.js?v=1"></script>
 <script>
@@ -110,9 +107,7 @@ function stampSvg(dateTxt) {
   <text x="100" y="138" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="9.5" font-weight="600" fill="currentColor">${esc(dateTxt)}</text></svg>`;
 }
 
-// Page 1: the bill itself -- who/what, how much, when it renews. Page 2 (buildPage2): terms only, kept
-// off page 1 so a long terms block never crowds the figures the owner's client actually needs to check.
-function buildPage1(D) {
+function build(D) {
   const t = D.totals || {}, lines = t.lines || [], st = (O.states || {})[D.state_code] || '';
   const prods = lines.filter((l) => l.type === 'product');
   const bankTxt = (O.bank && O.bank.account) ? `<span>Bank</span><b>${esc(O.bank.bank)}</b><span>Account</span><b>${esc(O.bank.holder)} · ${esc(O.bank.account)}</b><span>IFSC</span><b>${esc(O.bank.ifsc)}</b>` : '';
@@ -143,31 +138,18 @@ function buildPage1(D) {
     <div class="stamp">${stampSvg(dmy(D.paid_at || D.invoice_date))}</div>
   </div>
   <div class="ren"><h2 class="h2" style="font-size:15px">Renewal</h2><table><tr><th>Product</th><th>Plan</th><th>Renews on</th><th class="r">Renewal amount (incl. GST)</th></tr>${renRows}</table></div>
+  <div class="terms">${O.terms.map(([h, p]) => `<h4>${esc(h)}</h4><p>${esc(p)}</p>`).join('')}</div>
   <div class="foot">
     <div class="mark"><small>Business software built around the way you work</small></div>
     <div class="sign"><div class="line2">For ${co}<br>Authorised signatory</div></div>
   </div>`;
 }
-function buildPage2(D) {
-  const co = esc(CO.legalName || 'AUZslab');
-  const terms = O.terms.map(([h, p]) => `<h4>${esc(h)}</h4><p>${esc(p)}</p>`).join('');
-  return `
-  <div class="row"><div><h2 class="h2" style="font-size:22px">Terms and conditions</h2><div class="no">${esc(D.invoice_no || '')}</div></div><img class="hlogo" src="logo.png" alt="AUZslab"></div>
-  <div class="terms" style="margin-top:14px">${terms}</div>
-  <div class="foot"><div class="mark"><small>Business software built around the way you work</small></div><div class="sign" style="width:auto;font-size:9px">For ${co}</div></div>`;
-}
 
 function fit() {
-  const sheets = document.querySelectorAll('.sheet'), wrap = document.getElementById('wrap');
+  const sheet = document.getElementById('sheet'), wrap = document.getElementById('wrap');
   const w = document.documentElement.clientWidth, z = Math.min(1, (w - 8) / 794);
-  // transform:scale() doesn't shrink the box's reserved layout space, so each sheet still leaves a gap
-  // below it equal to what it would have taken up at full size -- pull that back in per sheet, independent
-  // of its neighbours, on top of the fixed 24px on-screen gap between pages (.sheet's own margin-bottom).
-  sheets.forEach((sheet) => {
-    sheet.style.transform = 'scale(' + z + ')'; sheet.style.marginLeft = 0;
-    sheet.style.marginBottom = (sheet.offsetHeight * (z - 1) + (sheet === sheets[sheets.length - 1] ? 0 : 24)) + 'px';
-  });
-  wrap.style.alignItems = z < 1 ? 'flex-start' : 'center'; wrap.style.paddingLeft = z < 1 ? '4px' : '0';
+  sheet.style.transform = 'scale(' + z + ')'; sheet.style.marginBottom = (sheet.offsetHeight * (z - 1)) + 'px'; sheet.style.marginLeft = 0;
+  wrap.style.justifyContent = z < 1 ? 'flex-start' : 'center'; wrap.style.paddingLeft = z < 1 ? '4px' : '0';
 }
 (async function () {
   const msg = document.getElementById('msg');
@@ -175,15 +157,12 @@ function fit() {
   let D = null;
   try { const r = await fetch(CFG.url + '/rpc/public_client_order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ p_token: TOKEN }) }); const j = await r.json(); D = j && (j.data !== undefined ? j.data : j); } catch (e) {}
   if (!D || D.status !== 'paid' || !D.invoice_no) { msg.textContent = D ? 'Your bill is ready once we confirm your payment. Please check again soon.' : 'We could not find this bill. Please check the link we sent you.'; return; }
-  document.getElementById('sheet1').innerHTML = buildPage1(D);
-  document.getElementById('sheet2').innerHTML = buildPage2(D);
+  document.getElementById('sheet').innerHTML = build(D);
   msg.hidden = true; document.getElementById('wrap').hidden = false; document.getElementById('bar').hidden = false;
   document.title = 'Invoice ' + D.invoice_no + ' — AUZslab';
   document.getElementById('backLink').href = 'pay.html?t=' + encodeURIComponent(TOKEN);
   document.getElementById('printBtn').onclick = () => window.print();
-  fit(); window.addEventListener('resize', fit);
-  window.addEventListener('beforeprint', () => { document.querySelectorAll('.sheet').forEach((s) => { s.style.transform = 'none'; s.style.marginBottom = '0'; }); });
-  window.addEventListener('afterprint', fit);
+  fit(); window.addEventListener('resize', fit); window.addEventListener('beforeprint', () => { const s = document.getElementById('sheet'); s.style.transform = 'none'; s.style.marginBottom = '0'; }); window.addEventListener('afterprint', fit);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
 })();
 </script>
