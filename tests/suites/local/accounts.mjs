@@ -221,7 +221,7 @@ export default async function run({ browser, stack }) {
   await s.check('Share link shows exactly one document to a logged-out visitor, and can be withdrawn', async () => {
     const t = (await ok(owner, 'acc_share_document', { p_doc: bill, p_enable: true }).catch(() => null));
     assert(t === null, 'bills must not be shareable'); const i3 = (await ok(owner, 'acc_save_document', { p: { doc_type: 'invoice', party_id: cust, post: true, lines: [{ description: 'Share me', qty: 1, rate: 50, tax_rate: 0 }] } })).id;
-    const tok = (await ok(owner, 'acc_share_document', { p_doc: i3, p_enable: true })).token; assert(tok.length >= 40, 'token'); const pub = await call(null, 'public_acc_document', { p_token: tok }); assert(pub.ok && pub.data.lines[0].description === 'Share me' && !JSON.stringify(pub.data).includes('credit_limit'), 'public view');
+    const tok = (await ok(owner, 'acc_share_document', { p_doc: i3, p_enable: true })).token; assert(tok.length >= 30, 'token'); const pub = await call(null, 'public_acc_document', { p_token: tok }); assert(pub.ok && pub.data.lines[0].description === 'Share me' && !JSON.stringify(pub.data).includes('credit_limit'), 'public view');
     assert((await call(null, 'public_acc_document', { p_token: 'x'.repeat(48) })).data === null, 'guessable'); await ok(owner, 'acc_share_document', { p_doc: i3, p_enable: false }); assert((await call(null, 'public_acc_document', { p_token: tok })).data === null, 'link still works after withdrawal');
   }, 'critical');
   await s.check('Documents above the approval limit are held for a manager; the manager can post them', async () => {

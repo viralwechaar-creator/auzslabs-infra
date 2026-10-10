@@ -135,6 +135,7 @@ async function apiFile(path, opts = {}) {
 
 // ---------- state ----------
 const S = { ctx: null, org: null, perms: {}, accounts: [], taxcodes: [], branches: [], warehouses: [], masters: [], fys: [], products: null, parties: null, user: null };
+const tenantOrigin = () => { if (window.TENANT_SLUG) return location.origin; const slug = S.ctx && S.ctx.tenant && S.ctx.tenant.slug; if (!slug) return location.origin; const parts = location.host.split('.'); return location.protocol + '//' + slug + '.' + (parts.length > 1 ? parts.slice(1).join('.') : parts[0]); };
 const can = (k) => !!S.perms[k];
 const acctBy = (k) => S.accounts.find((a) => a.system_key === k);
 const acctName = (id) => (S.accounts.find((a) => a.id === id) || {}).name || '';
