@@ -171,14 +171,9 @@ a.a-nav-row,a.a-side-btn{text-decoration:none}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]){--card-bg:#2d2b29;--card-bg2:#33312f;--wine-soft:rgba(190,60,90,.16);--wine-glow:rgba(190,60,90,.2);--sand-soft:rgba(220,185,120,.14);--sage:#58b784;--sage-soft:rgba(88,183,132,.16);--slate:#8fa5ba;--slate-soft:rgba(143,165,186,.16);--amber:#e0a550;--amber-soft:rgba(224,165,80,.16);--lift:0 1px 2px rgba(0,0,0,.3),0 10px 26px -14px rgba(0,0,0,.6);--lift-hi:0 2px 4px rgba(0,0,0,.3),0 18px 38px -16px rgba(0,0,0,.7)}}
 :root[data-theme=dark]{--card-bg:#2d2b29;--card-bg2:#33312f;--wine-soft:rgba(190,60,90,.16);--wine-glow:rgba(190,60,90,.2);--sand-soft:rgba(220,185,120,.14);--sage:#58b784;--sage-soft:rgba(88,183,132,.16);--slate:#8fa5ba;--slate-soft:rgba(143,165,186,.16);--amber:#e0a550;--amber-soft:rgba(224,165,80,.16);--lift:0 1px 2px rgba(0,0,0,.3),0 10px 26px -14px rgba(0,0,0,.6);--lift-hi:0 2px 4px rgba(0,0,0,.3),0 18px 38px -16px rgba(0,0,0,.7)}
 
-/* layer 1: a soft wine and sand glow behind the content (a plain pseudo-element, so it never scrolls or repaints) */
-.a-body{position:relative;isolation:isolate}
-.a-body::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
-  background:radial-gradient(520px 340px at 100% 0%,var(--wine-soft),transparent 70%),radial-gradient(460px 320px at 0% 100%,var(--sand-soft),transparent 70%)}
 .a-main{background:transparent;scroll-behavior:smooth;overscroll-behavior-y:contain;scroll-padding-top:12px}
 
 /* layer 2: bars */
-.a-topbar{box-shadow:0 8px 22px -20px rgba(46,44,42,.45);background:linear-gradient(180deg,var(--bg),color-mix(in srgb,var(--bg) 92%,var(--wine)))}
 .a-topbar-title{letter-spacing:-.015em}
 .a-tabbar{box-shadow:0 -8px 22px -20px rgba(46,44,42,.45)}
 .a-tab-btn{transition:color .25s var(--out),transform .2s var(--out)}
@@ -191,22 +186,22 @@ a.a-nav-row,a.a-side-btn{text-decoration:none}
 .a-page .label{color:var(--accent)}
 .a-page h2.h-2{letter-spacing:-.02em}
 
-/* layer 4: cards, tiles and rows lifted off the page, with a status-coloured edge */
-.a-kpi{background:linear-gradient(160deg,var(--card-bg),var(--card-bg2));box-shadow:var(--lift);border:1px solid var(--line-soft);position:relative;overflow:hidden;transition:transform .25s var(--out),box-shadow .25s var(--out)}
-.a-kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--wine)}
-.a-kpi:nth-child(2)::before{background:var(--sage)}.a-kpi:nth-child(3)::before{background:var(--sand)}
-.a-kpi:nth-child(4)::before{background:var(--slate)}.a-kpi:nth-child(5)::before{background:var(--amber)}
+/* layer 4: cards and rows, one restrained shadow each, no stacking. The KPI tiles used to each get an
+   arbitrary left-edge colour (wine/sage/sand/slate/amber) cycling purely by their position in the grid --
+   a stat tile has no actual status to signal, so that colour meant nothing and just added visual noise;
+   removed. The table row's colour-coded edge is kept -- that one IS meaningful, it's driven by the row's
+   real status (active/trial/suspended), not its position. */
+.a-kpi{background:var(--card-bg);box-shadow:var(--lift);border:1px solid var(--line-soft);transition:box-shadow .25s var(--out)}
 .a-kpi .n{letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .admin-table tr{--stripe:var(--wine)}
 .admin-table tr:has(.status-active){--stripe:var(--sage)}
 .admin-table tr:has(.status-trial){--stripe:var(--amber)}
 .admin-table tr:has(.status-suspended),.admin-table tr:has(.status-cancelled){--stripe:var(--slate)}
 @media (max-width:639px){
-  .admin-table tr{background:linear-gradient(160deg,var(--card-bg),var(--card-bg2));border:1px solid var(--line-soft);box-shadow:var(--lift),inset 3px 0 0 var(--stripe);transition:transform .25s var(--out),box-shadow .25s var(--out)}
-  .admin-table tr:active{transform:scale(.985)}
+  .admin-table tr{background:var(--card-bg);border:1px solid var(--line-soft);box-shadow:inset 3px 0 0 var(--stripe)}
 }
 .admin-table-wrap{background:transparent}
-.admin-table th{background:linear-gradient(180deg,var(--bg-raised),var(--card-bg2))}
+.admin-table th{background:var(--bg-raised)}
 @media (min-width:640px){
   /* an empty cell hidden for the phone cards must still take its place in the desktop table, or the columns shift */
   .admin-table td[hidden]{display:table-cell}
@@ -219,7 +214,7 @@ body.admin-shell .card{background:var(--card-bg);border:1px solid var(--line-sof
 
 /* layer 5: pills and chips in the AUZslab palette */
 .status-pill{border-width:1px;letter-spacing:.04em;font-weight:700}
-.status-new{background:linear-gradient(135deg,#9a0a2e,var(--wine));box-shadow:0 4px 12px -5px var(--wine-glow)}
+.status-new{background:var(--wine);color:#fff;border-color:transparent}
 .status-active{background:var(--sage-soft);color:var(--sage);border-color:transparent}
 .status-trial{background:var(--amber-soft);color:var(--amber);border-color:transparent}
 .status-suspended,.status-cancelled{background:var(--slate-soft);color:var(--slate);border-color:transparent}
@@ -235,18 +230,17 @@ body.admin-shell .card{background:var(--card-bg);border:1px solid var(--line-sof
 .feature-tag{font-size:10px;padding:3px 8px}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]) .feature-tag.tone-sand{color:#e0c68a}:root:not([data-theme=light]) .feature-tag.tone-sage{color:#8ad3a8}:root:not([data-theme=light]) .feature-tag.tone-slate{color:#a9bccd}:root:not([data-theme=light]) .feature-tag.tone-amber{color:#e8b866}}
 :root[data-theme=dark] .feature-tag.tone-sand{color:#e0c68a}:root[data-theme=dark] .feature-tag.tone-sage{color:#8ad3a8}:root[data-theme=dark] .feature-tag.tone-slate{color:#a9bccd}:root[data-theme=dark] .feature-tag.tone-amber{color:#e8b866}
-/* sidebar icons: each section gets its own palette colour */
-.a-side-btn[data-section=leads] svg{color:var(--wine)}.a-side-btn[data-section=signupRequests] svg{color:var(--amber)}.a-side-btn[data-section=addonRequests] svg{color:var(--sand)}
-.a-side-btn[data-section=pricing] svg{color:var(--sage)}.a-side-btn[data-section=clients] svg{color:var(--wine)}.a-side-btn[data-section=onboard] svg{color:var(--slate)}
-.a-side-btn[data-section=setup] svg{color:var(--sand)}.a-side-btn[data-section=users] svg{color:var(--slate)}.a-side-btn[data-section=systemStats] svg{color:var(--sage)}.a-side-btn[data-section=auditLog] svg{color:var(--amber)}
+/* sidebar icons were each given their own palette colour cycling by position (leads=wine, signupRequests=
+   amber, pricing=sage, ...) with no actual meaning behind which section got which colour -- removed, so the
+   current section (already marked by .on's background/left-bar) is what draws the eye, not a rainbow list */
 .a-side-btn.on svg{color:var(--accent)}
 .a-side-brand{padding:8px 8px 18px}
 
 /* layer 6: buttons */
 body.admin-shell .btn{transition:transform .2s var(--out),box-shadow .25s var(--out),background .2s}
 body.admin-shell .btn:active{transform:scale(.96)}
-body.admin-shell .btn-primary{background:linear-gradient(180deg,#940a2c,var(--wine));box-shadow:0 8px 20px -10px var(--wine-glow),inset 0 1px 0 rgba(255,255,255,.16)}
-body.admin-shell .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px 26px -10px rgba(128,0,32,.5),inset 0 1px 0 rgba(255,255,255,.2)}
+body.admin-shell .btn-primary{background:var(--wine)}
+body.admin-shell .btn-primary:hover{background:#940a2c}
 .a-search{box-shadow:inset 0 0 0 1px var(--line-soft);transition:box-shadow .2s var(--out),background .2s}
 .a-search:focus{outline:none;background:var(--card-bg);box-shadow:0 0 0 2px var(--wine-soft),inset 0 0 0 1px var(--accent)}
 .a-nav-row{transition:background .2s,padding .25s var(--out)}
