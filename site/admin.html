@@ -1370,7 +1370,9 @@ async function loadClients(preFetched) {
   if (!clientsCache.length) { listEl.innerHTML = emptyDoodle('No clients yet &mdash; onboard one above.'); return; }
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
+  try { await loadAllBills(); } catch (e) { allBills = []; }
   const rows = clientsCache.map((c) => {
+    const bill = allBills.find((b) => b.tenant_slug === c.slug);
     const services = Object.entries(c.features || {}).filter(([, on]) => on)
       .map(([k]) => `<span class="feature-tag ${featTone(k)}">${esc(FEATURE_LABEL[k] || k)}</span>`).join('') || '&mdash;';
     let renewalHtml = '&mdash;';
@@ -1392,6 +1394,7 @@ async function loadClients(preFetched) {
       <td class="row-actions">
         <button class="btn btn-ghost" data-edit>Edit</button>
         <button class="btn btn-ghost" data-pay>Payments</button>
+        ${bill ? `<a class="btn btn-ghost" data-cview href="${esc(billLink(bill))}" target="_blank" rel="noopener">View bill</a><button class="btn btn-primary" data-cwa="${bill.id}">Send bill on WhatsApp</button>` : '<button class="btn btn-ghost" data-pay>Make bill</button>'}
         <button class="btn btn-ghost" data-reset-pw>Reset password</button>
         <button class="btn btn-ghost" data-message>Message</button>
         <button class="btn btn-ghost" data-delete style="color:var(--accent);border-color:var(--accent)">Delete</button>
@@ -1409,6 +1412,13 @@ async function loadClients(preFetched) {
   });
   listEl.querySelectorAll('[data-pay]').forEach((btn) => {
     btn.onclick = () => openPayModal(btn.closest('tr').dataset.id);
+  });
+  listEl.querySelectorAll('[data-cwa]').forEach((btn) => {
+    btn.onclick = async () => {
+      const b = allBills.find((x) => x.id === btn.dataset.cwa); if (!b) return;
+      const w = window.open('', '_blank'); await sb.rpc('admin_mark_order_bill_sent', { p_id: b.id });
+      const url = waUrl(b.phone, billMessage(b)); if (w) w.location.href = url; else window.location.href = url;
+    };
   });
   listEl.querySelectorAll('[data-reset-pw]').forEach((btn) => {
     btn.onclick = async () => {
