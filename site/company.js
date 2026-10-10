@@ -9,7 +9,7 @@
     cin: '',                // company registration number (CIN / LLPIN) — not applicable, sole proprietorship
     grievanceName: 'Mahendra',
     grievanceEmail: 'helloauzslab@gmail.com',
-    phone: '+91 8302723179',
+    phone: '+91 8005673683',
     court: 'Jodhpur, Rajasthan'
   };
   window.AUZ_CO = CO;
