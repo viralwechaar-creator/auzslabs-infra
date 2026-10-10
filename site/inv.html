@@ -92,12 +92,15 @@ function words(n) {
   out = (out || 'Zero') + ' Rupees'; if (ps) out += ' and ' + two(ps) + ' Paise'; return out + ' only';
 }
 function stampSvg(dateTxt) {
-  return `<svg viewBox="0 0 200 200" width="100%" height="100%" aria-hidden="true"><defs><path id="cp" d="M100,100 m-72,0 a72,72 0 1,1 144,0 a72,72 0 1,1 -144,0"/></defs>
-  <circle cx="100" cy="100" r="94" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="100" cy="100" r="86" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="100" cy="100" r="54" fill="none" stroke="currentColor" stroke-width="1.5"/>
-  <text font-family="Inter,Arial,sans-serif" font-size="15" font-weight="700" letter-spacing="3.2" fill="currentColor"><textPath href="#cp" startOffset="0">AUZSLAB  ·  PAYMENT RECEIVED  ·  AUZSLAB  ·  </textPath></text>
-  <text x="100" y="103" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="34" font-weight="800" letter-spacing="2" fill="currentColor">PAID</text>
-  <text x="100" y="124" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="11.5" font-weight="600" fill="currentColor">${esc(dateTxt)}</text>
-  <path d="M62 72h76" stroke="currentColor" stroke-width="1.5"/><text x="100" y="86" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="9.5" font-weight="600" letter-spacing="2" fill="currentColor">AUZSLAB</text></svg>`;
+  return `<svg viewBox="0 0 200 200" width="100%" height="100%" aria-hidden="true"><defs>
+  <path id="cpt" d="M24,100 A76,76 0 0 1 176,100"/><path id="cpb" d="M20,100 A80,80 0 0 0 180,100"/>
+  <filter id="wine" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 .5 0 0 0 0 0 0 0 0 0 .125 0 0 0 1 0"/></filter></defs>
+  <circle cx="100" cy="100" r="96" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="100" cy="100" r="90" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="100" cy="100" r="58" fill="none" stroke="currentColor" stroke-width="1.4"/>
+  <text font-family="Inter,Arial,sans-serif" font-size="15" font-weight="700" letter-spacing="5" fill="currentColor" text-anchor="middle"><textPath href="#cpt" startOffset="50%">AUZSLAB</textPath></text>
+  <text font-family="Inter,Arial,sans-serif" font-size="8.6" font-weight="600" letter-spacing="1.6" fill="currentColor" text-anchor="middle"><textPath href="#cpb" startOffset="50%">IDEAS | PRODUCTS | SOLUTIONS</textPath></text>
+  <text x="100" y="78" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="800" letter-spacing="3" fill="currentColor">PAID</text>
+  <image href="logo.png" x="56" y="87" width="88" height="32" filter="url(#wine)" preserveAspectRatio="xMidYMid meet"/>
+  <text x="100" y="138" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="9.5" font-weight="600" fill="currentColor">${esc(dateTxt)}</text></svg>`;
 }
 
 function build(D) {

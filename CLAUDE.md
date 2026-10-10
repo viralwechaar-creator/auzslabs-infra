@@ -1773,3 +1773,4 @@ Admin -> Clients -> Reset password (`admin_reset_client_password`) now returns a
 ## Bill header: small invoice number under "Invoice", AUZslab logo top right
 `site/inv.html`: the invoice number is 12px under the big "Invoice" word, and the AUZslab logo (`logo.png`, `.hlogo`) is top right where the number used to be. Heading and spacings were tightened so the bill stays exactly one A4 page (the orders suite checks 794 x 1123).
 - Bill footer no longer repeats the logo (it is top right now); only the small tagline remains bottom-left.
+- Bill stamp (`stampSvg()` in `site/inv.html`) follows the owner's reference: thick + thin outer rings, "AUZSLAB" on the top arc, "IDEAS | PRODUCTS | SOLUTIONS" on the bottom arc, and the AUZslab logo (`logo.png`, tinted wine with an SVG colour-matrix filter) in the centre under "PAID" and the date.
