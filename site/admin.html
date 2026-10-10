@@ -297,6 +297,16 @@ body.admin-shell .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px
 .svc-row small{display:block;color:var(--ink-faint,#777);font-size:12.5px;line-height:1.4;margin-top:2px}
 #editFeatures{display:block!important}
 </style>
+<style>
+.ord-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:8px}
+.ord-q{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;align-items:end;padding:10px;border:1px solid var(--line);border-radius:12px;margin-top:8px}
+.ord-tot{margin-top:12px;max-width:320px;margin-left:auto}
+.ord-tot .tr{display:flex;justify-content:space-between;padding:3px 0;color:var(--ink-faint)}
+.ord-tot .tr b{color:var(--ink)}
+.ord-tot .tr.big{border-top:2px solid var(--ink);margin-top:6px;padding-top:8px;font-size:17px;color:var(--ink)}
+.chk-row{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:14px}
+.chk-row input{width:18px;height:18px}
+</style>
 </head>
 <body class="admin-shell">
 <div class="a-shell">
@@ -318,6 +328,7 @@ body.admin-shell .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px
       <div class="a-side-brand"><img src="logo.png" alt="AUZslab"></div>
       <nav class="a-side-nav" aria-label="Admin sections">
         <button class="a-side-btn active" data-section="leads"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l2 3h6l2-3h4"/><path d="M5 5h14l2 7v7a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-7l2-7Z"/></svg>Leads<span class="a-row-badge" id="notifBadgeLeadsSide" style="display:none"></span></button>
+        <button class="a-side-btn" data-section="orders"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg>Client requests<span class="a-row-badge" id="ordersBadge" style="display:none"></span></button>
         <button class="a-side-btn" data-section="signupRequests"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>Signup requests<span class="a-row-badge" id="notifBadgeSignupSide" style="display:none"></span></button>
         <button class="a-side-btn" data-section="addonRequests"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Add-on requests<span class="a-row-badge" id="notifBadgeAddonSide" style="display:none"></span></button>
         <button class="a-side-btn" data-section="pricing"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 12.5 12.5 20 4 11.5V4h7.5L20 12.5Z"/><circle cx="8" cy="8" r="1.4"/></svg>Pricing &amp; payments</button>
@@ -378,6 +389,16 @@ body.admin-shell .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px
         <div id="profilesList">Loading&hellip;</div>
       </section>
 
+      <section class="a-page" id="ordersSection" data-title="Client requests" data-parent="more">
+        <div class="label">From the cart to the bill</div>
+        <h2 class="h-2">Client requests</h2>
+        <p class="p">A visitor sends their details and what they need. Check the business, set the status, build the quote, send the payment link on WhatsApp, confirm the payment, then send the bill.</p>
+        <div class="row" style="gap:8px;margin:12px 0;flex-wrap:wrap">
+          <button class="btn btn-primary" data-ordf="open">Open</button><button class="btn btn-ghost" data-ordf="requested">New</button><button class="btn btn-ghost" data-ordf="verifying">Verifying</button><button class="btn btn-ghost" data-ordf="confirmed">Confirmed</button><button class="btn btn-ghost" data-ordf="link_sent">Link sent</button><button class="btn btn-ghost" data-ordf="payment_submitted">To confirm</button><button class="btn btn-ghost" data-ordf="paid">Paid</button><button class="btn btn-ghost" data-ordf="">All</button>
+        </div>
+        <div id="ordersList">Loading&hellip;</div>
+      </section>
+
       <section class="a-page" id="signupRequestsSection" data-title="Signup requests" data-parent="more">
         <div class="label">Self-serve signups</div>
         <h2 class="h-2">Cart requests</h2>
@@ -393,7 +414,7 @@ body.admin-shell .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px
       <section class="a-page" id="pricingSection" data-title="Pricing">
         <div class="label">Online checkout</div>
         <h2 class="h-2">Pricing</h2>
-        <p class="p">A product only gets a "Pay &amp; activate instantly" button on the cart page once it has a real price here. Leave it at &#8377;0 to keep it on the request-and-we'll-call-you flow.</p>
+        <p class="p">These prices fill in the quote builder under Client requests and show on the pricing page. Leave it at &#8377;0 to keep it on the request-and-we'll-call-you flow.</p>
         <div id="pricingList">Loading&hellip;</div>
 
         <div class="label" style="margin-top:28px">Bundle plans</div>
@@ -539,6 +560,11 @@ body.admin-shell .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px
 
       <section class="a-page" id="moreSection" data-title="More">
         <div class="a-nav-list" id="moreNav">
+          <button class="a-nav-row" data-section="orders">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg>
+            <span class="grow">Client requests</span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
           <button class="a-nav-row" data-section="signupRequests">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
             <span class="grow">Signup requests</span><span class="a-row-badge" id="notifBadgeSignupMore" style="display:none"></span>
@@ -689,6 +715,15 @@ body.admin-shell .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px
   </div>
 </div>
 
+<div class="modal-overlay" id="ordOverlay">
+  <div class="modal" id="ordModal" style="width:min(780px,100%);max-width:calc(100vw - 16px)">
+    <button class="modal-close" id="ordClose" aria-label="Close">&times;</button>
+    <div class="label" style="margin-bottom:10px">Client request</div>
+    <h3 class="h-2" id="ordTitle" style="font-size:20px"></h3>
+    <div id="ordBody" style="margin-top:14px"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="userOverlay">
   <div class="modal" id="userModal">
     <button class="modal-close" id="userClose" aria-label="Close">&times;</button>
@@ -753,7 +788,7 @@ function resetMainScroll() {
 // Each section loads when it is opened (and again if its data is older than 20 seconds), not all at once at sign-in:
 // signing in used to fire about 11 database requests together; now it is 2.
 const SECTION_LOADERS = {
-  leads: () => loadLeads(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(),
+  leads: () => { loadLeads(); refreshOrdersBadge(); }, orders: () => loadOrders(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(),
   pricing: () => { loadPricing(); loadBundles(); loadPayments(); },
   users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(), privacyReq: () => loadPrivacyReq(),
   salesmen: () => loadSalesmen(), salesWork: () => loadSalesWork(), clientPay: () => loadClientPay(),
@@ -1739,6 +1774,235 @@ async function loadSalesWork() {
   });
 }
 document.getElementById('swDays').onchange = loadSalesWork;
+
+// ---------- Client requests: verify, quote, payment link, confirm payment, bill (db/155) ----------
+const ORD_STATUS = { requested: 'New request', verifying: 'Under verification', confirmed: 'Confirmed', link_sent: 'Payment link sent', payment_submitted: 'Payment to confirm', paid: 'Paid', rejected: 'Rejected' };
+const ORD_PRODUCTS = [['pos', 'AUZsPOS'], ['self_order', 'AUZsPOS QR'], ['payroll', 'AUZsPay'], ['accounting', 'AUZsLedger'], ['mobile', 'AUZsMob'], ['scan', 'AUZsScan'], ['salon', 'AUZslab Salon'], ['website_builder', 'Website Builder']];
+const ORD_NICHES = [['cafe', 'Cafe / restaurant'], ['retail', 'Retail'], ['salon', 'Salon / spa'], ['mobile', 'Mobile shop'], ['gym', 'Gym'], ['general', 'Other']];
+const ORD_STATES = { '01': 'Jammu and Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab', '04': 'Chandigarh', '05': 'Uttarakhand', '06': 'Haryana', '07': 'Delhi', '08': 'Rajasthan', '09': 'Uttar Pradesh', '10': 'Bihar', '11': 'Sikkim', '12': 'Arunachal Pradesh', '13': 'Nagaland', '14': 'Manipur', '15': 'Mizoram', '16': 'Tripura', '17': 'Meghalaya', '18': 'Assam', '19': 'West Bengal', '20': 'Jharkhand', '21': 'Odisha', '22': 'Chhattisgarh', '23': 'Madhya Pradesh', '24': 'Gujarat', '26': 'Dadra and Nagar Haveli and Daman and Diu', '27': 'Maharashtra', '29': 'Karnataka', '30': 'Goa', '31': 'Lakshadweep', '32': 'Kerala', '33': 'Tamil Nadu', '34': 'Puducherry', '35': 'Andaman and Nicobar Islands', '36': 'Telangana', '37': 'Andhra Pradesh', '38': 'Ladakh' };
+const SETUP_DEFAULT = 2190;
+let ordFilter = 'open', ordCur = null, ordQ = null, ordPrices = null, ordProofUrl = null;
+const ordPill = (s) => `<span class="status-pill ${s === 'paid' ? 'status-active' : s === 'rejected' ? 'status-suspended' : ''}">${esc(ORD_STATUS[s] || s)}</span>`;
+const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+const money2 = (n) => '&#8377;' + Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const PROD_NAME = Object.fromEntries(ORD_PRODUCTS);
+
+async function refreshOrdersBadge() {
+  const { data } = await sb.rpc('admin_open_client_orders_count', {}).catch(() => ({ data: 0 }));
+  const b = document.getElementById('ordersBadge'); if (!b) return;
+  b.textContent = data || ''; b.style.display = data ? '' : 'none';
+}
+
+async function loadOrders() {
+  const el = document.getElementById('ordersList');
+  const { data, error } = await sb.rpc('admin_list_client_orders', { p_status: ordFilter });
+  if (error) { el.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  document.querySelectorAll('[data-ordf]').forEach((b) => { b.className = 'btn ' + (b.dataset.ordf === ordFilter ? 'btn-primary' : 'btn-ghost'); });
+  refreshOrdersBadge();
+  if (!data || !data.length) { el.innerHTML = emptyDoodle('No requests here yet.'); return; }
+  el.innerHTML = `<div class="admin-table-wrap"><table class="admin-table">
+    <tr><th>Business</th><th>Contact</th><th>Products</th><th>Status</th><th>Total</th><th></th></tr>
+    ${data.map((o) => `<tr data-oid="${o.id}">
+      <td data-label="Business"><b>${esc(o.business_name || '')}</b><br><span style="color:var(--ink-faint)">${esc(String(o.created_at).slice(0, 10))} &middot; ${o.kind === 'addon' ? 'add-on' : 'new'}</span></td>
+      <td data-label="Contact">${esc(o.contact_name || '')}<br><span style="color:var(--ink-faint)">${esc(o.phone || '')}</span></td>
+      <td data-label="Products">${(o.products || []).map((k) => esc(PROD_NAME[k] || k)).join(', ') || '&mdash;'}</td>
+      <td data-label="Status">${ordPill(o.status)}${o.has_proof && o.status !== 'paid' ? '<br><span style="color:var(--ink-faint)">screenshot sent</span>' : ''}</td>
+      <td data-label="Total">${o.total ? money2(o.total) : '&mdash;'}${o.invoice_no ? '<br><span style="color:var(--ink-faint)">' + esc(o.invoice_no) + '</span>' : ''}</td>
+      <td class="row-actions"><button class="btn btn-ghost" data-oopen>Open</button></td></tr>`).join('')}
+  </table></div>`;
+  el.querySelectorAll('[data-oopen]').forEach((b) => { b.onclick = () => openOrder(b.closest('tr').dataset.oid); });
+}
+document.querySelectorAll('[data-ordf]').forEach((b) => { b.onclick = () => { ordFilter = b.dataset.ordf; loadOrders(); }; });
+
+// ----- the quote maths: the same as client_order_totals() in the database (the saved totals always come from the database) -----
+function calcQuote(Q, stateCode) {
+  const intra = (stateCode || '08') === '08'; let sub = 0, dis = 0, tax = 0, g = 0; const lines = [];
+  const add = (type, label, rate, disc, gst, plan) => { const net = Math.round((rate - disc) * 100) / 100, ga = Math.round(net * gst) / 100; lines.push({ type, label, plan, rate, discount: disc, net, gst, gst_amt: ga, total: net + ga }); sub += rate; dis += disc; tax += net; g += ga; };
+  (Q.items || []).forEach((i) => { const r = Math.max(num(i.rate), 0), d = Math.min(Math.max(num(i.discount), 0), r); add('product', PROD_NAME[i.key] || i.key, r, d, Math.max(num(i.gst), 0), i.plan); });
+  if (Q.setup && Q.setup.on) { const r = Math.max(num(Q.setup.amount), 0); add('setup', 'One-time setup and onboarding', r, 0, Math.max(num(Q.setup.gst), 0)); }
+  (Q.custom || []).forEach((c) => { if (String(c.label || '').trim()) add('custom', c.label, num(c.amount), 0, Math.max(num(c.gst), 0)); });
+  g = Math.round(g * 100) / 100;
+  return { lines, subtotal: sub, discount: dis, taxable: tax, intra, cgst: intra ? Math.round(g * 50) / 100 : 0, sgst: intra ? g - Math.round(g * 50) / 100 : 0, igst: intra ? 0 : g, gst: g, total: Math.round((tax + g) * 100) / 100 };
+}
+
+async function ensurePrices() {
+  if (ordPrices) return ordPrices;
+  const { data } = await sb.rpc('public_product_prices', {}).catch(() => ({ data: [] }));
+  ordPrices = Object.fromEntries((data || []).map((p) => [p.key, p]));
+  return ordPrices;
+}
+
+function defaultQuote(o, defGst) {
+  const g = num(defGst);
+  const items = (o.products || []).filter((k) => PROD_NAME[k]).map((k) => { const p = ordPrices[k] || {}; return { key: k, plan: 'month', rate: num(p.monthly_price), discount: 0, gst: p.gst_exempt ? 0 : g }; });
+  return { items, setup: { on: o.kind === 'new', amount: SETUP_DEFAULT, gst: g }, custom: [], note: '' };
+}
+
+const waDigits = (p) => { const d = String(p || '').replace(/\D/g, ''); return d.length === 10 ? '91' + d : d; };
+const waUrl = (phone, text) => 'https://wa.me/' + waDigits(phone) + '?text=' + encodeURIComponent(text);
+const orderLink = (o) => location.origin + '/pay.html?t=' + o.token;
+const billLink = (o) => location.origin + '/inv.html?t=' + o.token;
+function payMessage(o) {
+  const t = o.totals || {};
+  return `Hello ${o.contact_name || ''},\n\nThank you for choosing AUZslab. We have checked the details of ${o.business_name || 'your business'} and everything looks good.\n\nYour bill is ready: Rs ${Number(t.total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (including GST).\n\nPlease open this link to see your bill, read the terms and pay by UPI:\n${orderLink(o)}\n\nAfter you pay, upload the payment screenshot on the same page. We will confirm your payment, activate your access and send your GST bill here on WhatsApp.\n\nIf you have any question, just reply to this message.\n\nTeam AUZslab`;
+}
+function billMessage(o) {
+  const t = o.totals || {}, ren = ((t.lines || []).filter((l) => l.type === 'product' && l.renewal)).map((l) => `${l.label}: ${l.renewal}`).join(', ');
+  return `Hello ${o.contact_name || ''},\n\nYour payment of Rs ${Number(t.total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} for ${o.business_name || 'your business'} is confirmed. Thank you!\n\n${o.tenant_slug ? `Your access is active at https://${o.tenant_slug}.auzslab.in (sign in with the same account you used to send your request).\n\n` : ''}Your GST bill ${o.invoice_no}:\n${billLink(o)}\n\n${ren ? 'Renewal dates: ' + ren + '.\n\n' : ''}Team AUZslab`;
+}
+
+async function openOrder(id) {
+  document.getElementById('ordBody').innerHTML = 'Loading&hellip;';
+  document.getElementById('ordOverlay').classList.add('open');
+  const { data, error } = await sb.rpc('admin_get_client_order', { p_id: id });
+  if (error) { document.getElementById('ordBody').innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  await ensurePrices();
+  ordCur = data; ordQ = data.quote ? JSON.parse(JSON.stringify(data.quote)) : defaultQuote(data, data.default_gst);
+  if (ordProofUrl) { URL.revokeObjectURL(ordProofUrl); ordProofUrl = null; }
+  renderOrder();
+}
+
+function renderOrder() {
+  const o = ordCur, locked = o.status === 'paid' || o.status === 'rejected', body = document.getElementById('ordBody');
+  document.getElementById('ordTitle').textContent = o.business_name || 'Request';
+  const sel = (id, opts, cur) => `<select id="${id}" class="inp">${opts.map(([v, l]) => `<option value="${esc(v)}" ${String(cur) === String(v) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
+  const stOpts = [['', 'State']].concat(Object.keys(ORD_STATES).map((c) => [c, ORD_STATES[c]]));
+  const f = (id, label, val, extra = '') => `<label class="lbl">${label}<input id="${id}" class="inp" value="${esc(val || '')}" ${locked ? 'disabled' : ''} ${extra}></label>`;
+  const preview = calcQuote(ordQ, o.state_code);
+  const prodRow = (it, i) => `<div class="ord-q" data-qi="${i}">
+      ${sel('qk' + i, ORD_PRODUCTS, it.key)}
+      ${sel('qp' + i, [['month', 'Monthly'], ['year', 'Yearly']], it.plan)}
+      <label class="lbl">Price<input class="inp" id="qr${i}" type="number" min="0" step="0.01" value="${it.rate}"></label>
+      <label class="lbl">Discount<input class="inp" id="qd${i}" type="number" min="0" step="0.01" value="${it.discount || 0}"></label>
+      <label class="lbl">GST %<input class="inp" id="qg${i}" type="number" min="0" step="0.01" value="${it.gst}"></label>
+      <button class="btn btn-ghost" data-qdel="${i}" type="button">Remove</button></div>`;
+  const custRow = (c, i) => `<div class="ord-q" data-ci="${i}"><label class="lbl" style="grid-column:1/3">Charge<input class="inp" id="cl${i}" value="${esc(c.label || '')}" placeholder="e.g. Customised branding setup"></label>
+      <label class="lbl">Amount<input class="inp" id="ca${i}" type="number" step="0.01" value="${c.amount}"></label><label class="lbl">GST %<input class="inp" id="cg${i}" type="number" min="0" step="0.01" value="${c.gst}"></label>
+      <span></span><button class="btn btn-ghost" data-cdel="${i}" type="button">Remove</button></div>`;
+  const pv = preview;
+  const proof = o.payment && o.payment.proof;
+  body.innerHTML = `
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">${ordPill(o.status)}<span style="color:var(--ink-faint)">${esc(String(o.created_at).slice(0, 10))} &middot; ${o.kind === 'addon' ? 'add-on to ' + esc(o.tenant_slug || 'existing business') : 'new business'}${o.user_email ? ' &middot; ' + esc(o.user_email) : ''}</span></div>
+  ${locked ? '' : `<div class="label" style="margin-top:14px">Status</div><div class="row-actions" style="gap:8px;flex-wrap:wrap;margin-top:6px">
+    <button class="btn ${o.status === 'verifying' ? 'btn-primary' : 'btn-ghost'}" data-ost="verifying" type="button">Under verification</button>
+    <button class="btn ${o.status === 'confirmed' ? 'btn-primary' : 'btn-ghost'}" data-ost="confirmed" type="button">Confirmed</button>
+    <button class="btn btn-ghost" data-ost="rejected" type="button" style="color:var(--accent);border-color:var(--accent)">Reject</button></div>`}
+  <div class="label" style="margin-top:16px">Client details</div>
+  <div class="ord-grid">${f('odName', 'Name', o.contact_name)}${f('odPhone', 'Mobile / WhatsApp', o.phone)}${f('odEmail', 'Email', o.email)}${f('odBiz', 'Business name', o.business_name)}${f('odGstin', 'GSTIN', o.gstin, 'maxlength="15"')}
+    <label class="lbl">State${sel('odState', stOpts, o.state_code)}</label><label class="lbl">Business type${sel('odNiche', ORD_NICHES, o.niche)}</label>${o.kind === 'new' ? f('odSlug', 'Address (.auzslab.in)', o.slug) : ''}
+    <label class="lbl" style="grid-column:1/-1">Address<input id="odAddr" class="inp" value="${esc(o.address || '')}" ${locked ? 'disabled' : ''}></label></div>
+  ${o.requirement ? `<p class="p" style="margin-top:10px"><b>What they need:</b> ${esc(o.requirement)}</p>` : ''}${o.notes ? `<p class="p"><b>Notes:</b> ${esc(o.notes)}</p>` : ''}
+  ${(o.products || []).length ? `<p class="p"><b>Picked:</b> ${(o.products || []).map((k) => esc(PROD_NAME[k] || k)).join(', ')}</p>` : ''}
+  ${locked ? '' : `<div class="row-actions" style="margin-top:8px"><button class="btn btn-ghost" id="odSave" type="button">Save details</button></div>`}
+  ${o.status === 'rejected' ? '' : `
+  <div class="label" style="margin-top:20px">${o.status === 'paid' ? 'Bill' : 'Quote: products, price, GST, discount'}</div>
+  ${o.status === 'paid' ? '' : `<div id="qItems">${(ordQ.items || []).map(prodRow).join('')}</div>
+  <div class="row-actions" style="margin-top:8px"><button class="btn btn-ghost" id="qAdd" type="button">+ Product</button></div>
+  <label class="chk-row"><input type="checkbox" id="qSetupOn" ${ordQ.setup && ordQ.setup.on ? 'checked' : ''}> Setup fee</label>
+  <div class="ord-q" id="qSetup" style="${ordQ.setup && ordQ.setup.on ? '' : 'display:none'}"><label class="lbl">Amount<input class="inp" id="qsA" type="number" min="0" step="0.01" value="${num(ordQ.setup && ordQ.setup.amount)}"></label><label class="lbl">GST %<input class="inp" id="qsG" type="number" min="0" step="0.01" value="${num(ordQ.setup && ordQ.setup.gst)}"></label></div>
+  <div class="label" style="margin-top:10px">Other charges</div><div id="qCustom">${(ordQ.custom || []).map(custRow).join('')}</div>
+  <div class="row-actions" style="margin-top:8px;flex-wrap:wrap"><button class="btn btn-ghost" id="qCAdd" type="button">+ Other charge</button><button class="btn btn-ghost" id="qBrand" type="button">+ Customised branding setup &#8377;2,910</button></div>
+  <label class="lbl" style="margin-top:10px">Note on the bill (optional)<input id="qNote" class="inp" value="${esc(ordQ.note || '')}"></label>`}
+  <div class="ord-tot" id="qTot"></div>
+  ${o.status === 'paid' ? '' : `<div class="row-actions" style="margin-top:10px"><button class="btn btn-primary" id="qSave" type="button">Save quote</button></div>`}`}
+  ${(['confirmed', 'link_sent', 'payment_submitted'].includes(o.status) && o.totals) ? `
+  <div class="label" style="margin-top:20px">Payment link</div>
+  <label class="lbl">Message to send on WhatsApp<textarea id="waPay" class="inp" rows="9">${esc(payMessage(o))}</textarea></label>
+  <div class="row-actions" style="margin-top:8px;flex-wrap:wrap"><button class="btn btn-primary" id="waSendPay" type="button">Send payment link on WhatsApp</button><button class="btn btn-ghost" id="copyPay" type="button">Copy link</button></div>` : ''}
+  ${(['link_sent', 'payment_submitted', 'confirmed'].includes(o.status) && o.totals) ? `
+  <div class="label" style="margin-top:20px">Payment</div>
+  <p class="p">${o.payment && o.payment.submitted_at ? `The client says they paid. Terms accepted ${esc(String(o.payment.terms_accepted_at || '').slice(0, 16).replace('T', ' '))}.${o.payment.utr ? ' UTR: <b>' + esc(o.payment.utr) + '</b>.' : ''}` : 'Nothing submitted by the client yet.'}</p>
+  <div id="proofBox">${proof ? 'Loading screenshot&hellip;' : '<p class="p" style="color:var(--ink-faint)">No screenshot yet.</p>'}</div>
+  <div class="ord-grid" style="margin-top:8px"><label class="lbl">Paid on<input id="cfDate" class="inp" type="date" value="${new Date().toISOString().slice(0, 10)}"></label><label class="lbl">UTR / reference<input id="cfUtr" class="inp" value="${esc((o.payment && o.payment.utr) || '')}"></label></div>
+  <div class="row-actions" style="margin-top:8px"><button class="btn btn-primary" id="cfPay" type="button">Confirm payment: switch on access and make the bill</button></div>
+  <p class="pay-note" style="font-size:12px;color:var(--ink-faint);margin-top:6px">Confirming switches on the products above for this client, gives the bill its number and fixes each renewal date from today's payment date. It cannot be undone.</p>` : ''}
+  ${o.status === 'paid' ? `
+  <div class="label" style="margin-top:20px">Bill sent to the client</div>
+  <p class="p">Bill <b>${esc(o.invoice_no)}</b> &middot; paid ${esc(String(o.paid_at || '').slice(0, 10))} &middot; ${o.tenant_slug ? 'access: <b>' + esc(o.tenant_slug) + '.auzslab.in</b>' : ''}${o.bill_sent_at ? ' &middot; bill sent ' + esc(String(o.bill_sent_at).slice(0, 10)) : ''}</p>
+  <label class="lbl">Message to send on WhatsApp<textarea id="waBill" class="inp" rows="8">${esc(billMessage(o))}</textarea></label>
+  <div class="row-actions" style="margin-top:8px;flex-wrap:wrap"><button class="btn btn-primary" id="waSendBill" type="button">Send bill on WhatsApp</button><a class="btn btn-ghost" href="${esc(billLink(o))}" target="_blank" rel="noopener">View bill</a></div>` : ''}
+  <div id="ordErr" class="err"></div>`;
+  wireOrder();
+}
+
+function readQuote() {
+  const g = (id) => document.getElementById(id);
+  const items = [...document.querySelectorAll('#qItems [data-qi]')].map((r) => { const i = r.dataset.qi; return { key: g('qk' + i).value, plan: g('qp' + i).value, rate: num(g('qr' + i).value), discount: num(g('qd' + i).value), gst: num(g('qg' + i).value) }; });
+  const custom = [...document.querySelectorAll('#qCustom [data-ci]')].map((r) => { const i = r.dataset.ci; return { label: g('cl' + i).value.trim(), amount: num(g('ca' + i).value), gst: num(g('cg' + i).value) }; });
+  return { items, setup: { on: g('qSetupOn').checked, amount: num(g('qsA').value), gst: num(g('qsG').value) }, custom, note: g('qNote').value.trim() };
+}
+function paintTotals() {
+  const el = document.getElementById('qTot'); if (!el) return;
+  if (document.getElementById('qItems')) ordQ = readQuote();
+  const p = calcQuote(ordQ, document.getElementById('odState') ? document.getElementById('odState').value : ordCur.state_code);
+  const T = (ordCur.totals && ordCur.status === 'paid') ? ordCur.totals : p;
+  el.innerHTML = `<div class="tr"><span>Total before GST</span><b>${money2(T.taxable)}</b></div>${T.intra ? `<div class="tr"><span>CGST</span><b>${money2(T.cgst)}</b></div><div class="tr"><span>SGST</span><b>${money2(T.sgst)}</b></div>` : `<div class="tr"><span>IGST</span><b>${money2(T.igst)}</b></div>`}<div class="tr big"><span>Total</span><b>${money2(T.total)}</b></div>`;
+}
+async function ordAct(fn, args, after) {
+  const err = document.getElementById('ordErr'); err.textContent = '';
+  const { data, error } = await sb.rpc(fn, args);
+  if (error) { err.textContent = error.message; return null; }
+  if (after) await after(data); return data || true;
+}
+async function reloadOrder() { await openOrder(ordCur.id); sectionLoadedAt.orders = 0; loadOrders(); }
+
+function wireOrder() {
+  const o = ordCur, g = (id) => document.getElementById(id);
+  document.querySelectorAll('[data-ost]').forEach((b) => { b.onclick = async () => { if (b.dataset.ost === 'rejected' && !confirm('Reject this request?')) return; await ordAct('admin_set_order_status', { p_id: o.id, p_status: b.dataset.ost }, reloadOrder); }; });
+  if (g('odSave')) g('odSave').onclick = () => ordAct('admin_update_client_order', { p_id: o.id, p: { contact_name: g('odName').value, phone: g('odPhone').value, email: g('odEmail').value, business_name: g('odBiz').value, gstin: g('odGstin').value, state_code: g('odState').value, niche: g('odNiche').value, slug: g('odSlug') ? g('odSlug').value : undefined, address: g('odAddr').value } }, reloadOrder);
+  if (g('odGstin')) g('odGstin').addEventListener('input', () => { const v = g('odGstin').value.trim().toUpperCase(); if (/^\d{2}/.test(v) && ORD_STATES[v.slice(0, 2)]) { g('odState').value = v.slice(0, 2); paintTotals(); } });
+  if (g('odState')) g('odState').addEventListener('change', paintTotals);
+  const q = g('qItems');
+  if (q) {
+    const again = () => { ordQ = readQuote(); renderOrder(); };
+    document.getElementById('ordBody').addEventListener('input', (e) => { if (e.target.closest('.ord-q')) paintTotals(); });
+    q.querySelectorAll('select').forEach((s) => s.addEventListener('change', (e) => {
+      const i = e.target.closest('[data-qi]').dataset.qi, key = g('qk' + i).value, plan = g('qp' + i).value, p = ordPrices[key] || {};
+      g('qr' + i).value = num(plan === 'year' ? p.yearly_price : p.monthly_price) || g('qr' + i).value; g('qg' + i).value = p.gst_exempt ? 0 : num(o.default_gst); paintTotals();
+    }));
+    document.querySelectorAll('[data-qdel]').forEach((b) => { b.onclick = () => { ordQ = readQuote(); ordQ.items.splice(Number(b.dataset.qdel), 1); renderOrder(); }; });
+    document.querySelectorAll('[data-cdel]').forEach((b) => { b.onclick = () => { ordQ = readQuote(); ordQ.custom.splice(Number(b.dataset.cdel), 1); renderOrder(); }; });
+    g('qAdd').onclick = () => { ordQ = readQuote(); const used = ordQ.items.map((i) => i.key), k = (ORD_PRODUCTS.find(([x]) => !used.includes(x)) || ORD_PRODUCTS[0])[0], p = ordPrices[k] || {}; ordQ.items.push({ key: k, plan: 'month', rate: num(p.monthly_price), discount: 0, gst: p.gst_exempt ? 0 : num(o.default_gst) }); renderOrder(); };
+    g('qCAdd').onclick = () => { ordQ = readQuote(); ordQ.custom.push({ label: '', amount: 0, gst: num(o.default_gst) }); renderOrder(); };
+    g('qBrand').onclick = () => { ordQ = readQuote(); ordQ.custom.push({ label: 'Customised branding setup', amount: 2910, gst: num(o.default_gst) }); renderOrder(); };
+    g('qSetupOn').onchange = () => { g('qSetup').style.display = g('qSetupOn').checked ? '' : 'none'; paintTotals(); };
+    g('qSave').onclick = () => { ordQ = readQuote(); ordAct('admin_save_order_quote', { p_id: o.id, p_quote: ordQ }, reloadOrder); };
+  }
+  paintTotals();
+  if (g('waSendPay')) {
+    g('waSendPay').onclick = async () => {
+      const w = window.open('', '_blank');
+      const ok = o.status === 'link_sent' || o.status === 'payment_submitted' ? true : await ordAct('admin_set_order_status', { p_id: o.id, p_status: 'link_sent' });
+      if (!ok) { if (w) w.close(); return; }
+      const url = waUrl(o.phone, g('waPay').value); if (w) w.location.href = url; else window.location.href = url;
+      sectionLoadedAt.orders = 0; setTimeout(reloadOrder, 800);
+    };
+    g('copyPay').onclick = async () => { try { await navigator.clipboard.writeText(orderLink(o)); g('copyPay').textContent = 'Copied'; } catch (e) { prompt('Copy this link:', orderLink(o)); } };
+  }
+  if (g('cfPay')) g('cfPay').onclick = async () => {
+    if (!confirm('Confirm the payment of ' + (o.totals ? Number(o.totals.total).toLocaleString('en-IN') : '') + ' rupees from ' + (o.business_name || 'this client') + '?\n\nThis switches on their products and makes the bill. It cannot be undone.')) return;
+    const r = await ordAct('admin_confirm_order_payment', { p_id: o.id, p_paid_on: g('cfDate').value || null, p_utr: g('cfUtr').value.trim() || null }, reloadOrder);
+    if (r) { sectionLoadedAt.clientPay = 0; refreshOrdersBadge(); }
+  };
+  if (g('waSendBill')) g('waSendBill').onclick = async () => {
+    const w = window.open('', '_blank'); await sb.rpc('admin_mark_order_bill_sent', { p_id: o.id });
+    const url = waUrl(o.phone, g('waBill').value); if (w) w.location.href = url; else window.location.href = url;
+    setTimeout(reloadOrder, 800);
+  };
+  if (o.payment && o.payment.proof && g('proofBox')) loadProof(o.id);
+}
+async function loadProof(id) {
+  const box = document.getElementById('proofBox'); if (!box) return;
+  try {
+    const { data: s } = await sb.auth.getSession();
+    const r = await fetch(CFG.url + '/storage/order-proof/' + id, { headers: { Authorization: 'Bearer ' + s.session.access_token } });
+    if (!r.ok) throw new Error('missing');
+    const blob = await r.blob(); ordProofUrl = URL.createObjectURL(blob);
+    box.innerHTML = blob.type === 'application/pdf' ? `<a class="btn btn-ghost" href="${ordProofUrl}" target="_blank" rel="noopener">Open the payment PDF</a>` : `<a href="${ordProofUrl}" target="_blank" rel="noopener"><img src="${ordProofUrl}" alt="Payment screenshot" style="max-width:100%;max-height:340px;border:1px solid var(--line);border-radius:12px"></a>`;
+  } catch (e) { box.innerHTML = '<p class="p" style="color:var(--accent)">The screenshot could not be loaded.</p>'; }
+}
+document.getElementById('ordClose').onclick = () => { document.getElementById('ordOverlay').classList.remove('open'); loadOrders(); };
+document.getElementById('ordOverlay').onclick = (e) => { if (e.target.id === 'ordOverlay') { e.currentTarget.classList.remove('open'); loadOrders(); } };
 
 async function openUserModal(id) {
   const u = usersCache.find((x) => x.id === id);

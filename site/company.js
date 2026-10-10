@@ -12,6 +12,7 @@
     phone: '+91 8302723179',
     court: 'Jodhpur, Rajasthan'
   };
+  window.AUZ_CO = CO;
   var nodes = document.querySelectorAll('[data-co]');
   for (var i = 0; i < nodes.length; i++) {
     var v = CO[nodes[i].getAttribute('data-co')];

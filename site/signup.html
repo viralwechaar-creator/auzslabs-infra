@@ -407,7 +407,11 @@ document.getElementById('pwEyeToggle').onclick = () => {
 };
 
 // ---- after any successful sign-in, by whatever method ----
+// "Sign in to send your request": the cart links here with ?next=cart.html and we bring the person back to it after sign-in
+(function () { try { const n = new URLSearchParams(location.search).get('next'); if (n === 'cart.html') sessionStorage.setItem('auz.next', n); } catch (e) {} })();
+function goNext() { try { const n = sessionStorage.getItem('auz.next'); if (n === 'cart.html') { sessionStorage.removeItem('auz.next'); window.location.href = n; return true; } } catch (e) {} return false; }
 async function afterSignIn(user) {
+  if (goNext()) return;
   if (user && await hasOwnTenant(user.id)) { window.location.href = 'account.html'; return; }
   if (await isPlatformAdmin()) { window.location.href = 'admin.html'; return; }
   window.location.href = 'index.html';
@@ -549,6 +553,7 @@ async function isPlatformAdmin() {
 async function checkSession() {
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
+    if (goNext()) return;
     if (await hasOwnTenant(session.user.id)) {
       window.location.href = 'account.html';
       return;

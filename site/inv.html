@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Invoice — AUZslab</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;background:#e9e7e4;color:#161616;font-family:Inter,-apple-system,"Helvetica Neue",Arial,sans-serif;-webkit-text-size-adjust:100%}
+.bar{display:flex;gap:10px;align-items:center;justify-content:center;padding:12px 16px;flex-wrap:wrap}
+.bar a,.bar button{font:600 14px Inter,Arial,sans-serif;padding:11px 18px;border-radius:999px;border:1.5px solid #161616;background:#fff;color:#161616;cursor:pointer;text-decoration:none}
+.bar button.go{background:#161616;color:#fff}
+#msg{max-width:520px;margin:60px auto;padding:0 20px;text-align:center;font-size:15px;line-height:1.6}
+#wrap{display:flex;justify-content:center;padding:0 0 28px;overflow:hidden}
+/* the page: a fixed A4 sheet (794 x 1123 CSS px), scaled to the screen width, real A4 when printed */
+.sheet{position:relative;width:794px;min-height:1118px;background:#fff;padding:36px 46px 28px;box-shadow:0 2px 24px rgba(0,0,0,.14);transform-origin:top center;display:flex;flex-direction:column;font-size:11px;line-height:1.45}
+.row{display:flex;justify-content:space-between;align-items:flex-start;gap:30px}
+.h1{font-size:54px;line-height:1;font-weight:500;letter-spacing:-2px;margin:0}
+.no{font-size:28px;line-height:1.1;font-weight:500;letter-spacing:-.8px;margin:6px 0 0;text-align:right;white-space:nowrap}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:16px}
+.h2{font-size:17px;font-weight:500;letter-spacing:-.3px;margin:0 0 4px}
+.kv{display:grid;grid-template-columns:62px 1fr;gap:0 8px;font-size:9.6px;line-height:1.4}
+.kv span:nth-child(odd){color:#8a8a8a}
+.kv b{font-weight:500}
+.svc{margin-top:14px}
+.svc-h{display:grid;grid-template-columns:1fr 44px 92px 92px;gap:8px;align-items:end;border-bottom:1.5px solid #161616;padding-bottom:6px}
+.svc-h .h2{margin:0;font-size:26px;letter-spacing:-1px;font-weight:500}
+.svc-h .c{font-size:15px;font-weight:500}
+.r{text-align:right}
+.line{display:grid;grid-template-columns:1fr 44px 92px 92px;gap:8px;padding:5px 0;border-bottom:1px solid #ececec;font-size:10.5px}
+.line small{display:block;color:#8a8a8a;font-size:9px}
+.tots{margin-left:auto;width:290px;margin-top:8px}
+.tr{display:flex;justify-content:space-between;padding:1.5px 0;font-size:10px;color:#555}
+.tr b{color:#161616;font-weight:500}
+.tr.big{border-top:1.5px solid #161616;margin-top:5px;padding-top:7px;font-size:20px;color:#161616;letter-spacing:-.4px}
+.tr.big b{font-weight:600}
+.words{font-size:9.5px;color:#555;text-align:right;margin-top:3px}
+.ren{margin-top:12px}
+.ren table{width:100%;border-collapse:collapse;font-size:10px;margin-top:4px}
+.ren th{text-align:left;font-weight:500;color:#8a8a8a;font-size:9px;padding:3px 0;border-bottom:1px solid #ddd}
+.ren td{padding:3px 0;border-bottom:1px solid #f0f0f0}
+.terms{margin-top:12px;columns:2;column-gap:26px;font-size:8.1px;line-height:1.38;color:#444}
+.terms h4{margin:0 0 1px;font-size:8.8px;color:#161616;font-weight:600;break-after:avoid}
+.terms p{margin:0 0 4px;break-inside:avoid}
+.foot{margin-top:auto;padding-top:12px;display:flex;justify-content:space-between;align-items:flex-end;position:relative}
+.mark{display:flex;align-items:flex-end;gap:8px}
+.mark img{height:40px;width:auto}
+.mark small{font-size:8.5px;color:#8a8a8a;padding-bottom:3px}
+.sign{width:240px;text-align:center;font-size:9.5px;color:#555}
+.sign .line2{border-top:1px solid #161616;margin-top:30px;padding-top:4px}
+.stamp{position:absolute;right:150px;bottom:22px;width:150px;height:150px;transform:rotate(-13deg);opacity:.88;pointer-events:none;color:#800020}
+@page{size:A4;margin:0}
+@media print{
+  html,body{background:#fff}
+  .bar{display:none!important}
+  #wrap{padding:0;display:block}
+  .sheet{box-shadow:none;transform:none!important;margin:0}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+<div class="bar" id="bar" hidden><button class="go" id="printBtn" type="button">Print or save as PDF</button><a href="#" id="backLink">Back to payment page</a></div>
+<h1 class="sr" style="position:absolute;left:-9999px">Your bill</h1>
+<div id="msg">Loading your bill...</div>
+<div id="wrap" hidden><div class="sheet" id="sheet"></div></div>
+<script src="company.js?v=2"></script>
+<script src="orderterms.js?v=1"></script>
+<script>
+const CFG = { url: 'https://api.auzslab.in' };
+const O = window.AUZ_ORDER, CO = window.AUZ_CO || {};
+const TOKEN = (new URLSearchParams(location.search).get('t') || '').trim();
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const money = (n) => '₹' + Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const dmy = (d) => { const m = String(d || '').slice(0, 10).split('-'); return m.length === 3 ? m[2] + '/' + m[1] + '/' + m[0] : ''; };
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const longDate = (d) => { const m = String(d || '').slice(0, 10).split('-'); return m.length === 3 ? Number(m[2]) + ' ' + MONTHS[Number(m[1]) - 1] + ' ' + m[0] : ''; };
+// amount in words (Indian system)
+function words(n) {
+  const a = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'], b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+  const two = (x) => (x < 20 ? a[x] : b[Math.floor(x / 10)] + (x % 10 ? ' ' + a[x % 10] : ''));
+  const three = (x) => (x >= 100 ? a[Math.floor(x / 100)] + ' Hundred' + (x % 100 ? ' ' + two(x % 100) : '') : two(x));
+  const rs = Math.floor(n), ps = Math.round((n - rs) * 100); if (rs === 0 && ps === 0) return 'Zero';
+  const parts = [[Math.floor(rs / 1e7), 'Crore'], [Math.floor(rs / 1e5) % 100, 'Lakh'], [Math.floor(rs / 1e3) % 100, 'Thousand'], [rs % 1000, '']];
+  let out = parts.filter((p) => p[0]).map((p) => (p[1] === '' ? three(p[0]) : two(p[0]) + ' ' + p[1])).join(' ');
+  out = (out || 'Zero') + ' Rupees'; if (ps) out += ' and ' + two(ps) + ' Paise'; return out + ' only';
+}
+function stampSvg(dateTxt) {
+  return `<svg viewBox="0 0 200 200" width="100%" height="100%" aria-hidden="true"><defs><path id="cp" d="M100,100 m-72,0 a72,72 0 1,1 144,0 a72,72 0 1,1 -144,0"/></defs>
+  <circle cx="100" cy="100" r="94" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="100" cy="100" r="86" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="100" cy="100" r="54" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text font-family="Inter,Arial,sans-serif" font-size="15" font-weight="700" letter-spacing="3.2" fill="currentColor"><textPath href="#cp" startOffset="0">AUZSLAB  ·  PAYMENT RECEIVED  ·  AUZSLAB  ·  </textPath></text>
+  <text x="100" y="103" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="34" font-weight="800" letter-spacing="2" fill="currentColor">PAID</text>
+  <text x="100" y="124" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="11.5" font-weight="600" fill="currentColor">${esc(dateTxt)}</text>
+  <path d="M62 72h76" stroke="currentColor" stroke-width="1.5"/><text x="100" y="86" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="9.5" font-weight="600" letter-spacing="2" fill="currentColor">AUZSLAB</text></svg>`;
+}
+
+function build(D) {
+  const t = D.totals || {}, lines = t.lines || [], st = (O.states || {})[D.state_code] || '';
+  const prods = lines.filter((l) => l.type === 'product');
+  const bankTxt = (O.bank && O.bank.account) ? `<span>Bank</span><b>${esc(O.bank.bank)}</b><span>Account</span><b>${esc(O.bank.holder)} · ${esc(O.bank.account)}</b><span>IFSC</span><b>${esc(O.bank.ifsc)}</b>` : '';
+  const svcRows = lines.map((l) => `<div class="line"><div>${esc(l.label)}<small>${l.type === 'product' ? (l.plan === 'year' ? 'Yearly plan' : 'Monthly plan') + (l.renewal ? ' · renews ' + esc(dmy(l.renewal)) : '') + ' · SAC ' + esc(O.sac) : (l.type === 'setup' ? 'SAC ' + esc(O.sac) : '')}${l.gst ? ' · GST ' + l.gst + '%' : ''}${l.discount > 0 ? ' · discount ' + esc(money(l.discount)) : ''}</small></div><div class="r">1</div><div class="r">${esc(money(l.rate))}</div><div class="r">${esc(money(l.net))}</div></div>`).join('');
+  const renRows = prods.map((l) => `<tr><td>${esc(l.label)}</td><td>${l.plan === 'year' ? 'Yearly' : 'Monthly'}</td><td>${esc(longDate(l.renewal))}</td><td class="r">${esc(money(l.net + l.gst_amt))} ${l.plan === 'year' ? 'per year' : 'per month'}</td></tr>`).join('');
+  const terms = O.terms.map(([h, p]) => `<h4>${esc(h)}</h4><p>${esc(p)}</p>`).join('');
+  const fromAddr = esc(CO.address || ''), co = esc(CO.legalName || 'AUZslab');
+  return `
+  <div class="row"><h1 class="h1">Invoice</h1><div><div class="no">${esc(D.invoice_no || '')}</div></div></div>
+  <div class="cols">
+    <div><h2 class="h2">From</h2><div class="kv"><span>Name</span><b>${co}</b><span>GSTIN</span><b>${esc(CO.gstin || '')}</b><span>Address</span><b>${fromAddr}</b><span>Phone</span><b>${esc(CO.phone || '')}</b><span>Email</span><b>${esc(CO.grievanceEmail || '')}</b></div></div>
+    <div><h2 class="h2">To</h2><div class="kv"><span>Name</span><b>${esc(D.business_name || '')}</b>${D.contact_name ? `<span>Contact</span><b>${esc(D.contact_name)}</b>` : ''}${D.gstin ? `<span>GSTIN</span><b>${esc(D.gstin)}</b>` : '<span>GSTIN</span><b>Unregistered</b>'}${D.address ? `<span>Address</span><b>${esc(D.address)}</b>` : ''}${st ? `<span>State</span><b>${esc(st)} (${esc(D.state_code)})</b>` : ''}<span>Phone</span><b>${esc(D.phone || '')}</b>${D.email ? `<span>Email</span><b>${esc(D.email)}</b>` : ''}</div></div>
+  </div>
+  <div class="cols" style="margin-top:10px">
+    <div><h2 class="h2">Payment</h2><div class="kv"><span>Status</span><b>Paid in full</b><span>Mode</span><b>UPI</b>${D.payment && D.payment.utr ? `<span>UTR</span><b>${esc(D.payment.utr)}</b>` : ''}<span>Pay to</span><b>${esc((O.upi || {}).id || '')}</b>${bankTxt}</div></div>
+    <div><h2 class="h2">Date</h2><div class="kv"><span>Invoice</span><b>${esc(longDate(D.invoice_date))}</b><span>Paid on</span><b>${esc(longDate(D.paid_at))}</b><span>Supply</span><b>${t.intra ? 'Within Rajasthan (CGST + SGST)' : 'Inter-state (IGST)'}</b><span>Reverse chg.</span><b>No</b></div></div>
+  </div>
+  <div class="svc">
+    <div class="svc-h"><h2 class="h2">Services</h2><div class="c r">Qty</div><div class="c r">Price</div><div class="c r">Total</div></div>
+    ${svcRows}
+    <div class="tots">
+      <div class="tr"><span>Subtotal</span><b>${esc(money(t.subtotal))}</b></div>
+      ${t.discount > 0 ? `<div class="tr"><span>Discount</span><b>−${esc(money(t.discount))}</b></div>` : ''}
+      <div class="tr"><span>Taxable value</span><b>${esc(money(t.taxable))}</b></div>
+      ${t.intra ? `<div class="tr"><span>CGST</span><b>${esc(money(t.cgst))}</b></div><div class="tr"><span>SGST</span><b>${esc(money(t.sgst))}</b></div>` : `<div class="tr"><span>IGST</span><b>${esc(money(t.igst))}</b></div>`}
+      <div class="tr big"><span>Total</span><b>${esc(money(t.total))}</b></div>
+      <div class="words">${esc(words(Number(t.total || 0)))}</div>
+    </div>
+  </div>
+  <div class="ren"><h2 class="h2" style="font-size:15px">Renewal</h2><table><tr><th>Product</th><th>Plan</th><th>Renews on</th><th class="r">Renewal amount (incl. GST)</th></tr>${renRows}</table></div>
+  <div class="terms">${terms}</div>
+  <div class="foot">
+    <div class="mark"><img src="logo.png" alt="AUZslab"><small>Business software built around the way you work</small></div>
+    <div class="stamp">${stampSvg(dmy(D.paid_at || D.invoice_date))}</div>
+    <div class="sign"><div class="line2">For ${co}<br>Authorised signatory</div></div>
+  </div>`;
+}
+
+function fit() {
+  const sheet = document.getElementById('sheet'), wrap = document.getElementById('wrap');
+  const w = document.documentElement.clientWidth, z = Math.min(1, (w - 8) / 794);
+  sheet.style.transform = 'scale(' + z + ')'; sheet.style.marginBottom = (sheet.offsetHeight * (z - 1)) + 'px'; sheet.style.marginLeft = 0;
+  wrap.style.justifyContent = z < 1 ? 'flex-start' : 'center'; wrap.style.paddingLeft = z < 1 ? '4px' : '0';
+}
+(async function () {
+  const msg = document.getElementById('msg');
+  if (!/^[a-f0-9]{32}$/.test(TOKEN)) { msg.textContent = 'This link is not valid. Please use the link we sent you.'; return; }
+  let D = null;
+  try { const r = await fetch(CFG.url + '/rpc/public_client_order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ p_token: TOKEN }) }); const j = await r.json(); D = j && (j.data !== undefined ? j.data : j); } catch (e) {}
+  if (!D || D.status !== 'paid' || !D.invoice_no) { msg.textContent = D ? 'Your bill is ready once we confirm your payment. Please check again soon.' : 'We could not find this bill. Please check the link we sent you.'; return; }
+  document.getElementById('sheet').innerHTML = build(D);
+  msg.hidden = true; document.getElementById('wrap').hidden = false; document.getElementById('bar').hidden = false;
+  document.title = 'Invoice ' + D.invoice_no + ' — AUZslab';
+  document.getElementById('backLink').href = 'pay.html?t=' + encodeURIComponent(TOKEN);
+  document.getElementById('printBtn').onclick = () => window.print();
+  fit(); window.addEventListener('resize', fit); window.addEventListener('beforeprint', () => { const s = document.getElementById('sheet'); s.style.transform = 'none'; s.style.marginBottom = '0'; }); window.addEventListener('afterprint', fit);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+})();
+</script>
+</body>
+</html>
