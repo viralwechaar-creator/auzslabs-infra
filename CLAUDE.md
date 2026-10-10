@@ -1766,3 +1766,6 @@ Admin -> Clients -> Reset password (`admin_reset_client_password`) now returns a
 
 ## Salesman: deleting a prospect accepts the name or the address
 `salesman.html` delete used to need the exact address (slug) and sent whatever was typed to the server, so typing the business name failed with "Typed address does not match". Now the page checks the typed text against the prospect's name OR address (case and spaces ignored) and sends the real slug to `salesman_delete_trial`, which stays strict. Static only: `git pull`.
+
+## Bill stamp beside the totals; support phone is 8005673683
+`site/inv.html`: the PAID stamp now sits inside `.svc` (position:relative) at the left of the totals block instead of the footer, so it never covers the terms. The AUZslab phone number is **+91 8005673683** everywhere (`site/company.js`, `ds/help.js` and `site/tool/help.js` SUPPORT, every page's Call link, docs); `company.js?v=3`. The Help sheet's Call / WhatsApp buttons use it now. Deploy: `git pull` only.

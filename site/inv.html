@@ -27,7 +27,7 @@ html,body{margin:0;background:#e9e7e4;color:#161616;font-family:Inter,-apple-sys
 .kv{display:grid;grid-template-columns:62px 1fr;gap:0 8px;font-size:9.6px;line-height:1.4}
 .kv span:nth-child(odd){color:#8a8a8a}
 .kv b{font-weight:500}
-.svc{margin-top:14px}
+.svc{margin-top:14px;position:relative}
 .svc-h{display:grid;grid-template-columns:1fr 44px 92px 92px;gap:8px;align-items:end;border-bottom:1.5px solid #161616;padding-bottom:6px}
 .svc-h .h2{margin:0;font-size:26px;letter-spacing:-1px;font-weight:500}
 .svc-h .c{font-size:15px;font-weight:500}
@@ -53,7 +53,7 @@ html,body{margin:0;background:#e9e7e4;color:#161616;font-family:Inter,-apple-sys
 .mark small{font-size:8.5px;color:#8a8a8a;padding-bottom:3px}
 .sign{width:240px;text-align:center;font-size:9.5px;color:#555}
 .sign .line2{border-top:1px solid #161616;margin-top:30px;padding-top:4px}
-.stamp{position:absolute;right:150px;bottom:22px;width:150px;height:150px;transform:rotate(-13deg);opacity:.88;pointer-events:none;color:#800020}
+.stamp{position:absolute;left:255px;bottom:-4px;width:150px;height:150px;transform:rotate(-13deg);opacity:.88;pointer-events:none;color:#800020}
 @page{size:A4;margin:0}
 @media print{
   html,body{background:#fff}
@@ -69,7 +69,7 @@ html,body{margin:0;background:#e9e7e4;color:#161616;font-family:Inter,-apple-sys
 <h1 class="sr" style="position:absolute;left:-9999px">Your bill</h1>
 <div id="msg">Loading your bill...</div>
 <div id="wrap" hidden><div class="sheet" id="sheet"></div></div>
-<script src="company.js?v=2"></script>
+<script src="company.js?v=3"></script>
 <script src="orderterms.js?v=1"></script>
 <script>
 const CFG = { url: 'https://api.auzslab.in' };
@@ -128,12 +128,12 @@ function build(D) {
       <div class="tr big"><span>Total</span><b>${esc(money(t.total))}</b></div>
       <div class="words">${esc(words(Number(t.total || 0)))}</div>
     </div>
+    <div class="stamp">${stampSvg(dmy(D.paid_at || D.invoice_date))}</div>
   </div>
   <div class="ren"><h2 class="h2" style="font-size:15px">Renewal</h2><table><tr><th>Product</th><th>Plan</th><th>Renews on</th><th class="r">Renewal amount (incl. GST)</th></tr>${renRows}</table></div>
   <div class="terms">${terms}</div>
   <div class="foot">
     <div class="mark"><img src="logo.png" alt="AUZslab"><small>Business software built around the way you work</small></div>
-    <div class="stamp">${stampSvg(dmy(D.paid_at || D.invoice_date))}</div>
     <div class="sign"><div class="line2">For ${co}<br>Authorised signatory</div></div>
   </div>`;
 }
