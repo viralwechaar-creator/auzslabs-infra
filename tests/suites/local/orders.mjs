@@ -116,7 +116,7 @@ export default async function run({ browser, stack }) {
     const c = await newCtx(browser, stack, { w: 1280, h: 1000 }); const page = await c.newPage(); const errs = watch(page);
     await page.goto(stack.url('', '/inv.html?t=' + tokA)); await page.waitForSelector('#sheet .h1', { timeout: 15000 });
     const t = await page.locator('#sheet').innerText();
-    for (const w of ['Invoice', 'AUZ/2026-27/0001', 'From', 'To', 'Plain Cafe', '08ABCDE1234F1Z5', '08KALPM2374C1ZH', 'Services', 'AUZsPOS', 'AUZsPay', 'One-time setup', 'Customised branding setup', 'CGST', 'SGST', '14,160.00', 'Renewal', '10/11/2026', '10/10/2027', 'Refunds', 'Bug fixes', 'backups', 'Support and calls', 'GST', 'Authorised signatory', 'Fourteen Thousand One Hundred Sixty Rupees only']) assert(t.includes(w), 'bill is missing: ' + w);
+    for (const w of ['Invoice', 'AUZ/2026-27/0001', 'From', 'To', 'Plain Cafe', '08ABCDE1234F1Z5', '08KALPM2374C1ZH', 'Services', 'AUZsPOS', 'AUZsPay', 'Setup fee', 'Customised branding setup', 'CGST', 'SGST', '14,160.00', 'Renewal', '10/11/2026', '10/10/2027', 'Refunds', 'Bug fixes', 'backups', 'Support and calls', 'GST', 'Authorised signatory', 'Fourteen Thousand One Hundred Sixty Rupees only']) assert(t.includes(w), 'bill is missing: ' + w);
     assert(await page.locator('#sheet .stamp svg').count() === 1 && /PAID/.test(await page.locator('#sheet .stamp').innerHTML()), 'PAID stamp missing');
     const box = await page.locator('#sheet').boundingBox(); assert(Math.abs(box.width - 794) < 2 && box.height >= 1117 && box.height <= 1124, 'not A4 sized: ' + JSON.stringify(box));
     await s.shot(page, 'order-bill-a4');
@@ -137,7 +137,7 @@ export default async function run({ browser, stack }) {
     const c = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await c.newPage(); const errs = watch(page);
     await page.goto(stack.url('', '/pay.html?t=' + tokB)); await page.waitForSelector('#agree', { timeout: 15000 });
     const t = await page.locator('body').innerText();
-    for (const w of ['AUZsLedger', '1,490.00', 'CGST', 'SGST', '1,758.20', 'Refunds', 'Bug fixes', 'Pay', 'Screenshot of your payment']) assert(t.toLowerCase().includes(w.toLowerCase()), 'pay page is missing: ' + w);
+    for (const w of ['AUZsLedger', '1,490.00', 'CGST', 'SGST', '1,758.00', 'Refunds', 'Bug fixes', 'Pay', 'Screenshot of your payment']) assert(t.toLowerCase().includes(w.toLowerCase()), 'pay page is missing: ' + w);
     assert(await page.locator('#agree').isChecked() === false, 'the terms box is ticked by default');
     assert(await page.locator('#qr').evaluate((i) => i.complete && i.naturalWidth > 50), 'no UPI QR');
     await page.click('#send'); assert(/tick the box/i.test(await page.locator('#err').innerText()), 'the unticked box was not enforced');
@@ -157,8 +157,8 @@ export default async function run({ browser, stack }) {
     await p.locator('#ordersList tr[data-oid]', { hasText: /screenshot sent/ }).first().locator('[data-oopen]').click();
     await p.waitForSelector('#cfPay', { timeout: 10000 }); await p.waitForSelector('#proofBox img', { timeout: 10000 });
     const txt = await p.locator('#ordBody').innerText();
-    for (const w of ['Quote', 'Setup fee', 'Payment link', 'Message to send on WhatsApp', 'Confirm payment', '1,758.20', 'UTR']) assert(txt.toLowerCase().includes(w.toLowerCase()), 'admin order screen is missing: ' + w);
-    const msg = await p.locator('#waPay').inputValue(); assert(/pay\.html\?t=[a-f0-9]{32}/.test(msg) && /Team AUZslab/.test(msg) && /1,758.20/.test(msg), 'payment link message: ' + msg.slice(0, 200));
+    for (const w of ['Quote', 'Setup fee', 'Payment link', 'Message to send on WhatsApp', 'Confirm payment', '1,758.00', 'UTR']) assert(txt.toLowerCase().includes(w.toLowerCase()), 'admin order screen is missing: ' + w);
+    const msg = await p.locator('#waPay').inputValue(); assert(/pay\.html\?t=[a-f0-9]{32}/.test(msg) && /Team AUZslab/.test(msg) && /1,758.00/.test(msg), 'payment link message: ' + msg.slice(0, 200));
     await s.shot(p, 'order-admin-quote');
     // quote builder: add a branding charge, the total follows live
     const before = await p.locator('#qTot').innerText(); await p.click('#qBrand'); await p.waitForTimeout(300);

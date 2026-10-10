@@ -2036,6 +2036,7 @@ const ORD_PRODUCTS = [['pos', 'AUZsPOS'], ['self_order', 'AUZsPOS QR'], ['payrol
 const ORD_NICHES = [['cafe', 'Cafe / restaurant'], ['retail', 'Retail'], ['salon', 'Salon / spa'], ['mobile', 'Mobile shop'], ['gym', 'Gym'], ['general', 'Other']];
 const ORD_STATES = { '01': 'Jammu and Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab', '04': 'Chandigarh', '05': 'Uttarakhand', '06': 'Haryana', '07': 'Delhi', '08': 'Rajasthan', '09': 'Uttar Pradesh', '10': 'Bihar', '11': 'Sikkim', '12': 'Arunachal Pradesh', '13': 'Nagaland', '14': 'Manipur', '15': 'Mizoram', '16': 'Tripura', '17': 'Meghalaya', '18': 'Assam', '19': 'West Bengal', '20': 'Jharkhand', '21': 'Odisha', '22': 'Chhattisgarh', '23': 'Madhya Pradesh', '24': 'Gujarat', '26': 'Dadra and Nagar Haveli and Daman and Diu', '27': 'Maharashtra', '29': 'Karnataka', '30': 'Goa', '31': 'Lakshadweep', '32': 'Kerala', '33': 'Tamil Nadu', '34': 'Puducherry', '35': 'Andaman and Nicobar Islands', '36': 'Telangana', '37': 'Andhra Pradesh', '38': 'Ladakh' };
 const SETUP_DEFAULT = 2190;
+const ONBOARDING_DEFAULT = 1460; // flat, every new client -- separate from the setup fee, which only applies when pos/self_order is in the request
 let ordFilter = 'open', ordCur = null, ordQ = null, ordPrices = null, ordProofUrl = null;
 const ordPill = (s) => `<span class="status-pill ${s === 'paid' ? 'status-active' : s === 'rejected' ? 'status-suspended' : ''}">${esc(ORD_STATUS[s] || s)}</span>`;
 const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
@@ -2074,7 +2075,8 @@ function calcQuote(Q, stateCode) {
   const intra = (stateCode || '08') === '08'; let sub = 0, dis = 0, tax = 0, g = 0; const lines = [];
   const add = (type, label, rate, disc, gst, plan) => { const net = Math.round((rate - disc) * 100) / 100, ga = Math.round(net * gst) / 100; lines.push({ type, label, plan, rate, discount: disc, net, gst, gst_amt: ga, total: net + ga }); sub += rate; dis += disc; tax += net; g += ga; };
   (Q.items || []).forEach((i) => { const r = Math.max(num(i.rate), 0), d = Math.min(Math.max(num(i.discount), 0), r); add('product', PROD_NAME[i.key] || i.key, r, d, Math.max(num(i.gst), 0), i.plan); });
-  if (Q.setup && Q.setup.on) { const r = Math.max(num(Q.setup.amount), 0); add('setup', 'One-time setup and onboarding', r, 0, Math.max(num(Q.setup.gst), 0)); }
+  if (Q.onboarding && Q.onboarding.on) { const r = Math.max(num(Q.onboarding.amount), 0); add('onboarding', 'Onboarding fee', r, 0, Math.max(num(Q.onboarding.gst), 0)); }
+  if (Q.setup && Q.setup.on) { const r = Math.max(num(Q.setup.amount), 0); add('setup', 'Setup fee (AUZsPOS installation)', r, 0, Math.max(num(Q.setup.gst), 0)); }
   (Q.custom || []).forEach((c) => { if (String(c.label || '').trim()) add('custom', c.label, num(c.amount), 0, Math.max(num(c.gst), 0)); });
   g = Math.round(g * 100) / 100;
   const raw = Math.round((tax + g) * 100) / 100, total = Math.round(raw), round = Math.round((total - raw) * 100) / 100;
@@ -2091,7 +2093,10 @@ async function ensurePrices() {
 function defaultQuote(o, defGst) {
   const g = num(defGst);
   const items = (o.products || []).filter((k) => PROD_NAME[k]).map((k) => { const p = ordPrices[k] || {}; return { key: k, plan: 'month', rate: num(p.monthly_price), discount: 0, gst: p.gst_exempt ? 0 : g }; });
-  return { items, setup: { on: o.kind === 'new' && !((o.products || []).length && (o.products || []).every((k) => (ordPrices[k] || {}).setup_fee_exempt)), amount: SETUP_DEFAULT, gst: g }, custom: [], note: '' };
+  return { items,
+    onboarding: { on: o.kind === 'new', amount: ONBOARDING_DEFAULT, gst: 0 },
+    setup: { on: o.kind === 'new' && !((o.products || []).length && (o.products || []).every((k) => (ordPrices[k] || {}).setup_fee_exempt)), amount: SETUP_DEFAULT, gst: g },
+    custom: [], note: '' };
 }
 
 const waDigits = (p) => { const d = String(p || '').replace(/\D/g, ''); return d.length === 10 ? '91' + d : d; };
@@ -2154,9 +2159,13 @@ function renderOrder() {
   <div class="label" style="margin-top:20px">${o.status === 'paid' ? 'Bill' : 'Quote: products, price, GST, discount'}</div>
   ${o.status === 'paid' ? '' : `<div id="qItems">${(ordQ.items || []).map(prodRow).join('')}</div>
   <div class="row-actions" style="margin-top:8px"><button class="btn btn-ghost" id="qAdd" type="button">+ Product</button></div>
-  <label class="chk-row"><input type="checkbox" id="qSetupOn" ${ordQ.setup && ordQ.setup.on ? 'checked' : ''}> Setup fee</label>
+  <label class="chk-row"><input type="checkbox" id="qOnbOn" ${ordQ.onboarding && ordQ.onboarding.on ? 'checked' : ''}> Onboarding fee (every new client)</label>
+  <div class="ord-q" id="qOnb" style="${ordQ.onboarding && ordQ.onboarding.on ? '' : 'display:none'}"><label class="lbl">Amount<input class="inp" id="qobA" type="number" min="0" step="0.01" value="${num(ordQ.onboarding && ordQ.onboarding.amount)}"></label><label class="lbl">GST %<input class="inp" id="qobG" type="number" min="0" step="0.01" value="${num(ordQ.onboarding && ordQ.onboarding.gst)}"></label></div>
+  <label class="chk-row"><input type="checkbox" id="qSetupOn" ${ordQ.setup && ordQ.setup.on ? 'checked' : ''}> Setup fee (AUZsPOS / AUZsPOS QR only -- other products need no install)</label>
   <div class="ord-q" id="qSetup" style="${ordQ.setup && ordQ.setup.on ? '' : 'display:none'}"><label class="lbl">Amount<input class="inp" id="qsA" type="number" min="0" step="0.01" value="${num(ordQ.setup && ordQ.setup.amount)}"></label><label class="lbl">GST %<input class="inp" id="qsG" type="number" min="0" step="0.01" value="${num(ordQ.setup && ordQ.setup.gst)}"></label></div>
-  <div class="label" style="margin-top:10px">Other charges</div><div id="qCustom">${(ordQ.custom || []).map(custRow).join('')}</div>
+  <div class="label" style="margin-top:10px">Other charges</div>
+  <p class="p" style="color:var(--ink-faint);font-size:12.5px;margin:2px 0 6px">Integrations (Zomato/Swiggy, payment gateways, etc.) and hardware (printers, scanners, tablets) are not included -- add them here as their own charge, quoted separately.</p>
+  <div id="qCustom">${(ordQ.custom || []).map(custRow).join('')}</div>
   <div class="row-actions" style="margin-top:8px;flex-wrap:wrap"><button class="btn btn-ghost" id="qCAdd" type="button">+ Other charge</button><button class="btn btn-ghost" id="qBrand" type="button">+ Customised branding setup &#8377;2,910</button></div>
   <label class="lbl" style="margin-top:10px">Note on the bill (optional)<input id="qNote" class="inp" value="${esc(ordQ.note || '')}"></label>`}
   <div class="ord-tot" id="qTot"></div>
@@ -2185,7 +2194,10 @@ function readQuote() {
   const g = (id) => document.getElementById(id);
   const items = [...document.querySelectorAll('#qItems [data-qi]')].map((r) => { const i = r.dataset.qi; return { key: g('qk' + i).value, plan: g('qp' + i).value, rate: num(g('qr' + i).value), discount: num(g('qd' + i).value), gst: num(g('qg' + i).value) }; });
   const custom = [...document.querySelectorAll('#qCustom [data-ci]')].map((r) => { const i = r.dataset.ci; return { label: g('cl' + i).value.trim(), amount: num(g('ca' + i).value), gst: num(g('cg' + i).value) }; });
-  return { items, setup: { on: g('qSetupOn').checked, amount: num(g('qsA').value), gst: num(g('qsG').value) }, custom, note: g('qNote').value.trim() };
+  return { items,
+    onboarding: { on: g('qOnbOn').checked, amount: num(g('qobA').value), gst: num(g('qobG').value) },
+    setup: { on: g('qSetupOn').checked, amount: num(g('qsA').value), gst: num(g('qsG').value) },
+    custom, note: g('qNote').value.trim() };
 }
 function paintTotals() {
   const el = document.getElementById('qTot'); if (!el) return;
@@ -2221,6 +2233,7 @@ function wireOrder() {
     g('qAdd').onclick = () => { ordQ = readQuote(); const used = ordQ.items.map((i) => i.key), k = (ORD_PRODUCTS.find(([x]) => !used.includes(x)) || ORD_PRODUCTS[0])[0], p = ordPrices[k] || {}; ordQ.items.push({ key: k, plan: 'month', rate: num(p.monthly_price), discount: 0, gst: p.gst_exempt ? 0 : num(o.default_gst) }); renderOrder(); };
     g('qCAdd').onclick = () => { ordQ = readQuote(); ordQ.custom.push({ label: '', amount: 0, gst: num(o.default_gst) }); renderOrder(); };
     g('qBrand').onclick = () => { ordQ = readQuote(); ordQ.custom.push({ label: 'Customised branding setup', amount: 2910, gst: num(o.default_gst) }); renderOrder(); };
+    g('qOnbOn').onchange = () => { g('qOnb').style.display = g('qOnbOn').checked ? '' : 'none'; paintTotals(); };
     g('qSetupOn').onchange = () => { g('qSetup').style.display = g('qSetupOn').checked ? '' : 'none'; paintTotals(); };
     g('qSave').onclick = () => { ordQ = readQuote(); ordAct('admin_save_order_quote', { p_id: o.id, p_quote: ordQ }, reloadOrder); };
   }
