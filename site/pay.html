@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KQRQJFT0V0"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KQRQJFT0V0');
+</script>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Your request and payment — AUZslab</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="/logo.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="stylesheet" href="tool/theme.mobile.css?v=45" media="(max-width:899px)"><link rel="stylesheet" href="tool/theme.desktop.css?v=45" media="(min-width:900px)"><script src="theme.js?v=1"></script>
+<link rel="stylesheet" href="tool/sketch.mobile.css?v=1" media="(max-width:899px)"><link rel="stylesheet" href="tool/sketch.desktop.css?v=1" media="(min-width:900px)">
+<script src="tool/sketch.js?v=1"></script>
+<script src="tool/sketch-art.js?v=1" defer></script>
+<link rel="stylesheet" href="tool/design-system/ui-kit.mobile.css?v=3" media="(max-width:899px)"><link rel="stylesheet" href="tool/design-system/ui-kit.desktop.css?v=3" media="(min-width:900px)">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+.err{color:var(--accent);font-size:12.5px;margin-top:10px}
+.pay-wrap{max-width:720px}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 4px}
+.steps span{font-size:12px;padding:6px 12px;border-radius:999px;border:1.5px solid var(--line);color:var(--ink-faint);white-space:nowrap}
+.steps span.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.steps span.done{border-color:var(--ink);color:var(--ink)}
+.bill-t{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:8px}
+.bill-t th{text-align:left;font-weight:600;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-faint);padding:6px 6px;border-bottom:1.5px solid var(--ink)}
+.bill-t td{padding:9px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+.bill-t .r{text-align:right;white-space:nowrap}
+.bill-t small{display:block;color:var(--ink-faint);font-size:11.5px}
+.tot-row{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:14px;color:var(--ink-faint)}
+.tot-row b{color:var(--ink)}
+.tot-row.big{border-top:2px solid var(--ink);margin-top:8px;padding-top:12px;font-size:18px;color:var(--ink)}
+.terms-box{border:1px solid var(--line);border-radius:14px;padding:6px 16px;margin-top:10px;max-height:300px;overflow:auto;font-size:13px;line-height:1.55}
+.terms-box h4{margin:12px 0 2px;font-size:13px}
+.terms-box p{margin:0 0 6px;color:var(--ink-faint)}
+.chk{display:flex;gap:10px;align-items:flex-start;margin:14px 0;font-size:14px;cursor:pointer}
+.chk input{width:20px;height:20px;margin-top:2px;flex:none}
+.upi-card{text-align:center}
+.upi-card img{margin:10px auto;display:block;border-radius:12px;background:#fff}
+.kv{display:grid;grid-template-columns:120px 1fr;gap:4px 12px;font-size:13.5px;margin-top:8px}
+.kv span:nth-child(odd){color:var(--ink-faint)}
+</style>
+</head>
+<body>
+<div id="pageTransition" class="page-transition" aria-hidden="true"></div>
+<div class="shell">
+  <header class="topbar">
+    <div style="display:flex;gap:8px;align-items:center;order:2">
+      <button type="button" class="theme-toggle" data-theme-toggle role="switch" aria-checked="false" aria-label="Dark mode"></button>
+      <a href="index.html" class="btn btn-ghost">&larr; Home</a>
+    </div>
+    <a href="index.html" class="topbar-logo"><img src="logo.png" alt="AUZslab"></a>
+  </header>
+  <main class="content">
+    <div class="wrap pay-wrap">
+      <section class="section" style="padding-top:48px">
+        <div class="label" id="pgLabel">Your request</div>
+        <h1 class="h-1" id="pgTitle">One moment...</h1>
+        <p class="lede" id="pgLede"></p>
+        <div class="steps" id="steps"></div>
+      </section>
+      <div id="body"></div>
+    </div>
+  </main>
+</div>
+<script src="/sb-client.js?v=5"></script>
+<script src="tool/lock.js?v=1"></script>
+<script src="tool/site.js?v=13"></script>
+<script src="company.js?v=2"></script>
+<script src="orderterms.js?v=1"></script>
+<script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
+<script src="vendor/qrcode.js"></script>
+<script>
+const sb = supabase.createClient(CFG.url, CFG.key);
+const O = window.AUZ_ORDER, CO = window.AUZ_CO || {};
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const inr = (n) => '₹' + Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const TOKEN = (new URLSearchParams(location.search).get('t') || '').trim();
+const STEPS = [['requested', 'Request'], ['verifying', 'Verification'], ['link_sent', 'Payment'], ['payment_submitted', 'Confirming'], ['paid', 'Done']];
+const ORDER_OF = { requested: 0, verifying: 1, confirmed: 1, link_sent: 2, payment_submitted: 3, paid: 4 };
+let D = null;
+
+function setHead(label, title, lede) { $('pgLabel').textContent = label; $('pgTitle').textContent = title; $('pgLede').textContent = lede || ''; }
+function setSteps(status) {
+  const at = ORDER_OF[status] == null ? -1 : ORDER_OF[status];
+  $('steps').innerHTML = status === 'rejected' ? '' : STEPS.map(([k, t], i) => `<span class="${i < at ? 'done' : i === at ? 'on' : ''}">${i + 1}. ${esc(t)}</span>`).join('');
+}
+function billHtml(D) {
+  const q = D.quote || {}, t = D.totals || {}, lines = t.lines || [];
+  const planTxt = (l) => l.type === 'product' ? (l.plan === 'year' ? 'Yearly' : 'Monthly') : '';
+  const rows = lines.map((l) => `<tr><td>${esc(l.label)}${planTxt(l) ? `<small>${planTxt(l)} plan${l.renewal ? ' &middot; renews ' + esc(l.renewal) : ''}</small>` : ''}</td><td class="r">${inr(l.rate)}</td><td class="r">${l.discount > 0 ? '−' + inr(l.discount) : '&mdash;'}</td><td class="r">${l.gst ? l.gst + '%' : '0%'}</td><td class="r"><b>${inr(l.total)}</b></td></tr>`).join('');
+  return `<table class="bill-t"><tr><th>Item</th><th class="r">Price</th><th class="r">Discount</th><th class="r">GST</th><th class="r">Amount</th></tr>${rows}</table>
+  <div style="margin-top:12px">
+    <div class="tot-row"><span>Total before GST</span><b>${inr(t.taxable)}</b></div>
+    ${t.intra ? `<div class="tot-row"><span>CGST</span><b>${inr(t.cgst)}</b></div><div class="tot-row"><span>SGST</span><b>${inr(t.sgst)}</b></div>` : `<div class="tot-row"><span>IGST</span><b>${inr(t.igst)}</b></div>`}
+    <div class="tot-row big"><span>Total to pay</span><b>${inr(t.total)}</b></div>
+  </div>${q.note ? `<p class="pay-note">${esc(q.note)}</p>` : ''}`;
+}
+function termsHtml() { return O.terms.map(([h, p]) => `<h4>${esc(h)}</h4><p>${esc(p)}</p>`).join(''); }
+function detailsHtml(D) {
+  return `<div class="kv"><span>Name</span><span>${esc(D.contact_name)}</span><span>Mobile</span><span>${esc(D.phone)}</span><span>Business</span><span>${esc(D.business_name)}</span>${D.gstin ? `<span>GSTIN</span><span>${esc(D.gstin)}</span>` : ''}${D.address ? `<span>Address</span><span>${esc(D.address)}</span>` : ''}${(D.products || []).length ? `<span>Products</span><span>${D.products.map((k) => esc(O.labels[k] || k)).join(', ')}</span>` : ''}</div>`;
+}
+function bankHtml() {
+  const b = O.bank || {}; if (!b.account) return '';
+  return `<div class="kv"><span>Account name</span><span>${esc(b.holder)}</span><span>Bank</span><span>${esc(b.bank)}</span><span>Account no.</span><span>${esc(b.account)}</span><span>IFSC</span><span>${esc(b.ifsc)}</span>${b.branch ? `<span>Branch</span><span>${esc(b.branch)}</span>` : ''}</div>`;
+}
+
+function render() {
+  const st = D.status; setSteps(st);
+  if (st === 'rejected') { setHead('Your request', 'We could not take this request.', 'Please write to us on WhatsApp or email if you would like to talk about it.'); $('body').innerHTML = `<section class="section tight"><div class="card">${detailsHtml(D)}</div></section>`; return; }
+  if (st === 'requested' || st === 'verifying' || st === 'confirmed') {
+    setHead('Your request', st === 'requested' ? 'Request received.' : st === 'verifying' ? 'We are checking your business.' : 'You are confirmed.',
+      st === 'confirmed' ? 'Your bill is being prepared. We will send the payment link on WhatsApp.' : 'We will contact you on WhatsApp. After that you will get your payment link here.');
+    $('body').innerHTML = `<section class="section tight"><div class="card"><div class="label">What you sent us</div>${detailsHtml(D)}${D.requirement ? `<p class="pay-note" style="margin-top:12px">${esc(D.requirement)}</p>` : ''}</div></section>`;
+    return;
+  }
+  if (st === 'paid') {
+    setHead('Payment confirmed', 'Thank you. You are all set.', 'Your access is active. Your bill is below.');
+    const slug = D.tenant_slug;
+    $('body').innerHTML = `<section class="section tight"><div class="card"><div class="label">Bill ${esc(D.invoice_no || '')}</div>
+      <p class="p">Paid on ${esc(String(D.paid_at || '').slice(0, 10))}. ${slug ? `Open your workspace at <a href="https://${esc(slug)}.auzslab.in" style="color:var(--accent)">${esc(slug)}.auzslab.in</a> and sign in with the same account you used to send the request.` : ''}</p>
+      <a class="btn btn-primary form-submit" href="inv.html?t=${encodeURIComponent(TOKEN)}">View or print your bill</a></div></section>`;
+    return;
+  }
+  // link_sent / payment_submitted: the bill and the payment card
+  const submitted = st === 'payment_submitted';
+  setHead(submitted ? 'Payment received' : 'Payment', submitted ? 'Thank you. We are confirming your payment.' : 'Your bill and payment.', submitted ? 'You will get your bill on WhatsApp once we confirm it. You can send the screenshot again below if needed.' : 'Read the terms, tick the box, pay, then send us the screenshot.');
+  const total = Number((D.totals || {}).total || 0);
+  const upi = O.upi || {}; const uri = 'upi://pay?pa=' + encodeURIComponent(upi.id) + '&pn=' + encodeURIComponent(upi.name || 'AUZslab') + '&am=' + total.toFixed(2) + '&cu=INR&tn=' + encodeURIComponent('AUZslab ' + (D.business_name || ''));
+  $('body').innerHTML = `
+  <section class="section tight"><div class="card"><div class="label">Your bill</div>${billHtml(D)}</div></section>
+  <section class="section tight"><div class="card"><div class="label">Terms, privacy and refunds</div>
+    <div class="terms-box" id="termsBox">${termsHtml()}</div>
+    <p class="pay-note"><a href="terms.html" target="_blank" rel="noopener" style="color:var(--accent)">Terms &amp; conditions</a> &middot; <a href="privacy.html" target="_blank" rel="noopener" style="color:var(--accent)">Privacy policy</a> &middot; <a href="refund.html" target="_blank" rel="noopener" style="color:var(--accent)">Refund policy</a></p>
+    <label class="chk"><input type="checkbox" id="agree" ${submitted ? 'checked' : ''}><span>I have read and I agree to the Terms &amp; Conditions, Privacy Policy and Refund Policy.</span></label>
+  </div></section>
+  <section class="section tight"><div class="card upi-card" id="payCard"><div class="label" style="justify-content:center">Pay ${inr(total)}</div>
+    <img id="qr" alt="UPI QR code" width="200" height="200">
+    <p class="pay-note" style="margin:0">Scan with any UPI app, or pay to <b>${esc(upi.id)}</b> (${esc(upi.name)}).</p>
+    <a class="btn btn-ghost" style="margin-top:10px" href="${esc(uri)}" id="upiOpen">Open my UPI app</a>
+    ${bankHtml() ? `<div style="text-align:left;margin-top:14px"><div class="label">Or pay by bank transfer</div>${bankHtml()}</div>` : ''}
+    <div class="field" style="text-align:left;margin-top:16px"><label for="shot">Screenshot of your payment *</label><input id="shot" type="file" accept="image/*,application/pdf"></div>
+    <div class="field" style="text-align:left"><label for="utr">UTR / reference number <span style="text-transform:none;letter-spacing:0">(optional)</span></label><input id="utr" inputmode="numeric" autocomplete="off" placeholder="12-digit number from your UPI app" value="${esc(D.payment.utr || '')}"></div>
+    <button class="btn btn-primary form-submit" id="send" type="button">${submitted ? 'Send again' : 'I have paid: send screenshot'}</button>
+    <div class="err" id="err"></div>
+    ${D.payment.proof ? '<p class="pay-note">We already have a screenshot from you.</p>' : ''}
+  </div></section>`;
+  try { const q = qrcode(0, 'M'); q.addData(uri); q.make(); $('qr').src = q.createDataURL(5, 2); } catch (e) { $('qr').style.display = 'none'; }
+  $('send').onclick = send;
+}
+
+async function send() {
+  const err = $('err'); err.textContent = '';
+  if (!$('agree').checked) { err.textContent = 'Please tick the box to accept the terms, privacy policy and refund policy.'; $('agree').scrollIntoView({ block: 'center' }); return; }
+  const file = $('shot').files[0];
+  if (!file && !D.payment.proof) { err.textContent = 'Please choose the screenshot of your payment.'; return; }
+  if (file && file.size > 5_500_000) { err.textContent = 'That file is too big (5 MB at most). Please send a smaller screenshot.'; return; }
+  const btn = $('send'); btn.disabled = true; const old = btn.textContent; btn.textContent = 'Sending...';
+  try {
+    if (file) {
+      const buf = await file.arrayBuffer();
+      const r = await fetch(CFG.url + '/storage/order-proof/' + encodeURIComponent(TOKEN), { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: buf });
+      if (!r.ok) { let m = 'The screenshot could not be sent.'; try { m = (await r.json()).error || m; } catch (e) {} throw new Error(m); }
+    }
+    const { error } = await sb.rpc('public_order_submit_payment', { p_token: TOKEN, p_utr: $('utr').value.trim(), p_terms: true });
+    if (error) throw new Error(error.message);
+    await load();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch (e) { err.textContent = e.message; btn.disabled = false; btn.textContent = old; }
+}
+
+async function load() {
+  if (!/^[a-f0-9]{32}$/.test(TOKEN)) { setHead('Payment link', 'This link is not valid.', 'Please use the link we sent you on WhatsApp, or send a new request from the cart.'); setSteps('x'); return; }
+  const { data, error } = await sb.rpc('public_client_order', { p_token: TOKEN });
+  if (error || !data) { setHead('Payment link', 'We could not find this request.', 'Please check the link we sent you on WhatsApp.'); setSteps('x'); return; }
+  D = data; render();
+}
+load();
+</script>
+<button type="button" class="theme-fab" onclick="auzThemeToggle()" aria-label="Toggle dark mode" title="Toggle dark mode"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg></button>
+</body>
+</html>

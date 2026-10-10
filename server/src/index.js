@@ -188,6 +188,18 @@ const RPC = {
   // --- Admin: salesmen (db/137) ---
   admin_add_salesman: { params: ['p_email', 'p_name'], defaults: { p_name: null }, auth: true },
   admin_list_salesmen: { params: [], auth: true },
+  submit_client_order: { params: ['p'], jsonb: ['p'], auth: true },
+  my_client_orders: { params: [], auth: true },
+  public_client_order: { params: ['p_token'], auth: false },
+  public_order_submit_payment: { params: ['p_token', 'p_utr', 'p_terms'], defaults: { p_utr: null, p_terms: false }, auth: false },
+  admin_list_client_orders: { params: ['p_status'], defaults: { p_status: null }, auth: true },
+  admin_get_client_order: { params: ['p_id'], auth: true },
+  admin_set_order_status: { params: ['p_id', 'p_status', 'p_note'], defaults: { p_note: null }, auth: true },
+  admin_update_client_order: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
+  admin_save_order_quote: { params: ['p_id', 'p_quote'], jsonb: ['p_quote'], auth: true },
+  admin_confirm_order_payment: { params: ['p_id', 'p_paid_on', 'p_utr'], defaults: { p_paid_on: null, p_utr: null }, auth: true },
+  admin_mark_order_bill_sent: { params: ['p_id'], auth: true },
+  admin_open_client_orders_count: { params: [], auth: true },
   admin_add_client_payment: { params: ['p_tenant_id', 'p_amount', 'p_paid_on', 'p_mode', 'p_utr', 'p_purpose', 'p_note'], auth: true, defaults: { p_paid_on: null, p_mode: 'upi', p_utr: null, p_purpose: null, p_note: null } },
   admin_list_client_payments: { params: ['p_tenant_id'], auth: true, defaults: { p_tenant_id: null } },
   admin_delete_client_payment: { params: ['p_id'], auth: true },
@@ -1278,6 +1290,31 @@ const server = http.createServer(async (req, res) => {
       const doc = await readDocUpload({ tenantId, empId: 'acc', filename });
       if (!doc) throw new HttpError(404, 'not found');
       res.writeHead(200, { 'Content-Type': doc.type, 'Cache-Control': 'private, max-age=31536000', ...(origin ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : {}) });
+      res.end(doc.buffer);
+      return;
+    }
+
+    // ---- client orders: the payment screenshot (private; the secret link is the credential) ----
+    const proofPost = url.pathname.match(/^\/storage\/order-proof\/([a-f0-9]{32})$/);
+    if (proofPost && req.method === 'POST') {
+      if (rateLimited(`orderproof:${clientIp(req)}`, 20, 60 * 60_000)) throw new HttpError(429, 'too many uploads, try again later');
+      const { rows } = await pool.query('select order_proof_target($1) as id', [proofPost[1]]);
+      const orderId = rows[0] && rows[0].id;
+      if (!orderId) throw new HttpError(404, 'This link is not waiting for a payment.');
+      const buffer = await readRawBody(req, 6_000_000);
+      const saved = await saveDocUpload({ tenantId: 'orders', empId: orderId, buffer });
+      await pool.query('select order_proof_record($1, $2)', [orderId, saved.path.split('/')[2]]);
+      return reply(200, { ok: true });
+    }
+    const proofGet = url.pathname.match(/^\/storage\/order-proof\/([0-9a-f-]{36})$/);
+    if (proofGet && req.method === 'GET') {
+      if (!user) throw new HttpError(401, 'authentication required');
+      const { rows } = await withAuth(user.id, (client) => client.query('select admin_order_proof($1) as f', [proofGet[1]]));
+      const file = rows[0] && rows[0].f;
+      if (!file) throw new HttpError(404, 'no screenshot');
+      const doc = await readDocUpload({ tenantId: 'orders', empId: proofGet[1], filename: file });
+      if (!doc) throw new HttpError(404, 'not found');
+      res.writeHead(200, { 'Content-Type': doc.type, 'Cache-Control': 'private, max-age=3600', ...(origin ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : {}) });
       res.end(doc.buffer);
       return;
     }

@@ -69,9 +69,9 @@
       <section class="section" style="padding-top:56px">
         <div class="hero-grid">
         <div>
-        <div class="label">Your cart</div>
-        <h1 class="h-1">Ready when you are.</h1>
-        <p class="lede">Confirm what you need, sign in, and we'll take it from there.</p>
+        <div class="label">Your request</div>
+        <h1 class="h-1">Tell us what you need.</h1>
+        <p class="lede">Pick your products and tell us about your business. We check your business first, then send you a payment link on WhatsApp. Nothing is charged on this page.</p>
         </div>
         <div class="hero-art" role="presentation">
           <img class="hero-art-logo" src="logo.png" alt="" aria-hidden="true">
@@ -82,62 +82,61 @@
       <div class="cart-cols">
       <div class="cart-left">
       <section class="section tight" style="max-width:640px">
+        <div class="label" style="margin-bottom:8px">Products you picked</div>
         <div id="cartItems"></div>
+        <p class="pay-note"><a href="products.html" style="color:var(--accent)">Add more products</a> &middot; Prices are confirmed in your payment link after we verify your business.</p>
       </section>
 
-      <section class="section tight" id="billSummarySection" style="display:none;max-width:640px">
-        <div class="card">
-          <div class="label">Your complete bill</div>
-          <div id="topBundleNote" style="display:none;margin-top:8px"></div>
-          <div id="periodRow" class="period-seg" style="display:none">
-            <button id="periodMonth" type="button" class="active">Monthly</button>
-            <button id="periodYear" type="button">Yearly</button>
-          </div>
-          <p class="pay-note" id="periodNote" style="margin:0 0 6px"></p>
-          <div class="bill-row" style="padding-left:0;padding-right:0"><span>Subscription</span><b id="topBillSubtotal"></b></div>
-          <div class="bill-row" id="topBillGstRow" style="padding-left:0;padding-right:0"><span id="topBillGstLabel">GST</span><b id="topBillGst"></b></div>
-          <div class="bill-row" id="topBillSetupRow" style="padding-left:0;padding-right:0"><span>One-time setup fee <i>(mandatory)</i></span><b id="topBillSetup"></b></div>
-          <div class="cart-total" style="border-top:2px solid var(--ink);margin-top:6px;padding-top:12px;padding-left:0;padding-right:0"><span>Total due today</span><b id="topBillTotal"></b></div>
-          <p class="pay-note" id="topBillThenNote" style="margin-top:0"></p>
-        </div>
+      <section class="section tight" id="myOrdersSection" style="display:none;max-width:640px">
+        <div class="label" style="margin-bottom:8px">Your earlier requests</div>
+        <div id="myOrders"></div>
       </section>
 
       <section class="section tight" id="signedOutNotice" style="display:none;max-width:640px">
         <div class="card">
-          <p class="p">Sign in or create an account first -- then tell us what you need and we'll take it from there.</p>
-          <a href="signup.html" class="btn btn-primary form-submit">Sign in / Create account</a>
+          <p class="p">Sign in or create an account first -- then tell us about your business and send your request.</p>
+          <a href="signup.html?next=cart.html" class="btn btn-primary form-submit">Sign in / Create account</a>
         </div>
       </section>
-
-      
       </div>
-      <div class="cart-right">
-      <section class="section tight" id="addonSection" style="display:none;max-width:640px">
-        <div class="card">
-          <p class="p" style="margin-bottom:8px">Signed in as <b id="addonWhoami"></b> — adding to <b id="addonTenant"></b></p>
-          <div id="addonAlreadyOwned"></div>
-          <div id="addonItems"></div>
 
-          <div class="field">
-            <label for="addonNotes">Anything else we should know?</label>
-            <textarea id="addonNotes" placeholder="When you'd like this live, number of staff who'll use it, etc. (optional)"></textarea>
+      <div class="cart-right">
+      <section class="section tight" id="requestSection" style="display:none;max-width:640px">
+        <form class="card" id="reqForm" novalidate>
+          <p class="p" style="margin-bottom:4px" id="whoLine"></p>
+          <div class="field"><label for="rqName">Your name *</label><input id="rqName" autocomplete="name" required></div>
+          <div class="field"><label for="rqPhone">Mobile / WhatsApp number *</label><input id="rqPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="9876543210" required></div>
+          <div class="field"><label for="rqEmail">Email</label><input id="rqEmail" type="email" autocomplete="email"></div>
+          <div id="newBizFields">
+            <div class="field"><label for="rqBiz">Business name *</label><input id="rqBiz" autocomplete="organization"></div>
+            <div class="field"><label for="rqNiche">Business type *</label>
+              <select id="rqNiche">
+                <option value="cafe">Cafe / restaurant / bar / bakery / hotel</option>
+                <option value="retail">Retail shop (books, clothing, general store)</option>
+                <option value="salon">Salon / spa</option>
+                <option value="mobile">Mobile phone shop / repair</option>
+                <option value="gym">Gym / fitness</option>
+                <option value="general">Something else</option>
+              </select></div>
+            <div class="field"><label for="rqSlug">Business address you would like <span style="text-transform:none;letter-spacing:0">(optional)</span></label><input id="rqSlug" placeholder="mybusiness" autocapitalize="none" autocomplete="off"><span class="pay-note" id="rqSlugNote" style="margin:0">Your workspace will be mybusiness.auzslab.in</span></div>
           </div>
-          <a href="checkout.html" id="continueAddonPayBtn" class="btn btn-primary form-submit">Continue to payment &rarr;</a>
-          <div id="addonErr" class="err"></div>
-        </div>
+          <div class="field"><label for="rqGstin">GSTIN <span style="text-transform:none;letter-spacing:0">(if you have one)</span></label><input id="rqGstin" maxlength="15" autocapitalize="characters" autocomplete="off" placeholder="08ABCDE1234F1Z5"></div>
+          <div class="field"><label for="rqState">State</label><select id="rqState"></select></div>
+          <div class="field"><label for="rqAddress">Business address</label><textarea id="rqAddress" rows="2" autocomplete="street-address" placeholder="Shop / building, area, city, PIN"></textarea></div>
+          <div class="field"><label for="rqReq">What do you need? *</label><textarea id="rqReq" rows="4" placeholder="Tell us how your business works and what you want the software to do: number of outlets and staff, billing, stock, payroll, bookings, anything special."></textarea></div>
+          <div class="field"><label for="rqNotes">Anything else we should know?</label><textarea id="rqNotes" rows="2" placeholder="When you want to start, who to call, etc. (optional)"></textarea></div>
+          <button id="rqSend" class="btn btn-primary form-submit" type="submit">Send request</button>
+          <div id="rqErr" class="err"></div>
+          <p class="pay-note">We read every request, check your business and reply on WhatsApp. We never charge anything before you receive our payment link.</p>
+        </form>
       </section>
 
-      <section class="section tight" id="requestSection" style="display:none;max-width:640px">
+      <section class="section tight" id="sentSection" style="display:none;max-width:640px">
         <div class="card">
-          <p class="p" style="margin-bottom:8px">Signed in as <b id="whoami"></b></p>
-          <div id="profileSummary" class="p" style="margin-bottom:12px"></div>
-
-          <div class="field">
-            <label for="bizNotes">Anything else we should know about this order?</label>
-            <textarea id="bizNotes" placeholder="When you'd like this live, number of outlets, etc. (optional)"></textarea>
-          </div>
-          <a href="checkout.html" id="continuePayBtn" class="btn btn-primary form-submit">Continue to payment &rarr;</a>
-          <div id="submitErr" class="err"></div>
+          <div class="label">Request received</div>
+          <h2 class="h-2" style="font-size:22px;margin-top:6px">Thank you. We have your request.</h2>
+          <p class="p">We will check your business and contact you on WhatsApp. After that you get a payment link with your bill. You can follow the status any time:</p>
+          <a id="trackLink" class="btn btn-primary form-submit" href="#">Track my request</a>
         </div>
       </section>
       </div>
@@ -151,292 +150,93 @@
 <script src="/sb-client.js?v=5"></script>
 <script src="tool/lock.js?v=1"></script>
 <script src="tool/site.js?v=13"></script>
+<script src="orderterms.js?v=1"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script>
 const sb = supabase.createClient(CFG.url, CFG.key);
 const PRODUCT_LABEL = { salon: 'AUZslab Salon', pos: 'AUZsPOS', crm: 'CRM', billing: 'Billing & Invoicing', inventory: 'Inventory', self_order: 'AUZsPOS QR', payroll: 'AUZsPay', website_builder: 'Website Builder', accounting: 'AUZsLedger', mobile: 'AUZsMob', scan: 'AUZsScan' };
-// Apps link here as cart.html?add=<product key>: pre-select that product so a new customer lands on their bill + notes.
+// Apps link here as cart.html?add=<product key>: pre-select that product.
 try { const pre = new URLSearchParams(location.search).get('add'); if (pre && PRODUCT_LABEL[pre]) AUZcart.add(pre); } catch (e) {}
 
-function inr(n) {
-  return '₹' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 0 });
-}
-
-// Mirrors payments.js's billFor() exactly (db/072 pricing + the GST/setup-fee pass) so this
-// preview is what Razorpay will actually charge, never a naive guess. 18% GST on the
-// subscription only; the one-time ₹2,179 setup fee is flat, no GST added to it, and only ever
-// applies to a brand-new signup, never to an addon purchase on an existing (already set up) tenant.
-let GST_RATE = 0; // set from the server (platform_flags gst_rate_pct); 0 until AUZslab is GST-registered
-const SETUP_FEE = 2179;
-const round2 = (n) => Math.round(n * 100) / 100;
-function billFor(subtotal, isSignup, keys) {
-  const k = keys || [];
-  const bundled = k.length > 0 && matchedBundle(k);
-  const flags = k.map((x) => FLAGS.get(x) || {});
-  const exempt = !bundled && k.length ? k.reduce((a, key) => a + ((FLAGS.get(key) || {}).gstExempt ? Number((PERIOD === 'year' ? (FLAGS.get(key) || {}).yearly : PRICES.get(key)) || 0) : 0), 0) : 0;
-  const setupExempt = !bundled && k.length > 0 && flags.every((f) => f.setupExempt);
-  const setupFee = isSignup && !setupExempt ? SETUP_FEE : 0;
-  const subtotalGst = round2((subtotal - exempt) * GST_RATE);
-  const dueToday = round2(subtotal + subtotalGst + setupFee);
-  const monthlyTotal = round2(subtotal + subtotalGst);
-  return { subtotal, subtotalGst, setupFee, dueToday, monthlyTotal, period: PERIOD, exempt };
-}
-function matchedBundle(keys) {
-  const sorted = keys.slice().sort().join(',');
-  return BUNDLES.find((b) => b.feature_keys.slice().sort().join(',') === sorted) || null;
-}
-// Yearly billing is offered when the cart is a bundle with a yearly price, or every product in the cart has a yearly price.
-function yearlyEligible(keys) {
-  const b = matchedBundle(keys);
-  if (b) return Number(b.yearly_price) > 0;
-  return keys.length > 0 && keys.every((k) => (FLAGS.get(k) || {}).yearly > 0);
-}
-
-// Prices + whether online checkout is even possible -- both start empty/off
-// so every render() before they load falls back to the existing
-// request-only behaviour, exactly as if Razorpay were never configured.
-let PRICES = new Map();
-let FLAGS = new Map();
-let PERIOD = 'month';   // 'month' | 'year' (yearly only for carts whose products all have a yearly price)
-let BUNDLES = [];
-let ADDON_OVERRIDES = [];
-let PAY = { enabled: false, keyId: null };
-
-async function loadPricing() {
-  const [{ data: prices }, { data: bundles }, { data: overrides }, { data: cfg }] = await Promise.all([
-    sb.rpc('public_product_prices'), sb.rpc('public_bundles'), sb.rpc('public_addon_price_overrides'), sb.payments.config(),
-  ]);
-  PRICES = new Map((prices || []).map((p) => [p.key, Number(p.monthly_price)]));
-  FLAGS = new Map((prices || []).map((p) => [p.key, { yearly: Number(p.yearly_price || 0), renewal: Number(p.renewal_yearly_price || 0), gstExempt: !!p.gst_exempt, setupExempt: !!p.setup_fee_exempt }]));
-  BUNDLES = bundles || [];
-  ADDON_OVERRIDES = overrides || [];
-  PAY = cfg || { enabled: false, keyId: null };
-  GST_RATE = Number(PAY.gstPct || 0) / 100;
-}
-
-// Mirrors payments.js's priceFeatures() exactly (db/072), so what this
-// page shows is what Razorpay will actually charge, not just a naive
-// sum: an exact bundle match first, then an addon-with-existing-product
-// override (tenantFeatures only set in the addon flow, from DASH),
-// otherwise the flat sum -- null (no online checkout) if anything in
-// the mix isn't priced yet, or for an unpriced single-item addon override miss.
-function priceTotal(keys, tenantFeatures) {
-  if (!keys.length) return null;
-  if (PERIOD === 'year' && yearlyEligible(keys)) {
-    const yb = matchedBundle(keys);
-    return yb ? Number(yb.yearly_price) : keys.reduce((a, k) => a + (FLAGS.get(k).yearly), 0);
-  }
-  const sortedKeys = keys.slice().sort().join(',');
-  const bundleMatch = BUNDLES.find((b) => b.feature_keys.slice().sort().join(',') === sortedKeys);
-  if (bundleMatch) return Number(bundleMatch.monthly_price);
-
-  if (keys.length === 1 && tenantFeatures) {
-    const override = ADDON_OVERRIDES.find((o) => o.key === keys[0] && tenantFeatures[o.requires] === true);
-    if (override) return Number(override.monthly_price);
-  }
-
-  let total = 0;
-  for (const k of keys) {
-    const p = PRICES.get(k);
-    if (!p || p <= 0) return null;
-    total += p;
-  }
-  return total;
-}
-
-// Whichever products are in the cart right now, regardless of the order they were added in --
-// AUZcart.get() just returns the current set, and the sorted-key match above doesn't care about
-// order either. Returns {label, savings} when the exact combination matches a bundle, else null,
-// so the UI can actually show "Growing bundle applied" instead of a silently lower number.
-function matchedBundleNote(keys) {
-  if (keys.length < 2) return null;
-  const sortedKeys = keys.slice().sort().join(',');
-  const bundle = BUNDLES.find((b) => b.feature_keys.slice().sort().join(',') === sortedKeys);
-  if (!bundle) return null;
-  let naiveSum = 0;
-  for (const k of keys) { const p = PRICES.get(k); if (!p) return null; naiveSum += p; }
-  const savings = naiveSum - Number(bundle.monthly_price);
-  // Only claim a saving when it's actually a saving vs. the flat per-product sum -- some seeded
-  // bundle prices (db/072) are priced against the sequential addon-override price, not the flat
-  // simultaneous sum, so the two can disagree. Never show a negative/zero "you're saving" line.
-  if (savings <= 0) return { label: bundle.label, savings: null };
-  return { label: bundle.label, savings };
-}
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const STATUS_TEXT = { requested: 'Received', verifying: 'We are checking your business', confirmed: 'Confirmed: your payment link is being prepared', link_sent: 'Payment link sent: please pay', payment_submitted: 'Payment received: we are confirming it', paid: 'Paid: your access is active', rejected: 'Not accepted' };
+let DASH = null, SESSION = null;
 
 function renderCart() {
-  const items = AUZcart.get();
-  const el = document.getElementById('cartItems');
+  const items = AUZcart.get(), el = $('cartItems');
   if (!items.length) {
-    el.innerHTML = `<div class="doodle-empty">
-      <svg width="88" height="88" viewBox="0 0 88 88" fill="none" aria-hidden="true">
-        <path d="M14 34 44 22 74 34 44 46Z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
-        <path d="M14 34v28l30 12V46" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
-        <path d="M74 34v28L44 74V46" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
-        <path d="M30 12c2 4 2 8-1 11M58 10c-3 3-4 7-2 11M44 6v9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="1 6"/>
-      </svg>
-      <p class="p">No products picked yet. <a href="products.html" style="color:var(--accent)">Browse products</a> to add some -- or just fill in your details below and we'll follow up to help you choose.</p>
-    </div>`;
-    updatePayButtons();
+    el.innerHTML = '<div class="card"><p class="p" style="margin:0">No products picked yet. <a href="products.html" style="color:var(--accent)">Browse products</a>, or just tell us what you need below and we will suggest the right ones.</p></div>';
     return;
   }
-  el.innerHTML = items.map((key) => {
-    const price = PRICES.get(key);
-    return `<div class="cart-item" data-key="${key}">
-      <b>${PRODUCT_LABEL[key] || key}</b>
-      <span style="display:flex;align-items:center">
-        <span class="price">${price > 0 ? inr(price) + '/mo' : 'Price on request'}</span>
-        <button class="btn btn-ghost" data-remove="${key}">Remove</button>
-      </span>
-    </div>`;
-  }).join('');
-  el.querySelectorAll('[data-remove]').forEach((btn) => {
-    btn.onclick = () => { AUZcart.remove(btn.dataset.remove); renderCart(); renderAddonItems(); };
-  });
-  updatePayButtons();
+  el.innerHTML = items.map((key) => `<div class="cart-item" data-key="${esc(key)}"><b>${esc(PRODUCT_LABEL[key] || key)}</b><button class="btn btn-ghost" data-remove="${esc(key)}" type="button">Remove</button></div>`).join('');
+  el.querySelectorAll('[data-remove]').forEach((b) => { b.onclick = () => { AUZcart.remove(b.dataset.remove); renderCart(); }; });
 }
 
-// The complete-bill preview (top summary, right under the item list) is shown whenever every
-// item in the cart is priced -- it doesn't need Razorpay configured, it's just arithmetic. Only
-// the "Pay & activate instantly" BUTTON itself is gated on PAY.enabled (online checkout actually
-// being turned on); the request-only flow underneath is unaffected either way.
-document.getElementById('periodMonth').onclick = () => { PERIOD = 'month'; updatePayButtons(); };
-document.getElementById('periodYear').onclick = () => { PERIOD = 'year'; updatePayButtons(); };
+// state list + GSTIN: the first two digits of a GSTIN are the state code
+(function fillStates() {
+  const sel = $('rqState'); const st = (window.AUZ_ORDER || {}).states || {};
+  sel.innerHTML = '<option value="">Choose state</option>' + Object.keys(st).map((c) => `<option value="${c}">${esc(st[c])}</option>`).join('');
+  $('rqGstin').addEventListener('input', () => { const v = $('rqGstin').value.trim().toUpperCase(); if (/^\d{2}/.test(v) && st[v.slice(0, 2)]) $('rqState').value = v.slice(0, 2); });
+  $('rqSlug').addEventListener('input', () => { const v = $('rqSlug').value.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30); $('rqSlug').value = v; $('rqSlugNote').textContent = 'Your workspace will be ' + (v || 'mybusiness') + '.auzslab.in'; });
+})();
 
-// Read-only preview only -- no payment action lives on this page any more (that's checkout.html).
-function updatePayButtons() {
-  const items = AUZcart.get();
-  const entitled = (DASH && DASH.features) || {};
-  const requestable = items.filter((k) => entitled[k] !== true);
-  // Before sign-in (or for a brand-new signup), the whole cart prices as a new account (setup
-  // fee included). Once signed in to an existing tenant (DASH loaded), only the not-yet-owned
-  // items matter, priced as an addon (no setup fee -- that tenant is already set up).
-  const isAddonContext = !!DASH;
-  const topKeys = isAddonContext ? requestable : items;
-  if (PERIOD === 'year' && !yearlyEligible(topKeys)) PERIOD = 'month';
-  const topSubtotal = priceTotal(topKeys, isAddonContext ? entitled : undefined);
-  const topTotal = topSubtotal !== null ? billFor(topSubtotal, !isAddonContext, topKeys) : null;
-
-  document.getElementById('billSummarySection').style.display = topTotal !== null ? 'block' : 'none';
-  if (topTotal !== null) {
-    const bundle = matchedBundleNote(topKeys);
-    const bundleNoteEl = document.getElementById('topBundleNote');
-    bundleNoteEl.style.display = bundle ? 'flex' : 'none';
-    bundleNoteEl.className = 'bundle-note';
-    if (bundle) bundleNoteEl.innerHTML = bundle.savings !== null
-      ? `<span class="tag">Bundle applied</span><span>${bundle.label} -- you're saving ${inr(bundle.savings)}/mo vs. buying separately.</span>`
-      : `<span class="tag">Bundle applied</span><span>${bundle.label}</span>`;
-    const yr = PERIOD === 'year' && yearlyEligible(topKeys);
-    document.getElementById('topBillSubtotal').textContent = inr(topTotal.subtotal) + (yr ? '/year' : '/mo');
-    document.getElementById('topBillGstRow').style.display = GST_RATE > 0 ? 'flex' : 'none';
-    document.getElementById('topBillGstLabel').textContent = 'GST (' + Math.round(GST_RATE * 100) + '%)';
-    document.getElementById('topBillGst').textContent = topTotal.exempt >= topTotal.subtotal ? 'No GST' : inr(topTotal.subtotalGst);
-    document.getElementById('topBillSetupRow').style.display = isAddonContext || topTotal.setupFee === 0 ? 'none' : 'flex';
-    const elig = yearlyEligible(topKeys);
-    document.getElementById('periodRow').style.display = elig ? 'flex' : 'none';
-    if (!elig) PERIOD = 'month';
-    document.getElementById('periodMonth').classList.toggle('active', PERIOD !== 'year');
-    document.getElementById('periodYear').classList.toggle('active', PERIOD === 'year');
-    if (elig) {
-      const pb = matchedBundle(topKeys);
-      const monthly = pb ? Number(pb.monthly_price) : topKeys.reduce((a, k) => a + Number(PRICES.get(k) || 0), 0), yearly = pb ? Number(pb.yearly_price) : topKeys.reduce((a, k) => a + (FLAGS.get(k).yearly), 0), renew = pb ? yearly : topKeys.reduce((a, k) => a + (FLAGS.get(k).renewal || FLAGS.get(k).yearly), 0);
-      document.getElementById('periodMonth').textContent = 'Monthly ' + inr(monthly);
-      document.getElementById('periodYear').textContent = 'Yearly ' + inr(yearly) + (yearly < monthly * 12 ? ' (save ' + inr(monthly * 12 - yearly) + ')' : '');
-      document.getElementById('periodNote').textContent = PERIOD === 'year' ? 'Year one ' + inr(yearly) + ', then ' + inr(renew) + ' a year from year two.' : 'Switch to yearly and pay less over the year.';
-    }
-    if (!isAddonContext) document.getElementById('topBillSetup').textContent = inr(topTotal.setupFee);
-    document.getElementById('topBillTotal').textContent = inr(topTotal.dueToday);
-    document.getElementById('topBillThenNote').textContent = isAddonContext
-      ? 'Charged monthly from today.'
-      : (yr ? 'Renews yearly (see above).' : 'Then ' + inr(topTotal.monthlyTotal) + '/mo from month 2' + (topTotal.setupFee ? ' (no setup fee again).' : '.'));
-  }
+async function loadMyOrders() {
+  const { data } = await sb.rpc('my_client_orders').catch(() => ({ data: null }));
+  const rows = data || [];
+  $('myOrdersSection').style.display = rows.length ? 'block' : 'none';
+  $('myOrders').innerHTML = rows.map((o) => `<a class="cart-item" style="text-decoration:none;color:inherit" href="pay.html?t=${esc(o.token)}"><span><b>${esc(o.business_name || 'Request')}</b><br><span style="font-size:12px;color:var(--ink-faint)">${esc(String(o.created_at).slice(0, 10))} &middot; ${esc(STATUS_TEXT[o.status] || o.status)}</span></span><span class="btn btn-ghost">Open</span></a>`).join('');
 }
-
-let DASH = null;
-
-function renderAddonItems() {
-  const entitled = (DASH && DASH.features) || {};
-  const items = AUZcart.get();
-  const el = document.getElementById('addonItems');
-  const ownedNote = document.getElementById('addonAlreadyOwned');
-  const alreadyOwned = items.filter((k) => entitled[k] === true);
-  const requestable = items.filter((k) => entitled[k] !== true);
-  ownedNote.innerHTML = alreadyOwned.length
-    ? `<p class="p" style="margin-bottom:8px">${alreadyOwned.map((k) => PRODUCT_LABEL[k] || k).join(', ')} ${alreadyOwned.length > 1 ? 'are' : 'is'} already on your subscription -- skipped below.</p>`
-    : '';
-  if (!requestable.length) {
-    el.innerHTML = `<p class="p">No new products picked yet. <a href="products.html" style="color:var(--accent)">Browse products</a> to add something you don't already have.</p>`;
-    return;
-  }
-  el.innerHTML = requestable.map((key) => {
-    const price = PRICES.get(key);
-    return `<div class="cart-item" data-key="${key}">
-      <b>${PRODUCT_LABEL[key] || key}</b>
-      <span style="display:flex;align-items:center">
-        <span class="price">${price > 0 ? inr(price) + '/mo' : 'Price on request'}</span>
-        <button class="btn btn-ghost" data-remove="${key}">Remove</button>
-      </span>
-    </div>`;
-  }).join('');
-  el.querySelectorAll('[data-remove]').forEach((btn) => {
-    btn.onclick = () => { AUZcart.remove(btn.dataset.remove); renderCart(); renderAddonItems(); };
-  });
-  updatePayButtons();
-}
-
-const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 async function checkSession() {
   const { data: { session } } = await sb.auth.getSession();
-  if (!session) {
-    document.getElementById('signedOutNotice').style.display = 'block';
-    document.getElementById('requestSection').style.display = 'none';
-    document.getElementById('addonSection').style.display = 'none';
-    return;
-  }
-  document.getElementById('signedOutNotice').style.display = 'none';
+  SESSION = session;
+  if (!session) { $('signedOutNotice').style.display = 'block'; $('requestSection').style.display = 'none'; return; }
+  $('signedOutNotice').style.display = 'none';
   DASH = await AUZaccount.fetch(sb);
+  $('requestSection').style.display = 'block';
+  $('rqEmail').value = session.user.email || '';
   if (DASH) {
-    document.getElementById('requestSection').style.display = 'none';
-    document.getElementById('addonSection').style.display = 'block';
-    document.getElementById('addonWhoami').textContent = session.user.email;
-    document.getElementById('addonTenant').textContent = DASH.tenant.name;
-    renderAddonItems();
+    $('newBizFields').style.display = 'none';
+    $('whoLine').innerHTML = 'Adding products to <b>' + esc(DASH.tenant.name) + '</b> (' + esc(session.user.email) + ')';
   } else {
-    document.getElementById('addonSection').style.display = 'none';
-    // New customer: step 1 (sign up, save profile) comes before this page -- see account.html's
-    // "My profile" tab. Block anyone who hasn't saved one yet, rather than asking for the same
-    // details again here, so profile-filling and paying are never the same screen.
+    $('whoLine').innerHTML = 'Signed in as <b>' + esc(session.user.email) + '</b>';
+    // pre-fill from the saved profile, when there is one
     const { data: pr } = await sb.rpc('my_profile').catch(() => ({ data: null }));
     const P = (pr && pr.profile) || null;
-    if (!P || !P.name || !P.phone || !P.business_name || !P.biz_slug) {
-      window.location.href = 'account.html?return=' + encodeURIComponent('cart.html') + '#profile';
-      return;
+    if (P) {
+      if (P.name) $('rqName').value = P.name; if (P.phone) $('rqPhone').value = P.phone; if (P.business_name) $('rqBiz').value = P.business_name;
+      if (P.biz_slug) { $('rqSlug').value = P.biz_slug; $('rqSlug').dispatchEvent(new Event('input')); }
+      if (P.address) $('rqAddress').value = P.address; if (P.niche && $('rqNiche').querySelector('option[value="' + P.niche + '"]')) $('rqNiche').value = P.niche;
+      if (P.notes) $('rqNotes').value = P.notes;
     }
-    document.getElementById('requestSection').style.display = 'block';
-    document.getElementById('whoami').textContent = session.user.email;
-    document.getElementById('profileSummary').innerHTML = esc(P.business_name) + ' &middot; ' + esc(P.biz_slug) + '.auzslab.in &middot; <a href="account.html#profile">Edit my profile</a>';
   }
-  updatePayButtons();
+  loadMyOrders();
 }
 
-(async () => {
-  await loadPricing().catch(() => {}); // PAY/PRICES just stay at their off/empty defaults on failure
-  renderCart();
-  await checkSession();
-})();
+$('reqForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const err = $('rqErr'); err.textContent = '';
+  const p = { contact_name: $('rqName').value.trim(), phone: $('rqPhone').value.trim(), email: $('rqEmail').value.trim(), business_name: $('rqBiz').value.trim(), niche: $('rqNiche').value, slug: $('rqSlug').value.trim(),
+    gstin: $('rqGstin').value.trim(), state_code: $('rqState').value, address: $('rqAddress').value.trim(), requirement: $('rqReq').value.trim(), notes: $('rqNotes').value.trim(), products: AUZcart.get() };
+  if (!p.contact_name) { err.textContent = 'Please enter your name.'; return; }
+  if (p.phone.replace(/\D/g, '').length < 10) { err.textContent = 'Please enter your mobile number (10 digits).'; return; }
+  if (!DASH && !p.business_name) { err.textContent = 'Please enter your business name.'; return; }
+  if (!p.requirement) { err.textContent = 'Please tell us what you need.'; return; }
+  const btn = $('rqSend'); btn.disabled = true; btn.textContent = 'Sending...';
+  const { data, error } = await sb.rpc('submit_client_order', { p });
+  btn.disabled = false; btn.textContent = 'Send request';
+  if (error) { err.textContent = error.message; return; }
+  try { AUZcart.clear(); } catch (x) {}
+  try { localStorage.setItem('auz_order_token', data.token); } catch (x) {}
+  $('requestSection').style.display = 'none'; $('sentSection').style.display = 'block';
+  $('trackLink').href = 'pay.html?t=' + encodeURIComponent(data.token);
+  renderCart(); loadMyOrders();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
 
-// Order notes (this cart, this order) are separate from the profile's own notes (account.html) --
-// carried to checkout.html via localStorage, the same pattern AUZcart itself already uses, since
-// navigating to a new page loses in-memory JS state. Saved on every keystroke so a stray
-// navigation (back button, "Continue to payment") never silently drops what was typed.
-const NOTES_KEY = 'auz_cart_notes';
-function wireNotes(id) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  try { el.value = localStorage.getItem(NOTES_KEY) || ''; } catch (e) {}
-  el.addEventListener('input', () => { try { localStorage.setItem(NOTES_KEY, el.value); } catch (e) {} });
-}
-wireNotes('bizNotes'); wireNotes('addonNotes');
+renderCart();
+checkSession();
 </script>
 <button type="button" class="theme-fab" onclick="auzThemeToggle()" aria-label="Toggle dark mode" title="Toggle dark mode"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg></button>
 </body>

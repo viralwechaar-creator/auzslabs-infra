@@ -100,34 +100,32 @@ export default async function run({ browser, stack }) {
     const vis = await p.locator('#clientsList').isVisible().catch(() => false); const txt = await p.locator('#clientsList').innerText().catch(() => '');
     assert(!vis || !/testcafe|Test Cafe/i.test(txt), 'a normal customer can see the client list'); await c4.close();
   }, 'critical');
-  await s.check('Cart page redirects to the profile first, then lets a signed-in visitor pick products and submit a request on checkout.html', async () => {
+  await s.check('Cart is request-only: no prices or payment, a signed-in visitor fills in their details and requirements and sends a request', async () => {
     const c5 = await newCtx(browser, stack); const p = await c5.newPage(); const e5 = watch(p);
     await p.goto(stack.url('', '/signup.html')); await p.waitForTimeout(500); await p.click('#modeLogin'); await p.fill('#email', USERS.plain); await p.fill('#password', PASSWORD); await p.click('#submitBtn'); await p.waitForTimeout(1500);
     await p.goto(stack.url('', '/products.html')); await p.waitForTimeout(800);
     const adds = p.locator('[data-cart-btn]'); assert((await adds.count()) >= 3, 'products page has too few Add to cart buttons');
     await adds.first().click(); await p.waitForTimeout(400);
-    await p.goto(stack.url('', '/cart.html')); await p.waitForTimeout(1200);
-    assert(/account\.html/.test(p.url()), 'visiting the cart with no saved profile did not redirect to account.html, landed on ' + p.url());
-    await p.waitForSelector('#pfName', { timeout: 15000 });
-    await p.fill('#pfName', 'QA Owner'); await p.fill('#pfPhone', '9811100011'); await p.fill('#pfBiz', 'QA Business ' + (Date.now() % 10000));
-    await p.click('#pfSave'); await p.waitForTimeout(1200);
-    assert(/saved/i.test(await p.locator('#pfMsg').innerText().catch(() => '')), 'profile save did not confirm');
-    assert(await p.locator('#pfContinue').isVisible(), 'Continue to products link did not appear after saving');
-    await p.goto(stack.url('', '/cart.html')); await p.waitForTimeout(1200);
-    assert(!/account\.html/.test(p.url()), 'cart redirected to account.html even after a profile was saved');
+    await p.goto(stack.url('', '/cart.html')); await p.waitForSelector('#reqForm', { state: 'visible', timeout: 15000 });
+    assert(!/account\.html/.test(p.url()), 'cart redirected away: ' + p.url());
+    const txt = await p.locator('main').innerText();
+    assert(!/₹|Continue to payment|Total due|Setup fee|GST/i.test(txt.replace(/GSTIN[^\n]*/gi, '').replace(/^.*GSTIN.*$/gm, '')), 'the cart still shows prices or payment: ' + txt.slice(0, 300));
     assert(/\S/.test(await p.locator('#cartItems').innerText()), 'cart is empty after adding a product');
-    await p.click('#continuePayBtn'); await p.waitForTimeout(1500);
-    assert(/checkout\.html/.test(p.url()), 'Continue to payment did not reach checkout.html, landed on ' + p.url());
-    await p.click('#submitBtn'); await p.waitForTimeout(2000);
-    const r = await q("select count(*)::int n from signup_requests where business_name like 'QA Business%'").catch(async () => q("select count(*)::int n from signup_requests"));
-    assert(r[0].n >= 1, 'no signup request stored; page says: ' + (await p.locator('#submitErr').innerText().catch(() => '')));
-    await s.shot(p, 'checkout-submitted'); assert(!e5.some((x) => /JS error/.test(x)), e5.join(' | ')); await c5.close();
+    await p.fill('#rqName', 'QA Owner'); await p.fill('#rqPhone', '9811100011'); await p.fill('#rqBiz', 'QA Business ' + (Date.now() % 10000)); await p.fill('#rqReq', 'Billing and stock for two outlets');
+    await p.click('#rqSend'); await p.waitForSelector('#sentSection', { state: 'visible', timeout: 10000 });
+    const r = await q("select count(*)::int n, min(status) st from client_orders where business_name like 'QA Business%'");
+    assert(r[0].n >= 1 && r[0].st === 'requested', 'no request stored');
+    assert(/pay\.html\?t=[a-f0-9]{32}/.test(await p.locator('#trackLink').getAttribute('href')), 'no track link');
+    await s.shot(p, 'cart-request-sent'); assert(!e5.some((x) => /JS error/.test(x)), e5.join(' | ')); await c5.close();
   }, 'critical');
-  await s.check('Submitted request is visible to the platform admin', async () => {
+  await s.check('Submitted request is visible to the platform admin under Client requests, and can be put under verification', async () => {
     const c6 = await newCtx(browser, stack); const p = await c6.newPage();
     await p.goto(stack.url('', '/admin.html')); await p.waitForTimeout(800); await p.fill('#email', USERS.admin); await p.fill('#password', PASSWORD); await p.click('#signin'); await p.waitForTimeout(2500);
-    await p.click('.a-side-btn[data-section=signupRequests]'); await p.waitForTimeout(1500); // sections load when opened
-    assert(/QA Business/.test(await p.locator('#signupRequestsList').innerText()), 'request not listed'); await c6.close();
+    await p.click('.a-side-btn[data-section=orders]'); await p.waitForSelector('#ordersList tr[data-oid]', { timeout: 10000 });
+    assert(/QA Business/.test(await p.locator('#ordersList').innerText()), 'request not listed');
+    await p.locator('#ordersList [data-oopen]').first().click(); await p.waitForSelector('#ordBody [data-ost=verifying]', { timeout: 10000 });
+    await p.click('#ordBody [data-ost=verifying]'); await p.waitForFunction(() => /under verification/i.test(document.querySelector('#ordBody')?.innerText || ''), null, { timeout: 8000 });
+    assert((await q("select status from client_orders where business_name like 'QA Business%' limit 1"))[0].status === 'verifying', 'status not saved'); await c6.close();
   }, 'critical');
   await s.check('Onboarding has two kinds: Standard (pick products) and Custom-built (no standard products); the choice is stored and shown', async () => {
     const login = async (email) => { const d = await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password: PASSWORD }) })).json(); return (d.data || d).access_token; };
