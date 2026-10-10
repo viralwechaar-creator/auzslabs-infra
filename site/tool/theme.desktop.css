@@ -80,8 +80,12 @@ input,select,textarea{font-size:16px}
 .drawer-icon-link{color:#fff;display:flex;transition:opacity .15s ease}
 .drawer-icon-link:hover{opacity:.6}
 .sidebar-nav{display:flex;flex-direction:column;gap:0;margin-top:8px;padding:0 20px}
-.nav-link{font-family:var(--font-display);font-weight:800;font-size:21px;letter-spacing:-.01em;
-  padding:15px 0;border-radius:0;color:#fff;background:none;
+/* border:none matters for a <button class="nav-link"> that isn't also .acct-nav-btn (.acct-nav-btn is
+   the thing that resets a button's native border elsewhere) -- #helpLink was exactly that case, so it kept
+   the browser's default outset button border while every <a class="nav-link"> and every acct-nav-btn next
+   to it looked plain, reading as a stray boxed-off item in an otherwise plain list. */
+.nav-link{font-family:var(--font-display);font-weight:600;font-size:16px;letter-spacing:-.01em;
+  padding:15px 0;border-radius:0;border:none;color:#fff;background:none;
   border-bottom:1px solid rgba(255,255,255,.14);
   text-align:left;display:flex;align-items:center;justify-content:space-between;gap:10px;
   transition:color .15s ease;}
