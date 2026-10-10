@@ -343,7 +343,7 @@
             <div class="h-2" style="margin-top:6px;margin-bottom:14px;font-size:20px">Setup &amp; onboarding</div>
             <div class="acct-row" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px dashed var(--line)">
               <span style="font-size:13px;color:var(--ink-dim)">Standard setup — account, business profile, initial users <b style="color:var(--accent)">(mandatory)</b></span>
-              <b style="white-space:nowrap;margin-left:10px">&#8377;2,179</b>
+              <b style="white-space:nowrap;margin-left:10px">&#8377;2,190</b>
             </div>
             <div class="acct-row" style="display:flex;justify-content:space-between;padding:10px 0">
               <span style="font-size:13px;color:var(--ink-dim)">Data migration (Excel/CSV, old software, historical records)</span>
@@ -650,7 +650,7 @@ document.querySelectorAll('[data-add-plan]').forEach(function (btn) {
     function row(a, b, bold) { var d = document.createElement('div'); d.style.cssText = 'display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px dashed var(--line);font-size:14px' + (bold ? ';font-weight:700' : ''); var x = document.createElement('span'); x.textContent = a; var y = document.createElement('span'); y.textContent = b; d.appendChild(x); d.appendChild(y); rows.appendChild(d); }
     function draw() {
       var p = list.filter(function (x) { return x.key === sel.value; })[0]; rows.textContent = ''; if (!p) return;
-      var sub = Number(p.monthly_price), gst = p.gst_exempt ? 0 : Math.round(sub * 18) / 100, setup = p.setup_fee_exempt ? 0 : 2179;
+      var sub = Number(p.monthly_price), gst = p.gst_exempt ? 0 : Math.round(sub * 18) / 100, setup = p.setup_fee_exempt ? 0 : 2190;
       row('Subscription, first month', inr(sub)); if (gst) row('GST (18%)', inr(gst)); if (setup) row('One-time setup (no GST)', inr(setup));
       row('Pay today', inr(sub + gst + setup), true); row('Every month after that', inr(sub + gst));
     }

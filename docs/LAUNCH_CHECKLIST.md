@@ -22,7 +22,7 @@ Tick these in order. "You" = the owner, "Partner" = registration/tax/bank, "Dev"
 - [ ] AUZsMob is Rs 199 a month or Rs 1,999 for the first year (Rs 1,599 from year two), no GST, no setup fee
 - [ ] Razorpay account approved (KYC), live keys in `.env`, webhook URL `https://api.auzslab.in/payments/webhook` with its secret in `.env`
 - [ ] One real small payment made end to end: the business activates by itself and a receipt is available
-- [ ] Prices in the platform admin (Pricing and payments) match the pricing page. GST 18% and the Rs 2,179 setup fee are in `server/src/payments.js`
+- [ ] Prices in the platform admin (Pricing and payments) match the pricing page. GST 18% and the Rs 2,190 setup fee are in `server/src/payments.js`
 - [ ] GST invoice process for what you charge customers decided with the partner
 
 ## D. Legal (partner details, then dev)
@@ -32,7 +32,7 @@ Tick these in order. "You" = the owner, "Partner" = registration/tax/bank, "Dev"
 ## E. The fake-customer test (you, on your phone, 30 minutes)
 Use a brand-new Google account that has never used AUZslab.
 1. [ ] Open auzslab.in, tap Sign up, Continue with Google. You land on the homepage, signed in.
-2. [ ] Open Products or Pricing, add AUZsPOS, go to the cart. The bill shows subscription + 18% GST + Rs 2,179 setup fee.
+2. [ ] Open Products or Pricing, add AUZsPOS, go to the cart. The bill shows subscription + 18% GST + Rs 2,190 setup fee.
 3. [ ] Pay (use a real small amount or Razorpay Test Mode). Within a minute the business exists.
 4. [ ] Open `<your-shop>.auzslab.in`. Sign in with Google. The POS opens.
 5. [ ] Add a menu item, make a bill, print or share it. Open the bill link in a private tab.
