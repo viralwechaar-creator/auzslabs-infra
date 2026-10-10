@@ -57,10 +57,10 @@ html,body{margin:0;background:#e9e7e4;color:#161616;font-family:Inter,-apple-sys
 .mark small{font-size:8.5px;color:#8a8a8a;padding-bottom:3px}
 .sign{width:240px;text-align:center;font-size:9.5px;color:#555}
 .sign .line2{border-top:1px solid #161616;margin-top:30px;padding-top:4px}
-/* sits in its own flow right after the renewal table, not layered over the totals/price box above it --
-   nothing else is ever positioned here, so it can never cover a number */
-.stamp-wrap{margin-top:16px;display:flex;justify-content:flex-end}
-.stamp{width:118px;height:118px;transform:rotate(-13deg);opacity:.88;pointer-events:none;color:#800020}
+/* sits in the blank space to the left of .tots (which is right-aligned, width:290px, inside .svc's
+   702px content width -- its own left edge lands around x:412px) -- left:140px keeps a clear ~270px gap
+   from .tots on one side and the page margin on the other, so it never touches a number */
+.stamp{position:absolute;left:140px;bottom:28px;width:118px;height:118px;transform:rotate(-13deg);opacity:.88;pointer-events:none;color:#800020}
 @page{size:A4;margin:0}
 @media print{
   html,body{background:#fff}
@@ -140,9 +140,9 @@ function buildPage1(D) {
       <div class="tr big"><span>Total</span><b>${esc(money(t.total))}</b></div>
       <div class="words">${esc(words(Number(t.total || 0)))}</div>
     </div>
+    <div class="stamp">${stampSvg(dmy(D.paid_at || D.invoice_date))}</div>
   </div>
   <div class="ren"><h2 class="h2" style="font-size:15px">Renewal</h2><table><tr><th>Product</th><th>Plan</th><th>Renews on</th><th class="r">Renewal amount (incl. GST)</th></tr>${renRows}</table></div>
-  <div class="stamp-wrap"><div class="stamp">${stampSvg(dmy(D.paid_at || D.invoice_date))}</div></div>
   <div class="foot">
     <div class="mark"><small>Business software built around the way you work</small></div>
     <div class="sign"><div class="line2">For ${co}<br>Authorised signatory</div></div>
