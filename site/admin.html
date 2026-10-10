@@ -1936,7 +1936,7 @@ async function ensurePrices() {
 function defaultQuote(o, defGst) {
   const g = num(defGst);
   const items = (o.products || []).filter((k) => PROD_NAME[k]).map((k) => { const p = ordPrices[k] || {}; return { key: k, plan: 'month', rate: num(p.monthly_price), discount: 0, gst: p.gst_exempt ? 0 : g }; });
-  return { items, setup: { on: o.kind === 'new', amount: SETUP_DEFAULT, gst: g }, custom: [], note: '' };
+  return { items, setup: { on: o.kind === 'new' && !((o.products || []).length && (o.products || []).every((k) => (ordPrices[k] || {}).setup_fee_exempt)), amount: SETUP_DEFAULT, gst: g }, custom: [], note: '' };
 }
 
 const waDigits = (p) => { const d = String(p || '').replace(/\D/g, ''); return d.length === 10 ? '91' + d : d; };
