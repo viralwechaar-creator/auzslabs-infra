@@ -199,6 +199,8 @@ const RPC = {
   admin_save_order_quote: { params: ['p_id', 'p_quote'], jsonb: ['p_quote'], auth: true },
   admin_confirm_order_payment: { params: ['p_id', 'p_paid_on', 'p_utr'], defaults: { p_paid_on: null, p_utr: null }, auth: true },
   admin_mark_order_bill_sent: { params: ['p_id'], auth: true },
+  admin_list_client_bills: { params: ['p_from', 'p_to'], auth: true, defaults: { p_from: null, p_to: null } },
+  admin_update_bill_details: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
   admin_open_client_orders_count: { params: [], auth: true },
   admin_add_client_payment: { params: ['p_tenant_id', 'p_amount', 'p_paid_on', 'p_mode', 'p_utr', 'p_purpose', 'p_note'], auth: true, defaults: { p_paid_on: null, p_mode: 'upi', p_utr: null, p_purpose: null, p_note: null } },
   admin_list_client_payments: { params: ['p_tenant_id'], auth: true, defaults: { p_tenant_id: null } },

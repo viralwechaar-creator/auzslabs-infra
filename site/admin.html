@@ -535,6 +535,19 @@ body.admin-shell .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px
         <p class="p">Every payment recorded with its UTR. Add one from <b>Clients &rarr; Payments</b>.</p>
         <div id="clientPayTotals" class="p"></div>
         <div id="clientPayList" style="margin-top:12px">Loading&hellip;</div>
+
+        <div class="label" style="margin-top:34px">GST bills</div>
+        <h2 class="h-2">Client bills</h2>
+        <p class="p">Every GST bill we have issued. Find one later, correct the client's details (GSTIN, name, address), share it again on WhatsApp, or download the list for your GST filing. The amounts and the bill number never change.</p>
+        <div class="row-actions" style="flex-wrap:wrap;align-items:flex-end;gap:10px;margin-top:10px">
+          <label class="lbl" style="margin:0">From<input id="billFrom" class="inp" type="date"></label>
+          <label class="lbl" style="margin:0">To<input id="billTo" class="inp" type="date"></label>
+          <label class="lbl" style="margin:0;flex:1;min-width:150px">Search<input id="billQ" class="inp" type="search" placeholder="Business, bill no., GSTIN, phone"></label>
+          <button class="btn btn-ghost" id="billThisMonth" type="button">This month</button>
+          <button class="btn btn-ghost" id="billCsv" type="button">Download GST file (CSV)</button>
+        </div>
+        <div id="billTotals" class="p" style="margin-top:12px"></div>
+        <div id="billList" style="margin-top:8px">Loading&hellip;</div>
       </section>
 
       <section class="a-page" id="systemStatsSection" data-title="System resources" data-parent="more">
@@ -695,6 +708,25 @@ body.admin-shell .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px
   </div>
 </div>
 
+<div class="modal-overlay" id="billOverlay">
+  <div class="modal" id="billModal">
+    <button class="modal-close" id="billClose" aria-label="Close">&times;</button>
+    <div class="label" style="margin-bottom:10px">Correct bill details</div>
+    <h3 class="h-2" id="billModalNo" style="font-size:20px"></h3>
+    <p class="p" style="margin-top:6px">Only the client's details change. The amounts, the GST split and the bill number stay as issued. After saving, share the bill again.</p>
+    <form id="billForm" style="margin-top:12px">
+      <label class="lbl">Business name<input id="beBiz" class="inp" type="text" required></label>
+      <label class="lbl" style="margin-top:10px">Contact person<input id="beContact" class="inp" type="text"></label>
+      <label class="lbl" style="margin-top:10px">Mobile / WhatsApp<input id="bePhone" class="inp" type="tel"></label>
+      <label class="lbl" style="margin-top:10px">Email<input id="beEmail" class="inp" type="email"></label>
+      <label class="lbl" style="margin-top:10px">GSTIN (leave empty if none)<input id="beGstin" class="inp" type="text" maxlength="15" autocapitalize="characters"></label>
+      <label class="lbl" style="margin-top:10px">Address<textarea id="beAddr" class="inp" rows="3"></textarea></label>
+      <div class="err" id="billErr"></div>
+      <button class="btn btn-primary" type="submit" style="margin-top:14px">Save details</button>
+    </form>
+  </div>
+</div>
+
 <div class="modal-overlay" id="payOverlay">
   <div class="modal" id="payModal">
     <button class="modal-close" id="payClose" aria-label="Close">&times;</button>
@@ -791,7 +823,7 @@ const SECTION_LOADERS = {
   leads: () => { loadLeads(); refreshOrdersBadge(); }, orders: () => loadOrders(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(),
   pricing: () => { loadPricing(); loadBundles(); loadPayments(); },
   users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(), privacyReq: () => loadPrivacyReq(),
-  salesmen: () => loadSalesmen(), salesWork: () => loadSalesWork(), clientPay: () => loadClientPay(),
+  salesmen: () => loadSalesmen(), salesWork: () => loadSalesWork(), clientPay: () => { loadClientPay(); loadBills(); },
 };
 const sectionLoadedAt = {};
 function ensureSectionLoaded(name) {
@@ -1744,6 +1776,75 @@ async function loadClientPay() {
   listEl.innerHTML = payTable(rows, true);
   wirePayDelete(listEl, loadClientPay);
 }
+
+
+// ---------- Client bills (db/158) ----------
+let billsCache = [];
+function billFiltered() {
+  const q = (document.getElementById('billQ').value || '').trim().toLowerCase();
+  if (!q) return billsCache;
+  return billsCache.filter((b) => [b.invoice_no, b.business_name, b.gstin, b.phone, b.contact_name].join(' ').toLowerCase().includes(q));
+}
+function renderBills() {
+  const el = document.getElementById('billList'), rows = billFiltered();
+  const sum = (k) => rows.reduce((t, b) => t + Number((b.totals || {})[k] || 0), 0);
+  document.getElementById('billTotals').innerHTML = rows.length ? `${rows.length} bill${rows.length === 1 ? '' : 's'} &middot; Taxable <b>${inr(sum('taxable'))}</b> &middot; GST <b>${inr(sum('gst'))}</b> &middot; Total <b>${inr(sum('total'))}</b>` : '';
+  if (!rows.length) { el.innerHTML = emptyDoodle('No bills in this period yet.'); return; }
+  el.innerHTML = `<div class="admin-table-wrap"><table class="admin-table">
+    <tr><th>Bill</th><th>Client</th><th>GSTIN</th><th>GST</th><th>Total</th><th></th></tr>
+    ${rows.map((b) => { const t = b.totals || {}; return `<tr data-bid="${b.id}">
+      <td data-label="Bill"><b>${esc(b.invoice_no)}</b><br><span style="color:var(--ink-faint)">${esc(String(b.invoice_date || '').slice(0, 10))}${b.bill_revised_at ? ' &middot; corrected' : ''}</span></td>
+      <td data-label="Client"><b>${esc(b.business_name || '')}</b><br><span style="color:var(--ink-faint)">${esc(b.contact_name || '')} ${esc(b.phone || '')}</span></td>
+      <td data-label="GSTIN">${esc(b.gstin || 'Unregistered')}</td>
+      <td data-label="GST">${inr(t.gst)}</td><td data-label="Total"><b>${inr(t.total)}</b>${b.bill_sent_at ? '<br><span style="color:var(--ink-faint)">sent ' + esc(String(b.bill_sent_at).slice(0, 10)) + '</span>' : ''}</td>
+      <td class="row-actions"><a class="btn btn-ghost" href="${esc(billLink(b))}" target="_blank" rel="noopener">View</a><button class="btn btn-ghost" data-bshare>Share</button><button class="btn btn-ghost" data-bedit>Edit details</button></td></tr>`; }).join('')}
+  </table></div>`;
+  el.querySelectorAll('tr[data-bid]').forEach((tr) => {
+    const b = billsCache.find((x) => x.id === tr.dataset.bid);
+    tr.querySelector('[data-bshare]').onclick = async () => {
+      const w = window.open('', '_blank'); await sb.rpc('admin_mark_order_bill_sent', { p_id: b.id });
+      const url = waUrl(b.phone, billMessage(b)); if (w) w.location.href = url; else window.location.href = url;
+      setTimeout(loadBills, 800);
+    };
+    tr.querySelector('[data-bedit]').onclick = () => openBillEdit(b);
+  });
+}
+async function loadBills() {
+  const el = document.getElementById('billList');
+  const { data, error } = await sb.rpc('admin_list_client_bills', { p_from: document.getElementById('billFrom').value || null, p_to: document.getElementById('billTo').value || null });
+  if (error) { el.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  billsCache = data || []; renderBills();
+}
+['billFrom', 'billTo'].forEach((id) => { document.getElementById(id).onchange = loadBills; });
+document.getElementById('billQ').oninput = renderBills;
+document.getElementById('billThisMonth').onclick = () => {
+  const d = new Date(), y = d.getFullYear(), m = d.getMonth(), pad = (n) => String(n).padStart(2, '0');
+  document.getElementById('billFrom').value = `${y}-${pad(m + 1)}-01`; document.getElementById('billTo').value = `${y}-${pad(m + 1)}-${pad(new Date(y, m + 1, 0).getDate())}`; loadBills();
+};
+document.getElementById('billCsv').onclick = () => {
+  const rows = billFiltered(); if (!rows.length) { alert('No bills to download.'); return; }
+  const cell = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const head = ['Invoice no', 'Invoice date', 'Client', 'GSTIN', 'State code', 'Taxable value', 'CGST', 'SGST', 'IGST', 'Total GST', 'Invoice total', 'Paid on', 'UTR', 'Phone', 'Email', 'Address'];
+  const lines = [head.map(cell).join(',')].concat(rows.map((b) => { const t = b.totals || {}, pay = b.payment || {};
+    return [b.invoice_no, String(b.invoice_date || '').slice(0, 10), b.business_name, b.gstin || '', b.state_code || '', t.taxable, t.cgst, t.sgst, t.igst, t.gst, t.total, String(b.paid_at || '').slice(0, 10), pay.utr || '', b.phone, b.email, b.address].map(cell).join(','); }));
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8' }));
+  a.download = 'auzslab-gst-bills-' + new Date().toISOString().slice(0, 10) + '.csv'; document.body.appendChild(a); a.click(); a.remove();
+};
+let billEditId = null;
+function openBillEdit(b) {
+  billEditId = b.id; const g = (i) => document.getElementById(i);
+  g('billModalNo').textContent = b.invoice_no; g('beBiz').value = b.business_name || ''; g('beContact').value = b.contact_name || ''; g('bePhone').value = b.phone || '';
+  g('beEmail').value = b.email || ''; g('beGstin').value = b.gstin || ''; g('beAddr').value = b.address || ''; g('billErr').textContent = '';
+  g('billOverlay').classList.add('open');
+}
+document.getElementById('billClose').onclick = () => document.getElementById('billOverlay').classList.remove('open');
+document.getElementById('billOverlay').onclick = (e) => { if (e.target.id === 'billOverlay') e.currentTarget.classList.remove('open'); };
+document.getElementById('billForm').onsubmit = async (e) => {
+  e.preventDefault(); const g = (i) => document.getElementById(i);
+  const { error } = await sb.rpc('admin_update_bill_details', { p_id: billEditId, p: { business_name: g('beBiz').value, contact_name: g('beContact').value, phone: g('bePhone').value, email: g('beEmail').value, gstin: g('beGstin').value, address: g('beAddr').value } });
+  if (error) { g('billErr').textContent = error.message; return; }
+  g('billOverlay').classList.remove('open'); loadBills();
+};
 
 // ---------- Salesman work dashboard (db/148) ----------
 async function loadSalesWork() {

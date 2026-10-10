@@ -168,5 +168,28 @@ export default async function run({ browser, stack }) {
     const bm = await p.locator('#waBill').inputValue(); assert(/AUZ\/20\d\d-\d\d\/\d{4}/.test(bm) && /inv\.html\?t=/.test(bm), 'bill message: ' + bm.slice(0, 200));
     assert(!errs.some((e) => /JS error/.test(e)), errs.join(' | ')); await c.close();
   }, 'critical');
+  await s.check('Client bills in the admin: listed with GSTIN and GST, buyer details can be corrected (amounts and number fixed), the shared bill follows, the GST file downloads', async () => {
+    const list = (await call('admin_list_client_bills', {}, adm)).data;
+    assert(Array.isArray(list) && list.length >= 2 && list[0].invoice_no && list[0].totals && list[0].token, 'bills list: ' + JSON.stringify(list).slice(0, 200));
+    const a = list.find((b) => b.id === idA); assert(a && Number(a.totals.total) === 14160, 'first bill missing');
+    const one = (await call('admin_list_client_bills', { p_from: '2026-10-11', p_to: '2026-10-31' }, adm)).data; assert(one.every((b) => String(b.invoice_date) >= '2026-10-11'), 'date filter');
+    const bad = await call('admin_update_bill_details', { p_id: idA, p: { gstin: '27ABCDE1234F1Z5' } }, adm); assert(bad.status >= 400, 'a GSTIN from another state was accepted');
+    const bad2 = await call('admin_update_bill_details', { p_id: idA, p: { gstin: 'nonsense' } }, adm); assert(bad2.status >= 400, 'a malformed GSTIN was accepted');
+    const ok = await call('admin_update_bill_details', { p_id: idA, p: { business_name: 'Plain Cafe Pvt Ltd', gstin: '08ABCDE1234F1Z5', address: 'Shop 9, Sardarpura, Jodhpur' } }, adm); assert(ok.status === 200, 'update: ' + JSON.stringify(ok.raw));
+    const after = (await call('admin_list_client_bills', {}, adm)).data.find((b) => b.id === idA);
+    assert(after.business_name === 'Plain Cafe Pvt Ltd' && after.invoice_no === 'AUZ/2026-27/0001' && Number(after.totals.total) === 14160 && after.bill_revised_at, 'after edit: ' + JSON.stringify(after).slice(0, 200));
+    const pub = (await call('public_client_order', { p_token: tokA })).data; assert(pub.business_name === 'Plain Cafe Pvt Ltd', 'shared bill did not follow the correction');
+    assert((await call('admin_list_client_bills', {}, cust)).status >= 400, 'a non-admin could list the bills');
+    const c = await newCtx(browser, stack, { w: 1280, h: 900 }); const p = await c.newPage(); const errs = watch(p);
+    await p.goto(stack.url('', '/admin.html')); await p.waitForTimeout(800); await p.fill('#email', USERS.admin); await p.fill('#password', PASSWORD); await p.click('#signin'); await p.waitForTimeout(2500);
+    await p.evaluate(() => openSection('clientPay')); await p.waitForSelector('#billList tr[data-bid]', { timeout: 10000 });
+    const txt = await p.locator('#billList').innerText(); assert(/AUZ\/2026-27\/0001/.test(txt) && /Plain Cafe Pvt Ltd/i.test(txt) && /08ABCDE1234F1Z5/.test(txt), 'bills table: ' + txt.slice(0, 200));
+    assert(/Taxable/.test(await p.locator('#billTotals').innerText()), 'totals line missing');
+    const dl = p.waitForEvent('download'); await p.click('#billCsv'); const d = await dl; const fs = await import('node:fs'); const csv = fs.readFileSync(await d.path(), 'utf8');
+    assert(/"Invoice no"/.test(csv) && /08ABCDE1234F1Z5/.test(csv) && /AUZ\/2026-27\/0001/.test(csv), 'csv: ' + csv.slice(0, 200));
+    await p.locator('#billList [data-bedit]').first().click(); await p.waitForSelector('#billOverlay.open'); assert(/AUZ\//.test(await p.locator('#billModalNo').innerText()), 'edit modal');
+    await s.shot(p, 'admin-client-bills');
+    assert(!errs.some((e) => /JS error/.test(e)), errs.join(' | ')); await c.close();
+  }, 'critical');
   s.done();
 }
