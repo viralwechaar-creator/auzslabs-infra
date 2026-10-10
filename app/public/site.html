@@ -586,7 +586,7 @@ async function callWaiter(){
  const cartTotal=()=>{let n=0,t=0;for(const k in cart){t+=priceOf(k)[2]*cart[k].q;n+=cart[k].q}return{n,t}};
  let lastBumped=null;
  function chg(k,d){const[i,sz]=priceOf(k),c=cart[k]||(cart[k]={id:i.id,size:sz,q:0});c.q=Math.max(0,c.q+d);if(!c.q)delete cart[k];lastBumped=k;drawMenu(true);drawCartBar()}
- function drawCartBar(){const{n,t}=cartTotal(),bar=$('cartBar');if(!tb||!n){bar.classList.remove('show');return}bar.classList.add('show');$('cartBarText').innerHTML=ic('bag')+' '+n+' item'+(n>1?'s':'')+' · '+inr(t)}
+ function drawCartBar(){const{n,t}=cartTotal(),bar=$('cartBar');if(!selfOrderOn||!n){bar.classList.remove('show');return}bar.classList.add('show');$('cartBarText').innerHTML=ic('bag')+' '+n+' item'+(n>1?'s':'')+' · '+inr(t)}
  const qtyCtl=(k,q)=>q?'<span class=stepper><button data-k="'+esc(k)+'" data-d=-1 aria-label=Less>'+ic('minus')+'</button><b'+(k===lastBumped?' class=pop':'')+'>'+q+'</b><button data-k="'+esc(k)+'" data-d=1 aria-label=More>'+ic('plus')+'</button></span>':'<button class=add data-k="'+esc(k)+'" data-d=1>'+ic('plus')+' Add</button>';
  function drawMenu(keepAnim){
   tabsEl.innerHTML='';cats.forEach(c=>{const b=document.createElement('button');b.className='tab'+(c.id==active?' on':'');b.textContent=c.name;b.onclick=()=>{active=c.id;lastBumped=null;drawMenu()};tabsEl.append(b)});
@@ -597,7 +597,7 @@ async function callWaiter(){
    const dt=DIET[i.veg||'veg']||DIET.veg;
    const panel='<div class=mpanel>'+(i.img?'<img loading=lazy alt="" src="'+esc(i.img)+'">':phArt((cats.find(x=>x.id==i.cat)||{}).name))+'<span class=dtag>'+ic(dt[0])+dt[1]+'</span>'+(i.combo?'<span class="dtag combo">'+ic('gift')+'Combo</span>':'')+'</div>';
    const desc=i.desc?'<p class=mdesc>'+esc(i.desc)+'</p>':'';
-   if(tb){
+   if(selfOrderOn){
     const variants=i.sizes&&i.sizes.length?i.sizes.map(s=>[s.l,s.p]):[['',i.price]];
     c.innerHTML=panel+'<div class=mbody><div class=mname>'+esc(i.name)+'</div>'+desc+'<div class=vlist>'+variants.map(([sz,p])=>{const k=i.id+'|'+sz,q=(cart[k]||{}).q||0;return '<div class=vline><span>'+(sz?esc(sz)+' — ':'')+'<b class=mprice>'+inr(p)+'</b></span>'+qtyCtl(k,q)+'</div>'}).join('')+'</div></div>';
     c.querySelectorAll('button[data-k]').forEach(b=>b.onclick=()=>chg(b.dataset.k,+b.dataset.d));
@@ -616,7 +616,7 @@ async function callWaiter(){
  function openCheckout(){
   const{t}=cartTotal(),so=document.createElement('div');so.className='sheet-ov';so.onclick=e=>{if(e.target===so)so.remove()};
   const rows=Object.keys(cart).map(k=>{const[i,sz,p]=priceOf(k);return '<div class=sline><span>'+cart[k].q+'× '+esc(i.name)+(sz?' ('+esc(sz)+')':'')+'</span><span>'+inr(p*cart[k].q)+'</span></div>'}).join('');
-  so.innerHTML='<div class=sht><h3>Your order · '+esc(tb.name)+'</h3>'+rows+'<div class="sline tot"><b>Estimated total</b><b>'+inr(t)+'</b></div><input id=coName placeholder="Your name *" autocomplete=name><input id=coPhone type=tel placeholder="Mobile number *" autocomplete=tel><textarea id=coNote placeholder="Notes (e.g. less spicy, no onion)" rows=2></textarea><div class=row><button class="pill line" id=coBack>Back</button><button class="pill dark" id=coGo>Place order</button></div></div>';
+  so.innerHTML='<div class=sht><h3>Your order'+(tb?' · '+esc(tb.name):' · Takeaway')+'</h3>'+rows+'<div class="sline tot"><b>Estimated total</b><b>'+inr(t)+'</b></div><input id=coName placeholder="Your name *" autocomplete=name><input id=coPhone type=tel placeholder="Mobile number *" autocomplete=tel><textarea id=coNote placeholder="Notes (e.g. less spicy, no onion)" rows=2></textarea><div class=row><button class="pill line" id=coBack>Back</button><button class="pill dark" id=coGo>Place order</button></div></div>';
   document.body.append(so);
   so.querySelector('#coBack').onclick=()=>so.remove();
   so.querySelector('#coGo').onclick=async e=>{
@@ -624,7 +624,7 @@ async function callWaiter(){
    if(!n)return alert('Please enter your name');if(!p)return alert('Please enter your mobile number');
    e.target.disabled=true;e.target.textContent='Placing order…';
    const{error}=await sb.rpc('place_order',{tenant_slug:TENANT_SLUG,t:T,n,p,nt:so.querySelector('#coNote').value.trim(),its:Object.values(cart).map(c=>({id:c.id,size:c.size,qty:c.q}))});
-   if(error){e.target.disabled=false;e.target.textContent='Place order';return alert(/busy/.test(error.message)?'Too many pending orders for this table. Please call our staff.':'Could not place the order. Please try again or call our staff.')}
+   if(error){e.target.disabled=false;e.target.textContent='Place order';return alert(/busy/.test(error.message)?'Too many pending orders right now. Please call us or try again shortly.':'Could not place the order. Please try again or call our staff.')}
    for(const k in cart)delete cart[k];so.remove();drawMenu();drawCartBar();
    const ok=document.createElement('div');ok.className='sheet-ov';ok.innerHTML='<div class=sht style="text-align:center"><div class=okmark><svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div><h3>Order sent</h3><p style="color:var(--muted)">Thank you '+esc(n)+'. Our staff will confirm it shortly.</p><button class="pill dark" id=okClose style="width:100%">Order more</button></div>';document.body.append(ok);ok.onclick=e=>{if(e.target===ok||e.target.id=='okClose')ok.remove()}
   };

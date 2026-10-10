@@ -108,7 +108,7 @@ async function claimG(g, st) {
 async function acceptG(g) {
   if (!(g.items && g.items.length)) { if (await claimG(g, 'done')) toast('Got it'); return getG(); } // a waiter call has nothing to cook
   if (!(await claimG(g, 'done'))) return;
-  const ex = tableOrder(g.tbl), o = ex ? structuredClone(ex) : newOrder({ type: 'Dine-in', table: g.tbl }), gone = [];
+  const ex = g.tbl ? tableOrder(g.tbl) : null, o = ex ? structuredClone(ex) : newOrder(g.tbl ? { type: 'Dine-in', table: g.tbl } : { type: 'Takeaway' }), gone = [];
   g.items.forEach((i) => {
     const it = rec(i.id); if (!it) { gone.push(i.name || 'item'); return; }
     const sz = i.size && (it.sizes || []).find((s) => s.l === i.size), price = sz ? sz.p : it.price;
@@ -130,7 +130,7 @@ function guestBanner() {
   if (!G.length) return null;
   return h('div', { class: 'stack s8' }, G.map((g) => { const call = !(g.items && g.items.length);
     return h('div', { class: 'banner', style: { borderLeft: '4px solid var(--accent)' } }, icon(call ? 'bell' : 'qr', 22),
-      h('div', { class: 'grow' }, h('b', null, (tn(g.tbl) || 'Table') + (call ? ' · waiter called' : ' · QR order')), h('span', { class: 'small sub' }, [g.name, g.phone, call ? null : g.items.map((i) => i.qty + '× ' + (i.name || '') + (i.size ? ' (' + i.size + ')' : '')).join(', '), g.note && g.note !== 'Waiter called' ? '"' + g.note + '"' : null].filter(Boolean).join(' · '))),
+      h('div', { class: 'grow' }, h('b', null, (g.tbl ? (tn(g.tbl) || 'Table') : 'Takeaway') + (call ? ' · waiter called' : ' · QR order')), h('span', { class: 'small sub' }, [g.name, g.phone, call ? null : g.items.map((i) => i.qty + '× ' + (i.name || '') + (i.size ? ' (' + i.size + ')' : '')).join(', '), g.note && g.note !== 'Waiter called' ? '"' + g.note + '"' : null].filter(Boolean).join(' · '))),
       h('button', { class: 'btn sm fill', onclick: () => acceptG(g) }, call ? 'Got it' : 'Accept'), call ? null : h('button', { class: 'btn sm', onclick: async () => { if (await claimG(g, 'rejected')) toast('Rejected'); getG(); } }, 'Reject')); }));
 }
 let hintClosed = false;
