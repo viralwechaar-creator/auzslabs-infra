@@ -165,6 +165,8 @@ header.stuck{box-shadow:0 1px 0 var(--line)}
 .legal a{text-decoration:underline}
 .cartbar{position:fixed;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translate(-50%,140%);z-index:60;width:min(540px,calc(100% - 28px));background:var(--char);color:var(--paper);padding:11px 11px 11px 22px;border-radius:999px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 26px 44px -20px rgba(20,20,18,.8);transition:transform .55s var(--ease)}
 .cartbar.show{transform:translate(-50%,0)}
+.toastmsg{position:fixed;top:14px;left:50%;transform:translate(-50%,-140%);z-index:96;background:var(--char);color:var(--paper);padding:10px 18px;border-radius:999px;font:500 13px/1 var(--sans);box-shadow:0 14px 30px -12px rgba(20,20,18,.7);transition:transform .35s var(--ease);pointer-events:none;white-space:nowrap}
+.toastmsg.show{transform:translate(-50%,0)}
 .cartbar .t{display:flex;align-items:center;gap:10px}
 .sheet-ov{position:fixed;inset:0;background:rgba(30,30,28,.55);backdrop-filter:blur(3px);z-index:85;display:flex;align-items:flex-end;justify-content:center;animation:fade .3s both}
 .sht{background:var(--paper);width:100%;max-width:540px;border-radius:18px 18px 0 0;padding:26px 24px max(24px,env(safe-area-inset-bottom));max-height:90svh;overflow:auto;animation:sheetUp .5s var(--ease) both}
@@ -337,6 +339,8 @@ header.stuck{box-shadow:0 1px 0 var(--line)}
 .legal a{text-decoration:underline}
 .cartbar{position:fixed;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translate(-50%,140%);z-index:60;width:min(540px,calc(100% - 28px));background:var(--char);color:var(--paper);padding:11px 11px 11px 22px;border-radius:999px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 26px 44px -20px rgba(20,20,18,.8);transition:transform .55s var(--ease)}
 .cartbar.show{transform:translate(-50%,0)}
+.toastmsg{position:fixed;top:14px;left:50%;transform:translate(-50%,-140%);z-index:96;background:var(--char);color:var(--paper);padding:10px 18px;border-radius:999px;font:500 13px/1 var(--sans);box-shadow:0 14px 30px -12px rgba(20,20,18,.7);transition:transform .35s var(--ease);pointer-events:none;white-space:nowrap}
+.toastmsg.show{transform:translate(-50%,0)}
 .cartbar .t{display:flex;align-items:center;gap:10px}
 .sheet-ov{position:fixed;inset:0;background:rgba(30,30,28,.55);backdrop-filter:blur(3px);z-index:85;display:flex;align-items:flex-end;justify-content:center;animation:fade .3s both}
 .sht{background:var(--paper);width:100%;max-width:540px;border-radius:18px 18px 0 0;padding:26px 24px max(24px,env(safe-area-inset-bottom));max-height:90svh;overflow:auto;animation:sheetUp .5s var(--ease) both}
@@ -584,8 +588,9 @@ async function callWaiter(){
  vfEl.innerHTML='<button class="dchip on" data-vf=all>All</button><button class=dchip data-vf=veg>'+ic('leaf')+' Veg</button><button class=dchip data-vf=nonveg>'+ic('meat')+' Non-veg</button>';
  const priceOf=k=>{const j=k.indexOf('|'),i=items.find(x=>x.id==k.slice(0,j)),sz=k.slice(j+1),s=sz&&(i.sizes||[]).find(x=>x.l==sz);return[i,sz,s?s.p:i.price]};
  const cartTotal=()=>{let n=0,t=0;for(const k in cart){t+=priceOf(k)[2]*cart[k].q;n+=cart[k].q}return{n,t}};
- let lastBumped=null;
- function chg(k,d){const[i,sz]=priceOf(k),c=cart[k]||(cart[k]={id:i.id,size:sz,q:0});c.q=Math.max(0,c.q+d);if(!c.q)delete cart[k];lastBumped=k;drawMenu(true);drawCartBar()}
+ let lastBumped=null,toastT=null;
+ function toastMsg(msg){let el=document.querySelector('.toastmsg');if(!el){el=document.createElement('div');el.className='toastmsg';document.body.append(el)}el.textContent=msg;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),1400)}
+ function chg(k,d){const[i,sz]=priceOf(k),c=cart[k]||(cart[k]={id:i.id,size:sz,q:0});c.q=Math.max(0,c.q+d);if(!c.q)delete cart[k];lastBumped=k;if(d>0)toastMsg(esc(i.name)+' added · '+cartTotal().n+' item'+(cartTotal().n>1?'s':'')+' in cart');drawMenu(true);drawCartBar()}
  function drawCartBar(){const{n,t}=cartTotal(),bar=$('cartBar');if(!selfOrderOn||!n){bar.classList.remove('show');return}bar.classList.add('show');$('cartBarText').innerHTML=ic('bag')+' '+n+' item'+(n>1?'s':'')+' · '+inr(t)}
  const qtyCtl=(k,q)=>q?'<span class=stepper><button data-k="'+esc(k)+'" data-d=-1 aria-label=Less>'+ic('minus')+'</button><b'+(k===lastBumped?' class=pop':'')+'>'+q+'</b><button data-k="'+esc(k)+'" data-d=1 aria-label=More>'+ic('plus')+'</button></span>':'<button class=add data-k="'+esc(k)+'" data-d=1>'+ic('plus')+' Add</button>';
  function drawMenu(keepAnim){
