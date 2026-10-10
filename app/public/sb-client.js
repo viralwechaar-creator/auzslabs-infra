@@ -226,6 +226,22 @@
       },
     };
 
+    // Silent session renewal (owner report: clients using the POS were getting logged out
+    // "again and again" mid-shift) -- nothing ever refreshed a token before this, so it
+    // expired exactly 7 days after the last LOGIN no matter how actively someone kept using
+    // the app since. An active session now renews itself in the background every few hours,
+    // so the 7-day cliff is only ever hit by a session that's genuinely gone unused -- a
+    // truly expired/revoked token still gets a real 401 here and has to sign in again.
+    async function silentRefresh() {
+      if (!session) return;
+      try {
+        const { data, error } = await request('/auth/refresh', { method: 'POST', body: {} });
+        if (!error && data && data.access_token) { session = { access_token: data.access_token, user: data.user || session.user }; saveSession(session); }
+      } catch {}
+    }
+    setInterval(silentRefresh, 6 * 60 * 60 * 1000);
+    if (session) silentRefresh();
+
     // The server picks the actual stored filename (never a client-
     // supplied one, to keep paths unpredictable/uncollidable) -- so
     // getPublicUrl(path) can't derive a URL from the path it's given
