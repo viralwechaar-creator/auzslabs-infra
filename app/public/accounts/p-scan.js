@@ -314,7 +314,11 @@ function scPendingCard(v) {
     : it.kind === 'product' ? { t: 'New product: ' + ((it.meta && it.meta.temp && it.meta.temp.name) || ''), s: 'Product', v: '' } : { t: 'Stock received', s: (it.payload.lines || []).length + ' item(s)', v: '' };
   const waiting = items.filter((x) => x.state !== 'refused').length;
   return h('div', { class: 'card grid', style: { gap: '8px' } },
-    h('div', { class: 'row sp' }, h('h3', null, 'On this phone, not yet in your books (' + items.length + ')'), waiting && !offlineNow() ? h('button', { class: 'btn sm', type: 'button', onclick: async () => { await sqFlush(); v.refresh(); } }, 'Send now') : null),
+    h('div', { class: 'row sp' }, h('h3', null, 'On this phone, not yet in your books (' + items.length + ')'), waiting && !offlineNow() ? h('button', { class: 'btn sm', type: 'button', onclick: async () => {
+      const r = await sqFlush();
+      if (!r.sent && !r.refused && !sessionExpiredShown) toast(navigator.onLine === false ? 'You are offline -- it will send automatically once you are back online.' : 'Still could not reach your books. Check your connection and try again.');
+      v.refresh();
+    } }, 'Send now') : null),
     h('details', { open: items.some((x) => x.state === 'refused') }, h('summary', { class: 'small muted' }, 'Show what is waiting'), h('div', { class: 'list' }, items.map((it) => { const l = label(it); return liRow({ icon: it.state === 'refused' ? 'alert' : 'doc', tone: it.state === 'refused' ? 'red' : '', title: l.t, sub: (it.state === 'refused' ? 'Refused: ' + it.error : l.s + ' · saved ' + fmtDT(it.at) + ', waiting'), value: l.v,
       badge: it.state === 'refused' ? h('span', { class: 'row', style: { gap: '6px' } }, h('button', { class: 'btn sm', type: 'button', onclick: async (e) => { e.stopPropagation(); await sqRetry(it.op); v.refresh(); } }, 'Retry'),
         h('button', { class: 'btn sm danger', type: 'button', onclick: async (e) => { e.stopPropagation(); if (await confirmBox('Discard this?', 'It has not reached your books and cannot be brought back.', 'Discard', true)) { await sqDiscard(it.op); v.refresh(); } } }, 'Discard')) : null }); }))));

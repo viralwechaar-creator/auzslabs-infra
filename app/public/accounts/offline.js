@@ -76,7 +76,13 @@ async function updateOffBar() {
   if (S.offline && !off) { text = 'You are back online. Reload to use everything again.'; act = { label: 'Reload', run: () => location.reload() }; }
   else if (off) { text = (window.AUZ_SCAN ? 'You are offline. Keep scanning and selling: everything is saved on this phone and sent to your books when you are back online.' : 'You are offline. You can still write bills, expenses and invoices: they are kept on this device and sent as drafts when you are back online.') + (_offCount.waiting ? ' Waiting: ' + _offCount.waiting + '.' : ''); act = window.AUZ_SCAN ? null : { label: 'Offline drafts', run: () => go('offline') }; }
   else if (_offCount.refused) { text = _offCount.refused + ' offline draft' + (_offCount.refused > 1 ? 's were' : ' was') + ' refused by the books. Open Offline drafts to see why.'; act = { label: 'Open', run: () => go('offline') }; }
-  else if (_offCount.waiting) { text = _offCount.waiting + ' offline draft' + (_offCount.waiting > 1 ? 's' : '') + ' waiting to be sent.'; act = { label: 'Send now', run: () => Promise.all([flushDrafts(), window.sqFlush ? sqFlush() : null]) }; }
+  else if (_offCount.waiting) { text = _offCount.waiting + ' offline draft' + (_offCount.waiting > 1 ? 's' : '') + ' waiting to be sent.'; act = { label: 'Send now', run: async () => {
+    const [d, s] = await Promise.all([flushDrafts(), window.sqFlush ? sqFlush() : { sent: 0, refused: 0 }]);
+    // Both flushDrafts() and sqFlush() already toast when something actually sent; this is only for the
+    // silent case (still can't reach the books, or the session just expired and bounced to sign-in) so a
+    // manual tap never just appears to do nothing.
+    if (!(d.sent + s.sent) && !(d.refused + s.refused) && !sessionExpiredShown) toast(navigator.onLine === false ? 'You are offline -- it will send automatically once you are back online.' : 'Still could not reach your books. Check your connection and try again.');
+  } }; }
   bar.hidden = !text; clear(bar);
   if (text) bar.append(icon(off ? 'alert' : 'info', 18), h('span', { class: 'grow' }, text), act ? h('button', { class: 'btn sm', type: 'button', onclick: act.run }, act.label) : null);
 }
