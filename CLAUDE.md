@@ -1786,3 +1786,15 @@ Admin -> Client payments (and Clients -> Payments) now show per payment row: **V
 
 ## Client card: View bill + Send bill on WhatsApp
 Admin -> Clients: each client card has **View bill** (opens the public `inv.html?t=` bill) and **Send bill on WhatsApp** (WhatsApp with the bill message and link, marks the send date) for the client's latest GST bill (`allBills` matched on `tenant_slug`); a client with no bill shows **Make bill**, which opens that client's Payments sheet where Make invoice lives (db/160). Static only, no new RPC. Test: orders suite (client card check).
+
+## SESSION LOG (2026-10-10, request-first onboarding + bills + pricing): PRs #312-#326
+1. **Offline-first AUZsScan (db/154)** and **per-item GST on a scan bill** (PRs #313-314): sections above.
+2. **Request-first onboarding (PR #315, db/155):** cart sends a request only; admin Client requests (verify, quote, WhatsApp payment link); client pays on `pay.html` (terms, unchecked box, screenshot); admin confirms payment; A4 GST bill `inv.html` with PAID stamp. Section "Request-first onboarding" above.
+3. **New pricing list (PR #316, db/156)** applied and live (owner confirmed): AUZsPOS 1,090, QR add-on 400 (POS QR 1,490), AUZsPay 590, AUZsLedger 1,490, AUZsMob 249, Salon 1,490, three new bundles, setup fee 2,190.
+4. **No GST / no setup fee for AUZsMob and AUZsScan (PR #324, db/159).**
+5. **Reset password gives 10 digits (PR #317, db/157); salesman delete accepts name or address (PR #318).**
+6. **Bill design (PRs #319-#322):** support phone **+91 8005673683** everywhere, stamp beside the totals with the AUZslab logo and ring text, small invoice number under the title, logo top right.
+7. **Admin bills (PRs #323, #325, #326, db/158, db/160):** Client bills list with GST CSV and corrected buyer details, Make invoice for a hand-recorded payment, View bill + WhatsApp on every payment row and client card.
+- **Deploy order on the VPS (after `set -a; source .env; set +a`, with `<`):** db/155, 156 (done), 157, 158, 159, 160, then `docker compose up -d --build api`, `git pull origin main`. Owner confirmed 156 is live; 157-160 not yet confirmed.
+- **Open (owner input):** bank details and the business UPI id in `site/orderterms.js` (empty/placeholder); SAC 9983 to check with the accountant; call/extra-support charge wording has no amounts; whether AUZsMob should ever carry GST; Google sign-in is still required to send a request; the old Razorpay/Cashfree server paths stay dormant; a credit-note flow if a bill's amounts ever need to change; the iPhone check of the scaled New Book World invoice (taxinv.js v7) is still unconfirmed.
+- **Test notes:** `innerText` respects CSS `text-transform:uppercase` (assert text case-insensitively, this failed three times); an inline `//` comment on a minified line swallows code; pages that print must keep one A4 page (the orders suite counts it); the responsive suite shows 4 sideways-scroll failures on `intelligence`, `platform` and `ip-custom-development` that predate this work.
