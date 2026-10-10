@@ -20,8 +20,9 @@ html,body{margin:0;background:#e9e7e4;color:#161616;font-family:Inter,-apple-sys
 /* the page: a fixed A4 sheet (794 x 1123 CSS px), scaled to the screen width, real A4 when printed */
 .sheet{position:relative;width:794px;min-height:1118px;background:#fff;padding:36px 46px 28px;box-shadow:0 2px 24px rgba(0,0,0,.14);transform-origin:top center;display:flex;flex-direction:column;font-size:11px;line-height:1.45}
 .row{display:flex;justify-content:space-between;align-items:flex-start;gap:30px}
-.h1{font-size:54px;line-height:1;font-weight:500;letter-spacing:-2px;margin:0}
-.no{font-size:28px;line-height:1.1;font-weight:500;letter-spacing:-.8px;margin:6px 0 0;text-align:right;white-space:nowrap}
+.h1{font-size:46px;line-height:1;font-weight:500;letter-spacing:-2px;margin:0}
+.no{font-size:12px;line-height:1.2;font-weight:500;letter-spacing:.2px;margin:2px 0 0;color:#555;white-space:nowrap}
+.hlogo{height:40px;width:auto;display:block}
 .cols{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:16px}
 .h2{font-size:17px;font-weight:500;letter-spacing:-.3px;margin:0 0 4px}
 .kv{display:grid;grid-template-columns:62px 1fr;gap:0 8px;font-size:9.6px;line-height:1.4}
@@ -40,11 +41,11 @@ html,body{margin:0;background:#e9e7e4;color:#161616;font-family:Inter,-apple-sys
 .tr.big{border-top:1.5px solid #161616;margin-top:5px;padding-top:7px;font-size:20px;color:#161616;letter-spacing:-.4px}
 .tr.big b{font-weight:600}
 .words{font-size:9.5px;color:#555;text-align:right;margin-top:3px}
-.ren{margin-top:12px}
+.ren{margin-top:8px}
 .ren table{width:100%;border-collapse:collapse;font-size:10px;margin-top:4px}
 .ren th{text-align:left;font-weight:500;color:#8a8a8a;font-size:9px;padding:3px 0;border-bottom:1px solid #ddd}
 .ren td{padding:3px 0;border-bottom:1px solid #f0f0f0}
-.terms{margin-top:12px;columns:2;column-gap:26px;font-size:8.1px;line-height:1.38;color:#444}
+.terms{margin-top:8px;columns:2;column-gap:26px;font-size:8.1px;line-height:1.38;color:#444}
 .terms h4{margin:0 0 1px;font-size:8.8px;color:#161616;font-weight:600;break-after:avoid}
 .terms p{margin:0 0 4px;break-inside:avoid}
 .foot{margin-top:auto;padding-top:12px;display:flex;justify-content:space-between;align-items:flex-end;position:relative}
@@ -108,7 +109,7 @@ function build(D) {
   const terms = O.terms.map(([h, p]) => `<h4>${esc(h)}</h4><p>${esc(p)}</p>`).join('');
   const fromAddr = esc(CO.address || ''), co = esc(CO.legalName || 'AUZslab');
   return `
-  <div class="row"><h1 class="h1">Invoice</h1><div><div class="no">${esc(D.invoice_no || '')}</div></div></div>
+  <div class="row"><div><h1 class="h1">Invoice</h1><div class="no">${esc(D.invoice_no || '')}</div></div><img class="hlogo" src="logo.png" alt="AUZslab"></div>
   <div class="cols">
     <div><h2 class="h2">From</h2><div class="kv"><span>Name</span><b>${co}</b><span>GSTIN</span><b>${esc(CO.gstin || '')}</b><span>Address</span><b>${fromAddr}</b><span>Phone</span><b>${esc(CO.phone || '')}</b><span>Email</span><b>${esc(CO.grievanceEmail || '')}</b></div></div>
     <div><h2 class="h2">To</h2><div class="kv"><span>Name</span><b>${esc(D.business_name || '')}</b>${D.contact_name ? `<span>Contact</span><b>${esc(D.contact_name)}</b>` : ''}${D.gstin ? `<span>GSTIN</span><b>${esc(D.gstin)}</b>` : '<span>GSTIN</span><b>Unregistered</b>'}${D.address ? `<span>Address</span><b>${esc(D.address)}</b>` : ''}${st ? `<span>State</span><b>${esc(st)} (${esc(D.state_code)})</b>` : ''}<span>Phone</span><b>${esc(D.phone || '')}</b>${D.email ? `<span>Email</span><b>${esc(D.email)}</b>` : ''}</div></div>

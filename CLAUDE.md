@@ -1769,3 +1769,6 @@ Admin -> Clients -> Reset password (`admin_reset_client_password`) now returns a
 
 ## Bill stamp beside the totals; support phone is 8005673683
 `site/inv.html`: the PAID stamp now sits inside `.svc` (position:relative) at the left of the totals block instead of the footer, so it never covers the terms. The AUZslab phone number is **+91 8005673683** everywhere (`site/company.js`, `ds/help.js` and `site/tool/help.js` SUPPORT, every page's Call link, docs); `company.js?v=3`. The Help sheet's Call / WhatsApp buttons use it now. Deploy: `git pull` only.
+
+## Bill header: small invoice number under "Invoice", AUZslab logo top right
+`site/inv.html`: the invoice number is 12px under the big "Invoice" word, and the AUZslab logo (`logo.png`, `.hlogo`) is top right where the number used to be. Heading and spacings were tightened so the bill stays exactly one A4 page (the orders suite checks 794 x 1123).
