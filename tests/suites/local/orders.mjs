@@ -215,6 +215,13 @@ export default async function run({ browser, stack }) {
     await p.locator('#clientPayList [data-pmake]').first().click(); await p.waitForSelector('#mkOverlay.open');
     assert(/does not match|matches/.test(await p.locator('#mkSum').innerText()), 'live total missing');
     await s.shot(p, 'admin-make-invoice');
+    // the client's own card: View bill + Send bill on WhatsApp (the retail business now has a bill)
+    const slug = (await q('select slug from tenants where id=$1', [tid]))[0].slug;
+    await p.evaluate(() => openSection('clients')); await p.waitForSelector('#clientsList tr[data-id]', { timeout: 10000 });
+    const card = p.locator('#clientsList tr[data-id]', { hasText: slug + '.auzslab.in' });
+    assert((await card.locator('[data-cview]').count()) === 1 && (await card.locator('[data-cwa]').count()) === 1, 'client card lacks View bill / Send bill on WhatsApp');
+    assert(/inv\.html\?t=/.test(await card.locator('[data-cview]').getAttribute('href')), 'view bill link');
+    await s.shot(p, 'admin-client-card-bill');
     assert(!errs.some((e) => /JS error/.test(e)), errs.join(' | ')); await c.close();
   }, 'critical');
   s.done();
