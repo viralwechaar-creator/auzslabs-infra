@@ -3,7 +3,7 @@
 window.AUZ_ORDER = {
   version: '2026-10',
   sac: '9983',                                   // SAC printed on every service line (group 9983, IT and other professional services); confirm with your accountant
-  upi: { id: '8005673683-2@ybl', name: 'Mahendra' },      // the UPI id the payment QR pays to
+  upi: { id: '8005673683-2@ybl', name: 'Mahendra' },      // the UPI id the payment QR pays to -- left unchanged when the contact number was updated: this is a live payment VPA, a different thing from the support/display number, and changing it needs the owner's explicit confirmation it's still valid
   bank: { holder: '', bank: '', account: '', ifsc: '', branch: '' },   // fill these in and they print on the payment page and the bill
   terms: [
     ['Refunds', 'Before setup: full refund minus a 1% transaction fee. Monthly, after setup: no refund of fees paid; billing stops when you cancel. Yearly, after setup: 20% refund within 6 months, none after. Onboarding/setup fees are non-refundable once begun. If our side fails you and we cannot fix it, we refund the period not provided. Full policy: auzslab.in/refund.html.'],

@@ -8,8 +8,8 @@
 (function () {
   var SUPPORT = {
     email: 'helloauzslab@gmail.com',
-    phone: '+91 8005673683',
-    whatsapp: '918005673683'
+    phone: '+91 9251250829',
+    whatsapp: '919251250829'
   };
   var recent = [];
   function note(s) { recent.push(String(s).slice(0, 200)); if (recent.length > 6) recent.shift(); }
