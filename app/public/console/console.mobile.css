@@ -287,11 +287,14 @@ th{font-weight:500;color:var(--label2);background:var(--fill3);font-size:12.5px}
 .fgrid,.row2,.row3{grid-template-columns:1fr}
 .modal{padding:16px;border-radius:18px}
 .mwrap{padding:10px;align-items:flex-end}
+.qr-print-sheet{display:none}
 @media print{
 .side,.top,.ph,.bar-row,.ai{display:none!important}
 .content{overflow:visible;padding:0}
 .app{display:block;height:auto}
 body{background:var(--card)}
+body.qr-printing .content,body.qr-printing .app{display:none!important}
+body.qr-printing .qr-print-sheet{display:block!important}
 }
 .tbl th[data-s=asc]::after{content:" \25B2";font-size:12px}
 .tbl th[data-s=desc]::after{content:" \25BC";font-size:12px}
