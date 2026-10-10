@@ -262,6 +262,28 @@ input,select,textarea{font-size:16px}
 .hero-service{font-family:var(--font-display);font-weight:600;font-size:15px;color:var(--ink-faint)}
 .hero-service.is-primary{color:var(--ink);font-weight:700}
 
+/* Promo row: two cards side by side on wide screens instead of stacked full-width */
+.promo-row{display:grid;grid-template-columns:1fr;gap:16px}
+
+/* Bento feature grid: one card can carry .feat to read as the lead capability, not just another tile the same size as the rest */
+.bento{display:grid;grid-template-columns:1fr;gap:16px}
+.bento>.feat .h-2{font-size:21px}
+.bento>.feat .p{font-size:14.5px}
+
+/* Feature matrix: a long "everything included" list as lean divided rows, not a repeated card per item */
+.feature-matrix{display:grid;grid-template-columns:1fr;margin-top:8px}
+.feature-matrix>div{padding:16px 0;border-top:1px solid var(--line)}
+.feature-matrix>div:first-child{border-top:none}
+.feature-matrix .h-2{font-size:16px}
+.feature-matrix .p{margin-top:5px;font-size:13.5px}
+
+/* Steps: a short process read as a numbered sequence, not another card grid */
+.steps{display:grid;grid-template-columns:1fr;gap:22px;margin-top:8px}
+.steps>div{position:relative;padding-left:46px}
+.steps>div::before{content:attr(data-step);position:absolute;left:0;top:0;width:32px;height:32px;border-radius:50%;background:var(--ink);color:var(--bg);font-family:var(--font-mono);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.steps .h-2{font-size:17px}
+.steps .p{margin-top:5px;font-size:13.5px}
+
 .mega-logo{
   display:flex;align-items:center;justify-content:flex-start;position:relative;
   padding:48px 20px;overflow:hidden;
@@ -521,6 +543,18 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
   .hero-grid{grid-template-columns:1.1fr 1fr;align-items:center;gap:56px}
   .hero-art{margin-top:0}
   .hero-art-logo{width:80%;max-width:340px}
+  .promo-row{grid-template-columns:1.15fr .85fr;align-items:stretch}
+  .bento{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .bento>.feat{grid-column:span 2}
+  .bento>.feat .h-2{font-size:25px}
+  .bento>.feat .p{font-size:15.5px;max-width:34em}
+  .feature-matrix{grid-template-columns:repeat(3,minmax(0,1fr));column-gap:28px}
+  .feature-matrix>div{grid-column:span 1}
+  .feature-matrix>div:nth-child(-n+3){border-top:none}
+  .feature-matrix>div:not(:nth-child(3n+1)){border-left:1px solid var(--line);padding-left:20px}
+  .steps{grid-template-columns:repeat(4,minmax(0,1fr));gap:24px}
+  .steps>div{padding-left:0;padding-top:46px}
+  .steps>div::before{left:0;top:0}
   .footer-dark{border-radius:40px 40px 0 0;padding:48px 0 32px}
   .footer-top{grid-template-columns:1.4fr 1fr 1fr 1fr;gap:32px}
   .footer-col-brand{grid-column:auto}
