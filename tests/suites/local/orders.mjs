@@ -191,5 +191,31 @@ export default async function run({ browser, stack }) {
     await s.shot(p, 'admin-client-bills');
     assert(!errs.some((e) => /JS error/.test(e)), errs.join(' | ')); await c.close();
   }, 'critical');
+  await s.check('A payment recorded by hand gets a GST invoice: must match the money, gets the next number, links to the payment, View/WhatsApp then show in the payments list', async () => {
+    const tid = (await q("select id from tenants where niche='retail' limit 1"))[0].id;
+    const pay = await call('admin_add_client_payment', { p_tenant_id: tid, p_amount: 460, p_paid_on: '2026-10-10', p_mode: 'upi', p_utr: 'UTRMANUAL460', p_purpose: null, p_note: null }, adm);
+    assert(pay.status === 200, 'add payment: ' + JSON.stringify(pay.raw));
+    const pid = (await q("select id from client_payments where utr='UTRMANUAL460'"))[0].id;
+    const bad = await call('admin_create_bill_for_payment', { p_payment_id: pid, p: { items: [{ key: 'scan', plan: 'month', rate: 460, discount: 0, gst: 18 }] } }, adm);
+    assert(bad.status >= 400 && /must equal/.test(JSON.stringify(bad.raw)), 'a bill that does not match the payment was accepted');
+    assert((await call('admin_create_bill_for_payment', { p_payment_id: pid, p: { items: [{ key: 'scan', plan: 'month', rate: 460, discount: 0, gst: 0 }] } }, cust)).status >= 400, 'a non-admin made a bill');
+    const ok = await call('admin_create_bill_for_payment', { p_payment_id: pid, p: { business_name: 'Book Shop', contact_name: 'Owner', phone: '9811111111', gstin: '08ABCDE1234F1Z5', items: [{ key: 'scan', plan: 'month', rate: 460, discount: 0, gst: 0 }] } }, adm);
+    assert(ok.status === 200 && /^AUZ\/2026-27\/\d{4}$/.test(ok.data.invoice_no), 'make bill: ' + JSON.stringify(ok.raw));
+    assert((await q('select purpose from client_payments where id=$1', [pid]))[0].purpose.includes(ok.data.invoice_no), 'the payment does not mention the bill');
+    assert((await call('admin_create_bill_for_payment', { p_payment_id: pid, p: { items: [{ key: 'scan', plan: 'month', rate: 460, discount: 0, gst: 0 }] } }, adm)).status >= 400, 'a second bill for the same payment was made');
+    const pub = (await call('public_client_order', { p_token: ok.data.token })).data; assert(pub.invoice_no === ok.data.invoice_no && Number(pub.totals.total) === 460, 'public bill');
+    const c = await newCtx(browser, stack, { w: 1280, h: 900 }); const p = await c.newPage(); const errs = watch(p);
+    await p.goto(stack.url('', '/admin.html')); await p.waitForTimeout(800); await p.fill('#email', USERS.admin); await p.fill('#password', PASSWORD); await p.click('#signin'); await p.waitForTimeout(2500);
+    await p.evaluate(() => openSection('clientPay')); await p.waitForSelector('#clientPayList tr[data-pid]', { timeout: 10000 });
+    const row = p.locator('#clientPayList tr[data-pid]', { hasText: 'UTRMANUAL460' });
+    assert((await row.locator('[data-pwa]').count()) === 1 && /view invoice/i.test(await row.innerText()), 'buttons missing: ' + (await p.locator('#clientPayList').innerHTML()).replace(/\s+/g,' ').slice(0, 1500));
+    // a payment with no bill shows Make invoice and the form checks the total live
+    await call('admin_add_client_payment', { p_tenant_id: tid, p_amount: 1000, p_paid_on: '2026-10-11', p_mode: 'cash', p_utr: null, p_purpose: null, p_note: null }, adm);
+    await p.evaluate(() => { sectionLoadedAt.clientPay = 0; loadClientPay(); }); await p.waitForSelector('#clientPayList [data-pmake]', { timeout: 10000 });
+    await p.locator('#clientPayList [data-pmake]').first().click(); await p.waitForSelector('#mkOverlay.open');
+    assert(/does not match|matches/.test(await p.locator('#mkSum').innerText()), 'live total missing');
+    await s.shot(p, 'admin-make-invoice');
+    assert(!errs.some((e) => /JS error/.test(e)), errs.join(' | ')); await c.close();
+  }, 'critical');
   s.done();
 }

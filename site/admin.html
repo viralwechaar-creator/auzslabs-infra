@@ -708,6 +708,29 @@ body.admin-shell .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px
   </div>
 </div>
 
+<div class="modal-overlay" id="mkOverlay">
+  <div class="modal" id="mkModal">
+    <button class="modal-close" id="mkClose" aria-label="Close">&times;</button>
+    <div class="label" style="margin-bottom:10px">Make GST invoice</div>
+    <h3 class="h-2" id="mkFor" style="font-size:18px"></h3>
+    <p class="p" style="margin-top:6px">The invoice total must equal the money received. It gets the next bill number and shows under Client bills.</p>
+    <form id="mkForm" style="margin-top:10px">
+      <label class="lbl">Business name<input id="mkBiz" class="inp" type="text" required></label>
+      <label class="lbl" style="margin-top:10px">Contact person<input id="mkContact" class="inp" type="text"></label>
+      <label class="lbl" style="margin-top:10px">Mobile / WhatsApp<input id="mkPhone" class="inp" type="tel"></label>
+      <label class="lbl" style="margin-top:10px">Email<input id="mkEmail" class="inp" type="email"></label>
+      <label class="lbl" style="margin-top:10px">GSTIN (leave empty if none)<input id="mkGstin" class="inp" type="text" maxlength="15" autocapitalize="characters"></label>
+      <label class="lbl" style="margin-top:10px">Address<textarea id="mkAddr" class="inp" rows="2"></textarea></label>
+      <div class="label" style="margin-top:14px">Products on the invoice</div>
+      <div id="mkItems"></div>
+      <button class="btn btn-ghost" type="button" id="mkAdd" style="margin-top:8px">+ Product</button>
+      <p class="p" id="mkSum" style="margin-top:12px"></p>
+      <div class="err" id="mkErr"></div>
+      <button class="btn btn-primary" type="submit" style="margin-top:12px">Make invoice</button>
+    </form>
+  </div>
+</div>
+
 <div class="modal-overlay" id="billOverlay">
   <div class="modal" id="billModal">
     <button class="modal-close" id="billClose" aria-label="Close">&times;</button>
@@ -1717,8 +1740,65 @@ function payTable(rows, withClient) {
       <td data-label="How">${esc(MODE_LABEL[r.mode] || r.mode)}</td>
       <td data-label="UTR / reference">${r.utr ? '<code>' + esc(r.utr) + '</code>' : '&mdash;'}</td>
       <td data-label="For">${esc([r.purpose, r.note].filter(Boolean).join(' · ') || '—')}</td>
-      <td class="row-actions"><button class="btn btn-ghost" data-pdel>Delete</button></td></tr>`).join('')}
+      <td class="row-actions">${payBillBtns(r)}<button class="btn btn-ghost" data-pdel>Delete</button></td></tr>`).join('')}
   </table></div>`;
+}
+// the GST bill that belongs to a payment (matched by the payment id, the bill number in "For", or the UTR)
+let allBills = [];
+async function loadAllBills() { const { data } = await sb.rpc('admin_list_client_bills', {}); allBills = data || []; }
+function billOfPayment(r) {
+  return allBills.find((b) => (b.payment && b.payment.payment_id === r.id) || (r.purpose && b.invoice_no && String(r.purpose).includes(b.invoice_no)) || (r.utr && b.payment && b.payment.utr && b.payment.utr.toLowerCase() === String(r.utr).toLowerCase()));
+}
+function payBillBtns(r) {
+  const b = billOfPayment(r);
+  return b ? `<a class="btn btn-ghost" href="${esc(billLink(b))}" target="_blank" rel="noopener">View invoice</a><button class="btn btn-primary" data-pwa="${b.id}">Send on WhatsApp</button>`
+           : `<button class="btn btn-ghost" data-pmake>Make invoice</button>`;
+}
+function wirePayBills(root, reload, rows) {
+  root.querySelectorAll('[data-pwa]').forEach((btn) => {
+    btn.onclick = async () => {
+      const b = allBills.find((x) => x.id === btn.dataset.pwa); if (!b) return;
+      const w = window.open('', '_blank'); await sb.rpc('admin_mark_order_bill_sent', { p_id: b.id });
+      const url = waUrl(b.phone, billMessage(b)); if (w) w.location.href = url; else window.location.href = url;
+    };
+  });
+  root.querySelectorAll('[data-pmake]').forEach((btn) => {
+    btn.onclick = () => openMakeBill(rows.find((x) => x.id === btn.closest('tr').dataset.pid), reload);
+  });
+}
+let mkPay = null, mkReload = null;
+function mkRow(i, it) {
+  const opts = ORD_PRODUCTS.map(([k, n]) => `<option value="${k}"${k === it.key ? ' selected' : ''}>${esc(n)}</option>`).join('');
+  return `<div data-mk="${i}" style="border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:8px">
+    <div class="row-actions" style="gap:8px;flex-wrap:wrap"><select class="inp" data-mkk style="flex:1;min-width:140px">${opts}</select><select class="inp" data-mkp style="width:110px"><option value="month"${it.plan === 'month' ? ' selected' : ''}>Monthly</option><option value="year"${it.plan === 'year' ? ' selected' : ''}>Yearly</option></select><button class="btn btn-ghost" type="button" data-mkx>Remove</button></div>
+    <div class="row-actions" style="gap:8px;margin-top:8px"><label class="lbl" style="margin:0;flex:1">Amount before GST (&#8377;)<input class="inp" data-mkr type="number" step="0.01" min="0" value="${it.rate}"></label><label class="lbl" style="margin:0;width:90px">GST %<input class="inp" data-mkg type="number" step="0.01" min="0" value="${it.gst}"></label></div></div>`;
+}
+function mkRead() { return [...document.querySelectorAll('#mkItems [data-mk]')].map((r) => ({ key: r.querySelector('[data-mkk]').value, plan: r.querySelector('[data-mkp]').value, rate: num(r.querySelector('[data-mkr]').value), discount: 0, gst: num(r.querySelector('[data-mkg]').value) })); }
+function mkTotal() {
+  const gst = (document.getElementById('mkGstin').value || '').trim().toUpperCase(), st = gst.length >= 2 ? gst.slice(0, 2) : '08';
+  const t = calcQuote({ items: mkRead(), setup: { on: false }, custom: [] }, st), want = Number(mkPay.amount), ok = Math.abs(t.total - want) <= 0.01;
+  const el = document.getElementById('mkSum'); el.innerHTML = `Bill total <b>${inr(t.total)}</b> (GST ${inr(t.gst)}) &middot; payment received <b>${inr(want)}</b> &middot; <b style="color:${ok ? 'var(--accent)' : '#b00020'}">${ok ? 'matches' : 'does not match yet'}</b>`;
+  return ok;
+}
+function mkDraw(items) {
+  document.getElementById('mkItems').innerHTML = items.map((it, i) => mkRow(i, it)).join('');
+  document.querySelectorAll('#mkItems [data-mk]').forEach((r) => {
+    r.querySelectorAll('input,select').forEach((e) => { e.oninput = mkTotal; e.onchange = mkTotal; });
+    r.querySelector('[data-mkk]').onchange = (e) => { const pr = ordPrices && ordPrices[e.target.value] || {}; r.querySelector('[data-mkg]').value = pr.gst_exempt ? 0 : 18; if (document.querySelectorAll('#mkItems [data-mk]').length === 1) { const g = pr.gst_exempt ? 0 : 18; r.querySelector('[data-mkr]').value = Math.round(Number(mkPay.amount) / (1 + g / 100) * 100) / 100; } mkTotal(); };
+    r.querySelector('[data-mkx]').onclick = () => { const cur = mkRead(); cur.splice(Number(r.dataset.mk), 1); mkDraw(cur); };
+  });
+  mkTotal();
+}
+async function openMakeBill(r, reload) {
+  mkPay = r; mkReload = reload; await ensurePrices();
+  const g = (id) => document.getElementById(id);
+  g('mkFor').textContent = `${r.client} · ${inr(r.amount)} · ${r.paid_on}${r.utr ? ' · UTR ' + r.utr : ''}`;
+  ['mkBiz', 'mkContact', 'mkPhone', 'mkEmail', 'mkGstin', 'mkAddr'].forEach((id) => { g(id).value = ''; });
+  g('mkBiz').value = r.client || ''; g('mkErr').textContent = '';
+  const pk = ORD_PRODUCTS[0][0];
+  const first = ordPrices[pk] || {}, gst = first.gst_exempt ? 0 : 18;
+  mkDraw([{ key: pk, plan: 'month', rate: Math.round(Number(r.amount) / (1 + gst / 100) * 100) / 100, gst }]);
+  g('mkOverlay').classList.add('open');
 }
 function wirePayDelete(root, reload) {
   root.querySelectorAll('[data-pdel]').forEach((b) => {
@@ -1736,8 +1816,8 @@ async function loadPayModalList() {
   const { data, error } = await sb.rpc('admin_list_client_payments', { p_tenant_id: payTenant });
   if (error) { el.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
   const total = (data || []).reduce((a, r) => a + Number(r.amount), 0);
-  el.innerHTML = (data && data.length ? `<p class="p"><b>Total received: ${inr(total)}</b></p>` : '') + payTable(data || [], false);
-  wirePayDelete(el, () => { loadPayModalList(); sectionLoadedAt.clientPay = 0; });
+  await loadAllBills(); el.innerHTML = (data && data.length ? `<p class="p"><b>Total received: ${inr(total)}</b></p>` : '') + payTable(data || [], false);
+  wirePayDelete(el, () => { loadPayModalList(); sectionLoadedAt.clientPay = 0; }); wirePayBills(el, () => { loadPayModalList(); sectionLoadedAt.clientPay = 0; }, data || []);
 }
 function openPayModal(id) {
   const c = clientsCache.find((x) => x.id === id); if (!c) return;
@@ -1773,8 +1853,8 @@ async function loadClientPay() {
   const month = new Date().toISOString().slice(0, 7);
   const sum = (a) => a.reduce((t, r) => t + Number(r.amount), 0);
   document.getElementById('clientPayTotals').innerHTML = `This month: <b>${inr(sum(rows.filter((r) => String(r.paid_on).startsWith(month))))}</b> &middot; All recorded: <b>${inr(sum(rows))}</b>`;
-  listEl.innerHTML = payTable(rows, true);
-  wirePayDelete(listEl, loadClientPay);
+  await loadAllBills(); listEl.innerHTML = payTable(rows, true);
+  wirePayDelete(listEl, loadClientPay); wirePayBills(listEl, loadClientPay, rows);
 }
 
 
@@ -1846,6 +1926,18 @@ document.getElementById('billForm').onsubmit = async (e) => {
   g('billOverlay').classList.remove('open'); loadBills();
 };
 
+
+document.getElementById('mkClose').onclick = () => document.getElementById('mkOverlay').classList.remove('open');
+document.getElementById('mkOverlay').onclick = (e) => { if (e.target.id === 'mkOverlay') e.currentTarget.classList.remove('open'); };
+document.getElementById('mkAdd').onclick = () => { const cur = mkRead(); cur.push({ key: 'pos', plan: 'month', rate: 0, gst: 18 }); mkDraw(cur); };
+document.getElementById('mkGstin').oninput = () => mkTotal();
+document.getElementById('mkForm').onsubmit = async (e) => {
+  e.preventDefault(); const g = (id) => document.getElementById(id);
+  if (!mkTotal()) { g('mkErr').textContent = 'The invoice total must equal the payment received. Adjust the amounts or the GST.'; return; }
+  const { data, error } = await sb.rpc('admin_create_bill_for_payment', { p_payment_id: mkPay.id, p: { business_name: g('mkBiz').value, contact_name: g('mkContact').value, phone: g('mkPhone').value, email: g('mkEmail').value, gstin: g('mkGstin').value, address: g('mkAddr').value, items: mkRead() } });
+  if (error) { g('mkErr').textContent = error.message; return; }
+  g('mkOverlay').classList.remove('open'); sectionLoadedAt.clientPay = 0; if (mkReload) mkReload(); loadBills();
+};
 // ---------- Salesman work dashboard (db/148) ----------
 async function loadSalesWork() {
   const el = document.getElementById('salesWorkBody');
