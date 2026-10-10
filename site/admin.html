@@ -1471,6 +1471,7 @@ function loadSetupQueue() {
       <div class="row-actions" style="margin-top:10px">
         <button class="btn btn-ghost" data-login-as>Log in as owner (setup)</button>
         <button class="btn btn-primary" data-deliver>Mark set up &amp; hand over</button>
+        <button class="btn btn-ghost" data-delete-setup style="color:var(--accent);border-color:var(--accent)">Delete</button>
       </div>
       <div data-loginbox></div>
     </div>`;
@@ -1508,13 +1509,32 @@ function loadSetupQueue() {
         <div class="ok-box" style="margin-bottom:12px">
           <b>${esc(c.name)}</b> marked as delivered. Copy this and send it to them directly (WhatsApp, SMS, etc.):
           <textarea readonly rows="6" style="width:100%;margin-top:8px;font:inherit;padding:10px;border:1.5px solid var(--line);border-radius:10px" onclick="this.select()">${esc(msg)}</textarea>
-          <button class="btn btn-primary" style="margin-top:8px" data-copy-handoff>Copy message</button>
+          <div class="row-actions" style="margin-top:8px">
+            <button class="btn btn-primary" data-copy-handoff>Copy message</button>
+            <button class="btn btn-ghost" data-wa-handoff>Send on WhatsApp</button>
+          </div>
         </div>`;
       document.querySelector('#setupHandoffResult [data-copy-handoff]').onclick = async (e) => {
         try { await navigator.clipboard.writeText(msg); e.target.textContent = 'Copied ✓'; setTimeout(() => { e.target.textContent = 'Copy message'; }, 1500); }
         catch { prompt('Copy this message:', msg); }
       };
+      document.querySelector('#setupHandoffResult [data-wa-handoff]').onclick = () => {
+        window.open(waUrl('', msg), '_blank');
+      };
       loadClients();
+    };
+  });
+  listEl.querySelectorAll('[data-delete-setup]').forEach((btn) => {
+    btn.onclick = async () => {
+      const card = btn.closest('[data-id]');
+      const id = card.dataset.id;
+      const c = clientsCache.find((x) => x.id === id);
+      const typed = prompt(`This permanently deletes "${c.name}" -- their login, orders, bookings, everything. This cannot be undone.\n\nType the client's exact name to confirm:`);
+      if (typed !== c.name) { if (typed !== null) alert('Name did not match -- nothing was deleted.'); return; }
+      const { error } = await sb.rpc('delete_client', { p_tenant_id: id });
+      if (error) { alert(error.message); return; }
+      loadClients();
+      loadSetupQueue();
     };
   });
 }
