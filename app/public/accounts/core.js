@@ -114,14 +114,22 @@ const STATES = { '01': 'Jammu and Kashmir', '02': 'Himachal Pradesh', '03': 'Pun
 const stateName = (c) => c ? (c + ' - ' + (STATES[c] || c)) : '';
 
 // ---------- API ----------
-let busy = 0;
+let busy = 0, sessionExpiredShown = false;
 async function api(fn, args) {
   busy++; document.documentElement.setAttribute('aria-busy', 'true');
   try {
     let r;
     try { r = await sb.rpc(fn, args || {}); } catch (e) { throw new Error(navigator.onLine === false ? 'You are offline. Accounting needs a connection to save and post.' : 'Could not reach the server. Check your connection and try again.'); }
     const { data, error } = r;
-    if (error) { const e = new Error(error.message || 'Something went wrong'); e.status = error.status; throw e; }
+    if (error) {
+      const e = new Error(error.message || 'Something went wrong'); e.status = error.status;
+      // A dead/expired token (sb-client.js clears it the moment this happens) used to leave the page silently
+      // stuck: every later call, including the background offline sync, kept failing with no error ever shown,
+      // so a sale sent while offline could sit waiting forever with nothing telling the owner why. Bounce to a
+      // real sign-in screen once, instead of retrying a session that can never succeed again.
+      if (error.status === 401 && !sessionExpiredShown && window.showLogin) { sessionExpiredShown = true; showLogin('Your session has expired. Please sign in again.'); }
+      throw e;
+    }
     return data;
   } finally { if (--busy === 0) document.documentElement.removeAttribute('aria-busy'); }
 }
