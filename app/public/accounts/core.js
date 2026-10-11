@@ -174,8 +174,16 @@ async function products(force) {
   }
   return S.products;
 }
-// big catalogues (more than PRODUCT_CAP items) are searched on the server and merged into the local list
-function rememberProducts(rows) { S.products = S.products || []; rows.forEach((r) => { const i = S.products.findIndex((x) => x.id === r.id); if (i >= 0) S.products[i] = r; else S.products.push(r); }); }
+// big catalogues (more than PRODUCT_CAP items) are searched on the server and merged into the local list; also the one
+// place a row freshly saved elsewhere (e.g. AUZsScan's own price-editing sheet) gets folded into the cached list without
+// a full products(true) round trip. Must also patch window.SQ.base (scan-sync.js's own last-server-reply snapshot) when
+// it exists: sqRefreshLocal() rebuilds S.products from SQ.base on its own, on a schedule this function has no part in --
+// patching S.products alone left SQ.base holding the pre-save row, so the very next offline-queue action silently
+// reverted the just-saved change right back onto the screen.
+function rememberProducts(rows) {
+  S.products = S.products || []; rows.forEach((r) => { const i = S.products.findIndex((x) => x.id === r.id); if (i >= 0) S.products[i] = r; else S.products.push(r); });
+  if (window.SQ && window.SQ.base) rows.forEach((r) => { const i = window.SQ.base.findIndex((x) => x.id === r.id); if (i >= 0) window.SQ.base[i] = r; });
+}
 async function searchProducts(q) { const rows = (await api('acc_list_products', { p: { search: q, limit: 8 } })).rows; rememberProducts(rows); return rows; }
 async function parties(force) {
   if (!S.parties || force) {
