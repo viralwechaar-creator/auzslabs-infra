@@ -1083,6 +1083,7 @@ const NICHE_LABEL = { custom: 'Custom-built', cafe: 'Café / restaurant / bar / 
 const TONE = { pos: 'wine', crm: 'wine', billing: 'wine', inventory: 'wine', kds: 'wine', purchases: 'wine', membership: 'wine', self_order: 'wine', salon: 'sand', booking: 'sand', website_builder: 'sand', payroll: 'slate', tasks: 'slate', helpdesk: 'slate', accounting: 'sage', mobile: 'amber' };
 const featTone = (k) => 'tone-' + (TONE[k] || 'slate');
 const FEATURE_LABEL = { salon: 'AUZslab Salon', pos: 'AUZsPOS', crm: 'CRM', booking: 'Booking', billing: 'Billing', self_order: 'AUZsPOS QR', kds: 'Kitchen display', inventory: 'Inventory', website_builder: 'Website Builder', payroll: 'AUZsPay', membership: 'Memberships', helpdesk: 'Helpdesk', tasks: 'Tasks', purchases: 'Purchases', accounting: 'AUZsLedger', mobile: 'AUZsMob', scan: 'AUZsScan' };
+const PRODUCT_KEYS = new Set(['pos', 'self_order', 'payroll', 'accounting', 'mobile', 'scan', 'salon', 'website_builder']);
 
 async function loadSignupRequests() {
   const listEl = document.getElementById('signupRequestsList');
@@ -1414,17 +1415,15 @@ async function loadClients(preFetched) {
   if (!clientsCache.length) { listEl.innerHTML = emptyDoodle('No clients yet &mdash; onboard one above.'); return; }
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  try { await loadAllBills(); } catch (e) { allBills = []; }
   const rows = clientsCache.map((c) => {
-    const bill = allBills.find((b) => b.tenant_slug === c.slug);
-    const services = Object.entries(c.features || {}).filter(([, on]) => on)
+    const services = Object.entries(c.features || {}).filter(([k, on]) => on && PRODUCT_KEYS.has(k))
       .map(([k]) => `<span class="feature-tag ${featTone(k)}">${esc(FEATURE_LABEL[k] || k)}</span>`).join('') || '&mdash;';
     let renewalHtml = '&mdash;';
     if (c.renewal_date) {
       const days = Math.round((new Date(c.renewal_date) - today) / 86400000);
       const cls = days < 0 ? 'renewal-overdue' : days <= 7 ? 'renewal-soon' : '';
-      const note = days < 0 ? ` (${-days}d overdue)` : days === 0 ? ' (today)' : days <= 7 ? ` (${days}d)` : '';
-      renewalHtml = `<span class="${cls}">${esc(c.renewal_date)}${note}</span>`;
+      const daysNote = days < 0 ? `${-days} days overdue` : days === 0 ? 'Today' : days === 1 ? '1 day left' : `${days} days left`;
+      renewalHtml = `${esc(c.renewal_date)}<br><span class="${cls}">${daysNote}</span>`;
     }
     return `
     <tr data-id="${c.id}">
@@ -1438,7 +1437,6 @@ async function loadClients(preFetched) {
       <td class="row-actions">
         <button class="btn btn-ghost" data-edit>Edit</button>
         <button class="btn btn-ghost" data-pay>Payments</button>
-        ${bill ? `<a class="btn btn-ghost" data-cview href="${esc(billLink(bill))}" target="_blank" rel="noopener">View bill</a><button class="btn btn-primary" data-cwa="${bill.id}">Send bill on WhatsApp</button>` : '<button class="btn btn-ghost" data-pay>Make bill</button>'}
         <button class="btn btn-ghost" data-reset-pw>Reset password</button>
         <button class="btn btn-ghost" data-message>Message</button>
         <button class="btn btn-ghost" data-delete style="color:var(--accent);border-color:var(--accent)">Delete</button>
