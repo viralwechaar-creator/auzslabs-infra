@@ -156,10 +156,21 @@ async function loadCtx() {
   return c;
 }
 const PRODUCT_CAP = 5000;
+// A force-refresh can overlap another one already in flight (e.g. the offline sync flush refreshing in the background
+// while a user saves a product's prices from the scan screen). Without a generation guard, whichever server response
+// happens to arrive LAST wins -- even if it was the one that started FIRST and carries stale data -- silently reverting
+// a just-saved change in the UI even though the database itself is correct. Only ever apply the result of the latest call.
+let productsGen = 0, partiesGen = 0;
 async function products(force) {
   if (!S.products || force) {
-    try { const rows = (await api('acc_list_products', { p: { limit: PRODUCT_CAP } })).rows; S.productsPartial = rows.length >= PRODUCT_CAP; if (window.offSave) offSave('products', rows); S.products = window.sqSetBase ? sqSetBase(rows) : rows; }
-    catch (e) { if (e.status || !window.offLoad) throw e; const c = await offLoad('products'); if (!c) throw e; S.products = window.sqSetBase ? sqSetBase(c) : c; S.productsPartial = false; }   // no connection: the copy kept on this device, with the waiting offline entries applied
+    const gen = ++productsGen;
+    try {
+      const rows = (await api('acc_list_products', { p: { limit: PRODUCT_CAP } })).rows;
+      if (gen === productsGen) { S.productsPartial = rows.length >= PRODUCT_CAP; if (window.offSave) offSave('products', rows); S.products = window.sqSetBase ? sqSetBase(rows) : rows; }
+    } catch (e) {
+      if (gen !== productsGen) { /* a newer refresh already resolved; this stale failure changes nothing */ }
+      else if (e.status || !window.offLoad) throw e; else { const c = await offLoad('products'); if (!c) throw e; S.products = window.sqSetBase ? sqSetBase(c) : c; S.productsPartial = false; }   // no connection: the copy kept on this device, with the waiting offline entries applied
+    }
   }
   return S.products;
 }
@@ -168,8 +179,14 @@ function rememberProducts(rows) { S.products = S.products || []; rows.forEach((r
 async function searchProducts(q) { const rows = (await api('acc_list_products', { p: { search: q, limit: 8 } })).rows; rememberProducts(rows); return rows; }
 async function parties(force) {
   if (!S.parties || force) {
-    try { S.parties = (await api('acc_list_parties', { limit: 5000, include_inactive: true })).rows; if (window.offSave) offSave('parties', S.parties); }
-    catch (e) { if (e.status || !window.offLoad) throw e; const c = await offLoad('parties'); if (!c) throw e; S.parties = c; }
+    const gen = ++partiesGen;
+    try {
+      const rows = (await api('acc_list_parties', { limit: 5000, include_inactive: true })).rows;
+      if (gen === partiesGen) { S.parties = rows; if (window.offSave) offSave('parties', S.parties); }
+    } catch (e) {
+      if (gen !== partiesGen) { /* a newer refresh already resolved; this stale failure changes nothing */ }
+      else if (e.status || !window.offLoad) throw e; else { const c = await offLoad('parties'); if (!c) throw e; S.parties = c; }
+    }
   }
   return S.parties;
 }
