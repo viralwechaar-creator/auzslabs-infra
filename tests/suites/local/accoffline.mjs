@@ -37,18 +37,21 @@ export default async function run({ browser, stack }) {
     assert(/needs a connection|Posting needs/i.test(await page.locator('.toast, #toast, [role=status]').allInnerTexts().then((a) => a.join(' ')).catch(() => '')), 'posting offline was not refused');
     await page.locator('.dock .btn', { hasText: /^Save draft$/ }).click(); await page.waitForFunction(() => /Offline drafts/.test(document.querySelector('#tb-t')?.textContent || ''), null, { timeout: 8000 });
     await page.waitForFunction(() => /Offline cartons|Bill/.test(document.querySelector('#main')?.innerText || '') && /Waiting to send \(1\)/.test(document.querySelector('#main')?.innerText || ''), null, { timeout: 8000 });
-    assert(Number((await q("select count(*)::int n from acc_documents where tenant_id=$1 and client_op is not null", [tid]))[0].n) === 0, 'it reached the books while offline');
+    // doc_type='bill' scopes this to the draft this check itself writes: the shared testacct tenant's client_op column is also used by
+    // AUZsScan's own offline-first sales (db/154, always doc_type='invoice'), which can already have real, legitimately-posted rows here
+    // by the time this suite runs after scan in a full continuous run -- counting every client_op row tenant-wide double-counts those.
+    assert(Number((await q("select count(*)::int n from acc_documents where tenant_id=$1 and client_op is not null and doc_type='bill'", [tid]))[0].n) === 0, 'it reached the books while offline');
     await s.shot(page, 'accounting-offline-queue');
   }, 'critical');
   await s.check('Back online: the draft reaches the books once, as a draft (not posted, no number), and the queue empties; sending again adds nothing', async () => {
     down = false;
     const r1 = await page.evaluate(() => flushDrafts()); assert(r1.sent === 1, JSON.stringify(r1));
-    const rows = await q("select doc_type, status, number, total::float8 t, supplier_ref from acc_documents where tenant_id=$1 and client_op is not null", [tid]);
+    const rows = await q("select doc_type, status, number, total::float8 t, supplier_ref from acc_documents where tenant_id=$1 and client_op is not null and doc_type='bill'", [tid]);
     assert(rows.length === 1 && rows[0].doc_type === 'bill' && rows[0].status === 'draft' && /^DRAFT-/.test(rows[0].number), JSON.stringify(rows));
     assert(Math.abs(rows[0].t - 354) < 0.05, 'total ' + rows[0].t + ' (3 x 100 + 18% GST)');
     assert((await page.evaluate(async () => (await draftQueue()).length)) === 0, 'queue not emptied');
     const r2 = await page.evaluate(() => flushDrafts()); assert(r2.sent === 0, 'second send: ' + JSON.stringify(r2));
-    assert(Number((await q("select count(*)::int n from acc_documents where tenant_id=$1 and client_op is not null", [tid]))[0].n) === 1, 'duplicated');
+    assert(Number((await q("select count(*)::int n from acc_documents where tenant_id=$1 and client_op is not null and doc_type='bill'", [tid]))[0].n) === 1, 'duplicated');
   }, 'critical');
   await s.check('A draft the books refuse (supplier gone) is kept and shown with the reason, never silently dropped; it can be discarded', async () => {
     await page.evaluate(async () => { await queueDraft({ doc_type: 'bill', party_id: '00000000-0000-0000-0000-000000000009', doc_date: today(), lines: [{ description: 'x', qty: 1, rate: 10, tax_rate: 0 }] }, 10); });
