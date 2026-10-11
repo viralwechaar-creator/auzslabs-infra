@@ -29,6 +29,7 @@ V.more = () => {
         liRow({ ic: 'moon', tone: 'purple', title: 'Appearance', right: seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v)) }),
         L('outlet').length ? liRow({ ic: 'building', tone: 'gray', title: 'Outlet', value: outletName(), chev: true, onclick: pickOutlet }) : null,
         liRow({ ic: 'printer', tone: 'gray', title: 'Receipt printer', value: printerLabel(), chev: true, onclick: printerSheet }),
+        liRow({ ic: 'bell', tone: 'red', title: 'Alert sound on this device', sub: 'Loud new-order beep + vibration; keeps ringing until accepted', right: seg([['on', 'On'], ['off', 'Off']], alertsMuted() ? 'off' : 'on', (v) => { setAlertsMuted(v === 'off'); render(); }) }),
         liRow({ ic: 'bell', tone: 'red', title: 'Order alerts when the app is closed', chev: true, onclick: enablePush }),
         liRow({ ic: 'bolt', tone: 'gray', title: 'Sync now', sub: h('span', { id: 'net2' }), chev: true, onclick: async () => { await syncNow(); toast('Synced'); render(); } }))),
       cfg().staffManual ? h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, 'Staff manual')), h('div', { class: 'card pad', style: { whiteSpace: 'pre-wrap', fontSize: '15px' } }, cfg().staffManual)) : null,
