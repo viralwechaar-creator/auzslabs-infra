@@ -98,6 +98,20 @@ export default async function run({ browser, stack }) {
     assert(db.invoices.some((i) => i.total === 300), 'invoice missing from console data');
   }, 'critical');
 
+  await s.check('The owner adds a staff login; it lands in records (not salon_store), and the staff member signs in with phone + password', async () => {
+    const r = await admin('POST', '/admin/staff', { name: 'Generic Staff', phone: '9812300003', password: 'staffpass1' });
+    assert(r.status === 201, 'staff create status ' + r.status + ' ' + (await r.text()));
+    const row = (await q("select data->'list' as l from records where tenant_id=$1 and kind='salon_staff' and id='salon_staff'", [tid]))[0];
+    assert(row && row.l.some((x) => x.phone === '9812300003'), 'staff did not land in records: ' + JSON.stringify(row));
+    const wrong = await api('POST', '/admin/login', { phone: '9812300003', password: 'wrong-password' });
+    assert(wrong.status === 401, 'wrong staff password accepted: ' + wrong.status);
+    const ok = await api('POST', '/admin/login', { phone: '9812300003', password: 'staffpass1' });
+    assert(ok.status === 200, 'staff login status ' + ok.status + ' ' + (await ok.text()));
+    const staffCookie = ok.headers.get('set-cookie');
+    const me = await fetch(stack.apiBase + '/salon-api/admin/me', { headers: { 'x-forwarded-host': slug + '.localhost', cookie: staffCookie } });
+    assert((await me.json()).role === 'staff', 'staff session did not carry the staff role');
+  }, 'critical');
+
   await s.check('A real browser can open this tenant\'s public site with no JS errors', async () => {
     const ctx = await newCtx(browser, stack, { w: 390, h: 844 }); const page = await ctx.newPage(); const errs = watch(page);
     await page.goto(stack.url(slug, '/'), { waitUntil: 'load' }); await page.waitForTimeout(800);

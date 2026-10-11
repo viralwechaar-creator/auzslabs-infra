@@ -108,6 +108,37 @@ export async function persistDb(client, tid, before, after) {
 
 export function newId() { return crypto.randomUUID(); }
 
+// ---- staff list + admin console password/lockout: same per-tenant generic-engine switch, kept
+// separate from assembleDb/persistDb above since they're small, standalone documents (never part of
+// the site/data combined object), not collections keyed by id like stylists/invoices/expenses.
+// readEngineKey/mutateEngineKey mirror salon.js's own readKey/mutateKey signatures exactly, so the
+// call sites that use them only need to pick which implementation to call, nothing else changes.
+const SINGLETON_KIND = { staff: 'salon_staff', admin: 'salon_admin' };
+export async function readEngineKey(pool, tid, key) {
+  const kind = SINGLETON_KIND[key];
+  return engineReadOne(pool, tid, kind);
+}
+async function engineReadOne(pool, tid, kind) {
+  return withSalonAuth(pool, tid, async (client) => {
+    const row = (await client.query(`select data from records where tenant_id=$1 and kind=$2 and id=$2`, [tid, kind])).rows[0];
+    return row ? row.data : null;
+  });
+}
+export async function mutateEngineKey(pool, tid, key, fn, init) {
+  const kind = SINGLETON_KIND[key];
+  return withSalonAuth(pool, tid, async (client) => {
+    const row = (await client.query(`select data from records where tenant_id=$1 and kind=$2 and id=$2 for update`, [tid, kind])).rows[0];
+    const d = row ? row.data : JSON.parse(JSON.stringify(init));
+    const out = await fn(d);
+    await client.query(
+      `insert into records (tenant_id, id, kind, data) values ($1,$2,$2,$3::jsonb)
+       on conflict (tenant_id, id) do update set data = excluded.data, updated_at = now()`,
+      [tid, kind, JSON.stringify(d)],
+    );
+    return out;
+  });
+}
+
 // records/bookings are RLS-protected, keyed off app_uid() -- a public site visitor has no AUZslab login
 // at all, and salon.js's own request model (its own cookie session, never a platform JWT) never sets
 // app.uid either way. salon_owner_uid(tid) (db/170, SECURITY DEFINER, works with no app.uid set) resolves
