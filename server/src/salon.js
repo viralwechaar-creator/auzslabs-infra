@@ -6,6 +6,14 @@ import { pool, withAuth } from './db.js';
 import { makeSeed, makeTemplate, makeDemo, DEMO_STAFF_PHONE } from './salon-seed.js';
 import { captureError } from './errors.js';
 import { staffLogin, verifyToken } from './auth.js';
+import * as engine from './salon-engine.js';
+
+// A tenant's storage is picked per-tenant (tenant.engine, from salon_tenant(), db/170): 'store' (today's
+// salon_store JSON documents, the only path every existing salon tenant uses) or 'generic' (the shared
+// records/bookings tables, RLS-protected, the same engine every other product already runs on). Nothing
+// about request handling, routes, auth or the frontend contract below ever branches on this -- only the
+// handful of storage functions in this section do, so the swap is invisible to everything else in this file.
+const usesGeneric = (tenant) => tenant.engine === 'generic';
 
 // Salon Suite API: the original Showoff Salon /api/* surface (see the
 // app/public/salon/ front-end, a verbatim port), multi-tenant. The
@@ -147,14 +155,22 @@ async function loadSite(tenant) {
 }
 async function loadSiteUncached(tenant) {
   const tid = tenant.id, g = genOf(tid);
-  let site = await readKey(pool, tid, 'site');
-  if (!site) site = await initStorage(tenant);
-  if (tenant.is_demo && (!site.seededAt || Date.now() - site.seededAt > DEMO_TTL)) site = (await reseedDemo(tenant)).site;
+  let site;
+  if (usesGeneric(tenant)) {
+    await engine.initGenericStorage(pool, tenant, freshDb(tenant));
+    const db = await engine.withSalonAuth(pool, tid, (c) => engine.assembleDb(c, tid, false));
+    site = { settings: db.settings, content: db.content, menu: db.menu, stylists: db.stylists, gallery: db.gallery };
+  } else {
+    site = await readKey(pool, tid, 'site');
+    if (!site) site = await initStorage(tenant);
+    if (tenant.is_demo && (!site.seededAt || Date.now() - site.seededAt > DEMO_TTL)) site = (await reseedDemo(tenant)).site;
+  }
   if (genOf(tid) === g) cacheSet(siteCache, tid, site);
   return site;
 }
 // Everything, as one object (admin screens, export). Not cached.
 async function loadDb(tenant) {
+  if (usesGeneric(tenant)) return engine.withSalonAuth(pool, tenant.id, (c) => engine.assembleDb(c, tenant.id, false));
   const site = await loadSite(tenant);
   const data = (await readKey(pool, tenant.id, 'data')) || {};
   return { ...site, ...data };
@@ -169,9 +185,9 @@ async function bookingCountsUncached(tenant) {
   const tid = tenant.id;
   await loadSite(tenant); // make sure storage exists
   const g = genOf(tid);
-  const data = (await readKey(pool, tid, 'data')) || {};
+  const bookings = usesGeneric(tenant) ? (await engine.withSalonAuth(pool, tid, (c) => engine.assembleDb(c, tid, false))).bookings : ((await readKey(pool, tid, 'data')) || {}).bookings || [];
   const from = new Date(Date.now() - 2 * 864e5).toISOString().slice(0, 10), counts = {};
-  for (const b of data.bookings || []) {
+  for (const b of bookings) {
     if (b.status === 'cancelled' || b.date < from) continue;
     ((counts[b.date] = counts[b.date] || {})[b.time] = (counts[b.date][b.time] || 0) + 1);
   }
@@ -179,6 +195,21 @@ async function bookingCountsUncached(tenant) {
   return counts;
 }
 
+// staff list / admin console password+lockout: the same per-tenant engine switch as everything above,
+// using the tenant object (not just tid) since usesGeneric() needs it. Every call site below passes
+// `tenant`, matching mutate()'s own convention, so the branch is consistent across this whole file.
+async function readStaffAdmin(tenant, key) {
+  if (usesGeneric(tenant)) return engine.readEngineKey(pool, tenant.id, key);
+  return readKey(pool, tenant.id, key);
+}
+async function mutateStaffAdmin(tenant, key, fn, init) {
+  if (usesGeneric(tenant)) return engine.mutateEngineKey(pool, tenant.id, key, fn, init);
+  return mutateKey(tenant.id, key, fn, init);
+}
+async function writeStaffAdmin(tenant, key, data) {
+  if (usesGeneric(tenant)) return engine.mutateEngineKey(pool, tenant.id, key, (d) => { for (const k of Object.keys(d)) delete d[k]; Object.assign(d, data); }, {});
+  return writeKey(pool, tenant.id, key, data);
+}
 // Same, for any other salon_store key (staff list, admin record): row-locked
 // read-modify-write, creating the row from `init` if it doesn't exist yet.
 async function mutateKey(tid, key, fn, init) {
@@ -206,6 +237,20 @@ async function mutate(tenant, fn, parts = ['site', 'data'], write = parts) {
   const tid = tenant.id, client = await pool.connect();
   try {
     await client.query('begin');
+    if (usesGeneric(tenant)) {
+      await engine.authorize(client, tid);
+      // Row-locked by assembleDb's own `for update` on every row it reads -- same "lock everything the
+      // handler might touch, for the duration of the transaction" guarantee the old site/data row locks gave,
+      // just at the level of the real rows underneath instead of two JSON blobs.
+      const before = await engine.assembleDb(client, tid, true);
+      const db = JSON.parse(JSON.stringify(before));
+      const out = await fn(db);
+      const after = out && out.replace ? out.replace : db;
+      await engine.persistDb(client, tid, before, after);
+      await client.query('commit');
+      dropCaches(tid);
+      return out && out.replace ? out.value : out;
+    }
     const db = {};
     for (const part of ['site', 'data']) {
       if (parts.includes(part) || write.includes(part)) Object.assign(db, (await readKey(client, tid, part, write.includes(part))) || {});
@@ -532,7 +577,7 @@ export async function handleSalon(req, res, ip) {
     const member = async () => {
       if (!sess) fail(401, 'Unauthorized.');
       if (sess.role === 'staff') {
-        const st = ((await readKey(pool, tid, 'staff')) || { list: [] }).list.find((x) => x.id === sess.sid);
+        const st = ((await readStaffAdmin(tenant, 'staff')) || { list: [] }).list.find((x) => x.id === sess.sid);
         if (!st || st.active === false) fail(401, 'Unauthorized.');
       }
       return sess;
@@ -590,7 +635,7 @@ export async function handleSalon(req, res, ip) {
     if (method === 'GET' && p === '/admin/me') {
       if (!sess) return send(200, { admin: false });
       if (sess.role === 'staff') {
-        const st = ((await readKey(pool, tid, 'staff')) || { list: [] }).list.find((x) => x.id === sess.sid);
+        const st = ((await readStaffAdmin(tenant, 'staff')) || { list: [] }).list.find((x) => x.id === sess.sid);
         if (!st || st.active === false) return send(200, { admin: false });
         return send(200, { admin: true, role: 'staff', name: st.name, payroll: !!st.employeeId && await payrollOn(tid), demo: !!tenant.is_demo });
       }
@@ -600,7 +645,8 @@ export async function handleSalon(req, res, ip) {
     const inv = p.match(/^\/invoice\/([a-f0-9]{8,32})$/);
     if (method === 'GET' && inv) {
       const s = (await loadSite(tenant)).settings;
-      const invoice = (((await readKey(pool, tid, 'data')) || {}).invoices || []).find((x) => x.token === inv[1] && !x.void);
+      const invoices = usesGeneric(tenant) ? (await loadDb(tenant)).invoices : ((await readKey(pool, tid, 'data')) || {}).invoices || [];
+      const invoice = invoices.find((x) => x.token === inv[1] && !x.void);
       if (!invoice) fail(404, 'Invoice not found.');
       return send(200, { invoice, salon: { salonName: s.salonName, address: s.address, phone: s.phone, email: s.email, instagram: s.instagram, invoiceFooter: s.invoiceFooter, logo: s.logo, logoLight: s.logoLight, theme: s.theme } });
     }
@@ -628,7 +674,7 @@ export async function handleSalon(req, res, ip) {
         const name = cleanString(um.full_name || um.name || uname.split('.')[0], 80);
         let st;
         const payOn = await payrollOn(tid);
-        await mutateKey(tid, 'staff', async (d) => {
+        await mutateStaffAdmin(tenant, 'staff', async (d) => {
           d.list = d.list || [];
           st = d.list.find((x) => x.userId === r.user.id);
           if (!st) { st = { id: crypto.randomUUID(), userId: r.user.id, name, phone: '', designation: prof.role === 'manager' ? 'Manager' : 'Staff', active: true, employeeId: null, createdAt: new Date().toISOString() }; d.list.push(st); }
@@ -644,7 +690,7 @@ export async function handleSalon(req, res, ip) {
         // Staff sign-in: phone number + the password the owner set for them.
         const phone = staffPhone(body.phone);
         if (phone.length < 6 || limited(`stafflogin:${tid}:${phone}`, 8, 15 * 60_000)) fail(429, 'Too many attempts. Try again later.');
-        const st = ((await readKey(pool, tid, 'staff')) || { list: [] }).list.find((x) => x.phone === phone && x.active !== false);
+        const st = ((await readStaffAdmin(tenant, 'staff')) || { list: [] }).list.find((x) => x.phone === phone && x.active !== false);
         if (!st || !st.passwordHash || !verifyScrypt(password, st.passwordHash)) fail(401, 'Invalid phone number or password.');
         setSession(res, tid, { role: 'staff', sid: st.id, name: st.name });
         return send(200, { ok: true, role: 'staff' });
@@ -828,7 +874,7 @@ export async function handleSalon(req, res, ip) {
       if (me.role === 'staff') {
         // A staff member changes their own password only.
         if (next.length < 6) fail(400, 'New password must be at least 6 characters.');
-        await mutateKey(tid, 'staff', (d) => {
+        await mutateStaffAdmin(tenant, 'staff', (d) => {
           const st = (d.list || []).find((x) => x.id === me.sid);
           if (!st || !verifyScrypt(cur, st.passwordHash)) fail(400, 'Current password is wrong.');
           st.passwordHash = hashPassword(next);
@@ -836,11 +882,11 @@ export async function handleSalon(req, res, ip) {
         return send(200, { ok: true });
       }
       await loadSite(tenant);
-      const a = (await readKey(pool, tid, 'admin')) || {};
+      const a = (await readStaffAdmin(tenant, 'admin')) || {};
       const ok = a.passwordHash ? verifyScrypt(cur, a.passwordHash) : await ownerPasswordOk(tid, cur);
       if (!ok) fail(400, 'Current password is wrong.');
       if (next.length < 8) fail(400, 'New password must be at least 8 characters.');
-      await writeKey(pool, tid, 'admin', { passwordHash: hashPassword(next), failCount: 0, lockedUntil: 0 });
+      await writeStaffAdmin(tenant, 'admin', { passwordHash: hashPassword(next), failCount: 0, lockedUntil: 0 });
       setSession(res, tid);
       return send(200, { ok: true });
     }
@@ -855,7 +901,7 @@ export async function handleSalon(req, res, ip) {
     if (method === 'GET' && p === '/admin/staff') {
       await admin();
       const db = await loadDb(tenant);
-      const d = (await readKey(pool, tid, 'staff')) || { list: [] };
+      const d = (await readStaffAdmin(tenant, 'staff')) || { list: [] };
       const pay = await payrollOn(tid);
       return send(200, { payroll: pay, staff: d.list.map((st) => staffView(st, db.invoices)), employees: pay ? (await pool.query('select salon_hr_list($1) as l', [tid])).rows[0].l : [] });
     }
@@ -872,7 +918,7 @@ export async function handleSalon(req, res, ip) {
       let employeeId = pay ? cleanString(body.employeeId, 60) || null : null;
       if (pay && body.payroll !== false && !employeeId) employeeId = (await pool.query('select salon_hr_ensure($1, $2, $3, $4) as id', [tid, name, phone, designation])).rows[0].id;
       const st = { id: crypto.randomUUID(), name, phone, designation, passwordHash: hashPassword(password), active: true, employeeId, createdAt: new Date().toISOString() };
-      await mutateKey(tid, 'staff', (d) => {
+      await mutateStaffAdmin(tenant, 'staff', (d) => {
         if ((d.list || []).some((x) => x.phone === phone)) fail(409, 'A staff member with this phone number already exists.');
         d.list = [...(d.list || []), st];
       }, { list: [] });
@@ -886,11 +932,11 @@ export async function handleSalon(req, res, ip) {
       let linkId = null;
       if (body.linkPayroll) {
         if (!(await payrollOn(tid))) fail(400, 'Payroll is not on your account yet.');
-        const cur = ((await readKey(pool, tid, 'staff')) || { list: [] }).list.find((x) => x.id === sm[1]);
+        const cur = ((await readStaffAdmin(tenant, 'staff')) || { list: [] }).list.find((x) => x.id === sm[1]);
         if (!cur) fail(404, 'Staff member not found.');
         linkId = (await pool.query('select salon_hr_ensure($1, $2, $3, $4) as id', [tid, cur.name, cur.phone, cur.designation])).rows[0].id;
       }
-      const out = await mutateKey(tid, 'staff', (d) => {
+      const out = await mutateStaffAdmin(tenant, 'staff', (d) => {
         const st = (d.list || []).find((x) => x.id === sm[1]);
         if (!st) fail(404, 'Staff member not found.');
         if (body.name !== undefined) st.name = cleanString(body.name, 80) || st.name;
@@ -914,7 +960,7 @@ export async function handleSalon(req, res, ip) {
     }
     if (method === 'DELETE' && sm) {
       await admin(); noDemo();
-      await mutateKey(tid, 'staff', (d) => {
+      await mutateStaffAdmin(tenant, 'staff', (d) => {
         const before = d.list || [];
         d.list = before.filter((x) => x.id !== sm[1]);
         if (d.list.length === before.length) fail(404, 'Staff member not found.');
@@ -927,7 +973,7 @@ export async function handleSalon(req, res, ip) {
     if (p === '/admin/punch' && (method === 'GET' || method === 'POST')) {
       const me = await member();
       if (me.role !== 'staff') fail(400, 'Clock in is for staff logins.');
-      const st = ((await readKey(pool, tid, 'staff')) || { list: [] }).list.find((x) => x.id === me.sid);
+      const st = ((await readStaffAdmin(tenant, 'staff')) || { list: [] }).list.find((x) => x.id === me.sid);
       if (!st.employeeId || !(await payrollOn(tid))) fail(400, 'Your login is not linked to payroll yet. Ask the owner.');
       if (method === 'GET') return send(200, (await pool.query('select salon_punch_state($1, $2, $3) as s', [tid, st.employeeId, todayStr()])).rows[0].s || { open: false, recent: [] });
       const r = await pool.query('select salon_punch($1, $2, $3, $4) as r', [tid, st.employeeId, todayStr(), new Date().toISOString()]);
