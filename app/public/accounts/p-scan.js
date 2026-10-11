@@ -329,9 +329,14 @@ function scPendingCard(v) {
       if (!r.sent && !r.refused && !sessionExpiredShown) toast(navigator.onLine === false ? 'You are offline -- it will send automatically once you are back online.' : 'Still could not reach your books. Check your connection and try again.');
       v.refresh();
     } }, 'Send now') : null),
-    h('details', { open: items.some((x) => x.state === 'refused') }, h('summary', { class: 'small muted' }, 'Show what is waiting'), h('div', { class: 'list' }, items.map((it) => { const l = label(it); return liRow({ icon: it.state === 'refused' ? 'alert' : 'doc', tone: it.state === 'refused' ? 'red' : '', title: l.t, sub: (it.state === 'refused' ? 'Refused: ' + it.error : l.s + ' · saved ' + fmtDT(it.at) + ', waiting' + (it.lastError ? ' · last try failed: ' + it.lastError + ' (' + fmtDT(it.lastTry) + ')' : '')), value: l.v,
-      badge: it.state === 'refused' ? h('span', { class: 'row', style: { gap: '6px' } }, h('button', { class: 'btn sm', type: 'button', onclick: async (e) => { e.stopPropagation(); await sqRetry(it.op); v.refresh(); } }, 'Retry'),
-        h('button', { class: 'btn sm danger', type: 'button', onclick: async (e) => { e.stopPropagation(); if (await confirmBox('Discard this?', 'It has not reached your books and cannot be brought back.', 'Discard', true)) { await sqDiscard(it.op); v.refresh(); } } }, 'Discard')) : null }); }))));
+    h('details', { open: items.some((x) => x.state === 'refused') }, h('summary', { class: 'small muted' }, 'Show what is waiting'), h('div', { class: 'list' }, items.map((it) => { const l = label(it);
+      // The row's own subtitle (liRow's `.s`) is single-line and truncates with an ellipsis -- the real
+      // error text was silently cut off there and never actually visible, defeating the point of recording
+      // it. It gets its own wrapped line underneath instead, same as `.li .s` but without the nowrap/ellipsis.
+      return h('div', { class: 'grid', style: { gap: '0' } }, liRow({ icon: it.state === 'refused' ? 'alert' : 'doc', tone: it.state === 'refused' ? 'red' : '', title: l.t, sub: (it.state === 'refused' ? 'Refused: ' + it.error : l.s + ' · saved ' + fmtDT(it.at) + ', waiting'), value: l.v,
+        badge: it.state === 'refused' ? h('span', { class: 'row', style: { gap: '6px' } }, h('button', { class: 'btn sm', type: 'button', onclick: async (e) => { e.stopPropagation(); await sqRetry(it.op); v.refresh(); } }, 'Retry'),
+          h('button', { class: 'btn sm danger', type: 'button', onclick: async (e) => { e.stopPropagation(); if (await confirmBox('Discard this?', 'It has not reached your books and cannot be brought back.', 'Discard', true)) { await sqDiscard(it.op); v.refresh(); } } }, 'Discard')) : null }),
+        it.lastError && it.state !== 'refused' ? h('div', { class: 'small muted', style: { padding: '0 14px 10px 50px', whiteSpace: 'normal' } }, 'Last try failed: ' + it.lastError + ' (' + fmtDT(it.lastTry) + ')') : null); }))));
 }
 const dockBusy = (b) => document.querySelectorAll('.scan-dock .btn').forEach((x) => { x.disabled = b; });
 
