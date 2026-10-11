@@ -216,6 +216,12 @@ export default async function run({ browser, stack }) {
     const tid = (await q("insert into tenants(slug, name, niche, plan, status) values ($1, 'Delete Me Co', 'general', 'pro', 'active') returning id", ['delete-me-' + Date.now()]))[0].id;
     await q("insert into tenant_settings(tenant_id, features, labels, business_rules) select $1, p.default_features, p.default_labels, p.default_business_rules from niche_presets p where p.niche='general'", [tid]);
     const owner = (await q("select id from auth_users where email=$1", [USERS.mobOwner]))[0].id;
+    // A real owner profile row for THIS disposable tenant (never the shared testmob fixture's own profile), so the
+    // "profiles left behind" assertion below actually exercises delete_client's profile-purging code path instead of
+    // trivially passing against a tenant that never had a profiles row to purge in the first place.
+    const delOwnerEmail = 'delete-me-owner-' + Date.now() + '@test.local';
+    const delOwnerId = (await q("insert into auth_users(email, password_hash) values ($1, $2) returning id", [delOwnerEmail, disposableHash]))[0].id;
+    await q("insert into profiles(id, tenant_id, role) values ($1, $2, 'owner')", [delOwnerId, tid]);
     await q("insert into mob_items(id, tenant_id, name, created_by) values (gen_random_uuid(), $1, 'Delete me', $2)", [tid, owner]);
     await q("insert into pay_org(tenant_id) values ($1) on conflict do nothing", [tid]);
     await q("insert into records(tenant_id, id, kind, data) values ($1, 'del1', 'item', '{}'::jsonb)", [tid]);
