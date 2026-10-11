@@ -166,10 +166,18 @@ function scStart(v) {
 // The first block changes this bill only. "Product prices" changes the saved product itself (selling price, purchase price, MRP), for
 // every future scan too, even for a product saved long ago. It needs the same permission as editing the product under Products.
 async function scSaveProductPrices(p, sale, buy, mrp) {
-  const r = await api('acc_save_product', { p: { id: p.id, name: p.name, sku: p.sku, barcode: p.barcode || '', category: p.category || '', brand: p.brand || '', unit: p.unit, hsn: p.hsn || '', tax_rate: p.tax_rate, tax_inclusive: p.tax_inclusive,
+  await api('acc_save_product', { p: { id: p.id, name: p.name, sku: p.sku, barcode: p.barcode || '', category: p.category || '', brand: p.brand || '', unit: p.unit, hsn: p.hsn || '', tax_rate: p.tax_rate, tax_inclusive: p.tax_inclusive,
     sale_price: sale, purchase_price: buy, mrp, is_service: p.is_service, track_stock: p.track_stock, track_batch: p.track_batch, track_serial: p.track_serial, reorder_level: p.reorder_level || 0, reorder_qty: p.reorder_qty || 0, notes: p.notes || '', active: p.active !== false, price_lists: p.price_lists || {} } });
-  bust('products'); await products(true);
-  return (S.products || []).find((x) => x.id === p.id) || p;
+  // acc_save_product only ever returns {id}, never the saved row, so there is nothing to merge from its reply. Build the
+  // updated product from what we already know we just sent (every field we sent was accepted, or the call above would have
+  // thrown) and splice it into S.products in place, rather than re-fetching the whole catalogue and hoping that round trip
+  // lands after this one: a second products(true) call racing an unrelated background refresh (the offline sync flush, a
+  // periodic re-render) can resolve out of order and silently revert the very prices just saved back onto the screen, even
+  // though the database itself already has the new values -- the exact failure this replaced.
+  const updated = { ...p, sale_price: sale, purchase_price: buy, mrp };
+  const i = (S.products || []).findIndex((x) => x.id === p.id); if (i >= 0) S.products[i] = updated;
+  if (window.offSave) offSave('products', S.products);
+  return updated;
 }
 function scLineSheet(l, done) {
   const sell = SC.mode === 'sell', q = input({ mode: 'decimal', value: l.qty, label: 'Quantity' }), r = input({ mode: 'decimal', value: sell ? l.rate : l.cost, label: sell ? 'Price' : 'Cost' }), d = input({ mode: 'decimal', value: l.disc || '', placeholder: '0', label: 'Discount' });
