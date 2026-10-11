@@ -66,7 +66,15 @@
       const headers = {};
       if (auth && session?.access_token) headers['Authorization'] = 'Bearer ' + session.access_token;
       if (!raw) headers['Content-Type'] = 'application/json';
-      const res = await fetch(base + path, { method, headers, body: raw ? body : (body !== undefined ? JSON.stringify(body) : undefined) });
+      // A weak/congested mobile connection can leave fetch() hanging far longer than anyone would wait, with
+      // no error, nothing retried, nothing shown -- this used to have no timeout at all, so a stuck request on
+      // a phone that LOOKS connected (full signal bars measure radio strength, not real reachability) looked
+      // identical to the page doing nothing. 20s is generous for a real RPC but still fails fast enough to retry.
+      const ac = new AbortController(); const bump = setTimeout(() => ac.abort(), 20000);
+      let res;
+      try { res = await fetch(base + path, { method, headers, body: raw ? body : (body !== undefined ? JSON.stringify(body) : undefined), signal: ac.signal }); }
+      catch (e) { throw Object.assign(new Error(e.name === 'AbortError' ? 'The connection is too slow or unreachable.' : 'Could not reach the server.'), { networkError: true }); }
+      finally { clearTimeout(bump); }
       let json = null;
       try { json = await res.json(); } catch {}
       if (!res.ok) {

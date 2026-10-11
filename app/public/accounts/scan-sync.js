@@ -83,7 +83,13 @@ async function sqFlush() {
         if (it.kind === 'sale') { sales++; await sqRemember({ ref: it.meta && it.meta.ref, id: r.id, number: r.number, total: r.total, at: it.at, name: it.meta && it.meta.name, phone: it.meta && it.meta.phone }); }
         await sqDel(it.op); sent++;
       } catch (e) {
-        if (sqTransient(e)) break;                                         // still offline / server busy / signed out: keep everything, try again later
+        if (sqTransient(e)) {
+          // Still offline / server busy / signed out -- keep everything, try again later. But record WHY, so
+          // "Send now" failing repeatedly is diagnosable from the phone itself instead of a total silence (this
+          // used to leave no trace at all: a sale could sit "waiting" for days with zero clue what was wrong).
+          it.lastError = e.message || 'Could not reach the server.'; it.lastTry = Date.now(); await sqPut(it);
+          break;
+        }
         it.state = 'refused'; it.error = e.message; await sqPut(it); refused++;     // a real refusal is shown to the person, never dropped
       }
     }
