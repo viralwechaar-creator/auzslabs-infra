@@ -70,6 +70,8 @@ body.admin-shell .card{padding:16px}
 body.admin-shell .field{margin-top:12px}
 body.admin-shell .field:first-child{margin-top:0}
 .a-nav-list{display:flex;flex-direction:column;gap:2px}
+.a-more-group-label{padding:18px 4px 6px;font:600 11px var(--font-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint)}
+.a-more-group-label:first-child{padding-top:2px}
 .a-nav-row{display:flex;align-items:center;gap:12px;width:100%;background:none;border:none;text-align:left;padding:11px 4px;min-height:44px;font:500 15px var(--font-body);color:var(--ink);cursor:pointer;border-bottom:1px solid var(--line-soft)}
 .a-nav-row:last-child{border-bottom:none}
 a.a-nav-row,a.a-side-btn{text-decoration:none}
@@ -99,19 +101,28 @@ a.a-nav-row,a.a-side-btn{text-decoration:none}
   .admin-table-wrap{overflow-x:visible;border:none;border-radius:0;margin-top:14px}
   .admin-table,.admin-table tbody{display:block;width:100%}
   .admin-table tr:first-child{display:none}
-  /* fields sit two to a row (Name next to Contact, Niche next to Status, etc.) instead of each on its
-     own full-width line -- cuts a card's height roughly in half. Free-text fields (a message, an address,
-     a note) span both columns since they don't read well squeezed to a half-width line. */
-  .admin-table tr{display:grid;grid-template-columns:1fr 1fr;column-gap:12px;row-gap:0;background:var(--bg-raised);border:1px solid var(--line);border-radius:12px;padding:8px 12px;margin-bottom:8px;width:auto}
+  /* Short fields (Status, Role, Niche, a date, a fee) pack several to a row instead of a rigid two-column
+     split, which used to leave a two-word value floating alone in a half-width cell -- most of the
+     "empty" feeling in a card came from that, not from too little content. The first cell (always the
+     name/business/client/user/product -- every loader puts the identifying field first) spans the full
+     width and reads as the card's own heading: bigger, bolder, its own label hidden since the bold text
+     already says what it is. Free-text fields still span full width, since they don't read well squeezed. */
+  .admin-table tr{display:grid;grid-template-columns:repeat(auto-fit,minmax(108px,1fr));column-gap:14px;row-gap:9px;background:var(--bg-raised);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:9px;width:auto;align-items:start}
   .admin-table tr:last-child{margin-bottom:0}
-  .admin-table td{display:block;padding:3px 0;border-bottom:none;min-width:0;font-size:13px;line-height:1.35}
+  .admin-table td{display:block;padding:0;border-bottom:none;min-width:0;font-size:12.5px;line-height:1.3;color:var(--ink-dim)}
   .admin-table td[hidden]{display:none}
-  .admin-table td[data-label]::before{content:attr(data-label);display:block;font:600 9.5px var(--font-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--ink-faint);margin-bottom:1px}
+  .admin-table td b{color:var(--ink);font-weight:700}
+  .admin-table td[data-label]::before{content:attr(data-label);display:block;font:600 9px var(--font-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);margin-bottom:2px}
+  .admin-table td:first-child{grid-column:1/-1;padding-bottom:9px;margin-bottom:2px;border-bottom:1px solid var(--line-soft)}
+  .admin-table td:first-child::before{display:none}
+  .admin-table td:first-child{font-size:17px;font-weight:700;color:var(--ink);line-height:1.3}
+  .admin-table td:first-child b{font-size:17px}
+  .admin-table td:first-child span:not(.status-pill){font-size:12.5px;font-weight:400}
   .admin-table td[data-label=Needs],.admin-table td[data-label=Message],.admin-table td[data-label=Note],.admin-table td[data-label=Address],
   .admin-table td[data-label=Problem],.admin-table td[data-label=Description],.admin-table td[data-label=Business]{grid-column:1/-1}
   .admin-table td[data-label=Message],.admin-table td[data-label=Note]{order:5}
-  .admin-table td.row-actions{grid-column:1/-1;order:9;margin-top:4px;padding-top:8px;border-top:1px solid var(--line-soft);gap:6px}
-  body.admin-shell .admin-table .row-actions .btn{padding:5px 11px;min-height:30px;font-size:10px;letter-spacing:.03em;border-width:1.5px;border-radius:999px;box-shadow:none;transform:none;margin:0}
+  .admin-table td.row-actions{grid-column:1/-1;order:9;margin-top:2px;padding-top:10px;border-top:1px solid var(--line-soft);gap:7px}
+  body.admin-shell .admin-table .row-actions .btn{padding:6px 12px;min-height:32px;font-size:10.5px;letter-spacing:.03em;border-width:1.5px;border-radius:999px;box-shadow:none;transform:none;margin:0}
 }
 .status-pill{display:inline-flex;padding:3px 9px;border-radius:999px;border:1px solid var(--ink);font-family:var(--font-mono);font-size:9px;text-transform:uppercase}
 .status-new{background:var(--accent);color:#fff;border-color:var(--accent)}
@@ -149,6 +160,8 @@ a.a-nav-row,a.a-side-btn{text-decoration:none}
   .a-side-btn .a-row-badge{margin-left:auto;min-width:18px;height:18px;border-radius:999px;background:var(--accent);color:#fff;font:700 10px var(--font-mono);display:flex;align-items:center;justify-content:center;padding:0 5px}
   .a-side-btn.on{background:var(--bg-raised);color:var(--ink);font-weight:700}
   .a-side-div{height:1px;background:var(--line);margin:10px 4px}
+  .a-side-group-label{padding:16px 10px 5px;font:600 10px var(--font-mono);text-transform:uppercase;letter-spacing:.07em;color:var(--ink-faint)}
+  .a-side-nav>.a-side-group-label:first-child{padding-top:2px}
   .a-side-link{display:flex;align-items:center;gap:10px;padding:9px 10px;font:500 13px var(--font-body);color:var(--ink-faint);text-decoration:none}
   .a-topbar-title{font-size:18px}
   .a-kpis{grid-template-columns:repeat(4,1fr)}
@@ -322,21 +335,30 @@ body.admin-shell .btn-primary:hover{background:#940a2c}
       <div class="a-side-brand"><img src="logo.png" alt="AUZslab"></div>
       <nav class="a-side-nav" aria-label="Admin sections">
         <button class="a-side-btn active" data-section="leads"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l2 3h6l2-3h4"/><path d="M5 5h14l2 7v7a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-7l2-7Z"/></svg>Leads<span class="a-row-badge" id="notifBadgeLeadsSide" style="display:none"></span></button>
+        <button class="a-side-btn" data-section="clients"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10v11h16V10"/><path d="M2 10l2-6h16l2 6"/><path d="M9 21v-6h6v6"/></svg>Clients</button>
+        <button class="a-side-btn" data-section="pricing"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 12.5 12.5 20 4 11.5V4h7.5L20 12.5Z"/><circle cx="8" cy="8" r="1.4"/></svg>Pricing &amp; payments</button>
+        <button class="a-side-btn" data-section="users"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 8a3 3 0 1 1 0 6"/><path d="M15.5 14.3A5.9 5.9 0 0 1 21 20"/></svg>Users</button>
+
+        <div class="a-side-group-label">Requests to review</div>
         <button class="a-side-btn" data-section="orders"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg>Client requests<span class="a-row-badge" id="ordersBadge" style="display:none"></span></button>
         <button class="a-side-btn" data-section="signupRequests"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>Signup requests<span class="a-row-badge" id="notifBadgeSignupSide" style="display:none"></span></button>
         <button class="a-side-btn" data-section="addonRequests"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Add-on requests<span class="a-row-badge" id="notifBadgeAddonSide" style="display:none"></span></button>
-        <button class="a-side-btn" data-section="pricing"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 12.5 12.5 20 4 11.5V4h7.5L20 12.5Z"/><circle cx="8" cy="8" r="1.4"/></svg>Pricing &amp; payments</button>
-        <button class="a-side-btn" data-section="clients"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10v11h16V10"/><path d="M2 10l2-6h16l2 6"/><path d="M9 21v-6h6v6"/></svg>Clients</button>
         <button class="a-side-btn" data-section="onboard"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/><path d="M19 4v4M17 6h4"/></svg>Onboard new</button>
         <button class="a-side-btn" data-section="setup"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l2.5 2.5L16 9"/></svg>Client setup<span class="a-row-badge" id="notifBadgeSetupSide" style="display:none"></span></button>
-        <div class="a-side-div"></div>
-        <button class="a-side-btn" data-section="users"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 8a3 3 0 1 1 0 6"/><path d="M15.5 14.3A5.9 5.9 0 0 1 21 20"/></svg>Users</button>
+
+        <div class="a-side-group-label">Team &amp; sales</div>
         <button class="a-side-btn" data-section="salesmen"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="7" r="3.4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/><path d="M15.5 4.5 17 3l1.5 1.5L17 6l1.5 1.5L17 9"/></svg>Salesmen</button>
         <button class="a-side-btn" data-section="salesWork"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Salesman work</button>
-        <button class="a-side-btn" data-section="clientPay"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3"/></svg>Client payments</button>
+
+        <div class="a-side-group-label">Money</div>
+        <button class="a-side-btn" data-section="clientPay"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3"/></svg>Client payments &amp; bills</button>
+
+        <div class="a-side-group-label">Oversight</div>
         <button class="a-side-btn" data-section="systemStats"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="7" rx="1.6"/><rect x="4" y="13" width="16" height="7" rx="1.6"/><circle cx="8" cy="7.5" r=".9" fill="currentColor" stroke="none"/><circle cx="8" cy="16.5" r=".9" fill="currentColor" stroke="none"/></svg>System resources</button>
         <button class="a-side-btn" data-section="auditLog"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>Audit log</button>
         <button class="a-side-btn" data-section="privacyReq"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3Z"/><path d="M9.5 12l2 2 3.5-4"/></svg>Privacy requests<span class="a-row-badge" id="privReqBadge" style="display:none"></span></button>
+
+        <div class="a-side-group-label">Tools</div>
         <a class="a-side-btn" href="https://agents.auzslab.in" id="agentsLinkSide"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/><circle cx="9" cy="10" r="1.3"/><circle cx="15" cy="10" r="1.3"/></svg>Agents Office</a>
       </nav>
       <a href="design-system/nav-kit.html" target="_blank" rel="noopener" class="a-side-link" style="margin-top:auto">
@@ -566,6 +588,7 @@ body.admin-shell .btn-primary:hover{background:#940a2c}
       </section>
 
       <section class="a-page" id="moreSection" data-title="More">
+        <div class="a-more-group-label">Requests to review</div>
         <div class="a-nav-list" id="moreNav">
           <button class="a-nav-row" data-section="orders">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg>
@@ -592,6 +615,33 @@ body.admin-shell .btn-primary:hover{background:#940a2c}
             <span class="grow">Client setup</span><span class="a-row-badge" id="notifBadgeSetupMore" style="display:none"></span>
             <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
           </button>
+        </div>
+
+        <div class="a-more-group-label">Team &amp; sales</div>
+        <div class="a-nav-list">
+          <button class="a-nav-row" data-section="salesmen">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="7" r="3.4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/><path d="M15.5 4.5 17 3l1.5 1.5L17 6l1.5 1.5L17 9"/></svg>
+            <span class="grow">Salesmen</span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <button class="a-nav-row" data-section="salesWork">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+            <span class="grow">Salesman work</span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+
+        <div class="a-more-group-label">Money</div>
+        <div class="a-nav-list">
+          <button class="a-nav-row" data-section="clientPay">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3"/></svg>
+            <span class="grow">Client payments &amp; bills</span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+
+        <div class="a-more-group-label">Oversight</div>
+        <div class="a-nav-list">
           <button class="a-nav-row" data-section="systemStats">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="7" rx="1.6"/><rect x="4" y="13" width="16" height="7" rx="1.6"/><circle cx="8" cy="7.5" r=".9" fill="currentColor" stroke="none"/><circle cx="8" cy="16.5" r=".9" fill="currentColor" stroke="none"/></svg>
             <span class="grow">System resources</span>
@@ -607,21 +657,10 @@ body.admin-shell .btn-primary:hover{background:#940a2c}
             <span class="grow">Privacy requests</span>
             <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
           </button>
-          <button class="a-nav-row" data-section="salesmen">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="7" r="3.4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/><path d="M15.5 4.5 17 3l1.5 1.5L17 6l1.5 1.5L17 9"/></svg>
-            <span class="grow">Salesmen</span>
-            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
-          </button>
-          <button class="a-nav-row" data-section="salesWork">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
-            <span class="grow">Salesman work</span>
-            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
-          </button>
-          <button class="a-nav-row" data-section="clientPay">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3"/></svg>
-            <span class="grow">Client payments</span>
-            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
-          </button>
+        </div>
+
+        <div class="a-more-group-label">Tools</div>
+        <div class="a-nav-list">
           <a class="a-nav-row" href="https://agents.auzslab.in" id="agentsLinkMore">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/><circle cx="9" cy="10" r="1.3"/><circle cx="15" cy="10" r="1.3"/></svg>
             <span class="grow">Agents Office</span>
@@ -631,6 +670,9 @@ body.admin-shell .btn-primary:hover{background:#940a2c}
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1.2"/><rect x="13" y="4" width="7" height="7" rx="1.2"/><rect x="4" y="13" width="7" height="7" rx="1.2"/><rect x="13" y="13" width="7" height="7" rx="1.2"/></svg>
             <span class="grow">UI Kit</span>
           </a>
+        </div>
+
+        <div class="a-nav-list" style="margin-top:8px">
           <button class="a-nav-row" id="signOutRow" style="color:var(--accent)">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8"/><path d="M10 12h11m0 0-3.5-3.5M21 12l-3.5 3.5"/></svg>
             <span class="grow">Sign out</span>
@@ -967,7 +1009,7 @@ async function loadProfiles() {
   if (!data || !data.length) { el.innerHTML = emptyDoodle('No profiles yet.'); return; }
   const rows = data.map((p) => `
     <tr>
-      <td data-label="Name"><b>${esc(p.name)}</b>${p.business_name ? '<br>' + esc(p.business_name) : ''}${p.is_client ? '<br><span class="status-pill">client</span>' : ''}</td>
+      <td data-label="Name"><b>${esc(p.name)}</b>${p.business_name ? '<br><span style="color:var(--ink-faint)">' + esc(p.business_name) + '</span>' : ''}${p.is_client ? '<br><span class="status-pill">client</span>' : ''}</td>
       <td data-label="Contact">${esc(p.phone || '')}<br>${esc(p.contact_email || p.login_email || '')}</td>
       <td data-label="Type">${esc(p.business_type || '&mdash;')}${p.niche ? '<br>' + esc(p.niche) : ''}</td>
       <td data-label="City">${esc(p.city || '&mdash;')}</td>
@@ -997,7 +1039,7 @@ async function loadLeads() {
   if (!data || !data.length) { listEl.innerHTML = emptyDoodle('No leads yet.'); return; }
   const rows = data.slice().reverse().map((l) => `
     <tr data-id="${l.id}">
-      <td data-label="Name"><b>${esc(l.name)}</b>${l.business ? '<br>' + esc(l.business) : ''}</td>
+      <td data-label="Name"><b>${esc(l.name)}</b>${l.business ? '<br><span style="color:var(--ink-faint)">' + esc(l.business) + '</span>' : ''}</td>
       <td data-label="Contact">${esc(l.contact)}</td>
       <td data-label="Niche">${esc(l.niche || '&mdash;')}</td>
       <td data-label="Message">${esc(l.message || '')}</td>
@@ -1041,6 +1083,7 @@ const NICHE_LABEL = { custom: 'Custom-built', cafe: 'Café / restaurant / bar / 
 const TONE = { pos: 'wine', crm: 'wine', billing: 'wine', inventory: 'wine', kds: 'wine', purchases: 'wine', membership: 'wine', self_order: 'wine', salon: 'sand', booking: 'sand', website_builder: 'sand', payroll: 'slate', tasks: 'slate', helpdesk: 'slate', accounting: 'sage', mobile: 'amber' };
 const featTone = (k) => 'tone-' + (TONE[k] || 'slate');
 const FEATURE_LABEL = { salon: 'AUZslab Salon', pos: 'AUZsPOS', crm: 'CRM', booking: 'Booking', billing: 'Billing', self_order: 'AUZsPOS QR', kds: 'Kitchen display', inventory: 'Inventory', website_builder: 'Website Builder', payroll: 'AUZsPay', membership: 'Memberships', helpdesk: 'Helpdesk', tasks: 'Tasks', purchases: 'Purchases', accounting: 'AUZsLedger', mobile: 'AUZsMob', scan: 'AUZsScan' };
+const PRODUCT_KEYS = new Set(['pos', 'self_order', 'payroll', 'accounting', 'mobile', 'scan', 'salon', 'website_builder']);
 
 async function loadSignupRequests() {
   const listEl = document.getElementById('signupRequestsList');
@@ -1372,17 +1415,15 @@ async function loadClients(preFetched) {
   if (!clientsCache.length) { listEl.innerHTML = emptyDoodle('No clients yet &mdash; onboard one above.'); return; }
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  try { await loadAllBills(); } catch (e) { allBills = []; }
   const rows = clientsCache.map((c) => {
-    const bill = allBills.find((b) => b.tenant_slug === c.slug);
-    const services = Object.entries(c.features || {}).filter(([, on]) => on)
+    const services = Object.entries(c.features || {}).filter(([k, on]) => on && PRODUCT_KEYS.has(k))
       .map(([k]) => `<span class="feature-tag ${featTone(k)}">${esc(FEATURE_LABEL[k] || k)}</span>`).join('') || '&mdash;';
     let renewalHtml = '&mdash;';
     if (c.renewal_date) {
       const days = Math.round((new Date(c.renewal_date) - today) / 86400000);
       const cls = days < 0 ? 'renewal-overdue' : days <= 7 ? 'renewal-soon' : '';
-      const note = days < 0 ? ` (${-days}d overdue)` : days === 0 ? ' (today)' : days <= 7 ? ` (${days}d)` : '';
-      renewalHtml = `<span class="${cls}">${esc(c.renewal_date)}${note}</span>`;
+      const daysNote = days < 0 ? `${-days} days overdue` : days === 0 ? 'Today' : days === 1 ? '1 day left' : `${days} days left`;
+      renewalHtml = `${esc(c.renewal_date)}<br><span class="${cls}">${daysNote}</span>`;
     }
     return `
     <tr data-id="${c.id}">
@@ -1396,7 +1437,6 @@ async function loadClients(preFetched) {
       <td class="row-actions">
         <button class="btn btn-ghost" data-edit>Edit</button>
         <button class="btn btn-ghost" data-pay>Payments</button>
-        ${bill ? `<a class="btn btn-ghost" data-cview href="${esc(billLink(bill))}" target="_blank" rel="noopener">View bill</a><button class="btn btn-primary" data-cwa="${bill.id}">Send bill on WhatsApp</button>` : '<button class="btn btn-ghost" data-pay>Make bill</button>'}
         <button class="btn btn-ghost" data-reset-pw>Reset password</button>
         <button class="btn btn-ghost" data-message>Message</button>
         <button class="btn btn-ghost" data-delete style="color:var(--accent);border-color:var(--accent)">Delete</button>

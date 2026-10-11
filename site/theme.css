@@ -113,7 +113,7 @@ input,select,textarea{font-size:16px}
 
 .sidebar-nav{display:flex;flex-direction:column;gap:0;margin-top:8px;padding:0 20px}
 .nav-link{
-  font-family:var(--font-display);font-weight:800;font-size:21px;letter-spacing:-.01em;
+  font-family:var(--font-display);font-weight:600;font-size:16px;letter-spacing:-.01em;
   padding:15px 0;border-radius:0;color:#fff;background:none;
   border-bottom:1px solid rgba(255,255,255,.14);
   text-align:left;display:flex;align-items:center;justify-content:space-between;gap:10px;
@@ -128,7 +128,7 @@ input,select,textarea{font-size:16px}
   background:none;border:none;cursor:pointer;text-align:left;font-family:inherit;
 }
 .nav-group-count{font-size:13px;font-weight:400;color:rgba(255,255,255,.4);margin-left:5px;top:-.3em}
-.nav-group-indicator{font-family:var(--font-display);font-weight:400;font-size:24px;line-height:1;color:rgba(255,255,255,.45);flex-shrink:0}
+.nav-group-indicator{font-family:var(--font-display);font-weight:400;font-size:19px;line-height:1;color:rgba(255,255,255,.45);flex-shrink:0}
 .nav-group-indicator::before{content:'+'}
 .nav-group-toggle[aria-expanded="true"] .nav-group-indicator::before{content:'\2212'}
 .nav-group-toggle[aria-expanded="true"]{color:#fff}
@@ -151,7 +151,7 @@ input,select,textarea{font-size:16px}
 }
 .nav-sublink:hover{color:#fff;background:none}
 .nav-sublink.is-disabled{color:rgba(255,255,255,.25);cursor:default;pointer-events:none}
-.sidebar-foot{display:flex;flex-direction:column;gap:14px;margin-top:28px;padding:20px 20px 0;border-top:1px solid rgba(255,255,255,.15)}
+.sidebar-foot{display:flex;flex-direction:column;gap:14px;margin-top:auto;padding:20px 20px 0;border-top:1px solid rgba(255,255,255,.15)}
 .sidebar-copy{font-family:var(--font-mono);font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.02em}
 .sidebar .btn-ghost{border-color:rgba(255,255,255,.3);color:#fff}
 .sidebar .btn-ghost:hover{background:#fff;color:var(--ink-solid);border-color:#fff}
