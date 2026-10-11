@@ -6,6 +6,14 @@ import { pool, withAuth } from './db.js';
 import { makeSeed, makeTemplate, makeDemo, DEMO_STAFF_PHONE } from './salon-seed.js';
 import { captureError } from './errors.js';
 import { staffLogin, verifyToken } from './auth.js';
+import * as engine from './salon-engine.js';
+
+// A tenant's storage is picked per-tenant (tenant.engine, from salon_tenant(), db/170): 'store' (today's
+// salon_store JSON documents, the only path every existing salon tenant uses) or 'generic' (the shared
+// records/bookings tables, RLS-protected, the same engine every other product already runs on). Nothing
+// about request handling, routes, auth or the frontend contract below ever branches on this -- only the
+// handful of storage functions in this section do, so the swap is invisible to everything else in this file.
+const usesGeneric = (tenant) => tenant.engine === 'generic';
 
 // Salon Suite API: the original Showoff Salon /api/* surface (see the
 // app/public/salon/ front-end, a verbatim port), multi-tenant. The
@@ -147,14 +155,22 @@ async function loadSite(tenant) {
 }
 async function loadSiteUncached(tenant) {
   const tid = tenant.id, g = genOf(tid);
-  let site = await readKey(pool, tid, 'site');
-  if (!site) site = await initStorage(tenant);
-  if (tenant.is_demo && (!site.seededAt || Date.now() - site.seededAt > DEMO_TTL)) site = (await reseedDemo(tenant)).site;
+  let site;
+  if (usesGeneric(tenant)) {
+    await engine.initGenericStorage(pool, tenant, freshDb(tenant));
+    const db = await engine.withSalonAuth(pool, tid, (c) => engine.assembleDb(c, tid, false));
+    site = { settings: db.settings, content: db.content, menu: db.menu, stylists: db.stylists, gallery: db.gallery };
+  } else {
+    site = await readKey(pool, tid, 'site');
+    if (!site) site = await initStorage(tenant);
+    if (tenant.is_demo && (!site.seededAt || Date.now() - site.seededAt > DEMO_TTL)) site = (await reseedDemo(tenant)).site;
+  }
   if (genOf(tid) === g) cacheSet(siteCache, tid, site);
   return site;
 }
 // Everything, as one object (admin screens, export). Not cached.
 async function loadDb(tenant) {
+  if (usesGeneric(tenant)) return engine.withSalonAuth(pool, tenant.id, (c) => engine.assembleDb(c, tenant.id, false));
   const site = await loadSite(tenant);
   const data = (await readKey(pool, tenant.id, 'data')) || {};
   return { ...site, ...data };
@@ -169,9 +185,9 @@ async function bookingCountsUncached(tenant) {
   const tid = tenant.id;
   await loadSite(tenant); // make sure storage exists
   const g = genOf(tid);
-  const data = (await readKey(pool, tid, 'data')) || {};
+  const bookings = usesGeneric(tenant) ? (await engine.withSalonAuth(pool, tid, (c) => engine.assembleDb(c, tid, false))).bookings : ((await readKey(pool, tid, 'data')) || {}).bookings || [];
   const from = new Date(Date.now() - 2 * 864e5).toISOString().slice(0, 10), counts = {};
-  for (const b of data.bookings || []) {
+  for (const b of bookings) {
     if (b.status === 'cancelled' || b.date < from) continue;
     ((counts[b.date] = counts[b.date] || {})[b.time] = (counts[b.date][b.time] || 0) + 1);
   }
@@ -206,6 +222,20 @@ async function mutate(tenant, fn, parts = ['site', 'data'], write = parts) {
   const tid = tenant.id, client = await pool.connect();
   try {
     await client.query('begin');
+    if (usesGeneric(tenant)) {
+      await engine.authorize(client, tid);
+      // Row-locked by assembleDb's own `for update` on every row it reads -- same "lock everything the
+      // handler might touch, for the duration of the transaction" guarantee the old site/data row locks gave,
+      // just at the level of the real rows underneath instead of two JSON blobs.
+      const before = await engine.assembleDb(client, tid, true);
+      const db = JSON.parse(JSON.stringify(before));
+      const out = await fn(db);
+      const after = out && out.replace ? out.replace : db;
+      await engine.persistDb(client, tid, before, after);
+      await client.query('commit');
+      dropCaches(tid);
+      return out && out.replace ? out.value : out;
+    }
     const db = {};
     for (const part of ['site', 'data']) {
       if (parts.includes(part) || write.includes(part)) Object.assign(db, (await readKey(client, tid, part, write.includes(part))) || {});
@@ -600,7 +630,8 @@ export async function handleSalon(req, res, ip) {
     const inv = p.match(/^\/invoice\/([a-f0-9]{8,32})$/);
     if (method === 'GET' && inv) {
       const s = (await loadSite(tenant)).settings;
-      const invoice = (((await readKey(pool, tid, 'data')) || {}).invoices || []).find((x) => x.token === inv[1] && !x.void);
+      const invoices = usesGeneric(tenant) ? (await loadDb(tenant)).invoices : ((await readKey(pool, tid, 'data')) || {}).invoices || [];
+      const invoice = invoices.find((x) => x.token === inv[1] && !x.void);
       if (!invoice) fail(404, 'Invoice not found.');
       return send(200, { invoice, salon: { salonName: s.salonName, address: s.address, phone: s.phone, email: s.email, instagram: s.instagram, invoiceFooter: s.invoiceFooter, logo: s.logo, logoLight: s.logoLight, theme: s.theme } });
     }
