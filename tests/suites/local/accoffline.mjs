@@ -11,6 +11,12 @@ export default async function run({ browser, stack }) {
   const owner = await login(USERS.acctOwner); await rpc(stack, 'acc_bootstrap', {}, owner);
   const sup = (await rpc(stack, 'acc_save_party', { p: { kind: 'supplier', name: 'Offline Supplies Co', state_code: '08', reg_type: 'regular' } }, owner)).data.data.id;
   const tid = (await q("select id from tenants where slug='testacct'"))[0].id;
+  // The shared testacct tenant's client_op column is also used by other suites' own offline-draft tests on this same tenant
+  // (e.g. accounts.mjs directly exercises acc_save_draft_offline with doc_type='bill' too) -- counting an absolute number of
+  // client_op rows breaks the moment another suite runs first in a full continuous run. Take a baseline here and only ever
+  // assert how much that count moves because of THIS suite's own actions, never an absolute value.
+  const billClientOpCount = async () => Number((await q("select count(*)::int n from acc_documents where tenant_id=$1 and client_op is not null and doc_type='bill'", [tid]))[0].n);
+  const baseBills = await billClientOpCount();
   const c = await newCtx(browser, stack, { w: 1280, h: 900 }); const page = await c.newPage(); const errs = watch(page);
   await page.goto(stack.url('testacct', '/accounts.html')); await page.waitForSelector('input[type=password]'); await page.fill('input[type=email]', USERS.acctOwner); await page.fill('input[type=password]', PASSWORD);
   await page.locator('button', { hasText: /^Sign in$/ }).click(); await page.waitForSelector('.shell', { timeout: 15000 }); await page.waitForTimeout(2500);   // lets the offline copy be saved
@@ -37,18 +43,18 @@ export default async function run({ browser, stack }) {
     assert(/needs a connection|Posting needs/i.test(await page.locator('.toast, #toast, [role=status]').allInnerTexts().then((a) => a.join(' ')).catch(() => '')), 'posting offline was not refused');
     await page.locator('.dock .btn', { hasText: /^Save draft$/ }).click(); await page.waitForFunction(() => /Offline drafts/.test(document.querySelector('#tb-t')?.textContent || ''), null, { timeout: 8000 });
     await page.waitForFunction(() => /Offline cartons|Bill/.test(document.querySelector('#main')?.innerText || '') && /Waiting to send \(1\)/.test(document.querySelector('#main')?.innerText || ''), null, { timeout: 8000 });
-    assert(Number((await q("select count(*)::int n from acc_documents where tenant_id=$1 and client_op is not null", [tid]))[0].n) === 0, 'it reached the books while offline');
+    assert((await billClientOpCount()) === baseBills, 'it reached the books while offline');
     await s.shot(page, 'accounting-offline-queue');
   }, 'critical');
   await s.check('Back online: the draft reaches the books once, as a draft (not posted, no number), and the queue empties; sending again adds nothing', async () => {
     down = false;
     const r1 = await page.evaluate(() => flushDrafts()); assert(r1.sent === 1, JSON.stringify(r1));
-    const rows = await q("select doc_type, status, number, total::float8 t, supplier_ref from acc_documents where tenant_id=$1 and client_op is not null", [tid]);
-    assert(rows.length === 1 && rows[0].doc_type === 'bill' && rows[0].status === 'draft' && /^DRAFT-/.test(rows[0].number), JSON.stringify(rows));
+    const rows = await q("select doc_type, status, number, total::float8 t, supplier_ref from acc_documents where tenant_id=$1 and client_op is not null and doc_type='bill' order by created_at desc limit 1", [tid]);
+    assert((await billClientOpCount()) === baseBills + 1 && rows[0].status === 'draft' && /^DRAFT-/.test(rows[0].number), JSON.stringify(rows));
     assert(Math.abs(rows[0].t - 354) < 0.05, 'total ' + rows[0].t + ' (3 x 100 + 18% GST)');
     assert((await page.evaluate(async () => (await draftQueue()).length)) === 0, 'queue not emptied');
     const r2 = await page.evaluate(() => flushDrafts()); assert(r2.sent === 0, 'second send: ' + JSON.stringify(r2));
-    assert(Number((await q("select count(*)::int n from acc_documents where tenant_id=$1 and client_op is not null", [tid]))[0].n) === 1, 'duplicated');
+    assert((await billClientOpCount()) === baseBills + 1, 'duplicated');
   }, 'critical');
   await s.check('A draft the books refuse (supplier gone) is kept and shown with the reason, never silently dropped; it can be discarded', async () => {
     await page.evaluate(async () => { await queueDraft({ doc_type: 'bill', party_id: '00000000-0000-0000-0000-000000000009', doc_date: today(), lines: [{ description: 'x', qty: 1, rate: 10, tax_rate: 0 }] }, 10); });

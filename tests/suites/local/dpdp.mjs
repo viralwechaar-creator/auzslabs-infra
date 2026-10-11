@@ -74,7 +74,12 @@ export default async function run({ browser, stack }) {
     assert(!(await page.locator('#consentBox').isVisible()), 'consent box should be for sign-up only');
   }, 'critical');
   await s.check('Account: the notice banner appears, Privacy & my data works end to end (agree, request, list, download)', async () => {
-    await page.goto(stack.url('', '/signup.html')); await page.waitForTimeout(500); await page.click('#modeLogin'); await page.fill('#email', USERS.plain); await page.fill('#password', PASSWORD); await page.click('#submitBtn'); await page.waitForTimeout(2500);
+    // Its own disposable account (signed up here), never the shared USERS.plain fixture -- orders.mjs runs earlier in the
+    // same continuous process and, by confirming a real order's payment, turns that account into a real tenant owner with
+    // a full business dashboard (the whole point of what it's testing); this screen specifically needs a bare account with
+    // no business yet, so account.html takes the light "customer" boot path this check actually exercises.
+    const privacyEmail = 'privacy-' + Date.now() + '@test.local'; await signup(privacyEmail);
+    await page.goto(stack.url('', '/signup.html')); await page.waitForTimeout(500); await page.click('#modeLogin'); await page.fill('#email', privacyEmail); await page.fill('#password', PASSWORD); await page.click('#submitBtn'); await page.waitForTimeout(2500);
     await page.goto(stack.url('', '/account.html#privacy')); await page.waitForSelector('#consentBanner', { timeout: 15000 });
     await page.waitForSelector('#pane-privacy .card h3'); assert(/Your consent/.test(await page.locator('#pane-privacy').innerText()), 'privacy pane');
     await page.click('#cbAgree'); await page.waitForFunction(() => !document.querySelector('#consentBanner')); await page.reload(); await page.waitForSelector('#pane-privacy .card h3'); await page.waitForTimeout(800);

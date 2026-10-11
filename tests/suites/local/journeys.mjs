@@ -197,17 +197,24 @@ export default async function run({ browser, stack }) {
     // signup request (the one created earlier in this suite)
     const sr = (await q("select id from signup_requests where business_name='QA Business' limit 1"))[0];
     if (sr) { assert((await call('admin_delete_lead', { p_kind: 'signup_request', p_id: sr.id }, adm)).status === 200, 'signup request not deleted'); }
-    // account: refused for self, platform admin, owner; works for a plain account (needs the typed email)
+    // account: refused for self, platform admin, owner; works for a plain account (needs the typed email).
+    // Uses its own disposable login (created here), never the shared USERS.plain fixture -- mobile.mjs, security.mjs,
+    // dpdp.mjs and others run later in the same continuous process and assume that account still exists.
     const adminId = (await q("select id from auth_users where email=$1", [USERS.admin]))[0].id;
     assert((await call('admin_delete_user', { p_user_id: adminId, p_confirm_email: USERS.admin }, adm)).status >= 400, 'admin deleted themselves');
     const ownerId = (await q("select id from auth_users where email=$1", [USERS.payOwner || USERS.mobOwner]))[0].id;
     assert((await call('admin_delete_user', { p_user_id: ownerId, p_confirm_email: USERS.payOwner || USERS.mobOwner }, adm)).status >= 400, 'a business owner was deleted as a bare account');
-    const plainId = (await q("select id from auth_users where email=$1", [USERS.plain]))[0].id;
-    assert((await call('admin_delete_user', { p_user_id: plainId, p_confirm_email: 'wrong@x.test' }, adm)).status >= 400, 'wrong typed email accepted');
-    assert((await call('admin_delete_user', { p_user_id: plainId, p_confirm_email: USERS.plain }, adm)).status === 200, 'plain account not deleted');
-    assert((await q("select count(*)::int n from auth_users where id=$1", [plainId]))[0].n === 0, 'account still there');
-    // a whole client with Payroll + AUZsMob data: tenant, logins and every tenant table are empty afterwards
-    const tid = (await q("select id from tenants where slug='testmob'"))[0].id;
+    const disposableEmail = 'delete-me-user-' + Date.now() + '@test.local';
+    const disposableHash = (await q("select password_hash from auth_users where email=$1", [USERS.plain]))[0].password_hash;
+    const disposableId = (await q("insert into auth_users(email, password_hash) values ($1, $2) returning id", [disposableEmail, disposableHash]))[0].id;
+    assert((await call('admin_delete_user', { p_user_id: disposableId, p_confirm_email: 'wrong@x.test' }, adm)).status >= 400, 'wrong typed email accepted');
+    assert((await call('admin_delete_user', { p_user_id: disposableId, p_confirm_email: disposableEmail }, adm)).status === 200, 'disposable account not deleted');
+    assert((await q("select count(*)::int n from auth_users where id=$1", [disposableId]))[0].n === 0, 'account still there');
+    // a whole client with Payroll + AUZsMob data: tenant, logins and every tenant table are empty afterwards.
+    // Its own disposable tenant (created here), never the shared `testmob` fixture -- mobile.mjs, offline.mjs and
+    // the design suite run later in the same process and assume that tenant still exists.
+    const tid = (await q("insert into tenants(slug, name, niche, plan, status) values ($1, 'Delete Me Co', 'general', 'pro', 'active') returning id", ['delete-me-' + Date.now()]))[0].id;
+    await q("insert into tenant_settings(tenant_id, features, labels, business_rules) select $1, p.default_features, p.default_labels, p.default_business_rules from niche_presets p where p.niche='general'", [tid]);
     const owner = (await q("select id from auth_users where email=$1", [USERS.mobOwner]))[0].id;
     await q("insert into mob_items(id, tenant_id, name, created_by) values (gen_random_uuid(), $1, 'Delete me', $2)", [tid, owner]);
     await q("insert into pay_org(tenant_id) values ($1) on conflict do nothing", [tid]);
