@@ -170,12 +170,14 @@ async function scSaveProductPrices(p, sale, buy, mrp) {
     sale_price: sale, purchase_price: buy, mrp, is_service: p.is_service, track_stock: p.track_stock, track_batch: p.track_batch, track_serial: p.track_serial, reorder_level: p.reorder_level || 0, reorder_qty: p.reorder_qty || 0, notes: p.notes || '', active: p.active !== false, price_lists: p.price_lists || {} } });
   // acc_save_product only ever returns {id}, never the saved row, so there is nothing to merge from its reply. Build the
   // updated product from what we already know we just sent (every field we sent was accepted, or the call above would have
-  // thrown) and splice it into S.products in place, rather than re-fetching the whole catalogue and hoping that round trip
-  // lands after this one: a second products(true) call racing an unrelated background refresh (the offline sync flush, a
-  // periodic re-render) can resolve out of order and silently revert the very prices just saved back onto the screen, even
-  // though the database itself already has the new values -- the exact failure this replaced.
+  // thrown) and fold it into the cache through rememberProducts (core.js) -- never a second products(true) round trip: that
+  // would race an unrelated background refresh (the offline sync flush, a periodic re-render) and could resolve out of
+  // order, silently reverting the very prices just saved back onto the screen even though the database already has the
+  // new values. rememberProducts also keeps scan-sync.js's own SQ.base snapshot in step, which a plain S.products splice
+  // here would miss -- leaving SQ.base stale enough that the very next offline-queue action (sqRefreshLocal rebuilding
+  // S.products from SQ.base) would have reverted this same save right back.
   const updated = { ...p, sale_price: sale, purchase_price: buy, mrp };
-  const i = (S.products || []).findIndex((x) => x.id === p.id); if (i >= 0) S.products[i] = updated;
+  rememberProducts([updated]);
   if (window.offSave) offSave('products', S.products);
   return updated;
 }
