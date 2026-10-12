@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import '../core/repo.dart';
 import '../core/session.dart';
 import 'actions.dart';
+import 'admin.dart';
+import 'scan.dart';
+import 'kit.dart';
 import 'floor.dart';
 import 'more.dart';
 import 'receipt.dart';
@@ -195,13 +198,14 @@ class _HomeState extends State<Home> {
       KitchenPage(this),
       OrdersPage(this),
       GuestPage(this),
-      MorePage(this),
+      s.can('m') ? AdminPage(this) : MorePage(this),
     ];
     return Scaffold(
       appBar: AppBar(
         title: Text('${s.cfg['name']}'),
         actions: [
           Center(child: InkWell(onTap: _syncInfo, child: Padding(padding: const EdgeInsets.all(8), child: Text(s.syncing ? 'Syncing…' : s.repo!.lastError != null ? 'Sync problem' : s.repo!.pending > 0 ? 'Not synced (${s.repo!.pending})' : 'Synced', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: (s.repo!.pending > 0 || s.repo!.lastError != null) ? Colors.orange.shade800 : Colors.green.shade700))))),
+          IconButton(icon: const Icon(Icons.qr_code_scanner), tooltip: 'Scan QR', onPressed: () => scanAndHandle(context, this)),
           IconButton(icon: const Icon(Icons.sync), onPressed: s.sync),
           PopupMenuButton<String>(onSelected: (_) => s.signOut(), itemBuilder: (_) => const [PopupMenuItem(value: 'out', child: Text('Sign out'))]),
         ],
@@ -216,7 +220,7 @@ class _HomeState extends State<Home> {
           const NavigationDestination(icon: Icon(Icons.soup_kitchen_outlined), label: 'Kitchen'),
           const NavigationDestination(icon: Icon(Icons.receipt_long), label: 'Orders'),
           NavigationDestination(icon: Badge(isLabelVisible: guests.isNotEmpty, label: Text('${guests.length}'), child: const Icon(Icons.qr_code_2)), label: 'QR orders'),
-          const NavigationDestination(icon: Icon(Icons.more_horiz), label: 'More'),
+          NavigationDestination(icon: Icon(s.can('m') ? Icons.dashboard_customize_outlined : Icons.more_horiz), label: s.can('m') ? 'Admin' : 'More'),
         ],
       ),
     );
@@ -255,7 +259,7 @@ class _SellPageState extends State<SellPage> {
       ),
       Expanded(
         child: items.isEmpty
-            ? Center(child: Text(s.repo!.of('item').isEmpty ? 'Loading your menu… connect once to download it.' : 'No items'))
+            ? (s.repo!.of('item').isEmpty ? Empty(Icons.restaurant_menu, 'Your menu is empty', s.syncing ? 'Downloading your menu…' : 'Add items in Admin > Menu, or connect once to download your existing menu.', action: s.can('m') ? 'Add menu items' : null, onAction: s.can('m') ? () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => MenuAdmin(h))) : null) : const Empty(Icons.search_off, 'No items here', 'Try another category or search.'))
             : GridView.builder(
                 padding: const EdgeInsets.all(12),
                 gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 180, mainAxisExtent: 84, crossAxisSpacing: 8, mainAxisSpacing: 8),
@@ -460,7 +464,7 @@ class GuestPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final g = h.guests;
-    if (g.isEmpty) return const Center(child: Text('No QR orders waiting'));
+    if (g.isEmpty) return const Empty(Icons.qr_code_2, 'No QR orders waiting', 'When a guest scans a table QR and orders, it shows up here for you to accept.');
     return RefreshIndicator(
       onRefresh: h.loadGuests,
       child: ListView(children: [

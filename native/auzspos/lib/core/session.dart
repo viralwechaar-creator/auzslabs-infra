@@ -30,6 +30,7 @@ class Session extends ChangeNotifier {
   }
 
   String role = 'cashier';
+  bool hasBusiness = true;
   String slug = 'app';
   Map<String, dynamic>? perms;
   static const _defaultPerms = {'pos': true, 'orders': true, 'kitchen': true, 'reports': true, 'staff': true, 'inventory': true, 'crm': true, 'menu': false, 'settings': false, 'billing': false};
@@ -45,6 +46,7 @@ class Session extends ChangeNotifier {
   Future<void> _loadRole() async {
     try {
       final r = await api.one('profiles', 'id', '${user!['id']}', select: 'role,role_id');
+      hasBusiness = r != null;
       role = '${r?['role'] ?? 'cashier'}';
       perms = null;
       if (r?['role_id'] != null) {

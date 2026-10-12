@@ -4,6 +4,7 @@ import 'ui/login.dart';
 import 'ui/home.dart';
 import 'ui/launch.dart';
 import 'ui/theme.dart';
+import 'ui/nobusiness.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,7 +26,7 @@ class App extends StatelessWidget {
           title: 'AUZsPOS',
           debugShowCheckedModeBanner: false,
           theme: Tk.theme(),
-          home: Launch(child: s.signedIn ? Home(s) : Login(s)),
+          home: Launch(child: !s.signedIn ? Login(s) : (s.hasBusiness ? Home(s) : NoBusiness(s))),
         );
       },
     );

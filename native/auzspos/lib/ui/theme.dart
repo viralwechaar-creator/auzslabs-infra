@@ -5,6 +5,7 @@ class Tk {
   static const bg = Color(0xFFF5F4F2), card = Colors.white, label = Color(0xFF2E2C2A), label2 = Color(0xA83C3834), line = Color(0x243C342C);
   static const green = Color(0xFF1F8A3D), orange = Color(0xFFA85A00), red = Color(0xFFD70015);
   static Color accent = const Color(0xFF800020);
+  static Color get accentText => accent;
 
   static Color parse(String? hex) {
     if (hex == null) return const Color(0xFF800020);

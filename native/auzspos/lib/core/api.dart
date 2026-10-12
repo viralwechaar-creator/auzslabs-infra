@@ -69,6 +69,15 @@ class ApiClient {
 
   Future<Map<String, dynamic>> confirm2fa(String challenge, String code) async => _session(await _request('POST', '/auth/2fa/challenge', body: {'challenge': challenge, 'code': code}, auth: false));
 
+  /// Password reset mail (same endpoint as the website; the reply is the same whether or not the address exists).
+  Future<void> forgotPassword(String email) async => _request('POST', '/auth/forgot', body: {'email': email}, auth: false);
+
+  /// A session handed back by the central Google sign-in page.
+  Map<String, dynamic> useHandoff(String token, Map<String, dynamic> user) {
+    this.token = token;
+    return user;
+  }
+
   Map<String, dynamic> _session(dynamic data) {
     final m = Map<String, dynamic>.from(data as Map);
     if (m['requires2fa'] == true) throw TwoFactorRequired('${m['challenge']}');

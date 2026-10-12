@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../core/repo.dart';
 import 'home.dart';
 import 'theme.dart';
+import 'kit.dart';
+import 'admin.dart';
 
 String _mins(dynamic iso) {
   final t = DateTime.tryParse('$iso');
@@ -38,7 +40,7 @@ class _TablesPageState extends State<TablesPage> {
   Widget build(BuildContext context) {
     final h = widget.h;
     final all = h.s.repo!.of('table').toList()..sort((a, b) => '${a['name']}'.compareTo('${b['name']}'));
-    if (all.isEmpty) return const Center(child: Padding(padding: EdgeInsets.all(24), child: Text('No tables yet. Add them in the website Admin console under Menu > Tables.', textAlign: TextAlign.center)));
+    if (all.isEmpty) return Empty(Icons.table_restaurant_outlined, 'No tables yet', 'Add your tables to take dine-in orders and print a QR code for each one.', action: h.s.can('m') ? 'Add tables' : null, onAction: h.s.can('m') ? () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => TablesAdmin(h))) : null);
     final secs = {for (final t in all) '${t['sec'] ?? 'Main'}'}.toList();
     final shown = all.where((t) => sec == 'all' || '${t['sec'] ?? 'Main'}' == sec).toList();
     final states = [for (final t in shown) (t, tableState(h, t))];
@@ -126,7 +128,7 @@ class KitchenPage extends StatelessWidget {
     final out = all.where((o) => o['kstat'] == 'dispatched').toList();
     final target = (h.s.cfg['kdsTargetMin'] ?? 15) as num;
     return ListView(padding: const EdgeInsets.all(12), children: [
-      if (queue.isEmpty && ready.isEmpty && out.isEmpty) const Padding(padding: EdgeInsets.all(32), child: Center(child: Text('Nothing in the kitchen right now', style: TextStyle(color: Tk.label2)))),
+      if (queue.isEmpty && ready.isEmpty && out.isEmpty) const Padding(padding: EdgeInsets.only(top: 60), child: Empty(Icons.soup_kitchen_outlined, 'Kitchen is clear', 'New orders sent to the kitchen show up here as tickets.')),
       for (final o in queue) _ticket(context, o, target),
       if (ready.isNotEmpty) ...[
         const Padding(padding: EdgeInsets.fromLTRB(4, 12, 4, 6), child: Text('Ready', style: TextStyle(fontWeight: FontWeight.w800))),
