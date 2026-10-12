@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/api.dart';
 import '../core/session.dart';
+import 'theme.dart';
 
 class Login extends StatefulWidget {
   const Login(this.s, {super.key});
@@ -59,7 +60,9 @@ class _LoginState extends State<Login> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 400),
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                const Text('AUZsPOS', textAlign: TextAlign.center, style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800)),
+                Image.asset('assets/logo-pos.png', height: 64),
+                const SizedBox(height: 8),
+                const Text('Sign in to your till', textAlign: TextAlign.center, style: TextStyle(color: Tk.label2)),
                 const SizedBox(height: 24),
                 SegmentedButton<bool>(
                   segments: const [ButtonSegment(value: false, label: Text('Owner / manager')), ButtonSegment(value: true, label: Text('Staff'))],
@@ -67,9 +70,9 @@ class _LoginState extends State<Login> {
                   onSelectionChanged: (v) => setState(() => staff = v.first),
                 ),
                 const SizedBox(height: 16),
-                TextField(controller: a, keyboardType: TextInputType.emailAddress, autocorrect: false, decoration: InputDecoration(labelText: staff ? 'Username' : 'Email', border: const OutlineInputBorder())),
+                TextField(controller: a, keyboardType: TextInputType.emailAddress, autocorrect: false, decoration: InputDecoration(labelText: staff ? 'Username' : 'Email')),
                 const SizedBox(height: 12),
-                TextField(controller: b, obscureText: true, keyboardType: staff ? TextInputType.number : TextInputType.visiblePassword, decoration: InputDecoration(labelText: staff ? 'PIN' : 'Password', border: const OutlineInputBorder())),
+                TextField(controller: b, obscureText: true, keyboardType: staff ? TextInputType.number : TextInputType.visiblePassword, decoration: InputDecoration(labelText: staff ? 'PIN' : 'Password')),
                 if (err != null || note != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(err ?? note!, style: const TextStyle(color: Colors.red))),
                 const SizedBox(height: 16),
                 FilledButton(onPressed: busy ? null : go, style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)), child: Text(busy ? 'Signing in…' : 'Sign in')),

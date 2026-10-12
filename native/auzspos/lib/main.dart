@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'core/session.dart';
 import 'ui/login.dart';
 import 'ui/home.dart';
+import 'ui/theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,12 +16,17 @@ class App extends StatelessWidget {
   final Session s;
   @override
   Widget build(BuildContext context) {
-    const wine = Color(0xFF800020);
-    return MaterialApp(
-      title: 'AUZsPOS',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: wine), useMaterial3: true, scaffoldBackgroundColor: const Color(0xFFF5F4F2)),
-      home: ListenableBuilder(listenable: s, builder: (_, __) => s.signedIn ? Home(s) : Login(s)),
+    return ListenableBuilder(
+      listenable: s,
+      builder: (_, _) {
+        Tk.accent = Tk.parse(s.signedIn ? '${s.cfg['col'] ?? ''}' : null);
+        return MaterialApp(
+          title: 'AUZsPOS',
+          debugShowCheckedModeBanner: false,
+          theme: Tk.theme(),
+          home: s.signedIn ? Home(s) : Login(s),
+        );
+      },
     );
   }
 }
