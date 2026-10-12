@@ -77,7 +77,7 @@ function render() {
   if (S.authExpired || !S.user) return login('Your session ended. Please sign in again.');
   applyTheme(); freshCur();
   const navs = navItems();
-  if (!navs.some((n) => n.k === S.tab)) S.tab = defaultTab(navs);
+  if (!V[S.tab]) S.tab = defaultTab(navs);
   const view = V[S.tab] || V.more, keep = {};
   for (const sel of ['#body', '.items-scroll', '.cats-col', '.tk-lines']) { const e = $('#app ' + sel); if (e) keep[sel] = e.scrollTop; }
   const banners = [standaloneBanner(), guestBanner(), readyBanner(), dispatchedBanner()].filter(Boolean);
