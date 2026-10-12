@@ -8,7 +8,7 @@ const cfgImage=(k,label,prefix,o={})=>{const prev=h('div',{class:'hint'},cfg()[k
 PAGES['mgmt/config']=()=>{const c=cfg();return[pageHead('Configuration','Business details used on bills, the public site and reports.'),ownerOnly(),
  card(cardHead('Business'),h('div',{class:'fgrid'},cfgSelect('bizType','Business type',[['restaurant','Café, restaurant, bar, bakery, hotel'],['salon','Salon / spa'],['retail','Retail (size & colour stock)']]),cfgField('name','Business name'),cfgField('phone','Phone'),cfgField('whatsapp','WhatsApp number',{hint:'Used for the WhatsApp links in Marketing'}),cfgField('gstin','GSTIN'),cfgField('addr','Address',{wide:true,area:true}))),
  card(cardHead('Billing'),h('div',{class:'fgrid'},cfgField('tax','Default tax (%)',{type:'number'}),cfgField('prefix','Invoice prefix'),cfgField('upi','UPI ID for QR payments'),cfgField('ftr','Bill footer',{wide:true,area:true}))),
- card(cardHead('Look & invoice'),h('div',{class:'fgrid'},cfgField('col','Brand colour (hex, e.g. #800020)'),cfgImage('logo','Logo',  'brand'),cfgSelect('w','Paper width',[[80,'80 mm'],[58,'58 mm']]),cfgSelect('sty','Invoice style',[['mono','Thermal (monospace)'],['sans','Clean (sans-serif)']]),cfgField('fs','Invoice font size (px)',{type:'number'}))),
+ card(cardHead('Look & invoice'),h('div',{class:'fgrid'},cfgField('col','Brand colour (hex, e.g. #800020)'),cfgImage('logo','Logo',  'brand'),cfgSelect('w','Paper width',[[80,'80 mm'],[58,'58 mm']]),cfgSelect('sty','Invoice style',[['mono','Thermal (monospace)'],['sans','Clean (sans-serif)']]),cfgField('fs','Invoice font size (px)',{type:'number'}),cfgSelect('billStyle','Bill design',[['',  'Standard (default)'],...(window.auzBillTemplates?auzBillTemplates.list.map(([k,label])=>[k,label]):[])]),h('div',{class:'fld'},h('label',{},' '),btn('Preview with sample data',()=>previewBillStyle(cfg().billStyle),''))),h('p',{class:'hint'},(window.auzBillTemplates&&auzBillTemplates.list.find(([k])=>k==cfg().billStyle)||[])[2]||'')),
  card(cardHead('Self-order'),h('div',{class:'fgrid'},cfgField('gw','Guest ordering welcome text',{wide:true,area:true}))),
  card(cardHead('Targets'),h('div',{class:'fgrid'},cfgField('targetMargin','Target margin (%)',{type:'number',hint:'Shown on the Dashboard margin card'}),cfgField('dailyTarget','Daily sales target (₹)',{type:'number'}))),
  card(cardHead('Operations'),setRow('Appearance','Light, dark, or follow this device\'s setting.',tabsBar([['system','Auto'],['light','Light'],['dark','Dark']],auzThemeGet(),v=>{auzTheme(v);render()})),
@@ -16,6 +16,19 @@ PAGES['mgmt/config']=()=>{const c=cfg();return[pageHead('Configuration','Busines
   setRow('Barcode scanner','Adds a Barcode field to items; scanning one on Sell adds it straight to the order. Any USB/Bluetooth scanner in keyboard-emulation mode works, no drivers needed.',sw(c.hwBarcode,v=>saveSettings({hwBarcode:v}))),
   setRow('Token display screen','Adds a Token tab with large ready-for-pickup numbers, for a spare tablet or monitor at the counter.',sw(c.hwToken,v=>saveSettings({hwToken:v})))),
  card(cardHead('Staff manual'),note('Shown read-only to staff on the POS app\'s Staff tab -- house rules, opening/closing checklist, how to handle common situations.'),h('div',{class:'fgrid'},cfgField('staffManual','Manual text',{wide:true,area:true})))]};
+// Sample bill for the "Preview with sample data" button -- same shape pos/core.js's tot() returns and pos/print.js's
+// rcpt()/renderBill() already read, so the preview shows exactly what a real printed or shared bill will look like.
+function sampleBillOrder(c){
+ const lines=[{name:'Masala Chai',qty:2,price:25},{name:'Veg Sandwich',size:'Large',qty:1,price:120,note:'No onion'},{name:'Cold Coffee',qty:1,price:90}];
+ const sub=lines.reduce((a,l)=>a+l.price*l.qty,0),rate=+c.tax||5,d=20,taxable=sub-d,tax=Math.round(taxable*rate)/100,svc=0,total=Math.round(taxable+tax+svc);
+ return{no:(c.prefix||'INV')+'-SAMPLE-0001',created:new Date().toISOString(),paidAt:new Date().toISOString(),type:'Dine-in',table:null,cust:{name:'Rahul Sharma',phone:'98765 43210'},lines,
+  pays:[{m:'cash',amt:total}],refunds:[],t:{sub,d,tax,round:0,total,net:taxable+tax,rates:{[rate]:{base:taxable,tax}},svc:0,pack:0,deliv:0}};
+}
+function previewBillStyle(style){
+ if(!window.auzBillTemplates||!auzBillTemplates.styles[style]){toast('Standard is the default view used everywhere else in the app -- nothing extra to preview.');return}
+ const c=cfg(),{css,html}=auzBillTemplates.styles[style](sampleBillOrder(c),c,{tableLabel:'Table 4'});
+ const st=h('style',{},css),box=h('div',{style:'max-height:72vh;overflow:auto'},st);box.insertAdjacentHTML('beforeend',html);
+ modal('Preview (sample data, not saved)',box,{wide:true})}
 // ---------- cancellation reasons ----------
 function reasonForm(r){r=r||{};formModal(r.id?'Edit reason':'New reason',[{k:'name',label:'Reason',value:r.name,req:true,placeholder:'e.g. Customer changed mind'}],async v=>{await save('reason',{...r,...v},r.id)},{onDelete:r.id?async()=>remove('reason',r):null})}
 PAGES['mgmt/reasons']=()=>{const rs=L('reason');return[pageHead('Cancellation Reasons','Required whenever a bill is voided, refunded, or a sent item is cancelled.',S.role=='owner'?btn('Add reason',()=>reasonForm(),'p','plus'):null),ownerOnly(),
