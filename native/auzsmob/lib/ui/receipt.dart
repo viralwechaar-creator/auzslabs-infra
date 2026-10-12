@@ -47,16 +47,16 @@ Future<void> printSale(MobSession s, Map<String, dynamic> sale) async {
   final st = s.settings;
   final doc = pw.Document();
   pw.Widget row(String a, String b, {bool bold = false}) => pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
-        pw.Expanded(child: pw.Text(a, style: pw.TextStyle(fontSize: 9, fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal))),
-        pw.Text(b, style: pw.TextStyle(fontSize: 9, fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal)),
+        pw.Expanded(child: _T(a, style: pw.TextStyle(fontSize: 9, fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal))),
+        _T(b, style: pw.TextStyle(fontSize: 9, fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal)),
       ]);
   final items = (sale['items'] as List? ?? const []).cast<Map>();
-  doc.addPage(pw.Page(
-    pageFormat: const PdfPageFormat(80 * PdfPageFormat.mm, double.infinity, marginAll: 6 * PdfPageFormat.mm),
-    build: (_) => pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.stretch, children: [
-      pw.Text('${st['shopName'] ?? 'Shop'}', textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
-      if ('${st['address'] ?? ''}'.isNotEmpty) pw.Text('${st['address']}', textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 8)),
-      if ('${st['phone'] ?? ''}'.isNotEmpty) pw.Text('${st['phone']}', textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 8)),
+  doc.addPage(pw.MultiPage(
+    pageFormat: PdfPageFormat(80 * PdfPageFormat.mm, 297 * PdfPageFormat.mm, marginAll: 6 * PdfPageFormat.mm),
+    build: (_) => [pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.stretch, children: [
+      _T('${st['shopName'] ?? 'Shop'}', textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
+      if ('${st['address'] ?? ''}'.isNotEmpty) _T('${st['address']}', textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 8)),
+      if ('${st['phone'] ?? ''}'.isNotEmpty) _T('${st['phone']}', textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 8)),
       pw.SizedBox(height: 6),
       row('Bill ${sale['bill_no'] ?? ''}', '${sale['payment_mode'] ?? ''}'),
       row(fmtShort(sale['created_at']), ''),
@@ -67,10 +67,14 @@ Future<void> printSale(MobSession s, Map<String, dynamic> sale) async {
       row('TOTAL', inr(n(sale['total'])), bold: true),
       if (n(sale['balance']) > 0) row('Balance due', inr(n(sale['balance']))),
       pw.SizedBox(height: 8),
-      pw.Text('${st['billFooter'] ?? ''}'.isNotEmpty ? '${st['billFooter']}' : 'Thank you!', textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 9)),
-    ]),
+      _T('${st['billFooter'] ?? ''}'.isNotEmpty ? '${st['billFooter']}' : 'Thank you!', textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 9)),
+    ]),],
   ));
-  await Printing.layoutPdf(name: 'Bill ${sale['bill_no'] ?? ''}', onLayout: (_) async => doc.save());
+  try {
+    await Printing.layoutPdf(name: 'Bill ${sale['bill_no'] ?? ''}', onLayout: (_) async => doc.save());
+  } catch (e) {
+    throw Exception('Could not open the print dialog: $e');
+  }
 }
 
 String fmtShort(dynamic s) {
@@ -78,3 +82,8 @@ String fmtShort(dynamic s) {
   if (d == null) return '';
   return '${ymd(d)} ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
 }
+
+/// The built-in PDF font has no rupee sign or multiplication sign; show them as plain letters.
+String _pt(String t) => t.replaceAll('₹', 'Rs ').replaceAll('×', 'x');
+
+pw.Widget _T(String t, {pw.TextAlign? textAlign, pw.TextStyle? style}) => pw.Text(_pt(t), textAlign: textAlign, style: style);

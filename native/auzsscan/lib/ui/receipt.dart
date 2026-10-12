@@ -15,14 +15,14 @@ Future<void> openWhatsApp(String phone, String text) => launchUrl(Uri.parse('htt
 Future<void> printReceiptPdf(ScanSession s, String number, double total, List<Map<String, dynamic>> items) async {
   final doc = pw.Document();
   pw.Widget row(String a, String b, {bool bold = false}) => pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
-        pw.Expanded(child: pw.Text(a, style: pw.TextStyle(fontSize: 9, fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal))),
-        pw.Text(b, style: pw.TextStyle(fontSize: 9, fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal)),
+        pw.Expanded(child: _T(a, style: pw.TextStyle(fontSize: 9, fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal))),
+        _T(b, style: pw.TextStyle(fontSize: 9, fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal)),
       ]);
-  doc.addPage(pw.Page(
-    pageFormat: const PdfPageFormat(80 * PdfPageFormat.mm, double.infinity, marginAll: 6 * PdfPageFormat.mm),
-    build: (_) => pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.stretch, children: [
-      pw.Text(s.orgName, textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
-      if ('${s.org['gstin'] ?? ''}'.isNotEmpty) pw.Text('GSTIN ${s.org['gstin']}', textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 8)),
+  doc.addPage(pw.MultiPage(
+    pageFormat: PdfPageFormat(80 * PdfPageFormat.mm, 297 * PdfPageFormat.mm, marginAll: 6 * PdfPageFormat.mm),
+    build: (_) => [pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.stretch, children: [
+      _T(s.orgName, textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
+      if ('${s.org['gstin'] ?? ''}'.isNotEmpty) _T('GSTIN ${s.org['gstin']}', textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 8)),
       pw.SizedBox(height: 6),
       row('Invoice $number', ymd(DateTime.now())),
       pw.Divider(),
@@ -30,10 +30,14 @@ Future<void> printReceiptPdf(ScanSession s, String number, double total, List<Ma
       pw.Divider(),
       row('TOTAL', inr(total), bold: true),
       pw.SizedBox(height: 8),
-      pw.Text('Thank you!', textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 9)),
-    ]),
+      _T('Thank you!', textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 9)),
+    ]),],
   ));
-  await Printing.layoutPdf(name: 'Invoice $number', onLayout: (_) async => doc.save());
+  try {
+    await Printing.layoutPdf(name: 'Invoice $number', onLayout: (_) async => doc.save());
+  } catch (e) {
+    throw Exception('Could not open the print dialog: $e');
+  }
 }
 
 String _hello(String name) => 'Hello${name.isEmpty ? '' : ' $name'}';
@@ -94,3 +98,8 @@ Future<void> offlineReceipt(BuildContext c, ScanSession s, Map<String, dynamic> 
         OutlinedButton.icon(onPressed: () => printReceiptPdf(s, '${r['ref']}', n(r['total']), items.map((e) => Map<String, dynamic>.from(e)).toList()), icon: const Icon(Icons.print_outlined), label: const Text('Print or save PDF')),
       ]), actions: [SheetAction('New sale', (ctx) async => true, primary: false)]);
 }
+
+/// The built-in PDF font has no rupee sign or multiplication sign; show them as plain letters.
+String _pt(String t) => t.replaceAll('₹', 'Rs ').replaceAll('×', 'x');
+
+pw.Widget _T(String t, {pw.TextAlign? textAlign, pw.TextStyle? style}) => pw.Text(_pt(t), textAlign: textAlign, style: style);

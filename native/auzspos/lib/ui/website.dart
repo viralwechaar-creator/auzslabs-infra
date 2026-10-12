@@ -4,7 +4,6 @@ import 'package:flutter/material.dart' hide Text;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../core/menu_import.dart';
-import '../core/repo.dart';
 import 'ds.dart';
 import 'home.dart';
 import 'i18n.dart';

@@ -1,4 +1,3 @@
-import 'package:auzspos/core/repo.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'sync_test.dart' show FakeServer, mk;
 
