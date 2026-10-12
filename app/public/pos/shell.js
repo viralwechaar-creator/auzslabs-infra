@@ -284,8 +284,19 @@ async function boot() {
   navigator.serviceWorker && navigator.serviceWorker.register('/sw.js');
   let c = JSON.parse(localStorage.u || 'null'), ses = null; try { ses = (await sb.auth.getSession()).data.session; } catch {}
   const id = ses ? ses.user.id : c && c.id;
-  if (id) { const meta = await get('meta', 'lastUser'); if (meta && meta.v && meta.v !== id) { await clr('rec'); await clr('out'); await del('meta', 'since'); } await put('meta', { k: 'lastUser', v: id }); }
-  (await all('rec')).forEach((r) => (R[r.id] = r));
+  // The local copy belongs to ONE login. A different login on the same address (shared addresses like app.auzslab.in) must never see it:
+  // empty the stores AND the in-memory copy (boot() also runs once before sign-in, which had already loaded the previous business's records into R).
+  for (const k of Object.keys(R)) delete R[k];
+  if (id) {
+    const meta = await get('meta', 'lastUser');
+    if (meta && meta.v && meta.v !== id) {
+      await clr('rec'); await clr('out'); await del('meta', 'since');
+      try { localStorage.removeItem('outlet'); localStorage.removeItem('seeded'); } catch {}
+      S.cur = null; S.resByDay = {};
+    }
+    await put('meta', { k: 'lastUser', v: id });
+    (await all('rec')).forEach((r) => (R[r.id] = r));
+  }
   if (ses) { S.user = ses.user; try { const { data } = await sb.from('profiles').select('role,role_id,outlet_id').eq('id', ses.user.id).single(); if (data && data.outlet_id && data.role !== 'owner') { try { localStorage.outlet = data.outlet_id; } catch {} } if (data) localStorage.u = JSON.stringify((c = { id: ses.user.id, role: data.role, role_id: data.role_id })); } catch {} } else if (c) S.user = { id: c.id };
   if (!S.user) return login();
   S.role = (c && c.role) || 'cashier'; S.role_id = (c && c.role_id) || null; S.perms = null;
