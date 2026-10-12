@@ -15,6 +15,7 @@ async function renderSettings(v) {
     isOwner ? featuresCard(v) : null,
     isOwner ? profitShareCard(v) : null,
     isOwner ? navCard(v) : null,
+    isOwner ? receiptStyleCard(v) : null,
     isOwner ? h('div', { class: 'list' }, liRow({ icon: 'gear', title: t('staffSeeRates'), right: h('span', { class: 'switch' }, h('input', { type: 'checkbox', checked: !!s.staffSeePurchaseRates, onchange: async (e) => { await api('mob_save_settings', { p: { staffSeePurchaseRates: e.target.checked } }); S.ctx = await api('mob_context'); toast(t('saved')); } })) })) : null,
     can('mob_reports') ? h('div', { id: 'staff-box' }, h('div', { class: 'skel', style: { height: '80px' } })) : null,
     can('mob_reports') ? h('div', { id: 'integrity-box' }) : null,
@@ -116,6 +117,34 @@ function navCard(v) {
     h('div', { class: 'row', style: { gap: '8px', marginTop: '10px' } },
       h('button', { class: 'btn fill', type: 'button', onclick: () => { const l = rows.filter((r) => r.on).map((r) => r.id); if (!l.length) return toast(t('navNone')); save(l); } }, t('save')),
       saved ? h('button', { class: 'btn', type: 'button', onclick: () => save([]) }, t('navAuto')) : null));
+}
+
+// Receipt style (owner only): which visual template the shared/printed receipt uses (receipt-templates.js).
+// Saved as features.receiptStyle; empty/"" is the automatic default ('thermal'), same convention navCard's
+// own "Use automatic menu" already follows.
+const RECEIPT_STYLES = [['', 'receiptThermal'], ['modern', 'receiptModern'], ['bold', 'receiptBold'], ['classic', 'receiptClassic'], ['stamped', 'receiptStamped']];
+function sampleSaleData() {
+  const s = S.ctx.settings;
+  return { shop: { name: s.shopName || 'My Mobile Shop', address: s.address || '123 Market Road, Jodhpur', phone: s.phone || '98765 43210', logoUrl: s.logoUrl, footer: s.billFooter },
+    sale: { billNo: (s.billPrefix || 'BILL') + '-1024', date: new Date().toISOString(),
+      items: [{ name: 'iPhone 13 (128GB) — 356938100000001', qty: 1, price: 38999 }, { name: 'Tempered Glass', qty: 2, price: 299 }, { name: 'Screen repair', qty: 1, price: 800 }],
+      subtotal: 40397, discount: 100, total: 40297, paid: 40297, balance: 0, paymentMode: 'upi', customerName: 'Rahul Sharma', customerPhone: '98765 12345', voided: false } };
+}
+function previewReceiptStyle(style) {
+  const data = sampleSaleData();
+  const build = window.auzMobReceiptTemplates && auzMobReceiptTemplates[style || 'thermal'];
+  const node = build ? build(data) : h('p', { class: 'small muted' }, 'Could not render this receipt.');
+  sheet({ title: t('previewTitle'), full: true, body: h('div', { style: { display: 'flex', justifyContent: 'center', padding: '12px' } }, node) });
+}
+function receiptStyleCard(v) {
+  const cur = feats().receiptStyle || '';
+  const sel = selectEl(RECEIPT_STYLES.map(([val, key]) => [val, t(key)]), cur);
+  return section(t('receiptStyleTitle'), h('div', { class: 'small muted', style: { marginBottom: '8px' } }, t('receiptStyleHint')),
+    h('div', { class: 'grid' }, field(t('receiptStyleTitle'), sel),
+      h('button', { class: 'btn sm', type: 'button', style: { justifySelf: 'start' }, onclick: () => previewReceiptStyle(sel.value) }, icon('eye', 16), t('previewSample')),
+      h('button', { class: 'btn fill', type: 'button', onclick: async () => {
+        try { await api('mob_save_settings', { p: { features: { receiptStyle: sel.value } } }); S.ctx = await api('mob_context'); toast(t('saved')); v.refresh(); } catch (e) { fail(e); }
+      } }, t('save'))));
 }
 
 // Profit sharing (owner only): what % of each staffer's profit goes to the shop owner. 0 = off. Saved as features.profitSharePct.

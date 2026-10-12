@@ -257,9 +257,26 @@ function waBillText(s) {
   if (st.billFooter) lines.push(st.billFooter); else lines.push(t('thankYou'));
   return lines.join('\n');
 }
-function waShareSale(s) {
+// Builds the real styled-receipt link (mobbill.html?t=<token>, the chosen template applied) for a sale that
+// has already synced (a real bill_no) and appends it to the WhatsApp text -- same "designed invoice link,
+// not just plain text" promise AUZsLedger/AUZsScan's own shareLink() already keeps (see CLAUDE.md
+// "AUZsScan/AUZsLedger WhatsApp bill link: real invoice link + shorter URL"). A sale still waiting to sync
+// (no real bill_no yet) or offline right now has no token to fetch: the plain text still goes out, just
+// without the link, exactly as before -- never blocks sending the bill over a styled-receipt failure.
+async function receiptLink(s) {
+  if (!s.bill_no || s.voided) return null;
+  try { const r = await api('mob_share_sale', { p_sale_id: s.id }); return r && r.token ? location.origin + '/mobbill.html?t=' + r.token : null; }
+  catch (e) { return null; }
+}
+async function waShareSale(s) {
   let d = String(s.customer_phone || '').replace(/\D/g, ''); if (d.length === 10) d = '91' + d;
-  window.open('https://wa.me/' + d + '?text=' + encodeURIComponent(waBillText(s)), '_blank');
+  // Open the tab synchronously on the tap (iOS Safari blocks a window.open() that happens after an await --
+  // same trick accounts/p-scan.js's scDone() already uses), then point it at the real URL once fetched.
+  const tab = window.open('', '_blank');
+  const link = await receiptLink(s);
+  const text = waBillText(s) + (link ? '\n' + link : '');
+  const url = 'https://wa.me/' + d + '?text=' + encodeURIComponent(text);
+  if (tab) tab.location = url; else window.open(url, '_blank');
 }
 function saleDetailSheet(v, s) {
   sheet({
@@ -270,7 +287,7 @@ function saleDetailSheet(v, s) {
       h('div', { class: 'card' }, h('div', { class: 'row sp' }, h('b', null, t('total')), h('b', null, money(s.total)))),
       s.customer_name ? h('div', { class: 'small muted' }, s.customer_name + (s.customer_phone ? ' · ' + s.customer_phone : '')) : null,
     ),
-    actions: [!s.voided ? { label: t('shareWhatsApp'), onclick: async () => { waShareSale(s); return false; } } : null].concat(can('mob_manage') && !s.voided ? [{ label: t('voidSale'), danger: true, onclick: async (close) => {
+    actions: [!s.voided ? { label: t('shareWhatsApp'), onclick: async () => { await waShareSale(s); return false; } } : null].concat(can('mob_manage') && !s.voided ? [{ label: t('voidSale'), danger: true, onclick: async (close) => {
       const ok = await confirmBox(t('voidSale'), t('confirmVoid'), t('voidSale'), true);
       if (!ok) return false;
       await api('mob_void_sale', { p_sale_id: s.id, p_reason: null });

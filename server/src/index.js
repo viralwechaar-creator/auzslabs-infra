@@ -496,6 +496,8 @@ const RPC = {
   mob_report_ledger: { params: ['p_from', 'p_to', 'p_staff_id', 'p_limit'], defaults: { p_from: null, p_to: null, p_staff_id: null, p_limit: 2000 }, auth: true },
   mob_integrity_check: { params: [], auth: true },
   mob_export_all: { params: [], auth: true },
+  mob_share_sale: { params: ['p_sale_id', 'p_enable'], defaults: { p_enable: true }, auth: true },
+  public_mob_sale: { params: ['p_token'], auth: false },
 };
 
 class HttpError extends Error {
