@@ -91,9 +91,20 @@ ${o.tip && o.tip.amt ? tr('Tip (not part of the bill)', inr(o.tip.amt)) : ''}
 <div class=ft><div><b>${provisional ? 'Payment' : 'Paid via'}</b>${provisional ? 'Not paid yet' : (o.pays || []).map((p) => esc(PAY_LABEL[p.m] || p.m) + ' · ' + inr(p.amt)).join('<br>') || '—'}</div><div class=sig><b>${esc(s.name)}</b><br>${esc(s.addr)}${s.gstin ? '<br>GSTIN ' + esc(s.gstin) : ''}${s.phone ? '<br>' + esc(s.phone) : ''}</div></div>`;
 }
 // customer bill: straight to the receipt printer when one is connected, else the invoice print window
-function prnReceipt(o, dup, provisional) {
-  if (directReady()) return viaPrinter(() => escReceipt(o, dup, provisional), () => prnInv(rcpt(o, dup, provisional)));
+// A chosen bill design (Settings -> Configuration -> Look & invoice -> "Bill design", cfg().billStyle) is a gallery
+// of alternate visual templates (pos/bill-templates.js) for the SAME numbers tot() already computed; the "standard"
+// design below (rcpt()/prnInv()) stays the default when none is chosen, or the template file hasn't loaded.
+function renderBill(o, dup, provisional) {
+  const style = cfg().billStyle;
+  if (style && window.auzBillTemplates && auzBillTemplates.styles[style]) {
+    const { css, html } = auzBillTemplates.styles[style](o, cfg(), { dup, provisional, tableLabel: o.table ? tn(o.table) : '' });
+    return printFrame(css, html);
+  }
   prnInv(rcpt(o, dup, provisional));
+}
+function prnReceipt(o, dup, provisional) {
+  if (directReady()) return viaPrinter(() => escReceipt(o, dup, provisional), () => renderBill(o, dup, provisional));
+  renderBill(o, dup, provisional);
 }
 function escReceipt(o, dup, prov) {
   const s = cfg(), t = o.t || tot(o), refunded = refundedOf(o), cust = o.cust || {}, w = slipWidth(), e = new auzEsc.Esc(w), wrap = auzEsc.wrap;
