@@ -55,6 +55,8 @@ class Session extends ChangeNotifier {
   Map<String, dynamic>? features, enabledFeatures;
   bool featureOn(String k) => features == null || (features![k] == true && (enabledFeatures?[k]) != false);
   String slug = 'app';
+  /// False when the business has not bought AUZsPOS (or the owner switched it off). Unknown (offline, no data yet) counts as allowed.
+  bool posAllowed = true;
   Map<String, dynamic>? perms;
   static const _defaultPerms = {'pos': true, 'orders': true, 'kitchen': true, 'reports': true, 'staff': true, 'inventory': true, 'crm': true, 'menu': false, 'settings': false, 'billing': false};
 
@@ -87,12 +89,19 @@ class Session extends ChangeNotifier {
         }
       } catch (_) {}
       final p = await SharedPreferences.getInstance();
+      if (features != null) {
+        posAllowed = featureOn('pos');
+        await p.setBool('posok.${user!['id']}', posAllowed);
+      } else {
+        posAllowed = p.getBool('posok.${user!['id']}') ?? true;
+      }
       await p.setString('role.${user!['id']}', role);
       await p.setString('slug.${user!['id']}', slug);
     } catch (_) {
       final p = await SharedPreferences.getInstance();
       role = p.getString('role.${user!['id']}') ?? 'cashier';
       slug = p.getString('slug.${user!['id']}') ?? 'app';
+      posAllowed = p.getBool('posok.${user!['id']}') ?? true;
     }
   }
 

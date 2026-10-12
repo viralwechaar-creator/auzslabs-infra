@@ -6,6 +6,7 @@ import 'ui/home.dart';
 import 'ui/launch.dart';
 import 'ui/theme.dart';
 import 'ui/nobusiness.dart';
+import 'ui/notonplan.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,7 +30,7 @@ class App extends StatelessWidget {
           theme: Tk.theme(),
           themeMode: ThemeMode.light,
           builder: (ctx, child) => _Fit(child: child!),
-          home: Launch(child: !s.signedIn ? Login(s) : (s.hasBusiness ? Home(s) : NoBusiness(s))),
+          home: Launch(child: !s.signedIn ? Login(s) : (!s.hasBusiness ? NoBusiness(s) : (s.posAllowed ? Home(s) : NotOnPlan(s)))),
         );
       },
     );
