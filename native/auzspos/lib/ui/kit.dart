@@ -31,6 +31,21 @@ Future<void> formSheet(BuildContext c, String title, List<F> fields, Future<bool
                 padding: const EdgeInsets.only(bottom: 12),
                 child: switch (f.type) {
                   'check' => SwitchListTile(contentPadding: EdgeInsets.zero, title: Text(f.label), value: vals[f.k] == true, onChanged: (v) => set(() => vals[f.k] = v)),
+                  'multi' => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(f.label, style: const TextStyle(fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 6),
+                      Wrap(spacing: 8, runSpacing: 4, children: [
+                        for (final o in f.options)
+                          FilterChip(
+                              label: Text(o[1]),
+                              selected: ((vals[f.k] as List?) ?? const []).contains(o[0]),
+                              onSelected: (on) => set(() {
+                                    final l = [...((vals[f.k] as List?) ?? const [])];
+                                    on ? l.add(o[0]) : l.remove(o[0]);
+                                    vals[f.k] = l;
+                                  })),
+                      ]),
+                    ]),
                   'select' => DropdownButtonFormField<String>(
                       initialValue: f.options.any((o) => o[0] == '${vals[f.k]}') ? '${vals[f.k]}' : null,
                       decoration: InputDecoration(labelText: f.label),
@@ -60,7 +75,7 @@ Future<void> formSheet(BuildContext c, String title, List<F> fields, Future<bool
                   onPressed: () async {
                     final out = <String, dynamic>{};
                     for (final f in fields) {
-                      if (f.type == 'check' || f.type == 'select') {
+                      if (f.type == 'check' || f.type == 'select' || f.type == 'multi') {
                         out[f.k] = vals[f.k];
                       } else if (f.type == 'number') {
                         final t = ctl[f.k]!.text.trim();

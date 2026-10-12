@@ -4,6 +4,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/session.dart';
+import '../core/thermal.dart';
 import 'home.dart';
 
 String _digits(String s) => s.replaceAll(RegExp(r'[^0-9]'), '');
@@ -87,6 +88,14 @@ Future<void> billActions(BuildContext context, HomeState h, Map<String, dynamic>
           Text('${o['no']} · ${inr((t['total'] ?? 0) as num)}', textAlign: TextAlign.center),
           const SizedBox(height: 12),
           FilledButton.icon(onPressed: () => sendWhatsApp(context, h.s, o), icon: const Icon(Icons.chat), label: const Text('Send bill on WhatsApp')),
+          const SizedBox(height: 8),
+          FilledButton.tonalIcon(
+              onPressed: () async {
+                final err = await Thermal.printBill(h.s, o);
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err ?? 'Sent to the printer')));
+              },
+              icon: const Icon(Icons.print),
+              label: const Text('Print on thermal printer')),
           const SizedBox(height: 8),
           OutlinedButton.icon(onPressed: () => printReceipt(h.s, o), icon: const Icon(Icons.print_outlined), label: const Text('Print or save PDF')),
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Done')),

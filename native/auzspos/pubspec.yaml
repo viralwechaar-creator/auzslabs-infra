@@ -44,6 +44,8 @@ dependencies:
   app_links: ^7.2.2
   mobile_scanner: ^7.4.2
   qr_flutter: ^4.1.0
+  print_bluetooth_thermal: ^1.2.5
+  permission_handler: ^13.0.2
 
 dev_dependencies:
   flutter_test:

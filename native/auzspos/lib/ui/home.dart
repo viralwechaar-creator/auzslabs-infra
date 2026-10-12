@@ -115,7 +115,7 @@ class _HomeState extends State<Home> {
     final fresh = lines.where((l) => (l['qty'] as num) > ((l['sent'] ?? 0) as num)).toList();
     if (fresh.isEmpty) return _toast('Nothing new to send');
     final kno = await s.nextKot();
-    final items = [for (final l in fresh) {'n': '${l['name']}${(l['size'] ?? '') != '' ? ' (${l['size']})' : ''}', 'q': (l['qty'] as num) - ((l['sent'] ?? 0) as num), 's': l['st'] ?? 'Kitchen'}];
+    final items = [for (final l in fresh) {'n': '${l['name']}${(l['size'] ?? '') != '' ? ' (${l['size']})' : ''}', 'q': (l['qty'] as num) - ((l['sent'] ?? 0) as num), 's': l['st'] ?? 'Kitchen', if ('${l['note'] ?? ''}'.isNotEmpty) 'note': l['note']}];
     for (final l in lines) {
       l['sent'] = l['qty'];
     }
@@ -309,7 +309,7 @@ class _SellPageState extends State<SellPage> {
             ? (all.isEmpty ? Empty(Icons.restaurant_menu, 'Your menu is empty', s.syncing ? 'Downloading your menu…' : 'Add items in More > Admin console > Menu, or connect once to download your existing menu.', action: s.can('m') ? 'Add menu items' : null, onAction: s.can('m') ? () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => MenuAdmin(h))) : null) : const Empty(Icons.search_off, 'No items here', 'Try another category or search.'))
             : GridView.builder(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisExtent: 196, crossAxisSpacing: 14, mainAxisSpacing: 14),
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 270, mainAxisExtent: 196, crossAxisSpacing: 14, mainAxisSpacing: 14),
                 itemCount: items.length,
                 itemBuilder: (_, i) => _tile(o, items[i]),
               ),
@@ -356,7 +356,7 @@ class _SellPageState extends State<SellPage> {
         borderRadius: BorderRadius.circular(22),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: off ? () => h._toast('${it['name']}: $why') : () => sizes.isEmpty ? add(o, it, '', it['price']) : pickSize(o, it, sizes),
+          onTap: off ? () => h._toast('${it['name']}: $why') : () => _addFlow(o, it, sizes),
           child: Container(
             decoration: BoxDecoration(borderRadius: BorderRadius.circular(22), border: Border.all(color: Tk.line, width: .5)),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -382,14 +382,99 @@ class _SellPageState extends State<SellPage> {
     );
   }
 
-  void add(Map<String, dynamic> o, Map it, String size, num price) {
+  /// Same rule as addItemFlow() on the website: sizes, add-on groups, own extras or a note prompt open the option sheet.
+  void _addFlow(Map<String, dynamic> o, Map it, List<Map> sizes) {
+    final groups = ((it['addonGroups'] as List?) ?? []).map((id) => s.repo!.rec('$id')).whereType<Map>().toList();
+    final own = _parseMods(groups.isNotEmpty ? it['ownMods'] : it['mods']);
+    if (sizes.isEmpty && groups.isEmpty && own.isEmpty && it['askNote'] != true) {
+      add(o, it, '', it['price']);
+    } else {
+      _optionSheet(o, it, sizes, groups, own);
+    }
+  }
+
+  List<(String, num)> _parseMods(dynamic l) {
+    final raw = l is List ? l.map((e) => '$e') : '${l ?? ''}'.split(',');
+    return [
+      for (final m in raw)
+        if (m.trim().isNotEmpty) (m.split(':').first.trim(), num.tryParse(m.contains(':') ? m.split(':')[1].trim() : '') ?? 0),
+    ];
+  }
+
+  void _optionSheet(Map<String, dynamic> o, Map it, List<Map> sizes, List<Map> groups, List<(String, num)> own) {
+    final gs = [
+      for (final g in groups) (name: '${g['name']}', min: (num.tryParse('${g['min'] ?? 0}') ?? 0).toInt(), max: (num.tryParse('${g['max'] ?? 0}') ?? 0).toInt(), mods: _parseMods(g['mods'])),
+      if (own.isNotEmpty) (name: groups.isNotEmpty ? 'Extras' : 'Add-ons', min: 0, max: 0, mods: own),
+    ];
+    Map? size = sizes.isEmpty ? null : sizes.first;
+    final picked = <int, Set<String>>{for (var i = 0; i < gs.length; i++) i: <String>{}};
+    final note = TextEditingController();
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, set) {
+        num unit() => (size != null ? size!['p'] as num : (it['price'] ?? 0) as num) + [for (var i = 0; i < gs.length; i++) for (final m in gs[i].mods) if (picked[i]!.contains(m.$1)) m.$2].fold<num>(0, (a, b) => a + b);
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, MediaQuery.of(ctx).viewInsets.bottom + 12),
+            child: SingleChildScrollView(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: [
+                Text('${it['name']}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                if (sizes.isNotEmpty) ...[
+                  const SectionLabel('Size'),
+                  Group([for (final z in sizes) Li('${z['l']}', chevron: false, trailing: Row(mainAxisSize: MainAxisSize.min, children: [Text(inr(z['p'] as num), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)), const SizedBox(width: 8), Icon(identical(size, z) ? Icons.radio_button_checked : Icons.radio_button_off, color: Tk.accent)]), onTap: () => set(() => size = z))]),
+                ],
+                for (var i = 0; i < gs.length; i++) ...[
+                  SectionLabel('${gs[i].name}${gs[i].min > 0 ? '  (choose at least ${gs[i].min})' : gs[i].max > 0 ? '  (up to ${gs[i].max})' : ''}'),
+                  Group([
+                    for (final m in gs[i].mods)
+                      Li(m.$1, chevron: false, trailing: Row(mainAxisSize: MainAxisSize.min, children: [if (m.$2 != 0) Text('+${inr(m.$2)}', style: const TextStyle(fontSize: 17)), const SizedBox(width: 8), Icon(picked[i]!.contains(m.$1) ? Icons.check_box : Icons.check_box_outline_blank, color: Tk.accent)]), onTap: () => set(() {
+                            final p = picked[i]!;
+                            if (p.contains(m.$1)) {
+                              p.remove(m.$1);
+                            } else {
+                              if (gs[i].max == 1) p.clear();
+                              if (gs[i].max > 1 && p.length >= gs[i].max) return;
+                              p.add(m.$1);
+                            }
+                          })),
+                  ]),
+                ],
+                const SizedBox(height: 12),
+                TextField(controller: note, decoration: const InputDecoration(labelText: 'Note for the kitchen', hintText: 'e.g. less spicy, no onion')),
+                const SizedBox(height: 12),
+                FilledButton(
+                  onPressed: () {
+                    for (var i = 0; i < gs.length; i++) {
+                      if (gs[i].min > 0 && picked[i]!.length < gs[i].min) {
+                        ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('Choose at least ${gs[i].min} in ${gs[i].name}')));
+                        return;
+                      }
+                    }
+                    final mods = [for (var i = 0; i < gs.length; i++) ...picked[i]!];
+                    final text = [if (mods.isNotEmpty) mods.join(', '), if (note.text.trim().isNotEmpty) note.text.trim()].join(' · ');
+                    Navigator.pop(ctx);
+                    add(o, it, size == null ? '' : '${size!['l']}', unit(), note: text);
+                  },
+                  child: Text('Add · ${inr(unit())}'),
+                ),
+              ]),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  void add(Map<String, dynamic> o, Map it, String size, num price, {String note = ''}) {
     final lines = (o['lines'] as List).cast<Map<String, dynamic>>();
-    final same = lines.where((l) => l['id'] == it['id'] && (l['size'] ?? '') == size && l['price'] == price).firstOrNull;
+    final same = lines.where((l) => l['id'] == it['id'] && (l['size'] ?? '') == size && l['price'] == price && '${l['note'] ?? ''}' == note).firstOrNull;
     setState(() {
       if (same != null) {
         same['qty'] = (same['qty'] as num) + 1;
       } else {
-        lines.add({'id': it['id'], 'name': it['name'], 'size': size, 'price': price, 'qty': 1, 'sent': 0, 'st': it['st'] ?? 'Kitchen'});
+        lines.add({'id': it['id'], 'name': it['name'], 'size': size, 'price': price, 'qty': 1, 'sent': 0, 'st': it['st'] ?? 'Kitchen', if (note.isNotEmpty) 'note': note});
       }
     });
     HapticFeedback.selectionClick();
@@ -458,6 +543,7 @@ class _SellPageState extends State<SellPage> {
                           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                             Text('${l['name']}${(l['size'] ?? '') != '' ? ' (${l['size']})' : ''}', style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w600)),
                             Text('${inr(l['price'] as num)}${(l['sent'] ?? 0) > 0 ? ' · sent ${l['sent']}' : ''}', style: const TextStyle(fontSize: 15, color: Tk.label2)),
+                            if ('${l['note'] ?? ''}'.isNotEmpty) Text('${l['note']}', style: TextStyle(fontSize: 14, color: Tk.accent)),
                           ])),
                           Container(
                             decoration: BoxDecoration(color: Tk.fill, borderRadius: BorderRadius.circular(22)),
@@ -627,7 +713,7 @@ class _OrdersPageState extends State<OrdersPage> {
           ]),
           if (x['name'] != null) Text('${x['name']} ${x['phone'] ?? ''}', style: const TextStyle(color: Tk.label2, fontSize: 16)),
           const SizedBox(height: 8),
-          for (final i in ((x['items'] as List?) ?? []).cast<Map>()) Text('${i['qty']} × ${i['name']}${(i['size'] ?? '') != '' ? ' (${i['size']})' : ''}', style: const TextStyle(fontSize: 18)),
+          for (final i in ((x['items'] as List?) ?? []).cast<Map>()) Text('${i['qty']} × ${i['name']}${(i['size'] ?? '') != '' ? ' (${i['size']})' : ''}${'${i['note'] ?? ''}'.isNotEmpty ? ' — ${i['note']}' : ''}', style: const TextStyle(fontSize: 18)),
           if (x['note'] != null) Padding(padding: const EdgeInsets.only(top: 4), child: Text('${x['note']}', style: const TextStyle(fontStyle: FontStyle.italic, color: Tk.label2))),
           const SizedBox(height: 12),
           FilledButton(onPressed: () => h.acceptGuest(x), child: Text(((x['items'] as List?) ?? []).isEmpty ? 'Got it' : 'Accept and send to kitchen')),

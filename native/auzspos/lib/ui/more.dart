@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'admin.dart';
 import 'console.dart';
 import 'ds.dart';
+import 'printer.dart';
 import 'scan.dart';
 import 'theme.dart';
 
@@ -108,7 +109,7 @@ class _MorePageState extends State<MorePage> {
           (await SharedPreferences.getInstance()).setBool('alertSound', v);
         })),
         Li('Outlet', icon: Icons.apartment, value: '${s.cfg['name']}', chevron: false),
-        Li('Receipt printer', icon: Icons.print_outlined, value: 'Print window', chevron: false),
+        Li('Receipt printer', sub: 'Bluetooth thermal printer, 58 or 80 mm', icon: Icons.print_outlined, onTap: () => printerSheet(context)),
         Li('Sync now', icon: Icons.bolt, onTap: () {
           s.sync();
           h.toast('Syncing…');

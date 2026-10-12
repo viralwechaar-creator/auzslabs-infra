@@ -65,7 +65,7 @@ class _TablesPageState extends State<TablesPage> {
         child: GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisExtent: 112, crossAxisSpacing: 12, mainAxisSpacing: 12),
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 250, mainAxisExtent: 112, crossAxisSpacing: 12, mainAxisSpacing: 12),
           itemCount: states.length,
           itemBuilder: (_, i) {
             final (t, s) = states[i];

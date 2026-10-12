@@ -5,6 +5,8 @@ import 'ui/login.dart';
 import 'ui/home.dart';
 import 'ui/launch.dart';
 import 'ui/theme.dart';
+import 'core/version.dart';
+import 'ui/updatescreen.dart';
 import 'ui/nobusiness.dart';
 import 'ui/notonplan.dart';
 
@@ -12,12 +14,14 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final s = Session();
   await s.restore();
-  runApp(App(s));
+  final upd = await checkUpdate();
+  runApp(App(s, upd));
 }
 
 class App extends StatelessWidget {
-  const App(this.s, {super.key});
+  const App(this.s, this.upd, {super.key});
   final Session s;
+  final UpdateInfo? upd;
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -30,7 +34,7 @@ class App extends StatelessWidget {
           theme: Tk.theme(),
           themeMode: ThemeMode.light,
           builder: (ctx, child) => _Fit(child: child!),
-          home: Launch(child: !s.signedIn ? Login(s) : (!s.hasBusiness ? NoBusiness(s) : (s.posAllowed ? Home(s) : NotOnPlan(s)))),
+          home: Launch(child: (upd?.force ?? false) ? UpdateRequired(upd!) : !s.signedIn ? Login(s) : (!s.hasBusiness ? NoBusiness(s) : (s.posAllowed ? Home(s) : NotOnPlan(s)))),
         );
       },
     );
@@ -45,8 +49,9 @@ class _Fit extends StatelessWidget {
   static const k = 0.84;
   @override
   Widget build(BuildContext context) {
-    if (!Platform.isAndroid) return child;
     final mq = MediaQuery.of(context);
+    // phones only: tablets (shortest side 600 dp or more) keep the normal size and get more grid columns
+    if (!Platform.isAndroid || mq.size.shortestSide >= 600) return child;
     final inner = mq.copyWith(
       size: mq.size / k,
       padding: mq.padding / k,

@@ -172,6 +172,8 @@ class _MenuAdminState extends State<MenuAdmin> with SingleTickerProviderStateMix
       return;
     }
     final taxes = s.repo!.of('tax').toList();
+    final groups = s.repo!.of('addongrp').toList();
+    final sizesText = ((it?['sizes'] as List?) ?? []).cast<Map>().map((x) => '${x['l']} = ${x['p']}').join('\n');
     await formSheet(
       context,
       it == null ? 'New item' : 'Edit item',
@@ -181,12 +183,22 @@ class _MenuAdminState extends State<MenuAdmin> with SingleTickerProviderStateMix
         F('price', 'Price (₹)', type: 'number', value: it?['price']),
         F('veg', 'Type', type: 'select', value: it?['veg'] ?? 'veg', options: const [['veg', 'Veg'], ['nonveg', 'Non-veg'], ['egg', 'Egg']]),
         if (taxes.isNotEmpty) F('taxId', 'Tax', type: 'select', value: it?['taxId'] ?? '', options: [['', 'Default rate'], for (final t in taxes) ['${t['id']}', '${t['name']} (${t['rate']}%)']]),
+        F('sizes', 'Sizes (one per line, like  Small = 100). Leave empty for one price.', type: 'multiline', value: sizesText),
+        if (groups.isNotEmpty) F('addonGroups', 'Add-on groups for this item', type: 'multi', value: [...((it?['addonGroups'] as List?) ?? const [])], options: [for (final g in groups) ['${g['id']}', '${g['name']}']]),
         F('desc', 'Description', type: 'multiline', value: it?['desc']),
         F('off', 'Sold out', type: 'check', value: it?['off'] == true),
       ],
       (v) async {
         if ('${v['name']}'.isEmpty || v['price'] == null) return false;
-        final d = {...?it, 'name': v['name'], 'cat': v['cat'], 'price': v['price'], 'veg': v['veg'], 'desc': v['desc'], 'off': v['off'] == true, 'taxId': ('${v['taxId'] ?? ''}').isEmpty ? null : v['taxId']};
+        final sizes = <Map<String, dynamic>>[];
+        for (final ln in '${v['sizes'] ?? ''}'.split('\n')) {
+          final parts = ln.split('=');
+          if (parts.length != 2) continue;
+          final pr = num.tryParse(parts[1].trim());
+          if (parts[0].trim().isEmpty || pr == null) continue;
+          sizes.add({'l': parts[0].trim(), 'p': pr});
+        }
+        final d = {...?it, 'sizes': sizes, if (groups.isNotEmpty) 'addonGroups': v['addonGroups'] ?? [], 'name': v['name'], 'cat': v['cat'], 'price': v['price'], 'veg': v['veg'], 'desc': v['desc'], 'off': v['off'] == true, 'taxId': ('${v['taxId'] ?? ''}').isEmpty ? null : v['taxId']};
         await s.repo!.save('item', d, id: it?['id'] as String?);
         setState(() {});
         s.sync();
