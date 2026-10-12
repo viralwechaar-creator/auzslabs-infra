@@ -142,20 +142,35 @@ function standaloneBanner() {
 }
 
 // ---------- sounds: each event has its own pattern ----------
-const ALERT_TONES = { kot: { freqs: [880], reps: 3, gap: 0.45, vib: [200, 100, 200, 100, 200] }, ready: { freqs: [660, 990], reps: 2, gap: 0.3, vib: [150, 80, 150, 80, 300] }, guest: { freqs: [523, 659, 784], reps: 1, gap: 0.15, vib: [100, 60, 100, 60, 100, 60, 200] }, waiter: { freqs: [440, 349], reps: 3, gap: 0.28, vib: [300, 150, 300, 150, 300, 150, 300] } };
+// Loud and insistent on purpose (owner report: "alarm is not loud enough"):
+// gain rings up to full volume (1.0, was 0.5), more reps per burst, and a
+// new order that nobody has acknowledged (kstat still 'new') gets re-rung
+// every few seconds -- not just once on arrival -- until a cashier/kitchen
+// staffer actually accepts it (kstat moves to 'preparing') or someone mutes
+// alerts for this device (see alertsMuted() below; a shop that can't be
+// silenced is its own usability problem, so this stays a real toggle, not a
+// permanent siren).
+const ALERT_TONES = { kot: { freqs: [880], reps: 5, gap: 0.42, vib: [250, 120, 250, 120, 250, 120, 250] }, ready: { freqs: [660, 990], reps: 3, gap: 0.3, vib: [180, 90, 180, 90, 350] }, guest: { freqs: [523, 659, 784], reps: 2, gap: 0.15, vib: [120, 70, 120, 70, 120, 70, 220] }, waiter: { freqs: [440, 349], reps: 4, gap: 0.26, vib: [320, 160, 320, 160, 320, 160, 320] } };
+function alertsMuted() { try { return localStorage['pos.alertsMuted'] === '1'; } catch { return false; } }
+function setAlertsMuted(v) { try { localStorage['pos.alertsMuted'] = v ? '1' : '0'; } catch {} }
 function alertSound(kind = 'kot') {
+  if (alertsMuted()) return;
   const c = ALERT_TONES[kind] || ALERT_TONES.kot;
-  try { const a = new (window.AudioContext || window.webkitAudioContext)(); let t = a.currentTime; for (let r = 0; r < c.reps; r++) for (const f of c.freqs) { const o = a.createOscillator(), g = a.createGain(); o.type = 'sine'; o.frequency.value = f; o.connect(g); g.connect(a.destination); g.gain.value = 0.001; g.gain.exponentialRampToValueAtTime(0.5, t + 0.02); g.gain.exponentialRampToValueAtTime(0.001, t + c.gap - 0.05); o.start(t); o.stop(t + c.gap); t += c.gap; } } catch {}
+  try { const a = new (window.AudioContext || window.webkitAudioContext)(); let t = a.currentTime; for (let r = 0; r < c.reps; r++) for (const f of c.freqs) { const o = a.createOscillator(), g = a.createGain(); o.type = 'sine'; o.frequency.value = f; o.connect(g); g.connect(a.destination); g.gain.value = 0.001; g.gain.exponentialRampToValueAtTime(1, t + 0.02); g.gain.exponentialRampToValueAtTime(0.001, t + c.gap - 0.03); o.start(t); o.stop(t + c.gap); t += c.gap; } } catch {}
   try { if (navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) navigator.vibrate(c.vib); } catch {}
 }
 // tickets already waiting when the app opens are noted silently; only new arrivals make a sound
-const seenNew = new Set(), seenReady = new Set(); let alertsPrimed = false;
+const seenNew = new Set(), seenReady = new Set(); let alertsPrimed = false, lastReping = 0;
 function checkAlerts() {
+  const stillNew = [];
   for (const o of L('order')) {
     if (o.status === 'void') continue;
-    if (o.kstat === 'new') { if (!seenNew.has(o.id)) { seenNew.add(o.id); if (alertsPrimed && can('kitchen')) alertSound('kot'); } } else seenNew.delete(o.id);
+    if (o.kstat === 'new') { stillNew.push(o.id); if (!seenNew.has(o.id)) { seenNew.add(o.id); if (alertsPrimed && can('kitchen')) alertSound('kot'); } } else seenNew.delete(o.id);
     if (o.kstat === 'ready') { if (!seenReady.has(o.id)) { seenReady.add(o.id); if (alertsPrimed) alertSound('ready'); } } else seenReady.delete(o.id);
   }
+  // keep ringing every 15s while any order is still sitting unacknowledged, so a closed/backgrounded tab's
+  // tab-title flash and the next time someone looks at the screen isn't the only chance to notice it
+  if (alertsPrimed && can('kitchen') && stillNew.length && Date.now() - lastReping > 15000) { lastReping = Date.now(); alertSound('kot'); }
   alertsPrimed = true;
 }
 async function refreshNotifCount() { try { const { data } = await sb.from('notifications').select('id').eq('read', false); const el = $('#notifCount'); if (el) { el.textContent = data && data.length ? String(data.length) : ''; el.classList.toggle('hidden', !(data && data.length)); } } catch {} }
