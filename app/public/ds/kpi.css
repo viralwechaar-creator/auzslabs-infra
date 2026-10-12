@@ -1,0 +1,25 @@
+/* KPI cards, one layout for every staff app: one HERO card (label + context on the left, the big number on the right)
+   and compact STAT TILES in a 2 or 3 column grid. Layout, size and spacing only: colours, fonts, radius and shadow come from
+   each app's own .kpi card style and the shared tokens. Applied by ds/kpi.js (adds .kg, .k-hero, --kc). */
+.kpis.kg{display:grid;grid-template-columns:repeat(var(--kc,3),minmax(0,1fr));gap:8px;margin:0 0 10px;overflow:visible}
+.kpis.kg>.kpi{padding:10px 12px;gap:2px;min-width:0;display:grid;align-content:start;text-align:left;flex:none}
+.kpis.kg>.kpi>:is(.l,.k,.k-l,span){order:-1;font-size:12px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin:0}
+.kpis.kg>.kpi>:is(.v,.n,.k-v,b){font-size:18px;line-height:1.2;font-weight:700;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.kpis.kg>.kpi>:is(.s,.d,.k-s){font-size:12px;line-height:1.25;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+/* hero: the primary emphasis card */
+.kpis.kg>.kpi.k-hero{grid-column:1/-1;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;column-gap:12px;row-gap:2px;align-items:center;align-content:center;padding:18px;background:var(--accent);color:var(--on-accent,#fff);border-color:transparent}
+.kpis.kg>.kpi.k-hero>:is(.l,.k,.k-l,span){grid-column:1;grid-row:1;order:0;font-size:15px;font-weight:600;color:inherit;align-self:end;-webkit-line-clamp:2}
+.kpis.kg>.kpi.k-hero>:is(.s,.d,.k-s){grid-column:1;grid-row:2;order:0;font-size:12px;color:inherit;opacity:.75;align-self:start}
+.kpis.kg>.kpi.k-hero>:is(.v,.n,.k-v,b){grid-column:2;grid-row:1/3;order:0;font-size:34px;line-height:1.05;font-weight:800;letter-spacing:-.02em;text-align:right;color:inherit;justify-self:end;max-width:100%}
+.kpis.kg>.kpi.k-hero>:is(.v,.n,.k-v,b) *{color:inherit}
+.kpis.kg>.kpi.k-hero:not(:has(.s,.d,.k-s))>:is(.l,.k,.k-l,span){grid-row:1/3;align-self:center}
+/* more metrics (7 or more KPIs): the rest folds away */
+.kpis.kg>.kmore{grid-column:1/-1}
+.kpis.kg>.kmore>summary{list-style:none;cursor:pointer;min-height:40px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--accent-text,var(--accent));border-radius:12px;background:var(--card);box-shadow:0 0 0 .5px var(--sep,rgba(0,0,0,.12))}
+.kpis.kg>.kmore>summary::-webkit-details-marker{display:none}
+.kpis.kg>.kmore>.kt{display:grid;grid-template-columns:repeat(var(--kc,3),minmax(0,1fr));gap:8px;margin-top:8px}
+.kpis.kg>.kmore>.kt>.kpi{padding:10px 12px;gap:2px;min-width:0;display:grid;align-content:start;text-align:left}
+.kpis.kg>.kmore>.kt>.kpi>:is(.l,.k,.k-l,span){order:-1;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpis.kg>.kmore>.kt>.kpi>:is(.v,.n,.k-v,b){font-size:18px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpis.kg>.kmore>.kt>.kpi>:is(.s,.d,.k-s){font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (min-width:900px){.kpis.kg{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}.kpis.kg>.kmore>.kt{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}.kpis.kg>.kpi.k-hero>:is(.v,.n,.k-v,b){font-size:40px}}
