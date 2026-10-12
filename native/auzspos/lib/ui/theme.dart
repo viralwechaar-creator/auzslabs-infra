@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart' hide Text;
-import 'i18n.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Same tokens as the website POS (ds/auz.css): warm off-white page, white cards, charcoal text, hairlines, the business colour as the one accent.

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'i18n.dart';
