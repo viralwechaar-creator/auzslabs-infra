@@ -2,8 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../core/repo.dart';
 import '../core/session.dart';
+import 'floor.dart';
 
 String inr(num v) => '₹${v == v.roundToDouble() ? v.toInt() : v.toStringAsFixed(2)}';
+
+typedef HomeState = _HomeState;
 
 class Home extends StatefulWidget {
   const Home(this.s, {super.key});
@@ -18,6 +21,26 @@ class _HomeState extends State<Home> {
   List<Map<String, dynamic>> guests = [];
   Timer? _g;
   Session get s => widget.s;
+
+  void openOrder(Map<String, dynamic> o) => setState(() {
+        cur = Map<String, dynamic>.from(o)..['lines'] = [for (final l in (o['lines'] as List)) Map<String, dynamic>.from(l as Map)];
+        tab = 0;
+      });
+
+  void startDineIn(String tableId) {
+    final unsaved = cur != null && (cur!['lines'] as List).isNotEmpty && s.repo!.rec('${cur!['id']}') == null;
+    setState(() {
+      if (unsaved && cur!['table'] == null) {
+        cur!['type'] = 'Dine-in';
+        cur!['table'] = tableId;
+      } else {
+        cur = newOrder(type: 'Dine-in', table: tableId);
+      }
+      tab = 0;
+    });
+  }
+
+  void toast(String m) => _toast(m);
 
   @override
   void initState() {
@@ -53,12 +76,19 @@ class _HomeState extends State<Home> {
 
   Future<void> persist(Map<String, dynamic> o) async {
     if (o['no'] == null) o['no'] = await s.nextNo();
+    final live = s.repo!.rec('${o['id']}');
+    if (live != null) {
+      for (final k in const ['kstat', 'preparingAt', 'readyAt', 'dispatchAt', 'deliveredAt', 'servedAt']) {
+        if (live[k] != null) o[k] = live[k];
+      }
+    }
     o['t'] = s.tot(o).toJson();
     await s.repo!.save('order', o, id: o['id'] as String);
     unawaited(s.sync());
   }
 
   Future<void> sendKitchen(Map<String, dynamic> o) async {
+    if (o['type'] == 'Dine-in' && o['table'] == null && s.repo!.of('table').isNotEmpty) return _toast('Pick a table first (Review > Table)');
     final lines = (o['lines'] as List).cast<Map<String, dynamic>>();
     final fresh = lines.where((l) => (l['qty'] as num) > ((l['sent'] ?? 0) as num)).toList();
     if (fresh.isEmpty) return _toast('Nothing new to send');
@@ -86,6 +116,10 @@ class _HomeState extends State<Home> {
     o['paidBy'] = s.user!['id'];
     if (o['no'] == null || '${o['no']}'.endsWith('~')) o['no'] = await s.nextNo();
     await persist(o);
+    if (o['type'] == 'Dine-in' && o['table'] != null) {
+      final t = s.repo!.rec('${o['table']}');
+      if (t != null) await s.repo!.save('table', {...t, 'cleaned': false}, id: '${o['table']}');
+    }
     return true;
   }
 
@@ -126,6 +160,8 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
     final pages = [
       SellPage(this),
+      TablesPage(this),
+      KitchenPage(this),
       OrdersPage(this),
       GuestPage(this),
     ];
@@ -144,6 +180,8 @@ class _HomeState extends State<Home> {
         onDestinationSelected: (i) => setState(() => tab = i),
         destinations: [
           const NavigationDestination(icon: Icon(Icons.point_of_sale), label: 'Sell'),
+          const NavigationDestination(icon: Icon(Icons.table_restaurant_outlined), label: 'Tables'),
+          const NavigationDestination(icon: Icon(Icons.soup_kitchen_outlined), label: 'Kitchen'),
           const NavigationDestination(icon: Icon(Icons.receipt_long), label: 'Orders'),
           NavigationDestination(icon: Badge(isLabelVisible: guests.isNotEmpty, label: Text('${guests.length}'), child: const Icon(Icons.qr_code_2)), label: 'QR orders'),
         ],
@@ -211,7 +249,7 @@ class _SellPageState extends State<SellPage> {
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Row(children: [
-              Expanded(child: InkWell(onTap: () => cartSheet(o), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('$qty item${qty == 1 ? '' : 's'} · ${o['type']}', style: const TextStyle(color: Colors.black54)), Text(inr(t.total), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800))]))),
+              Expanded(child: InkWell(onTap: () => cartSheet(o), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('$qty item${qty == 1 ? '' : 's'} · ${o['type']}${o['table'] != null ? ' · ${s.repo!.rec('${o['table']}')?['name'] ?? ''}' : ''}', style: const TextStyle(color: Colors.black54)), Text(inr(t.total), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800))]))),
               OutlinedButton(onPressed: () => cartSheet(o), child: const Text('Review')),
               const SizedBox(width: 8),
               FilledButton(onPressed: () => payDialog(o), child: const Text('Pay')),
