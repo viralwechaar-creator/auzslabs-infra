@@ -1,0 +1,13 @@
+[
+ {"name":"plain 5% exclusive","cfg":{},"order":{"type":"Takeaway","lines":[{"id":"a","price":100,"qty":2},{"id":"b","price":49.5,"qty":3}]}},
+ {"name":"inclusive prices","cfg":{"taxInclusive":true,"tax":12},"order":{"type":"Dine-in","lines":[{"id":"a","price":118,"qty":1},{"id":"b","price":59,"qty":3}]}},
+ {"name":"percent discount","cfg":{"tax":5},"order":{"type":"Dine-in","lines":[{"id":"a","price":250,"qty":2}],"disc":{"t":"%","v":10}}},
+ {"name":"rupee discount","cfg":{"tax":18},"order":{"type":"Takeaway","lines":[{"id":"a","price":333,"qty":1},{"id":"b","price":77,"qty":4}],"disc":{"t":"₹","v":50}}},
+ {"name":"service charge dine-in","cfg":{"tax":5,"serviceChargePct":10},"order":{"type":"Dine-in","lines":[{"id":"a","price":199,"qty":3}]}},
+ {"name":"packing and delivery","cfg":{"tax":5,"packingCharge":20,"deliveryCharge":35},"order":{"type":"Delivery","lines":[{"id":"a","price":120,"qty":2}]}},
+ {"name":"no round off","cfg":{"tax":5,"roundOff":false},"order":{"type":"Takeaway","lines":[{"id":"a","price":33.33,"qty":3}]}},
+ {"name":"complimentary","cfg":{"tax":5,"serviceChargePct":10},"order":{"type":"Dine-in","complimentary":true,"lines":[{"id":"a","price":100,"qty":2}]}},
+ {"name":"item tax record","cfg":{"tax":5},"records":[{"id":"a","kind":"item","taxId":"t12"},{"id":"t12","kind":"tax","rate":12,"inclusive":false},{"id":"t18","kind":"tax","rate":18,"inclusive":true},{"id":"b","kind":"item","taxId":"t18"}],"order":{"type":"Takeaway","lines":[{"id":"a","price":100,"qty":1},{"id":"b","price":118,"qty":2},{"id":"c","price":10,"qty":5}]}},
+ {"name":"half rupee rounds up","cfg":{"tax":0},"order":{"type":"Takeaway","lines":[{"id":"a","price":10.5,"qty":1}]}},
+ {"name":"empty bill","cfg":{},"order":{"type":"Dine-in","lines":[]}}
+]
