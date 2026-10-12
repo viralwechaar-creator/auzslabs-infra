@@ -3,6 +3,23 @@
 const SERIES = [['INV', 'Invoices'], ['CN', 'Credit notes'], ['PB', 'Purchase bills'], ['DN', 'Debit notes'], ['EXP', 'Expenses'], ['QT', 'Quotations'], ['SO', 'Sales orders'], ['DC', 'Delivery challans'], ['PRQ', 'Purchase requests'], ['PO', 'Purchase orders'], ['GRN', 'Goods receipts'], ['RCT', 'Receipts'], ['PAY', 'Payments'], ['JV', 'Journal vouchers']];
 const PERM_LABEL = { acc_view: 'See everything in Accounting', acc_sales: 'Create invoices, quotes and receipts', acc_purchase: 'Create bills, expenses and payments', acc_inventory: 'Manage products and stock', acc_banking: 'Import statements and reconcile', acc_post: 'Journals, transfers, assets', acc_approve: 'Approve documents held for approval', acc_cancel: 'Cancel and reverse', acc_reports: 'Reports and GST', acc_import: 'Import and bulk changes', acc_admin: 'Settings, financial years, locks', acc_audit: 'See the audit log' };
 
+// AUZsScan runs this same shell (window.AUZ_SCAN) with a short menu that has no room for
+// the full Settings page, but still needs to change the invoice layout without opening
+// AUZsLedger -- so it gets this one lightweight page, built from the exact same picker +
+// preview code the Organisation page uses below (invoiceLayoutField/previewInvoiceLayout).
+// Both read and write the same acc_org.settings.brand.invoiceStyle: one business, one setting.
+page('invoicelayout', {
+  title: 'Invoice layout', icon: 'doc', perm: 'acc_admin',
+  render(v) {
+    const o = S.org, br = JSON.parse(JSON.stringify((o.settings && o.settings.brand) || {}));
+    const previewData = () => Object.assign({}, o, { terms: o.invoice_terms, brand: br });
+    const f = invoiceLayoutField(br.invoiceStyle, previewData);
+    v.header({ title: 'Invoice layout' });
+    v.root.append(h('div', { class: 'card grid' }, h('p', { class: 'muted small' }, 'Choose how invoices, bills and receipts look for this business. This is shared with AUZsLedger if you use it too.'), f.row, f.previewBtn),
+      h('div', { class: 'dock' }, h('button', { class: 'btn fill', onclick: async (e) => { e.currentTarget.disabled = true; try { br.invoiceStyle = f.lay.value; const r = await api('acc_save_org', { p: { settings: { brand: br } } }); S.org = r; toast('Saved'); } catch (x) { fail(x); } e.currentTarget.disabled = false; } }, 'Save')));
+  },
+});
+
 page('settings', {
   title: 'Settings', icon: 'gear', perm: 'acc_view',
   async render(v) {
@@ -40,6 +57,15 @@ function imageField(label, hint, br, key, maxW, maxH) {
   draw();
   return h('div', { class: 'grid', style: { gap: '6px' } }, h('div', { class: 'lbl' }, label), prev, file, h('div', { class: 'hint' }, hint));
 }
+// Shared by the Organisation page (below) and AUZsScan's own lightweight Invoice layout
+// page (above) -- exactly one implementation of the picker + "Preview with sample data",
+// behind two entry points onto the same acc_org.settings.brand.invoiceStyle.
+const INVOICE_LAYOUTS = [['', 'Standard'], ['classic', 'Classic tax invoice (logo box, MRP, Billed to / Shipped to)'], ['noir', 'Noir (dark, minimalist)'], ['playful', 'Playful (cream & blue, friendly)'], ['bold', 'Bold (red, graphic, thick rules)'], ['minimal', 'Minimal (clean, corporate, pill info boxes)'], ['stamped', 'Stamped (perforated receipt, typewriter)']];
+function invoiceLayoutField(value, getPreviewData) {
+  const lay = selectEl(INVOICE_LAYOUTS, value || '');
+  const previewBtn = h('button', { class: 'btn sm', type: 'button', style: { justifySelf: 'start' }, onclick: () => previewInvoiceLayout(lay.value, getPreviewData()) }, icon('eye', 16), 'Preview with sample data');
+  return { lay, row: field('Invoice layout', lay), previewBtn };
+}
 function setOrg(v) {
   const o = S.org, br = JSON.parse(JSON.stringify((o.settings && o.settings.brand) || {})); br.bank = br.bank || {}; br.regs = br.regs || [];
   const bf = { upi: input({ value: br.upi || '', placeholder: 'name@bank', label: 'UPI ID' }), web: input({ value: br.website || '', placeholder: 'www.example.com' }), hold: input({ value: br.bank.holder || '' }), bname: input({ value: br.bank.name || '' }), acno: input({ value: br.bank.account || '', mode: 'numeric' }), ifsc: input({ value: br.bank.ifsc || '', max: 11 }), brn: input({ value: br.bank.branch || '' }) };
@@ -50,11 +76,12 @@ function setOrg(v) {
   const val = () => { const g = gst.value.trim().toUpperCase(); gst.value = g; gst.classList.remove('err'); if (!g) { msg.textContent = 'Needed on invoices if you are GST-registered.'; return; } if (g.length < 15) { msg.textContent = g.length + ' of 15 characters'; return; } if (gstinValid(g)) { msg.textContent = 'Valid · ' + (STATES[g.slice(0, 2)] || ''); if (!st.value) st.value = g.slice(0, 2); } else { gst.classList.add('err'); msg.textContent = 'Not a valid GSTIN. Check the characters and the last check digit.'; } };
   const st = selectEl([['', 'Choose state'], ...Object.keys(STATES).map((c) => [c, stateName(c)])], o.state_code || ''); gst.addEventListener('input', val);
   const f = { legal: input({ value: o.legal_name || '' }), trade: input({ value: o.trade_name || '' }), pan: input({ value: o.pan || '', max: 10 }), addr: h('textarea', { class: 'textarea', style: { minHeight: '70px' } }, o.address || ''), city: input({ value: o.city || '' }), pin: input({ value: o.pincode || '', mode: 'numeric', max: 6 }), ph: input({ value: o.phone || '' }), em: input({ value: o.email || '', type: 'email' }),
-    reg: selectEl([['regular', 'Regular (charges GST)'], ['composition', 'Composition scheme (no GST on invoices)'], ['unregistered', 'Not registered (no GST on invoices)']], o.reg_type), terms: h('textarea', { class: 'textarea' }, o.invoice_terms || ''), bank: h('textarea', { class: 'textarea', style: { minHeight: '70px' } }, o.bank_details || ''), foot: input({ value: o.invoice_footer || '' }), lay: selectEl([['', 'Standard'], ['classic', 'Classic tax invoice (logo box, MRP, Billed to / Shipped to)'], ['noir', 'Noir (dark, minimalist)'], ['playful', 'Playful (cream & blue, friendly)'], ['bold', 'Bold (red, graphic, thick rules)'], ['minimal', 'Minimal (clean, corporate, pill info boxes)'], ['stamped', 'Stamped (perforated receipt, typewriter)']], br.invoiceStyle || ''), numst: selectEl([['', 'INV/2026-27/00001'], ['plain', '1/2026-27']], (o.settings && o.settings.number_style) || '') };
+    reg: selectEl([['regular', 'Regular (charges GST)'], ['composition', 'Composition scheme (no GST on invoices)'], ['unregistered', 'Not registered (no GST on invoices)']], o.reg_type), terms: h('textarea', { class: 'textarea' }, o.invoice_terms || ''), bank: h('textarea', { class: 'textarea', style: { minHeight: '70px' } }, o.bank_details || ''), foot: input({ value: o.invoice_footer || '' }), numst: selectEl([['', 'INV/2026-27/00001'], ['plain', '1/2026-27']], (o.settings && o.settings.number_style) || '') };
+  const lf = invoiceLayoutField(br.invoiceStyle, () => ({ legal_name: f.legal.value, trade_name: f.trade.value, name: f.trade.value || f.legal.value, gstin: gst.value, state_code: st.value, address: f.addr.value, city: f.city.value, pincode: f.pin.value, phone: f.ph.value, email: f.em.value, terms: f.terms.value, bank_details: f.bank.value, brand: Object.assign({}, br, { upi: bf.upi.value.trim(), bank: { holder: bf.hold.value.trim(), name: bf.bname.value.trim(), account: bf.acno.value.trim(), ifsc: bf.ifsc.value.trim().toUpperCase(), branch: bf.brn.value.trim() } }) }));
+  f.lay = lf.lay;
   v.root.append(h('div', { class: 'card grid' }, field('Legal name', f.legal), field('Trade name (shown on documents)', f.trade), field('GSTIN', gst), msg, h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('State', st), field('Registration', f.reg)), field('PAN', f.pan), field('Address', f.addr), h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('City', f.city), field('Pincode', f.pin)), h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Phone', f.ph), field('Email', f.em))),
     h('div', { class: 'card grid' }, h('h3', null, 'On invoices'), field('Terms and conditions', f.terms), field('Bank details', f.bank), field('Footer line', f.foot),
-      field('Invoice layout', f.lay),
-      h('button', { class: 'btn sm', type: 'button', style: { justifySelf: 'start' }, onclick: () => previewInvoiceLayout(f.lay.value, { legal_name: f.legal.value, trade_name: f.trade.value, name: f.trade.value || f.legal.value, gstin: gst.value, state_code: st.value, address: f.addr.value, city: f.city.value, pincode: f.pin.value, phone: f.ph.value, email: f.em.value, terms: f.terms.value, bank_details: f.bank.value, brand: Object.assign({}, br, { upi: bf.upi.value.trim(), bank: { holder: bf.hold.value.trim(), name: bf.bname.value.trim(), account: bf.acno.value.trim(), ifsc: bf.ifsc.value.trim().toUpperCase(), branch: bf.brn.value.trim() } }) }) }, icon('eye', 16), 'Preview with sample data'),
+      lf.row, lf.previewBtn,
       field('Invoice number style', f.numst)),
     h('div', { class: 'card grid' }, h('h3', null, 'Business identity'), h('p', { class: 'muted small' }, 'Shown on every printed and shared invoice.'),
       imageField('Logo', 'Appears at the top left. A simple PNG works best.', br, 'logo', 360, 160), imageField('Signature', 'Appears above "Authorised signatory".', br, 'signature', 300, 120), imageField('Stamp or seal', 'Optional. Appears next to the signature.', br, 'stamp', 240, 240),

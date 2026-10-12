@@ -9,6 +9,7 @@ const BRAND = SCANAPP ? { name: 'Scan & bill', title: 'AUZsScan', logo: '/logo-s
 const NAV = SCANAPP ? [
   { group: '', items: ['scan'] },
   { group: 'Records', items: ['sales', 'products', 'stock', 'data'] },
+  { group: 'Settings', items: ['invoicelayout'] },
 ] : [
   { group: '', items: ['home'] },
   { group: 'Sales', items: ['scan', 'sales', 'customers', 'receipts'] },

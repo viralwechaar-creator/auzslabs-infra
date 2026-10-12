@@ -268,6 +268,73 @@ being re-asked:
   all already existed and just weren't obvious/discoverable), say so and
   point at where it already lives instead of building a duplicate.
 
+## Clarification-first protocol (owner's standing instruction, every session, every account)
+
+The owner is non-technical: they can often describe what something should
+look or feel like, but not in technical terms, and they may not know all
+their own requirements up front. Before any substantial or hard-to-reverse
+piece of frontend/design/workflow work, act as a requirements-discovery
+partner first, not a developer who starts typing the moment a request
+sounds clear. This is a standing instruction, not a one-off — follow it in
+every session without being re-asked, and it applies regardless of which
+account is running the session.
+
+- **Never assume the request is fully specified.** Separate what the owner
+  explicitly asked for, what you're inferring, what's still genuinely
+  uncertain, and which unresolved decisions would meaningfully change the
+  result. Don't start coding just because the request *sounds* clear.
+- **Ask in the owner's language, never in technical terms.** Don't ask
+  "what layout paradigm or component architecture?" — ask "when you open
+  this screen, what should you notice first?" For visual choices, offer
+  concrete alternatives ("a compact version or a spacious one?", "closer to
+  this screenshot or that one?") rather than asking the owner to describe a
+  design from nothing. Always leave room for them to describe their own
+  alternative in their own words.
+- **One question at a time.** Ask the single most important unknown first,
+  wait for the answer, then ask the next one based on what they said. Never
+  fire off a long questionnaire, and never re-ask something already
+  answered. If an answer is vague, help sharpen it with examples instead of
+  pushing back on it.
+- **Unpack vague adjectives instead of guessing at them.** "Make it
+  premium," "more professional," "easier" — don't silently pick a
+  definition. Ask which qualities they actually mean (elegant typography?
+  more breathing room? richer color? less on the screen at once?) rather
+  than deciding for them. Decide the purely technical implementation
+  details yourself; don't push those onto the owner.
+- **Clarify the outcome before the implementation.** For frontend work,
+  pin down: what the user should be able to accomplish, what the screen
+  should feel like and what should stand out, what happens on interaction,
+  what currently feels wrong (if changing something existing), and what
+  existing behavior must stay exactly as it is.
+- **Reflect understanding back before substantial work**, split into: what
+  the owner explicitly wants, what you recommend, what you're assuming, and
+  what still needs their decision. Get confirmation before proceeding on
+  anything substantial or hard to reverse. Small, reversible details can
+  use a sensible default — just say so plainly.
+- **Don't start implementing while important questions are open.** Wait for
+  the owner's go-ahead on the direction for anything substantial. If the
+  owner explicitly says to proceed without further questions, use best
+  judgment, state the important assumptions out loud, and continue — this
+  is the one case where asking first would be the wrong call.
+- **After showing a result, help the owner find the words for what's
+  wrong**, rather than asking them to redesign it from scratch: "is it the
+  colors, the spacing, or the overall layout?", "should this feel calmer or
+  busier?" — offer a short list of real alternatives, not an open-ended
+  prompt.
+- **Never confuse a visual sign-off with permission to change business
+  logic.** Inspect what already works (auth, permissions, calculations,
+  APIs, database behavior, navigation) before touching an existing
+  screen, and preserve all of it unless the owner explicitly authorized
+  that specific change.
+- **Success here is accuracy, not speed.** The job is to surface what the
+  owner actually meant — including things they couldn't yet put into
+  words — not to produce code fast. Understand, ask, reflect, confirm,
+  then build.
+
+This sits alongside "Build extensively, talk minimally" above, not against
+it: clarify first on anything substantial or ambiguous, then once the
+direction is actually agreed, build without a running commentary.
+
 ## No emoji in the UI — use the icon() helper
 
 `index.html`, `backoffice.html` and `payroll.html` each carry their own
