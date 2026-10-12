@@ -1968,3 +1968,9 @@ Owner: "Build native app for rest of apps". Same recipe as AUZsMob: separate cop
 - **Launch one app first** (AUZsPOS) to avoid Play's near-identical-listing spam flags. Listing text and assets: `docs/STORE_LISTING.md`, `store/`. Reviewer needs a working demo login (`demo@auzslab.in` / `Auzslab@Demo`, email + password: Google sign-in is hidden inside WebView apps and opens the browser in the native apps); declare camera, location (AUZsPay clock-in), notifications and Bluetooth permissions; account deletion link `auzslab.in/account.html`.
 - Firebase `google-services.json` is still needed for closed-app alerts (native push is not built).
 - Release links (test APKs, GitHub pre-releases): `native-pos-latest`, `native-mob-latest`, `native-scan-latest`, `native-pay-latest`, `native-ledger-latest`. All five builds succeeded on CI as of this note (AUZsScan re-ran after a small fix). Branch `native-pos-release` holds the native work and is not merged to `main`.
+
+## AUZslab social links
+Footer "Connect" column (and the contact page) on every `site/*.html` lists Instagram `https://www.instagram.com/auzslab.in` and Facebook `https://www.facebook.com/share/1FMd3FoFyZ/?mibextid=wwXIfr`. Change them with a script across all 25 pages. Per-client Instagram fields (salon, Chapter One, console) are separate and untouched.
+
+## Play `.aab` builds
+All five `native-*.yml` workflows also build `flutter build appbundle` and publish `AUZs<X>.aab` next to the APK. They sign with the test key unless the secrets `ANDROID_UPLOAD_KEYSTORE_B64`, `..._STORE_PASSWORD`, `..._KEY_ALIAS`, `..._KEY_PASSWORD` exist (then the owner's upload key is used). Do not upload test-key AABs to Play.
