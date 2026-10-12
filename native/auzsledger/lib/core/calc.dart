@@ -126,3 +126,19 @@ String waNumber(String phone) {
   final d = phone.replaceAll(RegExp(r'[^0-9]'), '');
   return d.length == 10 ? '91$d' : d;
 }
+
+/// From/to dates (YYYY-MM-DD) for a report period. Indian financial year runs 1 April to 31 March.
+(String, String) reportPeriod(String key, DateTime now) {
+  final fyStartYear = now.month >= 4 ? now.year : now.year - 1;
+  switch (key) {
+    case 'lastmonth':
+      final first = DateTime(now.year, now.month - 1, 1);
+      return (ymd(first), ymd(DateTime(now.year, now.month, 0)));
+    case 'fy':
+      return (ymd(DateTime(fyStartYear, 4, 1)), ymd(DateTime(fyStartYear + 1, 3, 31)));
+    case 'lastfy':
+      return (ymd(DateTime(fyStartYear - 1, 4, 1)), ymd(DateTime(fyStartYear, 3, 31)));
+    default:
+      return (ymd(DateTime(now.year, now.month, 1)), ymd(DateTime(now.year, now.month + 1, 0)));
+  }
+}

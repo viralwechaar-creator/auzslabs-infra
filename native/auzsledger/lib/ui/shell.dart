@@ -7,6 +7,7 @@ import 'i18n.dart';
 import 'mk.dart';
 import 'p_home.dart';
 import 'p_parties.dart';
+import 'p_reports.dart';
 import 'p_products.dart';
 import 'p_sales.dart';
 import 'p_scan.dart';
@@ -132,6 +133,10 @@ class _LedgerShellState extends State<LedgerShell> with WidgetsBindingObserver {
             Li('Customers and suppliers', icon: Icons.groups_outlined, tone: Tk.blue, onTap: () {
               Navigator.pop(ctx);
               Navigator.push(context, MaterialPageRoute(builder: (_) => PartiesPage(s)));
+            }),
+            if (s.can('acc_reports') || s.can('acc_admin')) Li('Reports', icon: Icons.bar_chart_outlined, tone: Tk.accent, onTap: () {
+              Navigator.pop(ctx);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => ReportsPage(s)));
             }),
             Li('${s.user?['email'] ?? ''}', sub: s.role, icon: Icons.person_outline, tone: Tk.label3, chevron: false),
             Li('Help & report a problem', icon: Icons.help_outline, tone: Tk.label3, onTap: () => launchUrl(Uri.parse('https://wa.me/919251250829'), mode: LaunchMode.externalApplication)),
