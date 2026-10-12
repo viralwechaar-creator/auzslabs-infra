@@ -14,7 +14,8 @@ String _day(DateTime t) => '${t.year}-${t.month.toString().padLeft(2, '0')}-${t.
 
 /// Attendance (clock in / out) and the manager approval PIN.
 class StaffPage extends StatefulWidget {
-  const StaffPage(this.h, {super.key});
+  const StaffPage(this.h, {this.embedded = false, super.key});
+  final bool embedded;
   final HomeState h;
   @override
   State<StaffPage> createState() => _StaffPageState();
@@ -87,7 +88,8 @@ class _StaffPageState extends State<StaffPage> {
 
 /// Business settings (owner only): the same fields the website POS applies to every bill.
 class SettingsPage extends StatefulWidget {
-  const SettingsPage(this.h, {super.key});
+  const SettingsPage(this.h, {this.embedded = false, super.key});
+  final bool embedded;
   final HomeState h;
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -167,7 +169,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
 /// Sales over a period, worked out on the phone from the orders it holds.
 class ReportsPage extends StatefulWidget {
-  const ReportsPage(this.h, {super.key});
+  const ReportsPage(this.h, {this.embedded = false, super.key});
+  final bool embedded;
   final HomeState h;
   @override
   State<ReportsPage> createState() => _ReportsPageState();

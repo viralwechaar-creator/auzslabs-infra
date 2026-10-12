@@ -7,6 +7,7 @@ import 'more2.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'admin.dart';
+import 'console.dart';
 import 'ds.dart';
 import 'scan.dart';
 import 'theme.dart';
@@ -116,7 +117,7 @@ class _MorePageState extends State<MorePage> {
       if (m) ...[
         const SectionLabel('Business tools'),
         Group([
-          Li('Admin console', sub: 'Reports, menu, stock, customers, team, settings', icon: Icons.home_outlined, tone: Tk.purple, onTap: () => _go(() => AdminPage(h))),
+          Li('Admin console', sub: 'Reports, menu, stock, customers, team, settings', icon: Icons.home_outlined, tone: Tk.purple, onTap: () => _go(() => ConsolePage(h))),
           Li('Scan a QR code', sub: 'Read a table or website QR with the camera', icon: Icons.qr_code_scanner, tone: Tk.teal, onTap: () => scanAndHandle(context, h)),
           Li('QR Ordering', sub: 'Customize what customers see when they scan a table', icon: Icons.language, tone: const Color(0xFF4FA8C0), onTap: () => _go(() => QrWebsitePage(h))),
           if (s.featureOn('payroll')) Li('Payroll', icon: Icons.groups_outlined, tone: const Color(0xFFF09A2E), onTap: () => _web('payroll.html')),
@@ -191,7 +192,8 @@ RegSummary registerSummary(Session s, Map<String, dynamic> reg) {
 }
 
 class RegisterPage extends StatefulWidget {
-  const RegisterPage(this.h, {super.key});
+  const RegisterPage(this.h, {this.embedded = false, super.key});
+  final bool embedded;
   final HomeState h;
   @override
   State<RegisterPage> createState() => _RegisterPageState();
@@ -312,7 +314,8 @@ class _RegisterPageState extends State<RegisterPage> {
 }
 
 class DayReportPage extends StatelessWidget {
-  const DayReportPage(this.h, {super.key});
+  const DayReportPage(this.h, {this.embedded = false, super.key});
+  final bool embedded;
   final HomeState h;
   @override
   Widget build(BuildContext context) {
@@ -340,7 +343,7 @@ class DayReportPage extends StatelessWidget {
     final top = byItem.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
     Widget kv(String k, String v) => Padding(padding: const EdgeInsets.symmetric(vertical: 3), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(k), Text(v, style: const TextStyle(fontWeight: FontWeight.w700))]));
     return Scaffold(
-      appBar: AppBar(title: const Text('Today\'s report')),
+      appBar: embedded ? null : AppBar(title: const Text('Today\'s report')),
       body: ListView(padding: const EdgeInsets.all(12), children: [
         Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(children: [Text(inr(total), style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800)), Text('${paid.length} paid bills today', style: const TextStyle(color: Tk.label2))]))),
         Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(children: [for (final e in modes.entries) kv('Paid by ${e.key}', inr(e.value)), if (modes.isEmpty) const Text('No payments yet'), const Divider(), kv('Refunds', inr(refunds)), kv('Cancelled bills', '$voided'), kv('Open orders now', '$open')]))),
@@ -357,7 +360,8 @@ class DayReportPage extends StatelessWidget {
 }
 
 class ReservationsPage extends StatefulWidget {
-  const ReservationsPage(this.h, {super.key});
+  const ReservationsPage(this.h, {this.embedded = false, super.key});
+  final bool embedded;
   final HomeState h;
   @override
   State<ReservationsPage> createState() => _ReservationsPageState();

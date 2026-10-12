@@ -71,7 +71,8 @@ class AdminPage extends StatelessWidget {
 // ---------------------------------------------------------------- dashboard
 
 class AdminDashboard extends StatelessWidget {
-  const AdminDashboard(this.h, {super.key});
+  const AdminDashboard(this.h, {this.embedded = false, super.key});
+  final bool embedded;
   final HomeState h;
   @override
   Widget build(BuildContext context) {
@@ -103,7 +104,7 @@ class AdminDashboard extends StatelessWidget {
     final diff = ySales == 0 ? null : ((tSales - ySales) / ySales * 100).round();
     final low = s.repo!.of('ing').where((g) => ((g['low'] ?? 0) as num) > 0 && ((g['qty'] ?? 0) as num) <= ((g['low'] ?? 0) as num)).length;
     return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard')),
+      appBar: embedded ? null : AppBar(title: const Text('Dashboard')),
       body: ListView(padding: const EdgeInsets.all(14), children: [
         Stat('Sales today', inr(r2(tSales)), sub: diff == null ? '$tBills bills' : '$tBills bills · ${diff >= 0 ? '+' : ''}$diff% vs yesterday', hero: true),
         const SizedBox(height: 10),
@@ -151,14 +152,16 @@ Widget _box(String t, List<Widget> kids) => Padding(padding: const EdgeInsets.on
 // ---------------------------------------------------------------- menu
 
 class MenuAdmin extends StatefulWidget {
-  const MenuAdmin(this.h, {super.key});
+  const MenuAdmin(this.h, {this.embedded = false, this.tab = 0, super.key});
+  final bool embedded;
+  final int tab;
   final HomeState h;
   @override
   State<MenuAdmin> createState() => _MenuAdminState();
 }
 
 class _MenuAdminState extends State<MenuAdmin> with SingleTickerProviderStateMixin {
-  late final TabController tc = TabController(length: 2, vsync: this);
+  late final TabController tc = TabController(length: 2, vsync: this, initialIndex: widget.tab);
   String q = '';
   Session get s => widget.h.s;
 
@@ -225,7 +228,7 @@ class _MenuAdminState extends State<MenuAdmin> with SingleTickerProviderStateMix
     final catName = {for (final c in cats) '${c['id']}': '${c['name']}'};
     final items = s.repo!.of('item').where((i) => q.isEmpty || '${i['name']}'.toLowerCase().contains(q.toLowerCase())).toList()..sort((a, b) => '${catName[a['cat']]}${a['name']}'.compareTo('${catName[b['cat']]}${b['name']}'));
     return Scaffold(
-      appBar: AppBar(title: const Text('Menu'), bottom: TabBar(controller: tc, tabs: const [Tab(text: 'Items'), Tab(text: 'Categories')])),
+      appBar: widget.embedded ? PreferredSize(preferredSize: const Size.fromHeight(48), child: Material(color: Tk.bg, child: TabBar(controller: tc, tabs: const [Tab(text: 'Items'), Tab(text: 'Categories')]))) : AppBar(title: const Text('Menu'), bottom: TabBar(controller: tc, tabs: const [Tab(text: 'Items'), Tab(text: 'Categories')])),
       floatingActionButton: ListenableBuilder(listenable: tc, builder: (_, _) => FloatingActionButton.extended(onPressed: () => tc.index == 0 ? item() : cat(), icon: const Icon(Icons.add), label: Text(tc.index == 0 ? 'Add item' : 'Add category'))),
       body: TabBarView(controller: tc, children: [
         Column(children: [
@@ -270,7 +273,8 @@ class _MenuAdminState extends State<MenuAdmin> with SingleTickerProviderStateMix
 // ---------------------------------------------------------------- tables + QR
 
 class TablesAdmin extends StatefulWidget {
-  const TablesAdmin(this.h, {super.key});
+  const TablesAdmin(this.h, {this.embedded = false, super.key});
+  final bool embedded;
   final HomeState h;
   @override
   State<TablesAdmin> createState() => _TablesAdminState();
@@ -372,7 +376,8 @@ void showQr(BuildContext c, Session s, String title, String url) {
 // ---------------------------------------------------------------- QR ordering + website
 
 class QrWebsitePage extends StatefulWidget {
-  const QrWebsitePage(this.h, {super.key});
+  const QrWebsitePage(this.h, {this.embedded = false, super.key});
+  final bool embedded;
   final HomeState h;
   @override
   State<QrWebsitePage> createState() => _QrWebsitePageState();
@@ -430,7 +435,8 @@ class _QrWebsitePageState extends State<QrWebsitePage> {
 // ---------------------------------------------------------------- taxes
 
 class TaxAdmin extends StatefulWidget {
-  const TaxAdmin(this.h, {super.key});
+  const TaxAdmin(this.h, {this.embedded = false, super.key});
+  final bool embedded;
   final HomeState h;
   @override
   State<TaxAdmin> createState() => _TaxAdminState();
@@ -473,7 +479,8 @@ class _TaxAdminState extends State<TaxAdmin> {
 // ---------------------------------------------------------------- stock
 
 class StockAdmin extends StatefulWidget {
-  const StockAdmin(this.h, {super.key});
+  const StockAdmin(this.h, {this.embedded = false, super.key});
+  final bool embedded;
   final HomeState h;
   @override
   State<StockAdmin> createState() => _StockAdminState();
@@ -550,7 +557,8 @@ class _StockAdminState extends State<StockAdmin> {
 // ---------------------------------------------------------------- customers
 
 class CustomersAdmin extends StatefulWidget {
-  const CustomersAdmin(this.h, {super.key});
+  const CustomersAdmin(this.h, {this.embedded = false, super.key});
+  final bool embedded;
   final HomeState h;
   @override
   State<CustomersAdmin> createState() => _CustomersAdminState();
@@ -615,7 +623,8 @@ class _CustomersAdminState extends State<CustomersAdmin> {
 // ---------------------------------------------------------------- expenses
 
 class ExpensesAdmin extends StatefulWidget {
-  const ExpensesAdmin(this.h, {super.key});
+  const ExpensesAdmin(this.h, {this.embedded = false, super.key});
+  final bool embedded;
   final HomeState h;
   @override
   State<ExpensesAdmin> createState() => _ExpensesAdminState();
@@ -670,7 +679,8 @@ class _ExpensesAdminState extends State<ExpensesAdmin> {
 // ---------------------------------------------------------------- team
 
 class TeamAdmin extends StatefulWidget {
-  const TeamAdmin(this.h, {super.key});
+  const TeamAdmin(this.h, {this.embedded = false, super.key});
+  final bool embedded;
   final HomeState h;
   @override
   State<TeamAdmin> createState() => _TeamAdminState();
