@@ -101,6 +101,7 @@ function ticketView(o, inSheet) {
     h('div', { class: 'tk-lines' }, lines),
     h('div', { class: 'tk-sum' },
       sumRow('Subtotal', inr(t.sub)),
+      ...(t.offers || []).map((x) => sumRow(x.desc, '−' + inr(x.amt))),
       t.d ? sumRow(o.complimentary ? 'Complimentary' : o.coupon ? 'Coupon ' + o.coupon : o.loyaltyRedeemed ? 'Loyalty points' : 'Discount' + (o.disc && o.disc.t === '%' ? ' ' + o.disc.v + '%' : ''), '−' + inr(t.d), () => (o.complimentary ? compSheet(o) : discountSheet(o))) : (o.lines.length ? sumRow('Add discount', '', () => discountSheet(o)) : null),
       t.svc ? sumRow('Service charge ' + c.serviceChargePct + '%', inr(t.svc), can('m') ? () => { o.noSvc = true; render(); toast('Service charge removed'); } : null) : (o.noSvc && o.type === 'Dine-in' ? sumRow('Add service charge', '', () => { o.noSvc = false; render(); }) : null),
       t.pack ? sumRow('Packing', inr(t.pack)) : null,

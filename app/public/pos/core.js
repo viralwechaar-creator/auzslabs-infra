@@ -244,6 +244,54 @@ function nextToken() { const day = today(), nums = L('order').filter((o) => o.to
 const taxOf = (l) => { const it = rec(l.id); return it && it.taxId ? rec(it.taxId) : null; };
 const lineRate = (l) => { const t = taxOf(l); return t ? +t.rate || 0 : +cfg().tax || 0; };
 const lineInclusive = (l) => { const t = taxOf(l); return t && t.inclusive != null ? !!t.inclusive : !!cfg().taxInclusive; };
+
+// Buy-N-Get-M offers (kind='offer', Admin console -> Menu -> Buy X Get Y): {name,active,from,to,scope:'cat'|'item',scopeId,buyQty,getQty,getPct}.
+// Matching + the discount math live HERE, inside tot(), the one place CLAUDE.md says all billing math lives -- sell.js/pay.js/print.js/i.html only ever
+// read the t.offer/t.offers fields this returns, never recompute anything themselves.
+// Kept deliberately separate from the manual discount `t.d`: the order-guard trigger (db/068) only asks for manager approval when `t.d` is a positive,
+// non-coupon, non-loyalty manual discount -- an auto-applied, correctly-computed offer discount must never need a PIN, so it never touches `t.d`.
+// No stacking, conservative by design: a cart line can be discounted by at most one offer (first match wins; an item-specific offer is checked before
+// a category offer, so the more specific one wins when both could apply to the same item), and only whole buy+get groups count (qty 3 on Buy1Get1
+// discounts 1 unit, not 1.5) -- both choices favour the business over giving away more than the offer actually promises.
+function offerActive(off) {
+  if (!off || off.active === false) return false;
+  const d = today();
+  if (off.from && d < off.from) return false;
+  if (off.to && d > off.to) return false;
+  return true;
+}
+function offerMatches(lines) {
+  const offers = L('offer').filter(offerActive).sort((a, b) => (a.scope === 'item' ? 0 : 1) - (b.scope === 'item' ? 0 : 1));
+  const used = new Set(), out = [];
+  for (const off of offers) {
+    const buy = Math.max(1, +off.buyQty || 1), get = Math.max(1, +off.getQty || 1);
+    const pct = Math.min(100, Math.max(0, off.getPct == null ? 100 : +off.getPct));
+    const idxs = [];
+    lines.forEach((l, i) => {
+      if (used.has(i) || !(l.qty > 0)) return;
+      const it = rec(l.id); if (!it) return;
+      if (off.scope === 'item' ? l.id === off.scopeId : off.scope === 'cat' && it.cat === off.scopeId) idxs.push(i);
+    });
+    if (!idxs.length) continue;
+    const qty = idxs.reduce((a, i) => a + lines[i].qty, 0);
+    let discQty = Math.floor(qty / (buy + get)) * get;
+    if (discQty <= 0) continue;
+    const order = idxs.slice().sort((a, b) => lines[a].price - lines[b].price); // cheapest qualifying units are the ones discounted
+    const perLine = {}; let amt = 0;
+    for (const i of order) {
+      if (discQty <= 0) break;
+      const give = Math.min(lines[i].qty, discQty);
+      const a = r2((give * lines[i].price * pct) / 100);
+      perLine[i] = (perLine[i] || 0) + a; amt = r2(amt + a); discQty -= give; used.add(i);
+    }
+    if (amt > 0) {
+      const label = buy + ' Get ' + get + (pct < 100 ? ' (' + pct + '% off)' : '');
+      out.push({ id: off.id, name: off.name || 'Offer', amt, perLine, desc: 'Offer: Buy ' + label + ' — ' + (off.name || 'applied item') });
+    }
+  }
+  return out;
+}
+
 function chargesOf(o, net) {
   const c = cfg();
   if (o.complimentary || !(net > 0)) return { svc: 0, pack: 0, deliv: 0 };
@@ -256,22 +304,28 @@ function chargesOf(o, net) {
 function tot(o) {
   const c = cfg(), lines = o.lines || [];
   const sub = r2(lines.reduce((a, l) => a + l.price * l.qty, 0));
+  const offers = o.complimentary ? [] : offerMatches(lines); // a complimentary bill is already 100% off; never double up
+  const offerDisc = r2(offers.reduce((a, x) => a + x.amt, 0));
+  const effSub = r2(sub - offerDisc);
   let d = 0;
   if (o.complimentary) d = sub;
-  else if (o.disc) d = r2(Math.min(sub, o.disc.t === '%' ? (sub * o.disc.v) / 100 : +o.disc.v || 0));
-  const keep = sub ? (sub - d) / sub : 1, rates = {};
+  else if (o.disc) d = r2(Math.min(effSub, o.disc.t === '%' ? (effSub * o.disc.v) / 100 : +o.disc.v || 0));
+  const keep = effSub ? (effSub - d) / effSub : 1, rates = {};
   let base = 0, tax = 0;
-  for (const l of lines) {
-    const g = l.price * l.qty * keep, rt = lineRate(l), inc = lineInclusive(l), b = inc ? g / (1 + rt / 100) : g, t = inc ? g - b : (g * rt) / 100;
+  for (let idx = 0; idx < lines.length; idx++) {
+    const l = lines[idx];
+    const lineOfferAmt = offers.reduce((a, x) => a + (x.perLine[idx] || 0), 0);
+    const g = (l.price * l.qty - lineOfferAmt) * keep, rt = lineRate(l), inc = lineInclusive(l), b = inc ? g / (1 + rt / 100) : g, t = inc ? g - b : (g * rt) / 100;
     base += b; tax += t; const x = rates[rt] || (rates[rt] = { base: 0, tax: 0 }); x.base += b; x.tax += t;
   }
-  const ch = chargesOf(o, sub - d), chSum = ch.svc + ch.pack + ch.deliv, chRate = +(c.chargesTax ?? c.tax) || 0;
+  const ch = chargesOf(o, effSub - d), chSum = ch.svc + ch.pack + ch.deliv, chRate = +(c.chargesTax ?? c.tax) || 0;
   if (chSum) { const x = rates[chRate] || (rates[chRate] = { base: 0, tax: 0 }); x.base += chSum; x.tax += (chSum * chRate) / 100; tax += (chSum * chRate) / 100; }
   base = r2(base); tax = r2(tax);
   const ex = r2(base + chSum + tax), total = c.roundOff === false ? ex : Math.round(ex);
   for (const k in rates) rates[k] = { base: r2(rates[k].base), tax: r2(rates[k].tax) };
   const t = { sub, d, tax, round: r2(total - ex), total, net: r2(base + chSum), rates };
   if (ch.svc) t.svc = ch.svc; if (ch.pack) t.pack = ch.pack; if (ch.deliv) t.deliv = ch.deliv;
+  if (offerDisc) { t.offer = offerDisc; t.offers = offers.map((x) => ({ id: x.id, name: x.name, amt: x.amt, desc: x.desc })); }
   return t;
 }
 const paidSoFar = (o) => r2((o.pays || []).reduce((a, p) => a + (+p.amt || 0), 0));

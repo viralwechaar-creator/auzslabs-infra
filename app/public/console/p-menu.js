@@ -178,6 +178,43 @@ PAGES['menu/discounts']=()=>{const list=rawL('coupon').filter(c=>matchQ(c.code))
   card(cardHead('Discount rules'),setRow('Cashier discount limit','Cashiers can give manual discounts up to this percent on their own. Above it, or for any discount when this is 0, a manager approves with their PIN.',h('div',{class:'bar-row',style:'margin:0'},h('input',{class:'inp',type:'number',disabled:ro,style:'min-width:90px;width:90px',value:cfg().maxDiscountPct||0,id:'mdp'}),btn('Save',async()=>{await saveSettings({maxDiscountPct:+$('#mdp').value||0});toast('Saved')},'p',null,ro)))),
   h('div',{class:'bar-row'},search('Search coupons…')),
   card(table([{label:'Code',get:c=>h('b',{},c.code)},{label:'Discount',get:c=>c.value+(c.type=='%'?'% off':' ₹ off')},{label:'Min. bill',get:c=>c.minBill?inr(c.minBill):'—'},{label:'Expires',get:c=>c.expiry?fmtD(c.expiry):'Never'},{label:'Used',get:c=>used(c)+(c.maxUses?' / '+c.maxUses:'')},{label:'Status',get:c=>(c.expiry&&c.expiry<today())||(c.maxUses&&used(c)>=c.maxUses)?pill('Expired','n'):pill('Active','g')},{label:'',get:c=>actBtns(btn('Edit',()=>couponForm(c),'sm2'))}],list,{empty:'No coupons yet',onRow:couponForm}))]};
+// ---------- offers (buy X get Y) ----------
+// kind='offer': {name,active,from,to,scope:'cat'|'item',scopeId,buyQty,getQty,getPct}. The matching + discount math
+// live in pos/core.js's tot() (the one place CLAUDE.md says billing math lives) -- this page only edits the config.
+// Manager-or-owner only server-side (db/172's pos_kind_ok), same bucket as tax/platform/campaign; the console itself
+// is already owner/manager-only (core.js's login gate), so no extra client-side role check is needed here.
+const offerScopeOptions=()=>[['','Select…'],...cats().map(c=>['cat:'+c.id,'Category: '+c.name]),...rawL('item').sort((a,b)=>a.name.localeCompare(b.name)).map(i=>['item:'+i.id,'Item: '+i.name])];
+const offerScopeLabel=o=>{if(o.scope=='item'){const i=rec(o.scopeId);return'Item: '+(i?i.name:'(deleted item)')}const c=cats().find(x=>x.id==o.scopeId);return'Category: '+(c?c.name:'(deleted category)')};
+const offerIsLive=o=>{if(o.active===false)return false;const d=today();if(o.from&&d<o.from)return false;if(o.to&&d>o.to)return false;return true};
+function offerForm(o){o=o||{};
+ formModal(o.id?'Edit offer':'New Buy X Get Y offer',[
+  {k:'name',label:'Offer name',value:o.name,req:true,placeholder:'e.g. Buy 1 Get 1 — Cappuccino'},
+  {k:'scope',label:'Applies to',type:'select',options:offerScopeOptions(),value:o.scope&&o.scopeId?o.scope+':'+o.scopeId:'',req:true,hint:'One category or one specific item'},
+  {k:'buyQty',label:'Buy quantity',type:'number',value:o.buyQty??1,req:true},
+  {k:'getQty',label:'Get quantity',type:'number',value:o.getQty??1,req:true},
+  {k:'getPct',label:'Discount on the "get" items (%)',type:'number',value:o.getPct??100,req:true,hint:'100 = fully free, e.g. 50 = half price'},
+  {k:'from',label:'Start date',type:'date',value:o.from},
+  {k:'to',label:'End date',type:'date',value:o.to,hint:'Leave empty for no end date'},
+  {k:'active',label:'Active',type:'check',value:o.active!==false}],
+  async v=>{
+   const[scope,scopeId]=String(v.scope||'').split(':');
+   if(!scope||!scopeId)return toast('Choose a category or item')||false;
+   if(!(v.buyQty>0)||!(v.getQty>0))return toast('Buy and get quantities must be at least 1')||false;
+   if(v.getPct<0||v.getPct>100)return toast('Discount must be between 0 and 100%')||false;
+   if(v.from&&v.to&&v.from>v.to)return toast('End date must be after the start date')||false;
+   await save('offer',{...o,name:v.name,scope,scopeId,buyQty:Math.round(v.buyQty),getQty:Math.round(v.getQty),getPct:v.getPct,from:v.from||null,to:v.to||null,active:v.active},o.id)},
+  {onDelete:o.id?async()=>remove('offer',o):null})}
+PAGES['menu/bogo']=()=>{const list=rawL('offer').filter(o=>matchQ(o.name+' '+offerScopeLabel(o)));
+ return[pageHead('Buy X Get Y','Automatic offers on a category or item, for a date range — applied and shown on the bill by the billing POS itself, no manager PIN needed.',btn('Add offer',()=>offerForm(),'p','plus')),
+  h('div',{class:'bar-row'},search('Search offers…')),
+  card(table([
+   {label:'Offer',get:o=>h('b',{},o.name)},
+   {label:'Applies to',get:offerScopeLabel},
+   {label:'Terms',get:o=>'Buy '+(o.buyQty||1)+' Get '+(o.getQty||1)+(o.getPct==null||o.getPct>=100?' (free)':' ('+o.getPct+'% off)')},
+   {label:'Dates',get:o=>(o.from?fmtD(o.from):'Any time')+' – '+(o.to?fmtD(o.to):'No end date')},
+   {label:'Status',get:o=>offerIsLive(o)?pill('Live now','g'):o.active===false?pill('Inactive','n'):pill('Scheduled','a')},
+   {label:'',get:o=>actBtns(btn('Edit',()=>offerForm(o),'sm2'))}],
+   list,{empty:'No offers yet',emptyText:'Create a Buy X Get Y offer on a category or a single item.',onRow:offerForm}))]};
 // ---------- availability ----------
 PAGES['menu/availability']=()=>{const outs=outlets(),items=rawL('item').filter(i=>matchQ(i.name+' '+catName(i.cat))).sort((a,b)=>catName(a.cat).localeCompare(catName(b.cat))||a.name.localeCompare(b.name)),toggleCh=async(i,k,on)=>{const c=structuredClone(i);c.chOff=c.chOff||{};on?delete c.chOff[k]:c.chOff[k]=true;await save('item',c,c.id)};
  return[pageHead('Menu Availability','Switch items on or off by channel, mark them sold out, or hide them at one outlet.',btn('Mark everything available',()=>confirmBox('Clear every sold-out flag?',async()=>{for(const i of rawL('item').filter(itemOffNow))await save('item',{...i,off:false,offUntil:null},i.id);render()},'Clear'),'')),h('div',{class:'bar-row'},search('Search items…'),h('span',{class:'sm'},items.filter(itemOffNow).length+' sold out')),
@@ -220,7 +257,7 @@ PAGES['menu/images']=()=>{const items=rawL('item').sort((a,b)=>a.name.localeComp
   card(cardHead('Items without a photo'),table([{label:'Item',get:i=>h('b',{},i.name)},{label:'Category',get:i=>catName(i.cat)},{label:'',get:i=>actBtns(btn('Add photo',()=>pickFile('image/*',async f=>{try{const url=await uploadImage(f,'menu');await save('item',{...i,img:url},i.id);toast('Photo added');render()}catch(e){toast('Upload failed: '+e.message)}}),'sm2','up'))}],miss,{empty:'Every item has a photo'})),
   card(cardHead('Items with photos'),h('div',{class:'grid-auto'},...items.filter(i=>i.img).map(i=>h('div',{class:'scard',style:'display:flex;gap:10px;align-items:center'},h('img',{src:i.img,style:'width:54px;height:54px;border-radius:12px;object-fit:cover'}),h('div',{},h('b',{},i.name),h('div',{class:'sub sm'},catName(i.cat)))))))]};
 // ---------- overview ----------
-PAGES['menu/overview']=()=>{const items=rawL('item'),sold=items.filter(itemOffNow).length,tiles=[['menu/items','Items',items.length+' items','box'],['menu/categories','Categories',cats().length+' categories','menu'],['menu/addons','Add-ons',rawL('addongrp').length+' groups','plus'],['menu/variants','Variants',rawL('variant').length+' saved','tag'],['menu/tables','Tables & Areas',L('table').length+' tables','dine'],['menu/taxes','Taxes',(cfg().tax||0)+'% default','fin'],['menu/discounts','Discounts',rawL('coupon').length+' coupons','gift'],['menu/availability','Availability',sold+' sold out','check'],['menu/physical','Physical menu','Print or upload','printer'],['menu/images','Bulk photos',items.filter(i=>!i.img).length+' missing','img']];
+PAGES['menu/overview']=()=>{const items=rawL('item'),sold=items.filter(itemOffNow).length,tiles=[['menu/items','Items',items.length+' items','box'],['menu/categories','Categories',cats().length+' categories','menu'],['menu/addons','Add-ons',rawL('addongrp').length+' groups','plus'],['menu/variants','Variants',rawL('variant').length+' saved','tag'],['menu/tables','Tables & Areas',L('table').length+' tables','dine'],['menu/taxes','Taxes',(cfg().tax||0)+'% default','fin'],['menu/discounts','Discounts',rawL('coupon').length+' coupons','gift'],['menu/bogo','Buy X Get Y',rawL('offer').length+' offers','tag'],['menu/availability','Availability',sold+' sold out','check'],['menu/physical','Physical menu','Print or upload','printer'],['menu/images','Bulk photos',items.filter(i=>!i.img).length+' missing','img']];
  return[pageHead('Menu & Discounts','Everything about what you sell, where, and at what price.',btn('Add item',()=>itemForm(),'p','plus')),kpis([['Items',items.length],['Categories',cats().length],['Sold out now',sold],['Average price',inr(items.length?items.reduce((a,i)=>a+(+i.price||0),0)/items.length:0)]]),
   h('div',{class:'grid-auto'},...tiles.map(([pg,t,s,i])=>h('button',{class:'scard',style:'text-align:left;display:flex;gap:12px;align-items:center',onclick:()=>go(pg)},tile(i,'b'),h('div',{},h('b',{},t),h('div',{class:'sm'},s))))),
   card(cardHead('Categories at a glance'),table([{label:'Category',get:c=>h('b',{},c.name)},{label:'Items',get:c=>String(items.filter(i=>i.cat==c.id).length)},{label:'Avg. price',r:true,get:c=>{const a=items.filter(i=>i.cat==c.id);return inr(a.length?a.reduce((x,i)=>x+(+i.price||0),0)/a.length:0)}}],cats(),{empty:'No categories yet',onRow:c=>go('menu/items')}))]};

@@ -77,6 +77,7 @@ function rcpt(o, dup, provisional) {
 <table><thead><tr><th>Item</th><th class=c>Qty</th><th class=r>Unit price</th><th class=r>Amount</th></tr></thead><tbody>${rows}</tbody></table>
 <div class=tot><table>
 ${tr('Subtotal', inr(t.sub))}
+${(t.offers || []).map((x) => tr(esc(x.desc), '−' + inr(x.amt))).join('')}
 ${t.d ? tr('Discount' + (o.coupon ? ' (' + esc(o.coupon) + ')' : ''), '−' + inr(t.d)) : ''}
 ${t.svc ? tr('Service charge', inr(t.svc)) : ''}${t.pack ? tr('Packing', inr(t.pack)) : ''}${t.deliv ? tr('Delivery', inr(t.deliv)) : ''}
 ${gstRows(t).map(([a, b]) => tr(a, inr(b))).join('')}
@@ -115,6 +116,7 @@ function escReceipt(o, dup, prov) {
   }
   e.hr();
   lr('Subtotal', inr(t.sub));
+  for (const x of (t.offers || [])) lr(x.desc, '-' + inr(x.amt));
   if (t.d) lr('Discount' + (o.coupon ? ' (' + o.coupon + ')' : ''), '-' + inr(t.d));
   if (t.svc) lr('Service charge', inr(t.svc)); if (t.pack) lr('Packing', inr(t.pack)); if (t.deliv) lr('Delivery', inr(t.deliv));
   for (const [a, b] of gstRows(t)) lr(a, inr(b));
