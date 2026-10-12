@@ -107,7 +107,7 @@ function table(cols,rows,opts={}){
  if(!rows.length)return h('div',{class:'empty'},h('b',{},opts.empty||'Nothing here yet'),opts.emptyText||'');
  return h('div',{class:'scroll-x'},h('table',{class:'tbl'},h('thead',{},h('tr',{},...cols.map(c=>h('th',{class:c.r?'r':''},c.label)))),h('tbody',{},...rows.map(r=>h('tr',{class:opts.onRow?'click':'',onclick:opts.onRow?e=>{if(e.target.closest('button,a,input,select'))return;opts.onRow(r)}:null},...cols.map(c=>{const v=c.get(r);return h('td',{class:c.r?'r':''},v==null?'':v)}))))))}
 const actBtns=(...b)=>h('div',{class:'acts'},...b.filter(Boolean));
-const btn=(label,fn,cls='',icon)=>h('button',{class:'btn '+cls,onclick:fn},icon?ic(icon,16):null,label);
+const btn=(label,fn,cls='',icon,disabled)=>h('button',{class:'btn '+cls,disabled:!!disabled,onclick:disabled?null:fn},icon?ic(icon,16):null,label);
 const pill=(t,c='n')=>h('span',{class:'pill s-'+c},t);
 const card=(...k)=>h('div',{class:'card'},...k);
 const cardHead=(title,...right)=>h('div',{class:'hd'},h('h3',{},title),h('div',{class:'bar-row',style:'margin:0'},...right));
@@ -116,7 +116,7 @@ const kpis=a=>h('div',{class:'kpis'},...a.map(([l,v,s])=>h('div',{class:'kpi'},h
 const tabsBar=(items,cur,fn)=>h('div',{class:'tabs wrap'},...items.map(([k,l])=>h('button',{class:cur==k?'on':'',onclick:()=>fn(k)},l)));
 const search=(ph,onq)=>h('input',{class:'inp',placeholder:ph,value:S.q,oninput:e=>{S.q=e.target.value;clearTimeout(S.qt);S.qt=setTimeout(()=>{onq?onq():render();const i=document.querySelector('.inp');if(i){i.focus();i.setSelectionRange(999,999)}},220)}});
 const matchQ=(txt)=>!S.q||String(txt).toLowerCase().includes(S.q.toLowerCase());
-const sw=(on,fn)=>{const i=h('input',{type:'checkbox',checked:!!on,onchange:e=>fn(e.target.checked)});return h('label',{class:'switch'},i,h('i'))};
+const sw=(on,fn,disabled)=>{const i=h('input',{type:'checkbox',checked:!!on,disabled:!!disabled,onchange:e=>fn(e.target.checked)});return h('label',{class:'switch'+(disabled?' switch-off':'')},i,h('i'))};
 const setRow=(title,desc,ctl)=>h('div',{class:'setrow'},h('div',{},h('b',{},title),desc?h('span',{class:'d'},desc):null),ctl);
 const note=t=>h('div',{class:'note',style:'margin-bottom:12px'},t);
 function csvDl(rows,name){const s=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n'),a=h('a',{href:URL.createObjectURL(new Blob([s],{type:'text/csv'})),download:name});document.body.append(a);a.click();a.remove()}
