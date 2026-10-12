@@ -29,8 +29,31 @@ class Session extends ChangeNotifier {
     return b.tot(o, cfg, taxes: taxes, items: items, offerRecords: repo?.of('offer').toList() ?? const [], today: today);
   }
 
+  /// Why an item cannot be sold right now ('' = it can). Port of itemOffWhy() in the website POS.
+  String itemOffWhy(Map<String, dynamic> i, String type) {
+    if (i['off'] == true) {
+      final u = DateTime.tryParse('${i['offUntil'] ?? ''}');
+      if (u == null || u.isAfter(DateTime.now())) return 'Sold out';
+    }
+    final key = const {'Dine-in': 'dine', 'Takeaway': 'take', 'Delivery': 'deliv'}[type];
+    if (key != null && i['chOff'] is Map && (i['chOff'] as Map)[key] == true) return 'Hidden from $type';
+    final rec = '${i['rec'] ?? ''}';
+    if (rec.isEmpty) return '';
+    final ings = repo?.of('ing').toList() ?? const <Map<String, dynamic>>[];
+    for (final part in rec.split(',')) {
+      final n = part.split(':').first.trim().toLowerCase();
+      if (n.isEmpty) continue;
+      for (final g in ings) {
+        if ('${g['name']}'.toLowerCase() == n && ((g['qty'] ?? 0) as num) <= 0) return 'No ${g['name']} in stock';
+      }
+    }
+    return '';
+  }
+
   String role = 'cashier';
   bool hasBusiness = true;
+  Map<String, dynamic>? features, enabledFeatures;
+  bool featureOn(String k) => features == null || (features![k] == true && (enabledFeatures?[k]) != false);
   String slug = 'app';
   Map<String, dynamic>? perms;
   static const _defaultPerms = {'pos': true, 'orders': true, 'kitchen': true, 'reports': true, 'staff': true, 'inventory': true, 'crm': true, 'menu': false, 'settings': false, 'billing': false};
@@ -57,6 +80,11 @@ class Session extends ChangeNotifier {
         final d = await api.rpc('my_dashboard');
         final sl = (d is Map ? d['tenant'] : null);
         if (sl is Map && sl['slug'] != null) slug = '${sl['slug']}';
+        if (d is Map) {
+          final ts = d['tenant_settings'] ?? d['settings'] ?? d;
+          if (ts is Map && ts['features'] is Map) features = Map<String, dynamic>.from(ts['features'] as Map);
+          if (ts is Map && ts['enabled_features'] is Map) enabledFeatures = Map<String, dynamic>.from(ts['enabled_features'] as Map);
+        }
       } catch (_) {}
       final p = await SharedPreferences.getInstance();
       await p.setString('role.${user!['id']}', role);

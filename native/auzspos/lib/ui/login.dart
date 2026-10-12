@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/api.dart';
 import '../core/session.dart';
+import 'ds.dart';
 import 'theme.dart';
 
 /// Same three doors as the website: Log in (Google, or email + password), Sign up (Google), Staff (username + PIN).
@@ -129,98 +130,86 @@ class _LoginState extends State<Login> {
     );
   }
 
-  Widget _googleBtn() => OutlinedButton.icon(
+  Widget _googleBtn() => OutlinedButton(
         onPressed: busy ? null : google,
-        style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52), backgroundColor: Colors.white, foregroundColor: Tk.label, side: const BorderSide(color: Tk.line)),
-        icon: Container(
-          width: 22,
-          height: 22,
-          alignment: Alignment.center,
-          decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF4285F4)),
-          child: const Text('G', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13)),
-        ),
-        label: const Text('Continue with Google', style: TextStyle(fontWeight: FontWeight.w600)),
+        style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(56), backgroundColor: Tk.fill3, side: const BorderSide(color: Tk.line2, width: 1), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Container(width: 24, height: 24, alignment: Alignment.center, decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white), child: const Text('G', style: TextStyle(color: Color(0xFF4285F4), fontWeight: FontWeight.w900, fontSize: 18))),
+          const SizedBox(width: 12),
+          const Text('Continue with Google', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700)),
+        ]),
       );
 
   @override
   Widget build(BuildContext context) {
     final note = widget.s.notice;
-    final titles = ['Welcome back', 'Create your account', 'Staff sign in'];
-    final subs = ['Sign in to run your till.', 'Start with your Google account. Then choose your plan.', 'Use the username and PIN your owner gave you.'];
+    final staff = tab == 2;
     return Scaffold(
       backgroundColor: Tk.bg,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(14),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                Image.asset('assets/logo-pos.png', height: 56),
-                const SizedBox(height: 20),
-                Container(
-                  decoration: BoxDecoration(color: Tk.card, borderRadius: BorderRadius.circular(22), border: Border.all(color: Tk.line)),
-                  padding: const EdgeInsets.all(20),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                    SegmentedButton<int>(
-                      showSelectedIcon: false,
-                      segments: const [ButtonSegment(value: 0, label: Text('Log in')), ButtonSegment(value: 1, label: Text('Sign up')), ButtonSegment(value: 2, label: Text('Staff'))],
-                      selected: {tab},
-                      onSelectionChanged: (v) => setState(() {
-                        tab = v.first;
-                        err = null;
-                        info = null;
-                      }),
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(28, 32, 28, 28),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(32), border: Border.all(color: Tk.line, width: .5)),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  Align(alignment: Alignment.centerLeft, child: Image.asset('assets/logo-pos.png', height: 64)),
+                  const SizedBox(height: 22),
+                  Text(tab == 1 ? 'Create account' : 'Sign in', style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w800, letterSpacing: -.8)),
+                  const SizedBox(height: 10),
+                  Text(tab == 1 ? 'Start with your Google account, then choose your plan.' : staff ? 'Use the username and PIN your owner gave you.' : 'Use the email and password your business gave you.', style: const TextStyle(fontSize: 20, color: Tk.label2, height: 1.3)),
+                  const SizedBox(height: 22),
+                  if (tab == 1) ...[
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      value: agree,
+                      onChanged: (v) => setState(() => agree = v == true),
+                      title: Text.rich(TextSpan(style: const TextStyle(fontSize: 16), children: <InlineSpan>[const TextSpan(text: 'I agree to the '), TextSpan(text: 'Privacy policy', style: TextStyle(color: Tk.accentText, decoration: TextDecoration.underline)), const TextSpan(text: ' and '), TextSpan(text: 'Terms', style: TextStyle(color: Tk.accentText, decoration: TextDecoration.underline))])),
                     ),
-                    const SizedBox(height: 18),
-                    Text(titles[tab], style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-                    const SizedBox(height: 4),
-                    Text(subs[tab], style: const TextStyle(color: Tk.label2)),
-                    const SizedBox(height: 18),
-                    if (tab == 1) ...[
-                      CheckboxListTile(
-                        contentPadding: EdgeInsets.zero,
-                        controlAffinity: ListTileControlAffinity.leading,
-                        value: agree,
-                        onChanged: (v) => setState(() => agree = v == true),
-                        title: Text.rich(TextSpan(style: const TextStyle(fontSize: 13), children: <InlineSpan>[
-                          const TextSpan(text: 'I agree to the '),
-                          TextSpan(text: 'Privacy policy', style: TextStyle(color: Tk.accentText, decoration: TextDecoration.underline)),
-                          const TextSpan(text: ' and '),
-                          TextSpan(text: 'Terms', style: TextStyle(color: Tk.accentText, decoration: TextDecoration.underline)),
-                        ])),
-                      ),
-                      CheckboxListTile(
-                        contentPadding: EdgeInsets.zero,
-                        controlAffinity: ListTileControlAffinity.leading,
-                        value: updates,
-                        onChanged: (v) => setState(() => updates = v == true),
-                        title: const Text('Send me product updates (optional)', style: TextStyle(fontSize: 13)),
-                      ),
-                      const SizedBox(height: 8),
-                      _googleBtn(),
-                    ] else ...[
-                      if (tab == 0) ...[_googleBtn(), const SizedBox(height: 14), Row(children: [const Expanded(child: Divider()), const Padding(padding: EdgeInsets.symmetric(horizontal: 10), child: Text('or', style: TextStyle(color: Tk.label2))), const Expanded(child: Divider())]), const SizedBox(height: 14)],
-                      TextField(controller: a, keyboardType: TextInputType.emailAddress, autocorrect: false, decoration: InputDecoration(labelText: tab == 2 ? 'Username' : 'Email')),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: b,
-                        obscureText: !show,
-                        keyboardType: tab == 2 ? TextInputType.number : TextInputType.visiblePassword,
-                        decoration: InputDecoration(labelText: tab == 2 ? 'PIN' : 'Password', suffixIcon: IconButton(icon: Icon(show ? Icons.visibility_off : Icons.visibility), onPressed: () => setState(() => show = !show))),
-                        onSubmitted: (_) => go(),
-                      ),
-                      if (tab == 0) Align(alignment: Alignment.centerRight, child: TextButton(onPressed: forgot, child: const Text('Forgot password?'))),
-                      const SizedBox(height: 4),
-                      FilledButton(onPressed: busy ? null : go, style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)), child: Text(busy ? 'Signing in…' : 'Log in')),
-                    ],
-                    if (err != null || note != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(err ?? note!, style: const TextStyle(color: Tk.red))),
-                    if (info != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(info!, style: const TextStyle(color: Tk.green))),
-                  ]),
-                ),
-                const SizedBox(height: 16),
-                Text(tab == 1 ? 'Already have an account? Use Log in.' : 'New here? Use Sign up to start.', textAlign: TextAlign.center, style: const TextStyle(color: Tk.label2, fontSize: 13)),
-              ]),
+                    CheckboxListTile(contentPadding: EdgeInsets.zero, controlAffinity: ListTileControlAffinity.leading, value: updates, onChanged: (v) => setState(() => updates = v == true), title: const Text('Send me product updates (optional)', style: TextStyle(fontSize: 16))),
+                    const SizedBox(height: 8),
+                    _googleBtn(),
+                  ] else ...[
+                    if (tab == 0) ...[_googleBtn(), const SizedBox(height: 16), const Center(child: Text('or', style: TextStyle(fontSize: 18, color: Tk.label2))), const SizedBox(height: 16)],
+                    Seg<int>(expand: true, items: const [(0, 'Email'), (2, 'Staff')], value: tab, onChanged: (v) => setState(() {
+                          tab = v;
+                          err = null;
+                          info = null;
+                        })),
+                    const SizedBox(height: 16),
+                    TextField(controller: a, style: const TextStyle(fontSize: 19), keyboardType: TextInputType.emailAddress, autocorrect: false, decoration: InputDecoration(hintText: staff ? 'Username' : 'Email', contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20), border: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: BorderSide.none), enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: BorderSide.none))),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: b,
+                      obscureText: !show,
+                      style: const TextStyle(fontSize: 19),
+                      keyboardType: staff ? TextInputType.number : TextInputType.visiblePassword,
+                      decoration: InputDecoration(hintText: staff ? 'PIN' : 'Password', contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20), border: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: BorderSide.none), enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: BorderSide.none), suffixIcon: IconButton(icon: Icon(show ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Tk.label2), onPressed: () => setState(() => show = !show))),
+                      onSubmitted: (_) => go(),
+                    ),
+                    if (!staff) Align(alignment: Alignment.centerRight, child: TextButton(onPressed: forgot, child: const Text('Forgot password?', style: TextStyle(fontSize: 18)))) else const SizedBox(height: 14),
+                    FilledButton(onPressed: busy ? null : go, style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(64), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)), textStyle: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)), child: Text(busy ? 'Signing in…' : 'Sign in')),
+                  ],
+                  if (err != null || note != null) Padding(padding: const EdgeInsets.only(top: 14), child: Text(err ?? note!, style: const TextStyle(color: Tk.red, fontSize: 17))),
+                  if (info != null) Padding(padding: const EdgeInsets.only(top: 14), child: Text(info!, style: const TextStyle(color: Tk.green, fontSize: 17))),
+                  const SizedBox(height: 26),
+                  Center(
+                    child: Wrap(alignment: WrapAlignment.center, children: [
+                      const Text('New to AUZslab? ', style: TextStyle(fontSize: 18)),
+                      GestureDetector(onTap: () => setState(() {
+                            tab = tab == 1 ? 0 : 1;
+                            err = null;
+                          }), child: Text(tab == 1 ? 'Sign in' : 'Create an account', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Tk.accent))),
+                      const Text(' · ', style: TextStyle(fontSize: 18)),
+                      GestureDetector(onTap: () => launchUrl(Uri.https('auzslab.in', '/pricing.html'), mode: LaunchMode.externalApplication), child: Text('See plans', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Tk.accent))),
+                    ]),
+                  ),
+                ]),
+              ),
             ),
           ),
         ),

@@ -5,6 +5,7 @@ import '../core/session.dart';
 import 'home.dart';
 import 'receipt.dart';
 import 'theme.dart';
+import 'ds.dart';
 
 /// Manager approval (same rules as approve() in the website POS): an owner/manager signs for themselves, anyone else
 /// types a manager's PIN, and the server returns a signed approval for this one action on this one record.
@@ -285,43 +286,72 @@ Future<bool> cancelOrder(BuildContext context, HomeState h, Map<String, dynamic>
 }
 
 /// A paid bill: view, refund, cancel.
-Future<void> billSheet(BuildContext context, HomeState h, Map<String, dynamic> o) async {
+/// Order detail sheet (open or paid), laid out like the website POS: number + Done, status pills, created, items, totals, actions, one big button.
+Future<void> orderSheet(BuildContext context, HomeState h, Map<String, dynamic> o) async {
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     builder: (ctx) {
-      final t = (o['t'] as Map?) ?? {};
+      final t = ((o['t'] as Map?) ?? h.s.tot(o).toJson());
       final refunds = ((o['refunds'] as List?) ?? []).cast<Map>();
       final refunded = refunds.fold<num>(0, (a, r) => a + ((r['amt'] ?? 0) as num));
-      final void_ = o['status'] == 'void';
+      final st = '${o['status']}';
+      final voided = st == 'void';
+      final isOpen = st == 'open';
       final lines = ((o['lines'] as List?) ?? []).cast<Map>();
+      final created = DateTime.tryParse('${o['created']}')?.toLocal();
+      const mon = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      String two(int n) => n.toString().padLeft(2, '0');
+      final when = created == null ? '' : '${created.day} ${mon[created.month - 1]} ${created.year}, ${created.hour % 12 == 0 ? 12 : created.hour % 12}:${two(created.minute)} ${created.hour >= 12 ? 'PM' : 'AM'}';
+      Widget pill(String l, Color bg, Color fg) => Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)), child: Text(l, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: fg)));
+      Widget kv(String k, String v, {bool bold = false}) => Padding(padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(k, style: TextStyle(fontSize: bold ? 22 : 20, fontWeight: bold ? FontWeight.w800 : FontWeight.w500)), Text(v, style: TextStyle(fontSize: bold ? 24 : 20, fontWeight: bold ? FontWeight.w800 : FontWeight.w600))]));
+      final tb = o['table'] == null ? '' : ' · ${h.s.repo!.rec('${o['table']}')?['name'] ?? ''}';
+      final kst = o['kstat'];
       return SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Text('${o['no']} · ${o['type']}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-            Text(void_ ? 'Cancelled${o['voidReason'] != null ? ' · ${o['voidReason']}' : ''}' : 'Paid ${(o['pays'] as List?)?.map((p) => (p as Map)['m']).join(', ') ?? ''}', style: const TextStyle(color: Tk.label2)),
-            const Divider(),
-            for (final l in lines) Padding(padding: const EdgeInsets.symmetric(vertical: 2), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Expanded(child: Text('${l['qty']} × ${l['name']}${(l['size'] ?? '') != '' ? ' (${l['size']})' : ''}')), Text(inr((l['price'] as num) * (l['qty'] as num)))])),
-            const Divider(),
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('Total', style: TextStyle(fontWeight: FontWeight.w800)), Text(inr((t['total'] ?? 0) as num), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18))]),
-            if (refunded > 0) Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('Refunded'), Text('−${inr(refunded)}')]),
-            if (!void_) ...[
-              const SizedBox(height: 12),
-              Row(children: [
-                Expanded(child: FilledButton.tonalIcon(onPressed: () => sendWhatsApp(context, h.s, o), icon: const Icon(Icons.chat, size: 18), label: const Text('WhatsApp'))),
-                const SizedBox(width: 8),
-                Expanded(child: FilledButton.tonalIcon(onPressed: () => printReceipt(h.s, o), icon: const Icon(Icons.print_outlined, size: 18), label: const Text('Print'))),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Padding(padding: const EdgeInsets.fromLTRB(20, 0, 8, 6), child: Row(children: [
+            Expanded(child: Text('${o['no'] ?? 'New order'}', style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -.4))),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Done', style: TextStyle(fontSize: 20))),
+          ])),
+          const Divider(),
+          Flexible(
+            child: ListView(padding: const EdgeInsets.only(bottom: 12, top: 14), children: [
+              Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Wrap(spacing: 10, runSpacing: 8, children: [
+                pill(isOpen ? 'Open' : voided ? 'Cancelled' : 'Paid', isOpen ? Tk.orangeBg : voided ? Tk.redBg : Tk.greenBg, isOpen ? Tk.orange : voided ? Tk.red : Tk.green),
+                pill('${o['type']}$tb', Tk.fill, Tk.label),
+                if (kst != null) pill(kst == 'new' ? 'In kitchen' : kst == 'ready' ? 'Ready' : kst == 'delivered' ? 'Delivered' : '$kst', Tk.orangeBg, Tk.orange),
+              ])),
+              const SizedBox(height: 14),
+              Group([kv('Created', when)]),
+              const SizedBox(height: 14),
+              Group([for (final l in lines) kv('${l['qty']} × ${l['name']}${(l['size'] ?? '') != '' ? ' (${l['size']})' : ''}', inr((l['price'] as num) * (l['qty'] as num)))]),
+              const SizedBox(height: 14),
+              Group([
+                kv('Subtotal', inr((t['sub'] ?? 0) as num)),
+                if (((t['d'] ?? 0) as num) > 0) kv('Discount', '−${inr((t['d']) as num)}'),
+                if (((t['svc'] ?? 0) as num) > 0) kv('Service charge', inr((t['svc']) as num)),
+                if (((t['tax'] ?? 0) as num) > 0) kv('GST', inr((t['tax']) as num)),
+                if (((t['round'] ?? 0) as num) != 0) kv('Round off', inr((t['round']) as num)),
+                kv('Total', inr((t['total'] ?? 0) as num), bold: true),
+                if (refunded > 0) kv('Refunded', '−${inr(refunded)}'),
               ]),
-              const SizedBox(height: 8),
-              Row(children: [
-                Expanded(child: OutlinedButton(onPressed: () { Navigator.pop(ctx); refundSheet(context, h, o); }, child: const Text('Refund'))),
-                const SizedBox(width: 8),
-                Expanded(child: OutlinedButton(onPressed: () async { Navigator.pop(ctx); await voidPaid(context, h, o); }, child: const Text('Cancel bill'))),
+              const SizedBox(height: 14),
+              Group([
+                Li(isOpen ? 'Print bill for the guest' : 'WhatsApp the bill', sub: isOpen ? 'Provisional' : null, icon: isOpen ? Icons.print_outlined : Icons.chat_outlined, tone: isOpen ? Tk.label3.withValues(alpha: .9) : Tk.green, onTap: () => isOpen ? printReceipt(h.s, o) : sendWhatsApp(context, h.s, o)),
+                if (!isOpen && !voided) Li('Print bill', icon: Icons.print_outlined, onTap: () => printReceipt(h.s, o)),
+                if (isOpen && kst != null) Li('Reprint kitchen ticket', icon: Icons.receipt_outlined, tone: const Color(0xFFF09A2E), onTap: () => h.toast('Kitchen tickets print from the Kitchen tab')),
+                if (!isOpen && !voided) Li('Refund', icon: Icons.undo, tone: Tk.orange, onTap: () { Navigator.pop(ctx); refundSheet(context, h, o); }),
+                if (!isOpen && !voided) Li('Cancel bill', icon: Icons.cancel_outlined, tone: Tk.red, titleColor: Tk.red, onTap: () async { Navigator.pop(ctx); await voidPaid(context, h, o); }),
               ]),
-            ],
-          ]),
-        ),
+              if (voided) Padding(padding: const EdgeInsets.all(18), child: Text('Cancelled${o['voidReason'] != null ? ' · ${o['voidReason']}' : ''}', style: const TextStyle(color: Tk.label2, fontSize: 17))),
+            ]),
+          ),
+          if (isOpen) Container(
+            decoration: const BoxDecoration(color: Color(0xFFFAF9F7), border: Border(top: BorderSide(color: Tk.line, width: .5))),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            child: FilledButton(style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(60), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))), onPressed: () { Navigator.pop(ctx); h.openOrder(o); }, child: const Text('Open order', style: TextStyle(fontSize: 22))),
+          ),
+        ]),
       );
     },
   );

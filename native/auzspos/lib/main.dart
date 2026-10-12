@@ -26,6 +26,7 @@ class App extends StatelessWidget {
           title: 'AUZsPOS',
           debugShowCheckedModeBanner: false,
           theme: Tk.theme(),
+          themeMode: ThemeMode.light,
           home: Launch(child: !s.signedIn ? Login(s) : (s.hasBusiness ? Home(s) : NoBusiness(s))),
         );
       },

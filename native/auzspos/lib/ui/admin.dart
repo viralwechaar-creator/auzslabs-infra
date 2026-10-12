@@ -10,6 +10,7 @@ import 'more.dart';
 import 'more2.dart';
 import 'scan.dart';
 import 'theme.dart';
+import 'ds.dart';
 
 String _day(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 String _dayOf(dynamic iso) {
@@ -19,69 +20,51 @@ String _dayOf(dynamic iso) {
 
 String siteUrl(Session s, [String? table]) => 'https://${s.slug}.auzslab.in/site.html${table == null ? '' : '?t=$table'}';
 
-/// The owner's Admin console, inside the app: the same sections as the website console.
+/// The owner's Admin console, inside the app: the same sections as the website console, as grouped lists.
 class AdminPage extends StatelessWidget {
   const AdminPage(this.h, {super.key});
   final HomeState h;
   @override
   Widget build(BuildContext context) {
     final s = h.s;
-    Widget tile(IconData i, String t, String sub, Widget Function() page, {bool show = true, VoidCallback? act}) => !show
-        ? const SizedBox.shrink()
-        : InkWell(
-            borderRadius: BorderRadius.circular(18),
-            onTap: act ?? () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => page())),
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(color: Tk.card, borderRadius: BorderRadius.circular(18), border: Border.all(color: Tk.line, width: .5)),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Container(width: 40, height: 40, decoration: BoxDecoration(color: Tk.accent.withValues(alpha: .1), borderRadius: BorderRadius.circular(12)), child: Icon(i, color: Tk.accent)),
-                const Spacer(),
-                Text(t, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
-                const SizedBox(height: 2),
-                Text(sub, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Tk.label2, fontSize: 12)),
-              ]),
-            ),
-          );
-    final tiles = <Widget>[
-      tile(Icons.dashboard_outlined, 'Dashboard', 'Sales today and this week', () => AdminDashboard(h)),
-      tile(Icons.restaurant_menu, 'Menu', 'Items, categories, prices', () => MenuAdmin(h), show: s.can('menu') || s.can('m')),
-      tile(Icons.table_restaurant_outlined, 'Tables and QR', 'Areas, tables, table QR codes', () => TablesAdmin(h), show: s.can('menu') || s.can('m')),
-      tile(Icons.qr_code_2, 'QR ordering and website', 'Your link, QR, UPI payments', () => QrWebsitePage(h), show: s.can('m')),
-      tile(Icons.percent, 'Taxes', 'GST rates for items', () => TaxAdmin(h), show: s.can('m')),
-      tile(Icons.inventory_2_outlined, 'Stock', 'Raw materials and counts', () => StockAdmin(h), show: s.can('inventory') || s.can('m')),
-      tile(Icons.people_outline, 'Customers', 'Names, phones, visits', () => CustomersAdmin(h), show: s.can('crm') || s.can('m')),
-      tile(Icons.payments_outlined, 'Expenses', 'Money spent, by day', () => ExpensesAdmin(h), show: s.can('m')),
-      tile(Icons.badge_outlined, 'Team', 'Who can sign in', () => TeamAdmin(h), show: s.can('o')),
-      tile(Icons.bar_chart, 'Reports', 'Sales, payments, top items', () => ReportsPage(h), show: s.can('reports') || s.can('m')),
-      tile(Icons.settings_outlined, 'Settings', 'Business, tax, charges', () => SettingsPage(h), show: s.can('o')),
-      tile(Icons.qr_code_scanner, 'Scan QR', 'Read a table or website QR', () => const SizedBox.shrink(), act: () => scanAndHandle(context, h)),
-      tile(Icons.point_of_sale, 'Register', 'Open and close the till', () => RegisterPage(h)),
-      tile(Icons.insights_outlined, 'Today\'s report', 'Cash, UPI, card, refunds', () => DayReportPage(h)),
-      tile(Icons.event_available_outlined, 'Reservations', 'Book and seat tables', () => ReservationsPage(h)),
-      tile(Icons.access_time, 'Attendance and PIN', 'Clock in, approval PIN', () => StaffPage(h)),
-      tile(Icons.language, 'Full web console', 'Everything else, on the website', () => const _Web('dashboard.html'), show: s.can('m')),
-    ];
-    return LayoutBuilder(
-      builder: (_, c) => GridView.count(
-        crossAxisCount: c.maxWidth > 700 ? 4 : 2,
-        padding: const EdgeInsets.all(14),
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 1.25,
-        children: tiles,
-      ),
+    void go(Widget Function() page) => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => page()));
+    Li row(IconData i, String t, String sub, Color tone, Widget Function() page) => Li(t, sub: sub, icon: i, tone: tone, onTap: () => go(page));
+    return Scaffold(
+      appBar: AppBar(title: const Text('Admin console')),
+      body: ListView(padding: const EdgeInsets.only(bottom: 28), children: [
+        const SizedBox(height: 8),
+        Group([
+          row(Icons.dashboard_outlined, 'Dashboard', 'Sales today, last 7 days, best sellers', Tk.purple, () => AdminDashboard(h)),
+          if (s.can('reports') || s.can('m')) row(Icons.bar_chart, 'Reports', 'Sales, payments, top items', Tk.blue, () => ReportsPage(h)),
+          row(Icons.insights_outlined, 'Today\'s report', 'Cash, UPI, card, refunds', const Color(0xFFF09A2E), () => DayReportPage(h)),
+        ]),
+        const SectionLabel('Menu and tables'),
+        Group([
+          if (s.can('menu') || s.can('m')) row(Icons.restaurant_menu, 'Menu', 'Items, categories, prices', Tk.green, () => MenuAdmin(h)),
+          if (s.can('menu') || s.can('m')) row(Icons.table_restaurant_outlined, 'Tables and QR', 'Areas, tables, table QR codes', const Color(0xFF4FA8C0), () => TablesAdmin(h)),
+          if (s.can('m')) row(Icons.percent, 'Taxes', 'GST rates for items', Tk.label3.withValues(alpha: .9), () => TaxAdmin(h)),
+          if (s.can('m')) row(Icons.language, 'QR ordering and website', 'Your link, QR, UPI payments', Tk.teal, () => QrWebsitePage(h)),
+        ]),
+        const SectionLabel('Business'),
+        Group([
+          if (s.can('inventory') || s.can('m')) row(Icons.inventory_2_outlined, 'Stock', 'Raw materials and counts', Tk.label3.withValues(alpha: .9), () => StockAdmin(h)),
+          if (s.can('crm') || s.can('m')) row(Icons.people_outline, 'Customers', 'Names, phones, visits', Tk.blue, () => CustomersAdmin(h)),
+          if (s.can('m')) row(Icons.payments_outlined, 'Expenses', 'Money spent, by day', Tk.orange, () => ExpensesAdmin(h)),
+          if (s.can('o')) row(Icons.badge_outlined, 'Team', 'Who can sign in', Tk.purple, () => TeamAdmin(h)),
+        ]),
+        const SectionLabel('Daily'),
+        Group([
+          row(Icons.point_of_sale, 'Register', 'Open and close the till', Tk.green, () => RegisterPage(h)),
+          row(Icons.event_available_outlined, 'Reservations', 'Book and seat tables', Tk.blue, () => ReservationsPage(h)),
+          row(Icons.access_time, 'Attendance and PIN', 'Clock in, approval PIN', Tk.orange, () => StaffPage(h)),
+        ]),
+        const SectionLabel('Settings'),
+        Group([
+          if (s.can('o')) row(Icons.settings_outlined, 'Settings', 'Business, tax, charges, discount limit', Tk.label3.withValues(alpha: .9), () => SettingsPage(h)),
+          Li('Full web console', sub: 'Everything else, on the website', icon: Icons.language, tone: Tk.purple, onTap: () => launchUrl(Uri.https('app.auzslab.in', '/dashboard.html'), mode: LaunchMode.externalApplication)),
+        ]),
+      ]),
     );
-  }
-}
-
-class _Web extends StatelessWidget {
-  const _Web(this.page);
-  final String page;
-  @override
-  Widget build(BuildContext context) {
-    launchUrl(Uri.https('app.auzslab.in', '/$page'), mode: LaunchMode.externalApplication);
-    return Scaffold(appBar: AppBar(title: const Text('Web console')), body: const Empty(Icons.open_in_browser, 'Opened in your browser', 'The full console runs on the website. Sign in there with the same login.'));
   }
 }
 

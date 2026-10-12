@@ -4,34 +4,139 @@ import '../core/repo.dart';
 import '../core/session.dart';
 import 'home.dart';
 import 'more2.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'admin.dart';
+import 'ds.dart';
+import 'scan.dart';
 import 'theme.dart';
+
+String _hm(String iso) {
+  final t = DateTime.tryParse(iso)?.toLocal();
+  return t == null ? '' : '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+}
 
 String _today() {
   final d = DateTime.now();
   return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 }
 
-class MorePage extends StatelessWidget {
+class MorePage extends StatefulWidget {
   const MorePage(this.h, {super.key});
   final HomeState h;
   @override
+  State<MorePage> createState() => _MorePageState();
+}
+
+class _MorePageState extends State<MorePage> {
+  HomeState get h => widget.h;
+  Session get s => h.s;
+  bool alert = true;
+
+  @override
+  void initState() {
+    super.initState();
+    SharedPreferences.getInstance().then((p) {
+      if (mounted) setState(() => alert = p.getBool('alertSound') ?? true);
+    });
+  }
+
+  void _go(Widget Function() page) => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => page()));
+  void _site(String page) => launchUrl(Uri.https('auzslab.in', '/$page'), mode: LaunchMode.externalApplication);
+  void _web(String page) => launchUrl(Uri.https('app.auzslab.in', '/$page'), mode: LaunchMode.externalApplication);
+
+  Future<void> _clock() async {
+    final uid = '${s.user!['id']}';
+    final open = s.repo!.of('shift').where((x) => x['u'] == uid && x['out'] == null).firstOrNull;
+    if (open != null) {
+      await s.repo!.save('shift', {...open, 'out': nowIso()}, id: '${open['id']}');
+    } else {
+      await s.repo!.save('shift', {'u': uid, 'e': '${s.user!['email'] ?? ''}', 'in': nowIso()});
+    }
+    s.sync();
+    setState(() {});
+  }
+
+  void _help() {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Text('Help and report a problem', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 12),
+            Group([
+              Li('Call us', icon: Icons.call, tone: Tk.green, value: '+91 92512 50829', onTap: () => launchUrl(Uri.parse('tel:+919251250829'))),
+              Li('WhatsApp', icon: Icons.chat, tone: const Color(0xFF25D366), onTap: () => launchUrl(Uri.parse('https://wa.me/919251250829'), mode: LaunchMode.externalApplication)),
+              Li('Email', icon: Icons.mail_outline, tone: Tk.blue, onTap: () => launchUrl(Uri.parse('mailto:helloauzslab@gmail.com?subject=AUZsPOS%20help'))),
+            ]),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final s = h.s;
-    Widget tile(IconData i, String t, String sub, Widget Function() page) => Card(
-          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-          child: ListTile(leading: Icon(i, color: Tk.accent), title: Text(t, style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text(sub), trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => page()))),
-        );
-    return ListView(padding: const EdgeInsets.symmetric(vertical: 8), children: [
-      tile(Icons.point_of_sale, 'Register', 'Open and close the till, cash in and out', () => RegisterPage(h)),
-      tile(Icons.insights_outlined, 'Today\'s report', 'Sales by payment mode, refunds, cancelled bills', () => DayReportPage(h)),
-      tile(Icons.bar_chart, 'Reports', 'Sales for today, 7 or 30 days', () => ReportsPage(h)),
-      tile(Icons.event_available_outlined, 'Reservations', 'Book and seat tables', () => ReservationsPage(h)),
-      tile(Icons.badge_outlined, 'Attendance and PIN', 'Clock in and out, approval PIN', () => StaffPage(h)),
-      if (s.can('o')) tile(Icons.settings_outlined, 'Settings', 'Business name, tax, charges, discount limit', () => SettingsPage(h)),
-      Card(margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5), child: ListTile(leading: const Icon(Icons.logout), title: const Text('Sign out'), subtitle: Text('${s.user?['email'] ?? ''}'), onTap: () async {
-        if (s.repo!.pending > 0 && !await _confirm(context, 'Sign out with unsent changes?', '${s.repo!.pending} change(s) have not reached the server. Signing out now will lose them.')) return;
-        await s.signOut();
-      })),
+    final uid = '${s.user!['id']}';
+    final open = s.repo!.of('shift').where((x) => x['u'] == uid && x['out'] == null).firstOrNull;
+    final role = '${s.role[0].toUpperCase()}${s.role.substring(1)}';
+    final m = s.can('m');
+    return ListView(padding: const EdgeInsets.only(bottom: 28), children: [
+      PageHead('More', sub: '${s.user?['email'] ?? s.user?['username'] ?? ''} · $role'),
+      const SizedBox(height: 12),
+      Group([
+        Li('Reservations', icon: Icons.event_available_outlined, tone: Tk.blue, onTap: () => _go(() => ReservationsPage(h))),
+        Li('Register', icon: Icons.point_of_sale, tone: Tk.green, onTap: () => _go(() => RegisterPage(h))),
+        Li('Today\'s report', icon: Icons.insights_outlined, tone: const Color(0xFFF09A2E), onTap: () => _go(() => DayReportPage(h))),
+        if (s.can('reports')) Li('Reports', icon: Icons.bar_chart, tone: Tk.purple, onTap: () => _go(() => ReportsPage(h))),
+      ]),
+      const SectionLabel('Attendance'),
+      Group([
+        Li(open != null ? 'On shift since ${_hm('${open['in']}')}' : 'Not clocked in', icon: Icons.schedule, trailing: FilledButton(style: FilledButton.styleFrom(minimumSize: const Size(0, 46), padding: const EdgeInsets.symmetric(horizontal: 18)), onPressed: _clock, child: Text(open != null ? 'Clock out' : 'Clock in'))),
+      ]),
+      if (m) ...[
+        const SectionLabel('Approvals'),
+        Group([Li('Set my approval PIN', sub: 'Type it on a cashier\'s till to approve discounts, cancellations and refunds', icon: Icons.lock_outline, tone: const Color(0xFFF09A2E), onTap: () => _go(() => StaffPage(h)))]),
+      ],
+      const SectionLabel('This device'),
+      Group([
+        Li('Alert sound on this device', sub: 'Loud new-order beep and vibration', icon: Icons.notifications_active_outlined, tone: Tk.red, chevron: false, trailing: Switch(value: alert, onChanged: (v) async {
+          setState(() => alert = v);
+          (await SharedPreferences.getInstance()).setBool('alertSound', v);
+        })),
+        Li('Outlet', icon: Icons.apartment, value: '${s.cfg['name']}', chevron: false),
+        Li('Receipt printer', icon: Icons.print_outlined, value: 'Print window', chevron: false),
+        Li('Sync now', icon: Icons.bolt, onTap: () {
+          s.sync();
+          h.toast('Syncing…');
+        }),
+      ]),
+      if (m) ...[
+        const SectionLabel('Business tools'),
+        Group([
+          Li('Admin console', sub: 'Reports, menu, stock, customers, team, settings', icon: Icons.home_outlined, tone: Tk.purple, onTap: () => _go(() => AdminPage(h))),
+          Li('Scan a QR code', sub: 'Read a table or website QR with the camera', icon: Icons.qr_code_scanner, tone: Tk.teal, onTap: () => scanAndHandle(context, h)),
+          Li('QR Ordering', sub: 'Customize what customers see when they scan a table', icon: Icons.language, tone: const Color(0xFF4FA8C0), onTap: () => _go(() => QrWebsitePage(h))),
+          if (s.featureOn('payroll')) Li('Payroll', icon: Icons.groups_outlined, tone: const Color(0xFFF09A2E), onTap: () => _web('payroll.html')),
+          if (s.featureOn('mobile')) Li('AUZsMob', icon: Icons.phone_iphone, tone: Tk.blue, onTap: () => _web('mob.html')),
+          if (s.featureOn('accounting')) Li('Accounting', icon: Icons.receipt_long_outlined, tone: const Color(0xFF4CC26A), onTap: () => _web('accounts.html')),
+          Li('Inventory', sub: 'Check stock levels and adjust quantity on hand', icon: Icons.inventory_2_outlined, onTap: () => _go(() => StockAdmin(h))),
+        ]),
+      ],
+      const SectionLabel('Account'),
+      Group([
+        Li('Plan & account', icon: Icons.bar_chart, onTap: () => _site('account.html')),
+        Li('Help & report a problem', icon: Icons.help_outline, onTap: _help),
+        Li('Backup, export or clear data', icon: Icons.cloud_download_outlined, onTap: () => _site('account.html')),
+        Li('Sign out', icon: Icons.logout, tone: Tk.red, chevron: false, onTap: () async {
+          if (s.repo!.pending > 0 && !await _confirm(context, 'Sign out with unsent changes?', '${s.repo!.pending} change(s) have not reached the server. Signing out now will lose them.')) return;
+          await s.signOut();
+        }),
+        Li('Delete my account', icon: Icons.delete_outline, tone: Tk.red, chevron: false, onTap: () => launchUrl(Uri.https('auzslab.in', '/account.html'), mode: LaunchMode.externalApplication)),
+      ]),
+      const Padding(padding: EdgeInsets.only(top: 22), child: Center(child: Text('Powered by AUZslab', style: TextStyle(fontSize: 16, color: Tk.label2)))),
     ]);
   }
 }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../core/repo.dart';
 import 'home.dart';
 import 'theme.dart';
+import 'ds.dart';
+import 'more.dart';
 import 'kit.dart';
 import 'admin.dart';
 
@@ -45,44 +47,57 @@ class _TablesPageState extends State<TablesPage> {
     final shown = all.where((t) => sec == 'all' || '${t['sec'] ?? 'Main'}' == sec).toList();
     final states = [for (final t in shown) (t, tableState(h, t))];
     final busy = states.where((e) => e.$2.o != null).length;
-    return Column(children: [
-      if (secs.length > 1)
-        SizedBox(
-          height: 52,
-          child: ListView(scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 8), children: [
-            for (final s in ['all', ...secs]) Padding(padding: const EdgeInsets.all(6), child: ChoiceChip(label: Text(s == 'all' ? 'All' : s), selected: sec == s, onSelected: (_) => setState(() => sec = s))),
-          ]),
-        ),
-      Padding(padding: const EdgeInsets.fromLTRB(16, 4, 16, 4), child: Align(alignment: Alignment.centerLeft, child: Text('$busy of ${states.length} tables busy', style: const TextStyle(color: Tk.label2)))),
-      Expanded(
+    return ListView(padding: const EdgeInsets.only(bottom: 24), children: [
+      PageHead('Tables', sub: '${states.length - busy} tables free · $busy seated'),
+      Padding(padding: const EdgeInsets.fromLTRB(16, 10, 16, 0), child: Row(children: [
+        PillBtn('Takeaway', icon: Icons.shopping_bag_outlined, onTap: () {
+          h.refresh(() {
+            h.cur = h.newOrder(type: 'Takeaway');
+            h.tab = 'sell';
+          });
+        }),
+        const SizedBox(width: 12),
+        PillBtn('Reservations', icon: Icons.event_available_outlined, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => ReservationsPage(h)))),
+      ])),
+      if (secs.length > 1) Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 0), child: Seg<String>(expand: true, items: [('all', 'All'), for (final x in secs) (x, x)], value: sec, onChanged: (v) => setState(() => sec = v))),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
         child: GridView.builder(
-          padding: const EdgeInsets.all(12),
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 170, mainAxisExtent: 104, crossAxisSpacing: 10, mainAxisSpacing: 10),
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisExtent: 112, crossAxisSpacing: 12, mainAxisSpacing: 12),
           itemCount: states.length,
           itemBuilder: (_, i) {
             final (t, s) = states[i];
             final c = _tone(s.st);
             final amt = s.o == null ? null : h.s.tot(s.o!).total;
             return Material(
-              color: s.st == 'free' ? Tk.card : c.withValues(alpha: .1),
-              borderRadius: BorderRadius.circular(16),
+              color: s.st == 'free' ? Colors.white : c.withValues(alpha: .1),
+              borderRadius: BorderRadius.circular(22),
               child: InkWell(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(22),
                 onTap: () => _tap(t, s),
                 child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: s.st == 'free' ? Tk.line : c.withValues(alpha: .5))),
+                  padding: const EdgeInsets.fromLTRB(18, 16, 14, 14),
+                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(22), border: Border.all(color: s.st == 'free' ? Tk.line : c.withValues(alpha: .5), width: .8)),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(children: [Expanded(child: Text('${t['name']}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17))), if (t['seats'] != null) Text('${t['seats']} seats', style: const TextStyle(fontSize: 11, color: Tk.label2))]),
+                    Row(children: [Expanded(child: Text('${t['name']}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 28, letterSpacing: -.5))), if (t['seats'] != null) Text('${t['seats']} seats', style: const TextStyle(fontSize: 14, color: Tk.label2))]),
                     const Spacer(),
-                    Text(_label[s.st]!, style: TextStyle(color: c, fontWeight: FontWeight.w600, fontSize: 13)),
-                    if (s.o != null) Text('${inr(amt!)} · ${_mins(s.o!['created'])}', style: const TextStyle(fontSize: 12, color: Tk.label2)),
+                    Text(s.st == 'free' ? 'Available' : _label[s.st]!, style: TextStyle(color: s.st == 'free' ? Tk.green : c, fontWeight: FontWeight.w600, fontSize: 19)),
+                    if (s.o != null) Text('${inr(amt!)} · ${_mins(s.o!['created'])}', style: const TextStyle(fontSize: 15, color: Tk.label2)),
                   ]),
                 ),
               ),
             );
           },
         ),
+      ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(18, 18, 16, 0),
+        child: Wrap(spacing: 18, runSpacing: 10, children: [
+          for (final (c, l) in [(Tk.label3, 'Ordering'), (const Color(0xFFF09A2E), 'In kitchen'), (const Color(0xFF34C759), 'Ready'), (const Color(0xFF263B30), 'Bill pending'), (Tk.blue, 'Reserved')])
+            Row(mainAxisSize: MainAxisSize.min, children: [Container(width: 16, height: 16, decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(4))), const SizedBox(width: 8), Text(l, style: const TextStyle(fontSize: 18, color: Tk.label2))]),
+        ]),
       ),
     ]);
   }
@@ -115,36 +130,56 @@ class _TablesPageState extends State<TablesPage> {
   }
 }
 
-class KitchenPage extends StatelessWidget {
+class KitchenPage extends StatefulWidget {
   const KitchenPage(this.h, {super.key});
   final HomeState h;
+  @override
+  State<KitchenPage> createState() => _KitchenPageState();
+}
+
+class _KitchenPageState extends State<KitchenPage> {
+  String station = 'all', type = 'all';
+  HomeState get h => widget.h;
 
   @override
   Widget build(BuildContext context) {
     final r = h.s.repo!;
-    final all = r.of('order').where((o) => o['status'] != 'void').toList();
+    bool typeOk(Map o) => type == 'all' || o['type'] == type;
+    final all = r.of('order').where((o) => o['status'] != 'void' && typeOk(o)).toList();
     final queue = all.where((o) => o['kstat'] == 'new' || o['kstat'] == 'preparing').toList()..sort((a, b) => '${a['ktime']}'.compareTo('${b['ktime']}'));
     final ready = all.where((o) => o['kstat'] == 'ready').toList()..sort((a, b) => '${a['readyAt']}'.compareTo('${b['readyAt']}'));
     final out = all.where((o) => o['kstat'] == 'dispatched').toList();
     final target = (h.s.cfg['kdsTargetMin'] ?? 15) as num;
-    return ListView(padding: const EdgeInsets.all(12), children: [
-      if (queue.isEmpty && ready.isEmpty && out.isEmpty) const Padding(padding: EdgeInsets.only(top: 60), child: Empty(Icons.soup_kitchen_outlined, 'Kitchen is clear', 'New orders sent to the kitchen show up here as tickets.')),
+    final stations = {'Kitchen', 'Dessert', 'Bar', for (final i in r.of('item')) '${i['st'] ?? 'Kitchen'}'}.toList();
+    final waiting = r.of('order').where((o) => o['status'] != 'void' && (o['kstat'] == 'new' || o['kstat'] == 'preparing')).length;
+    return ListView(padding: const EdgeInsets.only(bottom: 24), children: [
+      PageHead('Kitchen', sub: '$waiting ticket${waiting == 1 ? '' : 's'} waiting · target $target min'),
+      Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 0), child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: Seg<String>(items: [('all', 'All'), for (final x in stations) (x, x)], value: station, onChanged: (v) => setState(() => station = v)))),
+      Padding(padding: const EdgeInsets.fromLTRB(16, 10, 16, 14), child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: Seg<String>(items: const [('all', 'All'), ('Dine-in', 'Dine-in'), ('Takeaway', 'Takeaway'), ('Delivery', 'Delivery')], value: type, onChanged: (v) => setState(() => type = v)))),
+      if (queue.isEmpty && ready.isEmpty && out.isEmpty)
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(vertical: 44, horizontal: 20),
+          decoration: BoxDecoration(color: Tk.card, borderRadius: BorderRadius.circular(22), border: Border.all(color: Tk.line, width: .5)),
+          child: const Column(children: [
+            Icon(Icons.local_fire_department_outlined, size: 48, color: Tk.label3),
+            SizedBox(height: 14),
+            Text('No orders waiting', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+            SizedBox(height: 8),
+            Text('New kitchen tickets appear here the moment they are sent.', textAlign: TextAlign.center, style: TextStyle(fontSize: 19, color: Tk.label2)),
+          ]),
+        ),
       for (final o in queue) _ticket(context, o, target),
       if (ready.isNotEmpty) ...[
-        const Padding(padding: EdgeInsets.fromLTRB(4, 12, 4, 6), child: Text('Ready', style: TextStyle(fontWeight: FontWeight.w800))),
-        for (final o in ready)
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.check_circle, color: Tk.green),
-              title: Text('${o['no']} · ${o['type']}${o['table'] != null ? ' · ${_tn(o['table'])}' : ''}'),
-              subtitle: Text('Ready ${_mins(o['readyAt'])}'),
-              trailing: FilledButton.tonal(onPressed: () => _set(o, o['type'] == 'Dine-in' ? 'served' : 'dispatched'), child: Text(o['type'] == 'Dine-in' ? 'Served' : 'Handed over')),
-            ),
-          ),
+        const SectionLabel('Ready'),
+        Group([
+          for (final o in ready)
+            Li('${o['no']} · ${o['type']}${o['table'] != null ? ' · ${_tn(o['table'])}' : ''}', sub: 'Ready ${_mins(o['readyAt'])}', icon: Icons.check, tone: Tk.green, trailing: FilledButton(style: FilledButton.styleFrom(minimumSize: const Size(0, 44), padding: const EdgeInsets.symmetric(horizontal: 16)), onPressed: () => _set(o, o['type'] == 'Dine-in' ? 'served' : 'dispatched'), child: Text(o['type'] == 'Dine-in' ? 'Served' : 'Handed over'))),
+        ]),
       ],
       if (out.isNotEmpty) ...[
-        const Padding(padding: EdgeInsets.fromLTRB(4, 12, 4, 6), child: Text('Out for delivery', style: TextStyle(fontWeight: FontWeight.w800))),
-        for (final o in out) Card(child: ListTile(title: Text('${o['no']}'), subtitle: Text('${_mins(o['dispatchAt'])}'), trailing: FilledButton.tonal(onPressed: () => _set(o, 'done'), child: const Text('Delivered')))),
+        const SectionLabel('Out for delivery'),
+        Group([for (final o in out) Li('${o['no']}', sub: _mins(o['dispatchAt']), icon: Icons.delivery_dining, tone: Tk.orange, trailing: FilledButton(style: FilledButton.styleFrom(minimumSize: const Size(0, 44), padding: const EdgeInsets.symmetric(horizontal: 16)), onPressed: () => _set(o, 'done'), child: const Text('Delivered')))]),
       ],
     ]);
   }
@@ -155,11 +190,12 @@ class KitchenPage extends StatelessWidget {
     final started = DateTime.tryParse('${o['ktime']}');
     final late = started != null && DateTime.now().difference(started).inMinutes >= target;
     final batches = ((o['kotBatches'] as List?) ?? []).cast<Map>();
-    final items = <Map>[...((o['knew'] as List?) ?? []).cast<Map>()];
+    final items = <Map>[...((o['knew'] as List?) ?? []).cast<Map>()].where((i) => station == 'all' || '${i['s'] ?? 'Kitchen'}' == station).toList();
+    if (items.isEmpty) return const SizedBox.shrink();
     final prep = o['kstat'] == 'preparing';
     final typeColor = switch (o['type']) { 'Dine-in' => Tk.accent, 'Delivery' => Tk.orange, _ => Tk.green };
     return Card(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       clipBehavior: Clip.antiAlias,
       child: Container(
         decoration: BoxDecoration(border: Border(top: BorderSide(color: late ? Tk.red : typeColor, width: 4))),
