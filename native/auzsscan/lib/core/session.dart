@@ -144,7 +144,7 @@ class ScanSession extends ChangeNotifier {
 
   Future<void> refreshParties() async {
     try {
-      final d = await api.rpc('acc_list_parties', {'limit': 5000, 'include_inactive': true});
+      final d = await api.rpc('acc_list_parties', {'p': {'limit': 5000, 'include_inactive': true}});
       parties = ((d as Map)['rows'] as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
       await store!.setMeta('parties', jsonEncode(parties));
     } on ApiError {
