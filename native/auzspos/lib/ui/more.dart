@@ -3,6 +3,7 @@ import '../core/billing.dart' show r2;
 import '../core/repo.dart';
 import '../core/session.dart';
 import 'home.dart';
+import 'more2.dart';
 import 'theme.dart';
 
 String _today() {
@@ -23,7 +24,10 @@ class MorePage extends StatelessWidget {
     return ListView(padding: const EdgeInsets.symmetric(vertical: 8), children: [
       tile(Icons.point_of_sale, 'Register', 'Open and close the till, cash in and out', () => RegisterPage(h)),
       tile(Icons.insights_outlined, 'Today\'s report', 'Sales by payment mode, refunds, cancelled bills', () => DayReportPage(h)),
+      tile(Icons.bar_chart, 'Reports', 'Sales for today, 7 or 30 days', () => ReportsPage(h)),
       tile(Icons.event_available_outlined, 'Reservations', 'Book and seat tables', () => ReservationsPage(h)),
+      tile(Icons.badge_outlined, 'Attendance and PIN', 'Clock in and out, approval PIN', () => StaffPage(h)),
+      if (s.can('o')) tile(Icons.settings_outlined, 'Settings', 'Business name, tax, charges, discount limit', () => SettingsPage(h)),
       Card(margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5), child: ListTile(leading: const Icon(Icons.logout), title: const Text('Sign out'), subtitle: Text('${s.user?['email'] ?? ''}'), onTap: () async {
         if (s.repo!.pending > 0 && !await _confirm(context, 'Sign out with unsent changes?', '${s.repo!.pending} change(s) have not reached the server. Signing out now will lose them.')) return;
         await s.signOut();

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import '../core/repo.dart';
 import '../core/session.dart';
@@ -23,6 +24,7 @@ class _HomeState extends State<Home> {
   Map<String, dynamic>? cur; // the order being built
   List<Map<String, dynamic>> guests = [];
   Timer? _g;
+  bool _guestsLoaded = false;
   Session get s => widget.s;
 
   void openOrder(Map<String, dynamic> o) => setState(() {
@@ -71,7 +73,16 @@ class _HomeState extends State<Home> {
   Future<void> loadGuests() async {
     try {
       final r = await s.api.select('guest_orders', eq: {'status': 'new'}, order: 'created_at');
+      final known = guests.map((g) => g['id']).toSet();
+      final fresh = r.where((g) => !known.contains(g['id'])).toList();
       if (mounted) setState(() => guests = r);
+      if (fresh.isNotEmpty && _guestsLoaded && mounted) {
+        final call = fresh.any((g) => '${g['note']}' == 'Waiter called');
+        HapticFeedback.heavyImpact();
+        SystemSound.play(SystemSoundType.alert);
+        _toast(call ? 'A guest is calling the waiter' : 'New QR order');
+      }
+      _guestsLoaded = true;
     } catch (_) {}
   }
 

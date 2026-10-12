@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'core/session.dart';
 import 'ui/login.dart';
 import 'ui/home.dart';
+import 'ui/launch.dart';
 import 'ui/theme.dart';
 
 void main() async {
@@ -24,7 +25,7 @@ class App extends StatelessWidget {
           title: 'AUZsPOS',
           debugShowCheckedModeBanner: false,
           theme: Tk.theme(),
-          home: s.signedIn ? Home(s) : Login(s),
+          home: Launch(child: s.signedIn ? Home(s) : Login(s)),
         );
       },
     );
