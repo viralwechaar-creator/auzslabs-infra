@@ -55,7 +55,7 @@ PAGES['fin/accounting']=()=>{const f=rangeFrom(),t=rangeTo(),a=pnl(f,t),rate={};
   card(cardHead('Expenses by category'),Object.keys(a.byCat).length?barList(Object.entries(a.byCat).sort((x,y)=>y[1]-x[1]),inr):h('div',{class:'empty'},'No expenses in this period'))]};
 // ---------- reconciliation ----------
 PAGES['fin/reconcile']=()=>{const f=rangeFrom(),t=rangeTo(),days=[];for(let d=t;d>=f&&days.length<60;d=addDays(d,-1))days.push(d);
- const row=d=>{const st=dayStats(d),c=dayCash(d),dc=c.dc;return{d,cash:st.pay.cash,card:st.pay.card,other:st.pay.other,online:st.pay.online,total:st.rev,expected:c.expected,counted:dc?dc.countedCash:null,diff:dc?dc.variance:null}};
+ const row=d=>{const st=dayStats(d),c=dayCash(d),dc=c.dc;return{d,cash:st.pay.cash,card:st.pay.card,other:st.pay.other+st.pay.upi,online:st.pay.online,total:st.rev,expected:c.expected,counted:dc?dc.countedCash:null,diff:dc?dc.variance:null}};
  const rows=days.map(row).filter(r=>r.total||r.counted!=null),sets=rawL('settlement'),pending=sum(sets.filter(s=>s.status!='received'),s=>s.net);
  return[pageHead('Payment Reconciliation','Match what the till says against cash counted and platform payouts.',btn('Export CSV',()=>csvDl([['Date','Cash','Card','UPI/other','Online','Total','Expected cash','Counted','Difference'],...rows.map(r=>[r.d,r.cash,r.card,r.other,r.online,r.total,r.expected,r.counted??'',r.diff??''])],'reconciliation.csv'),'','dl')),allOutletsNote(),rangeBar(),
   kpis([['Total sales',inr(sum(rows,r=>r.total))],['Cash difference',inr(sum(rows,r=>r.diff||0))],['Days not closed',rows.filter(r=>r.counted==null&&r.d<today()).length],['Platform payouts pending',inr(pending)]]),

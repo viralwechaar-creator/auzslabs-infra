@@ -133,8 +133,8 @@ const isOnline=o=>!!o.src;
 const chanOf=o=>o.type=='Delivery'?'Delivery':o.type=='Takeaway'?'Takeaway':'Dine-In';
 const tn=id=>{const t=R[id];return t&&!t.deleted?t.data.name:''};
 function dayStats(d){
- const ps=paidOn(d),rev=sum(ps,netOf),pay={cash:0,card:0,other:0,online:0};
- ps.forEach(o=>{if(isOnline(o)){pay.online+=netOf(o);return}(o.pays||[]).forEach(p=>{const a=p.amt-(p.m=='cash'?(o.change||0):0);if(p.m=='cash')pay.cash+=a;else if(p.m=='card')pay.card+=a;else pay.other+=a})});
+ const ps=paidOn(d),rev=sum(ps,netOf),pay={cash:0,card:0,upi:0,other:0,online:0};
+ ps.forEach(o=>{if(isOnline(o)){pay.online+=netOf(o);return}(o.pays||[]).forEach(p=>{const a=p.amt-(p.m=='cash'?(o.change||0):0);if(p.m=='cash')pay.cash+=a;else if(p.m=='card')pay.card+=a;else if(p.m=='upi')pay.upi+=a;else pay.other+=a})});
  const unpaid=sum(orders().filter(o=>o.status=='due'&&dayOf(o.created)==d),o=>o.t.total-(o.pays||[]).reduce((a,p)=>a+p.amt,0));
  const ch={'Dine-In':{n:0,v:0},'Takeaway':{n:0,v:0},'Delivery':{n:0,v:0}};ps.forEach(o=>{const c=ch[chanOf(o)];c.n++;c.v+=netOf(o)});
  const hours=Array(24).fill(0);ps.forEach(o=>{hours[new Date(o.paidAt).getHours()]+=netOf(o)});
