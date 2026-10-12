@@ -85,6 +85,25 @@ class ApiClient {
     return Map<String, dynamic>.from(m['user'] as Map);
   }
 
+  /// Upload one employee document or receipt photo to the business's private storage. Returns its stored path (what pay_me_claim expects as `attachment`).
+  Future<String> uploadDoc(List<int> bytes, String empId) async {
+    final headers = <String, String>{'Content-Type': 'application/octet-stream', if (token != null) 'Authorization': 'Bearer $token'};
+    http.Response res;
+    try {
+      res = await _http.post(Uri.parse('$base/storage/doc?empId=${Uri.encodeQueryComponent(empId)}'), headers: headers, body: bytes).timeout(const Duration(seconds: 60));
+    } catch (_) {
+      throw ApiError('Could not reach the server.', networkError: true);
+    }
+    dynamic json;
+    try {
+      json = jsonDecode(utf8.decode(res.bodyBytes));
+    } catch (_) {}
+    if (res.statusCode < 200 || res.statusCode >= 300) throw ApiError(json is Map && json['error'] != null ? '${json['error']}' : 'Upload failed (${res.statusCode})', status: res.statusCode);
+    final path = json is Map ? (json['data'] is Map ? json['data']['path'] : json['path']) : null;
+    if (path == null) throw ApiError('Upload failed: no address came back.');
+    return '$path';
+  }
+
   Future<dynamic> rpc(String fn, [Map<String, dynamic> args = const {}]) => _request('POST', '/rpc/$fn', body: args);
 
   /// Several queued writes in ONE request (POST /sync, at most 50). Each result is {id, ok, status?, error?, skipped?}.

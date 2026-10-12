@@ -72,3 +72,39 @@ String mins(num m) {
   final h = t ~/ 60, r = t % 60;
   return r == 0 ? '${h}h' : '${h}h ${r}m';
 }
+
+/// What can be done next on a payroll run, from its state and who is looking. Same rules as the website's run page.
+/// ids: calculate, submit, approve, approve_finalise, send_back, finalise, pay, close, cancel
+List<String> runActions({required String status, required String kind, required bool canRun, required bool canApprove, required bool canPay, required bool needsReview, bool paidInFull = false}) {
+  final a = <String>[];
+  if (kind == 'legacy' || status == 'cancelled') return a;
+  if (status == 'draft' && canRun) a.add('calculate');
+  if (['draft', 'calculated'].contains(status) && canRun) {
+    if (needsReview || !canApprove) {
+      a.add('submit');
+    } else {
+      a.add('approve_finalise');
+    }
+  }
+  if (status == 'review') {
+    if (canApprove) a.add('approve');
+    if (canRun || canApprove) a.add('send_back');
+  }
+  if (status == 'approved') {
+    if (canApprove || canRun) a.add('finalise');
+    if (canRun || canApprove) a.add('send_back');
+  }
+  if (status == 'finalized' && canPay) a.add('pay');
+  if (status == 'paid' && canApprove) a.add('close');
+  if (['draft', 'calculated', 'review', 'approved'].contains(status) && canRun) a.add('cancel');
+  return a;
+}
+
+/// The payload of pay_me_claim. The attachment is the path the receipt upload returned (or null).
+Map<String, dynamic> claimPayload({required String category, required String amount, required String date, String description = '', String? attachment}) => {
+      'category': category,
+      'amount': n(amount),
+      'date': date.trim(),
+      'description': description.trim(),
+      'attachment': (attachment ?? '').isEmpty ? null : attachment,
+    };

@@ -5,6 +5,8 @@ import 'package:auzspay/core/api.dart';
 import 'package:auzspay/core/calc.dart';
 import 'package:auzspay/core/session.dart';
 import 'package:auzspay/core/store.dart';
+import 'package:auzspay/ui/p_addperson.dart';
+import 'package:auzspay/ui/p_run.dart';
 import 'package:auzspay/ui/shell.dart';
 import 'package:auzspay/ui/theme.dart';
 
@@ -16,6 +18,7 @@ class FakeApi extends ApiClient {
   ApiError? refuse;
   bool hr = true;
   final seen = <String>{};
+  final saved = <Map<String, dynamic>>[];
 
   @override
   Future<dynamic> rpc(String fn, [Map<String, dynamic> args = const {}]) async {
@@ -25,7 +28,7 @@ class FakeApi extends ApiClient {
       case 'my_dashboard':
         return {'my_role': 'owner', 'my_email': 'o@x.in', 'tenant': {'slug': 'acme', 'name': 'Acme'}, 'features': {'payroll': true}, 'enabled_features': {}};
       case 'pay_bootstrap':
-        return {'hr': hr, 'perms': {'pay_view': true, 'pay_salary': true, 'pay_run': true}, 'org': {'name': 'Acme'}, 'masters': []};
+        return {'hr': hr, 'perms': {'pay_view': true, 'pay_salary': true, 'pay_run': true, 'pay_people': true}, 'org': {'name': 'Acme'}, 'masters': []};
       case 'pay_me':
         return {
           'date': '2026-10-12',
@@ -67,6 +70,18 @@ class FakeApi extends ApiClient {
         return [{'id': 'e2', 'name': 'Ravi Kumar', 'designation': 'Packer', 'status': 'active', 'today': 'present', 'gross': 15000}];
       case 'pay_list_runs':
         return [{'id': 'run1', 'title': 'September 2026', 'month': '2026-09', 'employees': 4, 'net': 80000, 'status': 'paid'}];
+      case 'pay_get_run':
+        return {'id': 'run2', 'title': 'October 2026', 'kind': 'regular', 'status': 'calculated', 'number': 'PAY/1', 'net': 50000, 'gross': 55000, 'deductions': 5000, 'employees': 2, 'held': 0,
+          'items': [{'id': 'it1', 'name': 'Asha Verma', 'net': 30000, 'gross': 33000, 'deductions': 3000, 'paid_days': 31, 'status': 'ok', 'warnings': []}, {'id': 'it2', 'name': 'Ravi Kumar', 'net': 20000, 'gross': 22000, 'deductions': 2000, 'paid_days': 28, 'status': 'ok', 'warnings': [{'code': 'x', 'text': 'No bank account'}]}]};
+      case 'pay_save_employee':
+        saved.add(Map<String, dynamic>.from(args['p'] as Map));
+        return 'e9';
+      case 'pay_run_create':
+        return 'run2';
+      case 'pay_run_calculate':
+      case 'pay_run_submit':
+      case 'pay_item_hold':
+        return {'ok': true};
       case 'pay_dashboard':
         return {'today': '2026-10-12', 'attendance': {'present': 3, 'late': 1}, 'pending': {'leave': 1}, 'headcount': {'active': 4}};
       case 'pay_me_leave_apply':
@@ -101,6 +116,7 @@ Future<void> settle(WidgetTester t) async {
 }
 
 void main() {
+  claimTests();
   TestWidgetsFlutterBinding.ensureInitialized();
   SharedPreferences.setMockInitialValues({});
   void phone(WidgetTester t) {
@@ -194,5 +210,54 @@ void main() {
     await settle(t);
     expect(find.text('HR today'), findsNothing);
     expect(find.text('Profile'), findsOneWidget);
+  });
+
+  test('payroll run: the next steps depend on the state and on who is looking', () {
+    List<String> a(String st, {bool run = true, bool appr = false, bool pay = false, bool review = false, String kind = 'regular'}) =>
+        runActions(status: st, kind: kind, canRun: run, canApprove: appr, canPay: pay, needsReview: review);
+    expect(a('draft'), ['calculate', 'submit', 'cancel'], reason: 'no approve right: send it for approval');
+    expect(a('calculated', appr: true), ['approve_finalise', 'cancel'], reason: 'an approver without a review step finalises directly');
+    expect(a('calculated', appr: true, review: true), ['submit', 'cancel']);
+    expect(a('review', run: false, appr: true), ['approve', 'send_back']);
+    expect(a('approved', appr: true), ['finalise', 'send_back', 'cancel']);
+    expect(a('finalized', pay: true), ['pay']);
+    expect(a('finalized'), isEmpty);
+    expect(a('paid', run: false, appr: true), ['close']);
+    expect(a('calculated', kind: 'legacy'), isEmpty);
+    expect(a('cancelled'), isEmpty);
+  });
+
+  testWidgets('a payroll run opens, shows its people, and Send for approval calls the server', (t) async {
+    phone(t);
+    final (s, api) = await boot(t);
+    t.state<NavigatorState>(find.byType(Navigator).first).push(MaterialPageRoute<void>(builder: (_) => RunPage(s, 'run2', 'October 2026')));
+    await settle(t);
+    expect(find.text('Asha Verma'), findsOneWidget);
+    expect(find.textContaining('to check'), findsOneWidget);
+    await t.tap(find.text('Send for approval'));
+    await settle(t);
+    expect(api.calls, contains('pay_run_submit'));
+    expect(t.takeException(), isNull);
+  });
+
+  test('the Add person payload keeps salary and bank out when the user may not edit salary', () {
+    final a = newPersonPayload(name: ' Asha ', phone: '99', joinedOn: '2026-10-01', salary: 15000, structureId: 'st1', mayEditSalary: false);
+    expect(a.containsKey('salary'), false);
+    expect(a.containsKey('bank'), false);
+    final b = newPersonPayload(name: 'Asha', phone: '99', joinedOn: '2026-10-01', salary: 15000, structureId: 'st1', mayEditSalary: true, payBy: 'bank', accountNo: '123', ifsc: 'hdfc0001');
+    expect(b['salary'], {'amount': 15000, 'structure_id': 'st1'});
+    expect((b['bank'] as Map)['ifsc'], 'HDFC0001');
+    expect(defaultStructureId([{'id': 'a', 'basis': 'ctc', 'active': true}, {'id': 'b', 'basis': 'monthly', 'active': true, 'is_default': true}]), 'b');
+  });
+}
+
+void claimTests() {
+  test('claimPayload sends the receipt path, or null when there is none', () {
+    final a = claimPayload(category: 'Travel', amount: '250', date: ' 2026-10-12 ', description: ' cab ', attachment: 'tid/emp/receipt.jpg');
+    expect(a['amount'], 250);
+    expect(a['date'], '2026-10-12');
+    expect(a['description'], 'cab');
+    expect(a['attachment'], 'tid/emp/receipt.jpg');
+    expect(claimPayload(category: 'Food', amount: '10', date: '2026-10-12')['attachment'], isNull);
   });
 }

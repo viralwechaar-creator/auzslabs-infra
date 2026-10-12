@@ -7,7 +7,9 @@ import 'i18n.dart';
 import 'kit.dart';
 import 'lv.dart';
 import 'mk.dart';
+import 'p_addperson.dart';
 import 'p_pay.dart';
+import 'p_run.dart';
 import 'p_today.dart';
 import 'theme.dart';
 
@@ -207,11 +209,21 @@ class PeoplePage extends StatefulWidget {
 class _PeoplePageState extends State<PeoplePage> {
   PaySession get s => widget.s;
   String f = 'current', q = '';
+  int v = 0; // bumped after adding someone so the list loads again
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('People')),
+      appBar: AppBar(title: const Text('People'), actions: [
+        if (s.can('pay_people'))
+          TextButton.icon(
+              onPressed: () async {
+                if (await addPerson(context, s) && mounted) setState(() => v++);
+              },
+              icon: const Icon(Icons.person_add_alt_1),
+              label: const Text('Add person')),
+      ]),
       body: Loader<List<Map<String, dynamic>>>(
+        key: ValueKey(v),
         load: () async => _maps(await s.api.rpc('pay_list_employees', {'p': {'status': 'all'}})),
         builder: (ctx, all, reload) {
           final ql = q.toLowerCase();
@@ -281,15 +293,14 @@ class RunsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Payroll')),
+      appBar: AppBar(title: const Text('Payroll'), actions: [if (s.can('pay_run')) TextButton.icon(onPressed: () => newRun(context, s), icon: const Icon(Icons.add), label: const Text('New payroll'))]),
       body: Loader<List<Map<String, dynamic>>>(
         load: () async => _maps(await s.api.rpc('pay_list_runs', {'p': {}})),
         builder: (ctx, runs, reload) => runs.isEmpty
-            ? emptyBox(Icons.account_balance_wallet_outlined, 'No payroll yet', 'Payroll is run on the website. Finalised payrolls show here.')
+            ? emptyBox(Icons.account_balance_wallet_outlined, 'No payroll yet', s.can('pay_run') ? 'Tap New payroll to run the first month.' : 'Finalised payrolls show here.')
             : RefreshIndicator(
                 onRefresh: reload,
                 child: ListView(padding: const EdgeInsets.only(bottom: 40), children: [
-                  const Hint('To run or finalise a payroll, use AUZsPay on the website. Here you can read finished and running payrolls and open payslips.'),
                   Group([
                     for (final r in runs)
                       Li('${r['title']}',
@@ -301,35 +312,6 @@ class RunsPage extends StatelessWidget {
                   ]),
                 ]),
               ),
-      ),
-    );
-  }
-}
-
-class RunPage extends StatelessWidget {
-  const RunPage(this.s, this.id, this.title, {super.key});
-  final PaySession s;
-  final String id, title;
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Loader<Map<String, dynamic>>(
-        load: () async => Map<String, dynamic>.from(await s.api.rpc('pay_get_run', {'p_id': id}) as Map),
-        builder: (ctx, d, _) {
-          final r = d['run'] is Map ? Map<String, dynamic>.from(d['run'] as Map) : d;
-          final items = _maps(d['items']);
-          return ListView(padding: const EdgeInsets.only(bottom: 40), children: [
-            metricGrid([
-              Metric('Net pay', inr(n(r['net']), dp: 0), hero: true),
-              Metric('Gross', inr(n(r['gross']), dp: 0)),
-              Metric('Deductions', inr(n(r['deductions']), dp: 0)),
-              Metric('Status', tr('${r['status'] ?? ''}')),
-            ]),
-            const SectionLabel('Payslips'),
-            Group([for (final i in items) Li('${i['name']}', sub: '${i['payslip_no'] ?? ''}', value: inr(n(i['net'])), icon: Icons.person_outline, tone: Tk.accent, onTap: () => Navigator.push(ctx, MaterialPageRoute(builder: (_) => PayslipPage(s, '${i['id']}'))))]),
-          ]);
-        },
       ),
     );
   }
