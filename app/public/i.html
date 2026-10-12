@@ -123,6 +123,7 @@ const id=new URLSearchParams(location.search).get('o');
   <table><thead><tr><th>Item</th><th>Qty</th><th>Amount</th></tr></thead><tbody>${rows}</tbody></table>
   <div class=co-totals>
   <div><span>Subtotal</span><span>${inr(t.sub)}</span></div>
+  ${(t.offers||[]).map(x=>`<div><span>${esc(x.desc)}</span><span>-${inr(x.amt)}</span></div>`).join('')}
   ${t.d?`<div><span>Discount</span><span>-${inr(t.d)}</span></div>`:''}
   ${t.svc?`<div><span>Service charge</span><span>${inr(t.svc)}</span></div>`:''}${t.pack?`<div><span>Packing</span><span>${inr(t.pack)}</span></div>`:''}${t.deliv?`<div><span>Delivery</span><span>${inr(t.deliv)}</span></div>`:''}
   ${taxRows.map(([a,v])=>`<div><span>${a}</span><span>${inr(v)}</span></div>`).join('')}
@@ -144,6 +145,7 @@ const id=new URLSearchParams(location.search).get('o');
 <table><thead><tr><th>Item</th><th class=c>Qty</th><th class=r>Unit price</th><th class=r>Amount</th></tr></thead><tbody>${rows}</tbody></table>
 <div class=tot><table>
 <tr><td>Subtotal</td><td>${inr(t.sub)}</td></tr>
+${(t.offers||[]).map(x=>`<tr><td>${esc(x.desc)}</td><td>-${inr(x.amt)}</td></tr>`).join('')}
 ${t.d?`<tr><td>Discount</td><td>-${inr(t.d)}</td></tr>`:''}
 ${t.svc?`<tr><td>Service charge</td><td>${inr(t.svc)}</td></tr>`:''}${t.pack?`<tr><td>Packing</td><td>${inr(t.pack)}</td></tr>`:''}${t.deliv?`<tr><td>Delivery</td><td>${inr(t.deliv)}</td></tr>`:''}
 ${taxRows.map(([a,v])=>`<tr><td>${a}</td><td>${inr(v)}</td></tr>`).join('')}
