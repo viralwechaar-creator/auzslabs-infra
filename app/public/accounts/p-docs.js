@@ -322,6 +322,7 @@ function identityFoot(o, d) {
 function invoiceSheetNode(data) { // data: {org, doc, lines} shapes of public_acc_document (also used in-app)
   const o = data.org, d = data.doc;
   if (brandOf(o).invoiceStyle === 'classic' && window.auzTaxInvoice) return auzTaxInvoice.build(data);
+  if (window.auzInvoiceTemplates && auzInvoiceTemplates[brandOf(o).invoiceStyle]) return auzInvoiceTemplates[brandOf(o).invoiceStyle](data);
   const adr = [o.address, [o.city, o.pincode].filter(Boolean).join(' ')].filter(Boolean).join(', ');
   return h('div', null,
     h('div', { style: { display: 'flex', justifyContent: 'space-between', gap: '16px' } }, h('div', null, brandOf(o).logo ? h('img', { src: brandOf(o).logo, alt: '', style: { maxHeight: '56px', maxWidth: '200px', display: 'block', marginBottom: '6px' } }) : null, h('h1', null, o.name || o.legal_name), h('div', null, adr), o.gstin ? h('div', null, 'GSTIN ' + o.gstin) : null, (brandOf(o).regs || []).map((r) => h('div', null, r.k + ' ' + r.v)), o.phone ? h('div', null, o.phone) : null, brandOf(o).website ? h('div', null, brandOf(o).website) : null),
