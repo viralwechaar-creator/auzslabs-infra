@@ -16,6 +16,8 @@ V.more = () => {
     // Chapter One's bespoke one-off website (app/public/chapterone/), not the generic Website Builder.
     if (window.TENANT_SLUG === 'chapterone') links.push(liRow({ ic: 'globe', tone: 'teal', title: 'Our website', sub: 'Menu, reservations and takeaway ordering', chev: true, onclick: () => (location.href = '/chapterone/index.html') }));
   }
+  // Every staff member (not just owner/manager): a stripped-down stock screen, nothing else -- see pos/inventory.js.
+  if (can('inventory')) links.push(liRow({ ic: 'box', tone: 'gray', title: 'Inventory', sub: 'Check stock levels and adjust quantity on hand', chev: true, onclick: () => go('inventory') }));
   return h('div', { class: 'page' },
     h('div', { class: 'page-head' }, h('div', null, h('h1', null, 'More'), h('div', { class: 'sub' }, myName() + ' · ' + cap1(S.role)))),
     extra.length ? h('div', { class: 'list only-phone' }, extra.map((n) => liRow({ ic: n.ic, tone: n.tone || 'gray', title: n.label, chev: true, onclick: () => go(n.k) }))) : null,
