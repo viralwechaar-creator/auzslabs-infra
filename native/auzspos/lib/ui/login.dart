@@ -156,7 +156,7 @@ class _LoginState extends State<Login> {
                 padding: const EdgeInsets.fromLTRB(28, 32, 28, 28),
                 decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(32), border: Border.all(color: Tk.line, width: .5)),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                  Align(alignment: Alignment.centerLeft, child: Image.asset('assets/logo-pos.png', height: 64)),
+                  Align(alignment: Alignment.centerLeft, child: Image.asset('assets/logo-pos.png', height: 52, filterQuality: FilterQuality.high)),
                   const SizedBox(height: 22),
                   Text(tab == 1 ? 'Create account' : 'Sign in', style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w800, letterSpacing: -.8)),
                   const SizedBox(height: 10),
