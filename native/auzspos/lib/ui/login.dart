@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:app_links/app_links.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'i18n.dart';
+import 'package:flutter/material.dart' as m;
 import 'package:url_launcher/url_launcher.dart';
 import '../core/api.dart';
 import '../core/session.dart';
@@ -99,9 +101,9 @@ class _LoginState extends State<Login> {
       builder: (_) => AlertDialog(
         title: const Text('Forgot password'),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Text('We will email a link to set a new password.', style: TextStyle(color: Tk.label2)),
+          Text('We will email a link to set a new password.', style: TextStyle(color: Tk.label2)),
           const SizedBox(height: 12),
-          TextField(controller: c, keyboardType: TextInputType.emailAddress, autofocus: true, decoration: const InputDecoration(labelText: 'Email')),
+          TextField(controller: c, keyboardType: TextInputType.emailAddress, autofocus: true, decoration: InputDecoration(labelText: tr('Email'))),
         ]),
         actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(context, c.text.trim()), child: const Text('Send link'))],
       ),
@@ -124,7 +126,7 @@ class _LoginState extends State<Login> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Two-step sign in'),
-        content: TextField(controller: c, keyboardType: TextInputType.number, autofocus: true, decoration: const InputDecoration(labelText: '6-digit code or backup code')),
+        content: TextField(controller: c, keyboardType: TextInputType.number, autofocus: true, decoration: InputDecoration(labelText: tr('6-digit code or backup code'))),
         actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(context, c.text.trim()), child: const Text('Continue'))],
       ),
     );
@@ -132,7 +134,7 @@ class _LoginState extends State<Login> {
 
   Widget _googleBtn() => OutlinedButton(
         onPressed: busy ? null : google,
-        style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(56), backgroundColor: Tk.fill3, side: const BorderSide(color: Tk.line2, width: 1), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
+        style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(56), backgroundColor: Tk.fill3, side: BorderSide(color: Tk.line2, width: 1), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           Container(width: 24, height: 24, alignment: Alignment.center, decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white), child: const Text('G', style: TextStyle(color: Color(0xFF4285F4), fontWeight: FontWeight.w900, fontSize: 18))),
           const SizedBox(width: 12),
@@ -154,13 +156,15 @@ class _LoginState extends State<Login> {
               constraints: const BoxConstraints(maxWidth: 480),
               child: Container(
                 padding: const EdgeInsets.fromLTRB(28, 32, 28, 28),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(32), border: Border.all(color: Tk.line, width: .5)),
+                decoration: BoxDecoration(color: Tk.card, borderRadius: BorderRadius.circular(32), border: Border.all(color: Tk.line, width: .5)),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  Align(alignment: Alignment.centerRight, child: Seg<String>(items: const [('en', 'English'), ('hi', 'हिंदी')], value: Lang.code, onChanged: (v) => Lang.set(v))),
+                  const SizedBox(height: 14),
                   Align(alignment: Alignment.centerLeft, child: Image.asset('assets/logo-pos.png', height: 52, filterQuality: FilterQuality.high)),
                   const SizedBox(height: 22),
                   Text(tab == 1 ? 'Create account' : 'Sign in', style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w800, letterSpacing: -.8)),
                   const SizedBox(height: 10),
-                  Text(tab == 1 ? 'Start with your Google account, then choose your plan.' : staff ? 'Use the username and PIN your owner gave you.' : 'Use the email and password your business gave you.', style: const TextStyle(fontSize: 20, color: Tk.label2, height: 1.3)),
+                  Text(tab == 1 ? 'Start with your Google account, then choose your plan.' : staff ? 'Use the username and PIN your owner gave you.' : 'Use the email and password your business gave you.', style: TextStyle(fontSize: 20, color: Tk.label2, height: 1.3)),
                   const SizedBox(height: 22),
                   if (tab == 1) ...[
                     CheckboxListTile(
@@ -168,13 +172,13 @@ class _LoginState extends State<Login> {
                       controlAffinity: ListTileControlAffinity.leading,
                       value: agree,
                       onChanged: (v) => setState(() => agree = v == true),
-                      title: Text.rich(TextSpan(style: const TextStyle(fontSize: 16), children: <InlineSpan>[const TextSpan(text: 'I agree to the '), TextSpan(text: 'Privacy policy', style: TextStyle(color: Tk.accentText, decoration: TextDecoration.underline)), const TextSpan(text: ' and '), TextSpan(text: 'Terms', style: TextStyle(color: Tk.accentText, decoration: TextDecoration.underline))])),
+                      title: m.Text.rich(TextSpan(style: const TextStyle(fontSize: 16), children: <InlineSpan>[const TextSpan(text: 'I agree to the '), TextSpan(text: 'Privacy policy', style: TextStyle(color: Tk.accentText, decoration: TextDecoration.underline)), const TextSpan(text: ' and '), TextSpan(text: 'Terms', style: TextStyle(color: Tk.accentText, decoration: TextDecoration.underline))])),
                     ),
                     CheckboxListTile(contentPadding: EdgeInsets.zero, controlAffinity: ListTileControlAffinity.leading, value: updates, onChanged: (v) => setState(() => updates = v == true), title: const Text('Send me product updates (optional)', style: TextStyle(fontSize: 16))),
                     const SizedBox(height: 8),
                     _googleBtn(),
                   ] else ...[
-                    if (tab == 0) ...[_googleBtn(), const SizedBox(height: 16), const Center(child: Text('or', style: TextStyle(fontSize: 18, color: Tk.label2))), const SizedBox(height: 16)],
+                    if (tab == 0) ...[_googleBtn(), const SizedBox(height: 16), Center(child: Text('or', style: TextStyle(fontSize: 18, color: Tk.label2))), const SizedBox(height: 16)],
                     Seg<int>(expand: true, items: const [(0, 'Email'), (2, 'Staff')], value: tab, onChanged: (v) => setState(() {
                           tab = v;
                           err = null;
@@ -194,8 +198,8 @@ class _LoginState extends State<Login> {
                     if (!staff) Align(alignment: Alignment.centerRight, child: TextButton(onPressed: forgot, child: const Text('Forgot password?', style: TextStyle(fontSize: 18)))) else const SizedBox(height: 14),
                     FilledButton(onPressed: busy ? null : go, style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(64), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)), textStyle: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)), child: Text(busy ? 'Signing in…' : 'Sign in')),
                   ],
-                  if (err != null || note != null) Padding(padding: const EdgeInsets.only(top: 14), child: Text(err ?? note!, style: const TextStyle(color: Tk.red, fontSize: 17))),
-                  if (info != null) Padding(padding: const EdgeInsets.only(top: 14), child: Text(info!, style: const TextStyle(color: Tk.green, fontSize: 17))),
+                  if (err != null || note != null) Padding(padding: const EdgeInsets.only(top: 14), child: Text(err ?? note!, style: TextStyle(color: Tk.red, fontSize: 17))),
+                  if (info != null) Padding(padding: const EdgeInsets.only(top: 14), child: Text(info!, style: TextStyle(color: Tk.green, fontSize: 17))),
                   const SizedBox(height: 26),
                   Center(
                     child: Wrap(alignment: WrapAlignment.center, children: [

@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'i18n.dart';
 import 'theme.dart';
 
 /// One field of [formSheet].
@@ -48,13 +49,13 @@ Future<void> formSheet(BuildContext c, String title, List<F> fields, Future<bool
                     ]),
                   'select' => DropdownButtonFormField<String>(
                       initialValue: f.options.any((o) => o[0] == '${vals[f.k]}') ? '${vals[f.k]}' : null,
-                      decoration: InputDecoration(labelText: f.label),
+                      decoration: InputDecoration(labelText: tr(f.label)),
                       items: [for (final o in f.options) DropdownMenuItem(value: o[0], child: Text(o[1]))],
                       onChanged: (v) => vals[f.k] = v),
-                  _ => TextField(controller: ctl[f.k], keyboardType: f.type == 'number' ? const TextInputType.numberWithOptions(decimal: true) : (f.type == 'multiline' ? TextInputType.multiline : TextInputType.text), minLines: f.type == 'multiline' ? 2 : 1, maxLines: f.type == 'multiline' ? 4 : 1, decoration: InputDecoration(labelText: f.label, helperText: f.hint)),
+                  _ => TextField(controller: ctl[f.k], keyboardType: f.type == 'number' ? const TextInputType.numberWithOptions(decimal: true) : (f.type == 'multiline' ? TextInputType.multiline : TextInputType.text), minLines: f.type == 'multiline' ? 2 : 1, maxLines: f.type == 'multiline' ? 4 : 1, decoration: InputDecoration(labelText: tr(f.label), helperText: f.hint == null ? null : tr(f.hint!))),
                 },
               ),
-            if (err != null) Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(err!, style: const TextStyle(color: Tk.red))),
+            if (err != null) Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(err!, style: TextStyle(color: Tk.red))),
             Row(children: [
               if (onDelete != null)
                 Padding(
@@ -120,7 +121,7 @@ class Empty extends StatelessWidget {
             const SizedBox(height: 14),
             Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
             const SizedBox(height: 6),
-            Text(hint, textAlign: TextAlign.center, style: const TextStyle(color: Tk.label2)),
+            Text(hint, textAlign: TextAlign.center, style: TextStyle(color: Tk.label2)),
             if (action != null) ...[const SizedBox(height: 16), FilledButton(onPressed: onAction, child: Text(action!))],
           ]),
         ),

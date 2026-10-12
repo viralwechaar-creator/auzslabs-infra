@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'i18n.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/session.dart';
 import 'theme.dart';
@@ -18,7 +19,7 @@ class NoBusiness extends StatelessWidget {
                 const SizedBox(height: 16),
                 const Text('Welcome to AUZslab', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 8),
-                Text('${s.user?['email'] ?? 'Your account'} is ready, but it has no business yet. Choose your plan on the website and we will set up your till.', textAlign: TextAlign.center, style: const TextStyle(color: Tk.label2)),
+                Text('${s.user?['email'] ?? 'Your account'} is ready, but it has no business yet. Choose your plan on the website and we will set up your till.', textAlign: TextAlign.center, style: TextStyle(color: Tk.label2)),
                 const SizedBox(height: 24),
                 FilledButton(onPressed: () => launchUrl(Uri.https('auzslab.in', '/cart.html'), mode: LaunchMode.externalApplication), child: const Text('Choose a plan')),
                 const SizedBox(height: 8),

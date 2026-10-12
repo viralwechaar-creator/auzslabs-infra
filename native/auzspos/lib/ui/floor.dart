@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'i18n.dart';
 import '../core/repo.dart';
 import 'home.dart';
 import 'theme.dart';
@@ -72,7 +73,7 @@ class _TablesPageState extends State<TablesPage> {
             final c = _tone(s.st);
             final amt = s.o == null ? null : h.s.tot(s.o!).total;
             return Material(
-              color: s.st == 'free' ? Colors.white : c.withValues(alpha: .1),
+              color: s.st == 'free' ? Tk.card : c.withValues(alpha: .1),
               borderRadius: BorderRadius.circular(22),
               child: InkWell(
                 borderRadius: BorderRadius.circular(22),
@@ -81,10 +82,10 @@ class _TablesPageState extends State<TablesPage> {
                   padding: const EdgeInsets.fromLTRB(18, 16, 14, 14),
                   decoration: BoxDecoration(borderRadius: BorderRadius.circular(22), border: Border.all(color: s.st == 'free' ? Tk.line : c.withValues(alpha: .5), width: .8)),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(children: [Expanded(child: Text('${t['name']}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 28, letterSpacing: -.5))), if (t['seats'] != null) Text('${t['seats']} seats', style: const TextStyle(fontSize: 14, color: Tk.label2))]),
+                    Row(children: [Expanded(child: Text('${t['name']}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 28, letterSpacing: -.5))), if (t['seats'] != null) Text('${t['seats']} seats', style: TextStyle(fontSize: 14, color: Tk.label2))]),
                     const Spacer(),
                     Text(s.st == 'free' ? 'Available' : _label[s.st]!, style: TextStyle(color: s.st == 'free' ? Tk.green : c, fontWeight: FontWeight.w600, fontSize: 19)),
-                    if (s.o != null) Text('${inr(amt!)} · ${_mins(s.o!['created'])}', style: const TextStyle(fontSize: 15, color: Tk.label2)),
+                    if (s.o != null) Text('${inr(amt!)} · ${_mins(s.o!['created'])}', style: TextStyle(fontSize: 15, color: Tk.label2)),
                   ]),
                 ),
               ),
@@ -96,7 +97,7 @@ class _TablesPageState extends State<TablesPage> {
         padding: const EdgeInsets.fromLTRB(18, 18, 16, 0),
         child: Wrap(spacing: 18, runSpacing: 10, children: [
           for (final (c, l) in [(Tk.label3, 'Ordering'), (const Color(0xFFF09A2E), 'In kitchen'), (const Color(0xFF34C759), 'Ready'), (const Color(0xFF263B30), 'Bill pending'), (Tk.blue, 'Reserved')])
-            Row(mainAxisSize: MainAxisSize.min, children: [Container(width: 16, height: 16, decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(4))), const SizedBox(width: 8), Text(l, style: const TextStyle(fontSize: 18, color: Tk.label2))]),
+            Row(mainAxisSize: MainAxisSize.min, children: [Container(width: 16, height: 16, decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(4))), const SizedBox(width: 8), Text(l, style: TextStyle(fontSize: 18, color: Tk.label2))]),
         ]),
       ),
     ]);
@@ -161,7 +162,7 @@ class _KitchenPageState extends State<KitchenPage> {
           margin: const EdgeInsets.symmetric(horizontal: 16),
           padding: const EdgeInsets.symmetric(vertical: 44, horizontal: 20),
           decoration: BoxDecoration(color: Tk.card, borderRadius: BorderRadius.circular(22), border: Border.all(color: Tk.line, width: .5)),
-          child: const Column(children: [
+          child: Column(children: [
             Icon(Icons.local_fire_department_outlined, size: 48, color: Tk.label3),
             SizedBox(height: 14),
             Text('No orders waiting', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
@@ -205,7 +206,7 @@ class _KitchenPageState extends State<KitchenPage> {
             Expanded(child: Text('${o['no']} · ${o['type']}${o['table'] != null ? ' · ${_tn(o['table'])}' : ''}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
             Text(_mins(o['ktime']), style: TextStyle(color: late ? Tk.red : Tk.label2, fontWeight: FontWeight.w700)),
           ]),
-          if (batches.isNotEmpty && batches.last['no'] != null) Text('KOT #${batches.last['no']}', style: const TextStyle(color: Tk.label2, fontSize: 12)),
+          if (batches.isNotEmpty && batches.last['no'] != null) Text('KOT #${batches.last['no']}', style: TextStyle(color: Tk.label2, fontSize: 12)),
           const SizedBox(height: 8),
           for (final i in items) Padding(padding: const EdgeInsets.symmetric(vertical: 2), child: Text('${i['q']} × ${i['n']}${i['note'] != null ? '  (${i['note']})' : ''}', style: const TextStyle(fontSize: 16))),
           const SizedBox(height: 10),

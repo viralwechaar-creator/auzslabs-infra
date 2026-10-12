@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'i18n.dart';
 import '../core/billing.dart' show r2;
 import '../core/repo.dart';
 import '../core/session.dart';
@@ -108,6 +109,11 @@ class _MorePageState extends State<MorePage> {
           setState(() => alert = v);
           (await SharedPreferences.getInstance()).setBool('alertSound', v);
         })),
+        Li('Appearance', icon: Icons.dark_mode_outlined, chevron: false, trailing: Seg<String>(items: const [('system', 'Auto'), ('light', 'Light'), ('dark', 'Dark')], value: Tk.mode, onChanged: (v) async {
+          await Tk.setMode(v);
+          setState(() {});
+        })),
+        Li('Language', icon: Icons.translate, chevron: false, trailing: Seg<String>(items: const [('en', 'English'), ('hi', 'हिंदी')], value: Lang.code, onChanged: (v) => Lang.set(v))),
         Li('Outlet', icon: Icons.apartment, value: '${s.cfg['name']}', chevron: false),
         Li('Receipt printer', sub: 'Bluetooth thermal printer, 58 or 80 mm', icon: Icons.print_outlined, onTap: () => printerSheet(context)),
         Li('Sync now', icon: Icons.bolt, onTap: () {
@@ -138,7 +144,7 @@ class _MorePageState extends State<MorePage> {
         }),
         Li('Delete my account', icon: Icons.delete_outline, tone: Tk.red, chevron: false, onTap: () => launchUrl(Uri.https('auzslab.in', '/account.html'), mode: LaunchMode.externalApplication)),
       ]),
-      const Padding(padding: EdgeInsets.only(top: 22), child: Center(child: Text('Powered by AUZslab', style: TextStyle(fontSize: 16, color: Tk.label2)))),
+      Padding(padding: EdgeInsets.only(top: 22), child: Center(child: Text('Powered by AUZslab', style: TextStyle(fontSize: 16, color: Tk.label2)))),
     ]);
   }
 }
@@ -224,9 +230,9 @@ class _RegisterPageState extends State<RegisterPage> {
       builder: (d) => AlertDialog(
         title: Text(type == 'in' ? 'Cash in' : 'Cash out'),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(controller: amt, autofocus: true, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Amount')),
+          TextField(controller: amt, autofocus: true, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: tr('Amount'))),
           const SizedBox(height: 8),
-          TextField(controller: note, decoration: InputDecoration(labelText: 'What for', hintText: type == 'in' ? 'e.g. change from bank' : 'e.g. milk, bank deposit')),
+          TextField(controller: note, decoration: InputDecoration(labelText: tr('What for'), hintText: type == 'in' ? 'e.g. change from bank' : 'e.g. milk, bank deposit')),
         ]),
         actions: [TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(d, true), child: const Text('Record'))],
       ),
@@ -260,7 +266,7 @@ class _RegisterPageState extends State<RegisterPage> {
       appBar: AppBar(title: const Text('Register')),
       body: ListView(padding: const EdgeInsets.all(12), children: [
         if (reg == null)
-          Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [const Text('The register is closed', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)), const SizedBox(height: 4), const Text('Count the cash in the drawer before the first sale.', style: TextStyle(color: Tk.label2)), const SizedBox(height: 12), FilledButton(onPressed: _open, child: const Text('Open register'))])))
+          Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [const Text('The register is closed', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)), const SizedBox(height: 4), Text('Count the cash in the drawer before the first sale.', style: TextStyle(color: Tk.label2)), const SizedBox(height: 12), FilledButton(onPressed: _open, child: const Text('Open register'))])))
         else
           ..._openView(reg),
         if (hist.isNotEmpty) ...[
@@ -280,10 +286,10 @@ class _RegisterPageState extends State<RegisterPage> {
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Text('Open since ${'${reg['openedAt']}'.substring(11, 16)}', style: const TextStyle(color: Tk.label2)),
+            Text('Open since ${'${reg['openedAt']}'.substring(11, 16)}', style: TextStyle(color: Tk.label2)),
             const SizedBox(height: 6),
             Text(inr(sm.expected), textAlign: TextAlign.center, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800)),
-            const Text('Expected cash in the drawer', textAlign: TextAlign.center, style: TextStyle(color: Tk.label2)),
+            Text('Expected cash in the drawer', textAlign: TextAlign.center, style: TextStyle(color: Tk.label2)),
             const Divider(height: 24),
             kv('Opening cash', ((reg['float'] ?? 0) as num).toDouble()),
             kv('Cash sales', m['cash']!),
@@ -346,7 +352,7 @@ class DayReportPage extends StatelessWidget {
     return Scaffold(
       appBar: embedded ? null : AppBar(title: const Text('Today\'s report')),
       body: ListView(padding: const EdgeInsets.all(12), children: [
-        Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(children: [Text(inr(total), style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800)), Text('${paid.length} paid bills today', style: const TextStyle(color: Tk.label2))]))),
+        Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(children: [Text(inr(total), style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800)), Text('${paid.length} paid bills today', style: TextStyle(color: Tk.label2))]))),
         Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(children: [for (final e in modes.entries) kv('Paid by ${e.key}', inr(e.value)), if (modes.isEmpty) const Text('No payments yet'), const Divider(), kv('Refunds', inr(refunds)), kv('Cancelled bills', '$voided'), kv('Open orders now', '$open')]))),
         if (top.isNotEmpty) Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('Top items', style: TextStyle(fontWeight: FontWeight.w800)), const SizedBox(height: 6), for (final e in top.take(8)) kv(e.key, '${e.value}')]))),
       ]),
@@ -434,9 +440,9 @@ class _ReservationsPageState extends State<ReservationsPage> {
               child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 const Text('New reservation', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 10),
-                TextField(controller: name, textCapitalization: TextCapitalization.words, decoration: const InputDecoration(labelText: 'Name')),
+                TextField(controller: name, textCapitalization: TextCapitalization.words, decoration: InputDecoration(labelText: tr('Name'))),
                 const SizedBox(height: 8),
-                TextField(controller: phone, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Phone')),
+                TextField(controller: phone, keyboardType: TextInputType.phone, decoration: InputDecoration(labelText: tr('Phone'))),
                 const SizedBox(height: 8),
                 Row(children: [
                   Expanded(child: OutlinedButton(onPressed: () async { final t = await showTimePicker(context: ctx, initialTime: time); if (t != null) set(() => time = t); }, child: Text('Time ${time.format(ctx)}'))),
@@ -446,9 +452,9 @@ class _ReservationsPageState extends State<ReservationsPage> {
                   IconButton(onPressed: () => set(() => party++), icon: const Icon(Icons.add_circle_outline)),
                 ]),
                 const SizedBox(height: 8),
-                DropdownButtonFormField<String>(initialValue: table, decoration: const InputDecoration(labelText: 'Table (optional)'), items: [const DropdownMenuItem(value: null, child: Text('Decide on arrival')), for (final t in tables.where((t) => t['seats'] == null || (t['seats'] as num) >= party)) DropdownMenuItem(value: '${t['id']}', child: Text('${t['name']}${t['seats'] != null ? ' · ${t['seats']} seats' : ''}'))], onChanged: (v) => table = v),
+                DropdownButtonFormField<String>(initialValue: table, decoration: InputDecoration(labelText: tr('Table (optional)')), items: [const DropdownMenuItem(value: null, child: Text('Decide on arrival')), for (final t in tables.where((t) => t['seats'] == null || (t['seats'] as num) >= party)) DropdownMenuItem(value: '${t['id']}', child: Text('${t['name']}${t['seats'] != null ? ' · ${t['seats']} seats' : ''}'))], onChanged: (v) => table = v),
                 const SizedBox(height: 8),
-                TextField(controller: note, decoration: const InputDecoration(labelText: 'Note')),
+                TextField(controller: note, decoration: InputDecoration(labelText: tr('Note'))),
                 const SizedBox(height: 12),
                 FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Reserve')),
               ]),
@@ -496,7 +502,7 @@ class _ReservationsPageState extends State<ReservationsPage> {
                             padding: const EdgeInsets.all(12),
                             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                               Row(children: [Expanded(child: Text('${'${b['time']}'.substring(0, 5)} · ${b['customer_name']}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16))), Text('${b['status']}', style: TextStyle(color: b['status'] == 'confirmed' ? Tk.green : Tk.label2, fontWeight: FontWeight.w600))]),
-                              Text('${b['party_size'] ?? ''} guests${b['resource_id'] != null ? ' · ${_tn(b['resource_id'])}' : ''} · ${b['customer_phone'] ?? ''}${b['note'] != null ? '\n${b['note']}' : ''}', style: const TextStyle(color: Tk.label2)),
+                              Text('${b['party_size'] ?? ''} guests${b['resource_id'] != null ? ' · ${_tn(b['resource_id'])}' : ''} · ${b['customer_phone'] ?? ''}${b['note'] != null ? '\n${b['note']}' : ''}', style: TextStyle(color: Tk.label2)),
                               if (b['status'] == 'confirmed' || b['status'] == 'pending') ...[
                                 const SizedBox(height: 8),
                                 Wrap(spacing: 8, children: [

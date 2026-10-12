@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'i18n.dart';
 import '../core/repo.dart';
 import '../core/session.dart';
 import 'actions.dart';
@@ -229,7 +230,7 @@ class _HomeState extends State<Home> {
         Expanded(child: page),
       ]),
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(border: Border(top: BorderSide(color: Tk.line, width: .5))),
+        decoration: BoxDecoration(border: Border(top: BorderSide(color: Tk.line, width: .5))),
         child: NavigationBar(selectedIndex: keys.indexOf(tab), onDestinationSelected: (i) => setState(() => tab = keys[i]), destinations: [for (final k in keys) dest(k)]),
       ),
     );
@@ -294,7 +295,7 @@ class _SellPageState extends State<SellPage> {
           if (hasTables) ...[const SizedBox(width: 12), PillBtn(tableName == null || tableName.isEmpty ? 'Table' : tableName, icon: Icons.table_restaurant_outlined, onTap: () => pickTable(o))],
         ])),
       ),
-      Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 0), child: TextField(style: const TextStyle(fontSize: 18), decoration: const InputDecoration(hintText: 'Search items or codes', prefixIcon: Icon(Icons.search, color: Tk.label3)), onChanged: (v) => setState(() => q = v))),
+      Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 0), child: TextField(style: const TextStyle(fontSize: 18), decoration: InputDecoration(hintText: tr('Search items or codes'), prefixIcon: Icon(Icons.search, color: Tk.label3)), onChanged: (v) => setState(() => q = v))),
       SizedBox(
         height: 64,
         child: ListView(scrollDirection: Axis.horizontal, padding: const EdgeInsets.fromLTRB(16, 12, 8, 6), children: [
@@ -352,7 +353,7 @@ class _SellPageState extends State<SellPage> {
     return Opacity(
       opacity: off ? .55 : 1,
       child: Material(
-        color: off ? Tk.card2 : Colors.white,
+        color: off ? Tk.card2 : Tk.card,
         borderRadius: BorderRadius.circular(22),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -366,10 +367,10 @@ class _SellPageState extends State<SellPage> {
                   padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text('${it['name']}', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, height: 1.15)),
-                    if (off) Padding(padding: const EdgeInsets.only(top: 4), child: Text(why, style: const TextStyle(color: Tk.red, fontSize: 16, fontWeight: FontWeight.w600))),
+                    if (off) Padding(padding: const EdgeInsets.only(top: 4), child: Text(why, style: TextStyle(color: Tk.red, fontSize: 16, fontWeight: FontWeight.w600))),
                     const Spacer(),
                     Row(children: [
-                      Expanded(child: Text(price, style: const TextStyle(fontSize: 19, color: Tk.label2, fontWeight: FontWeight.w500))),
+                      Expanded(child: Text(price, style: TextStyle(fontSize: 19, color: Tk.label2, fontWeight: FontWeight.w500))),
                       Container(width: 24, height: 24, decoration: BoxDecoration(border: Border.all(color: vc, width: 2), borderRadius: BorderRadius.circular(6)), child: Center(child: Container(width: 10, height: 10, decoration: BoxDecoration(shape: BoxShape.circle, color: vc)))),
                     ]),
                   ]),
@@ -442,7 +443,7 @@ class _SellPageState extends State<SellPage> {
                   ]),
                 ],
                 const SizedBox(height: 12),
-                TextField(controller: note, decoration: const InputDecoration(labelText: 'Note for the kitchen', hintText: 'e.g. less spicy, no onion')),
+                TextField(controller: note, decoration: InputDecoration(labelText: tr('Note for the kitchen'), hintText: tr('e.g. less spicy, no onion'))),
                 const SizedBox(height: 12),
                 FilledButton(
                   onPressed: () {
@@ -542,7 +543,7 @@ class _SellPageState extends State<SellPage> {
                         child: Row(children: [
                           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                             Text('${l['name']}${(l['size'] ?? '') != '' ? ' (${l['size']})' : ''}', style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w600)),
-                            Text('${inr(l['price'] as num)}${(l['sent'] ?? 0) > 0 ? ' · sent ${l['sent']}' : ''}', style: const TextStyle(fontSize: 15, color: Tk.label2)),
+                            Text('${inr(l['price'] as num)}${(l['sent'] ?? 0) > 0 ? ' · sent ${l['sent']}' : ''}', style: TextStyle(fontSize: 15, color: Tk.label2)),
                             if ('${l['note'] ?? ''}'.isNotEmpty) Text('${l['note']}', style: TextStyle(fontSize: 14, color: Tk.accent)),
                           ])),
                           Container(
@@ -624,11 +625,11 @@ class _SellPageState extends State<SellPage> {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            const Text('Take payment', textAlign: TextAlign.center, style: TextStyle(fontSize: 18, color: Tk.label2)),
-            Text(inr(t.total), textAlign: TextAlign.center, style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 14),
+            Text('Take payment', textAlign: TextAlign.center, style: TextStyle(fontSize: 18, color: Tk.label2)),
+            Text(inr(t.total), textAlign: TextAlign.center, style: TextStyle(fontSize: 40, fontWeight: FontWeight.w800)),
+            SizedBox(height: 14),
             Group([
-              for (final m in const [['cash', 'Cash', Icons.payments_outlined, Tk.green], ['upi', 'UPI', Icons.qr_code_2, Tk.blue], ['card', 'Card', Icons.credit_card, Tk.purple]])
+              for (final m in [['cash', 'Cash', Icons.payments_outlined, Tk.green], ['upi', 'UPI', Icons.qr_code_2, Tk.blue], ['card', 'Card', Icons.credit_card, Tk.purple]])
                 Li(m[1] as String, icon: m[2] as IconData, tone: m[3] as Color, onTap: () async {
                   Navigator.pop(ctx);
                   await h.pay(o, m[0] as String);
@@ -682,7 +683,7 @@ class _OrdersPageState extends State<OrdersPage> {
               ]),
             ])),
             Text(inr(t as num), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-            const Icon(Icons.chevron_right, color: Tk.label3),
+            Icon(Icons.chevron_right, color: Tk.label3),
           ]),
         ),
       );
@@ -711,10 +712,10 @@ class _OrdersPageState extends State<OrdersPage> {
             Expanded(child: Text((x['tbl'] ?? '') == '' ? 'Takeaway' : 'Table ${s.repo!.rec('${x['tbl']}')?['name'] ?? x['tbl']}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20))),
             _pill('New', Tk.accentSoft, Tk.accent),
           ]),
-          if (x['name'] != null) Text('${x['name']} ${x['phone'] ?? ''}', style: const TextStyle(color: Tk.label2, fontSize: 16)),
+          if (x['name'] != null) Text('${x['name']} ${x['phone'] ?? ''}', style: TextStyle(color: Tk.label2, fontSize: 16)),
           const SizedBox(height: 8),
           for (final i in ((x['items'] as List?) ?? []).cast<Map>()) Text('${i['qty']} × ${i['name']}${(i['size'] ?? '') != '' ? ' (${i['size']})' : ''}${'${i['note'] ?? ''}'.isNotEmpty ? ' — ${i['note']}' : ''}', style: const TextStyle(fontSize: 18)),
-          if (x['note'] != null) Padding(padding: const EdgeInsets.only(top: 4), child: Text('${x['note']}', style: const TextStyle(fontStyle: FontStyle.italic, color: Tk.label2))),
+          if (x['note'] != null) Padding(padding: const EdgeInsets.only(top: 4), child: Text('${x['note']}', style: TextStyle(fontStyle: FontStyle.italic, color: Tk.label2))),
           const SizedBox(height: 12),
           FilledButton(onPressed: () => h.acceptGuest(x), child: Text(((x['items'] as List?) ?? []).isEmpty ? 'Got it' : 'Accept and send to kitchen')),
         ]),

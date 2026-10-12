@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'i18n.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/version.dart';
 import 'theme.dart';
@@ -18,7 +19,7 @@ class UpdateRequired extends StatelessWidget {
                 const SizedBox(height: 16),
                 const Text('Please update AUZsPOS', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 8),
-                Text(info.note.isEmpty ? 'This version is out of date. Update to keep billing safely.' : info.note, textAlign: TextAlign.center, style: const TextStyle(color: Tk.label2)),
+                Text(info.note.isEmpty ? 'This version is out of date. Update to keep billing safely.' : info.note, textAlign: TextAlign.center, style: TextStyle(color: Tk.label2)),
                 const SizedBox(height: 20),
                 FilledButton(onPressed: () => launchUrl(Uri.parse(info.url), mode: LaunchMode.externalApplication), child: const Text('Update now')),
               ]),

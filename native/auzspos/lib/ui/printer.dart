@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'i18n.dart';
 import '../core/thermal.dart';
 import 'ds.dart';
 import 'theme.dart';
@@ -50,7 +51,7 @@ class _PrinterSheetState extends State<_PrinterSheet> {
           child: ListView(shrinkWrap: true, padding: const EdgeInsets.fromLTRB(16, 0, 16, 16), children: [
             const Text('Receipt printer', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
             const SizedBox(height: 4),
-            const Text('Switch the printer on and pair it once in the phone\'s Bluetooth settings. Then pick it here.', style: TextStyle(color: Tk.label2)),
+            Text('Switch the printer on and pair it once in the phone\'s Bluetooth settings. Then pick it here.', style: TextStyle(color: Tk.label2)),
             const SizedBox(height: 12),
             Seg<int>(items: const [(32, '58 mm paper'), (48, '80 mm paper')], value: cols, expand: true, onChanged: (v) async {
               await Thermal.setCols(v);

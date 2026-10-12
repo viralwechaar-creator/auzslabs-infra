@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'i18n.dart';
 import '../core/billing.dart' show r2;
 import '../core/repo.dart';
 import 'actions.dart';
@@ -316,7 +317,7 @@ class _CrudPageState extends State<CrudPage> {
     final list = all.where((r) => q.isEmpty || '${c.rowTitle(r)} ${c.rowSub(r)}'.toLowerCase().contains(q.toLowerCase())).toList();
     return ListView(padding: const EdgeInsets.only(bottom: 28), children: [
       PageHead(c.title, sub: c.sub, trailing: PillBtn(c.add.split(' ').first, icon: Icons.add, fill: true, onTap: () => edit())),
-      if (all.length > 6) Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 4), child: TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Search'), onChanged: (v) => setState(() => q = v))),
+      if (all.length > 6) Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 4), child: TextField(decoration: InputDecoration(prefixIcon: Icon(Icons.search), hintText: tr('Search')), onChanged: (v) => setState(() => q = v))),
       const SizedBox(height: 12),
       if (list.isEmpty)
         Empty(c.icon, all.isEmpty ? 'Nothing here yet' : 'No matches', all.isEmpty ? c.empty : 'Try a different search.', action: all.isEmpty ? c.add : null, onAction: () => edit())
@@ -373,7 +374,7 @@ class _OverviewState extends State<_Overview> {
       ]),
       if (keys.length > 1) ...[
         const SectionLabel('Sales by day'),
-        Group([for (final d in keys) Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), child: Row(children: [SizedBox(width: 56, child: Text(d.substring(5), style: const TextStyle(fontSize: 16, color: Tk.label2))), Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(value: byDay[d]! / mx, minHeight: 14, color: Tk.accent, backgroundColor: Tk.fill2))), const SizedBox(width: 12), Text(inr(r2(byDay[d]!)), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700))]))]),
+        Group([for (final d in keys) Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), child: Row(children: [SizedBox(width: 56, child: Text(d.substring(5), style: TextStyle(fontSize: 16, color: Tk.label2))), Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(value: byDay[d]! / mx, minHeight: 14, color: Tk.accent, backgroundColor: Tk.fill2))), const SizedBox(width: 12), Text(inr(r2(byDay[d]!)), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700))]))]),
       ],
       const SectionLabel('Payment modes'),
       Group(modes.isEmpty ? [const Li('No payments in this range', chevron: false)] : [for (final e in modes.entries) Li(e.key == 'upi' ? 'UPI' : '${e.key[0].toUpperCase()}${e.key.substring(1)}', chevron: false, value: inr(r2(e.value)))]),
@@ -688,7 +689,7 @@ class _RepAnalyticsState extends _RepState<_RepAnalytics> {
     }
     final mxh = hours.fold<double>(1, (a, b) => b > a ? b : a), mxd = wd.fold<double>(1, (a, b) => b > a ? b : a);
     const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    Widget bar(String l, double v, double mx) => Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9), child: Row(children: [SizedBox(width: 54, child: Text(l, style: const TextStyle(fontSize: 16, color: Tk.label2))), Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(value: v / mx, minHeight: 14, color: Tk.accent, backgroundColor: Tk.fill2))), const SizedBox(width: 10), SizedBox(width: 70, child: Text(inr(r2(v)), textAlign: TextAlign.right, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)))]));
+    Widget bar(String l, double v, double mx) => Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9), child: Row(children: [SizedBox(width: 54, child: Text(l, style: TextStyle(fontSize: 16, color: Tk.label2))), Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(value: v / mx, minHeight: 14, color: Tk.accent, backgroundColor: Tk.fill2))), const SizedBox(width: 10), SizedBox(width: 70, child: Text(inr(r2(v)), textAlign: TextAlign.right, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)))]));
     return ListView(padding: const EdgeInsets.only(bottom: 28), children: [
       RangeBar(days, (v) => setState(() => days = v)),
       const SectionLabel('Sales by hour'),

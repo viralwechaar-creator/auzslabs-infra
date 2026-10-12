@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'i18n.dart';
 import '../core/billing.dart' show r2;
 import '../core/repo.dart';
 import '../core/session.dart';
@@ -33,8 +34,8 @@ class _StaffPageState extends State<StaffPage> {
       builder: (d) => AlertDialog(
         title: const Text('Approval PIN'),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Text('Type this PIN on a cashier\'s till to approve discounts, cancellations and refunds.', style: TextStyle(color: Tk.label2)),
-          TextField(controller: c, obscureText: true, keyboardType: TextInputType.number, maxLength: 8, autofocus: true, decoration: const InputDecoration(labelText: '4 to 8 digits')),
+          Text('Type this PIN on a cashier\'s till to approve discounts, cancellations and refunds.', style: TextStyle(color: Tk.label2)),
+          TextField(controller: c, obscureText: true, keyboardType: TextInputType.number, maxLength: 8, autofocus: true, decoration: InputDecoration(labelText: tr('4 to 8 digits'))),
         ]),
         actions: [TextButton(onPressed: () => Navigator.pop(d), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(d, c.text), child: const Text('Save'))],
       ),
@@ -161,7 +162,7 @@ class _SettingsPageState extends State<SettingsPage> {
         const SizedBox(height: 8),
         FilledButton(onPressed: _save, child: const Text('Save settings')),
         const SizedBox(height: 8),
-        const Text('Menu, prices, taxes, tables and staff are changed in the Admin console on the website.', style: TextStyle(color: Tk.label2, fontSize: 12)),
+        Text('Menu, prices, taxes, tables and staff are changed in the Admin console on the website.', style: TextStyle(color: Tk.label2, fontSize: 12)),
       ]),
     );
   }
@@ -222,7 +223,7 @@ class _ReportsPageState extends State<ReportsPage> {
       body: ListView(padding: const EdgeInsets.all(12), children: [
         SegmentedButton<int>(segments: const [ButtonSegment(value: 1, label: Text('Today')), ButtonSegment(value: 7, label: Text('7 days')), ButtonSegment(value: 30, label: Text('30 days'))], selected: {days}, onSelectionChanged: (v) => setState(() => days = v.first)),
         const SizedBox(height: 10),
-        Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(children: [Text(inr(total), style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800)), Text('${paid.length} bills · average ${inr(paid.isEmpty ? 0 : r2(total / paid.length))}', style: const TextStyle(color: Tk.label2))]))),
+        Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(children: [Text(inr(total), style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800)), Text('${paid.length} bills · average ${inr(paid.isEmpty ? 0 : r2(total / paid.length))}', style: TextStyle(color: Tk.label2))]))),
         box('Summary', [kv('Tax collected', inr(r2(tax))), kv('Discounts given', inr(r2(disc))), kv('Refunds', inr(r2(refunds)))]),
         if (dayKeys.length > 1)
           box('Sales by day', [

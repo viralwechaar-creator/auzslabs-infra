@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'i18n.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -30,7 +31,7 @@ Future<void> scanAndHandle(BuildContext c, HomeState h) async {
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           const Text('QR code read', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
-          Text(mine && tid != null ? 'This is a table QR of your business, but that table is not in your list yet.' : code, style: const TextStyle(color: Tk.label2)),
+          Text(mine && tid != null ? 'This is a table QR of your business, but that table is not in your list yet.' : code, style: TextStyle(color: Tk.label2)),
           const SizedBox(height: 14),
           if (u != null && (u.scheme == 'https' || u.scheme == 'http')) FilledButton.icon(onPressed: () => launchUrl(u, mode: LaunchMode.externalApplication), icon: const Icon(Icons.open_in_new), label: const Text('Open link')),
           const SizedBox(height: 8),

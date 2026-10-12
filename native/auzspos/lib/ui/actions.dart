@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'i18n.dart';
 import '../core/billing.dart' show r2;
 import '../core/repo.dart';
 import '../core/session.dart';
@@ -27,9 +28,9 @@ Future<Map<String, dynamic>?> approve(BuildContext context, Session s, String ac
       return AlertDialog(
         title: const Text('Manager approval'),
         content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(detail, style: const TextStyle(color: Tk.label2)),
+          Text(detail, style: TextStyle(color: Tk.label2)),
           const SizedBox(height: 12),
-          TextField(controller: pin, obscureText: true, keyboardType: TextInputType.number, maxLength: 8, autofocus: true, decoration: InputDecoration(labelText: 'Manager PIN', errorText: err)),
+          TextField(controller: pin, obscureText: true, keyboardType: TextInputType.number, maxLength: 8, autofocus: true, decoration: InputDecoration(labelText: tr('Manager PIN'), errorText: err)),
         ]),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
@@ -72,7 +73,7 @@ Future<String?> pickReason(BuildContext context, Session s, String title) async 
           Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
           for (final r in reasons) ListTile(dense: true, title: Text(r), onTap: () => Navigator.pop(ctx, r)),
-          TextField(controller: other, decoration: const InputDecoration(labelText: 'Other reason')),
+          TextField(controller: other, decoration: InputDecoration(labelText: tr('Other reason'))),
           const SizedBox(height: 8),
           FilledButton(onPressed: () => other.text.trim().isEmpty ? null : Navigator.pop(ctx, other.text.trim()), child: const Text('Use this reason')),
         ]),
@@ -115,8 +116,8 @@ Future<void> discountSheet(BuildContext context, Session s, Map<String, dynamic>
             const SizedBox(height: 8),
             Wrap(spacing: 8, children: [for (final v in kind == '%' ? [5, 10, 15, 20, 25] : [50, 100, 200, 500]) ActionChip(label: Text(kind == '%' ? '$v%' : '₹$v'), onPressed: () => val.text = '$v')]),
             const SizedBox(height: 8),
-            TextField(controller: why, decoration: const InputDecoration(labelText: 'Reason (optional)')),
-            if (!s.can('m')) Padding(padding: const EdgeInsets.only(top: 8), child: Text(lim > 0 ? 'Up to $lim% without a manager.' : 'A manager approves discounts.', style: const TextStyle(color: Tk.label2))),
+            TextField(controller: why, decoration: InputDecoration(labelText: tr('Reason (optional)'))),
+            if (!s.can('m')) Padding(padding: const EdgeInsets.only(top: 8), child: Text(lim > 0 ? 'Up to $lim% without a manager.' : 'A manager approves discounts.', style: TextStyle(color: Tk.label2))),
             const SizedBox(height: 12),
             Row(children: [
               if (o['disc'] != null)
@@ -163,7 +164,7 @@ Future<void> couponSheet(BuildContext context, Session s, Map<String, dynamic> o
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             const Text('Coupon', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
             const SizedBox(height: 12),
-            TextField(controller: code, textCapitalization: TextCapitalization.characters, autofocus: true, decoration: InputDecoration(labelText: 'Coupon code', errorText: err)),
+            TextField(controller: code, textCapitalization: TextCapitalization.characters, autofocus: true, decoration: InputDecoration(labelText: tr('Coupon code'), errorText: err)),
             const SizedBox(height: 12),
             Row(children: [
               if (o['coupon'] != null) Expanded(child: OutlinedButton(onPressed: () { o['coupon'] = null; o['disc'] = null; Navigator.pop(ctx); changed(); }, child: const Text('Remove'))),
@@ -234,11 +235,11 @@ Future<void> customerSheet(BuildContext context, Map<String, dynamic> o, VoidCal
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           const Text('Customer and note', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
           const SizedBox(height: 12),
-          TextField(controller: name, textCapitalization: TextCapitalization.words, decoration: const InputDecoration(labelText: 'Name')),
+          TextField(controller: name, textCapitalization: TextCapitalization.words, decoration: InputDecoration(labelText: tr('Name'))),
           const SizedBox(height: 10),
-          TextField(controller: phone, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Phone')),
+          TextField(controller: phone, keyboardType: TextInputType.phone, decoration: InputDecoration(labelText: tr('Phone'))),
           const SizedBox(height: 10),
-          TextField(controller: note, decoration: const InputDecoration(labelText: 'Note for this order')),
+          TextField(controller: note, decoration: InputDecoration(labelText: tr('Note for this order'))),
           const SizedBox(height: 12),
           FilledButton(
             onPressed: () {
@@ -343,11 +344,11 @@ Future<void> orderSheet(BuildContext context, HomeState h, Map<String, dynamic> 
                 if (!isOpen && !voided) Li('Refund', icon: Icons.undo, tone: Tk.orange, onTap: () { Navigator.pop(ctx); refundSheet(context, h, o); }),
                 if (!isOpen && !voided) Li('Cancel bill', icon: Icons.cancel_outlined, tone: Tk.red, titleColor: Tk.red, onTap: () async { Navigator.pop(ctx); await voidPaid(context, h, o); }),
               ]),
-              if (voided) Padding(padding: const EdgeInsets.all(18), child: Text('Cancelled${o['voidReason'] != null ? ' · ${o['voidReason']}' : ''}', style: const TextStyle(color: Tk.label2, fontSize: 17))),
+              if (voided) Padding(padding: const EdgeInsets.all(18), child: Text('Cancelled${o['voidReason'] != null ? ' · ${o['voidReason']}' : ''}', style: TextStyle(color: Tk.label2, fontSize: 17))),
             ]),
           ),
           if (isOpen) Container(
-            decoration: const BoxDecoration(color: Color(0xFFFAF9F7), border: Border(top: BorderSide(color: Tk.line, width: .5))),
+            decoration: BoxDecoration(color: Tk.card2, border: Border(top: BorderSide(color: Tk.line, width: .5))),
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
             child: FilledButton(style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(60), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))), onPressed: () { Navigator.pop(ctx); h.openOrder(o); }, child: const Text('Open order', style: TextStyle(fontSize: 22))),
           ),
@@ -379,7 +380,7 @@ Future<void> refundSheet(BuildContext context, HomeState h, Map<String, dynamic>
             const SizedBox(height: 12),
             SegmentedButton<String>(segments: const [ButtonSegment(value: 'cash', label: Text('Cash')), ButtonSegment(value: 'upi', label: Text('UPI')), ButtonSegment(value: 'card', label: Text('Card')), ButtonSegment(value: 'other', label: Text('Other'))], selected: {mode}, onSelectionChanged: (v) => set(() => mode = v.first)),
             const SizedBox(height: 6),
-            const Text('Refunds are added to the bill; the original payment is never changed.', style: TextStyle(color: Tk.label2, fontSize: 12)),
+            Text('Refunds are added to the bill; the original payment is never changed.', style: TextStyle(color: Tk.label2, fontSize: 12)),
             const SizedBox(height: 12),
             FilledButton(
               onPressed: () async {
@@ -445,7 +446,7 @@ Future<void> splitSheet(BuildContext context, HomeState h, Map<String, dynamic> 
           padding: const EdgeInsets.all(16),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             const Text('Split bill', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-            const Text('Choose what goes on the new bill.', style: TextStyle(color: Tk.label2)),
+            Text('Choose what goes on the new bill.', style: TextStyle(color: Tk.label2)),
             Flexible(
               child: ListView(shrinkWrap: true, children: [
                 for (var i = 0; i < lines.length; i++)

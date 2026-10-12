@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'i18n.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/billing.dart' show r2;
 import '../core/repo.dart';
@@ -100,7 +101,7 @@ class _ConsolePageState extends State<ConsolePage> {
               child: SizedBox(
                 height: MediaQuery.of(ctx).size.height * .6,
                 child: Column(children: [
-                  TextField(autofocus: true, decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Search pages'), onChanged: (v) => set(() => q = v)),
+                  TextField(autofocus: true, decoration: InputDecoration(prefixIcon: Icon(Icons.search), hintText: tr('Search pages')), onChanged: (v) => set(() => q = v)),
                   const SizedBox(height: 10),
                   Expanded(child: ListView(children: [Group([for (final e in hits) Li(e.$2, onTap: () {
                             Navigator.pop(ctx);
@@ -148,7 +149,7 @@ class _ConsolePageState extends State<ConsolePage> {
   }
 
   Widget _drawer() {
-    Widget lbl(String t) => Padding(padding: const EdgeInsets.fromLTRB(20, 18, 16, 6), child: Text(t.toUpperCase(), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: .8, color: Tk.label3)));
+    Widget lbl(String t) => Padding(padding: const EdgeInsets.fromLTRB(20, 18, 16, 6), child: Text(t.toUpperCase(), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: .8, color: Tk.label3)));
     final kids = <Widget>[];
     for (final n in consoleNav) {
       if (n is String) {
@@ -187,7 +188,7 @@ class _ConsolePageState extends State<ConsolePage> {
             const SizedBox(width: 12),
             Expanded(child: Text('${h.s.cfg['name']}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800))),
           ])),
-          const Padding(padding: EdgeInsets.fromLTRB(20, 0, 20, 4), child: Text('Admin console', style: TextStyle(color: Tk.label2, fontSize: 15))),
+          Padding(padding: EdgeInsets.fromLTRB(20, 0, 20, 4), child: Text('Admin console', style: TextStyle(color: Tk.label2, fontSize: 15))),
           _navTile(Icons.storefront_outlined, 'Billing POS', false, () {
             Navigator.pop(context);
             Navigator.pop(context);
@@ -223,8 +224,8 @@ class _ConsolePageState extends State<ConsolePage> {
   Widget _topBtn(IconData i, VoidCallback f, {int badge = 0}) => Padding(
         padding: const EdgeInsets.only(left: 8),
         child: Material(
-          color: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: const BorderSide(color: Tk.line, width: .8)),
+          color: Tk.card,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: BorderSide(color: Tk.line, width: .8)),
           child: InkWell(
             customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
             onTap: f,
@@ -241,10 +242,10 @@ class _ConsolePageState extends State<ConsolePage> {
       backgroundColor: Tk.bg,
       body: Column(children: [
         Container(
-          decoration: const BoxDecoration(color: Color(0xF5FAF9F7), border: Border(bottom: BorderSide(color: Tk.line, width: .5))),
+          decoration: BoxDecoration(color: Tk.bar, border: Border(bottom: BorderSide(color: Tk.line, width: .5))),
           padding: EdgeInsets.fromLTRB(14, MediaQuery.of(context).padding.top + 8, 14, 10),
           child: Row(children: [
-            Padding(padding: const EdgeInsets.only(right: 8), child: Material(color: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: const BorderSide(color: Tk.line, width: .8)), child: InkWell(customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)), onTap: () => key.currentState?.openDrawer(), child: const SizedBox(width: 54, height: 54, child: Icon(Icons.menu, size: 28))))),
+            Padding(padding: const EdgeInsets.only(right: 8), child: Material(color: Tk.card, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: BorderSide(color: Tk.line, width: .8)), child: InkWell(customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)), onTap: () => key.currentState?.openDrawer(), child: const SizedBox(width: 54, height: 54, child: Icon(Icons.menu, size: 28))))),
             const SizedBox(width: 6),
             Expanded(child: Text(titleOfPage(page), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -.5))),
             _topBtn(Icons.search, _search),
@@ -273,11 +274,11 @@ class RangeBar extends StatelessWidget {
         Container(
           margin: const EdgeInsets.only(right: 10),
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22), border: Border.all(color: Tk.accent, width: 1.5)),
+          decoration: BoxDecoration(color: Tk.card, borderRadius: BorderRadius.circular(22), border: Border.all(color: Tk.accent, width: 1.5)),
           child: Row(children: [Icon(Icons.calendar_today_outlined, size: 20, color: Tk.accent), const SizedBox(width: 10), Text(days == 1 ? 'Today' : '${d(from)} – ${d(to)} ${to.year}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700))]),
         ),
         for (final (v, l) in const [(1, 'Today'), (7, '7 days'), (30, '30 days'), (90, '90 days')])
-          Padding(padding: const EdgeInsets.only(right: 10), child: GestureDetector(onTap: () => onChange(v), child: Container(padding: const EdgeInsets.symmetric(horizontal: 18), alignment: Alignment.center, decoration: BoxDecoration(color: days == v ? Tk.accent : Colors.white, borderRadius: BorderRadius.circular(22), border: Border.all(color: days == v ? Tk.accent : Tk.line)), child: Text(l, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: days == v ? Colors.white : Tk.label))))),
+          Padding(padding: const EdgeInsets.only(right: 10), child: GestureDetector(onTap: () => onChange(v), child: Container(padding: const EdgeInsets.symmetric(horizontal: 18), alignment: Alignment.center, decoration: BoxDecoration(color: days == v ? Tk.accent : Tk.card, borderRadius: BorderRadius.circular(22), border: Border.all(color: days == v ? Tk.accent : Tk.line)), child: Text(l, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: days == v ? Colors.white : Tk.label))))),
       ]),
     );
   }
@@ -307,7 +308,7 @@ class Kpis extends StatelessWidget {
               Container(
                 width: (MediaQuery.of(context).size.width - 32 - 12) / 2,
                 padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
-                decoration: BoxDecoration(color: c == null ? Colors.white : c.withValues(alpha: .1), borderRadius: BorderRadius.circular(22), border: Border.all(color: c == null ? Tk.line : c.withValues(alpha: .35), width: .8)),
+                decoration: BoxDecoration(color: c == null ? Tk.card : c.withValues(alpha: .1), borderRadius: BorderRadius.circular(22), border: Border.all(color: c == null ? Tk.line : c.withValues(alpha: .35), width: .8)),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(l, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: c ?? Tk.label2)), const SizedBox(height: 4), Text(v, style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w800, letterSpacing: -.5))]),
               ),
           ]),

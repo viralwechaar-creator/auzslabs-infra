@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'i18n.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -126,7 +127,7 @@ class AdminDashboard extends StatelessWidget {
                     child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
                       Container(height: 6 + 84 * (d.$2 / maxW), decoration: BoxDecoration(color: d.$1 == today ? Tk.accent : Tk.accent.withValues(alpha: .35), borderRadius: BorderRadius.circular(6))),
                       const SizedBox(height: 4),
-                      Text(d.$1.substring(8), style: const TextStyle(fontSize: 11, color: Tk.label2)),
+                      Text(d.$1.substring(8), style: TextStyle(fontSize: 11, color: Tk.label2)),
                     ]),
                   ),
                 ),
@@ -134,11 +135,11 @@ class AdminDashboard extends StatelessWidget {
           ),
         ]),
         _box('Paid today by', [
-          if (modes.isEmpty) const Text('No payments yet today', style: TextStyle(color: Tk.label2)),
+          if (modes.isEmpty) Text('No payments yet today', style: TextStyle(color: Tk.label2)),
           for (final e in modes.entries) _kv(e.key == 'upi' ? 'UPI' : e.key[0].toUpperCase() + e.key.substring(1), inr(r2(e.value))),
         ]),
         _box('Best sellers this week', [
-          if (top.isEmpty) const Text('No sales yet', style: TextStyle(color: Tk.label2)),
+          if (top.isEmpty) Text('No sales yet', style: TextStyle(color: Tk.label2)),
           for (final e in top.take(6)) _kv(e.key, inr(r2(e.value))),
         ]),
       ]),
@@ -244,7 +245,7 @@ class _MenuAdminState extends State<MenuAdmin> with SingleTickerProviderStateMix
       floatingActionButton: ListenableBuilder(listenable: tc, builder: (_, _) => FloatingActionButton.extended(onPressed: () => tc.index == 0 ? item() : cat(), icon: const Icon(Icons.add), label: Text(tc.index == 0 ? 'Add item' : 'Add category'))),
       body: TabBarView(controller: tc, children: [
         Column(children: [
-          Padding(padding: const EdgeInsets.fromLTRB(12, 10, 12, 4), child: TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Search items'), onChanged: (v) => setState(() => q = v))),
+          Padding(padding: const EdgeInsets.fromLTRB(12, 10, 12, 4), child: TextField(decoration: InputDecoration(prefixIcon: Icon(Icons.search), hintText: tr('Search items')), onChanged: (v) => setState(() => q = v))),
           Expanded(
             child: items.isEmpty
                 ? Empty(Icons.restaurant_menu, 'No items yet', 'Add your first item, or import a whole menu from the website console.', action: 'Add item', onAction: item)
@@ -255,14 +256,14 @@ class _MenuAdminState extends State<MenuAdmin> with SingleTickerProviderStateMix
                       final it = items[i];
                       final first = i == 0 || items[i - 1]['cat'] != it['cat'];
                       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        if (first) Padding(padding: const EdgeInsets.fromLTRB(4, 12, 0, 4), child: Text('${catName[it['cat']] ?? 'No category'}'.toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Tk.label2, letterSpacing: .6))),
+                        if (first) Padding(padding: const EdgeInsets.fromLTRB(4, 12, 0, 4), child: Text('${catName[it['cat']] ?? 'No category'}'.toUpperCase(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Tk.label2, letterSpacing: .6))),
                         Card(
                           margin: const EdgeInsets.symmetric(vertical: 3),
                           child: ListTile(
                             onTap: () => item(it),
                             leading: Container(width: 14, height: 14, decoration: BoxDecoration(border: Border.all(color: it['veg'] == 'nonveg' ? Tk.red : Tk.green, width: 1.5), borderRadius: BorderRadius.circular(3)), child: Center(child: Container(width: 6, height: 6, decoration: BoxDecoration(shape: BoxShape.circle, color: it['veg'] == 'nonveg' ? Tk.red : Tk.green)))),
                             title: Text('${it['name']}', style: TextStyle(fontWeight: FontWeight.w700, decoration: it['off'] == true ? TextDecoration.lineThrough : null)),
-                            subtitle: it['off'] == true ? const Text('Sold out', style: TextStyle(color: Tk.red)) : null,
+                            subtitle: it['off'] == true ? Text('Sold out', style: TextStyle(color: Tk.red)) : null,
                             trailing: Text(inr((it['price'] ?? 0) as num), style: const TextStyle(fontWeight: FontWeight.w800)),
                           ),
                         ),
@@ -343,7 +344,7 @@ class _TablesAdminState extends State<TablesAdmin> {
           ? Empty(Icons.table_restaurant_outlined, 'No tables yet', 'Add tables so dine-in orders can be given a table, and so each table can have its own QR code.', action: 'Add several tables', onAction: bulk)
           : ListView(padding: const EdgeInsets.fromLTRB(12, 8, 12, 90), children: [
               for (final sc in secs) ...[
-                Padding(padding: const EdgeInsets.fromLTRB(4, 14, 0, 6), child: Text(sc.toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Tk.label2, letterSpacing: .6))),
+                Padding(padding: const EdgeInsets.fromLTRB(4, 14, 0, 6), child: Text(sc.toUpperCase(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Tk.label2, letterSpacing: .6))),
                 for (final t in ts.where((t) => '${t['sec'] ?? 'Main'}' == sc))
                   Card(
                     child: ListTile(
@@ -369,11 +370,11 @@ void showQr(BuildContext c, Session s, String title, String url) {
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Text('${s.cfg['name']}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
-        Text(title, style: const TextStyle(color: Tk.label2)),
+        Text(title, style: TextStyle(color: Tk.label2)),
         const SizedBox(height: 14),
         Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Tk.line)), child: QrImageView(data: url, size: 240, eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Colors.black), dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Colors.black))),
         const SizedBox(height: 10),
-        const Text('Scan to view the menu and order', style: TextStyle(color: Tk.label2)),
+        Text('Scan to view the menu and order', style: TextStyle(color: Tk.label2)),
         const SizedBox(height: 14),
         Row(children: [
           Expanded(child: OutlinedButton.icon(onPressed: () => Clipboard.setData(ClipboardData(text: url)), icon: const Icon(Icons.copy), label: const Text('Copy link'))),
@@ -423,7 +424,7 @@ class _QrWebsitePageState extends State<QrWebsitePage> {
           child: Column(children: [
             const Text('Your ordering website', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
             const SizedBox(height: 4),
-            Text(url, textAlign: TextAlign.center, style: const TextStyle(color: Tk.label2, fontSize: 12)),
+            Text(url, textAlign: TextAlign.center, style: TextStyle(color: Tk.label2, fontSize: 12)),
             const SizedBox(height: 12),
             QrImageView(data: url, size: 200),
             const SizedBox(height: 8),
@@ -438,7 +439,7 @@ class _QrWebsitePageState extends State<QrWebsitePage> {
         Card(child: ListTile(leading: Icon(Icons.table_restaurant_outlined, color: Tk.accent), title: const Text('Table QR codes', style: TextStyle(fontWeight: FontWeight.w700)), subtitle: Text(guests == 0 ? 'Add tables first' : 'One QR for each of your $guests tables'), trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => TablesAdmin(widget.h))))),
         Card(child: ListTile(leading: Icon(Icons.qr_code_scanner, color: Tk.accent), title: const Text('Scan a QR code', style: TextStyle(fontWeight: FontWeight.w700)), subtitle: const Text('Read a table or website QR with the camera'), trailing: const Icon(Icons.chevron_right), onTap: () => scanAndHandle(context, widget.h))),
         Card(child: ListTile(leading: Icon(Icons.account_balance_wallet_outlined, color: Tk.accent), title: const Text('Pay by UPI', style: TextStyle(fontWeight: FontWeight.w700)), subtitle: Text(('${s.cfg['upiId'] ?? ''}').isEmpty ? 'Not set up. Customers pay at the counter.' : '${s.cfg['upiId']}'), trailing: const Icon(Icons.chevron_right), onTap: upi)),
-        Padding(padding: const EdgeInsets.all(8), child: Text('Guest orders arrive in the QR orders tab. Turn QR ordering on or off, and edit your website text and photos, in the full web console.', style: const TextStyle(color: Tk.label2, fontSize: 12))),
+        Padding(padding: const EdgeInsets.all(8), child: Text('Guest orders arrive in the QR orders tab. Turn QR ordering on or off, and edit your website text and photos, in the full web console.', style: TextStyle(color: Tk.label2, fontSize: 12))),
       ]),
     );
   }
@@ -554,7 +555,7 @@ class _StockAdminState extends State<StockAdmin> {
                   child: ListTile(
                     onTap: () => ing(g),
                     title: Text('${g['name']}', style: const TextStyle(fontWeight: FontWeight.w700)),
-                    subtitle: isLow(g) ? const Text('Running low', style: TextStyle(color: Tk.orange, fontWeight: FontWeight.w600)) : null,
+                    subtitle: isLow(g) ? Text('Running low', style: TextStyle(color: Tk.orange, fontWeight: FontWeight.w600)) : null,
                     trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                       Text('${g['qty'] ?? 0} ${g['unit'] ?? ''}', style: TextStyle(fontWeight: FontWeight.w800, color: isLow(g) ? Tk.orange : Tk.label)),
                       IconButton(icon: const Icon(Icons.tune), tooltip: 'Adjust', onPressed: () => adjust(g)),
@@ -606,7 +607,7 @@ class _CustomersAdminState extends State<CustomersAdmin> {
       appBar: AppBar(title: const Text('Customers')),
       floatingActionButton: FloatingActionButton.extended(onPressed: () => cust(), icon: const Icon(Icons.add), label: const Text('Add customer')),
       body: Column(children: [
-        Padding(padding: const EdgeInsets.fromLTRB(12, 10, 12, 4), child: TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Search name or phone'), onChanged: (v) => setState(() => q = v))),
+        Padding(padding: const EdgeInsets.fromLTRB(12, 10, 12, 4), child: TextField(decoration: InputDecoration(prefixIcon: Icon(Icons.search), hintText: tr('Search name or phone')), onChanged: (v) => setState(() => q = v))),
         Expanded(
           child: cs.isEmpty
               ? Empty(Icons.people_outline, 'No customers yet', 'Add the customer on a bill and they appear here, with their visits and spend.', action: 'Add customer', onAction: cust)

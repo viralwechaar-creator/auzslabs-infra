@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'i18n.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/billing.dart' show r2;
@@ -92,7 +93,7 @@ void sendCenter(BuildContext context, HomeState h, String title, String rule, St
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 Text('Message · $title', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 4),
-                Text('Tap WhatsApp next to each customer. {name} becomes their name. ${people.length} customers.', style: const TextStyle(color: Tk.label2)),
+                Text('Tap WhatsApp next to each customer. {name} becomes their name. ${people.length} customers.', style: TextStyle(color: Tk.label2)),
                 const SizedBox(height: 10),
                 TextField(controller: ctl, minLines: 3, maxLines: 5, onChanged: (v) => msg = v),
                 const SizedBox(height: 10),
@@ -327,9 +328,9 @@ class _PlatformPageState extends State<PlatformPage> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 Text('Add ${widget.name} order', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 12),
-                TextField(controller: ref, decoration: const InputDecoration(labelText: 'Platform order ID')),
+                TextField(controller: ref, decoration: InputDecoration(labelText: tr('Platform order ID'))),
                 const SizedBox(height: 10),
-                Row(children: [Expanded(child: TextField(controller: name, decoration: const InputDecoration(labelText: 'Customer name'))), const SizedBox(width: 10), Expanded(child: TextField(controller: phone, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Mobile')))]),
+                Row(children: [Expanded(child: TextField(controller: name, decoration: InputDecoration(labelText: tr('Customer name')))), const SizedBox(width: 10), Expanded(child: TextField(controller: phone, keyboardType: TextInputType.phone, decoration: InputDecoration(labelText: tr('Mobile'))))]),
                 const SizedBox(height: 10),
                 Seg<String>(expand: true, items: const [('Delivery', 'Delivery'), ('Takeaway', 'Takeaway')], value: type, onChanged: (v) => set(() => type = v)),
                 const SizedBox(height: 10),
@@ -337,7 +338,7 @@ class _PlatformPageState extends State<PlatformPage> {
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
                   initialValue: null,
-                  decoration: const InputDecoration(labelText: 'Add item'),
+                  decoration: InputDecoration(labelText: tr('Add item')),
                   items: [for (final i in items) DropdownMenuItem(value: '${i['id']}', child: Text('${i['name']} — ${inr((i['price'] ?? 0) as num)}'))],
                   onChanged: (v) {
                     final it = items.firstWhere((x) => '${x['id']}' == v);
@@ -809,7 +810,7 @@ class _UsersPageState extends State<UsersPage> {
       builder: (ctx) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Text('${p['name'] ?? p['username']}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-          Text('${p['role']}${p['username'] != null ? ' · ${p['username']}' : ''}', style: const TextStyle(color: Tk.label2)),
+          Text('${p['role']}${p['username'] != null ? ' · ${p['username']}' : ''}', style: TextStyle(color: Tk.label2)),
           const SizedBox(height: 12),
           Group([
             if (p['username'] != null) Li('Reset PIN', icon: Icons.password, tone: Tk.orange, onTap: () async {
@@ -849,7 +850,7 @@ class _UsersPageState extends State<UsersPage> {
               child: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 Text(r == null ? 'New role' : 'Role · ${r['name']}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 10),
-                TextField(controller: name, decoration: const InputDecoration(labelText: 'Role name')),
+                TextField(controller: name, decoration: InputDecoration(labelText: tr('Role name'))),
                 for (final (k, l) in _permKeys) SwitchListTile(contentPadding: EdgeInsets.zero, title: Text(l), value: perms[k] == true, onChanged: (v) => set(() => perms[k] = v)),
                 FilledButton(
                   onPressed: () async {
@@ -923,7 +924,7 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
     final off = h.s.repo!.of('item').where((i) => i['off'] == true).length;
     return ListView(padding: const EdgeInsets.only(bottom: 28), children: [
       PageHead('Availability', sub: '$off sold out. Switch an item off to stop it being sold.'),
-      Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 12), child: TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Search items'), onChanged: (v) => setState(() => q = v))),
+      Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 12), child: TextField(decoration: InputDecoration(prefixIcon: Icon(Icons.search), hintText: tr('Search items')), onChanged: (v) => setState(() => q = v))),
       if (off > 0) Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 12), child: OutlinedButton(onPressed: () async {
             for (final i in h.s.repo!.of('item').where((i) => i['off'] == true).toList()) {
               await h.s.repo!.save('item', {...i, 'off': false, 'offUntil': null}, id: '${i['id']}');
@@ -963,14 +964,14 @@ class _BulkPricePageState extends State<BulkPricePage> {
       Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 0), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         DropdownButtonFormField<String>(
           initialValue: cat,
-          decoration: const InputDecoration(labelText: 'Which items'),
+          decoration: InputDecoration(labelText: tr('Which items')),
           items: [const DropdownMenuItem(value: 'all', child: Text('Every item')), for (final c in cats) DropdownMenuItem(value: '${c['id']}', child: Text('${c['name']}'))],
           onChanged: (v) => setState(() => cat = v ?? 'all'),
         ),
         const SizedBox(height: 12),
         Seg<String>(expand: true, items: const [('pct', 'Percent %'), ('rs', 'Rupees ₹')], value: mode, onChanged: (v) => setState(() => mode = v)),
         const SizedBox(height: 12),
-        TextField(controller: amt, keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true), decoration: const InputDecoration(labelText: 'Change by (use minus to lower)')),
+        TextField(controller: amt, keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true), decoration: InputDecoration(labelText: tr('Change by (use minus to lower)'))),
         const SizedBox(height: 14),
         FilledButton(
           onPressed: () async {

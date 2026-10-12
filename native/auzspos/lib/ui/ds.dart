@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'i18n.dart';
 import 'theme.dart';
 
 /// Building blocks that copy the website POS: large page title, segmented control, grouped list, tinted icon tiles.
@@ -14,7 +15,7 @@ class PageHead extends StatelessWidget {
         child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(title, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800, letterSpacing: -.8, height: 1.1)),
-            if (sub != null) Padding(padding: const EdgeInsets.only(top: 4), child: Text(sub!, style: const TextStyle(fontSize: 17, color: Tk.label2))),
+            if (sub != null) Padding(padding: const EdgeInsets.only(top: 4), child: Text(sub!, style: TextStyle(fontSize: 17, color: Tk.label2))),
           ])),
           ?trailing,
         ]),
@@ -44,8 +45,8 @@ class Seg<T> extends StatelessWidget {
                   height: 38,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   alignment: Alignment.center,
-                  decoration: BoxDecoration(color: v == value ? Colors.white : Colors.transparent, borderRadius: BorderRadius.circular(11), boxShadow: v == value ? const [BoxShadow(color: Color(0x1F000000), blurRadius: 4, offset: Offset(0, 1))] : null),
-                  child: Text(l, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Tk.label)),
+                  decoration: BoxDecoration(color: v == value ? (Tk.dark ? const Color(0xFF48484A) : Colors.white) : Colors.transparent, borderRadius: BorderRadius.circular(11), boxShadow: v == value ? const [BoxShadow(color: Color(0x1F000000), blurRadius: 4, offset: Offset(0, 1))] : null),
+                  child: Text(l, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Tk.label)),
                 ),
               ),
             ),
@@ -141,11 +142,11 @@ class Li extends StatelessWidget {
             if (icon != null) ...[Container(width: 44, height: 44, decoration: BoxDecoration(color: tone ?? Tk.label3.withValues(alpha: .9), borderRadius: BorderRadius.circular(12)), child: Icon(icon, color: Colors.white, size: 24)), const SizedBox(width: 14)],
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(title, style: TextStyle(fontSize: 19, fontWeight: FontWeight.w600, color: titleColor ?? Tk.label)),
-              if (sub != null) Padding(padding: const EdgeInsets.only(top: 2), child: Text(sub!, style: const TextStyle(fontSize: 16, color: Tk.label2, height: 1.25))),
+              if (sub != null) Padding(padding: const EdgeInsets.only(top: 2), child: Text(sub!, style: TextStyle(fontSize: 16, color: Tk.label2, height: 1.25))),
             ])),
-            if (value != null) Padding(padding: const EdgeInsets.only(left: 8), child: Text(value!, style: const TextStyle(fontSize: 18, color: Tk.label2))),
+            if (value != null) Padding(padding: const EdgeInsets.only(left: 8), child: Text(value!, style: TextStyle(fontSize: 18, color: Tk.label2))),
             ?trailing,
-            if (trailing == null && chevron && onTap != null) const Padding(padding: EdgeInsets.only(left: 8), child: Icon(Icons.chevron_right, color: Tk.label3, size: 26)),
+            if (trailing == null && chevron && onTap != null) Padding(padding: EdgeInsets.only(left: 8), child: Icon(Icons.chevron_right, color: Tk.label3, size: 26)),
           ]),
         ),
       );
@@ -161,14 +162,14 @@ class NavBar extends StatelessWidget {
   final int badge;
   @override
   Widget build(BuildContext context) => Container(
-        decoration: const BoxDecoration(color: Color(0xF5FAF9F7), border: Border(bottom: BorderSide(color: Tk.line, width: .5))),
+        decoration: BoxDecoration(color: Tk.bar, border: Border(bottom: BorderSide(color: Tk.line, width: .5))),
         padding: EdgeInsets.fromLTRB(16, MediaQuery.of(context).padding.top + 4, 4, 4),
         child: Row(children: [
           if (title != null) Expanded(child: Text(title!, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -.4))) else const SizedBox.shrink(),
           InkWell(onTap: onStatus, borderRadius: BorderRadius.circular(12), child: Padding(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12), child: Row(mainAxisSize: MainAxisSize.min, children: [
             Container(width: 10, height: 10, decoration: BoxDecoration(color: statusTone, shape: BoxShape.circle)),
             const SizedBox(width: 8),
-            Text(status, style: const TextStyle(fontSize: 16, color: Tk.label2)),
+            Text(status, style: TextStyle(fontSize: 16, color: Tk.label2)),
           ]))),
           if (title == null) const Spacer(),
           IconButton(

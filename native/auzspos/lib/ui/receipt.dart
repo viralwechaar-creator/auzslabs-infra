@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'i18n.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -27,7 +28,7 @@ Future<void> sendWhatsApp(BuildContext context, Session s, Map<String, dynamic> 
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Send the bill on WhatsApp'),
-        content: TextField(controller: c, keyboardType: TextInputType.phone, autofocus: true, decoration: const InputDecoration(labelText: 'Customer phone')),
+        content: TextField(controller: c, keyboardType: TextInputType.phone, autofocus: true, decoration: InputDecoration(labelText: tr('Customer phone'))),
         actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(ctx, c.text), child: const Text('Send'))],
       ),
     );

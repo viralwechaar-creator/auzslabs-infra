@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'i18n.dart';
 
 /// The opening animation (same idea as the website's launch screen): the mark rises on ink with a glow,
 /// the name appears letter by letter, a small bar runs, then the app lifts up. Always shown for 3 seconds.
