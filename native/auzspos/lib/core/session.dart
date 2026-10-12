@@ -23,7 +23,40 @@ class Session extends ChangeNotifier {
       };
   Map<String, Map<String, dynamic>> get taxes => {for (final t in repo?.of('tax') ?? const <Map<String, dynamic>>[]) '${t['id']}': t};
   Map<String, Map<String, dynamic>> get items => {for (final i in repo?.of('item') ?? const <Map<String, dynamic>>[]) '${i['id']}': i};
-  b.Totals tot(Map<String, dynamic> o) => b.tot(o, cfg, taxes: taxes, items: items);
+  b.Totals tot(Map<String, dynamic> o) {
+    final d = DateTime.now();
+    final today = '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+    return b.tot(o, cfg, taxes: taxes, items: items, offerRecords: repo?.of('offer').toList() ?? const [], today: today);
+  }
+
+  String role = 'cashier';
+  Map<String, dynamic>? perms;
+  static const _defaultPerms = {'pos': true, 'orders': true, 'kitchen': true, 'reports': true, 'staff': true, 'inventory': true, 'crm': true, 'menu': false, 'settings': false, 'billing': false};
+
+  /// 'm' = may approve money actions (owner, manager, or a role with billing); 'o' = owner only; else a permission key.
+  bool can(String x) {
+    if (role == 'owner') return true;
+    if (x == 'o') return false;
+    final p = perms ?? (role == 'manager' ? {..._defaultPerms, 'billing': true} : _defaultPerms);
+    return (x == 'm' ? p['billing'] : p[x]) == true;
+  }
+
+  Future<void> _loadRole() async {
+    try {
+      final r = await api.one('profiles', 'id', '${user!['id']}', select: 'role,role_id');
+      role = '${r?['role'] ?? 'cashier'}';
+      perms = null;
+      if (r?['role_id'] != null) {
+        final rr = await api.one('roles', 'id', '${r!['role_id']}', select: 'permissions');
+        if (rr?['permissions'] is Map) perms = Map<String, dynamic>.from(rr!['permissions'] as Map);
+      }
+      final p = await SharedPreferences.getInstance();
+      await p.setString('role.${user!['id']}', role);
+    } catch (_) {
+      final p = await SharedPreferences.getInstance();
+      role = p.getString('role.${user!['id']}') ?? 'cashier';
+    }
+  }
 
   Future<void> restore() async {
     final p = await SharedPreferences.getInstance();
@@ -46,6 +79,7 @@ class Session extends ChangeNotifier {
     repo = Repo(api, store, onChange: notifyListeners);
     user = u;
     await repo!.load();
+    await _loadRole();
     notifyListeners();
     unawaited(sync());
     _timer?.cancel();

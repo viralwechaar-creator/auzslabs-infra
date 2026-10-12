@@ -1,13 +1,430 @@
 [
- {"name":"plain 5% exclusive","cfg":{},"order":{"type":"Takeaway","lines":[{"id":"a","price":100,"qty":2},{"id":"b","price":49.5,"qty":3}]}},
- {"name":"inclusive prices","cfg":{"taxInclusive":true,"tax":12},"order":{"type":"Dine-in","lines":[{"id":"a","price":118,"qty":1},{"id":"b","price":59,"qty":3}]}},
- {"name":"percent discount","cfg":{"tax":5},"order":{"type":"Dine-in","lines":[{"id":"a","price":250,"qty":2}],"disc":{"t":"%","v":10}}},
- {"name":"rupee discount","cfg":{"tax":18},"order":{"type":"Takeaway","lines":[{"id":"a","price":333,"qty":1},{"id":"b","price":77,"qty":4}],"disc":{"t":"₹","v":50}}},
- {"name":"service charge dine-in","cfg":{"tax":5,"serviceChargePct":10},"order":{"type":"Dine-in","lines":[{"id":"a","price":199,"qty":3}]}},
- {"name":"packing and delivery","cfg":{"tax":5,"packingCharge":20,"deliveryCharge":35},"order":{"type":"Delivery","lines":[{"id":"a","price":120,"qty":2}]}},
- {"name":"no round off","cfg":{"tax":5,"roundOff":false},"order":{"type":"Takeaway","lines":[{"id":"a","price":33.33,"qty":3}]}},
- {"name":"complimentary","cfg":{"tax":5,"serviceChargePct":10},"order":{"type":"Dine-in","complimentary":true,"lines":[{"id":"a","price":100,"qty":2}]}},
- {"name":"item tax record","cfg":{"tax":5},"records":[{"id":"a","kind":"item","taxId":"t12"},{"id":"t12","kind":"tax","rate":12,"inclusive":false},{"id":"t18","kind":"tax","rate":18,"inclusive":true},{"id":"b","kind":"item","taxId":"t18"}],"order":{"type":"Takeaway","lines":[{"id":"a","price":100,"qty":1},{"id":"b","price":118,"qty":2},{"id":"c","price":10,"qty":5}]}},
- {"name":"half rupee rounds up","cfg":{"tax":0},"order":{"type":"Takeaway","lines":[{"id":"a","price":10.5,"qty":1}]}},
- {"name":"empty bill","cfg":{},"order":{"type":"Dine-in","lines":[]}}
+ {
+  "name": "plain 5% exclusive",
+  "cfg": {},
+  "order": {
+   "type": "Takeaway",
+   "lines": [
+    {
+     "id": "a",
+     "price": 100,
+     "qty": 2
+    },
+    {
+     "id": "b",
+     "price": 49.5,
+     "qty": 3
+    }
+   ]
+  }
+ },
+ {
+  "name": "inclusive prices",
+  "cfg": {
+   "taxInclusive": true,
+   "tax": 12
+  },
+  "order": {
+   "type": "Dine-in",
+   "lines": [
+    {
+     "id": "a",
+     "price": 118,
+     "qty": 1
+    },
+    {
+     "id": "b",
+     "price": 59,
+     "qty": 3
+    }
+   ]
+  }
+ },
+ {
+  "name": "percent discount",
+  "cfg": {
+   "tax": 5
+  },
+  "order": {
+   "type": "Dine-in",
+   "lines": [
+    {
+     "id": "a",
+     "price": 250,
+     "qty": 2
+    }
+   ],
+   "disc": {
+    "t": "%",
+    "v": 10
+   }
+  }
+ },
+ {
+  "name": "rupee discount",
+  "cfg": {
+   "tax": 18
+  },
+  "order": {
+   "type": "Takeaway",
+   "lines": [
+    {
+     "id": "a",
+     "price": 333,
+     "qty": 1
+    },
+    {
+     "id": "b",
+     "price": 77,
+     "qty": 4
+    }
+   ],
+   "disc": {
+    "t": "₹",
+    "v": 50
+   }
+  }
+ },
+ {
+  "name": "service charge dine-in",
+  "cfg": {
+   "tax": 5,
+   "serviceChargePct": 10
+  },
+  "order": {
+   "type": "Dine-in",
+   "lines": [
+    {
+     "id": "a",
+     "price": 199,
+     "qty": 3
+    }
+   ]
+  }
+ },
+ {
+  "name": "packing and delivery",
+  "cfg": {
+   "tax": 5,
+   "packingCharge": 20,
+   "deliveryCharge": 35
+  },
+  "order": {
+   "type": "Delivery",
+   "lines": [
+    {
+     "id": "a",
+     "price": 120,
+     "qty": 2
+    }
+   ]
+  }
+ },
+ {
+  "name": "no round off",
+  "cfg": {
+   "tax": 5,
+   "roundOff": false
+  },
+  "order": {
+   "type": "Takeaway",
+   "lines": [
+    {
+     "id": "a",
+     "price": 33.33,
+     "qty": 3
+    }
+   ]
+  }
+ },
+ {
+  "name": "complimentary",
+  "cfg": {
+   "tax": 5,
+   "serviceChargePct": 10
+  },
+  "order": {
+   "type": "Dine-in",
+   "complimentary": true,
+   "lines": [
+    {
+     "id": "a",
+     "price": 100,
+     "qty": 2
+    }
+   ]
+  }
+ },
+ {
+  "name": "item tax record",
+  "cfg": {
+   "tax": 5
+  },
+  "records": [
+   {
+    "id": "a",
+    "kind": "item",
+    "taxId": "t12"
+   },
+   {
+    "id": "t12",
+    "kind": "tax",
+    "rate": 12,
+    "inclusive": false
+   },
+   {
+    "id": "t18",
+    "kind": "tax",
+    "rate": 18,
+    "inclusive": true
+   },
+   {
+    "id": "b",
+    "kind": "item",
+    "taxId": "t18"
+   }
+  ],
+  "order": {
+   "type": "Takeaway",
+   "lines": [
+    {
+     "id": "a",
+     "price": 100,
+     "qty": 1
+    },
+    {
+     "id": "b",
+     "price": 118,
+     "qty": 2
+    },
+    {
+     "id": "c",
+     "price": 10,
+     "qty": 5
+    }
+   ]
+  }
+ },
+ {
+  "name": "half rupee rounds up",
+  "cfg": {
+   "tax": 0
+  },
+  "order": {
+   "type": "Takeaway",
+   "lines": [
+    {
+     "id": "a",
+     "price": 10.5,
+     "qty": 1
+    }
+   ]
+  }
+ },
+ {
+  "name": "empty bill",
+  "cfg": {},
+  "order": {
+   "type": "Dine-in",
+   "lines": []
+  }
+ },
+ {
+  "name": "buy1 get1 on an item",
+  "cfg": {
+   "tax": 5
+  },
+  "records": [
+   {
+    "id": "i1",
+    "kind": "item",
+    "name": "Tea",
+    "cat": "c1"
+   },
+   {
+    "id": "i2",
+    "kind": "item",
+    "name": "Cake",
+    "cat": "c2"
+   },
+   {
+    "id": "i3",
+    "kind": "item",
+    "name": "Bun",
+    "cat": "c2"
+   },
+   {
+    "id": "o1",
+    "kind": "offer",
+    "name": "Tea 1+1",
+    "scope": "item",
+    "scopeId": "i1",
+    "buyQty": 1,
+    "getQty": 1,
+    "getPct": 100
+   }
+  ],
+  "order": {
+   "type": "Takeaway",
+   "lines": [
+    {
+     "id": "i1",
+     "price": 40,
+     "qty": 3
+    },
+    {
+     "id": "i2",
+     "price": 90,
+     "qty": 1
+    }
+   ]
+  }
+ },
+ {
+  "name": "category offer half off cheapest",
+  "cfg": {
+   "tax": 12,
+   "serviceChargePct": 5
+  },
+  "records": [
+   {
+    "id": "i1",
+    "kind": "item",
+    "name": "Tea",
+    "cat": "c1"
+   },
+   {
+    "id": "i2",
+    "kind": "item",
+    "name": "Cake",
+    "cat": "c2"
+   },
+   {
+    "id": "i3",
+    "kind": "item",
+    "name": "Bun",
+    "cat": "c2"
+   },
+   {
+    "id": "o2",
+    "kind": "offer",
+    "name": "Bakery",
+    "scope": "cat",
+    "scopeId": "c2",
+    "buyQty": 2,
+    "getQty": 1,
+    "getPct": 50
+   }
+  ],
+  "order": {
+   "type": "Dine-in",
+   "lines": [
+    {
+     "id": "i2",
+     "price": 90,
+     "qty": 2
+    },
+    {
+     "id": "i3",
+     "price": 35,
+     "qty": 2
+    }
+   ]
+  }
+ },
+ {
+  "name": "offer plus manual discount",
+  "cfg": {
+   "tax": 5
+  },
+  "records": [
+   {
+    "id": "i1",
+    "kind": "item",
+    "name": "Tea",
+    "cat": "c1"
+   },
+   {
+    "id": "i2",
+    "kind": "item",
+    "name": "Cake",
+    "cat": "c2"
+   },
+   {
+    "id": "i3",
+    "kind": "item",
+    "name": "Bun",
+    "cat": "c2"
+   },
+   {
+    "id": "o3",
+    "kind": "offer",
+    "name": "Tea 2+1",
+    "scope": "item",
+    "scopeId": "i1",
+    "buyQty": 2,
+    "getQty": 1
+   }
+  ],
+  "order": {
+   "type": "Takeaway",
+   "disc": {
+    "t": "%",
+    "v": 10
+   },
+   "lines": [
+    {
+     "id": "i1",
+     "price": 45,
+     "qty": 6
+    }
+   ]
+  }
+ },
+ {
+  "name": "expired offer ignored",
+  "cfg": {
+   "tax": 5
+  },
+  "records": [
+   {
+    "id": "i1",
+    "kind": "item",
+    "name": "Tea",
+    "cat": "c1"
+   },
+   {
+    "id": "i2",
+    "kind": "item",
+    "name": "Cake",
+    "cat": "c2"
+   },
+   {
+    "id": "i3",
+    "kind": "item",
+    "name": "Bun",
+    "cat": "c2"
+   },
+   {
+    "id": "o4",
+    "kind": "offer",
+    "name": "Old",
+    "scope": "item",
+    "scopeId": "i1",
+    "buyQty": 1,
+    "getQty": 1,
+    "to": "2026-01-01"
+   }
+  ],
+  "order": {
+   "type": "Takeaway",
+   "lines": [
+    {
+     "id": "i1",
+     "price": 40,
+     "qty": 2
+    }
+   ]
+  }
+ }
 ]

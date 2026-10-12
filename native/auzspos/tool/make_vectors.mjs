@@ -11,12 +11,13 @@ function fn(name) { // copy one top-level function/const statement up to its mat
   for (; k < src.length; k++) { if (src[k] === '{') depth++; else if (src[k] === '}') { depth--; if (!depth) break; } }
   return src.slice(i, k + 1);
 }
-const code = ['const r2 =', 'const taxOf', 'const lineRate', 'const lineInclusive', 'function chargesOf', 'function tot('].map(fn).join('\n');
+const code = ['const r2 =', 'const taxOf', 'const lineRate', 'const lineInclusive', 'function offerActive', 'function offerMatches', 'function chargesOf', 'function tot('].map(fn).join('\n');
 const cases = JSON.parse(fs.readFileSync(new URL('./vector_inputs.json', import.meta.url), 'utf8'));
 const out = cases.map((c) => {
   const ctx = { R: { ...Object.fromEntries((c.records || []).map((r) => [r.id, { id: r.id, kind: r.kind, data: r }])), settings: { data: c.cfg } }, console, Math };
   ctx.rec = (id) => (id && ctx.R[id] ? ctx.R[id].data : null);
-  ctx.offerMatches = () => [];
+  ctx.L = (k) => (c.records || []).filter((r) => r.kind === k);
+  ctx.today = () => c.today || '2026-10-12';
   ctx.cfgBase = {};
   vm.createContext(ctx);
   vm.runInContext(`const cfg = () => ({ tax: 5, roundOff: true, serviceChargePct: 0, packingCharge: 0, deliveryCharge: 0, taxInclusive: false, ...(R.settings && R.settings.data) });\n${code}\nglobalThis.__tot = tot;`, ctx);

@@ -14,9 +14,10 @@ void main() {
       }
       final taxes = {for (final e in records.entries) if (e.value['kind'] == 'tax') e.key: e.value};
       final items = {for (final e in records.entries) if (e.value['kind'] == 'item') e.key: e.value};
-      final t = tot(Map<String, dynamic>.from(v['order']), Map<String, dynamic>.from(v['cfg']), taxes: taxes, items: items).toJson();
+      final offers = [for (final r in records.values) if (r['kind'] == 'offer') r];
+      final t = tot(Map<String, dynamic>.from(v['order']), Map<String, dynamic>.from(v['cfg']), taxes: taxes, items: items, offerRecords: offers, today: '2026-10-12').toJson();
       final e = Map<String, dynamic>.from(v['expect']);
-      for (final k in ['sub', 'd', 'tax', 'round', 'total', 'net', 'svc', 'pack', 'deliv']) {
+      for (final k in ['sub', 'd', 'tax', 'round', 'total', 'net', 'svc', 'pack', 'deliv', 'offer']) {
         expect((t[k] ?? 0) as num, closeTo((e[k] ?? 0) as num, 0.0001), reason: k);
       }
       final er = Map<String, dynamic>.from(e['rates']);

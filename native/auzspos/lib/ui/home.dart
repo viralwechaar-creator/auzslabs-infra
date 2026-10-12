@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../core/repo.dart';
 import '../core/session.dart';
+import 'actions.dart';
 import 'floor.dart';
 
 String inr(num v) => '₹${v == v.roundToDouble() ? v.toInt() : v.toStringAsFixed(2)}';
@@ -332,11 +333,21 @@ class _SellPageState extends State<SellPage> {
               ),
               const Divider(),
               _row('Subtotal', t.sub),
-              if (t.d > 0) _row('Discount', -t.d),
+              for (final of in t.offers) _row('${of['name']}', -(of['amt'] as num)),
+              if (t.d > 0) _row(o['complimentary'] == true ? 'Complimentary' : o['coupon'] != null ? 'Coupon ${o['coupon']}' : 'Discount', -t.d),
               if (t.svc > 0) _row('Service charge', t.svc),
               if (t.tax > 0) _row('Tax', t.tax),
               if (t.round != 0) _row('Round off', t.round),
               _row('Total', t.total, bold: true),
+              const SizedBox(height: 8),
+              Wrap(spacing: 8, runSpacing: 4, children: [
+                ActionChip(avatar: const Icon(Icons.percent, size: 16), label: Text(o['disc'] != null && o['complimentary'] != true ? 'Change discount' : 'Discount'), onPressed: () async { await discountSheet(ctx, s, o, () { set(() {}); setState(() {}); }); set(() {}); }),
+                ActionChip(avatar: const Icon(Icons.local_offer_outlined, size: 16), label: const Text('Coupon'), onPressed: () async { await couponSheet(ctx, s, o, () { set(() {}); setState(() {}); }); set(() {}); }),
+                ActionChip(avatar: const Icon(Icons.card_giftcard, size: 16), label: Text(o['complimentary'] == true ? 'Complimentary ✓' : 'Complimentary'), onPressed: () async { await compSheet(ctx, s, o, () { set(() {}); setState(() {}); }); set(() {}); }),
+                ActionChip(avatar: const Icon(Icons.person_outline, size: 16), label: Text(((o['cust'] as Map?)?['name'] ?? '') != '' ? '${(o['cust'] as Map)['name']}' : 'Customer / note'), onPressed: () async { await customerSheet(ctx, o, () { set(() {}); setState(() {}); }); set(() {}); }),
+                ActionChip(avatar: const Icon(Icons.call_split, size: 16), label: const Text('Split bill'), onPressed: () async { Navigator.pop(ctx); await splitSheet(context, h, o); }),
+                ActionChip(avatar: const Icon(Icons.cancel_outlined, size: 16), label: const Text('Cancel order'), onPressed: () async { if (await cancelOrder(ctx, h, o)) { if (ctx.mounted) Navigator.pop(ctx); h.refresh(() => h.cur = null); h._toast('Order cancelled'); } }),
+              ]),
               const SizedBox(height: 8),
               Row(children: [
                 Expanded(child: OutlinedButton(onPressed: () async { Navigator.pop(ctx); await h.persist(o); h.refresh(() => h.cur = null); h._toast('Order held'); }, child: const Text('Hold'))),
@@ -397,7 +408,7 @@ class OrdersPage extends StatelessWidget {
         title: Text('${o['no'] ?? 'New'} · ${o['type']}${o['table'] != null ? ' · ${s.repo!.rec('${o['table']}')?['name'] ?? ''}' : ''}'),
         subtitle: Text('${o['status']}${o['kstat'] != null ? ' · kitchen: ${o['kstat']}' : ''}'),
         trailing: Text(inr(t as num), style: const TextStyle(fontWeight: FontWeight.w700)),
-        onTap: o['status'] == 'open' ? () { h.refresh(() { h.cur = Map<String, dynamic>.from(o)..['lines'] = [for (final l in (o['lines'] as List)) Map<String, dynamic>.from(l as Map)]; h.tab = 0; }); } : null,
+        onTap: o['status'] == 'open' ? () => h.openOrder(o) : () => billSheet(context, h, o),
       );
     }
 
