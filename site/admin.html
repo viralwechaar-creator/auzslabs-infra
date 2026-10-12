@@ -59,8 +59,8 @@ body.admin-shell{position:fixed;inset:0;height:auto;margin:0;overscroll-behavior
 .a-page{display:none}
 .a-page.active{display:block}
 .a-page .label{margin:0}
-.a-page h2.h-2{font-size:19px;margin-top:3px;margin-bottom:10px}
-.a-page>p.p{font-size:13px;color:var(--ink-faint);margin-top:2px;margin-bottom:14px;max-width:46em}
+.a-page h2.h-2{font-size:18px;margin-top:2px;margin-bottom:8px}
+.a-page>p.p{font-size:12.5px;color:var(--ink-faint);margin-top:2px;margin-bottom:10px;max-width:46em}
 .a-login-wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:20px 0}
 .a-login-card{width:100%;max-width:360px}
 .a-brand-row{display:flex;align-items:center;gap:10px;margin-bottom:22px}
@@ -81,16 +81,16 @@ a.a-nav-row,a.a-side-btn{text-decoration:none}
 .a-nav-row .a-row-badge{min-width:20px;height:20px;border-radius:999px;background:var(--accent);color:#fff;font:700 11px var(--font-mono);display:flex;align-items:center;justify-content:center;padding:0 5px;flex:none}
 .a-search{width:100%;background:var(--bg-raised);border:none;border-radius:11px;padding:9px 12px;font:14px var(--font-body);color:var(--ink)}
 .a-search::placeholder{color:var(--ink-faint)}
-.a-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:2px 0 12px}
-.a-kpi{background:var(--bg-raised);border-radius:12px;padding:9px 12px}
+.a-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin:2px 0 10px}
+.a-kpi{background:var(--bg-raised);border-radius:10px;padding:7px 10px}
 .a-kpi:last-child:nth-child(odd){grid-column:1/-1}
 .a-kpi .k{font:500 11px var(--font-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--ink-faint)}
 .a-kpi .n{font:700 19px var(--font-display);margin-top:1px}
 /* responsive table -> stacked card list on phones */
 .admin-table-wrap{overflow-x:auto;border:1.5px solid var(--line);border-radius:14px;margin-top:0}
 .admin-table{width:100%;border-collapse:collapse;font-size:12.5px}
-.admin-table th{text-align:left;padding:9px 12px;background:var(--bg-raised);font-family:var(--font-mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-dim);border-bottom:1.5px solid var(--line)}
-.admin-table td{padding:9px 12px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+.admin-table th{text-align:left;padding:7px 10px;background:var(--bg-raised);font-family:var(--font-mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-dim);border-bottom:1.5px solid var(--line)}
+.admin-table td{padding:7px 10px;border-bottom:1px solid var(--line-soft);vertical-align:top}
 .admin-table tr:last-child td{border-bottom:none}
 .admin-table .row-actions{display:flex;gap:6px;flex-wrap:wrap}
 .admin-table .row-actions .btn{padding:7px 11px;font-size:9.5px;min-height:30px}
@@ -107,22 +107,22 @@ a.a-nav-row,a.a-side-btn{text-decoration:none}
      name/business/client/user/product -- every loader puts the identifying field first) spans the full
      width and reads as the card's own heading: bigger, bolder, its own label hidden since the bold text
      already says what it is. Free-text fields still span full width, since they don't read well squeezed. */
-  .admin-table tr{display:grid;grid-template-columns:repeat(auto-fit,minmax(108px,1fr));column-gap:14px;row-gap:9px;background:var(--bg-raised);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:9px;width:auto;align-items:start}
+  .admin-table tr{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));column-gap:10px;row-gap:6px;background:var(--bg-raised);border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin-bottom:6px;width:auto;align-items:start}
   .admin-table tr:last-child{margin-bottom:0}
-  .admin-table td{display:block;padding:0;border-bottom:none;min-width:0;font-size:12.5px;line-height:1.3;color:var(--ink-dim)}
+  .admin-table td{display:block;padding:0;border-bottom:none;min-width:0;font-size:11.5px;line-height:1.3;color:var(--ink-dim)}
   .admin-table td[hidden]{display:none}
   .admin-table td b{color:var(--ink);font-weight:700}
-  .admin-table td[data-label]::before{content:attr(data-label);display:block;font:600 9px var(--font-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);margin-bottom:2px}
-  .admin-table td:first-child{grid-column:1/-1;padding-bottom:9px;margin-bottom:2px;border-bottom:1px solid var(--line-soft)}
+  .admin-table td[data-label]::before{content:attr(data-label);display:block;font:600 8.5px var(--font-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);margin-bottom:1px}
+  .admin-table td:first-child{grid-column:1/-1;padding-bottom:6px;margin-bottom:1px;border-bottom:1px solid var(--line-soft)}
   .admin-table td:first-child::before{display:none}
-  .admin-table td:first-child{font-size:17px;font-weight:700;color:var(--ink);line-height:1.3}
-  .admin-table td:first-child b{font-size:17px}
-  .admin-table td:first-child span:not(.status-pill){font-size:12.5px;font-weight:400}
+  .admin-table td:first-child{font-size:14.5px;font-weight:700;color:var(--ink);line-height:1.3}
+  .admin-table td:first-child b{font-size:14.5px}
+  .admin-table td:first-child span:not(.status-pill){font-size:11.5px;font-weight:400}
   .admin-table td[data-label=Needs],.admin-table td[data-label=Message],.admin-table td[data-label=Note],.admin-table td[data-label=Address],
   .admin-table td[data-label=Problem],.admin-table td[data-label=Description],.admin-table td[data-label=Business]{grid-column:1/-1}
   .admin-table td[data-label=Message],.admin-table td[data-label=Note]{order:5}
-  .admin-table td.row-actions{grid-column:1/-1;order:9;margin-top:2px;padding-top:10px;border-top:1px solid var(--line-soft);gap:7px}
-  body.admin-shell .admin-table .row-actions .btn{padding:6px 12px;min-height:32px;font-size:10.5px;letter-spacing:.03em;border-width:1.5px;border-radius:999px;box-shadow:none;transform:none;margin:0}
+  .admin-table td.row-actions{grid-column:1/-1;order:9;margin-top:1px;padding-top:7px;border-top:1px solid var(--line-soft);gap:5px}
+  body.admin-shell .admin-table .row-actions .btn{padding:5px 10px;min-height:28px;font-size:10px;letter-spacing:.03em;border-width:1.5px;border-radius:999px;box-shadow:none;transform:none;margin:0}
 }
 .status-pill{display:inline-flex;padding:3px 9px;border-radius:999px;border:1px solid var(--ink);font-family:var(--font-mono);font-size:9px;text-transform:uppercase}
 .status-new{background:var(--accent);color:#fff;border-color:var(--accent)}
@@ -133,28 +133,75 @@ a.a-nav-row,a.a-side-btn{text-decoration:none}
 .renewal-overdue{color:var(--accent);font-weight:700;text-decoration:underline wavy}
 .feature-tag{display:inline-block;padding:2px 7px;margin:1px 2px 1px 0;border-radius:999px;border:1px solid var(--line);font-family:var(--font-mono);font-size:8.5px;color:var(--ink-dim)}
 .err{color:var(--accent);font-size:12.5px;margin-top:8px}
-.cc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
-.client-card{background:var(--card-bg);border:1px solid var(--line-soft);box-shadow:var(--lift);border-radius:18px;padding:20px}
-.cc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-.cc-name{font:700 21px var(--font-display);color:var(--ink);line-height:1.2;letter-spacing:-.01em}
-.cc-sub{font-size:12.5px;color:var(--ink-faint);margin-top:3px}
+.cc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px}
+.client-card{background:var(--card-bg);border:1px solid var(--line-soft);box-shadow:var(--lift);border-radius:14px;padding:13px 14px}
+.cc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.cc-name{font:700 17px var(--font-display);color:var(--ink);line-height:1.2;letter-spacing:-.01em}
+.cc-sub{font-size:11.5px;color:var(--ink-faint);margin-top:2px}
 .client-card .status-pill{border:none;background:var(--sage-soft,#e4f1e6);color:var(--sage,#2f7a43);font-weight:700;flex:none}
 .client-card .status-new{background:var(--wine-soft,#f7e2e8);color:var(--accent)}
 .client-card .status-trial{background:var(--bg-raised);color:var(--ink-dim)}
 .client-card .status-suspended,.client-card .status-cancelled{background:var(--ink);color:#fff}
-.cc-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line-soft)}
-.cc-label{font:600 10px var(--font-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--ink-faint)}
-.cc-big{font:700 19px var(--font-display);color:var(--ink);margin-top:3px}
-.cc-big.renewal-soon,.cc-big.renewal-overdue{font-size:19px;color:var(--accent)}
-.cc-svc{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--line-soft);font-size:13px;color:var(--ink-dim)}
-.cc-svc button{background:none;border:none;color:var(--accent);font:600 13px var(--font-body);cursor:pointer;padding:0}
-.cc-chips{margin-top:8px;display:none}
+.cc-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;padding-top:9px;border-top:1px solid var(--line-soft)}
+.cc-label{font:600 9px var(--font-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--ink-faint)}
+.cc-big{font:700 16px var(--font-display);color:var(--ink);margin-top:2px}
+.cc-big.renewal-soon,.cc-big.renewal-overdue{font-size:16px;color:var(--accent)}
+.cc-svc{display:flex;justify-content:space-between;align-items:center;margin-top:9px;padding-top:8px;border-top:1px solid var(--line-soft);font-size:12px;color:var(--ink-dim)}
+.cc-svc button{background:none;border:none;color:var(--accent);font:600 12px var(--font-body);cursor:pointer;padding:0}
+.cc-chips{margin-top:6px;display:none}
 .cc-chips.open{display:block}
-.cc-actions{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line-soft)}
-.cc-actions button{background:none;border:none;padding:4px 0;font:600 12.5px var(--font-body);color:var(--ink-dim);cursor:pointer}
+.cc-actions{display:flex;flex-wrap:wrap;gap:3px 12px;margin-top:9px;padding-top:8px;border-top:1px solid var(--line-soft)}
+.cc-actions button{background:none;border:none;padding:3px 0;font:600 11.5px var(--font-body);color:var(--ink-dim);cursor:pointer}
 .cc-actions button:hover{color:var(--ink)}
 .cc-actions button.cc-danger{color:var(--accent)}
-.cc-notes{margin-top:10px;font-size:12.5px;color:var(--ink-faint)}
+.cc-notes{margin-top:8px;font-size:11.5px;color:var(--ink-faint)}
+
+/* ===== Shared minimal components: generic list-card (avatar/icon row, Users/Salesmen/nav-like lists),
+   request-card (Leads/Signups/Add-ons -- one item per queue entry) and price-card (Pricing tab),
+   all compact by design: tight padding, small secondary text, no dead space. ===== */
+.group-label{padding:10px 2px 5px;font:600 9.5px var(--font-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint)}
+.group-label:first-child{padding-top:0}
+.list-card{background:var(--card-bg);border:1px solid var(--line-soft);box-shadow:var(--lift);border-radius:12px;padding:9px 11px;display:flex;align-items:center;gap:10px;margin-bottom:5px}
+.list-card:last-child{margin-bottom:0}
+.lc-list{display:flex;flex-direction:column;gap:5px}
+.lc-avatar{width:32px;height:32px;border-radius:999px;display:flex;align-items:center;justify-content:center;font:700 13px var(--font-display);color:#fff;flex:none;background:var(--wine)}
+.lc-body{flex:1 1 auto;min-width:0}
+.lc-name{font:700 13.5px var(--font-body);color:var(--ink);display:flex;align-items:center;gap:6px}
+.lc-sub{font-size:11px;color:var(--ink-faint);margin-top:1px}
+.lc-meta{font-size:11px;color:var(--ink-faint);margin-top:1px}
+.lc-side{display:flex;align-items:center;gap:8px;flex:none}
+.lc-dot{width:7px;height:7px;border-radius:999px;background:var(--sage);flex:none}
+.lc-chev{width:15px;height:15px;flex:none;color:var(--ink-faint)}
+.lc-action{background:none;border:none;padding:2px 0;font:600 11.5px var(--font-body);color:var(--accent);cursor:pointer;flex:none}
+
+.req-grid{display:flex;flex-direction:column;gap:6px}
+.req-card{background:var(--card-bg);border:1px solid var(--line-soft);box-shadow:var(--lift);border-radius:12px;padding:11px 13px;margin-bottom:0}
+.req-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.req-name{font:700 14.5px var(--font-display);color:var(--ink);letter-spacing:-.005em}
+.req-sub{font-size:11px;color:var(--ink-faint);margin-top:1px}
+.req-section{margin-top:7px;padding-top:7px;border-top:1px solid var(--line-soft)}
+.req-label{font:600 9px var(--font-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--ink-faint);margin-bottom:3px}
+.req-body{font-size:12px;color:var(--ink-dim);line-height:1.35}
+.req-actions{display:flex;flex-wrap:wrap;gap:3px 12px;margin-top:8px;padding-top:7px;border-top:1px solid var(--line-soft)}
+.req-actions button,.req-actions a{background:none;border:none;padding:2px 0;font:600 11.5px var(--font-body);color:var(--ink-dim);cursor:pointer;text-decoration:none}
+.req-actions button:hover,.req-actions a:hover{color:var(--ink)}
+.req-actions .req-primary{color:var(--accent)}
+.req-actions .req-danger{color:var(--accent)}
+
+.price-grid{display:flex;flex-direction:column;gap:6px}
+.price-card{background:var(--card-bg);border:1px solid var(--line-soft);box-shadow:var(--lift);border-radius:12px;padding:12px 13px}
+.price-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.price-name{font:700 15px var(--font-display);color:var(--ink)}
+.price-save{background:var(--wine);color:#fff;border:none;border-radius:999px;padding:5px 13px;font:600 11.5px var(--font-body);cursor:pointer;flex:none}
+.price-save:active{transform:scale(.96)}
+.price-note{font-size:11px;color:var(--ink-faint)}
+.price-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:7px;margin-top:9px}
+.price-field{background:var(--bg-raised);border-radius:9px;padding:7px 9px}
+.price-field label{display:block;font:600 9px var(--font-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--ink-faint);margin-bottom:2px}
+.price-field .pf-row{display:flex;align-items:baseline;gap:3px;font:700 16px var(--font-display);color:var(--ink)}
+.price-field input{border:none;background:none;font:700 16px var(--font-display);color:var(--ink);width:100%;padding:0;min-width:0}
+.price-field input:focus{outline:none}
+.price-field .pf-unit{font:500 10px var(--font-body);color:var(--ink-faint)}
 .ok-box{background:var(--bg-raised);border:1px solid var(--ink);border-radius:16px;padding:14px 16px;margin-top:12px;font-size:12.5px;line-height:1.6}
 .ok-box b{word-break:break-word}
 .doodle-empty{padding:24px 0}
@@ -1029,20 +1076,22 @@ async function loadProfiles() {
   const { data, error } = await sb.rpc('admin_list_profiles', {});
   if (error) { el.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
   if (!data || !data.length) { el.innerHTML = emptyDoodle('No profiles yet.'); return; }
-  const rows = data.map((p) => `
-    <tr>
-      <td data-label="Name"><b>${esc(p.name)}</b>${p.business_name ? '<br><span style="color:var(--ink-faint)">' + esc(p.business_name) + '</span>' : ''}${p.is_client ? '<br><span class="status-pill">client</span>' : ''}</td>
-      <td data-label="Contact">${esc(p.phone || '')}<br>${esc(p.contact_email || p.login_email || '')}</td>
-      <td data-label="Type">${esc(p.business_type || '&mdash;')}${p.niche ? '<br>' + esc(p.niche) : ''}</td>
-      <td data-label="City">${esc(p.city || '&mdash;')}</td>
-      <td data-label="Size">${p.outlets == null ? '&mdash;' : esc(p.outlets) + ' outlet(s)'}${p.staff_count == null ? '' : '<br>' + esc(p.staff_count) + ' staff'}</td>
-      <td data-label="Needs">${(p.products || []).map((k) => `<span class="feature-tag">${esc(PROFILE_PRODUCT_LABEL[k] || k)}</span>`).join('') || '&mdash;'}${p.current_software ? '<br>Uses: ' + esc(p.current_software) : ''}${p.notes ? '<br>' + esc(p.notes) : ''}</td>
-      <td data-label="Start">${esc(START_LABEL[p.start_when] || '&mdash;')}</td>
-    </tr>`).join('');
-  el.innerHTML = `<div class="admin-table-wrap"><table class="admin-table">
-    <tr><th>Name</th><th>Contact</th><th>Type</th><th>City</th><th>Size</th><th>Needs</th><th>Start</th></tr>
-    ${rows}
-  </table></div>`;
+  const cards = data.map((p) => {
+    const needs = (p.products || []).map((k) => `<span class="feature-tag">${esc(PROFILE_PRODUCT_LABEL[k] || k)}</span>`).join('') || '&mdash;';
+    return `
+    <div class="req-card">
+      <div class="req-head">
+        <div>
+          <div class="req-name">${esc(p.name)}${p.business_name ? ' &middot; ' + esc(p.business_name) : ''}</div>
+          <div class="req-sub">${esc(p.phone || '')}${p.phone && (p.contact_email || p.login_email) ? ' &middot; ' : ''}${esc(p.contact_email || p.login_email || '')}</div>
+        </div>
+        ${p.is_client ? '<span class="status-pill status-active">client</span>' : ''}
+      </div>
+      <div class="req-section req-body">${[p.business_type, p.niche, p.city, p.outlets == null ? null : p.outlets + ' outlet(s)', p.staff_count == null ? null : p.staff_count + ' staff', START_LABEL[p.start_when]].filter(Boolean).map(esc).join(' &middot; ') || '&mdash;'}</div>
+      <div class="req-section">${needs}${p.current_software ? '<div class="req-body" style="margin-top:4px">Uses: ' + esc(p.current_software) + '</div>' : ''}${p.notes ? '<div class="req-body" style="margin-top:4px">' + esc(p.notes) + '</div>' : ''}</div>
+    </div>`;
+  }).join('');
+  el.innerHTML = `<div class="req-grid">${cards}</div>`;
 }
 
 async function permanentDelete(kind, id, label) {
@@ -1060,25 +1109,25 @@ async function loadLeads() {
   if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
   if (!data || !data.length) { listEl.innerHTML = emptyDoodle('No leads yet.'); return; }
   const rows = data.slice().reverse().map((l) => `
-    <tr data-id="${l.id}">
-      <td data-label="Name"><b>${esc(l.name)}</b>${l.business ? '<br><span style="color:var(--ink-faint)">' + esc(l.business) + '</span>' : ''}</td>
-      <td data-label="Contact">${esc(l.contact)}</td>
-      <td data-label="Niche">${esc(l.niche || '&mdash;')}</td>
-      <td data-label="Message">${esc(l.message || '')}</td>
-      <td data-label="Status"><span class="status-pill ${l.status === 'new' ? 'status-new' : ''}">${esc(l.status)}</span></td>
-      <td class="row-actions">
-        <button class="btn btn-ghost" data-use>Use for onboarding</button>
-        <button class="btn btn-ghost" data-demo>Copy demo link</button>
-        ${STATUS_NEXT[l.status] ? `<button class="btn btn-ghost" data-advance="${STATUS_NEXT[l.status]}">Mark ${STATUS_NEXT[l.status]}</button>` : ''}
-        <button class="btn btn-ghost" data-del style="color:var(--accent);border-color:var(--accent)">Delete</button>
-      </td>
-    </tr>`).join('');
-  listEl.innerHTML = `<div class="admin-table-wrap"><table class="admin-table">
-    <tr><th>Name</th><th>Contact</th><th>Niche</th><th>Message</th><th>Status</th><th></th></tr>
-    ${rows}
-  </table></div>`;
+    <div class="req-card" data-id="${l.id}">
+      <div class="req-head">
+        <div>
+          <div class="req-name">${esc(l.name)}${l.business ? ' &middot; ' + esc(l.business) : ''}</div>
+          <div class="req-sub">${esc(l.contact)}${l.niche ? ' &middot; ' + esc(l.niche) : ''}</div>
+        </div>
+        <span class="status-pill ${l.status === 'new' ? 'status-new' : ''}">${esc(l.status)}</span>
+      </div>
+      ${l.message ? `<div class="req-section req-body">${esc(l.message)}</div>` : ''}
+      <div class="req-actions">
+        <button data-use>Use for onboarding</button>
+        <button data-demo>Copy demo link</button>
+        ${STATUS_NEXT[l.status] ? `<button data-advance="${STATUS_NEXT[l.status]}">Mark ${STATUS_NEXT[l.status]}</button>` : ''}
+        <button data-del class="req-danger">Delete</button>
+      </div>
+    </div>`).join('');
+  listEl.innerHTML = `<div class="req-grid">${rows}</div>`;
 
-  listEl.querySelectorAll('tr[data-id]').forEach((tr) => {
+  listEl.querySelectorAll('[data-id]').forEach((tr) => {
     const id = tr.dataset.id;
     const lead = data.find((l) => l.id === id);
     const useBtn = tr.querySelector('[data-use]');
@@ -1119,32 +1168,27 @@ async function loadSignupRequests() {
     const services = Object.entries(r.features || {}).filter(([, on]) => on)
       .map(([k]) => `<span class="feature-tag ${featTone(k)}">${esc(FEATURE_LABEL[k] || k)}</span>`).join('') || '&mdash;';
     return `
-    <tr data-id="${r.id}">
-      <td data-label="Business">
-        <b>${esc(r.business_name)}</b><br><span style="color:var(--ink-faint)">${esc(r.slug)}.auzslab.in</span><br>
-        <span style="color:var(--ink-faint)">${esc(NICHE_LABEL[r.niche] || r.niche || 'Type not given')}${r.address ? ' &middot; ' + esc(r.address) : ''}</span>
-      </td>
-      <td data-label="Contact">
-        <b>${r.contact_name ? esc(r.contact_name) : '&mdash;'}</b><br>
-        <span style="color:var(--ink-faint)">${r.phone ? esc(r.phone) : 'No phone given'}</span>
-      </td>
-      <td data-label="Requested">${services}</td>
-      <td data-label="Notes">${r.notes ? esc(r.notes) : '&mdash;'}</td>
-      <td class="row-actions">
-        <button class="btn btn-primary" data-approve>Approve</button>
-        <button class="btn btn-ghost" data-demo>Copy demo link</button>
-        <button class="btn btn-ghost" data-decline>Decline</button>
-        <button class="btn btn-ghost" data-del style="color:var(--accent);border-color:var(--accent)">Delete</button>
-      </td>
-    </tr>`;
+    <div class="req-card" data-id="${r.id}">
+      <div class="req-head">
+        <div>
+          <div class="req-name">${esc(r.business_name)}</div>
+          <div class="req-sub">${esc(r.slug)}.auzslab.in &middot; ${esc(NICHE_LABEL[r.niche] || r.niche || 'Type not given')}</div>
+        </div>
+      </div>
+      <div class="req-section req-body">${r.contact_name ? '<b style="color:var(--ink)">' + esc(r.contact_name) + '</b> &middot; ' : ''}${r.phone ? esc(r.phone) : 'No phone given'}${r.address ? ' &middot; ' + esc(r.address) : ''}</div>
+      <div class="req-section">${services}${r.notes ? '<div class="req-body" style="margin-top:4px">' + esc(r.notes) + '</div>' : ''}</div>
+      <div class="req-actions">
+        <button class="req-primary" data-approve>Approve</button>
+        <button data-demo>Copy demo link</button>
+        <button data-decline>Decline</button>
+        <button data-del class="req-danger">Delete</button>
+      </div>
+    </div>`;
   }).join('');
 
-  listEl.innerHTML = `<div class="admin-table-wrap"><table class="admin-table">
-    <tr><th>Business</th><th>Contact</th><th>Requested</th><th>Notes</th><th></th></tr>
-    ${rows}
-  </table></div>`;
+  listEl.innerHTML = `<div class="req-grid">${rows}</div>`;
 
-  listEl.querySelectorAll('tr[data-id]').forEach((tr) => {
+  listEl.querySelectorAll('[data-id]').forEach((tr) => {
     const id = tr.dataset.id;
     const req = pending.find((p) => p.id === id);
     const demoBtn = tr.querySelector('[data-demo]');
@@ -1179,24 +1223,25 @@ async function loadAddonRequests() {
     const services = Object.entries(r.features || {}).filter(([, on]) => on)
       .map(([k]) => `<span class="feature-tag ${featTone(k)}">${esc(FEATURE_LABEL[k] || k)}</span>`).join('') || '&mdash;';
     return `
-    <tr data-id="${r.id}">
-      <td data-label="Client"><b>${esc(r.tenant_name)}</b><br><span style="color:var(--ink-faint)">${esc(r.tenant_slug)}.auzslab.in</span></td>
-      <td data-label="Requested">${services}</td>
-      <td data-label="Notes">${r.notes ? esc(r.notes) : '&mdash;'}</td>
-      <td class="row-actions">
-        <button class="btn btn-primary" data-approve>Approve</button>
-        <button class="btn btn-ghost" data-decline>Decline</button>
-        <button class="btn btn-ghost" data-del style="color:var(--accent);border-color:var(--accent)">Delete</button>
-      </td>
-    </tr>`;
+    <div class="req-card" data-id="${r.id}">
+      <div class="req-head">
+        <div>
+          <div class="req-name">${esc(r.tenant_name)}</div>
+          <div class="req-sub">${esc(r.tenant_slug)}.auzslab.in</div>
+        </div>
+      </div>
+      <div class="req-section">${services}${r.notes ? '<div class="req-body" style="margin-top:4px">' + esc(r.notes) + '</div>' : ''}</div>
+      <div class="req-actions">
+        <button class="req-primary" data-approve>Approve</button>
+        <button data-decline>Decline</button>
+        <button data-del class="req-danger">Delete</button>
+      </div>
+    </div>`;
   }).join('');
 
-  listEl.innerHTML = `<div class="admin-table-wrap"><table class="admin-table">
-    <tr><th>Client</th><th>Requested</th><th>Notes</th><th></th></tr>
-    ${rows}
-  </table></div>`;
+  listEl.innerHTML = `<div class="req-grid">${rows}</div>`;
 
-  listEl.querySelectorAll('tr[data-id]').forEach((tr) => {
+  listEl.querySelectorAll('[data-id]').forEach((tr) => {
     const id = tr.dataset.id;
     tr.querySelector('[data-approve]').onclick = async () => {
       const { error: appErr } = await sb.rpc('approve_addon_request', { p_request_id: id });
@@ -1210,7 +1255,7 @@ async function loadAddonRequests() {
       if (decErr) { alert(decErr.message); return; }
       loadAddonRequests();
     };
-    tr.querySelector('[data-del]').onclick = async () => { const nm = tr.querySelector('td b')?.textContent || 'this request'; if (await permanentDelete('addon_request', id, nm)) loadAddonRequests(); };
+    tr.querySelector('[data-del]').onclick = async () => { const nm = tr.querySelector('.req-name')?.textContent || 'this request'; if (await permanentDelete('addon_request', id, nm)) loadAddonRequests(); };
   });
 }
 
@@ -1272,33 +1317,30 @@ async function loadPricing() {
   const { data, error } = await sb.rpc('public_product_prices', {});
   if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
 
-  const rows = (data || []).map((p) => `
-    <tr data-key="${esc(p.key)}">
-      <td data-label="Product"><b>${esc(p.label)}</b></td>
-      <td data-label="Monthly price">
-        ${['crm', 'billing', 'inventory'].includes(p.key)
-          ? '<span style="color:var(--ink-faint)">Included in AUZsPOS and the other apps &mdash; not sold separately (stays &#8377;0)</span>'
-          : `<span style="display:inline-flex;align-items:center;gap:6px">
-          &#8377; <input class="input" data-price type="number" min="0" step="1" value="${Number(p.monthly_price)}" style="width:100px">
-          <span style="color:var(--ink-faint)">/mo</span>
-        </span>`}
-      </td>
-      <td data-label="Whole year">
-        ${['crm', 'billing', 'inventory'].includes(p.key) ? '' : `<span style="display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap">
-          &#8377; <input class="input" data-yearly type="number" min="0" step="1" value="${Number(p.yearly_price || 0)}" style="width:100px" title="Price if paid for the whole year (0 = no yearly option)">
-          <span style="color:var(--ink-faint)">/yr, then</span>
-          &#8377; <input class="input" data-renew type="number" min="0" step="1" value="${Number(p.renewal_yearly_price || 0)}" style="width:100px" title="Yearly renewal price from year two (0 = same as year one)">
-        </span>`}
-      </td>
-      <td class="row-actions">${['crm', 'billing', 'inventory'].includes(p.key) ? '' : '<button class="btn btn-primary" data-save>Save</button>'}</td>
-    </tr>`).join('');
+  const INCLUDED = ['crm', 'billing', 'inventory'];
+  const cards = (data || []).map((p) => {
+    if (INCLUDED.includes(p.key)) return `
+      <div class="price-card" data-key="${esc(p.key)}">
+        <div class="price-head"><div class="price-name">${esc(p.label)}</div></div>
+        <div class="price-note" style="margin-top:4px">Included in AUZsPOS and the other apps &mdash; not sold separately (stays &#8377;0)</div>
+      </div>`;
+    return `
+    <div class="price-card" data-key="${esc(p.key)}">
+      <div class="price-head">
+        <div class="price-name">${esc(p.label)}</div>
+        <button class="price-save" data-save>Save</button>
+      </div>
+      <div class="price-fields">
+        <div class="price-field"><label>Monthly</label><div class="pf-row">&#8377;<input data-price type="number" min="0" step="1" value="${Number(p.monthly_price)}"><span class="pf-unit">/mo</span></div></div>
+        <div class="price-field"><label>Whole year</label><div class="pf-row">&#8377;<input data-yearly type="number" min="0" step="1" value="${Number(p.yearly_price || 0)}" title="Price if paid for the whole year (0 = no yearly option)"><span class="pf-unit">/yr</span></div></div>
+        <div class="price-field"><label>After year 1</label><div class="pf-row">&#8377;<input data-renew type="number" min="0" step="1" value="${Number(p.renewal_yearly_price || 0)}" title="Yearly renewal price from year two (0 = same as year one)"><span class="pf-unit">/yr</span></div></div>
+      </div>
+    </div>`;
+  }).join('');
 
-  listEl.innerHTML = `<div class="admin-table-wrap"><table class="admin-table">
-    <tr><th>Product</th><th>Monthly price</th><th>Whole year (year one, then renewal)</th><th></th></tr>
-    ${rows}
-  </table></div>`;
+  listEl.innerHTML = `<div class="price-grid">${cards}</div>`;
 
-  listEl.querySelectorAll('tr[data-key]').forEach((tr) => {
+  listEl.querySelectorAll('[data-key]').forEach((tr) => {
     const saveBtn = tr.querySelector('[data-save]'); if (!saveBtn) return;
     saveBtn.onclick = async () => {
       const price = Number(tr.querySelector('[data-price]').value);
@@ -1539,21 +1581,22 @@ function loadSetupQueue() {
   });
   if (!pending.length) { listEl.innerHTML = emptyDoodle('Nothing waiting -- every client has been set up and handed over.'); return; }
 
-  listEl.innerHTML = pending.map((c) => {
+  listEl.innerHTML = '<div class="req-grid">' + pending.map((c) => {
     const services = Object.entries(c.features || {}).filter(([, on]) => on)
       .map(([k]) => `<span class="feature-tag ${featTone(k)}">${esc(FEATURE_LABEL[k] || k)}</span>`).join('') || '&mdash;';
     return `
-    <div class="card" data-id="${c.id}" style="max-width:640px;margin-bottom:12px">
-      <b>${esc(c.name)}</b> &mdash; <span style="color:var(--ink-faint)">${esc(c.slug)}.auzslab.in</span><br>
-      <span style="color:var(--ink-faint)">${esc(NICHE_LABEL[c.niche] || c.niche)}</span> &middot; ${services}
-      <div class="row-actions" style="margin-top:10px">
-        <button class="btn btn-ghost" data-login-as>Log in as owner (setup)</button>
-        <button class="btn btn-primary" data-deliver>Mark set up &amp; hand over</button>
-        <button class="btn btn-ghost" data-delete-setup style="color:var(--accent);border-color:var(--accent)">Delete</button>
+    <div class="req-card" data-id="${c.id}" style="max-width:640px">
+      <div class="req-name">${esc(c.name)}</div>
+      <div class="req-sub">${esc(c.slug)}.auzslab.in &middot; ${esc(NICHE_LABEL[c.niche] || c.niche)}</div>
+      <div class="req-section">${services}</div>
+      <div class="req-actions">
+        <button data-login-as>Log in as owner (setup)</button>
+        <button class="req-primary" data-deliver>Mark set up &amp; hand over</button>
+        <button data-delete-setup class="req-danger">Delete</button>
       </div>
       <div data-loginbox></div>
     </div>`;
-  }).join('');
+  }).join('') + '</div>';
 
   listEl.querySelectorAll('[data-login-as]').forEach((btn) => {
     btn.onclick = async () => {
@@ -1774,22 +1817,31 @@ async function loadUsers(query) {
   usersCache = data || [];
   if (!usersCache.length) { listEl.innerHTML = emptyDoodle(query ? 'No users match that search.' : 'No users yet.'); return; }
 
-  const rows = usersCache.map((u) => `
-    <tr data-id="${u.id}">
-      <td data-label="User"><b>${esc(u.name || u.email)}</b><br><span style="color:var(--ink-faint)">${esc(u.email)}</span></td>
-      <td data-label="Business">${u.tenant_name ? `<b>${esc(u.tenant_name)}</b><br><span style="color:var(--ink-faint)">${esc(u.tenant_slug)}.auzslab.in</span>` : '&mdash;'}</td>
-      <td data-label="Role">${u.role ? esc(u.role) : (u.is_platform_admin ? 'platform admin' : '&mdash;')}</td>
-      <td data-label="Status">${u.disabled_at ? '<span class="status-pill status-suspended">suspended</span>' : u.deleted_at ? '<span class="status-pill status-cancelled">deleted</span>' : '<span class="status-pill status-active">active</span>'}</td>
-      <td class="row-actions"><button class="btn btn-ghost" data-view>View</button></td>
-    </tr>`).join('');
+  const initials = (s) => (s || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+  const AVATAR_TONES = ['var(--wine)', 'var(--sage)', 'var(--slate)', '#8a6a2c', 'var(--amber)'];
+  const tone = (s) => AVATAR_TONES[[...String(s || '')].reduce((a, c) => a + c.charCodeAt(0), 0) % AVATAR_TONES.length];
+  const rows = usersCache.map((u) => {
+    const live = !u.disabled_at && !u.deleted_at;
+    const statusPill = u.disabled_at ? '<span class="status-pill status-suspended">suspended</span>' : u.deleted_at ? '<span class="status-pill status-cancelled">deleted</span>' : '';
+    return `
+    <div class="list-card" data-id="${u.id}" style="cursor:pointer">
+      <div class="lc-avatar" style="background:${tone(u.email)}">${esc(initials(u.name || u.email))}</div>
+      <div class="lc-body">
+        <div class="lc-name">${esc(u.name || u.email)}${live ? '<span class="lc-dot" title="active"></span>' : ''}</div>
+        <div class="lc-sub">${esc(u.email)}</div>
+        <div class="lc-meta">${u.tenant_name ? esc(u.tenant_name) + ' &middot; ' : ''}${u.role ? esc(u.role) : (u.is_platform_admin ? 'platform admin' : '&mdash;')}</div>
+      </div>
+      <div class="lc-side">
+        ${statusPill}
+        <svg class="lc-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+    </div>`;
+  }).join('');
 
-  listEl.innerHTML = `<div class="admin-table-wrap"><table class="admin-table">
-    <tr><th>User</th><th>Business</th><th>Role</th><th>Status</th><th></th></tr>
-    ${rows}
-  </table></div>`;
+  listEl.innerHTML = `<div class="lc-list">${rows}</div>`;
 
-  listEl.querySelectorAll('[data-view]').forEach((btn) => {
-    btn.onclick = () => openUserModal(btn.closest('tr').dataset.id);
+  listEl.querySelectorAll('[data-id]').forEach((row) => {
+    row.onclick = () => openUserModal(row.dataset.id);
   });
 }
 
@@ -1806,20 +1858,22 @@ async function loadSalesmen() {
   const { data, error } = await sb.rpc('admin_list_salesmen');
   if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
   if (!data || !data.length) { listEl.innerHTML = emptyDoodle('No salesmen yet -- add one above once they have signed up.'); return; }
-  listEl.innerHTML = `<div class="admin-table-wrap"><table class="admin-table">
-    <tr><th>Name</th><th>Email</th><th>Trials created</th><th>Status</th><th></th></tr>
-    ${data.map((s) => `
-      <tr data-id="${s.id}">
-        <td data-label="Name">${esc(s.name || '&mdash;')}</td>
-        <td data-label="Email">${esc(s.email)}</td>
-        <td data-label="Trials created">${s.trial_count}</td>
-        <td data-label="Status">${s.active ? '<span class="status-pill status-active">active</span>' : '<span class="status-pill status-suspended">off</span>'}</td>
-        <td class="row-actions"><button class="btn btn-ghost" data-toggle="${s.active ? 'off' : 'on'}">${s.active ? 'Turn off' : 'Turn on'}</button></td>
-      </tr>`).join('')}
-  </table></div>`;
+  listEl.innerHTML = `<div class="lc-list">${data.map((s) => `
+      <div class="list-card" data-id="${s.id}">
+        <div class="lc-avatar">${esc((s.name || s.email || '?').trim()[0].toUpperCase())}</div>
+        <div class="lc-body">
+          <div class="lc-name">${esc(s.name || '&mdash;')}</div>
+          <div class="lc-sub">${esc(s.email)}</div>
+          <div class="lc-meta">${s.trial_count} trial${s.trial_count === 1 ? '' : 's'} created</div>
+        </div>
+        <div class="lc-side">
+          ${s.active ? '<span class="status-pill status-active">active</span>' : '<span class="status-pill status-suspended">off</span>'}
+          <button class="lc-action" data-toggle="${s.active ? 'off' : 'on'}">${s.active ? 'Turn off' : 'Turn on'}</button>
+        </div>
+      </div>`).join('')}</div>`;
   listEl.querySelectorAll('[data-toggle]').forEach((btn) => {
     btn.onclick = async () => {
-      const id = btn.closest('tr').dataset.id, turnOn = btn.dataset.toggle === 'on';
+      const id = btn.closest('[data-id]').dataset.id, turnOn = btn.dataset.toggle === 'on';
       const { error: e2 } = await sb.rpc('admin_set_salesman_active', { p_id: id, p_active: turnOn });
       if (e2) { alert(e2.message); return; }
       loadSalesmen();
