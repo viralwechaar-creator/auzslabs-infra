@@ -155,6 +155,22 @@ class _HomeState extends State<Home> {
   }
 
   void refresh(VoidCallback f) => setState(f);
+  Future<void> _syncInfo() async {
+    final r = s.repo!;
+    unawaited(s.sync());
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Sync'),
+        content: Text('Waiting to send: ${r.pending}\n'
+            '${r.lastOk != null ? 'Last synced: ${r.lastOk!.toLocal().toString().substring(11, 19)}' : 'Not synced yet in this session'}\n'
+            '${r.lastError != null ? '\nProblem: ${r.lastError}' : 'No problems'}\n\nSyncing again now…'),
+        actions: [TextButton(onPressed: () => Navigator.pop(c), child: const Text('OK'))],
+      ),
+    );
+  }
+
   void _toast(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
@@ -170,7 +186,7 @@ class _HomeState extends State<Home> {
       appBar: AppBar(
         title: Text('${s.cfg['name']}'),
         actions: [
-          Center(child: Padding(padding: const EdgeInsets.only(right: 4), child: Text(s.syncing ? 'Syncing…' : s.repo!.pending > 0 ? 'Not synced (${s.repo!.pending})' : 'Synced', style: TextStyle(fontSize: 12, color: s.repo!.pending > 0 ? Colors.orange.shade800 : Colors.green.shade700)))),
+          Center(child: InkWell(onTap: _syncInfo, child: Padding(padding: const EdgeInsets.all(8), child: Text(s.syncing ? 'Syncing…' : s.repo!.lastError != null ? 'Sync problem' : s.repo!.pending > 0 ? 'Not synced (${s.repo!.pending})' : 'Synced', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: (s.repo!.pending > 0 || s.repo!.lastError != null) ? Colors.orange.shade800 : Colors.green.shade700))))),
           IconButton(icon: const Icon(Icons.sync), onPressed: s.sync),
           PopupMenuButton<String>(onSelected: (_) => s.signOut(), itemBuilder: (_) => const [PopupMenuItem(value: 'out', child: Text('Sign out'))]),
         ],

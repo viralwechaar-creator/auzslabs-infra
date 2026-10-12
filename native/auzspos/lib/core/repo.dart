@@ -32,6 +32,7 @@ class Repo {
   bool _busy = false, _again = false;
   int pending = 0;
   String? lastError;
+  DateTime? lastOk;
 
   Future<void> load() async {
     byId.clear();
@@ -105,6 +106,7 @@ class Repo {
         final since = await store.meta('since') ?? '1970-01-01T00:00:00Z';
         final rows = await api.recordsSince(since);
         for (final row in rows) {
+          if (row['data'] is! Map) continue; // a record that is not an object cannot be shown: skip it, never block the rest
           final id = '${row['id']}';
           if (await store.outItem(id) != null) continue; // our own unsent change wins until it is sent
           final ex = byId[id];
@@ -120,9 +122,14 @@ class Repo {
     } on ApiError catch (e) {
       error = e.message;
       authExpired = e.isAuth;
+    } catch (e) {
+      error = 'Sync problem: $e'; // anything unexpected must not leave the sync stuck for ever
     }
-    pending = (await store.outbox()).length;
+    try {
+      pending = (await store.outbox()).length;
+    } catch (_) {}
     lastError = error;
+    if (error == null) lastOk = DateTime.now();
     _busy = false;
     if (pushed > 0 || pulled > 0 || rejected.isNotEmpty) onChange?.call();
     if (_again && error == null) {
