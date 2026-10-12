@@ -40,6 +40,11 @@ a{color:inherit;text-decoration:none}
 .ib .dot{position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--red);border:2px solid var(--card);box-sizing:content-box}
 .outlet{display:flex;align-items:center;gap:10px;padding:0 14px;height:44px;border-radius:13px;background:var(--card);border:1px solid var(--sep);font-weight:600;min-width:0}
 .outlet span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+.back-btn{flex:0 0 auto}
+.crumb{display:flex;align-items:center;gap:6px;min-width:0;flex:0 1 auto;overflow:hidden;white-space:nowrap;font-size:13px;color:var(--label2)}
+.crumb span:first-child{overflow:hidden;text-overflow:ellipsis}
+.crumb .sep{opacity:.5}
+.crumb b{color:var(--label);font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis}
 .open-p{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 12px;border-radius:99px;background:var(--green-bg);color:var(--green);font-size:12px;font-weight:600}
 .open-p i{width:8px;height:8px;border-radius:50%;background:var(--green)}
 .sp{flex:1}
@@ -69,15 +74,22 @@ a{color:inherit;text-decoration:none}
 .chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:99px;background:var(--green-bg);color:var(--green);margin-left:10px}
 .chip.dn{background:var(--red-bg);color:var(--red)}
 .big{font-size:38px;font-weight:800;letter-spacing:-.03em;line-height:1.05;margin:8px 0 4px}
+/* Visual hierarchy on Dashboard: Today's Revenue is the dominant figure (big-rev),
+   Total Orders and the payment strip read as clearly secondary (big-sec, .sec-card). */
+.big-rev{font-size:50px}
+.big-sec{font-size:24px}
+.sec-card{opacity:.92}
+.dash-card,.rev-card{padding:14px 16px}
+.dash-card .hd,.rev-card .hd{margin-bottom:8px}
 .rev{display:grid;grid-template-columns:1fr 1.1fr;gap:6px;align-items:end}
 .rev svg{width:100%;height:90px;display:block}
 .rev .big{white-space:nowrap}
-.pay{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;background:var(--card2);border:1px solid var(--sep);border-radius:var(--r);padding:8px}
-.pt{border-radius:14px;padding:14px 14px 12px;background:var(--card2);border:1px solid var(--sep);min-width:0}
-.pt .tile{margin-bottom:12px}
-.pt .l{font-size:13.5px;color:var(--label2)}
-.pt .v{font-size:20px;font-weight:700;margin:4px 0 2px;letter-spacing:-.02em}
-.pt .p{font-size:12px;color:var(--label2)}
+.pay{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;background:var(--card2);border:1px solid var(--sep);border-radius:var(--r);padding:8px}
+.pt{border-radius:14px;padding:12px 12px 10px;background:var(--card2);border:1px solid var(--sep);min-width:0}
+.pt .tile{margin-bottom:10px}
+.pt .l{font-size:12.5px;color:var(--label2)}
+.pt .v{font-size:16px;font-weight:700;margin:4px 0 2px;letter-spacing:-.02em}
+.pt .p{font-size:11.5px;color:var(--label2)}
 .tile{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex:0 0 30px}
 .t-g{background:var(--green-bg);color:var(--green)}
 .t-b{background:var(--accent-soft);color:var(--accent-text)}
@@ -312,6 +324,9 @@ body.qr-printing .qr-print-sheet{display:block!important}
   .top{gap:8px;padding:0 12px}
   .top .ib[title="Device mapping"],.top .ib[title="Configuration"],.top .ib[title="Quick add"]{display:none}
   .top .outlet{flex:0 1 auto;padding:0 10px}.top .outlet span{max-width:96px}
+  .crumb span:first-child,.crumb .sep{display:none}
+  .crumb b{max-width:92px}
+  .big-rev{font-size:40px}
 }
 /* medium (600-899px): two columns of cards */
 @media (min-width:600px){

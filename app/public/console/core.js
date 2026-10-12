@@ -20,7 +20,7 @@ const P={
  moon:'<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/>',bell:'<path d="M12 3a5 5 0 0 0-5 5v3.5c0 1-.4 2-1.2 2.7L5 15h14l-.8-.8A4 4 0 0 1 17 11.5V8a5 5 0 0 0-5-5Z"/><path d="M10 18a2 2 0 0 0 4 0"/>',gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',col:'<path d="M15 6l-6 6 6 6"/><path d="M5 5v14"/>',cal:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>',ref:'<path d="M20 12a8 8 0 1 1-2.5-5.8L20 8"/><path d="M20 3v5h-5"/>',chr:'<path d="M9 6l6 6-6 6"/>',chd:'<path d="M6 9l6 6 6-6"/>',bolt:'<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
  cash:'<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/>',card:'<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 10h18"/>',other:'<circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/>',unpaid:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6"/>',dine:'<path d="M4 3v7a2 2 0 0 0 4 0V3M6 10v11M16 3c-2 2-2 8 0 9v9"/>',take:'<path d="M6 7h12l-1 13H7z"/><path d="M9 7a3 3 0 0 1 6 0"/>',deliv:'<circle cx="6" cy="17" r="2.5"/><circle cx="18" cy="17" r="2.5"/><path d="M8 17h7l-3-8H8M12 9h4l2 5"/>',
  exp:'<path d="M12 3v12M8 11l4 4 4-4M5 20h14"/>',wd:'<path d="M12 21V9M8 13l4-4 4 4M5 4h14"/>',top:'<path d="M12 5v14M5 12h14"/>',cxl:'<circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/>',mod:'<path d="M4 20l4-1 11-11-3-3L5 16z"/>',shift:'<path d="M4 8h13l-3-3M20 16H7l3 3"/>',prn:'<path d="M7 8V3h10v5M7 17H5v-7h14v7h-2M7 14h10v7H7z"/>',wv:'<path d="M5 12l5 5L20 7"/>',
- spark:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M18 16l.8 2.2L21 19l-2.2.8L18 22l-.8-2.2L15 19l2.2-.8z"/>',arr:'<path d="M5 12h14M13 6l6 6-6 6"/>',trend:'<path d="M4 17l6-6 4 4 6-8"/><path d="M15 7h5v5"/>',menu3:'<path d="M4 7h16M4 12h16M4 17h16"/>',store:'<path d="M3 9l1.5-5h15L21 9M4 9v11h16V9"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/>',
+ spark:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M18 16l.8 2.2L21 19l-2.2.8L18 22l-.8-2.2L15 19l2.2-.8z"/>',arr:'<path d="M5 12h14M13 6l6 6-6 6"/>',back:'<path d="M19 12H5M11 18l-6-6 6-6"/>',trend:'<path d="M4 17l6-6 4 4 6-8"/><path d="M15 7h5v5"/>',menu3:'<path d="M4 7h16M4 12h16M4 17h16"/>',store:'<path d="M3 9l1.5-5h15L21 9M4 9v11h16V9"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/>',
  plus:'<path d="M12 5v14M5 12h14"/>',srch:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',edit:'<path d="M4 20l4-1 11-11-3-3L5 16z"/>',trash:'<path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/>',dl:'<path d="M12 4v11M8 11l4 4 4-4M5 20h14"/>',up:'<path d="M12 20V9M8 13l4-4 4 4M5 4h14"/>',search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',wa:'<path d="M4 20l1.3-4.2A8 8 0 1 1 8.4 18.8z"/><path d="M9 9c0 3 3 6 6 6l1-2-2-1-1 .8c-.9-.4-1.6-1.100-2-2l.8-1-1-2z"/>',link:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.700l1-1"/>',
  gift:'<rect x="4" y="9" width="16" height="11" rx="1"/><path d="M4 9h16M12 9v11"/><path d="M8 9c-1.5 0-3-1-3-3s1.5-2 3-1c1 .6 2 2 3 4zM16 9c1.5 0 3-1 3-3s-1.5-2-3-1c-1 .6-2 2-3 4z"/>',user:'<circle cx="12" cy="8" r="3.5"/><path d="M5 21a7 7 0 0 1 14 0"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',box:'<path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5"/>',tag:'<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.500" cy="8.500" r="1.200"/>',img:'<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/>',doc:'<path d="M7 3h8l4 4v14H7z"/><path d="M15 3v4h4M10 12h6M10 16h6"/>',lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',check:'<path d="M5 12l5 5L20 7"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>',printer:'<path d="M7 8V3h10v5M7 17H5v-7h14v7h-2M7 14h10v7H7z"/>'};
 const ic=(n,s=18)=>{const e=document.createElement('span');e.style.cssText='display:inline-flex';e.innerHTML='<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 '+s+'px">'+(P[n]||'')+'</svg>';return e.firstChild};
@@ -182,6 +182,16 @@ const NAV=[
 ];
 const flatNav=()=>NAV.flatMap(n=>n[0]=='lbl'||n[0]=='href'?[]:n[0].startsWith('g:')?n[3].map(c=>[c[0],c[1],n[1]]):[[n[0],n[1],'']]);
 const titleOf=p=>{const f=flatNav().find(x=>x[0]==p);return f?f[1]:'Dashboard'};
+const groupOf=p=>NAV.find(n=>n[0].startsWith('g:')&&n[3].some(c=>c[0]==p));
+const groupLabelOf=p=>{const g=groupOf(p);return g?g[1]:null};
+function goBack(){
+ // Prefer the browser's own history (every go() call pushes a real hash entry),
+ // so "back" lands on whatever the person actually came from -- their last
+ // position inside the current group, a different group, or Dashboard.
+ // Fall back to Dashboard only when there is nothing to go back to (e.g. the
+ // page was opened directly on a deep link with no history yet).
+ if(history.length>1){history.back()}else{go('dashboard')}
+}
 function go(p){S.page=p;S.sideOpen=false;S.q='';S.f={};const g=NAV.find(n=>n[0].startsWith('g:')&&n[3].some(c=>c[0]==p));if(g)S.open[g[0]]=true;try{location.hash='#'+p}catch{}render();const c=$('.content');if(c)c.scrollTop=0}
 function sideNav(){
  const nav=h('div',{class:'nav'});
@@ -204,9 +214,12 @@ function outletModal(){
   h('div',{class:'mf'},h('button',{class:'btn',onclick:()=>{c();go('mgmt/outlets')}},'Manage outlets'))])}
 function topBar(){
  const on=outletId()=='all'?'All outlets':outletNameOf(outletId());
+ const grp=groupLabelOf(S.page);
  return h('header',{class:'top'},
   h('button',{class:'ib menu-btn',onclick:()=>{S.sideOpen=!S.sideOpen;render()},'aria-label':'Menu'},ic('menu3',20)),
   h('button',{class:'ib col-btn',title:'Collapse sidebar',onclick:()=>{S.collapsed=!S.collapsed;render()}},ic('col',18)),
+  S.page!='dashboard'?h('button',{class:'ib back-btn',title:'Back',onclick:goBack,'aria-label':'Back'},ic('back',19)):null,
+  S.page!='dashboard'?h('div',{class:'crumb'},grp?h('span',{},grp):null,grp?h('span',{class:'sep'},'/'):null,h('b',{},titleOf(S.page))):null,
   h('button',{class:'outlet',onclick:outletModal},ic('store',18),h('span',{},on),ic('chd',16)),
   h('span',{class:'open-p'},h('i'),'Open'),h('div',{class:'sp'}),
   h('button',{class:'ib',title:'Device mapping',onclick:()=>go('mgmt/devices')},ic('dev',19)),
