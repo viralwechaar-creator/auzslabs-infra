@@ -145,3 +145,44 @@ String ledgerCsv(List<Map<String, dynamic>> rows) {
 
 /// "Who is shown as hindi/english" helper for server status words like in_repair.
 const repairStatuses = ['received', 'in_repair', 'ready', 'delivered', 'cancelled'];
+
+/// One day's takings for the cash count. Only sales that were paid and payments that settled dues count; a voided sale never does.
+/// Expected cash = cash sales + cash collected from customers - cash paid to vendors.
+class DayCash {
+  DayCash({this.cash = 0, this.upi = 0, this.card = 0, this.credit = 0, this.collected = 0, this.paidOut = 0, this.bills = 0});
+  double cash, upi, card, credit, collected, paidOut;
+  int bills;
+  double get expected => r2(cash + collected - paidOut);
+  double get total => r2(cash + upi + card);
+}
+
+DayCash dayCash(List<Map<String, dynamic>> sales, List<Map<String, dynamic>> payments, String day) {
+  bool on(dynamic iso) {
+    final d = DateTime.tryParse('${iso ?? ''}')?.toLocal();
+    return d != null && ymd(d) == day;
+  }
+
+  final c = DayCash();
+  for (final s in sales) {
+    if (s['voided'] == true || !on(s['created_at'])) continue;
+    c.bills++;
+    final paid = n(s['paid']);
+    switch ('${s['payment_mode'] ?? 'cash'}') {
+      case 'upi':
+        c.upi += paid;
+      case 'card':
+        c.card += paid;
+      case 'credit':
+        break;
+      default:
+        c.cash += paid;
+    }
+    c.credit += n(s['balance']);
+  }
+  for (final p in payments) {
+    if (!on(p['created_at']) || '${p['method'] ?? 'cash'}' != 'cash') continue;
+    if (p['kind'] == 'customer_due') c.collected += n(p['amount']);
+    if (p['kind'] == 'vendor_due') c.paidOut += n(p['amount']);
+  }
+  return c;
+}

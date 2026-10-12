@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' hide Text;
+import 'package:url_launcher/url_launcher.dart';
 import '../core/calc.dart';
 import '../core/session.dart';
 import 'ds.dart';
@@ -173,6 +174,7 @@ class _SettingsPageState extends State<SettingsPage> {
         Pad(Row(children: [
           Expanded(child: Sel('Receipt style', cur, [for (final o in _receiptStyles) (o.$1, tr(o.$2))], (v) => _save({'features': {'receiptStyle': v}}))),
         ])),
+        Group([Li('See how this style looks', sub: 'Opens a sample bill in your browser', icon: Icons.visibility_outlined, onTap: () => launchUrl(Uri.parse('${s.origin}/mobbill.html?sample=1&style=${Uri.encodeComponent(cur)}&shop=${Uri.encodeComponent('${s.settings['shopName'] ?? ''}')}'), mode: LaunchMode.externalApplication))]),
         Group([Li('Staff can see purchase rates', trailing: Switch(value: s.settings['staffSeePurchaseRates'] == true, onChanged: (v) => _save({'staffSeePurchaseRates': v})), chevron: false)]),
       ],
       if (s.can('mob_reports')) ...[

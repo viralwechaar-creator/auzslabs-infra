@@ -49,6 +49,23 @@ class _MorePageState extends State<MorePage> {
   void _site(String page) => launchUrl(Uri.https('auzslab.in', '/$page'), mode: LaunchMode.externalApplication);
   void _web(String page) => launchUrl(Uri.https('app.auzslab.in', '/$page'), mode: LaunchMode.externalApplication);
 
+  Future<void> _pickOutlet() async {
+    final cur = s.repo!.outlet;
+    final opts = [...s.outlets.map((o) => ('${o['id']}', '${o['name']}')), if (s.role == 'owner') ('all', 'All outlets')];
+    final id = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (c) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        for (final o in opts) ListTile(title: Text(o.$2), trailing: o.$1 == cur ? const Icon(Icons.check) : null, onTap: () => Navigator.pop(c, o.$1)),
+      ])),
+    );
+    if (id == null || id == cur) return;
+    await s.setOutlet(id);
+    h.cur = null;
+    h.toast('Working in ${s.outletName(id)}');
+    if (mounted) setState(() {});
+  }
+
   Future<void> _clock() async {
     final uid = '${s.user!['id']}';
     final open = s.repo!.of('shift').where((x) => x['u'] == uid && x['out'] == null).firstOrNull;
@@ -116,7 +133,10 @@ class _MorePageState extends State<MorePage> {
         })),
         Li('Test the alert sound', sub: 'Plays the new-order beep now', icon: Icons.volume_up_outlined, onTap: () => Alerts.ring(title: 'Test alert', body: 'This is how a new order sounds')),
         Li('Language', icon: Icons.translate, chevron: false, trailing: Seg<String>(items: const [('en', 'English'), ('hi', 'हिंदी')], value: Lang.code, onChanged: (v) => Lang.set(v))),
-        Li('Outlet', icon: Icons.apartment, value: '${s.cfg['name']}', chevron: false),
+        if (s.outlets.length > 1)
+          Li('Outlet', sub: s.outletPinned ? 'Set by the owner for your login' : 'Orders, tables and stock follow the outlet you pick', icon: Icons.apartment, chevron: !s.outletPinned, value: s.outletName(s.repo!.outlet), onTap: s.outletPinned ? null : _pickOutlet)
+        else
+          Li('Outlet', icon: Icons.apartment, value: '${s.cfg['name']}', chevron: false),
         Li('Receipt printer', sub: 'Bluetooth thermal printer, 58 or 80 mm', icon: Icons.print_outlined, onTap: () => printerSheet(context)),
         Li('Sync now', icon: Icons.bolt, onTap: () {
           s.sync();
@@ -475,7 +495,7 @@ class _ReservationsPageState extends State<ReservationsPage> {
     final endMin = time.hour * 60 + time.minute + ((s.cfg['resMinutes'] ?? 90) as num).toInt();
     final end = '${hh((endMin ~/ 60) % 24)}:${hh(endMin % 60)}';
     try {
-      await s.api.insert('bookings', {'customer_name': name.text.trim(), 'customer_phone': phone.text.trim(), 'date': day, 'time': start, 'end_time': end, 'party_size': party, 'resource_id': table, 'note': note.text.trim().isEmpty ? null : note.text.trim(), 'source': 'Phone', 'outlet': 'main', 'status': 'confirmed', 'items': [], 'total': 0});
+      await s.api.insert('bookings', {'customer_name': name.text.trim(), 'customer_phone': phone.text.trim(), 'date': day, 'time': start, 'end_time': end, 'party_size': party, 'resource_id': table, 'note': note.text.trim().isEmpty ? null : note.text.trim(), 'source': 'Phone', 'outlet': s.repo!.outletKey, 'status': 'confirmed', 'items': [], 'total': 0});
       await load();
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));

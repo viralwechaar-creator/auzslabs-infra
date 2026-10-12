@@ -11,6 +11,7 @@ import 'home.dart';
 import 'kit.dart';
 import 'more2.dart';
 import 'theme.dart';
+import 'website.dart';
 
 /// The page for a console menu id.
 Widget consolePageFor(String id, HomeState h, void Function(String) go) {
@@ -101,6 +102,16 @@ Widget consolePageFor(String id, HomeState h, void Function(String) go) {
       return SettingsPage(h, embedded: true);
     case 'mgmt/qr':
       return QrWebsitePage(h, embedded: true);
+    case 'mgmt/website':
+      return WebsiteContentPage(h);
+    case 'mgmt/data':
+      return DataPage(h);
+    case 'menu/physical':
+      return PhysicalMenuPage(h);
+    case 'menu/images':
+      return BulkPhotosPage(h);
+    case 'menu/import':
+      return MenuImportPage(h);
     case 'mgmt/reasons':
       return CrudPage(h, _cfgReason);
     case 'mgmt/outlets':

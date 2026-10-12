@@ -43,16 +43,16 @@ Future<void> sendWhatsApp(BuildContext context, Session s, Map<String, dynamic> 
 Future<void> printReceipt(Session s, Map<String, dynamic> o) async {
   final t = (o['t'] as Map?) ?? {};
   final doc = pw.Document();
-  pw.Widget row(String a, String b, {bool bold = false}) => pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [pw.Expanded(child: pw.Text(a, style: pw.TextStyle(fontSize: 9, fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal))), pw.Text(b, style: pw.TextStyle(fontSize: 9, fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal))]);
+  pw.Widget row(String a, String b, {bool bold = false}) => pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [pw.Expanded(child: _T(a, style: pw.TextStyle(fontSize: 9, fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal))), _T(b, style: pw.TextStyle(fontSize: 9, fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal))]);
   final lines = ((o['lines'] as List?) ?? []).cast<Map>();
   final pays = ((o['pays'] as List?) ?? []).cast<Map>();
-  doc.addPage(pw.Page(
-    pageFormat: const PdfPageFormat(80 * PdfPageFormat.mm, double.infinity, marginAll: 6 * PdfPageFormat.mm),
-    build: (_) => pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.stretch, children: [
-      pw.Text('${s.cfg['name']}', textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
-      if ('${s.cfg['addr'] ?? ''}'.isNotEmpty) pw.Text('${s.cfg['addr']}', textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 8)),
-      if ('${s.cfg['phone'] ?? ''}'.isNotEmpty) pw.Text('${s.cfg['phone']}', textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 8)),
-      if ('${s.cfg['gstin'] ?? ''}'.isNotEmpty) pw.Text('GSTIN ${s.cfg['gstin']}', textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 8)),
+  doc.addPage(pw.MultiPage(
+    pageFormat: PdfPageFormat(80 * PdfPageFormat.mm, 297 * PdfPageFormat.mm, marginAll: 6 * PdfPageFormat.mm),
+    build: (_) => [pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.stretch, children: [
+      _T('${s.cfg['name']}', textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
+      if ('${s.cfg['addr'] ?? ''}'.isNotEmpty) _T('${s.cfg['addr']}', textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 8)),
+      if ('${s.cfg['phone'] ?? ''}'.isNotEmpty) _T('${s.cfg['phone']}', textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 8)),
+      if ('${s.cfg['gstin'] ?? ''}'.isNotEmpty) _T('GSTIN ${s.cfg['gstin']}', textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 8)),
       pw.SizedBox(height: 6),
       row('Bill ${o['no']}', '${o['type']}'),
       row('${'${o['paidAt'] ?? o['created']}'.replaceFirst('T', ' ').substring(0, 16)}', ''),
@@ -68,10 +68,14 @@ Future<void> printReceipt(Session s, Map<String, dynamic> o) async {
       pw.SizedBox(height: 4),
       for (final p in pays) row('Paid by ${p['m']}', inr((p['amt'] ?? 0) as num)),
       pw.SizedBox(height: 8),
-      pw.Text('${s.cfg['ftr'] ?? 'Thank you!'}', textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 9)),
-    ]),
+      _T('${s.cfg['ftr'] ?? 'Thank you!'}', textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 9)),
+    ]),],
   ));
-  await Printing.layoutPdf(name: 'Bill ${o['no']}', onLayout: (_) async => doc.save());
+  try {
+    await Printing.layoutPdf(name: 'Bill ${o['no']}', onLayout: (_) async => doc.save());
+  } catch (e) {
+    throw Exception('Could not open the print dialog: $e');
+  }
 }
 
 /// Shown after a payment and from a paid bill.
@@ -105,3 +109,8 @@ Future<void> billActions(BuildContext context, HomeState h, Map<String, dynamic>
     ),
   );
 }
+
+/// The built-in PDF font has no rupee sign or multiplication sign; show them as plain letters.
+String _pt(String t) => t.replaceAll('₹', 'Rs ').replaceAll('×', 'x');
+
+pw.Widget _T(String t, {pw.TextAlign? textAlign, pw.TextStyle? style}) => pw.Text(_pt(t), textAlign: textAlign, style: style);

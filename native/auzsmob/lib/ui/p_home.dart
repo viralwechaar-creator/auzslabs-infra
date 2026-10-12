@@ -4,6 +4,7 @@ import '../core/session.dart';
 import 'ds.dart';
 import 'i18n.dart';
 import 'mk.dart';
+import 'p_more.dart';
 import 'p_purchase.dart';
 import 'p_repairs.dart';
 import 'theme.dart';
@@ -89,6 +90,8 @@ class _HomePageState extends State<HomePage> {
       if (s.can('mob_purchase') && s.feat('purchase')) ('Add purchase', Icons.add_shopping_cart, () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => PurchasePage(s)))),
       if (s.can('mob_repair') && s.repairsMode == 'full') ('New repair', Icons.build_outlined, () => openRepairSheet(context, s)),
       if (s.can('mob_purchase') && s.feat('purchase') && s.feat('serials')) ('Buy used phone', Icons.smartphone, () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => BuyUsedPage(s)))),
+      if (s.feat('customers') && s.can('mob_sell')) ('Customers', Icons.people_outline, () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => CustomersPage(s)))),
+      if (s.feat('dayclose') && s.can('mob_reports')) ('Day close', Icons.lock_clock_outlined, () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => DayClosePage(s)))),
     ];
     final rows = <Widget>[];
     for (var i = 0; i < acts.length; i += 2) {

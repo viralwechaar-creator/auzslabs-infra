@@ -85,6 +85,29 @@ class ApiClient {
     return Map<String, dynamic>.from(m['user'] as Map);
   }
 
+  /// Upload one photo (JPEG/PNG/WebP bytes) to the business's public storage, like sb.storage.upload() on the website.
+  /// Returns the full public address. Only the owner may upload; the server refuses anything that is not an image.
+  Future<String> uploadImage(List<int> bytes, String prefix) async {
+    final safe = prefix.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '');
+    final headers = <String, String>{'Content-Type': 'image/jpeg', if (token != null) 'Authorization': 'Bearer $token'};
+    http.Response res;
+    try {
+      res = await _http.post(Uri.parse('$base/storage/site/${safe.isEmpty ? 'file' : safe}'), headers: headers, body: bytes).timeout(const Duration(seconds: 60));
+    } catch (_) {
+      throw ApiError('Could not reach the server.', networkError: true);
+    }
+    dynamic json;
+    try {
+      json = jsonDecode(utf8.decode(res.bodyBytes));
+    } catch (_) {}
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw ApiError(json is Map && json['error'] != null ? '${json['error']}' : 'Upload failed (${res.statusCode})', status: res.statusCode);
+    }
+    final path = json is Map ? (json['data'] is Map ? json['data']['path'] : json['path']) : null;
+    if (path == null) throw ApiError('Upload failed: no address came back.');
+    return '$base$path';
+  }
+
   Future<dynamic> rpc(String fn, [Map<String, dynamic> args = const {}]) => _request('POST', '/rpc/$fn', body: args);
 
   /// Records changed since [since] (an ISO microsecond string from the server), oldest first.

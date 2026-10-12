@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' hide Text;
+import 'package:image_picker/image_picker.dart';
 import '../core/api.dart';
 import '../core/calc.dart';
 import '../core/session.dart';
@@ -34,23 +35,51 @@ class PayPage extends StatelessWidget {
   void _claim(BuildContext context, Future<void> Function() reload) {
     final masters = ((s.ctx['masters'] as List?) ?? const []).map((x) => Map<String, dynamic>.from(x as Map)).where((m) => m['kind'] == 'claim_type' && m['active'] == true).map((m) => '${m['name']}').toList();
     final cats = masters.isEmpty ? ['Travel', 'Food', 'Phone', 'Supplies', 'Other'] : masters;
-    formSheet(context, 'Claim an expense', [
-      F('category', 'What for', type: 'select', value: cats.first, options: [for (final c in cats) [c, c]]),
-      F('amount', 'Amount', type: 'number', hint: '₹'),
-      F('date', 'Date', value: todayStr(), hint: 'YYYY-MM-DD'),
-      F('description', 'Details (optional)'),
-    ], (v) async {
-      try {
-        await s.api.rpc('pay_me_claim', {'p': {...v, 'attachment': null}});
-        if (context.mounted) toast(context, tr('Claim sent'));
-        await s.loadMe();
-        await reload();
-        return true;
-      } on ApiError catch (e) {
-        if (context.mounted) toast(context, e.message, err: true);
-        return false;
-      }
-    }, saveLabel: 'Send');
+    var cat = cats.first;
+    var photoName = '';
+    String? attachment;
+    final amount = TextEditingController(), date = TextEditingController(text: todayStr()), desc = TextEditingController();
+    openSheet(context, 'Claim an expense', (ctx, set) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Sel('What for', cat, [for (final c in cats) (c, c)], (v) => set(() => cat = v)),
+          gap(8),
+          Fld('Amount (₹)', amount, number: true),
+          gap(8),
+          Fld('Date (YYYY-MM-DD)', date),
+          gap(8),
+          Fld('Details (optional)', desc),
+          gap(8),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.add_a_photo_outlined),
+            label: Text(photoName.isEmpty ? tr('Add a photo of the receipt') : photoName),
+            onPressed: () async {
+              final f = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1600, imageQuality: 80);
+              final emp = '${s.employee['id'] ?? ''}';
+              if (f == null || emp.isEmpty) return;
+              try {
+                final path = await s.api.uploadDoc(await f.readAsBytes(), emp);
+                set(() {
+                  attachment = path;
+                  photoName = f.name;
+                });
+              } on ApiError catch (e) {
+                if (ctx.mounted) toast(ctx, e.message, err: true);
+              }
+            },
+          ),
+        ]), actions: [
+      SheetAction('Send', (ctx) async {
+        try {
+          await s.api.rpc('pay_me_claim', {'p': claimPayload(category: cat, amount: amount.text, date: date.text, description: desc.text, attachment: attachment)});
+          if (context.mounted) toast(context, tr('Claim sent'));
+          await s.loadMe();
+          await reload();
+          return true;
+        } on ApiError catch (e) {
+          if (ctx.mounted) toast(ctx, e.message, err: true);
+          return false;
+        }
+      }),
+    ]);
   }
 
   @override

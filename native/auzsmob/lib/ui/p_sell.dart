@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' hide Text;
+import '../core/thermal.dart';
 import '../core/calc.dart';
 import '../core/ops.dart';
 import '../core/session.dart';
@@ -252,6 +253,12 @@ class _SellPageState extends State<SellPage> {
         actions: [
           TextButton(onPressed: () => shareSaleOnWhatsApp(s, local), child: const Text('Send on WhatsApp')),
           TextButton(onPressed: () => printSale(s, local), child: const Text('Print or save PDF')),
+          TextButton(
+              onPressed: () async {
+                final why = await Thermal.printSale(s.settings, local);
+                if (d.mounted) toast(d, why ?? tr('Printed'), err: why != null);
+              },
+              child: const Text('Thermal printer')),
           FilledButton(onPressed: () => Navigator.pop(d), child: const Text('Done')),
         ],
       ),
@@ -398,6 +405,11 @@ void saleDetailSheet(BuildContext c, MobSession s, Map<String, dynamic> sale) {
     }, primary: false),
     if (sale['voided'] != true) SheetAction('Print or save PDF', (ctx) async {
       await printSale(s, sale);
+      return false;
+    }, primary: false),
+    if (sale['voided'] != true) SheetAction('Print on thermal printer', (ctx) async {
+      final why = await Thermal.printSale(s.settings, sale);
+      if (ctx.mounted) toast(ctx, why ?? tr('Printed'), err: why != null);
       return false;
     }, primary: false),
     if (s.can('mob_manage') && sale['voided'] != true)
