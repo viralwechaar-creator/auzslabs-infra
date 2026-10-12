@@ -4,6 +4,7 @@ import '../core/repo.dart';
 import 'actions.dart';
 import 'admin.dart';
 import 'console.dart';
+import 'console_more.dart';
 import 'ds.dart';
 import 'home.dart';
 import 'kit.dart';
@@ -76,7 +77,7 @@ Widget consolePageFor(String id, HomeState h, void Function(String) go) {
     case 'crm/support':
       return CrudPage(h, _cfgTicket);
     case 'team/users':
-      return TeamAdmin(h, embedded: true);
+      return UsersPage(h);
     case 'team/attendance':
       return _Attendance(h);
     case 'team/tasks':
@@ -88,11 +89,11 @@ Widget consolePageFor(String id, HomeState h, void Function(String) go) {
     case 'fin/settlements':
       return CrudPage(h, _cfgSettle);
     case 'mkt/campaigns':
-      return CrudPage(h, _cfgCampaign);
+      return CampaignsPage(h);
     case 'mkt/segments':
-      return CrudPage(h, _cfgSegment);
+      return SegmentsPage(h);
     case 'mkt/offers':
-      return CrudPage(h, _cfgOffer);
+      return OffersPage(h);
     case 'agg/platforms':
       return CrudPage(h, _cfgPlatform);
     case 'mgmt/config':
@@ -105,6 +106,48 @@ Widget consolePageFor(String id, HomeState h, void Function(String) go) {
       return CrudPage(h, _cfgOutlet);
     case 'mgmt/devices':
       return CrudPage(h, _cfgDevice);
+    case 'menu/bogo':
+      return CrudPage(h, _cfgOffer);
+    case 'menu/availability':
+      return AvailabilityPage(h);
+    case 'menu/bulk':
+      return BulkPricePage(h);
+    case 'crm/loyalty':
+      return LoyaltyPage(h);
+    case 'crm/feedback':
+      return FeedbackPage(h);
+    case 'team/payroll':
+      return PayrollLinkPage(h);
+    case 'fin/cash':
+      return CashPage(h);
+    case 'fin/accounting':
+      return AccountingPage(h);
+    case 'fin/reconcile':
+      return ReconcilePage(h);
+    case 'mkt/whatsapp':
+      return WhatsAppPage(h);
+    case 'mkt/promotions':
+      return PromotionsPage(h, go);
+    case 'mkt/loyaltycamp':
+      return LoyaltyCampPage(h);
+    case 'agg/swiggy':
+    case 'agg/zomato':
+    case 'agg/ondc':
+    case 'agg/dunzo':
+    case 'agg/ubereats':
+      return PlatformPage(h, platKeys[id]!);
+    case 'int/apps':
+      return ExplorePage(h);
+    case 'ql/favorites':
+      return FavoritesPage(go);
+    case 'ql/shortcuts':
+      return ShortcutsPage(h, go);
+    case 'mgmt/hardware':
+      return HardwarePage(h);
+    case 'mgmt/audit':
+      return AuditPage(h);
+    case 'mgmt/logs':
+      return LogsPage(h);
     case 'ql/custom':
       return CrudPage(h, _cfgLink);
   }
@@ -198,17 +241,7 @@ final _cfgSettle = CrudCfg(
   rowTitle: (r) => _s(r['platform']), rowSub: (r) => '${_s(r['d'])} ${_s(r['ref'])}'.trim(), trail: (r) => '₹${r['amt']}',
 );
 
-final _cfgCampaign = CrudCfg(
-  kind: 'campaign', title: 'Campaigns', sub: 'Messages you plan to send to guests.', icon: Icons.campaign_outlined, add: 'New campaign', empty: 'Plan an offer, festival or win-back message.',
-  fields: (r) => [F('name', 'Campaign name', value: r?['name']), F('type', 'Type', type: 'select', value: r?['type'] ?? 'Offer', options: _opts(['Offer', 'Festival', 'Win-back', 'Birthday', 'New item', 'Announcement'])), F('message', 'Message', type: 'multiline', value: r?['message'])],
-  rowTitle: (r) => _s(r['name']), rowSub: (r) => _s(r['type']), trail: (r) => '',
-);
 
-final _cfgSegment = CrudCfg(
-  kind: 'segment', title: 'Segments', sub: 'Groups of guests to send campaigns to.', icon: Icons.groups_outlined, add: 'New segment', empty: 'For example guests who have not visited in 30 days.',
-  fields: (r) => [F('name', 'Segment name', value: r?['name']), F('rule', 'Who is in it', type: 'select', value: r?['rule'] ?? 'all', options: const [['all', 'Everyone'], ['new', 'New guests'], ['regular', 'Regulars'], ['lapsed', 'Lapsed (30+ days)'], ['birthday', 'Birthday this month']])],
-  rowTitle: (r) => _s(r['name']), rowSub: (r) => _s(r['rule']),
-);
 
 final _cfgPlatform = CrudCfg(
   kind: 'platform', title: 'Platform Settings', sub: 'Commission and store details for each delivery platform.', icon: Icons.power_outlined, add: 'Add platform', empty: 'Add Swiggy or Zomato to estimate what you earn on each order.',
