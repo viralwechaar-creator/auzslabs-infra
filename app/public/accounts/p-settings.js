@@ -50,9 +50,12 @@ function setOrg(v) {
   const val = () => { const g = gst.value.trim().toUpperCase(); gst.value = g; gst.classList.remove('err'); if (!g) { msg.textContent = 'Needed on invoices if you are GST-registered.'; return; } if (g.length < 15) { msg.textContent = g.length + ' of 15 characters'; return; } if (gstinValid(g)) { msg.textContent = 'Valid · ' + (STATES[g.slice(0, 2)] || ''); if (!st.value) st.value = g.slice(0, 2); } else { gst.classList.add('err'); msg.textContent = 'Not a valid GSTIN. Check the characters and the last check digit.'; } };
   const st = selectEl([['', 'Choose state'], ...Object.keys(STATES).map((c) => [c, stateName(c)])], o.state_code || ''); gst.addEventListener('input', val);
   const f = { legal: input({ value: o.legal_name || '' }), trade: input({ value: o.trade_name || '' }), pan: input({ value: o.pan || '', max: 10 }), addr: h('textarea', { class: 'textarea', style: { minHeight: '70px' } }, o.address || ''), city: input({ value: o.city || '' }), pin: input({ value: o.pincode || '', mode: 'numeric', max: 6 }), ph: input({ value: o.phone || '' }), em: input({ value: o.email || '', type: 'email' }),
-    reg: selectEl([['regular', 'Regular (charges GST)'], ['composition', 'Composition scheme (no GST on invoices)'], ['unregistered', 'Not registered (no GST on invoices)']], o.reg_type), terms: h('textarea', { class: 'textarea' }, o.invoice_terms || ''), bank: h('textarea', { class: 'textarea', style: { minHeight: '70px' } }, o.bank_details || ''), foot: input({ value: o.invoice_footer || '' }), lay: selectEl([['', 'Standard'], ['classic', 'Classic tax invoice (logo box, MRP, Billed to / Shipped to)']], br.invoiceStyle || ''), numst: selectEl([['', 'INV/2026-27/00001'], ['plain', '1/2026-27']], (o.settings && o.settings.number_style) || '') };
+    reg: selectEl([['regular', 'Regular (charges GST)'], ['composition', 'Composition scheme (no GST on invoices)'], ['unregistered', 'Not registered (no GST on invoices)']], o.reg_type), terms: h('textarea', { class: 'textarea' }, o.invoice_terms || ''), bank: h('textarea', { class: 'textarea', style: { minHeight: '70px' } }, o.bank_details || ''), foot: input({ value: o.invoice_footer || '' }), lay: selectEl([['', 'Standard'], ['classic', 'Classic tax invoice (logo box, MRP, Billed to / Shipped to)'], ['noir', 'Noir (dark, minimalist)'], ['playful', 'Playful (cream & blue, friendly)'], ['bold', 'Bold (red, graphic, thick rules)'], ['minimal', 'Minimal (clean, corporate, pill info boxes)'], ['stamped', 'Stamped (perforated receipt, typewriter)']], br.invoiceStyle || ''), numst: selectEl([['', 'INV/2026-27/00001'], ['plain', '1/2026-27']], (o.settings && o.settings.number_style) || '') };
   v.root.append(h('div', { class: 'card grid' }, field('Legal name', f.legal), field('Trade name (shown on documents)', f.trade), field('GSTIN', gst), msg, h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('State', st), field('Registration', f.reg)), field('PAN', f.pan), field('Address', f.addr), h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('City', f.city), field('Pincode', f.pin)), h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Phone', f.ph), field('Email', f.em))),
-    h('div', { class: 'card grid' }, h('h3', null, 'On invoices'), field('Terms and conditions', f.terms), field('Bank details', f.bank), field('Footer line', f.foot), field('Invoice layout', f.lay), field('Invoice number style', f.numst)),
+    h('div', { class: 'card grid' }, h('h3', null, 'On invoices'), field('Terms and conditions', f.terms), field('Bank details', f.bank), field('Footer line', f.foot),
+      field('Invoice layout', f.lay),
+      h('button', { class: 'btn sm', type: 'button', style: { justifySelf: 'start' }, onclick: () => previewInvoiceLayout(f.lay.value, { legal_name: f.legal.value, trade_name: f.trade.value, name: f.trade.value || f.legal.value, gstin: gst.value, state_code: st.value, address: f.addr.value, city: f.city.value, pincode: f.pin.value, phone: f.ph.value, email: f.em.value, terms: f.terms.value, bank_details: f.bank.value, brand: Object.assign({}, br, { upi: bf.upi.value.trim(), bank: { holder: bf.hold.value.trim(), name: bf.bname.value.trim(), account: bf.acno.value.trim(), ifsc: bf.ifsc.value.trim().toUpperCase(), branch: bf.brn.value.trim() } }) }) }, icon('eye', 16), 'Preview with sample data'),
+      field('Invoice number style', f.numst)),
     h('div', { class: 'card grid' }, h('h3', null, 'Business identity'), h('p', { class: 'muted small' }, 'Shown on every printed and shared invoice.'),
       imageField('Logo', 'Appears at the top left. A simple PNG works best.', br, 'logo', 360, 160), imageField('Signature', 'Appears above "Authorised signatory".', br, 'signature', 300, 120), imageField('Stamp or seal', 'Optional. Appears next to the signature.', br, 'stamp', 240, 240),
       field('Website', bf.web), h('div', { class: 'lbl' }, 'Other registration numbers'), regHost),
@@ -123,4 +126,21 @@ function setAccess() {
   v.root.append(h('div', { class: 'card grid' }, h('div', null, h('div', { class: 'cap' }, 'Signed in as'), h('div', { class: 't', style: { fontWeight: 600 } }, S.user.email), h('div', { class: 'small muted' }, cap1(S.user.role) + ' · ' + S.ctx.tenant.name))),
     h('div', { class: 'list' }, Object.entries(PERM_LABEL).map(([k, l]) => liRow({ icon: can(k) ? 'check' : 'x', tone: can(k) ? 'green' : 'gray', title: l, sub: can(k) ? 'Allowed' : 'Not allowed' }))),
     h('p', { class: 'cap' }, 'The owner has every permission. Managers have all except settings. A custom role gets exactly the accounting permissions ticked on it. Change roles on your AUZslab account page.'));
+}
+
+// ---------- invoice layout preview (sample data, nothing saved or posted) ----------
+function sampleInvoiceDoc(org) {
+  const lines = [
+    { n: 1, description: 'Notebook A5 (200 pages)', hsn: '4820', qty: 3, mrp: 60, rate: 50, taxable: 150, tax_rate: 18, tax: 27, total: 177, unit: 'Nos' },
+    { n: 2, description: 'Gel Pen (Blue, pack of 5)', hsn: '9608', qty: 10, mrp: 12, rate: 10, taxable: 100, tax_rate: 18, tax: 18, total: 118, unit: 'Nos' },
+  ];
+  return { org, doc: { type: 'invoice', number: 'INV/2026-27/00001', date: new Date().toISOString().slice(0, 10), party_name: 'Rahul Sharma', party_phone: '98765 43210', billing_address: '123, MG Road, Jodhpur', place_of_supply: org.state_code || '08', reverse_charge: false, discount: 20, total: 275, cgst: 22.5, sgst: 22.5, igst: 0, roundoff: 0, terms: org.terms }, lines };
+}
+function previewInvoiceLayout(style, orgLike) {
+  const data = sampleInvoiceDoc(orgLike);
+  let node;
+  if (style === 'classic' && window.auzTaxInvoice) node = auzTaxInvoice.build(data);
+  else if (style && window.auzInvoiceTemplates && auzInvoiceTemplates[style]) node = auzInvoiceTemplates[style](data);
+  else node = h('p', { class: 'muted' }, 'The standard layout is the default invoice view shown elsewhere in the app -- there is nothing extra to preview here.');
+  sheet({ title: 'Preview (sample data, not saved)', full: true, body: h('div', { style: { display: 'flex', justifyContent: 'center', padding: '12px' } }, node) });
 }
