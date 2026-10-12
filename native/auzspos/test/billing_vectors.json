@@ -388,5 +388,287 @@
    "net": 0,
    "rates": {}
   }
+ },
+ {
+  "name": "buy1 get1 on an item",
+  "cfg": {
+   "tax": 5
+  },
+  "records": [
+   {
+    "id": "i1",
+    "kind": "item",
+    "name": "Tea",
+    "cat": "c1"
+   },
+   {
+    "id": "i2",
+    "kind": "item",
+    "name": "Cake",
+    "cat": "c2"
+   },
+   {
+    "id": "i3",
+    "kind": "item",
+    "name": "Bun",
+    "cat": "c2"
+   },
+   {
+    "id": "o1",
+    "kind": "offer",
+    "name": "Tea 1+1",
+    "scope": "item",
+    "scopeId": "i1",
+    "buyQty": 1,
+    "getQty": 1,
+    "getPct": 100
+   }
+  ],
+  "order": {
+   "type": "Takeaway",
+   "lines": [
+    {
+     "id": "i1",
+     "price": 40,
+     "qty": 3
+    },
+    {
+     "id": "i2",
+     "price": 90,
+     "qty": 1
+    }
+   ]
+  },
+  "expect": {
+   "sub": 210,
+   "d": 0,
+   "tax": 8.5,
+   "round": 0.5,
+   "total": 179,
+   "net": 170,
+   "rates": {
+    "5": {
+     "base": 170,
+     "tax": 8.5
+    }
+   },
+   "offer": 40,
+   "offers": [
+    {
+     "id": "o1",
+     "name": "Tea 1+1",
+     "amt": 40,
+     "desc": "Offer: Buy 1 Get 1 — Tea 1+1"
+    }
+   ]
+  }
+ },
+ {
+  "name": "category offer half off cheapest",
+  "cfg": {
+   "tax": 12,
+   "serviceChargePct": 5
+  },
+  "records": [
+   {
+    "id": "i1",
+    "kind": "item",
+    "name": "Tea",
+    "cat": "c1"
+   },
+   {
+    "id": "i2",
+    "kind": "item",
+    "name": "Cake",
+    "cat": "c2"
+   },
+   {
+    "id": "i3",
+    "kind": "item",
+    "name": "Bun",
+    "cat": "c2"
+   },
+   {
+    "id": "o2",
+    "kind": "offer",
+    "name": "Bakery",
+    "scope": "cat",
+    "scopeId": "c2",
+    "buyQty": 2,
+    "getQty": 1,
+    "getPct": 50
+   }
+  ],
+  "order": {
+   "type": "Dine-in",
+   "lines": [
+    {
+     "id": "i2",
+     "price": 90,
+     "qty": 2
+    },
+    {
+     "id": "i3",
+     "price": 35,
+     "qty": 2
+    }
+   ]
+  },
+  "expect": {
+   "sub": 250,
+   "d": 0,
+   "tax": 29.3,
+   "round": -0.43,
+   "total": 273,
+   "net": 244.13,
+   "rates": {
+    "12": {
+     "base": 244.13,
+     "tax": 29.3
+    }
+   },
+   "svc": 11.63,
+   "offer": 17.5,
+   "offers": [
+    {
+     "id": "o2",
+     "name": "Bakery",
+     "amt": 17.5,
+     "desc": "Offer: Buy 2 Get 1 (50% off) — Bakery"
+    }
+   ]
+  }
+ },
+ {
+  "name": "offer plus manual discount",
+  "cfg": {
+   "tax": 5
+  },
+  "records": [
+   {
+    "id": "i1",
+    "kind": "item",
+    "name": "Tea",
+    "cat": "c1"
+   },
+   {
+    "id": "i2",
+    "kind": "item",
+    "name": "Cake",
+    "cat": "c2"
+   },
+   {
+    "id": "i3",
+    "kind": "item",
+    "name": "Bun",
+    "cat": "c2"
+   },
+   {
+    "id": "o3",
+    "kind": "offer",
+    "name": "Tea 2+1",
+    "scope": "item",
+    "scopeId": "i1",
+    "buyQty": 2,
+    "getQty": 1
+   }
+  ],
+  "order": {
+   "type": "Takeaway",
+   "disc": {
+    "t": "%",
+    "v": 10
+   },
+   "lines": [
+    {
+     "id": "i1",
+     "price": 45,
+     "qty": 6
+    }
+   ]
+  },
+  "expect": {
+   "sub": 270,
+   "d": 18,
+   "tax": 8.1,
+   "round": -0.1,
+   "total": 170,
+   "net": 162,
+   "rates": {
+    "5": {
+     "base": 162,
+     "tax": 8.1
+    }
+   },
+   "offer": 90,
+   "offers": [
+    {
+     "id": "o3",
+     "name": "Tea 2+1",
+     "amt": 90,
+     "desc": "Offer: Buy 2 Get 1 — Tea 2+1"
+    }
+   ]
+  }
+ },
+ {
+  "name": "expired offer ignored",
+  "cfg": {
+   "tax": 5
+  },
+  "records": [
+   {
+    "id": "i1",
+    "kind": "item",
+    "name": "Tea",
+    "cat": "c1"
+   },
+   {
+    "id": "i2",
+    "kind": "item",
+    "name": "Cake",
+    "cat": "c2"
+   },
+   {
+    "id": "i3",
+    "kind": "item",
+    "name": "Bun",
+    "cat": "c2"
+   },
+   {
+    "id": "o4",
+    "kind": "offer",
+    "name": "Old",
+    "scope": "item",
+    "scopeId": "i1",
+    "buyQty": 1,
+    "getQty": 1,
+    "to": "2026-01-01"
+   }
+  ],
+  "order": {
+   "type": "Takeaway",
+   "lines": [
+    {
+     "id": "i1",
+     "price": 40,
+     "qty": 2
+    }
+   ]
+  },
+  "expect": {
+   "sub": 80,
+   "d": 0,
+   "tax": 4,
+   "round": 0,
+   "total": 84,
+   "net": 80,
+   "rates": {
+    "5": {
+     "base": 80,
+     "tax": 4
+    }
+   }
+  }
  }
 ]

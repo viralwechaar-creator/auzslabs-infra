@@ -1,0 +1,5 @@
+package app.auzslab.scan
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity : FlutterActivity()

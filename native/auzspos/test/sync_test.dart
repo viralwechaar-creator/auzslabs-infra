@@ -48,6 +48,18 @@ class FakeServer {
 Repo mk(FakeServer s, [MemoryStore? st]) => Repo(ApiClient(client: MockClient(s.handle))..token = 't', st ?? MemoryStore());
 
 void main() {
+  test('one odd record from the server does not stop sync', () async {
+    final s = FakeServer();
+    s.rows['bad'] = {'id': 'bad', 'kind': 'x', 'data': 'not an object', 'deleted': false, 'updated_at': '2026-10-12T00:00:00.000001Z'};
+    s.rows['ok'] = {'id': 'ok', 'kind': 'table', 'data': {'name': 'T9'}, 'deleted': false, 'updated_at': '2026-10-12T00:00:00.000002Z'};
+    final repo = mk(s);
+    final r = await repo.sync();
+    expect(r.error, isNull);
+    expect(repo.of('table').single['name'], 'T9');
+    final again = await repo.sync();
+    expect(again.error, isNull, reason: 'sync can run again');
+  });
+
   test('a saved change reaches the server and leaves nothing queued', () async {
     final s = FakeServer(), repo = mk(s);
     await repo.save('item', {'name': 'Tea', 'price': 20});

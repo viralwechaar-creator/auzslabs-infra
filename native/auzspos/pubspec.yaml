@@ -38,6 +38,16 @@ dependencies:
   shared_preferences: ^2.5.6
   sqflite: ^2.4.4+1
   path: ^1.9.1
+  url_launcher: ^6.3.3
+  pdf: ^3.13.1
+  printing: ^5.15.1
+  app_links: ^7.2.2
+  mobile_scanner: ^7.4.2
+  qr_flutter: ^4.1.0
+  print_bluetooth_thermal: ^1.2.5
+  permission_handler: ^12.0.1
+  audioplayers: ^6.8.1
+  flutter_local_notifications: ^22.3.1
 
 dev_dependencies:
   flutter_test:
@@ -55,6 +65,8 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  assets:
+    - assets/
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

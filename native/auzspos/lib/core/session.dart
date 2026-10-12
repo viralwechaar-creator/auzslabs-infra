@@ -23,7 +23,87 @@ class Session extends ChangeNotifier {
       };
   Map<String, Map<String, dynamic>> get taxes => {for (final t in repo?.of('tax') ?? const <Map<String, dynamic>>[]) '${t['id']}': t};
   Map<String, Map<String, dynamic>> get items => {for (final i in repo?.of('item') ?? const <Map<String, dynamic>>[]) '${i['id']}': i};
-  b.Totals tot(Map<String, dynamic> o) => b.tot(o, cfg, taxes: taxes, items: items);
+  b.Totals tot(Map<String, dynamic> o) {
+    final d = DateTime.now();
+    final today = '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+    return b.tot(o, cfg, taxes: taxes, items: items, offerRecords: repo?.of('offer').toList() ?? const [], today: today);
+  }
+
+  /// Why an item cannot be sold right now ('' = it can). Port of itemOffWhy() in the website POS.
+  String itemOffWhy(Map<String, dynamic> i, String type) {
+    if (i['off'] == true) {
+      final u = DateTime.tryParse('${i['offUntil'] ?? ''}');
+      if (u == null || u.isAfter(DateTime.now())) return 'Sold out';
+    }
+    final key = const {'Dine-in': 'dine', 'Takeaway': 'take', 'Delivery': 'deliv'}[type];
+    if (key != null && i['chOff'] is Map && (i['chOff'] as Map)[key] == true) return 'Hidden from $type';
+    final rec = '${i['rec'] ?? ''}';
+    if (rec.isEmpty) return '';
+    final ings = repo?.of('ing').toList() ?? const <Map<String, dynamic>>[];
+    for (final part in rec.split(',')) {
+      final n = part.split(':').first.trim().toLowerCase();
+      if (n.isEmpty) continue;
+      for (final g in ings) {
+        if ('${g['name']}'.toLowerCase() == n && ((g['qty'] ?? 0) as num) <= 0) return 'No ${g['name']} in stock';
+      }
+    }
+    return '';
+  }
+
+  String role = 'cashier';
+  bool hasBusiness = true;
+  Map<String, dynamic>? features, enabledFeatures;
+  bool featureOn(String k) => features == null || (features![k] == true && (enabledFeatures?[k]) != false);
+  String slug = 'app';
+  /// False when the business has not bought AUZsPOS (or the owner switched it off). Unknown (offline, no data yet) counts as allowed.
+  bool posAllowed = true;
+  Map<String, dynamic>? perms;
+  static const _defaultPerms = {'pos': true, 'orders': true, 'kitchen': true, 'reports': true, 'staff': true, 'inventory': true, 'crm': true, 'menu': false, 'settings': false, 'billing': false};
+
+  /// 'm' = may approve money actions (owner, manager, or a role with billing); 'o' = owner only; else a permission key.
+  bool can(String x) {
+    if (role == 'owner') return true;
+    if (x == 'o') return false;
+    final p = perms ?? (role == 'manager' ? {..._defaultPerms, 'billing': true} : _defaultPerms);
+    return (x == 'm' ? p['billing'] : p[x]) == true;
+  }
+
+  Future<void> _loadRole() async {
+    try {
+      final r = await api.one('profiles', 'id', '${user!['id']}', select: 'role,role_id');
+      hasBusiness = r != null;
+      role = '${r?['role'] ?? 'cashier'}';
+      perms = null;
+      if (r?['role_id'] != null) {
+        final rr = await api.one('roles', 'id', '${r!['role_id']}', select: 'permissions');
+        if (rr?['permissions'] is Map) perms = Map<String, dynamic>.from(rr!['permissions'] as Map);
+      }
+      try {
+        final d = await api.rpc('my_dashboard');
+        final sl = (d is Map ? d['tenant'] : null);
+        if (sl is Map && sl['slug'] != null) slug = '${sl['slug']}';
+        if (d is Map) {
+          final ts = d['tenant_settings'] ?? d['settings'] ?? d;
+          if (ts is Map && ts['features'] is Map) features = Map<String, dynamic>.from(ts['features'] as Map);
+          if (ts is Map && ts['enabled_features'] is Map) enabledFeatures = Map<String, dynamic>.from(ts['enabled_features'] as Map);
+        }
+      } catch (_) {}
+      final p = await SharedPreferences.getInstance();
+      if (features != null) {
+        posAllowed = featureOn('pos');
+        await p.setBool('posok.${user!['id']}', posAllowed);
+      } else {
+        posAllowed = p.getBool('posok.${user!['id']}') ?? true;
+      }
+      await p.setString('role.${user!['id']}', role);
+      await p.setString('slug.${user!['id']}', slug);
+    } catch (_) {
+      final p = await SharedPreferences.getInstance();
+      role = p.getString('role.${user!['id']}') ?? 'cashier';
+      slug = p.getString('slug.${user!['id']}') ?? 'app';
+      posAllowed = p.getBool('posok.${user!['id']}') ?? true;
+    }
+  }
 
   Future<void> restore() async {
     final p = await SharedPreferences.getInstance();
@@ -46,6 +126,7 @@ class Session extends ChangeNotifier {
     repo = Repo(api, store, onChange: notifyListeners);
     user = u;
     await repo!.load();
+    await _loadRole();
     notifyListeners();
     unawaited(sync());
     _timer?.cancel();

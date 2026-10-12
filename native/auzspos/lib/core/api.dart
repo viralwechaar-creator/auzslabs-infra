@@ -69,6 +69,15 @@ class ApiClient {
 
   Future<Map<String, dynamic>> confirm2fa(String challenge, String code) async => _session(await _request('POST', '/auth/2fa/challenge', body: {'challenge': challenge, 'code': code}, auth: false));
 
+  /// Password reset mail (same endpoint as the website; the reply is the same whether or not the address exists).
+  Future<void> forgotPassword(String email) async => _request('POST', '/auth/forgot', body: {'email': email}, auth: false);
+
+  /// A session handed back by the central Google sign-in page.
+  Map<String, dynamic> useHandoff(String token, Map<String, dynamic> user) {
+    this.token = token;
+    return user;
+  }
+
   Map<String, dynamic> _session(dynamic data) {
     final m = Map<String, dynamic>.from(data as Map);
     if (m['requires2fa'] == true) throw TwoFactorRequired('${m['challenge']}');
@@ -84,6 +93,10 @@ class ApiClient {
     final d = await _request('GET', '/db/records?$q');
     return (d as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
+
+  Future<dynamic> insert(String table, Map<String, dynamic> values) => _request('POST', '/db/$table', body: values);
+
+  Future<dynamic> update(String table, String col, String val, Map<String, dynamic> values) => _request('PATCH', '/db/$table?${Uri(queryParameters: {'eq.$col': val}).query}', body: values);
 
   Future<Map<String, dynamic>?> one(String table, String col, String val, {String select = '*'}) async {
     final q = Uri(queryParameters: {'select': select, 'eq.$col': val, 'single': '1'}).query;

@@ -10,6 +10,7 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -19,7 +20,7 @@ android {
         applicationId = "app.auzslab.pos"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        minSdk = 24
         targetSdk = flutter.targetSdkVersion
         // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION
         // is added automatically by Flutter. (https://developer.android.com/studio/build/configure-apk-splits#configure-APK-versions)
@@ -29,11 +30,32 @@ android {
         versionName = flutter.versionName
     }
 
+    // Fixed key for TEST builds, so every new test APK installs over the previous one.
+    // The Play Store build will use its own secret key, never this one.
+    signingConfigs {
+        create("test") {
+            storeFile = file("test-release.jks")
+            storePassword = "auzspostest"
+            keyAlias = "test"
+            keyPassword = "auzspostest"
+        }
+        // Play upload key: used only when the build is given these environment values (GitHub secrets).
+        val uploadStore = System.getenv("ANDROID_UPLOAD_KEYSTORE")
+        if (uploadStore != null && uploadStore.isNotEmpty()) {
+            create("upload") {
+                storeFile = file(uploadStore)
+                storePassword = System.getenv("ANDROID_UPLOAD_STORE_PASSWORD")
+                keyAlias = System.getenv("ANDROID_UPLOAD_KEY_ALIAS")
+                keyPassword = System.getenv("ANDROID_UPLOAD_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("upload") ?: signingConfigs.getByName("test")
         }
     }
 }
@@ -42,6 +64,10 @@ kotlin {
     compilerOptions {
         jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
 
 flutter {
