@@ -434,13 +434,16 @@ function inSchedule(sc) {
   if (sc.from && sc.to) return sc.from <= sc.to ? hm >= sc.from && hm <= sc.to : hm >= sc.from || hm <= sc.to;
   return true;
 }
-function itemOff(i, type) {
-  if (i.off && (!i.offUntil || new Date(i.offUntil) > new Date())) return true;
-  if (i.sched && !inSchedule(i.sched)) return true;
-  if (i.chOff && i.chOff[CH_KEY[type || (S.cur && S.cur.type)]]) return true;
-  if (!i.rec) return false;
-  return i.rec.split(',').some((p) => { const [n] = p.split(':'), g = L('ing').find((x) => x.name.toLowerCase() === (n || '').trim().toLowerCase()); return g && g.qty <= 0; });
+// Why an item cannot be sold right now ('' = it can). The Sell screen still lists such items, dimmed with this reason, so nothing silently disappears.
+function itemOffWhy(i, type) {
+  if (i.off && (!i.offUntil || new Date(i.offUntil) > new Date())) return 'Sold out';
+  if (i.sched && !inSchedule(i.sched)) return 'Not sold at this time';
+  if (i.chOff && i.chOff[CH_KEY[type || (S.cur && S.cur.type)]]) return 'Hidden from ' + (type || (S.cur && S.cur.type) || 'this order type');
+  if (!i.rec) return '';
+  const low = i.rec.split(',').map((p) => { const [n] = p.split(':'), g = L('ing').find((x) => x.name.toLowerCase() === (n || '').trim().toLowerCase()); return g && g.qty <= 0 ? g.name : ''; }).find(Boolean);
+  return low ? 'No ' + low + ' in stock' : '';
 }
+const itemOff = (i, type) => !!itemOffWhy(i, type);
 function menuItems() { const o = outletId(); return L('item').filter((i) => !(i.outletOff && i.outletOff[o])).map((i) => (i.outletPrice && i.outletPrice[o] != null ? { ...i, price: +i.outletPrice[o] } : i)); }
 const variantQty = (i) => (i.variants || []).reduce((a, v) => a + (+v.qty || 0), 0);
 const dayLocked = (d) => L('dayclose').find((x) => x.d === d);

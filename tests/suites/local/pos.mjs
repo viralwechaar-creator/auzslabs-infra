@@ -287,6 +287,26 @@ export default async function run({ browser, stack }) {
     assert(/Token display screen/.test(await text()), 'Hardware page is missing the token display switch');
   }, 'critical');
 
+  await s.check('A different login on the same address never sees the previous login\'s local records', async () => {
+    await page.goto(stack.url('testcafe', '/index.html')); await page.waitForFunction(() => typeof boot === 'function' && typeof S !== 'undefined' && S.user && document.querySelector('.tabbar, .side, [data-nav]'), null, { timeout: 15000 });
+    const left = await page.evaluate(async () => {
+      const ghost = { id: 'ghost-tbl', kind: 'table', data: { id: 'ghost-tbl', name: 'GHOST-OTHER-BUSINESS' }, deleted: false, updated_at: new Date().toISOString() };
+      R[ghost.id] = ghost; await put('rec', ghost); await put('meta', { k: 'lastUser', v: 'a-different-login' });
+      await boot();
+      return { mem: !!R['ghost-tbl'], disk: !!(await get('rec', 'ghost-tbl')) };
+    });
+    assert(!left.mem && !left.disk, 'records of the previous login survived (memory ' + left.mem + ', disk ' + left.disk + ')');
+  }, 'critical');
+
+  await s.check('Sell lists a sold-out item dimmed with the reason instead of hiding it', async () => {
+    const cat = (await q("select data from records where tenant_id=$1 and kind='cat' and not deleted limit 1", [tid]))[0].data;
+    await addRec('it-soldout-test', 'item', { id: 'it-soldout-test', name: 'Soldout Test Latte', cat: cat.id, price: 99, off: true });
+    await syncClient(); await page.evaluate((c) => { S.cat = c; S.q = ''; S.cur = newOrder(); go('sell'); }, cat.id); await page.waitForTimeout(600);
+    const t = page.locator('.items .tile.off', { hasText: 'Soldout Test Latte' });
+    assert(await t.count() === 1, 'the sold-out item is missing or not dimmed');
+    assert(/Sold out/.test(await t.innerText()), 'the reason is not shown');
+  });
+
   // the 409 from the deliberate double booking above is the expected answer, not an error
   await s.check('No JavaScript errors during the whole workflow', async () => { const bad = errs.filter((e) => !/print|callback|WebSocket|ERR_CERT|tunnel/i.test(e) && !/icon-[a-z]+\.svg.*ERR_ABORTED/.test(e) && !/409.*\/db\/bookings/.test(e)); assert(!bad.length, bad.slice(0, 3).join(' | ')); }, 'major');
   await ctx.close(); s.done();
