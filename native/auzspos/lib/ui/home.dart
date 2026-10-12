@@ -4,6 +4,8 @@ import '../core/repo.dart';
 import '../core/session.dart';
 import 'actions.dart';
 import 'floor.dart';
+import 'more.dart';
+import 'receipt.dart';
 
 String inr(num v) => '₹${v == v.roundToDouble() ? v.toInt() : v.toStringAsFixed(2)}';
 
@@ -115,6 +117,7 @@ class _HomeState extends State<Home> {
     o['status'] = 'paid';
     o['paidAt'] = nowIso();
     o['paidBy'] = s.user!['id'];
+    o['tok'] ??= uid().replaceAll('-', '').substring(0, 12);
     if (o['no'] == null || '${o['no']}'.endsWith('~')) o['no'] = await s.nextNo();
     await persist(o);
     if (o['type'] == 'Dine-in' && o['table'] != null) {
@@ -181,6 +184,7 @@ class _HomeState extends State<Home> {
       KitchenPage(this),
       OrdersPage(this),
       GuestPage(this),
+      MorePage(this),
     ];
     return Scaffold(
       appBar: AppBar(
@@ -201,6 +205,7 @@ class _HomeState extends State<Home> {
           const NavigationDestination(icon: Icon(Icons.soup_kitchen_outlined), label: 'Kitchen'),
           const NavigationDestination(icon: Icon(Icons.receipt_long), label: 'Orders'),
           NavigationDestination(icon: Badge(isLabelVisible: guests.isNotEmpty, label: Text('${guests.length}'), child: const Icon(Icons.qr_code_2)), label: 'QR orders'),
+          const NavigationDestination(icon: Icon(Icons.more_horiz), label: 'More'),
         ],
       ),
     );
@@ -398,7 +403,7 @@ class _SellPageState extends State<SellPage> {
                     Navigator.pop(ctx);
                     await h.pay(o, m[0]);
                     h.refresh(() => h.cur = null);
-                    h._toast('Paid ${inr(t.total)} · ${o['no']}');
+                    if (context.mounted) await billActions(context, h, o);
                   },
                   child: Text(m[1]),
                 ),

@@ -30,6 +30,7 @@ class Session extends ChangeNotifier {
   }
 
   String role = 'cashier';
+  String slug = 'app';
   Map<String, dynamic>? perms;
   static const _defaultPerms = {'pos': true, 'orders': true, 'kitchen': true, 'reports': true, 'staff': true, 'inventory': true, 'crm': true, 'menu': false, 'settings': false, 'billing': false};
 
@@ -50,11 +51,18 @@ class Session extends ChangeNotifier {
         final rr = await api.one('roles', 'id', '${r!['role_id']}', select: 'permissions');
         if (rr?['permissions'] is Map) perms = Map<String, dynamic>.from(rr!['permissions'] as Map);
       }
+      try {
+        final d = await api.rpc('my_dashboard');
+        final sl = (d is Map ? d['tenant'] : null);
+        if (sl is Map && sl['slug'] != null) slug = '${sl['slug']}';
+      } catch (_) {}
       final p = await SharedPreferences.getInstance();
       await p.setString('role.${user!['id']}', role);
+      await p.setString('slug.${user!['id']}', slug);
     } catch (_) {
       final p = await SharedPreferences.getInstance();
       role = p.getString('role.${user!['id']}') ?? 'cashier';
+      slug = p.getString('slug.${user!['id']}') ?? 'app';
     }
   }
 

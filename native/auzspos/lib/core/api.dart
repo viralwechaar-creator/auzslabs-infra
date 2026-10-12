@@ -85,6 +85,10 @@ class ApiClient {
     return (d as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
 
+  Future<dynamic> insert(String table, Map<String, dynamic> values) => _request('POST', '/db/$table', body: values);
+
+  Future<dynamic> update(String table, String col, String val, Map<String, dynamic> values) => _request('PATCH', '/db/$table?${Uri(queryParameters: {'eq.$col': val}).query}', body: values);
+
   Future<Map<String, dynamic>?> one(String table, String col, String val, {String select = '*'}) async {
     final q = Uri(queryParameters: {'select': select, 'eq.$col': val, 'single': '1'}).query;
     final d = await _request('GET', '/db/$table?$q');

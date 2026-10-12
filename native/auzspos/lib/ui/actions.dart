@@ -3,6 +3,7 @@ import '../core/billing.dart' show r2;
 import '../core/repo.dart';
 import '../core/session.dart';
 import 'home.dart';
+import 'receipt.dart';
 import 'theme.dart';
 
 /// Manager approval (same rules as approve() in the website POS): an owner/manager signs for themselves, anyone else
@@ -307,6 +308,12 @@ Future<void> billSheet(BuildContext context, HomeState h, Map<String, dynamic> o
             if (refunded > 0) Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('Refunded'), Text('−${inr(refunded)}')]),
             if (!void_) ...[
               const SizedBox(height: 12),
+              Row(children: [
+                Expanded(child: FilledButton.tonalIcon(onPressed: () => sendWhatsApp(context, h.s, o), icon: const Icon(Icons.chat, size: 18), label: const Text('WhatsApp'))),
+                const SizedBox(width: 8),
+                Expanded(child: FilledButton.tonalIcon(onPressed: () => printReceipt(h.s, o), icon: const Icon(Icons.print_outlined, size: 18), label: const Text('Print'))),
+              ]),
+              const SizedBox(height: 8),
               Row(children: [
                 Expanded(child: OutlinedButton(onPressed: () { Navigator.pop(ctx); refundSheet(context, h, o); }, child: const Text('Refund'))),
                 const SizedBox(width: 8),
