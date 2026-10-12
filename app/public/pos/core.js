@@ -118,7 +118,7 @@ function L(kind) {
 const rec = (id) => (id && R[id] && !R[id].deleted ? R[id].data : null);
 const tn = (id) => { const t = rec(id); return t ? t.name : ''; };
 const cfg = () => ({
-  name: 'My Restaurant', addr: '', phone: '', gstin: '', tax: 5, prefix: 'INV', col: null, logo: '/logo.png', ftr: 'Thank you!', w: 80, sty: 'mono', fs: 12,
+  name: 'My Restaurant', addr: '', phone: '', gstin: '', tax: 5, prefix: 'INV', col: null, logo: '/logo.png', ftr: 'Thank you!', w: 80, sty: 'mono', fs: 12, billStyle: '',
   bizType: 'restaurant', loyaltyOn: true, loyaltyEarnRs: 100, loyaltyRedeemRs: 1, roundOff: true, requirePhone: true, serviceChargePct: 0, packingCharge: 0,
   deliveryCharge: 0, tipPrompt: false, maxDiscountPct: 0, kdsTargetMin: 15, resMinutes: 90, taxInclusive: false, printOnPay: true,
   ...(R.settings && R.settings.data),

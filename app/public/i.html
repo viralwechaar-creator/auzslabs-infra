@@ -47,7 +47,7 @@ th.c,td.c{text-align:center}th.r,td.r{text-align:right}
 </style></head><body>
 <div class=bar><button onclick="print()">Print / Download</button></div>
 <div class=wrap id=a>Loading…</div>
-<script src=/sb-client.js?v=5></script><script src=/config.js></script><script>
+<script src=/sb-client.js?v=5></script><script src=/config.js></script><script src=/pos/bill-templates.js?v=1></script><script>
 const sb=supabase.createClient(CFG.url,CFG.key),A=document.getElementById('a'),esc=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';'),r2=n=>Math.round(n*100)/100,inr=n=>'₹'+r2(n).toLocaleString('en-IN');
 const id=new URLSearchParams(location.search).get('o');
 (async()=>{
@@ -134,6 +134,18 @@ const id=new URLSearchParams(location.search).get('o');
   <div class=co-thanks><div class=co-invno>PAID VIA<br>${(o.pays||[]).map(p=>({cash:'Cash',upi:'UPI',card:'Card',giftcard:'Gift card',other:'Other'}[p.m]||p.m.toUpperCase())+' — '+inr(p.amt)).join('<br>')||'—'}</div><div class=co-seal>Thank<br>You</div></div>
   ${feedbackHtml}
   </div>`;
+  wireFeedback();
+  return;
+ }
+ // The POS's own bill-design gallery (pos/bill-templates.js, Settings -> Configuration -> Look & invoice ->
+ // "Bill design", settings.billStyle) -- a second visual template for a tenant that picked one, sitting
+ // alongside the chapterone bespoke branch above and the generic brand-driven render below. public_invoice()
+ // already returns the whole settings row as `cfg` (db/124's own comment), so cfg.billStyle is already here
+ // with no server change needed. o.t is already the saved tot() result, same numbers this page always used.
+ if(s.billStyle&&window.auzBillTemplates&&auzBillTemplates.styles[s.billStyle]){
+  const{css,html}=auzBillTemplates.styles[s.billStyle](o,s,{});
+  const st=document.createElement('style');st.textContent=css+'@media print{.bar{display:none}.fb{display:none}}';document.head.appendChild(st);
+  A.innerHTML=html+feedbackHtml;
   wireFeedback();
   return;
  }
