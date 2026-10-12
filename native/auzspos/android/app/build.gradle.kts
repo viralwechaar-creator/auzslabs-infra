@@ -29,11 +29,22 @@ android {
         versionName = flutter.versionName
     }
 
+    // Fixed key for TEST builds, so every new test APK installs over the previous one.
+    // The Play Store build will use its own secret key, never this one.
+    signingConfigs {
+        create("test") {
+            storeFile = file("test-release.jks")
+            storePassword = "auzspostest"
+            keyAlias = "test"
+            keyPassword = "auzspostest"
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("test")
         }
     }
 }
