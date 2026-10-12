@@ -44,7 +44,7 @@ window.CFG = { url: 'https://api.auzslab.in', key: '', googleClientId: '26411364
   var q = new URLSearchParams(location.search), h = new URLSearchParams((location.hash || '').replace(/^#/, ''));
   var err = document.getElementById('gErr'), text = document.getElementById('gText'), host = document.getElementById('gHost');
   var names = { pos: 'AUZsPOS', payroll: 'AUZsPay', accounts: 'AUZsLedger', mob: 'AUZsMob', site: 'AUZslab' };
-  function okReturn(r) { return /^auzspos:\/\/signin$/i.test(r || '') || /^https:\/\/([a-z0-9-]+\.)*auzslab\.in(\/|$)/i.test(r || '') || (local && /^http:\/\/([a-z0-9-]+\.)*localhost(:\d+)?(\/|$)/i.test(r || '')); }
+  function okReturn(r) { return /^auzs(pos|mob):\/\/signin$/i.test(r || '') || /^https:\/\/([a-z0-9-]+\.)*auzslab\.in(\/|$)/i.test(r || '') || (local && /^http:\/\/([a-z0-9-]+\.)*localhost(:\d+)?(\/|$)/i.test(r || '')); }
   function b64u(o) { return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
   function unb64u(t) { return JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g, '+').replace(/_/g, '/'))))); }
   function fail(m) { text.textContent = 'Google sign-in did not finish.'; err.textContent = m; }

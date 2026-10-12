@@ -38,7 +38,7 @@ class Tk {
   static Color get orangeBg => const Color(0x2BFF9500);
   static Color get redBg => const Color(0x1FFF3B30);
   static Color get blueBg => const Color(0x1F007AFF);
-  static Color get bar => _p(bar, const Color(0xF51C1C1E));
+  static Color get bar => _p(const Color(0xF5FAF9F7), const Color(0xF51C1C1E));
   static Color accent = const Color(0xFF800020);
   static Color get accentText => dark ? Color.lerp(accent, Colors.white, .35)! : accent;
   static Color get accentSoft => accent.withValues(alpha: .10);
