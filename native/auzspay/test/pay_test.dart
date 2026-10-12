@@ -7,6 +7,7 @@ import 'package:auzspay/core/session.dart';
 import 'package:auzspay/core/store.dart';
 import 'package:auzspay/ui/p_addperson.dart';
 import 'package:auzspay/ui/p_run.dart';
+import 'package:auzspay/ui/p_reports.dart';
 import 'package:auzspay/ui/shell.dart';
 import 'package:auzspay/ui/theme.dart';
 
@@ -116,6 +117,7 @@ Future<void> settle(WidgetTester t) async {
 }
 
 void main() {
+  reportTests();
   claimTests();
   TestWidgetsFlutterBinding.ensureInitialized();
   SharedPreferences.setMockInitialValues({});
@@ -259,5 +261,15 @@ void claimTests() {
     expect(a['description'], 'cab');
     expect(a['attachment'], 'tid/emp/receipt.jpg');
     expect(claimPayload(category: 'Food', amount: '10', date: '2026-10-12')['attachment'], isNull);
+  });
+}
+
+void reportTests() {
+  test('report cells: dates, money and plain numbers', () {
+    expect(reportCell('2026-10-05', 'Date', money: true), '5 Oct 2026');
+    expect(reportCell(1500, 'Net pay', money: true), '₹1,500');
+    expect(reportCell(3, 'Days', money: true), '3');
+    expect(reportCell(null, 'x', money: false), '');
+    expect(reportCsv(['Name', 'Net'], [['A, B', 5]]), 'Name,Net\n"A, B",5');
   });
 }

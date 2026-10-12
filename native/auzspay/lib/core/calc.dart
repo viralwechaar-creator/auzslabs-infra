@@ -108,3 +108,8 @@ Map<String, dynamic> claimPayload({required String category, required String amo
       'description': description.trim(),
       'attachment': (attachment ?? '').isEmpty ? null : attachment,
     };
+
+String csvEscape(Object? v) {
+  final s = v == null ? '' : '$v';
+  return RegExp(r'[",\r\n]').hasMatch(s) ? '"${s.replaceAll('"', '""')}"' : s;
+}

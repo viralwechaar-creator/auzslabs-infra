@@ -7,6 +7,7 @@ import 'i18n.dart';
 import 'kit.dart';
 import 'mk.dart';
 import 'p_hr.dart';
+import 'p_reports.dart';
 import 'theme.dart';
 
 class MorePage extends StatelessWidget {
@@ -28,6 +29,7 @@ class MorePage extends StatelessWidget {
             Li('HR today', icon: Icons.dashboard_outlined, tone: Tk.accent, onTap: () => _push(ctx, HrDashPage(s))),
             Li('Approvals', icon: Icons.pending_actions_outlined, tone: Tk.orange, onTap: () => _push(ctx, ApprovalsPage(s))),
             Li('People', icon: Icons.groups_outlined, tone: Tk.blue, onTap: () => _push(ctx, PeoplePage(s))),
+            if (s.can('pay_reports') || s.can('pay_view')) Li('Reports', icon: Icons.bar_chart_outlined, tone: Tk.blue, onTap: () => _push(ctx, ReportsPage(s))),
             if (s.can('pay_run') || s.can('pay_view')) Li('Payroll', icon: Icons.account_balance_wallet_outlined, tone: Tk.green, onTap: () => _push(ctx, RunsPage(s))),
           ]),
         ],
