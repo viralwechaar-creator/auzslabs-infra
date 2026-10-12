@@ -277,7 +277,7 @@ class _SellPageState extends State<SellPage> {
     catId ??= cats.isEmpty ? null : '${cats.first['id']}';
     if (catId != null && !cats.any((c) => '${c['id']}' == catId)) catId = cats.isEmpty ? null : '${cats.first['id']}';
     final lines = (o['lines'] as List).cast<Map<String, dynamic>>();
-    final all = s.repo!.of('item').toList();
+    final all = s.repo!.menuItems();
     final searching = q.isNotEmpty;
     final items = all.where((i) => searching ? '${i['name']} ${i['short'] ?? ''}'.toLowerCase().contains(q.toLowerCase()) : (catId == null || i['cat'] == catId)).toList()..sort((a, b) => '${a['name']}'.compareTo('${b['name']}'));
     final t = s.tot(o);

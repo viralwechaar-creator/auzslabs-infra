@@ -42,7 +42,40 @@ class Repo {
     pending = (await store.outbox()).length;
   }
 
-  Iterable<Map<String, dynamic>> of(String kind) => byId.values.where((r) => r.kind == kind && !r.deleted).map((r) => r.data);
+  /// Kinds that belong to one outlet (data.outlet, 'main' when absent). Same list as OUTK in the website POS (app/public/pos/core.js).
+  static const outletKinds = {'order', 'kotlog', 'exp', 'cashmove', 'waste', 'adjustment', 'transfer', 'ing', 'po', 'purchase', 'shift', 'dayclose', 'table', 'voidlog', 'closing', 'register', 'waitlist'};
+
+  /// The outlet this phone works in: an outlet id, 'main', or 'all' (every outlet, for owners).
+  String outlet = 'main';
+  /// The outlet new records are stamped with ('all' stamps 'main').
+  String get outletKey => outlet == 'all' ? 'main' : outlet;
+
+  /// Records of [kind], only this outlet's when the kind is per-outlet. Mirrors L() in the website POS.
+  Iterable<Map<String, dynamic>> of(String kind) {
+    final all = ofAll(kind);
+    if (!outletKinds.contains(kind) || outlet == 'all') return all;
+    return all.where((d) => '${d['outlet'] ?? 'main'}' == outlet);
+  }
+
+  /// Records of [kind] from every outlet.
+  Iterable<Map<String, dynamic>> ofAll(String kind) => byId.values.where((r) => r.kind == kind && !r.deleted).map((r) => r.data);
+
+  /// Menu items for this outlet: items switched off here are left out and a per-outlet price replaces the normal one. Mirrors menuItems() in the website POS.
+  List<Map<String, dynamic>> menuItems() {
+    final o = outlet;
+    final out = <Map<String, dynamic>>[];
+    for (final i in ofAll('item')) {
+      final off = i['outletOff'];
+      if (off is Map && off[o] == true) continue;
+      final op = i['outletPrice'];
+      if (op is Map && op[o] != null && '${op[o]}'.isNotEmpty) {
+        out.add({...i, 'price': num.tryParse('${op[o]}') ?? i['price']});
+      } else {
+        out.add(i);
+      }
+    }
+    return out;
+  }
   Map<String, dynamic>? rec(String? id) {
     final r = id == null ? null : byId[id];
     return r == null || r.deleted ? null : r.data;
@@ -52,6 +85,7 @@ class Repo {
   Future<Rec> save(String kind, Map<String, dynamic> data, {String? id, bool deleted = false}) async {
     id ??= (data['id'] as String?) ?? uid();
     data['id'] = id;
+    if (outletKinds.contains(kind) && (data['outlet'] == null || '${data['outlet']}'.isEmpty)) data['outlet'] = outletKey;
     final prev = byId[id];
     final r = Rec(id: id, kind: kind, data: data, deleted: deleted, updatedAt: nowIso(), srv: prev?.srv);
     byId[id] = r;

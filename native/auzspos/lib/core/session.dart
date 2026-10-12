@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api.dart';
+import '../ui/media.dart';
 import 'billing.dart' as b;
 import 'repo.dart';
 import 'sqlite_store.dart';
@@ -51,6 +52,22 @@ class Session extends ChangeNotifier {
   }
 
   String role = 'cashier';
+  /// True when the owner tied this login to one outlet (it cannot be changed on the phone).
+  bool outletPinned = false;
+  /// All outlets of the business (id, name). The first is always the main one.
+  List<Map<String, dynamic>> get outlets {
+    final l = (repo?.ofAll('outlet').toList() ?? <Map<String, dynamic>>[]);
+    l.sort((a, b) => '${a['name']}'.compareTo('${b['name']}'));
+    return [{'id': 'main', 'name': 'Main'}, ...l.where((o) => o['id'] != 'main')];
+  }
+  String outletName(String id) => id == 'all' ? 'All outlets' : '${outlets.firstWhere((o) => '${o['id']}' == id, orElse: () => {'name': id})['name']}';
+  Future<void> setOutlet(String id) async {
+    if (outletPinned || repo == null) return;
+    repo!.outlet = id;
+    (await SharedPreferences.getInstance()).setString('outlet.${user!['id']}', id);
+    notifyListeners();
+  }
+
   bool hasBusiness = true;
   Map<String, dynamic>? features, enabledFeatures;
   bool featureOn(String k) => features == null || (features![k] == true && (enabledFeatures?[k]) != false);
@@ -70,9 +87,15 @@ class Session extends ChangeNotifier {
 
   Future<void> _loadRole() async {
     try {
-      final r = await api.one('profiles', 'id', '${user!['id']}', select: 'role,role_id');
+      final r = await api.one('profiles', 'id', '${user!['id']}', select: 'role,role_id,outlet_id');
       hasBusiness = r != null;
       role = '${r?['role'] ?? 'cashier'}';
+      // Staff and managers are tied to the outlet the owner gave them; the owner chooses freely (default: the last one used).
+      final pinned = r?['outlet_id'];
+      final sp = await SharedPreferences.getInstance();
+      outletPinned = role != 'owner' && pinned != null && '$pinned'.isNotEmpty;
+      repo?.outlet = outletPinned ? '$pinned' : (sp.getString('outlet.${user!['id']}') ?? 'main');
+      if (outletPinned) await sp.setString('outletpin.${user!['id']}', '$pinned'); else await sp.remove('outletpin.${user!['id']}');
       perms = null;
       if (r?['role_id'] != null) {
         final rr = await api.one('roles', 'id', '${r!['role_id']}', select: 'permissions');
@@ -102,6 +125,9 @@ class Session extends ChangeNotifier {
       role = p.getString('role.${user!['id']}') ?? 'cashier';
       slug = p.getString('slug.${user!['id']}') ?? 'app';
       posAllowed = p.getBool('posok.${user!['id']}') ?? true;
+      final pin = p.getString('outletpin.${user!['id']}');
+      outletPinned = role != 'owner' && pin != null;
+      repo?.outlet = outletPinned ? pin! : (p.getString('outlet.${user!['id']}') ?? 'main');
     }
   }
 
@@ -122,6 +148,7 @@ class Session extends ChangeNotifier {
 
   Future<void> _open(Map<String, dynamic> u) async {
     api.onSessionExpired = () => signOut(message: 'Your session ended. Please sign in again.');
+    Media.api = api;
     final store = await SqliteStore.open('${u['id']}');
     repo = Repo(api, store, onChange: notifyListeners);
     user = u;
@@ -176,7 +203,7 @@ class Session extends ChangeNotifier {
     final d = DateTime.now();
     final day = '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
     try {
-      final r = await api.rpc('next_kot_no', {'p_day': day, 'p_outlet': 'main'});
+      final r = await api.rpc('next_kot_no', {'p_day': day, 'p_outlet': repo?.outletKey ?? 'main'});
       if (r != null) return '$r';
     } catch (_) {}
     final p = await SharedPreferences.getInstance();

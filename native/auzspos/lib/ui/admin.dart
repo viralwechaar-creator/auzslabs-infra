@@ -11,6 +11,7 @@ import 'more.dart';
 import 'more2.dart';
 import 'scan.dart';
 import 'theme.dart';
+import 'website.dart';
 import 'ds.dart';
 
 String _day(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
@@ -175,6 +176,7 @@ class _MenuAdminState extends State<MenuAdmin> with SingleTickerProviderStateMix
     final taxes = s.repo!.of('tax').toList();
     final groups = s.repo!.of('addongrp').toList();
     final sizesText = ((it?['sizes'] as List?) ?? []).cast<Map>().map((x) => '${x['l']} = ${x['p']}').join('\n');
+    final outs = s.outlets;
     await formSheet(
       context,
       it == null ? 'New item' : 'Edit item',
@@ -186,8 +188,19 @@ class _MenuAdminState extends State<MenuAdmin> with SingleTickerProviderStateMix
         if (taxes.isNotEmpty) F('taxId', 'Tax', type: 'select', value: it?['taxId'] ?? '', options: [['', 'Default rate'], for (final t in taxes) ['${t['id']}', '${t['name']} (${t['rate']}%)']]),
         F('sizes', 'Sizes (one per line, like  Small = 100). Leave empty for one price.', type: 'multiline', value: sizesText),
         if (groups.isNotEmpty) F('addonGroups', 'Add-on groups for this item', type: 'multi', value: [...((it?['addonGroups'] as List?) ?? const [])], options: [for (final g in groups) ['${g['id']}', '${g['name']}']]),
+        F('img', 'Photo', type: 'image', value: it?['img'], hint: 'menu'),
         F('desc', 'Description', type: 'multiline', value: it?['desc']),
+        F('short', 'Short name for the kitchen ticket', value: it?['short']),
+        F('st', 'Kitchen station', type: 'select', value: it?['st'] ?? 'Kitchen', options: const [['Kitchen', 'Kitchen'], ['Dessert', 'Dessert'], ['Bar', 'Bar']]),
+        F('hsn', 'HSN / SAC code', value: it?['hsn']),
+        F('cost', 'Cost price (₹)', type: 'number', value: it?['cost']),
+        F('barcode', 'Barcode', value: it?['barcode']),
+        F('rec', 'Recipe (stock used per sale, like  milk:0.2, tea:5)', type: 'multiline', value: it?['rec']),
         F('off', 'Sold out', type: 'check', value: it?['off'] == true),
+        if (outs.length > 1) ...[
+          for (final o in outs) F('op_${o['id']}', '${o['name']} price (₹), empty = same', type: 'number', value: (it?['outletPrice'] as Map?)?['${o['id']}']),
+          for (final o in outs) F('oo_${o['id']}', '${o['name']}: not sold here', type: 'check', value: (it?['outletOff'] as Map?)?['${o['id']}'] == true),
+        ],
       ],
       (v) async {
         if ('${v['name']}'.isEmpty || v['price'] == null) return false;
@@ -199,7 +212,13 @@ class _MenuAdminState extends State<MenuAdmin> with SingleTickerProviderStateMix
           if (parts[0].trim().isEmpty || pr == null) continue;
           sizes.add({'l': parts[0].trim(), 'p': pr});
         }
-        final d = {...?it, 'sizes': sizes, if (groups.isNotEmpty) 'addonGroups': v['addonGroups'] ?? [], 'name': v['name'], 'cat': v['cat'], 'price': v['price'], 'veg': v['veg'], 'desc': v['desc'], 'off': v['off'] == true, 'taxId': ('${v['taxId'] ?? ''}').isEmpty ? null : v['taxId']};
+        final outletPrice = <String, dynamic>{}, outletOff = <String, dynamic>{};
+        for (final o in outs) {
+          final pv = v['op_${o['id']}'];
+          if (pv != null && '$pv'.isNotEmpty) outletPrice['${o['id']}'] = pv;
+          if (v['oo_${o['id']}'] == true) outletOff['${o['id']}'] = true;
+        }
+        final d = {...?it, 'sizes': sizes, 'img': v['img'], 'short': v['short'] ?? '', 'st': v['st'] ?? 'Kitchen', 'hsn': v['hsn'] ?? '', 'cost': v['cost'] ?? 0, 'barcode': ('${v['barcode'] ?? ''}').isEmpty ? null : v['barcode'], 'rec': v['rec'] ?? '', if (outs.length > 1) ...{'outletPrice': outletPrice, 'outletOff': outletOff}, if (groups.isNotEmpty) 'addonGroups': v['addonGroups'] ?? [], 'name': v['name'], 'cat': v['cat'], 'price': v['price'], 'veg': v['veg'], 'desc': v['desc'], 'off': v['off'] == true, 'taxId': ('${v['taxId'] ?? ''}').isEmpty ? null : v['taxId']};
         await s.repo!.save('item', d, id: it?['id'] as String?);
         setState(() {});
         s.sync();
@@ -439,7 +458,8 @@ class _QrWebsitePageState extends State<QrWebsitePage> {
         Card(child: ListTile(leading: Icon(Icons.table_restaurant_outlined, color: Tk.accent), title: const Text('Table QR codes', style: TextStyle(fontWeight: FontWeight.w700)), subtitle: Text(guests == 0 ? 'Add tables first' : 'One QR for each of your $guests tables'), trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => TablesAdmin(widget.h))))),
         Card(child: ListTile(leading: Icon(Icons.qr_code_scanner, color: Tk.accent), title: const Text('Scan a QR code', style: TextStyle(fontWeight: FontWeight.w700)), subtitle: const Text('Read a table or website QR with the camera'), trailing: const Icon(Icons.chevron_right), onTap: () => scanAndHandle(context, widget.h))),
         Card(child: ListTile(leading: Icon(Icons.account_balance_wallet_outlined, color: Tk.accent), title: const Text('Pay by UPI', style: TextStyle(fontWeight: FontWeight.w700)), subtitle: Text(('${s.cfg['upiId'] ?? ''}').isEmpty ? 'Not set up. Customers pay at the counter.' : '${s.cfg['upiId']}'), trailing: const Icon(Icons.chevron_right), onTap: upi)),
-        Padding(padding: const EdgeInsets.all(8), child: Text('Guest orders arrive in the QR orders tab. Turn QR ordering on or off, and edit your website text and photos, in the full web console.', style: TextStyle(color: Tk.label2, fontSize: 12))),
+        Card(child: ListTile(leading: Icon(Icons.web_outlined, color: Tk.accent), title: const Text('Website text and photos', style: TextStyle(fontWeight: FontWeight.w700)), subtitle: const Text('Headline, about text, hero and gallery photos'), trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => Scaffold(appBar: AppBar(title: const Text('Website & Booking')), body: WebsiteContentPage(widget.h)))))),
+        Padding(padding: const EdgeInsets.all(8), child: Text('Guest orders arrive in the QR orders tab. Turning QR ordering on or off is in the full web console.', style: TextStyle(color: Tk.label2, fontSize: 12))),
       ]),
     );
   }

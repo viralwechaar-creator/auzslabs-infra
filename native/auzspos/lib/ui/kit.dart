@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart' hide Text;
 import 'i18n.dart';
+import 'media.dart';
 import 'theme.dart';
 
 /// One field of [formSheet].
 class F {
   F(this.k, this.label, {this.type = 'text', this.value, this.options = const [], this.hint});
-  final String k, label, type; // text | number | check | select | multiline
+  final String k, label, type; // text | number | check | select | multiline | multi | image (hint = upload folder)
   final dynamic value;
   final List<List<String>> options; // [value, label]
   final String? hint;
@@ -32,6 +33,14 @@ Future<void> formSheet(BuildContext c, String title, List<F> fields, Future<bool
                 padding: const EdgeInsets.only(bottom: 12),
                 child: switch (f.type) {
                   'check' => SwitchListTile(contentPadding: EdgeInsets.zero, title: Text(f.label), value: vals[f.k] == true, onChanged: (v) => set(() => vals[f.k] = v)),
+                  'image' => PhotoField(
+                      label: f.label,
+                      url: vals[f.k] as String?,
+                      onPick: () async {
+                        final u = await Media.pick(ctx, f.hint ?? 'menu');
+                        if (u != null) set(() => vals[f.k] = u);
+                      },
+                      onClear: () => set(() => vals[f.k] = null)),
                   'multi' => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(f.label, style: const TextStyle(fontWeight: FontWeight.w600)),
                       const SizedBox(height: 6),
@@ -76,7 +85,7 @@ Future<void> formSheet(BuildContext c, String title, List<F> fields, Future<bool
                   onPressed: () async {
                     final out = <String, dynamic>{};
                     for (final f in fields) {
-                      if (f.type == 'check' || f.type == 'select' || f.type == 'multi') {
+                      if (f.type == 'check' || f.type == 'select' || f.type == 'multi' || f.type == 'image') {
                         out[f.k] = vals[f.k];
                       } else if (f.type == 'number') {
                         final t = ctl[f.k]!.text.trim();
