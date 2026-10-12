@@ -5,6 +5,7 @@ import 'package:flutter/material.dart' hide Text;
 import 'i18n.dart';
 import '../core/repo.dart';
 import '../core/session.dart';
+import '../core/alerts.dart';
 import 'actions.dart';
 import 'admin.dart';
 import 'kit.dart';
@@ -58,7 +59,7 @@ class _HomeState extends State<Home> {
     super.initState();
     s.addListener(_note);
     if (s.repo!.of('table').isNotEmpty) tab = 'tables';
-    _g = Timer.periodic(const Duration(seconds: 20), (_) => loadGuests());
+    _g = Timer.periodic(const Duration(seconds: 10), (_) => loadGuests());
     loadGuests();
   }
 
@@ -85,10 +86,7 @@ class _HomeState extends State<Home> {
       if (mounted) setState(() => guests = r);
       if (fresh.isNotEmpty && _guestsLoaded && mounted) {
         final call = fresh.any((g) => '${g['note']}' == 'Waiter called');
-        if ((await SharedPreferences.getInstance()).getBool('alertSound') ?? true) {
-          HapticFeedback.heavyImpact();
-          SystemSound.play(SystemSoundType.alert);
-        }
+        if (await Alerts.enabled()) await Alerts.ring(title: call ? 'Guest is calling the waiter' : 'New QR order', body: 'Open AUZsPOS to accept it');
         _toast(call ? 'A guest is calling the waiter' : 'New QR order');
       }
       _guestsLoaded = true;

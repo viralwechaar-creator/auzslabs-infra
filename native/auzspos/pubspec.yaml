@@ -46,6 +46,8 @@ dependencies:
   qr_flutter: ^4.1.0
   print_bluetooth_thermal: ^1.2.5
   permission_handler: ^13.0.2
+  audioplayers: ^6.8.1
+  flutter_local_notifications: ^22.3.1
 
 dev_dependencies:
   flutter_test:

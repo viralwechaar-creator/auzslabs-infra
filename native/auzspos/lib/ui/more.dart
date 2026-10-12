@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' hide Text;
 import 'i18n.dart';
 import '../core/billing.dart' show r2;
 import '../core/repo.dart';
+import '../core/alerts.dart';
 import '../core/session.dart';
 import 'home.dart';
 import 'more2.dart';
@@ -113,6 +114,7 @@ class _MorePageState extends State<MorePage> {
           await Tk.setMode(v);
           setState(() {});
         })),
+        Li('Test the alert sound', sub: 'Plays the new-order beep now', icon: Icons.volume_up_outlined, onTap: () => Alerts.ring(title: 'Test alert', body: 'This is how a new order sounds')),
         Li('Language', icon: Icons.translate, chevron: false, trailing: Seg<String>(items: const [('en', 'English'), ('hi', 'हिंदी')], value: Lang.code, onChanged: (v) => Lang.set(v))),
         Li('Outlet', icon: Icons.apartment, value: '${s.cfg['name']}', chevron: false),
         Li('Receipt printer', sub: 'Bluetooth thermal printer, 58 or 80 mm', icon: Icons.print_outlined, onTap: () => printerSheet(context)),
