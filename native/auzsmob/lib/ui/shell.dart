@@ -13,6 +13,7 @@ import 'p_settings.dart';
 import 'p_stock.dart';
 import 'theme.dart';
 import 'mydata.dart';
+import 'printer.dart';
 
 const _icons = {
   'home': Icons.home_outlined,
@@ -167,6 +168,10 @@ class _MobShellState extends State<MobShell> with WidgetsBindingObserver {
         gap(),
         Group([
           Li('${s.user?['email'] ?? ''}', sub: s.role, icon: Icons.person_outline, tone: Tk.label3, chevron: false),
+          Li('Receipt printer', sub: 'Bluetooth thermal printer, 58 or 80 mm', icon: Icons.print_outlined, tone: Tk.label3, onTap: () {
+            Navigator.pop(ctx);
+            openPrinterSheet(context);
+          }),
           Li('Help & report a problem', icon: Icons.help_outline, tone: Tk.label3, onTap: () => launchUrl(Uri.parse('https://wa.me/919251250829'), mode: LaunchMode.externalApplication)),
           Li('Beginner guide', icon: Icons.menu_book_outlined, tone: Tk.label3, onTap: () => launchUrl(Uri.https('auzslab.in', '/learn.html'), mode: LaunchMode.externalApplication)),
           if (s.isOwner) Li('Backup, export or clear data', icon: Icons.download_outlined, tone: Tk.label3, onTap: () {

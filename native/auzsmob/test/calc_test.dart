@@ -81,4 +81,25 @@ void main() {
     expect(csv.contains(',,Total,3.0,300.0,480.0,180.0'), isTrue);
     expect(csv.split('\r\n').where((l) => l.isEmpty).length, 1);
   });
+
+  test('day cash: cash sales plus cash collected minus cash paid to vendors; voided and credit never count', () {
+    final d = DateTime.now().toIso8601String();
+    final old = DateTime.now().subtract(const Duration(days: 2)).toIso8601String();
+    final c = dayCash([
+      {'created_at': d, 'paid': 500, 'payment_mode': 'cash', 'balance': 0},
+      {'created_at': d, 'paid': 300, 'payment_mode': 'upi', 'balance': 0},
+      {'created_at': d, 'paid': 0, 'payment_mode': 'credit', 'balance': 700},
+      {'created_at': d, 'paid': 999, 'payment_mode': 'cash', 'voided': true},
+      {'created_at': old, 'paid': 111, 'payment_mode': 'cash'},
+    ], [
+      {'created_at': d, 'kind': 'customer_due', 'amount': 200, 'method': 'cash'},
+      {'created_at': d, 'kind': 'customer_due', 'amount': 50, 'method': 'upi'},
+      {'created_at': d, 'kind': 'vendor_due', 'amount': 120, 'method': 'cash'},
+    ], ymd(DateTime.now()));
+    expect(c.bills, 3);
+    expect(c.cash, 500);
+    expect(c.upi, 300);
+    expect(c.credit, 700);
+    expect(c.expected, 580);
+  });
 }

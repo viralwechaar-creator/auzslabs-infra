@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart' hide Text;
 import 'package:flutter/material.dart' as m;
 import 'package:flutter_test/flutter_test.dart';
@@ -8,6 +9,7 @@ import 'package:auzsmob/core/store.dart';
 import 'package:auzsmob/ui/shell.dart';
 import 'package:auzsmob/ui/theme.dart';
 import 'package:auzsmob/ui/i18n.dart';
+import 'package:auzsmob/ui/p_more.dart';
 import 'package:auzsmob/ui/p_purchase.dart';
 import 'package:auzsmob/ui/p_repairs.dart';
 
@@ -225,4 +227,43 @@ void main() {
   });
 
   test('placeholder so the m alias is used', () => expect(m.Text('x').data, 'x'));
+
+  testWidgets('Customers lists who bought and who owes; Day close shows the drawer and closes the day', (t) async {
+    t.view.physicalSize = const Size(1080, 2200);
+    t.view.devicePixelRatio = 2.75;
+    addTearDown(t.view.reset);
+    final s = await boot(t);
+    final now = DateTime.now().toIso8601String();
+    await s.repo!.put('sales', {'id': 'sa1', 'total': 500, 'paid': 300, 'balance': 200, 'payment_mode': 'cash', 'customer_name': 'Ravi', 'customer_phone': '9812345678', 'created_at': now, 'voided': false, 'staff_id': 'u1'});
+    await t.pump(const Duration(milliseconds: 300));
+    expect(find.text('Customers'), findsOneWidget, reason: 'Home offers Customers');
+    expect(find.text('Day close'), findsOneWidget, reason: 'and Day close');
+    final nav = t.state<NavigatorState>(find.byType(Navigator).first);
+    unawaited(nav.push(MaterialPageRoute<void>(builder: (_) => CustomersPage(s))));
+    await t.pump();
+    await t.pump(const Duration(milliseconds: 500));
+
+    final ex0 = t.takeException();
+    if (ex0 != null) fail('page threw: $ex0');
+    expect(find.text('Ravi'), findsOneWidget);
+    expect(find.textContaining('Due'), findsWidgets);
+    expect(t.takeException(), isNull);
+    await t.pageBack();
+    await t.pump(const Duration(milliseconds: 400));
+    unawaited(t.state<NavigatorState>(find.byType(Navigator).first).push(MaterialPageRoute<void>(builder: (_) => DayClosePage(s))));
+    await t.pump();
+    await t.pump(const Duration(milliseconds: 500));
+    expect(find.text('Expected in the drawer'), findsOneWidget);
+    await t.enterText(find.byType(TextField).first, '250');
+    await t.pump(const Duration(milliseconds: 300));
+    await t.drag(find.byType(ListView).last, const Offset(0, -500));
+    await t.pump(const Duration(milliseconds: 300));
+    expect(find.textContaining('Short by'), findsOneWidget, reason: '300 expected, 250 counted');
+    await t.ensureVisible(find.text('Close the day'));
+    await t.tap(find.text('Close the day'));
+    await t.pump();
+    await t.pump(const Duration(milliseconds: 500));
+    expect((s.api as _Api).calls, contains('mob_save_settings'));
+    expect(t.takeException(), isNull);
+  });
 }
