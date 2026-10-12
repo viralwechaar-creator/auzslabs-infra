@@ -9,20 +9,20 @@ const cats = () => L('cat').sort((a, b) => (a.n || 0) - (b.n || 0) || String(a.n
 function curOrder() { if (!S.cur) S.cur = newOrder(); return S.cur; }
 function visibleItems(o) {
   const q = S.q.trim().toLowerCase(), vf = S.vf;
-  return menuItems().filter((i) => !itemOff(i, o.type) && (q ? i.name.toLowerCase().includes(q) || (i.short || '').toLowerCase() === q || (i.short || '').toLowerCase().startsWith(q) || (i.barcode && i.barcode === S.q.trim()) || (i.variants || []).some((v) => v.barcode && v.barcode === S.q.trim()) : i.cat === S.cat)
+  return menuItems().filter((i) => (q ? i.name.toLowerCase().includes(q) || (i.short || '').toLowerCase() === q || (i.short || '').toLowerCase().startsWith(q) || (i.barcode && i.barcode === S.q.trim()) || (i.variants || []).some((v) => v.barcode && v.barcode === S.q.trim()) : i.cat === S.cat)
     && (isRetail() || vf === 'all' || (i.veg || 'veg') === vf)).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 V.sell = () => {
   const o = curOrder(), cs = cats();
   if (!cs.some((c) => c.id === S.cat)) S.cat = cs[0] && cs[0].id;
-  const counts = {}; menuItems().forEach((i) => { if (!itemOff(i, o.type)) counts[i.cat] = (counts[i.cat] || 0) + 1; });
+  const counts = {}; menuItems().forEach((i) => { counts[i.cat] = (counts[i.cat] || 0) + 1; });
   const inCart = {}; o.lines.forEach((l) => (inCart[l.id] = (inCart[l.id] || 0) + l.qty));
   const grid = h('div', { class: 'items', 'data-items': '1' });
   const drawGrid = () => {
     const its = visibleItems(o);
     grid.replaceChildren(...its.map((i) => itemTile(i, inCart[i.id])));
-    if (!its.length) grid.append(h('div', { style: { gridColumn: '1/-1' } }, cs.length ? empty('search', S.q ? 'No matches' : 'Nothing here', S.q ? 'Try another name or code.' : 'Every item in this category is sold out or hidden.') : empty('sell', 'No menu yet', 'Add categories and items in the admin console under Menu.')));
+    if (!its.length) grid.append(h('div', { style: { gridColumn: '1/-1' } }, cs.length ? empty('search', S.q ? 'No matches' : 'Nothing here', S.q ? 'Try another name or code.' : 'Add items to this category in the admin console under Menu.') : empty('sell', 'No menu yet', 'Add categories and items in the admin console under Menu.')));
   };
   drawGrid();
   const search = h('div', { class: 'search grow' }, icon('search', 18), h('input', { class: 'input', type: 'search', placeholder: 'Search items or codes', value: S.q, 'aria-label': 'Search items', oninput: (e) => { S.q = e.target.value; drawGrid(); $$('.cats button,.cat-chips .chip').forEach((b) => b.classList.toggle('on', !S.q && b.dataset.cat === S.cat)); } }));
@@ -43,9 +43,11 @@ V.sell.fixed = true;
 
 function itemTile(i, q) {
   const price = i.sizes && i.sizes.length ? i.sizes.map((s) => inr(s.p)).slice(0, 2).join(' / ') : inr(i.price);
-  return h('button', { class: 'tile' + (i.img ? ' has-img' : ''), onclick: () => addItemFlow(i), 'aria-label': i.name },
+  const why = itemOffWhy(i, S.cur && S.cur.type);
+  return h('button', { class: 'tile' + (i.img ? ' has-img' : '') + (why ? ' off' : ''), onclick: () => (why ? toast(i.name + ': ' + why, { err: true }) : addItemFlow(i)), 'aria-label': i.name },
     i.img ? h('img', { src: i.img, alt: '', loading: 'lazy' }) : null,
     h('div', { class: 'nm' }, i.name, i.combo ? ' ' : null),
+    why ? h('div', { class: 'offwhy' }, why) : null,
     h('div', { class: 'pr' }, h('span', null, isRetail() ? inr(i.price) + ' · ' + variantQty(i) + ' left' : price), !isRetail() ? h('i', { class: 'vmark ' + (i.veg || 'veg'), title: VEG[i.veg || 'veg'] }) : null),
     q ? h('span', { class: 'qty' }, String(q)) : null);
 }
