@@ -13,6 +13,11 @@
   var K = { hero: function (o) { return card(o, true); }, tile: function (o) { return card(o, false); } };
   K.grid = function (hero, tiles) { var g = el('div', 'kpis'); if (hero) g.append(K.hero(hero)); (tiles || []).forEach(function (t) { g.append(K.tile(t)); }); K.enhance(g); return g; };
   function valueText(k) { var v = k.querySelector(':scope > .v, :scope > .n, :scope > .k-v, :scope > b'); return v ? (v.textContent || '').trim() : ''; }
+  // 6-column grid: every row is filled edge to edge (3 or 2 per row; a short last row stretches), so there are no empty cells
+  function spans(list, long) {
+    var n = list.length, per = long || n === 4 ? 2 : 3, i = 0;
+    while (i < n) { var left = n - i, row = Math.min(per, left); for (var k = 0; k < row; k++) list[i + k].style.setProperty('--sp', String(6 / row)); i += row; }
+  }
   K.enhance = function (g) {
     if (!g || g.dataset.kg) return;
     var items = Array.prototype.filter.call(g.children, function (c) { return c.classList && c.classList.contains('kpi'); });
@@ -23,11 +28,11 @@
     var hero = items.length >= 3 && !taken ? items[0] : null; if (hero) hero.classList.add('k-hero');
     var tiles = items.filter(function (k) { return k !== hero; });
     var long = tiles.some(function (k) { return valueText(k).length > 9; });
-    g.style.setProperty('--kc', tiles.length < 3 ? String(Math.max(tiles.length, 1)) : long ? '2' : '3');
+    spans(tiles.slice(0, MAX_TILES), long);
     items.forEach(function (k) { if (!valueText(k) && k.querySelector(':scope > .v, :scope > .n, :scope > .k-v, :scope > b')) k.querySelector(':scope > .v, :scope > .n, :scope > .k-v, :scope > b').textContent = '—'; });
     if (tiles.length > MAX_TILES) {
       var d = el('details', 'kmore'), s = el('summary', '', 'More metrics'), t = el('div', 'kt');
-      tiles.slice(MAX_TILES).forEach(function (k) { t.append(k); }); d.append(s, t); g.append(d);
+      var rest = tiles.slice(MAX_TILES); rest.forEach(function (k) { t.append(k); }); spans(rest, long); d.append(s, t); g.append(d);
     }
   };
   K.scan = function (root) { (root.matches && root.matches('.kpis') ? [root] : []).concat(Array.prototype.slice.call(root.querySelectorAll ? root.querySelectorAll('.kpis:not([data-kg])') : [])).forEach(K.enhance); };
