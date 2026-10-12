@@ -18,13 +18,31 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze --no-fatal-infos
       - run: flutter test
+      - name: Play upload key (only if the secrets are set)
+        env:
+          KS_B64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+            echo "ANDROID_UPLOAD_KEYSTORE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+            echo "ANDROID_UPLOAD_STORE_PASSWORD=${{ secrets.ANDROID_UPLOAD_STORE_PASSWORD }}" >> "$GITHUB_ENV"
+            echo "ANDROID_UPLOAD_KEY_ALIAS=${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}" >> "$GITHUB_ENV"
+            echo "ANDROID_UPLOAD_KEY_PASSWORD=${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}" >> "$GITHUB_ENV"
+            echo "Using the Play upload key"
+          else
+            echo "No upload key secrets: the bundle is signed with the shared TEST key (not for Play)"
+          fi
       - run: flutter build apk --release
+      - run: flutter build appbundle --release
       - uses: actions/upload-artifact@v4
         with: { name: AUZsPay-apk, path: native/auzspay/build/app/outputs/flutter-apk/app-release.apk }
+      - uses: actions/upload-artifact@v4
+        with: { name: AUZsPay-aab, path: native/auzspay/build/app/outputs/bundle/release/app-release.aab }
       - name: Publish APK on a release page
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           cp build/app/outputs/flutter-apk/app-release.apk AUZsPay.apk
+          cp build/app/outputs/bundle/release/app-release.aab AUZsPay.aab
           gh release delete native-pay-latest --yes --cleanup-tag --repo "$GITHUB_REPOSITORY" || true
-          gh release create native-pay-latest AUZsPay.apk --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --title "AUZsPay Android (test build)" --notes "Test build of the native AUZsPay app. Tap AUZsPay.apk below to download, then open it to install."
+          gh release create native-pay-latest AUZsPay.apk AUZsPay.aab --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --title "AUZsPay Android (test build)" --notes "Test build of the native AUZsPay app. Tap AUZsPay.apk below to download, then open it to install. The .aab is the Google Play bundle: it is only valid for Play when this build ran with the owner upload key secrets, otherwise it is signed with the shared test key."
