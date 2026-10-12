@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api.dart';
+import 'push.dart';
 import '../ui/media.dart';
 import 'billing.dart' as b;
 import 'repo.dart';
@@ -155,6 +156,7 @@ class Session extends ChangeNotifier {
     await repo!.load();
     await _loadRole();
     notifyListeners();
+    unawaited(PushRegistration.register(api, '${u['id']}'));
     unawaited(sync());
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 45), (_) => sync());
