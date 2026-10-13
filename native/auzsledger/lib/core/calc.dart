@@ -142,3 +142,113 @@ String waNumber(String phone) {
       return (ymd(DateTime(now.year, now.month, 1)), ymd(DateTime(now.year, now.month + 1, 0)));
   }
 }
+
+/// Parse CSV text (quotes, doubled quotes, CRLF) into rows of cells.
+List<List<String>> parseCsv(String text) {
+  final rows = <List<String>>[];
+  var row = <String>[];
+  final cell = StringBuffer();
+  var q = false;
+  final t = text.startsWith('﻿') ? text.substring(1) : text;
+  for (var i = 0; i < t.length; i++) {
+    final ch = t[i];
+    if (q) {
+      if (ch == '"') {
+        if (i + 1 < t.length && t[i + 1] == '"') {
+          cell.write('"');
+          i++;
+        } else {
+          q = false;
+        }
+      } else {
+        cell.write(ch);
+      }
+    } else if (ch == '"') {
+      q = true;
+    } else if (ch == ',') {
+      row.add(cell.toString());
+      cell.clear();
+    } else if (ch == '\n' || ch == '\r') {
+      if (ch == '\r' && i + 1 < t.length && t[i + 1] == '\n') i++;
+      row.add(cell.toString());
+      cell.clear();
+      if (row.any((c) => c.trim().isNotEmpty)) rows.add(row);
+      row = <String>[];
+    } else {
+      cell.write(ch);
+    }
+  }
+  row.add(cell.toString());
+  if (row.any((c) => c.trim().isNotEmpty)) rows.add(row);
+  return rows;
+}
+
+/// Turn a statement date like 05/10/2026, 5-10-26, 2026-10-05 or 5 Oct 2026 into 2026-10-05 ('' if unreadable).
+String bankDate(String s) {
+  final t = s.trim();
+  var m = RegExp(r'^(\d{4})-(\d{1,2})-(\d{1,2})').firstMatch(t);
+  if (m != null) return '${m[1]}-${m[2]!.padLeft(2, '0')}-${m[3]!.padLeft(2, '0')}';
+  m = RegExp(r'^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})').firstMatch(t);
+  if (m != null) {
+    var y = int.parse(m[3]!);
+    if (y < 100) y += 2000;
+    return '$y-${m[2]!.padLeft(2, '0')}-${m[1]!.padLeft(2, '0')}';
+  }
+  m = RegExp(r'^(\d{1,2})[ \-]([A-Za-z]{3})[a-z]*[ \-,]*(\d{2,4})').firstMatch(t);
+  if (m != null) {
+    final mi = _mo.indexWhere((x) => x.toLowerCase() == m![2]!.toLowerCase());
+    if (mi >= 0) {
+      var y = int.parse(m[3]!);
+      if (y < 100) y += 2000;
+      return '$y-${(mi + 1).toString().padLeft(2, '0')}-${m[1]!.padLeft(2, '0')}';
+    }
+  }
+  return '';
+}
+
+/// Guess which CSV column is which for a bank statement. Returns column indexes (-1 = none).
+Map<String, int> guessBankColumns(List<String> head) {
+  int find(RegExp re) => head.indexWhere((h) => re.hasMatch(h.toLowerCase()));
+  return {
+    'date': find(RegExp(r'date|txn dt|value')),
+    'description': find(RegExp(r'desc|narration|particular|remark|details')),
+    'reference': find(RegExp(r'ref|chq|cheque|utr|instr')),
+    'debit': find(RegExp(r'withdraw|debit|dr\b|paid out')),
+    'credit': find(RegExp(r'deposit|credit|cr\b|paid in')),
+  };
+}
+
+/// Statement rows in the shape acc_bank_import wants.
+List<Map<String, dynamic>> bankRows(List<List<String>> table, Map<String, int> col) {
+  String at(List<String> r, String k) => (col[k] ?? -1) >= 0 && col[k]! < r.length ? r[col[k]!].trim() : '';
+  return [
+    for (final r in table.skip(1))
+      if (bankDate(at(r, 'date')).isNotEmpty)
+        {'date': bankDate(at(r, 'date')), 'description': at(r, 'description'), 'reference': at(r, 'reference'), 'debit': at(r, 'debit'), 'credit': at(r, 'credit')},
+  ];
+}
+
+/// Oldest-first split of a payment across outstanding documents: [{doc_id, amount}].
+List<Map<String, dynamic>> allocateOldestFirst(double amount, List<Map<String, dynamic>> docs) {
+  var left = amount;
+  final out = <Map<String, dynamic>>[];
+  final sorted = [...docs]..sort((a, b) => '${a['due_date'] ?? a['doc_date']}'.compareTo('${b['due_date'] ?? b['doc_date']}'));
+  for (final d in sorted) {
+    final o = n(d['outstanding']);
+    if (o <= 0 || left <= 0) continue;
+    final t = left < o ? left : o;
+    out.add({'doc_id': d['id'], 'amount': r2(t)});
+    left -= t;
+  }
+  return out;
+}
+
+/// Lines of a credit note from an invoice: quantity to credit per line id (blank/0 = left out).
+List<Map<String, dynamic>> creditLines(List<Map<String, dynamic>> lines, Map<String, double> qtyByLine) => [
+      for (final l in lines)
+        if ((qtyByLine['${l['id']}'] ?? 0) > 0)
+          {
+            'product_id': l['product_id'], 'account_id': l['account_id'], 'description': l['description'], 'hsn': l['hsn'], 'qty': qtyStr(qtyByLine['${l['id']}']!), 'unit': l['unit'], 'rate': l['rate'],
+            'disc_pct': l['disc_pct'], 'disc_amt': null, 'tax_rate': '${l['tax_rate']}', 'warehouse_id': l['warehouse_id'],
+          }
+    ];
