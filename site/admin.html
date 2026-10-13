@@ -453,6 +453,7 @@ body.admin-shell .btn-primary:hover{background:#940a2c}
         <button class="a-side-btn" data-section="systemStats"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="7" rx="1.6"/><rect x="4" y="13" width="16" height="7" rx="1.6"/><circle cx="8" cy="7.5" r=".9" fill="currentColor" stroke="none"/><circle cx="8" cy="16.5" r=".9" fill="currentColor" stroke="none"/></svg>System resources</button>
         <button class="a-side-btn" data-section="auditLog"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>Audit log</button>
         <button class="a-side-btn" data-section="privacyReq"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3Z"/><path d="M9.5 12l2 2 3.5-4"/></svg>Privacy requests<span class="a-row-badge" id="privReqBadge" style="display:none"></span></button>
+        <button class="a-side-btn" data-section="whatsapp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20l1.3-4.2A8 8 0 1 1 8.4 18.8L4 20Z"/><path d="M9 9.5c.3 2.2 2.3 4.2 4.5 4.5l1.2-1.2-1.8-1-.8.6c-.8-.4-1.4-1-1.8-1.8l.6-.8-1-1.8L9 9.5Z"/></svg>WhatsApp</button>
 
         <div class="a-side-group-label">Tools</div>
         <a class="a-side-btn" href="https://agents.auzslab.in" id="agentsLinkSide"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/><circle cx="9" cy="10" r="1.3"/><circle cx="15" cy="10" r="1.3"/></svg>Agents Office</a>
@@ -724,6 +725,13 @@ body.admin-shell .btn-primary:hover{background:#940a2c}
         <div id="privacyReqList">Loading&hellip;</div>
       </section>
 
+      <section class="a-page" id="whatsappSection" data-title="WhatsApp" data-parent="more">
+        <div class="label">Automatic messages</div>
+        <h2 class="h-2">WhatsApp</h2>
+        <p class="p">Messages that go out by themselves: AUZslab's own (quote link, GST bill, reminders) from the AUZslab number, and each client shop's customer messages from the shop's own number, or from ours if you allow it below.</p>
+        <div id="waBody">Loading&hellip;</div>
+      </section>
+
       <section class="a-page" id="moreSection" data-title="More">
         <div class="a-more-group-label">Requests to review</div>
         <div class="a-nav-list" id="moreNav">
@@ -792,6 +800,11 @@ body.admin-shell .btn-primary:hover{background:#940a2c}
           <button class="a-nav-row" data-section="privacyReq">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3Z"/><path d="M9.5 12l2 2 3.5-4"/></svg>
             <span class="grow">Privacy requests</span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <button class="a-nav-row" data-section="whatsapp">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20l1.3-4.2A8 8 0 1 1 8.4 18.8L4 20Z"/><path d="M9 9.5c.3 2.2 2.3 4.2 4.5 4.5l1.2-1.2-1.8-1-.8.6c-.8-.4-1.4-1-1.8-1.8l.6-.8-1-1.8L9 9.5Z"/></svg>
+            <span class="grow">WhatsApp</span>
             <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
           </button>
         </div>
@@ -1026,7 +1039,7 @@ function resetMainScroll() {
 const SECTION_LOADERS = {
   leads: () => { loadLeads(); refreshOrdersBadge(); }, orders: () => loadOrders(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(),
   pricing: () => { loadPricing(); loadBundles(); loadPayments(); },
-  users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(), privacyReq: () => loadPrivacyReq(),
+  users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(), privacyReq: () => loadPrivacyReq(), whatsapp: () => loadWhatsApp(),
   team: () => { loadTeam(); loadSetups(); loadTeamApps(); }, salesWork: () => loadSalesWork(), clientPay: () => { loadClientPay(); loadBills(); },
 };
 const sectionLoadedAt = {};
@@ -2768,6 +2781,38 @@ async function loadPrivacyReq() {
     const { error: e } = await sb.rpc('admin_update_data_request', { p_id: el.dataset.prClose, p_status: el.dataset.st, p_response: txt }); if (e) return alert(e.message); loadPrivacyReq(); }; });
 }
 document.querySelectorAll('[data-pr]').forEach((c) => { c.addEventListener('click', () => { prFilter = c.dataset.pr; document.querySelectorAll('[data-pr]').forEach((x) => { x.className = 'btn ' + (x === c ? 'btn-primary' : 'btn-ghost'); }); loadPrivacyReq(); }); });
+
+// ---- WhatsApp automation (db/184): the AUZslab number, which shops may use it, and the message log ----
+const WA_TONE = { queued: '#b8942f', sending: '#b8942f', sent: '#555', delivered: '#1a7f37', read: '#1a7f37', failed: '#b42318', skipped: '#888' };
+async function loadWhatsApp() {
+  const box = document.getElementById('waBody');
+  const [{ data, error }, cfg] = await Promise.all([sb.rpc('admin_wa_overview'), fetch(CFG.url + '/whatsapp/config').then((r) => r.json()).catch(() => ({}))]);
+  if (error) { box.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  const when = (t) => new Date(t).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const counts = Object.entries(data.platform_counts || {}).map(([k, n]) => `${esc(k)} ${n}`).join(' &middot; ') || 'none yet';
+  box.innerHTML = `
+    <div class="card" style="padding:14px;margin:12px 0"><b>AUZslab number</b>
+      <div style="margin:6px 0">${cfg.platform ? '<span style="color:#1a7f37">Connected on the server</span>' : '<span style="color:#b42318">Not set up yet</span> &mdash; add WA_PHONE_NUMBER_ID and WA_ACCESS_TOKEN to the server settings (steps in docs/WHATSAPP.md).'}</div>
+      <div class="row" style="gap:10px;align-items:center;flex-wrap:wrap"><span>Send AUZslab's own messages automatically: <b>${data.platform_auto ? 'ON' : 'OFF'}</b></span>
+      <button class="btn ${data.platform_auto ? 'btn-ghost' : 'btn-primary'}" id="waAutoBtn">${data.platform_auto ? 'Turn off' : 'Turn on'}</button></div>
+      <div style="color:var(--ink-faint);margin-top:6px">Last 30 days: ${counts}. While this is on, the tap-to-send WhatsApp buttons in Client requests would send a second copy &mdash; use one or the other for each client.</div></div>
+    <div class="card" style="padding:14px;margin:12px 0"><b>Client shops</b>
+      <div class="admin-table-wrap"><table class="admin-table"><tr><th>Shop</th><th>Own number</th><th>WhatsApp on</th><th>May use AUZslab number</th><th>Messages (30 days)</th></tr>${data.tenants.map((t) => `<tr>
+        <td data-label="Shop">${esc(t.name)}<div style="color:var(--ink-faint)">${esc(t.slug)}</div></td>
+        <td data-label="Own number">${t.own_number ? 'Yes' : '&mdash;'}</td>
+        <td data-label="WhatsApp on">${t.enabled ? 'Yes' : '&mdash;'}</td>
+        <td data-label="May use AUZslab number"><label><input type="checkbox" data-wa-allow="${t.id}" ${t.allow_platform ? 'checked' : ''}> allow</label></td>
+        <td data-label="Messages (30 days)">${t.sent_30d}</td></tr>`).join('')}</table></div></div>
+    <div class="card" style="padding:14px;margin:12px 0"><b>Recent messages</b>
+      <div class="admin-table-wrap"><table class="admin-table"><tr><th>When</th><th>From</th><th>To</th><th>Message</th><th>Status</th></tr>${(data.recent || []).map((m) => `<tr>
+        <td data-label="When">${when(m.created_at)}</td><td data-label="From">${esc(m.tenant || 'AUZslab')}</td><td data-label="To">+${esc(m.to_phone)}</td><td data-label="Message">${esc(m.template)}</td>
+        <td data-label="Status"><span style="color:${WA_TONE[m.status] || '#555'}">${esc(m.status)}</span>${m.error ? `<div style="color:var(--ink-faint)">${esc(m.error)}</div>` : ''}</td></tr>`).join('') || '<tr><td colspan="5">Nothing yet.</td></tr>'}</table></div></div>
+    <div class="card" style="padding:14px;margin:12px 0"><b>Templates to create in Meta WhatsApp Manager</b>
+      <p style="color:var(--ink-faint)">Create each once in the AUZslab WhatsApp account (English) with exactly this name and text. Shops creating their own number need the shop templates too.</p>
+      ${data.templates.map((t) => `<div style="margin:8px 0;padding:8px;border:1px solid var(--line);border-radius:10px"><b>${esc(t.name)}</b> <span style="color:var(--ink-faint)">(${t.audience === 'platform' ? 'AUZslab' : 'shop'})</span><div>${esc(t.body)}</div><div style="color:var(--ink-faint)">${t.params.map((p, i) => `{{${i + 1}}} = ${esc(p)}`).join(', ')}</div></div>`).join('')}</div>`;
+  document.getElementById('waAutoBtn').onclick = async () => { const { error: e } = await sb.rpc('admin_wa_set_platform_auto', { p_on: !data.platform_auto }); if (e) return alert(e.message); loadWhatsApp(); };
+  box.querySelectorAll('[data-wa-allow]').forEach((el) => { el.onchange = async () => { const { error: e } = await sb.rpc('admin_wa_set_tenant', { p_tenant: el.dataset.waAllow, p_allow_platform: el.checked }); if (e) { alert(e.message); el.checked = !el.checked; } }; });
+}
 </script>
 <script>
 /* a cell with nothing in it (an empty Message, a missing note) is hidden on phones instead of showing a bare label */

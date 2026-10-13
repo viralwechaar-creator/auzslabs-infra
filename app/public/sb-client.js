@@ -314,9 +314,15 @@
       async cancel() { return request('/payments/cashfree/cancel', { method: 'POST' }); },
     };
 
+    // ---- WhatsApp automation (db/184): connecting a shop's own number goes through the server (the token is stored
+    // encrypted there and never sent back); everything else is a normal rpc (wa_my_status, wa_save_settings ...). ----
+    const whatsapp = {
+      async connect(body) { return request('/whatsapp/connect', { method: 'POST', body, auth: true }); },
+    };
+
     // One request for a whole queue (POST /sync): see server/src/index.js. Resolves {data:{results:[{id,ok,data|status,error|skipped}]}}.
     async function sync(ops) { return request('/sync', { method: 'POST', body: { ops }, auth: true }); }
-    return { auth, from, rpc, sync, storage, channel, autorenew };
+    return { auth, from, rpc, sync, storage, channel, autorenew, whatsapp };
   }
 
   window.supabase = { createClient };

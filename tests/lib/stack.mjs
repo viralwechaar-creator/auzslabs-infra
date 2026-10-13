@@ -29,7 +29,22 @@ const freePort = () => new Promise((ok) => { const s = net.createServer(); s.lis
 export async function startStack({ apiPort, webPort, log = () => {} } = {}) {
   apiPort = apiPort || await freePort(); webPort = webPort || await freePort();
   const uploads = fs.mkdtempSync('/tmp/auz-uploads-');
-  const env = { ...process.env, PORT: String(apiPort), PGHOST: PG.host, PGPORT: String(PG.port), POSTGRES_APP_PASSWORD: PG.appPassword, POSTGRES_DB: PG.db,
+  // A stand-in for Meta's WhatsApp Graph API: records every send, answers per `wa.script` (first item used once, then 'ok').
+  const wa = { calls: [], script: [], goodToken: 'goodtoken-goodtoken-1234' };
+  const waSrv = http.createServer((rq, rs) => {
+    let b = ''; rq.on('data', (d) => (b += d)); rq.on('end', () => {
+      const send = (code, obj) => { rs.writeHead(code, { 'content-type': 'application/json' }); rs.end(JSON.stringify(obj)); };
+      const auth = String(rq.headers.authorization || '').replace('Bearer ', '');
+      if (rq.method === 'GET') return auth === wa.goodToken ? send(200, { display_phone_number: '+91 98765 00000', verified_name: 'Test Shop' }) : send(401, { error: { message: 'Invalid OAuth access token', code: 190 } });
+      const call = { path: rq.url, auth, body: b ? JSON.parse(b) : null }; wa.calls.push(call);
+      const mode = wa.script.shift() || 'ok';
+      if (mode === 'fail500') return send(500, { error: { message: 'temporary glitch', code: 2 } });
+      if (mode === 'badnumber') return send(400, { error: { message: 'Recipient phone number not in allowed list', code: 131030 } });
+      send(200, { messages: [{ id: 'wamid.' + wa.calls.length + Math.random().toString(36).slice(2, 8) }] });
+    });
+  });
+  await new Promise((ok) => waSrv.listen(0, '127.0.0.1', ok));
+  const env = { WA_GRAPH_URL: 'http://127.0.0.1:' + waSrv.address().port, WA_PHONE_NUMBER_ID: 'PLATFORM1', WA_ACCESS_TOKEN: 'platform-token-platform-token', WA_APP_SECRET: 'wa-app-secret', WA_VERIFY_TOKEN: 'wa-verify', WA_WORKER_MS: '250', WA_RETRY_BASE_S: '0', ...process.env, PORT: String(apiPort), PGHOST: PG.host, PGPORT: String(PG.port), POSTGRES_APP_PASSWORD: PG.appPassword, POSTGRES_DB: PG.db,
     JWT_SECRET: 'test-secret-test-secret-test-secret-123', DOMAIN: 'localhost', DISABLE_RATE_LIMIT: '1', UPLOAD_ROOT: uploads, DOC_UPLOAD_ROOT: uploads + '-private' };
   const api = spawn('node', ['src/index.js'], { cwd: path.join(root, 'server'), env, stdio: ['ignore', 'pipe', 'pipe'] });
   process.on('exit', () => { try { api.kill('SIGKILL'); } catch {} });
@@ -83,7 +98,7 @@ export async function startStack({ apiPort, webPort, log = () => {} } = {}) {
   return {
     apiPort, webPort, apiBase,
     url: (sub, p = '/') => `http://${sub ? sub + '.' : ''}localhost:${webPort}${p}`,
-    attach, getLog: () => apiLog,
-    async stop() { api.kill('SIGTERM'); await new Promise((ok) => web.close(ok)); fs.rmSync(uploads, { recursive: true, force: true }); },
+    attach, getLog: () => apiLog, wa,
+    async stop() { api.kill('SIGTERM'); waSrv.close(); await new Promise((ok) => web.close(ok)); fs.rmSync(uploads, { recursive: true, force: true }); },
   };
 }

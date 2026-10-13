@@ -177,7 +177,7 @@ const NAV=[
  ['g:fin','Finance','fin',[['fin/expenses','Expenses'],['fin/withdrawals','Withdrawals'],['fin/cash','Cash'],['fin/settlements','Settlements'],['fin/accounting','Accounting'],['fin/reconcile','Reconciliation']]],
  ['g:mkt','Marketing','mkt',[['mkt/campaigns','Campaigns'],['mkt/segments','Segments'],['mkt/offers','Offers'],['mkt/whatsapp','WhatsApp'],['mkt/promotions','Promotions'],['mkt/loyaltycamp','Loyalty Campaigns']],'New'],
  ['g:int','Integrations','plug',[['agg/swiggy','Swiggy'],['agg/zomato','Zomato'],['agg/ondc','ONDC'],['agg/dunzo','Dunzo'],['agg/ubereats','Uber Eats'],['agg/settings','Platform Settings']]],
- ['g:mgmt','Management','gear',[['mgmt/config','Configuration'],['mgmt/website','Website & Booking'],['mgmt/reasons','Cancellations'],['mgmt/outlets','Outlets'],['mgmt/devices','Devices'],['mgmt/hardware','Hardware'],['mgmt/logs','Logs'],['mgmt/audit','Audit Trail'],['mgmt/data','Data']]],
+ ['g:mgmt','Management','gear',[['mgmt/config','Configuration'],['mgmt/website','Website & Booking'],['mgmt/reasons','Cancellations'],['mgmt/outlets','Outlets'],['mgmt/devices','Devices'],['mgmt/hardware','Hardware'],['mgmt/whatsapp','WhatsApp'],['mgmt/logs','Logs'],['mgmt/audit','Audit Trail'],['mgmt/data','Data']]],
  ['g:ql','Quick Links','star',[['int/apps','Explore Apps'],['ql/favorites','Favourites'],['ql/shortcuts','Shortcuts'],['ql/custom','Custom Links']]]
 ];
 const flatNav=()=>NAV.flatMap(n=>n[0]=='lbl'||n[0]=='href'?[]:n[0].startsWith('g:')?n[3].map(c=>[c[0],c[1],n[1]]):[[n[0],n[1],'']]);

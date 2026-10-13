@@ -84,3 +84,29 @@ PAGES['ql/shortcuts']=()=>{const acts=[['Add online order',()=>onlineOrderForm()
 function linkForm(l){l=l||{};formModal(l.id?'Edit link':'Add link',[{k:'label',label:'Label',value:l.label,req:true},{k:'url',label:'Link',type:'url',value:l.url,req:true,placeholder:'https://'}],async v=>{if(!/^https?:\/\//i.test(v.url)&&!v.url.startsWith('/')){toast('Link must start with https:// or /');return false}await save('quicklink',{...l,...v},l.id)},{onDelete:l.id?async()=>remove('quicklink',l):null})}
 PAGES['ql/custom']=()=>{const ls=rawL('quicklink');return[pageHead('Custom Links','Your own shortcuts: supplier portals, accounting, anything.',btn('Add link',()=>linkForm(),'p','plus')),
  ls.length?h('div',{class:'grid-auto'},...ls.map(l=>card(h('h3',{style:'margin:0 0 2px'},l.label),h('p',{class:'sub',style:'word-break:break-all'},l.url),h('div',{class:'bar-row',style:'margin:10px 0 0'},h('a',{class:'btn p',target:'_blank',rel:'noopener',href:l.url},'Open'),btn('Edit',()=>linkForm(l)))))):card(h('div',{class:'empty'},'No links yet'))]};
+
+// ---------- WhatsApp automation (db/184): the shop's own number, which messages go out by themselves, and a log ----------
+async function loadWa(){try{const r=await sb.rpc('wa_my_status');S.wa=r.error?{error:r.error.message||'Could not load'}:r.data;if(S.page=='mgmt/whatsapp')render()}catch(e){S.wa={error:e.message}}}
+const WA_TONE={queued:'a',sending:'a',sent:'b',delivered:'g',read:'g',failed:'r',skipped:'n'};
+PAGES['mgmt/whatsapp']=()=>{if(!S.wa&&!S.waLoading){S.waLoading=1;loadWa()}
+ const w=S.wa;if(!w)return[pageHead('WhatsApp','Bills, bookings and reminders sent to your customers by themselves.'),note('Loading…')];
+ if(w.error)return[pageHead('WhatsApp','Bills, bookings and reminders sent to your customers by themselves.'),note('Only the owner or a manager can see this page. ('+w.error+')')];
+ const owner=S.role=='owner',reload=()=>{S.wa=null;S.waLoading=0;render()};
+ const saveSet=async(patch)=>{if(!owner)return;const r=await sb.rpc('wa_save_settings',{p:{enabled:w.enabled,events:w.events,...patch}});if(r.error)return toast(r.error.message||'Could not save');Object.assign(w,patch);toast('Saved');render()};
+ const connect=()=>formModal('Connect my WhatsApp number',[
+   {k:'phone_number_id',label:'Phone number ID',req:true,placeholder:'e.g. 105873456789012',hint:'From Meta WhatsApp Manager → API setup (digits only).'},
+   {k:'waba_id',label:'WhatsApp Business Account ID',placeholder:'optional'},
+   {k:'token',label:'Permanent access token',req:true,hint:'Create a System User token in Meta Business settings. It is stored encrypted and is never shown again.'}],
+  async v=>{const r=await sb.whatsapp.connect(v);if(r.error)throw new Error(r.error.message||r.error);toast('Connected '+(r.data&&r.data.number||''));reload()});
+ const disconnect=()=>confirmBox('Disconnect this number? Automatic messages will stop (unless AUZslab sends them for you).',async()=>{const r=await sb.rpc('wa_disconnect');if(r.error)return toast(r.error.message);toast('Disconnected');reload()},'Disconnect');
+ const sender=w.connected?pill('Your own number '+(w.number||''),'g'):w.allow_platform?pill('Sent from the AUZslab number','b'):pill('Not connected','n');
+ const on=w.enabled;
+ return[pageHead('WhatsApp','Bills, bookings and reminders sent to your customers by themselves, from your own business number.',btn('Refresh',reload,'')),owner?null:note('Only the owner can change these settings. You can view them.'),
+  card(cardHead('Sender'),setRow('Who sends the messages','Customers see this number. Until a number is connected, nothing is sent automatically and the tap-to-send WhatsApp buttons keep working.',sender),
+   h('div',{class:'bar-row',style:'padding:0 16px 14px'},w.connected?btn('Disconnect',disconnect,''):btn('Connect my number',connect,'p','plus'),w.connected?btn('Change number',connect,''):null)),
+  card(cardHead('Automatic messages'),setRow('Send messages automatically','Master switch for everything below.',sw(on,v=>saveSet({enabled:v}),!owner)),
+   ...w.templates.map(t=>setRow(t.title,t.body.replace(/\{\{\d\}\}/g,'…'),sw(w.events[t.key]!==false,v=>saveSet({events:{...w.events,[t.key]:v}}),!owner||!on)))),
+  card(cardHead('Last 30 days'),h('div',{class:'bar-row',style:'padding:0 16px 14px;gap:8px;flex-wrap:wrap'},...Object.entries(w.counts||{}).map(([k,n])=>pill(k+' '+n,WA_TONE[k]||'n')),Object.keys(w.counts||{}).length?null:h('span',{class:'sub'},'No messages yet'))),
+  card(cardHead('Recent messages'),table([{label:'When',get:m=>fmtDT(m.created_at)},{label:'To',get:m=>'+'+m.to_phone},{label:'Message',get:m=>(w.templates.find(t=>t.key==m.template)||{}).title||m.template},{label:'Status',get:m=>h('span',{},pill(m.status,WA_TONE[m.status]||'n'),m.error?h('div',{class:'sub'},m.error):null)}],w.recent||[],{empty:'No messages yet'})),
+  card(cardHead('Message templates (one-time setup in Meta WhatsApp Manager)'),h('div',{style:'padding:0 16px 14px'},h('p',{class:'sub'},'WhatsApp only allows automatic messages from approved templates. Create each of these once in your WhatsApp account with exactly this name and text, language English. Approval usually takes minutes.'),
+   ...w.templates.map(t=>h('div',{style:'margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:10px'},h('b',{},t.name),h('div',{class:'sub'},t.body),h('div',{class:'sub'},'Variables: '+t.params.map((p,i)=>'{{'+(i+1)+'}} = '+p).join(', '))))))]};
