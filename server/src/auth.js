@@ -155,12 +155,15 @@ export async function revokeAllSessionsForUser(userId, exceptJti = null) {
 // a token signed without it just has no jti, and is valid exactly as
 // every token was before this migration (not individually revocable,
 // same as today). Every real sign-in path in this file passes meta.
-export async function signToken(user, meta) {
+// opts.limited: a short, never-renewed session (8 hours) -- used when client setup staff are handed a client's own
+// business to set up (db/176). The `lim` claim makes /auth/refresh refuse to extend it.
+export async function signToken(user, meta, opts) {
   const jti = meta ? await createSession(user.id, meta) : undefined;
+  const limited = !!(opts && opts.limited);
   return jwt.sign(
-    { sub: user.id, email: user.email, app_metadata: user.app_metadata, ...(jti ? { jti } : {}) },
+    { sub: user.id, email: user.email, app_metadata: user.app_metadata, ...(jti ? { jti } : {}), ...(limited ? { lim: 1 } : {}) },
     JWT_SECRET,
-    { expiresIn: JWT_EXPIRY },
+    { expiresIn: limited ? '8h' : JWT_EXPIRY },
   );
 }
 
@@ -311,7 +314,7 @@ export function verifyToken(token) {
     if (payload.purpose) return null;
     if (payload.jti && revokedJtis.has(payload.jti)) return null;
     if (payload.jti) touchSession(payload.jti);
-    return { id: payload.sub, email: payload.email, app_metadata: payload.app_metadata || {}, jti: payload.jti };
+    return { id: payload.sub, email: payload.email, app_metadata: payload.app_metadata || {}, jti: payload.jti, lim: payload.lim };
   } catch {
     return null;
   }

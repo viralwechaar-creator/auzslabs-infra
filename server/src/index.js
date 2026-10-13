@@ -209,6 +209,25 @@ const RPC = {
   admin_delete_client_payment: { params: ['p_id'], auth: true },
   admin_salesman_work: { params: ['p_days'], auth: true, defaults: { p_days: 0 } },
   admin_set_salesman_active: { params: ['p_id', 'p_active'], auth: true },
+  // team: salesmen, setup staff, support staff, managers (db/176)
+  admin_add_team_member: { params: ['p_email', 'p_name', 'p_role', 'p_phone'], defaults: { p_name: null, p_role: 'salesman', p_phone: null }, auth: true },
+  admin_set_team_role: { params: ['p_id', 'p_role'], auth: true },
+  team_me: { params: [], auth: true },
+  team_my_leads: { params: [], auth: true },
+  team_all_leads: { params: [], auth: true },
+  team_add_lead: { params: ['p'], jsonb: ['p'], auth: true },
+  team_update_lead: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
+  team_lead_notes: { params: ['p_id'], auth: true },
+  team_assign_lead: { params: ['p_lead', 'p_user'], auth: true },
+  team_assign_setup: { params: ['p_tenant', 'p_user', 'p_days'], defaults: { p_days: 14 }, auth: true },
+  team_my_setups: { params: [], auth: true },
+  team_list_setups: { params: [], auth: true },
+  team_setup_cancel: { params: ['p_id'], auth: true },
+  team_setup_update: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
+  team_overview: { params: ['p_days'], defaults: { p_days: 30 }, auth: true },
+  team_activity_feed: { params: ['p_uid', 'p_limit'], defaults: { p_limit: 40 }, auth: true },
+  team_my_work: { params: ['p_days'], defaults: { p_days: 30 }, auth: true },
+  team_clients: { params: [], auth: true },
 
   // --- Salesman: provision + brand one real trial tenant per sales pitch (db/137) ---
   salesman_provision_trial: { params: ['p_business_name', 'p_slug', 'p_niche'], defaults: { p_niche: 'cafe' }, auth: true },
@@ -793,6 +812,8 @@ const server = http.createServer(async (req, res) => {
       await readJsonBody(req).catch(() => {});
       if (!user) throw new HttpError(401, 'Your session is no longer valid. Please sign in again.');
       if (rateLimited(`refresh:${user.id}`, 60, 15 * 60_000)) throw new HttpError(429, 'too many refresh attempts, try again later');
+      // A setup person's session on a client's business (db/176) is time-limited on purpose: it is never renewed.
+      if (user.lim) throw new HttpError(403, 'this session cannot be extended');
       return reply(200, { access_token: refreshToken(user), user: { id: user.id, email: user.email, app_metadata: user.app_metadata } });
     }
     // ---- public self-serve signup: creates a bare login with no
@@ -1401,6 +1422,16 @@ const server = http.createServer(async (req, res) => {
       if (!user) throw new HttpError(401, 'unauthorized');
       const body = await readJsonBody(req);
       if (!body.tenant_id) throw new HttpError(400, 'tenant_id is required');
+      // Client setup staff (db/176): only the assigned person, only while the setup is open and inside its time
+      // limit; every open is logged. They get the client's own owner session, but only for 8 hours and never renewed.
+      const roleRow = await withAuth(user.id, (client) => client.query('select team_role($1) as role', [user.id]));
+      if (roleRow.rows[0]?.role === 'setup') {
+        const ctx = await withAuth(user.id, (client) => client.query('select team_setup_open_context($1) as c', [body.tenant_id]));
+        const c = ctx.rows[0].c;
+        const owner = { id: c.owner_id, email: c.owner_email, app_metadata: c.owner_meta };
+        const access_token = await signToken(owner, meta, { limited: true });
+        return reply(200, { access_token, niche: c.niche, user: { id: owner.id, email: owner.email, app_metadata: owner.app_metadata } });
+      }
       const { rows } = await withAuth(user.id, (client) =>
         client.query(
           `select is_salesman($1) as ok, t.name as tenant_name, t.niche as niche,
