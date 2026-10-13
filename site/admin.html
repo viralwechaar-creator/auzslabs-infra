@@ -573,8 +573,7 @@ body.admin-shell .btn-primary:hover{background:#940a2c}
                 <select id="niche">
                   <option value="cafe">Café, restaurant, bar & more</option>
                   <option value="salon">Salon / spa</option>
-                  <option value="retail">Retail (shoes, clothing, books)</option>
-                  <option value="general">General</option>
+                  <option value="retail">Retail / General (AUZsLedger)</option>
                 </select>
               </div>
               <div class="field">
@@ -1221,7 +1220,7 @@ async function loadLeads() {
     if (useBtn) useBtn.onclick = () => {
       openSection('onboard');
       document.getElementById('name').value = lead.business || lead.name;
-      document.getElementById('niche').value = lead.niche || 'general';
+      document.getElementById('niche').value = (lead.niche === 'gym' || lead.niche === 'general' ? 'retail' : lead.niche) || 'retail';
       document.getElementById('ownerEmail').value = lead.contact.includes('@') ? lead.contact : '';
     };
     const demoBtn = tr.querySelector('[data-demo]');
@@ -1230,7 +1229,7 @@ async function loadLeads() {
   });
 }
 
-const NICHE_LABEL = { custom: 'Custom-built', cafe: 'Café / restaurant / bar / bakery / hotel', salon: 'Salon / spa', retail: 'Retail (shoes, clothing, books)', general: 'General' };
+const NICHE_LABEL = { custom: 'Custom-built', cafe: 'Café / restaurant / bar / bakery / hotel', salon: 'Salon / spa', retail: 'Retail / General', general: 'Retail / General', gym: 'Retail / General' };
 // Colour groups for module tags, all from the brand palette: wine = AUZsPOS family, sand = salon/website,
 // sage = money, slate = people/ops, amber = mobile shop.
 const TONE = { pos: 'wine', crm: 'wine', billing: 'wine', inventory: 'wine', kds: 'wine', purchases: 'wine', membership: 'wine', self_order: 'wine', salon: 'sand', booking: 'sand', website_builder: 'sand', payroll: 'slate', tasks: 'slate', helpdesk: 'slate', accounting: 'sage', mobile: 'amber' };
@@ -1276,9 +1275,9 @@ async function loadSignupRequests() {
     const demoBtn = tr.querySelector('[data-demo]');
     demoBtn.onclick = () => copyDemoLink('req', id, demoBtn);
     tr.querySelector('[data-approve]').onclick = async () => {
-      const niche = prompt('Niche for this tenant (cafe / salon / retail / general)', req?.niche || 'general');
+      const niche = prompt('Niche for this tenant (cafe / salon / retail)', req?.niche || 'retail');
       if (niche === null) return;
-      const cleanNiche = ['cafe', 'salon', 'retail', 'general'].includes(niche.trim()) ? niche.trim() : 'general';
+      const cleanNiche = ['cafe', 'salon', 'retail'].includes(niche.trim()) ? niche.trim() : 'retail';
       const { error: appErr } = await sb.rpc('approve_signup_request', { p_request_id: id, p_niche: cleanNiche });
       if (appErr) { alert(appErr.message); return; }
       loadSignupRequests();
@@ -2375,7 +2374,7 @@ document.getElementById('swDays').onchange = loadSalesWork;
 // ---------- Client requests: verify, quote, payment link, confirm payment, bill (db/155) ----------
 const ORD_STATUS = { requested: 'New request', verifying: 'Under verification', confirmed: 'Confirmed', link_sent: 'Payment link sent', payment_submitted: 'Payment to confirm', paid: 'Paid', rejected: 'Rejected' };
 const ORD_PRODUCTS = [['pos', 'AUZsPOS'], ['self_order', 'AUZsPOS QR'], ['payroll', 'AUZsPay'], ['accounting', 'AUZsLedger'], ['mobile', 'AUZsMob'], ['scan', 'AUZsScan'], ['salon', 'AUZslab Salon'], ['website_builder', 'Website Builder']];
-const ORD_NICHES = [['cafe', 'Cafe / restaurant'], ['retail', 'Retail'], ['salon', 'Salon / spa'], ['mobile', 'Mobile shop'], ['gym', 'Gym'], ['general', 'Other']];
+const ORD_NICHES = [['cafe', 'Cafe / restaurant'], ['retail', 'Retail / General'], ['salon', 'Salon / spa'], ['mobile', 'Mobile shop']];
 const ORD_STATES = { '01': 'Jammu and Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab', '04': 'Chandigarh', '05': 'Uttarakhand', '06': 'Haryana', '07': 'Delhi', '08': 'Rajasthan', '09': 'Uttar Pradesh', '10': 'Bihar', '11': 'Sikkim', '12': 'Arunachal Pradesh', '13': 'Nagaland', '14': 'Manipur', '15': 'Mizoram', '16': 'Tripura', '17': 'Meghalaya', '18': 'Assam', '19': 'West Bengal', '20': 'Jharkhand', '21': 'Odisha', '22': 'Chhattisgarh', '23': 'Madhya Pradesh', '24': 'Gujarat', '26': 'Dadra and Nagar Haveli and Daman and Diu', '27': 'Maharashtra', '29': 'Karnataka', '30': 'Goa', '31': 'Lakshadweep', '32': 'Kerala', '33': 'Tamil Nadu', '34': 'Puducherry', '35': 'Andaman and Nicobar Islands', '36': 'Telangana', '37': 'Andhra Pradesh', '38': 'Ladakh' };
 const SETUP_DEFAULT = 2190;
 const ONBOARDING_DEFAULT = 1460; // flat, every new client -- separate from the setup fee, which only applies when pos/self_order is in the request
