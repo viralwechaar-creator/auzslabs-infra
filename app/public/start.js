@@ -164,7 +164,14 @@
   }
   function adminHome(me) {
     foot.textContent = ''; foot.append(el('span', { text: me.email || '' }), el('button', { type: 'button', onclick: signOut, text: 'Sign out' }));
-    tilesBox('AUZslab admin', 'Clients, requests, pricing and the team.', [siteTile('Admin panel', 'Leads, clients, payments, team and settings', 'admin.html')].concat(exploreTiles()));
+    var tiles = [siteTile('Admin panel', 'Leads, clients, payments, team and settings', 'admin.html')];
+    var np = window.auzNativePush, st = np && np.webState();
+    if (st && st !== 'native' && st !== 'on' && st !== 'unsupported') {
+      var a = el('a', { class: 'tile', href: '#' }, [el('b', { text: 'Turn on alerts on this device' }), el('span', { text: st === 'ios-install' ? 'Add this app to your Home Screen first' : 'New client requests, team work and notices' })]);
+      a.onclick = function (ev) { ev.preventDefault(); np.enablePlatformWeb(sb, true).then(function (r) { alert(r.message); if (r.ok) adminHome(me); }); };
+      tiles.push(a);
+    }
+    tilesBox('AUZslab admin', 'Clients, requests, pricing and the team.', tiles.concat(exploreTiles()));
   }
 
   function apps(d) {
@@ -178,7 +185,7 @@
     if (!sess) return login();
     // one call says what kind of person this is (admin / team / business / customer), so nobody is sent down a dead end
     var hm = await sb.rpc('hub_me'), me = hm && hm.data;
-    if (me && (me.admin || me.team) && window.auzNativePush) { try { window.auzNativePush.enablePlatform(sb); } catch (e) {} }
+    if (me && (me.admin || me.team) && window.auzNativePush) { try { window.auzNativePush.enablePlatform(sb); window.auzNativePush.enablePlatformWeb(sb, false); } catch (e) {} }
     if (hm && hm.error && (hm.error.status || 0) === 401) { await sb.auth.signOut(); return login('Your session ended. Please sign in again.'); }
     if (me && me.admin) return adminHome(me);
     if (me && me.team && !me.business) { location.replace('/salesman.html'); return; }
