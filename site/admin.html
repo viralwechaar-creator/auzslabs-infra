@@ -638,6 +638,19 @@ body.admin-shell .btn-primary:hover{background:#940a2c}
           <button class="btn btn-primary" type="submit">Add to the team</button>
           <div id="tmErr" class="err"></div>
         </form>
+        <form id="noticeForm" class="card tm-form" style="margin-top:10px">
+          <div class="label">Notice to the team</div>
+          <p class="p" style="margin:2px 0 8px">Sends an alert to the team's phones (in the app) and shows in their workspace.</p>
+          <div class="tm-form-grid">
+            <label class="lbl">Title<input id="ntTitle" class="inp" type="text" maxlength="120" required></label>
+            <label class="lbl">Send to
+              <select id="ntAud" class="inp"><option value="all">Everyone</option><option value="salesman">Salesmen</option><option value="setup">Client setup</option><option value="support">Support</option><option value="manager">Managers</option></select>
+            </label>
+          </div>
+          <label class="lbl">Message<textarea id="ntBody" class="inp" rows="2" maxlength="1000"></textarea></label>
+          <button class="btn btn-primary" type="submit">Send notice</button>
+          <div id="ntMsg" class="err"></div>
+        </form>
         <div class="label" style="margin-top:6px">Applications</div>
         <h2 class="h-2">People who want to join</h2>
         <p class="p">Sent from the “Join our team” page. Approve with a role: if they already have an AUZslab login they are on the team at once, otherwise they are added automatically the first time they sign in with Google using that email.</p>
@@ -2056,6 +2069,14 @@ document.getElementById('teamForm').onsubmit = async (e) => {
   if (error) { errEl.textContent = error.message; return; }
   e.target.reset(); tmRoleNote(); e.target.hidden = true;
   loadTeam();
+};
+
+document.getElementById('noticeForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const msg = document.getElementById('ntMsg'); msg.style.color = ''; msg.textContent = '';
+  const { data, error } = await sb.rpc('admin_post_team_notice', { p_title: document.getElementById('ntTitle').value.trim(), p_body: document.getElementById('ntBody').value.trim(), p_audience: document.getElementById('ntAud').value });
+  if (error) { msg.textContent = error.message; return; }
+  e.target.reset(); msg.style.color = '#1a7f37'; msg.textContent = 'Sent to ' + ((data && data.sent_to) || 0) + ' team member(s).';
 };
 
 // ----- client setups -----
