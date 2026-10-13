@@ -182,7 +182,7 @@ export default async function run({ browser, stack }) {
     };
     // a customer with no business and not on the team
     await hub(USERS.plain, async (page, sent) => {
-      await page.waitForSelector('.tile', { timeout: 20000 });
+      await page.waitForSelector('.tile:visible', { timeout: 20000 });
       const t = await page.locator('.tile b').allInnerTexts();
       assert(t.includes('My account and purchases') && t.includes('Explore AUZslab') && t.includes('My cart'), 'customer tiles: ' + t.join(', '));
       assert(!/No business yet/i.test(await page.locator('body').innerText()), 'customer saw the old dead end');
@@ -191,7 +191,7 @@ export default async function run({ browser, stack }) {
     });
     // the platform admin
     await hub(USERS.admin, async (page, sent) => {
-      await page.waitForSelector('.tile', { timeout: 20000 });
+      await page.waitForSelector('.tile:visible', { timeout: 20000 });
       const t = await page.locator('.tile b').allInnerTexts(); assert(t.includes('Admin panel'), 'admin tiles: ' + t.join(', '));
       await page.locator('.tile', { hasText: 'Admin panel' }).click(); await page.waitForTimeout(800);
       assert(/^https:\/\/auzslab\.in\/admin\.html#auz_gt=/.test(page.url()), 'admin link did not carry the session: ' + page.url());
@@ -202,12 +202,12 @@ export default async function run({ browser, stack }) {
     await q('delete from platform_salesmen where id=$1', [await uidOf(USERS.plain)]);
     // a team member who is also staff of a business sees their business apps AND a Team workspace tile
     await hub(E.setup, async (page) => {
-      await page.waitForSelector('.tile', { timeout: 20000 });
+      await page.waitForSelector('.tile:visible', { timeout: 20000 });
       const t = await page.locator('.tile b').allInnerTexts(); assert(t.includes('Team workspace'), 'team tile missing: ' + t.join(', '));
     });
     // a business owner keeps their app tiles and also gets the account and explore tiles
     await hub(USERS.cafeOwner, async (page) => {
-      await page.waitForSelector('.tile', { timeout: 20000 });
+      await page.waitForSelector('.tile:visible', { timeout: 20000 });
       const t = await page.locator('.tile b').allInnerTexts();
       assert(t.includes('AUZsPOS') && t.includes('My account and purchases') && t.includes('Explore AUZslab'), 'owner tiles: ' + t.join(', '));
     });
@@ -226,7 +226,7 @@ export default async function run({ browser, stack }) {
       await page.route('https://auzslab.in/**', (r) => r.fulfill({ contentType: 'text/html', body: '<!doctype html><title>site</title>ok' }));
       await page.goto(stack.url('app', '/start.html' + suffix)); await page.waitForSelector('input[type=password]', { timeout: 20000 });
       await page.fill('input[type=email]', USERS.plain); await page.fill('input[type=password]', PASSWORD); await page.locator('button', { hasText: /^Sign in$/ }).click();
-      await page.waitForSelector('.tile', { timeout: 20000 });
+      await page.waitForSelector('.tile:visible', { timeout: 20000 });
       assert(/ready for payment/i.test(await page.locator('.tile', { hasText: 'My requests' }).innerText()), 'tile did not say a request is ready for payment');
       await page.locator('.tile', { hasText: 'My requests' }).click(); await page.waitForSelector('text=Hub Ready Co', { timeout: 10000 });
       await fn(page);
