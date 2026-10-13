@@ -13,12 +13,14 @@ import { handle as handlePayments } from './routes/payments.js';
 import { handle as handleData } from './routes/data.js';
 import { handle as handleStorage } from './routes/storage.js';
 import { handle as handleAdmin } from './routes/admin.js';
+import { handle as handleWhatsApp } from './routes/whatsapp.js';
+import { startWhatsAppWorker } from './whatsapp.js';
 
 initErrorTracking(); // dormant unless SENTRY_DSN is set -- see errors.js
 
 // Request flow: CORS preflight -> identify the caller -> try each route module in order (first one that handles it
 // wins) -> 404. Each module in routes/ owns one area; see docs/BACKEND_MAP.md. Order matters only where paths overlap.
-const ROUTE_MODULES = [handleSystem, handleAuth, handlePayments, handleData, handleStorage, handleAdmin];
+const ROUTE_MODULES = [handleSystem, handleAuth, handlePayments, handleData, handleStorage, handleAdmin, handleWhatsApp];
 
 const server = http.createServer(async (req, res) => {
   // Salon Suite (Showoff Salon's original app, see salon.js): same-origin
@@ -53,4 +55,5 @@ const server = http.createServer(async (req, res) => {
 startRealtime(server, { onPushEvent: handlePushEvent });
 
 server.listen(PORT, () => console.log(`auzlabs-api listening on :${PORT}`));
+startWhatsAppWorker(); // sends queued WhatsApp messages (whatsapp.js)
 startMaintenance(); // daily cleanup of expired sessions / codes / links (see maintenance.js)
