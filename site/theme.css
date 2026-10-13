@@ -632,3 +632,12 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
   .topbar .btn,.sidebar-foot .btn{min-height:44px;font-size:12px}
   .label,.eye,.price-card-badge,.sidebar-copy,.hero-services-label,.uk-bento-sub{font-size:11px}
 }
+
+/* Minimal footer: one highlighted contact line, two short columns, one legal row */
+.footer-cta{font-family:var(--font-display);font-weight:600;font-size:24px;line-height:1.2;color:#fff;margin-top:14px;display:inline-block}
+.footer-mail{font-size:13px;color:rgba(255,255,255,.6);margin-top:2px;display:block}
+.footer-top{grid-template-columns:1fr 1fr}
+.footer-legal{display:flex;flex-wrap:wrap;gap:6px 18px}
+.footer-legal a{font-size:12px;color:rgba(255,255,255,.55);padding:8px 0}
+.footer-legal a:hover{color:var(--accent)}
+@media (min-width:900px){.footer-top{grid-template-columns:1.6fr 1fr 1fr}.footer-cta{font-size:30px}}
