@@ -13,7 +13,7 @@ import { pool } from './db.js';
 
 const UPLOAD_ROOT = process.env.UPLOAD_ROOT || '/data/uploads';
 const DOMAIN = process.env.DOMAIN || '';
-const RESERVED = new Set(['app', 'www', 'api', 'auzspos', 'auzsmob', 'auzspay', 'auzsledger', 'auzsqr', 'auzslab', 'hub', 'agents', 'status']);
+const RESERVED = new Set(['app', 'www', 'api', 'auzspos', 'auzsmob', 'auzspay', 'auzsledger', 'auzsscan', 'auzsqr', 'auzslab', 'hub', 'agents', 'status']);
 
 // tenants and records both have RLS, and `pool` connects as the `app` role
 // (db.js) -- a bare pool.query against either, with no app.uid set (there is

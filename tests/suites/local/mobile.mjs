@@ -513,7 +513,7 @@ export default async function run({ browser, stack }) {
     await p2.locator('.tile', { hasText: 'AUZsPOS' }).click(); await p2.waitForURL(/index\.html/, { timeout: 15000 }); await p2.waitForSelector('.shell, .tbl-tile, .items', { timeout: 20000 });
     assert(!/different business/i.test(await p2.locator('body').innerText()), 'POS refused the login on the shared address');
     await c2.close();
-    for (const [host, re] of [['auzsmob', /\/mob\.html/], ['auzspos', /\/index\.html/], ['auzspay', /\/payroll\.html/], ['auzsledger', /\/accounts\.html/]]) {
+    for (const [host, re] of [['auzsmob', /\/mob\.html/], ['auzspos', /\/index\.html/], ['auzspay', /\/payroll\.html/], ['auzsledger', /\/accounts\.html/], ['auzsscan', /\/scan\.html/]]) {
       const cx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const px = await cx.newPage();
       // even with an old cached tenant.js (which thinks the address is a business name) the address decides
       await px.route(/\/tenant\.js/, (r) => r.fulfill({ contentType: 'application/javascript', body: "window.TENANT_SLUG='" + host + "';" }));

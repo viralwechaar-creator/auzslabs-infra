@@ -20,5 +20,5 @@ window.TENANT_SLUG = (() => {
   // user's own business is used (apps skip their "this login belongs to another business" check when this is empty).
   // auzspos / auzsmob / auzspay / auzsledger.auzslab.in are the same shared address, each opening its own app (see land.html).
   var sub = host.split('.')[0];
-  return ['app', 'auzspos', 'auzsmob', 'auzspay', 'auzsledger'].indexOf(sub) >= 0 ? '' : sub;
+  return ['app', 'auzspos', 'auzsmob', 'auzspay', 'auzsledger', 'auzsscan'].indexOf(sub) >= 0 ? '' : sub;
 })();
