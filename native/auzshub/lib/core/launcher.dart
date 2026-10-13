@@ -1,7 +1,7 @@
 import 'package:url_launcher/url_launcher.dart';
 import 'session.dart';
 
-/// One product app. [scheme] is the deep link the app listens on (auzs<x>://signin#auz_gt=...), which signs the person in
+/// One product app. [scheme] is the deep link the app listens on (auzs-name deep link, signin#auz_gt=...), which signs the person in
 /// with the hub's session so they do not type a password twice.
 class ProductApp {
   const ProductApp(this.id, this.name, this.note, this.scheme, this.release, this.feature);

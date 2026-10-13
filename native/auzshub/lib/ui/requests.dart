@@ -4,7 +4,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../core/api.dart';
 import '../core/launcher.dart';
 import '../core/session.dart';
-import 'ds.dart';
 import 'i18n.dart';
 import 'mk.dart';
 import 'theme.dart';
