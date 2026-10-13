@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' hide Text;
 import 'i18n.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/billing.dart' show r2;
 import '../core/session.dart';
@@ -9,6 +10,7 @@ import 'home.dart';
 import 'kit.dart';
 import 'more.dart';
 import 'more2.dart';
+import 'receipt.dart' show printQrCodes;
 import 'scan.dart';
 import 'theme.dart';
 import 'website.dart';
@@ -314,11 +316,12 @@ class TablesAdmin extends StatefulWidget {
 
 class _TablesAdminState extends State<TablesAdmin> {
   Session get s => widget.h.s;
+  String q = '';
 
   Future<void> table([Map<String, dynamic>? t, String sec = 'Main']) => formSheet(
         context,
         t == null ? 'New table' : 'Edit table',
-        [F('name', 'Table name or number', value: t?['name']), F('sec', 'Area', value: t?['sec'] ?? sec, hint: 'e.g. AC, Garden, Terrace'), F('seats', 'Seats', type: 'number', value: t?['seats'])],
+        [F('name', 'Table name or number', value: t?['name']), F('sec', 'Area / section', value: t?['sec'] ?? sec, hint: 'e.g. AC, Garden, Terrace'), F('seats', 'Seats', type: 'number', value: t?['seats'])],
         (v) async {
           if ('${v['name']}'.isEmpty) return false;
           await s.repo!.save('table', {...?t, 'name': v['name'], 'sec': ('${v['sec']}').isEmpty ? 'Main' : v['sec'], 'seats': v['seats']}, id: t?['id'] as String?);
@@ -352,53 +355,152 @@ class _TablesAdminState extends State<TablesAdmin> {
         saveLabel: 'Add tables',
       );
 
+  Future<void> renameArea(String sec, List<Map<String, dynamic>> inArea) => formSheet(
+        context,
+        'Rename area',
+        [F('n', 'Area name', value: sec)],
+        (v) async {
+          if ('${v['n']}'.isEmpty) return false;
+          for (final t in inArea) {
+            await s.repo!.save('table', {...t, 'sec': v['n']}, id: t['id'] as String);
+          }
+          setState(() {});
+          s.sync();
+          return true;
+        },
+      );
+
+  Widget _btn(String label, VoidCallback onTap, {IconData? icon, bool primary = false, bool small = false}) => Material(
+        color: primary ? Tk.accent : Tk.card,
+        borderRadius: BorderRadius.circular(small ? 12 : 16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(small ? 12 : 16),
+          onTap: onTap,
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: small ? 14 : 20, vertical: small ? 9 : 14),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(small ? 12 : 16), border: primary ? null : Border.all(color: Tk.line)),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              if (icon != null) ...[Icon(icon, size: small ? 18 : 20, color: primary ? Colors.white : Tk.label), const SizedBox(width: 8)],
+              Text(label, style: TextStyle(fontSize: small ? 15 : 17, fontWeight: FontWeight.w600, color: primary ? Colors.white : Tk.label)),
+            ]),
+          ),
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
-    final ts = s.repo!.of('table').toList()..sort((a, b) => '${a['name']}'.compareTo('${b['name']}'));
+    final all = s.repo!.of('table').toList();
+    final ts = all.where((t) => q.isEmpty || '${t['name']} ${t['sec'] ?? ''}'.toLowerCase().contains(q.toLowerCase())).toList()..sort((a, b) => '${a['name']}'.compareTo('${b['name']}'));
     final secs = {for (final t in ts) '${t['sec'] ?? 'Main'}'}.toList()..sort();
-    return Scaffold(
-      appBar: AppBar(title: const Text('Tables and QR'), actions: [IconButton(tooltip: 'Add several', icon: const Icon(Icons.playlist_add), onPressed: bulk)]),
-      floatingActionButton: FloatingActionButton.extended(onPressed: () => table(), icon: const Icon(Icons.add), label: const Text('Add table')),
-      body: ts.isEmpty
-          ? Empty(Icons.table_restaurant_outlined, 'No tables yet', 'Add tables so dine-in orders can be given a table, and so each table can have its own QR code.', action: 'Add several tables', onAction: bulk)
-          : ListView(padding: const EdgeInsets.fromLTRB(12, 8, 12, 90), children: [
-              for (final sc in secs) ...[
-                Padding(padding: const EdgeInsets.fromLTRB(4, 14, 0, 6), child: Text(sc.toUpperCase(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Tk.label2, letterSpacing: .6))),
-                for (final t in ts.where((t) => '${t['sec'] ?? 'Main'}' == sc))
-                  Card(
-                    child: ListTile(
-                      onTap: () => table(t),
-                      title: Text('${t['name']}', style: const TextStyle(fontWeight: FontWeight.w700)),
-                      subtitle: t['seats'] == null ? null : Text('${t['seats']} seats'),
-                      trailing: IconButton(icon: const Icon(Icons.qr_code_2), tooltip: 'QR code', onPressed: () => showQr(context, s, '${t['name']}', siteUrl(s, '${t['id']}'))),
-                    ),
-                  ),
-              ],
+    final areaCount = {for (final t in all) '${t['sec'] ?? 'Main'}'}.length;
+    final body = ListView(padding: const EdgeInsets.only(bottom: 40), children: [
+      const PageHead('Tables & Areas', sub: 'Floors, areas and table layouts for dine-in. Each outlet has its own tables.'),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        child: Wrap(spacing: 10, runSpacing: 10, children: [
+          _btn('Print all QR', () => showQrSheet(context, s, all), icon: Icons.print_outlined),
+          _btn('Add several', bulk),
+          _btn('Add table', () => table(), icon: Icons.add, primary: true),
+        ]),
+      ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+        child: Row(children: [
+          Expanded(
+            child: TextField(
+              onChanged: (v) => setState(() => q = v),
+              decoration: InputDecoration(hintText: tr('Search tables…'), filled: true, fillColor: Tk.card, contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14), border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Tk.line)), enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Tk.line))),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text('${all.length} tables · $areaCount areas', style: TextStyle(color: Tk.label2, fontSize: 15)),
+        ]),
+      ),
+      if (all.isEmpty)
+        Padding(padding: const EdgeInsets.all(16), child: Container(padding: const EdgeInsets.all(24), decoration: BoxDecoration(color: Tk.card, borderRadius: BorderRadius.circular(22), border: Border.all(color: Tk.line)), child: Column(children: [const Text('No tables yet', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)), const SizedBox(height: 4), Text('Add tables so dine-in orders can be assigned to them.', textAlign: TextAlign.center, style: TextStyle(color: Tk.label2))])))
+      else
+        for (final sc in secs)
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: Tk.card, borderRadius: BorderRadius.circular(22), border: Border.all(color: Tk.line, width: .8)),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Wrap(spacing: 10, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                Padding(padding: const EdgeInsets.only(right: 6), child: Text(sc, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800))),
+                _btn('Rename area', () => renameArea(sc, all.where((t) => '${t['sec'] ?? 'Main'}' == sc).toList()), small: true),
+                _btn('Add table here', () => table(null, sc), icon: Icons.add, small: true),
+              ]),
+              const SizedBox(height: 12),
+              for (final t in ts.where((t) => '${t['sec'] ?? 'Main'}' == sc))
+                Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.fromLTRB(18, 16, 12, 16),
+                  decoration: BoxDecoration(color: Tk.card, borderRadius: BorderRadius.circular(18), border: Border.all(color: Tk.line)),
+                  child: Row(children: [
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('${t['name']}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                      if (t['seats'] != null && '${t['seats']}'.isNotEmpty) Text('${t['seats']} seats', style: TextStyle(color: Tk.label2, fontSize: 14)),
+                    ])),
+                    _btn('QR', () => showQrSheet(context, s, [t]), small: true),
+                    const SizedBox(width: 6),
+                    _btn('Edit', () => table(t), small: true),
+                  ]),
+                ),
             ]),
-    );
+          ),
+    ]);
+    if (widget.embedded) return body;
+    return Scaffold(backgroundColor: Tk.bg, appBar: AppBar(title: const Text('Tables and QR')), body: body);
   }
 }
 
-/// Shows a QR code big enough to scan from a table, with copy and share.
-void showQr(BuildContext c, Session s, String title, String url) {
+/// Shows the QR code(s) of one or all tables, big enough to scan, with Print, Share and Copy link.
+void showQrSheet(BuildContext c, Session s, List<Map<String, dynamic>> ts) {
+  if (ts.isEmpty) {
+    ScaffoldMessenger.of(c).showSnackBar(const SnackBar(content: Text('Add a table first')));
+    return;
+  }
+  String urlOf(Map<String, dynamic> t) => siteUrl(s, '${t['id']}'.isEmpty ? null : '${t['id']}');
+  final one = ts.length == 1;
   showModalBottomSheet<void>(
     context: c,
     showDragHandle: true,
     isScrollControlled: true,
-    builder: (_) => Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Text('${s.cfg['name']}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
-        Text(title, style: TextStyle(color: Tk.label2)),
-        const SizedBox(height: 14),
-        Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Tk.line)), child: QrImageView(data: url, size: 240, eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Colors.black), dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Colors.black))),
-        const SizedBox(height: 10),
-        Text('Scan to view the menu and order', style: TextStyle(color: Tk.label2)),
-        const SizedBox(height: 14),
-        Row(children: [
-          Expanded(child: OutlinedButton.icon(onPressed: () => Clipboard.setData(ClipboardData(text: url)), icon: const Icon(Icons.copy), label: const Text('Copy link'))),
-          const SizedBox(width: 10),
-          Expanded(child: FilledButton.icon(onPressed: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication), icon: const Icon(Icons.open_in_new), label: const Text('Open'))),
+    builder: (ctx) => DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: one ? .72 : .9,
+      maxChildSize: .95,
+      builder: (_, sc) => ListView(controller: sc, padding: const EdgeInsets.fromLTRB(20, 0, 20, 24), children: [
+        Text(one ? 'QR code · ${ts.first['name']}' : 'Table QR codes (${ts.length})', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 12),
+        for (final t in ts)
+          Container(
+            margin: const EdgeInsets.only(bottom: 14),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Tk.line)),
+            child: Column(children: [
+              Text('${s.cfg['name'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Colors.black)),
+              const SizedBox(height: 8),
+              QrImageView(data: urlOf(t), size: 220, backgroundColor: Colors.white, eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Colors.black), dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Colors.black)),
+              const SizedBox(height: 8),
+              Text('${t['name']}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20, color: Colors.black)),
+              const Text('Scan to view menu & order', style: TextStyle(color: Colors.black54)),
+            ]),
+          ),
+        Wrap(spacing: 10, runSpacing: 10, children: [
+          if (one) OutlinedButton.icon(onPressed: () => Clipboard.setData(ClipboardData(text: urlOf(ts.first))), icon: const Icon(Icons.copy), label: const Text('Copy link')),
+          OutlinedButton.icon(onPressed: () => SharePlus.instance.share(ShareParams(text: ts.map((t) => '${t['name']}: ${urlOf(t)}').join('\n'), subject: '${s.cfg['name']} table QR')), icon: const Icon(Icons.ios_share), label: const Text('Share link')),
+          FilledButton.icon(
+            onPressed: () async {
+              try {
+                await printQrCodes(s, ts, urlOf);
+              } catch (e) {
+                if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('$e')));
+              }
+            },
+            icon: const Icon(Icons.print),
+            label: const Text('Print or save PDF'),
+          ),
         ]),
       ]),
     ),
@@ -430,38 +532,63 @@ class _QrWebsitePageState extends State<QrWebsitePage> {
         },
       );
 
+  Widget _card(String title, String note, List<Widget> kids) => Container(
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: Tk.card, borderRadius: BorderRadius.circular(22), border: Border.all(color: Tk.line, width: .8)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 6),
+          Text(note, style: TextStyle(color: Tk.label2, fontSize: 15, height: 1.35)),
+          const SizedBox(height: 12),
+          Wrap(spacing: 10, runSpacing: 10, children: kids),
+        ]),
+      );
+
+  Widget _b(String label, VoidCallback onTap, {IconData? icon, bool primary = false}) => Material(
+        color: primary ? Tk.accent : Tk.card,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: primary ? null : Border.all(color: Tk.line)),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              if (icon != null) ...[Icon(icon, size: 20, color: primary ? Colors.white : Tk.label), const SizedBox(width: 8)],
+              Text(label, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: primary ? Colors.white : Tk.label)),
+            ]),
+          ),
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     final url = siteUrl(s);
-    final guests = s.repo!.of('table').length;
-    return Scaffold(
-      appBar: AppBar(title: const Text('QR ordering and website')),
-      body: ListView(padding: const EdgeInsets.all(14), children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: Tk.card, borderRadius: BorderRadius.circular(18), border: Border.all(color: Tk.line, width: .5)),
-          child: Column(children: [
-            const Text('Your ordering website', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
-            const SizedBox(height: 4),
-            Text(url, textAlign: TextAlign.center, style: TextStyle(color: Tk.label2, fontSize: 12)),
-            const SizedBox(height: 12),
-            QrImageView(data: url, size: 200),
-            const SizedBox(height: 8),
-            Row(children: [
-              Expanded(child: OutlinedButton.icon(onPressed: () => Clipboard.setData(ClipboardData(text: url)), icon: const Icon(Icons.copy), label: const Text('Copy'))),
-              const SizedBox(width: 10),
-              Expanded(child: FilledButton.icon(onPressed: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication), icon: const Icon(Icons.open_in_new), label: const Text('Open'))),
-            ]),
-          ]),
-        ),
-        const SizedBox(height: 12),
-        Card(child: ListTile(leading: Icon(Icons.table_restaurant_outlined, color: Tk.accent), title: const Text('Table QR codes', style: TextStyle(fontWeight: FontWeight.w700)), subtitle: Text(guests == 0 ? 'Add tables first' : 'One QR for each of your $guests tables'), trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => TablesAdmin(widget.h))))),
-        Card(child: ListTile(leading: Icon(Icons.qr_code_scanner, color: Tk.accent), title: const Text('Scan a QR code', style: TextStyle(fontWeight: FontWeight.w700)), subtitle: const Text('Read a table or website QR with the camera'), trailing: const Icon(Icons.chevron_right), onTap: () => scanAndHandle(context, widget.h))),
-        Card(child: ListTile(leading: Icon(Icons.account_balance_wallet_outlined, color: Tk.accent), title: const Text('Pay by UPI', style: TextStyle(fontWeight: FontWeight.w700)), subtitle: Text(('${s.cfg['upiId'] ?? ''}').isEmpty ? 'Not set up. Customers pay at the counter.' : '${s.cfg['upiId']}'), trailing: const Icon(Icons.chevron_right), onTap: upi)),
-        Card(child: ListTile(leading: Icon(Icons.web_outlined, color: Tk.accent), title: const Text('Website text and photos', style: TextStyle(fontWeight: FontWeight.w700)), subtitle: const Text('Headline, about text, hero and gallery photos'), trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => Scaffold(appBar: AppBar(title: const Text('Website & Booking')), body: WebsiteContentPage(widget.h)))))),
-        Padding(padding: const EdgeInsets.all(8), child: Text('Guest orders arrive in the QR orders tab. Turning QR ordering on or off is in the full web console.', style: TextStyle(color: Tk.label2, fontSize: 12))),
+    final tables = s.repo!.of('table').toList();
+    final upiId = '${s.cfg['upiId'] ?? ''}';
+    final body = ListView(padding: const EdgeInsets.only(bottom: 40), children: [
+      const PageHead('QR Ordering', sub: 'What customers see the moment they scan a table\'s QR code.'),
+      const SizedBox(height: 12),
+      _card('Your ordering website', url, [
+        _b('Preview', () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication), icon: Icons.open_in_new),
+        _b('Copy link', () => Clipboard.setData(ClipboardData(text: url)), icon: Icons.copy),
+        _b('Show QR', () => showQrSheet(context, s, [{'id': '', 'name': 'Takeaway / website'}]), icon: Icons.qr_code_2),
       ]),
-    );
+      _card('Table QR codes', tables.isEmpty ? 'Add tables first, then print the QR code customers scan at each table.' : 'Print or re-print the QR codes customers scan at each of your ${tables.length} tables.', [
+        _b('Print all QR', () => showQrSheet(context, s, tables), icon: Icons.print_outlined),
+        _b('Open Tables & Areas', () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => TablesAdmin(widget.h)))),
+        _b('Scan a QR code', () => scanAndHandle(context, widget.h), icon: Icons.qr_code_scanner),
+      ]),
+      _card('Pay by UPI', upiId.isEmpty ? 'Not set up. Customers pay at the counter. When set, an online order can be paid by scanning a QR already filled in with the exact amount, paying straight to this UPI ID.' : 'Customers can pay by UPI to $upiId. Check the payment reached your account before handing over the order.', [
+        _b(upiId.isEmpty ? 'Set UPI ID' : 'Change UPI ID', upi, icon: Icons.account_balance_wallet_outlined),
+      ]),
+      _card('Website text and photos', 'Headline, about text, hero and gallery photos.', [
+        _b('Edit', () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => Scaffold(appBar: AppBar(title: const Text('Website & Booking')), body: WebsiteContentPage(widget.h)))), icon: Icons.web_outlined),
+      ]),
+    ]);
+    if (widget.embedded) return body;
+    return Scaffold(backgroundColor: Tk.bg, appBar: AppBar(title: const Text('QR ordering and website')), body: body);
   }
 }
 

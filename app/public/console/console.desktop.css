@@ -324,3 +324,8 @@ body.qr-printing .qr-print-sheet{display:block!important}
 .top,.side,.pt,.csvb,.ov,.tabs{display:none!important}
 .main{margin:0!important}
 }
+
+.qr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;max-height:60vh;overflow:auto}
+.qrc{border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center;background:#fff;color:#000;display:grid;gap:6px;justify-items:center}
+.qrc .qrsvg svg{width:100%;height:auto;max-width:220px;display:block}
+body.qr-printing .mwrap{display:none!important}

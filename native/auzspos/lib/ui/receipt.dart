@@ -1,4 +1,6 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart' hide Text;
+import 'package:qr_flutter/qr_flutter.dart';
 import 'i18n.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -73,6 +75,39 @@ Future<void> printReceipt(Session s, Map<String, dynamic> o) async {
   ));
   try {
     await Printing.layoutPdf(name: 'Bill ${o['no']}', onLayout: (_) async => doc.save());
+  } catch (e) {
+    throw Exception('Could not open the print dialog: $e');
+  }
+}
+
+/// Table QR codes as an A4 sheet (two per row). The system print dialog sends it to a printer or saves it as a PDF.
+Future<void> printQrCodes(Session s, List<Map<String, dynamic>> tables, String Function(Map<String, dynamic>) urlOf) async {
+  final doc = pw.Document();
+  final imgs = <Object?, pw.MemoryImage>{};
+  for (final t in tables) {
+    final bd = await QrPainter(data: urlOf(t), version: QrVersions.auto, gapless: true, emptyColor: Colors.white, eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Colors.black), dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Colors.black)).toImageData(700, format: ui.ImageByteFormat.png);
+    if (bd != null) imgs[t['id']] = pw.MemoryImage(bd.buffer.asUint8List());
+  }
+  pw.Widget card(Map<String, dynamic> t) => pw.Container(
+        width: 240,
+        padding: const pw.EdgeInsets.all(12),
+        decoration: pw.BoxDecoration(border: pw.Border.all(width: 1), borderRadius: pw.BorderRadius.circular(8)),
+        child: pw.Column(children: [
+          _T('${s.cfg['name'] ?? ''}', textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 8),
+          if (imgs[t['id']] != null) pw.Image(imgs[t['id']]!, width: 190, height: 190),
+          pw.SizedBox(height: 8),
+          _T('${t['name']}', textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+          _T('Scan to view menu & order', textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 10)),
+        ]),
+      );
+  doc.addPage(pw.MultiPage(
+    pageFormat: PdfPageFormat.a4,
+    margin: const pw.EdgeInsets.all(24),
+    build: (_) => [pw.Wrap(spacing: 14, runSpacing: 14, children: [for (final t in tables) card(t)])],
+  ));
+  try {
+    await Printing.layoutPdf(name: 'Table QR codes', onLayout: (_) async => doc.save());
   } catch (e) {
     throw Exception('Could not open the print dialog: $e');
   }

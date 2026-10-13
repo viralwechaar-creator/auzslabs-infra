@@ -148,18 +148,35 @@ PAGES['menu/addons']=()=>{const list=rawL('addongrp').filter(g=>matchQ(g.name+' 
 function tableForm(t,sec){t=t||{};const secs=[...new Set(L('table').map(x=>x.sec||'Main'))];
  formModal(t.id?'Edit table':'New table',[{k:'name',label:'Table name / number',value:t.name,req:true,placeholder:'T1'},{k:'sec',label:'Area / section',value:t.sec||sec||'Main',placeholder:'e.g. AC, Garden, Terrace',hint:secs.length?'Existing: '+secs.join(', '):''},{k:'seats',label:'Seats',type:'number',value:t.seats}],async v=>{await save('table',{...t,name:v.name,sec:v.sec||'Main',seats:v.seats},t.id)},{onDelete:t.id?async()=>remove('table',t):null})}
 function bulkTables(){formModal('Add several tables',[{k:'prefix',label:'Name prefix',value:'T'},{k:'from',label:'From number',type:'number',value:1},{k:'to',label:'To number',type:'number',value:6},{k:'sec',label:'Area',value:'Main'}],async v=>{for(let n=v.from;n<=v.to&&n-v.from<200;n++)await save('table',{name:v.prefix+n,sec:v.sec||'Main'});toast('Tables added')})}
-// Prints in place (no window.open): a new tab opened this way is blocked by mobile popup
-// blockers, and on an iOS home-screen app gets stuck as a permanently blank tab (same WebKit
-// limitation already hit and fixed for the "Preview" link elsewhere -- see CLAUDE.md). Instead
-// this fills a hidden print-only sheet in the current page and calls window.print() on it.
-function printQR(ts){if(typeof qrcode=='undefined')return toast('QR library is still loading, try again');
+// QR codes: tapping QR (or Print all QR) opens a dialog that SHOWS the codes first, with Share / Save image,
+// Copy link and Print. Printing happens in place (no window.open: a new tab is blocked by mobile popup
+// blockers and sticks as a blank tab in an iOS home-screen app). An iOS home-screen app cannot print at all
+// (window.print does nothing there), so the dialog says so and points at Share / Save image instead.
+const qrLink=t=>tenantOrigin()+'/site.html?t='+t.id;
+function qrMake(url){const q=qrcode(0,'M');q.addData(url);q.make();return q}
+function qrCardNode(t){const box=h('div',{class:'qrc'}),svg=h('div',{class:'qrsvg'});svg.innerHTML=qrMake(qrLink(t)).createSvgTag(5);
+ box.append(h('b',{},cfg().name||''),svg,h('b',{style:'font-size:18px'},t.name),h('div',{class:'sub sm'},'Scan to view menu & order'));return box}
+function qrPng(t){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=640;c.height=860;const x=c.getContext('2d');
+ x.fillStyle='#fff';x.fillRect(0,0,640,860);x.fillStyle='#000';x.textAlign='center';x.font='700 34px sans-serif';x.fillText(String(cfg().name||'').slice(0,28),320,70);
+ x.imageSmoothingEnabled=false;x.drawImage(img,70,110,500,500);x.font='700 46px sans-serif';x.fillText(String(t.name).slice(0,20),320,690);x.font='26px sans-serif';x.fillText('Scan to view menu & order',320,742);
+ c.toBlob(b=>b?res(b):rej(new Error('Could not make the picture')),'image/png')};img.onerror=()=>rej(new Error('Could not make the picture'));img.src=qrMake(qrLink(t)).createDataURL(10,0)})}
+async function qrShare(ts){try{const files=[];for(const t of ts)files.push(new File([await qrPng(t)],'QR-'+String(t.name).replace(/[^\w-]+/g,'_')+'.png',{type:'image/png'}));
+ if(navigator.canShare&&navigator.canShare({files})){await navigator.share({files,title:(cfg().name||'')+' table QR'});return}
+ for(const f of files){const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=f.name;document.body.append(a);a.click();a.remove();await new Promise(r=>setTimeout(r,300))}
+ toast(files.length>1?'Pictures saved':'Picture saved')}catch(e){if(e&&e.name!='AbortError')toast('Could not share: '+((e&&e.message)||e))}}
+function qrPrint(ts){if(navigator.standalone)return toast('Printing is not available in the home-screen app. Use Share / Save image, then print it from your photos.');
  let sheet=document.getElementById('qrPrintSheet');
  if(!sheet){sheet=document.createElement('div');sheet.id='qrPrintSheet';sheet.className='qr-print-sheet';document.body.appendChild(sheet)}
- sheet.innerHTML=ts.map(t=>{const q=qrcode(0,'M');q.addData(tenantOrigin()+'/site.html?t='+t.id);q.make();return'<div style="display:inline-block;text-align:center;margin:8px;padding:8px;border:1px solid #000;width:220px"><b>'+esc(cfg().name)+'</b><br>'+q.createSvgTag(5)+'<br><b>'+esc(t.name)+'</b><br>Scan to view menu &amp; order</div>'}).join('');
+ sheet.replaceChildren(...ts.map(t=>{const c=qrCardNode(t);c.style.cssText='display:inline-block;text-align:center;margin:8px;padding:8px;border:1px solid #000;width:220px;color:#000';return c}));
  document.body.classList.add('qr-printing');
  const done=()=>document.body.classList.remove('qr-printing');
  window.addEventListener('afterprint',done,{once:true});
- setTimeout(()=>{window.print();setTimeout(done,1500)},50)}
+ setTimeout(()=>{try{window.print()}catch(e){toast('Printing is not available here. Use Share / Save image.')}setTimeout(done,1500)},50)}
+function printQR(ts){if(typeof qrcode=='undefined')return toast('QR library is still loading, try again');if(!ts.length)return toast('Add a table first');
+ const one=ts.length==1;
+ modal(one?'QR code · '+ts[0].name:'Table QR codes ('+ts.length+')',[h('div',{class:'qr-grid'},...ts.map(qrCardNode)),
+  h('div',{class:'mf'},one?btn('Copy link',async()=>{try{await navigator.clipboard.writeText(qrLink(ts[0]));toast('Link copied')}catch(e){toast(qrLink(ts[0]))}}):null,
+   btn(one?'Share / Save image':'Share / Save images',()=>qrShare(ts)),btn('Print',()=>qrPrint(ts),'p','printer'))],{wide:!one})}
 PAGES['menu/tables']=()=>{const ts=L('table').filter(t=>matchQ(t.name+' '+(t.sec||''))),secs=[...new Set(ts.map(t=>t.sec||'Main'))].sort();
  return[pageHead('Tables & Areas','Floors, areas and table layouts for dine-in. Each outlet has its own tables.',btn('Print all QR',()=>printQR(L('table')),'','printer'),btn('Add several',bulkTables,''),btn('Add table',()=>tableForm(),'p','plus')),allOutletsNote(),h('div',{class:'bar-row'},search('Search tables…'),h('span',{class:'sm'},L('table').length+' tables · '+secs.length+' areas')),
   ...(secs.length?secs.map(sc=>card(cardHead(sc,btn('Rename area',()=>formModal('Rename area',[{k:'n',label:'Area name',value:sc,req:true}],async v=>{for(const t of L('table').filter(x=>(x.sec||'Main')==sc))await save('table',{...t,sec:v.n},t.id)}),'sm2'),btn('Add table here',()=>tableForm(null,sc),'sm2','plus')),h('div',{class:'grid-auto'},...ts.filter(t=>(t.sec||'Main')==sc).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true})).map(t=>h('div',{class:'scard',style:'display:flex;align-items:center;justify-content:space-between;gap:8px'},h('div',{},h('b',{},t.name),t.seats?h('div',{class:'sub sm'},t.seats+' seats'):null),actBtns(btn('QR',()=>printQR([t]),'sm2'),btn('Edit',()=>tableForm(t),'sm2'))))))):[card(h('div',{class:'empty'},h('b',{},'No tables yet'),'Add tables so dine-in orders can be assigned to them.'))])]};
