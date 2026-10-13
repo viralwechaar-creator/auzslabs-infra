@@ -639,6 +639,10 @@ body.admin-shell .btn-primary:hover{background:#940a2c}
           <button class="btn btn-primary" type="submit">Add to the team</button>
           <div id="tmErr" class="err"></div>
         </form>
+        <div class="label" style="margin-top:6px">Applications</div>
+        <h2 class="h-2">People who want to join</h2>
+        <p class="p">Sent from the “Join our team” page. Approve with a role: if they already have an AUZslab login they are on the team at once, otherwise they are added automatically the first time they sign in with Google using that email.</p>
+        <div id="teamApps" style="margin:10px 0 26px">Loading&hellip;</div>
         <div id="teamList" style="margin-top:14px">Loading&hellip;</div>
 
         <div class="label" style="margin-top:34px">Client setups</div>
@@ -1011,7 +1015,7 @@ const SECTION_LOADERS = {
   leads: () => { loadLeads(); refreshOrdersBadge(); }, orders: () => loadOrders(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(),
   pricing: () => { loadPricing(); loadBundles(); loadPayments(); },
   users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(), privacyReq: () => loadPrivacyReq(),
-  team: () => { loadTeam(); loadSetups(); }, salesWork: () => loadSalesWork(), clientPay: () => { loadClientPay(); loadBills(); },
+  team: () => { loadTeam(); loadSetups(); loadTeamApps(); }, salesWork: () => loadSalesWork(), clientPay: () => { loadClientPay(); loadBills(); },
 };
 const sectionLoadedAt = {};
 function ensureSectionLoaded(name) {
@@ -2009,6 +2013,36 @@ async function loadTeam() {
   });
 }
 document.getElementById('teamDays').onchange = loadTeam;
+async function loadTeamApps() {
+  const box = document.getElementById('teamApps');
+  const { data, error } = await sb.rpc('admin_list_team_applications', { p_status: 'new' });
+  if (error) { box.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  if (!data || !data.length) { box.innerHTML = '<p class="p">No new applications.</p>'; return; }
+  box.innerHTML = `<div class="lc-list">${data.map((a) => `
+    <div class="tm-card" data-id="${a.id}">
+      <div class="lc-name">${esc(a.name)} <span class="role-pill role-${a.role_wanted === 'other' ? 'support' : a.role_wanted}">wants: ${esc(ROLE_LABEL[a.role_wanted] || 'Something else')}</span></div>
+      <div class="lc-sub">${esc(a.email)} · ${esc(a.phone || '')}${a.city ? ' · ' + esc(a.city) : ''} · ${when(a.created_at)}</div>
+      ${a.experience ? `<p class="p" style="margin:6px 0 0"><b>Experience:</b> ${esc(a.experience)}</p>` : ''}
+      ${a.about ? `<p class="p" style="margin:4px 0 0">${esc(a.about)}</p>` : ''}
+      <div class="tm-stats">
+        <select class="tm-role-sel" data-role aria-label="Role to give">${Object.entries(ROLE_LABEL).map(([k, v]) => `<option value="${k}"${k === (a.role_wanted === 'other' ? 'support' : a.role_wanted) ? ' selected' : ''}>${v}</option>`).join('')}</select>
+        <button class="btn btn-primary" data-approve type="button">Approve</button>
+        <button class="lc-action" data-reject type="button">Reject</button>
+        <a class="lc-action" href="https://wa.me/${esc(String(a.phone || '').replace(/\D/g, ''))}" target="_blank" rel="noopener">WhatsApp</a>
+      </div>
+    </div>`).join('')}</div>`;
+  box.querySelectorAll('.tm-card').forEach((card) => {
+    const id = card.dataset.id;
+    const decide = async (decision) => {
+      const { data: r, error: e2 } = await sb.rpc('admin_decide_team_application', { p_id: id, p_decision: decision, p_role: card.querySelector('[data-role]').value });
+      if (e2) { alert(e2.message); return; }
+      if (decision === 'approve') alert(r && r.active ? 'Approved. They are on the team now.' : 'Approved. They are added automatically when they first sign in with Google using that email at app.auzslab.in.');
+      loadTeamApps(); loadTeam();
+    };
+    card.querySelector('[data-approve]').onclick = () => decide('approve');
+    card.querySelector('[data-reject]').onclick = () => { if (confirm('Reject this application?')) decide('reject'); };
+  });
+}
 document.getElementById('teamAddOpen').onclick = () => { const f = document.getElementById('teamForm'); f.hidden = !f.hidden; };
 const tmRoleNote = () => { document.getElementById('tmRoleNote').textContent = ROLE_NOTE[document.getElementById('tmRole').value] || ''; };
 document.getElementById('tmRole').onchange = tmRoleNote; tmRoleNote();
