@@ -11,7 +11,7 @@
     (kids || []).forEach(function (c) { if (c != null) n.append(c); });
     return n;
   }
-  function set(nodes) { box.textContent = ''; nodes.forEach(function (n) { box.append(n); }); }
+  function set(nodes) { box.textContent = ''; nodes.forEach(function (n) { box.append(n); }); Array.prototype.forEach.call(box.querySelectorAll('.tile'), function (t, i) { t.style.setProperty('--i', i); }); }
   function own(d, k) { return d.features && d.features[k] === true && (d.enabled_features || {})[k] !== false; }
   function lastGet() { try { return localStorage.getItem(LAST) || ''; } catch (e) { return ''; } }
   function lastSet(v) { try { localStorage.setItem(LAST, v); } catch (e) { /* private mode */ } }
