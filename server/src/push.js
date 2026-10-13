@@ -116,7 +116,21 @@ async function sendWebPush(endpoint, p256dh, authKey, payload) {
 // Called directly, in-process, when a 'push_events' Postgres NOTIFY
 // arrives (see realtime.js) -- no HTTP round-trip to a separate
 // function, no shared secret to guard that round-trip with.
-export async function handlePushEvent({ tenant_id, title, body, user_ids }) {
+export async function handlePushEvent({ tenant_id, title, body, user_ids, platform }) {
+  // Platform alerts (db/182): for the AUZslab admin and team, who belong to no business. Phones live in platform_fcm_tokens.
+  if (platform) {
+    if (!fcmConfigured() || !Array.isArray(user_ids) || !user_ids.length) return;
+    const { rows: tokens } = await pool.query('select * from platform_fcm_tokens where user_id = any($1::uuid[])', [user_ids]);
+    await Promise.allSettled(tokens.map(async (t) => {
+      try {
+        const res = await sendFcm(t.token, { title, body });
+        if (!res.ok && res.unregistered) await pool.query('delete from platform_fcm_tokens where id = $1', [t.id]);
+      } catch (e) {
+        console.error('platform push error', t.id, e.message);
+      }
+    }));
+    return;
+  }
   // A targeted event (user_ids set, db/175) goes only to those people's registered phones; the browser Web Push
   // subscriptions are tenant-wide and have no user, so a targeted event skips them.
   const targeted = Array.isArray(user_ids) && user_ids.length > 0;

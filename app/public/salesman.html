@@ -273,6 +273,7 @@ button:active:not(:disabled){transform:translateY(1px) scale(.99)}
 <div class=toast id=toast></div>
 
 <script src=/ds/appshell.js?v=1></script>
+<script src=/ds/nativepush.js?v=2></script>
 <script src=/sb-client.js></script>
 <script src=/config.js></script>
 <script src=/ds/gsignin.js?v=2></script>
@@ -326,6 +327,7 @@ async function boot() {
   $('login').classList.add('hidden');
   $('app').classList.remove('hidden');
   $('rolePill').textContent = ROLE[me.role] || me.role; $('rolePill').style.display = '';
+  if (window.auzNativePush) { try { window.auzNativePush.enablePlatform(sb); } catch (e) {} }
   buildTabs();
   const want = (location.hash || '').slice(1);
   go(TABS[me.role].includes(want) ? want : 'home');
@@ -405,6 +407,9 @@ async function renderHome() {
     ? kpi(sum.setups_open || 0, 'open') + kpi(sum.setups_done || 0, 'finished') + kpi(sum.updates || 0, 'updates')
     : kpi(sum.leads_open || 0, 'open leads') + kpi(sum.updates || 0, 'updates') + (ME.role === 'salesman' ? kpi(sum.trials || 0, 'trials') : kpi(sum.leads_converted || 0, 'won'))) + '</div>';
   if (ME.role === 'salesman') html += '<div class=kpis style="margin-top:8px">' + kpi(sum.leads_converted || 0, 'won') + (sum.leads_overdue ? `<div class="kpi warn"><b>${sum.leads_overdue}</b><span>overdue</span></div>` : kpi(0, 'overdue')) + '</div>';
+  let notices = [];
+  try { notices = await rpc('team_list_notices', { p_limit: 5 }); } catch (e) { notices = []; }
+  if (notices.length) html += '<h2>Notices</h2><div class=feed>' + notices.map((n) => `<div><span><b>${esc(n.title)}</b>${n.body ? '<br>' + esc(n.body) : ''}</span><i>${ago(n.created_at)}</i></div>`).join('') + '</div>';
   html += '<h2>Recent work</h2>' + feedHtml(work.recent);
   el.innerHTML = html;
   el.querySelectorAll('[data-lead]').forEach((b) => b.onclick = () => openLead(b.dataset.lead));
