@@ -247,10 +247,9 @@
         </div>
 
         <div id="authSection">
-        <div id="consentBox" style="display:none;margin:0 0 16px;padding:14px 16px;border:1px solid var(--line,#ddd);border-radius:14px;font-size:14px;line-height:1.5;text-align:left">
-          <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer"><input type="checkbox" id="consentService" style="margin-top:4px;flex:none"><span>I have read the <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a> and the <a href="terms.html" target="_blank" rel="noopener">Terms</a>, and I agree that AUZslab may use my details to create and run my account and the apps I choose.</span></label>
-          <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer;margin-top:10px"><input type="checkbox" id="consentUpdates" style="margin-top:4px;flex:none"><span>Optional: send me product updates by email. I can stop this any time.</span></label>
-          <div style="margin-top:10px;font-size:13px;color:var(--ink-dim,#666)">Your data is handled under India's Digital Personal Data Protection Act, 2023. You can see, correct or delete it, or withdraw consent, any time from Account, Privacy &amp; my data.</div>
+        <div id="consentBox" style="display:none;margin:0 0 14px;font-size:14px;line-height:1.4;text-align:left">
+          <label style="display:flex;gap:10px;align-items:center;cursor:pointer"><input type="checkbox" id="consentService" style="flex:none"><span>I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a></span></label>
+          <label style="display:flex;gap:10px;align-items:center;cursor:pointer;margin-top:8px;color:var(--ink-dim,#666)"><input type="checkbox" id="consentUpdates" style="flex:none"><span>Send me product updates (optional)</span></label>
         </div>
           <div id="socialRow" class="auth-social" style="display:none">
             <div id="googleBtnHost"></div>
@@ -322,7 +321,6 @@
         </div>
 
         <div class="auth-dash" style="margin-top:28px"></div>
-        <p class="auth-terms">By continuing you agree to the <a href="terms.html">Terms</a> and <a href="privacy.html">Privacy Policy</a>.</p>
 
         </section>
       </div>
@@ -352,7 +350,7 @@ function setMode(m) {
   document.getElementById('submitBtn').textContent = m === 'signup' ? 'Create account' : 'Log in';
   { const cb = document.getElementById('consentBox'); if (cb) cb.style.display = m === 'signup' ? 'block' : 'none'; }
   document.getElementById('pageTitle').textContent = m === 'signup' ? 'Create your account.' : 'Welcome back.';
-  document.getElementById('pageLede').textContent = m === 'signup' ? 'Sign up with your Google account. Google confirms your email, so there is nothing else to verify.' : 'Pick up where you left off.';
+  document.getElementById('pageLede').textContent = m === 'signup' ? 'Sign up with your Google account.' : 'Pick up where you left off.';
   setAuthMethod('email');
   document.getElementById('forgotRow').style.display = m === 'login' ? 'block' : 'none';
   showCaptcha(m === 'signup');
