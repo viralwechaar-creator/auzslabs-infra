@@ -5,6 +5,7 @@ import { suite, watch, assert } from '../../lib/harness.mjs';
 import { newCtx, layoutIssues } from '../../lib/common.mjs';
 import { q, PG, PASSWORD, USERS, TENANTS } from '../../lib/db.mjs';
 import { createRequire } from 'node:module';
+import fs from 'node:fs';
 const pg = createRequire(import.meta.url)('../../../server/node_modules/pg');
 
 export default async function run({ browser, stack }) {
@@ -366,5 +367,17 @@ export default async function run({ browser, stack }) {
     assert(!(await ok('team_list_notices', {}, T.sales)).some((n) => n.title === 'Office closed Friday'), 'a salesman saw a notice meant for setup staff');
     await fails('team_list_notices', {}, plain, 'not on the team');
     await lis.end();
+  }, 'critical');
+
+  await s.check('Browser alerts for admin and team: the service worker really shows pushes, and a browser can register', async () => {
+    const sw = fs.readFileSync(new URL('../../../app/public/sw.js', import.meta.url), 'utf8').split('\n');
+    assert(sw.some((l) => l.startsWith("self.addEventListener('push'")), 'the push listener must start its own line (a // comment above once swallowed it)');
+    assert(sw.some((l) => l.startsWith("self.addEventListener('notificationclick'")), 'notification click handler missing');
+    const sub = { p_endpoint: 'https://push.example.test/send/' + 'a'.repeat(30), p_p256dh: 'B'.repeat(80), p_auth: 'c'.repeat(22) };
+    await fails('register_platform_web_push', sub, plain, 'not on the team');
+    await fails('register_platform_web_push', { ...sub, p_endpoint: 'http://insecure.test/x' }, T.sales, 'must be https');
+    await ok('register_platform_web_push', sub, T.sales); await ok('register_platform_web_push', sub, adm);
+    const rows = await q('select user_id from platform_web_push where endpoint = $1', [sub.p_endpoint]);
+    assert(rows.length === 1, 'one row per browser (re-registering moves it, never duplicates): ' + rows.length);
   }, 'critical');
 }

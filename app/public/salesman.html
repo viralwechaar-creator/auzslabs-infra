@@ -273,7 +273,7 @@ button:active:not(:disabled){transform:translateY(1px) scale(.99)}
 <div class=toast id=toast></div>
 
 <script src=/ds/appshell.js?v=1></script>
-<script src=/ds/nativepush.js?v=2></script>
+<script src=/ds/nativepush.js?v=3></script>
 <script src=/sb-client.js></script>
 <script src=/config.js></script>
 <script src=/ds/gsignin.js?v=2></script>
@@ -327,7 +327,7 @@ async function boot() {
   $('login').classList.add('hidden');
   $('app').classList.remove('hidden');
   $('rolePill').textContent = ROLE[me.role] || me.role; $('rolePill').style.display = '';
-  if (window.auzNativePush) { try { window.auzNativePush.enablePlatform(sb); } catch (e) {} }
+  if (window.auzNativePush) { try { window.auzNativePush.enablePlatform(sb); window.auzNativePush.enablePlatformWeb(sb, false); } catch (e) {} }
   buildTabs();
   const want = (location.hash || '').slice(1);
   go(TABS[me.role].includes(want) ? want : 'home');
@@ -598,7 +598,13 @@ async function renderMe() {
   el.innerHTML = `<div class=card style="margin-top:0"><h3>${esc(ME.name)}</h3><p class=sub style="margin:0">${esc(ROLE[ME.role])} · ${esc(ME.email)}${ME.phone ? ' · ' + esc(ME.phone) : ''}</p></div>
     <h2>My results</h2><div class=actions style="margin:0 0 6px"><select id=meDays style="max-width:200px"><option value=7>Last 7 days</option><option value=30 selected>Last 30 days</option><option value=90>Last 90 days</option><option value=0>All time</option></select></div>
     <div id=meBody><p class=empty>Loading…</p></div>
+    <div id=meAlerts></div>
     <h2>Account</h2><button class=ghost id=meOut>Sign out</button>`;
+  { const np = window.auzNativePush, st = np && np.webState(), box = $('meAlerts');
+    if (st && st !== 'native' && st !== 'unsupported') {
+      box.innerHTML = st === 'on' ? '<h2>Alerts</h2><p class=sub>Alerts are on for this device.</p>' : `<h2>Alerts</h2><p class=sub>${st === 'ios-install' ? 'To get alerts on an iPhone, tap Share, then Add to Home Screen, and open the app from there.' : 'Get an alert for new leads, assignments and notices from the owner.'}</p>${st === 'ios-install' ? '' : '<button class=ghost id=meAlertsBtn>Turn on alerts on this device</button>'}`;
+      const b = $('meAlertsBtn'); if (b) b.onclick = async () => { const r = await np.enablePlatformWeb(sb, true); toast(r.message); if (r.ok) renderMe(); };
+    } }
   $('meOut').onclick = async () => { await sb.auth.signOut(); location.reload(); };
   const load = async () => {
     try {
