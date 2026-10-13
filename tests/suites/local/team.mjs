@@ -157,6 +157,16 @@ export default async function run({ browser, stack }) {
     await q('delete from platform_salesmen where id=$1', [await uidOf(USERS.plain)]);
   }, 'critical');
 
+  await s.check('A team member signing in on the website is sent to the team workspace, not the products/cart page', async () => {
+    await ok('admin_add_team_member', { p_email: USERS.plain, p_name: 'Web Signin', p_role: 'support', p_phone: null }, adm);
+    const ctx = await newCtx(browser, stack, { w: 1280, h: 800 }); const page = await ctx.newPage();
+    const urls = []; await page.route('https://app.auzslab.in/**', (r) => { urls.push(r.request().url()); r.abort(); });
+    await page.goto(stack.url('', '/signup.html')); await page.waitForSelector('#modeLogin', { timeout: 10000 }); await page.click('#modeLogin');
+    await page.fill('#email', USERS.plain); await page.fill('#password', PASSWORD); await page.click('#submitBtn'); await page.waitForTimeout(3000);
+    assert(urls.some((u) => u.startsWith('https://app.auzslab.in/salesman.html')), 'not sent to the team workspace: ' + (urls.join(' | ') || page.url()));
+    await ctx.close(); await q('delete from platform_salesmen where id=$1', [await uidOf(USERS.plain)]);
+  }, 'critical');
+
   await s.check('Admin panel: the Team tab lists everyone with their role and numbers; Leads show assignee, stage and follow-up controls', async () => {
     const c = await newCtx(browser, stack, { w: 1300, h: 900 }); const p = await c.newPage(); const errs = watch(p);
     await p.goto(stack.url('', '/admin.html')); await p.waitForTimeout(800); await p.fill('#email', USERS.admin); await p.fill('#password', PASSWORD); await p.click('#signin');
