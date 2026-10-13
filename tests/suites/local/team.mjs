@@ -143,9 +143,14 @@ export default async function run({ browser, stack }) {
     const list = await ok('admin_list_team_applications', { p_status: 'new' }, adm);
     assert(list.length === 1 && list[0].name === 'Nia Newhire', JSON.stringify(list));
     await fails('admin_decide_team_application', { p_id: list[0].id, p_decision: 'approve', p_role: 'support' }, plain, 'not admin');
+    await fails('admin_open_team_application_count', {}, plain, 'not admin');
+    assert((await ok('admin_open_team_application_count', {}, adm)) === 1, 'badge count should be 1');
     await q('update auth_users set email_verified_at = now() where email=$1', [USERS.plain]);
     await fails('team_me', {}, plain, 'not approved yet');
-    await ok('admin_decide_team_application', { p_id: list[0].id, p_decision: 'approve', p_role: 'support' }, adm);
+    const dec = await ok('admin_decide_team_application', { p_id: list[0].id, p_decision: 'approve', p_role: 'support' }, adm);
+    assert(dec.email === USERS.plain && dec.role === 'support' && dec.status === 'approved', JSON.stringify(dec));
+    await fails('admin_decide_team_application', { p_id: list[0].id, p_decision: 'reject' }, adm, 'already decided');
+    assert((await ok('admin_open_team_application_count', {}, adm)) === 0, 'badge count should be 0 now');
     const me = await ok('team_me', {}, plain);
     assert(me.role === 'support' && me.name === 'Nia Newhire', JSON.stringify(me));
     assert((await ok('admin_list_team_applications', { p_status: 'new' }, adm)).length === 0, 'still listed as new');

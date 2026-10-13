@@ -26,6 +26,8 @@ export const RPC = {
   submit_feedback: { params: ['oid', 'rating', 'comment'], auth: false },
   submit_team_application: { params: ['p_name', 'p_email', 'p_phone', 'p_city', 'p_role', 'p_experience', 'p_about', 'p_hp'], auth: false },
   admin_list_team_applications: { params: ['p_status'], defaults: { p_status: 'new' }, auth: true },
+  admin_open_counts: { params: [], auth: true },
+  admin_open_team_application_count: { params: [], auth: true },
   admin_decide_team_application: { params: ['p_id', 'p_decision', 'p_role'], defaults: { p_role: null }, auth: true },
   submit_lead: { params: ['p_name', 'p_contact', 'p_business', 'p_message', 'p_niche', 'p_hp'], auth: false },
   demo_context: { params: ['p_kind', 'p_id'], auth: false },
