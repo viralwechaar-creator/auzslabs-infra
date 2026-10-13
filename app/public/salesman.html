@@ -116,6 +116,8 @@ button:active:not(:disabled){transform:translateY(1px) scale(.99)}
 .tabbar{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));padding:6px;border:0;border-radius:22px;background:#2e2c2a;box-shadow:0 12px 26px -14px rgba(46,44,42,.55)}
 .tabbar .in{max-width:520px;margin:0 auto}
 .tabbar button{min-height:52px;border-radius:16px;color:#f5efe6;opacity:.8;font-weight:500;transition:opacity .2s,background .25s var(--ease),transform .12s var(--ease)}
+.tabbar button svg{width:23px;height:23px;stroke-width:1.7}
+.tabbar button.on svg{fill:currentColor;fill-opacity:.2}
 .tabbar button.on{opacity:1;background:rgba(245,239,230,.14);color:#ecd6a8}
 .tabbar button:active{transform:scale(.92)}
 .tabbar .dot{background:#ecd6a8;color:#2e2c2a;left:calc(50% + 6px);top:3px}
@@ -306,12 +308,12 @@ const TABS = {
 };
 const TAB_LABEL = { home: 'Home', leads: 'Leads', trials: 'Trials', setup: 'Setups', team: 'Team', me: 'Me' };
 const TAB_ICON = {
-  home: '<path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/>',
-  leads: '<path d="M4 6h16M4 12h16M4 18h10"/>',
-  trials: '<rect x="4" y="5" width="16" height="14" rx="3"/><path d="M8 10h8M8 14h5"/>',
-  setup: '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l2.5 2.5L16 9"/>',
-  team: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14.2a5 5 0 0 1 5 5.3"/>',
-  me: '<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/>',
+  home: '<path d="M3.5 11.2 12 4l8.5 7.2"/><path d="M5.5 9.6V19a1.5 1.5 0 0 0 1.5 1.5h10a1.5 1.5 0 0 0 1.5-1.5V9.6"/><path d="M10 20.5v-5.2a2 2 0 0 1 4 0v5.2"/>',
+  leads: '<path d="M4 5.5h16l-6.2 7.3v5.2L10.2 20v-7.2z"/>',
+  trials: '<path d="M4.5 10.5V19a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-8.5"/><path d="M3 10.5 4.7 5h14.6L21 10.5a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0z"/><path d="M10 20.5v-4h4v4"/>',
+  setup: '<rect x="5" y="4.5" width="14" height="16.5" rx="2.5"/><path d="M9 4.5V3.8A.8.8 0 0 1 9.8 3h4.4a.8.8 0 0 1 .8.8v.7"/><path d="m9 13.2 2.1 2.1L15.2 11"/>',
+  team: '<circle cx="9" cy="8.2" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14.2a5 5 0 0 1 5 5.3"/>',
+  me: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3"/><path d="M6.2 18.2a7 7 0 0 1 11.6 0"/>',
 };
 let ME = null, tab = 'home', leads = [], setups = [], work = null, clientsList = null;
 
