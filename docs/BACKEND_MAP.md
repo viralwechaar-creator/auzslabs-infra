@@ -46,7 +46,11 @@ Business logic that already had its own file stays where it was: `auth.js`, `pay
 ## Not done (on purpose)
 
 - No behaviour changes, no renamed addresses, no new libraries.
-- `auth.js` (805 lines) is still one big file; splitting it is a separate piece of work.
+- `auth.js` is now a list of re-exports; the code is in `server/src/auth/`: `config.js` (JWT secret and expiry),
+  `sessions.js` (session rows, revoke, `signToken`, `verifyToken`), `twofa.js` (2FA and the sign-in challenge),
+  `password.js` (login, create user, reset, delete account), `email.js` (verification, email change, recovery email,
+  signup switches), `identity.js` (Google, Apple, phone code), `staffpin.js` (username + PIN). A new exported name
+  must also be added to the list in `auth.js`.
 - `salon.js` is now a one-line entry; the code is in `server/src/salon/`: `util.js` (constants, small helpers, body
   reading), `storage.js` (tenant lookup, salon_store reads/writes, caches, `mutate`), `session.js` (password hashing,
   session cookie), `rules.js` (slots, bookings, clients, invoices, expenses), `brand.js` (uploads, per-salon icon and
