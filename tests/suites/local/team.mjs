@@ -167,6 +167,63 @@ export default async function run({ browser, stack }) {
     await ctx.close(); await q('delete from platform_salesmen where id=$1', [await uidOf(USERS.plain)]);
   }, 'critical');
 
+  await s.check('The hub (app.auzslab.in) sends each kind of person to the right place: admin, team member, customer with no business, business owner', async () => {
+    const hub = async (email, fn) => {
+      const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage(); const errs = watch(page);
+      const sent = []; await page.route('https://auzslab.in/**', (r) => { sent.push(r.request().url()); r.fulfill({ contentType: 'text/html', body: '<!doctype html><title>site</title>ok' }); });
+      await page.goto(stack.url('app', '/start.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
+      await page.fill('input[type=email]', email); await page.fill('input[type=password]', PASSWORD); await page.locator('button', { hasText: /^Sign in$/ }).click();
+      await fn(page, sent);
+      assert(!errs.filter((e) => !/aborted|ERR_FAILED/i.test(e)).length, 'script errors: ' + errs.join(' | '));
+      await ctx.close();
+    };
+    // a customer with no business and not on the team
+    await hub(USERS.plain, async (page, sent) => {
+      await page.waitForSelector('.tile', { timeout: 20000 });
+      const t = await page.locator('.tile b').allInnerTexts();
+      assert(t.includes('My account and purchases') && t.includes('Explore AUZslab') && t.includes('My cart'), 'customer tiles: ' + t.join(', '));
+      assert(!/No business yet/i.test(await page.locator('body').innerText()), 'customer saw the old dead end');
+      await page.locator('.tile', { hasText: 'My account and purchases' }).click(); await page.waitForTimeout(800);
+      assert(/^https:\/\/auzslab\.in\/account\.html#auz_gt=/.test(page.url()), 'account link did not carry the session: ' + page.url());
+    });
+    // the platform admin
+    await hub(USERS.admin, async (page, sent) => {
+      await page.waitForSelector('.tile', { timeout: 20000 });
+      const t = await page.locator('.tile b').allInnerTexts(); assert(t.includes('Admin panel'), 'admin tiles: ' + t.join(', '));
+      await page.locator('.tile', { hasText: 'Admin panel' }).click(); await page.waitForTimeout(800);
+      assert(/^https:\/\/auzslab\.in\/admin\.html#auz_gt=/.test(page.url()), 'admin link did not carry the session: ' + page.url());
+    });
+    // a team member without a business of their own lands on the team workspace
+    await ok('admin_add_team_member', { p_email: USERS.plain, p_name: 'Hub Pure', p_role: 'support', p_phone: null }, adm);
+    await hub(USERS.plain, async (page) => { await page.waitForURL(/\/salesman\.html/, { timeout: 20000 }); });
+    await q('delete from platform_salesmen where id=$1', [await uidOf(USERS.plain)]);
+    // a team member who is also staff of a business sees their business apps AND a Team workspace tile
+    await hub(E.setup, async (page) => {
+      await page.waitForSelector('.tile', { timeout: 20000 });
+      const t = await page.locator('.tile b').allInnerTexts(); assert(t.includes('Team workspace'), 'team tile missing: ' + t.join(', '));
+    });
+    // a business owner keeps their app tiles and also gets the account and explore tiles
+    await hub(USERS.cafeOwner, async (page) => {
+      await page.waitForSelector('.tile', { timeout: 20000 });
+      const t = await page.locator('.tile b').allInnerTexts();
+      assert(t.includes('AUZsPOS') && t.includes('My account and purchases') && t.includes('Explore AUZslab'), 'owner tiles: ' + t.join(', '));
+    });
+  }, 'critical');
+
+  await s.check('In-app shell (store and desktop apps): a way back to the hub on every page, and no buying on iPhone; an ordinary browser sees none of it', async () => {
+    const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage();
+    await page.goto(stack.url('', '/pricing.html')); await page.waitForTimeout(1200);
+    assert(!(await page.locator('.auz-hub-pill').count()), 'an ordinary browser got the in-app button');
+    await page.goto(stack.url('', '/pricing.html?inapp=1')); await page.waitForSelector('.auz-hub-pill', { timeout: 8000 });
+    assert(await page.evaluate(() => document.documentElement.classList.contains('in-app') && !document.documentElement.classList.contains('ios-app')), 'in-app class wrong');
+    await page.goto(stack.url('', '/products.html?inapp=ios')); await page.waitForSelector('.auz-hub-pill', { timeout: 8000 });
+    const shown = await page.evaluate(() => [...document.querySelectorAll('[data-add],[data-product]')].filter((e) => getComputedStyle(e).display !== 'none').length);
+    assert(shown === 0, shown + ' add-to-cart buttons still visible in the iPhone app');
+    await page.goto(stack.url('', '/cart.html?inapp=ios')); await page.waitForSelector('.auz-ios-buy', { timeout: 8000 });
+    assert(/Finish on our website/.test(await page.locator('.auz-ios-buy').innerText()), 'iPhone cart page did not explain');
+    await ctx.close();
+  }, 'major');
+
   await s.check('Admin panel: the Team tab lists everyone with their role and numbers; Leads show assignee, stage and follow-up controls', async () => {
     const c = await newCtx(browser, stack, { w: 1300, h: 900 }); const p = await c.newPage(); const errs = watch(p);
     await p.goto(stack.url('', '/admin.html')); await p.waitForTimeout(800); await p.fill('#email', USERS.admin); await p.fill('#password', PASSWORD); await p.click('#signin');

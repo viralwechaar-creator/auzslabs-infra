@@ -39,6 +39,22 @@ if (!manifest.includes('ACCESS_FINE_LOCATION')) {
     '</manifest>');
   fs.writeFileSync(manifestPath, manifest);
 }
+// Hub app only: the link auzslab://signin#auz_gt=... brings the Google sign-in (done in the phone's own browser, because Google refuses
+// an embedded web view) back into the app. ds/appshell.js listens for it through the Capacitor App plugin and hands it to the hub.
+if (app === 'hub') {
+  manifest = fs.readFileSync(manifestPath, 'utf8');
+  if (!manifest.includes('android:scheme="auzslab"')) {
+    manifest = manifest.replace('</activity>',
+      '        <intent-filter>\n' +
+      '            <action android:name="android.intent.action.VIEW" />\n' +
+      '            <category android:name="android.intent.category.DEFAULT" />\n' +
+      '            <category android:name="android.intent.category.BROWSABLE" />\n' +
+      '            <data android:scheme="auzslab" android:host="signin" />\n' +
+      '        </intent-filter>\n' +
+      '    </activity>');
+    fs.writeFileSync(manifestPath, manifest);
+  }
+}
 // Barcode scanning (AUZsLedger Scan to bill / AUZsScan, ds/scanner.js) opens the camera with getUserMedia. Capacitor's WebView
 // answers that prompt itself, but only once CAMERA is declared. camera is not "required", so phones without one are not filtered out.
 manifest = fs.readFileSync(manifestPath, 'utf8');

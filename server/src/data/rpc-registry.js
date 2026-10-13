@@ -116,6 +116,7 @@ export const RPC = {
   admin_set_team_role: { params: ['p_id', 'p_role'], auth: true },
   team_me: { params: [], auth: true },
   team_probe: { params: [], auth: true },
+  hub_me: { params: [], auth: true },
   team_my_leads: { params: [], auth: true },
   team_all_leads: { params: [], auth: true },
   team_add_lead: { params: ['p'], jsonb: ['p'], auth: true },
