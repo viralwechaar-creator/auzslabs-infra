@@ -178,10 +178,8 @@ button:active:not(:disabled){transform:translateY(1px) scale(.99)}
         <label>Type of business<select id=newNiche>
           <option value=cafe>Café / restaurant / bakery</option>
           <option value=salon>Salon / spa</option>
-          <option value=gym>Gym</option>
-          <option value=retail>Retail</option>
+          <option value=retail>Retail / General</option>
           <option value=mobile>Mobile phone shop</option>
-          <option value=general>General</option>
         </select></label>
         <button id=createBtn style="width:100%">Create trial + brand it</button>
         <div id=createErr class=err></div>
@@ -449,7 +447,7 @@ $('addLeadBtn').onclick = () => openSheet(`
   <label>Their name<input id=alName autocomplete=off></label>
   <label>Business<input id=alBiz autocomplete=off></label>
   <label>Phone or email<input id=alContact inputmode=tel autocomplete=off></label>
-  <label>Type of business<select id=alNiche><option value="">Not sure</option><option value=cafe>Café / restaurant</option><option value=salon>Salon / spa</option><option value=retail>Retail</option><option value=mobile>Mobile shop</option><option value=gym>Gym</option><option value=general>Other</option></select></label>
+  <label>Type of business<select id=alNiche><option value="">Not sure</option><option value=cafe>Café / restaurant</option><option value=salon>Salon / spa</option><option value=retail>Retail / General</option><option value=mobile>Mobile shop</option><option value=gym>Gym</option><option value=general>Other</option></select></label>
   <label>What do they need?<textarea id=alMsg></textarea></label>
   <label>Follow up on<input id=alFu type=date value="${addDays(1)}"></label>
   <button id=alSave style="width:100%">Save lead</button><div id=alErr class=err></div>`, (sh) => {
@@ -528,7 +526,7 @@ async function assignSetupSheet() {
     }, sh.querySelector('#asErr'));
   });
 }
-const SETUP_APPS = { salon: [['Open their admin console', '/salon/admin/']], mobile: [['Open their AUZsMob', '/mob.html']], cafe: [['Open their POS', '/index.html'], ['Open the admin console', '/dashboard.html']] };
+const SETUP_APPS = { salon: [['Open their admin console', '/salon/admin/']], mobile: [['Open their AUZsMob', '/mob.html']], retail: [['Open their AUZsLedger', '/accounts.html']], cafe: [['Open their POS', '/index.html'], ['Open the admin console', '/dashboard.html']] };
 function openSetup(id) {
   const a = setups.find((x) => x.id === id); if (!a) return;
   const mine = a.assigned_to === ME.id, live = a.status === 'open' && !a.expired && mine;
@@ -655,6 +653,9 @@ const NICHE_APP = {
   mobile: { main: 'Open their AUZsMob ↗',      page: '/mob.html', site: null, qr: false, demo: false, brand: false,
             sub: 'Open their AUZsMob (sell, repairs, stock, reports) already signed in, with a sample phone, a sale and a repair to show.',
             note: 'AUZsMob has no public website. Set the shop name, phone and address inside AUZsMob → Settings.' },
+  retail: { main: 'Open their AUZsLedger ↗',   page: '/accounts.html', site: null, qr: false, demo: false, brand: false,
+            sub: 'Open their AUZsLedger (invoices, stock, GST, reports) already signed in. Add the client\'s own products inside it for the pitch.',
+            note: 'Retail / General businesses use AUZsLedger. Set the business name, GSTIN and address inside AUZsLedger → Settings.' },
 };
 const nicheApp = (t) => NICHE_APP[t.niche] || { main: 'Open their POS ↗', page: '/index.html', site: null, qr: false, demo: false, brand: true,
   sub: 'Open their POS already signed in. Add the client\'s own items inside it for the pitch.' };
