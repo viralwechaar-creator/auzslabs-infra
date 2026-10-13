@@ -464,14 +464,14 @@ body.admin-shell .bn-in input{border:none!important;background:none!important;bo
 .lead-note-form button{border-radius:999px}
 .list-card,.req-card,.price-card,.client-card{border-radius:20px}
 
-/* client cards: stats as soft tiles, actions as visible pills */
+/* client cards: stats as soft tiles, actions back to small text links (owner: pills felt too boxy) */
 .client-card{padding:16px}
 .cc-stats{border-top:none;padding-top:0;margin-top:12px}
 .cc-stats>div{background:var(--bg-raised);border-radius:14px;padding:9px 12px}
-.cc-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:6px;border-top:none;padding-top:0;margin-top:12px}
-.cc-actions button{border:1px solid var(--line-soft);background:var(--bg-raised);border-radius:999px;padding:8px 10px;text-align:center;font:600 12px var(--font-body);min-height:36px}
-.cc-actions button:hover{background:var(--card-bg);border-color:var(--ink-faint)}
-.cc-actions button.cc-danger{color:var(--accent);border-color:rgba(128,0,32,.25)}
+.cc-actions{display:flex;flex-wrap:wrap;gap:4px 14px;border-top:1px solid var(--line-soft);padding-top:9px;margin-top:12px}
+.cc-actions button{border:none;background:none;border-radius:0;padding:3px 0;text-align:left;font:600 12px var(--font-body);min-height:0;color:var(--ink-dim)}
+.cc-actions button:hover{background:none;border:none;color:var(--ink)}
+.cc-actions button.cc-danger{color:var(--accent);border:none}
 .cc-grid{grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px}
 
 /* payments sheet */
