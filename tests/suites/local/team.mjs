@@ -170,6 +170,20 @@ export default async function run({ browser, stack }) {
     await ctx.close(); await q('delete from platform_salesmen where id=$1', [await uidOf(USERS.plain)]);
   }, 'critical');
 
+  await s.check('Hub app: a Google sign-in link that arrives while the hub is open (appUrlOpen) signs the person in instead of leaving the login page', async () => {
+    const d = await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: USERS.cafeOwner, password: PASSWORD }) })).json(); const sess = d.data || d;
+    const link = 'auzslab://signin#auz_gt=' + Buffer.from(JSON.stringify({ t: sess.access_token, u: sess.user })).toString('base64url');
+    const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage(); const errs = watch(page);
+    await page.addInitScript(() => { window.Capacitor = { Plugins: { App: { addListener: (n, f) => { window.__appUrl = f; }, getLaunchUrl: () => Promise.resolve(null) } } }; });
+    await page.goto(stack.url('app', '/start.html?inapp=1')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
+    await page.waitForFunction(() => !!window.__appUrl, null, { timeout: 5000 });
+    await page.evaluate((u) => window.__appUrl({ url: u }), link);
+    // a one-app business is sent straight into its app, anyone else sees tiles: either way the login page is gone
+    await page.waitForFunction(() => /\/(index|dashboard|mob|payroll|accounts|scan)\.html$/.test(location.pathname) || !!document.querySelector('.tile'), null, { timeout: 25000 });
+    assert(await page.evaluate(() => !!localStorage.getItem('auz_session')), 'the session was not saved');
+    await ctx.close();
+  }, 'critical');
+
   await s.check('The hub (app.auzslab.in) sends each kind of person to the right place: admin, team member, customer with no business, business owner', async () => {
     const hub = async (email, fn) => {
       const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage(); const errs = watch(page);

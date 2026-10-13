@@ -49,6 +49,14 @@
   function takeLink(u) {
     var m = /[#&]auz_gt=([^&\s]+)/.exec(u || ''); if (!m) return;
     try { var C = window.Capacitor; if (C && C.Plugins && C.Plugins.Browser && C.Plugins.Browser.close) C.Plugins.Browser.close(); } catch (e) { /* ignore */ }
+    // Already on the hub's own address: a link that only changes the part after # does NOT reload the page, so the hub would never read it
+    // (that was the "back on the login page" bug). Save the session here and load the hub afresh.
+    if (/^app\./.test(location.hostname)) {
+      try {
+        var p = JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g, '+').replace(/_/g, '/')))));
+        if (p && p.t && p.u) { localStorage.setItem('auz_session', JSON.stringify({ access_token: p.t, user: p.u })); location.replace('/start.html?s=' + Date.now()); return; }
+      } catch (e) { /* fall through */ }
+    }
     location.href = 'https://app.auzslab.in/start.html#auz_gt=' + m[1];
   }
   try { var Cap = window.Capacitor; if (Cap && Cap.Plugins && Cap.Plugins.App && Cap.Plugins.App.addListener) Cap.Plugins.App.addListener('appUrlOpen', function (e) { takeLink(e && e.url); }); if (Cap && Cap.Plugins && Cap.Plugins.App && Cap.Plugins.App.getLaunchUrl) Cap.Plugins.App.getLaunchUrl().then(function (r) { if (r && r.url) takeLink(r.url); }, function () {}); } catch (e) { /* no plugin */ }
