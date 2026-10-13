@@ -17,7 +17,7 @@ Never send the file or passwords in chat or email.
 - `ANDROID_KEY_PASSWORD`: the key password (the same as the keystore password if you pressed Enter)
 
 ## 3. Build
-GitHub > Actions > "Android build" > Run workflow > app = `all` (or one app: hub, pos, mob, payroll, accounts).
+GitHub > Actions > "Android build" > Run workflow > app = `all` (or one app: hub, pos, mob, payroll, accounts, scan).
 When it finishes, open the run and download each app's artifact: it holds the test `.apk` and, because the secrets exist, the signed `.aab`.
 
 ## 4. Upload to Google Play
