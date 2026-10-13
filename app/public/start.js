@@ -79,8 +79,78 @@
   function exploreTiles() {
     return [siteTile('Explore AUZslab', 'Products, pricing, demos and guides', ''), siteTile('Products and pricing', 'See what each product does and costs', 'products.html')];
   }
+  // ---- My requests: what the person asked for and where each request is (asked -> checked -> payment link -> paid -> active).
+  // Paying happens on the website's payment page (opened in the same window); the iPhone/iPad app never offers it (Apple's rules)
+  // and says so. A paid request shows the bill. Payment is confirmed by AUZslab (automatically once an online gateway is on).
+  var STATUS = {
+    requested: ['Received', 'We have your request.', 1], new: ['Received', 'We have your request.', 1],
+    verifying: ['Being checked', 'We are checking your business details.', 2], confirmed: ['Confirmed', 'Your payment link is being prepared.', 2],
+    link_sent: ['Ready to pay', 'Your quote is ready. Read it and pay.', 3], payment_submitted: ['Payment received', 'We are confirming your payment.', 4],
+    paid: ['Active', 'Paid. Your access is active.', 5], rejected: ['Not accepted', 'We could not accept this request. Contact us for help.', 0]
+  };
+  var STEPS = ['Asked', 'Checked', 'Pay', 'Confirmed', 'Active'];
+  var IOS = function () { return document.documentElement.classList.contains('ios-app'); };
+  var reqTimer = null;
+  function reqNeeds(rows) { return rows.filter(function (o) { return o.status === 'link_sent'; }).length; }
+  function requestsTile() {
+    var note = el('span', { text: 'Status of what you asked for, payment and bills' });
+    var t = el('a', { class: 'tile', href: '#requests', onclick: function (e) { e.preventDefault(); showRequests(); } }, [el('b', { text: 'My requests' }), note]);
+    sb.rpc('my_client_orders').then(function (r) {
+      var rows = (r && r.data) || [];
+      if (!rows.length) { t.style.display = 'none'; return; }
+      var n = reqNeeds(rows); if (n) note.textContent = n === 1 ? '1 request is ready for payment' : n + ' requests are ready for payment';
+    }, function () { /* quiet: the tile just keeps its default text */ });
+    return t;
+  }
+  function stepBar(n) {
+    return el('div', { style: 'display:flex;gap:4px;margin:8px 0 2px' }, STEPS.map(function (name, i) {
+      var on = n > 0 && i < n;
+      return el('div', { style: 'flex:1;text-align:center;font-size:11px;color:' + (on ? 'var(--accent,#800020)' : 'var(--label2,#6a625b)') }, [
+        el('div', { style: 'height:4px;border-radius:2px;margin-bottom:4px;background:' + (on ? 'var(--accent,#800020)' : 'var(--sep,#ddd)') }), el('span', { text: name })]);
+    }));
+  }
+  function requestCard(o) {
+    var st = STATUS[o.status] || [o.status, '', 0];
+    var prods = (o.products || []).join(', ');
+    var kids = [el('div', { style: 'display:flex;justify-content:space-between;gap:8px;align-items:baseline' }, [el('b', { text: o.business_name || 'Request' }), el('span', { style: 'font-size:12px;color:var(--label2,#6a625b)', text: String(o.created_at || '').slice(0, 10) })]),
+      prods ? el('div', { style: 'font-size:13px;color:var(--label2,#6a625b)', text: prods }) : null,
+      stepBar(st[2]),
+      el('div', { style: 'font-weight:700;margin-top:6px', text: st[0] }), el('div', { style: 'font-size:14px;color:var(--label2,#6a625b)', text: st[1] })];
+    if (o.status === 'link_sent') {
+      if (IOS()) kids.push(el('p', { style: 'font-size:14px;margin:10px 0 0', text: 'To pay, open auzslab.in in your browser and sign in. Your account and apps stay right here.' }));
+      else kids.push(el('a', { class: 'btn fill', style: 'margin-top:10px', href: SITE + 'pay.html?t=' + encodeURIComponent(o.token), text: 'Read quote and pay' }));
+    } else if (o.status === 'payment_submitted' && !IOS()) {
+      kids.push(el('a', { class: 'btn', style: 'margin-top:10px', href: SITE + 'pay.html?t=' + encodeURIComponent(o.token), text: 'View payment details' }));
+    } else if (o.status === 'paid') {
+      if (o.invoice_no) kids.push(el('div', { style: 'font-size:13px;margin-top:6px', text: 'Bill ' + o.invoice_no }));
+      kids.push(el('a', { class: 'btn', style: 'margin-top:10px', href: SITE + 'inv.html?t=' + encodeURIComponent(o.token), text: 'View bill' }));
+      kids.push(el('button', { class: 'btn fill', type: 'button', style: 'margin-top:8px', onclick: function () { boot(); }, text: 'Open my apps' }));
+    }
+    return el('div', { style: 'border:1px solid var(--sep,#e4dfda);border-radius:16px;padding:14px;background:var(--surface,#fff)' }, kids);
+  }
+  async function showRequests() {
+    clearInterval(reqTimer);
+    var list = el('div', { class: 'grid', style: 'margin-top:12px' }, [el('p', { class: 'sub', text: 'Loading...' })]);
+    var msg = el('div', { class: 'msg', role: 'status' });
+    async function load() {
+      var r = await sb.rpc('my_client_orders');
+      if (!list.isConnected) { clearInterval(reqTimer); return; }
+      if (r.error) { msg.textContent = 'Could not load your requests. Check your connection.'; return; }
+      msg.textContent = ''; var rows = r.data || []; list.textContent = '';
+      if (!rows.length) list.append(el('p', { class: 'sub', text: 'You have not asked for anything yet.' }));
+      rows.forEach(function (o) { list.append(requestCard(o)); });
+    }
+    var head = [el('button', { type: 'button', style: 'background:none;border:0;color:inherit;font:inherit;text-decoration:underline;cursor:pointer;padding:0;margin-bottom:8px', onclick: function () { clearInterval(reqTimer); boot(); }, text: 'Back' }),
+      el('h1', { text: 'My requests' }), el('p', { class: 'sub', text: 'You ask for products, we check, send a quote, and your access starts after payment is confirmed.' })];
+    var more = [list, msg];
+    if (!IOS()) more.push(el('a', { class: 'btn', style: 'margin-top:12px', href: SITE + 'cart.html', text: 'Ask for more products' }));
+    more.push(el('button', { class: 'btn', type: 'button', style: 'margin-top:8px', onclick: load, text: 'Refresh' }));
+    set(head.concat(more));
+    await load();
+    reqTimer = setInterval(load, 30000);
+  }
   function accountTiles() {
-    var t = [siteTile('My account and purchases', 'Profile, orders, bills and add-ons', 'account.html')];
+    var t = [requestsTile(), siteTile('My account and purchases', 'Profile, orders, bills and add-ons', 'account.html')];
     // no buying inside the iPhone/iPad app (Apple's rules): the cart is only offered on the website, Android and desktop
     if (!document.documentElement.classList.contains('ios-app')) t.push(siteTile('My cart', 'Products you asked for', 'cart.html'));
     return t;

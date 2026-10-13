@@ -210,6 +210,40 @@ export default async function run({ browser, stack }) {
     });
   }, 'critical');
 
+  await s.check('Hub "My requests": the client sees where each request is, pays from the app (not on iPhone), and sees the bill once paid', async () => {
+    const cust = await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: USERS.plain, password: PASSWORD }) })).json();
+    const tok = (cust.data || cust).access_token;
+    const mk = async (biz) => (await (await fetch(stack.apiBase + '/rpc/submit_client_order', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok }, body: JSON.stringify({ p: { contact_name: 'Hub Req', phone: '9812345671', business_name: biz, requirement: 'hub test', products: ['pos'] } }) })).json());
+    const a = await mk('Hub Ready Co'), b = await mk('Hub Paid Co');
+    const ta = (a.data || a).token, tb = (b.data || b).token;
+    await q("update client_orders set status='link_sent' where token=$1", [ta]);
+    await q("update client_orders set status='paid', invoice_no='AUZ/2026-27/9999' where token=$1", [tb]);
+    const open = async (suffix, fn) => {
+      const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage(); const errs = watch(page);
+      await page.route('https://auzslab.in/**', (r) => r.fulfill({ contentType: 'text/html', body: '<!doctype html><title>site</title>ok' }));
+      await page.goto(stack.url('app', '/start.html' + suffix)); await page.waitForSelector('input[type=password]', { timeout: 20000 });
+      await page.fill('input[type=email]', USERS.plain); await page.fill('input[type=password]', PASSWORD); await page.locator('button', { hasText: /^Sign in$/ }).click();
+      await page.waitForSelector('.tile', { timeout: 20000 });
+      assert(/ready for payment/i.test(await page.locator('.tile', { hasText: 'My requests' }).innerText()), 'tile did not say a request is ready for payment');
+      await page.locator('.tile', { hasText: 'My requests' }).click(); await page.waitForSelector('text=Hub Ready Co', { timeout: 10000 });
+      await fn(page);
+      assert(!errs.filter((e) => !/aborted|ERR_FAILED/i.test(e)).length, 'script errors: ' + errs.join(' | '));
+      await ctx.close();
+    };
+    await open('', async (page) => {
+      const body = await page.locator('main').innerText();
+      assert(/Ready to pay/.test(body) && /Active/.test(body) && /AUZ\/2026-27\/9999/.test(body), 'statuses/bill number missing: ' + body.slice(0, 300));
+      const pay = await page.locator('a', { hasText: 'Read quote and pay' }).getAttribute('href'); assert(pay === 'https://auzslab.in/pay.html?t=' + ta, 'pay link: ' + pay);
+      const bill = await page.locator('a', { hasText: 'View bill' }).getAttribute('href'); assert(bill === 'https://auzslab.in/inv.html?t=' + tb, 'bill link: ' + bill);
+    });
+    await open('?inapp=ios', async (page) => {
+      const body = await page.locator('main').innerText();
+      assert(!(await page.locator('a', { hasText: /pay/i }).count()) && /open auzslab\.in in your browser/i.test(body), 'iPhone app offered payment: ' + body.slice(0, 300));
+      assert(await page.locator('a', { hasText: 'View bill' }).count(), 'iPhone app lost the bill');
+    });
+    await q("delete from client_orders where token = any($1)", [[ta, tb]]);
+  }, 'critical');
+
   await s.check('In-app shell (store and desktop apps): a way back to the hub on every page, and no buying on iPhone; an ordinary browser sees none of it', async () => {
     const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage();
     await page.goto(stack.url('', '/pricing.html')); await page.waitForTimeout(1200);
