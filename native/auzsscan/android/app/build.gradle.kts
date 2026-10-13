@@ -73,3 +73,8 @@ dependencies {
 flutter {
     source = "../.."
 }
+
+// Push alerts (Firebase) switch on only when the build was given google-services.json; without it the app builds and runs as before.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}

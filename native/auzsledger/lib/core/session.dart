@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../ui/i18n.dart';
 import 'api.dart';
 import 'calc.dart';
+import 'push.dart';
 import 'store.dart';
 
 /// Signed-in state for AUZsLedger. It runs on the AUZsLedger books: the same functions as the website's Scan to bill
@@ -88,6 +89,7 @@ class LedgerSession extends ChangeNotifier {
   Future<void> openWith(Map<String, dynamic> u, LocalStore s) async {
     store = s;
     user = {...u};
+    unawaited(PushRegistration.register(api, '${u['id']}'));
     final cp = await s.meta('products'), cq = await s.meta('parties');
     baseProducts = cp == null ? [] : _decodeList(cp);
     parties = cq == null ? [] : _decodeList(cq);
