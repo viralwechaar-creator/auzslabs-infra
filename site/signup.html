@@ -413,7 +413,7 @@ function goNext() { try { const n = sessionStorage.getItem('auz.next'); if (n ==
 // team workspace opens. team_me() also turns an approved "Join our team" application into a seat on the first call.
 async function goTeam() {
   try {
-    const { error } = await sb.rpc('team_me'); if (error) return false;
+    const { data: tm, error } = await sb.rpc('team_probe'); if (error || !tm || !tm.member) return false;
     const { data: { session } } = await sb.auth.getSession(); if (!session || !session.access_token) return false;
     const b = btoa(unescape(encodeURIComponent(JSON.stringify({ t: session.access_token, u: session.user })))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     window.location.href = 'https://app.auzslab.in/salesman.html#auz_gt=' + b; return true;

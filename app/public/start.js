@@ -79,8 +79,8 @@
       // A salesman login (db/137) has no business of its own -- my_dashboard() always falls
       // into this same "no business" branch for them. Check before showing that dead end.
       // (db/176) every kind of team login -- salesman, client setup, support, manager -- lands on the same team page.
-      var sm = await sb.rpc('team_me');
-      if (!sm.error) { location.replace('/salesman.html'); return; }
+      var sm = await sb.rpc('team_probe');
+      if (!sm.error && sm.data && sm.data.member) { location.replace('/salesman.html'); return; }
       foot.textContent = ''; foot.append(el('button', { type: 'button', onclick: signOut, text: 'Sign out' }));
       return set([el('h1', { text: 'No business yet' }), el('p', { class: 'sub', text: 'This login is not linked to a business. Create one, or ask your owner to add you as staff.' }), el('a', { class: 'btn fill', href: 'https://auzslab.in/account.html', text: 'Open my account' })]);
     }
