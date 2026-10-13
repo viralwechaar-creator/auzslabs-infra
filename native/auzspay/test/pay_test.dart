@@ -7,6 +7,7 @@ import 'package:auzspay/core/session.dart';
 import 'package:auzspay/core/store.dart';
 import 'package:auzspay/ui/p_addperson.dart';
 import 'package:auzspay/ui/p_run.dart';
+import 'package:auzspay/ui/p_reports.dart';
 import 'package:auzspay/ui/shell.dart';
 import 'package:auzspay/ui/theme.dart';
 
@@ -116,6 +117,8 @@ Future<void> settle(WidgetTester t) async {
 }
 
 void main() {
+  taxTests();
+  reportTests();
   claimTests();
   TestWidgetsFlutterBinding.ensureInitialized();
   SharedPreferences.setMockInitialValues({});
@@ -188,12 +191,16 @@ void main() {
     await t.tap(find.descendant(of: find.byType(NavigationBar), matching: find.text('More')));
     await settle(t);
     for (final label in ['HR today', 'Approvals', 'People', 'Payroll']) {
+      await t.ensureVisible(find.text(label));
+      await t.pump();
       await t.tap(find.text(label));
       await settle(t);
       expect(t.takeException(), isNull, reason: label);
       await t.pageBack();
       await settle(t);
     }
+    await t.ensureVisible(find.text('Approvals'));
+    await t.pump();
     await t.tap(find.text('Approvals'));
     await settle(t);
     expect(find.text('Ravi'), findsOneWidget);
@@ -259,5 +266,27 @@ void claimTests() {
     expect(a['description'], 'cab');
     expect(a['attachment'], 'tid/emp/receipt.jpg');
     expect(claimPayload(category: 'Food', amount: '10', date: '2026-10-12')['attachment'], isNull);
+  });
+}
+
+void reportTests() {
+  test('report cells: dates, money and plain numbers', () {
+    expect(reportCell('2026-10-05', 'Date', money: true), '5 Oct 2026');
+    expect(reportCell(1500, 'Net pay', money: true), '₹1,500');
+    expect(reportCell(3, 'Days', money: true), '3');
+    expect(reportCell(null, 'x', money: false), '');
+    expect(reportCsv(['Name', 'Net'], [['A, B', 5]]), 'Name,Net\n"A, B",5');
+  });
+}
+
+void taxTests() {
+  test('tax payload: regime, blank amounts left out, metro only for the old regime', () {
+    final p = taxPayload('old', {'sec80c': '150000', 'sec80d': '', 'rent_monthly': '12,000'}, metro: true);
+    expect(p['regime'], 'old');
+    expect(p['items'], {'sec80c': 150000.0, 'rent_monthly': 12000.0, 'metro': true});
+    expect(taxPayload('new', {'sec80c': '5'}, metro: true)['items'], {'sec80c': 5.0});
+    expect(kioskIsIn({'state': {'open': true}}), true);
+    expect(kioskIsIn({'state': {'open': false}}), false);
+    expect(kioskIsIn({}), false);
   });
 }

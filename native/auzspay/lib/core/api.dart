@@ -104,6 +104,18 @@ class ApiClient {
     return '$path';
   }
 
+  /// Fetch a stored employee document (GET /storage/doc/<path>) as bytes.
+  Future<List<int>> downloadDoc(String path) async {
+    http.Response res;
+    try {
+      res = await _http.get(Uri.parse('$base/storage/doc/$path'), headers: {if (token != null) 'Authorization': 'Bearer $token'}).timeout(const Duration(seconds: 60));
+    } catch (_) {
+      throw ApiError('Could not reach the server.', networkError: true);
+    }
+    if (res.statusCode < 200 || res.statusCode >= 300) throw ApiError('Could not open the file (${res.statusCode})', status: res.statusCode);
+    return res.bodyBytes;
+  }
+
   Future<dynamic> rpc(String fn, [Map<String, dynamic> args = const {}]) => _request('POST', '/rpc/$fn', body: args);
 
   /// Several queued writes in ONE request (POST /sync, at most 50). Each result is {id, ok, status?, error?, skipped?}.

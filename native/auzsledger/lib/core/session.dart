@@ -142,6 +142,13 @@ class LedgerSession extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Fetch the business settings, accounts and tax codes again (after a change in Settings).
+  Future<void> reloadContext() async {
+    ctx = Map<String, dynamic>.from(await api.rpc('acc_bootstrap') as Map);
+    await store?.setMeta('ctx', jsonEncode(ctx));
+    notifyListeners();
+  }
+
   Future<void> refreshParties() async {
     try {
       final d = await api.rpc('acc_list_parties', {'p': {'limit': 5000, 'include_inactive': true}});

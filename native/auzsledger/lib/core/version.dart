@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 /// Bump with every release you ship. `min` in site/native-version.json forces older builds to update.
-const int kBuild = 1;
+const int kBuild = 3;
 
 class UpdateInfo {
   UpdateInfo(this.force, this.available, this.url, this.note);
