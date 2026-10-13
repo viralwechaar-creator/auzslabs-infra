@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api.dart';
+import 'push.dart';
 import 'store.dart';
 
 /// Signed-in state for AUZsPay. Payroll is server-authoritative (pay_* functions), with ONE offline exception, like the
@@ -87,6 +88,7 @@ class PaySession extends ChangeNotifier {
       }
       await loadMe();
       unawaited(flushPunches());
+      unawaited(PushRegistration.register(api, '${u['id']}'));
     }
     notifyListeners();
   }
