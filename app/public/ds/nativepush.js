@@ -37,5 +37,26 @@
     }).catch(function () { return { ok: false, message: 'Could not request notification permission.' }; });
   }
 
-  window.auzNativePush = { isNative: isNative, enable: enable };
+  /* AUZslab admin and team members belong to no business, so their phones are saved through register_platform_push
+     (db/182) instead of the per-business fcm_tokens table. Resolves {ok, message}; silent no-op outside the app. */
+  function enablePlatform(sb) {
+    var Push = plugin();
+    if (!isNative() || !Push) return Promise.resolve({ ok: false, message: 'Alerts are only available inside the installed app.' });
+    return Push.requestPermissions().then(function (perm) {
+      if (perm.receive !== 'granted') return { ok: false, message: 'Allow notifications for this app in your phone settings.' };
+      return new Promise(function (resolve) {
+        var done = false, offReg, offErr;
+        function finish(r) { if (done) return; done = true; try { offReg.remove(); } catch (e) {} try { offErr.remove(); } catch (e) {} resolve(r); }
+        offReg = Push.addListener('registration', function (token) {
+          sb.rpc('register_platform_push', { p_token: token.value }).then(function (r) {
+            finish(r.error ? { ok: false, message: r.error.message } : { ok: true, message: 'Alerts are on for this device' });
+          });
+        });
+        offErr = Push.addListener('registrationError', function () { finish({ ok: false, message: 'Could not register this device for notifications.' }); });
+        Push.register().catch(function () { finish({ ok: false, message: 'Could not register this device for notifications.' }); });
+      });
+    }).catch(function () { return { ok: false, message: 'Could not request notification permission.' }; });
+  }
+
+  window.auzNativePush = { isNative: isNative, enable: enable, enablePlatform: enablePlatform };
 })();
