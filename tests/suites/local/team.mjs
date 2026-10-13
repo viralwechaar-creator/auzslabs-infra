@@ -171,16 +171,20 @@ export default async function run({ browser, stack }) {
   }, 'critical');
 
   await s.check('Hub app: a Google sign-in link that arrives while the hub is open (appUrlOpen) signs the person in instead of leaving the login page', async () => {
-    const d = await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: USERS.cafeOwner, password: PASSWORD }) })).json(); const sess = d.data || d;
+    const d = await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: USERS.admin, password: PASSWORD }) })).json(); const sess = d.data || d;
     const link = 'auzslab://signin#auz_gt=' + Buffer.from(JSON.stringify({ t: sess.access_token, u: sess.user })).toString('base64url');
     const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage(); const errs = watch(page);
-    await page.addInitScript(() => { window.Capacitor = { Plugins: { App: { addListener: (n, f) => { window.__appUrl = f; }, getLaunchUrl: () => Promise.resolve(null) } } }; });
-    await page.goto(stack.url('app', '/start.html?inapp=1')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
+    await page.addInitScript(() => { Object.defineProperty(navigator, 'userAgent', { get: () => 'Mozilla/5.0 (Linux; Android 14) AUZslabApp' }); window.Capacitor = { Plugins: { App: { addListener: (n, f) => { window.__appUrl = f; }, getLaunchUrl: () => Promise.resolve(null) } } }; });
+    await page.goto(stack.url('app', '/start.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
     await page.waitForFunction(() => !!window.__appUrl, null, { timeout: 5000 });
+    await page.addInitScript((u) => { const f = window.Capacitor.Plugins.App; f.getLaunchUrl = () => Promise.resolve({ url: u }); }, link);
     await page.evaluate((u) => window.__appUrl({ url: u }), link);
     // a one-app business is sent straight into its app, anyone else sees tiles: either way the login page is gone
     await page.waitForFunction(() => /\/(index|dashboard|mob|payroll|accounts|scan)\.html$/.test(location.pathname) || !!document.querySelector('.tile'), null, { timeout: 25000 });
     assert(await page.evaluate(() => !!localStorage.getItem('auz_session')), 'the session was not saved');
+    // Android reports the launch link on every load: the page must not keep reloading because of it
+    let navs = 0; page.on('framenavigated', (f) => { if (f === page.mainFrame()) navs++; }); await page.waitForTimeout(5000);
+    assert(navs <= 1, 'the page keeps reloading (' + navs + ' loads in 5 s)');
     await ctx.close();
   }, 'critical');
 
