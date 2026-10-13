@@ -75,8 +75,17 @@ if (!manifest.includes('android.permission.CAMERA')) {
 // google-services Gradle plugin only if google-services.json exists and is
 // non-empty -- so writing the file here is the only step this script needs;
 // the plugin side is already handled by Capacitor's own template.
+// The Firebase file only lists the apps registered in the Firebase project; the
+// google-services Gradle plugin fails the whole build when this app's package id
+// is not in it. So the file is written only when it contains this app's id;
+// otherwise this app builds without push, exactly like the dormant case.
 if (process.env.GOOGLE_SERVICES_JSON) {
-  fs.writeFileSync('android/app/google-services.json', Buffer.from(process.env.GOOGLE_SERVICES_JSON, 'base64'));
+  const gs = Buffer.from(process.env.GOOGLE_SERVICES_JSON, 'base64').toString('utf8');
+  if (gs.includes('"package_name": "'+A.id+'"') || gs.includes('"package_name":"'+A.id+'"')) {
+    fs.writeFileSync('android/app/google-services.json', gs);
+  } else {
+    console.log('push skipped: '+A.id+' is not in the Firebase file');
+  }
 }
 
 const g='android/app/build.gradle'; let t=fs.readFileSync(g,'utf8');
