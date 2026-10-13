@@ -133,6 +133,25 @@ export default async function run({ browser, stack }) {
   }, 'critical');
 
   // ---------------- screens ----------------
+  await s.check('Join the team: a public application, admin approval, and the seat appears at first sign-in', async () => {
+    const app = { p_name: 'Nia Newhire', p_email: USERS.plain, p_phone: '9000000001', p_city: 'Jodhpur', p_role: 'support', p_experience: 'x', p_about: 'y', p_hp: '' };
+    await fails('submit_team_application', { ...app, p_email: 'not-an-email' }, null, 'bad email');
+    await ok('submit_team_application', { ...app, p_hp: 'bot' }, null);
+    assert((await q('select count(*)::int n from team_applications'))[0].n === 0, 'honeypot should drop it');
+    await ok('submit_team_application', app, null);
+    await fails('admin_list_team_applications', {}, plain, 'not admin');
+    const list = await ok('admin_list_team_applications', { p_status: 'new' }, adm);
+    assert(list.length === 1 && list[0].name === 'Nia Newhire', JSON.stringify(list));
+    await fails('admin_decide_team_application', { p_id: list[0].id, p_decision: 'approve', p_role: 'support' }, plain, 'not admin');
+    await q('update auth_users set email_verified_at = now() where email=$1', [USERS.plain]);
+    await fails('team_me', {}, plain, 'not approved yet');
+    await ok('admin_decide_team_application', { p_id: list[0].id, p_decision: 'approve', p_role: 'support' }, adm);
+    const me = await ok('team_me', {}, plain);
+    assert(me.role === 'support' && me.name === 'Nia Newhire', JSON.stringify(me));
+    assert((await ok('admin_list_team_applications', { p_status: 'new' }, adm)).length === 0, 'still listed as new');
+    await q('delete from platform_salesmen where id=$1', [await uidOf(USERS.plain)]);
+  }, 'critical');
+
   await s.check('Admin panel: the Team tab lists everyone with their role and numbers; Leads show assignee, stage and follow-up controls', async () => {
     const c = await newCtx(browser, stack, { w: 1300, h: 900 }); const p = await c.newPage(); const errs = watch(p);
     await p.goto(stack.url('', '/admin.html')); await p.waitForTimeout(800); await p.fill('#email', USERS.admin); await p.fill('#password', PASSWORD); await p.click('#signin');
