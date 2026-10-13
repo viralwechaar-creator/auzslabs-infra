@@ -92,35 +92,29 @@ button:disabled{opacity:.5;cursor:default}
 .toast{position:fixed;bottom:calc(88px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:var(--label);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:60;max-width:90vw;text-align:center}
 .toast.on{opacity:1}
 
-/* ===== Floating navigation + depth (owner request: like the admin panel's nav, with some visual depth) =====
+/* ===== Floating navigation + depth (owner request: like the admin panel's nav; kept MATTE, no gloss) =====
    Phones/tablets: a floating charcoal pill at the bottom (same as the admin panel). Wide screens: a floating rail on the left.
-   Depth = layered soft shadows, a lit hero card, a gentle rise on page change. Only transform/opacity are animated. */
-body{background-color:var(--bg);background-image:radial-gradient(760px 340px at 88% -80px,var(--accent-soft),transparent 72%);background-repeat:no-repeat;background-size:100% 420px}
-.top{box-shadow:0 10px 24px -20px rgba(46,44,42,.5)}
+   Depth = flat surfaces with soft neutral shadows only: no gradients, glows, inner highlights or coloured shadows. */
+.top{box-shadow:0 8px 20px -18px rgba(46,44,42,.45)}
 .mark{display:inline-flex;align-items:center}
-.mark::before{content:"";margin-right:8px;width:22px;height:22px;border-radius:7px;background:#171717 url(/icon-team.svg) center/cover;box-shadow:0 3px 8px -3px rgba(0,0,0,.5)}
-.card,.row,.kpi{box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 12px 28px -20px rgba(46,44,42,.5),0 2px 6px -2px rgba(46,44,42,.1)}
+.mark::before{content:"";margin-right:8px;width:22px;height:22px;border-radius:7px;background:#171717 url(/icon-team.svg) center/cover}
+.card,.row,.kpi{box-shadow:0 8px 22px -18px rgba(46,44,42,.45),0 1px 3px rgba(46,44,42,.08)}
 .card,.row,.kpi,button{transition:transform .22s var(--ease),box-shadow .22s var(--ease),background .2s}
 .row:active{transform:scale(.985)}
-button:not(.ghost):not(.chip):not(.row):not(.danger){box-shadow:0 8px 16px -10px var(--accent)}
 button:active:not(:disabled){transform:translateY(1px) scale(.99)}
 @media (hover:hover){
-  .card:hover,.row:hover,.kpi:hover{transform:translateY(-2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 18px 34px -20px rgba(46,44,42,.55),0 3px 8px -2px rgba(46,44,42,.12)}
+  .card:hover,.row:hover,.kpi:hover{transform:translateY(-1px);box-shadow:0 12px 26px -18px rgba(46,44,42,.5),0 1px 3px rgba(46,44,42,.1)}
 }
-.hero{position:relative;overflow:hidden;background:var(--accent);background:linear-gradient(145deg,color-mix(in srgb,var(--accent) 86%,#fff),var(--accent) 48%,color-mix(in srgb,var(--accent) 78%,#000));box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 22px 36px -22px var(--accent)}
-.hero::after{content:"";position:absolute;right:-60px;top:-70px;width:220px;height:220px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,255,255,.28),rgba(255,255,255,0));pointer-events:none}
-.kpi{position:relative;overflow:hidden}
-.kpi::before{content:"";position:absolute;left:12px;right:12px;top:0;height:2px;border-radius:0 0 2px 2px;background:var(--accent);opacity:.55}
-.sheet{box-shadow:0 -24px 60px -20px rgba(0,0,0,.45)}
-.scrim{background:radial-gradient(circle at 50% 100%,rgba(0,0,0,.5),rgba(0,0,0,.34))}
+.hero{background:var(--accent);box-shadow:0 10px 24px -20px rgba(46,44,42,.6)}
+.sheet{box-shadow:0 -18px 44px -22px rgba(0,0,0,.4)}
+.scrim{background:rgba(0,0,0,.4)}
 @keyframes tmRise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 .page.on.fresh>*{animation:tmRise .5s var(--ease) both}
 .page.on.fresh>*:nth-child(2){animation-delay:60ms}.page.on.fresh>*:nth-child(3){animation-delay:110ms}.page.on.fresh>*:nth-child(4){animation-delay:160ms}.page.on.fresh>*:nth-child(5){animation-delay:200ms}.page.on.fresh>*:nth-child(n+6){animation-delay:240ms}
 #login,#notTeam{animation:tmRise .55s var(--ease) both}
 /* floating pill (phones, tablets) */
-.tabbar{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));padding:6px;border:0;border-radius:22px;background:#2e2c2a;box-shadow:0 18px 34px -12px rgba(46,44,42,.6),0 0 0 1px rgba(255,255,255,.06)}
+.tabbar{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));padding:6px;border:0;border-radius:22px;background:#2e2c2a;box-shadow:0 12px 26px -14px rgba(46,44,42,.55)}
 .tabbar .in{max-width:520px;margin:0 auto}
-.tabbar .in button{box-shadow:none!important}
 .tabbar button{min-height:52px;border-radius:16px;color:#f5efe6;opacity:.8;font-weight:500;transition:opacity .2s,background .25s var(--ease),transform .12s var(--ease)}
 .tabbar button.on{opacity:1;background:rgba(245,239,230,.14);color:#ecd6a8}
 .tabbar button:active{transform:scale(.92)}
