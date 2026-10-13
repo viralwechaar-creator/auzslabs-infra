@@ -19,7 +19,7 @@ List<Map<String, dynamic>> _maps(dynamic l) => ((l as List?) ?? const []).map((e
 Map<String, dynamic> _map(dynamic m) => m is Map ? Map<String, dynamic>.from(m) : <String, dynamic>{};
 
 Future<String?> _pickCsv() async {
-  final r = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: const ['csv', 'txt'], withData: true);
+  final r = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: const ['csv', 'txt'], withData: true);
   final f = r?.files.firstOrNull;
   if (f == null) return null;
   final bytes = f.bytes ?? await File(f.path!).readAsBytes();
