@@ -49,5 +49,5 @@
    no buying on iPhone. Nothing happens in an ordinary browser. */
 (function () {
   if (!/AUZslabApp|AUZslabDesktop/.test(navigator.userAgent) && !/[?&]inapp=(1|ios)\b/.test(location.search)) return;
-  var s = document.createElement('script'); s.src = '/appshell.js?v=2'; (document.head || document.documentElement).appendChild(s);
+  var s = document.createElement('script'); s.src = '/appshell.js?v=3'; (document.head || document.documentElement).appendChild(s);
 })();
