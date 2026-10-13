@@ -2026,3 +2026,6 @@ Pure move, no behaviour change. `index.js` only identifies the caller and offers
 
 ## Salon API split (`server/src/salon/`)
 `server/src/salon.js` is now a one-line entry (`export { handleSalon } from './salon/router.js'`); the 1,006 lines were moved, unchanged, into `salon/util.js`, `storage.js`, `session.js`, `rules.js`, `brand.js`, `router.js` (map in `docs/BACKEND_MAP.md`). Where earlier sections say "`salon.js` ..." read the matching file in that folder (`mutate`/`loadSite`/caches = `storage.js`, `admin()`/`member()` guards and every address = `router.js`). Checked with ESLint `no-undef` plus the salon (27) and security (16) suites. Deploy: `docker compose up -d --build api`.
+
+## Auth split (`server/src/auth/`)
+`server/src/auth.js` is now only `export { ... } from './auth/<module>.js'` lines, so no importer changed; the 805 lines were moved unchanged into `auth/config.js`, `sessions.js`, `twofa.js`, `password.js`, `email.js`, `identity.js`, `staffpin.js` (map in `docs/BACKEND_MAP.md`). A new public function in one of them must also be listed in `auth.js`. Checked with ESLint `no-undef` and the security, signup, team, salon, journeys, mobile and dpdp suites. Deploy: `docker compose up -d --build api`.
