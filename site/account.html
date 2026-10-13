@@ -143,6 +143,7 @@ input:disabled+.slider{opacity:.4;cursor:default}
       <button class="nav-link" id="helpLink" type="button"><span>Help &amp; report a problem</span></button>
       <a href="#" id="openAccountsLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><span>Open Accounting</span></a>
       <a href="#" id="openMobLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><span>Open AUZsMob</span></a>
+      <a href="#" id="openScanLink" target="_blank" rel="noopener" class="nav-link" style="display:none"><span>Open AUZsScan</span></a>
     </nav>
     <div class="sidebar-foot">
       <button class="btn btn-ghost" id="signOutBtn" style="width:100%;justify-content:center">Sign out</button>
@@ -412,6 +413,8 @@ async function boot() {
   if (accountingOn) { $('#openAccountsLink').style.display = ''; $('#openAccountsLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in/accounts.html'; }
   const mobileOn = (DASH.features || {}).mobile === true && (DASH.enabled_features || {}).mobile !== false;
   if (mobileOn) { $('#openMobLink').style.display = ''; $('#openMobLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in/mob.html'; }
+  const scanOn = (DASH.features || {}).scan === true && (DASH.enabled_features || {}).scan !== false;
+  if (scanOn) { $('#openScanLink').style.display = ''; $('#openScanLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in/scan.html'; }
 
   await loadRoles();
   if (DASH.my_role === 'owner') await loadStaff();
