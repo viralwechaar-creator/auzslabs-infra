@@ -80,7 +80,10 @@
     return [siteTile('Explore AUZslab', 'Products, pricing, demos and guides', ''), siteTile('Products and pricing', 'See what each product does and costs', 'products.html')];
   }
   function accountTiles() {
-    return [siteTile('My account and purchases', 'Profile, orders, bills and add-ons', 'account.html'), siteTile('My cart', 'Products you asked for', 'cart.html')];
+    var t = [siteTile('My account and purchases', 'Profile, orders, bills and add-ons', 'account.html')];
+    // no buying inside the iPhone/iPad app (Apple's rules): the cart is only offered on the website, Android and desktop
+    if (!document.documentElement.classList.contains('ios-app')) t.push(siteTile('My cart', 'Products you asked for', 'cart.html'));
+    return t;
   }
   function tilesBox(title, sub, tiles, extra) {
     set([el('h1', { text: title }), el('p', { class: 'sub', text: sub }), el('div', { class: 'tiles' }, tiles)].concat(extra || []));

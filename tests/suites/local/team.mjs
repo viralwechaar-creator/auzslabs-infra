@@ -210,6 +210,20 @@ export default async function run({ browser, stack }) {
     });
   }, 'critical');
 
+  await s.check('In-app shell (store and desktop apps): a way back to the hub on every page, and no buying on iPhone; an ordinary browser sees none of it', async () => {
+    const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage();
+    await page.goto(stack.url('', '/pricing.html')); await page.waitForTimeout(1200);
+    assert(!(await page.locator('.auz-hub-pill').count()), 'an ordinary browser got the in-app button');
+    await page.goto(stack.url('', '/pricing.html?inapp=1')); await page.waitForSelector('.auz-hub-pill', { timeout: 8000 });
+    assert(await page.evaluate(() => document.documentElement.classList.contains('in-app') && !document.documentElement.classList.contains('ios-app')), 'in-app class wrong');
+    await page.goto(stack.url('', '/products.html?inapp=ios')); await page.waitForSelector('.auz-hub-pill', { timeout: 8000 });
+    const shown = await page.evaluate(() => [...document.querySelectorAll('[data-add],[data-product]')].filter((e) => getComputedStyle(e).display !== 'none').length);
+    assert(shown === 0, shown + ' add-to-cart buttons still visible in the iPhone app');
+    await page.goto(stack.url('', '/cart.html?inapp=ios')); await page.waitForSelector('.auz-ios-buy', { timeout: 8000 });
+    assert(/Finish on our website/.test(await page.locator('.auz-ios-buy').innerText()), 'iPhone cart page did not explain');
+    await ctx.close();
+  }, 'major');
+
   await s.check('Admin panel: the Team tab lists everyone with their role and numbers; Leads show assignee, stage and follow-up controls', async () => {
     const c = await newCtx(browser, stack, { w: 1300, h: 900 }); const p = await c.newPage(); const errs = watch(p);
     await p.goto(stack.url('', '/admin.html')); await p.waitForTimeout(800); await p.fill('#email', USERS.admin); await p.fill('#password', PASSWORD); await p.click('#signin');

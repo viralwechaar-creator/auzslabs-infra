@@ -358,3 +358,12 @@
 
   });
 })();
+
+
+/* In the AUZslab store/desktop apps (and ?inapp=1 for testing) also load the in-app shell: the way back to the hub, no bounce,
+   no buying on iPhone. Nothing happens in an ordinary browser. (appshell.js loads once even if theme.js did it too.) */
+(function () {
+  if (!/AUZslabApp|AUZslabDesktop/.test(navigator.userAgent) && !/[?&]inapp=(1|ios)\b/.test(location.search)) return;
+  if (document.querySelector('script[src^="/appshell.js"]')) return;
+  var s = document.createElement('script'); s.src = '/appshell.js?v=1'; (document.head || document.documentElement).appendChild(s);
+})();
