@@ -2,6 +2,8 @@ name: Android build
 # Run from the Actions tab. app = hub, pos, mob, payroll, accounts or all.
 # Always builds a test APK. If the four signing secrets exist (see docs/ANDROID_RELEASE.md) it also builds the signed
 # release bundle (.aab) that you upload to Google Play.
+permissions:
+  contents: write
 on:
   workflow_dispatch:
     inputs:
@@ -65,3 +67,10 @@ jobs:
           path: |
             mobile/android/app/build/outputs/apk/debug/*.apk
             mobile/android/app/build/outputs/bundle/release/*.aab
+      - name: Publish test APK on a release page
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp mobile/android/app/build/outputs/apk/debug/*.apk "AUZslab-${{ matrix.app }}.apk"
+          gh release delete "android-${{ matrix.app }}-latest" --yes --cleanup-tag --repo "$GITHUB_REPOSITORY" || true
+          gh release create "android-${{ matrix.app }}-latest" "AUZslab-${{ matrix.app }}.apk" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --title "AUZslab ${{ matrix.app }} Android (test build)" --notes "Test build. Tap the .apk below to download, then open it to install (allow installs from this source if Android asks)."
