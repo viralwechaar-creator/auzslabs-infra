@@ -28,5 +28,11 @@
     "id": "in.auzslab.accounts",
     "url": "https://app.auzslab.in/accounts.html",
     "icon": "icon-accounts-512.png"
+  },
+  "scan": {
+    "name": "AUZsScan",
+    "id": "in.auzslab.scan",
+    "url": "https://app.auzslab.in/scan.html",
+    "icon": "icon-scan-512.png"
   }
 }
