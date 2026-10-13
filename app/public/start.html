@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
+<script src="/ds/launch-hub.js?v=1"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>AUZslab</title>
@@ -37,7 +38,17 @@ p.sub{margin:0 0 16px;color:var(--label2,#6a625b);font-size:15px}
 .tiles{display:grid;gap:10px;margin-top:12px}
 .tile{display:flex;flex-direction:column;gap:2px;padding:16px;border:1px solid var(--sep,#e4dfda);border-radius:16px;background:var(--surface,#fff);color:inherit;text-decoration:none}
 .tile b{font-size:17px}.tile span{font-size:13px;color:var(--label2,#6a625b)}
-.tile:active{transform:scale(.99)}
+.tile{position:relative;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;animation:tileIn .55s cubic-bezier(.2,.9,.3,1) both;animation-delay:calc(var(--i,0)*70ms + 80ms)}
+.tile:after{content:"";position:absolute;right:16px;top:50%;width:8px;height:8px;margin-top:-5px;border-top:2px solid var(--label2,#6a625b);border-right:2px solid var(--label2,#6a625b);transform:rotate(45deg);opacity:.45;transition:transform .2s ease,opacity .2s ease}
+.tile:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.08);border-color:var(--accent,#800020)}
+.tile:hover:after{transform:translateX(4px) rotate(45deg);opacity:1}
+.tile:active{transform:scale(.985)}
+.card{animation:cardIn .6s cubic-bezier(.2,.9,.3,1) both}
+html.auz-wait .tile,html.auz-wait .card,html.auz-wait .brand{animation-play-state:paused}
+.brand{animation:cardIn .6s ease both}
+@keyframes tileIn{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.tile,.card,.brand{animation:none!important;transition:none}.tile:after{transition:none}}
 .links{display:flex;justify-content:space-between;margin:14px 4px 0;font-size:14px}
 .links a,.links button{color:inherit;background:none;border:0;font:inherit;text-decoration:underline;cursor:pointer;padding:0}
 .hide{display:none!important}
@@ -55,6 +66,6 @@ p.sub{margin:0 0 16px;color:var(--label2,#6a625b);font-size:15px}
 <script src="/ds/gsignin.js?v=2"></script>
 <script src="/ds/twofa.js?v=1"></script>
 <script src="/ds/appshell.js?v=1"></script>
-<script src="/start.js?v=8"></script>
+<script src="/start.js?v=9"></script>
 </body>
 </html>
