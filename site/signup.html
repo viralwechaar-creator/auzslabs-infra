@@ -408,10 +408,22 @@ document.getElementById('pwEyeToggle').onclick = () => {
 // "Sign in to send your request": the cart links here with ?next=cart.html and we bring the person back to it after sign-in
 (function () { try { const n = new URLSearchParams(location.search).get('next'); if (n === 'cart.html') sessionStorage.setItem('auz.next', n); } catch (e) {} })();
 function goNext() { try { const n = sessionStorage.getItem('auz.next'); if (n === 'cart.html') { sessionStorage.removeItem('auz.next'); window.location.href = n; return true; } } catch (e) {} return false; }
+// AUZslab team members (salesman, setup, support, manager) have no business: signing in on the website must not drop them
+// on the products/cart page. Hand the session to app.auzslab.in (same #auz_gt hand-off as the Google redirect) where their
+// team workspace opens. team_me() also turns an approved "Join our team" application into a seat on the first call.
+async function goTeam() {
+  try {
+    const { error } = await sb.rpc('team_me'); if (error) return false;
+    const { data: { session } } = await sb.auth.getSession(); if (!session || !session.access_token) return false;
+    const b = btoa(unescape(encodeURIComponent(JSON.stringify({ t: session.access_token, u: session.user })))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    window.location.href = 'https://app.auzslab.in/salesman.html#auz_gt=' + b; return true;
+  } catch (e) { return false; }
+}
 async function afterSignIn(user) {
   if (goNext()) return;
   if (user && await hasOwnTenant(user.id)) { window.location.href = 'account.html'; return; }
   if (await isPlatformAdmin()) { window.location.href = 'admin.html'; return; }
+  if (await goTeam()) return;
   window.location.href = 'index.html';
 }
 
@@ -560,6 +572,7 @@ async function checkSession() {
       window.location.href = 'admin.html';
       return;
     }
+    if (await goTeam()) return;
     // Just signed in (Google hand-off): a customer with no business yet starts at the homepage, not the cart.
     try { if (sessionStorage.getItem('auz.justSignedIn') === '1') { sessionStorage.removeItem('auz.justSignedIn'); window.location.href = 'index.html'; return; } } catch (e) {}
     document.querySelector('.auth-seg').style.display = 'none';
