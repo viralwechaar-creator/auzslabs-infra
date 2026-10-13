@@ -8,6 +8,7 @@ import 'kit.dart';
 import 'lv.dart';
 import 'mk.dart';
 import 'p_addperson.dart';
+import 'p_extra.dart';
 import 'p_pay.dart';
 import 'p_run.dart';
 import 'p_today.dart';
@@ -275,6 +276,19 @@ class PersonPage extends StatelessWidget {
           ].where((r) => (r.$2 ?? '').isNotEmpty).toList();
           return ListView(padding: const EdgeInsets.only(bottom: 40), children: [
             Group([for (final r in rows) Li(tr(r.$1), value: r.$2, chevron: false)]),
+            if (s.can('pay_people')) ...[
+              const SectionLabel('Documents'),
+              Group([
+                for (final dc in _maps(d['documents'] ?? emp['documents'])) Li('${dc['name'] ?? dc['doc_type']}', sub: '${dc['doc_type'] ?? ''}${dc['employee_can_see'] == false ? ' · only HR can see' : ''}', icon: Icons.description_outlined, tone: Tk.blue, onTap: () => openDocument(ctx, s, dc)),
+                Li('Add a document', icon: Icons.add_circle_outline, tone: Tk.accent, onTap: () async {
+                  if (await addDocument(ctx, s, '${emp['id']}') && ctx.mounted) {
+                    toast(ctx, tr('Saved'));
+                    Navigator.pushReplacement(ctx, MaterialPageRoute(builder: (_) => PersonPage(s, e)));
+                  }
+                }),
+                Li('Income tax', icon: Icons.receipt_long_outlined, tone: Tk.orange, onTap: () => Navigator.push(ctx, MaterialPageRoute(builder: (_) => MyTaxPage(s, empId: '${emp['id']}')))),
+              ]),
+            ],
             if (slips.isNotEmpty) ...[
               const SectionLabel('Payslips'),
               Group([for (final p in slips.take(24)) Li('${p['title'] ?? monthName(p['month'])}', value: inr(n(p['net'])), icon: Icons.description_outlined, tone: Tk.accent, onTap: () => Navigator.push(ctx, MaterialPageRoute(builder: (_) => PayslipPage(s, '${p['id']}'))))]),

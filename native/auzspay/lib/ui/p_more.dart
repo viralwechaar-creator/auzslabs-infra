@@ -6,6 +6,7 @@ import 'ds.dart';
 import 'i18n.dart';
 import 'kit.dart';
 import 'mk.dart';
+import 'p_extra.dart';
 import 'p_hr.dart';
 import 'p_reports.dart';
 import 'theme.dart';
@@ -21,12 +22,17 @@ class MorePage extends StatelessWidget {
     return ListenableBuilder(
       listenable: Listenable.merge([s, Lang.rev, Tk.rev]),
       builder: (ctx, _) => TabPage('More', [
-        if (s.hasEmployee) Group([Li('Profile', sub: '${s.employee['name'] ?? ''}', icon: Icons.person_outline, tone: Tk.accent, onTap: () => _push(ctx, ProfilePage(s)))]),
+        if (s.hasEmployee) Group([
+          Li('Profile', sub: '${s.employee['name'] ?? ''}', icon: Icons.person_outline, tone: Tk.accent, onTap: () => _push(ctx, ProfilePage(s))),
+          Li('Income tax', sub: 'Regime and deductions', icon: Icons.receipt_long_outlined, tone: Tk.orange, onTap: () => _push(ctx, MyTaxPage(s))),
+          Li('My documents', icon: Icons.folder_open_outlined, tone: Tk.blue, onTap: () => _push(ctx, MyDocsPage(s))),
+        ]),
         if (s.isManager) ...[gap(), Group([Li('My team', icon: Icons.groups_outlined, tone: Tk.blue, onTap: () => _push(ctx, TeamPage(s)))])],
         if (s.hr) ...[
           const SectionLabel('HR'),
           Group([
             Li('HR today', icon: Icons.dashboard_outlined, tone: Tk.accent, onTap: () => _push(ctx, HrDashPage(s))),
+            if (s.can('pay_time')) Li('Clock in kiosk', sub: 'A shared phone at work', icon: Icons.touch_app_outlined, tone: Tk.green, onTap: () => _push(ctx, KioskPage(s))),
             Li('Approvals', icon: Icons.pending_actions_outlined, tone: Tk.orange, onTap: () => _push(ctx, ApprovalsPage(s))),
             Li('People', icon: Icons.groups_outlined, tone: Tk.blue, onTap: () => _push(ctx, PeoplePage(s))),
             if (s.can('pay_reports') || s.can('pay_view')) Li('Reports', icon: Icons.bar_chart_outlined, tone: Tk.blue, onTap: () => _push(ctx, ReportsPage(s))),

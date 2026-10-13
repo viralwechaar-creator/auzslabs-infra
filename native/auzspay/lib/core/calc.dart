@@ -113,3 +113,16 @@ String csvEscape(Object? v) {
   final s = v == null ? '' : '$v';
   return RegExp(r'[",\r\n]').hasMatch(s) ? '"${s.replaceAll('"', '""')}"' : s;
 }
+
+/// The payload of pay_me_tax_save / pay_save_tax: regime plus the declaration amounts (blank = left out).
+Map<String, dynamic> taxPayload(String regime, Map<String, String> amounts, {bool metro = false}) {
+  final items = <String, dynamic>{};
+  amounts.forEach((k, v) {
+    if (v.trim().isNotEmpty) items[k] = n(v);
+  });
+  if (regime == 'old' && metro) items['metro'] = true;
+  return {'regime': regime == 'old' ? 'old' : 'new', 'items': items};
+}
+
+/// Kiosk status line for one person from pay_kiosk_list: "In since ..." / "Out".
+bool kioskIsIn(Map<String, dynamic> p) => p['state'] is Map && (p['state'] as Map)['open'] == true;
