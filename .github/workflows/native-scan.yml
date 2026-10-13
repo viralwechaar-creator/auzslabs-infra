@@ -32,6 +32,11 @@ jobs:
           else
             echo "No upload key secrets: the bundle is signed with the shared TEST key (not for Play)"
           fi
+      - name: Firebase file (only if the secret is set)
+        env:
+          GSJ: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GSJ" ]; then echo "$GSJ" | base64 -d > android/app/google-services.json; echo "Push alerts: Firebase file added"; else echo "No Firebase secret: push alerts stay off"; fi
       - run: flutter build apk --release
       - run: flutter build appbundle --release
       - uses: actions/upload-artifact@v4

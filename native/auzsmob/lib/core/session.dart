@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../ui/i18n.dart';
 import 'api.dart';
 import 'calc.dart';
+import 'push.dart';
 import 'repo.dart';
 import 'store.dart';
 
@@ -134,6 +135,7 @@ class MobSession extends ChangeNotifier {
     r.afterPull = _refreshContext;
     repo = r;
     user = {...u};
+    unawaited(PushRegistration.register(api, '${u['id']}'));
     await r.load();
     // the shop's settings: from the server, else the last copy kept on the phone (so the app opens with no internet)
     try {

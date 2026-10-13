@@ -46,6 +46,8 @@ dependencies:
   print_bluetooth_thermal: ^1.2.5
   permission_handler: ^12.0.1
   app_links: ^7.2.2
+  firebase_core: ^4.0.0
+  firebase_messaging: ^16.0.0
   mobile_scanner: ^7.4.2
 
 dev_dependencies:
