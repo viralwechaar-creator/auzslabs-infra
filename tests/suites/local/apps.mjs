@@ -33,6 +33,15 @@ export default async function run({ browser, stack }) {
       await page.evaluate((x) => { [...document.querySelectorAll('.nb')].find((b) => b.textContent.trim().startsWith(x)).click(); }, pg); await page.waitForTimeout(500);
       assert((await page.locator('.ph h1').first().innerText()).length > 2, pg + ' page did not render');
     }
+    await page.evaluate(async () => { await save('table', { name: 'T1', sec: 'Main' }, 'tq1'); go('menu/tables'); }); await page.waitForTimeout(300);
+    await page.locator('button', { hasText: /^QR$/ }).first().click(); await page.waitForTimeout(300);
+    assert(await page.locator('.mwrap .qrc svg').count() === 1, 'QR button did not show the QR code');
+    const qrText = await page.locator('.mwrap').innerText(); assert(/Copy link/.test(qrText) && /Share \/ Save image/.test(qrText) && /Print/.test(qrText), 'QR dialog actions missing: ' + qrText);
+    await page.evaluate(() => document.querySelectorAll('.mwrap').forEach((m) => m.remove()));
+    await page.locator('button', { hasText: /Print all QR/ }).first().click(); await page.waitForTimeout(300);
+    assert(await page.locator('.mwrap .qrc svg').count() >= 1, 'Print all QR did not show the codes');
+    const png = await page.evaluate(async () => { const b = await qrPng({ id: 'tq1', name: 'T1' }); return b.size; }); assert(png > 2000, 'QR picture too small: ' + png);
+    await page.evaluate(() => document.querySelectorAll('.mwrap').forEach((m) => m.remove()));
     const bad = errs.filter((e) => !/WebSocket|ERR_CERT|tunnel|print/i.test(e)); assert(!bad.length, bad.slice(0, 3).join(' | '));
     await ctx.close();
   }, 'major');
