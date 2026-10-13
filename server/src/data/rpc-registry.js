@@ -136,6 +136,7 @@ export const RPC = {
   team_setup_update: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
   team_overview: { params: ['p_days'], defaults: { p_days: 30 }, auth: true },
   register_platform_push: { params: ['p_token'], auth: true },
+  register_platform_web_push: { params: ['p_endpoint', 'p_p256dh', 'p_auth'], auth: true },
   admin_post_team_notice: { params: ['p_title', 'p_body', 'p_audience'], defaults: { p_body: '', p_audience: 'all' }, auth: true },
   team_list_notices: { params: ['p_limit'], defaults: { p_limit: 20 }, auth: true },
   team_activity_feed: { params: ['p_uid', 'p_limit'], defaults: { p_limit: 40 }, auth: true },

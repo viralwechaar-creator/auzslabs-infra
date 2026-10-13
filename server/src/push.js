@@ -119,7 +119,19 @@ async function sendWebPush(endpoint, p256dh, authKey, payload) {
 export async function handlePushEvent({ tenant_id, title, body, user_ids, platform }) {
   // Platform alerts (db/182): for the AUZslab admin and team, who belong to no business. Phones live in platform_fcm_tokens.
   if (platform) {
-    if (!fcmConfigured() || !Array.isArray(user_ids) || !user_ids.length) return;
+    if (!Array.isArray(user_ids) || !user_ids.length) return;
+    // browsers (db/183)
+    if (VAPID_PUBLIC && VAPID_PRIVATE) {
+      const { rows: subs } = await pool.query('select * from platform_web_push where user_id = any($1::uuid[])', [user_ids]);
+      await Promise.allSettled(subs.map(async (s) => {
+        try {
+          const res = await sendWebPush(s.endpoint, s.p256dh, s.auth, { title: title || 'AUZslab', body: body || '', tag: 'platform', url: '/start.html' });
+          if (!res.ok && (res.status === 404 || res.status === 410)) await pool.query('delete from platform_web_push where id = $1', [s.id]);
+          else if (!res.ok) console.error('platform web push failed', res.status);
+        } catch (e) { console.error('platform web push error', e.message); }
+      }));
+    }
+    if (!fcmConfigured()) return;
     const { rows: tokens } = await pool.query('select * from platform_fcm_tokens where user_id = any($1::uuid[])', [user_ids]);
     await Promise.allSettled(tokens.map(async (t) => {
       try {

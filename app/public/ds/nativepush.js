@@ -58,5 +58,36 @@
     }).catch(function () { return { ok: false, message: 'Could not request notification permission.' }; });
   }
 
-  window.auzNativePush = { isNative: isNative, enable: enable, enablePlatform: enablePlatform };
+  /* Browser alerts (Web Push) for the AUZslab admin and team, saved with register_platform_web_push (db/183). Needs the
+     public key that matches the server's VAPID_PRIVATE (same value as VAPID_PUBLIC in pos/core.js: change both together).
+     webState() -> 'native' | 'unsupported' | 'ios-install' (iPhone browser tab: Add to Home Screen first) | 'blocked' | 'ask' | 'on'.
+     enablePlatformWeb(sb, ask) -> {ok, message}; with ask=false it only re-saves an already allowed subscription (no popup). */
+  var VAPID_PUBLIC = 'BD-oWPPzj7gzvYCrQiNAowSxyIZWfoRNO3A7tGqs3km352VZuNhzl8sZvnri5IilWEeAE1AYzWrfiZJS_rmhp_c';
+  function keyBytes(b64) { var p = '='.repeat((4 - b64.length % 4) % 4), s = atob((b64 + p).replace(/-/g, '+').replace(/_/g, '/')), a = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return a; }
+  function webState() {
+    if (isNative()) return 'native';
+    var ios = /iphone|ipad|ipod/i.test(navigator.userAgent), standalone = window.navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+    if (ios && !standalone) return 'ios-install';
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return 'unsupported';
+    if (Notification.permission === 'denied') return 'blocked';
+    return Notification.permission === 'granted' ? 'on' : 'ask';
+  }
+  function enablePlatformWeb(sb, ask) {
+    var st = webState();
+    if (st === 'native' || st === 'unsupported' || st === 'ios-install') return Promise.resolve({ ok: false, message: st === 'ios-install' ? 'On an iPhone, tap Share, then Add to Home Screen, open the app from there and try again.' : 'This browser cannot show alerts.' });
+    if (st === 'blocked') return Promise.resolve({ ok: false, message: 'Alerts are blocked. Allow notifications for this site in the browser settings.' });
+    if (st === 'ask' && ask === false) return Promise.resolve({ ok: false, message: '' });
+    var perm = st === 'on' ? Promise.resolve('granted') : Notification.requestPermission();
+    return perm.then(function (p) {
+      if (p !== 'granted') return { ok: false, message: 'Alerts are off. Allow notifications to turn them on.' };
+      return navigator.serviceWorker.register('/sw.js').then(function () { return navigator.serviceWorker.ready; }).then(function (reg) {
+        return reg.pushManager.getSubscription().then(function (sub) { return sub || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(VAPID_PUBLIC) }); });
+      }).then(function (sub) {
+        var j = sub.toJSON();
+        return sb.rpc('register_platform_web_push', { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth });
+      }).then(function (r) { return r.error ? { ok: false, message: r.error.message } : { ok: true, message: 'Alerts are on for this device' }; });
+    }).catch(function () { return { ok: false, message: 'Could not turn on alerts on this device.' }; });
+  }
+
+  window.auzNativePush = { isNative: isNative, enable: enable, enablePlatform: enablePlatform, webState: webState, enablePlatformWeb: enablePlatformWeb };
 })();
