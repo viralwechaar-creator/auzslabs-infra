@@ -51,7 +51,7 @@
     try { var C = window.Capacitor; if (C && C.Plugins && C.Plugins.Browser && C.Plugins.Browser.close) C.Plugins.Browser.close(); } catch (e) { /* ignore */ }
     location.href = 'https://app.auzslab.in/start.html#auz_gt=' + m[1];
   }
-  try { var Cap = window.Capacitor; if (Cap && Cap.Plugins && Cap.Plugins.App && Cap.Plugins.App.addListener) Cap.Plugins.App.addListener('appUrlOpen', function (e) { takeLink(e && e.url); }); } catch (e) { /* no plugin */ }
+  try { var Cap = window.Capacitor; if (Cap && Cap.Plugins && Cap.Plugins.App && Cap.Plugins.App.addListener) Cap.Plugins.App.addListener('appUrlOpen', function (e) { takeLink(e && e.url); }); if (Cap && Cap.Plugins && Cap.Plugins.App && Cap.Plugins.App.getLaunchUrl) Cap.Plugins.App.getLaunchUrl().then(function (r) { if (r && r.url) takeLink(r.url); }, function () {}); } catch (e) { /* no plugin */ }
 
   function ready(fn) { if (document.body) fn(); else document.addEventListener('DOMContentLoaded', fn); }
   ready(function () {
