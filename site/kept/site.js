@@ -375,5 +375,5 @@
 (function () {
   if (!/AUZslabApp|AUZslabDesktop/.test(navigator.userAgent) && !/[?&]inapp=(1|ios)\b/.test(location.search)) return;
   if (document.querySelector('script[src^="/appshell.js"]')) return;
-  var s = document.createElement('script'); s.src = '/appshell.js?v=2'; (document.head || document.documentElement).appendChild(s);
+  var s = document.createElement('script'); s.src = '/appshell.js?v=4'; (document.head || document.documentElement).appendChild(s);
 })();
