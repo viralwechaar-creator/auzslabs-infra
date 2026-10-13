@@ -46,7 +46,10 @@ Business logic that already had its own file stays where it was: `auth.js`, `pay
 ## Not done (on purpose)
 
 - No behaviour changes, no renamed addresses, no new libraries.
-- `salon.js` (1,006 lines) and `auth.js` (805 lines) are still big single files; they have their own tidy structure
-  and splitting them is a separate piece of work.
+- `auth.js` (805 lines) is still one big file; splitting it is a separate piece of work.
+- `salon.js` is now a one-line entry; the code is in `server/src/salon/`: `util.js` (constants, small helpers, body
+  reading), `storage.js` (tenant lookup, salon_store reads/writes, caches, `mutate`), `session.js` (password hashing,
+  session cookie), `rules.js` (slots, bookings, clients, invoices, expenses), `brand.js` (uploads, per-salon icon and
+  share image), `router.js` (`handleSalon`, the address list). A new salon address goes in `router.js`.
 - Check for mistakes after any edit here: `eslint` with the `no-undef` rule over `server/src` (a missing import only
   shows up when that address is called).

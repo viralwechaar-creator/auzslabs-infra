@@ -1,0 +1,135 @@
+import crypto from 'node:crypto';
+import { cleanPhone, cleanString, fail, round2, todayStr, validDate, validTime } from './util.js';
+
+export const EXPENSE_CATEGORIES = ['rent', 'salary', 'bills', 'purchase', 'other'];
+
+export function publicSite(db) {
+  return {
+    settings: db.settings, menu: db.menu, content: db.content,
+    stylists: (db.stylists || []).filter((s) => s.visible && s.name !== 'Add name'),
+    gallery: (db.gallery || []).filter((g) => g.visible),
+    today: todayStr(),
+  };
+}
+
+export function computeSlots(site, counts, date) {
+  const S = site.settings;
+  if (!validDate(date)) fail(400, 'Invalid date.');
+  const day = new Date(date + 'T00:00:00Z').getUTCDay();
+  if ((S.closedDays || []).includes(day)) return { closed: true, reason: 'Closed that day.', slots: [] };
+  const [oh, om] = S.open.split(':').map(Number);
+  const [ch, cm] = S.close.split(':').map(Number);
+  const step = S.slotMinutes || 30;
+  const capacity = S.capacity || 1;
+  const booked = counts[date] || {};
+  const slots = [];
+  for (let m = oh * 60 + om; m < ch * 60 + cm; m += step) {
+    const time = String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+    slots.push({ time, free: (booked[time] || 0) < capacity });
+  }
+  return { closed: false, slots };
+}
+
+export function addBooking(db, body, isAdminBooking) {
+  if (cleanString(body.website, 200)) fail(400, 'Could not submit the booking.'); // honeypot
+  const name = cleanString(body.name, 100);
+  const phone = cleanPhone(body.phone);
+  const email = cleanString(body.email, 120);
+  const date = cleanString(body.date, 10);
+  const time = cleanString(body.time, 5);
+  const note = cleanString(body.note, 300);
+  const ids = Array.isArray(body.services) ? body.services.map((x) => cleanString(x, 100)).filter(Boolean) : [];
+  if (!name) fail(400, 'Name is required.');
+  if (!phone) fail(400, 'Phone number is required.');
+  if (!validDate(date)) fail(400, 'Invalid date.');
+  if (!validTime(time)) fail(400, 'Invalid time.');
+  if (!ids.length) fail(400, 'Choose at least one service.');
+  db.bookings = db.bookings || [];
+  if (db.bookings.some((x) => x.phone === phone && x.date === date && x.time === time && x.status !== 'cancelled'))
+    fail(409, 'A booking already exists for this phone number at that time.');
+  // The slot picker hides full times, but a direct request must not be able to overbook one.
+  if (!isAdminBooking) {
+    const cap = (db.settings && db.settings.capacity) || 1;
+    const taken = db.bookings.filter((x) => x.date === date && x.time === time && x.status !== 'cancelled').length;
+    if (taken >= cap) fail(409, 'That time was just taken. Please pick another slot.');
+  }
+  const all = (db.menu || []).flatMap((c) => c.items || []);
+  const services = ids.map((id) => all.find((i) => String(i.id) === id)).filter(Boolean).map((i) => ({ id: i.id, name: i.name, price: i.price }));
+  if (!services.length) fail(400, 'Selected services were not found.');
+  const id = crypto.randomUUID();
+  const rec = {
+    id, ref: id.replace(/-/g, '').slice(0, 8).toUpperCase(), name, phone, email, date, time, note, services,
+    price: services.reduce((s, x) => s + (Number(x.price) || 0), 0),
+    status: isAdminBooking ? 'confirmed' : 'pending', createdAt: new Date().toISOString(),
+  };
+  db.bookings.push(rec);
+  return rec;
+}
+
+export function clientsList(db) {
+  const map = new Map();
+  const get = (phone, name, email) => {
+    if (!phone) return null;
+    if (!map.has(phone)) map.set(phone, { phone, name, email: email || '', bookings: 0, visits: 0, billed: 0, last: '' });
+    const c = map.get(phone);
+    if (name) c.name = name;
+    if (email && !c.email) c.email = email;
+    return c;
+  };
+  (db.bookings || []).forEach((b) => { const c = get(b.phone, b.name, b.email); if (c) { c.bookings++; c.last = c.last > b.date ? c.last : b.date; } });
+  (db.invoices || []).filter((i) => !i.void).forEach((i) => {
+    const c = get(i.client.phone, i.client.name, i.client.email);
+    if (c) { c.visits++; c.billed = round2(c.billed + i.total); c.last = c.last > i.date ? c.last : i.date; }
+  });
+  return [...map.values()].sort((a, b) => (b.last || '').localeCompare(a.last || ''));
+}
+
+export function addInvoice(db, body, who) {
+  const client = body.client || {};
+  const name = cleanString(client.name, 80);
+  if (name.length < 2) fail(400, 'Enter the client name.');
+  const phone = client.phone ? cleanPhone(client.phone) : '';
+  if (client.phone && !phone) fail(400, 'Enter a valid phone number.');
+  const items = (Array.isArray(body.items) ? body.items : []).slice(0, 40).map((i) => ({
+    name: cleanString(i.name, 120),
+    qty: Math.max(1, Math.min(99, Math.round(Number(i.qty) || 1))),
+    price: round2(Number(i.price) || 0),
+  })).filter((i) => i.name);
+  if (!items.length) fail(400, 'Add at least one service.');
+  const subtotal = round2(items.reduce((s, i) => s + i.qty * i.price, 0));
+  const dType = body.discount && body.discount.type === 'percent' ? 'percent' : 'flat';
+  const dVal = Math.max(0, Math.min(dType === 'percent' ? 100 : 1e6, Number(body.discount && body.discount.value) || 0));
+  const dAmt = Math.min(subtotal, dType === 'percent' ? round2(subtotal * dVal / 100) : round2(dVal));
+  db.invoices = db.invoices || [];
+  db.counters = db.counters || { booking: 0, invoice: 0 };
+  let token;
+  do { token = crypto.randomBytes(4).toString('hex'); } while (db.invoices.some((x) => x.token === token));
+  const prefix = cleanString(db.settings.invoicePrefix, 6) || 'SS-';
+  const inv = {
+    id: crypto.randomUUID(), token, no: prefix + String(++db.counters.invoice).padStart(4, '0'),
+    date: validDate(body.date) ? cleanString(body.date, 10) : todayStr(),
+    client: { name, phone, email: cleanString(client.email, 120) },
+    items, subtotal, discount: { type: dType, value: dVal }, discountAmt: dAmt, total: round2(subtotal - dAmt),
+    servedBy: cleanString(body.servedBy, 80) || (who && who.role === 'staff' ? who.name || '' : ''),
+    createdBy: who && who.role === 'staff' ? { id: who.sid, name: who.name } : { id: 'owner', name: 'Owner' },
+    note: cleanString(body.note, 300), bookingId: cleanString(body.bookingId, 40),
+    void: false, createdAt: new Date().toISOString(),
+  };
+  db.invoices.push(inv);
+  const lb = (db.bookings || []).find((b) => b.id === inv.bookingId);
+  if (lb) lb.status = 'completed';
+  return inv;
+}
+
+export function addExpense(db, body) {
+  const amount = round2(Number(body.amount) || 0);
+  if (amount <= 0) fail(400, 'Enter an amount greater than zero.');
+  db.expenses = db.expenses || [];
+  const exp = {
+    id: crypto.randomUUID(), date: validDate(body.date) ? cleanString(body.date, 10) : todayStr(),
+    category: EXPENSE_CATEGORIES.includes(body.category) ? body.category : 'other',
+    note: cleanString(body.note, 200), amount, createdAt: new Date().toISOString(),
+  };
+  db.expenses.push(exp);
+  return exp;
+}
