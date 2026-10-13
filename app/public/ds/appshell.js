@@ -44,6 +44,15 @@
     return u;
   }
 
+
+  // Google sign-in runs in the system browser and comes back as auzslab://signin#auz_gt=...: hand it to the hub, which stores it.
+  function takeLink(u) {
+    var m = /[#&]auz_gt=([^&\s]+)/.exec(u || ''); if (!m) return;
+    try { var C = window.Capacitor; if (C && C.Plugins && C.Plugins.Browser && C.Plugins.Browser.close) C.Plugins.Browser.close(); } catch (e) { /* ignore */ }
+    location.href = 'https://app.auzslab.in/start.html#auz_gt=' + m[1];
+  }
+  try { var Cap = window.Capacitor; if (Cap && Cap.Plugins && Cap.Plugins.App && Cap.Plugins.App.addListener) Cap.Plugins.App.addListener('appUrlOpen', function (e) { takeLink(e && e.url); }); } catch (e) { /* no plugin */ }
+
   function ready(fn) { if (document.body) fn(); else document.addEventListener('DOMContentLoaded', fn); }
   ready(function () {
     // 1. the way home (not on the hub itself)

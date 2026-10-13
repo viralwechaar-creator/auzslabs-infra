@@ -1,0 +1,65 @@
+name: iOS build (iPhone + iPad)
+# Run from the Actions tab on a macOS runner. Always makes a simulator build (proves the project compiles). With the signing secrets
+# (docs/IOS_RELEASE.md) it also makes the signed .ipa and, if the App Store Connect key exists, uploads it to TestFlight.
+# Never run on a real iPhone from the build sandbox: the first CI run is the first real check.
+on:
+  workflow_dispatch:
+jobs:
+  ios:
+    runs-on: macos-latest
+    env:
+      BUILD_NUMBER: ${{ github.run_number }}
+      HAVE_CERT: ${{ secrets.IOS_CERT_P12_B64 != '' && secrets.IOS_PROFILE_B64 != '' }}
+      HAVE_ASC: ${{ secrets.ASC_KEY_P8_B64 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 20}
+      - run: pip3 install pillow
+      - name: Create the Xcode project
+        working-directory: mobile
+        run: npm install && node build-ios.mjs hub
+      - name: Build for the simulator (no signing needed)
+        working-directory: mobile/ios/App
+        run: |
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+      - name: Import certificate and profile
+        if: env.HAVE_CERT == 'true'
+        env:
+          CERT: ${{ secrets.IOS_CERT_P12_B64 }}
+          CERT_PW: ${{ secrets.IOS_CERT_PASSWORD }}
+          PROFILE: ${{ secrets.IOS_PROFILE_B64 }}
+        run: |
+          KC="$RUNNER_TEMP/build.keychain"; security create-keychain -p tmp "$KC"; security set-keychain-settings -lut 21600 "$KC"; security unlock-keychain -p tmp "$KC"
+          echo "$CERT" | base64 -d > "$RUNNER_TEMP/cert.p12"; security import "$RUNNER_TEMP/cert.p12" -P "$CERT_PW" -A -t cert -f pkcs12 -k "$KC"
+          security list-keychain -d user -s "$KC"; security set-key-partition-list -S apple-tool:,apple: -s -k tmp "$KC"
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles; echo "$PROFILE" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/auzslab.mobileprovision
+      - name: Archive and export the .ipa
+        if: env.HAVE_CERT == 'true'
+        working-directory: mobile/ios/App
+        env:
+          TEAM: ${{ secrets.IOS_TEAM_ID }}
+          PROFILE_NAME: ${{ secrets.IOS_PROFILE_NAME }}
+        run: |
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -archivePath "$RUNNER_TEMP/App.xcarchive" archive \
+            DEVELOPMENT_TEAM="$TEAM" CODE_SIGN_STYLE=Manual PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" MARKETING_VERSION="1.0.$BUILD_NUMBER"
+          cat > "$RUNNER_TEMP/export.plist" <<PL
+          <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict><key>method</key><string>app-store-connect</string><key>teamID</key><string>$TEAM</string>
+          <key>signingStyle</key><string>manual</string><key>provisioningProfiles</key><dict><key>in.auzslab.app</key><string>$PROFILE_NAME</string></dict></dict></plist>
+          PL
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" -exportOptionsPlist "$RUNNER_TEMP/export.plist" -exportPath "$RUNNER_TEMP/ipa"
+          cp "$RUNNER_TEMP"/ipa/*.ipa "$GITHUB_WORKSPACE/AUZslab.ipa"
+      - name: Upload to TestFlight (only when the App Store Connect key exists)
+        if: env.HAVE_CERT == 'true' && env.HAVE_ASC == 'true'
+        env:
+          KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ISSUER: ${{ secrets.ASC_ISSUER_ID }}
+          KEY: ${{ secrets.ASC_KEY_P8_B64 }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys; echo "$KEY" | base64 -d > ~/.appstoreconnect/private_keys/AuthKey_$KEY_ID.p8
+          xcrun altool --upload-app --type ios --file "$GITHUB_WORKSPACE/AUZslab.ipa" --apiKey "$KEY_ID" --apiIssuer "$ISSUER"
+      - uses: actions/upload-artifact@v4
+        if: env.HAVE_CERT == 'true'
+        with: {name: AUZslab-ipa, path: AUZslab.ipa}

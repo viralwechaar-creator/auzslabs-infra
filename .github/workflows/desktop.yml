@@ -1,0 +1,52 @@
+name: Desktop build (Windows + Mac)
+# Run from the Actions tab. Builds the AUZslab desktop apps (desktop/): a Windows installer (.exe) and a Mac disk image (.dmg),
+# publishes them as the GitHub pre-release "desktop-latest". UNSIGNED unless the signing secrets exist (docs/DESKTOP_RELEASE.md):
+# unsigned apps install, but Windows shows "unknown publisher" and Mac asks the person to right-click > Open.
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 20}
+      - name: Build
+        working-directory: desktop
+        shell: bash
+        env:
+          # Windows code signing (optional): a .pfx certificate as base64 + its password
+          CSC_LINK: ${{ matrix.os == 'windows-latest' && secrets.DESKTOP_WIN_CERT_B64 || secrets.DESKTOP_MAC_CERT_B64 }}
+          CSC_KEY_PASSWORD: ${{ matrix.os == 'windows-latest' && secrets.DESKTOP_WIN_CERT_PASSWORD || secrets.DESKTOP_MAC_CERT_PASSWORD }}
+          # Mac notarization (optional): Apple ID, app-specific password, team id
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          npm install
+          if [ -z "$CSC_LINK" ]; then export CSC_IDENTITY_AUTO_DISCOVERY=false; fi
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then npx electron-builder --win --publish never; else npx electron-builder --mac --publish never; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.os }}
+          path: |
+            desktop/dist/*.exe
+            desktop/dist/*.dmg
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: {path: out, merge-multiple: true}
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: desktop-latest
+          name: AUZslab for Windows and Mac (test build)
+          prerelease: true
+          files: out/*
