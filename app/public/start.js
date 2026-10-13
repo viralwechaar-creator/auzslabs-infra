@@ -58,10 +58,41 @@
     };
     set([el('h1', { text: 'Sign in' }), el('p', { class: 'sub', text: 'One place for all your AUZslab apps.' }), el('div', { class: 'seg' }, [tOwner, tStaff]), owner, staff, m]);
     which('owner');
-    foot.append(el('a', { href: 'https://auzslab.in/', text: 'auzslab.in' }), el('a', { href: 'https://auzslab.in/signup.html', text: 'Create an account' }));
+    foot.append(el('a', { href: 'https://auzslab.in/', text: 'Explore AUZslab' }), el('a', { href: 'https://auzslab.in/signup.html', text: 'Create an account' }));
   }
 
   function signOut() { sb.auth.signOut().then(function () { try { localStorage.removeItem('u'); } catch (e) { /* ignore */ } location.replace('/start.html'); }); }
+
+  // ---- the marketing site, the account page and the admin panel live on https://auzslab.in. The hub hands the signed-in
+  // session over in the URL fragment (same #auz_gt hand-off the Google sign-in uses: never sent to any server) so the person
+  // is already signed in there. Inside the app (AUZslabApp) these stay in the same window.
+  var SITE = 'https://auzslab.in/';
+  function b64(o) { return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+  async function siteHref(path) {
+    var sess = (await sb.auth.getSession()).data.session;
+    if (!sess || !sess.access_token) return SITE + path;
+    return SITE + path + '#auz_gt=' + b64({ t: sess.access_token, u: sess.user });
+  }
+  function siteTile(name, note, path) {
+    return el('a', { class: 'tile', href: SITE + path, onclick: function (e) { e.preventDefault(); siteHref(path).then(function (u) { location.href = u; }); } }, [el('b', { text: name }), el('span', { text: note })]);
+  }
+  function exploreTiles() {
+    return [siteTile('Explore AUZslab', 'Products, pricing, demos and guides', ''), siteTile('Products and pricing', 'See what each product does and costs', 'products.html')];
+  }
+  function accountTiles() {
+    return [siteTile('My account and purchases', 'Profile, orders, bills and add-ons', 'account.html'), siteTile('My cart', 'Products you asked for', 'cart.html')];
+  }
+  function tilesBox(title, sub, tiles, extra) {
+    set([el('h1', { text: title }), el('p', { class: 'sub', text: sub }), el('div', { class: 'tiles' }, tiles)].concat(extra || []));
+  }
+  function customerHome() {
+    foot.textContent = ''; foot.append(el('button', { type: 'button', onclick: signOut, text: 'Sign out' }));
+    tilesBox('Welcome', 'Look at the products, set up your account and ask for what your business needs.', accountTiles().concat(exploreTiles()));
+  }
+  function adminHome(me) {
+    foot.textContent = ''; foot.append(el('span', { text: me.email || '' }), el('button', { type: 'button', onclick: signOut, text: 'Sign out' }));
+    tilesBox('AUZslab admin', 'Clients, requests, pricing and the team.', [siteTile('Admin panel', 'Leads, clients, payments, team and settings', 'admin.html')].concat(exploreTiles()));
+  }
 
   function apps(d) {
     var list = APPS.filter(function (a) { return a[4](d); }).map(function (a) { return { id: a[0], name: a[1], note: a[2], path: a[3] }; });
@@ -72,24 +103,25 @@
   async function boot() {
     var sess = (await sb.auth.getSession()).data.session;
     if (!sess) return login();
+    // one call says what kind of person this is (admin / team / business / customer), so nobody is sent down a dead end
+    var hm = await sb.rpc('hub_me'), me = hm && hm.data;
+    if (hm && hm.error && (hm.error.status || 0) === 401) { await sb.auth.signOut(); return login('Your session ended. Please sign in again.'); }
+    if (me && me.admin) return adminHome(me);
+    if (me && me.team && !me.business) { location.replace('/salesman.html'); return; }
+    if (me && !me.business) return customerHome();
     var r = await sb.rpc('my_dashboard');
     if (r.error || !r.data) {
       var s = r.error && (r.error.status || 0);
       if (s === 401) { await sb.auth.signOut(); return login('Your session ended. Please sign in again.'); }
-      // A salesman login (db/137) has no business of its own -- my_dashboard() always falls
-      // into this same "no business" branch for them. Check before showing that dead end.
-      // (db/176) every kind of team login -- salesman, client setup, support, manager -- lands on the same team page.
-      var sm = await sb.rpc('team_probe');
-      if (!sm.error && sm.data && sm.data.member) { location.replace('/salesman.html'); return; }
-      foot.textContent = ''; foot.append(el('button', { type: 'button', onclick: signOut, text: 'Sign out' }));
-      return set([el('h1', { text: 'No business yet' }), el('p', { class: 'sub', text: 'This login is not linked to a business. Create one, or ask your owner to add you as staff.' }), el('a', { class: 'btn fill', href: 'https://auzslab.in/account.html', text: 'Open my account' })]);
+      return customerHome();
     }
     var d = r.data, list = apps(d), sw = new URLSearchParams(location.search).get('switch') === '1';
+    if (me && me.team) list.unshift({ id: 'team', name: 'Team workspace', note: 'Leads, client setups and your team work', path: '/salesman.html' });
     foot.textContent = ''; foot.append(el('span', { text: (d.my_email || '') }), el('button', { type: 'button', onclick: signOut, text: 'Sign out' }));
     if (!list.length) return set([el('h1', { text: d.tenant ? d.tenant.name : 'AUZslab' }), el('p', { class: 'sub', text: 'No apps are switched on for this login yet. Ask AUZslab or your owner.' })]);
     if (list.length === 1 && !sw) { lastSet(list[0].id); location.replace(list[0].path); return; }
     set([el('h1', { text: d.tenant ? d.tenant.name : 'AUZslab' }), el('p', { class: 'sub', text: 'Choose an app.' }),
-      el('div', { class: 'tiles' }, list.map(function (a) { return el('a', { class: 'tile', href: a.path, onclick: function () { lastSet(a.id); } }, [el('b', { text: a.name }), el('span', { text: a.note })]); }))]);
+      el('div', { class: 'tiles' }, list.map(function (a) { return el('a', { class: 'tile', href: a.path, onclick: function () { lastSet(a.id); } }, [el('b', { text: a.name }), el('span', { text: a.note })]); }).concat(accountTiles()).concat(exploreTiles().slice(0, 1)))]);
   }
   boot().catch(function (e) { set([el('h1', { text: 'Could not load' }), el('p', { class: 'sub', text: (e && e.message) || 'Check your connection and try again.' }), el('button', { class: 'btn', type: 'button', onclick: boot, text: 'Try again' })]); });
 })();
