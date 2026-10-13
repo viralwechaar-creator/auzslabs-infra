@@ -399,6 +399,97 @@ body.admin-shell .btn-primary:hover{background:#940a2c}
 .svc-row b{display:block;font-weight:600}
 .svc-row small{display:block;color:var(--ink-faint,#777);font-size:12.5px;line-height:1.4;margin-top:2px}
 #editFeatures{display:block!important}
+
+/* ===== Round 3 polish: soft rounded form controls, bundle editor, onboarding, team, payments ===== */
+body.admin-shell :is(.a-page,.modal) :is(input,select,textarea):not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=file]),
+body.admin-shell .inp,body.admin-shell .input{font:500 14px var(--font-body);color:var(--ink);background:var(--bg-raised,#f6f3f0);border:1px solid var(--line-soft);border-radius:12px;padding:10px 13px;min-height:42px;width:100%;box-sizing:border-box;outline:none;transition:border-color .2s,box-shadow .2s,background .2s}
+body.admin-shell :is(.a-page,.modal) textarea{min-height:84px;resize:vertical;line-height:1.4}
+body.admin-shell :is(.a-page,.modal) :is(input,select,textarea):focus{background:var(--card-bg,#fff);border-color:var(--accent);box-shadow:0 0 0 3px rgba(128,0,32,.10)}
+body.admin-shell :is(.a-page,.modal) select{appearance:none;-webkit-appearance:none;padding-right:34px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' stroke='%2374635f' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center}
+body.admin-shell .lbl{display:flex;flex-direction:column;gap:5px;font:600 11.5px var(--font-body);color:var(--ink-dim);margin:0}
+body.admin-shell .btn{border-radius:999px}
+body.admin-shell .card{border-radius:20px}
+body.admin-shell .modal{border-radius:24px 24px 0 0}
+@media (min-width:600px){body.admin-shell .modal{border-radius:24px}}
+
+/* bundle editor */
+.bn-card{background:var(--card-bg);border:1px solid var(--line-soft);box-shadow:var(--lift);border-radius:20px;padding:16px;margin-bottom:12px;display:flex;flex-direction:column;gap:12px}
+.bn-top{display:grid;grid-template-columns:1fr;gap:8px}
+@media (min-width:700px){.bn-top{grid-template-columns:1fr 220px}}
+.bn-prods{display:flex;flex-wrap:wrap;gap:7px}
+.bn-chip{position:relative;cursor:pointer}
+.bn-chip input{position:absolute;opacity:0;pointer-events:none}
+.bn-chip span{display:inline-flex;align-items:center;padding:7px 13px;border-radius:999px;border:1px solid var(--line-soft);background:var(--bg-raised);font:600 12px var(--font-body);color:var(--ink-dim);transition:all .18s}
+.bn-chip input:checked+span{background:var(--wine);border-color:var(--wine);color:#fff}
+.bn-chip input:focus-visible+span{box-shadow:0 0 0 3px rgba(128,0,32,.18)}
+.bn-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media (min-width:700px){.bn-grid{grid-template-columns:repeat(4,1fr)}}
+.bn-field{display:flex;flex-direction:column;gap:4px}
+.bn-field>span{font:600 9.5px var(--font-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--ink-faint)}
+.bn-in{display:flex;align-items:center;gap:6px;background:var(--bg-raised);border:1px solid var(--line-soft);border-radius:12px;padding:0 12px;min-height:42px}
+.bn-in:focus-within{background:var(--card-bg);border-color:var(--accent);box-shadow:0 0 0 3px rgba(128,0,32,.10)}
+.bn-in i{font-style:normal;color:var(--ink-faint);font-weight:600}
+body.admin-shell .bn-in input{border:none!important;background:none!important;box-shadow:none!important;padding:8px 0!important;min-height:0!important;font:700 15px var(--font-display);width:100%;min-width:0}
+.bn-toggles{display:flex;flex-wrap:wrap;gap:8px}
+.bn-switch{display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border-radius:999px;background:var(--bg-raised);border:1px solid var(--line-soft);font:600 12px var(--font-body);color:var(--ink-dim);cursor:pointer}
+.bn-disc{font-size:12px;color:var(--ink-faint);line-height:1.45}
+.bn-foot{display:flex;gap:8px}
+
+/* onboarding: two columns on desktop */
+.onb-card{max-width:1040px;padding:22px}
+.onb-grid{display:grid;grid-template-columns:1fr;gap:18px}
+@media (min-width:900px){.onb-grid{grid-template-columns:1fr 1fr;gap:34px}}
+.onb-kind{display:grid;grid-template-columns:1fr;gap:8px}
+@media (min-width:600px){.onb-kind{grid-template-columns:1fr 1fr}}
+.onb-kind .svc-row{border:1px solid var(--line-soft);border-radius:16px;padding:12px 14px;background:var(--bg-raised);border-bottom:1px solid var(--line-soft)}
+.onb-kind .svc-row:has(input:checked){border-color:var(--accent);background:var(--wine-soft,#f7e2e8)}
+#onbProducts{display:grid;grid-template-columns:1fr;gap:8px;margin:6px 0}
+@media (min-width:600px){#onbProducts{grid-template-columns:1fr 1fr}}
+#onbProducts .svc-row{border:1px solid var(--line-soft);border-radius:14px;padding:10px 12px;background:var(--bg-raised);border-bottom:1px solid var(--line-soft)}
+#onbProducts .svc-row:has(input:checked){border-color:var(--accent);background:var(--wine-soft,#f7e2e8)}
+.onb-foot{display:flex;align-items:center;gap:14px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line-soft)}
+.onb-foot .form-submit{width:auto;min-width:200px}
+
+/* team */
+.tm-bar{background:var(--card-bg);border:1px solid var(--line-soft);box-shadow:var(--lift);border-radius:18px;padding:12px 14px}
+.tm-period{max-width:220px}
+.tm-form{max-width:none;border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.tm-form .label{margin:0}
+.tm-form .p{margin:0}
+@media (min-width:1100px){#teamForm,#noticeForm{max-width:760px}}
+.tm-card{border-radius:18px;padding:13px 15px}
+.tm-role-sel{border-radius:999px;padding:6px 28px 6px 12px!important;min-height:0!important;width:auto!important;font:600 11.5px var(--font-body)!important}
+.lead-ctl select,.lead-ctl input{border-radius:12px}
+.lead-note-form input{border-radius:999px}
+.lead-note-form button{border-radius:999px}
+.list-card,.req-card,.price-card,.client-card{border-radius:20px}
+
+/* client cards: stats as soft tiles, actions as visible pills */
+.client-card{padding:16px}
+.cc-stats{border-top:none;padding-top:0;margin-top:12px}
+.cc-stats>div{background:var(--bg-raised);border-radius:14px;padding:9px 12px}
+.cc-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:6px;border-top:none;padding-top:0;margin-top:12px}
+.cc-actions button{border:1px solid var(--line-soft);background:var(--bg-raised);border-radius:999px;padding:8px 10px;text-align:center;font:600 12px var(--font-body);min-height:36px}
+.cc-actions button:hover{background:var(--card-bg);border-color:var(--ink-faint)}
+.cc-actions button.cc-danger{color:var(--accent);border-color:rgba(128,0,32,.25)}
+.cc-grid{grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px}
+
+/* payments sheet */
+#payModal{width:min(620px,100%)}
+@media (min-width:600px){#payModal{width:620px;max-width:calc(100vw - 40px)}}
+.pay-cards{display:flex;flex-direction:column;gap:8px}
+.pay-card{background:var(--bg-raised);border:1px solid var(--line-soft);border-radius:18px;padding:12px 14px}
+.pay-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.pay-amt{font:700 18px var(--font-display);color:var(--ink)}
+.pay-date{font-size:12px;color:var(--ink-faint)}
+.pay-meta{font-size:12px;color:var(--ink-dim);margin-top:4px}
+.pay-for{font-size:12.5px;color:var(--ink);margin-top:3px;line-height:1.35}
+.pay-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.pay-actions .btn{padding:6px 14px;min-height:32px;font-size:10.5px}
+#payForm{display:grid;grid-template-columns:1fr;gap:10px}
+@media (min-width:600px){#payForm{grid-template-columns:1fr 1fr}#payForm>.label,#payForm>.err,#payForm>button,#payForm>label:nth-of-type(5),#payForm>label:nth-of-type(6){grid-column:1/-1}}
+#payForm .lbl{margin-top:0!important}
+#payForm>button{margin-top:4px!important;justify-self:start}
 </style>
 <style>
 .ord-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:8px}
@@ -551,50 +642,58 @@ body.admin-shell .btn-primary:hover{background:#940a2c}
       <section class="a-page" id="onboardSection" data-title="Onboard new" data-parent="more">
         <div class="label">New client</div>
         <h2 class="h-2">Onboard a new client</h2>
-        <div class="card" style="max-width:420px">
+        <div class="card onb-card">
           <form id="form">
-            <div class="field">
-              <label>What kind of client?</label>
-              <div class="svc-row-group" style="display:grid;gap:8px">
-                <label class="svc-row"><input type="radio" name="buildType" value="standard" checked><span><b>Standard</b><small>Uses the standard AUZslab products. Pick the products below.</small></span></label>
-                <label class="svc-row"><input type="radio" name="buildType" value="custom"><span><b>Custom-built</b><small>A specially designed system made to their demand. No standard products.</small></span></label>
+            <div class="onb-grid">
+              <div class="onb-col">
+                <div class="field">
+                  <label>What kind of client?</label>
+                  <div class="onb-kind">
+                    <label class="svc-row"><input type="radio" name="buildType" value="standard" checked><span><b>Standard</b><small>The standard AUZslab products. Pick them on the right.</small></span></label>
+                    <label class="svc-row"><input type="radio" name="buildType" value="custom"><span><b>Custom-built</b><small>A system designed to their demand. No standard products.</small></span></label>
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="name">Business name</label>
+                  <input id="name" required placeholder="OG Book Cafe">
+                </div>
+                <div class="field">
+                  <label for="slug">Subdomain</label>
+                  <input id="slug" required placeholder="ogbookcafe" pattern="[a-z0-9-]+">
+                </div>
+                <div class="field">
+                  <label for="ownerEmail">Owner's email (their first login)</label>
+                  <input id="ownerEmail" type="email" required>
+                </div>
+              </div>
+              <div class="onb-col">
+                <div id="stdFields">
+                  <div class="field">
+                    <label for="niche">Niche</label>
+                    <select id="niche">
+                      <option value="cafe">Café, restaurant, bar & more</option>
+                      <option value="salon">Salon / spa</option>
+                      <option value="retail">Retail / General (AUZsLedger)</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Standard products</label>
+                    <div id="onbProducts"></div>
+                    <small style="color:var(--ink-faint)">Leave all unticked to use the defaults for the niche.</small>
+                  </div>
+                </div>
+                <div id="customFields" hidden>
+                  <div class="field">
+                    <label for="customBrief">What are we building for them?</label>
+                    <textarea id="customBrief" rows="9" placeholder="Their requirements, design ideas, agreed scope. Saved in the client's notes."></textarea>
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="field">
-              <label for="name">Business name</label>
-              <input id="name" required placeholder="OG Book Cafe">
+            <div class="onb-foot">
+              <button type="submit" class="btn btn-primary form-submit">Create client</button>
+              <div id="formErr" class="err"></div>
             </div>
-            <div class="field">
-              <label for="slug">Subdomain</label>
-              <input id="slug" required placeholder="ogbookcafe" pattern="[a-z0-9-]+">
-            </div>
-            <div id="stdFields">
-              <div class="field">
-                <label for="niche">Niche</label>
-                <select id="niche">
-                  <option value="cafe">Café, restaurant, bar & more</option>
-                  <option value="salon">Salon / spa</option>
-                  <option value="retail">Retail / General (AUZsLedger)</option>
-                </select>
-              </div>
-              <div class="field">
-                <label>Standard products</label>
-                <div id="onbProducts" style="display:flex;flex-wrap:wrap;gap:10px"></div>
-                <small style="color:var(--ink-faint)">Leave all unticked to use the defaults for the niche.</small>
-              </div>
-            </div>
-            <div id="customFields" hidden>
-              <div class="field">
-                <label for="customBrief">What are we building for them?</label>
-                <textarea id="customBrief" rows="5" placeholder="Their requirements, design ideas, agreed scope. Saved in the client's notes."></textarea>
-              </div>
-            </div>
-            <div class="field">
-              <label for="ownerEmail">Owner's email (their first login)</label>
-              <input id="ownerEmail" type="email" required>
-            </div>
-            <button type="submit" class="btn btn-primary form-submit">Create client</button>
-            <div id="formErr" class="err"></div>
           </form>
         </div>
         <div id="result"></div>
@@ -1473,23 +1572,26 @@ async function loadBundles() {
   const card = (b) => {
     const isNew = !b.key;
     const sum = (b.feature_keys || []).reduce((a, k) => a + Number((sellable.find((p) => p.key === k) || {}).monthly_price || 0), 0);
-    return `<div class="a-card" data-bkey="${esc(b.key || '')}" style="border:1px solid var(--line,#ddd);border-radius:12px;padding:14px;margin-bottom:12px">
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <input class="input" data-f="label" placeholder="Bundle name" value="${esc(b.label || '')}" style="flex:1;min-width:200px">
-        <input class="input" data-f="badge" placeholder="Badge (e.g. Most popular)" value="${esc(b.badge || '')}" style="width:190px">
+    const num = (f, label, v, extra) => `<label class="bn-field"><span>${label}</span><div class="bn-in">${extra === 'pct' ? '' : '<i>&#8377;</i>'}<input data-f="${f}" type="number" min="0" ${extra === 'pct' ? 'max="90" step="0.5"' : 'step="1"'} value="${Number(v || 0)}">${extra === 'pct' ? '<i>%</i>' : ''}</div></label>`;
+    return `<div class="a-card bn-card" data-bkey="${esc(b.key || '')}">
+      <div class="bn-top">
+        <input class="inp" data-f="label" placeholder="Bundle name" value="${esc(b.label || '')}">
+        <input class="inp" data-f="badge" placeholder="Badge (e.g. Most popular)" value="${esc(b.badge || '')}">
       </div>
-      <div style="margin:10px 0;display:flex;gap:12px;flex-wrap:wrap">${sellable.map((p) => `<label style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" data-prod="${esc(p.key)}" ${(b.feature_keys || []).includes(p.key) ? 'checked' : ''}> ${esc(p.label)}</label>`).join('')}</div>
-      <input class="input" data-f="blurb" placeholder="One line shown on the pricing page" value="${esc(b.blurb || '')}" style="width:100%;margin-bottom:10px">
-      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end">
-        <label title="Price follows the products' prices minus the discount"><input type="checkbox" data-f="auto" ${b.auto ? 'checked' : ''}> Follow product prices</label>
-        <label>Discount %<br><input class="input" data-f="discount_pct" type="number" min="0" max="90" step="0.5" value="${Number(b.discount_pct || 0)}" style="width:80px"></label>
-        <label>Monthly price<br>&#8377; <input class="input" data-f="monthly_price" type="number" min="0" step="1" value="${Number(b.monthly_price || 0)}" style="width:110px"></label>
-        <label>Total if bought separately<br>&#8377; <input class="input" data-f="list_price" type="number" min="0" step="1" value="${Number(b.list_price || 0)}" style="width:110px"></label>
-        <label>Whole-year price<br>&#8377; <input class="input" data-f="yearly_price" type="number" min="0" step="1" value="${Number(b.yearly_price || 0)}" style="width:110px"></label>
-        <label><input type="checkbox" data-f="active" ${b.active === false ? '' : 'checked'}> Show on site</label>
+      <div class="bn-prods">${sellable.map((p) => `<label class="bn-chip"><input type="checkbox" data-prod="${esc(p.key)}" ${(b.feature_keys || []).includes(p.key) ? 'checked' : ''}><span>${esc(p.label)}</span></label>`).join('')}</div>
+      <input class="inp" data-f="blurb" placeholder="One line shown on the pricing page" value="${esc(b.blurb || '')}">
+      <div class="bn-grid">
+        ${num('discount_pct', 'Discount', b.discount_pct, 'pct')}
+        ${num('monthly_price', 'Monthly price', b.monthly_price)}
+        ${num('list_price', 'Total if bought separately', b.list_price)}
+        ${num('yearly_price', 'Whole-year price', b.yearly_price)}
       </div>
-      <div class="p" data-disc style="margin:8px 0 0;font-size:13px"></div>
-      <div style="margin-top:10px;display:flex;gap:8px"><button class="btn btn-primary" data-save>${isNew ? 'Create bundle' : 'Save'}</button>${isNew ? '<button class="btn" data-cancel>Cancel</button>' : '<button class="btn" data-del>Delete</button>'}</div>
+      <div class="bn-toggles">
+        <label class="bn-switch" title="Price follows the products' prices minus the discount"><input type="checkbox" data-f="auto" ${b.auto ? 'checked' : ''}><span>Follow product prices</span></label>
+        <label class="bn-switch"><input type="checkbox" data-f="active" ${b.active === false ? '' : 'checked'}><span>Show on site</span></label>
+      </div>
+      <div class="bn-disc" data-disc></div>
+      <div class="bn-foot"><button class="btn btn-primary" data-save>${isNew ? 'Create bundle' : 'Save'}</button>${isNew ? '<button class="btn" data-cancel>Cancel</button>' : '<button class="btn" data-del>Delete</button>'}</div>
       <input type="hidden" data-sum value="${sum}">
     </div>`;
   };
@@ -2146,6 +2248,11 @@ const MODE_LABEL = { upi: 'UPI', bank: 'Bank transfer', cash: 'Cash', cheque: 'C
 const inr = (n) => '&#8377;' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
 function payTable(rows, withClient) {
   if (!rows.length) return '<p class="p">No payments recorded yet.</p>';
+  if (!withClient) return `<div class="pay-cards">${rows.map((r) => `<div class="pay-card" data-pid="${r.id}">
+    <div class="pay-top"><b class="pay-amt">${inr(r.amount)}</b><span class="pay-date">${esc(r.paid_on)} &middot; ${esc(MODE_LABEL[r.mode] || r.mode)}</span></div>
+    <div class="pay-meta">${r.utr ? 'UTR <code>' + esc(r.utr) + '</code>' : 'No UTR'}</div>
+    <div class="pay-for">${esc([r.purpose, r.note].filter(Boolean).join(' · ') || '—')}</div>
+    <div class="pay-actions">${payBillBtns(r)}<button class="btn btn-ghost" data-pdel>Delete</button></div></div>`).join('')}</div>`;
   return `<div class="admin-table-wrap"><table class="admin-table">
     <tr><th>Date</th>${withClient ? '<th>Client</th>' : ''}<th>Amount</th><th>How</th><th>UTR / reference</th><th>For</th><th></th></tr>
     ${rows.map((r) => `<tr data-pid="${r.id}">
@@ -2177,7 +2284,7 @@ function wirePayBills(root, reload, rows) {
     };
   });
   root.querySelectorAll('[data-pmake]').forEach((btn) => {
-    btn.onclick = () => openMakeBill(rows.find((x) => x.id === btn.closest('tr').dataset.pid), reload);
+    btn.onclick = () => openMakeBill(rows.find((x) => x.id === btn.closest('[data-pid]').dataset.pid), reload);
   });
 }
 let mkPay = null, mkReload = null;
@@ -2241,7 +2348,7 @@ function wirePayDelete(root, reload) {
   root.querySelectorAll('[data-pdel]').forEach((b) => {
     b.onclick = async () => {
       if (!confirm('Delete this payment record? It is kept in the audit log.')) return;
-      const { error } = await sb.rpc('admin_delete_client_payment', { p_id: b.closest('tr').dataset.pid });
+      const { error } = await sb.rpc('admin_delete_client_payment', { p_id: b.closest('[data-pid]').dataset.pid });
       if (error) { alert(error.message); return; }
       reload();
     };
