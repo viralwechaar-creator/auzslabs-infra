@@ -178,6 +178,7 @@
     if (!sess) return login();
     // one call says what kind of person this is (admin / team / business / customer), so nobody is sent down a dead end
     var hm = await sb.rpc('hub_me'), me = hm && hm.data;
+    if (me && (me.admin || me.team) && window.auzNativePush) { try { window.auzNativePush.enablePlatform(sb); } catch (e) {} }
     if (hm && hm.error && (hm.error.status || 0) === 401) { await sb.auth.signOut(); return login('Your session ended. Please sign in again.'); }
     if (me && me.admin) return adminHome(me);
     if (me && me.team && !me.business) { location.replace('/salesman.html'); return; }

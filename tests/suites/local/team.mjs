@@ -3,7 +3,9 @@
 // Team tab, the leads controls and the team workspace are driven on phone and desktop.
 import { suite, watch, assert } from '../../lib/harness.mjs';
 import { newCtx, layoutIssues } from '../../lib/common.mjs';
-import { q, PASSWORD, USERS, TENANTS } from '../../lib/db.mjs';
+import { q, PG, PASSWORD, USERS, TENANTS } from '../../lib/db.mjs';
+import { createRequire } from 'node:module';
+const pg = createRequire(import.meta.url)('../../../server/node_modules/pg');
 
 export default async function run({ browser, stack }) {
   const s = suite('Team: roles, leads, client setups, tracking and the team workspace', 'Salesmen keep leads up to date, setup staff work a checklist and can open only the client they were given for a limited time, managers see everyone, and the admin tracks it all.');
@@ -334,5 +336,35 @@ export default async function run({ browser, stack }) {
     { const c = await newCtx(browser, stack, { w: 390, h: 800, mobile: true }); const p = await c.newPage();
       await p.goto(stack.url(TENANTS.retail, '/salesman.html')); await p.waitForTimeout(500); await p.fill('#email', USERS.plain); await p.fill('#password', PASSWORD); await p.click('#signinBtn');
       await p.waitForSelector('#notTeam:not(.hidden)', { timeout: 10000 }); await c.close(); }
+  }, 'critical');
+
+  await s.check('Hub alerts: admin and team phones register; client requests, team work, assignments and admin notices each alert the right people', async () => {
+    const lis = new pg.Client({ host: PG.host, port: PG.port, user: PG.user, password: PG.password, database: PG.db });
+    await lis.connect(); await lis.query('LISTEN push_events');
+    const got = []; lis.on('notification', (m) => { try { got.push(JSON.parse(m.payload)); } catch {} });
+    const wait = async (f) => { for (let i = 0; i < 30; i++) { if (got.some(f)) return; await new Promise((r) => setTimeout(r, 100)); } assert(false, 'no matching alert: ' + JSON.stringify(got)); };
+    const salesUid = await uidOf(E.sales), mgrUid = await uidOf(E.mgr), adminUid = await uidOf(USERS.admin), setupUid = await uidOf(E.setup);
+    const tok = 'x'.repeat(40);
+    await fails('register_platform_push', { p_token: tok }, plain, 'not on the team');
+    await ok('register_platform_push', { p_token: tok + '1' }, T.sales); await ok('register_platform_push', { p_token: tok + '2' }, adm);
+    assert((await q('select count(*)::int n from platform_fcm_tokens where token like $1', [tok + '%']))[0].n === 2, 'tokens not stored');
+    // a client request reaches the admin and the manager
+    await q("insert into notifications (tenant_id, type, title, body) values (null, 'client_order', 'New client request: Test Cafe', 'Asha 9999')");
+    await wait((e) => e.platform && e.title.includes('New client request') && e.user_ids.includes(adminUid) && e.user_ids.includes(mgrUid));
+    // a salesman's work reaches supervisors, not the salesman
+    await q("select team_log('lead_added', 'x', 'Test lead', null, $1)", [salesUid]);
+    await wait((e) => e.platform && e.title === 'New lead' && e.user_ids.includes(adminUid) && !e.user_ids.includes(salesUid));
+    // an assignment reaches only the assigned person
+    await q("select team_log('lead_assigned', 'x', 'Test lead', null, $1)", [salesUid]);
+    await wait((e) => e.platform && /assigned to you/.test(e.title) && e.user_ids.length === 1 && e.user_ids[0] === salesUid);
+    // notices: only admin/manager may post; the audience decides who is alerted; the team can read them
+    await fails('admin_post_team_notice', { p_title: 'Hi' }, T.sales, 'a salesman cannot post');
+    const r = await ok('admin_post_team_notice', { p_title: 'Office closed Friday', p_body: 'Diwali', p_audience: 'setup' }, adm);
+    assert(r.sent_to >= 1, JSON.stringify(r));
+    await wait((e) => e.platform && /Office closed Friday/.test(e.title) && e.user_ids.includes(setupUid) && !e.user_ids.includes(salesUid));
+    assert((await ok('team_list_notices', {}, T.setup)).some((n) => n.title === 'Office closed Friday'), 'setup staff did not see the notice');
+    assert(!(await ok('team_list_notices', {}, T.sales)).some((n) => n.title === 'Office closed Friday'), 'a salesman saw a notice meant for setup staff');
+    await fails('team_list_notices', {}, plain, 'not on the team');
+    await lis.end();
   }, 'critical');
 }
