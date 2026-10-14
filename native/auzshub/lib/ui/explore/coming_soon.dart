@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart' hide Text;
 import '../../core/launcher.dart';
 import '../../core/session.dart';
-import '../ds.dart';
+import '../mk.dart';
 import '../i18n.dart';
 import '../theme.dart';
 

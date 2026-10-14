@@ -3,13 +3,14 @@ import 'package:url_launcher/url_launcher.dart';
 import '../core/launcher.dart';
 import '../core/session.dart';
 import 'account.dart';
+import 'admin.dart';
 import 'cart.dart';
 import 'ds.dart';
-import 'explore.dart';
 import 'i18n.dart';
 import 'mk.dart';
-import 'pricing.dart';
 import 'requests.dart';
+import 'site.dart';
+import 'team.dart';
 import 'theme.dart';
 
 /// The hub: one place that finds out who you are and shows what you can open (same tiles as the website hub).
@@ -46,6 +47,8 @@ class _HubHomeState extends State<HubHome> {
   Widget _app(ProductApp a, IconData i, Color c) => Li(a.name, sub: a.note, icon: i, tone: c, onTap: () => _open(a));
   Widget _web(String t, String sub, String url, IconData i, Color c) => Li(t, sub: sub, icon: i, tone: c, onTap: () => launchUrl(Uri.parse('$url#auz_gt=${s.handoff()}'), mode: LaunchMode.externalApplication));
 
+  Widget _team() => Li('Team workspace', sub: 'Leads, client setups and your team work', icon: Icons.groups_outlined, tone: Tk.accent, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => TeamWorkspace(s))));
+
   List<Widget> _account() => [
         Li('My requests', sub: ready == 0 ? 'Status of what you asked for, payment and bills' : (ready == 1 ? '1 request is ready for payment' : '$ready requests are ready for payment'), icon: Icons.assignment_outlined, tone: Tk.blue, onTap: () async {
           await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => RequestsPage(s)));
@@ -56,8 +59,8 @@ class _HubHomeState extends State<HubHome> {
       ];
 
   List<Widget> _explore() => [
-        Li('Explore AUZslab', sub: 'Products, pricing, demos and guides', icon: Icons.explore_outlined, tone: Tk.orange, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => ExplorePage(s)))),
-        Li('Products and pricing', sub: 'See what each product does and costs', icon: Icons.sell_outlined, tone: Tk.green, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => ProductsPricingPage(s)))),
+        Li('Explore AUZslab', sub: 'Products, pricing, demos and guides', icon: Icons.explore_outlined, tone: Tk.orange, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => SitePage(s, 'index')))),
+        Li('Products and pricing', sub: 'See what each product does and costs', icon: Icons.sell_outlined, tone: Tk.green, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => SitePage(s, 'pricing')))),
       ];
 
   @override
@@ -74,11 +77,11 @@ class _HubHomeState extends State<HubHome> {
           case Kind.admin:
             title = 'AUZslab admin';
             sub = 'Clients, requests, pricing and the team.';
-            rows.addAll([_web('Admin panel', 'Leads, clients, payments, team and settings', 'https://auzslab.in/admin.html', Icons.admin_panel_settings_outlined, Tk.accent), ..._explore()]);
+            rows.addAll([Li('Admin panel', sub: 'Requests, clients, leads, money, team and pricing', icon: Icons.admin_panel_settings_outlined, tone: Tk.accent, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => AdminWorkspace(s)))), ..._explore()]);
           case Kind.team:
             title = 'Team workspace';
             sub = 'Leads, client setups and your team work.';
-            rows.addAll([_web('Team workspace', 'Leads, client setups and your team work', 'https://app.auzslab.in/salesman.html', Icons.groups_outlined, Tk.accent), ..._explore()]);
+            rows.addAll([_team(), ..._explore()]);
           case Kind.customer:
             title = 'Welcome';
             sub = 'Look at the products, set up your account and ask for what your business needs.';
@@ -92,7 +95,7 @@ class _HubHomeState extends State<HubHome> {
             if (s.niche == 'salon') rows.insert(0, _web('AUZslab Salon', 'Bookings, billing and clients', 'https://${s.slug}.auzslab.in/salon/admin/', Icons.content_cut, Tk.accent));
             if (s.own('pos') && (s.isOwner || s.isManager)) rows.add(_web('Admin console', 'Reports, menu, stock and settings', 'https://app.auzslab.in/dashboard.html', Icons.dashboard_outlined, Tk.label2));
             if (s.own('website_builder') && s.isOwner) rows.add(_web('Website Builder', 'Edit your shop website', 'https://app.auzslab.in/builder.html', Icons.web_outlined, Tk.orange));
-            if (s.isTeam) rows.add(_web('Team workspace', 'Leads, client setups and your team work', 'https://app.auzslab.in/salesman.html', Icons.groups_outlined, Tk.accent));
+            if (s.isTeam) rows.add(_team());
             if (rows.isEmpty) rows.add(const Note('No apps are switched on for this login yet. Ask AUZslab or your owner.'));
             rows.addAll([..._account(), ..._explore()]);
         }

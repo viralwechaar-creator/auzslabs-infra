@@ -48,6 +48,19 @@ class Cart {
   static Future<List<String>> get() async => ((await SharedPreferences.getInstance()).getStringList(_k) ?? const <String>[]).where(productLabels.containsKey).toList();
   static Future<void> set(List<String> v) async => (await SharedPreferences.getInstance()).setStringList(_k, v);
   static Future<void> clear() => set(const []);
+  /// Adds product keys (a plan can be several, "pos,self_order"); returns how many were new.
+  static Future<int> add(Iterable<String> keys) async {
+    final cur = await get();
+    var n = 0;
+    for (final k in keys) {
+      if (productLabels.containsKey(k) && !cur.contains(k)) {
+        cur.add(k);
+        n++;
+      }
+    }
+    await set(cur);
+    return n;
+  }
 }
 
 /// Mobile number check used by the request form (10 digits at least).

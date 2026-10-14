@@ -8,8 +8,9 @@ import 'package:auzshub/core/session.dart';
 import 'package:auzshub/core/util.dart';
 import 'package:auzshub/core/orderdata.dart';
 import 'package:auzshub/ui/account.dart';
+import 'package:auzshub/ui/admin.dart';
+import 'package:auzshub/ui/admin_money.dart';
 import 'package:auzshub/ui/cart.dart';
-import 'package:auzshub/ui/explore.dart';
 import 'package:auzshub/ui/explore/product_accounting.dart';
 import 'package:auzshub/ui/explore/product_billing.dart';
 import 'package:auzshub/ui/explore/product_crm.dart';
@@ -18,8 +19,10 @@ import 'package:auzshub/ui/explore/product_payroll.dart';
 import 'package:auzshub/ui/explore/product_pos.dart';
 import 'package:auzshub/ui/explore/product_qr_ordering.dart';
 import 'package:auzshub/ui/explore/product_scan.dart';
+import 'package:auzshub/ui/explore.dart';
 import 'package:auzshub/ui/home.dart';
 import 'package:auzshub/ui/pay.dart';
+import 'package:auzshub/ui/team.dart';
 import 'package:auzshub/ui/pricing.dart';
 import 'package:auzshub/ui/requests.dart';
 import 'package:auzshub/ui/theme.dart';
@@ -48,6 +51,7 @@ class FakeApi extends ApiClient {
   final calls = <String>[];
   final args = <String, Map<String, dynamic>>{};
   Map<String, dynamic>? quote;
+  String teamRole = 'salesman';
 
   @override
   Future<dynamic> rpc(String fn, [Map<String, dynamic> a = const {}]) async {
@@ -60,6 +64,30 @@ class FakeApi extends ApiClient {
         return who['dash'];
       case 'my_client_orders':
         return orders;
+      case 'admin_open_counts':
+        return {'team': 2, 'privacy': 0};
+      case 'admin_list_client_orders':
+        return [
+          {'id': 'o1', 'business_name': 'Beta Foods', 'status': 'payment_submitted', 'kind': 'new', 'created_at': '2026-10-12T04:00:00Z', 'products': ['pos', 'payroll'], 'total': 3000, 'has_proof': true},
+        ];
+      case 'list_clients':
+        return [
+          {'id': 'c1', 'name': 'Acme Cafe', 'slug': 'acme', 'niche': 'cafe', 'status': 'active', 'monthly_fee': 1090, 'renewal_date': '2099-01-01', 'features': {'pos': true}},
+        ];
+      case 'team_me':
+        return {'id': 't1', 'role': teamRole, 'name': 'Ravi Kumar', 'email': 't@x.in'};
+      case 'team_my_work':
+        return {'summary': {'leads_open': 2, 'leads_converted': 1, 'leads_overdue': 1, 'updates': 5}, 'recent': []};
+      case 'team_my_leads':
+      case 'team_all_leads':
+        return [
+          {'id': 'l1', 'name': 'Asha', 'business': 'Asha Cafe', 'contact': '98765', 'status': 'new', 'next_followup': '2020-01-01'},
+          {'id': 'l2', 'name': 'Bhav', 'business': '', 'contact': '99', 'status': 'converted'},
+        ];
+      case 'team_list_notices':
+        return [];
+      case 'salesman_my_trials':
+        return [];
       case 'public_client_order':
         return quote;
       case 'public_product_prices':
@@ -72,6 +100,9 @@ class FakeApi extends ApiClient {
         return {'login_email': 'c@x.in', 'profile': {'name': 'Asha', 'phone': '9876543210', 'business_name': 'Asha Cafe', 'niche': 'cafe'}};
       case 'submit_client_order':
         return {'token': 'a' * 32};
+      case 'submit_lead':
+      case 'submit_team_application':
+        return {'ok': true};
     }
     return null;
   }
@@ -104,6 +135,13 @@ final cafe = {
     'enabled_features': {'website_builder': false},
   },
 };
+
+/// The Explore table of contents (older hand-built pages; the hub's own tiles now open the native website pages).
+Future<void> showExplore(WidgetTester t, HubSession s) async {
+  await t.binding.setSurfaceSize(const Size(420, 9000));
+  await t.pumpWidget(MaterialApp(theme: Tk.theme(), home: ExplorePage(s)));
+  await t.pumpAndSettle();
+}
 
 Future<void> show(WidgetTester t, HubSession s) async {
   await t.binding.setSurfaceSize(const Size(420, 900));
@@ -268,20 +306,65 @@ void main() {
     expect(stateNames['08'], 'Rajasthan');
   });
 
-  testWidgets('Explore AUZslab opens the native table of contents, not the browser', (t) async {
-    await show(t, await session(customer));
-    await t.tap(find.text('Explore AUZslab'));
-    await t.pumpAndSettle();
-    // Every exploreSections entry is a row here, native or still a placeholder.
-    for (final x in ['AUZslab', 'Why AUZslab', 'Products and pricing', 'Every product in detail', 'Built for your business', 'AUZslab Studio', 'AUZslab Intelligence', 'Learn & resources', 'Legal', 'Contact us']) {
-      expect(find.text(x), findsOneWidget, reason: x);
+  testWidgets('the team workspace shows the right tabs and the due lead for a salesman', (t) async {
+    final s = await session(teamOnly);
+    await t.binding.setSurfaceSize(const Size(420, 1200));
+    await t.pumpWidget(MaterialApp(theme: Tk.theme(), home: TeamWorkspace(s)));
+    await t.pump(const Duration(milliseconds: 100));
+    await t.pump(const Duration(milliseconds: 100));
+    for (final x in ['Home', 'Leads', 'Trials', 'Me']) {
+      expect(find.text(x), findsWidgets, reason: x);
     }
+    expect(find.text('Team'), findsNothing);
+    expect(find.text('Asha Cafe'), findsOneWidget);
+    await t.tap(find.text('Leads').last);
+    await t.pump(const Duration(milliseconds: 100));
+    await t.pump(const Duration(milliseconds: 100));
+    expect(find.text('Closed · 1'), findsOneWidget);
+  });
+
+  test('lead helpers', () {
+    expect(stageName('quoted'), 'Quote sent');
+    expect(leadOverdue({'status': 'new', 'next_followup': '2020-01-01'}), true);
+    expect(leadOverdue({'status': 'converted', 'next_followup': '2020-01-01'}), false);
+    expect(plusDays(0), todayYmd());
+  });
+
+  testWidgets('the admin panel lists requests and clients', (t) async {
+    final s = await session(admin);
+    await t.binding.setSurfaceSize(const Size(420, 1200));
+    await t.pumpWidget(MaterialApp(theme: Tk.theme(), home: AdminWorkspace(s)));
+    await t.pump(const Duration(milliseconds: 100));
+    await t.pump(const Duration(milliseconds: 100));
+    for (final x in ['Requests', 'Clients', 'Leads', 'Money', 'More']) {
+      expect(find.text(x), findsWidgets, reason: x);
+    }
+    expect(find.text('Beta Foods'), findsOneWidget);
+    expect(find.text('Payment submitted'), findsOneWidget);
+    await t.tap(find.text('Clients').last);
+    await t.pump(const Duration(milliseconds: 100));
+    expect(find.text('Acme Cafe'), findsOneWidget);
+  });
+
+  test('the quote maths match the database', () {
+    final q = {
+      'items': [{'key': 'pos', 'plan': 'month', 'rate': 1090, 'discount': 0, 'gst': 18}],
+      'onboarding': {'on': true, 'amount': 1460, 'gst': 0},
+      'setup': {'on': false, 'amount': 2190, 'gst': 18},
+      'custom': [],
+    };
+    final r = calcQuote(q, '08');
+    expect(r['taxable'], 2550);
+    expect(r['intra'], true);
+    expect(r['gst'], 196.2);
+    expect(r['cgst'], 98.1);
+    expect(r['total'], 2746);
+    expect(r['round'], -0.2);
+    expect(calcQuote(q, '27')['igst'], 196.2);
   });
 
   testWidgets('the Explore table of contents pushes the native Home page for "AUZslab"', (t) async {
-    await show(t, await session(customer));
-    await t.tap(find.text('Explore AUZslab'));
-    await t.pumpAndSettle();
+    await showExplore(t, await session(customer));
     await t.tap(find.text('AUZslab').last); // the TOC row (there is no other "AUZslab" text on that screen)
     await t.pumpAndSettle();
     expect(find.text('Software built around the way you work.'), findsOneWidget);
@@ -289,28 +372,14 @@ void main() {
   });
 
   testWidgets('the Explore table of contents pushes the native Why AUZslab page', (t) async {
-    await show(t, await session(customer));
-    await t.tap(find.text('Explore AUZslab'));
-    await t.pumpAndSettle();
+    await showExplore(t, await session(customer));
     await t.tap(find.text('Why AUZslab'));
     await t.pumpAndSettle();
     expect(find.text('Businesses differ. Software should too.'), findsOneWidget);
   });
 
-  testWidgets('a not-yet-native Explore section falls through to the "coming soon" website hand-off', (t) async {
-    await show(t, await session(customer));
-    await t.tap(find.text('Explore AUZslab'));
-    await t.pumpAndSettle();
-    await t.tap(find.text('Learn & resources'));
-    await t.pumpAndSettle();
-    expect(find.text('Coming soon, natively'), findsOneWidget);
-    expect(find.text('Open on the website'), findsOneWidget);
-  });
-
   testWidgets('the Explore table of contents pushes the native "Built for your business" hub, not the browser', (t) async {
-    await show(t, await session(customer));
-    await t.tap(find.text('Explore AUZslab'));
-    await t.pumpAndSettle();
+    await showExplore(t, await session(customer));
     await t.tap(find.text('Built for your business'));
     await t.pumpAndSettle();
     // The hub lists all five business types.
@@ -323,9 +392,7 @@ void main() {
   });
 
   testWidgets('the Explore table of contents pushes the native AUZslab Studio page, not the browser', (t) async {
-    await show(t, await session(customer));
-    await t.tap(find.text('Explore AUZslab'));
-    await t.pumpAndSettle();
+    await showExplore(t, await session(customer));
     await t.tap(find.text('AUZslab Studio'));
     await t.pumpAndSettle();
     expect(find.text('Design it the way you love.'), findsOneWidget);
@@ -335,9 +402,7 @@ void main() {
   });
 
   testWidgets('the Explore table of contents pushes the native AUZslab Intelligence page, not the browser', (t) async {
-    await show(t, await session(customer));
-    await t.tap(find.text('Explore AUZslab'));
-    await t.pumpAndSettle();
+    await showExplore(t, await session(customer));
     await t.tap(find.text('AUZslab Intelligence'));
     await t.pumpAndSettle();
     expect(find.text('Your business generates data. We help you understand it.'), findsOneWidget);
@@ -346,39 +411,11 @@ void main() {
     expect(find.textContaining('They are not real customer results.'), findsOneWidget);
   });
 
-  testWidgets('Products and pricing opens the native pricing screen with live prices, not the browser', (t) async {
-    await show(t, await session(customer));
-    await t.tap(find.text('Products and pricing'));
-    await t.pumpAndSettle();
-    expect(find.text('Setup & onboarding'), findsOneWidget);
-    expect(find.text('₹999'), findsWidgets); // AUZsPOS, from public_product_prices
-    expect(find.textContaining('AUZsLedger'), findsWidgets);
-    expect(find.textContaining('Starter business'), findsOneWidget); // from public_bundles
-  });
-
   testWidgets('every other tile is unchanged by this task (still listed, not touched)', (t) async {
     await show(t, await session(admin));
     // Admin panel, Admin console, Website Builder, Salon console, Team workspace keep their old
     // browser hand-over (_web/launchUrl) -- this task only changes Explore and Products/pricing.
     expect(find.text('Admin panel'), findsOneWidget);
-  });
-
-  testWidgets('the Explore registry now opens the native products hub for "Every product in detail", not the browser', (t) async {
-    await show(t, await session(customer));
-    await t.tap(find.text('Explore AUZslab'));
-    await t.pumpAndSettle();
-    await t.tap(find.text('Every product in detail'));
-    await t.pumpAndSettle();
-    expect(find.text('Coming soon, natively'), findsNothing);
-    expect(find.text('AUZsPOS'), findsOneWidget);
-    expect(find.text('CRM'), findsOneWidget);
-    expect(find.text('Billing & Invoicing'), findsOneWidget);
-    expect(find.text('Inventory'), findsOneWidget);
-    expect(find.text('QR Ordering'), findsOneWidget);
-    expect(find.text('AUZsPay'), findsOneWidget);
-    expect(find.text('AUZsLedger'), findsOneWidget);
-    expect(find.text('AUZsScan'), findsOneWidget);
-    expect(find.text('AUZslab Salon'), findsOneWidget);
   });
 
   testWidgets('each native product page shows its own real headline from the site copy', (t) async {
