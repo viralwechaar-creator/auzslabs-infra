@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' hide Text;
 import '../core/api.dart';
 import '../core/orderdata.dart';
 import '../core/session.dart';
+import 'guest.dart';
 import 'i18n.dart';
 import 'mk.dart';
 import 'pay.dart';
@@ -78,6 +79,11 @@ class _CartPageState extends State<CartPage> {
     if (bad != null) {
       setState(() => err = bad);
       return;
+    }
+    if (!widget.s.signedIn) {
+      // Exploring needs no account; sending a request does. Sign in or create one, then carry on with what was typed.
+      if (!await requireAccount(context, widget.s, tab: 1)) return;
+      if (!mounted) return;
     }
     setState(() {
       busy = true;

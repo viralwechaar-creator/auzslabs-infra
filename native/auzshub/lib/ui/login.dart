@@ -12,15 +12,19 @@ import 'theme.dart';
 
 /// Same three doors as the website: Log in (Google, or email + password), Sign up (Google), Staff (username + PIN).
 class Login extends StatefulWidget {
-  const Login(this.s, {super.key});
+  const Login(this.s, {this.startTab = 0, this.closable = false, super.key});
   final HubSession s;
+  /// 0 log in, 1 sign up, 2 staff.
+  final int startTab;
+  /// Opened from the explore screens: show a back arrow and close itself once signed in.
+  final bool closable;
   @override
   State<Login> createState() => _LoginState();
 }
 
 class _LoginState extends State<Login> {
   final a = TextEditingController(), b = TextEditingController();
-  int tab = 0; // 0 log in, 1 sign up, 2 staff
+  late int tab = widget.startTab; // 0 log in, 1 sign up, 2 staff
   bool busy = false, agree = false, updates = false, show = false;
   String? err, info;
   StreamSubscription<Uri>? _sub;
@@ -28,14 +32,20 @@ class _LoginState extends State<Login> {
   @override
   void initState() {
     super.initState();
+    widget.s.addListener(_closeWhenSignedIn);
     _sub = AppLinks().uriLinkStream.listen(_onLink);
     AppLinks().getInitialLink().then((u) {
       if (u != null) _onLink(u);
     }).catchError((_) {});
   }
 
+  void _closeWhenSignedIn() {
+    if (widget.closable && widget.s.signedIn && mounted && Navigator.of(context).canPop()) Navigator.of(context).pop();
+  }
+
   @override
   void dispose() {
+    widget.s.removeListener(_closeWhenSignedIn);
     _sub?.cancel();
     super.dispose();
   }
@@ -138,7 +148,7 @@ class _LoginState extends State<Login> {
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           Container(width: 24, height: 24, alignment: Alignment.center, decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white), child: const Text('G', style: TextStyle(color: Color(0xFF4285F4), fontWeight: FontWeight.w900, fontSize: 18))),
           const SizedBox(width: 12),
-          const Text('Continue with Google', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700)),
+          const Flexible(child: Text('Continue with Google', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700))),
         ]),
       );
 
@@ -148,15 +158,18 @@ class _LoginState extends State<Login> {
     final staff = tab == 2;
     return Scaffold(
       backgroundColor: Tk.bg,
+      appBar: widget.closable ? AppBar(backgroundColor: Tk.bg, elevation: 0, scrolledUnderElevation: 0, leading: const BackButton()) : null,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(14),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 480),
-              child: Container(
+              child: Material(
+                color: Tk.card,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32), side: BorderSide(color: Tk.line, width: .5)),
+                child: Padding(
                 padding: const EdgeInsets.fromLTRB(28, 32, 28, 28),
-                decoration: BoxDecoration(color: Tk.card, borderRadius: BorderRadius.circular(32), border: Border.all(color: Tk.line, width: .5)),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                   Align(alignment: Alignment.centerRight, child: Seg<String>(items: const [('en', 'English'), ('hi', 'हिंदी')], value: Lang.code, onChanged: (v) => Lang.set(v))),
                   const SizedBox(height: 14),
@@ -213,6 +226,7 @@ class _LoginState extends State<Login> {
                     ]),
                   ),
                 ]),
+                ),
               ),
             ),
           ),

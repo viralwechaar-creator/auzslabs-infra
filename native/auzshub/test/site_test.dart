@@ -3,10 +3,12 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:auzshub/core/orderdata.dart';
 import 'package:auzshub/core/session.dart';
 import 'package:auzshub/core/site.dart';
 import 'package:auzshub/ui/home.dart';
+import 'package:auzshub/ui/launch.dart';
 import 'package:auzshub/ui/shell.dart';
 import 'package:auzshub/ui/site.dart';
 import 'package:auzshub/ui/theme.dart';
@@ -167,6 +169,51 @@ void main() {
     await t.pump(const Duration(milliseconds: 200));
     expect(find.text('Acme Cafe'), findsWidgets);
     expect(find.text('My apps'), findsWidgets);
+  });
+
+  testWidgets('a visitor who is not signed in explores first and is only asked to sign in when they choose to', (t) async {
+    await t.binding.setSurfaceSize(const Size(420, 4000));
+    SharedPreferences.setMockInitialValues({});
+    final s = HubSession(api: FakeApi(customer)); // no sign-in
+    expect(s.signedIn, false);
+    await t.pumpWidget(MaterialApp(theme: Tk.theme(), home: HubShell(s)));
+    await t.pump(const Duration(milliseconds: 200));
+    // the website home is the first screen, and the last tab invites a sign-in
+    expect(find.textContaining('Software built', findRichText: true), findsWidgets);
+    expect(find.text('Sign in'), findsWidgets);
+    expect(find.text('Continue with Google'), findsNothing);
+    await t.tap(find.text('Sign in').last);
+    await t.pump(const Duration(milliseconds: 200));
+    expect(find.text('Create an account'), findsOneWidget);
+    await t.tap(find.text('Create an account'));
+    await t.pumpAndSettle();
+    expect(find.text('Continue with Google'), findsOneWidget);
+    expect(find.byType(BackButton), findsOneWidget);
+    // the back arrow returns to the app
+    await t.tap(find.byType(BackButton));
+    await t.pumpAndSettle();
+    expect(find.text('Continue with Google'), findsNothing);
+  });
+
+  testWidgets('the opening animation plays in full before the app is built', (t) async {
+    await t.pumpWidget(MaterialApp(home: Launch(child: const Text('THE APP'))));
+    await t.pump(const Duration(milliseconds: 300));
+    expect(find.text('THE APP'), findsNothing);
+    await t.pump(const Duration(milliseconds: 1500));
+    expect(find.text('THE APP'), findsNothing);
+    expect(find.text('All your apps. One place.'), findsOneWidget);
+    await t.pump(const Duration(milliseconds: 3000));
+    await t.pump();
+    expect(find.text('THE APP'), findsOneWidget);
+  });
+
+  testWidgets('the website pages scroll as plain bands: no sheet slides over another', (t) async {
+    for (final name in ['index', 'pos', 'products']) {
+      final s = await session(customer);
+      await pumpPage(t, s, name);
+      // only tiny line-height nudges inside a card may remain; no section is pulled up over the one above it
+      expect(find.byType(NegTop).evaluate().length, lessThanOrEqualTo(name == 'products' ? 2 : 0), reason: name);
+    }
   });
 
   testWidgets('the hub tiles Explore AUZslab and Products and pricing open the native website pages', (t) async {
