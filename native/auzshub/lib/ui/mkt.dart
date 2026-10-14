@@ -20,6 +20,36 @@ class M {
   static const shadow = BoxShadow(color: Color(0x4D2E2C2A), blurRadius: 28, spreadRadius: -12, offset: Offset(0, 10));
 }
 
+/// The website's pages are always light, whatever the phone's dark mode or the app's own theme is: form fields, drop-downs, buttons and
+/// selection handles inside a marketing page take their colours from here (without it a dark phone gave light labels on light fields).
+ThemeData marketingTheme() {
+  final base = ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.light,
+    fontFamily: 'Inter',
+    colorScheme: ColorScheme.fromSeed(seedColor: M.wine, brightness: Brightness.light).copyWith(primary: M.wine, onPrimary: Colors.white, surface: Colors.white, onSurface: M.ink),
+    scaffoldBackgroundColor: M.page,
+    canvasColor: Colors.white,
+  );
+  OutlineInputBorder border(Color c, [double w = 1]) => OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: c, width: w));
+  return base.copyWith(
+    textTheme: base.textTheme.apply(bodyColor: M.ink, displayColor: M.ink),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: const Color(0xFFF7F5F2),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      labelStyle: inter(15, color: M.dim),
+      floatingLabelStyle: inter(14, color: M.wine, w: 600),
+      hintStyle: inter(15, color: M.faint),
+      helperStyle: inter(12, color: M.faint),
+      border: border(M.line),
+      enabledBorder: border(M.line),
+      focusedBorder: border(M.wine, 1.6),
+    ),
+    textSelectionTheme: const TextSelectionThemeData(cursorColor: M.wine),
+  );
+}
+
 FontWeight _fw(int w) => FontWeight.values[(w ~/ 100).clamp(1, 9) - 1];
 
 /// Inter at a given weight (the font file is variable, so the weight axis is set explicitly).

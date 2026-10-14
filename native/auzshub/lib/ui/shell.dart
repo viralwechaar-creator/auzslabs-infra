@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' hide Text;
 import '../core/session.dart';
 import 'guest.dart';
 import 'home.dart';
+import 'mkt.dart';
 import 'site.dart';
 
 /// The hub's main screen: the website (Home, Products, Pricing, Menu) and, in the last tab, what this login can open.
@@ -30,7 +31,7 @@ class _HubShellState extends State<HubShell> {
         SitePage(s, 'index', top: true),
         SitePage(s, 'products', top: true),
         SitePage(s, 'pricing', top: true),
-        SiteMenu(s),
+        Theme(data: marketingTheme(), child: SiteMenu(s)),
         guest ? GuestPanel(s) : HubHome(s),
       ]),
       bottomNavigationBar: NavigationBar(
