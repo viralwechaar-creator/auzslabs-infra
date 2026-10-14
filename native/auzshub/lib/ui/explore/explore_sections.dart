@@ -2,7 +2,10 @@ import 'package:flutter/material.dart' hide Text;
 import '../../core/session.dart';
 import '../pricing.dart';
 import '../theme.dart';
+import 'contact_page.dart';
 import 'home_page.dart';
+import 'learn_page.dart';
+import 'legal_page.dart';
 import 'why_page.dart';
 
 /// One row of the "Explore AUZslab" table of contents.
@@ -30,9 +33,11 @@ class ExploreSection {
   final Widget Function(HubSession s)? builder;
 }
 
-/// Native so far: the homepage, "Why AUZslab" and Products & pricing (with live RPC-driven
-/// prices). Everything else is a placeholder entry -- real, named, reachable -- until its own
-/// native screen is built in a later pass.
+/// Native so far: the homepage, "Why AUZslab", Products & pricing (with live RPC-driven prices),
+/// "Learn & resources" (the beginner manual plus the three resources pages), "Legal" (every
+/// policy, rendered verbatim) and "Contact us" (the real WhatsApp/call/email channels and the
+/// `submit_lead` form). Everything else is a placeholder entry -- real, named, reachable --
+/// until its own native screen is built in a later pass.
 List<ExploreSection> exploreSections(HubSession s) => [
       ExploreSection('home', 'AUZslab', 'Software built around the way you work', Icons.home_outlined, Tk.accent, builder: (hs) => HomePage(hs)),
       ExploreSection('why', 'Why AUZslab', 'Businesses differ. Software should too.', Icons.lightbulb_outline, Tk.orange, builder: (hs) => WhyAuzslabPage(hs)),
@@ -41,7 +46,7 @@ List<ExploreSection> exploreSections(HubSession s) => [
       ExploreSection('business', 'Built for your business', 'Cafes, salons, retail, clothing and mobile repair shops, each shown its own way', Icons.store_outlined, Tk.teal, sitePath: 'business-cafes.html'),
       ExploreSection('studio', 'AUZslab Studio', 'Custom builds and bespoke development', Icons.design_services_outlined, Tk.blue, sitePath: 'studio.html'),
       ExploreSection('intelligence', 'AUZslab Intelligence', "Don't just see your business. Understand it.", Icons.insights_outlined, Tk.purple, sitePath: 'intelligence.html'),
-      ExploreSection('learn', 'Learn & resources', 'Guides to get the most from AUZslab', Icons.menu_book_outlined, Tk.orange, sitePath: 'learn.html'),
-      ExploreSection('legal', 'Legal', 'Terms, privacy, refund and other policies', Icons.gavel_outlined, Tk.label2, sitePath: 'terms.html'),
-      ExploreSection('contact', 'Contact us', 'Get in touch with the team', Icons.mail_outline, Tk.blue, sitePath: 'contact.html'),
+      ExploreSection('learn', 'Learn & resources', 'Guides to get the most from AUZslab', Icons.menu_book_outlined, Tk.orange, sitePath: 'learn.html', builder: (hs) => LearnHubPage(hs)),
+      ExploreSection('legal', 'Legal', 'Terms, privacy, refund and other policies', Icons.gavel_outlined, Tk.label2, sitePath: 'terms.html', builder: (hs) => LegalHubPage(hs)),
+      ExploreSection('contact', 'Contact us', 'Get in touch with the team', Icons.mail_outline, Tk.blue, sitePath: 'contact.html', builder: (hs) => ContactPage(hs)),
     ];

@@ -289,6 +289,50 @@ void main() {
     expect(find.text('Businesses differ. Software should too.'), findsOneWidget);
   });
 
+  testWidgets('the Explore table of contents pushes the native Learn & resources page', (t) async {
+    await show(t, await session(customer));
+    await t.tap(find.text('Explore AUZslab'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Learn & resources'));
+    await t.pumpAndSettle();
+    expect(find.text('Learn AUZslab, beginner manual'), findsOneWidget);
+    expect(find.text('Getting started'), findsOneWidget);
+    await t.tap(find.text('Learn AUZslab, beginner manual'));
+    await t.pumpAndSettle();
+    // Real manual copy from site/learn.html, not a summary of it.
+    expect(find.text('How do I sign in?'), findsOneWidget);
+    expect(find.textContaining('Staff: open the Staff tab and type the username and PIN your owner gave you.'), findsOneWidget);
+  });
+
+  testWidgets('the Explore table of contents pushes the native Legal page, rendered verbatim', (t) async {
+    await show(t, await session(customer));
+    await t.tap(find.text('Explore AUZslab'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Legal'));
+    await t.pumpAndSettle();
+    expect(find.text('Terms & conditions'), findsOneWidget);
+    expect(find.text('Privacy policy'), findsOneWidget);
+    await t.tap(find.text('Terms & conditions'));
+    await t.pumpAndSettle();
+    // Spot-check against the exact wording in site/terms.html (section 1), company details
+    // substituted the same way site/company.js fills them in on the website.
+    expect(find.textContaining('These terms are an agreement between you and Mahendra, trading as AUZslab (sole proprietorship)'), findsOneWidget);
+    expect(find.textContaining('GSTIN: 08KALPM2374C1ZH'), findsOneWidget);
+    expect(find.text('2. Your account'), findsOneWidget);
+  });
+
+  testWidgets('the Explore table of contents pushes the native Contact us page with the real channels', (t) async {
+    await show(t, await session(customer));
+    await t.tap(find.text('Explore AUZslab'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Contact us'));
+    await t.pumpAndSettle();
+    expect(find.text('Tell us how your business works.'), findsOneWidget);
+    expect(find.text('helloauzslab@gmail.com'), findsOneWidget);
+    expect(find.text('WhatsApp'), findsOneWidget);
+    expect(find.text('Call'), findsOneWidget);
+  });
+
   testWidgets('a not-yet-native Explore section falls through to the "coming soon" website hand-off', (t) async {
     await show(t, await session(customer));
     await t.tap(find.text('Explore AUZslab'));
