@@ -80,8 +80,8 @@ void main() {
     for (final name in d.keys) {
       await pumpPage(t, s, name);
       expect(tester(t), isNull, reason: name);
-      final title = (d[name] as Map)['title'] as String;
-      expect(find.text(title), findsWidgets, reason: 'app bar of $name');
+      expect(find.byType(MktHeader), findsOneWidget, reason: 'header of $name');
+      expect(find.byType(SiteFooter), findsOneWidget, reason: 'footer of $name');
     }
   });
 
@@ -89,10 +89,10 @@ void main() {
     final s = await session(customer);
     await pumpPage(t, s, 'pos');
     expect(find.text('Built around the way you sell.'), findsOneWidget);
-    await t.tap(find.text('Add to cart').first);
+    await t.tap(find.text('ADD TO CART').first);
     await t.pump();
     expect(await Cart.get(), ['pos']);
-    expect(find.text('Added. View cart'), findsWidgets);
+    expect(find.text('ADDED. VIEW CART'), findsWidgets);
   });
 
   testWidgets('the pricing page shows live prices and the bundles from the database', (t) async {
@@ -115,7 +115,7 @@ void main() {
     final fields = find.byType(TextField);
     await t.enterText(fields.at(0), 'Asha');
     await t.enterText(fields.at(2), '9876543210');
-    await t.tap(find.text('Send').last);
+    await t.tap(find.text('SEND').last);
     await t.pump();
     await t.pump();
     final api = s.api as FakeApi;
@@ -135,6 +135,9 @@ void main() {
     }
     expect(find.text('Software built around the way you work.'), findsWidgets);
     await t.tap(find.text('Menu').last);
+    await t.pump(const Duration(milliseconds: 100));
+    expect(find.textContaining('Business types', findRichText: true), findsOneWidget);
+    await t.tap(find.textContaining('Business types', findRichText: true));
     await t.pump(const Duration(milliseconds: 100));
     expect(find.text('Cafes and restaurants'), findsOneWidget);
     s = await session(cafe);

@@ -205,15 +205,20 @@ def btn(n):
 
 
 def heading_level(n):
-    if re.fullmatch(r'h[1-6]', n.tag):
-        return int(n.tag[1])
+    """1 hero title, 2 section title, 3 card title, 4 small title (the website's own .h-hero / .h-1 / .h-2 / .h-3 scale)"""
     c = n.cls
+    if n.tag == 'h1':
+        return 1
     if c & {'h-hero', 'fx-h1'}:
         return 1
-    if c & {'h-2', 'fx-h2', 'dh', 'h2'}:
+    if c & {'h-1', 'fx-h2'}:
         return 2
-    if c & {'h-3', 'h3'}:
+    if c & {'h-2', 'dh', 'h2'}:
         return 3
+    if c & {'h-3', 'h3'}:
+        return 4
+    if re.fullmatch(r'h[1-6]', n.tag):
+        return {1: 1, 2: 2, 3: 3}.get(int(n.tag[1]), 4)
     return 0
 
 
@@ -257,7 +262,11 @@ def handle(n, out, seen_ids):
     if lvl and not has_block(n):
         t = text_of(n)
         if t:
-            out.append({'t': 'h', 'l': lvl, 'x': t})
+            hb = {'t': 'h', 'l': lvl, 'x': t}
+            m = re.search(r'font-size:\s*(\d+)px', n.attrs.get('style', ''))
+            if m:
+                hb['fs'] = int(m.group(1))
+            out.append(hb)
         return
     if lvl:
         t = text_of(n)
@@ -297,6 +306,18 @@ def handle(n, out, seen_ids):
         if items:
             out.append({'t': 'ul', 'o': 1 if tag == 'ol' else 0, 'i': items})
         return
+    if 'uk-accordion-item' in n.cls:
+        head = next((x for x in iter_tags(n, 'button') if 'uk-accordion-head' in x.cls), None)
+        body = next((x for x in iter_tags(n, 'div') if 'uk-accordion-body-inner' in x.cls), None)
+        sub = []
+        if body is not None:
+            for k in body.kids:
+                blocks(k, sub, seen_ids)
+        fq = {'t': 'faq', 'q': text_of(head) if head else '', 'b': sub}
+        if 'is-open' in n.cls:
+            fq['o'] = 1
+        out.append(fq)
+        return
     if tag == 'details':
         summ = next((k for k in n.kids if isinstance(k, N) and k.tag == 'summary'), None)
         sub = []
@@ -325,11 +346,21 @@ def handle(n, out, seen_ids):
         return
     if tag == 'hr':
         return
+    # a row of pair/pill links (Pairs well with ...)
+    ls = [k for k in n.kids if isinstance(k, N) and k.tag == 'a' and (k.cls & {'pair', 'pill', 'tag'} or 'data-magnet' in k.attrs)]
+    if len(ls) >= 1 and len(ls) == len([k for k in n.kids if isinstance(k, N)]) and not any(isinstance(k, str) and k.strip() for k in n.kids):
+        items = [btn(k) for k in ls]
+        items = [i for i in items if i]
+        if items:
+            out.append({'t': 'links', 'i': items})
+        return
     # text-only container
     if not has_block(n) and tag in ('p', 'div', 'span', 'li', 'section', 'label', 'small', 'b', 'strong', 'em', 'i', 'td', 'th', 'dd', 'dt', 'figcaption', 'summary', 'sup', 'u', 'code'):
         s = spans(n)
         if s:
-            if n.cls & {'eye', 'label', 'kicker', 'eyebrow', 'stamp'}:
+            if n.cls & {'tag', 'stamp', 'price-card-badge'}:
+                out.append({'t': 'chip', 'x': text_of(n)})
+            elif n.cls & {'eye', 'label', 'kicker', 'eyebrow'}:
                 out.append({'t': 'eye', 'x': text_of(n)})
             else:
                 out.append({'t': 'p', 's': s})
@@ -373,7 +404,10 @@ def handle(n, out, seen_ids):
         if sub:
             cls = n.cls
             tone = 'dark' if cls & {'stack-panel-dark', 'dark'} else ('alt' if 'alt' in cls else '')
-            out.append({'t': 'sec', 'c': tone, 'b': sub})
+            sec = {'t': 'sec', 'c': tone, 'b': sub}
+            if n.attrs.get('data-tab'):
+                sec['tab'] = n.attrs['data-tab']
+            out.append(sec)
         return
     inline_run = []
     def flush():
@@ -385,7 +419,7 @@ def handle(n, out, seen_ids):
                 out.append({'t': 'p', 's': s})
             inline_run.clear()
     for k in n.kids:
-        if isinstance(k, str) or (k.tag in INLINE and not has_block(k) and not (k.cls & {'btn'}) and not skipped(k) and not action_of(k)):
+        if isinstance(k, str) or (k.tag in INLINE and not has_block(k) and not (k.cls & {'btn', 'tag', 'stamp'}) and not skipped(k) and not action_of(k)):
             if isinstance(k, N) and k.tag == 'a' and k.attrs.get('href') and not text_of(k):
                 continue
             inline_run.append(k)
@@ -411,6 +445,8 @@ def flatten(bl):
             cur = {'t': 'sec', 'c': b['c'], 'b': []}
             if 'id' in b:
                 cur['id'] = b['id']
+            if 'tab' in b:
+                cur['tab'] = b['tab']
             into.append(cur)
             for x in b['b']:
                 if x['t'] == 'sec':
@@ -443,6 +479,37 @@ def dedupe(bl):
     return out
 
 
+STACK_PAGES = {'index', 'pos', 'billing', 'business-cafes', 'products'}
+TAB = [(r'included|inside|what we build|everything a|what a ', 'INSIDE'), (r'pairs', 'PAIRS'), (r'ready|get started|next|your cart', 'START'),
+       (r'try|hands-on|demo|live client', 'TRY'), (r'before you write|answered|faq', 'ASK'), (r'how it works|step|how we work', 'STEPS'),
+       (r'why|struggle|gap|paper|counting|wrong|pain', 'WHY'), (r'get found|marketing|creator', 'REACH'), (r'independent|infrastructure', 'OWN')]
+
+
+def tabs(secs, name):
+    """the big word on each stacked sheet: the page's own data-tab, else the website's fx-stack rule"""
+    spare = ['MORE', 'NEXT', 'THEN', 'ALSO']
+    sp = 0
+    for i, s in enumerate(secs):
+        if i == 0 or s.get('tab'):
+            continue
+        txt = ''
+        for b in s['b']:
+            if b['t'] in ('eye', 'h'):
+                txt += ' ' + b['x']
+                if b['t'] == 'h':
+                    break
+        tab = ''
+        for rx, w in TAB:
+            if re.search(rx, txt, re.I):
+                tab = w
+                break
+        if not tab:
+            tab = 'TALK' if s['c'] == 'dark' else spare[sp % 4]
+            sp += 1
+        s['tab'] = tab
+    return secs
+
+
 def demote(secs):
     for s in secs:
         b = s['b']
@@ -460,6 +527,8 @@ def clean(secs):
         r = []
         for x in b:
             if r and r[-1] == x:
+                continue
+            if x['t'] == 'p' and ''.join(sp['x'] for sp in x['s']).strip() == 'AUZslab':
                 continue
             r.append(x)
         if r:
@@ -487,7 +556,10 @@ def main():
             for k in main_n.kids:
                 blocks(k, out, set())
         secs = demote(clean(flatten(out)))
-        data[name] = {'title': title, 'desc': desc, 'secs': secs}
+        stack = name in STACK_PAGES
+        if stack:
+            secs = tabs(secs, name)
+        data[name] = {'title': title, 'desc': desc, 'mode': 'stack' if stack else 'flat', 'secs': secs}
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(data, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
     print('wrote', OUT, OUT.stat().st_size, 'bytes,', len(data), 'pages')

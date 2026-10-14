@@ -2,7 +2,7 @@ import 'package:flutter/material.dart' hide Text;
 import '../core/session.dart';
 import 'i18n.dart';
 import 'mk.dart';
-import 'theme.dart';
+import 'mkt.dart';
 
 /// The contact form (same call as the website: submit_lead).
 class ContactForm extends StatefulWidget {
@@ -147,24 +147,24 @@ class _FormCard extends StatelessWidget {
   final List<Widget> children;
   @override
   Widget build(BuildContext context) => Container(
-        margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(color: Tk.card, border: Border.all(color: Tk.line), borderRadius: BorderRadius.circular(22), boxShadow: Tk.sh1),
+        margin: const EdgeInsets.fromLTRB(24, 28, 24, 8),
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(color: Colors.white, border: Border.all(color: M.line), borderRadius: BorderRadius.circular(22), boxShadow: const [M.shadow]),
         child: done
             ? Column(children: [
-                Icon(Icons.check_circle_outline, color: Tk.green, size: 44),
+                const Icon(Icons.check_circle_outline, color: Color(0xFF1F6B3A), size: 44),
                 const SizedBox(height: 10),
-                Text(doneTitle, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                Text(doneTitle, style: inter(22, w: 700)),
                 const SizedBox(height: 6),
-                Text(doneText, textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Tk.label2)),
+                Text(doneText, textAlign: TextAlign.center, style: inter(14, color: M.dim)),
               ])
             : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                Text(title, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800)),
+                Text(title, style: inter(20, w: 700, ls: -.3)),
                 const SizedBox(height: 14),
                 ...children,
-                if (err != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(err!, style: TextStyle(color: Tk.red, fontSize: 15))),
+                if (err != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(err!, style: inter(13, color: const Color(0xFFD70015)))),
                 const SizedBox(height: 16),
-                FilledButton(onPressed: busy ? null : send, style: FilledButton.styleFrom(backgroundColor: Tk.accent, minimumSize: const Size(0, 52), shape: const StadiumBorder()), child: Text(busy ? 'Sending...' : sendLabel, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700))),
+                FilledButton(onPressed: busy ? null : send, style: FilledButton.styleFrom(backgroundColor: M.wine, minimumSize: const Size(0, 48), shape: const StadiumBorder()), child: Text((busy ? 'Sending...' : sendLabel).toUpperCase(), style: mono(11.5, color: M.onInk, ls: .6))),
               ]),
       );
 }

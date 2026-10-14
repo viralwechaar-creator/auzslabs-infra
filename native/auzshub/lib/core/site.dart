@@ -87,6 +87,50 @@ const siteMenu = <MenuGroup>[
   ]),
 ];
 
+/// One entry of the website's drawer menu: a plain link, or a group with sub-links (the "(+8)" ones).
+class NavEntry {
+  const NavEntry(this.label, {this.page, this.anchor, this.kids = const [], this.cart = false});
+  final String label;
+  final String? page, anchor;
+  final List<NavEntry> kids;
+  final bool cart;
+}
+
+/// The same order and wording as the website's drawer (the Primary nav on every marketing page).
+const siteNav = <NavEntry>[
+  NavEntry('Home', page: 'index'),
+  NavEntry('Products', kids: [
+    NavEntry('AUZsPOS', page: 'pos'),
+    NavEntry('AUZsPOS QR', page: 'qr-ordering'),
+    NavEntry('AUZsPay', page: 'payroll'),
+    NavEntry('AUZsLedger', page: 'accounting'),
+    NavEntry('AUZsScan', page: 'scan-and-bill'),
+    NavEntry('AUZsMob', page: 'products', anchor: 'slab-mobile'),
+    NavEntry('AUZslab Salon', page: 'products', anchor: 'slab-salon'),
+    NavEntry('Studio: bespoke software', page: 'studio'),
+  ]),
+  NavEntry('Business types', kids: [
+    NavEntry('Cafes and restaurants', page: 'business-cafes'),
+    NavEntry('Salons', page: 'business-salons'),
+    NavEntry('Retail and bookstores', page: 'business-retail'),
+    NavEntry('Clothing and apparel', page: 'business-clothing'),
+    NavEntry('Mobile retail and repair', page: 'business-mobile-repair'),
+  ]),
+  NavEntry('Intelligence', page: 'intelligence'),
+  NavEntry('Why AUZslab', page: 'platform'),
+  NavEntry('Live demo', page: 'live-demo'),
+  NavEntry('Pricing', page: 'pricing'),
+  NavEntry('Cart', cart: true),
+  NavEntry('Resources', kids: [
+    NavEntry('Getting started', page: 'resources-getting-started'),
+    NavEntry('Learn: beginner manual', page: 'learn'),
+    NavEntry('Operations and workflows', page: 'resources-operations'),
+    NavEntry('Growth and scaling', page: 'resources-growth'),
+    NavEntry('Creatopz, marketing partner', page: 'creatopz'),
+  ]),
+  NavEntry('Contact', page: 'contact'),
+];
+
 /// Short names of the products (cart keys), for the plan cards.
 const planIcons = <String, String>{
   'pos': 'assets/site/p_pos.png',
