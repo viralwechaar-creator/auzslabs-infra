@@ -8,6 +8,8 @@ import 'package:auzshub/core/session.dart';
 import 'package:auzshub/core/util.dart';
 import 'package:auzshub/core/orderdata.dart';
 import 'package:auzshub/ui/account.dart';
+import 'package:auzshub/ui/admin.dart';
+import 'package:auzshub/ui/admin_money.dart';
 import 'package:auzshub/ui/cart.dart';
 import 'package:auzshub/ui/home.dart';
 import 'package:auzshub/ui/pay.dart';
@@ -36,6 +38,16 @@ class FakeApi extends ApiClient {
         return who['dash'];
       case 'my_client_orders':
         return orders;
+      case 'admin_open_counts':
+        return {'team': 2, 'privacy': 0};
+      case 'admin_list_client_orders':
+        return [
+          {'id': 'o1', 'business_name': 'Beta Foods', 'status': 'payment_submitted', 'kind': 'new', 'created_at': '2026-10-12T04:00:00Z', 'products': ['pos', 'payroll'], 'total': 3000, 'has_proof': true},
+        ];
+      case 'list_clients':
+        return [
+          {'id': 'c1', 'name': 'Acme Cafe', 'slug': 'acme', 'niche': 'cafe', 'status': 'active', 'monthly_fee': 1090, 'renewal_date': '2099-01-01', 'features': {'pos': true}},
+        ];
       case 'team_me':
         return {'id': 't1', 'role': teamRole, 'name': 'Ravi Kumar', 'email': 't@x.in'};
       case 'team_my_work':
@@ -270,5 +282,38 @@ void main() {
     expect(leadOverdue({'status': 'new', 'next_followup': '2020-01-01'}), true);
     expect(leadOverdue({'status': 'converted', 'next_followup': '2020-01-01'}), false);
     expect(plusDays(0), todayYmd());
+  });
+
+  testWidgets('the admin panel lists requests and clients', (t) async {
+    final s = await session(admin);
+    await t.binding.setSurfaceSize(const Size(420, 1200));
+    await t.pumpWidget(MaterialApp(theme: Tk.theme(), home: AdminWorkspace(s)));
+    await t.pump(const Duration(milliseconds: 100));
+    await t.pump(const Duration(milliseconds: 100));
+    for (final x in ['Requests', 'Clients', 'Leads', 'Money', 'More']) {
+      expect(find.text(x), findsWidgets, reason: x);
+    }
+    expect(find.text('Beta Foods'), findsOneWidget);
+    expect(find.text('Payment submitted'), findsOneWidget);
+    await t.tap(find.text('Clients').last);
+    await t.pump(const Duration(milliseconds: 100));
+    expect(find.text('Acme Cafe'), findsOneWidget);
+  });
+
+  test('the quote maths match the database', () {
+    final q = {
+      'items': [{'key': 'pos', 'plan': 'month', 'rate': 1090, 'discount': 0, 'gst': 18}],
+      'onboarding': {'on': true, 'amount': 1460, 'gst': 0},
+      'setup': {'on': false, 'amount': 2190, 'gst': 18},
+      'custom': [],
+    };
+    final r = calcQuote(q, '08');
+    expect(r['taxable'], 2550);
+    expect(r['intra'], true);
+    expect(r['gst'], 196.2);
+    expect(r['cgst'], 98.1);
+    expect(r['total'], 2746);
+    expect(r['round'], -0.2);
+    expect(calcQuote(q, '27')['igst'], 196.2);
   });
 }

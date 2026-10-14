@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../core/launcher.dart';
 import '../core/session.dart';
 import 'account.dart';
+import 'admin.dart';
 import 'cart.dart';
 import 'ds.dart';
 import 'i18n.dart';
@@ -76,7 +77,7 @@ class _HubHomeState extends State<HubHome> {
           case Kind.admin:
             title = 'AUZslab admin';
             sub = 'Clients, requests, pricing and the team.';
-            rows.addAll([_web('Admin panel', 'Leads, clients, payments, team and settings', 'https://auzslab.in/admin.html', Icons.admin_panel_settings_outlined, Tk.accent), ..._explore()]);
+            rows.addAll([Li('Admin panel', sub: 'Requests, clients, leads, money, team and pricing', icon: Icons.admin_panel_settings_outlined, tone: Tk.accent, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => AdminWorkspace(s)))), ..._explore()]);
           case Kind.team:
             title = 'Team workspace';
             sub = 'Leads, client setups and your team work.';

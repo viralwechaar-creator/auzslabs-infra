@@ -133,6 +133,18 @@ class ApiClient {
     return res.bodyBytes;
   }
 
+  /// Authenticated GET of raw bytes (the payment screenshot an admin looks at).
+  Future<List<int>> getBytes(String path) async {
+    http.Response res;
+    try {
+      res = await _http.get(Uri.parse('$base$path'), headers: {if (token != null) 'Authorization': 'Bearer $token'}).timeout(const Duration(seconds: 60));
+    } catch (_) {
+      throw ApiError('Could not reach the server.', networkError: true);
+    }
+    if (res.statusCode < 200 || res.statusCode >= 300) throw ApiError('Could not open the file (${res.statusCode})', status: res.statusCode);
+    return res.bodyBytes;
+  }
+
   /// Any authenticated JSON POST (used for the few plain HTTP routes that are not RPCs).
   Future<dynamic> postJson(String path, Map<String, dynamic> body) => _request('POST', path, body: body);
 
