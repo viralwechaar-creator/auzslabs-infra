@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter/services.dart' show rootBundle;
 
 /// The website's pages as data (assets/site/pages.json, made from site/*.html by tool/make_site_data.py).
@@ -10,7 +11,8 @@ class SiteData {
   static Future<SiteData> load() async {
     if (_i != null) return _i!;
     final raw = await rootBundle.loadString('assets/site/pages.json');
-    return _i = SiteData._(jsonDecode(raw) as Map<String, dynamic>);
+    // decoded off the main thread so the opening animation never stutters
+    return _i = SiteData._(await compute(_decode, raw));
   }
 
   /// For tests: use a page set that is already in memory.
@@ -19,6 +21,8 @@ class SiteData {
   Map<String, dynamic>? page(String name) => pages[name] as Map<String, dynamic>?;
   bool has(String name) => pages.containsKey(name);
 }
+
+Map<String, dynamic> _decode(String raw) => jsonDecode(raw) as Map<String, dynamic>;
 
 /// One link of the menu (same groups as the website's menu).
 class MenuLink {

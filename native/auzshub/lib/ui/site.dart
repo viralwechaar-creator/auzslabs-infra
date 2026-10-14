@@ -9,6 +9,7 @@ import '../core/session.dart';
 import '../core/site.dart';
 import 'account.dart';
 import 'cart.dart';
+import 'guest.dart';
 import 'mk.dart' show toast, Sel;
 import 'mkt.dart';
 import 'site_forms.dart';
@@ -17,6 +18,109 @@ part 'nodes.dart';
 
 const supportPhone = '+919251250829';
 const supportMail = 'helloauzslab@gmail.com';
+
+/// The website stacks its sections as rounded sheets that slide over each other. The app shows them as plain bands that scroll one after
+/// the other: no rounded tops, edge lines, shadows, overlap or big tab word, and a normal gap above the section.
+Map<String, dynamic> _plainSheet(Map<String, dynamic> root) {
+  final st = Map<String, dynamic>.from((root['s'] as Map?) ?? const {});
+  // the edge lines stay (they take 1px each from the width the content was measured in) but are made invisible
+  final bd = st['bd'];
+  if (bd is Map) {
+    st['bd'] = {for (final e in bd.entries) e.key: e.value is List && (e.value as List).length >= 3 ? [(e.value as List)[0], '00000000', (e.value as List)[2]] : e.value};
+  }
+  for (final k in ['r', 'sh', 'mt']) {
+    st.remove(k);
+  }
+  final pad = st['p'];
+  if (pad is List && pad.length == 4 && pad[0] is num && (pad[0] as num) > 56) st['p'] = [56, pad[1], pad[2], pad[3]];
+  final kids = root['c'];
+  return {
+    ...root,
+    's': st,
+    if (kids is List) 'c': [for (final c in kids) if (!(c is Map && c['abs'] != null && c['k'] == 't')) c],
+  };
+}
+
+/// Empty padded boxes are the website's forms and widgets whose insides are not drawn here (the app has its own native forms):
+/// they would show as blank cards.
+bool _blankBox(dynamic n) {
+  if (n is! Map || n['k'] != 'b' || n['h'] != null) return false;
+  final c = n['c'];
+  if (c is List && c.isNotEmpty) return false;
+  final st = n['s'];
+  final pad = st is Map ? st['p'] : null;
+  return pad is List && pad.any((e) => e is num && e > 0);
+}
+
+/// Text of a node tree (to recognise a section that only holds the website's footer word).
+String _plainText(dynamic n) {
+  if (n is! Map) return '';
+  final b = StringBuffer();
+  if (n['k'] == 't') {
+    for (final r in (n['r'] as List? ?? const [])) {
+      b.write(r is Map ? '${r['x'] ?? ''}' : '');
+    }
+  }
+  for (final c in (n['c'] as List? ?? const [])) {
+    b.write(_plainText(c));
+  }
+  for (final k in ['hd', 'bd']) {
+    b.write(_plainText(n[k]));
+  }
+  return b.toString().trim();
+}
+
+/// A node without its blank boxes (children are rebuilt only where something was removed).
+Map<String, dynamic> _tidy(Map<String, dynamic> n) {
+  final c = n['c'];
+  if (c is! List || c.isEmpty) return n;
+  var changed = false;
+  final out = <dynamic>[];
+  for (final k in c) {
+    if (_blankBox(k)) {
+      changed = true;
+      continue;
+    }
+    if (k is Map<String, dynamic>) {
+      final t = _tidy(k);
+      if (!identical(t, k)) changed = true;
+      out.add(t);
+    } else {
+      out.add(k);
+    }
+  }
+  return changed ? {...n, 'c': out} : n;
+}
+
+/// The sections of a page that the app draws: without the website's own footer sheet (the app has its footer) or empty ones.
+List<Map<String, dynamic>> _sectionsFor(Map<String, dynamic>? p) {
+  final out = <Map<String, dynamic>>[];
+  for (final x in ((p?['secs'] as List?) ?? const [])) {
+    final sec = x as Map<String, dynamic>;
+    if (sec['hr'] == 1) {
+      out.add(sec);
+      continue;
+    }
+    final root = (sec['n'] as Map?)?.cast<String, dynamic>();
+    if (root == null) continue;
+    final kids = root['c'];
+    if (kids is! List || kids.isEmpty) continue; // an empty section
+    if (_plainText(root) == 'CONNECT') continue; // the website's footer sheet
+    if (_plainText(root).isEmpty && !_hasArt(root)) continue;
+    out.add({...sec, 'n': _tidy(root)});
+  }
+  return out;
+}
+
+/// A section with no words may still be art (an image or drawing).
+bool _hasArt(dynamic n) {
+  if (n is! Map) return false;
+  if (n['k'] == 'v' || n['k'] == 'i') return true;
+  for (final c in (n['c'] as List? ?? const [])) {
+    if (_hasArt(c)) return true;
+  }
+  return false;
+}
 
 /// What every block of a page needs: the session, the prices, the link handler and the section colour.
 class _Env extends InheritedWidget {
@@ -62,7 +166,11 @@ Future<void> openSiteLink(BuildContext c, HubSession s, String href, {void Funct
     case 'cart':
       await go(CartPage(s));
     case 'account':
-      await go(AccountPage(s));
+      if (s.signedIn) {
+        await go(AccountPage(s));
+      } else {
+        await openLogin(c, s, tab: href.contains('signup') ? 1 : 0);
+      }
     case 'external':
     case 'web':
       await launchUrl(Uri.parse(l.url), mode: LaunchMode.externalApplication);
@@ -144,7 +252,7 @@ class _SitePageState extends State<SitePage> {
   @override
   Widget build(BuildContext context) {
     final p = page;
-    final secs = [for (final x in ((p?['secs'] as List?) ?? const [])) x as Map<String, dynamic>];
+    final secs = _sectionsFor(p);
     final stack = (p?['mode'] ?? 'flat') == 'stack';
     Widget body;
     if (missing) {
@@ -160,20 +268,23 @@ class _SitePageState extends State<SitePage> {
         if (sec['hr'] == 1) {
           w = const Padding(padding: EdgeInsets.symmetric(horizontal: 22, vertical: 4), child: _Dashed());
         } else {
-          final root = (sec['n'] as Map).cast<String, dynamic>();
+          var root = (sec['n'] as Map).cast<String, dynamic>();
+          root = _plainSheet(root);
           w = SectionView(root);
           final top = _top(root);
-          if (top < 0) w = NegTop(-top, child: w);
+          if (top < 0 && widget.name.isEmpty) w = NegTop(-top, child: w);
         }
         children.add(id == null ? w : KeyedSubtree(key: keyFor(id), child: w));
       }
       if (widget.name == 'contact') children.add(ContactForm(widget.s));
       if (widget.name == 'join-team') children.add(JoinForm(widget.s));
-      children.add(SiteFooter(widget.s, prev: stack ? M.bg : Colors.transparent));
+      children.add(SiteFooter(widget.s));
       body = ResponsivePage(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children));
     }
     final env = _Env(s: widget.s, pricing: pricing, open: _open, keyFor: keyFor, dark: false, flat: !stack, child: body);
-    return Scaffold(
+    return Theme(
+      data: marketingTheme(),
+      child: Scaffold(
       backgroundColor: M.page,
       body: DefaultTextStyle(
         style: inter(13.5, color: M.dim),
@@ -182,6 +293,7 @@ class _SitePageState extends State<SitePage> {
           Positioned.fill(child: ListView(controller: scroll, padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top), children: [SizedBox(height: _n(page?['top'])), env])),
           Positioned(top: 0, left: 0, right: 0, child: MktHeader(widget.s, back: !widget.top)),
         ]),
+      ),
       ),
     );
   }
@@ -201,8 +313,7 @@ class MktHeader extends StatelessWidget {
           if (back) IconButton(onPressed: () => Navigator.maybePop(context), icon: const Icon(Icons.chevron_left, color: M.ink, size: 28)),
           GestureDetector(onTap: () => Navigator.of(context).popUntil((r) => r.isFirst), child: Image.asset('assets/site/logo.png', height: 38)),
           const Spacer(),
-          MktPill('GET STARTED', onTap: () => openSiteLink(context, s, 'signup.html'), dim: true),
-          const SizedBox(width: 8),
+          ListenableBuilder(listenable: s, builder: (_, _) => s.signedIn ? const SizedBox.shrink() : Padding(padding: const EdgeInsets.only(right: 8), child: MktPill('GET STARTED', onTap: () => openLogin(context, s, tab: 1), dim: true))),
           MktPill('MENU', onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => SiteDrawerPage(s)))),
         ]),
       );
@@ -353,12 +464,11 @@ class SiteFooter extends StatelessWidget {
     Widget link(String label, String page) => InkWell(onTap: () => openSiteLink(context, s, '$page.html'), child: Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: fw.Text(label, style: inter(13, color: M.onInk))));
     Widget col(String title, List<(String, String)> items) => Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [fw.Text(title.toUpperCase(), style: mono(10, color: M.onInkFaint, ls: 1)), const SizedBox(height: 8), for (final i in items) link(i.$1, i.$2)]));
     return Container(
-      margin: const EdgeInsets.only(top: 14),
       color: prev,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(24, 10, 24, 40),
-        decoration: const BoxDecoration(color: M.ink, borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+        padding: const EdgeInsets.fromLTRB(24, 36, 24, 40),
+        decoration: const BoxDecoration(color: M.ink),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           fw.Text('CONNECT', style: inter(58, w: 800, color: M.onInk, ls: -2.4, h: 1.0)),
           const SizedBox(height: 44),
@@ -457,7 +567,7 @@ class SiteDrawerPage extends StatelessWidget {
   const SiteDrawerPage(this.s, {super.key});
   final HubSession s;
   @override
-  Widget build(BuildContext context) => Scaffold(backgroundColor: M.ink, body: DefaultTextStyle(style: inter(14, color: M.onInk), child: SiteMenu(s, onClose: () => Navigator.pop(context))));
+  Widget build(BuildContext context) => Theme(data: marketingTheme(), child: Scaffold(backgroundColor: M.ink, body: DefaultTextStyle(style: inter(14, color: M.onInk), child: SiteMenu(s, onClose: () => Navigator.pop(context)))));
 }
 
 
