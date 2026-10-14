@@ -6,7 +6,11 @@ import 'package:auzshub/core/api.dart';
 import 'package:auzshub/core/launcher.dart';
 import 'package:auzshub/core/session.dart';
 import 'package:auzshub/core/util.dart';
+import 'package:auzshub/core/orderdata.dart';
+import 'package:auzshub/ui/account.dart';
+import 'package:auzshub/ui/cart.dart';
 import 'package:auzshub/ui/home.dart';
+import 'package:auzshub/ui/pay.dart';
 import 'package:auzshub/ui/requests.dart';
 import 'package:auzshub/ui/theme.dart';
 
@@ -16,10 +20,13 @@ class FakeApi extends ApiClient {
   final Map<String, dynamic> who;
   final List<Map<String, dynamic>> orders;
   final calls = <String>[];
+  final args = <String, Map<String, dynamic>>{};
+  Map<String, dynamic>? quote;
 
   @override
-  Future<dynamic> rpc(String fn, [Map<String, dynamic> args = const {}]) async {
+  Future<dynamic> rpc(String fn, [Map<String, dynamic> a = const {}]) async {
     calls.add(fn);
+    args[fn] = a;
     switch (fn) {
       case 'hub_me':
         return who['hub'];
@@ -27,6 +34,12 @@ class FakeApi extends ApiClient {
         return who['dash'];
       case 'my_client_orders':
         return orders;
+      case 'public_client_order':
+        return quote;
+      case 'my_profile':
+        return {'login_email': 'c@x.in', 'profile': {'name': 'Asha', 'phone': '9876543210', 'business_name': 'Asha Cafe', 'niche': 'cafe'}};
+      case 'submit_client_order':
+        return {'token': 'a' * 32};
     }
     return null;
   }
@@ -153,5 +166,69 @@ void main() {
     expect(find.text('Read quote and pay'), findsOneWidget);
     expect(find.text('View bill'), findsOneWidget);
     expect(find.text('Bill AUZ/2026-27/0001'), findsOneWidget);
+  });
+
+  testWidgets('the cart sends the same request the website sends', (t) async {
+    SharedPreferences.setMockInitialValues({});
+    final api = FakeApi(customer);
+    final s = HubSession(api: api);
+    api.token = 'tok';
+    s.user = {'id': 'u1', 'email': 'c@x.in'};
+    await s.load();
+    await t.binding.setSurfaceSize(const Size(420, 1800));
+    await t.pumpWidget(MaterialApp(theme: Tk.theme(), home: CartPage(s)));
+    await t.pump(const Duration(milliseconds: 100));
+    await t.tap(find.text('AUZsPOS'));
+    await t.pump();
+    await t.enterText(find.byType(TextField).at(2), 'Asha Cafe');
+    await t.tap(find.text('Send request'));
+    await t.pump();
+    expect(find.text('Please tell us what you need.'), findsOneWidget);
+    expect(api.calls.contains('submit_client_order'), false);
+    await t.enterText(find.byType(TextField).at(6), 'Billing for one cafe');
+    await t.tap(find.text('Send request'));
+    await t.pump(const Duration(milliseconds: 100));
+    final p = api.args['submit_client_order']!['p'] as Map;
+    expect(p['products'], ['pos']);
+    expect(p['contact_name'], 'Asha');
+    expect(p['business_name'], 'Asha Cafe');
+    expect(p['requirement'], 'Billing for one cafe');
+  });
+
+  testWidgets('the payment page shows the quote and wants the terms ticked before sending', (t) async {
+    SharedPreferences.setMockInitialValues({});
+    final api = FakeApi(customer);
+    api.quote = {
+      'status': 'link_sent', 'contact_name': 'Asha', 'phone': '9876543210', 'business_name': 'Asha Cafe',
+      'payment': {},
+      'totals': {'taxable': 1090, 'intra': true, 'cgst': 98.1, 'sgst': 98.1, 'total': 1286, 'lines': [{'type': 'product', 'label': 'AUZsPOS', 'rate': 1090, 'discount': 0, 'gst': 18, 'plan': 'month'}]},
+    };
+    final s = HubSession(api: api);
+    api.token = 'tok';
+    s.user = {'id': 'u1', 'email': 'c@x.in'};
+    await t.binding.setSurfaceSize(const Size(420, 2600));
+    await t.pumpWidget(MaterialApp(theme: Tk.theme(), home: PayPage(s, 'f' * 32)));
+    await t.pump(const Duration(milliseconds: 100));
+    expect(find.text('Total to pay'), findsOneWidget);
+    expect(find.text('₹1,286'), findsWidgets);
+    await t.tap(find.text('I have paid: send screenshot'));
+    await t.pump();
+    expect(find.text('Please tick the box to accept the terms, privacy policy and refund policy.'), findsOneWidget);
+    expect(api.calls.contains('public_order_submit_payment'), false);
+  });
+
+  testWidgets('the account page shows the profile and the products the business owns', (t) async {
+    final s = await session(cafe);
+    await t.binding.setSurfaceSize(const Size(420, 1800));
+    await t.pumpWidget(MaterialApp(theme: Tk.theme(), home: AccountPage(s)));
+    await t.pump(const Duration(milliseconds: 100));
+    expect(find.text('Acme Cafe'), findsWidgets);
+    expect(find.text('AUZsPOS'), findsOneWidget);
+    expect(find.text('Save details'), findsOneWidget);
+  });
+
+  test('every product the website cart offers has a label', () {
+    expect(productLabels.keys, containsAll(['pos', 'payroll', 'accounting', 'mobile', 'scan', 'salon']));
+    expect(stateNames['08'], 'Rajasthan');
   });
 }

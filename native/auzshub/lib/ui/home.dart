@@ -2,6 +2,8 @@ import 'package:flutter/material.dart' hide Text;
 import 'package:url_launcher/url_launcher.dart';
 import '../core/launcher.dart';
 import '../core/session.dart';
+import 'account.dart';
+import 'cart.dart';
 import 'ds.dart';
 import 'i18n.dart';
 import 'mk.dart';
@@ -48,8 +50,8 @@ class _HubHomeState extends State<HubHome> {
           await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => RequestsPage(s)));
           _count();
         }),
-        _site('My account and purchases', 'Profile, orders, bills and add-ons', 'account.html', Icons.person_outline, Tk.purple),
-        _site('My cart', 'Products you asked for', 'cart.html', Icons.shopping_bag_outlined, Tk.teal),
+        Li('My account and purchases', sub: 'Profile, orders, bills and add-ons', icon: Icons.person_outline, tone: Tk.purple, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => AccountPage(s)))),
+        Li('My cart', sub: 'Products you asked for', icon: Icons.shopping_bag_outlined, tone: Tk.teal, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => CartPage(s)))),
       ];
 
   List<Widget> _explore() => [

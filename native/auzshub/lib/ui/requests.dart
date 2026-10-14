@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart' hide Text;
-import 'package:url_launcher/url_launcher.dart';
 import '../core/api.dart';
-import '../core/launcher.dart';
 import '../core/session.dart';
 import 'i18n.dart';
+import 'cart.dart';
 import 'mk.dart';
+import 'pay.dart';
 import 'theme.dart';
 
 /// label, line under it, how many of the five steps are done
@@ -82,8 +82,7 @@ class _RequestsPageState extends State<RequestsPage> {
   Widget _card(Map<String, dynamic> o) {
     final st = statusOf('${o['status']}');
     final prods = (o['products'] is List ? (o['products'] as List).join(', ') : '');
-    final token = Uri.encodeComponent('${o['token']}');
-    Future<void> site(String path) => launchUrl(Uri.parse('$siteBase$path'), mode: LaunchMode.externalApplication);
+    Future<void> site(String _) => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => PayPage(widget.s, '${o['token']}')));
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       padding: const EdgeInsets.all(16),
@@ -97,12 +96,12 @@ class _RequestsPageState extends State<RequestsPage> {
         _steps(st.$3),
         Padding(padding: const EdgeInsets.only(top: 8), child: Text(st.$1, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
         Text(st.$2, style: TextStyle(fontSize: 14, color: Tk.label2)),
-        if (o['status'] == 'link_sent') ...[const SizedBox(height: 10), FilledButton(onPressed: () => site('pay.html?t=$token'), child: const Text('Read quote and pay'))],
-        if (o['status'] == 'payment_submitted') ...[const SizedBox(height: 10), OutlinedButton(onPressed: () => site('pay.html?t=$token'), child: const Text('View payment details'))],
+        if (o['status'] == 'link_sent') ...[const SizedBox(height: 10), FilledButton(onPressed: () => site(''), child: const Text('Read quote and pay'))],
+        if (o['status'] == 'payment_submitted') ...[const SizedBox(height: 10), OutlinedButton(onPressed: () => site(''), child: const Text('View payment details'))],
         if (o['status'] == 'paid') ...[
           if ('${o['invoice_no'] ?? ''}'.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: Text('Bill ${o['invoice_no']}', style: const TextStyle(fontSize: 13))),
           const SizedBox(height: 10),
-          OutlinedButton(onPressed: () => site('inv.html?t=$token'), child: const Text('View bill')),
+          OutlinedButton(onPressed: () => site(''), child: const Text('View bill')),
           const SizedBox(height: 8),
           FilledButton(onPressed: () {
             widget.s.load();
@@ -123,7 +122,7 @@ class _RequestsPageState extends State<RequestsPage> {
       if (r != null && r.isEmpty) emptyBox(Icons.assignment_outlined, 'You have not asked for anything yet.'),
       if (r != null) ...r.map(_card),
       const SizedBox(height: 12),
-      Pad(OutlinedButton(onPressed: () => openSite(widget.s, 'cart.html'), child: const Text('Ask for more products'))),
+      Pad(OutlinedButton(onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => CartPage(widget.s))), child: const Text('Ask for more products'))),
       Pad(OutlinedButton(onPressed: load, child: const Text('Refresh'))),
     ]);
   }

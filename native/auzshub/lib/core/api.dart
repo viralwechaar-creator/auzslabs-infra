@@ -104,6 +104,23 @@ class ApiClient {
     return '$path';
   }
 
+  /// Send the payment screenshot for a quote (public, the unguessable quote token is the permission).
+  Future<void> uploadProof(String token, List<int> bytes) async {
+    http.Response res;
+    try {
+      res = await _http.post(Uri.parse('$base/storage/order-proof/${Uri.encodeComponent(token)}'), headers: {'Content-Type': 'application/octet-stream'}, body: bytes).timeout(const Duration(seconds: 60));
+    } catch (_) {
+      throw ApiError('Could not reach the server.', networkError: true);
+    }
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      dynamic json;
+      try {
+        json = jsonDecode(utf8.decode(res.bodyBytes));
+      } catch (_) {}
+      throw ApiError(json is Map && json['error'] != null ? '${json['error']}' : 'The screenshot could not be sent.', status: res.statusCode);
+    }
+  }
+
   /// Fetch a stored employee document (GET /storage/doc/<path>) as bytes.
   Future<List<int>> downloadDoc(String path) async {
     http.Response res;
