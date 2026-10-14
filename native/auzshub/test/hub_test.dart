@@ -206,7 +206,7 @@ void main() {
     final s = HubSession(api: api);
     api.token = 'tok';
     s.user = {'id': 'u1', 'email': 'c@x.in'};
-    await t.binding.setSurfaceSize(const Size(420, 2600));
+    await t.binding.setSurfaceSize(const Size(420, 4200));
     await t.pumpWidget(MaterialApp(theme: Tk.theme(), home: PayPage(s, 'f' * 32)));
     await t.pump(const Duration(milliseconds: 100));
     expect(find.text('Total to pay'), findsOneWidget);

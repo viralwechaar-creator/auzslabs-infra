@@ -86,11 +86,13 @@ class _PayPageState extends State<PayPage> {
       ? const SizedBox.shrink()
       : Padding(padding: const EdgeInsets.symmetric(vertical: 3), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [SizedBox(width: 110, child: Text(k, style: TextStyle(color: Tk.label2))), Expanded(child: Text(v, style: const TextStyle(fontWeight: FontWeight.w600)))]));
 
-  Widget _card(List<Widget> kids) => Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: Tk.card, borderRadius: BorderRadius.circular(18), border: Border.all(color: Tk.line, width: .5)),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: kids),
+  Widget _card(List<Widget> kids) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        child: Material(
+          color: Tk.card,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: BorderSide(color: Tk.line, width: .5)),
+          child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: kids)),
+        ),
       );
 
   Widget _row(String k, String v, {bool big = false}) => Padding(
