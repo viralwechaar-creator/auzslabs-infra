@@ -1,4 +1,6 @@
 import 'package:flutter/gestures.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:flutter/material.dart' as fw show Text;
 import 'package:url_launcher/url_launcher.dart';
@@ -7,10 +9,11 @@ import '../core/session.dart';
 import '../core/site.dart';
 import 'account.dart';
 import 'cart.dart';
-import 'i18n.dart';
 import 'mk.dart' show toast, Sel;
 import 'mkt.dart';
 import 'site_forms.dart';
+
+part 'nodes.dart';
 
 const supportPhone = '+919251250829';
 const supportMail = 'helloauzslab@gmail.com';
@@ -33,8 +36,6 @@ class _Env extends InheritedWidget {
   bool updateShouldNotify(_Env o) => o.pricing != pricing || o.dark != dark || o.card != card;
 }
 
-Color _fg(bool dark) => dark ? M.onInk : M.ink;
-Color _dim(bool dark) => dark ? M.onInkDim : M.dim;
 
 /// Opens a website link inside the app (a page, the cart, the account) or outside it (phone, mail, other sites).
 Future<void> openSiteLink(BuildContext c, HubSession s, String href, {void Function(String)? onAnchor, bool replace = false}) async {
@@ -106,7 +107,7 @@ class _SitePageState extends State<SitePage> {
     var yes = false;
     void walk(dynamic x) {
       if (x is Map) {
-        if (x['t'] == 'plan' || x['t'] == 'live') yes = true;
+        if (x['pc'] != null || x['k'] == 'x') yes = true;
         x.values.forEach(walk);
       } else if (x is List) {
         x.forEach(walk);
@@ -152,37 +153,34 @@ class _SitePageState extends State<SitePage> {
       body = const Padding(padding: EdgeInsets.all(48), child: Center(child: CircularProgressIndicator(color: M.wine)));
     } else {
       final children = <Widget>[];
-      Color prev = Colors.transparent;
       for (var i = 0; i < secs.length; i++) {
         final sec = secs[i];
-        final dark = sec['c'] == 'dark';
-        final tone = dark ? M.ink : (i.isOdd && stack || (sec['c'] == 'alt') ? M.raised : M.bg);
-        if (stack) {
-          children.add(_Sheet(sec, first: i == 0, prev: prev, tone: tone, dark: dark, home: widget.name == 'index'));
+        final id = sec['id'] as String?;
+        Widget w;
+        if (sec['hr'] == 1) {
+          w = const Padding(padding: EdgeInsets.symmetric(horizontal: 22, vertical: 4), child: _Dashed());
         } else {
-          children.add(_FlatSec(sec, first: i == 0, dark: dark));
+          final root = (sec['n'] as Map).cast<String, dynamic>();
+          w = SectionView(root);
+          final top = _top(root);
+          if (top < 0) w = NegTop(-top, child: w);
         }
-        prev = tone;
+        children.add(id == null ? w : KeyedSubtree(key: keyFor(id), child: w));
       }
       if (widget.name == 'contact') children.add(ContactForm(widget.s));
       if (widget.name == 'join-team') children.add(JoinForm(widget.s));
-      children.add(SiteFooter(widget.s, prev: stack ? prev : Colors.transparent));
+      children.add(SiteFooter(widget.s, prev: stack ? M.bg : Colors.transparent));
       body = Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children);
     }
     final env = _Env(s: widget.s, pricing: pricing, open: _open, keyFor: keyFor, dark: false, flat: !stack, child: body);
     return Scaffold(
-      backgroundColor: M.bg,
+      backgroundColor: M.page,
       body: DefaultTextStyle(
         style: inter(13.5, color: M.dim),
         child: Stack(children: [
           const Positioned.fill(child: CustomPaint(painter: PaperGrid())),
-          SafeArea(
-            bottom: false,
-            child: Column(children: [
-              MktHeader(widget.s, back: !widget.top),
-              Expanded(child: ListView(controller: scroll, padding: EdgeInsets.zero, children: [env])),
-            ]),
-          ),
+          Positioned.fill(child: ListView(controller: scroll, padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top), children: [env])),
+          Positioned(top: 0, left: 0, right: 0, child: MktHeader(widget.s, back: !widget.top)),
         ]),
       ),
     );
@@ -196,12 +194,12 @@ class MktHeader extends StatelessWidget {
   final bool back;
   @override
   Widget build(BuildContext context) => Container(
-        height: 60,
-        padding: EdgeInsets.fromLTRB(back ? 4 : 18, 0, 16, 0),
-        decoration: const BoxDecoration(color: Color(0xF2FAF9F7), border: Border(bottom: BorderSide(color: M.lineSoft))),
+        height: 74 + MediaQuery.paddingOf(context).top,
+        padding: EdgeInsets.fromLTRB(back ? 4 : 18, MediaQuery.paddingOf(context).top, 16, 0),
+        decoration: const BoxDecoration(color: Color(0xF2F6F4F1), border: Border(bottom: BorderSide(color: M.lineSoft))),
         child: Row(children: [
           if (back) IconButton(onPressed: () => Navigator.maybePop(context), icon: const Icon(Icons.chevron_left, color: M.ink, size: 28)),
-          GestureDetector(onTap: () => Navigator.of(context).popUntil((r) => r.isFirst), child: Image.asset('assets/site/logo.png', height: 30)),
+          GestureDetector(onTap: () => Navigator.of(context).popUntil((r) => r.isFirst), child: Image.asset('assets/site/logo.png', height: 38)),
           const Spacer(),
           MktPill('GET STARTED', onTap: () => openSiteLink(context, s, 'signup.html'), dim: true),
           const SizedBox(width: 8),
@@ -234,72 +232,7 @@ class MktPill extends StatelessWidget {
   }
 }
 
-/// A stacked sheet: rounded top with a thin ink edge, the big tab word, alternating paper and warm grey.
-class _Sheet extends StatelessWidget {
-  const _Sheet(this.sec, {required this.first, required this.prev, required this.tone, required this.dark, required this.home});
-  final Map<String, dynamic> sec;
-  final bool first, dark, home;
-  final Color prev, tone;
-  @override
-  Widget build(BuildContext context) {
-    final env = _Env.of(context);
-    final id = sec['id'] as String?;
-    final tab = sec['tab'] as String?;
-    final bl = [for (final b in (sec['b'] as List)) b as Map<String, dynamic>];
-    final inner = _Env(
-      s: env.s, pricing: env.pricing, open: env.open, keyFor: env.keyFor, dark: dark, flat: false,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        if (tab != null) Padding(padding: const EdgeInsets.only(bottom: 22), child: fw.Text(tab, style: inter(58, w: 800, color: dark ? M.onInk : M.ink, ls: -2.4, h: 1.0))),
-        for (var i = 0; i < bl.length; i++) _gap(bl, i, Block(bl[i], hero: first)),
-        if (home && first) ...[
-          const SizedBox(height: 26),
-          Stack(clipBehavior: Clip.none, children: [Image.asset('assets/site/logo.png', width: 300), Positioned(right: -4, top: -6, child: fw.Text('TM', style: inter(12, color: M.ink)))]),
-        ],
-      ]),
-    );
-    return Container(
-      key: id == null ? null : env.keyFor(id),
-      color: prev,
-      child: Container(
-        margin: EdgeInsets.only(top: first ? 12 : 0),
-        decoration: BoxDecoration(color: M.ink, borderRadius: const BorderRadius.vertical(top: Radius.circular(28))),
-        padding: const EdgeInsets.fromLTRB(1, 1, 1, 0),
-        child: Container(
-          width: double.infinity,
-          padding: EdgeInsets.fromLTRB(24, tab != null ? 12 : (first ? 44 : 34), 24, 38),
-          decoration: BoxDecoration(color: tone, borderRadius: const BorderRadius.vertical(top: Radius.circular(27))),
-          child: inner,
-        ),
-      ),
-    );
-  }
-}
-
 /// A flat-page section: plain paper with a dashed rule between sections.
-class _FlatSec extends StatelessWidget {
-  const _FlatSec(this.sec, {required this.first, required this.dark});
-  final Map<String, dynamic> sec;
-  final bool first, dark;
-  @override
-  Widget build(BuildContext context) {
-    final env = _Env.of(context);
-    final id = sec['id'] as String?;
-    final bl = [for (final b in (sec['b'] as List)) b as Map<String, dynamic>];
-    final col = Column(crossAxisAlignment: CrossAxisAlignment.start, children: [for (var i = 0; i < bl.length; i++) _gap(bl, i, Block(bl[i], hero: first))]);
-    return Container(
-      key: id == null ? null : env.keyFor(id),
-      width: double.infinity,
-      color: dark ? M.ink : Colors.transparent,
-      padding: EdgeInsets.fromLTRB(24, first ? 40 : 0, 24, 0),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        if (!first) const Padding(padding: EdgeInsets.symmetric(vertical: 26), child: _Dashed()),
-        _Env(s: env.s, pricing: env.pricing, open: env.open, keyFor: env.keyFor, dark: dark, flat: true, child: col),
-        const SizedBox(height: 4),
-      ]),
-    );
-  }
-}
-
 class _Dashed extends StatelessWidget {
   const _Dashed();
   @override
@@ -321,360 +254,7 @@ class _DashPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter o) => false;
 }
 
-Widget _gap(List<Map<String, dynamic>> bl, int i, Widget w) {
-  final t = bl[i]['t'];
-  final prev = i == 0 ? '' : bl[i - 1]['t'];
-  double top = 0;
-  if (i > 0) {
-    top = switch (t) {
-      'h' => prev == 'eye' ? 0 : 18,
-      'eye' => 18,
-      'btn' => prev == 'btn' ? 10 : 22,
-      'cards' || 'links' || 'plan' || 'live' || 'faq' || 'table' || 'ul' => 18,
-      'chip' => 4,
-      _ => prev == 'h' ? 12 : 12,
-    };
-  }
-  return Padding(padding: EdgeInsets.only(top: top), child: w);
-}
-
-/// Draws one block (heading, text, list, cards, button, ...). Used inside sections, cards and FAQs.
-class Block extends StatelessWidget {
-  const Block(this.b, {this.hero = false, super.key});
-  final Map<String, dynamic> b;
-  final bool hero;
-  @override
-  Widget build(BuildContext context) {
-    final env = _Env.of(context);
-    final dark = env.dark && !env.card;
-    final id = b['id'] as String?;
-    final width = MediaQuery.sizeOf(context).width;
-    Widget w;
-    switch (b['t']) {
-      case 'eye':
-        w = Padding(
-          padding: const EdgeInsets.only(bottom: 14),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Container(width: 16, height: 2, color: dark ? M.wineOnInk : M.wine),
-            const SizedBox(width: 9),
-            Flexible(child: fw.Text((b['x'] as String).toUpperCase(), style: mono(10, color: _dim(dark), ls: 1))),
-          ]),
-        );
-      case 'chip':
-        w = Container(padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4), decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), border: Border.all(color: dark ? M.onInkFaint : M.ink.withValues(alpha: .55))), child: fw.Text(b['x'] as String, style: mono(10, color: _fg(dark), ls: .2)));
-      case 'h':
-        final l = (b['l'] as num).toInt();
-        final fs = (b['fs'] as num?)?.toDouble();
-        final big = fs != null ? (fs > width * .125 ? width * .125 : fs) : (env.flat ? (width * .118).clamp(34.0, 50.0) : 32.0);
-        final st = switch (l) {
-          1 => inter(hero || env.flat ? big : 30, w: 700, color: _fg(dark), ls: -.9, h: 1.12),
-          2 => inter(26, w: 700, color: _fg(dark), ls: -.4, h: 1.14),
-          3 => inter(17, w: 600, color: _fg(dark), ls: -.1, h: 1.3),
-          _ => inter(15, w: 600, color: _fg(dark), h: 1.3),
-        };
-        w = fw.Text(b['x'] as String, style: st);
-      case 'p':
-        w = RichSpans(b['s'] as List, dark: dark, size: env.card ? 12.5 : 13.5);
-      case 'btn':
-        w = BtnBlock(b);
-      case 'ul':
-        w = _Ul(b);
-      case 'cards':
-        w = _Cards(b);
-      case 'links':
-        w = Wrap(spacing: 8, runSpacing: 8, children: [for (final x in (b['i'] as List)) _LinkPill((x as Map<String, dynamic>))]);
-      case 'faq':
-        w = _Faq(b);
-      case 'table':
-        w = _TableBlock(b);
-      case 'plan':
-        w = PlanCard(b);
-      case 'live':
-        w = b['k'] == 'bundles' ? const BundleCards() : const FirstBill();
-      case 'img':
-        final u = '${b['u']}';
-        w = u.endsWith('.svg') ? const SizedBox.shrink() : ClipRRect(borderRadius: BorderRadius.circular(16), child: Image.network(u.startsWith('http') ? u : 'https://auzslab.in/$u', errorBuilder: (_, _, _) => const SizedBox.shrink()));
-      case 'quote':
-        w = Container(padding: const EdgeInsets.only(left: 14), decoration: const BoxDecoration(border: Border(left: BorderSide(color: M.wine, width: 3))), child: RichSpans(b['s'] as List, dark: dark));
-      case 'code':
-        w = Container(width: double.infinity, padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: M.ink, borderRadius: BorderRadius.circular(16)), child: fw.Text(b['x'] as String, style: mono(12, color: M.onInk)));
-      default:
-        w = const SizedBox.shrink();
-    }
-    return id == null ? w : KeyedSubtree(key: env.keyFor(id), child: w);
-  }
-}
-
-/// A paragraph made of runs: normal, bold and tappable links.
-class RichSpans extends StatefulWidget {
-  const RichSpans(this.spans, {this.dark = false, this.size = 13.5, super.key});
-  final List spans;
-  final bool dark;
-  final double size;
-  @override
-  State<RichSpans> createState() => _RichSpansState();
-}
-
-class _RichSpansState extends State<RichSpans> {
-  final _rec = <TapGestureRecognizer>[];
-  @override
-  void dispose() {
-    for (final r in _rec) {
-      r.dispose();
-    }
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    for (final r in _rec) {
-      r.dispose();
-    }
-    _rec.clear();
-    final env = _Env.of(context);
-    final spans = <InlineSpan>[];
-    for (final x in widget.spans) {
-      final m = x as Map;
-      final href = m['h'] as String?;
-      TapGestureRecognizer? rec;
-      if (href != null && href.isNotEmpty) {
-        rec = TapGestureRecognizer()..onTap = () => env.open(context, href);
-        _rec.add(rec);
-      }
-      final bold = m['b'] == 1;
-      spans.add(TextSpan(
-        text: m['x'] as String,
-        recognizer: rec,
-        style: inter(widget.size, w: bold ? 700 : 400, color: rec != null ? (widget.dark ? M.wineOnInk : M.wine) : (bold ? _fg(widget.dark) : _dim(widget.dark)), h: widget.size > 13 ? 1.65 : 1.7).copyWith(decoration: rec != null ? TextDecoration.underline : TextDecoration.none),
-      ));
-    }
-    return fw.Text.rich(TextSpan(children: spans));
-  }
-}
-
-/// A button on the page: add to cart, ask us, or go to another page.
-class BtnBlock extends StatefulWidget {
-  const BtnBlock(this.b, {super.key});
-  final Map<String, dynamic> b;
-  @override
-  State<BtnBlock> createState() => _BtnBlockState();
-}
-
-class _BtnBlockState extends State<BtnBlock> {
-  bool added = false;
-  Future<void> _tap() async {
-    final env = _Env.of(context);
-    final b = widget.b;
-    if (b['a'] == 'add') {
-      final keys = '${b['p'] ?? ''}'.split(',').where((e) => e.isNotEmpty).toList();
-      if (keys.isEmpty) {
-        env.open(context, 'cart.html');
-        return;
-      }
-      await Cart.add(keys);
-      if (!mounted) return;
-      setState(() => added = true);
-      toast(context, 'Added to your cart.');
-      return;
-    }
-    if (b['a'] == 'contact') {
-      env.open(context, 'contact.html');
-      return;
-    }
-    env.open(context, '${b['h'] ?? ''}');
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final env = _Env.of(context);
-    final b = widget.b;
-    final primary = b['k'] == 'primary' || b['a'] == 'add';
-    final label = added ? 'Added. View cart' : (b['x'] as String);
-    final dark = env.dark && !env.card;
-    final tap = added ? () => env.open(context, 'cart.html') : _tap;
-    final fg = primary ? M.onInk : _fg(dark);
-    return Row(mainAxisSize: MainAxisSize.min, children: [
-      Flexible(
-        child: InkWell(
-          onTap: tap,
-          borderRadius: BorderRadius.circular(30),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 15),
-            decoration: BoxDecoration(color: primary ? M.wine : Colors.transparent, borderRadius: BorderRadius.circular(30), border: Border.all(color: primary ? M.wine : (dark ? const Color(0x66FFFFFF) : const Color(0x4D2E2C2A)))),
-            child: fw.Text(tr(label).toUpperCase(), style: mono(11, color: fg, ls: .55), textAlign: TextAlign.center),
-          ),
-        ),
-      ),
-    ]);
-  }
-}
-
-class _LinkPill extends StatelessWidget {
-  const _LinkPill(this.b);
-  final Map<String, dynamic> b;
-  @override
-  Widget build(BuildContext context) {
-    final env = _Env.of(context);
-    final dark = env.dark && !env.card;
-    return Row(mainAxisSize: MainAxisSize.min, children: [
-      InkWell(
-        borderRadius: BorderRadius.circular(22),
-        onTap: () => env.open(context, '${b['h'] ?? ''}'),
-        child: Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13), decoration: BoxDecoration(border: Border.all(color: dark ? const Color(0x66FFFFFF) : const Color(0x4D2E2C2A)), borderRadius: BorderRadius.circular(22)), child: fw.Text((b['x'] as String).replaceAll(RegExp(r'\s*[→>]+\s*$'), ''), style: mono(10.5, color: _fg(dark), ls: .3))),
-      ),
-    ]);
-  }
-}
-
-class _Ul extends StatelessWidget {
-  const _Ul(this.b);
-  final Map<String, dynamic> b;
-  @override
-  Widget build(BuildContext context) {
-    final env = _Env.of(context);
-    final dark = env.dark && !env.card;
-    final items = b['i'] as List;
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      for (var i = 0; i < items.length; i++)
-        Padding(
-          padding: const EdgeInsets.only(top: 6),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            SizedBox(width: 22, child: b['o'] == 1 ? fw.Text('${i + 1}.', style: inter(13, w: 600, color: _fg(dark), h: 1.7)) : Padding(padding: const EdgeInsets.only(top: 9, left: 2), child: Container(width: 5, height: 5, decoration: BoxDecoration(color: dark ? M.wineOnInk : M.wine, shape: BoxShape.circle)))),
-            Expanded(child: (items[i] as Map).containsKey('s') ? RichSpans((items[i] as Map)['s'] as List, dark: dark, size: env.card ? 12.5 : 13.5) : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [for (final x in ((items[i] as Map)['b'] as List)) Block(x as Map<String, dynamic>)])),
-          ]),
-        ),
-    ]);
-  }
-}
-
 BoxDecoration _cardDeco() => BoxDecoration(color: Colors.white, border: Border.all(color: M.line), borderRadius: BorderRadius.circular(22), boxShadow: const [M.shadow]);
-
-class _Cards extends StatelessWidget {
-  const _Cards(this.b);
-  final Map<String, dynamic> b;
-  @override
-  Widget build(BuildContext context) {
-    final env = _Env.of(context);
-    final items = [for (final c in (b['i'] as List)) [for (final x in ((c as Map)['b'] as List)) x as Map<String, dynamic>]];
-    return LayoutBuilder(builder: (_, cs) {
-      final cols = cs.maxWidth >= 900 ? 3 : (cs.maxWidth >= 600 ? 2 : 1);
-      const gapW = 12.0;
-      final w = cols == 1 ? cs.maxWidth : (cs.maxWidth - gapW * (cols - 1)) / cols;
-      return Wrap(spacing: gapW, runSpacing: 12, children: [
-        for (final c in items)
-          Container(
-            width: w,
-            padding: const EdgeInsets.all(20),
-            decoration: _cardDeco(),
-            child: _Env(
-              s: env.s, pricing: env.pricing, open: env.open, keyFor: env.keyFor, dark: false, card: true, flat: env.flat,
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [for (var i = 0; i < c.length; i++) _gap(c, i, Block(c[i]))]),
-            ),
-          ),
-      ]);
-    });
-  }
-}
-
-class _Faq extends StatelessWidget {
-  const _Faq(this.b);
-  final Map<String, dynamic> b;
-  @override
-  Widget build(BuildContext context) {
-    final env = _Env.of(context);
-    final dark = env.dark && !env.card;
-    final body = [for (final x in (b['b'] as List)) x as Map<String, dynamic>];
-    return Container(
-      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: dark ? M.onInkFaint : M.line))),
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          initiallyExpanded: b['o'] == 1,
-          tilePadding: EdgeInsets.zero,
-          childrenPadding: const EdgeInsets.only(bottom: 14),
-          expandedCrossAxisAlignment: CrossAxisAlignment.start,
-          iconColor: dark ? M.wineOnInk : M.wine,
-          collapsedIconColor: _dim(dark),
-          title: fw.Text(b['q'] as String, style: inter(14, w: 600, color: _fg(dark), h: 1.35)),
-          children: [for (var i = 0; i < body.length; i++) _gap(body, i, Block(body[i]))],
-        ),
-      ),
-    );
-  }
-}
-
-class _TableBlock extends StatelessWidget {
-  const _TableBlock(this.b);
-  final Map<String, dynamic> b;
-  @override
-  Widget build(BuildContext context) {
-    final env = _Env.of(context);
-    final dark = env.dark && !env.card;
-    final rows = [for (final r in (b['r'] as List)) [for (final c in (r as List)) '$c']];
-    final cols = rows.fold<int>(0, (m, r) => r.length > m ? r.length : m);
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Table(
-        defaultColumnWidth: const IntrinsicColumnWidth(),
-        border: TableBorder(horizontalInside: BorderSide(color: dark ? M.onInkFaint : M.line)),
-        children: [
-          for (var i = 0; i < rows.length; i++)
-            TableRow(children: [
-              for (var j = 0; j < cols; j++)
-                Padding(padding: const EdgeInsets.fromLTRB(0, 10, 18, 10), child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 240), child: fw.Text(j < rows[i].length ? rows[i][j] : '', style: i == 0 ? mono(10.5, color: _fg(dark), ls: .6) : inter(13, color: _dim(dark))))),
-            ]),
-        ],
-      ),
-    );
-  }
-}
-
-/// A product price card (live price when the database has one, the website's static price otherwise).
-class PlanCard extends StatelessWidget {
-  const PlanCard(this.b, {super.key});
-  final Map<String, dynamic> b;
-  @override
-  Widget build(BuildContext context) {
-    final env = _Env.of(context);
-    final keys = [for (final k in (b['keys'] as List? ?? const [])) '$k'];
-    final pr = env.pricing;
-    final live = pr?.monthly(keys);
-    final single = keys.length == 1 ? keys.first : '';
-    final mob = single == 'mobile';
-    final price = live != null && live > 0 ? inr(live) : '${b['price']}';
-    final subs = [for (final s in (b['sub'] as List? ?? const [])) '$s'];
-    final icon = keys.isEmpty ? null : (keys.length > 1 ? planIcons[keys.last] : planIcons[keys.first]);
-    String? sub;
-    if (mob && pr != null && pr.yearlyOf('mobile') > 0) {
-      final save = pr.monthlyOf('mobile') * 12 - pr.yearlyOf('mobile');
-      sub = 'Or ${inr(pr.yearlyOf('mobile'))} for the first year${save > 0 ? ' (save ${inr(save)})' : ''}${pr.renewalYearlyOf('mobile') > 0 ? ', then ${inr(pr.renewalYearlyOf('mobile'))} a year from year two' : ''}. No GST, no setup fee.';
-    }
-    final gst = mob || (single.isNotEmpty && pr != null && pr.gstExempt(single)) ? '' : ' + GST';
-    final badge = '${b['badge'] ?? ''}';
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, border: Border.all(color: badge.isEmpty ? M.line : M.wine, width: badge.isEmpty ? 1 : 2), borderRadius: BorderRadius.circular(22), boxShadow: badge.isEmpty ? const [M.shadow] : const [BoxShadow(color: M.wine, offset: Offset(5, 5))]),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        if (badge.isNotEmpty) Padding(padding: const EdgeInsets.only(bottom: 10), child: Container(padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4), decoration: BoxDecoration(color: M.wine.withValues(alpha: .1), borderRadius: BorderRadius.circular(20)), child: fw.Text(badge, style: mono(10, color: M.wine, ls: .2)))),
-        if (icon != null) Padding(padding: const EdgeInsets.only(bottom: 10), child: ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.asset(icon, width: 44, height: 44))),
-        fw.Text(b['x'] as String, style: inter(17, w: 600, color: M.ink)),
-        const SizedBox(height: 6),
-        fw.Text.rich(TextSpan(children: [
-          TextSpan(text: price, style: inter(30, w: 700, color: M.ink, ls: -.8, h: 1.1)),
-          TextSpan(text: '/month$gst', style: mono(11, color: M.dim, ls: .2)),
-        ])),
-        for (final t in (sub != null ? [sub] : subs)) Padding(padding: const EdgeInsets.only(top: 8), child: fw.Text(t, style: inter(12.5, color: M.dim, h: 1.6))),
-        const SizedBox(height: 16),
-        Wrap(spacing: 10, runSpacing: 8, children: [
-          if ((b['h'] as String? ?? '').isNotEmpty) BtnBlock({'t': 'btn', 'x': 'Details', 'h': b['h']}),
-          if (keys.isNotEmpty) BtnBlock({'t': 'btn', 'x': 'Get it', 'a': 'add', 'p': keys.join(','), 'k': 'primary'}),
-        ]),
-      ]),
-    );
-  }
-}
-
 /// The bundle cards, from the database (the website builds the same cards from the same functions).
 class BundleCards extends StatelessWidget {
   const BundleCards({super.key});
@@ -712,7 +292,7 @@ class BundleCards extends StatelessWidget {
                 if (list > m) Padding(padding: const EdgeInsets.only(top: 4), child: fw.Text('Save ${inr(list - m)}/month vs. buying separately.', style: inter(12.5, color: M.dim, h: 1.6))),
                 if (y > 0) Padding(padding: const EdgeInsets.only(top: 4), child: fw.Text('Or pay ${inr(y)} for the whole year${y < m * 12 ? ' (save ${inr(m * 12 - y)})' : ''}.', style: inter(12.5, color: M.dim, h: 1.6))),
                 const SizedBox(height: 16),
-                BtnBlock({'t': 'btn', 'x': 'Get ${badge.isEmpty ? bd['label'] : badge}', 'a': 'add', 'p': keys.join(','), 'k': 'primary'}),
+                _CartBtn('Get ${badge.isEmpty ? bd['label'] : badge}', keys),
               ]),
             );
           }),
@@ -878,4 +458,38 @@ class SiteDrawerPage extends StatelessWidget {
   final HubSession s;
   @override
   Widget build(BuildContext context) => Scaffold(backgroundColor: M.ink, body: DefaultTextStyle(style: inter(14, color: M.onInk), child: SiteMenu(s, onClose: () => Navigator.pop(context))));
+}
+
+
+/// "Add to cart" pill used by the live bundle cards.
+class _CartBtn extends StatefulWidget {
+  const _CartBtn(this.label, this.keys);
+  final String label;
+  final List<String> keys;
+  @override
+  State<_CartBtn> createState() => _CartBtnState();
+}
+
+class _CartBtnState extends State<_CartBtn> {
+  bool added = false;
+  @override
+  Widget build(BuildContext context) {
+    final env = _Env.of(context);
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      GestureDetector(
+        onTap: () async {
+          if (added) return env.open(context, 'cart.html');
+          await Cart.add(widget.keys);
+          if (!mounted) return;
+          setState(() => added = true);
+          toast(context, 'Added to your cart.');
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+          decoration: BoxDecoration(color: M.wine, borderRadius: BorderRadius.circular(999), border: Border.all(color: M.wine)),
+          child: fw.Text((added ? 'Added. View cart' : widget.label).toUpperCase(), style: mono(11, color: M.onInk, ls: .44)),
+        ),
+      ),
+    ]);
+  }
 }

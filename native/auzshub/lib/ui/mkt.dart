@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 /// These do not follow the business colour or dark mode on purpose: the website itself does not.
 class M {
   static const bg = Color(0xFFFAF9F7);
+  /// The page itself behind the sheets (the website's grey paper with a faint grid).
+  static const page = Color(0xFFF6F4F1);
   static const raised = Color(0xFFEFECE8);
   static const ink = Color(0xFF2E2C2A);
   static const dim = Color(0xFF625D58);
@@ -34,7 +36,7 @@ class PaperGrid extends CustomPainter {
   @override
   void paint(Canvas c, Size s) {
     final p = Paint()
-      ..color = const Color(0x0C2E2C2A)
+      ..color = const Color(0x0E2E2C2A)
       ..strokeWidth = 1;
     for (double x = 0; x < s.width; x += 24) {
       c.drawLine(Offset(x, 0), Offset(x, s.height), p);
