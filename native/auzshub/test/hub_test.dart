@@ -10,6 +10,14 @@ import 'package:auzshub/core/orderdata.dart';
 import 'package:auzshub/ui/account.dart';
 import 'package:auzshub/ui/cart.dart';
 import 'package:auzshub/ui/explore.dart';
+import 'package:auzshub/ui/explore/product_accounting.dart';
+import 'package:auzshub/ui/explore/product_billing.dart';
+import 'package:auzshub/ui/explore/product_crm.dart';
+import 'package:auzshub/ui/explore/product_inventory.dart';
+import 'package:auzshub/ui/explore/product_payroll.dart';
+import 'package:auzshub/ui/explore/product_pos.dart';
+import 'package:auzshub/ui/explore/product_qr_ordering.dart';
+import 'package:auzshub/ui/explore/product_scan.dart';
 import 'package:auzshub/ui/home.dart';
 import 'package:auzshub/ui/pay.dart';
 import 'package:auzshub/ui/pricing.dart';
@@ -333,14 +341,43 @@ void main() {
     expect(find.text('Call'), findsOneWidget);
   });
 
-  testWidgets('a not-yet-native Explore section falls through to the "coming soon" website hand-off', (t) async {
+  testWidgets('the Explore table of contents pushes the native "Built for your business" hub, not the browser', (t) async {
+    await show(t, await session(customer));
+    await t.tap(find.text('Explore AUZslab'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Built for your business'));
+    await t.pumpAndSettle();
+    // The hub lists all five business types.
+    for (final x in ['Cafés, restaurants, bars & bakeries', 'Salons & spas', 'Retail & bookstores', 'Clothing & apparel', 'Mobile retail & repair']) {
+      expect(find.text(x), findsOneWidget, reason: x);
+    }
+    await t.tap(find.text('Cafés, restaurants, bars & bakeries'));
+    await t.pumpAndSettle();
+    expect(find.text('Built for how a hospitality business actually runs.'), findsOneWidget);
+  });
+
+  testWidgets('the Explore table of contents pushes the native AUZslab Studio page, not the browser', (t) async {
     await show(t, await session(customer));
     await t.tap(find.text('Explore AUZslab'));
     await t.pumpAndSettle();
     await t.tap(find.text('AUZslab Studio'));
     await t.pumpAndSettle();
-    expect(find.text('Coming soon, natively'), findsOneWidget);
-    expect(find.text('Open on the website'), findsOneWidget);
+    expect(find.text('Design it the way you love.'), findsOneWidget);
+    // Studio is deliberately not a cart item: no price list, nothing to add to a cart.
+    expect(find.text('Add to cart'), findsNothing);
+    expect(find.textContaining('There is no price list'), findsWidgets);
+  });
+
+  testWidgets('the Explore table of contents pushes the native AUZslab Intelligence page, not the browser', (t) async {
+    await show(t, await session(customer));
+    await t.tap(find.text('Explore AUZslab'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('AUZslab Intelligence'));
+    await t.pumpAndSettle();
+    expect(find.text('Your business generates data. We help you understand it.'), findsOneWidget);
+    // Honest about what exists today: example insights are labelled, not claimed as real.
+    expect(find.text('Example insight'), findsWidgets);
+    expect(find.textContaining('They are not real customer results.'), findsOneWidget);
   });
 
   testWidgets('Products and pricing opens the native pricing screen with live prices, not the browser', (t) async {
@@ -358,6 +395,76 @@ void main() {
     // Admin panel, Admin console, Website Builder, Salon console, Team workspace keep their old
     // browser hand-over (_web/launchUrl) -- this task only changes Explore and Products/pricing.
     expect(find.text('Admin panel'), findsOneWidget);
+  });
+
+  testWidgets('the Explore registry now opens the native products hub for "Every product in detail", not the browser', (t) async {
+    await show(t, await session(customer));
+    await t.tap(find.text('Explore AUZslab'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Every product in detail'));
+    await t.pumpAndSettle();
+    expect(find.text('Coming soon, natively'), findsNothing);
+    expect(find.text('AUZsPOS'), findsOneWidget);
+    expect(find.text('CRM'), findsOneWidget);
+    expect(find.text('Billing & Invoicing'), findsOneWidget);
+    expect(find.text('Inventory'), findsOneWidget);
+    expect(find.text('QR Ordering'), findsOneWidget);
+    expect(find.text('AUZsPay'), findsOneWidget);
+    expect(find.text('AUZsLedger'), findsOneWidget);
+    expect(find.text('AUZsScan'), findsOneWidget);
+    expect(find.text('AUZslab Salon'), findsOneWidget);
+  });
+
+  testWidgets('each native product page shows its own real headline from the site copy', (t) async {
+    final s = await session(customer);
+    await t.binding.setSurfaceSize(const Size(420, 2600));
+    final pages = <Widget, String>{
+      ProductPosPage(s): 'Built around the way you sell.',
+      ProductCrmPage(s): 'Know your regulars. Bring them back.',
+      ProductBillingPage(s): 'Invoices that hold up to scrutiny.',
+      ProductInventoryPage(s): 'Know what is left before it runs out.',
+      ProductQrOrderingPage(s): 'Scan the table. Skip the wait.',
+      ProductPayrollPage(s): 'Payroll built around your business.',
+      ProductAccountingPage(s): 'Accounting that knows the business behind it.',
+      ProductScanPage(s): 'Point. Scan. Bill it.',
+    };
+    for (final e in pages.entries) {
+      await t.pumpWidget(MaterialApp(theme: Tk.theme(), home: e.key));
+      await t.pump(const Duration(milliseconds: 100));
+      expect(find.text(e.value), findsOneWidget, reason: e.value);
+    }
+  });
+
+  testWidgets('a priced product page (QR Ordering) adds its own key to the same cart as the website flow', (t) async {
+    SharedPreferences.setMockInitialValues({});
+    final api = FakeApi(customer);
+    final s = HubSession(api: api);
+    api.token = 'tok';
+    s.user = {'id': 'u1', 'email': 'c@x.in'};
+    await s.load();
+    await t.binding.setSurfaceSize(const Size(420, 2600));
+    await t.pumpWidget(MaterialApp(theme: Tk.theme(), home: ProductQrOrderingPage(s)));
+    await t.pump(const Duration(milliseconds: 100));
+    await t.tap(find.widgetWithText(FilledButton, 'Add to cart').first);
+    await t.pumpAndSettle();
+    expect(find.text('My cart'), findsOneWidget);
+    expect(await Cart.get(), contains('self_order'));
+  });
+
+  testWidgets('a bundled product page (CRM) adds AUZsPOS to the cart, not a separate key', (t) async {
+    SharedPreferences.setMockInitialValues({});
+    final api = FakeApi(customer);
+    final s = HubSession(api: api);
+    api.token = 'tok';
+    s.user = {'id': 'u1', 'email': 'c@x.in'};
+    await s.load();
+    await t.binding.setSurfaceSize(const Size(420, 2600));
+    await t.pumpWidget(MaterialApp(theme: Tk.theme(), home: ProductCrmPage(s)));
+    await t.pump(const Duration(milliseconds: 100));
+    await t.tap(find.widgetWithText(FilledButton, 'Add AUZsPOS to cart').first);
+    await t.pumpAndSettle();
+    expect(find.text('My cart'), findsOneWidget);
+    expect(await Cart.get(), ['pos']);
   });
 
   testWidgets('adding a product from the pricing screen puts it in the same cart as the website flow', (t) async {
