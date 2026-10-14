@@ -170,7 +170,7 @@ class _SitePageState extends State<SitePage> {
       if (widget.name == 'contact') children.add(ContactForm(widget.s));
       if (widget.name == 'join-team') children.add(JoinForm(widget.s));
       children.add(SiteFooter(widget.s, prev: stack ? M.bg : Colors.transparent));
-      body = Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children);
+      body = ResponsivePage(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children));
     }
     final env = _Env(s: widget.s, pricing: pricing, open: _open, keyFor: keyFor, dark: false, flat: !stack, child: body);
     return Scaffold(

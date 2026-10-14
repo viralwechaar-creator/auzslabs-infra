@@ -95,6 +95,18 @@ void main() {
     }
   });
 
+  testWidgets('pages scale to phones, folding phones and tablets with no overflow', (t) async {
+    final s = await session(customer);
+    for (final w in [320.0, 360.0, 412.0, 600.0, 768.0, 1024.0]) {
+      await t.binding.setSurfaceSize(Size(w, 4000));
+      await t.pumpWidget(MaterialApp(theme: Tk.theme(), home: SitePage(s, 'pos', key: ValueKey('pos$w'))));
+      await t.pump(const Duration(milliseconds: 100));
+      expect(tester(t), isNull, reason: 'width $w');
+      expect(ResponsivePage.scaleFor(w) >= 0.85 && ResponsivePage.scaleFor(w) <= 1.45, true);
+    }
+    expect(ResponsivePage.scaleFor(780) > ResponsivePage.scaleFor(390), true);
+  });
+
   testWidgets('the AUZsPOS page shows the website text and adds to the cart', (t) async {
     final s = await session(customer);
     await pumpPage(t, s, 'pos');

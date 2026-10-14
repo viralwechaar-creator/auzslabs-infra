@@ -609,7 +609,8 @@ class _BoxNodeState extends State<_BoxNode> {
         final w = k['k'] == 't' ? k['w'] : _s(k)['w'];
         final px = w is num ? iw * w.toDouble() + (k['k'] == 't' ? 2 : 1) : iw;
         final single = k['k'] == 't' && _n(k['nl'], 2) <= 1;
-        row.add(single ? Flexible(fit: FlexFit.loose, child: nodeView(context, k, iw, cx: cx, inRow: true)) : SizedBox(width: px, child: nodeView(context, k, iw, cx: cx, inRow: true)));
+        final pxw = px > iw - x + 0.01 && iw - x > 20 ? iw - x : px;
+        row.add(single ? Flexible(fit: FlexFit.loose, child: nodeView(context, k, iw, cx: cx, inRow: true)) : SizedBox(width: pxw, child: nodeView(context, k, iw, cx: cx, inRow: true)));
         cursor = x + (w is num ? iw * w.toDouble() : iw);
       }
       if (li > 0) out.add(SizedBox(height: rgap));
@@ -708,4 +709,25 @@ class SectionView extends StatelessWidget {
   final Map<String, dynamic> root;
   @override
   Widget build(BuildContext context) => LayoutBuilder(builder: (c, cs) => nodeView(c, root, cs.maxWidth));
+}
+
+/// The pages are drawn for a 390 px phone. On any other screen the whole page is laid out at that design width and scaled to fit,
+/// so type and elements grow or shrink with the device (small Android, iPhone, foldables, tablets). On wide screens the page
+/// keeps a readable width (at most 600 design pixels, scaled up to 1.45x) and is centred.
+class ResponsivePage extends StatelessWidget {
+  const ResponsivePage({required this.child, super.key});
+  final Widget child;
+  static double scaleFor(double w) => (w / 390).clamp(0.85, 1.45).toDouble();
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(builder: (c, cs) {
+        final w = cs.maxWidth;
+        final scale = scaleFor(w);
+        final lw = (w / scale).clamp(0.0, 600.0).toDouble();
+        return Center(
+          child: SizedBox(
+            width: lw * scale,
+            child: FittedBox(fit: BoxFit.fitWidth, alignment: Alignment.topCenter, child: SizedBox(width: lw, child: child)),
+          ),
+        );
+      });
 }
