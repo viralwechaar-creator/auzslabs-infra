@@ -9,10 +9,28 @@ import 'package:auzshub/core/util.dart';
 import 'package:auzshub/core/orderdata.dart';
 import 'package:auzshub/ui/account.dart';
 import 'package:auzshub/ui/cart.dart';
+import 'package:auzshub/ui/explore.dart';
 import 'package:auzshub/ui/home.dart';
 import 'package:auzshub/ui/pay.dart';
+import 'package:auzshub/ui/pricing.dart';
 import 'package:auzshub/ui/requests.dart';
 import 'package:auzshub/ui/theme.dart';
+
+/// Same shapes public_product_prices/public_bundles/public_addon_price_overrides really return
+/// (server/src/data/rpc-registry.js, db/101, db/114, db/072).
+const fakeProducts = [
+  {'key': 'pos', 'label': 'AUZsPOS', 'monthly_price': 999, 'yearly_price': 0, 'renewal_yearly_price': 0, 'gst_exempt': false, 'setup_fee_exempt': false},
+  {'key': 'self_order', 'label': 'AUZsPOS QR', 'monthly_price': 300, 'yearly_price': 0, 'renewal_yearly_price': 0, 'gst_exempt': false, 'setup_fee_exempt': false},
+  {'key': 'payroll', 'label': 'AUZsPay', 'monthly_price': 999, 'yearly_price': 0, 'renewal_yearly_price': 0, 'gst_exempt': false, 'setup_fee_exempt': false},
+  {'key': 'accounting', 'label': 'AUZsLedger', 'monthly_price': 1599, 'yearly_price': 0, 'renewal_yearly_price': 0, 'gst_exempt': false, 'setup_fee_exempt': false},
+  {'key': 'mobile', 'label': 'AUZsMob', 'monthly_price': 199, 'yearly_price': 1999, 'renewal_yearly_price': 1599, 'gst_exempt': true, 'setup_fee_exempt': true},
+];
+const fakeBundles = [
+  {'key': 'starter', 'label': 'Starter business', 'feature_keys': ['pos', 'payroll'], 'badge': 'Popular', 'blurb': 'AUZsPOS + AUZsPay', 'monthly_price': 1498, 'list_price': 1998, 'yearly_price': 0},
+];
+const fakeOverrides = [
+  {'key': 'payroll', 'requires': 'pos', 'monthly_price': 1399},
+];
 
 class FakeApi extends ApiClient {
   FakeApi(this.who, {this.orders = const []});
@@ -36,6 +54,12 @@ class FakeApi extends ApiClient {
         return orders;
       case 'public_client_order':
         return quote;
+      case 'public_product_prices':
+        return fakeProducts;
+      case 'public_bundles':
+        return fakeBundles;
+      case 'public_addon_price_overrides':
+        return fakeOverrides;
       case 'my_profile':
         return {'login_email': 'c@x.in', 'profile': {'name': 'Asha', 'phone': '9876543210', 'business_name': 'Asha Cafe', 'niche': 'cafe'}};
       case 'submit_client_order':
@@ -43,6 +67,10 @@ class FakeApi extends ApiClient {
     }
     return null;
   }
+
+  /// Avoid a real HTTP call to /payments/config from a test (GST off, same as a fresh platform).
+  @override
+  Future<Map<String, dynamic>> paymentConfig() async => {'gstPct': 0};
 }
 
 Future<HubSession> session(Map<String, dynamic> who, {List<Map<String, dynamic>> orders = const []}) async {
@@ -230,5 +258,77 @@ void main() {
   test('every product the website cart offers has a label', () {
     expect(productLabels.keys, containsAll(['pos', 'payroll', 'accounting', 'mobile', 'scan', 'salon']));
     expect(stateNames['08'], 'Rajasthan');
+  });
+
+  testWidgets('Explore AUZslab opens the native table of contents, not the browser', (t) async {
+    await show(t, await session(customer));
+    await t.tap(find.text('Explore AUZslab'));
+    await t.pumpAndSettle();
+    // Every exploreSections entry is a row here, native or still a placeholder.
+    for (final x in ['AUZslab', 'Why AUZslab', 'Products and pricing', 'Every product in detail', 'Built for your business', 'AUZslab Studio', 'AUZslab Intelligence', 'Learn & resources', 'Legal', 'Contact us']) {
+      expect(find.text(x), findsOneWidget, reason: x);
+    }
+  });
+
+  testWidgets('the Explore table of contents pushes the native Home page for "AUZslab"', (t) async {
+    await show(t, await session(customer));
+    await t.tap(find.text('Explore AUZslab'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('AUZslab').last); // the TOC row (there is no other "AUZslab" text on that screen)
+    await t.pumpAndSettle();
+    expect(find.text('Software built around the way you work.'), findsOneWidget);
+    expect(find.text('Why AUZslab'), findsWidgets); // CTA card at the bottom of Home
+  });
+
+  testWidgets('the Explore table of contents pushes the native Why AUZslab page', (t) async {
+    await show(t, await session(customer));
+    await t.tap(find.text('Explore AUZslab'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Why AUZslab'));
+    await t.pumpAndSettle();
+    expect(find.text('Businesses differ. Software should too.'), findsOneWidget);
+  });
+
+  testWidgets('a not-yet-native Explore section falls through to the "coming soon" website hand-off', (t) async {
+    await show(t, await session(customer));
+    await t.tap(find.text('Explore AUZslab'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('AUZslab Studio'));
+    await t.pumpAndSettle();
+    expect(find.text('Coming soon, natively'), findsOneWidget);
+    expect(find.text('Open on the website'), findsOneWidget);
+  });
+
+  testWidgets('Products and pricing opens the native pricing screen with live prices, not the browser', (t) async {
+    await show(t, await session(customer));
+    await t.tap(find.text('Products and pricing'));
+    await t.pumpAndSettle();
+    expect(find.text('Setup & onboarding'), findsOneWidget);
+    expect(find.text('₹999'), findsWidgets); // AUZsPOS, from public_product_prices
+    expect(find.textContaining('AUZsLedger'), findsWidgets);
+    expect(find.textContaining('Starter business'), findsOneWidget); // from public_bundles
+  });
+
+  testWidgets('every other tile is unchanged by this task (still listed, not touched)', (t) async {
+    await show(t, await session(admin));
+    // Admin panel, Admin console, Website Builder, Salon console, Team workspace keep their old
+    // browser hand-over (_web/launchUrl) -- this task only changes Explore and Products/pricing.
+    expect(find.text('Admin panel'), findsOneWidget);
+  });
+
+  testWidgets('adding a product from the pricing screen puts it in the same cart as the website flow', (t) async {
+    SharedPreferences.setMockInitialValues({});
+    final api = FakeApi(customer);
+    final s = HubSession(api: api);
+    api.token = 'tok';
+    s.user = {'id': 'u1', 'email': 'c@x.in'};
+    await s.load();
+    await t.binding.setSurfaceSize(const Size(420, 2600));
+    await t.pumpWidget(MaterialApp(theme: Tk.theme(), home: ProductsPricingPage(s)));
+    await t.pump(const Duration(milliseconds: 100));
+    await t.tap(find.widgetWithText(FilledButton, 'Add to cart').first);
+    await t.pumpAndSettle();
+    expect(find.text('My cart'), findsOneWidget); // navigated into CartPage
+    expect(await Cart.get(), contains('pos'));
   });
 }

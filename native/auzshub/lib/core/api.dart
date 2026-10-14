@@ -135,6 +135,10 @@ class ApiClient {
 
   Future<dynamic> rpc(String fn, [Map<String, dynamic> args = const {}]) => _request('POST', '/rpc/$fn', body: args);
 
+  /// Whether GST is switched on right now (platform_flags 'gst_rate_pct'), same call the website pricing
+  /// page makes before showing "+ GST". Public, no session needed.
+  Future<Map<String, dynamic>> paymentConfig() async => Map<String, dynamic>.from(await _request('GET', '/payments/config', auth: false) as Map);
+
   /// Several queued writes in ONE request (POST /sync, at most 50). Each result is {id, ok, status?, error?, skipped?}.
   Future<List<Map<String, dynamic>>> syncBatch(List<Map<String, dynamic>> ops) async {
     final d = await _request('POST', '/sync', body: {'ops': ops});

@@ -5,8 +5,10 @@ import '../core/session.dart';
 import 'account.dart';
 import 'cart.dart';
 import 'ds.dart';
+import 'explore.dart';
 import 'i18n.dart';
 import 'mk.dart';
+import 'pricing.dart';
 import 'requests.dart';
 import 'theme.dart';
 
@@ -42,7 +44,6 @@ class _HubHomeState extends State<HubHome> {
   }
 
   Widget _app(ProductApp a, IconData i, Color c) => Li(a.name, sub: a.note, icon: i, tone: c, onTap: () => _open(a));
-  Widget _site(String t, String sub, String path, IconData i, Color c) => Li(t, sub: sub, icon: i, tone: c, onTap: () => openSite(s, path));
   Widget _web(String t, String sub, String url, IconData i, Color c) => Li(t, sub: sub, icon: i, tone: c, onTap: () => launchUrl(Uri.parse('$url#auz_gt=${s.handoff()}'), mode: LaunchMode.externalApplication));
 
   List<Widget> _account() => [
@@ -55,8 +56,8 @@ class _HubHomeState extends State<HubHome> {
       ];
 
   List<Widget> _explore() => [
-        _site('Explore AUZslab', 'Products, pricing, demos and guides', '', Icons.explore_outlined, Tk.orange),
-        _site('Products and pricing', 'See what each product does and costs', 'products.html', Icons.sell_outlined, Tk.green),
+        Li('Explore AUZslab', sub: 'Products, pricing, demos and guides', icon: Icons.explore_outlined, tone: Tk.orange, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => ExplorePage(s)))),
+        Li('Products and pricing', sub: 'See what each product does and costs', icon: Icons.sell_outlined, tone: Tk.green, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => ProductsPricingPage(s)))),
       ];
 
   @override
