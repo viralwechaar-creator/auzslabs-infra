@@ -3,6 +3,7 @@ import '../../core/session.dart';
 import '../pricing.dart';
 import '../theme.dart';
 import 'home_page.dart';
+import 'products_page.dart';
 import 'why_page.dart';
 
 /// One row of the "Explore AUZslab" table of contents.
@@ -30,14 +31,15 @@ class ExploreSection {
   final Widget Function(HubSession s)? builder;
 }
 
-/// Native so far: the homepage, "Why AUZslab" and Products & pricing (with live RPC-driven
-/// prices). Everything else is a placeholder entry -- real, named, reachable -- until its own
-/// native screen is built in a later pass.
+/// Native so far: the homepage, "Why AUZslab", Products & pricing (with live RPC-driven prices)
+/// and "Every product in detail" (the 8 product pages, each with its own live price/Add to cart
+/// where it has one). Everything else is a placeholder entry -- real, named, reachable -- until
+/// its own native screen is built in a later pass.
 List<ExploreSection> exploreSections(HubSession s) => [
       ExploreSection('home', 'AUZslab', 'Software built around the way you work', Icons.home_outlined, Tk.accent, builder: (hs) => HomePage(hs)),
       ExploreSection('why', 'Why AUZslab', 'Businesses differ. Software should too.', Icons.lightbulb_outline, Tk.orange, builder: (hs) => WhyAuzslabPage(hs)),
       ExploreSection('pricing', 'Products and pricing', 'See what each product does and costs, with live prices', Icons.sell_outlined, Tk.green, builder: (hs) => ProductsPricingPage(hs)),
-      ExploreSection('products', 'Every product in detail', 'AUZsPOS, CRM, Billing, Inventory, QR Ordering, AUZsPay, AUZsLedger, AUZsScan, one page each', Icons.apps_outlined, Tk.purple, sitePath: 'products.html'),
+      ExploreSection('products', 'Every product in detail', 'AUZsPOS, CRM, Billing, Inventory, QR Ordering, AUZsPay, AUZsLedger, AUZsScan, one page each', Icons.apps_outlined, Tk.purple, builder: (hs) => ProductsHubPage(hs), sitePath: 'products.html'),
       ExploreSection('business', 'Built for your business', 'Cafes, salons, retail, clothing and mobile repair shops, each shown its own way', Icons.store_outlined, Tk.teal, sitePath: 'business-cafes.html'),
       ExploreSection('studio', 'AUZslab Studio', 'Custom builds and bespoke development', Icons.design_services_outlined, Tk.blue, sitePath: 'studio.html'),
       ExploreSection('intelligence', 'AUZslab Intelligence', "Don't just see your business. Understand it.", Icons.insights_outlined, Tk.purple, sitePath: 'intelligence.html'),
