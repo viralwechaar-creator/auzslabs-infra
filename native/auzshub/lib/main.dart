@@ -5,7 +5,7 @@ import 'core/version.dart';
 import 'ui/i18n.dart';
 import 'ui/launch.dart';
 import 'ui/login.dart';
-import 'ui/home.dart';
+import 'ui/shell.dart';
 import 'ui/theme.dart';
 import 'ui/updatescreen.dart';
 
@@ -48,7 +48,7 @@ class _AppState extends State<App> with WidgetsBindingObserver {
   Widget _home() {
     if (upd?.force ?? false) return UpdateRequired(upd!);
     if (!s.signedIn) return Login(s);
-    return HubHome(s);
+    return HubShell(s);
   }
 
   @override

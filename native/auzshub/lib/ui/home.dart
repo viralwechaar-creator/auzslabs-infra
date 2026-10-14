@@ -9,6 +9,7 @@ import 'ds.dart';
 import 'i18n.dart';
 import 'mk.dart';
 import 'requests.dart';
+import 'site.dart';
 import 'team.dart';
 import 'theme.dart';
 
@@ -44,7 +45,6 @@ class _HubHomeState extends State<HubHome> {
   }
 
   Widget _app(ProductApp a, IconData i, Color c) => Li(a.name, sub: a.note, icon: i, tone: c, onTap: () => _open(a));
-  Widget _site(String t, String sub, String path, IconData i, Color c) => Li(t, sub: sub, icon: i, tone: c, onTap: () => openSite(s, path));
   Widget _web(String t, String sub, String url, IconData i, Color c) => Li(t, sub: sub, icon: i, tone: c, onTap: () => launchUrl(Uri.parse('$url#auz_gt=${s.handoff()}'), mode: LaunchMode.externalApplication));
 
   Widget _team() => Li('Team workspace', sub: 'Leads, client setups and your team work', icon: Icons.groups_outlined, tone: Tk.accent, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => TeamWorkspace(s))));
@@ -59,8 +59,8 @@ class _HubHomeState extends State<HubHome> {
       ];
 
   List<Widget> _explore() => [
-        _site('Explore AUZslab', 'Products, pricing, demos and guides', '', Icons.explore_outlined, Tk.orange),
-        _site('Products and pricing', 'See what each product does and costs', 'products.html', Icons.sell_outlined, Tk.green),
+        Li('Explore AUZslab', sub: 'Products, pricing, demos and guides', icon: Icons.explore_outlined, tone: Tk.orange, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => SitePage(s, 'index')))),
+        Li('Products and pricing', sub: 'See what each product does and costs', icon: Icons.sell_outlined, tone: Tk.green, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => SitePage(s, 'pricing')))),
       ];
 
   @override

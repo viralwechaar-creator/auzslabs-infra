@@ -68,6 +68,23 @@ class FakeApi extends ApiClient {
         return {'login_email': 'c@x.in', 'profile': {'name': 'Asha', 'phone': '9876543210', 'business_name': 'Asha Cafe', 'niche': 'cafe'}};
       case 'submit_client_order':
         return {'token': 'a' * 32};
+      case 'public_product_prices':
+        return [
+          {'key': 'pos', 'monthly_price': 1090, 'yearly_price': 10900},
+          {'key': 'self_order', 'monthly_price': 400},
+          {'key': 'payroll', 'monthly_price': 590},
+          {'key': 'accounting', 'monthly_price': 1490},
+          {'key': 'mobile', 'monthly_price': 249, 'yearly_price': 2490, 'renewal_yearly_price': 1990, 'gst_exempt': true, 'setup_fee_exempt': true},
+        ];
+      case 'public_bundles':
+        return [
+          {'label': 'Hospitality Essentials', 'badge': 'Popular', 'feature_keys': ['pos', 'payroll'], 'monthly_price': 1490, 'list_price': 1680, 'yearly_price': 14900, 'blurb': 'For cafes.'},
+        ];
+      case 'public_addon_price_overrides':
+        return [];
+      case 'submit_lead':
+      case 'submit_team_application':
+        return {'ok': true};
     }
     return null;
   }
