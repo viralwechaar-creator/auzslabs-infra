@@ -2,7 +2,10 @@ import 'package:flutter/material.dart' hide Text;
 import '../../core/session.dart';
 import '../pricing.dart';
 import '../theme.dart';
+import 'business_page.dart';
 import 'home_page.dart';
+import 'intelligence_page.dart';
+import 'studio_page.dart';
 import 'why_page.dart';
 
 /// One row of the "Explore AUZslab" table of contents.
@@ -38,9 +41,9 @@ List<ExploreSection> exploreSections(HubSession s) => [
       ExploreSection('why', 'Why AUZslab', 'Businesses differ. Software should too.', Icons.lightbulb_outline, Tk.orange, builder: (hs) => WhyAuzslabPage(hs)),
       ExploreSection('pricing', 'Products and pricing', 'See what each product does and costs, with live prices', Icons.sell_outlined, Tk.green, builder: (hs) => ProductsPricingPage(hs)),
       ExploreSection('products', 'Every product in detail', 'AUZsPOS, CRM, Billing, Inventory, QR Ordering, AUZsPay, AUZsLedger, AUZsScan, one page each', Icons.apps_outlined, Tk.purple, sitePath: 'products.html'),
-      ExploreSection('business', 'Built for your business', 'Cafes, salons, retail, clothing and mobile repair shops, each shown its own way', Icons.store_outlined, Tk.teal, sitePath: 'business-cafes.html'),
-      ExploreSection('studio', 'AUZslab Studio', 'Custom builds and bespoke development', Icons.design_services_outlined, Tk.blue, sitePath: 'studio.html'),
-      ExploreSection('intelligence', 'AUZslab Intelligence', "Don't just see your business. Understand it.", Icons.insights_outlined, Tk.purple, sitePath: 'intelligence.html'),
+      ExploreSection('business', 'Built for your business', 'Cafes, salons, retail, clothing and mobile repair shops, each shown its own way', Icons.store_outlined, Tk.teal, builder: (hs) => BusinessTypesHubPage(hs), sitePath: 'business-cafes.html'),
+      ExploreSection('studio', 'AUZslab Studio', 'Custom builds and bespoke development', Icons.design_services_outlined, Tk.blue, builder: (hs) => StudioPage(hs), sitePath: 'studio.html'),
+      ExploreSection('intelligence', 'AUZslab Intelligence', "Don't just see your business. Understand it.", Icons.insights_outlined, Tk.purple, builder: (hs) => IntelligencePage(hs), sitePath: 'intelligence.html'),
       ExploreSection('learn', 'Learn & resources', 'Guides to get the most from AUZslab', Icons.menu_book_outlined, Tk.orange, sitePath: 'learn.html'),
       ExploreSection('legal', 'Legal', 'Terms, privacy, refund and other policies', Icons.gavel_outlined, Tk.label2, sitePath: 'terms.html'),
       ExploreSection('contact', 'Contact us', 'Get in touch with the team', Icons.mail_outline, Tk.blue, sitePath: 'contact.html'),

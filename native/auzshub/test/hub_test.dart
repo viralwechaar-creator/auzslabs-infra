@@ -293,10 +293,49 @@ void main() {
     await show(t, await session(customer));
     await t.tap(find.text('Explore AUZslab'));
     await t.pumpAndSettle();
-    await t.tap(find.text('AUZslab Studio'));
+    await t.tap(find.text('Every product in detail'));
     await t.pumpAndSettle();
     expect(find.text('Coming soon, natively'), findsOneWidget);
     expect(find.text('Open on the website'), findsOneWidget);
+  });
+
+  testWidgets('the Explore table of contents pushes the native "Built for your business" hub, not the browser', (t) async {
+    await show(t, await session(customer));
+    await t.tap(find.text('Explore AUZslab'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Built for your business'));
+    await t.pumpAndSettle();
+    // The hub lists all five business types.
+    for (final x in ['Cafés, restaurants, bars & bakeries', 'Salons & spas', 'Retail & bookstores', 'Clothing & apparel', 'Mobile retail & repair']) {
+      expect(find.text(x), findsOneWidget, reason: x);
+    }
+    await t.tap(find.text('Cafés, restaurants, bars & bakeries'));
+    await t.pumpAndSettle();
+    expect(find.text('Built for how a hospitality business actually runs.'), findsOneWidget);
+  });
+
+  testWidgets('the Explore table of contents pushes the native AUZslab Studio page, not the browser', (t) async {
+    await show(t, await session(customer));
+    await t.tap(find.text('Explore AUZslab'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('AUZslab Studio'));
+    await t.pumpAndSettle();
+    expect(find.text('Design it the way you love.'), findsOneWidget);
+    // Studio is deliberately not a cart item: no price list, nothing to add to a cart.
+    expect(find.text('Add to cart'), findsNothing);
+    expect(find.textContaining('There is no price list'), findsWidgets);
+  });
+
+  testWidgets('the Explore table of contents pushes the native AUZslab Intelligence page, not the browser', (t) async {
+    await show(t, await session(customer));
+    await t.tap(find.text('Explore AUZslab'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('AUZslab Intelligence'));
+    await t.pumpAndSettle();
+    expect(find.text('Your business generates data. We help you understand it.'), findsOneWidget);
+    // Honest about what exists today: example insights are labelled, not claimed as real.
+    expect(find.text('Example insight'), findsWidgets);
+    expect(find.textContaining('They are not real customer results.'), findsOneWidget);
   });
 
   testWidgets('Products and pricing opens the native pricing screen with live prices, not the browser', (t) async {
