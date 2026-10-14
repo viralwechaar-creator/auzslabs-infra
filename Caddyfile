@@ -69,6 +69,8 @@
     # same reasoning, for the actual app-shell HTML itself (index.html,
     # payroll.html, builder.html, site.html, ...) -- see the root domain
     # block above for the full story on why this exists.
+    # the bare address "/" (land.html decides where it goes) must never be cached either, or a phone keeps the old redirect
+    header / Cache-Control "no-cache"
     header /*.html Cache-Control "no-cache"
     # ds/docread.js dynamically `import()`s vendor/pdfjs/pdf.min.mjs (and its worker) to read a
     # PDF's own text -- a browser refuses to run a dynamically imported module unless it is
