@@ -11,6 +11,7 @@ import 'package:auzshub/ui/account.dart';
 import 'package:auzshub/ui/cart.dart';
 import 'package:auzshub/ui/home.dart';
 import 'package:auzshub/ui/pay.dart';
+import 'package:auzshub/ui/team.dart';
 import 'package:auzshub/ui/requests.dart';
 import 'package:auzshub/ui/theme.dart';
 
@@ -22,6 +23,7 @@ class FakeApi extends ApiClient {
   final calls = <String>[];
   final args = <String, Map<String, dynamic>>{};
   Map<String, dynamic>? quote;
+  String teamRole = 'salesman';
 
   @override
   Future<dynamic> rpc(String fn, [Map<String, dynamic> a = const {}]) async {
@@ -34,6 +36,20 @@ class FakeApi extends ApiClient {
         return who['dash'];
       case 'my_client_orders':
         return orders;
+      case 'team_me':
+        return {'id': 't1', 'role': teamRole, 'name': 'Ravi Kumar', 'email': 't@x.in'};
+      case 'team_my_work':
+        return {'summary': {'leads_open': 2, 'leads_converted': 1, 'leads_overdue': 1, 'updates': 5}, 'recent': []};
+      case 'team_my_leads':
+      case 'team_all_leads':
+        return [
+          {'id': 'l1', 'name': 'Asha', 'business': 'Asha Cafe', 'contact': '98765', 'status': 'new', 'next_followup': '2020-01-01'},
+          {'id': 'l2', 'name': 'Bhav', 'business': '', 'contact': '99', 'status': 'converted'},
+        ];
+      case 'team_list_notices':
+        return [];
+      case 'salesman_my_trials':
+        return [];
       case 'public_client_order':
         return quote;
       case 'my_profile':
@@ -230,5 +246,29 @@ void main() {
   test('every product the website cart offers has a label', () {
     expect(productLabels.keys, containsAll(['pos', 'payroll', 'accounting', 'mobile', 'scan', 'salon']));
     expect(stateNames['08'], 'Rajasthan');
+  });
+
+  testWidgets('the team workspace shows the right tabs and the due lead for a salesman', (t) async {
+    final s = await session(teamOnly);
+    await t.binding.setSurfaceSize(const Size(420, 1200));
+    await t.pumpWidget(MaterialApp(theme: Tk.theme(), home: TeamWorkspace(s)));
+    await t.pump(const Duration(milliseconds: 100));
+    await t.pump(const Duration(milliseconds: 100));
+    for (final x in ['Home', 'Leads', 'Trials', 'Me']) {
+      expect(find.text(x), findsWidgets, reason: x);
+    }
+    expect(find.text('Team'), findsNothing);
+    expect(find.text('Asha Cafe'), findsOneWidget);
+    await t.tap(find.text('Leads').last);
+    await t.pump(const Duration(milliseconds: 100));
+    await t.pump(const Duration(milliseconds: 100));
+    expect(find.text('Closed · 1'), findsOneWidget);
+  });
+
+  test('lead helpers', () {
+    expect(stageName('quoted'), 'Quote sent');
+    expect(leadOverdue({'status': 'new', 'next_followup': '2020-01-01'}), true);
+    expect(leadOverdue({'status': 'converted', 'next_followup': '2020-01-01'}), false);
+    expect(plusDays(0), todayYmd());
   });
 }

@@ -133,6 +133,9 @@ class ApiClient {
     return res.bodyBytes;
   }
 
+  /// Any authenticated JSON POST (used for the few plain HTTP routes that are not RPCs).
+  Future<dynamic> postJson(String path, Map<String, dynamic> body) => _request('POST', path, body: body);
+
   Future<dynamic> rpc(String fn, [Map<String, dynamic> args = const {}]) => _request('POST', '/rpc/$fn', body: args);
 
   /// Several queued writes in ONE request (POST /sync, at most 50). Each result is {id, ok, status?, error?, skipped?}.
