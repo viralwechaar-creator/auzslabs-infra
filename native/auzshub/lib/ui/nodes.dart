@@ -383,7 +383,7 @@ class _BoxNodeState extends State<_BoxNode> {
       content = Stack(clipBehavior: Clip.none, children: [
         flow,
         for (final a in abs)
-          Positioned(left: _n((a['abs'] as List)[0]) - 0, top: _n((a['abs'] as List)[1]), child: nodeView(context, a, iw, cx: cx)),
+          Positioned(left: _n((a['abs'] as List)[0]) - pad[3] - bdL, top: _n((a['abs'] as List)[1]) - pad[0] - bdT, child: nodeView(context, a, iw, cx: cx)),
       ]);
       content = Padding(padding: EdgeInsets.zero, child: content);
     }
@@ -426,6 +426,7 @@ class _BoxNodeState extends State<_BoxNode> {
       br = BorderRadius.only(topLeft: Radius.circular(_n(rad[0])), topRight: Radius.circular(_n(rad[1])), bottomRight: Radius.circular(_n(rad[2])), bottomLeft: Radius.circular(_n(rad[3])));
     }
     final sh = <BoxShadow>[
+      if (bg != null)
       for (final x in ((s['sh'] as List?) ?? const []))
         BoxShadow(offset: Offset(_n((x as List)[0]), _n(x[1])), blurRadius: _n(x[2]).abs(), spreadRadius: _n(x[3]), color: _hx(x[4]) ?? const Color(0x33000000)),
     ];

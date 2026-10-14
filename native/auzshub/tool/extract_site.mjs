@@ -410,7 +410,9 @@ function inPage([name, stackMode, pageProduct, included]) {
   collect(main);
   const t = document.title.replace(/\s*[|—–-]\s*AUZslab.*$/i, '').trim() || name;
   const md = document.querySelector('meta[name=description]');
-  return { title: t, desc: md ? md.content : '', mode: stackMode ? 'stack' : 'flat', secs, svgs: svgCount };
+  const fr = main.firstElementChild ? main.getBoundingClientRect().top + window.scrollY : 0;
+  const first = secs.length ? 0 : 0;
+  return { title: t, desc: md ? md.content : '', mode: stackMode ? 'stack' : 'flat', secs, svgs: svgCount, top: Math.round(fr) };
 }
 
 const b = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ['--no-sandbox'] });
