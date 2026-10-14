@@ -218,7 +218,9 @@ function inPage([name, stackMode, pageProduct, included]) {
     if (el.tagName === 'IMG') {
       const src = el.getAttribute('src') || '';
       if (!src || rect.width < 2) return null;
-      return { k: 'i', src, w: r1(rect.width), h: r1(rect.height), r: num(cs.borderTopLeftRadius) || undefined };
+      const pe = el.parentElement ? getComputedStyle(el.parentElement) : null;
+      const ac = (cs.marginLeft === cs.marginRight && num(cs.marginLeft) > 2) || (pe && pe.textAlign === 'center' && !/flex|grid/.test(pe.display)) ? 1 : undefined;
+      return { k: 'i', src, w: r1(rect.width), h: r1(rect.height), r: num(cs.borderTopLeftRadius) || undefined, ac };
     }
     const live = SPECIAL_LIVE(el);
     if (live) return { k: 'x', live };
@@ -325,14 +327,15 @@ function inPage([name, stackMode, pageProduct, included]) {
         }
         const runs = mergeRuns(rs);
         if (runs.length) {
-          let top = Infinity, bot = -Infinity;
+          const tops = [];
           for (const q of pend) {
             const rg = document.createRange();
-            rg.selectNodeContents(q.nodeType === 1 ? q : q);
-            const rr = rg.getBoundingClientRect();
-            if (rr.height > 0) { top = Math.min(top, rr.top); bot = Math.max(bot, rr.bottom); }
+            rg.selectNodeContents(q);
+            for (const rr of rg.getClientRects()) { if (rr.height > 0 && rr.width > 0) tops.push(rr.top); }
           }
-          const nl = isFinite(top) ? Math.max(1, Math.round((bot - top) / Math.max(1, base.fs * base.lh))) : 1;
+          tops.sort((a, b) => a - b);
+          let nl = tops.length ? 1 : 1;
+          for (let i = 1; i < tops.length; i++) if (tops[i] - tops[i - 1] > Math.max(3, base.fs * 0.6)) nl++;
           kids.push({ k: 't', r: runs, s: base, nl });
         }
         pend = [];
@@ -361,6 +364,11 @@ function inPage([name, stackMode, pageProduct, included]) {
     }
     const after = pseudo(el, '::after', cs);
     if (after) kids.push(after);
+    if (!isFlex && !isGrid && cs.textAlign === 'center' && kids.length && kids.every((k) => k.k === 'b' && k.s && k.s.fit === 1)) {
+      s.d = 'r'; s.jc = 'center';
+      const els = [...el.children].filter((c) => c.getBoundingClientRect().width > 0);
+      if (els.length > 1) { const a = els[0].getBoundingClientRect(), b = els[1].getBoundingClientRect(); s.g = r1(Math.max(0, b.left - a.right)); }
+    }
     // a text-only link or button keeps its pill look as a box; empty boxes with no look are dropped
     if (!kids.length && !s.bg && !s.bd && !n.h && !n.a) {
       if (rect.height < 3 || rect.width < 3) return null;
@@ -388,6 +396,11 @@ function inPage([name, stackMode, pageProduct, included]) {
     let host = el;
     const kids = [...el.children].filter((c) => !SKIP_TAG.has(c.tagName) && visible(c, getComputedStyle(c)));
     const node = conv(host, null, rect.width);
+    const mL = rect.left, mR = window.innerWidth - rect.right;
+    if (node && node.k === 'b' && (mL > 0.5 || mR > 0.5)) {
+      const ns = node.s || (node.s = {});
+      if (!ns.bg && !ns.bd) { const pp = ns.p || [0, 0, 0, 0]; ns.p = [pp[0], r1(pp[1] + Math.max(0, mR)), pp[2], r1(pp[3] + Math.max(0, mL))]; }
+    }
     const out = { c: tone, n: node && node.k === 'b' ? node : { k: 'b', s: {}, c: node ? [node] : [] }, h: Math.round(rect.height) };
     if (el.dataset.tab) out.tab = el.dataset.tab;
     if (el.id) out.id = el.id;

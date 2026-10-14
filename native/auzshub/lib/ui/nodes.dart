@@ -281,7 +281,7 @@ class _NTextState extends State<NText> {
       if ((widget.cx.inc || added) && i == 0) break;
     }
     final ta = s['ta'] == 'c' ? TextAlign.center : (s['ta'] == 'r' ? TextAlign.right : TextAlign.left);
-    Widget w = fw.Text.rich(TextSpan(children: spans, style: _tstyle(s)), textAlign: ta, softWrap: _n(n['nl'], 2) > 1, textHeightBehavior: const TextHeightBehavior(applyHeightToFirstAscent: true, applyHeightToLastDescent: true));
+    Widget w = fw.Text.rich(TextSpan(children: spans, style: _tstyle(s)), textAlign: ta, softWrap: _n(n['nl'], 2) > 1, overflow: TextOverflow.visible, textHeightBehavior: const TextHeightBehavior(applyHeightToFirstAscent: true, applyHeightToLastDescent: true));
     final mw = n['mw'];
     if (mw is num) {
       w = ConstrainedBox(constraints: BoxConstraints(maxWidth: mw.toDouble() + 2), child: w);
@@ -383,7 +383,7 @@ class _BoxNodeState extends State<_BoxNode> {
       content = Stack(clipBehavior: Clip.none, children: [
         flow,
         for (final a in abs)
-          Positioned(left: _n((a['abs'] as List)[0]) - pad[3] - bdL, top: _n((a['abs'] as List)[1]) - pad[0] - bdT, child: nodeView(context, a, iw, cx: cx)),
+          Positioned(left: _n((a['abs'] as List)[0]) - pad[3] - bdL, top: _n((a['abs'] as List)[1]) - pad[0] - bdT, child: a['k'] == 'b' ? ConstrainedBox(constraints: BoxConstraints(maxWidth: iw), child: IntrinsicWidth(child: nodeView(context, a, iw, cx: cx))) : nodeView(context, a, iw, cx: cx)),
       ]);
       content = Padding(padding: EdgeInsets.zero, child: content);
     }
@@ -476,7 +476,11 @@ class _BoxNodeState extends State<_BoxNode> {
     final ai = s['ai'];
     final bullet = s['li'];
     Widget body;
-    if (dir == 'g') {
+    if (n['lp'] == 1) {
+      body = Row(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
+        for (final k in flow) Flexible(child: nodeView(context, k, iw, cx: cx)),
+      ]);
+    } else if (dir == 'g') {
       body = _grid(context, flow, iw, cx, rgap);
     } else if (dir == 'r') {
       body = _row(context, flow, iw, cx, s, gap, rgap);
@@ -521,7 +525,7 @@ class _BoxNodeState extends State<_BoxNode> {
         space = block ? _coll(_bot(flow[i - 1]), _top(k)) : _bot(flow[i - 1]) + _top(k) + gap;
       }
       Widget w = _indent(k, nodeView(context, k, iw - _ml(k), cx: cx));
-      if (ai == 'center' && (k['k'] == 't' || k['k'] == 'i' || k['k'] == 'v' || k['k'] == 'r')) w = Align(alignment: Alignment.topCenter, child: w);
+      if ((ai == 'center' || (k['k'] == 'i' && k['ac'] == 1)) && (k['k'] == 't' || k['k'] == 'i' || k['k'] == 'v' || k['k'] == 'r')) w = Align(alignment: Alignment.topCenter, child: w);
       if (ai == 'end' && (k['k'] == 't' || k['k'] == 'i' || k['k'] == 'v')) w = Align(alignment: Alignment.topRight, child: w);
       if (k['k'] == 'i' || k['k'] == 'v' || k['k'] == 'r') {
         if (ai != 'center' && ai != 'end') w = Align(alignment: Alignment.topLeft, child: w);

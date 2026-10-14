@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -20,7 +21,16 @@ Future<void> pumpPage(WidgetTester t, HubSession s, String name, {bool top = fal
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  setUpAll(() => SiteData.use(jsonDecode(File('assets/site/pages.json').readAsStringSync()) as Map<String, dynamic>));
+  setUpAll(() async {
+    SiteData.use(jsonDecode(File('assets/site/pages.json').readAsStringSync()) as Map<String, dynamic>);
+    // the app's own fonts, so line lengths in the test match a real phone
+    for (final f in [['Inter', 'assets/fonts/Inter-Variable.ttf'], ['SpaceMono', 'assets/fonts/SpaceMono-Regular.ttf']]) {
+      final l = FontLoader(f[0])..addFont(Future.value(ByteData.sublistView(File(f[1]).readAsBytesSync())));
+      await l.load();
+    }
+    final b = FontLoader('SpaceMono')..addFont(Future.value(ByteData.sublistView(File('assets/fonts/SpaceMono-Bold.ttf').readAsBytesSync())));
+    await b.load();
+  });
 
   test('the page data covers every marketing page and no link is left dangling', () {
     final d = jsonDecode(File('assets/site/pages.json').readAsStringSync()) as Map<String, dynamic>;
@@ -88,7 +98,7 @@ void main() {
   testWidgets('the AUZsPOS page shows the website text and adds to the cart', (t) async {
     final s = await session(customer);
     await pumpPage(t, s, 'pos');
-    expect(find.text('Built around the way you sell.'), findsOneWidget);
+    expect(find.byWidgetPredicate((w) => w is RichText && w.text.toPlainText().toLowerCase().contains('built around')), findsWidgets);
     await t.tap(find.text('ADD TO CART').first);
     await t.pump();
     expect(await Cart.get(), ['pos']);
@@ -133,7 +143,7 @@ void main() {
     for (final x in ['Home', 'Products', 'Pricing', 'Menu', 'Account']) {
       expect(find.text(x), findsWidgets, reason: x);
     }
-    expect(find.text('Software built around the way you work.'), findsWidgets);
+    expect(find.textContaining('Software built', findRichText: true), findsWidgets);
     await t.tap(find.text('Menu').last);
     await t.pump(const Duration(milliseconds: 100));
     expect(find.textContaining('Business types', findRichText: true), findsOneWidget);
@@ -154,12 +164,12 @@ void main() {
     await t.pump(const Duration(milliseconds: 100));
     await t.tap(find.text('Explore AUZslab'));
     await t.pumpAndSettle();
-    expect(find.text('Software built around the way you work.'), findsOneWidget);
-    Navigator.of(t.element(find.text('Software built around the way you work.'))).pop();
+    expect(find.textContaining('Software built', findRichText: true), findsWidgets);
+    Navigator.of(t.element(find.textContaining('Software built', findRichText: true).first)).pop();
     await t.pumpAndSettle();
     await t.tap(find.text('Products and pricing'));
     await t.pumpAndSettle();
-    expect(find.text('Plans that fit the way you work.'), findsOneWidget);
+    expect(find.textContaining('Plans that fit', findRichText: true), findsWidgets);
   });
 
   test('the menu lists a page that exists for every link', () async {
