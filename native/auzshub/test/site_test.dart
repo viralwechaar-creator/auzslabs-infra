@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:auzshub/core/orderdata.dart';
 import 'package:auzshub/core/session.dart';
 import 'package:auzshub/core/site.dart';
+import 'package:auzshub/ui/home.dart';
 import 'package:auzshub/ui/shell.dart';
 import 'package:auzshub/ui/site.dart';
 import 'package:auzshub/ui/theme.dart';
@@ -98,12 +99,12 @@ void main() {
     final s = await session(customer);
     await pumpPage(t, s, 'pricing');
     await t.pump(const Duration(milliseconds: 200));
-    expect(find.text('₹1,090'), findsWidgets);
+    expect(find.text('₹999'), findsWidgets);
     await t.drag(find.byType(ListView).first, const Offset(0, -1400));
     await t.pump();
     await t.drag(find.byType(ListView).first, const Offset(0, -1400));
     await t.pump();
-    expect(find.textContaining('Hospitality Essentials'), findsWidgets);
+    expect(find.textContaining('Starter business'), findsWidgets);
   });
 
   testWidgets('the contact page sends the same lead the website sends', (t) async {
@@ -132,7 +133,7 @@ void main() {
     for (final x in ['Home', 'Products', 'Pricing', 'Menu', 'Account']) {
       expect(find.text(x), findsWidgets, reason: x);
     }
-    expect(find.text('Business software, built differently'), findsWidgets);
+    expect(find.text('Software built around the way you work.'), findsWidgets);
     await t.tap(find.text('Menu').last);
     await t.pump(const Duration(milliseconds: 100));
     expect(find.text('Cafes and restaurants'), findsOneWidget);
@@ -141,6 +142,21 @@ void main() {
     await t.pump(const Duration(milliseconds: 200));
     expect(find.text('Acme Cafe'), findsWidgets);
     expect(find.text('My apps'), findsWidgets);
+  });
+
+  testWidgets('the hub tiles Explore AUZslab and Products and pricing open the native website pages', (t) async {
+    await t.binding.setSurfaceSize(const Size(420, 3000));
+    final s = await session(customer);
+    await t.pumpWidget(MaterialApp(theme: Tk.theme(), home: HubHome(s)));
+    await t.pump(const Duration(milliseconds: 100));
+    await t.tap(find.text('Explore AUZslab'));
+    await t.pumpAndSettle();
+    expect(find.text('Software built around the way you work.'), findsOneWidget);
+    Navigator.of(t.element(find.text('Software built around the way you work.'))).pop();
+    await t.pumpAndSettle();
+    await t.tap(find.text('Products and pricing'));
+    await t.pumpAndSettle();
+    expect(find.text('Plans that fit the way you work.'), findsOneWidget);
   });
 
   test('the menu lists a page that exists for every link', () async {
