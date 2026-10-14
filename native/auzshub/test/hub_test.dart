@@ -260,13 +260,43 @@ void main() {
     expect(stateNames['08'], 'Rajasthan');
   });
 
-  testWidgets('Explore AUZslab opens the native Explore screen, not the browser', (t) async {
+  testWidgets('Explore AUZslab opens the native table of contents, not the browser', (t) async {
     await show(t, await session(customer));
     await t.tap(find.text('Explore AUZslab'));
     await t.pumpAndSettle();
-    // The page's own hero copy only exists on the native screen, never on the home tile.
+    // Every exploreSections entry is a row here, native or still a placeholder.
+    for (final x in ['AUZslab', 'Why AUZslab', 'Products and pricing', 'Every product in detail', 'Built for your business', 'AUZslab Studio', 'AUZslab Intelligence', 'Learn & resources', 'Legal', 'Contact us']) {
+      expect(find.text(x), findsOneWidget, reason: x);
+    }
+  });
+
+  testWidgets('the Explore table of contents pushes the native Home page for "AUZslab"', (t) async {
+    await show(t, await session(customer));
+    await t.tap(find.text('Explore AUZslab'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('AUZslab').last); // the TOC row (there is no other "AUZslab" text on that screen)
+    await t.pumpAndSettle();
     expect(find.text('Software built around the way you work.'), findsOneWidget);
-    expect(find.text('Products and pricing'), findsOneWidget); // its own CTA card
+    expect(find.text('Why AUZslab'), findsWidgets); // CTA card at the bottom of Home
+  });
+
+  testWidgets('the Explore table of contents pushes the native Why AUZslab page', (t) async {
+    await show(t, await session(customer));
+    await t.tap(find.text('Explore AUZslab'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Why AUZslab'));
+    await t.pumpAndSettle();
+    expect(find.text('Businesses differ. Software should too.'), findsOneWidget);
+  });
+
+  testWidgets('a not-yet-native Explore section falls through to the "coming soon" website hand-off', (t) async {
+    await show(t, await session(customer));
+    await t.tap(find.text('Explore AUZslab'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('AUZslab Studio'));
+    await t.pumpAndSettle();
+    expect(find.text('Coming soon, natively'), findsOneWidget);
+    expect(find.text('Open on the website'), findsOneWidget);
   });
 
   testWidgets('Products and pricing opens the native pricing screen with live prices, not the browser', (t) async {
