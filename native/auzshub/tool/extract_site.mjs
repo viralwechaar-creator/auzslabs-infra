@@ -197,7 +197,8 @@ function inPage([name, stackMode, pageProduct, included]) {
       t.setAttribute('fill', fill && fill !== 'none' ? fill : 'none');
       if (stroke && stroke !== 'none') { t.setAttribute('stroke', stroke); set('stroke-width', cs.strokeWidth); set('stroke-linecap', cs.strokeLinecap); set('stroke-linejoin', cs.strokeLinejoin); } else t.setAttribute('stroke', 'none');
       if (cs.opacity !== '1') t.setAttribute('opacity', cs.opacity);
-      t.removeAttribute('style'); t.removeAttribute('class'); t.removeAttribute('data-art'); t.removeAttribute('stroke-dasharray'); t.removeAttribute('stroke-dashoffset');
+      t.removeAttribute('style'); t.removeAttribute('class'); t.removeAttribute('data-art'); t.removeAttribute('stroke-dashoffset');
+      { const da = (cs.strokeDasharray || '').split(/[ ,]+/).map(parseFloat).filter((x) => !isNaN(x)); if (da.length && da.every((x) => x > 0 && x < 30)) t.setAttribute('stroke-dasharray', da.join(' ')); else t.removeAttribute('stroke-dasharray'); }
     });
     c.setAttribute('width', String(Math.round(rc.width)));
     c.setAttribute('height', String(Math.round(rc.height)));

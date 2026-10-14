@@ -281,7 +281,7 @@ class _NTextState extends State<NText> {
       if ((widget.cx.inc || added) && i == 0) break;
     }
     final ta = s['ta'] == 'c' ? TextAlign.center : (s['ta'] == 'r' ? TextAlign.right : TextAlign.left);
-    Widget w = fw.Text.rich(TextSpan(children: spans, style: _tstyle(s)), textAlign: ta, textHeightBehavior: const TextHeightBehavior(applyHeightToFirstAscent: true, applyHeightToLastDescent: true));
+    Widget w = fw.Text.rich(TextSpan(children: spans, style: _tstyle(s)), textAlign: ta, softWrap: _n(n['nl'], 2) > 1, textHeightBehavior: const TextHeightBehavior(applyHeightToFirstAscent: true, applyHeightToLastDescent: true));
     final mw = n['mw'];
     if (mw is num) {
       w = ConstrainedBox(constraints: BoxConstraints(maxWidth: mw.toDouble() + 2), child: w);
