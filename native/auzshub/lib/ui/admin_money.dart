@@ -234,7 +234,9 @@ class _OrderDetailState extends State<OrderDetail> {
 
   void _recalc() => setState(() {});
 
-  Widget _num(String label, Map m, String k, {VoidCallback? onChanged}) {
+  dynamic _price(Map? p, bool yearly) => p == null ? null : (yearly ? p['yearly_price'] : p['monthly_price']);
+
+  Widget _num(String label, Map m, String k) {
     final key = '${identityHashCode(m)}$k';
     final ctl = fee.putIfAbsent(key, () => TextEditingController(text: '${m[k] ?? 0}'));
     return Expanded(child: Padding(padding: const EdgeInsets.only(right: 6), child: TextField(controller: ctl, enabled: !locked, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: tr(label)), onChanged: (v) {
@@ -307,7 +309,7 @@ class _OrderDetailState extends State<OrderDetail> {
                 Expanded(child: Sel('Product', '${it['key']}', [for (final e in productLabels.entries) (e.key, e.value)], (v) {
                   it['key'] = v;
                   final p = prices[v] as Map?;
-                  it['rate'] = n0((it['plan'] == 'year' ? p?['yearly_price'] : p?['monthly_price']));
+                  it['rate'] = n0(_price(p, it['plan'] == 'year'));
                   it['gst'] = p?['gst_exempt'] == true ? 0 : defGst;
                   fee.removeWhere((k, _) => k.startsWith('${identityHashCode(it)}'));
                   setState(() {});
@@ -316,7 +318,7 @@ class _OrderDetailState extends State<OrderDetail> {
                 SizedBox(width: 120, child: Sel('Plan', '${it['plan']}', const [('month', 'Monthly'), ('year', 'Yearly')], (v) {
                   it['plan'] = v;
                   final p = prices['${it['key']}'] as Map?;
-                  final r = n0(v == 'year' ? p?['yearly_price'] : p?['monthly_price']);
+                  final r = n0(_price(p, v == 'year'));
                   if (r > 0) it['rate'] = r;
                   fee.removeWhere((k, _) => k.startsWith('${identityHashCode(it)}'));
                   setState(() {});
