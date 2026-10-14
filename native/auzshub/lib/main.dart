@@ -4,6 +4,7 @@ import 'core/session.dart';
 import 'core/version.dart';
 import 'ui/i18n.dart';
 import 'ui/launch.dart';
+import 'ui/mkt.dart' show MktDark;
 import 'ui/shell.dart';
 import 'ui/theme.dart';
 import 'ui/updatescreen.dart';
@@ -12,6 +13,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final s = HubSession();
   await Tk.loadMode();
+  await MktDark.load();
   await Lang.load();
   await s.restore();
   final upd = await checkUpdate();

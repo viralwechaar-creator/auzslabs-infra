@@ -10,9 +10,11 @@ import '../core/site.dart';
 import 'account.dart';
 import 'cart.dart';
 import 'guest.dart';
+import 'home.dart' show HubHome;
 import 'mk.dart' show toast, Sel;
 import 'mkt.dart';
 import 'site_forms.dart';
+import 'sticky.dart';
 
 part 'nodes.dart';
 
@@ -40,6 +42,27 @@ Map<String, dynamic> _plainSheet(Map<String, dynamic> root) {
     if (kids is List) 'c': [for (final c in kids) if (!(c is Map && c['abs'] != null && c['k'] == 't')) c],
   };
 }
+
+/// A stacked sheet of the website: a rounded, shadowed panel (or the plain page behind them).
+bool _isSheetRoot(Map<String, dynamic> root) {
+  final st = _s(root);
+  return st['r'] != null || st['sh'] != null;
+}
+
+/// A sheet keeps its look (rounded top, edge lines, shadow, big tab word) and gets the website's grid paper as its background
+/// (the website paints the grid with a CSS gradient, which the extractor cannot carry).
+Map<String, dynamic> _sheetRoot(Map<String, dynamic> root) {
+  final st = Map<String, dynamic>.from(_s(root));
+  if (_isSheetRoot(root)) {
+    if (st['bg'] == null || '${st['bg']}'.isEmpty) st['bg'] = 'faf9f7';
+  }
+  st.remove('mt');
+  return {...root, 'sheet': _isSheetRoot(root), 's': st};
+}
+
+/// The website's stacked pages (home, contact) give every sheet a full screen and start the stack 40px below the bar.
+bool _fullScreenSheets(List<Map<String, dynamic>> secs) =>
+    secs.any((x) => x['hr'] != 1 && const [76, 128, 150, 160, 190].contains(_padOf(_s((x['n'] as Map).cast<String, dynamic>()))[0].round()));
 
 /// Empty padded boxes are the website's forms and widgets whose insides are not drawn here (the app has its own native forms):
 /// they would show as blank cards.
@@ -250,72 +273,192 @@ class _SitePageState extends State<SitePage> {
   void _open(BuildContext c, String href) => openSiteLink(c, widget.s, href, onAnchor: _goto);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => ValueListenableBuilder<bool>(valueListenable: MktDark.on, builder: (ctx, _, _) => _page(ctx));
+
+  Widget _page(BuildContext context) {
     final p = page;
     final secs = _sectionsFor(p);
-    final stack = (p?['mode'] ?? 'flat') == 'stack';
+    final flatMode = (p?['mode'] ?? 'flat') != 'stack';
+    final sheets = secs.where((x) => x['hr'] != 1 && _isSheetRoot((x['n'] as Map).cast<String, dynamic>())).length;
+    final stacked = sheets >= 2;
+    final mq = MediaQuery.of(context);
+    final scale = ResponsivePage.scaleFor(mq.size.width);
+    final lw = (mq.size.width / scale).clamp(0.0, 600.0).toDouble();
     Widget body;
     if (missing) {
       body = Padding(padding: const EdgeInsets.all(32), child: fw.Text('This page is not available in the app yet.', style: inter(15, color: M.dim)));
     } else if (p == null) {
-      body = const Padding(padding: EdgeInsets.all(48), child: Center(child: CircularProgressIndicator(color: M.wine)));
+      body = const Padding(padding: EdgeInsets.all(48), child: Center(child: CircularProgressIndicator(color: Color(0xFF800020))));
     } else {
       final children = <Widget>[];
       for (var i = 0; i < secs.length; i++) {
         final sec = secs[i];
         final id = sec['id'] as String?;
         Widget w;
+        var mt = 0.0;
+        var sticky = true;
         if (sec['hr'] == 1) {
+          sticky = false;
           w = const Padding(padding: EdgeInsets.symmetric(horizontal: 22, vertical: 4), child: _Dashed());
         } else {
           var root = (sec['n'] as Map).cast<String, dynamic>();
-          root = _plainSheet(root);
+          if (stacked) {
+            mt = _n(_s(root)['mt']);
+            root = _sheetRoot(root);
+          } else {
+            root = _plainSheet(root);
+          }
           w = SectionView(root);
-          final top = _top(root);
-          if (top < 0 && widget.name.isEmpty) w = NegTop(-top, child: w);
         }
-        children.add(id == null ? w : KeyedSubtree(key: keyFor(id), child: w));
+        if (id != null) w = KeyedSubtree(key: keyFor(id), child: w);
+        children.add(stacked ? StickyChild(mt: mt, sticky: sticky, child: RepaintBoundary(child: w)) : w);
       }
-      if (widget.name == 'contact') children.add(ContactForm(widget.s));
-      if (widget.name == 'join-team') children.add(JoinForm(widget.s));
-      children.add(SiteFooter(widget.s));
-      body = ResponsivePage(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children));
+      if (widget.name == 'contact') children.add(stacked ? StickyChild(mt: 0, sticky: false, child: ContactForm(widget.s)) : ContactForm(widget.s));
+      if (widget.name == 'join-team') children.add(stacked ? StickyChild(mt: 0, sticky: false, child: JoinForm(widget.s)) : JoinForm(widget.s));
+      children.add(stacked ? StickyChild(mt: 0, sticky: false, child: SiteFooter(widget.s)) : SiteFooter(widget.s));
+      if (stacked) {
+        // the website gives each of these sheets a full screen (min-height: 100svh)
+        final full = _fullScreenSheets(secs);
+        final head = (74 + mq.padding.top) / scale;
+        body = ResponsivePage(
+          child: StickySheets(repaint: scroll, pinBase: head + 30, step: (lw * .068).clamp(24.0, 55.0).toDouble(), minH: full ? mq.size.height / scale : 0, children: children),
+        );
+      } else {
+        body = ResponsivePage(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children));
+      }
     }
-    final env = _Env(s: widget.s, pricing: pricing, open: _open, keyFor: keyFor, dark: false, flat: !stack, child: body);
+    final env = _Env(s: widget.s, pricing: pricing, open: _open, keyFor: keyFor, dark: false, flat: flatMode, child: body);
     return Theme(
       data: marketingTheme(),
       child: Scaffold(
-      backgroundColor: M.page,
-      body: DefaultTextStyle(
-        style: inter(13.5, color: M.dim),
-        child: Stack(children: [
-          const Positioned.fill(child: CustomPaint(painter: PaperGrid())),
-          Positioned.fill(child: ListView(controller: scroll, padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top), children: [SizedBox(height: _n(page?['top'])), env])),
-          Positioned(top: 0, left: 0, right: 0, child: MktHeader(widget.s, back: !widget.top)),
-        ]),
-      ),
+        backgroundColor: M.page,
+        body: DefaultTextStyle(
+          style: inter(13.5, color: M.dim),
+          child: Stack(children: [
+            Positioned.fill(child: CustomPaint(painter: PaperGrid())),
+            Positioned.fill(child: ListView(controller: scroll, padding: EdgeInsets.only(top: mq.padding.top), children: [SizedBox(height: _n(page?['top']) + (stacked && _fullScreenSheets(secs) ? 40 : 0)), env])),
+            Positioned(top: 0, left: 0, right: 0, child: MktHeader(widget.s, back: !widget.top)),
+            if (widget.name != 'contact' && widget.name != 'join-team') Positioned(right: 20, bottom: 22 + mq.padding.bottom, child: KnockButton(widget.s)),
+          ]),
+        ),
       ),
     );
   }
 }
 
-/// The website's top bar: pixel wordmark, GET STARTED and MENU.
+/// The website's top bar: pixel wordmark, the light / dark switch, GET STARTED (MY APPS once signed in) and MENU.
 class MktHeader extends StatelessWidget {
   const MktHeader(this.s, {this.back = false, super.key});
   final HubSession s;
   final bool back;
   @override
-  Widget build(BuildContext context) => Container(
-        height: 74 + MediaQuery.paddingOf(context).top,
-        padding: EdgeInsets.fromLTRB(back ? 4 : 18, MediaQuery.paddingOf(context).top, 16, 0),
-        decoration: const BoxDecoration(color: Color(0xF2F6F4F1), border: Border(bottom: BorderSide(color: M.lineSoft))),
-        child: Row(children: [
-          if (back) IconButton(onPressed: () => Navigator.maybePop(context), icon: const Icon(Icons.chevron_left, color: M.ink, size: 28)),
-          GestureDetector(onTap: () => Navigator.of(context).popUntil((r) => r.isFirst), child: Image.asset('assets/site/logo.png', height: 38)),
-          const Spacer(),
-          ListenableBuilder(listenable: s, builder: (_, _) => s.signedIn ? const SizedBox.shrink() : Padding(padding: const EdgeInsets.only(right: 8), child: MktPill('GET STARTED', onTap: () => openLogin(context, s, tab: 1), dim: true))),
-          MktPill('MENU', onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => SiteDrawerPage(s)))),
-        ]),
+  Widget build(BuildContext context) => ValueListenableBuilder<bool>(
+        valueListenable: MktDark.on,
+        builder: (context, dark, _) => Container(
+          height: 74 + MediaQuery.paddingOf(context).top,
+          padding: EdgeInsets.fromLTRB(back ? 0 : 16, MediaQuery.paddingOf(context).top, 14, 0),
+          decoration: BoxDecoration(color: M.bar, border: Border(bottom: BorderSide(color: M.lineSoft))),
+          child: Row(children: [
+            if (back) IconButton(onPressed: () => Navigator.maybePop(context), icon: Icon(Icons.chevron_left, color: M.ink, size: 28)),
+            Flexible(
+              child: GestureDetector(
+                onTap: () => Navigator.of(context).popUntil((r) => r.isFirst),
+                child: Image.asset('assets/site/logo.png', height: 34, fit: BoxFit.contain, alignment: Alignment.centerLeft, color: dark ? M.ink : null, colorBlendMode: dark ? BlendMode.srcIn : null),
+              ),
+            ),
+            const SizedBox(width: 6),
+            const MktSwitch(),
+            const SizedBox(width: 4),
+            ListenableBuilder(
+              listenable: s,
+              builder: (_, _) => s.signedIn
+                  ? Padding(padding: const EdgeInsets.only(right: 6), child: MktPill(s.kind == Kind.customer ? 'ACCOUNT' : 'MY APPS', onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => HubHome(s))), dim: true))
+                  : Padding(padding: const EdgeInsets.only(right: 6), child: MktPill('GET STARTED', onTap: () => openLogin(context, s, tab: 1), dim: true)),
+            ),
+            MktPill('MENU', onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => SiteDrawerPage(s)))),
+          ]),
+        ),
+      );
+}
+
+/// The website's round light / dark switch.
+class MktSwitch extends StatelessWidget {
+  const MktSwitch({super.key});
+  @override
+  Widget build(BuildContext context) => ValueListenableBuilder<bool>(
+        valueListenable: MktDark.on,
+        builder: (context, on, _) => Semantics(
+          button: true,
+          toggled: on,
+          label: 'Dark mode',
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: MktDark.toggle,
+            child: SizedBox(
+              width: 54,
+              height: 44,
+              child: Center(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 42,
+                  height: 24,
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), border: Border.all(color: M.ink, width: 1.4), color: on ? M.ink.withValues(alpha: .12) : Colors.transparent),
+                  child: AnimatedAlign(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOut,
+                    alignment: on ? Alignment.centerRight : Alignment.centerLeft,
+                    child: Container(width: 16, height: 16, decoration: BoxDecoration(shape: BoxShape.circle, color: M.ink)),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+}
+
+/// "Knock, we'll answer": the floating button of the website; it opens the contact form.
+class KnockButton extends StatelessWidget {
+  const KnockButton(this.s, {super.key});
+  final HubSession s;
+  @override
+  Widget build(BuildContext context) => Material(
+        color: M.wine,
+        elevation: 6,
+        shadowColor: const Color(0x66000000),
+        borderRadius: BorderRadius.circular(40),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(40),
+          onTap: () => showModalBottomSheet<void>(
+            context: context,
+            isScrollControlled: true,
+            useSafeArea: true,
+            backgroundColor: M.page,
+            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(26))),
+            builder: (ctx) => Theme(
+              data: marketingTheme(),
+              child: DraggableScrollableSheet(
+                expand: false,
+                initialChildSize: .92,
+                maxChildSize: .96,
+                builder: (_, c) => ListView(controller: c, padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom + 24), children: [
+                  Padding(padding: const EdgeInsets.fromLTRB(24, 22, 24, 0), child: fw.Text("TELL US HOW YOUR BUSINESS WORKS", style: mono(10.5, color: M.dim, ls: 1))),
+                  ContactForm(s),
+                ]),
+              ),
+            ),
+          ),
+          child: Container(
+            height: 52,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.back_hand_outlined, color: M.onInk, size: 18),
+              const SizedBox(width: 10),
+              fw.Text("KNOCK, WE'LL ANSWER", style: mono(11, color: M.onInk, ls: .6)),
+            ]),
+          ),
+        ),
       );
 }
 
@@ -365,7 +508,7 @@ class _DashPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter o) => false;
 }
 
-BoxDecoration _cardDeco() => BoxDecoration(color: Colors.white, border: Border.all(color: M.line), borderRadius: BorderRadius.circular(22), boxShadow: const [M.shadow]);
+BoxDecoration _cardDeco() => BoxDecoration(color: M.card, border: Border.all(color: M.line), borderRadius: BorderRadius.circular(22), boxShadow: const [M.shadow]);
 /// The bundle cards, from the database (the website builds the same cards from the same functions).
 class BundleCards extends StatelessWidget {
   const BundleCards({super.key});
@@ -373,7 +516,7 @@ class BundleCards extends StatelessWidget {
   Widget build(BuildContext context) {
     final env = _Env.of(context);
     final pr = env.pricing;
-    if (pr == null) return const Padding(padding: EdgeInsets.all(16), child: Center(child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: M.wine))));
+    if (pr == null) return Padding(padding: const EdgeInsets.all(16), child: Center(child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: M.wine))));
     if (pr.bundles.isEmpty) return fw.Text('Bundle prices are not available right now.', style: inter(13, color: M.dim));
     return LayoutBuilder(builder: (_, cs) {
       final cols = cs.maxWidth >= 700 ? 2 : 1;
@@ -388,7 +531,7 @@ class BundleCards extends StatelessWidget {
             return Container(
               width: w,
               padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(color: Colors.white, border: Border.all(color: hot ? M.wine : M.line, width: hot ? 2 : 1), borderRadius: BorderRadius.circular(22), boxShadow: hot ? const [BoxShadow(color: M.wine, offset: Offset(5, 5))] : const [M.shadow]),
+              decoration: BoxDecoration(color: M.card, border: Border.all(color: hot ? M.wine : M.line, width: hot ? 2 : 1), borderRadius: BorderRadius.circular(22), boxShadow: hot ? [BoxShadow(color: M.wine, offset: const Offset(5, 5))] : const [M.shadow]),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [for (final k in keys) if (planIcons[k] != null) Padding(padding: const EdgeInsets.only(right: 8), child: ClipRRect(borderRadius: BorderRadius.circular(9), child: Image.asset(planIcons[k]!, width: 36, height: 36)))]),
                 if (badge.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 10), child: Container(padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4), decoration: BoxDecoration(color: (hot ? M.wine : M.ink).withValues(alpha: .1), borderRadius: BorderRadius.circular(20)), child: fw.Text(badge, style: mono(10, color: hot ? M.wine : M.ink, ls: .2)))),
@@ -468,7 +611,7 @@ class SiteFooter extends StatelessWidget {
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(24, 36, 24, 40),
-        decoration: const BoxDecoration(color: M.ink),
+        decoration: const BoxDecoration(color: M.inkBg),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           fw.Text('CONNECT', style: inter(58, w: 800, color: M.onInk, ls: -2.4, h: 1.0)),
           const SizedBox(height: 44),
@@ -518,7 +661,7 @@ class _SiteMenuState extends State<SiteMenu> {
   Widget build(BuildContext context) {
     final s = widget.s;
     return Container(
-      color: M.ink,
+      color: M.inkBg,
       child: SafeArea(
         child: ListView(padding: const EdgeInsets.fromLTRB(22, 10, 22, 30), children: [
           Row(children: [
@@ -567,7 +710,7 @@ class SiteDrawerPage extends StatelessWidget {
   const SiteDrawerPage(this.s, {super.key});
   final HubSession s;
   @override
-  Widget build(BuildContext context) => Theme(data: marketingTheme(), child: Scaffold(backgroundColor: M.ink, body: DefaultTextStyle(style: inter(14, color: M.onInk), child: SiteMenu(s, onClose: () => Navigator.pop(context)))));
+  Widget build(BuildContext context) => Theme(data: marketingTheme(), child: Scaffold(backgroundColor: M.inkBg, body: DefaultTextStyle(style: inter(14, color: M.onInk), child: SiteMenu(s, onClose: () => Navigator.pop(context)))));
 }
 
 

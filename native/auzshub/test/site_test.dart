@@ -9,6 +9,8 @@ import 'package:auzshub/core/session.dart';
 import 'package:auzshub/core/site.dart';
 import 'package:auzshub/ui/home.dart';
 import 'package:auzshub/ui/launch.dart';
+import 'package:auzshub/ui/mkt.dart';
+import 'package:auzshub/ui/sticky.dart';
 import 'package:auzshub/ui/shell.dart';
 import 'package:auzshub/ui/site.dart';
 import 'package:auzshub/ui/theme.dart';
@@ -149,16 +151,20 @@ void main() {
     expect(find.text('Got it.'), findsOneWidget);
   });
 
-  testWidgets('the app opens on the website for a customer and on My apps for a business', (t) async {
+  testWidgets('the app opens on the website for a customer and on My apps for a business, with no bottom bar', (t) async {
     await t.binding.setSurfaceSize(const Size(420, 4000));
     var s = await session(customer);
     await t.pumpWidget(MaterialApp(theme: Tk.theme(), home: HubShell(s)));
     await t.pump(const Duration(milliseconds: 200));
-    for (final x in ['Home', 'Products', 'Pricing', 'Menu', 'Account']) {
+    expect(find.byType(NavigationBar), findsNothing);
+    // the website's top bar: switch, account pill, menu
+    expect(find.byType(MktSwitch), findsOneWidget);
+    for (final x in ['ACCOUNT', 'MENU']) {
       expect(find.text(x), findsWidgets, reason: x);
     }
     expect(find.textContaining('Software built', findRichText: true), findsWidgets);
-    await t.tap(find.text('Menu').last);
+    await t.tap(find.text('MENU'));
+    await t.pump(const Duration(milliseconds: 100));
     await t.pump(const Duration(milliseconds: 100));
     expect(find.textContaining('Business types', findRichText: true), findsOneWidget);
     await t.tap(find.textContaining('Business types', findRichText: true));
@@ -168,7 +174,7 @@ void main() {
     await t.pumpWidget(MaterialApp(theme: Tk.theme(), home: HubShell(s, key: UniqueKey())));
     await t.pump(const Duration(milliseconds: 200));
     expect(find.text('Acme Cafe'), findsWidgets);
-    expect(find.text('My apps'), findsWidgets);
+    expect(find.byType(NavigationBar), findsNothing);
   });
 
   testWidgets('a visitor who is not signed in explores first and is only asked to sign in when they choose to', (t) async {
@@ -178,21 +184,19 @@ void main() {
     expect(s.signedIn, false);
     await t.pumpWidget(MaterialApp(theme: Tk.theme(), home: HubShell(s)));
     await t.pump(const Duration(milliseconds: 200));
-    // the website home is the first screen, and the last tab invites a sign-in
+    // the website home is the first screen; GET STARTED is in its own top bar
     expect(find.textContaining('Software built', findRichText: true), findsWidgets);
-    expect(find.text('Sign in'), findsWidgets);
+    expect(find.text('GET STARTED'), findsOneWidget);
     expect(find.text('Continue with Google'), findsNothing);
-    await t.tap(find.text('Sign in').last);
-    await t.pump(const Duration(milliseconds: 200));
-    expect(find.text('Create an account'), findsOneWidget);
-    await t.tap(find.text('Create an account'));
+    await t.tap(find.text('GET STARTED'));
     await t.pumpAndSettle();
     expect(find.text('Continue with Google'), findsOneWidget);
     expect(find.byType(BackButton), findsOneWidget);
-    // the back arrow returns to the app
+    // the back arrow returns to the website
     await t.tap(find.byType(BackButton));
     await t.pumpAndSettle();
     expect(find.text('Continue with Google'), findsNothing);
+    expect(find.text('GET STARTED'), findsOneWidget);
   });
 
   testWidgets('the opening animation plays in full before the app is built', (t) async {
@@ -207,13 +211,67 @@ void main() {
     expect(find.text('THE APP'), findsOneWidget);
   });
 
-  testWidgets('the website pages scroll as plain bands: no sheet slides over another', (t) async {
-    for (final name in ['index', 'pos', 'products']) {
-      final s = await session(customer);
-      await pumpPage(t, s, name);
-      // only tiny line-height nudges inside a card may remain; no section is pulled up over the one above it
-      expect(find.byType(NegTop).evaluate().length, lessThanOrEqualTo(name == 'products' ? 2 : 0), reason: name);
+  testWidgets('the sheets stack: each pins near the top and the next one slides over it', (t) async {
+    await t.binding.setSurfaceSize(const Size(420, 800));
+    final s = await session(customer);
+    await t.pumpWidget(MaterialApp(theme: Tk.theme(), home: SitePage(s, 'index', top: true, key: const ValueKey('index'))));
+    await t.pump(const Duration(milliseconds: 100));
+    final box = t.renderObject<RenderStickySheets>(find.byType(StickySheets));
+    List<StickyParentData> kids() {
+      final out = <StickyParentData>[];
+      for (var c = box.firstChild; c != null; c = (c.parentData! as StickyParentData).nextSibling) {
+        out.add(c.parentData! as StickyParentData);
+      }
+      return out;
     }
+
+    expect(kids().length, greaterThanOrEqualTo(5));
+    // at the top nothing is moved
+    for (final k in kids()) {
+      expect(k.dy, k.offset.dy);
+    }
+    final heights = <double>[];
+    for (var c = box.firstChild; c != null; c = (c.parentData! as StickyParentData).nextSibling) {
+      heights.add(c.size.height);
+    }
+    // scroll to the middle of the page: the first sheet has been left behind but stays pinned (moved down from its place)
+    await t.drag(find.byType(ListView), const Offset(0, -2600));
+    await t.pump();
+    await t.pump();
+    final k = kids();
+    expect(k[0].dy, greaterThan(k[0].offset.dy));
+    // several sheets are held back at once, each inside the page (never past the end of the stack)
+    final pinned = [for (var i = 0; i < k.length; i++) if (k[i].sticky && k[i].dy > k[i].offset.dy) i];
+    expect(pinned.length, greaterThanOrEqualTo(2));
+    final end = box.size.height;
+    for (final i in pinned) {
+      expect(k[i].dy + heights[i], lessThanOrEqualTo(end + .5));
+    }
+    // a sheet that has not been reached yet is still in its own place
+    expect(k.last.dy, k.last.offset.dy);
+  });
+
+  testWidgets('the sheets lie on the website grid paper, the switch makes the pages dark, and the Knock button opens the contact form', (t) async {
+    await t.binding.setSurfaceSize(const Size(420, 3000));
+    final s = await session(customer);
+    await t.pumpWidget(MaterialApp(theme: Tk.theme(), home: SitePage(s, 'index', top: true, key: const ValueKey('index2'))));
+    await t.pump(const Duration(milliseconds: 100));
+    // grid under the sheets
+    expect(find.byWidgetPredicate((w) => w is CustomPaint && w.painter is PaperGrid).evaluate().length, greaterThanOrEqualTo(5));
+    expect(find.text("KNOCK, WE'LL ANSWER"), findsOneWidget);
+    // dark
+    MktDark.on.value = false;
+    await t.tap(find.byType(MktSwitch));
+    await t.pump(const Duration(milliseconds: 300));
+    expect(MktDark.on.value, true);
+    expect(M.bg, const Color(0xFF232120));
+    await t.tap(find.byType(MktSwitch));
+    await t.pump(const Duration(milliseconds: 300));
+    expect(MktDark.on.value, false);
+    // knock
+    await t.tap(find.text("KNOCK, WE'LL ANSWER"));
+    await t.pumpAndSettle();
+    expect(find.text('TELL US HOW YOUR BUSINESS WORKS'), findsOneWidget);
   });
 
   testWidgets('the hub tiles Explore AUZslab and Products and pricing open the native website pages', (t) async {

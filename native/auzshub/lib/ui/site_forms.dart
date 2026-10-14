@@ -149,7 +149,7 @@ class _FormCard extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         margin: const EdgeInsets.fromLTRB(24, 28, 24, 8),
         padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(color: Colors.white, border: Border.all(color: M.line), borderRadius: BorderRadius.circular(22), boxShadow: const [M.shadow]),
+        decoration: BoxDecoration(color: M.card, border: Border.all(color: M.line), borderRadius: BorderRadius.circular(22), boxShadow: const [M.shadow]),
         child: done
             ? Column(children: [
                 const Icon(Icons.check_circle_outline, color: Color(0xFF1F6B3A), size: 44),

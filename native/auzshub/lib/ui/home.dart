@@ -107,7 +107,7 @@ class _HubHomeState extends State<HubHome> {
                 await _count();
               },
               child: ListView(padding: const EdgeInsets.only(bottom: 32), children: [
-                Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 0), child: Row(children: [ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.asset('assets/icon.png', height: 36)), const SizedBox(width: 10), const Text('AUZslab', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800))])),
+                Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 0), child: Row(children: [if (Navigator.canPop(context)) IconButton(onPressed: () => Navigator.pop(context), icon: Icon(Icons.chevron_left, color: Tk.label, size: 28), padding: EdgeInsets.zero, constraints: const BoxConstraints(minWidth: 36, minHeight: 36)), ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.asset('assets/icon.png', height: 36)), const SizedBox(width: 10), const Text('AUZslab', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800))])),
                 PageHead(title, sub: sub),
                 const SizedBox(height: 8),
                 Group(rows),

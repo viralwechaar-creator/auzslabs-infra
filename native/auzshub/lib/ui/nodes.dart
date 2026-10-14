@@ -3,10 +3,38 @@ part of 'site.dart';
 // Draws the node trees written by tool/extract_site.mjs: every box, text and picture of a website section with the
 // computed look (font, size, colour, borders, radius, shadow, padding, tilt) the browser gave it at phone width.
 
-Color? _hx(dynamic v) {
+/// A colour of the extracted page (light theme values). [role] 0 = text, line or stroke, 1 = fill, 2 = shadow. In the dark theme the website's
+/// own token swap is applied: ink -> light ink, dim, faint, paper and raised tones, the accent; the fixed dark ink (footer) stays.
+Color? _hx(dynamic v, {int role = 0}) {
   if (v is! String || v.isEmpty) return null;
-  if (v.length == 8) return Color(int.parse('${v.substring(6)}${v.substring(0, 6)}', radix: 16));
-  return Color(int.parse('FF$v', radix: 16));
+  final c = v.length == 8 ? Color(int.parse('${v.substring(6)}${v.substring(0, 6)}', radix: 16)) : Color(int.parse('FF$v', radix: 16));
+  if (!MktDark.on.value || role == 2) return c;
+  final rgb = v.substring(0, 6).toLowerCase();
+  final solid = v.length != 8;
+  if (role == 1) {
+    switch (rgb) {
+      case 'faf9f7' || 'f6f4f1' || 'fbfaf9' || 'f7f5f2':
+        return solid ? const Color(0xFF232120) : c;
+      case 'efece8' || 'ffffff' || 'f1e4e6' || 'ece7e4':
+        return solid ? const Color(0xFF2D2B29) : c;
+      case '800020':
+        return solid ? const Color(0xFFA3324F) : c;
+    }
+    // any other light solid fill (pale tints, grey chips, code boxes) becomes the raised dark tone
+    if (solid && c.computeLuminance() > .55) return const Color(0xFF2D2B29);
+    return c;
+  }
+  switch (rgb) {
+    case '2e2c2a':
+      return solid ? const Color(0xFFF2F2F0) : Color.fromARGB(c.alpha, 255, 255, 255);
+    case '625d58':
+      return const Color(0xFFB8B8B6);
+    case '8f8a84':
+      return const Color(0xFF7A7A78);
+    case '800020':
+      return const Color(0xFFA3324F);
+  }
+  return c;
 }
 
 double _n(dynamic v, [double d = 0]) => v is num ? v.toDouble() : d;
@@ -179,7 +207,7 @@ Widget nodeView(BuildContext c, Map<String, dynamic> n, double iw, {NodeCx cx = 
     case 'b':
       return _BoxNode(n, iw, cx: cx, inRow: inRow);
     case 'r':
-      return Container(width: _n(n['w']), height: _n(n['h']), decoration: BoxDecoration(color: _hx(n['bg']), borderRadius: n['r'] != null ? BorderRadius.circular(_n(n['r'])) : null));
+      return Container(width: _n(n['w']), height: _n(n['h']), decoration: BoxDecoration(color: _hx(n['bg'], role: 1), borderRadius: n['r'] != null ? BorderRadius.circular(_n(n['r'])) : null));
     case 'i':
       return _ImgNode(n, iw);
     case 'v':
@@ -212,6 +240,15 @@ class _ImgNode extends StatelessWidget {
   }
 }
 
+/// The drawings carry the light theme's colours; swap them the way the website's dark tokens do.
+String _darkSvg(String x) => x
+    .replaceAll('rgb(46, 44, 42)', 'rgb(242, 242, 240)')
+    .replaceAll('rgb(0, 0, 0)', 'rgb(242, 242, 240)')
+    .replaceAll('rgb(128, 0, 32)', 'rgb(163, 50, 79)')
+    .replaceAll('rgb(255, 253, 247)', 'rgb(45, 43, 41)')
+    .replaceAll('rgb(246, 244, 241)', 'rgb(35, 33, 32)')
+    .replaceAll('rgb(236, 230, 230)', 'rgb(45, 43, 41)');
+
 class _SvgNode extends StatelessWidget {
   const _SvgNode(this.n, this.iw);
   final Map<String, dynamic> n;
@@ -219,7 +256,7 @@ class _SvgNode extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final w = _n(n['w']), h = _n(n['h']);
-    final sv = SvgPicture.string('${n['svg']}', width: w, height: h, fit: BoxFit.contain);
+    final sv = SvgPicture.string(MktDark.on.value ? _darkSvg('${n['svg']}') : '${n['svg']}', width: w, height: h, fit: BoxFit.contain);
     return w > iw && iw > 0 ? FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: sv) : sv;
   }
 }
@@ -417,7 +454,7 @@ class _BoxNodeState extends State<_BoxNode> {
   }
 
   Widget _decorated(Map<String, dynamic> n, Map<String, dynamic> s, List<double> pad, double l, double t, double r, double b, Widget content) {
-    final bg = _hx(s['bg']);
+    final bg = _hx(s['bg'], role: 1);
     final rad = s['r'];
     BorderRadius? br;
     if (rad is num) {
@@ -428,10 +465,12 @@ class _BoxNodeState extends State<_BoxNode> {
     final sh = <BoxShadow>[
       if (bg != null)
       for (final x in ((s['sh'] as List?) ?? const []))
-        BoxShadow(offset: Offset(_n((x as List)[0]), _n(x[1])), blurRadius: _n(x[2]).abs(), spreadRadius: _n(x[3]), color: _hx(x[4]) ?? const Color(0x33000000)),
+        BoxShadow(offset: Offset(_n((x as List)[0]), _n(x[1])), blurRadius: _n(x[2]).abs(), spreadRadius: _n(x[3]), color: _hx(x[4], role: 2) ?? const Color(0x33000000)),
     ];
     final bd = s['bd'] as Map?;
     Widget inner = Padding(padding: EdgeInsets.fromLTRB(pad[3], pad[0], pad[1], pad[2]), child: content);
+    // stacked sheets sit on the website's grid paper
+    if (n['sheet'] == true) inner = CustomPaint(painter: PaperGrid(), child: inner);
     var dashed = false;
     BoxBorder? border;
     if (bd != null) {
