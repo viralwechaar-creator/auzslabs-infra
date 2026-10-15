@@ -2,6 +2,8 @@ import 'package:flutter/material.dart' hide Text;
 import 'package:url_launcher/url_launcher.dart';
 import '../core/launcher.dart';
 import '../core/session.dart';
+import '../core/version.dart';
+import '../core/webflag.dart';
 import 'account.dart';
 import 'admin.dart';
 import 'cart.dart';
@@ -129,6 +131,9 @@ class _HubHomeState extends State<HubHome> {
 
 /// Language and appearance, saved on this phone.
 void showSettings(BuildContext c) {
+  // Hidden until a long-press on the build line below reveals it, for this phone only -- never
+  // shown to an ordinary person opening Settings. See core/webflag.dart.
+  var devRevealed = WebPilot.homeEnabled.value;
   openSheet(c, 'Settings', (ctx, set) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         const SectionLabel('Language'),
         Seg<String>(expand: true, items: const [('en', 'English'), ('hi', 'हिंदी')], value: Lang.code, onChanged: (v) {
@@ -140,5 +145,26 @@ void showSettings(BuildContext c) {
           Tk.setMode(v);
           set(() {});
         }),
+        const SizedBox(height: 20),
+        GestureDetector(
+          onLongPress: () => set(() => devRevealed = true),
+          child: Center(child: Text('AUZslab · build $kBuild', style: TextStyle(fontSize: 12, color: Tk.label3))),
+        ),
+        if (devRevealed) ...[
+          const SizedBox(height: 14),
+          const SectionLabel('Developer options (this phone only)'),
+          const Note('Pilot test switch, not for normal use: loads the real auzslab.in Home page here instead of the app’s own Home screen. Turning it off restores the app’s Home page immediately.'),
+          const SizedBox(height: 8),
+          Row(children: [
+            const Expanded(child: Text('Use the live website for Home (test)')),
+            Switch(
+              value: WebPilot.homeEnabled.value,
+              onChanged: (v) {
+                WebPilot.set(v);
+                set(() {});
+              },
+            ),
+          ]),
+        ],
       ]));
 }
