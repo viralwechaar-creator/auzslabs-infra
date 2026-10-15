@@ -9,6 +9,7 @@ import 'p_home.dart';
 import 'p_books.dart';
 import 'p_parties.dart';
 import 'p_reports.dart';
+import 'p_offline_drafts.dart';
 import 'p_products.dart';
 import 'p_sales.dart';
 import 'p_scan.dart';
@@ -150,6 +151,7 @@ class _LedgerShellState extends State<LedgerShell> with WidgetsBindingObserver {
             if (s.can('acc_banking') || s.can('acc_journal') || s.can('acc_admin')) Li('Journals and transfers', icon: Icons.menu_book_outlined, tone: Tk.accent, onTap: () => _go(ctx, JournalPage(s))),
             if (s.can('acc_reports') || s.can('acc_admin')) Li('GST returns', sub: 'Registers and filing', icon: Icons.percent, tone: Tk.orange, onTap: () => _go(ctx, GstReturnsPage(s))),
             if (s.can('acc_import') || s.can('acc_admin')) Li('Import', sub: 'Customers, products, stock', icon: Icons.upload_file, tone: Tk.blue, onTap: () => _go(ctx, ImportPage(s))),
+            Li('Offline drafts', sub: s.queue.where((q) => q['kind'] == 'draft').isEmpty ? 'All sent' : '${s.queue.where((q) => q['kind'] == 'draft').length} waiting', icon: Icons.cloud_upload_outlined, tone: Tk.orange, onTap: () => _go(ctx, OfflineDraftsPage(s))),
             Li('Business settings', icon: Icons.settings_outlined, tone: Tk.label3, onTap: () => _go(ctx, OrgSettingsPage(s))),
             Li('${s.user?['email'] ?? ''}', sub: s.role, icon: Icons.person_outline, tone: Tk.label3, chevron: false),
             Li('Help & report a problem', icon: Icons.help_outline, tone: Tk.label3, onTap: () => launchUrl(Uri.parse('https://wa.me/919251250829'), mode: LaunchMode.externalApplication)),

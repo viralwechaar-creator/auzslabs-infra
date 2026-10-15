@@ -213,18 +213,44 @@ class _CreditNotePageState extends State<CreditNotePage> {
             toast(ctx, tr('Enter a quantity for at least one item'), err: true);
             return false;
           }
-          final r = _map(await s.api.rpc('acc_save_document', {'p': {
+          final payload = {
             'id': null, 'doc_type': 'credit_note', 'doc_date': ymd(DateTime.now()), 'party_id': doc['party_id'], 'branch_id': doc['branch_id'], 'warehouse_id': doc['warehouse_id'],
             'place_of_supply': doc['place_of_supply'], 'reverse_charge': false, 'itc_eligible': true, 'price_includes_tax': doc['price_includes_tax'] == true,
             'ref_doc_id': doc['id'], 'source_doc_id': doc['id'], 'notes': reason.text.trim(), 'post': true, 'lines': chosen, 'payments': const [],
-          }}));
-          if (mounted) toast(context, '${tr('Posted')} ${r['number'] ?? ''}');
-          return true;
+          };
+          // Same offline-draft fallback as a purchase bill/expense: a lost connection or a 5xx
+          // never loses the credit note, it is kept as an unposted draft instead. Opening this
+          // sheet in the first place still needs a connection (it reads the original invoice's
+          // own lines via acc_get_document, which has no offline copy) -- unchanged from today.
+          if (s.offline) {
+            await _queueOffline(payload, doc, chosen);
+            return true;
+          }
+          try {
+            final r = _map(await s.api.rpc('acc_save_document', {'p': payload}));
+            if (mounted) toast(context, '${tr('Posted')} ${r['number'] ?? ''}');
+            return true;
+          } on ApiError catch (e) {
+            if (LedgerSession.transient(e)) {
+              await _queueOffline(payload, doc, chosen);
+              return true;
+            }
+            if (mounted) toast(ctx, e.message, err: true);
+            return false;
+          }
         }),
       ]);
     } on ApiError catch (e) {
       if (mounted) toast(context, e.message, err: true);
     }
+  }
+
+  Future<void> _queueOffline(Map<String, dynamic> payload, Map<String, dynamic> doc, List<Map<String, dynamic>> chosen) async {
+    final p = Map<String, dynamic>.from(payload)..remove('id');
+    final total = chosen.fold<double>(0, (t, l) => t + n(l['qty']) * n(l['rate']));
+    await s.enqueue('draft', p, meta: {'label': tr('Credit note'), 'party': doc['party_name'], 'total': total, 'date': p['doc_date']});
+    if (!mounted) return;
+    toast(context, tr('Saved offline. It will reach your books as a draft once you are back online.'));
   }
 
   @override
