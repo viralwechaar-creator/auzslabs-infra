@@ -322,9 +322,18 @@ String dayOfIso(dynamic iso) {
   return t == null ? '' : dayKey(t);
 }
 
-List<Map<String, dynamic>> paidIn(HomeState h, int days) {
+/// Paid orders in the last [days]. [includeDue] also brings in credit/due bills, dated by paidAt (or
+/// created, for a due bill with no paidAt yet) -- same `o.paidAt||o.created` fallback the website's own
+/// gstRows()/customerStats() use (app/public/console/p-extras.js, p-reports.js), since GST and a
+/// customer's visit/spend are owed the moment a bill is raised, not only once it is actually paid.
+List<Map<String, dynamic>> paidIn(Repo repo, int days, {bool includeDue = false}) {
   final from = dayKey(DateTime.now().subtract(Duration(days: days - 1)));
-  return h.s.repo!.of('order').where((o) => o['status'] == 'paid' && dayOfIso(o['paidAt']).compareTo(from) >= 0).toList();
+  return repo.of('order').where((o) {
+    final status = o['status'];
+    if (status != 'paid' && !(includeDue && status == 'due')) return false;
+    final d = dayOfIso(o['paidAt'] ?? o['created']);
+    return d.compareTo(from) >= 0;
+  }).toList();
 }
 
 num totalOf(Map<String, dynamic> o) => ((o['t'] as Map?)?['total'] ?? 0) as num;

@@ -383,7 +383,7 @@ class _OverviewState extends State<_Overview> {
   @override
   Widget build(BuildContext context) {
     final h = widget.h;
-    final paid = paidIn(h, days);
+    final paid = paidIn(h.s.repo!, days);
     final total = paid.fold<num>(0, (a, o) => a + totalOf(o));
     final modes = <String, double>{};
     final byDay = <String, double>{};
@@ -538,7 +538,7 @@ class _Consumption extends StatelessWidget {
   Widget build(BuildContext context) {
     final recipes = {for (final i in h.s.repo!.of('item')) '${i['id']}': _s(i['rec'])};
     final use = <String, double>{};
-    for (final o in paidIn(h, 7)) {
+    for (final o in paidIn(h.s.repo!, 7)) {
       for (final l in ((o['lines'] as List?) ?? []).cast<Map>()) {
         final rec = recipes['${l['id']}'] ?? '';
         for (final part in rec.split(',')) {
@@ -575,7 +575,7 @@ class _RepOrders extends StatefulWidget {
 class _RepOrdersState extends _RepState<_RepOrders> {
   @override
   Widget build(BuildContext context) {
-    final p = paidIn(widget.h, days);
+    final p = paidIn(widget.h.s.repo!, days);
     final byType = <String, (int, double)>{};
     for (final o in p) {
       final t = '${o['type']}';
@@ -609,7 +609,7 @@ class _RepItemsState extends _RepState<_RepItems> {
     final itemCat = {for (final i in h.s.repo!.of('item')) '${i['id']}': '${cats[i['cat']] ?? 'Other'}'};
     final amt = <String, double>{}, qty = <String, num>{};
     final sold = <String>{};
-    for (final o in paidIn(h, days)) {
+    for (final o in paidIn(h.s.repo!, days)) {
       for (final l in ((o['lines'] as List?) ?? []).cast<Map>()) {
         final k = view == 'item' ? '${l['name']}' : (itemCat['${l['id']}'] ?? 'Other');
         amt[k] = (amt[k] ?? 0) + (l['price'] as num) * (l['qty'] as num);
@@ -657,7 +657,7 @@ class _RepCustomersState extends _RepState<_RepCustomers> {
   @override
   Widget build(BuildContext context) {
     final spend = <String, double>{}, visits = <String, int>{};
-    for (final o in paidIn(widget.h, days)) {
+    for (final o in paidIn(widget.h.s.repo!, days, includeDue: true)) {
       final c = o['cust'] as Map?;
       final k = c == null ? '' : '${c['name'] ?? c['phone'] ?? ''}';
       if (k.isEmpty) continue;
@@ -686,7 +686,7 @@ class _RepStaffState extends _RepState<_RepStaff> {
   @override
   Widget build(BuildContext context) {
     final sales = <String, double>{}, bills = <String, int>{};
-    for (final o in paidIn(widget.h, days)) {
+    for (final o in paidIn(widget.h.s.repo!, days)) {
       final k = '${o['paidBy'] ?? o['by'] ?? ''}';
       sales[k] = (sales[k] ?? 0) + totalOf(o);
       bills[k] = (bills[k] ?? 0) + 1;
@@ -719,7 +719,7 @@ class _RepAnalyticsState extends _RepState<_RepAnalytics> {
   Widget build(BuildContext context) {
     final hours = List<double>.filled(24, 0);
     final wd = List<double>.filled(7, 0);
-    for (final o in paidIn(widget.h, days > 7 ? days : 30)) {
+    for (final o in paidIn(widget.h.s.repo!, days > 7 ? days : 30)) {
       final t = DateTime.tryParse('${o['paidAt']}')?.toLocal();
       if (t == null) continue;
       hours[t.hour] += totalOf(o);
@@ -750,7 +750,7 @@ class _RepGstState extends _RepState<_RepGst> {
   Widget build(BuildContext context) {
     final byRate = <String, (double, double)>{};
     var tax = 0.0, base = 0.0;
-    for (final o in paidIn(widget.h, days)) {
+    for (final o in paidIn(widget.h.s.repo!, days, includeDue: true)) {
       final t = (o['t'] as Map?) ?? {};
       tax += ((t['tax'] ?? 0) as num).toDouble();
       base += ((t['net'] ?? t['sub'] ?? 0) as num).toDouble();

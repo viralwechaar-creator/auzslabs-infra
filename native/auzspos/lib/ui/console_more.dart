@@ -36,7 +36,7 @@ List<Cust> custs(HomeState h) {
     if (p.isEmpty) continue;
     m[p] = Cust(_s(c['name']), p)..dob = _s(c['dob']);
   }
-  for (final o in paidIn(h, 3650)) {
+  for (final o in paidIn(h.s.repo!, 3650)) {
     final c = o['cust'];
     if (c is! Map || _s(c['phone']).isEmpty) continue;
     final p = _s(c['phone']);
@@ -751,7 +751,7 @@ class _AccountingPageState extends State<AccountingPage> {
   @override
   Widget build(BuildContext context) {
     final h = widget.h;
-    final paid = paidIn(h, days);
+    final paid = paidIn(h.s.repo!, days);
     final from = dayKey(DateTime.now().subtract(Duration(days: days - 1)));
     double revenue = 0, tax = 0, disc = 0;
     final rate = <String, (double, double)>{};
