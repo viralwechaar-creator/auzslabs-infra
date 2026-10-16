@@ -145,7 +145,8 @@ class _LedgerShellState extends State<LedgerShell> with WidgetsBindingObserver {
               Navigator.pop(ctx);
               Navigator.push(context, MaterialPageRoute(builder: (_) => ReportsPage(s)));
             }),
-            if (s.can('acc_sales') || s.can('acc_purchase') || s.can('acc_admin')) Li('Receipts and payments', icon: Icons.account_balance_wallet_outlined, tone: Tk.green, onTap: () => _go(ctx, MoneyPage(s))),
+            if (s.can('acc_sales') || s.can('acc_admin')) Li('Collect', sub: 'Who owes you, send reminders', icon: Icons.south_west, tone: Tk.green, onTap: () => _go(ctx, MoneyPage(s, kind: 'receipt'))),
+            if (s.can('acc_purchase') || s.can('acc_admin')) Li('Pay suppliers', sub: 'Who you owe', icon: Icons.north_east, tone: Tk.orange, onTap: () => _go(ctx, MoneyPage(s, kind: 'payment'))),
             if (s.can('acc_sales') || s.can('acc_admin')) Li('Credit note', sub: 'Goods or money came back', icon: Icons.undo, tone: Tk.orange, onTap: () => _go(ctx, CreditNotePage(s))),
             if (s.can('acc_banking') || s.can('acc_admin')) Li('Banking', sub: 'Statement and matching', icon: Icons.account_balance_outlined, tone: Tk.blue, onTap: () => _go(ctx, BankingPage(s))),
             if (s.can('acc_banking') || s.can('acc_journal') || s.can('acc_admin')) Li('Journals and transfers', icon: Icons.menu_book_outlined, tone: Tk.accent, onTap: () => _go(ctx, JournalPage(s))),
