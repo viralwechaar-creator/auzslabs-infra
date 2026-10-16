@@ -4,6 +4,7 @@ import 'package:flutter/material.dart' hide Text;
 import 'i18n.dart';
 import '../core/repo.dart';
 import '../core/session.dart';
+import '../core/cash.dart' as cash;
 import '../core/stock.dart' as stock;
 import '../core/alerts.dart';
 import 'actions.dart';
@@ -137,7 +138,10 @@ class _HomeState extends State<Home> {
   /// own already-persisted status just below does.
   final Set<String> _paying = {};
 
-  Future<bool> pay(Map<String, dynamic> o, String mode) async {
+  /// [tendered]/[change] are cash-only (website's cashSheet() in pay.js: a pay entry carries `tendered` and
+  /// `change`, and the order itself carries the summed `change` -- read by dayCash() in console_more.dart).
+  /// Both are ignored for every other tender mode, matching the website (UPI/card never calculate change).
+  Future<bool> pay(Map<String, dynamic> o, String mode, {num? tendered, num? change}) async {
     final id = '${o['id']}';
     // Already paid (persisted locally, or pulled back from the server after an earlier successful call) --
     // a second call for the same order must never deplete stock a second time.
@@ -145,15 +149,17 @@ class _HomeState extends State<Home> {
     if (_paying.contains(id)) return false;
     _paying.add(id);
     try {
-      return await _payOnce(o, mode);
+      return await _payOnce(o, mode, tendered: tendered, change: change);
     } finally {
       _paying.remove(id);
     }
   }
 
-  Future<bool> _payOnce(Map<String, dynamic> o, String mode) async {
+  Future<bool> _payOnce(Map<String, dynamic> o, String mode, {num? tendered, num? change}) async {
     final t = s.tot(o);
-    o['pays'] = [{'m': mode, 'amt': t.total, 'at': nowIso()}];
+    final cash = mode == 'cash';
+    o['pays'] = [{'m': mode, 'amt': t.total, 'at': nowIso(), if (cash && tendered != null) 'tendered': tendered, if (cash && change != null) 'change': change}];
+    if (cash && change != null) o['change'] = change;
     o['status'] = 'paid';
     o['paidAt'] = nowIso();
     o['paidBy'] = s.user!['id'];
@@ -639,6 +645,54 @@ class _SellPageState extends State<SellPage> {
     );
   }
 
+  /// Cash tendered + change due, same shape as cashSheet() in the website's pay.js, minus the
+  /// denomination-counting breakdown table (a convenience, not required for correctness -- the quick
+  /// round-amount buttons cover the common case; a cashier who wants to count notes still can on a real
+  /// cash drawer and type the total). Returns the tendered amount, or null if the cashier cancelled --
+  /// cancelling here must never call pay() or touch the order.
+  Future<num?> _cashTenderSheet(num total) {
+    final ctl = TextEditingController(text: total == total.roundToDouble() ? total.toInt().toString() : total.toStringAsFixed(2));
+    final quick = cash.quickCashAmounts(total);
+    return showModalBottomSheet<num?>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, set) {
+        final tendered = num.tryParse(ctl.text.trim());
+        final ok = cash.cashTenderOk(tendered, total);
+        final change = tendered != null && tendered > 0 ? cash.cashChange(tendered, total) : null;
+        final short = change != null && change < 0;
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, MediaQuery.of(ctx).viewInsets.bottom + 16),
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              const Padding(padding: EdgeInsets.symmetric(vertical: 14), child: Text('Cash', textAlign: TextAlign.center, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700))),
+              Text('Due ${inr(total)}', textAlign: TextAlign.center, style: TextStyle(color: Tk.label2, fontSize: 15)),
+              const SizedBox(height: 10),
+              Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 8, children: [
+                for (final v in quick)
+                  OutlinedButton(onPressed: () => set(() => ctl.text = v == v.roundToDouble() ? v.toInt().toString() : v.toStringAsFixed(2)), child: Text(v == total ? 'Exact ${inr(v)}' : inr(v))),
+              ]),
+              const SizedBox(height: 14),
+              TextField(controller: ctl, autofocus: true, keyboardType: const TextInputType.numberWithOptions(decimal: true), textAlign: TextAlign.center, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800), decoration: InputDecoration(labelText: tr('Amount received')), onChanged: (_) => set(() {})),
+              const SizedBox(height: 10),
+              Text(
+                tendered == null ? '' : short ? 'Short by ${inr(-change)}' : 'Change due ${inr(change ?? 0)}',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: short ? Tk.red : Tk.green),
+              ),
+              const SizedBox(height: 16),
+              Row(children: [
+                Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel'))),
+                const SizedBox(width: 8),
+                Expanded(child: FilledButton(onPressed: ok ? () => Navigator.pop(ctx, tendered) : null, child: const Text('Confirm'))),
+              ]),
+            ]),
+          ),
+        );
+      }),
+    );
+  }
+
   void payDialog(Map<String, dynamic> o) {
     final t = s.tot(o);
     showModalBottomSheet<void>(
@@ -653,8 +707,17 @@ class _SellPageState extends State<SellPage> {
             Group([
               for (final m in [['cash', 'Cash', Icons.payments_outlined, Tk.green], ['upi', 'UPI', Icons.qr_code_2, Tk.blue], ['card', 'Card', Icons.credit_card, Tk.purple]])
                 Li(m[1] as String, icon: m[2] as IconData, tone: m[3] as Color, onTap: () async {
-                  Navigator.pop(ctx);
-                  await h.pay(o, m[0] as String);
+                  final mode = m[0] as String;
+                  num? tendered, change;
+                  if (mode == 'cash') {
+                    // Nested on top of this sheet (not popped yet), matching the website's cashSheet() over
+                    // paySheet() -- cancelling it leaves the payment-method choice open, with no side effect.
+                    tendered = await _cashTenderSheet(t.total);
+                    if (tendered == null) return; // cancelled: no pay(), no cash movement, order untouched
+                    change = cash.cashChange(tendered, t.total);
+                  }
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  await h.pay(o, mode, tendered: tendered, change: change);
                   h.refresh(() => h.cur = null);
                   if (context.mounted) await billActions(context, h, o);
                 }),

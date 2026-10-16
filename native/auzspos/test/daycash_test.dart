@@ -52,6 +52,18 @@ void main() {
     expect(s.expected, 1000 + 200 - 150 - 100);
   });
 
+  test('a change value is never subtracted from card or online buckets, only cash (scenario 5: UPI/card never get cash-change treatment)', () async {
+    final repo = mk(FakeServer());
+    // A stray `change` on a non-cash order must have no effect -- home.dart's pay() only ever sets this
+    // field when mode=='cash' (verified by code reading: the `if (cash && change != null)` guard), but
+    // dayCash() itself is the second, independent line of defence: it only subtracts change from `cash`,
+    // never from `card`/`online`, regardless of what the order's own data says.
+    await repo.save('order', {'status': 'paid', 'paidAt': '2026-10-01T10:00:00Z', 'pays': [{'m': 'card', 'amt': 300}], 'change': 50, 't': {'total': 300}, 'lines': []});
+    final s = dayCash(repo, '2026-10-01');
+    expect(s.card, 300, reason: 'the full card amount, unaffected by the stray change field');
+    expect(s.cash, 0);
+  });
+
   test('a day closed through the phone saves the same field names the website reads back (dayclose shape parity)', () async {
     final repo = mk(FakeServer());
     await repo.save('dayclose', {'d': '2026-10-01', 'sales': 1000, 'bills': 3, 'expectedCash': 950, 'countedCash': 940, 'variance': -10, 'varianceReason': 'Counting error'});
