@@ -552,7 +552,7 @@ class LogsPage extends StatelessWidget {
 
     add('voidlog', 'Void', (x) => '${x['item'] ?? 'Order ${x['no'] ?? ''}'} · ${_s(x['reason'])}');
     add('cashmove', 'Cash drawer', (x) => '${x['type'] == 'in' ? 'Top-up' : 'Withdrawal'} ₹${x['amt']} · ${_s(x['note'])}');
-    add('dayclose', 'Day close', (x) => '${_s(x['d'])} · difference ₹${x['diff'] ?? 0}');
+    add('dayclose', 'Day close', (x) => '${_s(x['d'])} · difference ₹${x['variance'] ?? 0}');
     add('exp', 'Expense', (x) => '₹${x['amt']} · ${_s(x['cat'])}');
     add('waste', 'Wastage', (x) => '${x['q']} ${_s(x['ing'])} · ${_s(x['reason'])}');
     add('adjustment', 'Stock adjustment', (x) => '${x['q']} ${_s(x['ing'])}');
@@ -631,15 +631,23 @@ class FeedbackPage extends StatelessWidget {
 // ------------------------------------------------------------------ finance
 
 class _DayCash {
-  _DayCash(this.cash, this.card, this.other, this.online, this.expected, this.close);
-  final double cash, card, other, online, expected;
+  _DayCash(this.cash, this.card, this.other, this.online, this.expected, this.close, this.sales, this.bills);
+  final double cash, card, other, online, expected, sales;
+  final int bills;
   final Map<String, dynamic>? close;
   double get total => cash + card + other + online;
 }
 
-_DayCash dayCash(HomeState h, String d) {
-  double cash = 0, card = 0, other = 0, online = 0;
-  for (final o in h.s.repo!.of('order').where((o) => o['status'] == 'paid' && dayOfIso(o['paidAt']) == d)) {
+_DayCash dayCash(Repo repo, String d) {
+  double cash = 0, card = 0, other = 0, online = 0, sales = 0;
+  var bills = 0;
+  for (final o in repo.of('order').where((o) => o['status'] == 'paid' && dayOfIso(o['paidAt']) == d)) {
+    bills++;
+    sales += totalOf(o);
+    // Change given back on a cash sale leaves the drawer with the drawer; it must not inflate expected cash,
+    // same subtraction as the website's cashIn in dayCash() (app/public/console/p-finance.js).
+    final change = ((o['change'] ?? 0) as num).toDouble();
+    final paysCash = ((o['pays'] as List?) ?? []).cast<Map>().any((p) => '${p['m']}' == 'cash');
     for (final p in ((o['pays'] as List?) ?? []).cast<Map>()) {
       final a = ((p['amt'] ?? 0) as num).toDouble();
       switch ('${p['m']}') {
@@ -653,13 +661,14 @@ _DayCash dayCash(HomeState h, String d) {
           other += a;
       }
     }
+    if (paysCash) cash -= change;
   }
-  final moves = h.s.repo!.of('cashmove').where((x) => '${x['d']}' == d);
+  final moves = repo.of('cashmove').where((x) => '${x['d']}' == d);
   final ins = moves.where((x) => x['type'] == 'in').fold<double>(0, (a, x) => a + ((x['amt'] ?? 0) as num));
   final outs = moves.where((x) => x['type'] != 'in').fold<double>(0, (a, x) => a + ((x['amt'] ?? 0) as num));
-  final exp = h.s.repo!.of('exp').where((x) => '${x['d']}' == d && (x['mode'] ?? 'cash') == 'cash').fold<double>(0, (a, x) => a + ((x['amt'] ?? 0) as num));
-  final close = h.s.repo!.of('dayclose').where((x) => '${x['d']}' == d).firstOrNull;
-  return _DayCash(cash, card, other, online, r2(cash + ins - outs - exp).toDouble(), close);
+  final exp = repo.of('exp').where((x) => '${x['d']}' == d && (x['mode'] ?? 'cash') == 'cash').fold<double>(0, (a, x) => a + ((x['amt'] ?? 0) as num));
+  final close = repo.of('dayclose').where((x) => '${x['d']}' == d).firstOrNull;
+  return _DayCash(cash, card, other, online, r2(cash + ins - outs - exp).toDouble(), close, sales, bills);
 }
 
 class CashPage extends StatefulWidget {
@@ -675,7 +684,7 @@ class _CashPageState extends State<CashPage> {
   @override
   Widget build(BuildContext context) {
     final d = dayKey(day);
-    final s = dayCash(h, d);
+    final s = dayCash(h.s.repo!, d);
     final c = s.close;
     return ListView(padding: const EdgeInsets.only(bottom: 28), children: [
       const PageHead('Cash', sub: 'Expected cash in the drawer and day close.'),
@@ -687,12 +696,17 @@ class _CashPageState extends State<CashPage> {
       Kpis('Expected cash', inr(s.expected), 'Cash sales + top-ups − expenses − withdrawals', [('Cash sales', inr(r2(s.cash)), null), ('Card', inr(r2(s.card)), null), ('UPI / other', inr(r2(s.other)), null), ('Online', inr(r2(s.online)), null)]),
       const SizedBox(height: 10),
       if (c != null)
-        Group([Li('Day closed', sub: 'Counted ₹${c['counted']} · difference ₹${c['diff'] ?? 0}${_s(c['reason']).isEmpty ? '' : ' · ${c['reason']}'}', icon: Icons.lock_outline, tone: ((c['diff'] ?? 0) as num).abs() > .5 ? Tk.red : Tk.green, chevron: false)])
+        Group([Li('Day closed', sub: 'Counted ₹${c['countedCash']} · difference ₹${c['variance'] ?? 0}${_s(c['varianceReason']).isEmpty ? '' : ' · ${c['varianceReason']}'}', icon: Icons.lock_outline, tone: ((c['variance'] ?? 0) as num).abs() > .5 ? Tk.red : Tk.green, chevron: false)])
       else
         Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: FilledButton(onPressed: () => formSheet(context, 'Close $d', [F('counted', 'Cash actually counted (₹)', type: 'number', value: s.expected), F('reason', 'Reason for any difference', type: 'select', value: '', options: const [['', 'No difference'], ['Counting error', 'Counting error'], ['Change given short', 'Change given short'], ['Cash taken without entry', 'Cash taken without entry'], ['Tip paid out', 'Tip paid out'], ['Other', 'Other']])], (v) async {
               if (v['counted'] == null) return false;
-              final diff = r2((v['counted'] as num) - s.expected);
-              await h.s.repo!.save('dayclose', {'d': d, 'counted': v['counted'], 'expected': s.expected, 'diff': diff, 'reason': v['reason'], 'at': nowIso(), 'by': h.s.user!['id']});
+              final variance = r2((v['counted'] as num) - s.expected);
+              // Same guard as closeDay() on the website: a variance over 50 paise needs a reason picked.
+              if (variance.abs() > .5 && '${v['reason'] ?? ''}'.isEmpty) {
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pick a reason for the difference')));
+                return false;
+              }
+              await h.s.repo!.save('dayclose', {'d': d, 'sales': s.sales, 'bills': s.bills, 'expectedCash': s.expected, 'countedCash': v['counted'], 'variance': variance, 'varianceReason': '${v['reason'] ?? ''}'.isEmpty ? null : v['reason'], 'at': nowIso(), 'by': h.s.user!['id']});
               h.s.sync();
               setState(() {});
               return true;
@@ -714,11 +728,11 @@ class ReconcilePage extends StatelessWidget {
         for (final dt in days)
           () {
             final d = dayKey(dt);
-            final s = dayCash(h, d);
+            final s = dayCash(h.s.repo!, d);
             final c = s.close;
-            final diff = c == null ? 0 : ((c['diff'] ?? 0) as num);
+            final diff = c == null ? 0 : ((c['variance'] ?? 0) as num);
             final label = c == null ? (d == dayKey(DateTime.now()) ? 'Open' : (s.total == 0 ? '—' : 'Not closed')) : diff.abs() > .5 ? 'Off by ₹$diff' : 'Matched';
-            return Li(d, sub: 'Sales ${inr(r2(s.total))} · expected cash ${inr(s.expected)}${c != null ? ' · counted ₹${c['counted']}' : ''}', icon: Icons.fact_check_outlined, tone: c == null ? Tk.orange : diff.abs() > .5 ? Tk.red : Tk.green, value: label, chevron: false);
+            return Li(d, sub: 'Sales ${inr(r2(s.total))} · expected cash ${inr(s.expected)}${c != null ? ' · counted ₹${c['countedCash']}' : ''}', icon: Icons.fact_check_outlined, tone: c == null ? Tk.orange : diff.abs() > .5 ? Tk.red : Tk.green, value: label, chevron: false);
           }(),
       ]),
     ]);

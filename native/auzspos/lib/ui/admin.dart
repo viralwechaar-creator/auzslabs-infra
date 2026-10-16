@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../core/billing.dart' show r2;
 import '../core/reorder.dart';
 import '../core/session.dart';
+import 'console.dart' show Kpis, RangeBar;
 import 'home.dart';
 import 'kit.dart';
 import 'more.dart';
@@ -816,21 +817,37 @@ class ExpensesAdmin extends StatefulWidget {
   State<ExpensesAdmin> createState() => _ExpensesAdminState();
 }
 
+const _expCats = ['Raw material', 'Salary', 'Rent', 'Electricity', 'Repairs', 'Marketing', 'Other'];
+
 class _ExpensesAdminState extends State<ExpensesAdmin> {
   Session get s => widget.h.s;
+  int days = 7;
+  String? catFilter;
+  String q = '';
+
+  /// Mirrors dayCloseOf() in the website console: a day that has already been closed (p-finance.js's Cash
+  /// Management) must not silently accept a brand-new backdated expense -- only editing an existing one is
+  /// allowed, exactly like the website's own `!e.id` condition.
+  bool _dayClosed(String d) => s.repo!.of('dayclose').any((x) => '${x['d']}' == d);
+
   Future<void> exp([Map<String, dynamic>? e]) => formSheet(
         context,
         e == null ? 'New expense' : 'Edit expense',
         [
           F('note', 'What was it for?', value: e?['note']),
-          F('cat', 'Category', type: 'select', value: e?['cat'] ?? 'Other', options: [for (final c in const ['Raw material', 'Salary', 'Rent', 'Electricity', 'Repairs', 'Marketing', 'Other']) [c, c]]),
+          F('cat', 'Category', type: 'select', value: e?['cat'] ?? 'Other', options: [for (final c in _expCats) [c, c]]),
           F('amt', 'Amount (₹)', type: 'number', value: e?['amt']),
           F('d', 'Date (YYYY-MM-DD)', value: e?['d'] ?? _day(DateTime.now())),
           F('mode', 'Paid from', type: 'select', value: e?['mode'] ?? 'cash', options: const [['cash', 'Cash drawer'], ['bank', 'Bank / UPI'], ['owner', 'Owner pocket']]),
+          F('vendor', 'Paid to', value: e?['vendor']),
         ],
         (v) async {
           if ('${v['note']}'.isEmpty || v['amt'] == null || (v['amt'] as num) <= 0) return false;
-          await s.repo!.save('exp', {...?e, 'note': v['note'], 'cat': v['cat'], 'amt': v['amt'], 'd': v['d'], 'mode': v['mode'], 'at': e?['at'] ?? DateTime.now().toUtc().toIso8601String()}, id: e?['id'] as String?);
+          if (e == null && _dayClosed('${v['d']}')) {
+            if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('That day is closed. Reopen it under Cash Management first.')));
+            return false;
+          }
+          await s.repo!.save('exp', {...?e, 'note': v['note'], 'cat': v['cat'], 'amt': v['amt'], 'd': v['d'], 'mode': v['mode'], 'vendor': v['vendor'], 'at': e?['at'] ?? DateTime.now().toUtc().toIso8601String()}, id: e?['id'] as String?);
           setState(() {});
           s.sync();
           return true;
@@ -845,19 +862,47 @@ class _ExpensesAdminState extends State<ExpensesAdmin> {
       );
   @override
   Widget build(BuildContext context) {
-    final es = s.repo!.of('exp').toList()..sort((a, b) => '${b['d']}${b['at']}'.compareTo('${a['d']}${a['at']}'));
-    final month = _day(DateTime.now()).substring(0, 7);
-    final mSum = es.where((e) => '${e['d']}'.startsWith(month)).fold<double>(0, (a, e) => a + ((e['amt'] ?? 0) as num));
+    final to = DateTime.now(), from = to.subtract(Duration(days: days - 1));
+    final fromD = _day(from), toD = _day(to);
+    final all = s.repo!.of('exp').toList();
+    final cats = all.map((e) => '${e['cat'] ?? 'Other'}').toSet().toList()..sort();
+    final es = all.where((e) {
+      final d = '${e['d']}';
+      if (d.compareTo(fromD) < 0 || d.compareTo(toD) > 0) return false;
+      if (catFilter != null && catFilter!.isNotEmpty && '${e['cat'] ?? 'Other'}' != catFilter) return false;
+      if (q.isNotEmpty && !'${e['note']} ${e['cat'] ?? ''} ${e['vendor'] ?? ''}'.toLowerCase().contains(q.toLowerCase())) return false;
+      return true;
+    }).toList()
+      ..sort((a, b) => '${b['d']}${b['at']}'.compareTo('${a['d']}${a['at']}'));
+    final total = es.fold<double>(0, (a, e) => a + ((e['amt'] ?? 0) as num));
+    final byCat = <String, double>{};
+    for (final e in es) {
+      final c = '${e['cat'] ?? 'Other'}';
+      byCat[c] = (byCat[c] ?? 0) + ((e['amt'] ?? 0) as num);
+    }
+    final biggest = byCat.entries.isEmpty ? '—' : (byCat.entries.toList()..sort((a, b) => b.value.compareTo(a.value))).first.key;
     return Scaffold(
       appBar: AppBar(title: const Text('Expenses')),
       floatingActionButton: FloatingActionButton.extended(onPressed: () => exp(), icon: const Icon(Icons.add), label: const Text('Add expense')),
-      body: es.isEmpty
-          ? Empty(Icons.payments_outlined, 'No expenses yet', 'Record what you spend (milk, rent, salaries) so your profit is real.', action: 'Add expense', onAction: exp)
-          : ListView(padding: const EdgeInsets.fromLTRB(12, 10, 12, 90), children: [
-              Stat('This month', inr(r2(mSum)), hero: true),
-              const SizedBox(height: 8),
-              for (final e in es) Card(child: ListTile(onTap: () => exp(e), title: Text('${e['note']}', style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text('${e['d']} · ${e['cat'] ?? ''}'), trailing: Text(inr((e['amt'] ?? 0) as num), style: const TextStyle(fontWeight: FontWeight.w800)))),
-            ]),
+      body: ListView(padding: const EdgeInsets.fromLTRB(12, 10, 12, 90), children: [
+        RangeBar(days, (v) => setState(() => days = v)),
+        Kpis('Total', inr(r2(total)), '${es.length} entries', [('Entries', '${es.length}', null), ('Biggest category', biggest, null)]),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(children: [
+            Expanded(child: TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Search…', isDense: true), onChanged: (v) => setState(() => q = v))),
+            const SizedBox(width: 8),
+            DropdownButton<String?>(
+              value: catFilter,
+              hint: const Text('All categories'),
+              items: [const DropdownMenuItem(value: null, child: Text('All categories')), for (final c in cats) DropdownMenuItem(value: c, child: Text(c))],
+              onChanged: (v) => setState(() => catFilter = v),
+            ),
+          ]),
+        ),
+        if (es.isEmpty) const Padding(padding: EdgeInsets.only(top: 20), child: Empty(Icons.payments_outlined, 'No expenses in this range', 'Record what you spend (milk, rent, salaries) so your profit is real.')),
+        for (final e in es) Card(child: ListTile(onTap: () => exp(e), title: Text('${e['note']}', style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text('${e['d']} · ${e['cat'] ?? ''}${'${e['vendor'] ?? ''}'.isEmpty ? '' : ' · ${e['vendor']}'}'), trailing: Text(inr((e['amt'] ?? 0) as num), style: const TextStyle(fontWeight: FontWeight.w800)))),
+      ]),
     );
   }
 }

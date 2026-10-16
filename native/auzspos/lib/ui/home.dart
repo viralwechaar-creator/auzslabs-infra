@@ -129,7 +129,29 @@ class _HomeState extends State<Home> {
     _toast('Sent to kitchen · KOT #$kno');
   }
 
+  /// Order ids whose pay() is currently in flight on this phone, in this app session. Not a server-side
+  /// idempotency key (fixing that properly needs a shared contract change -- see stock.dart's own header
+  /// comment) -- this only protects against a re-entrant call to THIS function for the SAME in-memory order
+  /// object while it is still running (a double-tap during the UI's own dismiss animation, or two callers
+  /// racing). It does NOT protect across an app restart or a retried sync; the check against the order's
+  /// own already-persisted status just below does.
+  final Set<String> _paying = {};
+
   Future<bool> pay(Map<String, dynamic> o, String mode) async {
+    final id = '${o['id']}';
+    // Already paid (persisted locally, or pulled back from the server after an earlier successful call) --
+    // a second call for the same order must never deplete stock a second time.
+    if (s.repo!.rec(id)?['status'] == 'paid') return true;
+    if (_paying.contains(id)) return false;
+    _paying.add(id);
+    try {
+      return await _payOnce(o, mode);
+    } finally {
+      _paying.remove(id);
+    }
+  }
+
+  Future<bool> _payOnce(Map<String, dynamic> o, String mode) async {
     final t = s.tot(o);
     o['pays'] = [{'m': mode, 'amt': t.total, 'at': nowIso()}];
     o['status'] = 'paid';

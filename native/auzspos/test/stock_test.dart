@@ -65,4 +65,19 @@ void main() {
     await dedu(repo, {'lines': [{'id': 'ghost-id', 'qty': 1}]});
     // no throw, nothing to assert beyond "it returned"
   });
+
+  // Repeated-payment / duplicate-depletion risk (explicitly not solved inside dedu()/deduVariant() themselves
+  // -- the guard against this lives one layer up, in home.dart's pay(), which checks the order's own
+  // already-persisted status before calling these at all). This test documents, honestly, that calling
+  // dedu() twice for the identical order DOES deplete stock twice: these functions have no idempotency key
+  // of their own, by design (see stock.dart's header comment) -- proving the claim rather than asserting it.
+  test('dedu called twice for the same order depletes stock twice -- it has no idempotency key of its own', () async {
+    final repo = mk(FakeServer());
+    await repo.save('ing', {'name': 'Milk', 'qty': 1000});
+    final tea = await repo.save('item', {'name': 'Tea', 'price': 20, 'rec': 'Milk:100'});
+    final order = {'lines': [{'id': tea.id, 'qty': 1}]};
+    await dedu(repo, order);
+    await dedu(repo, order); // simulating pay() being (incorrectly) called twice for the same sale
+    expect(repo.of('ing').single['qty'], 800, reason: 'two deductions of 100ml each -- this function alone does not prevent it');
+  });
 }

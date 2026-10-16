@@ -256,10 +256,23 @@ final _cfgCash = CrudCfg(
   rowTitle: (r) => '${r['type'] == 'in' ? 'Top-up' : 'Withdrawal'} · ${_s(r['who'])}', rowSub: (r) => '${_s(r['d'])} ${_s(r['note'])}'.trim(), trail: (r) => '${r['type'] == 'in' ? '+' : '−'}₹${r['amt']}',
 );
 
+// Field names match the website's settlement record exactly (gross/commission/net/received/receivedOn/status
+// -- app/public/console/p-finance.js settlementForm()); native previously saved a different shape
+// (platform/amt/d/ref/note) that the website's "Pending payouts"/"Received"/"Commission paid" KPIs could
+// never read, since they key off net/received/status/commission, not amt.
 final _cfgSettle = CrudCfg(
-  kind: 'settlement', title: 'Settlements', sub: 'Payouts from delivery platforms.', icon: Icons.account_balance_outlined, add: 'Add settlement', empty: 'Record a payout you received from a platform.',
-  fields: (r) => [F('platform', 'Platform', type: 'select', value: r?['platform'] ?? 'Swiggy', options: _opts(['Swiggy', 'Zomato', 'ONDC', 'Other'])), F('amt', 'Amount received (₹)', type: 'number', value: r?['amt']), F('d', 'Date (YYYY-MM-DD)', value: r?['d'] ?? dayKey(DateTime.now())), F('ref', 'Reference', value: r?['ref']), F('note', 'Note', value: r?['note'])],
-  rowTitle: (r) => _s(r['platform']), rowSub: (r) => '${_s(r['d'])} ${_s(r['ref'])}'.trim(), trail: (r) => '₹${r['amt']}',
+  kind: 'settlement', title: 'Settlements', sub: 'Payouts from delivery platforms: what you sold, what they kept and what reached your bank.', icon: Icons.account_balance_outlined, add: 'Add settlement', empty: 'Record a payout from a platform.',
+  fields: (r) => [
+    F('platform', 'Platform', type: 'select', value: r?['platform'] ?? 'Swiggy', options: _opts(['Swiggy', 'Zomato', 'ONDC', 'Other'])),
+    F('from', 'Period from (YYYY-MM-DD)', value: r?['from'] ?? dayKey(DateTime.now().subtract(const Duration(days: 6)))),
+    F('to', 'Period to (YYYY-MM-DD)', value: r?['to'] ?? dayKey(DateTime.now())),
+    F('gross', 'Gross sales (₹)', type: 'number', value: r?['gross']),
+    F('commission', 'Commission & charges (₹)', type: 'number', value: r?['commission']),
+    F('received', 'Amount received (₹)', type: 'number', value: r?['received'], hint: 'Leave empty while pending'),
+    F('receivedOn', 'Received on (YYYY-MM-DD)', value: r?['receivedOn']),
+    F('ref', 'Reference / UTR', value: r?['ref']),
+  ],
+  rowTitle: (r) => _s(r['platform']), rowSub: (r) => '${_s(r['to'])} ${_s(r['ref'])}'.trim(), trail: (r) => r['received'] != null ? '₹${r['received']}' : 'Pending',
 );
 
 
@@ -317,6 +330,11 @@ class _CrudPageState extends State<CrudPage> {
           final d = {...?r, ...v};
           if (c.kind == 'giftcard') d['bal'] = d['bal'] ?? d['amt'];
           if (c.kind == 'segment' || c.kind == 'campaign') d['n'] = d['n'] ?? DateTime.now().millisecondsSinceEpoch;
+          if (c.kind == 'settlement') {
+            final gross = (d['gross'] as num?) ?? 0, commission = (d['commission'] as num?) ?? 0;
+            d['net'] = r2(gross - commission);
+            d['status'] = d['received'] != null ? 'received' : 'pending';
+          }
           await h.s.repo!.save(c.kind, d, id: r?['id'] as String?);
           setState(() {});
           h.s.sync();
