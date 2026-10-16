@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart' hide Text;
 import 'i18n.dart';
 import '../core/billing.dart' show r2;
+import '../core/inventory_reports.dart';
 import '../core/repo.dart';
 import 'actions.dart';
 import 'admin.dart';
@@ -629,19 +630,118 @@ class _RepItemsState extends _RepState<_RepItems> {
   }
 }
 
-class _RepInventory extends StatelessWidget {
+/// Stock summary / Reorder / Expiry, matching 3 of the website's 6 invReportTabs() (Purchases, Wastage and
+/// Food costing are a separate, later batch -- see the Reports-audit commit this builds on). "Create PO"
+/// on the website pre-fills a draft Purchase Order (a `po` record: draft -> received workflow) that native
+/// has never built any support for at all (native's existing Purchases screen uses a different, simpler
+/// `purchase` record that adds to stock immediately, with no draft/receive step). Building the full `po`
+/// draft/receive system is a materially bigger feature than "reorder suggestions" -- so the reorder row's
+/// action instead reuses native's own existing direct-purchase flow, pre-filled with the suggested
+/// quantity and the material's own vendor. This is a deliberate, smaller, documented substitute for the
+/// website's "Create PO" button, not a silent gap.
+class _RepInventory extends StatefulWidget {
   const _RepInventory(this.h);
   final HomeState h;
+  @override
+  State<_RepInventory> createState() => _RepInventoryState();
+}
+
+class _RepInventoryState extends State<_RepInventory> {
+  String tab = 'stock';
+  HomeState get h => widget.h;
+
+  Future<void> recordPurchase(Map<String, dynamic> g, num suggestedQty) => formSheet(
+        context,
+        'Record a purchase',
+        [
+          F('name', 'Raw material', value: '${g['name']}'),
+          F('qty', 'Quantity bought', type: 'number', value: suggestedQty > 0 ? suggestedQty : null),
+          F('price', 'Price per unit (₹)', type: 'number', value: g['cost']),
+          F('vendor', 'Vendor', value: g['vendor']),
+          F('d', 'Date (YYYY-MM-DD)', value: dayKey(DateTime.now())),
+        ],
+        (v) async {
+          if (v['qty'] == null || (v['qty'] as num) <= 0) return false;
+          await h.s.repo!.save('purchase', {'name': g['name'], 'qty': v['qty'], 'price': v['price'] ?? 0, 'vendor': v['vendor'], 'd': v['d'], 'unit': g['unit'], 'at': nowIso()});
+          await h.s.repo!.save('ing', {...g, 'qty': r2(((g['qty'] ?? 0) as num) + (v['qty'] as num)), if (v['price'] != null) 'cost': v['price']}, id: '${g['id']}');
+          setState(() {});
+          h.s.sync();
+          return true;
+        },
+      );
+
   @override
   Widget build(BuildContext context) {
     final ings = h.s.repo!.of('ing').toList()..sort((a, b) => '${a['name']}'.compareTo('${b['name']}'));
     final value = ings.fold<double>(0, (a, g) => a + ((g['qty'] ?? 0) as num) * ((g['cost'] ?? 0) as num));
     final low = ings.where((g) => ((g['low'] ?? 0) as num) > 0 && ((g['qty'] ?? 0) as num) <= ((g['low'] ?? 0) as num)).length;
+    return Column(children: [
+      Padding(padding: const EdgeInsets.fromLTRB(16, 10, 16, 0), child: Seg<String>(expand: true, items: const [('stock', 'Stock'), ('reorder', 'Reorder'), ('expiry', 'Expiry')], value: tab, onChanged: (v) => setState(() => tab = v))),
+      Expanded(
+        child: switch (tab) {
+          'reorder' => _ReorderTab(h, onBuy: recordPurchase),
+          'expiry' => _ExpiryTab(h),
+          _ => ListView(padding: const EdgeInsets.only(bottom: 28), children: [
+              const SizedBox(height: 8),
+              Kpis('Stock value', inr(r2(value)), '${ings.length} raw materials', [('Low stock', '$low', low > 0 ? Tk.orange : null)]),
+              const SectionLabel('Stock'),
+              Group(ings.isEmpty ? [const Li('No raw materials yet', chevron: false)] : [for (final g in ings) Li('${g['name']}', sub: '₹${g['cost'] ?? 0} per ${g['unit'] ?? 'unit'}', chevron: false, value: '${g['qty'] ?? 0} ${g['unit'] ?? ''}')]),
+            ]),
+        },
+      ),
+    ]);
+  }
+}
+
+class _ReorderTab extends StatelessWidget {
+  const _ReorderTab(this.h, {required this.onBuy});
+  final HomeState h;
+  final Future<void> Function(Map<String, dynamic> g, num suggestedQty) onBuy;
+  @override
+  Widget build(BuildContext context) {
+    final rows = reorderRows(h.s.repo!)..sort((a, b) => (a.daysLeft ?? 999).compareTo(b.daysLeft ?? 999));
     return ListView(padding: const EdgeInsets.only(bottom: 28), children: [
-      const SizedBox(height: 8),
-      Kpis('Stock value', inr(r2(value)), '${ings.length} raw materials', [('Low stock', '$low', low > 0 ? Tk.orange : null)]),
-      const SectionLabel('Stock'),
-      Group(ings.isEmpty ? [const Li('No raw materials yet', chevron: false)] : [for (final g in ings) Li('${g['name']}', sub: '₹${g['cost'] ?? 0} per ${g['unit'] ?? 'unit'}', chevron: false, value: '${g['qty'] ?? 0} ${g['unit'] ?? ''}')]),
+      const PageHead('Reorder', sub: 'Materials that are already low, or will run out within a week.'),
+      if (rows.isEmpty)
+        const Empty(Icons.check_circle_outline, 'Nothing needs reordering', 'Every material has enough stock for now.')
+      else
+        Group([
+          for (final r in rows)
+            Li(
+              '${r.ing['name']}',
+              sub: '${isLowStock(r.ing) ? 'Low stock' : '${r.daysLeft} day${r.daysLeft == 1 ? '' : 's'} left'} · on hand ${r2(r.ing['qty'] ?? 0)} ${r.ing['unit'] ?? ''} · daily use ${r.dailyUse > 0 ? '${r.dailyUse} ${r.ing['unit'] ?? ''}' : '—'}',
+              icon: Icons.shopping_cart_outlined,
+              tone: isLowStock(r.ing) ? Tk.red : Tk.orange,
+              trailing: OutlinedButton(onPressed: () => onBuy(r.ing, r.suggestedQty), child: Text('Buy ${r2(r.suggestedQty)} ${r.ing['unit'] ?? ''}')),
+              chevron: false,
+            ),
+        ]),
+    ]);
+  }
+}
+
+class _ExpiryTab extends StatelessWidget {
+  const _ExpiryTab(this.h);
+  final HomeState h;
+  @override
+  Widget build(BuildContext context) {
+    final rows = expiryRows(h.s.repo!);
+    return ListView(padding: const EdgeInsets.only(bottom: 28), children: [
+      const PageHead('Expiry', sub: 'Materials with an expiry date, soonest first.'),
+      if (rows.isEmpty)
+        const Empty(Icons.event_outlined, 'No expiry dates set', 'Add an expiry date to a raw material to track it here.')
+      else
+        Group([
+          for (final g in rows)
+            Li(
+              '${g['name']}',
+              sub: 'Expires ${g['expiry']} · on hand ${r2(g['qty'] ?? 0)} ${g['unit'] ?? ''} · value at risk ${inr(stockValue(g))}',
+              icon: Icons.event_outlined,
+              tone: isExpired(g) ? Tk.red : isExpiringSoon(g) ? Tk.orange : Tk.green,
+              value: isExpired(g) ? 'Expired' : isExpiringSoon(g) ? 'Within 7 days' : 'OK',
+              chevron: false,
+            ),
+        ]),
     ]);
   }
 }
