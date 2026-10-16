@@ -5,6 +5,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/billing.dart' show r2;
+import '../core/reorder.dart';
 import '../core/session.dart';
 import 'home.dart';
 import 'kit.dart';
@@ -170,7 +171,7 @@ class _MenuAdminState extends State<MenuAdmin> with SingleTickerProviderStateMix
   Session get s => widget.h.s;
 
   Future<void> item([Map<String, dynamic>? it]) async {
-    final cats = s.repo!.of('cat').toList()..sort((a, b) => '${a['name']}'.compareTo('${b['name']}'));
+    final cats = s.repo!.of('cat').toList()..sort((a, b) => ((a['n'] as num?) ?? 0).compareTo((b['n'] as num?) ?? 0));
     if (cats.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Add a category first')));
       return;
@@ -198,6 +199,8 @@ class _MenuAdminState extends State<MenuAdmin> with SingleTickerProviderStateMix
         F('cost', 'Cost price (₹)', type: 'number', value: it?['cost']),
         F('barcode', 'Barcode', value: it?['barcode']),
         F('rec', 'Recipe (stock used per sale, like  milk:0.2, tea:5)', type: 'multiline', value: it?['rec']),
+        F('combo', 'This is a combo (bundle of other items)', type: 'check', value: it?['combo'] == true),
+        F('comboText', 'Combo contents (like  Chicken Biryani:1, Coke:1)', type: 'multiline', value: it?['comboText']),
         F('off', 'Sold out', type: 'check', value: it?['off'] == true),
         if (outs.length > 1) ...[
           for (final o in outs) F('op_${o['id']}', '${o['name']} price (₹), empty = same', type: 'number', value: (it?['outletPrice'] as Map?)?['${o['id']}']),
@@ -220,7 +223,8 @@ class _MenuAdminState extends State<MenuAdmin> with SingleTickerProviderStateMix
           if (pv != null && '$pv'.isNotEmpty) outletPrice['${o['id']}'] = pv;
           if (v['oo_${o['id']}'] == true) outletOff['${o['id']}'] = true;
         }
-        final d = {...?it, 'sizes': sizes, 'img': v['img'], 'short': v['short'] ?? '', 'st': v['st'] ?? 'Kitchen', 'hsn': v['hsn'] ?? '', 'cost': v['cost'] ?? 0, 'barcode': ('${v['barcode'] ?? ''}').isEmpty ? null : v['barcode'], 'rec': v['rec'] ?? '', if (outs.length > 1) ...{'outletPrice': outletPrice, 'outletOff': outletOff}, if (groups.isNotEmpty) 'addonGroups': v['addonGroups'] ?? [], 'name': v['name'], 'cat': v['cat'], 'price': v['price'], 'veg': v['veg'], 'desc': v['desc'], 'off': v['off'] == true, 'taxId': ('${v['taxId'] ?? ''}').isEmpty ? null : v['taxId']};
+        final isCombo = v['combo'] == true;
+        final d = {...?it, 'sizes': sizes, 'img': v['img'], 'short': v['short'] ?? '', 'st': v['st'] ?? 'Kitchen', 'hsn': v['hsn'] ?? '', 'cost': v['cost'] ?? 0, 'barcode': ('${v['barcode'] ?? ''}').isEmpty ? null : v['barcode'], 'rec': v['rec'] ?? '', 'combo': isCombo, 'comboText': isCombo ? (v['comboText'] ?? '') : '', if (outs.length > 1) ...{'outletPrice': outletPrice, 'outletOff': outletOff}, if (groups.isNotEmpty) 'addonGroups': v['addonGroups'] ?? [], 'name': v['name'], 'cat': v['cat'], 'price': v['price'], 'veg': v['veg'], 'desc': v['desc'], 'off': v['off'] == true, 'taxId': ('${v['taxId'] ?? ''}').isEmpty ? null : v['taxId']};
         await s.repo!.save('item', d, id: it?['id'] as String?);
         setState(() {});
         s.sync();
@@ -239,10 +243,14 @@ class _MenuAdminState extends State<MenuAdmin> with SingleTickerProviderStateMix
   Future<void> cat([Map<String, dynamic>? c]) => formSheet(
         context,
         c == null ? 'New category' : 'Edit category',
-        [F('name', 'Category name', value: c?['name']), F('active', 'Visible on menus', type: 'check', value: c?['active'] != false)],
+        [
+          F('name', 'Category name', value: c?['name']),
+          F('parent', 'Parent category (optional)', value: c?['parent'], hint: 'Groups related categories together'),
+          F('active', 'Visible on menus', type: 'check', value: c?['active'] != false),
+        ],
         (v) async {
           if ('${v['name']}'.isEmpty) return false;
-          await s.repo!.save('cat', {...?c, 'name': v['name'], 'active': v['active'] == true, 'n': c?['n'] ?? DateTime.now().millisecondsSinceEpoch}, id: c?['id'] as String?);
+          await s.repo!.save('cat', {...?c, 'name': v['name'], 'parent': v['parent'] ?? '', 'active': v['active'] == true, 'n': c?['n'] ?? DateTime.now().millisecondsSinceEpoch}, id: c?['id'] as String?);
           setState(() {});
           s.sync();
           return true;
@@ -256,9 +264,17 @@ class _MenuAdminState extends State<MenuAdmin> with SingleTickerProviderStateMix
               },
       );
 
+  /// Swap this category's sort rank with its neighbour -- the order here is the order items appear in on
+  /// the billing screen.
+  Future<void> moveCat(List<Map<String, dynamic>> ordered, Map<String, dynamic> c, int d) async {
+    await reorderRank(s.repo!, 'cat', ordered, c, d);
+    setState(() {});
+    s.sync();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final cats = s.repo!.of('cat').toList()..sort((a, b) => '${a['name']}'.compareTo('${b['name']}'));
+    final cats = s.repo!.of('cat').toList()..sort((a, b) => ((a['n'] as num?) ?? 0).compareTo((b['n'] as num?) ?? 0));
     final catName = {for (final c in cats) '${c['id']}': '${c['name']}'};
     final items = s.repo!.of('item').where((i) => q.isEmpty || '${i['name']}'.toLowerCase().contains(q.toLowerCase())).toList()..sort((a, b) => '${catName[a['cat']]}${a['name']}'.compareTo('${catName[b['cat']]}${b['name']}'));
     return Scaffold(
@@ -297,7 +313,17 @@ class _MenuAdminState extends State<MenuAdmin> with SingleTickerProviderStateMix
             ? Empty(Icons.category_outlined, 'No categories', 'Group your items, for example Tea, Snacks, Meals.', action: 'Add category', onAction: cat)
             : ListView(padding: const EdgeInsets.fromLTRB(12, 10, 12, 90), children: [
                 for (final c in cats)
-                  Card(child: ListTile(onTap: () => cat(c), title: Text('${c['name']}', style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text('${s.repo!.of('item').where((i) => i['cat'] == c['id']).length} items${c['active'] == false ? ' · hidden' : ''}'), trailing: const Icon(Icons.chevron_right))),
+                  Card(
+                    child: ListTile(
+                      onTap: () => cat(c),
+                      title: Text('${c['name']}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                      subtitle: Text('${s.repo!.of('item').where((i) => i['cat'] == c['id']).length} items${'${c['parent'] ?? ''}'.isEmpty ? '' : ' · under ${c['parent']}'}${c['active'] == false ? ' · hidden' : ''}'),
+                      trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                        IconButton(icon: const Icon(Icons.arrow_upward, size: 20), onPressed: cats.first['id'] == c['id'] ? null : () => moveCat(cats, c, -1)),
+                        IconButton(icon: const Icon(Icons.arrow_downward, size: 20), onPressed: cats.last['id'] == c['id'] ? null : () => moveCat(cats, c, 1)),
+                      ]),
+                    ),
+                  ),
               ]),
       ]),
     );

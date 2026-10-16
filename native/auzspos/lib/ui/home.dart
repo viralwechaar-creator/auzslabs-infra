@@ -4,6 +4,7 @@ import 'package:flutter/material.dart' hide Text;
 import 'i18n.dart';
 import '../core/repo.dart';
 import '../core/session.dart';
+import '../core/stock.dart' as stock;
 import '../core/alerts.dart';
 import 'actions.dart';
 import 'admin.dart';
@@ -136,6 +137,8 @@ class _HomeState extends State<Home> {
     o['paidBy'] = s.user!['id'];
     o['tok'] ??= uid().replaceAll('-', '').substring(0, 12);
     if (o['no'] == null || '${o['no']}'.endsWith('~')) o['no'] = await s.nextNo();
+    await stock.dedu(s.repo!, o);
+    await stock.deduVariant(s.repo!, o);
     await persist(o);
     if (o['type'] == 'Dine-in' && o['table'] != null) {
       final t = s.repo!.rec('${o['table']}');
