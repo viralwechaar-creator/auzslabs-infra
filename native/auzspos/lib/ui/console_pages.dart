@@ -6,6 +6,7 @@ import 'actions.dart';
 import 'admin.dart';
 import 'console.dart';
 import 'console_more.dart';
+import 'console_menu2.dart';
 import 'ds.dart';
 import 'home.dart';
 import 'kit.dart';
@@ -98,6 +99,14 @@ Widget consolePageFor(String id, HomeState h, void Function(String) go) {
       return OffersPage(h);
     case 'agg/platforms':
       return CrudPage(h, _cfgPlatform);
+    case 'menu/overview':
+      return MenuOverviewPage(h, go: go);
+    case 'menu/preferences':
+      return OrderPreferencesPage(h);
+    case 'menu/commission':
+      return ItemCommissionPage(h);
+    case 'mgmt/whatsapp':
+      return WaAutomationPage(h);
     case 'mgmt/config':
       return SettingsPage(h, embedded: true);
     case 'mgmt/qr':
