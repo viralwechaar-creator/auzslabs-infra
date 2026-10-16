@@ -4,6 +4,7 @@ import '../core/billing.dart' show r2;
 import '../core/inventory_reports.dart';
 import '../core/repo.dart';
 import 'actions.dart';
+import 'purchase_orders.dart';
 import 'admin.dart';
 import 'console.dart';
 import 'console_more.dart';
@@ -460,6 +461,9 @@ class _Kot extends StatelessWidget {
 
 // ------------------------------------------------------------------ inventory pages
 
+/// Direct purchases (existing, unchanged) plus, for an owner or manager, a Purchase Orders tab -- the
+/// website's two independent purchasing paths (purchaseDirect() vs poForm()/receivePO(), both reachable
+/// from its own inv/purchase page) shown here as a segmented control instead of two separate buttons.
 class _Purchases extends StatefulWidget {
   const _Purchases(this.h);
   final HomeState h;
@@ -469,6 +473,7 @@ class _Purchases extends StatefulWidget {
 
 class _PurchasesState extends State<_Purchases> {
   HomeState get h => widget.h;
+  String tab = 'direct';
   Future<void> add() {
     final ings = h.s.repo!.of('ing').toList();
     if (ings.isEmpty) {
@@ -493,13 +498,22 @@ class _PurchasesState extends State<_Purchases> {
 
   @override
   Widget build(BuildContext context) {
-    final list = h.s.repo!.of('purchase').toList()..sort((a, b) => '${b['d']}${b['at']}'.compareTo('${a['d']}${a['at']}'));
-    return ListView(padding: const EdgeInsets.only(bottom: 28), children: [
-      PageHead('Purchases', sub: 'Stock you bought. Adds to your raw materials.', trailing: PillBtn('Add', icon: Icons.add, fill: true, onTap: add)),
-      const SizedBox(height: 12),
-      if (list.isEmpty) Empty(Icons.shopping_cart_outlined, 'No purchases yet', 'Record what you buy so stock and costs stay right.', action: 'Record a purchase', onAction: add) else Group([
-        for (final p in list.take(100)) Li('${p['name']}', sub: '${p['d']} · ${_s(p['vendor'])}', icon: Icons.shopping_cart_outlined, tone: Tk.green, value: '${p['qty']} ${p['unit'] ?? ''} · ₹${r2(((p['qty'] ?? 0) as num) * ((p['price'] ?? 0) as num))}', chevron: false),
-      ]),
+    final canOrders = h.s.role == 'owner' || h.s.role == 'manager';
+    Widget direct() {
+      final list = h.s.repo!.of('purchase').toList()..sort((a, b) => '${b['d']}${b['at']}'.compareTo('${a['d']}${a['at']}'));
+      return ListView(padding: const EdgeInsets.only(bottom: 28), children: [
+        PageHead('Direct purchase', sub: 'Stock you bought. Adds to your raw materials straight away.', trailing: PillBtn('Add', icon: Icons.add, fill: true, onTap: add)),
+        const SizedBox(height: 12),
+        if (list.isEmpty) Empty(Icons.shopping_cart_outlined, 'No purchases yet', 'Record what you buy so stock and costs stay right.', action: 'Record a purchase', onAction: add) else Group([
+          for (final p in list.take(100)) Li('${p['name']}', sub: '${p['d']} · ${_s(p['vendor'])}', icon: Icons.shopping_cart_outlined, tone: Tk.green, value: '${p['qty']} ${p['unit'] ?? ''} · ₹${r2(((p['qty'] ?? 0) as num) * ((p['price'] ?? 0) as num))}', chevron: false),
+        ]),
+      ]);
+    }
+
+    if (!canOrders) return direct();
+    return Column(children: [
+      Padding(padding: const EdgeInsets.fromLTRB(16, 10, 16, 0), child: Seg<String>(expand: true, items: const [('direct', 'Direct purchase'), ('orders', 'Purchase orders')], value: tab, onChanged: (v) => setState(() => tab = v))),
+      Expanded(child: tab == 'orders' ? PoOrdersTab(h) : direct()),
     ]);
   }
 }
