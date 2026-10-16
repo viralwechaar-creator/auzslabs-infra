@@ -59,6 +59,10 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  # Lets the real SqliteStore (the one used on a phone) run inside a plain `flutter test`
+  # (which has no platform channels), so the offline-draft persistence test below exercises
+  # actual disk-backed sqflite, not a stand-in.
+  sqflite_common_ffi: ^2.3.6
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

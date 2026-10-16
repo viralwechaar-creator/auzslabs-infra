@@ -235,7 +235,7 @@ class _CreditNotePageState extends State<CreditNotePage> {
               await _queueOffline(payload, doc, chosen);
               return true;
             }
-            if (mounted) toast(ctx, e.message, err: true);
+            if (mounted) toast(context, e.message, err: true);
             return false;
           }
         }),
