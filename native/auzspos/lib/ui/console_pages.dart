@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart' hide Text;
 import 'i18n.dart';
 import '../core/billing.dart' show r2;
+import '../core/auto_reorder.dart';
 import '../core/inventory_reports.dart';
 import '../core/purchases.dart';
 import '../core/wastage.dart' show wastageCostThisMonth;
@@ -723,15 +724,69 @@ class _RepInventoryState extends State<_RepInventory> {
   }
 }
 
-class _ReorderTab extends StatelessWidget {
+class _ReorderTab extends StatefulWidget {
   const _ReorderTab(this.h, {required this.onBuy});
   final HomeState h;
   final Future<void> Function(Map<String, dynamic> g, num suggestedQty) onBuy;
   @override
+  State<_ReorderTab> createState() => _ReorderTabState();
+}
+
+class _ReorderTabState extends State<_ReorderTab> {
+  HomeState get h => widget.h;
+  bool _busy = false;
+
+  /// Automation 1 (this mission's business-automations batch): review-then-confirm flow for
+  /// reorderPO()'s own automation, ported exactly -- see core/auto_reorder.dart's header for the
+  /// full website trace. [_busy] is the same submission latch used by wasteForm()/receivePO()'s own
+  /// native guard: it refuses a second tap while the first batch is still being written, so a fast
+  /// double-tap on "Draft purchase orders" can never create the same vendor's drafts twice in the
+  /// same gesture (pendingAutoReorder()'s own open-draft check additionally prevents a duplicate
+  /// across two SEPARATE visits to this screen, e.g. after returning from Purchase Orders).
+  Future<void> _autoReorder() async {
+    if (_busy) return;
+    final pending = pendingAutoReorder(h.s.repo!);
+    if (pending.isEmpty) {
+      h.toast(planAutoReorder(h.s.repo!).isEmpty ? 'Nothing is below its reorder level' : 'Every low vendor already has an open draft order');
+      return;
+    }
+    final itemCount = pending.fold<int>(0, (a, g) => a + g.items.length);
+    final sure = await askYes(
+      context,
+      'Create ${pending.length} draft purchase order${pending.length == 1 ? '' : 's'}?',
+      'For $itemCount low item${itemCount == 1 ? '' : 's'}. Quantity brings each back to twice its reorder level. '
+          'This only creates draft orders -- nothing is sent, nothing is paid, and stock is not added until you receive each order.',
+    );
+    if (!sure || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      await createAutoReorderDrafts(h.s.repo!, pending);
+      h.s.sync();
+      if (mounted) {
+        setState(() {});
+        h.toast('${pending.length} draft purchase order${pending.length == 1 ? '' : 's'} created');
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final rows = reorderRows(h.s.repo!)..sort((a, b) => (a.daysLeft ?? 999).compareTo(b.daysLeft ?? 999));
+    final canOrders = h.s.role == 'owner' || h.s.role == 'manager';
+    final pendingCount = canOrders ? pendingAutoReorder(h.s.repo!).length : 0;
     return ListView(padding: const EdgeInsets.only(bottom: 28), children: [
-      const PageHead('Reorder', sub: 'Materials that are already low, or will run out within a week.'),
+      PageHead(
+        'Reorder',
+        sub: 'Materials that are already low, or will run out within a week.',
+        trailing: canOrders
+            ? FilledButton.tonal(
+                onPressed: _busy ? null : _autoReorder,
+                child: Text(_busy ? 'Creating…' : pendingCount > 0 ? 'Draft purchase orders ($pendingCount)' : 'Draft purchase orders'),
+              )
+            : null,
+      ),
       if (rows.isEmpty)
         const Empty(Icons.check_circle_outline, 'Nothing needs reordering', 'Every material has enough stock for now.')
       else
@@ -742,7 +797,7 @@ class _ReorderTab extends StatelessWidget {
               sub: '${isLowStock(r.ing) ? 'Low stock' : '${r.daysLeft} day${r.daysLeft == 1 ? '' : 's'} left'} · on hand ${r2(r.ing['qty'] ?? 0)} ${r.ing['unit'] ?? ''} · daily use ${r.dailyUse > 0 ? '${r.dailyUse} ${r.ing['unit'] ?? ''}' : '—'}',
               icon: Icons.shopping_cart_outlined,
               tone: isLowStock(r.ing) ? Tk.red : Tk.orange,
-              trailing: OutlinedButton(onPressed: () => onBuy(r.ing, r.suggestedQty), child: Text('Buy ${r2(r.suggestedQty)} ${r.ing['unit'] ?? ''}')),
+              trailing: OutlinedButton(onPressed: () => widget.onBuy(r.ing, r.suggestedQty), child: Text('Buy ${r2(r.suggestedQty)} ${r.ing['unit'] ?? ''}')),
               chevron: false,
             ),
         ]),
