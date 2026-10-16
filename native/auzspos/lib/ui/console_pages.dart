@@ -2,7 +2,7 @@ import 'package:flutter/material.dart' hide Text;
 import 'i18n.dart';
 import '../core/billing.dart' show r2;
 import '../core/inventory_reports.dart';
-import '../core/repo.dart';
+import '../core/purchases.dart';
 import '../core/wastage.dart' show wastageCostThisMonth;
 import 'actions.dart';
 import 'costing.dart';
@@ -490,7 +490,7 @@ class _PurchasesState extends State<_Purchases> {
       (v) async {
         final g = ings.where((x) => x['name'] == v['name']).firstOrNull;
         if (g == null || v['qty'] == null || (v['qty'] as num) <= 0) return false;
-        await h.s.repo!.save('purchase', {'name': v['name'], 'qty': v['qty'], 'price': v['price'] ?? 0, 'vendor': v['vendor'], 'd': v['d'], 'unit': g['unit'], 'at': nowIso()});
+        await recordDirectPurchase(h.s.repo!, material: '${v['name']}', qty: v['qty'] as num, unitPrice: (v['price'] ?? 0) as num, unit: '${g['unit'] ?? ''}', vendor: v['vendor'] as String?, date: '${v['d']}');
         await h.s.repo!.save('ing', {...g, 'qty': r2(((g['qty'] ?? 0) as num) + (v['qty'] as num)), if (v['price'] != null) 'cost': v['price']}, id: '${g['id']}');
         setState(() {});
         h.s.sync();
@@ -503,12 +503,12 @@ class _PurchasesState extends State<_Purchases> {
   Widget build(BuildContext context) {
     final canOrders = h.s.role == 'owner' || h.s.role == 'manager';
     Widget direct() {
-      final list = h.s.repo!.of('purchase').toList()..sort((a, b) => '${b['d']}${b['at']}'.compareTo('${a['d']}${a['at']}'));
+      final list = purchaseRows(h.s.repo!).take(100).toList();
       return ListView(padding: const EdgeInsets.only(bottom: 28), children: [
         PageHead('Direct purchase', sub: 'Stock you bought. Adds to your raw materials straight away.', trailing: PillBtn('Add', icon: Icons.add, fill: true, onTap: add)),
         const SizedBox(height: 12),
         if (list.isEmpty) Empty(Icons.shopping_cart_outlined, 'No purchases yet', 'Record what you buy so stock and costs stay right.', action: 'Record a purchase', onAction: add) else Group([
-          for (final p in list.take(100)) Li('${p['name']}', sub: '${p['d']} · ${_s(p['vendor'])}', icon: Icons.shopping_cart_outlined, tone: Tk.green, value: '${p['qty']} ${p['unit'] ?? ''} · ₹${r2(((p['qty'] ?? 0) as num) * ((p['price'] ?? 0) as num))}', chevron: false),
+          for (final p in list) Li(p.itemsSummary, sub: '${p.date} · ${p.vendorName}', icon: Icons.shopping_cart_outlined, tone: Tk.green, value: inr(r2(p.amount)), chevron: false),
         ]),
       ]);
     }
@@ -679,7 +679,7 @@ class _RepInventoryState extends State<_RepInventory> {
         ],
         (v) async {
           if (v['qty'] == null || (v['qty'] as num) <= 0) return false;
-          await h.s.repo!.save('purchase', {'name': g['name'], 'qty': v['qty'], 'price': v['price'] ?? 0, 'vendor': v['vendor'], 'd': v['d'], 'unit': g['unit'], 'at': nowIso()});
+          await recordDirectPurchase(h.s.repo!, material: '${g['name']}', qty: v['qty'] as num, unitPrice: (v['price'] ?? 0) as num, unit: '${g['unit'] ?? ''}', vendor: v['vendor'] as String?, date: '${v['d']}');
           await h.s.repo!.save('ing', {...g, 'qty': r2(((g['qty'] ?? 0) as num) + (v['qty'] as num)), if (v['price'] != null) 'cost': v['price']}, id: '${g['id']}');
           setState(() {});
           h.s.sync();

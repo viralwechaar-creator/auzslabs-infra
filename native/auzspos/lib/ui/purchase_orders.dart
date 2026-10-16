@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' hide Text;
 import 'i18n.dart';
 import '../core/billing.dart' show r2;
 import '../core/purchase_orders.dart';
+import '../core/purchases.dart' show purchaseSpendInMonth;
 import '../core/repo.dart' show nowIso;
 import '../core/session.dart';
 import 'console.dart' show Kpis;
@@ -195,7 +196,7 @@ class _PoOrdersTabState extends State<PoOrdersTab> {
     final open = all.where((p) => '${p['status'] ?? 'draft'}' != 'received').length;
     final thisMonth = nowIso().substring(0, 7);
     final receivedThisMonth = all.where((p) => p['status'] == 'received' && '${p['receivedAt'] ?? ''}'.startsWith(thisMonth)).length;
-    final spendThisMonth = s.repo!.of('purchase').where((p) => '${p['date'] ?? ''}'.startsWith(thisMonth)).fold<num>(0, (a, p) => a + ((p['amount'] ?? 0) as num));
+    final spendThisMonth = purchaseSpendInMonth(s.repo!, thisMonth);
 
     return ListView(padding: const EdgeInsets.only(bottom: 90), children: [
       PageHead('Purchase Orders', sub: 'Order from vendors, then receive the goods to add them to stock.', trailing: PillBtn('New order', icon: Icons.add, fill: true, onTap: () => edit())),
