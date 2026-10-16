@@ -3,8 +3,10 @@ import 'i18n.dart';
 import '../core/billing.dart' show r2;
 import '../core/inventory_reports.dart';
 import '../core/repo.dart';
+import '../core/wastage.dart' show wastageCostThisMonth;
 import 'actions.dart';
 import 'purchase_orders.dart';
+import 'wastage.dart';
 import 'admin.dart';
 import 'console.dart';
 import 'console_more.dart';
@@ -690,16 +692,28 @@ class _RepInventoryState extends State<_RepInventory> {
     final value = ings.fold<double>(0, (a, g) => a + ((g['qty'] ?? 0) as num) * ((g['cost'] ?? 0) as num));
     final low = ings.where((g) => ((g['low'] ?? 0) as num) > 0 && ((g['qty'] ?? 0) as num) <= ((g['low'] ?? 0) as num)).length;
     return Column(children: [
-      Padding(padding: const EdgeInsets.fromLTRB(16, 10, 16, 0), child: Seg<String>(expand: true, items: const [('stock', 'Stock'), ('reorder', 'Reorder'), ('expiry', 'Expiry')], value: tab, onChanged: (v) => setState(() => tab = v))),
+      Padding(padding: const EdgeInsets.fromLTRB(16, 10, 16, 0), child: Seg<String>(expand: true, items: const [('stock', 'Stock'), ('reorder', 'Reorder'), ('expiry', 'Expiry'), ('waste', 'Wastage')], value: tab, onChanged: (v) => setState(() => tab = v))),
       Expanded(
         child: switch (tab) {
           'reorder' => _ReorderTab(h, onBuy: recordPurchase),
           'expiry' => _ExpiryTab(h),
+          'waste' => WastageTab(h),
           _ => ListView(padding: const EdgeInsets.only(bottom: 28), children: [
               const SizedBox(height: 8),
-              Kpis('Stock value', inr(r2(value)), '${ings.length} raw materials', [('Low stock', '$low', low > 0 ? Tk.orange : null)]),
+              Kpis('Stock value', inr(r2(value)), '${ings.length} raw materials', [('Low stock', '$low', low > 0 ? Tk.orange : null), ('Wastage this month', inr(r2(wastageCostThisMonth(h.s.repo!))), null)]),
               const SectionLabel('Stock'),
-              Group(ings.isEmpty ? [const Li('No raw materials yet', chevron: false)] : [for (final g in ings) Li('${g['name']}', sub: '₹${g['cost'] ?? 0} per ${g['unit'] ?? 'unit'}', chevron: false, value: '${g['qty'] ?? 0} ${g['unit'] ?? ''}')]),
+              Group(ings.isEmpty
+                  ? [const Li('No raw materials yet', chevron: false)]
+                  : [
+                      for (final g in ings)
+                        Li(
+                          '${g['name']}',
+                          sub: '₹${g['cost'] ?? 0} per ${g['unit'] ?? 'unit'}',
+                          chevron: false,
+                          value: '${g['qty'] ?? 0} ${g['unit'] ?? ''}',
+                          trailing: OutlinedButton(onPressed: () => wasteForm(context, h, g), child: const Text('Waste')),
+                        ),
+                    ]),
             ]),
         },
       ),
