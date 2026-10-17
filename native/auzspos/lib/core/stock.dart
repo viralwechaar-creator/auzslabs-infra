@@ -8,6 +8,23 @@
 import 'billing.dart' show r2;
 import 'repo.dart';
 
+/// Reasons offered for a manual stock adjustment -- same list as adjustForm() in the website's
+/// app/public/console/p-inventory.js. Kept here (not a free-text field) so every adjustment leaves
+/// a consistent, reportable reason, same discipline as the existing wastage/void reason lists.
+const List<String> adjustReasons = ['Count correction', 'Damaged / spoiled', 'Expired', 'Found later', 'Other'];
+
+/// The raw material matching [name] (case-insensitive) that already exists at [outlet] ('main' when
+/// absent, matching the website's own `(x.outlet||'main')` convention) -- the find-or-create lookup
+/// transferForm() does before deciding whether to add to an existing destination record or start a
+/// new one.
+Map<String, dynamic>? ingAtOutlet(Iterable<Map<String, dynamic>> ings, String name, String outlet) {
+  final want = name.trim().toLowerCase();
+  for (final i in ings) {
+    if ('${i['name'] ?? ''}'.trim().toLowerCase() == want && '${i['outlet'] ?? 'main'}' == outlet) return i;
+  }
+  return null;
+}
+
 /// Deduct ingredient stock for one item's recipe string (e.g. "Milk:200,Sugar:10"), scaled by [mult].
 Future<void> deduRecipe(Repo repo, String recipe, num mult) async {
   for (final part in recipe.split(',')) {

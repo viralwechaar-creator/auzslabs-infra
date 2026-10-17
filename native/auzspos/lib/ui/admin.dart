@@ -7,7 +7,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../core/billing.dart' show r2;
 import '../core/inventory_reports.dart' show isLowStock;
 import '../core/reorder.dart';
+import '../core/repo.dart' show nowIso;
 import '../core/session.dart';
+import '../core/stock.dart' show adjustReasons, ingAtOutlet;
 import 'console.dart' show Kpis, RangeBar;
 import 'home.dart';
 import 'kit.dart';
@@ -702,18 +704,77 @@ class _StockAdminState extends State<StockAdmin> {
               },
       );
 
+  /// Same shape as adjustForm() in the website's app/public/console/p-inventory.js: a signed delta
+  /// plus a reason, so the correction leaves an `adjustment` audit record (kind `adjustment` is
+  /// universal-write per db/068_pos_rebuild.sql) instead of silently rewriting `qty` with no trail --
+  /// previously this screen only ever did the bare `qty` rewrite.
   Future<void> adjust(Map<String, dynamic> g) => formSheet(
         context,
         'Adjust ${g['name']}',
-        [F('q', 'Add or remove (use minus to remove) in ${g['unit'] ?? 'units'}', type: 'number')],
+        [
+          F('q', 'Add or remove (use minus to remove) in ${g['unit'] ?? 'units'}', type: 'number'),
+          F('reason', 'Reason', type: 'select', value: adjustReasons.first, options: [for (final r in adjustReasons) [r, r]]),
+        ],
         (v) async {
-          if (v['q'] == null) return false;
-          await s.repo!.save('ing', {...g, 'qty': r2(((g['qty'] ?? 0) as num) + (v['q'] as num))}, id: g['id'] as String);
+          final q = v['q'] as num?;
+          if (q == null || q == 0) return false;
+          await s.repo!.save('ing', {...g, 'qty': r2(((g['qty'] ?? 0) as num) + q)}, id: g['id'] as String);
+          await s.repo!.save('adjustment', {'ing': g['name'], 'q': q, 'reason': '${v['reason'] ?? adjustReasons.first}', 'by': '${s.user!['email'] ?? s.user!['id']}', 'at': nowIso()});
           setState(() {});
           s.sync();
           return true;
         },
       );
+
+  /// Move stock to another outlet (or a free-text area, when the business only has the one outlet) --
+  /// same two-destination shape as transferForm() in the website's p-inventory.js, and the same
+  /// find-or-create rule for the destination raw-material record (ingAtOutlet()).
+  Future<void> transfer(Map<String, dynamic> g) {
+    final others = s.outlets.where((o) => '${o['id']}' != s.repo!.outlet).toList();
+    return formSheet(
+      context,
+      'Transfer ${g['name']}',
+      [
+        F('q', 'Quantity (${g['unit'] ?? ''})', type: 'number'),
+        if (others.length > 1)
+          F('to', 'Send to outlet', type: 'select', value: '${others.first['id']}', options: [for (final o in others) ['${o['id']}', '${o['name']}']])
+        else
+          F('toArea', 'To area', type: 'text'),
+        F('note', 'Note', type: 'text'),
+      ],
+      (v) async {
+        final q = v['q'] as num?;
+        final onHand = (g['qty'] ?? 0) as num;
+        if (q == null || !(q > 0) || q > onHand) {
+          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter a quantity up to what is on hand')));
+          return false;
+        }
+        final fromOutlet = s.repo!.outlet;
+        await s.repo!.save('ing', {...g, 'qty': r2(onHand - q)}, id: g['id'] as String);
+        final toId = v['to'] as String?;
+        if (toId != null) {
+          final dest = ingAtOutlet(s.repo!.ofAll('ing'), '${g['name']}', toId);
+          if (dest != null) {
+            await s.repo!.save('ing', {...dest, 'qty': r2(((dest['qty'] ?? 0) as num) + q)}, id: '${dest['id']}');
+          } else {
+            await s.repo!.save('ing', {'name': g['name'], 'unit': g['unit'], 'qty': q, 'low': g['low'], 'cost': g['cost'], 'outlet': toId});
+          }
+        }
+        await s.repo!.save('transfer', {
+          'ing': g['name'],
+          'q': q,
+          'from': s.outletName(fromOutlet),
+          'to': toId != null ? s.outletName(toId) : '${v['toArea'] ?? ''}',
+          'note': '${v['note'] ?? ''}',
+          'by': '${s.user!['email'] ?? s.user!['id']}',
+          'at': nowIso(),
+        });
+        setState(() {});
+        s.sync();
+        return true;
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -735,6 +796,7 @@ class _StockAdminState extends State<StockAdmin> {
                     trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                       Text('${g['qty'] ?? 0} ${g['unit'] ?? ''}', style: TextStyle(fontWeight: FontWeight.w800, color: isLowStock(g) ? Tk.orange : Tk.label)),
                       IconButton(icon: const Icon(Icons.tune), tooltip: 'Adjust', onPressed: () => adjust(g)),
+                      IconButton(icon: const Icon(Icons.swap_horiz), tooltip: 'Transfer', onPressed: () => transfer(g)),
                     ]),
                   ),
                 ),

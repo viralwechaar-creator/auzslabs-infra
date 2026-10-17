@@ -80,4 +80,33 @@ void main() {
     await dedu(repo, order); // simulating pay() being (incorrectly) called twice for the same sale
     expect(repo.of('ing').single['qty'], 800, reason: 'two deductions of 100ml each -- this function alone does not prevent it');
   });
+
+  group('ingAtOutlet (stock transfer destination lookup)', () {
+    test('matches an existing raw material at the target outlet, case-insensitively by name', () {
+      final ings = [
+        {'id': '1', 'name': 'Milk', 'outlet': 'branch2', 'qty': 5},
+        {'id': '2', 'name': 'Sugar', 'outlet': 'main', 'qty': 10},
+      ];
+      expect(ingAtOutlet(ings, 'milk', 'branch2')!['id'], '1');
+    });
+
+    test('a record with no outlet field is treated as "main"', () {
+      final ings = [{'id': '1', 'name': 'Milk', 'qty': 5}];
+      expect(ingAtOutlet(ings, 'Milk', 'main')!['id'], '1');
+    });
+
+    test('returns null when the material does not yet exist at that outlet (caller must create it)', () {
+      final ings = [{'id': '1', 'name': 'Milk', 'outlet': 'main', 'qty': 5}];
+      expect(ingAtOutlet(ings, 'Milk', 'branch2'), isNull);
+    });
+
+    test('a name match at the WRONG outlet is never returned', () {
+      final ings = [{'id': '1', 'name': 'Milk', 'outlet': 'branch2', 'qty': 5}];
+      expect(ingAtOutlet(ings, 'Milk', 'main'), isNull);
+    });
+  });
+
+  test('adjustReasons offers the same fixed set the website\'s adjustForm() does, for a consistent audit trail', () {
+    expect(adjustReasons, ['Count correction', 'Damaged / spoiled', 'Expired', 'Found later', 'Other']);
+  });
 }
