@@ -271,3 +271,19 @@ Map<String, CustomerStat> customerStats(Repo repo, {bool includeDue = true}) {
   }
   return m;
 }
+
+/// How many times a coupon code has actually been used -- ported from the website's own `used(c)`
+/// in app/public/console/p-menu.js: paid OR due orders (a due/credit bill still consumed the
+/// coupon) whose `coupon` field matches this code exactly.
+int couponUsedCount(Map<String, dynamic> coupon, Repo repo) => repo.of('order').where((o) => (o['status'] == 'paid' || o['status'] == 'due') && '${o['coupon'] ?? ''}' == '${coupon['code'] ?? ''}').length;
+
+/// Active/Expired, matching the website's own status pill exactly: expired by date, or by having
+/// reached its max-use count (whichever triggers first).
+bool couponExpired(Map<String, dynamic> coupon, Repo repo) {
+  final expiry = '${coupon['expiry'] ?? ''}';
+  final today = dayKeyOf(DateTime.now());
+  if (expiry.isNotEmpty && expiry.compareTo(today) < 0) return true;
+  final maxUses = (coupon['maxUses'] as num?)?.toInt();
+  if (maxUses != null && maxUses > 0 && couponUsedCount(coupon, repo) >= maxUses) return true;
+  return false;
+}

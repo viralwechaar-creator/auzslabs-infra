@@ -251,4 +251,42 @@ void main() {
       expect(customerStats(repo, includeDue: false), isEmpty);
     });
   });
+
+  group('couponUsedCount / couponExpired', () {
+    test('counts paid AND due orders that used this exact coupon code', () async {
+      final repo = mk(FakeServer());
+      final c = (await repo.save('coupon', {'code': 'WELCOME10', 'type': '%', 'value': 10})).data;
+      await repo.save('order', {'status': 'paid', 't': {'total': 100}, 'lines': [{'name': 'x'}], 'coupon': 'WELCOME10'});
+      await repo.save('order', {'status': 'due', 't': {'total': 100}, 'lines': [{'name': 'x'}], 'coupon': 'WELCOME10'});
+      await repo.save('order', {'status': 'paid', 't': {'total': 100}, 'lines': [{'name': 'x'}], 'coupon': 'OTHER'});
+      await repo.save('order', {'status': 'open', 't': {'total': 100}, 'lines': [{'name': 'x'}], 'coupon': 'WELCOME10'});
+      expect(couponUsedCount(c, repo), 2, reason: 'the paid and due orders, not the other code or the still-open order');
+    });
+
+    test('a coupon with no expiry and no max-uses limit is never expired', () async {
+      final repo = mk(FakeServer());
+      final c = (await repo.save('coupon', {'code': 'FOREVER', 'type': '%', 'value': 5})).data;
+      expect(couponExpired(c, repo), false);
+    });
+
+    test('a coupon past its expiry date is expired, even with uses remaining', () async {
+      final repo = mk(FakeServer());
+      final c = (await repo.save('coupon', {'code': 'OLD', 'type': '%', 'value': 5, 'expiry': '2000-01-01', 'maxUses': 100})).data;
+      expect(couponExpired(c, repo), true);
+    });
+
+    test('a coupon that has reached its max uses is expired, even with no expiry date set', () async {
+      final repo = mk(FakeServer());
+      final c = (await repo.save('coupon', {'code': 'LIMITED', 'type': '%', 'value': 5, 'maxUses': 1})).data;
+      await repo.save('order', {'status': 'paid', 't': {'total': 100}, 'lines': [{'name': 'x'}], 'coupon': 'LIMITED'});
+      expect(couponExpired(c, repo), true);
+    });
+
+    test('a coupon under its max-use limit, with a future (or no) expiry, is not expired', () async {
+      final repo = mk(FakeServer());
+      final c = (await repo.save('coupon', {'code': 'ROOM', 'type': '%', 'value': 5, 'maxUses': 5})).data;
+      await repo.save('order', {'status': 'paid', 't': {'total': 100}, 'lines': [{'name': 'x'}], 'coupon': 'ROOM'});
+      expect(couponExpired(c, repo), false);
+    });
+  });
 }

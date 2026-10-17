@@ -11,6 +11,7 @@ import 'actions.dart';
 import 'costing.dart';
 import '../core/costing.dart' show businessHealth;
 import '../core/dashboard_stats.dart' hide dayKeyOf;
+import '../core/repo.dart';
 import 'daily_summary.dart' show DailySummaryPage;
 import 'purchase_orders.dart';
 import 'wastage.dart';
@@ -191,17 +192,32 @@ Widget consolePageFor(String id, HomeState h, void Function(String) go) {
 // ------------------------------------------------------------------ generic record page
 
 class CrudCfg {
-  const CrudCfg({required this.kind, required this.title, required this.sub, required this.icon, required this.add, required this.fields, required this.rowTitle, required this.rowSub, this.trail, this.tone, this.empty = ''});
+  const CrudCfg({required this.kind, required this.title, required this.sub, required this.icon, required this.add, required this.fields, required this.rowTitle, required this.rowSub, this.trail, this.tone, this.empty = '', this.rowExtra});
   final String kind, title, sub, add, empty;
   final IconData icon;
   final Color? tone;
   final List<F> Function(Map<String, dynamic>? r) fields;
   final String Function(Map<String, dynamic> r) rowTitle, rowSub;
   final String Function(Map<String, dynamic> r)? trail;
+  /// Optional: a row detail computed from OTHER records (a coupon's usage count, a tax's assigned-
+  /// item count), not just the record itself -- [rowSub]/[trail] only ever see the one record, so a
+  /// cross-referenced figure like this needs the [Repo] too. Appended to [rowSub]'s text with ' · '
+  /// when non-empty. Nullable and defaulting to unset so every existing CrudCfg is unaffected --
+  /// widen this, not rowSub/trail's own signature, to avoid touching all 17+ existing configs.
+  final String Function(Map<String, dynamic> r, Repo repo)? rowExtra;
 }
 
 String _s(dynamic v) => v == null ? '' : '$v';
 List<List<String>> _opts(List<String> a) => [for (final x in a) [x, x]];
+
+/// [CrudCfg.rowSub] plus the optional [CrudCfg.rowExtra] (a repo-aware detail), joined with ' · ';
+/// returns null (not an empty string) when there is nothing to show, matching Li's own convention.
+String? _rowSubWithExtra(CrudCfg c, Map<String, dynamic> r, Repo repo) {
+  final sub = c.rowSub(r);
+  final extra = c.rowExtra?.call(r, repo) ?? '';
+  final parts = [if (sub.isNotEmpty) sub, if (extra.isNotEmpty) extra];
+  return parts.isEmpty ? null : parts.join(' · ');
+}
 
 final _cfgRaw = CrudCfg(
   kind: 'ing', title: 'Raw Materials', sub: 'Everything you buy and cook with, with unit, cost and reorder level.', icon: Icons.egg_outlined, add: 'Add material', empty: 'Add milk, flour, tea. You get a warning when something runs low.',
@@ -234,6 +250,12 @@ final _cfgCoupon = CrudCfg(
   kind: 'coupon', title: 'Discounts', sub: 'Coupon codes for the cashier to apply.', icon: Icons.local_offer_outlined, add: 'Add coupon', empty: 'Create a code like WELCOME10.',
   fields: (r) => [F('code', 'Code', value: r?['code'], hint: 'WELCOME10'), F('type', 'Type', type: 'select', value: r?['type'] ?? '%', options: const [['%', '% off'], ['₹', '₹ off']]), F('value', 'Value', type: 'number', value: r?['value']), F('minBill', 'Minimum bill (₹)', type: 'number', value: r?['minBill']), F('expiry', 'Expires on (YYYY-MM-DD)', value: r?['expiry']), F('maxUses', 'Max uses', type: 'number', value: r?['maxUses'])],
   rowTitle: (r) => _s(r['code']), rowSub: (r) => '${r['type'] == '%' ? '${r['value']}% off' : '₹${r['value']} off'}${(r['minBill'] ?? 0) != 0 ? ' · min ₹${r['minBill']}' : ''}',
+  rowExtra: (r, repo) {
+    final used = couponUsedCount(r, repo);
+    final maxUses = (r['maxUses'] as num?)?.toInt();
+    final usedText = 'Used $used${maxUses != null && maxUses > 0 ? '/$maxUses' : ''}';
+    return '$usedText · ${couponExpired(r, repo) ? 'Expired' : 'Active'}';
+  },
 );
 
 final _cfgOffer = CrudCfg(
@@ -380,7 +402,7 @@ class _CrudPageState extends State<CrudPage> {
       else
         Group([
           for (final r in list)
-            Li(c.rowTitle(r), sub: c.rowSub(r).isEmpty ? null : c.rowSub(r), icon: c.icon, tone: c.tone ?? Tk.accent, value: c.trail?.call(r), onTap: () => edit(r)),
+            Li(c.rowTitle(r), sub: _rowSubWithExtra(c, r, h.s.repo!), icon: c.icon, tone: c.tone ?? Tk.accent, value: c.trail?.call(r), onTap: () => edit(r)),
         ]),
     ]);
   }

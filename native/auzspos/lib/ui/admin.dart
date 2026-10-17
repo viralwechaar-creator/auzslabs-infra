@@ -653,6 +653,15 @@ class _TaxAdminState extends State<TaxAdmin> {
                 s.sync();
               },
       );
+  // Matches the website's "Items" column (menu/taxes): how many menu items currently use this tax
+  // rate specifically, rather than the business default. An item picks its own tax via the existing
+  // Tax field in the item editor (admin.dart's item form, F('taxId', 'Tax', ...)) -- that assignment
+  // already works per item; this is only the missing count/visibility on the tax list itself. The
+  // website also has a bulk "Assign items" multi-select action here -- not added (would need a new
+  // multi-select screen of its own); per-item assignment through the existing item editor remains
+  // the way to do it in the native app.
+  int _itemCount(Map<String, dynamic> t) => s.repo!.of('item').where((i) => '${i['taxId'] ?? ''}' == '${t['id']}').length;
+
   @override
   Widget build(BuildContext context) {
     final ts = s.repo!.of('tax').toList();
@@ -661,7 +670,7 @@ class _TaxAdminState extends State<TaxAdmin> {
       floatingActionButton: FloatingActionButton.extended(onPressed: () => tax(), icon: const Icon(Icons.add), label: const Text('Add tax')),
       body: ts.isEmpty
           ? Empty(Icons.percent, 'Using one default rate', 'Every item uses ${s.cfg['tax']}% from Settings. Add other rates (for example 12% or 18%) and give them to specific items.', action: 'Add tax', onAction: tax)
-          : ListView(padding: const EdgeInsets.all(12), children: [for (final t in ts) Card(child: ListTile(onTap: () => tax(t), title: Text('${t['name']}', style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text(t['inclusive'] == true ? 'Included in price' : 'Added on top'), trailing: Text('${t['rate']}%', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16))))]),
+          : ListView(padding: const EdgeInsets.all(12), children: [for (final t in ts) Card(child: ListTile(onTap: () => tax(t), title: Text('${t['name']}', style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text('${t['inclusive'] == true ? 'Included in price' : 'Added on top'} · ${_itemCount(t)} items'), trailing: Text('${t['rate']}%', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16))))]),
     );
   }
 }
