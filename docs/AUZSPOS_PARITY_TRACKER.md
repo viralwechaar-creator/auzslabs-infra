@@ -107,7 +107,7 @@ not individually confirmed): `menu/bulk`, `menu/import`, `rep/daily`.
 |---|---|---|
 | `rep/customers` (`_RepCustomers`) | **PARTIAL → mostly MATCHED after this round's fix** | Was gross (`totalOf`) instead of net (`netOf`) spend, and had no tier badges, no "Lapsed"/win-back list at all (website's `rep/customers` has Gold/Silver/Bronze tiers via `tierOf()`, a "Lapsed (30+ days)" KPI, and a win-back table with a per-customer WhatsApp deep link). **Fixed this round**: `netOf()`, tier dot+label, Lapsed KPI, Win-back list section with the website's own WhatsApp message template reused verbatim. Not yet matched: website also shows "New in range" (first visit within the selected range) as its own KPI — native does not compute this yet. |
 | `rep/staff` (`_RepStaff`) | **PARTIAL → mostly MATCHED after this round's fix** | Was missing Hours worked, Voids, Discounts entirely (website's staff report has all three, feeding its own KPI row: "Team members with sales"/"Hours worked"/"Voids"/"Discounts given", plus per-row Avg. bill and Sales/hour columns). **Fixed this round**: Hours (from `shift.in`/`shift.out`), Voids and Discounts (from `order.by`/`order.status`/`order.t.d`, matching the website's own `by`-keyed — not `paidBy`-keyed — void/discount calc) now computed and shown, with sales switched to `netOf()`. Not yet matched: native's per-row line doesn't show Avg. bill or Sales/hour as separate columns (folded into one sub-line instead of the website's own 8-column table) — a presentation difference, not a missing figure (the underlying numbers are all there to compute them, just not broken out). |
-| `rep/analytics` (`_RepAnalytics`) | **PARTIAL, not fixed this round** | Native currently only has "Sales by hour" and "Sales by weekday" bars (using gross `totalOf`, not `netOf`). The website's Analytics Dashboard additionally has: Net sales **vs. previous period** % comparison, Avg. daily sales, Avg. bill, Repeat-customer %, a full daily-sales line chart across the whole range (not just hour/weekday buckets), a Payment mix card, and a Top items card. This is a materially larger page than native's current version — left as a real, sizeable, documented gap for a future batch, not attempted this round to avoid a rushed/undertested change. |
+| `rep/analytics` (`_RepAnalytics`) | **MATCHED** (fixed in a follow-up batch the same session) | Added: Net sales vs. previous period % (`payModesOf`/`customerStats` new pure functions in `dashboard_stats.dart`, 8 new tests), Avg. daily sales, Avg. bill, Repeat-customer %, Payment mix card, Top items card; Sales by hour/weekday switched to `netOf()`. Remaining presentation difference, not a data gap: native's daily trend stays as the existing Sales-by-hour/weekday bars rather than the website's single continuous daily-sales line chart across the whole range — the figures underneath (vs-previous-period, averages) are the same regardless of chart shape. |
 | `rep/orders`, `rep/sales` (`ReportsPage`), `rep/gst` | **NOT VERIFIED** | Not read side-by-side this round. |
 
 Full list of the remaining native routes still needing a side-by-side read
@@ -185,17 +185,18 @@ been done this session and remains open.
    this platform" toggle).
 6. Read `rep/customers` and `rep/staff` side by side against the website;
    found and fixed real gaps in both (gross-vs-net spend, missing tiers/
-   win-back list, missing hours/voids/discounts). Documented `rep/analytics`
-   as a real, sizeable, NOT-yet-fixed gap rather than rushing it.
-7. Every step re-ran `flutter analyze --no-fatal-infos` (80 issues, unchanged
-   throughout) and `flutter test` (growing 305→323→323, zero regressions at
-   any point) before committing. Three new local commits, nothing pushed.
+   win-back list, missing hours/voids/discounts).
+7. Read `rep/analytics` side by side; found 6 missing elements (vs-previous-
+   period, avg daily sales, avg bill, repeat-customer %, payment mix, top
+   items) and closed all of them, adding `payModesOf()`/`customerStats()`
+   to `dashboard_stats.dart` (8 more tests) and reusing them.
+8. Every step re-ran `flutter analyze --no-fatal-infos` (80 issues, unchanged
+   throughout) and `flutter test` (growing 305→323→331, zero regressions at
+   any point) before committing. Four new local commits this round, nothing
+   pushed.
 
 ## What remains (honest, for the next batch — this list will keep shrinking, not disappear in one sitting)
 
-- `rep/analytics`'s larger, named gap list (vs-previous-period, avg daily
-  sales, avg bill, repeat-customer %, daily line chart, payment mix, top
-  items).
 - `rep/inventory`'s missing "Purchases" tab (low priority — the data exists
   elsewhere in native, just not consolidated into this one screen).
 - A side-by-side read of the remaining ~68 Console routes listed above
