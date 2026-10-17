@@ -840,20 +840,49 @@ class _RepOrders extends StatefulWidget {
 class _RepOrdersState extends _RepState<_RepOrders> {
   @override
   Widget build(BuildContext context) {
-    final p = paidIn(widget.h.s.repo!, days);
+    final from = dayKey(DateTime.now().subtract(Duration(days: days - 1)));
+    // Every non-void-filtered order CREATED in range (website's own `all_`), not just paid ones --
+    // Open/Due/Cancelled all read from this set, matching rep/orders exactly.
+    final all = widget.h.s.repo!.of('order').where((o) => (o['t'] as Map?) != null && dayKey(DateTime.tryParse('${o['created']}') ?? DateTime(2000)).compareTo(from) >= 0).toList();
+    final p = all.where((o) => o['status'] == 'paid').toList();
     final byType = <String, (int, double)>{};
     for (final o in p) {
       final t = '${o['type']}';
       final c = byType[t] ?? (0, 0.0);
-      byType[t] = (c.$1 + 1, c.$2 + totalOf(o));
+      byType[t] = (c.$1 + 1, c.$2 + netOf(o));
     }
-    final cancelled = widget.h.s.repo!.of('order').where((o) => o['status'] == 'void').length;
-    final total = p.fold<num>(0, (a, o) => a + totalOf(o));
+    final openDue = all.where((o) => o['status'] == 'open' || o['status'] == 'due').length;
+    final cancelled = all.where((o) => o['status'] == 'void').length;
+    final flagged = all.where((o) => o['status'] == 'void' || (((o['refunds'] as List?) ?? const []).isNotEmpty) || o['complimentary'] == true).toList();
+    final kotMins = widget.h.s.repo!.of('kotlog').where((k) => k['readyAt'] != null && dayKey(DateTime.tryParse('${k['createdAt']}') ?? DateTime(2000)).compareTo(from) >= 0).map((k) {
+      final c = DateTime.tryParse('${k['createdAt']}'), r = DateTime.tryParse('${k['readyAt']}');
+      return (c == null || r == null) ? null : r.difference(c).inMinutes;
+    }).whereType<int>().toList();
+    final avgPrep = kotMins.isEmpty ? null : (kotMins.reduce((a, b) => a + b) / kotMins.length).round();
+    final total = p.fold<num>(0, (a, o) => a + netOf(o));
     return ListView(padding: const EdgeInsets.only(bottom: 28), children: [
       RangeBar(days, (v) => setState(() => days = v)),
-      Kpis('Orders', '${p.length}', 'Paid bills', [('Revenue', inr(r2(total)), null), ('Average bill', inr(p.isEmpty ? 0 : r2(total / p.length)), null), ('Cancelled', '$cancelled', cancelled > 0 ? Tk.red : null)]),
+      Kpis('Orders', '${all.length}', '${p.length} paid · ${inr(r2(total))} revenue', [
+        ('Open / due', '$openDue', null),
+        ('Cancelled', '$cancelled', cancelled > 0 ? Tk.red : null),
+        ('Avg. prep time', avgPrep == null ? '—' : '$avgPrep min', null),
+      ]),
       const SectionLabel('By order type'),
       Group(byType.isEmpty ? [const Li('No orders in this range', chevron: false)] : [for (final e in byType.entries) Li(e.key, sub: '${e.value.$1} orders', chevron: false, value: inr(r2(e.value.$2)))]),
+      const SectionLabel('Cancelled, refunded and complimentary'),
+      Group(flagged.isEmpty
+          ? [const Li('Nothing cancelled in this range', chevron: false)]
+          : [
+              for (final o in flagged)
+                Li(
+                  '${o['no'] ?? '—'}',
+                  sub: o['status'] == 'void' ? (o['voidReason'] ?? 'Cancelled').toString() : (((o['refunds'] as List?) ?? const []).isNotEmpty ? 'Refunded' : (o['compReason'] ?? 'Complimentary').toString()),
+                  icon: o['status'] == 'void' ? Icons.cancel_outlined : Icons.undo,
+                  tone: o['status'] == 'void' ? Tk.red : Tk.orange,
+                  chevron: false,
+                  value: inr(((o['t'] as Map?)?['total'] ?? 0) as num),
+                ),
+            ]),
     ]);
   }
 }
