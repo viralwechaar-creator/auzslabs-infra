@@ -1327,9 +1327,14 @@ class _RepGstState extends _RepState<_RepGst> {
         byRate[e.key] = (c.$1 + ((v['base'] ?? 0) as num), c.$2 + ((v['tax'] ?? 0) as num));
       }
     }
+    // CGST/SGST are each exactly half of total tax, matching the website's own rep/gst assumption
+    // (an even intra-state split; it does not attempt IGST/IGST-vs-CGST+SGST routing by state).
     return ListView(padding: const EdgeInsets.only(bottom: 28), children: [
       RangeBar(days, (v) => setState(() => days = v)),
-      Kpis('GST collected', inr(r2(tax)), 'On ${inr(r2(base))} of sales', const []),
+      Kpis('GST collected', inr(r2(tax)), 'On ${inr(r2(base))} of sales', [
+        ('CGST', inr(r2(tax / 2)), null),
+        ('SGST', inr(r2(tax / 2)), null),
+      ]),
       const SectionLabel('By rate'),
       Group(byRate.isEmpty ? [const Li('No tax in this range', chevron: false)] : [for (final e in byRate.entries) Li('${e.key}%', sub: 'Taxable ${inr(r2(e.value.$1))}', chevron: false, value: inr(r2(e.value.$2)))]),
     ]);
