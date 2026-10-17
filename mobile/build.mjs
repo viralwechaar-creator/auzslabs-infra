@@ -65,6 +65,20 @@ if (!manifest.includes('android.permission.CAMERA')) {
     '</manifest>');
   fs.writeFileSync(manifestPath, manifest);
 }
+// Bluetooth receipt printing (ds/escpos.js's native branch, @capacitor-community/bluetooth-le). The plugin's own
+// `cap add android` step already merges BLUETOOTH_SCAN/BLUETOOTH_CONNECT (Android 12+, API 31) into the manifest
+// via its AndroidManifest; ACCESS_FINE_LOCATION (needed for BLE scanning on Android < 12) is already declared above
+// for every app. This block only adds the two legacy permissions (`BLUETOOTH`/`BLUETOOTH_ADMIN`) that some older
+// plugin/manifest-merger paths still expect and that cost nothing when unused -- confirmed by reading the plugin's
+// own documented manifest requirements, NOT verified by an actual build (no Android SDK in this sandbox).
+manifest = fs.readFileSync(manifestPath, 'utf8');
+if (!manifest.includes('android.permission.BLUETOOTH"')) {
+  manifest = manifest.replace('</manifest>',
+    '    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />\n' +
+    '    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />\n' +
+    '</manifest>');
+  fs.writeFileSync(manifestPath, manifest);
+}
 
 // Native push (Firebase Cloud Messaging, db/119/server/src/fcm.js). Same
 // dormant-until-configured discipline as every other optional integration:
