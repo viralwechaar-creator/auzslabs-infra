@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' hide Text;
 import 'i18n.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/billing.dart' show r2;
+import '../core/purchase_orders.dart' show openPurchaseOrders;
 import '../core/repo.dart';
 import 'actions.dart';
 import 'console_more.dart' show findDayNeedingClose;
@@ -85,6 +86,22 @@ class _ConsolePageState extends State<ConsolePage> {
   // filters it reads (low-stock materials + due bills + open tickets, now also day-close, open
   // purchase orders and pending sync), not the count of distinct conditions.
   int get _alerts => computeConsoleAlerts(h.s.repo!).fold<int>(0, (a, x) => a + x.count);
+
+  /// Audit finding: the bell's own dot was driven ONLY by [_alerts] (a count of CONFIRMED alert
+  /// records). A device whose last sync failed, or that has never synced at all, with zero
+  /// confirmed alerts, showed no dot whatsoever -- silently looking "all clear" from the console's
+  /// top bar alone, even though opening the sheet reveals the "may be out of date"/"may be
+  /// incomplete" banner the Business Health Monitor already computes. Reuses
+  /// computeBusinessHealth()'s own dataConfidence (never a second confidence check), and only
+  /// evaluates it when there is nothing already confirmed to show a dot for, so the common case
+  /// (a real alert exists) costs nothing extra. -1 is a sentinel _topBtn() reads as "show the dot,
+  /// the exact number is not meaningful" -- never shown as a number (the Badge below carries no
+  /// label, so it is a plain dot either way).
+  int get _alertBadge {
+    final n = _alerts;
+    if (n > 0) return n;
+    return computeBusinessHealth(h.s.repo!).dataConfidence != 'ok' ? -1 : 0;
+  }
 
   void _search() {
     final all = <(String, String)>[for (final n in consoleNav) if (n is CNode) ...[if (n.kids.isEmpty) (n.id, n.label), ...n.kids]];
@@ -287,7 +304,8 @@ class _ConsolePageState extends State<ConsolePage> {
           child: InkWell(
             customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
             onTap: f,
-            child: SizedBox(width: 54, height: 54, child: Badge(isLabelVisible: badge > 0, smallSize: 10, child: Icon(i, size: 26))),
+            // != 0, not > 0: -1 is the "data confidence is not ok" sentinel (see _alertBadge).
+            child: SizedBox(width: 54, height: 54, child: Badge(isLabelVisible: badge != 0, smallSize: 10, child: Icon(i, size: 26))),
           ),
         ),
       );
@@ -307,7 +325,7 @@ class _ConsolePageState extends State<ConsolePage> {
             const SizedBox(width: 6),
             Expanded(child: Text(titleOfPage(page), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -.5))),
             _topBtn(Icons.search, _search),
-            _topBtn(Icons.notifications_none, _alertsSheet, badge: _alerts),
+            _topBtn(Icons.notifications_none, _alertsSheet, badge: _alertBadge),
           ]),
         ),
         Expanded(child: KeyedSubtree(key: ValueKey(page), child: consolePageFor(page, h, go))),
@@ -444,7 +462,7 @@ List<AlertItem> computeConsoleAlerts(Repo repo) {
     out.add(AlertItem(kind: 'dayclose', title: '${reminder.date} is not closed yet', detail: '${reminder.bills} bill${reminder.bills == 1 ? '' : 's'} -- sales not yet reconciled', navTo: 'fin/cash', count: 1));
   }
 
-  final openPo = repo.of('po').where((p) => '${p['status'] ?? 'draft'}' != 'received').toList();
+  final openPo = openPurchaseOrders(repo);
   if (openPo.isNotEmpty) {
     out.add(AlertItem(kind: 'po', title: '${openPo.length} purchase order${openPo.length == 1 ? '' : 's'} not yet received', detail: 'Stock will not update until each is received', navTo: 'inv/purchase', count: openPo.length));
   }

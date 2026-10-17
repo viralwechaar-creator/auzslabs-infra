@@ -19,6 +19,18 @@ import 'repo.dart';
 /// the same number. Replicated as-is, not silently improved into a different contract than the website's.
 String nextPoNo(Repo repo) => 'PO-${(repo.of('po').length + 1).toString().padLeft(4, '0')}';
 
+/// True for a `po` record that has not yet been received -- the website's own `status!='received'`
+/// check (a PO with no status at all is still a draft, matching its `status||'draft'` fallback).
+/// Audit finding (Native POS Operational Features audit): this exact condition used to be written
+/// inline, separately, in two different UI files (the Alerts Center's 'po' alert in console.dart,
+/// and Purchases' own default-tab decision in console_pages.dart) -- harmless while both copies
+/// agreed, but a real risk of the two silently drifting apart if either was ever edited alone.
+/// Pulled out once, here, so both now call the same function.
+bool isPoOpen(Map<String, dynamic> p) => '${p['status'] ?? 'draft'}' != 'received';
+
+/// Every `po` record not yet received. Pure and read-only.
+List<Map<String, dynamic>> openPurchaseOrders(Repo repo) => repo.of('po').where(isPoOpen).toList();
+
 /// Apply a PO receipt exactly like receivePO() on the website: for each line with a received quantity > 0,
 /// add that quantity to the ingredient's stock (and its cost, if a price was given), append a usage entry
 /// matching the shape _Purchases.add() already writes (so it shows up the same way in reports); create one

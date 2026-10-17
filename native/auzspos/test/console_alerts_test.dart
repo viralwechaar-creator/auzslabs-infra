@@ -1,3 +1,4 @@
+import 'package:auzspos/core/purchase_orders.dart' show openPurchaseOrders;
 import 'package:auzspos/ui/console.dart' show computeConsoleAlerts, AlertItem;
 import 'package:flutter_test/flutter_test.dart';
 import 'sync_test.dart' show FakeServer, mk;
@@ -224,6 +225,21 @@ void main() {
 
       final total = computeConsoleAlerts(repo).fold<int>(0, (a, x) => a + x.count);
       expect(total, 2 + 1 + 2, reason: '2 low materials + 1 due bill + 2 open tickets = 5, matching the pre-existing badge semantics');
+    });
+  });
+
+  group('regression (Native POS Operational Features audit): the po alert and the Purchases '
+      'screen\'s own default-tab decision can never silently drift apart again', () {
+    test('the po alert\'s own count always equals openPurchaseOrders().length -- the exact function '
+        'the Purchases screen now also calls to decide its starting tab', () async {
+      final repo = mk(FakeServer());
+      await repo.save('po', {'supplier': 'A', 'items': [], 'status': 'draft'});
+      await repo.save('po', {'supplier': 'B', 'items': [], 'status': 'received'});
+      await repo.save('po', {'supplier': 'C', 'items': []}); // no status -- still open
+
+      final poAlert = computeConsoleAlerts(repo).singleWhere((a) => a.kind == 'po');
+      expect(poAlert.count, openPurchaseOrders(repo).length);
+      expect(poAlert.count, 2);
     });
   });
 }

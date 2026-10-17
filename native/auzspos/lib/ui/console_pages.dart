@@ -3,6 +3,7 @@ import 'i18n.dart';
 import '../core/billing.dart' show r2;
 import '../core/auto_reorder.dart';
 import '../core/inventory_reports.dart';
+import '../core/purchase_orders.dart' show openPurchaseOrders;
 import '../core/purchases.dart';
 import '../core/wastage.dart' show wastageCostThisMonth;
 import 'actions.dart';
@@ -480,7 +481,21 @@ class _Purchases extends StatefulWidget {
 
 class _PurchasesState extends State<_Purchases> {
   HomeState get h => widget.h;
-  String tab = 'direct';
+  late String tab;
+
+  @override
+  void initState() {
+    super.initState();
+    // Audit finding: the Alerts Center's 'po' alert ("N purchase orders not yet received") sends
+    // the user to this exact screen (navTo 'inv/purchase'), but it always opened on "Direct
+    // purchase" by default -- unrelated to what the alert was about, landing on an empty-looking
+    // tab until the person manually switches the segmented control. openPurchaseOrders() is the
+    // SAME function computeConsoleAlerts() now uses for that alert (console.dart) -- opening here
+    // on whatever tab actually has something to review, for every path into this screen, not just
+    // the alert's, and the two can never silently drift apart again.
+    tab = openPurchaseOrders(h.s.repo!).isNotEmpty ? 'orders' : 'direct';
+  }
+
   Future<void> add() {
     final ings = h.s.repo!.of('ing').toList();
     if (ings.isEmpty) {

@@ -192,4 +192,38 @@ void main() {
       expect(g['cost'], 500);
     });
   });
+
+  group('isPoOpen/openPurchaseOrders -- the one shared condition the Alerts Center and the '
+      'Purchases screen\'s own default-tab decision both now read (Native POS Operational '
+      'Features audit: these used to be two separate, independently-written copies of the same '
+      'filter)', () {
+    test('a draft PO is open', () {
+      expect(isPoOpen({'status': 'draft'}), isTrue);
+    });
+
+    test('a received PO is not open', () {
+      expect(isPoOpen({'status': 'received'}), isFalse);
+    });
+
+    test('a PO with no status field at all defaults to open, matching the website\'s own '
+        '`status||\'draft\'` fallback -- never a false negative that hides it', () {
+      expect(isPoOpen({}), isTrue);
+    });
+
+    test('openPurchaseOrders returns only the open ones, newest or oldest order unspecified but every open one present', () async {
+      final repo = mk(FakeServer());
+      await repo.save('po', {'supplier': 'A', 'items': [], 'status': 'draft'});
+      await repo.save('po', {'supplier': 'B', 'items': [], 'status': 'received'});
+      await repo.save('po', {'supplier': 'C', 'items': []}); // no status at all -- still open
+
+      final open = openPurchaseOrders(repo);
+      expect(open.length, 2);
+      expect(open.map((p) => p['supplier']).toSet(), {'A', 'C'});
+    });
+
+    test('an empty catalog has no open purchase orders, not an error', () async {
+      final repo = mk(FakeServer());
+      expect(openPurchaseOrders(repo), isEmpty);
+    });
+  });
 }
