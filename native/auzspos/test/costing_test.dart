@@ -171,4 +171,54 @@ void main() {
       expect(row.marginFraction, 0.5);
     });
   });
+
+  group('margins: the Dashboard "Business Health" card\'s per-item list, ported verbatim from \n       the website\'s own margins() in p-dashboard.js', () {
+    test('only items with a positive computed cost AND a positive price are included', () async {
+      final repo = mk(FakeServer());
+      await repo.save('item', {'name': 'Costed', 'price': 50, 'cost': 20}); // included: margin 60
+      await repo.save('item', {'name': 'No cost', 'price': 30}); // excluded: cost is 0
+      await repo.save('item', {'name': 'No price', 'price': 0, 'cost': 5}); // excluded: price is 0
+      final mg = margins(repo);
+      expect(mg.map((m) => m.name), ['Costed']);
+      expect(mg.first.marginPct, 60);
+    });
+
+    test('margin is rounded to 2 decimals (website\'s r2), not a whole percent', () async {
+      final repo = mk(FakeServer());
+      await repo.save('item', {'name': 'Thirds', 'price': 30, 'cost': 10}); // (30-10)/30*100 = 66.666...
+      final mg = margins(repo);
+      expect(mg.first.marginPct, 66.67);
+    });
+
+    test('an empty catalog returns an empty list, not an error', () async {
+      final repo = mk(FakeServer());
+      expect(margins(repo), isEmpty);
+    });
+  });
+
+  group('businessHealth: average margin vs. the configured target', () {
+    test('returns null when no item has both a cost and a price (nothing to show)', () async {
+      final repo = mk(FakeServer());
+      await repo.save('item', {'name': 'No cost', 'price': 30});
+      expect(businessHealth(repo, 70), isNull);
+    });
+
+    test('averages every item\'s margin and counts how many fall below the target', () async {
+      final repo = mk(FakeServer());
+      await repo.save('item', {'name': 'A', 'price': 100, 'cost': 10}); // margin 90
+      await repo.save('item', {'name': 'B', 'price': 100, 'cost': 50}); // margin 50
+      final bh = businessHealth(repo, 70)!;
+      expect(bh.total, 2);
+      expect(bh.avg, 70);
+      expect(bh.below, 1, reason: 'only B (margin 50) is below the 70 target');
+      expect(bh.target, 70);
+    });
+
+    test('the default target of 70 is passed in by the caller, not hardcoded here', () async {
+      final repo = mk(FakeServer());
+      await repo.save('item', {'name': 'A', 'price': 100, 'cost': 50}); // margin 50
+      expect(businessHealth(repo, 40)!.below, 0, reason: 'margin 50 is not below a target of 40');
+      expect(businessHealth(repo, 60)!.below, 1, reason: 'margin 50 IS below a target of 60');
+    });
+  });
 }

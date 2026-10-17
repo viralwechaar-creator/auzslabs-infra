@@ -8,6 +8,7 @@ import '../core/purchases.dart';
 import '../core/wastage.dart' show wastageCostThisMonth;
 import 'actions.dart';
 import 'costing.dart';
+import '../core/costing.dart' show businessHealth;
 import 'daily_summary.dart' show DailySummaryPage;
 import 'purchase_orders.dart';
 import 'wastage.dart';
@@ -431,8 +432,28 @@ class _OverviewState extends State<_Overview> {
       Group(modes.isEmpty ? [const Li('No payments in this range', chevron: false)] : [for (final e in modes.entries) Li(e.key == 'upi' ? 'UPI' : '${e.key[0].toUpperCase()}${e.key.substring(1)}', chevron: false, value: inr(r2(e.value)))]),
       const SectionLabel('Best sellers'),
       Group(top.isEmpty ? [const Li('No sales yet', chevron: false)] : [for (final e in top.take(8)) Li(e.key, chevron: false, value: inr(r2(e.value)))]),
+      ..._businessHealthSection(h),
     ]);
   }
+}
+
+/// "Business Health" card: average margin across every priced+costed item vs. the business's
+/// configured target margin (`settings.targetMargin`, default 70) and how many items fall short --
+/// ported from the website Dashboard's own card (app/public/console/p-dashboard.js, `margins()` +
+/// `+cfg().targetMargin||70`), using the already-ported `businessHealth()` in costing.dart.
+List<Widget> _businessHealthSection(HomeState h) {
+  final target = (h.s.cfg['targetMargin'] as num?) ?? 70;
+  final bh = businessHealth(h.s.repo!, target);
+  return [
+    const SectionLabel('Business Health'),
+    Group(bh == null
+        ? [const Li('Add a cost or recipe to your items to see margin health', chevron: false)]
+        : [
+            Li('Target margin', chevron: false, value: '${target.toStringAsFixed(0)}%'),
+            Li('Average margin', chevron: false, value: '${bh.avg}%', titleColor: bh.avg >= target ? Tk.green : Tk.red),
+            Li(bh.below == 0 ? 'Every priced item meets the target' : '${bh.below} of ${bh.total} items are below target', chevron: false, titleColor: bh.below == 0 ? Tk.green : Tk.orange),
+          ]),
+  ];
 }
 
 class OrderList extends StatelessWidget {

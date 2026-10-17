@@ -115,3 +115,48 @@ List<CostRow> costingRows(Repo repo) {
   rows.sort((a, b) => a.marginFraction.compareTo(b.marginFraction));
   return rows;
 }
+
+/// One item's margin, as shown by the website's Dashboard "Business Health" card: every item for
+/// which unitCost() is positive AND the item has a price > 0 (ported verbatim from
+/// `margins()` in app/public/console/p-dashboard.js: `L('item').forEach(i=>{const c=unitCost(i);
+/// if(c>0&&i.price>0)res.push({n:i.name,m:r2((i.price-c)/i.price*100)})})`). The margin here is
+/// rounded to 2 decimals (website's `r2`), NOT the whole-number `marginPct` used elsewhere --
+/// keep the two separate, they round differently and are read by different screens.
+class ItemMargin {
+  ItemMargin(this.name, this.marginPct);
+  final String name;
+  final num marginPct;
+}
+
+List<ItemMargin> margins(Repo repo) {
+  final res = <ItemMargin>[];
+  for (final item in repo.of('item')) {
+    final c = unitCost(repo, item);
+    final price = (item['price'] ?? 0) as num;
+    if (c > 0 && price > 0) {
+      res.add(ItemMargin('${item['name'] ?? ''}', _r2((price - c) / price * 100)));
+    }
+  }
+  return res;
+}
+
+/// The Dashboard's "Business Health" card: average margin across every priced/costed item, the
+/// configured target (business settings' `targetMargin`, default 70 -- matches the website's
+/// `+cfg().targetMargin||70`), and how many items fall below that target. Returns null when there
+/// is nothing to show (no item has both a cost and a price), matching the website's own card,
+/// which renders nothing meaningful in that case either.
+class BusinessHealth {
+  BusinessHealth({required this.target, required this.avg, required this.below, required this.total});
+  final num target;
+  final num avg;
+  final int below;
+  final int total;
+}
+
+BusinessHealth? businessHealth(Repo repo, num target) {
+  final mg = margins(repo);
+  if (mg.isEmpty) return null;
+  final avg = _r2(mg.fold<num>(0, (a, m) => a + m.marginPct) / mg.length);
+  final below = mg.where((m) => m.marginPct < target).length;
+  return BusinessHealth(target: target, avg: avg, below: below, total: mg.length);
+}
