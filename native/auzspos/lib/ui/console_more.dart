@@ -1113,17 +1113,28 @@ class BulkPricePage extends StatefulWidget {
   State<BulkPricePage> createState() => _BulkPricePageState();
 }
 
+/// Three of the website's bulk-menu actions (menu/items' selection toolbar in p-menu.js), scoped by
+/// category rather than the website's checkbox multi-select -- "apply to every item in category X"
+/// (or every item) covers the same end results without a separate selection-state UI. Bulk DELETE
+/// from the website's toolbar is deliberately not reproduced here: an irreversible, category-wide
+/// delete is exactly the kind of destructive bulk action this mission's own safety rules caution
+/// against adding casually -- an owner who needs that can still delete items one at a time from the
+/// item editor, which already supports it.
 class _BulkPricePageState extends State<BulkPricePage> {
-  String cat = 'all', mode = 'pct';
+  String cat = 'all', mode = 'pct', action = 'price';
   final amt = TextEditingController();
+  String moveTo = '';
+
   @override
   Widget build(BuildContext context) {
     final h = widget.h;
     final cats = h.s.repo!.of('cat').toList();
     final targets = h.s.repo!.of('item').where((i) => cat == 'all' || i['cat'] == cat).toList();
     return ListView(padding: const EdgeInsets.only(bottom: 28), children: [
-      const PageHead('Bulk price change', sub: 'Raise or lower prices for many items at once.'),
+      const PageHead('Bulk menu changes', sub: 'Price, type or category, for many items at once.'),
       Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 0), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Seg<String>(expand: true, items: const [('price', 'Price'), ('type', 'Veg type'), ('move', 'Category')], value: action, onChanged: (v) => setState(() => action = v)),
+        const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           initialValue: cat,
           decoration: InputDecoration(labelText: tr('Which items')),
@@ -1131,27 +1142,66 @@ class _BulkPricePageState extends State<BulkPricePage> {
           onChanged: (v) => setState(() => cat = v ?? 'all'),
         ),
         const SizedBox(height: 12),
-        Seg<String>(expand: true, items: const [('pct', 'Percent %'), ('rs', 'Rupees ₹')], value: mode, onChanged: (v) => setState(() => mode = v)),
-        const SizedBox(height: 12),
-        TextField(controller: amt, keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true), decoration: InputDecoration(labelText: tr('Change by (use minus to lower)'))),
-        const SizedBox(height: 14),
-        FilledButton(
-          onPressed: () async {
-            final a = double.tryParse(amt.text.trim());
-            if (a == null || a == 0) return h.toast('Enter an amount');
-            if (!await askYes(context, 'Change ${targets.length} item prices?', 'Prices (and sizes) change by ${mode == 'pct' ? '$a%' : '₹$a'}. You can change them back the same way.')) return;
-            num g(num v) => r2((mode == 'pct' ? v * (1 + a / 100) : v + a).clamp(0, 1e9));
-            for (final i in targets) {
-              final c = Map<String, dynamic>.from(i);
-              c['price'] = g((c['price'] ?? 0) as num);
-              if (c['sizes'] is List) c['sizes'] = [for (final z in (c['sizes'] as List).cast<Map>()) {...z, 'p': g(z['p'] as num)}];
-              await h.s.repo!.save('item', c, id: '${i['id']}');
-            }
-            h.s.sync();
-            h.toast('Updated ${targets.length} items');
-          },
-          child: Text('Apply to ${targets.length} items'),
-        ),
+        if (action == 'price') ...[
+          Seg<String>(expand: true, items: const [('pct', 'Percent %'), ('rs', 'Rupees ₹')], value: mode, onChanged: (v) => setState(() => mode = v)),
+          const SizedBox(height: 12),
+          TextField(controller: amt, keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true), decoration: InputDecoration(labelText: tr('Change by (use minus to lower)'))),
+          const SizedBox(height: 14),
+          FilledButton(
+            onPressed: () async {
+              final a = double.tryParse(amt.text.trim());
+              if (a == null || a == 0) return h.toast('Enter an amount');
+              if (!await askYes(context, 'Change ${targets.length} item prices?', 'Prices (and sizes) change by ${mode == 'pct' ? '$a%' : '₹$a'}. You can change them back the same way.')) return;
+              num g(num v) => r2((mode == 'pct' ? v * (1 + a / 100) : v + a).clamp(0, 1e9));
+              for (final i in targets) {
+                final c = Map<String, dynamic>.from(i);
+                c['price'] = g((c['price'] ?? 0) as num);
+                if (c['sizes'] is List) c['sizes'] = [for (final z in (c['sizes'] as List).cast<Map>()) {...z, 'p': g(z['p'] as num)}];
+                await h.s.repo!.save('item', c, id: '${i['id']}');
+              }
+              h.s.sync();
+              h.toast('Updated ${targets.length} items');
+            },
+            child: Text('Apply to ${targets.length} items'),
+          ),
+        ] else if (action == 'type') ...[
+          for (final (k, l) in const [('veg', 'Mark Veg'), ('nonveg', 'Mark Non-veg'), ('egg', 'Mark contains Egg')])
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: OutlinedButton(
+                onPressed: () async {
+                  if (!await askYes(context, '$l for ${targets.length} items?', 'This changes the veg/non-veg/egg marker only, not the recipe or price.')) return;
+                  for (final i in targets) {
+                    await h.s.repo!.save('item', {...i, 'veg': k}, id: '${i['id']}');
+                  }
+                  h.s.sync();
+                  h.toast('Updated ${targets.length} items');
+                },
+                child: Text('$l (${targets.length} items)'),
+              ),
+            ),
+        ] else ...[
+          DropdownButtonFormField<String>(
+            initialValue: moveTo.isEmpty ? null : moveTo,
+            decoration: InputDecoration(labelText: tr('Move to category')),
+            items: [for (final c in cats) DropdownMenuItem(value: '${c['id']}', child: Text('${c['name']}'))],
+            onChanged: (v) => setState(() => moveTo = v ?? ''),
+          ),
+          const SizedBox(height: 14),
+          FilledButton(
+            onPressed: moveTo.isEmpty
+                ? null
+                : () async {
+                    if (!await askYes(context, 'Move ${targets.length} items?', 'They will all move into the chosen category.')) return;
+                    for (final i in targets) {
+                      await h.s.repo!.save('item', {...i, 'cat': moveTo}, id: '${i['id']}');
+                    }
+                    h.s.sync();
+                    h.toast('Moved ${targets.length} items');
+                  },
+            child: Text('Move ${targets.length} items'),
+          ),
+        ],
       ])),
     ]);
   }
