@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../core/billing.dart' show r2;
 import '../core/repo.dart';
 import 'actions.dart';
+import 'console_more.dart' show findDayNeedingClose;
 import 'console_pages.dart';
 import 'ds.dart';
 import 'home.dart';
@@ -79,12 +80,11 @@ class _ConsolePageState extends State<ConsolePage> {
     if (key.currentState?.isDrawerOpen ?? false) Navigator.pop(context);
   }
 
-  int get _alerts {
-    final r = h.s.repo!;
-    final low = r.of('ing').where((g) => ((g['low'] ?? 0) as num) > 0 && ((g['qty'] ?? 0) as num) <= ((g['low'] ?? 0) as num)).length;
-    final due = r.of('order').where((o) => o['status'] == 'due').length;
-    return low + due + r.of('ticket').where((t) => t['status'] != 'closed' && t['status'] != 'done').length;
-  }
+  // Sum of each alert's own underlying count (not the number of alert TYPES) -- preserves the
+  // exact badge meaning this getter already had before computeConsoleAlerts() consolidated the
+  // filters it reads (low-stock materials + due bills + open tickets, now also day-close and open
+  // purchase orders), not the count of distinct conditions.
+  int get _alerts => computeConsoleAlerts(h.s.repo!).fold<int>(0, (a, x) => a + x.count);
 
   void _search() {
     final all = <(String, String)>[for (final n in consoleNav) if (n is CNode) ...[if (n.kids.isEmpty) (n.id, n.label), ...n.kids]];
@@ -116,11 +116,14 @@ class _ConsolePageState extends State<ConsolePage> {
     );
   }
 
+  static const _alertIcons = {'lowstock': Icons.inventory_2_outlined, 'due': Icons.schedule, 'tickets': Icons.support_agent, 'dayclose': Icons.lock_open_outlined, 'po': Icons.local_shipping_outlined};
+
   void _alertsSheet() {
-    final r = h.s.repo!;
-    final low = r.of('ing').where((g) => ((g['low'] ?? 0) as num) > 0 && ((g['qty'] ?? 0) as num) <= ((g['low'] ?? 0) as num)).toList();
-    final due = r.of('order').where((o) => o['status'] == 'due').toList();
-    final tk = r.of('ticket').where((t) => t['status'] != 'closed' && t['status'] != 'done').toList();
+    // Alerts Center: everything here is a plain, read-only navigation target. Tapping one never
+    // creates a purchase order, adjusts stock, closes a day, or changes a payment -- it only moves
+    // to the existing screen where that action already lives, same as the three alert types
+    // (low stock, due bills, open tickets) this sheet already had before this change.
+    final alerts = computeConsoleAlerts(h.s.repo!);
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -129,19 +132,22 @@ class _ConsolePageState extends State<ConsolePage> {
           constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * .7),
           child: ListView(padding: const EdgeInsets.only(bottom: 16), children: [
             const Padding(padding: EdgeInsets.fromLTRB(20, 0, 20, 8), child: Text('Alerts', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800))),
-            if (low.isEmpty && due.isEmpty && tk.isEmpty) const Empty(Icons.check_circle_outline, 'All clear', 'Low stock, dues and open tickets will show up here.'),
-            if (low.isNotEmpty) Group([for (final g in low) Li('${g['name']} is running low', sub: '${g['qty']} ${g['unit'] ?? ''} left', icon: Icons.inventory_2_outlined, tone: Tk.orange, onTap: () {
-                  Navigator.pop(ctx);
-                  go('inv/raw');
-                })]),
-            if (due.isNotEmpty) ...[const SizedBox(height: 12), Group([Li('${due.length} bill${due.length == 1 ? '' : 's'} with payment due', icon: Icons.schedule, tone: Tk.red, onTap: () {
+            if (alerts.isEmpty) const Empty(Icons.check_circle_outline, 'All clear', 'Low stock, dues, open tickets, an unclosed day or a pending purchase order will show up here.'),
+            for (final a in alerts) ...[
+              Group([
+                Li(
+                  a.title,
+                  sub: a.detail,
+                  icon: _alertIcons[a.kind] ?? Icons.info_outline,
+                  tone: a.kind == 'due' ? Tk.red : a.kind == 'tickets' ? Tk.blue : Tk.orange,
+                  onTap: () {
                     Navigator.pop(ctx);
-                    go('daily/due');
-                  })])],
-            if (tk.isNotEmpty) ...[const SizedBox(height: 12), Group([Li('${tk.length} open support ticket${tk.length == 1 ? '' : 's'}', icon: Icons.support_agent, tone: Tk.blue, onTap: () {
-                    Navigator.pop(ctx);
-                    go('crm/support');
-                  })])],
+                    go(a.navTo);
+                  },
+                ),
+              ]),
+              const SizedBox(height: 12),
+            ],
           ]),
         ),
       ),
@@ -337,6 +343,62 @@ List<Map<String, dynamic>> paidIn(Repo repo, int days, {bool includeDue = false}
 }
 
 num totalOf(Map<String, dynamic> o) => ((o['t'] as Map?)?['total'] ?? 0) as num;
+
+/// One item in the Console's Alerts Center (the bell icon in the top bar, _alertsSheet() below).
+/// Plain data only -- no Flutter types -- so the condition that produced it can be tested directly,
+/// with no widget harness; the sheet picks an icon/colour/action by [kind] at render time.
+class AlertItem {
+  AlertItem({required this.kind, required this.title, required this.detail, required this.navTo, required this.count});
+  final String kind; // 'lowstock' | 'due' | 'tickets' | 'dayclose' | 'po'
+  final String title, detail, navTo;
+  final int count;
+}
+
+/// Every alert the Console's bell should show right now, derived entirely from the already-synced
+/// local Repo -- plus, for the day-close check, the existing findDayNeedingClose() (console_more.dart),
+/// reused as-is rather than recomputed here a second time. ONE item per CONDITION, never one per
+/// underlying record: low stock across 11 materials is a single alert ("11 raw materials..."), not
+/// 11 separate ones, and calling this again with nothing changed returns the exact same single item
+/// for that condition, never a second, duplicate one. There is no stored alert state anywhere --
+/// an alert simply stops appearing in the next computed list the moment its own underlying
+/// condition is resolved (the material restocked, the bill paid, the ticket closed, the day
+/// closed, the purchase order received), so there is nothing to mark read or dismiss.
+///
+/// Low stock, due bills and open tickets were already computed this way by _alerts/_alertsSheet
+/// below (as two separate, duplicated inline filters) before this change -- consolidated here into
+/// one shared computation both now call, rather than adding a third copy of the same filters for
+/// this change's own two new conditions.
+List<AlertItem> computeConsoleAlerts(Repo repo) {
+  final out = <AlertItem>[];
+
+  final low = repo.of('ing').where((g) => ((g['low'] ?? 0) as num) > 0 && ((g['qty'] ?? 0) as num) <= ((g['low'] ?? 0) as num)).toList();
+  if (low.isNotEmpty) {
+    final names = low.take(3).map((g) => '${g['name']}').join(', ');
+    out.add(AlertItem(kind: 'lowstock', title: '${low.length} raw material${low.length == 1 ? '' : 's'} running low', detail: low.length > 3 ? '$names…' : names, navTo: 'inv/raw', count: low.length));
+  }
+
+  final due = repo.of('order').where((o) => o['status'] == 'due').toList();
+  if (due.isNotEmpty) {
+    out.add(AlertItem(kind: 'due', title: '${due.length} bill${due.length == 1 ? '' : 's'} with payment due', detail: 'Customers who have not paid yet', navTo: 'daily/due', count: due.length));
+  }
+
+  final tk = repo.of('ticket').where((t) => t['status'] != 'closed' && t['status'] != 'done').toList();
+  if (tk.isNotEmpty) {
+    out.add(AlertItem(kind: 'tickets', title: '${tk.length} open support ticket${tk.length == 1 ? '' : 's'}', detail: 'Waiting for a reply or a fix', navTo: 'crm/support', count: tk.length));
+  }
+
+  final reminder = findDayNeedingClose(repo);
+  if (reminder != null) {
+    out.add(AlertItem(kind: 'dayclose', title: '${reminder.date} is not closed yet', detail: '${reminder.bills} bill${reminder.bills == 1 ? '' : 's'} -- sales not yet reconciled', navTo: 'fin/cash', count: 1));
+  }
+
+  final openPo = repo.of('po').where((p) => '${p['status'] ?? 'draft'}' != 'received').toList();
+  if (openPo.isNotEmpty) {
+    out.add(AlertItem(kind: 'po', title: '${openPo.length} purchase order${openPo.length == 1 ? '' : 's'} not yet received', detail: 'Stock will not update until each is received', navTo: 'inv/purchase', count: openPo.length));
+  }
+
+  return out;
+}
 
 // ignore: unused_element
 void _unused() => (r2, nowIso, orderSheet, launchUrl, formSheet);
