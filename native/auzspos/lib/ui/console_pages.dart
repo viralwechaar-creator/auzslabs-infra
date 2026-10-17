@@ -9,6 +9,7 @@ import '../core/wastage.dart' show wastageCostThisMonth;
 import 'actions.dart';
 import 'costing.dart';
 import '../core/costing.dart' show businessHealth;
+import '../core/dashboard_stats.dart' hide dayKeyOf;
 import 'daily_summary.dart' show DailySummaryPage;
 import 'purchase_orders.dart';
 import 'wastage.dart';
@@ -394,29 +395,35 @@ class _Overview extends StatefulWidget {
 
 class _OverviewState extends State<_Overview> {
   int days = 7;
+  bool bestItems = true;
   @override
   Widget build(BuildContext context) {
     final h = widget.h;
     final paid = paidIn(h.s.repo!, days);
-    final total = paid.fold<num>(0, (a, o) => a + totalOf(o));
+    // Revenue is net of refunds (website's netOf()), not the raw bill total -- a partially refunded
+    // bill must not overstate "Revenue"/"Profit (rough)" here.
+    final total = paid.fold<num>(0, (a, o) => a + netOf(o));
     final modes = <String, double>{};
     final byDay = <String, double>{};
-    final items = <String, double>{};
     for (final o in paid) {
-      byDay[dayOfIso(o['paidAt'])] = (byDay[dayOfIso(o['paidAt'])] ?? 0) + totalOf(o);
+      final d = dayOfIso(o['paidAt']);
+      byDay[d] = (byDay[d] ?? 0) + netOf(o);
       for (final p in ((o['pays'] as List?) ?? []).cast<Map>()) {
         modes['${p['m']}'] = (modes['${p['m']}'] ?? 0) + ((p['amt'] ?? 0) as num);
-      }
-      for (final l in ((o['lines'] as List?) ?? []).cast<Map>()) {
-        items['${l['name']}'] = (items['${l['name']}'] ?? 0) + (l['price'] as num) * (l['qty'] as num);
       }
     }
     final open = h.s.repo!.of('order').where((o) => o['status'] == 'open' && ((o['lines'] as List?)?.isNotEmpty ?? false)).length;
     final exp = h.s.repo!.of('exp').where((e) => '${e['d']}'.compareTo(dayKey(DateTime.now().subtract(Duration(days: days - 1)))) >= 0).fold<num>(0, (a, e) => a + ((e['amt'] ?? 0) as num));
-    final top = items.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
     final keys = byDay.keys.toList()..sort();
     final mx = byDay.values.fold<double>(1, (a, b) => b > a ? b : a);
+    final today = dayKeyOf(DateTime.now());
+    final todayStats = dayStats(h.s.repo!, today);
+    final yStats = dayStats(h.s.repo!, dayKeyOf(DateTime.now().subtract(const Duration(days: 1))));
+    final delta = yStats.rev > 0 ? ((todayStats.rev - yStats.rev) / yStats.rev * 100).round() : null;
+    final itemRange = itemStats(h.s.repo!, dayKeyOf(DateTime.now().subtract(Duration(days: days - 1))), today);
+    final topList = topOrLowItems(itemRange, best: bestItems, n: 8);
     return ListView(padding: const EdgeInsets.only(bottom: 28), children: [
+      ..._greetingSection(h),
       RangeBar(days, (v) => setState(() => days = v)),
       Kpis('Revenue', inr(r2(total)), '${paid.length} bills · avg ${inr(paid.isEmpty ? 0 : r2(total / paid.length))}', [
         ('Open orders', '$open', null),
@@ -424,18 +431,212 @@ class _OverviewState extends State<_Overview> {
         ('Profit (rough)', inr(r2(total - exp)), total - exp >= 0 ? Tk.green : Tk.red),
         ('Tables', '${h.s.repo!.of('table').length}', null),
       ]),
+      const SectionLabel("Today vs. yesterday"),
+      Group([
+        Li('Today\'s revenue', chevron: false, value: inr(todayStats.rev), trailing: delta == null
+            ? null
+            : Text('${delta < 0 ? '↓' : '↑'} ${delta.abs()}%', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: delta < 0 ? Tk.red : Tk.green))),
+        Li('Yesterday', chevron: false, value: inr(yStats.rev)),
+      ]),
       if (keys.length > 1) ...[
         const SectionLabel('Sales by day'),
         Group([for (final d in keys) Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), child: Row(children: [SizedBox(width: 56, child: Text(d.substring(5), style: TextStyle(fontSize: 16, color: Tk.label2))), Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(value: byDay[d]! / mx, minHeight: 14, color: Tk.accent, backgroundColor: Tk.fill2))), const SizedBox(width: 12), Text(inr(r2(byDay[d]!)), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700))]))]),
       ],
+      ..._hourlyTrendSection(todayStats),
       const SectionLabel('Payment modes'),
       Group(modes.isEmpty ? [const Li('No payments in this range', chevron: false)] : [for (final e in modes.entries) Li(e.key == 'upi' ? 'UPI' : '${e.key[0].toUpperCase()}${e.key.substring(1)}', chevron: false, value: inr(r2(e.value)))]),
-      const SectionLabel('Best sellers'),
-      Group(top.isEmpty ? [const Li('No sales yet', chevron: false)] : [for (final e in top.take(8)) Li(e.key, chevron: false, value: inr(r2(e.value)))]),
+      ..._channelsSection(todayStats),
+      ..._onlineOverviewSection(h, todayStats),
+      SectionLabel(bestItems ? 'Best sellers' : 'Low performers'),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+        child: Row(children: [
+          Expanded(child: _tabChip('Best Sellers', bestItems, () => setState(() => bestItems = true))),
+          const SizedBox(width: 8),
+          Expanded(child: _tabChip('Low Performers', !bestItems, () => setState(() => bestItems = false))),
+        ]),
+      ),
+      Group(topList.isEmpty
+          ? [const Li('No sales yet', chevron: false)]
+          : [for (final x in topList) Li(x.name, chevron: false, sub: '${x.pct.toStringAsFixed(1)}% of units sold', value: '${x.qty}')]),
       ..._businessHealthSection(h),
+      ..._leakageSection(h, today),
+      ..._snapshotSection(h, today),
+      ..._quickActionsSection(widget.go),
     ]);
   }
 }
+
+Widget _tabChip(String label, bool on, VoidCallback onTap) => GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(color: on ? Tk.accent : Tk.card, borderRadius: BorderRadius.circular(14), border: Border.all(color: on ? Tk.accent : Tk.line)),
+        child: Text(label, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: on ? Colors.white : Tk.label)),
+      ),
+    );
+
+/// Outlet-aware greeting header, ported from the website's `greeting()` + `allOutletsNote()`.
+List<Widget> _greetingSection(HomeState h) {
+  final hr = DateTime.now().hour;
+  final greeting = hr < 12 ? 'Good Morning!' : hr < 17 ? 'Good Afternoon!' : 'Good Evening!';
+  final outlet = h.s.repo!.outlet;
+  final outletName = outlet == 'all' ? 'all your outlets' : '${h.s.cfg['name'] ?? 'this outlet'}';
+  return [
+    Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(greeting, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800)),
+        Padding(padding: const EdgeInsets.only(top: 2), child: Text("Here's what's happening at $outletName today.", style: TextStyle(fontSize: 16, color: Tk.label2))),
+        if (outlet == 'all') Padding(padding: const EdgeInsets.only(top: 8), child: Text('Showing all outlets combined. Pick one outlet to work inside it.', style: TextStyle(fontSize: 14, color: Tk.orange))),
+      ]),
+    ),
+  ];
+}
+
+/// "Sales Trend" -- hourly revenue for today, condensed to 2-hour buckets (12 bars) the same way the
+/// website's own "Total Orders" mini-bars are condensed, since a 24-bar chart is too fine-grained for
+/// a phone-width card. Genuine per-hour data from dayStats(), never decorative.
+List<Widget> _hourlyTrendSection(DayStats today) {
+  final buckets = List<num>.filled(12, 0);
+  for (var i = 0; i < 24; i++) {
+    buckets[i ~/ 2] += today.hours[i];
+  }
+  final mx = buckets.fold<num>(1, (a, b) => b > a ? b : a);
+  if (today.hours.every((v) => v == 0)) {
+    return [const SectionLabel('Sales Trend (today, by hour)'), Group(const [Li('No sales yet today', chevron: false)])];
+  }
+  return [
+    const SectionLabel('Sales Trend (today, by hour)'),
+    Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+      decoration: BoxDecoration(color: Tk.card, borderRadius: BorderRadius.circular(22), border: Border.all(color: Tk.line, width: .5)),
+      child: SizedBox(
+        height: 90,
+        child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          for (var i = 0; i < 12; i++)
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
+                  Container(height: (buckets[i] / mx * 64).clamp(2, 64).toDouble(), decoration: BoxDecoration(color: Tk.accent.withValues(alpha: buckets[i] > 0 ? 1 : .25), borderRadius: BorderRadius.circular(3))),
+                  const SizedBox(height: 6),
+                  Text('${i * 2}', style: TextStyle(fontSize: 10, color: Tk.label3)),
+                ]),
+              ),
+            ),
+        ]),
+      ),
+    ),
+  ];
+}
+
+/// "Order Channels" -- Dine-In/Takeaway/Delivery revenue+count for today.
+List<Widget> _channelsSection(DayStats today) {
+  final total = today.ch.values.fold<num>(0, (a, c) => a + c.value);
+  return [
+    const SectionLabel('Order Channels (today)'),
+    Group([
+      for (final k in ['Dine-In', 'Takeaway', 'Delivery'])
+        Li(k, chevron: false, sub: '${today.ch[k]!.count} orders · ${total > 0 ? (today.ch[k]!.value / total * 100).round() : 0}%', value: inr(r2(today.ch[k]!.value))),
+    ]),
+  ];
+}
+
+/// "Online Orders Overview" -- today's online (src-tagged) orders, by platform.
+List<Widget> _onlineOverviewSection(HomeState h, DayStats today) {
+  final byP = onlinePlatformStats(today);
+  final total = byP.values.fold<int>(0, (a, p) => a + p.n);
+  final prepaid = byP.values.fold<int>(0, (a, p) => a + p.pre);
+  final revenue = byP.values.fold<num>(0, (a, p) => a + p.rev);
+  return [
+    const SectionLabel('Online Orders Overview (today)'),
+    Group([
+      Li('Total online orders', chevron: false, value: '$total'),
+      Li('Prepaid', chevron: false, value: '$prepaid'),
+      Li('COD', chevron: false, value: '${total - prepaid}'),
+      Li('Revenue', chevron: false, value: inr(r2(revenue))),
+      if (byP.isEmpty) const Li('No online orders today', chevron: false) else for (final e in byP.entries) Li(e.key, chevron: false, sub: '${e.value.n} orders · ${e.value.pre} prepaid · ${e.value.cod} COD', value: inr(r2(e.value.rev))),
+    ]),
+  ];
+}
+
+/// "Revenue Leakage" -- today's cancelled/modified/shifted/reprinted bills and waived-off amount.
+List<Widget> _leakageSection(HomeState h, String today) {
+  final lk = revenueLeakage(h.s.repo!, today);
+  return [
+    const SectionLabel('Revenue Leakage (today)'),
+    Group([
+      Li('KOTs', chevron: false, value: '${lk.kots}'),
+      Li('Cancelled Bills', chevron: false, value: '${lk.cancelledBills}'),
+      Li('Modified Bills', chevron: false, value: '${lk.modifiedBills}'),
+      Li('Shifted Orders', chevron: false, value: '${lk.shiftedOrders}'),
+      Li('Reprinted Bills', chevron: false, value: '${lk.reprintedBills}'),
+      Li('Waived Off', chevron: false, value: inr(r2(lk.waivedOff))),
+    ]),
+  ];
+}
+
+/// "Daily Snapshot" -- a 7-day stacked view of channel revenue, matching the website's own bar-chart
+/// card (here: one row per day with a channel breakdown, since a phone-width stacked chart with 7
+/// clusters of 3 bars each is cramped; the numbers are identical, only the chart shape differs).
+List<Widget> _snapshotSection(HomeState h, String today) {
+  final days = [for (var i = 6; i >= 0; i--) dayKeyOf(DateTime.now().subtract(Duration(days: i)))];
+  final stats = [for (final d in days) dayStats(h.s.repo!, d)];
+  final mx = stats.fold<num>(1, (a, s) => s.ch.values.fold<num>(a, (b, c) => c.value > b ? c.value : b));
+  return [
+    const SectionLabel('Daily Snapshot (last 7 days)'),
+    Group([
+      for (var i = 0; i < days.length; i++)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(days[i].substring(5), style: TextStyle(fontSize: 14, color: Tk.label2)),
+            const SizedBox(height: 4),
+            Row(children: [
+              for (final k in ['Dine-In', 'Takeaway', 'Delivery'])
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 3),
+                    child: ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(value: (stats[i].ch[k]!.value / mx).clamp(0, 1).toDouble(), minHeight: 8, color: k == 'Dine-In' ? Tk.accent : (k == 'Takeaway' ? Tk.green : Tk.orange), backgroundColor: Tk.fill2)),
+                  ),
+                ),
+            ]),
+          ]),
+        ),
+    ]),
+    Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+      child: Row(children: [
+        _legendDot(Tk.accent, 'Dine-In'),
+        const SizedBox(width: 14),
+        _legendDot(Tk.green, 'Takeaway'),
+        const SizedBox(width: 14),
+        _legendDot(Tk.orange, 'Delivery'),
+      ]),
+    ),
+  ];
+}
+
+Widget _legendDot(Color c, String label) => Row(mainAxisSize: MainAxisSize.min, children: [
+      Container(width: 10, height: 10, decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
+      const SizedBox(width: 6),
+      Text(label, style: TextStyle(fontSize: 13, color: Tk.label2)),
+    ]);
+
+/// "Quick Actions" -- shortcuts into other Console pages, matching the website's own set.
+List<Widget> _quickActionsSection(void Function(String) go) => [
+      const SectionLabel('Quick Actions'),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Wrap(spacing: 10, runSpacing: 10, children: [
+          for (final (label, icon, route) in const [('Manage Menu', Icons.restaurant_menu, 'menu/items'), ('Run Reports', Icons.bar_chart, 'rep/sales'), ('Know Staff Costs', Icons.groups_outlined, 'team/attendance'), ('Explore Marketing', Icons.campaign_outlined, 'mkt/campaigns')])
+            OutlinedButton.icon(onPressed: () => go(route), icon: Icon(icon, size: 18), label: Text(label)),
+        ]),
+      ),
+    ];
 
 /// "Business Health" card: average margin across every priced+costed item vs. the business's
 /// configured target margin (`settings.targetMargin`, default 70) and how many items fall short --
