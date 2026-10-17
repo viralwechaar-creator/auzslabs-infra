@@ -671,6 +671,52 @@ _DayCash dayCash(Repo repo, String d) {
   return _DayCash(cash, card, other, online, r2(cash + ins - outs - exp).toDouble(), close, sales, bills);
 }
 
+/// Day-close reminder: a past day that had real paid business on it but has not been closed yet.
+/// Built directly on dayCash() above -- no second closing system, no separate financial
+/// calculation of its own. See findDayNeedingClose()'s own doc comment for the exact rule.
+class OpenDayNeedingClose {
+  OpenDayNeedingClose(this.date, this.sales, this.bills, this.expected);
+  final String date; // 'YYYY-MM-DD'
+  final double sales, expected;
+  final int bills;
+}
+
+/// Finds the single most recent day that genuinely needs closing, or null if there is none to
+/// report. "Genuinely needs closing" means, in order:
+///   1. It is a day BEFORE today -- today itself is still in progress and is never flagged (the
+///      website's own 14-day table, fin/cash, calls today "Open", never "Not closed", for exactly
+///      this reason).
+///   2. It has at least one paid bill (`bills > 0`) -- a day the shop was simply closed (a Sunday,
+///      a holiday) has nothing to close and is silently skipped, never reported as overdue.
+///   3. It has no `dayclose` record of its own yet (dayCash()'s own `close` field -- the exact same
+///      lookup dayCloseOf() does on the website, never a second, parallel check).
+///
+/// The scan walks backward from yesterday and STOPS the moment it reaches a day that IS already
+/// closed -- the business is considered "caught up" from that point backward, so an older gap
+/// behind an already-closed day is never surfaced (closing is expected to happen in order; if that
+/// assumption is ever wrong for a real tenant, this under-reports rather than over-reports, the
+/// safer direction for a reminder that must never claim something that isn't true). A day with
+/// zero bills does NOT stop the scan -- it is skipped so a still-older open day behind a quiet
+/// Sunday is not hidden by it. [lookbackDays] bounds how far back the scan goes (default 14,
+/// matching this app's own existing 14-day cash/reconciliation window) so this can never become an
+/// unbounded loop over a tenant's entire history.
+///
+/// Reads only the LOCAL Repo (the same data dayCash() already reads), so it is exactly as
+/// offline-capable, and exactly as honest about not-yet-synced data, as the Cash Management screen
+/// already is -- not a new capability and not a new gap. It never writes anything, so calling it
+/// repeatedly (e.g. on every rebuild) can never duplicate an alert or a closing record; it simply
+/// stops returning a day the moment that day's own `dayclose` record exists.
+OpenDayNeedingClose? findDayNeedingClose(Repo repo, {DateTime? now, int lookbackDays = 14}) {
+  final today = now ?? DateTime.now();
+  for (var i = 1; i <= lookbackDays; i++) {
+    final d = dayKey(today.subtract(Duration(days: i)));
+    final s = dayCash(repo, d);
+    if (s.close != null) break;
+    if (s.bills > 0) return OpenDayNeedingClose(d, s.sales, s.bills, s.expected);
+  }
+  return null;
+}
+
 class CashPage extends StatefulWidget {
   const CashPage(this.h, {super.key});
   final HomeState h;
@@ -686,8 +732,27 @@ class _CashPageState extends State<CashPage> {
     final d = dayKey(day);
     final s = dayCash(h.s.repo!, d);
     final c = s.close;
+    // Day-close reminder: a read-only check (findDayNeedingClose() never writes anything) run fresh
+    // on every build, so it disappears by itself the moment the day it names is actually closed --
+    // no flag to clear, no separate "dismiss" state to go stale. Hidden once it's naming the exact
+    // day already on screen, since that day's own Close button right below already covers it.
+    final reminder = findDayNeedingClose(h.s.repo!);
     return ListView(padding: const EdgeInsets.only(bottom: 28), children: [
       const PageHead('Cash', sub: 'Expected cash in the drawer and day close.'),
+      if (reminder != null && reminder.date != d)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+          child: Group([
+            Li(
+              '${reminder.date} is not closed yet',
+              sub: '${reminder.bills} bill${reminder.bills == 1 ? '' : 's'} · ${inr(r2(reminder.sales))} sales',
+              icon: Icons.lock_open_outlined,
+              tone: Tk.orange,
+              trailing: OutlinedButton(onPressed: () => setState(() => day = DateTime.parse(reminder.date)), child: const Text('Review')),
+              chevron: false,
+            ),
+          ]),
+        ),
       Padding(padding: const EdgeInsets.fromLTRB(16, 10, 16, 0), child: Row(children: [
         IconButton.filledTonal(onPressed: () => setState(() => day = day.subtract(const Duration(days: 1))), icon: const Icon(Icons.chevron_left)),
         Expanded(child: Center(child: Text(d, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)))),
