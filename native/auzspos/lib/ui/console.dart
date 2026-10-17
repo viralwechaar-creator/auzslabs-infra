@@ -139,6 +139,14 @@ class _ConsolePageState extends State<ConsolePage> {
   // One alert rendered as a tappable row -- the exact same navigation behaviour the flat Alerts
   // list already had: it only moves to the existing screen where the real action lives, never
   // performs one itself.
+  //
+  // Day-close navigation fix: a 'dayclose' alert now carries the exact overdue date in [a.extra]
+  // (computeConsoleAlerts() above). Stashing it on HomeState.pendingCashDay right before navigating
+  // -- a one-shot value CashPage's own initState() reads once and clears -- means tapping "2026-
+  // 10-10 is not closed yet" opens Cash showing THAT day directly, instead of today's day plus its
+  // own existing "X is not closed yet -- Review" banner needing a second tap to get there. Nothing
+  // about the Close Day workflow or its confirmation step changes: this only changes which day the
+  // page opens already showing.
   Widget _actionRow(BuildContext ctx, AlertItem a) => Group([
         Li(
           a.title,
@@ -147,6 +155,7 @@ class _ConsolePageState extends State<ConsolePage> {
           tone: a.kind == 'due' ? Tk.red : a.kind == 'tickets' ? Tk.blue : Tk.orange,
           onTap: () {
             Navigator.pop(ctx);
+            if (a.kind == 'dayclose' && a.extra != null) h.pendingCashDay = a.extra;
             go(a.navTo);
           },
         ),
@@ -419,10 +428,14 @@ num totalOf(Map<String, dynamic> o) => ((o['t'] as Map?)?['total'] ?? 0) as num;
 /// Plain data only -- no Flutter types -- so the condition that produced it can be tested directly,
 /// with no widget harness; the sheet picks an icon/colour/action by [kind] at render time.
 class AlertItem {
-  AlertItem({required this.kind, required this.title, required this.detail, required this.navTo, required this.count});
+  AlertItem({required this.kind, required this.title, required this.detail, required this.navTo, required this.count, this.extra});
   final String kind; // 'lowstock' | 'due' | 'tickets' | 'dayclose' | 'po' | 'sync'
   final String title, detail, navTo;
   final int count;
+  /// A kind-specific extra value, only ever set today for 'dayclose': the exact overdue date
+  /// ('YYYY-MM-DD') so the Alerts sheet can open Cash directly on that day instead of today --
+  /// see HomeState.pendingCashDay. Null for every other kind.
+  final String? extra;
 }
 
 /// Every alert the Console's bell should show right now, derived entirely from the already-synced
@@ -469,7 +482,7 @@ List<AlertItem> computeConsoleAlerts(Repo repo) {
 
   final reminder = findDayNeedingClose(repo);
   if (reminder != null) {
-    out.add(AlertItem(kind: 'dayclose', title: '${reminder.date} is not closed yet', detail: '${reminder.bills} bill${reminder.bills == 1 ? '' : 's'} -- sales not yet reconciled', navTo: 'fin/cash', count: 1));
+    out.add(AlertItem(kind: 'dayclose', title: '${reminder.date} is not closed yet', detail: '${reminder.bills} bill${reminder.bills == 1 ? '' : 's'} -- sales not yet reconciled', navTo: 'fin/cash', count: 1, extra: reminder.date));
   }
 
   final openPo = openPurchaseOrders(repo);

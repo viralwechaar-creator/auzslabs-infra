@@ -57,6 +57,29 @@ void main() {
       expect(dc.title, contains(d));
     });
 
+    test('day-close navigation fix: the dayclose alert carries the exact overdue date in `extra`, '
+        'so the sheet can open Cash on that specific day instead of today', () async {
+      final repo = mk(FakeServer());
+      final yesterday = DateTime.now().subtract(const Duration(days: 1));
+      final d = '${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}';
+      await repo.save('order', {'status': 'paid', 'paidAt': '${d}T12:00:00Z', 'pays': [{'m': 'cash', 'amt': 500}], 't': {'total': 500}, 'lines': []});
+
+      final dc = computeConsoleAlerts(repo).singleWhere((a) => a.kind == 'dayclose');
+      expect(dc.extra, d, reason: 'extra must be the exact overdue date, not just embedded in the title text');
+    });
+
+    test('every other alert kind leaves `extra` null -- it is only ever meaningful for dayclose', () async {
+      final repo = mk(FakeServer());
+      await repo.save('ing', {'name': 'Milk', 'qty': 0, 'low': 10});
+      await repo.save('order', {'status': 'due', 't': {'total': 100}, 'lines': []});
+      await repo.save('ticket', {'subject': 'A', 'status': 'open'});
+      await repo.save('po', {'supplier': 'A', 'items': [], 'status': 'draft'});
+
+      for (final a in computeConsoleAlerts(repo)) {
+        expect(a.extra, isNull, reason: '${a.kind} should never set extra');
+      }
+    });
+
     test('purchase orders still in draft or open (not received) become a "po" alert', () async {
       final repo = mk(FakeServer());
       await repo.save('po', {'supplier': 'A', 'items': [], 'status': 'draft'});

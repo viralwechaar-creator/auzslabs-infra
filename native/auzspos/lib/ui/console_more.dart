@@ -727,6 +727,21 @@ class CashPage extends StatefulWidget {
 class _CashPageState extends State<CashPage> {
   DateTime day = DateTime.now();
   HomeState get h => widget.h;
+
+  @override
+  void initState() {
+    super.initState();
+    // Day-close navigation fix: a one-shot date stashed by the Alerts Center's 'dayclose' alert
+    // (console.dart's _actionRow) -- open directly on that day instead of today, then consume it
+    // so a later, unrelated visit to Cash from the nav drawer is never affected by a stale value.
+    final pending = h.pendingCashDay;
+    if (pending != null) {
+      final parsed = DateTime.tryParse(pending);
+      if (parsed != null) day = parsed;
+      h.pendingCashDay = null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final d = dayKey(day);

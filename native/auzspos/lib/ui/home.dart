@@ -36,6 +36,12 @@ class _HomeState extends State<Home> {
   bool _guestsLoaded = false;
   Session get s => widget.s;
 
+  /// One-shot: the exact overdue day ('YYYY-MM-DD') to open Cash on, set by the Alerts Center's
+  /// 'dayclose' alert right before navigating -- CashPage's own initState() reads it once and
+  /// clears it, so a LATER, unrelated visit to Cash (from the nav drawer) is never affected by a
+  /// stale value. Null the rest of the time.
+  String? pendingCashDay;
+
   void openOrder(Map<String, dynamic> o) => setState(() {
         cur = Map<String, dynamic>.from(o)..['lines'] = [for (final l in (o['lines'] as List)) Map<String, dynamic>.from(l as Map)];
         tab = 'sell';
