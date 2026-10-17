@@ -7,6 +7,7 @@ import '../core/purchases.dart';
 import '../core/wastage.dart' show wastageCostThisMonth;
 import 'actions.dart';
 import 'costing.dart';
+import 'daily_summary.dart' show DailySummaryPage;
 import 'purchase_orders.dart';
 import 'wastage.dart';
 import 'admin.dart';
@@ -145,6 +146,8 @@ Widget consolePageFor(String id, HomeState h, void Function(String) go) {
       return FeedbackPage(h);
     case 'team/payroll':
       return PayrollLinkPage(h);
+    case 'rep/daily':
+      return DailySummaryPage(h);
     case 'fin/cash':
       return CashPage(h);
     case 'fin/accounting':

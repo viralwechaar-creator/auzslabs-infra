@@ -31,7 +31,7 @@ const consoleNav = <Object>[
   CNode('daily/due', 'Due Payment', Icons.schedule),
   'Inventory & reports',
   CNode('g:inv', 'Inventory', Icons.inventory_2_outlined, [('inv/raw', 'Raw Materials'), ('inv/stock', 'Stock'), ('inv/purchase', 'Purchases'), ('inv/vendors', 'Vendors'), ('inv/recipes', 'Recipes'), ('inv/consumption', 'Consumption')]),
-  CNode('g:rep', 'Reports', Icons.bar_chart, [('rep/sales', 'Sales'), ('rep/orders', 'Orders'), ('rep/items', 'Items'), ('rep/inventory', 'Inventory'), ('rep/customers', 'Customers'), ('rep/staff', 'Staff'), ('rep/analytics', 'Analytics'), ('rep/gst', 'GST Summary')]),
+  CNode('g:rep', 'Reports', Icons.bar_chart, [('rep/daily', 'Daily Summary'), ('rep/sales', 'Sales'), ('rep/orders', 'Orders'), ('rep/items', 'Items'), ('rep/inventory', 'Inventory'), ('rep/customers', 'Customers'), ('rep/staff', 'Staff'), ('rep/analytics', 'Analytics'), ('rep/gst', 'GST Summary')]),
   'Manage',
   CNode('g:menu', 'Menu Management', Icons.restaurant_menu, [('menu/overview', 'Overview'), ('menu/items', 'Items'), ('menu/categories', 'Categories'), ('menu/variants', 'Variants'), ('menu/addons', 'Add-ons'), ('menu/tables', 'Tables'), ('menu/taxes', 'Taxes'), ('menu/discounts', 'Discounts'), ('menu/bogo', 'Buy X Get Y'), ('menu/availability', 'Availability'), ('menu/preferences', 'Preferences'), ('menu/commission', 'Commission'), ('menu/bulk', 'Bulk price change'), ('menu/import', 'Import menu'), ('menu/physical', 'Physical Menu'), ('menu/images', 'Bulk Photos')]),
   CNode('g:crm', 'CRM', Icons.people_outline, [('crm/customers', 'Customers'), ('crm/loyalty', 'Loyalty'), ('crm/giftcards', 'Gift Cards'), ('crm/feedback', 'Feedback'), ('crm/membership', 'Membership'), ('crm/support', 'Support')]),
