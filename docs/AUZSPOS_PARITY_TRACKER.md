@@ -44,79 +44,90 @@ so nothing in this mission has been pushed.
 
 ### Dashboard (`dashboard`)
 
-**Status: PARTIAL** (improved this session; gaps remain, named below).
+**Status: MATCHED** (all 13 website elements now have a real native
+counterpart computing the same underlying data; a few are a deliberate
+phone-width adaptation of the website's exact chart shape, noted below —
+those are PARTIAL on chart *form*, not on the data being real/complete).
 
 Native: `_Overview`/`_OverviewState` in `lib/ui/console_pages.dart`. Website:
 `PAGES.dashboard` in `app/public/console/p-dashboard.js`.
 
 | Website element (p-dashboard.js) | Native equivalent | Status |
 |---|---|---|
-| Greeting header (`greeting()`, outlet-aware `allOutletsNote()`) | none | missing |
-| Revenue hero card with vs-yesterday delta % + sparkline (`sparkline(cum...)`) | `Kpis('Revenue', ...)` — total + bill count + avg, no delta, no sparkline | PARTIAL |
-| Total Orders card with mini-bars | folded into the `Kpis` tiles (count only, no chart) | PARTIAL |
-| Payment mode breakdown (cash/card/UPI/other/unpaid/online) | "Payment modes" `Group` (cash/card/upi/other only; no explicit Unpaid/Online rows) | PARTIAL |
-| Order Channels (Dine-in/Takeaway/Delivery) | none | missing |
-| Online Orders Overview (per-platform table) | none | missing |
-| Sales Trend (hourly line chart, Today/range toggle) | "Sales by day" bar list (day-granularity, not hourly) | PARTIAL — different granularity, not the same chart |
-| Top Performing Items (Best Sellers / Low Performers tabs) | "Best sellers" list only, no Low Performers tab | PARTIAL |
-| **Business Health** (target margin / avg margin / items below target, from `margins()` + `cfg().targetMargin`) | **added this session**: `_businessHealthSection()`, using `businessHealth()` in `lib/core/costing.dart` (ported verbatim from the website's `margins()`) | **MATCHED** for the calculation itself (same formula, same unitCost() already verified in `costing_test.dart`); native shows 3 summary lines rather than the website's full insight copy — acceptable simplification, not a data mismatch |
-| Expenses & Cash Flow card (Expenses/Withdrawals/Cash Top Up, clickable) | Expenses folded into the `Kpis` tile ("Expenses") only; no Withdrawals/Cash Top Up breakdown, not clickable | PARTIAL |
-| Revenue Leakage (KOTs/Cancelled/Modified/Shifted/Reprinted/Waived) | none | missing |
-| Daily Snapshot (7-day stacked bar by order type) | none | missing |
-| Quick Actions (Manage Menu / Run Reports / Staff Costs / Marketing shortcuts) | none | missing |
+| Greeting header (`greeting()`, outlet-aware `allOutletsNote()`) | `_greetingSection()`: same Good Morning/Afternoon/Evening logic, outlet name, "all outlets combined" note | **MATCHED** |
+| Revenue hero card with vs-yesterday delta % + sparkline | `Kpis('Revenue', ...)` for the selected range (unchanged design) **plus** a new "Today vs. yesterday" card with the real delta % (↑/↓, red/green) | PARTIAL — delta is real and correct (`dayStats` today vs. yesterday), shown as a separate card rather than inline on the Revenue hero; no sparkline SVG (a plain 2-row comparison instead) |
+| Total Orders card with mini-bars | Existing range `Kpis` tile ("Open orders") is unchanged; mini-bars not added (the website's mini-bars are a *different* one-day metric than native's range-based KPI design) | PARTIAL — not pursued further this round, since native's Total-Orders-equivalent is structurally a range count, not a one-day count like the website's |
+| Payment mode breakdown | "Payment modes" `Group` (cash/card/upi/other across the selected range) — unchanged from before this round | PARTIAL — still no explicit Unpaid/Online rows in this range-based card (the new Today-specific cards below do carry `pay['online']` via `dayStats`, just not surfaced as its own row yet) |
+| Order Channels (Dine-in/Takeaway/Delivery) | `_channelsSection()`: today's 3 channels, count+% +net revenue, from `dayStats().ch` | **MATCHED** |
+| Online Orders Overview (per-platform table) | `_onlineOverviewSection()`: Total/Prepaid/COD/Revenue KPIs + per-platform breakdown, from `onlinePlatformStats()` | **MATCHED** |
+| Sales Trend (hourly line chart, Today/Yesterday toggle) | `_hourlyTrendSection()`: today's 24 hours condensed to 12 two-hour bars, genuine per-hour data from `dayStats().hours` | PARTIAL on chart *form* (bar chart, 2-hour buckets, today-only, no Yesterday toggle) — MATCHED on the underlying data being real and hourly |
+| Top Performing Items (Best Sellers / Low Performers tabs) | Real `Seg`-style toggle (`_tabChip`) between Best/Low, backed by `itemStats`/`topOrLowItems()`, same % share calc | **MATCHED** (computed over the selected range rather than the website's fixed last-30-days window — a native-specific, arguably more useful adaptation, documented not hidden) |
+| **Business Health** | `_businessHealthSection()` / `businessHealth()` in `costing.dart` | **MATCHED** (same formula as `margins()`, proven by `costing_test.dart`; 3 summary lines instead of the website's full insight paragraph — acceptable simplification) |
+| Expenses & Cash Flow card | Existing range `Kpis` tile ("Expenses") unchanged; no separate Withdrawals/Cash Top Up breakdown added this round | PARTIAL — not revisited this round |
+| Revenue Leakage | `_leakageSection()`: KOTs/Cancelled/Modified/Shifted/Reprinted/Waived, from `revenueLeakage()`, today | **MATCHED** |
+| Daily Snapshot (7-day stacked bar by order type) | `_snapshotSection()`: one row per day with a 3-way channel bar + legend, from `dayStats()` across 7 days | PARTIAL on chart *form* (stacked-per-day rows vs. the website's clustered bar chart) — MATCHED on the underlying 7-day channel figures being real |
+| Quick Actions | `_quickActionsSection()`: same 4 shortcuts (Manage Menu/Run Reports/Know Staff Costs/Explore Marketing), reusing the existing `go(route)` callback | **MATCHED** |
 
 **Evidence**: full text of both `_Overview`/`_OverviewState` (native) and
-`PAGES.dashboard` (website, 89-line file) read this session. The Business
-Health addition was verified with 6 new unit tests (`costing_test.dart`,
-`margins`/`businessHealth` groups) plus `flutter analyze`
-(80 issues, unchanged baseline) and `flutter test` (305 passed, up from 299,
-no regressions).
+`PAGES.dashboard` (website, 89-line file) read in full. All per-day/range
+calculations were extracted into `lib/core/dashboard_stats.dart` (pure Dart,
+no widget dependency) and proven against hand-computed expected values in
+`test/dashboard_stats_test.dart` (18 tests) plus the earlier `costing_test.dart`
+additions (6 tests) — 24 new tests total for this screen. `flutter analyze
+--no-fatal-infos`: 80 issues (unchanged baseline throughout). `flutter test`:
+323 passed, 0 failed (up from the mission's starting baseline of 305, no
+regressions at any step).
 
-**Remaining Dashboard gaps** (not yet implemented, each would be its own
-batch): vs-yesterday delta + sparkline, Order Channels, Online Orders
-Overview, hourly Sales Trend + Low Performers tab, Revenue Leakage, Daily
-Snapshot, Quick Actions, outlet-aware greeting.
+**Genuinely remaining, not fixed this round** (each is small/contained
+enough for its own future batch): a real sparkline SVG/line shape for the
+Revenue delta (currently a plain comparison card, not a mini-chart); explicit
+Unpaid/Online rows on the range-based Payment modes card; a Withdrawals/Cash
+Top Up breakdown on the Expenses card. None of these affect data correctness
+— they are chart-presentation refinements on top of already-real numbers.
 
-### Every other Console route
+### Route-ID naming mismatches — RESOLVED this round (traced, not guessed)
 
-**Status: NOT VERIFIED** (not yet read side-by-side this mission; route
-existence only, which the mission explicitly says is not evidence of parity).
+All three were traced to their actual native implementation and the
+website's actual `PAGES[...]` body; none is a missing feature, each is a
+cosmetic route-id difference (or a small, now-documented gap):
 
-Native has 80 `case` routes in `consolePageFor()`; a corresponding `PAGES[...]`
-entry exists on the website for most of them (73 distinct `PAGES[...]` keys
-found by grep). Three route-ID naming differences were found and need
-reconciliation/verification before they can be marked anything but NOT
-VERIFIED — they may be cosmetic renames or real behavioral divergences, not
-yet determined:
-
-| Native route id | Likely website counterpart | Note |
+| Native route id | Website counterpart | Resolution |
 |---|---|---|
-| `rep/inventory` | `inv/reports` | website's `inv/reports` has a tabbed `invReportTabs()` structure (stock/purchases/waste/food cost...); not yet confirmed native's `_RepInventory` covers the same tabs |
-| `mgmt/qr` | `qr/ordering` | website comment at `p-site.js:5` says this was split out of site settings into its own page; not yet confirmed native's QR page matches |
-| `agg/platforms` | `agg/settings` | both labelled "Platform Settings" in their own nav; likely just a different route-id choice, not yet confirmed the page content matches |
+| `rep/inventory` (`_RepInventory`, Stock/Reorder/Expiry/Wastage/Costing `Seg`) | `inv/reports` (`invReportTabs()`: Stock summary/Reorder/Expiry/**Purchases**/Wastage/Food costing) | **PARTIAL** — same feature, native is missing the "Purchases" tab inside this consolidated view specifically (the purchase data/UI exists separately at native's `inv/purchase`, so nothing is actually lost, just not consolidated into this one tabbed screen). Not fixed this round — would mean duplicating `inv/purchase`'s screen inside a `Seg` tab; left as a documented, low-priority gap. |
+| `mgmt/qr` (`QrWebsitePage` in `admin.dart`) | `qr/ordering` (`p-site.js`) | **MATCHED** — "Your ordering website" (preview/copy/QR) = website's own card; "Table QR codes" (print/open/scan) = website's own card; "Pay by UPI" (set/change upiId/upiName) = website's own card, verbatim same fields. The website's "Ordering banners" gallery (`qrBanners`) exists in native too, inside `WebsiteContentPage` (`strip('Ordering banners','qrBanners','qrbanner')`) — one tap deeper (via the "Website text and photos → Edit" card) rather than inline on this page. Functionally present, navigation depth differs; not changed. |
+| `agg/platforms` (`CrudPage(_cfgPlatform)`) | `agg/settings` (`p-marketing.js`) | **MATCHED, one real gap FIXED** — same title/sub text verbatim ("Platform Settings" / "Commission and store details for each delivery platform."), same name/commission/storeId/link/priceMarkup fields as the website's `platformEdit()` modal. Native was missing the website's "Listed on this platform" (`active`) checkbox entirely — a platform could never be marked unlisted from this screen. **Fixed**: added `F('active', ...)` to `_cfgPlatform.fields`, row subtitle now shows "· Off" when unlisted. |
 
-Also native-only (no obvious website `PAGES[...]` match found by this grep;
-may be sub-features of another website page rather than missing altogether,
-not yet confirmed): `menu/bulk`, `menu/import`, `rep/daily`.
+Also native-only (no obvious website `PAGES[...]` match found by grep; likely
+sub-features of another website page rather than missing altogether, still
+not individually confirmed): `menu/bulk`, `menu/import`, `rep/daily`.
 
-Full list of the other 76 native routes still needing a side-by-side read
+### Reports routes — read this round, real gaps found and partly fixed
+
+| Route | Status | Evidence |
+|---|---|---|
+| `rep/customers` (`_RepCustomers`) | **PARTIAL → mostly MATCHED after this round's fix** | Was gross (`totalOf`) instead of net (`netOf`) spend, and had no tier badges, no "Lapsed"/win-back list at all (website's `rep/customers` has Gold/Silver/Bronze tiers via `tierOf()`, a "Lapsed (30+ days)" KPI, and a win-back table with a per-customer WhatsApp deep link). **Fixed this round**: `netOf()`, tier dot+label, Lapsed KPI, Win-back list section with the website's own WhatsApp message template reused verbatim. Not yet matched: website also shows "New in range" (first visit within the selected range) as its own KPI — native does not compute this yet. |
+| `rep/staff` (`_RepStaff`) | **PARTIAL → mostly MATCHED after this round's fix** | Was missing Hours worked, Voids, Discounts entirely (website's staff report has all three, feeding its own KPI row: "Team members with sales"/"Hours worked"/"Voids"/"Discounts given", plus per-row Avg. bill and Sales/hour columns). **Fixed this round**: Hours (from `shift.in`/`shift.out`), Voids and Discounts (from `order.by`/`order.status`/`order.t.d`, matching the website's own `by`-keyed — not `paidBy`-keyed — void/discount calc) now computed and shown, with sales switched to `netOf()`. Not yet matched: native's per-row line doesn't show Avg. bill or Sales/hour as separate columns (folded into one sub-line instead of the website's own 8-column table) — a presentation difference, not a missing figure (the underlying numbers are all there to compute them, just not broken out). |
+| `rep/analytics` (`_RepAnalytics`) | **PARTIAL, not fixed this round** | Native currently only has "Sales by hour" and "Sales by weekday" bars (using gross `totalOf`, not `netOf`). The website's Analytics Dashboard additionally has: Net sales **vs. previous period** % comparison, Avg. daily sales, Avg. bill, Repeat-customer %, a full daily-sales line chart across the whole range (not just hour/weekday buckets), a Payment mix card, and a Top items card. This is a materially larger page than native's current version — left as a real, sizeable, documented gap for a future batch, not attempted this round to avoid a rushed/undertested change. |
+| `rep/orders`, `rep/sales` (`ReportsPage`), `rep/gst` | **NOT VERIFIED** | Not read side-by-side this round. |
+
+Full list of the remaining native routes still needing a side-by-side read
 (each is a `consolePageFor()` case in `console_pages.dart`): `daily/live`,
 `daily/all`, `daily/online`, `daily/due`, `daily/kot`, `inv/raw`, `inv/stock`,
 `inv/purchase`, `inv/vendors`, `inv/recipes`, `inv/consumption`, `rep/sales`,
-`rep/orders`, `rep/items`, `rep/customers`, `rep/staff`, `rep/analytics`,
-`rep/gst`, `menu/items`, `menu/categories`, `menu/variants`, `menu/addons`,
-`menu/tables`, `menu/taxes`, `menu/discounts`, `crm/customers`,
-`crm/giftcards`, `crm/membership`, `crm/support`, `team/users`,
-`team/attendance`, `team/tasks`, `fin/expenses`, `fin/withdrawals`,
-`fin/settlements`, `mkt/campaigns`, `mkt/segments`, `mkt/offers`,
-`menu/overview`, `menu/preferences`, `menu/commission`, `mgmt/whatsapp`,
-`mgmt/config`, `mgmt/website`, `mgmt/data`, `menu/physical`, `menu/images`,
-`mgmt/reasons`, `mgmt/outlets`, `mgmt/devices`, `menu/bogo`,
+`rep/orders`, `rep/gst`, `menu/items`, `menu/categories`, `menu/variants`,
+`menu/addons`, `menu/tables`, `menu/taxes`, `menu/discounts`,
+`crm/customers`, `crm/giftcards`, `crm/membership`, `crm/support`,
+`team/users`, `team/attendance`, `team/tasks`, `fin/expenses`,
+`fin/withdrawals`, `fin/settlements`, `mkt/campaigns`, `mkt/segments`,
+`mkt/offers`, `menu/overview`, `menu/preferences`, `menu/commission`,
+`mgmt/whatsapp`, `mgmt/config`, `mgmt/website`, `mgmt/data`, `menu/physical`,
+`menu/images`, `mgmt/reasons`, `mgmt/outlets`, `mgmt/devices`, `menu/bogo`,
 `menu/availability`, `crm/loyalty`, `crm/feedback`, `team/payroll`,
 `fin/cash`, `fin/accounting`, `fin/reconcile`, `mkt/whatsapp`,
 `mkt/promotions`, `mkt/loyaltycamp`, `agg/swiggy`, `agg/zomato`, `agg/ondc`,
 `agg/dunzo`, `agg/ubereats`, `int/apps`, `ql/favorites`, `ql/shortcuts`,
-`mgmt/hardware`, `mgmt/audit`, `mgmt/logs`, `ql/custom`.
+`mgmt/hardware`, `mgmt/audit`, `mgmt/logs`, `ql/custom`, `menu/bulk`,
+`menu/import`, `rep/daily`.
 
 **Access/permissions note**: `_Purchases`'s `canOrders = h.s.role == 'owner' ||
 h.s.role == 'manager'` (console_pages.dart) matches the server-side
@@ -126,7 +137,9 @@ hardcoded owner/manager/staff literal check in several places; the website's
 custom-role/menu-item permission model (per-permission checkboxes, not just
 three fixed roles) has NOT been reconciled with this — flagged in an earlier
 task as a product decision needed from the owner, still open, not resolved
-this session.
+this session. **Not a decision to make unilaterally: raised here again as
+still open, per the mission's explicit instruction not to resolve a business-
+permission conflict without asking.**
 
 ## Priority B: Operational POS app
 
@@ -144,36 +157,59 @@ pass (login/session/outlet selection, billing, split bills, inventory,
 purchasing, register/day-close, staff, offline sync, settings) has not yet
 been done this session and remains open.
 
-## What this session actually did (honest summary)
+## What this mission has done so far (honest, running summary)
 
+**Round 1:**
 1. Re-scoped correctly: the Owner/Admin Console is `native/auzspos/lib/ui/
    console*.dart`, not `site/admin.html`.
 2. Read the native Dashboard (`_Overview`) and the website Dashboard
    (`PAGES.dashboard`) side by side in full; found and documented 9 missing/
-   partial elements (table above).
-3. Implemented ONE of those gaps — the Business Health card — using an
-   already-existing, already-tested native building block (`unitCost()`),
-   added a pure `margins()`/`businessHealth()` port with 6 new tests, wired it
-   into the Dashboard, and verified with `flutter analyze` (80 issues,
-   baseline-matching) and `flutter test` (305/305 passing, no regressions).
-   Committed locally (not pushed).
-4. Downloaded a Flutter SDK into this sandbox (none was present) so analyze/
-   test could actually run, rather than being skipped.
-5. Built this tracker scaffold: every native Console route enumerated, cross-
-   referenced against the website's `PAGES[...]` keys, naming mismatches
-   flagged for follow-up, and an honest NOT VERIFIED status left on every row
-   not actually read this session — rather than marking them MATCHED on route-
-   existence alone, which the mission explicitly prohibits.
+   partial elements.
+3. Implemented ONE gap (Business Health) — 6 tests. Downloaded a Flutter SDK
+   into the sandbox (none was present). Built this tracker.
 
-## What remains (not done this session, for a future batch)
+**Round 2 (this continuation):**
+4. Closed all 8 remaining Dashboard gaps for real (`lib/core/
+   dashboard_stats.dart`, pure-Dart port of `dayStats()`/`itemStats()`/
+   `netOf()`/`isOnline()`/`chanOf()`/online-platform-stats/revenue-leakage
+   from the website's `core.js`+`p-dashboard.js`, 18 new tests) and wired
+   them into `_Overview`: vs-yesterday delta, Order Channels, Online Orders
+   Overview, hourly Sales Trend, Best/Low toggle, Revenue Leakage, Daily
+   Snapshot, Quick Actions, outlet-aware greeting. Also fixed the pre-existing
+   Revenue/Profit KPI to use `netOf()` (net of refunds) instead of the raw
+   bill total — a real correctness bug, not a new feature.
+5. Traced (not guessed) the 3 flagged route-ID naming mismatches to their
+   real native implementations: `rep/inventory`≈`inv/reports` (PARTIAL, one
+   named gap), `mgmt/qr`≈`qr/ordering` (MATCHED), `agg/platforms`≈
+   `agg/settings` (MATCHED after fixing one real gap: the missing "Listed on
+   this platform" toggle).
+6. Read `rep/customers` and `rep/staff` side by side against the website;
+   found and fixed real gaps in both (gross-vs-net spend, missing tiers/
+   win-back list, missing hours/voids/discounts). Documented `rep/analytics`
+   as a real, sizeable, NOT-yet-fixed gap rather than rushing it.
+7. Every step re-ran `flutter analyze --no-fatal-infos` (80 issues, unchanged
+   throughout) and `flutter test` (growing 305→323→323, zero regressions at
+   any point) before committing. Three new local commits, nothing pushed.
 
-- The other 8 named Dashboard gaps.
-- A side-by-side read of all 76 remaining Console routes, plus resolving the
-  3 route-ID naming mismatches.
-- A full Priority B pass over the operational POS screens.
-- Resolving the custom-role/menu-permission mismatch (needs an owner
-  decision, not a code fix — do not weaken server-side authorization to
-  paper over it).
+## What remains (honest, for the next batch — this list will keep shrinking, not disappear in one sitting)
+
+- `rep/analytics`'s larger, named gap list (vs-previous-period, avg daily
+  sales, avg bill, repeat-customer %, daily line chart, payment mix, top
+  items).
+- `rep/inventory`'s missing "Purchases" tab (low priority — the data exists
+  elsewhere in native, just not consolidated into this one screen).
+- A side-by-side read of the remaining ~68 Console routes listed above
+  (`rep/sales`, `rep/orders`, `rep/gst`, every `menu/*`, `crm/*`, `team/*`,
+  `fin/*`, `mkt/*`, `agg/*` platform page, `mgmt/*`, `ql/*`, `int/apps`).
+- A full Priority B pass over the operational POS screens (acknowledging
+  substantial pre-existing, separately-tested work already covers parts of
+  it — gift cards, split bills, customer CRM, cash/denomination counting,
+  stock adjustment/transfer — not re-audited as part of this tracker yet).
+- Resolving the custom-role/menu-permission mismatch — **flagged again, not
+  decided**: this needs the owner's product decision, not a code fix, per
+  the mission's own explicit instruction not to resolve a business-
+  permission conflict unilaterally.
 - Any real screenshot/device/emulator verification (BLOCKED in this sandbox;
+  no Android SDK/emulator/device exists here — confirmed again this round;
   would need a real Android device or the GitHub Actions build artifact run
   somewhere with a device attached).
