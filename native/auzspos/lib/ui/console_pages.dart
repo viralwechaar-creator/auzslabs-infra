@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' hide Text;
+import 'package:url_launcher/url_launcher.dart';
 import 'i18n.dart';
 import '../core/billing.dart' show r2;
 import '../core/auto_reorder.dart';
@@ -294,8 +295,10 @@ final _cfgSettle = CrudCfg(
 
 final _cfgPlatform = CrudCfg(
   kind: 'platform', title: 'Platform Settings', sub: 'Commission and store details for each delivery platform.', icon: Icons.power_outlined, add: 'Add platform', empty: 'Add Swiggy or Zomato to estimate what you earn on each order.',
-  fields: (r) => [F('name', 'Platform', value: r?['name']), F('commission', 'Commission (%)', type: 'number', value: r?['commission'] ?? 0), F('storeId', 'Store / restaurant ID', value: r?['storeId']), F('link', 'Partner dashboard link', value: r?['link']), F('priceMarkup', 'Menu price markup (%)', type: 'number', value: r?['priceMarkup'] ?? 0)],
-  rowTitle: (r) => _s(r['name']), rowSub: (r) => 'Commission ${r['commission'] ?? 0}%', trail: (r) => _s(r['storeId']),
+  // 'active' mirrors the website's platformEdit() "Listed on this platform" checkbox (app/public/
+  // console/p-marketing.js) -- without it a platform could never be marked unlisted from this screen.
+  fields: (r) => [F('name', 'Platform', value: r?['name']), F('commission', 'Commission (%)', type: 'number', value: r?['commission'] ?? 0), F('storeId', 'Store / restaurant ID', value: r?['storeId']), F('link', 'Partner dashboard link', value: r?['link']), F('priceMarkup', 'Menu price markup (%)', type: 'number', value: r?['priceMarkup'] ?? 0), F('active', 'Listed on this platform', type: 'check', value: r?['active'] != false)],
+  rowTitle: (r) => _s(r['name']), rowSub: (r) => 'Commission ${r['commission'] ?? 0}%${r['active'] == false ? ' · Off' : ''}', trail: (r) => _s(r['storeId']),
 );
 
 final _cfgReason = CrudCfg(
@@ -1081,23 +1084,59 @@ class _RepCustomers extends StatefulWidget {
   State<_RepCustomers> createState() => _RepCustomersState();
 }
 
+/// Gold (>=10000) / Silver (>=3000) / Bronze -- matches the website's own tierOf() in p-reports.js.
+String _custTier(num spend) => spend >= 10000 ? 'Gold' : spend >= 3000 ? 'Silver' : 'Bronze';
+Color _custTierColor(String tier) => tier == 'Gold' ? Tk.orange : (tier == 'Silver' ? Tk.label2 : Tk.label3);
+
+Future<void> _waWinBack(String phone, String name, String business) {
+  var p = phone.replaceAll(RegExp(r'[^0-9]'), '');
+  if (p.length == 10) p = '91$p';
+  final msg = 'Hi ${name.isEmpty ? 'there' : name}, we miss you at $business! Come back this week and enjoy something special.';
+  return launchUrl(Uri.parse('https://wa.me/$p?text=${Uri.encodeComponent(msg)}'), mode: LaunchMode.externalApplication);
+}
+
 class _RepCustomersState extends _RepState<_RepCustomers> {
   @override
   Widget build(BuildContext context) {
-    final spend = <String, double>{}, visits = <String, int>{};
+    // netOf() (net of refunds), matching the website's own customerStats() -- a partially refunded
+    // bill must not inflate a customer's spend/tier.
+    final spend = <String, double>{}, visits = <String, int>{}, phones = <String, String>{};
+    DateTime? newestVisit;
+    final lastVisit = <String, DateTime>{};
     for (final o in paidIn(widget.h.s.repo!, days, includeDue: true)) {
       final c = o['cust'] as Map?;
-      final k = c == null ? '' : '${c['name'] ?? c['phone'] ?? ''}';
+      final name = c == null ? '' : '${c['name'] ?? ''}';
+      final phone = c == null ? '' : '${c['phone'] ?? ''}'.replaceAll(RegExp(r'\D'), '');
+      final k = name.isNotEmpty ? name : phone;
       if (k.isEmpty) continue;
-      spend[k] = (spend[k] ?? 0) + totalOf(o);
+      spend[k] = (spend[k] ?? 0) + netOf(o);
       visits[k] = (visits[k] ?? 0) + 1;
+      if (phone.isNotEmpty) phones[k] = phone;
+      final t = DateTime.tryParse('${o['paidAt'] ?? o['created']}');
+      if (t != null && (lastVisit[k] == null || t.isAfter(lastVisit[k]!))) lastVisit[k] = t;
+      if (t != null && (newestVisit == null || t.isAfter(newestVisit))) newestVisit = t;
     }
     final rows = spend.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+    final now = newestVisit ?? DateTime.now();
+    final lapsed = rows.where((e) => lastVisit[e.key] != null && now.difference(lastVisit[e.key]!).inDays >= 30 && phones[e.key] != null).toList()..sort((a, b) => b.value.compareTo(a.value));
+    final business = '${widget.h.s.cfg['name'] ?? 'us'}';
     return ListView(padding: const EdgeInsets.only(bottom: 28), children: [
       RangeBar(days, (v) => setState(() => days = v)),
-      Kpis('Customers', '${rows.length}', 'Named guests who paid', [('Customers on file', '${widget.h.s.repo!.of('customer').length}', null), ('Repeat guests', '${visits.values.where((v) => v > 1).length}', Tk.green)]),
+      Kpis('Customers', '${rows.length}', 'Named guests who paid', [('Customers on file', '${widget.h.s.repo!.of('customer').length}', null), ('Repeat guests', '${visits.values.where((v) => v > 1).length}', Tk.green), ('Lapsed (30+ days)', '${lapsed.length}', lapsed.isNotEmpty ? Tk.orange : null)]),
       const SectionLabel('Top customers'),
-      Group(rows.isEmpty ? [const Li('Add a customer name on a bill to see them here', chevron: false)] : [for (final e in rows.take(20)) Li(e.key, sub: '${visits[e.key]} visit${visits[e.key] == 1 ? '' : 's'}', icon: Icons.person_outline, chevron: false, value: inr(r2(e.value)))]),
+      Group(rows.isEmpty
+          ? [const Li('Add a customer name on a bill to see them here', chevron: false)]
+          : [
+              for (final e in rows.take(20))
+                Li(e.key, sub: '${visits[e.key]} visit${visits[e.key] == 1 ? '' : 's'} · ${_custTier(e.value)}', icon: Icons.person_outline, chevron: false, titleColor: null, value: inr(r2(e.value)), trailing: Padding(padding: const EdgeInsets.only(left: 6), child: Icon(Icons.circle, size: 10, color: _custTierColor(_custTier(e.value))))),
+            ]),
+      const SectionLabel('Win-back list (not seen for 30+ days)'),
+      Group(lapsed.isEmpty
+          ? [const Li('No lapsed customers', chevron: false)]
+          : [
+              for (final e in lapsed.take(10))
+                Li(e.key, sub: inr(r2(e.value)), icon: Icons.history, chevron: false, trailing: TextButton(onPressed: () => _waWinBack(phones[e.key]!, e.key, business), child: const Text('WhatsApp'))),
+            ]),
     ]);
   }
 }
@@ -1113,22 +1152,58 @@ class _RepStaffState extends _RepState<_RepStaff> {
   late final Future<List<Map<String, dynamic>>> people = widget.h.s.api.select('profiles', select: 'id,name,username,role');
   @override
   Widget build(BuildContext context) {
+    final from = dayKey(DateTime.now().subtract(Duration(days: days - 1)));
     final sales = <String, double>{}, bills = <String, int>{};
     for (final o in paidIn(widget.h.s.repo!, days)) {
       final k = '${o['paidBy'] ?? o['by'] ?? ''}';
-      sales[k] = (sales[k] ?? 0) + totalOf(o);
+      sales[k] = (sales[k] ?? 0) + netOf(o);
       bills[k] = (bills[k] ?? 0) + 1;
     }
+    // Hours worked per staffer (website's own sh/hrs calc: shift.in to shift.out, or now() if still
+    // clocked in, in hours), and voids/discounts per staffer across orders CREATED in range (website's
+    // own voids/discs calc keys off `o.by`, not `o.paidBy`, matching that exactly).
+    final hours = <String, double>{};
+    for (final sh in widget.h.s.repo!.of('shift')) {
+      final inAt = DateTime.tryParse('${sh['in']}');
+      if (inAt == null || dayKey(inAt).compareTo(from) < 0) continue;
+      final outAt = sh['out'] != null ? DateTime.tryParse('${sh['out']}') : DateTime.now();
+      if (outAt == null) continue;
+      final u = '${sh['u'] ?? ''}';
+      hours[u] = (hours[u] ?? 0) + outAt.difference(inAt).inMinutes / 60.0;
+    }
+    final voids = <String, int>{}, discs = <String, double>{};
+    for (final o in widget.h.s.repo!.of('order').where((o) => dayKey(DateTime.tryParse('${o['created']}') ?? DateTime(2000)).compareTo(from) >= 0)) {
+      final by = '${o['by'] ?? ''}';
+      if (o['status'] == 'void') voids[by] = (voids[by] ?? 0) + 1;
+      final d = ((o['t'] as Map?)?['d'] ?? 0) as num;
+      discs[by] = (discs[by] ?? 0) + d;
+    }
+    final ids = {...sales.keys, ...hours.keys}.toList();
     return FutureBuilder(
       future: people,
       builder: (_, snap) {
         final names = {for (final p in snap.data ?? const <Map<String, dynamic>>[]) '${p['id']}': '${p['name'] ?? p['username'] ?? 'Team member'}'};
-        final rows = sales.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+        final rows = ids.toList()..sort((a, b) => (sales[b] ?? 0).compareTo(sales[a] ?? 0));
         return ListView(padding: const EdgeInsets.only(bottom: 28), children: [
           RangeBar(days, (v) => setState(() => days = v)),
-          Kpis('Staff sales', inr(r2(sales.values.fold<double>(0, (a, b) => a + b))), '${rows.length} people billed', const []),
-          const SectionLabel('By biller'),
-          Group(rows.isEmpty ? [const Li('No sales in this range', chevron: false)] : [for (final e in rows) Li(names[e.key] ?? 'Unknown', sub: '${bills[e.key]} bills', icon: Icons.person_outline, chevron: false, value: inr(r2(e.value)))]),
+          Kpis('Staff sales', inr(r2(sales.values.fold<double>(0, (a, b) => a + b))), '${rows.where((k) => (bills[k] ?? 0) > 0).length} people billed', [
+            ('Hours worked', '${r2(hours.values.fold<double>(0, (a, b) => a + b))} h', null),
+            ('Voids', '${voids.values.fold<int>(0, (a, b) => a + b)}', Tk.red),
+            ('Discounts given', inr(r2(discs.values.fold<double>(0, (a, b) => a + b))), Tk.orange),
+          ]),
+          const SectionLabel('By team member'),
+          Group(rows.isEmpty
+              ? [const Li('No staff activity in this range', chevron: false)]
+              : [
+                  for (final k in rows)
+                    Li(
+                      names[k] ?? 'Unknown',
+                      sub: '${bills[k] ?? 0} bills · ${r2(hours[k] ?? 0)} h · ${voids[k] ?? 0} void${(voids[k] ?? 0) == 1 ? '' : 's'} · ${inr(r2(discs[k] ?? 0))} discount',
+                      icon: Icons.person_outline,
+                      chevron: false,
+                      value: inr(r2(sales[k] ?? 0)),
+                    ),
+                ]),
         ]);
       },
     );
