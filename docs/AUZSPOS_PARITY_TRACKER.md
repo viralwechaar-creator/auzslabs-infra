@@ -112,12 +112,28 @@ not individually confirmed): `menu/bulk`, `menu/import`, `rep/daily`.
 | `rep/sales` (`ReportsPage` in `more2.dart`) | **PARTIAL** | Core metrics are real and complete: revenue, bills, average bill, tax/discounts/refunds, sales-by-day, by-payment-mode, by-order-type, top items — all computed from real orders, nothing fabricated. Gap vs. the website: the website's `rep/sales` has 8 dimension tabs (day/hour/weekday/mode/type/source/category/staff, each a full bills/sales/share/avg table) and a CSV export; native covers only day/mode/type and has no export. A real, sizeable gap, deliberately not attempted this round (would need 5 more table views + an export mechanism — its own batch, not a rushed partial add). |
 | `rep/gst` (`_RepGst`) | **MATCHED** (one gap fixed: CGST/SGST split) | Taxable base, total tax, by-rate breakdown all read from real order `t.rates`/`t.tax`/`t.sub` data. Was missing the CGST/SGST half-split the website's KPIs show — added. Not matched: the website's CSV export (same gap class as `rep/sales` above — not attempted this round). |
 
+### Menu group — `menu/taxes` and `menu/discounts` read this round
+
+| Route | Status | Evidence |
+|---|---|---|
+| `menu/taxes` (`TaxAdmin`) | **PARTIAL** | Core tax CRUD (name/rate/inclusive, add/edit/delete) matches the website's `taxForm()`. The website's "Default tax" card (default GST %, GSTIN display) is NOT missing — it was already present in native, just on a different route (`mgmt/config`/`SettingsPage`: `_f('tax','Default tax %')`, same for GSTIN and the "Cashier discount limit" the website's `menu/discounts` page also shows) — same navigation-depth pattern already seen with `mgmt/qr`'s banners. **Real, un-fixed gap**: the website shows each tax's "Items" count and an "Assign items" bulk action (`assignTax()`); native's tax list has neither. Not fixed this round — see the CrudCfg note below. |
+| `menu/discounts` (`CrudPage(_cfgCoupon)`) | **PARTIAL** | Coupon CRUD (code/type/value/minBill/expiry/maxUses) matches `couponForm()`. **Real, un-fixed gap**: the website's coupon list shows "Used N times (/max)" and an Active/Expired status pill (`used(c)`, cross-referencing `orders()`); native's row only shows the discount value and min bill, no usage count, no status. Not fixed this round — see the CrudCfg note below. |
+
+**Structural note, not a per-route bug**: `CrudCfg`'s `rowTitle`/`rowSub`/
+`trail` functions (`console_pages.dart`) take only the record itself, no
+`Repo` — so a row display computed from OTHER records (a coupon's usage
+count, a tax's assigned-item count) cannot be added without widening the
+`CrudCfg` API, which every other `CrudPage` user shares. This affects more
+than these two routes (e.g. `_cfgPlatform`'s row could similarly show real
+order volume per platform) and deserves its own small, deliberate refactor
+rather than a one-off hack in just these two configs.
+
 Full list of the remaining native routes still needing a side-by-side read
 (each is a `consolePageFor()` case in `console_pages.dart`): `daily/live`,
 `daily/all`, `daily/online`, `daily/due`, `daily/kot`, `inv/raw`, `inv/stock`,
-`inv/purchase`, `inv/vendors`, `inv/recipes`, `inv/consumption`, `rep/sales`,
-`rep/orders`, `rep/gst`, `menu/items`, `menu/categories`, `menu/variants`,
-`menu/addons`, `menu/tables`, `menu/taxes`, `menu/discounts`,
+`inv/purchase`, `inv/vendors`, `inv/recipes`, `inv/consumption`,
+`menu/items`, `menu/categories`, `menu/variants`,
+`menu/addons`, `menu/tables`,
 `crm/customers`, `crm/giftcards`, `crm/membership`, `crm/support`,
 `team/users`, `team/attendance`, `team/tasks`, `fin/expenses`,
 `fin/withdrawals`, `fin/settlements`, `mkt/campaigns`, `mkt/segments`,
