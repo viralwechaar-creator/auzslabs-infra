@@ -2179,19 +2179,22 @@ async function loadTeamApps() {
   if (error) { box.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
   { const b = document.getElementById('teamAppBadge'); const n = (data || []).length; if (b) { b.style.display = n ? '' : 'none'; b.textContent = n ? String(n) : ''; } }
   if (!data || !data.length) { box.innerHTML = '<p class="p">No new applications.</p>'; return; }
-  box.innerHTML = `<div class="lc-list">${data.map((a) => `
+  box.innerHTML = `<div class="lc-list">${data.map((a) => { const preRole = ['salesman', 'setup', 'support', 'manager'].includes(a.role_wanted) ? a.role_wanted : 'support'; return `
     <div class="tm-card" data-id="${a.id}">
-      <div class="lc-name">${esc(a.name)} <span class="role-pill role-${a.role_wanted === 'other' ? 'support' : a.role_wanted}">wants: ${esc(ROLE_LABEL[a.role_wanted] || 'Something else')}</span></div>
+      <div class="lc-name">${esc(a.name)} <span class="role-pill role-${preRole}">wants: ${esc(ROLE_LABEL[a.role_wanted] || (a.role_wanted === 'not_sure' ? 'Not sure yet' : 'Something else'))}</span>${a.user_id ? ' <span class="status-pill status-active">has an account</span>' : ''}</div>
       <div class="lc-sub">${esc(a.email)} · ${esc(a.phone || '')}${a.city ? ' · ' + esc(a.city) : ''} · ${when(a.created_at)}</div>
-      ${a.experience ? `<p class="p" style="margin:6px 0 0"><b>Experience:</b> ${esc(a.experience)}</p>` : ''}
+      ${a.years_experience ? `<p class="p" style="margin:6px 0 0"><b>Experience:</b> ${esc(a.years_experience)}</p>` : (a.experience ? `<p class="p" style="margin:6px 0 0"><b>Experience:</b> ${esc(a.experience)}</p>` : '')}
+      ${a.skills ? `<p class="p" style="margin:4px 0 0"><b>Good at:</b> ${esc(a.skills)}</p>` : ''}
+      ${a.availability ? `<p class="p" style="margin:4px 0 0"><b>Can start:</b> ${esc(a.availability)}</p>` : ''}
+      ${a.links ? `<p class="p" style="margin:4px 0 0"><b>Links:</b> ${esc(a.links)}</p>` : ''}
       ${a.about ? `<p class="p" style="margin:4px 0 0">${esc(a.about)}</p>` : ''}
       <div class="tm-stats">
-        <select class="tm-role-sel" data-role aria-label="Role to give">${Object.entries(ROLE_LABEL).map(([k, v]) => `<option value="${k}"${k === (a.role_wanted === 'other' ? 'support' : a.role_wanted) ? ' selected' : ''}>${v}</option>`).join('')}</select>
+        <select class="tm-role-sel" data-role aria-label="Role to give">${Object.entries(ROLE_LABEL).map(([k, v]) => `<option value="${k}"${k === preRole ? ' selected' : ''}>${v}</option>`).join('')}</select>
         <button class="btn btn-primary" data-approve type="button">Approve</button>
         <button class="lc-action" data-reject type="button">Reject</button>
         <a class="lc-action" href="https://wa.me/${esc(String(a.phone || '').replace(/\D/g, ''))}" target="_blank" rel="noopener">WhatsApp</a>
       </div>
-    </div>`).join('')}</div>`;
+    </div>`; }).join('')}</div>`;
   box.querySelectorAll('.tm-card').forEach((card) => {
     const id = card.dataset.id;
     const decide = async (decision) => {

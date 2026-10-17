@@ -148,37 +148,57 @@
           <div class="grid-2 reveal in" style="align-items:start">
             <div>
               <div class="h-2">How it works</div>
-              <p class="p" style="margin-top:14px"><b>1.</b> Send the form. <b>2.</b> We review it and reply by phone or email. <b>3.</b> If we approve you, sign in at <span class="accent">app.auzslab.in</span> with Google, using the same email you applied with. Your own team dashboard opens there.</p>
-              <p class="p" style="margin-top:18px">Roles: <b>Salesman</b> (find clients, run demos), <b>Client setup</b> (get new clients ready), <b>Support</b> (help clients after they go live).</p>
+              <p class="p" style="margin-top:14px"><b>1.</b> Sign in with Google and save your profile. <b>2.</b> Submit to join the team. <b>3.</b> We review it and reply by phone or email -- you can always come back here to check your status. <b>4.</b> Once approved, sign in at <span class="accent">app.auzslab.in</span> with Google, using the same email. Your own team dashboard opens there.</p>
+              <p class="p" style="margin-top:18px">Roles: <b>Salesman</b> (find clients, run demos), <b>Client setup</b> (get new clients ready), <b>Support</b> (help clients after they go live), <b>Manager</b> (oversee the team).</p>
               <p class="p" style="margin-top:18px">Questions? <span class="accent">helloauzslab@gmail.com</span></p>
             </div>
 
-            <div class="card">
-              <form id="applyForm">
-                <div class="field" style="margin-top:0"><label for="a-name">Full name</label><input id="a-name" type="text" required maxlength="120" autocomplete="name"></div>
-                <div class="field"><label for="a-email">Email (use the Google email you will sign in with)</label><input id="a-email" type="email" required maxlength="160" autocomplete="email"></div>
-                <div class="field"><label for="a-phone">Phone / WhatsApp</label><input id="a-phone" type="tel" required maxlength="30" autocomplete="tel"></div>
-                <div class="field"><label for="a-city">City</label><input id="a-city" type="text" maxlength="80"></div>
-                <div class="field">
-                  <label for="a-role">What would you like to do?</label>
-                  <select id="a-role">
-                    <option value="salesman">Salesman: find clients and run demos</option>
-                    <option value="setup">Client setup: get new clients ready</option>
-                    <option value="support">Support: help clients after go-live</option>
-                    <option value="other">Something else</option>
-                  </select>
+            <div>
+              <section id="signedOutNotice">
+                <div class="card">
+                  <p class="p">Sign in or create an account first -- then save your profile and send your application. This keeps your details safe and lets you come back any time to check your status.</p>
+                  <a href="signup.html?next=join-team.html" class="btn btn-primary form-submit">Sign in / Create account</a>
                 </div>
-                <div class="field"><label for="a-exp">Your experience (optional)</label><textarea id="a-exp" maxlength="600" placeholder="Past work, languages you speak, software you know"></textarea></div>
-                <div class="field"><label for="a-about">Why do you want to join? (optional)</label><textarea id="a-about" maxlength="1500"></textarea></div>
-                <div style="position:absolute;left:-9999px;top:-9999px" aria-hidden="true"><label for="a-hp">Leave this field empty</label><input id="a-hp" type="text" tabindex="-1" autocomplete="off"></div>
-                <p class="p" id="applyErr" style="color:#b00020;display:none"></p>
-                <button type="submit" class="btn btn-primary form-submit">Send my application</button>
-              </form>
-              <div class="success-view" id="applyDone">
-                <div class="success-mark">&check;</div>
-                <h3 class="h-2" style="font-size:22px">Thank you.</h3>
-                <p class="p">We have your application and will reach out soon. If we approve you, sign in at app.auzslab.in with Google using the same email and your dashboard will open.</p>
-              </div>
+              </section>
+
+              <section id="caStatusSection" style="display:none;margin-bottom:16px">
+                <div class="card">
+                  <div class="label" style="margin-bottom:6px">Your application</div>
+                  <div id="caStatusLine" class="p"></div>
+                </div>
+              </section>
+
+              <section id="caFormSection" style="display:none">
+                <div class="card">
+                  <p class="p" id="caWhoLine" style="margin-bottom:4px"></p>
+                  <form id="applyForm">
+                    <div class="field" style="margin-top:0"><label for="a-name">Full name *</label><input id="a-name" type="text" required maxlength="120" autocomplete="name"></div>
+                    <div class="field"><label for="a-phone">Phone / WhatsApp *</label><input id="a-phone" type="tel" required maxlength="30" autocomplete="tel" placeholder="9876543210"></div>
+                    <div class="field"><label for="a-email">Contact email <span style="text-transform:none;letter-spacing:0">(optional, defaults to your login email)</span></label><input id="a-email" type="email" maxlength="160" autocomplete="email"></div>
+                    <div class="field"><label for="a-city">City</label><input id="a-city" type="text" maxlength="80"></div>
+                    <div class="field">
+                      <label for="a-role">What would you like to do?</label>
+                      <select id="a-role">
+                        <option value="salesman">Salesman: find clients and run demos</option>
+                        <option value="setup">Client setup: get new clients ready</option>
+                        <option value="support">Support: help clients after go-live</option>
+                        <option value="manager">Manager</option>
+                        <option value="not_sure">Not sure yet</option>
+                        <option value="other">Something else</option>
+                      </select>
+                    </div>
+                    <div class="field"><label for="a-years">Years of experience</label><input id="a-years" type="text" maxlength="40" placeholder="e.g. 2 years, or Fresher"></div>
+                    <div class="field"><label for="a-skills">What are you good at? *</label><textarea id="a-skills" maxlength="800" placeholder="Sales, client onboarding, customer support, languages you speak, software you know..."></textarea></div>
+                    <div class="field"><label for="a-links">Portfolio / LinkedIn / GitHub <span style="text-transform:none;letter-spacing:0">(optional)</span></label><input id="a-links" type="text" maxlength="400" placeholder="linkedin.com/in/you"></div>
+                    <div class="field"><label for="a-avail">When can you start?</label><input id="a-avail" type="text" maxlength="120" placeholder="Immediately, or a date"></div>
+                    <div class="field"><label for="a-notes">Anything else we should know? <span style="text-transform:none;letter-spacing:0">(optional)</span></label><textarea id="a-notes" maxlength="1000"></textarea></div>
+                    <p class="p" id="applyErr" style="color:#b00020;display:none"></p>
+                    <p class="p" id="applyOk" style="color:var(--accent);display:none;font-weight:600">Thank you -- we have your application and will reach out soon.</p>
+                    <button type="submit" id="applySubmit" class="btn btn-primary form-submit">Submit to join the team</button>
+                    <p class="p" style="font-size:12.5px;color:var(--ink-faint);margin-top:10px">Saving your profile first means you can update it any time before we decide -- submitting again while we have not yet decided simply refreshes what we see.</p>
+                  </form>
+                </div>
+              </section>
             </div>
           </div>
         </div>
@@ -240,21 +260,74 @@
 <script src="design-system/ui-kit.js?v=1"></script>
 <script src="company.js"></script>
 <script>
-document.getElementById('applyForm').addEventListener('submit', function (e) {
+const sb = supabase.createClient(CFG.url, CFG.key);
+const $jt = (id) => document.getElementById(id);
+const escJt = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const ROLE_LABEL_JT = { salesman: 'Salesman', setup: 'Client setup', support: 'Support', manager: 'Manager', other: 'Something else', not_sure: 'Not sure yet' };
+const STATUS_TEXT_JT = { new: 'Received -- we are reviewing it.', approved: 'Approved! Sign in at app.auzslab.in with Google using this email to open your dashboard.', rejected: 'We could not take this forward this time.' };
+let alreadyApproved = false;
+
+async function loadMyApplication() {
+  const { data } = await sb.rpc('my_team_applications').catch(() => ({ data: null }));
+  const rows = data || [];
+  alreadyApproved = rows.length > 0 && rows[0].status === 'approved';
+  if (!rows.length) { $jt('caStatusSection').style.display = 'none'; $jt('applySubmit').textContent = 'Submit to join the team'; return; }
+  const a = rows[0];
+  $jt('caStatusSection').style.display = 'block';
+  $jt('caStatusLine').innerHTML = '<b>' + escJt(ROLE_LABEL_JT[a.decided_role] || ROLE_LABEL_JT[a.role_wanted] || a.role_wanted) + '</b> &middot; ' + escJt(STATUS_TEXT_JT[a.status] || a.status) +
+    ' <span style="color:var(--ink-faint);font-size:12px">(sent ' + escJt(String(a.created_at).slice(0, 10)) + ')</span>';
+  $jt('applySubmit').textContent = alreadyApproved ? 'Save profile' : 'Submit to join the team';
+}
+
+async function checkSession() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { $jt('signedOutNotice').style.display = 'block'; $jt('caFormSection').style.display = 'none'; $jt('caStatusSection').style.display = 'none'; return; }
+  $jt('signedOutNotice').style.display = 'none';
+  $jt('caFormSection').style.display = 'block';
+  $jt('caWhoLine').innerHTML = 'Signed in as <b>' + escJt(session.user.email) + '</b>';
+  $jt('a-email').value = session.user.email || '';
+  const { data: pr } = await sb.rpc('my_team_candidate_profile').catch(() => ({ data: null }));
+  const P = (pr && pr.profile) || null;
+  if (P) {
+    if (P.name) $jt('a-name').value = P.name;
+    if (P.phone) $jt('a-phone').value = P.phone;
+    if (P.contact_email) $jt('a-email').value = P.contact_email;
+    if (P.city) $jt('a-city').value = P.city;
+    if (P.role_wanted && $jt('a-role').querySelector('option[value="' + P.role_wanted + '"]')) $jt('a-role').value = P.role_wanted;
+    if (P.years_experience) $jt('a-years').value = P.years_experience;
+    if (P.skills) $jt('a-skills').value = P.skills;
+    if (P.links) $jt('a-links').value = P.links;
+    if (P.availability) $jt('a-avail').value = P.availability;
+    if (P.notes) $jt('a-notes').value = P.notes;
+  }
+  await loadMyApplication();
+}
+
+$jt('applyForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  var f = e.target, err = document.getElementById('applyErr'), btn = f.querySelector('button[type=submit]');
-  var v = function (id) { return document.getElementById(id).value; };
-  err.style.display = 'none'; btn.disabled = true;
-  fetch('https://api.auzslab.in/rpc/submit_team_application', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ p_name: v('a-name'), p_email: v('a-email'), p_phone: v('a-phone'), p_city: v('a-city'),
-      p_role: v('a-role'), p_experience: v('a-exp'), p_about: v('a-about'), p_hp: v('a-hp') })
-  }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j }; }); })
-    .then(function (x) {
-      if (!x.ok) { err.textContent = (x.j && (x.j.error || x.j.message)) || 'Could not send. Please try again.'; err.style.display = 'block'; btn.disabled = false; return; }
-      f.style.display = 'none'; document.getElementById('applyDone').classList.add('show');
-    }).catch(function () { err.textContent = 'No connection. Please try again.'; err.style.display = 'block'; btn.disabled = false; });
+  const err = $jt('applyErr'), okMsg = $jt('applyOk'), btn = $jt('applySubmit');
+  err.style.display = 'none'; okMsg.style.display = 'none';
+  const p = { name: $jt('a-name').value.trim(), phone: $jt('a-phone').value.trim(), contact_email: $jt('a-email').value.trim(),
+    role_wanted: $jt('a-role').value, years_experience: $jt('a-years').value.trim(), city: $jt('a-city').value.trim(),
+    skills: $jt('a-skills').value.trim(), links: $jt('a-links').value.trim(), availability: $jt('a-avail').value.trim(), notes: $jt('a-notes').value.trim() };
+  if (!p.name) { err.textContent = 'Please enter your name.'; err.style.display = 'block'; return; }
+  if (p.phone.replace(/\D/g, '').length < 8) { err.textContent = 'Please enter a valid phone number.'; err.style.display = 'block'; return; }
+  btn.disabled = true;
+  const { error: e1 } = await sb.rpc('save_my_team_candidate_profile', { p });
+  if (e1) { err.textContent = e1.message; err.style.display = 'block'; btn.disabled = false; return; }
+  if (alreadyApproved) {
+    btn.disabled = false; okMsg.textContent = 'Profile saved.'; okMsg.style.display = 'block';
+    return;
+  }
+  const { error: e2 } = await sb.rpc('submit_my_team_application');
+  btn.disabled = false;
+  if (e2) { err.textContent = e2.message; err.style.display = 'block'; return; }
+  okMsg.textContent = 'Thank you -- we have your application and will reach out soon.'; okMsg.style.display = 'block';
+  await loadMyApplication();
+  window.scrollTo({ top: $jt('caFormSection').offsetTop - 80, behavior: 'smooth' });
 });
+
+checkSession();
 </script>
 </body>
 </html>

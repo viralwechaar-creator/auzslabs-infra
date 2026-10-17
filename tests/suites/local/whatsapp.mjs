@@ -158,17 +158,19 @@ export default async function run({ stack }) {
     assert((await (await fetch(api + '/whatsapp/config')).json()).platform === true, 'config');
   }, 'critical');
 
-  await s.check('A client request moving through its steps messages the client: checking, quote link, then the GST bill once paid, each only once', async () => {
+  await s.check('A client request messages the client the instant it is submitted (on INSERT, no admin action first), then once per step as it moves: checking, quote link, then the GST bill once paid, each only once', async () => {
     const u = (await q('select id from auth_users where email=$1', [USERS.plain]))[0].id;
     const o = (await q(`insert into client_orders (user_id, contact_name, phone, business_name, status, products) values ($1,'Meera','9866666666','Meera Cafe','requested','{pos}') returning id, token`, [u]))[0];
     const msgs = async () => (await q(`select template, params, status from wa_outbox where tenant_id is null and ref like $1 order by created_at`, [o.id + '-%']));
+    // the insert itself already queued "request_received" -- confirmed before any status change happens
+    assert((await msgs()).map((x) => x.template).join() === 'request_received', 'no instant confirmation on submit');
     await q(`update client_orders set status='verifying' where id=$1`, [o.id]);
     await q(`update client_orders set status='link_sent' where id=$1`, [o.id]);
     await q(`update client_orders set status='link_sent' where id=$1`, [o.id]); // same status again: no duplicate
     await q(`update client_orders set status='paid', invoice_no='AUZ/2026-27/0099' where id=$1`, [o.id]);
     const m = await msgs();
-    assert(m.map((x) => x.template).join() === 'request_update,quote_payment_link,bill_paid', m.map((x) => x.template).join());
-    assert(m[1].params[1] === `https://auzslab.in/pay.html?t=${o.token}` && m[2].params[1] === 'AUZ/2026-27/0099' && m[2].params[2] === `https://auzslab.in/inv.html?t=${o.token}`, JSON.stringify(m));
+    assert(m.map((x) => x.template).join() === 'request_received,request_update,quote_payment_link,bill_paid', m.map((x) => x.template).join());
+    assert(m[2].params[1] === `https://auzslab.in/pay.html?t=${o.token}` && m[3].params[1] === 'AUZ/2026-27/0099' && m[3].params[2] === `https://auzslab.in/inv.html?t=${o.token}`, JSON.stringify(m));
     await q('delete from client_orders where id=$1', [o.id]);
   });
 
