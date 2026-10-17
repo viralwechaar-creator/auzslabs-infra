@@ -24,3 +24,17 @@ List<num> quickCashAmounts(num due) {
   final list = set.where((v) => v >= due).toList()..sort();
   return list.take(5).toList();
 }
+
+/// The physical notes/coins counted when closing a REGISTER -- same list as CASH_DENOMS in the
+/// website's pos/pay.js (reused by register.js's own closeRegister()). No ₹2000 note: that
+/// denomination only appears in the separate Day Close count below.
+const List<int> cashDenoms = [500, 200, 100, 50, 20, 10, 5, 2, 1];
+
+/// The physical notes/coins counted when closing a DAY -- same list as NOTES in the website's
+/// app/public/console/p-finance.js denomForm(), which does include ₹2000.
+const List<int> dayCloseDenoms = [2000, 500, 200, 100, 50, 20, 10, 5, 2, 1];
+
+/// Total value of a denomination count {note/coin value: quantity} -- the same running arithmetic
+/// recalc()/upd() keep live on the website as each count field changes. A missing or non-positive
+/// count for a denomination contributes nothing, never throws.
+num denomTotal(Map<int, int> counts) => _round2(counts.entries.fold<num>(0, (a, e) => a + e.key * (e.value > 0 ? e.value : 0)));

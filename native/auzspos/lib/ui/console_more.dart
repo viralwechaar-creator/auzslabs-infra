@@ -3,6 +3,7 @@ import 'i18n.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/billing.dart' show r2;
+import '../core/cash.dart' show dayCloseDenoms, denomTotal;
 import '../core/repo.dart';
 import 'actions.dart';
 import 'console.dart';
@@ -778,20 +779,82 @@ class _CashPageState extends State<CashPage> {
       if (c != null)
         Group([Li('Day closed', sub: 'Counted ₹${c['countedCash']} · difference ₹${c['variance'] ?? 0}${_s(c['varianceReason']).isEmpty ? '' : ' · ${c['varianceReason']}'}', icon: Icons.lock_outline, tone: ((c['variance'] ?? 0) as num).abs() > .5 ? Tk.red : Tk.green, chevron: false)])
       else
-        Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: FilledButton(onPressed: () => formSheet(context, 'Close $d', [F('counted', 'Cash actually counted (₹)', type: 'number', value: s.expected), F('reason', 'Reason for any difference', type: 'select', value: '', options: const [['', 'No difference'], ['Counting error', 'Counting error'], ['Change given short', 'Change given short'], ['Cash taken without entry', 'Cash taken without entry'], ['Tip paid out', 'Tip paid out'], ['Other', 'Other']])], (v) async {
-              if (v['counted'] == null) return false;
-              final variance = r2((v['counted'] as num) - s.expected);
-              // Same guard as closeDay() on the website: a variance over 50 paise needs a reason picked.
-              if (variance.abs() > .5 && '${v['reason'] ?? ''}'.isEmpty) {
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pick a reason for the difference')));
-                return false;
-              }
-              await h.s.repo!.save('dayclose', {'d': d, 'sales': s.sales, 'bills': s.bills, 'expectedCash': s.expected, 'countedCash': v['counted'], 'variance': variance, 'varianceReason': '${v['reason'] ?? ''}'.isEmpty ? null : v['reason'], 'at': nowIso(), 'by': h.s.user!['id']});
-              h.s.sync();
-              setState(() {});
-              return true;
-            }, saveLabel: 'Close day'), child: const Text('Close the day'))),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(children: [
+            Expanded(child: OutlinedButton(onPressed: () async {
+              final counted = await _denomSheet(context, s.expected, d);
+              if (counted != null) await _closeDialog(d, s, counted);
+            }, child: const Text('Count by denomination'))),
+            const SizedBox(width: 10),
+            Expanded(child: FilledButton(onPressed: () => _closeDialog(d, s, s.expected), child: const Text('Enter total'))),
+          ]),
+        ),
     ]);
+  }
+
+  /// The confirm-and-save step shared by both Day Close paths (a typed total, or a denomination
+  /// count that produced one) -- same `closeDay()` the website funnels into either way
+  /// (denomForm()'s own "Use this count" button calls `closeDay(d,t)` with the counted total).
+  Future<void> _closeDialog(String d, _DayCash s, num defaultCounted) => formSheet(context, 'Close $d', [F('counted', 'Cash actually counted (₹)', type: 'number', value: defaultCounted), F('reason', 'Reason for any difference', type: 'select', value: '', options: const [['', 'No difference'], ['Counting error', 'Counting error'], ['Change given short', 'Change given short'], ['Cash taken without entry', 'Cash taken without entry'], ['Tip paid out', 'Tip paid out'], ['Other', 'Other']])], (v) async {
+        if (v['counted'] == null) return false;
+        final variance = r2((v['counted'] as num) - s.expected);
+        // Same guard as closeDay() on the website: a variance over 50 paise needs a reason picked.
+        if (variance.abs() > .5 && '${v['reason'] ?? ''}'.isEmpty) {
+          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pick a reason for the difference')));
+          return false;
+        }
+        await h.s.repo!.save('dayclose', {'d': d, 'sales': s.sales, 'bills': s.bills, 'expectedCash': s.expected, 'countedCash': v['counted'], 'variance': variance, 'varianceReason': '${v['reason'] ?? ''}'.isEmpty ? null : v['reason'], 'at': nowIso(), 'by': h.s.user!['id']});
+        h.s.sync();
+        setState(() {});
+        return true;
+      });
+
+  /// Count the drawer note by note/coin by coin -- same breakdown (and the same ₹2000 note) as
+  /// denomForm() in the website's app/public/console/p-finance.js. Returns the counted total, or
+  /// null if the manager cancelled -- nothing is saved here; the caller still runs the same
+  /// variance/reason confirmation as every other Day Close path.
+  Future<num?> _denomSheet(BuildContext context, num expected, String d) {
+    final counts = <int, int>{};
+    return showModalBottomSheet<num?>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, set) {
+        final total = denomTotal(counts);
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, MediaQuery.of(ctx).viewInsets.bottom + 16),
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Padding(padding: const EdgeInsets.symmetric(vertical: 14), child: Text('Count the drawer — $d', textAlign: TextAlign.center, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700))),
+              Text('Enter how many of each note or coin are in the drawer.', textAlign: TextAlign.center, style: TextStyle(color: Tk.label2)),
+              const SizedBox(height: 10),
+              Flexible(
+                child: ListView(shrinkWrap: true, children: [
+                  for (final n in dayCloseDenoms)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(children: [
+                        Expanded(child: Text('₹$n', style: const TextStyle(fontWeight: FontWeight.w700))),
+                        SizedBox(width: 84, child: TextField(keyboardType: TextInputType.number, textAlign: TextAlign.center, decoration: const InputDecoration(isDense: true, hintText: '0'), onChanged: (v) => set(() => counts[n] = int.tryParse(v) ?? 0))),
+                        SizedBox(width: 72, child: Text(inr(n * (counts[n] ?? 0)), textAlign: TextAlign.right)),
+                      ]),
+                    ),
+                ]),
+              ),
+              const Divider(),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('Counted total', style: TextStyle(fontWeight: FontWeight.w700)), Text(inr(total), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800))]),
+              Text('Expected ${inr(expected)}', style: TextStyle(color: Tk.label2, fontSize: 13)),
+              const SizedBox(height: 14),
+              Row(children: [
+                Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel'))),
+                const SizedBox(width: 8),
+                Expanded(child: FilledButton(onPressed: () => Navigator.pop(ctx, total), child: const Text('Use this count'))),
+              ]),
+            ]),
+          ),
+        );
+      }),
+    );
   }
 }
 

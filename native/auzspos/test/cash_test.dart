@@ -55,4 +55,29 @@ void main() {
       expect(q.toSet().length, q.length, reason: 'no duplicate values (100 rounds to itself at several denominations)');
     });
   });
+
+  group('denomTotal (Day Close / Register Close denomination counter)', () {
+    test('sums each denomination times its count', () {
+      expect(denomTotal({500: 2, 100: 3, 10: 1}), 500 * 2 + 100 * 3 + 10 * 1);
+    });
+
+    test('a denomination with no entry, a zero count, or a negative count all contribute nothing', () {
+      expect(denomTotal({500: 0, 100: -5}), 0);
+      expect(denomTotal({}), 0);
+    });
+
+    test('dayCloseDenoms includes ₹2000, matching the website\'s Day Close NOTES list', () {
+      expect(dayCloseDenoms, contains(2000));
+    });
+
+    test('cashDenoms (Register Close) does NOT include ₹2000, matching the website\'s CASH_DENOMS', () {
+      expect(cashDenoms, isNot(contains(2000)));
+    });
+
+    test('a real denomination count matches the plain hand total exactly', () {
+      final counts = {2000: 1, 500: 3, 100: 2, 10: 5};
+      final hand = 2000 * 1 + 500 * 3 + 100 * 2 + 10 * 5;
+      expect(denomTotal(counts), hand);
+    });
+  });
 }
