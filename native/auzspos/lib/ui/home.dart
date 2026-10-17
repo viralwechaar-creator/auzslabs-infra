@@ -6,6 +6,8 @@ import '../core/repo.dart';
 import '../core/session.dart';
 import '../core/cash.dart' as cash;
 import '../core/stock.dart' as stock;
+import '../core/api.dart' show ApiError;
+import '../core/giftcard.dart';
 import '../core/alerts.dart';
 import '../core/push.dart' show PushRegistration;
 import 'actions.dart';
@@ -152,7 +154,7 @@ class _HomeState extends State<Home> {
   /// [tendered]/[change] are cash-only (website's cashSheet() in pay.js: a pay entry carries `tendered` and
   /// `change`, and the order itself carries the summed `change` -- read by dayCash() in console_more.dart).
   /// Both are ignored for every other tender mode, matching the website (UPI/card never calculate change).
-  Future<bool> pay(Map<String, dynamic> o, String mode, {num? tendered, num? change}) async {
+  Future<bool> pay(Map<String, dynamic> o, String mode, {num? tendered, num? change, String? giftCode}) async {
     final id = '${o['id']}';
     // Already paid (persisted locally, or pulled back from the server after an earlier successful call) --
     // a second call for the same order must never deplete stock a second time.
@@ -160,16 +162,16 @@ class _HomeState extends State<Home> {
     if (_paying.contains(id)) return false;
     _paying.add(id);
     try {
-      return await _payOnce(o, mode, tendered: tendered, change: change);
+      return await _payOnce(o, mode, tendered: tendered, change: change, giftCode: giftCode);
     } finally {
       _paying.remove(id);
     }
   }
 
-  Future<bool> _payOnce(Map<String, dynamic> o, String mode, {num? tendered, num? change}) async {
+  Future<bool> _payOnce(Map<String, dynamic> o, String mode, {num? tendered, num? change, String? giftCode}) async {
     final t = s.tot(o);
     final cash = mode == 'cash';
-    o['pays'] = [{'m': mode, 'amt': t.total, 'at': nowIso(), if (cash && tendered != null) 'tendered': tendered, if (cash && change != null) 'change': change}];
+    o['pays'] = [{'m': mode, 'amt': t.total, 'at': nowIso(), if (cash && tendered != null) 'tendered': tendered, if (cash && change != null) 'change': change, if (mode == 'giftcard' && giftCode != null) 'code': giftCode}];
     if (cash && change != null) o['change'] = change;
     o['status'] = 'paid';
     o['paidAt'] = nowIso();
@@ -611,7 +613,7 @@ class _SellPageState extends State<SellPage> {
                     chip(Icons.percent, o['disc'] != null && o['complimentary'] != true ? 'Change discount' : 'Discount', () => discountSheet(ctx, s, o, () {})),
                     chip(Icons.local_offer_outlined, 'Coupon', () => couponSheet(ctx, s, o, () {})),
                     chip(Icons.card_giftcard, o['complimentary'] == true ? 'Complimentary ✓' : 'Complimentary', () => compSheet(ctx, s, o, () {})),
-                    chip(Icons.person_outline, ((o['cust'] as Map?)?['name'] ?? '') != '' ? '${(o['cust'] as Map)['name']}' : 'Customer / note', () => customerSheet(ctx, o, () {})),
+                    chip(Icons.person_outline, ((o['cust'] as Map?)?['name'] ?? '') != '' ? '${(o['cust'] as Map)['name']}' : 'Customer / note', () => customerSheet(ctx, s, o, () {})),
                     chip(Icons.call_split, 'Split bill', () async {
                       Navigator.pop(ctx);
                       await splitSheet(context, h, o);
@@ -706,6 +708,7 @@ class _SellPageState extends State<SellPage> {
 
   void payDialog(Map<String, dynamic> o) {
     final t = s.tot(o);
+    final giftcards = s.repo!.of('giftcard').toList();
     showModalBottomSheet<void>(
       context: context,
       builder: (ctx) => SafeArea(
@@ -716,10 +719,19 @@ class _SellPageState extends State<SellPage> {
             Text(inr(t.total), textAlign: TextAlign.center, style: TextStyle(fontSize: 40, fontWeight: FontWeight.w800)),
             SizedBox(height: 14),
             Group([
-              for (final m in [['cash', 'Cash', Icons.payments_outlined, Tk.green], ['upi', 'UPI', Icons.qr_code_2, Tk.blue], ['card', 'Card', Icons.credit_card, Tk.purple]])
+              for (final m in [
+                ['cash', 'Cash', Icons.payments_outlined, Tk.green],
+                ['upi', 'UPI', Icons.qr_code_2, Tk.blue],
+                ['card', 'Card', Icons.credit_card, Tk.purple],
+                // Shown only when the business actually has gift cards on file -- same gate as the
+                // website's paySheet() (`TENDERS.filter(([m]) => m!=='giftcard' || L('giftcard').length)`).
+                if (giftcards.isNotEmpty) ['giftcard', 'Gift card', Icons.card_giftcard_outlined, Tk.orange],
+                ['other', 'Other', Icons.more_horiz, Tk.label2],
+              ])
                 Li(m[1] as String, icon: m[2] as IconData, tone: m[3] as Color, onTap: () async {
                   final mode = m[0] as String;
                   num? tendered, change;
+                  String? giftCode;
                   if (mode == 'cash') {
                     // Nested on top of this sheet (not popped yet), matching the website's cashSheet() over
                     // paySheet() -- cancelling it leaves the payment-method choice open, with no side effect.
@@ -727,8 +739,12 @@ class _SellPageState extends State<SellPage> {
                     if (tendered == null) return; // cancelled: no pay(), no cash movement, order untouched
                     change = cash.cashChange(tendered, t.total);
                   }
+                  if (mode == 'giftcard') {
+                    giftCode = await _giftCardSheet(o, t.total, giftcards);
+                    if (giftCode == null) return; // cancelled, refused, or redemption failed -- order untouched
+                  }
                   if (ctx.mounted) Navigator.pop(ctx);
-                  await h.pay(o, mode, tendered: tendered, change: change);
+                  await h.pay(o, mode, tendered: tendered, change: change, giftCode: giftCode);
                   h.refresh(() => h.cur = null);
                   if (context.mounted) await billActions(context, h, o);
                 }),
@@ -736,6 +752,68 @@ class _SellPageState extends State<SellPage> {
           ]),
         ),
       ),
+    );
+  }
+
+  /// Gift-card redemption for the FULL amount due -- native pays one bill with one tender (see
+  /// `_payOnce`), unlike the website's giftSheet(), which can redeem a partial amount and combine it
+  /// with other tenders toward the same bill. A card whose balance cannot cover the whole bill is
+  /// refused here, clearly, rather than silently redeeming only part of it. The server's
+  /// redeem_giftcard() RPC (db/068_pos_rebuild.sql) is the real authority: it re-checks balance and
+  /// expiry itself and is idempotent per order+amount, so a lost reply and a retry never double-charge
+  /// the card. Returns the card's code on success (to be stamped on the pay entry), or null if the
+  /// cashier cancelled or the redemption did not go through.
+  Future<String?> _giftCardSheet(Map<String, dynamic> o, num total, List<Map<String, dynamic>> giftcards) {
+    final ctl = TextEditingController();
+    var busy = false;
+    var err = '';
+    return showModalBottomSheet<String?>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, set) {
+          final card = findGiftCard(giftcards, ctl.text);
+          final issue = card == null ? null : giftCardIssue(card, total);
+          final ok = card != null && issue == null && !busy;
+          return SafeArea(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(16, 0, 16, MediaQuery.of(ctx).viewInsets.bottom + 16),
+              child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                const Padding(padding: EdgeInsets.symmetric(vertical: 14), child: Text('Gift card', textAlign: TextAlign.center, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700))),
+                Text('Due ${inr(total)}', textAlign: TextAlign.center, style: TextStyle(color: Tk.label2, fontSize: 15)),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: ctl,
+                  autofocus: true,
+                  textCapitalization: TextCapitalization.characters,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+                  decoration: const InputDecoration(labelText: 'Gift card code'),
+                  onChanged: (_) => set(() {}),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  err.isNotEmpty ? err : issue ?? (card != null ? 'Balance ${inr((card['bal'] as num?) ?? 0)}' : ctl.text.trim().length > 2 ? 'No card with that code on this till yet' : ''),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14, color: err.isNotEmpty || issue != null ? Tk.red : Tk.label2),
+                ),
+                const SizedBox(height: 16),
+                Row(children: [
+                  Expanded(child: OutlinedButton(onPressed: busy ? null : () => Navigator.pop(ctx), child: const Text('Cancel'))),
+                  const SizedBox(width: 8),
+                  Expanded(child: FilledButton(onPressed: ok ? () async {
+                    set(() => busy = true);
+                    try {
+                      final res = await s.api.rpc('redeem_giftcard', {'p_code': ctl.text, 'p_amount': total, 'p_order': '${o['id']}'}) as Map?;
+                      if (ctx.mounted) Navigator.pop(ctx, '${res?['code'] ?? ctl.text.trim().toUpperCase()}');
+                    } on ApiError catch (e) {
+                      set(() { busy = false; err = e.networkError ? 'Gift cards need an internet connection.' : e.message; });
+                    }
+                  } : null, child: busy ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Use card'))),
+                ]),
+              ]),
+            ),
+          );
+      }),
     );
   }
 }
