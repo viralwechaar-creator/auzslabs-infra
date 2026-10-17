@@ -142,6 +142,11 @@ export const RPC = {
   team_activity_feed: { params: ['p_uid', 'p_limit'], defaults: { p_limit: 40 }, auth: true },
   team_my_work: { params: ['p_days'], defaults: { p_days: 30 }, auth: true },
   team_clients: { params: [], auth: true },
+  // team: general task list (db/186)
+  team_create_task: { params: ['p'], jsonb: ['p'], auth: true },
+  team_my_tasks: { params: [], auth: true },
+  team_all_tasks: { params: [], auth: true },
+  team_update_task: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
 
   // --- Salesman: provision + brand one real trial tenant per sales pitch (db/137) ---
   salesman_provision_trial: { params: ['p_business_name', 'p_slug', 'p_niche'], defaults: { p_niche: 'cafe' }, auth: true },

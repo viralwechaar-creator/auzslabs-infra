@@ -535,6 +535,7 @@ body.admin-shell .bn-in input{border:none!important;background:none!important;bo
 
         <div class="a-side-group-label">Team &amp; sales</div>
         <button class="a-side-btn" data-section="team"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14.2a5 5 0 0 1 5 5.3"/></svg>Team<span class="a-row-badge" id="teamAppBadge" style="display:none"></span></button>
+        <button class="a-side-btn" data-section="tasks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4.5" y="4.5" width="15" height="15" rx="3"/><path d="M8.5 12l2.2 2.2L15.5 9.5"/></svg>Tasks<span class="a-row-badge" id="tasksBadgeSide" style="display:none"></span></button>
         <button class="a-side-btn" data-section="salesWork"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Salesman work</button>
 
         <div class="a-side-group-label">Money</div>
@@ -772,6 +773,33 @@ body.admin-shell .bn-in input{border:none!important;background:none!important;bo
         <div id="teamSetupList" style="margin-top:14px">Loading&hellip;</div>
       </section>
 
+      <section class="a-page" id="tasksSection" data-title="Tasks" data-parent="more">
+        <div class="label">General task list</div>
+        <h2 class="h-2">Tasks</h2>
+        <p class="p">Hand anyone on the team an arbitrary task with a due date, and see it tracked to completion. Auto-created tasks (unassigned leads, setup deadlines, a payment just confirmed) show a tag so you can tell at a glance which is which.</p>
+        <div class="tm-bar">
+          <label class="lbl tm-period">Status
+            <select id="taskFilterStatus" class="inp"><option value="open" selected>Open</option><option value="done">Done</option><option value="cancelled">Cancelled</option><option value="all">All</option></select>
+          </label>
+          <label class="lbl tm-period">Assigned to
+            <select id="taskFilterAssignee" class="inp"><option value="">Everyone</option></select>
+          </label>
+          <button class="btn btn-primary" id="taskAddOpen" type="button">New task</button>
+        </div>
+        <form id="taskForm" class="card tm-form" hidden>
+          <div class="tm-form-grid">
+            <label class="lbl">Title<input id="tkTitle" class="inp" type="text" maxlength="200" required></label>
+            <label class="lbl">Assign to<select id="tkAssignee" class="inp"></select></label>
+            <label class="lbl">Due<input id="tkDue" class="inp" type="datetime-local"></label>
+            <label class="lbl">Priority<select id="tkPriority" class="inp"><option value="">Normal (default)</option><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option></select></label>
+          </div>
+          <label class="lbl">Description<textarea id="tkDesc" class="inp" rows="2" maxlength="2000"></textarea></label>
+          <button class="btn btn-primary" type="submit">Create task</button>
+          <div id="tkErr" class="err"></div>
+        </form>
+        <div id="tasksList" style="margin-top:14px">Loading&hellip;</div>
+      </section>
+
             <section class="a-page" id="salesWorkSection" data-title="Salesman work" data-parent="more">
         <div class="label">Work updates</div>
         <h2 class="h-2">Salesman work</h2>
@@ -866,6 +894,11 @@ body.admin-shell .bn-in input{border:none!important;background:none!important;bo
           <button class="a-nav-row" data-section="team">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14.2a5 5 0 0 1 5 5.3"/></svg>
             <span class="grow">Team</span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <button class="a-nav-row" data-section="tasks">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4.5" y="4.5" width="15" height="15" rx="3"/><path d="M8.5 12l2.2 2.2L15.5 9.5"/></svg>
+            <span class="grow">Tasks</span><span class="a-row-badge" id="tasksBadgeMore" style="display:none"></span>
             <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
           </button>
           <button class="a-nav-row" data-section="salesWork">
@@ -1139,7 +1172,7 @@ const SECTION_LOADERS = {
   leads: () => { loadLeads(); refreshOrdersBadge(); }, orders: () => loadOrders(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(),
   pricing: () => { loadPricing(); loadBundles(); loadPayments(); },
   users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(), privacyReq: () => loadPrivacyReq(), whatsapp: () => loadWhatsApp(),
-  team: () => { loadTeam(); loadSetups(); loadTeamApps(); }, salesWork: () => loadSalesWork(), clientPay: () => { loadClientPay(); loadBills(); },
+  team: () => { loadTeam(); loadSetups(); loadTeamApps(); }, tasks: () => loadTasks(), salesWork: () => loadSalesWork(), clientPay: () => { loadClientPay(); loadBills(); },
 };
 const sectionLoadedAt = {};
 function ensureSectionLoaded(name) {
@@ -1195,7 +1228,7 @@ async function refreshAdminNotifBadges() {
   setBadge(['notifBadgeAddonSide', 'notifBadgeAddonMore'], counts.addon_request || 0);
   const moreTotal = (counts.signup_request || 0) + (counts.addon_request || 0) + (document.querySelectorAll('#notifBadgeSetupSide:not([style*="display: none"])').length ? Number(document.getElementById('notifBadgeSetupSide').textContent) || 0 : 0);
   setBadge(['notifBadgeMoreTab'], moreTotal);
-  try { const oc = await sb.rpc('admin_open_counts'); if (!oc.error && oc.data) { setBadge(['privReqBadge'], Number(oc.data.privacy) || 0); setBadge(['teamAppBadge'], Number(oc.data.team) || 0); } } catch (e) { /* the badges are only a hint */ }
+  try { const oc = await sb.rpc('admin_open_counts'); if (!oc.error && oc.data) { setBadge(['privReqBadge'], Number(oc.data.privacy) || 0); setBadge(['teamAppBadge'], Number(oc.data.team) || 0); setBadge(['tasksBadgeSide', 'tasksBadgeMore'], Number(oc.data.tasks) || 0); } } catch (e) { /* the badges are only a hint */ }
 }
 async function markAdminNotifsRead(type) {
   const { data } = await sb.from('notifications').select('id').eq('read', false).eq('type', type);
@@ -2241,6 +2274,104 @@ document.getElementById('setupForm').onsubmit = async (e) => {
   const { error } = await sb.rpc('team_assign_setup', { p_tenant: tenant, p_user: user, p_days: Number(document.getElementById('suDays').value) });
   if (error) { errEl.textContent = error.message; return; }
   loadSetups(); loadTeam();
+};
+
+// ---------- Tasks: a general, assignable, trackable task list (db/186) ----------
+const TASK_STATUS_LABEL = { open: 'Open', done: 'Done', cancelled: 'Cancelled' };
+const TASK_SOURCE_LABEL = {
+  manual: null, // nothing shown for a hand-assigned task
+  'auto:unassigned_lead': 'Auto · unassigned lead', 'auto:setup_deadline': 'Auto · setup deadline', 'auto:payment_welcome': 'Auto · payment confirmed',
+};
+let tasksCache = [];
+function fillTaskAssigneeSelects() {
+  const people = teamCache.filter((m) => m.active);
+  const opts = people.map((m) => `<option value="${m.id}">${esc(m.name)} (${esc(ROLE_LABEL[m.role])})</option>`).join('');
+  const filt = document.getElementById('taskFilterAssignee');
+  if (filt) { const cur = filt.value; filt.innerHTML = '<option value="">Everyone</option>' + opts; filt.value = cur; }
+  const tk = document.getElementById('tkAssignee');
+  if (tk) tk.innerHTML = opts || '<option value="">No active team members yet</option>';
+}
+function taskCard(t) {
+  const srcLabel = TASK_SOURCE_LABEL[t.source] !== undefined ? TASK_SOURCE_LABEL[t.source] : 'Auto · ' + esc(t.source || '');
+  const due = t.due_at ? new Date(t.due_at) : null;
+  const overdue = due && t.status === 'open' && due.getTime() < Date.now();
+  const related = t.related_tenant_name ? `Client: ${esc(t.related_tenant_name)}` : t.related_lead_name ? `Lead: ${esc(t.related_lead_name)}` : '';
+  return `<div class="req-card" data-id="${t.id}">
+    <div class="req-head">
+      <div>
+        <div class="req-name">${esc(t.title)}</div>
+        <div class="req-sub">To ${esc(t.assignee || '—')}${t.created_by_name ? ' · by ' + esc(t.created_by_name) : ''}${t.priority ? ' · ' + esc(t.priority) + ' priority' : ''}</div>
+      </div>
+      <span class="status-pill ${t.status === 'open' ? (overdue ? 'status-suspended' : '') : t.status === 'done' ? 'status-active' : ''}">${esc(TASK_STATUS_LABEL[t.status] || t.status)}</span>
+    </div>
+    ${t.description ? `<div class="req-section req-body">${esc(t.description)}</div>` : ''}
+    <div class="req-section req-body" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      ${due ? `<span style="color:${overdue ? '#b00020' : 'var(--ink-faint)'}">Due ${esc(due.toLocaleString())}</span>` : ''}
+      ${srcLabel ? `<span class="feature-tag">${esc(srcLabel)}</span>` : ''}
+      ${related ? `<span style="color:var(--ink-faint)">${related}</span>` : ''}
+    </div>
+    <div class="req-section lead-ctl">
+      <label>Reassign<select data-reassign><option value="">Keep as is</option></select></label>
+    </div>
+    <div class="req-actions">
+      ${t.status === 'open' ? '<button data-done>Mark done</button><button data-cancel class="req-danger">Cancel</button>' : ''}
+    </div>
+  </div>`;
+}
+async function loadTasks() {
+  const listEl = document.getElementById('tasksList');
+  await ensureTeam();
+  fillTaskAssigneeSelects();
+  const status = document.getElementById('taskFilterStatus').value;
+  const assignee = document.getElementById('taskFilterAssignee').value;
+  const { data, error } = await sb.rpc('team_all_tasks', {});
+  if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  tasksCache = data || [];
+  const rows = tasksCache.filter((t) => (status === 'all' || t.status === status) && (!assignee || t.assigned_to === assignee));
+  if (!rows.length) { listEl.innerHTML = emptyDoodle('No tasks match this filter.'); return; }
+  listEl.innerHTML = `<div class="req-grid">${rows.map(taskCard).join('')}</div>`;
+  listEl.querySelectorAll('[data-id]').forEach((card) => {
+    const id = card.dataset.id;
+    const sel = card.querySelector('[data-reassign]');
+    sel.innerHTML += teamCache.filter((m) => m.active).map((m) => `<option value="${m.id}">${esc(m.name)}</option>`).join('');
+    sel.onchange = async () => {
+      if (!sel.value) return;
+      const { error: e2 } = await sb.rpc('team_update_task', { p_id: id, p: { assigned_to: sel.value } });
+      if (e2) { alert(e2.message); }
+      loadTasks();
+    };
+    const doneBtn = card.querySelector('[data-done]');
+    if (doneBtn) doneBtn.onclick = async () => { const { error: e2 } = await sb.rpc('team_update_task', { p_id: id, p: { status: 'done' } }); if (e2) { alert(e2.message); } loadTasks(); };
+    const cancelBtn = card.querySelector('[data-cancel]');
+    if (cancelBtn) cancelBtn.onclick = async () => {
+      if (!confirm('Cancel this task?')) return;
+      const { error: e2 } = await sb.rpc('team_update_task', { p_id: id, p: { status: 'cancelled' } });
+      if (e2) { alert(e2.message); }
+      loadTasks();
+    };
+  });
+}
+document.getElementById('taskFilterStatus').onchange = loadTasks;
+document.getElementById('taskFilterAssignee').onchange = loadTasks;
+document.getElementById('taskAddOpen').onclick = async () => {
+  const f = document.getElementById('taskForm');
+  if (f.hidden) { await ensureTeam(); fillTaskAssigneeSelects(); }
+  f.hidden = !f.hidden;
+};
+document.getElementById('taskForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById('tkErr'); errEl.textContent = '';
+  const due = document.getElementById('tkDue').value;
+  const { error } = await sb.rpc('team_create_task', { p: {
+    title: document.getElementById('tkTitle').value.trim(),
+    description: document.getElementById('tkDesc').value.trim(),
+    assigned_to: document.getElementById('tkAssignee').value || null,
+    due_at: due ? new Date(due).toISOString() : '',
+    priority: document.getElementById('tkPriority').value,
+  } });
+  if (error) { errEl.textContent = error.message; return; }
+  e.target.reset(); e.target.hidden = true;
+  loadTasks();
 };
 
 // ---------- Client payments (db/148) ----------
