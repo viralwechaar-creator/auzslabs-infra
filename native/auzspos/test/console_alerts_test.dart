@@ -76,6 +76,11 @@ void main() {
     test('calling computeConsoleAlerts many times with nothing changed always returns one alert \n       per condition, never an accumulating list', () async {
       final repo = mk(FakeServer());
       await repo.save('ing', {'name': 'Milk', 'qty': 2, 'low': 10});
+      // save() always queues an outbox item, which would otherwise also surface as the Business
+      // Health Monitor's new "sync" alert (a real, intentional condition -- see business_health_
+      // test.dart) and make this isolated low-stock check see two alerts instead of one. Zeroing it
+      // here isolates the one condition this test is actually about.
+      repo.pending = 0;
       List<AlertItem> last = [];
       for (var i = 0; i < 10; i++) {
         final alerts = computeConsoleAlerts(repo);
@@ -212,6 +217,10 @@ void main() {
       await repo.save('order', {'status': 'due', 't': {'total': 100}, 'lines': []});
       await repo.save('ticket', {'subject': 'A', 'status': 'open'});
       await repo.save('ticket', {'subject': 'B', 'status': 'open'});
+      // Isolate the three original conditions from the new "sync" alert (a real, intentional
+      // parity fix -- see business_health_test.dart) that these saves themselves would otherwise
+      // also trigger simply by having queued an outbox item.
+      repo.pending = 0;
 
       final total = computeConsoleAlerts(repo).fold<int>(0, (a, x) => a + x.count);
       expect(total, 2 + 1 + 2, reason: '2 low materials + 1 due bill + 2 open tickets = 5, matching the pre-existing badge semantics');

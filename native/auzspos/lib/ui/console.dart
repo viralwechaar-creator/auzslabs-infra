@@ -82,8 +82,8 @@ class _ConsolePageState extends State<ConsolePage> {
 
   // Sum of each alert's own underlying count (not the number of alert TYPES) -- preserves the
   // exact badge meaning this getter already had before computeConsoleAlerts() consolidated the
-  // filters it reads (low-stock materials + due bills + open tickets, now also day-close and open
-  // purchase orders), not the count of distinct conditions.
+  // filters it reads (low-stock materials + due bills + open tickets, now also day-close, open
+  // purchase orders and pending sync), not the count of distinct conditions.
   int get _alerts => computeConsoleAlerts(h.s.repo!).fold<int>(0, (a, x) => a + x.count);
 
   void _search() {
@@ -116,14 +116,15 @@ class _ConsolePageState extends State<ConsolePage> {
     );
   }
 
-  static const _alertIcons = {'lowstock': Icons.inventory_2_outlined, 'due': Icons.schedule, 'tickets': Icons.support_agent, 'dayclose': Icons.lock_open_outlined, 'po': Icons.local_shipping_outlined};
+  static const _alertIcons = {'lowstock': Icons.inventory_2_outlined, 'due': Icons.schedule, 'tickets': Icons.support_agent, 'dayclose': Icons.lock_open_outlined, 'po': Icons.local_shipping_outlined, 'sync': Icons.cloud_off_outlined};
 
   void _alertsSheet() {
     // Alerts Center: everything here is a plain, read-only navigation target. Tapping one never
     // creates a purchase order, adjusts stock, closes a day, or changes a payment -- it only moves
     // to the existing screen where that action already lives, same as the three alert types
     // (low stock, due bills, open tickets) this sheet already had before this change.
-    final alerts = computeConsoleAlerts(h.s.repo!);
+    final health = computeBusinessHealth(h.s.repo!);
+    final alerts = health.alerts;
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -132,7 +133,37 @@ class _ConsolePageState extends State<ConsolePage> {
           constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * .7),
           child: ListView(padding: const EdgeInsets.only(bottom: 16), children: [
             const Padding(padding: EdgeInsets.fromLTRB(20, 0, 20, 8), child: Text('Alerts', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800))),
-            if (alerts.isEmpty) const Empty(Icons.check_circle_outline, 'All clear', 'Low stock, dues, open tickets, an unclosed day or a pending purchase order will show up here.'),
+            // Never claim "all clear" while the local data itself cannot be trusted -- the alert
+            // list above was computed from exactly this data, so a sync failure or a device that
+            // has never synced means this list may be missing something, not that nothing is wrong.
+            if (health.dataConfidence != 'ok')
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: (health.dataConfidence == 'syncFailed' ? Tk.red : Tk.orange).withValues(alpha: .1),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: (health.dataConfidence == 'syncFailed' ? Tk.red : Tk.orange).withValues(alpha: .35)),
+                  ),
+                  child: Row(children: [
+                    Icon(Icons.cloud_off_outlined, size: 18, color: health.dataConfidence == 'syncFailed' ? Tk.red : Tk.orange),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        health.dataConfidence == 'syncFailed' ? 'The last sync failed -- the information below may be out of date.' : 'This device has not completed a sync yet -- the information below may be incomplete.',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: health.dataConfidence == 'syncFailed' ? Tk.red : Tk.orange),
+                      ),
+                    ),
+                  ]),
+                ),
+              ),
+            if (alerts.isEmpty)
+              Empty(
+                Icons.check_circle_outline,
+                health.dataConfidence == 'ok' ? 'All clear' : 'No alerts found',
+                health.dataConfidence == 'ok' ? 'Low stock, dues, open tickets, an unclosed day, a pending purchase order or unsent changes will show up here.' : 'Nothing is currently flagged, but see the notice above -- this may not be the full picture.',
+              ),
             for (final a in alerts) ...[
               Group([
                 Li(
@@ -349,7 +380,7 @@ num totalOf(Map<String, dynamic> o) => ((o['t'] as Map?)?['total'] ?? 0) as num;
 /// with no widget harness; the sheet picks an icon/colour/action by [kind] at render time.
 class AlertItem {
   AlertItem({required this.kind, required this.title, required this.detail, required this.navTo, required this.count});
-  final String kind; // 'lowstock' | 'due' | 'tickets' | 'dayclose' | 'po'
+  final String kind; // 'lowstock' | 'due' | 'tickets' | 'dayclose' | 'po' | 'sync'
   final String title, detail, navTo;
   final int count;
 }
@@ -397,7 +428,61 @@ List<AlertItem> computeConsoleAlerts(Repo repo) {
     out.add(AlertItem(kind: 'po', title: '${openPo.length} purchase order${openPo.length == 1 ? '' : 's'} not yet received', detail: 'Stock will not update until each is received', navTo: 'inv/purchase', count: openPo.length));
   }
 
+  // Parity fix: the website's own alerts() (app/public/console/p-extras.js) already has this exact
+  // condition -- `if(S.pending)A.push(['Waiting to sync',S.pending+' changes not yet sent to the
+  // server','mgmt/data'])` -- confirmed by reading that file directly. This native Alerts Center
+  // never had it, so a device with unsent local changes looked identical to one fully caught up.
+  // Reads the same Repo.pending the top-bar sync pill (home.dart) already surfaces -- no new state.
+  if (repo.pending > 0) {
+    out.add(AlertItem(kind: 'sync', title: '${repo.pending} change${repo.pending == 1 ? '' : 's'} waiting to sync', detail: 'Not yet sent to the server', navTo: 'mgmt/data', count: repo.pending));
+  }
+
   return out;
+}
+
+/// Overall business-health read, built entirely on computeConsoleAlerts() above -- never a second,
+/// parallel alert computation -- plus one fact this file did not track before: whether the LOCAL
+/// data itself can be trusted right now.
+///
+/// [dataConfidence] is derived only from plain, already-tracked facts on Repo (lastError, lastOk,
+/// whether anything has been loaded at all) -- deliberately NEVER a guessed staleness threshold
+/// ("stale after N hours"). This codebase has no existing convention for what counts as "too old"
+/// for a given business (a cafe closed overnight looks identical to one that has not synced in
+/// hours), and inventing one here would itself be a fabricated confidence signal -- exactly what
+/// this task explicitly rules out. The three values:
+///   - 'ok': the most recent sync attempt (if any) succeeded, or none has been attempted yet on an
+///     install that also has no local records at all -- a brand-new, genuinely empty business is
+///     not reported as a data problem, since there is nothing yet to be unsure about.
+///   - 'syncFailed': the most recent sync attempt itself failed -- Repo.lastError is set. This is
+///     the exact same fact the top-bar sync pill (home.dart) already shows, read here rather than
+///     recomputed.
+///   - 'neverSynced': this device holds at least one local record but has never completed a
+///     successful sync (Repo.lastOk is null) -- so every figure below was either seeded locally or
+///     is simply untested against the server, and the alert list itself may be missing something
+///     another device or the server already knows about.
+///
+/// [status] is the one combined verdict a health screen shows, and it can NEVER be 'healthy' while
+/// dataConfidence != 'ok': the alerts list (low stock, due bills, overdue tickets, an unclosed day,
+/// unreceived purchase orders, pending sync) is only as complete as the local data it was computed
+/// from, so claiming "all clear" while that data is known to be unreliable would be reporting
+/// health from a source this file already knows it cannot fully trust.
+class BusinessHealth {
+  BusinessHealth({required this.alerts, required this.dataConfidence, required this.status});
+  final List<AlertItem> alerts;
+  final String dataConfidence; // 'ok' | 'syncFailed' | 'neverSynced'
+  final String status; // 'healthy' | 'attention' | 'unknown'
+}
+
+BusinessHealth computeBusinessHealth(Repo repo) {
+  final alerts = computeConsoleAlerts(repo);
+  var dataConfidence = 'ok';
+  if (repo.lastError != null) {
+    dataConfidence = 'syncFailed';
+  } else if (repo.lastOk == null && repo.byId.isNotEmpty) {
+    dataConfidence = 'neverSynced';
+  }
+  final status = dataConfidence != 'ok' ? 'unknown' : (alerts.isEmpty ? 'healthy' : 'attention');
+  return BusinessHealth(alerts: alerts, dataConfidence: dataConfidence, status: status);
 }
 
 // ignore: unused_element
