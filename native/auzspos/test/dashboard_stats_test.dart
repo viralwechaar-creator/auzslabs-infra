@@ -192,4 +192,63 @@ void main() {
       expect(lk.waivedOff, 0);
     });
   });
+
+  group('payModesOf', () {
+    test('splits a normal (non-online) order\'s payments by mode, net of a cash order\'s change', () {
+      final m = payModesOf({'t': {'total': 100}, 'lines': [{'name': 'x'}], 'pays': [{'m': 'cash', 'amt': 110}], 'change': 10});
+      expect(m, {'Cash': 100});
+    });
+
+    test('ANY payment on an online order is grouped as Online, regardless of its own mode', () {
+      final m = payModesOf({'t': {'total': 100}, 'lines': [{'name': 'x'}], 'src': 'Zomato', 'pays': [{'m': 'card', 'amt': 100}]});
+      expect(m, {'Online': 100});
+    });
+
+    test('an order with no pays[] at all contributes one Unpaid (or Online) entry worth its net revenue', () {
+      final unpaid = payModesOf({'t': {'total': 50}, 'lines': [{'name': 'x'}]});
+      expect(unpaid, {'Unpaid': 50});
+      final onlineNoPays = payModesOf({'t': {'total': 50}, 'lines': [{'name': 'x'}], 'src': 'Zomato'});
+      expect(onlineNoPays, {'Online': 50});
+    });
+
+    test('an unrecognised payment mode is shown capitalised', () {
+      final m = payModesOf({'t': {'total': 30}, 'lines': [{'name': 'x'}], 'pays': [{'m': 'wallet', 'amt': 30}]});
+      expect(m, {'Wallet': 30});
+    });
+  });
+
+  group('customerStats / phoneKeyOf', () {
+    test('phoneKeyOf keeps the last 10 digits, ignoring a country code prefix or non-digit characters', () {
+      expect(phoneKeyOf({'phone': '+91 98765 43210'}), '9876543210');
+      expect(phoneKeyOf({'phone': '9876543210'}), '9876543210');
+      expect(phoneKeyOf({}), '');
+      expect(phoneKeyOf(null), '');
+    });
+
+    test('a customer with no phone number is never counted, even with a name', () async {
+      final repo = mk(FakeServer());
+      await repo.save('order', {'status': 'paid', 'paidAt': DateTime.now().toIso8601String(), 't': {'total': 100}, 'lines': [{'name': 'x'}], 'cust': {'name': 'Ravi'}});
+      expect(customerStats(repo), isEmpty);
+    });
+
+    test('aggregates visits and net spend per phone number, keeping the first non-empty name seen', () async {
+      final repo = mk(FakeServer());
+      await repo.save('order', {'status': 'paid', 'paidAt': '2026-01-01T10:00:00Z', 't': {'total': 100}, 'lines': [{'name': 'x'}], 'cust': {'name': 'Ravi', 'phone': '9876543210'}});
+      await repo.save('order', {'status': 'paid', 'paidAt': '2026-01-05T10:00:00Z', 't': {'total': 50}, 'lines': [{'name': 'x'}], 'cust': {'phone': '9876543210'}, 'refunds': [{'amt': 10}]});
+      final cs = customerStats(repo);
+      final c = cs['9876543210']!;
+      expect(c.name, 'Ravi');
+      expect(c.visits, 2);
+      expect(c.spend, 140, reason: '100 + (50-10 refunded)');
+      expect(c.first, '2026-01-01');
+      expect(c.last, '2026-01-05');
+    });
+
+    test('includeDue:false excludes due (credit) bills, counting only paid ones', () async {
+      final repo = mk(FakeServer());
+      await repo.save('order', {'status': 'due', 'created': DateTime.now().toIso8601String(), 't': {'total': 100}, 'lines': [{'name': 'x'}], 'cust': {'phone': '9876543210'}});
+      expect(customerStats(repo, includeDue: true), isNot(isEmpty));
+      expect(customerStats(repo, includeDue: false), isEmpty);
+    });
+  });
 }

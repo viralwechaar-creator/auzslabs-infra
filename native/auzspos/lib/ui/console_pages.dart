@@ -1220,23 +1220,57 @@ class _RepAnalytics extends StatefulWidget {
 class _RepAnalyticsState extends _RepState<_RepAnalytics> {
   @override
   Widget build(BuildContext context) {
+    final rows = paidIn(widget.h.s.repo!, days > 7 ? days : 30);
     final hours = List<double>.filled(24, 0);
     final wd = List<double>.filled(7, 0);
-    for (final o in paidIn(widget.h.s.repo!, days > 7 ? days : 30)) {
+    final itemRev = <String, double>{};
+    final modes = <String, num>{};
+    for (final o in rows) {
       final t = DateTime.tryParse('${o['paidAt']}')?.toLocal();
       if (t == null) continue;
-      hours[t.hour] += totalOf(o);
-      wd[t.weekday - 1] += totalOf(o);
+      hours[t.hour] += netOf(o);
+      wd[t.weekday - 1] += netOf(o);
+      for (final e in payModesOf(o).entries) {
+        modes[e.key] = (modes[e.key] ?? 0) + e.value;
+      }
+      for (final l in ((o['lines'] as List?) ?? const []).cast<Map>()) {
+        final name = '${l['name'] ?? ''}';
+        itemRev[name] = (itemRev[name] ?? 0) + ((l['price'] ?? 0) as num) * ((l['qty'] ?? 0) as num);
+      }
     }
+    final cur = rows.fold<num>(0, (a, o) => a + netOf(o));
+    // Previous period, same length, immediately before the current range -- matches the website's
+    // own `addDays(f,-days.length)` to `f` (exclusive) comparison.
+    final curFrom = dayKey(DateTime.now().subtract(Duration(days: days - 1)));
+    final prevFrom = dayKey(DateTime.now().subtract(Duration(days: days * 2 - 1)));
+    num prev = 0;
+    for (final o in widget.h.s.repo!.of('order').where((o) => o['status'] == 'paid')) {
+      final d = dayOfIso(o['paidAt']);
+      if (d.isNotEmpty && d.compareTo(prevFrom) >= 0 && d.compareTo(curFrom) < 0) prev += netOf(o);
+    }
+    final deltaPct = prev > 0 ? ((cur - prev) / prev * 100).round() : null;
+    final cs = customerStats(widget.h.s.repo!);
+    final active = cs.values.where((c) => c.last != null && c.last!.compareTo(curFrom) >= 0).toList();
+    final repeatPct = active.isEmpty ? 0 : (active.where((c) => c.visits > 1).length / active.length * 100).round();
+    final topItems = (itemRev.entries.toList()..sort((a, b) => b.value.compareTo(a.value))).take(8).toList();
     final mxh = hours.fold<double>(1, (a, b) => b > a ? b : a), mxd = wd.fold<double>(1, (a, b) => b > a ? b : a);
     const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     Widget bar(String l, double v, double mx) => Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9), child: Row(children: [SizedBox(width: 54, child: Text(l, style: TextStyle(fontSize: 16, color: Tk.label2))), Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(value: v / mx, minHeight: 14, color: Tk.accent, backgroundColor: Tk.fill2))), const SizedBox(width: 10), SizedBox(width: 70, child: Text(inr(r2(v)), textAlign: TextAlign.right, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)))]));
     return ListView(padding: const EdgeInsets.only(bottom: 28), children: [
       RangeBar(days, (v) => setState(() => days = v)),
+      Kpis('Net sales', inr(r2(cur)), deltaPct == null ? 'No previous period to compare' : '${deltaPct < 0 ? '↓' : '↑'} ${deltaPct.abs()}% vs. previous period', [
+        ('Avg. daily sales', inr(r2(cur / days)), null),
+        ('Avg. bill', inr(rows.isEmpty ? 0 : r2(cur / rows.length)), null),
+        ('Repeat customers', '$repeatPct%', Tk.green),
+      ]),
       const SectionLabel('Sales by hour'),
       Group([for (var i = 6; i < 24; i++) if (hours[i] > 0) bar('${i.toString().padLeft(2, '0')}:00', hours[i], mxh)]),
       const SectionLabel('Sales by weekday'),
       Group([for (var i = 0; i < 7; i++) bar(names[i], wd[i], mxd)]),
+      const SectionLabel('Payment mix'),
+      Group(modes.isEmpty ? [const Li('No sales', chevron: false)] : [for (final e in (modes.entries.toList()..sort((a, b) => b.value.compareTo(a.value)))) Li(e.key, chevron: false, value: inr(r2(e.value)))]),
+      const SectionLabel('Top items'),
+      Group(topItems.isEmpty ? [const Li('No sales', chevron: false)] : [for (final e in topItems) Li(e.key, chevron: false, value: inr(r2(e.value)))]),
     ]);
   }
 }

@@ -211,3 +211,63 @@ RevenueLeakage revenueLeakage(Repo repo, String day) {
   });
   return RevenueLeakage(kots: kots, cancelledBills: cancelled, modifiedBills: modified, shiftedOrders: shifted, reprintedBills: reprinted, waivedOff: _r2(waived));
 }
+
+/// Ported from the website's `payModes(o)`: one order's payment split by mode, keyed 'Cash'/'Card'/
+/// 'UPI'/'Online'/an unrecognised mode's own capitalised name -- ANY payment on an online order is
+/// grouped as 'Online' regardless of its own `m` field (matching the website's `isOnline(o)?'Online':
+/// ...` check happening INSIDE the per-payment loop, not just once for the whole order). An order with
+/// no `pays[]` at all contributes a single 'Online'/'Unpaid' entry worth its full net revenue.
+Map<String, num> payModesOf(Map<String, dynamic> o) {
+  final m = <String, num>{};
+  final pays = ((o['pays'] as List?) ?? const []).cast<Map>();
+  for (final p in pays) {
+    final mode = '${p['m'] ?? ''}';
+    final key = isOnline(o) ? 'Online' : (mode == 'cash' ? 'Cash' : (mode == 'card' ? 'Card' : (mode == 'upi' ? 'UPI' : (mode.isEmpty ? 'Other' : '${mode[0].toUpperCase()}${mode.substring(1)}'))));
+    final change = mode == 'cash' ? ((o['change'] ?? 0) as num) : 0;
+    m[key] = (m[key] ?? 0) + ((p['amt'] ?? 0) as num) - change;
+  }
+  if (m.isEmpty) {
+    m[isOnline(o) ? 'Online' : 'Unpaid'] = netOf(o);
+  }
+  return m;
+}
+
+/// One named/phoned customer's visit history across every paid (and, when asked, due) order --
+/// ported from the website's `customerStats()`, keyed by the last 10 digits of their phone number
+/// (`phoneKey()`); a customer with no phone number is never counted (matches the website exactly: a
+/// name alone is not a reliable enough key).
+class CustomerStat {
+  CustomerStat({required this.phone, required this.name, required this.visits, required this.spend, required this.first, required this.last});
+  final String phone;
+  String name;
+  int visits;
+  num spend;
+  String? first, last; // device-local day strings
+}
+
+String phoneKeyOf(dynamic cust) {
+  final c = cust is Map ? cust : null;
+  final raw = '${c?['phone'] ?? ''}'.replaceAll(RegExp(r'\D'), '');
+  return raw.length <= 10 ? raw : raw.substring(raw.length - 10);
+}
+
+Map<String, CustomerStat> customerStats(Repo repo, {bool includeDue = true}) {
+  final m = <String, CustomerStat>{};
+  for (final o in _orders(repo)) {
+    final status = o['status'];
+    if (status != 'paid' && !(includeDue && status == 'due')) continue;
+    final k = phoneKeyOf(o['cust']);
+    if (k.isEmpty) continue;
+    final c = m.putIfAbsent(k, () => CustomerStat(phone: k, name: '', visits: 0, spend: 0, first: null, last: null));
+    final name = '${(o['cust'] as Map?)?['name'] ?? ''}';
+    if (c.name.isEmpty && name.isNotEmpty) c.name = name;
+    c.visits++;
+    c.spend += netOf(o);
+    final d = _dayOfIso(o['paidAt'] ?? o['created']);
+    if (d.isNotEmpty) {
+      if (c.first == null || d.compareTo(c.first!) < 0) c.first = d;
+      if (c.last == null || d.compareTo(c.last!) > 0) c.last = d;
+    }
+  }
+  return m;
+}
