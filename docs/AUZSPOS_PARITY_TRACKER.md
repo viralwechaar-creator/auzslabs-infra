@@ -109,7 +109,8 @@ not individually confirmed): `menu/bulk`, `menu/import`, `rep/daily`.
 | `rep/staff` (`_RepStaff`) | **PARTIAL → mostly MATCHED after this round's fix** | Was missing Hours worked, Voids, Discounts entirely (website's staff report has all three, feeding its own KPI row: "Team members with sales"/"Hours worked"/"Voids"/"Discounts given", plus per-row Avg. bill and Sales/hour columns). **Fixed this round**: Hours (from `shift.in`/`shift.out`), Voids and Discounts (from `order.by`/`order.status`/`order.t.d`, matching the website's own `by`-keyed — not `paidBy`-keyed — void/discount calc) now computed and shown, with sales switched to `netOf()`. Not yet matched: native's per-row line doesn't show Avg. bill or Sales/hour as separate columns (folded into one sub-line instead of the website's own 8-column table) — a presentation difference, not a missing figure (the underlying numbers are all there to compute them, just not broken out). |
 | `rep/analytics` (`_RepAnalytics`) | **MATCHED** (fixed in a follow-up batch the same session) | Added: Net sales vs. previous period % (`payModesOf`/`customerStats` new pure functions in `dashboard_stats.dart`, 8 new tests), Avg. daily sales, Avg. bill, Repeat-customer %, Payment mix card, Top items card; Sales by hour/weekday switched to `netOf()`. Remaining presentation difference, not a data gap: native's daily trend stays as the existing Sales-by-hour/weekday bars rather than the website's single continuous daily-sales line chart across the whole range — the figures underneath (vs-previous-period, averages) are the same regardless of chart shape. |
 | `rep/orders` (`_RepOrders`) | **MATCHED (one real bug fixed)** | Found and fixed a real scoping bug: the "Cancelled" KPI counted void orders across the order's ENTIRE history, never scoped to the selected date range (`status=='void'` with no date filter at all) — a shop open for months always showed its lifetime cancellation count on every range including "Today". Fixed to share one range-filtered order set with Open/due and By-order-type, matching the website's own `all_`. Added Open/due count, Avg. prep time (from `kotlog`), and the "Cancelled, refunded and complimentary" detail list — none existed before. Switched to `netOf()`. |
-| `rep/sales` (`ReportsPage`), `rep/gst` | **NOT VERIFIED** | Not read side-by-side this round. |
+| `rep/sales` (`ReportsPage` in `more2.dart`) | **PARTIAL** | Core metrics are real and complete: revenue, bills, average bill, tax/discounts/refunds, sales-by-day, by-payment-mode, by-order-type, top items — all computed from real orders, nothing fabricated. Gap vs. the website: the website's `rep/sales` has 8 dimension tabs (day/hour/weekday/mode/type/source/category/staff, each a full bills/sales/share/avg table) and a CSV export; native covers only day/mode/type and has no export. A real, sizeable gap, deliberately not attempted this round (would need 5 more table views + an export mechanism — its own batch, not a rushed partial add). |
+| `rep/gst` (`_RepGst`) | **MATCHED** (one gap fixed: CGST/SGST split) | Taxable base, total tax, by-rate breakdown all read from real order `t.rates`/`t.tax`/`t.sub` data. Was missing the CGST/SGST half-split the website's KPIs show — added. Not matched: the website's CSV export (same gap class as `rep/sales` above — not attempted this round). |
 
 Full list of the remaining native routes still needing a side-by-side read
 (each is a `consolePageFor()` case in `console_pages.dart`): `daily/live`,
@@ -191,18 +192,33 @@ been done this session and remains open.
    period, avg daily sales, avg bill, repeat-customer %, payment mix, top
    items) and closed all of them, adding `payModesOf()`/`customerStats()`
    to `dashboard_stats.dart` (8 more tests) and reusing them.
-8. Every step re-ran `flutter analyze --no-fatal-infos` (80 issues, unchanged
-   throughout) and `flutter test` (growing 305→323→331, zero regressions at
-   any point) before committing. Four new local commits this round, nothing
-   pushed.
+8. Read `rep/orders`; found and fixed a real bug (the Cancelled-orders KPI
+   was never scoped to the selected date range at all — it always showed
+   the business's lifetime cancellation count). Added Open/due, Avg. prep
+   time, and the cancelled/refunded/complimentary detail list.
+9. Read `rep/sales` (`ReportsPage`) and `rep/gst`, completing the full
+   Reports group (8/8 routes now read side-by-side). Added the CGST/SGST
+   split to `rep/gst`; documented `rep/sales`'s larger dimension-tab/export
+   gap honestly rather than rushing a partial implementation of it.
+10. Every step re-ran `flutter analyze --no-fatal-infos` (80 issues,
+    unchanged throughout) and `flutter test` (growing 305→323→331→331→331,
+    zero regressions at any point) before committing. 7 new local commits
+    this round, nothing pushed.
 
 ## What remains (honest, for the next batch — this list will keep shrinking, not disappear in one sitting)
 
+**The Reports group (`rep/*`, 8 routes) is now fully read side-by-side.**
+Final state: `rep/sales` PARTIAL (missing 5 of 8 dimension tabs + CSV
+export — a real, sizeable, named gap), `rep/inventory` PARTIAL (missing one
+tab), all 6 others MATCHED. Remaining:
+
+- `rep/sales`'s 5 missing dimension tabs (hour/weekday/source/category/
+  staff) and CSV export (shared gap class with `rep/gst`'s missing export).
 - `rep/inventory`'s missing "Purchases" tab (low priority — the data exists
   elsewhere in native, just not consolidated into this one screen).
-- A side-by-side read of the remaining ~68 Console routes listed above
-  (`rep/sales`, `rep/orders`, `rep/gst`, every `menu/*`, `crm/*`, `team/*`,
-  `fin/*`, `mkt/*`, `agg/*` platform page, `mgmt/*`, `ql/*`, `int/apps`).
+- A side-by-side read of the remaining ~65 Console routes (every `menu/*`,
+  `crm/*`, `team/*`, `fin/*`, `mkt/*`, `agg/*` platform page, `mgmt/*`,
+  `ql/*`, `int/apps`).
 - A full Priority B pass over the operational POS screens (acknowledging
   substantial pre-existing, separately-tested work already covers parts of
   it — gift cards, split bills, customer CRM, cash/denomination counting,
