@@ -203,7 +203,10 @@ List<List<String>> _opts(List<String> a) => [for (final x in a) [x, x]];
 final _cfgRaw = CrudCfg(
   kind: 'ing', title: 'Raw Materials', sub: 'Everything you buy and cook with, with unit, cost and reorder level.', icon: Icons.egg_outlined, add: 'Add material', empty: 'Add milk, flour, tea. You get a warning when something runs low.',
   fields: (r) => [F('name', 'Name', value: r?['name']), F('unit', 'Unit', type: 'select', value: r?['unit'] ?? 'kg', options: _opts(['kg', 'g', 'l', 'ml', 'pcs', 'pack', 'dozen'])), F('qty', 'Stock on hand', type: 'number', value: r?['qty'] ?? 0), F('low', 'Low stock alert at', type: 'number', value: r?['low'] ?? 0), F('cost', 'Cost per unit (₹)', type: 'number', value: r?['cost']), F('expiry', 'Expiry date (YYYY-MM-DD)', value: r?['expiry']), F('vendor', 'Vendor', value: r?['vendor'])],
-  rowTitle: (r) => _s(r['name']), rowSub: (r) => '${r['qty'] ?? 0} ${r['unit'] ?? ''} · ₹${r['cost'] ?? 0}/${r['unit'] ?? 'unit'}', trail: (r) => ((r['low'] ?? 0) as num) > 0 && ((r['qty'] ?? 0) as num) <= ((r['low'] ?? 0) as num) ? 'Low' : '',
+  // Low-stock consistency fix: reuses isLowStock() (core/inventory_reports.dart), the same function
+  // the Alerts Center's 'lowstock' alert now uses, instead of a separate copy with an extra `low>0`
+  // guard that made a material with no reorder threshold ever set show no "Low" tag even at zero stock.
+  rowTitle: (r) => _s(r['name']), rowSub: (r) => '${r['qty'] ?? 0} ${r['unit'] ?? ''} · ₹${r['cost'] ?? 0}/${r['unit'] ?? 'unit'}', trail: (r) => isLowStock(r) ? 'Low' : '',
 );
 
 final _cfgVendor = CrudCfg(
@@ -710,7 +713,7 @@ class _RepInventoryState extends State<_RepInventory> {
   Widget build(BuildContext context) {
     final ings = h.s.repo!.of('ing').toList()..sort((a, b) => '${a['name']}'.compareTo('${b['name']}'));
     final value = ings.fold<double>(0, (a, g) => a + ((g['qty'] ?? 0) as num) * ((g['cost'] ?? 0) as num));
-    final low = ings.where((g) => ((g['low'] ?? 0) as num) > 0 && ((g['qty'] ?? 0) as num) <= ((g['low'] ?? 0) as num)).length;
+    final low = ings.where(isLowStock).length; // low-stock consistency fix: see _cfgRaw's own comment above
     return Column(children: [
       Padding(padding: const EdgeInsets.fromLTRB(16, 10, 16, 0), child: Seg<String>(expand: true, items: const [('stock', 'Stock'), ('reorder', 'Reorder'), ('expiry', 'Expiry'), ('waste', 'Wastage'), ('cost', 'Costing')], value: tab, onChanged: (v) => setState(() => tab = v))),
       Expanded(

@@ -7,6 +7,7 @@ import '../core/session.dart';
 import '../core/cash.dart' as cash;
 import '../core/stock.dart' as stock;
 import '../core/alerts.dart';
+import '../core/push.dart' show PushRegistration;
 import 'actions.dart';
 import 'admin.dart';
 import 'kit.dart';
@@ -62,12 +63,16 @@ class _HomeState extends State<Home> {
     if (s.repo!.of('table').isNotEmpty) tab = 'tables';
     _g = Timer.periodic(const Duration(seconds: 10), (_) => loadGuests());
     loadGuests();
+    // A Firebase push arriving while this screen is open asks the existing poll to check right away
+    // instead of waiting for its own 10 s timer -- see core/push.dart's onForegroundMessage doc comment.
+    PushRegistration.onForegroundMessage = loadGuests;
   }
 
   @override
   void dispose() {
     s.removeListener(_note);
     _g?.cancel();
+    if (PushRegistration.onForegroundMessage == loadGuests) PushRegistration.onForegroundMessage = null;
     super.dispose();
   }
 

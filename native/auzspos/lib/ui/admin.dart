@@ -5,6 +5,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/billing.dart' show r2;
+import '../core/inventory_reports.dart' show isLowStock;
 import '../core/reorder.dart';
 import '../core/session.dart';
 import 'console.dart' show Kpis, RangeBar;
@@ -108,7 +109,7 @@ class AdminDashboard extends StatelessWidget {
     }
     final top = items.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
     final diff = ySales == 0 ? null : ((tSales - ySales) / ySales * 100).round();
-    final low = s.repo!.of('ing').where((g) => ((g['low'] ?? 0) as num) > 0 && ((g['qty'] ?? 0) as num) <= ((g['low'] ?? 0) as num)).length;
+    final low = s.repo!.of('ing').where(isLowStock).length; // low-stock consistency fix: see console_pages.dart's _cfgRaw comment
     return Scaffold(
       appBar: embedded ? null : AppBar(title: const Text('Dashboard')),
       body: ListView(padding: const EdgeInsets.all(14), children: [
@@ -717,7 +718,8 @@ class _StockAdminState extends State<StockAdmin> {
   @override
   Widget build(BuildContext context) {
     final gs = s.repo!.of('ing').toList()..sort((a, b) => '${a['name']}'.compareTo('${b['name']}'));
-    bool isLow(Map g) => ((g['low'] ?? 0) as num) > 0 && ((g['qty'] ?? 0) as num) <= ((g['low'] ?? 0) as num);
+    // Low-stock consistency fix: this used to be its own local isLow() with an extra `low>0` guard --
+    // see console_pages.dart's _cfgRaw comment for the full trace. isLowStock() is imported below.
     return Scaffold(
       appBar: AppBar(title: const Text('Stock')),
       floatingActionButton: FloatingActionButton.extended(onPressed: () => ing(), icon: const Icon(Icons.add), label: const Text('Add material')),
@@ -729,9 +731,9 @@ class _StockAdminState extends State<StockAdmin> {
                   child: ListTile(
                     onTap: () => ing(g),
                     title: Text('${g['name']}', style: const TextStyle(fontWeight: FontWeight.w700)),
-                    subtitle: isLow(g) ? Text('Running low', style: TextStyle(color: Tk.orange, fontWeight: FontWeight.w600)) : null,
+                    subtitle: isLowStock(g) ? Text('Running low', style: TextStyle(color: Tk.orange, fontWeight: FontWeight.w600)) : null,
                     trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Text('${g['qty'] ?? 0} ${g['unit'] ?? ''}', style: TextStyle(fontWeight: FontWeight.w800, color: isLow(g) ? Tk.orange : Tk.label)),
+                      Text('${g['qty'] ?? 0} ${g['unit'] ?? ''}', style: TextStyle(fontWeight: FontWeight.w800, color: isLowStock(g) ? Tk.orange : Tk.label)),
                       IconButton(icon: const Icon(Icons.tune), tooltip: 'Adjust', onPressed: () => adjust(g)),
                     ]),
                   ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' hide Text;
 import 'i18n.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/billing.dart' show r2;
+import '../core/inventory_reports.dart' show isLowStock;
 import '../core/purchase_orders.dart' show openPurchaseOrders;
 import '../core/repo.dart';
 import 'actions.dart';
@@ -441,7 +442,16 @@ class AlertItem {
 List<AlertItem> computeConsoleAlerts(Repo repo) {
   final out = <AlertItem>[];
 
-  final low = repo.of('ing').where((g) => ((g['low'] ?? 0) as num) > 0 && ((g['qty'] ?? 0) as num) <= ((g['low'] ?? 0) as num)).toList();
+  // Low-stock consistency fix: this used to be its own inline filter with an extra `low>0 &&` guard
+  // that isLowStock() (core/inventory_reports.dart) does not have -- confirmed by reading the website's
+  // own `lowIng=g=>(g.qty||0)<=(g.low||0)` (app/public/console/p-inventory.js) directly, isLowStock() is
+  // the one that matches it exactly. The guard meant a material that NEVER had a reorder threshold
+  // configured was silently invisible here even at exactly zero stock, while the Reorder tab/auto-
+  // reorder (which already used isLowStock()) caught it correctly -- a real, confirmed blind spot.
+  // Fixed by reusing the one canonical function everywhere the same concept is evaluated, rather than
+  // five separate copies of a slightly different formula (see isLowStock()'s own doc comment for the
+  // full list of call sites this unifies).
+  final low = repo.of('ing').where(isLowStock).toList();
   if (low.isNotEmpty) {
     final names = low.take(3).map((g) => '${g['name']}').join(', ');
     out.add(AlertItem(kind: 'lowstock', title: '${low.length} raw material${low.length == 1 ? '' : 's'} running low', detail: low.length > 3 ? '$names…' : names, navTo: 'inv/raw', count: low.length));
@@ -532,10 +542,10 @@ BusinessHealth computeBusinessHealth(Repo repo) {
 ///   - 'now' ("needs attention now"): the business is blocked right now, or a reconciliation from a
 ///     PAST day is overdue. Evidence: findDayNeedingClose() already applied its own "genuinely
 ///     overdue" rule before 'dayclose' ever reaches this list; a material has reached zero stock
-///     (qty<=0), using the EXACT SAME filter computeConsoleAlerts() used to build the 'lowstock'
-///     alert in the first place (`low>0 && qty<=low`), just narrowed to the subset that has already
-///     hit zero rather than merely crossed the reorder point -- not a different calculation, a
-///     stricter read of the identical rows.
+///     (qty<=0), using isLowStock() -- the EXACT SAME, now-unified function computeConsoleAlerts()
+///     uses to build the 'lowstock' alert in the first place -- just narrowed to the subset that
+///     has already hit zero rather than merely crossed the reorder point, not a different
+///     calculation, a stricter read of the identical rows.
 ///   - 'next' ("recommended next actions"): a real, already-confirmed condition worth acting on
 ///     soon, with no evidence it is blocking anything right now -- a material below its reorder
 ///     point but not yet at zero, a bill still due (no due-date field exists anywhere in this app's
@@ -562,11 +572,11 @@ DailyActions computeDailyActions(Repo repo) {
       case 'dayclose':
         now.add(a);
       case 'lowstock':
-        // Same condition computeConsoleAlerts() already used to build this alert (low>0 &&
-        // qty<=low) -- narrowed here to the strict subset that has reached zero, so "about to run
-        // out" (next) and "cannot be sold at all right now" (now) are told apart using the
-        // identical underlying `ing` rows, not a second calculation.
-        final anyOut = repo.of('ing').any((g) => ((g['low'] ?? 0) as num) > 0 && ((g['qty'] ?? 0) as num) <= 0);
+        // Same isLowStock() condition computeConsoleAlerts() already used to build this alert --
+        // narrowed here to the strict subset that has reached zero, so "about to run out" (next)
+        // and "cannot be sold at all right now" (now) are told apart using the identical
+        // underlying `ing` rows, not a second calculation.
+        final anyOut = repo.of('ing').any((g) => isLowStock(g) && ((g['qty'] ?? 0) as num) <= 0);
         (anyOut ? now : next).add(a);
       case 'po':
       case 'tickets':

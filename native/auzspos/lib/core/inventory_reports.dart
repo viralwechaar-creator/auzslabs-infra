@@ -14,6 +14,18 @@ String dayKeyOf(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-
 
 /// qty <= low (low defaults to 0 when absent, same as the website's lowIng() -- an ingredient with no
 /// threshold set is only flagged once it actually hits zero or below, never "always flagged").
+///
+/// The ONE canonical definition of "low stock" app-wide -- confirmed directly against the website's
+/// own `lowIng=g=>(g.qty||0)<=(g.low||0)` (app/public/console/p-inventory.js). Before a Native POS
+/// Operational Features audit, five other places (the Alerts Center's 'lowstock' alert and its own
+/// Smart Daily Operations zero-stock refinement in console.dart, the raw-materials row label and
+/// StockAdmin's KPI in console_pages.dart, and the admin dashboard count plus a local isLow() helper
+/// in admin.dart) each had their own, slightly different copy with an extra `low>0 &&` guard that
+/// isLowStock() never had -- meaning a material that had NEVER had a reorder threshold configured was
+/// silently invisible to all of them even at exactly zero stock, while this function (already used by
+/// the Reorder tab and auto-reorder's own planAutoReorder()) correctly caught it. All six now call this
+/// one function; if a new screen needs to evaluate the same concept, call this rather than writing a
+/// seventh copy.
 bool isLowStock(Map<String, dynamic> g) => ((g['qty'] ?? 0) as num) <= ((g['low'] ?? 0) as num);
 
 /// expiry set, due within 7 days, AND there is still stock to use up (an ingredient already at zero has
