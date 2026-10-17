@@ -118,13 +118,35 @@ class _ConsolePageState extends State<ConsolePage> {
 
   static const _alertIcons = {'lowstock': Icons.inventory_2_outlined, 'due': Icons.schedule, 'tickets': Icons.support_agent, 'dayclose': Icons.lock_open_outlined, 'po': Icons.local_shipping_outlined, 'sync': Icons.cloud_off_outlined};
 
+  // One alert rendered as a tappable row -- the exact same navigation behaviour the flat Alerts
+  // list already had: it only moves to the existing screen where the real action lives, never
+  // performs one itself.
+  Widget _actionRow(BuildContext ctx, AlertItem a) => Group([
+        Li(
+          a.title,
+          sub: a.detail,
+          icon: _alertIcons[a.kind] ?? Icons.info_outline,
+          tone: a.kind == 'due' ? Tk.red : a.kind == 'tickets' ? Tk.blue : Tk.orange,
+          onTap: () {
+            Navigator.pop(ctx);
+            go(a.navTo);
+          },
+        ),
+      ]);
+
+  Widget _tierHeader(String label, Color c) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 6),
+        child: Text(label.toUpperCase(), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: .6, color: c)),
+      );
+
   void _alertsSheet() {
-    // Alerts Center: everything here is a plain, read-only navigation target. Tapping one never
-    // creates a purchase order, adjusts stock, closes a day, or changes a payment -- it only moves
-    // to the existing screen where that action already lives, same as the three alert types
-    // (low stock, due bills, open tickets) this sheet already had before this change.
-    final health = computeBusinessHealth(h.s.repo!);
-    final alerts = health.alerts;
+    // Smart Daily Operations: the SAME alerts the flat Alerts Center already computed
+    // (computeConsoleAlerts(), reused via computeBusinessHealth()), grouped into priority tiers by
+    // computeDailyActions() -- see that function's own doc comment for the transparent rule each
+    // tier uses. Everything here is still a plain, read-only navigation target: tapping one never
+    // creates a purchase order, adjusts stock, closes a day, or changes a payment, it only moves to
+    // the existing screen where that action already lives.
+    final actions = computeDailyActions(h.s.repo!);
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -133,51 +155,50 @@ class _ConsolePageState extends State<ConsolePage> {
           constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * .7),
           child: ListView(padding: const EdgeInsets.only(bottom: 16), children: [
             const Padding(padding: EdgeInsets.fromLTRB(20, 0, 20, 8), child: Text('Alerts', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800))),
-            // Never claim "all clear" while the local data itself cannot be trusted -- the alert
-            // list above was computed from exactly this data, so a sync failure or a device that
-            // has never synced means this list may be missing something, not that nothing is wrong.
-            if (health.dataConfidence != 'ok')
+            // Never claim "all clear" while the local data itself cannot be trusted -- the whole
+            // action list below was computed from exactly this data, so a sync failure or a device
+            // that has never synced means this list may be missing something, not that nothing is
+            // wrong. Reused verbatim from computeDailyActions()/computeBusinessHealth() -- not a
+            // second confidence check.
+            if (actions.dataConfidence != 'ok')
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: (health.dataConfidence == 'syncFailed' ? Tk.red : Tk.orange).withValues(alpha: .1),
+                    color: (actions.dataConfidence == 'syncFailed' ? Tk.red : Tk.orange).withValues(alpha: .1),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: (health.dataConfidence == 'syncFailed' ? Tk.red : Tk.orange).withValues(alpha: .35)),
+                    border: Border.all(color: (actions.dataConfidence == 'syncFailed' ? Tk.red : Tk.orange).withValues(alpha: .35)),
                   ),
                   child: Row(children: [
-                    Icon(Icons.cloud_off_outlined, size: 18, color: health.dataConfidence == 'syncFailed' ? Tk.red : Tk.orange),
+                    Icon(Icons.cloud_off_outlined, size: 18, color: actions.dataConfidence == 'syncFailed' ? Tk.red : Tk.orange),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        health.dataConfidence == 'syncFailed' ? 'The last sync failed -- the information below may be out of date.' : 'This device has not completed a sync yet -- the information below may be incomplete.',
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: health.dataConfidence == 'syncFailed' ? Tk.red : Tk.orange),
+                        actions.dataConfidence == 'syncFailed' ? 'The last sync failed -- the information below may be out of date.' : 'This device has not completed a sync yet -- the information below may be incomplete.',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: actions.dataConfidence == 'syncFailed' ? Tk.red : Tk.orange),
                       ),
                     ),
                   ]),
                 ),
               ),
-            if (alerts.isEmpty)
+            if (actions.isEmpty)
               Empty(
                 Icons.check_circle_outline,
-                health.dataConfidence == 'ok' ? 'All clear' : 'No alerts found',
-                health.dataConfidence == 'ok' ? 'Low stock, dues, open tickets, an unclosed day, a pending purchase order or unsent changes will show up here.' : 'Nothing is currently flagged, but see the notice above -- this may not be the full picture.',
+                actions.dataConfidence == 'ok' ? 'All clear' : 'No alerts found',
+                actions.dataConfidence == 'ok' ? 'Low stock, dues, open tickets, an unclosed day, a pending purchase order or unsent changes will show up here.' : 'Nothing is currently flagged, but see the notice above -- this may not be the full picture.',
               ),
-            for (final a in alerts) ...[
-              Group([
-                Li(
-                  a.title,
-                  sub: a.detail,
-                  icon: _alertIcons[a.kind] ?? Icons.info_outline,
-                  tone: a.kind == 'due' ? Tk.red : a.kind == 'tickets' ? Tk.blue : Tk.orange,
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    go(a.navTo);
-                  },
-                ),
-              ]),
-              const SizedBox(height: 12),
+            if (actions.now.isNotEmpty) ...[
+              _tierHeader('Needs attention now', Tk.red),
+              for (final a in actions.now) ...[_actionRow(ctx, a), const SizedBox(height: 12)],
+            ],
+            if (actions.next.isNotEmpty) ...[
+              _tierHeader('Recommended next actions', Tk.orange),
+              for (final a in actions.next) ...[_actionRow(ctx, a), const SizedBox(height: 12)],
+            ],
+            if (actions.routine.isNotEmpty) ...[
+              _tierHeader('Routine daily review', Tk.label2),
+              for (final a in actions.routine) ...[_actionRow(ctx, a), const SizedBox(height: 12)],
             ],
           ]),
         ),
@@ -483,6 +504,63 @@ BusinessHealth computeBusinessHealth(Repo repo) {
   }
   final status = dataConfidence != 'ok' ? 'unknown' : (alerts.isEmpty ? 'healthy' : 'attention');
   return BusinessHealth(alerts: alerts, dataConfidence: dataConfidence, status: status);
+}
+
+/// Smart Daily Operations: the SAME alerts computeBusinessHealth()/computeConsoleAlerts() already
+/// produce, grouped into three tiers so the Alerts Center can be read in priority order instead of
+/// as one flat list. This is deliberately NOT a second alert computation, a learned/AI score, or an
+/// invented numeric threshold -- every tier assignment below is a transparent rule over data this
+/// file already reads for the alert it is grouping:
+///   - 'now' ("needs attention now"): the business is blocked right now, or a reconciliation from a
+///     PAST day is overdue. Evidence: findDayNeedingClose() already applied its own "genuinely
+///     overdue" rule before 'dayclose' ever reaches this list; a material has reached zero stock
+///     (qty<=0), using the EXACT SAME filter computeConsoleAlerts() used to build the 'lowstock'
+///     alert in the first place (`low>0 && qty<=low`), just narrowed to the subset that has already
+///     hit zero rather than merely crossed the reorder point -- not a different calculation, a
+///     stricter read of the identical rows.
+///   - 'next' ("recommended next actions"): a real, already-confirmed condition worth acting on
+///     soon, with no evidence it is blocking anything right now -- a material below its reorder
+///     point but not yet at zero, a bill still due (no due-date field exists anywhere in this app's
+///     order records to claim it is "overdue," so this never claims financial urgency it cannot
+///     show), an open support ticket, a purchase order not yet received.
+///   - 'routine' ("routine daily review"): worth a periodic glance, not a confirmed problem --
+///     local changes still waiting to reach the server. This is ordinary, expected offline-first
+///     behaviour, not evidence of anything wrong (a genuine sync FAILURE is a separate, stronger
+///     signal already carried in [dataConfidence]/[status], reused verbatim from
+///     computeBusinessHealth() below -- never recomputed a second way).
+class DailyActions {
+  DailyActions({required this.now, required this.next, required this.routine, required this.dataConfidence, required this.status});
+  final List<AlertItem> now, next, routine;
+  final String dataConfidence; // 'ok' | 'syncFailed' | 'neverSynced' -- same meaning as BusinessHealth
+  final String status; // 'healthy' | 'attention' | 'unknown' -- same meaning as BusinessHealth
+  bool get isEmpty => now.isEmpty && next.isEmpty && routine.isEmpty;
+}
+
+DailyActions computeDailyActions(Repo repo) {
+  final health = computeBusinessHealth(repo); // reuse -- never a second alert/confidence computation
+  final now = <AlertItem>[], next = <AlertItem>[], routine = <AlertItem>[];
+  for (final a in health.alerts) {
+    switch (a.kind) {
+      case 'dayclose':
+        now.add(a);
+      case 'lowstock':
+        // Same condition computeConsoleAlerts() already used to build this alert (low>0 &&
+        // qty<=low) -- narrowed here to the strict subset that has reached zero, so "about to run
+        // out" (next) and "cannot be sold at all right now" (now) are told apart using the
+        // identical underlying `ing` rows, not a second calculation.
+        final anyOut = repo.of('ing').any((g) => ((g['low'] ?? 0) as num) > 0 && ((g['qty'] ?? 0) as num) <= 0);
+        (anyOut ? now : next).add(a);
+      case 'po':
+      case 'tickets':
+      case 'due':
+        next.add(a);
+      case 'sync':
+        routine.add(a);
+      default:
+        next.add(a); // an unrecognised future kind defaults to "worth a look", never silently dropped
+    }
+  }
+  return DailyActions(now: now, next: next, routine: routine, dataConfidence: health.dataConfidence, status: health.status);
 }
 
 // ignore: unused_element
