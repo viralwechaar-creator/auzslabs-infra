@@ -32,7 +32,7 @@ for (const [w, h, label] of WIDTHS) {
 
   // Try to open a few more sections via their data-section nav button (sidebar on tablet/desktop,
   // tab bar on phone -- both carry the same data-section attribute per admin.html's own markup).
-  for (const sec of ['clients', 'leads', 'pricing', 'users', 'team']) {
+  for (const sec of ['clients', 'leads', 'pricing', 'users', 'team', 'client', 'clientPay', 'systemStats', 'auditLog', 'privacyReq']) {
     const candidates = page.locator(`[data-section="${sec}"]`);
     const n = await candidates.count();
     let btn = null;
