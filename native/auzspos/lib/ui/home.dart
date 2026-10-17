@@ -803,10 +803,15 @@ class _SellPageState extends State<SellPage> {
                   Expanded(child: FilledButton(onPressed: ok ? () async {
                     set(() => busy = true);
                     try {
-                      final res = await s.api.rpc('redeem_giftcard', {'p_code': ctl.text, 'p_amount': total, 'p_order': '${o['id']}'}) as Map?;
-                      if (ctx.mounted) Navigator.pop(ctx, '${res?['code'] ?? ctl.text.trim().toUpperCase()}');
+                      final res = await s.api.rpc('redeem_giftcard', {'p_code': ctl.text, 'p_amount': total, 'p_order': '${o['id']}'});
+                      final code = res is Map ? '${res['code'] ?? ctl.text.trim().toUpperCase()}' : ctl.text.trim().toUpperCase();
+                      if (ctx.mounted) Navigator.pop(ctx, code);
                     } on ApiError catch (e) {
                       set(() { busy = false; err = e.networkError ? 'Gift cards need an internet connection.' : e.message; });
+                    } catch (_) {
+                      // Never leave the sheet stuck mid-redemption on an unexpected (non-ApiError) failure --
+                      // e.g. a malformed response -- with the button disabled and no way to retry or see why.
+                      set(() { busy = false; err = 'Could not use the gift card. Please try again.'; });
                     }
                   } : null, child: busy ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Use card'))),
                 ]),

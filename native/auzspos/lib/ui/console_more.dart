@@ -557,6 +557,11 @@ class LogsPage extends StatelessWidget {
     add('exp', 'Expense', (x) => '₹${x['amt']} · ${_s(x['cat'])}');
     add('waste', 'Wastage', (x) => '${x['q']} ${_s(x['ing'])} · ${_s(x['reason'])}');
     add('adjustment', 'Stock adjustment', (x) => '${x['q']} ${_s(x['ing'])}');
+    // Found during integration verification: transfer() (admin.dart StockAdmin) writes a `transfer`
+    // record exactly like the website's own transferForm(), but nothing in the app ever showed it --
+    // the website's equivalent Movements tab does list transfers. Same field names (`from`/`to`
+    // already resolved to outlet/area display names by the writer).
+    add('transfer', 'Stock transfer', (x) => '${x['q']} ${_s(x['ing'])} · ${_s(x['from'])} → ${_s(x['to'])}');
     add('settlement', 'Settlement', (x) => '${_s(x['platform'])} ₹${x['amt']}');
     acts.removeWhere((e) => e.$1.isEmpty);
     acts.sort((a, b) => b.$1.compareTo(a.$1));

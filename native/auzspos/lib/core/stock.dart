@@ -13,6 +13,13 @@ import 'repo.dart';
 /// a consistent, reportable reason, same discipline as the existing wastage/void reason lists.
 const List<String> adjustReasons = ['Count correction', 'Damaged / spoiled', 'Expired', 'Found later', 'Other'];
 
+/// Whether a transfer of [q] units is allowed, given the CURRENT on-hand stock [liveQty] at the
+/// moment of saving -- never a stale quantity captured when the transfer sheet was first opened,
+/// since real stock can change in the meantime (a sale, another transfer, an adjustment) for reasons
+/// that have nothing to do with a double-tap. Validating against a stale number would let a transfer
+/// push real stock negative.
+bool transferQtyOk(num? q, num liveQty) => q != null && q > 0 && q <= liveQty;
+
 /// The raw material matching [name] (case-insensitive) that already exists at [outlet] ('main' when
 /// absent, matching the website's own `(x.outlet||'main')` convention) -- the find-or-create lookup
 /// transferForm() does before deciding whether to add to an existing destination record or start a

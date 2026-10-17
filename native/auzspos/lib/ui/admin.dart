@@ -9,7 +9,7 @@ import '../core/inventory_reports.dart' show isLowStock;
 import '../core/reorder.dart';
 import '../core/repo.dart' show nowIso;
 import '../core/session.dart';
-import '../core/stock.dart' show adjustReasons, ingAtOutlet;
+import '../core/stock.dart' show adjustReasons, ingAtOutlet, transferQtyOk;
 import 'console.dart' show Kpis, RangeBar;
 import 'home.dart';
 import 'kit.dart';
@@ -743,14 +743,21 @@ class _StockAdminState extends State<StockAdmin> {
         F('note', 'Note', type: 'text'),
       ],
       (v) async {
-        final q = v['q'] as num?;
-        final onHand = (g['qty'] ?? 0) as num;
-        if (q == null || !(q > 0) || q > onHand) {
+        final qIn = v['q'] as num?;
+        // Re-read the raw material's CURRENT stock, not the snapshot captured when this sheet opened --
+        // on-hand quantity can genuinely change in the meantime (a sale, another transfer, an adjustment)
+        // for reasons that have nothing to do with a double-tap, and validating against a stale number
+        // would let this transfer push real stock negative. Falls back to the opened snapshot only if the
+        // record has since been deleted (should not happen for a raw material, but never crash on it).
+        final live = s.repo!.rec(g['id'] as String) ?? g;
+        final onHand = (live['qty'] ?? 0) as num;
+        if (!transferQtyOk(qIn, onHand)) {
           if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter a quantity up to what is on hand')));
           return false;
         }
+        final q = qIn!;
         final fromOutlet = s.repo!.outlet;
-        await s.repo!.save('ing', {...g, 'qty': r2(onHand - q)}, id: g['id'] as String);
+        await s.repo!.save('ing', {...live, 'qty': r2(onHand - q)}, id: g['id'] as String);
         final toId = v['to'] as String?;
         if (toId != null) {
           final dest = ingAtOutlet(s.repo!.ofAll('ing'), '${g['name']}', toId);

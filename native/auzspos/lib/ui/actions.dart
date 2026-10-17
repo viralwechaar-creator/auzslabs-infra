@@ -298,10 +298,13 @@ Future<void> customerSheet(BuildContext context, Session s, Map<String, dynamic>
                   o['note'] = note.text.trim().isEmpty ? null : note.text.trim();
                   final p = digitsOnly(phone.text);
                   if (p.length >= 10) {
+                    // See profileToMergeOnSave()'s own doc comment: must re-resolve for the phone
+                    // actually being saved under, never blindly spread the sheet-open-time `prof`.
+                    final curProf = profileToMergeOnSave(openedPhoneDigits: ph0, savingPhoneDigits: p, openedProfile: prof, lookup: s.repo!.rec);
                     unawaited(s.repo!.save('customer', {
-                      ...?prof,
+                      ...?curProf,
                       'phone': p,
-                      'name': name.text.trim().isEmpty ? (prof?['name']) : name.text.trim(),
+                      'name': name.text.trim().isEmpty ? (curProf?['name']) : name.text.trim(),
                       'gst': gstVal.isEmpty ? null : gstVal,
                       'email': email.text.trim(),
                       'dob': dob.text.trim().isEmpty ? null : dob.text.trim(),
@@ -516,6 +519,7 @@ Future<void> splitSheet(BuildContext context, HomeState h, Map<String, dynamic> 
   final otherTables = s.repo!.of('table').where((t) => t['id'] != o['table']).toList()..sort((a, b) => '${a['name']}'.compareTo('${b['name']}'));
   var dest = 'new'; // 'new' | 'table' | 'take'
   String? destTable;
+  var busy = false;
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -577,7 +581,7 @@ Future<void> splitSheet(BuildContext context, HomeState h, Map<String, dynamic> 
               ),
             const SizedBox(height: 10),
             FilledButton(
-              onPressed: () async {
+              onPressed: busy ? null : () async {
                 final moving = [for (final e in pick.entries) if (e.value > 0) e];
                 if (moving.isEmpty) {
                   h.toast('Choose at least one item');
@@ -591,43 +595,56 @@ Future<void> splitSheet(BuildContext context, HomeState h, Map<String, dynamic> 
                   h.toast('Choose a table');
                   return;
                 }
-                // Merge into the target table's already-open order, if there is one, exactly as
-                // mergeOrders()/splitSheet() do on the website -- never silently open a second
-                // simultaneous bill at an occupied table.
-                final target = dest == 'table' ? _openOrderAt(s, destTable!) : null;
-                final n = target != null
-                    ? (Map<String, dynamic>.from(target)..['lines'] = [for (final l in (target['lines'] as List)) Map<String, dynamic>.from(l as Map)])
-                    : h.newOrder(type: dest == 'take' ? 'Takeaway' : '${o['type']}', table: dest == 'take' ? null : (dest == 'table' ? destTable : o['table'] as String?));
-                if (target == null) {
-                  n['cust'] = Map<String, dynamic>.from((o['cust'] as Map?) ?? {});
-                  n['kfrom'] = o['id'];
-                  n['splitFrom'] = o['no'];
-                }
-                n['no'] ??= await s.nextNo();
-                final moved = <Map<String, dynamic>>[];
-                for (final e in moving) {
-                  final l = lines[e.key];
-                  final q = e.value;
-                  final sentMove = ((l['sent'] ?? 0) as num).toInt().clamp(0, q);
-                  moved.add({'q': sentMove, 'name': l['name'], 'qty': q});
-                  final nl = (n['lines'] as List).cast<Map<String, dynamic>>();
-                  final same = nl.where((x) => lineKey(x) == lineKey(l) && x['price'] == l['price']).firstOrNull;
-                  if (same != null) {
-                    same['qty'] = (same['qty'] as num) + q;
-                    same['sent'] = ((same['sent'] ?? 0) as num) + sentMove;
-                  } else {
-                    nl.add({...l, 'qty': q, 'sent': sentMove});
+                // Guard against a double-tap running this whole block twice concurrently -- there is
+                // an `await` below (nextNo()) before `lines[e.key]['qty']` is mutated in place, and a
+                // second overlapping run would double-decrement the same line objects (or, worse,
+                // double-create the destination order). Disables the button until this run finishes
+                // or fails, same pattern as the gift-card and register-close sheets.
+                set(() => busy = true);
+                try {
+                  // Merge into the target table's already-open order, if there is one, exactly as
+                  // mergeOrders()/splitSheet() do on the website -- never silently open a second
+                  // simultaneous bill at an occupied table.
+                  final target = dest == 'table' ? _openOrderAt(s, destTable!) : null;
+                  final n = target != null
+                      ? (Map<String, dynamic>.from(target)..['lines'] = [for (final l in (target['lines'] as List)) Map<String, dynamic>.from(l as Map)])
+                      : h.newOrder(type: dest == 'take' ? 'Takeaway' : '${o['type']}', table: dest == 'take' ? null : (dest == 'table' ? destTable : o['table'] as String?));
+                  if (target == null) {
+                    n['cust'] = Map<String, dynamic>.from((o['cust'] as Map?) ?? {});
+                    n['kfrom'] = o['id'];
+                    n['splitFrom'] = o['no'];
                   }
-                  l['qty'] = (l['qty'] as num) - q;
-                  l['sent'] = ((l['sent'] ?? 0) as num) - sentMove;
+                  n['no'] ??= await s.nextNo();
+                  final moved = <Map<String, dynamic>>[];
+                  for (final e in moving) {
+                    final l = lines[e.key];
+                    final q = e.value;
+                    final sentMove = ((l['sent'] ?? 0) as num).toInt().clamp(0, q);
+                    moved.add({'q': sentMove, 'name': l['name'], 'qty': q});
+                    final nl = (n['lines'] as List).cast<Map<String, dynamic>>();
+                    final same = nl.where((x) => lineKey(x) == lineKey(l) && x['price'] == l['price']).firstOrNull;
+                    if (same != null) {
+                      same['qty'] = (same['qty'] as num) + q;
+                      same['sent'] = ((same['sent'] ?? 0) as num) + sentMove;
+                    } else {
+                      nl.add({...l, 'qty': q, 'sent': sentMove});
+                    }
+                    l['qty'] = (l['qty'] as num) - q;
+                    l['sent'] = ((l['sent'] ?? 0) as num) - sentMove;
+                  }
+                  o['lines'] = lines.where((l) => (l['qty'] as num) > 0).toList();
+                  o['moves'] = [...((o['moves'] as List?) ?? []), {'at': nowIso(), 'to': n['id'], 'toNo': n['no'], 'items': moved}];
+                  await h.persist(n);
+                  await h.persist(o);
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  h.refresh(() => h.cur = n);
+                  h.toast(target != null ? 'Merged into ${n['no']}' : 'Split to ${n['no']}');
+                } finally {
+                  // Covers the (unlikely, but not provably impossible) case of an exception partway
+                  // through -- the sheet must never stay stuck with a permanently disabled button.
+                  // A no-op if the sheet already closed on success (ctx is unmounted by then).
+                  if (ctx.mounted) set(() => busy = false);
                 }
-                o['lines'] = lines.where((l) => (l['qty'] as num) > 0).toList();
-                o['moves'] = [...((o['moves'] as List?) ?? []), {'at': nowIso(), 'to': n['id'], 'toNo': n['no'], 'items': moved}];
-                await h.persist(n);
-                await h.persist(o);
-                if (ctx.mounted) Navigator.pop(ctx);
-                h.refresh(() => h.cur = n);
-                h.toast(target != null ? 'Merged into ${n['no']}' : 'Split to ${n['no']}');
               },
               child: const Text('Split'),
             ),

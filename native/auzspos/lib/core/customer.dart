@@ -21,6 +21,25 @@ List<Map<String, dynamic>> custHistory(Iterable<Map<String, dynamic>> orders, St
   return orders.where((o) => '${o['id']}' != exceptId && (o['status'] == 'paid' || o['status'] == 'due') && digitsOnly('${(o['cust'] as Map?)?['phone'] ?? ''}') == p).toList();
 }
 
+/// Which existing `customer` profile a customerSheet() Save should merge the typed field values onto:
+/// the profile for the phone actually being saved under (looked up fresh), unless it is unchanged
+/// from the phone the sheet opened with, in which case the already-loaded profile is reused (avoids
+/// a redundant lookup in the common case where the cashier never touched the phone field).
+///
+/// Getting this wrong -- spreading the ORIGINAL phone's profile onto a record saved under a
+/// DIFFERENT phone, because the cashier corrected/changed the number before saving -- silently
+/// carries one customer's stored fields (tags, DOB, email, favourite/opt-out...) onto a different
+/// phone's record, corrupting whichever customer already exists there (or inventing a confusing
+/// mix if none did). Found tracing the real save path in actions.dart's customerSheet() during the
+/// integration-verification pass; fixed by calling this instead of spreading a captured variable.
+Map<String, dynamic>? profileToMergeOnSave({
+  required String openedPhoneDigits,
+  required String savingPhoneDigits,
+  required Map<String, dynamic>? openedProfile,
+  required Map<String, dynamic>? Function(String) lookup,
+}) =>
+    savingPhoneDigits == openedPhoneDigits ? openedProfile : lookup(savingPhoneDigits);
+
 class LoyaltySummary {
   LoyaltySummary(this.visits, this.lifetime, this.points);
   final int visits;

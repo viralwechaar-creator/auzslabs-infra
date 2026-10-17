@@ -109,4 +109,24 @@ void main() {
   test('adjustReasons offers the same fixed set the website\'s adjustForm() does, for a consistent audit trail', () {
     expect(adjustReasons, ['Count correction', 'Damaged / spoiled', 'Expired', 'Found later', 'Other']);
   });
+
+  group('transferQtyOk (regression -- must validate against CURRENT stock, never a stale open-time snapshot)', () {
+    test('a quantity within current on-hand stock is allowed', () {
+      expect(transferQtyOk(5, 10), isTrue);
+      expect(transferQtyOk(10, 10), isTrue, reason: 'transferring exactly everything on hand is allowed');
+    });
+
+    test('more than current on-hand stock is refused, even if an earlier (stale) snapshot had enough', () {
+      // The real scenario this guards: the transfer sheet opened when 10 were on hand, but a sale or
+      // another transfer has since reduced it to 3 -- re-reading live stock at save time (admin.dart's
+      // transfer()) must see 3, not the stale 10, so this must be refused.
+      expect(transferQtyOk(10, 3), isFalse);
+    });
+
+    test('null, zero and negative quantities are all refused', () {
+      expect(transferQtyOk(null, 10), isFalse);
+      expect(transferQtyOk(0, 10), isFalse);
+      expect(transferQtyOk(-5, 10), isFalse);
+    });
+  });
 }

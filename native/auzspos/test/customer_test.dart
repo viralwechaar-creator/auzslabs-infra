@@ -76,4 +76,45 @@ void main() {
       expect(sum.points, 0);
     });
   });
+
+  group('profileToMergeOnSave (customerSheet Save -- regression for a real data-corruption bug found '
+      'during integration verification)', () {
+    test('when the phone was not changed before saving, reuses the already-loaded profile (no extra lookup)', () {
+      var lookups = 0;
+      final opened = {'phone': '9876543210', 'tags': ['VIP']};
+      final result = profileToMergeOnSave(
+        openedPhoneDigits: '9876543210',
+        savingPhoneDigits: '9876543210',
+        openedProfile: opened,
+        lookup: (ph) { lookups++; return null; },
+      );
+      expect(result, same(opened));
+      expect(lookups, 0, reason: 'the common case (phone unchanged) must not need a fresh lookup');
+    });
+
+    test('BUG THIS REPRODUCES: when the cashier changes the phone before saving, the ORIGINAL '
+        'customer\'s profile must never be carried onto the NEW phone\'s record', () {
+      final staleOriginalCustomer = {'phone': '9876543210', 'tags': ['VIP'], 'favorite': true, 'dob': '1990-01-01'};
+      final realExistingCustomerAtNewNumber = {'phone': '1111111111', 'tags': ['Regular'], 'favorite': false};
+      final result = profileToMergeOnSave(
+        openedPhoneDigits: '9876543210',
+        savingPhoneDigits: '1111111111', // cashier typed a different number before tapping Save
+        openedProfile: staleOriginalCustomer,
+        lookup: (ph) => ph == '1111111111' ? realExistingCustomerAtNewNumber : null,
+      );
+      expect(result, same(realExistingCustomerAtNewNumber), reason: 'must look up the NEW phone\'s own real profile, never reuse the stale one loaded for the original phone');
+      expect(result!['tags'], ['Regular'], reason: 'the original VIP customer\'s tags must not bleed onto this unrelated customer');
+    });
+
+    test('changing to a phone with NO existing customer looks up null, not the stale profile', () {
+      final staleOriginalCustomer = {'phone': '9876543210', 'tags': ['VIP']};
+      final result = profileToMergeOnSave(
+        openedPhoneDigits: '9876543210',
+        savingPhoneDigits: '2222222222',
+        openedProfile: staleOriginalCustomer,
+        lookup: (ph) => null,
+      );
+      expect(result, isNull, reason: 'a brand-new customer at the new number starts with nothing from the old one');
+    });
+  });
 }
