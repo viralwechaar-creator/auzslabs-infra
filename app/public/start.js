@@ -3,7 +3,7 @@
    this one address, so a single home-screen icon covers every app. Plain DOM, textContent only. */
 (function () {
   var sb = supabase.createClient(CFG.url, CFG.key);
-  var box = document.getElementById('box'), foot = document.getElementById('foot');
+  var box = document.getElementById('box'), foot = document.getElementById('foot'), sheet = document.getElementById('sheet');
   var LAST = 'auz.last';
   function el(tag, props, kids) {
     var n = document.createElement(tag);
@@ -11,7 +11,16 @@
     (kids || []).forEach(function (c) { if (c != null) n.append(c); });
     return n;
   }
-  function set(nodes) { box.textContent = ''; nodes.forEach(function (n) { box.append(n); }); Array.prototype.forEach.call(box.querySelectorAll('.tile'), function (t, i) { t.style.setProperty('--i', i); }); }
+  // Every screen change re-plays the sheet's slide-up-from-the-footer motion (not just the first time it
+  // opens) -- the owner asked for "a new page with a footer popup animation" for Sign in too, not only Welcome.
+  // Toggling .up off then back on forces the browser to restart the CSS transition from translateY(100%).
+  function set(nodes) {
+    box.textContent = ''; nodes.forEach(function (n) { box.append(n); });
+    Array.prototype.forEach.call(box.querySelectorAll('.tile'), function (t, i) { t.style.setProperty('--i', i); });
+    sheet.classList.remove('up');
+    void sheet.offsetHeight; // force reflow so the next class add is seen as a fresh transition, not a no-op
+    requestAnimationFrame(function () { sheet.classList.add('up'); });
+  }
   function own(d, k) { return d.features && d.features[k] === true && (d.enabled_features || {})[k] !== false; }
   function greet() { var h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; }
   function lastGet() { try { return localStorage.getItem(LAST) || ''; } catch (e) { return ''; } }

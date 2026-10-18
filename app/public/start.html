@@ -18,11 +18,19 @@
 <link rel="stylesheet" href="/ds/auz.css?v=4">
 <style>
 *{box-sizing:border-box}
-body{margin:0;min-height:100vh;background:var(--bg,#f5f4f2);color:var(--label,#171717);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding:max(20px,env(safe-area-inset-top)) 18px max(20px,env(safe-area-inset-bottom));display:flex;justify-content:center}
-main{width:100%;max-width:440px;margin:auto 0}
-.brand{display:flex;align-items:center;gap:9px;margin:0 4px 18px;font-weight:700;font-size:15px;letter-spacing:.01em}
-.brand img{width:30px;height:30px;border-radius:8px}
-.card{background:var(--card,#fff);border:1px solid var(--sep,#e4dfda);border-radius:24px;padding:26px 24px;box-shadow:0 8px 30px rgba(0,0,0,.06)}
+html,body{height:100%}
+body{margin:0;background:var(--bg,#f5f4f2);color:var(--label,#171717);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;display:flex;flex-direction:column;overflow-x:hidden}
+/* The backdrop: a big centred mark behind the sheet (its own page, per the reference -- not a tucked-away
+   top-left brand row). Stays visible in the space above whatever height the sheet below is using. */
+.stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;min-height:0}
+.stage img{width:84px;height:84px;border-radius:22px;box-shadow:0 14px 30px -10px rgba(0,0,0,.25)}
+.stage b{font-size:19px;font-weight:700;letter-spacing:.01em}
+/* The sheet: fixed to the screen's own bottom edge, rises on every screen change (set() in start.js
+   re-triggers .up each time) -- the "popup from the footer" the owner asked for, not an inline card. */
+.sheet-wrap{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;pointer-events:none;z-index:5}
+.sheet{pointer-events:auto;width:100%;max-width:440px;max-height:82vh;overflow-y:auto;background:var(--card,#fff);border-radius:26px 26px 0 0;box-shadow:0 -16px 50px rgba(0,0,0,.16);padding:26px 24px calc(22px + env(safe-area-inset-bottom));transform:translateY(100%);transition:transform .42s cubic-bezier(.22,.9,.28,1)}
+.sheet.up{transform:translateY(0)}
+@media (prefers-reduced-motion:reduce){.sheet{transition:none}}
 .greet{margin:0 0 6px;color:var(--label2,#6a625b);font-size:12px;font-weight:600;letter-spacing:.09em;text-transform:uppercase}
 .back{display:flex;align-items:center;gap:6px;margin:0 0 16px;padding:0;border:0;background:none;color:var(--label2,#6a625b);font:500 14px inherit;cursor:pointer}
 .greet + h1{font-size:27px;margin-top:2px}
@@ -43,28 +51,20 @@ p.sub{margin:0 0 20px;color:var(--label2,#6a625b);font-size:14px;line-height:1.5
 .tiles{display:grid;gap:10px;margin-top:12px}
 .tile{display:flex;flex-direction:column;gap:2px;padding:16px;border:1px solid var(--sep,#e4dfda);border-radius:16px;background:var(--card,#fff);color:inherit;text-decoration:none}
 .tile b{font-size:15.5px;font-weight:600}.tile span{font-size:12.5px;color:var(--label2,#6a625b)}
-.tile{position:relative;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;animation:tileIn .55s cubic-bezier(.2,.9,.3,1) both;animation-delay:calc(var(--i,0)*70ms + 80ms)}
+.tile{position:relative;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
 .tile:after{content:"";position:absolute;right:16px;top:50%;width:8px;height:8px;margin-top:-5px;border-top:2px solid var(--label2,#6a625b);border-right:2px solid var(--label2,#6a625b);transform:rotate(45deg);opacity:.45;transition:transform .2s ease,opacity .2s ease}
 .tile:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.08);border-color:var(--accent,#800020)}
 .tile:hover:after{transform:translateX(4px) rotate(45deg);opacity:1}
 .tile:active{transform:scale(.985)}
-.card{animation:cardIn .6s cubic-bezier(.2,.9,.3,1) both}
-html.auz-wait .tile,html.auz-wait .card,html.auz-wait .brand{animation-play-state:paused}
-.brand{animation:cardIn .6s ease both}
-@keyframes tileIn{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:none}}
-@keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion:reduce){.tile,.card,.brand{animation:none!important;transition:none}.tile:after{transition:none}}
+html.auz-wait .sheet{transition:none!important}
 .links{display:flex;justify-content:space-between;margin:16px 4px 0;font-size:13px}
 .links a,.links button{color:inherit;background:none;border:0;font:inherit;text-decoration:underline;cursor:pointer;padding:0}
 .hide{display:none!important}
 </style>
 </head>
 <body>
-<main>
-  <div class="brand"><img src="/icon-hub-180.png" alt="">AUZslab</div>
-  <div class="card" id="box"><p class="sub">Loading…</p></div>
-  <div class="links" id="foot"></div>
-</main>
+<div class="stage"><img src="/icon-hub-180.png" alt=""><b>AUZslab</b></div>
+<div class="sheet-wrap"><div class="sheet" id="sheet"><div id="box"><p class="sub">Loading…</p></div><div class="links" id="foot"></div></div></div>
 <script src="/config.js"></script>
 <script src="/sb-client.js?v=5"></script>
 <script src="/ds/staffpin.js?v=1"></script>
@@ -72,6 +72,6 @@ html.auz-wait .tile,html.auz-wait .card,html.auz-wait .brand{animation-play-stat
 <script src="/ds/twofa.js?v=1"></script>
 <script src="/ds/nativepush.js?v=4"></script>
 <script src="/ds/appshell.js?v=4"></script>
-<script src="/start.js?v=13"></script>
+<script src="/start.js?v=14"></script>
 </body>
 </html>
