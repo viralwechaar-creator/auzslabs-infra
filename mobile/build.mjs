@@ -27,6 +27,37 @@ if (fs.existsSync(png)) {
       execSync(`python3 -c "from PIL import Image;Image.open('${png}').convert('RGBA').resize((${s},${s})).save('android/app/src/main/res/mipmap-${d}/${n}.png')"`);
   }
 }
+// Android's own cold-start splash (via the androidx core-splashscreen dependency `cap add android`
+// already pulls in) defaults to a plain WHITE 480x320 drawable plus the app's own launcher icon
+// auto-overlaid on top -- shown for however long the WebView takes to fetch and paint the real page.
+// That is the "icon on a white screen for two seconds, then our own animation starts" the owner
+// reported: two splash screens stacked back to back, not one. Fixed by making the OS splash the exact
+// same ink colour every web splash (ds/launch.js / ds/launch-hub.js) opens on, with no icon overlay --
+// the two then read as one continuous screen instead of a visible hand-off. `windowSplashScreenBackground`
+// / `windowSplashScreenAnimatedIcon` are read by the compat library on every supported API level (not
+// only real Android 12+), since `Theme.SplashScreen` here is the compat theme those attrs belong to.
+const splashBg = [23, 23, 23]; // #171717, matches ds/launch.js and ds/launch-hub.js's background exactly
+for (const dir of fs.readdirSync('android/app/src/main/res').filter((d) => /^drawable(-|$)/.test(d))) {
+  const f = `android/app/src/main/res/${dir}/splash.png`;
+  if (fs.existsSync(f)) {
+    const im = fs.statSync(f) && execSync(`python3 -c "from PIL import Image;print(Image.open('${f}').size)"`).toString().trim();
+    const [w, h] = im.replace(/[()]/g, '').split(',').map((n) => parseInt(n, 10));
+    execSync(`python3 -c "from PIL import Image;Image.new('RGB',(${w},${h}),(${splashBg.join(',')})).save('${f}')"`);
+  }
+}
+execSync(`python3 -c "from PIL import Image;Image.new('RGBA',(4,4),(0,0,0,0)).save('android/app/src/main/res/drawable/auz_splash_icon.png')"`);
+fs.writeFileSync('android/app/src/main/res/values/colors.xml',
+  '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="auz_splash_bg">#171717</color>\n</resources>\n');
+let styles = fs.readFileSync('android/app/src/main/res/values/styles.xml', 'utf8');
+styles = styles.replace(
+  '<style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">\n        <item name="android:background">@drawable/splash</item>\n    </style>',
+  '<style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">\n' +
+  '        <item name="android:background">@color/auz_splash_bg</item>\n' +
+  '        <item name="windowSplashScreenBackground">@color/auz_splash_bg</item>\n' +
+  '        <item name="windowSplashScreenAnimatedIcon">@drawable/auz_splash_icon</item>\n' +
+  '        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>\n' +
+  '    </style>');
+fs.writeFileSync('android/app/src/main/res/values/styles.xml', styles);
 // Payroll's clock-in (and the hub app, which can navigate into Payroll in the same WebView -- allowNavigation
 // above covers the whole domain) calls plain navigator.geolocation. Capacitor's own WebView already answers that
 // call (BridgeWebChromeClient grants the runtime permission automatically, no extra npm plugin needed) -- but
