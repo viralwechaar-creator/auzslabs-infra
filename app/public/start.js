@@ -13,6 +13,7 @@
   }
   function set(nodes) { box.textContent = ''; nodes.forEach(function (n) { box.append(n); }); Array.prototype.forEach.call(box.querySelectorAll('.tile'), function (t, i) { t.style.setProperty('--i', i); }); }
   function own(d, k) { return d.features && d.features[k] === true && (d.enabled_features || {})[k] !== false; }
+  function greet() { var h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; }
   function lastGet() { try { return localStorage.getItem(LAST) || ''; } catch (e) { return ''; } }
   function lastSet(v) { try { localStorage.setItem(LAST, v); } catch (e) { /* private mode */ } }
 
@@ -33,7 +34,7 @@
     var pw = el('input', { class: 'input', type: 'password', placeholder: 'Password', autocomplete: 'current-password', 'aria-label': 'Password' });
     var m = el('div', { class: 'msg', role: 'alert', text: msg || '' });
     var go = el('button', { class: 'btn fill', type: 'button', text: 'Sign in' });
-    var forgot = el('button', { type: 'button', style: 'justify-self:end;background:none;border:0;color:inherit;text-decoration:underline;font:inherit;font-size:14px;cursor:pointer', text: 'Forgot password?' });
+    var forgot = el('button', { type: 'button', style: 'justify-self:end;background:none;border:0;color:inherit;text-decoration:underline;font:inherit;font-size:13px;cursor:pointer', text: 'Forgot password?' });
     var googleHost = el('div');
     var owner = el('div', { class: 'grid' }, [googleHost, el('div', { class: 'sep', text: 'or' }), email, pw, forgot, go]);
     var staff = auzStaffPinForm(sb, boot);
@@ -56,7 +57,7 @@
       var r = await sb.auth.forgotPassword(email.value.trim(), 'https://auzslab.in/signup.html');
       m.style.color = r.error ? '#c2183f' : 'inherit'; m.textContent = r.error ? r.error.message : 'If that email has an account, a reset link is on its way.';
     };
-    set([el('h1', { text: 'Sign in' }), el('p', { class: 'sub', text: 'One place for all your AUZslab apps.' }), el('div', { class: 'seg' }, [tOwner, tStaff]), owner, staff, m]);
+    set([el('p', { class: 'greet', text: greet() }), el('h1', { text: 'Sign in' }), el('p', { class: 'sub', text: 'One place for all your AUZslab apps.' }), el('div', { class: 'seg' }, [tOwner, tStaff]), owner, staff, m]);
     which('owner');
     foot.append(el('a', { href: 'https://auzslab.in/', text: 'Explore AUZslab' }), el('a', { href: 'https://auzslab.in/signup.html', text: 'Create an account' }));
   }
