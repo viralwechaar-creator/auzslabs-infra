@@ -355,6 +355,30 @@ export async function handleSalon(req, res, ip) {
     }
 
 
+    // ---- WhatsApp automation (db/184/db/190) ----
+    // The salon console authenticates with its own cookie session (admin()/member() above), never
+    // the generic auth_users JWT, so it can't call wa_save_settings/wa_my_status (which key off
+    // app_uid()). wa_tenant_settings has no RLS (same raw-pool-only pattern as phone_otps/payments --
+    // see CLAUDE.md), so a plain pool query here, already gated by admin(), is the right shape.
+    if (method === 'GET' && p === '/admin/whatsapp') {
+      await admin();
+      const [{ rows: [s] }, { rows: tmpl }] = await Promise.all([
+        pool.query('select enabled, allow_platform from wa_tenant_settings where tenant_id = $1', [tid]),
+        pool.query("select key, name, body from wa_templates where audience = 'shop' order by key"),
+      ]);
+      return send(200, { enabled: !!(s && s.enabled), allowPlatform: !!(s && s.allow_platform), templates: tmpl });
+    }
+    if (method === 'POST' && p === '/admin/whatsapp') {
+      await admin(); noDemo();
+      const enabled = !!body.enabled;
+      await pool.query(
+        `insert into wa_tenant_settings (tenant_id, enabled) values ($1, $2)
+         on conflict (tenant_id) do update set enabled = excluded.enabled, updated_at = now()`,
+        [tid, enabled],
+      );
+      return send(200, { ok: true, enabled });
+    }
+
     // ---- staff accounts (owner only) ----
     const staffView = (st, invoices) => ({
       id: st.id, name: st.name, phone: st.phone, designation: st.designation || '', active: st.active !== false,
