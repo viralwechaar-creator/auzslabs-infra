@@ -14,7 +14,14 @@ const gsRaw = process.env.GOOGLE_SERVICES_JSON ? Buffer.from(process.env.GOOGLE_
 const pushReady = !!gsRaw && (gsRaw.includes('"package_name": "'+A.id+'"') || gsRaw.includes('"package_name":"'+A.id+'"'));
 fs.writeFileSync('capacitor.config.json', JSON.stringify({
   appId:A.id, appName:A.name, webDir:'www', backgroundColor:'#171717',
-  server:{url:A.url, cleartext:false, allowNavigation:['auzslab.in','*.auzslab.in']},
+  // errorPath: without it, a failed load of the remote server.url (e.g. no internet) falls through to
+  // the OS's own native "Web page not available / net::ERR_INTERNET_DISCONNECTED" error screen --
+  // which shows the real app.auzslab.in URL and a generic browser-style page, visibly giving away that
+  // this is a wrapped website rather than a native app. Capacitor's own BridgeWebViewClient already
+  // redirects to this local bundled page automatically on any main-frame load error when it's set
+  // (com.getcapacitor.Bridge#getErrorUrl / CapConfig#getErrorPath -- no custom native code needed), so
+  // the owner's own branded www/index.html (written above) shows instead.
+  server:{url:A.url, cleartext:false, allowNavigation:['auzslab.in','*.auzslab.in'], errorPath:'index.html'},
   android:{appendUserAgent:'AUZslabApp', allowMixedContent:false},
   auzPushReady:pushReady
 },null,2));
