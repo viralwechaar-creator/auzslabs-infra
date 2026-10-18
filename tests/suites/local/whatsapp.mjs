@@ -186,4 +186,70 @@ export default async function run({ stack }) {
     assert((await q(`select count(*)::int n from wa_outbox where ref=$1`, [b2.id]))[0].n === 0, 'messaged although the shop had switched WhatsApp off');
     await q('delete from bookings where tenant_id=$1', [tid]);
   });
+
+  // ---------- db/190: the `invoice_link` template wired to every real sale/invoice completion ----------
+  await s.check('A POS bill becoming paid messages the customer once with the shared "invoice_link" template and the staff-side bill link; replaying the already-paid order (a reprint/resync) never messages twice', async () => {
+    await ok('wa_save_settings', { p: { enabled: true, events: {} } }, owner);
+    const oid = 'wa-pos-' + crypto.randomUUID();
+    const open = { id: oid, status: 'open', type: 'Dine-in', cust: { name: 'Priya', phone: '9899999901' }, lines: [{ name: 'Tea', qty: 1, price: 40 }], no: 'TC-9001' };
+    await ok('push_record', { rid: oid, rkind: 'order', rdata: open, rdeleted: false, base: null, force: false }, owner);
+    assert((await q('select count(*)::int n from wa_outbox where ref=$1', [oid + '-bill']))[0].n === 0, 'messaged before paid');
+    const paid = { ...open, status: 'paid', tok: 'tokpos' + oid.slice(-8), t: { total: 40 }, paidAt: new Date().toISOString() };
+    await ok('push_record', { rid: oid, rkind: 'order', rdata: paid, rdeleted: false, base: null, force: false }, owner);
+    const m = (await q('select template, params from wa_outbox where ref=$1', [oid + '-bill']))[0];
+    assert(m && m.template === 'invoice_link' && m.params[0] === 'Priya' && m.params[1] === 'Test Cafe' && m.params[2] === 'TC-9001' && m.params[3] === '40.00' && m.params[4].endsWith('/i.html?o=' + paid.tok), JSON.stringify(m));
+    // replay: re-sync the already-paid order (a reprint) must not queue a second one
+    await ok('push_record', { rid: oid, rkind: 'order', rdata: { ...paid, printCount: 1 }, rdeleted: false, base: null, force: true }, owner);
+    assert((await q('select count(*)::int n from wa_outbox where ref=$1', [oid + '-bill']))[0].n === 1, 'replay duplicated the message');
+    // switched off: paying a different order never queues anything
+    await ok('wa_save_settings', { p: { enabled: false, events: {} } }, owner);
+    const oid2 = 'wa-pos-off-' + crypto.randomUUID();
+    await ok('push_record', { rid: oid2, rkind: 'order', rdata: { id: oid2, status: 'paid', cust: { name: 'X', phone: '9899999902' }, lines: [], no: 'TC-9002', tok: 'tokoff', t: { total: 10 } }, rdeleted: false, base: null, force: false }, owner);
+    assert((await q('select count(*)::int n from wa_outbox where ref=$1', [oid2 + '-bill']))[0].n === 0, 'messaged while the shop had switched WhatsApp off');
+    await ok('wa_save_settings', { p: { enabled: true, events: {} } }, owner);
+  }, 'critical');
+
+  await s.check('An AUZsLedger/AUZsScan invoice becoming posted messages the customer once with the shared books\' bill link; a second posting attempt is refused by the books themselves and never duplicates the message; switched off, nothing is queued', async () => {
+    const acctOwner = await login(USERS.acctOwner);
+    const atid = (await q('select id from tenants where slug=$1', [TENANTS.acct]))[0].id;
+    await ok('wa_save_settings', { p: { enabled: true, events: {} } }, acctOwner);
+    await ok('acc_bootstrap', {}, acctOwner);
+    const party = await ok('acc_save_party', { p: { kind: 'customer', name: 'WA Test Traders', phone: '9899999910' } }, acctOwner);
+    const prod = await ok('acc_save_product', { p: { sku: 'WA-TEST-1', name: 'Consulting', is_service: true, sale_price: 1000, tax_rate: 18 } }, acctOwner);
+    const doc = await ok('acc_save_document', { p: { doc_type: 'invoice', party_id: party.id, post: true, lines: [{ product_id: prod.id, description: 'Consulting', qty: 1, rate: 1000 }] } }, acctOwner);
+    assert(doc.posted, 'did not post: ' + JSON.stringify(doc));
+    const m = (await q('select template, params from wa_outbox where tenant_id=$1 and ref=$2', [atid, doc.id + '-bill']))[0];
+    assert(m && m.template === 'invoice_link' && m.params[0] === 'WA Test Traders' && m.params[1] === 'Test Accounts' && m.params[2] === doc.number && m.params[3] === '1180.00' && /\/bill\.html\?t=[a-f0-9]{32}$/.test(m.params[4]), JSON.stringify(m));
+    await fails('acc_post_document', { p_doc_id: doc.id }, acctOwner, 'already posted'); // never duplicates
+    assert((await q('select count(*)::int n from wa_outbox where tenant_id=$1 and ref=$2', [atid, doc.id + '-bill']))[0].n === 1, 'duplicated');
+    // switched off
+    await ok('wa_save_settings', { p: { enabled: false, events: {} } }, acctOwner);
+    const party2 = await ok('acc_save_party', { p: { kind: 'customer', name: 'WA Test Traders 2', phone: '9899999911' } }, acctOwner);
+    const doc2 = await ok('acc_save_document', { p: { doc_type: 'invoice', party_id: party2.id, post: true, lines: [{ product_id: prod.id, description: 'Consulting', qty: 1, rate: 500 }] } }, acctOwner);
+    assert((await q('select count(*)::int n from wa_outbox where tenant_id=$1 and ref=$2', [atid, doc2.id + '-bill']))[0].n === 0, 'messaged while switched off');
+  }, 'critical');
+
+  await s.check('An AUZsMob sale with a customer attached messages them once with the shared receipt link; replaying the same client-generated sale id never duplicates it; no customer or switched off, nothing is queued', async () => {
+    const mobOwner = await login(USERS.mobOwner);
+    const mtid = (await q('select id from tenants where slug=$1', [TENANTS.mob]))[0].id;
+    await ok('wa_save_settings', { p: { enabled: true, events: {} } }, mobOwner);
+    const item = await ok('mob_save_item', { p_id: crypto.randomUUID(), p: { name: 'WA Test Cable', category: 'accessory', sellingPrice: 299, costPrice: 150 } }, mobOwner);
+    await ok('mob_push_purchase', { p_id: crypto.randomUUID(), p: { itemId: item.id, qty: 5, rate: 150 } }, mobOwner);
+    const saleId = crypto.randomUUID();
+    const sale = await ok('mob_push_sale', { p_id: saleId, p: { items: [{ itemId: item.id, qty: 1, price: 299 }], customerName: 'Rohit', customerPhone: '9899999920', paymentMode: 'cash' } }, mobOwner);
+    const m = (await q('select template, params from wa_outbox where tenant_id=$1 and ref=$2', [mtid, saleId + '-bill']))[0];
+    assert(m && m.template === 'invoice_link' && m.params[0] === 'Rohit' && m.params[1] === 'Test Mobile Shop' && m.params[2] === sale.billNo && m.params[3] === '299.00' && /\/mobbill\.html\?t=[a-f0-9]{32}$/.test(m.params[4]), JSON.stringify(m));
+    // replay: the exact same client-generated id (a duplicate sync/webhook-style replay) must not duplicate
+    await ok('mob_push_sale', { p_id: saleId, p: { items: [{ itemId: item.id, qty: 1, price: 299 }], customerName: 'Rohit', customerPhone: '9899999920', paymentMode: 'cash' } }, mobOwner);
+    assert((await q('select count(*)::int n from wa_outbox where tenant_id=$1 and ref=$2', [mtid, saleId + '-bill']))[0].n === 1, 'replay duplicated');
+    // no customer attached: never messaged
+    const sale2 = crypto.randomUUID();
+    await ok('mob_push_sale', { p_id: sale2, p: { items: [{ itemId: item.id, qty: 1, price: 299 }], paymentMode: 'cash' } }, mobOwner);
+    assert((await q('select count(*)::int n from wa_outbox where tenant_id=$1 and ref=$2', [mtid, sale2 + '-bill']))[0].n === 0, 'messaged with no customer phone');
+    // switched off: never messaged either
+    await ok('wa_save_settings', { p: { enabled: false, events: {} } }, mobOwner);
+    const sale3 = crypto.randomUUID();
+    await ok('mob_push_sale', { p_id: sale3, p: { items: [{ itemId: item.id, qty: 1, price: 299 }], customerName: 'Off Test', customerPhone: '9899999921', paymentMode: 'cash' } }, mobOwner);
+    assert((await q('select count(*)::int n from wa_outbox where tenant_id=$1 and ref=$2', [mtid, sale3 + '-bill']))[0].n === 0, 'messaged while switched off');
+  }, 'critical');
 }
