@@ -19,6 +19,18 @@ const RETRY_BASE_S = process.env.WA_RETRY_BASE_S !== undefined ? Number(process.
 
 export const waPlatformConfigured = () => !!(PLATFORM_ID && PLATFORM_TOKEN);
 
+// JS-callable wrapper over wa_enqueue() (db/184) for server code that isn't a SQL trigger -- today
+// just the Salon router, since Showoff's bills/bookings are JSON blobs mutated by JS, not rows a
+// Postgres trigger can watch. wa_enqueue() already checks wa_tenant_settings.enabled (the owner's
+// on/off switch) and is idempotent per (tenant, template, ref), so this adds nothing but a safe,
+// never-throwing JS entry point -- logs and swallows any failure so a message can never block the
+// real action that queued it, same discipline as every `exception when others then null;` SQL trigger.
+export async function enqueueWa(tenantId, phone, templateKey, params, ref) {
+  try {
+    await pool.query('select wa_enqueue($1, $2, $3, $4, $5)', [tenantId, phone, templateKey, JSON.stringify(params || []), ref || null]);
+  } catch (e) { console.warn('enqueueWa failed:', e.message); }
+}
+
 // Shop tokens are stored encrypted (AES-256-GCM, own HKDF subkey of JWT_SECRET), never returned to a browser.
 const KEY = Buffer.from(hkdfSync('sha256', Buffer.from(JWT_SECRET), Buffer.alloc(0), 'auzslab-whatsapp-token-v1', 32));
 export function encryptToken(t) {

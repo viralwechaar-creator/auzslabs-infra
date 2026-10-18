@@ -2,7 +2,7 @@
 import { suite, watch, assert } from '../../lib/harness.mjs';
 import { newCtx } from '../../lib/common.mjs';
 import { salonClient, rpc } from '../../lib/api.mjs';
-import { PASSWORD, TENANTS, USERS } from '../../lib/db.mjs';
+import { PASSWORD, TENANTS, USERS, q } from '../../lib/db.mjs';
 
 const tomorrow = () => { const d = new Date(Date.now() + 2 * 864e5); return d.toISOString().slice(0, 10); };
 
@@ -106,6 +106,21 @@ export default async function run({ browser, stack }) {
   await s.check('A made-up invoice link shows an error, not someone else\'s bill', async () => {
     const r = await salonClient(stack, host).call('GET', '/i/aaaaaaaaaaaaaaaa'); assert(r.status === 404, 'status ' + r.status);
   });
+  await s.check('A new bill with a phone number queues the shared "invoice_link" WhatsApp message once the owner switches WhatsApp on; switched off, nothing is queued (db/190, server/src/salon/router.js\'s direct JS call)', async () => {
+    const login = async (email) => (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password: PASSWORD }) })).json()).access_token;
+    const bearer = await login(USERS.salonOwner);
+    const rpc = async (fn, args) => { const r = await fetch(stack.apiBase + '/rpc/' + fn, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + bearer }, body: JSON.stringify(args || {}) }); return (await r.json()).data; };
+    const tid = (await q('select id from tenants where slug=$1', [TENANTS.salon]))[0].id;
+    await rpc('wa_save_settings', { p: { enabled: true, events: {} } });
+    const r = await owner.call('POST', '/admin/invoices', { client: { name: 'WA Bill Client', phone: '9833355566' }, items: [{ name: 'Facial', qty: 1, price: 800 }] });
+    assert(r.status === 201, JSON.stringify(r));
+    const m = (await q('select template, params from wa_outbox where tenant_id=$1 and ref=$2', [tid, r.data.invoice.id + '-bill']))[0];
+    assert(m && m.template === 'invoice_link' && m.params[0] === 'WA Bill Client' && m.params[1] === 'Test Salon' && m.params[2] === r.data.invoice.no && m.params[3] === '800.00' && new RegExp('/i/' + r.data.invoice.token + '$').test(m.params[4]), JSON.stringify(m));
+    await rpc('wa_save_settings', { p: { enabled: false, events: {} } });
+    const r2 = await owner.call('POST', '/admin/invoices', { client: { name: 'WA Bill Client 2', phone: '9833355577' }, items: [{ name: 'Wax', qty: 1, price: 300 }] });
+    assert(r2.status === 201, JSON.stringify(r2));
+    assert((await q('select count(*)::int n from wa_outbox where tenant_id=$1 and ref=$2', [tid, r2.data.invoice.id + '-bill']))[0].n === 0, 'messaged while switched off');
+  }, 'critical');
 
   // staff
   const staffApi = salonClient(stack, host);

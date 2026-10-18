@@ -2,11 +2,12 @@ import crypto from 'node:crypto';
 import { pool, withAuth } from '../db.js';
 import { captureError } from '../errors.js';
 import { staffLogin, verifyToken } from '../auth.js';
-import { cleanString, fail, hex6, htmlEsc, limited, readBody, round2, sendJson, staffPhone, todayStr, validDate } from './util.js';
+import { DOMAIN, cleanString, fail, hex6, htmlEsc, limited, readBody, round2, sendJson, staffPhone, todayStr, validDate } from './util.js';
 import { bookingCounts, freshDb, loadDb, loadSite, mutate, mutateStaffAdmin, payrollOn, readKey, readStaffAdmin, reseedDemo, tenantFor, usesGeneric, writeKey, writeStaffAdmin } from './storage.js';
 import { clearSession, getSession, hashPassword, ownerPasswordOk, setSession, verifyScrypt } from './session.js';
 import { EXPENSE_CATEGORIES, addBooking, addExpense, addInvoice, clientsList, computeSlots, publicSite } from './rules.js';
 import { salonIcon, salonOgImage, saveUpload } from './brand.js';
+import { enqueueWa } from '../whatsapp.js';
 
 // Entry point: index.js hands over every request whose path starts with
 // /salon-api (Caddy rewrites /api/* on tenant subdomains to it).
@@ -247,7 +248,21 @@ export async function handleSalon(req, res, ip) {
     }
     if (method === 'POST' && p === '/admin/bookings') { await member(); return send(201, { ok: true, booking: await mutate(tenant, (db) => addBooking(db, body, true), ['site', 'data'], ['data']) }); }
 
-    if (method === 'POST' && p === '/admin/invoices') { const me = await member(); return send(201, { ok: true, invoice: await mutate(tenant, (db) => addInvoice(db, body, me), ['site', 'data'], ['data']) }); }
+    if (method === 'POST' && p === '/admin/invoices') {
+      const me = await member();
+      const invoice = await mutate(tenant, (db) => addInvoice(db, body, me), ['site', 'data'], ['data']);
+      // WhatsApp "your bill is ready" link (invoice_link, db/184) -- a direct JS call since a salon's
+      // bills are a JSON blob mutated here, not a row a SQL trigger could watch (see db/190's own
+      // comment). enqueueWa() never throws and wa_enqueue() itself already checks the owner's
+      // wa_tenant_settings.enabled switch, so this can never block saving the invoice.
+      if (invoice && invoice.client && invoice.client.phone && DOMAIN) {
+        await enqueueWa(tid, invoice.client.phone, 'invoice_link',
+          [invoice.client.name || 'there', tenant.name || 'us', invoice.no, invoice.total.toFixed(2),
+           `https://${tenant.slug}.${DOMAIN}/i/${invoice.token}`],
+          invoice.id + '-bill');
+      }
+      return send(201, { ok: true, invoice });
+    }
     const iv = p.match(/^\/admin\/invoices\/(.+)$/);
     if (method === 'DELETE' && iv) {
       await admin();
