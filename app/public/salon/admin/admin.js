@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  let D = null, current = 'dashboard', B = null, ME = { role: 'owner' };
+  let D = null, current = 'dashboard', B = null, ME = { role: 'owner' }, WA = null;
   const isOwner = () => ME.role === 'owner';
   const view = () => $('#view');
 
@@ -14,7 +14,12 @@
   let tt;
   function toast(msg, err) { const t = $('#toast'); t.textContent = msg; t.className = 'a-toast show' + (err ? ' err' : ''); clearTimeout(tt); tt = setTimeout(() => { t.className = 'a-toast'; }, 3400); }
   const fail = e => toast(e.message || 'Something went wrong', true);
-  const load = async () => { D = await api('GET', '/api/admin/data'); if (!D.today) D.today = new Date().toLocaleDateString('en-CA'); renderNav(); };
+  const load = async () => {
+    D = await api('GET', '/api/admin/data'); if (!D.today) D.today = new Date().toLocaleDateString('en-CA'); renderNav();
+    // Fire-and-forget: lets invoice "Send" buttons know whether automatic sending is on without
+    // blocking the main load. Stays null (treated as off) if it fails.
+    api('GET', '/api/admin/whatsapp').then(w => { WA = w; }).catch(() => {});
+  };
 
   function modal(title, body, actions) {
     return new Promise(res => {
@@ -396,7 +401,7 @@
           h('td', { 'data-label': 'Invoice' }, h('span', {}, h('b', { text: i.no }), ' · ', h('span', { class: 'muted', text: fmtDate(i.date, { day: 'numeric', month: 'short', year: 'numeric' }) }))),
           h('td', { 'data-label': 'Client' }, h('span', {}, i.client.name, ' · ', h('span', { class: 'muted', text: i.client.phone }))),
           h('td', { 'data-label': 'Total', text: i.void ? 'Void' : inr(i.total) }),
-          h('td', { class: 'a-td-actions' }, i.void ? null : h('div', { class: 'a-row-actions' }, waBtn('Send', i.client.phone, invoiceMessage(i)),
+          h('td', { class: 'a-td-actions' }, i.void ? null : h('div', { class: 'a-row-actions' }, waSendRowBtn(i),
             h('a', { class: 'btn btn-sm btn-alt', href: '/i/' + i.token, target: '_blank', rel: 'noopener' }, 'Open'),
             !isOwner() ? null : btn('Void', async () => { if (await confirmBox('Void invoice ' + i.no + '? The customer link will stop working.', 'Void invoice')) { try { await api('DELETE', '/api/admin/invoices/' + i.id); await load(); rerender(); toast('Invoice voided'); } catch (ex) { fail(ex); } } }, 'btn-sm btn-danger')))))))) : emptyNote('No invoices yet.', 'scissors'));
     }
@@ -404,13 +409,41 @@
     view().replaceChildren(h('div', { class: 'a-cols' }, form, h('div', {}, h('h2', { class: 'a-h2', text: 'Invoices' }), q, h('div', { style: 'height:12px' }), hist)));
   }
 
+  // Automatic sending is on: tapping "Send" asks the server to send it (or retry it if it failed) --
+  // never opens wa.me, which would mean a second, manually-sent copy. Automatic is off (or unknown):
+  // tap-to-send a wa.me link, same as always.
+  function waSendAction(inv, afterSend) {
+    if (!inv.client.phone) return null;
+    if (WA && WA.enabled) {
+      return { label: 'Send on WhatsApp', value: 'wa', fn: async () => {
+        try { const r = await api('POST', `/api/admin/invoices/${inv.id}/whatsapp`, {}); toast(r.status === 'sent' ? 'Sent on WhatsApp' : r.already ? 'Already sent on WhatsApp' : 'Sending on WhatsApp...'); if (afterSend) afterSend(); }
+        catch (ex) { fail(ex); }
+        return false;
+      } };
+    }
+    return { label: 'Send on WhatsApp', href: waLink(inv.client.phone, invoiceMessage(inv)) };
+  }
+
+  function waSendRowBtn(inv) {
+    if (!inv.client.phone) return h('span', { class: 'muted', text: 'No phone' });
+    if (WA && WA.enabled) {
+      return btn('Send', async () => {
+        try { const r = await api('POST', `/api/admin/invoices/${inv.id}/whatsapp`, {}); toast(r.already ? 'Already sent on WhatsApp' : 'Sending on WhatsApp...'); }
+        catch (ex) { fail(ex); }
+      }, 'btn-sm btn-alt');
+    }
+    return waBtn('Send', inv.client.phone, invoiceMessage(inv));
+  }
+
   function invoiceDialog(inv) {
     const link = location.origin + '/i/' + inv.token;
+    const auto = WA && WA.enabled;
     const body = h('div', {}, h('p', {}, h('b', { text: inv.no }), ' for ' + inv.client.name + ': ', h('b', { text: inr(inv.total) })),
-      inv.client.phone ? h('p', { class: 'a-note', text: 'The WhatsApp message includes the itemised bill and a link to the invoice.' })
-        : h('p', { class: 'a-note', text: 'No phone number on this bill, so WhatsApp is not available. You can copy the link instead.' }));
+      !inv.client.phone ? h('p', { class: 'a-note', text: 'No phone number on this bill, so WhatsApp is not available. You can copy the link instead.' })
+        : auto ? h('p', { class: 'a-note', text: 'This bill is being sent to the customer on WhatsApp automatically.' })
+        : h('p', { class: 'a-note', text: 'The WhatsApp message includes the itemised bill and a link to the invoice.' }));
     modal('Invoice created', body, [
-      inv.client.phone ? { label: 'Send on WhatsApp', href: waLink(inv.client.phone, invoiceMessage(inv)) } : null,
+      waSendAction(inv),
       { label: 'Open invoice', cls: 'btn-alt', href: '/i/' + inv.token },
       { label: 'Copy link', cls: 'btn-alt', value: 'copy', fn: async () => { try { await navigator.clipboard.writeText(link); toast('Link copied'); } catch { toast(link); } return false; } },
       { label: 'Done', cls: 'btn-alt', value: 'done' }].filter(Boolean));

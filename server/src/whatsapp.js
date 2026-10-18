@@ -31,6 +31,28 @@ export async function enqueueWa(tenantId, phone, templateKey, params, ref) {
   } catch (e) { console.warn('enqueueWa failed:', e.message); }
 }
 
+// For a "Send" tap in a shop's own UI once automation is on: unlike enqueueWa() (fire-and-forget,
+// used right when a sale/invoice is created), this reports back what actually happened, so the UI
+// can show "sent"/"already sent" instead of silently doing nothing, and retries a message that
+// previously failed (wa_enqueue's own idempotency is insert-only, so a failed row is never retried
+// by calling it again -- the unique (tenant, template, ref) index just blocks the second insert).
+export async function sendOrRetryWa(tenantId, phone, templateKey, params, ref) {
+  const { rows: [s] } = await pool.query('select enabled from wa_tenant_settings where tenant_id = $1', [tenantId]);
+  if (!s || !s.enabled) return { ok: false, reason: 'disabled' };
+  const { rows: [existing] } = await pool.query(
+    'select id, status from wa_outbox where tenant_id = $1 and template = $2 and ref = $3', [tenantId, templateKey, ref],
+  );
+  if (existing && existing.status === 'failed') {
+    await pool.query("update wa_outbox set status = 'queued', attempts = 0, error = null, run_after = now(), updated_at = now() where id = $1", [existing.id]);
+    return { ok: true, status: 'queued', retried: true };
+  }
+  if (existing) return { ok: true, status: existing.status, already: true };
+  const { rows: [r] } = await pool.query(
+    'select wa_enqueue($1, $2, $3, $4, $5) as id', [tenantId, phone, templateKey, JSON.stringify(params || []), ref || null],
+  );
+  return r.id ? { ok: true, status: 'queued' } : { ok: false, reason: 'not_queued' };
+}
+
 // Shop tokens are stored encrypted (AES-256-GCM, own HKDF subkey of JWT_SECRET), never returned to a browser.
 const KEY = Buffer.from(hkdfSync('sha256', Buffer.from(JWT_SECRET), Buffer.alloc(0), 'auzslab-whatsapp-token-v1', 32));
 export function encryptToken(t) {
