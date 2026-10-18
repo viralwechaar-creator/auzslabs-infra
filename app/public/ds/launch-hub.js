@@ -15,7 +15,14 @@
     + '#auz-launch .orbit i{position:absolute;left:-9px;top:-9px;width:18px;height:18px;border-radius:5px;background:var(--c);transform:rotate(var(--a)) translateX(var(--r));animation:ah-pull 1.25s cubic-bezier(.55,.05,.35,1) .15s both}'
     + '#auz-launch .ring{position:absolute;width:40px;height:40px;border-radius:50%;border:2px solid rgba(232,54,93,.9);opacity:0;animation:ah-ring 1.1s cubic-bezier(.2,.7,.2,1) 1.3s forwards}'
     + '#auz-launch .ring.two{border-color:rgba(255,255,255,.35);animation-delay:1.45s}'
-    + '#auz-launch .logo{position:relative;width:min(64vw,300px);height:auto;filter:invert(1);clip-path:inset(0 100% 0 0);opacity:0;animation:ah-scan .9s steps(16,end) 1.35s forwards}'
+    /* The scan reveal used to be a clip-path + filter:invert(1) on the same <img> -- Safari/WebKit has a
+       long-documented bug combining those two on one element (the filter can paint outside, or lag behind,
+       the clip mask), which showed up as the wordmark rendering garbled/half-drawn on a real iPhone. Fixed
+       by moving the clip-path to a plain wrapper (overflow:hidden, no filter of its own) and keeping the
+       filter on the <img> alone, which Chromium renders identically either way -- verified below -- but
+       removes the specific property combination Safari mishandles. */
+    + '#auz-launch .logowrap{position:relative;width:min(64vw,300px);height:auto;overflow:hidden;clip-path:inset(0 100% 0 0);opacity:0;animation:ah-scan .9s steps(16,end) 1.35s forwards}'
+    + '#auz-launch .logo{display:block;width:100%;height:auto;filter:invert(1)}'
     + '#auz-launch .scan{position:absolute;width:3px;height:92px;background:#e8365d;box-shadow:0 0 18px 4px rgba(232,54,93,.55);opacity:0;left:calc(50% - min(32vw,150px));animation:ah-bar .9s steps(16,end) 1.35s forwards}'
     + '#auz-launch .tag{position:relative;margin-top:22px;color:rgba(246,244,241,.78);font:500 14px/1 -apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif;letter-spacing:.14em;text-transform:uppercase;opacity:0;transform:translateY(8px);animation:ah-up .6s ease 2.15s forwards}'
     + '#auz-launch .tag b{color:#e8365d;font-weight:600}'
@@ -27,13 +34,13 @@
     + '@keyframes ah-scan{0%{opacity:1;clip-path:inset(0 100% 0 0)}100%{opacity:1;clip-path:inset(0 0 0 0)}}'
     + '@keyframes ah-bar{0%{opacity:1;transform:translateX(0)}92%{opacity:1}100%{opacity:0;transform:translateX(min(64vw,300px))}}'
     + '@keyframes ah-up{to{opacity:1;transform:none}}'
-    + '@media (prefers-reduced-motion:reduce){#auz-launch *{animation:none!important}#auz-launch .logo{clip-path:none;opacity:1}#auz-launch .tag{opacity:1;transform:none}#auz-launch .orbit,#auz-launch .ring,#auz-launch .scan{display:none}#auz-launch{transition:opacity .3s}#auz-launch.out{clip-path:none;opacity:0}}';
+    + '@media (prefers-reduced-motion:reduce){#auz-launch *{animation:none!important}#auz-launch .logowrap{clip-path:none;opacity:1}#auz-launch .tag{opacity:1;transform:none}#auz-launch .orbit,#auz-launch .ring,#auz-launch .scan{display:none}#auz-launch{transition:opacity .3s}#auz-launch.out{clip-path:none;opacity:0}}';
   document.head.appendChild(css);
   var el = document.createElement('div'); el.id = 'auz-launch'; el.setAttribute('aria-hidden', 'true');
   var cols = ['#c2183f', '#8c2840', '#e8365d', '#f6f4f1', '#5c3340'], orbit = '';
   for (var i = 0; i < 5; i++) orbit += '<i style="--a:' + (i * 72) + 'deg;--r:150px;--c:' + cols[i] + '"></i>';
   el.innerHTML = '<div class="dots"></div><div class="glow"></div><div class="orbit">' + orbit + '</div><div class="ring"></div><div class="ring two"></div>'
-    + '<img class="logo" src="/logo.png" alt=""><div class="scan"></div><div class="tag">All your apps<b>.</b> One place<b>.</b></div>';
+    + '<div class="logowrap"><img class="logo" src="/logo.png" alt=""></div><div class="scan"></div><div class="tag">All your apps<b>.</b> One place<b>.</b></div>';
   root.appendChild(el);
   var minDone = false, appDone = false, gone = false;
   function reveal() { root.classList.remove('auz-wait'); }
