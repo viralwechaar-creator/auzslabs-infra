@@ -399,7 +399,7 @@ export default async function run({ browser, stack }) {
     assert(rows.length === 1, 'one row per browser (re-registering moves it, never duplicates): ' + rows.length);
   }, 'critical');
 
-  await s.check('Join the team as a real account: a saved profile, a real submission tied to the login, visible status, and RLS isolation (db/186)', async () => {
+  await s.check('Join the team as a real account: a saved profile, a real submission tied to the login, visible status, and RLS isolation (db/188)', async () => {
     const bcrypt = createRequire(import.meta.url)('../../../server/node_modules/bcryptjs');
     const hash = bcrypt.hashSync(PASSWORD, 4);
     const mk = async (email) => { await q('insert into auth_users (email, password_hash, email_verified_at) values ($1,$2,now()) on conflict (email) where deleted_at is null do nothing', [email, hash]); return login(email); };
@@ -444,7 +444,7 @@ export default async function run({ browser, stack }) {
     await fails('submit_my_team_application', {}, cand, 'already approved');
   }, 'critical');
 
-  await s.check('WhatsApp fires the instant a client or a team candidate submits -- no admin action first (db/184/db/186-187)', async () => {
+  await s.check('WhatsApp fires the instant a client or a team candidate submits -- no admin action first (db/184/db/188-189)', async () => {
     // these are 'platform'-audience messages (tenant_id null); dormant until the admin switches the platform auto-send on (db/184's own gate)
     await ok('admin_wa_set_platform_auto', { p_on: true }, adm);
     // a client request queues "request_received" on INSERT, not just on a later status change
