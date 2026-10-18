@@ -174,7 +174,7 @@ button:active:not(:disabled){transform:translateY(1px) scale(.99)}
   .row{padding:14px 18px}
   .feed div{padding:12px 0}
   .toast{bottom:32px}
-  #p-leads,#p-trials,#p-setup,#p-team,#p-me{max-width:1100px}
+  #p-leads,#p-trials,#p-setup,#p-tasks,#p-team,#p-me{max-width:1100px}
 }
 @media (min-width:1500px){.hm-cols{grid-template-columns:1.4fr 1fr}}
 </style>
@@ -301,6 +301,12 @@ button:active:not(:disabled){transform:translateY(1px) scale(.99)}
     <!-- CLIENT SETUP -->
     <section class=page id=p-setup></section>
 
+    <!-- TASKS -->
+    <section class=page id=p-tasks>
+      <div class=actions style="margin-top:0"><button id=addTaskBtn class=small>New task</button><button class="small ghost" id=refreshTasks>Refresh</button></div>
+      <div id=taskList></div>
+    </section>
+
     <!-- TEAM (manager) -->
     <section class=page id=p-team></section>
 
@@ -347,21 +353,22 @@ const STAGE = Object.fromEntries(STAGES);
 const STAGE_TONE = { new: 'blue', contacted: 'orange', demo: 'accent', quoted: 'accent', converted: 'green', declined: '' };
 const ACT = { lead_added: 'Added a lead', lead_stage: 'Moved a lead', lead_note: 'Wrote a note', lead_followup: 'Set a follow-up', lead_assigned: 'Was given a lead', trial_created: 'Created a trial', setup_assigned: 'Was given a client to set up', setup_open: 'Opened the client’s business', setup_checklist: 'Updated the checklist', setup_done: 'Finished a setup' };
 const TABS = {
-  salesman: ['home', 'leads', 'trials', 'me'],
-  setup: ['home', 'setup', 'me'],
-  support: ['home', 'leads', 'me'],
-  manager: ['home', 'leads', 'setup', 'team', 'me'],
+  salesman: ['home', 'leads', 'trials', 'tasks', 'me'],
+  setup: ['home', 'setup', 'tasks', 'me'],
+  support: ['home', 'leads', 'tasks', 'me'],
+  manager: ['home', 'leads', 'setup', 'tasks', 'team', 'me'],
 };
-const TAB_LABEL = { home: 'Home', leads: 'Leads', trials: 'Trials', setup: 'Setups', team: 'Team', me: 'Me' };
+const TAB_LABEL = { home: 'Home', leads: 'Leads', trials: 'Trials', setup: 'Setups', tasks: 'Tasks', team: 'Team', me: 'Me' };
 const TAB_ICON = {
   home: '<path d="M3.5 11.2 12 4l8.5 7.2"/><path d="M5.5 9.6V19a1.5 1.5 0 0 0 1.5 1.5h10a1.5 1.5 0 0 0 1.5-1.5V9.6"/><path d="M10 20.5v-5.2a2 2 0 0 1 4 0v5.2"/>',
   leads: '<path d="M4 5.5h16l-6.2 7.3v5.2L10.2 20v-7.2z"/>',
   trials: '<path d="M4.5 10.5V19a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-8.5"/><path d="M3 10.5 4.7 5h14.6L21 10.5a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0z"/><path d="M10 20.5v-4h4v4"/>',
   setup: '<rect x="5" y="4.5" width="14" height="16.5" rx="2.5"/><path d="M9 4.5V3.8A.8.8 0 0 1 9.8 3h4.4a.8.8 0 0 1 .8.8v.7"/><path d="m9 13.2 2.1 2.1L15.2 11"/>',
+  tasks: '<rect x="4.5" y="4.5" width="15" height="15" rx="3"/><path d="M8.5 12l2.2 2.2L15.5 9.5"/>',
   team: '<circle cx="9" cy="8.2" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14.2a5 5 0 0 1 5 5.3"/>',
   me: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3"/><path d="M6.2 18.2a7 7 0 0 1 11.6 0"/>',
 };
-let ME = null, tab = 'home', leads = [], setups = [], work = null, clientsList = null;
+let ME = null, tab = 'home', leads = [], setups = [], tasks = [], work = null, clientsList = null;
 
 // ---------- sign in / boot ----------
 async function boot() {
@@ -402,7 +409,7 @@ function go(t) {
   $('pageTitle').textContent = t === 'home' ? 'Hi, ' + String(ME.name || '').split(/[ @]/)[0] : (t === 'leads' && ME.role === 'manager' ? 'All leads' : t === 'setup' && ME.role !== 'manager' ? 'My setups' : TAB_LABEL[t]);
   window.scrollTo(0, 0);
   { const pg = $('p-' + t); if (pg) { pg.classList.remove('fresh'); void pg.offsetWidth; pg.classList.add('fresh'); } }
-  ({ home: renderHome, leads: loadLeads, trials: loadTrials, setup: loadSetups, team: loadTeamPage, me: renderMe })[t]();
+  ({ home: renderHome, leads: loadLeads, trials: loadTrials, setup: loadSetups, tasks: loadTasks, team: loadTeamPage, me: renderMe })[t]();
 }
 
 // ---------- bottom sheet ----------
@@ -429,12 +436,13 @@ async function renderHome() {
   try {
     const needLeads = ME.role !== 'setup';
     const needSetups = ME.role === 'setup';
-    const [w, l, s] = await Promise.all([
+    const [w, l, s, tk] = await Promise.all([
       rpc('team_my_work', { p_days: 30 }),
       needLeads ? rpc(ME.role === 'manager' ? 'team_all_leads' : 'team_my_leads') : Promise.resolve([]),
       needSetups ? rpc('team_my_setups') : Promise.resolve([]),
+      rpc('team_my_tasks'),
     ]);
-    work = w; leads = l; setups = s;
+    work = w; leads = l; setups = s; tasks = tk;
   } catch (e) { el.innerHTML = `<p class=err>${esc(e.message)}</p>`; return; }
   const sum = work.summary || {};
   const open = leads.filter((x) => !['converted', 'declined'].includes(x.status));
@@ -454,7 +462,8 @@ async function renderHome() {
   kp = '<h2>Last 30 days</h2><div class=kpis>' + (ME.role === 'setup'
     ? kpi(sum.setups_open || 0, 'open') + kpi(sum.setups_done || 0, 'finished') + kpi(sum.updates || 0, 'updates')
     : kpi(sum.leads_open || 0, 'open leads') + kpi(sum.updates || 0, 'updates') + (ME.role === 'salesman' ? kpi(sum.trials || 0, 'trials') : kpi(sum.leads_converted || 0, 'won'))
-      + (ME.role === 'salesman' ? kpi(sum.leads_converted || 0, 'won') + (sum.leads_overdue ? `<div class="kpi warn"><b>${sum.leads_overdue}</b><span>overdue</span></div>` : kpi(0, 'overdue')) : '')) + '</div>';
+      + (ME.role === 'salesman' ? kpi(sum.leads_converted || 0, 'won') + (sum.leads_overdue ? `<div class="kpi warn"><b>${sum.leads_overdue}</b><span>overdue</span></div>` : kpi(0, 'overdue')) : '')) + '</div>'
+    + '<div class=kpis style="margin-top:8px">' + kpi(tasks.filter((x) => x.status === 'open').length, 'open tasks') + '</div>';
   let notices = [];
   try { notices = await rpc('team_list_notices', { p_limit: 5 }); } catch (e) { notices = []; }
   if (notices.length) right += '<h2>Notices</h2><div class=feed>' + notices.map((n) => `<div><span><b>${esc(n.title)}</b>${n.body ? '<br>' + esc(n.body) : ''}</span><i>${ago(n.created_at)}</i></div>`).join('') + '</div>';
@@ -466,6 +475,9 @@ async function renderHome() {
   const gl = el.querySelector('[data-golead]'); if (gl) gl.onclick = () => go('leads');
   const dot = $('tabs').querySelector('[data-tab=leads] .dot');
   if (dot) { dot.hidden = !mine.length; dot.textContent = mine.length; }
+  const myOpenTasks = tasks.filter((x) => x.status === 'open');
+  const tdot = $('tabs').querySelector('[data-tab=tasks] .dot');
+  if (tdot) { tdot.hidden = !myOpenTasks.length; tdot.textContent = myOpenTasks.length; }
 }
 const kpi = (n, l) => `<div class=kpi><b>${n}</b><span>${l}</span></div>`;
 function feedHtml(list) {
@@ -623,6 +635,92 @@ async function openBusiness(tenantId, slug, page) {
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.error || 'could not open it');
   window.open('https://' + slug + '.auzslab.in' + page + '#auz_gt=' + b64u({ t: body.access_token, u: body.user }), '_blank');
+}
+
+// ---------- TASKS ----------
+const TASK_SOURCE_LABEL = { manual: null, 'auto:unassigned_lead': 'Unassigned lead', 'auto:setup_deadline': 'Setup deadline', 'auto:payment_welcome': 'Payment confirmed' };
+function taskRow(t) {
+  const due = t.due_at ? new Date(t.due_at) : null;
+  const overdue = due && t.status === 'open' && due.getTime() < Date.now();
+  const src = TASK_SOURCE_LABEL[t.source] !== undefined ? TASK_SOURCE_LABEL[t.source] : t.source;
+  const related = t.related_tenant_name || t.related_lead_name || '';
+  return `<button type=button class=row data-task="${t.id}"><div class=meta><div class=name>${esc(t.title)}</div><div class=s>${ME.role === 'manager' ? 'To ' + esc(t.assignee || '—') + ' · ' : ''}${src ? esc(src) : 'Manual'}${related ? ' · ' + esc(related) : ''}</div></div><div style="text-align:right">${t.status !== 'open' ? `<span class="pill ${t.status === 'done' ? 'green' : ''}">${esc(t.status === 'done' ? 'Done' : 'Cancelled')}</span>` : ''}${due ? `<div class=s style="margin-top:4px;color:${overdue ? 'var(--red)' : 'var(--label2)'}">${overdue ? 'Overdue · ' : 'Due '}${due.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</div>` : ''}</div></button>`;
+}
+async function loadTasks() {
+  const el = $('taskList');
+  el.innerHTML = '<p class=empty>Loading…</p>';
+  try { tasks = await rpc(ME.role === 'manager' ? 'team_all_tasks' : 'team_my_tasks'); } catch (e) { el.innerHTML = `<p class=err>${esc(e.message)}</p>`; return; }
+  if (!tasks.length) { el.innerHTML = '<p class=empty>No tasks yet. Create one, or wait for one to come your way.</p>'; return; }
+  const closed = (x) => x.status !== 'open';
+  const groups = [
+    ['Open', tasks.filter((x) => !closed(x))],
+    ['Done / cancelled', tasks.filter(closed)],
+  ];
+  el.innerHTML = groups.filter((g) => g[1].length).map(([n, arr]) => `<div class=group>${n} · ${arr.length}</div>${arr.map(taskRow).join('')}`).join('');
+  el.querySelectorAll('[data-task]').forEach((b) => b.onclick = () => openTask(b.dataset.task));
+  const dot = $('tabs').querySelector('[data-tab=tasks] .dot');
+  if (dot) { const open = tasks.filter((x) => !closed(x)); dot.hidden = !open.length; dot.textContent = open.length; }
+}
+$('refreshTasks').onclick = loadTasks;
+async function taskAssigneeOptions(current) {
+  let people = [];
+  if (ME.role === 'manager') { try { people = (await rpc('team_overview', { p_days: 30 })).filter((m) => m.active); } catch {} }
+  if (!people.length) people = [{ id: ME.id, name: ME.name, role: ME.role }];
+  return people.map((m) => `<option value="${m.id}"${m.id === current ? ' selected' : ''}>${esc(m.name)}${m.id === ME.id ? ' (me)' : ''}</option>`).join('');
+}
+$('addTaskBtn').onclick = async () => {
+  const opts = await taskAssigneeOptions(ME.id);
+  openSheet(`<h3>New task</h3><p class=sub>${ME.role === 'manager' ? 'Assign it to anyone on the team.' : 'Assigned to you.'}</p>
+    <label>Title<input id=ntkTitle autocomplete=off></label>
+    <label>Description<textarea id=ntkDesc></textarea></label>
+    ${ME.role === 'manager' ? `<label>Assign to<select id=ntkAssignee>${opts}</select></label>` : ''}
+    <label>Due<input id=ntkDue type=datetime-local></label>
+    <label>Priority<select id=ntkPriority><option value="">Normal</option><option value=low>Low</option><option value=high>High</option></select></label>
+    <button id=ntkSave style="width:100%">Create task</button><div id=ntkErr class=err></div>`, (sh) => {
+    sh.querySelector('#ntkSave').onclick = () => guard(async () => {
+      const title = sh.querySelector('#ntkTitle').value.trim();
+      if (!title) throw new Error('A title is required.');
+      const due = sh.querySelector('#ntkDue').value;
+      const assignee = sh.querySelector('#ntkAssignee');
+      await rpc('team_create_task', { p: { title, description: sh.querySelector('#ntkDesc').value.trim(), assigned_to: assignee ? assignee.value : ME.id, due_at: due ? new Date(due).toISOString() : '', priority: sh.querySelector('#ntkPriority').value } });
+      closeSheet(); toast('Task created'); if (tab === 'tasks') loadTasks(); else renderHome();
+    }, sh.querySelector('#ntkErr'));
+  });
+};
+async function openTask(id) {
+  const t = tasks.find((x) => x.id === id); if (!t) return;
+  const due = t.due_at ? new Date(t.due_at) : null;
+  const opts = ME.role === 'manager' ? await taskAssigneeOptions(t.assigned_to) : '';
+  const src = TASK_SOURCE_LABEL[t.source] !== undefined ? TASK_SOURCE_LABEL[t.source] : t.source;
+  const openRelated = t.related_tenant_id ? `<button type=button class=ghost data-open-tenant>Open ${esc(t.related_tenant_name || 'this client')} ↗</button>` : '';
+  openSheet(`<h3>${esc(t.title)}</h3><p class=sub>To ${esc(t.assignee || '—')}${t.created_by_name ? ' · by ' + esc(t.created_by_name) : ''}${src ? ' · ' + esc(src) : ''}</p>
+    ${t.description ? `<div class=card style="margin-top:0"><span class=sub style="margin:0">${esc(t.description)}</span></div>` : ''}
+    ${openRelated ? `<div class=actions style="margin-top:0">${openRelated}</div>` : ''}
+    <h2>Due</h2><input id=tkDue type=datetime-local value="${due ? new Date(due.getTime() - due.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''}">
+    <h2>Priority</h2><div class=chips id=tkPri>${['', 'low', 'normal', 'high'].map((p) => `<button type=button class="chip${(t.priority || '') === p ? ' on' : ''}" data-p="${p}">${p ? p[0].toUpperCase() + p.slice(1) : 'Normal'}</button>`).join('')}</div>
+    ${ME.role === 'manager' ? `<h2>Assigned to</h2><select id=tkAssign>${opts}</select>` : ''}
+    <div class=actions>
+      ${t.status === 'open' ? '<button id=tkDoneBtn>Mark done</button><button class=ghost id=tkCancelBtn>Cancel task</button>' : ''}
+      <button class=ghost id=tkSaveBtn>Save</button>
+    </div>
+    <div id=tkErr class=err></div>`, (sh) => {
+    let prio = t.priority || '';
+    sh.querySelectorAll('[data-p]').forEach((b) => b.onclick = () => { prio = b.dataset.p; sh.querySelectorAll('[data-p]').forEach((x) => x.classList.toggle('on', x === b)); });
+    const openT = sh.querySelector('[data-open-tenant]');
+    if (openT) openT.onclick = () => guard(async () => { openT.disabled = true; try { await openBusiness(t.related_tenant_id, t.related_tenant_slug, '/index.html'); } finally { openT.disabled = false; } }, sh.querySelector('#tkErr'));
+    const saveCommon = async (extra) => {
+      const patch = { priority: prio, due_at: sh.querySelector('#tkDue').value ? new Date(sh.querySelector('#tkDue').value).toISOString() : '', ...(extra || {}) };
+      const asel = sh.querySelector('#tkAssign');
+      if (asel && asel.value !== t.assigned_to) patch.assigned_to = asel.value;
+      await rpc('team_update_task', { p_id: id, p: patch });
+    };
+    sh.querySelector('#tkSaveBtn').onclick = () => guard(async () => { await saveCommon(); closeSheet(); toast('Saved'); loadTasks(); }, sh.querySelector('#tkErr'));
+    const db = sh.querySelector('#tkDoneBtn'); if (db) db.onclick = () => guard(async () => { await saveCommon({ status: 'done' }); closeSheet(); toast('Marked done'); loadTasks(); }, sh.querySelector('#tkErr'));
+    const cb = sh.querySelector('#tkCancelBtn'); if (cb) cb.onclick = () => guard(async () => {
+      if (!confirm('Cancel this task?')) return;
+      await saveCommon({ status: 'cancelled' }); closeSheet(); toast('Task cancelled'); loadTasks();
+    }, sh.querySelector('#tkErr'));
+  });
 }
 
 // ---------- TEAM (manager) ----------

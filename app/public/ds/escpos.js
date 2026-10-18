@@ -1,8 +1,25 @@
 /* Direct thermal printing (ESC/POS) from the browser: no print window, no driver.
    Builder (`Esc`), a converter from the small HTML the POS uses for kitchen tickets and slips (`htmlToEsc`), and the
-   three ways a browser can talk to a receipt printer: WebUSB, Web Serial and Web Bluetooth (`auzPrinter`).
-   Works in Chrome / Edge on computers and Android Chrome. It does NOT work inside the Android app wrapper (a WebView
-   has none of these APIs), in Safari or on iPhone: there the POS keeps using the normal print window.
+   ways a browser (or the packaged app) can talk to a receipt printer: WebUSB, Web Serial, Web Bluetooth and, inside
+   the Capacitor Android/iOS wrapper, a native Bluetooth LE transport (`auzPrinter`).
+   WebUSB/Web Serial/Web Bluetooth work in Chrome / Edge on computers and Android Chrome. They do NOT work inside the
+   Capacitor Android app wrapper -- confirmed by reading Chromium's own WebView feature support: Android's system
+   WebView (what every Capacitor app renders with) does not implement navigator.bluetooth, navigator.usb or
+   navigator.serial at all, even though it is Chromium-based and the standalone Chrome browser on the same device
+   does support them. This is a real, documented WebView limitation (tracked for years against Chromium's own
+   WebView, not something Capacitor could paper over), not a guess. Apple's WebKit (Safari and every iOS WebView,
+   including Capacitor's iOS wrapper) has never implemented Web Bluetooth/USB/Serial on any platform, app or not.
+   So for the wrapper to print over Bluetooth at all, it needs a real native plugin: see `nativeBleTransport` below,
+   which bridges to `@capacitor-community/bluetooth-le` (added to mobile/package.json) exactly the way
+   ds/nativepush.js already bridges to @capacitor/push-notifications -- window.Capacitor.Plugins.BluetoothLe,
+   no bundler, no build step. Outside the packaged app (desktop Chrome, Android Chrome) this plugin object does not
+   exist, so auzPrinter silently keeps using the existing Web Bluetooth/USB/Serial paths -- nothing about the
+   non-native behavior changed.
+   NOT VERIFIED ON A REAL DEVICE OR A REAL PRINTER: there is no Android SDK or Bluetooth hardware in this sandbox.
+   The plugin's own BleClient API (initialize/requestDevice/connect/getServices/write) is implemented here exactly
+   as that package's published documentation describes it; the first real build + a real printer is the first actual
+   test of this path, the same honesty bar every other "dormant until configured" integration in this codebase holds
+   itself to.
    Text is plain ASCII (Latin letters, digits, symbols); other scripts print as '?'. The rupee sign prints as "Rs". */
 (function (root) {
   'use strict';
@@ -165,8 +182,61 @@
       async close() { try { dev.gatt.disconnect(); } catch {} } };
   }
 
+  // ---- native Bluetooth LE (inside the Capacitor app wrapper only) ----
+  function cap() { return root.Capacitor; }
+  function isNativeApp() { const c = cap(); return !!(c && c.isNativePlatform && c.isNativePlatform()); }
+  function blePlugin() { const c = cap(); return c && c.Plugins && c.Plugins.BluetoothLe; }
+  function nativeBleSupported() { return isNativeApp() && !!blePlugin(); }
+  const str2hex = (s) => { let h = ''; for (let i = 0; i < s.length; i++) h += ('0' + s.charCodeAt(i).toString(16)).slice(-2); return h; };
+  const bytesToDataView = (b) => { const buf = new ArrayBuffer(b.length); const v = new Uint8Array(buf); for (let i = 0; i < b.length; i++) v[i] = b[i]; return new DataView(buf); };
+  /** Finds the first service+characteristic on the connected device that can be written to (write or writeWithoutResponse),
+   *  preferring the known printer service UUIDs (BLE_SERVICES) but falling back to any writable characteristic -- mirrors
+   *  what bleTransport() (Web Bluetooth, below) already does by iterating every primary service after connecting. */
+  async function findWriteChar(Ble, deviceId) {
+    const services = await Ble.getServices({ deviceId });
+    const list = (services && services.services) || [];
+    const writable = (c) => c && c.properties && (c.properties.write || c.properties.writeWithoutResponse);
+    const known = list.filter((s) => BLE_SERVICES.includes((s.uuid || '').toLowerCase()));
+    for (const s of known.concat(list)) {
+      for (const c of (s.characteristics || [])) {
+        if (writable(c)) return { service: s.uuid, characteristic: c.uuid, withoutResponse: !c.properties.write && !!c.properties.writeWithoutResponse };
+      }
+    }
+    return null;
+  }
+  async function nativeBleTransport(deviceId, name) {
+    const Ble = blePlugin();
+    if (!Ble) throw new Error('Bluetooth is not available in this app build.');
+    await Ble.initialize();
+    await Ble.connect({ deviceId });
+    let target;
+    try { target = await findWriteChar(Ble, deviceId); }
+    catch (e) { try { await Ble.disconnect({ deviceId }); } catch {} throw e; }
+    if (!target) { try { await Ble.disconnect({ deviceId }); } catch {} throw new Error('That Bluetooth device is not a receipt printer.'); }
+    return {
+      kind: 'bluetooth-native', name: name || 'Bluetooth printer', key: { deviceId, name },
+      async write(b) {
+        for (let i = 0; i < b.length; i += 100) {
+          const part = bytesToDataView(b.slice(i, i + 100));
+          const args = { deviceId, service: target.service, characteristic: target.characteristic, value: part };
+          if (target.withoutResponse && Ble.writeWithoutResponse) await Ble.writeWithoutResponse(args);
+          else await Ble.write(args);
+          await sleep(25);
+        }
+      },
+      async close() { try { await Ble.disconnect({ deviceId }); } catch {} },
+    };
+  }
+  /** Opens the native device picker (a real Android system dialog, not a web permission prompt) and connects. */
+  async function pairNativeBle() {
+    const Ble = blePlugin();
+    if (!Ble) throw new Error('Bluetooth printing needs the app to be rebuilt with the Bluetooth plugin.');
+    const dev = await Ble.requestDevice({ optionalServices: BLE_SERVICES });
+    return nativeBleTransport(dev.deviceId, dev.name);
+  }
+
   const auzPrinter = {
-    supported() { return { usb: !!(root.navigator && navigator.usb), serial: !!(root.navigator && navigator.serial), bluetooth: !!(root.navigator && navigator.bluetooth), bridge: true }; },
+    supported() { return { usb: !!(root.navigator && navigator.usb), serial: !!(root.navigator && navigator.serial), bluetooth: !!(root.navigator && navigator.bluetooth) || nativeBleSupported(), bridge: true }; },
     anySupported() { const s = this.supported(); return s.usb || s.serial || s.bluetooth || s.bridge; },
     info() { const s = store.get(); return T ? { connected: true, kind: T.kind, name: T.name } : s ? { connected: false, kind: s.kind, name: s.name } : null; },
     /** true when a direct printer has been chosen on this device (it is reconnected when needed) */
@@ -176,7 +246,10 @@
       let t;
       if (kind === 'usb') { if (!navigator.usb) throw new Error('This browser cannot use USB printers.'); t = await usbTransport(await navigator.usb.requestDevice({ filters: [{ classCode: 7 }] })); }
       else if (kind === 'serial') { if (!navigator.serial) throw new Error('This browser cannot use serial printers.'); t = await serialTransport(await navigator.serial.requestPort(), opt && opt.baud); }
-      else if (kind === 'bluetooth') { if (!navigator.bluetooth) throw new Error('This browser cannot use Bluetooth printers.'); t = await bleTransport(await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: BLE_SERVICES })); }
+      else if (kind === 'bluetooth') {
+        if (nativeBleSupported()) t = await pairNativeBle();
+        else { if (!navigator.bluetooth) throw new Error('This browser cannot use Bluetooth printers.'); t = await bleTransport(await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: BLE_SERVICES })); }
+      }
       else if (kind === 'bridge') { t = await bridgeTransport(opt.port, opt.token, opt.printer); }
       else throw new Error('Unknown printer type');
       if (T) await T.close();

@@ -104,6 +104,8 @@
       <section class="section tight" id="requestSection" style="display:none;max-width:640px">
         <form class="card" id="reqForm" novalidate>
           <p class="p" style="margin-bottom:4px" id="whoLine"></p>
+          <div id="quickSummary" class="pay-note" style="display:none;background:var(--bg-alt,#f6f4f1);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:12px"></div>
+          <div id="reqDetailFields">
           <div class="field"><label for="rqName">Your name *</label><input id="rqName" autocomplete="name" required></div>
           <div class="field"><label for="rqPhone">Mobile / WhatsApp number *</label><input id="rqPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="9876543210" required></div>
           <div class="field"><label for="rqEmail">Email</label><input id="rqEmail" type="email" autocomplete="email"></div>
@@ -122,8 +124,9 @@
           <div class="field"><label for="rqGstin">GSTIN <span style="text-transform:none;letter-spacing:0">(if you have one)</span></label><input id="rqGstin" maxlength="15" autocapitalize="characters" autocomplete="off" placeholder="08ABCDE1234F1Z5"></div>
           <div class="field"><label for="rqState">State</label><select id="rqState"></select></div>
           <div class="field"><label for="rqAddress">Business address</label><textarea id="rqAddress" rows="2" autocomplete="street-address" placeholder="Shop / building, area, city, PIN"></textarea></div>
-          <div class="field"><label for="rqReq">What do you need? *</label><textarea id="rqReq" rows="4" placeholder="Tell us how your business works and what you want the software to do: number of outlets and staff, billing, stock, payroll, bookings, anything special."></textarea></div>
           <div class="field"><label for="rqNotes">Anything else we should know?</label><textarea id="rqNotes" rows="2" placeholder="When you want to start, who to call, etc. (optional)"></textarea></div>
+          </div>
+          <div class="field"><label for="rqReq">What do you need? *</label><textarea id="rqReq" rows="4" placeholder="Tell us how your business works and what you want the software to do: number of outlets and staff, billing, stock, payroll, bookings, anything special."></textarea></div>
           <button id="rqSend" class="btn btn-primary form-submit" type="submit">Send request</button>
           <div id="rqErr" class="err"></div>
           <p class="pay-note">We read every request, check your business and reply on WhatsApp. We never charge anything before you receive our payment link.</p>
@@ -229,8 +232,21 @@ async function checkSession() {
       if (P.address) $('rqAddress').value = P.address; if (P.niche && $('rqNiche').querySelector('option[value="' + P.niche + '"]')) $('rqNiche').value = P.niche;
       if (P.notes) $('rqNotes').value = P.notes;
     }
+    // Skip straight to product + requirement when the saved profile already has what we need -- zero re-entry.
+    // The fields stay filled in the DOM (just hidden) so the submit handler reads the exact same values as before.
+    setQuickMode(!!(P && P.name && P.phone && P.business_name), P);
   }
   loadMyOrders();
+}
+
+function setQuickMode(on, P) {
+  $('reqDetailFields').style.display = on ? 'none' : '';
+  $('quickSummary').style.display = on ? 'block' : 'none';
+  if (on && P) {
+    $('quickSummary').innerHTML = 'Sending as: <b>' + esc(P.business_name) + '</b>' + (P.phone ? ', ' + esc(P.phone) : '') +
+      ' &middot; <a href="#" id="quickEditLink" style="color:var(--accent)">that\'s wrong, let me fix it</a>';
+    $('quickEditLink').onclick = (e) => { e.preventDefault(); setQuickMode(false); };
+  }
 }
 
 $('reqForm').addEventListener('submit', async (e) => {

@@ -32,6 +32,10 @@ const add = {
   NSPhotoLibraryUsageDescription: 'AUZslab lets you choose photos to upload, such as a logo or a menu photo.',
   NSLocationWhenInUseUsageDescription: 'AUZslab uses your location only when you clock in, to check you are at your workplace.',
   NSFaceIDUsageDescription: 'AUZslab can use Face ID to unlock the app.',
+  // Receipt printing over Bluetooth (ds/escpos.js's native branch, @capacitor-community/bluetooth-le). Web
+  // Bluetooth has never existed in WebKit on any Apple platform, so this is the only way the hub's webview can
+  // ever reach a thermal printer on iOS. Without this string iOS refuses to let the app ask for Bluetooth at all.
+  NSBluetoothAlwaysUsageDescription: 'AUZslab uses Bluetooth to connect to your receipt printer.',
   ITSAppUsesNonExemptEncryption: false
 };
 let extra = '';
