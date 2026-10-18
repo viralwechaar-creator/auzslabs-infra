@@ -28,7 +28,22 @@
     ['builder', 'Website Builder', 'Edit your shop website', '/builder.html', function (d) { return own(d, 'website_builder') && d.my_role === 'owner'; }]
   ];
 
-  function login(msg) {
+  // First screen for a signed-out visitor: a brief greeting and a choice, matching the "welcome, then
+  // choose, then the actual form" flow the owner asked for -- not the sign-in form itself (that's
+  // signInForm() below, reached by tapping "Sign in" here). A session-expiry message skips straight to
+  // the form instead (see the two signInForm(msg) calls in boot()) -- the person already knows they're
+  // signing back in, an extra tap to get there would be friction, not welcome.
+  function welcome() {
+    foot.textContent = '';
+    var signInBtn = el('button', { class: 'btn fill', type: 'button', text: 'Sign in', onclick: function () { signInForm(); } });
+    var createBtn = el('a', { class: 'btn', href: 'https://auzslab.in/signup.html', text: 'Create an account' });
+    set([el('p', { class: 'greet', text: greet() }), el('h1', { text: 'Welcome' }),
+      el('p', { class: 'sub', text: 'One place for all your AUZslab apps.' }),
+      el('div', { class: 'grid', style: 'margin-top:4px' }, [signInBtn, createBtn])]);
+    foot.append(el('a', { href: 'https://auzslab.in/', text: 'Explore AUZslab' }));
+  }
+
+  function signInForm(msg) {
     foot.textContent = '';
     var email = el('input', { class: 'input', type: 'email', placeholder: 'Email', autocomplete: 'username', 'aria-label': 'Email' });
     var pw = el('input', { class: 'input', type: 'password', placeholder: 'Password', autocomplete: 'current-password', 'aria-label': 'Password' });
@@ -57,7 +72,8 @@
       var r = await sb.auth.forgotPassword(email.value.trim(), 'https://auzslab.in/signup.html');
       m.style.color = r.error ? '#c2183f' : 'inherit'; m.textContent = r.error ? r.error.message : 'If that email has an account, a reset link is on its way.';
     };
-    set([el('p', { class: 'greet', text: greet() }), el('h1', { text: 'Sign in' }), el('p', { class: 'sub', text: 'One place for all your AUZslab apps.' }), el('div', { class: 'seg' }, [tOwner, tStaff]), owner, staff, m]);
+    var back = el('button', { type: 'button', class: 'back', 'aria-label': 'Back', onclick: function () { welcome(); } }, [el('span', { 'aria-hidden': 'true', text: '←' }), el('span', { text: 'Back' })]);
+    set([back, el('h1', { text: 'Sign in' }), el('p', { class: 'sub', text: 'One place for all your AUZslab apps.' }), el('div', { class: 'seg' }, [tOwner, tStaff]), owner, staff, m]);
     which('owner');
     foot.append(el('a', { href: 'https://auzslab.in/', text: 'Explore AUZslab' }), el('a', { href: 'https://auzslab.in/signup.html', text: 'Create an account' }));
   }
@@ -183,18 +199,18 @@
 
   async function boot() {
     var sess = (await sb.auth.getSession()).data.session;
-    if (!sess) return login();
+    if (!sess) return welcome();
     // one call says what kind of person this is (admin / team / business / customer), so nobody is sent down a dead end
     var hm = await sb.rpc('hub_me'), me = hm && hm.data;
     if (me && (me.admin || me.team) && window.auzNativePush) { try { window.auzNativePush.enablePlatform(sb); window.auzNativePush.enablePlatformWeb(sb, false); } catch (e) {} }
-    if (hm && hm.error && (hm.error.status || 0) === 401) { await sb.auth.signOut(); return login('Your session ended. Please sign in again.'); }
+    if (hm && hm.error && (hm.error.status || 0) === 401) { await sb.auth.signOut(); return signInForm('Your session ended. Please sign in again.'); }
     if (me && me.admin) return adminHome(me);
     if (me && me.team && !me.business) { location.replace('/salesman.html'); return; }
     if (me && !me.business) return customerHome();
     var r = await sb.rpc('my_dashboard');
     if (r.error || !r.data) {
       var s = r.error && (r.error.status || 0);
-      if (s === 401) { await sb.auth.signOut(); return login('Your session ended. Please sign in again.'); }
+      if (s === 401) { await sb.auth.signOut(); return signInForm('Your session ended. Please sign in again.'); }
       return customerHome();
     }
     var d = r.data, list = apps(d), sw = new URLSearchParams(location.search).get('switch') === '1';

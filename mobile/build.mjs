@@ -30,8 +30,24 @@ execSync('npx cap add android',{stdio:'inherit'});
 const png = '../app/public/'+A.icon;
 if (fs.existsSync(png)) {
   for (const [d,s] of Object.entries({mdpi:48,hdpi:72,xhdpi:96,xxhdpi:144,xxxhdpi:192})) {
-    for (const n of ['ic_launcher','ic_launcher_round','ic_launcher_foreground'])
+    // ic_launcher / ic_launcher_round: the flat, pre-API-26 icon -- full-bleed is correct here, nothing
+    // masks it. ic_launcher_foreground: the layer Android's ADAPTIVE icon masks to a circle/squircle/
+    // rounded-square depending on the launcher -- our source art fills its whole canvas edge to edge
+    // with no margin, so the mask was cropping straight into the wordmark (reported from a real device:
+    // "icon size is not fitting well"). Adaptive icons need real content kept inside a safe zone
+    // (roughly the centre 66% of the canvas); shrink the art and pad with its own corner colour (sampled
+    // from the source image, not assumed) so the margin matches instead of showing a seam.
+    for (const n of ['ic_launcher', 'ic_launcher_round'])
       execSync(`python3 -c "from PIL import Image;Image.open('${png}').convert('RGBA').resize((${s},${s})).save('android/app/src/main/res/mipmap-${d}/${n}.png')"`);
+    execSync(`python3 -c "
+from PIL import Image
+im = Image.open('${png}').convert('RGBA')
+bg = im.getpixel((1, 1))
+inner = im.resize((round(${s}*0.62), round(${s}*0.62)))
+canvas = Image.new('RGBA', (${s}, ${s}), bg)
+canvas.paste(inner, ((${s} - inner.width) // 2, (${s} - inner.height) // 2))
+canvas.save('android/app/src/main/res/mipmap-${d}/ic_launcher_foreground.png')
+"`);
   }
 }
 // Android's own cold-start splash (via the androidx core-splashscreen dependency `cap add android`
