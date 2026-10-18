@@ -944,6 +944,24 @@
     }
     drawMusic();
 
+    const waBox = h('div', { class: 'a-card', style: 'max-width:420px' });
+    (async () => {
+      try {
+        const w = await api('GET', '/api/admin/whatsapp');
+        waBox.replaceChildren(
+          h('label', { class: 'a-check', style: 'display:flex;align-items:center;gap:10px' },
+            h('input', { type: 'checkbox', checked: w.enabled, onchange: async e => {
+              const on = e.target.checked;
+              try { await api('POST', '/api/admin/whatsapp', { enabled: on }); toast(on ? 'WhatsApp messages are on' : 'WhatsApp messages are off'); }
+              catch (ex) { e.target.checked = !on; fail(ex); }
+            } }),
+            'Send WhatsApp messages automatically (bill ready)'),
+          h('p', { class: 'a-note', style: 'margin-top:8px', text: w.allowPlatform
+            ? 'Messages go out from the AUZslab WhatsApp number.'
+            : 'No WhatsApp number is set up for this salon yet. Contact AUZslab support to turn this on, or connect your own WhatsApp Business number.' }));
+      } catch (ex) { waBox.replaceChildren(h('p', { class: 'a-note', text: 'Could not load WhatsApp settings.' })); }
+    })();
+
     const qrUrl = location.origin + '/salon/menu/';
     const qrPic = h('div', { class: 'pic', style: 'aspect-ratio:1;background:#fff' });
     let qrCanvas = null;
@@ -991,6 +1009,9 @@
         fld('Clients per slot (chairs)', num(S, 'capacity', { id: id('cap'), min: 1 }), id('cap')), fld('Bookings open how many days ahead', num(S, 'advanceDays', { id: id('adv'), min: 1 }), id('adv'))),
       h('div', { class: 'field' }, h('label', { text: 'Closed on' }), days),
       h('h2', { class: 'a-h2', style: 'margin-top:32px', text: 'Invoice' }), fld('Footer line', inp(S, 'invoiceFooter', { id: id('foot') }), id('foot')),
+      h('h2', { class: 'a-h2', style: 'margin-top:32px', text: 'WhatsApp' }),
+      h('p', { class: 'muted', style: 'margin-bottom:12px', text: 'Send your customer a WhatsApp message with their bill the moment it is created.' }),
+      waBox,
       h('h2', { class: 'a-h2', style: 'margin-top:32px', text: 'Change password' }),
       h('div', { class: 'a-grid' }, fld('Current password', h('input', { type: 'password', id: 'pcur', autocomplete: 'current-password', oninput: e => { P.current = e.target.value; } }), 'pcur'),
         fld('New password (8 or more characters)', h('input', { type: 'password', id: 'pnew', autocomplete: 'new-password', oninput: e => { P.next = e.target.value; } }), 'pnew')),
