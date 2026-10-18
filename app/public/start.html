@@ -23,8 +23,7 @@ body{margin:0;background:var(--bg,#f5f4f2);color:var(--label,#171717);font:16px/
 /* The backdrop: a big centred mark behind the sheet (its own page, per the reference -- not a tucked-away
    top-left brand row). Stays visible in the space above whatever height the sheet below is using. */
 .stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;min-height:0}
-.stage img{width:84px;height:84px;border-radius:22px;box-shadow:0 14px 30px -10px rgba(0,0,0,.25)}
-.stage b{font-size:19px;font-weight:700;letter-spacing:.01em}
+.stage b{font-size:clamp(40px,11vw,56px);font-weight:800;letter-spacing:-.02em;line-height:1}
 /* The sheet: fixed to the screen's own bottom edge, rises on every screen change (set() in start.js
    re-triggers .up each time) -- the "popup from the footer" the owner asked for, not an inline card. */
 .sheet-wrap{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;pointer-events:none;z-index:5}
@@ -63,7 +62,7 @@ html.auz-wait .sheet{transition:none!important}
 </style>
 </head>
 <body>
-<div class="stage"><img src="/icon-hub-180.png" alt=""><b>AUZslab</b></div>
+<div class="stage"><b>AUZslab</b></div>
 <div class="sheet-wrap"><div class="sheet" id="sheet"><div id="box"><p class="sub">Loading…</p></div><div class="links" id="foot"></div></div></div>
 <script src="/config.js"></script>
 <script src="/sb-client.js?v=5"></script>
@@ -72,6 +71,6 @@ html.auz-wait .sheet{transition:none!important}
 <script src="/ds/twofa.js?v=1"></script>
 <script src="/ds/nativepush.js?v=4"></script>
 <script src="/ds/appshell.js?v=4"></script>
-<script src="/start.js?v=14"></script>
+<script src="/start.js?v=15"></script>
 </body>
 </html>
