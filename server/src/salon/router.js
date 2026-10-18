@@ -7,7 +7,7 @@ import { bookingCounts, freshDb, loadDb, loadSite, mutate, mutateStaffAdmin, pay
 import { clearSession, getSession, hashPassword, ownerPasswordOk, setSession, verifyScrypt } from './session.js';
 import { EXPENSE_CATEGORIES, addBooking, addExpense, addInvoice, clientsList, computeSlots, publicSite } from './rules.js';
 import { salonIcon, salonOgImage, saveUpload } from './brand.js';
-import { enqueueWa } from '../whatsapp.js';
+import { enqueueWa, sendOrRetryWa } from '../whatsapp.js';
 
 // Entry point: index.js hands over every request whose path starts with
 // /salon-api (Caddy rewrites /api/* on tenant subdomains to it).
@@ -262,6 +262,23 @@ export async function handleSalon(req, res, ip) {
           invoice.id + '-bill');
       }
       return send(201, { ok: true, invoice });
+    }
+    const ivWa = p.match(/^\/admin\/invoices\/(.+)\/whatsapp$/);
+    if (method === 'POST' && ivWa) {
+      await member();
+      const id = decodeURIComponent(ivWa[1]);
+      const db = await loadDb(tenant);
+      const invoice = (db.invoices || []).find((x) => String(x.id) === id);
+      if (!invoice) fail(404, 'Invoice not found.');
+      if (invoice.void) fail(400, 'This invoice was voided.');
+      if (!invoice.client || !invoice.client.phone) fail(400, 'No phone number on this bill.');
+      if (!DOMAIN) fail(400, 'WhatsApp sending is not set up on this server.');
+      const r = await sendOrRetryWa(tid, invoice.client.phone, 'invoice_link',
+        [invoice.client.name || 'there', tenant.name || 'us', invoice.no, invoice.total.toFixed(2),
+         `https://${tenant.slug}.${DOMAIN}/i/${invoice.token}`],
+        invoice.id + '-bill');
+      if (!r.ok) fail(400, r.reason === 'disabled' ? 'Automatic WhatsApp sending is off. Turn it on in Settings, or use the Send on WhatsApp link.' : 'Could not send.');
+      return send(200, { ok: true, status: r.status });
     }
     const iv = p.match(/^\/admin\/invoices\/(.+)$/);
     if (method === 'DELETE' && iv) {
