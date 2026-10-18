@@ -317,7 +317,7 @@ export default async function run({ browser, stack }) {
     const tabs = async (p) => (await p.locator('#tabs button').allInnerTexts()).map((x) => x.trim());
     // salesman, phone
     { const { c, p, errs } = await asUser(E.sales, 390, 844);
-      assert((await tabs(p)).join() === 'Home,Leads,Trials,Me', 'salesman tabs: ' + (await tabs(p)).join());
+      assert((await tabs(p)).join() === 'Home,Leads,Trials,Tasks,Me', 'salesman tabs: ' + (await tabs(p)).join());
       await p.waitForSelector('#p-home .hero', { timeout: 8000 });
       await p.click('#tabs [data-tab=leads]'); await p.waitForSelector('#leadList .row', { timeout: 8000 });
       await p.click('#addLeadBtn'); await p.fill('#alName', 'Meena Joshi'); await p.fill('#alBiz', 'Meena Salon'); await p.fill('#alContact', '9898989898'); await p.click('#alSave');
@@ -334,7 +334,7 @@ export default async function run({ browser, stack }) {
     // setup person, phone
     { await ok('team_assign_setup', { p_tenant: clientId, p_user: await uidOf(E.setup), p_days: 7 }, adm);
       const { c, p, errs } = await asUser(E.setup, 390, 844);
-      assert((await tabs(p)).join() === 'Home,Setups,Me', 'setup tabs: ' + (await tabs(p)).join());
+      assert((await tabs(p)).join() === 'Home,Setups,Tasks,Me', 'setup tabs: ' + (await tabs(p)).join());
       await p.click('#tabs [data-tab=setup]'); await p.waitForSelector('#p-setup .row', { timeout: 8000 });
       await p.locator('#p-setup .row').first().click(); await p.waitForSelector('#suChecks input[data-k]', { timeout: 5000 });
       assert((await p.locator('#suChecks input').count()) === 6, 'checklist not shown');
@@ -344,7 +344,7 @@ export default async function run({ browser, stack }) {
       assert(!errs.length, errs.join(' | ')); await c.close(); }
     // manager, desktop
     { const { c, p, errs } = await asUser(E.mgr, 1280, 800);
-      assert((await tabs(p)).join() === 'Home,Leads,Setups,Team,Me', 'manager tabs: ' + (await tabs(p)).join());
+      assert((await tabs(p)).join() === 'Home,Leads,Setups,Tasks,Team,Me', 'manager tabs: ' + (await tabs(p)).join());
       await p.click('#tabs [data-tab=team]'); await p.waitForSelector('#p-team [data-m]', { timeout: 8000 });
       const t = await p.locator('#p-team').innerText(); assert(/Sam Sales/.test(t) && /Sia Setup/.test(t), 'team page missing people');
       await p.click('#tabs [data-tab=leads]'); await p.waitForSelector('#leadList .row', { timeout: 8000 });
