@@ -33,13 +33,28 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-  .app-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;margin-top:28px}
-  .app-card{border:1px solid var(--line,#e4ddd4);border-radius:16px;padding:22px;background:var(--surface,#fff);display:flex;flex-direction:column;gap:10px}
-  .app-card img{width:56px;height:56px;border-radius:14px;object-fit:cover}
-  .app-card h3{margin:0;font-size:19px}
-  .app-card p{margin:0;color:var(--muted,#6b6459);font-size:14px;line-height:1.5}
-  .app-card .btn{margin-top:auto;justify-content:center;text-align:center}
-  .app-badge{display:inline-block;font:700 10px/1 "Space Mono",monospace;letter-spacing:.04em;text-transform:uppercase;padding:4px 8px;border-radius:999px;background:var(--tint,#f3e9d8);color:var(--ink);width:fit-content}
+  /* Apps directory: deliberate horizontal card (icon + text) at every width, not a stack of
+     oversized vertical blocks. The grid just adds columns as the viewport grows -- the card's own
+     internal layout never changes, so there's one design to reason about, not one per breakpoint. */
+  .apps-intro{max-width:640px}
+  .app-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-top:26px}
+  .app-card{border:1px solid var(--line,#e4ddd4);border-radius:18px;padding:20px;background:var(--surface,#fff);display:flex;flex-direction:column;align-items:flex-start;gap:14px}
+  .app-card-head{display:flex;align-items:center;gap:14px;width:100%}
+  .app-icon{flex:0 0 52px;width:52px;height:52px;border-radius:14px;border:1px solid var(--line,#e4ddd4);background:var(--bg,#faf9f7);display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .app-icon img{width:100%;height:100%;object-fit:contain;display:block}
+  .app-titles{display:flex;flex-direction:column;gap:5px;min-width:0}
+  .app-card h3{margin:0;font-size:17px;line-height:1.25;font-weight:700}
+  .app-badge{display:inline-flex;align-items:center;font:700 9px/1 "Space Mono",monospace;letter-spacing:.05em;text-transform:uppercase;padding:4px 8px;border-radius:999px;background:var(--tint,#f3e9d8);color:var(--ink);width:fit-content}
+  .app-card p{margin:0;color:var(--muted,#6b6459);font-size:13.5px;line-height:1.55}
+  .app-card .btn{height:42px;padding:0 26px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:11px}
+  .app-card .btn:focus-visible{outline:2px solid var(--accent,#800020);outline-offset:2px}
+  /* Tapping a download link never changes the page itself -- the browser just starts the file
+     transfer quietly in its own download manager (a small arrow near the address bar on most phone
+     browsers). This banner is the only on-page sign anything happened; without it a tap looks like
+     it did nothing at all. */
+  .dl-toast{position:fixed;left:16px;right:16px;bottom:16px;z-index:60;background:var(--ink,#2e2c2a);color:#fff;border-radius:14px;padding:14px 16px;font-size:13.5px;line-height:1.5;box-shadow:0 10px 30px rgba(0,0,0,.25);transform:translateY(130%);opacity:0;transition:transform .25s ease,opacity .25s ease;max-width:460px;margin:0 auto}
+  .dl-toast.show{transform:translateY(0);opacity:1}
+  .dl-toast b{display:block;margin-bottom:2px}
 </style>
 </head>
 <body>
@@ -151,9 +166,9 @@
           <h1 class="h-hero reveal in">Download the AUZslab apps.</h1>
           <p class="lede reveal in">Every AUZslab app, straight to your phone — no Play Store account needed. These open the real, live website inside the app, so you always see the newest version the moment it ships.</p>
 
-          <div class="card" style="max-width:640px;margin-top:22px;padding:20px 22px">
+          <div class="card apps-intro" style="margin-top:22px;padding:18px 20px">
             <b>Before you install</b>
-            <p style="margin:8px 0 0;color:var(--muted,#6b6459);font-size:14px;line-height:1.6">
+            <p style="margin:8px 0 0;color:var(--muted,#6b6459);font-size:13.5px;line-height:1.6">
               These are direct APK files, not from the Play Store, so Android will warn "Install blocked" or
               "Unknown source" the first time — that's expected. Tap <b>Settings</b> in that warning, allow your
               browser to install unknown apps, then install again. These are test builds: expect occasional rough
@@ -164,46 +179,60 @@
           <div class="app-grid">
 
             <div class="app-card">
-              <img src="/icon-hub-512.png" alt="">
-              <span class="app-badge">Start here</span>
-              <h3>AUZslab</h3>
+              <div class="app-card-head">
+                <div class="app-icon"><img src="app-icons/icon-hub-512.png" alt="AUZslab"></div>
+                <div class="app-titles">
+                  <span class="app-badge">Start here</span>
+                  <h3>AUZslab</h3>
+                </div>
+              </div>
               <p>One app, every product you use — opens straight into whichever of your apps you're entitled to, or lets you pick when you have more than one.</p>
-              <a class="btn btn-primary" href="https://github.com/viralwechaar-creator/auzslabs-infra/releases/download/wrapper-hub-latest/AUZslab-hub.apk">Download APK</a>
+              <a class="btn btn-primary js-dl" data-app="AUZslab-hub" download="AUZslab-hub.apk" href="https://github.com/viralwechaar-creator/auzslabs-infra/releases/download/wrapper-hub-latest/AUZslab-hub.apk">Download APK</a>
             </div>
 
             <div class="app-card">
-              <img src="/icon-pos.svg" alt="">
-              <h3>AUZsPOS</h3>
+              <div class="app-card-head">
+                <div class="app-icon"><img src="app-icons/icon-pos.svg" alt="AUZsPOS"></div>
+                <div class="app-titles"><h3>AUZsPOS</h3></div>
+              </div>
               <p>Billing, kitchen display, tables, QR ordering, inventory and reports for cafés, restaurants and retail.</p>
-              <a class="btn btn-primary" href="https://github.com/viralwechaar-creator/auzslabs-infra/releases/download/wrapper-pos-latest/AUZslab-pos.apk">Download APK</a>
+              <a class="btn btn-primary js-dl" data-app="AUZslab-pos" download="AUZslab-pos.apk" href="https://github.com/viralwechaar-creator/auzslabs-infra/releases/download/wrapper-pos-latest/AUZslab-pos.apk">Download APK</a>
             </div>
 
             <div class="app-card">
-              <img src="/icon-mob.svg" alt="">
-              <h3>AUZsMob</h3>
+              <div class="app-card-head">
+                <div class="app-icon"><img src="app-icons/icon-mob.svg" alt="AUZsMob"></div>
+                <div class="app-titles"><h3>AUZsMob</h3></div>
+              </div>
               <p>Buy, sell and repair phones: IMEI tracking, staff ledger, vendor dues and profit sharing.</p>
-              <a class="btn btn-primary" href="https://github.com/viralwechaar-creator/auzslabs-infra/releases/download/wrapper-mob-latest/AUZslab-mob.apk">Download APK</a>
+              <a class="btn btn-primary js-dl" data-app="AUZslab-mob" download="AUZslab-mob.apk" href="https://github.com/viralwechaar-creator/auzslabs-infra/releases/download/wrapper-mob-latest/AUZslab-mob.apk">Download APK</a>
             </div>
 
             <div class="app-card">
-              <img src="/icon-payroll.svg" alt="">
-              <h3>AUZsPay</h3>
+              <div class="app-card-head">
+                <div class="app-icon"><img src="app-icons/icon-payroll.svg" alt="AUZsPay"></div>
+                <div class="app-titles"><h3>AUZsPay</h3></div>
+              </div>
               <p>Attendance, leave, loans, payroll runs and payslips for your whole team.</p>
-              <a class="btn btn-primary" href="https://github.com/viralwechaar-creator/auzslabs-infra/releases/download/wrapper-payroll-latest/AUZslab-payroll.apk">Download APK</a>
+              <a class="btn btn-primary js-dl" data-app="AUZslab-payroll" download="AUZslab-payroll.apk" href="https://github.com/viralwechaar-creator/auzslabs-infra/releases/download/wrapper-payroll-latest/AUZslab-payroll.apk">Download APK</a>
             </div>
 
             <div class="app-card">
-              <img src="/icon-accounts.svg" alt="">
-              <h3>AUZsLedger</h3>
+              <div class="app-card-head">
+                <div class="app-icon"><img src="app-icons/icon-accounts.svg" alt="AUZsLedger"></div>
+                <div class="app-titles"><h3>AUZsLedger</h3></div>
+              </div>
               <p>Full double-entry accounting, GST invoices, banking and reports.</p>
-              <a class="btn btn-primary" href="https://github.com/viralwechaar-creator/auzslabs-infra/releases/download/wrapper-accounts-latest/AUZslab-accounts.apk">Download APK</a>
+              <a class="btn btn-primary js-dl" data-app="AUZslab-accounts" download="AUZslab-accounts.apk" href="https://github.com/viralwechaar-creator/auzslabs-infra/releases/download/wrapper-accounts-latest/AUZslab-accounts.apk">Download APK</a>
             </div>
 
             <div class="app-card">
-              <img src="/icon-scan.svg" alt="">
-              <h3>AUZsScan</h3>
+              <div class="app-card-head">
+                <div class="app-icon"><img src="app-icons/icon-scan.svg" alt="AUZsScan"></div>
+                <div class="app-titles"><h3>AUZsScan</h3></div>
+              </div>
               <p>Scan a barcode, bill it, add stock — built for shops that live on a scanner.</p>
-              <a class="btn btn-primary" href="https://github.com/viralwechaar-creator/auzslabs-infra/releases/download/wrapper-scan-latest/AUZslab-scan.apk">Download APK</a>
+              <a class="btn btn-primary js-dl" data-app="AUZslab-scan" download="AUZslab-scan.apk" href="https://github.com/viralwechaar-creator/auzslabs-infra/releases/download/wrapper-scan-latest/AUZslab-scan.apk">Download APK</a>
             </div>
 
           </div>
@@ -268,10 +297,26 @@
 
   </main>
 </div>
+<div class="dl-toast" id="dlToast" role="status" aria-live="polite"></div>
 <script src="/sb-client.js?v=5"></script>
 <script src="site.js?v=13"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script src="design-system/ui-kit.js?v=1"></script>
+<script>
+(function () {
+  var toast = document.getElementById('dlToast');
+  var hideT;
+  document.querySelectorAll('.js-dl').forEach(function (a) {
+    a.addEventListener('click', function () {
+      var name = a.getAttribute('data-app') || 'the app';
+      toast.innerHTML = '<b>Downloading ' + name + '.apk…</b>Look for the download icon near your address bar, or check your Downloads / Files app. It can take a minute on a slow connection.';
+      toast.classList.add('show');
+      clearTimeout(hideT);
+      hideT = setTimeout(function () { toast.classList.remove('show'); }, 7000);
+    });
+  });
+})();
+</script>
 <script src="company.js"></script>
 </body>
 </html>
