@@ -10,10 +10,17 @@
   function cap() { return window.Capacitor; }
   function plugin() { var c = cap(); return c && c.Plugins && c.Plugins.PushNotifications; }
   function isNative() { var c = cap(); return !!(c && c.isNativePlatform && c.isNativePlatform()); }
+  /* mobile/build.mjs bakes this in at build time: true only when this exact app's package id was found in the
+     Firebase project (GOOGLE_SERVICES_JSON), i.e. google-services.json actually shipped in the APK. The
+     push-notifications plugin's native code is bundled into every wrapper app regardless -- calling into it
+     (requestPermissions/register) when Firebase was never configured throws an uncaught native exception
+     ("Default FirebaseApp is not initialized") that crashes the whole app, not just a rejected JS promise, so
+     this must be checked BEFORE touching the plugin at all, not inside a try/catch. See docs/AUZSPOS_LAUNCH_CHECKLIST.md. */
+  function pushConfigured() { var c = cap(); var cfg = c && c.getConfig ? c.getConfig() : null; return !!(cfg && cfg.auzPushReady); }
 
   function enable(sb, userId) {
     var Push = plugin();
-    if (!isNative() || !Push) return Promise.resolve({ ok: false, message: 'Native push is only available inside the installed app.' });
+    if (!isNative() || !Push || !pushConfigured()) return Promise.resolve({ ok: false, message: 'Native push is only available inside the installed app.' });
     return Push.requestPermissions().then(function (perm) {
       if (perm.receive !== 'granted') return { ok: false, message: 'Allow notifications for this app in your phone settings.' };
       return new Promise(function (resolve) {
@@ -41,7 +48,7 @@
      (db/182) instead of the per-business fcm_tokens table. Resolves {ok, message}; silent no-op outside the app. */
   function enablePlatform(sb) {
     var Push = plugin();
-    if (!isNative() || !Push) return Promise.resolve({ ok: false, message: 'Alerts are only available inside the installed app.' });
+    if (!isNative() || !Push || !pushConfigured()) return Promise.resolve({ ok: false, message: 'Alerts are only available inside the installed app.' });
     return Push.requestPermissions().then(function (perm) {
       if (perm.receive !== 'granted') return { ok: false, message: 'Allow notifications for this app in your phone settings.' };
       return new Promise(function (resolve) {

@@ -5,10 +5,18 @@ const A = JSON.parse(fs.readFileSync('apps.json','utf8'))[app];
 if (!A) throw new Error('unknown app '+app);
 fs.rmSync('www',{recursive:true,force:true}); fs.mkdirSync('www');
 fs.writeFileSync('www/index.html', `<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>${A.name}</title><body style="margin:0;background:#171717;color:#fff;font:16px system-ui;display:grid;place-items:center;min-height:100vh;text-align:center;padding:24px"><div><h1 style="font-size:22px">${A.name}</h1><p>You are offline. Connect to the internet and try again.</p><button onclick="location.href='${A.url}'" style="font:inherit;padding:12px 22px;border:0;border-radius:12px">Retry</button></div>`);
+// Computed up front (not just for the google-services.json write further down) because it also needs to reach
+// the live website's JS as a build-time fact, via Capacitor.getConfig()'s "plugins" field -- see the long
+// comment near the google-services.json write below for why this matters: without it, ds/nativepush.js has no
+// way to know push-notifications was bundled into THIS app's build without Firebase actually being configured
+// for it, and calling into that plugin unconfigured crashes the whole app, not just rejects a promise.
+const gsRaw = process.env.GOOGLE_SERVICES_JSON ? Buffer.from(process.env.GOOGLE_SERVICES_JSON,'base64').toString('utf8') : '';
+const pushReady = !!gsRaw && (gsRaw.includes('"package_name": "'+A.id+'"') || gsRaw.includes('"package_name":"'+A.id+'"'));
 fs.writeFileSync('capacitor.config.json', JSON.stringify({
   appId:A.id, appName:A.name, webDir:'www', backgroundColor:'#171717',
   server:{url:A.url, cleartext:false, allowNavigation:['auzslab.in','*.auzslab.in']},
-  android:{appendUserAgent:'AUZslabApp', allowMixedContent:false}
+  android:{appendUserAgent:'AUZslabApp', allowMixedContent:false},
+  auzPushReady:pushReady
 },null,2));
 fs.rmSync('android',{recursive:true,force:true});
 execSync('npx cap add android',{stdio:'inherit'});
@@ -93,13 +101,10 @@ if (!manifest.includes('android.permission.BLUETOOTH"')) {
 // google-services Gradle plugin fails the whole build when this app's package id
 // is not in it. So the file is written only when it contains this app's id;
 // otherwise this app builds without push, exactly like the dormant case.
-if (process.env.GOOGLE_SERVICES_JSON) {
-  const gs = Buffer.from(process.env.GOOGLE_SERVICES_JSON, 'base64').toString('utf8');
-  if (gs.includes('"package_name": "'+A.id+'"') || gs.includes('"package_name":"'+A.id+'"')) {
-    fs.writeFileSync('android/app/google-services.json', gs);
-  } else {
-    console.log('push skipped: '+A.id+' is not in the Firebase file');
-  }
+if (pushReady) {
+  fs.writeFileSync('android/app/google-services.json', gsRaw);
+} else if (process.env.GOOGLE_SERVICES_JSON) {
+  console.log('push skipped: '+A.id+' is not in the Firebase file');
 }
 
 const g='android/app/build.gradle'; let t=fs.readFileSync(g,'utf8');

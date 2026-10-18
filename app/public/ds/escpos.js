@@ -231,6 +231,10 @@
   async function pairNativeBle() {
     const Ble = blePlugin();
     if (!Ble) throw new Error('Bluetooth printing needs the app to be rebuilt with the Bluetooth plugin.');
+    // Bug fixed (confirmed by reading @capacitor-community/bluetooth-le's own required call order): initialize()
+    // must run before any other BleClient method, including requestDevice() -- calling requestDevice() first (the
+    // previous code here) throws a native exception that this file cannot catch from JS, crashing the whole app.
+    await Ble.initialize();
     const dev = await Ble.requestDevice({ optionalServices: BLE_SERVICES });
     return nativeBleTransport(dev.deviceId, dev.name);
   }
