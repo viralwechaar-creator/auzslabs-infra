@@ -17,12 +17,22 @@ function escapeHtml(s) {
 // One shared, email-safe layout (tables + inline styles, works in Gmail / Outlook / Apple Mail).
 // kicker = small label, title = big heading, body = html paragraphs, button = {label, href}, note = small print.
 //
-// Forcing light mode: `color-scheme`/`supported-color-schemes` meta tags alone do not stop Gmail's own
-// heuristic dark mode from re-painting a "plain" white-card email as dark-with-inverted-text (confirmed
-// against a real Gmail app send: the card and headings went dark, only the explicitly-colored button
-// stayed put) -- the documented, reliable fix is the `[data-ogsc]` attribute selector, which Gmail adds
-// to the document itself the moment it applies its own dark-mode repaint, specifically so a sender can
-// override it back. Every color that must never flip gets a `!important` rule under that selector.
+// Dark mode, the real story: `color-scheme` meta tags and the `[data-ogsc]` attribute selector (Gmail
+// WEB's own documented hook for "a sender wants to override our forced-dark repaint") do nothing on the
+// Gmail ANDROID APP -- confirmed by sending a real email and watching the card stay dark with [data-ogsc]
+// rules in place. The app has its own separate dark-mode pipeline that a style block can't reliably fight.
+// Two real fixes instead of one more attempt to force light everywhere:
+//  1. The logo gets its own small white chip (not just sitting on the page background), so a solid-black
+//     ink-on-transparent PNG is never asked to render on a dark background -- that's what produced the
+//     near-invisible "ghost outline" a real test caught (anti-aliased edge pixels of a black mark go
+//     almost invisible against a dark app-forced background; a guaranteed-light backing avoids the
+//     problem outright rather than trying to detect and prevent it).
+//  2. A genuine second palette under `@media (prefers-color-scheme:dark)` (the brand's own dark tokens,
+//     same values as ds/auz.css) -- this query IS honoured by more real mail clients than [data-ogsc],
+//     so where it's respected the email now looks deliberately designed for dark mode instead of merely
+//     not-broken; where NEITHER mechanism is honoured (confirmed: this exact Gmail app build), the body
+//     text and button already read fine as plain white-on-dark/pink-on-dark, which the real screenshot
+//     confirmed -- only the logo chip and footer links needed a real fix, not the whole card.
 export function emailLayout({ preheader = '', kicker = '', title, body = '', button = null, note = '' }) {
   const font = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
   const mono = "'SFMono-Regular',Menlo,Consolas,'Courier New',monospace";
@@ -31,18 +41,23 @@ export function emailLayout({ preheader = '', kicker = '', title, body = '', but
             <a href="${button.href}" style="display:inline-block;padding:16px 36px;font:700 16px ${font};color:#ffffff;text-decoration:none;border-radius:999px">${button.label}</a>
           </td></tr></table>
           <p class="muted" style="margin:14px 0 0;font:13px/1.6 ${font};color:#8a8480">Button not working? Copy this link into your browser:<br><a href="${button.href}" class="link" style="color:#800020;word-break:break-all">${button.href}</a></p>` : '';
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light">
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">
 <style>
-  :root{color-scheme:light;supported-color-schemes:light}
-  [data-ogsc] .page{background:#f3f0ec!important}
-  [data-ogsc] .card{background:#ffffff!important;border-color:#e6e1dc!important}
-  [data-ogsc] .ink,[data-ogsc] .ink *{color:#2e2c2a!important}
-  [data-ogsc] .body-copy,[data-ogsc] .body-copy *{color:#4a4643!important}
-  [data-ogsc] .muted,[data-ogsc] .muted *{color:#8a8480!important}
-  [data-ogsc] .kicker{color:#800020!important}
-  [data-ogsc] .link{color:#800020!important}
-  [data-ogsc] .btn-fill,[data-ogsc] .btn-fill a{background:#800020!important;color:#ffffff!important}
-  [data-ogsc] .footer-link{color:#700a1c!important}
+  :root{color-scheme:light dark;supported-color-schemes:light dark}
+  [data-ogsc] .footer-link{color:#ffb4c4!important}
+  [data-ogsc] .muted{color:#b9b2ac!important}
+  @media (prefers-color-scheme:dark) {
+    .page{background:#17161a!important}
+    .card{background:#211f24!important;border-color:#38353b!important}
+    .ink,.ink *{color:#f3f1ee!important}
+    .body-copy,.body-copy *{color:#cfc9c4!important}
+    .muted,.muted *{color:#a39b93!important}
+    .kicker{color:#e8365d!important}
+    .link{color:#ff6b86!important}
+    .btn-fill,.btn-fill a{background:#e8365d!important;color:#ffffff!important}
+    .footer-link{color:#ff9fb2!important}
+    .logo-chip{background:#ffffff!important}
+  }
 </style>
 </head>
 <body class="page" style="margin:0;padding:0;background:#f3f0ec">
@@ -50,7 +65,9 @@ export function emailLayout({ preheader = '', kicker = '', title, body = '', but
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f3f0ec" class="page" style="background:#f3f0ec"><tr><td align="center" style="padding:40px 14px">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px">
     <tr><td align="center" style="padding:0 6px 26px">
-      <img src="${SITE}/logo.png" width="118" height="43" alt="AUZslab" style="display:block;border:0;outline:none">
+      <table role="presentation" cellpadding="0" cellspacing="0"><tr><td class="logo-chip" bgcolor="#ffffff" style="background:#ffffff;border-radius:14px;padding:10px 20px">
+        <img src="${SITE}/logo.png" width="110" height="40" alt="AUZslab" style="display:block;border:0;outline:none">
+      </td></tr></table>
     </td></tr>
     <tr><td class="card" bgcolor="#ffffff" style="background:#ffffff;border-radius:22px;border:1px solid #e6e1dc;padding:44px 40px;box-shadow:0 1px 0 rgba(46,44,42,.04)">
       <p class="kicker" style="margin:0 0 14px;font:700 11px ${mono};letter-spacing:.12em;text-transform:uppercase;color:#800020">${escapeHtml(kicker)}</p>
