@@ -1,8 +1,6 @@
 name: Native AUZsPOS (Android)
 on:
   workflow_dispatch:
-  push:
-    paths: ['native/auzspos/**', '.github/workflows/native-pos.yml']
 permissions:
   contents: write
 jobs:

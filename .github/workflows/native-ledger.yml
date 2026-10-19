@@ -1,8 +1,6 @@
 name: Native AUZsLedger (Android)
 on:
   workflow_dispatch:
-  push:
-    paths: ['native/auzsledger/**', '.github/workflows/native-ledger.yml']
 permissions:
   contents: write
 jobs:
