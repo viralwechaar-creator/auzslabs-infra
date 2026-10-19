@@ -171,8 +171,16 @@ class MenuAdmin extends StatefulWidget {
 
 class _MenuAdminState extends State<MenuAdmin> with SingleTickerProviderStateMixin {
   late final TabController tc = TabController(length: 2, vsync: this, initialIndex: widget.tab);
-  String q = '';
+  String q = '', catFilter = '', vegFilter = '';
   Session get s => widget.h.s;
+
+  Future<void> copyItem(Map<String, dynamic> it) async {
+    final c = Map<String, dynamic>.from(it)..remove('id');
+    c['name'] = '${it['name']} (copy)';
+    await s.repo!.save('item', c);
+    setState(() {});
+    s.sync();
+  }
 
   Future<void> item([Map<String, dynamic>? it]) async {
     final cats = s.repo!.of('cat').toList()..sort((a, b) => ((a['n'] as num?) ?? 0).compareTo((b['n'] as num?) ?? 0));
@@ -280,13 +288,23 @@ class _MenuAdminState extends State<MenuAdmin> with SingleTickerProviderStateMix
   Widget build(BuildContext context) {
     final cats = s.repo!.of('cat').toList()..sort((a, b) => ((a['n'] as num?) ?? 0).compareTo((b['n'] as num?) ?? 0));
     final catName = {for (final c in cats) '${c['id']}': '${c['name']}'};
-    final items = s.repo!.of('item').where((i) => q.isEmpty || '${i['name']}'.toLowerCase().contains(q.toLowerCase())).toList()..sort((a, b) => '${catName[a['cat']]}${a['name']}'.compareTo('${catName[b['cat']]}${b['name']}'));
+    final taxName = {for (final t in s.repo!.of('tax')) '${t['id']}': '${t['name']}'};
+    final items = s.repo!.of('item').where((i) => (q.isEmpty || '${i['name']} ${i['short'] ?? ''}'.toLowerCase().contains(q.toLowerCase())) && (catFilter.isEmpty || i['cat'] == catFilter) && (vegFilter.isEmpty || ('${i['veg'] ?? 'veg'}') == vegFilter)).toList()..sort((a, b) => '${catName[a['cat']]}${a['name']}'.compareTo('${catName[b['cat']]}${b['name']}'));
     return Scaffold(
       appBar: widget.embedded ? PreferredSize(preferredSize: const Size.fromHeight(48), child: Material(color: Tk.bg, child: TabBar(controller: tc, tabs: const [Tab(text: 'Items'), Tab(text: 'Categories')]))) : AppBar(title: const Text('Menu'), bottom: TabBar(controller: tc, tabs: const [Tab(text: 'Items'), Tab(text: 'Categories')])),
       floatingActionButton: ListenableBuilder(listenable: tc, builder: (_, _) => FloatingActionButton.extended(onPressed: () => tc.index == 0 ? item() : cat(), icon: const Icon(Icons.add), label: Text(tc.index == 0 ? 'Add item' : 'Add category'))),
       body: TabBarView(controller: tc, children: [
         Column(children: [
-          Padding(padding: const EdgeInsets.fromLTRB(12, 10, 12, 4), child: TextField(decoration: InputDecoration(prefixIcon: Icon(Icons.search), hintText: tr('Search items')), onChanged: (v) => setState(() => q = v))),
+          Padding(padding: const EdgeInsets.fromLTRB(12, 10, 12, 4), child: TextField(decoration: InputDecoration(prefixIcon: Icon(Icons.search), hintText: tr('Search items, short codes')), onChanged: (v) => setState(() => q = v))),
+          SizedBox(
+            height: 40,
+            child: ListView(scrollDirection: Axis.horizontal, padding: const EdgeInsets.fromLTRB(12, 0, 12, 6), children: [
+              Padding(padding: const EdgeInsets.only(right: 8), child: DropdownButton<String>(value: catFilter, underline: const SizedBox.shrink(), items: [const DropdownMenuItem(value: '', child: Text('All categories')), for (final c in cats) DropdownMenuItem(value: '${c['id']}', child: Text('${c['name']}'))], onChanged: (v) => setState(() => catFilter = v ?? ''))),
+              DropdownButton<String>(value: vegFilter, underline: const SizedBox.shrink(), items: const [DropdownMenuItem(value: '', child: Text('All types')), DropdownMenuItem(value: 'veg', child: Text('Veg')), DropdownMenuItem(value: 'nonveg', child: Text('Non-veg')), DropdownMenuItem(value: 'egg', child: Text('Egg'))], onChanged: (v) => setState(() => vegFilter = v ?? '')),
+              const SizedBox(width: 8),
+              Align(alignment: Alignment.centerLeft, child: Text('${items.length} items', style: TextStyle(color: Tk.label2))),
+            ]),
+          ),
           Expanded(
             child: items.isEmpty
                 ? Empty(Icons.restaurant_menu, 'No items yet', 'Add your first item, or import a whole menu from the website console.', action: 'Add item', onAction: item)
@@ -296,16 +314,33 @@ class _MenuAdminState extends State<MenuAdmin> with SingleTickerProviderStateMix
                     itemBuilder: (_, i) {
                       final it = items[i];
                       final first = i == 0 || items[i - 1]['cat'] != it['cat'];
+                      final soldOut = it['off'] == true;
+                      final limited = !soldOut && (it['chOff'] is Map) && (it['chOff'] as Map).isNotEmpty;
+                      final subParts = <String>[
+                        if (soldOut) 'Sold out' else if (limited) 'Limited',
+                        if ('${it['short'] ?? ''}'.isNotEmpty) 'Code ${it['short']}',
+                        if (it['combo'] == true) 'Combo',
+                        it['taxId'] != null ? (taxName['${it['taxId']}'] ?? 'Tax') : 'Default tax',
+                      ];
                       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        if (first) Padding(padding: const EdgeInsets.fromLTRB(4, 12, 0, 4), child: Text('${catName[it['cat']] ?? 'No category'}'.toUpperCase(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Tk.label2, letterSpacing: .6))),
+                        if (first) Padding(padding: const EdgeInsets.fromLTRB(4, 12, 0, 4), child: Text((catName[it['cat']] ?? 'No category').toUpperCase(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Tk.label2, letterSpacing: .6))),
                         Card(
                           margin: const EdgeInsets.symmetric(vertical: 3),
                           child: ListTile(
                             onTap: () => item(it),
-                            leading: Container(width: 14, height: 14, decoration: BoxDecoration(border: Border.all(color: it['veg'] == 'nonveg' ? Tk.red : Tk.green, width: 1.5), borderRadius: BorderRadius.circular(3)), child: Center(child: Container(width: 6, height: 6, decoration: BoxDecoration(shape: BoxShape.circle, color: it['veg'] == 'nonveg' ? Tk.red : Tk.green)))),
-                            title: Text('${it['name']}', style: TextStyle(fontWeight: FontWeight.w700, decoration: it['off'] == true ? TextDecoration.lineThrough : null)),
-                            subtitle: it['off'] == true ? Text('Sold out', style: TextStyle(color: Tk.red)) : null,
-                            trailing: Text(inr((it['price'] ?? 0) as num), style: const TextStyle(fontWeight: FontWeight.w800)),
+                            leading: '${it['img'] ?? ''}'.isEmpty
+                                ? Container(width: 14, height: 14, margin: const EdgeInsets.only(top: 2), decoration: BoxDecoration(border: Border.all(color: it['veg'] == 'nonveg' ? Tk.red : Tk.green, width: 1.5), borderRadius: BorderRadius.circular(3)), child: Center(child: Container(width: 6, height: 6, decoration: BoxDecoration(shape: BoxShape.circle, color: it['veg'] == 'nonveg' ? Tk.red : Tk.green))))
+                                : ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network('${it['img']}', width: 38, height: 38, fit: BoxFit.cover, errorBuilder: (_, _, _) => Container(width: 38, height: 38, color: Tk.fill, child: Icon(Icons.broken_image_outlined, color: Tk.label3, size: 18)))),
+                            title: Text('${it['name']}', style: TextStyle(fontWeight: FontWeight.w700, decoration: soldOut ? TextDecoration.lineThrough : null)),
+                            subtitle: subParts.isEmpty ? null : Text(subParts.join(' · '), style: TextStyle(color: soldOut ? Tk.red : (limited ? Tk.orange : Tk.label2))),
+                            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                              Text(inr((it['price'] ?? 0) as num), style: const TextStyle(fontWeight: FontWeight.w800)),
+                              PopupMenuButton<String>(
+                                icon: const Icon(Icons.more_vert, size: 20),
+                                onSelected: (v) => v == 'copy' ? copyItem(it) : item(it),
+                                itemBuilder: (_) => const [PopupMenuItem(value: 'edit', child: Text('Edit')), PopupMenuItem(value: 'copy', child: Text('Copy'))],
+                              ),
+                            ]),
                           ),
                         ),
                       ]);
