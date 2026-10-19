@@ -75,6 +75,11 @@ body.adm { background: var(--tint); overflow-x: hidden; }
 .a-select { border: 1px solid var(--line); background: #fff; padding: 6px 8px; font-size: 14px; }
 
 .a-cols { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 32px; align-items: start; }
+/* Lets a page's cards flow into 2-3 columns on a wide screen instead of one
+   narrow stack with the rest of the screen left blank (auto-fit collapses
+   empty tracks and lets the real cards grow, unlike auto-fill). */
+.a-cardgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; align-items: start; }
+.a-cardgrid > .a-card, .a-cardgrid > details.a-card { margin-bottom: 0; }
 .a-card { border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 12px; background: #fff; }
 details.a-card > summary { cursor: pointer; font-weight: 500; font-size: 17px; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
 details.a-card > summary::-webkit-details-marker { display: none; }
@@ -91,7 +96,7 @@ details.a-card[open] > summary { margin-bottom: 14px; }
 .a-mini button:hover:not(:disabled) { background: var(--plum); color: #fff; }
 .a-mini button:disabled { opacity: .3; }
 .a-sticky { position: sticky; bottom: 0; background: rgba(255,255,255,.96); padding: 14px 0; border-top: 1px solid var(--line); display: flex; gap: 12px; align-items: center; z-index: 5; }
-.a-thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+.a-thumbs { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 380px)); gap: 18px; }
 .a-thumb img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 10px; background: var(--tint); }
 .a-thumb .pic { aspect-ratio: 4/5; border-radius: 10px; background: var(--taupe); display: grid; place-items: center; overflow: hidden; }
 .a-thumb .pic img { width: 100%; height: 100%; aspect-ratio: auto; }

@@ -352,8 +352,8 @@
             btn('Remove', async () => { if (await confirmBox('Remove ' + st.name + '? They can no longer sign in. Their payroll record stays.', 'Remove')) { try { await api('DELETE', '/api/admin/staff/' + st.id); toast('Staff removed'); viewStaff(); } catch (ex) { fail(ex); } } }, 'btn-sm btn-danger'))))))))
       : emptyNote('No staff logins yet. Add one so your team can make bills and manage bookings.', 'chair');
     view().replaceChildren(
-      h('div', { class: 'a-card', style: 'max-width:760px;margin-bottom:24px' },
-        h('p', { text: 'Staff sign in with their phone number. They can see Today, Bookings, Billing and Clients only: they can take bookings, make bills and send them on WhatsApp, but cannot change the menu, prices, website, gallery, settings or expenses, void bills, or see other people\'s bills.' }),
+      h('div', { class: 'a-card', style: 'margin-bottom:24px' },
+        h('p', { style: 'max-width:64ch', text: 'Staff sign in with their phone number. They can see Today, Bookings, Billing and Clients only: they can take bookings, make bills and send them on WhatsApp, but cannot change the menu, prices, website, gallery, settings or expenses, void bills, or see other people\'s bills.' }),
         data.payroll
           ? [h('p', { class: 'a-note', style: 'margin-top:8px', text: 'Staff are linked to AUZslab Payroll. Their clock in and out on the Today tab becomes their attendance there; set their salary under Payroll, Employees.' }),
             h('a', { class: 'btn btn-sm btn-alt', style: 'margin-top:10px', href: '/payroll.html', target: '_blank', rel: 'noopener' }, 'Open Payroll')]
@@ -1167,7 +1167,7 @@
     const C = { ...D.content };
     const rows = [['heroTitle', 'Home page headline', 'i'], ['heroText', 'Home page intro', 't', 3], ['servicesText', 'Services intro', 't', 2], ['menuText', 'Menu intro', 't', 2],
       ['galleryText', 'Gallery intro', 't', 2], ['stylistsText', 'Hairstylists intro', 't', 2], ['aboutTitle', 'About us headline', 'i'], ['aboutText', 'About us text (one paragraph per line)', 't', 8], ['bookText', 'Booking intro', 't', 2]];
-    view().replaceChildren(h('div', { style: 'max-width:720px' }, rows.map(([k, l, t, r]) => fld(l, t === 'i' ? inp(C, k, { id: 'c' + k }) : area(C, k, { id: 'c' + k, rows: r }), 'c' + k))),
+    view().replaceChildren(h('div', { class: 'a-cardgrid', style: 'max-width:1400px' }, rows.map(([k, l, t, r]) => h('div', { class: 'a-card' }, fld(l, t === 'i' ? inp(C, k, { id: 'c' + k }) : area(C, k, { id: 'c' + k, rows: r }), 'c' + k)))),
       sticky(btn('Save website text', async () => { if (await saveSection('content', C)) await load(); })));
   }
 
@@ -1189,6 +1189,7 @@
     const S = JSON.parse(JSON.stringify(D.settings)), P = { current: '', next: '' };
     if (!S.bgMusic) S.bgMusic = { mode: 'off', src: '', volume: 15, spotifyUrl: '', spotifyEmbed: '' };
     if (!S.bgMusic.mode) S.bgMusic.mode = S.bgMusic.enabled ? 'upload' : 'off';
+    if (!Array.isArray(S.closedDays)) S.closedDays = [];
     const id = k => 's' + k;
     const days = h('div', { style: 'display:flex;gap:16px;flex-wrap:wrap' }, DAYS.map((d, i) => h('label', { class: 'a-check' }, h('input', { type: 'checkbox', checked: S.closedDays.includes(i), onchange: e => { S.closedDays = e.target.checked ? [...S.closedDays, i] : S.closedDays.filter(x => x !== i); } }), d)));
     const logoBox = h('div', { class: 'a-card', style: 'max-width:220px' });
@@ -1355,11 +1356,14 @@
        scrolling to reach "Change password" or "Danger zone". Remembers which
        ones are open across a re-render (e.g. after Save) the same way Menu does. */
     const openSecs = viewSettings._open || (viewSettings._open = new Set(['basics']));
-    const sec = (key, title, hint, ...kids) => h('details', { class: 'a-card', open: openSecs.has(key), ontoggle: e => { e.target.open ? openSecs.add(key) : openSecs.delete(key); } },
+    // Sections with several fields side by side (brand colours, salon details, hours)
+    // read better spanning the full grid width; the rest sit two/three to a row.
+    const WIDE = new Set(['branding', 'basics', 'hours']);
+    const sec = (key, title, hint, ...kids) => h('details', { class: 'a-card', style: WIDE.has(key) ? 'grid-column:1/-1' : '', open: openSecs.has(key), ontoggle: e => { e.target.open ? openSecs.add(key) : openSecs.delete(key); } },
       h('summary', {}, h('span', {}, title, hint ? [' ', h('small', { text: hint })] : null)),
       h('div', { style: 'margin-top:16px' }, kids));
 
-    view().replaceChildren(h('div', { style: 'max-width:760px' },
+    view().replaceChildren(h('div', { class: 'a-cardgrid', style: 'max-width:1400px' },
       sec('branding', 'Branding', 'Logo, photo, colours, style', brandBox),
       sec('logo', 'Home page logo artwork', 'Optional, replaces the photo',
         h('p', { class: 'muted', style: 'margin-bottom:12px', text: 'Optional: a large logo shown in the home page hero in place of the salon photo. Leave empty to use the photo.' }),
