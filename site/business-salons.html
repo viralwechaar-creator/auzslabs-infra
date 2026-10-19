@@ -544,21 +544,16 @@
 // site.js) opens with it noted -- still the one real request-a-quote flow,
 // nothing here is a second checkout. Monthly prices match the four tiers in
 // order (Studio, Salon, Atelier, Maison); "was" = monthly x 1.25 (shown as the
-// struck-through price), yearly = 10 months' worth (2 months free).
-//
-// Linked to Admin -> Pricing: the numbers below are a fallback shown instantly
-// (and if the live fetch fails -- offline, RPC down, nothing ever breaks).
-// public_product_prices() (the same live source pricing.html already reads)
-// is fetched once on load; if the admin's real "salon" monthly price differs
-// from this fallback, every tier here is rescaled by that same ratio, so
-// changing the one real price in Admin -> Pricing moves all four tiers
-// together without a deploy. The four tiers themselves still aren't real,
-// separately-priced products -- see the section's own disclaimer line.
+// struck-through price), yearly = 10 months' worth (2 months free). These four
+// numbers are fixed -- not pulled from Admin -> Pricing's single real "salon"
+// price (an earlier version rescaled them off that live number; removed on
+// request, since it drifted these exact figures away from what's shown here).
+// The admin panel still links to this page (a one-way pointer, Admin ->
+// Pricing's salon row), it just no longer feeds a number back.
 (function () {
   var toggle = document.getElementById('spToggle');
   var grid = document.getElementById('spGrid');
   if (!toggle || !grid) return;
-  var FALLBACK_BASE = 1080;
   var monthlyPrices = [1080, 1360, 2720, 5440];
   var currentPeriod = 'm';
   function inr(n) { return '₹' + Math.round(n).toLocaleString('en-IN'); }
@@ -602,23 +597,13 @@
     });
   });
 
-  // Live link to Admin -> Pricing: rescale every tier if the real "salon"
-  // price differs from the fallback above, and reveal the "+ GST" tags if
-  // GST is actually configured -- same two RPCs pricing.html already reads,
-  // so nothing new on the server. Silently keeps the fallback on any error.
+  // These four tiers' prices are fixed (not pulled from Admin -> Pricing's
+  // single real "salon" price -- an earlier version of this page rescaled
+  // them off that live number, which drifted the numbers away from what's
+  // shown here; removed on request). Only the "+ GST" label is still live,
+  // since that's a true/false switch, never a number this page could drift.
   try {
     var sb = supabase.createClient(CFG.url, CFG.key);
-    sb.rpc('public_product_prices').then(function (r) {
-      var rows = (r && r.data) || [];
-      var salon = rows.filter(function (p) { return p.key === 'salon'; })[0];
-      if (salon && Number(salon.monthly_price) > 0) {
-        var ratio = Number(salon.monthly_price) / FALLBACK_BASE;
-        if (ratio > 0 && Math.abs(ratio - 1) > 0.001) {
-          monthlyPrices = monthlyPrices.map(function (m) { return Math.round(m * ratio); });
-          setPeriod(currentPeriod);
-        }
-      }
-    }).catch(function () {});
     sb.payments.config().then(function (c) {
       c = c && c.data;
       if (c && c.gstPct > 0) document.querySelectorAll('#salon-plans .gst-t').forEach(function (e) { e.hidden = false; });
