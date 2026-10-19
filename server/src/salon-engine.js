@@ -73,18 +73,14 @@ async function persistCollection(client, tid, kind, before, after) {
   const beforeById = new Map(before.map((x) => [x.id, x])), afterById = new Map(after.map((x) => [x.id, x]));
   for (const [id, row] of afterById) {
     if (JSON.stringify(beforeById.get(id)) !== JSON.stringify(row)) {
-      const r = await client.query(
+      await client.query(
         `insert into records (tenant_id, id, kind, data) values ($1,$2,$3,$4::jsonb)
          on conflict (tenant_id, id) do update set data = excluded.data, updated_at = now()`,
         [tid, String(id), kind, JSON.stringify(row)],
       );
-      if (kind === 'cat') console.log(`[menu-debug] upsert cat ${id} rowCount=${r.rowCount}`);
     }
   }
-  for (const id of beforeById.keys()) if (!afterById.has(id)) {
-    const r = await client.query(`delete from records where tenant_id=$1 and id=$2 and kind=$3`, [tid, String(id), kind]);
-    if (kind === 'cat') console.log(`[menu-debug] DELETE cat ${id} rowCount=${r.rowCount}`);
-  }
+  for (const id of beforeById.keys()) if (!afterById.has(id)) await client.query(`delete from records where tenant_id=$1 and id=$2 and kind=$3`, [tid, String(id), kind]);
 }
 async function persistBookings(client, tid, before, after) {
   const beforeById = new Map(before.map((x) => [x.id, x])), afterById = new Map(after.map((x) => [x.id, x]));
@@ -122,10 +118,8 @@ function flattenMenu(menu) {
 }
 async function persistMenu(client, tid, before, after) {
   const b = flattenMenu(before.menu), a = flattenMenu(after.menu);
-  console.log(`[menu-debug] before cats=${b.cats.length} (${b.cats.map(c=>c.id).join(',')}) after cats=${a.cats.length} (${a.cats.map(c=>c.id).join(',')})`);
   await persistCollection(client, tid, 'cat', b.cats, a.cats);
   await persistCollection(client, tid, 'item', b.items, a.items);
-  console.log('[menu-debug] persistMenu finished without throwing');
 }
 
 export async function persistDb(client, tid, before, after) {
