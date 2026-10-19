@@ -501,24 +501,68 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
   padding:6px 10px;border-radius:999px;
 }
 #salon-plans .sp-head{display:flex;align-items:center;gap:10px}
-#salon-plans .sp-name{font-family:var(--font-display);font-weight:700;font-size:19px;letter-spacing:-.01em}
-#salon-plans .sp-tagline{font-size:11.5px;color:var(--ink-dim);margin-top:10px;line-height:1.5;min-height:32px}
-#salon-plans .sp-price-row{display:flex;align-items:baseline;gap:6px;margin-top:16px;flex-wrap:wrap}
-#salon-plans .sp-price{font-family:var(--font-display);font-weight:700;font-size:26px;letter-spacing:-.03em;white-space:nowrap}
-#salon-plans .sp-per{font-family:var(--font-mono);font-size:10.5px;color:var(--ink-faint)}
-#salon-plans .sp-from{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-faint);margin-top:2px}
-#salon-plans .sp-cta{width:100%;justify-content:center;margin-top:16px}
-#salon-plans .sp-feats{list-style:none;margin:16px 0 0;padding:14px 0 0;border-top:1px dashed var(--line);display:grid;gap:9px;flex:1}
-#salon-plans .sp-feats li{display:flex;gap:8px;font-size:11.5px;line-height:1.4;align-items:flex-start;color:var(--ink-dim)}
-#salon-plans .sp-feats li::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--accent);flex:none;margin-top:6px}
+#salon-plans .sp-name{font-family:var(--font-display);font-weight:700;font-size:17px;letter-spacing:-.01em}
+#salon-plans .sp-tagline{font-size:10.5px;color:var(--ink-dim);margin-top:9px;line-height:1.45;min-height:28px}
+#salon-plans .sp-price-row{display:flex;align-items:baseline;gap:6px;margin-top:14px;flex-wrap:wrap}
+#salon-plans .sp-price{font-family:var(--font-display);font-weight:700;font-size:22px;letter-spacing:-.03em;white-space:nowrap}
+#salon-plans .sp-per{font-family:var(--font-mono);font-size:9.5px;color:var(--ink-faint)}
+#salon-plans .sp-wassave{display:flex;align-items:center;gap:7px;margin-top:3px;font-size:10px}
+#salon-plans .sp-was{color:var(--ink-faint);text-decoration:line-through}
+#salon-plans .sp-save2{color:var(--success);font-weight:700}
+#salon-plans .sp-cta{width:100%;justify-content:center;margin-top:14px;font-size:11.5px;padding:10px 14px;min-height:38px}
+#salon-plans .sp-feats{list-style:none;margin:14px 0 0;padding:12px 0 0;border-top:1px dashed var(--line);display:grid;grid-template-columns:repeat(2,1fr);gap:7px 10px;flex:1}
+#salon-plans .sp-feats li{display:flex;gap:6px;font-size:10px;line-height:1.35;align-items:flex-start;color:var(--ink-dim)}
+#salon-plans .sp-feats li::before{content:'';width:4px;height:4px;border-radius:50%;background:var(--accent);flex:none;margin-top:5px}
 #salon-plans .sp-note{margin-top:18px;font-size:11.5px;color:var(--ink-faint)}
 #salon-plans .sp-link{font:inherit;color:var(--accent);background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+#salon-plans .sp-strip{
+  display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:18px;
+  border:1px solid var(--line);background:var(--bg-raised);border-radius:18px;padding:18px 20px;margin-top:18px;
+}
+#salon-plans .sp-strip-pitch{display:flex;align-items:center;gap:12px}
+#salon-plans .sp-strip-symbol{width:34px;height:34px;border-radius:10px;background:var(--bg);color:var(--accent);display:grid;place-items:center;font-size:16px;flex:none;border:1px solid var(--line)}
+#salon-plans .sp-strip-pitch b{font-family:var(--font-display);font-size:13px;display:block}
+#salon-plans .sp-strip-pitch small{color:var(--ink-faint);font-size:11px;display:block;margin-top:3px}
+#salon-plans .sp-strip-price{white-space:nowrap}
+#salon-plans .sp-strip-price b{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-faint);display:block;margin-bottom:4px}
+#salon-plans .sp-strip-amt{font-family:var(--font-display);font-weight:700;font-size:21px;letter-spacing:-.03em}
+#salon-plans .sp-strip-per{font-family:var(--font-mono);font-size:10.5px;color:var(--ink-faint)}
 @media (min-width:620px){#salon-plans .sp-grid{grid-template-columns:repeat(2,1fr)}}
 @media (min-width:1100px){#salon-plans .sp-grid{grid-template-columns:repeat(4,1fr)}}
 @media (max-width:860px){
   #salon-plans .sp-card:nth-of-type(even),#salon-plans .sp-card:nth-of-type(odd){transform:none}
   #salon-plans .sp-toggle-note{display:none}
+  #salon-plans .sp-strip{grid-template-columns:1fr;gap:12px}
+  #salon-plans .sp-strip .btn{width:100%;justify-content:center}
 }
+
+/* hero trust badges (business-salons.html) */
+.sp-badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.sp-badges span{font-family:var(--font-mono);font-size:10px;color:var(--ink-dim);display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg-raised);border:1px solid var(--line);border-radius:9px}
+.sp-badges svg{color:var(--accent);flex:none}
+
+/* #salon-compare table */
+#salon-compare .sp-tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:16px;margin-top:16px;background:var(--bg)}
+#salon-compare .sp-table{width:100%;border-collapse:collapse;font-size:11px;min-width:560px}
+#salon-compare .sp-table th,#salon-compare .sp-table td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:center}
+#salon-compare .sp-table thead th{font-family:var(--font-mono);font-size:10px;letter-spacing:.03em;text-transform:uppercase;font-weight:700;background:var(--bg-raised)}
+#salon-compare .sp-table th:first-child,#salon-compare .sp-table td:first-child{text-align:left;font-weight:600;color:var(--ink)}
+#salon-compare .sp-table tbody tr:last-child td{border-bottom:none}
+#salon-compare .sp-table thead th:nth-child(3),#salon-compare .sp-table tbody td:nth-child(3){background:color-mix(in srgb, var(--accent) 6%, transparent)}
+#salon-compare .sp-check{color:var(--accent);font-weight:800}
+#salon-compare .sp-dash{color:var(--ink-faint)}
+
+/* #salon-addons */
+#salon-addons .addons-head{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between}
+#salon-addons .sp-addon-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:16px}
+#salon-addons .sp-addon{border:1px solid var(--line);border-radius:16px;background:var(--bg);padding:16px;box-shadow:0 8px 20px -12px rgba(46,44,42,.25)}
+#salon-addons .sp-addon-ic{width:30px;height:30px;border-radius:9px;background:var(--bg-raised);color:var(--accent);display:grid;place-items:center;margin-bottom:10px}
+#salon-addons .sp-addon-ic svg{width:15px;height:15px}
+#salon-addons .sp-addon b{font-family:var(--font-display);font-size:12.5px;display:block}
+#salon-addons .sp-addon-pr{font-family:var(--font-mono);font-size:10px;color:var(--accent);font-weight:700;margin-top:4px;display:block}
+#salon-addons .sp-addon p{color:var(--ink-dim);font-size:10.5px;margin-top:7px;line-height:1.45}
+@media (min-width:620px){#salon-addons .sp-addon-grid{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:1100px){#salon-addons .sp-addon-grid{grid-template-columns:repeat(4,1fr)}}
 
 @media (max-width:860px){
   #quick-look .label{margin-bottom:10px}
