@@ -123,12 +123,18 @@
       text: c.name + (filter === 'all' && c.gender !== 'all' ? (c.gender === 'female' ? ' (women)' : ' (men)') : '')
     })));
     slider.replaceChildren(...cats.map((c, i) => {
-      const two = c.priceLabels.length === 2;
+      // A category saved before priceLabels/items existed as fields (or edited directly in SQL) can be
+      // missing either entirely -- one such record used to throw here and abort this whole .map(), which
+      // silently blanked out every category's slide, not just the bad one (the tabs above render from a
+      // separate, earlier call, so they kept working while the slider stayed empty). Never let one legacy
+      // record take down the whole public menu.
+      const priceLabels = c.priceLabels || [], items = c.items || [];
+      const two = priceLabels.length === 2;
       return h('article', { class: 'slide', hidden: i !== idx, 'aria-roledescription': 'slide', 'aria-label': `${c.name}, ${i + 1} of ${cats.length}` },
         h('div', { class: 'slide-head' }, h('h3', { text: c.name }), h('p', { text: who(c.gender) + (c.note ? '. ' + c.note + '.' : '') })),
         h('div', { class: 'slide-list' },
-          c.priceLabels.length ? h('div', { class: 'ph', 'aria-hidden': 'true' }, c.priceLabels.map(l => h('span', { text: l }))) : null,
-          c.items.map(it => h('div', { class: 'item' },
+          priceLabels.length ? h('div', { class: 'ph', 'aria-hidden': 'true' }, priceLabels.map(l => h('span', { text: l }))) : null,
+          !items.length ? h('p', { class: 'muted' }, 'No services in this group yet.') : items.map(it => h('div', { class: 'item' },
             h('div', { class: 'item-name' }, it.name, it.popular ? star() : null),
             it.desc ? h('div', { class: 'item-desc', text: it.desc }) : null,
             h('div', { class: 'prices' },
