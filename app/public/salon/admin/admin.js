@@ -771,7 +771,7 @@
     const uid = () => 'n' + Math.random().toString(16).slice(2, 10);
     function draw() {
       const y = scrollY;
-      root.replaceChildren(...M.map((c, ci) => h('details', { class: 'a-card', open: openCats.has(c.id), ontoggle: e => { e.target.open ? openCats.add(c.id) : openCats.delete(c.id); } },
+      root.replaceChildren(...M.map((c, ci) => { c.priceLabels = c.priceLabels || []; return h('details', { class: 'a-card', open: openCats.has(c.id), ontoggle: e => { e.target.open ? openCats.add(c.id) : openCats.delete(c.id); } },
         h('summary', {}, h('span', {}, c.name, ' ', h('small', { text: who(c.gender) + ', ' + c.items.length + ' items' })), h('span', { class: 'a-mini' })),
         h('div', { class: 'a-grid' }, fld('Group name', inp(c, 'name', { id: 'cn' + ci }), 'cn' + ci),
           fld('For', h('select', { id: 'cg' + ci, onchange: e => { c.gender = e.target.value; } }, [['all', 'Women and men'], ['female', 'Women'], ['male', 'Men']].map(([v, t]) => h('option', { value: v, selected: c.gender === v, text: t }))), 'cg' + ci),
@@ -786,7 +786,7 @@
           h('div', { class: 'flags' }, chk(it, 'popular', 'Most popular'), chk(it, 'active', 'Show on website')))),
         h('div', { class: 'a-dialog-actions' }, btn('Add service', () => { c.items.push({ id: uid(), name: '', desc: '', price: 0, price2: null, popular: false, active: true }); openCats.add(c.id); draw(); }, 'btn-sm btn-alt'),
           btn('Move group up', () => { move(M, ci, -1); draw(); }, 'btn-sm btn-alt'), btn('Move group down', () => { move(M, ci, 1); draw(); }, 'btn-sm btn-alt'),
-          btn('Delete group', async () => { if (await confirmBox('Delete "' + c.name + '" and all its services from the menu?', 'Delete group')) { M.splice(ci, 1); draw(); } }, 'btn-sm btn-danger')))));
+          btn('Delete group', async () => { if (await confirmBox('Delete "' + c.name + '" and all its services from the menu?', 'Delete group')) { M.splice(ci, 1); draw(); } }, 'btn-sm btn-danger'))); }));
       scrollTo(0, y);
     }
     draw();
