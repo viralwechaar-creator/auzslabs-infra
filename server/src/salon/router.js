@@ -5,7 +5,7 @@ import { staffLogin, verifyToken } from '../auth.js';
 import { DOMAIN, cleanString, fail, hex6, htmlEsc, limited, normalizeOrigin, readBody, round2, sendJson, staffPhone, todayStr, validDate } from './util.js';
 import { bookingCounts, freshDb, loadDb, loadSite, mutate, mutateStaffAdmin, originAllowed, payrollOn, readKey, readStaffAdmin, reseedDemo, tenantFor, usesGeneric, writeKey, writeStaffAdmin } from './storage.js';
 import { clearSession, getSession, hashPassword, ownerPasswordOk, setSession, verifyScrypt } from './session.js';
-import { EXPENSE_CATEGORIES, addBooking, addCashMove, addExpense, addInvoice, cashRangeSummary, cashSummary, clientsList, computeSlots, publicSite, settleInvoice } from './rules.js';
+import { EXPENSE_CATEGORIES, addBooking, addCashMove, addExpense, addInvoice, cashRangeSummary, cashSummary, clientsList, computeSlots, deletePackageDef, publicSite, saveClientProfile, savePackageDef, sellPackage, settleInvoice } from './rules.js';
 import { salonIcon, salonOgImage, saveUpload } from './brand.js';
 import { enqueueWa, sendOrRetryWa } from '../whatsapp.js';
 import { sendWebPush, vapidReady } from '../push.js';
@@ -244,12 +244,14 @@ export async function handleSalon(req, res, ip) {
         return send(200, {
           settings, menu: db.menu, content: {}, gallery: [], expenses: [],
           stylists: (db.stylists || []).filter((x) => x.visible && x.name !== 'Add name').map((x) => ({ id: x.id, name: x.name, role: x.role })),
-          bookings: db.bookings || [], invoices: mine, clients: clientsList({ bookings: db.bookings, invoices: mine }), today: todayStr(),
+          bookings: db.bookings || [], invoices: mine, clients: clientsList({ bookings: db.bookings, invoices: mine, clients: db.clients }),
+          packages: (db.packages || []).filter((x) => x.active !== false), clientPackages: db.clientPackages || [], today: todayStr(),
         });
       }
       return send(200, {
         settings: db.settings, menu: db.menu, content: db.content, stylists: db.stylists || [], gallery: db.gallery || [],
-        bookings: db.bookings || [], invoices: db.invoices || [], expenses: db.expenses || [], clients: clientsList(db), today: todayStr(),
+        bookings: db.bookings || [], invoices: db.invoices || [], expenses: db.expenses || [], clients: clientsList(db),
+        packages: db.packages || [], clientPackages: db.clientPackages || [], today: todayStr(),
       });
     }
 
@@ -327,6 +329,34 @@ export async function handleSalon(req, res, ip) {
       const from = String(url.searchParams.get('from') || todayStr());
       const to = String(url.searchParams.get('to') || todayStr());
       return send(200, cashRangeSummary(await loadDb(tenant), from, to));
+    }
+
+    // ---- client profiles (dob/anniversary/notes, db/196) -- open to any signed-in console user, same
+    // trust level as billing/bookings: a staffer entering a client's birthday is no more sensitive than
+    // them entering the client's name and phone on a bill.
+    if (method === 'POST' && p === '/admin/clients') {
+      await member();
+      const client = await mutate(tenant, (db) => saveClientProfile(db, body), ['site', 'data'], ['data']);
+      return send(201, { ok: true, client });
+    }
+
+    // ---- packages / memberships (db/196) ----
+    if (method === 'POST' && p === '/admin/packages') {
+      await admin(); noDemo();
+      const pkg = await mutate(tenant, (db) => savePackageDef(db, body), ['site']);
+      return send(201, { ok: true, package: pkg });
+    }
+    const pk = p.match(/^\/admin\/packages\/(.+)$/);
+    if (method === 'DELETE' && pk) {
+      await admin(); noDemo();
+      const id = decodeURIComponent(pk[1]);
+      await mutate(tenant, (db) => deletePackageDef(db, id), ['site']);
+      return send(200, { ok: true });
+    }
+    if (method === 'POST' && p === '/admin/packages/sell') {
+      const me = await member();
+      const rec = await mutate(tenant, (db) => sellPackage(db, body), ['site', 'data'], ['data']);
+      return send(201, { ok: true, clientPackage: rec });
     }
 
     const ivWa = p.match(/^\/admin\/invoices\/(.+)\/whatsapp$/);

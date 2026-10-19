@@ -126,6 +126,52 @@ export async function runPostVisitReviews() {
   if (sent) console.log(`salon post-visit reviews: queued ${sent}`);
 }
 
+// Birthday/anniversary greetings (db/196): compares only the month-day part of a stored dob/anniversary
+// against today, so it fires every year, not just once -- the ref includes the current year so a repeat
+// run within the same year never double-sends, and next year's ref is naturally different.
+export async function runClientGreetings() {
+  const todayMD = todayStr().slice(5), year = todayStr().slice(0, 4);
+  const sentB = await forEachEnabledSalon('birthday_greeting', async (tenant, db) => {
+    let n = 0;
+    for (const c of db.clients || []) {
+      if (!c.dob || c.dob.slice(5) !== todayMD) continue;
+      await enqueueWa(tenant.id, c.phone, 'birthday_greeting', [c.name || 'there', db.settings.salonName || tenant.name || 'us'], c.phone + '-bday-' + year);
+      n++;
+    }
+    return n;
+  });
+  const sentA = await forEachEnabledSalon('anniversary_greeting', async (tenant, db) => {
+    let n = 0;
+    for (const c of db.clients || []) {
+      if (!c.anniversary || c.anniversary.slice(5) !== todayMD) continue;
+      await enqueueWa(tenant.id, c.phone, 'anniversary_greeting', [c.name || 'there', db.settings.salonName || tenant.name || 'us'], c.phone + '-anniv-' + year);
+      n++;
+    }
+    return n;
+  });
+  if (sentB) console.log(`salon birthday greetings: queued ${sentB}`);
+  if (sentA) console.log(`salon anniversary greetings: queued ${sentA}`);
+}
+
+// A sold package/membership expiring in exactly 7 days (a fixed threshold, same honesty as the 30-day
+// lapsed-client window above) gets one reminder. No redemption/credit tracking exists yet (rules.js's
+// own comment on sellPackage explains why) -- this only ever looks at the expiry date itself.
+export async function runMembershipExpiryReminders() {
+  const in7 = dateOffset(7);
+  const sent = await forEachEnabledSalon('membership_expiry', async (tenant, db) => {
+    let n = 0;
+    for (const cp of db.clientPackages || []) {
+      if (cp.expiryDate !== in7) continue;
+      const label = new Date(cp.expiryDate + 'T00:00:00Z').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+      await enqueueWa(tenant.id, cp.phone, 'membership_expiry',
+        [cp.clientName || 'there', cp.packageName, db.settings.salonName || tenant.name || 'us', label], cp.id + '-expiry');
+      n++;
+    }
+    return n;
+  });
+  if (sent) console.log(`salon membership expiry reminders: queued ${sent}`);
+}
+
 // A credit (pay-later) bill that's still unsettled gets one reminder 3 days after billing and one more
 // at 7 days -- then nothing further (an owner who wants to keep chasing after that already has the
 // "Mark as paid"/Void actions and the Due badge in Billing history). Each stage has its own ref so it

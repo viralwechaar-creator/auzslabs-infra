@@ -72,7 +72,7 @@ export function clientsList(db) {
   const map = new Map();
   const get = (phone, name, email) => {
     if (!phone) return null;
-    if (!map.has(phone)) map.set(phone, { phone, name, email: email || '', bookings: 0, visits: 0, billed: 0, last: '' });
+    if (!map.has(phone)) map.set(phone, { phone, name, email: email || '', bookings: 0, visits: 0, billed: 0, last: '', dob: '', anniversary: '', notes: '' });
     const c = map.get(phone);
     if (name) c.name = name;
     if (email && !c.email) c.email = email;
@@ -82,6 +82,13 @@ export function clientsList(db) {
   (db.invoices || []).filter((i) => !i.void).forEach((i) => {
     const c = get(i.client.phone, i.client.name, i.client.email);
     if (c) { c.visits++; c.billed = round2(c.billed + i.total); c.last = c.last > i.date ? c.last : i.date; }
+  });
+  // Stored profiles (dob/anniversary/notes, db/196) merge onto whatever clientsList already derived from
+  // bookings/invoices -- and a profile with no booking/invoice yet (added ahead of a client's first visit)
+  // still shows up, since get() creates the row if it's missing.
+  (db.clients || []).forEach((p) => {
+    const c = get(p.phone, p.name, p.email);
+    if (c) { c.dob = p.dob || ''; c.anniversary = p.anniversary || ''; c.notes = p.notes || ''; }
   });
   return [...map.values()].sort((a, b) => (b.last || '').localeCompare(a.last || ''));
 }
@@ -217,4 +224,68 @@ export function cashRangeSummary(db, from, to) {
     if (d.variance != null) variance = round2(variance + d.variance);
   }
   return { from, to, byMode, totalSales, totalExpenses, variance, days };
+}
+
+// ---- client profiles (db/196): a persistent record per phone number, for data a booking/invoice
+// never carries -- date of birth, anniversary, free-text notes. Additive only: clientsList() above
+// still derives the base client list from bookings/invoices exactly as before, this just merges onto
+// it (and lets an owner add a client manually, ahead of their first visit, as a profile-only row).
+export function saveClientProfile(db, body) {
+  const phone = cleanPhone(body.phone);
+  if (!phone) fail(400, 'Enter a valid phone number.');
+  db.clients = db.clients || [];
+  let c = db.clients.find((x) => x.phone === phone);
+  if (!c) { c = { phone, name: '', email: '', dob: '', anniversary: '', notes: '', createdAt: new Date().toISOString() }; db.clients.push(c); }
+  if (body.name !== undefined) c.name = cleanString(body.name, 80);
+  if (body.email !== undefined) c.email = cleanString(body.email, 120);
+  if (body.dob !== undefined) { if (body.dob && !validDate(body.dob)) fail(400, 'Invalid date of birth.'); c.dob = body.dob || ''; }
+  if (body.anniversary !== undefined) { if (body.anniversary && !validDate(body.anniversary)) fail(400, 'Invalid anniversary date.'); c.anniversary = body.anniversary || ''; }
+  if (body.notes !== undefined) c.notes = cleanString(body.notes, 500);
+  c.updatedAt = new Date().toISOString();
+  return c;
+}
+
+// ---- packages / memberships (db/196): a flat, no-redemption-tracking model on purpose -- a package
+// definition (name, price, how many days it's valid for) and a sale of one to a client (purchase date,
+// computed expiry). There is deliberately no credit/visit-consumption link into billing yet: this only
+// tracks that a package was sold and when it expires, so the expiry-reminder automation has something
+// real to read. Connecting a package's remaining credits to what a bill actually consumes is a real,
+// separate piece of scope -- flagged, not built here.
+export function savePackageDef(db, body) {
+  db.packages = db.packages || [];
+  const name = cleanString(body.name, 80);
+  if (!name) fail(400, 'Enter a package name.');
+  const price = round2(Number(body.price) || 0);
+  const validityDays = Math.max(1, Math.min(3650, Math.round(Number(body.validityDays) || 0) || 1));
+  if (body.id) {
+    const pkg = db.packages.find((x) => x.id === body.id);
+    if (!pkg) fail(404, 'Package not found.');
+    pkg.name = name; pkg.price = price; pkg.validityDays = validityDays; pkg.active = body.active !== false;
+    return pkg;
+  }
+  const pkg = { id: crypto.randomUUID(), name, price, validityDays, active: true, createdAt: new Date().toISOString() };
+  db.packages.push(pkg);
+  return pkg;
+}
+export function deletePackageDef(db, id) {
+  const before = db.packages || [];
+  db.packages = before.filter((x) => x.id !== id);
+  if (db.packages.length === before.length) fail(404, 'Package not found.');
+}
+export function sellPackage(db, body) {
+  const phone = cleanPhone(body.phone);
+  if (!phone) fail(400, 'Enter a valid client phone number.');
+  const clientName = cleanString(body.clientName, 80);
+  if (!clientName) fail(400, 'Enter the client name.');
+  const pkg = (db.packages || []).find((x) => x.id === body.packageId);
+  if (!pkg) fail(400, 'Choose a package.');
+  db.clientPackages = db.clientPackages || [];
+  const purchaseDate = validDate(body.date) ? cleanString(body.date, 10) : todayStr();
+  const expiry = new Date(purchaseDate + 'T00:00:00Z'); expiry.setUTCDate(expiry.getUTCDate() + pkg.validityDays);
+  const rec = {
+    id: crypto.randomUUID(), phone, clientName, packageId: pkg.id, packageName: pkg.name, price: pkg.price,
+    purchaseDate, expiryDate: expiry.toISOString().slice(0, 10), note: cleanString(body.note, 200), createdAt: new Date().toISOString(),
+  };
+  db.clientPackages.push(rec);
+  return rec;
 }

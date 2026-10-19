@@ -129,8 +129,8 @@
     go(location.hash.slice(1) in VIEWS && allowed(location.hash.slice(1)) ? location.hash.slice(1) : 'dashboard');
   }
 
-  const TITLES = { dashboard: 'Today', bookings: 'Bookings', billing: 'Billing', clients: 'Clients', menu: 'Menu and prices', stylists: 'Hairstylists', gallery: 'Gallery', content: 'Website text', settings: 'Settings', expenses: 'Expenses', cash: 'Cash register', analytics: 'Analytics', staff: 'Staff' };
-  const ICONS = { dashboard: 'grid', bookings: 'calendar', billing: 'receipt', clients: 'users', menu: 'list', stylists: 'cut', gallery: 'pics', content: 'doc', settings: 'gear', expenses: 'wallet', cash: 'wallet', analytics: 'chart', staff: 'chair' };
+  const TITLES = { dashboard: 'Today', bookings: 'Bookings', billing: 'Billing', clients: 'Clients', menu: 'Menu and prices', stylists: 'Hairstylists', gallery: 'Gallery', content: 'Website text', settings: 'Settings', expenses: 'Expenses', cash: 'Cash register', packages: 'Packages', analytics: 'Analytics', staff: 'Staff' };
+  const ICONS = { dashboard: 'grid', bookings: 'calendar', billing: 'receipt', clients: 'users', menu: 'list', stylists: 'cut', gallery: 'pics', content: 'doc', settings: 'gear', expenses: 'wallet', cash: 'wallet', packages: 'star', analytics: 'chart', staff: 'chair' };
   const PRIMARY = ['dashboard', 'bookings', 'billing', 'clients'];
   /* Staff logins see exactly the PRIMARY four. This is only the UI half: the API
      refuses every other endpoint for a staff session (server/src/salon.js). */
@@ -594,6 +594,84 @@
     loadSummary();
   }
 
+  /* ---------- packages / memberships ---------- */
+  function packageDialog(pkg) {
+    const F = pkg ? { id: pkg.id, name: pkg.name, price: pkg.price, validityDays: pkg.validityDays, active: pkg.active } : { name: '', price: null, validityDays: 180, active: true };
+    const body = h('div', {},
+      fld('Package name', inp(F, 'name', { id: 'pkName', placeholder: 'e.g. 10 Haircuts' }), 'pkName'),
+      fld('Price', num(F, 'price', { id: 'pkPrice', min: 0 }), 'pkPrice'),
+      fld('Valid for how many days', num(F, 'validityDays', { id: 'pkDays', min: 1 }), 'pkDays'));
+    modal(pkg ? 'Edit package' : 'Add a package', body, [{ label: 'Cancel', cls: 'btn-alt', value: 'no' }, {
+      label: 'Save', fn: async () => {
+        if (!F.name || !String(F.name).trim()) { toast('Enter a package name', true); return false; }
+        if (!F.validityDays || F.validityDays <= 0) { toast('Enter how many days it is valid for', true); return false; }
+        try { await api('POST', '/api/admin/packages', F); await load(); rerender(); toast('Package saved'); } catch (ex) { fail(ex); return false; }
+      }
+    }]);
+  }
+  function sellPackageDialog() {
+    if (!D.packages.length) { toast('Add a package first, under Package types below.', true); return; }
+    const F = { phone: '', clientName: '', packageId: D.packages[0].id, date: D.today, note: '' };
+    const body = h('div', {},
+      fld('Client phone', inp(F, 'phone', { id: 'spPhone', type: 'tel' }), 'spPhone'),
+      fld('Client name', inp(F, 'clientName', { id: 'spName' }), 'spName'),
+      fld('Package', h('select', { id: 'spPkg', onchange: e => { F.packageId = e.target.value; } }, D.packages.map(p => h('option', { value: p.id, selected: p.id === F.packageId, text: p.name + ' — ' + inr(p.price) }))), 'spPkg'),
+      fld('Sale date', h('input', { type: 'date', id: 'spDate', value: F.date, onchange: e => { F.date = e.target.value; } }), 'spDate'),
+      fld('Note (optional)', inp(F, 'note', { id: 'spNote' }), 'spNote'));
+    modal('Sell a package', body, [{ label: 'Cancel', cls: 'btn-alt', value: 'no' }, {
+      label: 'Sell', fn: async () => {
+        if (!F.phone.trim() || !F.clientName.trim()) { toast('Enter the client\'s name and phone', true); return false; }
+        try { const r = await api('POST', '/api/admin/packages/sell', F); await load(); rerender(); toast(r.clientPackage.packageName + ' sold — expires ' + fmtDate(r.clientPackage.expiryDate, { day: 'numeric', month: 'short', year: 'numeric' })); } catch (ex) { fail(ex); return false; }
+      }
+    }]);
+  }
+  function packageStatus(cp) {
+    if (cp.expiryDate < D.today) return { label: 'Expired', cls: 'btn-danger' };
+    const days = Math.round((new Date(cp.expiryDate) - new Date(D.today)) / 86400000);
+    if (days <= 7) return { label: 'Expires in ' + days + 'd', cls: 'btn-alt' };
+    return { label: 'Active', cls: '' };
+  }
+  function viewPackages() {
+    const q = h('input', { class: 'a-search', type: 'search', placeholder: 'Search by client name or phone', 'aria-label': 'Search sold packages', oninput: drawSold }), soldBox = h('div', {});
+    function drawSold() {
+      const s = q.value.trim().toLowerCase();
+      const l = (D.clientPackages || []).filter(cp => !s || (cp.clientName + cp.phone).toLowerCase().includes(s)).slice().sort((a, b) => b.purchaseDate.localeCompare(a.purchaseDate));
+      soldBox.replaceChildren(l.length ? h('div', { class: 'a-scroll' }, h('table', { class: 'a-table' },
+        h('thead', {}, h('tr', {}, ['Client', 'Package', 'Sold', 'Expires', 'Status', ''].map(t => h('th', { text: t })))),
+        h('tbody', {}, l.map(cp => { const st = packageStatus(cp); return h('tr', {},
+          h('td', { 'data-label': 'Client' }, h('b', { text: cp.clientName }), h('br'), h('span', { class: 'muted', text: cp.phone })),
+          h('td', { 'data-label': 'Package', text: cp.packageName + ' · ' + inr(cp.price) }),
+          h('td', { 'data-label': 'Sold', text: fmtDate(cp.purchaseDate, { day: 'numeric', month: 'short', year: 'numeric' }) }),
+          h('td', { 'data-label': 'Expires', text: fmtDate(cp.expiryDate, { day: 'numeric', month: 'short', year: 'numeric' }) }),
+          h('td', { 'data-label': 'Status' }, h('span', { class: 'badge ' + st.cls, text: st.label })),
+          h('td', { class: 'a-td-actions' }, waBtn('WhatsApp', cp.phone, 'Hi ' + cp.clientName + ', ')));
+        }))))
+        : emptyNote('No packages sold yet.', 'star'));
+    }
+    drawSold();
+
+    const typesBox = h('div', {});
+    function drawTypes() {
+      typesBox.replaceChildren(!D.packages.length ? emptyNote('No packages set up yet.', 'star') : h('div', { class: 'a-scroll' }, h('table', { class: 'a-table' },
+        h('thead', {}, h('tr', {}, ['Package', 'Price', 'Valid for', 'Status', ''].map(t => h('th', { text: t })))),
+        h('tbody', {}, D.packages.map(pkg => h('tr', { style: pkg.active === false ? 'opacity:.5' : '' },
+          h('td', { 'data-label': 'Package', text: pkg.name }), h('td', { 'data-label': 'Price', text: inr(pkg.price) }),
+          h('td', { 'data-label': 'Valid for', text: pkg.validityDays + ' days' }), h('td', { 'data-label': 'Status', text: pkg.active === false ? 'Hidden' : 'Active' }),
+          !isOwner() ? null : h('td', { class: 'a-td-actions' }, h('div', { class: 'a-row-actions' },
+            btn('Edit', () => packageDialog(pkg), 'btn-sm btn-alt'),
+            btn(pkg.active === false ? 'Unhide' : 'Hide', async () => { try { await api('POST', '/api/admin/packages', { ...pkg, active: pkg.active === false }); await load(); rerender(); } catch (ex) { fail(ex); } }, 'btn-sm btn-alt'),
+            btn('Delete', async () => { if (await confirmBox('Delete the package "' + pkg.name + '"? Already-sold packages are not affected.', 'Delete package')) { try { await api('DELETE', '/api/admin/packages/' + pkg.id); await load(); rerender(); } catch (ex) { fail(ex); } } }, 'btn-sm btn-danger')))))))));
+    }
+    drawTypes();
+
+    setActions(btn('Sell a package', sellPackageDialog, 'btn-alt'), !isOwner() ? null : btn('Add a package', () => packageDialog(null)));
+    view().replaceChildren(
+      h('h2', { class: 'a-h2', text: 'Sold packages' }), q, h('div', { style: 'height:12px' }), soldBox,
+      h('h2', { class: 'a-h2', style: 'margin-top:32px', text: 'Package types' }),
+      h('p', { class: 'a-note', style: 'margin-bottom:12px', text: 'We will send a WhatsApp reminder automatically 7 days before a sold package expires, if WhatsApp is turned on in Settings.' }),
+      typesBox);
+  }
+
   function viewExpenses() {
     setActions(btn('Add expense', addExpenseDialog));
     const t = D.today.slice(0, 7);
@@ -844,6 +922,30 @@
   }
 
   /* ---------- clients ---------- */
+  function mdLabel(dateStr) {
+    // 'YYYY-MM-DD' -> "15 Mar", with no year (a recurring yearly date, the year on file doesn't matter here)
+    if (!dateStr) return '';
+    return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  }
+  function editClientDialog(c, afterSave) {
+    const isNew = !c.phone;
+    const F = { phone: c.phone || '', name: c.name || '', email: c.email || '', dob: c.dob || '', anniversary: c.anniversary || '', notes: c.notes || '' };
+    const body = h('div', {},
+      !isNew ? null : h('div', { class: 'row2' },
+        fld('Phone', inp(F, 'phone', { id: 'cPhone', type: 'tel' }), 'cPhone'), fld('Name', inp(F, 'name', { id: 'cName' }), 'cName')),
+      fld('Date of birth (optional)', h('input', { type: 'date', id: 'cDob', value: F.dob, onchange: e => { F.dob = e.target.value; } }), 'cDob'),
+      fld('Anniversary (optional)', h('input', { type: 'date', id: 'cAnniv', value: F.anniversary, onchange: e => { F.anniversary = e.target.value; } }), 'cAnniv'),
+      fld('Notes (optional)', area(F, 'notes', { id: 'cNotes', rows: 3, placeholder: 'Preferences, allergies, anything worth remembering' }), 'cNotes'),
+      h('p', { class: 'a-note', text: 'We will send a WhatsApp greeting automatically on these dates if WhatsApp is turned on in Settings.' }));
+    modal(isNew ? 'Add a client' : 'Client details — ' + c.name, body, [{ label: 'Cancel', cls: 'btn-alt', value: 'no' }, {
+      label: 'Save', fn: async () => {
+        if (!F.phone.trim()) { toast('Enter a phone number', true); return false; }
+        if (isNew && !F.name.trim()) { toast('Enter a name', true); return false; }
+        try { await api('POST', '/api/admin/clients', F); await load(); rerender(); toast('Client details saved'); if (afterSave) afterSave(); }
+        catch (ex) { fail(ex); return false; }
+      }
+    }]);
+  }
   function viewClients() {
     const q = h('input', { class: 'a-search', type: 'search', placeholder: 'Search by name or phone', 'aria-label': 'Search clients', oninput: draw }), box = h('div', {});
     function draw() {
@@ -851,13 +953,16 @@
       const l = D.clients.filter(c => !s || (c.name + c.phone).toLowerCase().includes(s));
       box.replaceChildren(l.length ? h('div', { class: 'a-scroll' }, h('table', { class: 'a-table' },
         h('thead', {}, h('tr', {}, ['Client', 'Bookings', 'Bills', 'Billed', 'Last visit', ''].map(t => h('th', { text: t })))),
-        h('tbody', {}, l.map(c => h('tr', {}, h('td', { 'data-label': 'Client' }, h('b', { text: c.name }), h('br'), h('span', { class: 'muted', text: c.phone + (c.email ? '  ' + c.email : '') })),
+        h('tbody', {}, l.map(c => h('tr', {}, h('td', { 'data-label': 'Client' }, h('b', { text: c.name }), h('br'), h('span', { class: 'muted', text: c.phone + (c.email ? '  ' + c.email : '') }),
+            (c.dob || c.anniversary) ? h('br') : null, c.dob ? h('span', { class: 'muted', text: 'Birthday ' + mdLabel(c.dob) + ' ' }) : null, c.anniversary ? h('span', { class: 'muted', text: 'Anniversary ' + mdLabel(c.anniversary) }) : null),
           h('td', { 'data-label': 'Bookings', text: c.bookings }), h('td', { 'data-label': 'Bills', text: c.visits }), h('td', { 'data-label': 'Billed', text: inr(c.billed) }), h('td', { 'data-label': 'Last visit', text: c.last ? fmtDate(c.last, { day: 'numeric', month: 'short', year: 'numeric' }) : '' }),
           h('td', { class: 'a-td-actions' }, h('div', { class: 'a-row-actions' }, btn('New bill', () => { B = newBill({ client: { name: c.name, phone: c.phone, email: c.email } }); go('billing'); }, 'btn-sm btn-alt'),
-            waBtn('WhatsApp', c.phone, 'Hi ' + c.name + ', '))))))))
+            waBtn('WhatsApp', c.phone, 'Hi ' + c.name + ', '), btn('Edit details', () => editClientDialog(c), 'btn-sm btn-alt'))))))))
         : emptyNote('Clients appear here after their first booking or bill.', 'comb'));
     }
-    draw(); view().replaceChildren(q, h('div', { style: 'height:16px' }), box);
+    draw();
+    setActions(btn('Add a client', () => editClientDialog({ phone: '', name: '', email: '' }), 'btn-alt'));
+    view().replaceChildren(q, h('div', { style: 'height:16px' }), box);
   }
 
   /* ---------- uploads ---------- */
@@ -1187,6 +1292,6 @@
       sticky(btn('Save settings', async () => { if (await saveSection('settings', S)) await load(); })));
   }
 
-  const VIEWS = { staff: viewStaff, dashboard: viewDashboard, bookings: viewBookings, billing: viewBilling, clients: viewClients, menu: viewMenu, stylists: viewStylists, gallery: viewGallery, content: viewContent, settings: viewSettings, expenses: viewExpenses, cash: viewCash, analytics: viewAnalytics };
+  const VIEWS = { staff: viewStaff, dashboard: viewDashboard, bookings: viewBookings, billing: viewBilling, clients: viewClients, menu: viewMenu, stylists: viewStylists, gallery: viewGallery, content: viewContent, settings: viewSettings, expenses: viewExpenses, cash: viewCash, packages: viewPackages, analytics: viewAnalytics };
   boot();
 })();

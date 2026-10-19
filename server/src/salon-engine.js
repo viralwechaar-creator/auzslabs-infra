@@ -13,7 +13,8 @@
 
 import crypto from 'node:crypto';
 
-const COLLECTION_KINDS = { stylists: 'stylist', invoices: 'salon_invoice', expenses: 'salon_expense', cashlog: 'salon_cashlog' };
+const COLLECTION_KINDS = { stylists: 'stylist', invoices: 'salon_invoice', expenses: 'salon_expense', cashlog: 'salon_cashlog',
+  clients: 'salon_client', packages: 'salon_package', clientPackages: 'salon_client_package' };
 
 function refOf(id) { return String(id || '').replace(/-/g, '').slice(0, 8).toUpperCase(); }
 
@@ -46,10 +47,14 @@ export async function assembleDb(client, tid, lock) {
   const invoices = (await client.query(`select data from records where tenant_id=$1 and kind='salon_invoice' order by id${L}`, [tid])).rows.map((r) => r.data);
   const expenses = (await client.query(`select data from records where tenant_id=$1 and kind='salon_expense' order by id${L}`, [tid])).rows.map((r) => r.data);
   const cashlog = (await client.query(`select data from records where tenant_id=$1 and kind='salon_cashlog' order by id${L}`, [tid])).rows.map((r) => r.data);
+  const clients = (await client.query(`select data from records where tenant_id=$1 and kind='salon_client' order by id${L}`, [tid])).rows.map((r) => r.data);
+  const packages = (await client.query(`select data from records where tenant_id=$1 and kind='salon_package' order by id${L}`, [tid])).rows.map((r) => r.data);
+  const clientPackages = (await client.query(`select data from records where tenant_id=$1 and kind='salon_client_package' order by id${L}`, [tid])).rows.map((r) => r.data);
   const bookingRows = (await client.query(`select * from bookings where tenant_id=$1${L}`, [tid])).rows;
   const bookings = bookingRows.map(bookingRowToLegacy);
   const counters = { booking: bookings.length, invoice: invoices.length };
-  return { settings, content: content || {}, menu, stylists: stylists || [], gallery: gallery || [], bookings, invoices: invoices || [], expenses: expenses || [], cashlog: cashlog || [], counters };
+  return { settings, content: content || {}, menu, stylists: stylists || [], gallery: gallery || [], bookings, invoices: invoices || [], expenses: expenses || [], cashlog: cashlog || [],
+    clients: clients || [], packages: packages || [], clientPackages: clientPackages || [], counters };
 }
 
 // ---- write: diff a before/after pair of assembled objects and persist exactly what changed ----
@@ -103,6 +108,9 @@ export async function persistDb(client, tid, before, after) {
   await persistCollection(client, tid, 'salon_invoice', before.invoices, after.invoices);
   await persistCollection(client, tid, 'salon_expense', before.expenses, after.expenses);
   await persistCollection(client, tid, 'salon_cashlog', before.cashlog || [], after.cashlog || []);
+  await persistCollection(client, tid, 'salon_client', before.clients || [], after.clients || []);
+  await persistCollection(client, tid, 'salon_package', before.packages || [], after.packages || []);
+  await persistCollection(client, tid, 'salon_client_package', before.clientPackages || [], after.clientPackages || []);
   await persistBookings(client, tid, before.bookings, after.bookings);
   // menu (categories/items) is edited through the console's own existing menu editor, not through
   // salon's admin console -- the menu-editing endpoints in handleSalon() are not part of this swap.
