@@ -49,6 +49,15 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- A Firebase push notification-type message, delivered while the app is backgrounded or
+             closed, is displayed by Android's own FCM layer with no Dart code involved. Without this,
+             that uses a plain system-default channel, separate from the "orders" channel core/alerts.dart
+             creates for the in-app guest-order alert -- same app, two different notification channels
+             with different sound/importance. This points it at the same one. Harmless without Firebase
+             configured: the metadata is simply never read. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="orders" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

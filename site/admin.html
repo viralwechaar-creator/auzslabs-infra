@@ -226,8 +226,14 @@ a.a-nav-row,a.a-side-btn{text-decoration:none}
 .price-field{background:var(--bg-raised);border-radius:9px;padding:7px 9px}
 .price-field label{display:block;font:600 9px var(--font-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--ink-faint);margin-bottom:2px}
 .price-field .pf-row{display:flex;align-items:baseline;gap:3px;font:700 16px var(--font-display);color:var(--ink)}
-.price-field input{border:none;background:none;font:700 16px var(--font-display);color:var(--ink);width:100%;padding:0;min-width:0}
+.price-field input{border:none;background:none;font:700 16px var(--font-display);color:var(--ink);width:100%;padding:0;min-width:0;-moz-appearance:textfield}
 .price-field input:focus{outline:none}
+/* Bug found during the Master Frontend Mission's real-browser screenshot pass: on a phone the native
+   number-input spin buttons ate enough width that the price itself (e.g. "1490") was visually clipped
+   to "14" inside its own field -- confirmed with an actual screenshot. Hiding the spinner (purely
+   cosmetic, the field is still type=number and still validates the same) gives the digits the room
+   they need; nobody taps those tiny arrows on a touchscreen anyway. */
+.price-field input::-webkit-outer-spin-button,.price-field input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .price-field .pf-unit{font:500 10px var(--font-body);color:var(--ink-faint)}
 .ok-box{background:var(--bg-raised);border:1px solid var(--ink);border-radius:16px;padding:14px 16px;margin-top:12px;font-size:12.5px;line-height:1.6}
 .ok-box b{word-break:break-word}
@@ -240,12 +246,17 @@ a.a-nav-row,a.a-side-btn{text-decoration:none}
 .modal{width:100%;max-width:none;border-radius:18px 18px 0 0;max-height:min(86vh,86dvh);overflow-y:auto;-webkit-overflow-scrolling:touch;padding:18px 18px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px -10px rgba(46,44,42,.3);animation:aSheetUp .28s cubic-bezier(.2,.8,.2,1)}
 @keyframes aSheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @media (min-width:600px){
-  .a-tabbar{display:none}
   .a-main{padding:20px 24px 24px}
   .modal-overlay{align-items:center;padding:20px}
   .modal{width:420px;max-width:calc(100vw - 40px);border-radius:22px;max-height:calc(100vh - 80px);animation:none;box-shadow:0 10px 28px -12px rgba(46,44,42,.30)}
 }
 @media (min-width:860px){
+  /* Bug found during the Master Frontend Mission's real-browser screenshot pass (tests/admin_shots.mjs):
+     the tab bar used to hide at 600px while the sidebar only appeared at 860px, leaving a real dead
+     zone from 600-859px (a tablet in portrait, a large phone in landscape) with NO navigation at all --
+     confirmed with an actual screenshot showing just a bare top bar and no way to switch sections.
+     The tab bar must stay visible exactly until the sidebar takes over. */
+  .a-tabbar{display:none}
   .a-side{display:flex;flex-direction:column;width:232px;flex:none;border-right:1px solid var(--line);padding:16px 12px;overflow-y:auto}
   .a-side-brand{display:flex;align-items:center;gap:8px;padding:6px 8px 14px}
   .a-side-brand img{height:30px;width:auto;max-width:150px;object-fit:contain}

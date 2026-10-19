@@ -8,12 +8,21 @@ import 'package:auzsledger/ui/p_scan.dart';
 class FakeApi extends ApiClient {
   final calls = <String>[];
   final applied = <Map<String, dynamic>>[];
+  final drafts = <Map<String, dynamic>>[];
   ApiError? fail;
   final seen = <String>{};
+  final seenDraft = <String>{};
   @override
   Future<dynamic> rpc(String fn, [Map<String, dynamic> args = const {}]) async {
     calls.add(fn);
     switch (fn) {
+      case 'acc_save_draft_offline':
+        final p = args['p'] as Map;
+        if (fail != null) throw fail!;
+        final op = '${p['op']}';
+        if (!seenDraft.add(op)) return {'id': 'draft1', 'number': 'DRAFT-1', 'status': 'draft', 'posted': false, 'duplicate': true};
+        drafts.add(Map<String, dynamic>.from(p));
+        return {'id': 'draft1', 'number': 'DRAFT-1', 'status': 'draft', 'posted': false, 'duplicate': false};
       case 'my_dashboard':
         return {'my_role': 'owner', 'my_email': 'o@x.in', 'tenant': {'slug': 'nbw', 'name': 'New Book World'}, 'features': {'accounting': true}, 'enabled_features': {}};
       case 'acc_bootstrap':
@@ -135,5 +144,61 @@ void main() {
     expect(a, startsWith('OFF-'));
     expect(a.substring(0, a.length - 3), b.substring(0, b.length - 3));
     expect(a, isNot(b));
+  });
+
+  // ---- offline drafts (bills, expenses, credit notes): the gap this session closes ----
+
+  test('a draft item sent at flush() calls acc_save_draft_offline, not acc_offline_apply', () async {
+    final (s, api) = await boot();
+    await s.enqueue('draft', {'doc_type': 'bill', 'post': false, 'lines': []}, meta: {'label': 'Bill', 'total': 500});
+    final r = await s.flush();
+    expect(r.sent, 1);
+    expect(api.drafts, hasLength(1));
+    expect(api.applied, isEmpty, reason: 'a draft must never go through the sale/stock/product path');
+    expect(s.queue, isEmpty);
+  });
+
+  test('a draft never shows up as stock movement -- overlay() ignores an unknown kind safely', () async {
+    final (s, _) = await boot();
+    final before = s.products.single['stock'];
+    await s.enqueue('draft', {'doc_type': 'expense', 'post': false, 'lines': [
+      {'product_id': 'p1', 'qty': '3', 'rate': 10, 'tax_rate': 0},
+    ]}, meta: {'label': 'Expense', 'total': 30});
+    expect(s.products.single['stock'], before, reason: 'a document draft must not touch the stock overlay the way a real sale/stock-adjust item does');
+  });
+
+  test('a transient failure keeps a draft waiting; a real refusal marks it refused, never silently queued forever', () async {
+    final (s, api) = await boot();
+    await s.enqueue('draft', {'doc_type': 'bill', 'post': false, 'lines': []}, meta: {'label': 'Bill', 'total': 10});
+    api.fail = ApiError('down', networkError: true);
+    var r = await s.flush();
+    expect(r.sent, 0);
+    expect(s.queue.single['state'], 'waiting', reason: 'a transient failure (no connection) must never be treated as a business-rule refusal');
+    expect(s.offline, isTrue);
+    api.fail = ApiError('The accounting period is locked.', status: 400);
+    r = await s.flush();
+    expect(r.refused, 1);
+    expect(s.queue.single['state'], 'refused', reason: 'a genuine rule refusal must never be queued as though it were an internet problem');
+    expect(s.queue.single['error'], 'The accounting period is locked.');
+    api.fail = null;
+    await s.retry(s.queue.single['op'] as String);
+    expect(s.queue, isEmpty);
+    expect(api.drafts, hasLength(1));
+  });
+
+  test('retrying the same draft operation id never creates a second draft (idempotent, like a sale)', () async {
+    final (s, api) = await boot();
+    await s.enqueue('draft', {'doc_type': 'bill', 'post': false, 'lines': []}, meta: {'label': 'Bill'}, op: 'fixed-draft');
+    await s.flush();
+    await s.enqueue('draft', {'doc_type': 'bill', 'post': false, 'lines': []}, meta: {'label': 'Bill'}, op: 'fixed-draft');
+    await s.flush();
+    expect(api.drafts.where((d) => d['op'] == 'fixed-draft'), hasLength(1));
+  });
+
+  test('discarding a waiting draft removes it for good', () async {
+    final (s, _) = await boot();
+    final row = await s.enqueue('draft', {'doc_type': 'bill', 'post': false, 'lines': []}, meta: {'label': 'Bill'});
+    await s.discard(row['op'] as String);
+    expect(s.queue, isEmpty);
   });
 }

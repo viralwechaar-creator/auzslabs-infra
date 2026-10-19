@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart' hide Text;
 import 'i18n.dart';
 import '../core/billing.dart' show r2;
+import '../core/cash.dart' show cashDenoms, denomTotal;
 import '../core/repo.dart';
 import '../core/alerts.dart';
 import '../core/session.dart';
@@ -268,16 +269,68 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Future<void> _close(Map<String, dynamic> reg) async {
     final sm = registerSummary(s, reg);
-    final v = await _num('Close register', 'Cash counted in the drawer', hint: 'Expected ${inr(sm.expected)}');
-    if (v == null) return;
-    final counted = r2(double.tryParse(v) ?? 0);
-    final done = {...reg, 'closedAt': nowIso(), 'closedBy': s.user!['id'], 'closedByName': '${s.user!['email'] ?? ''}', 'counted': counted, 'expected': sm.expected, 'variance': r2(counted - sm.expected), 'methods': sm.methods, 'refunds': {'cash': sm.refundsCash}, 'bills': sm.bills, 'sales': sm.sales, 'tips': sm.tipsCash, 'cashIn': sm.cashIn, 'cashOut': sm.cashOut};
+    final result = await _registerCloseSheet(sm.expected);
+    if (result == null) return;
+    final (counted, denoms) = result;
+    final done = {...reg, 'closedAt': nowIso(), 'closedBy': s.user!['id'], 'closedByName': '${s.user!['email'] ?? ''}', 'counted': counted, 'denoms': denoms, 'expected': sm.expected, 'variance': r2(counted - sm.expected), 'methods': sm.methods, 'refunds': {'cash': sm.refundsCash}, 'bills': sm.bills, 'sales': sm.sales, 'tips': sm.tipsCash, 'cashIn': sm.cashIn, 'cashOut': sm.cashOut};
     await s.repo!.save('register', done, id: '${reg['id']}');
     s.sync();
     if (!mounted) return;
     final diff = r2(counted - sm.expected);
     _t(diff.abs() < 1 ? 'Register closed. Balanced.' : 'Register closed. ${diff > 0 ? 'Over' : 'Short'} by ${inr(diff.abs())}');
     setState(() {});
+  }
+
+  /// Count the drawer note by note/coin by coin, or type the total directly -- same two paths as
+  /// closeRegister() in the website's pos/register.js (CASH_DENOMS list, a live Counted/variance
+  /// readout, and a "type the total instead" field that overrides the count). Returns the counted
+  /// total plus the denomination breakdown that produced it (empty if the cashier just typed a
+  /// total), or null if cancelled -- nothing is saved here.
+  Future<(num, Map<String, int>)?> _registerCloseSheet(num expected) {
+    final counts = <int, int>{};
+    final typed = TextEditingController();
+    return showModalBottomSheet<(num, Map<String, int>)?>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, set) {
+        final counted = typed.text.trim().isNotEmpty ? (r2(double.tryParse(typed.text) ?? 0)) : denomTotal(counts);
+        final diff = r2(counted - expected);
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, MediaQuery.of(ctx).viewInsets.bottom + 16),
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              const Padding(padding: EdgeInsets.symmetric(vertical: 14), child: Text('Close register', textAlign: TextAlign.center, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700))),
+              Text('Count the cash in the drawer', style: TextStyle(color: Tk.label2, fontSize: 13)),
+              const SizedBox(height: 8),
+              Flexible(
+                child: ListView(shrinkWrap: true, children: [
+                  for (final n in cashDenoms)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(children: [
+                        Expanded(child: Text('₹$n', style: const TextStyle(fontWeight: FontWeight.w700))),
+                        SizedBox(width: 84, child: TextField(keyboardType: TextInputType.number, textAlign: TextAlign.center, decoration: const InputDecoration(isDense: true, hintText: '0'), onChanged: (v) => set(() { counts[n] = int.tryParse(v) ?? 0; typed.clear(); }))),
+                        SizedBox(width: 72, child: Text(inr(n * (counts[n] ?? 0)), textAlign: TextAlign.right)),
+                      ]),
+                    ),
+                ]),
+              ),
+              const SizedBox(height: 8),
+              TextField(controller: typed, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Or type the total directly'), onChanged: (_) => set(() {})),
+              const SizedBox(height: 10),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('Counted', style: TextStyle(fontWeight: FontWeight.w700)), Text(inr(counted), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800))]),
+              Text(diff.abs() < 1 ? 'Balanced · expected ${inr(expected)}' : '${diff > 0 ? 'Over' : 'Short'} by ${inr(diff.abs())} · expected ${inr(expected)}', style: TextStyle(color: diff.abs() < 1 ? Tk.green : Tk.red, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 14),
+              Row(children: [
+                Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel'))),
+                const SizedBox(width: 8),
+                Expanded(child: FilledButton(onPressed: () => Navigator.pop(ctx, (counted, typed.text.trim().isNotEmpty ? const <String, int>{} : {for (final e in counts.entries) if (e.value > 0) '${e.key}': e.value})), child: const Text('Close register'))),
+              ]),
+            ]),
+          ),
+        );
+      }),
+    );
   }
 
   @override

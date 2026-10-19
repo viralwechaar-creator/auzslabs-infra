@@ -1,8 +1,6 @@
 name: Native AUZsMob (Android)
 on:
   workflow_dispatch:
-  push:
-    paths: ['native/auzsmob/**', '.github/workflows/native-mob.yml']
 permissions:
   contents: write
 jobs:

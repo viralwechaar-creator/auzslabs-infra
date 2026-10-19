@@ -100,23 +100,49 @@ class _BillPageState extends State<BillPage> {
     final acct = pay == 'later' ? null : s.payAccounts(pay).firstOrNull?['id'];
     if (pay != 'later' && acct == null) return toast(context, tr('No cash or bank account is set up'), err: true);
     if (exp && pay == 'later' && supplier == null) return toast(context, tr('Choose where the money was paid from'), err: true);
+    final payload = {
+      'id': null, 'doc_type': exp ? 'expense' : 'bill', 'doc_date': ymd(DateTime.now()), 'due_date': null, 'party_id': supplier?['id'], 'branch_id': s.branches.length == 1 ? s.branches.first['id'] : null,
+      'warehouse_id': null, 'place_of_supply': null, 'reverse_charge': false, 'itc_eligible': true, 'price_includes_tax': incl, 'supplier_ref': ref.text.trim().isEmpty ? null : ref.text.trim(), 'supplier_ref_date': null,
+      'ref_doc_id': null, 'source_doc_id': null, 'notes': note.text, 'terms': '', 'roundoff': null, 'post': true,
+      'lines': [for (final l in lines) {'product_id': l['product_id'], 'description': l['description'], 'hsn': l['hsn'], 'qty': '${l['qty']}', 'unit': l['unit'], 'rate': l['rate'], 'disc_pct': null, 'disc_amt': null, 'tax_rate': '${l['tax_rate']}', 'account_id': null, 'batch_no': '', 'expiry': null, 'warehouse_id': null}],
+      'payments': acct == null ? [] : [{'account_id': acct, 'amount': c.total, 'mode': pay == 'cash' ? 'Cash' : 'Bank', 'reference': ''}],
+    };
     setState(() => busy = true);
     try {
-      await s.api.rpc('acc_save_document', {'p': {
-        'id': null, 'doc_type': exp ? 'expense' : 'bill', 'doc_date': ymd(DateTime.now()), 'due_date': null, 'party_id': supplier?['id'], 'branch_id': s.branches.length == 1 ? s.branches.first['id'] : null,
-        'warehouse_id': null, 'place_of_supply': null, 'reverse_charge': false, 'itc_eligible': true, 'price_includes_tax': incl, 'supplier_ref': ref.text.trim().isEmpty ? null : ref.text.trim(), 'supplier_ref_date': null,
-        'ref_doc_id': null, 'source_doc_id': null, 'notes': note.text, 'terms': '', 'roundoff': null, 'post': true,
-        'lines': [for (final l in lines) {'product_id': l['product_id'], 'description': l['description'], 'hsn': l['hsn'], 'qty': '${l['qty']}', 'unit': l['unit'], 'rate': l['rate'], 'disc_pct': null, 'disc_amt': null, 'tax_rate': '${l['tax_rate']}', 'account_id': null, 'batch_no': '', 'expiry': null, 'warehouse_id': null}],
-        'payments': acct == null ? [] : [{'account_id': acct, 'amount': c.total, 'mode': pay == 'cash' ? 'Cash' : 'Bank', 'reference': ''}],
-      }});
+      // Known offline already: don't wait out a doomed network call, queue it straight away.
+      if (s.offline) {
+        await _queueOffline(payload, c.total);
+        return;
+      }
+      await s.api.rpc('acc_save_document', {'p': payload});
       if (!mounted) return;
       toast(context, tr('Saved to your books'));
       Navigator.pop(context);
     } on ApiError catch (e) {
-      if (mounted) toast(context, e.message, err: true);
+      // A lost connection, a timeout, a 5xx or being signed out: never lose what was typed --
+      // keep it on the phone as an unposted draft, exactly like the website does. A genuine
+      // business-rule refusal (period locked, missing permission, ...) is shown as before.
+      if (LedgerSession.transient(e)) {
+        await _queueOffline(payload, c.total);
+      } else if (mounted) {
+        toast(context, e.message, err: true);
+      }
     } finally {
       if (mounted) setState(() => busy = false);
     }
+  }
+
+  Future<void> _queueOffline(Map<String, dynamic> payload, double total) async {
+    // Defense in depth: the server already strips id/payments/post and forces post:false for a
+    // draft, but the locally-stored copy stays honestly in that same shape too.
+    final p = Map<String, dynamic>.from(payload)
+      ..remove('id')
+      ..remove('payments')
+      ..['post'] = false;
+    await s.enqueue('draft', p, meta: {'label': exp ? tr('Expense') : tr('Bill'), 'party': supplier?['name'], 'total': total, 'date': p['doc_date']});
+    if (!mounted) return;
+    toast(context, tr('Saved offline. It will reach your books as a draft once you are back online.'));
+    Navigator.pop(context);
   }
 
   @override

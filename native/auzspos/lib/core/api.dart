@@ -110,6 +110,12 @@ class ApiClient {
 
   Future<dynamic> rpc(String fn, [Map<String, dynamic> args = const {}]) => _request('POST', '/rpc/$fn', body: args);
 
+  /// Owner connects their own WhatsApp Business number (same endpoint as the website's sb.whatsapp.connect).
+  Future<Map<String, dynamic>> connectWhatsApp({required String phoneNumberId, String? wabaId, required String token}) async {
+    final d = await _request('POST', '/whatsapp/connect', body: {'phone_number_id': phoneNumberId, 'waba_id': wabaId, 'token': token});
+    return Map<String, dynamic>.from(d as Map);
+  }
+
   /// Records changed since [since] (an ISO microsecond string from the server), oldest first.
   Future<List<Map<String, dynamic>>> recordsSince(String since, {int limit = 1000}) async {
     final q = Uri(queryParameters: {'select': 'id,kind,data,deleted,updated_at', 'gte.updated_at': since, 'order': 'updated_at', 'limit': '$limit'}).query;

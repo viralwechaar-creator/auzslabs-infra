@@ -243,6 +243,10 @@ List<Map<String, dynamic>> allocateOldestFirst(double amount, List<Map<String, d
   return out;
 }
 
+/// Overdue part of an ageing bucket set (acc_ageing's own totals, or one party's row) -- the
+/// same d30+d60+d90+d90p sum the website computes inline in moneyPage() (p-money.js).
+double ageingOverdue(Map<String, dynamic> t) => n(t['d30']) + n(t['d60']) + n(t['d90']) + n(t['d90p']);
+
 /// Lines of a credit note from an invoice: quantity to credit per line id (blank/0 = left out).
 List<Map<String, dynamic>> creditLines(List<Map<String, dynamic>> lines, Map<String, double> qtyByLine) => [
       for (final l in lines)

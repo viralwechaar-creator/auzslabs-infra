@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart' hide Text;
 import 'i18n.dart';
 import '../core/billing.dart' show r2;
+import '../core/customer.dart';
+import '../core/linekey.dart';
 import '../core/repo.dart';
 import '../core/session.dart';
 import 'home.dart';
@@ -223,38 +226,111 @@ Future<void> compSheet(BuildContext context, Session s, Map<String, dynamic> o, 
   changed();
 }
 
-Future<void> customerSheet(BuildContext context, Map<String, dynamic> o, VoidCallback changed) async {
+/// Customer + note on the bill, with the same CRM fields and loyalty-history preview as
+/// customerSheet() in the website's pos/sell.js: a GSTIN for business bills, email, birthday,
+/// anniversary, tags, a favourite-guest switch and a no-marketing-messages opt-out -- persisted as a
+/// `customer` record keyed by the phone's digits (universal-write kind, db/068_pos_rebuild.sql), the
+/// exact same record the website/console's CRM screens read.
+Future<void> customerSheet(BuildContext context, Session s, Map<String, dynamic> o, VoidCallback changed) async {
   final cust = Map<String, dynamic>.from((o['cust'] as Map?) ?? {});
-  final name = TextEditingController(text: '${cust['name'] ?? ''}'), phone = TextEditingController(text: '${cust['phone'] ?? ''}'), note = TextEditingController(text: '${o['note'] ?? ''}');
+  final ph0 = digitsOnly('${cust['phone'] ?? ''}');
+  final prof = ph0.length >= 10 ? s.repo!.rec(ph0) : null;
+  final name = TextEditingController(text: '${cust['name'] ?? prof?['name'] ?? ''}');
+  final phone = TextEditingController(text: '${cust['phone'] ?? ''}');
+  final note = TextEditingController(text: '${o['note'] ?? ''}');
+  final gst = TextEditingController(text: '${cust['gst'] ?? prof?['gst'] ?? ''}');
+  final email = TextEditingController(text: '${prof?['email'] ?? ''}');
+  final dob = TextEditingController(text: '${prof?['dob'] ?? ''}');
+  final ann = TextEditingController(text: '${prof?['anniversary'] ?? ''}');
+  final tags = TextEditingController(text: ((prof?['tags'] as List?) ?? const []).join(', '));
+  var fav = prof?['favorite'] == true;
+  var optOut = prof?['optOut'] == true;
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    builder: (ctx) => SafeArea(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + MediaQuery.of(ctx).viewInsets.bottom),
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          const Text('Customer and note', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 12),
-          TextField(controller: name, textCapitalization: TextCapitalization.words, decoration: InputDecoration(labelText: tr('Name'))),
-          const SizedBox(height: 10),
-          TextField(controller: phone, keyboardType: TextInputType.phone, decoration: InputDecoration(labelText: tr('Phone'))),
-          const SizedBox(height: 10),
-          TextField(controller: note, decoration: InputDecoration(labelText: tr('Note for this order'))),
-          const SizedBox(height: 12),
-          FilledButton(
-            onPressed: () {
-              o['cust'] = {'name': name.text.trim(), 'phone': phone.text.trim()};
-              o['note'] = note.text.trim().isEmpty ? null : note.text.trim();
-              Navigator.pop(ctx);
-              changed();
-            },
-            child: const Text('Save'),
+    builder: (ctx) => StatefulBuilder(builder: (ctx, set) {
+      final hist = digitsOnly(phone.text).length >= 10 ? loyaltySummary(s.repo!.of('order'), phone.text, '${o['id']}', earnPerRs: (s.cfg['loyaltyEarnRs'] as num?) ?? 100) : null;
+      return SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + MediaQuery.of(ctx).viewInsets.bottom),
+          child: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              const Text('Customer', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              if (hist != null && hist.visits > 0) ...[
+                const SizedBox(height: 10),
+                Row(children: [
+                  Expanded(child: _kpi('${hist.visits}', 'Visits')),
+                  Expanded(child: _kpi(inr(hist.lifetime), 'Spent')),
+                  Expanded(child: _kpi('${hist.points}', 'Points')),
+                ]),
+              ],
+              const SizedBox(height: 12),
+              TextField(controller: name, textCapitalization: TextCapitalization.words, decoration: InputDecoration(labelText: tr('Name'))),
+              const SizedBox(height: 10),
+              TextField(controller: phone, keyboardType: TextInputType.phone, decoration: InputDecoration(labelText: tr('Phone')), onChanged: (_) => set(() {})),
+              const SizedBox(height: 10),
+              TextField(controller: gst, textCapitalization: TextCapitalization.characters, maxLength: 15, decoration: const InputDecoration(labelText: '15-character GSTIN (business bills)')),
+              const SizedBox(height: 10),
+              Row(children: [
+                Expanded(child: TextField(controller: email, keyboardType: TextInputType.emailAddress, decoration: InputDecoration(labelText: tr('Email')))),
+                const SizedBox(width: 10),
+                Expanded(child: TextField(controller: tags, decoration: const InputDecoration(labelText: 'Tags (Regular, VIP)'))),
+              ]),
+              const SizedBox(height: 10),
+              Row(children: [
+                Expanded(child: TextField(controller: dob, keyboardType: TextInputType.datetime, decoration: const InputDecoration(labelText: 'Birthday (YYYY-MM-DD)'))),
+                const SizedBox(width: 10),
+                Expanded(child: TextField(controller: ann, keyboardType: TextInputType.datetime, decoration: const InputDecoration(labelText: 'Anniversary (YYYY-MM-DD)'))),
+              ]),
+              SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Favourite guest'), value: fav, onChanged: (v) => set(() => fav = v)),
+              SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('No marketing messages'), value: optOut, onChanged: (v) => set(() => optOut = v)),
+              const Divider(height: 24),
+              TextField(controller: note, decoration: InputDecoration(labelText: tr('Note for this order'))),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: () {
+                  final gstVal = gst.text.trim().toUpperCase();
+                  if (gstVal.isNotEmpty && !isValidGstin(gstVal)) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('A GSTIN has 15 characters, starting with the 2-digit state code')));
+                    return;
+                  }
+                  o['cust'] = {'name': name.text.trim(), 'phone': phone.text.trim(), if (gstVal.isNotEmpty) 'gst': gstVal};
+                  o['note'] = note.text.trim().isEmpty ? null : note.text.trim();
+                  final p = digitsOnly(phone.text);
+                  if (p.length >= 10) {
+                    // See profileToMergeOnSave()'s own doc comment: must re-resolve for the phone
+                    // actually being saved under, never blindly spread the sheet-open-time `prof`.
+                    final curProf = profileToMergeOnSave(openedPhoneDigits: ph0, savingPhoneDigits: p, openedProfile: prof, lookup: s.repo!.rec);
+                    unawaited(s.repo!.save('customer', {
+                      ...?curProf,
+                      'phone': p,
+                      'name': name.text.trim().isEmpty ? (curProf?['name']) : name.text.trim(),
+                      'gst': gstVal.isEmpty ? null : gstVal,
+                      'email': email.text.trim(),
+                      'dob': dob.text.trim().isEmpty ? null : dob.text.trim(),
+                      'anniversary': ann.text.trim().isEmpty ? null : ann.text.trim(),
+                      'tags': tags.text.split(',').map((x) => x.trim()).where((x) => x.isNotEmpty).toList(),
+                      'optOut': optOut,
+                      'favorite': fav,
+                    }, id: p));
+                  }
+                  Navigator.pop(ctx);
+                  changed();
+                },
+                child: const Text('Save'),
+              ),
+            ]),
           ),
-        ]),
-      ),
-    ),
+        ),
+      );
+    }),
   );
 }
+
+Widget _kpi(String value, String label) => Column(children: [
+      Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+      Text(label, style: TextStyle(fontSize: 12, color: Tk.label2)),
+    ]);
 
 /// Cancel an order that is not paid. Items already sent to the kitchen need a manager's approval.
 Future<bool> cancelOrder(BuildContext context, HomeState h, Map<String, dynamic> o) async {
@@ -426,13 +502,24 @@ Future<void> voidPaid(BuildContext context, HomeState h, Map<String, dynamic> o)
   h.toast('Bill cancelled');
 }
 
-/// Move some items to a new bill (same rule as splitSheet in the website POS: sent quantities travel with the items and the move is logged).
+/// The existing open order at [tableId], if any (same lookup as floor.dart's tableState()'s .o,
+/// duplicated here as a one-line query rather than importing floor.dart just for this).
+Map<String, dynamic>? _openOrderAt(Session s, String tableId) =>
+    s.repo!.of('order').where((x) => x['status'] == 'open' && x['table'] == tableId && ((x['lines'] as List?)?.isNotEmpty ?? false)).firstOrNull;
+
+/// Move some items to a new bill, a different table's bill (merging into it if one is already open
+/// there), or a takeaway -- same three destinations as splitSheet() in the website's tables.js.
+/// Sent quantities travel with the items and the move is logged either way.
 Future<void> splitSheet(BuildContext context, HomeState h, Map<String, dynamic> o) async {
   final s = h.s;
   final lines = (o['lines'] as List).cast<Map<String, dynamic>>();
   if (lines.isEmpty) return;
   if (s.repo!.rec('${o['id']}') == null) await h.persist(o);
   final pick = <int, int>{};
+  final otherTables = s.repo!.of('table').where((t) => t['id'] != o['table']).toList()..sort((a, b) => '${a['name']}'.compareTo('${b['name']}'));
+  var dest = 'new'; // 'new' | 'table' | 'take'
+  String? destTable;
+  var busy = false;
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -463,36 +550,101 @@ Future<void> splitSheet(BuildContext context, HomeState h, Map<String, dynamic> 
               ]),
             ),
             Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('New bill subtotal'), Text(inr(sum), style: const TextStyle(fontWeight: FontWeight.w800))])),
+            const Padding(padding: EdgeInsets.only(bottom: 6), child: Text('New bill is for', style: TextStyle(fontWeight: FontWeight.w600))),
+            Seg<String>(
+              expand: true,
+              value: dest,
+              items: [('new', 'New bill'), if (otherTables.isNotEmpty) ('table', 'Another table'), ('take', 'Takeaway')],
+              onChanged: (v) => set(() { dest = v; if (v != 'table') destTable = null; }),
+            ),
+            if (dest == 'table')
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: OutlinedButton(
+                  onPressed: () async {
+                    final picked = await showModalBottomSheet<String>(
+                      context: ctx,
+                      showDragHandle: true,
+                      builder: (c) => SafeArea(child: ListView(shrinkWrap: true, children: [
+                        for (final t in otherTables)
+                          ListTile(
+                            title: Text('${t['name']}'),
+                            subtitle: Text(_openOrderAt(s, '${t['id']}') != null ? 'Already has an open bill -- items will be added to it' : 'Free'),
+                            onTap: () => Navigator.pop(c, '${t['id']}'),
+                          ),
+                      ])),
+                    );
+                    if (picked != null) set(() => destTable = picked);
+                  },
+                  child: Text(destTable == null ? 'Choose a table' : '${s.repo!.rec(destTable!)?['name'] ?? 'Chosen'}'),
+                ),
+              ),
+            const SizedBox(height: 10),
             FilledButton(
-              onPressed: () async {
+              onPressed: busy ? null : () async {
                 final moving = [for (final e in pick.entries) if (e.value > 0) e];
-                if (moving.isEmpty) return;
+                if (moving.isEmpty) {
+                  h.toast('Choose at least one item');
+                  return;
+                }
                 if (moving.length == lines.length && moving.every((e) => e.value >= (lines[e.key]['qty'] as num))) {
                   h.toast('Leave something on this bill, or move the whole table instead');
                   return;
                 }
-                final n = h.newOrder(type: '${o['type']}', table: o['table'] as String?);
-                n['cust'] = Map<String, dynamic>.from((o['cust'] as Map?) ?? {});
-                n['kfrom'] = o['id'];
-                n['splitFrom'] = o['no'];
-                n['no'] = await s.nextNo();
-                final moved = <Map<String, dynamic>>[];
-                for (final e in moving) {
-                  final l = lines[e.key];
-                  final q = e.value;
-                  final sentMove = ((l['sent'] ?? 0) as num).toInt().clamp(0, q);
-                  moved.add({'q': sentMove, 'name': l['name'], 'qty': q});
-                  (n['lines'] as List).add({...l, 'qty': q, 'sent': sentMove});
-                  l['qty'] = (l['qty'] as num) - q;
-                  l['sent'] = ((l['sent'] ?? 0) as num) - sentMove;
+                if (dest == 'table' && destTable == null) {
+                  h.toast('Choose a table');
+                  return;
                 }
-                o['lines'] = lines.where((l) => (l['qty'] as num) > 0).toList();
-                o['moves'] = [...((o['moves'] as List?) ?? []), {'at': nowIso(), 'to': n['id'], 'toNo': n['no'], 'items': moved}];
-                await h.persist(n);
-                await h.persist(o);
-                if (ctx.mounted) Navigator.pop(ctx);
-                h.refresh(() => h.cur = n);
-                h.toast('Split to ${n['no']}');
+                // Guard against a double-tap running this whole block twice concurrently -- there is
+                // an `await` below (nextNo()) before `lines[e.key]['qty']` is mutated in place, and a
+                // second overlapping run would double-decrement the same line objects (or, worse,
+                // double-create the destination order). Disables the button until this run finishes
+                // or fails, same pattern as the gift-card and register-close sheets.
+                set(() => busy = true);
+                try {
+                  // Merge into the target table's already-open order, if there is one, exactly as
+                  // mergeOrders()/splitSheet() do on the website -- never silently open a second
+                  // simultaneous bill at an occupied table.
+                  final target = dest == 'table' ? _openOrderAt(s, destTable!) : null;
+                  final n = target != null
+                      ? (Map<String, dynamic>.from(target)..['lines'] = [for (final l in (target['lines'] as List)) Map<String, dynamic>.from(l as Map)])
+                      : h.newOrder(type: dest == 'take' ? 'Takeaway' : '${o['type']}', table: dest == 'take' ? null : (dest == 'table' ? destTable : o['table'] as String?));
+                  if (target == null) {
+                    n['cust'] = Map<String, dynamic>.from((o['cust'] as Map?) ?? {});
+                    n['kfrom'] = o['id'];
+                    n['splitFrom'] = o['no'];
+                  }
+                  n['no'] ??= await s.nextNo();
+                  final moved = <Map<String, dynamic>>[];
+                  for (final e in moving) {
+                    final l = lines[e.key];
+                    final q = e.value;
+                    final sentMove = ((l['sent'] ?? 0) as num).toInt().clamp(0, q);
+                    moved.add({'q': sentMove, 'name': l['name'], 'qty': q});
+                    final nl = (n['lines'] as List).cast<Map<String, dynamic>>();
+                    final same = nl.where((x) => lineKey(x) == lineKey(l) && x['price'] == l['price']).firstOrNull;
+                    if (same != null) {
+                      same['qty'] = (same['qty'] as num) + q;
+                      same['sent'] = ((same['sent'] ?? 0) as num) + sentMove;
+                    } else {
+                      nl.add({...l, 'qty': q, 'sent': sentMove});
+                    }
+                    l['qty'] = (l['qty'] as num) - q;
+                    l['sent'] = ((l['sent'] ?? 0) as num) - sentMove;
+                  }
+                  o['lines'] = lines.where((l) => (l['qty'] as num) > 0).toList();
+                  o['moves'] = [...((o['moves'] as List?) ?? []), {'at': nowIso(), 'to': n['id'], 'toNo': n['no'], 'items': moved}];
+                  await h.persist(n);
+                  await h.persist(o);
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  h.refresh(() => h.cur = n);
+                  h.toast(target != null ? 'Merged into ${n['no']}' : 'Split to ${n['no']}');
+                } finally {
+                  // Covers the (unlikely, but not provably impossible) case of an exception partway
+                  // through -- the sheet must never stay stuck with a permanently disabled button.
+                  // A no-op if the sheet already closed on success (ctx is unmounted by then).
+                  if (ctx.mounted) set(() => busy = false);
+                }
               },
               child: const Text('Split'),
             ),

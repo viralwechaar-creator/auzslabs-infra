@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart' hide Text;
 import '../core/session.dart';
+import '../core/webflag.dart';
 import 'guest.dart';
 import 'home.dart';
 import 'mkt.dart';
 import 'site.dart';
+import 'webmarketing.dart';
 
 /// The hub's main screen: the website (Home, Products, Pricing, Menu) and, in the last tab, what this login can open.
 class HubShell extends StatefulWidget {
@@ -28,7 +30,12 @@ class _HubShellState extends State<HubShell> {
     final t = tab >= 0 ? tab : (guest || s.kind == Kind.customer ? 0 : 4);
     return Scaffold(
       body: IndexedStack(index: t, children: [
-        SitePage(s, 'index', top: true),
+        // Home-page WebView pilot (see docs/HUB_WEBVIEW_PILOT.md): a developer-only switch,
+        // off by default. Every other tab always uses the native renderer.
+        ValueListenableBuilder<bool>(
+          valueListenable: WebPilot.homeEnabled,
+          builder: (context, webOn, child) => webOn ? WebMarketingHome(s) : SitePage(s, 'index', top: true),
+        ),
         SitePage(s, 'products', top: true),
         SitePage(s, 'pricing', top: true),
         Theme(data: marketingTheme(), child: SiteMenu(s)),

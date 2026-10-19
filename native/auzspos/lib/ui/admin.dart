@@ -5,7 +5,12 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/billing.dart' show r2;
+import '../core/inventory_reports.dart' show isLowStock;
+import '../core/reorder.dart';
+import '../core/repo.dart' show nowIso;
 import '../core/session.dart';
+import '../core/stock.dart' show adjustReasons, ingAtOutlet, transferQtyOk;
+import 'console.dart' show Kpis, RangeBar;
 import 'home.dart';
 import 'kit.dart';
 import 'more.dart';
@@ -106,7 +111,7 @@ class AdminDashboard extends StatelessWidget {
     }
     final top = items.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
     final diff = ySales == 0 ? null : ((tSales - ySales) / ySales * 100).round();
-    final low = s.repo!.of('ing').where((g) => ((g['low'] ?? 0) as num) > 0 && ((g['qty'] ?? 0) as num) <= ((g['low'] ?? 0) as num)).length;
+    final low = s.repo!.of('ing').where(isLowStock).length; // low-stock consistency fix: see console_pages.dart's _cfgRaw comment
     return Scaffold(
       appBar: embedded ? null : AppBar(title: const Text('Dashboard')),
       body: ListView(padding: const EdgeInsets.all(14), children: [
@@ -166,11 +171,19 @@ class MenuAdmin extends StatefulWidget {
 
 class _MenuAdminState extends State<MenuAdmin> with SingleTickerProviderStateMixin {
   late final TabController tc = TabController(length: 2, vsync: this, initialIndex: widget.tab);
-  String q = '';
+  String q = '', catFilter = '', vegFilter = '';
   Session get s => widget.h.s;
 
+  Future<void> copyItem(Map<String, dynamic> it) async {
+    final c = Map<String, dynamic>.from(it)..remove('id');
+    c['name'] = '${it['name']} (copy)';
+    await s.repo!.save('item', c);
+    setState(() {});
+    s.sync();
+  }
+
   Future<void> item([Map<String, dynamic>? it]) async {
-    final cats = s.repo!.of('cat').toList()..sort((a, b) => '${a['name']}'.compareTo('${b['name']}'));
+    final cats = s.repo!.of('cat').toList()..sort((a, b) => ((a['n'] as num?) ?? 0).compareTo((b['n'] as num?) ?? 0));
     if (cats.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Add a category first')));
       return;
@@ -198,6 +211,8 @@ class _MenuAdminState extends State<MenuAdmin> with SingleTickerProviderStateMix
         F('cost', 'Cost price (₹)', type: 'number', value: it?['cost']),
         F('barcode', 'Barcode', value: it?['barcode']),
         F('rec', 'Recipe (stock used per sale, like  milk:0.2, tea:5)', type: 'multiline', value: it?['rec']),
+        F('combo', 'This is a combo (bundle of other items)', type: 'check', value: it?['combo'] == true),
+        F('comboText', 'Combo contents (like  Chicken Biryani:1, Coke:1)', type: 'multiline', value: it?['comboText']),
         F('off', 'Sold out', type: 'check', value: it?['off'] == true),
         if (outs.length > 1) ...[
           for (final o in outs) F('op_${o['id']}', '${o['name']} price (₹), empty = same', type: 'number', value: (it?['outletPrice'] as Map?)?['${o['id']}']),
@@ -220,7 +235,8 @@ class _MenuAdminState extends State<MenuAdmin> with SingleTickerProviderStateMix
           if (pv != null && '$pv'.isNotEmpty) outletPrice['${o['id']}'] = pv;
           if (v['oo_${o['id']}'] == true) outletOff['${o['id']}'] = true;
         }
-        final d = {...?it, 'sizes': sizes, 'img': v['img'], 'short': v['short'] ?? '', 'st': v['st'] ?? 'Kitchen', 'hsn': v['hsn'] ?? '', 'cost': v['cost'] ?? 0, 'barcode': ('${v['barcode'] ?? ''}').isEmpty ? null : v['barcode'], 'rec': v['rec'] ?? '', if (outs.length > 1) ...{'outletPrice': outletPrice, 'outletOff': outletOff}, if (groups.isNotEmpty) 'addonGroups': v['addonGroups'] ?? [], 'name': v['name'], 'cat': v['cat'], 'price': v['price'], 'veg': v['veg'], 'desc': v['desc'], 'off': v['off'] == true, 'taxId': ('${v['taxId'] ?? ''}').isEmpty ? null : v['taxId']};
+        final isCombo = v['combo'] == true;
+        final d = {...?it, 'sizes': sizes, 'img': v['img'], 'short': v['short'] ?? '', 'st': v['st'] ?? 'Kitchen', 'hsn': v['hsn'] ?? '', 'cost': v['cost'] ?? 0, 'barcode': ('${v['barcode'] ?? ''}').isEmpty ? null : v['barcode'], 'rec': v['rec'] ?? '', 'combo': isCombo, 'comboText': isCombo ? (v['comboText'] ?? '') : '', if (outs.length > 1) ...{'outletPrice': outletPrice, 'outletOff': outletOff}, if (groups.isNotEmpty) 'addonGroups': v['addonGroups'] ?? [], 'name': v['name'], 'cat': v['cat'], 'price': v['price'], 'veg': v['veg'], 'desc': v['desc'], 'off': v['off'] == true, 'taxId': ('${v['taxId'] ?? ''}').isEmpty ? null : v['taxId']};
         await s.repo!.save('item', d, id: it?['id'] as String?);
         setState(() {});
         s.sync();
@@ -239,10 +255,14 @@ class _MenuAdminState extends State<MenuAdmin> with SingleTickerProviderStateMix
   Future<void> cat([Map<String, dynamic>? c]) => formSheet(
         context,
         c == null ? 'New category' : 'Edit category',
-        [F('name', 'Category name', value: c?['name']), F('active', 'Visible on menus', type: 'check', value: c?['active'] != false)],
+        [
+          F('name', 'Category name', value: c?['name']),
+          F('parent', 'Parent category (optional)', value: c?['parent'], hint: 'Groups related categories together'),
+          F('active', 'Visible on menus', type: 'check', value: c?['active'] != false),
+        ],
         (v) async {
           if ('${v['name']}'.isEmpty) return false;
-          await s.repo!.save('cat', {...?c, 'name': v['name'], 'active': v['active'] == true, 'n': c?['n'] ?? DateTime.now().millisecondsSinceEpoch}, id: c?['id'] as String?);
+          await s.repo!.save('cat', {...?c, 'name': v['name'], 'parent': v['parent'] ?? '', 'active': v['active'] == true, 'n': c?['n'] ?? DateTime.now().millisecondsSinceEpoch}, id: c?['id'] as String?);
           setState(() {});
           s.sync();
           return true;
@@ -256,17 +276,35 @@ class _MenuAdminState extends State<MenuAdmin> with SingleTickerProviderStateMix
               },
       );
 
+  /// Swap this category's sort rank with its neighbour -- the order here is the order items appear in on
+  /// the billing screen.
+  Future<void> moveCat(List<Map<String, dynamic>> ordered, Map<String, dynamic> c, int d) async {
+    await reorderRank(s.repo!, 'cat', ordered, c, d);
+    setState(() {});
+    s.sync();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final cats = s.repo!.of('cat').toList()..sort((a, b) => '${a['name']}'.compareTo('${b['name']}'));
+    final cats = s.repo!.of('cat').toList()..sort((a, b) => ((a['n'] as num?) ?? 0).compareTo((b['n'] as num?) ?? 0));
     final catName = {for (final c in cats) '${c['id']}': '${c['name']}'};
-    final items = s.repo!.of('item').where((i) => q.isEmpty || '${i['name']}'.toLowerCase().contains(q.toLowerCase())).toList()..sort((a, b) => '${catName[a['cat']]}${a['name']}'.compareTo('${catName[b['cat']]}${b['name']}'));
+    final taxName = {for (final t in s.repo!.of('tax')) '${t['id']}': '${t['name']}'};
+    final items = s.repo!.of('item').where((i) => (q.isEmpty || '${i['name']} ${i['short'] ?? ''}'.toLowerCase().contains(q.toLowerCase())) && (catFilter.isEmpty || i['cat'] == catFilter) && (vegFilter.isEmpty || ('${i['veg'] ?? 'veg'}') == vegFilter)).toList()..sort((a, b) => '${catName[a['cat']]}${a['name']}'.compareTo('${catName[b['cat']]}${b['name']}'));
     return Scaffold(
       appBar: widget.embedded ? PreferredSize(preferredSize: const Size.fromHeight(48), child: Material(color: Tk.bg, child: TabBar(controller: tc, tabs: const [Tab(text: 'Items'), Tab(text: 'Categories')]))) : AppBar(title: const Text('Menu'), bottom: TabBar(controller: tc, tabs: const [Tab(text: 'Items'), Tab(text: 'Categories')])),
       floatingActionButton: ListenableBuilder(listenable: tc, builder: (_, _) => FloatingActionButton.extended(onPressed: () => tc.index == 0 ? item() : cat(), icon: const Icon(Icons.add), label: Text(tc.index == 0 ? 'Add item' : 'Add category'))),
       body: TabBarView(controller: tc, children: [
         Column(children: [
-          Padding(padding: const EdgeInsets.fromLTRB(12, 10, 12, 4), child: TextField(decoration: InputDecoration(prefixIcon: Icon(Icons.search), hintText: tr('Search items')), onChanged: (v) => setState(() => q = v))),
+          Padding(padding: const EdgeInsets.fromLTRB(12, 10, 12, 4), child: TextField(decoration: InputDecoration(prefixIcon: Icon(Icons.search), hintText: tr('Search items, short codes')), onChanged: (v) => setState(() => q = v))),
+          SizedBox(
+            height: 40,
+            child: ListView(scrollDirection: Axis.horizontal, padding: const EdgeInsets.fromLTRB(12, 0, 12, 6), children: [
+              Padding(padding: const EdgeInsets.only(right: 8), child: DropdownButton<String>(value: catFilter, underline: const SizedBox.shrink(), items: [const DropdownMenuItem(value: '', child: Text('All categories')), for (final c in cats) DropdownMenuItem(value: '${c['id']}', child: Text('${c['name']}'))], onChanged: (v) => setState(() => catFilter = v ?? ''))),
+              DropdownButton<String>(value: vegFilter, underline: const SizedBox.shrink(), items: const [DropdownMenuItem(value: '', child: Text('All types')), DropdownMenuItem(value: 'veg', child: Text('Veg')), DropdownMenuItem(value: 'nonveg', child: Text('Non-veg')), DropdownMenuItem(value: 'egg', child: Text('Egg'))], onChanged: (v) => setState(() => vegFilter = v ?? '')),
+              const SizedBox(width: 8),
+              Align(alignment: Alignment.centerLeft, child: Text('${items.length} items', style: TextStyle(color: Tk.label2))),
+            ]),
+          ),
           Expanded(
             child: items.isEmpty
                 ? Empty(Icons.restaurant_menu, 'No items yet', 'Add your first item, or import a whole menu from the website console.', action: 'Add item', onAction: item)
@@ -276,16 +314,33 @@ class _MenuAdminState extends State<MenuAdmin> with SingleTickerProviderStateMix
                     itemBuilder: (_, i) {
                       final it = items[i];
                       final first = i == 0 || items[i - 1]['cat'] != it['cat'];
+                      final soldOut = it['off'] == true;
+                      final limited = !soldOut && (it['chOff'] is Map) && (it['chOff'] as Map).isNotEmpty;
+                      final subParts = <String>[
+                        if (soldOut) 'Sold out' else if (limited) 'Limited',
+                        if ('${it['short'] ?? ''}'.isNotEmpty) 'Code ${it['short']}',
+                        if (it['combo'] == true) 'Combo',
+                        it['taxId'] != null ? (taxName['${it['taxId']}'] ?? 'Tax') : 'Default tax',
+                      ];
                       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        if (first) Padding(padding: const EdgeInsets.fromLTRB(4, 12, 0, 4), child: Text('${catName[it['cat']] ?? 'No category'}'.toUpperCase(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Tk.label2, letterSpacing: .6))),
+                        if (first) Padding(padding: const EdgeInsets.fromLTRB(4, 12, 0, 4), child: Text((catName[it['cat']] ?? 'No category').toUpperCase(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Tk.label2, letterSpacing: .6))),
                         Card(
                           margin: const EdgeInsets.symmetric(vertical: 3),
                           child: ListTile(
                             onTap: () => item(it),
-                            leading: Container(width: 14, height: 14, decoration: BoxDecoration(border: Border.all(color: it['veg'] == 'nonveg' ? Tk.red : Tk.green, width: 1.5), borderRadius: BorderRadius.circular(3)), child: Center(child: Container(width: 6, height: 6, decoration: BoxDecoration(shape: BoxShape.circle, color: it['veg'] == 'nonveg' ? Tk.red : Tk.green)))),
-                            title: Text('${it['name']}', style: TextStyle(fontWeight: FontWeight.w700, decoration: it['off'] == true ? TextDecoration.lineThrough : null)),
-                            subtitle: it['off'] == true ? Text('Sold out', style: TextStyle(color: Tk.red)) : null,
-                            trailing: Text(inr((it['price'] ?? 0) as num), style: const TextStyle(fontWeight: FontWeight.w800)),
+                            leading: '${it['img'] ?? ''}'.isEmpty
+                                ? Container(width: 14, height: 14, margin: const EdgeInsets.only(top: 2), decoration: BoxDecoration(border: Border.all(color: it['veg'] == 'nonveg' ? Tk.red : Tk.green, width: 1.5), borderRadius: BorderRadius.circular(3)), child: Center(child: Container(width: 6, height: 6, decoration: BoxDecoration(shape: BoxShape.circle, color: it['veg'] == 'nonveg' ? Tk.red : Tk.green))))
+                                : ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network('${it['img']}', width: 38, height: 38, fit: BoxFit.cover, errorBuilder: (_, _, _) => Container(width: 38, height: 38, color: Tk.fill, child: Icon(Icons.broken_image_outlined, color: Tk.label3, size: 18)))),
+                            title: Text('${it['name']}', style: TextStyle(fontWeight: FontWeight.w700, decoration: soldOut ? TextDecoration.lineThrough : null)),
+                            subtitle: subParts.isEmpty ? null : Text(subParts.join(' · '), style: TextStyle(color: soldOut ? Tk.red : (limited ? Tk.orange : Tk.label2))),
+                            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                              Text(inr((it['price'] ?? 0) as num), style: const TextStyle(fontWeight: FontWeight.w800)),
+                              PopupMenuButton<String>(
+                                icon: const Icon(Icons.more_vert, size: 20),
+                                onSelected: (v) => v == 'copy' ? copyItem(it) : item(it),
+                                itemBuilder: (_) => const [PopupMenuItem(value: 'edit', child: Text('Edit')), PopupMenuItem(value: 'copy', child: Text('Copy'))],
+                              ),
+                            ]),
                           ),
                         ),
                       ]);
@@ -297,7 +352,17 @@ class _MenuAdminState extends State<MenuAdmin> with SingleTickerProviderStateMix
             ? Empty(Icons.category_outlined, 'No categories', 'Group your items, for example Tea, Snacks, Meals.', action: 'Add category', onAction: cat)
             : ListView(padding: const EdgeInsets.fromLTRB(12, 10, 12, 90), children: [
                 for (final c in cats)
-                  Card(child: ListTile(onTap: () => cat(c), title: Text('${c['name']}', style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text('${s.repo!.of('item').where((i) => i['cat'] == c['id']).length} items${c['active'] == false ? ' · hidden' : ''}'), trailing: const Icon(Icons.chevron_right))),
+                  Card(
+                    child: ListTile(
+                      onTap: () => cat(c),
+                      title: Text('${c['name']}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                      subtitle: Text('${s.repo!.of('item').where((i) => i['cat'] == c['id']).length} items${'${c['parent'] ?? ''}'.isEmpty ? '' : ' · under ${c['parent']}'}${c['active'] == false ? ' · hidden' : ''}'),
+                      trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                        IconButton(icon: const Icon(Icons.arrow_upward, size: 20), onPressed: cats.first['id'] == c['id'] ? null : () => moveCat(cats, c, -1)),
+                        IconButton(icon: const Icon(Icons.arrow_downward, size: 20), onPressed: cats.last['id'] == c['id'] ? null : () => moveCat(cats, c, 1)),
+                      ]),
+                    ),
+                  ),
               ]),
       ]),
     );
@@ -623,6 +688,15 @@ class _TaxAdminState extends State<TaxAdmin> {
                 s.sync();
               },
       );
+  // Matches the website's "Items" column (menu/taxes): how many menu items currently use this tax
+  // rate specifically, rather than the business default. An item picks its own tax via the existing
+  // Tax field in the item editor (admin.dart's item form, F('taxId', 'Tax', ...)) -- that assignment
+  // already works per item; this is only the missing count/visibility on the tax list itself. The
+  // website also has a bulk "Assign items" multi-select action here -- not added (would need a new
+  // multi-select screen of its own); per-item assignment through the existing item editor remains
+  // the way to do it in the native app.
+  int _itemCount(Map<String, dynamic> t) => s.repo!.of('item').where((i) => '${i['taxId'] ?? ''}' == '${t['id']}').length;
+
   @override
   Widget build(BuildContext context) {
     final ts = s.repo!.of('tax').toList();
@@ -631,7 +705,7 @@ class _TaxAdminState extends State<TaxAdmin> {
       floatingActionButton: FloatingActionButton.extended(onPressed: () => tax(), icon: const Icon(Icons.add), label: const Text('Add tax')),
       body: ts.isEmpty
           ? Empty(Icons.percent, 'Using one default rate', 'Every item uses ${s.cfg['tax']}% from Settings. Add other rates (for example 12% or 18%) and give them to specific items.', action: 'Add tax', onAction: tax)
-          : ListView(padding: const EdgeInsets.all(12), children: [for (final t in ts) Card(child: ListTile(onTap: () => tax(t), title: Text('${t['name']}', style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text(t['inclusive'] == true ? 'Included in price' : 'Added on top'), trailing: Text('${t['rate']}%', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16))))]),
+          : ListView(padding: const EdgeInsets.all(12), children: [for (final t in ts) Card(child: ListTile(onTap: () => tax(t), title: Text('${t['name']}', style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text('${t['inclusive'] == true ? 'Included in price' : 'Added on top'} · ${_itemCount(t)} items'), trailing: Text('${t['rate']}%', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16))))]),
     );
   }
 }
@@ -674,23 +748,90 @@ class _StockAdminState extends State<StockAdmin> {
               },
       );
 
+  /// Same shape as adjustForm() in the website's app/public/console/p-inventory.js: a signed delta
+  /// plus a reason, so the correction leaves an `adjustment` audit record (kind `adjustment` is
+  /// universal-write per db/068_pos_rebuild.sql) instead of silently rewriting `qty` with no trail --
+  /// previously this screen only ever did the bare `qty` rewrite.
   Future<void> adjust(Map<String, dynamic> g) => formSheet(
         context,
         'Adjust ${g['name']}',
-        [F('q', 'Add or remove (use minus to remove) in ${g['unit'] ?? 'units'}', type: 'number')],
+        [
+          F('q', 'Add or remove (use minus to remove) in ${g['unit'] ?? 'units'}', type: 'number'),
+          F('reason', 'Reason', type: 'select', value: adjustReasons.first, options: [for (final r in adjustReasons) [r, r]]),
+        ],
         (v) async {
-          if (v['q'] == null) return false;
-          await s.repo!.save('ing', {...g, 'qty': r2(((g['qty'] ?? 0) as num) + (v['q'] as num))}, id: g['id'] as String);
+          final q = v['q'] as num?;
+          if (q == null || q == 0) return false;
+          await s.repo!.save('ing', {...g, 'qty': r2(((g['qty'] ?? 0) as num) + q)}, id: g['id'] as String);
+          await s.repo!.save('adjustment', {'ing': g['name'], 'q': q, 'reason': '${v['reason'] ?? adjustReasons.first}', 'by': '${s.user!['email'] ?? s.user!['id']}', 'at': nowIso()});
           setState(() {});
           s.sync();
           return true;
         },
       );
 
+  /// Move stock to another outlet (or a free-text area, when the business only has the one outlet) --
+  /// same two-destination shape as transferForm() in the website's p-inventory.js, and the same
+  /// find-or-create rule for the destination raw-material record (ingAtOutlet()).
+  Future<void> transfer(Map<String, dynamic> g) {
+    final others = s.outlets.where((o) => '${o['id']}' != s.repo!.outlet).toList();
+    return formSheet(
+      context,
+      'Transfer ${g['name']}',
+      [
+        F('q', 'Quantity (${g['unit'] ?? ''})', type: 'number'),
+        if (others.length > 1)
+          F('to', 'Send to outlet', type: 'select', value: '${others.first['id']}', options: [for (final o in others) ['${o['id']}', '${o['name']}']])
+        else
+          F('toArea', 'To area', type: 'text'),
+        F('note', 'Note', type: 'text'),
+      ],
+      (v) async {
+        final qIn = v['q'] as num?;
+        // Re-read the raw material's CURRENT stock, not the snapshot captured when this sheet opened --
+        // on-hand quantity can genuinely change in the meantime (a sale, another transfer, an adjustment)
+        // for reasons that have nothing to do with a double-tap, and validating against a stale number
+        // would let this transfer push real stock negative. Falls back to the opened snapshot only if the
+        // record has since been deleted (should not happen for a raw material, but never crash on it).
+        final live = s.repo!.rec(g['id'] as String) ?? g;
+        final onHand = (live['qty'] ?? 0) as num;
+        if (!transferQtyOk(qIn, onHand)) {
+          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter a quantity up to what is on hand')));
+          return false;
+        }
+        final q = qIn!;
+        final fromOutlet = s.repo!.outlet;
+        await s.repo!.save('ing', {...live, 'qty': r2(onHand - q)}, id: g['id'] as String);
+        final toId = v['to'] as String?;
+        if (toId != null) {
+          final dest = ingAtOutlet(s.repo!.ofAll('ing'), '${g['name']}', toId);
+          if (dest != null) {
+            await s.repo!.save('ing', {...dest, 'qty': r2(((dest['qty'] ?? 0) as num) + q)}, id: '${dest['id']}');
+          } else {
+            await s.repo!.save('ing', {'name': g['name'], 'unit': g['unit'], 'qty': q, 'low': g['low'], 'cost': g['cost'], 'outlet': toId});
+          }
+        }
+        await s.repo!.save('transfer', {
+          'ing': g['name'],
+          'q': q,
+          'from': s.outletName(fromOutlet),
+          'to': toId != null ? s.outletName(toId) : '${v['toArea'] ?? ''}',
+          'note': '${v['note'] ?? ''}',
+          'by': '${s.user!['email'] ?? s.user!['id']}',
+          'at': nowIso(),
+        });
+        setState(() {});
+        s.sync();
+        return true;
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final gs = s.repo!.of('ing').toList()..sort((a, b) => '${a['name']}'.compareTo('${b['name']}'));
-    bool isLow(Map g) => ((g['low'] ?? 0) as num) > 0 && ((g['qty'] ?? 0) as num) <= ((g['low'] ?? 0) as num);
+    // Low-stock consistency fix: this used to be its own local isLow() with an extra `low>0` guard --
+    // see console_pages.dart's _cfgRaw comment for the full trace. isLowStock() is imported below.
     return Scaffold(
       appBar: AppBar(title: const Text('Stock')),
       floatingActionButton: FloatingActionButton.extended(onPressed: () => ing(), icon: const Icon(Icons.add), label: const Text('Add material')),
@@ -702,10 +843,11 @@ class _StockAdminState extends State<StockAdmin> {
                   child: ListTile(
                     onTap: () => ing(g),
                     title: Text('${g['name']}', style: const TextStyle(fontWeight: FontWeight.w700)),
-                    subtitle: isLow(g) ? Text('Running low', style: TextStyle(color: Tk.orange, fontWeight: FontWeight.w600)) : null,
+                    subtitle: isLowStock(g) ? Text('Running low', style: TextStyle(color: Tk.orange, fontWeight: FontWeight.w600)) : null,
                     trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Text('${g['qty'] ?? 0} ${g['unit'] ?? ''}', style: TextStyle(fontWeight: FontWeight.w800, color: isLow(g) ? Tk.orange : Tk.label)),
+                      Text('${g['qty'] ?? 0} ${g['unit'] ?? ''}', style: TextStyle(fontWeight: FontWeight.w800, color: isLowStock(g) ? Tk.orange : Tk.label)),
                       IconButton(icon: const Icon(Icons.tune), tooltip: 'Adjust', onPressed: () => adjust(g)),
+                      IconButton(icon: const Icon(Icons.swap_horiz), tooltip: 'Transfer', onPressed: () => transfer(g)),
                     ]),
                   ),
                 ),
@@ -790,21 +932,37 @@ class ExpensesAdmin extends StatefulWidget {
   State<ExpensesAdmin> createState() => _ExpensesAdminState();
 }
 
+const _expCats = ['Raw material', 'Salary', 'Rent', 'Electricity', 'Repairs', 'Marketing', 'Other'];
+
 class _ExpensesAdminState extends State<ExpensesAdmin> {
   Session get s => widget.h.s;
+  int days = 7;
+  String? catFilter;
+  String q = '';
+
+  /// Mirrors dayCloseOf() in the website console: a day that has already been closed (p-finance.js's Cash
+  /// Management) must not silently accept a brand-new backdated expense -- only editing an existing one is
+  /// allowed, exactly like the website's own `!e.id` condition.
+  bool _dayClosed(String d) => s.repo!.of('dayclose').any((x) => '${x['d']}' == d);
+
   Future<void> exp([Map<String, dynamic>? e]) => formSheet(
         context,
         e == null ? 'New expense' : 'Edit expense',
         [
           F('note', 'What was it for?', value: e?['note']),
-          F('cat', 'Category', type: 'select', value: e?['cat'] ?? 'Other', options: [for (final c in const ['Raw material', 'Salary', 'Rent', 'Electricity', 'Repairs', 'Marketing', 'Other']) [c, c]]),
+          F('cat', 'Category', type: 'select', value: e?['cat'] ?? 'Other', options: [for (final c in _expCats) [c, c]]),
           F('amt', 'Amount (₹)', type: 'number', value: e?['amt']),
           F('d', 'Date (YYYY-MM-DD)', value: e?['d'] ?? _day(DateTime.now())),
           F('mode', 'Paid from', type: 'select', value: e?['mode'] ?? 'cash', options: const [['cash', 'Cash drawer'], ['bank', 'Bank / UPI'], ['owner', 'Owner pocket']]),
+          F('vendor', 'Paid to', value: e?['vendor']),
         ],
         (v) async {
           if ('${v['note']}'.isEmpty || v['amt'] == null || (v['amt'] as num) <= 0) return false;
-          await s.repo!.save('exp', {...?e, 'note': v['note'], 'cat': v['cat'], 'amt': v['amt'], 'd': v['d'], 'mode': v['mode'], 'at': e?['at'] ?? DateTime.now().toUtc().toIso8601String()}, id: e?['id'] as String?);
+          if (e == null && _dayClosed('${v['d']}')) {
+            if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('That day is closed. Reopen it under Cash Management first.')));
+            return false;
+          }
+          await s.repo!.save('exp', {...?e, 'note': v['note'], 'cat': v['cat'], 'amt': v['amt'], 'd': v['d'], 'mode': v['mode'], 'vendor': v['vendor'], 'at': e?['at'] ?? DateTime.now().toUtc().toIso8601String()}, id: e?['id'] as String?);
           setState(() {});
           s.sync();
           return true;
@@ -819,19 +977,47 @@ class _ExpensesAdminState extends State<ExpensesAdmin> {
       );
   @override
   Widget build(BuildContext context) {
-    final es = s.repo!.of('exp').toList()..sort((a, b) => '${b['d']}${b['at']}'.compareTo('${a['d']}${a['at']}'));
-    final month = _day(DateTime.now()).substring(0, 7);
-    final mSum = es.where((e) => '${e['d']}'.startsWith(month)).fold<double>(0, (a, e) => a + ((e['amt'] ?? 0) as num));
+    final to = DateTime.now(), from = to.subtract(Duration(days: days - 1));
+    final fromD = _day(from), toD = _day(to);
+    final all = s.repo!.of('exp').toList();
+    final cats = all.map((e) => '${e['cat'] ?? 'Other'}').toSet().toList()..sort();
+    final es = all.where((e) {
+      final d = '${e['d']}';
+      if (d.compareTo(fromD) < 0 || d.compareTo(toD) > 0) return false;
+      if (catFilter != null && catFilter!.isNotEmpty && '${e['cat'] ?? 'Other'}' != catFilter) return false;
+      if (q.isNotEmpty && !'${e['note']} ${e['cat'] ?? ''} ${e['vendor'] ?? ''}'.toLowerCase().contains(q.toLowerCase())) return false;
+      return true;
+    }).toList()
+      ..sort((a, b) => '${b['d']}${b['at']}'.compareTo('${a['d']}${a['at']}'));
+    final total = es.fold<double>(0, (a, e) => a + ((e['amt'] ?? 0) as num));
+    final byCat = <String, double>{};
+    for (final e in es) {
+      final c = '${e['cat'] ?? 'Other'}';
+      byCat[c] = (byCat[c] ?? 0) + ((e['amt'] ?? 0) as num);
+    }
+    final biggest = byCat.entries.isEmpty ? '—' : (byCat.entries.toList()..sort((a, b) => b.value.compareTo(a.value))).first.key;
     return Scaffold(
       appBar: AppBar(title: const Text('Expenses')),
       floatingActionButton: FloatingActionButton.extended(onPressed: () => exp(), icon: const Icon(Icons.add), label: const Text('Add expense')),
-      body: es.isEmpty
-          ? Empty(Icons.payments_outlined, 'No expenses yet', 'Record what you spend (milk, rent, salaries) so your profit is real.', action: 'Add expense', onAction: exp)
-          : ListView(padding: const EdgeInsets.fromLTRB(12, 10, 12, 90), children: [
-              Stat('This month', inr(r2(mSum)), hero: true),
-              const SizedBox(height: 8),
-              for (final e in es) Card(child: ListTile(onTap: () => exp(e), title: Text('${e['note']}', style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text('${e['d']} · ${e['cat'] ?? ''}'), trailing: Text(inr((e['amt'] ?? 0) as num), style: const TextStyle(fontWeight: FontWeight.w800)))),
-            ]),
+      body: ListView(padding: const EdgeInsets.fromLTRB(12, 10, 12, 90), children: [
+        RangeBar(days, (v) => setState(() => days = v)),
+        Kpis('Total', inr(r2(total)), '${es.length} entries', [('Entries', '${es.length}', null), ('Biggest category', biggest, null)]),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(children: [
+            Expanded(child: TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Search…', isDense: true), onChanged: (v) => setState(() => q = v))),
+            const SizedBox(width: 8),
+            DropdownButton<String?>(
+              value: catFilter,
+              hint: const Text('All categories'),
+              items: [const DropdownMenuItem(value: null, child: Text('All categories')), for (final c in cats) DropdownMenuItem(value: c, child: Text(c))],
+              onChanged: (v) => setState(() => catFilter = v),
+            ),
+          ]),
+        ),
+        if (es.isEmpty) const Padding(padding: EdgeInsets.only(top: 20), child: Empty(Icons.payments_outlined, 'No expenses in this range', 'Record what you spend (milk, rent, salaries) so your profit is real.')),
+        for (final e in es) Card(child: ListTile(onTap: () => exp(e), title: Text('${e['note']}', style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text('${e['d']} · ${e['cat'] ?? ''}${'${e['vendor'] ?? ''}'.isEmpty ? '' : ' · ${e['vendor']}'}'), trailing: Text(inr((e['amt'] ?? 0) as num), style: const TextStyle(fontWeight: FontWeight.w800)))),
+      ]),
     );
   }
 }
