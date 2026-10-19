@@ -5,7 +5,7 @@ import { staffLogin, verifyToken } from '../auth.js';
 import { DOMAIN, cleanString, fail, hex6, htmlEsc, limited, normalizeOrigin, readBody, round2, sendJson, staffPhone, todayStr, validDate } from './util.js';
 import { bookingCounts, freshDb, loadDb, loadSite, mutate, mutateStaffAdmin, originAllowed, payrollOn, readKey, readStaffAdmin, reseedDemo, tenantFor, usesGeneric, writeKey, writeStaffAdmin } from './storage.js';
 import { clearSession, getSession, hashPassword, ownerPasswordOk, setSession, verifyScrypt } from './session.js';
-import { EXPENSE_CATEGORIES, addBooking, addCashMove, addExpense, addInvoice, cashRangeSummary, cashSummary, clientsList, computeSlots, publicSite } from './rules.js';
+import { EXPENSE_CATEGORIES, addBooking, addCashMove, addExpense, addInvoice, cashRangeSummary, cashSummary, clientsList, computeSlots, publicSite, settleInvoice } from './rules.js';
 import { salonIcon, salonOgImage, saveUpload } from './brand.js';
 import { enqueueWa, sendOrRetryWa } from '../whatsapp.js';
 import { sendWebPush, vapidReady } from '../push.js';
@@ -345,6 +345,13 @@ export async function handleSalon(req, res, ip) {
         invoice.id + '-bill');
       if (!r.ok) fail(400, r.reason === 'disabled' ? 'Automatic WhatsApp sending is off. Turn it on in Settings, or use the Send on WhatsApp link.' : 'Could not send.');
       return send(200, { ok: true, status: r.status });
+    }
+    const ivSettle = p.match(/^\/admin\/invoices\/(.+)\/settle$/);
+    if (method === 'POST' && ivSettle) {
+      const me = await member();
+      const id = decodeURIComponent(ivSettle[1]);
+      const invoice = await mutate(tenant, (db) => settleInvoice(db, id), ['site', 'data'], ['data']);
+      return send(200, { ok: true, invoice });
     }
     const iv = p.match(/^\/admin\/invoices\/(.+)$/);
     if (method === 'DELETE' && iv) {

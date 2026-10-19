@@ -116,11 +116,26 @@ export function addInvoice(db, body, who) {
     createdBy: who && who.role === 'staff' ? { id: who.sid, name: who.name } : { id: 'owner', name: 'Owner' },
     note: cleanString(body.note, 300), bookingId: cleanString(body.bookingId, 40),
     paymentMode: PAYMENT_MODES.includes(body.paymentMode) ? body.paymentMode : 'cash',
+    // Only a credit bill is ever actually "due" -- every other mode is paid at the counter the moment
+    // it's billed, so it's settled from the start. settleInvoice() below is the only way to flip this.
+    settled: (PAYMENT_MODES.includes(body.paymentMode) ? body.paymentMode : 'cash') !== 'credit', settledAt: null,
     void: false, createdAt: new Date().toISOString(),
   };
   db.invoices.push(inv);
   const lb = (db.bookings || []).find((b) => b.id === inv.bookingId);
   if (lb) lb.status = 'completed';
+  return inv;
+}
+
+// A credit (pay-later) bill the client has now actually paid. Any other mode is already settled at
+// billing time, so this is only ever meaningful for paymentMode:'credit' -- but it's harmless to call
+// on anything else too (just marks it settled, which it already was).
+export function settleInvoice(db, id) {
+  const inv = (db.invoices || []).find((x) => x.id === id);
+  if (!inv) fail(404, 'Invoice not found.');
+  if (inv.void) fail(400, 'This invoice is void.');
+  inv.settled = true;
+  inv.settledAt = new Date().toISOString();
   return inv;
 }
 

@@ -440,9 +440,11 @@
         h('tbody', {}, l.map(i => h('tr', { style: i.void ? 'opacity:.5' : '' },
           h('td', { 'data-label': 'Invoice' }, h('span', {}, h('b', { text: i.no }), ' · ', h('span', { class: 'muted', text: fmtDate(i.date, { day: 'numeric', month: 'short', year: 'numeric' }) }))),
           h('td', { 'data-label': 'Client' }, h('span', {}, i.client.name, ' · ', h('span', { class: 'muted', text: i.client.phone }))),
-          h('td', { 'data-label': 'Total' }, i.void ? h('span', { text: 'Void' }) : h('span', {}, inr(i.total), ' · ', h('span', { class: 'muted', text: PAY_MODES[i.paymentMode] || 'Cash' }))),
+          h('td', { 'data-label': 'Total' }, i.void ? h('span', { text: 'Void' }) : h('span', {}, inr(i.total), ' · ', h('span', { class: 'muted', text: PAY_MODES[i.paymentMode] || 'Cash' }),
+            i.paymentMode === 'credit' && !i.settled ? h('span', { class: 'badge', style: 'margin-left:6px', text: 'Due' }) : null)),
           h('td', { class: 'a-td-actions' }, i.void ? null : h('div', { class: 'a-row-actions' }, waSendRowBtn(i),
             h('a', { class: 'btn btn-sm btn-alt', href: '/i/' + i.token, target: '_blank', rel: 'noopener' }, 'Open'),
+            i.paymentMode === 'credit' && !i.settled ? btn('Mark as paid', async () => { try { await api('POST', '/api/admin/invoices/' + i.id + '/settle', {}); await load(); rerender(); toast('Marked as paid'); } catch (ex) { fail(ex); } }, 'btn-sm btn-alt') : null,
             !isOwner() ? null : btn('Void', async () => { if (await confirmBox('Void invoice ' + i.no + '? The customer link will stop working.', 'Void invoice')) { try { await api('DELETE', '/api/admin/invoices/' + i.id); await load(); rerender(); toast('Invoice voided'); } catch (ex) { fail(ex); } } }, 'btn-sm btn-danger')))))))) : emptyNote('No invoices yet.', 'scissors'));
     }
     drawHist();
@@ -1158,7 +1160,8 @@
       h('h2', { class: 'a-h2', style: 'margin-top:32px', text: 'Salon details' }),
       h('div', { class: 'a-grid' }, fld('Salon name', inp(S, 'salonName', { id: id('salonName') }), id('salonName')), fld('Phone', inp(S, 'phone', { id: id('phone'), type: 'tel' }), id('phone')),
         fld('WhatsApp number (for the Book form)', inp(S, 'whatsapp', { id: id('whatsapp'), type: 'tel', placeholder: '10 digit number' }), id('whatsapp')), fld('Email', inp(S, 'email', { id: id('email') }), id('email')),
-        fld('Instagram handle', inp(S, 'instagram', { id: id('instagram') }), id('instagram')), fld('Google Maps link', inp(S, 'mapUrl', { id: id('mapUrl'), placeholder: 'https://maps.app.goo.gl/...' }), id('mapUrl'))),
+        fld('Instagram handle', inp(S, 'instagram', { id: id('instagram') }), id('instagram')), fld('Google Maps link', inp(S, 'mapUrl', { id: id('mapUrl'), placeholder: 'https://maps.app.goo.gl/...' }), id('mapUrl')),
+        fld('Google review link (optional)', inp(S, 'reviewLink', { id: id('reviewLink'), placeholder: 'For the post-visit WhatsApp message' }), id('reviewLink'))),
       fld('Address', inp(S, 'address', { id: id('address') }), id('address')), fld('Line under the logo', inp(S, 'tagline', { id: id('tagline') }), id('tagline')),
       h('h2', { class: 'a-h2', style: 'margin-top:32px', text: 'Hours and booking rules' }),
       h('div', { class: 'a-grid' }, fld('Opens', h('input', { type: 'time', id: id('open'), value: S.open, onchange: e => { S.open = e.target.value; } }), id('open')), fld('Closes', h('input', { type: 'time', id: id('close'), value: S.close, onchange: e => { S.close = e.target.value; } }), id('close')),
