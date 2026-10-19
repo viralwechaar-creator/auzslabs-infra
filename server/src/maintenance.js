@@ -3,6 +3,7 @@
 // links are useless once expired. Failures are logged and never stop the server.
 import { pool } from './db.js';
 import { sendRenewalEmail } from './mail.js';
+import { runSalonDailySummaries } from './salon/daily-summary.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -45,6 +46,6 @@ export async function runBookingReminders() {
 
 export function startMaintenance() {
   if (process.env.DISABLE_MAINTENANCE === '1') return;
-  const runAll = () => { runMaintenance(); runRenewals(); runBookingReminders(); };
+  const runAll = () => { runMaintenance(); runRenewals(); runBookingReminders(); runSalonDailySummaries(); };
   setTimeout(() => { runAll(); setInterval(runAll, DAY).unref(); }, 60_000).unref();
 }

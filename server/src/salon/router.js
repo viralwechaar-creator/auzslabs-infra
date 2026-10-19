@@ -466,18 +466,28 @@ export async function handleSalon(req, res, ip) {
     if (method === 'GET' && p === '/admin/whatsapp') {
       await admin();
       const [{ rows: [s] }, { rows: tmpl }] = await Promise.all([
-        pool.query('select enabled, allow_platform from wa_tenant_settings where tenant_id = $1', [tid]),
-        pool.query("select key, name, body from wa_templates where audience = 'shop' order by key"),
+        pool.query('select enabled, allow_platform, events from wa_tenant_settings where tenant_id = $1', [tid]),
+        pool.query("select key, name, title, body from wa_templates where audience = 'shop' order by key"),
       ]);
-      return send(200, { enabled: !!(s && s.enabled), allowPlatform: !!(s && s.allow_platform), templates: tmpl });
+      const events = (s && s.events) || {};
+      return send(200, { enabled: !!(s && s.enabled), allowPlatform: !!(s && s.allow_platform),
+        templates: tmpl.map((t) => ({ ...t, on: events[t.key] !== false })) });
     }
     if (method === 'POST' && p === '/admin/whatsapp') {
       await admin(); noDemo();
       const enabled = !!body.enabled;
+      // `events`: an optional {templateKey: boolean} patch -- false switches that one message type off
+      // without touching the master switch or any other template (same mechanism db/184 documents).
+      // Merged, not replaced, so toggling one template never silently resets another the owner already set.
+      const patch = {};
+      if (body.events && typeof body.events === 'object') {
+        for (const [k, v] of Object.entries(body.events)) if (typeof v === 'boolean') patch[k] = v;
+      }
       await pool.query(
-        `insert into wa_tenant_settings (tenant_id, enabled) values ($1, $2)
-         on conflict (tenant_id) do update set enabled = excluded.enabled, updated_at = now()`,
-        [tid, enabled],
+        `insert into wa_tenant_settings (tenant_id, enabled, events) values ($1, $2, $3::jsonb)
+         on conflict (tenant_id) do update set enabled = excluded.enabled,
+           events = coalesce(wa_tenant_settings.events, '{}'::jsonb) || excluded.events, updated_at = now()`,
+        [tid, enabled, JSON.stringify(patch)],
       );
       return send(200, { ok: true, enabled });
     }

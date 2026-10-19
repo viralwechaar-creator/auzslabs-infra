@@ -1104,7 +1104,15 @@
             'Send WhatsApp messages automatically (bill ready)'),
           h('p', { class: 'a-note', style: 'margin-top:8px', text: w.allowPlatform
             ? 'Messages go out from the AUZslab WhatsApp number.'
-            : 'No WhatsApp number is set up for this salon yet. Contact AUZslab support to turn this on, or connect your own WhatsApp Business number.' }));
+            : 'No WhatsApp number is set up for this salon yet. Contact AUZslab support to turn this on, or connect your own WhatsApp Business number.' }),
+          !w.templates || !w.templates.length ? null : h('div', { style: 'margin-top:16px' },
+            h('p', { class: 'a-note', style: 'margin:0 0 8px', text: 'Turn specific messages off without switching off WhatsApp entirely:' }),
+            ...w.templates.map(t => h('label', { class: 'a-check', style: 'display:flex;align-items:center;gap:10px;margin-bottom:8px' },
+              h('input', { type: 'checkbox', checked: t.on, onchange: async e => {
+                const on = e.target.checked;
+                try { await api('POST', '/api/admin/whatsapp', { enabled: w.enabled, events: { [t.key]: on } }); toast((t.title || t.key) + (on ? ' is on' : ' is off')); }
+                catch (ex) { e.target.checked = !on; fail(ex); }
+              } }), t.title || t.key))));
       } catch (ex) { waBox.replaceChildren(h('p', { class: 'a-note', text: 'Could not load WhatsApp settings.' })); }
     })();
 
