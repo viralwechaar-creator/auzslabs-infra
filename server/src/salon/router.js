@@ -5,7 +5,7 @@ import { staffLogin, verifyToken } from '../auth.js';
 import { DOMAIN, cleanString, fail, hex6, htmlEsc, limited, normalizeOrigin, readBody, round2, sendJson, staffPhone, todayStr, validDate } from './util.js';
 import { bookingCounts, freshDb, loadDb, loadSite, mutate, mutateStaffAdmin, originAllowed, payrollOn, readKey, readStaffAdmin, reseedDemo, tenantFor, usesGeneric, writeKey, writeStaffAdmin } from './storage.js';
 import { clearSession, getSession, hashPassword, ownerPasswordOk, setSession, verifyScrypt } from './session.js';
-import { EXPENSE_CATEGORIES, addBooking, addCashMove, addExpense, addInvoice, cashRangeSummary, cashSummary, clientsList, computeSlots, deletePackageDef, publicSite, saveClientProfile, savePackageDef, sellPackage, settleInvoice } from './rules.js';
+import { EXPENSE_CATEGORIES, addBooking, addCashMove, addExpense, addInvoice, cashRangeSummary, cashSummary, clientsList, computeSlots, deletePackageDef, publicSite, saveClientProfile, savePackageDef, sellPackage, setCheckinStatus, settleInvoice, submitCheckin } from './rules.js';
 import { salonIcon, salonOgImage, saveUpload } from './brand.js';
 import { enqueueWa, sendOrRetryWa } from '../whatsapp.js';
 import { sendWebPush, vapidReady } from '../push.js';
@@ -149,6 +149,15 @@ export async function handleSalon(req, res, ip) {
       return send(201, { ok: true, booking });
     }
 
+    // ---- self check-in: a public, cookie-free endpoint a client's own phone hits after
+    // scanning the Settings -> check-in QR -- same corsPath/rate-limit discipline as /bookings above.
+    if (method === 'POST' && p === '/checkin') {
+      if (limited(`checkin:${tid}:${ip}`, 20, 60 * 60_000)) fail(429, 'Too many requests, please try again later.');
+      const c = await mutate(tenant, (db) => submitCheckin(db, body), ['site', 'data'], ['data']);
+      salonPush(tid, c.bookingId ? 'Check-in: add-on request' : 'New walk-in check-in', `${c.name} — ${c.services.length} service${c.services.length === 1 ? '' : 's'}`);
+      return send(201, { ok: true });
+    }
+
     if (method === 'POST' && p === '/admin/login') {
       if (limited(`salonlogin:${ip}`, 30, 15 * 60_000)) fail(429, 'Too many attempts. Try again later.');
       const password = String(body.password || body.pin || '');
@@ -245,13 +254,13 @@ export async function handleSalon(req, res, ip) {
           settings, menu: db.menu, content: {}, gallery: [], expenses: [],
           stylists: (db.stylists || []).filter((x) => x.visible && x.name !== 'Add name').map((x) => ({ id: x.id, name: x.name, role: x.role })),
           bookings: db.bookings || [], invoices: mine, clients: clientsList({ bookings: db.bookings, invoices: mine, clients: db.clients }),
-          packages: (db.packages || []).filter((x) => x.active !== false), clientPackages: db.clientPackages || [], today: todayStr(),
+          packages: (db.packages || []).filter((x) => x.active !== false), clientPackages: db.clientPackages || [], checkins: db.checkins || [], today: todayStr(),
         });
       }
       return send(200, {
         settings: db.settings, menu: db.menu, content: db.content, stylists: db.stylists || [], gallery: db.gallery || [],
         bookings: db.bookings || [], invoices: db.invoices || [], expenses: db.expenses || [], clients: clientsList(db),
-        packages: db.packages || [], clientPackages: db.clientPackages || [], today: todayStr(),
+        packages: db.packages || [], clientPackages: db.clientPackages || [], checkins: db.checkins || [], today: todayStr(),
       });
     }
 
@@ -292,6 +301,14 @@ export async function handleSalon(req, res, ip) {
       return send(200, { ok: true });
     }
     if (method === 'POST' && p === '/admin/bookings') { await member(); return send(201, { ok: true, booking: await mutate(tenant, (db) => addBooking(db, body, true), ['site', 'data'], ['data']) }); }
+
+    const ck = p.match(/^\/admin\/checkins\/(.+)$/);
+    if (method === 'PATCH' && ck) {
+      await member();
+      const id = decodeURIComponent(ck[1]);
+      const checkin = await mutate(tenant, (db) => setCheckinStatus(db, id, body.status), ['data']);
+      return send(200, { ok: true, checkin });
+    }
 
     if (method === 'POST' && p === '/admin/invoices') {
       const me = await member();

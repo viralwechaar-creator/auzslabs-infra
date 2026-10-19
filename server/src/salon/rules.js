@@ -68,6 +68,47 @@ export function addBooking(db, body, isAdminBooking) {
   return rec;
 }
 
+// ---- self check-in: the client scans a QR, fills their own phone/name and picks services
+// themselves -- so staff never has to ask for those face-to-face. Deliberately a review queue, not an
+// automatic bill (acceptCheckin/declineCheckin, router.js): a self-submitted request could have a typo
+// or a wrong service tapped, so staff glance at it and turn it into a bill with one tap, same pattern as
+// "Create bill from booking" already uses for a scheduled appointment.
+export function submitCheckin(db, body) {
+  if (cleanString(body.website, 200)) fail(400, 'Could not submit.'); // honeypot, same as addBooking
+  const name = cleanString(body.name, 100);
+  const phone = cleanPhone(body.phone);
+  const email = cleanString(body.email, 120);
+  const note = cleanString(body.note, 300);
+  const ids = Array.isArray(body.services) ? body.services.map((x) => cleanString(x, 100)).filter(Boolean) : [];
+  if (!name) fail(400, 'Name is required.');
+  if (!phone) fail(400, 'Phone number is required.');
+  if (!ids.length) fail(400, 'Choose at least one service.');
+  const all = (db.menu || []).flatMap((c) => c.items || []);
+  const services = ids.map((id) => all.find((i) => String(i.id) === id)).filter(Boolean).map((i) => ({ id: i.id, name: i.name, price: i.price }));
+  if (!services.length) fail(400, 'Selected services were not found.');
+  // Same-phone, today-or-later, still-open booking -- so staff see this as "wants to add services to
+  // their existing appointment," not a second, unrelated walk-in. Matched by phone only (a booking has
+  // no login to check against), same trust level as addBooking's own phone-based duplicate check.
+  const today = todayStr();
+  const match = (db.bookings || []).find((b) => b.phone === phone && b.date >= today && !['cancelled', 'completed'].includes(b.status));
+  const id = crypto.randomUUID();
+  const rec = {
+    id, name, phone, email, note, services, bookingId: match ? match.id : null,
+    status: 'new', createdAt: new Date().toISOString(),
+  };
+  db.checkins = db.checkins || [];
+  db.checkins.push(rec);
+  return rec;
+}
+export function setCheckinStatus(db, id, status) {
+  if (!['accepted', 'declined'].includes(status)) fail(400, 'Invalid status.');
+  const c = (db.checkins || []).find((x) => x.id === id);
+  if (!c) fail(404, 'Check-in not found.');
+  if (c.status !== 'new') fail(400, 'This check-in was already handled.');
+  c.status = status;
+  return c;
+}
+
 export function clientsList(db) {
   const map = new Map();
   const get = (phone, name, email) => {

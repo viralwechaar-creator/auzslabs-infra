@@ -68,7 +68,7 @@ export function freshDb(tenant) {
 // `loadDb()` / `mutate()` still hand handlers the familiar combined object, so
 // the endpoint code below is unchanged. Older salons were one 'db' row: it is
 // split on first use (initStorage) and kept as 'db_backup'.
-const DATA_FIELDS = ['bookings', 'invoices', 'expenses', 'counters', 'cashlog', 'clients', 'clientPackages'];
+const DATA_FIELDS = ['bookings', 'invoices', 'expenses', 'counters', 'cashlog', 'clients', 'clientPackages', 'checkins'];
 function splitDb(db) {
   const site = {}, data = {};
   for (const [k, v] of Object.entries(db || {})) (DATA_FIELDS.includes(k) ? data : site)[k] = v;
