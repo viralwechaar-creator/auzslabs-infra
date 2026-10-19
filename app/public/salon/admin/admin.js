@@ -349,7 +349,8 @@
 
   /* ---------- dashboard ---------- */
   function viewDashboard() {
-    setActions(btn('New bill', () => { B = newBill(); go('billing'); }), btn('Add booking', addBookingDialog, 'btn-alt'), isOwner() ? null : btn('My password', myPasswordDialog, 'btn-alt'));
+    setActions(btn('New bill', () => { B = newBill(); go('billing'); }), btn('Add booking', addBookingDialog, 'btn-alt'),
+      !isOwner() ? null : btn('Open register', () => go('cash'), 'btn-alt'), isOwner() ? null : btn('My password', myPasswordDialog, 'btn-alt'));
     const t = D.today, live = D.bookings.filter(b => b.status !== 'cancelled');
     const invM = D.invoices.filter(i => !i.void && i.date.startsWith(t.slice(0, 7)));
     const stats = [[live.filter(b => b.date === t).length, 'Bookings today'], [D.bookings.filter(b => b.status === 'pending').length, 'Waiting for confirmation'],
@@ -423,6 +424,11 @@
     const phoneEl = inp(B.client, 'phone', { id: 'bPhone', type: 'tel', list: 'clientList', autocomplete: 'off',
       onchange: e => { const c = D.clients.find(x => x.phone === e.target.value.replace(/\D/g, '').slice(-10)) || D.clients.find(x => x.phone === e.target.value); if (c) { B.client.name = c.name; B.client.email = c.email || ''; nameEl.value = c.name; emailEl.value = B.client.email; B.client.phone = c.phone; phoneEl.value = c.phone; } } });
     const emailEl = inp(B.client, 'email', { id: 'bEmail', type: 'email' });
+    const fillClient = c => { B.client.name = c.name; B.client.phone = c.phone; B.client.email = c.email || ''; nameEl.value = c.name; phoneEl.value = c.phone; emailEl.value = B.client.email; };
+    const recentClients = D.clients.slice().sort((a, b) => (b.last || '').localeCompare(a.last || '')).slice(0, 8);
+    const recentRow = !recentClients.length ? null : h('div', { style: 'margin:0 0 16px' },
+      h('p', { class: 'a-note', style: 'margin:0 0 6px', text: 'Recent clients — tap to fill in' }),
+      h('div', { class: 'a-row-actions', style: 'flex-wrap:wrap' }, recentClients.map(c => btn(c.name, () => fillClient(c), 'btn-sm btn-alt'))));
     const discRow = h('div', { class: 'row2' },
       fld('Discount type', h('select', { id: 'bDT', onchange: e => { B.discType = e.target.value; drawTotals(); } }, h('option', { value: 'flat', selected: B.discType === 'flat', text: 'Amount (rupees)' }), h('option', { value: 'percent', selected: B.discType === 'percent', text: 'Percent' })), 'bDT'),
       fld('Discount', h('input', { id: 'bDV', type: 'number', min: 0, step: 'any', value: B.discVal, oninput: e => { B.discVal = +e.target.value; drawTotals(); } }), 'bDV'));
@@ -437,7 +443,7 @@
     });
 
     const form = h('div', {},
-      h('h2', { class: 'a-h2', text: 'New bill' }), clientList, stylistList,
+      h('h2', { class: 'a-h2', text: 'New bill' }), clientList, stylistList, recentRow,
       h('div', { class: 'row2' }, fld('Client phone', phoneEl, 'bPhone'), fld('Client name', nameEl, 'bName')),
       h('div', { class: 'row2' }, fld('Email (optional)', emailEl, 'bEmail'), fld('Bill date', h('input', { type: 'date', id: 'bDate', value: B.date, onchange: e => { B.date = e.target.value; } }), 'bDate')),
       fld('Served by (optional)', inp(B, 'servedBy', { id: 'bBy', list: 'stylistList' }), 'bBy'),
