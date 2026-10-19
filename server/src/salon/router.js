@@ -2,8 +2,8 @@ import crypto from 'node:crypto';
 import { pool, withAuth } from '../db.js';
 import { captureError } from '../errors.js';
 import { staffLogin, verifyToken } from '../auth.js';
-import { DOMAIN, cleanString, fail, hex6, htmlEsc, limited, readBody, round2, sendJson, staffPhone, todayStr, validDate } from './util.js';
-import { bookingCounts, freshDb, loadDb, loadSite, mutate, mutateStaffAdmin, payrollOn, readKey, readStaffAdmin, reseedDemo, tenantFor, usesGeneric, writeKey, writeStaffAdmin } from './storage.js';
+import { DOMAIN, cleanString, fail, hex6, htmlEsc, limited, normalizeOrigin, readBody, round2, sendJson, staffPhone, todayStr, validDate } from './util.js';
+import { bookingCounts, freshDb, loadDb, loadSite, mutate, mutateStaffAdmin, originAllowed, payrollOn, readKey, readStaffAdmin, reseedDemo, tenantFor, usesGeneric, writeKey, writeStaffAdmin } from './storage.js';
 import { clearSession, getSession, hashPassword, ownerPasswordOk, setSession, verifyScrypt } from './session.js';
 import { EXPENSE_CATEGORIES, addBooking, addExpense, addInvoice, clientsList, computeSlots, publicSite } from './rules.js';
 import { salonIcon, salonOgImage, saveUpload } from './brand.js';
@@ -18,6 +18,24 @@ export async function handleSalon(req, res, ip) {
     const p = url.pathname.slice('/salon-api'.length) || '/';
     const tenant = await tenantFor(req);
     const tid = tenant.id;
+
+    // CORS, scoped to exactly the four public/cookie-free endpoints a tenant's own external website might call
+    // directly (never /admin/*, which stays same-origin-cookie-only). Origin is never trusted for tenant
+    // identification or authorization here -- tenantFor() above already resolved the tenant from Host alone;
+    // this only decides whether to let an approved origin's browser JS read the response. An unapproved/absent
+    // origin simply gets no CORS header (today's behavior, unchanged) -- the request itself still runs normally.
+    const corsPath = p === '/site' || p === '/slots' || p === '/bookings' || /^\/invoice\/[a-f0-9]{8,32}$/.test(p);
+    let corsOrigin = null;
+    if (corsPath && req.headers.origin) {
+      const norm = normalizeOrigin(req.headers.origin);
+      if (norm && await originAllowed(tid, norm)) corsOrigin = norm;
+    }
+    if (corsOrigin) { res.setHeader('Access-Control-Allow-Origin', corsOrigin); res.setHeader('Vary', 'Origin'); }
+    if (method === 'OPTIONS' && corsPath && corsOrigin) {
+      res.writeHead(204, { 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '600' });
+      return res.end();
+    }
+
     const body = ['POST', 'PUT', 'PATCH'].includes(method) ? await readBody(req) : {};
     const sess = getSession(req, tid);
     // member(): any signed-in console user (owner or an active staff member).

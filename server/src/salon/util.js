@@ -26,6 +26,20 @@ export const staffPhone = (v) => String(v || '').replace(/\D/g, '').slice(-10);
 export const hex6 = (v, d) => (/^#[0-9a-fA-F]{6}$/.test(v || '') ? v : d);
 export const htmlEsc = (v) => String(v || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+// Strict Origin-header normalizer for the public-endpoint CORS allowlist (router.js). Accepts only a bare
+// "scheme://host[:port]" (http/https), never a path, query, fragment, userinfo or wildcard -- the caller then
+// compares the *exact* returned string against a tenant's allowed-origins list, never a substring/suffix match.
+export function normalizeOrigin(raw) {
+  if (!raw || typeof raw !== 'string' || raw.length > 255 || /[*@]/.test(raw)) return null;
+  let u;
+  try { u = new URL(raw); } catch { return null; }
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+  if (u.username || u.password || u.search || u.hash) return null;
+  if (u.pathname !== '/' && u.pathname !== '') return null;
+  const norm = `${u.protocol}//${u.host}`;
+  return norm === raw || norm === raw.replace(/\/$/, '') ? norm : null;
+}
+
 const rl = new Map();
 export function limited(key, limit, windowMs) {
   const now = Date.now();
