@@ -129,36 +129,59 @@
     go(location.hash.slice(1) in VIEWS && allowed(location.hash.slice(1)) ? location.hash.slice(1) : 'dashboard');
   }
 
-  const TITLES = { dashboard: 'Today', bookings: 'Bookings', billing: 'Billing', clients: 'Clients', menu: 'Menu and prices', stylists: 'Hairstylists', gallery: 'Gallery', content: 'Website text', settings: 'Settings', expenses: 'Expenses', cash: 'Cash register', packages: 'Packages', analytics: 'Analytics', staff: 'Staff' };
-  const ICONS = { dashboard: 'grid', bookings: 'calendar', billing: 'receipt', clients: 'users', menu: 'list', stylists: 'cut', gallery: 'pics', content: 'doc', settings: 'gear', expenses: 'wallet', cash: 'wallet', packages: 'star', analytics: 'chart', staff: 'chair' };
+  const TITLES = { dashboard: 'Today', bookings: 'Bookings', checkins: 'Check-ins', billing: 'Billing', clients: 'Clients', packages: 'Packages', cash: 'Cash register', expenses: 'Expenses', analytics: 'Analytics', menu: 'Menu and prices', stylists: 'Hairstylists', gallery: 'Gallery', content: 'Website text', staff: 'Staff', settings: 'Settings' };
+  const ICONS = { dashboard: 'grid', bookings: 'calendar', checkins: 'wave', billing: 'receipt', clients: 'users', packages: 'star', cash: 'wallet', expenses: 'wallet', analytics: 'chart', menu: 'list', stylists: 'cut', gallery: 'pics', content: 'doc', staff: 'chair', settings: 'gear' };
   const PRIMARY = ['dashboard', 'bookings', 'billing', 'clients'];
-  /* Staff logins see exactly the PRIMARY four. This is only the UI half: the API
-     refuses every other endpoint for a staff session (server/src/salon.js). */
-  const allowed = k => isOwner() || PRIMARY.includes(k);
+  /* Everything outside PRIMARY is grouped under labelled headers in the side nav
+     (desktop) and the More sheet (phone) -- a flat 13-item list was hard to scan. */
+  const GROUPS = [
+    { label: 'Front desk', keys: ['dashboard', 'bookings', 'checkins', 'billing', 'clients'] },
+    { label: 'Business', keys: ['packages', 'cash', 'expenses', 'analytics'] },
+    { label: 'Set up', keys: ['menu', 'stylists', 'gallery', 'content', 'staff', 'settings'] },
+  ];
+  /* Staff logins see the PRIMARY four plus Check-ins (turning one into a bill is
+     the same job as billing a walk-in). This is only the UI half: the API refuses
+     every other endpoint for a staff session (server/src/salon/router.js). */
+  const STAFF_ALSO = ['checkins'];
+  const allowed = k => isOwner() || PRIMARY.includes(k) || STAFF_ALSO.includes(k);
   const SECONDARY = () => Object.keys(TITLES).filter(k => !PRIMARY.includes(k) && allowed(k));
+  const pendingCount = k => k === 'bookings' ? D.bookings.filter(b => b.status === 'pending').length
+    : k === 'checkins' ? (D.checkins || []).filter(c => c.status === 'new').length : 0;
 
   function renderNav() {
-    const pending = D.bookings.filter(b => b.status === 'pending').length;
     const items = Object.entries(TITLES).filter(([k]) => allowed(k));
     $('#rail').replaceChildren(...items.map(([k, t]) => h('button', { type: 'button', title: t, 'aria-label': t, 'aria-current': k === current ? 'page' : null, onclick: () => go(k) }, icon(ICONS[k]))));
-    $('#sideNav').replaceChildren(...items.map(([k, t]) => h('button', { type: 'button', 'aria-current': k === current ? 'page' : null, onclick: () => go(k) },
-      icon(ICONS[k]), h('span', { class: 'a-nav-label', text: t }), k === 'bookings' && pending ? h('span', { class: 'badge', text: pending }) : null)));
+
+    $('#sideNav').replaceChildren(...GROUPS.flatMap((g, gi) => {
+      const keys = g.keys.filter(k => allowed(k) && TITLES[k]);
+      if (!keys.length) return [];
+      return [
+        gi ? h('div', { class: 'a-nav-sep' }) : null,
+        h('div', { class: 'a-nav-group', text: g.label }),
+        ...keys.map(k => h('button', { type: 'button', 'aria-current': k === current ? 'page' : null, onclick: () => go(k) },
+          icon(ICONS[k]), h('span', { class: 'a-nav-label', text: TITLES[k] }), pendingCount(k) ? h('span', { class: 'badge', text: pendingCount(k) }) : null)),
+      ];
+    }));
 
     const inMore = SECONDARY().includes(current);
     $('#tabbar').replaceChildren(
       ...PRIMARY.map(k => h('button', { type: 'button', 'aria-current': k === current ? 'page' : null, onclick: () => go(k) },
-        icon(ICONS[k]), h('span', { text: TITLES[k] }), k === 'bookings' && pending ? h('span', { class: 'a-tab-dot' }) : null)),
-      h('button', { type: 'button', 'aria-current': inMore ? 'page' : null, onclick: openMore }, icon('dots'), h('span', { text: 'More' })));
+        icon(ICONS[k]), h('span', { text: TITLES[k] }), pendingCount(k) ? h('span', { class: 'a-tab-dot' }) : null)),
+      h('button', { type: 'button', 'aria-current': inMore ? 'page' : null, onclick: openMore }, icon('dots'), h('span', { text: 'More' }), (SECONDARY().some(k => pendingCount(k))) ? h('span', { class: 'a-tab-dot' }) : null));
   }
 
   function openMore() {
-    const pending = D.bookings.filter(b => b.status === 'pending').length;
     const d = h('dialog', { class: 'a-dialog' },
       h('button', { type: 'button', class: 'a-dialog-close', 'aria-label': 'Close', onclick: () => d.close() }, icon('close')),
       h('h2', { text: 'More' }),
       h('div', { class: 'a-more-list' },
-        SECONDARY().map(k => h('button', { type: 'button', 'aria-current': k === current ? 'page' : null, onclick: () => { d.close(); go(k); } },
-          icon(ICONS[k]), TITLES[k], k === 'bookings' && pending ? h('span', { class: 'badge', text: pending }) : null)),
+        GROUPS.flatMap(g => {
+          const keys = g.keys.filter(k => allowed(k) && SECONDARY().includes(k));
+          if (!keys.length) return [];
+          return [h('div', { class: 'a-more-group', text: g.label }),
+            ...keys.map(k => h('button', { type: 'button', 'aria-current': k === current ? 'page' : null, onclick: () => { d.close(); go(k); } },
+              icon(ICONS[k]), TITLES[k], pendingCount(k) ? h('span', { class: 'badge', text: pendingCount(k) }) : null))];
+        }),
         h('div', { class: 'a-more-sep' }),
         h('a', { href: '/salon/', target: '_blank', rel: 'noopener' }, icon('doc'), 'View website'),
         h('button', { type: 'button', onclick: () => { d.close(); window.auzHelp && auzHelp.open(null); } }, icon('doc'), 'Help & report a problem'),
@@ -367,8 +390,12 @@
       c.bills++; c.revenue += i.total; byServer.set(name, c);
     }
     const teamToday = [...byServer.values()].sort((a, b) => b.revenue - a.revenue);
+    const waitingCheckins = (D.checkins || []).filter(c => c.status === 'new').length;
     view().replaceChildren(
       punchCard(),
+      !waitingCheckins ? null : h('div', { class: 'a-card', style: 'margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap' },
+        h('span', {}, h('b', { text: waitingCheckins + (waitingCheckins === 1 ? ' client has' : ' clients have') + ' checked themselves in' }), ' — waiting to be turned into a bill.'),
+        btn('Review check-ins', () => go('checkins'), 'btn-sm')),
       h('div', { class: 'a-stats' }, stats.map(([n, l]) => h('div', { class: 'a-stat' }, h('b', { text: n }), h('span', { text: l })))),
       h('div', { class: 'a-section' }, h('h2', { class: 'a-h2', text: 'Coming up' }), bookingTable(up)),
       !teamToday.length ? null : h('div', { class: 'a-section' }, h('h2', { class: 'a-h2', text: 'Today\'s team' }),
@@ -384,6 +411,39 @@
     const idx = menuIndex();
     return newBill({ client: { name: b.name, phone: b.phone, email: b.email || '' }, date: b.date < D.today ? D.today : b.date, bookingId: b.id,
       items: b.services.map(s => { const m = idx.get(s.id); return { name: s.name, qty: 1, price: m ? m.price : 0 }; }) });
+  }
+  function billFromCheckin(c) {
+    const idx = menuIndex();
+    return newBill({ client: { name: c.name, phone: c.phone, email: c.email || '' }, date: D.today, bookingId: c.bookingId || '', note: c.note || '',
+      items: c.services.map(s => { const m = idx.get(s.id); return { name: s.name, qty: 1, price: m ? m.price : s.price || 0 }; }) });
+  }
+
+  /* ---------- self check-in queue (client scans a QR, picks their own services) ---------- */
+  function viewCheckins() {
+    const list = (D.checkins || []).slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const waiting = list.filter(c => c.status === 'new');
+    const handled = list.filter(c => c.status !== 'new');
+    async function act(c, status) {
+      try {
+        await api('PATCH', '/api/admin/checkins/' + c.id, { status });
+        await load();
+        if (status === 'accepted') { B = billFromCheckin(c); toast('Added to a new bill'); go('billing'); } else { rerender(); toast('Check-in declined'); }
+      } catch (ex) { fail(ex); }
+    }
+    const row = c => h('div', { class: 'a-card', style: 'margin-bottom:12px' },
+      h('div', { style: 'display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap' },
+        h('div', {},
+          h('b', { text: c.name }), h('br'),
+          h('span', { class: 'muted', text: c.phone + (c.email ? ' · ' + c.email : '') }), h('br'),
+          h('span', { text: c.services.map(s => s.name).join(', ') }),
+          c.note ? [h('br'), h('span', { class: 'muted', text: 'Note: ' + c.note })] : null,
+          c.bookingId ? [h('br'), h('span', { class: 'muted', text: 'Matches an existing booking' })] : null),
+        c.status === 'new' ? h('div', { class: 'a-row-actions', style: 'align-items:flex-start' },
+          btn('Create bill', () => act(c, 'accepted'), 'btn-sm'),
+          btn('Decline', () => act(c, 'declined'), 'btn-sm btn-alt')) : h('span', { class: 'badge-s ' + c.status, text: c.status === 'accepted' ? 'Billed' : 'Declined' })));
+    view().replaceChildren(
+      waiting.length ? waiting.map(row) : emptyNote('No one is waiting. Put the check-in QR code up at your counter (Settings) so clients can check themselves in.', 'wave'),
+      handled.length ? h('div', { class: 'a-section', style: 'margin-top:28px' }, h('h2', { class: 'a-h2', text: 'Earlier today' }), handled.slice(0, 20).map(row)) : null);
   }
   const calc = b => {
     const sub = b.items.reduce((a, i) => a + (+i.qty || 0) * (+i.price || 0), 0);
@@ -1266,24 +1326,29 @@
     const notifyBox = h('div', { class: 'a-card', style: 'max-width:420px' });
     drawNotifyBox(notifyBox);
 
-    const qrUrl = location.origin + '/salon/menu/';
-    const qrPic = h('div', { class: 'pic', style: 'aspect-ratio:1;background:#fff' });
-    let qrCanvas = null;
-    function drawQr() {
+    function qrCard(url, filename) {
+      const pic = h('div', { class: 'pic', style: 'aspect-ratio:1;background:#fff' });
       const qr = qrcode(0, 'M');
-      qr.addData(qrUrl);
+      qr.addData(url);
       qr.make();
       const count = qr.getModuleCount(), margin = 2;
       const cell = Math.max(6, Math.round(480 / (count + margin * 2)));
       const size = (count + margin * 2) * cell;
-      qrCanvas = h('canvas', { width: size, height: size, style: 'width:100%;height:100%' });
-      const ctx = qrCanvas.getContext('2d');
+      const canvas = h('canvas', { width: size, height: size, style: 'width:100%;height:100%' });
+      const ctx = canvas.getContext('2d');
       ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, size, size);
       ctx.fillStyle = S.theme.plum || '#391D21';
       for (let r = 0; r < count; r++) for (let c = 0; c < count; c++) if (qr.isDark(r, c)) ctx.fillRect((c + margin) * cell, (r + margin) * cell, cell, cell);
-      qrPic.replaceChildren(qrCanvas);
+      pic.replaceChildren(canvas);
+      return h('div', { class: 'a-card', style: 'max-width:260px;text-align:center' },
+        pic,
+        h('p', { class: 'a-note', style: 'word-break:break-all', text: url }),
+        h('div', { class: 'a-row-actions', style: 'justify-content:center;margin-top:10px' },
+          btn('Copy link', async () => { try { await navigator.clipboard.writeText(url); toast('Link copied'); } catch { toast(url); } }, 'btn-sm btn-alt'),
+          btn('Download QR', () => { const a = document.createElement('a'); a.href = canvas.toDataURL('image/png'); a.download = filename; a.click(); }, 'btn-sm btn-alt')));
     }
-    drawQr();
+    const qrUrl = location.origin + '/salon/menu/';
+    const checkinUrl = location.origin + '/salon/checkin/';
 
     view().replaceChildren(h('div', { style: 'max-width:760px' },
       h('h2', { class: 'a-h2', text: 'Branding' }),
@@ -1296,12 +1361,10 @@
       musicBox,
       h('h2', { class: 'a-h2', style: 'margin-top:32px', text: 'Share your menu' }),
       h('p', { class: 'muted', style: 'margin-bottom:12px', text: 'Print this at the counter or entrance. Scanning it opens your treatment menu, where clients can browse and pick services before booking.' }),
-      h('div', { class: 'a-card', style: 'max-width:260px;text-align:center' },
-        qrPic,
-        h('p', { class: 'a-note', style: 'word-break:break-all', text: qrUrl }),
-        h('div', { class: 'a-row-actions', style: 'justify-content:center;margin-top:10px' },
-          btn('Copy link', async () => { try { await navigator.clipboard.writeText(qrUrl); toast('Link copied'); } catch { toast(qrUrl); } }, 'btn-sm btn-alt'),
-          btn('Download QR', () => { const a = document.createElement('a'); a.href = qrCanvas.toDataURL('image/png'); a.download = 'menu-qr.png'; a.click(); }, 'btn-sm btn-alt'))),
+      qrCard(qrUrl, 'menu-qr.png'),
+      h('h2', { class: 'a-h2', style: 'margin-top:32px', text: 'Self check-in' }),
+      h('p', { class: 'muted', style: 'margin-bottom:12px', text: 'Put this up at the counter too. A client scans it, fills in their own name, phone and the services they want, and it lands in Check-ins for your team to turn into a bill with one tap — no need to ask them face to face.' }),
+      qrCard(checkinUrl, 'checkin-qr.png'),
       h('h2', { class: 'a-h2', style: 'margin-top:32px', text: 'Salon details' }),
       h('div', { class: 'a-grid' }, fld('Salon name', inp(S, 'salonName', { id: id('salonName') }), id('salonName')), fld('Phone', inp(S, 'phone', { id: id('phone'), type: 'tel' }), id('phone')),
         fld('WhatsApp number (for the Book form)', inp(S, 'whatsapp', { id: id('whatsapp'), type: 'tel', placeholder: '10 digit number' }), id('whatsapp')), fld('Email', inp(S, 'email', { id: id('email') }), id('email')),
@@ -1332,6 +1395,6 @@
       sticky(btn('Save settings', async () => { if (await saveSection('settings', S)) await load(); })));
   }
 
-  const VIEWS = { staff: viewStaff, dashboard: viewDashboard, bookings: viewBookings, billing: viewBilling, clients: viewClients, menu: viewMenu, stylists: viewStylists, gallery: viewGallery, content: viewContent, settings: viewSettings, expenses: viewExpenses, cash: viewCash, packages: viewPackages, analytics: viewAnalytics };
+  const VIEWS = { staff: viewStaff, dashboard: viewDashboard, bookings: viewBookings, checkins: viewCheckins, billing: viewBilling, clients: viewClients, menu: viewMenu, stylists: viewStylists, gallery: viewGallery, content: viewContent, settings: viewSettings, expenses: viewExpenses, cash: viewCash, packages: viewPackages, analytics: viewAnalytics };
   boot();
 })();
