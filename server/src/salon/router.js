@@ -2,11 +2,36 @@ import crypto from 'node:crypto';
 import { pool, withAuth } from '../db.js';
 import { captureError } from '../errors.js';
 import { staffLogin, verifyToken } from '../auth.js';
-import { cleanString, fail, hex6, htmlEsc, limited, readBody, round2, sendJson, staffPhone, todayStr, validDate } from './util.js';
-import { bookingCounts, freshDb, loadDb, loadSite, mutate, mutateStaffAdmin, payrollOn, readKey, readStaffAdmin, reseedDemo, tenantFor, usesGeneric, writeKey, writeStaffAdmin } from './storage.js';
+import { DOMAIN, cleanString, fail, hex6, htmlEsc, limited, normalizeOrigin, readBody, round2, sendJson, staffPhone, todayStr, validDate } from './util.js';
+import { bookingCounts, freshDb, loadDb, loadSite, mutate, mutateStaffAdmin, originAllowed, payrollOn, readKey, readStaffAdmin, reseedDemo, tenantFor, usesGeneric, writeKey, writeStaffAdmin } from './storage.js';
 import { clearSession, getSession, hashPassword, ownerPasswordOk, setSession, verifyScrypt } from './session.js';
-import { EXPENSE_CATEGORIES, addBooking, addExpense, addInvoice, clientsList, computeSlots, publicSite } from './rules.js';
+import { EXPENSE_CATEGORIES, addBooking, addCashMove, addExpense, addInvoice, cashRangeSummary, cashSummary, clientsList, computeSlots, deletePackageDef, publicSite, saveClientProfile, savePackageDef, sellPackage, setCheckinStatus, settleInvoice, submitCheckin } from './rules.js';
 import { salonIcon, salonOgImage, saveUpload } from './brand.js';
+import { enqueueWa, sendOrRetryWa } from '../whatsapp.js';
+import { sendWebPush, vapidReady } from '../push.js';
+
+// Live browser notifications for the owner/staff console (new booking, new bill, staff clock-in/out --
+// db/193). Direct JS call for the same reason enqueueWa() above is: nothing here is a SQL row a
+// trigger could watch. Never throws -- a notification failure can never block the real action.
+async function salonPush(tid, title, body) {
+  try {
+    if (!vapidReady()) { console.warn('salon push: VAPID keys not configured, skipping'); return; }
+    const { rows: subs } = await pool.query('select * from salon_push_subs where tenant_id = $1', [tid]);
+    console.log(`salon push: sending "${title}" to ${subs.length} device(s) for tenant ${tid}`);
+    await Promise.allSettled(subs.map(async (s) => {
+      try {
+        const res = await sendWebPush(s.endpoint, s.p256dh, s.auth, { title, body, tag: 'salon' });
+        if (!res.ok) {
+          const text = await res.text().catch(() => '');
+          console.error(`salon push failed: ${res.status} ${text} (endpoint ${s.endpoint.slice(0, 60)}...)`);
+          if (res.status === 404 || res.status === 410) await pool.query('delete from salon_push_subs where id = $1', [s.id]);
+        } else {
+          console.log(`salon push sent ok (endpoint ${s.endpoint.slice(0, 60)}...)`);
+        }
+      } catch (e) { console.error('salon push error:', e.message); }
+    }));
+  } catch (e) { console.error('salon push outer error:', e.message); }
+}
 
 // Entry point: index.js hands over every request whose path starts with
 // /salon-api (Caddy rewrites /api/* on tenant subdomains to it).
@@ -17,6 +42,24 @@ export async function handleSalon(req, res, ip) {
     const p = url.pathname.slice('/salon-api'.length) || '/';
     const tenant = await tenantFor(req);
     const tid = tenant.id;
+
+    // CORS, scoped to exactly the four public/cookie-free endpoints a tenant's own external website might call
+    // directly (never /admin/*, which stays same-origin-cookie-only). Origin is never trusted for tenant
+    // identification or authorization here -- tenantFor() above already resolved the tenant from Host alone;
+    // this only decides whether to let an approved origin's browser JS read the response. An unapproved/absent
+    // origin simply gets no CORS header (today's behavior, unchanged) -- the request itself still runs normally.
+    const corsPath = p === '/site' || p === '/slots' || p === '/bookings' || /^\/invoice\/[a-f0-9]{8,32}$/.test(p);
+    let corsOrigin = null;
+    if (corsPath && req.headers.origin) {
+      const norm = normalizeOrigin(req.headers.origin);
+      if (norm && await originAllowed(tid, norm)) corsOrigin = norm;
+    }
+    if (corsOrigin) { res.setHeader('Access-Control-Allow-Origin', corsOrigin); res.setHeader('Vary', 'Origin'); }
+    if (method === 'OPTIONS' && corsPath && corsOrigin) {
+      res.writeHead(204, { 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '600' });
+      return res.end();
+    }
+
     const body = ['POST', 'PUT', 'PATCH'].includes(method) ? await readBody(req) : {};
     const sess = getSession(req, tid);
     // member(): any signed-in console user (owner or an active staff member).
@@ -102,7 +145,17 @@ export async function handleSalon(req, res, ip) {
     if (method === 'POST' && p === '/bookings') {
       if (limited(`book:${tid}:${ip}`, 20, 60 * 60_000)) fail(429, 'Too many requests, please try again later.');
       const booking = await mutate(tenant, (db) => addBooking(db, body, false), ['site', 'data'], ['data']);
+      salonPush(tid, 'New booking', `${booking.name} — ${booking.date} ${booking.time}`);
       return send(201, { ok: true, booking });
+    }
+
+    // ---- self check-in: a public, cookie-free endpoint a client's own phone hits after
+    // scanning the Settings -> check-in QR -- same corsPath/rate-limit discipline as /bookings above.
+    if (method === 'POST' && p === '/checkin') {
+      if (limited(`checkin:${tid}:${ip}`, 20, 60 * 60_000)) fail(429, 'Too many requests, please try again later.');
+      const c = await mutate(tenant, (db) => submitCheckin(db, body), ['site', 'data'], ['data']);
+      salonPush(tid, c.bookingId ? 'Check-in: add-on request' : 'New walk-in check-in', `${c.name} — ${c.services.length} service${c.services.length === 1 ? '' : 's'}`);
+      return send(201, { ok: true });
     }
 
     if (method === 'POST' && p === '/admin/login') {
@@ -200,12 +253,14 @@ export async function handleSalon(req, res, ip) {
         return send(200, {
           settings, menu: db.menu, content: {}, gallery: [], expenses: [],
           stylists: (db.stylists || []).filter((x) => x.visible && x.name !== 'Add name').map((x) => ({ id: x.id, name: x.name, role: x.role })),
-          bookings: db.bookings || [], invoices: mine, clients: clientsList({ bookings: db.bookings, invoices: mine }), today: todayStr(),
+          bookings: db.bookings || [], invoices: mine, clients: clientsList({ bookings: db.bookings, invoices: mine, clients: db.clients }),
+          packages: (db.packages || []).filter((x) => x.active !== false), clientPackages: db.clientPackages || [], checkins: db.checkins || [], today: todayStr(),
         });
       }
       return send(200, {
         settings: db.settings, menu: db.menu, content: db.content, stylists: db.stylists || [], gallery: db.gallery || [],
-        bookings: db.bookings || [], invoices: db.invoices || [], expenses: db.expenses || [], clients: clientsList(db), today: todayStr(),
+        bookings: db.bookings || [], invoices: db.invoices || [], expenses: db.expenses || [], clients: clientsList(db),
+        packages: db.packages || [], clientPackages: db.clientPackages || [], checkins: db.checkins || [], today: todayStr(),
       });
     }
 
@@ -247,7 +302,104 @@ export async function handleSalon(req, res, ip) {
     }
     if (method === 'POST' && p === '/admin/bookings') { await member(); return send(201, { ok: true, booking: await mutate(tenant, (db) => addBooking(db, body, true), ['site', 'data'], ['data']) }); }
 
-    if (method === 'POST' && p === '/admin/invoices') { const me = await member(); return send(201, { ok: true, invoice: await mutate(tenant, (db) => addInvoice(db, body, me), ['site', 'data'], ['data']) }); }
+    const ck = p.match(/^\/admin\/checkins\/(.+)$/);
+    if (method === 'PATCH' && ck) {
+      await member();
+      const id = decodeURIComponent(ck[1]);
+      const checkin = await mutate(tenant, (db) => setCheckinStatus(db, id, body.status), ['data']);
+      return send(200, { ok: true, checkin });
+    }
+
+    if (method === 'POST' && p === '/admin/invoices') {
+      const me = await member();
+      const invoice = await mutate(tenant, (db) => addInvoice(db, body, me), ['site', 'data'], ['data']);
+      // WhatsApp "your bill is ready" link (invoice_link, db/184) -- a direct JS call since a salon's
+      // bills are a JSON blob mutated here, not a row a SQL trigger could watch (see db/190's own
+      // comment). enqueueWa() never throws and wa_enqueue() itself already checks the owner's
+      // wa_tenant_settings.enabled switch, so this can never block saving the invoice.
+      if (invoice && invoice.client && invoice.client.phone && DOMAIN) {
+        await enqueueWa(tid, invoice.client.phone, 'invoice_link',
+          [invoice.client.name || 'there', tenant.name || 'us', invoice.no, invoice.total.toFixed(2),
+           `https://${tenant.slug}.${DOMAIN}/i/${invoice.token}`],
+          invoice.id + '-bill');
+      }
+      salonPush(tid, 'New bill', `${(invoice.client && invoice.client.name) || 'A customer'} — ₹${invoice.total.toFixed(2)}`);
+      return send(201, { ok: true, invoice });
+    }
+
+    // ---- cash register (opening float, cash in/out, closing count) + payment-mode settlement ----
+    // Open to any signed-in console user (member(), not admin()): the same trust level as creating a
+    // bill or taking a booking -- a cashier opens/closes the drawer they're working from, same as the
+    // main POS's own cash drawer. All arithmetic lives in rules.js (addCashMove/cashSummary), never here.
+    if (method === 'POST' && p === '/admin/cash/move') {
+      const me = await member();
+      const entry = await mutate(tenant, (db) => addCashMove(db, body, me), ['site', 'data'], ['data']);
+      return send(201, { ok: true, entry });
+    }
+    if (method === 'GET' && p === '/admin/cash/summary') {
+      await member();
+      const date = String(url.searchParams.get('date') || todayStr());
+      return send(200, cashSummary(await loadDb(tenant), date));
+    }
+    if (method === 'GET' && p === '/admin/cash/range') {
+      await member();
+      const from = String(url.searchParams.get('from') || todayStr());
+      const to = String(url.searchParams.get('to') || todayStr());
+      return send(200, cashRangeSummary(await loadDb(tenant), from, to));
+    }
+
+    // ---- client profiles (dob/anniversary/notes, db/196) -- open to any signed-in console user, same
+    // trust level as billing/bookings: a staffer entering a client's birthday is no more sensitive than
+    // them entering the client's name and phone on a bill.
+    if (method === 'POST' && p === '/admin/clients') {
+      await member();
+      const client = await mutate(tenant, (db) => saveClientProfile(db, body), ['site', 'data'], ['data']);
+      return send(201, { ok: true, client });
+    }
+
+    // ---- packages / memberships (db/196) ----
+    if (method === 'POST' && p === '/admin/packages') {
+      await admin(); noDemo();
+      const pkg = await mutate(tenant, (db) => savePackageDef(db, body), ['site']);
+      return send(201, { ok: true, package: pkg });
+    }
+    const pk = p.match(/^\/admin\/packages\/(.+)$/);
+    if (method === 'DELETE' && pk) {
+      await admin(); noDemo();
+      const id = decodeURIComponent(pk[1]);
+      await mutate(tenant, (db) => deletePackageDef(db, id), ['site']);
+      return send(200, { ok: true });
+    }
+    if (method === 'POST' && p === '/admin/packages/sell') {
+      const me = await member();
+      const rec = await mutate(tenant, (db) => sellPackage(db, body), ['site', 'data'], ['data']);
+      return send(201, { ok: true, clientPackage: rec });
+    }
+
+    const ivWa = p.match(/^\/admin\/invoices\/(.+)\/whatsapp$/);
+    if (method === 'POST' && ivWa) {
+      await member();
+      const id = decodeURIComponent(ivWa[1]);
+      const db = await loadDb(tenant);
+      const invoice = (db.invoices || []).find((x) => String(x.id) === id);
+      if (!invoice) fail(404, 'Invoice not found.');
+      if (invoice.void) fail(400, 'This invoice was voided.');
+      if (!invoice.client || !invoice.client.phone) fail(400, 'No phone number on this bill.');
+      if (!DOMAIN) fail(400, 'WhatsApp sending is not set up on this server.');
+      const r = await sendOrRetryWa(tid, invoice.client.phone, 'invoice_link',
+        [invoice.client.name || 'there', tenant.name || 'us', invoice.no, invoice.total.toFixed(2),
+         `https://${tenant.slug}.${DOMAIN}/i/${invoice.token}`],
+        invoice.id + '-bill');
+      if (!r.ok) fail(400, r.reason === 'disabled' ? 'Automatic WhatsApp sending is off. Turn it on in Settings, or use the Send on WhatsApp link.' : 'Could not send.');
+      return send(200, { ok: true, status: r.status });
+    }
+    const ivSettle = p.match(/^\/admin\/invoices\/(.+)\/settle$/);
+    if (method === 'POST' && ivSettle) {
+      const me = await member();
+      const id = decodeURIComponent(ivSettle[1]);
+      const invoice = await mutate(tenant, (db) => settleInvoice(db, id), ['site', 'data'], ['data']);
+      return send(200, { ok: true, invoice });
+    }
     const iv = p.match(/^\/admin\/invoices\/(.+)$/);
     if (method === 'DELETE' && iv) {
       await admin();
@@ -339,6 +491,60 @@ export async function handleSalon(req, res, ip) {
       return send(200, { ok: true });
     }
 
+    if (method === 'POST' && p === '/admin/push/subscribe') {
+      await member();
+      const endpoint = String(body.endpoint || '');
+      const p256dh = String((body.keys && body.keys.p256dh) || body.p256dh || '');
+      const auth = String((body.keys && body.keys.auth) || body.auth || '');
+      if (!endpoint || !p256dh || !auth) fail(400, 'Missing subscription details.');
+      await pool.query(
+        'insert into salon_push_subs (tenant_id, endpoint, p256dh, auth) values ($1, $2, $3, $4) ' +
+        'on conflict (tenant_id, endpoint) do update set p256dh = excluded.p256dh, auth = excluded.auth',
+        [tid, endpoint, p256dh, auth],
+      );
+      return send(200, { ok: true });
+    }
+    if (method === 'POST' && p === '/admin/push/unsubscribe') {
+      await member();
+      const endpoint = String(body.endpoint || '');
+      if (endpoint) await pool.query('delete from salon_push_subs where tenant_id = $1 and endpoint = $2', [tid, endpoint]);
+      return send(200, { ok: true });
+    }
+
+
+    // ---- WhatsApp automation (db/184/db/190) ----
+    // The salon console authenticates with its own cookie session (admin()/member() above), never
+    // the generic auth_users JWT, so it can't call wa_save_settings/wa_my_status (which key off
+    // app_uid()). wa_tenant_settings has no RLS (same raw-pool-only pattern as phone_otps/payments --
+    // see CLAUDE.md), so a plain pool query here, already gated by admin(), is the right shape.
+    if (method === 'GET' && p === '/admin/whatsapp') {
+      await admin();
+      const [{ rows: [s] }, { rows: tmpl }] = await Promise.all([
+        pool.query('select enabled, allow_platform, events from wa_tenant_settings where tenant_id = $1', [tid]),
+        pool.query("select key, name, title, body from wa_templates where audience = 'shop' order by key"),
+      ]);
+      const events = (s && s.events) || {};
+      return send(200, { enabled: !!(s && s.enabled), allowPlatform: !!(s && s.allow_platform),
+        templates: tmpl.map((t) => ({ ...t, on: events[t.key] !== false })) });
+    }
+    if (method === 'POST' && p === '/admin/whatsapp') {
+      await admin(); noDemo();
+      const enabled = !!body.enabled;
+      // `events`: an optional {templateKey: boolean} patch -- false switches that one message type off
+      // without touching the master switch or any other template (same mechanism db/184 documents).
+      // Merged, not replaced, so toggling one template never silently resets another the owner already set.
+      const patch = {};
+      if (body.events && typeof body.events === 'object') {
+        for (const [k, v] of Object.entries(body.events)) if (typeof v === 'boolean') patch[k] = v;
+      }
+      await pool.query(
+        `insert into wa_tenant_settings (tenant_id, enabled, events) values ($1, $2, $3::jsonb)
+         on conflict (tenant_id) do update set enabled = excluded.enabled,
+           events = coalesce(wa_tenant_settings.events, '{}'::jsonb) || excluded.events, updated_at = now()`,
+        [tid, enabled, JSON.stringify(patch)],
+      );
+      return send(200, { ok: true, enabled });
+    }
 
     // ---- staff accounts (owner only) ----
     const staffView = (st, invoices) => ({
@@ -351,7 +557,19 @@ export async function handleSalon(req, res, ip) {
       const db = await loadDb(tenant);
       const d = (await readStaffAdmin(tenant, 'staff')) || { list: [] };
       const pay = await payrollOn(tid);
-      return send(200, { payroll: pay, staff: d.list.map((st) => staffView(st, db.invoices)), employees: pay ? (await pool.query('select salon_hr_list($1) as l', [tid])).rows[0].l : [] });
+      const staff = d.list.map((st) => staffView(st, db.invoices));
+      // Live clock-in state, for the "who's working right now" row on Today -- only meaningful with the
+      // Payroll add-on on (a salon staff login is linked to a pay_employees row only then, see
+      // salon_hr_ensure's own comment above). One query per staffer with a linked employee; salon staff
+      // lists are small (a handful of people), so this is never a real cost.
+      if (pay) {
+        await Promise.all(staff.filter((s) => s.employeeId).map(async (s) => {
+          const { rows: [r] } = await pool.query('select salon_punch_state($1, $2, $3) as s', [tid, s.employeeId, todayStr()]);
+          s.clockedIn = !!(r.s && r.s.open);
+          s.clockedInSince = r.s ? r.s.in : null;
+        }));
+      }
+      return send(200, { payroll: pay, staff, employees: pay ? (await pool.query('select salon_hr_list($1) as l', [tid])).rows[0].l : [] });
     }
     if (method === 'POST' && p === '/admin/staff') {
       await admin(); noDemo();
@@ -425,6 +643,7 @@ export async function handleSalon(req, res, ip) {
       if (!st.employeeId || !(await payrollOn(tid))) fail(400, 'Your login is not linked to payroll yet. Ask the owner.');
       if (method === 'GET') return send(200, (await pool.query('select salon_punch_state($1, $2, $3) as s', [tid, st.employeeId, todayStr()])).rows[0].s || { open: false, recent: [] });
       const r = await pool.query('select salon_punch($1, $2, $3, $4) as r', [tid, st.employeeId, todayStr(), new Date().toISOString()]);
+      salonPush(tid, 'Staff clock-in/out', `${st.name} clocked ${r.rows[0].r.open ? 'in' : 'out'}`);
       return send(200, { ok: true, ...r.rows[0].r });
     }
 

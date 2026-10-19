@@ -433,7 +433,6 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
 .stack-panel:nth-of-type(2){top:calc((112px + env(safe-area-inset-top)) + min(0px, 100svh - var(--h, 0px)));z-index:2}
 .stack-panel:nth-of-type(3){top:calc((112px + env(safe-area-inset-top) + var(--tab-step)) + min(0px, 100svh - var(--h, 0px)));z-index:3}
 .stack-panel:nth-of-type(4){top:calc((112px + env(safe-area-inset-top) + (var(--tab-step) * 2)) + min(0px, 100svh - var(--h, 0px)));z-index:4}
-.stack-panel:nth-of-type(5){top:calc((112px + env(safe-area-inset-top) + (var(--tab-step) * 3)) + min(0px, 100svh - var(--h, 0px)));z-index:5}
 .stack-panel.alt{background-color:var(--bg-raised);background-blend-mode:normal}
 .stack-panel{overflow:hidden}
 
@@ -460,6 +459,111 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
 .ql-cta{margin-top:24px}
 .ql-partner{margin-top:44px;padding-top:24px;border-top:1px dashed var(--line);display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
 .ql-partner-p{margin-top:8px;max-width:36em}
+
+/* #salon-plans (business-salons.html): four illustrative plan tiers, retro-classy
+   naming (Studio/Salon/Atelier/Maison -- the old way a house grows). Every CTA still
+   goes through the one real request-a-quote flow (data-open-contact) -- these are not
+   a second checkout, so prices are framed "starting from" with a plain disclaimer. */
+#salon-plans .sp-toggle-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:22px}
+#salon-plans .sp-toggle{
+  display:inline-flex;align-items:center;gap:2px;padding:4px;border-radius:999px;
+  background:var(--bg-raised);border:1.5px solid var(--accent);
+  box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+#salon-plans .sp-toggle button{
+  font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;text-transform:uppercase;
+  border:none;background:none;color:var(--ink-dim);padding:10px 16px;border-radius:999px;cursor:pointer;
+  display:inline-flex;align-items:center;gap:7px;transition:background .18s ease,color .18s ease;
+}
+#salon-plans .sp-toggle button.on{background:var(--accent);color:#fff}
+#salon-plans .sp-toggle .sp-save{font-size:9px;background:var(--success,#3fa968);color:#fff;padding:2px 7px;border-radius:999px}
+#salon-plans .sp-toggle button:not(.on) .sp-save{background:var(--line-soft);color:var(--ink-dim)}
+#salon-plans .sp-toggle-note{font-family:var(--font-mono);font-size:11px;color:var(--ink-faint);letter-spacing:.02em}
+#salon-plans .sp-grid{display:grid;grid-template-columns:1fr;gap:16px;margin-top:22px}
+#salon-plans .sp-card{
+  position:relative;background:var(--bg);border:1px solid var(--line);border-radius:22px;
+  padding:24px 22px 22px;box-shadow:0 10px 28px -12px rgba(46,44,42,.30);
+  display:flex;flex-direction:column;
+}
+#salon-plans .sp-card:nth-of-type(even){transform:rotate(.4deg)}
+#salon-plans .sp-card:nth-of-type(odd){transform:rotate(-.3deg)}
+#salon-plans .sp-card.hi{border-color:var(--accent);box-shadow:0 14px 34px -14px rgba(128,0,32,.4)}
+#salon-plans .sp-num{
+  width:28px;height:28px;border-radius:50%;border:1px solid var(--ink);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--ink-dim);flex:none;
+}
+#salon-plans .sp-card.hi .sp-num{background:var(--accent);border-color:var(--accent);color:#fff}
+#salon-plans .sp-fav{
+  position:absolute;top:-11px;right:18px;font-family:var(--font-mono);font-size:9px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;background:var(--accent);color:#fff;
+  padding:6px 10px;border-radius:999px;
+}
+#salon-plans .sp-head{display:flex;align-items:center;gap:10px}
+#salon-plans .sp-name{font-family:var(--font-display);font-weight:700;font-size:17px;letter-spacing:-.01em}
+#salon-plans .sp-tagline{font-size:10.5px;color:var(--ink-dim);margin-top:9px;line-height:1.45;min-height:28px}
+#salon-plans .sp-price-row{display:flex;align-items:baseline;gap:6px;margin-top:14px;flex-wrap:wrap}
+#salon-plans .sp-price{font-family:var(--font-display);font-weight:700;font-size:22px;letter-spacing:-.03em;white-space:nowrap}
+#salon-plans .sp-per{font-family:var(--font-mono);font-size:9.5px;color:var(--ink-faint)}
+#salon-plans .sp-gst{font-family:var(--font-mono);font-size:9px;color:var(--ink-faint)}
+#salon-plans .sp-wassave{display:flex;align-items:center;gap:7px;margin-top:3px;font-size:10px}
+#salon-plans .sp-was{color:var(--ink-faint);text-decoration:line-through}
+#salon-plans .sp-save2{color:var(--success);font-weight:700}
+#salon-plans .sp-cta{width:100%;justify-content:center;margin-top:14px;font-size:11.5px;padding:10px 14px;min-height:38px}
+#salon-plans .sp-feats{list-style:none;margin:14px 0 0;padding:12px 0 0;border-top:1px dashed var(--line);display:grid;grid-template-columns:repeat(2,1fr);gap:7px 10px;flex:1}
+#salon-plans .sp-feats li{display:flex;gap:6px;font-size:10px;line-height:1.35;align-items:flex-start;color:var(--ink-dim)}
+#salon-plans .sp-feats li::before{content:'';width:4px;height:4px;border-radius:50%;background:var(--accent);flex:none;margin-top:5px}
+#salon-plans .sp-note{margin-top:18px;font-size:11.5px;color:var(--ink-faint)}
+#salon-plans .sp-link{font:inherit;color:var(--accent);background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+#salon-plans .sp-strip{
+  display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:18px;
+  border:1px solid var(--line);background:var(--bg-raised);border-radius:18px;padding:18px 20px;margin-top:18px;
+}
+#salon-plans .sp-strip-pitch{display:flex;align-items:center;gap:12px}
+#salon-plans .sp-strip-symbol{width:34px;height:34px;border-radius:10px;background:var(--bg);color:var(--accent);display:grid;place-items:center;font-size:16px;flex:none;border:1px solid var(--line)}
+#salon-plans .sp-strip-pitch b{font-family:var(--font-display);font-size:13px;display:block}
+#salon-plans .sp-strip-pitch small{color:var(--ink-faint);font-size:11px;display:block;margin-top:3px}
+#salon-plans .sp-strip-price{white-space:nowrap}
+#salon-plans .sp-strip-price b{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-faint);display:block;margin-bottom:4px}
+#salon-plans .sp-strip-amt{font-family:var(--font-display);font-weight:700;font-size:21px;letter-spacing:-.03em}
+#salon-plans .sp-strip-per{font-family:var(--font-mono);font-size:10.5px;color:var(--ink-faint)}
+@media (min-width:620px){#salon-plans .sp-grid{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:1100px){#salon-plans .sp-grid{grid-template-columns:repeat(4,1fr)}}
+@media (max-width:860px){
+  #salon-plans .sp-card:nth-of-type(even),#salon-plans .sp-card:nth-of-type(odd){transform:none}
+  #salon-plans .sp-toggle-note{display:none}
+  #salon-plans .sp-strip{grid-template-columns:1fr;gap:12px}
+  #salon-plans .sp-strip .btn{width:100%;justify-content:center}
+}
+
+/* hero trust badges (business-salons.html) */
+.sp-badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.sp-badges span{font-family:var(--font-mono);font-size:10px;color:var(--ink-dim);display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg-raised);border:1px solid var(--line);border-radius:9px}
+.sp-badges svg{color:var(--accent);flex:none}
+
+/* #salon-compare table */
+#salon-compare .sp-tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:16px;margin-top:16px;background:var(--bg)}
+#salon-compare .sp-table{width:100%;border-collapse:collapse;font-size:11px;min-width:560px}
+#salon-compare .sp-table th,#salon-compare .sp-table td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:center}
+#salon-compare .sp-table thead th{font-family:var(--font-mono);font-size:10px;letter-spacing:.03em;text-transform:uppercase;font-weight:700;background:var(--bg-raised)}
+#salon-compare .sp-table th:first-child,#salon-compare .sp-table td:first-child{text-align:left;font-weight:600;color:var(--ink)}
+#salon-compare .sp-table tbody tr:last-child td{border-bottom:none}
+#salon-compare .sp-table thead th:nth-child(3),#salon-compare .sp-table tbody td:nth-child(3){background:color-mix(in srgb, var(--accent) 6%, transparent)}
+#salon-compare .sp-check{color:var(--accent);font-weight:800}
+#salon-compare .sp-dash{color:var(--ink-faint)}
+
+/* #salon-addons */
+#salon-addons .addons-head{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between}
+#salon-addons .sp-addon-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:16px}
+#salon-addons .sp-addon{border:1px solid var(--line);border-radius:16px;background:var(--bg);padding:16px;box-shadow:0 8px 20px -12px rgba(46,44,42,.25)}
+#salon-addons .sp-addon-ic{width:30px;height:30px;border-radius:9px;background:var(--bg-raised);color:var(--accent);display:grid;place-items:center;margin-bottom:10px}
+#salon-addons .sp-addon-ic svg{width:15px;height:15px}
+#salon-addons .sp-addon b{font-family:var(--font-display);font-size:12.5px;display:block}
+#salon-addons .sp-addon-pr{font-family:var(--font-mono);font-size:10px;color:var(--accent);font-weight:700;margin-top:4px;display:block}
+#salon-addons .sp-addon p{color:var(--ink-dim);font-size:10.5px;margin-top:7px;line-height:1.45}
+@media (min-width:620px){#salon-addons .sp-addon-grid{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:1100px){#salon-addons .sp-addon-grid{grid-template-columns:repeat(4,1fr)}}
+
 @media (max-width:860px){
   #quick-look .label{margin-bottom:10px}
   #quick-look .h-1{font-size:22px}
@@ -569,7 +673,6 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
   .stack-panel:nth-of-type(2){top:calc(150px + min(0px, 100svh - var(--h, 0px)))}
   .stack-panel:nth-of-type(3){top:calc(150px + var(--tab-step) + min(0px, 100svh - var(--h, 0px)))}
   .stack-panel:nth-of-type(4){top:calc(150px + (var(--tab-step) * 2) + min(0px, 100svh - var(--h, 0px)))}
-  .stack-panel:nth-of-type(5){top:calc(150px + (var(--tab-step) * 3) + min(0px, 100svh - var(--h, 0px)))}
   .stack-panel:not(:first-of-type)::before{left:56px}
   .stack-panel.stack-panel-dark{padding-top:160px}
   .stack-panel-dark::before{left:56px}

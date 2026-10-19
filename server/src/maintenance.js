@@ -3,6 +3,7 @@
 // links are useless once expired. Failures are logged and never stop the server.
 import { pool } from './db.js';
 import { sendRenewalEmail } from './mail.js';
+import { runClientGreetings, runLapsedClientWinback, runMembershipExpiryReminders, runPaymentDueReminders, runPostVisitReviews, runSalonDailySummaries } from './salon/automations.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -34,7 +35,21 @@ export async function runRenewals() {
   } catch (err) { console.warn('renewal run failed:', err.message); }
 }
 
+// WhatsApp booking reminders (db/191): a shop's own customers, one day before a confirmed booking.
+export async function runBookingReminders() {
+  try {
+    const { rows } = await pool.query('select booking_reminder_run() as r');
+    const sent = rows[0]?.r?.sent || 0;
+    if (sent) console.log(`booking reminders: queued ${sent}`);
+  } catch (err) { console.warn('booking reminder run failed:', err.message); }
+}
+
 export function startMaintenance() {
   if (process.env.DISABLE_MAINTENANCE === '1') return;
-  setTimeout(() => { runMaintenance(); runRenewals(); setInterval(() => { runMaintenance(); runRenewals(); }, DAY).unref(); }, 60_000).unref();
+  const runAll = () => {
+    runMaintenance(); runRenewals(); runBookingReminders();
+    runSalonDailySummaries(); runLapsedClientWinback(); runPostVisitReviews(); runPaymentDueReminders();
+    runClientGreetings(); runMembershipExpiryReminders();
+  };
+  setTimeout(() => { runAll(); setInterval(runAll, DAY).unref(); }, 60_000).unref();
 }

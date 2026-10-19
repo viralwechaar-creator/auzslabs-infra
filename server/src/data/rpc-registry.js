@@ -26,6 +26,10 @@ export const RPC = {
   submit_feedback: { params: ['oid', 'rating', 'comment'], auth: false },
   submit_team_application: { params: ['p_name', 'p_email', 'p_phone', 'p_city', 'p_role', 'p_experience', 'p_about', 'p_hp'], auth: false },
   admin_list_team_applications: { params: ['p_status'], defaults: { p_status: 'new' }, auth: true },
+  my_team_candidate_profile: { params: [], auth: true },
+  save_my_team_candidate_profile: { params: ['p'], jsonb: ['p'], auth: true },
+  submit_my_team_application: { params: [], auth: true },
+  my_team_applications: { params: [], auth: true },
   wa_my_status: { params: [], auth: true },
   wa_save_settings: { params: ['p'], jsonb: ['p'], auth: true },
   wa_disconnect: { params: [], auth: true },
@@ -59,6 +63,10 @@ export const RPC = {
   admin_delete_bundle: { params: ['p_key'], auth: true },
   admin_set_product_yearly: { params: ['p_key', 'p_yearly_price', 'p_renewal_yearly_price'], auth: true },
   admin_set_addon_price: { params: ['p_key', 'p_requires', 'p_monthly_price'], auth: true },
+  // --- AUZslab Salon's four-tier pricing page (db/198) ---
+  public_salon_tiers: { params: [], auth: false },
+  admin_list_salon_tiers: { params: [], auth: true },
+  admin_save_salon_tier: { params: ['p'], jsonb: ['p'], auth: true },
   // provision_from_payment / provision_addon_from_payment deliberately NOT
   // registered here -- they skip the is_platform_admin() check that every
   // other provisioning path requires, trusting instead that the only
@@ -142,6 +150,11 @@ export const RPC = {
   team_activity_feed: { params: ['p_uid', 'p_limit'], defaults: { p_limit: 40 }, auth: true },
   team_my_work: { params: ['p_days'], defaults: { p_days: 30 }, auth: true },
   team_clients: { params: [], auth: true },
+  // team: general task list (db/186)
+  team_create_task: { params: ['p'], jsonb: ['p'], auth: true },
+  team_my_tasks: { params: [], auth: true },
+  team_all_tasks: { params: [], auth: true },
+  team_update_task: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
 
   // --- Salesman: provision + brand one real trial tenant per sales pitch (db/137) ---
   salesman_provision_trial: { params: ['p_business_name', 'p_slug', 'p_niche'], defaults: { p_niche: 'cafe' }, auth: true },

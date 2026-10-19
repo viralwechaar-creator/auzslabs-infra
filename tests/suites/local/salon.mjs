@@ -2,7 +2,7 @@
 import { suite, watch, assert } from '../../lib/harness.mjs';
 import { newCtx } from '../../lib/common.mjs';
 import { salonClient, rpc } from '../../lib/api.mjs';
-import { PASSWORD, TENANTS, USERS } from '../../lib/db.mjs';
+import { PASSWORD, TENANTS, USERS, q } from '../../lib/db.mjs';
 
 const tomorrow = () => { const d = new Date(Date.now() + 2 * 864e5); return d.toISOString().slice(0, 10); };
 
@@ -106,6 +106,21 @@ export default async function run({ browser, stack }) {
   await s.check('A made-up invoice link shows an error, not someone else\'s bill', async () => {
     const r = await salonClient(stack, host).call('GET', '/i/aaaaaaaaaaaaaaaa'); assert(r.status === 404, 'status ' + r.status);
   });
+  await s.check('A new bill with a phone number queues the shared "invoice_link" WhatsApp message once the owner switches WhatsApp on; switched off, nothing is queued (db/190, server/src/salon/router.js\'s direct JS call)', async () => {
+    const login = async (email) => (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password: PASSWORD }) })).json()).access_token;
+    const bearer = await login(USERS.salonOwner);
+    const rpc = async (fn, args) => { const r = await fetch(stack.apiBase + '/rpc/' + fn, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + bearer }, body: JSON.stringify(args || {}) }); return (await r.json()).data; };
+    const tid = (await q('select id from tenants where slug=$1', [TENANTS.salon]))[0].id;
+    await rpc('wa_save_settings', { p: { enabled: true, events: {} } });
+    const r = await owner.call('POST', '/admin/invoices', { client: { name: 'WA Bill Client', phone: '9833355566' }, items: [{ name: 'Facial', qty: 1, price: 800 }] });
+    assert(r.status === 201, JSON.stringify(r));
+    const m = (await q('select template, params from wa_outbox where tenant_id=$1 and ref=$2', [tid, r.data.invoice.id + '-bill']))[0];
+    assert(m && m.template === 'invoice_link' && m.params[0] === 'WA Bill Client' && m.params[1] === 'Test Salon' && m.params[2] === r.data.invoice.no && m.params[3] === '800.00' && new RegExp('/i/' + r.data.invoice.token + '$').test(m.params[4]), JSON.stringify(m));
+    await rpc('wa_save_settings', { p: { enabled: false, events: {} } });
+    const r2 = await owner.call('POST', '/admin/invoices', { client: { name: 'WA Bill Client 2', phone: '9833355577' }, items: [{ name: 'Wax', qty: 1, price: 300 }] });
+    assert(r2.status === 201, JSON.stringify(r2));
+    assert((await q('select count(*)::int n from wa_outbox where tenant_id=$1 and ref=$2', [tid, r2.data.invoice.id + '-bill']))[0].n === 0, 'messaged while switched off');
+  }, 'critical');
 
   // staff
   const staffApi = salonClient(stack, host);
@@ -199,5 +214,76 @@ export default async function run({ browser, stack }) {
     const og = await get('/og.png'); const ob = Buffer.from(await og.arrayBuffer());
     assert(og.status === 200 && ob.subarray(1, 4).toString() === 'PNG', 'og image ' + og.status);
   }, 'major');
+  // CORS for a client's own external website calling the four public salon endpoints directly (no cookie).
+  const ORIGIN_OK = 'https://client-site.example';
+  const ORIGIN_BAD = 'https://not-approved.example';
+  const corsReq = (tenantSlug, path, { method = 'GET', origin } = {}) =>
+    fetch(stack.apiBase + '/salon-api' + path, { method, headers: { 'x-tenant-slug': tenantSlug, ...(origin ? { Origin: origin } : {}) } });
+  await q(
+    `update tenant_settings set business_rules = coalesce(business_rules,'{}'::jsonb) || jsonb_build_object('corsOrigins', $2::jsonb)
+     where tenant_id = (select id from tenants where slug = $1)`,
+    [host, JSON.stringify([ORIGIN_OK])],
+  );
+  await s.check('No Origin header: no CORS header, request still works (today\'s behavior unchanged)', async () => {
+    const r = await corsReq(host, '/site');
+    assert(r.status === 200, 'status ' + r.status);
+    assert(!r.headers.get('access-control-allow-origin'), 'unexpected ACAO with no Origin header');
+  }, 'critical');
+  await s.check('Approved origin gets the exact echoed Access-Control-Allow-Origin + Vary: Origin', async () => {
+    const r = await corsReq(host, '/site', { origin: ORIGIN_OK });
+    assert(r.status === 200, 'status ' + r.status);
+    assert(r.headers.get('access-control-allow-origin') === ORIGIN_OK, 'ACAO: ' + r.headers.get('access-control-allow-origin'));
+    assert((r.headers.get('vary') || '').includes('Origin'), 'Vary: ' + r.headers.get('vary'));
+  }, 'critical');
+  await s.check('An unapproved origin for the same tenant gets no CORS header', async () => {
+    const r = await corsReq(host, '/site', { origin: ORIGIN_BAD });
+    assert(r.status === 200, 'status ' + r.status);
+    assert(!r.headers.get('access-control-allow-origin'), 'unapproved origin was granted ACAO');
+  }, 'critical');
+  await s.check('A malformed/wildcard Origin is refused CORS entirely, even though it is "similar" to the approved one', async () => {
+    for (const bad of ['https://client-site.example/evil', 'https://client-site.example.attacker.com', '*', 'https://user:pw@client-site.example']) {
+      const r = await corsReq(host, '/site', { origin: bad });
+      assert(!r.headers.get('access-control-allow-origin'), 'malformed origin "' + bad + '" was granted ACAO');
+    }
+  }, 'critical');
+  await s.check('OPTIONS preflight on /bookings: 204 + the right headers for an approved origin, still 404 for an unapproved one', async () => {
+    const ok = await corsReq(host, '/bookings', { method: 'OPTIONS', origin: ORIGIN_OK });
+    assert(ok.status === 204, 'approved preflight status ' + ok.status);
+    assert(ok.headers.get('access-control-allow-origin') === ORIGIN_OK, 'preflight ACAO: ' + ok.headers.get('access-control-allow-origin'));
+    assert(/POST/.test(ok.headers.get('access-control-allow-methods') || ''), 'ACAM missing POST');
+    const bad = await corsReq(host, '/bookings', { method: 'OPTIONS', origin: ORIGIN_BAD });
+    assert(bad.status === 404, 'unapproved preflight status ' + bad.status);
+    const none = await corsReq(host, '/bookings', { method: 'OPTIONS' });
+    assert(none.status === 404, 'no-origin preflight status ' + none.status);
+  }, 'critical');
+  await s.check('/admin/* is never affected by CORS, even for an approved origin', async () => {
+    const r = await corsReq(host, '/admin/me', { origin: ORIGIN_OK });
+    assert(!r.headers.get('access-control-allow-origin'), '/admin/me leaked ACAO for an approved origin');
+    const pre = await corsReq(host, '/admin/data', { method: 'OPTIONS', origin: ORIGIN_OK });
+    assert(pre.status === 404, 'OPTIONS on /admin/data should still 404, got ' + pre.status);
+  }, 'critical');
+  // A second real salon tenant (salon_tenant() only resolves niche='salon'; the cafe/retail fixtures can't stand in here).
+  const OTHER_SALON = 'testsalon2';
+  await q(
+    `insert into tenants (slug, name, niche, plan, status) values ($1, 'Test Salon 2', 'salon', 'pro', 'active')
+     on conflict (slug) do nothing`,
+    [OTHER_SALON],
+  );
+  await q(
+    `insert into tenant_settings (tenant_id, features, labels, business_rules)
+     select t.id, p.default_features, p.default_labels, p.default_business_rules
+     from tenants t, niche_presets p where t.slug = $1 and p.niche = 'salon'
+     on conflict (tenant_id) do nothing`,
+    [OTHER_SALON],
+  );
+  await s.check('Tenant A\'s approved origin is not granted on a different salon\'s subdomain', async () => {
+    const r = await corsReq(OTHER_SALON, '/site', { origin: ORIGIN_OK });
+    assert(!r.headers.get('access-control-allow-origin'), 'cross-tenant origin grant leaked onto ' + OTHER_SALON);
+  }, 'critical');
+  await s.check('A salon with no configured origins behaves exactly as before (no CORS, no new errors)', async () => {
+    const r = await corsReq(OTHER_SALON, '/site', { origin: 'https://anything.example' });
+    assert(r.status === 200 && !r.headers.get('access-control-allow-origin'), 'unconfigured tenant status/headers wrong');
+  }, 'major');
+
   await ctx.close(); s.done();
 }

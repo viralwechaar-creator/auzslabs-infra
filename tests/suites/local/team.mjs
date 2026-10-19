@@ -317,7 +317,7 @@ export default async function run({ browser, stack }) {
     const tabs = async (p) => (await p.locator('#tabs button').allInnerTexts()).map((x) => x.trim());
     // salesman, phone
     { const { c, p, errs } = await asUser(E.sales, 390, 844);
-      assert((await tabs(p)).join() === 'Home,Leads,Trials,Me', 'salesman tabs: ' + (await tabs(p)).join());
+      assert((await tabs(p)).join() === 'Home,Leads,Trials,Tasks,Me', 'salesman tabs: ' + (await tabs(p)).join());
       await p.waitForSelector('#p-home .hero', { timeout: 8000 });
       await p.click('#tabs [data-tab=leads]'); await p.waitForSelector('#leadList .row', { timeout: 8000 });
       await p.click('#addLeadBtn'); await p.fill('#alName', 'Meena Joshi'); await p.fill('#alBiz', 'Meena Salon'); await p.fill('#alContact', '9898989898'); await p.click('#alSave');
@@ -334,7 +334,7 @@ export default async function run({ browser, stack }) {
     // setup person, phone
     { await ok('team_assign_setup', { p_tenant: clientId, p_user: await uidOf(E.setup), p_days: 7 }, adm);
       const { c, p, errs } = await asUser(E.setup, 390, 844);
-      assert((await tabs(p)).join() === 'Home,Setups,Me', 'setup tabs: ' + (await tabs(p)).join());
+      assert((await tabs(p)).join() === 'Home,Setups,Tasks,Me', 'setup tabs: ' + (await tabs(p)).join());
       await p.click('#tabs [data-tab=setup]'); await p.waitForSelector('#p-setup .row', { timeout: 8000 });
       await p.locator('#p-setup .row').first().click(); await p.waitForSelector('#suChecks input[data-k]', { timeout: 5000 });
       assert((await p.locator('#suChecks input').count()) === 6, 'checklist not shown');
@@ -344,7 +344,7 @@ export default async function run({ browser, stack }) {
       assert(!errs.length, errs.join(' | ')); await c.close(); }
     // manager, desktop
     { const { c, p, errs } = await asUser(E.mgr, 1280, 800);
-      assert((await tabs(p)).join() === 'Home,Leads,Setups,Team,Me', 'manager tabs: ' + (await tabs(p)).join());
+      assert((await tabs(p)).join() === 'Home,Leads,Setups,Tasks,Team,Me', 'manager tabs: ' + (await tabs(p)).join());
       await p.click('#tabs [data-tab=team]'); await p.waitForSelector('#p-team [data-m]', { timeout: 8000 });
       const t = await p.locator('#p-team').innerText(); assert(/Sam Sales/.test(t) && /Sia Setup/.test(t), 'team page missing people');
       await p.click('#tabs [data-tab=leads]'); await p.waitForSelector('#leadList .row', { timeout: 8000 });
@@ -397,5 +397,81 @@ export default async function run({ browser, stack }) {
     await ok('register_platform_web_push', sub, T.sales); await ok('register_platform_web_push', sub, adm);
     const rows = await q('select user_id from platform_web_push where endpoint = $1', [sub.p_endpoint]);
     assert(rows.length === 1, 'one row per browser (re-registering moves it, never duplicates): ' + rows.length);
+  }, 'critical');
+
+  await s.check('Join the team as a real account: a saved profile, a real submission tied to the login, visible status, and RLS isolation (db/188)', async () => {
+    const bcrypt = createRequire(import.meta.url)('../../../server/node_modules/bcryptjs');
+    const hash = bcrypt.hashSync(PASSWORD, 4);
+    const mk = async (email) => { await q('insert into auth_users (email, password_hash, email_verified_at) values ($1,$2,now()) on conflict (email) where deleted_at is null do nothing', [email, hash]); return login(email); };
+    const cand = await mk('candidate1@test.local'), cand2 = await mk('candidate2@test.local');
+
+    // cannot submit without a saved profile first
+    await fails('submit_my_team_application', {}, cand, 'no profile saved yet');
+
+    // save a profile (structured fields only)
+    const prof = { name: 'Priya Sharma', phone: '9812300001', contact_email: 'priya@test.local', role_wanted: 'setup',
+      years_experience: '2 years', city: 'Jodhpur', skills: 'POS onboarding, Excel, Hindi+English', links: 'linkedin.com/in/priya', availability: 'Immediately', notes: 'Worked at a retail shop before.' };
+    await fails('save_my_team_candidate_profile', { p: { ...prof, phone: 'x' } }, cand, 'bad phone');
+    await ok('save_my_team_candidate_profile', { p: prof }, cand);
+    const got = await ok('my_team_candidate_profile', {}, cand);
+    assert(got.profile && got.profile.name === 'Priya Sharma' && got.profile.role_wanted === 'setup' && got.profile.skills.includes('Excel'), JSON.stringify(got));
+    assert((await ok('my_team_candidate_profile', {}, cand2)).profile === null, 'a different login must not see this profile');
+
+    // submit: writes the SAME team_applications table the admin already reviews, tied to user_id
+    const sub = await ok('submit_my_team_application', {}, cand);
+    const mine = await ok('my_team_applications', {}, cand);
+    assert(mine.length === 1 && mine[0].id === sub.id && mine[0].status === 'new' && mine[0].role_wanted === 'setup', JSON.stringify(mine));
+    assert((await ok('my_team_applications', {}, cand2)).length === 0, 'another login must not see this application');
+    await fails('my_team_applications', {}, null, 'logged out');
+
+    // the admin sees it with the richer, structured fields (admin_list_team_applications already does to_jsonb(row))
+    const list = await ok('admin_list_team_applications', { p_status: 'new' }, adm);
+    const row = list.find((a) => a.id === sub.id);
+    assert(row && row.skills === prof.skills && row.years_experience === prof.years_experience && row.links === prof.links && row.availability === prof.availability && row.user_id, JSON.stringify(row));
+
+    // resubmitting updates the SAME row (never a second parallel row) -- and a profile edit flows into it
+    await ok('save_my_team_candidate_profile', { p: { ...prof, skills: 'Updated skills: Tally too' } }, cand);
+    const sub2 = await ok('submit_my_team_application', {}, cand);
+    assert(sub2.id === sub.id, 'resubmitting must update the same application, not create a second one');
+    assert((await q('select count(*)::int n from team_applications where id=$1', [sub.id]))[0].n === 1, 'exactly one row');
+    const row2 = (await ok('admin_list_team_applications', { p_status: 'new' }, adm)).find((a) => a.id === sub.id);
+    assert(row2.skills.includes('Tally'), 'resubmission did not refresh the row');
+
+    // approve -> status visible to the applicant; a platform-admin account is never turned into a team member (db/177's own rule, unaffected)
+    const dec = await ok('admin_decide_team_application', { p_id: sub.id, p_decision: 'approve', p_role: 'setup' }, adm);
+    assert(dec.status === 'approved', JSON.stringify(dec));
+    assert((await ok('my_team_applications', {}, cand))[0].status === 'approved', 'applicant does not see the approval');
+    await fails('submit_my_team_application', {}, cand, 'already approved');
+  }, 'critical');
+
+  await s.check('WhatsApp fires the instant a client or a team candidate submits -- no admin action first (db/184/db/188-189)', async () => {
+    // these are 'platform'-audience messages (tenant_id null); dormant until the admin switches the platform auto-send on (db/184's own gate)
+    await ok('admin_wa_set_platform_auto', { p_on: true }, adm);
+    // a client request queues "request_received" on INSERT, not just on a later status change
+    const rr = await q(`insert into client_orders (contact_name, phone, business_name, requirement, status) values ('Anita','9812399991','Anita Store','Need billing','requested') returning id`);
+    const oid = rr[0].id;
+    const msgs = await q("select template, status, params from wa_outbox where ref = $1", [oid + '-received']);
+    assert(msgs.length === 1 && msgs[0].template === 'request_received', JSON.stringify(msgs));
+    assert(JSON.stringify(msgs[0].params).includes('Anita'), JSON.stringify(msgs[0].params));
+    // idempotent: a second insert-shaped replay with the SAME ref never double-queues (the unique index on wa_outbox)
+    const dupe = await q("select wa_enqueue(null, '9812399991', 'request_received', '[\"Anita\",\"x\"]'::jsonb, $1) as id", [oid + '-received']);
+    assert(dupe[0].id === null, 'a duplicate ref must not queue a second message');
+    assert((await q("select count(*)::int n from wa_outbox where ref=$1", [oid + '-received']))[0].n === 1, 'double-queued');
+    // the pre-existing status-change messages are completely unchanged (still fire on update, not on insert twice)
+    await q("update client_orders set status='verifying' where id=$1", [oid]);
+    assert((await q("select count(*)::int n from wa_outbox where ref=$1", [oid + '-verifying']))[0].n === 1, 'status-change message regressed');
+
+    // a team application queues a DIFFERENT message, on INSERT, once -- never resent on a resubmit-shaped UPDATE
+    const bcrypt = createRequire(import.meta.url)('../../../server/node_modules/bcryptjs');
+    const hash = bcrypt.hashSync(PASSWORD, 4);
+    await q('insert into auth_users (email, password_hash, email_verified_at) values ($1,$2,now()) on conflict (email) where deleted_at is null do nothing', ['candidate3@test.local', hash]);
+    const cand3 = await login('candidate3@test.local');
+    await ok('save_my_team_candidate_profile', { p: { name: 'Vikram Rao', phone: '9812399992', role_wanted: 'support' } }, cand3);
+    const sub3 = await ok('submit_my_team_application', {}, cand3);
+    const tmsgs = await q("select template, params from wa_outbox where ref=$1", [sub3.id + '-received']);
+    assert(tmsgs.length === 1 && tmsgs[0].template === 'team_application_received' && JSON.stringify(tmsgs[0].params).includes('Vikram'), JSON.stringify(tmsgs));
+    assert(tmsgs[0].template !== 'request_received', 'the team-candidate message must be worded differently from the client-request one');
+    await ok('submit_my_team_application', {}, cand3); // resubmit: same row, same ref -- must not queue a second message
+    assert((await q("select count(*)::int n from wa_outbox where ref=$1", [sub3.id + '-received']))[0].n === 1, 'resubmission double-sent the team-application message');
   }, 'critical');
 }

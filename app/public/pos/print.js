@@ -151,7 +151,7 @@ function printerSheet() {
   const draw = () => {
     const inf = P.info(), rows = [];
     rows.push(liRow({ ic: 'printer', tone: inf && inf.connected ? 'green' : 'gray', title: inf ? inf.name : 'Print window (default)', sub: inf ? (inf.connected ? 'Connected (' + inf.kind + ')' : 'Chosen on this device, reconnects when you print (' + inf.kind + ')') : 'Bills and kitchen tickets open the normal print window' }));
-    if (!any) rows.push(h('p', { class: 'muted', style: { padding: '8px 4px' } }, 'This browser cannot print straight to a receipt printer. Use Chrome or Edge on a computer or Android phone, not Safari, not an iPhone and not the packaged Android app. The print window keeps working everywhere.'));
+    if (!any) rows.push(h('p', { class: 'muted', style: { padding: '8px 4px' } }, 'This browser cannot print straight to a receipt printer. Use Chrome or Edge on a computer or Android phone, the packaged Android app (Bluetooth only), not Safari and not an iPhone. The print window keeps working everywhere.'));
     const conn = (kind, label, sub) => liRow({ ic: 'plus', tone: 'blue', title: label, sub, chev: true, onclick: async () => { try { await P.pair(kind); toast('Printer connected'); } catch (e) { if (!/cancel|chosen|no device selected|aborted/i.test(String(e && e.message))) toast(String(e && e.message || e), { err: true }); } draw(); } });
     if (sup.usb) rows.push(conn('usb', 'Connect a USB printer', 'Plug it into this device, then choose it'));
     if (sup.bluetooth) rows.push(conn('bluetooth', 'Connect a Bluetooth printer', 'Switch the printer on, then choose it'));

@@ -14,34 +14,79 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
-// One shared, email-safe layout (tables + inline styles, no images, works in Gmail / Outlook / Apple Mail).
+// One shared, email-safe layout (tables + inline styles, works in Gmail / Outlook / Apple Mail).
 // kicker = small label, title = big heading, body = html paragraphs, button = {label, href}, note = small print.
+//
+// Dark mode, the real story: `color-scheme` meta tags and the `[data-ogsc]` attribute selector (Gmail
+// WEB's own documented hook for "a sender wants to override our forced-dark repaint") do nothing on the
+// Gmail ANDROID APP -- confirmed by sending a real email and watching the card stay dark with [data-ogsc]
+// rules in place. The app has its own separate dark-mode pipeline that a style block can't reliably fight.
+// Two real fixes instead of one more attempt to force light everywhere:
+//  1. The logo gets its own small white chip (not just sitting on the page background), so a solid-black
+//     ink-on-transparent PNG is never asked to render on a dark background -- that's what produced the
+//     near-invisible "ghost outline" a real test caught (anti-aliased edge pixels of a black mark go
+//     almost invisible against a dark app-forced background; a guaranteed-light backing avoids the
+//     problem outright rather than trying to detect and prevent it).
+//  2. A genuine second palette under `@media (prefers-color-scheme:dark)` (the brand's own dark tokens,
+//     same values as ds/auz.css) -- this query IS honoured by more real mail clients than [data-ogsc],
+//     so where it's respected the email now looks deliberately designed for dark mode instead of merely
+//     not-broken; where NEITHER mechanism is honoured (confirmed: this exact Gmail app build), the body
+//     text and button already read fine as plain white-on-dark/pink-on-dark, which the real screenshot
+//     confirmed -- only the logo chip and footer links needed a real fix, not the whole card.
 export function emailLayout({ preheader = '', kicker = '', title, body = '', button = null, note = '' }) {
   const font = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
   const mono = "'SFMono-Regular',Menlo,Consolas,'Courier New',monospace";
   const btn = button ? `
-          <table role="presentation" cellpadding="0" cellspacing="0" style="margin:28px 0 8px"><tr><td style="background:#800020;border-radius:999px">
-            <a href="${button.href}" style="display:inline-block;padding:16px 34px;font:700 16px ${font};color:#ffffff;text-decoration:none;border-radius:999px">${button.label}</a>
+          <table role="presentation" cellpadding="0" cellspacing="0" style="margin:30px 0 10px"><tr><td class="btn-fill" style="background:#800020;border-radius:999px">
+            <a href="${button.href}" style="display:inline-block;padding:16px 36px;font:700 16px ${font};color:#ffffff;text-decoration:none;border-radius:999px">${button.label}</a>
           </td></tr></table>
-          <p style="margin:14px 0 0;font:13px/1.6 ${font};color:#8a8480">Button not working? Copy this link into your browser:<br><a href="${button.href}" style="color:#800020;word-break:break-all">${button.href}</a></p>` : '';
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"></head>
-<body style="margin:0;padding:0;background:#f3f0ec">
+          <p class="muted" style="margin:14px 0 0;font:13px/1.6 ${font};color:#8a8480">Button not working? Copy this link into your browser:<br><a href="${button.href}" class="link" style="color:#800020;word-break:break-all">${button.href}</a></p>` : '';
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">
+<style>
+  :root{color-scheme:light dark;supported-color-schemes:light dark}
+  [data-ogsc] .footer-link{color:#ffb4c4!important}
+  [data-ogsc] .muted{color:#b9b2ac!important}
+  @media (prefers-color-scheme:dark) {
+    .page{background:#17161a!important}
+    .card{background:#211f24!important;border-color:#38353b!important}
+    .ink,.ink *{color:#f3f1ee!important}
+    .body-copy,.body-copy *{color:#cfc9c4!important}
+    .muted,.muted *{color:#a39b93!important}
+    .kicker{color:#e8365d!important}
+    .link{color:#ff6b86!important}
+    .btn-fill,.btn-fill a{background:#e8365d!important;color:#ffffff!important}
+    .footer-link{color:#ff9fb2!important}
+    .logo-chip{background:#ffffff!important}
+  }
+</style>
+</head>
+<body class="page" style="margin:0;padding:0;background:#f3f0ec">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">${escapeHtml(preheader)}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f0ec"><tr><td align="center" style="padding:32px 14px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f3f0ec" class="page" style="background:#f3f0ec"><tr><td align="center" style="padding:40px 14px">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px">
-    <tr><td style="padding:0 6px 16px" align="left">
-      <span style="display:inline-block;width:12px;height:12px;background:#800020;vertical-align:-1px"></span>
-      <span style="font:700 17px ${mono};letter-spacing:.04em;color:#2e2c2a;margin-left:7px">AUZslab</span>
+    <tr><td align="center" style="padding:0 6px 26px">
+      <table role="presentation" cellpadding="0" cellspacing="0"><tr><td class="logo-chip" bgcolor="#ffffff" style="background:#ffffff;border-radius:14px;padding:10px 20px">
+        <img src="${SITE}/logo.png" width="110" height="40" alt="AUZslab" style="display:block;border:0;outline:none">
+      </td></tr></table>
     </td></tr>
-    <tr><td style="background:#ffffff;border-radius:22px;border:1px solid #e6e1dc;padding:40px 36px">
-      <p style="margin:0 0 14px;font:700 11px ${mono};letter-spacing:.12em;text-transform:uppercase;color:#800020">${escapeHtml(kicker)}</p>
-      <h1 style="margin:0 0 16px;font:800 28px/1.2 ${font};letter-spacing:-.01em;color:#2e2c2a">${title}</h1>
-      <div style="font:16px/1.65 ${font};color:#4a4643">${body}</div>${btn}
-      ${note ? `<div style="border-top:1px solid #eeeae6;margin-top:28px;padding-top:18px;font:13px/1.6 ${font};color:#8a8480">${note}</div>` : ''}
+    <tr><td class="card" bgcolor="#ffffff" style="background:#ffffff;border-radius:22px;border:1px solid #e6e1dc;padding:44px 40px;box-shadow:0 1px 0 rgba(46,44,42,.04)">
+      <p class="kicker" style="margin:0 0 14px;font:700 11px ${mono};letter-spacing:.12em;text-transform:uppercase;color:#800020">${escapeHtml(kicker)}</p>
+      <h1 class="ink" style="margin:0 0 16px;font:800 28px/1.25 ${font};letter-spacing:-.01em;color:#2e2c2a">${title}</h1>
+      <div class="body-copy" style="font:16px/1.65 ${font};color:#4a4643">${body}</div>${btn}
+      ${note ? `<div class="muted" style="border-top:1px solid #eeeae6;margin-top:28px;padding-top:18px;font:13px/1.6 ${font};color:#8a8480">${note}</div>` : ''}
     </td></tr>
-    <tr><td align="center" style="padding:22px 10px 0;font:12px/1.7 ${font};color:#9a948f">
-      Software for shops, salons and cafes &middot; <a href="${SITE}" style="color:#9a948f">auzslab.in</a><br>
-      You are getting this because of activity on your AUZslab account.
+    <tr><td style="padding:28px 10px 0">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+        <td align="center" style="padding-bottom:12px;font:13px ${font}">
+          <a href="${SITE}/products.html" class="footer-link muted" style="color:#8a8480;text-decoration:none;margin:0 10px">Products</a>
+          <a href="${SITE}/pricing.html" class="footer-link muted" style="color:#8a8480;text-decoration:none;margin:0 10px">Pricing</a>
+          <a href="${SITE}/contact.html" class="footer-link muted" style="color:#8a8480;text-decoration:none;margin:0 10px">Help</a>
+        </td>
+      </tr></table>
+      <p class="muted" align="center" style="margin:0;font:12px/1.7 ${font};color:#9a948f;text-align:center">
+        Software for shops, salons and cafes &middot; <a href="${SITE}" class="footer-link" style="color:#9a948f">auzslab.in</a><br>
+        You are getting this because of activity on your AUZslab account.
+      </p>
     </td></tr>
   </table>
 </td></tr></table></body></html>`;

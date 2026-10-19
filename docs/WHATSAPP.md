@@ -5,7 +5,7 @@ Messages go out by themselves through the official WhatsApp Business route. Noth
 ## What is built
 - One sending queue for every app. Each message is logged with its status (queued, sent, delivered, read, failed, skipped).
 - **AUZslab's own messages** (from the AUZslab number): "request update", "quote and payment link", "GST bill after payment". Switched on by you in Admin -> WhatsApp ("Send AUZslab's own messages automatically"). While it is on, do not also use the tap-to-send buttons in Client requests for the same client, or they get two copies.
-- **Client shops' customer messages**: booking confirmed (salon / reservations), repair ready (AUZsMob). Bill link, order ready, payment due, booking reminder and payslip templates exist and are ready to be connected next.
+- **Client shops' customer messages**: booking confirmed (salon / reservations), repair ready (AUZsMob), and now the "your bill is ready" link every time a real sale/invoice is completed: a POS bill becoming paid, an AUZsLedger/AUZsScan invoice being posted, an AUZsMob sale with a customer attached, and a Salon bill (db/190; the Salon one is a direct call from `server/src/salon/router.js` since Showoff's bills are a JSON blob, not a row a database trigger can watch). Order ready, payment due, booking reminder and payslip templates exist and are ready to be connected next.
 - **Which number sends for a shop**: the shop's own number if the owner connected it (Admin console -> Management -> WhatsApp); otherwise the AUZslab number, only if you ticked "allow" for that shop in Admin -> WhatsApp; otherwise nothing is sent (the message shows as "skipped") and the old tap-to-send buttons still work.
 - A customer who replies STOP is never messaged again by that sender.
 

@@ -2,9 +2,9 @@
 // Change a sentence here and both pages follow. Company name/address/GSTIN/phone come from company.js (window.AUZ_CO).
 window.AUZ_ORDER = {
   version: '2026-10',
-  sac: '9983',                                   // SAC printed on every service line (group 9983, IT and other professional services); confirm with your accountant
+  sac: { product: '998314', setup: '998315' },   // confirmed with the accountant: 998314 (IT support/consulting services) for the recurring product lines, 998315 (IT design and development services) for setup/onboarding lines
   upi: { id: '8005673683-2@ybl', name: 'Mahendra' },      // the UPI id the payment QR pays to -- left unchanged when the contact number was updated: this is a live payment VPA, a different thing from the support/display number, and changing it needs the owner's explicit confirmation it's still valid
-  bank: { holder: '', bank: '', account: '', ifsc: '', branch: '' },   // fill these in and they print on the payment page and the bill
+  bank: { holder: 'AUZSLAB', bank: 'State Bank of India', account: '45665672359', ifsc: 'SBIN0031201', branch: '' },   // branch left blank (optional, shown only if filled)
   terms: [
     ['Refunds', 'Before setup: full refund minus a 1% transaction fee. Monthly, after setup: no refund of fees paid; billing stops when you cancel. Yearly, after setup: 20% refund within 6 months, none after. Onboarding/setup fees are non-refundable once begun. If our side fails you and we cannot fix it, we refund the period not provided. Full policy: auzslab.in/refund.html.'],
     ['Setup, changes and extras', 'A flat Rs 1,460 onboarding fee applies to every new client; a setup fee applies only for AUZsPOS/AUZsPOS QR. Salon setup/website, integrations and hardware are quoted separately. A small change after setup is a flat Rs 500, no GST; anything bigger is custom development, quoted first.'],

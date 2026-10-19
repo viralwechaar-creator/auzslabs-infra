@@ -6,6 +6,8 @@ on:
   workflow_dispatch:
     inputs:
       app: {description: "hub, pos, mob, payroll, accounts, scan or all", default: all}
+permissions:
+  contents: write
 jobs:
   plan:
     runs-on: ubuntu-latest
@@ -65,3 +67,17 @@ jobs:
           path: |
             mobile/android/app/build/outputs/apk/debug/*.apk
             mobile/android/app/build/outputs/bundle/release/*.aab
+      - name: Publish on a release page (no GitHub login needed to download)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp mobile/android/app/build/outputs/apk/debug/app-debug.apk AUZslab-${{ matrix.app }}.apk
+          ASSETS="AUZslab-${{ matrix.app }}.apk"
+          if [ -f mobile/android/app/build/outputs/bundle/release/app-release.aab ]; then
+            cp mobile/android/app/build/outputs/bundle/release/app-release.aab AUZslab-${{ matrix.app }}.aab
+            ASSETS="$ASSETS AUZslab-${{ matrix.app }}.aab"
+          fi
+          gh release delete wrapper-${{ matrix.app }}-latest --yes --cleanup-tag --repo "$GITHUB_REPOSITORY" || true
+          gh release create wrapper-${{ matrix.app }}-latest $ASSETS --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
+            --title "AUZslab ${{ matrix.app }} (Android, test build)" \
+            --notes "Test build of the AUZslab ${{ matrix.app }} app (the wrapper around the real website, not the separate native Flutter app of the same name). Tap AUZslab-${{ matrix.app }}.apk below to download, then open it to install -- your phone will warn about an unknown source the first time, that is expected for a test build. The .aab (if present) is only valid for the Play Store once this build ran with the real owner signing-key secrets; otherwise skip it."

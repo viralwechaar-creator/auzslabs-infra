@@ -27,7 +27,7 @@
 <link rel="icon" href="/logo.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="theme.css?v=54"><link rel="stylesheet" href="balance.css?v=3" media="(min-width:1000px)"><script src="theme.js?v=1"></script>
+<link rel="stylesheet" href="theme.css?v=57"><link rel="stylesheet" href="balance.css?v=3" media="(min-width:1000px)"><script src="theme.js?v=1"></script>
 <link rel="stylesheet" href="design-system/ui-kit.css?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -69,11 +69,11 @@
         </button>
         <div class="nav-submenu">
           <div class="nav-submenu-inner">
-            <a href="pos.html" class="nav-sublink"><span>AUZsPOS</span></a>
-            <a href="qr-ordering.html" class="nav-sublink"><span>AUZsPOS QR</span></a>
-            <a href="payroll.html" class="nav-sublink"><span>AUZsPay</span></a>
-            <a href="accounting.html" class="nav-sublink"><span>AUZsLedger</span></a>
-            <a href="scan-and-bill.html" class="nav-sublink"><span>AUZsScan</span></a>
+            <a href="products.html#slab-pos" class="nav-sublink"><span>AUZsPOS</span></a>
+            <a href="products.html#slab-qr" class="nav-sublink"><span>AUZsPOS QR</span></a>
+            <a href="products.html#slab-payroll" class="nav-sublink"><span>AUZsPay</span></a>
+            <a href="products.html#slab-accounting" class="nav-sublink"><span>AUZsLedger</span></a>
+            <a href="products.html#slab-scan" class="nav-sublink"><span>AUZsScan</span></a>
             <a href="products.html#slab-mobile" class="nav-sublink"><span>AUZsMob</span></a>
             <a href="products.html#slab-salon" class="nav-sublink"><span>AUZslab Salon</span></a>
             <a href="studio.html" class="nav-sublink"><span>Studio &mdash; bespoke software</span></a>
@@ -97,10 +97,9 @@
         </div>
       </div>
 
-      <a href="intelligence.html" class="nav-link">Intelligence</a>
-      <a href="platform.html" class="nav-link">Why AUZslab</a>
+            <a href="platform.html" class="nav-link">Why AUZslab</a>
       <a href="live-demo.html" class="nav-link">Live demo</a>
-      <a href="pricing.html" class="nav-link">Pricing</a>
+      <a href="download-apps.html" class="nav-link">Download apps</a>
       <a href="cart.html" class="nav-link">Cart <span class="cart-count"></span></a>
 
       <div class="nav-group">
@@ -146,6 +145,12 @@
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px">
           <button class="btn btn-primary" data-open-contact>Let's talk</button>
           <a href="products.html" class="btn btn-ghost">See all products</a>
+        </div>
+        <div class="sp-badges">
+          <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>No long-term lock-in</span>
+          <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9" stroke-linecap="round"/><path d="M3 4v8h8" stroke-linecap="round" stroke-linejoin="round"/></svg>Cancel anytime</span>
+          <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z" stroke-linejoin="round"/></svg>Secure &amp; reliable</span>
+          <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3" stroke-linecap="round" stroke-linejoin="round"/></svg>Real support, not a bot</span>
         </div>
         </div>
         <div class="hero-art" role="presentation">
@@ -220,6 +225,166 @@
 
       <hr class="dash">
 
+      <section class="section tight" id="salon-plans">
+        <div class="label">Plans built for your chair count</div>
+        <h2 class="h-2" style="font-size:28px">From the first chair to the whole house.</h2>
+        <p class="p" style="margin-top:8px;max-width:48em">Named the old way a salon earns its name &mdash; one chair at a time. Every plan here is set up and switched on by us once we know your business; this isn't a fixed online checkout, so treat the numbers below as a starting point for comparison.</p>
+
+        <div class="sp-toggle-row">
+          <div class="sp-toggle" id="spToggle" role="group" aria-label="Billing period">
+            <button type="button" class="on" data-period="m" aria-pressed="true">Monthly</button>
+            <button type="button" data-period="y" aria-pressed="false">Yearly <span class="sp-save">2 months free</span></button>
+          </div>
+          <span class="sp-toggle-note">&larr; switch to yearly, keep two months' worth</span>
+        </div>
+
+        <div class="sp-grid" id="spGrid">
+          <div class="sp-card" data-plan="The Studio">
+            <div class="sp-head"><span class="sp-num">I</span><span class="sp-name">The Studio</span></div>
+            <p class="sp-tagline">One chair, every tool. For a solo stylist or a salon just opening its doors.</p>
+            <div class="sp-price-row"><span class="sp-price sp-amt">&#8377;1,080</span><span class="sp-per sp-unit">/month</span> <span class="sp-gst gst-t" hidden>+ GST</span></div>
+            <div class="sp-wassave"><span class="sp-was">&#8377;1,350</span><span class="sp-save2">Save &#8377;270</span></div>
+            <button type="button" class="btn btn-ghost sp-cta" data-open-contact data-plan="The Studio">Start here</button>
+            <ul class="sp-feats">
+              <li>1 staff login</li>
+              <li>Branded website &amp; booking</li>
+              <li>WhatsApp bills &amp; clients</li>
+              <li>Expense tracking</li>
+              <li>Self check-in QR</li>
+              <li>Email support</li>
+            </ul>
+          </div>
+
+          <div class="sp-card hi" data-plan="The Salon">
+            <span class="sp-fav">House favourite</span>
+            <div class="sp-head"><span class="sp-num">II</span><span class="sp-name">The Salon</span></div>
+            <p class="sp-tagline">For a small team sharing chairs, with payroll and memberships switched on.</p>
+            <div class="sp-price-row"><span class="sp-price sp-amt">&#8377;1,360</span><span class="sp-per sp-unit">/month</span> <span class="sp-gst gst-t" hidden>+ GST</span></div>
+            <div class="sp-wassave"><span class="sp-was">&#8377;1,700</span><span class="sp-save2">Save &#8377;340</span></div>
+            <button type="button" class="btn btn-primary sp-cta" data-open-contact data-plan="The Salon">Choose The Salon</button>
+            <ul class="sp-feats">
+              <li>Up to 5 staff logins</li>
+              <li>Everything in The Studio</li>
+              <li>Packages &amp; memberships</li>
+              <li>Cash register</li>
+              <li>Payroll clock-ins</li>
+              <li>Priority WhatsApp support</li>
+            </ul>
+          </div>
+
+          <div class="sp-card" data-plan="The Atelier">
+            <div class="sp-head"><span class="sp-num">III</span><span class="sp-name">The Atelier</span></div>
+            <p class="sp-tagline">For a busy house that runs on numbers &mdash; full analytics and automation.</p>
+            <div class="sp-price-row"><span class="sp-price sp-amt">&#8377;2,720</span><span class="sp-per sp-unit">/month</span> <span class="sp-gst gst-t" hidden>+ GST</span></div>
+            <div class="sp-wassave"><span class="sp-was">&#8377;3,400</span><span class="sp-save2">Save &#8377;680</span></div>
+            <button type="button" class="btn btn-ghost sp-cta" data-open-contact data-plan="The Atelier">Choose The Atelier</button>
+            <ul class="sp-feats">
+              <li>Unlimited staff logins</li>
+              <li>Everything in The Salon</li>
+              <li>Full analytics &amp; trends</li>
+              <li>Automatic WhatsApp alerts</li>
+              <li>Priority support</li>
+              <li>A dedicated setup call</li>
+            </ul>
+          </div>
+
+          <div class="sp-card" data-plan="The Maison">
+            <div class="sp-head"><span class="sp-num">IV</span><span class="sp-name">The Maison</span></div>
+            <p class="sp-tagline">For a brand with more than one address, built around how you already work.</p>
+            <div class="sp-price-row"><span class="sp-price sp-amt">&#8377;5,440</span><span class="sp-per sp-unit">/month</span> <span class="sp-gst gst-t" hidden>+ GST</span></div>
+            <div class="sp-wassave"><span class="sp-was">&#8377;6,800</span><span class="sp-save2">Save &#8377;1,360</span></div>
+            <button type="button" class="btn btn-ghost sp-cta" data-open-contact data-plan="The Maison">Talk to us</button>
+            <ul class="sp-feats">
+              <li>Multiple branches, one brand</li>
+              <li>Everything in The Atelier</li>
+              <li>Bespoke design, by AUZslab Studio</li>
+              <li>A named AUZslab contact</li>
+              <li>Custom integrations</li>
+              <li>Tailored onboarding</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="sp-strip">
+          <div class="sp-strip-pitch"><span class="sp-strip-symbol">&#10022;</span><div><b>Pay yearly, keep two months' worth.</b><small>Best value once you're ready to commit.</small></div></div>
+          <div class="sp-strip-price"><b>The Salon, yearly</b><div><span class="sp-strip-amt">&#8377;13,600</span><span class="sp-strip-per">/year</span> <span class="sp-was">&#8377;17,000</span> <span class="sp-save2">Save &#8377;3,400</span></div></div>
+          <button type="button" class="btn btn-primary" data-open-contact data-plan="The Salon (yearly)">Choose annual billing &#8599;</button>
+        </div>
+
+        <p class="sp-note">Prices shown exclude GST<span class="gst-t" hidden>, added on top</span>. A one-time onboarding fee and a one-time setup fee apply to every new AUZslab Salon account &mdash; both confirmed in your quote, never a surprise on the bill.</p>
+        <p class="sp-note" style="margin-top:6px">Onboarding fee: &#8377;1,460. Setup fee: &#8377;2,190 (covers your console, services and stylists being configured). Hardware &mdash; a receipt printer or tablet, if you want one &mdash; is charged additionally, and a custom salon website is quoted separately.</p>
+        <p class="sp-note" style="margin-top:6px">Shown for comparison, not a checkout &mdash; every salon is quoted directly once we know your chairs, staff and what you need switched on. <button type="button" class="sp-link" data-open-contact>Tell us about your salon &rarr;</button></p>
+      </section>
+
+      <hr class="dash">
+
+      <section class="section tight" id="salon-compare">
+        <div class="label">Compare plans</div>
+        <h2 class="h-2" style="font-size:24px">Every plan, side by side.</h2>
+        <p class="p" style="margin-top:8px">All four run the same AUZslab Salon console &mdash; each tier just switches more of it on.</p>
+        <div class="sp-tablewrap">
+          <table class="sp-table">
+            <thead><tr><th>Feature</th><th>Studio</th><th>Salon</th><th>Atelier</th><th>Maison</th></tr></thead>
+            <tbody>
+              <tr><td>Staff logins</td><td>1</td><td>Up to 5</td><td>Unlimited</td><td>Unlimited</td></tr>
+              <tr><td>Branches</td><td>1</td><td>1</td><td>1</td><td>Multiple, one brand</td></tr>
+              <tr><td>Website &amp; online booking</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td></tr>
+              <tr><td>WhatsApp bills &amp; clients</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td></tr>
+              <tr><td>Self check-in QR</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td></tr>
+              <tr><td>Packages &amp; memberships</td><td class="sp-dash">&mdash;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td></tr>
+              <tr><td>Cash register</td><td class="sp-dash">&mdash;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td></tr>
+              <tr><td>Payroll clock-ins</td><td class="sp-dash">&mdash;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td></tr>
+              <tr><td>Analytics</td><td>Basic</td><td>Basic</td><td>Full, with trends</td><td>Full, with trends</td></tr>
+              <tr><td>WhatsApp automation</td><td class="sp-dash">&mdash;</td><td class="sp-dash">&mdash;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td></tr>
+              <tr><td>Bespoke design &amp; integrations</td><td class="sp-dash">&mdash;</td><td class="sp-dash">&mdash;</td><td class="sp-dash">&mdash;</td><td class="sp-check">&#10003;</td></tr>
+              <tr><td>Support</td><td>Email</td><td>Priority WhatsApp</td><td>Priority WhatsApp</td><td>Named contact</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <hr class="dash">
+
+      <section class="section tight" id="salon-addons">
+        <div class="addons-head">
+          <div>
+            <div class="label">Optional add-ons</div>
+            <h2 class="h-2" style="margin-top:12px;font-size:22px">Add to any plan when you need it.</h2>
+            <p class="p" style="margin-top:6px;max-width:40em">Keep the core plan simple and add extras only when your salon actually needs them.</p>
+          </div>
+          <button type="button" class="btn btn-ghost" data-open-contact>Ask about add-ons</button>
+        </div>
+        <div class="sp-addon-grid">
+          <div class="sp-addon">
+            <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <b>AUZsPay</b><span class="sp-addon-pr">&#8377;590/month</span>
+            <p>Staff attendance &amp; payroll &mdash; works with any plan, not just salons.</p>
+          </div>
+          <div class="sp-addon">
+            <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 0 0-7.6 13.8L3 21l4.4-1.3A9 9 0 1 0 12 3z" stroke-linejoin="round"/></svg></span>
+            <b>WhatsApp automation</b><span class="sp-addon-pr">from &#8377;299/month</span>
+            <p>Automatic booking reminders and bill alerts.</p>
+          </div>
+          <div class="sp-addon">
+            <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M12 20V4M20 20v-7" stroke-linecap="round"/></svg></span>
+            <b>Deeper analytics</b><span class="sp-addon-pr">from &#8377;499/month</span>
+            <p>Trend lines, stylist performance and more, beyond the basics.</p>
+          </div>
+          <div class="sp-addon">
+            <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-5.2-7-11a7 7 0 0 1 14 0c0 5.8-7 11-7 11z" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.4"/></svg></span>
+            <b>Extra branch</b><span class="sp-addon-pr">from &#8377;999/month</span>
+            <p>Bring another address under the same brand, set up by AUZslab Studio.</p>
+          </div>
+          <div class="sp-addon">
+            <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-2v-7h4M3 17v-7h4v7H5a2 2 0 0 1-2-2z" stroke-linejoin="round"/></svg></span>
+            <b>Priority support</b><span class="sp-addon-pr">from &#8377;399/month</span>
+            <p>Faster response and a named person to call.</p>
+          </div>
+        </div>
+      </section>
+
+      <hr class="dash">
+
       <section class="section tight">
         <div class="label">Live client</div>
         <h2 class="h-2">Showoff Salon, Jodhpur &mdash; running on AUZslab Salon.</h2>
@@ -261,7 +426,7 @@
         <h2 class="h-2">Put your salon online with AUZslab Salon.</h2>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
           <button class="btn btn-primary" data-open-contact>Let's talk</button>
-          <a href="pricing.html" class="btn btn-ghost">See pricing</a>
+          <a href="#salon-plans" class="btn btn-ghost">See pricing</a>
         </div>
       </section>
 
@@ -280,17 +445,17 @@
             </div>
             <div class="footer-col">
               <div class="footer-col-title">Products</div>
-              <a href="pos.html">AUZsPOS</a>
-              <a href="payroll.html">AUZsPay</a>
-              <a href="accounting.html">AUZsLedger</a>
-              <a href="scan-and-bill.html">AUZsScan</a>
+              <a href="products.html#slab-pos">AUZsPOS</a>
+              <a href="products.html#slab-payroll">AUZsPay</a>
+              <a href="products.html#slab-accounting">AUZsLedger</a>
+              <a href="products.html#slab-scan">AUZsScan</a>
               <a href="products.html">AUZsMob</a>
               <a href="products.html">All products</a>
             </div>
             <div class="footer-col">
               <div class="footer-col-title">Company</div>
-              <a href="pricing.html">Pricing</a>
               <a href="live-demo.html">Live demo</a>
+              <a href="download-apps.html">Download apps</a>
               <a href="contact.html">Contact</a>
               <a href="join-team.html">Join our team</a>
               <a href="signup.html">Sign in</a>
@@ -376,5 +541,117 @@
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script src="design-system/ui-kit.js?v=1"></script>
 <script src="company.js"></script>
+<script>
+// Salon plans toggle: monthly <-> yearly, and tags which plan a CTA click
+// came from so the shared contact modal (data-open-contact, site.js) opens
+// with it noted -- still the one real request-a-quote flow, nothing here is
+// a second checkout.
+//
+// The four hardcoded cards in the HTML above are the fallback, shown
+// instantly and kept if the live fetch ever fails (offline, RPC down --
+// never a blank or broken page). On load this fetches public_salon_tiers()
+// (db/198: a dedicated table, admin-editable from Admin -> Pricing -> "Salon
+// plan tiers", since these four tiers aren't four separate real priced
+// products -- there's only one real "salon" price in product_prices -- so
+// they couldn't be admin_set_product_price rows or `bundles` rows either,
+// see db/198's own comment) and, if it returns real data, fully replaces
+// each card's name/tagline/price/features/badge from it. Both "was" and
+// "save" are computed from the tier's own real yearly_price now (not a
+// guessed x10/x1.25), same arithmetic either way: was = monthly x 12,
+// save = was - whichever price is currently shown.
+(function () {
+  var toggle = document.getElementById('spToggle');
+  var grid = document.getElementById('spGrid');
+  if (!toggle || !grid) return;
+  var monthlyPrices = [1080, 1360, 2720, 5440];
+  var yearlyPrices = [10800, 13600, 27200, 54400];
+  var currentPeriod = 'm';
+  function inr(n) { return '₹' + Math.round(n).toLocaleString('en-IN'); }
+  function setPeriod(period) {
+    currentPeriod = period;
+    var yearly = period === 'y';
+    toggle.querySelectorAll('button[data-period]').forEach(function (b) {
+      var on = b.getAttribute('data-period') === period;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    grid.querySelectorAll('.sp-card').forEach(function (card, i) {
+      var monthly = monthlyPrices[i], yr = yearlyPrices[i];
+      if (typeof monthly !== 'number') return;
+      var amt = card.querySelector('.sp-amt');
+      var unit = card.querySelector('.sp-unit');
+      var was = card.querySelector('.sp-was');
+      var save = card.querySelector('.sp-save2');
+      var shown = yearly ? (yr || monthly * 10) : monthly;
+      if (amt) amt.textContent = inr(shown);
+      if (unit) unit.textContent = yearly ? '/year' : '/month';
+      if (was) was.textContent = inr(monthly * 12);
+      if (save) save.textContent = 'Save ' + inr(Math.max(0, monthly * 12 - shown));
+    });
+    var stripAmt = document.querySelector('.sp-strip-amt');
+    var stripPer = document.querySelector('.sp-strip-per');
+    var stripWas = document.querySelector('.sp-strip .sp-was');
+    var stripSave = document.querySelector('.sp-strip .sp-save2');
+    var m1 = monthlyPrices[1], y1 = yearlyPrices[1], shown1 = yearly ? (y1 || m1 * 10) : m1;
+    if (stripAmt) stripAmt.textContent = inr(shown1);
+    if (stripPer) stripPer.textContent = yearly ? '/year' : '/month';
+    if (stripWas) stripWas.textContent = inr(m1 * 12);
+    if (stripSave) stripSave.textContent = 'Save ' + inr(Math.max(0, m1 * 12 - shown1));
+  }
+  toggle.querySelectorAll('button[data-period]').forEach(function (b) {
+    b.addEventListener('click', function () { setPeriod(b.getAttribute('data-period')); });
+  });
+  function wireCta(btn) {
+    btn.addEventListener('click', function () {
+      var plan = btn.getAttribute('data-plan');
+      var msg = document.getElementById('m-message');
+      if (plan && msg && !msg.value) msg.value = 'Interested in the ' + plan + ' plan for my salon.';
+    });
+  }
+  document.querySelectorAll('.sp-cta').forEach(wireCta);
+
+  var CTA_LABEL = ['Start here', 'Choose {name}', 'Choose {name}', 'Talk to us'];
+  var CTA_CLASS = ['btn-ghost', 'btn-primary', 'btn-ghost', 'btn-ghost'];
+  var NUMERALS = ['I', 'II', 'III', 'IV'];
+  function renderFromLive(tiers) {
+    if (!Array.isArray(tiers) || tiers.length !== 4) return;
+    monthlyPrices = tiers.map(function (t) { return Number(t.monthly_price) || 0; });
+    yearlyPrices = tiers.map(function (t) { return Number(t.yearly_price) || 0; });
+    grid.querySelectorAll('.sp-card').forEach(function (card, i) {
+      var t = tiers[i]; if (!t) return;
+      card.classList.toggle('hi', !!t.highlighted);
+      var name = card.querySelector('.sp-name'); if (name) name.textContent = t.name;
+      var tag = card.querySelector('.sp-tagline'); if (tag) tag.textContent = t.tagline || '';
+      var fav = card.querySelector('.sp-fav');
+      if (t.badge) {
+        if (!fav) { fav = document.createElement('span'); fav.className = 'sp-fav'; card.insertBefore(fav, card.firstChild); }
+        fav.textContent = t.badge; fav.hidden = false;
+      } else if (fav) { fav.hidden = true; }
+      var feats = card.querySelector('.sp-feats');
+      if (feats && Array.isArray(t.features)) {
+        feats.textContent = '';
+        t.features.forEach(function (f) { var li = document.createElement('li'); li.textContent = f; feats.appendChild(li); });
+      }
+      var cta = card.querySelector('.sp-cta');
+      if (cta) {
+        cta.setAttribute('data-plan', t.name);
+        cta.textContent = CTA_LABEL[i].replace('{name}', t.name);
+        cta.className = 'btn ' + CTA_CLASS[i] + ' sp-cta';
+      }
+    });
+    var stripName = document.querySelector('.sp-strip-price b'); if (stripName) stripName.textContent = tiers[1].name + ', yearly';
+    setPeriod(currentPeriod);
+  }
+
+  try {
+    var sb = supabase.createClient(CFG.url, CFG.key);
+    sb.rpc('public_salon_tiers').then(function (r) { renderFromLive(r && r.data); }).catch(function () {});
+    sb.payments.config().then(function (c) {
+      c = c && c.data;
+      if (c && c.gstPct > 0) document.querySelectorAll('#salon-plans .gst-t').forEach(function (e) { e.hidden = false; });
+    }).catch(function () {});
+  } catch (e) {}
+})();
+</script>
 </body>
 </html>

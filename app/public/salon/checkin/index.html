@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Check in</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#391D21">
+<link rel="icon" type="image/png" href="/api/icon/32.png">
+<link rel="apple-touch-icon" href="/api/icon/180.png">
+<link rel="manifest" href="/api/manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/salon/assets/style.css">
+<style>
+  body.ck { background: var(--plum); min-height: 100vh; min-height: 100dvh; }
+  .ck-wrap { max-width: 480px; margin: 0 auto; padding: 40px 20px 60px; }
+  .ck-head { text-align: center; color: var(--cream); margin-bottom: 24px; }
+  .ck-head img { border-radius: 14px; margin-bottom: 14px; }
+  .ck-head h1 { font-size: clamp(26px, 5vw, 34px); margin-bottom: 6px; }
+  .ck-head p { opacity: .85; font-size: 15px; }
+  .ck-panel { background: #fff; color: var(--plum); border-radius: var(--r-lg); padding: clamp(22px, 5vw, 36px); box-shadow: 0 30px 60px -24px rgba(0,0,0,.4); }
+</style>
+</head>
+<body class="ck">
+<div class="ck-wrap">
+  <div class="ck-head">
+    <img src="/salon/assets/logo-cream.png" alt="" width="64" height="64">
+    <h1 id="ckTitle">Check in</h1>
+    <p>Fill in your details and pick what you'd like today. Our team will come find you.</p>
+  </div>
+  <div class="ck-panel">
+    <form id="ckForm" novalidate>
+      <div class="field"><label for="ckName">Your name</label><input id="ckName" name="name" autocomplete="name" required maxlength="80"></div>
+      <div class="row2">
+        <div class="field"><label for="ckPhone">Phone number</label><input id="ckPhone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required maxlength="20"></div>
+        <div class="field"><label for="ckEmail">Email (optional)</label><input id="ckEmail" name="email" type="email" autocomplete="email" maxlength="120"></div>
+      </div>
+      <div class="field">
+        <label id="ckPickLabel">Services</label>
+        <details class="picker" id="ckPicker">
+          <summary aria-labelledby="ckPickLabel"><span id="ckPickSummary">Choose services</span></summary>
+          <div class="pick-list" id="ckPickList"></div>
+        </details>
+        <div class="chips" id="ckPickChips"></div>
+      </div>
+      <div class="field"><label for="ckNote">Anything we should know (optional)</label><textarea id="ckNote" name="note" rows="2" maxlength="300"></textarea></div>
+      <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <p class="error" id="ckError" role="alert"></p>
+      <button class="btn btn-wide" type="submit" id="ckBtn">Check in</button>
+    </form>
+    <div class="done" id="ckDone" hidden></div>
+  </div>
+</div>
+<script src="/salon/assets/dom.js"></script>
+<script src="/salon/assets/checkin.js"></script>
+</body>
+</html>

@@ -5,7 +5,7 @@
    refuses on a business rule (db/068: a cashier voiding a paid bill, a discount over the limit without approval)
    is rolled back to the server's copy and the cashier is told why, instead of sitting in the outbox for ever. */
 'use strict';
-const VAPID_PUBLIC = 'BD-oWPPzj7gzvYCrQiNAowSxyIZWfoRNO3A7tGqs3km352VZuNhzl8sZvnri5IilWEeAE1AYzWrfiZJS_rmhp_c';
+const VAPID_PUBLIC = 'BFQTtl3U3YPPl7qBOO00GjCNsW4N-T5jyq4UGs2Mk9s3lHoichGl0_B4yYrPCmCfscnw63XbHtpOp2Iy1nWMmZA';
 const C = window.CFG || {}, sb = supabase.createClient(C.url, C.key);
 const S = {
   tab: 'sell', cur: null, role: 'cashier', role_id: null, perms: null, features: null, enabledFeatures: {}, user: null, authExpired: false,

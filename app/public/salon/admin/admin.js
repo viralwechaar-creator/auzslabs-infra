@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  let D = null, current = 'dashboard', B = null, ME = { role: 'owner' };
+  let D = null, current = 'dashboard', B = null, ME = { role: 'owner' }, WA = null;
   const isOwner = () => ME.role === 'owner';
   const view = () => $('#view');
 
@@ -14,7 +14,49 @@
   let tt;
   function toast(msg, err) { const t = $('#toast'); t.textContent = msg; t.className = 'a-toast show' + (err ? ' err' : ''); clearTimeout(tt); tt = setTimeout(() => { t.className = 'a-toast'; }, 3400); }
   const fail = e => toast(e.message || 'Something went wrong', true);
-  const load = async () => { D = await api('GET', '/api/admin/data'); if (!D.today) D.today = new Date().toLocaleDateString('en-CA'); renderNav(); };
+
+  /* ---------- live notifications (Web Push, db/193) ---------- */
+  const VAPID_PUBLIC = 'BFQTtl3U3YPPl7qBOO00GjCNsW4N-T5jyq4UGs2Mk9s3lHoichGl0_B4yYrPCmCfscnw63XbHtpOp2Iy1nWMmZA';
+  function b64ToArr(s) { const p = '='.repeat((4 - (s.length % 4)) % 4), b = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')), a = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a; }
+  async function currentPushSub() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return null;
+    const reg = await navigator.serviceWorker.register('/salon/sw.js', { scope: '/salon/' });
+    return reg.pushManager.getSubscription();
+  }
+  async function enableNotify() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) throw new Error('This browser cannot show notifications when the tab is closed.');
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') throw new Error('Allow notifications for this site in the browser settings.');
+    const reg = await navigator.serviceWorker.register('/salon/sw.js', { scope: '/salon/' });
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToArr(VAPID_PUBLIC) });
+    await api('POST', '/api/admin/push/subscribe', sub.toJSON());
+  }
+  async function disableNotify() {
+    const sub = await currentPushSub();
+    if (sub) { await api('POST', '/api/admin/push/unsubscribe', { endpoint: sub.endpoint }); await sub.unsubscribe(); }
+  }
+  async function drawNotifyBox(box) {
+    const sub = await currentPushSub().catch(() => null);
+    box.replaceChildren(
+      h('label', { class: 'a-check', style: 'display:flex;align-items:center;gap:10px' },
+        h('input', { type: 'checkbox', checked: !!sub, onchange: async e => {
+          const on = e.target.checked;
+          try {
+            if (on) await enableNotify(); else await disableNotify();
+            toast(on ? 'Notifications are on for this device' : 'Notifications are off for this device');
+          } catch (ex) { e.target.checked = !on; fail(ex); }
+        } }),
+        'Notify this device'),
+      h('p', { class: 'a-note', style: 'margin-top:8px', text: 'Turns this on for the browser/device you are using right now. Turn it on separately on a phone or another computer too.' }));
+  }
+
+  const load = async () => {
+    D = await api('GET', '/api/admin/data'); if (!D.today) D.today = new Date().toLocaleDateString('en-CA'); renderNav();
+    // Fire-and-forget: lets invoice "Send" buttons know whether automatic sending is on without
+    // blocking the main load. Stays null (treated as off) if it fails.
+    api('GET', '/api/admin/whatsapp').then(w => { WA = w; }).catch(() => {});
+  };
 
   function modal(title, body, actions) {
     return new Promise(res => {
@@ -87,36 +129,59 @@
     go(location.hash.slice(1) in VIEWS && allowed(location.hash.slice(1)) ? location.hash.slice(1) : 'dashboard');
   }
 
-  const TITLES = { dashboard: 'Today', bookings: 'Bookings', billing: 'Billing', clients: 'Clients', menu: 'Menu and prices', stylists: 'Hairstylists', gallery: 'Gallery', content: 'Website text', settings: 'Settings', expenses: 'Expenses', analytics: 'Analytics', staff: 'Staff' };
-  const ICONS = { dashboard: 'grid', bookings: 'calendar', billing: 'receipt', clients: 'users', menu: 'list', stylists: 'cut', gallery: 'pics', content: 'doc', settings: 'gear', expenses: 'wallet', analytics: 'chart', staff: 'chair' };
+  const TITLES = { dashboard: 'Today', bookings: 'Bookings', checkins: 'Check-ins', billing: 'Billing', clients: 'Clients', packages: 'Packages', cash: 'Cash register', expenses: 'Expenses', analytics: 'Analytics', menu: 'Menu and prices', stylists: 'Hairstylists', gallery: 'Gallery', content: 'Website text', staff: 'Staff', settings: 'Settings' };
+  const ICONS = { dashboard: 'grid', bookings: 'calendar', checkins: 'wave', billing: 'receipt', clients: 'users', packages: 'star', cash: 'wallet', expenses: 'wallet', analytics: 'chart', menu: 'list', stylists: 'cut', gallery: 'pics', content: 'doc', staff: 'chair', settings: 'gear' };
   const PRIMARY = ['dashboard', 'bookings', 'billing', 'clients'];
-  /* Staff logins see exactly the PRIMARY four. This is only the UI half: the API
-     refuses every other endpoint for a staff session (server/src/salon.js). */
-  const allowed = k => isOwner() || PRIMARY.includes(k);
+  /* Everything outside PRIMARY is grouped under labelled headers in the side nav
+     (desktop) and the More sheet (phone) -- a flat 13-item list was hard to scan. */
+  const GROUPS = [
+    { label: 'Front desk', keys: ['dashboard', 'bookings', 'checkins', 'billing', 'clients'] },
+    { label: 'Business', keys: ['packages', 'cash', 'expenses', 'analytics'] },
+    { label: 'Set up', keys: ['menu', 'stylists', 'gallery', 'content', 'staff', 'settings'] },
+  ];
+  /* Staff logins see the PRIMARY four plus Check-ins (turning one into a bill is
+     the same job as billing a walk-in). This is only the UI half: the API refuses
+     every other endpoint for a staff session (server/src/salon/router.js). */
+  const STAFF_ALSO = ['checkins'];
+  const allowed = k => isOwner() || PRIMARY.includes(k) || STAFF_ALSO.includes(k);
   const SECONDARY = () => Object.keys(TITLES).filter(k => !PRIMARY.includes(k) && allowed(k));
+  const pendingCount = k => k === 'bookings' ? D.bookings.filter(b => b.status === 'pending').length
+    : k === 'checkins' ? (D.checkins || []).filter(c => c.status === 'new').length : 0;
 
   function renderNav() {
-    const pending = D.bookings.filter(b => b.status === 'pending').length;
     const items = Object.entries(TITLES).filter(([k]) => allowed(k));
     $('#rail').replaceChildren(...items.map(([k, t]) => h('button', { type: 'button', title: t, 'aria-label': t, 'aria-current': k === current ? 'page' : null, onclick: () => go(k) }, icon(ICONS[k]))));
-    $('#sideNav').replaceChildren(...items.map(([k, t]) => h('button', { type: 'button', 'aria-current': k === current ? 'page' : null, onclick: () => go(k) },
-      icon(ICONS[k]), h('span', { class: 'a-nav-label', text: t }), k === 'bookings' && pending ? h('span', { class: 'badge', text: pending }) : null)));
+
+    $('#sideNav').replaceChildren(...GROUPS.flatMap((g, gi) => {
+      const keys = g.keys.filter(k => allowed(k) && TITLES[k]);
+      if (!keys.length) return [];
+      return [
+        gi ? h('div', { class: 'a-nav-sep' }) : null,
+        h('div', { class: 'a-nav-group', text: g.label }),
+        ...keys.map(k => h('button', { type: 'button', 'aria-current': k === current ? 'page' : null, onclick: () => go(k) },
+          icon(ICONS[k]), h('span', { class: 'a-nav-label', text: TITLES[k] }), pendingCount(k) ? h('span', { class: 'badge', text: pendingCount(k) }) : null)),
+      ];
+    }));
 
     const inMore = SECONDARY().includes(current);
     $('#tabbar').replaceChildren(
       ...PRIMARY.map(k => h('button', { type: 'button', 'aria-current': k === current ? 'page' : null, onclick: () => go(k) },
-        icon(ICONS[k]), h('span', { text: TITLES[k] }), k === 'bookings' && pending ? h('span', { class: 'a-tab-dot' }) : null)),
-      h('button', { type: 'button', 'aria-current': inMore ? 'page' : null, onclick: openMore }, icon('dots'), h('span', { text: 'More' })));
+        icon(ICONS[k]), h('span', { text: TITLES[k] }), pendingCount(k) ? h('span', { class: 'a-tab-dot' }) : null)),
+      h('button', { type: 'button', 'aria-current': inMore ? 'page' : null, onclick: openMore }, icon('dots'), h('span', { text: 'More' }), (SECONDARY().some(k => pendingCount(k))) ? h('span', { class: 'a-tab-dot' }) : null));
   }
 
   function openMore() {
-    const pending = D.bookings.filter(b => b.status === 'pending').length;
     const d = h('dialog', { class: 'a-dialog' },
       h('button', { type: 'button', class: 'a-dialog-close', 'aria-label': 'Close', onclick: () => d.close() }, icon('close')),
       h('h2', { text: 'More' }),
       h('div', { class: 'a-more-list' },
-        SECONDARY().map(k => h('button', { type: 'button', 'aria-current': k === current ? 'page' : null, onclick: () => { d.close(); go(k); } },
-          icon(ICONS[k]), TITLES[k], k === 'bookings' && pending ? h('span', { class: 'badge', text: pending }) : null)),
+        GROUPS.flatMap(g => {
+          const keys = g.keys.filter(k => allowed(k) && SECONDARY().includes(k));
+          if (!keys.length) return [];
+          return [h('div', { class: 'a-more-group', text: g.label }),
+            ...keys.map(k => h('button', { type: 'button', 'aria-current': k === current ? 'page' : null, onclick: () => { d.close(); go(k); } },
+              icon(ICONS[k]), TITLES[k], pendingCount(k) ? h('span', { class: 'badge', text: pendingCount(k) }) : null))];
+        }),
         h('div', { class: 'a-more-sep' }),
         h('a', { href: '/salon/', target: '_blank', rel: 'noopener' }, icon('doc'), 'View website'),
         h('button', { type: 'button', onclick: () => { d.close(); window.auzHelp && auzHelp.open(null); } }, icon('doc'), 'Help & report a problem'),
@@ -268,8 +333,11 @@
     const patch = async (st, body, msg) => { try { await api('PATCH', '/api/admin/staff/' + st.id, body); toast(msg); viewStaff(); } catch (ex) { fail(ex); } };
     const list = data.staff.length
       ? h('div', { class: 'a-scroll' }, h('table', { class: 'a-table' },
-        h('thead', {}, h('tr', {}, ['Staff', 'Phone', 'Payroll', 'Bills', ''].map(t => h('th', { text: t })))),
+        h('thead', {}, h('tr', {}, [...(data.payroll ? ['Working now'] : []), 'Staff', 'Phone', 'Payroll', 'Bills', ''].map(t => h('th', { text: t })))),
         h('tbody', {}, data.staff.map(st => h('tr', { style: st.active ? '' : 'opacity:.55' },
+          !data.payroll ? null : h('td', { 'data-label': 'Working now' }, st.employeeId
+            ? h('span', { class: 'badge ' + (st.clockedIn ? '' : 'btn-alt'), text: st.clockedIn ? 'Clocked in' : 'Off clock' })
+            : h('span', { class: 'muted', text: '—' })),
           h('td', { 'data-label': 'Staff' }, h('b', { text: st.name }), h('br'), h('span', { class: 'muted', text: st.designation + (st.active ? '' : ' (off)') })),
           h('td', { 'data-label': 'Phone', text: st.phone }),
           h('td', { 'data-label': 'Payroll' }, st.employeeId ? 'Linked' : (data.payroll ? btn('Link to payroll', () => patch(st, { linkPayroll: true }, 'Linked to payroll'), 'btn-sm btn-alt') : 'Not linked')),
@@ -284,8 +352,8 @@
             btn('Remove', async () => { if (await confirmBox('Remove ' + st.name + '? They can no longer sign in. Their payroll record stays.', 'Remove')) { try { await api('DELETE', '/api/admin/staff/' + st.id); toast('Staff removed'); viewStaff(); } catch (ex) { fail(ex); } } }, 'btn-sm btn-danger'))))))))
       : emptyNote('No staff logins yet. Add one so your team can make bills and manage bookings.', 'chair');
     view().replaceChildren(
-      h('div', { class: 'a-card', style: 'max-width:760px;margin-bottom:24px' },
-        h('p', { text: 'Staff sign in with their phone number. They can see Today, Bookings, Billing and Clients only: they can take bookings, make bills and send them on WhatsApp, but cannot change the menu, prices, website, gallery, settings or expenses, void bills, or see other people\'s bills.' }),
+      h('div', { class: 'a-card', style: 'margin-bottom:24px' },
+        h('p', { style: 'max-width:64ch', text: 'Staff sign in with their phone number. They can see Today, Bookings, Billing and Clients only: they can take bookings, make bills and send them on WhatsApp, but cannot change the menu, prices, website, gallery, settings or expenses, void bills, or see other people\'s bills.' }),
         data.payroll
           ? [h('p', { class: 'a-note', style: 'margin-top:8px', text: 'Staff are linked to AUZslab Payroll. Their clock in and out on the Today tab becomes their attendance there; set their salary under Payroll, Employees.' }),
             h('a', { class: 'btn btn-sm btn-alt', style: 'margin-top:10px', href: '/payroll.html', target: '_blank', rel: 'noopener' }, 'Open Payroll')]
@@ -304,24 +372,78 @@
 
   /* ---------- dashboard ---------- */
   function viewDashboard() {
-    setActions(btn('New bill', () => { B = newBill(); go('billing'); }), btn('Add booking', addBookingDialog, 'btn-alt'), isOwner() ? null : btn('My password', myPasswordDialog, 'btn-alt'));
+    setActions(btn('New bill', () => { B = newBill(); go('billing'); }), btn('Add booking', addBookingDialog, 'btn-alt'),
+      !isOwner() ? null : btn('Open register', () => go('cash'), 'btn-alt'), isOwner() ? null : btn('My password', myPasswordDialog, 'btn-alt'));
     const t = D.today, live = D.bookings.filter(b => b.status !== 'cancelled');
     const invM = D.invoices.filter(i => !i.void && i.date.startsWith(t.slice(0, 7)));
     const stats = [[live.filter(b => b.date === t).length, 'Bookings today'], [D.bookings.filter(b => b.status === 'pending').length, 'Waiting for confirmation'],
       [invM.length, isOwner() ? 'Bills this month' : 'Your bills this month'], [inr(invM.reduce((a, i) => a + i.total, 0)), isOwner() ? 'Billed this month' : 'You billed this month']];
     const up = live.filter(b => b.date >= t && b.status !== 'completed').sort(cmpWhen).slice(0, 12);
+    // Who billed what today, by who was entered as serving the client -- the closest thing to a "today's
+    // workload" view this data model supports (bookings carry no stylist assignment at all, only invoices
+    // carry a servedBy name). For a staff login this naturally only ever shows their own one row.
+    const byServer = new Map();
+    for (const i of D.invoices) {
+      if (i.void || i.date !== t) continue;
+      const name = i.servedBy || 'Unassigned';
+      const c = byServer.get(name) || { name, bills: 0, revenue: 0 };
+      c.bills++; c.revenue += i.total; byServer.set(name, c);
+    }
+    const teamToday = [...byServer.values()].sort((a, b) => b.revenue - a.revenue);
+    const waitingCheckins = (D.checkins || []).filter(c => c.status === 'new').length;
     view().replaceChildren(
       punchCard(),
+      !waitingCheckins ? null : h('div', { class: 'a-card', style: 'margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap' },
+        h('span', {}, h('b', { text: waitingCheckins + (waitingCheckins === 1 ? ' client has' : ' clients have') + ' checked themselves in' }), ' — waiting to be turned into a bill.'),
+        btn('Review check-ins', () => go('checkins'), 'btn-sm')),
       h('div', { class: 'a-stats' }, stats.map(([n, l]) => h('div', { class: 'a-stat' }, h('b', { text: n }), h('span', { text: l })))),
-      h('div', { class: 'a-section' }, h('h2', { class: 'a-h2', text: 'Coming up' }), bookingTable(up)));
+      h('div', { class: 'a-section' }, h('h2', { class: 'a-h2', text: 'Coming up' }), bookingTable(up)),
+      !teamToday.length ? null : h('div', { class: 'a-section' }, h('h2', { class: 'a-h2', text: 'Today\'s team' }),
+        h('div', { class: 'a-scroll' }, h('table', { class: 'a-table' },
+          h('thead', {}, h('tr', {}, ['Served by', 'Bills', 'Billed'].map(x => h('th', { text: x })))),
+          h('tbody', {}, teamToday.map(c => h('tr', {}, h('td', { 'data-label': 'Served by', text: c.name }), h('td', { 'data-label': 'Bills', text: c.bills }), h('td', { 'data-label': 'Billed', text: inr(c.revenue) }))))))));
   }
 
   /* ---------- billing ---------- */
-  const newBill = pre => ({ client: { name: '', phone: '', email: '' }, date: D.today, servedBy: isOwner() ? '' : (ME.name || ''), items: [], discType: 'flat', discVal: 0, note: '', bookingId: '', ...pre });
+  const PAY_MODES = { cash: 'Cash', upi: 'UPI / QR', card: 'Card', credit: 'Credit (pay later)' };
+  const newBill = pre => ({ client: { name: '', phone: '', email: '' }, date: D.today, servedBy: isOwner() ? '' : (ME.name || ''), items: [], discType: 'flat', discVal: 0, note: '', bookingId: '', paymentMode: 'cash', ...pre });
   function billFromBooking(b) {
     const idx = menuIndex();
     return newBill({ client: { name: b.name, phone: b.phone, email: b.email || '' }, date: b.date < D.today ? D.today : b.date, bookingId: b.id,
       items: b.services.map(s => { const m = idx.get(s.id); return { name: s.name, qty: 1, price: m ? m.price : 0 }; }) });
+  }
+  function billFromCheckin(c) {
+    const idx = menuIndex();
+    return newBill({ client: { name: c.name, phone: c.phone, email: c.email || '' }, date: D.today, bookingId: c.bookingId || '', note: c.note || '',
+      items: c.services.map(s => { const m = idx.get(s.id); return { name: s.name, qty: 1, price: m ? m.price : s.price || 0 }; }) });
+  }
+
+  /* ---------- self check-in queue (client scans a QR, picks their own services) ---------- */
+  function viewCheckins() {
+    const list = (D.checkins || []).slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const waiting = list.filter(c => c.status === 'new');
+    const handled = list.filter(c => c.status !== 'new');
+    async function act(c, status) {
+      try {
+        await api('PATCH', '/api/admin/checkins/' + c.id, { status });
+        await load();
+        if (status === 'accepted') { B = billFromCheckin(c); toast('Added to a new bill'); go('billing'); } else { rerender(); toast('Check-in declined'); }
+      } catch (ex) { fail(ex); }
+    }
+    const row = c => h('div', { class: 'a-card', style: 'margin-bottom:12px' },
+      h('div', { style: 'display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap' },
+        h('div', {},
+          h('b', { text: c.name }), h('br'),
+          h('span', { class: 'muted', text: c.phone + (c.email ? ' · ' + c.email : '') }), h('br'),
+          h('span', { text: c.services.map(s => s.name).join(', ') }),
+          c.note ? [h('br'), h('span', { class: 'muted', text: 'Note: ' + c.note })] : null,
+          c.bookingId ? [h('br'), h('span', { class: 'muted', text: 'Matches an existing booking' })] : null),
+        c.status === 'new' ? h('div', { class: 'a-row-actions', style: 'align-items:flex-start' },
+          btn('Create bill', () => act(c, 'accepted'), 'btn-sm'),
+          btn('Decline', () => act(c, 'declined'), 'btn-sm btn-alt')) : h('span', { class: 'badge-s ' + c.status, text: c.status === 'accepted' ? 'Billed' : 'Declined' })));
+    view().replaceChildren(
+      waiting.length ? waiting.map(row) : emptyNote('No one is waiting. Put the check-in QR code up at your counter (Settings) so clients can check themselves in.', 'wave'),
+      handled.length ? h('div', { class: 'a-section', style: 'margin-top:28px' }, h('h2', { class: 'a-h2', text: 'Earlier today' }), handled.slice(0, 20).map(row)) : null);
   }
   const calc = b => {
     const sub = b.items.reduce((a, i) => a + (+i.qty || 0) * (+i.price || 0), 0);
@@ -362,28 +484,35 @@
     const phoneEl = inp(B.client, 'phone', { id: 'bPhone', type: 'tel', list: 'clientList', autocomplete: 'off',
       onchange: e => { const c = D.clients.find(x => x.phone === e.target.value.replace(/\D/g, '').slice(-10)) || D.clients.find(x => x.phone === e.target.value); if (c) { B.client.name = c.name; B.client.email = c.email || ''; nameEl.value = c.name; emailEl.value = B.client.email; B.client.phone = c.phone; phoneEl.value = c.phone; } } });
     const emailEl = inp(B.client, 'email', { id: 'bEmail', type: 'email' });
+    const fillClient = c => { B.client.name = c.name; B.client.phone = c.phone; B.client.email = c.email || ''; nameEl.value = c.name; phoneEl.value = c.phone; emailEl.value = B.client.email; };
+    const recentClients = D.clients.slice().sort((a, b) => (b.last || '').localeCompare(a.last || '')).slice(0, 8);
+    const recentRow = !recentClients.length ? null : h('div', { style: 'margin:0 0 16px' },
+      h('p', { class: 'a-note', style: 'margin:0 0 6px', text: 'Recent clients — tap to fill in' }),
+      h('div', { class: 'a-row-actions', style: 'flex-wrap:wrap' }, recentClients.map(c => btn(c.name, () => fillClient(c), 'btn-sm btn-alt'))));
     const discRow = h('div', { class: 'row2' },
       fld('Discount type', h('select', { id: 'bDT', onchange: e => { B.discType = e.target.value; drawTotals(); } }, h('option', { value: 'flat', selected: B.discType === 'flat', text: 'Amount (rupees)' }), h('option', { value: 'percent', selected: B.discType === 'percent', text: 'Percent' })), 'bDT'),
       fld('Discount', h('input', { id: 'bDV', type: 'number', min: 0, step: 'any', value: B.discVal, oninput: e => { B.discVal = +e.target.value; drawTotals(); } }), 'bDV'));
+    const payRow = fld('Payment mode', h('select', { id: 'bPay', onchange: e => { B.paymentMode = e.target.value; } },
+      Object.entries(PAY_MODES).map(([k, label]) => h('option', { value: k, selected: B.paymentMode === k, text: label }))), 'bPay');
     const genBtn = btn('Generate invoice', async () => {
       genBtn.disabled = true;
       try {
-        const r = await api('POST', '/api/admin/invoices', { client: B.client, date: B.date, servedBy: B.servedBy, items: B.items, discount: { type: B.discType, value: B.discVal }, note: B.note, bookingId: B.bookingId });
+        const r = await api('POST', '/api/admin/invoices', { client: B.client, date: B.date, servedBy: B.servedBy, items: B.items, discount: { type: B.discType, value: B.discVal }, note: B.note, bookingId: B.bookingId, paymentMode: B.paymentMode });
         await load(); B = newBill(); invoiceDialog(r.invoice); rerender();
       } catch (ex) { fail(ex); } finally { genBtn.disabled = false; }
     });
 
     const form = h('div', {},
-      h('h2', { class: 'a-h2', text: 'New bill' }), clientList, stylistList,
+      h('h2', { class: 'a-h2', text: 'New bill' }), clientList, stylistList, recentRow,
       h('div', { class: 'row2' }, fld('Client phone', phoneEl, 'bPhone'), fld('Client name', nameEl, 'bName')),
       h('div', { class: 'row2' }, fld('Email (optional)', emailEl, 'bEmail'), fld('Bill date', h('input', { type: 'date', id: 'bDate', value: B.date, onchange: e => { B.date = e.target.value; } }), 'bDate')),
       fld('Served by (optional)', inp(B, 'servedBy', { id: 'bBy', list: 'stylistList' }), 'bBy'),
       fld('Services used', addSel, 'addSvc'),
       h('div', { class: 'a-scroll' }, h('table', { class: 'a-bill-lines' }, lines)),
       btn('Add custom item', () => { B.items.push({ name: '', qty: 1, price: 0 }); drawLines(); }, 'btn-sm btn-alt'),
-      h('div', { style: 'height:20px' }), discRow, fld('Note on invoice (optional)', inp(B, 'note', { id: 'bNote' }), 'bNote'),
+      h('div', { style: 'height:20px' }), discRow, payRow, fld('Note on invoice (optional)', inp(B, 'note', { id: 'bNote' }), 'bNote'),
       totals, h('div', { style: 'margin-top:20px' }, genBtn),
-      h('p', { class: 'a-note', text: 'Payment is taken at the counter by QR or cash. Invoices show what was billed only.' }));
+      h('p', { class: 'a-note', text: 'The payment mode you pick is recorded against the bill so the cash register and settlement totals stay accurate. The invoice shown to the client still only lists what was billed.' }));
     drawLines();
 
     /* history */
@@ -395,22 +524,52 @@
         h('tbody', {}, l.map(i => h('tr', { style: i.void ? 'opacity:.5' : '' },
           h('td', { 'data-label': 'Invoice' }, h('span', {}, h('b', { text: i.no }), ' · ', h('span', { class: 'muted', text: fmtDate(i.date, { day: 'numeric', month: 'short', year: 'numeric' }) }))),
           h('td', { 'data-label': 'Client' }, h('span', {}, i.client.name, ' · ', h('span', { class: 'muted', text: i.client.phone }))),
-          h('td', { 'data-label': 'Total', text: i.void ? 'Void' : inr(i.total) }),
-          h('td', { class: 'a-td-actions' }, i.void ? null : h('div', { class: 'a-row-actions' }, waBtn('Send', i.client.phone, invoiceMessage(i)),
+          h('td', { 'data-label': 'Total' }, i.void ? h('span', { text: 'Void' }) : h('span', {}, inr(i.total), ' · ', h('span', { class: 'muted', text: PAY_MODES[i.paymentMode] || 'Cash' }),
+            i.paymentMode === 'credit' && !i.settled ? h('span', { class: 'badge', style: 'margin-left:6px', text: 'Due' }) : null)),
+          h('td', { class: 'a-td-actions' }, i.void ? null : h('div', { class: 'a-row-actions' }, waSendRowBtn(i),
             h('a', { class: 'btn btn-sm btn-alt', href: '/i/' + i.token, target: '_blank', rel: 'noopener' }, 'Open'),
+            i.paymentMode === 'credit' && !i.settled ? btn('Mark as paid', async () => { try { await api('POST', '/api/admin/invoices/' + i.id + '/settle', {}); await load(); rerender(); toast('Marked as paid'); } catch (ex) { fail(ex); } }, 'btn-sm btn-alt') : null,
             !isOwner() ? null : btn('Void', async () => { if (await confirmBox('Void invoice ' + i.no + '? The customer link will stop working.', 'Void invoice')) { try { await api('DELETE', '/api/admin/invoices/' + i.id); await load(); rerender(); toast('Invoice voided'); } catch (ex) { fail(ex); } } }, 'btn-sm btn-danger')))))))) : emptyNote('No invoices yet.', 'scissors'));
     }
     drawHist();
     view().replaceChildren(h('div', { class: 'a-cols' }, form, h('div', {}, h('h2', { class: 'a-h2', text: 'Invoices' }), q, h('div', { style: 'height:12px' }), hist)));
   }
 
+  // Automatic sending is on: tapping "Send" asks the server to send it (or retry it if it failed) --
+  // never opens wa.me, which would mean a second, manually-sent copy. Automatic is off (or unknown):
+  // tap-to-send a wa.me link, same as always.
+  function waSendAction(inv, afterSend) {
+    if (!inv.client.phone) return null;
+    if (WA && WA.enabled) {
+      return { label: 'Send on WhatsApp', value: 'wa', fn: async () => {
+        try { const r = await api('POST', `/api/admin/invoices/${inv.id}/whatsapp`, {}); toast(r.status === 'sent' ? 'Sent on WhatsApp' : r.already ? 'Already sent on WhatsApp' : 'Sending on WhatsApp...'); if (afterSend) afterSend(); }
+        catch (ex) { fail(ex); }
+        return false;
+      } };
+    }
+    return { label: 'Send on WhatsApp', href: waLink(inv.client.phone, invoiceMessage(inv)) };
+  }
+
+  function waSendRowBtn(inv) {
+    if (!inv.client.phone) return h('span', { class: 'muted', text: 'No phone' });
+    if (WA && WA.enabled) {
+      return btn('Send', async () => {
+        try { const r = await api('POST', `/api/admin/invoices/${inv.id}/whatsapp`, {}); toast(r.already ? 'Already sent on WhatsApp' : 'Sending on WhatsApp...'); }
+        catch (ex) { fail(ex); }
+      }, 'btn-sm btn-alt');
+    }
+    return waBtn('Send', inv.client.phone, invoiceMessage(inv));
+  }
+
   function invoiceDialog(inv) {
     const link = location.origin + '/i/' + inv.token;
+    const auto = WA && WA.enabled;
     const body = h('div', {}, h('p', {}, h('b', { text: inv.no }), ' for ' + inv.client.name + ': ', h('b', { text: inr(inv.total) })),
-      inv.client.phone ? h('p', { class: 'a-note', text: 'The WhatsApp message includes the itemised bill and a link to the invoice.' })
-        : h('p', { class: 'a-note', text: 'No phone number on this bill, so WhatsApp is not available. You can copy the link instead.' }));
+      !inv.client.phone ? h('p', { class: 'a-note', text: 'No phone number on this bill, so WhatsApp is not available. You can copy the link instead.' })
+        : auto ? h('p', { class: 'a-note', text: 'This bill is being sent to the customer on WhatsApp automatically.' })
+        : h('p', { class: 'a-note', text: 'The WhatsApp message includes the itemised bill and a link to the invoice.' }));
     modal('Invoice created', body, [
-      inv.client.phone ? { label: 'Send on WhatsApp', href: waLink(inv.client.phone, invoiceMessage(inv)) } : null,
+      waSendAction(inv),
       { label: 'Open invoice', cls: 'btn-alt', href: '/i/' + inv.token },
       { label: 'Copy link', cls: 'btn-alt', value: 'copy', fn: async () => { try { await navigator.clipboard.writeText(link); toast('Link copied'); } catch { toast(link); } return false; } },
       { label: 'Done', cls: 'btn-alt', value: 'done' }].filter(Boolean));
@@ -446,6 +605,157 @@
       }
     }]);
   }
+  /* ---------- cash register (opening float, cash in/out, closing count, payment-mode settlement) ---------- */
+  function cashMoveDialog(type) {
+    const titles = { in: 'Cash in', out: 'Cash out', open: 'Open the register', close: 'Close the register' };
+    const F = { amount: null, note: '' };
+    const body = h('div', {},
+      type === 'close' ? h('p', { class: 'a-note', style: 'margin:0 0 16px', text: 'Count the cash in the drawer and enter it below. The register compares it to what it expects.' }) : null,
+      fld(type === 'close' ? 'Cash counted' : type === 'open' ? 'Opening amount' : 'Amount', num(F, 'amount', { id: 'cmAmt', min: 0 }), 'cmAmt'),
+      fld('Note (optional)', inp(F, 'note', { id: 'cmNote', placeholder: type === 'in' ? 'e.g. top-up from owner' : type === 'out' ? 'e.g. petty cash withdrawal' : '' }), 'cmNote'));
+    modal(titles[type], body, [{ label: 'Cancel', cls: 'btn-alt', value: 'no' }, {
+      label: 'Save', fn: async () => {
+        if (F.amount == null || F.amount < 0 || ((type === 'in' || type === 'out') && F.amount <= 0)) { toast('Enter an amount', true); return false; }
+        try { await api('POST', '/api/admin/cash/move', { type, amount: F.amount, note: F.note, date: D.today }); rerender(); toast(titles[type] + ' saved'); } catch (ex) { fail(ex); return false; }
+      }
+    }]);
+  }
+  function viewCash() {
+    setActions();
+    let date = D.today, summary = null, rangeOpen = false, rFrom = D.today, rTo = D.today, rangeSummary = null;
+    const box = h('div', {});
+    async function loadSummary() { summary = await api('GET', '/api/admin/cash/summary?date=' + date); draw(); }
+    async function loadRange() { rangeSummary = await api('GET', '/api/admin/cash/range?from=' + rFrom + '&to=' + rTo); draw(); }
+    function modeRow(label, v) { return h('div', { class: 'a-stat' }, h('b', { text: inr(v) }), h('span', { text: label })); }
+    function draw() {
+      if (!summary) { box.replaceChildren(h('p', { class: 'muted', text: 'Loading...' })); return; }
+      const s = summary;
+      const stats = h('div', { class: 'a-stats' },
+        modeRow('Cash', s.byMode.cash), modeRow('UPI / QR', s.byMode.upi), modeRow('Card', s.byMode.card), modeRow('Credit', s.byMode.credit),
+        h('div', { class: 'a-stat' }, h('b', { text: inr(s.totalSales) }), h('span', { text: 'Total billed' })));
+      const drawer = h('div', { class: 'a-section' },
+        h('h2', { class: 'a-h2', text: 'Drawer, for ' + fmtDate(date, { weekday: 'short', day: 'numeric', month: 'short' }) }),
+        h('div', { class: 'a-stats' },
+          h('div', { class: 'a-stat' }, h('b', { text: inr(s.opening) }), h('span', { text: 'Opening cash' })),
+          h('div', { class: 'a-stat' }, h('b', { text: inr(s.cashIn) }), h('span', { text: 'Cash in' })),
+          h('div', { class: 'a-stat' }, h('b', { text: inr(s.cashOut) }), h('span', { text: 'Cash out' })),
+          h('div', { class: 'a-stat' }, h('b', { text: inr(s.cashExpenses) }), h('span', { text: 'Cash expenses' })),
+          h('div', { class: 'a-stat' }, h('b', { text: inr(s.expectedCash) }), h('span', { text: 'Expected cash' })),
+          s.closed ? h('div', { class: 'a-stat' }, h('b', { text: inr(s.actualCash) }), h('span', { text: 'Counted cash' })) : null,
+          s.closed ? h('div', { class: 'a-stat' }, h('b', { style: s.variance !== 0 ? ('color:' + (s.variance > 0 ? 'var(--ok,#1a7f37)' : 'var(--danger,#c0392b)')) : '', text: (s.variance > 0 ? '+' : '') + inr(s.variance) }), h('span', { text: 'Variance' })) : null),
+        h('div', { class: 'a-row-actions', style: 'margin-top:16px' },
+          !s.opened ? btn('Open the register', () => cashMoveDialog('open')) : null,
+          s.opened && !s.closed ? btn('Cash in', () => cashMoveDialog('in'), 'btn-alt') : null,
+          s.opened && !s.closed ? btn('Cash out', () => cashMoveDialog('out'), 'btn-alt') : null,
+          s.opened && !s.closed ? btn('Close the register', () => cashMoveDialog('close')) : null,
+          s.closed ? h('p', { class: 'a-note', text: 'The register is closed for this day.' }) : null));
+      const log = s.entries.length ? h('div', { class: 'a-section' }, h('h2', { class: 'a-h2', text: 'Entries' }), h('div', { class: 'a-scroll' },
+        h('table', { class: 'a-table' }, h('thead', {}, h('tr', {}, ['Time', 'Type', 'Amount', 'Note', 'By'].map(t => h('th', { text: t })))),
+          h('tbody', {}, s.entries.map(e => h('tr', {},
+            h('td', { 'data-label': 'Time', text: new Date(e.createdAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) }),
+            h('td', { 'data-label': 'Type', text: { open: 'Opened', in: 'Cash in', out: 'Cash out', close: 'Closed' }[e.type] }),
+            h('td', { 'data-label': 'Amount', text: inr(e.amount) }),
+            h('td', { 'data-label': 'Note', text: e.note || '' }),
+            h('td', { 'data-label': 'By', text: e.by.name }))))))) : null;
+      const rangeBox = h('div', { class: 'a-section' },
+        h('div', { class: 'a-sub' }, h('h2', { class: 'a-h2', style: 'margin:0', text: 'Settlement over a date range' }),
+          btn(rangeOpen ? 'Hide' : 'Show', () => { rangeOpen = !rangeOpen; if (rangeOpen && !rangeSummary) loadRange(); else draw(); }, 'btn-sm btn-alt')),
+        !rangeOpen ? null : h('div', {},
+          h('div', { class: 'a-period-custom' }, h('span', { class: 'muted', text: 'From' }),
+            h('input', { type: 'date', value: rFrom, max: D.today, onchange: e => { rFrom = e.target.value; loadRange(); } }),
+            h('span', { class: 'muted', text: 'to' }),
+            h('input', { type: 'date', value: rTo, max: D.today, onchange: e => { rTo = e.target.value; loadRange(); } })),
+          !rangeSummary ? h('p', { class: 'muted', text: 'Loading...' }) : h('div', { style: 'margin-top:12px' },
+            h('div', { class: 'a-stats' },
+              modeRow('Cash', rangeSummary.byMode.cash), modeRow('UPI / QR', rangeSummary.byMode.upi), modeRow('Card', rangeSummary.byMode.card), modeRow('Credit', rangeSummary.byMode.credit),
+              h('div', { class: 'a-stat' }, h('b', { text: inr(rangeSummary.totalSales) }), h('span', { text: 'Total billed' })),
+              h('div', { class: 'a-stat' }, h('b', { text: inr(rangeSummary.totalExpenses) }), h('span', { text: 'Total expenses' }))),
+            rangeSummary.variance ? h('p', { class: 'a-note', text: 'Net cash variance over this range: ' + (rangeSummary.variance > 0 ? '+' : '') + inr(rangeSummary.variance) }) : null)));
+      box.replaceChildren(stats, drawer, log, rangeBox);
+    }
+    const dateInp = h('input', { type: 'date', value: date, max: D.today, onchange: e => { date = e.target.value; loadSummary(); } });
+    view().replaceChildren(h('div', {}, h('div', { class: 'a-sub' }, h('h2', { class: 'a-h2', style: 'margin:0', text: 'Cash register' }), fld('Date', dateInp, 'cashDate')), box));
+    loadSummary();
+  }
+
+  /* ---------- packages / memberships ---------- */
+  function packageDialog(pkg) {
+    const F = pkg ? { id: pkg.id, name: pkg.name, price: pkg.price, validityDays: pkg.validityDays, active: pkg.active } : { name: '', price: null, validityDays: 180, active: true };
+    const body = h('div', {},
+      fld('Package name', inp(F, 'name', { id: 'pkName', placeholder: 'e.g. 10 Haircuts' }), 'pkName'),
+      fld('Price', num(F, 'price', { id: 'pkPrice', min: 0 }), 'pkPrice'),
+      fld('Valid for how many days', num(F, 'validityDays', { id: 'pkDays', min: 1 }), 'pkDays'));
+    modal(pkg ? 'Edit package' : 'Add a package', body, [{ label: 'Cancel', cls: 'btn-alt', value: 'no' }, {
+      label: 'Save', fn: async () => {
+        if (!F.name || !String(F.name).trim()) { toast('Enter a package name', true); return false; }
+        if (!F.validityDays || F.validityDays <= 0) { toast('Enter how many days it is valid for', true); return false; }
+        try { await api('POST', '/api/admin/packages', F); await load(); rerender(); toast('Package saved'); } catch (ex) { fail(ex); return false; }
+      }
+    }]);
+  }
+  function sellPackageDialog() {
+    if (!D.packages.length) { toast('Add a package first, under Package types below.', true); return; }
+    const F = { phone: '', clientName: '', packageId: D.packages[0].id, date: D.today, note: '' };
+    const body = h('div', {},
+      fld('Client phone', inp(F, 'phone', { id: 'spPhone', type: 'tel' }), 'spPhone'),
+      fld('Client name', inp(F, 'clientName', { id: 'spName' }), 'spName'),
+      fld('Package', h('select', { id: 'spPkg', onchange: e => { F.packageId = e.target.value; } }, D.packages.map(p => h('option', { value: p.id, selected: p.id === F.packageId, text: p.name + ' — ' + inr(p.price) }))), 'spPkg'),
+      fld('Sale date', h('input', { type: 'date', id: 'spDate', value: F.date, onchange: e => { F.date = e.target.value; } }), 'spDate'),
+      fld('Note (optional)', inp(F, 'note', { id: 'spNote' }), 'spNote'));
+    modal('Sell a package', body, [{ label: 'Cancel', cls: 'btn-alt', value: 'no' }, {
+      label: 'Sell', fn: async () => {
+        if (!F.phone.trim() || !F.clientName.trim()) { toast('Enter the client\'s name and phone', true); return false; }
+        try { const r = await api('POST', '/api/admin/packages/sell', F); await load(); rerender(); toast(r.clientPackage.packageName + ' sold — expires ' + fmtDate(r.clientPackage.expiryDate, { day: 'numeric', month: 'short', year: 'numeric' })); } catch (ex) { fail(ex); return false; }
+      }
+    }]);
+  }
+  function packageStatus(cp) {
+    if (cp.expiryDate < D.today) return { label: 'Expired', cls: 'btn-danger' };
+    const days = Math.round((new Date(cp.expiryDate) - new Date(D.today)) / 86400000);
+    if (days <= 7) return { label: 'Expires in ' + days + 'd', cls: 'btn-alt' };
+    return { label: 'Active', cls: '' };
+  }
+  function viewPackages() {
+    const q = h('input', { class: 'a-search', type: 'search', placeholder: 'Search by client name or phone', 'aria-label': 'Search sold packages', oninput: drawSold }), soldBox = h('div', {});
+    function drawSold() {
+      const s = q.value.trim().toLowerCase();
+      const l = (D.clientPackages || []).filter(cp => !s || (cp.clientName + cp.phone).toLowerCase().includes(s)).slice().sort((a, b) => b.purchaseDate.localeCompare(a.purchaseDate));
+      soldBox.replaceChildren(l.length ? h('div', { class: 'a-scroll' }, h('table', { class: 'a-table' },
+        h('thead', {}, h('tr', {}, ['Client', 'Package', 'Sold', 'Expires', 'Status', ''].map(t => h('th', { text: t })))),
+        h('tbody', {}, l.map(cp => { const st = packageStatus(cp); return h('tr', {},
+          h('td', { 'data-label': 'Client' }, h('b', { text: cp.clientName }), h('br'), h('span', { class: 'muted', text: cp.phone })),
+          h('td', { 'data-label': 'Package', text: cp.packageName + ' · ' + inr(cp.price) }),
+          h('td', { 'data-label': 'Sold', text: fmtDate(cp.purchaseDate, { day: 'numeric', month: 'short', year: 'numeric' }) }),
+          h('td', { 'data-label': 'Expires', text: fmtDate(cp.expiryDate, { day: 'numeric', month: 'short', year: 'numeric' }) }),
+          h('td', { 'data-label': 'Status' }, h('span', { class: 'badge ' + st.cls, text: st.label })),
+          h('td', { class: 'a-td-actions' }, waBtn('WhatsApp', cp.phone, 'Hi ' + cp.clientName + ', ')));
+        }))))
+        : emptyNote('No packages sold yet.', 'star'));
+    }
+    drawSold();
+
+    const typesBox = h('div', {});
+    function drawTypes() {
+      typesBox.replaceChildren(!D.packages.length ? emptyNote('No packages set up yet.', 'star') : h('div', { class: 'a-scroll' }, h('table', { class: 'a-table' },
+        h('thead', {}, h('tr', {}, ['Package', 'Price', 'Valid for', 'Status', ''].map(t => h('th', { text: t })))),
+        h('tbody', {}, D.packages.map(pkg => h('tr', { style: pkg.active === false ? 'opacity:.5' : '' },
+          h('td', { 'data-label': 'Package', text: pkg.name }), h('td', { 'data-label': 'Price', text: inr(pkg.price) }),
+          h('td', { 'data-label': 'Valid for', text: pkg.validityDays + ' days' }), h('td', { 'data-label': 'Status', text: pkg.active === false ? 'Hidden' : 'Active' }),
+          !isOwner() ? null : h('td', { class: 'a-td-actions' }, h('div', { class: 'a-row-actions' },
+            btn('Edit', () => packageDialog(pkg), 'btn-sm btn-alt'),
+            btn(pkg.active === false ? 'Unhide' : 'Hide', async () => { try { await api('POST', '/api/admin/packages', { ...pkg, active: pkg.active === false }); await load(); rerender(); } catch (ex) { fail(ex); } }, 'btn-sm btn-alt'),
+            btn('Delete', async () => { if (await confirmBox('Delete the package "' + pkg.name + '"? Already-sold packages are not affected.', 'Delete package')) { try { await api('DELETE', '/api/admin/packages/' + pkg.id); await load(); rerender(); } catch (ex) { fail(ex); } } }, 'btn-sm btn-danger')))))))));
+    }
+    drawTypes();
+
+    setActions(btn('Sell a package', sellPackageDialog, 'btn-alt'), !isOwner() ? null : btn('Add a package', () => packageDialog(null)));
+    view().replaceChildren(
+      h('h2', { class: 'a-h2', text: 'Sold packages' }), q, h('div', { style: 'height:12px' }), soldBox,
+      h('h2', { class: 'a-h2', style: 'margin-top:32px', text: 'Package types' }),
+      h('p', { class: 'a-note', style: 'margin-bottom:12px', text: 'We will send a WhatsApp reminder automatically 7 days before a sold package expires, if WhatsApp is turned on in Settings.' }),
+      typesBox);
+  }
+
   function viewExpenses() {
     setActions(btn('Add expense', addExpenseDialog));
     const t = D.today.slice(0, 7);
@@ -555,6 +865,17 @@
     for (const inv of D.invoices) { if (inv.void || inv.date < from || inv.date > to) continue; sums[new Date(inv.date + 'T00:00:00').getDay()] += inv.total; }
     return sums.map((v, i) => ({ name: DAYS[i].slice(0, 3), value: v }));
   }
+  // Busiest hour of the day, from bookings' own time field (invoices carry no time of day, only a date --
+  // so this is about appointment scheduling/staffing, the weekday chart above is about billed revenue).
+  function hourStats(from, to) {
+    const sums = Array.from({ length: 24 }, () => 0);
+    for (const b of D.bookings) {
+      if (b.status === 'cancelled' || b.date < from || b.date > to || !b.time) continue;
+      const h = +b.time.slice(0, 2);
+      if (h >= 0 && h < 24) sums[h]++;
+    }
+    return sums.map((v, i) => ({ name: fmt12(String(i).padStart(2, '0') + ':00'), value: v }));
+  }
   function bookingFunnel(from, to) {
     const counts = { pending: 0, confirmed: 0, completed: 0, cancelled: 0 };
     for (const b of D.bookings) { if (b.date < from || b.date > to) continue; counts[b.status] = (counts[b.status] || 0) + 1; }
@@ -654,6 +975,11 @@
         h('p', { class: 'a-note', style: 'margin:0 0 16px', text: 'Total billed on each weekday, for the selected period.' }),
         rankedBars(weekdayStats(from, to).sort((a, b) => b.value - a.value), { emptyText: 'Nothing billed in this period yet.' }));
 
+      const hourRows = hourStats(from, to).filter(r => r.value > 0);
+      const hourSection = !hourRows.length ? null : h('div', { class: 'a-section' }, h('h2', { class: 'a-h2', text: 'Busiest time of day' }),
+        h('p', { class: 'a-note', style: 'margin:0 0 16px', text: 'Appointments booked for each hour, for the selected period -- useful for staffing.' }),
+        rankedBars(hourRows.sort((a, b) => b.value - a.value), { meta: r => r.value + (r.value === 1 ? ' booking' : ' bookings') }));
+
       const team = stylistStats(from, to);
       const teamSection = team.length ? h('div', { class: 'a-section' }, h('h2', { class: 'a-h2', text: 'Team performance' }),
         h('p', { class: 'a-note', style: 'margin:0 0 16px', text: 'By who was billed as serving the client. Based on the name entered at billing, not a linked stylist profile.' }),
@@ -688,7 +1014,7 @@
           h('tbody', {}, topC.map(c => h('tr', {}, h('td', { 'data-label': 'Client', text: c.name }), h('td', { 'data-label': 'Bills', text: c.bills }),
             h('td', { 'data-label': 'Revenue', class: 'r', text: inr(c.revenue) }))))))) : null;
 
-      box.replaceChildren(stats, trendSection, svcSection, weekdaySection, teamSection, funnelSection, splitSection, topClientsSection);
+      box.replaceChildren(stats, trendSection, svcSection, weekdaySection, hourSection, teamSection, funnelSection, splitSection, topClientsSection);
     }
     setActions(btn('Export CSV', () => exportAnalyticsCsv(...range()), 'btn-sm btn-alt'));
     draw();
@@ -696,6 +1022,30 @@
   }
 
   /* ---------- clients ---------- */
+  function mdLabel(dateStr) {
+    // 'YYYY-MM-DD' -> "15 Mar", with no year (a recurring yearly date, the year on file doesn't matter here)
+    if (!dateStr) return '';
+    return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  }
+  function editClientDialog(c, afterSave) {
+    const isNew = !c.phone;
+    const F = { phone: c.phone || '', name: c.name || '', email: c.email || '', dob: c.dob || '', anniversary: c.anniversary || '', notes: c.notes || '' };
+    const body = h('div', {},
+      !isNew ? null : h('div', { class: 'row2' },
+        fld('Phone', inp(F, 'phone', { id: 'cPhone', type: 'tel' }), 'cPhone'), fld('Name', inp(F, 'name', { id: 'cName' }), 'cName')),
+      fld('Date of birth (optional)', h('input', { type: 'date', id: 'cDob', value: F.dob, onchange: e => { F.dob = e.target.value; } }), 'cDob'),
+      fld('Anniversary (optional)', h('input', { type: 'date', id: 'cAnniv', value: F.anniversary, onchange: e => { F.anniversary = e.target.value; } }), 'cAnniv'),
+      fld('Notes (optional)', area(F, 'notes', { id: 'cNotes', rows: 3, placeholder: 'Preferences, allergies, anything worth remembering' }), 'cNotes'),
+      h('p', { class: 'a-note', text: 'We will send a WhatsApp greeting automatically on these dates if WhatsApp is turned on in Settings.' }));
+    modal(isNew ? 'Add a client' : 'Client details — ' + c.name, body, [{ label: 'Cancel', cls: 'btn-alt', value: 'no' }, {
+      label: 'Save', fn: async () => {
+        if (!F.phone.trim()) { toast('Enter a phone number', true); return false; }
+        if (isNew && !F.name.trim()) { toast('Enter a name', true); return false; }
+        try { await api('POST', '/api/admin/clients', F); await load(); rerender(); toast('Client details saved'); if (afterSave) afterSave(); }
+        catch (ex) { fail(ex); return false; }
+      }
+    }]);
+  }
   function viewClients() {
     const q = h('input', { class: 'a-search', type: 'search', placeholder: 'Search by name or phone', 'aria-label': 'Search clients', oninput: draw }), box = h('div', {});
     function draw() {
@@ -703,13 +1053,16 @@
       const l = D.clients.filter(c => !s || (c.name + c.phone).toLowerCase().includes(s));
       box.replaceChildren(l.length ? h('div', { class: 'a-scroll' }, h('table', { class: 'a-table' },
         h('thead', {}, h('tr', {}, ['Client', 'Bookings', 'Bills', 'Billed', 'Last visit', ''].map(t => h('th', { text: t })))),
-        h('tbody', {}, l.map(c => h('tr', {}, h('td', { 'data-label': 'Client' }, h('b', { text: c.name }), h('br'), h('span', { class: 'muted', text: c.phone + (c.email ? '  ' + c.email : '') })),
+        h('tbody', {}, l.map(c => h('tr', {}, h('td', { 'data-label': 'Client' }, h('b', { text: c.name }), h('br'), h('span', { class: 'muted', text: c.phone + (c.email ? '  ' + c.email : '') }),
+            (c.dob || c.anniversary) ? h('br') : null, c.dob ? h('span', { class: 'muted', text: 'Birthday ' + mdLabel(c.dob) + ' ' }) : null, c.anniversary ? h('span', { class: 'muted', text: 'Anniversary ' + mdLabel(c.anniversary) }) : null),
           h('td', { 'data-label': 'Bookings', text: c.bookings }), h('td', { 'data-label': 'Bills', text: c.visits }), h('td', { 'data-label': 'Billed', text: inr(c.billed) }), h('td', { 'data-label': 'Last visit', text: c.last ? fmtDate(c.last, { day: 'numeric', month: 'short', year: 'numeric' }) : '' }),
           h('td', { class: 'a-td-actions' }, h('div', { class: 'a-row-actions' }, btn('New bill', () => { B = newBill({ client: { name: c.name, phone: c.phone, email: c.email } }); go('billing'); }, 'btn-sm btn-alt'),
-            waBtn('WhatsApp', c.phone, 'Hi ' + c.name + ', '))))))))
+            waBtn('WhatsApp', c.phone, 'Hi ' + c.name + ', '), btn('Edit details', () => editClientDialog(c), 'btn-sm btn-alt'))))))))
         : emptyNote('Clients appear here after their first booking or bill.', 'comb'));
     }
-    draw(); view().replaceChildren(q, h('div', { style: 'height:16px' }), box);
+    draw();
+    setActions(btn('Add a client', () => editClientDialog({ phone: '', name: '', email: '' }), 'btn-alt'));
+    view().replaceChildren(q, h('div', { style: 'height:16px' }), box);
   }
 
   /* ---------- uploads ---------- */
@@ -738,7 +1091,7 @@
     const uid = () => 'n' + Math.random().toString(16).slice(2, 10);
     function draw() {
       const y = scrollY;
-      root.replaceChildren(...M.map((c, ci) => h('details', { class: 'a-card', open: openCats.has(c.id), ontoggle: e => { e.target.open ? openCats.add(c.id) : openCats.delete(c.id); } },
+      root.replaceChildren(...M.map((c, ci) => { c.priceLabels = c.priceLabels || []; return h('details', { class: 'a-card', open: openCats.has(c.id), ontoggle: e => { e.target.open ? openCats.add(c.id) : openCats.delete(c.id); } },
         h('summary', {}, h('span', {}, c.name, ' ', h('small', { text: who(c.gender) + ', ' + c.items.length + ' items' })), h('span', { class: 'a-mini' })),
         h('div', { class: 'a-grid' }, fld('Group name', inp(c, 'name', { id: 'cn' + ci }), 'cn' + ci),
           fld('For', h('select', { id: 'cg' + ci, onchange: e => { c.gender = e.target.value; } }, [['all', 'Women and men'], ['female', 'Women'], ['male', 'Men']].map(([v, t]) => h('option', { value: v, selected: c.gender === v, text: t }))), 'cg' + ci),
@@ -753,7 +1106,7 @@
           h('div', { class: 'flags' }, chk(it, 'popular', 'Most popular'), chk(it, 'active', 'Show on website')))),
         h('div', { class: 'a-dialog-actions' }, btn('Add service', () => { c.items.push({ id: uid(), name: '', desc: '', price: 0, price2: null, popular: false, active: true }); openCats.add(c.id); draw(); }, 'btn-sm btn-alt'),
           btn('Move group up', () => { move(M, ci, -1); draw(); }, 'btn-sm btn-alt'), btn('Move group down', () => { move(M, ci, 1); draw(); }, 'btn-sm btn-alt'),
-          btn('Delete group', async () => { if (await confirmBox('Delete "' + c.name + '" and all its services from the menu?', 'Delete group')) { M.splice(ci, 1); draw(); } }, 'btn-sm btn-danger')))));
+          btn('Delete group', async () => { if (await confirmBox('Delete "' + c.name + '" and all its services from the menu?', 'Delete group')) { M.splice(ci, 1); draw(); } }, 'btn-sm btn-danger'))); }));
       scrollTo(0, y);
     }
     draw();
@@ -814,7 +1167,7 @@
     const C = { ...D.content };
     const rows = [['heroTitle', 'Home page headline', 'i'], ['heroText', 'Home page intro', 't', 3], ['servicesText', 'Services intro', 't', 2], ['menuText', 'Menu intro', 't', 2],
       ['galleryText', 'Gallery intro', 't', 2], ['stylistsText', 'Hairstylists intro', 't', 2], ['aboutTitle', 'About us headline', 'i'], ['aboutText', 'About us text (one paragraph per line)', 't', 8], ['bookText', 'Booking intro', 't', 2]];
-    view().replaceChildren(h('div', { style: 'max-width:720px' }, rows.map(([k, l, t, r]) => fld(l, t === 'i' ? inp(C, k, { id: 'c' + k }) : area(C, k, { id: 'c' + k, rows: r }), 'c' + k))),
+    view().replaceChildren(h('div', { class: 'a-cardgrid', style: 'max-width:1400px' }, rows.map(([k, l, t, r]) => h('div', { class: 'a-card' }, fld(l, t === 'i' ? inp(C, k, { id: 'c' + k }) : area(C, k, { id: 'c' + k, rows: r }), 'c' + k)))),
       sticky(btn('Save website text', async () => { if (await saveSection('content', C)) await load(); })));
   }
 
@@ -836,6 +1189,7 @@
     const S = JSON.parse(JSON.stringify(D.settings)), P = { current: '', next: '' };
     if (!S.bgMusic) S.bgMusic = { mode: 'off', src: '', volume: 15, spotifyUrl: '', spotifyEmbed: '' };
     if (!S.bgMusic.mode) S.bgMusic.mode = S.bgMusic.enabled ? 'upload' : 'off';
+    if (!Array.isArray(S.closedDays)) S.closedDays = [];
     const id = k => 's' + k;
     const days = h('div', { style: 'display:flex;gap:16px;flex-wrap:wrap' }, DAYS.map((d, i) => h('label', { class: 'a-check' }, h('input', { type: 'checkbox', checked: S.closedDays.includes(i), onchange: e => { S.closedDays = e.target.checked ? [...S.closedDays, i] : S.closedDays.filter(x => x !== i); } }), d)));
     const logoBox = h('div', { class: 'a-card', style: 'max-width:220px' });
@@ -944,65 +1298,115 @@
     }
     drawMusic();
 
-    const qrUrl = location.origin + '/salon/menu/';
-    const qrPic = h('div', { class: 'pic', style: 'aspect-ratio:1;background:#fff' });
-    let qrCanvas = null;
-    function drawQr() {
+    const waBox = h('div', { class: 'a-card', style: 'max-width:420px' });
+    (async () => {
+      try {
+        const w = await api('GET', '/api/admin/whatsapp');
+        waBox.replaceChildren(
+          h('label', { class: 'a-check', style: 'display:flex;align-items:center;gap:10px' },
+            h('input', { type: 'checkbox', checked: w.enabled, onchange: async e => {
+              const on = e.target.checked;
+              try { await api('POST', '/api/admin/whatsapp', { enabled: on }); toast(on ? 'WhatsApp messages are on' : 'WhatsApp messages are off'); }
+              catch (ex) { e.target.checked = !on; fail(ex); }
+            } }),
+            'Send WhatsApp messages automatically (bill ready)'),
+          h('p', { class: 'a-note', style: 'margin-top:8px', text: w.allowPlatform
+            ? 'Messages go out from the AUZslab WhatsApp number.'
+            : 'No WhatsApp number is set up for this salon yet. Contact AUZslab support to turn this on, or connect your own WhatsApp Business number.' }),
+          !w.templates || !w.templates.length ? null : h('div', { style: 'margin-top:16px' },
+            h('p', { class: 'a-note', style: 'margin:0 0 8px', text: 'Turn specific messages off without switching off WhatsApp entirely:' }),
+            ...w.templates.map(t => h('label', { class: 'a-check', style: 'display:flex;align-items:center;gap:10px;margin-bottom:8px' },
+              h('input', { type: 'checkbox', checked: t.on, onchange: async e => {
+                const on = e.target.checked;
+                try { await api('POST', '/api/admin/whatsapp', { enabled: w.enabled, events: { [t.key]: on } }); toast((t.title || t.key) + (on ? ' is on' : ' is off')); }
+                catch (ex) { e.target.checked = !on; fail(ex); }
+              } }), t.title || t.key))));
+      } catch (ex) { waBox.replaceChildren(h('p', { class: 'a-note', text: 'Could not load WhatsApp settings.' })); }
+    })();
+
+    const notifyBox = h('div', { class: 'a-card', style: 'max-width:420px' });
+    drawNotifyBox(notifyBox);
+
+    function qrCard(url, filename) {
+      const pic = h('div', { class: 'pic', style: 'aspect-ratio:1;background:#fff' });
       const qr = qrcode(0, 'M');
-      qr.addData(qrUrl);
+      qr.addData(url);
       qr.make();
       const count = qr.getModuleCount(), margin = 2;
       const cell = Math.max(6, Math.round(480 / (count + margin * 2)));
       const size = (count + margin * 2) * cell;
-      qrCanvas = h('canvas', { width: size, height: size, style: 'width:100%;height:100%' });
-      const ctx = qrCanvas.getContext('2d');
+      const canvas = h('canvas', { width: size, height: size, style: 'width:100%;height:100%' });
+      const ctx = canvas.getContext('2d');
       ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, size, size);
       ctx.fillStyle = S.theme.plum || '#391D21';
       for (let r = 0; r < count; r++) for (let c = 0; c < count; c++) if (qr.isDark(r, c)) ctx.fillRect((c + margin) * cell, (r + margin) * cell, cell, cell);
-      qrPic.replaceChildren(qrCanvas);
-    }
-    drawQr();
-
-    view().replaceChildren(h('div', { style: 'max-width:760px' },
-      h('h2', { class: 'a-h2', text: 'Branding' }),
-      brandBox,
-      h('h2', { class: 'a-h2', style: 'margin-top:32px', text: 'Home page logo artwork' }),
-      h('p', { class: 'muted', style: 'margin-bottom:12px', text: 'Optional: a large logo shown in the home page hero in place of the salon photo. Leave empty to use the photo.' }),
-      logoBox,
-      h('h2', { class: 'a-h2', style: 'margin-top:32px', text: 'Background music' }),
-      h('p', { class: 'muted', style: 'margin-bottom:12px', text: "Pick at most one source. An uploaded track loops quietly and needs a visitor to tap the on-site button once before it makes sound (browsers block that automatically); only upload music you have the rights to play publicly. Spotify shows their own player instead." }),
-      musicBox,
-      h('h2', { class: 'a-h2', style: 'margin-top:32px', text: 'Share your menu' }),
-      h('p', { class: 'muted', style: 'margin-bottom:12px', text: 'Print this at the counter or entrance. Scanning it opens your treatment menu, where clients can browse and pick services before booking.' }),
-      h('div', { class: 'a-card', style: 'max-width:260px;text-align:center' },
-        qrPic,
-        h('p', { class: 'a-note', style: 'word-break:break-all', text: qrUrl }),
+      pic.replaceChildren(canvas);
+      return h('div', { class: 'a-card', style: 'max-width:260px;text-align:center' },
+        pic,
+        h('p', { class: 'a-note', style: 'word-break:break-all', text: url }),
         h('div', { class: 'a-row-actions', style: 'justify-content:center;margin-top:10px' },
-          btn('Copy link', async () => { try { await navigator.clipboard.writeText(qrUrl); toast('Link copied'); } catch { toast(qrUrl); } }, 'btn-sm btn-alt'),
-          btn('Download QR', () => { const a = document.createElement('a'); a.href = qrCanvas.toDataURL('image/png'); a.download = 'menu-qr.png'; a.click(); }, 'btn-sm btn-alt'))),
-      h('h2', { class: 'a-h2', style: 'margin-top:32px', text: 'Salon details' }),
-      h('div', { class: 'a-grid' }, fld('Salon name', inp(S, 'salonName', { id: id('salonName') }), id('salonName')), fld('Phone', inp(S, 'phone', { id: id('phone'), type: 'tel' }), id('phone')),
-        fld('WhatsApp number (for the Book form)', inp(S, 'whatsapp', { id: id('whatsapp'), type: 'tel', placeholder: '10 digit number' }), id('whatsapp')), fld('Email', inp(S, 'email', { id: id('email') }), id('email')),
-        fld('Instagram handle', inp(S, 'instagram', { id: id('instagram') }), id('instagram')), fld('Google Maps link', inp(S, 'mapUrl', { id: id('mapUrl'), placeholder: 'https://maps.app.goo.gl/...' }), id('mapUrl'))),
-      fld('Address', inp(S, 'address', { id: id('address') }), id('address')), fld('Line under the logo', inp(S, 'tagline', { id: id('tagline') }), id('tagline')),
-      h('h2', { class: 'a-h2', style: 'margin-top:32px', text: 'Hours and booking rules' }),
-      h('div', { class: 'a-grid' }, fld('Opens', h('input', { type: 'time', id: id('open'), value: S.open, onchange: e => { S.open = e.target.value; } }), id('open')), fld('Closes', h('input', { type: 'time', id: id('close'), value: S.close, onchange: e => { S.close = e.target.value; } }), id('close')),
-        fld('Time slot length', h('select', { id: id('slot'), onchange: e => { S.slotMinutes = +e.target.value; } }, [15, 20, 30, 45, 60, 90, 120].map(m => h('option', { value: m, selected: S.slotMinutes === m, text: m + ' minutes' }))), id('slot')),
-        fld('Clients per slot (chairs)', num(S, 'capacity', { id: id('cap'), min: 1 }), id('cap')), fld('Bookings open how many days ahead', num(S, 'advanceDays', { id: id('adv'), min: 1 }), id('adv'))),
-      h('div', { class: 'field' }, h('label', { text: 'Closed on' }), days),
-      h('h2', { class: 'a-h2', style: 'margin-top:32px', text: 'Invoice' }), fld('Footer line', inp(S, 'invoiceFooter', { id: id('foot') }), id('foot')),
-      h('h2', { class: 'a-h2', style: 'margin-top:32px', text: 'Change password' }),
-      h('div', { class: 'a-grid' }, fld('Current password', h('input', { type: 'password', id: 'pcur', autocomplete: 'current-password', oninput: e => { P.current = e.target.value; } }), 'pcur'),
-        fld('New password (8 or more characters)', h('input', { type: 'password', id: 'pnew', autocomplete: 'new-password', oninput: e => { P.next = e.target.value; } }), 'pnew')),
-      btn('Change password', async () => { try { await api('POST', '/api/admin/password', P); P.current = P.next = ''; $('#pcur').value = $('#pnew').value = ''; toast('Password changed'); } catch (ex) { fail(ex); } }, 'btn-alt'),
-      h('h2', { class: 'a-h2', style: 'margin-top:32px', text: 'Danger zone' }),
-      h('p', { class: 'muted', style: 'margin-bottom:12px', text: 'Start fresh by permanently deleting all bookings, bills and expenses. Your menu, prices, stylists, gallery, website text and settings are not touched.' }),
-      h('div', { class: 'a-row-actions' },
-        h('a', { class: 'btn btn-alt', href: '/api/admin/export', download: 'salon-backup.json' }, 'Download backup first'),
-        btn('Clear all bookings, bills and expenses', clearHistoryDialog, 'btn-danger'))),
+          btn('Copy link', async () => { try { await navigator.clipboard.writeText(url); toast('Link copied'); } catch { toast(url); } }, 'btn-sm btn-alt'),
+          btn('Download QR', () => { const a = document.createElement('a'); a.href = canvas.toDataURL('image/png'); a.download = filename; a.click(); }, 'btn-sm btn-alt')));
+    }
+    const qrUrl = location.origin + '/salon/menu/';
+    const checkinUrl = location.origin + '/salon/checkin/';
+
+    /* Each settings area is its own collapsed <details> card (same pattern Menu
+       already uses per category) -- one long always-open page was a lot of
+       scrolling to reach "Change password" or "Danger zone". Remembers which
+       ones are open across a re-render (e.g. after Save) the same way Menu does. */
+    const openSecs = viewSettings._open || (viewSettings._open = new Set(['basics']));
+    // Sections with several fields side by side (brand colours, salon details, hours)
+    // read better spanning the full grid width; the rest sit two/three to a row.
+    const WIDE = new Set(['branding', 'basics', 'hours']);
+    const sec = (key, title, hint, ...kids) => h('details', { class: 'a-card', style: WIDE.has(key) ? 'grid-column:1/-1' : '', open: openSecs.has(key), ontoggle: e => { e.target.open ? openSecs.add(key) : openSecs.delete(key); } },
+      h('summary', {}, h('span', {}, title, hint ? [' ', h('small', { text: hint })] : null)),
+      h('div', { style: 'margin-top:16px' }, kids));
+
+    view().replaceChildren(h('div', { class: 'a-cardgrid', style: 'max-width:1400px' },
+      sec('branding', 'Branding', 'Logo, photo, colours, style', brandBox),
+      sec('logo', 'Home page logo artwork', 'Optional, replaces the photo',
+        h('p', { class: 'muted', style: 'margin-bottom:12px', text: 'Optional: a large logo shown in the home page hero in place of the salon photo. Leave empty to use the photo.' }),
+        logoBox),
+      sec('music', 'Background music', 'Off by default',
+        h('p', { class: 'muted', style: 'margin-bottom:12px', text: "Pick at most one source. An uploaded track loops quietly and needs a visitor to tap the on-site button once before it makes sound (browsers block that automatically); only upload music you have the rights to play publicly. Spotify shows their own player instead." }),
+        musicBox),
+      sec('menuqr', 'Share your menu', 'Print this QR code',
+        h('p', { class: 'muted', style: 'margin-bottom:12px', text: 'Print this at the counter or entrance. Scanning it opens your treatment menu, where clients can browse and pick services before booking.' }),
+        qrCard(qrUrl, 'menu-qr.png')),
+      sec('checkinqr', 'Self check-in', 'Print this QR code',
+        h('p', { class: 'muted', style: 'margin-bottom:12px', text: 'Put this up at the counter too. A client scans it, fills in their own name, phone and the services they want, and it lands in Check-ins for your team to turn into a bill with one tap — no need to ask them face to face.' }),
+        qrCard(checkinUrl, 'checkin-qr.png')),
+      sec('basics', 'Salon details', 'Name, phone, address',
+        h('div', { class: 'a-grid' }, fld('Salon name', inp(S, 'salonName', { id: id('salonName') }), id('salonName')), fld('Phone', inp(S, 'phone', { id: id('phone'), type: 'tel' }), id('phone')),
+          fld('WhatsApp number (for the Book form)', inp(S, 'whatsapp', { id: id('whatsapp'), type: 'tel', placeholder: '10 digit number' }), id('whatsapp')), fld('Email', inp(S, 'email', { id: id('email') }), id('email')),
+          fld('Instagram handle', inp(S, 'instagram', { id: id('instagram') }), id('instagram')), fld('Google Maps link', inp(S, 'mapUrl', { id: id('mapUrl'), placeholder: 'https://maps.app.goo.gl/...' }), id('mapUrl')),
+          fld('Google review link (optional)', inp(S, 'reviewLink', { id: id('reviewLink'), placeholder: 'For the post-visit WhatsApp message' }), id('reviewLink'))),
+        fld('Address', inp(S, 'address', { id: id('address') }), id('address')), fld('Line under the logo', inp(S, 'tagline', { id: id('tagline') }), id('tagline'))),
+      sec('hours', 'Hours and booking rules', null,
+        h('div', { class: 'a-grid' }, fld('Opens', h('input', { type: 'time', id: id('open'), value: S.open, onchange: e => { S.open = e.target.value; } }), id('open')), fld('Closes', h('input', { type: 'time', id: id('close'), value: S.close, onchange: e => { S.close = e.target.value; } }), id('close')),
+          fld('Time slot length', h('select', { id: id('slot'), onchange: e => { S.slotMinutes = +e.target.value; } }, [15, 20, 30, 45, 60, 90, 120].map(m => h('option', { value: m, selected: S.slotMinutes === m, text: m + ' minutes' }))), id('slot')),
+          fld('Clients per slot (chairs)', num(S, 'capacity', { id: id('cap'), min: 1 }), id('cap')), fld('Bookings open how many days ahead', num(S, 'advanceDays', { id: id('adv'), min: 1 }), id('adv'))),
+        h('div', { class: 'field' }, h('label', { text: 'Closed on' }), days)),
+      sec('invoice', 'Invoice', null, fld('Footer line', inp(S, 'invoiceFooter', { id: id('foot') }), id('foot'))),
+      sec('whatsapp', 'WhatsApp', 'Automatic bill messages',
+        h('p', { class: 'muted', style: 'margin-bottom:12px', text: 'Send your customer a WhatsApp message with their bill the moment it is created.' }),
+        waBox),
+      sec('notify', 'Notifications', 'Alerts on this device',
+        h('p', { class: 'muted', style: 'margin-bottom:12px', text: 'Get an alert on this device the moment a new booking comes in, a bill is made, or staff clock in or out — even with this tab closed.' }),
+        notifyBox),
+      sec('password', 'Change password', null,
+        h('div', { class: 'a-grid' }, fld('Current password', h('input', { type: 'password', id: 'pcur', autocomplete: 'current-password', oninput: e => { P.current = e.target.value; } }), 'pcur'),
+          fld('New password (8 or more characters)', h('input', { type: 'password', id: 'pnew', autocomplete: 'new-password', oninput: e => { P.next = e.target.value; } }), 'pnew')),
+        btn('Change password', async () => { try { await api('POST', '/api/admin/password', P); P.current = P.next = ''; $('#pcur').value = $('#pnew').value = ''; toast('Password changed'); } catch (ex) { fail(ex); } }, 'btn-alt')),
+      sec('danger', 'Danger zone', null,
+        h('p', { class: 'muted', style: 'margin-bottom:12px', text: 'Start fresh by permanently deleting all bookings, bills and expenses. Your menu, prices, stylists, gallery, website text and settings are not touched.' }),
+        h('div', { class: 'a-row-actions' },
+          h('a', { class: 'btn btn-alt', href: '/api/admin/export', download: 'salon-backup.json' }, 'Download backup first'),
+          btn('Clear all bookings, bills and expenses', clearHistoryDialog, 'btn-danger')))),
       sticky(btn('Save settings', async () => { if (await saveSection('settings', S)) await load(); })));
   }
 
-  const VIEWS = { staff: viewStaff, dashboard: viewDashboard, bookings: viewBookings, billing: viewBilling, clients: viewClients, menu: viewMenu, stylists: viewStylists, gallery: viewGallery, content: viewContent, settings: viewSettings, expenses: viewExpenses, analytics: viewAnalytics };
+  const VIEWS = { staff: viewStaff, dashboard: viewDashboard, bookings: viewBookings, checkins: viewCheckins, billing: viewBilling, clients: viewClients, menu: viewMenu, stylists: viewStylists, gallery: viewGallery, content: viewContent, settings: viewSettings, expenses: viewExpenses, cash: viewCash, packages: viewPackages, analytics: viewAnalytics };
   boot();
 })();

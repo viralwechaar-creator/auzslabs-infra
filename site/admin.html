@@ -546,6 +546,7 @@ body.admin-shell .bn-in input{border:none!important;background:none!important;bo
 
         <div class="a-side-group-label">Team &amp; sales</div>
         <button class="a-side-btn" data-section="team"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14.2a5 5 0 0 1 5 5.3"/></svg>Team<span class="a-row-badge" id="teamAppBadge" style="display:none"></span></button>
+        <button class="a-side-btn" data-section="tasks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4.5" y="4.5" width="15" height="15" rx="3"/><path d="M8.5 12l2.2 2.2L15.5 9.5"/></svg>Tasks<span class="a-row-badge" id="tasksBadgeSide" style="display:none"></span></button>
         <button class="a-side-btn" data-section="salesWork"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Salesman work</button>
 
         <div class="a-side-group-label">Money</div>
@@ -631,6 +632,11 @@ body.admin-shell .bn-in input{border:none!important;background:none!important;bo
         <h2 class="h-2">Pricing</h2>
         <p class="p">These prices fill in the quote builder under Client requests and show on the pricing page. Leave it at &#8377;0 to keep it on the request-and-we'll-call-you flow.</p>
         <div id="pricingList">Loading&hellip;</div>
+
+        <div class="label" style="margin-top:28px">AUZslab Salon plans</div>
+        <h2 class="h-2">Salon plan tiers</h2>
+        <p class="p">The four tiers shown on <a href="business-salons.html#salon-plans" target="_blank" rel="noopener">the salon plans page &#8599;</a> &mdash; edit their prices, names and features here; the live page reads these the moment you save.</p>
+        <div id="salonTiersList">Loading&hellip;</div>
 
         <div class="label" style="margin-top:28px">Bundle plans</div>
         <h2 class="h-2">Bundles</h2>
@@ -783,6 +789,33 @@ body.admin-shell .bn-in input{border:none!important;background:none!important;bo
         <div id="teamSetupList" style="margin-top:14px">Loading&hellip;</div>
       </section>
 
+      <section class="a-page" id="tasksSection" data-title="Tasks" data-parent="more">
+        <div class="label">General task list</div>
+        <h2 class="h-2">Tasks</h2>
+        <p class="p">Hand anyone on the team an arbitrary task with a due date, and see it tracked to completion. Auto-created tasks (unassigned leads, setup deadlines, a payment just confirmed) show a tag so you can tell at a glance which is which.</p>
+        <div class="tm-bar">
+          <label class="lbl tm-period">Status
+            <select id="taskFilterStatus" class="inp"><option value="open" selected>Open</option><option value="done">Done</option><option value="cancelled">Cancelled</option><option value="all">All</option></select>
+          </label>
+          <label class="lbl tm-period">Assigned to
+            <select id="taskFilterAssignee" class="inp"><option value="">Everyone</option></select>
+          </label>
+          <button class="btn btn-primary" id="taskAddOpen" type="button">New task</button>
+        </div>
+        <form id="taskForm" class="card tm-form" hidden>
+          <div class="tm-form-grid">
+            <label class="lbl">Title<input id="tkTitle" class="inp" type="text" maxlength="200" required></label>
+            <label class="lbl">Assign to<select id="tkAssignee" class="inp"></select></label>
+            <label class="lbl">Due<input id="tkDue" class="inp" type="datetime-local"></label>
+            <label class="lbl">Priority<select id="tkPriority" class="inp"><option value="">Normal (default)</option><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option></select></label>
+          </div>
+          <label class="lbl">Description<textarea id="tkDesc" class="inp" rows="2" maxlength="2000"></textarea></label>
+          <button class="btn btn-primary" type="submit">Create task</button>
+          <div id="tkErr" class="err"></div>
+        </form>
+        <div id="tasksList" style="margin-top:14px">Loading&hellip;</div>
+      </section>
+
             <section class="a-page" id="salesWorkSection" data-title="Salesman work" data-parent="more">
         <div class="label">Work updates</div>
         <h2 class="h-2">Salesman work</h2>
@@ -877,6 +910,11 @@ body.admin-shell .bn-in input{border:none!important;background:none!important;bo
           <button class="a-nav-row" data-section="team">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14.2a5 5 0 0 1 5 5.3"/></svg>
             <span class="grow">Team</span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <button class="a-nav-row" data-section="tasks">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4.5" y="4.5" width="15" height="15" rx="3"/><path d="M8.5 12l2.2 2.2L15.5 9.5"/></svg>
+            <span class="grow">Tasks</span><span class="a-row-badge" id="tasksBadgeMore" style="display:none"></span>
             <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
           </button>
           <button class="a-nav-row" data-section="salesWork">
@@ -1148,9 +1186,9 @@ function resetMainScroll() {
 // signing in used to fire about 11 database requests together; now it is 2.
 const SECTION_LOADERS = {
   leads: () => { loadLeads(); refreshOrdersBadge(); }, orders: () => loadOrders(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(),
-  pricing: () => { loadPricing(); loadBundles(); loadPayments(); },
+  pricing: () => { loadPricing(); loadSalonTiers(); loadBundles(); loadPayments(); },
   users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(), privacyReq: () => loadPrivacyReq(), whatsapp: () => loadWhatsApp(),
-  team: () => { loadTeam(); loadSetups(); loadTeamApps(); }, salesWork: () => loadSalesWork(), clientPay: () => { loadClientPay(); loadBills(); },
+  team: () => { loadTeam(); loadSetups(); loadTeamApps(); }, tasks: () => loadTasks(), salesWork: () => loadSalesWork(), clientPay: () => { loadClientPay(); loadBills(); },
 };
 const sectionLoadedAt = {};
 function ensureSectionLoaded(name) {
@@ -1206,7 +1244,7 @@ async function refreshAdminNotifBadges() {
   setBadge(['notifBadgeAddonSide', 'notifBadgeAddonMore'], counts.addon_request || 0);
   const moreTotal = (counts.signup_request || 0) + (counts.addon_request || 0) + (document.querySelectorAll('#notifBadgeSetupSide:not([style*="display: none"])').length ? Number(document.getElementById('notifBadgeSetupSide').textContent) || 0 : 0);
   setBadge(['notifBadgeMoreTab'], moreTotal);
-  try { const oc = await sb.rpc('admin_open_counts'); if (!oc.error && oc.data) { setBadge(['privReqBadge'], Number(oc.data.privacy) || 0); setBadge(['teamAppBadge'], Number(oc.data.team) || 0); } } catch (e) { /* the badges are only a hint */ }
+  try { const oc = await sb.rpc('admin_open_counts'); if (!oc.error && oc.data) { setBadge(['privReqBadge'], Number(oc.data.privacy) || 0); setBadge(['teamAppBadge'], Number(oc.data.team) || 0); setBadge(['tasksBadgeSide', 'tasksBadgeMore'], Number(oc.data.tasks) || 0); } } catch (e) { /* the badges are only a hint */ }
 }
 async function markAdminNotifsRead(type) {
   const { data } = await sb.from('notifications').select('id').eq('read', false).eq('type', type);
@@ -1547,6 +1585,7 @@ async function loadPricing() {
         <div class="price-name">${esc(p.label)}</div>
         <button class="price-save" data-save>Save</button>
       </div>
+      ${p.key === 'salon' ? `<div class="price-note" style="margin-top:2px"><a href="business-salons.html#salon-plans" target="_blank" rel="noopener">View the live salon plans page &#8599;</a> &mdash; its four tiers are fixed prices, set on that page directly, not from this field</div>` : ''}
       <div class="price-fields">
         <div class="price-field"><label>Monthly</label><div class="pf-row">&#8377;<input data-price type="number" min="0" step="1" value="${Number(p.monthly_price)}"><span class="pf-unit">/mo</span></div></div>
         <div class="price-field"><label>Whole year</label><div class="pf-row">&#8377;<input data-yearly type="number" min="0" step="1" value="${Number(p.yearly_price || 0)}" title="Price if paid for the whole year (0 = no yearly option)"><span class="pf-unit">/yr</span></div></div>
@@ -1569,6 +1608,50 @@ async function loadPricing() {
       const { error: yErr } = await sb.rpc('admin_set_product_yearly', { p_key: tr.dataset.key, p_yearly_price: yearly, p_renewal_yearly_price: renew });
       if (yErr) { alert(yErr.message); return; }
       loadPricing();
+    };
+  });
+}
+
+async function loadSalonTiers() {
+  const listEl = document.getElementById('salonTiersList');
+  const { data, error } = await sb.rpc('admin_list_salon_tiers', {});
+  if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  const cards = (data || []).map((t) => `
+    <div class="a-card bn-card" data-tier="${esc(t.tier_key)}">
+      <div class="bn-top">
+        <input class="inp" data-f="name" placeholder="Tier name" value="${esc(t.name || '')}">
+        <input class="inp" data-f="badge" placeholder="Badge (e.g. House favourite)" value="${esc(t.badge || '')}">
+      </div>
+      <input class="inp" data-f="tagline" placeholder="One-line tagline shown on the card" value="${esc(t.tagline || '')}">
+      <div class="bn-grid">
+        <label class="bn-field"><span>Monthly</span><div class="bn-in"><i>&#8377;</i><input data-f="monthly_price" type="number" min="0" step="1" value="${Number(t.monthly_price || 0)}"></div></label>
+        <label class="bn-field"><span>Whole year</span><div class="bn-in"><i>&#8377;</i><input data-f="yearly_price" type="number" min="0" step="1" value="${Number(t.yearly_price || 0)}"></div></label>
+      </div>
+      <textarea class="inp" data-f="features" rows="3" placeholder="One feature per line" style="margin-top:8px;resize:vertical">${esc((t.features || []).join('\n'))}</textarea>
+      <div class="bn-toggles">
+        <label class="bn-switch"><input type="checkbox" data-f="highlighted" ${t.highlighted ? 'checked' : ''}><span>Highlighted (shown as the popular tier)</span></label>
+        <label class="bn-switch"><input type="checkbox" data-f="active" ${t.active === false ? '' : 'checked'}><span>Show on the page</span></label>
+      </div>
+      <div class="bn-foot"><button class="btn btn-primary" data-save>Save</button></div>
+    </div>`).join('');
+  listEl.innerHTML = `<div class="price-grid">${cards}</div>`;
+
+  listEl.querySelectorAll('[data-tier]').forEach((card) => {
+    card.querySelector('[data-save]').onclick = async () => {
+      const val = (f) => card.querySelector(`[data-f="${f}"]`).value;
+      const monthly = Number(val('monthly_price')), yearly = Number(val('yearly_price'));
+      if (!(monthly >= 0) || !(yearly >= 0)) { alert('Prices must be 0 or more.'); return; }
+      const features = val('features').split('\n').map((s) => s.trim()).filter(Boolean);
+      const p = {
+        tier_key: card.dataset.tier,
+        name: val('name'), tagline: val('tagline'), badge: val('badge'),
+        monthly_price: monthly, yearly_price: yearly, features,
+        highlighted: card.querySelector('[data-f="highlighted"]').checked,
+        active: card.querySelector('[data-f="active"]').checked,
+      };
+      const { error: saveErr } = await sb.rpc('admin_save_salon_tier', { p });
+      if (saveErr) { alert(saveErr.message); return; }
+      loadSalonTiers();
     };
   });
 }
@@ -2157,19 +2240,22 @@ async function loadTeamApps() {
   if (error) { box.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
   { const b = document.getElementById('teamAppBadge'); const n = (data || []).length; if (b) { b.style.display = n ? '' : 'none'; b.textContent = n ? String(n) : ''; } }
   if (!data || !data.length) { box.innerHTML = '<p class="p">No new applications.</p>'; return; }
-  box.innerHTML = `<div class="lc-list">${data.map((a) => `
+  box.innerHTML = `<div class="lc-list">${data.map((a) => { const preRole = ['salesman', 'setup', 'support', 'manager'].includes(a.role_wanted) ? a.role_wanted : 'support'; return `
     <div class="tm-card" data-id="${a.id}">
-      <div class="lc-name">${esc(a.name)} <span class="role-pill role-${a.role_wanted === 'other' ? 'support' : a.role_wanted}">wants: ${esc(ROLE_LABEL[a.role_wanted] || 'Something else')}</span></div>
+      <div class="lc-name">${esc(a.name)} <span class="role-pill role-${preRole}">wants: ${esc(ROLE_LABEL[a.role_wanted] || (a.role_wanted === 'not_sure' ? 'Not sure yet' : 'Something else'))}</span>${a.user_id ? ' <span class="status-pill status-active">has an account</span>' : ''}</div>
       <div class="lc-sub">${esc(a.email)} · ${esc(a.phone || '')}${a.city ? ' · ' + esc(a.city) : ''} · ${when(a.created_at)}</div>
-      ${a.experience ? `<p class="p" style="margin:6px 0 0"><b>Experience:</b> ${esc(a.experience)}</p>` : ''}
+      ${a.years_experience ? `<p class="p" style="margin:6px 0 0"><b>Experience:</b> ${esc(a.years_experience)}</p>` : (a.experience ? `<p class="p" style="margin:6px 0 0"><b>Experience:</b> ${esc(a.experience)}</p>` : '')}
+      ${a.skills ? `<p class="p" style="margin:4px 0 0"><b>Good at:</b> ${esc(a.skills)}</p>` : ''}
+      ${a.availability ? `<p class="p" style="margin:4px 0 0"><b>Can start:</b> ${esc(a.availability)}</p>` : ''}
+      ${a.links ? `<p class="p" style="margin:4px 0 0"><b>Links:</b> ${esc(a.links)}</p>` : ''}
       ${a.about ? `<p class="p" style="margin:4px 0 0">${esc(a.about)}</p>` : ''}
       <div class="tm-stats">
-        <select class="tm-role-sel" data-role aria-label="Role to give">${Object.entries(ROLE_LABEL).map(([k, v]) => `<option value="${k}"${k === (a.role_wanted === 'other' ? 'support' : a.role_wanted) ? ' selected' : ''}>${v}</option>`).join('')}</select>
+        <select class="tm-role-sel" data-role aria-label="Role to give">${Object.entries(ROLE_LABEL).map(([k, v]) => `<option value="${k}"${k === preRole ? ' selected' : ''}>${v}</option>`).join('')}</select>
         <button class="btn btn-primary" data-approve type="button">Approve</button>
         <button class="lc-action" data-reject type="button">Reject</button>
         <a class="lc-action" href="https://wa.me/${esc(String(a.phone || '').replace(/\D/g, ''))}" target="_blank" rel="noopener">WhatsApp</a>
       </div>
-    </div>`).join('')}</div>`;
+    </div>`; }).join('')}</div>`;
   box.querySelectorAll('.tm-card').forEach((card) => {
     const id = card.dataset.id;
     const decide = async (decision) => {
@@ -2252,6 +2338,104 @@ document.getElementById('setupForm').onsubmit = async (e) => {
   const { error } = await sb.rpc('team_assign_setup', { p_tenant: tenant, p_user: user, p_days: Number(document.getElementById('suDays').value) });
   if (error) { errEl.textContent = error.message; return; }
   loadSetups(); loadTeam();
+};
+
+// ---------- Tasks: a general, assignable, trackable task list (db/186) ----------
+const TASK_STATUS_LABEL = { open: 'Open', done: 'Done', cancelled: 'Cancelled' };
+const TASK_SOURCE_LABEL = {
+  manual: null, // nothing shown for a hand-assigned task
+  'auto:unassigned_lead': 'Auto · unassigned lead', 'auto:setup_deadline': 'Auto · setup deadline', 'auto:payment_welcome': 'Auto · payment confirmed',
+};
+let tasksCache = [];
+function fillTaskAssigneeSelects() {
+  const people = teamCache.filter((m) => m.active);
+  const opts = people.map((m) => `<option value="${m.id}">${esc(m.name)} (${esc(ROLE_LABEL[m.role])})</option>`).join('');
+  const filt = document.getElementById('taskFilterAssignee');
+  if (filt) { const cur = filt.value; filt.innerHTML = '<option value="">Everyone</option>' + opts; filt.value = cur; }
+  const tk = document.getElementById('tkAssignee');
+  if (tk) tk.innerHTML = opts || '<option value="">No active team members yet</option>';
+}
+function taskCard(t) {
+  const srcLabel = TASK_SOURCE_LABEL[t.source] !== undefined ? TASK_SOURCE_LABEL[t.source] : 'Auto · ' + esc(t.source || '');
+  const due = t.due_at ? new Date(t.due_at) : null;
+  const overdue = due && t.status === 'open' && due.getTime() < Date.now();
+  const related = t.related_tenant_name ? `Client: ${esc(t.related_tenant_name)}` : t.related_lead_name ? `Lead: ${esc(t.related_lead_name)}` : '';
+  return `<div class="req-card" data-id="${t.id}">
+    <div class="req-head">
+      <div>
+        <div class="req-name">${esc(t.title)}</div>
+        <div class="req-sub">To ${esc(t.assignee || '—')}${t.created_by_name ? ' · by ' + esc(t.created_by_name) : ''}${t.priority ? ' · ' + esc(t.priority) + ' priority' : ''}</div>
+      </div>
+      <span class="status-pill ${t.status === 'open' ? (overdue ? 'status-suspended' : '') : t.status === 'done' ? 'status-active' : ''}">${esc(TASK_STATUS_LABEL[t.status] || t.status)}</span>
+    </div>
+    ${t.description ? `<div class="req-section req-body">${esc(t.description)}</div>` : ''}
+    <div class="req-section req-body" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      ${due ? `<span style="color:${overdue ? '#b00020' : 'var(--ink-faint)'}">Due ${esc(due.toLocaleString())}</span>` : ''}
+      ${srcLabel ? `<span class="feature-tag">${esc(srcLabel)}</span>` : ''}
+      ${related ? `<span style="color:var(--ink-faint)">${related}</span>` : ''}
+    </div>
+    <div class="req-section lead-ctl">
+      <label>Reassign<select data-reassign><option value="">Keep as is</option></select></label>
+    </div>
+    <div class="req-actions">
+      ${t.status === 'open' ? '<button data-done>Mark done</button><button data-cancel class="req-danger">Cancel</button>' : ''}
+    </div>
+  </div>`;
+}
+async function loadTasks() {
+  const listEl = document.getElementById('tasksList');
+  await ensureTeam();
+  fillTaskAssigneeSelects();
+  const status = document.getElementById('taskFilterStatus').value;
+  const assignee = document.getElementById('taskFilterAssignee').value;
+  const { data, error } = await sb.rpc('team_all_tasks', {});
+  if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  tasksCache = data || [];
+  const rows = tasksCache.filter((t) => (status === 'all' || t.status === status) && (!assignee || t.assigned_to === assignee));
+  if (!rows.length) { listEl.innerHTML = emptyDoodle('No tasks match this filter.'); return; }
+  listEl.innerHTML = `<div class="req-grid">${rows.map(taskCard).join('')}</div>`;
+  listEl.querySelectorAll('[data-id]').forEach((card) => {
+    const id = card.dataset.id;
+    const sel = card.querySelector('[data-reassign]');
+    sel.innerHTML += teamCache.filter((m) => m.active).map((m) => `<option value="${m.id}">${esc(m.name)}</option>`).join('');
+    sel.onchange = async () => {
+      if (!sel.value) return;
+      const { error: e2 } = await sb.rpc('team_update_task', { p_id: id, p: { assigned_to: sel.value } });
+      if (e2) { alert(e2.message); }
+      loadTasks();
+    };
+    const doneBtn = card.querySelector('[data-done]');
+    if (doneBtn) doneBtn.onclick = async () => { const { error: e2 } = await sb.rpc('team_update_task', { p_id: id, p: { status: 'done' } }); if (e2) { alert(e2.message); } loadTasks(); };
+    const cancelBtn = card.querySelector('[data-cancel]');
+    if (cancelBtn) cancelBtn.onclick = async () => {
+      if (!confirm('Cancel this task?')) return;
+      const { error: e2 } = await sb.rpc('team_update_task', { p_id: id, p: { status: 'cancelled' } });
+      if (e2) { alert(e2.message); }
+      loadTasks();
+    };
+  });
+}
+document.getElementById('taskFilterStatus').onchange = loadTasks;
+document.getElementById('taskFilterAssignee').onchange = loadTasks;
+document.getElementById('taskAddOpen').onclick = async () => {
+  const f = document.getElementById('taskForm');
+  if (f.hidden) { await ensureTeam(); fillTaskAssigneeSelects(); }
+  f.hidden = !f.hidden;
+};
+document.getElementById('taskForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById('tkErr'); errEl.textContent = '';
+  const due = document.getElementById('tkDue').value;
+  const { error } = await sb.rpc('team_create_task', { p: {
+    title: document.getElementById('tkTitle').value.trim(),
+    description: document.getElementById('tkDesc').value.trim(),
+    assigned_to: document.getElementById('tkAssignee').value || null,
+    due_at: due ? new Date(due).toISOString() : '',
+    priority: document.getElementById('tkPriority').value,
+  } });
+  if (error) { errEl.textContent = error.message; return; }
+  e.target.reset(); e.target.hidden = true;
+  loadTasks();
 };
 
 // ---------- Client payments (db/148) ----------

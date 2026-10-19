@@ -111,6 +111,12 @@ export default async function run({ browser, stack }) {
     const txt = await p.locator('main').innerText();
     assert(!/₹|Continue to payment|Total due|Setup fee|GST/i.test(txt.replace(/GSTIN[^\n]*/gi, '').replace(/^.*GSTIN.*$/gm, '')), 'the cart still shows prices or payment: ' + txt.slice(0, 300));
     assert(/\S/.test(await p.locator('#cartItems').innerText()), 'cart is empty after adding a product');
+    // this login already has a complete saved profile (an earlier check in this file saved one) -- the cart must
+    // skip straight to product + requirement (zero re-entry), with a plain "that's wrong" escape hatch back to the full form
+    assert(await p.locator('#quickSummary').isVisible(), 'a complete saved profile should skip the business-details form');
+    assert(/Sending as:/.test(await p.locator('#quickSummary').innerText()), 'no "sending as" summary shown in quick mode');
+    assert(!(await p.locator('#rqName').isVisible()), 'business-detail fields should be hidden in quick mode');
+    await p.click('#quickEditLink'); await p.waitForSelector('#rqName', { state: 'visible', timeout: 5000 });
     await p.fill('#rqName', 'QA Owner'); await p.fill('#rqPhone', '9811100011'); await p.fill('#rqBiz', 'QA Business ' + (Date.now() % 10000)); await p.fill('#rqReq', 'Billing and stock for two outlets');
     await p.click('#rqSend'); await p.waitForSelector('#sentSection', { state: 'visible', timeout: 10000 });
     const r = await q("select count(*)::int n, min(status) st from client_orders where business_name like 'QA Business%'");

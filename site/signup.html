@@ -405,9 +405,10 @@ document.getElementById('pwEyeToggle').onclick = () => {
 };
 
 // ---- after any successful sign-in, by whatever method ----
-// "Sign in to send your request": the cart links here with ?next=cart.html and we bring the person back to it after sign-in
-(function () { try { const n = new URLSearchParams(location.search).get('next'); if (n === 'cart.html') sessionStorage.setItem('auz.next', n); } catch (e) {} })();
-function goNext() { try { const n = sessionStorage.getItem('auz.next'); if (n === 'cart.html') { sessionStorage.removeItem('auz.next'); window.location.href = n; return true; } } catch (e) {} return false; }
+// "Sign in to send your request": the cart (and join-team.html) link here with ?next=<page> and we bring the person back after sign-in
+const NEXT_PAGES = ['cart.html', 'join-team.html'];
+(function () { try { const n = new URLSearchParams(location.search).get('next'); if (NEXT_PAGES.includes(n)) sessionStorage.setItem('auz.next', n); } catch (e) {} })();
+function goNext() { try { const n = sessionStorage.getItem('auz.next'); if (NEXT_PAGES.includes(n)) { sessionStorage.removeItem('auz.next'); window.location.href = n; return true; } } catch (e) {} return false; }
 // AUZslab team members (salesman, setup, support, manager) have no business: signing in on the website must not drop them
 // on the products/cart page. Hand the session to app.auzslab.in (same #auz_gt hand-off as the Google redirect) where their
 // team workspace opens. team_me() also turns an approved "Join our team" application into a seat on the first call.

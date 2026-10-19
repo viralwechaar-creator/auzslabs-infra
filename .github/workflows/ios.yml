@@ -1,15 +1,38 @@
 name: iOS build (iPhone + iPad)
-# Run from the Actions tab on a macOS runner. Always makes a simulator build (proves the project compiles). With the signing secrets
-# (docs/IOS_RELEASE.md) it also makes the signed .ipa and, if the App Store Connect key exists, uploads it to TestFlight.
+# Run from the Actions tab on a macOS runner. app = hub, pos or all (default).
+# Every selected app always gets an unsigned simulator build (proves that app's Xcode project actually compiles --
+# this is the only check this sandbox can do for an iOS project, since there is no macOS runner or device here).
+# The SIGNED .ipa + TestFlight upload stays wired for the hub app only, because that is the one bundle id
+# (in.auzslab.app) this project has real, documented signing secrets and a provisioning profile for (docs/IOS_RELEASE.md).
+# A signed build for a second bundle id (e.g. in.auzslab.pos, a standalone AUZsPOS listing) needs its OWN
+# provisioning profile from the owner's Apple Developer account first -- see "Building a second app (e.g. AUZsPOS
+# on its own)" in docs/IOS_RELEASE.md before wiring that in here; it is not done in this workflow yet because it
+# cannot be tested without that profile existing.
 # Never run on a real iPhone from the build sandbox: the first CI run is the first real check.
 on:
   workflow_dispatch:
+    inputs:
+      app: {description: "hub, pos or all", default: all}
 jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      apps: ${{ steps.p.outputs.apps }}
+    steps:
+      - id: p
+        run: |
+          if [ "${{ inputs.app }}" = "all" ]; then echo 'apps=["hub","pos"]' >> $GITHUB_OUTPUT; else echo 'apps=["${{ inputs.app }}"]' >> $GITHUB_OUTPUT; fi
   ios:
+    needs: plan
     runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJson(needs.plan.outputs.apps) }}
     env:
       BUILD_NUMBER: ${{ github.run_number }}
-      HAVE_CERT: ${{ secrets.IOS_CERT_P12_B64 != '' && secrets.IOS_PROFILE_B64 != '' }}
+      # Signing only exists for the hub app right now (see the header comment above).
+      HAVE_CERT: ${{ matrix.app == 'hub' && secrets.IOS_CERT_P12_B64 != '' && secrets.IOS_PROFILE_B64 != '' }}
       HAVE_ASC: ${{ secrets.ASC_KEY_P8_B64 != '' }}
     steps:
       - uses: actions/checkout@v4
@@ -18,8 +41,8 @@ jobs:
       - run: pip3 install pillow
       - name: Create the Xcode project
         working-directory: mobile
-        run: npm install && node build-ios.mjs hub
-      - name: Build for the simulator (no signing needed)
+        run: npm install && node build-ios.mjs ${{ matrix.app }}
+      - name: Build for the simulator (no signing needed; proves the project compiles)
         working-directory: mobile/ios/App
         run: |
           xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator \

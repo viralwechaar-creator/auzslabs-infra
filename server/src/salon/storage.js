@@ -22,6 +22,23 @@ export async function tenantFor(req) {
   return rows[0];
 }
 
+// ---- CORS: a tenant-specific allowlist of external-website origins allowed to read the four public,
+// cookie-free salon endpoints (GET /site, /slots, /invoice/:token, POST /bookings) cross-origin -- e.g. a
+// client's own existing website calling the booking API directly. Stored in the SAME per-tenant jsonb settings
+// blob every other client-specific rule already lives in (tenant_settings.business_rules, see db/170's own
+// salonEngine precedent) rather than a new table/column -- exact string match only, via jsonb's `?` "array
+// contains this element" operator, never LIKE/substring. An operator sets/revokes an origin with plain SQL,
+// e.g.: update tenant_settings set business_rules = jsonb_set(business_rules, '{corsOrigins}',
+// coalesce(business_rules->'corsOrigins', '[]'::jsonb) || '["https://client-site.example"]'::jsonb)
+// where tenant_id = (select id from tenants where slug = '<slug>'); -- revoke: remove that element the same way.
+// Goes through salon_cors_origin_allowed() (db/192), a SECURITY DEFINER function, not a bare query against
+// tenant_settings -- that table's RLS (owner_read_own, keyed on a JWT app.uid the salon API's cookie session
+// never sets) hides every row from the plain `app` role otherwise, confirmed by testing, not assumed.
+export async function originAllowed(tid, origin) {
+  const { rows } = await pool.query('select salon_cors_origin_allowed($1, $2) as ok', [tid, origin]);
+  return !!rows[0]?.ok;
+}
+
 // ---- storage ----
 export async function readKey(client, tid, key, lock) {
   const { rows } = await client.query(`select data from salon_store where tenant_id = $1 and key = $2${lock ? ' for update' : ''}`, [tid, key]);
@@ -51,7 +68,7 @@ export function freshDb(tenant) {
 // `loadDb()` / `mutate()` still hand handlers the familiar combined object, so
 // the endpoint code below is unchanged. Older salons were one 'db' row: it is
 // split on first use (initStorage) and kept as 'db_backup'.
-const DATA_FIELDS = ['bookings', 'invoices', 'expenses', 'counters'];
+const DATA_FIELDS = ['bookings', 'invoices', 'expenses', 'counters', 'cashlog', 'clients', 'clientPackages', 'checkins'];
 function splitDb(db) {
   const site = {}, data = {};
   for (const [k, v] of Object.entries(db || {})) (DATA_FIELDS.includes(k) ? data : site)[k] = v;
