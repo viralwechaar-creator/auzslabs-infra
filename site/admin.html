@@ -1569,6 +1569,7 @@ async function loadPricing() {
         <div class="price-name">${esc(p.label)}</div>
         <button class="price-save" data-save>Save</button>
       </div>
+      ${p.key === 'salon' ? `<div class="price-note" style="margin-top:2px"><a href="business-salons.html#salon-plans" target="_blank" rel="noopener">View the live salon plans page &#8599;</a> &mdash; its four tiers scale off this monthly price</div>` : ''}
       <div class="price-fields">
         <div class="price-field"><label>Monthly</label><div class="pf-row">&#8377;<input data-price type="number" min="0" step="1" value="${Number(p.monthly_price)}"><span class="pf-unit">/mo</span></div></div>
         <div class="price-field"><label>Whole year</label><div class="pf-row">&#8377;<input data-yearly type="number" min="0" step="1" value="${Number(p.yearly_price || 0)}" title="Price if paid for the whole year (0 = no yearly option)"><span class="pf-unit">/yr</span></div></div>

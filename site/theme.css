@@ -506,6 +506,7 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
 #salon-plans .sp-price-row{display:flex;align-items:baseline;gap:6px;margin-top:14px;flex-wrap:wrap}
 #salon-plans .sp-price{font-family:var(--font-display);font-weight:700;font-size:22px;letter-spacing:-.03em;white-space:nowrap}
 #salon-plans .sp-per{font-family:var(--font-mono);font-size:9.5px;color:var(--ink-faint)}
+#salon-plans .sp-gst{font-family:var(--font-mono);font-size:9px;color:var(--ink-faint)}
 #salon-plans .sp-wassave{display:flex;align-items:center;gap:7px;margin-top:3px;font-size:10px}
 #salon-plans .sp-was{color:var(--ink-faint);text-decoration:line-through}
 #salon-plans .sp-save2{color:var(--success);font-weight:700}

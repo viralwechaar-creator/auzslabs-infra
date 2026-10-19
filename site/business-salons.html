@@ -27,7 +27,7 @@
 <link rel="icon" href="/logo.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="theme.css?v=56"><link rel="stylesheet" href="balance.css?v=3" media="(min-width:1000px)"><script src="theme.js?v=1"></script>
+<link rel="stylesheet" href="theme.css?v=57"><link rel="stylesheet" href="balance.css?v=3" media="(min-width:1000px)"><script src="theme.js?v=1"></script>
 <link rel="stylesheet" href="design-system/ui-kit.css?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -244,7 +244,7 @@
           <div class="sp-card" data-plan="The Studio">
             <div class="sp-head"><span class="sp-num">I</span><span class="sp-name">The Studio</span></div>
             <p class="sp-tagline">One chair, every tool. For a solo stylist or a salon just opening its doors.</p>
-            <div class="sp-price-row"><span class="sp-price sp-amt">&#8377;1,080</span><span class="sp-per sp-unit">/month</span></div>
+            <div class="sp-price-row"><span class="sp-price sp-amt">&#8377;1,080</span><span class="sp-per sp-unit">/month</span> <span class="sp-gst gst-t" hidden>+ GST</span></div>
             <div class="sp-wassave"><span class="sp-was">&#8377;1,350</span><span class="sp-save2">Save &#8377;270</span></div>
             <button type="button" class="btn btn-ghost sp-cta" data-open-contact data-plan="The Studio">Start here</button>
             <ul class="sp-feats">
@@ -261,7 +261,7 @@
             <span class="sp-fav">House favourite</span>
             <div class="sp-head"><span class="sp-num">II</span><span class="sp-name">The Salon</span></div>
             <p class="sp-tagline">For a small team sharing chairs, with payroll and memberships switched on.</p>
-            <div class="sp-price-row"><span class="sp-price sp-amt">&#8377;1,360</span><span class="sp-per sp-unit">/month</span></div>
+            <div class="sp-price-row"><span class="sp-price sp-amt">&#8377;1,360</span><span class="sp-per sp-unit">/month</span> <span class="sp-gst gst-t" hidden>+ GST</span></div>
             <div class="sp-wassave"><span class="sp-was">&#8377;1,700</span><span class="sp-save2">Save &#8377;340</span></div>
             <button type="button" class="btn btn-primary sp-cta" data-open-contact data-plan="The Salon">Choose The Salon</button>
             <ul class="sp-feats">
@@ -277,7 +277,7 @@
           <div class="sp-card" data-plan="The Atelier">
             <div class="sp-head"><span class="sp-num">III</span><span class="sp-name">The Atelier</span></div>
             <p class="sp-tagline">For a busy house that runs on numbers &mdash; full analytics and automation.</p>
-            <div class="sp-price-row"><span class="sp-price sp-amt">&#8377;2,720</span><span class="sp-per sp-unit">/month</span></div>
+            <div class="sp-price-row"><span class="sp-price sp-amt">&#8377;2,720</span><span class="sp-per sp-unit">/month</span> <span class="sp-gst gst-t" hidden>+ GST</span></div>
             <div class="sp-wassave"><span class="sp-was">&#8377;3,400</span><span class="sp-save2">Save &#8377;680</span></div>
             <button type="button" class="btn btn-ghost sp-cta" data-open-contact data-plan="The Atelier">Choose The Atelier</button>
             <ul class="sp-feats">
@@ -293,7 +293,7 @@
           <div class="sp-card" data-plan="The Maison">
             <div class="sp-head"><span class="sp-num">IV</span><span class="sp-name">The Maison</span></div>
             <p class="sp-tagline">For a brand with more than one address, built around how you already work.</p>
-            <div class="sp-price-row"><span class="sp-price sp-amt">&#8377;5,440</span><span class="sp-per sp-unit">/month</span></div>
+            <div class="sp-price-row"><span class="sp-price sp-amt">&#8377;5,440</span><span class="sp-per sp-unit">/month</span> <span class="sp-gst gst-t" hidden>+ GST</span></div>
             <div class="sp-wassave"><span class="sp-was">&#8377;6,800</span><span class="sp-save2">Save &#8377;1,360</span></div>
             <button type="button" class="btn btn-ghost sp-cta" data-open-contact data-plan="The Maison">Talk to us</button>
             <ul class="sp-feats">
@@ -313,7 +313,8 @@
           <button type="button" class="btn btn-primary" data-open-contact data-plan="The Salon (yearly)">Choose annual billing &#8599;</button>
         </div>
 
-        <p class="sp-note">Shown for comparison, not a checkout &mdash; every salon is quoted directly once we know your chairs, staff and what you need switched on. <button type="button" class="sp-link" data-open-contact>Tell us about your salon &rarr;</button></p>
+        <p class="sp-note">Prices shown exclude GST<span class="gst-t" hidden>, added on top</span>. A one-time onboarding fee is mandatory for every first-time client; a separate setup fee is optional and only applies depending on what you choose &mdash; both are confirmed in your quote, never a surprise on the bill.</p>
+        <p class="sp-note" style="margin-top:6px">Shown for comparison, not a checkout &mdash; every salon is quoted directly once we know your chairs, staff and what you need switched on. <button type="button" class="sp-link" data-open-contact>Tell us about your salon &rarr;</button></p>
       </section>
 
       <hr class="dash">
@@ -544,13 +545,25 @@
 // nothing here is a second checkout. Monthly prices match the four tiers in
 // order (Studio, Salon, Atelier, Maison); "was" = monthly x 1.25 (shown as the
 // struck-through price), yearly = 10 months' worth (2 months free).
+//
+// Linked to Admin -> Pricing: the numbers below are a fallback shown instantly
+// (and if the live fetch fails -- offline, RPC down, nothing ever breaks).
+// public_product_prices() (the same live source pricing.html already reads)
+// is fetched once on load; if the admin's real "salon" monthly price differs
+// from this fallback, every tier here is rescaled by that same ratio, so
+// changing the one real price in Admin -> Pricing moves all four tiers
+// together without a deploy. The four tiers themselves still aren't real,
+// separately-priced products -- see the section's own disclaimer line.
 (function () {
   var toggle = document.getElementById('spToggle');
   var grid = document.getElementById('spGrid');
   if (!toggle || !grid) return;
+  var FALLBACK_BASE = 1080;
   var monthlyPrices = [1080, 1360, 2720, 5440];
+  var currentPeriod = 'm';
   function inr(n) { return '₹' + Math.round(n).toLocaleString('en-IN'); }
   function setPeriod(period) {
+    currentPeriod = period;
     var yearly = period === 'y';
     toggle.querySelectorAll('button[data-period]').forEach(function (b) {
       var on = b.getAttribute('data-period') === period;
@@ -588,6 +601,29 @@
       if (plan && msg && !msg.value) msg.value = 'Interested in the ' + plan + ' plan for my salon.';
     });
   });
+
+  // Live link to Admin -> Pricing: rescale every tier if the real "salon"
+  // price differs from the fallback above, and reveal the "+ GST" tags if
+  // GST is actually configured -- same two RPCs pricing.html already reads,
+  // so nothing new on the server. Silently keeps the fallback on any error.
+  try {
+    var sb = supabase.createClient(CFG.url, CFG.key);
+    sb.rpc('public_product_prices').then(function (r) {
+      var rows = (r && r.data) || [];
+      var salon = rows.filter(function (p) { return p.key === 'salon'; })[0];
+      if (salon && Number(salon.monthly_price) > 0) {
+        var ratio = Number(salon.monthly_price) / FALLBACK_BASE;
+        if (ratio > 0 && Math.abs(ratio - 1) > 0.001) {
+          monthlyPrices = monthlyPrices.map(function (m) { return Math.round(m * ratio); });
+          setPeriod(currentPeriod);
+        }
+      }
+    }).catch(function () {});
+    sb.payments.config().then(function (c) {
+      c = c && c.data;
+      if (c && c.gstPct > 0) document.querySelectorAll('#salon-plans .gst-t').forEach(function (e) { e.hidden = false; });
+    }).catch(function () {});
+  } catch (e) {}
 })();
 </script>
 </body>
