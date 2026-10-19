@@ -103,8 +103,28 @@ async function persistBookings(client, tid, before, after) {
   }
   for (const id of beforeById.keys()) if (!afterById.has(id)) await client.query(`delete from bookings where id=$1 and tenant_id=$2`, [id, tid]);
 }
+// Flatten the salon admin console's nested {category, items:[...]} shape back into the two flat
+// collections assembleDb() reads them from (cat/item records, same kinds the console's own menu
+// editor and the POS already use -- an item keeps whatever extra fields it already had, e.g. `sizes`,
+// untouched, since this only ever rewrites the fields the salon editor itself knows about).
+function flattenMenu(menu) {
+  const cats = [], items = [];
+  for (const c of menu || []) {
+    const { items: catItems, ...catRow } = c;
+    cats.push(catRow);
+    for (const it of catItems || []) items.push({ ...it, cat: catRow.id });
+  }
+  return { cats, items };
+}
+async function persistMenu(client, tid, before, after) {
+  const b = flattenMenu(before.menu), a = flattenMenu(after.menu);
+  await persistCollection(client, tid, 'cat', b.cats, a.cats);
+  await persistCollection(client, tid, 'item', b.items, a.items);
+}
+
 export async function persistDb(client, tid, before, after) {
   await persistSettings(client, tid, before, after);
+  await persistMenu(client, tid, before, after);
   await persistCollection(client, tid, 'stylist', before.stylists, after.stylists);
   await persistCollection(client, tid, 'salon_invoice', before.invoices, after.invoices);
   await persistCollection(client, tid, 'salon_expense', before.expenses, after.expenses);
@@ -114,8 +134,6 @@ export async function persistDb(client, tid, before, after) {
   await persistCollection(client, tid, 'salon_client_package', before.clientPackages || [], after.clientPackages || []);
   await persistCollection(client, tid, 'salon_checkin', before.checkins || [], after.checkins || []);
   await persistBookings(client, tid, before.bookings, after.bookings);
-  // menu (categories/items) is edited through the console's own existing menu editor, not through
-  // salon's admin console -- the menu-editing endpoints in handleSalon() are not part of this swap.
 }
 
 export function newId() { return crypto.randomUUID(); }
