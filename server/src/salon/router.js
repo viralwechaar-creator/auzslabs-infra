@@ -5,7 +5,7 @@ import { staffLogin, verifyToken } from '../auth.js';
 import { DOMAIN, cleanString, fail, hex6, htmlEsc, limited, normalizeOrigin, readBody, round2, sendJson, staffPhone, todayStr, validDate } from './util.js';
 import { bookingCounts, freshDb, loadDb, loadSite, mutate, mutateStaffAdmin, originAllowed, payrollOn, readKey, readStaffAdmin, reseedDemo, tenantFor, usesGeneric, writeKey, writeStaffAdmin } from './storage.js';
 import { clearSession, getSession, hashPassword, ownerPasswordOk, setSession, verifyScrypt } from './session.js';
-import { EXPENSE_CATEGORIES, addBooking, addExpense, addInvoice, clientsList, computeSlots, publicSite } from './rules.js';
+import { EXPENSE_CATEGORIES, addBooking, addCashMove, addExpense, addInvoice, cashRangeSummary, cashSummary, clientsList, computeSlots, publicSite } from './rules.js';
 import { salonIcon, salonOgImage, saveUpload } from './brand.js';
 import { enqueueWa, sendOrRetryWa } from '../whatsapp.js';
 import { sendWebPush, vapidReady } from '../push.js';
@@ -307,6 +307,28 @@ export async function handleSalon(req, res, ip) {
       salonPush(tid, 'New bill', `${(invoice.client && invoice.client.name) || 'A customer'} — ₹${invoice.total.toFixed(2)}`);
       return send(201, { ok: true, invoice });
     }
+
+    // ---- cash register (opening float, cash in/out, closing count) + payment-mode settlement ----
+    // Open to any signed-in console user (member(), not admin()): the same trust level as creating a
+    // bill or taking a booking -- a cashier opens/closes the drawer they're working from, same as the
+    // main POS's own cash drawer. All arithmetic lives in rules.js (addCashMove/cashSummary), never here.
+    if (method === 'POST' && p === '/admin/cash/move') {
+      const me = await member();
+      const entry = await mutate(tenant, (db) => addCashMove(db, body, me), ['site', 'data'], ['data']);
+      return send(201, { ok: true, entry });
+    }
+    if (method === 'GET' && p === '/admin/cash/summary') {
+      await member();
+      const date = String(url.searchParams.get('date') || todayStr());
+      return send(200, cashSummary(await loadDb(tenant), date));
+    }
+    if (method === 'GET' && p === '/admin/cash/range') {
+      await member();
+      const from = String(url.searchParams.get('from') || todayStr());
+      const to = String(url.searchParams.get('to') || todayStr());
+      return send(200, cashRangeSummary(await loadDb(tenant), from, to));
+    }
+
     const ivWa = p.match(/^\/admin\/invoices\/(.+)\/whatsapp$/);
     if (method === 'POST' && ivWa) {
       await member();

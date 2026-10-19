@@ -129,8 +129,8 @@
     go(location.hash.slice(1) in VIEWS && allowed(location.hash.slice(1)) ? location.hash.slice(1) : 'dashboard');
   }
 
-  const TITLES = { dashboard: 'Today', bookings: 'Bookings', billing: 'Billing', clients: 'Clients', menu: 'Menu and prices', stylists: 'Hairstylists', gallery: 'Gallery', content: 'Website text', settings: 'Settings', expenses: 'Expenses', analytics: 'Analytics', staff: 'Staff' };
-  const ICONS = { dashboard: 'grid', bookings: 'calendar', billing: 'receipt', clients: 'users', menu: 'list', stylists: 'cut', gallery: 'pics', content: 'doc', settings: 'gear', expenses: 'wallet', analytics: 'chart', staff: 'chair' };
+  const TITLES = { dashboard: 'Today', bookings: 'Bookings', billing: 'Billing', clients: 'Clients', menu: 'Menu and prices', stylists: 'Hairstylists', gallery: 'Gallery', content: 'Website text', settings: 'Settings', expenses: 'Expenses', cash: 'Cash register', analytics: 'Analytics', staff: 'Staff' };
+  const ICONS = { dashboard: 'grid', bookings: 'calendar', billing: 'receipt', clients: 'users', menu: 'list', stylists: 'cut', gallery: 'pics', content: 'doc', settings: 'gear', expenses: 'wallet', cash: 'wallet', analytics: 'chart', staff: 'chair' };
   const PRIMARY = ['dashboard', 'bookings', 'billing', 'clients'];
   /* Staff logins see exactly the PRIMARY four. This is only the UI half: the API
      refuses every other endpoint for a staff session (server/src/salon.js). */
@@ -359,7 +359,8 @@
   }
 
   /* ---------- billing ---------- */
-  const newBill = pre => ({ client: { name: '', phone: '', email: '' }, date: D.today, servedBy: isOwner() ? '' : (ME.name || ''), items: [], discType: 'flat', discVal: 0, note: '', bookingId: '', ...pre });
+  const PAY_MODES = { cash: 'Cash', upi: 'UPI / QR', card: 'Card', credit: 'Credit (pay later)' };
+  const newBill = pre => ({ client: { name: '', phone: '', email: '' }, date: D.today, servedBy: isOwner() ? '' : (ME.name || ''), items: [], discType: 'flat', discVal: 0, note: '', bookingId: '', paymentMode: 'cash', ...pre });
   function billFromBooking(b) {
     const idx = menuIndex();
     return newBill({ client: { name: b.name, phone: b.phone, email: b.email || '' }, date: b.date < D.today ? D.today : b.date, bookingId: b.id,
@@ -407,10 +408,12 @@
     const discRow = h('div', { class: 'row2' },
       fld('Discount type', h('select', { id: 'bDT', onchange: e => { B.discType = e.target.value; drawTotals(); } }, h('option', { value: 'flat', selected: B.discType === 'flat', text: 'Amount (rupees)' }), h('option', { value: 'percent', selected: B.discType === 'percent', text: 'Percent' })), 'bDT'),
       fld('Discount', h('input', { id: 'bDV', type: 'number', min: 0, step: 'any', value: B.discVal, oninput: e => { B.discVal = +e.target.value; drawTotals(); } }), 'bDV'));
+    const payRow = fld('Payment mode', h('select', { id: 'bPay', onchange: e => { B.paymentMode = e.target.value; } },
+      Object.entries(PAY_MODES).map(([k, label]) => h('option', { value: k, selected: B.paymentMode === k, text: label }))), 'bPay');
     const genBtn = btn('Generate invoice', async () => {
       genBtn.disabled = true;
       try {
-        const r = await api('POST', '/api/admin/invoices', { client: B.client, date: B.date, servedBy: B.servedBy, items: B.items, discount: { type: B.discType, value: B.discVal }, note: B.note, bookingId: B.bookingId });
+        const r = await api('POST', '/api/admin/invoices', { client: B.client, date: B.date, servedBy: B.servedBy, items: B.items, discount: { type: B.discType, value: B.discVal }, note: B.note, bookingId: B.bookingId, paymentMode: B.paymentMode });
         await load(); B = newBill(); invoiceDialog(r.invoice); rerender();
       } catch (ex) { fail(ex); } finally { genBtn.disabled = false; }
     });
@@ -423,9 +426,9 @@
       fld('Services used', addSel, 'addSvc'),
       h('div', { class: 'a-scroll' }, h('table', { class: 'a-bill-lines' }, lines)),
       btn('Add custom item', () => { B.items.push({ name: '', qty: 1, price: 0 }); drawLines(); }, 'btn-sm btn-alt'),
-      h('div', { style: 'height:20px' }), discRow, fld('Note on invoice (optional)', inp(B, 'note', { id: 'bNote' }), 'bNote'),
+      h('div', { style: 'height:20px' }), discRow, payRow, fld('Note on invoice (optional)', inp(B, 'note', { id: 'bNote' }), 'bNote'),
       totals, h('div', { style: 'margin-top:20px' }, genBtn),
-      h('p', { class: 'a-note', text: 'Payment is taken at the counter by QR or cash. Invoices show what was billed only.' }));
+      h('p', { class: 'a-note', text: 'The payment mode you pick is recorded against the bill so the cash register and settlement totals stay accurate. The invoice shown to the client still only lists what was billed.' }));
     drawLines();
 
     /* history */
@@ -437,7 +440,7 @@
         h('tbody', {}, l.map(i => h('tr', { style: i.void ? 'opacity:.5' : '' },
           h('td', { 'data-label': 'Invoice' }, h('span', {}, h('b', { text: i.no }), ' · ', h('span', { class: 'muted', text: fmtDate(i.date, { day: 'numeric', month: 'short', year: 'numeric' }) }))),
           h('td', { 'data-label': 'Client' }, h('span', {}, i.client.name, ' · ', h('span', { class: 'muted', text: i.client.phone }))),
-          h('td', { 'data-label': 'Total', text: i.void ? 'Void' : inr(i.total) }),
+          h('td', { 'data-label': 'Total' }, i.void ? h('span', { text: 'Void' }) : h('span', {}, inr(i.total), ' · ', h('span', { class: 'muted', text: PAY_MODES[i.paymentMode] || 'Cash' }))),
           h('td', { class: 'a-td-actions' }, i.void ? null : h('div', { class: 'a-row-actions' }, waSendRowBtn(i),
             h('a', { class: 'btn btn-sm btn-alt', href: '/i/' + i.token, target: '_blank', rel: 'noopener' }, 'Open'),
             !isOwner() ? null : btn('Void', async () => { if (await confirmBox('Void invoice ' + i.no + '? The customer link will stop working.', 'Void invoice')) { try { await api('DELETE', '/api/admin/invoices/' + i.id); await load(); rerender(); toast('Invoice voided'); } catch (ex) { fail(ex); } } }, 'btn-sm btn-danger')))))))) : emptyNote('No invoices yet.', 'scissors'));
@@ -516,6 +519,79 @@
       }
     }]);
   }
+  /* ---------- cash register (opening float, cash in/out, closing count, payment-mode settlement) ---------- */
+  function cashMoveDialog(type) {
+    const titles = { in: 'Cash in', out: 'Cash out', open: 'Open the register', close: 'Close the register' };
+    const F = { amount: null, note: '' };
+    const body = h('div', {},
+      type === 'close' ? h('p', { class: 'a-note', style: 'margin:0 0 16px', text: 'Count the cash in the drawer and enter it below. The register compares it to what it expects.' }) : null,
+      fld(type === 'close' ? 'Cash counted' : type === 'open' ? 'Opening amount' : 'Amount', num(F, 'amount', { id: 'cmAmt', min: 0 }), 'cmAmt'),
+      fld('Note (optional)', inp(F, 'note', { id: 'cmNote', placeholder: type === 'in' ? 'e.g. top-up from owner' : type === 'out' ? 'e.g. petty cash withdrawal' : '' }), 'cmNote'));
+    modal(titles[type], body, [{ label: 'Cancel', cls: 'btn-alt', value: 'no' }, {
+      label: 'Save', fn: async () => {
+        if (F.amount == null || F.amount < 0 || ((type === 'in' || type === 'out') && F.amount <= 0)) { toast('Enter an amount', true); return false; }
+        try { await api('POST', '/api/admin/cash/move', { type, amount: F.amount, note: F.note, date: D.today }); rerender(); toast(titles[type] + ' saved'); } catch (ex) { fail(ex); return false; }
+      }
+    }]);
+  }
+  function viewCash() {
+    setActions();
+    let date = D.today, summary = null, rangeOpen = false, rFrom = D.today, rTo = D.today, rangeSummary = null;
+    const box = h('div', {});
+    async function loadSummary() { summary = await api('GET', '/api/admin/cash/summary?date=' + date); draw(); }
+    async function loadRange() { rangeSummary = await api('GET', '/api/admin/cash/range?from=' + rFrom + '&to=' + rTo); draw(); }
+    function modeRow(label, v) { return h('div', { class: 'a-stat' }, h('b', { text: inr(v) }), h('span', { text: label })); }
+    function draw() {
+      if (!summary) { box.replaceChildren(h('p', { class: 'muted', text: 'Loading...' })); return; }
+      const s = summary;
+      const stats = h('div', { class: 'a-stats' },
+        modeRow('Cash', s.byMode.cash), modeRow('UPI / QR', s.byMode.upi), modeRow('Card', s.byMode.card), modeRow('Credit', s.byMode.credit),
+        h('div', { class: 'a-stat' }, h('b', { text: inr(s.totalSales) }), h('span', { text: 'Total billed' })));
+      const drawer = h('div', { class: 'a-section' },
+        h('h2', { class: 'a-h2', text: 'Drawer, for ' + fmtDate(date, { weekday: 'short', day: 'numeric', month: 'short' }) }),
+        h('div', { class: 'a-stats' },
+          h('div', { class: 'a-stat' }, h('b', { text: inr(s.opening) }), h('span', { text: 'Opening cash' })),
+          h('div', { class: 'a-stat' }, h('b', { text: inr(s.cashIn) }), h('span', { text: 'Cash in' })),
+          h('div', { class: 'a-stat' }, h('b', { text: inr(s.cashOut) }), h('span', { text: 'Cash out' })),
+          h('div', { class: 'a-stat' }, h('b', { text: inr(s.cashExpenses) }), h('span', { text: 'Cash expenses' })),
+          h('div', { class: 'a-stat' }, h('b', { text: inr(s.expectedCash) }), h('span', { text: 'Expected cash' })),
+          s.closed ? h('div', { class: 'a-stat' }, h('b', { text: inr(s.actualCash) }), h('span', { text: 'Counted cash' })) : null,
+          s.closed ? h('div', { class: 'a-stat' }, h('b', { style: s.variance !== 0 ? ('color:' + (s.variance > 0 ? 'var(--ok,#1a7f37)' : 'var(--danger,#c0392b)')) : '', text: (s.variance > 0 ? '+' : '') + inr(s.variance) }), h('span', { text: 'Variance' })) : null),
+        h('div', { class: 'a-row-actions', style: 'margin-top:16px' },
+          !s.opened ? btn('Open the register', () => cashMoveDialog('open')) : null,
+          s.opened && !s.closed ? btn('Cash in', () => cashMoveDialog('in'), 'btn-alt') : null,
+          s.opened && !s.closed ? btn('Cash out', () => cashMoveDialog('out'), 'btn-alt') : null,
+          s.opened && !s.closed ? btn('Close the register', () => cashMoveDialog('close')) : null,
+          s.closed ? h('p', { class: 'a-note', text: 'The register is closed for this day.' }) : null));
+      const log = s.entries.length ? h('div', { class: 'a-section' }, h('h2', { class: 'a-h2', text: 'Entries' }), h('div', { class: 'a-scroll' },
+        h('table', { class: 'a-table' }, h('thead', {}, h('tr', {}, ['Time', 'Type', 'Amount', 'Note', 'By'].map(t => h('th', { text: t })))),
+          h('tbody', {}, s.entries.map(e => h('tr', {},
+            h('td', { 'data-label': 'Time', text: new Date(e.createdAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) }),
+            h('td', { 'data-label': 'Type', text: { open: 'Opened', in: 'Cash in', out: 'Cash out', close: 'Closed' }[e.type] }),
+            h('td', { 'data-label': 'Amount', text: inr(e.amount) }),
+            h('td', { 'data-label': 'Note', text: e.note || '' }),
+            h('td', { 'data-label': 'By', text: e.by.name }))))))) : null;
+      const rangeBox = h('div', { class: 'a-section' },
+        h('div', { class: 'a-sub' }, h('h2', { class: 'a-h2', style: 'margin:0', text: 'Settlement over a date range' }),
+          btn(rangeOpen ? 'Hide' : 'Show', () => { rangeOpen = !rangeOpen; if (rangeOpen && !rangeSummary) loadRange(); else draw(); }, 'btn-sm btn-alt')),
+        !rangeOpen ? null : h('div', {},
+          h('div', { class: 'a-period-custom' }, h('span', { class: 'muted', text: 'From' }),
+            h('input', { type: 'date', value: rFrom, max: D.today, onchange: e => { rFrom = e.target.value; loadRange(); } }),
+            h('span', { class: 'muted', text: 'to' }),
+            h('input', { type: 'date', value: rTo, max: D.today, onchange: e => { rTo = e.target.value; loadRange(); } })),
+          !rangeSummary ? h('p', { class: 'muted', text: 'Loading...' }) : h('div', { style: 'margin-top:12px' },
+            h('div', { class: 'a-stats' },
+              modeRow('Cash', rangeSummary.byMode.cash), modeRow('UPI / QR', rangeSummary.byMode.upi), modeRow('Card', rangeSummary.byMode.card), modeRow('Credit', rangeSummary.byMode.credit),
+              h('div', { class: 'a-stat' }, h('b', { text: inr(rangeSummary.totalSales) }), h('span', { text: 'Total billed' })),
+              h('div', { class: 'a-stat' }, h('b', { text: inr(rangeSummary.totalExpenses) }), h('span', { text: 'Total expenses' }))),
+            rangeSummary.variance ? h('p', { class: 'a-note', text: 'Net cash variance over this range: ' + (rangeSummary.variance > 0 ? '+' : '') + inr(rangeSummary.variance) }) : null)));
+      box.replaceChildren(stats, drawer, log, rangeBox);
+    }
+    const dateInp = h('input', { type: 'date', value: date, max: D.today, onchange: e => { date = e.target.value; loadSummary(); } });
+    view().replaceChildren(h('div', {}, h('div', { class: 'a-sub' }, h('h2', { class: 'a-h2', style: 'margin:0', text: 'Cash register' }), fld('Date', dateInp, 'cashDate')), box));
+    loadSummary();
+  }
+
   function viewExpenses() {
     setActions(btn('Add expense', addExpenseDialog));
     const t = D.today.slice(0, 7);
@@ -1100,6 +1176,6 @@
       sticky(btn('Save settings', async () => { if (await saveSection('settings', S)) await load(); })));
   }
 
-  const VIEWS = { staff: viewStaff, dashboard: viewDashboard, bookings: viewBookings, billing: viewBilling, clients: viewClients, menu: viewMenu, stylists: viewStylists, gallery: viewGallery, content: viewContent, settings: viewSettings, expenses: viewExpenses, analytics: viewAnalytics };
+  const VIEWS = { staff: viewStaff, dashboard: viewDashboard, bookings: viewBookings, billing: viewBilling, clients: viewClients, menu: viewMenu, stylists: viewStylists, gallery: viewGallery, content: viewContent, settings: viewSettings, expenses: viewExpenses, cash: viewCash, analytics: viewAnalytics };
   boot();
 })();
