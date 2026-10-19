@@ -27,7 +27,7 @@
 <link rel="icon" href="/logo.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="theme.css?v=54"><link rel="stylesheet" href="balance.css?v=3" media="(min-width:1000px)"><script src="theme.js?v=1"></script>
+<link rel="stylesheet" href="theme.css?v=55"><link rel="stylesheet" href="balance.css?v=3" media="(min-width:1000px)"><script src="theme.js?v=1"></script>
 <link rel="stylesheet" href="design-system/ui-kit.css?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -221,6 +221,87 @@
 
       <hr class="dash">
 
+      <section class="section tight" id="salon-plans">
+        <div class="label">Plans built for your chair count</div>
+        <h2 class="h-2" style="font-size:28px">From the first chair to the whole house.</h2>
+        <p class="p" style="margin-top:8px;max-width:48em">Named the old way a salon earns its name &mdash; one chair at a time. Every plan here is set up and switched on by us once we know your business; this isn't a fixed online checkout, so treat the numbers below as a starting point for comparison.</p>
+
+        <div class="sp-toggle-row">
+          <div class="sp-toggle" id="spToggle" role="group" aria-label="Billing period">
+            <button type="button" class="on" data-period="m" aria-pressed="true">Monthly</button>
+            <button type="button" data-period="y" aria-pressed="false">Yearly <span class="sp-save">2 months free</span></button>
+          </div>
+          <span class="sp-toggle-note">&larr; switch to yearly, keep two months' worth</span>
+        </div>
+
+        <div class="sp-grid" id="spGrid">
+          <div class="sp-card" data-monthly="1490" data-plan="The Studio">
+            <div class="sp-head"><span class="sp-num">I</span><span class="sp-name">The Studio</span></div>
+            <p class="sp-tagline">One chair, every tool. For a solo stylist or a salon just opening its doors.</p>
+            <div class="sp-price-row"><span class="sp-price sp-amt">&#8377;1,490</span><span class="sp-per sp-unit">/month</span></div>
+            <div class="sp-from">Starting from</div>
+            <button type="button" class="btn btn-ghost sp-cta" data-open-contact data-plan="The Studio">Start here</button>
+            <ul class="sp-feats">
+              <li>1 staff login</li>
+              <li>Your own branded website &amp; online booking</li>
+              <li>WhatsApp bills, clients &amp; expenses</li>
+              <li>Self check-in QR for walk-ins</li>
+              <li>Email support</li>
+            </ul>
+          </div>
+
+          <div class="sp-card hi" data-monthly="2080" data-plan="The Salon">
+            <span class="sp-fav">House favourite</span>
+            <div class="sp-head"><span class="sp-num">II</span><span class="sp-name">The Salon</span></div>
+            <p class="sp-tagline">For a small team sharing chairs, with payroll and memberships switched on.</p>
+            <div class="sp-price-row"><span class="sp-price sp-amt">&#8377;2,080</span><span class="sp-per sp-unit">/month</span></div>
+            <div class="sp-from">Starting from</div>
+            <button type="button" class="btn btn-primary sp-cta" data-open-contact data-plan="The Salon">Choose The Salon</button>
+            <ul class="sp-feats">
+              <li>Up to 5 staff logins</li>
+              <li>Everything in The Studio</li>
+              <li>Packages &amp; memberships</li>
+              <li>Cash register &amp; daily settlement</li>
+              <li>Clock-ins linked to AUZslab Payroll</li>
+              <li>Priority WhatsApp support</li>
+            </ul>
+          </div>
+
+          <div class="sp-card" data-monthly="2990" data-plan="The Atelier">
+            <div class="sp-head"><span class="sp-num">III</span><span class="sp-name">The Atelier</span></div>
+            <p class="sp-tagline">For a busy house that runs on numbers &mdash; full analytics and automation.</p>
+            <div class="sp-price-row"><span class="sp-price sp-amt">&#8377;2,990</span><span class="sp-per sp-unit">/month</span></div>
+            <div class="sp-from">Starting from</div>
+            <button type="button" class="btn btn-ghost sp-cta" data-open-contact data-plan="The Atelier">Choose The Atelier</button>
+            <ul class="sp-feats">
+              <li>Unlimited staff logins</li>
+              <li>Everything in The Salon</li>
+              <li>Full analytics &amp; trend reports</li>
+              <li>Automatic WhatsApp reminders &amp; alerts</li>
+              <li>A dedicated setup call</li>
+            </ul>
+          </div>
+
+          <div class="sp-card" data-custom="true" data-plan="The Maison">
+            <div class="sp-head"><span class="sp-num">IV</span><span class="sp-name">The Maison</span></div>
+            <p class="sp-tagline">For a brand with more than one address, built around how you already work.</p>
+            <div class="sp-price-row"><span class="sp-price" style="font-size:19px">Custom</span></div>
+            <div class="sp-from">Let's talk it through</div>
+            <button type="button" class="btn btn-ghost sp-cta" data-open-contact data-plan="The Maison">Talk to us</button>
+            <ul class="sp-feats">
+              <li>Multiple branches, one brand</li>
+              <li>Everything in The Atelier</li>
+              <li>Bespoke design &amp; workflow, built by AUZslab Studio</li>
+              <li>A named AUZslab contact</li>
+            </ul>
+          </div>
+        </div>
+
+        <p class="sp-note">Shown for comparison, not a checkout &mdash; every salon is quoted directly once we know your chairs, staff and what you need switched on. <button type="button" class="sp-link" data-open-contact>Tell us about your salon &rarr;</button></p>
+      </section>
+
+      <hr class="dash">
+
       <section class="section tight">
         <div class="label">Live client</div>
         <h2 class="h-2">Showoff Salon, Jodhpur &mdash; running on AUZslab Salon.</h2>
@@ -378,5 +459,43 @@
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script src="design-system/ui-kit.js?v=1"></script>
 <script src="company.js"></script>
+<script>
+// Salon plans toggle: monthly <-> yearly (2 months free, same framing as the
+// highlighted switch), and tags which plan a "Let's talk" click came from so
+// the shared contact modal (data-open-contact, site.js) opens with it noted --
+// still the one real request-a-quote flow, nothing here is a second checkout.
+(function () {
+  var toggle = document.getElementById('spToggle');
+  var grid = document.getElementById('spGrid');
+  if (!toggle || !grid) return;
+  function inr(n) { return '₹' + Math.round(n).toLocaleString('en-IN'); }
+  function setPeriod(period) {
+    var yearly = period === 'y';
+    toggle.querySelectorAll('button[data-period]').forEach(function (b) {
+      var on = b.getAttribute('data-period') === period;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    grid.querySelectorAll('.sp-card').forEach(function (card) {
+      if (card.getAttribute('data-custom') === 'true') return;
+      var monthly = Number(card.getAttribute('data-monthly'));
+      var amt = card.querySelector('.sp-amt');
+      var unit = card.querySelector('.sp-unit');
+      if (amt) amt.textContent = inr(yearly ? monthly * 10 : monthly);
+      if (unit) unit.textContent = yearly ? '/year' : '/month';
+    });
+  }
+  toggle.querySelectorAll('button[data-period]').forEach(function (b) {
+    b.addEventListener('click', function () { setPeriod(b.getAttribute('data-period')); });
+  });
+  grid.querySelectorAll('.sp-cta').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var plan = btn.getAttribute('data-plan');
+      var msg = document.getElementById('m-message');
+      if (plan && msg && !msg.value) msg.value = 'Interested in the ' + plan + ' plan for my salon.';
+    });
+  });
+})();
+</script>
 </body>
 </html>
