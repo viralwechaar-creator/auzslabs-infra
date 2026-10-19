@@ -622,6 +622,11 @@ body.admin-shell .bn-in input{border:none!important;background:none!important;bo
         <p class="p">These prices fill in the quote builder under Client requests and show on the pricing page. Leave it at &#8377;0 to keep it on the request-and-we'll-call-you flow.</p>
         <div id="pricingList">Loading&hellip;</div>
 
+        <div class="label" style="margin-top:28px">AUZslab Salon plans</div>
+        <h2 class="h-2">Salon plan tiers</h2>
+        <p class="p">The four tiers shown on <a href="business-salons.html#salon-plans" target="_blank" rel="noopener">the salon plans page &#8599;</a> &mdash; edit their prices, names and features here; the live page reads these the moment you save.</p>
+        <div id="salonTiersList">Loading&hellip;</div>
+
         <div class="label" style="margin-top:28px">Bundle plans</div>
         <h2 class="h-2">Bundles</h2>
         <p class="p">Create bundles from any two or more products. A bundle's price (monthly, or the whole-year price if set) applies when a cart's products exactly match its set; everything else is a flat sum of the products above.</p>
@@ -1170,7 +1175,7 @@ function resetMainScroll() {
 // signing in used to fire about 11 database requests together; now it is 2.
 const SECTION_LOADERS = {
   leads: () => { loadLeads(); refreshOrdersBadge(); }, orders: () => loadOrders(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(),
-  pricing: () => { loadPricing(); loadBundles(); loadPayments(); },
+  pricing: () => { loadPricing(); loadSalonTiers(); loadBundles(); loadPayments(); },
   users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(), privacyReq: () => loadPrivacyReq(), whatsapp: () => loadWhatsApp(),
   team: () => { loadTeam(); loadSetups(); loadTeamApps(); }, tasks: () => loadTasks(), salesWork: () => loadSalesWork(), clientPay: () => { loadClientPay(); loadBills(); },
 };
@@ -1592,6 +1597,50 @@ async function loadPricing() {
       const { error: yErr } = await sb.rpc('admin_set_product_yearly', { p_key: tr.dataset.key, p_yearly_price: yearly, p_renewal_yearly_price: renew });
       if (yErr) { alert(yErr.message); return; }
       loadPricing();
+    };
+  });
+}
+
+async function loadSalonTiers() {
+  const listEl = document.getElementById('salonTiersList');
+  const { data, error } = await sb.rpc('admin_list_salon_tiers', {});
+  if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  const cards = (data || []).map((t) => `
+    <div class="a-card bn-card" data-tier="${esc(t.tier_key)}">
+      <div class="bn-top">
+        <input class="inp" data-f="name" placeholder="Tier name" value="${esc(t.name || '')}">
+        <input class="inp" data-f="badge" placeholder="Badge (e.g. House favourite)" value="${esc(t.badge || '')}">
+      </div>
+      <input class="inp" data-f="tagline" placeholder="One-line tagline shown on the card" value="${esc(t.tagline || '')}">
+      <div class="bn-grid">
+        <label class="bn-field"><span>Monthly</span><div class="bn-in"><i>&#8377;</i><input data-f="monthly_price" type="number" min="0" step="1" value="${Number(t.monthly_price || 0)}"></div></label>
+        <label class="bn-field"><span>Whole year</span><div class="bn-in"><i>&#8377;</i><input data-f="yearly_price" type="number" min="0" step="1" value="${Number(t.yearly_price || 0)}"></div></label>
+      </div>
+      <textarea class="inp" data-f="features" rows="3" placeholder="One feature per line" style="margin-top:8px;resize:vertical">${esc((t.features || []).join('\n'))}</textarea>
+      <div class="bn-toggles">
+        <label class="bn-switch"><input type="checkbox" data-f="highlighted" ${t.highlighted ? 'checked' : ''}><span>Highlighted (shown as the popular tier)</span></label>
+        <label class="bn-switch"><input type="checkbox" data-f="active" ${t.active === false ? '' : 'checked'}><span>Show on the page</span></label>
+      </div>
+      <div class="bn-foot"><button class="btn btn-primary" data-save>Save</button></div>
+    </div>`).join('');
+  listEl.innerHTML = `<div class="price-grid">${cards}</div>`;
+
+  listEl.querySelectorAll('[data-tier]').forEach((card) => {
+    card.querySelector('[data-save]').onclick = async () => {
+      const val = (f) => card.querySelector(`[data-f="${f}"]`).value;
+      const monthly = Number(val('monthly_price')), yearly = Number(val('yearly_price'));
+      if (!(monthly >= 0) || !(yearly >= 0)) { alert('Prices must be 0 or more.'); return; }
+      const features = val('features').split('\n').map((s) => s.trim()).filter(Boolean);
+      const p = {
+        tier_key: card.dataset.tier,
+        name: val('name'), tagline: val('tagline'), badge: val('badge'),
+        monthly_price: monthly, yearly_price: yearly, features,
+        highlighted: card.querySelector('[data-f="highlighted"]').checked,
+        active: card.querySelector('[data-f="active"]').checked,
+      };
+      const { error: saveErr } = await sb.rpc('admin_save_salon_tier', { p });
+      if (saveErr) { alert(saveErr.message); return; }
+      loadSalonTiers();
     };
   });
 }

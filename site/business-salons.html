@@ -314,6 +314,7 @@
         </div>
 
         <p class="sp-note">Prices shown exclude GST<span class="gst-t" hidden>, added on top</span>. A one-time onboarding fee is mandatory for every first-time client; a separate setup fee is optional and only applies depending on what you choose &mdash; both are confirmed in your quote, never a surprise on the bill.</p>
+        <p class="sp-note" style="margin-top:6px">Onboarding fee: &#8377;1,460 (mandatory, one-time). Setup fee: &#8377;2,190 (optional, one-time &mdash; only if your plan needs it).</p>
         <p class="sp-note" style="margin-top:6px">Shown for comparison, not a checkout &mdash; every salon is quoted directly once we know your chairs, staff and what you need switched on. <button type="button" class="sp-link" data-open-contact>Tell us about your salon &rarr;</button></p>
       </section>
 
@@ -539,22 +540,29 @@
 <script src="design-system/ui-kit.js?v=1"></script>
 <script src="company.js"></script>
 <script>
-// Salon plans toggle: monthly <-> yearly (2 months free), and tags which plan
-// a CTA click came from so the shared contact modal (data-open-contact,
-// site.js) opens with it noted -- still the one real request-a-quote flow,
-// nothing here is a second checkout. Monthly prices match the four tiers in
-// order (Studio, Salon, Atelier, Maison); "was" = monthly x 1.25 (shown as the
-// struck-through price), yearly = 10 months' worth (2 months free). These four
-// numbers are fixed -- not pulled from Admin -> Pricing's single real "salon"
-// price (an earlier version rescaled them off that live number; removed on
-// request, since it drifted these exact figures away from what's shown here).
-// The admin panel still links to this page (a one-way pointer, Admin ->
-// Pricing's salon row), it just no longer feeds a number back.
+// Salon plans toggle: monthly <-> yearly, and tags which plan a CTA click
+// came from so the shared contact modal (data-open-contact, site.js) opens
+// with it noted -- still the one real request-a-quote flow, nothing here is
+// a second checkout.
+//
+// The four hardcoded cards in the HTML above are the fallback, shown
+// instantly and kept if the live fetch ever fails (offline, RPC down --
+// never a blank or broken page). On load this fetches public_salon_tiers()
+// (db/198: a dedicated table, admin-editable from Admin -> Pricing -> "Salon
+// plan tiers", since these four tiers aren't four separate real priced
+// products -- there's only one real "salon" price in product_prices -- so
+// they couldn't be admin_set_product_price rows or `bundles` rows either,
+// see db/198's own comment) and, if it returns real data, fully replaces
+// each card's name/tagline/price/features/badge from it. Both "was" and
+// "save" are computed from the tier's own real yearly_price now (not a
+// guessed x10/x1.25), same arithmetic either way: was = monthly x 12,
+// save = was - whichever price is currently shown.
 (function () {
   var toggle = document.getElementById('spToggle');
   var grid = document.getElementById('spGrid');
   if (!toggle || !grid) return;
   var monthlyPrices = [1080, 1360, 2720, 5440];
+  var yearlyPrices = [10800, 13600, 27200, 54400];
   var currentPeriod = 'm';
   function inr(n) { return '₹' + Math.round(n).toLocaleString('en-IN'); }
   function setPeriod(period) {
@@ -566,44 +574,76 @@
       b.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
     grid.querySelectorAll('.sp-card').forEach(function (card, i) {
-      var monthly = monthlyPrices[i];
+      var monthly = monthlyPrices[i], yr = yearlyPrices[i];
       if (typeof monthly !== 'number') return;
       var amt = card.querySelector('.sp-amt');
       var unit = card.querySelector('.sp-unit');
       var was = card.querySelector('.sp-was');
       var save = card.querySelector('.sp-save2');
-      if (amt) amt.textContent = inr(yearly ? monthly * 10 : monthly);
+      var shown = yearly ? (yr || monthly * 10) : monthly;
+      if (amt) amt.textContent = inr(shown);
       if (unit) unit.textContent = yearly ? '/year' : '/month';
-      if (was) was.textContent = inr(yearly ? monthly * 12 : monthly * 1.25);
-      if (save) save.textContent = 'Save ' + inr(yearly ? monthly * 2 : monthly * 0.25);
+      if (was) was.textContent = inr(monthly * 12);
+      if (save) save.textContent = 'Save ' + inr(Math.max(0, monthly * 12 - shown));
     });
     var stripAmt = document.querySelector('.sp-strip-amt');
     var stripPer = document.querySelector('.sp-strip-per');
     var stripWas = document.querySelector('.sp-strip .sp-was');
     var stripSave = document.querySelector('.sp-strip .sp-save2');
-    if (stripAmt) stripAmt.textContent = inr(yearly ? monthlyPrices[1] * 10 : monthlyPrices[1]);
+    var m1 = monthlyPrices[1], y1 = yearlyPrices[1], shown1 = yearly ? (y1 || m1 * 10) : m1;
+    if (stripAmt) stripAmt.textContent = inr(shown1);
     if (stripPer) stripPer.textContent = yearly ? '/year' : '/month';
-    if (stripWas) stripWas.textContent = inr(yearly ? monthlyPrices[1] * 12 : monthlyPrices[1] * 1.25);
-    if (stripSave) stripSave.textContent = 'Save ' + inr(yearly ? monthlyPrices[1] * 2 : monthlyPrices[1] * 0.25);
+    if (stripWas) stripWas.textContent = inr(m1 * 12);
+    if (stripSave) stripSave.textContent = 'Save ' + inr(Math.max(0, m1 * 12 - shown1));
   }
   toggle.querySelectorAll('button[data-period]').forEach(function (b) {
     b.addEventListener('click', function () { setPeriod(b.getAttribute('data-period')); });
   });
-  document.querySelectorAll('.sp-cta').forEach(function (btn) {
+  function wireCta(btn) {
     btn.addEventListener('click', function () {
       var plan = btn.getAttribute('data-plan');
       var msg = document.getElementById('m-message');
       if (plan && msg && !msg.value) msg.value = 'Interested in the ' + plan + ' plan for my salon.';
     });
-  });
+  }
+  document.querySelectorAll('.sp-cta').forEach(wireCta);
 
-  // These four tiers' prices are fixed (not pulled from Admin -> Pricing's
-  // single real "salon" price -- an earlier version of this page rescaled
-  // them off that live number, which drifted the numbers away from what's
-  // shown here; removed on request). Only the "+ GST" label is still live,
-  // since that's a true/false switch, never a number this page could drift.
+  var CTA_LABEL = ['Start here', 'Choose {name}', 'Choose {name}', 'Talk to us'];
+  var CTA_CLASS = ['btn-ghost', 'btn-primary', 'btn-ghost', 'btn-ghost'];
+  var NUMERALS = ['I', 'II', 'III', 'IV'];
+  function renderFromLive(tiers) {
+    if (!Array.isArray(tiers) || tiers.length !== 4) return;
+    monthlyPrices = tiers.map(function (t) { return Number(t.monthly_price) || 0; });
+    yearlyPrices = tiers.map(function (t) { return Number(t.yearly_price) || 0; });
+    grid.querySelectorAll('.sp-card').forEach(function (card, i) {
+      var t = tiers[i]; if (!t) return;
+      card.classList.toggle('hi', !!t.highlighted);
+      var name = card.querySelector('.sp-name'); if (name) name.textContent = t.name;
+      var tag = card.querySelector('.sp-tagline'); if (tag) tag.textContent = t.tagline || '';
+      var fav = card.querySelector('.sp-fav');
+      if (t.badge) {
+        if (!fav) { fav = document.createElement('span'); fav.className = 'sp-fav'; card.insertBefore(fav, card.firstChild); }
+        fav.textContent = t.badge; fav.hidden = false;
+      } else if (fav) { fav.hidden = true; }
+      var feats = card.querySelector('.sp-feats');
+      if (feats && Array.isArray(t.features)) {
+        feats.textContent = '';
+        t.features.forEach(function (f) { var li = document.createElement('li'); li.textContent = f; feats.appendChild(li); });
+      }
+      var cta = card.querySelector('.sp-cta');
+      if (cta) {
+        cta.setAttribute('data-plan', t.name);
+        cta.textContent = CTA_LABEL[i].replace('{name}', t.name);
+        cta.className = 'btn ' + CTA_CLASS[i] + ' sp-cta';
+      }
+    });
+    var stripName = document.querySelector('.sp-strip-price b'); if (stripName) stripName.textContent = tiers[1].name + ', yearly';
+    setPeriod(currentPeriod);
+  }
+
   try {
     var sb = supabase.createClient(CFG.url, CFG.key);
+    sb.rpc('public_salon_tiers').then(function (r) { renderFromLive(r && r.data); }).catch(function () {});
     sb.payments.config().then(function (c) {
       c = c && c.data;
       if (c && c.gstPct > 0) document.querySelectorAll('#salon-plans .gst-t').forEach(function (e) { e.hidden = false; });
