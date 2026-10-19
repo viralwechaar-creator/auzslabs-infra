@@ -15,15 +15,22 @@ import { sendWebPush, vapidReady } from '../push.js';
 // trigger could watch. Never throws -- a notification failure can never block the real action.
 async function salonPush(tid, title, body) {
   try {
-    if (!vapidReady()) return;
+    if (!vapidReady()) { console.warn('salon push: VAPID keys not configured, skipping'); return; }
     const { rows: subs } = await pool.query('select * from salon_push_subs where tenant_id = $1', [tid]);
+    console.log(`salon push: sending "${title}" to ${subs.length} device(s) for tenant ${tid}`);
     await Promise.allSettled(subs.map(async (s) => {
       try {
         const res = await sendWebPush(s.endpoint, s.p256dh, s.auth, { title, body, tag: 'salon' });
-        if (!res.ok && (res.status === 404 || res.status === 410)) await pool.query('delete from salon_push_subs where id = $1', [s.id]);
-      } catch { /* one dead subscription never blocks the rest */ }
+        if (!res.ok) {
+          const text = await res.text().catch(() => '');
+          console.error(`salon push failed: ${res.status} ${text} (endpoint ${s.endpoint.slice(0, 60)}...)`);
+          if (res.status === 404 || res.status === 410) await pool.query('delete from salon_push_subs where id = $1', [s.id]);
+        } else {
+          console.log(`salon push sent ok (endpoint ${s.endpoint.slice(0, 60)}...)`);
+        }
+      } catch (e) { console.error('salon push error:', e.message); }
     }));
-  } catch { /* never block the real action that triggered this */ }
+  } catch (e) { console.error('salon push outer error:', e.message); }
 }
 
 // Entry point: index.js hands over every request whose path starts with
