@@ -32,6 +32,23 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+.price-card{text-align:center;transform:none !important;padding:26px 20px}
+.price-card:hover{transform:translate(-2px,-2px) !important;box-shadow:0 10px 28px -12px rgba(46,44,42,.30)}
+.price-card-icon{width:48px;height:48px;border-radius:14px;display:block;margin:0 auto 12px}
+.price-card-icons{display:flex;justify-content:center;margin-bottom:12px}
+.price-card-icons img{width:40px;height:40px;border-radius:12px;border:3px solid #fff;box-shadow:0 0 0 1px var(--line)}
+.price-card-icons img:not(:first-child){margin-left:-14px}
+.price-card-name{font-family:var(--font-display);font-weight:700;font-size:15px}
+.price-card-price{font-family:var(--font-display);font-weight:700;font-size:26px;margin-top:8px}
+.price-card-price span{font-size:12px;color:var(--ink-faint);font-weight:500}
+.price-card-price s{font-size:13px;color:var(--ink-faint);font-weight:500;margin-right:4px}
+.price-card-sub{font-size:12px;color:var(--ink-dim);margin-top:6px}
+.price-card .acts{justify-content:center;margin-top:14px;flex-wrap:wrap}
+.price-card .btn{padding:9px 16px;font-size:11px}
+.price-card-badge{display:inline-block;font-size:10px;font-family:var(--font-mono);letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:99px;border:1px solid var(--line);color:var(--ink-dim)}
+.price-card-badge.hot{background:var(--accent);color:#fff;border-color:var(--accent)}
+</style>
 </head>
 <body>
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
@@ -99,7 +116,6 @@
 
             <a href="platform.html" class="nav-link">Why AUZslab</a>
       <a href="live-demo.html" class="nav-link">Live demo</a>
-      <a href="pricing.html" class="nav-link">Pricing</a>
       <a href="download-apps.html" class="nav-link">Download apps</a>
       <a href="cart.html" class="nav-link">Cart <span class="cart-count"></span></a>
 
@@ -219,12 +235,56 @@
 
       <hr class="dash">
 
-      <section class="section tight">
-        <div class="label">Stock that finally makes sense</div>
-        <h2 class="h-2">Your size/color matrix, finally under control.</h2>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+      <section class="section tight" id="pricing">
+        <div class="label">What you get, and what it costs</div>
+        <h2 class="h-2" style="margin-bottom:6px">Software for a clothing shop.</h2>
+        <p class="p" style="max-width:34em">AUZsPOS covers size/color billing, stock, trial room, returns, customers and staff in one till. Add AUZsLedger if you want full double-entry accounts on top. Prices exclude GST<span class="gst-t" hidden> (18%, added at checkout)</span>.</p>
+        <div class="grid-2 grid-4" style="margin-top:18px">
+
+          <div class="card price-card" data-price-card>
+            <img src="icon-pos.svg" alt="" class="price-card-icon">
+            <div class="price-card-name">AUZsPOS</div>
+            <div class="price-card-price">&#8377;1,090<span>/mo<span class="gst-t" hidden> + GST</span></span></div>
+            <p class="price-card-sub">Size/color billing, stock, customers &amp; staff.</p>
+            <div class="acts">
+              <a href="products.html#slab-pos" class="btn btn-ghost">Details</a>
+              <button class="btn btn-primary" data-add-plan="pos">Get it</button>
+            </div>
+          </div>
+
+          <div class="card price-card" data-price-card>
+            <img src="icon-accounts.svg" alt="" class="price-card-icon">
+            <div class="price-card-name">AUZsPOS + AUZsLedger</div>
+            <div class="price-card-price">&#8377;2,580<span>/mo<span class="gst-t" hidden> + GST</span></span></div>
+            <p class="price-card-sub">Full double-entry books on top of your till.</p>
+            <div class="acts">
+              <a href="products.html#slab-accounting" class="btn btn-ghost">Details</a>
+              <button class="btn btn-primary" data-add-plan="pos,accounting">Get it</button>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="card" style="margin-top:22px;max-width:640px">
+          <div class="label">One-time, not monthly</div>
+          <div class="acct-row" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px dashed var(--line)">
+            <span style="font-size:13px;color:var(--ink-dim)">Onboarding fee <b style="color:var(--accent)">(every new client)</b></span>
+            <b style="white-space:nowrap;margin-left:10px">&#8377;1,460</b>
+          </div>
+          <div class="acct-row" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px dashed var(--line)">
+            <span style="font-size:13px;color:var(--ink-dim)">Setup fee &mdash; installing and configuring the till, catalogue and stock</span>
+            <b style="white-space:nowrap;margin-left:10px">&#8377;2,190</b>
+          </div>
+          <div class="acct-row" style="display:flex;justify-content:space-between;padding:10px 0">
+            <span style="font-size:13px;color:var(--ink-dim)">Hardware &mdash; barcode scanner, receipt printer, tablet</span>
+            <b style="white-space:nowrap;margin-left:10px">Charged additionally</b>
+          </div>
+          <p class="p" style="margin-top:10px;font-size:12px;color:var(--ink-faint)">Both fees are confirmed in your quote before anything is charged. Hardware and any third-party integrations are quoted separately, never bundled into the subscription price.</p>
+        </div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px">
           <button class="btn btn-primary" data-open-contact>Let's talk</button>
-          <a href="pricing.html" class="btn btn-ghost">See pricing</a>
+          <a href="products.html" class="btn btn-ghost">See every product</a>
         </div>
       </section>
 
@@ -252,7 +312,6 @@
             </div>
             <div class="footer-col">
               <div class="footer-col-title">Company</div>
-              <a href="pricing.html">Pricing</a>
               <a href="live-demo.html">Live demo</a>
               <a href="download-apps.html">Download apps</a>
               <a href="contact.html">Contact</a>
@@ -339,6 +398,41 @@
 <script src="site.js?v=13"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script src="design-system/ui-kit.js?v=1"></script>
+<script>
+// Live prices: the cards above are a fallback; this reads what the admin
+// has set (public_product_prices / public_bundles) so edits show up here
+// without a deploy. A matching bundle wins over the flat per-product sum.
+(function () {
+  var inr = function (n) { return '₹' + Number(n).toLocaleString('en-IN'); };
+  var sb; try { sb = supabase.createClient(CFG.url, CFG.key); } catch (e) { return; }
+  Promise.all([sb.rpc('public_product_prices'), sb.rpc('public_bundles')]).then(function (r) {
+    var prices = {}; ((r[0] && r[0].data) || []).forEach(function (p) { prices[p.key] = p; });
+    var bundles = (r[1] && r[1].data) || [];
+    if (!Object.keys(prices).length) return;
+    function setPrice(el, text, strike) {
+      var tail = el.querySelector('span');
+      while (el.firstChild && el.firstChild !== tail) el.removeChild(el.firstChild);
+      if (strike) { var s = document.createElement('s'); s.textContent = strike; el.insertBefore(s, tail); el.insertBefore(document.createTextNode(' '), tail); }
+      el.insertBefore(document.createTextNode(text), tail);
+    }
+    document.querySelectorAll('[data-add-plan]').forEach(function (btn) {
+      var keys = btn.dataset.addPlan.split(',').sort(), card = btn.closest('[data-price-card]');
+      var el = card && card.querySelector('.price-card-price'); if (!el) return;
+      var b = bundles.filter(function (x) { return x.feature_keys.slice().sort().join(',') === keys.join(','); })[0];
+      var total = 0, ok = true; keys.forEach(function (k) { var p = prices[k]; if (!p || !(Number(p.monthly_price) > 0)) ok = false; else total += Number(p.monthly_price); });
+      var v = b ? Number(b.monthly_price) : (ok ? total : 0), list = b ? Number(b.list_price) : 0;
+      if (v > 0) setPrice(el, inr(v), list > v ? inr(list) : null);
+    });
+    try { sb.payments.config().then(function (c) { c = c && c.data; if (c && c.gstPct > 0) document.querySelectorAll('.gst-t').forEach(function (e) { e.hidden = false; }); }); } catch (e) {}
+  }).catch(function () {});
+})();
+document.querySelectorAll('[data-add-plan]').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    btn.dataset.addPlan.split(',').forEach(function (key) { window.AUZcart.add(key); });
+    window.location.href = 'cart.html';
+  });
+});
+</script>
 <script src="company.js"></script>
 </body>
 </html>
