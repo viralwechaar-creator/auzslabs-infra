@@ -540,7 +540,19 @@ export async function handleSalon(req, res, ip) {
       const db = await loadDb(tenant);
       const d = (await readStaffAdmin(tenant, 'staff')) || { list: [] };
       const pay = await payrollOn(tid);
-      return send(200, { payroll: pay, staff: d.list.map((st) => staffView(st, db.invoices)), employees: pay ? (await pool.query('select salon_hr_list($1) as l', [tid])).rows[0].l : [] });
+      const staff = d.list.map((st) => staffView(st, db.invoices));
+      // Live clock-in state, for the "who's working right now" row on Today -- only meaningful with the
+      // Payroll add-on on (a salon staff login is linked to a pay_employees row only then, see
+      // salon_hr_ensure's own comment above). One query per staffer with a linked employee; salon staff
+      // lists are small (a handful of people), so this is never a real cost.
+      if (pay) {
+        await Promise.all(staff.filter((s) => s.employeeId).map(async (s) => {
+          const { rows: [r] } = await pool.query('select salon_punch_state($1, $2, $3) as s', [tid, s.employeeId, todayStr()]);
+          s.clockedIn = !!(r.s && r.s.open);
+          s.clockedInSince = r.s ? r.s.in : null;
+        }));
+      }
+      return send(200, { payroll: pay, staff, employees: pay ? (await pool.query('select salon_hr_list($1) as l', [tid])).rows[0].l : [] });
     }
     if (method === 'POST' && p === '/admin/staff') {
       await admin(); noDemo();

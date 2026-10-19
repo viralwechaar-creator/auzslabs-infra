@@ -310,8 +310,11 @@
     const patch = async (st, body, msg) => { try { await api('PATCH', '/api/admin/staff/' + st.id, body); toast(msg); viewStaff(); } catch (ex) { fail(ex); } };
     const list = data.staff.length
       ? h('div', { class: 'a-scroll' }, h('table', { class: 'a-table' },
-        h('thead', {}, h('tr', {}, ['Staff', 'Phone', 'Payroll', 'Bills', ''].map(t => h('th', { text: t })))),
+        h('thead', {}, h('tr', {}, [...(data.payroll ? ['Working now'] : []), 'Staff', 'Phone', 'Payroll', 'Bills', ''].map(t => h('th', { text: t })))),
         h('tbody', {}, data.staff.map(st => h('tr', { style: st.active ? '' : 'opacity:.55' },
+          !data.payroll ? null : h('td', { 'data-label': 'Working now' }, st.employeeId
+            ? h('span', { class: 'badge ' + (st.clockedIn ? '' : 'btn-alt'), text: st.clockedIn ? 'Clocked in' : 'Off clock' })
+            : h('span', { class: 'muted', text: '—' })),
           h('td', { 'data-label': 'Staff' }, h('b', { text: st.name }), h('br'), h('span', { class: 'muted', text: st.designation + (st.active ? '' : ' (off)') })),
           h('td', { 'data-label': 'Phone', text: st.phone }),
           h('td', { 'data-label': 'Payroll' }, st.employeeId ? 'Linked' : (data.payroll ? btn('Link to payroll', () => patch(st, { linkPayroll: true }, 'Linked to payroll'), 'btn-sm btn-alt') : 'Not linked')),
@@ -352,10 +355,25 @@
     const stats = [[live.filter(b => b.date === t).length, 'Bookings today'], [D.bookings.filter(b => b.status === 'pending').length, 'Waiting for confirmation'],
       [invM.length, isOwner() ? 'Bills this month' : 'Your bills this month'], [inr(invM.reduce((a, i) => a + i.total, 0)), isOwner() ? 'Billed this month' : 'You billed this month']];
     const up = live.filter(b => b.date >= t && b.status !== 'completed').sort(cmpWhen).slice(0, 12);
+    // Who billed what today, by who was entered as serving the client -- the closest thing to a "today's
+    // workload" view this data model supports (bookings carry no stylist assignment at all, only invoices
+    // carry a servedBy name). For a staff login this naturally only ever shows their own one row.
+    const byServer = new Map();
+    for (const i of D.invoices) {
+      if (i.void || i.date !== t) continue;
+      const name = i.servedBy || 'Unassigned';
+      const c = byServer.get(name) || { name, bills: 0, revenue: 0 };
+      c.bills++; c.revenue += i.total; byServer.set(name, c);
+    }
+    const teamToday = [...byServer.values()].sort((a, b) => b.revenue - a.revenue);
     view().replaceChildren(
       punchCard(),
       h('div', { class: 'a-stats' }, stats.map(([n, l]) => h('div', { class: 'a-stat' }, h('b', { text: n }), h('span', { text: l })))),
-      h('div', { class: 'a-section' }, h('h2', { class: 'a-h2', text: 'Coming up' }), bookingTable(up)));
+      h('div', { class: 'a-section' }, h('h2', { class: 'a-h2', text: 'Coming up' }), bookingTable(up)),
+      !teamToday.length ? null : h('div', { class: 'a-section' }, h('h2', { class: 'a-h2', text: 'Today\'s team' }),
+        h('div', { class: 'a-scroll' }, h('table', { class: 'a-table' },
+          h('thead', {}, h('tr', {}, ['Served by', 'Bills', 'Billed'].map(x => h('th', { text: x })))),
+          h('tbody', {}, teamToday.map(c => h('tr', {}, h('td', { 'data-label': 'Served by', text: c.name }), h('td', { 'data-label': 'Bills', text: c.bills }), h('td', { 'data-label': 'Billed', text: inr(c.revenue) }))))))));
   }
 
   /* ---------- billing ---------- */
@@ -781,6 +799,17 @@
     for (const inv of D.invoices) { if (inv.void || inv.date < from || inv.date > to) continue; sums[new Date(inv.date + 'T00:00:00').getDay()] += inv.total; }
     return sums.map((v, i) => ({ name: DAYS[i].slice(0, 3), value: v }));
   }
+  // Busiest hour of the day, from bookings' own time field (invoices carry no time of day, only a date --
+  // so this is about appointment scheduling/staffing, the weekday chart above is about billed revenue).
+  function hourStats(from, to) {
+    const sums = Array.from({ length: 24 }, () => 0);
+    for (const b of D.bookings) {
+      if (b.status === 'cancelled' || b.date < from || b.date > to || !b.time) continue;
+      const h = +b.time.slice(0, 2);
+      if (h >= 0 && h < 24) sums[h]++;
+    }
+    return sums.map((v, i) => ({ name: fmt12(String(i).padStart(2, '0') + ':00'), value: v }));
+  }
   function bookingFunnel(from, to) {
     const counts = { pending: 0, confirmed: 0, completed: 0, cancelled: 0 };
     for (const b of D.bookings) { if (b.date < from || b.date > to) continue; counts[b.status] = (counts[b.status] || 0) + 1; }
@@ -880,6 +909,11 @@
         h('p', { class: 'a-note', style: 'margin:0 0 16px', text: 'Total billed on each weekday, for the selected period.' }),
         rankedBars(weekdayStats(from, to).sort((a, b) => b.value - a.value), { emptyText: 'Nothing billed in this period yet.' }));
 
+      const hourRows = hourStats(from, to).filter(r => r.value > 0);
+      const hourSection = !hourRows.length ? null : h('div', { class: 'a-section' }, h('h2', { class: 'a-h2', text: 'Busiest time of day' }),
+        h('p', { class: 'a-note', style: 'margin:0 0 16px', text: 'Appointments booked for each hour, for the selected period -- useful for staffing.' }),
+        rankedBars(hourRows.sort((a, b) => b.value - a.value), { meta: r => r.value + (r.value === 1 ? ' booking' : ' bookings') }));
+
       const team = stylistStats(from, to);
       const teamSection = team.length ? h('div', { class: 'a-section' }, h('h2', { class: 'a-h2', text: 'Team performance' }),
         h('p', { class: 'a-note', style: 'margin:0 0 16px', text: 'By who was billed as serving the client. Based on the name entered at billing, not a linked stylist profile.' }),
@@ -914,7 +948,7 @@
           h('tbody', {}, topC.map(c => h('tr', {}, h('td', { 'data-label': 'Client', text: c.name }), h('td', { 'data-label': 'Bills', text: c.bills }),
             h('td', { 'data-label': 'Revenue', class: 'r', text: inr(c.revenue) }))))))) : null;
 
-      box.replaceChildren(stats, trendSection, svcSection, weekdaySection, teamSection, funnelSection, splitSection, topClientsSection);
+      box.replaceChildren(stats, trendSection, svcSection, weekdaySection, hourSection, teamSection, funnelSection, splitSection, topClientsSection);
     }
     setActions(btn('Export CSV', () => exportAnalyticsCsv(...range()), 'btn-sm btn-alt'));
     draw();
