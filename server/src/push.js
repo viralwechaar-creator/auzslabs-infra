@@ -10,6 +10,8 @@ const VAPID_PUBLIC = process.env.VAPID_PUBLIC;
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE;
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'https://auzslab.in';
 
+export const vapidReady = () => !!(VAPID_PUBLIC && VAPID_PRIVATE);
+
 function b64url(buf) {
   let s = '';
   for (const b of buf) s += String.fromCharCode(b);
@@ -98,7 +100,7 @@ async function encryptPayload(payload, p256dhB64, authB64) {
   return concatBytes(header, ciphertext);
 }
 
-async function sendWebPush(endpoint, p256dh, authKey, payload) {
+export async function sendWebPush(endpoint, p256dh, authKey, payload) {
   const body = await encryptPayload(new TextEncoder().encode(JSON.stringify(payload)), p256dh, authKey);
   const authHeader = await vapidAuthHeader(endpoint);
   return fetch(endpoint, {

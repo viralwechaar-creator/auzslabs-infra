@@ -8,6 +8,23 @@ import { clearSession, getSession, hashPassword, ownerPasswordOk, setSession, ve
 import { EXPENSE_CATEGORIES, addBooking, addExpense, addInvoice, clientsList, computeSlots, publicSite } from './rules.js';
 import { salonIcon, salonOgImage, saveUpload } from './brand.js';
 import { enqueueWa, sendOrRetryWa } from '../whatsapp.js';
+import { sendWebPush, vapidReady } from '../push.js';
+
+// Live browser notifications for the owner/staff console (new booking, new bill, staff clock-in/out --
+// db/193). Direct JS call for the same reason enqueueWa() above is: nothing here is a SQL row a
+// trigger could watch. Never throws -- a notification failure can never block the real action.
+async function salonPush(tid, title, body) {
+  try {
+    if (!vapidReady()) return;
+    const { rows: subs } = await pool.query('select * from salon_push_subs where tenant_id = $1', [tid]);
+    await Promise.allSettled(subs.map(async (s) => {
+      try {
+        const res = await sendWebPush(s.endpoint, s.p256dh, s.auth, { title, body, tag: 'salon' });
+        if (!res.ok && (res.status === 404 || res.status === 410)) await pool.query('delete from salon_push_subs where id = $1', [s.id]);
+      } catch { /* one dead subscription never blocks the rest */ }
+    }));
+  } catch { /* never block the real action that triggered this */ }
+}
 
 // Entry point: index.js hands over every request whose path starts with
 // /salon-api (Caddy rewrites /api/* on tenant subdomains to it).
@@ -121,6 +138,7 @@ export async function handleSalon(req, res, ip) {
     if (method === 'POST' && p === '/bookings') {
       if (limited(`book:${tid}:${ip}`, 20, 60 * 60_000)) fail(429, 'Too many requests, please try again later.');
       const booking = await mutate(tenant, (db) => addBooking(db, body, false), ['site', 'data'], ['data']);
+      salonPush(tid, 'New booking', `${booking.name} — ${booking.date} ${booking.time}`);
       return send(201, { ok: true, booking });
     }
 
@@ -279,6 +297,7 @@ export async function handleSalon(req, res, ip) {
            `https://${tenant.slug}.${DOMAIN}/i/${invoice.token}`],
           invoice.id + '-bill');
       }
+      salonPush(tid, 'New bill', `${(invoice.client && invoice.client.name) || 'A customer'} — ₹${invoice.total.toFixed(2)}`);
       return send(201, { ok: true, invoice });
     }
     const ivWa = p.match(/^\/admin\/invoices\/(.+)\/whatsapp$/);
@@ -386,6 +405,26 @@ export async function handleSalon(req, res, ip) {
       if (next.length < 8) fail(400, 'New password must be at least 8 characters.');
       await writeStaffAdmin(tenant, 'admin', { passwordHash: hashPassword(next), failCount: 0, lockedUntil: 0 });
       setSession(res, tid);
+      return send(200, { ok: true });
+    }
+
+    if (method === 'POST' && p === '/admin/push/subscribe') {
+      await member();
+      const endpoint = String(body.endpoint || '');
+      const p256dh = String((body.keys && body.keys.p256dh) || body.p256dh || '');
+      const auth = String((body.keys && body.keys.auth) || body.auth || '');
+      if (!endpoint || !p256dh || !auth) fail(400, 'Missing subscription details.');
+      await pool.query(
+        'insert into salon_push_subs (tenant_id, endpoint, p256dh, auth) values ($1, $2, $3, $4) ' +
+        'on conflict (tenant_id, endpoint) do update set p256dh = excluded.p256dh, auth = excluded.auth',
+        [tid, endpoint, p256dh, auth],
+      );
+      return send(200, { ok: true });
+    }
+    if (method === 'POST' && p === '/admin/push/unsubscribe') {
+      await member();
+      const endpoint = String(body.endpoint || '');
+      if (endpoint) await pool.query('delete from salon_push_subs where tenant_id = $1 and endpoint = $2', [tid, endpoint]);
       return send(200, { ok: true });
     }
 
@@ -499,6 +538,7 @@ export async function handleSalon(req, res, ip) {
       if (!st.employeeId || !(await payrollOn(tid))) fail(400, 'Your login is not linked to payroll yet. Ask the owner.');
       if (method === 'GET') return send(200, (await pool.query('select salon_punch_state($1, $2, $3) as s', [tid, st.employeeId, todayStr()])).rows[0].s || { open: false, recent: [] });
       const r = await pool.query('select salon_punch($1, $2, $3, $4) as r', [tid, st.employeeId, todayStr(), new Date().toISOString()]);
+      salonPush(tid, 'Staff clock-in/out', `${st.name} clocked ${r.rows[0].r.open ? 'in' : 'out'}`);
       return send(200, { ok: true, ...r.rows[0].r });
     }
 

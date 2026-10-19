@@ -14,6 +14,43 @@
   let tt;
   function toast(msg, err) { const t = $('#toast'); t.textContent = msg; t.className = 'a-toast show' + (err ? ' err' : ''); clearTimeout(tt); tt = setTimeout(() => { t.className = 'a-toast'; }, 3400); }
   const fail = e => toast(e.message || 'Something went wrong', true);
+
+  /* ---------- live notifications (Web Push, db/193) ---------- */
+  const VAPID_PUBLIC = 'BD-oWPPzj7gzvYCrQiNAowSxyIZWfoRNO3A7tGqs3km352VZuNhzl8sZvnri5IilWEeAE1AYzWrfiZJS_rmhp_c';
+  function b64ToArr(s) { const p = '='.repeat((4 - (s.length % 4)) % 4), b = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')), a = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a; }
+  async function currentPushSub() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return null;
+    const reg = await navigator.serviceWorker.register('/salon/sw.js', { scope: '/salon/' });
+    return reg.pushManager.getSubscription();
+  }
+  async function enableNotify() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) throw new Error('This browser cannot show notifications when the tab is closed.');
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') throw new Error('Allow notifications for this site in the browser settings.');
+    const reg = await navigator.serviceWorker.register('/salon/sw.js', { scope: '/salon/' });
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToArr(VAPID_PUBLIC) });
+    await api('POST', '/api/admin/push/subscribe', sub.toJSON());
+  }
+  async function disableNotify() {
+    const sub = await currentPushSub();
+    if (sub) { await api('POST', '/api/admin/push/unsubscribe', { endpoint: sub.endpoint }); await sub.unsubscribe(); }
+  }
+  async function drawNotifyBox(box) {
+    const sub = await currentPushSub().catch(() => null);
+    box.replaceChildren(
+      h('label', { class: 'a-check', style: 'display:flex;align-items:center;gap:10px' },
+        h('input', { type: 'checkbox', checked: !!sub, onchange: async e => {
+          const on = e.target.checked;
+          try {
+            if (on) await enableNotify(); else await disableNotify();
+            toast(on ? 'Notifications are on for this device' : 'Notifications are off for this device');
+          } catch (ex) { e.target.checked = !on; fail(ex); }
+        } }),
+        'Notify this device'),
+      h('p', { class: 'a-note', style: 'margin-top:8px', text: 'Turns this on for the browser/device you are using right now. Turn it on separately on a phone or another computer too.' }));
+  }
+
   const load = async () => {
     D = await api('GET', '/api/admin/data'); if (!D.today) D.today = new Date().toLocaleDateString('en-CA'); renderNav();
     // Fire-and-forget: lets invoice "Send" buttons know whether automatic sending is on without
@@ -995,6 +1032,9 @@
       } catch (ex) { waBox.replaceChildren(h('p', { class: 'a-note', text: 'Could not load WhatsApp settings.' })); }
     })();
 
+    const notifyBox = h('div', { class: 'a-card', style: 'max-width:420px' });
+    drawNotifyBox(notifyBox);
+
     const qrUrl = location.origin + '/salon/menu/';
     const qrPic = h('div', { class: 'pic', style: 'aspect-ratio:1;background:#fff' });
     let qrCanvas = null;
@@ -1045,6 +1085,9 @@
       h('h2', { class: 'a-h2', style: 'margin-top:32px', text: 'WhatsApp' }),
       h('p', { class: 'muted', style: 'margin-bottom:12px', text: 'Send your customer a WhatsApp message with their bill the moment it is created.' }),
       waBox,
+      h('h2', { class: 'a-h2', style: 'margin-top:32px', text: 'Notifications' }),
+      h('p', { class: 'muted', style: 'margin-bottom:12px', text: 'Get an alert on this device the moment a new booking comes in, a bill is made, or staff clock in or out — even with this tab closed.' }),
+      notifyBox,
       h('h2', { class: 'a-h2', style: 'margin-top:32px', text: 'Change password' }),
       h('div', { class: 'a-grid' }, fld('Current password', h('input', { type: 'password', id: 'pcur', autocomplete: 'current-password', oninput: e => { P.current = e.target.value; } }), 'pcur'),
         fld('New password (8 or more characters)', h('input', { type: 'password', id: 'pnew', autocomplete: 'new-password', oninput: e => { P.next = e.target.value; } }), 'pnew')),
