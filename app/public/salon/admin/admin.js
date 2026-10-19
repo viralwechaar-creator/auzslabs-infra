@@ -16,7 +16,7 @@
   const fail = e => toast(e.message || 'Something went wrong', true);
 
   /* ---------- live notifications (Web Push, db/193) ---------- */
-  const VAPID_PUBLIC = 'BPiW_NeG0lSSYViz6P2NqDOi-h39m1zoJ4-oQwzvF3eny5Axph2c7a6xb0si8yA0OpVoBVkN-9BTC0apc_rzTNA';
+  const VAPID_PUBLIC = 'BFQTtl3U3YPPl7qBOO00GjCNsW4N-T5jyq4UGs2Mk9s3lHoichGl0_B4yYrPCmCfscnw63XbHtpOp2Iy1nWMmZA';
   function b64ToArr(s) { const p = '='.repeat((4 - (s.length % 4)) % 4), b = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')), a = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a; }
   async function currentPushSub() {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return null;
