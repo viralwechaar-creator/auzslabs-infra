@@ -1,5 +1,5 @@
 import { pool, withAuth } from '../db.js';
-import { paymentConfig, gstPct, createOrder, createClientOrderPayment, verifyWebhookSignature, handleWebhookEvent } from '../payments.js';
+import { paymentConfig, gstPct, createOrder, createClientOrderPayment, createRenewalOrder, startRazorpayAutorenew, cancelRazorpayAutorenew, razorpayConfigured, verifyWebhookSignature, handleWebhookEvent } from '../payments.js';
 import { cashfreeConfigured, startAutorenew, cancelAutorenew, verifyWebhookSignature as verifyCashfreeSignature, handleWebhookEvent as handleCashfreeWebhookEvent } from '../cashfree.js';
 import { requireVerifiedEmail } from '../lib/guards.js';
 import { HttpError, rateLimited, readJsonBody, readRawBody } from '../lib/http.js';
@@ -36,6 +36,44 @@ export async function handle(ctx) {
     try { result = await createClientOrderPayment({ token, terms }); }
     catch (err) { throw new HttpError(400, err.message || 'could not start payment'); }
     return reply(200, result);
+  }
+  // ---- Renewals and auto-renewal (db/201): provider-agnostic front door for the apps' "Plan & account" sheet.
+  // Razorpay Subscriptions when Razorpay is configured, else the older Cashfree code. Owner-only, gated in the SQL/route. ----
+  if (url.pathname === '/payments/autorenew/config' && req.method === 'GET') {
+    return reply(200, { enabled: razorpayConfigured() || cashfreeConfigured(), provider: razorpayConfigured() ? 'razorpay' : cashfreeConfigured() ? 'cashfree' : null, renewOnline: razorpayConfigured() });
+  }
+  if (url.pathname === '/payments/renew/create' && req.method === 'POST') {
+    if (!user) throw new HttpError(401, 'authentication required');
+    if (rateLimited(`renewpay:${ip}`, 10, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+    if (!razorpayConfigured()) throw new HttpError(400, 'Online payment is not switched on yet.');
+    try { return reply(200, await createRenewalOrder({ userId: user.id })); }
+    catch (err) { throw new HttpError(err.status || 400, err.message || 'could not start the renewal'); }
+  }
+  if (url.pathname === '/payments/autorenew/start' && req.method === 'POST') {
+    if (!user) throw new HttpError(401, 'authentication required');
+    if (rateLimited(`arstart:${ip}`, 10, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+    if (razorpayConfigured()) {
+      try { return reply(200, await startRazorpayAutorenew({ userId: user.id, email: user.email })); }
+      catch (err) { throw new HttpError(err.status || 400, err.message || 'could not start auto-renewal'); }
+    }
+    const profC = await withAuth(user.id, (client) => client.query('select tenant_id, role from profiles where id = $1', [user.id]));
+    const pc = profC.rows[0];
+    if (!pc || pc.role !== 'owner') throw new HttpError(403, 'owner access required');
+    const trC = await pool.query('select name from tenants where id = $1', [pc.tenant_id]);
+    try { return reply(200, await startAutorenew({ userId: user.id, tenantId: pc.tenant_id, tenantName: trC.rows[0]?.name || 'business', email: user.email, phone: user.phone })); }
+    catch (err) { throw new HttpError(400, err.message || 'could not start auto-renewal'); }
+  }
+  if (url.pathname === '/payments/autorenew/cancel' && req.method === 'POST') {
+    if (!user) throw new HttpError(401, 'authentication required');
+    const prof = await withAuth(user.id, (client) => client.query('select tenant_id, role from profiles where id = $1', [user.id]));
+    const p = prof.rows[0];
+    if (!p || p.role !== 'owner') throw new HttpError(403, 'owner access required');
+    const row = (await pool.query(`select provider, provider_sub_id from subscriptions where tenant_id = $1 and status <> 'cancelled' order by created_at desc limit 1`, [p.tenant_id])).rows[0];
+    if (row && row.provider === 'razorpay') {
+      await cancelRazorpayAutorenew({ subId: row.provider_sub_id });
+      await pool.query(`update subscriptions set status = 'cancelled', cancelled_at = now() where provider = 'razorpay' and provider_sub_id = $1`, [row.provider_sub_id]);
+    } else await cancelAutorenew({ tenantId: p.tenant_id });
+    return reply(200, { ok: true });
   }
   // Razorpay calls this directly, server-to-server -- no Bearer token,
   // no Origin, no rate limit by IP (it's always Razorpay's own IPs).

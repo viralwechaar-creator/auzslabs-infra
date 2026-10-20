@@ -220,6 +220,49 @@ export async function createClientOrderPayment({ token, terms }) {
   };
 }
 
+// ---- Renewal: pay the next period now, or switch on auto-debit (Razorpay Subscriptions, db/201) ----
+const OWNER_TENANT = async (userId) => {
+  const prof = await withAuth(userId, (client) => client.query('select tenant_id, role from profiles where id = $1', [userId]));
+  const p = prof.rows[0];
+  if (!p || p.role !== 'owner') { const e = new Error('owner access required'); e.status = 403; throw e; }
+  return p.tenant_id;
+};
+export async function createRenewalOrder({ userId }) {
+  const tenantId = await OWNER_TENANT(userId);
+  const { rows } = await pool.query('select renewal_order_create($1, $2) as result', [tenantId, userId]);
+  return rows[0].result;
+}
+export async function startRazorpayAutorenew({ userId, email }) {
+  if (!razorpayConfigured()) throw new Error('Auto-renewal is not set up yet. Renew by hand for now.');
+  const tenantId = await OWNER_TENANT(userId);
+  const { rows: ex } = await pool.query(`select 1 from subscriptions where tenant_id = $1 and status <> 'cancelled' limit 1`, [tenantId]);
+  if (ex.length) throw new Error('Auto-renewal is already on.');
+  const { rows: q } = await pool.query('select renewal_quote($1) as result', [tenantId]);
+  const rq = q[0].result;
+  if (!rq) throw new Error('Your plan was set up by AUZslab directly. Please contact us to switch on auto-renewal.');
+  if (rq.error) throw new Error('Your plan has products on different billing periods. Please contact us to switch on auto-renewal.');
+  const total = Number(rq.totals.total);
+  const yearly = rq.period === 'year';
+  const { rows: tr } = await pool.query('select name, renewal_date from tenants where id = $1', [tenantId]);
+  const plan = await razorpayApi('plans', { period: yearly ? 'yearly' : 'monthly', interval: 1, item: { name: `AUZslab ${yearly ? 'yearly' : 'monthly'} - ${String(tr[0]?.name || '').slice(0, 60)}`, amount: Math.round(total * 100), currency: 'INR' }, notes: { tenant_id: String(tenantId) } });
+  const body = { plan_id: plan.id, total_count: yearly ? 10 : 120, customer_notify: 1, notes: { tenant_id: String(tenantId) } };
+  // The first auto-debit lands on the renewal date (never before the period already paid for ends)
+  const rd = tr[0]?.renewal_date ? new Date(String(tr[0].renewal_date).slice(0, 10) + 'T00:30:00+05:30') : null;
+  if (rd && rd.getTime() - Date.now() > 24 * 3600 * 1000) body.start_at = Math.floor(rd.getTime() / 1000);
+  const sub = await razorpayApi('subscriptions', body);
+  const { rows: f } = await pool.query('select features from tenant_settings where tenant_id = $1', [tenantId]);
+  const features = f[0]?.features || {};
+  await pool.query(
+    `insert into subscriptions (tenant_id, provider, provider_sub_id, provider_plan_id, status, period, amount, feature_keys, created_by)
+     values ($1, 'razorpay', $2, $3, 'created', $4, $5, $6, $7)`,
+    [tenantId, sub.id, plan.id, yearly ? 'year' : 'month', total, JSON.stringify(Object.keys(features).filter((k) => features[k] === true)), userId],
+  );
+  return { authLink: sub.short_url || null, subscriptionId: sub.id };
+}
+export async function cancelRazorpayAutorenew({ subId }) {
+  try { await razorpayApi(`subscriptions/${subId}/cancel`, { cancel_at_cycle_end: 0 }); } catch { /* best effort: the row below still records the owner's choice */ }
+}
+
 // Raw-body HMAC-SHA256 verification against Razorpay's published
 // algorithm (https://razorpay.com/docs/webhooks/validate-test/) --
 // the signature MUST be computed over the exact raw bytes Razorpay
@@ -239,6 +282,23 @@ export function verifyWebhookSignature(rawBody, signatureHeader) {
 // step here is idempotent: a payment already marked 'paid', or a
 // signup/addon request already 'approved', is a no-op, not an error.
 export async function handleWebhookEvent(event) {
+  const ev = String(event.event || '');
+  // A failed attempt: remember why (a client keeps failing -> the admin is told).
+  if (ev === 'payment.failed') {
+    const pf = event.payload?.payment?.entity;
+    if (pf?.order_id) await pool.query('select online_payment_failed($1, $2, $3)', [pf.order_id, pf.id || null, pf.error_description || pf.error_reason || null]);
+    return;
+  }
+  // Auto-renewal (Razorpay Subscriptions): authorised, charged, halted/pending (a charge failed) or cancelled.
+  if (ev.startsWith('subscription.')) {
+    const sub = event.payload?.subscription?.entity;
+    const pay = event.payload?.payment?.entity;
+    if (!sub?.id) return;
+    const kind = { 'subscription.authenticated': 'authenticated', 'subscription.activated': 'activated', 'subscription.charged': 'charged', 'subscription.pending': 'failed', 'subscription.halted': 'failed', 'subscription.cancelled': 'cancelled', 'subscription.completed': 'completed' }[ev];
+    if (!kind) return;
+    await pool.query('select subscription_event($1, $2, $3, $4, $5)', [sub.id, kind, pay?.id || null, pay?.amount != null ? Number(pay.amount) / 100 : null, ev === 'subscription.halted' ? 'retries used up' : ev === 'subscription.pending' ? 'a charge was declined' : null]);
+    return;
+  }
   if (event.event !== 'payment.captured' && event.event !== 'order.paid') return;
   const payment = event.payload?.payment?.entity;
   if (!payment?.order_id) return;
