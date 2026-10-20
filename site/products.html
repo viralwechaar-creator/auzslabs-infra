@@ -43,20 +43,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 /* ---------- products: bubble lab + nine differently composed slabs ---------- */
-.prh{padding:clamp(96px,14vh,150px) 5vw clamp(40px,7vh,80px);display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:clamp(24px,4vw,64px);align-items:center;min-height:min(100vh,860px)}
+.prh{padding:clamp(110px,18vh,170px) 5vw clamp(36px,6vh,64px);max-width:980px}
 .prh-eye{font:500 12px/1 var(--font-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:10px}
 .prh-eye::before{content:"";width:28px;height:2px;background:var(--accent)}
-.prh-h{margin:16px 0 0;font:900 clamp(42px,6.2vw,96px)/.98 var(--font-display);letter-spacing:-.05em}
-.prh-lede{margin:18px 0 0;max-width:28em;font:500 clamp(15px,1.25vw,19px)/1.55 var(--font-body);color:var(--ink-dim)}
-.prh-acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}
-.prh-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
-.prh-card{position:relative;display:flex;flex-direction:column;gap:4px;padding:16px 16px 14px;background:#fffdf7;border:1px solid rgba(46,44,42,.18);border-radius:20px;box-shadow:0 10px 26px -16px rgba(46,44,42,.3);transition:transform .2s,box-shadow .2s,border-color .2s;min-height:150px}
-.prh-card:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:0 16px 30px -16px rgba(128,0,32,.35)}
-.prh-card svg{width:52px;height:52px;margin-bottom:6px}
-.prh-card b{font:800 15px/1.1 var(--font-display);letter-spacing:-.02em}
-.prh-card span{font-size:12px;line-height:1.4;color:var(--ink-dim)}
-.prh-card i{position:absolute;right:14px;top:14px;font-style:normal;font-size:13px;color:var(--accent);font-weight:700}
-@media(max-width:900px){.prh{grid-template-columns:1fr;min-height:0;padding-top:96px}.prh-grid{grid-template-columns:repeat(2,1fr)}}
+.prh-h{margin:16px 0 0;font:900 clamp(38px,5.4vw,76px)/1 var(--font-display);letter-spacing:-.05em}
+.prh-lede{margin:16px 0 0;max-width:30em;font:500 clamp(15px,1.2vw,18px)/1.55 var(--font-body);color:var(--ink-dim)}
+.prh-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px}
+.prh-links a{font-size:13px;font-weight:600;padding:9px 15px;border:1px solid rgba(46,44,42,.22);border-radius:999px;color:var(--ink);transition:.2s}
+.prh-links a:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
 
 .band{background:var(--ink);color:#f6f4f1;padding:1.1em 0;font:900 clamp(22px,4vw,64px)/1 var(--font-display);letter-spacing:-.04em;text-transform:uppercase;transform:rotate(-1.6deg);margin:5vh -3vw;position:relative;z-index:4}
 .band span{padding:0 .5em;white-space:nowrap}
@@ -271,24 +265,21 @@
           <main class="content">
 
     <section class="prh" id="lab">
-      <div class="prh-copy">
-        <div class="prh-eye">Products</div>
-        <h1 class="prh-h">Built around you.</h1>
-        <p class="prh-lede">Connected systems for every part of your business. Start with what you need, shape it to how you work.</p>
-        <div class="prh-acts"><a href="cart.html" class="btn btn-primary">Request a setup</a><button class="btn btn-ghost" data-open-contact>Let's talk</button></div>
-      </div>
-      <div class="prh-grid">
-        <a class="prh-card" href="#slab-pos"><svg data-art="pos" aria-hidden="true"></svg><b>AUZsPOS</b><span>Billing, tables and kitchen</span><i aria-hidden="true">&darr;</i></a>
-        <a class="prh-card" href="#slab-crm"><svg data-art="crm" aria-hidden="true"></svg><b>CRM</b><span>Customers worth keeping</span><i aria-hidden="true">&darr;</i></a>
-        <a class="prh-card" href="#slab-billing"><svg data-art="billing" aria-hidden="true"></svg><b>Billing</b><span>GST invoices, numbered</span><i aria-hidden="true">&darr;</i></a>
-        <a class="prh-card" href="#slab-inventory"><svg data-art="inventory" aria-hidden="true"></svg><b>Stock</b><span>Stock and purchasing</span><i aria-hidden="true">&darr;</i></a>
-        <a class="prh-card" href="#slab-qr"><svg data-art="qr" aria-hidden="true"></svg><b>QR ordering</b><span>Guests order from the table</span><i aria-hidden="true">&darr;</i></a>
-        <a class="prh-card" href="#slab-payroll"><svg data-art="payroll" aria-hidden="true"></svg><b>AUZsPay</b><span>Attendance-based pay</span><i aria-hidden="true">&darr;</i></a>
-        <a class="prh-card" href="#slab-salon"><svg data-art="salon" aria-hidden="true"></svg><b>Salon</b><span>Booking, clients and bills</span><i aria-hidden="true">&darr;</i></a>
-        <a class="prh-card" href="#slab-mobile"><svg data-art="mobile" aria-hidden="true"></svg><b>AUZsMob</b><span>Phones, repairs and dues</span><i aria-hidden="true">&darr;</i></a>
-        <a class="prh-card" href="#slab-accounting"><svg data-art="billing" aria-hidden="true"></svg><b>AUZsLedger</b><span>Books and GST reports</span><i aria-hidden="true">&darr;</i></a>
-        <a class="prh-card" href="#slab-scan"><svg data-art="qr" aria-hidden="true"></svg><b>AUZsScan</b><span>Scan a barcode, bill it</span><i aria-hidden="true">&darr;</i></a>
-      </div>
+      <div class="prh-eye">Products</div>
+      <h1 class="prh-h">Built around you.</h1>
+      <p class="prh-lede">Connected systems for every part of your business. Start with what you need, shape it to how you work.</p>
+      <nav class="prh-links" aria-label="Jump to a product">
+        <a href="#slab-pos">AUZsPOS</a>
+        <a href="#slab-crm">CRM</a>
+        <a href="#slab-billing">Billing</a>
+        <a href="#slab-inventory">Stock</a>
+        <a href="#slab-qr">QR ordering</a>
+        <a href="#slab-payroll">AUZsPay</a>
+        <a href="#slab-salon">Salon</a>
+        <a href="#slab-mobile">AUZsMob</a>
+        <a href="#slab-accounting">AUZsLedger</a>
+        <a href="#slab-scan">AUZsScan</a>
+      </nav>
     </section>
 
 <div class="band" data-marquee data-speed="46"><span>One login</span><i></i><span>Every module</span><i></i><span>Works offline</span><i></i><span>Your data stays yours</span><i></i></div>
