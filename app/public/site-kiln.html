@@ -455,6 +455,12 @@ input[type=text],input[type=tel],input[type=email],input[type=date],select,texta
 #cartBar #barL{font-size:15px;font-weight:600;white-space:nowrap}
 #cartBar #barR{background:#FFF9F3;color:#7A4630;border-radius:999px;padding:11px 20px;font-size:14px;font-weight:700;white-space:nowrap}
 @media (max-width:899px){#cartBar{left:14px;right:14px;bottom:calc(10px + env(safe-area-inset-bottom,0px));padding:8px 8px 8px 20px}#cartBar #barL{font-size:14px}#cartBar #barR{padding:10px 16px;font-size:13px}}
+
+/* ---- fade in on scroll ---- */
+@media (prefers-reduced-motion:no-preference){
+html.rv-on .rv{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1);transition-delay:var(--rvd,0s)}
+html.rv-on .rv.in{opacity:1;transform:none}
+}
 </style>
 
 <nav id="side" aria-label="Main">
@@ -898,6 +904,16 @@ function starStr(n){n=Math.round(n);return '\u2605\u2605\u2605\u2605\u2605'.slic
 function renderReviews(){if(!LIVE||!sbc||!SLUG)return;sbc.rpc('public_reviews',{tenant_slug:SLUG}).then(function(r){var d=r&&r.data;if(!d||!d.count||!d.reviews||!d.reviews.length)return;$('#revAvg').textContent=Number(d.avg).toFixed(1);$('#revStars').textContent=starStr(d.avg);$('#revCount').textContent='from '+d.count+(d.count===1?' rating':' ratings');$('#revList').innerHTML=d.reviews.map(function(v){return '<figure class="rev" style="margin:0"><span class="stars" aria-label="'+v.rating+' out of 5">'+starStr(v.rating)+'</span><p>\u201c'+esc(v.comment)+'\u201d</p><span class="who">'+esc(v.name||'A guest')+'</span></figure>'}).join('');$('#revSec').hidden=false}).catch(function(){})}
 renderTabs();renderMenu();status();setInterval(status,60000);route();
 loadLive().then(function(){renderTabs();renderMenu();renderReviews();status();refresh();if(cur==='cart')renderCart()});
+})();
+
+(function(){
+ if(!('IntersectionObserver' in window)||matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+ var SEL='.hero-meta,.wordmark,.hero-row,.story-teaser,.sec>h2,.sec .row,.sec .col,.cat-head,.card,.rev-sum,.rev,.gal>*,.about-copy,.page>.mono,.page>h1,.kfoot,.cols3>*';
+ var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.12,rootMargin:'0px 0px -6% 0px'});
+ function scan(root){(root||document).querySelectorAll(SEL).forEach(function(el){if(el.dataset.rv)return;el.dataset.rv='1';el.classList.add('rv');var sib=el.parentNode?Array.prototype.indexOf.call(el.parentNode.children,el):0;el.style.setProperty('--rvd',Math.min(sib%4,3)*.08+'s');io.observe(el)})}
+ document.documentElement.classList.add('rv-on');scan();
+ var t=null;new MutationObserver(function(){clearTimeout(t);t=setTimeout(scan,60)}).observe(document.body,{childList:true,subtree:true});
+ window.addEventListener('hashchange',function(){setTimeout(scan,80)});
 })();
 </script>
 
