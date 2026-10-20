@@ -27,6 +27,25 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
+
+/* clean header: logo + home, no half-cut menu */
+.shell{display:block!important}
+.shell>.content{margin:0!important;width:100%}
+.shell>.topbar{display:flex!important;position:sticky;top:0;z-index:30;background:var(--bg);border-bottom:1px solid var(--line);align-items:center;justify-content:space-between;padding:10px 24px}
+.shell>.topbar .topbar-nav,.shell>.topbar .topbar-nav.tbn-fixed{display:none!important}
+.shell>.topbar .topbar-logo{order:0!important;display:block}
+.shell>.topbar .topbar-logo img{max-width:112px;height:auto;display:block}
+body.has-tbn main.content{padding-top:0!important}
+.pay-wrap{margin-left:auto;margin-right:auto;padding-left:20px;padding-right:20px}
+.pay-hero{padding-top:30px!important;padding-bottom:6px!important}
+.pay-hero .h-1{font-size:clamp(28px,4vw,40px);margin:6px 0 8px}
+.pay-hero .lede{margin:0 0 4px;max-width:640px}
+.state-card{text-align:center;padding:30px 22px}
+.state-ico{width:56px;height:56px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;margin:0 auto 14px;font-size:26px;font-weight:700}
+.state-ico.ok{background:#1f7a4d}.state-ico.bad{background:var(--accent)}
+.state-card h2{margin:0 0 6px;font-size:20px}
+.state-card p{margin:0 auto 14px;max-width:420px;color:var(--ink-faint);font-size:14px}
+.help-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .err{color:var(--accent);font-size:12.5px;margin-top:10px}
 .pay-wrap{max-width:720px}
 .pay-grid{display:block}
@@ -82,11 +101,16 @@
   .tbn-menu a small{font:500 10px/1 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint,#8a847f)}
   .tbn-menu a:hover{background:var(--bg,#f6f4f1);color:var(--accent)}
   .tbn-menu a.tbn-all{margin-top:4px;border-top:1px dashed var(--line);border-radius:0 0 10px 10px;color:var(--accent)}
-  .topbar-nav.tbn-fixed{display:flex;position:fixed;left:0;right:var(--sidebar-w,280px);top:0;transform:none;height:54px;align-items:center;justify-content:center;background:var(--bg);border-bottom:1px solid var(--line);z-index:24}
+  .topbar-nav.tbn-fixed{display:flex;position:fixed;left:0;right:var(--sidebar-w,280px);top:0;transform:none;height:54px;align-items:center;justify-content:center;background:var(--bg);border-bottom:1px solid var(--line);z-index:24;padding-left:120px}
+  body:not(:has(.sidebar)) .topbar-nav.tbn-fixed{right:0}
+  .tbn-logo{position:absolute;left:20px;top:50%;transform:translateY(-50%);display:block;line-height:0}
+  .tbn-logo img{height:28px;width:auto;display:block}
+  :root[data-theme=dark] .tbn-logo img{filter:invert(1)}
+  @media (prefers-color-scheme:dark){:root:not([data-theme=light]) .tbn-logo img{filter:invert(1)}}
   body.has-tbn main.content{padding-top:54px}
 }
 </style>
-<script id="topbar-nav-js">(function(){function f(){var n=document.querySelector('.topbar-nav'),t=document.querySelector('.topbar');if(!n||!t)return;var hide=matchMedia('(min-width:900px)').matches&&getComputedStyle(t).display==='none';if(hide&&n.parentNode===t){document.body.appendChild(n);n.classList.add('tbn-fixed');document.body.classList.add('has-tbn')}else if(!hide&&n.classList.contains('tbn-fixed')&&!matchMedia('(min-width:900px)').matches){}}f();addEventListener('load',f)})();</script>
+<script id="topbar-nav-js">(function(){function f(){var n=document.querySelector('.topbar-nav'),t=document.querySelector('.topbar');if(!n||!t)return;var hide=matchMedia('(min-width:900px)').matches&&getComputedStyle(t).display==='none';if(hide&&n.parentNode===t){document.body.appendChild(n);n.classList.add('tbn-fixed');if(!n.querySelector('.tbn-logo')){var a=document.createElement('a');a.className='tbn-logo';a.href='index.html';a.setAttribute('aria-label','AUZslab home');var im=document.createElement('img');im.src='logo.png';im.alt='AUZslab';a.appendChild(im);n.insertBefore(a,n.firstChild)}document.body.classList.add('has-tbn')}else if(!hide&&n.classList.contains('tbn-fixed')&&!matchMedia('(min-width:900px)').matches){}}f();addEventListener('load',f)})();</script>
 </head>
 <body>
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
@@ -101,7 +125,7 @@
   </header>
   <main class="content">
     <div class="wrap pay-wrap">
-      <section class="section" style="padding-top:48px">
+      <section class="section pay-hero">
         <div class="label" id="pgLabel">Your request</div>
         <h1 class="h-1" id="pgTitle">One moment...</h1>
         <p class="lede" id="pgLede"></p>
@@ -155,9 +179,18 @@ function bankHtml() {
   return `<div class="kv"><span>Account name</span><span>${esc(b.holder)}</span><span>Bank</span><span>${esc(b.bank)}</span><span>Account no.</span><span>${esc(b.account)}</span><span>IFSC</span><span>${esc(b.ifsc)}</span>${b.branch ? `<span>Branch</span><span>${esc(b.branch)}</span>` : ''}</div>`;
 }
 
+function helpCard(title) {
+  const ph = String(CO.phone || '').replace(/[^0-9]/g, '');
+  return `<div class="card"><div class="label">${title || 'Need help?'}</div><p class="pay-note" style="margin:6px 0 12px">Write to us and quote your request. We reply the same day.</p><div class="help-btns">${ph ? `<a class="btn btn-primary" href="https://wa.me/${ph}" target="_blank" rel="noopener">WhatsApp us</a><a class="btn btn-ghost" href="tel:+${ph}">Call</a>` : ''}${CO.grievanceEmail ? `<a class="btn btn-ghost" href="mailto:${esc(CO.grievanceEmail)}">Email</a>` : ''}</div></div>`;
+}
+function stateBody(kind, title, text, extra) {
+  const ico = kind === 'ok' ? '&#10003;' : kind === 'bad' ? '!' : '?';
+  $('body').innerHTML = `<div class="pay-grid"><div class="pay-col"><div class="card state-card"><div class="state-ico ${kind}">${ico}</div><h2>${esc(title)}</h2><p>${esc(text)}</p>${extra || ''}</div></div><div class="pay-col pay-side">${helpCard()}<div class="card"><div class="label">Not sure what to do?</div><ul class="next-list"><li><b>1</b><span>Open the latest message we sent you on WhatsApp.</span></li><li><b>2</b><span>Tap the payment link in it.</span></li><li><b>3</b><span>Or send a new request from the cart.</span></li></ul><a class="btn btn-ghost" style="margin-top:12px" href="cart.html">Go to cart</a></div></div></div>`;
+}
+
 function render() {
   const st = D.status; setSteps(st);
-  if (st === 'rejected') { setHead('Your request', 'We could not take this request.', 'Please write to us on WhatsApp or email if you would like to talk about it.'); $('body').innerHTML = `<section class="section tight"><div class="card">${detailsHtml(D)}</div></section>`; return; }
+  if (st === 'rejected') { setHead('Your request', 'We could not take this request.', 'Please write to us on WhatsApp or email if you would like to talk about it.'); $('body').innerHTML = `<div class="pay-grid"><div class="pay-col"><div class="card"><div class="label">What you sent us</div>${detailsHtml(D)}</div></div><div class="pay-col pay-side">${helpCard('Talk to us')}</div></div>`; return; }
   if (st === 'requested' || st === 'verifying' || st === 'confirmed') {
     setHead('Your request', st === 'requested' ? 'Request received.' : st === 'verifying' ? 'We are checking your business.' : 'You are confirmed.',
       st === 'confirmed' ? 'Your bill is being prepared. We will send the payment link on WhatsApp.' : 'We will contact you on WhatsApp. After that you will get your payment link here.');
@@ -166,7 +199,7 @@ function render() {
         <li><b>1</b><span>We check your details and contact you on WhatsApp.</span></li>
         <li><b>2</b><span>You get your bill and a payment link on this page.</span></li>
         <li><b>3</b><span>Pay online. Your access starts as soon as the payment is confirmed.</span></li></ol></div>
-        <div class="card"><div class="label">Need help?</div><p class="pay-note" style="margin:6px 0 0">Write to us on WhatsApp or email and quote your request number.</p></div></div></div>`;
+        ${helpCard('Need help?')}</div>`;
     return;
   }
   if (st === 'paid') {
@@ -279,9 +312,9 @@ async function send() {
 }
 
 async function load() {
-  if (!/^[a-f0-9]{32}$/.test(TOKEN)) { setHead('Payment link', 'This link is not valid.', 'Please use the link we sent you on WhatsApp, or send a new request from the cart.'); setSteps('x'); return; }
+  if (!/^[a-f0-9]{32}$/.test(TOKEN)) { setHead('Payment link', 'This link is not valid.', 'Please use the link we sent you on WhatsApp, or send a new request from the cart.'); setSteps('x'); stateBody('bad', 'This link does not look right', 'It may have been cut short when copied. Open the original message and tap the link again.'); return; }
   const { data, error } = await sb.rpc('public_client_order', { p_token: TOKEN });
-  if (error || !data) { setHead('Payment link', 'We could not find this request.', 'Please check the link we sent you on WhatsApp.'); setSteps('x'); return; }
+  if (error || !data) { setHead('Payment link', 'We could not find this request.', 'Please check the link we sent you on WhatsApp.'); setSteps('x'); stateBody('bad', 'No request found for this link', 'The request may have been removed, or the link is from an older message.'); return; }
   try { const c = await fetch(CFG.url + '/payments/config'); if (c.ok) PAYCFG = await c.json(); } catch (e) {}
   D = data; render();
 }
