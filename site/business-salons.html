@@ -398,28 +398,28 @@
           <button type="button" class="btn btn-ghost" data-open-contact>Ask about add-ons</button>
         </div>
         <div class="sp-addon-grid">
-          <div class="sp-addon">
+          <div class="sp-addon" data-addon="salon_payroll">
             <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
             <b>AUZsPay</b>
             <div class="sp-addon-pr"><span data-live-price="payroll">&#8377;590</span></div>
             <div class="sp-addon-sub">per month + GST</div>
             <p>Staff attendance, leave and payroll. Works with any plan.</p>
           </div>
-          <div class="sp-addon">
+          <div class="sp-addon" data-addon="salon_whatsapp">
             <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 0 0-7.6 13.8L3 21l4.4-1.3A9 9 0 1 0 12 3z" stroke-linejoin="round"/></svg></span>
             <b>WhatsApp automation</b>
             <div class="sp-addon-pr">Per message</div>
             <div class="sp-addon-sub">Charged by messages sent</div>
             <p>Booking reminders and bill links sent from our number. You pay only for the messages that go out. Ask us for the current per-message rate.</p>
           </div>
-          <div class="sp-addon">
+          <div class="sp-addon" data-addon="salon_analytics">
             <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M12 20V4M20 20v-7" stroke-linecap="round"/></svg></span>
             <b>Deeper analytics</b>
             <div class="sp-addon-pr">Quoted</div>
             <div class="sp-addon-sub">Price on request</div>
             <p>Trend lines and stylist performance beyond the basics.</p>
           </div>
-          <div class="sp-addon">
+          <div class="sp-addon" data-addon="salon_branch">
             <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-5.2-7-11a7 7 0 0 1 14 0c0 5.8-7 11-7 11z" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.4"/></svg></span>
             <b>Extra branch</b>
             <div class="sp-addon-pr">Quoted</div>
@@ -693,7 +693,7 @@
       var el = document.querySelector('[data-live-price="payroll"]');
       if (el && p && Number(p.monthly_price) > 0) el.textContent = '\u20B9' + Number(p.monthly_price).toLocaleString('en-IN');
     }).catch(function () {});
-    sb.rpc('public_salon_tiers').then(function (r) { renderFromLive(r && r.data); }).catch(function () {});
+    window.planApply = renderFromLive;
     sb.payments.config().then(function (c) {
       c = c && c.data;
       if (c && c.gstPct > 0) document.querySelectorAll('#salon-plans .gst-t').forEach(function (e) { e.hidden = false; });
@@ -701,5 +701,7 @@
   } catch (e) {}
 })();
 </script>
+<script>window.PLAN_NICHE = 'salon';</script>
+<script src="plan-pick.js?v=1"></script>
 </body>
 </html>

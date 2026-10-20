@@ -224,5 +224,43 @@ export default async function run({ browser, stack }) {
     await s.shot(p, 'admin-client-card-bill');
     assert(!errs.some((e) => /JS error/.test(e)), errs.join(' | ')); await c.close();
   }, 'critical');
+  await s.check('Business-page plans and add-ons (db/204): admin-managed prices are served live, a request carries the chosen plan with server-side prices, and the quote starts from it', async () => {
+    const tiers = (await call('public_plan_tiers', { p_niche: 'cafe' })).data;
+    assert(tiers.length === 4 && Number(tiers[1].monthly_price) === 1360, 'cafe tiers: ' + JSON.stringify(tiers.map((t) => t.monthly_price)));
+    assert((await call('public_plan_tiers', { p_niche: 'salon' })).data.length === 4 && (await call('public_salon_tiers', {})).data.length === 4, 'salon tiers wrong');
+    assert((await call('admin_save_niche_addon', { p: { addon_key: 'cafe_qr', monthly_price: 500 } }, cust)).status >= 400, 'customer saved an add-on price');
+    assert((await call('admin_save_niche_addon', { p: { addon_key: 'cafe_qr', monthly_price: 500 } }, adm)).status === 200, 'admin cannot save add-on');
+    assert((await call('admin_save_salon_tier', { p: { tier_key: 'cafe_growth', monthly_price: 1400 } }, adm)).status === 200, 'admin cannot save cafe tier');
+    assert(Number((await call('public_niche_addons', { p_niche: 'cafe' })).data.find((a) => a.addon_key === 'cafe_qr').monthly_price) === 500, 'add-on price not live');
+    await q('delete from client_orders where user_id = (select id from auth_users where email=$1)', [USERS.cafeOwner]);
+    const base = { contact_name: 'Plan Test', phone: '9812345678', business_name: 'Plan Cafe', requirement: 'Growth plan', plan: { niche: 'cafe', tier_key: 'cafe_growth', period: 'year', addons: ['cafe_qr', 'cafe_delivery', 'nope'], price: 1 } };
+    const r = await call('submit_client_order', { p: base }, other);
+    assert(r.status === 200, 'plan request refused: ' + JSON.stringify(r.raw));
+    const row = (await q('select niche, products, selection from client_orders where id=$1', [r.data.id]))[0];
+    assert(row.selection.tier.key === 'cafe_growth' && Number(row.selection.tier.monthly) === 1400 && row.selection.period === 'year' && row.selection.addons.length === 2, JSON.stringify(row.selection));
+    assert(row.niche === 'cafe' && row.products.includes('pos') && row.products.includes('self_order'), JSON.stringify(row));
+    const got = (await call('admin_get_client_order', { p_id: r.data.id }, adm)).data;
+    assert(got.selection && got.selection.addons.some((a) => a.key === 'cafe_qr' && Number(a.price) === 500), 'admin does not see the selection');
+    await q('delete from client_orders where id=$1', [r.data.id]);
+    await call('admin_save_niche_addon', { p: { addon_key: 'cafe_qr', monthly_price: 460 } }, adm); await call('admin_save_salon_tier', { p: { tier_key: 'cafe_growth', monthly_price: 1360 } }, adm);
+  }, 'critical');
+  await s.check('Cafe and salon pages read the admin prices live; Choose plan and Add-on land in the cart', async () => {
+    await call('admin_save_salon_tier', { p: { tier_key: 'cafe_growth', monthly_price: 1777 } }, adm);
+    const c = await newCtx(browser, stack, { w: 1280, h: 900 }); const page = await c.newPage(); const errs = watch(page);
+    await page.goto(stack.url('', '/business-cafes.html')); await page.waitForFunction(() => /1,777/.test(document.querySelector('#cfGrid').innerText), null, { timeout: 15000 });
+    await page.waitForFunction(() => document.querySelector('#salon-addons [data-addon="cafe_qr"] .sp-addon-add'), null, { timeout: 15000 });
+    await page.locator('#salon-addons [data-addon="cafe_delivery"] .sp-addon-add').click();
+    await page.locator('#cfGrid .sp-card').nth(1).locator('.sp-cta').click();
+    await page.waitForURL(/cart\.html/, { timeout: 15000 });
+    await page.waitForSelector('#planBox .cart-item', { timeout: 15000 });
+    const t = await page.locator('#planBox').innerText();
+    assert(/Growth plan/.test(t) && /1,777/.test(t) && /Zomato/.test(t), 'cart plan box: ' + t);
+    assert(await page.evaluate(() => JSON.parse(localStorage.getItem('auz_plan')).tier_key) === 'cafe_growth', 'plan not stored');
+    await page.goto(stack.url('', '/business-salons.html')); await page.waitForFunction(() => document.querySelector('#salon-addons [data-addon="salon_branch"] .sp-addon-add'), null, { timeout: 15000 });
+    assert((await page.locator('#spGrid .sp-card').count()) === 4, 'salon tiers missing');
+    await call('admin_save_salon_tier', { p: { tier_key: 'cafe_growth', monthly_price: 1360 } }, adm);
+    await s.shot(page, 'salon-plan-pick');
+    assert(!errs.some((e) => /JS error/.test(e)), errs.join(' | ')); await c.close();
+  }, 'critical');
   s.done();
 }

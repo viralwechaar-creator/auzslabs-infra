@@ -634,9 +634,14 @@ body.admin-shell .bn-in input{border:none!important;background:none!important;bo
         <div id="pricingList">Loading&hellip;</div>
 
         <div class="label" style="margin-top:28px">AUZslab Salon plans</div>
-        <h2 class="h-2">Salon plan tiers</h2>
-        <p class="p">The four tiers shown on <a href="business-salons.html#salon-plans" target="_blank" rel="noopener">the salon plans page &#8599;</a> &mdash; edit their prices, names and features here; the live page reads these the moment you save.</p>
+        <h2 class="h-2">Plan tiers (salon and cafe &amp; restaurant)</h2>
+        <p class="p">The four tiers on <a href="business-salons.html#salon-plans" target="_blank" rel="noopener">the salon page &#8599;</a> and <a href="business-cafes.html#salon-plans" target="_blank" rel="noopener">the cafe &amp; restaurant page &#8599;</a> &mdash; edit their prices, names and features here; the live page reads these the moment you save.</p>
         <div id="salonTiersList">Loading&hellip;</div>
+
+        <div class="label" style="margin-top:28px">Business-page add-ons</div>
+        <h2 class="h-2">Add-ons on the salon and cafe pages</h2>
+        <p class="p">The optional add-ons under the plans on the <a href="business-salons.html#salon-addons" target="_blank" rel="noopener">salon</a> and <a href="business-cafes.html#salon-addons" target="_blank" rel="noopener">cafe &amp; restaurant</a> pages. A price of &#8377;0 shows the label instead (for example &ldquo;Ask for pricing&rdquo;). Customers can add them to their request, and your quote starts from these prices.</p>
+        <div id="nicheAddonsList">Loading&hellip;</div>
 
         <div class="label" style="margin-top:28px">Bundle plans</div>
         <h2 class="h-2">Bundles</h2>
@@ -1186,7 +1191,7 @@ function resetMainScroll() {
 // signing in used to fire about 11 database requests together; now it is 2.
 const SECTION_LOADERS = {
   leads: () => { loadLeads(); refreshOrdersBadge(); }, orders: () => loadOrders(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(),
-  pricing: () => { loadPricing(); loadSalonTiers(); loadBundles(); loadPayments(); },
+  pricing: () => { loadPricing(); loadSalonTiers(); loadNicheAddons(); loadBundles(); loadPayments(); },
   users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(), privacyReq: () => loadPrivacyReq(), whatsapp: () => loadWhatsApp(),
   team: () => { loadTeam(); loadSetups(); loadTeamApps(); }, tasks: () => loadTasks(), salesWork: () => loadSalesWork(), clientPay: () => { loadClientPay(); loadBills(); },
 };
@@ -1616,7 +1621,8 @@ async function loadSalonTiers() {
   const listEl = document.getElementById('salonTiersList');
   const { data, error } = await sb.rpc('admin_list_salon_tiers', {});
   if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
-  const cards = (data || []).map((t) => `
+  const NICHE_NAME = { salon: 'Salon plans', cafe: 'Cafe & restaurant plans' };
+  const cards = (data || []).map((t, i, all) => `${(i === 0 || all[i - 1].niche !== t.niche) ? `<h3 class="h-3" style="grid-column:1/-1;margin:14px 0 0">${esc(NICHE_NAME[t.niche] || t.niche)}</h3>` : ''}
     <div class="a-card bn-card" data-tier="${esc(t.tier_key)}">
       <div class="bn-top">
         <input class="inp" data-f="name" placeholder="Tier name" value="${esc(t.name || '')}">
@@ -1652,6 +1658,36 @@ async function loadSalonTiers() {
       const { error: saveErr } = await sb.rpc('admin_save_salon_tier', { p });
       if (saveErr) { alert(saveErr.message); return; }
       loadSalonTiers();
+    };
+  });
+}
+
+async function loadNicheAddons() {
+  const listEl = document.getElementById('nicheAddonsList'); if (!listEl) return;
+  const { data, error } = await sb.rpc('admin_list_niche_addons', {});
+  if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  const NICHE_NAME = { salon: 'Salon add-ons', cafe: 'Cafe & restaurant add-ons' };
+  const cards = (data || []).map((a, i, all) => `${(i === 0 || all[i - 1].niche !== a.niche) ? `<h3 class="h-3" style="grid-column:1/-1;margin:14px 0 0">${esc(NICHE_NAME[a.niche] || a.niche)}</h3>` : ''}
+    <div class="a-card bn-card" data-addon="${esc(a.addon_key)}">
+      <input class="inp" data-f="name" placeholder="Add-on name" value="${esc(a.name || '')}">
+      <textarea class="inp" data-f="blurb" rows="2" placeholder="Short description" style="margin-top:8px;resize:vertical">${esc(a.blurb || '')}</textarea>
+      <div class="bn-grid">
+        <label class="bn-field"><span>Monthly price</span><div class="bn-in"><i>&#8377;</i><input data-f="monthly_price" type="number" min="0" step="1" value="${Number(a.monthly_price || 0)}"></div></label>
+        <label class="bn-field"><span>Label when &#8377;0</span><div class="bn-in"><input data-f="price_label" value="${esc(a.price_label || '')}" placeholder="Ask for pricing"></div></label>
+      </div>
+      <input class="inp" data-f="unit_note" placeholder="Small print under the price" value="${esc(a.unit_note || '')}" style="margin-top:8px">
+      <div class="bn-toggles"><label class="bn-switch"><input type="checkbox" data-f="active" ${a.active === false ? '' : 'checked'}><span>Show on the page</span></label>${a.product_key ? `<span style="font-size:12px;color:var(--ink-faint)">Also switches on: ${esc(PROD_NAME[a.product_key] || a.product_key)}</span>` : ''}</div>
+      <div class="bn-foot"><button class="btn btn-primary" data-save>Save</button></div>
+    </div>`).join('');
+  listEl.innerHTML = `<div class="price-grid">${cards}</div>`;
+  listEl.querySelectorAll('[data-addon]').forEach((card) => {
+    card.querySelector('[data-save]').onclick = async () => {
+      const val = (f) => card.querySelector(`[data-f="${f}"]`).value, price = Number(val('monthly_price'));
+      if (!(price >= 0)) { alert('Price must be 0 or more.'); return; }
+      const p = { addon_key: card.dataset.addon, name: val('name'), blurb: val('blurb'), monthly_price: price, price_label: val('price_label'), unit_note: val('unit_note'), active: card.querySelector('[data-f="active"]').checked };
+      const { error: e2 } = await sb.rpc('admin_save_niche_addon', { p });
+      if (e2) { alert(e2.message); return; }
+      loadNicheAddons();
     };
   });
 }
@@ -2751,7 +2787,7 @@ document.querySelectorAll('[data-ordf]').forEach((b) => { b.onclick = () => { or
 function calcQuote(Q, stateCode) {
   const intra = (stateCode || '08') === '08'; let sub = 0, dis = 0, tax = 0, g = 0; const lines = [];
   const add = (type, label, rate, disc, gst, plan) => { const net = Math.round((rate - disc) * 100) / 100, ga = Math.round(net * gst) / 100; lines.push({ type, label, plan, rate, discount: disc, net, gst, gst_amt: ga, total: net + ga }); sub += rate; dis += disc; tax += net; g += ga; };
-  (Q.items || []).forEach((i) => { const r = Math.max(num(i.rate), 0), d = Math.min(Math.max(num(i.discount), 0), r); add('product', PROD_NAME[i.key] || i.key, r, d, Math.max(num(i.gst), 0), i.plan); });
+  (Q.items || []).forEach((i) => { const r = Math.max(num(i.rate), 0), d = Math.min(Math.max(num(i.discount), 0), r); add('product', i.label || PROD_NAME[i.key] || i.key, r, d, Math.max(num(i.gst), 0), i.plan); });
   if (Q.onboarding && Q.onboarding.on) { const r = Math.max(num(Q.onboarding.amount), 0); add('onboarding', 'Onboarding fee', r, 0, Math.max(num(Q.onboarding.gst), 0)); }
   if (Q.setup && Q.setup.on) { const r = Math.max(num(Q.setup.amount), 0); add('setup', 'Setup fee (AUZsPOS installation)', r, 0, Math.max(num(Q.setup.gst), 0)); }
   (Q.custom || []).forEach((c) => { if (String(c.label || '').trim()) add('custom', c.label, num(c.amount), 0, Math.max(num(c.gst), 0)); });
@@ -2769,11 +2805,22 @@ async function ensurePrices() {
 
 function defaultQuote(o, defGst) {
   const g = num(defGst);
-  const items = (o.products || []).filter((k) => PROD_NAME[k]).map((k) => { const p = ordPrices[k] || {}; return { key: k, plan: 'month', rate: num(p.monthly_price), discount: 0, gst: p.gst_exempt ? 0 : g }; });
+  const sel = o.selection, yr = sel && sel.period === 'year', used = new Set(), custom = [], items = [];
+  const gstOf = (k) => ((ordPrices[k] || {}).gst_exempt ? 0 : g);
+  if (sel && sel.tier) {
+    const t = sel.tier; used.add(t.product_key);
+    items.push({ key: t.product_key, label: t.name + ' plan', plan: yr ? 'year' : 'month', rate: num(yr ? (t.yearly || num(t.monthly) * 10) : t.monthly), discount: 0, gst: gstOf(t.product_key) });
+  }
+  ((sel && sel.addons) || []).forEach((a) => {
+    const price = num(a.price), label = a.name + (price > 0 ? '' : ' (price to be agreed)');
+    if (a.product_key && !used.has(a.product_key)) { used.add(a.product_key); items.push({ key: a.product_key, label: a.name, plan: yr ? 'year' : 'month', rate: yr ? price * 10 : price, discount: 0, gst: gstOf(a.product_key) }); }
+    else custom.push({ label: label + (yr ? ' (yearly)' : ' (monthly)'), amount: yr ? price * 10 : price, gst: g });
+  });
+  (o.products || []).filter((k) => PROD_NAME[k] && !used.has(k)).forEach((k) => { const p = ordPrices[k] || {}; items.push({ key: k, plan: 'month', rate: num(p.monthly_price), discount: 0, gst: p.gst_exempt ? 0 : g }); });
   return { items,
     onboarding: { on: o.kind === 'new', amount: ONBOARDING_DEFAULT, gst: 0 },
     setup: { on: o.kind === 'new' && !((o.products || []).length && (o.products || []).every((k) => (ordPrices[k] || {}).setup_fee_exempt)), amount: SETUP_DEFAULT, gst: g },
-    custom: [], note: '' };
+    custom, note: '' };
 }
 
 const waDigits = (p) => { const d = String(p || '').replace(/\D/g, ''); return d.length === 10 ? '91' + d : d; };
@@ -2807,7 +2854,7 @@ function renderOrder() {
   const stOpts = [['', 'State']].concat(Object.keys(ORD_STATES).map((c) => [c, ORD_STATES[c]]));
   const f = (id, label, val, extra = '') => `<label class="lbl">${label}<input id="${id}" class="inp" value="${esc(val || '')}" ${locked ? 'disabled' : ''} ${extra}></label>`;
   const preview = calcQuote(ordQ, o.state_code);
-  const prodRow = (it, i) => `<div class="ord-q" data-qi="${i}">
+  const prodRow = (it, i) => `<div class="ord-q" data-qi="${i}" data-lbl="${esc(it.label || '')}" data-lblkey="${esc(it.key)}">${it.label ? `<div style="grid-column:1/-1;font-size:12px;color:var(--ink-faint)">${esc(it.label)}</div>` : ''}
       ${sel('qk' + i, ORD_PRODUCTS, it.key)}
       ${sel('qp' + i, [['month', 'Monthly'], ['year', 'Yearly']], it.plan)}
       <label class="lbl">Price<input class="inp" id="qr${i}" type="number" min="0" step="0.01" value="${it.rate}"></label>
@@ -2825,6 +2872,7 @@ function renderOrder() {
     <button class="btn ${o.status === 'verifying' ? 'btn-primary' : 'btn-ghost'}" data-ost="verifying" type="button">Under verification</button>
     <button class="btn ${o.status === 'confirmed' ? 'btn-primary' : 'btn-ghost'}" data-ost="confirmed" type="button">Confirmed</button>
     <button class="btn btn-ghost" data-ost="rejected" type="button" style="color:var(--accent);border-color:var(--accent)">Reject</button></div>`}
+  ${o.selection ? `<div class="a-card" style="margin-top:14px;padding:12px 14px"><b>Chosen on the website:</b> ${esc((o.selection.tier ? o.selection.tier.name + ' plan (' + (o.selection.period === 'year' ? 'yearly' : 'monthly') + ')' : 'no plan') + ((o.selection.addons || []).length ? ' + ' + o.selection.addons.map((a) => a.name).join(', ') : ''))}<br><span style="font-size:12px;color:var(--ink-faint)">The quote below starts from these prices. Change anything before you save.</span></div>` : ''}
   <div class="label" style="margin-top:16px">Client details</div>
   <div class="ord-grid">${f('odName', 'Name', o.contact_name)}${f('odPhone', 'Mobile / WhatsApp', o.phone)}${f('odEmail', 'Email', o.email)}${f('odBiz', 'Business name', o.business_name)}${f('odGstin', 'GSTIN', o.gstin, 'maxlength="15"')}
     <label class="lbl">State${sel('odState', stOpts, o.state_code)}</label><label class="lbl">Business type${sel('odNiche', ORD_NICHES, o.niche)}</label>${o.kind === 'new' ? f('odSlug', 'Address (.auzslab.in)', o.slug) : ''}
@@ -2869,7 +2917,7 @@ function renderOrder() {
 
 function readQuote() {
   const g = (id) => document.getElementById(id);
-  const items = [...document.querySelectorAll('#qItems [data-qi]')].map((r) => { const i = r.dataset.qi; return { key: g('qk' + i).value, plan: g('qp' + i).value, rate: num(g('qr' + i).value), discount: num(g('qd' + i).value), gst: num(g('qg' + i).value) }; });
+  const items = [...document.querySelectorAll('#qItems [data-qi]')].map((r) => { const i = r.dataset.qi; return { key: g('qk' + i).value, label: (r.dataset.lbl && r.dataset.lblkey === g('qk' + i).value) ? r.dataset.lbl : undefined, plan: g('qp' + i).value, rate: num(g('qr' + i).value), discount: num(g('qd' + i).value), gst: num(g('qg' + i).value) }; });
   const custom = [...document.querySelectorAll('#qCustom [data-ci]')].map((r) => { const i = r.dataset.ci; return { label: g('cl' + i).value.trim(), amount: num(g('ca' + i).value), gst: num(g('cg' + i).value) }; });
   return { items,
     onboarding: { on: g('qOnbOn').checked, amount: num(g('qobA').value), gst: num(g('qobG').value) },
