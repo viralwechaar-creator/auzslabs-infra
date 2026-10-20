@@ -84,7 +84,7 @@ export default async function run({ browser, stack }) {
     const o = await page.evaluate(() => window.__rz); assert(o.amount === Math.round(Number(amt) * 100) && o.key === 'rzp_test_TESTKEY' && /^order_/.test(o.order_id) && o.theme.color === '#800020', JSON.stringify(o));
     assert(await page.locator('#qr').count() === 0, 'the manual UPI QR is still shown when online payment is on');
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'sideways scroll');
-    await s.shot(page, 'razorpay-pay-page');
+    await s.shot(page, 'razorpay-pay-page'); await page.setViewportSize({ width: 1440, height: 900 }); await page.waitForTimeout(400); await s.shot(page, 'razorpay-pay-page-desktop');
     assert(!errs.some((e) => /JS error/.test(e)), errs.join(' | ')); await c.close();
   }, 'critical');
 

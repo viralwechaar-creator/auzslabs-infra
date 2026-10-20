@@ -29,6 +29,18 @@
 <style>
 .err{color:var(--accent);font-size:12.5px;margin-top:10px}
 .pay-wrap{max-width:720px}
+.pay-grid{display:block}
+.pay-grid>section{margin:0}
+.pay-col{display:grid;gap:16px;align-content:start}
+.next-list{margin:8px 0 0;padding:0;list-style:none;display:grid;gap:10px;font-size:13.5px}
+.next-list li{display:flex;gap:10px;align-items:flex-start}
+.next-list b{flex:none;width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;font-size:12px;display:grid;place-items:center}
+@media(min-width:1000px){
+  .pay-wrap{max-width:1080px}
+  .pay-wrap>section.section:first-child{padding-bottom:6px}
+  .pay-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:24px;align-items:start}
+  .pay-grid .pay-side{position:sticky;top:76px}
+}
 .steps{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 4px}
 .steps span{font-size:12px;padding:6px 12px;border-radius:999px;border:1.5px solid var(--line);color:var(--ink-faint);white-space:nowrap}
 .steps span.on{background:var(--ink);color:#fff;border-color:var(--ink)}
@@ -149,15 +161,20 @@ function render() {
   if (st === 'requested' || st === 'verifying' || st === 'confirmed') {
     setHead('Your request', st === 'requested' ? 'Request received.' : st === 'verifying' ? 'We are checking your business.' : 'You are confirmed.',
       st === 'confirmed' ? 'Your bill is being prepared. We will send the payment link on WhatsApp.' : 'We will contact you on WhatsApp. After that you will get your payment link here.');
-    $('body').innerHTML = `<section class="section tight"><div class="card"><div class="label">What you sent us</div>${detailsHtml(D)}${D.requirement ? `<p class="pay-note" style="margin-top:12px">${esc(D.requirement)}</p>` : ''}</div></section>`;
+    $('body').innerHTML = `<div class="pay-grid"><div class="pay-col"><div class="card"><div class="label">What you sent us</div>${detailsHtml(D)}${D.requirement ? `<p class="pay-note" style="margin-top:12px">${esc(D.requirement)}</p>` : ''}</div></div>
+      <div class="pay-col pay-side"><div class="card"><div class="label">What happens next</div><ol class="next-list">
+        <li><b>1</b><span>We check your details and contact you on WhatsApp.</span></li>
+        <li><b>2</b><span>You get your bill and a payment link on this page.</span></li>
+        <li><b>3</b><span>Pay online. Your access starts as soon as the payment is confirmed.</span></li></ol></div>
+        <div class="card"><div class="label">Need help?</div><p class="pay-note" style="margin:6px 0 0">Write to us on WhatsApp or email and quote your request number.</p></div></div></div>`;
     return;
   }
   if (st === 'paid') {
     setHead('Payment confirmed', 'Thank you. You are all set.', 'Your access is active. Your bill is below.');
     const slug = D.tenant_slug;
-    $('body').innerHTML = `<section class="section tight"><div class="card"><div class="label">Bill ${esc(D.invoice_no || '')}</div>
+    $('body').innerHTML = `<div class="pay-grid"><div class="pay-col"><div class="card"><div class="label">Your bill</div>${billHtml(D)}</div></div><div class="pay-col pay-side"><div class="card"><div class="label">Bill ${esc(D.invoice_no || '')}</div>
       <p class="p">Paid on ${esc(String(D.paid_at || '').slice(0, 10))}. ${slug ? `Open your workspace at <a href="https://${esc(slug)}.auzslab.in" style="color:var(--accent)">${esc(slug)}.auzslab.in</a> and sign in with the same account you used to send the request.` : ''}</p>
-      <a class="btn btn-primary form-submit" href="inv.html?t=${encodeURIComponent(TOKEN)}">View or print your bill</a></div></section>`;
+      <a class="btn btn-primary form-submit" href="inv.html?t=${encodeURIComponent(TOKEN)}">View or print your bill</a></div></div></div>`;
     return;
   }
   // link_sent / payment_submitted: the bill and the payment card
@@ -165,19 +182,20 @@ function render() {
   setHead(submitted ? 'Payment received' : 'Payment', submitted ? 'Thank you. We are confirming your payment.' : 'Your bill and payment.', submitted ? 'You will get your bill on WhatsApp once we confirm it. You can send the screenshot again below if needed.' : (PAYCFG.enabled ? 'Read the terms, tick the box and pay online.' : 'Read the terms, tick the box, pay, then send us the screenshot.'));
   const total = Number((D.totals || {}).total || 0);
   const upi = O.upi || {}; const uri = 'upi://pay?pa=' + encodeURIComponent(upi.id) + '&pn=' + encodeURIComponent(upi.name || 'AUZslab') + '&am=' + total.toFixed(2) + '&cu=INR&tn=' + encodeURIComponent('AUZslab ' + (D.business_name || ''));
-  $('body').innerHTML = `
-  <section class="section tight"><div class="card"><div class="label">Your bill</div>${billHtml(D)}</div></section>
-  <section class="section tight"><div class="card"><div class="label">Terms, privacy and refunds</div>
+  $('body').innerHTML = `<div class="pay-grid"><div class="pay-col">
+  <div class="card"><div class="label">Your bill</div>${billHtml(D)}</div>
+  <div class="card"><div class="label">Terms, privacy and refunds</div>
     <div class="terms-box" id="termsBox">${termsHtml()}</div>
     <p class="pay-note"><a href="terms.html" target="_blank" rel="noopener" style="color:var(--accent)">Terms &amp; conditions</a> &middot; <a href="privacy.html" target="_blank" rel="noopener" style="color:var(--accent)">Privacy policy</a> &middot; <a href="refund.html" target="_blank" rel="noopener" style="color:var(--accent)">Refund policy</a></p>
     <label class="chk"><input type="checkbox" id="agree" ${submitted ? 'checked' : ''}><span>I have read and I agree to the Terms &amp; Conditions, Privacy Policy and Refund Policy.</span></label>
-  </div></section>
-  ${PAYCFG.enabled ? `<section class="section tight"><div class="card" style="text-align:center"><div class="label" style="justify-content:center">Pay online</div>
+  </div></div>
+  <div class="pay-col pay-side">
+  ${PAYCFG.enabled ? `<div class="card" style="text-align:center"><div class="label" style="justify-content:center">Pay online</div>
     <p class="pay-note" style="margin:6px 0 12px">Cards, UPI and net banking, secured by Razorpay. Your bill is created automatically as soon as the payment goes through.</p>
     <button class="btn btn-primary form-submit" id="payOnline" type="button">Pay ${inr(total)} online</button>
     <div class="err" id="onErr"></div>
-  </div></section>` : ''}
-  ${PAYCFG.enabled ? '' : `<section class="section tight"><div class="card upi-card" id="payCard"><div class="label" style="justify-content:center">Pay ${inr(total)}</div>
+  </div>` : ''}
+  ${PAYCFG.enabled ? '' : `<div class="card upi-card" id="payCard"><div class="label" style="justify-content:center">Pay ${inr(total)}</div>
     <img id="qr" alt="UPI QR code" width="200" height="200">
     <p class="pay-note" style="margin:0">Scan with any UPI app, or pay to <b>${esc(upi.id)}</b> (${esc(upi.name)}).</p>
     <a class="btn btn-ghost" style="margin-top:10px" href="${esc(uri)}" id="upiOpen">Open my UPI app</a>
@@ -187,7 +205,9 @@ function render() {
     <button class="btn btn-primary form-submit" id="send" type="button">${submitted ? 'Send again' : 'I have paid: send screenshot'}</button>
     <div class="err" id="err"></div>
     ${D.payment.proof ? '<p class="pay-note">We already have a screenshot from you.</p>' : ''}
-  </div></section>`}`;
+  </div>`}
+  <div class="card"><div class="label">Good to know</div><ul class="next-list"><li><b>1</b><span>Tick the box to agree to the terms.</span></li><li><b>2</b><span>Pay ${inr(total)} online.</span></li><li><b>3</b><span>Your bill and access arrive as soon as it is confirmed.</span></li></ul></div>
+  </div></div>`;
   if (!PAYCFG.enabled) {
     try { const q = qrcode(0, 'M'); q.addData(uri); q.make(); $('qr').src = q.createDataURL(5, 2); } catch (e) { $('qr').style.display = 'none'; }
     $('send').onclick = send;
