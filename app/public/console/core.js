@@ -164,21 +164,27 @@ function barList(rows,fmt=v=>v){const mx=Math.max(1,...rows.map(r=>r[1]));return
 // ---------- navigation ----------
 const NAV=[
  ['dashboard','Overview','home'],
- ['lbl','POS & Orders'],
+ ['lbl','Daily work'],
  ['href','/index.html','Billing POS','store'],
  ['daily/live','Live Orders','live'],['daily/all','All Orders','orders'],['daily/online','Online Orders','online'],['daily/kot','KOT','kot'],['daily/due','Due Payment','due'],
- ['lbl','Inventory & reports'],
- ['g:inv','Inventory','inv',[['inv/raw','Raw Materials'],['inv/stock','Stock'],['inv/purchase','Purchases'],['inv/vendors','Vendors'],['inv/recipes','Recipes'],['inv/consumption','Consumption']]],
- ['g:rep','Reports','rep',[['rep/sales','Sales'],['rep/orders','Orders'],['rep/items','Items'],['rep/inventory','Inventory'],['rep/customers','Customers'],['rep/staff','Staff'],['rep/analytics','Analytics'],['rep/gst','GST Summary']]],
- ['lbl','Manage'],
- ['g:menu','Menu Management','menu',[['menu/overview','Overview'],['menu/items','Items'],['menu/categories','Categories'],['menu/variants','Variants'],['menu/addons','Add-ons'],['menu/tables','Tables'],['menu/taxes','Taxes'],['menu/discounts','Discounts'],['menu/bogo','Buy X Get Y'],['menu/availability','Availability'],['menu/preferences','Preferences'],['menu/commission','Commission'],['menu/physical','Physical Menu'],['menu/images','Bulk Images']]],
- ['g:crm','CRM','crm',[['crm/customers','Customers'],['crm/loyalty','Loyalty'],['crm/giftcards','Gift Cards'],['crm/feedback','Feedback'],['crm/membership','Membership'],['crm/support','Support']]],
- ['g:team','Team Management','team',[['team/users','Users & Roles'],['team/attendance','Attendance'],['team/payroll','Payroll'],['team/tasks','Tasks']]],
- ['g:fin','Finance','fin',[['fin/expenses','Expenses'],['fin/withdrawals','Withdrawals'],['fin/cash','Cash'],['fin/settlements','Settlements'],['fin/accounting','Accounting'],['fin/reconcile','Reconciliation']]],
- ['g:mkt','Marketing','mkt',[['mkt/campaigns','Campaigns'],['mkt/segments','Segments'],['mkt/offers','Offers'],['mkt/whatsapp','WhatsApp'],['mkt/promotions','Promotions'],['mkt/loyaltycamp','Loyalty Campaigns']],'New'],
- ['g:int','Integrations','plug',[['agg/swiggy','Swiggy'],['agg/zomato','Zomato'],['agg/ondc','ONDC'],['agg/dunzo','Dunzo'],['agg/ubereats','Uber Eats'],['agg/settings','Platform Settings']]],
- ['g:mgmt','Management','gear',[['mgmt/config','Configuration'],['mgmt/website','Website & Booking'],['mgmt/reasons','Cancellations'],['mgmt/outlets','Outlets'],['mgmt/devices','Devices'],['mgmt/hardware','Hardware'],['mgmt/whatsapp','WhatsApp'],['mgmt/logs','Logs'],['mgmt/audit','Audit Trail'],['mgmt/data','Data']]],
- ['g:ql','Quick Links','star',[['int/apps','Explore Apps'],['ql/favorites','Favourites'],['ql/shortcuts','Shortcuts'],['ql/custom','Custom Links']]]
+ ['lbl','Menu & pricing'],
+ ['g:menu','Menu','menu',[['menu/overview','Overview'],['menu/items','Items'],['menu/categories','Categories'],['menu/variants','Variants'],['menu/addons','Add-ons'],['menu/availability','Availability'],['menu/physical','Physical Menu'],['menu/images','Bulk Images']]],
+ ['g:price','Pricing, tax & offers','card',[['menu/taxes','Taxes'],['menu/discounts','Discounts'],['menu/bogo','Buy X Get Y'],['menu/commission','Commission']]],
+ ['g:tbl','Tables & ordering','dine',[['menu/tables','Tables'],['menu/preferences','Order preferences']]],
+ ['lbl','Stock'],
+ ['g:inv','Stock & purchasing','inv',[['inv/stock','Stock'],['inv/raw','Raw Materials'],['inv/purchase','Purchases'],['inv/vendors','Vendors'],['inv/recipes','Recipes'],['inv/consumption','Consumption']]],
+ ['lbl','Customers & marketing'],
+ ['g:crm','Customers','crm',[['crm/customers','Customers'],['crm/loyalty','Loyalty'],['crm/membership','Membership'],['crm/giftcards','Gift Cards'],['crm/feedback','Feedback'],['crm/support','Support']]],
+ ['g:mkt','Marketing','mkt',[['mkt/campaigns','Campaigns'],['mkt/segments','Segments'],['mkt/offers','Offers'],['mkt/promotions','Promotions'],['mkt/loyaltycamp','Loyalty Campaigns'],['mkt/whatsapp','WhatsApp']]],
+ ['lbl','Money & team'],
+ ['g:fin','Finance','fin',[['fin/expenses','Expenses'],['fin/withdrawals','Withdrawals'],['fin/cash','Cash'],['fin/settlements','Settlements'],['fin/reconcile','Reconciliation'],['fin/accounting','Accounting']]],
+ ['g:team','Team','team',[['team/users','Users & Roles'],['team/attendance','Attendance'],['team/payroll','Payroll'],['team/tasks','Tasks']]],
+ ['lbl','Reports & online'],
+ ['g:rep','Reports','rep',[['rep/sales','Sales'],['rep/orders','Orders'],['rep/items','Items'],['rep/inventory','Inventory'],['rep/customers','Customers'],['rep/staff','Staff'],['rep/analytics','Analytics'],['rep/gst','GST Summary'],['mgmt/audit','Audit Trail'],['mgmt/logs','Logs']]],
+ ['g:int','Zomato, Swiggy & more','plug',[['agg/swiggy','Swiggy'],['agg/zomato','Zomato'],['agg/ondc','ONDC'],['agg/dunzo','Dunzo'],['agg/ubereats','Uber Eats'],['agg/settings','Platform Settings']]],
+ ['lbl','Settings'],
+ ['g:mgmt','Business settings','gear',[['mgmt/config','Configuration'],['mgmt/website','Website & Booking'],['mgmt/outlets','Outlets'],['mgmt/devices','Devices'],['mgmt/hardware','Hardware'],['mgmt/reasons','Cancellations'],['mgmt/whatsapp','WhatsApp'],['mgmt/data','Data']]],
+ ['g:ql','Shortcuts','star',[['int/apps','Explore Apps'],['ql/favorites','Favourites'],['ql/shortcuts','Shortcuts'],['ql/custom','Custom Links']]]
 ];
 const flatNav=()=>NAV.flatMap(n=>n[0]=='lbl'||n[0]=='href'?[]:n[0].startsWith('g:')?n[3].map(c=>[c[0],c[1],n[1]]):[[n[0],n[1],'']]);
 const titleOf=p=>{const f=flatNav().find(x=>x[0]==p);return f?f[1]:'Dashboard'};
@@ -229,8 +235,7 @@ function topBar(){
 function sidebar(){
  return h('aside',{class:'side'+(S.sideOpen?' open':'')+(S.collapsed?' hide':'')},
   h('div',{class:'brand'},h('div',{class:'logo'},h('img',{src:'/icon-pos.svg',alt:'',width:42,height:42})),h('div',{},h('b',{},'AUZslab'),h('span',{},'Admin console'))),
-  sideNav(),
-  h('div',{class:'upg'},h('div',{class:'t'},h('span',{class:'bolt'},ic('bolt',18)),h('span',{},'Upgrade to ',h('b',{},'AUZslab Pro'))),h('p',{},'Unlock advanced reports, automation and more.'),h('a',{class:'dbtn',href:'https://auzslab.in/pricing.html'},'Upgrade Now')))}
+  sideNav())}
 function render(){
  if(!S.user)return login();
  if(window.auzBrandFrom)auzBrandFrom(cfg());
