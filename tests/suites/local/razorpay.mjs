@@ -82,7 +82,7 @@ export default async function run({ browser, stack }) {
     await page.click('#payOnline'); assert(/tick the box/i.test(await page.locator('#onErr').innerText()), 'the terms box was not enforced');
     await page.check('#agree'); await page.click('#payOnline'); await page.waitForFunction(() => window.__rzOpened === true, null, { timeout: 15000 });
     const o = await page.evaluate(() => window.__rz); assert(o.amount === Math.round(Number(amt) * 100) && o.key === 'rzp_test_TESTKEY' && /^order_/.test(o.order_id) && o.theme.color === '#800020', JSON.stringify(o));
-    assert(await page.locator('#qr').count() === 1, 'the UPI QR fallback is gone');
+    assert(await page.locator('#qr').count() === 0, 'the manual UPI QR is still shown when online payment is on');
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'sideways scroll');
     await s.shot(page, 'razorpay-pay-page');
     assert(!errs.some((e) => /JS error/.test(e)), errs.join(' | ')); await c.close();

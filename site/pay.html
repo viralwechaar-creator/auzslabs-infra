@@ -162,7 +162,7 @@ function render() {
   }
   // link_sent / payment_submitted: the bill and the payment card
   const submitted = st === 'payment_submitted';
-  setHead(submitted ? 'Payment received' : 'Payment', submitted ? 'Thank you. We are confirming your payment.' : 'Your bill and payment.', submitted ? 'You will get your bill on WhatsApp once we confirm it. You can send the screenshot again below if needed.' : 'Read the terms, tick the box, pay, then send us the screenshot.');
+  setHead(submitted ? 'Payment received' : 'Payment', submitted ? 'Thank you. We are confirming your payment.' : 'Your bill and payment.', submitted ? 'You will get your bill on WhatsApp once we confirm it. You can send the screenshot again below if needed.' : (PAYCFG.enabled ? 'Read the terms, tick the box and pay online.' : 'Read the terms, tick the box, pay, then send us the screenshot.'));
   const total = Number((D.totals || {}).total || 0);
   const upi = O.upi || {}; const uri = 'upi://pay?pa=' + encodeURIComponent(upi.id) + '&pn=' + encodeURIComponent(upi.name || 'AUZslab') + '&am=' + total.toFixed(2) + '&cu=INR&tn=' + encodeURIComponent('AUZslab ' + (D.business_name || ''));
   $('body').innerHTML = `
@@ -176,9 +176,8 @@ function render() {
     <p class="pay-note" style="margin:6px 0 12px">Cards, UPI and net banking, secured by Razorpay. Your bill is created automatically as soon as the payment goes through.</p>
     <button class="btn btn-primary form-submit" id="payOnline" type="button">Pay ${inr(total)} online</button>
     <div class="err" id="onErr"></div>
-    <p class="pay-note" style="margin-top:14px">Prefer UPI QR? Pay below and send us the screenshot.</p>
   </div></section>` : ''}
-  <section class="section tight"><div class="card upi-card" id="payCard"><div class="label" style="justify-content:center">Pay ${inr(total)}</div>
+  ${PAYCFG.enabled ? '' : `<section class="section tight"><div class="card upi-card" id="payCard"><div class="label" style="justify-content:center">Pay ${inr(total)}</div>
     <img id="qr" alt="UPI QR code" width="200" height="200">
     <p class="pay-note" style="margin:0">Scan with any UPI app, or pay to <b>${esc(upi.id)}</b> (${esc(upi.name)}).</p>
     <a class="btn btn-ghost" style="margin-top:10px" href="${esc(uri)}" id="upiOpen">Open my UPI app</a>
@@ -188,9 +187,11 @@ function render() {
     <button class="btn btn-primary form-submit" id="send" type="button">${submitted ? 'Send again' : 'I have paid: send screenshot'}</button>
     <div class="err" id="err"></div>
     ${D.payment.proof ? '<p class="pay-note">We already have a screenshot from you.</p>' : ''}
-  </div></section>`;
-  try { const q = qrcode(0, 'M'); q.addData(uri); q.make(); $('qr').src = q.createDataURL(5, 2); } catch (e) { $('qr').style.display = 'none'; }
-  $('send').onclick = send;
+  </div></section>`}`;
+  if (!PAYCFG.enabled) {
+    try { const q = qrcode(0, 'M'); q.addData(uri); q.make(); $('qr').src = q.createDataURL(5, 2); } catch (e) { $('qr').style.display = 'none'; }
+    $('send').onclick = send;
+  }
   if ($('payOnline')) $('payOnline').onclick = payOnline;
 }
 
