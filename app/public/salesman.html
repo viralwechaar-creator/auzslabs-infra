@@ -260,6 +260,10 @@ button:active:not(:disabled){transform:translateY(1px) scale(.99)}
             <div><label>Invoice footer note<input id=bFtr placeholder="Thank you!"></label></div>
           </div>
 
+          <h2>Website design</h2>
+          <p class=sub>How their QR / ordering website looks. Same menu and text in both; the client can switch later from their POS.</p>
+          <label>Design<select id=bDesign><option value=classic>Classic (original)</option><option value=kiln>Kiln (editorial, warm)</option></select></label>
+
           <h2>Website text</h2>
           <label>Tagline / kicker<input id=bKicker placeholder="Our story"></label>
           <label>Headline<input id=bTag placeholder="Quiet coffee. Calm experience."></label>
@@ -860,6 +864,7 @@ async function openBrand(tenantId) {
   $('bName').value = data.name || ''; $('bPhone').value = data.phone || ''; $('bGstin').value = data.gstin || '';
   $('bAddr').value = data.addr || ''; $('bHours').value = data.siteHours || '';
   $('bPrefix').value = data.prefix || ''; $('bFtr').value = data.ftr || '';
+  $('bDesign').value = data.siteTemplate === 'kiln' ? 'kiln' : 'classic';
   $('bKicker').value = data.siteKicker || ''; $('bTag').value = data.siteTag || '';
   $('bSub').value = data.siteSub || ''; $('bAbout').value = data.siteAbout || ''; $('bInsta').value = data.siteInsta || '';
   const b = data.brand || {};
@@ -954,6 +959,7 @@ $('saveBrandBtn').onclick = async () => {
     name: $('bName').value.trim(), phone: $('bPhone').value.trim(), gstin: $('bGstin').value.trim(),
     addr: $('bAddr').value.trim(), siteHours: $('bHours').value.trim(),
     prefix: $('bPrefix').value.trim(), ftr: $('bFtr').value.trim(),
+    siteTemplate: $('bDesign').value,
     siteKicker: $('bKicker').value.trim(), siteTag: $('bTag').value.trim(),
     siteSub: $('bSub').value.trim(), siteAbout: $('bAbout').value.trim(), siteInsta: $('bInsta').value.trim(),
     brand: { plum: $('bPlum').value, tint: $('bTint').value, muted: $('bMuted').value, line: $('bLine').value },
