@@ -27,7 +27,7 @@
 <link rel="icon" href="/logo.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="theme.css?v=57"><link rel="stylesheet" href="balance.css?v=3" media="(min-width:1000px)"><script src="theme.js?v=1"></script>
+<link rel="stylesheet" href="theme.css?v=58"><link rel="stylesheet" href="reach.css?v=1"><link rel="stylesheet" href="balance.css?v=3" media="(min-width:1000px)"><script src="theme.js?v=1"></script>
 <link rel="stylesheet" href="design-system/ui-kit.css?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -380,28 +380,31 @@
         <div class="sp-addon-grid">
           <div class="sp-addon">
             <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-            <b>AUZsPay</b><span class="sp-addon-pr">&#8377;590/month</span>
-            <p>Staff attendance &amp; payroll &mdash; works with any plan, not just salons.</p>
+            <b>AUZsPay</b>
+            <div class="sp-addon-pr"><span data-live-price="payroll">&#8377;590</span></div>
+            <div class="sp-addon-sub">per month + GST</div>
+            <p>Staff attendance, leave and payroll. Works with any plan.</p>
           </div>
           <div class="sp-addon">
             <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 0 0-7.6 13.8L3 21l4.4-1.3A9 9 0 1 0 12 3z" stroke-linejoin="round"/></svg></span>
-            <b>WhatsApp automation</b><span class="sp-addon-pr">from &#8377;299/month</span>
-            <p>Automatic booking reminders and bill alerts.</p>
+            <b>WhatsApp automation</b>
+            <div class="sp-addon-pr">Per message</div>
+            <div class="sp-addon-sub">Charged by messages sent</div>
+            <p>Booking reminders and bill links sent from our number. You pay only for the messages that go out. Ask us for the current per-message rate.</p>
           </div>
           <div class="sp-addon">
             <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M12 20V4M20 20v-7" stroke-linecap="round"/></svg></span>
-            <b>Deeper analytics</b><span class="sp-addon-pr">from &#8377;499/month</span>
-            <p>Trend lines, stylist performance and more, beyond the basics.</p>
+            <b>Deeper analytics</b>
+            <div class="sp-addon-pr">Quoted</div>
+            <div class="sp-addon-sub">Price on request</div>
+            <p>Trend lines and stylist performance beyond the basics.</p>
           </div>
           <div class="sp-addon">
             <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-5.2-7-11a7 7 0 0 1 14 0c0 5.8-7 11-7 11z" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.4"/></svg></span>
-            <b>Extra branch</b><span class="sp-addon-pr">from &#8377;999/month</span>
-            <p>Bring another address under the same brand, set up by AUZslab Studio.</p>
-          </div>
-          <div class="sp-addon">
-            <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-2v-7h4M3 17v-7h4v7H5a2 2 0 0 1-2-2z" stroke-linejoin="round"/></svg></span>
-            <b>Priority support</b><span class="sp-addon-pr">from &#8377;399/month</span>
-            <p>Faster response and a named person to call.</p>
+            <b>Extra branch</b>
+            <div class="sp-addon-pr">Quoted</div>
+            <div class="sp-addon-sub">Price on request</div>
+            <p>Bring another address under the same brand.</p>
           </div>
         </div>
       </section>
@@ -664,6 +667,12 @@
 
   try {
     var sb = supabase.createClient(CFG.url, CFG.key);
+    sb.rpc('public_product_prices').then(function (r) {
+      var rows = (r && r.data) || [], p = null;
+      for (var i = 0; i < rows.length; i++) if (rows[i].key === 'payroll') p = rows[i];
+      var el = document.querySelector('[data-live-price="payroll"]');
+      if (el && p && Number(p.monthly_price) > 0) el.textContent = '\u20B9' + Number(p.monthly_price).toLocaleString('en-IN');
+    }).catch(function () {});
     sb.rpc('public_salon_tiers').then(function (r) { renderFromLive(r && r.data); }).catch(function () {});
     sb.payments.config().then(function (c) {
       c = c && c.data;
