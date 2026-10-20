@@ -19,6 +19,8 @@
   .sidebar-nav>.nav-link.active{box-shadow:none;padding-left:0}
   .sidebar-nav>.nav-link:first-child{order:0}
   .nav-group{order:1;grid-column:1/-1}
+  .nav-group:nth-of-type(1){margin-top:28px}
+  .nav-group:nth-of-type(3){margin-bottom:28px}
   .nav-group-toggle{width:100%;padding:2px 0;border:0;cursor:pointer;font-family:Inter,system-ui,sans-serif;font-weight:400;font-size:24px;line-height:1.22;letter-spacing:-.015em;color:#fff;justify-content:space-between}
   .nav-group-toggle .nav-group-count{display:none}
   .nav-group-indicator{display:block;width:20px;text-align:center;font-size:22px;font-weight:300;color:rgba(255,255,255,.5)}
