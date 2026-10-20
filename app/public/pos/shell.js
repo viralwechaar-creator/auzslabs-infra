@@ -309,7 +309,7 @@ async function boot() {
   let askedTab = null; try { const q = new URLSearchParams(location.search).get('tab'); const map = { pos: 'sell', tabs: 'orders', kds: 'kitchen', staff: 'more' }; if (q) askedTab = map[q] || q; } catch {}
   S.authExpired = false; $('#app').replaceChildren(h('div', { class: 'login' }, h('div', { class: 'sub' }, 'Loading…')));
   if (!booted) {
-    booted = true;
+    booted = true; healPush();
     addEventListener('online', () => { syncNow(); setNote(); }); addEventListener('offline', setNote);
     sb.channel('r').on('postgres_changes', { event: '*', schema: 'public', table: 'records' }, () => sync()).subscribe();
     sb.channel('g').on('postgres_changes', { event: '*', schema: 'public', table: 'guest_orders' }, () => getG()).subscribe();

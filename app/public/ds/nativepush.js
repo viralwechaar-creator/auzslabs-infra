@@ -69,7 +69,7 @@
      public key that matches the server's VAPID_PRIVATE (same value as VAPID_PUBLIC in pos/core.js: change both together).
      webState() -> 'native' | 'unsupported' | 'ios-install' (iPhone browser tab: Add to Home Screen first) | 'blocked' | 'ask' | 'on'.
      enablePlatformWeb(sb, ask) -> {ok, message}; with ask=false it only re-saves an already allowed subscription (no popup). */
-  var VAPID_PUBLIC = 'BD-oWPPzj7gzvYCrQiNAowSxyIZWfoRNO3A7tGqs3km352VZuNhzl8sZvnri5IilWEeAE1AYzWrfiZJS_rmhp_c';
+  var VAPID_PUBLIC = 'BFQTtl3U3YPPl7qBOO00GjCNsW4N-T5jyq4UGs2Mk9s3lHoichGl0_B4yYrPCmCfscnw63XbHtpOp2Iy1nWMmZA';
   function keyBytes(b64) { var p = '='.repeat((4 - b64.length % 4) % 4), s = atob((b64 + p).replace(/-/g, '+').replace(/_/g, '/')), a = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return a; }
   function webState() {
     if (isNative()) return 'native';
