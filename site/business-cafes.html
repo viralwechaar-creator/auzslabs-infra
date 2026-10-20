@@ -27,7 +27,7 @@
 <link rel="icon" href="/logo.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="theme.css?v=58"><link rel="stylesheet" href="balance.css?v=3" media="(min-width:1000px)"><script src="theme.js?v=1"></script>
+<link rel="stylesheet" href="theme.css?v=59"><link rel="stylesheet" href="reach.css?v=1"><link rel="stylesheet" href="balance.css?v=3" media="(min-width:1000px)"><script src="theme.js?v=1"></script>
 <link rel="stylesheet" href="design-system/ui-kit.css?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -98,7 +98,24 @@
 .biz-band .p,.demo-note .p{color:rgba(255,255,255,.78)}
 .biz-band .btn-primary,.demo-note .btn-primary{background:#fff;color:var(--ink-solid,#2e2c2a);border-color:#fff}
 </style>
-<link rel="stylesheet" href="reach.css?v=1"></head>
+<link rel="stylesheet" href="reach.css?v=1"><style id="cafe-contrast-base">
+/* minimal contrast: soft warm band, white cards, one ink featured tier */
+#salon-plans .sp-card{background:#fff;border-color:var(--line)}
+#salon-plans .sp-card.hi{background:var(--ink-solid);border-color:var(--ink-solid);color:#fff}
+#salon-plans .sp-card.hi .sp-name,#salon-plans .sp-card.hi .sp-price{color:#fff}
+#salon-plans .sp-card.hi .sp-tagline,#salon-plans .sp-card.hi .sp-per,#salon-plans .sp-card.hi .sp-gst,#salon-plans .sp-card.hi .sp-was,#salon-plans .sp-card.hi .sp-feats li{color:rgba(255,255,255,.75)}
+#salon-plans .sp-card.hi .sp-save2{color:#ffd9a0}
+#salon-plans .sp-card.hi .sp-feats{border-top-color:rgba(255,255,255,.25)}
+#salon-plans .sp-card.hi .sp-feats li::before{background:#ffd9a0}
+#salon-plans .sp-card.hi .sp-cta{background:#fff;color:var(--ink-solid);border-color:#fff}
+#salon-plans .sp-strip{background:#fff;border-color:var(--line)}
+#salon-addons .sp-addon{background:#fff}
+</style>
+<style id="cafe-contrast">
+/* the plan/compare/add-on styles live in theme.css under the #salon-* ids; this page reuses those ids on purpose */
+#salon-plans .sp-feats li.sp-off{opacity:.5;text-decoration:line-through}
+</style>
+</head>
 <body>
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
 
@@ -285,71 +302,169 @@
 
       <hr class="dash">
 
-      <section class="section tight" id="pricing">
-  <div class="label">What you get, and what it costs</div>
-  <h2 class="h-2" style="margin-bottom:6px;font-size:26px">Software for a cafe or restaurant.</h2>
-  <p class="p" style="max-width:34em">AUZsPOS covers tables, KOT, billing, stock, customers and staff. Add QR ordering when you want guests to order from their own phone. Prices exclude GST<span class="gst-t" hidden> (18%, added at checkout)</span>.</p>
-  <div class="price-grid">
+      <section class="section tight" id="salon-plans">
+        <div class="label">Plans built for how you serve</div>
+        <h2 class="h-2" style="font-size:28px">From the first counter to the whole group.</h2>
+        <p class="p" style="margin-top:8px;max-width:48em">Run your food business, not the complexity. Choose the plan that fits today and grow when you are ready. Every plan is set up and switched on by us once we know your business.</p>
 
-    <div class="card price-card" data-price-card>
-      <img src="icon-pos.svg" alt="" class="price-card-icon">
-      <div class="price-card-name">AUZsPOS</div>
-      <div class="price-card-price">&#8377;1,090<span>/mo<span class="gst-t" hidden> + GST</span></span></div>
-      <p class="price-card-sub">Tables, KOT, billing, stock &amp; staff.</p>
-      <div class="acts">
-        <a href="products.html#slab-pos" class="btn btn-ghost">Details</a>
-        <button class="btn btn-primary" data-add-plan="pos">Get it</button>
-      </div>
-    </div>
+        <div class="sp-toggle-row">
+          <div class="sp-toggle" id="cfToggle" role="group" aria-label="Billing period">
+            <button type="button" class="on" data-period="m" aria-pressed="true">Monthly</button>
+            <button type="button" data-period="y" aria-pressed="false">Yearly <span class="sp-save">2 months free</span></button>
+          </div>
+          <span class="sp-toggle-note">&larr; pay for 10 months, use all 12</span>
+        </div>
 
-    <div class="card price-card hi" data-price-card>
-      <img src="icon-pos-qr.svg" alt="" class="price-card-icon">
-      <div class="price-card-badge hot">Most popular for dine-in</div>
-      <div class="price-card-name" style="margin-top:10px">AUZsPOS + QR</div>
-      <div class="price-card-price">&#8377;1,490<span>/mo<span class="gst-t" hidden> + GST</span></span></div>
-      <p class="price-card-sub">Table QR ordering, straight to the kitchen.</p>
-      <div class="acts">
-        <a href="products.html#slab-qr" class="btn btn-ghost">Details</a>
-        <button class="btn btn-primary" data-add-plan="pos,self_order">Get it</button>
-      </div>
-    </div>
+        <div class="sp-grid" id="cfGrid">
+          <div class="sp-card" data-plan="Starter">
+            <div class="sp-head"><span class="sp-num">I</span><span class="sp-name">Starter</span></div>
+            <p class="sp-tagline">For small cafes, food trucks and new businesses.</p>
+            <div class="sp-price-row"><span class="sp-price sp-amt">&#8377;820</span><span class="sp-per sp-unit">/month</span> <span class="sp-gst gst-t" hidden>+ GST</span></div>
+            <div class="sp-wassave"><span class="sp-was">&#8377;9,840</span><span class="sp-save2">Save &#8377;1,640</span></div>
+            <button type="button" class="btn btn-ghost sp-cta" data-open-contact data-plan="Starter">Choose Starter</button>
+            <ul class="sp-feats">
+              <li class="">Basic POS billing</li>
+              <li class="">Basic receipts</li>
+              <li class="">Simple menu and product management</li>
+              <li class="">Essential sales summary</li>
+              <li class="sp-off">Advanced inventory and wastage</li>
+              <li class="sp-off">Advanced analytics</li>
+            </ul>
+          </div>
 
-    <div class="card price-card" data-price-card>
-      <img src="icon-payroll.svg" alt="" class="price-card-icon">
-      <div class="price-card-badge">Works with any plan</div>
-      <div class="price-card-name" style="margin-top:10px">+ AUZsPay</div>
-      <div class="price-card-price">&#8377;590<span>/mo<span class="gst-t" hidden> + GST</span></span></div>
-      <p class="price-card-sub">Add staff attendance &amp; payroll, on top of whatever you pick above.</p>
-      <div class="acts">
-        <a href="products.html#slab-payroll" class="btn btn-ghost">Details</a>
-        <button class="btn btn-primary" data-add-plan="payroll">Add it</button>
-      </div>
-    </div>
+          <div class="sp-card" data-plan="Growth">
+            <div class="sp-head"><span class="sp-num">II</span><span class="sp-name">Growth</span></div>
+            <p class="sp-tagline">For established cafes, restaurants and cloud kitchens.</p>
+            <div class="sp-price-row"><span class="sp-price sp-amt">&#8377;1,360</span><span class="sp-per sp-unit">/month</span> <span class="sp-gst gst-t" hidden>+ GST</span></div>
+            <div class="sp-wassave"><span class="sp-was">&#8377;16,320</span><span class="sp-save2">Save &#8377;2,720</span></div>
+            <button type="button" class="btn btn-ghost sp-cta" data-open-contact data-plan="Growth">Choose Growth</button>
+            <ul class="sp-feats">
+              <li class="">Complete POS functionality</li>
+              <li class="">Advanced inventory management</li>
+              <li class="">Advanced analytics dashboard</li>
+              <li class="">Core order and kitchen workflows</li>
+              <li class="">QR ordering as an add-on</li>
+              <li class="">Zomato / Swiggy as an add-on</li>
+              <li class="">WhatsApp automation as an add-on</li>
+            </ul>
+          </div>
 
-  </div>
+          <div class="sp-card hi" data-plan="Professional">
+            <span class="sp-fav">Best for growing restaurants</span>
+            <div class="sp-head"><span class="sp-num">III</span><span class="sp-name">Professional</span></div>
+            <p class="sp-tagline">For busy restaurants ready for connected ordering.</p>
+            <div class="sp-price-row"><span class="sp-price sp-amt">&#8377;2,260</span><span class="sp-per sp-unit">/month</span> <span class="sp-gst gst-t" hidden>+ GST</span></div>
+            <div class="sp-wassave"><span class="sp-was">&#8377;27,120</span><span class="sp-save2">Save &#8377;4,520</span></div>
+            <button type="button" class="btn btn-primary sp-cta" data-open-contact data-plan="Professional">Choose Professional</button>
+            <ul class="sp-feats">
+              <li class="">Everything in Growth</li>
+              <li class="">Preset QR ordering website included</li>
+              <li class="">Zomato and Swiggy integration included</li>
+              <li class="">Multiple invoice template options</li>
+              <li class="">Advanced inventory and analytics</li>
+              <li class="">WhatsApp automation as a paid add-on</li>
+            </ul>
+          </div>
 
-  <div class="card fee-card">
-    <div class="label">One-time, not monthly</div>
-    <div class="fee-row">
-      <span>Onboarding fee <b style="color:var(--accent)">(every new client)</b></span>
-      <b>&#8377;1,460</b>
-    </div>
-    <div class="fee-row">
-      <span>Setup fee &mdash; installing and configuring the till, menu and tables</span>
-      <b>&#8377;2,190</b>
-    </div>
-    <div class="fee-row">
-      <span>Hardware &mdash; KOT/receipt printer, barcode scanner, tablet, router</span>
-      <b>Charged additionally</b>
-    </div>
-    <p class="p" style="margin-top:10px;font-size:12px;color:var(--ink-faint)">Both fees are confirmed in your quote before anything is charged. Hardware and integrations like Zomato/Swiggy ordering are quoted separately, never bundled into the subscription price.</p>
-  </div>
+          <div class="sp-card" data-plan="Enterprise">
+            <div class="sp-head"><span class="sp-num">IV</span><span class="sp-name">Enterprise</span></div>
+            <p class="sp-tagline">For restaurant groups and multi-outlet businesses.</p>
+            <div class="sp-price-row"><span class="sp-price sp-amt">&#8377;3,610</span><span class="sp-per sp-unit">/month</span> <span class="sp-gst gst-t" hidden>+ GST</span></div>
+            <div class="sp-wassave"><span class="sp-was">&#8377;43,320</span><span class="sp-save2">Save &#8377;7,220</span></div>
+            <button type="button" class="btn btn-ghost sp-cta" data-open-contact data-plan="Enterprise">Talk to our team</button>
+            <ul class="sp-feats">
+              <li class="">Professional plan capabilities</li>
+              <li class="">Multi-outlet requirements discussed with you</li>
+              <li class="">Outlet and team setup scoped to your business</li>
+              <li class="">Dedicated account manager</li>
+              <li class="">Custom integrations quoted separately</li>
+              <li class="">WhatsApp automation as a paid add-on</li>
+            </ul>
+          </div>
+        </div>
 
-  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px">
-    <button class="btn btn-primary" data-open-contact>Let's talk</button>
-    <a href="products.html" class="btn btn-ghost">See every product</a>
-  </div>
-</section>
+        <p class="sp-note">All prices are in INR and exclude GST<span class="gst-t" hidden>, added on top</span>. Annual billing is priced at 10 months of the monthly subscription. A one-time onboarding fee (&#8377;1,460) and setup fee (&#8377;2,190) apply to every new account, both confirmed in your quote. Hardware, such as a receipt printer or tablet, is charged additionally.</p>
+        <p class="sp-note" style="margin-top:6px">Shown for comparison, not a checkout &mdash; every business is quoted directly. <button type="button" class="sp-link" data-open-contact>Tell us about your cafe or restaurant &rarr;</button></p>
+      </section>
+
+      <hr class="dash">
+
+      <section class="section tight" id="salon-compare">
+        <div class="label">Compare plans</div>
+        <h2 class="h-2" style="font-size:24px">Compare the essentials.</h2>
+        <p class="p" style="margin-top:8px">Clear differences between plans, so you can choose based on what your business needs.</p>
+        <div class="sp-tablewrap">
+          <table class="sp-table">
+            <thead><tr><th>Feature</th><th>Starter</th><th>Growth</th><th>Professional</th><th>Enterprise</th></tr></thead>
+            <tbody>
+              <tr><td>Basic POS billing</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td></tr>
+              <tr><td>Complete POS</td><td class="sp-dash">&mdash;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td></tr>
+              <tr><td>Advanced inventory</td><td class="sp-dash">&mdash;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td></tr>
+              <tr><td>Advanced analytics</td><td class="sp-dash">&mdash;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td></tr>
+              <tr><td>Preset QR ordering</td><td>Paid add-on</td><td>Paid add-on</td><td class="sp-check">&#10003;</td><td>Included / scoped</td></tr>
+              <tr><td>Zomato + Swiggy integration</td><td>Paid add-on</td><td>Paid add-on</td><td class="sp-check">&#10003;</td><td>Included / scoped</td></tr>
+              <tr><td>WhatsApp automation</td><td>Paid add-on</td><td>Paid add-on</td><td>Paid add-on</td><td>Paid add-on</td></tr>
+              <tr><td>Custom ordering website</td><td>Separate quote</td><td>Separate quote</td><td>Separate quote</td><td>Separate quote</td></tr>
+              <tr><td>Payroll module</td><td>Paid add-on</td><td>Paid add-on</td><td>Paid add-on</td><td>Paid add-on</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <hr class="dash">
+
+      <section class="section tight" id="salon-addons">
+        <div class="addons-head">
+          <div>
+            <div class="label">Optional add-ons</div>
+            <h2 class="h-2" style="margin-top:12px;font-size:22px">Add what you need.</h2>
+            <p class="p" style="margin-top:6px;max-width:40em">Keep your core plan simple. Add extra capabilities when they make sense for your business.</p>
+          </div>
+          <button type="button" class="btn btn-ghost" data-open-contact>Ask about add-ons</button>
+        </div>
+        <div class="sp-addon-grid">
+          <div class="sp-addon">
+            <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v7h-4M14 21h.01" stroke-linecap="round"/></svg></span>
+            <b>QR Ordering + Invoice Templates</b>
+            <div class="sp-addon-pr">&#8377;460</div>
+            <div class="sp-addon-sub">per month + GST</div>
+            <p>Preset QR ordering website and multiple invoice template options. Included in Professional. Custom website development is quoted separately.</p>
+          </div>
+          <div class="sp-addon">
+            <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M9 7h8v8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <b>Zomato &amp; Swiggy Integration</b>
+            <div class="sp-addon-pr">Ask for pricing</div>
+            <div class="sp-addon-sub">No add-on rate published yet</div>
+            <p>Available as an add-on for Growth. Included in Professional, subject to integration availability and agreed scope.</p>
+          </div>
+          <div class="sp-addon">
+            <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 0 0-7.6 13.8L3 21l4.4-1.3A9 9 0 1 0 12 3z" stroke-linejoin="round"/></svg></span>
+            <b>WhatsApp Automation</b>
+            <div class="sp-addon-pr">Pay per message</div>
+            <div class="sp-addon-sub">Rates depend on message type</div>
+            <p>Monthly usage-based billing, with different rates by message category and provider charges.</p>
+          </div>
+          <div class="sp-addon">
+            <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <b>Payroll Module</b>
+            <div class="sp-addon-pr">&#8377;640</div>
+            <div class="sp-addon-sub">per month + GST</div>
+            <p>Add payroll to your setup without changing your core subscription. Billed separately from your plan.</p>
+          </div>
+        </div>
+        
+      </section>
+
+      <hr class="dash">
+
+      <section class="section tight biz-band">
+        <div class="label">Custom ordering website</div>
+        <h2 class="h-2">Need a website made just for your restaurant?</h2>
+        <p class="p" style="margin-top:8px">We scope a bespoke design and development project separately. Pricing depends on the requirements and agreed deliverables. Third-party platform fees, payment processing fees and any provider charges should be confirmed before purchase.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+          <button class="btn btn-primary" data-open-contact>Talk to AUZslab &rarr;</button>
+        </div>
+      </section>
 
       <hr class="dash">
 
@@ -358,7 +473,7 @@
         <h2 class="h-2" style="font-size:26px">Your kitchen is done with paper tickets.</h2>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
           <button class="btn btn-primary" data-open-contact>Let's talk</button>
-          <a href="#pricing" class="btn btn-ghost">See pricing</a>
+          <a href="#salon-plans" class="btn btn-ghost">See pricing</a>
         </div>
       </section>
 
@@ -512,5 +627,40 @@ document.querySelectorAll('[data-add-plan]').forEach(function (btn) {
 });
 </script>
 <script src="company.js"></script>
+<script>
+(function () {
+  var toggle = document.getElementById('cfToggle'), grid = document.getElementById('cfGrid');
+  if (!toggle || !grid) return;
+  var prices = [820, 1360, 2260, 3610];
+  function inr(n) { return '\u20B9' + Math.round(n).toLocaleString('en-IN'); }
+  function setPeriod(p) {
+    var y = p === 'y';
+    toggle.querySelectorAll('button[data-period]').forEach(function (b) {
+      var on = b.getAttribute('data-period') === p; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    grid.querySelectorAll('.sp-card').forEach(function (c, i) {
+      var m = prices[i], shown = y ? m * 10 : m;
+      c.querySelector('.sp-amt').textContent = inr(shown);
+      c.querySelector('.sp-unit').textContent = y ? '/year' : '/month';
+      c.querySelector('.sp-was').textContent = inr(m * 12);
+      c.querySelector('.sp-save2').textContent = 'Save ' + inr(m * 12 - shown);
+    });
+  }
+  toggle.querySelectorAll('button[data-period]').forEach(function (b) { b.addEventListener('click', function () { setPeriod(b.getAttribute('data-period')); }); });
+  document.querySelectorAll('#salon-plans .sp-cta').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var plan = btn.getAttribute('data-plan'), msg = document.getElementById('m-message');
+      if (plan && msg && !msg.value) msg.value = 'Interested in the ' + plan + ' plan for my cafe or restaurant.';
+    });
+  });
+  try {
+    var sb = supabase.createClient(CFG.url, CFG.key);
+    sb.payments.config().then(function (c) {
+      c = c && c.data;
+      if (c && c.gstPct > 0) document.querySelectorAll('#salon-plans .gst-t').forEach(function (e) { e.hidden = false; });
+    }).catch(function () {});
+  } catch (e) {}
+})();
+</script>
 </body>
 </html>
