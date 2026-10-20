@@ -86,6 +86,18 @@ export default async function run({ browser, stack }) {
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'sideways scroll');
     await s.shot(page, 'razorpay-pay-page'); await page.setViewportSize({ width: 1440, height: 900 }); await page.waitForTimeout(400); await s.shot(page, 'razorpay-pay-page-desktop');
     assert(!errs.some((e) => /JS error/.test(e)), errs.join(' | ')); await c.close();
+
+  await s.check('pay.html: every step page has a clean header, the logo and filled cards', async () => {
+    const r = await call('submit_client_order', { p: { contact_name: 'Step Payer', phone: '9812300013', business_name: 'Step Cafe', requirement: 'Need POS', products: ['payroll'] } }, cust);
+    const c = await newCtx(browser, stack, { w: 1440, h: 900 }); const page = await c.newPage(); const errs = watch(page);
+    for (const [name, url] of [['notfound', '/pay.html?t=' + '0'.repeat(32)], ['invalid', '/pay.html?t=abc'], ['requested', '/pay.html?t=' + r.data.token]]) {
+      await page.goto(stack.url('', url)); await page.waitForSelector('.pay-grid', { timeout: 15000 });
+      const logo = await page.locator('.shell>.topbar .topbar-logo img').boundingBox(); assert(logo && logo.width > 60 && logo.y >= 0, name + ': logo missing or cut');
+      assert(await page.locator('.topbar-nav').isHidden(), name + ': half-cut menu still visible');
+      await s.shot(page, 'pay-step-' + name);
+    }
+    assert(!errs.some((e) => /JS error/.test(e)), errs.join(' | ')); await c.close();
+  });
   }, 'critical');
 
   const other = await login(USERS.cafeOwner);
