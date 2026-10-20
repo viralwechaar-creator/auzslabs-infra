@@ -243,12 +243,12 @@ a.a-nav-row,a.a-side-btn{text-decoration:none}
 /* modal becomes a bottom sheet on phones */
 .hidden{display:none!important}
 .modal-overlay{align-items:flex-end;justify-content:center;padding:0}
-.modal{width:100%;max-width:none;border-radius:18px 18px 0 0;max-height:min(86vh,86dvh);overflow-y:auto;-webkit-overflow-scrolling:touch;padding:18px 18px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px -10px rgba(46,44,42,.3);animation:aSheetUp .28s cubic-bezier(.2,.8,.2,1)}
+.modal{width:100%;max-width:none;border-radius:18px 18px 0 0;max-height:min(86vh,86dvh);overflow-y:auto;-webkit-overflow-scrolling:touch;padding:18px 18px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px -10px rgba(0,0,0,.3);animation:aSheetUp .28s cubic-bezier(.2,.8,.2,1)}
 @keyframes aSheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @media (min-width:600px){
   .a-main{padding:20px 24px 24px}
   .modal-overlay{align-items:center;padding:20px}
-  .modal{width:420px;max-width:calc(100vw - 40px);border-radius:22px;max-height:calc(100vh - 80px);animation:none;box-shadow:0 10px 28px -12px rgba(46,44,42,.30)}
+  .modal{width:420px;max-width:calc(100vw - 40px);border-radius:22px;max-height:calc(100vh - 80px);animation:none;box-shadow:0 10px 28px -12px rgba(0,0,0,.30)}
 }
 @media (min-width:860px){
   /* Bug found during the Master Frontend Mission's real-browser screenshot pass (tests/admin_shots.mjs):
@@ -284,8 +284,8 @@ a.a-nav-row,a.a-side-btn{text-decoration:none}
   --wine:#800020;--wine-soft:rgba(128,0,32,.08);--wine-glow:rgba(128,0,32,.14);
   --sand:#b8955a;--sand-soft:rgba(184,149,90,.14);--sage:#2f7a52;--sage-soft:rgba(47,122,82,.12);
   --slate:#4f6275;--slate-soft:rgba(79,98,117,.12);--amber:#a96a12;--amber-soft:rgba(201,138,28,.15);
-  --lift:0 1px 2px rgba(46,44,42,.05),0 10px 26px -14px rgba(46,44,42,.28);
-  --lift-hi:0 2px 4px rgba(46,44,42,.06),0 18px 38px -16px rgba(46,44,42,.34);
+  --lift:0 1px 2px rgba(0,0,0,.05),0 10px 26px -14px rgba(0,0,0,.28);
+  --lift-hi:0 2px 4px rgba(0,0,0,.06),0 18px 38px -16px rgba(0,0,0,.34);
   --out:cubic-bezier(.22,.8,.24,1);
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]){--card-bg:#2d2b29;--card-bg2:#33312f;--wine-soft:rgba(190,60,90,.16);--wine-glow:rgba(190,60,90,.2);--sand-soft:rgba(220,185,120,.14);--sage:#58b784;--sage-soft:rgba(88,183,132,.16);--slate:#8fa5ba;--slate-soft:rgba(143,165,186,.16);--amber:#e0a550;--amber-soft:rgba(224,165,80,.16);--lift:0 1px 2px rgba(0,0,0,.3),0 10px 26px -14px rgba(0,0,0,.6);--lift-hi:0 2px 4px rgba(0,0,0,.3),0 18px 38px -16px rgba(0,0,0,.7)}}
@@ -295,7 +295,7 @@ a.a-nav-row,a.a-side-btn{text-decoration:none}
 
 /* layer 2: bars */
 .a-topbar-title{letter-spacing:-.015em}
-.a-tabbar{box-shadow:0 -8px 22px -20px rgba(46,44,42,.45)}
+.a-tabbar{box-shadow:0 -8px 22px -20px rgba(0,0,0,.45)}
 .a-tab-btn{transition:color .25s var(--out),transform .2s var(--out)}
 .a-tab-btn svg{transition:transform .3s var(--out)}
 .a-tab-btn.on::before{content:'';position:absolute;top:-3px;left:30%;right:30%;height:3px;border-radius:0 0 3px 3px;background:var(--accent);animation:aGrow .35s var(--out) both}
@@ -368,7 +368,7 @@ body.admin-shell .btn-primary:hover{background:#940a2c}
 
 /* layer 7: desktop sidebar */
 @media (min-width:860px){
-  .a-side{background:var(--card-bg);box-shadow:1px 0 0 var(--line-soft),12px 0 30px -26px rgba(46,44,42,.4)}
+  .a-side{background:var(--card-bg);box-shadow:1px 0 0 var(--line-soft),12px 0 30px -26px rgba(0,0,0,.4)}
   .a-side-btn{position:relative;transition:background .2s var(--out),color .2s,transform .2s var(--out)}
   .a-side-btn:hover{background:var(--wine-soft);color:var(--ink);transform:translateX(2px)}
   .a-side-btn.on{background:var(--wine-soft);color:var(--accent)}
@@ -389,7 +389,7 @@ body.admin-shell .btn-primary:hover{background:#940a2c}
 /* ===== Floating pill tab bar (phones): the salon admin's navigation, in AUZslab charcoal and sand ===== */
 @media (max-width:599px){
   .a-tabbar{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:40;display:flex;gap:2px;
-    padding:6px;border-radius:22px;border:0;background:#2e2c2a;box-shadow:0 16px 32px -12px rgba(46,44,42,.55),0 0 0 1px rgba(255,255,255,.04)}
+    padding:6px;border-radius:22px;border:0;background:#000000;box-shadow:0 16px 32px -12px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.04)}
   .a-tab-btn{flex:1;min-height:0;padding:8px 2px 7px;border-radius:16px;gap:3px;color:#f5efe6;opacity:.82;font:500 11px var(--font-body);
     transition:opacity .2s var(--out),background .25s var(--out),color .2s,transform .12s var(--out)}
   .a-tab-btn svg{width:21px;height:21px}
@@ -397,7 +397,7 @@ body.admin-shell .btn-primary:hover{background:#940a2c}
   .a-tab-btn.on::before{display:none}
   .a-tab-btn.on svg{transform:none}
   .a-tab-btn:active{transform:scale(.92)}
-  .a-tab-badge{top:3px;right:calc(50% - 20px);background:#ecd6a8;color:#2e2c2a}
+  .a-tab-badge{top:3px;right:calc(50% - 20px);background:#ecd6a8;color:#000000}
 }
 
 .modal-overlay{animation:aFade .25s var(--out) both}

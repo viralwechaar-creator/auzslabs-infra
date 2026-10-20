@@ -135,6 +135,8 @@ export default async function run({ browser, stack }) {
     await call('admin_save_order_quote', { p_id: idB, p_quote: { items: [{ key: 'accounting', plan: 'month', rate: 1490, discount: 0, gst: 18 }], setup: { on: false } } }, adm);
     await call('admin_set_order_status', { p_id: idB, p_status: 'link_sent' }, adm);
     const c = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await c.newPage(); const errs = watch(page);
+    // the test stack has Razorpay switched on; this check covers the fallback used when online payment is off
+    await page.route('**/payments/config', (r) => r.fulfill({ status: 200, headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' }, body: JSON.stringify({ enabled: false }) }));
     await page.goto(stack.url('', '/pay.html?t=' + tokB)); await page.waitForSelector('#agree', { timeout: 15000 });
     const t = await page.locator('body').innerText();
     for (const w of ['AUZsLedger', '1,490.00', 'CGST', 'SGST', '1,758.00', 'Refunds', 'Bug fixes', 'Pay', 'Screenshot of your payment']) assert(t.toLowerCase().includes(w.toLowerCase()), 'pay page is missing: ' + w);
@@ -215,13 +217,12 @@ export default async function run({ browser, stack }) {
     await p.locator('#clientPayList [data-pmake]').first().click(); await p.waitForSelector('#mkOverlay.open');
     assert(/does not match|matches/.test(await p.locator('#mkSum').innerText()), 'live total missing');
     await s.shot(p, 'admin-make-invoice');
-    // the client's own card: View bill + Send bill on WhatsApp (the retail business now has a bill)
+    // the client card is deliberately minimal now: bills live under Client payments and Client bills only
     const slug = (await q('select slug from tenants where id=$1', [tid]))[0].slug;
-    await p.evaluate(() => openSection('clients')); await p.waitForSelector('#clientsList tr[data-id]', { timeout: 10000 });
-    const card = p.locator('#clientsList tr[data-id]', { hasText: slug + '.auzslab.in' });
-    assert((await card.locator('[data-cview]').count()) === 1 && (await card.locator('[data-cwa]').count()) === 1, 'client card lacks View bill / Send bill on WhatsApp');
-    assert(/inv\.html\?t=/.test(await card.locator('[data-cview]').getAttribute('href')), 'view bill link');
-    await s.shot(p, 'admin-client-card-bill');
+    await p.evaluate(() => openSection('clients')); await p.waitForSelector('#clientsList .client-card[data-id]', { timeout: 10000 });
+    const card = p.locator('#clientsList .client-card[data-id]', { hasText: slug + '.auzslab.in' });
+    assert((await card.count()) === 1 && (await card.locator('[data-pay]').count()) === 1, 'client card lacks its Payments button');
+    assert((await card.locator('[data-cview],[data-cwa]').count()) === 0, 'bill buttons came back on the client card');
     assert(!errs.some((e) => /JS error/.test(e)), errs.join(' | ')); await c.close();
   }, 'critical');
   await s.check('Business-page plans and add-ons (db/204): admin-managed prices are served live, a request carries the chosen plan with server-side prices, and the quote starts from it', async () => {
