@@ -36,9 +36,9 @@
 .next-list li{display:flex;gap:10px;align-items:flex-start}
 .next-list b{flex:none;width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;font-size:12px;display:grid;place-items:center}
 @media(min-width:1000px){
-  .pay-wrap{max-width:1080px}
+  .pay-wrap{max-width:1240px!important;width:100%}
   .pay-wrap>section.section:first-child{padding-bottom:6px}
-  .pay-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:24px;align-items:start}
+  .pay-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
   .pay-grid .pay-side{position:sticky;top:76px}
 }
 .steps{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 4px}
@@ -184,12 +184,15 @@ function render() {
   const upi = O.upi || {}; const uri = 'upi://pay?pa=' + encodeURIComponent(upi.id) + '&pn=' + encodeURIComponent(upi.name || 'AUZslab') + '&am=' + total.toFixed(2) + '&cu=INR&tn=' + encodeURIComponent('AUZslab ' + (D.business_name || ''));
   $('body').innerHTML = `<div class="pay-grid"><div class="pay-col">
   <div class="card"><div class="label">Your bill</div>${billHtml(D)}</div>
+  <div class="card"><div class="label">Good to know</div><ul class="next-list"><li><b>1</b><span>Tick the box to agree to the terms.</span></li><li><b>2</b><span>Pay ${inr(total)} online.</span></li><li><b>3</b><span>Your bill and access arrive as soon as it is confirmed.</span></li></ul></div>
+  </div>
+  <div class="pay-col pay-side">
   <div class="card"><div class="label">Terms, privacy and refunds</div>
     <div class="terms-box" id="termsBox">${termsHtml()}</div>
     <p class="pay-note"><a href="terms.html" target="_blank" rel="noopener" style="color:var(--accent)">Terms &amp; conditions</a> &middot; <a href="privacy.html" target="_blank" rel="noopener" style="color:var(--accent)">Privacy policy</a> &middot; <a href="refund.html" target="_blank" rel="noopener" style="color:var(--accent)">Refund policy</a></p>
     <label class="chk"><input type="checkbox" id="agree" ${submitted ? 'checked' : ''}><span>I have read and I agree to the Terms &amp; Conditions, Privacy Policy and Refund Policy.</span></label>
-  </div></div>
-  <div class="pay-col pay-side">
+  </div>
+
   ${PAYCFG.enabled ? `<div class="card" style="text-align:center"><div class="label" style="justify-content:center">Pay online</div>
     <p class="pay-note" style="margin:6px 0 12px">Cards, UPI and net banking, secured by Razorpay. Your bill is created automatically as soon as the payment goes through.</p>
     <button class="btn btn-primary form-submit" id="payOnline" type="button">Pay ${inr(total)} online</button>
@@ -206,7 +209,6 @@ function render() {
     <div class="err" id="err"></div>
     ${D.payment.proof ? '<p class="pay-note">We already have a screenshot from you.</p>' : ''}
   </div>`}
-  <div class="card"><div class="label">Good to know</div><ul class="next-list"><li><b>1</b><span>Tick the box to agree to the terms.</span></li><li><b>2</b><span>Pay ${inr(total)} online.</span></li><li><b>3</b><span>Your bill and access arrive as soon as it is confirmed.</span></li></ul></div>
   </div></div>`;
   if (!PAYCFG.enabled) {
     try { const q = qrcode(0, 'M'); q.addData(uri); q.make(); $('qr').src = q.createDataURL(5, 2); } catch (e) { $('qr').style.display = 'none'; }
