@@ -57,6 +57,45 @@
 @media(min-width:900px){.footer-top{grid-template-columns:1.5fr 1fr 1fr 1fr}}
 </style>
 <script id="topbar-nav-js">(function(){function f(){var n=document.querySelector('.topbar-nav'),t=document.querySelector('.topbar');if(!n||!t)return;var hide=matchMedia('(min-width:900px)').matches&&getComputedStyle(t).display==='none';if(hide&&n.parentNode===t){document.body.appendChild(n);n.classList.add('tbn-fixed');document.body.classList.add('has-tbn')}else if(!hide&&n.classList.contains('tbn-fixed')&&!matchMedia('(min-width:900px)').matches){}}f();addEventListener('load',f)})();</script>
+<style id="salon-contrast">
+/* contrast: banded sections + differently coloured tiers and add-on cards */
+#salon-plans,#salon-addons{background:#ece7e1;border-radius:28px;padding:34px 22px;margin-top:18px;margin-bottom:18px}
+@media(min-width:900px){#salon-plans,#salon-addons{padding:44px 40px}}
+#salon-plans .sp-card{background:#fff;border-color:rgba(46,44,42,.22)}
+#salon-plans .sp-card:nth-of-type(3){background:#d9cfc4;border-color:#bfb3a5}
+#salon-plans .sp-card.hi,#salon-plans .sp-card:nth-of-type(4){color:#fff}
+#salon-plans .sp-card.hi{background:#2e2c2a;border-color:#2e2c2a}
+#salon-plans .sp-card:nth-of-type(4){background:#800020;border-color:#800020}
+#salon-plans .sp-card.hi .sp-name,#salon-plans .sp-card:nth-of-type(4) .sp-name,
+#salon-plans .sp-card.hi .sp-price,#salon-plans .sp-card:nth-of-type(4) .sp-price{color:#fff}
+#salon-plans .sp-card.hi .sp-tagline,#salon-plans .sp-card:nth-of-type(4) .sp-tagline,
+#salon-plans .sp-card.hi .sp-per,#salon-plans .sp-card:nth-of-type(4) .sp-per,
+#salon-plans .sp-card.hi .sp-gst,#salon-plans .sp-card:nth-of-type(4) .sp-gst,
+#salon-plans .sp-card.hi .sp-was,#salon-plans .sp-card:nth-of-type(4) .sp-was,
+#salon-plans .sp-card.hi .sp-feats li,#salon-plans .sp-card:nth-of-type(4) .sp-feats li{color:rgba(255,255,255,.78)}
+#salon-plans .sp-card.hi .sp-save2,#salon-plans .sp-card:nth-of-type(4) .sp-save2{color:#ffd9a0}
+#salon-plans .sp-card.hi .sp-feats,#salon-plans .sp-card:nth-of-type(4) .sp-feats{border-top-color:rgba(255,255,255,.28)}
+#salon-plans .sp-card.hi .sp-feats li::before{background:#ffd9a0}
+#salon-plans .sp-card:nth-of-type(4) .sp-feats li::before{background:#fff}
+#salon-plans .sp-card.hi .sp-num,#salon-plans .sp-card:nth-of-type(4) .sp-num{background:#fff;color:#2e2c2a;border-color:#fff}
+#salon-plans .sp-card.hi .sp-cta,#salon-plans .sp-card:nth-of-type(4) .sp-cta{background:#fff;color:#2e2c2a;border-color:#fff}
+#salon-plans .sp-strip{background:#2e2c2a;border-color:#2e2c2a;color:#fff}
+#salon-plans .sp-strip-pitch b,#salon-plans .sp-strip-amt{color:#fff}
+#salon-plans .sp-strip-pitch small,#salon-plans .sp-strip-price b,#salon-plans .sp-strip-per{color:rgba(255,255,255,.7)}
+#salon-plans .sp-strip-price span[style],#salon-plans .sp-strip .sp-save2{color:#ffd9a0}
+#salon-plans .sp-note,#salon-plans .sp-note+.sp-note{color:var(--ink-dim)}
+#salon-addons .sp-addon:nth-child(1){background:#fff}
+#salon-addons .sp-addon:nth-child(2){background:#2e2c2a;color:#fff;border-color:#2e2c2a}
+#salon-addons .sp-addon:nth-child(3){background:#d9cfc4;border-color:#bfb3a5}
+#salon-addons .sp-addon:nth-child(4){background:#800020;color:#fff;border-color:#800020}
+#salon-addons .sp-addon:nth-child(2) b,#salon-addons .sp-addon:nth-child(4) b,
+#salon-addons .sp-addon:nth-child(2) .sp-addon-pr,#salon-addons .sp-addon:nth-child(4) .sp-addon-pr{color:#fff}
+#salon-addons .sp-addon:nth-child(2) p,#salon-addons .sp-addon:nth-child(4) p,
+#salon-addons .sp-addon:nth-child(2) .sp-addon-sub,#salon-addons .sp-addon:nth-child(4) .sp-addon-sub{color:rgba(255,255,255,.75)}
+#salon-addons .sp-addon:nth-child(2) .sp-addon-ic,#salon-addons .sp-addon:nth-child(4) .sp-addon-ic{background:#fff;color:#2e2c2a}
+#salon-plans .sp-card:nth-of-type(3) .sp-cta{color:#2e2c2a;border-color:#2e2c2a}
+#salon-compare{background:#fff;border-radius:28px;padding:34px 22px}
+</style>
 <style id="biz-layout-css">
 .bento{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
 @media(min-width:900px){.bento{grid-template-columns:repeat(3,minmax(0,1fr))}.bento>.feat{grid-column:span 2}}
