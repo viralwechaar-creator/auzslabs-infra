@@ -19,10 +19,13 @@ export function computeSlots(site, counts, date) {
   if (!validDate(date)) fail(400, 'Invalid date.');
   const day = new Date(date + 'T00:00:00Z').getUTCDay();
   if ((S.closedDays || []).includes(day)) return { closed: true, reason: 'Closed that day.', slots: [] };
-  const [oh, om] = S.open.split(':').map(Number);
-  const [ch, cm] = S.close.split(':').map(Number);
-  const step = S.slotMinutes || 30;
-  const capacity = S.capacity || 1;
+  // Tolerate a business whose settings never had hours saved (or kept them under the generic
+  // booking* keys): fall back to 10:00-19:00 instead of throwing and showing no times at all.
+  const hhmm = (v, d) => (/^\d{1,2}:\d{2}$/.test(String(v || '')) ? String(v) : d);
+  const [oh, om] = hhmm(S.open || S.bookingOpen, '10:00').split(':').map(Number);
+  const [ch, cm] = hhmm(S.close || S.bookingClose, '19:00').split(':').map(Number);
+  const step = Number(S.slotMinutes || S.bookingSlotMinutes) || 30;
+  const capacity = Number(S.capacity || S.bookingSlotCapacity) || 1;
   const booked = counts[date] || {};
   const slots = [];
   for (let m = oh * 60 + om; m < ch * 60 + cm; m += step) {
