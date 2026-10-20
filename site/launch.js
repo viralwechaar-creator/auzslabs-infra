@@ -12,7 +12,7 @@
   var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   var root = document.documentElement; root.classList.add('auz-wait');
   var css = document.createElement('style');
-  css.textContent = '#auz-launch{position:fixed;inset:0;z-index:2147483000;background:#171717;display:flex;align-items:center;justify-content:center;flex-direction:column;overflow:hidden;clip-path:circle(150% at 50% 50%);transition:clip-path .75s cubic-bezier(.65,0,.2,1)}'
+  css.textContent = '#auz-launch{position:fixed;inset:0;z-index:2147483000;background:#000000;display:flex;align-items:center;justify-content:center;flex-direction:column;overflow:hidden;clip-path:circle(150% at 50% 50%);transition:clip-path .75s cubic-bezier(.65,0,.2,1)}'
     + '#auz-launch.out{clip-path:circle(0% at 50% 56%);pointer-events:none}'
     + '#auz-launch .dots{position:absolute;inset:-10%;background-image:radial-gradient(rgba(255,255,255,.07) 1.2px,transparent 1.4px);background-size:26px 26px;opacity:0;animation:ah-fade 1.2s ease .1s forwards,ah-drift 14s linear infinite}'
     + '#auz-launch .glow{position:absolute;width:640px;height:640px;max-width:150vw;border-radius:50%;background:radial-gradient(closest-side,rgba(194,24,63,.42),rgba(194,24,63,0));opacity:0;animation:ah-glow 2.4s ease-out .2s forwards}'

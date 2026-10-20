@@ -26,7 +26,7 @@
   }
   window.auzMyData = function (sb) {
     var msg = el('p', { style: 'margin:12px 0 0;min-height:20px;font-size:14px' });
-    var box = el('div', { style: 'background:var(--bg,#fff);color:var(--label,#171717);border-radius:20px;max-width:440px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.35);max-height:90vh;overflow:auto;font:16px/1.4 var(--font,-apple-system,system-ui,sans-serif)' });
+    var box = el('div', { style: 'background:var(--bg,#fff);color:var(--label,#000000);border-radius:20px;max-width:440px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.35);max-height:90vh;overflow:auto;font:16px/1.4 var(--font,-apple-system,system-ui,sans-serif)' });
     var ov = el('div', { role: 'dialog', 'aria-modal': 'true', 'aria-label': 'My data', style: 'position:fixed;inset:0;z-index:2147482000;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px' }, box);
     function close() { ov.remove(); }
     function say(t, bad) { msg.textContent = t; msg.style.color = bad ? 'var(--red,#c00)' : 'var(--green,#1a7f37)'; }

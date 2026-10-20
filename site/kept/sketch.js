@@ -98,7 +98,7 @@
         if (sz < .3) continue;
         ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.a);
         ctx.globalAlpha = Math.min(1, .35 + life);
-        ctx.fillStyle = q.hot > .55 ? (q.hot > .85 ? '#fff6d6' : '#ff8a2e') : (q.acc ? '#800020' : '#2e2c2a');
+        ctx.fillStyle = q.hot > .55 ? (q.hot > .85 ? '#fff6d6' : '#ff8a2e') : (q.acc ? '#800020' : '#000000');
         if (q.shard) { ctx.fillRect(-sz, -sz * .35, sz * 2, sz * .7); } else { ctx.fillRect(-sz / 2, -sz / 2, sz, sz); }
         ctx.restore();
       }

@@ -45,7 +45,7 @@
       try { sb.rpc('my_dashboard').then(function (r) { var d = r && r.data; if (d) { info.shop = ((d.tenant && d.tenant.name) || '') + ' (' + ((d.tenant && d.tenant.slug) || location.hostname) + ')'; info.who = d.my_email || ''; info.role = d.my_role || ''; } }, function () {}); } catch (e) { /* ignore */ }
     }
     var shot = null;
-    var box = el('div', 'background:var(--bg,#fff);color:var(--label,#171717);border-radius:20px;max-width:440px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.35);max-height:90vh;overflow:auto;font:16px/1.4 system-ui,sans-serif');
+    var box = el('div', 'background:var(--bg,#fff);color:var(--label,#000000);border-radius:20px;max-width:440px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.35);max-height:90vh;overflow:auto;font:16px/1.4 system-ui,sans-serif');
     var ov = el('div', 'position:fixed;inset:0;z-index:2147482000;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px');
     ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'Help and report a problem');
     function close() { ov.remove(); }
