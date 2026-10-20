@@ -87,5 +87,82 @@ export default async function run({ browser, stack }) {
     await s.shot(page, 'razorpay-pay-page');
     assert(!errs.some((e) => /JS error/.test(e)), errs.join(' | ')); await c.close();
   }, 'critical');
+
+  const other = await login(USERS.cafeOwner);
+  let tenantId, rtok, sub1;
+  const tenantOf = async () => (await q('select tenant_id from client_orders where id=$1', [id]))[0].tenant_id;
+  const renewalDate = async () => String((await q('select renewal_date::text d from tenants where id=$1', [tenantId]))[0].d);
+  const addMonths = (d, n) => { const x = new Date(d + 'T00:00:00Z'); x.setUTCMonth(x.getUTCMonth() + n); return x.toISOString().slice(0, 10); };
+
+  await s.check('Renew now: an owner gets a renewal order priced from what the business was last billed; others and hand-set-up businesses are refused; paying it extends the plan and issues a new bill', async () => {
+    tenantId = await tenantOf();
+    const before = await renewalDate();
+    const noOwner = await post('/payments/renew/create', {}, {}); assert(noOwner.status === 401, 'anonymous could start a renewal');
+    const bad = await post('/payments/renew/create', {}, { authorization: 'Bearer ' + other }); assert(bad.status === 400, 'a business with no paid order got a renewal: ' + bad.status);
+    const r = await post('/payments/renew/create', {}, { authorization: 'Bearer ' + cust }); const d = await r.json(); assert(r.status === 200 && /^[a-f0-9]{32}$/.test(d.token), 'renew: ' + JSON.stringify(d)); rtok = d.token;
+    const again = await (await post('/payments/renew/create', {}, { authorization: 'Bearer ' + cust })).json(); assert(again.token === rtok, 'a second press made a second order');
+    const o = (await q('select kind, status, totals, products from client_orders where token=$1', [rtok]))[0];
+    assert(o.kind === 'renewal' && o.status === 'link_sent' && o.products.join() === 'pos' && Number(o.totals.total) > 0 && !(o.totals.lines || []).some((l) => l.type === 'setup'), JSON.stringify(o));
+    const c = await post('/payments/order/create', { token: rtok, terms: true }); const cd = await c.json(); assert(c.status === 200 && cd.amount === Math.round(Number(o.totals.total) * 100), 'renewal order: ' + JSON.stringify(cd));
+    const orderId = cd.orderId; const rid = (await q('select id from client_orders where token=$1', [rtok]))[0].id;
+    assert((await hook(captured(orderId, 'pay_RENEW0001', cd.amount))).status === 200, 'webhook');
+    const after = (await q('select status, invoice_no, kind from client_orders where id=$1', [rid]))[0];
+    assert(after.status === 'paid' && /^AUZ\//.test(after.invoice_no), JSON.stringify(after));
+    const nd = await renewalDate(); assert(nd > before && nd === addMonths(nd > before ? addMonths(nd, -1) : before, 1), 'renewal date not moved: ' + before + ' -> ' + nd);
+    assert((await q('select count(*)::int n from client_payments where tenant_id=$1', [tenantId]))[0].n === 2, 'payment not recorded');
+    await hook(captured(orderId, 'pay_RENEW0001', cd.amount));
+    assert((await q('select count(*)::int n from client_payments where tenant_id=$1', [tenantId]))[0].n === 2 && (await renewalDate()) === nd, 'a replay renewed twice');
+  }, 'critical');
+
+  await s.check('Failed payments: a failed attempt is recorded with its reason, a later good payment still works, three failures in a day tell the admin', async () => {
+    const mk = async () => { const r = await (await post('/payments/renew/create', {}, { authorization: 'Bearer ' + cust })).json(); const c = await (await post('/payments/order/create', { token: r.token, terms: true })).json(); return c.orderId; };
+    const failed = (oid, why) => ({ event: 'payment.failed', payload: { payment: { entity: { id: 'pay_F' + Math.random().toString(36).slice(2, 8), order_id: oid, error_description: why } } } });
+    const o1 = await mk(); assert((await hook(failed(o1, 'Your card was declined'))).status === 200, 'failed webhook refused');
+    const row = (await q('select status, failure_reason from payments where razorpay_order_id=$1', [o1]))[0]; assert(row.status === 'failed' && /declined/.test(row.failure_reason), JSON.stringify(row));
+    const o2 = await mk(); await hook(failed(o2, 'Bank server down')); const o3 = await mk(); await hook(failed(o3, 'OTP wrong'));
+    assert((await q("select count(*)::int n from notifications where tenant_id is null and title like 'A client online payment keeps failing%'"))[0].n === 1, 'the admin was not told after three failures');
+    assert((await hook({ event: 'payment.failed', payload: { payment: { entity: { id: 'pay_X', order_id: 'order_NOPE', error_description: 'x' } } } })).status === 200, 'an unknown order broke the webhook');
+  }, 'critical');
+
+  await s.check('Auto-renewal: owner-only; creates a plan and a subscription for what the business pays; authorised, charged (bill + extended plan, once), a wrong amount is held, a failed charge flags without cutting access, cancel stops it', async () => {
+    assert((await post('/payments/autorenew/start', {}, { authorization: 'Bearer ' + other })).status === 400, 'a business with no paid order started auto-renewal');
+    const r = await post('/payments/autorenew/start', {}, { authorization: 'Bearer ' + cust }); const d = await r.json();
+    assert(r.status === 200 && /^https:\/\/rzp\.io\//.test(d.authLink) && /^sub_TEST/.test(d.subscriptionId), 'start: ' + JSON.stringify(d)); sub1 = d.subscriptionId;
+    const plan = stack.rzp.plans[stack.rzp.plans.length - 1]; const sb = stack.rzp.subs[stack.rzp.subs.length - 1];
+    const rq = (await q('select renewal_quote($1) as r', [tenantId]))[0].r;
+    assert(plan.period === 'monthly' && plan.item.amount === Math.round(Number(rq.totals.total) * 100) && sb.plan_id === plan.id && sb.total_count === 120 && sb.notes.tenant_id === tenantId, JSON.stringify({ plan, sb }));
+    assert((await post('/payments/autorenew/start', {}, { authorization: 'Bearer ' + cust })).status === 400, 'a second auto-renewal was created');
+    assert((await call('my_autorenew', {}, cust)).data.status === 'created', 'status not created');
+    const ev = (event, pay) => ({ event, payload: { subscription: { entity: { id: sub1 } }, ...(pay ? { payment: { entity: pay } } : {}) } });
+    await hook(ev('subscription.authenticated')); assert((await call('my_autorenew', {}, cust)).data.status === 'active', 'not active after authorisation');
+    const amt = Math.round(Number(rq.totals.total) * 100); const before = await renewalDate();
+    await hook(ev('subscription.charged', { id: 'pay_AUTO0001', amount: 100 }));
+    assert((await renewalDate()) === before && (await q("select count(*)::int n from notifications where tenant_id is null and title like 'Renewal payment does not match%'"))[0].n === 1, 'a wrong amount extended the plan');
+    await hook(ev('subscription.charged', { id: 'pay_AUTO0002', amount: amt }));
+    const nd = await renewalDate(); assert(nd > before, 'charge did not extend: ' + before + ' -> ' + nd);
+    const bill = (await q("select invoice_no, kind, status, payment from client_orders where tenant_id=$1 and payment->>'razorpay_payment_id'='pay_AUTO0002'", [tenantId]))[0];
+    assert(bill && bill.kind === 'renewal' && bill.status === 'paid' && /^AUZ\//.test(bill.invoice_no) && bill.payment.method === 'auto-renewal', 'no renewal bill: ' + JSON.stringify(bill));
+    await hook(ev('subscription.charged', { id: 'pay_AUTO0002', amount: amt }));
+    assert((await renewalDate()) === nd && (await q("select count(*)::int n from client_orders where tenant_id=$1 and payment->>'razorpay_payment_id'='pay_AUTO0002'", [tenantId]))[0].n === 1, 'a replay made a second bill');
+    await hook(ev('subscription.pending'));
+    assert((await call('my_autorenew', {}, cust)).data.status === 'payment_failed', 'failure not flagged');
+    assert((await q('select status from tenants where id=$1', [tenantId]))[0].status === 'active', 'a failed charge cut access');
+    assert((await q("select count(*)::int n from notifications where tenant_id=$1 and title like 'Auto-renewal payment failed%'", [tenantId]))[0].n >= 1, 'the client was not told');
+    await hook(ev('subscription.charged', { id: 'pay_AUTO0003', amount: amt }));
+    assert((await call('my_autorenew', {}, cust)).data.status === 'active', 'a good charge did not clear the failure');
+    const cn = await post('/payments/autorenew/cancel', {}, { authorization: 'Bearer ' + cust }); assert(cn.status === 200, 'cancel failed');
+    assert(stack.rzp.cancelled.some((u) => u.includes(sub1)) && (await call('my_autorenew', {}, cust)).data.on === false, 'cancel did not reach Razorpay / the row');
+  }, 'critical');
+
+  await s.check('Renewal reminders skip a business on an active auto-renewal (until it lapses) and resume when it is off', async () => {
+    const ev = (event) => ({ event, payload: { subscription: { entity: { id: sub1 } } } });
+    await q("update tenants set renewal_date = current_date + 2 where id=$1", [tenantId]); await q('delete from renewal_notices where tenant_id=$1', [tenantId]); await q('delete from notifications where tenant_id=$1', [tenantId]);
+    await q("update subscriptions set status='active', cancelled_at=null where provider_sub_id=$1", [sub1]);
+    await q('select renewal_notify_run()');
+    assert((await q("select count(*)::int n from notifications where tenant_id=$1 and type='renewal'", [tenantId]))[0].n === 0, 'a reminder was sent to a business on auto-renewal');
+    await q("update subscriptions set status='cancelled' where provider_sub_id=$1", [sub1]); await q('delete from renewal_notices where tenant_id=$1', [tenantId]);
+    await q('select renewal_notify_run()');
+    assert((await q("select count(*)::int n from notifications where tenant_id=$1 and type='renewal'", [tenantId]))[0].n === 1, 'the reminder did not come back');
+  }, 'critical');
   s.done();
 }

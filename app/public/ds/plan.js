@@ -54,10 +54,29 @@
           el('p', { style: 'margin:2px 0 0;font-size:13px;opacity:.75' },
             !s.on ? 'Off -- you pay each renewal yourself' :
             s.status === 'created' ? 'Waiting for you to approve the recurring payment' :
-            s.status === 'payment_failed' ? 'Last charge failed -- pay manually, or fix your card/UPI' :
+            s.status === 'payment_failed' ? 'Last charge failed. Pay by hand with the button below, or fix your card/UPI. Your access has not been changed.' :
             s.next_charge_on ? 'On -- next charge ' + fmt(s.next_charge_on) : 'On')),
         toggleBtn));
     }
+  }
+  // Pay the next period now, online (a renewal order on the same pay page and webhook as a new purchase). Owner only (the server says no to anyone else).
+  function renewBox(sb) {
+    var wrap = el('div', null);
+    if (!sb.autorenew || !sb.autorenew.renewNow) return wrap;
+    sb.autorenew.config().then(function (c) {
+      if (!c || c.error || !c.data || !c.data.renewOnline) return;
+      var btn = el('button', { type: 'button', style: btnCss.replace('background:var(--fill,#f2f2f2);color:inherit', 'background:var(--accent,#800020);color:#fff;border-color:transparent') }, 'Pay renewal online');
+      btn.onclick = function () {
+        btn.disabled = true; var was = btn.textContent; btn.textContent = 'Opening...';
+        sb.autorenew.renewNow().then(function (r) {
+          btn.disabled = false; btn.textContent = was;
+          if (r && r.error) { alert((r.error && r.error.message) || 'Could not start the renewal.'); return; }
+          if (r && r.data && r.data.token) window.open(SITE + '/pay.html?t=' + encodeURIComponent(r.data.token), '_blank', 'noopener');
+        }).catch(function () { btn.disabled = false; btn.textContent = was; });
+      };
+      wrap.append(btn);
+    }).catch(function () {});
+    return wrap;
   }
   var pri = btnCss.replace('background:var(--fill,#f2f2f2);color:inherit', 'background:var(--accent,#800020);color:#fff;border-color:transparent');
 
@@ -80,6 +99,7 @@
         el('p', { style: 'margin:2px 0 0;color:' + tone + ';font-weight:600' }, s.renewal_date ? (s.is_demo ? 'Demo account' : 'Renews ' + fmt(s.renewal_date) + ' - ' + when(s)) : 'No renewal date set yet'),
         names.length ? el('p', { style: 'margin:10px 0 0;font-size:14px' }, 'Included: ' + names.join(', ')) : null,
         s.is_demo ? null : autorenewBox(sb),
+        s.is_demo ? null : renewBox(sb),
         el('a', { href: SITE + '/account.html', target: '_blank', rel: 'noopener', style: late ? pri : btnCss }, late ? 'Renew now' : 'Manage plan & billing'),
         el('a', { href: SITE + '/pricing.html?from=' + APP, target: '_blank', rel: 'noopener', style: btnCss }, 'See all plans & add apps'),
         el('a', { href: SITE + '/cart.html?add=' + (KEY[APP] || 'pos') + '&from=' + APP, target: '_blank', rel: 'noopener', style: btnCss }, 'Create a new account'),

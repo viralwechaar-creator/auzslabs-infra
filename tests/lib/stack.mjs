@@ -45,12 +45,16 @@ export async function startStack({ apiPort, webPort, log = () => {} } = {}) {
   });
   await new Promise((ok) => waSrv.listen(0, '127.0.0.1', ok));
   // A stand-in for Razorpay's orders API: hands back an order id and remembers it (rzp.orders).
-  const rzp = { orders: [], webhookSecret: 'rzp-webhook-secret-test' };
+  const rzp = { orders: [], plans: [], subs: [], cancelled: [], webhookSecret: 'rzp-webhook-secret-test' };
   const rzpSrv = http.createServer((rq, rs) => {
     let b = ''; rq.on('data', (d) => (b += d)); rq.on('end', () => {
-      const body = b ? JSON.parse(b) : {}; const id = 'order_TEST' + (rzp.orders.length + 1) + Math.random().toString(36).slice(2, 7);
+      const body = b ? JSON.parse(b) : {}; const rnd = Math.random().toString(36).slice(2, 7); const send = (o) => { rs.writeHead(200, { 'content-type': 'application/json' }); rs.end(JSON.stringify(o)); };
+      if (/\/plans$/.test(rq.url)) { const id = 'plan_TEST' + rnd; rzp.plans.push({ id, ...body }); return send({ id }); }
+      if (/\/subscriptions$/.test(rq.url)) { const id = 'sub_TEST' + rnd; rzp.subs.push({ id, ...body }); return send({ id, short_url: 'https://rzp.io/i/' + id, status: 'created' }); }
+      if (/\/subscriptions\/[^/]+\/cancel$/.test(rq.url)) { rzp.cancelled.push(rq.url); return send({ status: 'cancelled' }); }
+      const id = 'order_TEST' + (rzp.orders.length + 1) + rnd;
       rzp.orders.push({ id, auth: rq.headers.authorization, ...body });
-      rs.writeHead(200, { 'content-type': 'application/json' }); rs.end(JSON.stringify({ id, amount: body.amount, currency: body.currency || 'INR' }));
+      send({ id, amount: body.amount, currency: body.currency || 'INR' });
     });
   });
   await new Promise((ok) => rzpSrv.listen(0, '127.0.0.1', ok));

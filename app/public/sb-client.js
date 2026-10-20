@@ -308,10 +308,11 @@
     // CASHFREE_APP_ID/SECRET_KEY; ds/plan.js's "Plan & account" sheet
     // checks config().enabled before showing the toggle at all. ----
     const autorenew = {
-      async config() { return request('/payments/cashfree/config', { method: 'GET', auth: false }); },
+      async config() { return request('/payments/autorenew/config', { method: 'GET', auth: false }); },
       async status() { return rpc('my_autorenew'); },
-      async start() { return request('/payments/cashfree/start', { method: 'POST' }); },
-      async cancel() { return request('/payments/cashfree/cancel', { method: 'POST' }); },
+      async start() { return request('/payments/autorenew/start', { method: 'POST' }); },
+      async cancel() { return request('/payments/autorenew/cancel', { method: 'POST' }); },
+      async renewNow() { return request('/payments/renew/create', { method: 'POST' }); },
     };
 
     // ---- WhatsApp automation (db/184): connecting a shop's own number goes through the server (the token is stored
