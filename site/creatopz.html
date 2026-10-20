@@ -31,6 +31,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style id="topbar-nav-css">
+.topbar-nav{display:none}
+@media(min-width:900px){
+  .topbar-nav{display:flex;order:1;gap:4px;margin-right:auto;margin-left:18px}
+  .topbar-nav a{font-size:13px;font-weight:600;color:var(--ink);padding:9px 14px;border-radius:999px;border:1px solid transparent;transition:.15s}
+  .topbar-nav a:hover{border-color:var(--line)}
+  .topbar-nav a[aria-current="page"]{background:var(--ink-solid,var(--ink));color:#fff}
+}
+</style>
 </head>
 <body>
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
@@ -45,6 +54,7 @@
       </button>
     </div>
     <a href="index.html" class="topbar-logo"><img src="logo.png" alt="AUZslab"></a>
+    <nav class="topbar-nav" aria-label="Main"><a href="products.html">Products</a><a href="platform.html">Businesses</a><a href="live-demo.html">Live demo</a><a href="contact.html">Contact</a></nav>
   </header>
 
   <div class="drawer-overlay" id="drawerOverlay"></div>

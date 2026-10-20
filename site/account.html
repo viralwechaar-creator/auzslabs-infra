@@ -102,6 +102,15 @@ input:disabled+.slider{opacity:.4;cursor:default}
 @media (min-width:900px){#pane-profile .card{display:grid;grid-template-columns:1fr 1fr;column-gap:20px;align-content:start}#pane-profile .card>h3,#pane-profile .card>p,#pane-profile .card>.field.wide,#pane-profile .card>button,#pane-profile .card>a,#pane-profile .card>#pfMsg{grid-column:1/-1}}
 #pfProducts{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));column-gap:20px}
 </style>
+<style id="topbar-nav-css">
+.topbar-nav{display:none}
+@media(min-width:900px){
+  .topbar-nav{display:flex;order:1;gap:4px;margin-right:auto;margin-left:18px}
+  .topbar-nav a{font-size:13px;font-weight:600;color:var(--ink);padding:9px 14px;border-radius:999px;border:1px solid transparent;transition:.15s}
+  .topbar-nav a:hover{border-color:var(--line)}
+  .topbar-nav a[aria-current="page"]{background:var(--ink-solid,var(--ink));color:#fff}
+}
+</style>
 </head>
 <body>
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
@@ -114,6 +123,7 @@ input:disabled+.slider{opacity:.4;cursor:default}
       </button>
     </div>
     <a href="index.html" class="topbar-logo"><img src="logo.png" alt="AUZslab"></a>
+    <nav class="topbar-nav" aria-label="Main"><a href="products.html">Products</a><a href="platform.html">Businesses</a><a href="live-demo.html">Live demo</a><a href="contact.html">Contact</a></nav>
   </header>
 
   <div class="drawer-overlay" id="drawerOverlay"></div>
