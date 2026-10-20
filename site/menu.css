@@ -59,20 +59,30 @@
   .drawer-close span{display:inline;font-size:30px;line-height:1;font-weight:300}
   .drawer-close::before,.drawer-close::after{content:none!important}
 
-  .sidebar-nav{position:relative;display:flex;flex-direction:column;align-items:flex-start;width:100%;box-sizing:border-box;margin:clamp(20px,6vh,64px) 0 0;padding:0 0 0 17vw;gap:0}
+  .sidebar-nav{position:relative;flex:1 1 auto;display:flex;flex-direction:column;align-items:flex-start;width:100%;box-sizing:border-box;margin:clamp(20px,6vh,64px) 0 8px;padding:0 0 0 17vw;gap:0}
   .sidebar-nav::before{content:"";display:block;width:min(32vw,460px);height:1px;background:#0a0a0a;margin-bottom:10px}
   .sidebar-nav>.nav-link,.nav-group-toggle{order:initial;display:inline-flex;align-items:center;font-family:Inter,system-ui,sans-serif;font-weight:600;font-size:clamp(24px,2.6vw,36px);line-height:1.06;letter-spacing:-.035em;color:#0a0a0a!important;padding:1px 0;border:0;background:none;box-shadow:none;width:auto;justify-content:flex-start;cursor:pointer;text-decoration:none}
   .sidebar-nav>.nav-link.active{padding-left:0;box-shadow:none;color:#0a0a0a}
   .sidebar-nav>.nav-link:hover::after,.nav-group:hover .nav-group-toggle::after,.nav-group-toggle[aria-expanded="true"]::after{content:"";width:.26em;height:.26em;border-radius:50%;background:#800020;margin-left:.45em;flex:none}
   .nav-group{width:100%;position:static}
   .nav-group-toggle .nav-group-count,.nav-group-indicator{display:none}
-  .nav-submenu{display:block;max-height:none!important;overflow:visible!important;position:absolute;left:50%;right:5vw;top:0;bottom:auto;margin:0;width:auto;background:transparent;border:0;border-radius:0;box-shadow:none;padding:0;transform:none;opacity:0;visibility:hidden;transition:opacity .16s ease .25s,visibility 0s .45s;pointer-events:none}
-  .nav-submenu::before{display:block;font:600 17px Inter,system-ui,sans-serif;letter-spacing:-.01em;color:#0a0a0a;margin:0 0 14px}
+  /* two halves: Explore on top, Get started at the bottom (order), the open group's list sits bottom right */
+  .sidebar-nav>a[href="index.html"]{order:1}
+  .sidebar-nav>.nav-group:nth-of-type(1){order:2}
+  .sidebar-nav>.nav-group:nth-of-type(2){order:3}
+  .sidebar-nav>a[href="platform.html"]{order:4}
+  .sidebar-nav>a[href="live-demo.html"]{order:6;margin-top:auto;display:flex;width:min(32vw,460px);border-top:1px solid #0a0a0a;padding-top:12px}
+  .sidebar-nav>a[href="download-apps.html"]{order:7}
+  .sidebar-nav>.nav-group:nth-of-type(3){order:8}
+  .sidebar-nav>a[href="cart.html"]{order:9}
+  .sidebar-nav>a[href="contact.html"]{order:10}
+  .nav-submenu{display:block;max-height:none!important;overflow:visible!important;position:absolute;left:50%;right:5vw;top:auto;bottom:0;margin:0;width:auto;background:transparent;border:0;border-radius:0;box-shadow:none;padding:0;transform:none;opacity:0;visibility:hidden;transition:opacity .16s ease .25s,visibility 0s .45s;pointer-events:none}
+  .nav-submenu::before{display:block;font:600 22px Inter,system-ui,sans-serif;letter-spacing:-.02em;color:#0a0a0a;margin:0 0 18px}
   .nav-group:nth-of-type(1) .nav-submenu::before{content:"Products"}
   .nav-group:nth-of-type(2) .nav-submenu::before{content:"Business types"}
   .nav-group:nth-of-type(3) .nav-submenu::before{content:"Resources"}
-  .nav-submenu-inner{display:grid;grid-template-columns:1fr 1fr;gap:2px 40px;padding:0;overflow:visible}
-  .nav-sublink{display:block;font-family:Inter,system-ui,sans-serif;font-weight:400;font-size:14px;line-height:1.4;letter-spacing:0;padding:5px 0;color:#444;border:0;background:none;text-decoration:none}
+  .nav-submenu-inner{display:grid;grid-template-columns:1fr 1fr;gap:2px 48px;padding:0;overflow:visible}
+  .nav-sublink{display:block;font-family:Inter,system-ui,sans-serif;font-weight:400;font-size:17px;line-height:1.35;letter-spacing:-.01em;padding:7px 0;color:#333;border:0;background:none;text-decoration:none}
   .nav-sublink:hover,.nav-sublink.active{color:#800020;background:none;transform:none}
   .nav-sublink.is-disabled{color:#aaa}
   .nav-group:hover .nav-submenu,.nav-group:focus-within .nav-submenu,.nav-group-toggle[aria-expanded="true"]+.nav-submenu,
