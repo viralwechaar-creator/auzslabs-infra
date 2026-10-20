@@ -59,8 +59,6 @@
 <script id="topbar-nav-js">(function(){function f(){var n=document.querySelector('.topbar-nav'),t=document.querySelector('.topbar');if(!n||!t)return;var hide=matchMedia('(min-width:900px)').matches&&getComputedStyle(t).display==='none';if(hide&&n.parentNode===t){document.body.appendChild(n);n.classList.add('tbn-fixed');document.body.classList.add('has-tbn')}else if(!hide&&n.classList.contains('tbn-fixed')&&!matchMedia('(min-width:900px)').matches){}}f();addEventListener('load',f)})();</script>
 <style id="salon-contrast">
 /* minimal contrast: soft warm band, white cards, one ink featured tier */
-#salon-plans,#salon-addons{background:var(--bg-raised);border-radius:28px;padding:34px 22px;margin-top:18px;margin-bottom:18px}
-@media(min-width:900px){#salon-plans,#salon-addons{padding:44px 40px}}
 #salon-plans .sp-card{background:#fff;border-color:var(--line)}
 #salon-plans .sp-card.hi{background:var(--ink-solid);border-color:var(--ink-solid);color:#fff}
 #salon-plans .sp-card.hi .sp-name,#salon-plans .sp-card.hi .sp-price{color:#fff}
@@ -71,7 +69,6 @@
 #salon-plans .sp-card.hi .sp-cta{background:#fff;color:var(--ink-solid);border-color:#fff}
 #salon-plans .sp-strip{background:#fff;border-color:var(--line)}
 #salon-addons .sp-addon{background:#fff}
-#salon-compare{background:#fff;border-radius:28px;padding:34px 22px}
 </style>
 <style id="biz-layout-css">
 .bento{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
