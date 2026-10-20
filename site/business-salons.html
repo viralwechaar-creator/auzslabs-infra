@@ -45,6 +45,7 @@
 .topbar-nav.tbn-fixed{display:flex;position:fixed;left:0;right:var(--sidebar-w,280px);top:0;transform:none;height:54px;align-items:center;justify-content:center;background:var(--bg);border-bottom:1px solid var(--line);z-index:24}
 body.has-tbn main.content{padding-top:54px}
 }
+@media(min-width:900px){.footer-top{grid-template-columns:1.5fr 1fr 1fr 1fr}}
 </style>
 <script id="topbar-nav-js">(function(){function f(){var n=document.querySelector('.topbar-nav'),t=document.querySelector('.topbar');if(!n||!t)return;var hide=matchMedia('(min-width:900px)').matches&&getComputedStyle(t).display==='none';if(hide&&n.parentNode===t){document.body.appendChild(n);n.classList.add('tbn-fixed');document.body.classList.add('has-tbn')}else if(!hide&&n.classList.contains('tbn-fixed')&&!matchMedia('(min-width:900px)').matches){}}f();addEventListener('load',f)})();</script>
 </head>
@@ -465,8 +466,16 @@ body.has-tbn main.content{padding-top:54px}
               <a href="products.html#slab-payroll">AUZsPay</a>
               <a href="products.html#slab-accounting">AUZsLedger</a>
               <a href="products.html#slab-scan">AUZsScan</a>
-              <a href="products.html">AUZsMob</a>
+              <a href="products.html#slab-mobile">AUZsMob</a>
               <a href="products.html">All products</a>
+            </div>
+            <div class="footer-col">
+              <div class="footer-col-title">Business types</div>
+              <a href="business-cafes.html">Cafes &amp; restaurants</a>
+              <a href="business-retail.html">Retail &amp; bookstores</a>
+              <a href="business-salons.html">Salons &amp; studios</a>
+              <a href="business-mobile-repair.html">Mobile shops</a>
+              <a href="business-clothing.html">Clothing &amp; apparel</a>
             </div>
             <div class="footer-col">
               <div class="footer-col-title">Company</div>
