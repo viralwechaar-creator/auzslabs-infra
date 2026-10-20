@@ -56,7 +56,7 @@ export function paymentConfig() {
 
 async function razorpayApi(path, body) {
   const auth = Buffer.from(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`).toString('base64');
-  const res = await fetch(`https://api.razorpay.com/v1/${path}`, {
+  const res = await fetch(`${process.env.RAZORPAY_API_URL || 'https://api.razorpay.com/v1'}/${path}`, {
     method: 'POST',
     headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -193,6 +193,33 @@ export async function createOrder({ userId, signupRequestId, addonRequestId, per
   return { orderId: order.id, amount: order.amount, currency: order.currency, keyId: RAZORPAY_KEY_ID };
 }
 
+// Online payment for a request-first order (db/155, db/200). The token in the pay link is the only
+// credential (same as the page itself), so this needs no login. The charge is exactly the saved quote
+// total; the order is created here and only the signed webhook can ever mark it paid.
+export async function createClientOrderPayment({ token, terms }) {
+  if (!razorpayConfigured()) throw new Error('Online payment is not switched on yet. Please pay by UPI and send the screenshot.');
+  if (!/^[a-f0-9]{32}$/.test(String(token || ''))) throw new Error('This link is not valid.');
+  const { rows } = await pool.query('select order_online_start($1, $2) as result', [token, !!terms]);
+  const o = rows[0]?.result;
+  const paise = Math.round(Number(o.total) * 100);
+  if (!(paise >= 100)) throw new Error('This request has no amount to pay yet.');
+  const order = await razorpayApi('orders', {
+    amount: paise,
+    currency: 'INR',
+    receipt: `corder_${String(o.id).replace(/-/g, '').slice(0, 24)}`,
+    notes: { client_order_id: String(o.id), business: String(o.business_name || '').slice(0, 80) },
+  });
+  await pool.query(
+    `insert into payments (razorpay_order_id, user_id, client_order_id, amount, status, period) values ($1, null, $2, $3, 'created', 'month')`,
+    [order.id, o.id, Number(o.total)],
+  );
+  return {
+    orderId: order.id, amount: order.amount, currency: order.currency, keyId: RAZORPAY_KEY_ID,
+    prefill: { name: o.contact_name || '', email: o.email || '', contact: o.phone || '' },
+    description: `AUZslab: ${o.business_name || 'your order'}`,
+  };
+}
+
 // Raw-body HMAC-SHA256 verification against Razorpay's published
 // algorithm (https://razorpay.com/docs/webhooks/validate-test/) --
 // the signature MUST be computed over the exact raw bytes Razorpay
@@ -216,13 +243,18 @@ export async function handleWebhookEvent(event) {
   const payment = event.payload?.payment?.entity;
   if (!payment?.order_id) return;
 
-  const { rows } = await pool.query('select id, status, signup_request_id, addon_request_id from payments where razorpay_order_id = $1', [payment.order_id]);
+  const { rows } = await pool.query('select id, status, signup_request_id, addon_request_id, client_order_id from payments where razorpay_order_id = $1', [payment.order_id]);
   const row = rows[0];
   if (!row) return; // an order this server never created, or a test event -- nothing to do
   if (row.status !== 'paid') {
     await pool.query(`update payments set status = 'paid', razorpay_payment_id = $1, paid_at = now() where id = $2`, [payment.id, row.id]);
   }
 
+  if (row.client_order_id) {
+    // request-first order: runs the admin's own confirm step (access, bill number, renewals). Never throws; a mismatch tells the admin.
+    await pool.query('select online_confirm_order_payment($1, $2, $3)', [row.client_order_id, payment.id, Number(payment.amount) / 100]);
+    return;
+  }
   if (row.signup_request_id) await pool.query('select provision_from_payment($1)', [row.id]);
   else await pool.query('select provision_addon_from_payment($1)', [row.id]);
 }
