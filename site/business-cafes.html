@@ -423,28 +423,28 @@
           <button type="button" class="btn btn-ghost" data-open-contact>Ask about add-ons</button>
         </div>
         <div class="sp-addon-grid">
-          <div class="sp-addon">
+          <div class="sp-addon" data-addon="cafe_qr">
             <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v7h-4M14 21h.01" stroke-linecap="round"/></svg></span>
             <b>QR Ordering + Invoice Templates</b>
             <div class="sp-addon-pr">&#8377;460</div>
             <div class="sp-addon-sub">per month + GST</div>
             <p>Preset QR ordering website and multiple invoice template options. Included in Professional. Custom website development is quoted separately.</p>
           </div>
-          <div class="sp-addon">
+          <div class="sp-addon" data-addon="cafe_delivery">
             <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M9 7h8v8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
             <b>Zomato &amp; Swiggy Integration</b>
             <div class="sp-addon-pr">Ask for pricing</div>
             <div class="sp-addon-sub">No add-on rate published yet</div>
             <p>Available as an add-on for Growth. Included in Professional, subject to integration availability and agreed scope.</p>
           </div>
-          <div class="sp-addon">
+          <div class="sp-addon" data-addon="cafe_whatsapp">
             <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 0 0-7.6 13.8L3 21l4.4-1.3A9 9 0 1 0 12 3z" stroke-linejoin="round"/></svg></span>
             <b>WhatsApp Automation</b>
             <div class="sp-addon-pr">Pay per message</div>
             <div class="sp-addon-sub">Rates depend on message type</div>
             <p>Monthly usage-based billing, with different rates by message category and provider charges.</p>
           </div>
-          <div class="sp-addon">
+          <div class="sp-addon" data-addon="cafe_payroll">
             <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
             <b>Payroll Module</b>
             <div class="sp-addon-pr">&#8377;640</div>
@@ -626,20 +626,21 @@ document.querySelectorAll('[data-add-plan]').forEach(function (btn) {
   });
 });
 </script>
+<script>window.PLAN_NICHE = 'cafe';</script>
 <script src="company.js"></script>
 <script>
 (function () {
   var toggle = document.getElementById('cfToggle'), grid = document.getElementById('cfGrid');
   if (!toggle || !grid) return;
-  var prices = [820, 1360, 2260, 3610];
+  var prices = [820, 1360, 2260, 3610], yprices = [0, 0, 0, 0], cur = 'm';
   function inr(n) { return '\u20B9' + Math.round(n).toLocaleString('en-IN'); }
   function setPeriod(p) {
-    var y = p === 'y';
+    var y = p === 'y'; cur = p;
     toggle.querySelectorAll('button[data-period]').forEach(function (b) {
       var on = b.getAttribute('data-period') === p; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
     grid.querySelectorAll('.sp-card').forEach(function (c, i) {
-      var m = prices[i], shown = y ? m * 10 : m;
+      var m = prices[i], shown = y ? (yprices[i] || m * 10) : m;
       c.querySelector('.sp-amt').textContent = inr(shown);
       c.querySelector('.sp-unit').textContent = y ? '/year' : '/month';
       c.querySelector('.sp-was').textContent = inr(m * 12);
@@ -647,6 +648,22 @@ document.querySelectorAll('[data-add-plan]').forEach(function (btn) {
     });
   }
   toggle.querySelectorAll('button[data-period]').forEach(function (b) { b.addEventListener('click', function () { setPeriod(b.getAttribute('data-period')); }); });
+  window.planApply = function (tiers) {
+    if (!tiers || tiers.length !== 4) return;
+    prices = tiers.map(function (t) { return Number(t.monthly_price) || 0; });
+    yprices = tiers.map(function (t) { return Number(t.yearly_price) || 0; });
+    grid.querySelectorAll('.sp-card').forEach(function (card, i) {
+      var t = tiers[i]; card.classList.toggle('hi', !!t.highlighted);
+      card.querySelector('.sp-name').textContent = t.name;
+      card.querySelector('.sp-tagline').textContent = t.tagline || '';
+      var fav = card.querySelector('.sp-fav');
+      if (t.badge) { if (!fav) { fav = document.createElement('span'); fav.className = 'sp-fav'; card.insertBefore(fav, card.firstChild); } fav.textContent = t.badge; fav.hidden = false; } else if (fav) fav.hidden = true;
+      var feats = card.querySelector('.sp-feats'); feats.textContent = '';
+      (t.features || []).forEach(function (f) { var li = document.createElement('li'); li.textContent = f; feats.appendChild(li); });
+      var cta = card.querySelector('.sp-cta'); if (cta) { cta.setAttribute('data-plan', t.name); cta.textContent = 'Choose ' + t.name; cta.className = 'btn ' + (t.highlighted ? 'btn-primary' : 'btn-ghost') + ' sp-cta'; }
+    });
+    setPeriod(cur);
+  };
   document.querySelectorAll('#salon-plans .sp-cta').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var plan = btn.getAttribute('data-plan'), msg = document.getElementById('m-message');
@@ -662,5 +679,6 @@ document.querySelectorAll('[data-add-plan]').forEach(function (btn) {
   } catch (e) {}
 })();
 </script>
+<script src="plan-pick.js?v=1"></script>
 </body>
 </html>

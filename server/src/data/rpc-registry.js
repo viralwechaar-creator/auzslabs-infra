@@ -65,6 +65,10 @@ export const RPC = {
   admin_set_addon_price: { params: ['p_key', 'p_requires', 'p_monthly_price'], auth: true },
   // --- AUZslab Salon's four-tier pricing page (db/198) ---
   public_salon_tiers: { params: [], auth: false },
+  public_plan_tiers: { params: ['p_niche'], auth: false },
+  public_niche_addons: { params: ['p_niche'], auth: false },
+  admin_list_niche_addons: { params: [], auth: true },
+  admin_save_niche_addon: { params: ['p'], jsonb: ['p'], auth: true },
   admin_list_salon_tiers: { params: [], auth: true },
   admin_save_salon_tier: { params: ['p'], jsonb: ['p'], auth: true },
   // provision_from_payment / provision_addon_from_payment deliberately NOT

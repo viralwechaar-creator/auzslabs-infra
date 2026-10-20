@@ -113,6 +113,7 @@
       <div class="cart-left">
       <section class="section tight" style="max-width:640px">
         <div class="label" style="margin-bottom:8px">Products you picked</div>
+        <div id="planBox"></div>
         <div id="cartItems"></div>
         <p class="pay-note"><a href="products.html" style="color:var(--accent)">Add more products</a> &middot; Prices are confirmed in your payment link after we verify your business.</p>
       </section>
@@ -215,6 +216,21 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':
 const STATUS_TEXT = { requested: 'Received', verifying: 'We are checking your business', confirmed: 'Confirmed: your payment link is being prepared', link_sent: 'Payment link sent: please pay', payment_submitted: 'Payment received: we are confirming it', paid: 'Paid: your access is active', rejected: 'Not accepted' };
 let DASH = null, SESSION = null;
 
+// plan + add-ons chosen on a business page (prices are the admin's; the server re-reads them)
+function planSel() { try { const s = JSON.parse(localStorage.getItem('auz_plan') || 'null'); return s && (s.tier_key || (s.addons || []).length) ? s : null; } catch (e) { return null; } }
+async function renderPlan() {
+  const box = $('planBox'), s = planSel(); if (!s) { box.innerHTML = ''; return; }
+  const [t, a] = await Promise.all([sb.rpc('public_plan_tiers', { p_niche: s.niche }), sb.rpc('public_niche_addons', { p_niche: s.niche })]).catch(() => [{}, {}]);
+  const tier = ((t && t.data) || []).find((x) => x.tier_key === s.tier_key), ads = ((a && a.data) || []).filter((x) => (s.addons || []).includes(x.addon_key));
+  const yr = s.period === 'year', inr = (n) => '\u20B9' + Math.round(n).toLocaleString('en-IN');
+  const rows = [];
+  if (tier) rows.push(`<div class="cart-item"><span><b>${esc(tier.name)} plan</b><br><span style="font-size:12px;color:var(--ink-faint)">${yr ? 'Yearly' : 'Monthly'} &middot; ${inr(yr ? (tier.yearly_price || tier.monthly_price * 10) : tier.monthly_price)} ${yr ? '/year' : '/month'} + GST (indicative)</span></span></div>`);
+  ads.forEach((x) => rows.push(`<div class="cart-item"><span><b>${esc(x.name)}</b><br><span style="font-size:12px;color:var(--ink-faint)">${Number(x.monthly_price) > 0 ? inr(x.monthly_price) + ' /month + GST (indicative)' : esc(x.price_label || 'Price in your quote')}</span></span><button class="btn btn-ghost" data-rmad="${esc(x.addon_key)}" type="button">Remove</button></div>`));
+  box.innerHTML = rows.length ? `<div class="label" style="margin-bottom:8px">Your plan</div>${rows.join('')}<p class="pay-note"><a href="#" id="planClear" style="color:var(--accent)">Remove plan</a> &middot; We confirm the final prices in your quote; you can ask us to change anything.</p>` : '';
+  box.querySelectorAll('[data-rmad]').forEach((b) => { b.onclick = () => { const cur = planSel(); cur.addons = cur.addons.filter((k) => k !== b.dataset.rmad); localStorage.setItem('auz_plan', JSON.stringify(cur)); renderPlan(); }; });
+  if ($('planClear')) $('planClear').onclick = (e) => { e.preventDefault(); localStorage.removeItem('auz_plan'); renderPlan(); };
+  if (s.niche && $('rqNiche') && $('rqNiche').querySelector('option[value="' + s.niche + '"]') && !$('rqNiche').dataset.touched) $('rqNiche').value = s.niche;
+}
 function renderCart() {
   const items = AUZcart.get(), el = $('cartItems');
   if (!items.length) {
@@ -283,7 +299,7 @@ $('reqForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const err = $('rqErr'); err.textContent = '';
   const p = { contact_name: $('rqName').value.trim(), phone: $('rqPhone').value.trim(), email: $('rqEmail').value.trim(), business_name: $('rqBiz').value.trim(), niche: $('rqNiche').value, slug: $('rqSlug').value.trim(),
-    gstin: $('rqGstin').value.trim(), state_code: $('rqState').value, address: $('rqAddress').value.trim(), requirement: $('rqReq').value.trim(), notes: $('rqNotes').value.trim(), products: AUZcart.get() };
+    gstin: $('rqGstin').value.trim(), state_code: $('rqState').value, address: $('rqAddress').value.trim(), requirement: $('rqReq').value.trim(), notes: $('rqNotes').value.trim(), products: AUZcart.get(), plan: planSel() };
   if (!p.contact_name) { err.textContent = 'Please enter your name.'; return; }
   if (p.phone.replace(/\D/g, '').length < 10) { err.textContent = 'Please enter your mobile number (10 digits).'; return; }
   if (!DASH && !p.business_name) { err.textContent = 'Please enter your business name.'; return; }
@@ -292,7 +308,7 @@ $('reqForm').addEventListener('submit', async (e) => {
   const { data, error } = await sb.rpc('submit_client_order', { p });
   btn.disabled = false; btn.textContent = 'Send request';
   if (error) { err.textContent = error.message; return; }
-  try { AUZcart.clear(); } catch (x) {}
+  try { AUZcart.clear(); localStorage.removeItem('auz_plan'); } catch (x) {}
   try { localStorage.setItem('auz_order_token', data.token); } catch (x) {}
   $('requestSection').style.display = 'none'; $('sentSection').style.display = 'block';
   $('trackLink').href = 'pay.html?t=' + encodeURIComponent(data.token);
@@ -300,7 +316,7 @@ $('reqForm').addEventListener('submit', async (e) => {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 
-renderCart();
+renderCart(); renderPlan();
 checkSession();
 </script>
 <button type="button" class="theme-fab" onclick="auzThemeToggle()" aria-label="Toggle dark mode" title="Toggle dark mode"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg></button>
