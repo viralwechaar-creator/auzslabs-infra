@@ -86,6 +86,22 @@ function pickOutlet() {
   const s = sheet({ title: 'Outlet', narrow: true, body: h('div', { class: 'list' }, outletList().map((o) => liRow({ title: o.name, right: outletId() === o.id ? h('span', { style: { color: 'var(--accent-text)' } }, icon('check', 20)) : null, onclick: () => { localStorage.outlet = o.id; s.close(); S.cur = null; S.resByDay = {}; loadBookings(today()); render(); } }))) });
 }
 function b64ToArr(s) { const p = '='.repeat((4 - (s.length % 4)) % 4), b = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')), a = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a; }
+// Heal a stale alert subscription: if this device already allowed notifications but its saved subscription was made with an older server key
+// (keys were rotated), re-subscribe silently with the current key and save it. Never asks anything; does nothing without permission.
+async function healPush() {
+  try {
+    if (window.auzNativePush && window.auzNativePush.isNative()) return;
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window) || Notification.permission !== 'granted') return;
+    const reg = await navigator.serviceWorker.ready, want = b64ToArr(VAPID_PUBLIC);
+    let sub = await reg.pushManager.getSubscription();
+    const have = sub && sub.options && sub.options.applicationServerKey ? new Uint8Array(sub.options.applicationServerKey) : null;
+    const same = have && have.length === want.length && have.every((b, i) => b === want[i]);
+    if (sub && !same) { try { await sb.from('push_subs').delete().eq('endpoint', sub.endpoint); } catch {} await sub.unsubscribe(); sub = null; }
+    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: want });
+    const j = sub.toJSON();
+    await sb.from('push_subs').upsert({ user_id: S.user.id, endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth }, { onConflict: 'endpoint' });
+  } catch {}
+}
 async function enablePush() {
   // Inside the installed Android app, Web Push below never works (the
   // WebView there never registers a push service) -- FCM (ds/nativepush.js)
