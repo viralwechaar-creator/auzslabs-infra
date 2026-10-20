@@ -48,6 +48,33 @@ body.has-tbn main.content{padding-top:54px}
 @media(min-width:900px){.footer-top{grid-template-columns:1.5fr 1fr 1fr 1fr}}
 </style>
 <script id="topbar-nav-js">(function(){function f(){var n=document.querySelector('.topbar-nav'),t=document.querySelector('.topbar');if(!n||!t)return;var hide=matchMedia('(min-width:900px)').matches&&getComputedStyle(t).display==='none';if(hide&&n.parentNode===t){document.body.appendChild(n);n.classList.add('tbn-fixed');document.body.classList.add('has-tbn')}else if(!hide&&n.classList.contains('tbn-fixed')&&!matchMedia('(min-width:900px)').matches){}}f();addEventListener('load',f)})();</script>
+<style id="contact-retro-css">
+.ct-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:clamp(28px,5vw,72px);align-items:start;padding-top:8px}
+.ct-h{font-size:clamp(34px,4.6vw,64px);line-height:1.02;margin-top:14px}
+.ct-copy .lede{max-width:34em}
+.ct-direct{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 0}
+.ct-direct a{display:flex;flex-direction:column;gap:2px;min-width:200px;padding:11px 16px;border:2px solid var(--ink);border-radius:10px;background:#fffdf7;font-size:14px;font-weight:700;color:var(--ink);box-shadow:4px 4px 0 var(--ink);transition:.15s}
+.ct-direct a span{font:500 10px/1 var(--font-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+.ct-direct a:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--accent)}
+.ct-steps{list-style:none;margin:26px 0 0;padding:0;display:grid;gap:0;max-width:34em}
+.ct-steps li{display:flex;gap:16px;align-items:flex-start;padding:13px 0;border-top:1.5px dashed rgba(46,44,42,.25);font-size:13px;line-height:1.45;color:var(--ink-dim)}
+.ct-steps li:last-child{border-bottom:1.5px dashed rgba(46,44,42,.25)}
+.ct-steps b{font:700 12px/1 var(--font-mono);color:var(--accent);padding-top:3px}
+.ct-steps strong{display:block;font-size:14px;color:var(--ink);margin-bottom:2px}
+.ct-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.ct-chips span{font:500 11px/1 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;border:1.5px solid var(--ink);border-radius:999px;padding:7px 12px;background:transparent}
+.ct-win{max-width:440px;width:100%;margin-left:auto;border:2px solid var(--ink);border-radius:12px;background:#fffdf7;box-shadow:6px 6px 0 var(--accent);overflow:hidden}
+.ct-bar{display:flex;align-items:center;gap:7px;padding:9px 14px;border-bottom:2px solid var(--ink);background:var(--hl,#f3e3a6)}
+.ct-bar i{width:11px;height:11px;border-radius:50%;border:1.5px solid var(--ink);background:#fffdf7}
+.ct-bar span{margin-left:8px;font:500 11px/1 var(--font-mono);letter-spacing:.06em}
+.ct-body{padding:16px 18px 18px}
+.ct-body .field{margin-top:11px}
+.ct-body .field label{font:500 10px/1 var(--font-mono);letter-spacing:.14em;text-transform:uppercase}
+.ct-body input,.ct-body select,.ct-body textarea{padding:10px 12px;font-size:14px;border:1.5px solid var(--ink);border-radius:8px;background:#fff}
+.ct-body textarea{min-height:76px}
+.ct-body .form-submit{width:100%;margin-top:14px}
+@media(max-width:899px){.ct-grid{grid-template-columns:1fr}.ct-win{margin:0;max-width:none}.ct-direct a{min-width:0;flex:1 1 200px}}
+</style>
 </head>
 <body>
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
@@ -149,25 +176,34 @@ body.has-tbn main.content{padding-top:54px}
 
     <div class="stack">
 
-      <section class="stack-panel">
+      <section class="stack-panel" id="form">
         <div class="wrap">
-          <div class="label">Contact</div>
-          <h1 class="h-hero reveal in">Tell us how your business works.</h1>
-          <p class="lede reveal in">We'll help you find the right AUZslab setup, from ready-to-use software to a system shaped around your workflow. We reply within a day.</p>
-        </div>
-      </section>
+          <div class="ct-grid">
+            <div class="ct-copy">
+              <div class="label">Contact</div>
+              <h1 class="h-hero reveal in ct-h">Tell us how your business works.</h1>
+              <p class="lede reveal in">We'll help you find the right AUZslab setup, from ready-to-use software to a system shaped around your workflow. We reply within a day.</p>
 
-      <section class="stack-panel alt" data-tab="REACH" id="form">
-        <div class="wrap">
-          <div class="grid-2 reveal in" style="align-items:start">
-            <div>
-              <div class="h-2">Reach us directly</div>
-              <p class="p" style="margin-top:14px">Prefer to skip the form? Write to us directly.</p>
-              <p class="p" style="margin-top:18px"><span class="accent">helloauzslab@gmail.com</span></p>
+              <div class="ct-direct">
+                <a href="mailto:helloauzslab@gmail.com"><span>Email</span>helloauzslab@gmail.com</a>
+                <a href="tel:+919251250829"><span>Call</span>+91 92512 50829</a>
+              </div>
+
+              <ol class="ct-steps">
+                <li><b>01</b><div><strong>You write in</strong>A few lines about your business is enough.</div></li>
+                <li><b>02</b><div><strong>We reply within a day</strong>Usually sooner, by phone or email.</div></li>
+                <li><b>03</b><div><strong>We suggest a setup</strong>Ready-made, or shaped around how you work.</div></li>
+              </ol>
+
+              <div class="ct-chips" aria-label="Businesses we help">
+                <span>Cafes</span><span>Retail</span><span>Salons</span><span>Mobile shops</span><span>Clothing</span><span>Custom builds</span>
+              </div>
             </div>
 
-            <div class="card">
-              <form id="formView" data-contact-form>
+            <div class="ct-win reveal in">
+              <div class="ct-bar"><i></i><i></i><i></i><span>new-message.txt</span></div>
+              <div class="ct-body">
+                <form id="formView" data-contact-form>
                 <div class="field" style="margin-top:0">
                   <label for="c-name">Name</label>
                   <input id="c-name" name="name" type="text" placeholder="Your name" required>
@@ -200,7 +236,7 @@ body.has-tbn main.content{padding-top:54px}
         </div>
                 <button type="submit" class="btn btn-primary form-submit">Send</button>
               </form>
-              <div class="success-view" id="successView">
+                <div class="success-view" id="successView">
                 <div class="success-mark">&check;</div>
                 <h3 class="h-2" style="font-size:22px">Got it.</h3>
                 <p class="p">We'll reach out to <span class="success-contact" id="successContact">you</span> shortly.</p>
