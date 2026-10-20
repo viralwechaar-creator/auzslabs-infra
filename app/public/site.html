@@ -508,6 +508,7 @@ async function callWaiter(){
 (async()=>{
  try{const{data}=await sb.rpc('public_menu',{tenant_slug:TENANT_SLUG});M=data}catch(e){console.warn(e)}
  const cfg=(M&&M.cfg)||{};
+ {const dz=new URLSearchParams(location.search).get('design')||cfg.siteTemplate;if(dz==='kiln'){location.replace('/site-kiln.html'+location.search.replace(/[?&]design=[^&]*/,'').replace(/^&/,'?'));return}}
  const selfOrderOn=!!(cfg._features&&cfg._features.self_order===true&&(!cfg._enabled_features||cfg._enabled_features.self_order!==false));
  if(T){
   const bEl=$('tbanner');bEl.style.display='flex';
