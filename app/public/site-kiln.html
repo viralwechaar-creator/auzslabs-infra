@@ -442,8 +442,15 @@ input[type=text],input[type=tel],input[type=email],input[type=date],select,texta
 .gal img{width:100%;height:100%;object-fit:cover;display:block}
 .gal>:first-child{grid-column:span 2;grid-row:span 2;aspect-ratio:auto}
 @media (max-width:640px){.gal{grid-template-columns:repeat(2,1fr);gap:10px}.gal>:first-child{grid-column:1/-1;grid-row:auto;aspect-ratio:16/10}}
-.favs{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px;margin-top:20px}
-.fav-more{margin-top:20px}
+.rev-sum{display:flex;align-items:center;flex-wrap:wrap;gap:6px 14px;margin-top:18px;font-family:var(--f-body)}
+.rev-sum b{font-size:44px;line-height:1;font-weight:700;letter-spacing:-.03em}
+.rev-sum #revCount{color:var(--mute);font-size:14px}
+.stars{color:#C98A3B;font-size:22px;letter-spacing:2px;white-space:nowrap}
+.revs{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:20px}
+.rev{background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:18px 20px;display:grid;gap:10px;align-content:start}
+.rev .stars{font-size:16px}
+.rev p{margin:0;font-size:15px;line-height:1.55;color:var(--ink)}
+.rev .who{font:600 11px/1 var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
 #cartBar{display:flex;align-items:center;justify-content:space-between;gap:14px;border-radius:999px;font-family:var(--f-body);font-size:15px;font-weight:600;letter-spacing:0;text-transform:none;padding:10px 10px 10px 24px;left:calc(var(--side) + 24px);right:24px;bottom:18px;box-shadow:0 10px 32px rgba(48,30,20,.28);background:#9A6048;color:#FFF9F3}
 #cartBar #barL{font-size:15px;font-weight:600;white-space:nowrap}
 #cartBar #barR{background:#FFF9F3;color:#7A4630;border-radius:999px;padding:11px 20px;font-size:14px;font-weight:700;white-space:nowrap}
@@ -499,10 +506,10 @@ input[type=text],input[type=tel],input[type=email],input[type=date],select,texta
     <div class="story-copy"><span class="mono">A little about us</span><h2>Good things take their time.</h2><p>Small-batch bakes, carefully made coffee and a welcoming table in the heart of Jodhpur.</p><a class="lnk" href="#about">Read our story ↗︎</a></div>
   </div>
 
-  <div class="sec" id="favSec" hidden>
-    <h2>Guest favourites</h2>
-    <div class="favs" id="favList"></div>
-    <div class="fav-more"><a class="btn ghost btn-compact" href="#menu">See the full menu</a></div>
+  <div class="sec" id="revSec" hidden>
+    <h2>What guests say</h2>
+    <div class="rev-sum"><b id="revAvg">0</b><span class="stars" id="revStars"></span><span id="revCount"></span></div>
+    <div class="revs" id="revList"></div>
   </div>
 
   <div class="sec" id="galSec">
@@ -887,10 +894,10 @@ function brand(M){var c=CFGt,nm=c.name||'';
  $$('a[href^="https://www.facebook.com/"]').forEach(function(a){if(a.parentNode.tagName==='LI')a.parentNode.hidden=true;else a.hidden=true});
  var soc=$('.soc');if(soc&&!ig)soc.hidden=true;
  var sf=$('.side-foot>span:last-child');if(sf)sf.textContent=c.addr?String(c.addr).split(',').slice(-2).join(',').trim():''}
-function renderFavs(){var fs=$('#favSec'),fl=$('#favList');if(!fs||!fl)return;var it=P.filter(function(p){return p.price>0}).slice(0,4);if(it.length<2){fs.hidden=true;return}fl.innerHTML=it.map(card).join('');fs.hidden=false}
-$('#favList').addEventListener('click',function(e){var o=e.target.closest('[data-open]');if(o){openPop(o.dataset.open,o);return}var a=e.target.closest('[data-add]');if(a){var p=BY[a.dataset.add];addLine(p.id,0,0,[],1);toast('Added: '+p.name)}});
-renderTabs();renderMenu();renderFavs();status();setInterval(status,60000);route();
-loadLive().then(function(){renderTabs();renderMenu();renderFavs();status();refresh();if(cur==='cart')renderCart()});
+function starStr(n){n=Math.round(n);return '\u2605\u2605\u2605\u2605\u2605'.slice(0,n)+'\u2606\u2606\u2606\u2606\u2606'.slice(0,5-n)}
+function renderReviews(){if(!LIVE||!sbc||!SLUG)return;sbc.rpc('public_reviews',{tenant_slug:SLUG}).then(function(r){var d=r&&r.data;if(!d||!d.count||!d.reviews||!d.reviews.length)return;$('#revAvg').textContent=Number(d.avg).toFixed(1);$('#revStars').textContent=starStr(d.avg);$('#revCount').textContent='from '+d.count+(d.count===1?' rating':' ratings');$('#revList').innerHTML=d.reviews.map(function(v){return '<figure class="rev" style="margin:0"><span class="stars" aria-label="'+v.rating+' out of 5">'+starStr(v.rating)+'</span><p>\u201c'+esc(v.comment)+'\u201d</p><span class="who">'+esc(v.name||'A guest')+'</span></figure>'}).join('');$('#revSec').hidden=false}).catch(function(){})}
+renderTabs();renderMenu();status();setInterval(status,60000);route();
+loadLive().then(function(){renderTabs();renderMenu();renderReviews();status();refresh();if(cur==='cart')renderCart()});
 })();
 </script>
 
