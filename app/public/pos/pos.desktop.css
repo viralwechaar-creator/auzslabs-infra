@@ -67,4 +67,6 @@ kbd{font:600 13px var(--font);padding:3px 8px;border-radius:6px;background:var(-
 
 .page{padding:20px 24px 32px;max-width:1400px;width:100%}
 .split2{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;align-items:start}
-.more-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:16px;align-items:start}
+/* masonry: sections of different heights pack into columns with no empty gaps */
+.more-grid{display:block;column-width:360px;column-gap:16px}
+.more-grid>.sec{break-inside:avoid;-webkit-column-break-inside:avoid;margin:0 0 16px;display:inline-block;width:100%}

@@ -124,6 +124,7 @@ button.li:active,a.li:active{background:var(--fill2)}
 .li .s{font-size:13px;color:var(--label2)}
 .li .v{margin-left:auto;text-align:right;flex:none;font-variant-numeric:tabular-nums}
 .li .chev{color:var(--label3);flex:none}
+.li>.seg{flex:none;max-width:none;overflow:visible;margin-left:auto}
 .ic{width:30px;height:30px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;flex:none;background:var(--accent);color:#fff}
 .ic.gray{background:#8e8e93}.ic.green{background:#34c759}.ic.orange{background:#ff9500}.ic.blue{background:#007aff}.ic.purple{background:#af52de}.ic.red{background:#ff3b30}.ic.teal{background:#30b0c7}
 .empty{display:grid;justify-items:center;gap:6px;text-align:center;padding:40px 20px;color:var(--label2)}
