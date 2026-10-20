@@ -29,7 +29,7 @@ async function renderCustomerDues(body, v) {
     [{ key: 'c', title: true, label: '', render: (r) => r.customer_name || 'Walk-in' },
       { key: 'b', sub: true, label: '', render: (r) => r.bill_no || '' },
       { key: 'due', value: true, r: true, label: '', render: (r) => money(r._due) }],
-    rows, { onRow: (r) => settleSheet(v, 'customer_due', { saleId: r.id }, r._due), emptyText: t('noneYet') },
+    rows, { onRow: (r) => settleSheet(v, 'customer_due', { saleId: r.id, phone: r.customer_phone }, r._due), emptyText: t('noneYet') },
   ));
 }
 
@@ -88,7 +88,9 @@ function settleSheet(v, kind, ref, maxDue) {
   const method = selectEl([['cash', t('cash')], ['upi', t('upi')], ['card', t('card')]], 'cash');
   sheet({
     title: t('settlePayment'), body: h('div', { class: 'grid' }, field(t('amount'), amount), field(t('paymentMode'), method)),
-    actions: [{ label: t('save'), primary: true, onclick: async (close) => {
+    actions: [...(kind === 'customer_due' && ref.phone ? [{ label: t('remindWa'), onclick: async () => {
+      try { const r = await api('mob_send_due_reminder', { p_sale_id: ref.saleId }); toast(r.sent ? t('reminderSent') : r.reason === 'off' ? t('reminderOff') : r.reason === 'already_sent' ? t('reminderAlready') : t('reminderNoPhone')); } catch (e) { fail(e); }
+      return false; } }] : []), { label: t('save'), primary: true, onclick: async (close) => {
       if (!N(amount.value)) { fail(new Error(t('errNameRequired'))); return false; }
       const id = uid();
       const p = { kind, saleId: ref.saleId || null, vendorId: ref.vendorId || null, amount: N(amount.value), method: method.value };

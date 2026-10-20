@@ -231,6 +231,11 @@ const STR = {
   stockHistory: { en: 'In / out history', hi: 'अंदर / बाहर का इतिहास' },
 
   // ---------- dues ----------
+  remindWa: { en: 'Remind on WhatsApp', hi: 'व्हाट्सएप पर याद दिलाएं' },
+  reminderSent: { en: 'Reminder sent on WhatsApp', hi: 'व्हाट्सएप पर याद दिलाया गया' },
+  reminderOff: { en: 'WhatsApp is switched off for this shop', hi: 'इस दुकान के लिए व्हाट्सएप बंद है' },
+  reminderAlready: { en: 'Already reminded today', hi: 'आज पहले ही याद दिलाया जा चुका है' },
+  reminderNoPhone: { en: 'No phone number saved for this customer', hi: 'इस ग्राहक का फ़ोन नंबर सेव नहीं है' },
   customerDue: { en: 'Customer owes you', hi: 'ग्राहक से लेना है' },
   vendorDue: { en: 'You owe vendor', hi: 'विक्रेता को देना है' },
   settlePayment: { en: 'Record payment', hi: 'भुगतान दर्ज करें' },
