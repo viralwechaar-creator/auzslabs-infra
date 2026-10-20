@@ -70,11 +70,16 @@
   .tbn-menu a small{font:500 10px/1 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint,#8a847f)}
   .tbn-menu a:hover{background:var(--bg,#f6f4f1);color:var(--accent)}
   .tbn-menu a.tbn-all{margin-top:4px;border-top:1px dashed var(--line);border-radius:0 0 10px 10px;color:var(--accent)}
-  .topbar-nav.tbn-fixed{display:flex;position:fixed;left:0;right:var(--sidebar-w,280px);top:0;transform:none;height:54px;align-items:center;justify-content:center;background:var(--bg);border-bottom:1px solid var(--line);z-index:24}
+  .topbar-nav.tbn-fixed{display:flex;position:fixed;left:0;right:var(--sidebar-w,280px);top:0;transform:none;height:54px;align-items:center;justify-content:center;background:var(--bg);border-bottom:1px solid var(--line);z-index:24;padding-left:120px}
+  body:not(:has(.sidebar)) .topbar-nav.tbn-fixed{right:0}
+  .tbn-logo{position:absolute;left:20px;top:50%;transform:translateY(-50%);display:block;line-height:0}
+  .tbn-logo img{height:28px;width:auto;display:block}
+  :root[data-theme=dark] .tbn-logo img{filter:invert(1)}
+  @media (prefers-color-scheme:dark){:root:not([data-theme=light]) .tbn-logo img{filter:invert(1)}}
   body.has-tbn main.content{padding-top:54px}
 }
 </style>
-<script id="topbar-nav-js">(function(){function f(){var n=document.querySelector('.topbar-nav'),t=document.querySelector('.topbar');if(!n||!t)return;var hide=matchMedia('(min-width:900px)').matches&&getComputedStyle(t).display==='none';if(hide&&n.parentNode===t){document.body.appendChild(n);n.classList.add('tbn-fixed');document.body.classList.add('has-tbn')}else if(!hide&&n.classList.contains('tbn-fixed')&&!matchMedia('(min-width:900px)').matches){}}f();addEventListener('load',f)})();</script>
+<script id="topbar-nav-js">(function(){function f(){var n=document.querySelector('.topbar-nav'),t=document.querySelector('.topbar');if(!n||!t)return;var hide=matchMedia('(min-width:900px)').matches&&getComputedStyle(t).display==='none';if(hide&&n.parentNode===t){document.body.appendChild(n);n.classList.add('tbn-fixed');if(!n.querySelector('.tbn-logo')){var a=document.createElement('a');a.className='tbn-logo';a.href='index.html';a.setAttribute('aria-label','AUZslab home');var im=document.createElement('img');im.src='logo.png';im.alt='AUZslab';a.appendChild(im);n.insertBefore(a,n.firstChild)}document.body.classList.add('has-tbn')}else if(!hide&&n.classList.contains('tbn-fixed')&&!matchMedia('(min-width:900px)').matches){}}f();addEventListener('load',f)})();</script>
 </head>
 <body>
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
