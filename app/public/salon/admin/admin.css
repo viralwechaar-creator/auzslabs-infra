@@ -136,7 +136,7 @@ dialog.a-dialog h2 { font-size: 22px; margin-bottom: 14px; }
 
 /* analytics: period picker, KPI deltas, trend/weekday charts, funnel, performance tables */
 .a-period { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
-.a-period .seg { flex-wrap: wrap; border: 0; padding: 0; gap: 8px; }
+.a-period .seg { flex-wrap: wrap; border: 0; padding: 0; gap: 8px; max-width: 100%; overflow: visible; }
 .a-period .seg button { border: 1px solid var(--line); background: #fff; }
 .a-period .seg button[aria-pressed="true"] { border-color: var(--plum); }
 .a-period-custom { display: flex; align-items: center; gap: 8px; }
