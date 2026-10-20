@@ -195,48 +195,53 @@
         <div class="dot-texture" aria-hidden="true"></div>
         <div class="wrap">
           <div class="label reveal">Every business works differently</div>
-          <h2 class="h-1 reveal" style="max-width:11em">Your software should understand that.</h2>
+          <h2 class="h-1 reveal" style="max-width:11em">Start with your kind of business.</h2>
           <div class="reveal biz-pick" id="bizPick">
-            <div class="biz-lead">Start with your kind of business</div>
             <div class="biz-tabs" role="tablist" aria-label="Your kind of business">
-              <button type="button" role="tab" class="biz-tab on" data-b="cafe" aria-selected="true">Cafes &amp; restaurants</button>
-              <button type="button" role="tab" class="biz-tab" data-b="retail" aria-selected="false">Retail &amp; bookstores</button>
-              <button type="button" role="tab" class="biz-tab" data-b="salon" aria-selected="false">Salons &amp; studios</button>
-              <button type="button" role="tab" class="biz-tab" data-b="mobile" aria-selected="false">Mobile shops</button>
-              <button type="button" role="tab" class="biz-tab" data-b="clothing" aria-selected="false">Clothing &amp; apparel</button>
+              <button type="button" role="tab" class="biz-tab on" data-b="cafe" aria-selected="true">Cafes &amp; restaurants <span>01</span></button>
+              <button type="button" role="tab" class="biz-tab" data-b="retail" aria-selected="false">Retail &amp; bookstores <span>02</span></button>
+              <button type="button" role="tab" class="biz-tab" data-b="salon" aria-selected="false">Salons &amp; studios <span>03</span></button>
+              <button type="button" role="tab" class="biz-tab" data-b="mobile" aria-selected="false">Mobile shops <span>04</span></button>
+              <button type="button" role="tab" class="biz-tab" data-b="clothing" aria-selected="false">Clothing &amp; apparel <span>05</span></button>
             </div>
             <div class="biz-card" role="tabpanel" aria-live="polite">
+              <div class="biz-eye" id="bizEye"></div>
               <div class="h-2" id="bizTitle"></div>
+              <p class="p" id="bizText"></p>
               <ul class="biz-list" id="bizList"></ul>
               <a class="btn btn-primary" id="bizGo" href="business-cafes.html">See the setup</a>
             </div>
           </div>
           <style>
-            .biz-pick{margin-top:18px}
-            .biz-lead{font-size:13px;font-weight:700;color:var(--muted);margin-bottom:10px}
-            .biz-tabs{display:flex;flex-wrap:wrap;gap:8px}
-            .biz-tab{border:1px solid var(--line);background:var(--bg-raised,#fff);color:inherit;border-radius:999px;padding:10px 16px;font:inherit;font-size:13px;font-weight:600;min-height:44px;cursor:pointer}
-            .biz-tab.on{background:var(--accent);border-color:var(--accent);color:#fff}
-            .biz-card{margin-top:14px;max-width:560px;border:1px solid var(--line);border-radius:20px;background:var(--bg-raised,#fff);padding:20px}
-            .biz-list{list-style:none;margin:10px 0 16px;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;font-size:13px}
+            .biz-pick{margin-top:18px;display:grid;grid-template-columns:minmax(0,.75fr) minmax(0,1.25fr);gap:24px;align-items:start}
+            .biz-tabs{display:flex;flex-direction:column;gap:6px}
+            .biz-tab{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;border:1px solid transparent;background:transparent;color:inherit;border-radius:16px;padding:14px 16px;font:inherit;font-size:15px;font-weight:700;min-height:48px;cursor:pointer;opacity:.7}
+            .biz-tab span{font-size:11px;color:var(--muted);font-weight:700}
+            .biz-tab.on{background:var(--bg-raised,#fff);border-color:var(--line);opacity:1;color:var(--accent);box-shadow:0 5px 18px rgba(46,32,30,.06)}
+            .biz-card{border:1px solid var(--line);border-radius:24px;background:var(--bg-raised,#fff);padding:24px}
+            .biz-eye{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+            .biz-card .h-2{margin-top:8px}
+            .biz-list{list-style:none;margin:14px 0 18px;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:9px 14px;font-size:13px}
             .biz-list li:before{content:"\2713";color:var(--accent);font-weight:800;margin-right:7px}
-            @media(max-width:560px){.biz-list{grid-template-columns:1fr}}
+            @media(max-width:700px){.biz-pick{grid-template-columns:1fr;gap:14px}.biz-tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px}.biz-tab{padding:10px 12px;font-size:12px;min-height:44px}.biz-card{padding:18px}.biz-list{grid-template-columns:1fr}}
           </style>
           <script>
           (function(){
             var D={
-              cafe:['Orders, tables, kitchen and bills in one flow.',['Table and QR ordering','Kitchen screen','GST bills','Stock and recipes'],'business-cafes.html'],
-              retail:['Barcode billing and stock you can trust.',['Barcode billing','Stock and reorder','Customer history','GST invoices'],'business-retail.html'],
-              salon:['Bookings, clients and bills together.',['Online booking','Client history','Staff and payroll','Bills on WhatsApp'],'business-salons.html'],
-              mobile:['Sell, repair and track every phone.',['IMEI tracking','Repair jobs','Staff profit ledger','Customer dues'],'business-mobile-repair.html'],
-              clothing:['Sizes, colours and exchanges handled.',['Variant stock','Barcode billing','Returns and exchanges','Trial room hold'],'business-clothing.html']
+              cafe:['Cafes and restaurants','Orders, tables, kitchen and bills in one flow.','See what is ordered, cooked and sold, from the table to the till.',['Table and QR ordering','Kitchen screen','GST bills','Stock and recipes'],'business-cafes.html'],
+              retail:['Retail and bookstores','Barcode billing and stock you can trust.','Know what is selling and what is still on the shelf.',['Barcode billing','Stock and reorder','Customer history','GST invoices'],'business-retail.html'],
+              salon:['Salons and studios','Bookings, clients and bills together.','Give every appointment a smoother flow, from booking to bill.',['Online booking','Client history','Staff and payroll','Bills on WhatsApp'],'business-salons.html'],
+              mobile:['Mobile shops','Sell, repair and track every phone.','Keep sales, repairs and dues connected, with every IMEI traced.',['IMEI tracking','Repair jobs','Staff profit ledger','Customer dues'],'business-mobile-repair.html'],
+              clothing:['Clothing and apparel','Sizes, colours and exchanges handled.','Make variants, exchanges and stock easier to manage.',['Variant stock','Barcode billing','Returns and exchanges','Trial room hold'],'business-clothing.html']
             };
             var tabs=document.querySelectorAll('#bizPick .biz-tab');
             function show(k){
               var d=D[k];
-              document.getElementById('bizTitle').textContent=d[0];
-              document.getElementById('bizList').innerHTML=d[1].map(function(x){return '<li>'+x+'</li>'}).join('');
-              document.getElementById('bizGo').href=d[2];
+              document.getElementById('bizEye').textContent=d[0];
+              document.getElementById('bizTitle').textContent=d[1];
+              document.getElementById('bizText').textContent=d[2];
+              document.getElementById('bizList').innerHTML=d[3].map(function(x){return '<li>'+x+'</li>'}).join('');
+              document.getElementById('bizGo').href=d[4];
               tabs.forEach(function(t){var on=t.dataset.b===k;t.classList.toggle('on',on);t.setAttribute('aria-selected',on?'true':'false')});
             }
             tabs.forEach(function(t){t.addEventListener('click',function(){show(t.dataset.b)})});
