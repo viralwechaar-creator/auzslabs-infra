@@ -65,6 +65,20 @@ body.has-tbn main.content{padding-top:54px}
 @media(min-width:900px){.footer-top{grid-template-columns:1.5fr 1fr 1fr 1fr}}
 </style>
 <script id="topbar-nav-js">(function(){function f(){var n=document.querySelector('.topbar-nav'),t=document.querySelector('.topbar');if(!n||!t)return;var hide=matchMedia('(min-width:900px)').matches&&getComputedStyle(t).display==='none';if(hide&&n.parentNode===t){document.body.appendChild(n);n.classList.add('tbn-fixed');document.body.classList.add('has-tbn')}else if(!hide&&n.classList.contains('tbn-fixed')&&!matchMedia('(min-width:900px)').matches){}}f();addEventListener('load',f)})();</script>
+<style id="biz-layout-css">
+.bento{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+@media(min-width:900px){.bento{grid-template-columns:repeat(3,minmax(0,1fr))}.bento>.feat{grid-column:span 2}}
+.bento>.card{display:flex;flex-direction:column;align-items:flex-start;border-radius:20px;border-top:3px solid var(--accent);background:#fff}
+.bento>.card.feat{background:var(--ink-solid,#2e2c2a);color:#fff;border-color:var(--ink-solid,#2e2c2a);border-top-color:var(--accent);min-height:230px;justify-content:flex-end;padding:30px}
+.bento>.card.feat .h-2{font-size:28px!important;line-height:1.1;color:#fff}
+.bento>.card.feat .p{font-size:15px;color:rgba(255,255,255,.8);max-width:34em}
+.bento>.card.feat .tag{border-color:rgba(255,255,255,.55);color:#fff;background:transparent}
+.biz-band,.demo-note{background:var(--ink-solid,#2e2c2a)!important;color:#fff;border:0!important;border-radius:24px;padding:34px clamp(22px,4vw,44px)!important}
+.biz-band .label,.demo-note .label{color:#f0b9c6}
+.biz-band .h-2,.demo-note .h-2{color:#fff}
+.biz-band .p,.demo-note .p{color:rgba(255,255,255,.78)}
+.biz-band .btn-primary,.demo-note .btn-primary{background:#fff;color:var(--ink-solid,#2e2c2a);border-color:#fff}
+</style>
 </head>
 <body>
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
@@ -231,17 +245,12 @@ body.has-tbn main.content{padding-top:54px}
             <div class="h-2" style="margin-top:12px;font-size:19px">Due &amp; credit sales</div>
             <p class="p" style="margin-top:8px">Let a trusted customer settle later &mdash; the sale still logs now, and the balance shows up as due.</p>
           </div>
-          <div class="card">
-            <span class="tag">Payroll</span>
-            <div class="h-2" style="margin-top:12px;font-size:19px">Staff pay, off their own clock-ins</div>
-            <p class="p" style="margin-top:8px">A rate per staffer, hours computed from real attendance, one button to mark a month paid.</p>
-          </div>
         </div>
       </section>
 
       <hr class="dash">
 
-      <section class="section tight">
+      <section class="section tight biz-band">
         <div class="label">Try before you decide</div>
         <h2 class="h-2">Scan a barcode and watch the stock move &mdash; for real.</h2>
         <p class="p" style="margin-top:8px">A live, shared account seeded with sample products &mdash; scan a barcode, ring up a sale, print a receipt.</p>
