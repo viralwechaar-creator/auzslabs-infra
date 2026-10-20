@@ -235,11 +235,11 @@ button:active:not(:disabled){transform:translateY(1px) scale(.99)}
         <p class=sub id=bpLink></p>
         <p class="sub hidden" id=bpNote></p>
         <h2 style="margin-top:0">Show the client</h2>
-        <p class=sub id=showSub>Website and POS side by side in one screen: place an order on the website and watch it land in the POS. Already loaded with their logo, colours and a 24-item menu.</p>
+        <p class=sub id=showSub>Opens the website and the POS in two separate tabs: place an order on the website, then check it in the POS tab. Already loaded with their logo, colours and a 24-item menu.</p>
         <div class=actions>
-          <button id=demoRoomBtn>Start demo (website + POS) ↗</button>
+          <button id=demoRoomBtn>Start demo (2 tabs) ↗</button>
           <button class=ghost id=openPosBtn>Open their POS ↗</button>
-          <button class=ghost id=openQrBtn>Open QR order demo ↗</button>
+          <button class=ghost id=openQrBtn>Open table QR order ↗</button>
           <button class=ghost id=openSiteBtn>Open their website ↗</button>
         </div>
         <div id=demoErr class=err></div>
@@ -628,7 +628,7 @@ function openSetup(id) {
 
 // Same {access_token,user} -> URL-fragment handoff every app's sb-client.js already consumes.
 function b64u(o) { return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
-async function openBusiness(tenantId, slug, page) {
+async function openBusiness(tenantId, slug, page, win) {
   const { data: { session } } = await sb.auth.getSession();
   const res = await fetch(CFG.url + '/admin/salesman-open-pos', {
     method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
@@ -636,7 +636,8 @@ async function openBusiness(tenantId, slug, page) {
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.error || 'could not open it');
-  window.open('https://' + slug + '.auzslab.in' + page + '#auz_gt=' + b64u({ t: body.access_token, u: body.user }), '_blank');
+  const url = 'https://' + slug + '.auzslab.in' + page + '#auz_gt=' + b64u({ t: body.access_token, u: body.user });
+  if (win && !win.closed) win.location.href = url; else window.open(url, '_blank');
 }
 
 // ---------- TASKS ----------
@@ -976,18 +977,20 @@ $('openSiteBtn').onclick = () => { if (current && nicheApp(current).site) window
 
 $('openQrBtn').onclick = () => {
   if (!current) return;
-  if (!current.table_id) { $('demoErr').textContent = 'No table set up for this business yet (only cafe trials get one automatically).'; return; }
-  window.open('https://' + current.slug + '.auzslab.in/site.html?t=' + current.table_id, '_blank');
+  // No table yet (older trials): open the website as a takeaway order page instead of refusing.
+  window.open('https://' + current.slug + '.auzslab.in/site.html' + (current.table_id ? '?t=' + current.table_id : ''), '_blank');
 };
 
 $('demoRoomBtn').onclick = async () => {
   if (!current) return;
   $('demoErr').textContent = '';
+  // Open both tabs inside the tap (browsers block a second pop-up opened after an await), fill them in afterwards.
+  const base = 'https://' + current.slug + '.auzslab.in';
+  const wSite = window.open(base + '/site.html' + (current.table_id ? '?t=' + encodeURIComponent(current.table_id) : ''), '_blank');
+  const wPos = window.open('about:blank', '_blank');
   $('demoRoomBtn').disabled = true;
-  try {
-    const q = '?n=' + encodeURIComponent(current.name) + (current.table_id ? '&t=' + encodeURIComponent(current.table_id) : '');
-    await openBusiness(current.id, current.slug, '/demo-room.html' + q);
-  } catch (e) { $('demoErr').textContent = e.message; }
+  try { await openBusiness(current.id, current.slug, nicheApp(current).page, wPos); }
+  catch (e) { $('demoErr').textContent = e.message; if (wPos) wPos.close(); }
   $('demoRoomBtn').disabled = false;
 };
 
