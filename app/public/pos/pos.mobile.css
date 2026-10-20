@@ -85,3 +85,7 @@
 
 /* phones: the large page title already names the screen, so the bar above it stays slim and only carries status */
 @media (max-width:599px){.navbar{min-height:40px}.navbar .title{opacity:0;width:0;flex:0 0 0;overflow:hidden}.navbar .title.keep{opacity:1;width:auto;flex:1 1 auto}.page{padding-top:4px}}
+
+/* More page on phones: sections in their original order, one column */
+.more-grid{display:flex;flex-direction:column;gap:16px}
+.more-col{display:contents}

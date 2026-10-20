@@ -21,7 +21,7 @@ V.more = () => {
   return h('div', { class: 'page' },
     h('div', { class: 'page-head' }, h('div', null, h('h1', null, 'More'), h('div', { class: 'sub' }, myName() + ' · ' + cap1(S.role)))),
     extra.length ? h('div', { class: 'list only-phone' }, extra.map((n) => liRow({ ic: n.ic, tone: n.tone || 'gray', title: n.label, chev: true, onclick: () => go(n.k) }))) : null,
-    h('div', { class: 'more-grid' },
+    moreGrid([
       h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, 'Attendance')), h('div', { class: 'list' },
         liRow({ ic: 'clock', tone: mine ? 'green' : 'gray', title: mine ? 'On shift since ' + fmtTime(mine.in) : 'Not clocked in', right: h('button', { class: 'btn sm ' + (mine ? '' : 'fill'), onclick: async () => { if (mine) { mine.out = now(); await save('shift', mine, mine.id); toast('Clocked out'); } else { await save('shift', { u: S.user.id, e: S.user.email || myName(), in: now() }); toast('Clocked in'); } render(); } }, mine ? 'Clock out' : 'Clock in') }),
         ...sh.slice(0, 5).filter((x) => x.out).map((x) => liRow({ title: fmtDay(localDay(x.in)), sub: fmtTime(x.in) + ' to ' + fmtTime(x.out), value: Math.round((new Date(x.out) - new Date(x.in)) / 60000) + ' min' })))),
@@ -44,7 +44,8 @@ V.more = () => {
         liRow({ ic: 'chart', tone: 'gray', title: 'Help & report a problem', onclick: () => auzHelp.open(sb) }),
         S.role === 'owner' ? liRow({ ic: 'chart', tone: 'gray', title: 'Backup, export or clear data', onclick: () => auzMyData(sb) }) : null,
         liRow({ ic: 'logout', tone: 'red', title: 'Sign out', onclick: signOut }),
-        liRow({ ic: 'trash', tone: 'red', title: 'Delete my account', onclick: deleteAccountFlow })))),
+        liRow({ ic: 'trash', tone: 'red', title: 'Delete my account', onclick: deleteAccountFlow })))
+    ]),
     h('div', { class: 'powered' }, 'Powered by ', h('a', { href: 'https://auzslab.in', target: '_blank', rel: 'noopener' }, 'AUZslab')));
 };
 async function signOut() { if (!(await confirmBox('Sign out?', 'Unsynced changes stay on this device and sync when you sign in again.', 'Sign out', true))) return; await sb.auth.signOut(); localStorage.removeItem('u'); location.reload(); }
@@ -102,3 +103,16 @@ async function enablePush() {
   if (error) return toast('Could not save this device: ' + error.message, { err: true });
   toast('Order alerts are on for this device');
 }
+// Spread the sections over three columns of about the same height, so no column leaves a blank area (phones keep the original order).
+function moreGrid(secs) {
+  secs = secs.filter(Boolean);
+  const cols = [[], [], []], load = [0, 0, 0];
+  secs.forEach((el, i) => {
+    el.style.order = i;
+    const w = 1.5 + (el.querySelectorAll ? el.querySelectorAll('.li').length || 2 : 2);
+    const k = load.indexOf(Math.min(...load));
+    cols[k].push(el); load[k] += w;
+  });
+  return h('div', { class: 'more-grid' }, cols.map((c) => h('div', { class: 'more-col' }, c)));
+}
+
