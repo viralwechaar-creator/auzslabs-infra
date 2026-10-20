@@ -43,25 +43,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 /* ---------- products: bubble lab + nine differently composed slabs ---------- */
-.lab{position:relative;min-height:100vh;min-height:100svh;overflow:hidden;padding:0}
-.lab-h{position:absolute;left:4vw;top:15vh;margin:0;z-index:1;pointer-events:none;display:flex;flex-direction:column;gap:0}
-.lab-h .giant{font-size:clamp(46px,14.5vw,320px);line-height:.84}
-.lab-h .lh2{font-size:clamp(34px,7vw,150px);margin-left:34vw;margin-top:-.15em}
-.lab-h .lh3{margin-left:8vw}
-.lab-lede{position:absolute;right:5vw;top:15vh;max-width:15em;margin:0;z-index:2;font:500 clamp(14px,1.3vw,20px)/1.5 var(--font-body);color:var(--ink-dim);text-align:right}
-.bubbles{position:absolute;inset:0;z-index:3}
-.bub{position:absolute;left:0;top:0;width:var(--s);height:var(--s);border-radius:50%;background:#fffdf7;border:1px solid var(--ink);box-shadow:0 10px 28px -12px rgba(46,44,42,.30);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.2em;cursor:grab;user-select:none;-webkit-user-select:none;transition:box-shadow .2s,background .2s}
-.bub svg{width:62%;height:auto;margin-top:-6%;pointer-events:none}
-.bub b{font:900 clamp(12px,1.9vmin,24px)/1 var(--font-display);letter-spacing:-.03em;text-transform:uppercase;pointer-events:none}
-.bub:hover{background:var(--hl)}
-.bub.grab{cursor:grabbing;box-shadow:10px 10px 0 var(--accent)}
-.bub.dash{border-style:dashed;border-color:var(--accent);box-shadow:none;background:transparent;color:var(--accent)}
-html:not(.fx-live) .bubbles{position:static;display:flex;flex-wrap:wrap;gap:14px;padding:6vh 5vw 40px}
-html:not(.fx-live) .bub{position:static}
-html:not(.fx-live) .lab-h,html:not(.fx-live) .lab-lede{position:static;padding:90px 5vw 0}
-html:not(.fx-live) .lab{min-height:0;height:auto}
-html:not(.fx-live) .lab-hint{position:static;padding:3vh 5vw 5vh;transform:none}
-.lab-hint{position:absolute;left:5vw;bottom:5vh;font-size:clamp(22px,2.6vw,42px);z-index:2;transform:rotate(-3deg)}
+.prh{padding:clamp(110px,18vh,170px) 5vw clamp(36px,6vh,64px);max-width:980px}
+.prh-eye{font:500 12px/1 var(--font-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:10px}
+.prh-eye::before{content:"";width:28px;height:2px;background:var(--accent)}
+.prh-h{margin:16px 0 0;font:900 clamp(38px,5.4vw,76px)/1 var(--font-display);letter-spacing:-.05em}
+.prh-lede{margin:16px 0 0;max-width:30em;font:500 clamp(15px,1.2vw,18px)/1.55 var(--font-body);color:var(--ink-dim)}
+.prh-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px}
+.prh-links a{font-size:13px;font-weight:600;padding:9px 15px;border:1px solid rgba(46,44,42,.22);border-radius:999px;color:var(--ink);transition:.2s}
+.prh-links a:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
 
 .band{background:var(--ink);color:#f6f4f1;padding:1.1em 0;font:900 clamp(22px,4vw,64px)/1 var(--font-display);letter-spacing:-.04em;text-transform:uppercase;transform:rotate(-1.6deg);margin:5vh -3vw;position:relative;z-index:4}
 .band span{padding:0 .5em;white-space:nowrap}
@@ -138,12 +127,38 @@ html:not(.fx-live) .lab-hint{position:static;padding:3vh 5vw 5vh;transform:none}
 .s-custom .q{position:absolute;right:4vw;top:50%;transform:translateY(-52%);font:900 clamp(200px,52vw,900px)/.7 var(--font-display);color:transparent;-webkit-text-stroke:max(2px,.18vw) var(--blue);opacity:.55}
 .s-custom .no{left:4vw;top:2vh;-webkit-text-stroke-color:rgba(46,44,42,.25)}
 .s-custom .nm{font-size:clamp(50px,13vw,280px)}.s-custom .blk{margin-top:12vh;max-width:30em}
+/* a touch smaller type and cards below the hero (owner request) */
+.slab .nm{font-size:clamp(38px,9.4vw,196px)}
+.s-pos .nm{font-size:clamp(58px,18.5vw,400px)}
+.s-pos .blk{margin-top:2vh}
+.s-crm .nm.tilt{font-size:clamp(54px,16vw,340px)}
+.s-inventory .nm.center{font-size:clamp(32px,10.4vw,238px)}
+.s-qr .nm{font-size:clamp(36px,8.2vw,178px)}
+.s-payroll .nm{font-size:clamp(36px,7.3vw,162px)}
+.frame .nm{font-size:clamp(36px,7.1vw,144px)}
+.s-salon .nm{font-size:clamp(40px,8.9vw,196px)}
+.s-custom .nm{font-size:clamp(44px,11vw,238px)}
+.slab .sum{font-size:clamp(14px,1.15vw,18px)}
+.feats{font-size:clamp(12.5px,.95vw,15.5px)}
+.notes li{width:min(23vw,260px);font-size:clamp(16px,1.6vw,26px)}
+.receipt{width:min(42vw,560px)}
+.orb{font-size:clamp(12px,1vw,16.5px);width:min(20vw,260px)}
+.labels li{font-size:clamp(12px,.95vw,15.5px)}
+.frame{width:min(72vw,980px)}
+.s-pos .a-big{width:min(48vw,700px)}
+.s-crm .a-left{width:min(25vw,350px)}
+.s-billing .a-corner{width:min(20vw,280px)}
+.s-inventory .a-mid{width:min(36vw,480px)}
+.s-qr .a-phone{width:min(25vw,350px)}
+.s-payroll .a-clock{width:min(32vw,470px)}
+.s-web .a-cursor{width:min(17vw,220px)}
+.s-salon .a-scissors{width:min(38vw,540px)}
+.s-payroll .blk{width:min(46vw,680px)}
+.s-salon .blk,.s-crm .blk{max-width:32em}
 .checkout{padding:14vh 5vw 10vh;display:flex;flex-direction:column;gap:2.4vh;align-items:flex-start;position:relative}
 .checkout .eye{font:500 12px/1 var(--font-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
 .checkout .tags{display:flex;gap:10px;flex-wrap:wrap;margin-top:2vh}
 @media (max-width:760px){
-  .lab-h{top:11vh}.lab-h .giant{font-size:12.4vw}.lab-h .lh2{margin-left:30vw;font-size:8vw}.lab-lede{display:none}
-  .bub b{font-size:9px}.bub{--s:21vw!important}.bub.dash{--s:17vw!important}
   .slab{padding:60px 5vw}
   .s-pos .a-big{position:relative;right:auto;bottom:auto;width:90vw;margin:4vh -3vw 0 0}
   .s-crm .a-left{position:relative;left:auto;top:auto;width:46vw;margin:3vh 0 0;display:block}
@@ -259,25 +274,22 @@ html:not(.fx-live) .lab-hint{position:static;padding:3vh 5vw 5vh;transform:none}
 
           <main class="content">
 
-    <section class="lab" id="lab">
-      <canvas class="fx-field" data-shapes="flow" data-n="900" aria-hidden="true"></canvas>
-      <h1 class="lab-h" aria-label="Built around you.">
-        <span class="giant outline lh1" aria-hidden="true">Built</span>
-        <span class="giant lh2" aria-hidden="true">around</span>
-        <span class="giant outline-m lh3" aria-hidden="true">you.</span>
-      </h1>
-      <p class="lab-lede">Connected systems for every part of your business. Start with what you need, shape it to how you work.</p>
-      <div class="bubbles" data-bubbles>
-        <a class="bub" href="#slab-pos" style="--s:15vmin"><svg data-art="pos" aria-hidden="true"></svg><b>POS</b></a>
-        <a class="bub" href="#slab-crm" style="--s:12.5vmin"><svg data-art="crm" aria-hidden="true"></svg><b>CRM</b></a>
-        <a class="bub" href="#slab-billing" style="--s:14vmin"><svg data-art="billing" aria-hidden="true"></svg><b>Billing</b></a>
-        <a class="bub" href="#slab-inventory" style="--s:13vmin"><svg data-art="inventory" aria-hidden="true"></svg><b>Stock</b></a>
-        <a class="bub" href="#slab-qr" style="--s:11.5vmin"><svg data-art="qr" aria-hidden="true"></svg><b>QR</b></a>
-        <a class="bub" href="#slab-payroll" style="--s:13vmin"><svg data-art="payroll" aria-hidden="true"></svg><b>Payroll</b></a>
-        <a class="bub" href="#slab-salon" style="--s:12.5vmin"><svg data-art="salon" aria-hidden="true"></svg><b>Salon</b></a>
-        <a class="bub" href="#slab-mobile" style="--s:12.5vmin"><svg data-art="mobile" aria-hidden="true"></svg><b>Mob</b></a>
-      </div>
-      <p class="hand lab-hint">grab one. throw it. tap to jump.</p>
+    <section class="prh" id="lab">
+      <div class="prh-eye">Products</div>
+      <h1 class="prh-h">Built around you.</h1>
+      <p class="prh-lede">Connected systems for every part of your business. Start with what you need, shape it to how you work.</p>
+      <nav class="prh-links" aria-label="Jump to a product">
+        <a href="#slab-pos">AUZsPOS</a>
+        <a href="#slab-crm">CRM</a>
+        <a href="#slab-billing">Billing</a>
+        <a href="#slab-inventory">Stock</a>
+        <a href="#slab-qr">QR ordering</a>
+        <a href="#slab-payroll">AUZsPay</a>
+        <a href="#slab-salon">Salon</a>
+        <a href="#slab-mobile">AUZsMob</a>
+        <a href="#slab-accounting">AUZsLedger</a>
+        <a href="#slab-scan">AUZsScan</a>
+      </nav>
     </section>
 
 <div class="band" data-marquee data-speed="46"><span>One login</span><i></i><span>Every module</span><i></i><span>Works offline</span><i></i><span>Your data stays yours</span><i></i></div>
