@@ -283,6 +283,7 @@ export const RPC = {
   acc_bulk_update: { params: ['p_entity', 'p_ids', 'p_changes'], jsonb: ['p_changes'], auth: true },
   acc_bulk_post: { params: ['p_ids'], auth: true },
   acc_delete_products: { params: ['p_ids'], auth: true },
+  acc_send_due_reminder: { params: ['p_party_id'], auth: true },
   acc_due_reminders: { params: ['p_side'], defaults: {'p_side': 'receivable'}, auth: true },
   acc_log_comm: { params: ['p'], jsonb: ['p'], auth: true },
   acc_retry_comm: { params: ['p_id', 'p_status'], auth: true },
@@ -442,6 +443,7 @@ export const RPC = {
   mob_report_ledger: { params: ['p_from', 'p_to', 'p_staff_id', 'p_limit'], defaults: { p_from: null, p_to: null, p_staff_id: null, p_limit: 2000 }, auth: true },
   mob_integrity_check: { params: [], auth: true },
   mob_export_all: { params: [], auth: true },
+  mob_send_due_reminder: { params: ['p_sale_id'], auth: true },
   mob_share_sale: { params: ['p_sale_id', 'p_enable'], defaults: { p_enable: true }, auth: true },
   public_mob_sale: { params: ['p_token'], auth: false },
 };
