@@ -214,7 +214,7 @@ button:active:not(:disabled){transform:translateY(1px) scale(.99)}
     <section class=page id=p-trials>
       <div class=card style="margin-top:0">
         <h3>New prospect</h3>
-        <p class=sub>Creates a real trial business, ready to demo. Branding it updates their website, invoice and bill instantly.</p>
+        <p class=sub>Creates a real trial business with menu, photos and website text already filled in — ready to demo in one tap.</p>
         <label>Business name<input id=newName placeholder="e.g. Chapter One Cafe"></label>
         <label>Desired address (subdomain)<input id=newSlug placeholder="chapterone" pattern="[a-z0-9-]+"></label>
         <label>Type of business<select id=newNiche>
@@ -223,7 +223,7 @@ button:active:not(:disabled){transform:translateY(1px) scale(.99)}
           <option value=retail>Retail / General</option>
           <option value=mobile>Mobile phone shop</option>
         </select></label>
-        <button id=createBtn style="width:100%">Create trial + brand it</button>
+        <button id=createBtn style="width:100%">Create trial</button>
         <div id=createErr class=err></div>
       </div>
 
@@ -234,9 +234,20 @@ button:active:not(:disabled){transform:translateY(1px) scale(.99)}
         <h3 id=bpTitle>Brand this business</h3>
         <p class=sub id=bpLink></p>
         <p class="sub hidden" id=bpNote></p>
+        <h2 style="margin-top:0">Show the client</h2>
+        <p class=sub id=showSub>Website and POS side by side in one screen: place an order on the website and watch it land in the POS. Already loaded with their logo, colours and a 24-item menu.</p>
+        <div class=actions>
+          <button id=demoRoomBtn>Start demo (website + POS) ↗</button>
+          <button class=ghost id=openPosBtn>Open their POS ↗</button>
+          <button class=ghost id=openQrBtn>Open QR order demo ↗</button>
+          <button class=ghost id=openSiteBtn>Open their website ↗</button>
+        </div>
+        <div id=demoErr class=err></div>
+
+        <details id=brandDet open><summary style="cursor:pointer;font-weight:600;margin:14px 0 4px">Branding &amp; website text (already filled in — edit only if needed)</summary>
         <div id=brandForm>
           <label>Logo (PNG)<input id=bLogoFile type=file accept="image/png,image/jpeg,image/webp"></label>
-          <div id=bLogoPrev style="margin-top:8px"></div>
+          <div id=bLogoPrev style="margin-top:8px"></div><button type=button class="ghost small hidden" id=bLogoRm>Remove logo</button>
           <label>Business name<input id=bName></label>
           <div class=row2>
             <div><label>Phone<input id=bPhone></label></div>
@@ -259,7 +270,7 @@ button:active:not(:disabled){transform:translateY(1px) scale(.99)}
           <h2>Website photos</h2>
           <p class=sub>Without these the website still works — it shows a drawn icon instead of a photo. Upload the client's own when you have them.</p>
           <label>Hero photo (top of the page)<input id=bHeroFile type=file accept="image/png,image/jpeg,image/webp"></label>
-          <div id=bHeroPrev style="margin-top:8px"></div>
+          <div id=bHeroPrev style="margin-top:8px"></div><button type=button class="ghost small hidden" id=bHeroRm>Remove hero photo</button>
           <label>Gallery photos (add one at a time)<input id=bGalFile type=file accept="image/png,image/jpeg,image/webp"></label>
           <div id=bGalPrev style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"></div>
 
@@ -276,16 +287,7 @@ button:active:not(:disabled){transform:translateY(1px) scale(.99)}
           <div id=brandErr class=err></div>
           <div id=brandOk class="ok hidden"></div>
         </div>
-
-        <h2>Show the client</h2>
-        <p class=sub id=showSub>Open the real POS and the real QR ordering page, already loaded with their logo, colours and a 24-item menu — for the pitch, in one tap.</p>
-        <div class=actions>
-          <button id=openPosBtn>Open their POS ↗</button>
-          <button class=ghost id=openQrBtn>Open QR order demo ↗</button>
-          <button class=ghost id=openSiteBtn>Open their website ↗</button>
-          <button class=ghost id=applyDemoBtn>Menu/website looks empty? Add demo photos</button>
-        </div>
-        <div id=demoErr class=err></div>
+        </details>
 
         <h2>Once they buy</h2>
         <p class=sub>A real login with a password, to hand over to the owner.</p>
@@ -764,6 +766,10 @@ async function renderMe() {
 
 // ---------- TRIALS (salesman): create a prospect, brand it, demo it ----------
 let trials = [], current = null;
+// Website text filled in for every new prospect so the website never looks empty; the team member edits it only if needed.
+const SAMPLE_TEXT = {
+  cafe: { siteKicker: 'Welcome', siteTag: 'Good food. Good company.', siteSub: 'Fresh coffee, hearty plates and a warm table waiting for you. Order from your phone and we bring it over.', siteAbout: 'We are a neighbourhood cafe that cares about what goes on the plate. Everything is made fresh, served warm and priced fairly. Scan the QR on your table to order, or order ahead for takeaway.', siteHours: 'Mon–Sun · 9am – 11pm' },
+};
 async function loadTrials() {
   try { trials = (await rpc('salesman_my_trials')) || []; } catch (e) { $('trialsList').innerHTML = `<p class=err>${esc(e.message)}</p>`; return; }
   renderTrials();
@@ -781,6 +787,11 @@ $('createBtn').onclick = async () => {
   $('createBtn').disabled = false;
   if (error) { $('createErr').textContent = error.message; return; }
   const tenantId = data.tenant_id;
+  const sample = SAMPLE_TEXT[niche];
+  if (sample) {
+    const patch = { ...sample, siteHours: sample.siteHours, name };
+    await sb.rpc('salesman_branding_save', { p_tenant_id: tenantId, p_patch: patch });
+  }
   trials.unshift({ id: tenantId, name, slug, niche, created_at: new Date().toISOString(), has_owner: false, logo: null, col: null, table_id: data.table_id });
   $('newName').value = ''; $('newSlug').value = ''; $('newSlug').dataset.touched = '';
   renderTrials();
@@ -824,7 +835,10 @@ function applyNiche(t) {
   $('openPosBtn').textContent = a.main;
   $('openQrBtn').classList.toggle('hidden', !a.qr);
   $('openSiteBtn').classList.toggle('hidden', !a.site);
-  $('applyDemoBtn').classList.toggle('hidden', !a.demo);
+  $('demoRoomBtn').classList.toggle('hidden', !a.demo);
+  $('openPosBtn').classList.toggle('ghost', a.demo);
+  $('brandDet').open = !a.demo;
+  $('brandDet').classList.toggle('hidden', !a.brand);
   $('brandForm').classList.toggle('hidden', !a.brand);
   $('bpNote').textContent = a.note || '';
   $('bpNote').classList.toggle('hidden', !a.note);
@@ -852,10 +866,8 @@ async function openBrand(tenantId) {
   $('bTint').value = /^#[0-9a-f]{6}$/i.test(b.tint || '') ? b.tint : '#f5f4f2';
   $('bMuted').value = /^#[0-9a-f]{6}$/i.test(b.muted || '') ? b.muted : '#7a756d';
   $('bLine').value = /^#[0-9a-f]{6}$/i.test(b.line || '') ? b.line : '#e2dcd4';
-  $('bLogoPrev').innerHTML = data.logo ? `<img src="${esc(data.logo)}" style="height:52px;border-radius:8px" alt="">` : '';
-  current.logoUrl = data.logo || null;
-  $('bHeroPrev').innerHTML = data.siteHero ? `<img src="${esc(data.siteHero)}" style="height:70px;border-radius:8px" alt="">` : '';
-  current.heroUrl = data.siteHero || null;
+  current.logoUrl = data.logo || null; current.heroUrl = data.siteHero || null;
+  showLogo(); showHero();
   current.galleryUrls = (data.siteGallery || '').split(',').map((s) => s.trim()).filter(Boolean);
   renderGalleryPrev();
   $('brandPanel').classList.remove('hidden');
@@ -875,6 +887,17 @@ async function uploadBrandImage(file, prefix) {
   return CFG.url + body.path;
 }
 
+function showLogo() {
+  $('bLogoPrev').innerHTML = current.logoUrl ? `<img src="${esc(current.logoUrl)}" style="height:52px;border-radius:8px" alt="">` : '';
+  $('bLogoRm').classList.toggle('hidden', !current.logoUrl);
+}
+function showHero() {
+  $('bHeroPrev').innerHTML = current.heroUrl ? `<img src="${esc(current.heroUrl)}" style="height:70px;border-radius:8px" alt="">` : '';
+  $('bHeroRm').classList.toggle('hidden', !current.heroUrl);
+}
+$('bLogoRm').onclick = () => { current.logoUrl = ''; showLogo(); toast('Logo removed — click Save to make it live'); };
+$('bHeroRm').onclick = () => { current.heroUrl = ''; showHero(); toast('Hero photo removed — click Save to make it live'); };
+
 function renderGalleryPrev() {
   $('bGalPrev').innerHTML = (current.galleryUrls || []).map((u, i) =>
     `<span style="position:relative;display:inline-block"><img src="${esc(u)}" style="height:60px;border-radius:8px;display:block" alt=""><button type=button data-rm="${i}" aria-label="Remove photo" style="position:absolute;top:-6px;right:-6px;width:26px;height:26px;min-height:0;padding:0;border-radius:50%;font-size:14px;line-height:1;margin:0">×</button></span>`
@@ -891,7 +914,7 @@ $('bLogoFile').onchange = async () => {
   $('brandErr').textContent = '';
   try {
     current.logoUrl = await uploadBrandImage(file, 'brand');
-    $('bLogoPrev').innerHTML = `<img src="${esc(current.logoUrl)}" style="height:52px;border-radius:8px" alt="">`;
+    showLogo();
     toast('Logo uploaded — click Save to make it live');
   } catch (e) { $('brandErr').textContent = e.message; }
   $('bLogoFile').value = '';
@@ -903,7 +926,7 @@ $('bHeroFile').onchange = async () => {
   $('brandErr').textContent = '';
   try {
     current.heroUrl = await uploadBrandImage(file, 'hero');
-    $('bHeroPrev').innerHTML = `<img src="${esc(current.heroUrl)}" style="height:70px;border-radius:8px" alt="">`;
+    showHero();
     toast('Hero photo uploaded — click Save to make it live');
   } catch (e) { $('brandErr').textContent = e.message; }
   $('bHeroFile').value = '';
@@ -934,8 +957,8 @@ $('saveBrandBtn').onclick = async () => {
     siteSub: $('bSub').value.trim(), siteAbout: $('bAbout').value.trim(), siteInsta: $('bInsta').value.trim(),
     brand: { plum: $('bPlum').value, tint: $('bTint').value, muted: $('bMuted').value, line: $('bLine').value },
   };
-  if (current.logoUrl) patch.logo = current.logoUrl;
-  if (current.heroUrl) patch.siteHero = current.heroUrl;
+  if (current.logoUrl != null) patch.logo = current.logoUrl;
+  if (current.heroUrl != null) patch.siteHero = current.heroUrl;
   if (current.galleryUrls) patch.siteGallery = current.galleryUrls.join(',');
   $('saveBrandBtn').disabled = true;
   const { data, error } = await sb.rpc('salesman_branding_save', { p_tenant_id: current.id, p_patch: patch });
@@ -957,14 +980,15 @@ $('openQrBtn').onclick = () => {
   window.open('https://' + current.slug + '.auzslab.in/site.html?t=' + current.table_id, '_blank');
 };
 
-$('applyDemoBtn').onclick = async () => {
+$('demoRoomBtn').onclick = async () => {
   if (!current) return;
   $('demoErr').textContent = '';
-  $('applyDemoBtn').disabled = true;
-  const { data, error } = await sb.rpc('salesman_apply_demo_content', { p_tenant_id: current.id });
-  $('applyDemoBtn').disabled = false;
-  if (error) { $('demoErr').textContent = error.message; return; }
-  toast(data.added_menu ? 'Demo menu + photos added — open the POS or site to see it' : (data.photos_backfilled ? `Added photos to ${data.photos_backfilled} item(s)` : 'Already had photos — nothing to add'));
+  $('demoRoomBtn').disabled = true;
+  try {
+    const q = '?n=' + encodeURIComponent(current.name) + (current.table_id ? '&t=' + encodeURIComponent(current.table_id) : '');
+    await openBusiness(current.id, current.slug, '/demo-room.html' + q);
+  } catch (e) { $('demoErr').textContent = e.message; }
+  $('demoRoomBtn').disabled = false;
 };
 
 $('openPosBtn').onclick = async () => {

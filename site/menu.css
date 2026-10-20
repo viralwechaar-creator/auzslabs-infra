@@ -69,18 +69,16 @@
   /* two halves: Explore on top, Get started at the bottom (order), the open group's list sits bottom right */
   .sidebar-nav>a[href="index.html"]{order:1}
   .sidebar-nav>.nav-group:nth-of-type(1){order:2}
-  .sidebar-nav>.nav-group:nth-of-type(2){order:3}
   .sidebar-nav>a[href="platform.html"]{order:4}
   .sidebar-nav>a[href="live-demo.html"]{order:6;margin-top:auto;display:flex;width:min(32vw,460px);border-top:1px solid #0a0a0a;padding-top:12px}
   .sidebar-nav>a[href="download-apps.html"]{order:7}
-  .sidebar-nav>.nav-group:nth-of-type(3){order:8}
+  .sidebar-nav>.nav-group:nth-of-type(2){order:8}
   .sidebar-nav>a[href="cart.html"]{order:9}
   .sidebar-nav>a[href="contact.html"]{order:10}
   .nav-submenu{display:block;max-height:none!important;overflow:visible!important;position:absolute;left:50%;right:5vw;top:auto;bottom:0;margin:0;width:auto;background:transparent;border:0;border-radius:0;box-shadow:none;padding:0;transform:none;opacity:0;visibility:hidden;transition:opacity .16s ease .25s,visibility 0s .45s;pointer-events:none}
   .nav-submenu::before{display:block;font:600 22px Inter,system-ui,sans-serif;letter-spacing:-.02em;color:#0a0a0a;margin:0 0 18px}
-  .nav-group:nth-of-type(1) .nav-submenu::before{content:"Products"}
-  .nav-group:nth-of-type(2) .nav-submenu::before{content:"Business types"}
-  .nav-group:nth-of-type(3) .nav-submenu::before{content:"Resources"}
+  .nav-group:nth-of-type(1) .nav-submenu::before{content:"Business types"}
+  .nav-group:nth-of-type(2) .nav-submenu::before{content:"Resources"}
   .nav-submenu-inner{display:grid;grid-template-columns:1fr 1fr;gap:2px 48px;padding:0;overflow:visible}
   .nav-sublink{display:block;font-family:Inter,system-ui,sans-serif;font-weight:400;font-size:17px;line-height:1.35;letter-spacing:-.01em;padding:7px 0;color:#333;border:0;background:none;text-decoration:none}
   .nav-sublink:hover,.nav-sublink.active{color:#800020;background:none;transform:none}
