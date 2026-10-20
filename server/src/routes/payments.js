@@ -1,5 +1,5 @@
 import { pool, withAuth } from '../db.js';
-import { paymentConfig, gstPct, createOrder, verifyWebhookSignature, handleWebhookEvent } from '../payments.js';
+import { paymentConfig, gstPct, createOrder, createClientOrderPayment, verifyWebhookSignature, handleWebhookEvent } from '../payments.js';
 import { cashfreeConfigured, startAutorenew, cancelAutorenew, verifyWebhookSignature as verifyCashfreeSignature, handleWebhookEvent as handleCashfreeWebhookEvent } from '../cashfree.js';
 import { requireVerifiedEmail } from '../lib/guards.js';
 import { HttpError, rateLimited, readJsonBody, readRawBody } from '../lib/http.js';
@@ -26,6 +26,15 @@ export async function handle(ctx) {
     } catch (err) {
       throw new HttpError(400, err.message || 'could not start payment');
     }
+    return reply(200, result);
+  }
+  // Pay online for a request-first order (db/200). The unguessable token in the pay link is the credential.
+  if (url.pathname === '/payments/order/create' && req.method === 'POST') {
+    if (rateLimited(`corderpay:${ip}`, 20, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+    const { token, terms } = await readJsonBody(req);
+    let result;
+    try { result = await createClientOrderPayment({ token, terms }); }
+    catch (err) { throw new HttpError(400, err.message || 'could not start payment'); }
     return reply(200, result);
   }
   // Razorpay calls this directly, server-to-server -- no Bearer token,

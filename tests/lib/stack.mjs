@@ -44,7 +44,17 @@ export async function startStack({ apiPort, webPort, log = () => {} } = {}) {
     });
   });
   await new Promise((ok) => waSrv.listen(0, '127.0.0.1', ok));
-  const env = { WA_GRAPH_URL: 'http://127.0.0.1:' + waSrv.address().port, WA_PHONE_NUMBER_ID: 'PLATFORM1', WA_ACCESS_TOKEN: 'platform-token-platform-token', WA_APP_SECRET: 'wa-app-secret', WA_VERIFY_TOKEN: 'wa-verify', WA_WORKER_MS: '250', WA_RETRY_BASE_S: '0', ...process.env, PORT: String(apiPort), PGHOST: PG.host, PGPORT: String(PG.port), POSTGRES_APP_PASSWORD: PG.appPassword, POSTGRES_DB: PG.db,
+  // A stand-in for Razorpay's orders API: hands back an order id and remembers it (rzp.orders).
+  const rzp = { orders: [], webhookSecret: 'rzp-webhook-secret-test' };
+  const rzpSrv = http.createServer((rq, rs) => {
+    let b = ''; rq.on('data', (d) => (b += d)); rq.on('end', () => {
+      const body = b ? JSON.parse(b) : {}; const id = 'order_TEST' + (rzp.orders.length + 1) + Math.random().toString(36).slice(2, 7);
+      rzp.orders.push({ id, auth: rq.headers.authorization, ...body });
+      rs.writeHead(200, { 'content-type': 'application/json' }); rs.end(JSON.stringify({ id, amount: body.amount, currency: body.currency || 'INR' }));
+    });
+  });
+  await new Promise((ok) => rzpSrv.listen(0, '127.0.0.1', ok));
+  const env = { RAZORPAY_API_URL: 'http://127.0.0.1:' + rzpSrv.address().port + '/v1', RAZORPAY_KEY_ID: 'rzp_test_TESTKEY', RAZORPAY_KEY_SECRET: 'rzp-test-secret', RAZORPAY_WEBHOOK_SECRET: rzp.webhookSecret, WA_GRAPH_URL: 'http://127.0.0.1:' + waSrv.address().port, WA_PHONE_NUMBER_ID: 'PLATFORM1', WA_ACCESS_TOKEN: 'platform-token-platform-token', WA_APP_SECRET: 'wa-app-secret', WA_VERIFY_TOKEN: 'wa-verify', WA_WORKER_MS: '250', WA_RETRY_BASE_S: '0', ...process.env, PORT: String(apiPort), PGHOST: PG.host, PGPORT: String(PG.port), POSTGRES_APP_PASSWORD: PG.appPassword, POSTGRES_DB: PG.db,
     JWT_SECRET: 'test-secret-test-secret-test-secret-123', DOMAIN: 'localhost', DISABLE_RATE_LIMIT: '1', UPLOAD_ROOT: uploads, DOC_UPLOAD_ROOT: uploads + '-private' };
   const api = spawn('node', ['src/index.js'], { cwd: path.join(root, 'server'), env, stdio: ['ignore', 'pipe', 'pipe'] });
   process.on('exit', () => { try { api.kill('SIGKILL'); } catch {} });
@@ -98,7 +108,7 @@ export async function startStack({ apiPort, webPort, log = () => {} } = {}) {
   return {
     apiPort, webPort, apiBase,
     url: (sub, p = '/') => `http://${sub ? sub + '.' : ''}localhost:${webPort}${p}`,
-    attach, getLog: () => apiLog, wa,
-    async stop() { api.kill('SIGTERM'); waSrv.close(); await new Promise((ok) => web.close(ok)); fs.rmSync(uploads, { recursive: true, force: true }); },
+    attach, getLog: () => apiLog, wa, rzp,
+    async stop() { api.kill('SIGTERM'); waSrv.close(); rzpSrv.close(); await new Promise((ok) => web.close(ok)); fs.rmSync(uploads, { recursive: true, force: true }); },
   };
 }

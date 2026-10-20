@@ -115,7 +115,7 @@ const inr = (n) => '₹' + Number(n || 0).toLocaleString('en-IN', { minimumFract
 const TOKEN = (new URLSearchParams(location.search).get('t') || '').trim();
 const STEPS = [['requested', 'Request'], ['verifying', 'Verification'], ['link_sent', 'Payment'], ['payment_submitted', 'Confirming'], ['paid', 'Done']];
 const ORDER_OF = { requested: 0, verifying: 1, confirmed: 1, link_sent: 2, payment_submitted: 3, paid: 4 };
-let D = null;
+let D = null, PAYCFG = { enabled: false };
 
 function setHead(label, title, lede) { $('pgLabel').textContent = label; $('pgTitle').textContent = title; $('pgLede').textContent = lede || ''; }
 function setSteps(status) {
@@ -172,6 +172,12 @@ function render() {
     <p class="pay-note"><a href="terms.html" target="_blank" rel="noopener" style="color:var(--accent)">Terms &amp; conditions</a> &middot; <a href="privacy.html" target="_blank" rel="noopener" style="color:var(--accent)">Privacy policy</a> &middot; <a href="refund.html" target="_blank" rel="noopener" style="color:var(--accent)">Refund policy</a></p>
     <label class="chk"><input type="checkbox" id="agree" ${submitted ? 'checked' : ''}><span>I have read and I agree to the Terms &amp; Conditions, Privacy Policy and Refund Policy.</span></label>
   </div></section>
+  ${PAYCFG.enabled ? `<section class="section tight"><div class="card" style="text-align:center"><div class="label" style="justify-content:center">Pay online</div>
+    <p class="pay-note" style="margin:6px 0 12px">Cards, UPI and net banking, secured by Razorpay. Your bill is created automatically as soon as the payment goes through.</p>
+    <button class="btn btn-primary form-submit" id="payOnline" type="button">Pay ${inr(total)} online</button>
+    <div class="err" id="onErr"></div>
+    <p class="pay-note" style="margin-top:14px">Prefer UPI QR? Pay below and send us the screenshot.</p>
+  </div></section>` : ''}
   <section class="section tight"><div class="card upi-card" id="payCard"><div class="label" style="justify-content:center">Pay ${inr(total)}</div>
     <img id="qr" alt="UPI QR code" width="200" height="200">
     <p class="pay-note" style="margin:0">Scan with any UPI app, or pay to <b>${esc(upi.id)}</b> (${esc(upi.name)}).</p>
@@ -185,6 +191,45 @@ function render() {
   </div></section>`;
   try { const q = qrcode(0, 'M'); q.addData(uri); q.make(); $('qr').src = q.createDataURL(5, 2); } catch (e) { $('qr').style.display = 'none'; }
   $('send').onclick = send;
+  if ($('payOnline')) $('payOnline').onclick = payOnline;
+}
+
+function loadCheckout() {
+  return new Promise((resolve, reject) => {
+    if (window.Razorpay) return resolve();
+    const el = document.createElement('script'); el.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    el.onload = () => resolve(); el.onerror = () => reject(new Error('Could not load the payment window. Check your connection and try again.'));
+    document.head.appendChild(el);
+  });
+}
+async function waitPaid() {
+  const box = $('onErr'); const btn = $('payOnline');
+  if (btn) { btn.disabled = true; btn.textContent = 'Confirming your payment...'; }
+  for (let i = 0; i < 30; i++) {
+    await new Promise((r) => setTimeout(r, 3000));
+    const { data } = await sb.rpc('public_client_order', { p_token: TOKEN });
+    if (data && data.status === 'paid') { D = data; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+  }
+  if (box) box.textContent = 'Your payment is being confirmed. This can take a minute. You will get your bill on WhatsApp; you can also refresh this page.';
+}
+async function payOnline() {
+  const err = $('onErr'); err.textContent = '';
+  if (!$('agree').checked) { err.textContent = 'Please tick the box to accept the terms, privacy policy and refund policy.'; $('agree').scrollIntoView({ block: 'center' }); return; }
+  const btn = $('payOnline'); const old = btn.textContent; btn.disabled = true; btn.textContent = 'Opening...';
+  try {
+    const r = await fetch(CFG.url + '/payments/order/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: TOKEN, terms: true }) });
+    const o = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(o.error || 'Could not start the payment.');
+    await loadCheckout();
+    const rz = new window.Razorpay({
+      key: o.keyId, amount: o.amount, currency: o.currency, order_id: o.orderId, name: 'AUZslab', description: o.description,
+      prefill: o.prefill, theme: { color: '#800020' },
+      handler: () => { waitPaid(); },
+      modal: { ondismiss: () => { btn.disabled = false; btn.textContent = old; } },
+    });
+    rz.on('payment.failed', (resp) => { err.textContent = (resp && resp.error && resp.error.description) || 'The payment did not go through. You can try again.'; btn.disabled = false; btn.textContent = old; });
+    rz.open();
+  } catch (e) { err.textContent = e.message; btn.disabled = false; btn.textContent = old; }
 }
 
 async function send() {
@@ -214,6 +259,7 @@ async function load() {
   if (!/^[a-f0-9]{32}$/.test(TOKEN)) { setHead('Payment link', 'This link is not valid.', 'Please use the link we sent you on WhatsApp, or send a new request from the cart.'); setSteps('x'); return; }
   const { data, error } = await sb.rpc('public_client_order', { p_token: TOKEN });
   if (error || !data) { setHead('Payment link', 'We could not find this request.', 'Please check the link we sent you on WhatsApp.'); setSteps('x'); return; }
+  try { const c = await fetch(CFG.url + '/payments/config'); if (c.ok) PAYCFG = await c.json(); } catch (e) {}
   D = data; render();
 }
 load();
