@@ -421,6 +421,33 @@ input[type=text],input[type=tel],input[type=email],input[type=date],select,texta
 }
 @media(min-width:700px) and (max-width:1023px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}.story-teaser{gap:28px}.founder-photo{min-height:320px}}
 
+
+/* ---- footer pinned to the bottom, dark; gallery; favourites; cart bar ---- */
+.main{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;box-sizing:border-box}
+.main>.wrap{flex:1;display:flex;flex-direction:column;width:100%}
+.main>.wrap>.page{padding-bottom:64px}
+.kfoot{display:block;margin-top:auto;border:0;padding:0;background:#2B2420;color:#EFE7DC;border-radius:26px;overflow:hidden;font-family:var(--f-body);font-size:14px;text-transform:none;letter-spacing:0}
+.kf-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:28px 36px;padding:36px 36px 28px}
+.kf-grid .kf-brand{font-size:30px;color:#FFF6EA;font-weight:700;letter-spacing:-.02em;color:#FFF6EA;margin:0 0 8px}
+.kf-grid p{margin:0;line-height:1.6;color:#CFC3B4;font-size:14px}
+.kf-grid h4{margin:0 0 10px;font:600 11px/1 var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:#E3B79F}
+.kfoot a{color:#FFF6EA;text-decoration:none;font-weight:600}
+.kfoot a:hover{color:#F0B79C}
+.kf-links{display:grid;gap:8px}
+.kf-bar{border-top:1px solid rgba(255,246,234,.16);padding:16px 36px;font:500 11px/1.4 var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:#BDB0A0;display:flex;flex-wrap:wrap;gap:6px 24px;justify-content:space-between}
+@media (max-width:899px){.kf-grid{grid-template-columns:1fr 1fr;padding:28px 22px 22px}.kf-grid>div:first-child{grid-column:1/-1}.kf-bar{padding:14px 22px}}
+@media (max-width:480px){.kf-grid{grid-template-columns:1fr}}
+.gal{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:20px}
+.gal a,.gal span{display:block;aspect-ratio:1/1;border-radius:18px;overflow:hidden;background:#E8DCCF}
+.gal img{width:100%;height:100%;object-fit:cover;display:block}
+.gal>:first-child{grid-column:span 2;grid-row:span 2;aspect-ratio:auto}
+@media (max-width:640px){.gal{grid-template-columns:repeat(2,1fr);gap:10px}.gal>:first-child{grid-column:1/-1;grid-row:auto;aspect-ratio:16/10}}
+.favs{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px;margin-top:20px}
+.fav-more{margin-top:20px}
+#cartBar{display:flex;align-items:center;justify-content:space-between;gap:14px;border-radius:999px;font-family:var(--f-body);font-size:15px;font-weight:600;letter-spacing:0;text-transform:none;padding:10px 10px 10px 24px;left:calc(var(--side) + 24px);right:24px;bottom:18px;box-shadow:0 10px 32px rgba(48,30,20,.28);background:#9A6048;color:#FFF9F3}
+#cartBar #barL{font-size:15px;font-weight:600;white-space:nowrap}
+#cartBar #barR{background:#FFF9F3;color:#7A4630;border-radius:999px;padding:11px 20px;font-size:14px;font-weight:700;white-space:nowrap}
+@media (max-width:899px){#cartBar{left:14px;right:14px;bottom:calc(10px + env(safe-area-inset-bottom,0px));padding:8px 8px 8px 20px}#cartBar #barL{font-size:14px}#cartBar #barR{padding:10px 16px;font-size:13px}}
 </style>
 
 <nav id="side" aria-label="Main">
@@ -470,6 +497,17 @@ input[type=text],input[type=tel],input[type=email],input[type=date],select,texta
   <div class="story-teaser">
     <a class="story-photo" href="#about" aria-label="Read the Kiln story"><img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=1200&q=85" alt="Freshly baked artisan bread" loading="lazy"><span class="photo-label">Made slowly, served warm</span></a>
     <div class="story-copy"><span class="mono">A little about us</span><h2>Good things take their time.</h2><p>Small-batch bakes, carefully made coffee and a welcoming table in the heart of Jodhpur.</p><a class="lnk" href="#about">Read our story ↗︎</a></div>
+  </div>
+
+  <div class="sec" id="favSec" hidden>
+    <h2>Guest favourites</h2>
+    <div class="favs" id="favList"></div>
+    <div class="fav-more"><a class="btn ghost btn-compact" href="#menu">See the full menu</a></div>
+  </div>
+
+  <div class="sec" id="galSec">
+    <h2>From the kitchen</h2>
+    <div class="gal" id="galGrid"><span><img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=900&q=80" alt="" loading="lazy"></span><span><img src="https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=900&q=80" alt="" loading="lazy"></span><span><img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=900&q=80" alt="" loading="lazy"></span><span><img src="https://images.unsplash.com/photo-1442512595331-e89e73853f31?auto=format&fit=crop&w=900&q=80" alt="" loading="lazy"></span><span><img src="https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=900&q=80" alt="" loading="lazy"></span></div>
   </div>
 
   <div class="sec">
@@ -589,14 +627,19 @@ input[type=text],input[type=tel],input[type=email],input[type=date],select,texta
   </div>
 </section>
 
-<footer class="foot mono">
-  <span>Kiln Bakery and Café · Jodhpur</span>
-  <span><a href="https://www.instagram.com/" target="_blank" rel="noopener">Instagram ↗︎</a> &nbsp; <a href="https://www.facebook.com/" target="_blank" rel="noopener">Facebook ↗︎</a></span>
+<footer class="foot kfoot">
+  <div class="kf-grid">
+    <div><p class="kf-brand kf-name">Kiln Bakery and Café</p><p class="kf-tag">Bread, pastry and coffee from one small oven.</p></div>
+    <div><h4>Visit</h4><p class="kf-addr">Shop 14, Sardar Market Road, near Ghanta Ghar, Jodhpur 342001</p></div>
+    <div><h4>Hours</h4><p class="kf-hours">Daily 07:30 to 22:00</p><p class="kf-phone">+91 00000 00000</p></div>
+    <div><h4>Explore</h4><div class="kf-links"><a href="#menu">Menu</a><a href="#reservation">Reserve a table</a><a href="#contact">Contact</a><a href="https://www.instagram.com/" target="_blank" rel="noopener">Instagram ↗︎</a><a href="https://www.facebook.com/" target="_blank" rel="noopener">Facebook ↗︎</a></div></div>
+  </div>
+  <div class="kf-bar"><span class="kf-name2">Kiln Bakery and Café · Jodhpur</span><span>Orders by phone, ready at the counter</span></div>
 </footer>
 </div>
 </main>
 
-<a id="cartBar" class="gut" href="#cart" hidden><span id="barL">0 items</span><span id="barR">View cart →</span></a>
+<a id="cartBar" class="gut" href="#cart" hidden><span id="barL">0 items</span><span id="barR">View cart</span></a>
 <div id="toast" role="status" hidden></div>
 <div class="pop" id="pop" hidden><div class="pop-panel" role="dialog" aria-modal="true" aria-labelledby="popT" id="popPanel"></div></div>
 <script src="/sb-client.js?v=6"></script>
@@ -818,8 +861,10 @@ function loadLive(){if(!sbc||!SLUG)return Promise.resolve();
 function nl2(t){return esc(t).replace(/\n/g,'<br>')}
 function brand(M){var c=CFGt,nm=c.name||'';
  if(nm){$$('.brand').forEach(function(b){b.textContent=nm});document.title=nm+' · Menu';var w=$('.wordmark');if(w){w.textContent=nm;if(nm.length>5){w.style.fontSize='clamp(40px,'+Math.max(6,Math.min(18,115/nm.length)).toFixed(1)+'vw,'+Math.round(Math.max(60,Math.min(260,1500/nm.length)))+'px)';w.style.letterSpacing='-.05em'}}
-  var fs=$('.foot span');if(fs)fs.textContent=nm}
+  $$('.kf-name,.kf-name2').forEach(function(x){x.textContent=nm})}
  if(c.siteHours)HRS=c.siteHours;
+ var ka=$('.kf-addr');if(ka&&c.addr)ka.textContent=c.addr;var kh=$('.kf-hours');if(kh&&c.siteHours)kh.textContent=c.siteHours;var kp=$('.kf-phone');if(kp){if(c.phone)kp.textContent=c.phone;else kp.hidden=true}var kt=$('.kf-tag');if(kt){var tg=c.siteSub||c.siteTag;if(tg)kt.textContent=tg}
+ var gs=String(c.siteGallery||'').split(',').map(function(x){return x.trim()}).filter(Boolean).slice(0,5),gg=$('#galGrid');if(gg){if(gs.length>=2){gg.innerHTML=gs.map(function(u){return '<span><img src="'+esc(u)+'" alt="" loading="lazy"></span>'}).join('')}else{$('#galSec').hidden=true}}
  var lede=$('.lede');var tl=c.siteSub||c.siteTag;if(lede&&tl)lede.textContent=tl;
  var m3=$$('.hero-meta div');
  if(m3[0])m3[0].innerHTML=esc(c.siteKicker||'Café')+'<br>and restaurant';
@@ -842,8 +887,10 @@ function brand(M){var c=CFGt,nm=c.name||'';
  $$('a[href^="https://www.facebook.com/"]').forEach(function(a){if(a.parentNode.tagName==='LI')a.parentNode.hidden=true;else a.hidden=true});
  var soc=$('.soc');if(soc&&!ig)soc.hidden=true;
  var sf=$('.side-foot>span:last-child');if(sf)sf.textContent=c.addr?String(c.addr).split(',').slice(-2).join(',').trim():''}
-renderTabs();renderMenu();status();setInterval(status,60000);route();
-loadLive().then(function(){renderTabs();renderMenu();status();refresh();if(cur==='cart')renderCart()});
+function renderFavs(){var fs=$('#favSec'),fl=$('#favList');if(!fs||!fl)return;var it=P.filter(function(p){return p.price>0}).slice(0,4);if(it.length<2){fs.hidden=true;return}fl.innerHTML=it.map(card).join('');fs.hidden=false}
+$('#favList').addEventListener('click',function(e){var o=e.target.closest('[data-open]');if(o){openPop(o.dataset.open,o);return}var a=e.target.closest('[data-add]');if(a){var p=BY[a.dataset.add];addLine(p.id,0,0,[],1);toast('Added: '+p.name)}});
+renderTabs();renderMenu();renderFavs();status();setInterval(status,60000);route();
+loadLive().then(function(){renderTabs();renderMenu();renderFavs();status();refresh();if(cur==='cart')renderCart()});
 })();
 </script>
 
