@@ -196,23 +196,53 @@
         <div class="wrap">
           <div class="label reveal">Every business works differently</div>
           <h2 class="h-1 reveal" style="max-width:11em">Your software should understand that.</h2>
-          <div class="grid-3 zigzag">
-            <div class="reveal work-step" style="border-top:1px dashed var(--line);padding-top:12px">
-              <span class="big-numeral">01</span>
-              <div class="h-2" style="margin-top:6px">Start</div>
-              <p class="p" style="margin-top:6px">A powerful core, ready on day one: billing, stock, accounts, payroll and customers.</p>
+          <div class="reveal biz-pick" id="bizPick">
+            <div class="biz-lead">Start with your kind of business</div>
+            <div class="biz-tabs" role="tablist" aria-label="Your kind of business">
+              <button type="button" role="tab" class="biz-tab on" data-b="cafe" aria-selected="true">Cafes &amp; restaurants</button>
+              <button type="button" role="tab" class="biz-tab" data-b="retail" aria-selected="false">Retail &amp; bookstores</button>
+              <button type="button" role="tab" class="biz-tab" data-b="salon" aria-selected="false">Salons &amp; studios</button>
+              <button type="button" role="tab" class="biz-tab" data-b="mobile" aria-selected="false">Mobile shops</button>
+              <button type="button" role="tab" class="biz-tab" data-b="clothing" aria-selected="false">Clothing &amp; apparel</button>
             </div>
-            <div class="reveal work-step" style="border-top:1px dashed var(--line);padding-top:12px">
-              <span class="big-numeral">02</span>
-              <div class="h-2" style="margin-top:6px">Shape</div>
-              <p class="p" style="margin-top:6px">Roles, approvals, rules, reports and branding set to the way you run things. Anything more, we build.</p>
-            </div>
-            <div class="reveal work-step" style="border-top:1px dashed var(--line);padding-top:12px">
-              <span class="big-numeral">03</span>
-              <div class="h-2" style="margin-top:6px">Grow</div>
-              <p class="p" style="margin-top:6px">We don't just hand over a login. We set it up with you and keep improving it as you grow.</p>
+            <div class="biz-card" role="tabpanel" aria-live="polite">
+              <div class="h-2" id="bizTitle"></div>
+              <ul class="biz-list" id="bizList"></ul>
+              <a class="btn btn-primary" id="bizGo" href="business-cafes.html">See the setup</a>
             </div>
           </div>
+          <style>
+            .biz-pick{margin-top:18px}
+            .biz-lead{font-size:13px;font-weight:700;color:var(--muted);margin-bottom:10px}
+            .biz-tabs{display:flex;flex-wrap:wrap;gap:8px}
+            .biz-tab{border:1px solid var(--line);background:var(--bg-raised,#fff);color:inherit;border-radius:999px;padding:10px 16px;font:inherit;font-size:13px;font-weight:600;min-height:44px;cursor:pointer}
+            .biz-tab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+            .biz-card{margin-top:14px;max-width:560px;border:1px solid var(--line);border-radius:20px;background:var(--bg-raised,#fff);padding:20px}
+            .biz-list{list-style:none;margin:10px 0 16px;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;font-size:13px}
+            .biz-list li:before{content:"\2713";color:var(--accent);font-weight:800;margin-right:7px}
+            @media(max-width:560px){.biz-list{grid-template-columns:1fr}}
+          </style>
+          <script>
+          (function(){
+            var D={
+              cafe:['Orders, tables, kitchen and bills in one flow.',['Table and QR ordering','Kitchen screen','GST bills','Stock and recipes'],'business-cafes.html'],
+              retail:['Barcode billing and stock you can trust.',['Barcode billing','Stock and reorder','Customer history','GST invoices'],'business-retail.html'],
+              salon:['Bookings, clients and bills together.',['Online booking','Client history','Staff and payroll','Bills on WhatsApp'],'business-salons.html'],
+              mobile:['Sell, repair and track every phone.',['IMEI tracking','Repair jobs','Staff profit ledger','Customer dues'],'business-mobile-repair.html'],
+              clothing:['Sizes, colours and exchanges handled.',['Variant stock','Barcode billing','Returns and exchanges','Trial room hold'],'business-clothing.html']
+            };
+            var tabs=document.querySelectorAll('#bizPick .biz-tab');
+            function show(k){
+              var d=D[k];
+              document.getElementById('bizTitle').textContent=d[0];
+              document.getElementById('bizList').innerHTML=d[1].map(function(x){return '<li>'+x+'</li>'}).join('');
+              document.getElementById('bizGo').href=d[2];
+              tabs.forEach(function(t){var on=t.dataset.b===k;t.classList.toggle('on',on);t.setAttribute('aria-selected',on?'true':'false')});
+            }
+            tabs.forEach(function(t){t.addEventListener('click',function(){show(t.dataset.b)})});
+            show('cafe');
+          })();
+          </script>
         </div>
       </section>
 
