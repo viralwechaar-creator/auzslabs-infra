@@ -218,6 +218,8 @@
   })();
 
   dateEl.addEventListener('change', loadSlots);
+  dateEl.addEventListener('input', loadSlots);
+  if (dateEl.value) loadSlots();
   async function loadSlots() {
     const box = $('#slots');
     if (!dateEl.value) return;
@@ -227,6 +229,7 @@
       const d = await r.json();
       if (!r.ok) throw new Error(d.error);
       if (d.closed) return box.replaceChildren(h('p', { class: 'hint', text: d.reason }));
+      if (!d.slots || !d.slots.length) return box.replaceChildren(h('p', { class: 'hint', text: 'No times available that day. Please pick another date.' }));
       box.replaceChildren(...d.slots.map(s => h('label', { class: 'slot' },
         h('input', { type: 'radio', name: 'time', value: s.time, disabled: !s.free }),
         h('span', { text: fmt12(s.time) }))));

@@ -22,8 +22,10 @@ export function computeSlots(site, counts, date) {
   // Tolerate a business whose settings never had hours saved (or kept them under the generic
   // booking* keys): fall back to 10:00-19:00 instead of throwing and showing no times at all.
   const hhmm = (v, d) => (/^\d{1,2}:\d{2}$/.test(String(v || '')) ? String(v) : d);
-  const [oh, om] = hhmm(S.open || S.bookingOpen, '10:00').split(':').map(Number);
-  const [ch, cm] = hhmm(S.close || S.bookingClose, '19:00').split(':').map(Number);
+  let [oh, om] = hhmm(S.open || S.bookingOpen, '10:00').split(':').map(Number);
+  let [ch, cm] = hhmm(S.close || S.bookingClose, '19:00').split(':').map(Number);
+  // Closing time at or before opening (e.g. saved as 00:00) would give no slots at all.
+  if (ch * 60 + cm <= oh * 60 + om) { oh = 10; om = 0; ch = 19; cm = 0; }
   const step = Number(S.slotMinutes || S.bookingSlotMinutes) || 30;
   const capacity = Number(S.capacity || S.bookingSlotCapacity) || 1;
   const booked = counts[date] || {};
