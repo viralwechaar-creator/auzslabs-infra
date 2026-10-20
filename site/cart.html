@@ -51,6 +51,16 @@
 .cart-cols .section{max-width:none!important}
 @media (min-width:1000px){.cart-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px;align-items:start}}
 </style>
+<style id="steps-css">
+.steps3{list-style:none;margin:0 0 14px;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;counter-reset:st}
+.steps3 li{counter-increment:st;border:1px solid var(--line);border-radius:14px;padding:10px 10px 10px 12px;font-size:12.5px;line-height:1.35;color:var(--ink-dim);background:var(--bg-raised,#fff)}
+.steps3 li::before{content:counter(st);display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--bg,#fff);font-size:11px;font-weight:700;margin-bottom:6px}
+.steps3 li b{display:block;color:var(--ink);font-size:13px;margin-bottom:2px}
+.steps3 li.on{border-color:var(--ink)}
+.steps3 li.done{opacity:.6}
+.steps3 li.done::before{content:"\2713"}
+@media(max-width:420px){.steps3{grid-template-columns:1fr}.steps3 li{display:flex;gap:10px;align-items:flex-start}.steps3 li::before{margin:0;flex:none}}
+</style>
 <style id="topbar-nav-css">
 .topbar-nav{display:none}
 @media(min-width:900px){
@@ -134,6 +144,7 @@
 
       <section class="section tight" id="requestSection" style="display:none;max-width:640px">
         <form class="card" id="reqForm" novalidate>
+          <ol class="steps3" aria-label="How it works"><li class="on"><b>Send your request</b>Tell us about your business.</li><li><b>We check, you get a quote</b>On WhatsApp, usually the same day.</li><li><b>Pay and start</b>We switch your access on and send your bill.</li></ol>
           <p class="p" style="margin-bottom:4px" id="whoLine"></p>
           <div id="quickSummary" class="pay-note" style="display:none;background:var(--bg-alt,#f6f4f1);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:12px"></div>
           <div id="reqDetailFields">
@@ -168,6 +179,7 @@
         <div class="card">
           <div class="label">Request received</div>
           <h2 class="h-2" style="font-size:22px;margin-top:6px">Thank you. We have your request.</h2>
+          <ol class="steps3" style="margin-top:12px"><li class="done"><b>Request sent</b>We have it.</li><li class="on"><b>We check, you get a quote</b>On WhatsApp, usually the same day.</li><li><b>Pay and start</b>Access on, bill sent.</li></ol>
           <p class="p">We will check your business and contact you on WhatsApp. After that you get a payment link with your bill. You can follow the status any time:</p>
           <a id="trackLink" class="btn btn-primary form-submit" href="#">Track my request</a>
         </div>

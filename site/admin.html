@@ -634,8 +634,8 @@ body.admin-shell .bn-in input{border:none!important;background:none!important;bo
         <div id="pricingList">Loading&hellip;</div>
 
         <div class="label" style="margin-top:28px">AUZslab Salon plans</div>
-        <h2 class="h-2">Plan tiers (salon and cafe &amp; restaurant)</h2>
-        <p class="p">The four tiers on <a href="business-salons.html#salon-plans" target="_blank" rel="noopener">the salon page &#8599;</a> and <a href="business-cafes.html#salon-plans" target="_blank" rel="noopener">the cafe &amp; restaurant page &#8599;</a> &mdash; edit their prices, names and features here; the live page reads these the moment you save.</p>
+        <h2 class="h-2">Plan tiers (salon, cafe &amp; restaurant, mobile shop)</h2>
+        <p class="p">The four tiers on <a href="business-salons.html#salon-plans" target="_blank" rel="noopener">the salon</a>, <a href="business-cafes.html#salon-plans" target="_blank" rel="noopener">cafe &amp; restaurant</a> and <a href="business-mobile-repair.html#salon-plans" target="_blank" rel="noopener">mobile shop</a> pages &mdash; edit their prices, names and features here; the live page reads these the moment you save.</p>
         <div id="salonTiersList">Loading&hellip;</div>
 
         <div class="label" style="margin-top:28px">Business-page add-ons</div>
@@ -1621,7 +1621,7 @@ async function loadSalonTiers() {
   const listEl = document.getElementById('salonTiersList');
   const { data, error } = await sb.rpc('admin_list_salon_tiers', {});
   if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
-  const NICHE_NAME = { salon: 'Salon plans', cafe: 'Cafe & restaurant plans' };
+  const NICHE_NAME = { salon: 'Salon plans', cafe: 'Cafe & restaurant plans', mobile: 'Mobile shop & repair plans' };
   const cards = (data || []).map((t, i, all) => `${(i === 0 || all[i - 1].niche !== t.niche) ? `<h3 class="h-3" style="grid-column:1/-1;margin:14px 0 0">${esc(NICHE_NAME[t.niche] || t.niche)}</h3>` : ''}
     <div class="a-card bn-card" data-tier="${esc(t.tier_key)}">
       <div class="bn-top">
@@ -1666,7 +1666,7 @@ async function loadNicheAddons() {
   const listEl = document.getElementById('nicheAddonsList'); if (!listEl) return;
   const { data, error } = await sb.rpc('admin_list_niche_addons', {});
   if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
-  const NICHE_NAME = { salon: 'Salon add-ons', cafe: 'Cafe & restaurant add-ons' };
+  const NICHE_NAME = { salon: 'Salon add-ons', cafe: 'Cafe & restaurant add-ons', mobile: 'Mobile shop & repair add-ons' };
   const cards = (data || []).map((a, i, all) => `${(i === 0 || all[i - 1].niche !== a.niche) ? `<h3 class="h-3" style="grid-column:1/-1;margin:14px 0 0">${esc(NICHE_NAME[a.niche] || a.niche)}</h3>` : ''}
     <div class="a-card bn-card" data-addon="${esc(a.addon_key)}">
       <input class="inp" data-f="name" placeholder="Add-on name" value="${esc(a.name || '')}">
@@ -2810,6 +2810,7 @@ function defaultQuote(o, defGst) {
   if (sel && sel.tier) {
     const t = sel.tier; used.add(t.product_key);
     items.push({ key: t.product_key, label: t.name + ' plan', plan: yr ? 'year' : 'month', rate: num(yr ? (t.yearly || num(t.monthly) * 10) : t.monthly), discount: 0, gst: gstOf(t.product_key) });
+    (t.extra_keys || []).forEach((k) => { if (!used.has(k)) { used.add(k); items.push({ key: k, label: (PROD_NAME[k] || k) + ' (included in ' + t.name + ')', plan: yr ? 'year' : 'month', rate: 0, discount: 0, gst: 0 }); } });
   }
   ((sel && sel.addons) || []).forEach((a) => {
     const price = num(a.price), label = a.name + (price > 0 ? '' : ' (price to be agreed)');
@@ -3145,6 +3146,8 @@ async function loadWhatsApp() {
       <div style="margin:6px 0">${cfg.platform ? '<span style="color:#1a7f37">Connected on the server</span>' : '<span style="color:#b42318">Not set up yet</span> &mdash; add WA_PHONE_NUMBER_ID and WA_ACCESS_TOKEN to the server settings (steps in docs/WHATSAPP.md).'}</div>
       <div class="row" style="gap:10px;align-items:center;flex-wrap:wrap"><span>Send AUZslab's own messages automatically: <b>${data.platform_auto ? 'ON' : 'OFF'}</b></span>
       <button class="btn ${data.platform_auto ? 'btn-ghost' : 'btn-primary'}" id="waAutoBtn">${data.platform_auto ? 'Turn off' : 'Turn on'}</button></div>
+      <div class="row" style="gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px"><label style="display:flex;gap:8px;align-items:center">Daily summary to my WhatsApp <input id="waAdminPhone" class="inp" style="width:170px" inputmode="numeric" placeholder="10-digit number" value="${esc(data.admin_phone || '')}"></label><button class="btn btn-ghost" id="waAdminPhoneSave" type="button">Save</button></div>
+      <p class="p" style="margin-top:6px;font-size:13px">Every morning you get a short summary (new requests, unpaid quotes, renewals due). Leave it empty to get it as an app notification only. The WhatsApp version needs the template <b>auzslab_admin_daily_summary</b> approved in WhatsApp Manager.</p>
       <div style="color:var(--ink-faint);margin-top:6px">Last 30 days: ${counts}. While this is on, the tap-to-send WhatsApp buttons in Client requests would send a second copy &mdash; use one or the other for each client.</div></div>
     <div class="card" style="padding:14px;margin:12px 0"><b>Client shops</b>
       <div class="admin-table-wrap"><table class="admin-table"><tr><th>Shop</th><th>Own number</th><th>WhatsApp on</th><th>May use AUZslab number</th><th>Messages (30 days)</th></tr>${data.tenants.map((t) => `<tr>
@@ -3160,6 +3163,7 @@ async function loadWhatsApp() {
     <div class="card" style="padding:14px;margin:12px 0"><b>Templates to create in Meta WhatsApp Manager</b>
       <p style="color:var(--ink-faint)">Create each once in the AUZslab WhatsApp account (English) with exactly this name and text. Shops creating their own number need the shop templates too.</p>
       ${data.templates.map((t) => `<div style="margin:8px 0;padding:8px;border:1px solid var(--line);border-radius:10px"><b>${esc(t.name)}</b> <span style="color:var(--ink-faint)">(${t.audience === 'platform' ? 'AUZslab' : 'shop'})</span><div>${esc(t.body)}</div><div style="color:var(--ink-faint)">${t.params.map((p, i) => `{{${i + 1}}} = ${esc(p)}`).join(', ')}</div></div>`).join('')}</div>`;
+  document.getElementById('waAdminPhoneSave').onclick = async () => { const { error: e } = await sb.rpc('admin_set_admin_phone', { p_phone: document.getElementById('waAdminPhone').value }); if (e) return alert(e.message); loadWhatsApp(); };
   document.getElementById('waAutoBtn').onclick = async () => { const { error: e } = await sb.rpc('admin_wa_set_platform_auto', { p_on: !data.platform_auto }); if (e) return alert(e.message); loadWhatsApp(); };
   box.querySelectorAll('[data-wa-allow]').forEach((el) => { el.onchange = async () => { const { error: e } = await sb.rpc('admin_wa_set_tenant', { p_tenant: el.dataset.waAllow, p_allow_platform: el.checked }); if (e) { alert(e.message); el.checked = !el.checked; } }; });
 }

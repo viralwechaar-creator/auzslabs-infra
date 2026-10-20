@@ -27,7 +27,7 @@
 <link rel="icon" href="/logo.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="theme.css?v=155"><link rel="stylesheet" href="menu.css?v=103" media="(max-width:860px)"><link rel="stylesheet" href="balance.css?v=103" media="(min-width:1000px)"><script src="theme.js?v=101"></script>
+<link rel="stylesheet" href="theme.css?v=161"><link rel="stylesheet" href="menu.css?v=103" media="(max-width:860px)"><link rel="stylesheet" href="balance.css?v=103" media="(min-width:1000px)"><script src="theme.js?v=101"></script>
 <link rel="stylesheet" href="design-system/ui-kit.css?v=103">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -93,7 +93,24 @@
 .biz-band .p,.demo-note .p{color:rgba(255,255,255,.78)}
 .biz-band .btn-primary,.demo-note .btn-primary{background:#fff;color:var(--ink-solid,#000000);border-color:#fff}
 </style>
-<link rel="stylesheet" href="reach.css?v=101"></head>
+<link rel="stylesheet" href="reach.css?v=101"><link rel="stylesheet" href="reach.css?v=101"><style id="cafe-contrast-base">
+/* minimal contrast: soft warm band, white cards, one ink featured tier */
+#salon-plans .sp-card{background:#fff;border-color:var(--line)}
+#salon-plans .sp-card.hi{background:var(--ink-solid);border-color:var(--ink-solid);color:#fff}
+#salon-plans .sp-card.hi .sp-name,#salon-plans .sp-card.hi .sp-price{color:#fff}
+#salon-plans .sp-card.hi .sp-tagline,#salon-plans .sp-card.hi .sp-per,#salon-plans .sp-card.hi .sp-gst,#salon-plans .sp-card.hi .sp-was,#salon-plans .sp-card.hi .sp-feats li{color:rgba(255,255,255,.75)}
+#salon-plans .sp-card.hi .sp-save2{color:#ffd9a0}
+#salon-plans .sp-card.hi .sp-feats{border-top-color:rgba(255,255,255,.25)}
+#salon-plans .sp-card.hi .sp-feats li::before{background:#ffd9a0}
+#salon-plans .sp-card.hi .sp-cta{background:#fff;color:var(--ink-solid);border-color:#fff}
+#salon-plans .sp-strip{background:#fff;border-color:var(--line)}
+#salon-addons .sp-addon{background:#fff}
+</style>
+<style id="cafe-contrast">
+/* the plan/compare/add-on styles live in theme.css under the #salon-* ids; this page reuses those ids on purpose */
+#salon-plans .sp-feats li.sp-off{opacity:.5;text-decoration:line-through}
+</style>
+</head>
 <body>
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
 
@@ -199,12 +216,17 @@
         <div class="uk-kit uk-breadcrumb" style="margin-bottom:18px">
           <a href="platform.html">Business types</a><span class="uk-breadcrumb-sep">/</span><span class="uk-breadcrumb-current">Mobile retail &amp; repair</span>
         </div>
-        <div class="label">AUZsMob</div>
-        <h1 class="h-1" style="font-size:48px">Built around the way<br>your shop runs.</h1>
-        <p class="lede">Sell phones and accessories, track every repair, and know who sold or fixed what, without any staffer seeing another's numbers. In Hindi or English, even offline.</p>
+        <div class="label">Mobile retail &amp; repair</div>
+        <h1 class="h-1" style="font-size:44px">Everything your mobile shop needs. One connected setup.</h1>
+        <p class="lede">Manage repairs, device sales, scan-based stock and accounts in one place, with each staffer seeing only their own numbers. In Hindi or English, even offline.</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px">
-          <button class="btn btn-primary" id="addCartBtn">Add to cart</button>
-          <a href="cart.html" class="btn btn-ghost">View cart</a>
+          <a href="#salon-plans" class="btn btn-primary">See plans</a>
+          <button class="btn btn-ghost" data-open-contact>Let's talk</button>
+        </div>
+        <div class="sp-badges">
+          <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>Retail + repair management</span>
+          <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5v14M7 5v14M10 5v14M14 5v14M17 5v14M20 5v14" stroke-linecap="round"/></svg>Scan-based stock</span>
+          <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9" stroke-linecap="round"/><path d="M3 4v8h8" stroke-linecap="round" stroke-linejoin="round"/></svg>Works without internet</span>
         </div>
         </div>
         <div class="hero-art" role="presentation">
@@ -282,69 +304,162 @@
       <hr class="dash">
 
 
-      <section class="section tight" id="pricing">
-        <div class="label">What you get, and what it costs</div>
-        <h2 class="h-2" style="margin-bottom:6px">Software for a mobile shop.</h2>
-        <p class="p" style="max-width:34em">AUZsMob covers IMEI stock, sales, repairs and staff accountability. No GST, no setup fee &mdash; add AUZsScan if you also want barcode scan-to-bill for accessories, or AUZsLedger for full double-entry books.</p>
-        <div class="grid-2 grid-4" style="margin-top:18px">
-
-          <div class="card price-card" data-price-card>
-            <img src="icon-mob.svg" alt="" class="price-card-icon">
-            <div class="price-card-name">AUZsMob</div>
-            <div class="price-card-price" data-mob-price>&#8377;249<span>/mo</span></div>
-            <p class="price-card-sub" data-mob-sub>Or &#8377;2,490 for the first year.</p>
-            <p class="price-card-sub" style="font-weight:700;color:var(--accent)">No GST. No setup fee.</p>
-            <div class="acts">
-              <button class="btn btn-primary" data-add-plan="mobile">Get it</button>
-            </div>
+      <section class="section tight">
+        <div class="label">Three connected capabilities</div>
+        <h2 class="h-2" style="font-size:24px">The tools your shop needs. Together.</h2>
+        <p class="p" style="margin-top:8px;max-width:46em">Choose a package based on your workflow. You do not need to buy all three capabilities separately: start with essential billing, add repair management or scanning, and choose complete accounts when your business needs it.</p>
+        <div class="bento" style="margin-top:14px">
+          <div class="card feat-card">
+            <span class="tag">Retail + repair</span>
+            <div class="h-2" style="margin-top:12px;font-size:19px">AUZsMob</div>
+            <p class="p" style="margin-top:8px">Manage mobile retail, device purchases and sales, customer records, billing and repair jobs in a workflow built for your shop.</p>
           </div>
-
-          <div class="card price-card" data-price-card>
-            <img src="icon-scan.svg" alt="" class="price-card-icon">
-            <div class="price-card-name">AUZsMob + AUZsScan</div>
-            <div class="price-card-price">&#8377;709<span>/mo</span></div>
-            <p class="price-card-sub">Add barcode scan-to-bill for accessories.</p>
-            <p class="price-card-sub" style="font-weight:700;color:var(--accent)">No GST. No setup fee.</p>
-            <div class="acts">
-              <a href="products.html#slab-scan" class="btn btn-ghost">Details</a>
-              <button class="btn btn-primary" data-add-plan="mobile,scan">Get it</button>
-            </div>
+          <div class="card feat-card">
+            <span class="tag">Scanning</span>
+            <div class="h-2" style="margin-top:12px;font-size:19px">AUZsScan</div>
+            <p class="p" style="margin-top:8px">Use GTIN/barcode scanning to identify supported products and speed up stock, purchase and sales entry.</p>
           </div>
-
-          <div class="card price-card" data-price-card>
-            <img src="icon-payroll.svg" alt="" class="price-card-icon">
-            <div class="price-card-badge">Works with any plan</div>
-            <div class="price-card-name" style="margin-top:10px">+ AUZsPay</div>
-            <div class="price-card-price">&#8377;590<span>/mo<span class="gst-t" hidden> + GST</span></span></div>
-            <p class="price-card-sub">Add staff attendance &amp; payroll, on top of whatever you pick above.</p>
-            <div class="acts">
-              <a href="products.html#slab-payroll" class="btn btn-ghost">Details</a>
-              <button class="btn btn-primary" data-add-plan="payroll">Add it</button>
-            </div>
+          <div class="card feat-card">
+            <span class="tag">Accounts</span>
+            <div class="h-2" style="margin-top:12px;font-size:19px">Complete Accounts</div>
+            <p class="p" style="margin-top:8px">Keep sales, purchases, expenses, outstanding payments and relevant financial records connected to your business.</p>
           </div>
+        </div>
+      </section>
 
+      <hr class="dash">
+
+      <section class="section tight" id="salon-plans">
+        <div class="label">Simple, transparent pricing</div>
+        <h2 class="h-2" style="font-size:28px">Find the right setup for your shop.</h2>
+        <p class="p" style="margin-top:8px;max-width:48em">Clear monthly or annual pricing. Pick the package that fits the way you work today and grow when you are ready. Every plan is set up and switched on by us once we know your shop.</p>
+
+        <div class="sp-toggle-row">
+          <div class="sp-toggle" id="cfToggle" role="group" aria-label="Billing period">
+            <button type="button" class="on" data-period="m" aria-pressed="true">Monthly</button>
+            <button type="button" data-period="y" aria-pressed="false">Yearly <span class="sp-save">2 months free</span></button>
+          </div>
+          <span class="sp-toggle-note">&larr; pay for 10 months, use all 12</span>
         </div>
 
-        <div class="card" style="margin-top:22px;max-width:640px">
-          <div class="label">One-time, not monthly</div>
-          <div class="acct-row" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px dashed var(--line)">
-            <span style="font-size:13px;color:var(--ink-dim)">Onboarding fee <b style="color:var(--accent)">(every new client)</b></span>
-            <b style="white-space:nowrap;margin-left:10px">&#8377;1,460</b>
+        <div class="sp-grid" id="cfGrid">
+          <div class="sp-card" data-plan="Essential">
+            
+            <div class="sp-head"><span class="sp-num">I</span><span class="sp-name">Essential</span></div>
+            <p class="sp-tagline">For smaller mobile shops that need essential billing and sales management.</p>
+            <div class="sp-price-row"><span class="sp-price sp-amt">&#8377;560</span><span class="sp-per sp-unit">/month</span> <span class="sp-gst gst-t" hidden>+ GST</span></div>
+            <div class="sp-wassave"><span class="sp-was">&#8377;6,720</span><span class="sp-save2">Save &#8377;1,120</span></div>
+            <button type="button" class="btn btn-ghost sp-cta" data-open-contact data-plan="Essential">Choose Essential</button>
+            <ul class="sp-feats"><li class="">Basic sales and billing</li><li class="">Customer and invoice records</li><li class="">Basic product management</li><li class="">Essential sales summary</li></ul>
           </div>
-          <div class="acct-row" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px dashed var(--line)">
-            <span style="font-size:13px;color:var(--ink-dim)">Setup fee</span>
-            <b style="white-space:nowrap;margin-left:10px;color:var(--accent)">None &mdash; AUZsMob &amp; AUZsScan are exempt</b>
+
+          <div class="sp-card" data-plan="Retail & Repair">
+            
+            <div class="sp-head"><span class="sp-num">II</span><span class="sp-name">Retail &amp; Repair</span></div>
+            <p class="sp-tagline">For shops selling devices and accessories while handling customer repairs.</p>
+            <div class="sp-price-row"><span class="sp-price sp-amt">&#8377;820</span><span class="sp-per sp-unit">/month</span> <span class="sp-gst gst-t" hidden>+ GST</span></div>
+            <div class="sp-wassave"><span class="sp-was">&#8377;9,840</span><span class="sp-save2">Save &#8377;1,640</span></div>
+            <button type="button" class="btn btn-ghost sp-cta" data-open-contact data-plan="Retail & Repair">Choose Retail & Repair</button>
+            <ul class="sp-feats"><li class="">Essential package capabilities</li><li class="">AUZsMob repair management</li><li class="">Repair status and service history</li><li class="">Device purchase and sale tracking</li><li class="">Customer repair records</li><li class="">Retail product management</li></ul>
           </div>
-          <div class="acct-row" style="display:flex;justify-content:space-between;padding:10px 0">
-            <span style="font-size:13px;color:var(--ink-dim)">Hardware &mdash; a Bluetooth/USB barcode scanner, if you want one</span>
-            <b style="white-space:nowrap;margin-left:10px">Charged additionally</b>
+
+          <div class="sp-card hi" data-plan="Smart Retail">
+            <span class="sp-fav">Most popular</span>
+            <div class="sp-head"><span class="sp-num">III</span><span class="sp-name">Smart Retail</span></div>
+            <p class="sp-tagline">For busy shops that want faster scan-based inventory workflows.</p>
+            <div class="sp-price-row"><span class="sp-price sp-amt">&#8377;1,360</span><span class="sp-per sp-unit">/month</span> <span class="sp-gst gst-t" hidden>+ GST</span></div>
+            <div class="sp-wassave"><span class="sp-was">&#8377;16,320</span><span class="sp-save2">Save &#8377;2,720</span></div>
+            <button type="button" class="btn btn-primary sp-cta" data-open-contact data-plan="Smart Retail">Choose Smart Retail</button>
+            <ul class="sp-feats"><li class="">Retail & Repair capabilities</li><li class="">AUZsScan GTIN/barcode scanning</li><li class="">Scan-based stock handling</li><li class="">Faster product identification</li><li class="">Improved stock visibility</li><li class="">Relevant stock and sales reports</li></ul>
           </div>
-          <p class="p" style="margin-top:10px;font-size:12px;color:var(--ink-faint)">AUZsMob's own camera scanning works with no extra hardware. The onboarding fee still applies to every new account. Adding AUZsLedger for full accounts brings the usual &#8377;2,190 one-time setup fee, since Ledger is not setup-fee-exempt.</p>
+
+          <div class="sp-card" data-plan="Business 360">
+            
+            <div class="sp-head"><span class="sp-num">IV</span><span class="sp-name">Business 360</span></div>
+            <p class="sp-tagline">For businesses seeking connected retail, repairs, stock and accounts.</p>
+            <div class="sp-price-row"><span class="sp-price sp-amt">&#8377;2,260</span><span class="sp-per sp-unit">/month</span> <span class="sp-gst gst-t" hidden>+ GST</span></div>
+            <div class="sp-wassave"><span class="sp-was">&#8377;27,120</span><span class="sp-save2">Save &#8377;4,520</span></div>
+            <button type="button" class="btn btn-ghost sp-cta" data-open-contact data-plan="Business 360">Choose Business 360</button>
+            <ul class="sp-feats"><li class="">AUZsMob repair and sales</li><li class="">AUZsScan barcode workflows</li><li class="">Stock, purchase and sales</li><li class="">Complete accounts software</li><li class="">Relevant business reports</li><li class="">Setup configured to your needs</li></ul>
+          </div>
         </div>
 
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px">
-          <button class="btn btn-primary" data-open-contact>Let's talk</button>
-          <a href="products.html" class="btn btn-ghost">See every product</a>
+        <p class="sp-note">All prices are in INR and exclude GST<span class="gst-t" hidden>, added on top</span>. Annual billing is priced at 10 months of the monthly subscription. A one-time onboarding fee (&#8377;1,460) applies to every new account and is confirmed in your quote. Hardware, such as a barcode scanner, is charged additionally; AUZsMob&#39;s own camera scanning needs none.</p>
+        <p class="sp-note" style="margin-top:6px">Shown for comparison, not a checkout &mdash; every shop is quoted directly. <button type="button" class="sp-link" data-open-contact>Tell us about your shop &rarr;</button></p>
+      </section>
+
+      <hr class="dash">
+
+      <section class="section tight" id="salon-compare">
+        <div class="label">Compare plans</div>
+        <h2 class="h-2" style="font-size:24px">Know what is included.</h2>
+        <p class="p" style="margin-top:8px">Compare the core capabilities before choosing your package.</p>
+        <div class="sp-tablewrap">
+          <table class="sp-table">
+            <thead><tr><th>Capability</th><th>Essential</th><th>Retail &amp; Repair</th><th>Smart Retail</th><th>Business 360</th></tr></thead>
+            <tbody>
+              <tr><td>Basic sales and billing</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td></tr>
+              <tr><td>Customer and invoice records</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td></tr>
+              <tr><td>Device purchase and sales management</td><td class="sp-dash">&mdash;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td></tr>
+              <tr><td>Repair management</td><td class="sp-dash">&mdash;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td></tr>
+              <tr><td>Customer repair history</td><td class="sp-dash">&mdash;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td></tr>
+              <tr><td>GTIN/barcode scanning</td><td class="sp-dash">&mdash;</td><td class="sp-dash">&mdash;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td></tr>
+              <tr><td>Scan-based stock workflows</td><td class="sp-dash">&mdash;</td><td class="sp-dash">&mdash;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td></tr>
+              <tr><td>Stock and purchase management</td><td>Basic products</td><td>Retail products</td><td>Scan-enabled</td><td>Connected workflow</td></tr>
+              <tr><td>Complete accounts software</td><td class="sp-dash">&mdash;</td><td class="sp-dash">&mdash;</td><td>Available on enquiry</td><td class="sp-check">&#10003;</td></tr>
+              <tr><td>Relevant business reports</td><td>Sales summary</td><td>Sales / repair records</td><td>Stock and sales</td><td>Business reports</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="p" style="margin-top:8px;font-size:12px;color:var(--ink-faint)">A dash means the capability is not included in that package. Product-code coverage depends on supported codes; confirm your workflow with us before you buy.</p>
+      </section>
+
+      <hr class="dash">
+
+      <section class="section tight" id="salon-addons">
+        <div class="addons-head">
+          <div>
+            <div class="label">Optional add-ons</div>
+            <h2 class="h-2" style="margin-top:12px;font-size:22px">Extend your setup when you need to.</h2>
+            <p class="p" style="margin-top:6px;max-width:40em">Keep your core plan simple. Ask about extra capabilities if your workflow grows.</p>
+          </div>
+          <button type="button" class="btn btn-ghost" data-open-contact>Ask about add-ons</button>
+        </div>
+        <div class="sp-addon-grid">
+          <div class="sp-addon" data-addon="mobile_scan">
+            <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5v14M7 5v14M10 5v14M14 5v14M17 5v14M20 5v14" stroke-linecap="round"/></svg></span>
+            <b>AUZsScan workflows</b>
+            <div class="sp-addon-pr">Pricing on enquiry</div>
+            <div class="sp-addon-sub">Available as an add-on</div>
+            <p>Ask about adding GTIN/barcode scanning to an eligible setup for quicker product lookup and stock entry.</p>
+          </div>
+          <div class="sp-addon" data-addon="mobile_accounts">
+            <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h4" stroke-linecap="round"/></svg></span>
+            <b>Complete Accounts</b>
+            <div class="sp-addon-pr">Pricing on enquiry</div>
+            <div class="sp-addon-sub">Available as an add-on</div>
+            <p>Connect sales, purchases, expenses and outstanding payment records with a fuller accounts workflow.</p>
+          </div>
+          <div class="sp-addon" data-addon="mobile_multi">
+            <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="8" height="7" rx="1"/><rect x="13" y="4" width="8" height="7" rx="1"/><rect x="3" y="13" width="8" height="7" rx="1"/><rect x="13" y="13" width="8" height="7" rx="1"/></svg></span>
+            <b>Multi-counter or multi-location</b>
+            <div class="sp-addon-pr">Pricing on enquiry</div>
+            <div class="sp-addon-sub">Available as an add-on</div>
+            <p>Discuss the right configuration for shops operating multiple counters or locations.</p>
+          </div>
+        </div>
+      </section>
+
+      <hr class="dash">
+
+      <section class="section tight">
+        <div class="label">Designed for real shop workflows</div>
+        <h2 class="h-2" style="font-size:24px">Built around the way mobile shops work.</h2>
+        <div class="grid-2" style="margin-top:12px">
+          <div style="border-top:1px dashed var(--line);padding-top:20px"><div class="h-2" style="font-size:19px">One clearer workflow</div><p class="p" style="margin-top:10px">Bring relevant shop activities into a connected software setup.</p></div>
+          <div style="border-top:1px dashed var(--line);padding-top:20px"><div class="h-2" style="font-size:19px">Choose what fits</div><p class="p" style="margin-top:10px">Select a package based on the work your business handles.</p></div>
+          <div style="border-top:1px dashed var(--line);padding-top:20px"><div class="h-2" style="font-size:19px">Less duplicate entry</div><p class="p" style="margin-top:10px">Keep related records together where the selected capabilities support it.</p></div>
+          <div style="border-top:1px dashed var(--line);padding-top:20px"><div class="h-2" style="font-size:19px">Room to grow</div><p class="p" style="margin-top:10px">Discuss additional modules as your retail or repair workflow changes.</p></div>
         </div>
       </section>
 
@@ -462,27 +577,59 @@
 <script src="site.js?v=113"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script src="design-system/ui-kit.js?v=101"></script>
+<script>window.PLAN_NICHE = 'mobile';</script>
 <script>
 (function () {
-  var KEY = 'mobile';
-  var sb = supabase.createClient(CFG.url, CFG.key);
-  var btn = document.getElementById('addCartBtn');
-  var owned = false;
-  function refresh() {
-    if (owned) { btn.textContent = 'Already included ✓'; btn.disabled = true; return; }
-    btn.disabled = false;
-    var has = AUZcart.has(KEY);
-    btn.textContent = has ? 'Added ✓ — remove' : 'Add to cart';
+  var toggle = document.getElementById('cfToggle'), grid = document.getElementById('cfGrid');
+  if (!toggle || !grid) return;
+  var prices = [560, 820, 1360, 2260], yprices = [0, 0, 0, 0], cur = 'm';
+  function inr(n) { return '\u20B9' + Math.round(n).toLocaleString('en-IN'); }
+  function setPeriod(p) {
+    var y = p === 'y'; cur = p;
+    toggle.querySelectorAll('button[data-period]').forEach(function (b) {
+      var on = b.getAttribute('data-period') === p; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    grid.querySelectorAll('.sp-card').forEach(function (c, i) {
+      var m = prices[i], shown = y ? (yprices[i] || m * 10) : m;
+      c.querySelector('.sp-amt').textContent = inr(shown);
+      c.querySelector('.sp-unit').textContent = y ? '/year' : '/month';
+      c.querySelector('.sp-was').textContent = inr(m * 12);
+      c.querySelector('.sp-save2').textContent = 'Save ' + inr(m * 12 - shown);
+    });
   }
-  btn.addEventListener('click', function () { if (owned) return; AUZcart.toggle(KEY); refresh(); });
-  var n = AUZcart.get().length;
-  document.querySelectorAll('.cart-count').forEach(function (el) { el.textContent = n ? '(' + n + ')' : ''; });
-  refresh();
-  AUZaccount.fetch(sb).then(function (dash) {
-    if (dash && dash.features && dash.features[KEY] === true) { owned = true; refresh(); }
+  toggle.querySelectorAll('button[data-period]').forEach(function (b) { b.addEventListener('click', function () { setPeriod(b.getAttribute('data-period')); }); });
+  window.planApply = function (tiers) {
+    if (!tiers || tiers.length !== 4) return;
+    prices = tiers.map(function (t) { return Number(t.monthly_price) || 0; });
+    yprices = tiers.map(function (t) { return Number(t.yearly_price) || 0; });
+    grid.querySelectorAll('.sp-card').forEach(function (card, i) {
+      var t = tiers[i]; card.classList.toggle('hi', !!t.highlighted);
+      card.querySelector('.sp-name').textContent = t.name;
+      card.querySelector('.sp-tagline').textContent = t.tagline || '';
+      var fav = card.querySelector('.sp-fav');
+      if (t.badge) { if (!fav) { fav = document.createElement('span'); fav.className = 'sp-fav'; card.insertBefore(fav, card.firstChild); } fav.textContent = t.badge; fav.hidden = false; } else if (fav) fav.hidden = true;
+      var feats = card.querySelector('.sp-feats'); feats.textContent = '';
+      (t.features || []).forEach(function (f) { var li = document.createElement('li'); li.textContent = f; feats.appendChild(li); });
+      var cta = card.querySelector('.sp-cta'); if (cta) { cta.setAttribute('data-plan', t.name); cta.textContent = 'Choose ' + t.name; cta.className = 'btn ' + (t.highlighted ? 'btn-primary' : 'btn-ghost') + ' sp-cta'; }
+    });
+    setPeriod(cur);
+  };
+  document.querySelectorAll('#salon-plans .sp-cta').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var plan = btn.getAttribute('data-plan'), msg = document.getElementById('m-message');
+      if (plan && msg && !msg.value) msg.value = 'Interested in the ' + plan + ' plan for my mobile shop.';
+    });
   });
+  try {
+    var sb = supabase.createClient(CFG.url, CFG.key);
+    sb.payments.config().then(function (c) {
+      c = c && c.data;
+      if (c && c.gstPct > 0) document.querySelectorAll('#salon-plans .gst-t').forEach(function (e) { e.hidden = false; });
+    }).catch(function () {});
+  } catch (e) {}
 })();
 </script>
+<script src="plan-pick.js?v=1"></script>
 <script>
 // Live prices: the cards above are a fallback; this reads what the admin
 // has set (public_product_prices / public_bundles) so edits show up here

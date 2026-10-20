@@ -35,6 +35,7 @@ export const RPC = {
   wa_disconnect: { params: [], auth: true },
   admin_wa_overview: { params: [], auth: true },
   admin_wa_set_platform_auto: { params: ['p_on'], auth: true },
+  admin_set_admin_phone: { params: ['p_phone'], auth: true },
   admin_wa_set_tenant: { params: ['p_tenant', 'p_allow_platform'], auth: true },
   admin_open_counts: { params: [], auth: true },
   admin_open_team_application_count: { params: [], auth: true },

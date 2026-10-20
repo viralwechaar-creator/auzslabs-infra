@@ -44,10 +44,25 @@ export async function runBookingReminders() {
   } catch (err) { console.warn('booking reminder run failed:', err.message); }
 }
 
+// Unpaid-quote reminders to the client (and a note to the admin) after 2 and 5 days, db/205.
+export async function runQuoteFollowups() {
+  try {
+    const { rows } = await pool.query('select quote_followup_run() as r');
+    const n = rows[0]?.r?.followed_up || 0;
+    if (n) console.log(`quote follow-ups: ${n}`);
+  } catch (err) { console.warn('quote follow-up run failed:', err.message); }
+}
+
+// One summary for the AUZslab owner each day: a push notification, and WhatsApp when platform_flags.admin_phone is set.
+export async function runAdminSummary() {
+  try { await pool.query('select admin_daily_summary_run()'); }
+  catch (err) { console.warn('admin summary failed:', err.message); }
+}
+
 export function startMaintenance() {
   if (process.env.DISABLE_MAINTENANCE === '1') return;
   const runAll = () => {
-    runMaintenance(); runRenewals(); runBookingReminders();
+    runMaintenance(); runRenewals(); runBookingReminders(); runQuoteFollowups(); runAdminSummary();
     runSalonDailySummaries(); runLapsedClientWinback(); runPostVisitReviews(); runPaymentDueReminders();
     runClientGreetings(); runMembershipExpiryReminders();
   };
