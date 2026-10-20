@@ -2413,3 +2413,4 @@ Owner's reference (a black full-screen menu: small wordmark + caption top left, 
 
 ## Marketing site ink is pure black (#000000), not charcoal
 Owner request: every charcoal (#2e2c2a, #171717, rgba(46,44,42,x)) in `site/` (except `admin.html`, the platform admin tool) is now #000000 / rgba(0,0,0,x): theme files, kept/, tool/, design-system, every page's inline styles, drawer, footer, buttons, cards. The greys for secondary text (#625d58, #8f8a84) and the dark-mode palette are unchanged. CSS/JS `?v=` numbers on the pages were raised by 100 to refresh caches (now theme.css `?v=15x`). Use #000 for any new dark surface.
+- Phone menu update: minimal and foldable. Home, then Products / Business types / Resources as big rows with a +/- that fold open (collapsed by default, one open at a time via the existing `.nav-group-toggle` JS in site.js), then Why AUZslab, Live demo, Download apps, Cart, Contact (menu.css `?v=5`).
