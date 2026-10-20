@@ -78,6 +78,21 @@
 .ct-body .field{margin-top:12px}
 .ct-body textarea{min-height:84px}
 .ct-body .form-submit{width:100%;margin-top:16px}
+
+/* contrast pass */
+.ct-direct a{background:var(--ink-solid,#2e2c2a);border-color:var(--ink-solid,#2e2c2a);color:#fff}
+.ct-direct a span{color:#f0b9c6}
+.ct-direct a:hover{background:var(--accent);border-color:var(--accent)}
+.ct-direct a:hover span{color:#fff}
+.ct-steps li{border-top-color:rgba(46,44,42,.3);color:#4a443f}
+.ct-steps li:last-child{border-bottom-color:rgba(46,44,42,.3)}
+.ct-steps b{display:inline-grid;place-items:center;width:26px;height:26px;padding:0;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;flex-shrink:0}
+.ct-steps strong{color:#1c1a18}
+.ct-chips span{border-color:var(--ink);background:transparent;color:var(--ink)}
+.ct-win{background:#fff;border:1px solid #cfc5be;box-shadow:0 22px 50px -22px rgba(46,44,42,.5)}
+.ct-body input,.ct-body select,.ct-body textarea{background:#fff;border:1px solid #bfb4ac;color:#1c1a18}
+.ct-body input:focus,.ct-body select:focus,.ct-body textarea:focus{border-color:var(--accent);outline:0;box-shadow:0 0 0 3px rgba(128,0,32,.12)}
+.ct-body .field label{color:#2e2c2a;font-weight:700}
 @media(max-width:899px){.ct-grid{grid-template-columns:1fr}.ct-win{margin:0;max-width:none}.ct-direct a{min-width:0;flex:1 1 200px}}
 </style>
 </head>
