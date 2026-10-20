@@ -16,7 +16,7 @@ so they are NOT duplicates to delete. Merging them would change how pages look.
 ## Page groups
 - Product pages: `pos`, `qr-ordering`, `payroll`, `accounting`, `scan-and-bill`, `crm`, `billing`, `inventory`, `products`, `pricing`, `intelligence`
 - Business pages: `business-cafes|clothing|retail|salons|mobile-repair`
-- Company: `index`, `platform`, `contact`, `studio`, `creatopz`, `ip-custom-development`, `learn`, `resources-*`, `live-demo`, `demo`
+- Company: `index`, `platform`, `contact`, `studio`, `ip-custom-development`, `learn`, `resources-*`, `live-demo`, `demo`
 - Request flow: `cart` -> `pay` (client pays) -> `inv` (GST bill)
 - Account tools: `account`, `admin`, `signup`, `signin`, `verify-email`, `confirm-email`, `delete-account`
 - Legal: `terms`, `privacy`, `refund`, `cookies`, `security`, `acceptable-use`, `hardware-terms`
