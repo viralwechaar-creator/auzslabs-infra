@@ -1,14 +1,14 @@
 /* Management: configuration, outlets, devices, logs, audit, data; Quick links */
 const ownerOnly=()=>S.role=='owner'?null:note('Only the owner can change these settings. You can view them.');
 const cfgField=(k,label,o={})=>h('div',{class:'fld'+(o.wide?' s2':'')},h('label',{},label),o.area?h('textarea',{disabled:S.role!='owner',onchange:e=>saveSettings({[k]:e.target.value})},cfg()[k]||''):h('input',{type:o.type||'text',disabled:S.role!='owner',value:cfg()[k]??'',step:'any',placeholder:o.ph||'',onchange:e=>saveSettings({[k]:o.type=='number'?(e.target.value===''?null:+e.target.value):e.target.value}).then(r=>r!==false&&toast('Saved'))}),o.hint?h('div',{class:'hint'},o.hint):null);
-const cfgSelect=(k,label,options,o={})=>h('div',{class:'fld'+(o.wide?' s2':'')},h('label',{},label),h('select',{disabled:S.role!='owner',onchange:e=>saveSettings({[k]:e.target.value}).then(r=>r!==false&&toast('Saved'))},...options.map(([v,n])=>h('option',{value:v,selected:String(cfg()[k]??options[0][0])==String(v)},n))));
+const cfgSelect=(k,label,options,o={})=>h('div',{class:'fld'+(o.wide?' s2':'')},h('label',{},label),h('select',{disabled:S.role!='owner',onchange:e=>saveSettings({[k]:e.target.value}).then(r=>{if(r!==false){toast('Saved');if(k==='billStyle')render()}})},...options.map(([v,n])=>h('option',{value:v,selected:String(cfg()[k]??options[0][0])==String(v)},n))));
 const cfgImage=(k,label,prefix,o={})=>{const prev=h('div',{class:'hint'},cfg()[k]?'Image is set':'No image yet'),inp=h('input',{type:'file',accept:'image/*',disabled:S.role!='owner'});
  inp.onchange=async()=>{const file=inp.files[0];if(!file)return;prev.textContent='Uploading…';try{const url=await uploadImage(file,prefix);await saveSettings({[k]:url});prev.textContent='Uploaded';toast('Saved')}catch(e){prev.textContent='Upload failed: '+e.message}};
  return h('div',{class:'fld'+(o.wide?' s2':'')},h('label',{},label),inp,prev)};
 PAGES['mgmt/config']=()=>{const c=cfg();return[pageHead('Configuration','Business details used on bills, the public site and reports.'),ownerOnly(),
  card(cardHead('Business'),h('div',{class:'fgrid'},cfgSelect('bizType','Business type',[['restaurant','Café, restaurant, bar, bakery, hotel'],['salon','Salon / spa'],['retail','Retail (size & colour stock)']]),cfgField('name','Business name'),cfgField('phone','Phone'),cfgField('whatsapp','WhatsApp number',{hint:'Used for the WhatsApp links in Marketing'}),cfgField('gstin','GSTIN'),cfgField('addr','Address',{wide:true,area:true}))),
  card(cardHead('Billing'),h('div',{class:'fgrid'},cfgField('tax','Default tax (%)',{type:'number'}),cfgField('prefix','Invoice prefix'),cfgField('upi','UPI ID for QR payments'),cfgField('ftr','Bill footer',{wide:true,area:true}))),
- card(cardHead('Look & invoice'),h('div',{class:'fgrid'},cfgField('col','Brand colour (hex, e.g. #800020)'),cfgImage('logo','Logo',  'brand'),cfgSelect('w','Paper width',[[80,'80 mm'],[58,'58 mm']]),cfgSelect('sty','Invoice style',[['mono','Thermal (monospace)'],['sans','Clean (sans-serif)']]),cfgField('fs','Invoice font size (px)',{type:'number'}),cfgSelect('billStyle','Bill design',[['',  'Standard (default)'],...(window.auzBillTemplates?auzBillTemplates.list.map(([k,label])=>[k,label]):[])]),h('div',{class:'fld'},h('label',{},' '),btn('Preview with sample data',()=>previewBillStyle(cfg().billStyle),''))),h('p',{class:'hint'},(window.auzBillTemplates&&auzBillTemplates.list.find(([k])=>k==cfg().billStyle)||[])[2]||'')),
+ card(cardHead('Look & invoice'),h('div',{class:'fgrid'},cfgField('col','Brand colour (hex, e.g. #800020)'),cfgImage('logo','Logo',  'brand'),cfgSelect('w','Paper width',[[80,'80 mm'],[58,'58 mm']]),cfgSelect('sty','Invoice style',[['mono','Thermal (monospace)'],['sans','Clean (sans-serif)']]),cfgField('fs','Invoice font size (px)',{type:'number'}),cfgSelect('billStyle','Bill design',[['',  'Standard (default)'],...(window.auzBillTemplates?auzBillTemplates.list.map(([k,label])=>[k,label]):[])]),h('div',{class:'fld'},h('label',{},' '),btn('Preview with sample data',()=>previewBillStyle(cfg().billStyle),''))),h('p',{class:'hint'},(window.auzBillTemplates&&auzBillTemplates.list.find(([k])=>k==cfg().billStyle)||[])[2]||''),billPreviewInline()),
  card(cardHead('Self-order'),h('div',{class:'fgrid'},cfgField('gw','Guest ordering welcome text',{wide:true,area:true}))),
  card(cardHead('Targets'),h('div',{class:'fgrid'},cfgField('targetMargin','Target margin (%)',{type:'number',hint:'Shown on the Dashboard margin card'}),cfgField('dailyTarget','Daily sales target (₹)',{type:'number'}))),
  card(cardHead('Operations'),setRow('Appearance','Light, dark, or follow this device\'s setting.',tabsBar([['system','Auto'],['light','Light'],['dark','Dark']],auzThemeGet(),v=>{auzTheme(v);render()})),
@@ -24,6 +24,14 @@ function sampleBillOrder(c){
  return{no:(c.prefix||'INV')+'-SAMPLE-0001',created:new Date().toISOString(),paidAt:new Date().toISOString(),type:'Dine-in',table:null,cust:{name:'Rahul Sharma',phone:'98765 43210'},lines,
   pays:[{m:'cash',amt:total}],refunds:[],t:{sub,d,tax,round:0,total,net:taxable+tax,rates:{[rate]:{base:taxable,tax}},svc:0,pack:0,deliv:0}};
 }
+// Live preview shown right under the Bill design picker, so the owner sees the choice without pressing anything.
+function billPreviewInline(){
+ const style=cfg().billStyle;
+ if(!window.auzBillTemplates||!auzBillTemplates.styles[style])return h('p',{class:'hint'},'Standard design selected: this is the layout used on every printed and shared bill. Pick another design above to see it here.');
+ const c=cfg(),{css,html}=auzBillTemplates.styles[style](sampleBillOrder(c),c,{tableLabel:'Table 4'});
+ const box=h('div',{class:'bill-prev',style:'max-height:460px;overflow:auto;border:1px solid var(--sep);border-radius:14px;padding:10px;margin-top:10px;background:#fff'},h('style',{},css));
+ box.insertAdjacentHTML('beforeend',html);
+ return h('div',{},h('div',{class:'hint'},'Preview with sample data (not saved)'),box)}
 function previewBillStyle(style){
  if(!window.auzBillTemplates||!auzBillTemplates.styles[style]){toast('Standard is the default view used everywhere else in the app -- nothing extra to preview.');return}
  const c=cfg(),{css,html}=auzBillTemplates.styles[style](sampleBillOrder(c),c,{tableLabel:'Table 4'});
