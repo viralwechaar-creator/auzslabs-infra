@@ -40,3 +40,44 @@
   .sidebar .btn-ghost:hover,.sidebar-foot .btn:hover{background:none;color:#fff;border:0}
   .sidebar-copy{font-family:Inter,system-ui,sans-serif;font-size:14px;color:rgba(255,255,255,.42);letter-spacing:0}
 }
+
+/* Desktop menu: the same full-screen black menu as the phone, laid out wide. Big light links on the left,
+   the list of the group you point at (Products by default) on the right. Hover or click a group to switch. */
+@media (min-width:861px){
+  #sidebarDrawer.sidebar{position:fixed!important;inset:0!important;left:0!important;right:0!important;width:100%!important;max-width:none!important;height:100dvh!important;border-radius:0!important;background:#000!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;padding:0!important;display:flex;flex-direction:column;overflow-y:auto;font-family:Inter,system-ui,-apple-system,sans-serif}
+  .drawer-overlay{display:none!important}
+  .drawer-topbar{background:transparent;position:static;display:flex;align-items:center;justify-content:space-between;width:100%;max-width:1280px;margin:0 auto;box-sizing:border-box;padding:30px 48px 0}
+  .drawer-topbar-logo{display:block}
+  .drawer-topbar-icons{display:flex;gap:2px;margin-left:auto;order:1}
+  .drawer-topbar-icons .drawer-icon-link[aria-label=Cart]{display:none}
+  .drawer-icon-link{width:44px;height:44px;align-items:center;justify-content:center;color:#fff}
+  .drawer-icon-link svg{width:22px;height:22px}
+  .drawer-close{order:2;position:relative;width:44px;height:44px;margin:0 -10px 0 8px;padding:0;background:none;border:0;border-radius:0;font-size:0;color:#fff;justify-content:center}
+  .drawer-close:hover{background:none}
+  .drawer-close span{display:none}
+  .drawer-close::before,.drawer-close::after{content:"";position:absolute;left:50%;top:50%;width:22px;height:1.6px;background:#fff;transform:translate(-50%,-50%) rotate(45deg)}
+  .drawer-close::after{transform:translate(-50%,-50%) rotate(-45deg)}
+
+  .sidebar-nav{position:relative;display:flex;flex-direction:column;align-items:flex-start;width:100%;max-width:1280px;margin:clamp(24px,7vh,80px) auto 0;padding:0 48px;box-sizing:border-box;gap:0}
+  .sidebar-nav>.nav-link,.nav-group-toggle{order:initial;font-family:Inter,system-ui,sans-serif;font-weight:300;font-size:clamp(30px,4.2vw,50px);line-height:1.1;letter-spacing:-.03em;color:#fff;padding:5px 0;border:0;background:none;box-shadow:none;width:auto;justify-content:flex-start;gap:14px;cursor:pointer;transition:opacity .2s}
+  .sidebar-nav>.nav-link.active{padding-left:0;box-shadow:none}
+  .nav-group{width:100%;position:static}
+  .nav-group-toggle .nav-group-count{display:none}
+  .nav-group-indicator{display:inline-block;width:auto;font-size:.5em;font-weight:300;color:rgba(255,255,255,.4);transform:translateY(-.5em)}
+  .sidebar-nav:hover>.nav-link,.sidebar-nav:hover .nav-group-toggle{opacity:.38}
+  .sidebar-nav>.nav-link:hover,.sidebar-nav .nav-group:hover .nav-group-toggle,.sidebar-nav .nav-group-toggle:focus-visible{opacity:1}
+  .nav-submenu{display:block;max-height:none!important;overflow:visible!important;position:absolute;left:52%;right:48px;top:0;bottom:auto;margin:0;width:auto;background:transparent;border:0;border-radius:0;box-shadow:none;padding:0;transform:none;opacity:0;visibility:hidden;transition:opacity .18s ease .25s,visibility 0s .45s;pointer-events:none}
+  .nav-submenu-inner{display:grid;grid-template-columns:1fr 1fr;gap:4px 40px;padding:6px 0;overflow:visible}
+  .nav-sublink{font-family:Inter,system-ui,sans-serif;font-weight:400;font-size:clamp(17px,1.7vw,22px);line-height:1.3;letter-spacing:-.01em;padding:7px 0;color:rgba(255,255,255,.62);border:0;background:none;display:block}
+  .nav-sublink:hover,.nav-sublink.active{color:#fff}
+  .nav-sublink.is-disabled{color:rgba(255,255,255,.3)}
+  .nav-group:hover .nav-submenu,.nav-group:focus-within .nav-submenu,.nav-group-toggle[aria-expanded="true"]+.nav-submenu,
+  .sidebar-nav:not(:has(.nav-group:hover)):not(:has(.nav-group-toggle[aria-expanded="true"])):not(:has(.nav-group:focus-within)) .nav-group:first-of-type .nav-submenu{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .18s ease,visibility 0s}
+  .nav-group:hover~.nav-group .nav-submenu{visibility:hidden}
+
+  .sidebar-foot{border:0;margin:auto auto 0;width:100%;max-width:1280px;box-sizing:border-box;padding:48px 48px 36px;display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:24px}
+  .sidebar-foot>div:first-child{display:flex!important;gap:26px!important}
+  .sidebar-foot .btn{flex:0 0 auto!important;border:0;background:none;padding:0;min-height:0;height:auto;font-family:Inter,system-ui,sans-serif;font-size:14px;font-weight:400;letter-spacing:0;text-transform:none;color:rgba(255,255,255,.5);justify-content:flex-start}
+  .sidebar .btn-ghost:hover,.sidebar-foot .btn:hover{background:none;color:#fff;border:0}
+  .sidebar-copy{font-family:Inter,system-ui,sans-serif;font-size:14px;color:rgba(255,255,255,.42);letter-spacing:0}
+}
