@@ -263,5 +263,35 @@ export default async function run({ browser, stack }) {
     await s.shot(page, 'salon-plan-pick');
     assert(!errs.some((e) => /JS error/.test(e)), errs.join(' | ')); await c.close();
   }, 'critical');
+  await s.check('Automations (db/205): unpaid quote reminder once per stage, daily summary, setup task for a paid new business, retry link after a failed payment', async () => {
+    await q("insert into platform_flags (key, value) values ('whatsapp_platform_auto','on') on conflict (key) do update set value='on'");
+    const mk = async (extra) => (await q("insert into client_orders (user_id, kind, status, contact_name, phone, business_name, niche, products) values ((select id from auth_users where email=$1),'new','link_sent','Auto Test','9812300001','Auto Biz','cafe','{pos}') returning id, token", [USERS.plain]))[0];
+    const o = await mk();
+    await q("update client_orders set updated_at = now() - interval '3 days' where id=$1", [o.id]);
+    const r1 = (await q('select quote_followup_run() as r'))[0].r; assert(r1.followed_up >= 1, 'no reminder: ' + JSON.stringify(r1));
+    const w = await q("select params from wa_outbox where ref=$1 and template='request_update'", [o.id + '-qf1']); assert(w.length === 1 && /pay\.html\?t=/.test(JSON.stringify(w[0].params)), 'reminder message: ' + JSON.stringify(w));
+    assert((await q("select quote_followup_run() as r"))[0].r.followed_up === 0, 'the same reminder was queued twice');
+    assert((await q("select count(*)::int c from notifications where type='quote_followup' and tenant_id is null"))[0].c >= 1, 'admin not told');
+    assert((await call('admin_set_admin_phone', { p_phone: '9876543210' }, cust)).status >= 400, 'a customer set the admin phone');
+    assert((await call('admin_set_admin_phone', { p_phone: '123' }, adm)).status >= 400, 'short phone accepted');
+    assert((await call('admin_set_admin_phone', { p_phone: '98765 43210' }, adm)).status === 200 && (await call('admin_wa_overview', {}, adm)).data.admin_phone === '9876543210', 'admin phone not saved');
+    const sm = (await q('select admin_daily_summary_run() as r'))[0].r; assert(typeof sm.new === 'number', 'summary: ' + JSON.stringify(sm));
+    assert((await q("select count(*)::int c from notifications where type='daily_summary'"))[0].c >= 1, 'no summary notification');
+    // failed payment -> retry link
+    const pid = (await q("insert into payments (client_order_id, amount, status, razorpay_order_id) values ($1, 100, 'created', 'order_auto_1') returning id", [o.id]))[0].id;
+    await q("update payments set status='failed' where id=$1", [pid]);
+    assert((await q("select count(*)::int c from wa_outbox where ref=$1", [pid + '-retry']))[0].c === 1, 'no retry link queued');
+    // setup task for a paid new business
+    const uid = (await q('select id from auth_users where email=$1', [USERS.cafeOwner]))[0].id;
+    await q("insert into platform_salesmen (id, name, role, active) values ($1,'Setup Test','setup',true) on conflict (id) do update set role='setup', active=true", [uid]);
+    const tid = (await q("select id from tenants where niche='retail' limit 1"))[0].id;
+    await q("update client_orders set tenant_id=$2 where id=$1", [o.id, tid]); await q("update client_orders set status='paid', invoice_no='AUTO/1' where id=$1", [o.id]);
+    assert((await q("select count(*)::int c from team_tasks where source='auto:payment_setup' and related_tenant_id=$1 and assigned_to=$2", [tid, uid]))[0].c === 1, 'no setup task');
+    await q("update client_orders set invoice_no='AUTO/2' where id=$1", [o.id]); await q("update client_orders set tenant_id=$2 where id=$1", [o.id, tid]);
+    assert((await q("select count(*)::int c from team_tasks where source='auto:payment_setup' and related_tenant_id=$1", [tid]))[0].c === 1, 'setup task duplicated');
+    assert((await q("select count(*)::int c from wa_outbox where template='admin_daily_summary'"))[0].c === 1, 'no WhatsApp summary queued');
+    await q('delete from team_tasks where source=$1', ['auto:payment_setup']); await q('delete from platform_salesmen where id=$1', [uid]);
+    await q('delete from payments where id=$1', [pid]); await q('delete from client_orders where id=$1', [o.id]);
+  }, 'critical');
   s.done();
 }
