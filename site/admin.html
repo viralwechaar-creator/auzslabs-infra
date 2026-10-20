@@ -634,8 +634,8 @@ body.admin-shell .bn-in input{border:none!important;background:none!important;bo
         <div id="pricingList">Loading&hellip;</div>
 
         <div class="label" style="margin-top:28px">AUZslab Salon plans</div>
-        <h2 class="h-2">Plan tiers (salon and cafe &amp; restaurant)</h2>
-        <p class="p">The four tiers on <a href="business-salons.html#salon-plans" target="_blank" rel="noopener">the salon page &#8599;</a> and <a href="business-cafes.html#salon-plans" target="_blank" rel="noopener">the cafe &amp; restaurant page &#8599;</a> &mdash; edit their prices, names and features here; the live page reads these the moment you save.</p>
+        <h2 class="h-2">Plan tiers (salon, cafe &amp; restaurant, mobile shop)</h2>
+        <p class="p">The four tiers on <a href="business-salons.html#salon-plans" target="_blank" rel="noopener">the salon</a>, <a href="business-cafes.html#salon-plans" target="_blank" rel="noopener">cafe &amp; restaurant</a> and <a href="business-mobile-repair.html#salon-plans" target="_blank" rel="noopener">mobile shop</a> pages &mdash; edit their prices, names and features here; the live page reads these the moment you save.</p>
         <div id="salonTiersList">Loading&hellip;</div>
 
         <div class="label" style="margin-top:28px">Business-page add-ons</div>
@@ -1621,7 +1621,7 @@ async function loadSalonTiers() {
   const listEl = document.getElementById('salonTiersList');
   const { data, error } = await sb.rpc('admin_list_salon_tiers', {});
   if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
-  const NICHE_NAME = { salon: 'Salon plans', cafe: 'Cafe & restaurant plans' };
+  const NICHE_NAME = { salon: 'Salon plans', cafe: 'Cafe & restaurant plans', mobile: 'Mobile shop & repair plans' };
   const cards = (data || []).map((t, i, all) => `${(i === 0 || all[i - 1].niche !== t.niche) ? `<h3 class="h-3" style="grid-column:1/-1;margin:14px 0 0">${esc(NICHE_NAME[t.niche] || t.niche)}</h3>` : ''}
     <div class="a-card bn-card" data-tier="${esc(t.tier_key)}">
       <div class="bn-top">
@@ -1666,7 +1666,7 @@ async function loadNicheAddons() {
   const listEl = document.getElementById('nicheAddonsList'); if (!listEl) return;
   const { data, error } = await sb.rpc('admin_list_niche_addons', {});
   if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
-  const NICHE_NAME = { salon: 'Salon add-ons', cafe: 'Cafe & restaurant add-ons' };
+  const NICHE_NAME = { salon: 'Salon add-ons', cafe: 'Cafe & restaurant add-ons', mobile: 'Mobile shop & repair add-ons' };
   const cards = (data || []).map((a, i, all) => `${(i === 0 || all[i - 1].niche !== a.niche) ? `<h3 class="h-3" style="grid-column:1/-1;margin:14px 0 0">${esc(NICHE_NAME[a.niche] || a.niche)}</h3>` : ''}
     <div class="a-card bn-card" data-addon="${esc(a.addon_key)}">
       <input class="inp" data-f="name" placeholder="Add-on name" value="${esc(a.name || '')}">
@@ -2810,6 +2810,7 @@ function defaultQuote(o, defGst) {
   if (sel && sel.tier) {
     const t = sel.tier; used.add(t.product_key);
     items.push({ key: t.product_key, label: t.name + ' plan', plan: yr ? 'year' : 'month', rate: num(yr ? (t.yearly || num(t.monthly) * 10) : t.monthly), discount: 0, gst: gstOf(t.product_key) });
+    (t.extra_keys || []).forEach((k) => { if (!used.has(k)) { used.add(k); items.push({ key: k, label: (PROD_NAME[k] || k) + ' (included in ' + t.name + ')', plan: yr ? 'year' : 'month', rate: 0, discount: 0, gst: 0 }); } });
   }
   ((sel && sel.addons) || []).forEach((a) => {
     const price = num(a.price), label = a.name + (price > 0 ? '' : ' (price to be agreed)');

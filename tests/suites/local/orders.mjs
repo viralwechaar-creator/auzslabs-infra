@@ -293,5 +293,19 @@ export default async function run({ browser, stack }) {
     await q('delete from team_tasks where source=$1', ['auto:payment_setup']); await q('delete from platform_salesmen where id=$1', [uid]);
     await q('delete from payments where id=$1', [pid]); await q('delete from client_orders where id=$1', [o.id]);
   }, 'critical');
+  await s.check('Mobile shop plans (db/206): four admin-managed tiers, a plan can switch on extra products (Smart Retail adds AUZsScan, Business 360 adds AUZsScan + AUZsLedger)', async () => {
+    const t = (await call('public_plan_tiers', { p_niche: 'mobile' })).data;
+    assert(t.length === 4 && t.map((x) => Number(x.monthly_price)).join() === '560,820,1360,2260', 'mobile tiers: ' + JSON.stringify(t.map((x) => x.monthly_price)));
+    assert(t[2].extra_keys.join() === 'scan' && t[3].extra_keys.join() === 'scan,accounting' && t[0].extra_keys.length === 0, 'extra keys: ' + JSON.stringify(t.map((x) => x.extra_keys)));
+    assert((await call('public_niche_addons', { p_niche: 'mobile' })).data.length === 3, 'mobile add-ons');
+    assert((await call('admin_list_salon_tiers', {}, adm)).data.filter((x) => x.niche === 'mobile').length === 4, 'admin does not list the mobile tiers');
+    await q('delete from client_orders where user_id = (select id from auth_users where email=$1)', [USERS.cafeOwner]);
+    const base = { contact_name: 'Mob Test', phone: '9812345678', business_name: 'Mob Shop', requirement: 'Business 360', plan: { niche: 'mobile', tier_key: 'mobile_business_360', period: 'month', addons: ['mobile_multi'] } };
+    const r = await call('submit_client_order', { p: base }, other); assert(r.status === 200, 'refused: ' + JSON.stringify(r.raw));
+    const row = (await q('select niche, products, selection from client_orders where id=$1', [r.data.id]))[0];
+    assert(row.niche === 'mobile' && ['mobile', 'scan', 'accounting'].every((k) => row.products.includes(k)), JSON.stringify(row));
+    assert(row.selection.tier.extra_keys.join() === 'scan,accounting', JSON.stringify(row.selection));
+    await q('delete from client_orders where id=$1', [r.data.id]);
+  }, 'critical');
   s.done();
 }
