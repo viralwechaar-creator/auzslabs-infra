@@ -209,30 +209,37 @@
               <div class="h-2" id="bizTitle"></div>
               <p class="p" id="bizText"></p>
               <ul class="biz-list" id="bizList"></ul>
+              <div class="biz-prods" id="bizProds"></div>
               <a class="btn btn-primary" id="bizGo" href="business-cafes.html">See the setup</a>
             </div>
           </div>
           <style>
-            .biz-pick{margin-top:18px;display:grid;grid-template-columns:minmax(0,.75fr) minmax(0,1.25fr);gap:24px;align-items:start}
-            .biz-tabs{display:flex;flex-direction:column;gap:6px}
-            .biz-tab{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;border:1px solid transparent;background:transparent;color:inherit;border-radius:16px;padding:14px 16px;font:inherit;font-size:15px;font-weight:700;min-height:48px;cursor:pointer;opacity:.7}
-            .biz-tab span{font-size:11px;color:var(--muted);font-weight:700}
-            .biz-tab.on{background:var(--bg-raised,#fff);border-color:var(--line);opacity:1;color:var(--accent);box-shadow:0 5px 18px rgba(46,32,30,.06)}
-            .biz-card{border:1px solid var(--line);border-radius:24px;background:var(--bg-raised,#fff);padding:24px}
-            .biz-eye{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
-            .biz-card .h-2{margin-top:8px}
-            .biz-list{list-style:none;margin:14px 0 18px;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:9px 14px;font-size:13px}
-            .biz-list li:before{content:"\2713";color:var(--accent);font-weight:800;margin-right:7px}
-            @media(max-width:700px){.biz-pick{grid-template-columns:1fr;gap:14px}.biz-tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px}.biz-tab{padding:10px 12px;font-size:12px;min-height:44px}.biz-card{padding:18px}.biz-list{grid-template-columns:1fr}}
+            .biz-pick{margin-top:20px;display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:34px;align-items:stretch}
+            .biz-tabs{display:flex;flex-direction:column;gap:10px}
+            .biz-tab{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;border:1px solid var(--line);background:rgba(255,255,255,.55);color:var(--ink);border-radius:18px;padding:15px 22px;font:inherit;font-size:18px;font-weight:700;letter-spacing:-.02em;min-height:56px;cursor:pointer;transition:.2s}
+            .biz-tab span{font-size:12px;color:var(--muted);font-weight:700}
+            .biz-tab:hover{border-color:var(--ink)}
+            .biz-tab.on{background:var(--ink);border-color:var(--ink);color:#fff;box-shadow:0 14px 30px rgba(46,32,30,.22)}
+            .biz-tab.on span{color:rgba(255,255,255,.7)}
+            .biz-card{border:1px solid #d9cfc8;border-radius:28px;background:#fff;padding:28px 32px;box-shadow:0 22px 50px rgba(46,32,30,.16);display:flex;flex-direction:column}
+            .biz-eye{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+            .biz-card .h-2{margin-top:12px;font-size:clamp(24px,2.6vw,34px);line-height:1.12;color:#1c1a18}
+            .biz-card .p{margin-top:12px;font-size:16px;color:#4a443f}
+            .biz-list{list-style:none;margin:16px 0;padding:16px 0 0;border-top:1px dashed #d9cfc8;display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;font-size:15px;color:#2e2c2a}
+            .biz-list li:before{content:"\2713";color:var(--accent);font-weight:800;margin-right:9px}
+            .biz-prods{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+            .biz-prods b{font-size:12px;font-weight:700;border:1px solid #d9cfc8;border-radius:999px;padding:7px 13px;background:#f6f1ee;color:#2e2c2a}
+            .biz-card .btn{align-self:flex-start;margin-top:auto}
+            @media(max-width:700px){.biz-pick{grid-template-columns:1fr;gap:12px;margin-top:14px}.biz-card .p{display:none}.biz-prods{margin-bottom:14px}.biz-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px}.biz-tab{padding:9px 12px;font-size:13px;min-height:44px;border-radius:14px}.biz-card{padding:18px;border-radius:22px}.biz-list{grid-template-columns:1fr;gap:8px;margin:12px 0;padding-top:12px;font-size:14px}}
           </style>
           <script>
           (function(){
             var D={
-              cafe:['Cafes and restaurants','Orders, tables, kitchen and bills in one flow.','See what is ordered, cooked and sold, from the table to the till.',['Table and QR ordering','Kitchen screen','GST bills','Stock and recipes'],'business-cafes.html'],
-              retail:['Retail and bookstores','Barcode billing and stock you can trust.','Know what is selling and what is still on the shelf.',['Barcode billing','Stock and reorder','Customer history','GST invoices'],'business-retail.html'],
-              salon:['Salons and studios','Bookings, clients and bills together.','Give every appointment a smoother flow, from booking to bill.',['Online booking','Client history','Staff and payroll','Bills on WhatsApp'],'business-salons.html'],
-              mobile:['Mobile shops','Sell, repair and track every phone.','Keep sales, repairs and dues connected, with every IMEI traced.',['IMEI tracking','Repair jobs','Staff profit ledger','Customer dues'],'business-mobile-repair.html'],
-              clothing:['Clothing and apparel','Sizes, colours and exchanges handled.','Make variants, exchanges and stock easier to manage.',['Variant stock','Barcode billing','Returns and exchanges','Trial room hold'],'business-clothing.html']
+              cafe:['Cafes and restaurants','Orders, tables, kitchen and bills in one flow.','See what is ordered, cooked and sold, from the table to the till.',['Table and QR ordering','Kitchen screen','GST bills','Stock and recipes'],'business-cafes.html',['AUZsPOS','AUZsPOS QR','AUZsPay']],
+              retail:['Retail and bookstores','Barcode billing and stock you can trust.','Know what is selling and what is still on the shelf.',['Barcode billing','Stock and reorder','Customer history','GST invoices'],'business-retail.html',['AUZsPOS','AUZsLedger']],
+              salon:['Salons and studios','Bookings, clients and bills together.','Give every appointment a smoother flow, from booking to bill.',['Online booking','Client history','Staff and payroll','Bills on WhatsApp'],'business-salons.html',['AUZslab Salon','AUZsPay']],
+              mobile:['Mobile shops','Sell, repair and track every phone.','Keep sales, repairs and dues connected, with every IMEI traced.',['IMEI tracking','Repair jobs','Staff profit ledger','Customer dues'],'business-mobile-repair.html',['AUZsMob','AUZsLedger']],
+              clothing:['Clothing and apparel','Sizes, colours and exchanges handled.','Make variants, exchanges and stock easier to manage.',['Variant stock','Barcode billing','Returns and exchanges','Trial room hold'],'business-clothing.html',['AUZsPOS','AUZsLedger']]
             };
             var tabs=document.querySelectorAll('#bizPick .biz-tab');
             function show(k){
@@ -242,6 +249,7 @@
               document.getElementById('bizText').textContent=d[2];
               document.getElementById('bizList').innerHTML=d[3].map(function(x){return '<li>'+x+'</li>'}).join('');
               document.getElementById('bizGo').href=d[4];
+              document.getElementById('bizProds').innerHTML=d[5].map(function(x){return '<b>'+x+'</b>'}).join('');
               tabs.forEach(function(t){var on=t.dataset.b===k;t.classList.toggle('on',on);t.setAttribute('aria-selected',on?'true':'false')});
             }
             tabs.forEach(function(t){t.addEventListener('click',function(){show(t.dataset.b)})});
