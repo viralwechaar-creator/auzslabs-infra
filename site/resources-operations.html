@@ -32,6 +32,22 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style id="topbar-nav-css">
+.topbar-nav{display:none}
+@media(min-width:900px){
+  .topbar-nav{display:flex;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);gap:30px;margin:0;order:0}
+  .topbar-nav a{font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink);padding:8px 2px;border:0;border-radius:0;background:none;white-space:nowrap;position:relative}
+  .topbar-nav a:hover{color:var(--accent)}
+  .topbar-nav a:hover::after{content:"";position:absolute;left:0;right:0;bottom:2px;border-bottom:2px dotted var(--accent)}
+  .topbar-nav a[aria-current="page"]{color:var(--accent);background:none}
+  .topbar-nav a[aria-current="page"]::before{content:"[ ";white-space:pre}
+  .topbar-nav a[aria-current="page"]::after{content:" ]";white-space:pre;border:0;position:static}
+.topbar-nav.tbn-fixed{display:flex;position:fixed;left:0;right:var(--sidebar-w,280px);top:0;transform:none;height:54px;align-items:center;justify-content:center;background:var(--bg);border-bottom:1px solid var(--line);z-index:24}
+body.has-tbn main.content{padding-top:54px}
+}
+@media(min-width:900px){.footer-top{grid-template-columns:1.5fr 1fr 1fr 1fr}}
+</style>
+<script id="topbar-nav-js">(function(){function f(){var n=document.querySelector('.topbar-nav'),t=document.querySelector('.topbar');if(!n||!t)return;var hide=matchMedia('(min-width:900px)').matches&&getComputedStyle(t).display==='none';if(hide&&n.parentNode===t){document.body.appendChild(n);n.classList.add('tbn-fixed');document.body.classList.add('has-tbn')}else if(!hide&&n.classList.contains('tbn-fixed')&&!matchMedia('(min-width:900px)').matches){}}f();addEventListener('load',f)})();</script>
 </head>
 <body>
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
@@ -46,6 +62,7 @@
       </button>
     </div>
     <a href="index.html" class="topbar-logo"><img src="logo.png" alt="AUZslab"></a>
+    <nav class="topbar-nav" aria-label="Main"><a href="products.html">Products</a><a href="platform.html">Businesses</a><a href="live-demo.html">Live demo</a><a href="contact.html">Contact</a></nav>
   </header>
 
   <div class="drawer-overlay" id="drawerOverlay"></div>
@@ -218,8 +235,16 @@
               <a href="products.html#slab-payroll">AUZsPay</a>
               <a href="products.html#slab-accounting">AUZsLedger</a>
               <a href="products.html#slab-scan">AUZsScan</a>
-              <a href="products.html">AUZsMob</a>
+              <a href="products.html#slab-mobile">AUZsMob</a>
               <a href="products.html">All products</a>
+            </div>
+            <div class="footer-col">
+              <div class="footer-col-title">Business types</div>
+              <a href="business-cafes.html">Cafes &amp; restaurants</a>
+              <a href="business-retail.html">Retail &amp; bookstores</a>
+              <a href="business-salons.html">Salons &amp; studios</a>
+              <a href="business-mobile-repair.html">Mobile shops</a>
+              <a href="business-clothing.html">Clothing &amp; apparel</a>
             </div>
             <div class="footer-col">
               <div class="footer-col-title">Company</div>
