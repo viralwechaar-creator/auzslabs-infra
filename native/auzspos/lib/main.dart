@@ -1,5 +1,6 @@
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
+import 'core/alerts.dart';
 import 'core/session.dart';
 import 'ui/login.dart';
 import 'ui/home.dart';
@@ -13,6 +14,10 @@ import 'ui/notonplan.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Notification-channel race fix (see alerts.dart's own doc comment on ensureChannel()): create the
+  // "orders" channel with its real settings (max importance, sound, vibration) before anything -- login,
+  // Firebase registration, a background push -- gets a chance to. This never shows a permission prompt.
+  await Alerts.ensureChannel();
   final s = Session();
   await Tk.loadMode();
   await Lang.load();

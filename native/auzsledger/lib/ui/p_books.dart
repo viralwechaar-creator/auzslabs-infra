@@ -38,33 +38,57 @@ Future<void> _shareCsv(BuildContext c, String name, List<List<Object?>> rows) as
 
 // ---------------------------------------------------------------- receipts and payments
 
-/// Money received from customers / paid to suppliers, settled against what is outstanding, oldest first.
+/// Money received from customers / paid to suppliers: ageing dashboard (matches the website's
+/// moneyPage() in p-money.js -- same acc_ageing/acc_list_payments RPCs, same KPI shape), the
+/// existing settle-oldest-first "Receive/Pay money" sheet, and a tappable Recent list leading
+/// to the full payment detail (allocations, journal lines, cancel).
 class MoneyPage extends StatefulWidget {
-  const MoneyPage(this.s, {super.key});
+  const MoneyPage(this.s, {required this.kind, super.key});
   final LedgerSession s;
+  /// 'receipt' (Collect, money in from customers) or 'payment' (Pay suppliers, money out).
+  final String kind;
   @override
   State<MoneyPage> createState() => _MoneyPageState();
 }
 
 class _MoneyPageState extends State<MoneyPage> {
   LedgerSession get s => widget.s;
-  String kind = 'receipt';
+  String get kind => widget.kind;
+  bool get isIn => kind == 'receipt';
   int tick = 0;
+  // Re-entrancy guard: acc_save_payment has no client-side idempotency key (unlike the
+  // offline-draft RPCs), so a double tap would create two real payments server-side. Guarded
+  // here rather than in the shared openSheet()/SheetAction widget, which every other screen's
+  // sheet relies on unchanged.
+  bool _submitting = false;
 
-  bool get canWrite => s.can(kind == 'receipt' ? 'acc_sales' : 'acc_purchase') || s.can('acc_admin');
+  bool get canWrite => s.can(isIn ? 'acc_sales' : 'acc_purchase') || s.can('acc_admin');
 
-  void _new() {
-    Map<String, dynamic>? party;
+  void _new({Map<String, dynamic>? presetParty}) {
+    var party = presetParty;
+    var loadedPreset = presetParty == null; // true once the preset party's own docs are fetched
     var docs = <Map<String, dynamic>>[];
     final amt = TextEditingController(), ref = TextEditingController(), note = TextEditingController();
     var date = ymd(DateTime.now());
-    var mode = kind == 'receipt' ? 'Cash' : 'Bank';
+    var mode = isIn ? 'Cash' : 'Bank';
     final accts = s.payAccounts(mode == 'Cash' ? 'cash' : 'bank');
     var acct = accts.firstOrNull?['id'];
-    final isIn = kind == 'receipt';
+    Future<void> loadDocs(void Function(VoidCallback) set, String partyId) async {
+      set(() => docs = []);
+      try {
+        final r = _map(await s.api.rpc('acc_list_documents', {'p': {'types': isIn ? ['invoice'] : ['bill', 'expense'], 'party_id': partyId, 'limit': 200}}));
+        set(() => docs = _maps(r['rows']).where((d) => d['status'] == 'posted' && n(d['outstanding']) > 0).toList());
+      } on ApiError catch (_) {}
+    }
+
     openSheet(context, isIn ? 'Receive money' : 'Pay money', (ctx, set) {
       final cands = s.parties.where((p) => p['is_walkin'] != true && p['active'] != false && (isIn ? (p['kind'] == 'customer' || p['kind'] == 'both') : (p['kind'] == 'supplier' || p['kind'] == 'both'))).toList()
         ..sort((a, b) => '${a['name']}'.toLowerCase().compareTo('${b['name']}'.toLowerCase()));
+      if (!loadedPreset) {
+        // Kick off the preset party's outstanding docs once, on the very first build.
+        loadedPreset = true;
+        loadDocs(set, '${party!['id']}');
+      }
       final alloc = allocateOldestFirst(n(amt.text), docs);
       final used = alloc.fold<double>(0, (a, x) => a + n(x['amount']));
       return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -73,13 +97,9 @@ class _MoneyPageState extends State<MoneyPage> {
           isExpanded: true,
           decoration: InputDecoration(labelText: tr(isIn ? 'Received from' : 'Paid to')),
           items: [for (final p in cands) DropdownMenuItem(value: '${p['id']}', child: Text('${p['name']}'))],
-          onChanged: (v) async {
+          onChanged: (v) {
             party = cands.firstWhere((p) => '${p['id']}' == v);
-            set(() => docs = []);
-            try {
-              final r = _map(await s.api.rpc('acc_list_documents', {'p': {'types': isIn ? ['invoice'] : ['bill', 'expense'], 'party_id': v, 'limit': 200}}));
-              set(() => docs = _maps(r['rows']).where((d) => d['status'] == 'posted' && n(d['outstanding']) > 0).toList());
-            } on ApiError catch (_) {}
+            loadDocs(set, v!);
           },
         ),
         gap(),
@@ -113,6 +133,7 @@ class _MoneyPageState extends State<MoneyPage> {
       ]);
     }, actions: [
       SheetAction(isIn ? 'Record receipt' : 'Record payment', (ctx) async {
+        if (_submitting) return false; // already in flight -- never send the same tap twice
         final a = n(amt.text);
         if (party == null) {
           toast(ctx, tr('Choose a party'), err: true);
@@ -122,13 +143,18 @@ class _MoneyPageState extends State<MoneyPage> {
           toast(ctx, tr(a <= 0 ? 'Enter the amount' : 'No cash or bank account is set up'), err: true);
           return false;
         }
-        final r = _map(await s.api.rpc('acc_save_payment', {'p': {'kind': kind, 'party_id': party!['id'], 'account_id': acct, 'amount': a, 'date': date, 'mode': mode, 'reference': ref.text.trim(), 'notes': note.text.trim(), 'allocations': allocateOldestFirst(a, docs)}}));
-        if (mounted) {
-          toast(context, '${isIn ? tr('Received') : tr('Paid')} ${inr(a)} · ${r['number'] ?? ''}');
-          setState(() => tick++);
+        _submitting = true;
+        try {
+          final r = _map(await s.api.rpc('acc_save_payment', {'p': {'kind': kind, 'party_id': party!['id'], 'account_id': acct, 'amount': a, 'date': date, 'mode': mode, 'reference': ref.text.trim(), 'notes': note.text.trim(), 'allocations': allocateOldestFirst(a, docs)}}));
+          if (mounted) {
+            toast(context, '${isIn ? tr('Received') : tr('Paid')} ${inr(a)} · ${r['number'] ?? ''}');
+            setState(() => tick++);
+          }
+          await s.refreshParties();
+          return true;
+        } finally {
+          _submitting = false;
         }
-        await s.refreshParties();
-        return true;
       }),
     ]);
   }
@@ -136,22 +162,155 @@ class _MoneyPageState extends State<MoneyPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Receipts and payments'), actions: [if (canWrite) iconBtn(Icons.add_circle_outline, _new, tip: 'New')]),
-      body: ListView(padding: const EdgeInsets.only(bottom: 40), children: [
-        Pad(Seg<String>(expand: true, items: const [('receipt', 'Received'), ('payment', 'Paid')], value: kind, onChanged: (v) => setState(() => kind = v))),
-        Loader<Map<String, dynamic>>(
-          key: ValueKey('$kind$tick'),
-          load: () async => _map(await s.api.rpc('acc_list_payments', {'p': {'kind': kind, 'limit': 100}})),
-          builder: (ctx, d, _) {
-            final rows = _maps(d['rows']);
-            if (rows.isEmpty) return emptyBox(Icons.account_balance_wallet_outlined, 'Nothing yet');
-            return Group([
-              for (final r in rows)
-                Li('${r['party_name'] ?? ''}', sub: '${r['number']} · ${fmtD(r['pay_date'])}${r['status'] == 'cancelled' ? ' · cancelled' : ''}', value: inr(n(r['amount'])), icon: kind == 'receipt' ? Icons.south_west : Icons.north_east, tone: kind == 'receipt' ? Tk.green : Tk.orange, chevron: false),
-            ]);
-          },
-        ),
-      ]),
+      appBar: AppBar(title: Text(isIn ? tr('Collect') : tr('Pay suppliers')), actions: [if (canWrite) iconBtn(Icons.add_circle_outline, _new, tip: 'New')]),
+      body: Loader<Map<String, dynamic>>(
+        key: ValueKey(tick),
+        load: () async {
+          final r = await Future.wait([
+            s.api.rpc('acc_ageing', {'p': {'kind': isIn ? 'receivable' : 'payable'}}),
+            s.api.rpc('acc_list_payments', {'p': {'kind': kind, 'limit': 100}}),
+          ]);
+          return {'ageing': _map(r[0]), 'payments': _map(r[1])};
+        },
+        builder: (ctx, d, reload) {
+          final age = _map(d['ageing']);
+          final totals = _map(age['totals']);
+          final overdue = ageingOverdue(totals);
+          final rows = _maps(age['rows']).where((r) => n(r['total']) > 0).take(12).toList();
+          final pays = _maps(_map(d['payments'])['rows']);
+          return RefreshIndicator(
+            onRefresh: reload,
+            child: ListView(padding: const EdgeInsets.only(bottom: 40), children: [
+              metricGrid([
+                Metric(isIn ? tr('To collect') : tr('To pay'), inr(n(totals['total']), dp: 0), sub: n(totals['advance']) != 0 ? '${inr(n(totals['advance']).abs(), dp: 0)} ${tr('in advances')}' : null, hero: true),
+                Metric(tr('Overdue'), inr(overdue, dp: 0), sub: overdue > 0 ? tr('Past the due date') : tr('Nothing overdue'), tone: overdue > 0 ? Tk.red : null),
+                Metric(tr('Not yet due'), inr(n(totals['current']), dp: 0)),
+              ]),
+              SectionLabel(isIn ? 'Who owes you' : 'Who you owe'),
+              if (rows.isEmpty)
+                emptyBox(Icons.check_circle_outline, tr(isIn ? 'Nothing to collect' : 'Nothing to pay'), tr('Everything is settled.'))
+              else
+                Group([
+                  for (final r in rows)
+                    Li('${r['name']}', sub: ageingOverdue(r) > 0 ? '${inr(ageingOverdue(r), dp: 0)} ${tr('overdue')}' : tr('Within terms'), value: inr(n(r['total']), dp: 0), chevron: false,
+                        trailing: canWrite
+                            ? Padding(padding: const EdgeInsets.only(left: 8), child: OutlinedButton(onPressed: () => _new(presetParty: {'id': r['party_id'], 'name': r['name'], 'kind': isIn ? 'customer' : 'supplier'}), child: Text(tr(isIn ? 'Collect' : 'Pay'))))
+                            : null),
+                ]),
+              SectionLabel(isIn ? 'Recent receipts' : 'Recent payments'),
+              if (pays.isEmpty)
+                emptyBox(Icons.account_balance_wallet_outlined, tr('Nothing yet'))
+              else
+                Group([
+                  for (final r in pays)
+                    Li('${r['party_name'] ?? ''}', sub: '${r['number']} · ${fmtD(r['pay_date'])}${r['status'] == 'cancelled' ? ' · ${tr('cancelled')}' : ''}', value: inr(n(r['amount'])), icon: isIn ? Icons.south_west : Icons.north_east, tone: isIn ? Tk.green : Tk.orange,
+                        onTap: () async {
+                          await Navigator.push(context, MaterialPageRoute(builder: (_) => PaymentDetailPage(s, '${r['id']}')));
+                          if (mounted) setState(() => tick++);
+                        }),
+                ]),
+            ]),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// One payment/receipt's detail: amount, party, allocations against documents, the accounting
+/// entries it created, attachments (read-only -- no screen in this app fetches a private file
+/// yet, so there is nothing to wire a download/upload action to), and Cancel with a reason
+/// (acc_cancel_payment, same reversal the website uses).
+class PaymentDetailPage extends StatefulWidget {
+  const PaymentDetailPage(this.s, this.id, {super.key});
+  final LedgerSession s;
+  final String id;
+  @override
+  State<PaymentDetailPage> createState() => _PaymentDetailPageState();
+}
+
+class _PaymentDetailPageState extends State<PaymentDetailPage> {
+  LedgerSession get s => widget.s;
+  bool _cancelling = false;
+
+  Future<void> _cancel(Map<String, dynamic> p, Future<void> Function() reload) async {
+    if (_cancelling) return;
+    final reasonCtrl = TextEditingController();
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (d) => AlertDialog(
+        title: Text(tr('Cancel ${p['number'] ?? ''}?')),
+        content: TextField(controller: reasonCtrl, autofocus: true, decoration: InputDecoration(labelText: tr('Reason (required)'))),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(d), child: Text(tr('Back'))),
+          FilledButton(style: FilledButton.styleFrom(backgroundColor: Tk.red), onPressed: () => Navigator.pop(d, reasonCtrl.text.trim()), child: Text(tr('Cancel payment'))),
+        ],
+      ),
+    );
+    if (reason == null) return;
+    if (reason.isEmpty) {
+      if (mounted) toast(context, tr('A reason is required'), err: true);
+      return;
+    }
+    _cancelling = true;
+    try {
+      await s.api.rpc('acc_cancel_payment', {'p_payment': widget.id, 'p_reason': reason});
+      if (mounted) toast(context, tr('Cancelled'));
+      await reload();
+    } on ApiError catch (e) {
+      if (mounted) toast(context, e.message, err: true);
+    } finally {
+      _cancelling = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Loader<Map<String, dynamic>>(
+      load: () async => _map(await s.api.rpc('acc_get_payment', {'p_id': widget.id})),
+      builder: (ctx, r, reload) {
+        final p = _map(r['payment']);
+        final party = _map(r['party']);
+        final isIn = p['kind'] == 'receipt';
+        final cancelled = p['status'] == 'cancelled';
+        final unallocated = n(p['amount']) - n(p['allocated']);
+        final allocations = _maps(r['allocations']);
+        final journalLines = _maps(r['journal_lines']);
+        final attachments = _maps(r['attachments']);
+        return Scaffold(
+          appBar: AppBar(title: Text('${p['number'] ?? ''}'), actions: [
+            if (!cancelled && s.can('acc_cancel')) IconButton(onPressed: () => _cancel(p, reload), icon: Icon(Icons.cancel_outlined, color: Tk.red), tooltip: tr('Cancel')),
+          ]),
+          body: ListView(padding: const EdgeInsets.only(bottom: 40), children: [
+            Pad(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Expanded(child: Text(inr(n(p['amount'])), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800))),
+                Pill(cancelled ? tr('Cancelled') : (unallocated > .005 ? tr('Open') : tr('Posted')), tone: cancelled ? Tk.red : (unallocated > .005 ? Tk.orange : Tk.green)),
+              ]),
+              Text('${isIn ? tr('From') : tr('To')} ${party['name'] ?? '—'}', style: TextStyle(color: Tk.label2, fontSize: 15)),
+              Text('${fmtD(p['pay_date'])} · ${r['account'] ?? ''}${p['mode'] != null && '${p['mode']}'.isNotEmpty ? ' · ${p['mode']}' : ''}', style: TextStyle(color: Tk.label2, fontSize: 13)),
+              if (p['reference'] != null && '${p['reference']}'.isNotEmpty) Text('${tr('Reference')} ${p['reference']}', style: TextStyle(color: Tk.label2, fontSize: 13)),
+              if (p['notes'] != null && '${p['notes']}'.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4), child: Text('${p['notes']}')),
+            ])),
+            if (cancelled) Note('${tr('Cancelled')}${p['cancel_reason'] != null && '${p['cancel_reason']}'.isNotEmpty ? ': ${p['cancel_reason']}' : ''}', bad: true)
+            else if (unallocated > .005) Note('${inr(unallocated)} ${tr('is not yet allocated to a document (held as an advance)')}'),
+            const SectionLabel('Settled documents'),
+            allocations.isEmpty
+                ? Group([Li(tr('Not allocated to any document'), chevron: false)])
+                : Group([for (final a in allocations) Li('${a['doc_type']} ${a['doc_number']}', sub: a['reversed'] == true ? tr('Unlinked') : null, value: inr(n(a['amount'])), icon: Icons.receipt_long_outlined, tone: a['reversed'] == true ? Tk.label3 : Tk.green, chevron: false)]),
+            if (journalLines.isNotEmpty) ...[
+              const SectionLabel('Accounting entries'),
+              Group([for (final j in journalLines) Li('${j['account']}', value: n(j['debit']) > 0 ? '${inr(n(j['debit']))} Dr' : '${inr(n(j['credit']))} Cr', chevron: false)]),
+            ],
+            const SectionLabel('Attachments'),
+            attachments.isEmpty
+                ? Group([Li(tr('No files attached'), chevron: false)])
+                // Read-only: nothing in this app has a way to fetch a private file yet, so there is
+                // no "open" action to wire here without inventing a new authenticated-download path.
+                : Group([for (final a in attachments) Li('${a['name'] ?? ''}', sub: fmtD(a['created_at']), chevron: false, icon: Icons.attach_file, tone: Tk.label3)]),
+          ]),
+        );
+      },
     );
   }
 }
@@ -213,18 +372,44 @@ class _CreditNotePageState extends State<CreditNotePage> {
             toast(ctx, tr('Enter a quantity for at least one item'), err: true);
             return false;
           }
-          final r = _map(await s.api.rpc('acc_save_document', {'p': {
+          final payload = {
             'id': null, 'doc_type': 'credit_note', 'doc_date': ymd(DateTime.now()), 'party_id': doc['party_id'], 'branch_id': doc['branch_id'], 'warehouse_id': doc['warehouse_id'],
             'place_of_supply': doc['place_of_supply'], 'reverse_charge': false, 'itc_eligible': true, 'price_includes_tax': doc['price_includes_tax'] == true,
             'ref_doc_id': doc['id'], 'source_doc_id': doc['id'], 'notes': reason.text.trim(), 'post': true, 'lines': chosen, 'payments': const [],
-          }}));
-          if (mounted) toast(context, '${tr('Posted')} ${r['number'] ?? ''}');
-          return true;
+          };
+          // Same offline-draft fallback as a purchase bill/expense: a lost connection or a 5xx
+          // never loses the credit note, it is kept as an unposted draft instead. Opening this
+          // sheet in the first place still needs a connection (it reads the original invoice's
+          // own lines via acc_get_document, which has no offline copy) -- unchanged from today.
+          if (s.offline) {
+            await _queueOffline(payload, doc, chosen);
+            return true;
+          }
+          try {
+            final r = _map(await s.api.rpc('acc_save_document', {'p': payload}));
+            if (mounted) toast(context, '${tr('Posted')} ${r['number'] ?? ''}');
+            return true;
+          } on ApiError catch (e) {
+            if (LedgerSession.transient(e)) {
+              await _queueOffline(payload, doc, chosen);
+              return true;
+            }
+            if (mounted) toast(context, e.message, err: true);
+            return false;
+          }
         }),
       ]);
     } on ApiError catch (e) {
       if (mounted) toast(context, e.message, err: true);
     }
+  }
+
+  Future<void> _queueOffline(Map<String, dynamic> payload, Map<String, dynamic> doc, List<Map<String, dynamic>> chosen) async {
+    final p = Map<String, dynamic>.from(payload)..remove('id');
+    final total = chosen.fold<double>(0, (t, l) => t + n(l['qty']) * n(l['rate']));
+    await s.enqueue('draft', p, meta: {'label': tr('Credit note'), 'party': doc['party_name'], 'total': total, 'date': p['doc_date']});
+    if (!mounted) return;
+    toast(context, tr('Saved offline. It will reach your books as a draft once you are back online.'));
   }
 
   @override

@@ -3,6 +3,7 @@ import 'i18n.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/billing.dart' show r2;
+import '../core/cash.dart' show dayCloseDenoms, denomTotal;
 import '../core/repo.dart';
 import 'actions.dart';
 import 'console.dart';
@@ -36,7 +37,7 @@ List<Cust> custs(HomeState h) {
     if (p.isEmpty) continue;
     m[p] = Cust(_s(c['name']), p)..dob = _s(c['dob']);
   }
-  for (final o in paidIn(h, 3650)) {
+  for (final o in paidIn(h.s.repo!, 3650)) {
     final c = o['cust'];
     if (c is! Map || _s(c['phone']).isEmpty) continue;
     final p = _s(c['phone']);
@@ -552,10 +553,15 @@ class LogsPage extends StatelessWidget {
 
     add('voidlog', 'Void', (x) => '${x['item'] ?? 'Order ${x['no'] ?? ''}'} · ${_s(x['reason'])}');
     add('cashmove', 'Cash drawer', (x) => '${x['type'] == 'in' ? 'Top-up' : 'Withdrawal'} ₹${x['amt']} · ${_s(x['note'])}');
-    add('dayclose', 'Day close', (x) => '${_s(x['d'])} · difference ₹${x['diff'] ?? 0}');
+    add('dayclose', 'Day close', (x) => '${_s(x['d'])} · difference ₹${x['variance'] ?? 0}');
     add('exp', 'Expense', (x) => '₹${x['amt']} · ${_s(x['cat'])}');
     add('waste', 'Wastage', (x) => '${x['q']} ${_s(x['ing'])} · ${_s(x['reason'])}');
     add('adjustment', 'Stock adjustment', (x) => '${x['q']} ${_s(x['ing'])}');
+    // Found during integration verification: transfer() (admin.dart StockAdmin) writes a `transfer`
+    // record exactly like the website's own transferForm(), but nothing in the app ever showed it --
+    // the website's equivalent Movements tab does list transfers. Same field names (`from`/`to`
+    // already resolved to outlet/area display names by the writer).
+    add('transfer', 'Stock transfer', (x) => '${x['q']} ${_s(x['ing'])} · ${_s(x['from'])} → ${_s(x['to'])}');
     add('settlement', 'Settlement', (x) => '${_s(x['platform'])} ₹${x['amt']}');
     acts.removeWhere((e) => e.$1.isEmpty);
     acts.sort((a, b) => b.$1.compareTo(a.$1));
@@ -631,15 +637,23 @@ class FeedbackPage extends StatelessWidget {
 // ------------------------------------------------------------------ finance
 
 class _DayCash {
-  _DayCash(this.cash, this.card, this.other, this.online, this.expected, this.close);
-  final double cash, card, other, online, expected;
+  _DayCash(this.cash, this.card, this.other, this.online, this.expected, this.close, this.sales, this.bills);
+  final double cash, card, other, online, expected, sales;
+  final int bills;
   final Map<String, dynamic>? close;
   double get total => cash + card + other + online;
 }
 
-_DayCash dayCash(HomeState h, String d) {
-  double cash = 0, card = 0, other = 0, online = 0;
-  for (final o in h.s.repo!.of('order').where((o) => o['status'] == 'paid' && dayOfIso(o['paidAt']) == d)) {
+_DayCash dayCash(Repo repo, String d) {
+  double cash = 0, card = 0, other = 0, online = 0, sales = 0;
+  var bills = 0;
+  for (final o in repo.of('order').where((o) => o['status'] == 'paid' && dayOfIso(o['paidAt']) == d)) {
+    bills++;
+    sales += totalOf(o);
+    // Change given back on a cash sale leaves the drawer with the drawer; it must not inflate expected cash,
+    // same subtraction as the website's cashIn in dayCash() (app/public/console/p-finance.js).
+    final change = ((o['change'] ?? 0) as num).toDouble();
+    final paysCash = ((o['pays'] as List?) ?? []).cast<Map>().any((p) => '${p['m']}' == 'cash');
     for (final p in ((o['pays'] as List?) ?? []).cast<Map>()) {
       final a = ((p['amt'] ?? 0) as num).toDouble();
       switch ('${p['m']}') {
@@ -653,13 +667,60 @@ _DayCash dayCash(HomeState h, String d) {
           other += a;
       }
     }
+    if (paysCash) cash -= change;
   }
-  final moves = h.s.repo!.of('cashmove').where((x) => '${x['d']}' == d);
+  final moves = repo.of('cashmove').where((x) => '${x['d']}' == d);
   final ins = moves.where((x) => x['type'] == 'in').fold<double>(0, (a, x) => a + ((x['amt'] ?? 0) as num));
   final outs = moves.where((x) => x['type'] != 'in').fold<double>(0, (a, x) => a + ((x['amt'] ?? 0) as num));
-  final exp = h.s.repo!.of('exp').where((x) => '${x['d']}' == d && (x['mode'] ?? 'cash') == 'cash').fold<double>(0, (a, x) => a + ((x['amt'] ?? 0) as num));
-  final close = h.s.repo!.of('dayclose').where((x) => '${x['d']}' == d).firstOrNull;
-  return _DayCash(cash, card, other, online, r2(cash + ins - outs - exp).toDouble(), close);
+  final exp = repo.of('exp').where((x) => '${x['d']}' == d && (x['mode'] ?? 'cash') == 'cash').fold<double>(0, (a, x) => a + ((x['amt'] ?? 0) as num));
+  final close = repo.of('dayclose').where((x) => '${x['d']}' == d).firstOrNull;
+  return _DayCash(cash, card, other, online, r2(cash + ins - outs - exp).toDouble(), close, sales, bills);
+}
+
+/// Day-close reminder: a past day that had real paid business on it but has not been closed yet.
+/// Built directly on dayCash() above -- no second closing system, no separate financial
+/// calculation of its own. See findDayNeedingClose()'s own doc comment for the exact rule.
+class OpenDayNeedingClose {
+  OpenDayNeedingClose(this.date, this.sales, this.bills, this.expected);
+  final String date; // 'YYYY-MM-DD'
+  final double sales, expected;
+  final int bills;
+}
+
+/// Finds the single most recent day that genuinely needs closing, or null if there is none to
+/// report. "Genuinely needs closing" means, in order:
+///   1. It is a day BEFORE today -- today itself is still in progress and is never flagged (the
+///      website's own 14-day table, fin/cash, calls today "Open", never "Not closed", for exactly
+///      this reason).
+///   2. It has at least one paid bill (`bills > 0`) -- a day the shop was simply closed (a Sunday,
+///      a holiday) has nothing to close and is silently skipped, never reported as overdue.
+///   3. It has no `dayclose` record of its own yet (dayCash()'s own `close` field -- the exact same
+///      lookup dayCloseOf() does on the website, never a second, parallel check).
+///
+/// The scan walks backward from yesterday and STOPS the moment it reaches a day that IS already
+/// closed -- the business is considered "caught up" from that point backward, so an older gap
+/// behind an already-closed day is never surfaced (closing is expected to happen in order; if that
+/// assumption is ever wrong for a real tenant, this under-reports rather than over-reports, the
+/// safer direction for a reminder that must never claim something that isn't true). A day with
+/// zero bills does NOT stop the scan -- it is skipped so a still-older open day behind a quiet
+/// Sunday is not hidden by it. [lookbackDays] bounds how far back the scan goes (default 14,
+/// matching this app's own existing 14-day cash/reconciliation window) so this can never become an
+/// unbounded loop over a tenant's entire history.
+///
+/// Reads only the LOCAL Repo (the same data dayCash() already reads), so it is exactly as
+/// offline-capable, and exactly as honest about not-yet-synced data, as the Cash Management screen
+/// already is -- not a new capability and not a new gap. It never writes anything, so calling it
+/// repeatedly (e.g. on every rebuild) can never duplicate an alert or a closing record; it simply
+/// stops returning a day the moment that day's own `dayclose` record exists.
+OpenDayNeedingClose? findDayNeedingClose(Repo repo, {DateTime? now, int lookbackDays = 14}) {
+  final today = now ?? DateTime.now();
+  for (var i = 1; i <= lookbackDays; i++) {
+    final d = dayKey(today.subtract(Duration(days: i)));
+    final s = dayCash(repo, d);
+    if (s.close != null) break;
+    if (s.bills > 0) return OpenDayNeedingClose(d, s.sales, s.bills, s.expected);
+  }
+  return null;
 }
 
 class CashPage extends StatefulWidget {
@@ -672,13 +733,47 @@ class CashPage extends StatefulWidget {
 class _CashPageState extends State<CashPage> {
   DateTime day = DateTime.now();
   HomeState get h => widget.h;
+
+  @override
+  void initState() {
+    super.initState();
+    // Day-close navigation fix: a one-shot date stashed by the Alerts Center's 'dayclose' alert
+    // (console.dart's _actionRow) -- open directly on that day instead of today, then consume it
+    // so a later, unrelated visit to Cash from the nav drawer is never affected by a stale value.
+    final pending = h.pendingCashDay;
+    if (pending != null) {
+      final parsed = DateTime.tryParse(pending);
+      if (parsed != null) day = parsed;
+      h.pendingCashDay = null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final d = dayKey(day);
-    final s = dayCash(h, d);
+    final s = dayCash(h.s.repo!, d);
     final c = s.close;
+    // Day-close reminder: a read-only check (findDayNeedingClose() never writes anything) run fresh
+    // on every build, so it disappears by itself the moment the day it names is actually closed --
+    // no flag to clear, no separate "dismiss" state to go stale. Hidden once it's naming the exact
+    // day already on screen, since that day's own Close button right below already covers it.
+    final reminder = findDayNeedingClose(h.s.repo!);
     return ListView(padding: const EdgeInsets.only(bottom: 28), children: [
       const PageHead('Cash', sub: 'Expected cash in the drawer and day close.'),
+      if (reminder != null && reminder.date != d)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+          child: Group([
+            Li(
+              '${reminder.date} is not closed yet',
+              sub: '${reminder.bills} bill${reminder.bills == 1 ? '' : 's'} · ${inr(r2(reminder.sales))} sales',
+              icon: Icons.lock_open_outlined,
+              tone: Tk.orange,
+              trailing: OutlinedButton(onPressed: () => setState(() => day = DateTime.parse(reminder.date)), child: const Text('Review')),
+              chevron: false,
+            ),
+          ]),
+        ),
       Padding(padding: const EdgeInsets.fromLTRB(16, 10, 16, 0), child: Row(children: [
         IconButton.filledTonal(onPressed: () => setState(() => day = day.subtract(const Duration(days: 1))), icon: const Icon(Icons.chevron_left)),
         Expanded(child: Center(child: Text(d, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)))),
@@ -687,17 +782,84 @@ class _CashPageState extends State<CashPage> {
       Kpis('Expected cash', inr(s.expected), 'Cash sales + top-ups − expenses − withdrawals', [('Cash sales', inr(r2(s.cash)), null), ('Card', inr(r2(s.card)), null), ('UPI / other', inr(r2(s.other)), null), ('Online', inr(r2(s.online)), null)]),
       const SizedBox(height: 10),
       if (c != null)
-        Group([Li('Day closed', sub: 'Counted ₹${c['counted']} · difference ₹${c['diff'] ?? 0}${_s(c['reason']).isEmpty ? '' : ' · ${c['reason']}'}', icon: Icons.lock_outline, tone: ((c['diff'] ?? 0) as num).abs() > .5 ? Tk.red : Tk.green, chevron: false)])
+        Group([Li('Day closed', sub: 'Counted ₹${c['countedCash']} · difference ₹${c['variance'] ?? 0}${_s(c['varianceReason']).isEmpty ? '' : ' · ${c['varianceReason']}'}', icon: Icons.lock_outline, tone: ((c['variance'] ?? 0) as num).abs() > .5 ? Tk.red : Tk.green, chevron: false)])
       else
-        Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: FilledButton(onPressed: () => formSheet(context, 'Close $d', [F('counted', 'Cash actually counted (₹)', type: 'number', value: s.expected), F('reason', 'Reason for any difference', type: 'select', value: '', options: const [['', 'No difference'], ['Counting error', 'Counting error'], ['Change given short', 'Change given short'], ['Cash taken without entry', 'Cash taken without entry'], ['Tip paid out', 'Tip paid out'], ['Other', 'Other']])], (v) async {
-              if (v['counted'] == null) return false;
-              final diff = r2((v['counted'] as num) - s.expected);
-              await h.s.repo!.save('dayclose', {'d': d, 'counted': v['counted'], 'expected': s.expected, 'diff': diff, 'reason': v['reason'], 'at': nowIso(), 'by': h.s.user!['id']});
-              h.s.sync();
-              setState(() {});
-              return true;
-            }, saveLabel: 'Close day'), child: const Text('Close the day'))),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(children: [
+            Expanded(child: OutlinedButton(onPressed: () async {
+              final counted = await _denomSheet(context, s.expected, d);
+              if (counted != null) await _closeDialog(d, s, counted);
+            }, child: const Text('Count by denomination'))),
+            const SizedBox(width: 10),
+            Expanded(child: FilledButton(onPressed: () => _closeDialog(d, s, s.expected), child: const Text('Enter total'))),
+          ]),
+        ),
     ]);
+  }
+
+  /// The confirm-and-save step shared by both Day Close paths (a typed total, or a denomination
+  /// count that produced one) -- same `closeDay()` the website funnels into either way
+  /// (denomForm()'s own "Use this count" button calls `closeDay(d,t)` with the counted total).
+  Future<void> _closeDialog(String d, _DayCash s, num defaultCounted) => formSheet(context, 'Close $d', [F('counted', 'Cash actually counted (₹)', type: 'number', value: defaultCounted), F('reason', 'Reason for any difference', type: 'select', value: '', options: const [['', 'No difference'], ['Counting error', 'Counting error'], ['Change given short', 'Change given short'], ['Cash taken without entry', 'Cash taken without entry'], ['Tip paid out', 'Tip paid out'], ['Other', 'Other']])], (v) async {
+        if (v['counted'] == null) return false;
+        final variance = r2((v['counted'] as num) - s.expected);
+        // Same guard as closeDay() on the website: a variance over 50 paise needs a reason picked.
+        if (variance.abs() > .5 && '${v['reason'] ?? ''}'.isEmpty) {
+          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pick a reason for the difference')));
+          return false;
+        }
+        await h.s.repo!.save('dayclose', {'d': d, 'sales': s.sales, 'bills': s.bills, 'expectedCash': s.expected, 'countedCash': v['counted'], 'variance': variance, 'varianceReason': '${v['reason'] ?? ''}'.isEmpty ? null : v['reason'], 'at': nowIso(), 'by': h.s.user!['id']});
+        h.s.sync();
+        setState(() {});
+        return true;
+      });
+
+  /// Count the drawer note by note/coin by coin -- same breakdown (and the same ₹2000 note) as
+  /// denomForm() in the website's app/public/console/p-finance.js. Returns the counted total, or
+  /// null if the manager cancelled -- nothing is saved here; the caller still runs the same
+  /// variance/reason confirmation as every other Day Close path.
+  Future<num?> _denomSheet(BuildContext context, num expected, String d) {
+    final counts = <int, int>{};
+    return showModalBottomSheet<num?>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, set) {
+        final total = denomTotal(counts);
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, MediaQuery.of(ctx).viewInsets.bottom + 16),
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Padding(padding: const EdgeInsets.symmetric(vertical: 14), child: Text('Count the drawer — $d', textAlign: TextAlign.center, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700))),
+              Text('Enter how many of each note or coin are in the drawer.', textAlign: TextAlign.center, style: TextStyle(color: Tk.label2)),
+              const SizedBox(height: 10),
+              Flexible(
+                child: ListView(shrinkWrap: true, children: [
+                  for (final n in dayCloseDenoms)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(children: [
+                        Expanded(child: Text('₹$n', style: const TextStyle(fontWeight: FontWeight.w700))),
+                        SizedBox(width: 84, child: TextField(keyboardType: TextInputType.number, textAlign: TextAlign.center, decoration: const InputDecoration(isDense: true, hintText: '0'), onChanged: (v) => set(() => counts[n] = int.tryParse(v) ?? 0))),
+                        SizedBox(width: 72, child: Text(inr(n * (counts[n] ?? 0)), textAlign: TextAlign.right)),
+                      ]),
+                    ),
+                ]),
+              ),
+              const Divider(),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('Counted total', style: TextStyle(fontWeight: FontWeight.w700)), Text(inr(total), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800))]),
+              Text('Expected ${inr(expected)}', style: TextStyle(color: Tk.label2, fontSize: 13)),
+              const SizedBox(height: 14),
+              Row(children: [
+                Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel'))),
+                const SizedBox(width: 8),
+                Expanded(child: FilledButton(onPressed: () => Navigator.pop(ctx, total), child: const Text('Use this count'))),
+              ]),
+            ]),
+          ),
+        );
+      }),
+    );
   }
 }
 
@@ -714,11 +876,11 @@ class ReconcilePage extends StatelessWidget {
         for (final dt in days)
           () {
             final d = dayKey(dt);
-            final s = dayCash(h, d);
+            final s = dayCash(h.s.repo!, d);
             final c = s.close;
-            final diff = c == null ? 0 : ((c['diff'] ?? 0) as num);
+            final diff = c == null ? 0 : ((c['variance'] ?? 0) as num);
             final label = c == null ? (d == dayKey(DateTime.now()) ? 'Open' : (s.total == 0 ? '—' : 'Not closed')) : diff.abs() > .5 ? 'Off by ₹$diff' : 'Matched';
-            return Li(d, sub: 'Sales ${inr(r2(s.total))} · expected cash ${inr(s.expected)}${c != null ? ' · counted ₹${c['counted']}' : ''}', icon: Icons.fact_check_outlined, tone: c == null ? Tk.orange : diff.abs() > .5 ? Tk.red : Tk.green, value: label, chevron: false);
+            return Li(d, sub: 'Sales ${inr(r2(s.total))} · expected cash ${inr(s.expected)}${c != null ? ' · counted ₹${c['countedCash']}' : ''}', icon: Icons.fact_check_outlined, tone: c == null ? Tk.orange : diff.abs() > .5 ? Tk.red : Tk.green, value: label, chevron: false);
           }(),
       ]),
     ]);
@@ -737,7 +899,7 @@ class _AccountingPageState extends State<AccountingPage> {
   @override
   Widget build(BuildContext context) {
     final h = widget.h;
-    final paid = paidIn(h, days);
+    final paid = paidIn(h.s.repo!, days);
     final from = dayKey(DateTime.now().subtract(Duration(days: days - 1)));
     double revenue = 0, tax = 0, disc = 0;
     final rate = <String, (double, double)>{};
@@ -951,17 +1113,28 @@ class BulkPricePage extends StatefulWidget {
   State<BulkPricePage> createState() => _BulkPricePageState();
 }
 
+/// Three of the website's bulk-menu actions (menu/items' selection toolbar in p-menu.js), scoped by
+/// category rather than the website's checkbox multi-select -- "apply to every item in category X"
+/// (or every item) covers the same end results without a separate selection-state UI. Bulk DELETE
+/// from the website's toolbar is deliberately not reproduced here: an irreversible, category-wide
+/// delete is exactly the kind of destructive bulk action this mission's own safety rules caution
+/// against adding casually -- an owner who needs that can still delete items one at a time from the
+/// item editor, which already supports it.
 class _BulkPricePageState extends State<BulkPricePage> {
-  String cat = 'all', mode = 'pct';
+  String cat = 'all', mode = 'pct', action = 'price';
   final amt = TextEditingController();
+  String moveTo = '';
+
   @override
   Widget build(BuildContext context) {
     final h = widget.h;
     final cats = h.s.repo!.of('cat').toList();
     final targets = h.s.repo!.of('item').where((i) => cat == 'all' || i['cat'] == cat).toList();
     return ListView(padding: const EdgeInsets.only(bottom: 28), children: [
-      const PageHead('Bulk price change', sub: 'Raise or lower prices for many items at once.'),
+      const PageHead('Bulk menu changes', sub: 'Price, type or category, for many items at once.'),
       Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 0), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Seg<String>(expand: true, items: const [('price', 'Price'), ('type', 'Veg type'), ('move', 'Category')], value: action, onChanged: (v) => setState(() => action = v)),
+        const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           initialValue: cat,
           decoration: InputDecoration(labelText: tr('Which items')),
@@ -969,27 +1142,66 @@ class _BulkPricePageState extends State<BulkPricePage> {
           onChanged: (v) => setState(() => cat = v ?? 'all'),
         ),
         const SizedBox(height: 12),
-        Seg<String>(expand: true, items: const [('pct', 'Percent %'), ('rs', 'Rupees ₹')], value: mode, onChanged: (v) => setState(() => mode = v)),
-        const SizedBox(height: 12),
-        TextField(controller: amt, keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true), decoration: InputDecoration(labelText: tr('Change by (use minus to lower)'))),
-        const SizedBox(height: 14),
-        FilledButton(
-          onPressed: () async {
-            final a = double.tryParse(amt.text.trim());
-            if (a == null || a == 0) return h.toast('Enter an amount');
-            if (!await askYes(context, 'Change ${targets.length} item prices?', 'Prices (and sizes) change by ${mode == 'pct' ? '$a%' : '₹$a'}. You can change them back the same way.')) return;
-            num g(num v) => r2((mode == 'pct' ? v * (1 + a / 100) : v + a).clamp(0, 1e9));
-            for (final i in targets) {
-              final c = Map<String, dynamic>.from(i);
-              c['price'] = g((c['price'] ?? 0) as num);
-              if (c['sizes'] is List) c['sizes'] = [for (final z in (c['sizes'] as List).cast<Map>()) {...z, 'p': g(z['p'] as num)}];
-              await h.s.repo!.save('item', c, id: '${i['id']}');
-            }
-            h.s.sync();
-            h.toast('Updated ${targets.length} items');
-          },
-          child: Text('Apply to ${targets.length} items'),
-        ),
+        if (action == 'price') ...[
+          Seg<String>(expand: true, items: const [('pct', 'Percent %'), ('rs', 'Rupees ₹')], value: mode, onChanged: (v) => setState(() => mode = v)),
+          const SizedBox(height: 12),
+          TextField(controller: amt, keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true), decoration: InputDecoration(labelText: tr('Change by (use minus to lower)'))),
+          const SizedBox(height: 14),
+          FilledButton(
+            onPressed: () async {
+              final a = double.tryParse(amt.text.trim());
+              if (a == null || a == 0) return h.toast('Enter an amount');
+              if (!await askYes(context, 'Change ${targets.length} item prices?', 'Prices (and sizes) change by ${mode == 'pct' ? '$a%' : '₹$a'}. You can change them back the same way.')) return;
+              num g(num v) => r2((mode == 'pct' ? v * (1 + a / 100) : v + a).clamp(0, 1e9));
+              for (final i in targets) {
+                final c = Map<String, dynamic>.from(i);
+                c['price'] = g((c['price'] ?? 0) as num);
+                if (c['sizes'] is List) c['sizes'] = [for (final z in (c['sizes'] as List).cast<Map>()) {...z, 'p': g(z['p'] as num)}];
+                await h.s.repo!.save('item', c, id: '${i['id']}');
+              }
+              h.s.sync();
+              h.toast('Updated ${targets.length} items');
+            },
+            child: Text('Apply to ${targets.length} items'),
+          ),
+        ] else if (action == 'type') ...[
+          for (final (k, l) in const [('veg', 'Mark Veg'), ('nonveg', 'Mark Non-veg'), ('egg', 'Mark contains Egg')])
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: OutlinedButton(
+                onPressed: () async {
+                  if (!await askYes(context, '$l for ${targets.length} items?', 'This changes the veg/non-veg/egg marker only, not the recipe or price.')) return;
+                  for (final i in targets) {
+                    await h.s.repo!.save('item', {...i, 'veg': k}, id: '${i['id']}');
+                  }
+                  h.s.sync();
+                  h.toast('Updated ${targets.length} items');
+                },
+                child: Text('$l (${targets.length} items)'),
+              ),
+            ),
+        ] else ...[
+          DropdownButtonFormField<String>(
+            initialValue: moveTo.isEmpty ? null : moveTo,
+            decoration: InputDecoration(labelText: tr('Move to category')),
+            items: [for (final c in cats) DropdownMenuItem(value: '${c['id']}', child: Text('${c['name']}'))],
+            onChanged: (v) => setState(() => moveTo = v ?? ''),
+          ),
+          const SizedBox(height: 14),
+          FilledButton(
+            onPressed: moveTo.isEmpty
+                ? null
+                : () async {
+                    if (!await askYes(context, 'Move ${targets.length} items?', 'They will all move into the chosen category.')) return;
+                    for (final i in targets) {
+                      await h.s.repo!.save('item', {...i, 'cat': moveTo}, id: '${i['id']}');
+                    }
+                    h.s.sync();
+                    h.toast('Moved ${targets.length} items');
+                  },
+            child: Text('Move ${targets.length} items'),
+          ),
+        ],
       ])),
     ]);
   }

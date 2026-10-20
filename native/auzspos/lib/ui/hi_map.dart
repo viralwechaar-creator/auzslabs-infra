@@ -454,6 +454,7 @@ const Map<String, String> hiMap = {
   'Sizes (one per line, like  Small = 100). Leave empty for one price.': 'साइज़ (हर लाइन में एक, जैसे  Small = 100)। एक कीमत के लिए खाली छोड़ें।',
   'Add-on groups for this item': 'इस आइटम के ऐड-ऑन समूह',
   'Bulk price change': 'कई कीमतें एक साथ बदलें',
+  'Bulk menu changes': 'कई आइटम एक साथ बदलें',
   'Items, categories, prices': 'आइटम, श्रेणियां, कीमतें',
   'Tables and QR': 'टेबल और QR',
   'Areas, tables, table QR codes': 'क्षेत्र, टेबल, टेबल QR कोड',

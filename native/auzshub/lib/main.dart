@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/material.dart' hide Text;
 import 'core/session.dart';
 import 'core/version.dart';
+import 'core/webflag.dart';
 import 'ui/i18n.dart';
 import 'ui/launch.dart';
 import 'ui/shell.dart';
@@ -13,6 +14,7 @@ void main() async {
   final s = HubSession();
   await Tk.loadMode();
   await Lang.load();
+  await WebPilot.load();
   await s.restore();
   final upd = await checkUpdate();
   runApp(App(s, upd));

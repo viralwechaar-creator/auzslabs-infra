@@ -386,6 +386,12 @@ class _DataPageState extends State<DataPage> {
         const PageHead('My data', sub: 'Only the business owner can use these. Passwords and secrets are never included.'),
         const SizedBox(height: 8),
         Group([
+          // Audit finding (Smart Daily Operations/Alerts Center): the website's own equivalent page
+          // (app/public/console/p-mgmt.js, mgmt/data) shows a "Waiting to sync" count right here --
+          // this native page never did, so the Alerts Center's 'sync' alert ("N changes waiting to
+          // sync", navTo 'mgmt/data') sent a person to a screen that did not actually confirm or
+          // explain what the alert was about. Read-only -- no behaviour change to backup/export/clear.
+          Li('Waiting to sync', sub: h.s.repo!.pending > 0 ? 'Not yet confirmed by the server' : 'Everything is confirmed by the server', icon: Icons.cloud_off_outlined, tone: h.s.repo!.pending > 0 ? Tk.orange : Tk.green, value: '${h.s.repo!.pending}', chevron: false),
           Li('Backup (full copy)', sub: 'A .json file with everything. Keep it safe.', icon: Icons.cloud_download_outlined, onTap: busy ? null : backup),
           Li('Export to Excel', sub: 'A .csv file you can open in Excel or Google Sheets', icon: Icons.table_chart_outlined, onTap: busy ? null : exportCsv),
         ]),

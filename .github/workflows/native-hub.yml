@@ -1,8 +1,6 @@
 name: Native AUZslab (Android)
 on:
   workflow_dispatch:
-  push:
-    paths: ['native/auzshub/**', '.github/workflows/native-hub.yml']
 permissions:
   contents: write
 jobs:

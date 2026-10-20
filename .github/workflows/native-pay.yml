@@ -1,8 +1,6 @@
 name: Native AUZsPay (Android)
 on:
   workflow_dispatch:
-  push:
-    paths: ['native/auzspay/**', '.github/workflows/native-pay.yml']
 permissions:
   contents: write
 jobs:

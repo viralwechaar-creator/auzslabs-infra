@@ -275,7 +275,14 @@ class LedgerSession extends ChangeNotifier {
         }
         try {
           final payload = _subst(it['payload'], map) as Map;
-          final r = await api.rpc('acc_offline_apply', {'p': {'op': it['op'], 'kind': it['kind'], 'payload': payload}});
+          // A 'draft' item (a bill, expense or credit note typed while offline) goes through
+          // acc_save_draft_offline instead: it can only ever create a brand-new, unposted
+          // draft for a human to check and post later -- never the same call AUZsScan-style
+          // sales use (acc_offline_apply), which completes a real sale. Both are idempotent on
+          // the same client-made `op`, so a retry after a lost reply still can't double it up.
+          final r = it['kind'] == 'draft'
+              ? await api.rpc('acc_save_draft_offline', {'p': {...Map<String, dynamic>.from(payload), 'op': it['op']}})
+              : await api.rpc('acc_offline_apply', {'p': {'op': it['op'], 'kind': it['kind'], 'payload': payload}});
           final Map<dynamic, dynamic> res = r is Map ? r : const {};
           final meta = (it['meta'] as Map?) ?? const {};
           if (it['kind'] == 'product' && meta['temp'] is Map && res['id'] != null) {
