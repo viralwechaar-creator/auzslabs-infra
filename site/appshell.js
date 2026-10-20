@@ -25,11 +25,11 @@
     'html.in-app input,html.in-app textarea,html.in-app [contenteditable]{-webkit-user-select:text;user-select:text}' +
     'html.in-app img{-webkit-user-drag:none}' +
     '.auz-hub-pill{position:fixed;left:12px;bottom:calc(86px + env(safe-area-inset-bottom));z-index:60;width:44px;height:44px;border-radius:50%;border:0;padding:0;' +
-    'background:#2e2c2a;color:#f5efe6;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px -10px rgba(46,44,42,.6);cursor:pointer}' +
+    'background:#000000;color:#f5efe6;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px -10px rgba(0,0,0,.6);cursor:pointer}' +
     '.auz-hub-pill:active{transform:scale(.94)}.auz-hub-pill svg{width:22px;height:22px}' +
     'html.desktop-app .auz-hub-pill{bottom:24px}' +
     'html.ios-app [data-add],html.ios-app [data-product],html.ios-app a[href$="cart.html"],html.ios-app a[href*="cart.html?"]{display:none!important}' +
-    '.auz-ios-buy{position:fixed;inset:0;z-index:2147483000;background:#f5f4f2;color:#171717;display:flex;align-items:center;justify-content:center;padding:24px;font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}' +
+    '.auz-ios-buy{position:fixed;inset:0;z-index:2147483000;background:#f5f4f2;color:#000000;display:flex;align-items:center;justify-content:center;padding:24px;font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}' +
     '.auz-ios-buy div{max-width:380px;text-align:center}.auz-ios-buy h1{font-size:22px;margin:0 0 8px}.auz-ios-buy p{margin:0 0 16px;color:#6a625b}' +
     '.auz-ios-buy a,.auz-ios-buy button{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 20px;border-radius:12px;border:0;background:#800020;color:#fff;font:600 16px inherit;text-decoration:none;cursor:pointer;margin:4px}';
   (document.head || root).appendChild(css);

@@ -1,12 +1,12 @@
 :root{
-  --ink:#2e2c2a;
-  --ink-solid:#2e2c2a;--ink-dim-solid:#625d58;--ink-faint-solid:#8f8a84;
+  --ink:#000000;
+  --ink-solid:#000000;--ink-dim-solid:#625d58;--ink-faint-solid:#8f8a84;
   --ink-dim:#625d58;
   --ink-faint:#8f8a84;
   --bg:#faf9f7;
   --bg-raised:#efece8;
-  --line:rgba(46,44,42,.16);
-  --line-soft:rgba(46,44,42,.06);
+  --line:rgba(0,0,0,.16);
+  --line-soft:rgba(0,0,0,.06);
   --accent:#800020;
   --success:#1f6b3a;
   --sidebar-w:240px;
@@ -74,7 +74,7 @@ input,select,textarea{font-size:16px}
 }
 
 .drawer-overlay{
-  position:fixed;inset:0;background:rgba(46,44,42,.4);
+  position:fixed;inset:0;background:rgba(0,0,0,.4);
   opacity:0;pointer-events:none;transition:opacity .25s ease;z-index:29;
 }
 .drawer-overlay.open{opacity:1;pointer-events:auto}
@@ -83,15 +83,15 @@ input,select,textarea{font-size:16px}
   position:fixed;top:0;right:0;bottom:0;width:calc(100% - 16px);max-width:none;height:100%;
   transform:translateX(100%);transition:transform .3s ease;
   display:flex;flex-direction:column;gap:0;padding:0 0 calc(20px + env(safe-area-inset-bottom));
-  background:#2e2c2a;color:#fff;
+  background:#000000;color:#fff;
   border-radius:20px 0 0 20px;
   z-index:30;overflow-y:auto;
 }
-.sidebar.open{transform:translateX(0);box-shadow:-30px 0 70px -20px rgba(46,44,42,.5);}
+.sidebar.open{transform:translateX(0);box-shadow:-30px 0 70px -20px rgba(0,0,0,.5);}
 
 .drawer-topbar{
   display:flex;align-items:center;justify-content:space-between;gap:10px;
-  padding:max(18px, env(safe-area-inset-top)) 20px 16px;position:sticky;top:0;background:#2e2c2a;z-index:2;
+  padding:max(18px, env(safe-area-inset-top)) 20px 16px;position:sticky;top:0;background:#000000;z-index:2;
 }
 .drawer-close{
   display:inline-flex;align-items:center;gap:4px;flex-shrink:0;
@@ -194,14 +194,14 @@ input,select,textarea{font-size:16px}
   --ink:var(--ink-solid);--ink-dim:var(--ink-dim-solid);--ink-faint:var(--ink-faint-solid);color:var(--ink-solid);
   background:#fff;
   border:1px solid var(--line);border-radius:22px;padding:22px;
-  box-shadow:0 10px 28px -12px rgba(46,44,42,.30);
+  box-shadow:0 10px 28px -12px rgba(0,0,0,.30);
   position:relative;overflow:hidden;
   transition:transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s cubic-bezier(.22,1,.36,1);
 }
 
 
 .card:nth-of-type(even){transform:rotate(.4deg);border-radius:22px}
-.card:hover{transform:translateY(-2px);box-shadow:0 10px 28px -12px rgba(46,44,42,.30)}
+.card:hover{transform:translateY(-2px);box-shadow:0 10px 28px -12px rgba(0,0,0,.30)}
 .grid-3{display:grid;grid-template-columns:1fr;gap:12px}
 .work-step{position:relative;overflow:hidden;z-index:0}
 
@@ -367,22 +367,22 @@ input,select,textarea{font-size:16px}
   position:fixed;right:max(20px, env(safe-area-inset-right) + 20px);bottom:max(22px, env(safe-area-inset-bottom) + 22px);z-index:40;
   display:flex;align-items:center;gap:8px;padding:13px 18px;border-radius:999px;
   background:var(--accent);color:#fff;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;
-  border:1px solid var(--ink);cursor:pointer;box-shadow:0 10px 28px -12px rgba(46,44,42,.30);
+  border:1px solid var(--ink);cursor:pointer;box-shadow:0 10px 28px -12px rgba(0,0,0,.30);
   transition:transform .18s ease, box-shadow .18s ease, opacity .2s ease;
 }
-.knock-btn:hover{transform:translate(-2px,-2px);box-shadow:0 10px 28px -12px rgba(46,44,42,.30)}
+.knock-btn:hover{transform:translate(-2px,-2px);box-shadow:0 10px 28px -12px rgba(0,0,0,.30)}
 
 body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14px)}
 
 .modal-overlay{
-  position:fixed;inset:0;background:rgba(46,44,42,.5);backdrop-filter:blur(4px);
+  position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);
   display:none;align-items:center;justify-content:center;z-index:50;
 }
 .modal-overlay.open{display:flex;animation:fadeIn .18s ease}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 .modal{
   width:400px;max-width:calc(100vw - 40px);background:var(--bg);border:1px solid var(--ink);
-  border-radius:22px;padding:26px;box-shadow:0 10px 28px -12px rgba(46,44,42,.30);position:relative;
+  border-radius:22px;padding:26px;box-shadow:0 10px 28px -12px rgba(0,0,0,.30);position:relative;
 }
 .modal-close{
   position:absolute;top:18px;right:18px;width:30px;height:30px;border-radius:999px;
@@ -417,7 +417,7 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
   border:1px solid var(--ink);
   border-bottom:none;
   border-radius:8px 26px 0 0;
-  box-shadow:0 -30px 60px -30px rgba(46,44,42,.2);
+  box-shadow:0 -30px 60px -30px rgba(0,0,0,.2);
 }
 .stack-panel:nth-of-type(1){top:0;z-index:1}
 /* Each sheet should pin --tab-step below the last, so the one behind it peeks out above
@@ -482,7 +482,7 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
 #salon-plans .sp-grid{display:grid;grid-template-columns:1fr;gap:16px;margin-top:22px}
 #salon-plans .sp-card{
   position:relative;background:var(--bg);border:1px solid var(--line);border-radius:22px;
-  padding:24px 22px 22px;box-shadow:0 10px 28px -12px rgba(46,44,42,.30);
+  padding:24px 22px 22px;box-shadow:0 10px 28px -12px rgba(0,0,0,.30);
   display:flex;flex-direction:column;
 }
 #salon-plans .sp-card:nth-of-type(even){transform:rotate(.4deg)}
@@ -620,7 +620,7 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
     position:absolute;left:auto;bottom:auto;top:-10px;right:100%;margin-right:16px;
     --ink:var(--ink-solid);--ink-dim:var(--ink-dim-solid);--ink-faint:var(--ink-faint-solid);
     width:264px;background:#fff;border:1px solid var(--line);border-radius:18px;
-    padding:14px;box-shadow:0 10px 28px -12px rgba(46,44,42,.30);
+    padding:14px;box-shadow:0 10px 28px -12px rgba(0,0,0,.30);
     opacity:0;pointer-events:none;transform:translateX(10px) scale(.97);transform-origin:top right;
     transition:opacity .18s ease,transform .18s ease;
   }
@@ -701,7 +701,7 @@ body.menu-open .knock-btn{opacity:0;pointer-events:none;transform:translateY(14p
 .theme-switch{display:flex;gap:4px;padding:3px;border:1px solid var(--ink);border-radius:999px;margin-bottom:14px}
 .theme-switch button{flex:1;border:none;background:none;font-family:var(--font-display);font-size:12px;font-weight:700;padding:7px 0;border-radius:999px;color:var(--ink-dim);cursor:pointer;transition:background .15s ease,color .15s ease}
 .theme-switch button[aria-selected=true]{background:var(--ink);color:var(--bg)}
-.theme-fab{position:fixed;left:18px;bottom:18px;z-index:30;width:44px;height:44px;border-radius:999px;border:1px solid var(--ink);background:var(--bg);color:var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 10px 28px -12px rgba(46,44,42,.30)}
+.theme-fab{position:fixed;left:18px;bottom:18px;z-index:30;width:44px;height:44px;border-radius:999px;border:1px solid var(--ink);background:var(--bg);color:var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 10px 28px -12px rgba(0,0,0,.30)}
 
 /* the pixel wordmark logo is flat black-on-transparent -- invert it in dark mode so it stays visible */
 :root[data-theme=dark] .topbar-logo img,

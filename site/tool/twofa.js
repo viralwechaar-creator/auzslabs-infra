@@ -24,7 +24,7 @@
     var challenge = result.data.challenge;
     return new Promise(function (done) {
       var usingBackup = false;
-      var box = el('div', { style: 'background:var(--bg,#fff);color:var(--label,#171717);border-radius:20px;max-width:360px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.35);font:16px/1.4 var(--font,-apple-system,system-ui,sans-serif)' });
+      var box = el('div', { style: 'background:var(--bg,#fff);color:var(--label,#000000);border-radius:20px;max-width:360px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.35);font:16px/1.4 var(--font,-apple-system,system-ui,sans-serif)' });
       var ov = el('div', { role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Verification code', style: 'position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px' }, box);
       document.body.appendChild(ov);
       function finish(res) { ov.remove(); done(res); }
