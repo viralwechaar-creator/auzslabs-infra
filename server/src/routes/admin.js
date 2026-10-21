@@ -64,7 +64,7 @@ export async function handle(ctx) {
       if (!row) throw new HttpError(404, 'trial not found');
       let ownerId = row.owner_id, ownerEmail = row.owner_email;
       if (!ownerId) {
-        ownerEmail = `trial-${row.slug}@trial.auzslab.in`;
+        ownerEmail = `${row.slug}@trial.auzslab.in`;
         const made = await createUser({
           email: ownerEmail,
           password: crypto.randomUUID(),
