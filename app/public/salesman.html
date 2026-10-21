@@ -296,7 +296,7 @@ button:active:not(:disabled){transform:translateY(1px) scale(.99)}
         <h2>Trial login for the client</h2>
         <p class=sub>An email and password so the client can try it on their own phone or computer (the POS and the website editor) without going live. Press again to get a fresh password.</p>
         <div id=trialLoginBox class="hidden" style="background:var(--fill);border-radius:14px;padding:12px 14px;margin:8px 0;font-size:14px;line-height:1.7"></div>
-        <button class=ghost id=ownerLoginBtn>Create trial login</button>
+        <button class=ghost id=ownerLoginBtn>Create trial login</button><div id=trialLoginErr class=err style="margin:6px 0;color:#c0392b;font-size:14px"></div>
 
         <h2 style="color:var(--red)">Delete this prospect</h2>
         <p class=sub>Permanent — removes the business and everything in it (menu, logo, any owner login). Cannot be undone.</p>
@@ -990,7 +990,7 @@ $('openPosBtn').onclick = async () => {
 
 $('ownerLoginBtn').onclick = async () => {
   if (!current) return;
-  $('brandErr').textContent = '';
+  $('brandErr').textContent = ''; $('trialLoginErr').textContent = '';
   $('ownerLoginBtn').disabled = true;
   try {
     const { data: { session } } = await sb.auth.getSession();
@@ -1006,12 +1006,12 @@ $('ownerLoginBtn').onclick = async () => {
     if (current.niche === 'cafe') lines.push(['Website editor', base + '/site-edit.html']);
     const text = lines.map(([k, v]) => k + ': ' + v).join('\n');
     $('trialLoginBox').innerHTML = lines.map(([k, v]) => `<div><b>${esc(k)}:</b> ${esc(v)}</div>`).join('') + '<button class=ghost id=copyTrialBtn style="margin-top:8px">Copy to send</button>';
-    $('trialLoginBox').classList.remove('hidden');
+    $('trialLoginBox').classList.remove('hidden'); $('trialLoginBox').scrollIntoView({block:'center'});
     $('copyTrialBtn').onclick = async () => { try { await navigator.clipboard.writeText(text); toast('Copied'); } catch { prompt('Copy this', text); } };
     current.has_owner = true;
     const idx = trials.findIndex((t) => t.id === current.id); if (idx > -1) trials[idx].has_owner = true;
     renderTrials();
-  } catch (e) { $('brandErr').textContent = e.message; }
+  } catch (e) { $('trialLoginErr').textContent = 'Could not create the login: ' + e.message; }
   $('ownerLoginBtn').disabled = false;
 };
 
