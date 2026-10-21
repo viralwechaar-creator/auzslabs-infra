@@ -444,3 +444,21 @@ body.homehero .hero::before{content:"";position:absolute;left:0;right:0;top:0;he
 .stk .sk{margin-left:-18px}
 .footer .col,footer .col{gap:3px}
 @media(prefers-reduced-motion:reduce){.live i{animation:none}}
+
+/* size hierarchy for home bands: L big and bold, M medium, S compact. Product cards inside one band stay identical. */
+.band.t-l .hd h2{font-size:20px;font-weight:700;letter-spacing:-.01em}
+.band.t-l .row .pc{flex:0 0 74%}
+.band.t-l{padding:12px 8px 12px;background:#fff}
+.band.t-m .hd h2{font-size:14px;font-weight:600}
+.band.t-m .row .pc{flex:0 0 46%}
+.band.t-s .hd h2{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+.band.t-s .row .pc{flex:0 0 31%}
+.band.t-s .hd .btn{height:24px;font-size:9px;padding:0 10px}
+.band.t-s{padding:6px 6px 8px}
+.stk{margin-top:6px}
+@media(min-width:900px){
+  .band.t-l .row .pc{flex-basis:calc(36% - 6px)}
+  .band.t-m .row .pc{flex-basis:calc(24% - 6px)}
+  .band.t-s .row .pc{flex-basis:calc(16.5% - 6px)}
+  .band.t-l .hd h2{font-size:28px}.band.t-m .hd h2{font-size:18px}.band.t-s .hd h2{font-size:12px}
+}
