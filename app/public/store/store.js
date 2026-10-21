@@ -212,10 +212,13 @@ V.home = (v) => {
   // 1. latest products
   v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'Latest drop'), E('a', { class: 'btn sm out', href: link('shop?new=1') }, 'Discover more')), gridOf(newest(8), true)));
   // 2. category by category: a swipe row on desktop, a slide deck on phones
-  [...new Set(STY.map((x) => x.category).filter(Boolean))].slice(0, 4).forEach((cat) => {
+  // size hierarchy: each category band gets its own scale (L big, deck, S compact, M medium); product cards inside one band are always the same size
+  const TIER = ['l', 'deck', 's', 'm'];
+  [...new Set(STY.map((x) => x.category).filter(Boolean))].slice(0, 4).forEach((cat, i) => {
     const items = STY.filter((x) => x.category === cat).slice(0, 10); if (items.length < 2) return;
-    const dk = phone ? stack(items, cat) : null;
-    v.append(dk || E('section', { class: 'band' }, E('div', { class: 'hd' }, E('h2', null, cat), E('a', { class: 'btn sm', href: link('shop?cat=' + encodeURIComponent(cat)) }, 'Discover more')), E('div', { class: 'row' }, items.map((s) => card(s)))));
+    const tier = TIER[i % TIER.length];
+    const dk = tier === 'deck' || (phone && tier === 'm') ? stack(items, cat) : null;
+    v.append(dk || E('section', { class: 'band t-' + tier }, E('div', { class: 'hd' }, E('h2', null, cat), E('a', { class: 'btn sm', href: link('shop?cat=' + encodeURIComponent(cat)) }, 'Discover more')), E('div', { class: 'row' }, items.map((s) => card(s)))));
   });
   // 3. big collection pictures
   cols.slice(0, 3).forEach((x) => {
