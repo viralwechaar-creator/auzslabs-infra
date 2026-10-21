@@ -155,12 +155,11 @@ function openMenu() {
   const fams = FAM.filter((f) => STY.some((s) => colours(s).some((c) => famOf(c) === f[0])));
   const nav = (p) => (e) => { e.preventDefault(); close(); location.hash = '#/' + p; };
   const a = (txt, p) => E('a', { href: link(p), onclick: nav(p) }, txt);
-  const panel = E('div', { class: 'mp' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'Explore'), E('button', { class: 'ic', 'aria-label': 'Close', onclick: close }, icon('x'))),
+  const panel = E('div', { class: 'mp' }, E('button', { class: 'ic mx', 'aria-label': 'Close', onclick: close }, icon('x')),
     E('div', { class: 'cols' },
-      E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Shop'), a('New arrivals', 'shop?new=1'), a('All products', 'shop'), ...D.collections.filter((c) => c.styleIds.length).slice(0, 6).map((c) => a(c.name, 'shop?col=' + c.id)), a('All collections', 'collections')),
+      E('div', { class: 'col nv' }, a('New arrivals', 'shop?new=1'), a('All products', 'shop'), ...D.collections.filter((c) => c.styleIds.length).slice(0, 4).map((c) => a(c.name, 'shop?col=' + c.id))),
       ...groups().map(([n, cs]) => E('div', { class: 'col' }, E('span', { class: 'lbl' }, n), E('div', { class: 'wrapc' }, cs.map((c) => a(c, 'shop?cat=' + encodeURIComponent(c)))))),
-      fams.length ? E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Shop by colour'), E('div', { class: 'wrapc' }, fams.map((f) => E('a', { class: 'fam', href: link('shop?fam=' + f[0]), onclick: nav('shop?fam=' + f[0]) }, f[0], E('span', { class: 'bar', style: { background: 'linear-gradient(90deg,' + f[2][0] + ',' + f[2][1] + ')' } }))))) : null,
-      E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Help'), a('Our stores', 'stores'), a('About us', 'about'), a('My orders', 'orders'), a('FAQs', 'faq'), a('Shipping & returns', 'policy/shipping'), a('Contact', 'contact'))));
+      fams.length ? E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Shop by colour'), E('div', { class: 'wrapc' }, fams.map((f) => E('a', { class: 'fam', href: link('shop?fam=' + f[0]), onclick: nav('shop?fam=' + f[0]) }, f[0], E('span', { class: 'bar', style: { background: 'linear-gradient(90deg,' + f[2][0] + ',' + f[2][1] + ')' } }))))) : null));
   m.append(panel);
   m.onclick = (e) => { if (e.target === m) close(); };
 }
