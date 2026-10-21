@@ -152,13 +152,35 @@ async function shrinkImage(file, max = 1280, q = .78) {
   const okType = /^image\/(jpeg|png|webp)$/.test(file.type);
   return okType && k === 1 && file.size <= out.size ? file : out;
 }
-async function uploadPhoto(file) {
-  const blob = await shrinkImage(file);
+async function uploadBlob(blob) {
   const ext = blob.type === 'image/webp' ? 'webp' : blob.type === 'image/png' ? 'png' : 'jpg';
   const name = 'style/' + Date.now() + '-' + Math.random().toString(36).slice(2, 7) + '.' + ext;
   const { error } = await sb.storage.from('site').upload(name, blob, { contentType: blob.type });
   if (error) throw new Error(error.message || t('Upload failed'));
   return sb.storage.from('site').getPublicUrl(name).data.publicUrl;
+}
+async function uploadPhoto(file) { return uploadBlob(await shrinkImage(file)); }
+// pictures uploaded before compression existed can be several MB: iPhone Safari then paints only part of them. This shrinks every big one once.
+async function lightenPictures(onProgress) {
+  const list = (await loadCatalog(true)).filter((s) => s.photoUrl || (s.photos || []).length);
+  let done = 0, changed = 0, failed = 0, saved = 0;
+  for (const s of list) {
+    const urls = [s.photoUrl, ...(s.photos || [])].filter(Boolean); const out = []; let touched = false;
+    for (const u of urls) {
+      try {
+        const b = await (await fetch(u, { cache: 'no-store' })).blob();
+        if (b.size > 200000 || (b.type !== 'image/webp' && b.size > 120000)) {
+          const nb = await shrinkImage(new File([b], 'p', { type: b.type }));
+          if (nb.size < b.size * 0.85) { out.push(await uploadBlob(nb)); touched = true; saved += b.size - nb.size; continue; }
+        }
+      } catch (e) { failed++; }
+      out.push(u);
+    }
+    if (touched) { await api('sty_save_style', { p: { id: s.id, photoUrl: out[0] || null, photos: out.slice(1) } }); changed++; }
+    onProgress && onProgress(++done, list.length);
+  }
+  S.catAt = 0;
+  return { total: list.length, changed, failed, savedKb: Math.round(saved / 1024) };
 }
 // main picture + extra pictures editor: value {main, extra[]}; returns a node with .get()
 function photoEditor(main, extra) {

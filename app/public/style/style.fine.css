@@ -302,3 +302,9 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .scard .pic{border-radius:18px}
 @media (min-width:900px){.sgrid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px 8px}.scard .nm{font-size:13px}.scard .pr{font-size:12px}}
 @media (max-width:599px){.sgrid{gap:12px 6px}.page[data-p=sell]{padding-left:10px;padding-right:10px}}
+
+/* iPhone: blur layers over scrolling pictures made Safari paint only part of a picture (the rest stayed blank). Bars are solid; pictures sit on their own layer. */
+.tabbar,.sheet-h,.brandpill,.topbar,.side{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.brandpill{background:var(--bar)}
+.scard .pic,.gal img,.ph{isolation:isolate;transform:translateZ(0);-webkit-transform:translateZ(0)}
+.scard .pic img,.gal img,.ph img{background:var(--fill)}
