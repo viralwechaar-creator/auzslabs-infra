@@ -1002,7 +1002,9 @@ $('ownerLoginBtn').onclick = async () => {
     const body = await res.json();
     if (!res.ok) throw new Error(body.error || 'failed');
     const a = nicheApp(current), base = 'https://' + current.slug + '.auzslab.in';
-    const lines = [['Email', body.email], ['Password', body.temp_password], [a.main.replace(/^Open their |\s*\u2197$/g, ''), base + a.page]];
+    // one shared address per product (the sign-in finds the business), so no separate POS link per trial
+    const SHARED = { '/index.html': 'https://auzspos.auzslab.in', '/mob.html': 'https://auzsmob.auzslab.in', '/accounts.html': 'https://auzsledger.auzslab.in' };
+    const lines = [['Email', body.email], ['Password', body.temp_password], [a.main.replace(/^Open their |\s*\u2197$/g, ''), SHARED[a.page] || (base + a.page)]];
     if (current.niche === 'cafe') lines.push(['Website editor', base + '/site-edit.html']);
     const text = lines.map(([k, v]) => k + ': ' + v).join('\n');
     $('trialLoginBox').innerHTML = lines.map(([k, v]) => `<div><b>${esc(k)}:</b> ${esc(v)}</div>`).join('') + '<button class=ghost id=copyTrialBtn style="margin-top:8px">Copy to send</button>';
