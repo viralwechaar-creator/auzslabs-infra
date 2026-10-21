@@ -122,7 +122,7 @@ function countBadge(get) { const n = E('span', { class: 'n' }); const f = () => 
 function shell() {
   counts = [];
   const name = D.shop.name;
-  const brandEl = (D.shop.logoUrl) ? E('a', { class: 'brand', href: link('') }, E('img', { src: D.shop.logoUrl, alt: name })) : E('a', { class: 'brand', href: link('') }, name);
+  const brandEl = E('a', { class: 'brand', href: link('') }, name);
   const top = E('header', { class: 'top' },
     E('div', { class: 'l' }, E('a', { class: 'deskonly', href: link('shop?new=1') }, 'New in'), E('a', { class: 'deskonly', href: link('collections') }, 'Collections'), E('button', { class: 'menu-pill phoneonly', onclick: openMenu }, E('i'), 'Menu')),
     brandEl,
@@ -133,7 +133,7 @@ function shell() {
   const phoneNo = String(D.shop.phone || '').replace(/\D/g, '');
   const waUrl = phoneNo ? 'https://wa.me/' + (phoneNo.length === 10 ? '91' + phoneNo : phoneNo) : '';
   const dock = E('div', { class: 'dock phoneonly' },
-    E('a', { class: 'mark', href: link(''), 'aria-label': 'Home' }, D.shop.logoUrl ? E('img', { src: D.shop.logoUrl, alt: '' }) : name.slice(0, 1).toUpperCase()),
+    E('a', { class: 'mark', href: link(''), 'aria-label': 'Home' }, name.slice(0, 1).toUpperCase()),
     E('div', { class: 'pill' }, E('button', { 'aria-label': 'Explore', onclick: openMenu }, icon('compass')), E('button', { 'aria-label': 'Shop', onclick: () => go('shop') }, icon('home')),
       E('button', { 'aria-label': 'Saved', onclick: () => go('wishlist') }, icon('mark'), countBadge(() => wish.length)), E('button', { 'aria-label': 'Stores', onclick: () => go('stores') }, icon('pin')), E('button', { 'aria-label': 'Search', onclick: openSearch }, icon('search'))),
     waUrl ? E('a', { class: 'chat', href: waUrl, target: '_blank', rel: 'noopener', 'aria-label': 'Chat on WhatsApp' }, icon('chat')) : E('button', { class: 'chat', 'aria-label': 'Contact', onclick: () => go('contact') }, icon('chat')));
