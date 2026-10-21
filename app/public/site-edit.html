@@ -26,6 +26,13 @@ input[type=text],textarea{font:inherit;width:100%;padding:11px 12px;border:1px s
 .note{font-size:13px;color:var(--label2)}
 @media (max-width:1100px){.ed{grid-template-columns:200px minmax(0,1fr)}.pv{display:none}}
 @media (max-width:720px){.ed{grid-template-columns:minmax(0,1fr);padding:10px}.nav{position:static;display:flex;overflow-x:auto;gap:8px;padding-bottom:4px}.nav button{width:auto;flex:none}.nav button span{display:none}.fg{grid-template-columns:minmax(0,1fr)}}
+
+.cr{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.6);display:grid;place-items:center;padding:12px}
+.cr .box{background:var(--card);border-radius:20px;padding:16px;width:min(100%,560px);display:grid;gap:12px;max-height:100%;overflow:auto}
+.cr h3{margin:0;font-size:18px}.cr .vp{justify-self:center;background:#111;border-radius:12px;overflow:hidden;touch-action:none;cursor:grab;max-width:100%}.cr canvas{display:block;max-width:100%}
+.cr .asp{display:flex;gap:8px;flex-wrap:wrap}.cr .asp button{flex:1;min-width:84px;padding:8px 10px;min-height:40px}.cr .asp button.on{background:var(--accent);color:#fff}
+.cr .zm{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--label2)}.cr .zm input{flex:1}
+.cr .row2{display:flex;gap:8px}.cr .row2 button{flex:1}
 </style></head><body><div id="app"></div>
 <script src="/config.js"></script><script src="/sb-client.js?v=6"></script><script src="/ds/twofa.js?v=1"></script><script src="/tenant.js?v=3"></script><script src="/site-schemas.js?v=1"></script>
 <script>
@@ -50,13 +57,30 @@ async function boot(){
  const design=(REC.data||{}).siteTemplate||'classic',sc=(window.SITE_SCHEMAS||{})[design];
  if(!sc)return root.replaceChildren(topBar(),h('div',{class:'wrap'},h('div',{class:'login',style:'margin:0 auto;max-width:520px'},h('h2',{style:'margin:0'},'This design is edited in the Admin console'),h('div',{class:'note'},'Open Admin console, then Tables & ordering, Website & Booking.'),h('a',{class:'btn p',href:'/dashboard.html#mgmt/website'},'Open Admin console'))));
  const html=await (await fetch(sc.file+'?'+Date.now())).text(),doc=new DOMParser().parseFromString(html,'text/html');
- FIELDS=[...doc.querySelectorAll('[data-ed],[data-ed-img]')].map(el=>{const pg=el.closest('.page'),img=el.hasAttribute('data-ed-img'),k=el.getAttribute(img?'data-ed-img':'data-ed');return{k,img,hash:pg?pg.id.replace('page-',''):'home',label:el.getAttribute('data-ed-label')||k,group:el.getAttribute('data-ed-group')||'Other',type:img?'image':(el.getAttribute('data-ed-type')||'text'),def:img?(el.getAttribute('src')||''):el.innerText===undefined?el.textContent.trim():el.textContent.replace(/\s+/g,' ').trim()}});
+ FIELDS=[...doc.querySelectorAll('[data-ed],[data-ed-img]')].map(el=>{const pg=el.closest('.page'),img=el.hasAttribute('data-ed-img'),k=el.getAttribute(img?'data-ed-img':'data-ed');return{k,img,asp:el.getAttribute('data-ed-aspect')||'16:10',hash:pg?pg.id.replace('page-',''):'home',label:el.getAttribute('data-ed-label')||k,group:el.getAttribute('data-ed-group')||'Other',type:img?'image':(el.getAttribute('data-ed-type')||'text'),def:img?(el.getAttribute('src')||''):el.innerText===undefined?el.textContent.trim():el.textContent.replace(/\s+/g,' ').trim()}});
+ const rd=REC.data||{},sa=(k)=>{const p=String(rd.addr||'').split(',').map(x=>x.replace(/[0-9]+/g,'').trim()).filter(Boolean);return k==='short'?(rd.siteArea||p.slice(-2).join(', ')):''};
+ FIELDS.forEach(f=>{if(f.k==='addr.full'&&rd.addr)f.def=rd.addr;if(f.k==='addr.short'&&sa('short'))f.def=sa('short');if(f.k==='addr.map')f.def=rd.mapUrl||'(opens Google Maps for the complete address)'});
  draw(sc);
 }
 function topBar(){return h('div',{class:'bar'},h('h1',{},'Edit website'),h('button',{onclick:async()=>{await sb.auth.signOut();login()}},'Sign out'))}
-async function shrink(file){const bm=await createImageBitmap(file),sc=Math.min(1,1600/bm.width),w=Math.round(bm.width*sc),ht=Math.round(bm.height*sc),c=document.createElement('canvas');c.width=w;c.height=ht;c.getContext('2d').drawImage(bm,0,0,w,ht);
- for(const[t,q,ext]of[['image/webp',.8,'webp'],['image/jpeg',.8,'jpg']]){const b=await new Promise(r=>c.toBlob(r,t,q));if(b&&b.type===t)return{b,ext,t}}throw new Error('Could not process that image')}
-async function upload(file){const o=await shrink(file),name='site-edit/'+Date.now()+'-'+Math.random().toString(36).slice(2,7)+'.'+o.ext,{error}=await sb.storage.from('site').upload(name,o.b,{contentType:o.t});if(error)throw error;return sb.storage.from('site').getPublicUrl(name).data.publicUrl}
+function encode(c){return (async()=>{for(const[t,q,ext]of[['image/webp',.8,'webp'],['image/jpeg',.8,'jpg']]){const b=await new Promise(r=>c.toBlob(r,t,q));if(b&&b.type===t)return{b,ext,t}}throw new Error('Could not process that image')})()}
+async function shrink(file){const bm=await createImageBitmap(file),sc=Math.min(1,1600/bm.width),c=document.createElement('canvas');c.width=Math.round(bm.width*sc);c.height=Math.round(bm.height*sc);c.getContext('2d').drawImage(bm,0,0,c.width,c.height);return encode(c)}
+const ASPECTS=[['orig','Original',0],['16:10','Wide',16/10],['1:1','Square',1],['4:5','Portrait',4/5],['3:1','Banner',3]];
+function cropper(file,startAsp){return new Promise(async(res,rej)=>{
+ let bm;try{bm=await createImageBitmap(file)}catch(e){return rej(new Error('Could not read that image'))}
+ let asp=startAsp&&ASPECTS.some(x=>x[0]===startAsp)?startAsp:'16:10';
+ const maxW=Math.min(520,innerWidth-56),cv=document.createElement('canvas'),ctx=cv.getContext('2d');let W=maxW,H=Math.round(W/1.6),s0=1,sc=1,ox=0,oy=0,z=1;
+ const zr=h('input',{type:'range',min:'1',max:'4',step:'0.01',value:'1'}),ab=h('div',{class:'asp'});
+ const clamp=()=>{ox=Math.min(0,Math.max(W-bm.width*sc,ox));oy=Math.min(0,Math.max(H-bm.height*sc,oy))};
+ const draw=()=>{ctx.fillStyle='#111';ctx.fillRect(0,0,W,H);ctx.drawImage(bm,ox,oy,bm.width*sc,bm.height*sc)};
+ const setAsp=k=>{asp=k;const r=ASPECTS.find(x=>x[0]===k)[2]||bm.width/bm.height;W=maxW;H=Math.round(W/r);if(H>440){H=440;W=Math.round(H*r)}cv.width=W;cv.height=H;s0=Math.max(W/bm.width,H/bm.height);z=1;zr.value='1';sc=s0;ox=(W-bm.width*sc)/2;oy=(H-bm.height*sc)/2;clamp();draw();[...ab.children].forEach((b,i)=>b.classList.toggle('on',ASPECTS[i][0]===k))};
+ ASPECTS.forEach(([k,l])=>ab.append(h('button',{onclick:()=>setAsp(k)},l)));
+ zr.oninput=()=>{const cx=W/2,cy=H/2,old=sc;z=+zr.value;sc=s0*z;ox=cx-(cx-ox)*sc/old;oy=cy-(cy-oy)*sc/old;clamp();draw()};
+ let drag=null;cv.onpointerdown=e=>{drag={x:e.clientX,y:e.clientY,ox,oy};cv.setPointerCapture(e.pointerId)};cv.onpointermove=e=>{if(!drag)return;ox=drag.ox+(e.clientX-drag.x);oy=drag.oy+(e.clientY-drag.y);clamp();draw()};cv.onpointerup=()=>{drag=null};
+ const close=v=>{ov.remove();res(v)};
+ const ov=h('div',{class:'cr',role:'dialog','aria-label':'Crop photo'},h('div',{class:'box'},h('h3',{},'Crop your photo'),h('div',{class:'note'},'Pick a shape, drag the photo to move it, use the slider to zoom.'),ab,h('div',{class:'vp'},cv),h('div',{class:'zm'},'Zoom',zr),h('div',{class:'row2'},h('button',{onclick:()=>close(null)},'Cancel'),h('button',{class:'p','data-act':'crop-use',onclick:async()=>{if(asp==='orig')return close(await shrink(file));const sw=W/sc,sh=H/sc,out=document.createElement('canvas'),ow=Math.min(1600,Math.round(sw));out.width=ow;out.height=Math.round(ow*H/W);out.getContext('2d').drawImage(bm,-ox/sc,-oy/sc,sw,sh,0,0,out.width,out.height);try{close(await encode(out))}catch(e){close(null)}}},'Use this photo'))));
+ document.body.append(ov);setAsp(asp)})}
+async function upload(file,asp){const o=await cropper(file,asp);if(!o)return null;const name='site-edit/'+Date.now()+'-'+Math.random().toString(36).slice(2,7)+'.'+o.ext,{error}=await sb.storage.from('site').upload(name,o.b,{contentType:o.t});if(error)throw error;return sb.storage.from('site').getPublicUrl(name).data.publicUrl}
 let CUR=0,GROUPS=[],SC=null;
 function draw(sc){
  SC=sc;GROUPS=[];FIELDS.forEach(f=>{let g=GROUPS.find(x=>x.n===f.group);if(!g)GROUPS.push(g={n:f.group,f:[],hash:f.hash});g.f.push(f)});
@@ -71,7 +95,7 @@ function paint(){
  ed.replaceChildren(nav,panel,pv)}
 function field(f){
  const wrap=h('div',{class:'f'+((f.type==='long'||f.img)?'':'')});
- if(f.img){const im=h('img',{src:DATA[f.k]||f.def,alt:''}),file=h('input',{type:'file',accept:'image/*',style:'display:none',onchange:async e=>{const x=e.target.files[0];if(!x)return;msg('Uploading photo…');try{DATA[f.k]=await upload(x);im.src=DATA[f.k];dirty=true;msg('Photo ready. Press Save changes.')}catch(err){msg(err.message)}}});
+ if(f.img){const im=h('img',{src:DATA[f.k]||f.def,alt:''}),file=h('input',{type:'file',accept:'image/*',style:'display:none',onchange:async e=>{const x=e.target.files[0];if(!x)return;e.target.value='';try{const u=await upload(x,f.asp);if(!u)return msg('');msg('Uploading photo…');DATA[f.k]=u;im.src=u;dirty=true;msg('Photo ready. Press Save changes.')}catch(err){msg(err.message)}}});
   wrap.append(h('label',{},f.label),h('div',{class:'im'},im,h('div',{class:'acts'},h('button',{onclick:()=>file.click()},'Choose photo'),h('button',{onclick:()=>{delete DATA[f.k];im.src=f.def;dirty=true}},'Use original')),file));return wrap}
  if(f.type==='long')wrap.classList.add('wide');
  const inp=f.type==='long'?h('textarea',{placeholder:f.def}):h('input',{type:'text',placeholder:f.def});inp.value=DATA[f.k]!=null?DATA[f.k]:'';

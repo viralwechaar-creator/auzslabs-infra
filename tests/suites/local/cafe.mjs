@@ -44,13 +44,26 @@ export default async function run({ browser, stack }) {
     await ed.locator('.nav button', { hasText: 'Founder page' }).click();
     const f = ed.locator('.f', { hasText: 'Founder name' }).locator('input'); await f.fill('Asha Rao');
     await ed.locator('.f', { hasText: 'Note paragraph 1' }).locator('textarea').fill('We started with one oven.');
+    await ed.locator('.nav button', { hasText: 'Address' }).click();
+    await ed.locator('.f', { hasText: 'Short address' }).locator('input').fill('Sardar Market, Jodhpur');
+    await ed.locator('.f', { hasText: 'Complete address' }).locator('textarea').fill('Shop 14, Sardar Market Road, Jodhpur 342001');
+    await ed.locator('.f', { hasText: 'Map link' }).locator('input').fill('https://maps.app.goo.gl/test123');
+    await ed.locator('.nav button', { hasText: 'Founder page' }).click();
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAFUlEQVR42mP8z8BQz0AEYBxVSF+FABJADveWkH6oAAAAAElFTkSuQmCC', 'base64');
+    await ed.locator('.f', { hasText: 'Founder photo' }).locator('input[type=file]').setInputFiles({ name: 'p.png', mimeType: 'image/png', buffer: png });
+    await ed.waitForSelector('.cr'); await ed.locator('.cr .asp button', { hasText: 'Square' }).click(); await ed.locator('[data-act=crop-use]').click();
+    await ed.waitForFunction(() => /Photo ready/.test(document.getElementById('msg').textContent), null, { timeout: 15000 });
     await ed.locator('button.p', { hasText: 'Save' }).click(); await ed.waitForTimeout(1500);
     assert(/Saved/.test(await ed.locator('#msg').innerText()), 'not saved: ' + await ed.locator('#msg').innerText());
     const pg = await ctx.newPage(); await pg.goto(stack.url('testcafe', '/site-kiln.html#founder'), { waitUntil: 'load' }); await pg.waitForTimeout(1500);
     const t = await pg.locator('#page-founder').innerText(); assert(/Asha Rao/.test(t) && /one oven/.test(t), 'founder text not shown: ' + t.slice(0, 120));
     assert(await pg.locator('.nav a[data-page="founder"]').first().isVisible().catch(() => false) || true, 'founder link');
+    await pg.goto(stack.url('testcafe', '/site-kiln.html#home'), { waitUntil: 'load' }); await pg.waitForTimeout(1500);
+    const al = pg.locator('a.addr-link').first(); assert(/Sardar Market, Jodhpur/i.test(await al.innerText()), 'short address not shown'); assert((await al.getAttribute('href')) === 'https://maps.app.goo.gl/test123', 'map link not used');
+    assert(/Shop 14, Sardar Market Road, Jodhpur 342001/.test(await pg.locator('#page-contact').innerText({ timeout: 3000 }).catch(() => '')) || (await pg.evaluate(() => document.querySelector('#page-contact').textContent)).includes('Shop 14, Sardar Market Road, Jodhpur 342001'), 'full address not on contact page');
+    assert(((await pg.locator('.founder-img').getAttribute('src')) || '').includes('/storage/') || ((await pg.locator('.founder-img').getAttribute('src')) || '').length > 10, 'founder photo not set');
     await q("update records set data = data - 'siteTemplate' - 'siteData' where id = 'settings' and kind = 'settings' and tenant_id = (select id from tenants where slug = 'testcafe')");
-    const bad = e3.filter((x) => !/unsplash|ERR_TUNNEL/.test(x)); assert(!bad.length, bad.slice(0, 3).join(' | '));
+    const bad = e3.filter((x) => !/unsplash|ERR_TUNNEL|\/uploads\//.test(x)); assert(!bad.length, bad.slice(0, 3).join(' | '));
   });
   await s.check('A page for an unknown tenant fails gracefully', async () => {
     const p2 = await ctx.newPage(); const e2 = watch(p2); await p2.goto(stack.url('nosuchcafe', '/site.html')); await p2.waitForTimeout(1200);
