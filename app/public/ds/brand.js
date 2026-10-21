@@ -14,7 +14,9 @@
     return [Math.round((hh * 60 + 360) % 360), Math.round(s * 100), Math.round(l * 100)];
   }
   function auzBrand(c) {
-    c = hexHsl(c) ? String(c).trim() : DEF;
+    // Staff apps always wear the AUZslab wine (owner: wine, white and black only). A business's own colour stays on its customer-facing
+    // pages and bills; to let businesses recolour the apps again, delete the next line.
+    c = DEF;
     const st = document.documentElement.style, [hu, sa, li] = hexHsl(c), s2 = sa < 8 ? sa : Math.max(sa, 30);
     st.setProperty('--brand', c);
     st.setProperty('--brand-dark', 'hsl(' + hu + ' ' + s2 + '% ' + Math.min(Math.max(li, 36), 52) + '%)');
