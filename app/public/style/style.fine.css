@@ -311,3 +311,9 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 /* Bill sheet on phones: as tall as the bill, anchored to the bottom, no empty area */
 .sheet:has(.bill){height:auto;max-height:92dvh}
 @media (max-width:599px){.sheet.full:has(.bill){top:auto;bottom:0}.sheet:has(.bill) .sheet-b{padding-bottom:calc(16px + var(--safe-b))}}
+/* UPI QR inside the pay sheet */
+.upiq{display:flex;align-items:center;gap:12px;padding:10px;border-radius:14px;background:var(--panel);box-shadow:0 0 0 .5px var(--sep);flex-wrap:wrap}
+.upiq[hidden]{display:none}
+.upiq-i{width:132px;height:132px;border-radius:10px;background:#fff;flex:none}
+.upiq-t{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}.upiq-t b{font-size:20px}.upiq-t .small{overflow:hidden;text-overflow:ellipsis}
+.upiq .upic{flex-basis:100%;min-height:40px;padding:6px 2px}

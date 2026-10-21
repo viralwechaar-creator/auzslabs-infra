@@ -202,18 +202,31 @@ function paySheet(c, done) {
   const upd = () => {
     const s = sumNow(), bal = r2(due0 - s);
     clear(sum).append(h('span', null, bal > 0.005 ? t('Due') : bal < -0.005 ? t('Change') : t('Paid in full')), h('b', { class: 'num ' + (bal > 0.005 ? 'neg' : '') }, inr(Math.abs(bal))));
-    ok.disabled = false;
+    paintQr();
+    ok.disabled = !!(upiId && pay.upi > 0 && !upiGot);
   };
   MODES.forEach(([m, l]) => {
     const i = input({ type: 'number', value: pay[m] || '', mode: 'decimal', placeholder: '0', oninput: () => { pay[m] = N(i.value); upd(); } }); inputs[m] = i;
     rows.append(h('div', { class: 'payl' }, h('label', null, l), i, h('button', { class: 'btn sm', type: 'button', onclick: () => { MODES.forEach(([x]) => { pay[x] = 0; inputs[x].value = ''; }); pay[m] = m === 'credit' ? Math.min(due0, cust.credit) : due0; inputs[m].value = pay[m]; upd(); } }, t('Exact'))));
   });
+  const upiId = ((st.features || {}).upiId || '').trim(), upiName = ((st.features || {}).upiName || st.shopName || '').trim();
+  const qrBox = h('div', { class: 'upiq' }); let upiGot = false;
+  const upiConfirm = h('label', { class: 'swrow upic' }, h('div', { class: 'grow' }, t('Payment received on UPI')), h('input', { type: 'checkbox', onchange: (e) => { upiGot = e.target.checked; upd(); } }));
+  const paintQr = () => {
+    const amt = r2(pay.upi || 0); clear(qrBox);
+    if (amt <= 0) { qrBox.hidden = true; upiGot = false; return; }
+    qrBox.hidden = false;
+    if (!upiId) { qrBox.append(h('div', { class: 'muted small' }, t('Add your UPI id in Settings to show a QR here.')), can('sty_manage') ? h('button', { class: 'btn sm', type: 'button', onclick: () => { sh.close(); go('settings'); } }, t('Open Settings')) : null); return; }
+    let img = null;
+    try { const q = qrcode(0, 'M'); q.addData('upi://pay?pa=' + encodeURIComponent(upiId) + '&pn=' + encodeURIComponent(upiName) + '&am=' + amt.toFixed(2) + '&cu=INR&tn=' + encodeURIComponent('Bill ' + (S.ctx.settings.billPrefix || ''))); q.make(); img = q.createDataURL(5, 2); } catch (e) { /* no QR library */ }
+    qrBox.append(img ? h('img', { src: img, alt: 'UPI QR', class: 'upiq-i' }) : null, h('div', { class: 'upiq-t' }, h('b', { class: 'num' }, inr(amt)), h('span', { class: 'muted small' }, t('Scan to pay') + ' · ' + upiId)), upiConfirm);
+  };
   const note = input({ placeholder: t('Note (optional)') });
   const ok = h('button', { class: 'btn fill', type: 'button' }, t('Complete sale') + ' · ' + inr(c.total));
   const sh = sheet({ title: t('Pay'), body: h('div', { class: 'grid' },
     h('div', { class: 'paytot' }, h('span', null, t('Total')), h('b', { class: 'num' }, inr(c.total))), redeemVal > 0 ? h('div', { class: 'muted small' }, t('Points used') + ': -' + inr(redeemVal)) : null,
     cust ? h('div', { class: 'muted small' }, cust.name + (cust.phone ? ' · ' + cust.phone : '')) : h('div', { class: 'muted small' }, t('Walk-in') + ' — ' + t('add a customer to leave a balance due')),
-    rows, sum, field(t('Note'), note)), actions: [] });
+    rows, qrBox, sum, field(t('Note'), note)), actions: [] });
   sh.el.querySelector('.sheet-f') || sh.el.append(h('div', { class: 'sheet-f' }));
   sh.el.querySelector('.sheet-f').append(ok);
   upd();

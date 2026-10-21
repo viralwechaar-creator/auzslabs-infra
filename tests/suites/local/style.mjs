@@ -332,6 +332,28 @@ export default async function run({ browser, stack }) {
     assert(!(await ok(staff, 'sty_collections_list')).some((x) => x.id === c.id), 'not deleted');
   });
 
+  await s.check('UPI QR in the pay sheet: shows with the exact amount, must be confirmed, then the bill saves', async () => {
+    await ok(owner, 'sty_save_settings', { p: { features: { upiId: 'testshop@upi', upiName: 'Test Shop' } } });
+    const { c, page, errs } = await open(USERS.styStaff, { w: 1280, h: 800 });
+    await page.evaluate(() => { location.hash = '#/sell'; }); await page.waitForSelector('.scard', { timeout: 15000 });
+    const v = await ok(owner, 'sty_catalog', { p_branch: null }); const jv = v.find((x) => x.name === 'Skinny Jeans').variants.find((x) => x.size === '34');
+    await page.fill('.sell-l input[type=search]', jv.barcode); await page.keyboard.press('Enter'); await page.waitForTimeout(500);
+    await page.locator('.cartpane .btn.fill', { hasText: /Pay/ }).click(); await page.waitForSelector('.paytot', { timeout: 8000 });
+    assert(await page.locator('.upiq').isHidden(), 'QR shown before any UPI amount');
+    const pays = page.locator('.payl'); const n = await pays.count();
+    let upiRow = null; for (let i = 0; i < n; i++) { if (/UPI/i.test(await pays.nth(i).locator('label').innerText())) upiRow = pays.nth(i); }
+    await upiRow.locator('.btn.sm').click(); await page.waitForTimeout(300);
+    assert(await page.locator('.upiq .upiq-i').count() === 1, 'no QR image');
+    assert(/testshop@upi/.test(await page.locator('.upiq').innerText()), 'UPI id missing');
+    assert(await page.locator('.sheet-f .btn.fill').last().isDisabled(), 'Complete sale should wait for the confirmation');
+    await page.locator('.upiq input[type=checkbox]').check(); await page.waitForTimeout(200);
+    assert(!(await page.locator('.sheet-f .btn.fill').last().isDisabled()), 'still disabled after confirming');
+    await s.shot(page, 'upi qr');
+    await page.locator('.sheet-f .btn.fill').last().click(); await page.waitForSelector('.receipt', { timeout: 15000 });
+    assert(!errs.filter((e) => !/sentry/i.test(e)).length, errs.join(' | ')); await c.close();
+    await ok(owner, 'sty_save_settings', { p: { features: {} } });
+  });
+
   await s.check('Barcode tags: the generated Code 128 reads back with the scanner library', async () => {
     const c = await newCtx(browser, stack, { w: 800, h: 600 }); const page = await c.newPage();
     await page.goto(stack.url('teststyle', '/style.html')); await page.waitForTimeout(800);
