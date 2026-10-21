@@ -354,6 +354,86 @@ export default async function run({ browser, stack }) {
     await ok(owner, 'sty_save_settings', { p: { features: {} } });
   });
 
+  await s.check('Online store: closed by default, then public catalogue, orders (COD + UPI), stock and price checks, staff inbox', async () => {
+    const anon = null;
+    let pub = await ok(anon, 'public_sty_store', { p_slug: 'teststyle' }); assert(pub && pub.closed, 'should be closed by default: ' + JSON.stringify(pub).slice(0, 120));
+    await fails(anon, 'public_sty_place_order', { p_slug: 'teststyle', p: { name: 'A B', phone: '9876543210', address: '1 Road', city: 'Jodhpur', pin: '342001', payment: 'cod', lines: [] } }, /closed|empty/i);
+    await fails(staff, 'sty_store_save', { p: { on: true } }, /does not allow/i);
+    await ok(manager, 'sty_store_save', { p: { on: true, announce: 'Free shipping above 3000', heroImages: ['/x.jpg'], shipping: { fee: 80, freeOver: 3000, note: 'Ships in 3 days' }, pay: { cod: true, upi: true },
+      stores: [{ name: 'Main store', address: 'Sardarpura, Jodhpur', phone: '9999999999' }], faqs: [{ cat: 'Orders', q: 'How long?', a: '3 to 7 days' }], about: { title: 'About', text: 'We sell clothes.' }, evil: 'nope' } });
+    const cfgNow = await ok(manager, 'sty_store_get'); assert(cfgNow.on === true && !('evil' in cfgNow) && cfgNow.slug === 'teststyle', 'config ' + JSON.stringify(cfgNow));
+    pub = await ok(anon, 'public_sty_store', { p_slug: 'teststyle' });
+    assert(pub.styles.length >= 2 && pub.shop.name, 'styles missing');
+    const flat = JSON.stringify(pub); assert(!/"cost"|barcode|"sku"/.test(flat), 'cost/barcode leaked on the public store');
+    assert(pub.styles.every((x) => x.variants.every((v) => v.left >= 0 && v.left <= 9)), 'stock should be capped for the public');
+    const cat = await ok(owner, 'sty_catalog', { p_branch: null });
+    const sty = cat.find((x) => x.variants.some((v) => v.stock >= 3 && x.price > 0)); const vr = sty.variants.find((v) => v.stock >= 3);
+    const base = { name: 'Asha Rao', email: 'asha@example.com', phone: '98765 43210', address: '12 Station Road', city: 'Jodhpur', state: 'Rajasthan', pin: '342001' };
+    await fails(anon, 'public_sty_place_order', { p_slug: 'teststyle', p: { ...base, payment: 'cod', lines: [{ variantId: vr.id, qty: 99 }] } }, /Quantity/i);
+    await fails(anon, 'public_sty_place_order', { p_slug: 'teststyle', p: { ...base, payment: 'cod', lines: [{ variantId: vr.id, qty: 20 }] } }, /Only \d+ left|left of/i);
+    await fails(anon, 'public_sty_place_order', { p_slug: 'teststyle', p: { ...base, phone: '12', payment: 'cod', lines: [{ variantId: vr.id, qty: 1 }] } }, /phone/i);
+    await fails(anon, 'public_sty_place_order', { p_slug: 'teststyle', p: { ...base, payment: 'upi', lines: [{ variantId: vr.id, qty: 1 }] } }, /UPI payment is not set up/i);
+    await fails(anon, 'public_sty_place_order', { p_slug: 'nobodyshop', p: { ...base, payment: 'cod', lines: [{ variantId: vr.id, qty: 1 }] } }, /not available/i);
+    const before = await stock(vr.id);
+    const o1 = await ok(anon, 'public_sty_place_order', { p_slug: 'teststyle', p: { ...base, payment: 'cod', lines: [{ variantId: vr.id, qty: 2, price: 1 }] } });
+    const expect = vr.price * 2 + (vr.price * 2 >= 3000 ? 0 : 80);
+    assert(Number(o1.total) === expect, `total ${o1.total} expected ${expect} (a price sent by the browser must be ignored)`);
+    assert(await stock(vr.id) === before, 'a web order must not move stock until it is billed');
+    const mine = await ok(anon, 'public_sty_order', { p_token: o1.token }); assert(mine.number === o1.number && !JSON.stringify(mine).includes('9876543210'), 'order page should not show the phone');
+    await ok(owner, 'sty_save_settings', { p: { features: { upiId: 'testshop@upi', upiName: 'Test Shop' } } });
+    const o2 = await ok(anon, 'public_sty_place_order', { p_slug: 'teststyle', p: { ...base, phone: '9123456780', payment: 'upi', lines: [{ variantId: vr.id, qty: 1 }] } });
+    assert(o2.upi && o2.upi.id === 'testshop@upi', 'upi details');
+    await fails(anon, 'public_sty_order_paid', { p_token: o2.token, p_utr: '12' }, /reference/i);
+    const paid = await ok(anon, 'public_sty_order_paid', { p_token: o2.token, p_utr: 'T2610123456' }); assert(paid.paymentStatus === 'submitted', 'status ' + paid.paymentStatus);
+    const inbox = await ok(staff, 'sty_web_orders_list', { p: {} }); assert(inbox.length >= 2 && inbox.find((x) => x.number === o2.number).utr === 'T2610123456', 'inbox');
+    assert(await ok(staff, 'sty_web_orders_open') >= 2, 'open count');
+    await ok(staff, 'sty_web_order_update', { p_id: inbox.find((x) => x.number === o2.number).id, p: { status: 'confirmed', paymentStatus: 'paid' } });
+    await fails(cafe, 'sty_web_orders_list', { p: {} }, /not enabled/i);
+    await fails(staff, 'sty_store_request_payments', {}, /does not allow/i);
+    const rq = await ok(manager, 'sty_store_request_payments'); assert(rq.payReq === 'requested', 'payReq');
+    await ok(owner, 'sty_save_settings', { p: { features: {} } });
+    await integrity();
+  });
+
+  await s.check('Online store page: browse, filter, product page, bag, checkout and the owner inbox, on phone and desktop', async () => {
+    await ok(manager, 'sty_store_save', { p: { on: true } });
+    for (const dev of [{ w: 390, h: 844, mobile: true }, { w: 1366, h: 800 }]) {
+      const c = await newCtx(browser, stack, dev); const page = await c.newPage(); const errs = watch(page);
+      await page.goto(stack.url('teststyle', '/store.html')); await page.waitForSelector('.pc', { timeout: 20000 });
+      await s.shot(page, 'store home ' + dev.w);
+      assert(await page.locator('.hero').count() === 1, 'hero');
+      assert(await page.locator('footer').count() === 1, 'footer');
+      const sx = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth); assert(sx <= 1, 'sideways scroll ' + sx);
+      await page.evaluate(() => { location.hash = '#/shop'; }); await page.waitForSelector('.pc'); const all = await page.locator('.pc').count();
+      await page.getByRole('button', { name: /Refine/ }).click(); await page.waitForSelector('.sheet .sz');
+      await s.shot(page, 'store refine ' + dev.w);
+      await page.locator('.sheet .sz', { hasText: /^L$/ }).first().click(); const showTxt = await page.locator('.sheet .btn.wide').last().innerText(); assert(/show \d+/i.test(showTxt), showTxt);
+      await page.locator('.sheet .btn.wide').last().click(); await page.waitForTimeout(250);
+      assert(await page.locator('.pc').count() <= all, 'filter should not add products');
+      await page.evaluate(() => { location.hash = '#/shop'; }); await page.waitForSelector('.pc');
+      await page.locator('.pc .in a').first().click(); await page.waitForSelector('.pd .info', { timeout: 8000 });
+      assert(await page.locator('.gal .main').count() === 1, 'primary image');
+      await s.shot(page, 'store product ' + dev.w);
+      const sz = page.locator('.info .sz:not(.off)').first(); if (await sz.count()) await sz.click();
+      await page.locator('.info .btn', { hasText: /Add to bag/ }).click(); await page.waitForTimeout(300);
+      await page.evaluate(() => { location.hash = '#/bag'; }); await page.waitForSelector('.ln', { timeout: 8000 });
+      await page.locator('a.btn', { hasText: /checkout/i }).click(); await page.waitForSelector('.frm .fld input');
+      await s.shot(page, 'store checkout ' + dev.w);
+      await page.fill('input[aria-label="Phone"]', '9811122233'); await page.fill('input[aria-label="First name"]', 'Test'); await page.fill('input[aria-label="Address"]', '5 Test Road'); await page.fill('input[aria-label="City"]', 'Jodhpur'); await page.fill('input[aria-label="PIN code"]', '342001');
+      await page.locator('.btn.wide', { hasText: /Place order/ }).click(); await page.waitForSelector('.pg .steps', { timeout: 12000 });
+      assert(/Thank you/.test(await page.locator('.pg h1').innerText()), 'thank you page');
+      await s.shot(page, 'store order ' + dev.w);
+      await page.evaluate(() => { location.hash = '#/stores'; }); await page.waitForSelector('.scard'); await page.evaluate(() => { location.hash = '#/faq'; }); await page.waitForSelector('.fq');
+      await page.locator('.fq button').first().click(); assert(await page.locator('.fq.on').count() === 1, 'faq opens');
+      assert(!errs.filter((e) => !/sentry/i.test(e)).length, errs.join(' | ')); await c.close();
+    }
+    const { c, page, errs } = await open(USERS.styOwner, { w: 1280, h: 800 });
+    await page.evaluate(() => { location.hash = '#/store'; }); await page.waitForSelector('.list .li', { timeout: 15000 });
+    await s.shot(page, 'store inbox');
+    await page.locator('.seg button', { hasText: /Store/ }).click(); await page.waitForSelector('.swrow', { timeout: 8000 }); await s.shot(page, 'store editor');
+    assert(!errs.filter((e) => !/sentry/i.test(e)).length, errs.join(' | ')); await c.close();
+  });
+
   await s.check('Barcode tags: the generated Code 128 reads back with the scanner library', async () => {
     const c = await newCtx(browser, stack, { w: 800, h: 600 }); const page = await c.newPage();
     await page.goto(stack.url('teststyle', '/style.html')); await page.waitForTimeout(800);
