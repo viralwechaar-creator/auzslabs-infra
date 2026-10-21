@@ -428,6 +428,7 @@ export const RPC = {
   sty_catalog: { params: ['p_branch'], defaults: { p_branch: null }, auth: true },
   sty_save_style: { params: ['p'], jsonb: ['p'], auth: true },
   sty_set_variant: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
+  sty_set_colour_photos: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
   sty_adjust: { params: ['p'], jsonb: ['p'], auth: true },
   sty_save_supplier: { params: ['p'], jsonb: ['p'], auth: true },
   sty_list_suppliers: { params: [], auth: true },

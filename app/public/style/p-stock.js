@@ -87,18 +87,19 @@ function adjustSheet(x, s, done) {
 
 // ---- style editor ----
 function chipEditor(initial, suggestions, label, cap) {
-  const items = new Set(initial); const host = h('div', { class: 'chips wrap' });
+  const items = new Set(initial); const host = h('div', { class: 'chips wrap' }); let node = null;
   const inp = input({ placeholder: t('Type and press Enter') });
   const paint = () => {
     clear(host).append(...[...items].map((x) => h('button', { class: 'chip', type: 'button', 'aria-pressed': 'true', onclick: () => { items.delete(x); paint(); } }, x, icon('x', 12))),
       ...suggestions.filter((x) => !items.has(x)).map((x) => h('button', { class: 'chip', type: 'button', onclick: () => { items.add(x); paint(); } }, '+ ' + x)));
+    if (node && node.onChange) node.onChange();
   };
   const addTyped = () => { inp.value.split(',').map((x) => x.trim()).filter(Boolean).forEach((x) => items.add(x)); inp.value = ''; paint(); };
   inp.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTyped(); } });
   inp.addEventListener('blur', addTyped);
   paint();
-  const node = h('div', { class: 'field' }, h('label', null, label), host, inp, cap ? h('div', { class: 'hint' }, cap) : null);
-  node.get = () => { addTyped(); return [...items]; }; node.setSuggestions = (s) => { suggestions = s; paint(); };
+  node = h('div', { class: 'field' }, h('label', null, label), host, inp, cap ? h('div', { class: 'hint' }, cap) : null);
+  node.peek = () => [...items]; node.get = () => { addTyped(); return [...items]; }; node.setSuggestions = (s) => { suggestions = s; paint(); };
   return node;
 }
 function styleForm(s, done) {
@@ -122,12 +123,21 @@ function styleForm(s, done) {
   function setSizes() { szs.setSuggestions(presetFor(cat.value)); }
   cat.addEventListener('input', setSizes);
   const pics = photoEditor(s ? s.photoUrl : '', s ? s.photos : []);
+  // pictures per colour: the till switches to these when a colour is picked
+  const colPics = {}; const colHost = h('div', { class: 'grid' }); const colInit = (s && s.colourPhotos) || {};
+  const paintColPics = () => {
+    const cs = cols.peek(); cs.forEach((c) => { if (!colPics[c]) colPics[c] = photoEditor((colInit[c] || [])[0] || '', (colInit[c] || []).slice(1)); });
+    clear(colHost).append(...cs.map((c) => h('div', { class: 'card grid' }, h('div', { class: 'cap' }, c), colPics[c])));
+    colWrap.style.display = cs.length ? '' : 'none';
+  };
+  const colWrap = h('div', { class: 'field' }, h('label', null, t('Pictures per colour')), h('div', { class: 'hint' }, t('Optional. When a colour is picked on the till, its pictures show instead.')), colHost);
+  cols.onChange = paintColPics; paintColPics();
   const seeCost = S.ctx.canSeeCost;
   const spanOf = (n) => { n.classList.add('span'); return n; };
   const body = h('div', { class: 'grid edgrid' }, spanOf(pics), field(t('Name'), f.name), field(t('Product code'), f.code, t('Used to find the style and as the start of each size barcode label. Leave empty to skip.')), field(t('Category'), cat, t('Type any name to add your own category. It appears everywhere once the style is saved.')), spanOf(catList), h('div', { class: 'two' }, field(t('Brand'), f.brand), field(t('Gender'), f.gender)),
     h('div', { class: 'two' }, field(t('Selling price'), f.price), field(t('MRP'), f.mrp)), seeCost ? h('div', { class: 'two' }, field(t('Cost'), f.cost), field(t('Tax %'), f.tax)) : field(t('Tax %'), f.tax),
     h('div', { class: 'two' }, field(t('Type'), f.type), field(t('Fabric'), f.fabric)), h('div', { class: 'two' }, field(t('Collection'), f.collection), field(t('Weight') + ' (g)', f.weight)),
-    spanOf(cols), spanOf(szs), spanOf(field(t('Description'), f.desc)), spanOf(field(t('Details'), f.det)), spanOf(field(t('Wash care'), f.wash)),
+    spanOf(cols), spanOf(colWrap), spanOf(szs), spanOf(field(t('Description'), f.desc)), spanOf(field(t('Details'), f.det)), spanOf(field(t('Wash care'), f.wash)),
     isNew ? h('div', { class: 'two' }, field(t('Opening stock per size'), f.qty), h('div')) : null,
     spanOf(h('details', { class: 'more' }, h('summary', null, t('More details')), h('div', { class: 'grid', style: { marginTop: '10px' } }, h('div', { class: 'two' }, field(t('Season'), f.season), field(t('HSN code'), f.hsn))))));
   sheet({ title: isNew ? t('New style') : t('Edit style'), full: true, wide: true, body, actions: [
@@ -141,7 +151,10 @@ function styleForm(s, done) {
         price: N(f.price.value), mrp: N(f.mrp.value) || N(f.price.value), taxPct: f.tax.value === '' ? null : N(f.tax.value), colours, sizes };
       if (seeCost && f.cost.value !== '') p.cost = N(f.cost.value);
       if (isNew && N(f.qty.value) > 0) p.opening = { qty: Math.round(N(f.qty.value)), unitCost: N(f.cost.value), branchId: S.branch };
-      const r = await api('sty_save_style', { p }); close(); S.catAt = 0; toast(t('Saved'));
+      const r = await api('sty_save_style', { p });
+      const cp = {}; cols.peek().forEach((c) => { const g = colPics[c] && colPics[c].get(); if (g && g.main) cp[c] = [g.main, ...g.extra]; });
+      if (Object.keys(cp).length || Object.keys(colInit).length) await api('sty_set_colour_photos', { p_id: r.id, p: cp });
+      close(); S.catAt = 0; toast(t('Saved'));
       done && done();
       if (isNew && r && r.variants && r.variants.length) { const st = await promptAfterCreate(r); }
     } }].filter(Boolean) });
