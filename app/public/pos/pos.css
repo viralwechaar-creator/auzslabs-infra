@@ -40,7 +40,7 @@ svg.i{flex:none;display:block}
 .page{padding:16px;display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-content:start;min-width:0}
 .page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .status{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--label2);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.status i{width:8px;height:8px;border-radius:50%;background:var(--green);flex:none}
+.status i{width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none}
 .status.off i{background:var(--orange)}
 .status.err i{background:var(--red)}
 .iconbtn{width:44px;height:44px;flex:none;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;color:var(--accent-text);position:relative;transition:background .2s var(--ease)}
@@ -63,7 +63,7 @@ svg.i{flex:none;display:block}
 .btn.plain:hover{background:var(--fill2)}
 .btn.danger{color:var(--red)}
 .btn.danger.fill{background:var(--red);color:#fff}
-.btn.green.fill{background:#248a3d;color:#fff}
+.btn.green.fill{background:var(--accent);color:var(--on-accent)}
 .btn.lg{min-height:54px;font-size:17px;border-radius:14px;padding:0 20px}
 .btn.sm{min-height:36px;padding:0 12px;font-size:15px;border-radius:10px}
 .btn.wide{width:100%}
@@ -200,7 +200,7 @@ button.kpi.on{box-shadow:0 0 0 2px var(--accent)}
 .switch input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;z-index:1}
 .switch i{position:absolute;inset:0;border-radius:16px;background:var(--fill);transition:background .25s var(--ease)}
 .switch i::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.15),0 1px 1px rgba(0,0,0,.16);transition:transform .25s var(--ease)}
-.switch input:checked+i{background:#34c759}
+.switch input:checked+i{background:var(--accent)}
 .switch input:checked+i::after{transform:translateX(20px)}
 
 /* ---------- sell: items ---------- */

@@ -11,10 +11,10 @@
   --accent-soft2:color-mix(in srgb,var(--accent) 17%,transparent);
   --accent-line:color-mix(in srgb,var(--accent) 38%,transparent);
   /* surfaces and text */
-  --bg:#f5f4f2;--bg2:#efedea;--card:#fff;--elev:#fff;--card2:#faf9f7;--bar:rgba(250,249,247,.92);--thumb:#fff;
+  --bg:#efece8;--bg2:#e8e4df;--card:#fff;--elev:#fff;--card2:#faf9f7;--bar:rgba(250,249,247,.92);--thumb:#fff;
   --fill:rgba(118,112,104,.12);--fill2:rgba(118,112,104,.08);--fill3:rgba(118,112,104,.045);
   --label:#2e2c2a;--label2:rgba(60,56,52,.66);--label3:rgba(60,56,52,.42);
-  --sep:rgba(60,52,44,.14);--sep2:rgba(60,52,44,.24);
+  --sep:rgba(60,52,44,.2);--sep2:rgba(60,52,44,.32);
   /* state colours (text / tinted background) */
   --green:#1f8a3d;--green-bg:rgba(52,199,89,.15);
   --orange:#a85a00;--orange-bg:rgba(255,149,0,.17);

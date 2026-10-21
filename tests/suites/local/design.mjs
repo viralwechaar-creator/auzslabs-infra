@@ -41,16 +41,16 @@ export default async function run({ browser, stack }) {
       const x = await sample(page, app); fills[app.name] = x.fill;
       assert(x.ds, 'does not link /ds/auz.css');
       assert(/-apple-system|system-ui/.test(x.font) && !/^Inter/.test(x.font), 'body font is ' + x.font);
-      assert(x.bg === 'rgb(245, 244, 242)', 'page background is ' + x.bg + ', not the shared --bg');
+      assert(x.bg === 'rgb(239, 236, 232)', 'page background is ' + x.bg + ', not the shared --bg');
       assert(x.label === '#2e2c2a', 'text token is ' + x.label);
       const bad = errs.filter((e) => !/WebSocket|ERR_CERT|tunnel|ERR_FAILED|print/i.test(e)); assert(!bad.length, bad.slice(0, 2).join(' | '));
       await ctx.close();
     }, 'major');
   }
-  await s.check('Same business, same accent: POS, admin console and Payroll paint primary buttons in one colour', () => {
+  await s.check('AUZslab wine everywhere: POS, admin console and Payroll paint primary buttons in one colour', () => {
     const cafe = ['POS', 'Admin console', 'Payroll'].map((n) => fills[n]);
     assert(cafe.every((c) => c && c === cafe[0]), 'primary colours differ: ' + JSON.stringify(fills));
-    assert(cafe[0] === 'rgb(31, 61, 46)', 'accent is not the business colour #1f3d2e: ' + cafe[0]);
+    assert(cafe[0] === 'rgb(128, 0, 32)', 'staff apps must wear AUZslab wine whatever colour the business set: ' + cafe[0]);
     assert(fills.Accounting === 'rgb(128, 0, 32)', 'Accounting (no business colour set) is not AUZslab wine: ' + fills.Accounting);
   }, 'major');
 
