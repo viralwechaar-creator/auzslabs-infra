@@ -259,6 +259,23 @@ export default async function run({ browser, stack }) {
     assert((await call(null, 'public_sty_sale', { p_token: 'ffffffffff' })).data == null, 'unknown token answered');
     await fails(staff, 'sty_share_sale', { p_id: '00000000-0000-0000-0000-000000000001' }, /not found/i);
   });
+  await s.check('Limited stock and Sold out labels: set by a manager, shown on the till, and Sold out cannot be added to a bill', async () => {
+    const r = await ok(owner, 'sty_set_badge', { p_id: shirt.id, p_badge: 'limited' }); assert(r.badge === 'limited', 'badge ' + r.badge);
+    await fails(owner, 'sty_set_badge', { p_id: shirt.id, p_badge: 'rare' }, /limited or soldout/i);
+    await fails(staff, 'sty_set_badge', { p_id: shirt.id, p_badge: 'soldout' }, /does not allow/i);
+    const { c, page } = await open(USERS.styStaff, { w: 390, h: 844, mobile: true });
+    await page.evaluate(() => { location.hash = '#/sell'; }); await page.waitForSelector('.scard', { timeout: 15000 });
+    assert(/Limited stock/i.test(await page.locator('.scard', { hasText: 'Slim Shirt' }).innerText()), 'no Limited stock label on the card');
+    await c.close();
+    await ok(owner, 'sty_set_badge', { p_id: shirt.id, p_badge: 'soldout' });
+    const o2 = await open(USERS.styStaff, { w: 390, h: 844, mobile: true });
+    await o2.page.evaluate(() => { location.hash = '#/sell'; }); await o2.page.waitForSelector('.scard', { timeout: 15000 });
+    const card = o2.page.locator('.scard', { hasText: 'Slim Shirt' }); assert(/Sold out/i.test(await card.innerText()), 'no Sold out label');
+    await card.locator('.pic').click(); await o2.page.waitForTimeout(500);
+    assert(!(await o2.page.locator('.vp-h').count()), 'a sold-out style opened the picker');
+    await o2.c.close();
+    await ok(owner, 'sty_set_badge', { p_id: shirt.id, p_badge: null });
+  });
   await s.check('Picking a colour on the till switches the picture to that colour', async () => {
     const { c, page } = await open(USERS.styStaff, { w: 390, h: 844, mobile: true });
     await page.evaluate(() => { location.hash = '#/sell'; }); await page.waitForSelector('.scard', { timeout: 15000 });

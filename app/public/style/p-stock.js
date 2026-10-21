@@ -31,7 +31,7 @@ page('stock', {
           h('div', { class: 'ic-b' },
             h('div', { class: 'ic-t' }, h('span', { class: 'ic-n' }, s.name), h('span', { class: 'ic-pr num' }, inr(s.price))),
             h('div', { class: 'ic-s' }, [s.category, s.fabric, cols + ' ' + t('colours'), sizes + ' ' + t('sizes')].filter(Boolean).join(' · ')),
-            h('div', { class: 'ic-f' }, h('span', { class: 'ic-chip ' + tone }, st <= 0 ? t('Out of stock') : st + ' ' + t('in stock')), s.active === false ? h('span', { class: 'ic-chip' }, t('Hidden')) : null,
+            h('div', { class: 'ic-f' }, h('span', { class: 'ic-chip ' + (s.badge === 'soldout' ? 'z' : tone) }, st <= 0 || s.badge === 'soldout' ? t('Out of stock') : st + ' ' + t('in stock')), s.badge === 'limited' ? h('span', { class: 'ic-chip' }, t('Limited stock')) : null, s.active === false ? h('span', { class: 'ic-chip' }, t('Hidden')) : null,
               h('span', { class: 'ic-bar' }, h('i', { class: tone, style: { width: Math.max(4, Math.min(100, st / mx * 100)) + '%' } })))));
       }) : [empty('shirt', S.cat.length ? t('No match') : t('No styles yet'), S.cat.length ? '' : t('Add a style to start. You can also load a small sample to look around.'),
         can('sty_manage') && !S.cat.length ? h('div', { class: 'row', style: { gap: '8px', justifyContent: 'center' } }, h('button', { class: 'btn fill', onclick: () => styleForm(null, () => v.refresh()) }, t('New style')), h('button', { class: 'btn', onclick: async () => { await api('sty_load_sample'); toast(t('Sample added')); v.refresh(); } }, t('Load sample'))) : null)]));
@@ -65,6 +65,7 @@ async function styleSheet(id, changed) {
     h('div', { class: 'cap' }, t('Stock by colour and size') + (can('sty_stock') ? ' · ' + t('tap a number to adjust') : '')), grid,
     h('div', { class: 'row', style: { gap: '8px', flexWrap: 'wrap' } },
       can('sty_manage') ? h('button', { class: 'btn', type: 'button', onclick: () => { sh.close(); styleForm(s, changed); } }, icon('edit', 18), t('Edit style')) : null,
+      ...(can('sty_manage') ? [['limited', t('Limited stock')], ['soldout', t('Sold out')]].map(([k, l]) => h('button', { class: 'btn' + (s.badge === k ? ' fill' : ''), type: 'button', 'aria-pressed': String(s.badge === k), onclick: async () => { try { await api('sty_set_badge', { p_id: s.id, p_badge: s.badge === k ? null : k }); S.catAt = 0; sh.close(); toast(t('Saved')); changed && changed(); } catch (e) { toast(e.message || t('Failed'), { err: true }); } } }, l)) : []),
       h('button', { class: 'btn', type: 'button', onclick: () => tagsSheet([s]) }, icon('barcode', 18), t('Print tags')),
       can('sty_purchase') ? h('button', { class: 'btn', type: 'button', onclick: () => { sh.close(); receiveForm({ style: s }, changed); } }, icon('truck', 18), t('Receive stock')) : null)) });
 }
@@ -132,12 +133,18 @@ function styleForm(s, done) {
   };
   const colWrap = h('div', { class: 'field' }, h('label', null, t('Pictures per colour')), h('div', { class: 'hint' }, t('Optional. When a colour is picked on the till, its pictures show instead.')), colHost);
   cols.onChange = paintColPics; paintColPics();
+  // show on the till as: normal / limited stock (exclusivity, display only) / sold out (cannot be added to a bill)
+  let badge = (s && s.badge) || '';
+  const badgeHost = h('div', { class: 'chips' });
+  const paintBadge = () => clear(badgeHost).append(...[['', t('Normal')], ['limited', t('Limited stock')], ['soldout', t('Sold out')]].map(([k, l]) => h('button', { class: 'chip', type: 'button', 'aria-pressed': String(badge === k), onclick: () => { badge = k; paintBadge(); } }, l)));
+  paintBadge();
+  const badgeField = h('div', { class: 'field' }, h('label', null, t('Show on the till as')), badgeHost, h('div', { class: 'hint' }, t('Limited stock is only a label for exclusivity. Sold out also stops this style from being added to a bill.')));
   const seeCost = S.ctx.canSeeCost;
   const spanOf = (n) => { n.classList.add('span'); return n; };
   const body = h('div', { class: 'grid edgrid' }, spanOf(pics), field(t('Name'), f.name), field(t('Product code'), f.code, t('Used to find the style and as the start of each size barcode label. Leave empty to skip.')), field(t('Category'), cat, t('Type any name to add your own category. It appears everywhere once the style is saved.')), spanOf(catList), h('div', { class: 'two' }, field(t('Brand'), f.brand), field(t('Gender'), f.gender)),
     h('div', { class: 'two' }, field(t('Selling price'), f.price), field(t('MRP'), f.mrp)), seeCost ? h('div', { class: 'two' }, field(t('Cost'), f.cost), field(t('Tax %'), f.tax)) : field(t('Tax %'), f.tax),
     h('div', { class: 'two' }, field(t('Type'), f.type), field(t('Fabric'), f.fabric)), h('div', { class: 'two' }, field(t('Collection'), f.collection), field(t('Weight') + ' (g)', f.weight)),
-    spanOf(cols), spanOf(colWrap), spanOf(szs), spanOf(field(t('Description'), f.desc)), spanOf(field(t('Details'), f.det)), spanOf(field(t('Wash care'), f.wash)),
+    spanOf(cols), spanOf(colWrap), spanOf(szs), spanOf(badgeField), spanOf(field(t('Description'), f.desc)), spanOf(field(t('Details'), f.det)), spanOf(field(t('Wash care'), f.wash)),
     isNew ? h('div', { class: 'two' }, field(t('Opening stock per size'), f.qty), h('div')) : null,
     spanOf(h('details', { class: 'more' }, h('summary', null, t('More details')), h('div', { class: 'grid', style: { marginTop: '10px' } }, h('div', { class: 'two' }, field(t('Season'), f.season), field(t('HSN code'), f.hsn))))));
   sheet({ title: isNew ? t('New style') : t('Edit style'), full: true, wide: true, body, actions: [
@@ -154,6 +161,7 @@ function styleForm(s, done) {
       const r = await api('sty_save_style', { p });
       const cp = {}; cols.peek().forEach((c) => { const g = colPics[c] && colPics[c].get(); if (g && g.main) cp[c] = [g.main, ...g.extra]; });
       if (Object.keys(cp).length || Object.keys(colInit).length) await api('sty_set_colour_photos', { p_id: r.id, p: cp });
+      if (badge !== ((s && s.badge) || '')) await api('sty_set_badge', { p_id: r.id, p_badge: badge || null });
       close(); S.catAt = 0; toast(t('Saved'));
       done && done();
       if (isNew && r && r.variants && r.variants.length) { const st = await promptAfterCreate(r); }

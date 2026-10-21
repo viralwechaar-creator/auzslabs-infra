@@ -8,6 +8,7 @@ const billCalc = () => calcBill(BILL.lines.map((l) => ({ unit: l.price, qty: l.q
 const unitCount = () => BILL.lines.reduce((a, l) => a + l.qty, 0);
 
 function addLine(style, v, q = 1) {
+  if (style.badge === 'soldout') { toast(`${style.name}: ${t('Marked as sold out')}`, { err: true }); beep(false); return false; }
   const have = BILL.lines.find((l) => l.variantId === v.id && !l.custom);
   const inCart = (have ? have.qty : 0) + q;
   if (!S.ctx.settings.allowNegativeStock && inCart > v.stock) { toast(`${style.name} ${v.colour} ${v.size}: ${t('only')} ${Math.max(v.stock, 0)} ${t('in stock')}`, { err: true }); beep(false); return false; }
@@ -55,16 +56,17 @@ page('sell', {
       if (!list.length) { grid.append(empty('shirt', S.cat.length ? t('No match') : t('No styles yet'), S.cat.length ? '' : t('Add your first style in Stock.'), !S.cat.length && can('sty_manage') ? h('button', { class: 'btn fill', onclick: () => go('stock') }, t('Go to Stock')) : null)); return; }
       list.slice(0, 160).forEach((s) => {
         const st = styleStock(s); const pics = [s.photoUrl, ...(s.photos || [])].filter(Boolean);
-        grid.append(h('div', { class: 'scard' + (st <= 0 ? ' out' : '') },
+        grid.append(h('div', { class: 'scard' + (st <= 0 || s.badge === 'soldout' ? ' out' : '') },
           h('button', { class: 'pic', type: 'button', 'aria-label': s.name, onclick: () => pickVariant(s) },
             pics.length ? h('img', { src: pics[0], alt: '', loading: 'lazy', decoding: 'async' }) : h('span', { class: 'nopic' }, icon('shirt', 34)),
-            st <= 0 ? h('span', { class: 'pill' }, t('Sold out')) : null,
+            st <= 0 || s.badge === 'soldout' ? h('span', { class: 'pill' }, t('Sold out')) : (s.badge === 'limited' ? h('span', { class: 'pill' }, t('Limited stock')) : null),
             pics.length > 1 ? h('span', { class: 'pdots' }, pics.slice(0, 3).map((_, i) => h('i', { class: i === 0 ? 'on' : '' }))) : null),
           h('div', { class: 'meta' }, h('div', { class: 'mt' }, h('div', { class: 'nm' }, s.name), h('button', { class: 'plus', type: 'button', 'aria-label': t('Add') + ' ' + s.name, onclick: () => pickVariant(s) }, icon('plus', 18))),
             h('div', { class: 'pr' }, h('span', { class: 'num' }, priceRange(s)), st > 0 && st <= 3 ? h('span', { class: 'stk lo' }, st + ' ' + t('left')) : null))));
       });
     }
     function pickVariant(s) {
+      if (s.badge === 'soldout') { toast(`${s.name}: ${t('Marked as sold out')}`, { err: true }); beep(false); return; }
       const cols = [...new Set(s.variants.filter((x) => x.active !== false).map((x) => x.colour))];
       if (s.variants.filter((x) => x.active !== false).length === 1) { const only = s.variants.find((x) => x.active !== false); if (addLine(s, only)) { paintCart(); } return; }
       let col = cols.find((c) => s.variants.some((x) => x.colour === c && x.stock > 0)) ?? cols[0];
