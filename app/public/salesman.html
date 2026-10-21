@@ -273,6 +273,8 @@ button:active:not(:disabled){transform:translateY(1px) scale(.99)}
 
           <h2>Website photos</h2>
           <p class=sub>Without these the website still works — it shows a drawn icon instead of a photo. Upload the client's own when you have them.</p>
+          <label>Home-screen icon (square PNG: used when the client adds their website or POS to the phone home screen)<input id=bIconFile type=file accept="image/png,image/jpeg,image/webp"></label>
+          <div id=bIconPrev style="margin:6px 0"></div>
           <label>Hero photo (top of the page)<input id=bHeroFile type=file accept="image/png,image/jpeg,image/webp"></label>
           <div id=bHeroPrev style="margin-top:8px"></div><button type=button class="ghost small hidden" id=bHeroRm>Remove hero photo</button>
           <label>Gallery photos (add one at a time)<input id=bGalFile type=file accept="image/png,image/jpeg,image/webp"></label>
@@ -871,8 +873,8 @@ async function openBrand(tenantId) {
   $('bTint').value = /^#[0-9a-f]{6}$/i.test(b.tint || '') ? b.tint : '#f5f4f2';
   $('bMuted').value = /^#[0-9a-f]{6}$/i.test(b.muted || '') ? b.muted : '#7a756d';
   $('bLine').value = /^#[0-9a-f]{6}$/i.test(b.line || '') ? b.line : '#e2dcd4';
-  current.logoUrl = data.logo || null; current.heroUrl = data.siteHero || null;
-  showLogo(); showHero();
+  current.logoUrl = data.logo || null; current.heroUrl = data.siteHero || null; current.iconUrl = data.appIcon || null;
+  showLogo(); showHero(); showIcon();
   current.galleryUrls = (data.siteGallery || '').split(',').map((s) => s.trim()).filter(Boolean);
   renderGalleryPrev();
   $('brandPanel').classList.remove('hidden');
@@ -900,6 +902,14 @@ function showHero() {
   $('bHeroPrev').innerHTML = current.heroUrl ? `<img src="${esc(current.heroUrl)}" style="height:70px;border-radius:8px" alt="">` : '';
   $('bHeroRm').classList.toggle('hidden', !current.heroUrl);
 }
+function showIcon() { $('bIconPrev').innerHTML = current.iconUrl ? `<img src="${esc(current.iconUrl)}" style="height:64px;width:64px;object-fit:cover;border-radius:14px" alt="">` : ''; }
+$('bIconFile').onchange = async () => {
+  const file = $('bIconFile').files[0];
+  if (!file || !current) return;
+  $('brandErr').textContent = '';
+  try { current.iconUrl = await uploadBrandImage(file, 'icon'); showIcon(); toast('Icon uploaded — click Save to make it live'); } catch (e) { $('brandErr').textContent = e.message; }
+  $('bIconFile').value = '';
+};
 $('bLogoRm').onclick = () => { current.logoUrl = ''; showLogo(); toast('Logo removed — click Save to make it live'); };
 $('bHeroRm').onclick = () => { current.heroUrl = ''; showHero(); toast('Hero photo removed — click Save to make it live'); };
 
@@ -965,6 +975,7 @@ $('saveBrandBtn').onclick = async () => {
   };
   if (current.logoUrl != null) patch.logo = current.logoUrl;
   if (current.heroUrl != null) patch.siteHero = current.heroUrl;
+  if (current.iconUrl != null) patch.appIcon = current.iconUrl;
   if (current.galleryUrls) patch.siteGallery = current.galleryUrls.join(',');
   $('saveBrandBtn').disabled = true;
   const { data, error } = await sb.rpc('salesman_branding_save', { p_tenant_id: current.id, p_patch: patch });
