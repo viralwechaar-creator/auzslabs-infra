@@ -475,3 +475,15 @@ body.homehero .hero::before{content:"";position:absolute;left:0;right:0;top:0;he
 .oc .oh .t{font-weight:700;font-size:11px}.oc .tr{font-weight:700}
 .oc .live{margin-top:2px}.oc .steps{margin:8px 0 4px}
 .od{display:grid;gap:6px;padding-top:6px;border-top:1px solid var(--line);margin-top:6px}
+
+/* header layout on phones: menu | name | icons, never overlapping; page clears the floating dock */
+@media(max-width:899px){
+  .top{grid-template-columns:auto minmax(0,1fr) auto;gap:6px}
+  .top .l{min-width:0}
+  .brand{font-size:16px;max-width:none;width:100%;justify-self:stretch;justify-content:center;text-align:center;min-width:0}
+  .top .r{gap:0}.top .ic{width:32px;height:32px}
+  .menu-pill{flex:none}
+  #view{padding-bottom:120px}
+  .announce{position:relative;z-index:31;line-height:1.3;padding:8px 10px}
+}
+.shophd{padding-top:12px}

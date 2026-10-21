@@ -130,7 +130,7 @@ function shell() {
     E('div', { class: 'l' }, E('a', { class: 'deskonly', href: link('shop?new=1') }, 'New in'), E('a', { class: 'deskonly', href: link('collections') }, 'Collections'), E('button', { class: 'menu-pill phoneonly', onclick: openMenu }, E('i'), 'Menu')),
     brandEl,
     E('div', { class: 'r' }, E('a', { class: 'ic deskonly', href: link('stores'), 'aria-label': 'Stores' }, icon('pin')), E('button', { class: 'ic', 'aria-label': 'Search', onclick: openSearch }, icon('search')),
-      E('a', { class: 'ic', href: link('wishlist'), 'aria-label': 'Saved' }, icon('mark'), countBadge(() => wish.length)), E('a', { class: 'ic', href: link('me'), 'aria-label': 'My account' }, icon('user')), E('a', { class: 'ic', href: link('bag'), 'aria-label': 'Bag' }, icon('bag'), countBadge(bagCount)),
+      E('a', { class: 'ic deskonly', href: link('wishlist'), 'aria-label': 'Saved' }, icon('mark'), countBadge(() => wish.length)), E('a', { class: 'ic', href: link('me'), 'aria-label': 'My account' }, icon('user')), E('a', { class: 'ic', href: link('bag'), 'aria-label': 'Bag' }, icon('bag'), countBadge(bagCount)),
       E('button', { class: 'menu-pill deskonly', onclick: openMenu }, E('i'), 'Menu')));
   const c = cfg();
   const phoneNo = String(D.shop.phone || '').replace(/\D/g, '');
@@ -138,7 +138,7 @@ function shell() {
   const dock = E('div', { class: 'dock phoneonly' },
     E('a', { class: 'mark', href: link(''), 'aria-label': 'Home' }, name.slice(0, 1).toUpperCase()),
     E('div', { class: 'pill' }, E('button', { 'aria-label': 'Explore', onclick: openMenu }, icon('compass')), E('button', { 'aria-label': 'Shop', onclick: () => go('shop') }, icon('home')),
-      E('button', { 'aria-label': 'Saved', onclick: () => go('wishlist') }, icon('mark'), countBadge(() => wish.length)), E('button', { 'aria-label': 'Stores', onclick: () => go('stores') }, icon('pin')), E('button', { 'aria-label': 'Search', onclick: openSearch }, icon('search'))),
+      E('button', { 'aria-label': 'Saved', onclick: () => go('wishlist') }, icon('mark'), countBadge(() => wish.length)), E('button', { 'aria-label': 'Stores', onclick: () => go('stores') }, icon('pin'))),
     waUrl ? E('a', { class: 'chat', href: waUrl, target: '_blank', rel: 'noopener', 'aria-label': 'Chat on WhatsApp' }, icon('chat')) : E('button', { class: 'chat', 'aria-label': 'Contact', onclick: () => go('contact') }, icon('chat')));
   const root = $('#app'); clear(root);
   root.append(c.announce ? E('div', { class: 'announce' }, c.announce) : null, top, E('main', { id: 'view' }), footer(), dock, waUrl ? E('a', { class: 'chatfab', href: waUrl, target: '_blank', rel: 'noopener', 'aria-label': 'Chat on WhatsApp' }, icon('chat')) : null,
