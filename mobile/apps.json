@@ -1,10 +1,4 @@
 {
-  "hub": {
-    "name": "AUZslab",
-    "id": "in.auzslab.app",
-    "url": "https://app.auzslab.in/start.html",
-    "icon": "icon-hub-512.png"
-  },
   "pos": {
     "name": "AUZsPOS",
     "id": "in.auzslab.pos",

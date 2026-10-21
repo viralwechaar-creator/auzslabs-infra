@@ -1,11 +1,11 @@
 name: Android build
-# Run from the Actions tab. app = hub, pos, mob, payroll, accounts, scan or all.
+# Run from the Actions tab. app = pos, mob, payroll, accounts, scan or all.
 # Always builds a test APK. If the four signing secrets exist (see docs/ANDROID_RELEASE.md) it also builds the signed
 # release bundle (.aab) that you upload to Google Play.
 on:
   workflow_dispatch:
     inputs:
-      app: {description: "hub, pos, mob, payroll, accounts, scan or all", default: all}
+      app: {description: "pos, mob, payroll, accounts, scan or all", default: all}
 permissions:
   contents: write
 jobs:
@@ -16,7 +16,7 @@ jobs:
     steps:
       - id: p
         run: |
-          if [ "${{ inputs.app }}" = "all" ]; then echo 'apps=["hub","pos","mob","payroll","accounts","scan"]' >> $GITHUB_OUTPUT; else echo 'apps=["${{ inputs.app }}"]' >> $GITHUB_OUTPUT; fi
+          if [ "${{ inputs.app }}" = "all" ]; then echo 'apps=["pos","mob","payroll","accounts","scan"]' >> $GITHUB_OUTPUT; else echo 'apps=["${{ inputs.app }}"]' >> $GITHUB_OUTPUT; fi
   build:
     needs: plan
     runs-on: ubuntu-latest

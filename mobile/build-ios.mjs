@@ -1,11 +1,9 @@
-// Usage (on a Mac): node build-ios.mjs [hub] ; generates www/, capacitor.config.json and the ios/ Xcode project for the hub app.
-// The iPhone/iPad app is the SAME hub as every other platform (https://app.auzslab.in/start.html) in a native shell, plus the in-app
-// shell script (app/public/ds/appshell.js: way back to the hub, no bounce, and NO buying inside the app: Apple's rules).
+// Usage (on a Mac): node build-ios.mjs <app> ; generates www/, capacitor.config.json and the ios/ Xcode project for one app (apps.json).
 // Needs a Mac (Xcode). The GitHub workflow .github/workflows/ios.yml runs it on a macOS runner. Never run on a real iPhone from the build sandbox.
 import fs from 'fs'; import { execSync } from 'child_process';
-const app = process.argv[2] || 'hub';
-const A = JSON.parse(fs.readFileSync('apps.json', 'utf8'))[app];
-if (!A) throw new Error('unknown app ' + app);
+const app = process.argv[2];
+const A = app && JSON.parse(fs.readFileSync('apps.json', 'utf8'))[app];
+if (!A) throw new Error('usage: node build-ios.mjs <app>  (pos, mob, payroll, accounts or scan)');
 fs.rmSync('www', { recursive: true, force: true }); fs.mkdirSync('www');
 // shown only if the first page cannot load (no connection)
 fs.writeFileSync('www/index.html', `<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><title>${A.name}</title>
@@ -20,8 +18,8 @@ fs.writeFileSync('capacitor.config.json', JSON.stringify({
 fs.rmSync('ios', { recursive: true, force: true });
 execSync('npx cap add ios', { stdio: 'inherit' });
 
-// App icon: one 1024 square (Xcode 15 single-size icon). Upscaled from the 512 master; replace app/public/icon-hub-1024.png with a true 1024 when there is one.
-const src = fs.existsSync('../app/public/icon-hub-1024.png') ? '../app/public/icon-hub-1024.png' : '../app/public/' + A.icon;
+// App icon: one 1024 square (Xcode 15 single-size icon), upscaled from the 512 master.
+const src = '../app/public/' + A.icon;
 const set = 'ios/App/App/Assets.xcassets/AppIcon.appiconset';
 execSync(`python3 -c "from PIL import Image;im=Image.open('${src}').convert('RGB');im.resize((1024,1024),Image.LANCZOS).save('${set}/AppIcon-512@2x.png')"`);
 

@@ -1,39 +1,20 @@
 name: iOS build (iPhone + iPad)
-# Run from the Actions tab on a macOS runner. app = hub, pos or all (default).
-# Every selected app always gets an unsigned simulator build (proves that app's Xcode project actually compiles --
-# this is the only check this sandbox can do for an iOS project, since there is no macOS runner or device here).
-# The SIGNED .ipa + TestFlight upload stays wired for the hub app only, because that is the one bundle id
-# (in.auzslab.app) this project has real, documented signing secrets and a provisioning profile for (docs/IOS_RELEASE.md).
-# A signed build for a second bundle id (e.g. in.auzslab.pos, a standalone AUZsPOS listing) needs its OWN
-# provisioning profile from the owner's Apple Developer account first -- see "Building a second app (e.g. AUZsPOS
-# on its own)" in docs/IOS_RELEASE.md before wiring that in here; it is not done in this workflow yet because it
-# cannot be tested without that profile existing.
+# Run from the Actions tab on a macOS runner. app = pos (default; the only one with an iOS project today).
+# Gives an unsigned simulator build only -- proves the Xcode project actually compiles. This is the only
+# check this sandbox can do for an iOS project, since there is no macOS runner or device here.
+# No app has a signed .ipa / TestFlight pipeline right now: the hub app (which used to be signed here) was
+# removed per owner request. Wiring up a signed build for any app needs its own provisioning profile from
+# the owner's Apple Developer account first -- see docs/IOS_RELEASE.md before adding that back.
 # Never run on a real iPhone from the build sandbox: the first CI run is the first real check.
 on:
   workflow_dispatch:
     inputs:
-      app: {description: "hub, pos or all", default: all}
+      app: {description: "pos", default: pos}
 jobs:
-  plan:
-    runs-on: ubuntu-latest
-    outputs:
-      apps: ${{ steps.p.outputs.apps }}
-    steps:
-      - id: p
-        run: |
-          if [ "${{ inputs.app }}" = "all" ]; then echo 'apps=["hub","pos"]' >> $GITHUB_OUTPUT; else echo 'apps=["${{ inputs.app }}"]' >> $GITHUB_OUTPUT; fi
   ios:
-    needs: plan
     runs-on: macos-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        app: ${{ fromJson(needs.plan.outputs.apps) }}
     env:
       BUILD_NUMBER: ${{ github.run_number }}
-      # Signing only exists for the hub app right now (see the header comment above).
-      HAVE_CERT: ${{ matrix.app == 'hub' && secrets.IOS_CERT_P12_B64 != '' && secrets.IOS_PROFILE_B64 != '' }}
-      HAVE_ASC: ${{ secrets.ASC_KEY_P8_B64 != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -41,48 +22,9 @@ jobs:
       - run: pip3 install pillow
       - name: Create the Xcode project
         working-directory: mobile
-        run: npm install && node build-ios.mjs ${{ matrix.app }}
+        run: npm install && node build-ios.mjs ${{ inputs.app }}
       - name: Build for the simulator (no signing needed; proves the project compiles)
         working-directory: mobile/ios/App
         run: |
           xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
-      - name: Import certificate and profile
-        if: env.HAVE_CERT == 'true'
-        env:
-          CERT: ${{ secrets.IOS_CERT_P12_B64 }}
-          CERT_PW: ${{ secrets.IOS_CERT_PASSWORD }}
-          PROFILE: ${{ secrets.IOS_PROFILE_B64 }}
-        run: |
-          KC="$RUNNER_TEMP/build.keychain"; security create-keychain -p tmp "$KC"; security set-keychain-settings -lut 21600 "$KC"; security unlock-keychain -p tmp "$KC"
-          echo "$CERT" | base64 -d > "$RUNNER_TEMP/cert.p12"; security import "$RUNNER_TEMP/cert.p12" -P "$CERT_PW" -A -t cert -f pkcs12 -k "$KC"
-          security list-keychain -d user -s "$KC"; security set-key-partition-list -S apple-tool:,apple: -s -k tmp "$KC"
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles; echo "$PROFILE" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/auzslab.mobileprovision
-      - name: Archive and export the .ipa
-        if: env.HAVE_CERT == 'true'
-        working-directory: mobile/ios/App
-        env:
-          TEAM: ${{ secrets.IOS_TEAM_ID }}
-          PROFILE_NAME: ${{ secrets.IOS_PROFILE_NAME }}
-        run: |
-          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -archivePath "$RUNNER_TEMP/App.xcarchive" archive \
-            DEVELOPMENT_TEAM="$TEAM" CODE_SIGN_STYLE=Manual PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" MARKETING_VERSION="1.0.$BUILD_NUMBER"
-          cat > "$RUNNER_TEMP/export.plist" <<PL
-          <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0"><dict><key>method</key><string>app-store-connect</string><key>teamID</key><string>$TEAM</string>
-          <key>signingStyle</key><string>manual</string><key>provisioningProfiles</key><dict><key>in.auzslab.app</key><string>$PROFILE_NAME</string></dict></dict></plist>
-          PL
-          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" -exportOptionsPlist "$RUNNER_TEMP/export.plist" -exportPath "$RUNNER_TEMP/ipa"
-          cp "$RUNNER_TEMP"/ipa/*.ipa "$GITHUB_WORKSPACE/AUZslab.ipa"
-      - name: Upload to TestFlight (only when the App Store Connect key exists)
-        if: env.HAVE_CERT == 'true' && env.HAVE_ASC == 'true'
-        env:
-          KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ISSUER: ${{ secrets.ASC_ISSUER_ID }}
-          KEY: ${{ secrets.ASC_KEY_P8_B64 }}
-        run: |
-          mkdir -p ~/.appstoreconnect/private_keys; echo "$KEY" | base64 -d > ~/.appstoreconnect/private_keys/AuthKey_$KEY_ID.p8
-          xcrun altool --upload-app --type ios --file "$GITHUB_WORKSPACE/AUZslab.ipa" --apiKey "$KEY_ID" --apiIssuer "$ISSUER"
-      - uses: actions/upload-artifact@v4
-        if: env.HAVE_CERT == 'true'
-        with: {name: AUZslab-ipa, path: AUZslab.ipa}

@@ -1,8 +1,8 @@
 // Usage: node build.mjs <app> ; generates www/, capacitor.config.json and the android/ project for one app.
 import fs from 'fs'; import {execSync} from 'child_process';
-const app = process.argv[2] || 'hub';
-const A = JSON.parse(fs.readFileSync('apps.json','utf8'))[app];
-if (!A) throw new Error('unknown app '+app);
+const app = process.argv[2];
+const A = app && JSON.parse(fs.readFileSync('apps.json','utf8'))[app];
+if (!A) throw new Error('usage: node build.mjs <app>  (pos, mob, payroll, accounts or scan)');
 fs.rmSync('www',{recursive:true,force:true}); fs.mkdirSync('www');
 fs.writeFileSync('www/index.html', `<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>${A.name}</title><body style="margin:0;background:#171717;color:#fff;font:16px system-ui;display:grid;place-items:center;min-height:100vh;text-align:center;padding:24px"><div><h1 style="font-size:22px">${A.name}</h1><p>You are offline. Connect to the internet and try again.</p><button onclick="location.href='${A.url}'" style="font:inherit;padding:12px 22px;border:0;border-radius:12px">Retry</button></div>`);
 // Computed up front (not just for the google-services.json write further down) because it also needs to reach
@@ -101,22 +101,10 @@ if (!manifest.includes('ACCESS_FINE_LOCATION')) {
     '</manifest>');
   fs.writeFileSync(manifestPath, manifest);
 }
-// Hub app only: the link auzslab://signin#auz_gt=... brings the Google sign-in (done in the phone's own browser, because Google refuses
-// an embedded web view) back into the app. ds/appshell.js listens for it through the Capacitor App plugin and hands it to the hub.
-if (app === 'hub') {
-  manifest = fs.readFileSync(manifestPath, 'utf8');
-  if (!manifest.includes('android:scheme="auzslab"')) {
-    manifest = manifest.replace('</activity>',
-      '        <intent-filter>\n' +
-      '            <action android:name="android.intent.action.VIEW" />\n' +
-      '            <category android:name="android.intent.category.DEFAULT" />\n' +
-      '            <category android:name="android.intent.category.BROWSABLE" />\n' +
-      '            <data android:scheme="auzslab" android:host="signin" />\n' +
-      '        </intent-filter>\n' +
-      '    </activity>');
-    fs.writeFileSync(manifestPath, manifest);
-  }
-}
+// The hub app (and its auzslab://signin intent filter, Google sign-in's hand-back from the phone's
+// own browser) was removed per owner request -- this block used to add that filter for app === 'hub',
+// which can never run now that 'hub' is gone from apps.json. Each of the five remaining apps' own
+// in-app Google sign-in still works the same way it always did: the app, not an embedded web view.
 // Barcode scanning (AUZsLedger Scan to bill / AUZsScan, ds/scanner.js) opens the camera with getUserMedia. Capacitor's WebView
 // answers that prompt itself, but only once CAMERA is declared. camera is not "required", so phones without one are not filtered out.
 manifest = fs.readFileSync(manifestPath, 'utf8');
