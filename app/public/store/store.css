@@ -84,13 +84,13 @@ main{padding:6px var(--pad) 96px;max-width:1500px;margin:0 auto}
 @media(min-width:900px){.dk{flex-basis:260px}}
 
 /* ---- grid + cards ---- */
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-@media(min-width:700px){.grid{grid-template-columns:repeat(3,1fr);gap:10px}}
-@media(min-width:1100px){.grid{grid-template-columns:repeat(4,1fr);gap:12px}}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px 6px}
+@media(min-width:700px){.grid{grid-template-columns:repeat(3,1fr);gap:8px}}
+@media(min-width:1100px){.grid{grid-template-columns:repeat(4,1fr);gap:10px}}
 .grid.five{}
 @media(min-width:1400px){.grid{grid-template-columns:repeat(5,1fr)}}
-.pc{background:var(--card);border-radius:var(--r2);padding:6px 6px 10px;position:relative;min-width:0}
-.pc .ph{position:relative;border-radius:calc(var(--r2) - 6px);overflow:hidden;background:var(--soft);aspect-ratio:3/4}
+.pc{background:transparent;border-radius:0;padding:0;position:relative;min-width:0}
+.pc .ph{position:relative;border-radius:var(--r2);overflow:hidden;background:var(--soft);aspect-ratio:3/4}
 .pc .sc{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;height:100%;scrollbar-width:none;-ms-overflow-style:none}
 .pc .sc::-webkit-scrollbar{display:none}
 .pc .sc>a,.pc .sc>div{flex:0 0 100%;scroll-snap-align:center;height:100%;display:block}
@@ -104,21 +104,21 @@ main{padding:6px var(--pad) 96px;max-width:1500px;margin:0 auto}
 .pc .nx.p{left:6px}.pc .nx.n{right:6px}
 .pc .nx svg{width:11px;height:11px;stroke:#111;fill:none;stroke-width:1.8}
 @media(hover:hover){.pc:hover .nx{display:grid}}
-.pc .in{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;padding:8px 6px 0}
+.pc .in{display:flex;align-items:flex-start;justify-content:space-between;gap:4px;padding:5px 3px 4px}
 .pc .in .nm{font-size:10px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.pc .in .pr{font-size:9.5px;color:#555;margin-top:1px}.pc .in s{color:var(--mut);margin-left:5px}
-.pc .add{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;flex:none;color:#444}
+.pc .in .pr{font-size:9.5px;color:#555;margin-top:0;line-height:1.3}.pc .in s{color:var(--mut);margin-left:5px}
+.pc .add{width:20px;height:20px;margin-top:-1px;border-radius:50%;display:grid;place-items:center;flex:none;color:#444}
 .pc .add:hover{background:var(--soft)}
 .pc .add svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:1.6}
 .pc.gone .ph img{opacity:.55}
-.blank{background:var(--card);border-radius:var(--r2);aspect-ratio:3/4;opacity:.55}
+.blank{background:var(--card);border-radius:var(--r2);aspect-ratio:3/4;opacity:.55;margin-bottom:30px}
 .blank.ghost{background:transparent;box-shadow:inset 0 0 0 1px var(--line)}
 @media(max-width:699px){.blank.d{display:none}}
 
 /* collection band (like "Bags: discover more") */
 .band{background:var(--soft);border-radius:var(--r1);padding:12px 12px 14px;margin-top:18px}
 .band .hd{display:flex;justify-content:space-between;align-items:center;padding:4px 6px 10px}
-.band .row{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+.band .row{display:flex;gap:6px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
 .band .row::-webkit-scrollbar{display:none}
 .band .row .pc{flex:0 0 46%;scroll-snap-align:start}
 @media(min-width:900px){.band .row .pc{flex-basis:calc(25% - 8px)}}
