@@ -55,6 +55,8 @@ services:
       PGPORT: 5432
     volumes:
       - uploads_data:/data/uploads
+      # read-only copy of the website and app pages: the API writes each business's icon into the page it sends (routes/system.js)
+      - ./app/public:/srv/app:ro
       # Employee documents (Aadhar/PAN/driving-licence) are private --
       # unlike uploads_data above, this volume is mounted into the api
       # container ONLY, never into caddy, so there is no static-file

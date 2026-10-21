@@ -127,6 +127,12 @@
         rewrite * /salon-api/share
         reverse_proxy api:3000
     }
+    # The website (site.html, site-kiln.html) and POS (index.html) pages go through the API so each business's own
+    # icon is written INTO the page: an iPhone ignores a home-screen icon that is linked by address or set by script.
+    @iconPages path /site-kiln.html /site.html /index.html
+    handle @iconPages {
+        reverse_proxy api:3000
+    }
     # Everything else. Wrapped in handle so the /api and /uploads blocks
     # above win: Caddy runs try_files BEFORE handle in its fixed directive
     # order, so a bare top-level try_files would rewrite /api/site to
