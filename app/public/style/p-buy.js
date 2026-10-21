@@ -62,14 +62,23 @@ async function receiveForm(o, done) {
   const q = searchField(t('Add item: name or barcode'), () => paintRes());
   const scanBtn = h('button', { class: 'btn icon', type: 'button', 'aria-label': t('Scan'), onclick: () => scanWith((c) => { const f = findBarcode(c); if (f) { addVar({ ...f.variant, style: f.style }, 1); paintHost(); } else { const sc = findStyleCode(c); if (sc) { sc.variants.filter((x) => x.active !== false).forEach((x) => addVar({ ...x, style: sc })); paintHost(); } else toast(t('No item with that code'), { err: true }); } }) }, icon('camera', 18));
   q.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const f = findBarcode(q.input.value); if (f) { addVar({ ...f.variant, style: f.style }, 1); q.input.value = ''; clear(res); paintHost(); } } });
+  const addAllOf = (st) => { st.variants.filter((x) => x.active !== false).sort((a, b) => a.colour.localeCompare(b.colour) || byRank(a, b)).forEach((x) => addVar({ ...x, style: st })); q.input.value = ''; paintRes(); paintHost(); };
+  const newItem = () => { const before = new Set(S.cat.map((x) => x.id)); styleForm(null, async () => { try { await loadCatalog(true); } catch { /* offline */ } const fresh = S.cat.filter((x) => !before.has(x.id)); fresh.forEach(addAllOf); if (fresh.length) toast(t('Added to this stock entry. Enter the quantities.')); }); };
+  const newBtn = can('sty_manage') || can('sty_stock') ? h('button', { class: 'btn', type: 'button', onclick: newItem }, icon('plus', 18), t('New item')) : null;
   function paintRes() {
-    const k = q.input.value.trim().toLowerCase(); clear(res); if (k.length < 2) return;
+    const k = q.input.value.trim().toLowerCase(); clear(res);
+    if (k.length < 2) {
+      const pick = S.cat.filter((x) => x.active !== false).map((x) => ({ x, st: styleStock(x) })).sort((a, b) => a.st - b.st).slice(0, 6);
+      if (pick.length) res.append(h('div', { class: 'cap' }, t('Low on stock first')), ...pick.map(({ x, st }) => liRow({ icon: 'shirt', title: x.name, sub: t('Add all sizes') + ' · ' + t('have') + ' ' + st, onclick: () => addAllOf(x) })));
+      return;
+    }
     const seen = new Set();
-    S.cat.filter((s) => (s.name + ' ' + (s.brand || '')).toLowerCase().includes(k)).slice(0, 6).forEach((s) => res.append(liRow({ icon: 'shirt', title: s.name, sub: t('Add all sizes') + ' · ' + s.variants.length, onclick: () => { s.variants.filter((x) => x.active !== false).sort((a, b) => a.colour.localeCompare(b.colour) || byRank(a, b)).forEach((x) => addVar({ ...x, style: s })); q.input.value = ''; clear(res); paintHost(); } })));
+    S.cat.filter((s) => (s.name + ' ' + (s.brand || '')).toLowerCase().includes(k)).slice(0, 6).forEach((s) => res.append(liRow({ icon: 'shirt', title: s.name, sub: t('Add all sizes') + ' · ' + s.variants.length, onclick: () => addAllOf(s) })));
+    if (!res.children.length && newBtn) res.append(liRow({ icon: 'plus', title: t('New item') + ': ' + q.input.value.trim(), sub: t('Not in your list yet. Create it now.'), onclick: newItem }));
     allVariants().filter((x) => x.barcode === k).forEach((x) => res.append(liRow({ title: x.style.name, sub: [x.colour, x.size].join(' · '), onclick: () => { addVar(x, 1); q.input.value = ''; clear(res); paintHost(); } })));
   }
-  paintHost();
-  sheet({ title: t('Receive stock'), full: true, wide: true, body: h('div', { class: 'grid' }, h('div', { class: 'two' }, field(t('Supplier'), sup), field(t('Invoice'), inv)), h('div', { class: 'row', style: { gap: '8px' } }, h('div', { class: 'grow' }, q), scanBtn), res, host, totEl, field(t('Paid now'), paid)),
+  paintHost(); paintRes();
+  sheet({ title: t('Receive stock'), full: true, wide: true, body: h('div', { class: 'grid rcv' }, h('div', { class: 'two' }, field(t('Supplier'), sup), field(t('Invoice'), inv)), h('div', { class: 'row', style: { gap: '8px' } }, h('div', { class: 'grow' }, q), scanBtn, newBtn), res, host, totEl, field(t('Paid now'), paid)),
     actions: [{ label: t('Receive'), primary: true, onclick: async (close) => {
       const ls = lines.filter((l) => l.qty > 0); if (!ls.length) { toast(t('Enter a quantity for at least one item'), { err: true }); return false; }
       const total = ls.reduce((a, l) => a + l.qty * l.cost, 0);
