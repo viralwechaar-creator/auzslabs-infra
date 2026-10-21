@@ -361,3 +361,12 @@ footer .col a,footer .col span{font-size:10.5px;color:var(--mut)}footer .col>.lb
 footer .ftbrand{grid-column:1/-1;display:flex;align-items:center;justify-content:flex-end}
 footer .ftbrand .big{font-size:26px;font-weight:800;letter-spacing:-.02em;text-align:right;line-height:1.05}
 @media(min-width:900px){.ftstrip{margin:0 28px}footer .cols{grid-template-columns:1fr 1fr 1fr 1.4fr;gap:40px}footer .ftbrand{grid-column:auto}footer .ftbrand .big{font-size:40px}}
+
+/* home hero: the picture fills the whole first screen (edge to edge, behind the header) */
+body.homehero .hero{margin:calc(-1 * var(--hh)) calc(-1 * var(--pad)) 0;border-radius:0;height:100svh;min-height:480px;max-height:none}
+body.homehero .hero .cap{padding:80px 20px 34px}
+body.homehero.atop .top{background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none}
+body.homehero.atop .top,body.homehero.atop .top .l a,body.homehero.atop .top .ic,body.homehero.atop .brand{color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.35)}
+body.homehero.atop .top .ic svg{filter:drop-shadow(0 1px 4px rgba(0,0,0,.35))}
+body.homehero .hero::before{content:"";position:absolute;left:0;right:0;top:0;height:120px;background:linear-gradient(rgba(0,0,0,.28),transparent);z-index:1;pointer-events:none}
+@media(min-width:900px){body.homehero .hero{margin:calc(-1 * var(--hh)) -28px 0}}
