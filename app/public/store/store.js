@@ -428,7 +428,7 @@ function mapUrl(st) { return st.mapUrl || 'https://www.google.com/maps/search/?a
 function storeList() { const st = (cfg().stores || []).filter((x) => x && (x.name || x.address)); if (st.length) return st; return D.shop.address ? [{ name: D.shop.name, address: D.shop.address, phone: D.shop.phone }] : []; }
 function storeCards(list) {
   return E('div', { class: 'scards' }, list.map((st) => E('div', { class: 'scard' }, st.photo ? E('div', { class: 'im' }, E('img', { src: st.photo, alt: st.name || '', loading: 'lazy' })) : null,
-    E('div', { class: 'b' }, E('h3', null, st.name || 'Store'), E('div', { class: 'mut' }, st.address), st.hours ? E('div', { class: 'mut' }, st.hours) : null, E('div', { style: { display: 'flex', gap: '6px', marginTop: '6px' } }, E('a', { class: 'btn sm', href: mapUrl(st), target: '_blank', rel: 'noopener' }, 'Get direction'), st.phone ? E('a', { class: 'btn sm out', href: 'tel:' + String(st.phone).replace(/[^\d+]/g, '') }, st.phone) : null)))));
+    E('div', { class: 'b' }, E('div', { class: 'inf' }, E('h3', null, st.name || 'Store'), E('div', { class: 'mut' }, st.address), st.hours ? E('div', { class: 'mut' }, st.hours) : null), E('div', { class: 'acts' }, E('a', { class: 'btn sm', href: mapUrl(st), target: '_blank', rel: 'noopener' }, 'Get direction'), st.phone ? E('a', { class: 'btn sm out', href: 'tel:' + String(st.phone).replace(/[^\d+]/g, '') }, st.phone) : null)))));
 }
 V.stores = (v) => { const l = storeList(); v.append(E('div', { class: 'pg wide' }, E('div', { class: 'shophd' }, E('h1', null, 'Our stores')), l.length ? storeCards(l) : E('div', { class: 'card mut' }, 'Store details are coming soon.'))); };
 V.about = (v) => {
