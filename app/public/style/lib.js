@@ -77,7 +77,7 @@ function printReceipt(sale) {
 // the bill link lives on the shop's own address: https://<shop>.auzslab.in/b/<token>
 function billOrigin() { const slug = S.dash && S.dash.tenant && S.dash.tenant.slug; if (!slug) return location.origin; return location.hostname.split('.')[0] === slug ? location.origin : 'https://' + slug + '.auzslab.in'; }
 function waText(sale, link) {
-  const sh = shopHeader(), d = new Date(sale.at || Date.now()), rd = S.ctx.settings && S.ctx.settings.returnDays;
+  const sh = shopHeader(), d = new Date(sale.at || Date.now());
   const first = sale.customer && sale.customer.name ? String(sale.customer.name).trim().split(/\s+/)[0] : '';
   const lines = sale.lines.map((l) => `${l.qty} × ${l.name}${l.colour || l.size ? ' (' + [l.colour, l.size].filter(Boolean).join(', ') + ')' : ''}  ${inr(l.net)}`).join('\n');
   const paid = (sale.payments || []).filter((p) => p.mode !== 'due').map((p) => String(p.mode)).join(' + ');
@@ -86,7 +86,7 @@ function waText(sale, link) {
     sale.discount > 0 ? `Discount: -${inr(sale.discount)}` : '',
     `*Total: ${inr(sale.total)}*${paid ? '  (' + paid + ')' : ''}`, sale.balance > 0 ? `Balance due: ${inr(sale.balance)}` : '',
     link ? '' : null, link ? 'View or download your bill:' : null, link || null,
-    '', rd ? `Exchange or return within ${rd} days with this bill.` : '', sh.footer || 'Thank you, visit again', sh.phone ? `Call us: ${sh.phone}` : ''].filter((x) => x !== null && x !== undefined).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+    ].filter((x) => x !== null && x !== undefined).join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 // a short link needs a connection; offline the message goes without it
 async function billLink(sale) { try { const r = await api('sty_share_sale', { p_id: sale.id }); return r && r.token ? billOrigin() + '/b/' + r.token : ''; } catch { return ''; } }
