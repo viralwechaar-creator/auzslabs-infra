@@ -354,3 +354,22 @@ picture{display:contents}
 .dact{display:grid;gap:8px;margin-top:14px}.dact .btn{width:100%}
 @media (max-width:1099px){.tbl-detail{display:none}}
 @media (min-width:1100px){.tbl-wrap{grid-template-columns:minmax(0,1fr) 360px}}
+/* Tables: one radius scale (8 / 12 / 16 / 22), hairline + soft shadow like every other card, smooth press and hover */
+.tbl-main.card,.tbl-side .card{border-radius:var(--r4);box-shadow:var(--sh1)}
+.tbl-main.card{padding:20px}
+.tbl-side{gap:16px}.tbl-wrap{gap:20px}
+.tables{gap:14px}
+.tbl-tile{border-radius:var(--r3);padding:16px 16px 14px 20px;box-shadow:var(--sh1);transition:transform .25s var(--ease),box-shadow .25s var(--ease),background .25s var(--ease)}
+.tbl-tile:hover{box-shadow:var(--sh2);transform:translateY(-1px)}
+.tbl-tile:active{transform:scale(.98)}
+.tbl-tile::before{left:8px;top:14px;bottom:14px;width:4px;border-radius:999px}
+.tbl-tile.sel{box-shadow:0 0 0 2px var(--accent),0 10px 24px -12px color-mix(in srgb,var(--accent) 45%,transparent)}
+.tbl-tile .tchip{border-radius:999px;padding:4px 10px}
+.tbl-detail{border-radius:var(--r4)}
+.dban{padding:20px}
+.dempty{border-radius:var(--r2)}
+.dact .btn{border-radius:var(--r2)}
+.chipf{box-shadow:var(--sh1);transition:background .25s var(--ease),color .25s var(--ease)}
+.chipf.on{box-shadow:none}
+.tbl-bar{gap:12px}
+.tbl-side .card.tbl-detail{padding:0;overflow:hidden}
