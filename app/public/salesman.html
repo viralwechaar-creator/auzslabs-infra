@@ -122,6 +122,8 @@ button:active:not(:disabled){transform:translateY(1px) scale(.99)}
 .tabbar button:active{transform:scale(.92)}
 .tabbar .dot{background:#ecd6a8;color:#2e2c2a;left:calc(50% + 6px);top:3px}
 .wrap{padding-bottom:calc(112px + env(safe-area-inset-bottom))}
+/* solid strip behind the floating pill so scrolling content never shows through or under it (phones/tablets) */
+@media (max-width:899px){body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:calc(88px + env(safe-area-inset-bottom));background:var(--bg);z-index:29;pointer-events:none;box-shadow:0 -10px 14px -6px var(--bg)}}
 .toast{bottom:calc(98px + env(safe-area-inset-bottom))}
 /* floating rail (wide screens) */
 @media (min-width:900px){

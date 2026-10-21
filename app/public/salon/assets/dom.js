@@ -105,3 +105,12 @@ window.applyBrand = function applyBrand(S) {
   });
   if (S.salonName) document.querySelectorAll('img[src$="logo-cream.png"], img[data-brand-alt]').forEach(i => { i.alt = S.salonName; });
 };
+
+/* Live preview: the admin console's "Edit website" screen shows this page in a frame and posts the text being typed. */
+addEventListener('message', function (e) {
+  if (e.origin !== location.origin || !e.data || e.data.type !== 'auz-preview' || !e.data.content) return;
+  var C = e.data.content, set = function (id, t) { var el = document.getElementById(id); if (el && t != null) el.textContent = t; };
+  ['heroTitle', 'heroText', 'servicesText', 'menuText', 'galleryText', 'stylistsText', 'aboutTitle', 'bookText'].forEach(function (k) { set(k, C[k]); });
+  var ab = document.getElementById('aboutBody');
+  if (ab && C.aboutText != null) { ab.replaceChildren.apply(ab, String(C.aboutText).split(/\n+/).filter(Boolean).map(function (t) { var p = document.createElement('p'); p.textContent = t; return p; })); }
+});
