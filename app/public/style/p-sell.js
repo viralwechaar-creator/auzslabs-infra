@@ -57,7 +57,7 @@ page('sell', {
         const st = styleStock(s); const pics = [s.photoUrl, ...(s.photos || [])].filter(Boolean);
         grid.append(h('div', { class: 'scard' + (st <= 0 ? ' out' : '') },
           h('button', { class: 'pic', type: 'button', 'aria-label': s.name, onclick: () => pickVariant(s) },
-            pics.length ? h('img', { src: pics[0], alt: '', loading: 'lazy' }) : h('span', { class: 'nopic' }, icon('shirt', 34)),
+            pics.length ? h('img', { src: pics[0], alt: '', loading: 'lazy', decoding: 'async' }) : h('span', { class: 'nopic' }, icon('shirt', 34)),
             st <= 0 ? h('span', { class: 'pill' }, t('Sold out')) : null,
             pics.length > 1 ? h('span', { class: 'pdots' }, pics.slice(0, 3).map((_, i) => h('i', { class: i === 0 ? 'on' : '' }))) : null),
           h('div', { class: 'meta' }, h('div', { class: 'mt' }, h('div', { class: 'nm' }, s.name), h('button', { class: 'plus', type: 'button', 'aria-label': t('Add') + ' ' + s.name, onclick: () => pickVariant(s) }, icon('plus', 18))),
