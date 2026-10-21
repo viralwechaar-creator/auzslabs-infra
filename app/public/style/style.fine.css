@@ -249,3 +249,4 @@
 .toolbar .btn.icon,.toolbar .row>.btn.icon{flex:none}
 .toolbar .row{flex-wrap:nowrap}
 @media (max-width:899px){.two{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.three{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.card.grid,.grid{gap:10px}.field{gap:4px}}
+.logo-row{display:flex;gap:12px;align-items:center}.logo-prev{width:56px;height:56px;border-radius:14px;background:var(--fill);display:grid;place-items:center;color:var(--label3);overflow:hidden;flex:none}.logo-prev img{width:100%;height:100%;object-fit:contain;background:#fff}

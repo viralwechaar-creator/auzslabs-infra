@@ -12,6 +12,15 @@ page('settings', {
       leadDays: input({ type: 'number', mode: 'numeric', value: st.leadDays }), coverDays: input({ type: 'number', mode: 'numeric', value: st.coverDays }), slowDays: input({ type: 'number', mode: 'numeric', value: st.slowDays }),
     };
     const sw = (key, label, hint) => { const c = h('input', { type: 'checkbox', checked: !!st[key], onchange: () => { st[key] = c.checked; } }); return h('label', { class: 'swrow' }, h('div', { class: 'grow' }, h('div', null, label), hint ? h('div', { class: 'muted small' }, hint) : null), c); };
+    // shop logo: becomes the home-screen icon (the picture is centred on a tile) and is kept on the shop's own bills later
+    let logoUrl = st.logoUrl || '';
+    const logoImg = h('div', { class: 'logo-prev' }), logoBtns = h('div', { class: 'row', style: { gap: '8px' } });
+    const paintLogo = () => {
+      clear(logoImg).append(logoUrl ? h('img', { src: logoUrl, alt: '' }) : icon('shirt', 26));
+      const file = h('input', { type: 'file', accept: 'image/*', class: 'hidden', onchange: async (e) => { const f = e.target.files[0]; if (!f) return; try { logoUrl = await uploadPhoto(f); paintLogo(); toast(t('Logo ready, press Save settings')); } catch (er) { fail(er); } } });
+      clear(logoBtns).append(file, h('button', { class: 'btn sm', type: 'button', onclick: () => file.click() }, icon('camera', 16), logoUrl ? t('Change logo') : t('Upload logo')), logoUrl ? h('button', { class: 'btn sm danger', type: 'button', onclick: () => { logoUrl = ''; paintLogo(); } }, t('Remove')) : null);
+    };
+    paintLogo();
     const slabs = Array.isArray(st.taxSlabs) ? st.taxSlabs : [];
     const s1 = input({ type: 'number', mode: 'decimal', value: slabs[0] ? slabs[0].upto : '', placeholder: '2500' }), r1 = input({ type: 'number', mode: 'decimal', value: slabs[0] ? slabs[0].rate : '', placeholder: '5' }), r2_ = input({ type: 'number', mode: 'decimal', value: slabs[1] ? slabs[1].rate : '', placeholder: '18' });
     const brHost = h('div', { class: 'list' });
@@ -26,14 +35,14 @@ page('settings', {
       ev.currentTarget.disabled = true;
       try {
         const sl = []; if (N(s1.value) && N(r1.value) >= 0) sl.push({ upto: N(s1.value), rate: N(r1.value) }); if (r2_.value !== '') sl.push({ rate: N(r2_.value) });
-        const p = { shopName: F.shopName.value, address: F.address.value, phone: F.phone.value, gstin: F.gstin.value, billFooter: F.billFooter.value, billPrefix: F.billPrefix.value, maxDiscountPct: N(F.maxDiscountPct.value), returnDays: Math.round(N(F.returnDays.value)),
+        const p = { logoUrl, shopName: F.shopName.value, address: F.address.value, phone: F.phone.value, gstin: F.gstin.value, billFooter: F.billFooter.value, billPrefix: F.billPrefix.value, maxDiscountPct: N(F.maxDiscountPct.value), returnDays: Math.round(N(F.returnDays.value)),
           defaultTaxPct: N(F.defaultTaxPct.value), loyaltyEarnPct: N(F.loyaltyEarnPct.value), loyaltyPointValue: N(F.loyaltyPointValue.value), leadDays: Math.round(N(F.leadDays.value)), coverDays: Math.round(N(F.coverDays.value)), slowDays: Math.round(N(F.slowDays.value)),
           allowNegativeStock: st.allowNegativeStock, roundOff: st.roundOff, requireCustomerPhone: st.requireCustomerPhone, staffSeeCost: st.staffSeeCost, priceIncludesTax: st.priceIncludesTax, taxSlabs: sl };
         S.ctx = await api('sty_save_settings', { p }); S.perms = S.ctx.perms; toast(t('Saved')); buildShell();
       } catch (e) { fail(e); } finally { ev.currentTarget && (ev.currentTarget.disabled = false); }
     } }, t('Save settings'));
     v.root.append(h('div', { class: 'grid setg' },
-      section(t('Shop'), h('div', { class: 'card grid' }, field(t('Shop name'), F.shopName), field(t('Address'), F.address), h('div', { class: 'two' }, field(t('Phone'), F.phone), field('GSTIN', F.gstin)), h('div', { class: 'two' }, field(t('Bill prefix'), F.billPrefix), field(t('Bill footer'), F.billFooter)))),
+      section(t('Shop'), h('div', { class: 'card grid' }, h('div', { class: 'logo-row' }, logoImg, h('div', { class: 'grow' }, h('div', { class: 'cap' }, t('Shop logo') + ' · ' + t('used for the home-screen icon')), logoBtns)), field(t('Shop name'), F.shopName), field(t('Address'), F.address), h('div', { class: 'two' }, field(t('Phone'), F.phone), field('GSTIN', F.gstin)), h('div', { class: 'two' }, field(t('Bill prefix'), F.billPrefix), field(t('Bill footer'), F.billFooter)))),
       section(t('Selling rules'), h('div', { class: 'card grid' }, h('div', { class: 'two' }, field(t('Staff can give discount up to') + ' %', F.maxDiscountPct), field(t('Returns allowed for (days)'), F.returnDays)),
         sw('allowNegativeStock', t('Allow selling with no stock'), t('Useful while stock is not entered yet')), sw('roundOff', t('Round bills to the nearest rupee')), sw('requireCustomerPhone', t('Ask for the customer phone on every bill')), sw('staffSeeCost', t('Let staff see purchase cost and profit')))),
       section(t('Tax (GST)'), h('div', { class: 'card grid' }, sw('priceIncludesTax', t('Prices already include tax')), field(t('Default tax %'), F.defaultTaxPct),
