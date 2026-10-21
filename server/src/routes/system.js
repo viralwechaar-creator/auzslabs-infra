@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 import { pool } from '../db.js';
 import { tenantForIconContext, appIcon, appManifest } from '../appicon.js';
 
@@ -8,6 +10,22 @@ const BAILAMOS_512 = readFileSync(new URL('../assets/bailamos-512.png', import.m
 const RADZ_180 = readFileSync(new URL('../assets/radz-180.png', import.meta.url));
 const RADZ_512 = readFileSync(new URL('../assets/radz-512.png', import.meta.url));
 const DEFAULT_ICON_512 = readFileSync(new URL('../assets/default-icon-512.png', import.meta.url));
+
+// One place that decides a business's icon picture: the one it uploaded, else the fixed Bailamos / Radz icons, else a
+// generated one (logo or initials).
+async function iconBuf(tenant, size) {
+  if (tenant.settings && tenant.settings.appIcon) return appIcon(tenant, tenant.settings, size);
+  if (tenant.slug === 'bailamos') return size <= 180 ? BAILAMOS_180 : BAILAMOS_512;
+  if (tenant.slug === 'radz') return size <= 180 ? RADZ_180 : RADZ_512;
+  return appIcon(tenant, tenant.settings, size);
+}
+
+// The website and POS pages are sent through here (Caddy routes them to the API on business addresses) so the
+// business's icon can be written INTO the page as a data: link. An iPhone only accepts a home-screen icon that is
+// part of the page it receives: the same picture linked by web address, or put in by script afterwards, showed a
+// grey letter tile.
+const APP_ROOT = process.env.APP_ROOT || '/srv/app';
+const ICON_PAGES = new Set(['/site-kiln.html', '/site.html', '/index.html']);
 
 // Returns false when none of this module's routes matched, so the dispatcher in index.js tries the next module;
 // any other return (including the undefined that `return reply(...)` gives) means the request was handled.
@@ -44,8 +62,24 @@ export async function handle(ctx) {
     const send = (buf, age) => { res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=' + age }); res.end(buf); };
     const fallback = () => (size <= 180 ? DEFAULT_ICON_180 : DEFAULT_ICON_512);
     let buf = null;
-    try { const tenant = await tenantForIconContext(req); if (tenant) buf = tenant.settings && tenant.settings.appIcon ? await appIcon(tenant, tenant.settings, size) : tenant.slug === 'bailamos' ? (size <= 180 ? BAILAMOS_180 : BAILAMOS_512) : tenant.slug === 'radz' ? (size <= 180 ? RADZ_180 : RADZ_512) : await appIcon(tenant, tenant.settings, size); } catch { buf = null; }
+    try { const tenant = await tenantForIconContext(req); if (tenant) buf = await iconBuf(tenant, size); } catch { buf = null; }
     if (buf) send(buf, 300); else send(fallback(), 300);
+    return;
+  }
+  if (ICON_PAGES.has(url.pathname) && req.method === 'GET') {
+    let html;
+    try { html = await readFile(path.join(APP_ROOT, url.pathname), 'utf8'); } catch { res.writeHead(404, { 'Content-Type': 'text/plain' }); res.end('not found'); return; }
+    try {
+      const tenant = await tenantForIconContext(req);
+      if (tenant) {
+        const uri = 'data:image/png;base64,' + (await iconBuf(tenant, 180)).toString('base64');
+        html = html.replace(/<link\s+rel=("?)apple-touch-icon\1[^>]*>/i, () => `<link rel="apple-touch-icon" href="${uri}">`);
+        const nm = String((tenant.settings && tenant.settings.name) || tenant.name || '').replace(/[<>"&]/g, '').trim();
+        if (nm) html = html.replace(/(<meta\s+name="apple-mobile-web-app-title"\s+content=")[^"]*(")/i, (_m, a, b) => a + nm + b);
+      }
+    } catch { /* serve the page as it is */ }
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
+    res.end(html);
     return;
   }
   return false;
