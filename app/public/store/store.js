@@ -477,11 +477,12 @@ function footer() {
 function route() {
   const raw = (location.hash || '').replace(/^#\/?/, '').split('?')[0]; const parts = raw.split('/').filter(Boolean).map(decodeURIComponent);
   const id = parts[0] || 'home'; const view = $('#view'); if (!view) return; clear(view);
-  const fn = V[id] || V.home; try { const r = fn(view, parts[1]); if (r && r.catch) r.catch((e) => view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message))); } catch (e) { view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message)); }
+  document.body.classList.toggle('homehero', id === 'home'); const fn = V[id] || V.home; try { const r = fn(view, parts[1]); if (r && r.catch) r.catch((e) => view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message))); } catch (e) { view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message)); }
   $('#menu') && $('#menu').classList.remove('on'); $('#srch') && $('#srch').classList.remove('on');
   document.title = (id === 'home' ? '' : cap(id === 'p' ? (BYID[parts[1]] || {}).name || 'Product' : id) + ' · ') + D.shop.name;
-  window.scrollTo(0, 0);
+  window.scrollTo(0, 0); document.body.classList.add('atop');
 }
+window.addEventListener('scroll', () => document.body.classList.toggle('atop', window.scrollY < 40), { passive: true });
 async function boot() {
   const app = $('#app'); app.append(E('div', { class: 'spin' }));
   if (!SLUG) { clear(app).append(E('div', { class: 'empty' }, E('h2', null, 'Open this store from the shop address'), E('div', { class: 'mut' }, 'For example yourshop.auzslab.in/store.html'))); return; }
