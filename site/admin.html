@@ -1302,7 +1302,7 @@ document.getElementById('signOutBtn').onclick = async () => {
 };
 
 
-const PROFILE_PRODUCT_LABEL = { pos: 'AUZsPOS', self_order: 'AUZsPOS QR', payroll: 'AUZsPay', accounting: 'AUZsLedger', mobile: 'AUZsMob', scan: 'AUZsScan', salon: 'AUZslab Salon', website_builder: 'Website Builder', whatsapp: 'WhatsApp automation', aggregators: 'Zomato/Swiggy', custom: 'Custom software' };
+const PROFILE_PRODUCT_LABEL = { pos: 'AUZsPOS', self_order: 'AUZsPOS QR', payroll: 'AUZsPay', accounting: 'AUZsLedger', mobile: 'AUZsMob', style: 'AUZsStyle', scan: 'AUZsScan', salon: 'AUZslab Salon', website_builder: 'Website Builder', whatsapp: 'WhatsApp automation', aggregators: 'Zomato/Swiggy', custom: 'Custom software' };
 const START_LABEL = { now: 'As soon as possible', month: 'Within a month', quarter: '2 to 3 months', exploring: 'Just exploring' };
 async function loadProfiles() {
   const el = document.getElementById('profilesList');
@@ -1413,7 +1413,7 @@ const NICHE_LABEL = { custom: 'Custom-built', cafe: 'Café / restaurant / bar / 
 // sage = money, slate = people/ops, amber = mobile shop.
 const TONE = { pos: 'wine', crm: 'wine', billing: 'wine', inventory: 'wine', kds: 'wine', purchases: 'wine', membership: 'wine', self_order: 'wine', salon: 'sand', booking: 'sand', website_builder: 'sand', payroll: 'slate', tasks: 'slate', helpdesk: 'slate', accounting: 'sage', mobile: 'amber' };
 const featTone = (k) => 'tone-' + (TONE[k] || 'slate');
-const FEATURE_LABEL = { salon: 'AUZslab Salon', pos: 'AUZsPOS', crm: 'CRM', booking: 'Booking', billing: 'Billing', self_order: 'AUZsPOS QR', kds: 'Kitchen display', inventory: 'Inventory', website_builder: 'Website Builder', payroll: 'AUZsPay', membership: 'Memberships', helpdesk: 'Helpdesk', tasks: 'Tasks', purchases: 'Purchases', accounting: 'AUZsLedger', mobile: 'AUZsMob', scan: 'AUZsScan' };
+const FEATURE_LABEL = { salon: 'AUZslab Salon', pos: 'AUZsPOS', crm: 'CRM', booking: 'Booking', billing: 'Billing', self_order: 'AUZsPOS QR', kds: 'Kitchen display', inventory: 'Inventory', website_builder: 'Website Builder', payroll: 'AUZsPay', membership: 'Memberships', helpdesk: 'Helpdesk', tasks: 'Tasks', purchases: 'Purchases', accounting: 'AUZsLedger', mobile: 'AUZsMob', style: 'AUZsStyle', scan: 'AUZsScan' };
 const PRODUCT_KEYS = new Set(['pos', 'self_order', 'payroll', 'accounting', 'mobile', 'scan', 'salon', 'website_builder']);
 
 async function loadSignupRequests() {
@@ -2008,6 +2008,7 @@ const SELLABLE = [
   { id: 'ledger', label: 'AUZsLedger', keys: ['accounting'], note: 'Accounting and GST books' },
   { id: 'scan', label: 'AUZsScan', keys: ['scan'], note: 'Scan, bill and add stock (runs on AUZsLedger books)' },
   { id: 'mob', label: 'AUZsMob', keys: ['mobile'], note: 'Mobile shop: stock, sales, repairs' },
+  { id: 'sty', label: 'AUZsStyle', keys: ['style'], note: 'Clothing and footwear shop: sizes, colours, billing, analytics' },
   { id: 'salon', label: 'AUZslab Salon', keys: ['salon', 'booking', 'crm', 'billing'], note: 'Website, booking, customers (CRM) and billing are always included' },
   { id: 'web', label: 'Website Builder', keys: ['website_builder'], note: 'Drag-and-drop website editor' },
 ];
@@ -2745,7 +2746,7 @@ document.getElementById('swDays').onchange = loadSalesWork;
 
 // ---------- Client requests: verify, quote, payment link, confirm payment, bill (db/155) ----------
 const ORD_STATUS = { requested: 'New request', verifying: 'Under verification', confirmed: 'Confirmed', link_sent: 'Payment link sent', payment_submitted: 'Payment to confirm', paid: 'Paid', rejected: 'Rejected' };
-const ORD_PRODUCTS = [['pos', 'AUZsPOS'], ['self_order', 'AUZsPOS QR'], ['payroll', 'AUZsPay'], ['accounting', 'AUZsLedger'], ['mobile', 'AUZsMob'], ['scan', 'AUZsScan'], ['salon', 'AUZslab Salon'], ['website_builder', 'Website Builder']];
+const ORD_PRODUCTS = [['pos', 'AUZsPOS'], ['self_order', 'AUZsPOS QR'], ['payroll', 'AUZsPay'], ['accounting', 'AUZsLedger'], ['mobile', 'AUZsMob'], ['style', 'AUZsStyle'], ['scan', 'AUZsScan'], ['salon', 'AUZslab Salon'], ['website_builder', 'Website Builder']];
 const ORD_NICHES = [['cafe', 'Cafe / restaurant'], ['retail', 'Retail / General'], ['salon', 'Salon / spa'], ['mobile', 'Mobile shop']];
 const ORD_STATES = { '01': 'Jammu and Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab', '04': 'Chandigarh', '05': 'Uttarakhand', '06': 'Haryana', '07': 'Delhi', '08': 'Rajasthan', '09': 'Uttar Pradesh', '10': 'Bihar', '11': 'Sikkim', '12': 'Arunachal Pradesh', '13': 'Nagaland', '14': 'Manipur', '15': 'Mizoram', '16': 'Tripura', '17': 'Meghalaya', '18': 'Assam', '19': 'West Bengal', '20': 'Jharkhand', '21': 'Odisha', '22': 'Chhattisgarh', '23': 'Madhya Pradesh', '24': 'Gujarat', '26': 'Dadra and Nagar Haveli and Daman and Diu', '27': 'Maharashtra', '29': 'Karnataka', '30': 'Goa', '31': 'Lakshadweep', '32': 'Kerala', '33': 'Tamil Nadu', '34': 'Puducherry', '35': 'Andaman and Nicobar Islands', '36': 'Telangana', '37': 'Andhra Pradesh', '38': 'Ladakh' };
 const SETUP_DEFAULT = 2190;

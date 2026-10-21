@@ -1,0 +1,52 @@
+/* AUZsStyle: Settings (manager). Shop details, selling rules, tax, loyalty, analytics tuning, branches, day close, health check. */
+'use strict';
+page('settings', {
+  title: 'Settings', perm: 'sty_manage',
+  async render(v) {
+    v.header({ title: t('Settings') });
+    const st = S.ctx.settings;
+    const F = {
+      shopName: input({ value: st.shopName || '' }), address: input({ value: st.address || '' }), phone: input({ value: st.phone || '', mode: 'tel' }), gstin: input({ value: st.gstin || '' }), billFooter: input({ value: st.billFooter || '', placeholder: 'Thank you, visit again' }), billPrefix: input({ value: st.billPrefix || 'AS', max: 6 }),
+      maxDiscountPct: input({ type: 'number', mode: 'decimal', value: st.maxDiscountPct }), returnDays: input({ type: 'number', mode: 'numeric', value: st.returnDays }),
+      defaultTaxPct: input({ type: 'number', mode: 'decimal', value: st.defaultTaxPct }), loyaltyEarnPct: input({ type: 'number', mode: 'decimal', value: st.loyaltyEarnPct }), loyaltyPointValue: input({ type: 'number', mode: 'decimal', value: st.loyaltyPointValue }),
+      leadDays: input({ type: 'number', mode: 'numeric', value: st.leadDays }), coverDays: input({ type: 'number', mode: 'numeric', value: st.coverDays }), slowDays: input({ type: 'number', mode: 'numeric', value: st.slowDays }),
+    };
+    const sw = (key, label, hint) => { const c = h('input', { type: 'checkbox', checked: !!st[key], onchange: () => { st[key] = c.checked; } }); return h('label', { class: 'swrow' }, h('div', { class: 'grow' }, h('div', null, label), hint ? h('div', { class: 'muted small' }, hint) : null), c); };
+    const slabs = Array.isArray(st.taxSlabs) ? st.taxSlabs : [];
+    const s1 = input({ type: 'number', mode: 'decimal', value: slabs[0] ? slabs[0].upto : '', placeholder: '2500' }), r1 = input({ type: 'number', mode: 'decimal', value: slabs[0] ? slabs[0].rate : '', placeholder: '5' }), r2_ = input({ type: 'number', mode: 'decimal', value: slabs[1] ? slabs[1].rate : '', placeholder: '18' });
+    const brHost = h('div', { class: 'list' });
+    const paintBr = () => clear(brHost).append(...(S.ctx.branches || []).map((b) => liRow({ icon: 'building', title: b.name, sub: (b.kind === 'warehouse' ? t('Warehouse') : t('Shop')) + (b.isMain ? ' · ' + t('Main') : ''), chevron: true, onclick: () => branchForm(b) })));
+    function branchForm(b) {
+      const nm = input({ value: b ? b.name : '' }), kd = selectEl([['shop', t('Shop')], ['warehouse', t('Warehouse')]], b ? b.kind : 'shop'), ad = input({ value: b ? b.address || '' : '' });
+      sheet({ title: b ? t('Edit branch') : t('New branch'), body: h('div', { class: 'grid' }, field(t('Name'), nm), field(t('Type'), kd), field(t('Address'), ad)), actions: [{ label: t('Save'), primary: true, onclick: async (close) => { S.ctx = await api('sty_save_branch', { p: { id: b && b.id, name: nm.value, kind: kd.value, address: ad.value } }); close(); buildShell(); paintBr(); } }] });
+    }
+    paintBr();
+    const dc = input({ type: 'date', value: st.dayCloseDate ? String(st.dayCloseDate).slice(0, 10) : '' });
+    const save = h('button', { class: 'btn fill wide', type: 'button', onclick: async (ev) => {
+      ev.currentTarget.disabled = true;
+      try {
+        const sl = []; if (N(s1.value) && N(r1.value) >= 0) sl.push({ upto: N(s1.value), rate: N(r1.value) }); if (r2_.value !== '') sl.push({ rate: N(r2_.value) });
+        const p = { shopName: F.shopName.value, address: F.address.value, phone: F.phone.value, gstin: F.gstin.value, billFooter: F.billFooter.value, billPrefix: F.billPrefix.value, maxDiscountPct: N(F.maxDiscountPct.value), returnDays: Math.round(N(F.returnDays.value)),
+          defaultTaxPct: N(F.defaultTaxPct.value), loyaltyEarnPct: N(F.loyaltyEarnPct.value), loyaltyPointValue: N(F.loyaltyPointValue.value), leadDays: Math.round(N(F.leadDays.value)), coverDays: Math.round(N(F.coverDays.value)), slowDays: Math.round(N(F.slowDays.value)),
+          allowNegativeStock: st.allowNegativeStock, roundOff: st.roundOff, requireCustomerPhone: st.requireCustomerPhone, staffSeeCost: st.staffSeeCost, priceIncludesTax: st.priceIncludesTax, taxSlabs: sl };
+        S.ctx = await api('sty_save_settings', { p }); S.perms = S.ctx.perms; toast(t('Saved')); buildShell();
+      } catch (e) { fail(e); } finally { ev.currentTarget && (ev.currentTarget.disabled = false); }
+    } }, t('Save settings'));
+    v.root.append(h('div', { class: 'grid setg' },
+      section(t('Shop'), h('div', { class: 'card grid' }, field(t('Shop name'), F.shopName), field(t('Address'), F.address), h('div', { class: 'two' }, field(t('Phone'), F.phone), field('GSTIN', F.gstin)), h('div', { class: 'two' }, field(t('Bill prefix'), F.billPrefix), field(t('Bill footer'), F.billFooter)))),
+      section(t('Selling rules'), h('div', { class: 'card grid' }, h('div', { class: 'two' }, field(t('Staff can give discount up to') + ' %', F.maxDiscountPct), field(t('Returns allowed for (days)'), F.returnDays)),
+        sw('allowNegativeStock', t('Allow selling with no stock'), t('Useful while stock is not entered yet')), sw('roundOff', t('Round bills to the nearest rupee')), sw('requireCustomerPhone', t('Ask for the customer phone on every bill')), sw('staffSeeCost', t('Let staff see purchase cost and profit')))),
+      section(t('Tax (GST)'), h('div', { class: 'card grid' }, sw('priceIncludesTax', t('Prices already include tax')), field(t('Default tax %'), F.defaultTaxPct),
+        h('div', { class: 'cap' }, t('Clothing and footwear slabs. Ask your accountant, rates change.')), h('div', { class: 'three' }, field(t('Up to price ₹'), s1), field(t('Tax % up to there'), r1), field(t('Tax % above'), r2_)))),
+      section(t('Loyalty'), h('div', { class: 'card grid two' }, field(t('Points earned (% of bill)'), F.loyaltyEarnPct), field(t('1 point is worth ₹'), F.loyaltyPointValue))),
+      section(t('Analytics tuning'), h('div', { class: 'card grid' }, h('div', { class: 'three' }, field(t('Supplier delivery (days)'), F.leadDays), field(t('Reorder should cover (days)'), F.coverDays), field(t('Slow if unsold (days)'), F.slowDays)))),
+      save,
+      section(t('Branches and warehouses'), brHost, h('button', { class: 'btn', type: 'button', onclick: () => branchForm(null) }, icon('plus', 18), t('New branch'))),
+      section(t('Day close'), h('div', { class: 'card grid' }, h('p', { class: 'muted small' }, t('Closing a day stops anyone adding or changing bills on or before that date.')), field(t('Closed up to'), dc),
+        h('button', { class: 'btn', type: 'button', onclick: async () => { if (!dc.value) return; if (!await confirmBox(t('Close the books?'), t('Bills on or before') + ' ' + dc.value + ' ' + t('cannot be changed after this.'), t('Close day'), true)) return; S.ctx = await api('sty_day_close', { p_date: dc.value }); toast(t('Day closed')); } }, t('Close day')))),
+      section(t('Health check'), h('div', { class: 'card grid' }, h('p', { class: 'muted small' }, t('Checks that bill totals, stock and returns all agree.')), h('div', { id: 'hc' }),
+        h('button', { class: 'btn', type: 'button', onclick: async () => { const r = await api('sty_integrity_check'); const el = $('#hc'); clear(el).append(r.ok ? banner('ok', 'check', t('Everything agrees')) : banner('warn', 'alert', r.problems.map((p) => p.check + ' (' + p.count + ')').join('; '))); } }, t('Run check')),
+        h('button', { class: 'btn', type: 'button', onclick: async () => { await api('sty_load_sample'); S.catAt = 0; toast(t('Sample added')); } }, t('Add sample styles')))),
+    ));
+  },
+});

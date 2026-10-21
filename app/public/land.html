@@ -5,7 +5,7 @@
 <div>Loading…</div>
 <script src="/sb-client.js?v=6"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
-<script src="/tenant.js?v=3"></script>
+<script src="/tenant.js?v=4"></script>
 <script>
 /*
  The Caddyfile's root fallback (a request to a path that isn't a real
@@ -23,7 +23,7 @@ const LANDING = { salon: '/salon/', custom: '/custom.html' };
 (async () => {
  // Shared addresses are decided from the address itself (not from tenant.js, which a browser may still have cached):
  // app.auzslab.in = every app; auzspos / auzsmob / auzspay / auzsledger open their own app (the sign-in screen finds the user's business).
- const HOME = { app: '/start.html', auzspos: '/index.html', auzsmob: '/mob.html', auzspay: '/payroll.html', auzsledger: '/accounts.html', auzsscan: '/scan.html' };
+ const HOME = { app: '/start.html', auzspos: '/index.html', auzsmob: '/mob.html', auzspay: '/payroll.html', auzsledger: '/accounts.html', auzsscan: '/scan.html', auzsstyle: '/style.html' };
  const first = location.hostname.split('.')[0];
  if (HOME[first]) return location.replace(HOME[first]);
  if (!TENANT_SLUG) return location.replace('/index.html');
