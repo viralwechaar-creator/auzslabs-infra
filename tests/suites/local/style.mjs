@@ -182,6 +182,26 @@ export default async function run({ browser, stack }) {
     const r2 = await q("select public_app_icon_context('teststyle') c"); assert(!r2[0].c.settings.logo, 'empty logo must not be exposed');
   });
 
+  await s.check('Logo upload end to end: upload, save, icon drawn from it, shown in the app', async () => {
+    const c = await newCtx(browser, stack, { w: 1280, h: 800 }); const page = await c.newPage(); const errs = watch(page);
+    await page.goto(stack.url('teststyle', '/style.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
+    await page.fill('input[type=email]', USERS.styOwner); await page.fill('input[type=password]', PASSWORD);
+    await page.locator('button', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 });
+    const out = await page.evaluate(async () => {
+      const cv = document.createElement('canvas'); cv.width = 200; cv.height = 200; const g = cv.getContext('2d'); g.fillStyle = '#0a7'; g.fillRect(0, 0, 200, 200); g.fillStyle = '#fff'; g.fillRect(60, 60, 80, 80);
+      const blob = await new Promise((r) => cv.toBlob(r, 'image/jpeg'));
+      const up = await sb.storage.from('site').upload('style/logo-test.jpg', blob, { contentType: 'image/jpeg' });
+      const url = sb.storage.from('site').getPublicUrl('x').data.publicUrl;
+      let saved = null; try { saved = await api('sty_save_settings', { p: { logoUrl: url } }); } catch (e) { saved = { err: e.message }; }
+      const ic = await fetch('/app-icon/180.png'); const ab = await ic.arrayBuffer();
+      return { err: up.error && up.error.message, url, saved: saved && (saved.settings ? saved.settings.logoUrl : saved), icType: ic.headers.get('content-type'), icLen: ab.byteLength };
+    });
+    await page.evaluate(async () => { await api('sty_save_settings', { p: { logoUrl: '' } }); });
+    await s.shot(page, 'logo flow'); await c.close();
+    assert(!out.err && out.url, 'upload failed: ' + JSON.stringify(out));
+    assert(out.saved === out.url, 'logo not saved: ' + JSON.stringify(out));
+  });
+
   // ---------- screens ----------
   const open = async (email, dev) => {
     const c = await newCtx(browser, stack, dev); const page = await c.newPage(); const errs = watch(page);

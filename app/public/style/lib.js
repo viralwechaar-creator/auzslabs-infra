@@ -53,7 +53,7 @@ function receiptNode(sale) {
   const sh = shopHeader(), d = new Date(sale.at || Date.now());
   const row = (a, b, cls) => h('div', { class: 'rc-r' + (cls ? ' ' + cls : '') }, h('span', null, a), h('span', { class: 'num' }, b));
   return h('div', { class: 'receipt' },
-    h('div', { class: 'rc-h' }, h('b', null, sh.name), sh.address ? h('div', null, sh.address) : null, sh.phone ? h('div', null, sh.phone) : null, sh.gstin ? h('div', null, 'GSTIN ' + sh.gstin) : null),
+    h('div', { class: 'rc-h' }, (S.ctx.settings && S.ctx.settings.logoUrl) ? h('img', { class: 'rc-logo', src: S.ctx.settings.logoUrl, alt: '' }) : null, h('b', null, sh.name), sh.address ? h('div', null, sh.address) : null, sh.phone ? h('div', null, sh.phone) : null, sh.gstin ? h('div', null, 'GSTIN ' + sh.gstin) : null),
     h('div', { class: 'rc-sep' }),
     row(sale.number || '—', d.toLocaleString('en-GB', { day: 'numeric', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' })),
     sale.customer ? row(sale.customer.name, sale.customer.phone || '') : null,
