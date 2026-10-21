@@ -207,13 +207,23 @@ V.home = (v) => {
   } else hero = E('section', { class: 'hero empty' }, E('div', { class: 'big' }, D.shop.name), E('a', { class: 'btn', href: link('shop'), style: { position: 'absolute', bottom: '24px' } }, 'Shop now'));
   v.append(hero);
   const cols = D.collections.filter((x) => x.styleIds.some((id) => BYID[id]));
-  if (cols.length) v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'Collections'), E('a', { class: 'btn sm out', href: link('collections') }, 'View all')),
-    E('div', { class: 'deck' }, cols.map((x) => { const s0 = x.styleIds.map((id) => BYID[id]).find((s) => s && photos(s)[0]); return E('a', { class: 'dk' + (s0 ? '' : ' ph'), href: link('shop?col=' + x.id) }, s0 ? E('img', { src: photos(s0)[0], alt: '', loading: 'lazy' }) : null, E('div', { class: 'nm' }, x.name)); }))));
-  { const sk = stack(STY, 'All products'); if (sk) v.append(sk); }
-  v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'New arrivals'), E('a', { class: 'btn sm out', href: link('shop?new=1') }, 'Discover more')), gridOf(newest(8), true)));
-  cols.slice(0, 3).forEach((x) => { const items = x.styleIds.map((id) => BYID[id]).filter(Boolean).slice(0, 8); if (items.length < 2) return; v.append(E('section', { class: 'band' }, E('div', { class: 'hd' }, E('h2', null, x.name), E('a', { class: 'btn sm', href: link('shop?col=' + x.id) }, 'Discover more')), E('div', { class: 'row' }, items.map((s) => card(s))))); });
-  if (STY.length > 8) v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'All products'), E('a', { class: 'btn sm out', href: link('shop') }, 'Shop all')), gridOf(STY.slice(0, 12), true)));
-  v.append(recentBand(null));
+  const phone = matchMedia('(max-width:700px)').matches;
+  // 1. latest products
+  v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'Latest drop'), E('a', { class: 'btn sm out', href: link('shop?new=1') }, 'Discover more')), gridOf(newest(8), true)));
+  // 2. category by category: a swipe row on desktop, a slide deck on phones
+  [...new Set(STY.map((x) => x.category).filter(Boolean))].slice(0, 4).forEach((cat) => {
+    const items = STY.filter((x) => x.category === cat).slice(0, 10); if (items.length < 2) return;
+    const dk = phone ? stack(items, cat) : null;
+    v.append(dk || E('section', { class: 'band' }, E('div', { class: 'hd' }, E('h2', null, cat), E('a', { class: 'btn sm', href: link('shop?cat=' + encodeURIComponent(cat)) }, 'Discover more')), E('div', { class: 'row' }, items.map((s) => card(s)))));
+  });
+  // 3. big collection pictures
+  cols.slice(0, 3).forEach((x) => {
+    const s0 = x.styleIds.map((id) => BYID[id]).find((s) => s && photos(s)[0]); if (!s0) return;
+    v.append(E('a', { class: 'bigcol', href: link('shop?col=' + x.id) }, E('img', { src: photos(s0)[0], alt: '', loading: 'lazy' }), E('div', { class: 'cap' }, E('div', { class: 't' }, x.name), E('span', { class: 'btn' }, 'Shop now'))));
+  });
+  // 4. products again
+  if (STY.length > 4) v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'All products'), E('a', { class: 'btn sm out', href: link('shop') }, 'Shop all')), gridOf(STY.slice(0, 12), true)));
+  // 5. stores
   if ((c.stores || []).length) v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'Visit us'), E('a', { class: 'btn sm out', href: link('stores') }, 'All stores')), storeCards(c.stores.slice(0, 2))));
 };
 
@@ -464,7 +474,14 @@ function footer() {
   const c = cfg(), so = c.social || {}; const ph = String(D.shop.phone || '').replace(/\D/g, '');
   const ext = (t, u) => (u ? E('a', { href: /^https?:/.test(u) ? u : 'https://' + u, target: '_blank', rel: 'noopener' }, t) : null);
   const cats = [...new Set(STY.map((x) => x.category).filter(Boolean))].slice(0, 8);
-  const strip = cats.length ? E('div', { class: 'ftstrip' }, E('b', null, 'Shop by category'), cats.map((x) => E('a', { href: link('shop?cat=' + encodeURIComponent(x)) }, x))) : null;
+  const fams = FAM.filter((f) => STY.some((x) => colours(x).some((k) => famOf(k) === f[0])));
+  const tabs = [['Popular searches', cats.slice(0, 8).map((x) => [x, 'shop?cat=' + encodeURIComponent(x)])], ['Shop by category', cats.map((x) => [x, 'shop?cat=' + encodeURIComponent(x)])], ['Shop by style', D.collections.filter((x) => x.styleIds.length).map((x) => [x.name, 'shop?col=' + x.id])], ['Shop by colour', fams.map((f) => [f[0], 'shop?fam=' + f[0]])]].filter((t) => t[1].length);
+  const pn = E('div', { class: 'ftpanel' });
+  const tabEls = tabs.map((t, i) => E('button', { class: 'ftab', onclick: () => { const on = tabEls[i].classList.contains('on'); tabEls.forEach((b) => b.classList.remove('on')); clear(pn); if (on) return; tabEls[i].classList.add('on'); pn.append(...t[1].map(([n, p]) => E('a', { href: link(p) }, n))); } }, t[0]));
+  const ab = cfg().about; const blurb = (ab && typeof ab === 'object' ? (ab.text || ab.body || '') : (ab || '')) || D.shop.tagline || ('Shop ' + D.shop.name + ' online. Fresh styles, easy returns and delivery across India.');
+  const more = E('button', { class: 'ftmore', onclick: () => { const t = fold.classList.toggle('open'); more.textContent = t ? 'Read less' : 'Read more...'; } }, 'Read more...');
+  const fold = E('div', { class: 'ftfold' }, E('p', null, blurb), more);
+  const strip = tabs.length ? E('div', { class: 'ftstrip' }, fold, E('div', { class: 'ftabs' }, tabEls), pn) : null;
   return E('div', { class: 'ftwrap' }, strip, E('footer', null, E('div', { class: 'cols' },
     E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Connect with us'), ph ? E('a', { href: 'tel:+' + (ph.length === 10 ? '91' + ph : ph) }, 'Call') : null, ph ? E('a', { href: 'https://wa.me/' + (ph.length === 10 ? '91' + ph : ph), target: '_blank', rel: 'noopener' }, 'Text (WhatsApp)') : null, ext('Instagram', so.instagram), ext('Facebook', so.facebook), c.email ? E('a', { href: 'mailto:' + c.email }, 'Email') : null),
     E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Order support'), E('a', { href: link('orders') }, 'Track your order'), E('a', { href: link('policy/returns') }, 'Returns & exchanges'), E('a', { href: link('policy/shipping') }, 'Shipping policy'), E('a', { href: link('faq') }, 'FAQs'), E('a', { href: link('policy/terms') }, 'Terms'), E('a', { href: link('policy/privacy') }, 'Privacy')),
