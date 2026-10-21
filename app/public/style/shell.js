@@ -86,7 +86,6 @@ async function boot() {
   const saved = LS.get('branch.' + slugKey(), null);
   const brs = ctx.branches || [];
   S.branch = brs.find((b) => b.id === saved) ? saved : (brs.find((b) => b.isMain) || brs[0] || {}).id || null;
-  if (window.auzBrandLoad) auzBrandLoad(sb);
   buildShell();
   window.addEventListener('hashchange', route_);
   window.addEventListener('sty:q', updatePill);
@@ -123,8 +122,8 @@ function buildShell() {
   const topbar = h('header', { class: 'topbar', id: 'topbar' }, h('div', { class: 'l', id: 'tb-l' }), h('div', { class: 'tt', id: 'tb-t' }), h('div', { class: 'r', id: 'tb-r' }));
   const tabs = tabsFor();
   const tabbar = h('nav', { class: 'tabbar', 'aria-label': 'Main' },
-    tabs.map((id) => { const n = NAV.find((x) => x[0] === id); return h('button', { type: 'button', 'data-tab': id, onclick: () => go(id) }, icon(n[2], 25), h('span', null, t(n[1]))); }),
-    nav.length > tabs.length || true ? h('button', { type: 'button', 'data-tab': 'more', onclick: moreSheet }, icon('more', 25), h('span', null, t('More'))) : null);
+    tabs.map((id) => { const n = NAV.find((x) => x[0] === id); return h('button', { type: 'button', 'data-tab': id, 'aria-label': t(n[1]), title: t(n[1]), onclick: () => go(id) }, icon(n[2], 24), h('span', null, t(n[1]))); }),
+    nav.length > tabs.length || true ? h('button', { type: 'button', 'data-tab': 'more', 'aria-label': t('More'), title: t('More'), onclick: moreSheet }, icon('more', 24), h('span', null, t('More'))) : null);
   clear($('#app')).append(h('div', { class: 'shell' + (LS.get('side', '') ? ' ' + LS.get('side', '') : ''), id: 'shell' }, side, h('div', { class: 'main' }, topbar, h('main', { id: 'main', tabindex: '-1' })), tabbar));
   matchMedia('(min-width:900px)').addEventListener('change', () => route_());
 }
@@ -171,6 +170,7 @@ function header(o, root) {
   t_.textContent = o.title || '';
   document.title = (o.title ? o.title + ' · ' : '') + 'AUZsStyle';
   if (o.back) l.append(h('button', { class: 'btn plain', type: 'button', 'aria-label': 'Back', onclick: () => go(o.back) }, icon('chevL', 22)));
+  else if (!isDesk()) l.append(h('button', { class: 'brandpill', type: 'button', onclick: moreSheet }, icon('plus', 16), h('b', null, (S.ctx.settings.shopName || (S.dash.tenant && S.dash.tenant.name) || 'AUZsStyle').slice(0, 18))));
   const desk = isDesk();
   (o.actions || []).filter(Boolean).forEach((a) => r.append(h('button', { class: 'btn ' + (desk ? (a.primary ? 'fill' : '') : 'plain') + (!desk ? ' icon' : ''), type: 'button', 'aria-label': a.label, title: a.label, onclick: a.run }, a.icon ? icon(a.icon, 20) : null, desk ? a.label : null)));
   if (root) { const old = root.querySelector(':scope > .large-title'); if (old) old.remove(); }

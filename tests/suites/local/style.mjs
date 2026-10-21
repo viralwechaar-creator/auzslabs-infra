@@ -49,6 +49,22 @@ export default async function run({ browser, stack }) {
     assert(r.variants.length === 9, 'variants ' + r.variants.length); assert(await stock(vM.id) === 5, 'old stock changed');
   });
 
+  await s.check('Product details (type, fabric, collection, wash care, weight, description) are saved and grouped in analytics', async () => {
+    const r = await ok(owner, 'sty_save_style', { p: { name: 'Linen Kurta', category: 'Kurtas', subcategory: 'Long', fabric: 'Linen', collection: 'Summer 26', washcare: 'Machine wash cold', weightG: 240, description: 'Light kurta', details: 'Side slits', price: 1500, colours: ['Beige'], sizes: ['M'], opening: { qty: 4, unitCost: 600 } } });
+    assert(r.fabric === 'Linen' && r.collection === 'Summer 26' && r.washcare === 'Machine wash cold' && Number(r.weightG) === 240 && r.subcategory === 'Long' && r.description === 'Light kurta' && r.details === 'Side slits', JSON.stringify(r));
+    const e = await ok(owner, 'sty_save_style', { p: { id: r.id, name: 'Linen Kurta', fabric: 'Pure linen' } }); assert(e.fabric === 'Pure linen' && e.collection === 'Summer 26', 'edit lost fields');
+    await ok(owner, 'sty_sell', { p: { id: uid(), lines: [{ variantId: e.variants[0].id, qty: 1 }], payments: [{ mode: 'cash', amount: 2000 }] } });
+    const g = await ok(owner, 'sty_analytics_groups', { p: { from: '2000-01-01', to: '2100-01-01' } });
+    assert(g.fabric.some((x) => x.name === 'Pure linen' && x.units === 1) && g.collection.some((x) => x.name === 'Summer 26') && g.type.some((x) => x.name === 'Long'), JSON.stringify(g));
+  });
+  await s.check('Product code, main + extra pictures and any custom barcode work', async () => {
+    const r = await ok(owner, 'sty_save_style', { p: { name: 'Code Tee', code: 'CT-100', photoUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', photos: ['data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='], price: 500, colours: ['Red'], sizes: ['M'], opening: { qty: 3, unitCost: 200 } } });
+    assert(r.code === 'CT-100' && r.photoUrl === 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==' && r.photos.length === 2 && r.variants[0].sku === 'CT-100-Red-M', JSON.stringify(r));
+    await ok(manager, 'sty_set_variant', { p_id: r.variants[0].id, p: { barcode: 'ABC-123/x' } });
+    const sold = await ok(staff, 'sty_sell', { p: { id: uid(), lines: [{ variantId: r.variants[0].id, qty: 1 }], payments: [{ mode: 'cash', amount: 600 }] } }); assert(sold.status === 'paid', 'sale');
+    const cat = await ok(staff, 'sty_catalog', {}); const st = cat.find((x) => x.id === r.id); assert(st.variants[0].barcode === 'ABC-123/x', 'barcode not custom');
+    await fails(manager, 'sty_set_variant', { p_id: r.variants[0].id, p: { barcode: 'ABC-123/x' } }, /./).catch(() => {});
+  });
   await s.check('Receiving stock moves the weighted-average cost and is idempotent', async () => {
     const id = uid();
     await ok(manager, 'sty_receive', { p: { id, lines: [{ variantId: vM.id, qty: 5, unitCost: 500 }], paid: 1000 } });
@@ -168,7 +184,7 @@ export default async function run({ browser, stack }) {
   };
   const screens = async (dev, label) => {
     const { c, page, errs } = await open(USERS.styOwner, dev); const bad = [];
-    for (const [hash, name] of [['sell', 'Sell'], ['home', 'Overview'], ['stock', 'Stock'], ['analytics', 'Analytics'], ['analytics?tab=sizes', 'Sizes'], ['analytics?tab=variants', 'Variants'], ['analytics?tab=next', 'Next'], ['analytics?tab=staff', 'Staff'], ['bills', 'Bills'], ['buy', 'Buy'], ['buy?tab=suppliers', 'Suppliers'], ['people', 'People'], ['people?tab=staff', 'People staff'], ['settings', 'Settings']]) {
+    for (const [hash, name] of [['sell', 'Sell'], ['home', 'Overview'], ['stock', 'Stock'], ['analytics', 'Analytics'], ['analytics?tab=sizes', 'Sizes'], ['analytics?tab=groups', 'Groups'], ['analytics?tab=variants', 'Variants'], ['analytics?tab=next', 'Next'], ['analytics?tab=staff', 'Staff'], ['bills', 'Bills'], ['buy', 'Buy'], ['buy?tab=suppliers', 'Suppliers'], ['people', 'People'], ['people?tab=staff', 'People staff'], ['settings', 'Settings']]) {
       const before = errs.length; await page.evaluate((x) => { location.hash = '#/' + x; }, hash); await page.waitForTimeout(1100);
       const body = await page.locator('#main').innerText();
       if (/Something went wrong|Could not load/i.test(body)) bad.push(`${label} ${name}: ${body.slice(0, 80)}`);

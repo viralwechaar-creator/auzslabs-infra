@@ -32,30 +32,36 @@ page('sell', {
     const grid = h('div', { class: 'sgrid' });
     const cartHost = h('aside', { class: 'cartpane' });
     const bar = h('button', { class: 'cartbar', type: 'button', onclick: () => cartSheet() });
-    const scanBtn = window.auzScanner ? h('button', { class: 'btn icon', type: 'button', 'aria-label': t('Scan'), onclick: () => auzScanner.open({ title: t('Scan a tag'), onCode: (c) => { onCode(c); }, footer: '' }) }, icon('camera', 20)) : null;
+    const scanBtn = window.auzScanner ? h('button', { class: 'btn icon', type: 'button', 'aria-label': t('Scan'), onclick: () => scanWith((c) => { onCode(c); }) }, icon('camera', 20)) : null;
     const sf = searchField(t('Search or scan a tag'), (val) => { UI.q = val; paintGrid(); }, UI.q);
     sf.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const val = sf.input.value.trim(); if (val && onCode(val, true)) { sf.input.value = ''; UI.q = ''; paintGrid(); } } });
     const chips = h('div', { class: 'chips' });
+    const filterHost = h('span');
+    const paintFilter = () => { clear(filterHost).append(filterButton(() => { paintFilter(); paintGrid(); })); };
     function paintChips() { clear(chips).append(...cats.map((c) => h('button', { class: 'chip', type: 'button', 'aria-pressed': String(UI.cat === c), onclick: () => { UI.cat = c; paintChips(); paintGrid(); } }, c === 'All' ? t('All') : c))); }
     function onCode(code, fromEnter) {
       const f = findBarcode(code);
       if (f) { if (addLine(f.style, f.variant)) { paintCart(); } return true; }
+      const sc = findStyleCode(code); if (sc) { pickVariant(sc); return true; }
       if (fromEnter) return false;
       toast(t('No item with that code'), { err: true }); beep(false); return false;
     }
     function priceRange(s) { const ps = s.variants.map((x) => x.price); const a = Math.min(...ps), b = Math.max(...ps); return a === b ? inr(a) : inr(a) + '+'; }
     function paintGrid() {
       const q = UI.q.trim().toLowerCase();
-      let list = S.cat.filter((s) => s.active !== false && (UI.cat === 'All' || s.category === UI.cat));
-      if (q) list = list.filter((s) => (s.name + ' ' + (s.brand || '') + ' ' + s.category).toLowerCase().includes(q) || s.variants.some((x) => x.barcode === q));
+      let list = S.cat.filter((s) => s.active !== false && (UI.cat === 'All' || s.category === UI.cat) && styleMatches(s));
+      if (q) list = list.filter((s) => (s.name + ' ' + (s.brand || '') + ' ' + s.category + ' ' + (s.code || '') + ' ' + (s.subcategory || '') + ' ' + (s.fabric || '') + ' ' + (s.collection || '')).toLowerCase().includes(q) || s.variants.some((x) => x.barcode === q || (x.sku || '').toLowerCase() === q));
       clear(grid);
       if (!list.length) { grid.append(empty('shirt', S.cat.length ? t('No match') : t('No styles yet'), S.cat.length ? '' : t('Add your first style in Stock.'), !S.cat.length && can('sty_manage') ? h('button', { class: 'btn fill', onclick: () => go('stock') }, t('Go to Stock')) : null)); return; }
       list.slice(0, 160).forEach((s) => {
-        const st = styleStock(s); const cols = [...new Set(s.variants.map((x) => x.colour).filter(Boolean))];
-        grid.append(h('button', { class: 'scard' + (st <= 0 ? ' out' : ''), type: 'button', onclick: () => pickVariant(s) },
-          h('div', { class: 'ph' }, s.photoUrl ? h('img', { src: s.photoUrl, alt: '', loading: 'lazy' }) : icon('shirt', 30)),
-          h('div', { class: 'nm' }, s.name), h('div', { class: 'pr num' }, priceRange(s)),
-          h('div', { class: 'ft' }, h('span', { class: 'dots' }, cols.slice(0, 4).map((c) => colourDot(c, 10))), h('span', { class: 'stk' + (st <= 0 ? ' z' : st <= 3 ? ' lo' : '') }, st <= 0 ? t('Out of stock') : st + ' ' + t('in stock')))));
+        const st = styleStock(s); const pics = [s.photoUrl, ...(s.photos || [])].filter(Boolean);
+        grid.append(h('div', { class: 'scard' + (st <= 0 ? ' out' : '') },
+          h('button', { class: 'pic', type: 'button', 'aria-label': s.name, onclick: () => pickVariant(s) },
+            pics.length ? h('img', { src: pics[0], alt: '', loading: 'lazy' }) : h('span', { class: 'nopic' }, icon('shirt', 34)),
+            st <= 0 ? h('span', { class: 'pill' }, t('Sold out')) : null,
+            pics.length > 1 ? h('span', { class: 'pdots' }, pics.slice(0, 3).map((_, i) => h('i', { class: i === 0 ? 'on' : '' }))) : null),
+          h('div', { class: 'meta' }, h('div', { class: 'mt' }, h('div', { class: 'nm' }, s.name), h('button', { class: 'plus', type: 'button', 'aria-label': t('Add') + ' ' + s.name, onclick: () => pickVariant(s) }, icon('plus', 18))),
+            h('div', { class: 'pr' }, h('span', { class: 'num' }, priceRange(s)), st > 0 && st <= 3 ? h('span', { class: 'stk lo' }, st + ' ' + t('left')) : null))));
       });
     }
     function pickVariant(s) {
@@ -66,7 +72,8 @@ page('sell', {
       const paint = () => {
         const vs = s.variants.filter((x) => x.colour === col && x.active !== false).sort(byRank);
         clear(body).append(
-          h('div', { class: 'vp-h' }, h('div', { class: 'ph sm' }, s.photoUrl ? h('img', { src: s.photoUrl, alt: '' }) : icon('shirt', 24)), h('div', null, h('b', null, s.name), h('div', { class: 'muted small' }, [s.brand, s.category].filter(Boolean).join(' · ')), h('div', { class: 'num' }, inr(s.price), s.mrp > s.price ? h('s', { class: 'muted small', style: { marginLeft: '6px' } }, inr(s.mrp)) : null))),
+          (s.photos || []).length ? h('div', { class: 'gal' }, [s.photoUrl, ...s.photos].filter(Boolean).map((u) => h('img', { src: u, alt: '', loading: 'lazy' }))) : null,
+          h('div', { class: 'vp-h' }, h('div', { class: 'ph sm' }, s.photoUrl ? h('img', { src: s.photoUrl, alt: '' }) : icon('shirt', 24)), h('div', null, h('b', null, s.name), h('div', { class: 'muted small' }, [s.brand, s.category, s.fabric].filter(Boolean).join(' · ')), h('div', { class: 'num' }, inr(s.price), s.mrp > s.price ? h('s', { class: 'muted small', style: { marginLeft: '6px' } }, inr(s.mrp)) : null))),
           cols.length > 1 || (cols[0] || '') ? h('div', null, h('div', { class: 'cap' }, t('Colour')), h('div', { class: 'chips wrap' }, cols.map((c) => { const n = s.variants.filter((x) => x.colour === c).reduce((a, x) => a + x.stock, 0); return h('button', { class: 'chip', type: 'button', 'aria-pressed': String(c === col), onclick: () => { col = c; paint(); } }, colourDot(c, 14), c || '—', h('span', { class: 'muted small' }, n)); }))) : null,
           h('div', null, h('div', { class: 'cap' }, t('Size')), h('div', { class: 'sizes' }, vs.map((x) => {
             const dis = x.stock <= 0 && !S.ctx.settings.allowNegativeStock;
@@ -117,8 +124,8 @@ page('sell', {
     }
     window.addEventListener('sty:cartchanged', paintCart);
     cleanupHook(v, () => window.removeEventListener('sty:cartchanged', paintCart));
-    paintChips(); paintGrid(); paintCart();
-    clear(root).append(h('div', { class: 'sell-l' }, h('div', { class: 'row', style: { gap: '8px' } }, h('div', { class: 'grow' }, sf), scanBtn), chips, grid), cartHost, bar);
+    paintChips(); paintFilter(); paintGrid(); paintCart();
+    clear(root).append(h('div', { class: 'sell-l', 'data-title': t('All Products') }, h('div', { class: 'row', style: { gap: '8px' } }, h('div', { class: 'grow' }, sf), filterHost, scanBtn), chips, grid), cartHost, bar);
     if (isDesk()) setTimeout(() => sf.input.focus(), 50);
     // hardware barcode scanners type the code fast and press Enter, even when the search box is not focused
     let buf = '', last = 0;

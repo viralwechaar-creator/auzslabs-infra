@@ -17,7 +17,7 @@ const HI = {
   'Sales by size': 'साइज़ के अनुसार बिक्री', 'Sales by colour': 'रंग के अनुसार बिक्री', 'Fast movers': 'तेज़ बिकने वाले', 'Reorder': 'दोबारा मँगाएँ', 'Slow stock': 'धीमा स्टॉक',
   'Sign in': 'साइन इन', 'Sign out': 'साइन आउट', 'Language': 'भाषा', 'Appearance': 'दिखावट', 'Help': 'मदद', 'Phone': 'फ़ोन', 'Notes': 'नोट', 'Shop name': 'दुकान का नाम',
   'Open shift': 'शिफ़्ट शुरू करें', 'Close shift': 'शिफ़्ट बंद करें', 'Opening cash': 'शुरुआती नकद', 'Counted cash': 'गिना हुआ नकद',
-  'Points': 'पॉइंट', 'Use points': 'पॉइंट इस्तेमाल करें', 'Print': 'प्रिंट', 'WhatsApp': 'WhatsApp', 'New bill': 'नया बिल', 'Cancel bill': 'बिल रद्द करें',
+  'Points': 'पॉइंट', 'Use points': 'पॉइंट इस्तेमाल करें', 'Print': 'प्रिंट', 'All Products': 'सभी प्रोडक्ट', 'Sold out': 'बिक गया', 'left': 'बचे', 'Browse': 'ब्राउज़', 'Fabric': 'कपड़ा', 'Collection': 'कलेक्शन', 'Type': 'प्रकार', 'Wash care': 'धुलाई निर्देश', 'Weight': 'वज़न', 'Description': 'विवरण', 'Details': 'ब्योरा', 'Filter': 'फ़िल्टर', 'Fabric & collection': 'कपड़ा और कलेक्शन', 'WhatsApp': 'WhatsApp', 'New bill': 'नया बिल', 'Cancel bill': 'बिल रद्द करें',
 };
 function setLang(l) { S_LANG = l === 'hi' ? 'hi' : 'en'; try { localStorage['sty.lang'] = S_LANG; } catch { /* private mode */ } document.documentElement.lang = S_LANG; }
 function t(s, vars) {

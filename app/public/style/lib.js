@@ -140,3 +140,79 @@ function csvDownload(name, rows) {
   const blob = new Blob(['﻿' + rows.map((r) => r.map(q).join(',')).join('\n')], { type: 'text/csv' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.append(a); a.click(); a.remove();
 }
+
+// ---- pictures: shrink in the browser, upload to the shop's own storage ----
+async function shrinkImage(file, max = 1200, q = .82) {
+  const bmp = await createImageBitmap(file); const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  const cv = document.createElement('canvas'); cv.width = Math.round(bmp.width * k); cv.height = Math.round(bmp.height * k); cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
+  return new Promise((res) => cv.toBlob(res, 'image/jpeg', q));
+}
+async function uploadPhoto(file) {
+  const blob = await shrinkImage(file);
+  const name = 'style/' + Date.now() + '-' + Math.random().toString(36).slice(2, 7) + '.jpg';
+  const { error } = await sb.storage.from('site').upload(name, blob, { contentType: 'image/jpeg' });
+  if (error) throw new Error(error.message || t('Upload failed'));
+  return sb.storage.from('site').getPublicUrl(name).data.publicUrl;
+}
+// main picture + extra pictures editor: value {main, extra[]}; returns a node with .get()
+function photoEditor(main, extra) {
+  const st = { main: main || '', extra: [...(extra || [])] }; const host = h('div', { class: 'grid' });
+  const pick = (cb) => { const i = h('input', { type: 'file', accept: 'image/*', multiple: true, class: 'hidden' }); document.body.append(i); i.onchange = async () => { const fs = [...i.files]; i.remove(); for (const f of fs) { try { await cb(await uploadPhoto(f)); } catch (e) { fail(e); } } paint(); }; i.click(); };
+  const paint = () => {
+    clear(host).append(
+      h('div', null, h('div', { class: 'cap' }, t('Main picture')), h('div', { class: 'pe-row' },
+        h('div', { class: 'pe-main' }, st.main ? h('img', { src: st.main, alt: '' }) : icon('camera', 28)),
+        h('div', { class: 'grid', style: { gap: '6px', alignContent: 'start' } }, h('button', { class: 'btn sm', type: 'button', onclick: () => pick((u) => { st.main = u; }) }, icon('camera', 16), st.main ? t('Change') : t('Add picture')),
+          st.main ? h('button', { class: 'btn sm danger', type: 'button', onclick: () => { st.main = ''; paint(); } }, t('Remove')) : null))),
+      h('div', null, h('div', { class: 'cap' }, t('More pictures') + ' (' + st.extra.length + ')'), h('div', { class: 'pe-grid' },
+        st.extra.map((u, i) => h('div', { class: 'pe-t' }, h('img', { src: u, alt: '' }), h('div', { class: 'pe-a' }, h('button', { type: 'button', title: t('Make main'), onclick: () => { const old = st.main; st.main = u; st.extra.splice(i, 1); if (old) st.extra.unshift(old); paint(); } }, icon('check', 14)), h('button', { type: 'button', title: t('Remove'), onclick: () => { st.extra.splice(i, 1); paint(); } }, icon('x', 14))))),
+        h('button', { class: 'pe-add', type: 'button', onclick: () => pick((u) => { if (!st.main) st.main = u; else st.extra.push(u); }) }, icon('plus', 22)))));
+  };
+  paint(); host.get = () => st; return host;
+}
+
+// ---- colour families (Blues, Reds ...) ----
+const FAMILIES = { Blues: ['blue', 'navy', 'sky', 'indigo', 'teal', 'denim', 'cyan'], Browns: ['brown', 'tan', 'beige', 'khaki', 'camel', 'coffee', 'cream', 'chocolate'], Greens: ['green', 'olive', 'mint', 'sage', 'lime', 'emerald'],
+  Neutrals: ['black', 'white', 'grey', 'gray', 'silver', 'charcoal', 'off white', 'ivory'], Purples: ['purple', 'lavender', 'violet', 'lilac', 'mauve', 'plum'], Reds: ['red', 'maroon', 'wine', 'pink', 'orange', 'rust', 'coral', 'peach', 'yellow', 'mustard', 'gold'] };
+function colourFamily(name) { const k = String(name || '').toLowerCase(); for (const f in FAMILIES) if (FAMILIES[f].some((w) => k.includes(w))) return f; return ''; }
+
+// ---- browse / filter: collections, category > type, fabric, colour families ----
+const FILT = { colour: '', family: '', category: '', type: '', fabric: '', collection: '' };
+const filtActive = () => Object.values(FILT).filter(Boolean).length;
+const distinctOf = (get) => [...new Set(S.cat.filter((s) => s.active !== false).flatMap((s) => [].concat(get(s))).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+function styleMatches(s) {
+  if (FILT.colour && !s.variants.some((v) => v.colour === FILT.colour && v.active !== false)) return false;
+  if (FILT.family && !s.variants.some((v) => colourFamily(v.colour) === FILT.family && v.active !== false)) return false;
+  if (FILT.category && s.category !== FILT.category) return false;
+  if (FILT.type && (s.subcategory || '') !== FILT.type) return false;
+  if (FILT.fabric && (s.fabric || '') !== FILT.fabric) return false;
+  if (FILT.collection && (s.collection || '') !== FILT.collection) return false;
+  return true;
+}
+function filterSheet(onApply) {
+  const body = h('div', { class: 'grid browse' });
+  const chip = (k, v, label, extra) => h('button', { class: 'chip', type: 'button', 'aria-pressed': String(FILT[k] === v), onclick: () => { FILT[k] = FILT[k] === v ? '' : v; if (k === 'category') FILT.type = ''; if (k === 'type') { const st = S.cat.find((s) => s.subcategory === v); if (st) FILT.category = FILT[k] ? st.category : ''; } paint(); } }, extra || null, label || v);
+  const paint = () => {
+    const cols = distinctOf((s) => s.collection), cats = distinctOf((s) => s.category), fabs = distinctOf((s) => s.fabric);
+    const colours = distinctOf((s) => s.variants.filter((v) => v.active !== false).map((v) => v.colour));
+    const fams = Object.keys(FAMILIES).filter((f) => colours.some((c) => colourFamily(c) === f));
+    clear(body).append(
+      cols.length ? h('div', null, h('div', { class: 'cap' }, t('Collections')), h('div', { class: 'chips wrap' }, cols.map((c) => chip('collection', c)))) : null,
+      cats.length ? h('div', null, h('div', { class: 'cap' }, t('Categories and types')), h('div', { class: 'cat-cols' }, cats.map((c) => {
+        const types = [...new Set(S.cat.filter((s) => s.active !== false && s.category === c && s.subcategory).map((s) => s.subcategory))].sort();
+        return h('div', { class: 'cat-b' }, h('button', { class: 'cat-h' + (FILT.category === c && !FILT.type ? ' on' : ''), type: 'button', onclick: () => { FILT.category = FILT.category === c ? '' : c; FILT.type = ''; paint(); } }, c), h('div', { class: 'chips wrap' }, types.map((x) => chip('type', x))));
+      }))) : null,
+      fabs.length ? h('div', null, h('div', { class: 'cap' }, t('Fabric')), h('div', { class: 'chips wrap' }, fabs.map((c) => chip('fabric', c)))) : null,
+      fams.length ? h('div', null, h('div', { class: 'cap' }, t('Shop by colour')), h('div', { class: 'chips wrap' }, fams.map((f) => chip('family', f, f, h('span', { class: 'fam-dots' }, colours.filter((c) => colourFamily(c) === f).slice(0, 3).map((c) => colourDot(c, 12))))))) : null,
+      colours.length ? h('div', null, h('div', { class: 'cap' }, t('Colour')), h('div', { class: 'chips wrap' }, colours.map((c) => chip('colour', c, c, colourDot(c, 12))))) : null,
+      !cats.length ? empty('tag', t('Nothing to filter yet'), t('Add category, type, fabric and collection when you create a style.')) : null);
+  };
+  paint();
+  sheet({ title: t('Browse'), full: true, wide: true, body, actions: [{ label: t('Clear'), onclick: (close) => { Object.keys(FILT).forEach((k) => FILT[k] = ''); close(); onApply(); } }, { label: t('Show'), primary: true, onclick: (close) => { close(); onApply(); } }] });
+}
+function filterButton(onApply) {
+  const n = filtActive();
+  return h('button', { class: 'btn icon' + (n ? ' fill' : ''), type: 'button', 'aria-label': t('Browse'), onclick: () => filterSheet(onApply) }, icon('tag', 20), n ? h('span', { class: 'fcount' }, n) : null);
+}
+// camera scan helper: any barcode format (the scanner reads whatever the phone camera can)
+function scanWith(onCode) { if (!window.auzScanner) return toast(t('Scanner not available on this device'), { err: true }); auzScanner.open({ title: t('Scan a tag'), onCode, footer: '' }); }
