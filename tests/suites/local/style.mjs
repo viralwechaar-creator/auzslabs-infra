@@ -286,6 +286,33 @@ export default async function run({ browser, stack }) {
     await s.shot(page, 'colour picture'); await c.close();
   });
 
+  await s.check('CRM and WhatsApp automation: segments, detail, bill link queued once, birthday greeting, gates', async () => {
+    const cu = await ok(staff, 'sty_save_customer', { p: { name: 'Riya Shah', phone: '9811100022', birthday: '1995-03-04', anniversary: '2020-05-06', gender: 'female', city: 'Jodhpur' } });
+    const today = new Date(Date.now() + 5.5 * 3600000).toISOString().slice(5, 10);
+    await ok(staff, 'sty_save_customer', { p: { id: cu.id, birthday: '1990-' + today } });
+    const sid = uid();
+    await ok(staff, 'sty_sell', { p: { id: sid, customerId: cu.id, lines: [{ variantId: vM.id, qty: 1 }], payments: [{ mode: 'cash', amount: 5000 }] } });
+    const ov = await ok(staff, 'sty_crm_overview'); assert(ov.total >= 1 && ov.withPhone >= 1, 'overview ' + JSON.stringify(ov));
+    assert(ov.upcoming.some((u) => u.kind === 'birthday' && u.days === 0), 'today birthday missing');
+    const det = await ok(staff, 'sty_customer_detail', { p_id: cu.id }); assert(det.visits === 1 && det.bills.length === 1 && det.likes.length === 1 && det.city === 'Jodhpur', JSON.stringify(det));
+    const list = await ok(staff, 'sty_crm_list', { p: { q: 'riya', segment: 'new' } }); assert(list.length === 1, 'segment new ' + list.length);
+    await fails(cafe, 'sty_crm_list', { p: {} }, /not enabled/i);
+    // nothing leaves until the shop switches WhatsApp on
+    assert(Number((await q("select count(*)::int n from wa_outbox where tenant_id=$1", [tid]))[0].n) === 0, 'queued while off');
+    await q("insert into wa_tenant_settings (tenant_id, enabled) values ($1, true) on conflict (tenant_id) do update set enabled = true", [tid]);
+    const sid2 = uid();
+    await ok(staff, 'sty_sell', { p: { id: sid2, customerId: cu.id, lines: [{ variantId: vM.id, qty: 1 }], payments: [{ mode: 'cash', amount: 5000 }] } });
+    await q("select sty_wa_daily_run()"); await q("select sty_wa_daily_run()");
+    const rows = await q("select template, params->>4 link from wa_outbox where tenant_id=$1 order by template", [tid]);
+    assert(rows.filter((r) => r.template === 'invoice_link').length === 1 && /\/b\/[a-f0-9]{10}$/.test(rows.find((r) => r.template === 'invoice_link').link), 'bill link ' + JSON.stringify(rows));
+    assert(rows.filter((r) => r.template === 'birthday_greeting').length === 1, 'birthday once: ' + JSON.stringify(rows));
+    await ok(staff, 'sty_save_customer', { p: { id: cu.id, waOptin: false } });
+    await ok(staff, 'sty_sell', { p: { id: uid(), customerId: cu.id, lines: [{ variantId: vM.id, qty: 1 }], payments: [{ mode: 'cash', amount: 5000 }] } });
+    assert((await q("select count(*)::int n from wa_outbox where tenant_id=$1 and template='invoice_link'", [tid]))[0].n === 1, 'opted-out customer got a bill link');
+    await q("update wa_tenant_settings set enabled=false where tenant_id=$1", [tid]);
+    await integrity();
+  });
+
   await s.check('Barcode tags: the generated Code 128 reads back with the scanner library', async () => {
     const c = await newCtx(browser, stack, { w: 800, h: 600 }); const page = await c.newPage();
     await page.goto(stack.url('teststyle', '/style.html')); await page.waitForTimeout(800);

@@ -115,11 +115,15 @@ function customerPicker(onPick) {
 function customerForm(c, onSaved) {
   const name = input({ value: c ? c.name : '', placeholder: t('Name') }), ph = input({ value: c ? c.phone || '' : '', mode: 'tel', placeholder: t('Phone') });
   const size = input({ value: c ? c.usualSize || '' : '', placeholder: 'M / 32 / 8' }), bday = input({ type: 'date', value: c && c.birthday ? String(c.birthday).slice(0, 10) : '' });
+  const anni = input({ type: 'date', value: c && c.anniversary ? String(c.anniversary).slice(0, 10) : '' }), city = input({ value: c ? c.city || '' : '', placeholder: t('City') });
+  const gender = selectEl([['', '—'], ['female', t('Female')], ['male', t('Male')], ['other', t('Other')]], c ? c.gender || '' : '');
+  const wa = h('input', { type: 'checkbox', checked: c ? c.waOptin !== false : true });
   const notes = h('textarea', { class: 'textarea', rows: 2 }, c ? c.notes || '' : '');
-  sheet({ title: c ? t('Edit customer') : t('New customer'), body: h('div', { class: 'grid' }, field(t('Name'), name), field(t('Phone'), ph), field(t('Usual size'), size), field(t('Birthday'), bday), field(t('Notes'), notes)),
+  sheet({ title: c ? t('Edit customer') : t('New customer'), body: h('div', { class: 'grid' }, field(t('Name'), name), field(t('Phone'), ph), h('div', { class: 'two' }, field(t('Usual size'), size), field(t('Gender'), gender)), h('div', { class: 'two' }, field(t('Birthday'), bday), field(t('Anniversary'), anni)), field(t('City'), city), field(t('Notes'), notes),
+    h('label', { class: 'swrow' }, h('div', { class: 'grow' }, h('div', null, t('Send WhatsApp messages')), h('div', { class: 'muted small' }, t('Bill link, birthday wishes and offers'))), wa)),
     actions: [{ label: t('Save'), primary: true, onclick: async (close) => {
       if (!name.value.trim()) { toast(t('Enter a name'), { err: true }); return false; }
-      const r = await api('sty_save_customer', { p: { id: c && c.id, name: name.value, phone: ph.value, usualSize: size.value, birthday: bday.value || null, notes: notes.value } });
+      const r = await api('sty_save_customer', { p: { id: c && c.id, name: name.value, phone: ph.value, usualSize: size.value, birthday: bday.value || null, anniversary: anni.value || null, gender: gender.value, city: city.value, waOptin: wa.checked, notes: notes.value } });
       close(); onSaved && onSaved(r);
     } }] });
 }

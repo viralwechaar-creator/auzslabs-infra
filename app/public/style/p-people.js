@@ -6,22 +6,45 @@ page('people', {
     const tab = v.q.get('tab') || 'customers';
     v.header({ title: t('People'), actions: [{ label: t('New customer'), icon: 'plus', primary: true, run: () => customerForm(null, () => v.refresh()) }] });
     const root = v.root;
-    if (can('sty_reports')) root.append(seg([['customers', t('Customers')], ['staff', t('Staff')]], tab, (x) => go('people?tab=' + x), { full: true }));
+    root.append(seg([['customers', t('Customers')], ['followups', t('Follow-ups')]].concat(can('sty_reports') ? [['staff', t('Staff')]] : []), tab, (x) => go('people?tab=' + x), { full: true }));
     const host = h('div'); root.append(host); host.append(h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '24px auto' } }));
     if (tab === 'staff' && can('sty_reports')) return staffTab(host, v);
-    let q = ''; const list = h('div', { class: 'list' });
+    if (tab === 'followups') return followTab(host, v);
+    let q = '', segm = 'all'; const list = h('div', { class: 'list' }), chipRow = h('div', { class: 'chips' });
+    let ov = {}; try { ov = await api('sty_crm_overview') || {}; } catch (e) { return fail(e); }
+    const SEGS = [['all', t('All'), ov.total], ['new', t('New'), ov.newCount], ['regular', t('Regular'), ov.regular], ['lapsed', t('Lapsed'), ov.lapsed], ['gold', t('Gold'), ov.gold], ['silver', t('Silver'), ov.silver], ['credit', t('Store credit')], ['points', t('Points')]];
+    const paintChips = () => clear(chipRow).append(...SEGS.map(([k, l, n]) => h('button', { class: 'chip', 'aria-pressed': segm === k ? 'true' : 'false', type: 'button', onclick: () => { segm = k; paintChips(); load(); } }, l + (n != null ? ' ' + n : ''))));
     const load = debounce(async () => {
-      let rows = []; try { rows = await api('sty_list_customers', { p_q: q, p_limit: 200 }) || []; } catch (e) { return fail(e); }
-      clear(list).append(...(rows.length ? rows.map((c) => liRow({ icon: 'user', title: c.name, sub: [c.phone, c.usualSize ? t('Size') + ' ' + c.usualSize : '', c.lastAt ? t('Last') + ' ' + fmtDay(c.lastAt) : ''].filter(Boolean).join(' · '), value: inr(c.spent, 0), valueSub: c.visits + ' ' + t('visits'), chevron: true, onclick: () => customerSheet(c, () => v.refresh()) })) : [empty('users', t('No customers yet'), t('They are added when you bill them, or add one here.'))]));
+      let rows = []; try { rows = await api('sty_crm_list', { p: { q, segment: segm, limit: 300 } }) || []; } catch (e) { return fail(e); }
+      clear(list).append(...(rows.length ? rows.map((c) => liRow({ icon: 'user', title: c.name, sub: [c.tier !== 'Member' ? c.tier : '', c.status === 'lapsed' ? t('Lapsed') : '', c.phone, c.lastAt ? t('Last') + ' ' + fmtDay(c.lastAt) : ''].filter(Boolean).join(' · '), value: inr(c.spent, 0), valueSub: c.visits + ' ' + t('visits'), chevron: true, onclick: () => customerSheet(c, () => v.refresh()) })) : [empty('users', t('No customers here'), t('They are added when you bill them, or add one here.'))]));
     }, 200);
-    clear(host).append(h('div', { class: 'grid' }, searchField(t('Name or phone'), (x) => { q = x; load(); }), list)); load();
+    paintChips();
+    clear(host).append(h('div', { class: 'grid' }, h('div', { class: 'kpis' }, kpi(t('Customers'), ov.total || 0, (ov.withPhone || 0) + ' ' + t('with phone')), kpi(t('Lapsed'), ov.lapsed || 0, t('not back in 60 days')), kpi(t('Points out'), ov.points || 0, t('Store credit') + ' ' + inr(ov.credit || 0, 0))), searchField(t('Name or phone'), (x) => { q = x; load(); }), chipRow, list)); load();
   },
 });
-function customerSheet(c, done) {
+function waLink(c, text) { const ph = String(c.phone || '').replace(/\D/g, '').slice(-10); return ph ? 'https://wa.me/91' + ph + (text ? '?text=' + encodeURIComponent(text) : '') : null; }
+async function followTab(host, v) {
+  let ov; try { ov = await api('sty_crm_overview') || {}; } catch (e) { return fail(e); }
+  const shop = (S.ctx && S.ctx.settings && S.ctx.settings.shopName) || '';
+  const row = (c, icon_, sub, text) => liRow({ icon: icon_, title: c.name, sub, chevron: !!c.phone, onclick: c.phone ? () => window.open(waLink(c, text), '_blank', 'noopener') : null });
+  const up = (ov.upcoming || []).map((c) => row(c, c.kind === 'birthday' ? 'tag' : 'user', (c.kind === 'birthday' ? t('Birthday') : t('Anniversary')) + ' · ' + (c.days === 0 ? t('Today') : c.days + ' ' + t('days')) + (c.phone ? '' : ' · ' + t('no phone')), (c.kind === 'birthday' ? 'Happy birthday ' : 'Happy anniversary ') + String(c.name).split(' ')[0] + '! Wishing you a wonderful day from everyone at ' + shop + '.'));
+  const lp = (ov.lapsedList || []).map((c) => row(c, 'user', t('Last') + ' ' + fmtDay(c.lastAt) + ' · ' + inr(c.spent, 0), 'Hi ' + String(c.name).split(' ')[0] + ', it has been a while since your last visit to ' + shop + '. Come and see what is new in store.'));
+  clear(host).append(h('div', { class: 'grid' }, banner('info', 'share', t('Tap a person to send a WhatsApp message. Turn on automatic messages in Settings → WhatsApp.')),
+    h('div', { class: 'cap' }, t('Birthdays and anniversaries · next 30 days')), h('div', { class: 'list' }, up.length ? up : [empty('tag', t('Nothing coming up'), t('Add birthdays on the customer to see them here.'))]),
+    h('div', { class: 'cap' }, t('Lapsed customers · not back in 60 days')), h('div', { class: 'list' }, lp.length ? lp : [empty('users', t('Nobody has lapsed'), '')])));
+}
+async function customerSheet(c0, done) {
+  let c = c0, det = null;
+  try { det = await api('sty_customer_detail', { p_id: c0.id }); } catch (e) { /* show what we have */ }
+  c = Object.assign({}, c0, det || {});
+  const names = (a) => (a || []).map((x) => x.name + ' ×' + x.qty).join(', ');
   const body = h('div', { class: 'grid' }, h('div', { class: 'kpis' }, kpi(t('Spent'), inr(c.spent, 0), c.visits + ' ' + t('visits')), kpi(t('Points'), c.points || 0), kpi(t('Store credit'), inr(c.credit, 0))),
-    h('div', { class: 'muted' }, [c.phone, c.usualSize ? t('Usual size') + ' ' + c.usualSize : '', c.birthday ? t('Birthday') + ' ' + fmtDay(c.birthday) : '', c.notes].filter(Boolean).join(' · ')),
+    h('div', { class: 'muted' }, [c.tier, c.status === 'lapsed' ? t('Lapsed') : '', c.phone, c.city, c.usualSize ? t('Usual size') + ' ' + c.usualSize : '', c.birthday ? t('Birthday') + ' ' + fmtDay(c.birthday) : '', c.anniversary ? t('Anniversary') + ' ' + fmtDay(c.anniversary) : '', c.notes].filter(Boolean).join(' · ')),
+    det && det.visits ? h('div', { class: 'muted small' }, [t('Average bill') + ' ' + inr(det.avgBill, 0), det.due > 0 ? t('Due') + ' ' + inr(det.due, 0) : '', det.sizes && det.sizes.length ? t('Sizes') + ': ' + names(det.sizes) : '', det.colours && det.colours.length ? t('Colours') + ': ' + names(det.colours) : '', det.likes && det.likes.length ? t('Buys') + ': ' + names(det.likes) : ''].filter(Boolean).join(' · ')) : null,
+    det && det.bills && det.bills.length ? h('div', { class: 'list' }, det.bills.slice(0, 5).map((b) => liRow({ icon: 'tag', title: b.number, sub: fmtDay(b.at) + (b.status === 'due' ? ' · ' + t('Due') : ''), value: inr(b.total, 0), chevron: true, onclick: () => { s.close(); go('bills?customer=' + c.id); } }))) : null,
+    det && det.messages && det.messages.length ? h('div', { class: 'muted small' }, t('Messages') + ': ' + det.messages.map((m) => m.template.replace(/_/g, ' ') + ' (' + m.status + ')').join(', ')) : null,
     h('div', { class: 'row', style: { gap: '8px', flexWrap: 'wrap' } }, h('button', { class: 'btn', type: 'button', onclick: () => { s.close(); customerForm(c, done); } }, icon('edit', 18), t('Edit')),
-      c.phone ? h('button', { class: 'btn', type: 'button', onclick: () => window.open('https://wa.me/91' + String(c.phone).replace(/\D/g, '').slice(-10), '_blank', 'noopener') }, icon('share', 18), 'WhatsApp') : null,
+      c.phone ? h('button', { class: 'btn', type: 'button', onclick: () => window.open(waLink(c), '_blank', 'noopener') }, icon('share', 18), 'WhatsApp') : null,
       h('button', { class: 'btn', type: 'button', onclick: () => { s.close(); go('bills?customer=' + c.id); } }, icon('tag', 18), t('Bills'))));
   const s = sheet({ title: c.name, closeLabel: t('Done'), body });
 }

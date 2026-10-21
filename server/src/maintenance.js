@@ -59,12 +59,18 @@ export async function runAdminSummary() {
   catch (err) { console.warn('admin summary failed:', err.message); }
 }
 
+// AUZsStyle: birthday / anniversary greetings and win-back (db/226). Quiet unless the shop turned WhatsApp on.
+export async function runStyleGreetings() {
+  try { await pool.query('select sty_wa_daily_run()'); }
+  catch (err) { console.warn('style greetings failed:', err.message); }
+}
+
 export function startMaintenance() {
   if (process.env.DISABLE_MAINTENANCE === '1') return;
   const runAll = () => {
     runMaintenance(); runRenewals(); runBookingReminders(); runQuoteFollowups(); runAdminSummary();
     runSalonDailySummaries(); runLapsedClientWinback(); runPostVisitReviews(); runPaymentDueReminders();
-    runClientGreetings(); runMembershipExpiryReminders();
+    runClientGreetings(); runMembershipExpiryReminders(); runStyleGreetings();
   };
   setTimeout(() => { runAll(); setInterval(runAll, DAY).unref(); }, 60_000).unref();
 }
