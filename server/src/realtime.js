@@ -63,6 +63,9 @@ export function startRealtime(server, { onPushEvent }) {
   listenClient.connect().then(() => {
     listenClient.query('LISTEN live_changes');
     listenClient.query('LISTEN push_events');
+    console.log('[realtime] connected and listening on live_changes, push_events');
+  }).catch((err) => {
+    console.error('[realtime] FAILED to connect the LISTEN client:', err.message);
   });
 
   listenClient.on('notification', (msg) => {
@@ -70,6 +73,7 @@ export function startRealtime(server, { onPushEvent }) {
     try { payload = JSON.parse(msg.payload); } catch { return; }
 
     if (msg.channel === 'push_events') {
+      console.log('[realtime] push_events NOTIFY received', payload);
       onPushEvent(payload);
       return;
     }

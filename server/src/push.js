@@ -148,11 +148,14 @@ export async function handlePushEvent({ tenant_id, title, body, user_ids, platfo
   // A targeted event (user_ids set, db/175) goes only to those people's registered phones; the browser Web Push
   // subscriptions are tenant-wide and have no user, so a targeted event skips them.
   const targeted = Array.isArray(user_ids) && user_ids.length > 0;
+  console.log('[push] handlePushEvent fired', { tenant_id, title, targeted });
   if (!targeted && VAPID_PUBLIC && VAPID_PRIVATE) {
     const { rows: subs } = await pool.query('select * from push_subs where tenant_id = $1', [tenant_id]);
+    console.log('[push] sending to', subs.length, 'subscription(s) for tenant', tenant_id);
     await Promise.allSettled(subs.map(async (s) => {
       try {
         const res = await sendWebPush(s.endpoint, s.p256dh, s.auth, { title: title || 'AUZslab', body: body || '' });
+        console.log('[push] result', res.status, res.ok ? 'OK' : 'NOT OK', s.endpoint.slice(0, 60));
         if (!res.ok && (res.status === 404 || res.status === 410)) {
           await pool.query('delete from push_subs where id = $1', [s.id]);
         } else if (!res.ok) {
