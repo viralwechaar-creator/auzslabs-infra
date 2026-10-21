@@ -313,6 +313,25 @@ export default async function run({ browser, stack }) {
     await integrity();
   });
 
+  await s.check('Collections: create, add styles, remove, rename rules, staff cannot change, other business separate', async () => {
+    const c = await ok(manager, 'sty_collection_save', { p: { name: 'Summer 2026', note: 'Light fabrics' } });
+    await fails(manager, 'sty_collection_save', { p: { name: 'summer 2026' } }, /already exists/i);
+    await fails(staff, 'sty_collection_save', { p: { name: 'Nope' } }, /does not allow/i);
+    let r = await ok(manager, 'sty_collection_members', { p_id: c.id, p_add: [shirt.id, jeans.id] }); assert(r.count === 2, 'count ' + r.count);
+    await ok(manager, 'sty_collection_members', { p_id: c.id, p_add: [shirt.id] });
+    let list = await ok(staff, 'sty_collections_list'); const mine = list.find((x) => x.id === c.id); assert(mine && mine.styleIds.length === 2, JSON.stringify(list));
+    await fails(staff, 'sty_collection_members', { p_id: c.id, p_remove: [shirt.id] }, /does not allow/i);
+    r = await ok(manager, 'sty_collection_members', { p_id: c.id, p_remove: [jeans.id] }); assert(r.count === 1, 'after remove ' + r.count);
+    await fails(cafe, 'sty_collections_list', {}, /not enabled/i);
+    const { c: cx, page } = await open(USERS.styStaff, { w: 390, h: 844, mobile: true });
+    await page.evaluate(() => { location.hash = '#/sell'; }); await page.waitForSelector('.scard', { timeout: 15000 });
+    await page.locator('.chips .chip', { hasText: 'Summer 2026' }).click(); await page.waitForTimeout(300);
+    assert(await page.locator('.scard').count() === 1, 'collection filter should show 1 style');
+    await cx.close();
+    await ok(manager, 'sty_collection_delete', { p_id: c.id });
+    assert(!(await ok(staff, 'sty_collections_list')).some((x) => x.id === c.id), 'not deleted');
+  });
+
   await s.check('Barcode tags: the generated Code 128 reads back with the scanner library', async () => {
     const c = await newCtx(browser, stack, { w: 800, h: 600 }); const page = await c.newPage();
     await page.goto(stack.url('teststyle', '/style.html')); await page.waitForTimeout(800);

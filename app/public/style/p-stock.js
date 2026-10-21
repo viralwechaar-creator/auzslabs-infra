@@ -6,9 +6,11 @@ page('stock', {
   title: 'Stock', perm: 'sty_view',
   async render(v) {
     v.header({ title: t('Stock'), actions: [can('sty_manage') ? { label: t('New style'), icon: 'plus', primary: true, run: () => styleForm(null, () => v.refresh()) } : null,
+      { label: t('Collections'), icon: 'tag', run: () => collectionsSheet(() => v.refresh()) },
       can('sty_stock') ? { label: t('Transfers'), icon: 'swap', run: () => transfersSheet(() => v.refresh()) } : null].filter(Boolean) });
     const root = v.root; root.append(h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '30px auto' } }));
     try { await loadCatalog(true); } catch (e) { return clear(root).append(empty('cloudOff', t('Could not load'), e.message, h('button', { class: 'btn fill', onclick: () => v.refresh() }, t('Try again')))); }
+    await loadCollections();
     const vs = allVariants().filter((x) => x.active !== false);
     const units = vs.reduce((a, x) => a + Math.max(x.stock, 0), 0), cost = vs.reduce((a, x) => a + Math.max(x.stock, 0) * (x.cost || 0), 0), retail = vs.reduce((a, x) => a + Math.max(x.stock, 0) * x.price, 0);
     const lowN = vs.filter((x) => x.stock <= (x.reorderAt || 0)).length, outN = vs.filter((x) => x.stock <= 0).length;
@@ -66,6 +68,7 @@ async function styleSheet(id, changed) {
     h('div', { class: 'row', style: { gap: '8px', flexWrap: 'wrap' } },
       can('sty_manage') ? h('button', { class: 'btn', type: 'button', onclick: () => { sh.close(); styleForm(s, changed); } }, icon('edit', 18), t('Edit style')) : null,
       ...(can('sty_manage') ? [['limited', t('Limited stock')], ['soldout', t('Sold out')]].map(([k, l]) => h('button', { class: 'btn' + (s.badge === k ? ' fill' : ''), type: 'button', 'aria-pressed': String(s.badge === k), onclick: async () => { try { await api('sty_set_badge', { p_id: s.id, p_badge: s.badge === k ? null : k }); S.catAt = 0; sh.close(); toast(t('Saved')); changed && changed(); } catch (e) { toast(e.message || t('Failed'), { err: true }); } } }, l)) : []),
+      can('sty_manage') ? h('button', { class: 'btn', type: 'button', onclick: () => { sh.close(); styleCollectionsSheet(s, () => { changed && changed(); styleSheet(id, changed); }); } }, icon('tag', 18), t('Add to collection')) : null,
       h('button', { class: 'btn', type: 'button', onclick: () => tagsSheet([s]) }, icon('barcode', 18), t('Print tags')),
       can('sty_purchase') ? h('button', { class: 'btn', type: 'button', onclick: () => { sh.close(); receiveForm({ style: s }, changed); } }, icon('truck', 18), t('Receive stock')) : null)) });
 }

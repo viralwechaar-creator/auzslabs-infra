@@ -2,7 +2,7 @@
    (phone): the bill. Pick a style -> choose colour + size (stock shown) -> it joins the bill. */
 'use strict';
 const BILL = { lines: [], customer: null, custName: '', custPhone: '', billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0 };
-const UI = { q: '', cat: 'All' };
+const UI = { q: '', cat: 'All', col: null };
 const newBill = () => { Object.assign(BILL, { lines: [], customer: null, custName: '', custPhone: '', billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0 }); };
 const billCalc = () => calcBill(BILL.lines.map((l) => ({ unit: l.price, qty: l.qty, discPct: l.discPct, discAmt: l.discAmt, taxPct: l.taxPct })), { billDiscPct: BILL.billDiscPct, billDiscAmt: BILL.billDiscAmt });
 const unitCount = () => BILL.lines.reduce((a, l) => a + l.qty, 0);
@@ -29,6 +29,7 @@ page('sell', {
     const root = v.root; root.classList.add('sellpage');
     clear(root).append(h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '40px auto' } }));
     try { await loadCatalog(); } catch (e) { return clear(root).append(empty('cloudOff', t('Could not load the catalogue'), e.message, h('button', { class: 'btn fill', onclick: () => v.refresh() }, t('Try again')))); }
+    await loadCollections();
     const cats = ['All', ...[...new Set(S.cat.filter((s) => s.active !== false).map((s) => s.category))].sort()];
     const grid = h('div', { class: 'sgrid' });
     const cartHost = h('aside', { class: 'cartpane' });
@@ -39,7 +40,7 @@ page('sell', {
     const chips = h('div', { class: 'chips' });
     const filterHost = h('span');
     const paintFilter = () => { clear(filterHost).append(filterButton(() => { paintFilter(); paintGrid(); })); };
-    function paintChips() { clear(chips).append(...cats.map((c) => h('button', { class: 'chip', type: 'button', 'aria-pressed': String(UI.cat === c), onclick: () => { UI.cat = c; paintChips(); paintGrid(); } }, c === 'All' ? t('All') : c))); }
+    function paintChips() { clear(chips).append(...COL.list.filter((c) => (c.styleIds || []).length).map((c) => h('button', { class: 'chip', type: 'button', 'aria-pressed': String(UI.col === c.id), onclick: () => { UI.col = UI.col === c.id ? null : c.id; paintChips(); paintGrid(); } }, icon('tag', 14), c.name)), ...cats.map((c) => h('button', { class: 'chip', type: 'button', 'aria-pressed': String(UI.cat === c), onclick: () => { UI.cat = c; paintChips(); paintGrid(); } }, c === 'All' ? t('All') : c))); }
     function onCode(code, fromEnter) {
       const f = findBarcode(code);
       if (f) { if (addLine(f.style, f.variant)) { paintCart(); } return true; }
@@ -50,7 +51,7 @@ page('sell', {
     function priceRange(s) { const ps = s.variants.map((x) => x.price); const a = Math.min(...ps), b = Math.max(...ps); return a === b ? inr(a) : inr(a) + '+'; }
     function paintGrid() {
       const q = UI.q.trim().toLowerCase();
-      let list = S.cat.filter((s) => s.active !== false && (UI.cat === 'All' || s.category === UI.cat) && styleMatches(s));
+      let list = S.cat.filter((s) => s.active !== false && (UI.cat === 'All' || s.category === UI.cat) && (!UI.col || ((COL.list.find((c) => c.id === UI.col) || {}).styleIds || []).includes(s.id)) && styleMatches(s));
       if (q) list = list.filter((s) => (s.name + ' ' + (s.brand || '') + ' ' + s.category + ' ' + (s.code || '') + ' ' + (s.subcategory || '') + ' ' + (s.fabric || '') + ' ' + (s.collection || '')).toLowerCase().includes(q) || s.variants.some((x) => x.barcode === q || (x.sku || '').toLowerCase() === q));
       clear(grid);
       if (!list.length) { grid.append(empty('shirt', S.cat.length ? t('No match') : t('No styles yet'), S.cat.length ? '' : t('Add your first style in Stock.'), !S.cat.length && can('sty_manage') ? h('button', { class: 'btn fill', onclick: () => go('stock') }, t('Go to Stock')) : null)); return; }
