@@ -916,7 +916,8 @@ function applyEd(c){var d=c&&c.siteData;if(!d||typeof d!=='object')return;
  $$('[data-ed]').forEach(function(el){var v=d[el.getAttribute('data-ed')];if(v==null||v==='')return;if(el.getAttribute('data-ed-type')==='long')el.innerHTML=nl2(v);else el.textContent=String(v)});
  $$('[data-ed-img]').forEach(function(el){var v=d[el.getAttribute('data-ed-img')];if(!v)return;el.src=v;el.hidden=false;if(el.classList.contains('founder-img')){var ph=el.parentNode.querySelector('.portrait-placeholder');if(ph)ph.hidden=true}});
  var hasF=Object.keys(d).some(function(k){return k.indexOf('founder.')===0&&d[k]});var fo=$$('.nav a[data-page="founder"]')[0];if(fo)fo.parentNode.hidden=!hasF}
-function mapHref(c){return c.mapUrl||('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(c.addr||''))}
+function mapHref(c){var u=String(c.mapUrl||'').trim();if(u&&!/^https?:\/\//i.test(u)){if(/^(www\.)?(maps\.app\.goo\.gl|goo\.gl\/maps|google\.[a-z.]+\/maps)/i.test(u))u='https://'+u;else u=''}
+var q=(c.addr||'')||(c.siteArea||'');return u||('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q+' '+(c.name||'')))}
 function shortAddr(c){if(c.siteArea)return String(c.siteArea);var p=String(c.addr||'').split(',').map(function(x){return x.replace(/[0-9]+/g,'').trim()}).filter(Boolean);return p.slice(-2).join(', ')}
 function addrLink(c){return '<a class="addr-link" href="'+esc(mapHref(c))+'" target="_blank" rel="noopener">'+esc(shortAddr(c))+' \u2197\uFE0E</a>'}
 function starStr(n){n=Math.round(n);return '\u2605\u2605\u2605\u2605\u2605'.slice(0,n)+'\u2606\u2606\u2606\u2606\u2606'.slice(0,5-n)}
