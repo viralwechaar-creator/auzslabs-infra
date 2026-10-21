@@ -129,7 +129,7 @@
     go(location.hash.slice(1) in VIEWS && allowed(location.hash.slice(1)) ? location.hash.slice(1) : 'dashboard');
   }
 
-  const TITLES = { dashboard: 'Today', bookings: 'Bookings', checkins: 'Check-ins', billing: 'Billing', clients: 'Clients', packages: 'Packages', cash: 'Cash register', expenses: 'Expenses', analytics: 'Analytics', menu: 'Menu and prices', stylists: 'Hairstylists', gallery: 'Gallery', content: 'Website text', staff: 'Staff', settings: 'Settings' };
+  const TITLES = { dashboard: 'Today', bookings: 'Bookings', checkins: 'Check-ins', billing: 'Billing', clients: 'Clients', packages: 'Packages', cash: 'Cash register', expenses: 'Expenses', analytics: 'Analytics', menu: 'Menu and prices', stylists: 'Hairstylists', gallery: 'Gallery', content: 'Edit website', staff: 'Staff', settings: 'Settings' };
   const ICONS = { dashboard: 'grid', bookings: 'calendar', checkins: 'wave', billing: 'receipt', clients: 'users', packages: 'star', cash: 'wallet', expenses: 'wallet', analytics: 'chart', menu: 'list', stylists: 'cut', gallery: 'pics', content: 'doc', staff: 'chair', settings: 'gear' };
   const PRIMARY = ['dashboard', 'bookings', 'billing', 'clients'];
   /* Everything outside PRIMARY is grouped under labelled headers in the side nav
@@ -1163,12 +1163,25 @@
   }
 
   /* ---------- website text ---------- */
+  /* A form on the left and the real website on the right: typing shows on the page at once (posted to the frame), Save keeps it. */
+  function splitPreview(left, live, pages) {
+    let page = pages[0][1];
+    const frame = h('iframe', { class: 'a-pv-frame', src: page, title: 'Website preview' });
+    const send = () => { try { frame.contentWindow.postMessage({ type: 'auz-preview', content: live() }, location.origin); } catch (e) { /* frame not ready */ } };
+    frame.addEventListener('load', send);
+    left.addEventListener('input', send);
+    const tabs = h('div', { class: 'a-pv-tabs' }, pages.map(([label, url]) => h('button', { type: 'button', class: 'btn btn-alt btn-sm' + (url === page ? ' on' : ''), onclick: (ev) => { page = url; frame.src = url; tabs.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === ev.currentTarget)); } }, label)));
+    const reload = () => { frame.src = page; };
+    const box = h('div', { class: 'a-split' }, h('div', { class: 'a-split-l' }, left), h('aside', { class: 'a-split-r' }, h('div', { class: 'a-pv-bar' }, h('strong', { text: 'Live preview' }), tabs), frame));
+    return { box, reload };
+  }
   function viewContent() {
     const C = { ...D.content };
     const rows = [['heroTitle', 'Home page headline', 'i'], ['heroText', 'Home page intro', 't', 3], ['servicesText', 'Services intro', 't', 2], ['menuText', 'Menu intro', 't', 2],
       ['galleryText', 'Gallery intro', 't', 2], ['stylistsText', 'Hairstylists intro', 't', 2], ['aboutTitle', 'About us headline', 'i'], ['aboutText', 'About us text (one paragraph per line)', 't', 8], ['bookText', 'Booking intro', 't', 2]];
-    view().replaceChildren(h('div', { class: 'a-cardgrid', style: 'max-width:1400px' }, rows.map(([k, l, t, r]) => h('div', { class: 'a-card' }, fld(l, t === 'i' ? inp(C, k, { id: 'c' + k }) : area(C, k, { id: 'c' + k, rows: r }), 'c' + k)))),
-      sticky(btn('Save website text', async () => { if (await saveSection('content', C)) await load(); })));
+    const form = h('div', { class: 'a-cardgrid' }, rows.map(([k, l, t, r]) => h('div', { class: 'a-card' }, fld(l, t === 'i' ? inp(C, k, { id: 'c' + k }) : area(C, k, { id: 'c' + k, rows: r }), 'c' + k))));
+    const sp = splitPreview(form, () => C, [['Home', '/salon/'], ['Menu', '/salon/menu/']]);
+    view().replaceChildren(sp.box, sticky(btn('Save website text', async () => { if (await saveSection('content', C)) { await load(); sp.reload(); } })));
   }
 
   /* ---------- settings ---------- */
