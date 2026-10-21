@@ -98,11 +98,11 @@ function tblSide(states, covers, selPair) {
 }
 function tableTile(t, s) {
   const lab = TSTATE[s.st][0];
-  const meta = s.o ? [h('span', { class: 'tc' }, icon('clock', 13), h('span', { 'data-since': s.o.created }, s.mins + ' min'), s.o.covers ? ' · ' + s.o.covers + ' guests' : null), h('b', { class: 'ta' }, inr(s.amt))]
-    : s.st === 'res' ? [h('span', { class: 'tc' }, s.res.time.slice(0, 5) + ' · ' + s.res.customer_name)] : [h('span', { class: 'tc' }, t.sec || 'Main')];
+  const info = s.o ? [h('span', { class: 'tc' }, icon('clock', 12), h('span', { 'data-since': s.o.created }, s.mins + ' min')), h('b', { class: 'ta' }, inr(s.amt))]
+    : s.st === 'res' ? [h('span', { class: 'tc' }, s.res.time.slice(0, 5) + ' · ' + s.res.customer_name)] : [];
   return h('button', { class: 'tbl-tile st-' + s.st + ((S.cur && S.cur.table === t.id) || S.tblSel === t.id ? ' sel' : ''), 'data-table': t.id, onclick: () => { if (tblWide()) { S.tblSel = t.id; render(); } else tableTap(t, s); } },
-    h('div', { class: 'ttop' }, h('div', { class: 'tn' }, t.name), t.seats ? h('span', { class: 'seats' }, t.seats + ' seats') : null),
-    h('span', { class: 'tchip' }, lab), h('div', { class: 'tmeta' }, meta));
+    h('div', { class: 'ttop' }, h('div', { class: 'tname' }, h('span', { class: 'tn' }, t.name), h('span', { class: 'tarea' }, t.sec || 'Main')), t.seats ? h('span', { class: 'seats' }, t.seats + ' seats') : null),
+    h('div', { class: 'tmeta' }, h('span', { class: 'tchip' }, lab), info.length ? h('div', { class: 'tinfo' }, info) : null));
 }
 async function tableTap(t, s) {
   if (s.o) { if (S.cur && S.cur.lines.length && !rec(S.cur.id) && S.cur.id !== s.o.id && !(await confirmBox('Discard the unsaved order?', 'You have items in an order that was never saved.', 'Discard', true))) return; S.cur = structuredClone(s.o); return go('sell'); }
