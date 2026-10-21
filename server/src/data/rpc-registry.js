@@ -430,6 +430,7 @@ export const RPC = {
   sty_set_variant: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
   sty_set_colour_photos: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
   sty_share_sale: { params: ['p_id'], auth: true },
+  sty_set_badge: { params: ['p_id', 'p_badge'], auth: true },
   public_sty_sale: { params: ['p_token'], auth: false },
   sty_adjust: { params: ['p'], jsonb: ['p'], auth: true },
   sty_save_supplier: { params: ['p'], jsonb: ['p'], auth: true },
