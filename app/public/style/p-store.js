@@ -100,7 +100,7 @@ async function editor(host) {
     try {
       const num = (x) => (x === '' || x == null ? 0 : Number(x) || 0);
       sh.fee = num(sh.fee); sh.freeOver = num(sh.freeOver);
-      const p = { on: !!C.on, tagline: C.tagline || '', announce: C.announce || '', heroImages: C.heroImages, heroTitle: C.heroTitle || '', heroCta: C.heroCta || '', about: a, founders: C.founders, stores: C.stores, faqs: C.faqs, policies: pol, shipping: sh, pay, social: soc, email: C.email || '', phone: C.phone || '', brandName: C.brandName || '' };
+      const p = { on: !!C.on, tagline: C.tagline || '', announce: C.announce || '', heroImages: C.heroImages, heroTitle: C.heroTitle || '', heroCta: C.heroCta || '', about: a, founders: C.founders, stores: C.stores, faqs: C.faqs, policies: pol, shipping: sh, pay, social: soc, email: C.email || '', phone: C.phone || '', brandName: C.brandName || '', showSale: !!C.showSale };
       C = await api('sty_store_save', { p }); toast(t('Saved'));
     } catch (e) { fail(e); } finally { b.disabled = false; }
   } }, t('Save store'));
@@ -109,6 +109,7 @@ async function editor(host) {
   host.append(
     section(t('Your store'), h('div', { class: 'card grid' },
       sw(t('Open the online store'), t('When off, visitors see a "not open yet" page.'), () => C.on, (x) => { C.on = x; }),
+      sw(t('Show discounts on the website'), t('Off: no sale price or % off is shown. Switch on only when you have approved a sale.'), () => C.showSale, (x) => { C.showSale = x; }),
       h('div', { class: 'field' }, h('label', null, t('Store link')), h('div', { class: 'row', style: { gap: '8px' } }, h('input', { class: 'input grow', readonly: true, value: link, 'aria-label': t('Store link') }), h('button', { class: 'btn sm', type: 'button', onclick: async () => { try { await navigator.clipboard.writeText(link); toast(t('Copied')); } catch (e) { toast(link); } } }, t('Copy')), h('a', { class: 'btn sm', href: link, target: '_blank', rel: 'noopener' }, t('Open')))),
       field(t('Top bar message (optional)'), tx(() => C.announce, (v) => { C.announce = v; }, { placeholder: t('Free shipping above ₹2,999') })))),
     section(t('Home page'), h('div', { class: 'card grid' }, h('div', { class: 'cap' }, t('Big hero pictures (they change one by one)')), hero,

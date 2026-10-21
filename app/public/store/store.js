@@ -58,7 +58,8 @@ const leftOf = (s) => s.variants.reduce((a, v) => a + v.left, 0);
 const isGone = (s) => s.badge === 'soldout' || leftOf(s) === 0;
 const colours = (s) => [...new Set(s.variants.map((v) => v.colour).filter(Boolean))];
 const sizesOf = (s) => [...new Set(s.variants.map((v) => v.size).filter(Boolean))];
-const discPct = (s) => (s.mrp > s.price && s.mrp > 0 ? Math.round(((s.mrp - s.price) / s.mrp) * 100) : 0);
+const saleOn = () => ((D && D.config) || {}).showSale === true; // no sale price or % off on the website unless the owner switched it on
+const discPct = (s) => (saleOn() && s.mrp > s.price && s.mrp > 0 ? Math.round(((s.mrp - s.price) / s.mrp) * 100) : 0);
 const q$ = () => { const m = {}; for (const [k, v] of new URLSearchParams((location.hash.split('?')[1] || ''))) m[k] = v; return m; };
 const go = (p) => { location.hash = '#/' + p; };
 const link = (p) => '#/' + p;
@@ -87,7 +88,7 @@ function card(s, opt) {
     gone ? E('div', { class: 'tag' }, 'Sold Out') : s.badge === 'limited' ? E('div', { class: 'tag' }, 'Limited') : discPct(s) >= 10 ? E('div', { class: 'tag' }, discPct(s) + '% off') : null,
     list.length > 1 ? E('button', { class: 'nx p', 'aria-label': 'Previous picture', onclick: step(-1) }, icon('left')) : null, list.length > 1 ? E('button', { class: 'nx n', 'aria-label': 'Next picture', onclick: step(1) }, icon('right')) : null);
   return E('div', { class: 'pc' + (gone ? ' gone' : '') }, ph, E('div', { class: 'in' },
-    E('a', { href: link('p/' + s.id), style: { minWidth: 0 } }, E('div', { class: 'nm' }, s.name), E('div', { class: 'pr' }, inr(s.price), s.mrp > s.price ? E('s', null, inr(s.mrp)) : null)),
+    E('a', { href: link('p/' + s.id), style: { minWidth: 0 } }, E('div', { class: 'nm' }, s.name), E('div', { class: 'pr' }, inr(s.price), saleOn() && s.mrp > s.price ? E('s', null, inr(s.mrp)) : null)),
     gone ? null : E('button', { class: 'add', 'aria-label': 'Quick add', onclick: () => quickAdd(s) }, icon('plus'))));
 }
 function toggleWish(id) { const i = wish.indexOf(id); if (i >= 0) wish.splice(i, 1); else wish.push(id); saveWish(); }
@@ -174,6 +175,22 @@ function openSearch() {
 // ---------- views ----------
 const V = {};
 function newest(n) { return [...STY].sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))).slice(0, n); }
+// slide stack: a deck of product cards that slides by itself; the centre card is full size, its neighbours peek out
+function stack(list, label) {
+  list = list.filter((s) => photos(s)[0]).slice(0, 14); if (list.length < 3) return null;
+  const deck = E('div', { class: 'stk' }, list.map((s) => E('a', { class: 'sk', href: link('p/' + s.id) }, E('img', { src: photos(s)[0], alt: '', loading: 'lazy' }), E('div', { class: 'nm' }, E('span', null, s.name), E('b', null, inr(s.price))))));
+  const items = [...deck.children]; let hold = false, holdT = 0;
+  const near = () => { const mid = deck.scrollLeft + deck.clientWidth / 2; let bi = 0, bd = 1e9; items.forEach((el, i) => { const d = Math.abs(el.offsetLeft + el.offsetWidth / 2 - mid); if (d < bd) { bd = d; bi = i; } }); return bi; };
+  const mark = () => { const n = near(); items.forEach((el, i) => el.classList.toggle('on', i === n)); };
+  const go = (i) => { const el = items[i]; if (el) deck.scrollTo({ left: el.offsetLeft - (deck.clientWidth - el.offsetWidth) / 2, behavior: 'smooth' }); };
+  deck.addEventListener('scroll', () => requestAnimationFrame(mark), { passive: true });
+  const pause = () => { hold = true; clearTimeout(holdT); holdT = setTimeout(() => { hold = false; }, 5000); };
+  ['pointerdown', 'touchstart', 'wheel', 'mouseenter'].forEach((ev) => deck.addEventListener(ev, pause, { passive: true }));
+  deck.addEventListener('mouseleave', () => { clearTimeout(holdT); holdT = setTimeout(() => { hold = false; }, 1500); });
+  setTimeout(mark, 60);
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) { const t = setInterval(() => { if (!document.body.contains(deck)) return clearInterval(t); if (hold || document.hidden) return; go((near() + 1) % items.length); }, 3200); }
+  return E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, label)), deck);
+}
 function gridOf(list, withBlanks) {
   const g = E('div', { class: 'grid' });
   list.forEach((s, i) => { g.append(card(s)); if (withBlanks && (i + 1) % 7 === 0 && i + 1 < list.length) g.append(E('div', { class: 'blank' + (((i + 1) / 7) % 2 ? '' : ' ghost') + ' d', 'aria-hidden': 'true' })); });
@@ -193,6 +210,7 @@ V.home = (v) => {
   const cols = D.collections.filter((x) => x.styleIds.some((id) => BYID[id]));
   if (cols.length) v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'Collections'), E('a', { class: 'btn sm out', href: link('collections') }, 'View all')),
     E('div', { class: 'deck' }, cols.map((x) => { const s0 = x.styleIds.map((id) => BYID[id]).find((s) => s && photos(s)[0]); return E('a', { class: 'dk' + (s0 ? '' : ' ph'), href: link('shop?col=' + x.id) }, s0 ? E('img', { src: photos(s0)[0], alt: '', loading: 'lazy' }) : null, E('div', { class: 'nm' }, x.name)); }))));
+  { const sk = stack(STY, 'All products'); if (sk) v.append(sk); }
   v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'New arrivals'), E('a', { class: 'btn sm out', href: link('shop?new=1') }, 'Discover more')), gridOf(newest(8), true)));
   cols.slice(0, 3).forEach((x) => { const items = x.styleIds.map((id) => BYID[id]).filter(Boolean).slice(0, 8); if (items.length < 2) return; v.append(E('section', { class: 'band' }, E('div', { class: 'hd' }, E('h2', null, x.name), E('a', { class: 'btn sm', href: link('shop?col=' + x.id) }, 'Discover more')), E('div', { class: 'row' }, items.map((s) => card(s))))); });
   if (STY.length > 8) v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'All products'), E('a', { class: 'btn sm out', href: link('shop') }, 'Shop all')), gridOf(STY.slice(0, 12), true)));
@@ -255,6 +273,7 @@ V.shop = (v) => {
     E('div', { class: 'shophd' }, E('div', null, E('h1', null, title), E('div', { class: 'mut tiny' }, list.length + (list.length === 1 ? ' piece' : ' pieces'))), E('button', { class: 'btn soft', onclick: refine }, icon('filter'), 'Refine')),
     act.length ? E('div', { class: 'chips' }, act.map(([k, l]) => E('button', { class: 'chip on', onclick: () => setQ({ [k]: '' }) }, l, E('span', { class: 'x' }, '×')))) : null,
     !act.length && [...new Set(STY.map((s) => s.category))].length > 1 ? E('div', { class: 'chips' }, [...new Set(STY.map((s) => s.category).filter(Boolean))].map((c) => E('button', { class: 'chip', onclick: () => setQ({ cat: c }) }, c))) : null,
+    (q.cat || list.length === STY.length) ? stack(list, q.cat ? q.cat : 'All products') : null,
     list.length ? pagedGrid(list) : E('div', { class: 'empty' }, E('h2', null, 'Nothing matches'), E('div', { class: 'mut' }, 'Try removing a filter.'), E('a', { class: 'btn', href: link('shop') }, 'Clear filters')));
 };
 V.collections = (v) => {
@@ -294,7 +313,7 @@ V.p = (v, id) => {
     const chosen = s.variants.find((x) => (!colour || x.colour === colour) && x.size === size) || (!sizesOf(s).length ? vs[0] : null);
     info.append(
       E('div', null, E('div', { class: 'nm' }, E('span', null, s.name), E('button', { class: 'ic', 'aria-label': 'Save', onclick: () => { toggleWish(s.id); paintInfo(); } }, E('span', { style: { display: 'contents' } }, icon('mark')))),
-        E('div', { class: 'pr' }, inr(s.price), s.mrp > s.price ? [E('s', null, inr(s.mrp)), E('b', null, discPct(s) + '% off')] : null)),
+        E('div', { class: 'pr' }, inr(s.price), discPct(s) > 0 ? [E('s', null, inr(s.mrp)), E('b', null, discPct(s) + '% off')] : null)),
       colours(s).length ? E('div', { class: 'fx' }, E('span', { class: 'lbl' }, 'Colour · ' + colour), E('div', { class: 'dots2', style: { marginTop: '8px' } }, colours(s).map((c) => E('button', { class: c === colour ? 'on' : '', 'aria-label': c, onclick: () => { colour = c; size = ''; cur = 0; paintGal(); paintInfo(); } }, E('span', { class: 'c', style: { background: hex(c) } }))))) : null,
       sizesOf(s).length ? E('div', { class: 'fx' }, E('div', { style: { display: 'flex', justifyContent: 'space-between' } }, E('span', { class: 'lbl' }, 'Size'), E('button', { class: 'tiny', style: { textDecoration: 'underline', color: 'var(--mut)' }, onclick: sizeGuide }, 'Size guide')),
         E('div', { class: 'fwrap', style: { marginTop: '8px' } }, vs.map((x) => E('button', { class: 'sz' + (x.size === size ? ' on' : '') + (x.left < 1 ? ' off' : ''), onclick: () => { size = x.size; paintInfo(); } }, x.size)))) : null,

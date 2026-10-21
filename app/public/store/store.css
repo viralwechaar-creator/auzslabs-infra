@@ -322,3 +322,14 @@ h1,h2,h3,h4{line-height:1.12;margin-top:0;margin-bottom:4px}
 .acc .ai{padding:8px 0}.acc .ai .b{padding-bottom:6px}
 .band{padding:10px 0}.fbar{padding:6px 0}
 footer .cols>*{line-height:1.3}footer a{padding:2px 0}
+
+/* slide stack */
+.stk{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 20% 8px;scrollbar-width:none;margin:0 -4px}
+.stk::-webkit-scrollbar{display:none}
+.sk{flex:0 0 60%;max-width:300px;aspect-ratio:3/4.2;border-radius:var(--r1);overflow:hidden;position:relative;scroll-snap-align:center;background:#d9d6d3;box-shadow:var(--sh);transform:scale(.88);opacity:.72;transition:transform .45s ease,opacity .45s ease}
+.sk.on{transform:scale(1);opacity:1}
+.sk img{width:100%;height:100%;object-fit:cover;display:block}
+.sk .nm{position:absolute;left:0;right:0;bottom:0;padding:30px 12px 12px;display:flex;justify-content:space-between;gap:8px;color:#fff;font-size:11px;background:linear-gradient(transparent,rgba(0,0,0,.5))}
+.sk .nm b{font-weight:600;white-space:nowrap}
+@media(min-width:900px){.stk{padding:4px calc(50% - 150px) 8px}.sk{flex-basis:260px}}
+@media(prefers-reduced-motion:reduce){.sk{transition:none}}
