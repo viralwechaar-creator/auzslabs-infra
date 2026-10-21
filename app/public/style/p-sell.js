@@ -104,12 +104,18 @@ page('sell', {
             h('input', { class: 'input cin', placeholder: t('Customer name'), value: BILL.custName, 'aria-label': t('Customer name'), autocomplete: 'off', oninput: (e) => { BILL.custName = e.target.value; } }),
             h('input', { class: 'input cin', placeholder: t('Phone'), value: BILL.custPhone, inputmode: 'tel', 'aria-label': t('Phone'), autocomplete: 'off', oninput: (e) => { BILL.custPhone = e.target.value; } }),
             h('button', { class: 'btn icon sm', type: 'button', 'aria-label': t('Customer'), title: t('Find a customer'), onclick: () => customerPicker((cu) => { BILL.customer = cu; paintCart(); inSheet && inSheet(); }) }, icon('search', 16))),
-        BILL.lines.length ? h('div', { class: 'blines' }, lines) : h('div', { class: 'bempty' }, icon('tag', 26), h('div', null, t('Cart is empty')), h('div', { class: 'small' }, t('Tap a style or scan a tag'))),
+        BILL.lines.length ? h('div', { class: 'blines' }, lines, inSheet ? null : quickAdd()) : h('div', { class: 'bempty' }, icon('tag', 26), h('div', null, t('Cart is empty')), h('div', { class: 'small' }, t('Tap a style or scan a tag'))),
         BILL.lines.length ? h('div', { class: 'tots' },
           trow(t('Subtotal'), inr(c.subtotal)), c.discount > 0 ? trow(t('Discount'), '-' + inr(c.discount), 'g') : null, trow(t('Tax') + ' (incl.)', inr(c.tax)), c.rounding ? trow(t('Round off'), inr(c.rounding)) : null,
           h('button', { class: 'btn wide sm', type: 'button', onclick: () => discountSheet(() => { paintCart(); inSheet && inSheet(); }) }, icon('tag', 16), t('Discount'))) : null,
         BILL.lines.length ? h('div', { class: 'payrow' }, h('div', { class: 'tot' }, h('span', null, t('Total')), h('b', { class: 'num' }, inr(c.total))),
           h('div', { class: 'row', style: { gap: '8px' } }, h('button', { class: 'btn', type: 'button', onclick: () => holdBill(() => { paintCart(); inSheet && inSheet(true); }) }, t('Hold')), h('button', { class: 'btn fill grow', type: 'button', onclick: async () => { await resolveTypedCustomer(); inSheet && inSheet('close'); paySheet(billCalc(), () => { paintCart(); }); } }, t('Pay') + ' ' + inr(c.total)))) : null);
+    }
+    // fills the free space under the lines with a few styles to add next
+    function quickAdd() {
+      const picks = (S.cat || []).filter((x) => x.active !== false && styleStock(x) > 0).slice(0, 8);
+      if (!picks.length) return null;
+      return h('div', { class: 'quick' }, h('div', { class: 'cap' }, t('Add more')), h('div', { class: 'chips wrap' }, picks.map((x) => h('button', { class: 'chip', type: 'button', onclick: () => pickVariant(x) }, x.name))));
     }
     const trow = (a, b, cls) => h('div', { class: 'tr' + (cls ? ' ' + cls : '') }, h('span', null, a), h('span', { class: 'num' }, b));
     function cartSheet() {

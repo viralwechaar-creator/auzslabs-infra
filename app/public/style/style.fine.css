@@ -251,3 +251,10 @@
 @media (max-width:899px){.two{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.three{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.card.grid,.grid{gap:10px}.field{gap:4px}}
 .logo-row{display:flex;gap:12px;align-items:center}.logo-prev{width:56px;height:56px;border-radius:14px;background:var(--fill);display:grid;place-items:center;color:var(--label3);overflow:hidden;flex:none}.logo-prev img{width:100%;height:100%;object-fit:contain;background:#fff}
 .brand-logo{width:34px;height:34px;border-radius:9px;object-fit:contain;background:#fff;flex:none}.pill-logo{width:24px;height:24px;border-radius:7px;object-fit:contain;background:#fff;flex:none}.rc-logo{display:block;max-height:46px;max-width:120px;margin:0 auto 4px;object-fit:contain}
+
+/* bill lines sit at the top, free space gets quick-add chips; the colour and size picker is a compact sheet */
+.blines{align-content:start}
+.quick{margin-top:14px;padding-top:10px;border-top:.5px solid var(--sep);display:grid;gap:8px}
+.quick .chip{min-height:28px;font-size:13px}
+@media (min-width:900px){.sheet:has(.vp-h){width:min(460px,92vw)}}
+.vp-h .ph{width:84px;height:84px}
