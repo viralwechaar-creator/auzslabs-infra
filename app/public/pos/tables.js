@@ -20,6 +20,7 @@ function tableState(t) {
   const res = upcomingRes(t.id); if (res) return { st: 'res', res };
   return { st: 'free' };
 }
+const tblWide = () => window.matchMedia && matchMedia('(min-width:1100px)').matches;
 const tables = () => L('table').sort((a, b) => String(a.name).localeCompare(b.name, undefined, { numeric: true }));
 const sections = () => [...new Set(tables().map((t) => t.sec || 'Main'))];
 
@@ -27,24 +28,59 @@ V.tables = () => {
   const secs = sections(), ts = tables(), sec = secs.includes(S.tblSec) ? S.tblSec : 'all';
   const states = ts.map((t) => [t, tableState(t)]), busyN = states.filter(([, s]) => s.o).length, covers = states.reduce((a, [, s]) => a + ((s.o && s.o.covers) || 0), 0);
   const shown = states.filter(([t]) => sec === 'all' || (t.sec || 'Main') === sec), f = S.tblFilter || 'all', filtered = shown.filter(([, st]) => tblMatch(f, st));
+  if (!ts.some((t) => t.id === S.tblSel)) S.tblSel = (states.find(([, st]) => st.o) || states[0] || [{}])[0].id;
+  const selPair = states.find(([t]) => t.id === S.tblSel), canAdd = S.role === 'owner' || S.role === 'manager';
   return h('div', { class: 'page' },
-    h('div', { class: 'page-head' }, h('div', null, h('h1', null, 'Tables'), h('div', { class: 'sub' }, plural(ts.length - busyN, 'table') + ' free · ' + busyN + ' seated' + (covers ? ' · ' + plural(covers, 'guest') : ''))),
-      h('div', { class: 'row' }, h('button', { class: 'btn tinted', onclick: () => { S.cur = newOrder({ type: 'Takeaway' }); go('sell'); } }, icon('sell', 18), 'Takeaway'), isRestaurant() ? h('button', { class: 'btn', onclick: () => go('reserve') }, icon('reserve', 18), 'Reservations') : null)),
+    h('div', { class: 'page-head' }, h('div', null, h('div', { class: 'eyebrow' }, 'Floor management'), h('h1', null, 'Tables'), h('div', { class: 'sub' }, 'Find open seats fast, spot occupied tables, and manage each bill.')),
+      h('div', { class: 'row' }, h('button', { class: 'btn tinted', onclick: () => { S.cur = newOrder({ type: 'Takeaway' }); go('sell'); } }, icon('sell', 18), 'Takeaway'), isRestaurant() ? h('button', { class: 'btn', onclick: () => go('reserve') }, icon('reserve', 18), 'Reservations') : null,
+        canAdd ? h('button', { class: 'btn fill', onclick: () => { location.href = '/dashboard.html#menu/tables'; } }, icon('plus', 18), 'Add table') : null)),
+    h('div', { class: 'tbl-bar' }, h('div', { class: 'legend' }, [['#34c759', 'Available'], ['var(--accent)', 'Occupied'], ['#8e8e93', 'Needs cleaning'], ['#007aff', 'Reserved']].map(([c, l]) => h('span', null, h('i', { style: { background: c } }), l))), tblFilters(states)),
     secs.length > 1 ? h('div', { style: { maxWidth: '640px' } }, seg([['all', 'All'], ...secs.map((s) => [s, s])], sec, (v) => { S.tblSec = v; render(); })) : null,
     ts.length ? h('div', { class: 'tbl-wrap' },
-      h('div', { class: 'tbl-main' }, tblFilters(states), filtered.length ? h('div', { class: 'tables' }, filtered.map(([t, s]) => tableTile(t, s))) : h('div', { class: 'empty' }, h('b', null, 'No tables in this view'), h('div', null, 'Choose another status above.')),
-        h('div', { class: 'legend' }, [['#8e8e93', 'Ordering'], ['#ff9500', 'In kitchen'], ['#34c759', 'Ready'], ['var(--accent)', 'Bill pending'], ['#007aff', 'Reserved']].map(([c, l]) => h('span', null, h('i', { style: { background: c } }), l)))),
-      tblSide(states, covers))
+      h('div', { class: 'tbl-main card' }, h('div', { class: 'row sp' }, h('div', null, h('h2', { class: 'tbl-h' }, sec === 'all' ? 'Dining floor' : sec), h('div', { class: 'sub' }, (secs.length > 1 && sec === 'all' ? secs.join(', ') + ' · ' : '') + plural(shown.length, 'table'))),
+        canAdd ? h('button', { class: 'btn plain', onclick: () => { location.href = '/dashboard.html#menu/tables'; } }, 'Edit layout ↗') : null),
+        filtered.length ? h('div', { class: 'tables' }, filtered.map(([t, s]) => tableTile(t, s))) : h('div', { class: 'empty' }, h('b', null, 'No tables in this view'), h('div', null, 'Choose another status above.'))),
+      tblSide(states, covers, selPair))
       : empty('tables', 'No tables yet', 'Add tables in the admin console under Menu → Tables & Areas.'));
 };
 
 // ---- the floor summary: filter chips with counts, and a side panel of what needs doing next ----
 const tblMatch = (f, st) => f === 'all' || (f === 'free' && st.st === 'free') || (f === 'seated' && !!st.o) || (f === 'ready' && st.st === 'ready') || (f === 'dirty' && st.st === 'dirty') || (f === 'res' && st.st === 'res');
 function tblFilters(states) {
-  const defs = [['all', 'All'], ['free', 'Available'], ['seated', 'Seated'], ['ready', 'Ready'], ['dirty', 'Cleaning'], ['res', 'Reserved']], f = S.tblFilter || 'all';
+  const defs = [['all', 'All tables'], ['free', 'Available'], ['seated', 'Occupied'], ['ready', 'Ready'], ['dirty', 'Cleaning'], ['res', 'Reserved']], f = S.tblFilter || 'all';
   return h('div', { class: 'chips tbl-chips', role: 'toolbar', 'aria-label': 'Filter tables' }, defs.map(([k, l]) => { const n = states.filter(([, st]) => tblMatch(k, st)).length; return (k === 'all' || n || f === k) ? h('button', { class: 'chipf' + (f === k ? ' on' : ''), 'data-tf': k, onclick: () => { S.tblFilter = k; render(); } }, l, h('b', null, String(n))) : null; }));
 }
-function tblSide(states, covers) {
+
+// the selected table: what is on it and the next action (wide screens; on a phone a tap goes straight to the order)
+function tblDetail(t, s) {
+  const lab = TSTATE[s.st][0], guests = s.o && s.o.covers;
+  const line = (k, v) => h('div', { class: 'dline' }, h('span', null, k), h('b', null, v));
+  const body = s.o ? [line('Bill', s.o.no || '—'), line('Items', plural(itemCount(s.o), 'item')), line('Running time', s.mins + ' min'), line('Bill total', inr(s.amt))]
+    : [h('div', { class: 'dempty' }, h('b', null, s.st === 'free' ? 'Table available' : s.st === 'res' ? 'Reservation scheduled' : s.st === 'dirty' ? 'Cleaning in progress' : lab), s.st === 'free' ? 'Start a new order for this table.' : s.st === 'res' ? s.res.customer_name + ' · ' + s.res.time.slice(0, 5) + (s.res.party_size ? ' · ' + plural(s.res.party_size, 'guest') : '') : 'Mark it clean when it is ready for the next guests.')];
+  const primary = s.o ? 'Open table bill →' : s.st === 'dirty' ? 'Mark cleaned' : s.st === 'res' ? 'Seat this reservation' : 'Start order →';
+  return h('div', { class: 'card tbl-detail' },
+    h('div', { class: 'dban' }, h('small', null, 'SELECTED TABLE'), h('h2', null, t.name + (t.sec ? ' · ' + t.sec : '')), h('p', null, lab + (guests ? ' · ' + plural(guests, 'guest') : '') + (s.o ? ' · ' + s.mins + ' min' : '') + (t.seats ? ' · ' + t.seats + ' seats' : ''))),
+    h('div', { class: 'dbody' }, h('h3', null, s.o ? 'Current bill' : 'Table'), ...body,
+      h('div', { class: 'dact' }, h('button', { class: 'btn fill wide', 'data-act': 'open', onclick: () => (s.st === 'dirty' ? markClean(t) : s.st === 'res' ? seatBooking(s.res, t.id) : tableTap(t, s)) }, primary),
+        h('button', { class: 'btn wide', 'data-act': 'status', onclick: () => tableStatusSheet(t, s) }, 'Change table status'))));
+}
+async function markClean(t) { await save('table', { ...t, cleaned: true, cleanedAt: now(), cleanedBy: S.user.id }, t.id); toast(t.name + ' is ready'); render(); }
+function tableStatusSheet(t, s) {
+  const opt = (ic, title, sub, run) => liRow({ ic, tone: 'gray', title, sub, chev: true, onclick: async () => { sh.close(); await run(); } });
+  const rows = [];
+  if (s.o) {
+    rows.push(opt('move', 'Move to another table', 'The bill follows the guests', () => tableSheet(s.o)));
+    rows.push(opt('merge', 'Merge into another table', 'Join this bill with an open one', () => mergeIntoSheet(s.o)));
+    rows.push(opt('move', 'Split the bill', 'Move some items to a new bill', () => splitSheet(s.o)));
+  } else {
+    if (s.st === 'dirty') rows.push(opt('broom', 'Mark as cleaned', 'Ready for the next guests', () => markClean(t)));
+    else rows.push(opt('broom', 'Mark as needs cleaning', 'Show it as not ready', async () => { await save('table', { ...t, cleaned: false }, t.id); toast(t.name + ' needs cleaning'); render(); }));
+    if (s.st === 'res') rows.push(opt('people', 'Seat this reservation', s.res.customer_name, () => seatBooking(s.res, t.id)));
+    if (isRestaurant()) rows.push(opt('reserve', 'Reserve this table', 'Open Reservations', () => go('reserve')));
+  }
+  const sh = sheet({ title: t.name + ' · change status', narrow: true, closeLabel: 'Close', body: h('div', { class: 'list' }, rows) });
+}
+function tblSide(states, covers, selPair) {
   const seated = states.filter(([, st]) => st.o), running = seated.reduce((a, [, st]) => a + (st.amt || 0), 0);
   const stat = (v, l) => h('div', { class: 'tstat' }, h('b', null, v), h('span', null, l));
   const ready = states.filter(([, st]) => st.st === 'ready'), dirty = states.filter(([, st]) => st.st === 'dirty'), slow = seated.filter(([, st]) => st.st !== 'ready' && st.mins >= 60);
@@ -54,19 +90,19 @@ function tblSide(states, covers) {
     ...dirty.map(([t]) => liRow({ ic: 'broom', tone: 'gray', title: t.name + ' needs cleaning', right: h('button', { class: 'btn tinted sm', onclick: async (e) => { e.stopPropagation(); await save('table', { ...t, cleaned: true, cleanedAt: now(), cleanedBy: S.user.id }, t.id); toast(t.name + ' is ready'); render(); } }, 'Mark clean') })),
   ];
   const nowT = Date.now(), res = (S.bookings || []).filter((b) => b.date === today() && ['pending', 'confirmed'].includes(b.status) && b.time && new Date(b.date + 'T' + b.time).getTime() > nowT - 30 * 60000).sort((a, b) => String(a.time).localeCompare(String(b.time))).slice(0, 4);
-  return h('aside', { class: 'tbl-side' },
+  return h('aside', { class: 'tbl-side' }, selPair ? tblDetail(selPair[0], selPair[1]) : null,
     h('div', { class: 'card tblsum' }, h('div', { class: 'tstats' }, stat(String(states.filter(([, st]) => st.st === 'free').length), 'Available'), stat(String(seated.length), 'Seated'), stat(String(covers), 'Guests'), stat(inr(running), 'Running bills'))),
     h('div', { class: 'card' }, h('div', { class: 'lbl' }, 'Needs attention'), attn.length ? h('div', { class: 'list' }, attn) : h('div', { class: 'sub', style: { padding: '6px 0' } }, 'Nothing waiting. Tables are on track.')),
     isRestaurant() ? h('div', { class: 'card' }, h('div', { class: 'row sp' }, h('div', { class: 'lbl' }, 'Coming up today'), h('button', { class: 'btn plain sm', onclick: () => go('reserve') }, 'All reservations')),
       res.length ? h('div', { class: 'list' }, res.map((b) => liRow({ ic: 'people', tone: 'blue', title: b.time.slice(0, 5) + ' · ' + b.customer_name, sub: (b.party_size ? plural(b.party_size, 'guest') + ' · ' : '') + (tn(b.resource_id) || 'No table yet'), chev: true, onclick: () => go('reserve') }))) : h('div', { class: 'sub', style: { padding: '6px 0' } }, 'No more bookings today.')) : null);
 }
 function tableTile(t, s) {
-  const lab = TSTATE[s.st];
-  const sub = s.o ? [h('div', { class: 'ts' }, icon('clock', 14), h('span', { 'data-since': s.o.created }, s.mins + ' min'), s.o.covers ? [' · ', icon('people', 14), String(s.o.covers)] : null), h('div', { class: 'ta' }, inr(s.amt)), h('div', { class: 'ts' }, lab[0])]
-    : s.st === 'res' ? [h('div', { class: 'ts' }, 'Reserved ' + s.res.time.slice(0, 5)), h('div', { class: 'ts' }, s.res.customer_name + (s.res.party_size ? ' · ' + s.res.party_size : ''))]
-      : [h('div', { class: 'ts' }, s.st === 'dirty' ? [icon('broom', 14), 'Needs cleaning'] : 'Available')];
-  return h('button', { class: 'tbl-tile st-' + s.st + (S.cur && S.cur.table === t.id ? ' sel' : ''), 'data-table': t.id, onclick: () => tableTap(t, s) },
-    h('div', { class: 'tn' }, t.name), t.seats ? h('span', { class: 'seats' }, icon('people', 13), String(t.seats)) : null, h('div', null, sub));
+  const lab = TSTATE[s.st][0];
+  const meta = s.o ? [h('span', { class: 'tc' }, icon('clock', 13), h('span', { 'data-since': s.o.created }, s.mins + ' min'), s.o.covers ? ' · ' + s.o.covers + ' guests' : null), h('b', { class: 'ta' }, inr(s.amt))]
+    : s.st === 'res' ? [h('span', { class: 'tc' }, s.res.time.slice(0, 5) + ' · ' + s.res.customer_name)] : [h('span', { class: 'tc' }, t.sec || 'Main')];
+  return h('button', { class: 'tbl-tile st-' + s.st + ((S.cur && S.cur.table === t.id) || S.tblSel === t.id ? ' sel' : ''), 'data-table': t.id, onclick: () => { if (tblWide()) { S.tblSel = t.id; render(); } else tableTap(t, s); } },
+    h('div', { class: 'ttop' }, h('div', { class: 'tn' }, t.name), t.seats ? h('span', { class: 'seats' }, t.seats + ' seats') : null),
+    h('span', { class: 'tchip' }, lab), h('div', { class: 'tmeta' }, meta));
 }
 async function tableTap(t, s) {
   if (s.o) { if (S.cur && S.cur.lines.length && !rec(S.cur.id) && S.cur.id !== s.o.id && !(await confirmBox('Discard the unsaved order?', 'You have items in an order that was never saved.', 'Discard', true))) return; S.cur = structuredClone(s.o); return go('sell'); }

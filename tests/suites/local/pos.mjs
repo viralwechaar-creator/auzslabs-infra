@@ -33,7 +33,7 @@ export default async function run({ browser, stack }) {
   await s.shot(page, 'pos-tables-desktop');
 
   await s.check('Send to kitchen: the order and its numbered KOT reach the server, with nothing left to sync', async () => {
-    await page.locator('.tbl-tile').first().click(); await page.waitForSelector('.items .tile');
+    await page.locator('.tbl-tile').first().click(); await page.locator('.tbl-detail [data-act=open]').click(); await page.waitForSelector('.items .tile');
     await tile('Chicken 65').click(); await tile('Chicken 65').click();
     await custFill('Workflow Guest', '9811122233');
     await pane.locator('button', { hasText: 'Send to kitchen' }).click();
@@ -115,7 +115,7 @@ export default async function run({ browser, stack }) {
   }, 'major');
 
   await s.check('Move a table: the order follows to the new table and the move is in the audit log', async () => {
-    await nav('tables'); await page.locator('.tables .tbl-tile[data-table="tbl-2"]').click(); await page.waitForTimeout(500);
+    await nav('tables'); await page.locator('.tables .tbl-tile[data-table="tbl-2"]').click(); await page.locator('.tbl-detail [data-act=open]').click(); await page.waitForTimeout(500);
     await pane.locator('button[aria-label="Order actions"]').click(); await page.waitForTimeout(300);
     await page.locator('.md button.li', { hasText: 'Move to another table' }).click(); await page.waitForTimeout(400);
     await page.locator('.md .tbl-tile[data-table="tbl-3"]').click();
