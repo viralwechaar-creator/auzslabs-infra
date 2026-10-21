@@ -387,7 +387,13 @@ export default async function run({ browser, stack }) {
     const paid = await ok(anon, 'public_sty_order_paid', { p_token: o2.token, p_utr: 'T2610123456' }); assert(paid.paymentStatus === 'submitted', 'status ' + paid.paymentStatus);
     const inbox = await ok(staff, 'sty_web_orders_list', { p: {} }); assert(inbox.length >= 2 && inbox.find((x) => x.number === o2.number).utr === 'T2610123456', 'inbox');
     assert(await ok(staff, 'sty_web_orders_open') >= 2, 'open count');
-    await ok(staff, 'sty_web_order_update', { p_id: inbox.find((x) => x.number === o2.number).id, p: { status: 'confirmed', paymentStatus: 'paid' } });
+    const stk0 = await stock(vr.id);
+    const up = await ok(staff, 'sty_web_order_update', { p_id: inbox.find((x) => x.number === o2.number).id, p: { status: 'confirmed', paymentStatus: 'paid' } });
+    assert(up.saleId && up.billed, 'paying the order must make the bill by itself: ' + JSON.stringify(up));
+    assert(await stock(vr.id) === stk0 - 1, 'stock must move once, when the bill is made');
+    const again = await ok(staff, 'sty_web_order_bill', { p_id: inbox.find((x) => x.number === o2.number).id }); assert(again.duplicate, 'a second bill must not be made');
+    await ok(staff, 'sty_web_order_update', { p_id: inbox.find((x) => x.number === o2.number).id, p: { status: 'packed' } });
+    assert(await stock(vr.id) === stk0 - 1, 'stock moved twice');
     await fails(cafe, 'sty_web_orders_list', { p: {} }, /not enabled/i);
     await fails(staff, 'sty_store_request_payments', {}, /does not allow/i);
     const rq = await ok(manager, 'sty_store_request_payments'); assert(rq.payReq === 'requested', 'payReq');

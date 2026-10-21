@@ -444,6 +444,7 @@ export const RPC = {
   public_sty_order: { params: ['p_token'], auth: false },
   public_sty_order_paid: { params: ['p_token', 'p_utr'], auth: false },
   public_sty_track: { params: ['p_slug', 'p'], auth: false },
+  sty_web_order_bill: { params: ['p_id'], auth: true },
   sty_store_analytics: { params: ['p_days'], defaults: { p_days: 30 }, auth: true },
   sty_web_orders_list: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
   sty_web_orders_open: { params: [], auth: true },

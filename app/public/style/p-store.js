@@ -21,7 +21,7 @@ page('store', {
 async function orders(host) {
   const list = h('div', { class: 'list' });
   const seg2 = seg([['new', t('New')], ['active', t('In progress')], ['done', t('Done')], ['', t('All')]], OST.status, (x) => { OST.status = x; load(); }, { full: true });
-  host.append(seg2, list);
+  host.append(alertCard(), seg2, list);
   async function load() {
     clear(list).append(h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '20px auto' } }));
     let rows = []; try { rows = await api('sty_web_orders_list', { p: {} }) || []; } catch (e) { return clear(list).append(empty('cloudOff', t('Could not load'), e.message)); }
@@ -34,10 +34,12 @@ async function orders(host) {
 
 function orderSheet(r, changed) {
   const c = r.customer;
-  const set = async (p, close) => { await api('sty_web_order_update', { p_id: r.id, p }); toast(t('Saved')); changed && changed(); close && close(); };
+  const set = async (p, close) => { const x = await api('sty_web_order_update', { p_id: r.id, p }); if (x && x.billed) toast(t('Saved. Bill made') + ': ' + x.billed); else if (x && x.billError) toast(t('Saved, but the bill could not be made') + ': ' + x.billError, { err: true }); else toast(t('Saved')); changed && changed(); close && close(); };
+  const billNow = async (close) => { try { const x = await api('sty_web_order_bill', { p_id: r.id }); toast(t('Bill made') + ': ' + (x.number || '')); changed && changed(); close && close(); } catch (e) { toast(e.message, { err: true }); return false; } };
   const addr = [c.address, c.address2, c.city, c.state, c.pin].filter(Boolean).join(', ');
   const wa = String(c.phone || '').replace(/\D/g, '');
   const body = h('div', { class: 'grid' },
+    r.saleId ? banner('ok', 'check', t('Billed automatically') + (r.saleNo ? ': ' + r.saleNo : '') + '. ' + t('No need to bill it again on the till.')) : r.paymentStatus === 'paid' ? null : banner('info', 'alert', t('The bill is made automatically when the payment is confirmed (or when a cash on delivery order is delivered).')),
     r.paymentStatus === 'submitted' ? banner('warn', 'alert', t('The customer says they paid by UPI. Reference') + ': ' + (r.utr || '-') + '. ' + t('Check it in your bank app, then mark it paid.')) : null,
     h('div', { class: 'card grid' }, h('b', null, c.name), h('div', { class: 'muted small' }, c.phone + (c.email ? ' · ' + c.email : '')), h('div', { class: 'small' }, addr), r.note ? h('div', { class: 'muted small' }, t('Note') + ': ' + r.note) : null,
       h('div', { class: 'row', style: { gap: '8px', flexWrap: 'wrap' } }, c.phone ? h('a', { class: 'btn sm', href: 'tel:' + c.phone }, icon('phone', 16), t('Call')) : null, wa ? h('a', { class: 'btn sm', target: '_blank', rel: 'noopener', href: 'https://wa.me/' + (wa.length === 10 ? '91' + wa : wa) + '?text=' + encodeURIComponent('Hi ' + c.name.split(' ')[0] + ', about your order ' + r.number + '.') }, icon('share', 16), 'WhatsApp') : null)),
@@ -50,23 +52,8 @@ function orderSheet(r, changed) {
     r.status === 'confirmed' ? { label: t('Packed'), onclick: (close) => set({ status: 'packed' }, close) } : null,
     ['confirmed', 'packed'].includes(r.status) ? { label: t('Shipped'), onclick: (close) => set({ status: 'shipped' }, close) } : null,
     r.status === 'shipped' ? { label: t('Delivered'), primary: true, onclick: (close) => set(r.payment === 'cod' ? { status: 'delivered', paymentStatus: 'paid' } : { status: 'delivered' }, close) } : null,
-    !['delivered', 'cancelled'].includes(r.status) ? { label: t('Make a bill'), onclick: async (close) => { await makeBill(r); close(); } } : null,
+    !r.saleId && r.status !== 'cancelled' && r.paymentStatus !== 'paid' ? { label: t('Make bill now (stock goes out)'), onclick: billNow } : null,
     !['delivered', 'cancelled'].includes(r.status) ? { label: t('Cancel order'), danger: true, onclick: async (close) => { if (!await confirmBox(t('Cancel this order?'), t('The customer is not told automatically.'), t('Cancel order'), true)) return false; await set({ status: 'cancelled' }, close); } } : null] });
-}
-
-// put the order on the till so staff can take payment / print the bill; stock moves when the bill is made
-async function makeBill(r) {
-  await loadCatalog(true);
-  newBill();
-  let missed = 0;
-  for (const l of r.lines) {
-    const s = S.cat.find((x) => x.id === l.styleId); const vr = s && s.variants.find((x) => x.id === l.variantId);
-    if (!vr || !addLine(s, vr, l.qty)) missed++;
-  }
-  BILL.custName = r.customer.name; BILL.custPhone = r.customer.phone; BILL.note = 'Online order ' + r.number;
-  if (r.status === 'new') { try { await api('sty_web_order_update', { p_id: r.id, p: { status: 'confirmed' } }); } catch (e) { /* the till still works */ } }
-  if (missed) toast(t('Some items could not be added (stock). Check the bill.'), { err: true });
-  go('sell');
 }
 
 async function editor(host) {
@@ -159,4 +146,28 @@ async function storeStats(host) {
     box.append(section(t('Busy hours'), h('div', { class: 'card' }, vbars(Array.from({ length: 24 }, (_, i) => ({ l: i, v: +(((r.hours || []).find((x) => +x.h === i) || {}).n || 0) }))))));
   }
   load();
+}
+
+
+// ---- order alerts on this device (browser push); the same push_subs table the POS uses ----
+const OVAPID = 'BFQTtl3U3YPPl7qBOO00GjCNsW4N-T5jyq4UGs2Mk9s3lHoichGl0_B4yYrPCmCfscnw63XbHtpOp2Iy1nWMmZA';
+const b64arr = (s) => { const p = '='.repeat((4 - (s.length % 4)) % 4), b = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')), a = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a; };
+async function enableAlerts(ask) {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return { ok: false, msg: t('This browser cannot show alerts when the app is closed. On iPhone, add the app to the Home Screen first.') };
+  if (Notification.permission !== 'granted') { if (!ask) return { ok: false }; const perm = await Notification.requestPermission(); if (perm !== 'granted') return { ok: false, msg: t('Allow notifications for this site in the phone settings.') }; }
+  const reg = await navigator.serviceWorker.ready, want = b64arr(OVAPID);
+  let sub = await reg.pushManager.getSubscription();
+  const have = sub && sub.options && sub.options.applicationServerKey ? new Uint8Array(sub.options.applicationServerKey) : null;
+  if (sub && !(have && have.length === want.length && have.every((b, i) => b === want[i]))) { try { await sb.from('push_subs').delete().eq('endpoint', sub.endpoint); } catch {} await sub.unsubscribe(); sub = null; }
+  if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: want });
+  const j = sub.toJSON(); const { error } = await sb.from('push_subs').upsert({ user_id: S.user.id, endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth }, { onConflict: 'endpoint' });
+  return error ? { ok: false, msg: error.message } : { ok: true };
+}
+function alertCard() {
+  const box = h('div');
+  const paint = (on) => { clear(box); if (on) return; box.append(h('div', { class: 'card row', style: { gap: '10px', alignItems: 'center' } }, h('div', { class: 'grow' }, h('b', null, t('Get an alert for every new online order')), h('div', { class: 'muted small' }, t('Works when the app is closed. On iPhone it needs the app added to the Home Screen.'))), h('button', { class: 'btn sm primary', onclick: async () => { const r = await enableAlerts(true); if (r.ok) { toast(t('Order alerts are on for this device')); paint(true); } else toast(r.msg || t('Could not turn on alerts'), { err: true }); } }, t('Turn on'))));
+  };
+  paint(false);
+  enableAlerts(false).then((r) => { if (r.ok) paint(true); }).catch(() => {});
+  return box;
 }
