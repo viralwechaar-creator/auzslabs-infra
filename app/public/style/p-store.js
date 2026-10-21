@@ -11,9 +11,9 @@ page('store', {
   async render(v) {
     v.header({ title: t('Online store') });
     const body = h('div', { class: 'grid' });
-    const tabs = seg(can('sty_manage') ? [['orders', t('Orders')], ['edit', t('Store')]] : [['orders', t('Orders')]], OST.tab, (x) => { OST.tab = x; paint(); }, { full: true });
+    const tabs = seg(can('sty_manage') ? [['orders', t('Orders')], ['stats', t('Visitors')], ['edit', t('Store')]] : [['orders', t('Orders')]], OST.tab, (x) => { OST.tab = x; paint(); }, { full: true });
     v.root.append(h('div', { class: 'grid' }, tabs, body));
-    async function paint() { clear(body); if (OST.tab === 'edit' && can('sty_manage')) await editor(body); else await orders(body); }
+    async function paint() { clear(body); if (OST.tab === 'edit' && can('sty_manage')) await editor(body); else if (OST.tab === 'stats' && can('sty_manage')) await storeStats(body); else await orders(body); }
     paint();
   },
 });
@@ -126,4 +126,37 @@ async function editor(host) {
     section(t('Contact and social'), h('div', { class: 'card grid' }, h('div', { class: 'two' }, field(t('Phone (also used for WhatsApp)'), tx(() => C.phone, (v) => { C.phone = v; }, { mode: 'tel', placeholder: st.phone || '' })), field(t('Email'), tx(() => C.email, (v) => { C.email = v; }, { type: 'email' }))), h('div', { class: 'two' }, field('Instagram', tx(() => soc.instagram, (v) => { soc.instagram = v; }, { placeholder: 'instagram.com/yourshop' })), field('Facebook', tx(() => soc.facebook, (v) => { soc.facebook = v; }))))),
     section(t('Policies (optional)'), h('div', { class: 'card grid' }, h('div', { class: 'muted small' }, t('Leave empty to show our simple standard text.')), field(t('Shipping'), ta(() => pol.shipping, (v) => { pol.shipping = v; })), field(t('Returns and exchanges'), ta(() => pol.returns, (v) => { pol.returns = v; })), field(t('Terms'), ta(() => pol.terms, (v) => { pol.terms = v; })), field(t('Privacy'), ta(() => pol.privacy, (v) => { pol.privacy = v; })))),
     save);
+}
+
+
+// ---- visitor behaviour: who comes, what they look at, how far they scroll, where they drop off ----
+OST.days = 30;
+const PAGEN = { home: 'Home', shop: 'Shop', p: 'Product page', bag: 'Bag', checkout: 'Checkout', order: 'Order page', stores: 'Stores', about: 'About', faq: 'FAQ', contact: 'Contact', collections: 'Collections', orders: 'My orders', saved: 'Saved' };
+const pageName = (p) => { const k = String(p || '').split('/')[0]; return PAGEN[k] || k || '-'; };
+const hbar = (label, n, max, sub) => h('div', { class: 'hbar' }, h('div', { class: 'hb-l' }, label), h('div', { class: 'hb-t' }, h('div', { class: 'hb-f', style: { width: Math.max(2, n / Math.max(1, max) * 100) + '%' } })), h('div', { class: 'hb-n num' }, String(n), sub ? h('span', { class: 'mut' }, ' ' + sub) : null));
+async function storeStats(host) {
+  const box = h('div', { class: 'grid' });
+  const per = seg([['7', t('7 days')], ['30', t('30 days')], ['90', t('90 days')]], String(OST.days), (x) => { OST.days = +x; load(); }, { full: true });
+  host.append(per, box);
+  async function load() {
+    clear(box).append(h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '20px auto' } }));
+    let r; try { r = await api('sty_store_analytics', { p_days: OST.days }); } catch (e) { return clear(box).append(empty('cloudOff', t('Could not load'), e.message)); }
+    clear(box);
+    if (!r.visitors) { box.append(empty('chart', t('No visitors yet'), t('Visits are counted from now on. Share your store link and check back.'))); return; }
+    const f = r.funnel || {}; const conv = f.v ? Math.round((f.o || 0) / f.v * 1000) / 10 : 0;
+    box.append(h('div', { class: 'kpis' }, kpi(t('Visitors'), r.visitors, r.returning + ' ' + t('came back')), kpi(t('Time on site'), (Math.floor(r.avgSeconds / 60) ? Math.floor(r.avgSeconds / 60) + 'm ' : '') + (r.avgSeconds % 60) + 's', t('per page')), kpi(t('Orders'), r.orders, inr(r.revenue, 0)), kpi(t('Buying rate'), conv + '%', t('of visitors ordered'))));
+    const fm = f.v || 1;
+    box.append(section(t('Where visitors drop off'), h('div', { class: 'card' }, [[t('Visited the store'), f.v], [t('Looked at a product'), f.p], [t('Added to bag'), f.b], [t('Started checkout'), f.c], [t('Placed an order'), f.o]].map(([l, n], i, a) => hbar(l, n || 0, fm, i ? '(' + (a[i - 1][1] ? Math.round((n || 0) / a[i - 1][1] * 100) : 0) + '% of previous)' : '')))));
+    box.append(section(t('How far people scroll'), h('div', { class: 'card' }, (r.scroll || []).length ? (r.scroll || []).map((x) => h('div', { class: 'sd' }, h('div', { class: 'hb-l' }, pageName(x.page), h('span', { class: 'mut' }, ' · ' + x.n + ' ' + t('visits') + ' · ' + t('avg') + ' ' + (x.avg_s || 0) + 's')),
+      h('div', { class: 'sd-b' }, [['25%', x.a25], ['50%', x.a50], ['75%', x.a75], ['End', x.a100]].map(([l, n]) => h('div', { class: 'sd-c' }, h('div', { class: 'sd-f', style: { height: Math.max(3, Math.round(n / Math.max(1, x.n) * 100)) + '%' } }), h('div', { class: 'sd-l' }, l, h('br'), Math.round(n / Math.max(1, x.n) * 100) + '%'))))) ) : h('div', { class: 'mut' }, t('Not enough data yet')))));
+    const pm = Math.max(1, ...(r.products || []).map((x) => +x.views));
+    box.append(section(t('Most viewed products'), h('div', { class: 'card' }, (r.products || []).map((x) => hbar(x.name || x.sid, +x.views, pm, (((r.adds || []).find((a) => a.sid === x.sid) || {}).adds || 0) + ' ' + t('added to bag'))))));
+    if ((r.searches || []).length) box.append(section(t('What people search for'), h('div', { class: 'card' }, r.searches.map((x) => hbar(x.q, +x.n, +r.searches[0].n)))));
+    if ((r.clicks || []).length) box.append(section(t('Buttons used'), h('div', { class: 'card' }, r.clicks.map((x) => hbar(x.what, +x.n, +r.clicks[0].n)))));
+    box.append(section(t('Devices'), h('div', { class: 'card' }, (r.devices || []).map((x) => hbar(x.device, +x.n, r.visitors)))));
+    box.append(section(t('Where visitors come from'), h('div', { class: 'card' }, (r.sources || []).map((x) => hbar(x.ref === 'Direct' ? t('Direct / link shared') : x.ref, +x.n, r.visitors)))));
+    box.append(section(t('Visitors per day'), h('div', { class: 'card' }, vbars((r.daily || []).map((x) => ({ l: String(x.day).slice(8, 10), v: +x.n }))))));
+    box.append(section(t('Busy hours'), h('div', { class: 'card' }, vbars(Array.from({ length: 24 }, (_, i) => ({ l: i, v: +(((r.hours || []).find((x) => +x.h === i) || {}).n || 0) }))))));
+  }
+  load();
 }

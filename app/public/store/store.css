@@ -408,3 +408,39 @@ body.homehero .hero::before{content:"";position:absolute;left:0;right:0;top:0;he
 .sk .nm{flex-direction:column;align-items:center;text-align:center;background:none;padding:0 12px 16px;gap:2px;font-size:13px;text-shadow:0 1px 8px rgba(0,0,0,.5)}
 .sk .nm b{font-size:10.5px;font-weight:500}
 @media(min-width:900px){.stk{padding:6px calc(50% - 160px) 10px}.sk{flex-basis:300px}}
+
+/* ---- round 4: bolder desktop header, a bit more contrast, smaller checkout, tighter cards ---- */
+:root{--line:#d4d1ce;--mut:#6f6d6b;--r1:18px;--r2:12px;--r3:9px}
+.ic{color:#111}.ic svg{stroke-width:1.9}
+.pc .add{color:#111}.pc .in .pr{color:#3a3a3a}
+.pc .bm{background:rgba(255,255,255,.92)}.pc .bm svg{stroke-width:1.9}
+.btn.out{border-color:#222}
+@media(min-width:900px){
+  .top{height:64px}:root{--hh:64px}
+  .top .l a{font-size:14px;font-weight:700;padding:8px 12px;color:#111}
+  .top .ic{width:44px;height:44px}.top .ic svg{width:21px;height:21px;stroke-width:2.1}
+  .top .ic .n{min-width:17px;height:17px;font-size:10px;font-weight:700}
+  .brand{font-size:22px;font-weight:800}
+  .menu-pill{height:38px;font-size:13px;font-weight:700;padding:0 16px}
+}
+/* checkout and forms smaller, and no zoom on focus (viewport is also locked) */
+.fld input,.fld select,.fld textarea{height:32px;border-radius:10px;font-size:11px;padding:0 10px;border-color:#cfcdca}
+.fld textarea{height:52px;padding:7px 10px;border-radius:10px}
+.fld label,.fld .lbl{font-size:9.5px}
+.frm{gap:6px}.frm h2{font-size:12px;margin-top:4px}
+.sum .t{font-size:10px}.ln{padding:6px 0}
+.ln .im{width:44px;height:56px;border-radius:8px}
+/* live order status */
+.live{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px;font-size:11px}
+.live i{width:8px;height:8px;border-radius:50%;background:#1a9d4a;box-shadow:0 0 0 0 rgba(26,157,74,.5);animation:lv 1.6s infinite}
+.live .tiny{flex-basis:100%}
+@keyframes lv{70%{box-shadow:0 0 0 7px rgba(26,157,74,0)}100%{box-shadow:0 0 0 0 rgba(26,157,74,0)}}
+/* tighter cards and lines everywhere, less curve */
+.grid{gap:4px}.band{border-radius:14px;padding:8px 6px 8px;margin-top:8px}.band .row{gap:4px}
+.pc .ph{border-radius:10px}.pc .in{padding:3px 2px 2px}
+.card,.scard{border-radius:14px}.sec{margin-top:10px}
+.swcard{border-radius:22px;padding:6px 6px 10px}.swcard .im{border-radius:16px}
+.sk{border-radius:14px}.bigcol{margin-top:8px;margin-bottom:0}
+.stk .sk{margin-left:-18px}
+.footer .col,footer .col{gap:3px}
+@media(prefers-reduced-motion:reduce){.live i{animation:none}}
