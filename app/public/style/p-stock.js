@@ -54,7 +54,7 @@ async function styleSheet(id, changed) {
     h('tbody', null, cols.map((c) => h('tr', null, h('th', { class: 'rl' }, colourDot(c, 12), ' ', c || '—'),
       sizes.map((z) => { const x = cell(c, z); return h('td', null, x ? h('button', { class: 'mxc' + (x.stock <= 0 ? ' z' : x.stock <= (x.reorderAt || 2) ? ' lo' : ''), type: 'button', disabled: !can('sty_stock'), onclick: () => adjustSheet(x, s, () => { sh.close(); styleSheet(id, changed); changed && changed(); }) }, x.stock) : '·'); }),
       h('td', { class: 'num tt' }, s.variants.filter((x) => x.colour === c).reduce((a, x) => a + x.stock, 0)))))));
-  const sh = sheet({ title: s.name, closeLabel: t('Done'), full: true, wide: true, body: h('div', { class: 'grid' },
+  const sh = sheet({ title: s.name, closeLabel: t('Done'), full: true, wide: true, body: h('div', { class: 'grid stk' },
     (s.photos || []).length || s.photoUrl ? h('div', { class: 'gal' }, [s.photoUrl, ...(s.photos || [])].filter(Boolean).map((u) => h('img', { src: u, alt: '', loading: 'lazy' }))) : null,
     h('div', { class: 'vp-h' }, h('div', { class: 'ph' }, s.photoUrl ? h('img', { src: s.photoUrl, alt: '' }) : icon('shirt', 30)), h('div', null, s.code ? h('div', { class: 'mono small' }, s.code) : null,
       h('div', { class: 'muted small' }, [s.category, s.subcategory, s.brand, s.gender, s.season].filter(Boolean).join(' · ')),
@@ -122,12 +122,13 @@ function styleForm(s, done) {
   cat.addEventListener('input', setSizes);
   const pics = photoEditor(s ? s.photoUrl : '', s ? s.photos : []);
   const seeCost = S.ctx.canSeeCost;
-  const body = h('div', { class: 'grid' }, pics, field(t('Name'), f.name), field(t('Product code'), f.code, t('Used to find the style and as the start of each size barcode label. Leave empty to skip.')), field(t('Category'), cat), catList, h('div', { class: 'two' }, field(t('Brand'), f.brand), field(t('Gender'), f.gender)),
+  const spanOf = (n) => { n.classList.add('span'); return n; };
+  const body = h('div', { class: 'grid edgrid' }, spanOf(pics), field(t('Name'), f.name), field(t('Product code'), f.code, t('Used to find the style and as the start of each size barcode label. Leave empty to skip.')), field(t('Category'), cat), spanOf(catList), h('div', { class: 'two' }, field(t('Brand'), f.brand), field(t('Gender'), f.gender)),
     h('div', { class: 'two' }, field(t('Selling price'), f.price), field(t('MRP'), f.mrp)), seeCost ? h('div', { class: 'two' }, field(t('Cost'), f.cost), field(t('Tax %'), f.tax)) : field(t('Tax %'), f.tax),
     h('div', { class: 'two' }, field(t('Type'), f.type), field(t('Fabric'), f.fabric)), h('div', { class: 'two' }, field(t('Collection'), f.collection), field(t('Weight') + ' (g)', f.weight)),
-    cols, szs, field(t('Description'), f.desc), field(t('Details'), f.det), field(t('Wash care'), f.wash),
+    spanOf(cols), spanOf(szs), spanOf(field(t('Description'), f.desc)), spanOf(field(t('Details'), f.det)), spanOf(field(t('Wash care'), f.wash)),
     isNew ? h('div', { class: 'two' }, field(t('Opening stock per size'), f.qty), h('div')) : null,
-    h('details', { class: 'more' }, h('summary', null, t('More details')), h('div', { class: 'grid', style: { marginTop: '10px' } }, h('div', { class: 'two' }, field(t('Season'), f.season), field(t('HSN code'), f.hsn)))));
+    spanOf(h('details', { class: 'more' }, h('summary', null, t('More details')), h('div', { class: 'grid', style: { marginTop: '10px' } }, h('div', { class: 'two' }, field(t('Season'), f.season), field(t('HSN code'), f.hsn))))));
   sheet({ title: isNew ? t('New style') : t('Edit style'), full: true, wide: true, body, actions: [
     s && s.active !== false ? { label: t('Hide style'), danger: true, onclick: async (close) => { if (!await confirmBox(t('Hide style'), t('It will not show on the till. Stock and old bills stay.'), t('Hide'), true)) return false; await api('sty_save_style', { p: { id: s.id, name: s.name, active: false } }); close(); S.catAt = 0; done && done(); } } : (s ? { label: t('Show style'), onclick: async (close) => { await api('sty_save_style', { p: { id: s.id, name: s.name, active: true } }); close(); S.catAt = 0; done && done(); } } : null),
     { label: t('Save'), primary: true, onclick: async (close) => {
