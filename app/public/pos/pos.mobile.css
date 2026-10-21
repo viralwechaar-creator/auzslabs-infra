@@ -120,3 +120,7 @@
 .tbl-tile .tmeta{padding-top:8px;flex-wrap:wrap}
 .tbl-tile .tchip{font-size:12px;padding:0;max-width:none}
 .tbl-tile .tinfo{gap:8px}
+
+/* table tiles: a visible edge on phones */
+.tbl-tile,.tbl-tile.st-dirty{box-shadow:0 0 0 1px var(--sep2),0 1px 3px rgba(0,0,0,.05)}
+.tbl-tile.sel{box-shadow:0 0 0 2px var(--accent)}
