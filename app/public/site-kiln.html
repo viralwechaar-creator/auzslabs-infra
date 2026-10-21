@@ -456,6 +456,14 @@ input[type=text],input[type=tel],input[type=email],input[type=date],select,texta
 #cartBar #barR{background:#FFF9F3;color:#7A4630;border-radius:999px;padding:11px 20px;font-size:14px;font-weight:700;white-space:nowrap}
 @media (max-width:899px){#cartBar{left:14px;right:14px;bottom:calc(10px + env(safe-area-inset-bottom,0px));padding:8px 8px 8px 20px}#cartBar #barL{font-size:14px}#cartBar #barR{padding:10px 16px;font-size:13px}}
 
+
+/* ---- cards: footer (price + Add) must stay inside the card, no dead space ---- */
+.card{display:flex;flex-direction:column}
+.card .card-open{flex:1 1 auto;min-height:0}
+.card .ds{min-height:0}
+.card .nm{min-height:0}
+.card .card-foot{margin-top:auto;flex:0 0 auto}
+@media (max-width:640px){.card .ds{min-height:0}.card .nm{min-height:0}}
 /* ---- fade in on scroll ---- */
 @media (prefers-reduced-motion:no-preference){
 html.rv-on .rv{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1);transition-delay:var(--rvd,0s)}
