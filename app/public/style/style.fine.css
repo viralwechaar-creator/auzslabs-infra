@@ -258,3 +258,10 @@
 .quick .chip{min-height:28px;font-size:13px}
 @media (min-width:900px){.sheet:has(.vp-h){width:min(460px,92vw)}}
 .vp-h .ph{width:84px;height:84px}
+
+/* No zoom; clear contrast for the selected tab */
+html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
+.side [aria-current=page],.side .nav-i[aria-current=page]{background:var(--accent)!important;color:#fff!important;font-weight:700}
+.side [aria-current=page] svg{color:#fff!important;stroke:currentColor}
+.tabbar button[aria-current=page]{background:var(--accent)!important;color:#fff!important;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.tabbar button[aria-current=page] svg{color:#fff!important}

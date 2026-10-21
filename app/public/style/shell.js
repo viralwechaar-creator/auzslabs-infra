@@ -1,3 +1,4 @@
+document.addEventListener("gesturestart",e=>e.preventDefault());document.addEventListener("gesturechange",e=>e.preventDefault());document.addEventListener("dblclick",e=>e.preventDefault());
 /* AUZsStyle: shell (sign in, navigation, router). Pages register with page(). Same login/boot/router shape as AUZsMob. */
 'use strict';
 const PAGES = {};
