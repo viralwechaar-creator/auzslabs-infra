@@ -146,6 +146,9 @@
         rewrite @salonDir {re.sd.1}/index.html
         @salonInvoice path_regexp ^/i/[a-f0-9]{8,32}$
         rewrite @salonInvoice /salon/invoice.html
+        # AUZsStyle short bill link: https://<shop>.auzslab.in/b/<token>
+        @styBill path_regexp ^/b/[a-f0-9]{8,32}$
+        rewrite @styBill /stybill.html
         file_server
         # A request for a real file (index.html, booking.html, site.html,
         # backoffice.html, ...) is served directly, above -- this fallback

@@ -250,6 +250,15 @@ export default async function run({ browser, stack }) {
   await s.check('Till on a phone: scan a tag, bill it, pay cash, get a receipt', async () => { await till({ w: 390, h: 844, mobile: true }, 'phone till'); }, 'critical');
   await s.check('Till on a laptop: scan a tag, bill it, pay cash, get a receipt', async () => { await till({ w: 1280, h: 800 }, 'desktop till'); }, 'critical');
 
+  await s.check('A bill gets a short public link that shows the bill but no staff, cost or customer phone', async () => {
+    const sale = await ok(owner, 'sty_sell', { p: { id: uid(), lines: [{ variantId: vM.id, qty: 1 }], payments: [{ mode: 'cash', amount: 1500 }] } });
+    const t1 = (await ok(owner, 'sty_share_sale', { p_id: sale.id })).token; const t2 = (await ok(owner, 'sty_share_sale', { p_id: sale.id })).token;
+    assert(/^[a-f0-9]{10}$/.test(t1) && t1 === t2, 'token ' + t1 + ' / ' + t2);
+    const pub = await call(null, 'public_sty_sale', { p_token: t1 }); assert(pub.ok && pub.data && pub.data.sale.number === sale.number, 'public bill: ' + JSON.stringify(pub).slice(0, 120));
+    const txt = JSON.stringify(pub.data); assert(!/staff|cost|barcode|"phone":"\d/i.test(txt.replace(/"shop":\{[^}]*\}/, '')), 'public bill leaks: ' + txt.slice(0, 200));
+    assert((await call(null, 'public_sty_sale', { p_token: 'ffffffffff' })).data == null, 'unknown token answered');
+    await fails(staff, 'sty_share_sale', { p_id: '00000000-0000-0000-0000-000000000001' }, /not found/i);
+  });
   await s.check('Picking a colour on the till switches the picture to that colour', async () => {
     const { c, page } = await open(USERS.styStaff, { w: 390, h: 844, mobile: true });
     await page.evaluate(() => { location.hash = '#/sell'; }); await page.waitForSelector('.scard', { timeout: 15000 });
