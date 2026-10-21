@@ -74,15 +74,28 @@ function printReceipt(sale) {
   const wrap = h('div', { class: 'print-only' }, receiptNode(sale));
   document.body.append(wrap); window.print(); setTimeout(() => wrap.remove(), 800);
 }
-function waText(sale) {
-  const sh = shopHeader();
-  const lines = sale.lines.map((l) => `${l.qty} × ${l.name}${l.colour ? ' ' + l.colour : ''}${l.size ? ' ' + l.size : ''} — ${inr(l.net)}`).join('\n');
-  return `*${sh.name}*\nBill ${sale.number}\n${lines}\n\nTotal: ${inr(sale.total)}${sale.balance > 0 ? '\nDue: ' + inr(sale.balance) : ''}\n${sh.footer || 'Thank you, visit again'}`;
+// the bill link lives on the shop's own address: https://<shop>.auzslab.in/b/<token>
+function billOrigin() { const slug = S.dash && S.dash.tenant && S.dash.tenant.slug; if (!slug) return location.origin; return location.hostname.split('.')[0] === slug ? location.origin : 'https://' + slug + '.auzslab.in'; }
+function waText(sale, link) {
+  const sh = shopHeader(), d = new Date(sale.at || Date.now()), rd = S.ctx.settings && S.ctx.settings.returnDays;
+  const first = sale.customer && sale.customer.name ? String(sale.customer.name).trim().split(/\s+/)[0] : '';
+  const lines = sale.lines.map((l) => `${l.qty} × ${l.name}${l.colour || l.size ? ' (' + [l.colour, l.size].filter(Boolean).join(', ') + ')' : ''}  ${inr(l.net)}`).join('\n');
+  const paid = (sale.payments || []).filter((p) => p.mode !== 'due').map((p) => String(p.mode)).join(' + ');
+  return [`*${sh.name}*`, first ? `Hi ${first}, thank you for shopping with us.` : 'Thank you for shopping with us.', '',
+    `Bill ${sale.number}  ·  ${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`, lines,
+    sale.discount > 0 ? `Discount: -${inr(sale.discount)}` : '',
+    `*Total: ${inr(sale.total)}*${paid ? '  (' + paid + ')' : ''}`, sale.balance > 0 ? `Balance due: ${inr(sale.balance)}` : '',
+    link ? '' : null, link ? 'View or download your bill:' : null, link || null,
+    '', rd ? `Exchange or return within ${rd} days with this bill.` : '', sh.footer || 'Thank you, visit again', sh.phone ? `Call us: ${sh.phone}` : ''].filter((x) => x !== null && x !== undefined).join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
-function shareWa(sale, phone) {
+// a short link needs a connection; offline the message goes without it
+async function billLink(sale) { try { const r = await api('sty_share_sale', { p_id: sale.id }); return r && r.token ? billOrigin() + '/b/' + r.token : ''; } catch { return ''; } }
+async function shareWa(sale, phone) {
   const p = String(phone || (sale.customer && sale.customer.phone) || '').replace(/\D/g, '');
-  const url = 'https://wa.me/' + (p ? (p.length === 10 ? '91' + p : p) : '') + '?text=' + encodeURIComponent(waText(sale));
-  window.open(url, '_blank', 'noopener');
+  const w = window.open('', '_blank');   // opened inside the tap so a phone does not block it while the link is made
+  const link = await billLink(sale);
+  const url = 'https://wa.me/' + (p ? (p.length === 10 ? '91' + p : p) : '') + '?text=' + encodeURIComponent(waText(sale, link));
+  if (w) w.location.href = url; else window.open(url, '_blank', 'noopener');
 }
 
 // ---- pickers ----
