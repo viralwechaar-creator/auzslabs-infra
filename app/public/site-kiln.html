@@ -1,4 +1,5 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}a.addr-link{color:inherit;text-decoration:underline;text-underline-offset:3px}
+</style></head><body>
 <title>Menu</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap">
@@ -884,12 +885,12 @@ function brand(M){var c=CFGt,nm=c.name||'';
  if(nm){$$('.brand').forEach(function(b){b.textContent=nm});document.title=nm+' · Menu';var w=$('.wordmark');if(w){w.textContent=nm;if(nm.length>5){w.style.fontSize='clamp(40px,'+Math.max(6,Math.min(18,115/nm.length)).toFixed(1)+'vw,'+Math.round(Math.max(60,Math.min(260,1500/nm.length)))+'px)';w.style.letterSpacing='-.05em'}}
   $$('.kf-name,.kf-name2').forEach(function(x){x.textContent=nm})}
  if(c.siteHours)HRS=c.siteHours;
- var ka=$('.kf-addr');if(ka&&c.addr)ka.textContent=c.addr;var kh=$('.kf-hours');if(kh&&c.siteHours)kh.textContent=c.siteHours;var kp=$('.kf-phone');if(kp){if(c.phone)kp.textContent=c.phone;else kp.hidden=true}var kt=$('.kf-tag');if(kt){var tg=c.siteSub||c.siteTag;if(tg)kt.textContent=tg}
+ var ka=$('.kf-addr');if(ka&&c.addr)ka.innerHTML=addrLink(c);var kh=$('.kf-hours');if(kh&&c.siteHours)kh.textContent=c.siteHours;var kp=$('.kf-phone');if(kp){if(c.phone)kp.textContent=c.phone;else kp.hidden=true}var kt=$('.kf-tag');if(kt){var tg=c.siteSub||c.siteTag;if(tg)kt.textContent=tg}
  var gs=String(c.siteGallery||'').split(',').map(function(x){return x.trim()}).filter(Boolean).slice(0,5),gg=$('#galGrid');if(gg){if(gs.length>=2){gg.innerHTML=gs.map(function(u){return '<span><img src="'+esc(u)+'" alt="" loading="lazy"></span>'}).join('')}else{$('#galSec').hidden=true}}
  var lede=$('.lede');var tl=c.siteSub||c.siteTag;if(lede&&tl)lede.textContent=tl;
  var m3=$$('.hero-meta div');
  if(m3[0])m3[0].innerHTML=esc(c.siteKicker||'Café')+'<br>and restaurant';
- if(m3[1]&&c.addr){var ap=String(c.addr).split(','),a1=ap.slice(0,Math.ceil(ap.length/2)).join(',').trim(),a2=ap.slice(Math.ceil(ap.length/2)).join(',').trim();m3[1].innerHTML=esc(a1)+(a2?'<br>'+esc(a2):'')}
+ if(m3[1]&&c.addr){m3[1].innerHTML=addrLink(c)}
  if(m3[2]&&c.siteHours)m3[2].innerHTML=esc(c.siteHours);
  var sc=$('.story-copy');if(sc){if(c.siteTag){sc.querySelector('h2').textContent=c.siteTag}if(c.siteAbout){sc.querySelector('p').textContent=String(c.siteAbout).slice(0,220)}}
  var ph=$('.story-photo img');if(ph&&c.siteHero)ph.src=c.siteHero;
@@ -907,7 +908,10 @@ function brand(M){var c=CFGt,nm=c.name||'';
  $$('a[href^="https://www.instagram.com/"]').forEach(function(a){if(ig)a.href=ig;else a.parentNode.hidden=true;if(!ig&&a.parentNode.tagName!=='LI')a.hidden=true});
  $$('a[href^="https://www.facebook.com/"]').forEach(function(a){if(a.parentNode.tagName==='LI')a.parentNode.hidden=true;else a.hidden=true});
  var soc=$('.soc');if(soc&&!ig)soc.hidden=true;
- var sf=$('.side-foot>span:last-child');if(sf)sf.textContent=c.addr?String(c.addr).split(',').slice(-2).join(',').trim():''}
+ var sf=$('.side-foot>span:last-child');if(sf)sf.textContent=c.addr?shortAddr(c):''}
+function mapHref(c){return c.mapUrl||('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(c.addr||''))}
+function shortAddr(c){if(c.siteArea)return String(c.siteArea);var p=String(c.addr||'').split(',').map(function(x){return x.replace(/[0-9]+/g,'').trim()}).filter(Boolean);return p.slice(-2).join(', ')}
+function addrLink(c){return '<a class="addr-link" href="'+esc(mapHref(c))+'" target="_blank" rel="noopener">'+esc(shortAddr(c))+' \u2197\uFE0E</a>'}
 function starStr(n){n=Math.round(n);return '\u2605\u2605\u2605\u2605\u2605'.slice(0,n)+'\u2606\u2606\u2606\u2606\u2606'.slice(0,5-n)}
 function renderReviews(){if(!LIVE||!sbc||!SLUG)return;sbc.rpc('public_reviews',{tenant_slug:SLUG}).then(function(r){var d=r&&r.data;if(!d||!d.count||!d.reviews||!d.reviews.length)return;$('#revAvg').textContent=Number(d.avg).toFixed(1);$('#revStars').textContent=starStr(d.avg);$('#revCount').textContent='from '+d.count+(d.count===1?' rating':' ratings');$('#revList').innerHTML=d.reviews.map(function(v){return '<figure class="rev" style="margin:0"><span class="stars" aria-label="'+v.rating+' out of 5">'+starStr(v.rating)+'</span><p>\u201c'+esc(v.comment)+'\u201d</p><span class="who">'+esc(v.name||'A guest')+'</span></figure>'}).join('');$('#revSec').hidden=false}).catch(function(){})}
 renderTabs();renderMenu();status();setInterval(status,60000);route();
