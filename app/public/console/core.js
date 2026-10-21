@@ -205,8 +205,9 @@ function sideNav(){
  NAV.forEach(n=>{
   if(n[0]=='lbl'){nav.append(h('div',{class:'nav-lbl'},n[1]));return}
   if(n[0]=='href'){nav.append(h('a',{class:'nb',href:n[1]},ic(n[3]),h('span',{},n[2])));return}
-  if(n[0].startsWith('g:')){const id=n[0],open=!!S.open[id];
-   nav.append(h('button',{class:'nb',onclick:()=>{S.open[id]=!open;render()}},ic(n[2]),h('span',{},n[1]),n[4]?h('span',{class:'badge'},n[4]):null,h('span',{class:'chev'+(open?' open':'')},ic('chr',14))),
+  if(n[0].startsWith('g:')){const id=n[0],open=!!S.open[id]||n[3].some(c=>c[0]==S.page);
+   const act=n[3].some(c=>c[0]==S.page);
+   nav.append(h('button',{class:'nb'+(act?' on-g':'')+(act&&open?' open-g':''),onclick:()=>{S.open[id]=!open;render()}},ic(n[2]),h('span',{},n[1]),n[4]?h('span',{class:'badge'},n[4]):null,h('span',{class:'chev'+(open?' open':'')},ic('chr',14))),
     h('div',{class:'sub'+(open?' open':'')},...n[3].map(([pid,t])=>h('a',{class:S.page==pid?'on':'',href:'#'+pid,onclick:e=>{e.preventDefault();go(pid)}},t))));return}
   nav.append(h('button',{class:'nb'+(S.page==n[0]?' on':''),onclick:()=>go(n[0])},ic(n[2]),h('span',{},n[1])))});
  const apps=[['payroll','/payroll.html','Payroll','team'],['accounting','/accounts.html','Accounting','fin'],['mobile','/mob.html','AUZsMob','box']].filter(a=>S.features&&S.features[a[0]]===true&&S.enabledFeatures[a[0]]!==false);
