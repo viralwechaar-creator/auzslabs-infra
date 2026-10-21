@@ -113,8 +113,9 @@ function styleForm(s, done) {
     weight: input({ type: 'number', mode: 'decimal', value: s && s.weightG ? s.weightG : '', placeholder: 'g' }), wash: input({ value: s ? s.washcare || '' : '', placeholder: 'Machine wash cold, do not bleach' }),
     desc: h('textarea', { class: 'textarea', rows: 2, placeholder: t('Short description for the customer') }, s ? s.description || '' : ''), det: h('textarea', { class: 'textarea', rows: 3, placeholder: t('Fit, pockets, stitching, model size…') }, s ? s.details || '' : ''), qty: input({ type: 'number', mode: 'numeric', value: '', placeholder: '0' }), photo: input({ value: s ? s.photoUrl || '' : '', placeholder: 'https://…' }),
   };
-  const cat = input({ value: s ? s.category : '', placeholder: 'Shirts' });
-  const catList = h('div', { class: 'chips' }, COMMON_CATS.map((c) => h('button', { class: 'chip', type: 'button', onclick: () => { cat.value = c; setSizes(); } }, c)));
+  const cat = input({ value: s ? s.category : '', placeholder: t('Pick one below or type a new category') });
+  const mine = [...new Set(S.cat.map((x) => x.category).filter(Boolean))];
+  const catList = h('div', { class: 'chips' }, [...mine, ...COMMON_CATS.filter((c) => !mine.some((m) => m.toLowerCase() === c.toLowerCase()))].map((c) => h('button', { class: 'chip', type: 'button', onclick: () => { cat.value = c; setSizes(); } }, c)));
   const cols = chipEditor(s ? [...new Set(s.variants.map((x) => x.colour).filter(Boolean))] : [], ['Black', 'White', 'Blue', 'Navy', 'Red', 'Grey', 'Green', 'Beige'], t('Colours'), isNew ? '' : t('Add new colours here. Existing ones keep their stock.'));
   const presetFor = (c) => /jean|trouser|pant/i.test(c) ? SIZE_SETS.Jeans : /foot|shoe|sandal|sneaker|slipper/i.test(c) ? SIZE_SETS.Footwear : /kid/i.test(c) ? SIZE_SETS.Kids : SIZE_SETS.Clothing;
   const szs = chipEditor(s ? [...new Set(s.variants.map((x) => x.size).filter(Boolean))] : [], presetFor(s ? s.category : ''), t('Sizes'), '');
@@ -123,7 +124,7 @@ function styleForm(s, done) {
   const pics = photoEditor(s ? s.photoUrl : '', s ? s.photos : []);
   const seeCost = S.ctx.canSeeCost;
   const spanOf = (n) => { n.classList.add('span'); return n; };
-  const body = h('div', { class: 'grid edgrid' }, spanOf(pics), field(t('Name'), f.name), field(t('Product code'), f.code, t('Used to find the style and as the start of each size barcode label. Leave empty to skip.')), field(t('Category'), cat), spanOf(catList), h('div', { class: 'two' }, field(t('Brand'), f.brand), field(t('Gender'), f.gender)),
+  const body = h('div', { class: 'grid edgrid' }, spanOf(pics), field(t('Name'), f.name), field(t('Product code'), f.code, t('Used to find the style and as the start of each size barcode label. Leave empty to skip.')), field(t('Category'), cat, t('Type any name to add your own category. It appears everywhere once the style is saved.')), spanOf(catList), h('div', { class: 'two' }, field(t('Brand'), f.brand), field(t('Gender'), f.gender)),
     h('div', { class: 'two' }, field(t('Selling price'), f.price), field(t('MRP'), f.mrp)), seeCost ? h('div', { class: 'two' }, field(t('Cost'), f.cost), field(t('Tax %'), f.tax)) : field(t('Tax %'), f.tax),
     h('div', { class: 'two' }, field(t('Type'), f.type), field(t('Fabric'), f.fabric)), h('div', { class: 'two' }, field(t('Collection'), f.collection), field(t('Weight') + ' (g)', f.weight)),
     spanOf(cols), spanOf(szs), spanOf(field(t('Description'), f.desc)), spanOf(field(t('Details'), f.det)), spanOf(field(t('Wash care'), f.wash)),
