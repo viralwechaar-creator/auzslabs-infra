@@ -112,3 +112,6 @@
 .vc-g{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.fg{padding:8px 6px;border-radius:10px;background:var(--fill);text-align:center}.fv{font-size:15px;font-weight:600}.fl{font-size:10.5px;color:var(--label2);margin-top:1px}
 .vc-f{font-size:12px;color:var(--label2)}
 @media (max-width:899px){.ph{aspect-ratio:1/1}.scard .nm{font-size:13px}.sgrid{gap:8px}}
+
+.fcount{position:absolute;top:2px;right:2px;min-width:16px;height:16px;border-radius:8px;background:var(--accent);color:var(--on-accent);font-size:10px;display:grid;place-items:center}.btn.icon{position:relative}
+.kvs{display:grid;gap:8px}.kvs p{margin:0}

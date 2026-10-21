@@ -49,13 +49,13 @@ page('analytics', {
     AU.tab = v.q.get('tab') || AU.tab; if (!v.q.get('tab')) AU.tab = AU.tab || 'sells';
     if (!AU.from) Object.assign(AU, rangeFor('30'));
     v.header({ title: t('Analytics'), actions: [{ label: 'CSV', icon: 'download', run: () => exportCsv() }] });
-    let data = null, ins = null;
+    let data = null, ins = null, grp = null;
     const host = h('div', { class: 'grid' });
     v.root.append(rangePicker(AU, load, ['week', 'month', '30', 'custom']),
-      seg([['sells', t('What sells')], ['sizes', t('Sizes & colours')], ['variants', t('Fast & slow')], ['next', t('What to buy')], ['staff', t('Staff')]], AU.tab, (x) => { AU.tab = x; paint(); }), host);
+      seg([['sells', t('What sells')], ['sizes', t('Sizes & colours')], ['groups', t('Fabric & collection')], ['variants', t('Fast & slow')], ['next', t('What to buy')], ['staff', t('Staff')]], AU.tab, (x) => { AU.tab = x; paint(); }), host);
     async function load() {
       clear(host).append(h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '24px auto' } }));
-      try { [data, ins] = await Promise.all([api('sty_analytics', { p: { from: AU.from, to: AU.to, branchId: S.branch } }), api('sty_insights', { p: { branchId: S.branch } })]); } catch (e) { return clear(host).append(empty('cloudOff', t('Could not load'), e.message, h('button', { class: 'btn fill', onclick: load }, t('Try again')))); }
+      try { [data, ins, grp] = await Promise.all([api('sty_analytics', { p: { from: AU.from, to: AU.to, branchId: S.branch } }), api('sty_insights', { p: { branchId: S.branch } }), api('sty_analytics_groups', { p: { from: AU.from, to: AU.to, branchId: S.branch } })]); } catch (e) { return clear(host).append(empty('cloudOff', t('Could not load'), e.message, h('button', { class: 'btn fill', onclick: load }, t('Try again')))); }
       paint();
     }
     function exportCsv() {
@@ -81,6 +81,12 @@ page('analytics', {
           section(t('Category × size'), h('div', { class: 'mxw card' }, h('table', { class: 'mx' }, h('thead', null, h('tr', null, h('th'), sizes.map((z) => h('th', null, z)))), h('tbody', null, cats.map((c) => h('tr', null, h('th', { class: 'rl' }, c), sizes.map((z) => { const u = (data.catSize.find((x) => x.category === c && x.size === z) || {}).units || 0; return h('td', null, u ? h('span', { class: 'heat', style: { '--a': (.12 + .75 * u / mx).toFixed(2) } }, u) : '·'); }))))))),
           section(t('Sales by colour'), h('div', { class: 'card' }, hbars(data.byColour.map((x) => ({ l: h('span', { style: { display: 'inline-flex', gap: '6px', alignItems: 'center' } }, colourDot(x.colour, 12), x.colour), v: x.units }))))),
           data.returnsBySize.some((x) => x.returned > 0) ? section(t('Returns by size'), h('div', { class: 'card' }, hbars(data.returnsBySize.filter((x) => x.sold > 0).map((x) => ({ l: x.size, v: Number(x.rate || 0), tone: 'red', txt: x.rate + '% (' + x.returned + '/' + x.sold + ')' }))), h('div', { class: 'muted small' }, t('A size that comes back a lot may run small or large.')))) : null);
+      } else if (AU.tab === 'groups') {
+        if (empt) return host.append(empty('chart', t('No sales in this period')));
+        const blk = (title, rows) => rows.length && !(rows.length === 1 && rows[0].name === 'Not set') ? section(title, h('div', { class: 'card' }, hbars(rows.map((x) => ({ l: x.name, v: x.units, txt: x.units + ' · ' + inr(x.revenue, 0) + (x.stock != null ? ' · ' + x.stock + ' ' + t('in stock') : '') }))))) : null;
+        host.append(blk(t('Sales by type'), grp.type), blk(t('Sales by fabric'), grp.fabric), blk(t('Sales by collection'), grp.collection), blk(t('Sales by brand'), grp.brand), blk(t('Sales by gender'), grp.gender),
+          section(t('Sales by colour'), h('div', { class: 'card' }, hbars(data.byColour.map((x) => ({ l: h('span', { style: { display: 'inline-flex', gap: '6px', alignItems: 'center' } }, colourDot(x.colour, 12), x.colour), v: x.units }))))),
+          h('p', { class: 'muted small' }, t('Fill in type, fabric and collection when you add a style to see them here.')));
       } else if (AU.tab === 'variants') {
         if (empt) return host.append(empty('chart', t('No sales in this period')));
         const fig = (l, v) => h('div', { class: 'fg' }, h('div', { class: 'fv num' }, v), h('div', { class: 'fl' }, l));

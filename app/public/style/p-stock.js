@@ -14,26 +14,27 @@ page('stock', {
     const lowN = vs.filter((x) => x.stock <= (x.reorderAt || 0)).length, outN = vs.filter((x) => x.stock <= 0).length;
     const cats = ['All', ...[...new Set(S.cat.map((s) => s.category))].sort()];
     const list = h('div', { class: 'list' }); const chips = h('div', { class: 'chips' });
+    const filtHost = h('span'); const paintF = () => clear(filtHost).append(filterButton(() => { paintF(); paint(); }));
     const paintChips = () => clear(chips).append(...cats.map((c) => h('button', { class: 'chip', type: 'button', 'aria-pressed': String(SU.cat === c), onclick: () => { SU.cat = c; paintChips(); paint(); } }, c === 'All' ? t('All') : c)));
     const flt = seg([['all', t('All')], ['low', t('Low stock')], ['out', t('Out of stock')]], SU.f, (x) => { SU.f = x; paint(); }, { full: true });
     function paint() {
       const q = SU.q.trim().toLowerCase();
-      let rows = S.cat.filter((s) => (SU.cat === 'All' || s.category === SU.cat) && (!q || (s.name + ' ' + (s.brand || '')).toLowerCase().includes(q) || s.variants.some((x) => x.barcode === q)));
+      let rows = S.cat.filter((s) => (SU.cat === 'All' || s.category === SU.cat) && styleMatches(s) && (!q || (s.name + ' ' + (s.brand || '')).toLowerCase().includes(q) || s.variants.some((x) => x.barcode === q)));
       if (SU.f === 'low') rows = rows.filter((s) => s.variants.some((x) => x.active !== false && x.stock > 0 && x.stock <= (x.reorderAt || 0)));
       if (SU.f === 'out') rows = rows.filter((s) => s.variants.some((x) => x.active !== false && x.stock <= 0));
       clear(list).append(...(rows.length ? rows.map((s) => {
         const st = styleStock(s), sizes = [...new Set(s.variants.map((x) => x.size))].length, cols = [...new Set(s.variants.map((x) => x.colour))].length;
         return h('button', { class: 'li', type: 'button', onclick: () => styleSheet(s.id, () => v.refresh()) },
           h('div', { class: 'ph sm' }, s.photoUrl ? h('img', { src: s.photoUrl, alt: '', loading: 'lazy' }) : icon('shirt', 22)),
-          h('div', { class: 'grow' }, h('div', { class: 't' }, s.name, s.active === false ? h('span', { class: 'badge', style: { marginLeft: '6px' } }, t('Hidden')) : null), h('div', { class: 's' }, [s.category, s.brand, cols + ' ' + t('colours'), sizes + ' ' + t('sizes')].filter(Boolean).join(' · '))),
+          h('div', { class: 'grow' }, h('div', { class: 't' }, s.name, s.active === false ? h('span', { class: 'badge', style: { marginLeft: '6px' } }, t('Hidden')) : null), h('div', { class: 's' }, [s.category, s.subcategory, s.fabric, s.collection, cols + ' ' + t('colours'), sizes + ' ' + t('sizes')].filter(Boolean).join(' · '))),
           h('div', { class: 'v' }, h('div', { class: 't num' }, inr(s.price)), h('div', { class: 's' }, h('span', { class: 'stk' + (st <= 0 ? ' z' : '') }, st + ' ' + t('in stock')))), h('span', { class: 'chev' }, icon('chevR', 18)));
       }) : [empty('shirt', S.cat.length ? t('No match') : t('No styles yet'), S.cat.length ? '' : t('Add a style to start. You can also load a small sample to look around.'),
         can('sty_manage') && !S.cat.length ? h('div', { class: 'row', style: { gap: '8px', justifyContent: 'center' } }, h('button', { class: 'btn fill', onclick: () => styleForm(null, () => v.refresh()) }, t('New style')), h('button', { class: 'btn', onclick: async () => { await api('sty_load_sample'); toast(t('Sample added')); v.refresh(); } }, t('Load sample'))) : null)]));
     }
     clear(root); if (!isDesk()) root.append(h('h1', { class: 'large-title' }, t('Stock')));
     root.append(h('div', { class: 'kpis' }, kpi(t('Units'), nf0.format(units), `${S.cat.length} ${t('styles')}`), kpi(t('Stock value'), inr(cost, 0), t('at cost')), kpi(t('Retail value'), inr(retail, 0)), kpi(t('Low stock'), lowN, outN + ' ' + t('Out of stock'), null, lowN ? 'neg' : '')),
-      h('div', { class: 'toolbar' }, searchField(t('Search styles, scan a barcode'), (x) => { SU.q = x; paint(); }, SU.q), chips, flt), list);
-    paintChips(); paint();
+      h('div', { class: 'toolbar' }, h('div', { class: 'row', style: { gap: '8px' } }, h('div', { class: 'grow' }, searchField(t('Search styles, scan a barcode'), (x) => { SU.q = x; paint(); }, SU.q)), filtHost), chips, flt), list);
+    paintChips(); paintF(); paint();
   },
 });
 
@@ -53,6 +54,8 @@ async function styleSheet(id, changed) {
       h('div', { class: 'muted small' }, [s.category, s.subcategory, s.brand, s.gender, s.season].filter(Boolean).join(' · ')),
       h('div', { class: 'num' }, h('b', null, inr(s.price)), s.mrp > s.price ? h('s', { class: 'muted small', style: { marginLeft: '6px' } }, inr(s.mrp)) : null, ' ', h('span', { class: 'muted small' }, t('Tax') + ' ' + (s.taxPct != null ? s.taxPct + '%' : t('auto')))),
       S.ctx.canSeeCost && s.cost != null ? h('div', { class: 'muted small' }, t('Cost') + ' ' + inr(s.cost)) : null)),
+    (s.description || s.details || s.fabric || s.washcare || s.weightG || s.collection) ? h('div', { class: 'card kvs' }, s.description ? h('p', null, s.description) : null, s.details ? h('p', { class: 'muted small' }, s.details) : null,
+      [[t('Fabric'), s.fabric], [t('Wash care'), s.washcare], [t('Weight'), s.weightG ? s.weightG + ' g' : ''], [t('Collection'), s.collection], [t('Type'), s.subcategory]].filter((x) => x[1]).map(([a, b]) => h('div', { class: 'kv' }, h('span', { class: 'muted' }, a), h('b', null, b)))) : null,
     h('div', { class: 'cap' }, t('Stock by colour and size') + (can('sty_stock') ? ' · ' + t('tap a number to adjust') : '')), grid,
     h('div', { class: 'row', style: { gap: '8px', flexWrap: 'wrap' } },
       can('sty_manage') ? h('button', { class: 'btn', type: 'button', onclick: () => { sh.close(); styleForm(s, changed); } }, icon('edit', 18), t('Edit style')) : null,
@@ -96,7 +99,10 @@ function styleForm(s, done) {
     name: input({ value: s ? s.name : '', placeholder: 'Blue slim shirt' }), brand: input({ value: s ? s.brand || '' : '' }), gender: selectEl(['', 'Men', 'Women', 'Kids', 'Unisex'], s ? s.gender || '' : ''),
     season: input({ value: s ? s.season || '' : '', placeholder: 'Summer 2026' }), hsn: input({ value: s ? s.hsn || '' : '', placeholder: '6105' }),
     price: input({ type: 'number', mode: 'decimal', value: s ? s.price : '' }), mrp: input({ type: 'number', mode: 'decimal', value: s ? s.mrp : '' }), cost: input({ type: 'number', mode: 'decimal', value: s && s.cost != null ? s.cost : '' }),
-    tax: input({ type: 'number', mode: 'decimal', value: s && s.taxPct != null ? s.taxPct : '', placeholder: t('auto') }), qty: input({ type: 'number', mode: 'numeric', value: '', placeholder: '0' }), photo: input({ value: s ? s.photoUrl || '' : '', placeholder: 'https://…' }),
+    tax: input({ type: 'number', mode: 'decimal', value: s && s.taxPct != null ? s.taxPct : '', placeholder: t('auto') }),
+    type: input({ value: s ? s.subcategory || '' : '', placeholder: 'Slim fit, A-line, Sneakers' }), fabric: input({ value: s ? s.fabric || '' : '', placeholder: 'Cotton, Denim, Linen' }), collection: input({ value: s ? s.collection || '' : '', placeholder: 'Summer 2026' }),
+    weight: input({ type: 'number', mode: 'decimal', value: s && s.weightG ? s.weightG : '', placeholder: 'g' }), wash: input({ value: s ? s.washcare || '' : '', placeholder: 'Machine wash cold, do not bleach' }),
+    desc: h('textarea', { class: 'textarea', rows: 2, placeholder: t('Short description for the customer') }, s ? s.description || '' : ''), det: h('textarea', { class: 'textarea', rows: 3, placeholder: t('Fit, pockets, stitching, model size…') }, s ? s.details || '' : ''), qty: input({ type: 'number', mode: 'numeric', value: '', placeholder: '0' }), photo: input({ value: s ? s.photoUrl || '' : '', placeholder: 'https://…' }),
   };
   const cat = input({ value: s ? s.category : '', placeholder: 'Shirts' });
   const catList = h('div', { class: 'chips' }, COMMON_CATS.map((c) => h('button', { class: 'chip', type: 'button', onclick: () => { cat.value = c; setSizes(); } }, c)));
@@ -108,7 +114,8 @@ function styleForm(s, done) {
   const seeCost = S.ctx.canSeeCost;
   const body = h('div', { class: 'grid' }, field(t('Name'), f.name), field(t('Category'), cat), catList, h('div', { class: 'two' }, field(t('Brand'), f.brand), field(t('Gender'), f.gender)),
     h('div', { class: 'two' }, field(t('Selling price'), f.price), field(t('MRP'), f.mrp)), seeCost ? h('div', { class: 'two' }, field(t('Cost'), f.cost), field(t('Tax %'), f.tax)) : field(t('Tax %'), f.tax),
-    cols, szs,
+    h('div', { class: 'two' }, field(t('Type'), f.type), field(t('Fabric'), f.fabric)), h('div', { class: 'two' }, field(t('Collection'), f.collection), field(t('Weight') + ' (g)', f.weight)),
+    cols, szs, field(t('Description'), f.desc), field(t('Details'), f.det), field(t('Wash care'), f.wash),
     isNew ? h('div', { class: 'two' }, field(t('Opening stock per size'), f.qty), h('div')) : null,
     h('details', { class: 'more' }, h('summary', null, t('More details')), h('div', { class: 'grid', style: { marginTop: '10px' } }, h('div', { class: 'two' }, field(t('Season'), f.season), field(t('HSN code'), f.hsn)), field(t('Photo link'), f.photo))));
   sheet({ title: isNew ? t('New style') : t('Edit style'), full: true, wide: true, body, actions: [
@@ -118,7 +125,7 @@ function styleForm(s, done) {
       if (!N(f.price.value)) { toast(t('Enter the selling price'), { err: true }); return false; }
       const colours = cols.get(), sizes = szs.get();
       if (isNew && (!colours.length && !sizes.length)) { toast(t('Add at least one size or colour'), { err: true }); return false; }
-      const p = { id: s && s.id, name: f.name.value, category: cat.value || 'Clothing', brand: f.brand.value, gender: f.gender.value, season: f.season.value, hsn: f.hsn.value, photoUrl: f.photo.value || null,
+      const p = { id: s && s.id, name: f.name.value, category: cat.value || 'Clothing', brand: f.brand.value, gender: f.gender.value, subcategory: f.type.value, fabric: f.fabric.value, collection: f.collection.value, weightG: f.weight.value === '' ? null : N(f.weight.value), washcare: f.wash.value, description: f.desc.value, details: f.det.value, season: f.season.value, hsn: f.hsn.value, photoUrl: f.photo.value || null,
         price: N(f.price.value), mrp: N(f.mrp.value) || N(f.price.value), taxPct: f.tax.value === '' ? null : N(f.tax.value), colours, sizes };
       if (seeCost && f.cost.value !== '') p.cost = N(f.cost.value);
       if (isNew && N(f.qty.value) > 0) p.opening = { qty: Math.round(N(f.qty.value)), unitCost: N(f.cost.value), branchId: S.branch };

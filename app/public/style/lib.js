@@ -140,3 +140,28 @@ function csvDownload(name, rows) {
   const blob = new Blob(['﻿' + rows.map((r) => r.map(q).join(',')).join('\n')], { type: 'text/csv' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.append(a); a.click(); a.remove();
 }
+
+// ---- product filters: colour / type / fabric / collection (shared by Sell and Stock) ----
+const FILT = { colour: '', type: '', fabric: '', collection: '' };
+const filtActive = () => Object.values(FILT).filter(Boolean).length;
+const distinctOf = (get) => [...new Set(S.cat.filter((s) => s.active !== false).flatMap((s) => [].concat(get(s))).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+function styleMatches(s) {
+  if (FILT.colour && !s.variants.some((v) => v.colour === FILT.colour && v.active !== false)) return false;
+  if (FILT.type && (s.subcategory || '') !== FILT.type) return false;
+  if (FILT.fabric && (s.fabric || '') !== FILT.fabric) return false;
+  if (FILT.collection && (s.collection || '') !== FILT.collection) return false;
+  return true;
+}
+function filterSheet(onApply) {
+  const groups = [['colour', t('Colour'), distinctOf((s) => s.variants.map((v) => v.colour))], ['type', t('Type'), distinctOf((s) => s.subcategory)], ['fabric', t('Fabric'), distinctOf((s) => s.fabric)], ['collection', t('Collection'), distinctOf((s) => s.collection)]];
+  const body = h('div', { class: 'grid' });
+  const paint = () => clear(body).append(...groups.filter((g) => g[2].length).map(([k, label, vals]) => h('div', null, h('div', { class: 'cap' }, label),
+    h('div', { class: 'chips wrap' }, vals.map((v) => h('button', { class: 'chip', type: 'button', 'aria-pressed': String(FILT[k] === v), onclick: () => { FILT[k] = FILT[k] === v ? '' : v; paint(); } }, k === 'colour' ? colourDot(v, 12) : null, v))))),
+    groups.every((g) => !g[2].length) ? empty('tag', t('Nothing to filter yet'), t('Add fabric, type or collection when you create a style.')) : null);
+  paint();
+  sheet({ title: t('Filter'), body, actions: [{ label: t('Clear'), onclick: (close) => { Object.keys(FILT).forEach((k) => FILT[k] = ''); close(); onApply(); } }, { label: t('Show'), primary: true, onclick: (close) => { close(); onApply(); } }] });
+}
+function filterButton(onApply) {
+  const n = filtActive();
+  return h('button', { class: 'btn icon' + (n ? ' fill' : ''), type: 'button', 'aria-label': t('Filter'), onclick: () => filterSheet(onApply) }, icon('tag', 20), n ? h('span', { class: 'fcount' }, n) : null);
+}

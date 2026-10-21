@@ -36,6 +36,8 @@ page('sell', {
     const sf = searchField(t('Search or scan a tag'), (val) => { UI.q = val; paintGrid(); }, UI.q);
     sf.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const val = sf.input.value.trim(); if (val && onCode(val, true)) { sf.input.value = ''; UI.q = ''; paintGrid(); } } });
     const chips = h('div', { class: 'chips' });
+    const filterHost = h('span');
+    const paintFilter = () => { clear(filterHost).append(filterButton(() => { paintFilter(); paintGrid(); })); };
     function paintChips() { clear(chips).append(...cats.map((c) => h('button', { class: 'chip', type: 'button', 'aria-pressed': String(UI.cat === c), onclick: () => { UI.cat = c; paintChips(); paintGrid(); } }, c === 'All' ? t('All') : c))); }
     function onCode(code, fromEnter) {
       const f = findBarcode(code);
@@ -46,7 +48,7 @@ page('sell', {
     function priceRange(s) { const ps = s.variants.map((x) => x.price); const a = Math.min(...ps), b = Math.max(...ps); return a === b ? inr(a) : inr(a) + '+'; }
     function paintGrid() {
       const q = UI.q.trim().toLowerCase();
-      let list = S.cat.filter((s) => s.active !== false && (UI.cat === 'All' || s.category === UI.cat));
+      let list = S.cat.filter((s) => s.active !== false && (UI.cat === 'All' || s.category === UI.cat) && styleMatches(s));
       if (q) list = list.filter((s) => (s.name + ' ' + (s.brand || '') + ' ' + s.category).toLowerCase().includes(q) || s.variants.some((x) => x.barcode === q));
       clear(grid);
       if (!list.length) { grid.append(empty('shirt', S.cat.length ? t('No match') : t('No styles yet'), S.cat.length ? '' : t('Add your first style in Stock.'), !S.cat.length && can('sty_manage') ? h('button', { class: 'btn fill', onclick: () => go('stock') }, t('Go to Stock')) : null)); return; }
@@ -66,7 +68,7 @@ page('sell', {
       const paint = () => {
         const vs = s.variants.filter((x) => x.colour === col && x.active !== false).sort(byRank);
         clear(body).append(
-          h('div', { class: 'vp-h' }, h('div', { class: 'ph sm' }, s.photoUrl ? h('img', { src: s.photoUrl, alt: '' }) : icon('shirt', 24)), h('div', null, h('b', null, s.name), h('div', { class: 'muted small' }, [s.brand, s.category].filter(Boolean).join(' · ')), h('div', { class: 'num' }, inr(s.price), s.mrp > s.price ? h('s', { class: 'muted small', style: { marginLeft: '6px' } }, inr(s.mrp)) : null))),
+          h('div', { class: 'vp-h' }, h('div', { class: 'ph sm' }, s.photoUrl ? h('img', { src: s.photoUrl, alt: '' }) : icon('shirt', 24)), h('div', null, h('b', null, s.name), h('div', { class: 'muted small' }, [s.brand, s.category, s.fabric].filter(Boolean).join(' · ')), h('div', { class: 'num' }, inr(s.price), s.mrp > s.price ? h('s', { class: 'muted small', style: { marginLeft: '6px' } }, inr(s.mrp)) : null))),
           cols.length > 1 || (cols[0] || '') ? h('div', null, h('div', { class: 'cap' }, t('Colour')), h('div', { class: 'chips wrap' }, cols.map((c) => { const n = s.variants.filter((x) => x.colour === c).reduce((a, x) => a + x.stock, 0); return h('button', { class: 'chip', type: 'button', 'aria-pressed': String(c === col), onclick: () => { col = c; paint(); } }, colourDot(c, 14), c || '—', h('span', { class: 'muted small' }, n)); }))) : null,
           h('div', null, h('div', { class: 'cap' }, t('Size')), h('div', { class: 'sizes' }, vs.map((x) => {
             const dis = x.stock <= 0 && !S.ctx.settings.allowNegativeStock;
@@ -117,8 +119,8 @@ page('sell', {
     }
     window.addEventListener('sty:cartchanged', paintCart);
     cleanupHook(v, () => window.removeEventListener('sty:cartchanged', paintCart));
-    paintChips(); paintGrid(); paintCart();
-    clear(root).append(h('div', { class: 'sell-l' }, h('div', { class: 'row', style: { gap: '8px' } }, h('div', { class: 'grow' }, sf), scanBtn), chips, grid), cartHost, bar);
+    paintChips(); paintFilter(); paintGrid(); paintCart();
+    clear(root).append(h('div', { class: 'sell-l' }, h('div', { class: 'row', style: { gap: '8px' } }, h('div', { class: 'grow' }, sf), filterHost, scanBtn), chips, grid), cartHost, bar);
     if (isDesk()) setTimeout(() => sf.input.focus(), 50);
     // hardware barcode scanners type the code fast and press Enter, even when the search box is not focused
     let buf = '', last = 0;
