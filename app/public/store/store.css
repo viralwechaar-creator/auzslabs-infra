@@ -281,3 +281,30 @@ footer .fin{display:flex;justify-content:space-between;align-items:center;gap:8p
 .buybar{position:fixed;left:10px;right:10px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:35;background:rgba(255,255,255,.92);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-radius:22px;padding:8px 8px 8px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 6px 24px rgba(0,0,0,.14)}
 .buybar .nm{font-size:10.5px}
 .fbar{height:3px;background:#e4e2e0;border-radius:2px;margin-top:5px;overflow:hidden}.fbar i{display:block;height:100%;background:var(--ink);border-radius:2px}
+/* tighter rhythm: empty space only where it is intentional (.blank cards, the hero) */
+main{padding:2px var(--pad) 84px}
+@media(min-width:900px){main{padding:4px 28px 44px}}
+.sec{margin:10px 0 0}
+.sec>.hd{padding:0 3px 6px}
+.band{margin-top:10px;padding:8px 8px 10px}
+.band .hd{padding:2px 4px 7px}
+.hero{height:calc(100svh - var(--hh) - 130px);min-height:320px;max-height:640px}
+.hero .cap{padding:44px 16px 16px;gap:8px}
+.crumbs{padding:4px 3px}
+.shophd{padding:2px 3px 6px}
+.chips{padding:0 3px 6px}
+.card{padding:14px}
+.info{padding:14px;gap:11px}
+.ln{padding:8px 0}
+.frm{gap:7px}.frm h2{margin-top:6px}
+.empty{padding:28px 16px;gap:8px}
+.pg{margin:4px auto;gap:8px}
+.fq button{padding:11px 14px}.fq .a{padding:0 14px 11px}
+.scards{gap:8px}.scard .b{padding:11px 13px 13px}
+.fgrp{margin:10px 0}
+.deck{gap:8px}
+footer{margin:16px var(--pad) 96px;padding:18px 16px 12px;border-radius:26px}
+footer .cols{gap:14px}
+footer .fin{margin-top:14px;padding-top:9px}
+@media(min-width:900px){footer{margin:18px 28px 20px;padding:24px 28px 14px}}
+.top{height:50px}:root{--hh:50px}
