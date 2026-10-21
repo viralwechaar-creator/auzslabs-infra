@@ -41,7 +41,7 @@ export default async function run({ browser, stack }) {
     const ed = await ctx.newPage(); const e3 = watch(ed);
     await ed.goto(stack.url('testcafe', '/site-edit.html'), { waitUntil: 'load' }); await ed.waitForTimeout(800);
     await ed.fill('input[type=text]', USERS.cafeOwner); await ed.fill('input[type=password]', PASSWORD); await ed.click('button.p'); await ed.waitForTimeout(2500);
-    await ed.locator('summary', { hasText: 'Founder page' }).click();
+    await ed.locator('.nav button', { hasText: 'Founder page' }).click();
     const f = ed.locator('.f', { hasText: 'Founder name' }).locator('input'); await f.fill('Asha Rao');
     await ed.locator('.f', { hasText: 'Note paragraph 1' }).locator('textarea').fill('We started with one oven.');
     await ed.locator('button.p', { hasText: 'Save' }).click(); await ed.waitForTimeout(1500);

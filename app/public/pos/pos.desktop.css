@@ -1,7 +1,7 @@
 /* expanded (900-1199px: icon rail, two-pane selling screen) and wide (1200px and up: full sidebar, three panes); centred sheets */
 .side{flex:none;width:var(--side-w);transition:width .3s var(--ease);display:flex;flex-direction:column;background:var(--card);border-right:.5px solid var(--sep);padding:max(14px,env(safe-area-inset-top)) 12px 12px;gap:4px;min-height:0;overflow-y:auto}
 .side .brand{display:flex;align-items:center;gap:8px;padding:2px 2px 14px 8px;min-height:48px}
-.side .brand-logo{flex:1 1 auto;min-width:0;display:flex}.side .brand-logo img{height:30px;width:auto}
+.side .brand-logo{flex:1 1 auto;min-width:0;display:flex}.side .brand-logo img{height:42px;width:auto}
 .side .brand-mark{display:none;width:34px;height:34px}
 .side-tg{flex:none;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--label2)}
 .side-tg:hover{background:var(--fill2);color:var(--label)}

@@ -309,3 +309,67 @@ picture{display:contents}
 .powered a{color:inherit}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 @media print{body{overflow:visible;height:auto}.shell,.ov,.toast{display:none!important}}
+
+/* Tables: filter chips and the floor summary */
+.tbl-wrap{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+.tbl-main{display:grid;gap:14px;min-width:0}
+.tbl-side{display:grid;gap:12px;min-width:0}
+.tbl-chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+.chipf{flex:none;display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 13px;border-radius:99px;background:var(--card);color:var(--label2);font-weight:600;font-size:14px;box-shadow:inset 0 0 0 .5px var(--sep)}
+.chipf b{font-weight:700;font-size:12.5px;min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--fill2);color:var(--label);display:grid;place-items:center}
+.chipf.on{background:var(--accent);color:var(--on-accent,#fff);box-shadow:none}.chipf.on b{background:rgba(255,255,255,.22);color:inherit}
+.tstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.tstat{display:grid;gap:2px;min-width:0}.tstat b{font-size:20px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;white-space:nowrap}.tstat span{font-size:12px;color:var(--label2)}
+.tbl-side .card{padding:12px 14px}
+.tbl-tile .tc{font-size:12px;color:var(--label2)}
+@media (min-width:1100px){.tbl-wrap{grid-template-columns:minmax(0,1fr) 330px}.tbl-side{position:sticky;top:12px}}
+
+.logo2{display:inline-flex}.logo2 .lg-d{display:none}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .logo2 .lg-l{display:none}:root:not([data-theme=light]) .logo2 .lg-d{display:inline}}
+:root[data-theme=dark] .logo2 .lg-l{display:none}:root[data-theme=dark] .logo2 .lg-d{display:inline}
+.login .logo2 img{height:64px;width:auto}
+/* Tables, as in the owner's prototype: legend + pills, floor card, selected-table panel */
+.eyebrow{color:var(--accent-text);font-size:11px;letter-spacing:.14em;font-weight:800;text-transform:uppercase;margin-bottom:4px}
+.tbl-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.tbl-bar .legend{font-size:13px}
+.tbl-h{margin:0;font-size:17px;font-weight:700}
+.tbl-main.card{padding:16px;gap:14px;align-content:start}
+.tbl-tile{min-height:128px;gap:8px;justify-content:flex-start}
+.tbl-tile .ttop{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.tbl-tile .seats{position:static;font-size:12px;color:var(--label3)}
+.tbl-tile .tchip{align-self:flex-start;font-size:12px;font-weight:700;padding:4px 9px;border-radius:7px;background:color-mix(in srgb,#34c759 16%,var(--card));color:var(--green,#1f8a4c)}
+.tbl-tile .tmeta{margin-top:auto;display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:12.5px;color:var(--label2)}
+.tbl-tile .tmeta .tc{display:flex;align-items:center;gap:4px;min-width:0}
+.tbl-tile .tmeta .ta{font-size:15px;color:var(--label)}
+.tbl-tile:is(.st-placed,.st-kot,.st-prep,.st-bill,.st-served) .tchip{background:var(--accent-soft);color:var(--accent-text)}
+.tbl-tile.st-ready .tchip{background:color-mix(in srgb,#34c759 18%,var(--card));color:#1f8a4c}
+.tbl-tile.st-dirty .tchip{background:var(--fill2);color:var(--label2)}
+.tbl-tile.st-res .tchip{background:color-mix(in srgb,#007aff 14%,var(--card));color:#0a63c9}
+.tbl-detail{padding:0;overflow:hidden}
+.dban{background:var(--accent);color:var(--on-accent,#fff);padding:18px}
+.dban small{opacity:.8;font-weight:700;letter-spacing:.05em;font-size:12px}.dban h2{margin:4px 0 2px;font-size:24px;letter-spacing:-.02em}.dban p{margin:0;font-size:13px;opacity:.88}
+.dbody{padding:16px}.dbody h3{margin:0 0 8px;font-size:15px}
+.dline{display:flex;justify-content:space-between;gap:10px;padding:8px 0;font-size:14px;color:var(--label2)}.dline b{color:var(--label);font-weight:700}
+.dempty{border:1px dashed var(--sep);border-radius:12px;padding:16px;text-align:center;color:var(--label2);font-size:13px}.dempty b{display:block;color:var(--label);font-size:15px;margin-bottom:4px}
+.dact{display:grid;gap:8px;margin-top:14px}.dact .btn{width:100%}
+@media (max-width:1099px){.tbl-detail{display:none}}
+@media (min-width:1100px){.tbl-wrap{grid-template-columns:minmax(0,1fr) 360px}}
+/* Tables: one radius scale (8 / 12 / 16 / 22), hairline + soft shadow like every other card, smooth press and hover */
+.tbl-main.card,.tbl-side .card{border-radius:var(--r4);box-shadow:var(--sh1)}
+.tbl-main.card{padding:20px}
+.tbl-side{gap:16px}.tbl-wrap{gap:20px}
+.tables{gap:14px}
+.tbl-tile{border-radius:var(--r3);padding:16px 16px 14px 20px;box-shadow:var(--sh1);transition:transform .25s var(--ease),box-shadow .25s var(--ease),background .25s var(--ease)}
+.tbl-tile:hover{box-shadow:var(--sh2);transform:translateY(-1px)}
+.tbl-tile:active{transform:scale(.98)}
+.tbl-tile::before{left:8px;top:14px;bottom:14px;width:4px;border-radius:999px}
+.tbl-tile.sel{box-shadow:0 0 0 2px var(--accent),0 10px 24px -12px color-mix(in srgb,var(--accent) 45%,transparent)}
+.tbl-tile .tchip{border-radius:999px;padding:4px 10px}
+.tbl-detail{border-radius:var(--r4)}
+.dban{padding:20px}
+.dempty{border-radius:var(--r2)}
+.dact .btn{border-radius:var(--r2)}
+.chipf{box-shadow:var(--sh1);transition:background .25s var(--ease),color .25s var(--ease)}
+.chipf.on{box-shadow:none}
+.tbl-bar{gap:12px}
+.tbl-side .card.tbl-detail{padding:0;overflow:hidden}
