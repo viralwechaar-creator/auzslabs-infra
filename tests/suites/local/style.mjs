@@ -174,6 +174,14 @@ export default async function run({ browser, stack }) {
     await ok(owner, 'sty_day_close', { p_date: null });
   });
 
+  await s.check('A shop logo becomes the home-screen icon source', async () => {
+    await ok(owner, 'sty_save_settings', { p: { logoUrl: 'https://api.test.local/uploads/style/logo.png' } });
+    const r = await q("select public_app_icon_context('teststyle') c"); const c = r[0].c;
+    assert(c.settings.logo === 'https://api.test.local/uploads/style/logo.png', 'logo not exposed: ' + JSON.stringify(c.settings));
+    await ok(owner, 'sty_save_settings', { p: { logoUrl: '' } });
+    const r2 = await q("select public_app_icon_context('teststyle') c"); assert(!r2[0].c.settings.logo, 'empty logo must not be exposed');
+  });
+
   // ---------- screens ----------
   const open = async (email, dev) => {
     const c = await newCtx(browser, stack, dev); const page = await c.newPage(); const errs = watch(page);

@@ -87,6 +87,7 @@ async function boot() {
   const brs = ctx.branches || [];
   S.branch = brs.find((b) => b.id === saved) ? saved : (brs.find((b) => b.isMain) || brs[0] || {}).id || null;
   buildShell();
+  shopIcon();
   window.addEventListener('hashchange', route_);
   window.addEventListener('sty:q', updatePill);
   window.addEventListener('sty:synced', () => { updatePill(); if (['sell', 'stock', 'home'].includes(route.id)) route_(); });
@@ -94,6 +95,15 @@ async function boot() {
   route_();
 }
 
+// a shop that uploaded a logo gets it as the home-screen icon (server draws it centred on a tile); embedded as a data URI so iOS never shows a blank icon
+async function shopIcon() {
+  try {
+    const logo = S.ctx.settings && S.ctx.settings.logoUrl;
+    if (!logo || !/\.auzslab\.in$|^localhost$/.test(location.hostname) || /^(app|www|auzspos|auzsmob|auzspay|auzsledger|auzsscan|auzsstyle)\./.test(location.hostname)) return;
+    const r = await fetch('/app-icon/180.png?v=' + encodeURIComponent(logo.slice(-12))); if (!r.ok) return;
+    const fr = new FileReader(); fr.onload = () => { const l = document.querySelector('link[rel=apple-touch-icon]'); if (l) l.href = fr.result; }; fr.readAsDataURL(await r.blob());
+  } catch { /* the default icon stays */ }
+}
 function navItem(id, label, ic) {
   if (!allowed(PAGES[id])) return null;
   return h('a', { href: '#/' + id, 'data-nav': id, class: 'nav-i', title: t(label) }, icon(ic, 20), h('span', { class: 'lbl-t' }, t(label)));
