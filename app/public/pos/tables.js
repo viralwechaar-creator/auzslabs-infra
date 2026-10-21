@@ -6,7 +6,7 @@ const KRANK = { new: 0, preparing: 1, ready: 2, served: 3 };
 const kstatOf = (o) => { const src = o.kfrom && rec(o.kfrom); return src && src.status !== 'void' && src.kstat && src.kstat !== 'served' && src.kstat !== 'done' && !o.kstat ? src.kstat : o.kstat; };
 const TSTATE = {
   free: ['Available', ''], placed: ['Ordering', 'gray'], kot: ['In kitchen', 'orange'], prep: ['Preparing', 'orange'], ready: ['Ready to serve', 'green'],
-  bill: ['Served · bill pending', 'accent'], dirty: ['Needs cleaning', 'gray'], res: ['Reserved', 'blue'],
+  bill: ['Bill pending', 'accent'], dirty: ['Needs cleaning', 'gray'], res: ['Reserved', 'blue'],
 };
 function upcomingRes(tid) {
   const t = Date.now();
