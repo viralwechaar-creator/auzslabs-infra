@@ -294,13 +294,13 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .sgrid{gap:14px 8px}
 .scard .meta{padding:5px 1px 0}
 .scard .mt{gap:4px;align-items:center}
-.scard .nm{font-size:12.5px;font-weight:500;line-height:1.15;letter-spacing:-.005em}
-.scard .pr{padding:0;margin-top:-1px;font-size:11.5px;line-height:1.2;gap:6px}
-.scard .stk.lo{font-size:10.5px}
+.scard .nm{font-size:11.5px;font-weight:500;line-height:1.15;letter-spacing:-.005em}
+.scard .pr{padding:0;margin-top:-1px;font-size:10.5px;line-height:1.2;gap:6px}
+.scard .stk.lo{font-size:9.5px}
 .scard .plus{width:22px;height:22px;margin:0 -3px 0 0}
 .scard .plus svg{width:14px;height:14px}
 .scard .pic{border-radius:18px}
-@media (min-width:900px){.sgrid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px 8px}.scard .nm{font-size:13px}.scard .pr{font-size:12px}}
+@media (min-width:900px){.sgrid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px 8px}.scard .nm{font-size:12px}.scard .pr{font-size:11px}}
 @media (max-width:599px){.sgrid{gap:12px 6px}.page[data-p=sell]{padding-left:10px;padding-right:10px}}
 
 /* iPhone: blur layers over scrolling pictures made Safari paint only part of a picture (the rest stayed blank). Bars are solid; pictures sit on their own layer. */
