@@ -395,6 +395,16 @@ export default async function run({ browser, stack }) {
     await integrity();
   });
 
+  await s.check('Store visitor analytics: events are stored anonymously and the owner sees funnel, scroll depth and products', async () => {
+    await ok(manager, 'sty_store_save', { p: { on: true } });
+    const ev = (k, p, d) => ({ sid: 'visitor-abc12345', k, p, d, dev: 'phone', ref: 'instagram.com', ret: false });
+    const r = await ok(null, 'public_sty_track', { p_slug: 'teststyle', p: { events: [ev('view', 'home'), ev('scroll', 'home', { max: 80, s: 20 }), ev('time', 'home', { s: 20 }), ev('product', 'p/x', { id: 'x', name: 'Slim Shirt' }), ev('bag', 'p/x', { id: 'x', name: 'Slim Shirt' }), ev('search', 'shop', { q: 'shirt' }), { sid: 'x', k: 'view' }, { sid: 'visitor-abc12345', k: 'hack' }] } });
+    assert(r.n === 6, 'stored ' + r.n + ' (bad ids and unknown kinds must be dropped)');
+    const a = await ok(manager, 'sty_store_analytics', { p_days: 30 });
+    assert(a.visitors >= 1 && a.funnel.b >= 1 && a.scroll.some((x) => x.page === 'home' && +x.a75 >= 1) && a.products.some((x) => x.name === 'Slim Shirt') && a.searches.some((x) => x.q === 'shirt'), JSON.stringify(a).slice(0, 300));
+    assert(!(await call(staff, 'sty_store_analytics', { p_days: 30 })).ok, 'a plain staffer must not read visitor analytics');
+  });
+
   await s.check('Online store page: browse, filter, product page, bag, checkout and the owner inbox, on phone and desktop', async () => {
     await ok(manager, 'sty_store_save', { p: { on: true } });
     for (const dev of [{ w: 390, h: 844, mobile: true }, { w: 1366, h: 800 }]) {

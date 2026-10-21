@@ -317,3 +317,12 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .upiq-i{width:132px;height:132px;border-radius:10px;background:#fff;flex:none}
 .upiq-t{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}.upiq-t b{font-size:20px}.upiq-t .small{overflow:hidden;text-overflow:ellipsis}
 .upiq .upic{flex-basis:100%;min-height:40px;padding:6px 2px}
+
+/* store visitor analytics */
+.hbar{display:grid;grid-template-columns:minmax(80px,32%) 1fr auto;gap:8px;align-items:center;padding:5px 0;font-size:12px}
+.hb-t{height:8px;border-radius:4px;background:var(--fill,rgba(128,128,128,.15));overflow:hidden}.hb-f{height:100%;background:var(--tint);border-radius:4px}
+.hb-l{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hb-n{font-weight:600;white-space:nowrap}
+.sd{padding:8px 0;border-top:1px solid var(--sep,rgba(128,128,128,.2))}.sd:first-child{border-top:0}
+.sd-b{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;height:70px;margin-top:6px;align-items:end}
+.sd-c{display:flex;flex-direction:column;justify-content:flex-end;height:100%;text-align:center;font-size:10px}
+.sd-f{background:var(--tint);border-radius:4px 4px 0 0;opacity:.85}.sd-l{margin-top:3px}

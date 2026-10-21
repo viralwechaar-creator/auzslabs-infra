@@ -91,7 +91,7 @@ function card(s, opt) {
     E('a', { href: link('p/' + s.id), style: { minWidth: 0 } }, E('div', { class: 'nm' }, s.name), E('div', { class: 'pr' }, inr(s.price), saleOn() && s.mrp > s.price ? E('s', null, inr(s.mrp)) : null)),
     gone ? null : E('button', { class: 'add', 'aria-label': 'Quick add', onclick: () => quickAdd(s) }, icon('plus'))));
 }
-function toggleWish(id) { const i = wish.indexOf(id); if (i >= 0) wish.splice(i, 1); else wish.push(id); saveWish(); }
+function toggleWish(id) { try { TR.push('wish', null, { id }); } catch {} const i = wish.indexOf(id); if (i >= 0) wish.splice(i, 1); else wish.push(id); saveWish(); }
 function quickAdd(s) {
   let colour = colours(s)[0] || '', size = '';
   const body = E('div'); const cb = E('button', { class: 'btn wide' }, 'Add to bag');
@@ -110,6 +110,7 @@ function addBag(vid, q) {
   const v = VAR[vid]; if (!v) return;
   const cur = bag.find((b) => b.v === vid); const nq = Math.min((cur ? cur.q : 0) + q, v.left >= 9 ? 20 : v.left);
   if (cur) cur.q = nq; else bag.push({ v: vid, q: Math.max(nq, 1) });
+  try { TR.push('bag', null, { id: v.sid, name: (BYID[v.sid] || {}).name }); } catch {}
   saveBag(); toast('Added to your bag');
 }
 const bagLines = () => bag.map((b) => ({ ...b, vr: VAR[b.v] })).filter((b) => b.vr).map((b) => ({ ...b, s: BYID[b.vr.sid] }));
@@ -167,7 +168,7 @@ function openSearch() {
   const s = $('#srch'); clear(s); s.classList.add('on');
   const close = () => s.classList.remove('on');
   const res = E('div', { class: 'grid', style: { maxWidth: '1100px', margin: '0 auto' } });
-  const inp = E('input', { placeholder: 'Search products, colours, collections', 'aria-label': 'Search', oninput: () => { const q = inp.value.trim().toLowerCase(); clear(res); if (q.length < 2) return; const hit = STY.filter((x) => [x.name, x.category, x.brand, x.collection, x.fabric, x.code, ...colours(x)].join(' ').toLowerCase().includes(q)).slice(0, 24); res.append(...(hit.length ? hit.map((x) => { const c = card(x); c.addEventListener('click', (e) => { if (e.target.closest('a')) close(); }); return c; }) : [E('div', { class: 'mut', style: { gridColumn: '1/-1', padding: '30px', textAlign: 'center' } }, 'Nothing found')])); } });
+  const inp = E('input', { placeholder: 'Search products, colours, collections', 'aria-label': 'Search', oninput: () => { const q = inp.value.trim().toLowerCase(); clearTimeout(inp._t); if (q.length >= 3) inp._t = setTimeout(() => TR.push('search', null, { q }), 1200); clear(res); if (q.length < 2) return; const hit = STY.filter((x) => [x.name, x.category, x.brand, x.collection, x.fabric, x.code, ...colours(x)].join(' ').toLowerCase().includes(q)).slice(0, 24); res.append(...(hit.length ? hit.map((x) => { const c = card(x); c.addEventListener('click', (e) => { if (e.target.closest('a')) close(); }); return c; }) : [E('div', { class: 'mut', style: { gridColumn: '1/-1', padding: '30px', textAlign: 'center' } }, 'Nothing found')])); } });
   s.append(E('div', { class: 'bar' }, inp, E('button', { class: 'ic', 'aria-label': 'Close', onclick: close }, icon('x'))), res); inp.focus();
 }
 
@@ -398,6 +399,7 @@ V.checkout = (v) => {
       const r = await rpc('public_sty_place_order', { p_slug: SLUG, p: { name, email: g('email'), phone: g('phone'), address: g('address'), address2: g('address2'), city: g('city'), state: g('state'), pin: g('pin'), country: g('country'), note: g('note'), payment: pay, lines: bagLines().map((l) => ({ variantId: l.v, qty: l.q })) } });
       if (save.checked) LS.set('me', { first: g('first'), last: g('last'), email: g('email'), phone: g('phone'), address: g('address'), address2: g('address2'), city: g('city'), state: g('state'), pin: g('pin'), country: g('country'), name: 1 }); else LS.set('me', {});
       const mine = LS.get('orders', []); mine.unshift({ token: r.token, number: r.number }); LS.set('orders', mine.slice(0, 20));
+      TR.push('order', null, { total: r.total }); TR.flush();
       bag = []; saveBag(); go('order/' + r.token);
     } catch (e) { err.textContent = e.message; btn.disabled = false; btn.textContent = 'Place order'; }
   };
@@ -412,7 +414,9 @@ V.checkout = (v) => {
       E('div', { class: 'mut tiny' }, 'By placing the order you agree to the ', E('a', { href: link('policy/terms'), style: { textDecoration: 'underline' } }, 'terms'), ' and the ', E('a', { href: link('policy/returns'), style: { textDecoration: 'underline' } }, 'returns policy'), '.'))));
 };
 
+const LIVE_MSG = { new: 'We have your order', confirmed: 'Confirmed, we are getting it ready', packed: 'Packed and waiting for pickup', shipped: 'On its way to you', delivered: 'Delivered. Enjoy!', cancelled: 'This order was cancelled' };
 V.order = async (v, tok) => {
+  clearInterval(v._ot);
   v.append(E('div', { class: 'spin' }));
   let o; try { o = await rpc('public_sty_order', { p_token: tok }); } catch (e) { o = null; }
   clear(v);
@@ -428,10 +432,11 @@ V.order = async (v, tok) => {
   }
   v.append(E('div', { class: 'pg' }, E('div', { class: 'card' }, E('div', { class: 'lbl' }, 'Order ' + o.number), E('h1', { style: { margin: '4px 0' } }, o.status === 'cancelled' ? 'Order cancelled' : 'Thank you, ' + (o.customer.name || '').split(' ')[0]),
     E('div', { class: 'mut' }, o.payment === 'cod' ? 'Pay ' + inr(o.total) + ' in cash when it arrives.' : o.paymentStatus === 'paid' ? 'Payment received.' : 'We will confirm your order once the payment is checked.'),
-    o.status === 'cancelled' ? null : E('div', { class: 'steps' }, steps.map((_, i) => E('i', { class: i <= at ? 'on' : '' }))), o.status === 'cancelled' ? null : E('div', { class: 'lbl' }, cap(o.status)),
+    o.status === 'cancelled' ? null : E('div', { class: 'steps' }, steps.map((_, i) => E('i', { class: i <= at ? 'on' : '' }))), o.status === 'cancelled' ? null : E('div', { class: 'live' }, o.status === 'cancelled' ? null : E('i'), E('b', null, cap(o.status)), E('span', null, ' · ' + (LIVE_MSG[o.status] || '')), E('div', { class: 'tiny mut' }, 'Updates by itself · checked ' + new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }))),
     E('div', { style: { marginTop: '12px' } }, (o.lines || []).map((l) => E('div', { class: 'ln' }, E('div', { class: 'im' }, l.photo ? E('img', { src: l.photo, alt: '' }) : placeholder(l.name)), E('div', null, E('div', { class: 't' }, l.name), E('div', { class: 's' }, [l.colour, l.size].filter(Boolean).join(' · ') + ' × ' + l.qty)), E('div', null, inr(l.price * l.qty))))),
     E('div', { class: 'sum', style: { marginTop: '10px' } }, E('div', { class: 't' }, E('span', null, 'Shipping'), E('span', null, o.shipping ? inr(o.shipping) : 'Free')), E('div', { class: 't g' }, E('span', null, 'Total'), E('span', null, inr(o.total)))),
     E('div', { class: 'mut tiny', style: { marginTop: '10px' } }, 'Save this page to follow your order. Questions? ', E('a', { href: link('contact'), style: { textDecoration: 'underline' } }, 'Contact us'))), pbox, E('a', { class: 'btn out', href: link('shop'), style: { justifySelf: 'center' } }, 'Keep shopping')));
+  if (!['delivered', 'cancelled'].includes(o.status)) { const last = o.status + '|' + o.paymentStatus; v._ot = setInterval(async () => { if (!document.body.contains(v) || !location.hash.includes(tok)) return clearInterval(v._ot); let n = null; try { n = await rpc('public_sty_order', { p_token: tok }); } catch { return; } if (n && n.status + '|' + n.paymentStatus !== last) { clearInterval(v._ot); const y = scrollY; await V.order(v, tok); scrollTo(0, y); toast('Order update: ' + cap(n.status)); } }, 12000); }
 };
 
 function mapUrl(st) { return st.mapUrl || 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent([st.name, st.address].filter(Boolean).join(' ')); }
@@ -494,6 +499,24 @@ function footer() {
     E('div', { class: 'fin' }, E('span', null, '© ' + new Date().getFullYear() + ' ' + D.shop.name + '. All rights reserved'), E('a', { href: 'https://auzslab.in', target: '_blank', rel: 'noopener' }, 'Store by AUZslab'))));
 }
 
+// ---------- anonymous visitor analytics (no names, phones or addresses) ----------
+const TR = (() => {
+  let sid = ''; let ret = false; try { sid = localStorage.getItem('st.sid'); ret = !!localStorage.getItem('st.seen'); if (!sid) { sid = 'v' + Math.random().toString(36).slice(2, 12) + Date.now().toString(36); localStorage.setItem('st.sid', sid); } localStorage.setItem('st.seen', '1'); } catch { sid = sid || 'v' + Math.random().toString(36).slice(2, 14); }
+  const dev = innerWidth < 700 ? 'phone' : innerWidth < 1100 ? 'tablet' : 'desktop';
+  let ref = ''; try { ref = document.referrer ? new URL(document.referrer).hostname.replace(/^www\./, '') : ''; if (ref === location.hostname) ref = ''; } catch {}
+  const q = []; let page = '', t0 = 0, maxd = 0;
+  const push = (k, p, d) => { q.push({ sid, k, p: p == null ? page : p, d: d || {}, dev, ref, ret }); if (q.length >= 25) flush(); };
+  function flush() { if (!q.length) return; const ev = q.splice(0, 40); sb.rpc('public_sty_track', { p_slug: SLUG, p: { events: ev } }).then(() => {}, () => {}); }
+  function depth() { const h = document.documentElement.scrollHeight - innerHeight; return h > 0 ? Math.min(100, Math.round(scrollY / h * 100)) : 100; }
+  addEventListener('scroll', () => { const d = depth(); if (d > maxd) maxd = d; }, { passive: true });
+  function leave() { if (page) { push('scroll', page, { max: maxd, s: Math.round((Date.now() - t0) / 1000) }); push('time', page, { s: Math.round((Date.now() - t0) / 1000) }); } }
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { leave(); page = page; t0 = Date.now(); maxd = depth(); flush(); } });
+  addEventListener('pagehide', () => { leave(); flush(); });
+  setInterval(flush, 12000);
+  document.addEventListener('click', (e) => { const a = e.target.closest && e.target.closest('a,button'); if (!a) return; const w = a.classList.contains('gd') ? 'Get direction' : a.classList.contains('chat') || a.classList.contains('chatfab') ? 'WhatsApp chat' : /^tel:/.test(a.getAttribute('href') || '') ? 'Call' : a.classList.contains('hero') || (a.closest && a.closest('.hero')) ? 'Hero button' : ''; if (w) push('click', null, { what: w }); }, true);
+  return { enter(p) { leave(); page = p; t0 = Date.now(); maxd = 0; push('view', p); }, push, flush };
+})();
+
 // ---------- router ----------
 function route() {
   const raw = (location.hash || '').replace(/^#\/?/, '').split('?')[0]; const parts = raw.split('/').filter(Boolean).map(decodeURIComponent);
@@ -502,6 +525,8 @@ function route() {
   $('#menu') && $('#menu').classList.remove('on'); $('#srch') && $('#srch').classList.remove('on');
   document.title = (id === 'home' ? '' : cap(id === 'p' ? (BYID[parts[1]] || {}).name || 'Product' : id) + ' · ') + D.shop.name;
   window.scrollTo(0, 0); document.body.classList.add('atop');
+  TR.enter(id === 'p' ? 'p/' + (parts[1] || '') : id); if (id === 'p' && BYID[parts[1]]) TR.push('product', null, { id: parts[1], name: BYID[parts[1]].name });
+  if (id === 'checkout') TR.push('checkout', null, { step: 'start' });
 }
 window.addEventListener('scroll', () => document.body.classList.toggle('atop', window.scrollY < 40), { passive: true });
 async function boot() {
