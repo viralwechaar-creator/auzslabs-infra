@@ -121,7 +121,7 @@ function pickBranch(anchor) {
 function buildShell() {
   const nav = navList();
   const side = h('aside', { class: 'side', 'aria-label': 'Sections' },
-    h('div', { class: 'brand' }, icon('shirt', 28), h('div', { class: 'lbl-t grow' }, h('b', null, 'AUZsStyle'), h('span', null, S.ctx.settings.shopName || (S.dash.tenant ? S.dash.tenant.name : ''))),
+    h('div', { class: 'brand' }, (S.ctx.settings && S.ctx.settings.logoUrl) ? h('img', { class: 'brand-logo', src: S.ctx.settings.logoUrl, alt: '' }) : icon('shirt', 28), h('div', { class: 'lbl-t grow' }, h('b', null, 'AUZsStyle'), h('span', null, S.ctx.settings.shopName || (S.dash.tenant ? S.dash.tenant.name : ''))),
       h('button', { class: 'side-tg', type: 'button', 'aria-label': 'Toggle sidebar', onclick: () => $('#shell').classList.toggle('min') }, icon('sidebar', 20))),
     (S.ctx.branches || []).length > 1 ? h('button', { class: 'nav-i', type: 'button', onclick: (e) => pickBranch(e.currentTarget) }, icon('building', 20), h('span', { class: 'lbl-t' }, branchName())) : null,
     nav.map(([id, l, ic]) => navItem(id, l, ic)),
@@ -134,6 +134,7 @@ function buildShell() {
   const tabbar = h('nav', { class: 'tabbar', 'aria-label': 'Main' },
     tabs.map((id) => { const n = NAV.find((x) => x[0] === id); return h('button', { type: 'button', 'data-tab': id, 'aria-label': t(n[1]), title: t(n[1]), onclick: () => go(id) }, icon(n[2], 24), h('span', null, t(n[1]))); }),
     nav.length > tabs.length || true ? h('button', { type: 'button', 'data-tab': 'more', 'aria-label': t('More'), title: t('More'), onclick: moreSheet }, icon('more', 24), h('span', null, t('More'))) : null);
+  shopIcon();
   clear($('#app')).append(h('div', { class: 'shell' + (LS.get('side', '') ? ' ' + LS.get('side', '') : ''), id: 'shell' }, side, h('div', { class: 'main' }, topbar, h('main', { id: 'main', tabindex: '-1' })), tabbar));
   matchMedia('(min-width:900px)').addEventListener('change', () => route_());
 }
@@ -180,7 +181,7 @@ function header(o, root) {
   t_.textContent = o.title || '';
   document.title = (o.title ? o.title + ' · ' : '') + 'AUZsStyle';
   if (o.back) l.append(h('button', { class: 'btn plain', type: 'button', 'aria-label': 'Back', onclick: () => go(o.back) }, icon('chevL', 22)));
-  else if (!isDesk()) l.append(h('button', { class: 'brandpill', type: 'button', onclick: moreSheet }, icon('shirt', 16), h('b', null, (S.ctx.settings.shopName || (S.dash.tenant && S.dash.tenant.name) || 'AUZsStyle').slice(0, 18))));
+  else if (!isDesk()) l.append(h('button', { class: 'brandpill', type: 'button', onclick: moreSheet }, (S.ctx.settings && S.ctx.settings.logoUrl) ? h('img', { class: 'pill-logo', src: S.ctx.settings.logoUrl, alt: '' }) : icon('shirt', 16), h('b', null, (S.ctx.settings.shopName || (S.dash.tenant && S.dash.tenant.name) || 'AUZsStyle').slice(0, 18))));
   const desk = isDesk();
   (o.actions || []).filter(Boolean).forEach((a) => r.append(h('button', { class: 'btn ' + (desk ? (a.primary ? 'fill' : '') : 'plain') + (!desk ? ' icon' : ''), type: 'button', 'aria-label': a.label, title: a.label, onclick: a.run }, a.icon ? icon(a.icon, 20) : null, desk ? a.label : null)));
   if (root) { const old = root.querySelector(':scope > .large-title'); if (old) old.remove(); }
