@@ -25,7 +25,8 @@ function go(tab) { S.tab = tab; try { localStorage['pos.tab'] = tab; } catch {} 
 const navBadge = (k) => { if (k === 'kitchen') return L('order').filter((o) => o.status !== 'void' && o.kstat === 'new').length; if (k === 'orders') return G.length; return 0; };
 
 // the wordmark is ink on a light page; dark mode swaps in the white-type lockup
-const posLogo = () => h('picture', null, h('source', { media: '(prefers-color-scheme: dark)', srcset: '/logo-pos-light.svg' }), h('img', { src: '/logo-pos.svg', alt: 'AUZslab POS' }));
+// both wordmarks are drawn; CSS shows the one that matches the app's own light/dark choice (not just the phone's), so the name is never white-on-white
+const posLogo = () => h('span', { class: 'logo2' }, h('img', { class: 'lg-l', src: '/logo-pos.svg', alt: 'AUZslab POS' }), h('img', { class: 'lg-d', src: '/logo-pos-light.svg', alt: '' }));
 // sidebar width: an icon rail below 1200px wide, the full sidebar above; the toggle remembers the other choice
 const sidePref = () => { try { return localStorage['pos.side'] || ''; } catch { return ''; } };
 function toggleSide() {

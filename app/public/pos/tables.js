@@ -26,14 +26,40 @@ const sections = () => [...new Set(tables().map((t) => t.sec || 'Main'))];
 V.tables = () => {
   const secs = sections(), ts = tables(), sec = secs.includes(S.tblSec) ? S.tblSec : 'all';
   const states = ts.map((t) => [t, tableState(t)]), busyN = states.filter(([, s]) => s.o).length, covers = states.reduce((a, [, s]) => a + ((s.o && s.o.covers) || 0), 0);
-  const shown = states.filter(([t]) => sec === 'all' || (t.sec || 'Main') === sec);
+  const shown = states.filter(([t]) => sec === 'all' || (t.sec || 'Main') === sec), f = S.tblFilter || 'all', filtered = shown.filter(([, st]) => tblMatch(f, st));
   return h('div', { class: 'page' },
     h('div', { class: 'page-head' }, h('div', null, h('h1', null, 'Tables'), h('div', { class: 'sub' }, plural(ts.length - busyN, 'table') + ' free · ' + busyN + ' seated' + (covers ? ' · ' + plural(covers, 'guest') : ''))),
       h('div', { class: 'row' }, h('button', { class: 'btn tinted', onclick: () => { S.cur = newOrder({ type: 'Takeaway' }); go('sell'); } }, icon('sell', 18), 'Takeaway'), isRestaurant() ? h('button', { class: 'btn', onclick: () => go('reserve') }, icon('reserve', 18), 'Reservations') : null)),
     secs.length > 1 ? h('div', { style: { maxWidth: '640px' } }, seg([['all', 'All'], ...secs.map((s) => [s, s])], sec, (v) => { S.tblSec = v; render(); })) : null,
-    ts.length ? h('div', { class: 'tables' }, shown.map(([t, s]) => tableTile(t, s))) : empty('tables', 'No tables yet', 'Add tables in the admin console under Menu → Tables & Areas.'),
-    ts.length ? h('div', { class: 'legend' }, [['#8e8e93', 'Ordering'], ['#ff9500', 'In kitchen'], ['#34c759', 'Ready'], [getComputedStyle(document.documentElement).getPropertyValue('--accent'), 'Bill pending'], ['#007aff', 'Reserved']].map(([c, l]) => h('span', null, h('i', { style: { background: c } }), l))) : null);
+    ts.length ? h('div', { class: 'tbl-wrap' },
+      h('div', { class: 'tbl-main' }, tblFilters(states), filtered.length ? h('div', { class: 'tables' }, filtered.map(([t, s]) => tableTile(t, s))) : h('div', { class: 'empty' }, h('b', null, 'No tables in this view'), h('div', null, 'Choose another status above.')),
+        h('div', { class: 'legend' }, [['#8e8e93', 'Ordering'], ['#ff9500', 'In kitchen'], ['#34c759', 'Ready'], ['var(--accent)', 'Bill pending'], ['#007aff', 'Reserved']].map(([c, l]) => h('span', null, h('i', { style: { background: c } }), l)))),
+      tblSide(states, covers))
+      : empty('tables', 'No tables yet', 'Add tables in the admin console under Menu → Tables & Areas.'));
 };
+
+// ---- the floor summary: filter chips with counts, and a side panel of what needs doing next ----
+const tblMatch = (f, st) => f === 'all' || (f === 'free' && st.st === 'free') || (f === 'seated' && !!st.o) || (f === 'ready' && st.st === 'ready') || (f === 'dirty' && st.st === 'dirty') || (f === 'res' && st.st === 'res');
+function tblFilters(states) {
+  const defs = [['all', 'All'], ['free', 'Available'], ['seated', 'Seated'], ['ready', 'Ready'], ['dirty', 'Cleaning'], ['res', 'Reserved']], f = S.tblFilter || 'all';
+  return h('div', { class: 'chips tbl-chips', role: 'toolbar', 'aria-label': 'Filter tables' }, defs.map(([k, l]) => { const n = states.filter(([, st]) => tblMatch(k, st)).length; return (k === 'all' || n || f === k) ? h('button', { class: 'chipf' + (f === k ? ' on' : ''), 'data-tf': k, onclick: () => { S.tblFilter = k; render(); } }, l, h('b', null, String(n))) : null; }));
+}
+function tblSide(states, covers) {
+  const seated = states.filter(([, st]) => st.o), running = seated.reduce((a, [, st]) => a + (st.amt || 0), 0);
+  const stat = (v, l) => h('div', { class: 'tstat' }, h('b', null, v), h('span', null, l));
+  const ready = states.filter(([, st]) => st.st === 'ready'), dirty = states.filter(([, st]) => st.st === 'dirty'), slow = seated.filter(([, st]) => st.st !== 'ready' && st.mins >= 60);
+  const attn = [
+    ...ready.map(([t, st]) => liRow({ ic: 'bell', tone: 'green', title: t.name + ' is ready to serve', sub: st.o.no + ' · ' + inr(st.amt), chev: true, onclick: () => tableTap(t, st) })),
+    ...slow.map(([t, st]) => liRow({ ic: 'clock', tone: 'orange', title: t.name + ' seated ' + st.mins + ' min', sub: st.o.no + ' · ' + inr(st.amt), chev: true, onclick: () => tableTap(t, st) })),
+    ...dirty.map(([t]) => liRow({ ic: 'broom', tone: 'gray', title: t.name + ' needs cleaning', right: h('button', { class: 'btn tinted sm', onclick: async (e) => { e.stopPropagation(); await save('table', { ...t, cleaned: true, cleanedAt: now(), cleanedBy: S.user.id }, t.id); toast(t.name + ' is ready'); render(); } }, 'Mark clean') })),
+  ];
+  const nowT = Date.now(), res = (S.bookings || []).filter((b) => b.date === today() && ['pending', 'confirmed'].includes(b.status) && b.time && new Date(b.date + 'T' + b.time).getTime() > nowT - 30 * 60000).sort((a, b) => String(a.time).localeCompare(String(b.time))).slice(0, 4);
+  return h('aside', { class: 'tbl-side' },
+    h('div', { class: 'card tblsum' }, h('div', { class: 'tstats' }, stat(String(states.filter(([, st]) => st.st === 'free').length), 'Available'), stat(String(seated.length), 'Seated'), stat(String(covers), 'Guests'), stat(inr(running), 'Running bills'))),
+    h('div', { class: 'card' }, h('div', { class: 'lbl' }, 'Needs attention'), attn.length ? h('div', { class: 'list' }, attn) : h('div', { class: 'sub', style: { padding: '6px 0' } }, 'Nothing waiting. Tables are on track.')),
+    isRestaurant() ? h('div', { class: 'card' }, h('div', { class: 'row sp' }, h('div', { class: 'lbl' }, 'Coming up today'), h('button', { class: 'btn plain sm', onclick: () => go('reserve') }, 'All reservations')),
+      res.length ? h('div', { class: 'list' }, res.map((b) => liRow({ ic: 'people', tone: 'blue', title: b.time.slice(0, 5) + ' · ' + b.customer_name, sub: (b.party_size ? plural(b.party_size, 'guest') + ' · ' : '') + (tn(b.resource_id) || 'No table yet'), chev: true, onclick: () => go('reserve') }))) : h('div', { class: 'sub', style: { padding: '6px 0' } }, 'No more bookings today.')) : null);
+}
 function tableTile(t, s) {
   const lab = TSTATE[s.st];
   const sub = s.o ? [h('div', { class: 'ts' }, icon('clock', 14), h('span', { 'data-since': s.o.created }, s.mins + ' min'), s.o.covers ? [' · ', icon('people', 14), String(s.o.covers)] : null), h('div', { class: 'ta' }, inr(s.amt)), h('div', { class: 'ts' }, lab[0])]
