@@ -1,9 +1,9 @@
 /* AUZsStyle: Sell (the till). Left/top: styles grid with category chips + barcode/search. Right (desktop) or a bottom bar
    (phone): the bill. Pick a style -> choose colour + size (stock shown) -> it joins the bill. */
 'use strict';
-const BILL = { lines: [], customer: null, billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0 };
+const BILL = { lines: [], customer: null, custName: '', custPhone: '', billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0 };
 const UI = { q: '', cat: 'All' };
-const newBill = () => { Object.assign(BILL, { lines: [], customer: null, billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0 }); };
+const newBill = () => { Object.assign(BILL, { lines: [], customer: null, custName: '', custPhone: '', billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0 }); };
 const billCalc = () => calcBill(BILL.lines.map((l) => ({ unit: l.price, qty: l.qty, discPct: l.discPct, discAmt: l.discAmt, taxPct: l.taxPct })), { billDiscPct: BILL.billDiscPct, billDiscAmt: BILL.billDiscAmt });
 const unitCount = () => BILL.lines.reduce((a, l) => a + l.qty, 0);
 
@@ -98,13 +98,18 @@ page('sell', {
       return h('div', { class: 'bill' },
         BILL.exchange > 0 ? h('div', { class: 'exbar' }, icon('swap', 16), t('Exchange credit') + ' ' + inr(BILL.exchange)) : null,
         h('div', { class: 'bill-h' }, h('b', null, t('Bill')), h('span', { class: 'muted small' }, unitCount() + ' ' + t('Units')), h('span', { class: 'grow' }), BILL.lines.length ? h('button', { class: 'btn plain sm', type: 'button', onclick: async () => { if (await confirmBox(t('Clear'), t('Remove everything from this bill?'), t('Clear'), true)) { newBill(); paintCart(); inSheet && inSheet(true); } } }, t('Clear')) : null),
-        h('button', { class: 'cust', type: 'button', onclick: () => customerPicker((cu) => { BILL.customer = cu; paintCart(); inSheet && inSheet(); }) }, icon('user', 18), h('span', { class: 'grow' }, BILL.customer ? BILL.customer.name : t('Walk-in')), BILL.customer ? h('span', { class: 'muted small' }, (BILL.customer.points || 0) + ' ' + t('Points')) : icon('chevR', 16)),
+        BILL.customer
+          ? h('button', { class: 'cust', type: 'button', onclick: () => customerPicker((cu) => { BILL.customer = cu; paintCart(); inSheet && inSheet(); }) }, icon('user', 18), h('span', { class: 'grow' }, BILL.customer.name + (BILL.customer.phone ? ' · ' + BILL.customer.phone : '')), h('span', { class: 'muted small' }, (BILL.customer.points || 0) + ' ' + t('Points')), h('span', { class: 'cust-x', role: 'button', 'aria-label': t('Clear'), onclick: (e) => { e.stopPropagation(); BILL.customer = null; paintCart(); inSheet && inSheet(); } }, icon('x', 14)))
+          : h('div', { class: 'custrow' },
+            h('input', { class: 'input cin', placeholder: t('Customer name'), value: BILL.custName, 'aria-label': t('Customer name'), autocomplete: 'off', oninput: (e) => { BILL.custName = e.target.value; } }),
+            h('input', { class: 'input cin', placeholder: t('Phone'), value: BILL.custPhone, inputmode: 'tel', 'aria-label': t('Phone'), autocomplete: 'off', oninput: (e) => { BILL.custPhone = e.target.value; } }),
+            h('button', { class: 'btn icon sm', type: 'button', 'aria-label': t('Customer'), title: t('Find a customer'), onclick: () => customerPicker((cu) => { BILL.customer = cu; paintCart(); inSheet && inSheet(); }) }, icon('search', 16))),
         BILL.lines.length ? h('div', { class: 'blines' }, lines) : h('div', { class: 'bempty' }, icon('tag', 26), h('div', null, t('Cart is empty')), h('div', { class: 'small' }, t('Tap a style or scan a tag'))),
         BILL.lines.length ? h('div', { class: 'tots' },
           trow(t('Subtotal'), inr(c.subtotal)), c.discount > 0 ? trow(t('Discount'), '-' + inr(c.discount), 'g') : null, trow(t('Tax') + ' (incl.)', inr(c.tax)), c.rounding ? trow(t('Round off'), inr(c.rounding)) : null,
           h('button', { class: 'btn wide sm', type: 'button', onclick: () => discountSheet(() => { paintCart(); inSheet && inSheet(); }) }, icon('tag', 16), t('Discount'))) : null,
         BILL.lines.length ? h('div', { class: 'payrow' }, h('div', { class: 'tot' }, h('span', null, t('Total')), h('b', { class: 'num' }, inr(c.total))),
-          h('div', { class: 'row', style: { gap: '8px' } }, h('button', { class: 'btn', type: 'button', onclick: () => holdBill(() => { paintCart(); inSheet && inSheet(true); }) }, t('Hold')), h('button', { class: 'btn fill grow', type: 'button', onclick: () => { inSheet && inSheet('close'); paySheet(c, () => { paintCart(); }); } }, t('Pay') + ' ' + inr(c.total)))) : null);
+          h('div', { class: 'row', style: { gap: '8px' } }, h('button', { class: 'btn', type: 'button', onclick: () => holdBill(() => { paintCart(); inSheet && inSheet(true); }) }, t('Hold')), h('button', { class: 'btn fill grow', type: 'button', onclick: async () => { await resolveTypedCustomer(); inSheet && inSheet('close'); paySheet(billCalc(), () => { paintCart(); }); } }, t('Pay') + ' ' + inr(c.total)))) : null);
     }
     const trow = (a, b, cls) => h('div', { class: 'tr' + (cls ? ' ' + cls : '') }, h('span', null, a), h('span', { class: 'num' }, b));
     function cartSheet() {
@@ -221,6 +226,14 @@ function paySheet(c, done) {
       done(); successSheet(snapshot, !r.done);
     } catch (e) { ok.disabled = false; fail(e); }
   };
+}
+// a name and/or phone typed on the bill becomes a customer (found by phone, else created) before paying; offline it is skipped
+async function resolveTypedCustomer() {
+  if (BILL.customer) return;
+  const name = (BILL.custName || '').trim(), phone = (BILL.custPhone || '').trim();
+  if (!name && !phone) return;
+  if (navigator.onLine === false) return;
+  try { BILL.customer = await api('sty_save_customer', { p: { name: name || phone, phone: phone || undefined } }); } catch { /* the bill can still go through as walk-in */ }
 }
 function provisional(p, c) {
   return { number: 'WAITING', at: new Date().toISOString(), customer: BILL.customer, lines: c.lines.map((l, i) => ({ name: BILL.lines[i].name, colour: BILL.lines[i].colour, size: BILL.lines[i].size, qty: l.qty, price: l.unit, net: l.net })),

@@ -157,3 +157,95 @@
   .sell-l::before{content:attr(data-title);display:block;font-size:17px;font-weight:500;padding:0 4px 2px}
 }
 @media (min-width:900px){.sgrid{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:26px 14px}.side{background:rgba(255,255,255,.7);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px)}.cartpane{border-radius:24px;box-shadow:0 0 0 .5px var(--sep)}}
+
+/* ===== Polish pass: compact and premium, no dead space, solid bars, real dark mode ===== */
+:root{--glass:rgba(255,255,255,.78);--tab-on:#fff;--tab-on-fg:#111;--panel:#e9e9eb;--ring:rgba(255,255,255,.7);--hit:40px}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--glass:rgba(38,38,42,.82);--tab-on:rgba(255,255,255,.18);--tab-on-fg:#fff;--panel:#1c1c1f;--ring:rgba(255,255,255,.1)}}
+:root[data-theme=dark]{--glass:rgba(38,38,42,.82);--tab-on:rgba(255,255,255,.18);--tab-on-fg:#fff;--panel:#1c1c1f;--ring:rgba(255,255,255,.1)}
+.scard .pill{background:var(--card);color:var(--label)}
+.scard .pdots i{background:rgba(255,255,255,.6)}
+.btn{font-size:14.5px;min-height:38px;padding:0 14px;gap:6px;line-height:1.1}
+.btn.sm{min-height:32px;padding:0 11px;font-size:13.5px}
+.btn.icon{width:38px;padding:0}.btn.icon.sm{width:32px}
+.btn .ic svg{width:18px;height:18px}
+.chip{min-height:30px;font-size:13.5px;padding:0 12px}
+.input,.select{min-height:38px;font-size:15px;padding:7px 12px}
+.card{padding:12px 14px;border-radius:16px}
+.list{border-radius:16px}
+.li{min-height:44px;padding:8px 12px}.li+.li::before{left:12px}
+.sec{gap:8px}.sec-h h3{font-size:12.5px}
+.page{gap:14px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.kpi{padding:10px 12px;border-radius:14px;gap:2px}.kpi .k{font-size:12.5px}.kpi .n{font-size:20px}.kpi .d{font-size:12px}
+.hero-k{padding:12px 16px;border-radius:16px}.hero-k .big{font-size:30px}
+.tbl th,.tbl td{padding:8px 12px}
+.side button.nav-i,.side a.nav-i{display:flex;align-items:center;gap:10px;min-height:36px;padding:0 10px;border-radius:9px;color:var(--label);font-size:14.5px;font-weight:500;width:100%;text-align:left}
+.side button.nav-i:hover{background:var(--fill)}
+.side{background:var(--glass)}
+.topbar{background:var(--bg);-webkit-backdrop-filter:none;backdrop-filter:none}
+.brandpill{background:var(--glass);max-width:64vw;min-height:36px;padding:0 14px 0 10px;white-space:nowrap}
+.brandpill b{overflow:hidden;text-overflow:ellipsis;font-size:15px}
+.seg{min-height:34px}.seg button{font-size:13.5px;min-height:30px}
+
+/* inventory cards: picture, name, price, stock chip and bar, not a spreadsheet */
+.igrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.igrid>.empty{grid-column:1/-1}
+.icard{display:flex;gap:12px;align-items:center;text-align:left;padding:10px;border-radius:16px;background:var(--card);box-shadow:0 0 0 .5px var(--sep);min-width:0;transition:transform .15s var(--ease),box-shadow .15s}
+.icard:active{transform:scale(.985)}
+@media (hover:hover){.icard:hover{box-shadow:0 0 0 .5px var(--sep),0 6px 18px rgba(0,0,0,.08)}}
+.icard.off{opacity:.6}
+.ic-p{width:64px;height:76px;border-radius:12px;background:var(--fill);display:grid;place-items:center;color:var(--label3);overflow:hidden;flex:none}.ic-p img{width:100%;height:100%;object-fit:cover}
+.ic-b{display:grid;gap:3px;min-width:0;flex:1}
+.ic-t{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.ic-n{font-size:14.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ic-pr{font-size:14px;font-weight:600;flex:none}
+.ic-s{font-size:12px;color:var(--label2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ic-f{display:flex;align-items:center;gap:8px;margin-top:2px}
+.ic-chip{font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:9px;background:var(--fill);color:var(--label2);white-space:nowrap}
+.ic-chip.ok{background:rgba(52,199,89,.16);color:var(--green)}.ic-chip.lo{background:rgba(255,149,0,.18);color:var(--orange)}.ic-chip.z{background:rgba(255,59,48,.16);color:var(--red)}
+.ic-bar{flex:1;height:5px;border-radius:3px;background:var(--fill);overflow:hidden;min-width:24px}.ic-bar i{display:block;height:100%;border-radius:3px;background:var(--green)}.ic-bar i.lo{background:var(--orange)}.ic-bar i.z{background:var(--red)}
+
+/* charts: narrow bars, never one giant block */
+.vb{gap:4px;height:100px;justify-content:center}.vb-c{flex:1 1 0;max-width:34px}.vb-f{background:var(--accent);opacity:.9}
+
+/* bill: inline customer name and phone */
+.custrow{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto;gap:6px;align-items:center}
+.custrow .cin{min-height:36px;font-size:14px;padding:6px 10px}
+.cust{min-height:38px;font-size:14px}.cust-x{display:grid;place-items:center;width:24px;height:24px;border-radius:12px;color:var(--label2)}
+.bill{gap:8px}.blines{gap:0}.bl{padding:7px 2px}
+
+@media (max-width:899px){
+  .topbar{min-height:calc(50px + var(--safe-t));padding-top:calc(var(--safe-t) + 4px)}
+  .shell::after{content:"";position:fixed;left:0;right:0;bottom:0;height:calc(64px + var(--safe-b));background:linear-gradient(transparent,var(--bg) 60%);pointer-events:none;z-index:34}
+  .tabbar{bottom:calc(6px + var(--safe-b));background:var(--glass);border-color:var(--ring);padding:5px}
+  .tabbar button{min-height:46px}.tabbar button[aria-current=page]{background:var(--tab-on);color:var(--tab-on-fg)}
+  .cartbar{bottom:calc(72px + var(--safe-b));min-height:46px}
+  .shell{padding-bottom:calc(84px + var(--safe-b))}
+  .page,.page.pos-page{padding-left:12px;padding-right:12px}
+  .large-title{font-size:26px}
+  .sell-l{background:var(--panel);padding:14px 12px 6px}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpis>.kpi:last-child:nth-child(odd){grid-column:1/-1}
+  .igrid{grid-template-columns:1fr}
+}
+@media (min-width:900px){
+  .topbar{min-height:54px;padding:8px 22px}.topbar .tt{font-size:19px}
+  .page{padding:16px 22px 28px;max-width:none}
+  .page.pos-page{padding:14px 22px 18px}
+  .setg{max-width:none;display:block;columns:2;column-gap:14px}.setg>*{break-inside:avoid;margin-bottom:14px}.setg>.btn,.setg>button{width:100%}
+  .sellpage{grid-template-columns:minmax(0,1fr) 380px;gap:16px}
+  .cartpane{display:flex;flex-direction:column;top:66px;height:calc(100vh - 82px);max-height:none;padding:12px;border-radius:20px;background:var(--card);overflow:hidden}
+  .cartpane>.bill{flex:1;min-height:0;display:flex;flex-direction:column}
+  .cartpane .blines{flex:1;max-height:none;min-height:0;overflow:auto}
+  .cartpane .bempty{flex:1;align-content:center}
+  .cartpane .tots{margin-top:auto}
+  .side{padding:14px 10px 12px}
+}
+@media (min-width:1500px){.kpis{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}}
+
+/* desktop: report sections flow into two balanced columns, so the right half is never empty */
+@media (min-width:900px){
+  .page[data-p=home]>.grid,.page[data-p=analytics]>.grid{display:block;columns:2;column-gap:14px}
+  .page[data-p=home]>.grid>*,.page[data-p=analytics]>.grid>*{break-inside:avoid;margin-bottom:14px}
+  .page[data-p=home]>.grid>.hero-k,.page[data-p=home]>.grid>.kpis,.page[data-p=analytics]>.grid>.hero-k,.page[data-p=analytics]>.grid>.kpis,.page>.grid>.banner,.page>.grid>.empty,.page>.grid>.spin{column-span:all}
+}
+.toolbar .btn.icon,.toolbar .row>.btn.icon{flex:none}
+.toolbar .row{flex-wrap:nowrap}
+@media (max-width:899px){.two{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.three{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.card.grid,.grid{gap:10px}.field{gap:4px}}

@@ -6,6 +6,13 @@ function hbars(rows, o = {}) {
   const max = Math.max(1, ...rows.map((r) => r.v));
   return h('div', { class: 'hb' }, rows.map((r) => h('div', { class: 'hb-r' }, h('div', { class: 'hb-l' }, r.l), h('div', { class: 'hb-t' }, h('div', { class: 'hb-f' + (r.tone ? ' ' + r.tone : ''), style: { width: Math.max(2, r.v / max * 100) + '%' } })), h('div', { class: 'hb-v num' }, r.txt != null ? r.txt : o.money ? inr(r.v, 0) : nf0.format(r.v)))));
 }
+// every hour in the shop's busy window gets a bar (even with no sales), so one hour never becomes one giant block
+function hourRows(by) {
+  const m = new Map(by.map((x) => [Number(x.hour), Number(x.revenue) || 0])); const hs = [...m.keys()];
+  const a = Math.min(9, ...hs), z = Math.max(21, ...hs); const out = [];
+  for (let i = a; i <= z; i++) out.push({ l: i, v: m.get(i) || 0 });
+  return out;
+}
 function vbars(rows, o = {}) {
   const max = Math.max(1, ...rows.map((r) => r.v));
   return h('div', { class: 'vb' }, rows.map((r) => h('div', { class: 'vb-c', title: r.l + ': ' + (o.money ? inr(r.v, 0) : r.v) }, h('div', { class: 'vb-b' }, h('div', { class: 'vb-f', style: { height: Math.max(2, r.v / max * 100) + '%' } })), h('div', { class: 'vb-l' }, r.l))));
@@ -29,7 +36,7 @@ page('home', {
         h('div', { class: 'kpis' }, kpi(t('Bills'), c.bills, '', null), kpi(t('Units'), c.units), kpi(t('Average bill'), inr(c.bills ? c.revenue / c.bills : 0, 0)),
           showProfit ? kpi(t('Profit'), inr(c.profit, 0), c.revenue ? Math.round(c.profit / c.revenue * 100) + '% ' + t('margin') : '') : null, kpi(t('Returns'), d.returns.count, inr(d.returns.amount, 0)), kpi(t('Discount'), inr(d.discount, 0))),
         d.byPayment.length ? section(t('Money received'), h('div', { class: 'card' }, hbars(d.byPayment.map((x) => ({ l: String(x.mode).toUpperCase(), v: x.amount })), { money: true }))) : null,
-        d.byHour.length ? section(t('Busy hours'), h('div', { class: 'card' }, vbars(d.byHour.map((x) => ({ l: x.hour, v: x.revenue })), { money: true }))) : null,
+        d.byHour.length ? section(t('Busy hours'), h('div', { class: 'card' }, vbars(hourRows(d.byHour), { money: true }))) : null,
         d.topStyles.length ? section(t('Best sellers'), h('div', { class: 'list' }, d.topStyles.map((x, i) => liRow({ icon: 'shirt', title: x.name, sub: x.category, value: x.units + ' ' + t('Units'), valueSub: inr(x.revenue, 0) })))) : (c.bills ? null : empty('tag', t('No sales in this period'))),
         section(t('Needs attention'), h('div', { class: 'list' },
           liRow({ icon: 'alert', tone: inv.out ? 'red' : 'gray', title: t('Out of stock'), value: inv.out, sub: t('items you cannot sell right now'), chevron: true, onclick: () => go('analytics?tab=next') }),
@@ -71,7 +78,7 @@ page('analytics', {
           section(t('Sales by category'), h('div', { class: 'card' }, hbars(data.byCategory.map((x) => ({ l: x.category, v: x.units, txt: x.units + ' · ' + inr(x.revenue, 0) }))))),
           section(t('Best selling styles'), h('div', { class: 'list' }, data.byStyle.slice(0, 15).map((x, i) => liRow({ title: (i + 1) + '. ' + x.name, sub: [x.category, x.best_size ? t('best size') + ' ' + x.best_size : '', x.best_colour ? x.best_colour : ''].filter(Boolean).join(' · '), value: x.units + ' ' + t('Units'), valueSub: inr(x.revenue, 0) + (S.ctx.canSeeCost ? ' · ' + t('profit') + ' ' + inr(x.profit, 0) : '') })))),
           section(t('Busy days'), h('div', { class: 'card' }, vbars(['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => ({ l: d, v: Number((data.byWeekday.find((x) => x.dow === i) || {}).revenue || 0) })), { money: true }))),
-          section(t('Busy hours'), h('div', { class: 'card' }, vbars(data.byHour.map((x) => ({ l: x.hour, v: Number(x.revenue) })), { money: true }))));
+          section(t('Busy hours'), h('div', { class: 'card' }, vbars(hourRows(data.byHour), { money: true }))));
       } else if (AU.tab === 'sizes') {
         if (empt) return host.append(empty('chart', t('No sales in this period')));
         const sizes = [...new Set(data.catSize.map((x) => x.size))].sort((a, b) => sizeRank(a) - sizeRank(b)), cats = [...new Set(data.catSize.map((x) => x.category))];

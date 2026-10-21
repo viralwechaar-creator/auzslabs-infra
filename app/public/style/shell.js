@@ -152,7 +152,7 @@ async function route_() {
   let def = PAGES[route.id];
   if (!def || !allowed(def)) { route = { id: 'sell', args: [], q: new URLSearchParams() }; def = PAGES.sell; }
   const main = $('#main'); if (!main) return;
-  const root = h('div', { class: 'page' + (def.pos ? ' pos-page' : '') });
+  const root = h('div', { class: 'page' + (def.pos ? ' pos-page' : ''), 'data-p': route.id });
   clear(main).append(root);
   $$('[data-nav]').forEach((a) => a.removeAttribute('aria-current')); $$('[data-tab]').forEach((a) => a.removeAttribute('aria-current'));
   $(`[data-nav="${route.id}"]`)?.setAttribute('aria-current', 'page');
@@ -170,7 +170,7 @@ function header(o, root) {
   t_.textContent = o.title || '';
   document.title = (o.title ? o.title + ' · ' : '') + 'AUZsStyle';
   if (o.back) l.append(h('button', { class: 'btn plain', type: 'button', 'aria-label': 'Back', onclick: () => go(o.back) }, icon('chevL', 22)));
-  else if (!isDesk()) l.append(h('button', { class: 'brandpill', type: 'button', onclick: moreSheet }, icon('plus', 16), h('b', null, (S.ctx.settings.shopName || (S.dash.tenant && S.dash.tenant.name) || 'AUZsStyle').slice(0, 18))));
+  else if (!isDesk()) l.append(h('button', { class: 'brandpill', type: 'button', onclick: moreSheet }, icon('shirt', 16), h('b', null, (S.ctx.settings.shopName || (S.dash.tenant && S.dash.tenant.name) || 'AUZsStyle').slice(0, 18))));
   const desk = isDesk();
   (o.actions || []).filter(Boolean).forEach((a) => r.append(h('button', { class: 'btn ' + (desk ? (a.primary ? 'fill' : '') : 'plain') + (!desk ? ' icon' : ''), type: 'button', 'aria-label': a.label, title: a.label, onclick: a.run }, a.icon ? icon(a.icon, 20) : null, desk ? a.label : null)));
   if (root) { const old = root.querySelector(':scope > .large-title'); if (old) old.remove(); }

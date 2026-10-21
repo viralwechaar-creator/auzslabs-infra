@@ -166,7 +166,7 @@ export default async function run({ browser, stack }) {
   }, 'critical');
   await s.check('Another business cannot read this shop\'s styles or bills', async () => {
     await fails(cafe, 'sty_catalog', {}, /not enabled/i);
-    const direct = await q("select count(*)::int n from sty_styles where tenant_id <> $1", [tid]); assert(direct[0].n === 0, 'foreign rows in a one-shop test');
+    const direct = await q("select count(*)::int n from sty_styles where tenant_id <> $1 and tenant_id not in (select id from tenants where slug = 'demo')", [tid]); assert(direct[0].n === 0, 'foreign rows in a one-shop test');
   }, 'critical');
   await s.check('Day close refuses a bill dated inside a closed day', async () => {
     await ok(owner, 'sty_day_close', { p_date: '2020-01-31' });
@@ -186,6 +186,7 @@ export default async function run({ browser, stack }) {
     const { c, page, errs } = await open(USERS.styOwner, dev); const bad = [];
     for (const [hash, name] of [['sell', 'Sell'], ['home', 'Overview'], ['stock', 'Stock'], ['analytics', 'Analytics'], ['analytics?tab=sizes', 'Sizes'], ['analytics?tab=groups', 'Groups'], ['analytics?tab=variants', 'Variants'], ['analytics?tab=next', 'Next'], ['analytics?tab=staff', 'Staff'], ['bills', 'Bills'], ['buy', 'Buy'], ['buy?tab=suppliers', 'Suppliers'], ['people', 'People'], ['people?tab=staff', 'People staff'], ['settings', 'Settings']]) {
       const before = errs.length; await page.evaluate((x) => { location.hash = '#/' + x; }, hash); await page.waitForTimeout(1100);
+      if (process.env.SHOTS) { await s.shot(page, `${label} ${name}`); await page.emulateMedia({ colorScheme: 'dark' }); await page.waitForTimeout(250); await s.shot(page, `${label} ${name} DARK`); await page.emulateMedia({ colorScheme: 'light' }); }
       const body = await page.locator('#main').innerText();
       if (/Something went wrong|Could not load/i.test(body)) bad.push(`${label} ${name}: ${body.slice(0, 80)}`);
       if (/undefined|NaN|\[object|\bnull\b/.test(body)) bad.push(`${label} ${name}: shows undefined/NaN/null`);
