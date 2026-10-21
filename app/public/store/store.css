@@ -308,3 +308,6 @@ footer .cols{gap:14px}
 footer .fin{margin-top:14px;padding-top:9px}
 @media(min-width:900px){footer{margin:18px 28px 20px;padding:24px 28px 14px}}
 .top{height:50px}:root{--hh:50px}
+
+.brand{font-weight:800;font-size:19px;letter-spacing:.04em;line-height:1.1;max-width:56vw;white-space:nowrap}
+@media(min-width:900px){.brand{font-size:24px}}
