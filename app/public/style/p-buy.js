@@ -67,17 +67,13 @@ async function receiveForm(o, done) {
   const newBtn = can('sty_manage') || can('sty_stock') ? h('button', { class: 'btn', type: 'button', onclick: newItem }, icon('plus', 18), t('New item')) : null;
   function paintRes() {
     const k = q.input.value.trim().toLowerCase(); clear(res);
-    if (k.length < 2) {
-      const pick = S.cat.filter((x) => x.active !== false).map((x) => ({ x, st: styleStock(x) })).sort((a, b) => a.st - b.st).slice(0, 6);
-      if (pick.length) res.append(h('div', { class: 'cap' }, t('Low on stock first')), ...pick.map(({ x, st }) => liRow({ icon: 'shirt', title: x.name, sub: t('Add all sizes') + ' · ' + t('have') + ' ' + st, onclick: () => addAllOf(x) })));
-      return;
-    }
+    if (k.length < 2) return;
     const seen = new Set();
     S.cat.filter((s) => (s.name + ' ' + (s.brand || '')).toLowerCase().includes(k)).slice(0, 6).forEach((s) => res.append(liRow({ icon: 'shirt', title: s.name, sub: t('Add all sizes') + ' · ' + s.variants.length, onclick: () => addAllOf(s) })));
     if (!res.children.length && newBtn) res.append(liRow({ icon: 'plus', title: t('New item') + ': ' + q.input.value.trim(), sub: t('Not in your list yet. Create it now.'), onclick: newItem }));
     allVariants().filter((x) => x.barcode === k).forEach((x) => res.append(liRow({ title: x.style.name, sub: [x.colour, x.size].join(' · '), onclick: () => { addVar(x, 1); q.input.value = ''; clear(res); paintHost(); } })));
   }
-  paintHost(); paintRes();
+  paintHost();
   sheet({ title: t('Receive stock'), full: true, wide: true, body: h('div', { class: 'grid rcv' }, h('div', { class: 'two' }, field(t('Supplier'), sup), field(t('Invoice'), inv)), h('div', { class: 'row', style: { gap: '8px' } }, h('div', { class: 'grow' }, q), scanBtn, newBtn), res, host, totEl, field(t('Paid now'), paid)),
     actions: [{ label: t('Receive'), primary: true, onclick: async (close) => {
       const ls = lines.filter((l) => l.qty > 0); if (!ls.length) { toast(t('Enter a quantity for at least one item'), { err: true }); return false; }
