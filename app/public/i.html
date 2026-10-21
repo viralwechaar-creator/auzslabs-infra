@@ -43,6 +43,9 @@ th.c,td.c{text-align:center}th.r,td.r{text-align:right}
 .fb .submit{margin-top:12px;width:100%;padding:15px;font:14px/1 Inter,sans-serif;font-weight:700;background:var(--ink);color:var(--paper);border:none;border-radius:4px;cursor:pointer}
 .fb .submit:disabled{opacity:.5}
 .fb .thanks-msg{font-size:14px;color:var(--mute)}
+.fb .gr{display:none;margin:14px 0 0;padding:14px;background:rgba(224,167,42,.12);border:1px solid rgba(224,167,42,.4);border-radius:8px;font-size:14px}
+.fb .gr.on{display:block}
+.fb .gr a{display:inline-block;margin-top:8px;font-weight:700;color:var(--ink);text-decoration:underline}
 @media print{.bar{display:none}.fb{display:none}body{background:#fff}}
 </style></head><body>
 <div class=bar><button onclick="print()">Print / Download</button></div>
@@ -76,6 +79,7 @@ const id=new URLSearchParams(location.search).get('o');
  const taxRows=(t.rates&&Object.keys(t.rates).some(r=>+r>0&&t.rates[r].tax>0)?Object.entries(t.rates).filter(([r,x])=>+r>0&&x.tax>0).flatMap(([r,x])=>[['CGST '+(+r/2)+'%',x.tax/2],['SGST '+(+r/2)+'%',x.tax/2]]):[['CGST',t.tax/2],['SGST',t.tax/2]]);
  const feedbackHtml=`<div class=fb id=fb><h4>How was your experience at ${esc(s.name)}?</h4>
 <div class=stars id=stars>${[1,2,3,4,5].map(n=>`<button type=button data-v=${n}>★</button>`).join('')}</div>
+${s.googleReviewUrl?`<div class=gr id=fbGoogle>Glad you liked it! Would you share it on Google too? <a href="${esc(s.googleReviewUrl)}" target=_blank rel=noopener>Leave a Google review ↗</a></div>`:''}
 <textarea id=fbComment placeholder="Anything you'd like to tell us? (optional)" maxlength=1000></textarea>
 <button class=submit id=fbSubmit disabled>Submit feedback</button>
 </div>`;
@@ -174,16 +178,18 @@ ${feedbackHtml}
  wireFeedback();
  function wireFeedback(){
  let rating=0;const starsEl=document.getElementById('stars'),submitBtn=document.getElementById('fbSubmit');
+ const googleBox=document.getElementById('fbGoogle');
  starsEl.querySelectorAll('button').forEach(btn=>btn.onclick=()=>{
   rating=+btn.dataset.v;submitBtn.disabled=false;
   starsEl.querySelectorAll('button').forEach(b=>b.classList.toggle('on',+b.dataset.v<=rating));
+  if(googleBox)googleBox.classList.toggle('on',rating>=4);
  });
  const fbErr=document.createElement('p');fbErr.style.cssText='color:#b23;font-size:13px;margin:8px 0 0';document.getElementById('fb').appendChild(fbErr);
  submitBtn.onclick=async()=>{
   if(!rating)return;submitBtn.disabled=true;submitBtn.textContent='Submitting…';fbErr.textContent='';
   const{error}=await sb.rpc('submit_feedback',{oid:id,rating,comment:document.getElementById('fbComment').value.trim()});
   if(error){fbErr.textContent='Could not submit right now — please try again.';submitBtn.disabled=false;submitBtn.textContent='Submit feedback'}
-  else document.getElementById('fb').innerHTML='<p class=thanks-msg>Thank you for your feedback!</p>';
+  else document.getElementById('fb').innerHTML='<p class=thanks-msg>Thank you for your feedback!</p>'+(rating>=4&&s.googleReviewUrl?`<p class=thanks-msg>Got a moment? <a href="${esc(s.googleReviewUrl)}" target=_blank rel=noopener style="font-weight:700;color:var(--ink)">Leave a Google review ↗</a></p>`:'');
  };
  }
 })();

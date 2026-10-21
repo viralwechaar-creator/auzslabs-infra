@@ -30,6 +30,7 @@ PAGES['mgmt/website']=()=>{const c=cfg(),isSalon=c.bizType=='salon',isBespoke=wi
  card(cardHead('Website'),h('div',{class:'fgrid'},
   siteField('siteKicker','Small tagline above headline'),siteField('siteTag','Headline',{wide:true,area:true,hint:'Press Enter for a line break'}),siteField('siteSub','Subheading'),
   siteField('siteHours','Opening hours text'),siteField('siteInsta','Instagram link (optional)'),siteField('siteMaps','Google Maps link (optional)'),
+  siteField('googleReviewUrl','Google review link (optional)',{wide:true,hint:'A customer who rates you 4 or 5 stars on their invoice is offered this link to also post a public Google review. Find it in your Google Business Profile → Ask for reviews (looks like g.page/r/.../review), or leave blank to only collect private feedback.'}),
   siteField('siteAbout','About text',{wide:true,area:true}),siteImage('siteHero','Hero photo'),siteImage('siteAboutImg','About-section photo'),
   siteGallery('siteGallery','Gallery photos','gallery'))),
  isSalon?card(cardHead('Booking hours'),h('div',{class:'fgrid'},siteField('bookingOpen','Opens at (24h, e.g. 10:00)'),siteField('bookingClose','Closes at (24h, e.g. 20:00)'),siteField('bookingSlotMinutes','Slot length (minutes)',{type:'number'}),siteField('bookingSlotCapacity','Appointments per slot',{type:'number'}))):null,
