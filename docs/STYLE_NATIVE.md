@@ -26,3 +26,5 @@ AUZsStyle is built so a Flutter (or Swift/Kotlin) app is a re-skin of the same p
 Product fields a native form must offer (all in `sty_save_style`): name, category, type (`subcategory`), brand, gender,
 season, collection, fabric, wash care, weight (g), description, details, HSN, tax %, price, MRP, cost, photo link, colours,
 sizes, opening stock. Grouping/filters: colour, type, fabric, collection (plus brand, gender in analytics).
+
+Look: minimal gallery theme (full-picture portrait cards with name and price below on the grey page, frosted floating bottom bar, white/black). All of it is CSS in `style/style.fine.css` plus the card markup in `p-sell.js`, so the native app copies tokens and layout, not logic.
