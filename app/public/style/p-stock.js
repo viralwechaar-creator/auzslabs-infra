@@ -13,7 +13,7 @@ page('stock', {
     const units = vs.reduce((a, x) => a + Math.max(x.stock, 0), 0), cost = vs.reduce((a, x) => a + Math.max(x.stock, 0) * (x.cost || 0), 0), retail = vs.reduce((a, x) => a + Math.max(x.stock, 0) * x.price, 0);
     const lowN = vs.filter((x) => x.stock <= (x.reorderAt || 0)).length, outN = vs.filter((x) => x.stock <= 0).length;
     const cats = ['All', ...[...new Set(S.cat.map((s) => s.category))].sort()];
-    const list = h('div', { class: 'list' }); const chips = h('div', { class: 'chips' });
+    const list = h('div', { class: 'igrid' }); const chips = h('div', { class: 'chips' });
     const filtHost = h('span'); const paintF = () => clear(filtHost).append(filterButton(() => { paintF(); paint(); }));
     const paintChips = () => clear(chips).append(...cats.map((c) => h('button', { class: 'chip', type: 'button', 'aria-pressed': String(SU.cat === c), onclick: () => { SU.cat = c; paintChips(); paint(); } }, c === 'All' ? t('All') : c)));
     const flt = seg([['all', t('All')], ['low', t('Low stock')], ['out', t('Out of stock')]], SU.f, (x) => { SU.f = x; paint(); }, { full: true });
@@ -24,10 +24,15 @@ page('stock', {
       if (SU.f === 'out') rows = rows.filter((s) => s.variants.some((x) => x.active !== false && x.stock <= 0));
       clear(list).append(...(rows.length ? rows.map((s) => {
         const st = styleStock(s), sizes = [...new Set(s.variants.map((x) => x.size))].length, cols = [...new Set(s.variants.map((x) => x.colour))].length;
-        return h('button', { class: 'li', type: 'button', onclick: () => styleSheet(s.id, () => v.refresh()) },
-          h('div', { class: 'ph sm' }, s.photoUrl ? h('img', { src: s.photoUrl, alt: '', loading: 'lazy' }) : icon('shirt', 22)),
-          h('div', { class: 'grow' }, h('div', { class: 't' }, s.name, s.active === false ? h('span', { class: 'badge', style: { marginLeft: '6px' } }, t('Hidden')) : null), h('div', { class: 's' }, [s.category, s.subcategory, s.fabric, s.collection, cols + ' ' + t('colours'), sizes + ' ' + t('sizes')].filter(Boolean).join(' · '))),
-          h('div', { class: 'v' }, h('div', { class: 't num' }, inr(s.price)), h('div', { class: 's' }, h('span', { class: 'stk' + (st <= 0 ? ' z' : '') }, st + ' ' + t('in stock')))), h('span', { class: 'chev' }, icon('chevR', 18)));
+        const mx = Math.max(1, ...S.cat.map(styleStock)), lowS = s.variants.some((x) => x.active !== false && x.stock > 0 && x.stock <= (x.reorderAt || 0));
+        const tone = st <= 0 ? 'z' : lowS || st <= 3 ? 'lo' : 'ok';
+        return h('button', { class: 'icard' + (s.active === false ? ' off' : ''), type: 'button', onclick: () => styleSheet(s.id, () => v.refresh()) },
+          h('div', { class: 'ic-p' }, s.photoUrl ? h('img', { src: s.photoUrl, alt: '', loading: 'lazy' }) : icon('shirt', 24)),
+          h('div', { class: 'ic-b' },
+            h('div', { class: 'ic-t' }, h('span', { class: 'ic-n' }, s.name), h('span', { class: 'ic-pr num' }, inr(s.price))),
+            h('div', { class: 'ic-s' }, [s.category, s.fabric, cols + ' ' + t('colours'), sizes + ' ' + t('sizes')].filter(Boolean).join(' · ')),
+            h('div', { class: 'ic-f' }, h('span', { class: 'ic-chip ' + tone }, st <= 0 ? t('Out of stock') : st + ' ' + t('in stock')), s.active === false ? h('span', { class: 'ic-chip' }, t('Hidden')) : null,
+              h('span', { class: 'ic-bar' }, h('i', { class: tone, style: { width: Math.max(4, Math.min(100, st / mx * 100)) + '%' } })))));
       }) : [empty('shirt', S.cat.length ? t('No match') : t('No styles yet'), S.cat.length ? '' : t('Add a style to start. You can also load a small sample to look around.'),
         can('sty_manage') && !S.cat.length ? h('div', { class: 'row', style: { gap: '8px', justifyContent: 'center' } }, h('button', { class: 'btn fill', onclick: () => styleForm(null, () => v.refresh()) }, t('New style')), h('button', { class: 'btn', onclick: async () => { await api('sty_load_sample'); toast(t('Sample added')); v.refresh(); } }, t('Load sample'))) : null)]));
     }
