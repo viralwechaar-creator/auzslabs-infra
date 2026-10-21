@@ -311,3 +311,14 @@ footer .fin{margin-top:14px;padding-top:9px}
 
 .brand{font-weight:800;font-size:19px;letter-spacing:.04em;line-height:1.1;max-width:56vw;white-space:nowrap}
 @media(min-width:900px){.brand{font-size:24px}}
+
+/* tighter lines and gaps everywhere */
+body{line-height:1.3}
+p,.mut,.ai .b,.desc{line-height:1.35}
+h1,h2,h3,h4{line-height:1.12;margin-top:0;margin-bottom:4px}
+.sec{margin:6px 0 0}.sec h2{margin-bottom:6px}
+.pc .in{padding-top:5px;gap:0}.pc .in *{line-height:1.2}
+.info>*{margin-top:0}.info .row,.info .blk{margin-top:8px}
+.acc .ai{padding:8px 0}.acc .ai .b{padding-bottom:6px}
+.band{padding:10px 0}.fbar{padding:6px 0}
+footer .cols>*{line-height:1.3}footer a{padding:2px 0}
