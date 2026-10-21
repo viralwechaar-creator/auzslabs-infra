@@ -44,7 +44,9 @@ export async function createUser({ email, password, app_metadata = {}, user_meta
 // e.g. over WhatsApp, same as the recovery-link approach the Supabase
 // edge function used, just without needing transactional email either).
 export async function resetToRandomPassword(userId) {
-  const password = crypto.randomUUID() + crypto.randomUUID();
+  // 12 characters from an alphabet without look-alikes (no 0/O, 1/l/I): about 70 bits, short enough to read out or type
+  const A = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  const password = Array.from(randomBytes(12), (b) => A[b % A.length]).join('');
   const password_hash = await bcrypt.hash(password, 12);
   await pool.query('update auth_users set password_hash = $1 where id = $2', [password_hash, userId]);
   return password;
