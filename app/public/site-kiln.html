@@ -472,6 +472,13 @@ input[type=text],input[type=tel],input[type=email],input[type=date],select,texta
 html.rv-on .rv{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1);transition-delay:var(--rvd,0s)}
 html.rv-on .rv.in{opacity:1;transform:none}
 }
+/* menu: kitchen button, social block bottom-right */
+#side .kitchen-go{display:inline-flex;align-self:flex-start;align-items:center;gap:8px;margin-top:6px;padding:11px 18px;border-radius:999px;background:var(--accent);color:var(--accent-ink);font-size:14px;font-weight:600;text-decoration:none}
+#side .kitchen-go:hover{opacity:.88}
+#side .soc{margin-top:auto;text-align:right}
+#side .soc ul{display:flex;flex-direction:column;align-items:flex-end}
+#side .soc a{padding-left:0;padding-right:0}
+#side .side-foot{margin-top:0}
 </style>
 
 <nav id="side" aria-label="Main">
@@ -485,6 +492,7 @@ html.rv-on .rv.in{opacity:1;transform:none}
     <li><a href="#cart" data-page="cart">Cart <span class="count navCount" hidden>0</span></a></li>
     <li><a href="#reservation" data-page="reservation">Reservation</a></li>
   </ul>
+  <a class="kitchen-go" id="kitchenGo" href="/index.html">Go to kitchen <span aria-hidden="true">&rarr;</span></a>
   <div class="soc">
     <span class="mono">Social media</span>
     <ul>
