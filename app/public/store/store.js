@@ -24,6 +24,7 @@ const clear = (el) => { while (el.firstChild) el.removeChild(el.firstChild); ret
 const IC = {
   menu: 'M4 8h16M4 16h16', bag: 'M6 8h12l-1 12H7L6 8Zm3 0V6a3 3 0 0 1 6 0v2', mark: 'M7 4h10v17l-5-4-5 4V4Z', pin: 'M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21Zm0-8.8a2.7 2.7 0 1 0 0-5.4 2.7 2.7 0 0 0 0 5.4Z',
   search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Zm9 3-4.2-4.2', x: 'M6 6l12 12M18 6 6 18', plus: 'M12 5v14M5 12h14', left: 'M15 6l-6 6 6 6', right: 'M9 6l6 6-6 6',
+  user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 9a7 7 0 0 1 14 0',
   chat: 'M5 6h14v9H10l-5 4V6Z', home: 'M4 11 12 4l8 7v9h-5v-6H9v6H4v-9Z', compass: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm3-12-2 5-5 2 2-5 5-2Z', filter: 'M4 7h10M18 7h2M4 17h2M10 17h10M14 5v4M6 15v4',
 };
 const icon = (n) => { const s = document.createElementNS(NS, 'svg'); s.setAttribute('viewBox', '0 0 24 24'); const p = document.createElementNS(NS, 'path'); p.setAttribute('d', IC[n] || ''); s.append(p); return s; };
@@ -129,7 +130,7 @@ function shell() {
     E('div', { class: 'l' }, E('a', { class: 'deskonly', href: link('shop?new=1') }, 'New in'), E('a', { class: 'deskonly', href: link('collections') }, 'Collections'), E('button', { class: 'menu-pill phoneonly', onclick: openMenu }, E('i'), 'Menu')),
     brandEl,
     E('div', { class: 'r' }, E('a', { class: 'ic deskonly', href: link('stores'), 'aria-label': 'Stores' }, icon('pin')), E('button', { class: 'ic', 'aria-label': 'Search', onclick: openSearch }, icon('search')),
-      E('a', { class: 'ic', href: link('wishlist'), 'aria-label': 'Saved' }, icon('mark'), countBadge(() => wish.length)), E('a', { class: 'ic', href: link('bag'), 'aria-label': 'Bag' }, icon('bag'), countBadge(bagCount)),
+      E('a', { class: 'ic', href: link('wishlist'), 'aria-label': 'Saved' }, icon('mark'), countBadge(() => wish.length)), E('a', { class: 'ic', href: link('me'), 'aria-label': 'My account' }, icon('user')), E('a', { class: 'ic', href: link('bag'), 'aria-label': 'Bag' }, icon('bag'), countBadge(bagCount)),
       E('button', { class: 'menu-pill deskonly', onclick: openMenu }, E('i'), 'Menu')));
   const c = cfg();
   const phoneNo = String(D.shop.phone || '').replace(/\D/g, '');
@@ -167,9 +168,25 @@ function openMenu() {
 function openSearch() {
   const s = $('#srch'); clear(s); s.classList.add('on');
   const close = () => s.classList.remove('on');
-  const res = E('div', { class: 'grid', style: { maxWidth: '1100px', margin: '0 auto' } });
-  const inp = E('input', { placeholder: 'Search products, colours, collections', 'aria-label': 'Search', oninput: () => { const q = inp.value.trim().toLowerCase(); clearTimeout(inp._t); if (q.length >= 3) inp._t = setTimeout(() => TR.push('search', null, { q }), 1200); clear(res); if (q.length < 2) return; const hit = STY.filter((x) => [x.name, x.category, x.brand, x.collection, x.fabric, x.code, ...colours(x)].join(' ').toLowerCase().includes(q)).slice(0, 24); res.append(...(hit.length ? hit.map((x) => { const c = card(x); c.addEventListener('click', (e) => { if (e.target.closest('a')) close(); }); return c; }) : [E('div', { class: 'mut', style: { gridColumn: '1/-1', padding: '30px', textAlign: 'center' } }, 'Nothing found')])); } });
-  s.append(E('div', { class: 'bar' }, inp, E('button', { class: 'ic', 'aria-label': 'Close', onclick: close }, icon('x'))), res); inp.focus();
+  const body = E('div', { style: { maxWidth: '1100px', margin: '0 auto' } });
+  const chip = (txt, fn) => E('button', { class: 'chp', onclick: fn }, txt);
+  const cats = [...new Set(STY.map((x) => x.category).filter(Boolean))].slice(0, 8), cols = D.collections.filter((c) => c.styleIds.length).slice(0, 5);
+  const jump = (p) => () => { close(); go(p); };
+  function suggest(msg) {
+    clear(body);
+    if (msg) body.append(E('div', { class: 'mut', style: { padding: '8px 4px 14px', textAlign: 'center' } }, msg));
+    body.append(E('div', { class: 'sgh' }, 'Popular searches'), E('div', { class: 'chps' }, [...cats.map((c) => chip(c, jump('shop?cat=' + encodeURIComponent(c)))), ...cols.map((c) => chip(c.name, jump('shop?col=' + c.id))), chip('New arrivals', jump('shop?new=1'))]));
+    const fams = FAM.filter((f) => STY.some((x) => colours(x).some((k) => famOf(k) === f[0]))); if (fams.length) body.append(E('div', { class: 'sgh' }, 'Shop by colour'), E('div', { class: 'chps' }, fams.map((f) => chip(f[0], jump('shop?fam=' + f[0])))));
+    const pick = newest(8); if (pick.length) { body.append(E('div', { class: 'sgh' }, msg ? 'You may like' : 'Trending now')); const g = E('div', { class: 'grid' }, pick.map((x) => { const c = card(x); c.addEventListener('click', (e) => { if (e.target.closest('a')) close(); }); return c; })); body.append(g); }
+  }
+  const inp = E('input', { placeholder: 'Search products, colours, collections', 'aria-label': 'Search', enterkeyhint: 'search', autocomplete: 'off', oninput: () => {
+    const q = inp.value.trim().toLowerCase(); clearTimeout(inp._t); if (q.length >= 3) inp._t = setTimeout(() => TR.push('search', null, { q }), 1200);
+    if (q.length < 2) return suggest();
+    const hit = STY.filter((x) => [x.name, x.category, x.brand, x.collection, x.fabric, x.code, ...colours(x)].join(' ').toLowerCase().includes(q)).slice(0, 24);
+    if (!hit.length) return suggest('Nothing found for "' + inp.value.trim() + '". Try one of these.');
+    clear(body); body.append(E('div', { class: 'grid' }, hit.map((x) => { const c = card(x); c.addEventListener('click', (e) => { if (e.target.closest('a')) close(); }); return c; })));
+  } });
+  s.append(E('div', { class: 'bar' }, inp, E('button', { class: 'ic', 'aria-label': 'Close', onclick: close }, icon('x'))), body); suggest(); inp.focus({ preventScroll: true });
 }
 
 // ---------- views ----------
@@ -471,14 +488,32 @@ V.contact = (v) => {
   v.append(E('div', { class: 'pg' }, E('div', { class: 'shophd' }, E('h1', null, 'Contact')), E('div', { class: 'card frm' }, D.shop.phone ? E('div', null, E('span', { class: 'lbl' }, 'Phone'), E('div', null, E('a', { href: 'tel:' + D.shop.phone }, D.shop.phone))) : null, c.email ? E('div', null, E('span', { class: 'lbl' }, 'Email'), E('div', null, E('a', { href: 'mailto:' + c.email }, c.email))) : null, D.shop.address ? E('div', null, E('span', { class: 'lbl' }, 'Address'), E('div', null, D.shop.address)) : null,
     wa ? [E('label', { class: 'fld' }, name), E('label', { class: 'fld' }, msg), E('button', { class: 'btn wide', onclick: () => window.open(wa + '?text=' + encodeURIComponent((name.value ? 'Hi, I am ' + name.value + '. ' : 'Hi. ') + msg.value), '_blank', 'noopener') }, 'Message on WhatsApp')] : null)));
 };
+const STAT_MSG = { new: 'We have your order', confirmed: 'Confirmed, getting it ready', packed: 'Packed, waiting for pickup', shipped: 'On its way', delivered: 'Delivered', cancelled: 'Cancelled' };
 V.orders = async (v) => {
-  const mine = LS.get('orders', []); v.append(E('div', { class: 'pg' }, E('div', { class: 'shophd' }, E('h1', null, 'My orders'))));
-  const box = E('div', { class: 'pg' }); v.append(box);
-  if (!mine.length) { box.append(E('div', { class: 'card mut' }, 'Orders you place on this phone show here. ', E('a', { href: link('shop'), style: { textDecoration: 'underline' } }, 'Shop now'))); return; }
-  box.append(E('div', { class: 'spin' }));
-  const rows = await Promise.all(mine.map((m) => rpc('public_sty_order', { p_token: m.token }).catch(() => null)));
-  clear(box); rows.forEach((o, i) => { if (o) box.append(E('a', { class: 'card', href: link('order/' + mine[i].token), style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } }, E('div', null, E('div', null, o.number), E('div', { class: 'mut tiny' }, cap(o.status) + ' · ' + new Date(o.createdAt).toLocaleDateString('en-GB'))), E('div', null, inr(o.total)))); });
+  clearInterval(v._ot);
+  const saved = LS.get('me', {}) || {}; const F = {};
+  const fld = (key, label, o) => { o = o || {}; const el = o.area ? E('textarea', { 'aria-label': label, placeholder: label }) : E('input', { 'aria-label': label, placeholder: label, type: o.type || 'text', inputmode: o.mode }); el.value = saved[key] || ''; F[key] = el; return E('div', { class: 'fld' }, el); };
+  const msg = E('div', { class: 'tiny', style: { minHeight: '14px', color: '#1a7f3c' } });
+  const prof = E('div', { class: 'card' }, E('h2', null, 'My details'), E('div', { class: 'mut tiny', style: { margin: '2px 0 8px' } }, 'Saved on this phone only, so checkout is quicker next time.'),
+    E('div', { class: 'frm' }, E('div', { class: 'two' }, fld('first', 'First name'), fld('last', 'Last name')), E('div', { class: 'two' }, fld('phone', 'Phone', { type: 'tel', mode: 'tel' }), fld('email', 'Email', { type: 'email' })), fld('address', 'Address'), fld('address2', 'Apartment, floor (optional)'), E('div', { class: 'two' }, fld('city', 'City'), fld('state', 'State')), fld('pin', 'PIN code', { mode: 'numeric' }),
+      E('div', { style: { display: 'flex', gap: '8px', alignItems: 'center' } }, E('button', { class: 'btn', onclick: () => { const me = {}; Object.keys(F).forEach((k) => { me[k] = F[k].value.trim(); }); me.country = saved.country || 'India'; me.name = 1; LS.set('me', me); msg.textContent = 'Saved'; setTimeout(() => { msg.textContent = ''; }, 2000); } }, 'Save my details'), E('button', { class: 'btn out', onclick: () => { if (confirm('Remove my saved details from this phone?')) { LS.set('me', {}); Object.values(F).forEach((e) => { e.value = ''; }); msg.textContent = 'Removed'; } } }, 'Clear'), msg)));
+  const mine = LS.get('orders', []);
+  const box = E('div', { class: 'ords' });
+  v.append(E('div', { class: 'pg' }, E('div', { class: 'shophd' }, E('h1', null, saved.first ? 'Hi, ' + saved.first : 'My account')), prof, E('h2', { style: { padding: '12px 4px 4px' } }, 'My orders'), box));
+  if (!mine.length) { box.append(E('div', { class: 'card mut' }, 'Orders you place on this phone show here with live status. ', E('a', { href: link('shop'), style: { textDecoration: 'underline' } }, 'Shop now'))); return; }
+  const open = new Set(); let state = {};
+  const paint = () => { clear(box); mine.forEach((m) => { const o = state[m.token]; if (!o) return; const live = !['delivered', 'cancelled'].includes(o.status);
+    const det = E('div', { class: 'od' }, (o.lines || []).map((l) => E('div', { class: 'ln' }, E('div', { class: 'im' }, l.photo ? E('img', { src: l.photo, alt: '' }) : placeholder(l.name)), E('div', null, E('div', { class: 't' }, l.name), E('div', { class: 's' }, [l.colour, l.size].filter(Boolean).join(' · ') + ' × ' + l.qty)), E('div', null, inr(l.price * l.qty)))),
+      E('div', { class: 'sum' }, E('div', { class: 't' }, E('span', null, 'Shipping'), E('span', null, o.shipping ? inr(o.shipping) : 'Free')), E('div', { class: 't g' }, E('span', null, 'Total'), E('span', null, inr(o.total)))),
+      E('div', { class: 'tiny mut' }, (o.payment === 'cod' ? 'Cash on delivery' : o.paymentStatus === 'paid' ? 'Paid' : 'Payment: ' + o.paymentStatus) + ' · placed ' + new Date(o.createdAt).toLocaleDateString('en-GB')), E('a', { class: 'btn sm out', href: link('order/' + m.token), style: { justifySelf: 'start' } }, 'Open order page'));
+    const steps = ['new', 'confirmed', 'packed', 'shipped', 'delivered']; const at = steps.indexOf(o.status);
+    box.append(E('div', { class: 'card oc' }, E('button', { class: 'oh', onclick: () => { open.has(m.token) ? open.delete(m.token) : open.add(m.token); paint(); } }, E('div', null, E('div', { class: 't' }, o.number), E('div', { class: 'live' }, live ? E('i') : null, E('b', null, cap(o.status)), E('span', null, ' · ' + (STAT_MSG[o.status] || '')))), E('div', { class: 'tr' }, inr(o.total))),
+      o.status === 'cancelled' ? null : E('div', { class: 'steps' }, steps.map((_, i) => E('i', { class: i <= at ? 'on' : '' }))), open.has(m.token) ? det : null)); }); };
+  async function load(quiet) { const rows = await Promise.all(mine.map((m) => rpc('public_sty_order', { p_token: m.token }).catch(() => null))); const nx = {}; let changed = false; mine.forEach((m, i) => { if (rows[i]) { nx[m.token] = rows[i]; const was = state[m.token]; if (was && was.status !== rows[i].status) { changed = true; if (quiet) toast(rows[i].number + ': ' + cap(rows[i].status)); } } }); state = nx; paint(); return changed; }
+  box.append(E('div', { class: 'spin' })); await load(false);
+  v._ot = setInterval(() => { if (!document.body.contains(v) || !location.hash.includes('orders')) return clearInterval(v._ot); load(true); }, 12000);
 };
+V.me = V.orders;
 const POL = { shipping: ['Shipping', () => (cfg().policies || {}).shipping || 'We ship across India. Orders are packed within 1 to 2 working days and usually arrive in 3 to 7 days. You will get an update on the phone number you gave us.'], returns: ['Returns & exchanges', () => (cfg().policies || {}).returns || 'You can return or exchange a piece within ' + (D.shop.returnDays || 30) + ' days of delivery if it is unworn, unwashed and the tags are intact. Contact the store to arrange it.'], terms: ['Terms', () => (cfg().policies || {}).terms || 'By placing an order you confirm that the details you gave are correct. Prices include taxes. An order is confirmed only after the store accepts it, and the store may cancel an order if an item cannot be supplied.'], privacy: ['Privacy', () => (cfg().policies || {}).privacy || 'We use your name, phone, email and address only to deliver your order and to contact you about it. We do not sell your details.'] };
 V.policy = (v, k) => { const p = POL[k] || POL.terms; v.append(E('div', { class: 'pg' }, E('div', { class: 'shophd' }, E('h1', null, p[0])), E('div', { class: 'card' }, String(p[1]()).split(/\n+/).map((x) => E('p', null, x))))); };
 
@@ -496,7 +531,7 @@ function footer() {
   const strip = tabs.length ? E('div', { class: 'ftstrip' }, fold, E('div', { class: 'ftabs' }, tabEls), pn) : null;
   return E('div', { class: 'ftwrap' }, strip, E('footer', null, E('div', { class: 'cols' },
     E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Connect with us'), ph ? E('a', { href: 'tel:+' + (ph.length === 10 ? '91' + ph : ph) }, 'Call') : null, ph ? E('a', { href: 'https://wa.me/' + (ph.length === 10 ? '91' + ph : ph), target: '_blank', rel: 'noopener' }, 'Text (WhatsApp)') : null, ext('Instagram', so.instagram), ext('Facebook', so.facebook), c.email ? E('a', { href: 'mailto:' + c.email }, 'Email') : null),
-    E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Order support'), E('a', { href: link('orders') }, 'Track your order'), E('a', { href: link('policy/returns') }, 'Returns & exchanges'), E('a', { href: link('policy/shipping') }, 'Shipping policy'), E('a', { href: link('faq') }, 'FAQs'), E('a', { href: link('policy/terms') }, 'Terms'), E('a', { href: link('policy/privacy') }, 'Privacy')),
+    E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Order support'), E('a', { href: link('me') }, 'My account & orders'), E('a', { href: link('orders') }, 'Track your order'), E('a', { href: link('policy/returns') }, 'Returns & exchanges'), E('a', { href: link('policy/shipping') }, 'Shipping policy'), E('a', { href: link('faq') }, 'FAQs'), E('a', { href: link('policy/terms') }, 'Terms'), E('a', { href: link('policy/privacy') }, 'Privacy')),
     E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'We are ' + D.shop.name), E('a', { href: link('about') }, 'Our story'), E('a', { href: link('stores') }, 'Walk-in stores'), E('a', { href: link('collections') }, 'Collections'), E('a', { href: link('contact') }, 'Contact')),
     E('div', { class: 'ftbrand' }, E('div', { class: 'big' }, D.shop.name))),
     E('div', { class: 'fin' }, E('span', null, '© ' + new Date().getFullYear() + ' ' + D.shop.name + '. All rights reserved'), E('a', { href: 'https://auzslab.in', target: '_blank', rel: 'noopener' }, 'Store by AUZslab'))));

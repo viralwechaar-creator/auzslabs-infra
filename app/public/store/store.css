@@ -462,3 +462,16 @@ body.homehero .hero::before{content:"";position:absolute;left:0;right:0;top:0;he
   .band.t-s .row .pc{flex-basis:calc(16.5% - 6px)}
   .band.t-l .hd h2{font-size:28px}.band.t-m .hd h2{font-size:18px}.band.t-s .hd h2{font-size:12px}
 }
+
+/* search: suggestions, no zoom on focus */
+.srch input{font-size:16px;height:42px}
+.sgh{font-size:11px;font-weight:700;padding:12px 4px 6px}
+.chps{display:flex;flex-wrap:wrap;gap:6px;padding:0 2px 4px}
+.chp{border:1px solid #cfcdca;background:#fff;border-radius:999px;height:28px;padding:0 12px;font-size:10.5px;cursor:pointer}
+.chp:hover{border-color:#111}
+/* my account */
+.oc{padding:8px 10px;margin-top:6px}
+.oc .oh{display:flex;width:100%;justify-content:space-between;align-items:center;text-align:left;background:none;border:0;padding:2px 0;cursor:pointer}
+.oc .oh .t{font-weight:700;font-size:11px}.oc .tr{font-weight:700}
+.oc .live{margin-top:2px}.oc .steps{margin:8px 0 4px}
+.od{display:grid;gap:6px;padding-top:6px;border-top:1px solid var(--line);margin-top:6px}
