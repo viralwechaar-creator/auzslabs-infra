@@ -430,7 +430,7 @@ export default async function run({ browser, stack }) {
       await page.locator('.btn.wide', { hasText: /Place order/ }).click(); await page.waitForSelector('.pg .steps', { timeout: 12000 });
       assert(/Thank you/.test(await page.locator('.pg h1').innerText()), 'thank you page');
       await s.shot(page, 'store order ' + dev.w);
-      await page.evaluate(() => { location.hash = '#/orders'; }); await page.waitForSelector('.pg a.card', { timeout: 8000 }); await page.evaluate(() => { location.hash = '#/stores'; }); await page.waitForSelector('.scard'); await page.evaluate(() => { location.hash = '#/faq'; }); await page.waitForSelector('.fq');
+      await page.evaluate(() => { location.hash = '#/orders'; }); await page.waitForSelector('.pg a.card', { timeout: 8000 }); await page.evaluate(() => { location.hash = '#/stores'; }); await page.waitForSelector('.swcard'); await page.evaluate(() => { location.hash = '#/faq'; }); await page.waitForSelector('.fq');
       await page.locator('.fq button').first().click(); assert(await page.locator('.fq.on').count() === 1, 'faq opens');
       assert(!errs.filter((e) => !/sentry/i.test(e)).length, errs.join(' | ')); await c.close();
     }
