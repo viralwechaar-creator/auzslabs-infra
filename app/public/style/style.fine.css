@@ -282,3 +282,4 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
   .edgrid>.span{grid-column:1/-1}
   .edgrid .field{gap:4px}
 }
+@media (max-width:599px){.sheet.full:has(.stk){top:auto;max-height:92dvh}.sheet:has(.stk) .sheet-b{padding-bottom:calc(16px + var(--safe-b))}}

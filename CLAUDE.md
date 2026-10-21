@@ -2565,3 +2565,16 @@ Owner request (from a prototype file): a complete POS for clothing and shoe shop
 
 ## Marketing-site opening animation removed (owner request)
 `site/launch.js` and its `<script>` tag on every marketing page are deleted; pages just open. The hub's own opening (`app/public/ds/launch-hub.js`) and the per-app launch animations (`ds/launch.js`) are separate and untouched. Do not re-add a site intro without asking.
+
+## SESSION LOG (2026-10-20/21, AUZsStyle polish + marketing fixes): PRs #530-#541
+Handover for the next account. All merged to `main`; every change is static (no DB step) except where noted. Deploy: `cd /root/auzslabs-infra && git pull origin main && git log -1 --oneline`.
+- **SEO (#530):** canonical fixes (privacy/refund/delete-account own canonical, checkout none), `products.html` ItemList JSON-LD.
+- **AUZsStyle polish (#531):** `db/221_demo_style.sql` (demo tenant gets `style` + sample bills; run it for the Live demo), AUZsStyle card on `site/live-demo.html` and in every page's Live demo menu, compact cards/buttons, solid top bar, dark-mode token fixes (`--glass --tab-on --panel --ring`, never hard-code white/grey), inventory as photo cards (`.igrid/.icard`), two-column desktop pages, bill pane as full-height column with totals and Pay at the bottom, inline customer name + phone on the bill (`resolveTypedCustomer()` before Pay), `hourRows()` for busy-hours charts.
+- **Logo (#532, #534, db/222):** shop logo in Settings -> Shop becomes the home-screen icon (`/app-icon/180.png`, `shopIcon()` in `style/shell.js`, business hosts only), shown in the side brand, top pill and receipt. Run `db/222_style_app_icon_logo.sql` + `docker compose up -d --build api`. The owner said "logo not working" and the cause was never reproduced: ask which step fails (upload / in-app / home-screen icon).
+- **Marketing intro removed (#533):** `site/launch.js` and its tags are gone; do not re-add.
+- **Default icon (#536):** the t-shirt icon is embedded in `style.html` as a data URI (iOS blank-icon problem); a shop logo replaces it.
+- **No zoom + selected-tab contrast (#537):** viewport `maximum-scale=1,user-scalable=no`, `gesturestart`/`dblclick` blocked in `shell.js`, selected nav/tab = solid accent with white text.
+- **Nav order (#538):** Sell, Stock, Bills, Overview, Analytics, Buy, People, Settings (`NAV` in `style/shell.js`; the phone bar shows the first four).
+- **Stock sheet and Edit style (#539, #540, #541):** sheets sized to content (`.sheet:has(.stk)` / `:has(.edgrid)`), Edit style is two columns on desktop (`edgrid`, `span` class marks full-row items), inputs have a hairline border, category field lists the shop's own categories first and accepts any new name (categories are free text on the style, no category table), stock sheet is a bottom sheet on phones.
+- **Merge routine that works:** `git fetch origin main && git merge origin/main`, then `git checkout --ours` on the conflicted files (style.html, sw.js, style.fine.css, p-stock.js), commit, push, PR, squash-merge. Always bump `?v=` in `style.html` and `sw.js` and `V` in `sw.js` (now `pos-v169`; style.fine.css `?v=15`).
+- **Not verified on a real phone/screen:** everything above was checked in headless Chromium and the style suite (28 checks). Open: Hindi wording partial, e-commerce site not built, thermal printing not built.
