@@ -46,15 +46,20 @@
 @media (min-width:861px){
   #sidebarDrawer.sidebar{position:fixed!important;inset:0!important;left:0!important;right:0!important;width:100%!important;max-width:none!important;height:100dvh!important;border-radius:0!important;background:#f4f4f4!important;color:#0a0a0a!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;padding:0!important;display:flex;flex-direction:column;overflow-y:auto;font-family:Inter,system-ui,-apple-system,sans-serif;--ink:#0a0a0a;--ink-dim:#555;--ink-faint:#777}
   .drawer-overlay{display:none!important}
-  .drawer-topbar{background:transparent;position:static;display:flex;align-items:flex-start;justify-content:space-between;padding:26px 36px 0}
-  .drawer-topbar-logo{display:block}
+  /* pointer-events:none here, re-enabled on the real interactive children below: this div has no explicit
+     height, so it stretches to its content's natural box (logo + padding) across the FULL drawer width --
+     an invisible area that silently sat on top of the "Let's talk" button (sidebar-foot, absolutely
+     positioned up here on desktop) and swallowed every click aimed at it, confirmed with
+     document.elementFromPoint() returning this div instead of the button. */
+  .drawer-topbar{background:transparent;position:static;display:flex;align-items:flex-start;justify-content:space-between;padding:26px 36px 0;pointer-events:none}
+  .drawer-topbar-logo{display:block;pointer-events:auto}
   .drawer-topbar-logo img{height:34px;width:auto;filter:none!important;opacity:1}
   .drawer-topbar::after{content:"Business software built around the way you work.";position:absolute;left:50%;top:28px;max-width:230px;font-size:12px;line-height:1.35;color:#0a0a0a}
-  .drawer-topbar-icons{position:absolute;left:24px;top:calc(50% + 52px);display:flex;gap:0}
+  .drawer-topbar-icons{position:absolute;left:24px;top:calc(50% + 52px);display:flex;gap:0;pointer-events:auto}
   .drawer-icon-link{width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:#0a0a0a}
   .drawer-icon-link svg{width:18px;height:18px}
   .drawer-topbar-icons .drawer-icon-link[aria-label=Cart]{display:none}
-  .drawer-close{position:absolute;left:24px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:14px;width:auto;height:36px;margin:0;padding:0;background:none;border:0;border-radius:0;color:#0a0a0a;font:400 12px Inter,system-ui,sans-serif;letter-spacing:0;text-transform:none;cursor:pointer}
+  .drawer-close{position:absolute;left:24px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:14px;width:auto;height:36px;margin:0;padding:0;background:none;border:0;border-radius:0;color:#0a0a0a;font:400 12px Inter,system-ui,sans-serif;letter-spacing:0;text-transform:none;cursor:pointer;pointer-events:auto}
   .drawer-close:hover{background:none;color:#800020}
   .drawer-close span{display:inline;font-size:30px;line-height:1;font-weight:300}
   .drawer-close::before,.drawer-close::after{content:none!important}
