@@ -44,7 +44,25 @@
 /* Desktop menu (from the owner's reference): light page, thin rule, medium bold links on the left, the list of the group you
    point at on the right, a close + social rail on the far left, "Let's talk" top right. Phone keeps the black menu above. */
 @media (min-width:861px){
-  #sidebarDrawer.sidebar{position:fixed!important;inset:0!important;left:0!important;right:0!important;width:100%!important;max-width:none!important;height:100dvh!important;border-radius:0!important;background:#f4f4f4!important;color:#0a0a0a!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;padding:0!important;display:flex;flex-direction:column;overflow-y:auto;font-family:Inter,system-ui,-apple-system,sans-serif;--ink:#0a0a0a;--ink-dim:#555;--ink-faint:#777}
+  /* theme.css's own desktop rule (outside this file) hides .topbar and sets .sidebar{transform:none} --
+     its original design was a narrow, always-visible side column with no open/close state at all. Only
+     index.html carries its own inline override restoring a real slide-in/out drawer (.topbar{display:flex},
+     .sidebar{transform:translateX(100%)}, .sidebar.open{transform:translateX(0)}); every other page using
+     this shared menu.css never got that override, so on those pages (confirmed with a real headless-browser
+     computed-style check: transform:none, full-width, visible, with NO hamburger anywhere to close it)
+     the full-screen drawer this file turns .sidebar into was ALWAYS on screen from first paint, with no
+     way to open or close it at all -- not a z-index/click bug, a genuinely missing closed state. Restoring
+     both rules here, matching index.html's own pattern exactly, fixes every page that loads this file. */
+  .topbar{display:flex!important}
+  /* theme.css's base .shell{flex-direction:row} makes .topbar a flex ROW-sibling of main.content, so with
+     .topbar restored to visible it stretched to content's full height (align-items:stretch) and centered
+     its own children partway down the page instead of at the real top -- confirmed the hamburger rendered
+     around y:2300px on a page whose topbar should sit at y:0. index.html's own override already fixes this
+     the same way (flex-direction:column, topbar stacks above content instead of beside it). */
+  .shell{flex-direction:column!important}
+  .content{margin-right:0!important}
+  #sidebarDrawer.sidebar{position:fixed!important;inset:0!important;left:0!important;right:0!important;width:100%!important;max-width:none!important;height:100dvh!important;border-radius:0!important;background:#f4f4f4!important;color:#0a0a0a!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;padding:0!important;display:flex;flex-direction:column;overflow-y:auto;font-family:Inter,system-ui,-apple-system,sans-serif;--ink:#0a0a0a;--ink-dim:#555;--ink-faint:#777;transform:translateX(100%)!important;transition:transform .3s ease!important}
+  #sidebarDrawer.sidebar.open{transform:translateX(0)!important}
   .drawer-overlay{display:none!important}
   /* pointer-events:none here, re-enabled on the real interactive children below: this div has no explicit
      height, so it stretches to its content's natural box (logo + padding) across the FULL drawer width --
@@ -69,28 +87,34 @@
   .sidebar-nav>.nav-link,.nav-group-toggle{order:initial;display:inline-flex;align-items:center;font-family:Inter,system-ui,sans-serif;font-weight:600;font-size:clamp(24px,2.6vw,36px);line-height:1.06;letter-spacing:-.035em;color:#0a0a0a!important;padding:1px 0;border:0;background:none;box-shadow:none;width:auto;justify-content:flex-start;cursor:pointer;text-decoration:none}
   .sidebar-nav>.nav-link.active{padding-left:0;box-shadow:none;color:#0a0a0a}
   .sidebar-nav>.nav-link:hover::after,.nav-group:hover .nav-group-toggle::after,.nav-group-toggle[aria-expanded="true"]::after{content:"";width:.26em;height:.26em;border-radius:50%;background:#800020;margin-left:.45em;flex:none}
-  .nav-group{width:100%;position:static}
+  .nav-group{width:100%;position:static;align-items:flex-start}
   .nav-group-toggle .nav-group-count,.nav-group-indicator{display:none}
-  /* two halves: Explore on top, Get started at the bottom (order), the open group's list sits bottom right */
+  /* Business types (.nav-biz, marked in the markup, not by position -- some pages have a real "Products"
+     group too, so counting groups by nth-of-type silently pointed at the wrong one there and showed two
+     panels' links overlapping in the same spot) is pinned: always visible, bottom right, never hover-gated.
+     Any other group (Products on pages that have one, Resources everywhere) opens in the empty area near
+     the top, only while hovered/focused/expanded -- the two can never collide since they occupy different
+     halves of the panel and only one of Products/Resources can be hovered at once anyway. */
   .sidebar-nav>a[href="index.html"]{order:1}
-  .sidebar-nav>.nav-group:nth-of-type(1){order:2}
+  .sidebar-nav>.nav-group:not(.nav-biz):first-of-type{order:2}
   .sidebar-nav>a[href="platform.html"]{order:4}
   .sidebar-nav>a[href="live-demo.html"]{order:6;margin-top:auto;display:flex;width:min(32vw,460px);border-top:1px solid #0a0a0a;padding-top:12px}
   .sidebar-nav>a[href="download-apps.html"]{order:7}
-  .sidebar-nav>.nav-group:nth-of-type(2){order:8}
-  .sidebar-nav>a[href="cart.html"]{order:9}
-  .sidebar-nav>a[href="contact.html"]{order:10}
-  .nav-submenu{display:block;max-height:none!important;overflow:visible!important;position:absolute;left:50%;right:5vw;top:auto;bottom:0;margin:0;width:auto;background:transparent;border:0;border-radius:0;box-shadow:none;padding:0;transform:none;opacity:0;visibility:hidden;transition:opacity .16s ease .25s,visibility 0s .45s;pointer-events:none}
-  .nav-submenu::before{display:block;font:600 22px Inter,system-ui,sans-serif;letter-spacing:-.02em;color:#0a0a0a;margin:0 0 18px}
-  .nav-group:nth-of-type(1) .nav-submenu::before{content:"Business types"}
-  .nav-group:nth-of-type(2) .nav-submenu::before{content:"Resources"}
+  .sidebar-nav>.nav-group.nav-biz{order:8}
+  .sidebar-nav>.nav-group:not(.nav-biz):last-of-type{order:9}
+  .sidebar-nav>a[href="cart.html"]{order:10}
+  .sidebar-nav>a[href="contact.html"]{order:11}
+  .nav-submenu{display:block;max-height:none!important;overflow:visible!important;position:absolute;left:50%;right:5vw;top:104px;bottom:auto;margin:0;width:auto;background:transparent;border:0;border-radius:0;box-shadow:none;padding:0;transform:none;opacity:0;visibility:hidden;transition:opacity .16s ease,visibility 0s .16s;pointer-events:none}
+  .nav-submenu-head{display:block;font:600 22px Inter,system-ui,sans-serif;letter-spacing:-.02em;color:#0a0a0a;margin:0 0 18px}
   .nav-submenu-inner{display:grid;grid-template-columns:1fr 1fr;gap:2px 48px;padding:0;overflow:visible}
   .nav-sublink{display:block;font-family:Inter,system-ui,sans-serif;font-weight:400;font-size:17px;line-height:1.35;letter-spacing:-.01em;padding:7px 0;color:#333;border:0;background:none;text-decoration:none}
   .nav-sublink:hover,.nav-sublink.active{color:#800020;background:none;transform:none}
   .nav-sublink.is-disabled{color:#aaa}
-  .nav-group:hover .nav-submenu,.nav-group:focus-within .nav-submenu,.nav-group-toggle[aria-expanded="true"]+.nav-submenu,
-  .sidebar-nav:not(:has(.nav-group:hover)):not(:has(.nav-group-toggle[aria-expanded="true"])):not(:has(.nav-group:focus-within)) .nav-group:first-of-type .nav-submenu{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .16s ease,visibility 0s}
-  .nav-group:hover~.nav-group .nav-submenu{visibility:hidden}
+  .nav-group:not(.nav-biz):hover .nav-submenu,.nav-group:not(.nav-biz):focus-within .nav-submenu,
+  .nav-group:not(.nav-biz) .nav-group-toggle[aria-expanded="true"]+.nav-submenu{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .16s ease,visibility 0s}
+  .nav-group.nav-biz .nav-submenu{top:auto;bottom:0;opacity:1!important;visibility:visible!important;pointer-events:auto!important;transition:none!important}
+  .nav-group.nav-biz .nav-group-toggle{cursor:default}
+  .nav-group.nav-biz .nav-group-toggle:hover::after,.nav-group.nav-biz .nav-group-toggle[aria-expanded]::after{content:none!important}
 
   .sidebar-foot{border:0;margin:auto 0 0;width:100%;box-sizing:border-box;padding:40px 36px 26px 36px;display:flex;flex-direction:row;align-items:flex-end;justify-content:space-between;gap:24px;background:none}
   .sidebar-foot>div:first-child{display:flex!important;gap:0!important}
