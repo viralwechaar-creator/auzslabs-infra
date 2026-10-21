@@ -35,6 +35,7 @@ const outletId=()=>{try{return localStorage.outlet||'main'}catch{return'main'}};
 const setOutlet=id=>{try{localStorage.outlet=id}catch{}};
 const settingsRec=()=>R.settings&&R.settings.data||{};
 const cfg=()=>({name:'My Business',tax:5,...settingsRec()});
+const storeOpen=()=>cfg().storeOpen!==false;
 // The real customer-facing origin for this business's public pages (site.html, booking.html,
 // the chapterone bespoke site). Console pages can be opened from the tenant's own subdomain OR
 // the shared app.auzslab.in address (every app, one login -- see CLAUDE.md "One address for every
@@ -227,7 +228,7 @@ function topBar(){
   S.page!='dashboard'?h('button',{class:'ib back-btn',title:'Back',onclick:goBack,'aria-label':'Back'},ic('back',19)):null,
   S.page!='dashboard'?h('div',{class:'crumb'},grp?h('span',{},grp):null,grp?h('span',{class:'sep'},'/'):null,h('b',{},titleOf(S.page))):null,
   h('button',{class:'outlet',onclick:outletModal},ic('store',18),h('span',{},on),ic('chd',16)),
-  h('span',{class:'open-p'},h('i'),'Open'),h('div',{class:'sp'}),
+  h('button',{class:'open-p'+(storeOpen()?'':' closed'),title:storeOpen()?'Restaurant is open. Tap to close.':'Restaurant is closed. Tap to open.',onclick:()=>setStoreOpen(!storeOpen())},h('i'),storeOpen()?'Open':'Closed'),h('div',{class:'sp'}),
   h('button',{class:'ib',title:'Device mapping',onclick:()=>go('mgmt/devices')},ic('dev',19)),
   h('a',{class:'ib',href:'https://auzslab.in/account.html#notifications',title:'Notifications'},ic('bell',19),h('i',{class:'dot'})),
   h('button',{class:'ib',title:'Configuration',onclick:()=>go('mgmt/config')},ic('gear',19)),
@@ -265,6 +266,13 @@ async function boot(){
  addEventListener('hashchange',()=>{const p=(location.hash||'').slice(1);if(p&&p!=S.page&&PAGES[p]){S.page=p;S.q='';render()}})}
 $('#ov').onclick=()=>{S.sideOpen=false;render()};
 
+// Master open / closed switch. Closed = QR and website orders refused by the database (db/211), manual Swiggy/Zomato entry blocked.
+// Swiggy and Zomato orders arrive on their own tablets and cannot be stopped from here: the closing note says to pause them in their apps too.
+async function setStoreOpen(open){
+ if(S.role!='owner'){toast('Only the owner can open or close the restaurant');return}
+ const go=async()=>{const r=await saveSettings({storeOpen:open});if(r!==false){toast(open?'Restaurant is open: online orders are on':'Restaurant is closed: QR and website orders are stopped');render()}};
+ if(open)return go();
+ confirmBox('Close the restaurant? QR and website orders stop right away and entering Swiggy or Zomato orders by hand is blocked. Swiggy and Zomato send orders to their own tablet, so also pause the restaurant in their partner apps.',go,'Close restaurant')}
 const saveSettings=async patch=>{if(S.role!='owner'){toast('Only the owner can change business settings');return false}return save('settings',{...settingsRec(),...patch},'settings')};
 async function uploadFile(file,prefix){const ext=(file.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,''),name=prefix+'/'+Date.now()+'-'+Math.random().toString(36).slice(2,7)+'.'+ext,{error}=await sb.storage.from('site').upload(name,file,{contentType:file.type||'application/octet-stream'});if(error)throw error;return sb.storage.from('site').getPublicUrl(name).data.publicUrl}
 

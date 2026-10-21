@@ -3,6 +3,8 @@
 'use strict';
 const ORDER_TYPES = [['Dine-in', 'Dine-in'], ['Takeaway', 'Takeaway'], ['Delivery', 'Delivery']];
 const DELIVERY_SOURCES = ['Phone', 'Website', 'Zomato', 'Swiggy', 'ONDC'];
+// restaurant closed (console master switch): aggregator / website orders cannot be added by hand
+function closedSource(src) { if (cfg().storeOpen === false && ['Zomato', 'Swiggy', 'ONDC', 'Website'].includes(src)) { toast('The restaurant is closed, so online orders are paused. Open it from the admin console first.', { err: true }); return true; } return false; }
 const VEG = { veg: 'Veg', nonveg: 'Non-veg', egg: 'Egg' };
 const cats = () => L('cat').sort((a, b) => (a.n || 0) - (b.n || 0) || String(a.name).localeCompare(b.name));
 
@@ -374,7 +376,7 @@ function pickupSourceSheet(o) {
   const ext = input({ value: o.extRef || '', placeholder: 'Zomato / Swiggy order number' });
   sheet({ title: 'Order from', closeLabel: 'Cancel', narrow: true, body: h('div', { class: 'stack s20' },
     field('Source', seg([['', 'Walk-in'], ...DELIVERY_SOURCES.filter((x) => x !== 'Phone').map((x) => [x, x])], src, (v) => (src = v))), field('Platform order number (optional)', ext)),
-    actions: [{ label: 'Save', primary: true, run: () => { o.src = src || undefined; o.extRef = ext.value.trim() || undefined; render(); } }] });
+    actions: [{ label: 'Save', primary: true, run: () => { if (closedSource(src)) return false; o.src = src || undefined; o.extRef = ext.value.trim() || undefined; render(); } }] });
 }
 function deliverySheet(o) {
   const addr = textarea({ value: o.addr || '', placeholder: 'House, street, area, landmark' }), eta = input({ type: 'time', value: o.eta || '' }), ext = input({ value: o.extRef || '', placeholder: 'Zomato / Swiggy order number' });
@@ -383,7 +385,7 @@ function deliverySheet(o) {
   sheet({ title: 'Delivery details', closeLabel: 'Cancel', body: h('div', { class: 'stack s20' },
     field('Order from', seg(DELIVERY_SOURCES.map((x) => [x, x]), src, (v) => (src = v))), field('Platform order number (optional)', ext), field('Address', addr), h('div', { class: 'grid2' }, field('Promised by', eta), field('Rider', riderSel)),
     h('div', { class: 'hint' }, cfg().deliveryCharge ? 'Delivery charge ' + inr(cfg().deliveryCharge) + ' is added to the bill.' : '')),
-    actions: [{ label: 'Save', primary: true, run: () => { o.addr = addr.value.trim() || undefined; o.eta = eta.value || undefined; o.src = src; o.extRef = ext.value.trim() || undefined; o.rider = rider ? { id: rider, name: staffName(rider) } : undefined; render(); } }] });
+    actions: [{ label: 'Save', primary: true, run: () => { if (closedSource(src)) return false; o.addr = addr.value.trim() || undefined; o.eta = eta.value || undefined; o.src = src; o.extRef = ext.value.trim() || undefined; o.rider = rider ? { id: rider, name: staffName(rider) } : undefined; render(); } }] });
 }
 
 // barcode scanners type the code and press Enter (Settings -> Hardware -> Barcode scanner)

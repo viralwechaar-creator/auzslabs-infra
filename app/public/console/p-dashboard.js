@@ -47,7 +47,9 @@ PAGES.dashboard=()=>{
   h('div',{class:'lg'},...[['Dine-In','var(--accent)'],['Takeaway','var(--teal)'],['Delivery','var(--orange)']].map(([k,c])=>h('span',{},h('i',{style:'background:'+c}),k))));
  const qa=h('div',{class:'card dash-card'},h('div',{class:'hd'},h('h3',{},'Quick Actions')),h('div',{class:'qa'},...[['Manage Menu','menu','menu/items'],['Run Reports','rep','rep/sales'],['Know Staff Costs','team','team/attendance'],['Explore Marketing','mkt','mkt/campaigns']].map(([t,i,pg])=>h('button',{class:'qb',onclick:()=>go(pg)},ic(i,19),t))));
  const r4=h('div',{class:'g r4',style:'grid-template-columns:1.35fr 1fr 1.2fr 1.15fr'},cf,leak,snap,qa);
- return[hello,r1,r2e,r3,r4]};
+
+ const storeCard=h('div',{class:'store-card'+(storeOpen()?'':' closed')},h('div',{},h('h3',{},storeOpen()?'Restaurant is open':'Restaurant is closed'),h('p',{},storeOpen()?'Customers can order from your QR codes and website. Swiggy and Zomato orders come in on their own tablets.':'QR and website orders are stopped and manual Swiggy or Zomato entry is blocked. Also pause the restaurant in the Swiggy and Zomato partner apps, they cannot be switched off from here.')),S.role=='owner'?h('button',{class:'btn '+(storeOpen()?'':'p'),onclick:()=>setStoreOpen(!storeOpen())},storeOpen()?'Close restaurant':'Open restaurant'):h('span',{class:'sm'},'Only the owner can change this'));
+ return[hello,storeCard,r1,r2e,r3,r4]};
 // ---------- Daily Operations ----------
 const stPill=o=>o.status=='paid'?pill('Paid','g'):o.status=='due'?pill('Due','a'):o.status=='void'?pill('Void','r'):pill(({new:'In kitchen',preparing:'Preparing',ready:'Ready',served:'Served',dispatched:'Out for delivery',done:'Delivered'})[o.kstat]||'Open','b');
 function ordersTable(rows,opts={}){return table([
