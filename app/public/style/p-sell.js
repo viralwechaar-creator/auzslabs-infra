@@ -72,8 +72,8 @@ page('sell', {
       const paint = () => {
         const vs = s.variants.filter((x) => x.colour === col && x.active !== false).sort(byRank);
         clear(body).append(
-          (s.photos || []).length ? h('div', { class: 'gal' }, [s.photoUrl, ...s.photos].filter(Boolean).map((u) => h('img', { src: u, alt: '', loading: 'lazy' }))) : null,
-          h('div', { class: 'vp-h' }, h('div', { class: 'ph sm' }, s.photoUrl ? h('img', { src: s.photoUrl, alt: '' }) : icon('shirt', 24)), h('div', null, h('b', null, s.name), h('div', { class: 'muted small' }, [s.brand, s.category, s.fabric].filter(Boolean).join(' · ')), h('div', { class: 'num' }, inr(s.price), s.mrp > s.price ? h('s', { class: 'muted small', style: { marginLeft: '6px' } }, inr(s.mrp)) : null))),
+          colourPics(s, col).length > 1 ? h('div', { class: 'gal' }, colourPics(s, col).map((u) => h('img', { src: u, alt: '', loading: 'lazy', decoding: 'async' }))) : null,
+          h('div', { class: 'vp-h' }, h('div', { class: 'ph sm' }, colourPics(s, col)[0] ? h('img', { src: colourPics(s, col)[0], alt: '' }) : icon('shirt', 24)), h('div', null, h('b', null, s.name), h('div', { class: 'muted small' }, [s.brand, s.category, s.fabric].filter(Boolean).join(' · ')), h('div', { class: 'num' }, inr(s.price), s.mrp > s.price ? h('s', { class: 'muted small', style: { marginLeft: '6px' } }, inr(s.mrp)) : null))),
           cols.length > 1 || (cols[0] || '') ? h('div', null, h('div', { class: 'cap' }, t('Colour')), h('div', { class: 'chips wrap' }, cols.map((c) => { const n = s.variants.filter((x) => x.colour === c).reduce((a, x) => a + x.stock, 0); return h('button', { class: 'chip', type: 'button', 'aria-pressed': String(c === col), onclick: () => { col = c; paint(); } }, colourDot(c, 14), c || '—', h('span', { class: 'muted small' }, n)); }))) : null,
           h('div', null, h('div', { class: 'cap' }, t('Size')), h('div', { class: 'sizes' }, vs.map((x) => {
             const dis = x.stock <= 0 && !S.ctx.settings.allowNegativeStock;

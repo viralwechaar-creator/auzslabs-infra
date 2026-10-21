@@ -48,6 +48,12 @@ export default async function run({ browser, stack }) {
     const r = await ok(owner, 'sty_save_style', { p: { id: shirt.id, name: 'Slim Shirt', colours: ['Blue', 'White', 'Black'], sizes: ['M', 'L', 'XL'], price: 1000 } });
     assert(r.variants.length === 9, 'variants ' + r.variants.length); assert(await stock(vM.id) === 5, 'old stock changed');
   });
+  await s.check('Pictures per colour are saved, returned with the style, and a staffer cannot change them', async () => {
+    const r = await ok(owner, 'sty_set_colour_photos', { p_id: shirt.id, p: { Blue: ['/u/blue-1.webp', '/u/blue-2.webp'], White: ['/u/white-1.webp'], Pink: [] } });
+    assert(r.colourPhotos.Blue.length === 2 && r.colourPhotos.White[0] === '/u/white-1.webp' && !('Pink' in r.colourPhotos), JSON.stringify(r.colourPhotos));
+    const cat = await ok(owner, 'sty_catalog', {}); const st = cat.find((x) => x.id === shirt.id); assert(st.colourPhotos.Blue[1] === '/u/blue-2.webp', 'catalogue lacks colour pictures');
+    await fails(staff, 'sty_set_colour_photos', { p_id: shirt.id, p: { Blue: ['/u/x.webp'] } }, /does not allow/i);
+  });
 
   await s.check('Product details (type, fabric, collection, wash care, weight, description) are saved and grouped in analytics', async () => {
     const r = await ok(owner, 'sty_save_style', { p: { name: 'Linen Kurta', category: 'Kurtas', subcategory: 'Long', fabric: 'Linen', collection: 'Summer 26', washcare: 'Machine wash cold', weightG: 240, description: 'Light kurta', details: 'Side slits', price: 1500, colours: ['Beige'], sizes: ['M'], opening: { qty: 4, unitCost: 600 } } });
@@ -243,6 +249,16 @@ export default async function run({ browser, stack }) {
   };
   await s.check('Till on a phone: scan a tag, bill it, pay cash, get a receipt', async () => { await till({ w: 390, h: 844, mobile: true }, 'phone till'); }, 'critical');
   await s.check('Till on a laptop: scan a tag, bill it, pay cash, get a receipt', async () => { await till({ w: 1280, h: 800 }, 'desktop till'); }, 'critical');
+
+  await s.check('Picking a colour on the till switches the picture to that colour', async () => {
+    const { c, page } = await open(USERS.styStaff, { w: 390, h: 844, mobile: true });
+    await page.evaluate(() => { location.hash = '#/sell'; }); await page.waitForSelector('.scard', { timeout: 15000 });
+    await page.locator('.scard', { hasText: 'Slim Shirt' }).locator('.pic').click(); await page.waitForSelector('.vp-h .ph img', { timeout: 8000 });
+    const first = await page.locator('.vp-h .ph img').getAttribute('src'); assert(/blue-1/.test(first), 'first colour picture: ' + first);
+    await page.locator('.sheet .chip', { hasText: 'White' }).first().click(); await page.waitForTimeout(300);
+    const second = await page.locator('.vp-h .ph img').getAttribute('src'); assert(/white-1/.test(second), 'picture did not switch: ' + second);
+    await s.shot(page, 'colour picture'); await c.close();
+  });
 
   await s.check('Barcode tags: the generated Code 128 reads back with the scanner library', async () => {
     const c = await newCtx(browser, stack, { w: 800, h: 600 }); const page = await c.newPage();

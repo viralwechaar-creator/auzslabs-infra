@@ -152,6 +152,8 @@ async function shrinkImage(file, max = 1280, q = .78) {
   const okType = /^image\/(jpeg|png|webp)$/.test(file.type);
   return okType && k === 1 && file.size <= out.size ? file : out;
 }
+// pictures to show for a colour (its own set), else the style's pictures
+function colourPics(s, col) { const a = (s.colourPhotos || {})[col]; return a && a.length ? a : [s.photoUrl, ...(s.photos || [])].filter(Boolean); }
 async function uploadBlob(blob) {
   const ext = blob.type === 'image/webp' ? 'webp' : blob.type === 'image/png' ? 'png' : 'jpg';
   const name = 'style/' + Date.now() + '-' + Math.random().toString(36).slice(2, 7) + '.' + ext;
