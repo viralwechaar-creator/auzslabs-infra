@@ -21,6 +21,21 @@ page('settings', {
       clear(logoBtns).append(file, h('button', { class: 'btn sm', type: 'button', onclick: () => file.click() }, icon('camera', 16), logoUrl ? t('Change logo') : t('Upload logo')), logoUrl ? h('button', { class: 'btn sm danger', type: 'button', onclick: () => { logoUrl = ''; paintLogo(); } }, t('Remove')) : null);
     };
     paintLogo();
+    const waCard = () => {
+      const host = h('div', { class: 'card grid' }, h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '12px auto' } }));
+      const EV = [['invoice_link', t('Bill link after every bill')], ['birthday_greeting', t('Birthday wishes')], ['anniversary_greeting', t('Anniversary wishes')], ['style_winback', t('We miss you (not back in 60 days)')]];
+      (async () => {
+        let w; try { w = await api('wa_my_status'); } catch (e) { clear(host).append(h('p', { class: 'muted small' }, t('Only the owner or manager can change WhatsApp settings.'))); return; }
+        const on = h('input', { type: 'checkbox', checked: !!w.enabled }), ev = {};
+        const rows = EV.map(([k, l]) => { const c = h('input', { type: 'checkbox', checked: (w.events || {})[k] !== false }); ev[k] = c; return h('label', { class: 'swrow' }, h('div', { class: 'grow' }, l), c); });
+        clear(host).append(
+          w.allow_platform ? banner('ok', 'check', t('AUZslab has allowed this shop to send from the AUZslab WhatsApp number.')) : banner('warn', 'alert', t('Ask AUZslab to allow this shop first. Until then nothing is sent.')),
+          h('label', { class: 'swrow' }, h('div', { class: 'grow' }, h('b', null, t('Send messages automatically')), h('div', { class: 'muted small' }, t('Needs both: AUZslab allowing the shop, and this switch.'))), on), ...rows,
+          h('p', { class: 'muted small' }, t('Messages go only to customers who have a phone number and have not turned messages off.')),
+          h('button', { class: 'btn', type: 'button', onclick: async () => { try { const evs = {}; EV.forEach(([k]) => { evs[k] = ev[k].checked; }); await api('wa_save_settings', { p: { enabled: on.checked, events: evs } }); toast(t('Saved')); } catch (e) { fail(e); } } }, t('Save WhatsApp settings')));
+      })();
+      return host;
+    };
     const slabs = Array.isArray(st.taxSlabs) ? st.taxSlabs : [];
     const s1 = input({ type: 'number', mode: 'decimal', value: slabs[0] ? slabs[0].upto : '', placeholder: '2500' }), r1 = input({ type: 'number', mode: 'decimal', value: slabs[0] ? slabs[0].rate : '', placeholder: '5' }), r2_ = input({ type: 'number', mode: 'decimal', value: slabs[1] ? slabs[1].rate : '', placeholder: '18' });
     const brHost = h('div', { class: 'list' });
@@ -54,6 +69,7 @@ page('settings', {
       section(t('Branches and warehouses'), brHost, h('button', { class: 'btn', type: 'button', onclick: () => branchForm(null) }, icon('plus', 18), t('New branch'))),
       section(t('Day close'), h('div', { class: 'card grid' }, h('p', { class: 'muted small' }, t('Closing a day stops anyone adding or changing bills on or before that date.')), field(t('Closed up to'), dc),
         h('button', { class: 'btn', type: 'button', onclick: async () => { if (!dc.value) return; if (!await confirmBox(t('Close the books?'), t('Bills on or before') + ' ' + dc.value + ' ' + t('cannot be changed after this.'), t('Close day'), true)) return; S.ctx = await api('sty_day_close', { p_date: dc.value }); toast(t('Day closed')); } }, t('Close day')))),
+      section(t('WhatsApp messages'), waCard()),
       section(t('Health check'), h('div', { class: 'card grid' }, h('p', { class: 'muted small' }, t('Checks that bill totals, stock and returns all agree.')), h('div', { id: 'hc' }),
         h('button', { class: 'btn', type: 'button', onclick: async () => { const r = await api('sty_integrity_check'); const el = $('#hc'); clear(el).append(r.ok ? banner('ok', 'check', t('Everything agrees')) : banner('warn', 'alert', r.problems.map((p) => p.check + ' (' + p.count + ')').join('; '))); } }, t('Run check')),
         h('button', { class: 'btn', type: 'button', onclick: async () => { await api('sty_load_sample'); S.catAt = 0; toast(t('Sample added')); } }, t('Add sample styles')))),
