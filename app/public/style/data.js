@@ -32,9 +32,11 @@ async function loadCatalog(force) {
   return S.cat;
 }
 const allVariants = () => S.cat.flatMap((s) => s.variants.map((v) => ({ ...v, style: s })));
+function findStyleCode(code) { code = String(code).trim().toLowerCase(); return code ? S.cat.find((s) => s.code && s.code.toLowerCase() === code) || null : null; }
 function findBarcode(code) {
   code = String(code).trim(); if (!code) return null;
-  for (const s of S.cat) for (const v of s.variants) if (v.barcode === code || (v.sku && v.sku === code)) return { style: s, variant: v };
+  const lc = code.toLowerCase();
+  for (const s of S.cat) for (const v of s.variants) if (v.barcode === code || (v.sku && v.sku.toLowerCase() === lc) || v.barcode.toLowerCase() === lc) return { style: s, variant: v };
   return null;
 }
 const styleStock = (s) => s.variants.reduce((a, v) => a + (v.active === false ? 0 : v.stock), 0);

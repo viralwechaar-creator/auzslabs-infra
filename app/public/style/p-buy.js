@@ -60,6 +60,7 @@ async function receiveForm(o, done) {
   };
   const res = h('div', { class: 'list' });
   const q = searchField(t('Add item: name or barcode'), () => paintRes());
+  const scanBtn = h('button', { class: 'btn icon', type: 'button', 'aria-label': t('Scan'), onclick: () => scanWith((c) => { const f = findBarcode(c); if (f) { addVar({ ...f.variant, style: f.style }, 1); paintHost(); } else { const sc = findStyleCode(c); if (sc) { sc.variants.filter((x) => x.active !== false).forEach((x) => addVar({ ...x, style: sc })); paintHost(); } else toast(t('No item with that code'), { err: true }); } }) }, icon('camera', 18));
   q.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const f = findBarcode(q.input.value); if (f) { addVar({ ...f.variant, style: f.style }, 1); q.input.value = ''; clear(res); paintHost(); } } });
   function paintRes() {
     const k = q.input.value.trim().toLowerCase(); clear(res); if (k.length < 2) return;
@@ -68,7 +69,7 @@ async function receiveForm(o, done) {
     allVariants().filter((x) => x.barcode === k).forEach((x) => res.append(liRow({ title: x.style.name, sub: [x.colour, x.size].join(' · '), onclick: () => { addVar(x, 1); q.input.value = ''; clear(res); paintHost(); } })));
   }
   paintHost();
-  sheet({ title: t('Receive stock'), full: true, wide: true, body: h('div', { class: 'grid' }, h('div', { class: 'two' }, field(t('Supplier'), sup), field(t('Invoice'), inv)), q, res, host, totEl, field(t('Paid now'), paid)),
+  sheet({ title: t('Receive stock'), full: true, wide: true, body: h('div', { class: 'grid' }, h('div', { class: 'two' }, field(t('Supplier'), sup), field(t('Invoice'), inv)), h('div', { class: 'row', style: { gap: '8px' } }, h('div', { class: 'grow' }, q), scanBtn), res, host, totEl, field(t('Paid now'), paid)),
     actions: [{ label: t('Receive'), primary: true, onclick: async (close) => {
       const ls = lines.filter((l) => l.qty > 0); if (!ls.length) { toast(t('Enter a quantity for at least one item'), { err: true }); return false; }
       const total = ls.reduce((a, l) => a + l.qty * l.cost, 0);

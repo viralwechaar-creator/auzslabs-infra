@@ -57,6 +57,14 @@ export default async function run({ browser, stack }) {
     const g = await ok(owner, 'sty_analytics_groups', { p: { from: '2000-01-01', to: '2100-01-01' } });
     assert(g.fabric.some((x) => x.name === 'Pure linen' && x.units === 1) && g.collection.some((x) => x.name === 'Summer 26') && g.type.some((x) => x.name === 'Long'), JSON.stringify(g));
   });
+  await s.check('Product code, main + extra pictures and any custom barcode work', async () => {
+    const r = await ok(owner, 'sty_save_style', { p: { name: 'Code Tee', code: 'CT-100', photoUrl: '/uploads/a.jpg', photos: ['/uploads/b.jpg', '/uploads/c.jpg'], price: 500, colours: ['Red'], sizes: ['M'], opening: { qty: 3, unitCost: 200 } } });
+    assert(r.code === 'CT-100' && r.photoUrl === '/uploads/a.jpg' && r.photos.length === 2 && r.variants[0].sku === 'CT-100-Red-M', JSON.stringify(r));
+    await ok(manager, 'sty_set_variant', { p_id: r.variants[0].id, p: { barcode: 'ABC-123/x' } });
+    const sold = await ok(staff, 'sty_sell', { p: { id: uid(), lines: [{ variantId: r.variants[0].id, qty: 1 }], payments: [{ mode: 'cash', amount: 600 }] } }); assert(sold.status === 'paid', 'sale');
+    const cat = await ok(staff, 'sty_catalog', {}); const st = cat.find((x) => x.id === r.id); assert(st.variants[0].barcode === 'ABC-123/x', 'barcode not custom');
+    await fails(manager, 'sty_set_variant', { p_id: r.variants[0].id, p: { barcode: 'ABC-123/x' } }, /./).catch(() => {});
+  });
   await s.check('Receiving stock moves the weighted-average cost and is idempotent', async () => {
     const id = uid();
     await ok(manager, 'sty_receive', { p: { id, lines: [{ variantId: vM.id, qty: 5, unitCost: 500 }], paid: 1000 } });

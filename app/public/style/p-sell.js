@@ -32,7 +32,7 @@ page('sell', {
     const grid = h('div', { class: 'sgrid' });
     const cartHost = h('aside', { class: 'cartpane' });
     const bar = h('button', { class: 'cartbar', type: 'button', onclick: () => cartSheet() });
-    const scanBtn = window.auzScanner ? h('button', { class: 'btn icon', type: 'button', 'aria-label': t('Scan'), onclick: () => auzScanner.open({ title: t('Scan a tag'), onCode: (c) => { onCode(c); }, footer: '' }) }, icon('camera', 20)) : null;
+    const scanBtn = window.auzScanner ? h('button', { class: 'btn icon', type: 'button', 'aria-label': t('Scan'), onclick: () => scanWith((c) => { onCode(c); }) }, icon('camera', 20)) : null;
     const sf = searchField(t('Search or scan a tag'), (val) => { UI.q = val; paintGrid(); }, UI.q);
     sf.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const val = sf.input.value.trim(); if (val && onCode(val, true)) { sf.input.value = ''; UI.q = ''; paintGrid(); } } });
     const chips = h('div', { class: 'chips' });
@@ -42,6 +42,7 @@ page('sell', {
     function onCode(code, fromEnter) {
       const f = findBarcode(code);
       if (f) { if (addLine(f.style, f.variant)) { paintCart(); } return true; }
+      const sc = findStyleCode(code); if (sc) { pickVariant(sc); return true; }
       if (fromEnter) return false;
       toast(t('No item with that code'), { err: true }); beep(false); return false;
     }
@@ -49,7 +50,7 @@ page('sell', {
     function paintGrid() {
       const q = UI.q.trim().toLowerCase();
       let list = S.cat.filter((s) => s.active !== false && (UI.cat === 'All' || s.category === UI.cat) && styleMatches(s));
-      if (q) list = list.filter((s) => (s.name + ' ' + (s.brand || '') + ' ' + s.category).toLowerCase().includes(q) || s.variants.some((x) => x.barcode === q));
+      if (q) list = list.filter((s) => (s.name + ' ' + (s.brand || '') + ' ' + s.category + ' ' + (s.code || '') + ' ' + (s.subcategory || '') + ' ' + (s.fabric || '') + ' ' + (s.collection || '')).toLowerCase().includes(q) || s.variants.some((x) => x.barcode === q || (x.sku || '').toLowerCase() === q));
       clear(grid);
       if (!list.length) { grid.append(empty('shirt', S.cat.length ? t('No match') : t('No styles yet'), S.cat.length ? '' : t('Add your first style in Stock.'), !S.cat.length && can('sty_manage') ? h('button', { class: 'btn fill', onclick: () => go('stock') }, t('Go to Stock')) : null)); return; }
       list.slice(0, 160).forEach((s) => {
@@ -68,6 +69,7 @@ page('sell', {
       const paint = () => {
         const vs = s.variants.filter((x) => x.colour === col && x.active !== false).sort(byRank);
         clear(body).append(
+          (s.photos || []).length ? h('div', { class: 'gal' }, [s.photoUrl, ...s.photos].filter(Boolean).map((u) => h('img', { src: u, alt: '', loading: 'lazy' }))) : null,
           h('div', { class: 'vp-h' }, h('div', { class: 'ph sm' }, s.photoUrl ? h('img', { src: s.photoUrl, alt: '' }) : icon('shirt', 24)), h('div', null, h('b', null, s.name), h('div', { class: 'muted small' }, [s.brand, s.category, s.fabric].filter(Boolean).join(' · ')), h('div', { class: 'num' }, inr(s.price), s.mrp > s.price ? h('s', { class: 'muted small', style: { marginLeft: '6px' } }, inr(s.mrp)) : null))),
           cols.length > 1 || (cols[0] || '') ? h('div', null, h('div', { class: 'cap' }, t('Colour')), h('div', { class: 'chips wrap' }, cols.map((c) => { const n = s.variants.filter((x) => x.colour === c).reduce((a, x) => a + x.stock, 0); return h('button', { class: 'chip', type: 'button', 'aria-pressed': String(c === col), onclick: () => { col = c; paint(); } }, colourDot(c, 14), c || '—', h('span', { class: 'muted small' }, n)); }))) : null,
           h('div', null, h('div', { class: 'cap' }, t('Size')), h('div', { class: 'sizes' }, vs.map((x) => {
