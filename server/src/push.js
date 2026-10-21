@@ -155,7 +155,10 @@ export async function handlePushEvent({ tenant_id, title, body, user_ids, platfo
     const { rows: subs } = await pool.query('select * from push_subs_for_tenant($1)', [tenant_id]);
     await Promise.allSettled(subs.map(async (s) => {
       try {
-        const res = await sendWebPush(s.endpoint, s.p256dh, s.auth, { title: title || 'AUZslab', body: body || '' });
+        // No url here fell back to sw.js's default (/start.html, the hub) --
+        // every real device subscribed from the POS itself, so the alert
+        // should always reopen the POS, not bounce through the hub.
+        const res = await sendWebPush(s.endpoint, s.p256dh, s.auth, { title: title || 'AUZslab', body: body || '', url: '/index.html' });
         if (!res.ok && (res.status === 404 || res.status === 410)) {
           await pool.query('select push_subs_delete_dead($1)', [s.id]);
         } else if (!res.ok) {
