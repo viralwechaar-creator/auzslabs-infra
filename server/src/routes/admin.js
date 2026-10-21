@@ -22,7 +22,7 @@ export async function handle(ctx) {
     );
     if (!rows.length) throw new HttpError(403, 'forbidden -- not a platform admin');
     const body = await readJsonBody(req);
-    if (!body.tenant_id || !body.email) throw new HttpError(400, 'tenant_id and email are required');
+    if (!body.tenant_id || (!body.email && !body.trial)) throw new HttpError(400, 'tenant_id and email are required');
     const created = await createUser({
       email: body.email,
       password: crypto.randomUUID(),
@@ -43,12 +43,40 @@ export async function handle(ctx) {
   if (url.pathname === '/admin/salesman-provision-owner' && req.method === 'POST') {
     if (!user) throw new HttpError(401, 'unauthorized');
     const body = await readJsonBody(req);
-    if (!body.tenant_id || !body.email) throw new HttpError(400, 'tenant_id and email are required');
+    if (!body.tenant_id || (!body.email && !body.trial)) throw new HttpError(400, 'tenant_id and email are required');
     const { rows } = await withAuth(user.id, (client) =>
       client.query('select is_salesman($1) as ok, exists(select 1 from tenants where id = $2 and created_by_salesman = $1) as owns', [user.id, body.tenant_id]),
     );
     if (!rows[0]?.ok) throw new HttpError(403, 'forbidden -- not a salesman account');
     if (!rows[0]?.owns) throw new HttpError(403, 'not your trial tenant');
+    if (body.trial) {
+      // A trial login the client can use on their own device: the business's owner login (made if there is none),
+      // with a fresh password each time. The tenant stays a trial until an admin converts it.
+      const ex = await withAuth(user.id, (client) =>
+        client.query(
+          `select p.id as owner_id, au.email as owner_email, t.slug as slug
+           from tenants t left join profiles p on p.tenant_id = t.id and p.role = 'owner'
+           left join auth_users au on au.id = p.id where t.id = $1`,
+          [body.tenant_id],
+        ),
+      );
+      const row = ex.rows[0];
+      if (!row) throw new HttpError(404, 'trial not found');
+      let ownerId = row.owner_id, ownerEmail = row.owner_email;
+      if (!ownerId) {
+        ownerEmail = `trial-${row.slug}@trial.auzslab.in`;
+        const made = await createUser({
+          email: ownerEmail,
+          password: crypto.randomUUID(),
+          app_metadata: { tenant_id: body.tenant_id, role: 'owner' },
+          user_metadata: { name: body.name || '' },
+          verified: true,
+        });
+        ownerId = made.id;
+      }
+      const pw = await resetToRandomPassword(ownerId);
+      return reply(200, { user_id: ownerId, email: ownerEmail, temp_password: pw });
+    }
     const created = await createUser({
       email: body.email,
       password: crypto.randomUUID(),

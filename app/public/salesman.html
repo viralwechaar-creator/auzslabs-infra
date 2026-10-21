@@ -239,10 +239,8 @@ button:active:not(:disabled){transform:translateY(1px) scale(.99)}
         <h2 style="margin-top:0">Show the client</h2>
         <p class=sub id=showSub>Opens the website and the POS in two separate tabs: place an order on the website, then check it in the POS tab. Already loaded with their logo, colours and a 24-item menu.</p>
         <div class=actions>
-          <button id=demoRoomBtn>Start demo (2 tabs) ↗</button>
-          <button class=ghost id=openPosBtn>Open their POS ↗</button>
-          <button class=ghost id=openQrBtn>Open table QR order ↗</button>
-          <button class=ghost id=openSiteBtn>Open their website ↗</button>
+          <button id=openSiteBtn>Open their website ↗</button>
+          <button id=openPosBtn>Open their POS ↗</button>
         </div>
         <div id=demoErr class=err></div>
 
@@ -295,9 +293,10 @@ button:active:not(:disabled){transform:translateY(1px) scale(.99)}
         </div>
         </details>
 
-        <h2>Once they buy</h2>
-        <p class=sub>A real login with a password, to hand over to the owner.</p>
-        <button class=ghost id=ownerLoginBtn>Create a real owner login</button>
+        <h2>Trial login for the client</h2>
+        <p class=sub>An email and password so the client can try it on their own phone or computer (the POS and the website editor) without going live. Press again to get a fresh password.</p>
+        <div id=trialLoginBox class="hidden" style="background:var(--fill);border-radius:14px;padding:12px 14px;margin:8px 0;font-size:14px;line-height:1.7"></div>
+        <button class=ghost id=ownerLoginBtn>Create trial login</button>
 
         <h2 style="color:var(--red)">Delete this prospect</h2>
         <p class=sub>Permanent — removes the business and everything in it (menu, logo, any owner login). Cannot be undone.</p>
@@ -840,10 +839,8 @@ const cafeSub = $('showSub').textContent;
 function applyNiche(t) {
   const a = nicheApp(t);
   $('openPosBtn').textContent = a.main;
-  $('openQrBtn').classList.toggle('hidden', !a.qr);
   $('openSiteBtn').classList.toggle('hidden', !a.site);
-  $('demoRoomBtn').classList.toggle('hidden', !a.demo);
-  $('openPosBtn').classList.toggle('ghost', a.demo);
+  $('trialLoginBox').classList.add('hidden');
   $('brandDet').open = !a.demo;
   $('brandDet').classList.toggle('hidden', !a.brand);
   $('brandForm').classList.toggle('hidden', !a.brand);
@@ -983,25 +980,6 @@ $('saveBrandBtn').onclick = async () => {
 
 $('openSiteBtn').onclick = () => { if (current && nicheApp(current).site) window.open('https://' + current.slug + '.auzslab.in' + nicheApp(current).site, '_blank'); };
 
-$('openQrBtn').onclick = () => {
-  if (!current) return;
-  // No table yet (older trials): open the website as a takeaway order page instead of refusing.
-  window.open('https://' + current.slug + '.auzslab.in/site.html' + (current.table_id ? '?t=' + current.table_id : ''), '_blank');
-};
-
-$('demoRoomBtn').onclick = async () => {
-  if (!current) return;
-  $('demoErr').textContent = '';
-  // Open both tabs inside the tap (browsers block a second pop-up opened after an await), fill them in afterwards.
-  const base = 'https://' + current.slug + '.auzslab.in';
-  const wSite = window.open(base + '/site.html' + (current.table_id ? '?t=' + encodeURIComponent(current.table_id) : ''), '_blank');
-  const wPos = window.open('about:blank', '_blank');
-  $('demoRoomBtn').disabled = true;
-  try { await openBusiness(current.id, current.slug, nicheApp(current).page, wPos); }
-  catch (e) { $('demoErr').textContent = e.message; if (wPos) wPos.close(); }
-  $('demoRoomBtn').disabled = false;
-};
-
 $('openPosBtn').onclick = async () => {
   if (!current) return;
   $('demoErr').textContent = '';
@@ -1012,23 +990,29 @@ $('openPosBtn').onclick = async () => {
 
 $('ownerLoginBtn').onclick = async () => {
   if (!current) return;
-  const email = prompt("Owner's email for their first login:");
-  if (!email) return;
   $('brandErr').textContent = '';
+  $('ownerLoginBtn').disabled = true;
   try {
     const { data: { session } } = await sb.auth.getSession();
     const res = await fetch(CFG.url + '/admin/salesman-provision-owner', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
-      body: JSON.stringify({ tenant_id: current.id, email, name: current.name }),
+      body: JSON.stringify({ tenant_id: current.id, trial: true, name: current.name }),
     });
     const body = await res.json();
     if (!res.ok) throw new Error(body.error || 'failed');
-    alert('Owner login created.\n\nEmail: ' + email + '\nTemporary password: ' + body.temp_password + '\n\nShare this with the client directly.');
+    const a = nicheApp(current), base = 'https://' + current.slug + '.auzslab.in';
+    const lines = [['Email', body.email], ['Password', body.temp_password], [a.main.replace(/^Open their |\s*\u2197$/g, ''), base + a.page]];
+    if (current.niche === 'cafe') lines.push(['Website editor', base + '/site-edit.html']);
+    const text = lines.map(([k, v]) => k + ': ' + v).join('\n');
+    $('trialLoginBox').innerHTML = lines.map(([k, v]) => `<div><b>${esc(k)}:</b> ${esc(v)}</div>`).join('') + '<button class=ghost id=copyTrialBtn style="margin-top:8px">Copy to send</button>';
+    $('trialLoginBox').classList.remove('hidden');
+    $('copyTrialBtn').onclick = async () => { try { await navigator.clipboard.writeText(text); toast('Copied'); } catch { prompt('Copy this', text); } };
     current.has_owner = true;
     const idx = trials.findIndex((t) => t.id === current.id); if (idx > -1) trials[idx].has_owner = true;
     renderTrials();
   } catch (e) { $('brandErr').textContent = e.message; }
+  $('ownerLoginBtn').disabled = false;
 };
 
 $('deleteTrialBtn').onclick = async () => {
