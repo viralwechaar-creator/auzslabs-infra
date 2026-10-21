@@ -308,3 +308,6 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .brandpill{background:var(--bar)}
 .scard .pic,.gal img,.ph{isolation:isolate;transform:translateZ(0);-webkit-transform:translateZ(0)}
 .scard .pic img,.gal img,.ph img{background:var(--fill)}
+/* Bill sheet on phones: as tall as the bill, anchored to the bottom, no empty area */
+.sheet:has(.bill){height:auto;max-height:92dvh}
+@media (max-width:599px){.sheet.full:has(.bill){top:auto;bottom:0}.sheet:has(.bill) .sheet-b{padding-bottom:calc(16px + var(--safe-b))}}
