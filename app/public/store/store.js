@@ -46,6 +46,12 @@ const toast = (m) => { const t = E('div', { class: 'toast', role: 'status' }, m)
 async function rpc(fn, args) { const { data, error } = await sb.rpc(fn, args || {}); if (error) { const e = new Error(error.message || 'Something went wrong'); e.status = error.status; throw e; } return data; }
 const saveBag = () => { LS.set('bag', bag); paintCounts(); };
 const saveWish = () => { LS.set('wish', wish); paintCounts(); };
+const recent = () => LS.get('recent', []).filter((id) => BYID[id]);
+const seen = (id) => { const r = LS.get('recent', []).filter((x) => x !== id); r.unshift(id); LS.set('recent', r.slice(0, 14)); };
+function recentBand(except, title) {
+  const list = recent().filter((id) => id !== except).map((id) => BYID[id]).slice(0, 10); if (!list.length) return null;
+  return E('section', { class: 'band' }, E('div', { class: 'hd' }, E('h2', null, title || 'Recently viewed'), E('button', { class: 'btn sm out', onclick: () => { LS.set('recent', []); route(); } }, 'Clear')), E('div', { class: 'row' }, list.map((x) => card(x))));
+}
 const photos = (s) => { const out = []; const push = (u) => { if (u && !out.includes(u)) out.push(u); }; push(s.photoUrl); (s.photos || []).forEach(push); Object.values(s.colourPhotos || {}).forEach((a) => (a || []).forEach(push)); return out; };
 const photosFor = (s, colour) => { const cp = (s.colourPhotos || {})[colour] || []; const rest = photos(s).filter((u) => !cp.includes(u)); return [...cp, ...rest]; };
 const leftOf = (s) => s.variants.reduce((a, v) => a + v.left, 0);
@@ -78,7 +84,7 @@ function card(s, opt) {
   const step = (d) => (e) => { e.preventDefault(); sc.scrollBy({ left: d * sc.clientWidth, behavior: 'smooth' }); };
   const bm = E('button', { class: 'bm' + (on ? ' on' : ''), 'aria-label': 'Save', onclick: (e) => { e.preventDefault(); toggleWish(s.id); bm.classList.toggle('on', wish.includes(s.id)); } }, icon('mark'));
   const ph = E('div', { class: 'ph' }, sc, dt, bm,
-    gone ? E('div', { class: 'tag' }, 'Sold Out') : s.badge === 'limited' ? E('div', { class: 'tag' }, 'Limited') : null,
+    gone ? E('div', { class: 'tag' }, 'Sold Out') : s.badge === 'limited' ? E('div', { class: 'tag' }, 'Limited') : discPct(s) >= 10 ? E('div', { class: 'tag' }, discPct(s) + '% off') : null,
     list.length > 1 ? E('button', { class: 'nx p', 'aria-label': 'Previous picture', onclick: step(-1) }, icon('left')) : null, list.length > 1 ? E('button', { class: 'nx n', 'aria-label': 'Next picture', onclick: step(1) }, icon('right')) : null);
   return E('div', { class: 'pc' + (gone ? ' gone' : '') }, ph, E('div', { class: 'in' },
     E('a', { href: link('p/' + s.id), style: { minWidth: 0 } }, E('div', { class: 'nm' }, s.name), E('div', { class: 'pr' }, inr(s.price), s.mrp > s.price ? E('s', null, inr(s.mrp)) : null)),
@@ -153,7 +159,7 @@ function openMenu() {
       E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Shop'), a('New arrivals', 'shop?new=1'), a('All products', 'shop'), ...D.collections.filter((c) => c.styleIds.length).slice(0, 6).map((c) => a(c.name, 'shop?col=' + c.id)), a('All collections', 'collections')),
       ...groups().map(([n, cs]) => E('div', { class: 'col' }, E('span', { class: 'lbl' }, n), E('div', { class: 'wrapc' }, cs.map((c) => a(c, 'shop?cat=' + encodeURIComponent(c)))))),
       fams.length ? E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Shop by colour'), E('div', { class: 'wrapc' }, fams.map((f) => E('a', { class: 'fam', href: link('shop?fam=' + f[0]), onclick: nav('shop?fam=' + f[0]) }, f[0], E('span', { class: 'bar', style: { background: 'linear-gradient(90deg,' + f[2][0] + ',' + f[2][1] + ')' } }))))) : null,
-      E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Help'), a('Our stores', 'stores'), a('About us', 'about'), a('FAQs', 'faq'), a('Shipping & returns', 'policy/shipping'), a('Contact', 'contact'))));
+      E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Help'), a('Our stores', 'stores'), a('About us', 'about'), a('My orders', 'orders'), a('FAQs', 'faq'), a('Shipping & returns', 'policy/shipping'), a('Contact', 'contact'))));
   m.append(panel);
   m.onclick = (e) => { if (e.target === m) close(); };
 }
@@ -190,6 +196,7 @@ V.home = (v) => {
   v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'New arrivals'), E('a', { class: 'btn sm out', href: link('shop?new=1') }, 'Discover more')), gridOf(newest(8), true)));
   cols.slice(0, 3).forEach((x) => { const items = x.styleIds.map((id) => BYID[id]).filter(Boolean).slice(0, 8); if (items.length < 2) return; v.append(E('section', { class: 'band' }, E('div', { class: 'hd' }, E('h2', null, x.name), E('a', { class: 'btn sm', href: link('shop?col=' + x.id) }, 'Discover more')), E('div', { class: 'row' }, items.map((s) => card(s))))); });
   if (STY.length > 8) v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'All products'), E('a', { class: 'btn sm out', href: link('shop') }, 'Shop all')), gridOf(STY.slice(0, 12), true)));
+  v.append(recentBand(null));
   if ((c.stores || []).length) v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'Visit us'), E('a', { class: 'btn sm out', href: link('stores') }, 'All stores')), storeCards(c.stores.slice(0, 2))));
 };
 
@@ -232,6 +239,11 @@ function refine() {
   const sh = sheet('Refine', body, foot);
   showBtn.onclick = () => { sh.close(); const q = { ...draft }; for (const k in q) if (!q[k]) delete q[k]; location.hash = '#/shop' + (Object.keys(q).length ? '?' + new URLSearchParams(q).toString() : ''); };
 }
+function pagedGrid(list) {
+  let n = 24; const host = E('div');
+  const paint = () => { clear(host).append(gridOf(list.slice(0, n), true), n < list.length ? E('div', { style: { textAlign: 'center', padding: '18px' } }, E('button', { class: 'btn out', onclick: () => { n += 24; paint(); } }, 'Show more · ' + (list.length - n) + ' left')) : null); };
+  paint(); return host;
+}
 V.shop = (v) => {
   const q = q$(); const list = filterSet(q); const cols = D.collections;
   const act = []; const lab = { cat: 'Type', colour: 'Colour', fam: 'Colour', size: 'Size', gender: '', stock: 'In stock', new: 'New in' };
@@ -243,7 +255,7 @@ V.shop = (v) => {
     E('div', { class: 'shophd' }, E('div', null, E('h1', null, title), E('div', { class: 'mut tiny' }, list.length + (list.length === 1 ? ' piece' : ' pieces'))), E('button', { class: 'btn soft', onclick: refine }, icon('filter'), 'Refine')),
     act.length ? E('div', { class: 'chips' }, act.map(([k, l]) => E('button', { class: 'chip on', onclick: () => setQ({ [k]: '' }) }, l, E('span', { class: 'x' }, '×')))) : null,
     !act.length && [...new Set(STY.map((s) => s.category))].length > 1 ? E('div', { class: 'chips' }, [...new Set(STY.map((s) => s.category).filter(Boolean))].map((c) => E('button', { class: 'chip', onclick: () => setQ({ cat: c }) }, c))) : null,
-    list.length ? gridOf(list, true) : E('div', { class: 'empty' }, E('h2', null, 'Nothing matches'), E('div', { class: 'mut' }, 'Try removing a filter.'), E('a', { class: 'btn', href: link('shop') }, 'Clear filters')));
+    list.length ? pagedGrid(list) : E('div', { class: 'empty' }, E('h2', null, 'Nothing matches'), E('div', { class: 'mut' }, 'Try removing a filter.'), E('a', { class: 'btn', href: link('shop') }, 'Clear filters')));
 };
 V.collections = (v) => {
   const cols = D.collections.filter((x) => x.styleIds.some((id) => BYID[id]));
@@ -258,7 +270,7 @@ V.wishlist = (v) => {
 V.p = (v, id) => {
   const s = BYID[id];
   if (!s) { v.append(E('div', { class: 'empty' }, E('h2', null, 'Piece not found'), E('a', { class: 'btn', href: link('shop') }, 'Shop all'))); return; }
-  let colour = colours(s)[0] || '', size = '', qty = 1, tab = 'd';
+  let colour = colours(s)[0] || '', size = '', qty = 1; const open = { d: true }; let folded = false, pinned = false; seen(s.id);
   const gal = E('div', { class: 'gal' }), info = E('div', { class: 'info' });
   let cur = 0;
   const paintGal = () => {
@@ -268,9 +280,9 @@ V.p = (v, id) => {
     const rail = E('div', { class: 'rail' }, ims.map((u, i) => E('button', { class: 'th' + (i === cur ? ' on' : ''), 'aria-label': 'Picture ' + (i + 1), onclick: () => { cur = i; paintGal(); } }, E('img', { src: u, alt: '', loading: 'lazy' }))));
     gal.append(main, ims.length > 1 ? rail : null);
   };
-  const dtl = () => {
-    if (tab === 'w') return E('div', { class: 'dtl' }, s.washcare ? E('div', null, s.washcare) : E('div', { class: 'mut' }, 'Wash cold, dry in shade, do not bleach.'));
-    if (tab === 's') return E('div', { class: 'dtl' }, E('div', null, (cfg().shipping || {}).note || 'We ship across India. Delivery usually takes 3 to 7 days.'), (cfg().shipping || {}).fee > 0 ? E('div', null, 'Shipping ' + inr(cfg().shipping.fee) + ((cfg().shipping || {}).freeOver > 0 ? ', free above ' + inr(cfg().shipping.freeOver) : '') + '.') : E('div', null, 'Free shipping.'), E('div', null, 'Returns within ' + (D.shop.returnDays || 30) + ' days of delivery, tags intact. ', E('a', { href: link('policy/returns'), style: { textDecoration: 'underline' } }, 'Read more')));
+  const dtl = (k) => {
+    if (k === 'w') return E('div', { class: 'dtl' }, s.washcare ? E('div', null, s.washcare) : E('div', { class: 'mut' }, 'Wash cold, dry in shade, do not bleach.'));
+    if (k === 's') return E('div', { class: 'dtl' }, E('div', null, (cfg().shipping || {}).note || 'We ship across India. Delivery usually takes 3 to 7 days.'), (cfg().shipping || {}).fee > 0 ? E('div', null, 'Shipping ' + inr(cfg().shipping.fee) + ((cfg().shipping || {}).freeOver > 0 ? ', free above ' + inr(cfg().shipping.freeOver) : '') + '.') : E('div', null, 'Free shipping.'), E('div', null, 'Returns within ' + (D.shop.returnDays || 30) + ' days of delivery, tags intact. ', E('a', { href: link('policy/returns'), style: { textDecoration: 'underline' } }, 'Read more')));
     const bullets = String(s.details || '').split(/\n+/).map((x) => x.trim()).filter(Boolean);
     const rows = [['Brand', s.brand], ['Fabric', s.fabric], ['Season', s.season], ['For', s.gender], ['Collection', s.collection], ['Weight', s.weightG ? s.weightG + ' g' : ''], ['Code', s.code]].filter((r) => r[1]);
     return E('div', { class: 'dtl' }, bullets.length ? E('div', null, E('h3', null, 'Details'), E('ul', null, bullets.map((b) => E('li', null, b)))) : null, s.description ? E('div', null, E('h3', null, 'Description'), E('div', null, s.description)) : null, rows.length ? E('dl', null, rows.flatMap(([k, val]) => [E('dt', null, k), E('dd', null, val)])) : null,
@@ -283,32 +295,52 @@ V.p = (v, id) => {
     info.append(
       E('div', null, E('div', { class: 'nm' }, E('span', null, s.name), E('button', { class: 'ic', 'aria-label': 'Save', onclick: () => { toggleWish(s.id); paintInfo(); } }, E('span', { style: { display: 'contents' } }, icon('mark')))),
         E('div', { class: 'pr' }, inr(s.price), s.mrp > s.price ? [E('s', null, inr(s.mrp)), E('b', null, discPct(s) + '% off')] : null)),
-      colours(s).length ? E('div', null, E('span', { class: 'lbl' }, 'Colour · ' + colour), E('div', { class: 'dots2', style: { marginTop: '8px' } }, colours(s).map((c) => E('button', { class: c === colour ? 'on' : '', 'aria-label': c, onclick: () => { colour = c; size = ''; cur = 0; paintGal(); paintInfo(); } }, E('span', { class: 'c', style: { background: hex(c) } }))))) : null,
-      sizesOf(s).length ? E('div', null, E('div', { style: { display: 'flex', justifyContent: 'space-between' } }, E('span', { class: 'lbl' }, 'Size'), E('button', { class: 'tiny', style: { textDecoration: 'underline', color: 'var(--mut)' }, onclick: sizeGuide }, 'Size guide')),
+      colours(s).length ? E('div', { class: 'fx' }, E('span', { class: 'lbl' }, 'Colour · ' + colour), E('div', { class: 'dots2', style: { marginTop: '8px' } }, colours(s).map((c) => E('button', { class: c === colour ? 'on' : '', 'aria-label': c, onclick: () => { colour = c; size = ''; cur = 0; paintGal(); paintInfo(); } }, E('span', { class: 'c', style: { background: hex(c) } }))))) : null,
+      sizesOf(s).length ? E('div', { class: 'fx' }, E('div', { style: { display: 'flex', justifyContent: 'space-between' } }, E('span', { class: 'lbl' }, 'Size'), E('button', { class: 'tiny', style: { textDecoration: 'underline', color: 'var(--mut)' }, onclick: sizeGuide }, 'Size guide')),
         E('div', { class: 'fwrap', style: { marginTop: '8px' } }, vs.map((x) => E('button', { class: 'sz' + (x.size === size ? ' on' : '') + (x.left < 1 ? ' off' : ''), onclick: () => { size = x.size; paintInfo(); } }, x.size)))) : null,
-      chosen && chosen.left > 0 && chosen.left <= 3 ? E('div', { class: 'left' }, 'Only ' + chosen.left + ' left in this size') : null,
-      gone ? E('div', { class: 'note' }, 'This piece is sold out right now.') : E('div', { style: { display: 'flex', alignItems: 'center', gap: '10px' } }, E('span', { class: 'lbl' }, 'Qty'), E('div', { class: 'qty' }, E('button', { onclick: () => { qty = Math.max(1, qty - 1); paintInfo(); } }, '–'), E('span', null, qty), E('button', { onclick: () => { qty = Math.min(chosen ? (chosen.left >= 9 ? 20 : chosen.left) : 9, qty + 1); paintInfo(); } }, '+'))),
+      chosen && chosen.left > 0 && chosen.left <= 3 ? E('div', { class: 'left fx' }, 'Only ' + chosen.left + ' left in this size') : null,
+      gone ? E('div', { class: 'note fx' }, 'This piece is sold out right now.') : E('div', { class: 'fx', style: { display: 'flex', alignItems: 'center', gap: '10px' } }, E('span', { class: 'lbl' }, 'Qty'), E('div', { class: 'qty' }, E('button', { onclick: () => { qty = Math.max(1, qty - 1); paintInfo(); } }, '–'), E('span', null, qty), E('button', { onclick: () => { qty = Math.min(chosen ? (chosen.left >= 9 ? 20 : chosen.left) : 9, qty + 1); paintInfo(); } }, '+'))),
       E('div', { class: 'row2' }, E('button', { class: 'btn out', disabled: gone, onclick: () => need(chosen) && (addBag(chosen.id, qty)) }, 'Add to bag'), E('button', { class: 'btn', disabled: gone, onclick: () => { if (!need(chosen)) return; addBag(chosen.id, qty); go('checkout'); } }, 'Buy now')),
-      E('div', null, E('div', { class: 'tabs' }, [['d', 'Details & Description'], ['w', 'Washcare'], ['s', 'Shipping']].map(([k, l]) => E('button', { class: tab === k ? 'on' : '', onclick: () => { tab = k; paintInfo(); } }, l))), E('div', { style: { paddingTop: '12px' } }, dtl())));
+      E('div', { class: 'acc fx' }, [['d', 'Details & Description'], ['w', 'Washcare'], ['s', 'Shipping & returns']].map(([k, l]) => E('div', { class: 'ai' + (open[k] ? ' on' : '') }, E('button', { 'aria-expanded': String(!!open[k]), onclick: () => { open[k] = !open[k]; paintInfo(); } }, E('span', null, l), E('span', { class: 'pl' }, open[k] ? '–' : '+')), open[k] ? E('div', { class: 'ab' }, dtl(k)) : null))),
+      E('div', { class: 'row2 fx' }, E('button', { class: 'btn out sm', onclick: share }, 'Share'), gone ? E('button', { class: 'btn out sm', onclick: notify }, 'Notify me') : null),
+      E('button', { class: 'unfold', onclick: () => { pinned = true; folded = false; info.classList.remove('fold'); } }, 'Show size, colour and details'));
   };
   const need = (c) => { if (!c) { toast('Please choose a size'); return false; } return true; };
   function sizeGuide() { sheet('Size guide', E('div', { class: 'dtl' }, E('div', null, 'Measure a piece that fits you well and compare it with the chest or waist size of the garment. If you are between sizes, choose the larger one for a relaxed fit.'), E('div', { class: 'mut' }, 'Need help choosing? Message the store and we will help.'))); }
+  function share() { const u = location.href; if (navigator.share) navigator.share({ title: s.name, url: u }).catch(() => {}); else { try { navigator.clipboard.writeText(u); toast('Link copied'); } catch (e) { toast(u); } } }
+  function notify() { const ph = String(D.shop.phone || '').replace(/\D/g, ''); if (!ph) { go('contact'); return; } window.open('https://wa.me/' + (ph.length === 10 ? '91' + ph : ph) + '?text=' + encodeURIComponent('Hi, please tell me when ' + s.name + ' is back in stock. ' + location.href), '_blank', 'noopener'); }
   paintGal(); paintInfo();
+  try { document.querySelectorAll('script[data-ld]').forEach((x) => x.remove()); const ld = document.createElement('script'); ld.type = 'application/ld+json'; ld.dataset.ld = '1'; ld.textContent = JSON.stringify({ '@context': 'https://schema.org', '@type': 'Product', name: s.name, image: photos(s).slice(0, 4), description: s.description || s.name, brand: s.brand ? { '@type': 'Brand', name: s.brand } : undefined, sku: s.code || undefined, offers: { '@type': 'Offer', priceCurrency: 'INR', price: s.price, availability: isGone(s) ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock' } }); document.head.append(ld); } catch (e) { /* no JSON-LD */ }
   const more = STY.filter((x) => x.id !== s.id && (x.category === s.category || (s.collection && x.collection === s.collection))).slice(0, 8);
   v.append(E('div', { class: 'crumbs' }, E('a', { href: link('') }, 'Home'), ' / ', E('a', { href: link('shop?cat=' + encodeURIComponent(s.category)) }, s.category), ' / ', s.name), E('div', { class: 'pd' }, gal, info),
-    more.length ? E('section', { class: 'band' }, E('div', { class: 'hd' }, E('h2', null, 'Products you may like'), E('a', { class: 'btn sm', href: link('shop?cat=' + encodeURIComponent(s.category)) }, 'Discover more')), E('div', { class: 'row' }, more.map((x) => card(x)))) : null);
+    more.length ? E('section', { class: 'band' }, E('div', { class: 'hd' }, E('h2', null, 'Products you may like'), E('a', { class: 'btn sm', href: link('shop?cat=' + encodeURIComponent(s.category)) }, 'Discover more')), E('div', { class: 'row' }, more.map((x) => card(x)))) : null, recentBand(s.id));
+  // on a wide screen the details card folds up by itself when you scroll down to the other products, so it never covers them
+  const bands = [...v.querySelectorAll('.band')];
+  if (bands.length && window.matchMedia('(min-width:900px)').matches && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver((es) => { const on = es.some((e) => e.isIntersecting); if (on && !pinned) { folded = true; info.classList.add('fold'); } else if (!on) { pinned = false; folded = false; info.classList.remove('fold'); } }, { threshold: 0.12 });
+    bands.forEach((b) => io.observe(b));
+  }
+  // phone: a slim buy bar appears once the real buttons have scrolled out of view
+  if (!window.matchMedia('(min-width:900px)').matches && 'IntersectionObserver' in window && !isGone(s)) {
+    const bar = E('div', { class: 'buybar hidden' }, E('div', null, E('div', { class: 'nm' }, s.name), E('div', { class: 'mut tiny' }, inr(s.price))), E('button', { class: 'btn', onclick: () => { window.scrollTo({ top: 0, behavior: 'smooth' }); } }, 'Choose size'));
+    document.body.append(bar); const row = info.querySelector('.row2');
+    const io2 = new IntersectionObserver((es) => { if (!document.body.contains(v)) { bar.remove(); io2.disconnect(); return; } bar.classList.toggle('hidden', es[0].isIntersecting || es[0].boundingClientRect.top > 0); }, { threshold: 0 });
+    if (row) io2.observe(row);
+    window.addEventListener('hashchange', () => bar.remove(), { once: true });
+  }
 };
 
 V.bag = (v) => {
   const ls = bagLines();
-  if (!ls.length) { const rec = newest(6); v.append(E('div', { class: 'empty' }, E('h1', null, 'Your bag is empty'), E('div', { class: 'mut' }, 'Pieces you add will wait here.'), E('a', { class: 'btn', href: link('shop') }, 'Shop now')), rec.length ? E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'Products you may like')), gridOf(rec)) : null); return; }
+  if (!ls.length) { const rec = newest(6); v.append(E('div', { class: 'empty' }, E('h1', null, 'Your bag is empty'), E('div', { class: 'mut' }, 'Pieces you add will wait here.'), E('a', { class: 'btn', href: link('shop') }, 'Shop now')), rec.length ? E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'Products you may like')), gridOf(rec)) : null, recentBand(null)); return; }
   const list = E('div', { class: 'card' }, E('h2', { style: { marginBottom: '6px' } }, 'Bag'), ls.map((l) => E('div', { class: 'ln' }, E('a', { class: 'im', href: link('p/' + l.s.id) }, photosFor(l.s, l.vr.colour)[0] ? E('img', { src: photosFor(l.s, l.vr.colour)[0], alt: '' }) : placeholder(l.s.name)),
     E('div', null, E('div', { class: 't' }, l.s.name), E('div', { class: 's' }, [l.vr.colour, l.vr.size].filter(Boolean).join(' · ')), E('div', { class: 'qty', style: { marginTop: '6px' } }, E('button', { onclick: () => { l.q > 1 ? (bag.find((b) => b.v === l.v).q -= 1) : bag.splice(bag.findIndex((b) => b.v === l.v), 1); saveBag(); route(); } }, '–'), E('span', null, l.q), E('button', { onclick: () => { addBag(l.v, 1); route(); } }, '+'))),
     E('div', { style: { textAlign: 'right' } }, E('div', null, inr(l.vr.price * l.q)), E('button', { class: 'tiny mut', style: { textDecoration: 'underline', marginTop: '8px' }, onclick: () => { bag.splice(bag.findIndex((b) => b.v === l.v), 1); saveBag(); route(); } }, 'Remove')))));
   const t = bagTotal();
   v.append(E('div', { class: 'shophd' }, E('h1', null, 'Bag'), E('div', { class: 'stats' }, E('span', { class: 'stat' }, 'In stock'), E('span', { class: 'stat' }, bagCount() + ' items'), E('span', { class: 'stat' }, inr(t)))),
-    E('div', { class: 'two' }, list, E('div', { class: 'card stick sum' }, E('div', { class: 't' }, E('span', null, 'Subtotal'), E('span', null, inr(t))), E('div', { class: 'mut tiny' }, shipLine(t)), E('a', { class: 'btn wide', href: link('checkout') }, 'Process to checkout'))));
+    E('div', { class: 'two' }, list, E('div', { class: 'card stick sum' }, E('div', { class: 't' }, E('span', null, 'Subtotal'), E('span', null, inr(t))), E('div', { class: 'mut tiny' }, shipLine(t)), freeBar(t), E('a', { class: 'btn wide', href: link('checkout') }, 'Process to checkout'))), recentBand(null));
 };
+function freeBar(sub) { const fo = +((cfg().shipping || {}).freeOver) || 0; if (!(fo > 0)) return null; const left = Math.max(fo - sub, 0); return E('div', null, E('div', { class: 'mut tiny' }, left ? 'Add ' + inr(left) + ' more for free shipping' : 'You have free shipping'), E('div', { class: 'fbar' }, E('i', { style: { width: Math.min(100, Math.round(sub / fo * 100)) + '%' } }))); }
 function shipFee(sub) { const sh = cfg().shipping || {}; const fee = +sh.fee || 0, fo = +sh.freeOver || 0; return fo > 0 && sub >= fo ? 0 : fee; }
 function shipLine(sub) { const sh = cfg().shipping || {}; const f = shipFee(sub); return f ? 'Shipping ' + inr(f) + ((+sh.freeOver > 0) ? ' · free above ' + inr(sh.freeOver) : '') : 'Free shipping'; }
 
@@ -398,6 +430,14 @@ V.contact = (v) => {
   v.append(E('div', { class: 'pg' }, E('div', { class: 'shophd' }, E('h1', null, 'Contact')), E('div', { class: 'card frm' }, D.shop.phone ? E('div', null, E('span', { class: 'lbl' }, 'Phone'), E('div', null, E('a', { href: 'tel:' + D.shop.phone }, D.shop.phone))) : null, c.email ? E('div', null, E('span', { class: 'lbl' }, 'Email'), E('div', null, E('a', { href: 'mailto:' + c.email }, c.email))) : null, D.shop.address ? E('div', null, E('span', { class: 'lbl' }, 'Address'), E('div', null, D.shop.address)) : null,
     wa ? [E('label', { class: 'fld' }, name), E('label', { class: 'fld' }, msg), E('button', { class: 'btn wide', onclick: () => window.open(wa + '?text=' + encodeURIComponent((name.value ? 'Hi, I am ' + name.value + '. ' : 'Hi. ') + msg.value), '_blank', 'noopener') }, 'Message on WhatsApp')] : null)));
 };
+V.orders = async (v) => {
+  const mine = LS.get('orders', []); v.append(E('div', { class: 'pg' }, E('div', { class: 'shophd' }, E('h1', null, 'My orders'))));
+  const box = E('div', { class: 'pg' }); v.append(box);
+  if (!mine.length) { box.append(E('div', { class: 'card mut' }, 'Orders you place on this phone show here. ', E('a', { href: link('shop'), style: { textDecoration: 'underline' } }, 'Shop now'))); return; }
+  box.append(E('div', { class: 'spin' }));
+  const rows = await Promise.all(mine.map((m) => rpc('public_sty_order', { p_token: m.token }).catch(() => null)));
+  clear(box); rows.forEach((o, i) => { if (o) box.append(E('a', { class: 'card', href: link('order/' + mine[i].token), style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } }, E('div', null, E('div', null, o.number), E('div', { class: 'mut tiny' }, cap(o.status) + ' · ' + new Date(o.createdAt).toLocaleDateString('en-GB'))), E('div', null, inr(o.total)))); });
+};
 const POL = { shipping: ['Shipping', () => (cfg().policies || {}).shipping || 'We ship across India. Orders are packed within 1 to 2 working days and usually arrive in 3 to 7 days. You will get an update on the phone number you gave us.'], returns: ['Returns & exchanges', () => (cfg().policies || {}).returns || 'You can return or exchange a piece within ' + (D.shop.returnDays || 30) + ' days of delivery if it is unworn, unwashed and the tags are intact. Contact the store to arrange it.'], terms: ['Terms', () => (cfg().policies || {}).terms || 'By placing an order you confirm that the details you gave are correct. Prices include taxes. An order is confirmed only after the store accepts it, and the store may cancel an order if an item cannot be supplied.'], privacy: ['Privacy', () => (cfg().policies || {}).privacy || 'We use your name, phone, email and address only to deliver your order and to contact you about it. We do not sell your details.'] };
 V.policy = (v, k) => { const p = POL[k] || POL.terms; v.append(E('div', { class: 'pg' }, E('div', { class: 'shophd' }, E('h1', null, p[0])), E('div', { class: 'card' }, String(p[1]()).split(/\n+/).map((x) => E('p', null, x))))); };
 
@@ -407,7 +447,7 @@ function footer() {
   return E('footer', null, E('div', { class: 'cols' },
     E('div', { class: 'col', style: { gridColumn: 'span 2' } }, E('span', { class: 'lbl' }, 'Our stores'), E('div', { class: 'sm' }, (storeList().slice(0, 2)).map((st) => E('div', { class: 'scm' }, E('b', null, st.name || 'Store'), E('span', { class: 'mut' }, st.address), st.phone ? E('span', { class: 'mut' }, st.phone) : null)))),
     E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Connect with us'), ext('Instagram', so.instagram), ext('Facebook', so.facebook), ph ? E('a', { href: 'https://wa.me/' + (ph.length === 10 ? '91' + ph : ph), target: '_blank', rel: 'noopener' }, 'WhatsApp') : null, c.email ? E('a', { href: 'mailto:' + c.email }, c.email) : null),
-    E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'We are'), E('a', { href: link('about') }, 'About us'), E('a', { href: link('stores') }, 'Stores'), E('a', { href: link('collections') }, 'Collections'), E('span', { class: 'lbl', style: { margin: '14px 0 6px' } }, 'Order support'), E('a', { href: link('faq') }, 'FAQs'), E('a', { href: link('policy/shipping') }, 'Shipping'), E('a', { href: link('policy/returns') }, 'Returns'), E('a', { href: link('policy/terms') }, 'Terms'), E('a', { href: link('policy/privacy') }, 'Privacy'), E('a', { href: link('contact') }, 'Contact'))),
+    E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'We are'), E('a', { href: link('about') }, 'About us'), E('a', { href: link('stores') }, 'Stores'), E('a', { href: link('collections') }, 'Collections'), E('span', { class: 'lbl', style: { margin: '14px 0 6px' } }, 'Order support'), E('a', { href: link('orders') }, 'My orders'), E('a', { href: link('faq') }, 'FAQs'), E('a', { href: link('policy/shipping') }, 'Shipping'), E('a', { href: link('policy/returns') }, 'Returns'), E('a', { href: link('policy/terms') }, 'Terms'), E('a', { href: link('policy/privacy') }, 'Privacy'), E('a', { href: link('contact') }, 'Contact'))),
     E('div', { class: 'fin' }, E('span', null, '© ' + new Date().getFullYear() + ' ' + D.shop.name), E('a', { href: 'https://auzslab.in', target: '_blank', rel: 'noopener' }, 'Store by AUZslab')));
 }
 

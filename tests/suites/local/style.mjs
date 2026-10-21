@@ -414,6 +414,13 @@ export default async function run({ browser, stack }) {
       await page.locator('.pc .in a').first().click(); await page.waitForSelector('.pd .info', { timeout: 8000 });
       assert(await page.locator('.gal .main').count() === 1, 'primary image');
       await s.shot(page, 'store product ' + dev.w);
+      assert(await page.locator('.info .ai').count() === 3, 'foldable detail sections');
+      await page.locator('.info .ai button').nth(1).click(); assert(await page.locator('.info .ai.on').count() === 2, 'washcare did not open');
+      await page.locator('.info .ai button').nth(0).click(); assert(await page.locator('.info .ai.on').count() === 1, 'details did not fold');
+      await page.evaluate(() => { location.hash = '#/shop'; }); await page.waitForSelector('.pc'); await page.locator('.pc .in a').nth(1).click(); await page.waitForSelector('.pd .info');
+      assert(await page.locator('.band', { hasText: /Recently viewed/i }).count() === 1, 'recently viewed band');
+      if (dev.w > 900) { await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(500); assert(await page.locator('.info.fold').count() === 1, 'details should fold when the other products are in view'); await page.evaluate(() => window.scrollTo(0, 0)); await page.waitForTimeout(400); assert(await page.locator('.info.fold').count() === 0, 'details should open again at the top'); }
+
       const sz = page.locator('.info .sz:not(.off)').first(); if (await sz.count()) await sz.click();
       await page.locator('.info .btn', { hasText: /Add to bag/ }).click(); await page.waitForTimeout(300);
       await page.evaluate(() => { location.hash = '#/bag'; }); await page.waitForSelector('.ln', { timeout: 8000 });
@@ -423,7 +430,7 @@ export default async function run({ browser, stack }) {
       await page.locator('.btn.wide', { hasText: /Place order/ }).click(); await page.waitForSelector('.pg .steps', { timeout: 12000 });
       assert(/Thank you/.test(await page.locator('.pg h1').innerText()), 'thank you page');
       await s.shot(page, 'store order ' + dev.w);
-      await page.evaluate(() => { location.hash = '#/stores'; }); await page.waitForSelector('.scard'); await page.evaluate(() => { location.hash = '#/faq'; }); await page.waitForSelector('.fq');
+      await page.evaluate(() => { location.hash = '#/orders'; }); await page.waitForSelector('.pg a.card', { timeout: 8000 }); await page.evaluate(() => { location.hash = '#/stores'; }); await page.waitForSelector('.scard'); await page.evaluate(() => { location.hash = '#/faq'; }); await page.waitForSelector('.fq');
       await page.locator('.fq button').first().click(); assert(await page.locator('.fq.on').count() === 1, 'faq opens');
       assert(!errs.filter((e) => !/sentry/i.test(e)).length, errs.join(' | ')); await c.close();
     }
