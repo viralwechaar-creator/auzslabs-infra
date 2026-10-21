@@ -1,5 +1,9 @@
+import { readFileSync } from 'node:fs';
 import { pool } from '../db.js';
 import { tenantForIconContext, appIcon, appManifest } from '../appicon.js';
+
+const DEFAULT_ICON_180 = readFileSync(new URL('../assets/default-icon-180.png', import.meta.url));
+const DEFAULT_ICON_512 = readFileSync(new URL('../assets/default-icon-512.png', import.meta.url));
 
 // Returns false when none of this module's routes matched, so the dispatcher in index.js tries the next module;
 // any other return (including the undefined that `return reply(...)` gives) means the request was handled.
@@ -32,11 +36,12 @@ export async function handle(ctx) {
   const appIconMatch = url.pathname.match(/^\/app-icon\/(\d+)\.png$/);
   if (appIconMatch && req.method === 'GET') {
     const size = Math.min(512, Math.max(32, parseInt(appIconMatch[1], 10) || 192));
-    const tenant = await tenantForIconContext(req);
-    if (!tenant) { res.writeHead(302, { Location: '/icon-512.png' }); res.end(); return; }
-    const buf = await appIcon(tenant, tenant.settings, size);
-    res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=300' });
-    res.end(buf);
+    // Always answer 200 with image bytes: iPhones show a blank icon when the icon address redirects or errors.
+    const send = (buf, age) => { res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=' + age }); res.end(buf); };
+    const fallback = () => (size <= 180 ? DEFAULT_ICON_180 : DEFAULT_ICON_512);
+    let buf = null;
+    try { const tenant = await tenantForIconContext(req); if (tenant) buf = await appIcon(tenant, tenant.settings, size); } catch { buf = null; }
+    if (buf) send(buf, 300); else send(fallback(), 300);
     return;
   }
   return false;
