@@ -54,11 +54,14 @@ page('sell', {
       clear(grid);
       if (!list.length) { grid.append(empty('shirt', S.cat.length ? t('No match') : t('No styles yet'), S.cat.length ? '' : t('Add your first style in Stock.'), !S.cat.length && can('sty_manage') ? h('button', { class: 'btn fill', onclick: () => go('stock') }, t('Go to Stock')) : null)); return; }
       list.slice(0, 160).forEach((s) => {
-        const st = styleStock(s); const cols = [...new Set(s.variants.map((x) => x.colour).filter(Boolean))];
-        grid.append(h('button', { class: 'scard' + (st <= 0 ? ' out' : ''), type: 'button', onclick: () => pickVariant(s) },
-          h('div', { class: 'ph' }, s.photoUrl ? h('img', { src: s.photoUrl, alt: '', loading: 'lazy' }) : icon('shirt', 30)),
-          h('div', { class: 'nm' }, s.name), h('div', { class: 'pr num' }, priceRange(s)),
-          h('div', { class: 'ft' }, h('span', { class: 'dots' }, cols.slice(0, 4).map((c) => colourDot(c, 10))), h('span', { class: 'stk' + (st <= 0 ? ' z' : st <= 3 ? ' lo' : '') }, st <= 0 ? t('Out of stock') : st + ' ' + t('in stock')))));
+        const st = styleStock(s); const pics = [s.photoUrl, ...(s.photos || [])].filter(Boolean);
+        grid.append(h('div', { class: 'scard' + (st <= 0 ? ' out' : '') },
+          h('button', { class: 'pic', type: 'button', 'aria-label': s.name, onclick: () => pickVariant(s) },
+            pics.length ? h('img', { src: pics[0], alt: '', loading: 'lazy' }) : h('span', { class: 'nopic' }, icon('shirt', 34)),
+            st <= 0 ? h('span', { class: 'pill' }, t('Sold out')) : null,
+            pics.length > 1 ? h('span', { class: 'pdots' }, pics.slice(0, 3).map((_, i) => h('i', { class: i === 0 ? 'on' : '' }))) : null),
+          h('div', { class: 'meta' }, h('div', { class: 'mt' }, h('div', { class: 'nm' }, s.name), h('button', { class: 'plus', type: 'button', 'aria-label': t('Add') + ' ' + s.name, onclick: () => pickVariant(s) }, icon('plus', 18))),
+            h('div', { class: 'pr' }, h('span', { class: 'num' }, priceRange(s)), st > 0 && st <= 3 ? h('span', { class: 'stk lo' }, st + ' ' + t('left')) : null))));
       });
     }
     function pickVariant(s) {
@@ -122,7 +125,7 @@ page('sell', {
     window.addEventListener('sty:cartchanged', paintCart);
     cleanupHook(v, () => window.removeEventListener('sty:cartchanged', paintCart));
     paintChips(); paintFilter(); paintGrid(); paintCart();
-    clear(root).append(h('div', { class: 'sell-l' }, h('div', { class: 'row', style: { gap: '8px' } }, h('div', { class: 'grow' }, sf), filterHost, scanBtn), chips, grid), cartHost, bar);
+    clear(root).append(h('div', { class: 'sell-l', 'data-title': t('All Products') }, h('div', { class: 'row', style: { gap: '8px' } }, h('div', { class: 'grow' }, sf), filterHost, scanBtn), chips, grid), cartHost, bar);
     if (isDesk()) setTimeout(() => sf.input.focus(), 50);
     // hardware barcode scanners type the code fast and press Enter, even when the search box is not focused
     let buf = '', last = 0;
