@@ -118,7 +118,7 @@ export async function sendWebPush(endpoint, p256dh, authKey, payload) {
 // Called directly, in-process, when a 'push_events' Postgres NOTIFY
 // arrives (see realtime.js) -- no HTTP round-trip to a separate
 // function, no shared secret to guard that round-trip with.
-export async function handlePushEvent({ tenant_id, title, body, user_ids, platform }) {
+export async function handlePushEvent({ tenant_id, title, body, user_ids, platform, url: evUrl }) {
   // Platform alerts (db/182): for the AUZslab admin and team, who belong to no business. Phones live in platform_fcm_tokens.
   if (platform) {
     if (!Array.isArray(user_ids) || !user_ids.length) return;
@@ -158,7 +158,7 @@ export async function handlePushEvent({ tenant_id, title, body, user_ids, platfo
         // No url here fell back to sw.js's default (/start.html, the hub) --
         // every real device subscribed from the POS itself, so the alert
         // should always reopen the POS, not bounce through the hub.
-        const res = await sendWebPush(s.endpoint, s.p256dh, s.auth, { title: title || 'AUZslab', body: body || '', url: '/index.html' });
+        const res = await sendWebPush(s.endpoint, s.p256dh, s.auth, { title: title || 'AUZslab', body: body || '', url: (typeof evUrl === 'string' && /^\/[a-z0-9._\-]+\.html(#[\w\/-]*)?$/i.test(evUrl)) ? evUrl : '/index.html' });
         if (!res.ok && (res.status === 404 || res.status === 410)) {
           await pool.query('select push_subs_delete_dead($1)', [s.id]);
         } else if (!res.ok) {
