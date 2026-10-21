@@ -1,0 +1,72 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Edit website</title>
+<link rel="stylesheet" href="/ds/auz.css?v=5"><script src="/ds/brand.js?v=2"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font:15px/1.5 Inter,system-ui,sans-serif;background:var(--bg);color:var(--label)}
+.bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--sep)}
+.bar h1{font-size:17px;margin:0;flex:1;min-width:0}
+button,.btn{font:inherit;font-weight:600;border:0;border-radius:12px;padding:10px 16px;background:var(--fill2);color:var(--label);cursor:pointer;text-decoration:none;display:inline-block;min-height:44px}
+button.p{background:var(--accent);color:#fff}button:disabled{opacity:.5}
+.wrap{max-width:760px;margin:0 auto;padding:14px 14px 90px;display:grid;gap:10px}
+details{background:var(--card);border:1px solid var(--sep);border-radius:16px;padding:0 14px}
+summary{font-weight:700;padding:14px 0;cursor:pointer;display:flex;justify-content:space-between}
+.f{display:grid;gap:6px;padding:10px 0;border-top:1px solid var(--sep)}
+.f label{font-size:13px;font-weight:600}.f .def{font-size:12px;color:var(--label2)}
+input[type=text],textarea{font:inherit;width:100%;padding:10px 12px;border:1px solid var(--sep);border-radius:12px;background:var(--bg);color:var(--label)}textarea{min-height:90px}
+.im{display:flex;gap:12px;align-items:center}.im img{width:96px;height:72px;object-fit:cover;border-radius:10px;background:var(--fill2)}
+.login{max-width:380px;margin:12vh auto;background:var(--card);border:1px solid var(--sep);border-radius:20px;padding:24px;display:grid;gap:12px}
+.note{font-size:13px;color:var(--label2)}.mark{color:var(--accent-text);font-size:12px}
+</style></head><body><div id="app"></div>
+<script src="/config.js"></script><script src="/sb-client.js?v=6"></script><script src="/ds/twofa.js?v=1"></script><script src="/tenant.js?v=3"></script><script src="/site-schemas.js?v=1"></script>
+<script>
+const $=s=>document.querySelector(s);
+function h(t,a,...k){const e=document.createElement(t);for(const[x,v]of Object.entries(a||{})){if(x.startsWith('on'))e[x]=v;else if(v!=null)e.setAttribute(x,v)}k.flat().forEach(c=>{if(c!=null&&c!==false)e.append(c.nodeType?c:document.createTextNode(c))});return e}
+const sb=supabase.createClient((window.CFG||{}).url,(window.CFG||{}).key),root=$('#app');let SLUG='',REC=null,DATA={},FIELDS=[],dirty=false;
+function login(msg){const e=h('input',{type:'text',placeholder:'Email',autocomplete:'username'}),p=h('input',{type:'password',placeholder:'Password',autocomplete:'current-password',style:'font:inherit;width:100%;padding:10px 12px;border:1px solid var(--sep);border-radius:12px;background:var(--bg);color:var(--label)'}),m=h('div',{class:'note'},msg||'');
+ root.replaceChildren(h('div',{class:'login'},h('h2',{style:'margin:0'},'Website login'),h('div',{class:'note'},'Sign in with the same email and password you use for your business.'),e,p,m,h('button',{class:'p',onclick:async()=>{let r=await sb.auth.signInWithPassword({email:e.value.trim(),password:p.value});r=await auz2fa.resolve(sb,r);r.error?m.textContent=r.error.message:boot()}},'Sign in')))}
+function siteBase(){const parts=location.hostname.split('.');return location.protocol+'//'+SLUG+'.'+parts.slice(-2).join('.')}
+async function boot(){
+ let ses=null;try{ses=(await sb.auth.getSession()).data.session}catch{}
+ if(!ses)return login();
+ let dash=null;try{dash=(await sb.rpc('my_dashboard')).data}catch{}
+ if(!dash||!dash.tenant)return login('This login has no business.');
+ if(window.TENANT_SLUG&&dash.tenant.slug!==window.TENANT_SLUG){await sb.auth.signOut();return login('This login belongs to a different business ('+dash.tenant.slug+'). Open your own website link.')}
+ let role='';try{role=((await sb.from('profiles').select('role').eq('id',ses.user.id).single()).data||{}).role}catch{}
+ if(role!=='owner')return root.replaceChildren(h('div',{class:'login'},h('h2',{style:'margin:0'},'Owner only'),h('div',{class:'note'},'Only the business owner can edit the website.'),h('button',{onclick:async()=>{await sb.auth.signOut();login()}},'Sign out')));
+ SLUG=dash.tenant.slug;
+ const{data}=await sb.from('records').select('id,data,updated_at').eq('kind','settings').eq('id','settings').limit(1);
+ REC=data&&data[0];if(!REC)return root.replaceChildren(h('div',{class:'login'},'Settings not found.'));
+ DATA=Object.assign({},(REC.data||{}).siteData||{});
+ const design=(REC.data||{}).siteTemplate||'classic',sc=(window.SITE_SCHEMAS||{})[design];
+ if(!sc)return root.replaceChildren(topBar(),h('div',{class:'wrap'},h('div',{class:'login',style:'margin:0 auto;max-width:520px'},h('h2',{style:'margin:0'},'This design is edited in the Admin console'),h('div',{class:'note'},'Open Admin console, then Tables & ordering, Website & Booking.'),h('a',{class:'btn p',href:'/dashboard.html#mgmt/website'},'Open Admin console'))));
+ const html=await (await fetch(sc.file+'?'+Date.now())).text(),doc=new DOMParser().parseFromString(html,'text/html');
+ FIELDS=[...doc.querySelectorAll('[data-ed],[data-ed-img]')].map(el=>{const img=el.hasAttribute('data-ed-img'),k=el.getAttribute(img?'data-ed-img':'data-ed');return{k,img,label:el.getAttribute('data-ed-label')||k,group:el.getAttribute('data-ed-group')||'Other',type:img?'image':(el.getAttribute('data-ed-type')||'text'),def:img?(el.getAttribute('src')||''):el.innerText===undefined?el.textContent.trim():el.textContent.replace(/\s+/g,' ').trim()}});
+ draw(sc);
+}
+function topBar(){return h('div',{class:'bar'},h('h1',{},'Edit website'),h('button',{onclick:async()=>{await sb.auth.signOut();login()}},'Sign out'))}
+async function shrink(file){const bm=await createImageBitmap(file),sc=Math.min(1,1600/bm.width),w=Math.round(bm.width*sc),ht=Math.round(bm.height*sc),c=document.createElement('canvas');c.width=w;c.height=ht;c.getContext('2d').drawImage(bm,0,0,w,ht);
+ for(const[t,q,ext]of[['image/webp',.8,'webp'],['image/jpeg',.8,'jpg']]){const b=await new Promise(r=>c.toBlob(r,t,q));if(b&&b.type===t)return{b,ext,t}}throw new Error('Could not process that image')}
+async function upload(file){const o=await shrink(file),name='site-edit/'+Date.now()+'-'+Math.random().toString(36).slice(2,7)+'.'+o.ext,{error}=await sb.storage.from('site').upload(name,o.b,{contentType:o.t});if(error)throw error;return sb.storage.from('site').getPublicUrl(name).data.publicUrl}
+function draw(sc){
+ const groups=[];FIELDS.forEach(f=>{let g=groups.find(x=>x.n===f.group);if(!g)groups.push(g={n:f.group,f:[]});g.f.push(f)});
+ const save=h('button',{class:'p',onclick:doSave},'Save changes'),msg=h('span',{class:'note',id:'msg'});
+ const bar=h('div',{class:'bar'},h('h1',{},'Edit '+sc.name+' website'),msg,h('a',{class:'btn',href:siteBase()+'/site.html',target:'_blank',rel:'noopener'},'View site'),save,h('button',{onclick:async()=>{await sb.auth.signOut();login()}},'Sign out'));
+ const list=h('div',{class:'wrap'},h('div',{class:'note'},'Change any text or photo, then press Save. Empty = keep the original. Photos are shrunk automatically. Your menu, prices and address come from the Admin console.'),...groups.map((g,i)=>h('details',{open:i==0?'':null},h('summary',{},g.n,h('span',{class:'note'},g.f.length+' items')),...g.f.map(field))));
+ root.replaceChildren(bar,list)}
+function field(f){
+ const wrap=h('div',{class:'f'},h('label',{},f.label));
+ if(f.img){const im=h('img',{src:DATA[f.k]||f.def,alt:''}),file=h('input',{type:'file',accept:'image/*',style:'display:none',onchange:async e=>{const x=e.target.files[0];if(!x)return;msg('Uploading…');try{DATA[f.k]=await upload(x);im.src=DATA[f.k];dirty=true;msg('Photo ready: press Save')}catch(err){msg(err.message)}}});
+  wrap.append(h('div',{class:'im'},im,h('button',{onclick:()=>file.click()},'Choose photo'),h('button',{onclick:()=>{delete DATA[f.k];im.src=f.def;dirty=true}},'Reset'),file));return wrap}
+ const cur=DATA[f.k]!=null?DATA[f.k]:'',inp=f.type==='long'?h('textarea',{placeholder:f.def}):h('input',{type:'text',placeholder:f.def});inp.value=cur;
+ inp.oninput=()=>{if(inp.value.trim())DATA[f.k]=inp.value;else delete DATA[f.k];dirty=true};
+ wrap.append(inp,h('div',{class:'def'},'Original: '+(f.def.length>90?f.def.slice(0,90)+'…':f.def)));return wrap}
+function msg(t){const m=document.getElementById('msg');if(m)m.textContent=t}
+async function doSave(){msg('Saving…');
+ try{const{data}=await sb.from('records').select('id,data,updated_at').eq('kind','settings').eq('id','settings').limit(1),cur=data&&data[0];if(!cur)throw new Error('Settings not found');
+  const nd=Object.assign({},cur.data,{siteData:DATA});
+  let{data:r,error}=await sb.rpc('push_record',{rid:'settings',rkind:'settings',rdata:nd,rdeleted:false,base:cur.updated_at,force:false});
+  if(error)throw error;
+  if(r&&r.conflict){({error}=await sb.rpc('push_record',{rid:'settings',rkind:'settings',rdata:nd,rdeleted:false,base:null,force:true}));if(error)throw error}
+  dirty=false;msg('Saved. Your website is updated.')}catch(e){msg('Not saved: '+(e.message||e))}}
+addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
+boot();
+</script></body></html>
