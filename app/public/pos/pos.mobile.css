@@ -115,3 +115,8 @@
 .tbl-tile .tmeta .ta{font-size:14px}
 .tbl-side{display:none}
 .tbl-tile.sel{box-shadow:none}
+
+.tbl-tile{padding:11px 12px 10px 16px}
+.tbl-tile .tmeta{padding-top:8px;flex-wrap:wrap}
+.tbl-tile .tchip{font-size:12px;padding:0;max-width:none}
+.tbl-tile .tinfo{gap:8px}
