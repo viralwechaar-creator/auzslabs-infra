@@ -463,11 +463,14 @@ V.policy = (v, k) => { const p = POL[k] || POL.terms; v.append(E('div', { class:
 function footer() {
   const c = cfg(), so = c.social || {}; const ph = String(D.shop.phone || '').replace(/\D/g, '');
   const ext = (t, u) => (u ? E('a', { href: /^https?:/.test(u) ? u : 'https://' + u, target: '_blank', rel: 'noopener' }, t) : null);
-  return E('footer', null, E('div', { class: 'cols' },
-    E('div', { class: 'col', style: { gridColumn: 'span 2' } }, E('span', { class: 'lbl' }, 'Our stores'), E('div', { class: 'sm' }, (storeList().slice(0, 2)).map((st) => E('div', { class: 'scm' }, E('b', null, st.name || 'Store'), E('span', { class: 'mut' }, st.address), st.phone ? E('span', { class: 'mut' }, st.phone) : null)))),
-    E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Connect with us'), ext('Instagram', so.instagram), ext('Facebook', so.facebook), ph ? E('a', { href: 'https://wa.me/' + (ph.length === 10 ? '91' + ph : ph), target: '_blank', rel: 'noopener' }, 'WhatsApp') : null, c.email ? E('a', { href: 'mailto:' + c.email }, c.email) : null),
-    E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'We are'), E('a', { href: link('about') }, 'About us'), E('a', { href: link('stores') }, 'Stores'), E('a', { href: link('collections') }, 'Collections'), E('span', { class: 'lbl', style: { margin: '14px 0 6px' } }, 'Order support'), E('a', { href: link('orders') }, 'My orders'), E('a', { href: link('faq') }, 'FAQs'), E('a', { href: link('policy/shipping') }, 'Shipping'), E('a', { href: link('policy/returns') }, 'Returns'), E('a', { href: link('policy/terms') }, 'Terms'), E('a', { href: link('policy/privacy') }, 'Privacy'), E('a', { href: link('contact') }, 'Contact'))),
-    E('div', { class: 'fin' }, E('span', null, '© ' + new Date().getFullYear() + ' ' + D.shop.name), E('a', { href: 'https://auzslab.in', target: '_blank', rel: 'noopener' }, 'Store by AUZslab')));
+  const cats = [...new Set(STY.map((x) => x.category).filter(Boolean))].slice(0, 8);
+  const strip = cats.length ? E('div', { class: 'ftstrip' }, E('b', null, 'Shop by category'), cats.map((x) => E('a', { href: link('shop?cat=' + encodeURIComponent(x)) }, x))) : null;
+  return E('div', { class: 'ftwrap' }, strip, E('footer', null, E('div', { class: 'cols' },
+    E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Connect with us'), ph ? E('a', { href: 'tel:+' + (ph.length === 10 ? '91' + ph : ph) }, 'Call') : null, ph ? E('a', { href: 'https://wa.me/' + (ph.length === 10 ? '91' + ph : ph), target: '_blank', rel: 'noopener' }, 'Text (WhatsApp)') : null, ext('Instagram', so.instagram), ext('Facebook', so.facebook), c.email ? E('a', { href: 'mailto:' + c.email }, 'Email') : null),
+    E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Order support'), E('a', { href: link('orders') }, 'Track your order'), E('a', { href: link('policy/returns') }, 'Returns & exchanges'), E('a', { href: link('policy/shipping') }, 'Shipping policy'), E('a', { href: link('faq') }, 'FAQs'), E('a', { href: link('policy/terms') }, 'Terms'), E('a', { href: link('policy/privacy') }, 'Privacy')),
+    E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'We are ' + D.shop.name), E('a', { href: link('about') }, 'Our story'), E('a', { href: link('stores') }, 'Walk-in stores'), E('a', { href: link('collections') }, 'Collections'), E('a', { href: link('contact') }, 'Contact')),
+    E('div', { class: 'ftbrand' }, E('div', { class: 'big' }, D.shop.name))),
+    E('div', { class: 'fin' }, E('span', null, '© ' + new Date().getFullYear() + ' ' + D.shop.name + '. All rights reserved'), E('a', { href: 'https://auzslab.in', target: '_blank', rel: 'noopener' }, 'Store by AUZslab'))));
 }
 
 // ---------- router ----------
