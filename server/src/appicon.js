@@ -48,11 +48,20 @@ export async function appIcon(tenant, settings, size) {
   // on their own home-screen icon. Parse out the path instead.
   const logoPath = (() => { try { return typeof s.logo === 'string' && s.logo ? new URL(s.logo, 'https://x').pathname : null; } catch { return null; } })();
   const logo = logoPath && logoPath.startsWith('/uploads/') ? logoPath : null;
-  const key = [tenant.slug, logo, s.name, bg, size].join('|');
+  // an uploaded home-screen icon wins over everything: used as-is, full bleed, nothing drawn around it
+  const iconPath = (() => { try { return typeof s.appIcon === 'string' && s.appIcon ? new URL(s.appIcon, 'https://x').pathname : null; } catch { return null; } })();
+  const upIcon = iconPath && iconPath.startsWith('/uploads/') ? iconPath : null;
+  const key = [tenant.slug, upIcon, logo, s.name, bg, size].join('|');
   if (iconCache.has(key)) return iconCache.get(key);
   const sharp = (await import('sharp')).default;
   let out = null;
-  if (logo) {
+  if (upIcon) {
+    try {
+      const file = path.join(UPLOAD_ROOT, upIcon.replace(/^\/uploads\//, ''));
+      out = await sharp(await fs.readFile(file), { density: 300 }).resize(size, size, { fit: 'cover' }).flatten({ background: '#ffffff' }).png().toBuffer();
+    } catch { out = null; }
+  }
+  if (!out && logo) {
     try {
       const file = path.join(UPLOAD_ROOT, logo.replace(/^\/uploads\//, ''));
       const inner = Math.round(size * 0.66);

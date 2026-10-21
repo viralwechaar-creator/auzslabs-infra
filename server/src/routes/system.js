@@ -44,7 +44,7 @@ export async function handle(ctx) {
     const send = (buf, age) => { res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=' + age }); res.end(buf); };
     const fallback = () => (size <= 180 ? DEFAULT_ICON_180 : DEFAULT_ICON_512);
     let buf = null;
-    try { const tenant = await tenantForIconContext(req); if (tenant) buf = tenant.slug === 'bailamos' ? (size <= 180 ? BAILAMOS_180 : BAILAMOS_512) : tenant.slug === 'radz' ? (size <= 180 ? RADZ_180 : RADZ_512) : await appIcon(tenant, tenant.settings, size); } catch { buf = null; }
+    try { const tenant = await tenantForIconContext(req); if (tenant) buf = tenant.settings && tenant.settings.appIcon ? await appIcon(tenant, tenant.settings, size) : tenant.slug === 'bailamos' ? (size <= 180 ? BAILAMOS_180 : BAILAMOS_512) : tenant.slug === 'radz' ? (size <= 180 ? RADZ_180 : RADZ_512) : await appIcon(tenant, tenant.settings, size); } catch { buf = null; }
     if (buf) send(buf, 300); else send(fallback(), 300);
     return;
   }
