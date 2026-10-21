@@ -224,7 +224,7 @@ V.home = (v) => {
   // 4. products again
   if (STY.length > 4) v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'All products'), E('a', { class: 'btn sm out', href: link('shop') }, 'Shop all')), gridOf(STY.slice(0, 12), true)));
   // 5. stores
-  if ((c.stores || []).length) v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'Visit us'), E('a', { class: 'btn sm out', href: link('stores') }, 'All stores')), storeCards(c.stores.slice(0, 2))));
+  if ((c.stores || []).length) v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'Visit us'), E('a', { class: 'btn sm out', href: link('stores') }, 'All stores')), storeCards(c.stores)));
 };
 
 function filterSet(q) {
@@ -437,8 +437,12 @@ V.order = async (v, tok) => {
 function mapUrl(st) { return st.mapUrl || 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent([st.name, st.address].filter(Boolean).join(' ')); }
 function storeList() { const st = (cfg().stores || []).filter((x) => x && (x.name || x.address)); if (st.length) return st; return D.shop.address ? [{ name: D.shop.name, address: D.shop.address, phone: D.shop.phone }] : []; }
 function storeCards(list) {
-  return E('div', { class: 'scards' }, list.map((st) => E('div', { class: 'scard' }, st.photo ? E('div', { class: 'im' }, E('img', { src: st.photo, alt: st.name || '', loading: 'lazy' })) : null,
-    E('div', { class: 'b' }, E('div', { class: 'inf' }, E('h3', null, st.name || 'Store'), E('div', { class: 'mut' }, st.address), st.hours ? E('div', { class: 'mut' }, st.hours) : null), E('div', { class: 'acts' }, E('a', { class: 'btn sm', href: mapUrl(st), target: '_blank', rel: 'noopener' }, 'Get direction'), st.phone ? E('a', { class: 'btn sm out', href: 'tel:' + String(st.phone).replace(/[^\d+]/g, '') }, st.phone) : null)))));
+  const row = E('div', { class: 'swc' }, list.map((st) => E('div', { class: 'swcard' },
+    E('div', { class: 'im' }, st.photo ? E('img', { src: st.photo, alt: st.name || '', loading: 'lazy' }) : null),
+    E('div', { class: 'tx' }, E('h3', null, st.name || 'Store'), E('div', { class: 'ad' }, st.address || '', st.hours ? E('div', { class: 'mut' }, st.hours) : null),
+      E('a', { class: 'gd', href: mapUrl(st), target: '_blank', rel: 'noopener' }, 'Get Direction \u2197'),
+      st.phone ? E('a', { class: 'ph2', href: 'tel:' + String(st.phone).replace(/[^\d+]/g, '') }, st.phone) : E('span')))));
+  return row;
 }
 V.stores = (v) => { const l = storeList(); v.append(E('div', { class: 'pg wide' }, E('div', { class: 'shophd' }, E('h1', null, 'Our stores')), l.length ? storeCards(l) : E('div', { class: 'card mut' }, 'Store details are coming soon.'))); };
 V.about = (v) => {

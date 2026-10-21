@@ -386,3 +386,25 @@ body.homehero .hero::before{content:"";position:absolute;left:0;right:0;top:0;he
 .ftpanel{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px}
 .ftpanel:empty{display:none}
 .ftpanel a{font-size:12px;text-decoration:underline}
+/* swipe store cards (reference: big white rounded cards, neighbours peek) */
+.swc{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 calc(-1*var(--pad));padding:0 var(--pad) 4px;scrollbar-width:none}
+.swc::-webkit-scrollbar{display:none}
+.swcard{flex:0 0 78%;max-width:420px;scroll-snap-align:center;background:#fff;border-radius:34px;padding:8px 8px 14px;display:flex;flex-direction:column;gap:10px}
+.swcard .im{aspect-ratio:3/4.1;border-radius:26px;overflow:hidden;background:var(--soft)}
+.swcard .im img{width:100%;height:100%;object-fit:cover;display:block}
+.swcard .tx{display:grid;grid-template-columns:1fr 1.45fr;column-gap:10px;row-gap:12px;padding:0 8px;align-items:start}
+.swcard h3{font-size:13.5px;font-weight:500;line-height:1.1;margin:0}
+.swcard .ad{font-size:10px;line-height:1.3}
+.swcard .gd{font-size:11px;text-decoration:underline;text-underline-offset:2px;color:inherit;align-self:end}
+.swcard .ph2{font-size:10px;color:#8a8a8a}
+@media(min-width:700px){.swcard{flex-basis:340px}}
+/* product cards: Rs. price like the reference */
+.pc .in .nm{font-size:10.5px}
+/* slide stack: overlapping cards, centre bigger */
+.stk{gap:0;padding:6px 14% 10px}
+.sk{flex:0 0 66%;max-width:320px;border-radius:22px;transform:scale(.9);opacity:1;box-shadow:none;margin-left:-22px;filter:brightness(.7);transition:transform .45s ease,filter .45s ease}
+.sk:first-child{margin-left:0}
+.sk.on{transform:scale(1);z-index:2;filter:none}
+.sk .nm{flex-direction:column;align-items:center;text-align:center;background:none;padding:0 12px 16px;gap:2px;font-size:13px;text-shadow:0 1px 8px rgba(0,0,0,.5)}
+.sk .nm b{font-size:10.5px;font-weight:500}
+@media(min-width:900px){.stk{padding:6px calc(50% - 160px) 10px}.sk{flex-basis:300px}}
