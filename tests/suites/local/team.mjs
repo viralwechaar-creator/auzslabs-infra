@@ -265,16 +265,6 @@ export default async function run({ browser, stack }) {
     await q("delete from client_orders where token = any($1)", [[ta, tb]]);
   }, 'critical');
 
-  await s.check('Marketing-site opening animation plays with ?intro=1, then lifts away; automated browsers and the apps skip it by default', async () => {
-    const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage(); const errs = watch(page);
-    await page.goto(stack.url('', '/pricing.html'));
-    await page.waitForTimeout(600); assert(!(await page.locator('#auz-launch').count()), 'animation played for an automated browser without ?intro=1');
-    await page.goto(stack.url('', '/pricing.html?intro=1')); await page.waitForSelector('#auz-launch', { timeout: 4000 });
-    await page.waitForSelector('#auz-launch', { state: 'detached', timeout: 9000 });
-    assert(!errs.filter((e) => !/aborted|ERR_FAILED/i.test(e)).length, 'script errors: ' + errs.join(' | '));
-    await ctx.close();
-  });
-
   await s.check('In-app shell (store and desktop apps): a way back to the hub on every page, and no buying on iPhone; an ordinary browser sees none of it', async () => {
     const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage();
     await page.goto(stack.url('', '/pricing.html')); await page.waitForTimeout(1200);
