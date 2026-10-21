@@ -509,7 +509,8 @@ async function callWaiter(){
  try{const{data}=await sb.rpc('public_menu',{tenant_slug:TENANT_SLUG});M=data}catch(e){console.warn(e)}
  const cfg=(M&&M.cfg)||{};
  {const dz=new URLSearchParams(location.search).get('design')||cfg.siteTemplate;if(dz==='kiln'){location.replace('/site-kiln.html'+location.search.replace(/[?&]design=[^&]*/,'').replace(/^&/,'?'));return}}
- const selfOrderOn=!!(cfg._features&&cfg._features.self_order===true&&(!cfg._enabled_features||cfg._enabled_features.self_order!==false));
+ const storeClosed=cfg.storeOpen===false;
+ const selfOrderOn=!storeClosed&&!!(cfg._features&&cfg._features.self_order===true&&(!cfg._enabled_features||cfg._enabled_features.self_order!==false));
  if(T){
   const bEl=$('tbanner');bEl.style.display='flex';
   tb=(M&&M.tables||[]).find(x=>x.id==T);
@@ -518,7 +519,7 @@ async function callWaiter(){
    // Calling a waiter is independent of self-order being on -- a table
    // should always be able to flag staff down, even if online ordering
    // itself is turned off (order-at-counter mode).
-   const orderMsg=selfOrderOn?('Ordering for '+esc(tb.name)+' — tap items below to add to your order'):(esc(tb.name)+' — please order at the counter.');
+   const orderMsg=storeClosed?(esc(tb.name)+' — we are closed right now, so orders are paused. Please try again when we open.'):selfOrderOn?('Ordering for '+esc(tb.name)+' — tap items below to add to your order'):(esc(tb.name)+' — please order at the counter.');
    bEl.innerHTML='<span>'+ic('pin')+' '+orderMsg+'</span><button id=callWaiterBtn class="pill">'+ic('bell')+' Call waiter</button>';
    $('callWaiterBtn').onclick=callWaiter;
   }

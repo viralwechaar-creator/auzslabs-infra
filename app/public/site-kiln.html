@@ -811,7 +811,7 @@ $('#orderForm').addEventListener('submit',function(e){e.preventDefault();if(!car
  var name=$('#cName').value.trim(),ph=cleanPhone($('#cPhone').value),dine=$('input[name="otype"]:checked').value==='dine',tb=$('#cTable').value;
  var a=mark('cName','eName',name.length<2?'Enter your name.':'');var b=mark('cPhone','ePhone',okPhone(ph)?'':'Enter a valid 10 digit mobile number.');var c=true;if(dine)c=mark('cTable','eTable',tb?'':'Choose your table number.');else mark('cTable','eTable','');
  if(!(a&&b&&c)){(!a?$('#cName'):!b?$('#cPhone'):$('#cTable')).focus();return}
- if(LIVE&&!selfOn){toast('Online ordering is switched off. Please order at the counter.');return}
+ if(LIVE&&!selfOn){toast(closed?'We are closed right now, so orders are paused. Please try again when we open.':'Online ordering is switched off. Please order at the counter.');return}
  var note=$('#cNote').value.trim(),lines=cart.slice(),tot=total();
  function finish(oid){
   var items=lines.map(function(l){var o=optTxt(l);return '<dd>'+l.q+' × '+esc(BY[l.id].name)+(o?' <span style="color:var(--mute)">('+esc(o)+')</span>':'')+'</dd>'}).join('');
@@ -846,7 +846,7 @@ $$('a[data-page="reservation"]').forEach(function(a){a.addEventListener('click',
 $('#msgForm').addEventListener('submit',function(e){e.preventDefault();var t=$('#mText').value.trim();var ok=mark('mText','mErr',t.length<3?'Write a short message first.':'');if(!ok){$('#mText').focus();return}var wa=(CFGt.phone||'').replace(/\D/g,'');if(LIVE&&wa){if(wa.length===10)wa='91'+wa;window.open('https://wa.me/'+wa+'?text='+encodeURIComponent((($('#mName').value.trim()?$('#mName').value.trim()+': ':'')+t)),'_blank');$('#mOk').textContent='Opening WhatsApp so you can send it.'}else if(LIVE){$('#mOk').textContent='Please call us on the number above.'}else{$('#mOk').textContent='Message noted. We reply during opening hours.'}$('#mOk').hidden=false;$('#msgForm').reset()});
 
 /* init */
-var LIVE=false,SLUG=window.TENANT_SLUG||'',CFGt={},selfOn=true,sbc=null,TID=new URLSearchParams(location.search).get('t');
+var closed=false,LIVE=false,SLUG=window.TENANT_SLUG||'',CFGt={},selfOn=true,sbc=null,TID=new URLSearchParams(location.search).get('t');
 try{sbc=supabase.createClient(CFG.url,CFG.key)}catch(x){}
 var BGS=[R,I,PP,Y,SG,PK];
 function artFor(cat,name,i){var c=(cat||'').toLowerCase(),n=(name||'').toLowerCase(),t=c+' '+n;
@@ -860,7 +860,7 @@ function artFor(cat,name,i){var c=(cat||'').toLowerCase(),n=(name||'').toLowerCa
  var ks=[{k:'toast'},{k:'brioche'},{k:'quiche'},{k:'sandwich',fill:K.pist},{k:'loaf',seeds:1}];return ks[i%ks.length]}
 function loadLive(){if(!sbc||!SLUG)return Promise.resolve();
  return sbc.rpc('public_menu',{tenant_slug:SLUG}).then(function(r){var M=r&&r.data;if(!M||!M.items||!M.items.length||!M.cats||!M.cats.length)return;
-  LIVE=true;CFGt=M.cfg||{};selfOn=!!(CFGt._features&&CFGt._features.self_order===true&&(!CFGt._enabled_features||CFGt._enabled_features.self_order!==false));
+  LIVE=true;CFGt=M.cfg||{};closed=CFGt.storeOpen===false;selfOn=!closed&&!!(CFGt._features&&CFGt._features.self_order===true&&(!CFGt._enabled_features||CFGt._enabled_features.self_order!==false));
   var cats=M.cats.slice().sort(function(a,b){return (a.n||0)-(b.n||0)});
   var ings=M.ings||[];
   var off=function(i){if(i.off&&(!i.offUntil||new Date(i.offUntil)>new Date()))return true;if(!i.rec)return false;return i.rec.split(',').some(function(p){var n=p.split(':')[0],g=ings.find(function(x){return String(x.name).toLowerCase()==n.trim().toLowerCase()});return g&&g.qty<=0})};
@@ -877,7 +877,7 @@ function loadLive(){if(!sbc||!SLUG)return Promise.resolve();
   var sel=$('#cTable');sel.innerHTML='<option value="">Choose your table</option>'+tl.map(function(t){return '<option value="'+esc(t.id)+'">'+esc(t.name)+'</option>'}).join('');
   if(TID&&tl.some(function(t){return t.id==TID})){sel.value=TID;$('input[name="otype"][value="dine"]').checked=true;$('#fTable').hidden=false;$('#fPickup').hidden=true}
   if(!tl.length){var dl=$('input[name="otype"][value="dine"]');dl.closest('label').hidden=true;$('input[name="otype"][value="take"]').checked=true;$('#fTable').hidden=true;$('#fPickup').hidden=false}
-  if(!selfOn){var nb=document.createElement('p');nb.className='live-note';nb.textContent='Online ordering is switched off right now. Please order at the counter.';var pb=$('#placeBtn');pb.parentNode.insertBefore(nb,pb);pb.disabled=true}
+  if(!selfOn){var nb=document.createElement('p');nb.className='live-note';nb.textContent=closed?'We are closed right now, so orders are paused. Please try again when we open.':'Online ordering is switched off right now. Please order at the counter.';var pb=$('#placeBtn');pb.parentNode.insertBefore(nb,pb);pb.disabled=true}
  }).catch(function(){})}
 function nl2(t){return esc(t).replace(/\n/g,'<br>')}
 function brand(M){var c=CFGt,nm=c.name||'';
