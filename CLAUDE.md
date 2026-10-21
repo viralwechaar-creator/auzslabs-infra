@@ -2494,3 +2494,6 @@ Cards 22px (`--r4`), tiles 16px (`--r3`), buttons and inner boxes 12px (`--r2`),
 
 ## POS: neutral background, lighter phone Tables (Oct 2026)
 POS light mode no longer uses the beige tokens: `pos/pos.css` ends with neutral grey/white overrides (`--bg #f2f2f4` etc., light only; `ds/auz.css` and the other apps are untouched). On phones (`pos.mobile.css`) Tables hides the eyebrow/description, shows compact action buttons, a one-row scrolling legend and filter pills, plain two-column tiles without the outer card or side panel, and the status label for a served table reads "Bill pending". sw `pos-v136`. pos suite 29/29; not seen on a real phone.
+
+## Bailamos trial cafe: fixed home-screen icon
+The owner's own logo (brown coffee bean in a pill, on white) is the home-screen icon for `bailamos.*` (static `app/public/bailamos/icon-180.png`, `icon-512.png`). Both `site.html` and `site-kiln.html` check `/^bailamos\./.test(location.hostname)` in the head script and use that file instead of fetching `/app-icon/180.png`. Slug assumed to be `bailamos`. Phones must delete and re-add the home-screen icon.
