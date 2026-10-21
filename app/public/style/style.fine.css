@@ -289,3 +289,12 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 @media (max-width:599px){.sheet.full:has(.rcv){top:auto}}
 @media (min-width:600px){.sheet:has(.rcv){width:min(620px,94vw)}}
 .rcv .cap{margin:2px 2px -4px}
+
+/* Tight product grid (reference: 8px between cards, caption close to the picture) */
+.sgrid{gap:14px 8px}
+.scard .meta{padding:6px 2px 0}
+.scard .nm{font-size:14px;line-height:1.2}
+.scard .pr{padding:1px 0 0;font-size:13px}
+.scard .plus{width:24px;height:24px;margin:-2px -2px 0 0}
+@media (min-width:900px){.sgrid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px 8px}}
+@media (max-width:599px){.sgrid{gap:12px 6px}.page[data-p=sell]{padding-left:10px;padding-right:10px}}
