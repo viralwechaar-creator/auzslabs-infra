@@ -142,15 +142,21 @@ function csvDownload(name, rows) {
 }
 
 // ---- pictures: shrink in the browser, upload to the shop's own storage ----
-async function shrinkImage(file, max = 1200, q = .82) {
+async function shrinkImage(file, max = 1280, q = .78) {
+  // every picture is resized (longest side 1280 px) and re-encoded as WebP (JPEG where WebP is unsupported); the smaller of original and result is kept
   const bmp = await createImageBitmap(file); const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
-  const cv = document.createElement('canvas'); cv.width = Math.round(bmp.width * k); cv.height = Math.round(bmp.height * k); cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
-  return new Promise((res) => cv.toBlob(res, 'image/jpeg', q));
+  const cv = document.createElement('canvas'); cv.width = Math.round(bmp.width * k); cv.height = Math.round(bmp.height * k);
+  const cx = cv.getContext('2d'); cx.drawImage(bmp, 0, 0, cv.width, cv.height);
+  const enc = (type) => new Promise((res) => cv.toBlob(res, type, q));
+  let out = await enc('image/webp'); if (!out || out.type !== 'image/webp') { cx.globalCompositeOperation = 'destination-over'; cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height); out = await enc('image/jpeg'); }
+  const okType = /^image\/(jpeg|png|webp)$/.test(file.type);
+  return okType && k === 1 && file.size <= out.size ? file : out;
 }
 async function uploadPhoto(file) {
   const blob = await shrinkImage(file);
-  const name = 'style/' + Date.now() + '-' + Math.random().toString(36).slice(2, 7) + '.jpg';
-  const { error } = await sb.storage.from('site').upload(name, blob, { contentType: 'image/jpeg' });
+  const ext = blob.type === 'image/webp' ? 'webp' : blob.type === 'image/png' ? 'png' : 'jpg';
+  const name = 'style/' + Date.now() + '-' + Math.random().toString(36).slice(2, 7) + '.' + ext;
+  const { error } = await sb.storage.from('site').upload(name, blob, { contentType: blob.type });
   if (error) throw new Error(error.message || t('Upload failed'));
   return sb.storage.from('site').getPublicUrl(name).data.publicUrl;
 }
