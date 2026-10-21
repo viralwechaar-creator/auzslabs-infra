@@ -1,4 +1,5 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><link rel="apple-touch-icon" href="/app-icon/180.png?v=3"><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}a.addr-link{color:inherit;text-decoration:underline;text-underline-offset:3px}
+</style></head><body>
 <title>Menu</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap">
@@ -506,18 +507,18 @@ html.rv-on .rv.in{opacity:1;transform:none}
 <!-- HOME -->
 <section class="page" id="page-home">
   <div class="hero-meta mono"><div>Bakery<br>and café</div><div>Jodhpur<br>Rajasthan</div><div>Daily<br>07:30 to 22:00</div></div>
-  <h1 class="wordmark">Kiln</h1>
+  <h1 class="wordmark" data-ed="home.name" data-ed-label="Big name at the top" data-ed-group="Home page" data-ed-type="text">Kiln</h1>
   <div class="hero-row">
     <div>
-      <p class="lede">Bread, pastry and coffee from one small oven near the Clock Tower.</p>
+      <p class="lede" data-ed="home.lede" data-ed-label="Line under the name" data-ed-group="Home page" data-ed-type="long">Bread, pastry and coffee from one small oven near the Clock Tower.</p>
       <div class="cta"><a class="btn red btn-compact" href="#menu">Order menu ↗︎</a><a class="btn ghost btn-compact" href="#reservation">Visit us</a></div>
     </div>
     <div class="shapes" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
   </div>
 
   <div class="story-teaser">
-    <a class="story-photo" href="#about" aria-label="Read the Kiln story"><img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=1200&q=85" alt="Freshly baked artisan bread" loading="lazy"><span class="photo-label">Made slowly, served warm</span></a>
-    <div class="story-copy"><span class="mono">A little about us</span><h2>Good things take their time.</h2><p>Small-batch bakes, carefully made coffee and a welcoming table in the heart of Jodhpur.</p><a class="lnk" href="#about">Read our story ↗︎</a></div>
+    <a class="story-photo" href="#about" aria-label="Read the Kiln story"><img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=1200&q=85" alt="Freshly baked artisan bread" loading="lazy" decoding="async" data-ed-img="home.storyImg" data-ed-label="Photo beside the story" data-ed-group="Home page"><span class="photo-label">Made slowly, served warm</span></a>
+    <div class="story-copy"><span class="mono" data-ed="home.storyKicker" data-ed-label="Small label above the story" data-ed-group="Home page" data-ed-type="text">A little about us</span><h2 data-ed="home.storyTitle" data-ed-label="Story heading" data-ed-group="Home page" data-ed-type="text">Good things take their time.</h2><p data-ed="home.storyText" data-ed-label="Story text" data-ed-group="Home page" data-ed-type="long">Small-batch bakes, carefully made coffee and a welcoming table in the heart of Jodhpur.</p><a class="lnk" href="#about">Read our story ↗︎</a></div>
   </div>
 
   <div class="sec" id="revSec" hidden>
@@ -527,7 +528,7 @@ html.rv-on .rv.in{opacity:1;transform:none}
   </div>
 
   <div class="sec" id="galSec">
-    <h2>From the kitchen</h2>
+    <h2 data-ed="home.galTitle" data-ed-label="Gallery heading" data-ed-group="Home page" data-ed-type="text">From the kitchen</h2>
     <div class="gal" id="galGrid"><span><img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=900&q=80" alt="" loading="lazy"></span><span><img src="https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=900&q=80" alt="" loading="lazy"></span><span><img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=900&q=80" alt="" loading="lazy"></span><span><img src="https://images.unsplash.com/photo-1442512595331-e89e73853f31?auto=format&fit=crop&w=900&q=80" alt="" loading="lazy"></span><span><img src="https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=900&q=80" alt="" loading="lazy"></span></div>
   </div>
 
@@ -542,8 +543,8 @@ html.rv-on .rv.in{opacity:1;transform:none}
   <div class="sec">
     <h2>Visit or order</h2>
     <div class="cols3">
-      <div class="col"><h3>Dine in</h3><p>Order from your phone, tell us your table number and we bring it over.</p><a class="lnk" href="#menu">Open the menu →</a></div>
-      <div class="col"><h3>Takeaway</h3><p>Choose a pickup time and collect at the counter. Name and mobile number are all we need.</p><a class="lnk" href="#menu">Start an order →</a></div>
+      <div class="col"><h3>Dine in</h3><p data-ed="home.dineText" data-ed-label="Dine in text" data-ed-group="Home page" data-ed-type="long">Order from your phone, tell us your table number and we bring it over.</p><a class="lnk" href="#menu">Open the menu →</a></div>
+      <div class="col"><h3>Takeaway</h3><p data-ed="home.takeText" data-ed-label="Takeaway text" data-ed-group="Home page" data-ed-type="long">Choose a pickup time and collect at the counter. Name and mobile number are all we need.</p><a class="lnk" href="#menu">Start an order →</a></div>
       <div class="col"><h3>Find us</h3><p>Shop 14, Sardar Market Road, near Ghanta Ghar, Jodhpur 342001</p><a class="lnk" href="#contact">Contact us →</a></div>
     </div>
   </div>
@@ -551,24 +552,24 @@ html.rv-on .rv.in{opacity:1;transform:none}
 
 <!-- MENU -->
 <section class="page" id="page-menu" hidden>
-  <div class="ph"><span class="mono">Café menu</span><h1>Menu</h1><p>Tap any item for sizes, variants and add-ons. Add puts the standard version straight in your cart. Prices include GST.</p></div>
+  <div class="ph"><span class="mono">Café menu</span><h1>Menu</h1><p data-ed="menu.intro" data-ed-label="Line under "Menu"" data-ed-group="Menu page" data-ed-type="long">Tap any item for sizes, variants and add-ons. Add puts the standard version straight in your cart. Prices include GST.</p></div>
   <div class="tabs" id="tabs" role="toolbar" aria-label="Menu categories"></div>
   <div id="menuList"></div>
 </section>
 
 <!-- ABOUT -->
 <section class="page" id="page-about" hidden>
-  <div class="ph"><span class="mono">A little about Kiln</span><h1>Our story</h1><p>A neighbourhood bakery and café built around thoughtful baking, good coffee and the pleasure of slowing down.</p></div>
-  <div class="about-hero"><img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1800&q=85" alt="Coffee and a quiet café table" loading="lazy"><div class="about-caption"><span class="mono">The Kiln feeling</span><h2>Warm bread.<br>Good company.</h2></div></div>
-  <div class="about-grid"><div><span class="mono">What matters to us</span><h2>Made with care, never in a hurry.</h2></div><div class="about-copy"><p>At Kiln, the everyday things deserve attention: dough given time to rise, coffee made with care, seasonal bakes and a table where you can stay a little longer.</p><p>We’re here for early starts, slow afternoons, a quick takeaway and the small rituals that make a neighbourhood feel like home.</p><p class="note-small">This is a starter brand story. Replace it with Kiln’s verified history, sourcing practices and team details before publishing.</p></div></div>
-  <div class="photo-strip"><figure><img src="https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=900&q=85" alt="Fresh pastries" loading="lazy"><figcaption>Fresh from the oven</figcaption></figure><figure><img src="https://images.unsplash.com/photo-1442512595331-e89e73853f31?auto=format&fit=crop&w=900&q=85" alt="Coffee being prepared" loading="lazy"><figcaption>Thoughtful coffee</figcaption></figure><figure><img src="https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=900&q=85" alt="A welcoming café interior" loading="lazy"><figcaption>A seat for you</figcaption></figure></div>
-  <div class="about-end"><p>Come in for a coffee. Stay for something warm.</p><div class="cta"><a class="btn red btn-compact" href="#menu">Explore the menu ↗︎</a><a class="btn ghost btn-compact" href="#contact">Find us</a></div></div>
+  <div class="ph"><span class="mono" data-ed="about.kicker" data-ed-label="Small label at the top" data-ed-group="Our story page" data-ed-type="text">A little about Kiln</span><h1 data-ed="about.title" data-ed-label="Page title" data-ed-group="Our story page" data-ed-type="text">Our story</h1><p data-ed="about.intro" data-ed-label="Intro line" data-ed-group="Our story page" data-ed-type="long">A neighbourhood bakery and café built around thoughtful baking, good coffee and the pleasure of slowing down.</p></div>
+  <div class="about-hero"><img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1800&q=85" alt="Coffee and a quiet café table" loading="lazy" decoding="async" data-ed-img="about.heroImg" data-ed-label="Big photo at the top" data-ed-group="Our story page"><div class="about-caption"><span class="mono" data-ed="about.capKicker" data-ed-label="Label on the big photo" data-ed-group="Our story page" data-ed-type="text">The Kiln feeling</span><h2 data-ed="about.capTitle" data-ed-label="Words on the big photo" data-ed-group="Our story page" data-ed-type="long">Warm bread.<br>Good company.</h2></div></div>
+  <div class="about-grid"><div><span class="mono" data-ed="about.k2" data-ed-label="Small label before the story" data-ed-group="Our story page" data-ed-type="text">What matters to us</span><h2 data-ed="about.h2" data-ed-label="Story heading" data-ed-group="Our story page" data-ed-type="text">Made with care, never in a hurry.</h2></div><div class="about-copy"><p data-ed="about.p1" data-ed-label="Story paragraph 1" data-ed-group="Our story page" data-ed-type="long">At Kiln, the everyday things deserve attention: dough given time to rise, coffee made with care, seasonal bakes and a table where you can stay a little longer.</p><p data-ed="about.p2" data-ed-label="Story paragraph 2" data-ed-group="Our story page" data-ed-type="long">We’re here for early starts, slow afternoons, a quick takeaway and the small rituals that make a neighbourhood feel like home.</p></div></div>
+  <div class="photo-strip"><figure><img src="https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=900&q=85" alt="Fresh pastries" loading="lazy" decoding="async" data-ed-img="about.photo1" data-ed-label="Photo 1 in the strip" data-ed-group="Our story page"><figcaption data-ed="about.cap1" data-ed-label="Caption under photo 1" data-ed-group="Our story page" data-ed-type="text">Fresh from the oven</figcaption></figure><figure><img src="https://images.unsplash.com/photo-1442512595331-e89e73853f31?auto=format&fit=crop&w=900&q=85" alt="Coffee being prepared" loading="lazy" decoding="async" data-ed-img="about.photo2" data-ed-label="Photo 2 in the strip" data-ed-group="Our story page"><figcaption data-ed="about.cap2" data-ed-label="Caption under photo 2" data-ed-group="Our story page" data-ed-type="text">Thoughtful coffee</figcaption></figure><figure><img src="https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=900&q=85" alt="A welcoming café interior" loading="lazy" decoding="async" data-ed-img="about.photo3" data-ed-label="Photo 3 in the strip" data-ed-group="Our story page"><figcaption data-ed="about.cap3" data-ed-label="Caption under photo 3" data-ed-group="Our story page" data-ed-type="text">A seat for you</figcaption></figure></div>
+  <div class="about-end"><p data-ed="about.end" data-ed-label="Closing line" data-ed-group="Our story page" data-ed-type="text">Come in for a coffee. Stay for something warm.</p><div class="cta"><a class="btn red btn-compact" href="#menu">Explore the menu ↗︎</a><a class="btn ghost btn-compact" href="#contact">Find us</a></div></div>
 </section>
 
 <!-- FOUNDER -->
 <section class="page" id="page-founder" hidden>
-  <div class="ph"><span class="mono">The person behind the place</span><h1>Founder</h1><p>A personal note from the person bringing Kiln to life.</p></div>
-  <div class="founder-layout"><div class="founder-photo"><div class="portrait-placeholder" role="img" aria-label="Founder portrait placeholder"><span>K</span></div><span class="photo-label">Founder portrait</span></div><div class="founder-note"><span class="mono">A note from our founder</span><h2>Built around a simple idea.</h2><p>That a good bakery can make an ordinary day feel a little more special — with honest baking, thoughtful coffee and a warm welcome.</p><p>Kiln is a work in progress, shaped by the people who walk through the door and the community around us.</p><p class="founder-sign">With warmth,<br><strong>The Kiln founder</strong></p><p class="note-small">Add the founder’s name, real portrait and personal message here. No identity or biography has been assumed.</p></div></div>
+  <div class="ph"><span class="mono" data-ed="founder.kicker" data-ed-label="Small label at the top" data-ed-group="Founder page" data-ed-type="text">The person behind the place</span><h1 data-ed="founder.title" data-ed-label="Page title" data-ed-group="Founder page" data-ed-type="text">Founder</h1><p data-ed="founder.intro" data-ed-label="Intro line" data-ed-group="Founder page" data-ed-type="long">A personal note from the person bringing Kiln to life.</p></div>
+  <div class="founder-layout"><div class="founder-photo"><img class="founder-img" alt="Founder" decoding="async" hidden data-ed-img="founder.photo" data-ed-label="Founder photo" data-ed-group="Founder page" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"><div class="portrait-placeholder" role="img" aria-label="Founder portrait placeholder"><span>K</span></div><span class="photo-label">Founder portrait</span></div><div class="founder-note"><span class="mono" data-ed="founder.k2" data-ed-label="Small label above the note" data-ed-group="Founder page" data-ed-type="text">A note from our founder</span><h2 data-ed="founder.h2" data-ed-label="Note heading" data-ed-group="Founder page" data-ed-type="text">Built around a simple idea.</h2><p data-ed="founder.p1" data-ed-label="Note paragraph 1" data-ed-group="Founder page" data-ed-type="long">That a good bakery can make an ordinary day feel a little more special — with honest baking, thoughtful coffee and a warm welcome.</p><p data-ed="founder.p2" data-ed-label="Note paragraph 2" data-ed-group="Founder page" data-ed-type="long">Kiln is a work in progress, shaped by the people who walk through the door and the community around us.</p><p class="founder-sign"><span data-ed="founder.sign" data-ed-label="Sign-off" data-ed-group="Founder page" data-ed-type="text">With warmth,</span><br><strong data-ed="founder.name" data-ed-label="Founder name" data-ed-group="Founder page" data-ed-type="text">The Kiln founder</strong></p></div></div>
   <div class="founder-bottom"><span class="mono">Get to know us</span><a href="#about">Read our story ↗︎</a><a href="#contact">Come say hello ↗︎</a></div>
 </section>
 
@@ -650,12 +651,12 @@ html.rv-on .rv.in{opacity:1;transform:none}
 
 <footer class="foot kfoot">
   <div class="kf-grid">
-    <div><p class="kf-brand kf-name">Kiln Bakery and Café</p><p class="kf-tag">Bread, pastry and coffee from one small oven.</p></div>
+    <div><p class="kf-brand kf-name">Kiln Bakery and Café</p><p class="kf-tag" data-ed="footer.tag" data-ed-label="Footer tagline" data-ed-group="Footer" data-ed-type="text">Bread, pastry and coffee from one small oven.</p></div>
     <div><h4>Visit</h4><p class="kf-addr">Shop 14, Sardar Market Road, near Ghanta Ghar, Jodhpur 342001</p></div>
     <div><h4>Hours</h4><p class="kf-hours">Daily 07:30 to 22:00</p><p class="kf-phone">+91 00000 00000</p></div>
     <div><h4>Explore</h4><div class="kf-links"><a href="#menu">Menu</a><a href="#reservation">Reserve a table</a><a href="#contact">Contact</a><a href="https://www.instagram.com/" target="_blank" rel="noopener">Instagram ↗︎</a><a href="https://www.facebook.com/" target="_blank" rel="noopener">Facebook ↗︎</a></div></div>
   </div>
-  <div class="kf-bar"><span class="kf-name2">Kiln Bakery and Café · Jodhpur</span><span>Orders by phone, ready at the counter</span></div>
+  <div class="kf-bar"><a class="kf-edit" href="/site-edit.html" style="opacity:.55;font-size:12px">Website login</a><span class="kf-name2">Kiln Bakery and Café · Jodhpur</span><span>Orders by phone, ready at the counter</span></div>
 </footer>
 </div>
 </main>
@@ -884,12 +885,12 @@ function brand(M){var c=CFGt,nm=c.name||'';
  if(nm){$$('.brand').forEach(function(b){b.textContent=nm});document.title=nm+' · Menu';var w=$('.wordmark');if(w){w.textContent=nm;if(nm.length>5){w.style.fontSize='clamp(40px,'+Math.max(6,Math.min(18,115/nm.length)).toFixed(1)+'vw,'+Math.round(Math.max(60,Math.min(260,1500/nm.length)))+'px)';w.style.letterSpacing='-.05em'}}
   $$('.kf-name,.kf-name2').forEach(function(x){x.textContent=nm})}
  if(c.siteHours)HRS=c.siteHours;
- var ka=$('.kf-addr');if(ka&&c.addr)ka.textContent=c.addr;var kh=$('.kf-hours');if(kh&&c.siteHours)kh.textContent=c.siteHours;var kp=$('.kf-phone');if(kp){if(c.phone)kp.textContent=c.phone;else kp.hidden=true}var kt=$('.kf-tag');if(kt){var tg=c.siteSub||c.siteTag;if(tg)kt.textContent=tg}
+ var ka=$('.kf-addr');if(ka&&c.addr)ka.innerHTML=addrLink(c);var kh=$('.kf-hours');if(kh&&c.siteHours)kh.textContent=c.siteHours;var kp=$('.kf-phone');if(kp){if(c.phone)kp.textContent=c.phone;else kp.hidden=true}var kt=$('.kf-tag');if(kt){var tg=c.siteSub||c.siteTag;if(tg)kt.textContent=tg}
  var gs=String(c.siteGallery||'').split(',').map(function(x){return x.trim()}).filter(Boolean).slice(0,5),gg=$('#galGrid');if(gg){if(gs.length>=2){gg.innerHTML=gs.map(function(u){return '<span><img src="'+esc(u)+'" alt="" loading="lazy"></span>'}).join('')}else{$('#galSec').hidden=true}}
  var lede=$('.lede');var tl=c.siteSub||c.siteTag;if(lede&&tl)lede.textContent=tl;
  var m3=$$('.hero-meta div');
  if(m3[0])m3[0].innerHTML=esc(c.siteKicker||'Café')+'<br>and restaurant';
- if(m3[1]&&c.addr){var ap=String(c.addr).split(','),a1=ap.slice(0,Math.ceil(ap.length/2)).join(',').trim(),a2=ap.slice(Math.ceil(ap.length/2)).join(',').trim();m3[1].innerHTML=esc(a1)+(a2?'<br>'+esc(a2):'')}
+ if(m3[1]&&c.addr){m3[1].innerHTML=addrLink(c)}
  if(m3[2]&&c.siteHours)m3[2].innerHTML=esc(c.siteHours);
  var sc=$('.story-copy');if(sc){if(c.siteTag){sc.querySelector('h2').textContent=c.siteTag}if(c.siteAbout){sc.querySelector('p').textContent=String(c.siteAbout).slice(0,220)}}
  var ph=$('.story-photo img');if(ph&&c.siteHero)ph.src=c.siteHero;
@@ -898,6 +899,7 @@ function brand(M){var c=CFGt,nm=c.name||'';
  var ov=$$('.sec h2').filter(function(h){return /Oven times/.test(h.textContent)})[0];if(ov)ov.parentNode.hidden=true;
  var fnd=$$('.col').filter(function(x){return x.querySelector('h3')&&/Find us/.test(x.querySelector('h3').textContent)})[0];if(fnd&&c.addr)fnd.querySelector('p').textContent=c.addr;
  var fo=$$('.nav a[data-page="founder"]')[0];if(fo)fo.parentNode.hidden=true;
+ applyEd(c);
  var ct=$('#page-contact');
  if(ct){var cols=$$('.col',ct);if(cols[0]&&c.addr)cols[0].querySelector('p').innerHTML=nl2(c.addr);
   if(cols[1]){var pe=[];if(c.phone)pe.push(esc(c.phone));if(c.email)pe.push(esc(c.email));if(pe.length)cols[1].querySelector('p').innerHTML=pe.join('<br>')}
@@ -907,7 +909,15 @@ function brand(M){var c=CFGt,nm=c.name||'';
  $$('a[href^="https://www.instagram.com/"]').forEach(function(a){if(ig)a.href=ig;else a.parentNode.hidden=true;if(!ig&&a.parentNode.tagName!=='LI')a.hidden=true});
  $$('a[href^="https://www.facebook.com/"]').forEach(function(a){if(a.parentNode.tagName==='LI')a.parentNode.hidden=true;else a.hidden=true});
  var soc=$('.soc');if(soc&&!ig)soc.hidden=true;
- var sf=$('.side-foot>span:last-child');if(sf)sf.textContent=c.addr?String(c.addr).split(',').slice(-2).join(',').trim():''}
+ var sf=$('.side-foot>span:last-child');if(sf)sf.textContent=c.addr?shortAddr(c):''}
+
+function applyEd(c){var d=c&&c.siteData;if(!d||typeof d!=='object')return;
+ $$('[data-ed]').forEach(function(el){var v=d[el.getAttribute('data-ed')];if(v==null||v==='')return;if(el.getAttribute('data-ed-type')==='long')el.innerHTML=nl2(v);else el.textContent=String(v)});
+ $$('[data-ed-img]').forEach(function(el){var v=d[el.getAttribute('data-ed-img')];if(!v)return;el.src=v;el.hidden=false;if(el.classList.contains('founder-img')){var ph=el.parentNode.querySelector('.portrait-placeholder');if(ph)ph.hidden=true}});
+ var hasF=Object.keys(d).some(function(k){return k.indexOf('founder.')===0&&d[k]});var fo=$$('.nav a[data-page="founder"]')[0];if(fo)fo.parentNode.hidden=!hasF}
+function mapHref(c){return c.mapUrl||('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(c.addr||''))}
+function shortAddr(c){if(c.siteArea)return String(c.siteArea);var p=String(c.addr||'').split(',').map(function(x){return x.replace(/[0-9]+/g,'').trim()}).filter(Boolean);return p.slice(-2).join(', ')}
+function addrLink(c){return '<a class="addr-link" href="'+esc(mapHref(c))+'" target="_blank" rel="noopener">'+esc(shortAddr(c))+' \u2197\uFE0E</a>'}
 function starStr(n){n=Math.round(n);return '\u2605\u2605\u2605\u2605\u2605'.slice(0,n)+'\u2606\u2606\u2606\u2606\u2606'.slice(0,5-n)}
 function renderReviews(){if(!LIVE||!sbc||!SLUG)return;sbc.rpc('public_reviews',{tenant_slug:SLUG}).then(function(r){var d=r&&r.data;if(!d||!d.count||!d.reviews||!d.reviews.length)return;$('#revAvg').textContent=Number(d.avg).toFixed(1);$('#revStars').textContent=starStr(d.avg);$('#revCount').textContent='from '+d.count+(d.count===1?' rating':' ratings');$('#revList').innerHTML=d.reviews.map(function(v){return '<figure class="rev" style="margin:0"><span class="stars" aria-label="'+v.rating+' out of 5">'+starStr(v.rating)+'</span><p>\u201c'+esc(v.comment)+'\u201d</p><span class="who">'+esc(v.name||'A guest')+'</span></figure>'}).join('');$('#revSec').hidden=false}).catch(function(){})}
 renderTabs();renderMenu();status();setInterval(status,60000);route();

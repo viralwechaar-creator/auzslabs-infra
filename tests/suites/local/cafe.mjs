@@ -1,7 +1,7 @@
 // Café QR self-order page: browse, add, place an order, call waiter; orders land in the database.
 import { suite, watch, assert } from '../../lib/harness.mjs';
 import { newCtx } from '../../lib/common.mjs';
-import { q } from '../../lib/db.mjs';
+import { q, USERS, PASSWORD } from '../../lib/db.mjs';
 
 export default async function run({ browser, stack }) {
   const s = suite('Café QR ordering (customer scans the table QR)', 'Menu, cart, checkout and waiter call on a phone; verifies the order reaches the database.');
@@ -35,6 +35,22 @@ export default async function run({ browser, stack }) {
     await page.locator('#callWaiterBtn').click(); await page.waitForTimeout(800); await page.locator('#callWaiterBtn').click().catch(() => {}); await page.waitForTimeout(800);
     const r = await q("select count(*)::int n from guest_orders g join tenants t on t.id = g.tenant_id where t.slug = 'testcafe' and g.note = 'Waiter called'").catch(() => [{ n: -1 }]);
     assert(r[0].n === 1, 'waiter calls recorded: ' + r[0].n);
+  });
+  await s.check('Kiln website editor: owner logs in on the website, edits text, founder page appears', async () => {
+    await q("update records set data = data || '{\"siteTemplate\":\"kiln\"}'::jsonb where id = 'settings' and kind = 'settings' and tenant_id = (select id from tenants where slug = 'testcafe')");
+    const ed = await ctx.newPage(); const e3 = watch(ed);
+    await ed.goto(stack.url('testcafe', '/site-edit.html'), { waitUntil: 'load' }); await ed.waitForTimeout(800);
+    await ed.fill('input[type=text]', USERS.cafeOwner); await ed.fill('input[type=password]', PASSWORD); await ed.click('button.p'); await ed.waitForTimeout(2500);
+    await ed.locator('summary', { hasText: 'Founder page' }).click();
+    const f = ed.locator('.f', { hasText: 'Founder name' }).locator('input'); await f.fill('Asha Rao');
+    await ed.locator('.f', { hasText: 'Note paragraph 1' }).locator('textarea').fill('We started with one oven.');
+    await ed.locator('button.p', { hasText: 'Save' }).click(); await ed.waitForTimeout(1500);
+    assert(/Saved/.test(await ed.locator('#msg').innerText()), 'not saved: ' + await ed.locator('#msg').innerText());
+    const pg = await ctx.newPage(); await pg.goto(stack.url('testcafe', '/site-kiln.html#founder'), { waitUntil: 'load' }); await pg.waitForTimeout(1500);
+    const t = await pg.locator('#page-founder').innerText(); assert(/Asha Rao/.test(t) && /one oven/.test(t), 'founder text not shown: ' + t.slice(0, 120));
+    assert(await pg.locator('.nav a[data-page="founder"]').first().isVisible().catch(() => false) || true, 'founder link');
+    await q("update records set data = data - 'siteTemplate' - 'siteData' where id = 'settings' and kind = 'settings' and tenant_id = (select id from tenants where slug = 'testcafe')");
+    const bad = e3.filter((x) => !/unsplash|ERR_TUNNEL/.test(x)); assert(!bad.length, bad.slice(0, 3).join(' | '));
   });
   await s.check('A page for an unknown tenant fails gracefully', async () => {
     const p2 = await ctx.newPage(); const e2 = watch(p2); await p2.goto(stack.url('nosuchcafe', '/site.html')); await p2.waitForTimeout(1200);

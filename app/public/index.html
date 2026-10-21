@@ -12,7 +12,7 @@
 <script>(function(){var h=location.hostname,shared=/^(app|www|auzspos|auzsmob|auzspay|auzsledger|auzsscan|localhost|\d+\.\d+\.\d+\.\d+)(\.|$)/.test(h);if(!shared)return;
 // shared addresses have no business, so the dynamic /app-icon redirect is skipped: link the real files directly (a redirected icon shows blank on some phones)
 var m=document.querySelector('link[rel=manifest]'),a=document.querySelector('link[rel=apple-touch-icon]'),i=document.querySelector('link[rel=icon][type="image/png"]');
-if(m)m.href='/manifest.json';if(a)a.href='/icon-pos-180.png';if(i)i.href='/icon-512.png'})()</script>
+if(m)m.href='/manifest.json';if(a)a.href='/icon-pos-180.png?v=3';if(i)i.href='/icon-512.png'})()</script>
 <meta name="theme-color" content="#f5f4f2" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#161618" media="(prefers-color-scheme: dark)">
 <meta name="color-scheme" content="light dark">
