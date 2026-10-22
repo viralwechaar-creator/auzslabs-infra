@@ -96,12 +96,15 @@ function adjustSheet(x, s, done) {
   const hint = h('div', { class: 'muted small' }, '');
   sheet({ title: `${s.name} · ${x.colour} ${x.size}`, body: h('div', { class: 'grid' }, h('div', { class: 'kv' }, h('span', null, t('In stock')), h('b', { class: 'num' }, x.stock)), modes, hint, field(t('Qty'), q), field(t('Note'), nt),
     can('sty_manage') ? h('div', { class: 'grid', style: { gap: '6px' } }, h('div', { class: 'cap' }, t('Barcode (any type: your own, supplier, EAN, QR text)')), h('div', { class: 'row', style: { gap: '6px' } }, h('div', { class: 'grow' }, bc), h('button', { class: 'btn icon', type: 'button', 'aria-label': t('Scan'), onclick: () => scanWith((c) => { bc.value = c; }) }, icon('camera', 18)), h('button', { class: 'btn icon', type: 'button', 'aria-label': t('Print'), onclick: () => tagsSheet([s], x.id) }, icon('print', 18)))) : h('div', { class: 'muted small' }, 'Barcode ' + x.barcode)),
-    actions: [{ label: t('Save'), primary: true, onclick: async (close) => {
-      if (bc && bc.value.trim() && bc.value.trim() !== x.barcode) { await api('sty_set_variant', { p_id: x.id, p: { barcode: bc.value.trim() } }); S.catAt = 0; }
-      if (q.value === '') { close(); toast(t('Saved')); done(); return; }
-      await api('sty_adjust', { p: { branchId: S.branch, variantId: x.id, qty: Math.round(N(q.value)), mode, note: nt.value } });
-      close(); S.catAt = 0; toast(t('Stock updated')); done();
-    } }] });
+    actions: [{ label: t('Save'), primary: true, onclick: async (close) => { await saveAdj(); close(); S.catAt = 0; toast(q.value === '' ? t('Saved') : t('Stock updated')); done(); } },
+      { label: t('Save & print tags'), onclick: async (close) => { const n = await saveAdj(); close(); S.catAt = 0; toast(t('Stock updated')); done(); await loadCatalog(true).catch(() => {}); const s2 = S.cat.find((z) => z.id === s.id) || s; tagsSheet([s2], x.id, n > 0 ? { [x.id]: n } : null); } }] });
+  async function saveAdj() {
+    if (bc && bc.value.trim() && bc.value.trim() !== x.barcode) { await api('sty_set_variant', { p_id: x.id, p: { barcode: bc.value.trim() } }); S.catAt = 0; }
+    if (q.value === '') return 0;
+    const n = Math.round(N(q.value));
+    await api('sty_adjust', { p: { branchId: S.branch, variantId: x.id, qty: n, mode, note: nt.value } });
+    return mode === 'add' ? n : 0;
+  }
 }
 
 // ---- style editor ----
