@@ -709,3 +709,14 @@ footer .col a,footer .col span{font-size:9.5px}
 .stkw .srr{max-width:none;padding-left:8px}
 .stkw .pd{-webkit-line-clamp:8}
 }
+
+/* desktop: Refine opens as a small card under its button and folds back into it */
+@media(min-width:900px){
+.sheetwrap.pop{display:block}
+.sheetwrap.pop .bd{background:transparent}
+.sheetwrap.pop .sheet{position:fixed;max-width:none;border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.22),0 0 0 1px var(--line);animation:rfIn .2s cubic-bezier(.2,.8,.2,1)}
+.sheetwrap.pop.out .sheet{animation:rfOut .19s ease forwards}
+.sheetwrap.pop .grab{display:none}
+@keyframes rfIn{from{opacity:0;transform:scale(.15)}to{opacity:1;transform:scale(1)}}
+@keyframes rfOut{to{opacity:0;transform:scale(.15)}}
+}

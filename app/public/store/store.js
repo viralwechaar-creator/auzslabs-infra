@@ -93,7 +93,7 @@ function setMeta(title, desc, img, canon) {
 // ---------- small ui ----------
 function sheet(title, body, foot) {
   const w = E('div', { class: 'sheetwrap', role: 'dialog', 'aria-modal': 'true' });
-  const close = () => w.remove();
+  const close = () => { if (w.classList.contains('pop') && !w.classList.contains('out')) { w.classList.add('out'); setTimeout(() => w.remove(), 190); } else w.remove(); };
   w.append(E('div', { class: 'bd', onclick: close }), E('div', { class: 'sheet' }, E('div', { class: 'grab' }), E('div', { class: 'hd' }, E('h2', null, title), E('button', { class: 'ic', 'aria-label': 'Close', onclick: close }, icon('x'))), body, foot || null));
   document.body.append(w); return { close, el: w };
 }
@@ -357,7 +357,7 @@ function filterSet(q) {
   return list;
 }
 function setQ(patch) { const q = { ...q$(), ...patch }; for (const k in q) if (q[k] == null || q[k] === '') delete q[k]; const qs = new URLSearchParams(q).toString(); location.hash = '#/shop' + (qs ? '?' + qs : ''); }
-function refine() {
+function refine(anchor) {
   const base = q$(); const draft = { ...base };
   const prices = STY.map((s) => s.price); const lo = Math.floor(Math.min(...prices, 0)), hi = Math.ceil(Math.max(...prices, 1) / 100) * 100;
   const body = E('div'); const showBtn = E('button', { class: 'btn wide' }, 'View items'); const live = () => { const n = filterSet(draft).length; showBtn.textContent = 'View ' + n + (n === 1 ? ' item' : ' items'); };
@@ -377,6 +377,7 @@ function refine() {
   paint();
   const foot = E('div', { class: 'rf' }, showBtn, E('button', { class: 'rclr', onclick: () => { sh.close(); location.hash = '#/shop'; } }, 'Clear all'));
   const sh = sheet('Filter', body, foot); sh.el.querySelector('.sheet').classList.add('refine');
+  if (anchor && anchor.getBoundingClientRect && matchMedia('(min-width: 900px)').matches) { const r = anchor.getBoundingClientRect(), W = 340, left = Math.max(8, Math.min(r.right - W, innerWidth - W - 8)), top = r.bottom + 8, card = sh.el.querySelector('.sheet'); sh.el.classList.add('pop'); card.style.cssText = 'left:' + left + 'px;top:' + top + 'px;width:' + W + 'px;max-height:' + Math.max(260, innerHeight - top - 12) + 'px;transform-origin:' + (r.left + r.width / 2 - left) + 'px 0'; }
   showBtn.onclick = () => { sh.close(); const q = { ...draft }; for (const k in q) if (!q[k]) delete q[k]; location.hash = '#/shop' + (Object.keys(q).length ? '?' + new URLSearchParams(q).toString() : ''); };
 }
 function pagedGrid(list) {
@@ -392,7 +393,7 @@ V.shop = (v) => {
   for (const k of ['cat', 'colour', 'fam', 'size', 'gender', 'stock', 'new', 'min', 'max']) if (q[k]) act.push([k, k === 'stock' ? 'In stock' : k === 'new' ? 'New in' : k === 'min' ? 'From ' + inr(q[k]) : k === 'max' ? 'Up to ' + inr(q[k]) : (lab[k] ? lab[k] + ': ' : '') + q[k]]);
   if (q.col) act.push(['col', colName || 'Collection']);
   v.append(E('div', { class: 'crumbs' }, E('a', { href: link('') }, 'Home'), ' / ', title),
-    E('div', { class: 'shophd' }, E('div', null, E('h1', null, title), E('div', { class: 'mut tiny' }, list.length + (list.length === 1 ? ' piece' : ' pieces'))), E('button', { class: 'btn soft', onclick: refine }, icon('filter'), 'Refine')),
+    E('div', { class: 'shophd' }, E('div', null, E('h1', null, title), E('div', { class: 'mut tiny' }, list.length + (list.length === 1 ? ' piece' : ' pieces'))), E('button', { class: 'btn soft', onclick: (e) => refine(e.currentTarget) }, icon('filter'), 'Refine')),
     act.length ? E('div', { class: 'chips' }, act.map(([k, l]) => E('button', { class: 'chip on', onclick: () => setQ({ [k]: '' }) }, l, E('span', { class: 'x' }, '×')))) : null,
     !act.length && [...new Set(STY.map((s) => s.category))].length > 1 ? E('div', { class: 'chips' }, [...new Set(STY.map((s) => s.category).filter(Boolean))].map((c) => E('button', { class: 'chip', onclick: () => setQ({ cat: c }) }, c))) : null,
     (q.cat || list.length === STY.length) ? stack(list, q.cat ? q.cat : 'All products') : null,
