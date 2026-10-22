@@ -96,7 +96,7 @@ function sheet(title, body, foot) {
   const w = E('div', { class: 'sheetwrap', role: 'dialog', 'aria-modal': 'true' });
   const close = () => w.remove();
   w.append(E('div', { class: 'bd', onclick: close }), E('div', { class: 'sheet' }, E('div', { class: 'grab' }), E('div', { class: 'hd' }, E('h2', null, title), E('button', { class: 'ic', 'aria-label': 'Close', onclick: close }, icon('x'))), body, foot || null));
-  document.body.append(w); return { close };
+  document.body.append(w); return { close, el: w };
 }
 function placeholder(name) { return E('div', { style: { height: '100%', display: 'grid', placeItems: 'center', color: '#c8c5c2', fontSize: '26px', fontWeight: 700, letterSpacing: '.04em' } }, (name || '?').trim().slice(0, 1).toUpperCase()); }
 
@@ -304,8 +304,8 @@ function filterSet(q) {
 function setQ(patch) { const q = { ...q$(), ...patch }; for (const k in q) if (q[k] == null || q[k] === '') delete q[k]; const qs = new URLSearchParams(q).toString(); location.hash = '#/shop' + (qs ? '?' + qs : ''); }
 function refine() {
   const base = q$(); const draft = { ...base };
-  const prices = STY.map((s) => s.price); const lo = Math.floor(Math.min(...prices, 0)), hi = Math.ceil(Math.max(...prices, 1));
-  const body = E('div'); const showBtn = E('button', { class: 'btn wide' }, 'Show'); const live = () => { const n = filterSet(draft).length; showBtn.textContent = 'Show ' + n + (n === 1 ? ' piece' : ' pieces'); };
+  const prices = STY.map((s) => s.price); const lo = Math.floor(Math.min(...prices, 0)), hi = Math.ceil(Math.max(...prices, 1) / 100) * 100;
+  const body = E('div'); const showBtn = E('button', { class: 'btn wide' }, 'View items'); const live = () => { const n = filterSet(draft).length; showBtn.textContent = 'View ' + n + (n === 1 ? ' item' : ' items'); };
   const allSizes = [...new Set(STY.flatMap(sizesOf))]; const allCols = [...new Set(STY.flatMap(colours))]; const cats = [...new Set(STY.map((s) => s.category).filter(Boolean))];
   const paint = () => {
     clear(body);
@@ -314,14 +314,14 @@ function refine() {
       E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, 'Sort'), E('div', { class: 'fwrap' }, [['new', 'Newest'], ['low', 'Price low'], ['high', 'Price high'], ['az', 'A to Z']].map(([k, l]) => E('button', { class: 'sz' + ((draft.sort || 'new') === k ? ' on' : ''), onclick: () => { draft.sort = k; paint(); } }, l)))),
       cats.length > 1 ? E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, 'Type'), E('div', { class: 'fwrap' }, cats.map((c) => E('button', { class: 'sz' + (draft.cat === c ? ' on' : ''), onclick: () => pick('cat', c) }, c)))) : null,
       allSizes.length ? E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, 'Size'), E('div', { class: 'fwrap' }, allSizes.map((z) => E('button', { class: 'sz' + (draft.size === z ? ' on' : ''), onclick: () => pick('size', z) }, z)))) : null,
-      allCols.length ? E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, 'Colour'), E('div', { class: 'dots2' }, allCols.map((c) => E('button', { class: draft.colour === c ? 'on' : '', onclick: () => pick('colour', c) }, E('span', { class: 'c', style: { background: hex(c) } }), c)))) : null,
+      allCols.length ? E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, 'Colour'), E('div', { class: 'fwrap' }, allCols.map((c) => E('button', { class: 'sz cl' + (draft.colour === c ? ' on' : ''), onclick: () => pick('colour', c) }, E('span', { class: 'c', style: { background: hex(c) } }), c)))) : null,
       E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, 'Budget'), (() => { const mn = E('input', { type: 'range', min: lo, max: hi, value: draft.min || lo, step: 100 }), mx = E('input', { type: 'range', min: lo, max: hi, value: draft.max || hi, step: 100 }); const rv = E('div', { class: 'rv' }); const up = () => { if (+mn.value > +mx.value) mn.value = mx.value; draft.min = +mn.value > lo ? mn.value : ''; draft.max = +mx.value < hi ? mx.value : ''; rv.textContent = ''; add(rv, [E('span', null, inr(mn.value)), E('span', null, inr(mx.value))]); live(); }; mn.oninput = up; mx.oninput = up; up(); return E('div', { class: 'range' }, rv, mn, mx); })()),
       E('button', { class: 'tgl' + (draft.stock ? ' on' : ''), style: { width: '100%' }, onclick: () => { draft.stock = draft.stock ? '' : '1'; paint(); } }, E('span', null, 'Only what is in stock'), E('i')));
     live();
   };
   paint();
-  const foot = E('div', { class: 'row2', style: { marginTop: '8px' } }, E('button', { class: 'btn out', onclick: () => { sh.close(); location.hash = '#/shop'; } }, 'Clear all'), showBtn);
-  const sh = sheet('Refine', body, foot);
+  const foot = E('div', { class: 'rf' }, showBtn, E('button', { class: 'rclr', onclick: () => { sh.close(); location.hash = '#/shop'; } }, 'Clear all'));
+  const sh = sheet('Filter', body, foot); sh.el.querySelector('.sheet').classList.add('refine');
   showBtn.onclick = () => { sh.close(); const q = { ...draft }; for (const k in q) if (!q[k]) delete q[k]; location.hash = '#/shop' + (Object.keys(q).length ? '?' + new URLSearchParams(q).toString() : ''); };
 }
 function pagedGrid(list) {

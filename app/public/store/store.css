@@ -521,3 +521,19 @@ svg.f{fill:currentColor!important;stroke:none!important}
 @media(min-width:900px){.perks{grid-template-columns:repeat(4,1fr);margin:6px 28px 18px}}
 .dock .chat,.chatfab{box-shadow:0 0 0 2px #fff,0 6px 18px rgba(0,0,0,.35)}.dock .chat svg.f,.chatfab svg.f{color:#fff}
 .dock .pill,.dock>div:not(.chat){background:rgba(255,255,255,.94)!important}
+/* Filter sheet: compact, grouped by hairlines, grey pills, one dark action */
+.sheet.refine{padding:14px 16px calc(12px + env(safe-area-inset-bottom));max-height:90svh;display:flex;flex-direction:column;overflow:hidden}
+.sheet.refine .grab{margin-bottom:8px}.sheet.refine .hd{margin-bottom:2px}.sheet.refine .hd h2{font-size:15px;font-weight:700}
+.sheet.refine .sheet-b,.sheet.refine>div:nth-child(3){overflow:auto;min-height:0;flex:1}
+.sheet.refine .fgrp{padding:11px 0;border-bottom:1px solid var(--line)}.sheet.refine .fgrp:last-of-type{border-bottom:0}
+.sheet.refine .fgrp>.lbl{display:block;font-size:10px;letter-spacing:.04em;margin-bottom:7px;color:#111;text-transform:none;font-weight:600}
+.sheet.refine .fwrap{gap:5px}
+.sheet.refine .sz{min-width:0;height:28px;padding:0 12px;font-size:10.5px;background:#f1f0ef;border-radius:14px}
+.sheet.refine .sz.on{background:#000;color:#fff}
+.sheet.refine .sz.cl{display:inline-flex;gap:6px;align-items:center;padding:0 12px 0 9px}
+.sheet.refine .sz .c{width:10px;height:10px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.22);flex:none}
+.sheet.refine input[type=range]{accent-color:#000}
+.sheet.refine .tgl{margin-top:8px}
+.rf{display:grid;gap:4px;padding-top:8px;border-top:1px solid var(--line);margin-top:2px}
+.rf .btn{height:42px;background:#000;color:#fff;border-radius:21px;font-weight:700;letter-spacing:.02em}
+.rclr{font-size:10px;color:#777;text-decoration:underline;padding:6px;justify-self:center}
