@@ -322,13 +322,83 @@ ${b.refunded ? `<div class=row><span>Refunded</span><span>-${inr(b.refunded)}</s
     return { css, html: `<div class=bt-soft-wrap><div class=bt-soft>${html}</div></div>` };
   }
 
-  const STYLES = { ticket: buildTicket, modern: buildModern, brand: buildBrand, ruled: buildRuled, soft: buildSoft };
+  // =======================================================================================================
+  // 6) "a4" -- a full A4 printed page (like a GST tax invoice), not a receipt-width card. For a business that
+  //    wants a formal, letter-sized document to print or save as PDF rather than a till-style slip. Uses the
+  //    same iPhone-safe table-border rules as "ruled" (border-collapse:separate + a --bw line width), and a
+  //    real @page rule so a browser's own "Print" / "Save as PDF" actually renders one clean A4 sheet.
+  // =======================================================================================================
+  function buildA4(o, c, opts) {
+    const b = computeBill(o, c, opts), accent = c.col || '#800020', css = PAGE_RESET + `
+.bt-a4-wrap{display:flex;justify-content:center;background:#e9e7e2;padding:18px 10px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:#1c1c1a}
+.bt-a4{width:210mm;min-height:297mm;box-sizing:border-box;background:#fff;padding:14mm 14mm 12mm;box-shadow:0 1px 3px rgba(0,0,0,.08),0 18px 40px -20px rgba(0,0,0,.3)}
+.bt-a4 .dup{display:inline-block;border:1px solid ${esc(accent)};color:${esc(accent)};border-radius:999px;padding:4px 12px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px}
+.bt-a4 .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border-bottom:2px solid ${esc(accent)};padding-bottom:16px;margin-bottom:18px}
+.bt-a4 .hd .lg{display:flex;gap:14px;align-items:center}
+.bt-a4 .hd img{max-height:56px;max-width:140px;object-fit:contain;display:block}
+.bt-a4 .nm{font-size:24px;font-weight:800;letter-spacing:-.01em}
+.bt-a4 .sub{font-size:12px;color:#5b584f;margin-top:3px;line-height:1.6}
+.bt-a4 .tt{text-align:right}
+.bt-a4 .tt .cap{font-size:26px;font-weight:800;letter-spacing:.02em;color:${esc(accent)};text-transform:uppercase}
+.bt-a4 .tt .meta{font-size:12.5px;color:#5b584f;margin-top:6px;line-height:1.7}
+.bt-a4 .tt .meta b{color:#1c1c1a}
+.bt-a4 .secs{display:flex;justify-content:space-between;gap:24px;margin-bottom:20px}
+.bt-a4 .sec{font-size:13px;line-height:1.7;color:#3a3832}
+.bt-a4 .sec b{display:block;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#9b968a;margin-bottom:5px;font-weight:700}
+.bt-a4 table.it{width:100%;border:var(--bw,1px) solid #1c1c1a;font-size:13px}
+.bt-a4 table.it th{background:#f6f4f0;text-align:left;font-size:11px;letter-spacing:.03em;text-transform:uppercase;padding:9px 10px;border-bottom:var(--bw,1px) solid #1c1c1a}
+.bt-a4 table.it th+th,.bt-a4 table.it td+td{border-left:var(--bw,1px) solid #e3e0d8}
+.bt-a4 table.it td{padding:9px 10px;border-bottom:var(--bw,1px) solid #e3e0d8}
+.bt-a4 .r{text-align:right}.bt-a4 .c{text-align:center}
+.bt-a4 .foot{display:flex;justify-content:space-between;gap:24px;margin-top:20px}
+.bt-a4 .notes{flex:1;font-size:12px;color:#5b584f;line-height:1.7;max-width:60%}
+.bt-a4 .tot{width:260px}
+.bt-a4 .tot .row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:#3a3832}
+.bt-a4 .tot .big{display:flex;justify-content:space-between;font-size:19px;font-weight:800;color:${esc(accent)};border-top:2px solid #1c1c1a;margin-top:8px;padding-top:10px}
+.bt-a4 .sign{margin-top:46px;display:flex;justify-content:flex-end}
+.bt-a4 .sign div{text-align:center;font-size:12px;color:#5b584f}
+.bt-a4 .sign .ln{width:180px;border-top:1px solid #1c1c1a;margin-bottom:6px;height:38px}
+.bt-a4 .thanks{margin-top:22px;text-align:center;font-size:13px;color:#5b584f}
+@media print{@page{size:A4;margin:0}.bt-a4-wrap{background:#fff;padding:0}.bt-a4{box-shadow:none;width:auto;min-height:0}}`;
+    const html = `
+${b.dup ? '<div class=dup>Duplicate &middot; reprint</div>' : b.provisional ? '<div class=dup>Provisional bill, not a tax invoice</div>' : ''}
+<div class=hd>
+  <div class=lg>${c.logo ? '<img src="' + esc(c.logo) + '">' : ''}<div><div class=nm>${esc(c.name || '')}</div>${c.addr ? '<div class=sub>' + esc(c.addr) + '</div>' : ''}${[c.phone ? 'Ph ' + esc(c.phone) : '', c.gstin ? 'GSTIN ' + esc(c.gstin) : ''].filter(Boolean).length ? '<div class=sub>' + [c.phone ? 'Ph ' + esc(c.phone) : '', c.gstin ? 'GSTIN ' + esc(c.gstin) : ''].filter(Boolean).join(' &middot; ') + '</div>' : ''}</div></div>
+  <div class=tt><div class=cap>${b.provisional ? 'Bill' : 'Invoice'}</div><div class=meta><b>No.</b> ${esc(o.no || '')}<br><b>Date</b> ${fdate(b.when)}, ${ftime(b.when)}${b.tableLabel ? '<br><b>' + esc(o.type || 'Order') + '</b> ' + esc(b.tableLabel) : ''}</div></div>
+</div>
+<div class=secs>
+  <div class=sec><b>Billed to</b>${esc(b.billTo)}${b.cust.phone ? '<br>' + esc(b.cust.phone) : ''}${b.cust.gst ? '<br>GSTIN ' + esc(b.cust.gst) : ''}</div>
+  <div class=sec style="text-align:right"><b>Payment</b>${b.provisional ? 'Not paid yet' : b.pays.map((p) => esc(p.label) + ' &middot; ' + inr(p.amt)).join('<br>') || '&mdash;'}</div>
+</div>
+<table class=it><colgroup><col style="width:48%"><col style="width:13%"><col style="width:19%"><col style="width:20%"></colgroup>
+<thead><tr><th>Item</th><th class=c>Qty</th><th class=r>Price</th><th class=r>Amount</th></tr></thead>
+<tbody>${b.rows.map((l) => `<tr><td>${esc(l.name)}${l.size ? ' (' + esc(l.size) + ')' : ''}${l.note ? '<br><small>' + esc(l.note) + '</small>' : ''}</td><td class=c>${l.qty}</td><td class=r>${inr(l.price)}</td><td class=r>${inr(l.amt)}</td></tr>`).join('')}</tbody></table>
+<div class=foot>
+<div class=notes>${c.ftr ? esc(c.ftr) : ''}</div>
+<div class=tot>
+<div class=row><span>Subtotal</span><span>${inr(b.t.sub)}</span></div>
+${(b.t.offers || []).map((x) => `<div class=row><span>${esc(x.desc)}</span><span>-${inr(x.amt)}</span></div>`).join('')}
+${b.t.d ? `<div class=row><span>Discount</span><span>-${inr(b.t.d)}</span></div>` : ''}
+${b.t.svc ? `<div class=row><span>Service charge</span><span>${inr(b.t.svc)}</span></div>` : ''}${b.t.pack ? `<div class=row><span>Packing</span><span>${inr(b.t.pack)}</span></div>` : ''}${b.t.deliv ? `<div class=row><span>Delivery</span><span>${inr(b.t.deliv)}</span></div>` : ''}
+${b.gst.map(([a, v]) => `<div class=row><span>${a}</span><span>${inr(v)}</span></div>`).join('')}
+${b.t.round ? `<div class=row><span>Round off</span><span>${b.t.round >= 0 ? '+' : '-'}${inr(Math.abs(b.t.round))}</span></div>` : ''}
+<div class=big><span>Total</span><span>${inr(b.t.total)}</span></div>
+${b.refunded ? `<div class=row><span>Refunded</span><span>-${inr(b.refunded)}</span></div>` : ''}
+</div>
+</div>
+<div class=sign><div><div class=ln></div>Authorised signatory</div></div>
+<div class=thanks>Thank you for your business!</div>`;
+    return { css, html: `<div class=bt-a4-wrap><div class=bt-a4>${html}</div></div>` };
+  }
+
+  const STYLES = { ticket: buildTicket, modern: buildModern, brand: buildBrand, ruled: buildRuled, soft: buildSoft, a4: buildA4 };
   const LIST = [
     ['ticket', 'Ticket', 'A narrow thermal-style column with dashed rules and a perforated edge -- looks like the paper that comes out of a till.'],
     ['modern', 'Modern', 'Clean sans-serif, pill badges, generous whitespace. No borders.'],
     ['brand', 'Brand', 'A solid colour band in the business’s own accent carries the name. Bold and high-contrast.'],
     ['ruled', 'Ruled', 'A classic ruled table on a letterhead-style header. Traditional and formal.'],
     ['soft', 'Soft', 'A rounded, warm card with soft shadows and pill-shaped totals. Friendly, cafe/salon leaning.'],
+    ['a4', 'A4 page', 'A full letter-size page, like a formal GST tax invoice -- prints or saves as one clean A4 sheet instead of a receipt-width slip.'],
   ];
   root.auzBillTemplates = Object.assign(root.auzBillTemplates || {}, { styles: STYLES, list: LIST, computeBill, gstRows });
   if (typeof module !== 'undefined' && module.exports) module.exports = root.auzBillTemplates;

@@ -166,38 +166,34 @@ async function voidPaid(o) {
   await save('order', c, c.id); await save('voidlog', { order: c.id, no: c.no, reason, by: S.user.email || S.user.id, approvedBy: ap.name, at: now() });
   toast('Bill cancelled'); render();
 }
-// retail: return or exchange a sold item
-function returnableQty(o, idx) { const l = o.lines[idx], back = (o.exchanges || []).filter((e) => e.lineIdx === idx).reduce((a, e) => a + e.qty, 0); return l.qty - back; }
+// retail: return or exchange a sold item -- raises a request (pos/returns.js), not an instant effect any
+// more; a manager approves/rejects it, the item is marked received, then the actual refund/exchange is
+// completed. `returnableQty` keeps a line's stock out of being requested twice at once (already-completed
+// returns are subtracted via o.exchanges as before; a still-open request -- pending/approved/received --
+// is subtracted too, from pos/returns.js's own records, even though nothing has hit o.exchanges yet).
+function returnableQty(o, idx) {
+  const l = o.lines[idx], done = (o.exchanges || []).filter((e) => e.lineIdx === idx).reduce((a, e) => a + e.qty, 0);
+  const inFlight = L('returnreq').filter((r) => r.orderId === o.id && r.lineIdx === idx && ['pending', 'approved', 'received'].includes(r.stage)).reduce((a, r) => a + r.qty, 0);
+  return l.qty - done - inFlight;
+}
 function returnSheet(o) {
   if (dayLocked(localDay(o.paidAt)) && !can('o')) return info('This day is closed', 'Ask the owner to reopen it first.');
   const rows = o.lines.map((l, idx) => ({ l, idx, avail: returnableQty(o, idx) })).filter((r) => r.avail > 0);
-  if (!rows.length) return info('Nothing left to return', 'Every item on this bill has already come back.');
+  if (!rows.length) return info('Nothing left to return', 'Every item on this bill has already come back, or is waiting on an open request.');
   const s = sheet({ title: 'Return or exchange · ' + o.no, narrow: true, body: h('div', { class: 'list' }, rows.map(({ l, idx, avail }) => liRow({ title: l.name + (l.size ? ' (' + l.size + ')' : ''), sub: avail + ' can come back', chev: true, onclick: () => { s.close(); returnLineSheet(o, idx, avail); } }))) });
 }
 function returnLineSheet(o, idx, avail) {
   const l = o.lines[idx]; let q = 1;
   sheet({ title: l.name, narrow: true, closeLabel: 'Cancel', body: h('div', { class: 'row sp' }, h('span', { class: 'lbl' }, 'Quantity'), stepper(1, (v) => (q = v), 1, avail)),
-    actions: [{ label: 'Refund', run: () => { doReturn(o, idx, q, 'refund'); } }, { label: 'Exchange', primary: true, run: () => { exchangePick(o, idx, q); } }] });
+    actions: [{ label: 'Request refund', run: () => { requestReturn(o, idx, q, 'refund'); } }, { label: 'Request exchange', primary: true, run: () => { exchangePick(o, idx, q); } }] });
 }
 function exchangePick(o, idx, q) {
   const its = L('item').filter((i) => i.variants && i.variants.length);
   const s = sheet({ title: 'Exchange for', narrow: true, body: its.length ? h('div', { class: 'list' }, its.map((ni) => liRow({ title: ni.name, value: inr(ni.price), chev: true, onclick: () => {
     s.close();
     const s2 = sheet({ title: ni.name, narrow: true, body: h('div', { class: 'list' }, ni.variants.map((v) => liRow({ title: v.size + (v.color ? ' / ' + v.color : ''), sub: v.qty > 0 ? v.qty + ' in stock' : 'Out of stock', onclick: async () => {
-      if (v.qty < q && !(await confirmBox('Not enough stock', 'Only ' + v.qty + ' in stock. Exchange anyway?', 'Exchange'))) return;
-      s2.close(); doReturn(o, idx, q, 'exchange', { itemId: ni.id, itemName: ni.name, price: ni.price, size: v.size, color: v.color });
+      if (v.qty < q && !(await confirmBox('Not enough stock', 'Only ' + v.qty + ' in stock. Request the exchange anyway?', 'Request exchange'))) return;
+      s2.close(); requestReturn(o, idx, q, 'exchange', { itemId: ni.id, itemName: ni.name, price: ni.price, size: v.size, color: v.color });
     } }))) });
   } }))) : empty('box', 'Nothing to exchange with', 'Only items with size or colour stock can be exchanged.') });
-}
-async function doReturn(o, idx, q, type, give) {
-  const reason = await pickReason(type === 'refund' ? 'Why is it coming back?' : 'Why the exchange?'); if (!reason) return;
-  const ap = await approve('return', o.id, (type === 'refund' ? 'Return ' : 'Exchange ') + q + ' × ' + o.lines[idx].name); if (!ap) return;
-  const c = structuredClone(rec(o.id) || o), l = c.lines[idx], amt = r2(l.price * q), gAmt = type === 'exchange' && give ? r2(give.price * q) : 0;
-  const it = rec(l.id);
-  if (it && it.variants && l.variant) { const v = it.variants.find((x) => x.size === l.variant.size && (x.color || '') === (l.variant.color || '')); if (v) { v.qty = r2((v.qty || 0) + q); await save('item', it, it.id); } }
-  if (type === 'exchange' && give) { const ni = rec(give.itemId); if (ni && ni.variants) { const v = ni.variants.find((x) => x.size === give.size && (x.color || '') === (give.color || '')); if (v) { v.qty = r2((v.qty || 0) - q); await save('item', ni, ni.id); } } }
-  c.exchanges = (c.exchanges || []).concat({ lineIdx: idx, qty: q, type, amt, give: give ? { ...give, qty: q, amt: gAmt } : null, diff: r2(gAmt - amt), reason, by: S.user.email || S.user.id, at: now() });
-  c.returnApprovedBy = ap;
-  await save('order', c, c.id); render();
-  info(type === 'refund' ? 'Refund ' + inr(amt) : gAmt > amt ? 'Collect ' + inr(r2(gAmt - amt)) : gAmt < amt ? 'Refund ' + inr(r2(amt - gAmt)) : 'Even exchange', type === 'refund' ? 'Give the money back and record the refund on the bill if needed.' : gAmt === amt ? 'Nothing is owed either way.' : '');
 }

@@ -18,6 +18,8 @@ V.more = () => {
   }
   // Every staff member (not just owner/manager): a stripped-down stock screen, nothing else -- see pos/inventory.js.
   if (can('inventory')) links.push(liRow({ ic: 'box', tone: 'gray', title: 'Inventory', sub: 'Check stock levels and adjust quantity on hand', chev: true, onclick: () => go('inventory') }));
+  // Retail only (same gate orders.js's own "Return or exchange" action already uses) -- see pos/returns.js.
+  if (isRetail()) { const openN = openReturnReqs().length; links.push(liRow({ ic: 'move', tone: openN ? 'orange' : 'gray', title: 'Returns & exchanges', sub: openN ? plural(openN, 'request') + ' waiting' : 'Nothing waiting right now', chev: true, onclick: () => go('returns') })); }
   return h('div', { class: 'page' },
     h('div', { class: 'page-head' }, h('div', null, h('h1', null, 'More'), h('div', { class: 'sub' }, myName() + ' · ' + cap1(S.role)))),
     extra.length ? h('div', { class: 'list only-phone' }, extra.map((n) => liRow({ ic: n.ic, tone: n.tone || 'gray', title: n.label, chev: true, onclick: () => go(n.k) }))) : null,
