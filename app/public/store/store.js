@@ -161,6 +161,13 @@ const bagCount = () => bagLines().reduce((a, l) => a + l.q, 0);
 let counts = [];
 function paintCounts() { counts.forEach((f) => f()); }
 function countBadge(get) { const n = E('span', { class: 'n' }); const f = () => { const v = get(); n.textContent = v; n.style.display = v ? '' : 'none'; }; counts.push(f); f(); return n; }
+function denseOn() { try { return localStorage.getItem('st.dens') === '1'; } catch (x) { return false; } }
+function paintDense() { const b = $('#dview'); if (b) b.replaceChildren(icon(denseOn() ? 'big' : 'dense')); }
+function toggleDense() {
+  const on = !denseOn(); try { localStorage.setItem('st.dens', on ? '1' : '0'); } catch (x) {}
+  const gw = $('.gw'); if (gw) { gw.classList.toggle('dense', on); gw.classList.add('flip'); setTimeout(() => gw.classList.remove('flip'), 320); }
+  paintDense();
+}
 function shell() {
   counts = [];
   const name = D.shop.name;
@@ -168,7 +175,7 @@ function shell() {
   const top = E('header', { class: 'top' },
     E('div', { class: 'l' }, E('a', { class: 'deskonly', href: link('shop?new=1') }, 'New in'), E('a', { class: 'deskonly', href: link('collections') }, 'Collections'), E('button', { class: 'menu-pill phoneonly', onclick: openMenu }, E('i'), 'Menu')),
     brandEl,
-    E('div', { class: 'r' }, E('a', { class: 'ic deskonly', href: link('stores'), 'aria-label': 'Stores' }, icon('pin')), E('button', { class: 'ic', 'aria-label': 'Search', onclick: openSearch }, icon('search')),
+    E('div', { class: 'r' }, E('button', { class: 'ic dview', id: 'dview', 'aria-label': 'Picture view', title: 'Picture view', onclick: toggleDense }, icon('dense')), E('a', { class: 'ic deskonly', href: link('stores'), 'aria-label': 'Stores' }, icon('pin')), E('button', { class: 'ic', 'aria-label': 'Search', onclick: openSearch }, icon('search')),
       E('a', { class: 'ic deskonly', href: link('wishlist'), 'aria-label': 'Saved' }, icon('mark'), countBadge(() => wish.length)), E('a', { class: 'ic', href: link('me'), 'aria-label': 'My account' }, icon('user')), E('a', { class: 'ic', href: link('bag'), 'aria-label': 'Bag' }, icon('bag'), countBadge(bagCount)),
       E('button', { class: 'menu-pill deskonly', onclick: openMenu }, E('i'), 'Menu')));
   const c = cfg();
@@ -410,7 +417,7 @@ V.shop = (v) => {
   for (const k of ['cat', 'colour', 'fam', 'size', 'gender', 'stock', 'new', 'min', 'max']) if (q[k]) act.push([k, k === 'stock' ? 'In stock' : k === 'new' ? 'New in' : k === 'min' ? 'From ' + inr(q[k]) : k === 'max' ? 'Up to ' + inr(q[k]) : (lab[k] ? lab[k] + ': ' : '') + q[k]]);
   if (q.col) act.push(['col', colName || 'Collection']);
   v.append(E('div', { class: 'crumbs' }, E('a', { href: link('') }, 'Home'), ' / ', title),
-    E('div', { class: 'shophd' }, E('div', null, E('h1', null, title), E('div', { class: 'mut tiny' }, list.length + (list.length === 1 ? ' piece' : ' pieces'))), E('div', { class: 'shact' }, E('button', { class: 'btn soft icb', 'aria-label': 'Picture view', title: 'Picture view', onclick: (e) => { const on = !gw.classList.contains('dense'); gw.classList.toggle('dense', on); gw.classList.add('flip'); setTimeout(() => gw.classList.remove('flip'), 320); try { localStorage.setItem('st.dens', on ? '1' : '0'); } catch (x) {} e.currentTarget.replaceChildren(icon(on ? 'big' : 'dense')); } }, icon(dens ? 'big' : 'dense')), E('button', { class: 'btn soft', onclick: (e) => refine(e.currentTarget) }, icon('filter'), 'Refine'))),
+    E('div', { class: 'shophd' }, E('div', null, E('h1', null, title), E('div', { class: 'mut tiny' }, list.length + (list.length === 1 ? ' piece' : ' pieces'))), E('button', { class: 'btn soft', onclick: (e) => refine(e.currentTarget) }, icon('filter'), 'Refine')),
     act.length ? E('div', { class: 'chips' }, act.map(([k, l]) => E('button', { class: 'chip on', onclick: () => setQ({ [k]: '' }) }, l, E('span', { class: 'x' }, '×')))) : null,
     !act.length && [...new Set(STY.map((s) => s.category))].length > 1 ? E('div', { class: 'chips' }, [...new Set(STY.map((s) => s.category).filter(Boolean))].map((c) => E('button', { class: 'chip', onclick: () => setQ({ cat: c }) }, c))) : null,
     (q.cat || list.length === STY.length) ? stack(list, q.cat ? q.cat : 'All products') : null,
@@ -820,7 +827,7 @@ const TR = (() => {
 function route() {
   const raw = (location.hash || '').replace(/^#\/?/, '').split('?')[0]; const parts = raw.split('/').filter(Boolean).map(decodeURIComponent);
   const id = parts[0] || 'home'; const view = $('#view'); if (!view) return; clear(view);
-  document.body.classList.toggle('homehero', id === 'home'); const fn = V[id] || V.home; try { const r = fn(view, parts[1]); if (r && r.catch) r.catch((e) => view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message))); } catch (e) { view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message)); }
+  document.body.classList.toggle('homehero', id === 'home'); document.body.classList.toggle('onlist', id === 'shop'); paintDense(); const fn = V[id] || V.home; try { const r = fn(view, parts[1]); if (r && r.catch) r.catch((e) => view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message))); } catch (e) { view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message)); }
   $('#menu') && $('#menu').classList.remove('on'); $('#srch') && $('#srch').classList.remove('on');
   document.title = (id === 'home' ? '' : cap(id === 'p' ? (BYID[parts[1]] || {}).name || 'Product' : id) + ' · ') + D.shop.name;
   if (id !== 'p') setMeta(document.title, cfg().tagline || ('Shop online at ' + D.shop.name), ((D.styles || [])[0] && photos((D.styles || [])[0])[0]) || '', location.origin + location.pathname);

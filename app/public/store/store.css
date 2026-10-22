@@ -1027,3 +1027,6 @@ body.homehero .announce{display:none}
 .gw.dense .pc .sc{overflow:hidden}.gw.dense .pc .ph{border-radius:12px}
 /* tighter spacing in the shop and the product lists */
 .grid{gap:3px!important}.pc .in{padding:5px 2px 2px}.shophd{margin:4px 0 6px}.crumbs{margin:2px 0 4px}.chips{margin:0 0 6px}
+
+/* the picture-view button lives in the header, only on product list pages */
+.top .dview{display:none}body.onlist .top .dview{display:inline-grid}
