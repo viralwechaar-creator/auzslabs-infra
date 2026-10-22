@@ -77,7 +77,7 @@ for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.html'))) {
   // head: only our stylesheet
   s = s.replace(/<link rel="stylesheet"[^>]*>\s*/g, '').replace(/<link rel="stylesheet" href="min\.css[^>]*>\s*/g, '');
   s = s.replace(/<script[^>]*src="(?:kept\/)?(?:sketch|fx|fx-art|fx-canvas|fx-stack|fx-phys)\.js[^"]*"[^>]*><\/script>\s*/g, '').replace(/<script[^>]*src="min\.js[^"]*"[^>]*><\/script>\s*/g, '').replace(/<script id="topbar-nav-js">[\s\S]*?<\/script>\s*/, '');
-  if (!/href="u\.css/.test(s)) s = s.replace('</head>', '<link rel="stylesheet" href="u.css?v=2"><link rel="stylesheet" href="e.css?v=2">\n<meta name="theme-color" content="#efeeed">\n</head>');
+  if (!/href="u\.css/.test(s)) s = s.replace('</head>', '<link rel="stylesheet" href="u.css?v=2"><link rel="stylesheet" href="e.css?v=3">\n<meta name="theme-color" content="#efeeed">\n</head>');
   if (!/src="u\.js/.test(s)) s = s.replace('</body>', '<script src="ed.js?v=1" defer></script><script src="u.js?v=1" defer></script>\n</body>');
   // body chrome
   const cur = f;
