@@ -37,6 +37,30 @@ export async function handle(ctx) {
     catch (err) { throw new HttpError(400, err.message || 'could not start payment'); }
     return reply(200, result);
   }
+  // AUZsStyle online store: card/UPI/net banking with the SHOP'S OWN Razorpay keys (db/232). The money goes straight to the shop.
+  // The browser's success callback is verified by HMAC in SQL (sty_online_confirm); nothing is trusted without the signature.
+  if (url.pathname === '/payments/sty/start' && req.method === 'POST') {
+    if (rateLimited(`styrzp:${ip}`, 20, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+    const { token } = await readJsonBody(req);
+    const { rows } = await pool.query('select sty_online_start($1) as r', [String(token || '')]).catch((e) => { throw new HttpError(400, e.message || 'could not start payment'); });
+    const k = rows[0].r;
+    const res = await fetch(`${process.env.RAZORPAY_API_URL || 'https://api.razorpay.com/v1'}/orders`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: 'Basic ' + Buffer.from(`${k.key}:${k.secret}`).toString('base64') },
+      body: JSON.stringify({ amount: Math.round(Number(k.total) * 100), currency: 'INR', receipt: String(k.number).slice(0, 40) }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || !body.id) throw new HttpError(400, 'The shop\'s card payment is not working right now. Please choose another way to pay.');
+    await pool.query('select sty_online_set_order($1, $2)', [String(token), body.id]);
+    return reply(200, { key: k.key, orderId: body.id, amount: body.amount, name: k.name, phone: k.phone, email: k.email, number: k.number });
+  }
+  if (url.pathname === '/payments/sty/verify' && req.method === 'POST') {
+    if (rateLimited(`styrzpv:${ip}`, 30, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+    const b = await readJsonBody(req);
+    const { rows } = await pool.query('select sty_online_confirm($1, $2, $3, $4) as r', [String(b.token || ''), String(b.razorpay_order_id || ''), String(b.razorpay_payment_id || ''), String(b.razorpay_signature || '')])
+      .catch((e) => { throw new HttpError(400, e.message || 'could not verify payment'); });
+    return reply(200, rows[0].r);
+  }
   // ---- Renewals and auto-renewal (db/201): provider-agnostic front door for the apps' "Plan & account" sheet.
   // Razorpay Subscriptions when Razorpay is configured, else the older Cashfree code. Owner-only, gated in the SQL/route. ----
   if (url.pathname === '/payments/autorenew/config' && req.method === 'GET') {
