@@ -1,7 +1,7 @@
 /* AUZsFinance: Assets (things the business owns that wear out) and Budget (a monthly limit per kind of expense). */
 'use strict';
 page('assets', { title: 'Assets', async render(v) {
-  v.header({ title: 'Assets', actions: [can('write') ? { label: 'Add asset', icon: 'plus', primary: true, run: () => assetSheet() } : null] });
+  v.header({ title: 'Assets', back: 'tools', actions: [can('write') ? { label: 'Add asset', icon: 'plus', primary: true, run: () => assetSheet() } : null] });
   const rows = await api('fin_asset_list');
   const worth = rows.filter((a) => a.status === 'active').reduce((x, a) => x + Number(a.book_value), 0);
   v.root.append(h('div', { class: 'hero-n' }, h('div', { class: 'k' }, 'Worth today'), h('div', { class: 'n num' }, inr(worth))));
@@ -23,7 +23,7 @@ function assetSheet(a) {
       await api('fin_asset_save', { p: a ? { id: a.id, name: nm.value.trim(), life_years: N(life.value), salvage: N(salv.value) } : { name: nm.value.trim(), cost: N(cost.value), buy_date: date.value, life_years: N(life.value), salvage: N(salv.value) } }); close(); route_(); } }] });
 }
 page('budget', { title: 'Budget', async render(v) {
-  v.header({ title: 'Budget', actions: [] });
+  v.header({ title: 'Budget', back: 'tools', actions: [] });
   const r = await api('fin_budget_status', { p_month: null });
   const left = r.rows.reduce((x, b) => x + Number(b.budget) - Number(b.spent), 0);
   v.root.append(h('div', { class: 'hero-n' }, h('div', { class: 'k' }, 'Left this month'), h('div', { class: 'n num ' + (left < 0 ? 'down' : '') }, inr(left))));

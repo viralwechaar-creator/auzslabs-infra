@@ -34,6 +34,10 @@ function addTxn(preset) {
       evid.value = 'have'; amount.dispatchEvent(new Event('input')); fileNote.textContent = 'Bill read and attached. Please check the amount and date.' + (r.notes[0] ? ' ' + r.notes[0] : '');
     } catch (e) { fileNote.textContent = 'Could not read this bill. You can still type it in.'; }
   };
+  const TAXK = ['money_in', 'expense', 'credit_sale', 'credit_purchase', 'asset_buy'], TDSK = ['money_in', 'expense', 'credit_sale', 'credit_purchase', 'dues_in', 'dues_out'];
+  const gst = TAXK.includes(preset.kind) ? selectEl([['', 'None'], ['5', '5%'], ['12', '12%'], ['18', '18%'], ['28', '28%']], preset.tax_rate ? String(preset.tax_rate) : '', { label: 'GST in this amount' }) : null;
+  const tds = TDSK.includes(preset.kind) ? input({ type: 'number', mode: 'decimal', step: '0.01', min: '0', value: preset.tds_amt || '', placeholder: '0', label: 'TDS cut' }) : null;
+  const taxBox = gst || tds ? h('details', { class: 'taxbox' }, h('summary', null, 'Tax (optional)'), h('div', { class: 'grid', style: { paddingTop: '10px' } }, gst ? field('GST in this amount', gst, 'The amount above is taken as including GST.') : null, tds ? field('TDS cut', tds, 'Tax cut at source from this payment, if any.') : null)) : null;
   const preview = h('div', { class: 'preview' });
   const accName = (id) => (accounts.find((a) => a.id === id) || {}).name || '';
   const upd = () => {
@@ -56,10 +60,11 @@ function addTxn(preset) {
     interest ? field(preset.kind === 'loan_repay' ? 'Interest part of this payment' : 'Interest part', interest, 'Leave empty if there is no interest.') : null,
     cat ? field(K.catLabel, cat) : null, dueDate ? field('Due date (optional)', dueDate) : null,
     field('Note', purpose), field('Proof', evid), h('div', { class: 'row', style: { gap: '8px', flexWrap: 'wrap' } }, h('button', { class: 'btn sm', type: 'button', onclick: () => file.click() }, icon('camera', 16), 'Add photo or file'), ['expense', 'asset_buy', 'credit_purchase'].includes(preset.kind) ? h('button', { class: 'btn sm', type: 'button', onclick: () => scanIn.click() }, icon('eye', 16), 'Scan a bill') : null, file, scanIn, fileNote),
-    review, preview);
+    taxBox, review, preview);
   sheet({ title: K.label, closeLabel: 'Cancel', full: true, body, actions: [{ label: 'Save', primary: true, onclick: async (close) => {
     const a = N(amount.value); if (a <= 0) { toast('Enter an amount above zero', { err: true }); amount.focus(); return false; }
     const p = { op, kind: preset.kind, amount: a, date: date.value, purpose: purpose.value.trim(), evidence: evid.value, review: review.querySelector('input').checked ? 'needs_review' : 'confirmed' };
+    if (gst && gst.value) p.tax_rate = N(gst.value); if (tds && tds.value) p.tds_amt = N(tds.value);
     if (acc) p.account_id = acc.value; if (to) p.to_account_id = to.value; if (cat && cat.value) p.category_id = cat.value; if (interest) p.interest = N(interest.value); if (dueDate && dueDate.value) p.due_date = dueDate.value;
     if (people) { const g = people.get(); if (K.person === 'req' && !g) { toast('Choose who this is with', { err: true }); return false; } if (g && g.name !== undefined) { if (!g.name) { toast('Type the name', { err: true }); return false; } const r = await api('fin_save_person', { p: { name: g.name, kind: preset.kind.indexOf('purchase') >= 0 || preset.kind === 'dues_out' ? 'supplier' : 'customer' } }); p.person_id = r.id; } else if (g) p.person_id = g.id; }
     if (partners) { const g = partners.get(); if (!g) { toast('Choose who', { err: true }); return false; } if (g.name !== undefined) { if (!g.name) { toast('Type the name', { err: true }); return false; } const r = await api('fin_save_partner', { p: { name: g.name, kind: 'partner' } }); p.partner_id = r.id; } else p.partner_id = g.id; }

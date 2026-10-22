@@ -560,6 +560,7 @@ export const RPC = {
   fin_send_reminder: { params: ['p_person'], auth: true },
   fin_anomalies: { params: [], auth: true },
   fin_forecast: { params: [], auth: true },
+  fin_tax_summary: { params: ['p_from', 'p_to'], auth: true },
   sty_dashboard: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
   sty_analytics: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
   sty_analytics_groups: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
