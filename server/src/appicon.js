@@ -51,7 +51,7 @@ export async function appIcon(tenant, settings, size) {
   // an uploaded home-screen icon wins over everything: used as-is, full bleed, nothing drawn around it
   const iconPath = (() => { try { return typeof s.appIcon === 'string' && s.appIcon ? new URL(s.appIcon, 'https://x').pathname : null; } catch { return null; } })();
   const upIcon = iconPath && iconPath.startsWith('/uploads/') ? iconPath : null;
-  const key = [tenant.slug, upIcon, logo, s.name, bg, size].join('|');
+  const key = ['v2', tenant.slug, upIcon, logo, s.name, bg, size].join('|');
   if (iconCache.has(key)) return iconCache.get(key);
   const sharp = (await import('sharp')).default;
   let out = null;
@@ -64,12 +64,18 @@ export async function appIcon(tenant, settings, size) {
   if (!out && logo) {
     try {
       const file = path.join(UPLOAD_ROOT, logo.replace(/^\/uploads\//, ''));
-      const inner = Math.round(size * 0.66);
-      const lg = await sharp(await fs.readFile(file), { density: 300 })
-        .resize(inner, inner, { fit: 'inside', background: { r: 0, g: 0, b: 0, alpha: 0 } })
-        .png().toBuffer();
-      out = await sharp({ create: { width: size, height: size, channels: 4, background: bg } })
-        .composite([{ input: lg, gravity: 'centre' }]).png().toBuffer();
+      // the logo fills the whole icon: a roughly square logo is cropped to fill, a wide or tall one is fitted
+      // with a small margin on white, so there is never a big empty tile around it
+      const buf = await fs.readFile(file);
+      const meta = await sharp(buf, { density: 300 }).metadata();
+      const ratio = (meta.width || 1) / (meta.height || 1);
+      if (ratio > 0.8 && ratio < 1.25) {
+        out = await sharp(buf, { density: 300 }).resize(size, size, { fit: 'cover' }).flatten({ background: '#ffffff' }).png().toBuffer();
+      } else {
+        const inner = Math.round(size * 0.9);
+        const lg = await sharp(buf, { density: 300 }).resize(inner, inner, { fit: 'inside', background: { r: 255, g: 255, b: 255, alpha: 0 } }).png().toBuffer();
+        out = await sharp({ create: { width: size, height: size, channels: 4, background: '#ffffff' } }).composite([{ input: lg, gravity: 'centre' }]).png().toBuffer();
+      }
     } catch { out = null; } // a missing/unreadable logo file falls through to initials below
   }
   if (!out) {
