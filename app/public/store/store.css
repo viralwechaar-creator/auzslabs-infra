@@ -985,3 +985,9 @@ footer .col a,footer .col span{font-size:9.5px}
 .pc.one .sc img{height:100%!important;object-fit:cover!important;object-position:center 35%}
 .pc .sc img{object-position:center 35%}
 .grid{align-items:stretch}
+
+/* equal cards for real: the link around each picture must fill the card height, and the picture is zoomed slightly */
+.pc .ph{aspect-ratio:3/4!important;height:auto}
+.pc .sc{height:100%!important}
+.pc .sc a{display:block;height:100%!important;flex:0 0 100%;overflow:hidden}
+.pc .sc img{width:100%;height:100%!important;object-fit:cover!important;transform:scale(1.08)}
