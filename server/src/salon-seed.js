@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 
 // Starting content. Everything here can be edited later from /admin.
 // Menu transcribed from "SHOWOFF_SALON treatment menu" PDF (volumes 1.1 to 7.1).
@@ -249,8 +250,18 @@ function makeDemo(today) {
     { id: 'st-demo-2', name: 'Rahul', role: 'Barber and groomer', bio: 'Clean cuts and beard work.', photo: '', visible: true },
     { id: 'st-demo-3', name: 'Meera', role: 'Skin and beauty specialist', bio: 'Facials, waxing and nails.', photo: '', visible: true }
   ];
-  const all = db.menu.flatMap(c => c.items);
-  const item = n => all.find(i => i.name === n) || all[0];
+  addDemoActivity(db, today);
+  return db;
+}
+
+/* A believable week of bookings, bills and expenses (fake names and numbers), dated relative to today and built
+   from whatever menu `db` already has, so the live Showoff Salon demo keeps its own menu and look and only its
+   activity is regenerated. Replaces db.bookings / invoices / expenses / counters. */
+function addDemoActivity(db, today) {
+  db.bookings = []; db.invoices = []; db.expenses = []; db.counters = { booking: 0, invoice: 0 };
+  const all = (db.menu || []).flatMap(c => c.items || []).filter(i => i && i.price);
+  if (!all.length) return db;
+  const item = (n, k) => all.find(i => i.name === n) || all[(k * 7) % all.length];
   const addDays = (d, n) => { const x = new Date(d + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
   const clients = [['Ananya Sharma', '9811100001'], ['Rohan Mehta', '9811100002'], ['Kavya Joshi', '9811100003'], ['Vikram Singh', '9811100004'], ['Neha Kapoor', '9811100005'], ['Aditya Rao', '9811100006']];
   const plan = [
@@ -259,16 +270,17 @@ function makeDemo(today) {
     [-1, '13:00', 0, ['Hair spa'], 'completed'], [-2, '17:00', 2, ['Full legs wax'], 'completed']
   ];
   plan.forEach(([d, time, ci, names, status], n) => {
-    const services = names.map(x => { const i = item(x); return { id: i.id, name: i.name, price: i.price }; });
-    db.bookings.push({ id: 'demo-b' + n, ref: 'DEMO' + String(n + 1).padStart(4, '0'), name: clients[ci][0], phone: clients[ci][1], email: '', date: addDays(today, d), time, note: '',
+    const services = names.map((x, k) => { const i = item(x, n + k); return { id: i.id, name: i.name, price: i.price }; });
+    db.bookings.push({ id: crypto.randomUUID(), ref: 'DEMO' + String(n + 1).padStart(4, '0'), name: clients[ci][0], phone: clients[ci][1], email: '', date: addDays(today, d), time, note: '',
       services, price: services.reduce((s, x) => s + x.price, 0), status, createdAt: new Date().toISOString() });
   });
   const bills = [[-1, 0, ['Hair spa'], 0], [-2, 2, ['Full legs wax', 'Classic pedicure'], 100], [-4, 3, ['Haircut', 'Beard trim'], 0], [-6, 4, ['Glow facial'], 0], [-9, 1, ['Hair colour'], 0], [-12, 5, ['Highlights'], 300]];
   bills.forEach(([d, ci, names, disc], n) => {
-    const items = names.map(x => { const i = item(x); return { name: i.name, qty: 1, price: i.price }; });
+    const items = names.map((x, k) => { const i = item(x, n + k + 3); return { name: i.name, qty: 1, price: i.price }; });
     const subtotal = items.reduce((s, x) => s + x.price, 0);
+    const off = Math.min(disc, subtotal);
     db.invoices.push({ id: 'demo-i' + n, token: 'de00' + String(n + 1).padStart(4, '0'), no: 'SS-' + String(n + 1).padStart(4, '0'), date: addDays(today, d),
-      client: { name: clients[ci][0], phone: clients[ci][1], email: '' }, items, subtotal, discount: { type: 'flat', value: disc }, discountAmt: disc, total: subtotal - disc,
+      client: { name: clients[ci][0], phone: clients[ci][1], email: '' }, items, subtotal, discount: { type: 'flat', value: off }, discountAmt: off, total: subtotal - off,
       servedBy: n % 2 ? 'Meera' : 'Priya', createdBy: { id: 'owner', name: 'Owner' }, note: '', bookingId: '', void: false, createdAt: new Date().toISOString() });
   });
   db.counters.invoice = bills.length;
@@ -278,4 +290,4 @@ function makeDemo(today) {
   return db;
 }
 
-export { makeSeed, makeTemplate, makeDemo, DEMO_STAFF_PHONE };
+export { makeSeed, makeTemplate, makeDemo, addDemoActivity, DEMO_STAFF_PHONE };

@@ -285,5 +285,24 @@ export default async function run({ browser, stack }) {
     assert(r.status === 200 && !r.headers.get('access-control-allow-origin'), 'unconfigured tenant status/headers wrong');
   }, 'major');
 
+  // The live Showoff Salon demo: a demo salon on the records engine keeps its own menu and gets fresh fake activity (never the neutral template).
+  await s.check('A demo salon on the records engine keeps its own menu and gets sample bookings dated from today', async () => {
+    const [t] = await q(`insert into tenants (slug, name, niche, plan, status, is_demo) values ('testlivedemo', 'Test Live Demo', 'salon', 'pro', 'active', true) returning id`);
+    await q(`insert into tenant_settings (tenant_id, features, labels, business_rules) select $1, p.default_features || '{"pos":true}'::jsonb, p.default_labels, p.default_business_rules from niche_presets p where p.niche = 'salon'`, [t.id]);
+    await q(`insert into auth_users (email, password_hash, app_metadata) values ('livedemo@test.local', 'x', jsonb_build_object('tenant_id', $1::text, 'role', 'owner'))`, [t.id]);
+    await q(`select salon_set_engine('testlivedemo', 'generic')`);
+    await q(`insert into records (id, tenant_id, kind, data) select 'settings', $1, 'settings', p.default_business_rules || '{"name":"Test Live Demo"}'::jsonb from niche_presets p where p.niche = 'salon'`, [t.id]);
+    await q(`insert into records (id, tenant_id, kind, data) values ('own-cat', $1, 'cat', '{"id":"own-cat","name":"Showoff Signature","gender":"all"}'::jsonb), ('own-item', $1, 'item', '{"id":"own-item","cat":"own-cat","name":"Signature cut","price":777,"active":true}'::jsonb)`, [t.id]);
+    const c = salonClient(stack, 'testlivedemo');
+    const sr = await c.call('GET', '/site'); const site = sr.data; assert(site && site.menu, 'site status ' + sr.status + ' ' + JSON.stringify(sr.data).slice(0, 200));
+    assert(site.menu.some((m) => m.name === 'Showoff Signature'), 'its own menu was replaced by the template');
+    const [bk] = await q(`select count(*)::int n, count(*) filter (where date >= current_date - 3)::int recent from bookings where tenant_id = $1`, [t.id]);
+    assert(bk.n >= 6 && bk.recent >= 6, 'sample bookings were not created (rows ' + bk.n + ', recent ' + bk.recent + ')');
+    const [bl] = await q(`select count(*)::int n from records where tenant_id = $1 and kind = 'salon_invoice'`, [t.id]);
+    assert(bl.n >= 4, 'sample bills were not created (' + bl.n + ')');
+    const [row] = await q(`select data->>'demoSeededAt' as at from records where tenant_id = $1 and kind = 'settings' and id = 'settings'`, [t.id]);
+    assert(row.at, 'demo refresh time not recorded');
+  }, 'major');
+
   await ctx.close(); s.done();
 }

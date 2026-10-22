@@ -72,7 +72,7 @@
       <a href="contact.html" class="btn btn-ghost">Questions? Let's talk</a>
     </div>
     <a href="index.html" class="topbar-logo"><img src="logo.png" alt="AUZslab"></a>
-    <nav class="topbar-nav" aria-label="Main"><div class="tbn-item"><a href="products.html" class="tbn-top">Business types<i aria-hidden="true">&#9662;</i></a><div class="tbn-menu"><a href="business-cafes.html">Caf&eacute;s &amp; restaurants<small></small></a><a href="business-salons.html">Salons &amp; studios<small></small></a><a href="business-retail.html">Retail &amp; bookstores<small></small></a><a href="business-clothing.html">Clothing &amp; apparel<small></small></a><a href="business-mobile-repair.html">Mobile shops<small></small></a><a href="products.html" class="tbn-all">All products</a></div></div><div class="tbn-item"><a href="live-demo.html" class="tbn-top" aria-current="page">Live demo<i aria-hidden="true">&#9662;</i></a><div class="tbn-menu"><a href="https://demo.auzslab.in/" target="_blank" rel="noopener">AUZsPOS<small>Try</small></a><a href="https://demo.auzslab.in/payroll.html" target="_blank" rel="noopener">AUZsPay<small>Try</small></a><a href="https://demo.auzslab.in/accounts.html" target="_blank" rel="noopener">AUZsLedger<small>Try</small></a><a href="https://demo.auzslab.in/scan.html" target="_blank" rel="noopener">AUZsScan<small>Try</small></a><a href="https://demo.auzslab.in/mob.html" target="_blank" rel="noopener">AUZsMob<small>Try</small></a><a href="https://demo.auzslab.in/style.html" target="_blank" rel="noopener">AUZsStyle<small>Try</small></a><a href="https://demo-salon.auzslab.in/salon/admin/" target="_blank" rel="noopener">AUZslab Salon<small>Try</small></a><a href="live-demo.html" class="tbn-all">All demos</a></div></div><a href="contact.html" class="tbn-top">Contact</a></nav>
+    <nav class="topbar-nav" aria-label="Main"><div class="tbn-item"><a href="products.html" class="tbn-top">Business types<i aria-hidden="true">&#9662;</i></a><div class="tbn-menu"><a href="business-cafes.html">Caf&eacute;s &amp; restaurants<small></small></a><a href="business-salons.html">Salons &amp; studios<small></small></a><a href="business-retail.html">Retail &amp; bookstores<small></small></a><a href="business-clothing.html">Clothing &amp; apparel<small></small></a><a href="business-mobile-repair.html">Mobile shops<small></small></a><a href="products.html" class="tbn-all">All products</a></div></div><div class="tbn-item"><a href="live-demo.html" class="tbn-top" aria-current="page">Live demo<i aria-hidden="true">&#9662;</i></a><div class="tbn-menu"><a href="https://demo.auzslab.in/" target="_blank" rel="noopener">AUZsPOS<small>Try</small></a><a href="https://demo.auzslab.in/payroll.html" target="_blank" rel="noopener">AUZsPay<small>Try</small></a><a href="https://demo.auzslab.in/accounts.html" target="_blank" rel="noopener">AUZsLedger<small>Try</small></a><a href="https://demo.auzslab.in/scan.html" target="_blank" rel="noopener">AUZsScan<small>Try</small></a><a href="https://demo.auzslab.in/mob.html" target="_blank" rel="noopener">AUZsMob<small>Try</small></a><a href="https://demo.auzslab.in/style.html" target="_blank" rel="noopener">AUZsStyle<small>Try</small></a><a href="https://showoffsalon.auzslab.in/salon/admin/" target="_blank" rel="noopener">AUZslab Salon<small>Try</small></a><a href="live-demo.html" class="tbn-all">All demos</a></div></div><a href="contact.html" class="tbn-top">Contact</a></nav>
   </header>
 
   <main class="content">
@@ -108,8 +108,8 @@
             <div>Password &nbsp; <b>Auzslab@Demo</b></div>
           </div>
  <div id="liveDemoExtra" style="display:none;margin-top:10px;font-family:var(--font-mono);font-size:12.5px;line-height:1.9;background:var(--bg-raised);border:1px solid var(--ink);border-radius:14px;padding:14px 16px">
-            <div>Staff view: choose &ldquo;Staff sign in&rdquo; &nbsp; Username <b>priya.demo-salon</b> &nbsp; PIN <b>1234</b></div>
-            <div>Public website &nbsp; <b>demo-salon.auzslab.in</b></div>
+            <div>Staff view: choose &ldquo;Staff sign in&rdquo; &nbsp; Username <b>priya.showoffsalon</b> &nbsp; PIN <b>1234</b></div>
+            <div>Public website &nbsp; <b>showoffsalon.auzslab.in</b></div>
           </div>
           <a id="liveDemoBtn" href="#" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top:16px">Launch live demo &rarr;</a>
           <p class="p" style="margin-top:12px;font-size:11.5px;color:var(--ink-faint)">For evaluation only &mdash; please don't scrape or copy the software. See our <a href="terms.html" style="color:var(--ink-faint);text-decoration:underline">terms</a>.</p>
@@ -230,7 +230,7 @@ function render(ctx) {
     ? "Here's exactly what you picked, walked through one module at a time."
     : "Here's what a business like yours typically runs on AUZslab. Your account manager will confirm the final list with you.";
 
-  const demoSlug = ctx.niche === 'salon' ? 'demo-salon' : 'demo';
+  const demoSlug = ctx.niche === 'salon' ? 'showoffsalon' : 'demo';
   const demoUrl = 'https://' + demoSlug + '.auzslab.in' + (ctx.niche === 'salon' ? '/salon/admin/' : '');
   if (ctx.niche === 'salon') document.getElementById('liveDemoExtra').style.display = 'block';
   document.getElementById('liveDemoUrl').textContent = demoUrl;
