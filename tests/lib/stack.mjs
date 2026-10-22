@@ -78,7 +78,7 @@ export async function startStack({ apiPort, webPort, log = () => {} } = {}) {
     let p = decodeURIComponent(u.pathname);
     if (p.includes('..')) { res.writeHead(400); return res.end(); }
     if (!sub) { // marketing site (auzslab.in)
-      let f = path.join(root, 'site', p);
+      let f = path.join(root, process.env.SITE_DIR || 'site', p);
       if (p.endsWith('/')) f = path.join(f, 'index.html');
       if (!isFile(f) && isFile(f + '.html')) f += '.html';
       return isFile(f) ? serveFile(res, f) : (res.writeHead(404, { 'content-type': 'text/html' }), res.end('<h1>404</h1>'));
