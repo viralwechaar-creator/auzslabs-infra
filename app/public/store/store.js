@@ -819,7 +819,9 @@ function route() {
   TR.enter(id === 'p' ? 'p/' + (parts[1] || '') : id); if (id === 'p' && BYID[parts[1]]) TR.push('product', null, { id: parts[1], name: BYID[parts[1]].name });
   if (id === 'checkout') TR.push('checkout', null, { step: 'start' });
 }
-window.addEventListener('scroll', () => document.body.classList.toggle('atop', window.scrollY < 40), { passive: true });
+const heroEnd = () => { const h = document.querySelector('.hero'); return h ? h.offsetHeight - 70 : window.innerHeight * 0.9; };
+const navState = () => { document.body.classList.toggle('atop', window.scrollY < 40); document.body.classList.toggle('pasthero', window.scrollY > heroEnd()); };
+window.addEventListener('scroll', navState, { passive: true }); window.addEventListener('hashchange', () => setTimeout(navState, 50));
 function ingest(d) {
   shopIcon(d);
   D = d; STY = (D.styles || []).filter((x) => x.variants && x.variants.length); BYID = {}; VAR = {};
