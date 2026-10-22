@@ -40,8 +40,11 @@ export const USERS = {
   styOwner: 'owner-sty@test.local',
   styManager: 'manager-sty@test.local',
   styStaff: 'staff-sty@test.local',
+  finOwner: 'owner-fin@test.local',
+  finManager: 'manager-fin@test.local',
+  finStaff: 'staff-fin@test.local',
 };
-export const TENANTS = { cafe: 'testcafe', salon: 'testsalon', retail: 'testretail', acct: 'testacct', pay: 'testpay', mob: 'testmob', sty: 'teststyle' };
+export const TENANTS = { cafe: 'testcafe', salon: 'testsalon', retail: 'testretail', acct: 'testacct', pay: 'testpay', mob: 'testmob', sty: 'teststyle', fin: 'testfin' };
 
 export async function connect(database) {
   const c = new pg.Client({ host: PG.host, port: PG.port, user: PG.user, password: PG.password, database });
@@ -72,7 +75,7 @@ export async function build(log = () => {}) {
   // Production ran 999_app_grants.sql long before the pay_/mob_/acc_ tables existed, so `app` has NO rights on them
   // there (they are only reachable through SECURITY DEFINER functions). In a fresh build 999 runs last and would grant
   // everything, hiding any non-definer trigger/helper that touches those tables. Mirror production.
-  await c.query(`do $$ declare t text; begin for t in select tablename from pg_tables where schemaname = 'public' and (tablename like 'pay\\_%' or tablename like 'mob\\_%' or tablename like 'sty\\_%' or tablename like 'acc\\_%') loop execute format('revoke all on %I from app', t); end loop; end $$`);
+  await c.query(`do $$ declare t text; begin for t in select tablename from pg_tables where schemaname = 'public' and (tablename like 'pay\\_%' or tablename like 'mob\\_%' or tablename like 'sty\\_%' or tablename like 'acc\\_%' or tablename like 'fin\\_%') loop execute format('revoke all on %I from app', t); end loop; end $$`);
   // the sign-up suites exercise email sign-up through the API, so tests switch it on (production ships with it off, db/100)
   await c.query(`update platform_flags set value = 'on' where key = 'password_signup'`);
   log('migrations applied' + (warn.length ? ' with ' + warn.length + ' warning(s): ' + warn.join(' | ') : ''));
@@ -127,6 +130,10 @@ async function seed(c) {
   await user(c, USERS.styOwner, { tenant_id: sty, role: 'owner' });
   await user(c, USERS.styManager, { tenant_id: sty, role: 'manager' });
   await user(c, USERS.styStaff, { tenant_id: sty, role: 'cashier' });
+  const fin = await tenant(c, TENANTS.fin, 'Test Finance Shop', 'retail', { finance: true });
+  await user(c, USERS.finOwner, { tenant_id: fin, role: 'owner' });
+  await user(c, USERS.finManager, { tenant_id: fin, role: 'manager' });
+  await user(c, USERS.finStaff, { tenant_id: fin, role: 'cashier' });
   await user(c, USERS.plain);
   const adminId = await user(c, USERS.admin);
   await c.query('insert into platform_admins (id) values ($1) on conflict do nothing', [adminId]);

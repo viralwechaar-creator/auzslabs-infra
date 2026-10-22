@@ -250,7 +250,7 @@ function visiblePermKeys() {
   });
 }
 
-const PRODUCT_CHOICES = [['pos', 'AUZsPOS (billing, kitchen, stock, customers)'], ['self_order', 'AUZsPOS QR (table QR ordering)'], ['payroll', 'AUZsPay (attendance and payroll)'], ['accounting', 'AUZsLedger (accounting and GST)'], ['mobile', 'AUZsMob (mobile shop)'], ['style', 'AUZsStyle (clothing and footwear shop)'], ['scan', 'AUZsScan (scan, bill and add stock)'], ['salon', 'AUZslab Salon (booking, billing, website)'], ['website_builder', 'Website Builder'], ['whatsapp', 'WhatsApp automation (add-on)'], ['aggregators', 'Zomato / Swiggy orders (add-on)'], ['custom', 'Custom software']];
+const PRODUCT_CHOICES = [['pos', 'AUZsPOS (billing, kitchen, stock, customers)'], ['self_order', 'AUZsPOS QR (table QR ordering)'], ['payroll', 'AUZsPay (attendance and payroll)'], ['accounting', 'AUZsLedger (accounting and GST)'], ['mobile', 'AUZsMob (mobile shop)'], ['style', 'AUZsStyle (clothing and footwear shop)'], ['finance', 'AUZsFinance (money in and out, loans, dues)'], ['scan', 'AUZsScan (scan, bill and add stock)'], ['salon', 'AUZslab Salon (booking, billing, website)'], ['website_builder', 'Website Builder'], ['whatsapp', 'WhatsApp automation (add-on)'], ['aggregators', 'Zomato / Swiggy orders (add-on)'], ['custom', 'Custom software']];
 const BIZ_TYPES = ['Cafe / restaurant / bar', 'Salon / spa', 'Retail shop', 'Clothing / boutique', 'Mobile phone shop', 'Office / services', 'Other'];
 const START_WHEN = [['', 'Choose'], ['now', 'As soon as possible'], ['month', 'Within a month'], ['quarter', 'In 2 to 3 months'], ['exploring', 'Just exploring']];
 let PROFILE = null, LOGIN_EMAIL = '';
@@ -500,6 +500,7 @@ function renderAccount() {
     : own('pos') ? { name: 'POS system', path: '' }
     : own('mobile') ? { name: 'AUZsMob', path: '/mob.html' }
     : own('style') ? { name: 'AUZsStyle', path: '/style.html' }
+    : own('finance') ? { name: 'AUZsFinance', path: '/finance.html' }
     : own('accounting') ? { name: 'AUZsLedger', path: '/accounts.html' }
     : own('scan') ? { name: 'AUZsScan', path: '/scan.html' }
     : own('payroll') ? { name: 'AUZsPay', path: '/payroll.html' } : null;
@@ -747,6 +748,7 @@ const SALON_SERVICE_GROUPS = [
   ['AUZsLedger', ['accounting']],
   ['AUZsMob', ['mobile']],
   ['AUZsStyle', ['style']],
+  ['AUZsFinance', ['finance']],
   ['AUZsScan', ['scan']],
 ];
 const SERVICE_GROUPS = [
@@ -756,6 +758,7 @@ const SERVICE_GROUPS = [
   ['AUZsLedger', ['accounting']],
   ['AUZsMob', ['mobile']],
   ['AUZsStyle', ['style']],
+  ['AUZsFinance', ['finance']],
   ['AUZsScan', ['scan']],
 ];
 function renderServices() {
