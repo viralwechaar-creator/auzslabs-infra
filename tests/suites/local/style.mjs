@@ -516,9 +516,9 @@ export default async function run({ browser, stack }) {
       await page.locator('.pc .in a').first().click(); await page.waitForSelector('.pd .info', { timeout: 8000 });
       assert(await page.locator('.gal .main').count() === 1, 'primary image');
       await s.shot(page, 'store product ' + dev.w);
-      assert(await page.locator('.info .ai').count() === 3, 'foldable detail sections');
-      await page.locator('.info .ai button').nth(1).click(); assert(await page.locator('.info .ai.on').count() === 2, 'washcare did not open');
-      await page.locator('.info .ai button').nth(0).click(); assert(await page.locator('.info .ai.on').count() === 1, 'details did not fold');
+      assert(await page.locator('.info .tabs2 .tr button').count() === 3, 'three detail tabs');
+      await page.locator('.info .tabs2 .tr button').nth(1).click(); assert(await page.locator('.info .tabs2 .tr button.on').count() === 1, 'washcare tab did not open');
+      await page.locator('.info .tabs2 .tr button').nth(0).click(); assert((await page.locator('.info .tabs2 .tb').innerText()).length > 0, 'details tab empty');
       await page.evaluate(() => { location.hash = '#/shop'; }); await page.waitForSelector('.pc'); await page.locator('.pc .in a').nth(1).click(); await page.waitForSelector('.pd .info');
       assert(await page.locator('.band', { hasText: /Recently viewed/i }).count() === 1, 'recently viewed band');
       if (dev.w > 900) { await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(500); assert(await page.locator('.info.fold').count() === 1, 'details should fold when the other products are in view'); await page.evaluate(() => window.scrollTo(0, 0)); await page.waitForTimeout(400); assert(await page.locator('.info.fold').count() === 0, 'details should open again at the top'); }

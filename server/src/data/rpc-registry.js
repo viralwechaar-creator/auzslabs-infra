@@ -427,6 +427,8 @@ export const RPC = {
   sty_save_branch: { params: ['p'], jsonb: ['p'], auth: true },
   sty_catalog: { params: ['p_branch'], defaults: { p_branch: null }, auth: true },
   sty_save_style: { params: ['p'], jsonb: ['p'], auth: true },
+  sty_bulk_edit: { params: ['p'], jsonb: ['p'], auth: true },
+  sty_delete_styles: { params: ['p'], jsonb: ['p'], auth: true },
   sty_set_variant: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
   sty_set_colour_photos: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
   sty_share_sale: { params: ['p_id'], auth: true },
