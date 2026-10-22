@@ -1030,3 +1030,11 @@ body.homehero .announce{display:none}
 
 /* the picture-view button lives in the header, only on product list pages */
 .top .dview{display:none}body.onlist .top .dview{display:inline-grid}
+
+/* home: picture-view button above the contact button (phones: inside the dock, so it rises in with it) */
+.chatwrap{position:relative;display:grid}
+.zfab{width:38px;height:38px;border-radius:50%;background:#fff;color:var(--ink);display:none;place-items:center;box-shadow:0 0 0 1px var(--line),0 6px 18px rgba(0,0,0,.18)}
+.zfab svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.7}
+body.homehero .dock .zfab{display:grid;position:absolute;left:6px;bottom:calc(100% + 8px)}
+@media(min-width:900px){body.homehero .zfab.zdesk{display:grid;position:fixed;right:22px;bottom:70px;z-index:30}}
+.top .dview{display:none}body.onlist .top .dview{display:inline-grid}
