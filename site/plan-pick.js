@@ -6,7 +6,7 @@
   var niche = window.PLAN_NICHE; if (!niche) return;
   var KEY = 'auz_plan';
   var sb; try { sb = supabase.createClient(CFG.url, CFG.key); } catch (e) { return; }
-  var inr = function (n) { return '₹' + Math.round(Number(n)).toLocaleString('en-IN'); };
+  var inr = function () { return 'Custom quote'; };
   function load() { try { var s = JSON.parse(localStorage.getItem(KEY) || 'null'); return s && s.niche === niche ? s : null; } catch (e) { return null; } }
   function save(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {} }
   function period() { var b = document.querySelector('#salon-plans .sp-toggle button.on'); return b && b.getAttribute('data-period') === 'y' ? 'year' : 'month'; }
@@ -34,8 +34,8 @@
       var pr = card.querySelector('.sp-addon-pr'), sub = card.querySelector('.sp-addon-sub'), nm = card.querySelector('b'), bl = card.querySelector('p');
       if (nm) nm.textContent = a.name; if (bl) bl.textContent = a.blurb;
       var priced = Number(a.monthly_price) > 0;
-      if (pr) pr.textContent = priced ? inr(a.monthly_price) : (a.price_label || 'Quoted');
-      if (sub) sub.textContent = a.unit_note || '';
+      if (pr) pr.textContent = 'Custom quote';
+      if (sub) sub.textContent = 'Agreed with you';
       var btn = card.querySelector('.sp-addon-add');
       if (!btn) { btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn btn-ghost sp-addon-add'; btn.style.cssText = 'margin-top:10px;padding:9px 14px;font-size:12px'; card.appendChild(btn); }
       var on = chosen.indexOf(a.addon_key) >= 0;
