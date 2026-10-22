@@ -219,6 +219,18 @@ export default async function run({ browser, stack }) {
     await fails(cafe, 'fin_forecast', {}, /not enabled/i);
   });
 
+  await s.check('GST and TDS memo: noted on entries, added up for filing, bad values refused, books unchanged', async () => {
+    const today = new Date().toISOString().slice(0, 10), from = today.slice(0, 8) + '01';
+    const before = await ok(owner, 'fin_tax_summary', { p_from: from, p_to: today });
+    await ok(owner, 'fin_save_txn', { p: { kind: 'money_in', amount: 1180, account_id: cash, purpose: 'Taxed sale', tax_rate: 18, tds_amt: 10 } });
+    await ok(owner, 'fin_save_txn', { p: { kind: 'expense', amount: 590, account_id: cash, purpose: 'Taxed buy', tax_rate: 18 } });
+    const r = await ok(owner, 'fin_tax_summary', { p_from: from, p_to: today });
+    assert(Math.abs(Number(r.output_gst) - Number(before.output_gst) - 180) < 0.01 && Math.abs(Number(r.input_gst) - Number(before.input_gst) - 90) < 0.01, JSON.stringify(r));
+    assert(Number(r.tds_cut_on_us) - Number(before.tds_cut_on_us) === 10, 'tds'); assert(r.by_rate.some((x) => Number(x.rate) === 18), 'by rate');
+    await fails(owner, 'fin_save_txn', { p: { kind: 'expense', amount: 100, account_id: cash, tax_rate: 90 } }, /GST rate/i);
+    await fails(owner, 'fin_save_txn', { p: { kind: 'expense', amount: 100, account_id: cash, tds_amt: 500 } }, /TDS/i);
+    await fails(cafe, 'fin_tax_summary', { p_from: from, p_to: today }, /not enabled/i); await integrity();
+  }, 'major');
   // ---------- the app in a browser ----------
   const open = async (dev) => {
     const c = await newCtx(browser, stack, dev); const page = await c.newPage(); const errs = watch(page);
@@ -231,7 +243,7 @@ export default async function run({ browser, stack }) {
     await s.check(`Every screen opens on ${dev.name}: no script errors, no sideways scroll`, async () => {
       const { c, page, errs } = await open(dev);
       await page.waitForSelector('.hero-n .n', { timeout: 15000 });
-      for (const id of ['home', 'activity', 'dues', 'owner', 'accounts', 'reports', 'assets', 'budget', 'approvals', 'repeat', 'bank', 'insights', 'settings']) {
+      for (const id of ['home', 'activity', 'dues', 'owner', 'accounts', 'reports', 'assets', 'budget', 'approvals', 'repeat', 'bank', 'insights', 'tools', 'tax', 'settings']) {
         await page.evaluate((x) => { location.hash = '#/' + x; }, id); await page.waitForTimeout(700);
         await page.waitForSelector('.page[data-p="' + id + '"]', { timeout: 10000 });
         const txt = await page.locator('.page').innerText(); assert(!/undefined|NaN|\[object/i.test(txt), id + ' shows a bad value: ' + txt.slice(0, 200));

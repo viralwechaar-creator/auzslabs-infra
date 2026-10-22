@@ -12,7 +12,7 @@ function parseHash() {
 }
 const go = (path) => { const tgt = '#/' + path.replace(/^#?\/?/, ''); if (location.hash === tgt) route_(); else location.hash = tgt; };
 const allowed = (def) => !!def && (!def.perm || can(def.perm));
-const NAV = [['home', 'Today', 'home'], ['activity', 'Activity', 'swap'], ['dues', 'Dues', 'users'], ['owner', 'Owner & loans', 'wallet'], ['accounts', 'Accounts', 'cash'], ['reports', 'Reports', 'chart'], ['assets', 'Assets', 'building'], ['budget', 'Budget', 'tag'], ['approvals', 'Approvals', 'check'], ['repeat', 'Repeating', 'refresh'], ['bank', 'Bank import', 'download'], ['insights', 'Insights', 'bolt'], ['settings', 'Settings', 'gear']];
+const NAV = [['home', 'Today', 'home'], ['activity', 'Activity', 'swap'], ['dues', 'Dues', 'users'], ['owner', 'Owner & loans', 'wallet'], ['accounts', 'Accounts', 'cash'], ['reports', 'Reports', 'chart'], ['insights', 'Insights', 'bolt'], ['tools', 'Tools', 'more'], ['settings', 'Settings', 'gear']];
 const navList = () => NAV.filter(([id]) => allowed(PAGES[id]));
 const tabsFor = () => navList().slice(0, 4).map((x) => x[0]);
 
@@ -96,6 +96,7 @@ function buildShell() {
     nav.map(([id, l, ic]) => navItem(id, l, ic)),
     h('div', { class: 'foot' }, h('span', null, S.user.email),
       seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v), { full: true }),
+      seg([['en', 'English'], ['hi', 'हिंदी']], S_LANG, (v) => { setLang(v); location.reload(); }, { full: true }),
       h('div', { class: 'row', style: { gap: '6px', marginTop: '6px' } }, h('button', { class: 'btn sm', type: 'button', onclick: () => auzHelp.open(sb) }, 'Help'), h('button', { class: 'btn sm', type: 'button', onclick: signOut }, 'Sign out'))));
   const topbar = h('header', { class: 'topbar', id: 'topbar' }, h('div', { class: 'l', id: 'tb-l' }), h('div', { class: 'tt', id: 'tb-t' }), h('div', { class: 'r', id: 'tb-r' }));
   const tabs = tabsFor();
@@ -111,7 +112,8 @@ function moreSheet() {
   const tabs = tabsFor(); const rest = navList().filter(([id]) => !tabs.includes(id));
   const body = h('div', { class: 'grid' },
     rest.length ? h('div', { class: 'list' }, rest.map(([id, l, ic]) => liRow({ icon: ic, title: l, chevron: true, onclick: () => { s.close(); go(id); } }))) : null,
-    h('div', { class: 'list' }, liRow({ icon: 'moon', tone: 'gray', title: 'Appearance', badge: seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v)) })),
+    h('div', { class: 'list' }, liRow({ icon: 'moon', tone: 'gray', title: 'Appearance', badge: seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v)) }),
+      liRow({ icon: 'globe', tone: 'gray', title: 'Language', badge: seg([['en', 'English'], ['hi', 'हिंदी']], S_LANG, (v) => { setLang(v); location.reload(); }) })),
     h('div', { class: 'list' }, liRow({ icon: 'user', tone: 'gray', title: S.user.email, sub: S.user.role }),
       liRow({ icon: 'info', tone: 'gray', title: 'Help & report a problem', onclick: () => { s.close(); auzHelp.open(sb); } }),
       S.user.role === 'owner' ? liRow({ icon: 'download', tone: 'gray', title: 'Backup, export or clear data', onclick: () => { s.close(); auzMyData(sb); } }) : null,
@@ -130,7 +132,7 @@ async function route_() {
   $$('[data-nav]').forEach((a) => a.removeAttribute('aria-current')); $$('[data-tab]').forEach((a) => a.removeAttribute('aria-current'));
   $(`[data-nav="${route.id}"]`)?.setAttribute('aria-current', 'page');
   const tab = tabsFor().includes(route.id) ? route.id : 'more'; $(`[data-tab="${tab}"]`)?.setAttribute('aria-current', 'page');
-  const nm = (NAV.find((x) => x[0] === route.id) || [0, route.id])[1];
+  const nm = (NAV.find((x) => x[0] === route.id) || [0, def.title || route.id])[1];
   const view = { id: route.id, args: route.args, q: route.q, root, header: (o) => header(o, root), refresh: () => route_(), onLeave: (f) => cleanup.push(f) };
   try { header({ title: nm }, root); await def.render(view); } catch (e) {
     console.error(e); clear(root).append(empty('alert', 'Something went wrong', e.message, h('button', { class: 'btn fill', onclick: route_ }, 'Try again')));

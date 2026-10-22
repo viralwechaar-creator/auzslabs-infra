@@ -4,7 +4,7 @@
 
 // ---------- Approvals ----------
 page('approvals', { title: 'Approvals', async render(v) {
-  v.header({ title: 'Approvals' });
+  v.header({ title: 'Approvals', back: 'tools' });
   const [list, st] = await Promise.all([api('fin_txn_list', { p: { review: 'needs_review', limit: 200 } }), api('fin_settings_get')]);
   const open = list.filter((r) => r.status === 'posted');
   v.root.append(section('Waiting for a check', open.length ? h('div', { class: 'list' }, open.map((r) => txnRow(r, () => approveSheet(r)))) : empty('check', 'Nothing waiting', 'Entries marked "not sure" or above your limit show here.')));
@@ -34,7 +34,7 @@ function limitSheet(st, v) {
 const REC_KINDS = ['expense', 'money_in', 'transfer', 'drawing', 'loan_repay', 'dues_out', 'dues_in'];
 const FREQ = [['weekly', 'Every week'], ['monthly', 'Every month'], ['yearly', 'Every year']];
 page('repeat', { title: 'Repeating', async render(v) {
-  v.header({ title: 'Repeating', actions: [can('write') ? { label: 'New repeating entry', icon: 'plus', primary: true, run: () => recSheet(null, v) } : null] });
+  v.header({ title: 'Repeating', back: 'tools', actions: [can('write') ? { label: 'New repeating entry', icon: 'plus', primary: true, run: () => recSheet(null, v) } : null] });
   if (can('write')) {
     try { const r = await api('fin_recurring_run', { p_to: null }); if (r.posted) toast(r.posted + ' repeating entr' + (r.posted === 1 ? 'y' : 'ies') + ' added'); } catch { /* shown below */ }
   }
@@ -107,7 +107,7 @@ function statementRows(text) {
   }).filter((o) => o.date && (o.debit || o.credit));
 }
 page('bank', { title: 'Bank import', perm: 'write', async render(v) {
-  v.header({ title: 'Bank import' });
+  v.header({ title: 'Bank import', back: 'tools' });
   const accounts = S.ctx.accounts.filter((a) => a.active && a.kind !== 'cash');
   if (!accounts.length) return v.root.append(empty('cash', 'Add a bank account first', 'Accounts is where you add one.', h('button', { class: 'btn fill', onclick: () => go('accounts') }, 'Open Accounts')));
   const acc = selectEl(accounts.map((a) => [a.id, a.name]), accounts[0].id, { label: 'Bank account' });
@@ -179,3 +179,25 @@ async function scanBill(file) {
   const total = d.total || d.subtotal || 0;
   return { amount: total || '', date: d.date || '', purpose: [d.supplier && d.supplier.name, d.invoice_no ? 'Bill ' + d.invoice_no : ''].filter(Boolean).join(' · '), notes: d.notes || [] };
 }
+
+// ---------- Tools: one quiet page for everything that is not part of the daily rhythm ----------
+page('tools', { title: 'Tools', async render(v) {
+  v.header({ title: 'Tools' });
+  let pend = 0; try { pend = (await api('fin_txn_list', { p: { review: 'needs_review', limit: 200 } })).filter((r) => r.status === 'posted').length; } catch { /* ignore */ }
+  const T = [['approvals', 'Approvals', 'check', 'Entries waiting for a check', pend], ['repeat', 'Repeating', 'refresh', 'Rent, salary, EMI on its own'], ['bank', 'Bank import', 'download', 'Match a bank statement'], ['tax', 'Tax', 'tag', 'GST and TDS for filing'], ['assets', 'Assets', 'building', 'Things you own, losing value'], ['budget', 'Budget', 'chart', 'A limit for each kind of spend']];
+  v.root.append(h('div', { class: 'tools' }, T.filter(([id]) => allowed(PAGES[id])).map(([id, name, ic, sub, n]) => h('button', { class: 'tool', type: 'button', onclick: () => go(id) }, h('span', { class: 'tile' }, icon(ic, 20)), h('b', null, name, n ? h('span', { class: 'badge-n' }, String(n)) : null), h('span', { class: 'small muted' }, sub)))));
+} });
+
+// ---------- Tax: GST and TDS added up from the memo you put on entries ----------
+page('tax', { title: 'Tax', async render(v) {
+  const per = LS.get('per', 'month'); const [f, to] = periodDates(per);
+  v.header({ title: 'Tax', back: 'tools' });
+  v.root.append(seg(PERIODS, per, (x) => { LS.set('per', x); v.refresh(); }, { full: true }));
+  const r = await api('fin_tax_summary', { p_from: f, p_to: to });
+  const net = Number(r.net_gst);
+  v.root.append(h('div', { class: 'hero-n small' }, h('div', { class: 'k' }, net >= 0 ? 'GST to pay' : 'GST to claim back'), h('div', { class: 'n num ' + (net >= 0 ? '' : 'up') }, inr(Math.abs(net)))),
+    h('div', { class: 'duo' }, kpi('Sales GST (collected)', inr(r.output_gst), 'on ' + inr(r.taxable_sales)), kpi('Purchase GST (paid)', inr(r.input_gst), 'on ' + inr(r.taxable_purchases))),
+    section('By rate', r.by_rate.length ? h('div', { class: 'list' }, r.by_rate.map((x) => liRow({ title: Number(x.rate) + '% GST', value: inr(Number(x.out || 0) - Number(x.in || 0)), onclick: () => sheet({ title: Number(x.rate) + '% GST', closeLabel: 'Done', body: h('div', { class: 'list' }, liRow({ title: 'Collected on sales', value: inr(x.out || 0) }), liRow({ title: 'Paid on purchases', value: inr(x.in || 0) })) }) }))) : empty('tag', 'No GST noted', 'Add a GST rate to an entry (Tax, optional) and it adds up here.')),
+    section('TDS', h('div', { class: 'list' }, liRow({ title: 'Cut from your payments', value: inr(r.tds_cut_on_us) }), liRow({ title: 'Cut by you', value: inr(r.tds_withheld) }))),
+    h('p', { class: 'small muted' }, 'A working summary from the rates you note on entries (amounts are taken as including GST). Your books are not changed by it. Check with your accountant before filing.'));
+} });

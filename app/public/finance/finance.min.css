@@ -33,3 +33,26 @@
 .sheet{border-radius:22px}
 .chk{width:22px;text-align:center;font-weight:700;color:var(--tint)}
 .sec-h h3{font-size:13px;font-weight:600;color:var(--label2);letter-spacing:.02em;text-transform:none}
+
+/* Phase 4: money line, spend strip, tools tiles */
+.flow{width:100%;height:64px;display:block;margin-top:10px;touch-action:none;cursor:crosshair;overflow:visible}
+.flow-l{fill:none;stroke:var(--label);stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke;stroke-dasharray:1;stroke-dashoffset:1;animation:flowdraw 1.1s var(--ease) .1s forwards}
+.flow-a{fill:var(--label);opacity:.05}
+.flow-d{fill:var(--tint);stroke:var(--bg);stroke-width:2}
+.flow-r{stroke:var(--label3);stroke-width:1;vector-effect:non-scaling-stroke;stroke-dasharray:3 3}
+.flow-cap{display:flex;justify-content:space-between;margin-top:6px;font-size:11px}
+@keyframes flowdraw{to{stroke-dashoffset:0}}
+.strip{display:flex;height:10px;gap:3px;margin:2px 0 10px}
+.strip i{display:block;background:var(--tint);border-radius:5px;min-width:6px;transition:flex-grow .5s var(--ease)}
+.tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (min-width:900px){.tools{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.tool{display:grid;gap:10px;align-content:start;text-align:left;padding:16px;border:1px solid var(--sep);border-radius:16px;background:var(--card,var(--bg2));min-height:104px;transition:transform .2s var(--ease),border-color .2s}
+.tool:active{transform:scale(.97)}.tool:hover{border-color:var(--label3)}
+.tool .tile{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--fill);color:var(--label)}
+.tool b{font-size:15px;font-weight:600}.tool .small{font-size:12px}
+.badge-n{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--tint);color:var(--tint-fg);font-size:11px;font-weight:700;margin-left:6px}
+@media (prefers-reduced-motion:reduce){.flow-l{animation:none;stroke-dashoffset:0}}
+.taxbox{border:1px solid var(--sep);border-radius:12px;padding:10px 14px}
+.taxbox summary{font-size:14px;font-weight:550;cursor:pointer;color:var(--label2);list-style:none}
+.taxbox summary::-webkit-details-marker{display:none}
+.taxbox[open] summary{color:var(--label)}
