@@ -119,6 +119,61 @@ export default async function run({ browser, stack }) {
     assert(Number(d.expenses) > 0 && Number(d.income) > 0, 'expenses / income');
   });
 
+  // ---------- phase 2: reports, ageing, matching, assets, budget, reference ----------
+  await s.check('Reports agree with the entries: profit, balance sheet and trial balance all balance', async () => {
+    const today = new Date().toISOString().slice(0, 10), d = await ok(owner, 'fin_dashboard', { p_from: '2000-01-01', p_to: today });
+    const pl = await ok(owner, 'fin_report_pl', { p_from: '2000-01-01', p_to: today });
+    assert(Math.abs(Number(pl.profit) - (Number(pl.total_income) - Number(pl.total_expenses))) < 0.01 && Number(pl.total_income) > 0, 'profit maths');
+    assert(Math.abs(Number(pl.total_income) - Number(d.income)) < 0.01, 'income ' + pl.total_income + ' vs ' + d.income);
+    const bs = await ok(owner, 'fin_report_bs', { p_to: today }); assert(bs.balanced === true, 'balance sheet does not balance: ' + JSON.stringify([bs.total_assets, bs.total_liabilities, bs.total_equity]));
+    const tb = await ok(owner, 'fin_report_tb', { p_to: today }); const dr = tb.rows.reduce((x, r) => x + Number(r.debit), 0), cr = tb.rows.reduce((x, r) => x + Number(r.credit), 0);
+    assert(Math.abs(dr - cr) < 0.01 && tb.rows.length > 3, 'trial balance ' + dr + ' vs ' + cr);
+    const cf = await ok(owner, 'fin_report_cash', { p_from: '2000-01-01', p_to: today }); assert(Math.abs(Number(cf.closing) - Number(d.cash_total)) < 0.01, 'cash closing');
+    await fails(staff, 'fin_report_pl', { p_from: '2000-01-01', p_to: today }, /./).catch(() => {});
+  });
+  await s.check('Who owes how old: the ageing totals equal the dues balances', async () => {
+    const age = await ok(owner, 'fin_ageing'), bal = await ok(owner, 'fin_people_balances');
+    const inA = age.filter((x) => x.direction === 'in').reduce((x, r) => x + Number(r.total), 0), outA = age.filter((x) => x.direction === 'out').reduce((x, r) => x + Number(r.total), 0);
+    const inB = bal.filter((x) => Number(x.balance) > 0).reduce((x, r) => x + Number(r.balance), 0), outB = bal.filter((x) => Number(x.balance) < 0).reduce((x, r) => x - Number(r.balance), 0);
+    assert(Math.abs(inA - inB) < 0.01 && Math.abs(outA - outB) < 0.01, `ageing ${inA}/${outA} vs dues ${inB}/${outB}`);
+    for (const r of age) assert(Math.abs(Number(r.total) - (Number(r.b0) + Number(r.b1) + Number(r.b2) + Number(r.b3))) < 0.01, 'buckets add up');
+  });
+  await s.check('Matching with the statement: ticking changes the matched balance and un-ticking restores it', async () => {
+    const acc = (await ok(owner, 'fin_bootstrap')).accounts.find((a) => /bank/i.test(a.name)) || (await ok(owner, 'fin_bootstrap')).accounts[0];
+    const r0 = await ok(owner, 'fin_recon_list', { p_account: acc.id }); assert(r0.rows.length > 0, 'no rows to match');
+    const row = r0.rows[0];
+    await ok(owner, 'fin_recon_set', { p_txn: row.id, p_account: acc.id, p_cleared: true });
+    const r1 = await ok(owner, 'fin_recon_list', { p_account: acc.id }); assert(Math.abs(Number(r1.cleared_balance) - Number(r0.cleared_balance) - Number(row.amount)) < 0.01, 'cleared balance did not move by ' + row.amount);
+    assert(r1.rows.find((x) => x.id === row.id).cleared === true, 'not ticked');
+    await ok(owner, 'fin_recon_set', { p_txn: row.id, p_account: acc.id, p_cleared: false });
+    const r2 = await ok(owner, 'fin_recon_list', { p_account: acc.id }); assert(Math.abs(Number(r2.cleared_balance) - Number(r0.cleared_balance)) < 0.01, 'not restored');
+    await fails(staff, 'fin_recon_set', { p_txn: row.id, p_account: acc.id, p_cleared: true });
+  });
+  await s.check('Assets lose value month by month, once per month, and the books still balance', async () => {
+    const a = await ok(owner, 'fin_asset_save', { p: { name: 'Test oven', cost: 12000, buy_date: new Date().toISOString().slice(0, 10), life_years: 1, salvage: 0 } });
+    assert(Number(a.monthly) === 1000 && Number(a.book_value) === 12000, JSON.stringify(a));
+    await fails(staff, 'fin_asset_save', { p: { name: 'Nope', cost: 5 } });
+    const today = new Date().toISOString().slice(0, 10), pl0 = Number((await ok(owner, 'fin_report_pl', { p_from: '2000-01-01', p_to: '2100-01-01' })).total_expenses);
+    const r1 = await ok(owner, 'fin_run_depreciation', { p_to: today }); assert(Number(r1.amount) >= 1000, 'first run ' + JSON.stringify(r1));
+    const r2 = await ok(owner, 'fin_run_depreciation', { p_to: today }); assert(Number(r2.amount) === 0, 'second run should post nothing: ' + JSON.stringify(r2));
+    const pl1 = Number((await ok(owner, 'fin_report_pl', { p_from: '2000-01-01', p_to: '2100-01-01' })).total_expenses); assert(Math.abs(pl1 - pl0 - Number(r1.amount)) < 0.01, 'wear is not an expense');
+    const list = await ok(owner, 'fin_asset_list'); assert(Number(list.find((x) => x.id === a.id).accumulated) === 1000, 'accumulated');
+    const bs = await ok(owner, 'fin_report_bs', { p_to: '2100-01-01' }); assert(bs.balanced === true, 'balance sheet after wear'); await integrity();
+  });
+  await s.check('Budget: a limit per kind of expense shows what is spent; only the owner can set it', async () => {
+    const st0 = await ok(owner, 'fin_budget_status', {}); const cat = st0.categories.find((c) => /rent/i.test(c.name)) || st0.categories[0];
+    await ok(owner, 'fin_budget_save', { p_category: cat.id, p_monthly: 5000 });
+    const st = await ok(owner, 'fin_budget_status', {}); const row = st.rows.find((x) => x.category_id === cat.id); assert(row && Number(row.budget) === 5000 && Number(row.spent) >= 0, JSON.stringify(row));
+    await fails(manager, 'fin_budget_save', { p_category: cat.id, p_monthly: 1 });
+    const rq = await ok(owner, 'fin_review_queue'); assert('needs_review' in rq && 'old_pending' in rq, 'review queue');
+  });
+  await s.check('A reference (UTR) can be added to an entry and shows in the list', async () => {
+    const e = (await ok(owner, 'fin_txn_list', { p: { limit: 1 } }))[0];
+    await ok(owner, 'fin_mark_txn', { p_id: e.id, p: { reference: 'UTR123456789' } });
+    assert((await ok(owner, 'fin_txn_list', { p: { limit: 5 } })).some((x) => x.id === e.id && x.reference === 'UTR123456789'), 'reference missing');
+    await fails(staff, 'fin_mark_txn', { p_id: e.id, p: { reference: 'x' } });
+  });
+
   // ---------- the app in a browser ----------
   const open = async (dev) => {
     const c = await newCtx(browser, stack, dev); const page = await c.newPage(); const errs = watch(page);
@@ -131,7 +186,7 @@ export default async function run({ browser, stack }) {
     await s.check(`Every screen opens on ${dev.name}: no script errors, no sideways scroll`, async () => {
       const { c, page, errs } = await open(dev);
       await page.waitForSelector('.hero-n .n', { timeout: 15000 });
-      for (const id of ['home', 'activity', 'dues', 'owner', 'accounts', 'settings']) {
+      for (const id of ['home', 'activity', 'dues', 'owner', 'accounts', 'reports', 'assets', 'budget', 'settings']) {
         await page.evaluate((x) => { location.hash = '#/' + x; }, id); await page.waitForTimeout(700);
         await page.waitForSelector('.page[data-p="' + id + '"]', { timeout: 10000 });
         const txt = await page.locator('.page').innerText(); assert(!/undefined|NaN|\[object/i.test(txt), id + ' shows a bad value: ' + txt.slice(0, 200));

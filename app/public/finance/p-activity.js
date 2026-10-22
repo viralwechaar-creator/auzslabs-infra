@@ -18,9 +18,9 @@ page('activity', { title: 'Activity', async render(v) {
   v.root.append(search, chips, list); paintChips(); await load();
   async function exportCsv() {
     const all = await api('fin_txn_list', { p: { limit: 500 } });
-    const head = ['Date', 'Type', 'Amount', 'Interest', 'Account', 'To account', 'Category', 'Person', 'Owner/partner', 'Loan', 'Note', 'Proof', 'Review', 'Status'];
+    const head = ['Date', 'Type', 'Amount', 'Interest', 'Account', 'To account', 'Category', 'Person', 'Owner/partner', 'Loan', 'Reference', 'Note', 'Proof', 'Review', 'Status'];
     const q = (x) => '"' + String(x == null ? '' : x).replace(/"/g, '""') + '"';
-    const csv = '﻿' + [head, ...all.map((r) => [r.txn_date, kindName(r.kind), r.amount, r.interest, r.account, r.to_account, r.category, r.person, r.partner, r.loan, r.purpose, EVIDENCE[r.evidence], r.review === 'needs_review' ? 'Needs check' : 'OK', r.status])].map((l) => l.map(q).join(',')).join('\n');
+    const csv = '﻿' + [head, ...all.map((r) => [r.txn_date, kindName(r.kind), r.amount, r.interest, r.account, r.to_account, r.category, r.person, r.partner, r.loan, r.purpose, r.reference, EVIDENCE[r.evidence], r.review === 'needs_review' ? 'Needs check' : 'OK', r.status])].map((l) => l.map(q).join(',')).join('\n');
     const a = h('a', { href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })), download: 'finance-entries.csv' }); document.body.append(a); a.click(); a.remove();
   }
 } });
@@ -34,13 +34,15 @@ async function txnSheet(id, known) {
   const file = h('input', { type: 'file', accept: 'image/*,application/pdf', style: { display: 'none' } });
   file.onchange = async () => { if (!file.files[0]) return; try { await uploadEvidence(r.id, file.files[0]); toast('Attached'); s.close(); route_(); } catch (e) { fail(e); } };
   const body = h('div', { class: 'grid' },
-    h('div', { class: 'hero-n small' }, h('div', { class: 'k' }, K.label), h('div', { class: 'n num' }, amountNode(r)), h('div', { class: 'small muted' }, fmtD(r.txn_date) + (r.status === 'reversed' ? ' · cancelled: ' + (r.reversed_reason || '') : ''))),
-    h('div', { class: 'list' }, row('Account', r.kind === 'transfer' ? r.account + ' → ' + r.to_account : r.account), row('Category', r.category), row('Person', r.person), row('Owner / partner', r.partner), row('Loan', r.loan),
+    h('div', { class: 'hero-n small' }, h('div', { class: 'k' }, K.label), h('div', { class: 'n num' }, amountNode(r)), r.status === 'reversed' ? h('div', { class: 'small muted' }, 'Cancelled: ' + (r.reversed_reason || '')) : null),
+    h('div', { class: 'list' }, row('Date', fmtD(r.txn_date)), row('Time', r.created_at ? new Date(r.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : ''), row('Type', K.label), row('Reference / UTR', r.reference), row('Method', r.method),
+      row('Account', r.kind === 'transfer' ? r.account + ' → ' + r.to_account : r.account), row('Category', r.category), row('Person', r.person), row('Owner / partner', r.partner), row('Loan', r.loan),
       Number(r.interest) ? row('Interest', inr(r.interest)) : null, row('Note', r.purpose), row('Due date', r.due_date ? fmtD(r.due_date) : ''), row('Proof', EVIDENCE[r.evidence]), row('Review', r.review === 'needs_review' ? 'Needs a check' : 'Confirmed'), row('Journal', r.journal_no)),
     r.files && r.files.length ? section('Proof files', h('div', { class: 'list' }, r.files.map((f) => liRow({ icon: 'eye', tone: 'gray', title: f.name, chevron: true, onclick: () => openEvidence(f).catch(fail) })))) : null,
     can('write') && r.status === 'posted' ? h('div', { class: 'col' },
       h('button', { class: 'btn', onclick: () => file.click() }, icon('camera', 18), 'Add photo or file'), file,
       r.review === 'needs_review' ? h('button', { class: 'btn', onclick: async () => { try { await api('fin_mark_txn', { p_id: r.id, p: { review: 'confirmed' } }); toast('Confirmed'); s.close(); route_(); } catch (e) { fail(e); } } }, icon('check', 18), 'Mark as checked') : h('button', { class: 'btn', onclick: async () => { try { await api('fin_mark_txn', { p_id: r.id, p: { review: 'needs_review' } }); toast('Marked to check'); s.close(); route_(); } catch (e) { fail(e); } } }, icon('alert', 18), 'Ask for a check'),
+      h('button', { class: 'btn', onclick: async () => { const v = input({ value: r.reference || '', placeholder: 'UTR or reference number', label: 'Reference' }); const ok = await alertBox({ title: 'Reference or UTR', message: 'Bank or UPI reference for this entry.', body: v, actions: [{ label: 'Save', value: true, role: 'primary' }, { label: 'Cancel', value: false }], focus: 'input' }); if (!ok) return; try { await api('fin_mark_txn', { p_id: r.id, p: { reference: v.value } }); toast('Saved'); s.close(); route_(); } catch (e) { fail(e); } } }, icon('edit', 18), r.reference ? 'Change reference' : 'Add reference / UTR'),
       r.evidence !== 'have' && r.evidence !== 'pending' ? h('button', { class: 'btn', onclick: async () => { try { await api('fin_mark_txn', { p_id: r.id, p: { evidence: 'pending' } }); s.close(); route_(); } catch (e) { fail(e); } } }, 'Bill will come later') : null,
       h('button', { class: 'btn', onclick: async () => { if (!await confirmBox('Correct this entry?', 'The old entry is cancelled (kept in history) and a new one opens with the same details for you to fix.', 'Correct')) return; try { await api('fin_reverse_txn', { p_id: r.id, p_reason: 'Corrected' }); s.close(); addTxn({ kind: r.kind, amount: r.amount, interest: r.interest, date: r.txn_date, account_id: r.account_id, to_account_id: r.to_account_id, category_id: r.category_id, person_id: r.person_id, partner_id: r.partner_id, loan_id: r.loan_id, purpose: r.purpose, evidence: r.evidence }); } catch (e) { fail(e); } } }, icon('edit', 18), 'Correct this entry'),
       h('button', { class: 'btn danger', onclick: async () => {
