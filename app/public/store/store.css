@@ -734,3 +734,8 @@ footer .col a,footer .col span{font-size:9.5px}
 .bigcol::after{background:rgba(0,0,0,.28)}
 .bigcol .cap{inset:0;bottom:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:16px;padding:0 var(--pad)}
 .bigcol .t{font-size:clamp(34px,8vw,84px);line-height:1.02;font-weight:800;letter-spacing:-.03em;text-transform:uppercase;text-shadow:0 2px 24px rgba(0,0,0,.35)}
+
+/* collection banners: name at the bottom, centred, a little smaller */
+.bigcol::after{background:linear-gradient(transparent 45%,rgba(0,0,0,.55))}
+.bigcol .cap{inset:auto var(--pad) 28px var(--pad);justify-content:flex-end;gap:12px}
+.bigcol .t{font-size:clamp(24px,4.6vw,54px);line-height:1.05;font-weight:800;letter-spacing:-.02em}
