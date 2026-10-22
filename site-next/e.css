@@ -89,3 +89,21 @@ main.content .card,main.content .feat-card,main.content .price-card,main.content
 .ftwrap footer,.ftstrip,.ftwrap{border-radius:26px}
 .ftwrap{border-radius:30px 30px 0 0}
 @media(min-width:900px){.pe{padding:26px}.ph{border-radius:30px}}
+/* foldable rows: one line closed, a few words open */
+.folds{margin-top:28px;display:grid;gap:8px}
+.fold{border:1px solid var(--line);border-radius:22px;padding:0 16px;background:transparent}
+.fold>summary{list-style:none;display:grid;grid-template-columns:28px 1fr 14px;gap:10px;align-items:baseline;padding:13px 0;cursor:pointer}
+.fold>summary::-webkit-details-marker{display:none}
+.fold>summary i{font-style:normal;font-size:8.5px;color:var(--mut);letter-spacing:.1em}
+.fold>summary b{font-weight:400;font-size:14px;letter-spacing:-.01em}
+.fold>summary:after{content:"+";font-size:13px;color:var(--mut);text-align:right}
+.fold[open]>summary:after{content:"\2212"}
+.fold .fb{padding:0 0 14px 38px;display:flex;flex-wrap:wrap;gap:6px 16px;font-size:10px;color:var(--dim)}
+.fold .fb a{border-bottom:1px solid var(--line);color:var(--ink)}
+/* generic folds made by fold.js on every other page */
+main.content details.gfold{border:1px solid var(--line);border-radius:22px;padding:0 16px;margin:8px 0}
+main.content details.gfold>summary{list-style:none;cursor:pointer;padding:13px 0;font-size:14px;font-weight:300;letter-spacing:-.01em;display:flex;justify-content:space-between;gap:10px}
+main.content details.gfold>summary::-webkit-details-marker{display:none}
+main.content details.gfold>summary:after{content:"+";color:var(--mut)}
+main.content details.gfold[open]>summary:after{content:"\2212"}
+main.content details.gfold>.gb{padding:0 0 14px}
