@@ -995,3 +995,9 @@ footer .col a,footer .col span{font-size:9.5px}
 /* card picture slider: every picture snaps exactly to the card edge, so the neighbouring picture never peeks in */
 .pc .sc{scroll-snap-type:x mandatory;overscroll-behavior-x:contain}
 .pc .sc>a,.pc .sc>div{scroll-snap-align:start;scroll-snap-stop:always;min-width:100%;max-width:100%;overflow:hidden;contain:paint}
+
+/* home page: the top bar stays hidden over the hero picture and slides in once you scroll past it */
+.top{transition:transform .35s cubic-bezier(.2,.7,.2,1),background .25s}
+body.homehero:not(.pasthero) .top{transform:translateY(-110%);pointer-events:none}
+body.homehero.pasthero .top{background:rgba(239,238,237,.92)!important;color:#000}
+body.homehero.pasthero .top,body.homehero.pasthero .top .l a,body.homehero.pasthero .top .ic,body.homehero.pasthero .brand{color:#000!important;text-shadow:none!important}
