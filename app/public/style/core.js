@@ -78,10 +78,27 @@ const ICONS = {
   bolt: '<path d="M13 3 5 13h6l-1 8 8-10h-6z"/>',
   globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
 };
+// solid hand-cut glyphs for the main sections (drawn black-and-white style); thin strokes stay for small controls
+const ICONS_F = {
+  home: 'M3 11.500 12 3.500l9 8h-2.500V21h-5v-6h-3v6h-5v-9.500H3Z',
+  cash: 'M2.500 6h19a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-19a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Zm9.500 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z',
+  box: 'M12 2.500 21 7l-9 4.500L3 7l9-4.500ZM3 8.800l8 4v8.200l-8-4V8.800Zm18 0v8.200l-8 4v-8.200l8-4Z',
+  chart: 'M3 12h4v9H3zM10 3h4v18h-4zM17 8h4v13h-4z',
+  user: 'M12 11.500a4.200 4.200 0 1 0 0-8.400 4.200 4.200 0 0 0 0 8.400ZM3.500 21c0-4.200 3.800-6.700 8.500-6.700s8.500 2.500 8.500 6.700H3.500Z',
+  users: 'M9 11a3.800 3.800 0 1 0 0-7.600A3.800 3.800 0 0 0 9 11Zm7.500-.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM2 20.500c0-3.800 3-6 7-6s7 2.200 7 6H2Zm14.500-5.800c3 0 5.500 1.700 5.500 5.300h-4.200c0-2-.5-3.700-1.300-5.300Z',
+  phone: 'M6.600 2.500 9 2c.5 0 .9.300 1 .8l.8 3.200c.1.400 0 .8-.3 1.100L9.200 8.400a12 12 0 0 0 6.400 6.400l1.300-1.300c.3-.3.7-.4 1.100-.3l3.200.8c.5.100.8.500.8 1l-.5 2.400c-.2 1.200-1.300 2-2.500 1.900C10.300 19.200 4.800 13.700 4.700 5c-.1-1.200.7-2.300 1.900-2.500Z',
+  truck: 'M2 6h11v9H2V6Zm12 3h4l3 3v3h-7V9ZM6.500 16.500a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z',
+  tag: 'M3 3h8l10 10-8 8L3 11V3Zm4 2.500a1.500 1.500 0 1 0 0 3 1.500 1.500 0 0 0 0-3Z',
+  shirt: 'M8 3 3 6l2 4 2-1v12h10V9l2 1 2-4-5-3c0 1.700-1.800 3-4 3S8 4.700 8 3Z',
+  wallet: 'M3 7a3 3 0 0 1 3-3h12v3H6a1 1 0 0 0 0 2h14a1 1 0 0 1 1 1v9a2 2 0 0 1-2 2H6a3 3 0 0 1-3-3V7Zm14 8a1.200 1.200 0 1 0 0 2.400A1.200 1.200 0 0 0 17 15Z',
+  bolt: 'M13 2 4 14h6l-1 8 9-12h-6l1-8Z',
+  alert: 'M12 3 22 20H2L12 3Zm-1 7v5h2v-5h-2Zm0 6.500v2h2v-2h-2Z',
+  globe: 'M12 2.500a9.500 9.500 0 1 0 0 19 9.500 9.500 0 0 0 0-19Zm-1 1.800c-2 2-3.200 4.700-3.300 7.700H11V4.300Zm2 0V12h3.300c-.1-3-1.300-5.700-3.300-7.700ZM7.700 14c.1 3 1.300 5.700 3.300 7.700V14H7.700Zm5.300 0v7.700c2-2 3.200-4.700 3.300-7.700H13Z',
+};
 function icon(name, size = 22) {
   const s = document.createElement('span');
   s.className = 'ic'; s.setAttribute('aria-hidden', 'true');
-  s.innerHTML = `<svg width="${size}" height="${size}" viewBox="0 0 24 24">${ICONS[name] || ICONS.box}</svg>`;
+  s.innerHTML = ICONS_F[name] ? `<svg class="f" width="${size}" height="${size}" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="${ICONS_F[name]}"/></svg>` : `<svg width="${size}" height="${size}" viewBox="0 0 24 24">${ICONS[name] || ICONS.box}</svg>`;
   return s;
 }
 
