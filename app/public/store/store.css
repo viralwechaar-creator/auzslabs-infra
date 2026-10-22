@@ -763,3 +763,25 @@ footer .col a,footer .col span{font-size:9.5px}
   .dock .pill button svg:not(.f){fill:none;stroke:currentColor}
   .dock .mark{color:#000}
 }
+
+/* dock v3 (reference): frosted glass pill, plain icons, logo circle with a blue ring, dark chat circle */
+@media(max-width:899px){
+  .dock{left:50%;right:auto;transform:translateX(-50%);width:min(94vw,420px);height:auto;padding:0;gap:8px;border-radius:0;background:none;box-shadow:none;justify-content:center;bottom:max(14px,env(safe-area-inset-bottom))}
+  .dock .mark{width:56px;height:56px;background:#fff;color:#000;box-shadow:0 0 0 3px #3b6fe0,0 8px 24px rgba(0,0,0,.18)!important}
+  .dock .mark img{border-radius:50%}
+  .dock .pill{flex:1;height:54px;padding:0 6px;border-radius:27px;background:rgba(240,240,240,.78)!important;-webkit-backdrop-filter:blur(22px) saturate(1.6);backdrop-filter:blur(22px) saturate(1.6);box-shadow:0 8px 28px rgba(0,0,0,.18),inset 0 0 0 1px rgba(255,255,255,.7)!important;justify-content:space-around}
+  .dock .pill button{flex:1;width:auto;height:46px;color:#000!important;display:grid;place-items:center}
+  .dock .pill button::after{content:none}
+  .dock .pill button:active{background:rgba(0,0,0,.07);color:#000}
+  .dock svg,.dock svg.f{width:22px!important;height:22px!important}
+  .dock .pill .n{background:#000;color:#fff;right:calc(50% - 22px)}
+  .dock .chat{width:56px;height:56px;background:#17181a;color:#fff;box-shadow:0 0 0 3px #fff,0 8px 24px rgba(0,0,0,.28)!important}
+  .dock .chat svg,.dock .chat svg.f{color:#fff;stroke:#fff}
+}
+/* welcome card: dark, logo + name + message + close */
+.chatwel{display:flex;align-items:center;gap:12px;max-width:min(88vw,340px);padding:12px 14px;border-radius:22px;background:#17181a;color:#fff;box-shadow:0 12px 36px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.08)}
+.chatwel .wl{width:40px;height:40px;border-radius:11px;object-fit:cover;background:#fff;color:#000;display:grid;place-items:center;font:800 16px/1 inherit;font-style:normal;flex:none}
+.chatwel .wt{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.chatwel b{font-size:11px;font-weight:700;color:rgba(255,255,255,.6);letter-spacing:.02em}
+.chatwel span{font-size:14px;font-weight:500;color:#fff}
+.chatwel u{text-decoration:none;flex:none;width:26px;height:26px;border-radius:13px;background:rgba(255,255,255,.12);display:grid;place-items:center;font-size:16px;color:rgba(255,255,255,.8)}

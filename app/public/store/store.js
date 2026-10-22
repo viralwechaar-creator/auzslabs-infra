@@ -53,6 +53,14 @@ const FAM = [['Blues', /blue|navy|sky|denim|indigo|teal/, ['#2f5fd0', '#1f2a44']
 const famOf = (c) => { const n = String(c || '').toLowerCase(); const f = FAM.find((x) => x[1].test(n)); return f ? f[0] : null; };
 
 // ---------- state ----------
+// the shop's own logo becomes the home-screen icon of this website (a data URI, so iOS never shows a blank icon)
+async function shopIcon(d) {
+  try {
+    const logo = d && d.shop && d.shop.logoUrl; if (!logo) return;
+    const r = await fetch('/app-icon/180.png?v=' + encodeURIComponent(String(logo).slice(-14))); if (!r.ok) return;
+    const fr = new FileReader(); fr.onload = () => { document.querySelectorAll('link[rel=apple-touch-icon],link[rel=icon]').forEach((l) => l.remove()); ['apple-touch-icon', 'icon'].forEach((rel) => { const l = document.createElement('link'); l.rel = rel; l.href = fr.result; document.head.append(l); }); }; fr.readAsDataURL(await r.blob());
+  } catch (e) { /* the default icon stays */ }
+}
 let D = null;            // public_sty_store result
 let STY = [], BYID = {}, VAR = {};
 let bag = [], wish = [];
@@ -173,7 +181,7 @@ function shell() {
     E('div', { class: 'menu', id: 'menu' }), E('div', { class: 'srch', id: 'srch' }));
 
   try { if (!sessionStorage.getItem('st.wel.' + SLUG)) { sessionStorage.setItem('st.wel.' + SLUG, '1');
-    setTimeout(() => { const b = E('button', { class: 'chatwel', id: 'chatwel', onclick: toContact }, E('b', null, 'Welcome to ' + name), E('span', null, c.welcome || 'Need a hand? Tap to reach us.')); document.body.append(b); setTimeout(() => b.classList.add('out'), 6500); setTimeout(() => b.remove(), 7100); }, 1200); } } catch (e) { /* no storage */ }}
+    setTimeout(() => { const b = E('button', { class: 'chatwel', id: 'chatwel', onclick: toContact }, (D.shop.logoUrl ? E('img', { class: 'wl', src: D.shop.logoUrl, alt: '' }) : E('i', { class: 'wl' }, String(name || 'S').trim().charAt(0).toUpperCase())), E('div', { class: 'wt' }, E('b', null, name), E('span', null, c.welcome || 'Welcome to ' + name + '!')), E('u', { 'aria-label': 'Close', onclick: (ev) => { ev.stopPropagation(); b.remove(); } }, '×')); document.body.append(b); setTimeout(() => b.classList.add('out'), 6500); setTimeout(() => b.remove(), 7100); }, 1200); } } catch (e) { /* no storage */ }}
 function groups() {
   const cats = [...new Set(STY.map((s) => s.category).filter(Boolean))];
   const G = [['Top', /shirt|tee|polo|sweat|hood|jacket|top|kurta|blazer|coat|knit|vest/i], ['Bottom', /jean|pant|trouser|short|cargo|skirt|jogger|chino|denim|legging/i], ['Footwear', /shoe|sneaker|sandal|slipper|boot|loafer|footwear|heel/i], ['Accessories', /bag|cap|hat|belt|wallet|sock|scarf|watch|case|glass|jewel|tie/i]];
@@ -798,6 +806,7 @@ function route() {
 }
 window.addEventListener('scroll', () => document.body.classList.toggle('atop', window.scrollY < 40), { passive: true });
 function ingest(d) {
+  shopIcon(d);
   D = d; STY = (D.styles || []).filter((x) => x.variants && x.variants.length); BYID = {}; VAR = {};
   STY.forEach((x) => { BYID[x.id] = x; x.variants.forEach((y) => { VAR[y.id] = { ...y, sid: x.id }; }); });
   bag = LS.get('bag', []).filter((b) => VAR[b.v]); wish = LS.get('wish', []).filter((id) => BYID[id]);
