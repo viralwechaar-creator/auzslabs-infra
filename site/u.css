@@ -476,3 +476,19 @@ main.content .sp-feats li{font-size:9.5px!important}
 .ftfold p{font-size:9px}
 .u-sheet .nav-link{font-size:14px}
 @media(min-width:900px){main.content p,main.content .p,main.content .lede,main.content li{font-size:10.5px!important}main.content h1.h-1{font-size:28px!important}}
+/* breathing room: page gutter, calmer gaps, no underlined tiles */
+main.content>.wrap,main.content .wrap.hm{padding-left:14px!important;padding-right:14px!important;max-width:1240px;margin:0 auto}
+.hm,.pr-grid{gap:12px!important;padding-top:12px}
+.hm-grid{gap:12px}
+main.content .card,.hm-hero{padding:18px 18px!important}
+main.content .section{padding:10px 0!important}
+.hm-tile{padding:16px!important;min-height:112px;gap:6px}
+.hm-biz{gap:10px}.hm-biz a,.hm-chips a,.hm-tile{text-decoration:none!important}
+.hm-biz a{padding:14px 15px}
+.hm-hero{gap:12px}
+main.content .card>*+*{margin-top:2px}
+main.content p,main.content .p,main.content li{margin-bottom:6px!important}
+.pr-card{gap:9px}.pr-list{gap:7px}
+.u-top{margin-bottom:4px}
+main.content .row-b{margin-top:6px!important}
+@media(min-width:900px){main.content>.wrap{padding-left:28px!important;padding-right:28px!important}}
