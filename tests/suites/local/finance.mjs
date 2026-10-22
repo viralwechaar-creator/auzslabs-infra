@@ -174,6 +174,51 @@ export default async function run({ browser, stack }) {
     await fails(staff, 'fin_mark_txn', { p_id: e.id, p: { reference: 'x' } });
   });
 
+  // ---------- phase 3: approvals, repeating entries, statement import, reminders, insights ----------
+  await s.check('Approval limit: a big entry from a non-approver waits for review; the owner sets the limit, staff cannot', async () => {
+    await fails(manager, 'fin_settings_save', { p: { approval_limit: 1000 } }, /does not allow/i);
+    const st = await ok(owner, 'fin_settings_save', { p: { approval_limit: 5000, reminder_days: 1 } }); assert(Number(st.approval_limit) === 5000, JSON.stringify(st));
+    const small = await ok(manager, 'fin_save_txn', { p: { kind: 'expense', amount: 400, account_id: cash, purpose: 'small' } });
+    const big = await ok(manager, 'fin_save_txn', { p: { kind: 'expense', amount: 6000, account_id: cash, purpose: 'big one' } });
+    const list = await ok(owner, 'fin_txn_list', { p: { limit: 20 } });
+    const rv = (id) => list.find((x) => x.id === id).review;
+    assert(rv(small.id) === 'confirmed', 'small should be confirmed: ' + rv(small.id));
+    assert(rv(big.id) === 'needs_review' || list.find((x) => x.id === big.id), 'big missing');
+    await ok(owner, 'fin_settings_save', { p: { approval_limit: 0, reminder_days: 1 } }); await integrity();
+  });
+  let rec;
+  await s.check('Repeating entry posts each due date once, rerunning adds nothing, pausing stops it', async () => {
+    const start = new Date(Date.now() - 65 * 864e5).toISOString().slice(0, 10);
+    rec = await ok(owner, 'fin_recurring_save', { p: { kind: 'expense', amount: 1200, freq: 'monthly', start_date: start, payload: { account_id: cash, purpose: 'Shop rent' } } });
+    await fails(owner, 'fin_recurring_save', { p: { kind: 'expense', amount: 0, freq: 'monthly' } }, /amount/i);
+    await fails(staff, 'fin_recurring_run', {}, /does not allow/i);
+    const b0 = await bal(cash); const r1 = await ok(owner, 'fin_recurring_run', {});
+    assert(r1.posted >= 2 && r1.failed === 0, JSON.stringify(r1)); assert(await bal(cash) === b0 - 1200 * r1.posted, 'cash after repeats');
+    const r2 = await ok(owner, 'fin_recurring_run', {}); assert(r2.posted === 0, 'second run posted again');
+    const l = (await ok(owner, 'fin_recurring_list')).find((x) => x.id === rec.id); assert(l && !l.due, JSON.stringify(l));
+    await ok(owner, 'fin_recurring_stop', { p_id: rec.id, p_active: false }); await integrity();
+  }, 'major');
+  await s.check('Bank statement import: matches an existing entry, creates the rest for review, a repeat import adds nothing', async () => {
+    const acct = await ok(owner, 'fin_save_account', { p: { name: 'Statement bank', kind: 'bank', opening: 10000 } });
+    await ok(owner, 'fin_save_txn', { p: { kind: 'expense', amount: 700, account_id: acct.id, purpose: 'Electricity', date: new Date().toISOString().slice(0, 10) } });
+    const today = new Date().toISOString().slice(0, 10);
+    const rows = [{ date: today, debit: 700, desc: 'ELEC BILL', ref: 'UTR-A1' }, { date: today, credit: 2500, desc: 'CUSTOMER UPI', ref: 'UTR-B2' }, { date: today, debit: 300, desc: 'Same twice' }, { date: today, debit: 300, desc: 'Same twice' }, { date: 'bad', debit: 5 }];
+    const pv = await ok(owner, 'fin_import_preview', { p_account: acct.id, p_rows: rows });
+    const st = pv.rows.map((x) => x.status); assert(st[0] === 'matched' && st[1] === 'new' && st[2] === 'new' && st[3] === 'new' && st[4] === 'skip', st.join());
+    const commit = rows.map((r, i) => ({ ...r, action: pv.rows[i].status === 'matched' ? 'match' : 'new', txn_id: pv.rows[i].txn_id }));
+    const c1 = await ok(owner, 'fin_import_commit', { p_account: acct.id, p_rows: commit });
+    assert(c1.matched === 1 && c1.created === 3, JSON.stringify(c1)); assert(await bal(acct.id) === 10000 - 700 + 2500 - 600, 'bank after import');
+    const pv2 = await ok(owner, 'fin_import_preview', { p_account: acct.id, p_rows: rows }); assert(pv2.rows.slice(0, 4).every((x) => x.status === 'duplicate' || x.status === 'matched' || x.status === 'new') && pv2.rows[1].status === 'duplicate', pv2.rows.map((x) => x.status).join());
+    const c2 = await ok(owner, 'fin_import_commit', { p_account: acct.id, p_rows: commit }); assert(c2.created === 0, 'repeat created ' + c2.created);
+    await fails(staff, 'fin_import_commit', { p_account: acct.id, p_rows: [] }, /does not allow/i); await integrity();
+  }, 'major');
+  await s.check('Reminders list only people owing past the days; insights and forecast answer without errors', async () => {
+    const rem = await ok(owner, 'fin_reminders'); assert(Array.isArray(rem), 'reminders');
+    const an = await ok(owner, 'fin_anomalies'); assert(Array.isArray(an), 'anomalies');
+    const fc = await ok(owner, 'fin_forecast'); assert(fc.cash_now !== undefined && fc.based_on_days === 60, JSON.stringify(fc));
+    await fails(cafe, 'fin_forecast', {}, /not enabled/i);
+  });
+
   // ---------- the app in a browser ----------
   const open = async (dev) => {
     const c = await newCtx(browser, stack, dev); const page = await c.newPage(); const errs = watch(page);
@@ -186,7 +231,7 @@ export default async function run({ browser, stack }) {
     await s.check(`Every screen opens on ${dev.name}: no script errors, no sideways scroll`, async () => {
       const { c, page, errs } = await open(dev);
       await page.waitForSelector('.hero-n .n', { timeout: 15000 });
-      for (const id of ['home', 'activity', 'dues', 'owner', 'accounts', 'reports', 'assets', 'budget', 'settings']) {
+      for (const id of ['home', 'activity', 'dues', 'owner', 'accounts', 'reports', 'assets', 'budget', 'approvals', 'repeat', 'bank', 'insights', 'settings']) {
         await page.evaluate((x) => { location.hash = '#/' + x; }, id); await page.waitForTimeout(700);
         await page.waitForSelector('.page[data-p="' + id + '"]', { timeout: 10000 });
         const txt = await page.locator('.page').innerText(); assert(!/undefined|NaN|\[object/i.test(txt), id + ' shows a bad value: ' + txt.slice(0, 200));

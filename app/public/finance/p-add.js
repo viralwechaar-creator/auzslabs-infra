@@ -25,6 +25,15 @@ function addTxn(preset) {
   const file = h('input', { type: 'file', accept: 'image/*,application/pdf', capture: null, multiple: true, style: { display: 'none' } });
   const fileNote = h('div', { class: 'small muted' });
   file.onchange = () => { fileNote.textContent = file.files.length ? file.files.length + ' file(s) will be attached' : ''; if (file.files.length) evid.value = 'have'; };
+  const scanIn = h('input', { type: 'file', accept: 'image/*,application/pdf', style: { display: 'none' } });
+  scanIn.onchange = async () => {
+    const f = scanIn.files[0]; if (!f) return; fileNote.textContent = 'Reading the bill…';
+    try {
+      const r = await scanBill(f); const dt = new DataTransfer(); [...file.files].forEach((x) => dt.items.add(x)); dt.items.add(f); file.files = dt.files;
+      if (r.amount && !N(amount.value)) amount.value = r.amount; if (/^\d{4}-\d{2}-\d{2}$/.test(r.date || '') && r.date <= todayISO()) date.value = r.date; if (r.purpose && !purpose.value) purpose.value = r.purpose;
+      evid.value = 'have'; amount.dispatchEvent(new Event('input')); fileNote.textContent = 'Bill read and attached. Please check the amount and date.' + (r.notes[0] ? ' ' + r.notes[0] : '');
+    } catch (e) { fileNote.textContent = 'Could not read this bill. You can still type it in.'; }
+  };
   const preview = h('div', { class: 'preview' });
   const accName = (id) => (accounts.find((a) => a.id === id) || {}).name || '';
   const upd = () => {
@@ -46,7 +55,7 @@ function addTxn(preset) {
     people ? field(K.personLabel, people.el) : null, partners ? field(K.partnerLabel, partners.el) : null, loans ? field('Loan', loans.el) : null,
     interest ? field(preset.kind === 'loan_repay' ? 'Interest part of this payment' : 'Interest part', interest, 'Leave empty if there is no interest.') : null,
     cat ? field(K.catLabel, cat) : null, dueDate ? field('Due date (optional)', dueDate) : null,
-    field('Note', purpose), field('Proof', evid), h('div', null, h('button', { class: 'btn sm', type: 'button', onclick: () => file.click() }, icon('camera', 16), 'Add photo or file'), file, fileNote),
+    field('Note', purpose), field('Proof', evid), h('div', { class: 'row', style: { gap: '8px', flexWrap: 'wrap' } }, h('button', { class: 'btn sm', type: 'button', onclick: () => file.click() }, icon('camera', 16), 'Add photo or file'), ['expense', 'asset_buy', 'credit_purchase'].includes(preset.kind) ? h('button', { class: 'btn sm', type: 'button', onclick: () => scanIn.click() }, icon('eye', 16), 'Scan a bill') : null, file, scanIn, fileNote),
     review, preview);
   sheet({ title: K.label, closeLabel: 'Cancel', full: true, body, actions: [{ label: 'Save', primary: true, onclick: async (close) => {
     const a = N(amount.value); if (a <= 0) { toast('Enter an amount above zero', { err: true }); amount.focus(); return false; }
