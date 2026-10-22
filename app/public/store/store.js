@@ -161,7 +161,6 @@ function shell() {
   const phoneNo = String(D.shop.phone || '').replace(/\D/g, '');
   const waUrl = phoneNo ? 'https://wa.me/' + (phoneNo.length === 10 ? '91' + phoneNo : phoneNo) : '';
   const dock = E('div', { class: 'dock phoneonly' },
-    E('a', { class: 'mark', href: link(''), 'aria-label': 'Home' }, name.slice(0, 1).toUpperCase()),
     E('div', { class: 'pill' }, E('button', { 'aria-label': 'Explore', onclick: openMenu }, icon('compass')), E('button', { 'aria-label': 'Shop', onclick: () => go('shop') }, icon('home')),
       E('button', { 'aria-label': 'Saved', onclick: () => go('wishlist') }, icon('mark'), countBadge(() => wish.length)), E('button', { 'aria-label': 'Stores', onclick: () => go('stores') }, icon('pin'))),
     waUrl ? E('a', { class: 'chat', href: waUrl, target: '_blank', rel: 'noopener', 'aria-label': 'Chat on WhatsApp' }, icon('chat')) : E('button', { class: 'chat', 'aria-label': 'Contact', onclick: () => go('contact') }, icon('chat')));
@@ -182,19 +181,16 @@ const mediaOn = () => (cfg().media || []).some((x) => x && (x.title || x.image))
 const jobsOn = () => (cfg().jobs || []).some((x) => x && x.title) || !!(cfg().hiring && (cfg().hiring.email || cfg().hiring.text));
 function openMenu() {
   const m = $('#menu'); clear(m); m.classList.add('on');
-  const close = () => { m.classList.remove('on'); document.body.classList.remove('menuopen'); };
-  document.body.classList.add('menuopen');
+  const close = () => m.classList.remove('on');
   const fams = FAM.filter((f) => STY.some((s) => colours(s).some((c) => famOf(c) === f[0])));
   const nav = (p) => (e) => { e.preventDefault(); close(); location.hash = '#/' + p; };
-  const a = (txt, p, cls) => E('a', { class: cls || '', href: link(p), onclick: nav(p) }, txt);
-  const cols = D.collections.filter((c) => c.styleIds.length).slice(0, 3);
-  const more = [blogsOn() ? ['Journal', 'blog'] : null, mediaOn() ? ['Media & gallery', 'media'] : null, jobsOn() ? ['Careers', 'careers'] : null, ['Our stores', 'stores'], ['Our story', 'about'], ['FAQs', 'faq'], ['Contact', 'contact'], ['My account & orders', 'me']].filter(Boolean);
-  const panel = E('div', { class: 'mp' },
-    E('div', { class: 'mhd' }, E('b', null, D.shop.name), E('button', { class: 'ic mx', 'aria-label': 'Close', onclick: close }, icon('x'))),
-    E('nav', { class: 'mbig' }, a('New arrivals', 'shop?new=1', 'b'), a('All products', 'shop', 'b'), ...cols.map((c) => a(c.name, 'shop?col=' + c.id, 'b'))),
-    ...groups().map(([n, cs]) => E('div', { class: 'mgrp' }, E('span', { class: 'ml' }, n), E('div', { class: 'mrow' }, cs.map((c) => a(c, 'shop?cat=' + encodeURIComponent(c)))))),
-    fams.length ? E('div', { class: 'mgrp' }, E('span', { class: 'ml' }, 'Shop by colour'), E('div', { class: 'mdots' }, fams.map((f) => E('a', { class: 'md', 'aria-label': f[0], title: f[0], href: link('shop?fam=' + f[0]), onclick: nav('shop?fam=' + f[0]), style: { background: 'linear-gradient(135deg,' + f[2][0] + ',' + f[2][1] + ')' } })))) : null,
-    E('div', { class: 'mmore' }, more.map(([t, p]) => a(t, p))));
+  const a = (txt, p) => E('a', { href: link(p), onclick: nav(p) }, txt);
+  const panel = E('div', { class: 'mp' }, E('button', { class: 'ic mx', 'aria-label': 'Close', onclick: close }, icon('x')),
+    E('div', { class: 'cols' },
+      E('div', { class: 'col nv' }, a('New arrivals', 'shop?new=1'), a('All products', 'shop'), ...D.collections.filter((c) => c.styleIds.length).slice(0, 4).map((c) => a(c.name, 'shop?col=' + c.id))),
+      ...groups().map(([n, cs]) => E('div', { class: 'col' }, E('span', { class: 'lbl' }, n), E('div', { class: 'wrapc' }, cs.map((c) => a(c, 'shop?cat=' + encodeURIComponent(c)))))),
+      (blogsOn() || mediaOn() || jobsOn()) ? E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Explore'), E('div', { class: 'wrapc' }, [blogsOn() ? a('Journal', 'blog') : null, mediaOn() ? a('Media & gallery', 'media') : null, jobsOn() ? a('Careers', 'careers') : null].filter(Boolean))) : null,
+      fams.length ? E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Shop by colour'), E('div', { class: 'wrapc' }, fams.map((f) => E('a', { class: 'fam', href: link('shop?fam=' + f[0]), onclick: nav('shop?fam=' + f[0]) }, f[0], E('span', { class: 'bar', style: { background: 'linear-gradient(90deg,' + f[2][0] + ',' + f[2][1] + ')' } }))))) : null));
   m.append(panel);
   m.onclick = (e) => { if (e.target === m) close(); };
 }
@@ -224,6 +220,30 @@ function openSearch() {
 
 // ---------- views ----------
 const V = {};
+
+// Home page "refine as a sentence": tap a word to change it, the count updates live, then jump to the matching pieces
+function refineLine() {
+  const prices = STY.map((x) => x.price).filter((x) => x > 0).sort((a, b) => a - b); if (STY.length < 4) return null;
+  const cats = [...new Set(STY.map((x) => x.category).filter(Boolean))], sizes = [...new Set(STY.flatMap(sizesOf))], cols = [...new Set(STY.flatMap(colours))];
+  const pts = [...new Set([.25, .5, .75].map((q) => Math.ceil((prices[Math.floor((prices.length - 1) * q)] || 0) / 100) * 100).filter((x) => x > 0))];
+  const SL = [['cat', 'anything', 'a ' + 'type', cats], ['size', 'any size', 'size', sizes], ['colour', 'any colour', 'colour', cols], ['max', 'any budget', 'budget', pts]];
+  const draft = {}; let open = '';
+  const sentence = E('p', { class: 'rl-s' }), chips = E('div', { class: 'rl-c' }), go = E('a', { class: 'rl-go' });
+  const word = (k, ph) => E('button', { class: 'mw' + (draft[k] ? ' set' : '') + (open === k ? ' open' : ''), onclick: () => { open = open === k ? '' : k; paint(); } }, k === 'max' && draft[k] ? 'under ' + inr(draft[k]) : draft[k] || ph);
+  const paint = () => {
+    const n = filterSet(draft).length; clear(sentence);
+    sentence.append('I am looking for ', word('cat', 'anything'), ' in ', word('size', 'any size'), ', ', word('colour', 'any colour'), ' ', draft.max ? '' : 'at ', word('max', 'any budget'), '.');
+    clear(chips); const slot = SL.find((x) => x[0] === open);
+    if (slot) chips.append(...slot[3].map((o) => E('button', { class: 'ch' + (String(draft[slot[0]]) === String(o) ? ' on' : ''), onclick: () => { draft[slot[0]] = String(draft[slot[0]]) === String(o) ? '' : o; open = ''; paint(); } }, slot[0] === 'max' ? 'under ' + inr(o) : o)), E('button', { class: 'ch ghost', onclick: () => { draft[slot[0]] = ''; open = ''; paint(); } }, 'Any'));
+    chips.classList.toggle('on', !!slot);
+    go.textContent = n ? 'Show ' + n + (n === 1 ? ' piece' : ' pieces') + ' ↗' : 'Nothing matches yet';
+    go.classList.toggle('dead', !n);
+    const q = { ...draft }; for (const x in q) if (!q[x]) delete q[x];
+    go.setAttribute('href', n ? link('shop' + (Object.keys(q).length ? '?' + new URLSearchParams(q).toString() : '')) : '#');
+  };
+  paint();
+  return E('section', { class: 'rl' }, E('div', { class: 'lbl' }, 'Find your piece'), sentence, chips, E('div', { class: 'rl-f' }, go, E('button', { class: 'rl-x', onclick: () => { for (const k in draft) delete draft[k]; open = ''; paint(); } }, 'Reset')));
+}
 function newest(n) { return [...STY].sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))).slice(0, n); }
 // slide stack: a deck of product cards that slides by itself; the centre card is full size, its neighbours peek out
 function stack(list, label) {
@@ -272,6 +292,7 @@ V.home = (v) => {
   const cols = D.collections.filter((x) => x.styleIds.some((id) => BYID[id]));
   const phone = matchMedia('(max-width:700px)').matches;
   // 1. latest products
+  v.append(refineLine());
   v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'Latest drop'), E('a', { class: 'btn sm out', href: link('shop?new=1') }, 'Discover more')), gridOf(newest(8), true)));
   // 2. category by category: a swipe row on desktop, a slide deck on phones
   // size hierarchy: each category band gets its own scale (L big, deck, S compact, M medium); product cards inside one band are always the same size
