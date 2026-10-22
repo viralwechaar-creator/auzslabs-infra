@@ -264,3 +264,6 @@ function filterButton(onApply) {
 }
 // camera scan helper: any barcode format (the scanner reads whatever the phone camera can)
 function scanWith(onCode) { if (!window.auzScanner) return toast(t('Scanner not available on this device'), { err: true }); auzScanner.open({ title: t('Scan a tag'), onCode, footer: '' }); }
+
+// small copy of an uploaded picture for lists (server makes <name>.w480.webp at upload); callers fall back to the original on error
+function thumbOf(u, w) { return u && /\/uploads\/site\//.test(u) ? u.replace(/\.(jpe?g|png|webp)$/i, '.w' + (w || 480) + '.webp') : u; }

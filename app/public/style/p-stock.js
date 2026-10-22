@@ -42,7 +42,7 @@ page('stock', {
         const tone = st <= 0 ? 'z' : lowS || st <= 3 ? 'lo' : 'ok';
         return h('button', { class: 'icard' + (s.active === false ? ' off' : '') + (SEL.on && SEL.ids.has(s.id) ? ' sel' : ''), type: 'button', onclick: () => { if (SEL.on) { SEL.ids.has(s.id) ? SEL.ids.delete(s.id) : SEL.ids.add(s.id); paint(); } else styleSheet(s.id, () => v.refresh()); } },
           SEL.on ? h('span', { class: 'ic-tick' + (SEL.ids.has(s.id) ? ' on' : '') }, SEL.ids.has(s.id) ? icon('check', 14) : null) : null,
-          h('div', { class: 'ic-p' }, s.photoUrl ? h('img', { src: s.photoUrl, alt: '', loading: 'lazy' }) : icon('shirt', 24)),
+          h('div', { class: 'ic-p' }, s.photoUrl ? h('img', { src: thumbOf(s.photoUrl), alt: '', loading: 'lazy', onerror: (e) => { const i = e.target; if (i.src !== s.photoUrl) i.src = s.photoUrl; } }) : icon('shirt', 24)),
           h('div', { class: 'ic-b' },
             h('div', { class: 'ic-t' }, h('span', { class: 'ic-n' }, s.name), h('span', { class: 'ic-pr num' }, inr(s.price))),
             h('div', { class: 'ic-s' }, [s.category, s.fabric, cols + ' ' + t('colours'), sizes + ' ' + t('sizes')].filter(Boolean).join(' · ')),
