@@ -360,12 +360,15 @@ V.home = (v) => {
   const phone = matchMedia('(max-width:700px)').matches;
   // 1. one category browser: pick a category and only its products show, in a row that swipes by itself
   v.append(refineLine());
+  v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'Latest drop'), E('a', { class: 'btn sm out', href: link('shop?new=1') }, 'Discover more')), gridOf(newest(8), true)));
   v.append(catBrowser());
   // 3. big collection pictures
   cols.slice(0, 3).forEach((x) => {
     const s0 = x.styleIds.map((id) => BYID[id]).find((s) => s && photos(s)[0]); const pic = x.image || (s0 && pickPic(s0, 'banner')); if (!pic) return;
     v.append(E('a', { class: 'bigcol', href: link('shop?col=' + x.id) }, E('img', { src: pic, alt: '', loading: 'eager' }), E('div', { class: 'cap' }, E('div', { class: 't' }, x.name), E('span', { class: 'btn' }, 'Shop now'))));
   });
+  // 4. products again
+  if (STY.length > 4) v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'All products'), E('a', { class: 'btn sm out', href: link('shop') }, 'Shop all')), gridOf(STY.slice(0, 12), true)));
   // 5. stores
   if ((c.stores || []).length) v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'Visit us'), E('a', { class: 'btn sm out', href: link('stores') }, 'All stores')), storeCards(c.stores)));
 };
