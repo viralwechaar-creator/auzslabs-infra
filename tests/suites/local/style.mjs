@@ -456,6 +456,18 @@ export default async function run({ browser, stack }) {
     await integrity();
   });
 
+  await s.check('Store link previews: the share page carries the product name, price, picture and the shop name with its address', async () => {
+    await ok(manager, 'sty_store_save', { p: { on: true, heroImages: ['/hero-one.jpg'] } });
+    const pub = await ok(null, 'public_sty_store', { p_slug: 'teststyle' }); const sty = pub.styles[0];
+    const get = async (qs) => (await fetch(stack.apiBase + '/store-share?' + qs)).text();
+    const html = await get('shop=teststyle&p=' + sty.id);
+    assert(html.includes('og:title') && html.includes(sty.name) && /Rs \d/.test(html) && /Visit .* at /.test(html) && html.includes('og:image') && html.includes('/hero-one.jpg'), 'product preview: ' + html.slice(0, 400));
+    assert(html.includes('/store.html?p=' + sty.id), 'preview must link to the clean product link');
+    const shopOnly = await get('shop=teststyle'); assert(shopOnly.includes('og:title') && !/og:type" content="product"/.test(shopOnly), 'shop preview');
+    const none = await get('shop=nobodyshop&p=' + sty.id); assert(none.includes('<title>Store'), 'unknown shop must not leak anything: ' + none.slice(0, 200));
+    assert(!/<script/i.test(await get('shop=teststyle&p=%22%3E%3Cscript%3E')), 'must not echo script');
+  });
+
   await s.check('Online store page: browse, filter, product page, bag, checkout and the owner inbox, on phone and desktop', async () => {
     await ok(manager, 'sty_store_save', { p: { on: true } });
     for (const dev of [{ w: 390, h: 844, mobile: true }, { w: 1366, h: 800 }]) {

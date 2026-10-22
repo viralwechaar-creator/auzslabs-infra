@@ -412,7 +412,13 @@ V.p = (v, id) => {
     inp.oninput = find;
     sheet('Size guide', E('div', { class: 'dtl' }, E('div', { class: 'lbl' }, 'Which size am I?'), E('label', { class: 'fld' }, inp), res, tb, g.note ? E('div', null, g.note) : E('div', { class: 'mut' }, 'Measure a piece that fits you well and compare it with the chart. Between sizes, take the larger for a relaxed fit.'), fit ? E('div', null, E('b', null, 'About this piece: '), fit.replace(/^fit\s*:?\s*/i, '')) : null));
   }
-  function share() { const u = location.origin + location.pathname + '?p=' + s.id; if (navigator.share) navigator.share({ title: s.name, url: u }).catch(() => {}); else { try { navigator.clipboard.writeText(u); toast('Link copied'); } catch (e) { toast(u); } } }
+  function share() {
+    // a clean link (the server gives link previews the product picture) plus a line that names the shop and its website
+    const u = location.origin + location.pathname + '?p=' + s.id; const host = location.host;
+    const text = s.name + ' · ' + inr(s.price) + '\nVisit ' + D.shop.name + ' at ' + host;
+    if (navigator.share) navigator.share({ title: s.name + ' · ' + D.shop.name, text, url: u }).catch(() => {});
+    else { try { navigator.clipboard.writeText(text + '\n' + u); toast('Link copied'); } catch (e) { toast(u); } }
+  }
   function notify() {
     const ph = E('input', { type: 'tel', inputmode: 'tel', placeholder: 'Your phone number', 'aria-label': 'Phone', value: (LS.get('me', {}) || {}).phone || '', style: { height: '38px', borderRadius: '19px', border: '1px solid #dcdad8', padding: '0 14px', fontSize: '11px', width: '100%' } });
     const vsel = E('select', { 'aria-label': 'Size', style: { height: '38px', borderRadius: '19px', border: '1px solid #dcdad8', padding: '0 14px', fontSize: '11px', width: '100%' } }, s.variants.filter((x) => x.left < 1 || s.badge === 'soldout').map((x) => E('option', { value: x.id }, [x.colour, x.size].filter(Boolean).join(' · ') || s.name)));

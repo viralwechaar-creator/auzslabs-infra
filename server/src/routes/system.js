@@ -31,6 +31,30 @@ const ICON_PAGES = new Set(['/site-kiln.html', '/site.html', '/index.html']);
 // any other return (including the undefined that `return reply(...)` gives) means the request was handled.
 export async function handle(ctx) {
   const { req, res, url, user, ip, meta, reply, origin } = ctx;
+  // ---- AUZsStyle store link previews. WhatsApp / Facebook / Telegram bots do not run JavaScript, so Caddy sends them here for
+  // /store.html and they get the product's own title, price, picture and the shop name + address. People never see this page. ----
+  if (url.pathname === '/store-share' && req.method === 'GET') {
+    const esc = (v) => String(v == null ? '' : v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].replace(/[^a-z0-9.:-]/gi, '');
+    const slug = String(url.searchParams.get('shop') || host.split('.')[0]).toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 60);
+    const pid = String(url.searchParams.get('p') || '').replace(/[^a-f0-9-]/gi, '').slice(0, 40);
+    let d = null;
+    try { const r = await pool.query('select public_sty_share($1, $2) as d', [slug, /^[0-9a-f-]{36}$/i.test(pid) ? pid : null]); d = r.rows[0] && r.rows[0].d; } catch { d = null; }
+    const origin2 = 'https://' + host;
+    const abs = (u) => (!u ? '' : /^https?:\/\//.test(u) ? u : u.startsWith('//') ? 'https:' + u : u.startsWith('data:') ? '' : origin2 + (u.startsWith('/') ? '' : '/') + u);
+    const shop = (d && d.shop) || 'Store';
+    const isP = !!(d && d.name);
+    const price = d && d.price ? 'Rs ' + Math.round(Number(d.price)).toLocaleString('en-IN') : '';
+    const title = isP ? d.name + (price ? ' · ' + price : '') + ' · ' + shop : shop + (d && d.tagline ? ' · ' + d.tagline : '');
+    const desc = (isP ? [d.description, 'Visit ' + shop + ' at ' + host].filter(Boolean).join(' · ') : ((d && d.tagline) || 'Shop online') + ' · ' + host).replace(/\s+/g, ' ').slice(0, 200);
+    const img = abs(isP ? (d.photo || d.heroPhoto) : ((d && (d.heroPhoto || d.photo)) || ''));
+    const pageUrl = origin2 + '/store.html' + (isP ? '?p=' + pid : '');
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=300' });
+    return res.end(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><meta name="description" content="${esc(desc)}">
+<meta property="og:type" content="${isP ? 'product' : 'website'}"><meta property="og:site_name" content="${esc(shop)}"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:url" content="${esc(pageUrl)}">${img ? `<meta property="og:image" content="${esc(img)}">` : ''}
+<meta name="twitter:card" content="${img ? 'summary_large_image' : 'summary'}"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(desc)}">${img ? `<meta name="twitter:image" content="${esc(img)}">` : ''}
+</head><body><a href="${esc(pageUrl)}">${esc(title)}</a></body></html>`);
+  }
   // ---- health: for uptime monitors (UptimeRobot etc.). Public on purpose and carries nothing sensitive: it only
   // says whether the API is up and can reach the database. ----
   if (url.pathname === '/health' && (req.method === 'GET' || req.method === 'HEAD')) {
