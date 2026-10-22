@@ -30,9 +30,50 @@ function accountSheet(a) {
 }
 page('settings', { title: 'Settings', async render(v) {
   v.header({ title: 'Settings' });
-  const ic = await api('fin_integrity_check');
-  v.root.append(section('Books health', h('div', { class: 'list' }, liRow({ icon: ic.ok ? 'check' : 'alert', tone: ic.ok ? 'green' : 'orange', title: ic.ok ? 'Everything adds up' : 'Something needs a look', sub: ic.txns + ' entries · debits ' + inr(ic.debit) + ' = credits ' + inr(ic.credit) }))),
-    section('About', h('div', { class: 'list' }, liRow({ title: 'Locked up to', value: S.ctx.lock_date ? fmtD(S.ctx.lock_date) : 'Not locked', sub: 'Set in AUZsLedger settings. Entries on or before this date are refused.' }),
+  const [ic, bp, me] = await Promise.all([api('fin_integrity_check'), api('fin_profile_get'), api('my_profile').catch(() => ({ profile: null }))]);
+  const mp = (me && me.profile) || {};
+  const canEdit = !!bp.can_edit;
+  // Business details (its own record, kept inside AUZsFinance)
+  const B = {
+    business_name: input({ value: bp.business_name || '', label: 'Business name', placeholder: 'Name on your bills' }),
+    legal_name: input({ value: bp.legal_name || '', label: 'Legal name', placeholder: 'If different (optional)' }),
+    business_type: input({ value: bp.business_type || '', label: 'Kind of business', placeholder: 'e.g. Cafe, Shop, Clinic' }),
+    gstin: input({ value: bp.gstin || '', label: 'GST number', placeholder: '15 letters and numbers' }),
+    pan: input({ value: bp.pan || '', label: 'PAN', placeholder: 'ABCDE1234F' }),
+    phone: input({ value: bp.phone || '', label: 'Business phone', mode: 'tel' }),
+    email: input({ value: bp.email || '', label: 'Business email', type: 'email' }),
+    address: input({ value: bp.address || '', label: 'Address' }),
+    city: input({ value: bp.city || '', label: 'City' }),
+    state: input({ value: bp.state || '', label: 'State' }),
+    pincode: input({ value: bp.pincode || '', label: 'PIN code', mode: 'numeric', max: 6 }),
+  };
+  if (!canEdit) Object.values(B).forEach((x) => { x.disabled = true; });
+  const saveBiz = h('button', { class: 'btn primary', onclick: async () => {
+    const p = {}; Object.keys(B).forEach((k) => { p[k] = B[k].value.trim(); });
+    try { await api('fin_profile_save', { p }); toast('Business details saved'); S.ctx.tenant = { ...S.ctx.tenant, name: p.business_name }; } catch (e) { fail(e); } } }, 'Save business details');
+  // My profile (the person signed in)
+  const M = {
+    name: input({ value: mp.name || '', label: 'Your name' }),
+    phone: input({ value: mp.phone || '', label: 'Your phone', mode: 'tel' }),
+    contact_email: input({ value: mp.contact_email || '', label: 'Contact email', type: 'email' }),
+  };
+  const saveMe = h('button', { class: 'btn primary', onclick: async () => {
+    if (!M.name.value.trim()) return toast('Enter your name', { err: true });
+    try { await api('save_my_profile', { p: { ...mp, name: M.name.value.trim(), phone: M.phone.value.trim(), contact_email: M.contact_email.value.trim(), products: mp.products || [] } }); toast('Profile saved'); } catch (e) { fail(e); } } }, 'Save my profile');
+  // Lock date
+  const lockIn = input({ type: 'date', value: bp.lock_date ? String(bp.lock_date).slice(0, 10) : '', label: 'Lock books up to' });
+  if (!canEdit) lockIn.disabled = true;
+  const saveLock = h('button', { class: 'btn', onclick: async () => {
+    if (lockIn.value && !await confirmBox('Lock the books?', 'Nothing on or before ' + fmtD(lockIn.value) + ' can be added or changed afterwards. You can move or clear this date later.', 'Lock')) return;
+    try { await api('fin_set_lock_date', { p_date: lockIn.value || null }); S.ctx.lock_date = lockIn.value || null; toast(lockIn.value ? 'Books locked' : 'Lock removed'); } catch (e) { fail(e); } } }, 'Save');
+  v.root.append(
+    section('My profile', h('div', { class: 'grid' }, h('div', { class: 'small muted' }, 'Signed in as ' + (me.login_email || S.ctx.email || '')), field('Your name', M.name), field('Your phone', M.phone), field('Contact email', M.contact_email), saveMe)),
+    section('Business details', h('div', { class: 'grid' }, canEdit ? null : h('div', { class: 'small muted' }, 'Only the owner can change these.'),
+      field('Business name', B.business_name), field('Legal name', B.legal_name), field('Kind of business', B.business_type), field('GST number', B.gstin), field('PAN', B.pan),
+      field('Business phone', B.phone), field('Business email', B.email), field('Address', B.address), field('City', B.city), field('State', B.state), field('PIN code', B.pincode), canEdit ? saveBiz : null)),
+    section('Locked up to', h('div', { class: 'grid' }, h('div', { class: 'small muted' }, 'Entries on or before this date are refused. Leave empty to keep the books open.'), field('Lock books up to', lockIn), canEdit ? saveLock : null)),
+    section('Your files', h('div', { class: 'list' }, liRow({ title: 'Kept separately', sub: 'Photos and PDFs you attach live in AUZsFinance\'s own storage, apart from AUZsLedger. Photos are made small automatically. A PDF can be up to 10 KB.' }))),
+    section('Books health', h('div', { class: 'list' }, liRow({ icon: ic.ok ? 'check' : 'alert', tone: ic.ok ? 'green' : 'orange', title: ic.ok ? 'Everything adds up' : 'Something needs a look', sub: ic.txns + ' entries · debits ' + inr(ic.debit) + ' = credits ' + inr(ic.credit) }),
       liRow({ title: 'Nothing is ever deleted', sub: 'A wrong entry is cancelled and stays in history, so your books always have a trail.' }))));
 } });
 

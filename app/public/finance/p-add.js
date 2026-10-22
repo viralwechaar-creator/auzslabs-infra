@@ -24,16 +24,35 @@ function addTxn(preset) {
   const review = h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: preset.review === 'needs_review' }), h('span', null, 'Not sure about this one. Ask a manager to check it.'));
   const file = h('input', { type: 'file', accept: 'image/*,application/pdf', capture: null, multiple: true, style: { display: 'none' } });
   const fileNote = h('div', { class: 'small muted' });
-  file.onchange = () => { fileNote.textContent = file.files.length ? file.files.length + ' file(s) will be attached' : ''; if (file.files.length) evid.value = 'have'; };
-  const scanIn = h('input', { type: 'file', accept: 'image/*,application/pdf', style: { display: 'none' } });
-  scanIn.onchange = async () => {
-    const f = scanIn.files[0]; if (!f) return; fileNote.textContent = 'Reading the bill…';
-    try {
-      const r = await scanBill(f); const dt = new DataTransfer(); [...file.files].forEach((x) => dt.items.add(x)); dt.items.add(f); file.files = dt.files;
-      if (r.amount && !N(amount.value)) amount.value = r.amount; if (/^\d{4}-\d{2}-\d{2}$/.test(r.date || '') && r.date <= todayISO()) date.value = r.date; if (r.purpose && !purpose.value) purpose.value = r.purpose;
-      evid.value = 'have'; amount.dispatchEvent(new Event('input')); fileNote.textContent = 'Bill read and attached. Please check the amount and date.' + (r.notes[0] ? ' ' + r.notes[0] : '');
-    } catch (e) { fileNote.textContent = 'Could not read this bill. You can still type it in.'; }
+  file.onchange = () => { fileNote.textContent = file.files.length ? file.files.length + ' file(s) will be attached. Pictures are made small automatically.' : ''; if (file.files.length) evid.value = 'have'; };
+  const pdfIn = h('input', { type: 'file', accept: 'application/pdf', style: { display: 'none' } });
+  pdfIn.onchange = () => {
+    const f = pdfIn.files[0]; pdfIn.value = ''; if (!f) return;
+    if (f.size > PDF_MAX) { toast('A PDF can be up to 10 KB. Use a photo instead, it is made small automatically.', { err: true }); return; }
+    const dt = new DataTransfer(); [...file.files].forEach((x) => dt.items.add(x)); dt.items.add(f); file.files = dt.files; file.onchange();
   };
+  // How it was paid, and the details that mode needs
+  const defMode = (a) => ({ cash: 'cash', upi: 'upi', card: 'card', bank: 'online', wallet: 'upi' }[(accounts.find((x) => x.id === a) || {}).kind] || 'cash');
+  const mode = K.acc && preset.kind !== 'transfer' ? selectEl(PAYMODES, preset.method || defMode(acc && acc.value), { label: 'How was it paid' }) : null;
+  const utr = input({ placeholder: 'e.g. 4123 8890 1234', value: preset.reference || '', label: 'UTR / transaction ID' });
+  const cardRef = input({ placeholder: 'Last 4 digits or slip number', value: preset.reference || '', label: 'Card details' });
+  const chqNo = input({ placeholder: '6 digit cheque number', value: preset.cheque_no || '', label: 'Cheque number', mode: 'numeric' });
+  const chqDate = input({ type: 'date', value: preset.cheque_date || '', label: 'Cheque date' });
+  const chqBank = input({ placeholder: 'Bank on the cheque', value: preset.cheque_bank || '', label: 'Cheque bank' });
+  const modeBox = h('div', { class: 'grid' });
+  const paintMode = () => {
+    const m = mode && mode.value;
+    clear(modeBox).append(...(m === 'upi' || m === 'online' ? [field('UTR / transaction ID', utr, 'Required. The reference you see in the bank or UPI app.')]
+      : m === 'card' ? [field('Card details', cardRef, 'Last 4 digits or the slip number (optional).')]
+      : m === 'cheque' ? [field('Cheque number', chqNo), field('Cheque date', chqDate), field('Cheque bank', chqBank)] : []));
+  };
+  if (mode) { mode.addEventListener('change', paintMode); if (acc) acc.addEventListener('change', () => { mode.value = defMode(acc.value); paintMode(); }); paintMode(); }
+  // Who paid / who was paid, with GST number
+  const partyOn = GSTK.includes(preset.kind);
+  const inbound = ['money_in', 'credit_sale', 'dues_in'].includes(preset.kind);
+  const partyName = input({ placeholder: inbound ? 'Name of who paid you' : 'Name of who you paid', value: preset.party_name || '', label: inbound ? 'Who paid' : 'Paid to' });
+  const partyGst = input({ placeholder: '15 letters and numbers', value: preset.party_gstin || '', label: 'GST number', autocapitalize: 'characters' });
+  const earlyWhy = K.early ? selectEl(EARLY, preset.early_reason || 'before_bank', { label: 'Why not from the books' }) : null;
   const TAXK = ['money_in', 'expense', 'credit_sale', 'credit_purchase', 'asset_buy'], TDSK = ['money_in', 'expense', 'credit_sale', 'credit_purchase', 'dues_in', 'dues_out'];
   const gst = TAXK.includes(preset.kind) ? selectEl([['', 'None'], ['5', '5%'], ['12', '12%'], ['18', '18%'], ['28', '28%']], preset.tax_rate ? String(preset.tax_rate) : '', { label: 'GST in this amount' }) : null;
   const tds = TDSK.includes(preset.kind) ? input({ type: 'number', mode: 'decimal', step: '0.01', min: '0', value: preset.tds_amt || '', placeholder: '0', label: 'TDS cut' }) : null;
@@ -46,6 +65,7 @@ function addTxn(preset) {
     if (acc && K.sign > 0) L.push(accName(acc.value) + ' goes up by ' + inr(tot));
     if (acc && K.sign < 0) L.push(accName(acc.value) + ' goes down by ' + inr(tot));
     if (preset.kind === 'transfer' && acc && to) L.push(accName(acc.value) + ' down, ' + accName(to.value) + ' up, by ' + inr(a));
+    if (preset.kind === 'early_expense') L.push('Counts as an expense, and as money you put in. No bank or cash account changes.');
     if (preset.kind === 'credit_sale') L.push('They owe you ' + inr(a) + ' more. No cash moves yet.');
     if (preset.kind === 'credit_purchase') L.push('You owe them ' + inr(a) + ' more. No cash moves yet.');
     if (K.interest && i) L.push(preset.kind === 'loan_repay' ? inr(a) + ' reduces the loan, ' + inr(i) + ' is interest cost' : inr(a) + ' reduces what they owe, ' + inr(i) + ' is interest income');
@@ -55,15 +75,25 @@ function addTxn(preset) {
   const body = h('div', { class: 'grid addform' },
     h('div', { class: 'amtbox' }, h('div', { class: 'small muted' }, K.label), h('div', { class: 'row amtrow' }, h('span', { class: 'rs' }, '₹'), amount)),
     field('Date', date),
-    acc ? field(K.acc, acc) : null, to ? field(K.to, to) : null,
+    acc ? field(K.acc, acc) : null, to ? field(K.to, to) : null, mode ? field('How was it paid', mode) : null, mode ? modeBox : null,
+    earlyWhy ? field('Why not from the books', earlyWhy, 'Counted as money you put into the business, so the books stay true.') : null,
     people ? field(K.personLabel, people.el) : null, partners ? field(K.partnerLabel, partners.el) : null, loans ? field('Loan', loans.el) : null,
     interest ? field(preset.kind === 'loan_repay' ? 'Interest part of this payment' : 'Interest part', interest, 'Leave empty if there is no interest.') : null,
     cat ? field(K.catLabel, cat) : null, dueDate ? field('Due date (optional)', dueDate) : null,
-    field('Note', purpose), field('Proof', evid), h('div', { class: 'row', style: { gap: '8px', flexWrap: 'wrap' } }, h('button', { class: 'btn sm', type: 'button', onclick: () => file.click() }, icon('camera', 16), 'Add photo or file'), ['expense', 'asset_buy', 'credit_purchase'].includes(preset.kind) ? h('button', { class: 'btn sm', type: 'button', onclick: () => scanIn.click() }, icon('eye', 16), 'Scan a bill') : null, file, scanIn, fileNote),
+    partyOn ? field(inbound ? 'Who paid' : 'Paid to', partyName) : null, partyOn ? field('GST number', partyGst, 'Of the ' + (inbound ? 'person who paid' : 'seller or person you paid') + ' (optional).') : null,
+    field('Note', purpose), field('Proof', evid), h('div', { class: 'row', style: { gap: '8px', flexWrap: 'wrap' } }, h('button', { class: 'btn sm', type: 'button', onclick: () => file.click() }, icon('camera', 16), 'Add photo'), h('button', { class: 'btn sm', type: 'button', onclick: () => pdfIn.click() }, icon('download', 16), 'Attach PDF (up to 10 KB)'), file, pdfIn, fileNote),
     taxBox, review, preview);
   sheet({ title: K.label, closeLabel: 'Cancel', full: true, body, actions: [{ label: 'Save', primary: true, onclick: async (close) => {
     const a = N(amount.value); if (a <= 0) { toast('Enter an amount above zero', { err: true }); amount.focus(); return false; }
     const p = { op, kind: preset.kind, amount: a, date: date.value, purpose: purpose.value.trim(), evidence: evid.value, review: review.querySelector('input').checked ? 'needs_review' : 'confirmed' };
+    if (mode) {
+      p.method = mode.value; const m = mode.value;
+      if ((m === 'upi' || m === 'online')) { if (!utr.value.trim()) { toast('Enter the UTR / transaction ID', { err: true }); utr.focus(); return false; } p.reference = utr.value.trim(); }
+      else if (m === 'card' && cardRef.value.trim()) p.reference = cardRef.value.trim();
+      else if (m === 'cheque') { if (!chqNo.value.trim()) { toast('Enter the cheque number', { err: true }); chqNo.focus(); return false; } p.cheque_no = chqNo.value.trim(); if (chqDate.value) p.cheque_date = chqDate.value; if (chqBank.value.trim()) p.cheque_bank = chqBank.value.trim(); }
+    }
+    if (partyOn) { const gs = partyGst.value.trim().toUpperCase(); if (gs && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(gs)) { toast('That GST number does not look right (15 letters and numbers)', { err: true }); partyGst.focus(); return false; } if (gs) p.party_gstin = gs; if (partyName.value.trim()) p.party_name = partyName.value.trim(); }
+    if (earlyWhy) p.early_reason = earlyWhy.value;
     if (gst && gst.value) p.tax_rate = N(gst.value); if (tds && tds.value) p.tds_amt = N(tds.value);
     if (acc) p.account_id = acc.value; if (to) p.to_account_id = to.value; if (cat && cat.value) p.category_id = cat.value; if (interest) p.interest = N(interest.value); if (dueDate && dueDate.value) p.due_date = dueDate.value;
     if (people) { const g = people.get(); if (K.person === 'req' && !g) { toast('Choose who this is with', { err: true }); return false; } if (g && g.name !== undefined) { if (!g.name) { toast('Type the name', { err: true }); return false; } const r = await api('fin_save_person', { p: { name: g.name, kind: preset.kind.indexOf('purchase') >= 0 || preset.kind === 'dues_out' ? 'supplier' : 'customer' } }); p.person_id = r.id; } else if (g) p.person_id = g.id; }
