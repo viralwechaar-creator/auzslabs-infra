@@ -27,6 +27,7 @@ page('stock', {
       selH.append(h('div', { class: 'selbar' }, h('b', null, SEL.ids.size + ' ' + t('selected')),
         h('button', { class: 'btn sm', type: 'button', onclick: () => { CUR.forEach((x) => SEL.ids.add(x.id)); paint(); } }, t('Select all') + ' (' + CUR.length + ')'),
         h('button', { class: 'btn sm', type: 'button', onclick: () => { SEL.ids.clear(); paint(); } }, t('Clear')),
+        h('button', { class: 'btn sm', type: 'button', disabled: !SEL.ids.size, onclick: () => tagsSheet(S.cat.filter((x) => SEL.ids.has(x.id))) }, icon('barcode', 16), t('Print tags')),
         h('button', { class: 'btn sm fill', type: 'button', disabled: !SEL.ids.size, onclick: () => bulkEditSheet([...SEL.ids], () => { SEL.ids.clear(); v.refresh(); }) }, t('Edit selected')),
         h('button', { class: 'btn sm danger', type: 'button', disabled: !SEL.ids.size, onclick: () => bulkDelete([...SEL.ids], () => { SEL.ids.clear(); v.refresh(); }) }, t('Delete selected'))));
     }
@@ -199,24 +200,6 @@ function styleForm(s, done) {
 async function promptAfterCreate(style) {
   const go_ = await alertBox({ title: t('Style added'), message: style.variants.length + ' ' + t('items created with barcodes. Print tags now?'), actions: [{ label: t('Print tags'), value: true, role: 'def' }, { label: t('Later'), value: false }] });
   if (go_) { await loadCatalog(true); tagsSheet([S.cat.find((x) => x.id === style.id) || style]); }
-}
-
-// ---- barcode tags ----
-function tagsSheet(styles, onlyVariant) {
-  const vs = styles.flatMap((s) => s.variants.filter((x) => x.active !== false && (!onlyVariant || x.id === onlyVariant)).map((x) => ({ ...x, style: s })));
-  const copies = {}; vs.forEach((x) => copies[x.id] = Math.max(1, x.stock > 0 ? x.stock : 1));
-  const rows = h('div', { class: 'list' }, vs.map((x) => { const i = input({ type: 'number', mode: 'numeric', value: copies[x.id], oninput: () => { copies[x.id] = Math.max(0, Math.round(N(i.value))); } }); i.style.width = '72px'; return h('div', { class: 'li' }, h('div', { class: 'grow' }, h('div', { class: 't' }, x.style.name), h('div', { class: 's' }, [x.colour, x.size].filter(Boolean).join(' · ') + ' · ' + x.barcode)), i); }));
-  const size = selectEl([['50x25', '50 × 25 mm'], ['38x25', '38 × 25 mm'], ['a4', 'A4 sheet (4 × 10)']], '50x25');
-  sheet({ title: t('Print tags'), full: true, body: h('div', { class: 'grid' }, h('div', { class: 'muted small' }, t('Copies per item (set to the quantity received). Stick one tag on each piece.')), field(t('Label size'), size), rows),
-    actions: [{ label: t('Print'), primary: true, onclick: () => { printTags(vs, copies, size.value); return false; } }] });
-}
-function printTags(vs, copies, size) {
-  const wrap = h('div', { class: 'print-only tags tags-' + size });
-  const shop = (S.ctx.settings.shopName || '').slice(0, 24);
-  vs.forEach((x) => { for (let i = 0; i < (copies[x.id] || 0); i++) wrap.append(h('div', { class: 'tag-l' }, h('div', { class: 'tg-s' }, shop), h('div', { class: 'tg-n' }, x.style.name.slice(0, 26)), h('div', { class: 'tg-v' }, [x.colour, x.size].filter(Boolean).join(' · ')), barcodeSvg(x.barcode, { height: 34, width: 150 }), h('div', { class: 'tg-c' }, x.barcode), h('div', { class: 'tg-p' }, h('s', null, x.style.mrp > x.price ? inr(x.style.mrp) : ''), ' ', h('b', null, inr(x.price))))); });
-  if (!wrap.childNodes.length) return toast(t('Nothing to print'), { err: true });
-  const st = document.createElement('style'); st.textContent = '@media print{@page{size:' + (size === 'a4' ? 'A4;margin:8mm' : size.replace('x', 'mm ') + 'mm;margin:0') + '}}'; document.head.append(st);
-  document.body.append(wrap); window.print(); setTimeout(() => { wrap.remove(); st.remove(); }, 1000);
 }
 
 // ---- transfers between branches ----
