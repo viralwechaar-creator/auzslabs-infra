@@ -268,10 +268,19 @@ function stack(list, label) {
     el.classList.toggle('on', a === 0);
   });
   // desktop side rails: counter + arrows on the left, the front piece's details on the right
+  const pcat = E('span', { class: 'pcat' }), pd = E('p', { class: 'pd' }), pbl = E('ul', { class: 'pbl' }), psp = E('div', { class: 'psp' }), pco = E('div', { class: 'pco' }), psz = E('div', { class: 'psz' });
   const num = E('b', null, '01'), bar = E('i'), pn = E('span', { class: 'pn' }), pp = E('span', { class: 'pp' }), pl = E('a', { class: 'pl', href: '#' }, 'View piece ', icon('right'));
   const rails = () => {
     const s = list[cur]; num.textContent = String(cur + 1).padStart(2, '0'); bar.style.width = ((cur + 1) / n * 100) + '%';
     pn.textContent = s.name; pp.textContent = inr(s.price); pl.href = link('p/' + s.id);
+    const bl = String(s.details || '').split(/\n+/).map((x) => x.trim()).filter(Boolean).slice(0, 4);
+    const spec = [['Brand', s.brand], ['Fabric', s.fabric], ['For', s.gender], ['Season', s.season], ['Collection', s.collection]].filter((r) => r[1]);
+    pcat.textContent = [s.category, s.brand].filter(Boolean).join(' · ');
+    pd.textContent = s.description || ''; pd.hidden = !s.description;
+    clear(pbl); bl.forEach((b) => pbl.append(E('li', null, b))); pbl.hidden = !bl.length;
+    clear(psp); spec.forEach((r) => psp.append(E('div', null, E('span', null, r[0]), E('b', null, cap(String(r[1])))))); psp.hidden = !spec.length;
+    clear(pco); colours(s).slice(0, 8).forEach((c) => pco.append(E('i', { title: c, style: { background: hex(c) } }))); pco.hidden = !pco.children.length;
+    clear(psz); sizesOf(s).slice(0, 10).forEach((z) => psz.append(E('em', null, z))); psz.hidden = !psz.children.length;
   };
   const go = (i) => { cur = ((i % n) + n) % n; place(); rails(); };
   const pause = (ms) => { hold = true; clearTimeout(holdT); holdT = setTimeout(() => { hold = false; }, ms || 5000); };
@@ -286,7 +295,7 @@ function stack(list, label) {
   if (!matchMedia('(prefers-reduced-motion: reduce)').matches) { const t = setInterval(() => { if (!document.body.contains(deck)) return clearInterval(t); if (hold || document.hidden) return; go(cur + 1); }, 3200); }
   const prev = E('button', { class: 'ar', type: 'button', 'aria-label': 'Previous', onclick: () => { go(cur - 1); pause(); } }, icon('left')), next = E('button', { class: 'ar nx', type: 'button', 'aria-label': 'Next', onclick: () => { go(cur + 1); pause(); } }, icon('right'));
   const left = E('div', { class: 'srl' }, E('div', { class: 'cnt' }, num, E('span', null, '/ ' + String(n).padStart(2, '0'))), E('div', { class: 'sbar' }, bar), E('div', { class: 'ars' }, prev, next));
-  const right = E('div', { class: 'srr' }, E('span', { class: 'tg' }, 'In front'), pn, pp, pl);
+  const right = E('div', { class: 'srr' }, E('span', { class: 'tg' }, 'In front'), pcat, pn, pp, pd, pbl, psp, pco, psz, pl);
   return E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, label)), E('div', { class: 'stkw' }, E('span', { class: 'gh', 'aria-hidden': 'true' }, label), left, deck, right));
 }
 function gridOf(list, withBlanks) {
