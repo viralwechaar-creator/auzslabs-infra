@@ -869,3 +869,13 @@ footer .col a,footer .col span{font-size:9.5px}
   .gal .dots3 i.on{width:16px;background:#000}
   .gal .main .ct{left:auto;right:12px}
 }
+
+/* gallery v4 (desktop): picture area fills all the width; the whole picture is shown over a soft blurred copy of itself, so there is never an empty band */
+@media(min-width:900px){
+  .pd{grid-template-columns:minmax(0,1fr) 400px;justify-content:stretch;gap:14px}
+  .gal{grid-template-columns:minmax(0,1fr) 96px;width:100%}
+  .gal.solo{grid-template-columns:190px minmax(0,1fr)}
+  .gal .main{width:100%;max-width:none;position:relative;overflow:hidden;isolation:isolate}
+  .gal .main::before{content:"";position:absolute;inset:-30px;background:var(--bgi) center/cover;filter:blur(28px) saturate(1.1);opacity:.55;z-index:-1}
+  .gal .main img{position:absolute!important;inset:0;width:100%;height:100%;object-fit:contain;background:transparent}
+}
