@@ -211,15 +211,25 @@ function paySheet(c, done) {
   });
   const upiId = ((st.features || {}).upiId || '').trim(), upiName = ((st.features || {}).upiName || st.shopName || '').trim();
   const qrBox = h('div', { class: 'upiq' }); let upiGot = false;
-  const upiConfirm = h('label', { class: 'swrow upic' }, h('div', { class: 'grow' }, t('Payment received on UPI')), h('input', { type: 'checkbox', onchange: (e) => { upiGot = e.target.checked; upd(); } }));
+  // the QR opens in its own popup: Change payment (close) or Payment received (confirm)
+  const openQr = () => {
+    const amt = r2(pay.upi || 0); if (amt <= 0) return;
+    let img = null;
+    try { const q = qrcode(0, 'M'); q.addData('upi://pay?pa=' + encodeURIComponent(upiId) + '&pn=' + encodeURIComponent(upiName) + '&am=' + amt.toFixed(2) + '&cu=INR&tn=' + encodeURIComponent('Bill ' + (S.ctx.settings.billPrefix || ''))); q.make(); img = q.createDataURL(7, 2); } catch (e) { /* no QR library */ }
+    const row = (k, v) => h('div', { class: 'upiq-r' }, h('span', { class: 'muted small' }, k), h('b', null, v));
+    const body = h('div', { class: 'upiq-card' },
+      img ? h('img', { src: img, alt: 'UPI QR', class: 'upiq-i' }) : h('div', { class: 'muted small' }, t('QR could not be drawn')),
+      h('div', { class: 'upiq-amt num' }, inr(amt)),
+      h('div', { class: 'upiq-rows' }, row(t('Store'), st.shopName || '-'), row(t('Shows to the customer as'), upiName || '-'), row(t('UPI id'), upiId)));
+    const q = sheet({ title: t('Scan to pay'), closeLabel: t('Change payment'), body: h('div', { class: 'grid' }, body, h('button', { class: 'btn fill', type: 'button', onclick: () => { upiGot = true; q.close(); upd(); } }, t('Payment received')))});
+  };
   const paintQr = () => {
     const amt = r2(pay.upi || 0); clear(qrBox);
     if (amt <= 0) { qrBox.hidden = true; upiGot = false; return; }
     qrBox.hidden = false;
     if (!upiId) { qrBox.append(h('div', { class: 'muted small' }, t('Add your UPI id in Settings to show a QR here.')), can('sty_manage') ? h('button', { class: 'btn sm', type: 'button', onclick: () => { sh.close(); go('settings'); } }, t('Open Settings')) : null); return; }
-    let img = null;
-    try { const q = qrcode(0, 'M'); q.addData('upi://pay?pa=' + encodeURIComponent(upiId) + '&pn=' + encodeURIComponent(upiName) + '&am=' + amt.toFixed(2) + '&cu=INR&tn=' + encodeURIComponent('Bill ' + (S.ctx.settings.billPrefix || ''))); q.make(); img = q.createDataURL(5, 2); } catch (e) { /* no QR library */ }
-    qrBox.append(img ? h('img', { src: img, alt: 'UPI QR', class: 'upiq-i' }) : null, h('div', { class: 'upiq-t' }, h('b', { class: 'num' }, inr(amt)), h('span', { class: 'muted small' }, t('Scan to pay') + ' · ' + upiId)), upiConfirm);
+    qrBox.append(h('div', { class: 'upiq-t' }, h('b', { class: 'num' }, inr(amt)), h('span', { class: 'muted small' }, upiGot ? t('Payment received on UPI') : t('Customer pays by UPI'))),
+      upiGot ? h('button', { class: 'btn sm', type: 'button', onclick: () => { upiGot = false; upd(); } }, t('Undo')) : h('button', { class: 'btn sm fill', type: 'button', onclick: openQr }, t('Show QR')));
   };
   const note = input({ placeholder: t('Note (optional)') });
   const ok = h('button', { class: 'btn fill', type: 'button' }, t('Complete sale') + ' · ' + inr(c.total));
