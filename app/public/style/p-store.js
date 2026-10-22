@@ -11,9 +11,9 @@ page('store', {
   async render(v) {
     v.header({ title: t('Online store') });
     const body = h('div', { class: 'grid' });
-    const tabs = seg(can('sty_manage') ? [['orders', t('Orders')], ['stats', t('Visitors')], ['edit', t('Store')]] : [['orders', t('Orders')]], OST.tab, (x) => { OST.tab = x; paint(); }, { full: true });
+    const tabs = seg(can('sty_manage') ? [['orders', t('Orders')], ['extras', t('Offers & reviews')], ['stats', t('Visitors')], ['edit', t('Store')]] : [['orders', t('Orders')]], OST.tab, (x) => { OST.tab = x; paint(); }, { full: true });
     v.root.append(h('div', { class: 'grid' }, tabs, body));
-    async function paint() { clear(body); if (OST.tab === 'edit' && can('sty_manage')) await editor(body); else if (OST.tab === 'stats' && can('sty_manage')) await storeStats(body); else await orders(body); }
+    async function paint() { clear(body); if (OST.tab === 'edit' && can('sty_manage')) await editor(body); else if (OST.tab === 'extras' && can('sty_manage')) await extras(body); else if (OST.tab === 'stats' && can('sty_manage')) await storeStats(body); else await orders(body); }
     paint();
   },
 });
@@ -38,11 +38,15 @@ function orderSheet(r, changed) {
   const billNow = async (close) => { try { const x = await api('sty_web_order_bill', { p_id: r.id }); toast(t('Bill made') + ': ' + (x.number || '')); changed && changed(); close && close(); } catch (e) { toast(e.message, { err: true }); return false; } };
   const addr = [c.address, c.address2, c.city, c.state, c.pin].filter(Boolean).join(', ');
   const wa = String(c.phone || '').replace(/\D/g, '');
+  const COUR = ['', 'Delhivery', 'India Post', 'DTDC', 'Blue Dart', 'Ecom Express', 'XpressBees', 'Shiprocket', 'Other'];
+  const courierSel = h('select', { class: 'input' }, COUR.map((x) => h('option', { value: x, selected: x === (r.courier || '') }, x || t('Choose')))); const trackIn = input({ value: r.trackingNo || '', placeholder: t('Tracking number') });
   const body = h('div', { class: 'grid' },
     r.saleId ? banner('ok', 'check', t('Billed automatically') + (r.saleNo ? ': ' + r.saleNo : '') + '. ' + t('No need to bill it again on the till.')) : r.paymentStatus === 'paid' ? null : banner('info', 'alert', t('The bill is made automatically when the payment is confirmed (or when a cash on delivery order is delivered).')),
     r.paymentStatus === 'submitted' ? banner('warn', 'alert', t('The customer says they paid by UPI. Reference') + ': ' + (r.utr || '-') + '. ' + t('Check it in your bank app, then mark it paid.')) : null,
     h('div', { class: 'card grid' }, h('b', null, c.name), h('div', { class: 'muted small' }, c.phone + (c.email ? ' · ' + c.email : '')), h('div', { class: 'small' }, addr), r.note ? h('div', { class: 'muted small' }, t('Note') + ': ' + r.note) : null,
       h('div', { class: 'row', style: { gap: '8px', flexWrap: 'wrap' } }, c.phone ? h('a', { class: 'btn sm', href: 'tel:' + c.phone }, icon('phone', 16), t('Call')) : null, wa ? h('a', { class: 'btn sm', target: '_blank', rel: 'noopener', href: 'https://wa.me/' + (wa.length === 10 ? '91' + wa : wa) + '?text=' + encodeURIComponent('Hi ' + c.name.split(' ')[0] + ', about your order ' + r.number + '.') }, icon('share', 16), 'WhatsApp') : null)),
+    ['confirmed', 'packed', 'shipped', 'delivered'].includes(r.status) ? h('div', { class: 'card grid' }, h('b', null, t('Courier and tracking')), h('div', { class: 'two' }, field(t('Courier'), courierSel), field(t('Tracking number'), trackIn)), h('button', { class: 'btn sm', type: 'button', onclick: () => set({ courier: courierSel.value, trackingNo: trackIn.value }) }, t('Save tracking'))) : null,
+    r.coupon ? h('div', { class: 'muted small' }, t('Coupon') + ': ' + r.coupon + ' (– ' + inr(r.discount) + ')') : null,
     h('div', { class: 'list' }, r.lines.map((l) => liRow({ icon: 'shirt', title: l.name, sub: [l.colour, l.size].filter(Boolean).join(' · ') + ' × ' + l.qty, value: inr(l.price * l.qty) }))),
     h('div', { class: 'card grid' }, h('div', { class: 'row' }, h('span', { class: 'grow' }, t('Subtotal')), inr(r.subtotal)), h('div', { class: 'row' }, h('span', { class: 'grow' }, t('Shipping')), r.shipping ? inr(r.shipping) : t('Free')), h('div', { class: 'row' }, h('b', { class: 'grow' }, t('Total')), h('b', null, inr(r.total))),
       h('div', { class: 'muted small' }, t(PAYL[r.payment] || r.payment) + ' · ' + (r.paymentStatus === 'paid' ? t('Paid') : r.paymentStatus === 'cod' ? t('Collect on delivery') : r.paymentStatus === 'submitted' ? t('Check payment') : t('Waiting for payment')))));
@@ -66,6 +70,8 @@ async function editor(host) {
   const sw = (label, hint, get, set) => { const c = h('input', { type: 'checkbox', checked: !!get(), onchange: () => set(c.checked) }); return h('label', { class: 'swrow' }, h('div', { class: 'grow' }, h('div', null, label), hint ? h('div', { class: 'muted small' }, hint) : null), c); };
   const tx = (get, set, o) => { const i = input(Object.assign({ value: get() || '' }, o || {})); i.oninput = () => set(i.value); return i; };
   const ta = (get, set, ph) => { const e = h('textarea', { class: 'input', rows: 4, placeholder: ph || '' }); e.value = get() || ''; e.oninput = () => set(e.value); return e; };
+  const rzpId = input({ placeholder: 'rzp_live_...', value: C.rzpKey || '' }), rzpSec = input({ placeholder: C.payOnline ? t('Saved. Type to change') : '', type: 'password', autocomplete: 'off' });
+  const sg0 = C.sizeGuide || {}; const sgNote = { v: sg0.note || '' }; const sgRows = (sg0.rows || []).map((r) => ({ size: r[0], chest: r[1], waist: r[2] }));
   const hero = h('div', { class: 'pe-grid' }), repaintHero = () => clear(hero).append(...C.heroImages.map((u, i) => h('div', { class: 'pe-t' }, h('img', { src: u, alt: '' }), h('div', { class: 'pe-a' }, h('button', { type: 'button', title: t('Remove'), onclick: () => { C.heroImages.splice(i, 1); repaintHero(); } }, icon('x', 14))))), h('button', { class: 'pe-add', type: 'button', onclick: () => pickImg((u) => { C.heroImages.push(u); repaintHero(); }) }, icon('plus', 22)));
   repaintHero();
   const aboutImg = h('div', { class: 'row', style: { gap: '8px' } }); const repaintAbout = () => clear(aboutImg).append(a.image ? h('img', { src: a.image, alt: '', style: { width: '64px', height: '64px', objectFit: 'cover', borderRadius: '12px' } }) : null, h('button', { class: 'btn sm', type: 'button', onclick: () => pickImg((u) => { a.image = u; repaintAbout(); }) }, icon('camera', 16), a.image ? t('Change') : t('Add picture')), a.image ? h('button', { class: 'btn sm danger', type: 'button', onclick: () => { a.image = ''; repaintAbout(); } }, t('Remove')) : null); repaintAbout();
@@ -87,7 +93,7 @@ async function editor(host) {
     try {
       const num = (x) => (x === '' || x == null ? 0 : Number(x) || 0);
       sh.fee = num(sh.fee); sh.freeOver = num(sh.freeOver);
-      const p = { on: !!C.on, tagline: C.tagline || '', announce: C.announce || '', heroImages: C.heroImages, heroTitle: C.heroTitle || '', heroCta: C.heroCta || '', about: a, founders: C.founders, stores: C.stores, faqs: C.faqs, policies: pol, shipping: sh, pay, social: soc, email: C.email || '', phone: C.phone || '', brandName: C.brandName || '', showSale: !!C.showSale };
+      const p = { on: !!C.on, tagline: C.tagline || '', announce: C.announce || '', heroImages: C.heroImages, heroTitle: C.heroTitle || '', heroCta: C.heroCta || '', about: a, founders: C.founders, stores: C.stores, faqs: C.faqs, policies: pol, shipping: sh, sizeGuide: { note: sgNote.v, head: ['Size', 'Chest (in)', 'Waist (in)'], rows: sgRows.filter((x) => x.size).map((x) => [x.size, x.chest || '', x.waist || '']) }, waOrder: C.waOrder !== false, abandonWa: !!C.abandonWa, pay, social: soc, email: C.email || '', phone: C.phone || '', brandName: C.brandName || '', showSale: !!C.showSale };
       C = await api('sty_store_save', { p }); toast(t('Saved'));
     } catch (e) { fail(e); } finally { b.disabled = false; }
   } }, t('Save store'));
@@ -106,6 +112,14 @@ async function editor(host) {
       sw(t('Cash on delivery'), '', () => pay.cod !== false, (x) => { pay.cod = x; }),
       sw(t('Pay by UPI QR'), feat.upiId ? t('Uses your UPI id') + ': ' + feat.upiId : t('Add your UPI id in Settings first'), () => pay.upi !== false, (x) => { pay.upi = x; }),
       reqState, C.payReq === 'live' || C.payReq === 'requested' ? null : h('div', { class: 'grid' }, h('div', { class: 'muted small' }, t('Want customers to pay by card and net banking? Ask AUZslab to switch on online payments for your store.')), h('button', { class: 'btn', type: 'button', onclick: async () => { try { C = await api('sty_store_request_payments'); toast(t('Request sent')); OST.tab = 'edit'; go('store'); } catch (e) { fail(e); } } }, t('Ask for online payments'))))),
+    section(t('Card payments (your own Razorpay)'), h('div', { class: 'card grid' }, C.payOnline ? banner('ok', 'check', t('Card, UPI and net banking are on. The money goes straight to your Razorpay account.')) : h('div', { class: 'muted small' }, t('Create a free Razorpay account, then paste the Key ID and Key Secret here. Customers pay you directly. AUZslab never holds your money.')),
+      h('div', { class: 'two' }, field(t('Key ID'), rzpId), field(t('Key Secret'), rzpSec)),
+      h('div', { class: 'row', style: { gap: '8px' } }, h('button', { class: 'btn sm primary', type: 'button', onclick: async (ev) => { ev.currentTarget.disabled = true; try { await api('sty_store_set_razorpay', { p: { keyId: rzpId.value, secret: rzpSec.value } }); C.payOnline = true; toast(t('Saved')); rzpSec.value = ''; } catch (e) { fail(e); } ev.currentTarget.disabled = false; } }, t('Save keys')), C.payOnline ? h('button', { class: 'btn sm', type: 'button', onclick: async () => { await api('sty_store_set_razorpay', { p: { clear: true } }); C.payOnline = false; toast(t('Card payments turned off')); } }, t('Turn off')) : null),
+      h('div', { class: 'muted small' }, t('In Razorpay use "Test" keys first. Paid orders still need your tap on Confirm to make the bill.')))),
+    section(t('Size guide'), h('div', { class: 'card grid' }, h('div', { class: 'muted small' }, t('Shown on every product. Customers can type their chest size to find their size. Use ranges like 36-38. A product line starting with "Fit:" in its details is shown as the fit note.')), listEditor(sgRows, [['size', t('Size')], ['chest', t('Chest in inches, e.g. 36-38')], ['waist', t('Waist in inches')]], t('Size'), (x) => x.size, (x) => x.chest), field(t('Note under the chart'), tx(() => sgNote.v, (v) => { sgNote.v = v; })))),
+    section(t('WhatsApp messages to customers'), h('div', { class: 'card grid' },
+      sw(t('Order confirmed and shipped'), t('Two messages per order. Each message may cost you a small fee from Meta. Off to save cost.'), () => C.waOrder !== false, (x) => { C.waOrder = x; }),
+      sw(t('Abandoned bag reminder'), t('One reminder to people who left items in the bag after typing their phone. Costs a small fee per message.'), () => C.abandonWa, (x) => { C.abandonWa = x; }))),
     section(t('Our stores'), listEditor(C.stores, [['name', t('Store name')], ['address', t('Address'), 'area'], ['phone', t('Phone')], ['hours', t('Opening hours')], ['mapUrl', t('Google Maps link (optional)')], ['photo', t('Picture'), 'img']], t('Store'), (x) => x.name || x.address, (x) => x.address)),
     section(t('About us'), h('div', { class: 'card grid' }, field(t('Heading'), tx(() => a.title, (v) => { a.title = v; }, { placeholder: t('About us') })), field(t('Story'), ta(() => a.text, (v) => { a.text = v; })), h('div', { class: 'field' }, h('label', null, t('Picture')), aboutImg))),
     section(t('Founders'), listEditor(C.founders, [['name', t('Name')], ['role', t('Role')], ['bio', t('A few words'), 'area'], ['photo', t('Picture'), 'img']], t('Founder'), (x) => x.name, (x) => x.role)),
@@ -115,6 +129,36 @@ async function editor(host) {
     save);
 }
 
+
+// ---- offers and reviews: coupons, returns requested from the website, reviews from real buyers ----
+async function extras(host) {
+  const box = h('div', { class: 'grid' }); host.append(box);
+  async function paint() {
+    clear(box);
+    let cps = [], rets = [], revs = [];
+    try { [cps, rets, revs] = await Promise.all([api('sty_coupons_list'), api('sty_web_returns_list'), api('sty_reviews_list')]); } catch (e) { return box.append(empty('cloudOff', t('Could not load'), e.message)); }
+    const RS = ['requested', 'approved', 'rejected', 'received', 'refunded'];
+    box.append(
+      section(t('Returns and exchanges asked online'), h('div', { class: 'list' }, (rets && rets.length ? rets : []).map((r) => liRow({ icon: 'box', title: r.number + ' · ' + r.customer.name, sub: t(r.kind === 'return' ? 'Return' : 'Exchange') + ': ' + r.reason, value: t(r.status), chevron: true, onclick: () => {
+          const note = input({ value: r.staffNote || '', placeholder: t('Note for the customer') });
+          sheet({ title: r.number, closeLabel: t('Done'), body: h('div', { class: 'grid' }, h('div', { class: 'card grid' }, h('b', null, r.customer.name), h('div', { class: 'muted small' }, r.customer.phone), h('div', null, r.reason), (r.items || []).map((x) => h('div', { class: 'muted small' }, x.name + ' · ' + [x.colour, x.size].filter(Boolean).join(' ') + ' × ' + x.qty))), field(t('Note'), note)),
+            actions: RS.filter((x) => x !== r.status).map((x) => ({ label: t(x), primary: x === 'approved', onclick: async (close) => { await api('sty_web_return_set', { p_id: r.id, p: { status: x, staffNote: note.value } }); toast(t('Saved')); close(); paint(); } })) });
+        } })).concat(rets && rets.length ? [] : [empty('box', t('No requests'), t('Return and exchange requests from your online customers show here.'))]))),
+      section(t('Coupon codes'), h('div', { class: 'list' }, cps.map((c) => liRow({ icon: 'tag', title: c.code, sub: (c.kind === 'pct' ? c.value + '% off' : c.kind === 'flat' ? '₹' + c.value + ' off' : t('Free shipping')) + (c.minOrder ? ' · ' + t('min') + ' ₹' + c.minOrder : '') + (c.firstOnly ? ' · ' + t('first order only') : ''), value: c.used + (c.maxUses ? '/' + c.maxUses : ''), valueSub: c.active ? t('On') : t('Off'), chevron: true, onclick: () => couponSheet(c) })).concat([h('button', { class: 'btn', type: 'button', onclick: () => couponSheet(null) }, t('Add a coupon'))]))),
+      section(t('Reviews from buyers'), h('div', { class: 'list' }, (revs && revs.length ? revs : []).map((r) => liRow({ icon: 'star', title: '★'.repeat(r.rating) + ' ' + r.style, sub: (r.name || '') + (r.body ? ': ' + r.body : ''), value: r.status === 'hidden' ? t('Hidden') : t('Shown'), chevron: true, onclick: async () => { await api('sty_review_set', { p_id: r.id, p_status: r.status === 'hidden' ? 'published' : 'hidden' }); toast(t('Saved')); paint(); } })).concat(revs && revs.length ? [] : [empty('star', t('No reviews yet'), t('Customers can review a piece after their order is delivered.'))]))));
+  }
+  function couponSheet(c) {
+    const cur = Object.assign({ kind: 'pct', value: 10, active: true }, c || {});
+    const code = input({ value: cur.code || '', placeholder: 'WELCOME10' }); const kind = h('select', { class: 'input' }, [['pct', '% off'], ['flat', '₹ off'], ['ship', t('Free shipping')]].map(([k, l]) => h('option', { value: k, selected: k === cur.kind }, l)));
+    const val = input({ value: cur.value || '', type: 'number', mode: 'decimal' }), min = input({ value: cur.minOrder || '', type: 'number', mode: 'decimal' }), max = input({ value: cur.maxUses || '', type: 'number', mode: 'numeric' }), ends = input({ value: cur.endsOn || '', type: 'date' });
+    const first = h('input', { type: 'checkbox', checked: !!cur.firstOnly }), act = h('input', { type: 'checkbox', checked: cur.active !== false });
+    sheet({ title: c ? c.code : t('New coupon'), closeLabel: t('Cancel'), body: h('div', { class: 'grid' }, field(t('Code'), code), h('div', { class: 'two' }, field(t('Type'), kind), field(t('Value'), val)), h('div', { class: 'two' }, field(t('Minimum order ₹'), min), field(t('Max uses'), max)), field(t('Ends on (optional)'), ends),
+      h('label', { class: 'swrow' }, h('div', { class: 'grow' }, t('First order only')), first), h('label', { class: 'swrow' }, h('div', { class: 'grow' }, t('Active')), act)),
+      actions: [{ label: t('Save'), primary: true, onclick: async (close) => { try { await api('sty_coupon_save', { p: { id: cur.id, code: code.value, kind: kind.value, value: +val.value || 0, minOrder: +min.value || 0, maxUses: max.value ? +max.value : null, endsOn: ends.value || null, firstOnly: first.checked, active: act.checked } }); toast(t('Saved')); close(); paint(); } catch (e) { toast(e.message, { err: true }); return false; } } },
+        c ? { label: t('Delete'), danger: true, onclick: async (close) => { await api('sty_coupon_delete', { p_id: c.id }); close(); paint(); } } : null] });
+  }
+  paint();
+}
 
 // ---- visitor behaviour: who comes, what they look at, how far they scroll, where they drop off ----
 OST.days = 30;

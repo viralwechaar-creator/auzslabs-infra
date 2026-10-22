@@ -65,12 +65,18 @@ export async function runStyleGreetings() {
   catch (err) { console.warn('style greetings failed:', err.message); }
 }
 
+// AUZsStyle store: abandoned-bag reminders (db/232). Only for shops that switched them on.
+export async function runStyleAbandoned() {
+  try { await pool.query('select sty_abandoned_run()'); }
+  catch (err) { console.warn('style abandoned bags failed:', err.message); }
+}
+
 export function startMaintenance() {
   if (process.env.DISABLE_MAINTENANCE === '1') return;
   const runAll = () => {
     runMaintenance(); runRenewals(); runBookingReminders(); runQuoteFollowups(); runAdminSummary();
     runSalonDailySummaries(); runLapsedClientWinback(); runPostVisitReviews(); runPaymentDueReminders();
-    runClientGreetings(); runMembershipExpiryReminders(); runStyleGreetings();
+    runClientGreetings(); runMembershipExpiryReminders(); runStyleGreetings(); runStyleAbandoned();
   };
   setTimeout(() => { runAll(); setInterval(runAll, DAY).unref(); }, 60_000).unref();
 }

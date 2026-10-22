@@ -65,6 +65,17 @@ const q$ = () => { const m = {}; for (const [k, v] of new URLSearchParams((locat
 const go = (p) => { location.hash = '#/' + p; };
 const link = (p) => '#/' + p;
 const cfg = () => D.config || {};
+const COURIERS = { 'Delhivery': 'https://www.delhivery.com/track-v2/package/', 'India Post': 'https://www.indiapost.gov.in/_layouts/15/dop.portal.tracking/trackconsignment.aspx?', 'DTDC': 'https://www.dtdc.in/tracking.asp?', 'Blue Dart': 'https://www.bluedart.com/tracking?trackfor=', 'Ecom Express': 'https://ecomexpress.in/tracking/?awb_field=', 'XpressBees': 'https://www.xpressbees.com/shipment/tracking?awb=', 'Shiprocket': 'https://shiprocket.co/tracking/' };
+function trackBox(o) {
+  if (!o.trackingNo && !o.courier) return null;
+  const base = COURIERS[o.courier]; const u = base && o.trackingNo ? base + encodeURIComponent(o.trackingNo) : '';
+  return E('div', { class: 'note', style: { marginTop: '10px' } }, E('div', null, 'Shipped with ', E('b', null, o.courier || 'the courier')), o.trackingNo ? E('div', null, 'Tracking number: ', E('b', null, o.trackingNo)) : null, u ? E('a', { class: 'btn sm out', href: u, target: '_blank', rel: 'noopener', style: { marginTop: '8px', display: 'inline-flex' } }, 'Track my parcel') : null);
+}
+function stars(n) { return '★★★★★'.slice(0, Math.round(n)) + '☆☆☆☆☆'.slice(0, 5 - Math.round(n)); }
+function setMeta(title, desc, img, canon) {
+  const m = (sel, attr, val) => { let el = document.head.querySelector(sel); if (!el) { el = document.createElement(sel.startsWith('link') ? 'link' : 'meta'); const mm = sel.match(/\[(\w+)="([^"]+)"\]/); if (mm) el.setAttribute(mm[1], mm[2]); document.head.append(el); } el.setAttribute(attr, val); };
+  try { if (desc) { m('meta[name="description"]', 'content', desc); m('meta[property="og:description"]', 'content', desc); } m('meta[property="og:title"]', 'content', title); m('meta[property="og:type"]', 'content', 'website'); if (img) m('meta[property="og:image"]', 'content', img); if (canon) m('link[rel="canonical"]', 'href', canon); } catch (e) { /* meta is best effort */ }
+}
 
 // ---------- small ui ----------
 function sheet(title, body, foot) {
@@ -355,15 +366,37 @@ V.p = (v, id) => {
       E('button', { class: 'unfold', onclick: () => { pinned = true; folded = false; info.classList.remove('fold'); } }, 'Show size, colour and details'));
   };
   const need = (c) => { if (!c) { toast('Please choose a size'); return false; } return true; };
-  function sizeGuide() { sheet('Size guide', E('div', { class: 'dtl' }, E('div', null, 'Measure a piece that fits you well and compare it with the chest or waist size of the garment. If you are between sizes, choose the larger one for a relaxed fit.'), E('div', { class: 'mut' }, 'Need help choosing? Message the store and we will help.'))); }
-  function share() { const u = location.href; if (navigator.share) navigator.share({ title: s.name, url: u }).catch(() => {}); else { try { navigator.clipboard.writeText(u); toast('Link copied'); } catch (e) { toast(u); } } }
-  function notify() { const ph = String(D.shop.phone || '').replace(/\D/g, ''); if (!ph) { go('contact'); return; } window.open('https://wa.me/' + (ph.length === 10 ? '91' + ph : ph) + '?text=' + encodeURIComponent('Hi, please tell me when ' + s.name + ' is back in stock. ' + location.href), '_blank', 'noopener'); }
+  function sizeGuide() {
+    const g = cfg().sizeGuide || {}; const head = (g.head && g.head.length ? g.head : ['Size', 'Chest (in)', 'Waist (in)']); const rows = g.rows && g.rows.length ? g.rows : [['S', '34-36', '28-30'], ['M', '38-40', '32-34'], ['L', '42-44', '36-38'], ['XL', '46-48', '40-42']];
+    const fit = String(s.details || '').split(/\n+/).map((x) => x.trim()).find((x) => /^fit\b/i.test(x));
+    const tb = E('table', { class: 'sgt' }, E('tr', null, head.map((h) => E('th', null, h))), rows.map((r) => E('tr', { 'data-size': r[0] }, r.map((c) => E('td', null, c)))));
+    const inp = E('input', { type: 'number', inputmode: 'decimal', placeholder: 'Your chest in inches', 'aria-label': 'Your chest in inches', style: { height: '38px', borderRadius: '19px', border: '1px solid #dcdad8', padding: '0 14px', fontSize: '11px', width: '100%' } });
+    const res = E('div', { class: 'note', style: { display: 'none' } });
+    const find = () => { const n = parseFloat(inp.value); tb.querySelectorAll('tr[data-size]').forEach((x) => x.classList.remove('hit')); if (!(n > 0)) { res.style.display = 'none'; return; }
+      const hit = rows.find((r) => { const m = String(r[1] || '').match(/(\d+(?:\.\d+)?)\s*[-–to]+\s*(\d+(?:\.\d+)?)/); return m ? n >= +m[1] && n <= +m[2] + 1.99 : parseFloat(r[1]) === n; }) || null;
+      res.style.display = ''; res.textContent = hit ? 'Your size is probably ' + hit[0] + '. Between two sizes? Take the larger for a relaxed fit.' : 'Your measurement is outside this chart. Message the store and we will help.'; if (hit) { const tr = tb.querySelector('tr[data-size="' + hit[0] + '"]'); if (tr) tr.classList.add('hit'); } };
+    inp.oninput = find;
+    sheet('Size guide', E('div', { class: 'dtl' }, E('div', { class: 'lbl' }, 'Which size am I?'), E('label', { class: 'fld' }, inp), res, tb, g.note ? E('div', null, g.note) : E('div', { class: 'mut' }, 'Measure a piece that fits you well and compare it with the chart. Between sizes, take the larger for a relaxed fit.'), fit ? E('div', null, E('b', null, 'About this piece: '), fit.replace(/^fit\s*:?\s*/i, '')) : null));
+  }
+  function share() { const u = location.origin + location.pathname + '?p=' + s.id; if (navigator.share) navigator.share({ title: s.name, url: u }).catch(() => {}); else { try { navigator.clipboard.writeText(u); toast('Link copied'); } catch (e) { toast(u); } } }
+  function notify() {
+    const ph = E('input', { type: 'tel', inputmode: 'tel', placeholder: 'Your phone number', 'aria-label': 'Phone', value: (LS.get('me', {}) || {}).phone || '', style: { height: '38px', borderRadius: '19px', border: '1px solid #dcdad8', padding: '0 14px', fontSize: '11px', width: '100%' } });
+    const vsel = E('select', { 'aria-label': 'Size', style: { height: '38px', borderRadius: '19px', border: '1px solid #dcdad8', padding: '0 14px', fontSize: '11px', width: '100%' } }, s.variants.filter((x) => x.left < 1 || s.badge === 'soldout').map((x) => E('option', { value: x.id }, [x.colour, x.size].filter(Boolean).join(' · ') || s.name)));
+    const msg = E('div', { class: 'tiny', style: { minHeight: '14px', color: '#c0392b' } });
+    if (!vsel.options.length) s.variants.forEach((x) => vsel.append(E('option', { value: x.id }, [x.colour, x.size].filter(Boolean).join(' · ') || s.name)));
+    const sh = sheet('Tell me when it is back', E('div', { class: 'frm' }, E('div', { class: 'mut tiny' }, 'We will send one WhatsApp message when this piece is available again.'), E('label', { class: 'fld' }, vsel), E('label', { class: 'fld' }, ph), msg,
+      E('button', { class: 'btn wide', onclick: async (e) => { e.target.disabled = true; try { await rpc('public_sty_notify_me', { p_slug: SLUG, p: { variantId: vsel.value, phone: ph.value, name: ((LS.get('me', {}) || {}).first) || '' } }); sh.close(); toast('Done. We will message you.'); } catch (er) { msg.textContent = er.message; e.target.disabled = false; } } }, 'Notify me')));
+  }
   paintGal(); paintInfo();
   try { document.querySelectorAll('script[data-ld]').forEach((x) => x.remove()); const ld = document.createElement('script'); ld.type = 'application/ld+json'; ld.dataset.ld = '1'; ld.textContent = JSON.stringify({ '@context': 'https://schema.org', '@type': 'Product', name: s.name, image: photos(s).slice(0, 4), description: s.description || s.name, brand: s.brand ? { '@type': 'Brand', name: s.brand } : undefined, sku: s.code || undefined, offers: { '@type': 'Offer', priceCurrency: 'INR', price: s.price, availability: isGone(s) ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock' } }); document.head.append(ld); } catch (e) { /* no JSON-LD */ }
   let more = STY.filter((x) => x.id !== s.id && (x.category === s.category || (s.collection && x.collection === s.collection))).slice(0, 8);
   if (more.length < 4) { const have = new Set(more.map((x) => x.id)); more = more.concat(newest(STY.length).filter((x) => x.id !== s.id && !have.has(x.id))).slice(0, Math.max(4, more.length)); } // always suggest at least 4 (2 when the shop has fewer)
   v.append(E('div', { class: 'crumbs' }, E('a', { href: link('') }, 'Home'), ' / ', E('a', { href: link('shop?cat=' + encodeURIComponent(s.category)) }, s.category), ' / ', s.name), E('div', { class: 'pd' }, gal, info),
     more.length ? E('section', { class: 'band' }, E('div', { class: 'hd' }, E('h2', null, 'Products you may like'), E('a', { class: 'btn sm', href: link('shop?cat=' + encodeURIComponent(s.category)) }, 'Discover more')), E('div', { class: 'row' }, more.map((x) => card(x)))) : null, recentBand(s.id));
+  rpc('public_sty_reviews', { p_slug: SLUG, p_style: s.id }).then((rv) => { if (!rv || !rv.count || !document.body.contains(v)) return;
+    const box = E('section', { class: 'band' }, E('div', { class: 'hd' }, E('h2', null, 'Reviews'), E('span', { class: 'mut tiny' }, stars(rv.avg) + ' ' + rv.avg + ' · ' + rv.count + (rv.count === 1 ? ' review' : ' reviews'))), E('div', { class: 'frm' }, (rv.items || []).slice(0, 8).map((r) => E('div', { class: 'card' }, E('div', null, E('b', null, stars(r.rating)), r.title ? ' ' + r.title : ''), r.body ? E('div', { class: 'mut' }, r.body) : null, E('div', { class: 'tiny mut' }, (r.name || 'Customer') + ' · verified buyer')))));
+    const first = v.querySelector('.band'); first ? v.insertBefore(box, first) : v.append(box); }).catch(() => {});
+  setMeta(s.name + ' · ' + D.shop.name, (s.description || s.name).slice(0, 150), photos(s)[0], location.origin + location.pathname + '?p=' + s.id);
   // on a wide screen the details card folds up by itself when you scroll down to the other products, so it never covers them
   const bands = [...v.querySelectorAll('.band')];
   if (bands.length && window.matchMedia('(min-width:900px)').matches && 'IntersectionObserver' in window) {
@@ -400,40 +433,93 @@ V.checkout = (v) => {
   if (!ls.length) { go('bag'); return; }
   const saved = LS.get('me', {}) || {};
   const F = {};
-  const f = (key, label, o) => { o = o || {}; const el = o.select ? E('select', { 'aria-label': label }, o.select.map((x) => E('option', { value: x, selected: (saved[key] || o.def) === x }, x))) : o.area ? E('textarea', { placeholder: label, 'aria-label': label }) : E('input', { placeholder: label + (o.opt ? ' (optional)' : ''), 'aria-label': label, type: o.type || 'text', autocomplete: o.ac || 'on', inputmode: o.mode, value: saved[key] || '' }); F[key] = el; return E('label', { class: 'fld' }, el); };
-  const methods = []; if (D.upi) methods.push(['upi', 'Pay by UPI', 'Scan a QR with any UPI app after you place the order']); if (D.cod) methods.push(['cod', 'Cash on delivery', 'Pay when the order reaches you']);
+  const f = (key, label, o) => { o = o || {}; const el = o.select ? E('select', { 'aria-label': label }, o.select.map((x) => E('option', { value: x, selected: (saved[key] || o.def) === x }, x))) : o.area ? E('textarea', { placeholder: label, 'aria-label': label }) : E('input', { placeholder: label + (o.opt ? ' (optional)' : ''), 'aria-label': label, type: o.type || 'text', autocomplete: o.ac || 'on', inputmode: o.mode, value: saved[key] || '', maxlength: o.max }); F[key] = el; return E('label', { class: 'fld' }, el); };
+  const methods = []; if (D.cod) methods.push(['cod', 'Cash on delivery', 'Pay when the order reaches you']); if (D.upi) methods.push(['upi', 'Pay by UPI', 'Scan a QR with any UPI app after you place the order']); if (cfg().payOnline) methods.push(['online', 'Card, UPI or net banking', 'Pay securely now']);
   let pay = methods[0] ? methods[0][0] : '';
   const payBox = E('div', { class: 'frm' }); const payPaint = () => { clear(payBox); if (!methods.length) { payBox.append(E('div', { class: 'note' }, 'This store is not taking online orders right now. Please contact the store.')); return; } methods.forEach(([k, l, d]) => payBox.append(E('div', { class: 'opt' + (pay === k ? ' on' : ''), role: 'radio', 'aria-checked': pay === k, tabindex: 0, onclick: () => { pay = k; payPaint(); } }, E('i', { class: 'r' }), E('div', null, E('div', null, l), E('div', { class: 'mut tiny' }, d))))); };
   payPaint();
   const t = bagTotal(), sh = shipFee(t); const save = E('input', { type: 'checkbox', checked: !!saved.name });
+  let coupon = null; // { code, discount, msg }
+  const sumBox = E('div');
+  const paintSum = () => { clear(sumBox); const d = coupon ? Math.min(coupon.discount, t + sh) : 0; sumBox.append(E('div', { class: 't', style: { paddingTop: '8px', borderTop: '1px solid var(--line)' } }, E('span', null, 'Subtotal'), E('span', null, inr(t))), E('div', { class: 't' }, E('span', null, 'Shipping'), E('span', null, sh ? inr(sh) : 'Free')), d ? E('div', { class: 't', style: { color: '#1a7f3c' } }, E('span', null, 'Coupon ' + coupon.code), E('span', null, '– ' + inr(d))) : null, E('div', { class: 't g' }, E('span', null, 'Total'), E('span', null, inr(t + sh - d)))); };
+  paintSum();
+  const cin = E('input', { placeholder: 'Coupon code', 'aria-label': 'Coupon code', style: { textTransform: 'uppercase' } }); const cmsg = E('div', { class: 'tiny', style: { minHeight: '14px' } });
+  const capply = async () => { cmsg.style.color = '#c0392b'; if (coupon) { coupon = null; cin.disabled = false; cin.value = ''; cmsg.textContent = ''; capplyBtn.textContent = 'Apply'; paintSum(); return; } if (!cin.value.trim()) return; capplyBtn.disabled = true;
+    try { const r = await rpc('public_sty_coupon_check', { p_slug: SLUG, p: { code: cin.value, subtotal: t, phone: (F.phone.value || '').trim() } }); if (r && r.ok) { coupon = { code: r.code, discount: +r.discount }; cmsg.style.color = '#1a7f3c'; cin.disabled = true; capplyBtn.textContent = 'Remove'; paintSum(); } cmsg.textContent = (r && r.msg) || ''; } catch (e) { cmsg.textContent = e.message; } capplyBtn.disabled = false; };
+  const capplyBtn = E('button', { class: 'btn out sm', type: 'button', onclick: capply }, 'Apply');
   const err = E('div', { class: 'tiny', role: 'alert', style: { color: '#c0392b', minHeight: '14px' } });
   const btn = E('button', { class: 'btn wide' }, 'Place order');
+  const done = (r, g) => {
+    if (save.checked) LS.set('me', { first: g('first'), last: g('last'), email: g('email'), phone: g('phone'), address: g('address'), address2: g('address2'), city: g('city'), state: g('state'), pin: g('pin'), country: g('country'), name: 1 }); else LS.set('me', {});
+    const mine = LS.get('orders', []); mine.unshift({ token: r.token, number: r.number, phone: g('phone') }); LS.set('orders', mine.slice(0, 20));
+    TR.push('order', null, { total: r.total }); TR.flush(); bag = []; saveBag(); go('order/' + r.token);
+  };
   btn.onclick = async () => {
     const g = (k) => (F[k].value || '').trim(); err.textContent = '';
     const name = [g('first'), g('last')].filter(Boolean).join(' ');
-    const miss = !g('first') ? 'your first name' : !g('phone') ? 'your phone number' : !g('address') ? 'your address' : !g('city') ? 'your city' : !g('pin') ? 'your PIN code' : '';
+    const miss = !g('phone') ? 'your phone number' : !g('first') ? 'your first name' : !g('pin') ? 'your PIN code' : !g('address') ? 'your address' : !g('city') ? 'your city' : '';
     if (miss) { err.textContent = 'Please enter ' + miss + '.'; return; }
     if (!pay) { err.textContent = 'Choose how you want to pay.'; return; }
     btn.disabled = true; btn.textContent = 'Placing…';
     try {
-      const r = await rpc('public_sty_place_order', { p_slug: SLUG, p: { name, email: g('email'), phone: g('phone'), address: g('address'), address2: g('address2'), city: g('city'), state: g('state'), pin: g('pin'), country: g('country'), note: g('note'), payment: pay, lines: bagLines().map((l) => ({ variantId: l.v, qty: l.q })) } });
-      if (save.checked) LS.set('me', { first: g('first'), last: g('last'), email: g('email'), phone: g('phone'), address: g('address'), address2: g('address2'), city: g('city'), state: g('state'), pin: g('pin'), country: g('country'), name: 1 }); else LS.set('me', {});
-      const mine = LS.get('orders', []); mine.unshift({ token: r.token, number: r.number }); LS.set('orders', mine.slice(0, 20));
-      TR.push('order', null, { total: r.total }); TR.flush();
-      bag = []; saveBag(); go('order/' + r.token);
+      const r = await rpc('public_sty_place_order', { p_slug: SLUG, p: { name, email: g('email'), phone: g('phone'), address: g('address'), address2: g('address2'), city: g('city'), state: g('state'), pin: g('pin'), country: g('country'), note: g('note'), payment: pay, coupon: coupon ? coupon.code : '', lines: bagLines().map((l) => ({ variantId: l.v, qty: l.q })) } });
+      if (pay === 'online') { await rzpPay(r.token, () => done(r, g), () => { done(r, g); }); return; }
+      done(r, g);
     } catch (e) { err.textContent = e.message; btn.disabled = false; btn.textContent = 'Place order'; }
   };
+  // fill city and state from the PIN code (free India Post lookup); if it is unreachable the person just types them
+  const pinAuto = async () => { const p = (F.pin.value || '').trim(); if (!/^\d{6}$/.test(p)) return; try { const r = await fetch('https://api.postalpincode.in/pincode/' + p); const j = await r.json(); const po = j && j[0] && j[0].PostOffice && j[0].PostOffice[0]; if (po) { if (!F.city.value) F.city.value = po.District || po.Block || ''; const st = STATES.find((x) => x.toLowerCase() === String(po.State || '').toLowerCase()); if (st) F.state.value = st; } } catch (e) { /* offline or blocked: manual entry */ } };
+  // remember the bag against the phone so the shop can remind the customer (only if the shop switched this on)
+  let lastCart = ''; const saveCart = () => { const ph = (F.phone.value || '').replace(/\D/g, ''); if (!cfg().abandonWa || ph.length < 10 || lastCart === ph) return; lastCart = ph; rpc('public_sty_cart_save', { p_slug: SLUG, p: { phone: ph, name: (F.first.value || '').trim(), lines: bagLines().map((l) => ({ variantId: l.v, qty: l.q })) } }).catch(() => {}); };
   v.append(E('div', { class: 'shophd' }, E('h1', null, 'Checkout')), E('div', { class: 'two' },
-    E('div', { class: 'card frm' }, E('h2', null, 'Contact'), f('email', 'Email', { type: 'email', ac: 'email', opt: true }), f('phone', 'Phone', { type: 'tel', ac: 'tel', mode: 'tel' }),
-      E('h2', null, 'Delivery'), f('country', 'Country', { select: ['India'], def: 'India' }), E('div', { class: 'f2' }, f('first', 'First name', { ac: 'given-name' }), f('last', 'Last name', { ac: 'family-name', opt: true })), f('address', 'Address', { ac: 'street-address' }), f('address2', 'Apartment, suite, etc.', { opt: true }),
-      E('div', { class: 'f2' }, f('city', 'City'), f('state', 'State', { select: STATES, def: 'Rajasthan' })), f('pin', 'PIN code', { mode: 'numeric', ac: 'postal-code' }), f('note', 'Notes for the store (optional)', { area: true }),
+    E('div', { class: 'card frm' }, E('h2', null, 'Contact'), f('phone', 'Phone', { type: 'tel', ac: 'tel', mode: 'tel', max: 14 }), f('email', 'Email', { type: 'email', ac: 'email', opt: true }),
+      E('h2', null, 'Delivery'), E('div', { class: 'f2' }, f('first', 'First name', { ac: 'given-name' }), f('last', 'Last name', { ac: 'family-name', opt: true })), f('pin', 'PIN code', { mode: 'numeric', ac: 'postal-code', max: 6 }), f('address', 'Address', { ac: 'street-address' }), f('address2', 'Apartment, suite, etc.', { opt: true }),
+      E('div', { class: 'f2' }, f('city', 'City'), f('state', 'State', { select: STATES, def: 'Rajasthan' })), f('country', 'Country', { select: ['India'], def: 'India' }), f('note', 'Notes for the store (optional)', { area: true }),
       E('label', { style: { display: 'flex', gap: '8px', alignItems: 'center' } }, save, 'Save this information for next time'),
       E('h2', null, 'Shipping method'), E('div', { class: 'note' }, shipLine(t)), E('h2', null, 'Payment'), E('div', { class: 'mut tiny' }, 'All transactions are secure.'), payBox),
     E('div', { class: 'card stick sum' }, E('h2', { style: { marginBottom: '6px' } }, 'Order summary'), ls.map((l) => E('div', { class: 't' }, E('span', null, l.s.name + ' × ' + l.q + (l.vr.size ? ' · ' + l.vr.size : '')), E('span', null, inr(l.vr.price * l.q)))),
-      E('div', { class: 't', style: { paddingTop: '8px', borderTop: '1px solid var(--line)' } }, E('span', null, 'Subtotal'), E('span', null, inr(t))), E('div', { class: 't' }, E('span', null, 'Shipping'), E('span', null, sh ? inr(sh) : 'Free')), E('div', { class: 't g' }, E('span', null, 'Total'), E('span', null, inr(t + sh))), err, btn,
+      E('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', marginTop: '8px' } }, E('label', { class: 'fld', style: { flex: 1 } }, cin), capplyBtn), cmsg, sumBox, err, btn,
       E('div', { class: 'mut tiny' }, 'By placing the order you agree to the ', E('a', { href: link('policy/terms'), style: { textDecoration: 'underline' } }, 'terms'), ' and the ', E('a', { href: link('policy/returns'), style: { textDecoration: 'underline' } }, 'returns policy'), '.'))));
+  F.pin.addEventListener('input', pinAuto); F.pin.addEventListener('change', pinAuto); F.phone.addEventListener('blur', saveCart); F.phone.addEventListener('change', saveCart);
 };
+// card / UPI / net banking with the shop's own Razorpay account; the server checks the signature before anything is marked paid
+function loadRzp() { return new Promise((res, rej) => { if (window.Razorpay) return res(); const sc = document.createElement('script'); sc.src = 'https://checkout.razorpay.com/v1/checkout.js'; sc.onload = res; sc.onerror = () => rej(new Error('Could not load the payment window. Check your connection.')); document.head.append(sc); }); }
+async function rzpPay(token, ok, later) {
+  const base = (window.CFG || {}).url || '';
+  const post = async (path, body) => { const r = await fetch(base + path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || j.message || 'Payment could not start'); return j; };
+  let st; try { st = await post('/payments/sty/start', { token }); await loadRzp(); } catch (e) { toast(e.message); later(); return; }
+  const rz = new window.Razorpay({ key: st.key, order_id: st.orderId, amount: st.amount, currency: 'INR', name: D.shop.name, description: 'Order ' + st.number, prefill: { name: st.name, contact: st.phone, email: st.email },
+    handler: async (resp) => { try { await post('/payments/sty/verify', { token, razorpay_order_id: resp.razorpay_order_id, razorpay_payment_id: resp.razorpay_payment_id, razorpay_signature: resp.razorpay_signature }); toast('Payment received'); } catch (e) { toast('We could not confirm the payment yet. The store will check it.'); } ok(); },
+    modal: { ondismiss: () => { toast('Payment not completed. You can pay from your order page.'); later(); } } });
+  rz.open();
+}
 
+// delivered orders: rate what you bought, or ask for a return / exchange
+function afterSale(o, tok, v) {
+  const wrap = E('div', { class: 'card', style: { marginTop: '10px' } });
+  const reviewed = new Set((o.reviewed || []).map(String));
+  const seenS = new Set(); const rows = [];
+  (o.lines || []).forEach((l) => { const sid = l.styleId; if (!sid || seenS.has(sid)) return; seenS.add(sid); rows.push(l); });
+  if (rows.length) {
+    wrap.append(E('h2', null, 'How was it?'));
+    rows.forEach((l) => {
+      const box = E('div', { class: 'frm', style: { margin: '8px 0' } });
+      if (reviewed.has(String(l.styleId))) { box.append(E('div', { class: 'mut tiny' }, l.name + ': thank you for your review.')); wrap.append(box); return; }
+      let rate = 0; const sb2 = E('div', { class: 'stars' }); const paint = () => { clear(sb2); for (let i = 1; i <= 5; i++) sb2.append(E('button', { type: 'button', 'aria-label': i + ' stars', style: { fontSize: '22px', color: i <= rate ? '#111' : '#c8c5c2' }, onclick: () => { rate = i; paint(); } }, '★')); }; paint();
+      const body = E('textarea', { placeholder: 'Tell others about the fit and quality (optional)', 'aria-label': 'Review', style: { height: '64px', borderRadius: '16px', border: '1px solid #dcdad8', padding: '10px 14px', fontSize: '11px', width: '100%' } }); const m = E('div', { class: 'tiny', style: { color: '#c0392b' } });
+      box.append(E('div', { class: 't' }, l.name), sb2, body, m, E('button', { class: 'btn sm', onclick: async (e) => { if (!rate) { m.textContent = 'Choose 1 to 5 stars'; return; } e.target.disabled = true; try { await rpc('public_sty_review_submit', { p_token: tok, p: { styleId: l.styleId, rating: rate, body: body.value } }); clear(box).append(E('div', { class: 'mut tiny' }, 'Thank you for your review.')); } catch (er) { m.textContent = er.message; e.target.disabled = false; } } }, 'Post review'));
+      wrap.append(box);
+    });
+  }
+  if (o.returns && o.returns.length) wrap.append(E('h2', { style: { marginTop: '10px' } }, 'Return / exchange'), o.returns.map((r) => E('div', { class: 'note', style: { marginTop: '6px' } }, cap(r.kind) + ': ' + cap(r.status) + (r.staffNote ? ' · ' + r.staffNote : ''))));
+  if (o.canReturn) {
+    const kind = { v: 'return' }; const reason = E('input', { placeholder: 'Reason (size, fit, damaged...)', 'aria-label': 'Reason' }); const m = E('div', { class: 'tiny', style: { color: '#c0392b', minHeight: '14px' } });
+    const kb = E('div', { class: 'fwrap' }); const kp = () => { clear(kb); ['return', 'exchange'].forEach((k) => kb.append(E('button', { type: 'button', class: 'sz' + (kind.v === k ? ' on' : ''), onclick: () => { kind.v = k; kp(); } }, cap(k)))); }; kp();
+    wrap.append(E('h2', { style: { marginTop: '10px' } }, 'Return or exchange'), E('div', { class: 'mut tiny', style: { margin: '2px 0 8px' } }, 'Within ' + o.returnDays + ' days of delivery, tags intact.'), E('div', { class: 'frm' }, kb, E('label', { class: 'fld' }, reason), m,
+      E('button', { class: 'btn sm out', onclick: async (e) => { e.target.disabled = true; try { await rpc('public_sty_return_request', { p_token: tok, p: { kind: kind.v, reason: reason.value, items: (o.lines || []).map((l) => ({ name: l.name, size: l.size, colour: l.colour, qty: l.qty })) } }); toast('Request sent'); const y = scrollY; await V.order(v, tok); scrollTo(0, y); } catch (er) { m.textContent = er.message; e.target.disabled = false; } } }, 'Send request')));
+  }
+  return wrap.children.length ? wrap : null;
+}
 const LIVE_MSG = { new: 'We have your order', confirmed: 'Confirmed, we are getting it ready', packed: 'Packed and waiting for pickup', shipped: 'On its way to you', delivered: 'Delivered. Enjoy!', cancelled: 'This order was cancelled' };
 V.order = async (v, tok) => {
   clearInterval(v._ot);
@@ -454,8 +540,9 @@ V.order = async (v, tok) => {
     E('div', { class: 'mut' }, o.payment === 'cod' ? 'Pay ' + inr(o.total) + ' in cash when it arrives.' : o.paymentStatus === 'paid' ? 'Payment received.' : 'We will confirm your order once the payment is checked.'),
     o.status === 'cancelled' ? null : E('div', { class: 'steps' }, steps.map((_, i) => E('i', { class: i <= at ? 'on' : '' }))), o.status === 'cancelled' ? null : E('div', { class: 'live' }, o.status === 'cancelled' ? null : E('i'), E('b', null, cap(o.status)), E('span', null, ' · ' + (LIVE_MSG[o.status] || '')), E('div', { class: 'tiny mut' }, 'Updates by itself · checked ' + new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }))),
     E('div', { style: { marginTop: '12px' } }, (o.lines || []).map((l) => E('div', { class: 'ln' }, E('div', { class: 'im' }, l.photo ? E('img', { src: l.photo, alt: '' }) : placeholder(l.name)), E('div', null, E('div', { class: 't' }, l.name), E('div', { class: 's' }, [l.colour, l.size].filter(Boolean).join(' · ') + ' × ' + l.qty)), E('div', null, inr(l.price * l.qty))))),
-    E('div', { class: 'sum', style: { marginTop: '10px' } }, E('div', { class: 't' }, E('span', null, 'Shipping'), E('span', null, o.shipping ? inr(o.shipping) : 'Free')), E('div', { class: 't g' }, E('span', null, 'Total'), E('span', null, inr(o.total)))),
-    E('div', { class: 'mut tiny', style: { marginTop: '10px' } }, 'Save this page to follow your order. Questions? ', E('a', { href: link('contact'), style: { textDecoration: 'underline' } }, 'Contact us'))), pbox, E('a', { class: 'btn out', href: link('shop'), style: { justifySelf: 'center' } }, 'Keep shopping')));
+    E('div', { class: 'sum', style: { marginTop: '10px' } }, E('div', { class: 't' }, E('span', null, 'Shipping'), E('span', null, o.shipping ? inr(o.shipping) : 'Free')), +o.discount ? E('div', { class: 't', style: { color: '#1a7f3c' } }, E('span', null, 'Coupon' + (o.coupon ? ' ' + o.coupon : '')), E('span', null, '– ' + inr(o.discount))) : null, E('div', { class: 't g' }, E('span', null, 'Total'), E('span', null, inr(o.total)))),
+    trackBox(o),
+    E('div', { class: 'mut tiny', style: { marginTop: '10px' } }, 'Save this page to follow your order. Questions? ', E('a', { href: link('contact'), style: { textDecoration: 'underline' } }, 'Contact us'))), pbox, o.status === 'delivered' ? afterSale(o, tok, v) : null, E('a', { class: 'btn out', href: link('shop'), style: { justifySelf: 'center' } }, 'Keep shopping')));
   if (!['delivered', 'cancelled'].includes(o.status)) { const last = o.status + '|' + o.paymentStatus; v._ot = setInterval(async () => { if (!document.body.contains(v) || !location.hash.includes(tok)) return clearInterval(v._ot); let n = null; try { n = await rpc('public_sty_order', { p_token: tok }); } catch { return; } if (n && n.status + '|' + n.paymentStatus !== last) { clearInterval(v._ot); const y = scrollY; await V.order(v, tok); scrollTo(0, y); toast('Order update: ' + cap(n.status)); } }, 12000); }
 };
 
@@ -499,13 +586,16 @@ V.orders = async (v) => {
       E('div', { style: { display: 'flex', gap: '8px', alignItems: 'center' } }, E('button', { class: 'btn', onclick: () => { const me = {}; Object.keys(F).forEach((k) => { me[k] = F[k].value.trim(); }); me.country = saved.country || 'India'; me.name = 1; LS.set('me', me); msg.textContent = 'Saved'; setTimeout(() => { msg.textContent = ''; }, 2000); } }, 'Save my details'), E('button', { class: 'btn out', onclick: () => { if (confirm('Remove my saved details from this phone?')) { LS.set('me', {}); Object.values(F).forEach((e) => { e.value = ''; }); msg.textContent = 'Removed'; } } }, 'Clear'), msg)));
   const mine = LS.get('orders', []);
   const box = E('div', { class: 'ords' });
-  v.append(E('div', { class: 'pg' }, E('div', { class: 'shophd' }, E('h1', null, saved.first ? 'Hi, ' + saved.first : 'My account')), prof, E('h2', { style: { padding: '12px 4px 4px' } }, 'My orders'), box));
+  const fnum = E('input', { placeholder: 'Order number', 'aria-label': 'Order number' }), fph = E('input', { placeholder: 'Phone used on the order', type: 'tel', inputmode: 'tel', 'aria-label': 'Phone', value: saved.phone || '' }), fmsg = E('div', { class: 'tiny', style: { color: '#c0392b', minHeight: '14px' } });
+  const find = E('div', { class: 'card' }, E('h2', null, 'Find an order'), E('div', { class: 'mut tiny', style: { margin: '2px 0 8px' } }, 'On another phone or lost the link? Enter the order number and your phone.'), E('div', { class: 'frm' }, E('label', { class: 'fld' }, fnum), E('label', { class: 'fld' }, fph), fmsg,
+    E('button', { class: 'btn', onclick: async (e) => { e.target.disabled = true; fmsg.textContent = ''; try { const r = await rpc('public_sty_order_find', { p_slug: SLUG, p: { number: fnum.value, phone: fph.value } }); const l = LS.get('orders', []); if (!l.some((x) => x.token === r.token)) { l.unshift({ token: r.token, number: fnum.value.trim().toUpperCase() }); LS.set('orders', l.slice(0, 20)); } go('order/' + r.token); } catch (er) { fmsg.textContent = er.message; } e.target.disabled = false; } }, 'Find my order')));
+  v.append(E('div', { class: 'pg' }, E('div', { class: 'shophd' }, E('h1', null, saved.first ? 'Hi, ' + saved.first : 'My account')), prof, E('h2', { style: { padding: '12px 4px 4px' } }, 'My orders'), box, find));
   if (!mine.length) { box.append(E('div', { class: 'card mut' }, 'Orders you place on this phone show here with live status. ', E('a', { href: link('shop'), style: { textDecoration: 'underline' } }, 'Shop now'))); return; }
   const open = new Set(); let state = {};
   const paint = () => { clear(box); mine.forEach((m) => { const o = state[m.token]; if (!o) return; const live = !['delivered', 'cancelled'].includes(o.status);
     const det = E('div', { class: 'od' }, (o.lines || []).map((l) => E('div', { class: 'ln' }, E('div', { class: 'im' }, l.photo ? E('img', { src: l.photo, alt: '' }) : placeholder(l.name)), E('div', null, E('div', { class: 't' }, l.name), E('div', { class: 's' }, [l.colour, l.size].filter(Boolean).join(' · ') + ' × ' + l.qty)), E('div', null, inr(l.price * l.qty)))),
       E('div', { class: 'sum' }, E('div', { class: 't' }, E('span', null, 'Shipping'), E('span', null, o.shipping ? inr(o.shipping) : 'Free')), E('div', { class: 't g' }, E('span', null, 'Total'), E('span', null, inr(o.total)))),
-      E('div', { class: 'tiny mut' }, (o.payment === 'cod' ? 'Cash on delivery' : o.paymentStatus === 'paid' ? 'Paid' : 'Payment: ' + o.paymentStatus) + ' · placed ' + new Date(o.createdAt).toLocaleDateString('en-GB')), E('a', { class: 'btn sm out', href: link('order/' + m.token), style: { justifySelf: 'start' } }, 'Open order page'));
+      E('div', { class: 'tiny mut' }, (o.payment === 'cod' ? 'Cash on delivery' : o.paymentStatus === 'paid' ? 'Paid' : 'Payment: ' + o.paymentStatus) + ' · placed ' + new Date(o.createdAt).toLocaleDateString('en-GB')), trackBox(o), E('a', { class: 'btn sm out', href: link('order/' + m.token), style: { justifySelf: 'start' } }, 'Open order page'));
     const steps = ['new', 'confirmed', 'packed', 'shipped', 'delivered']; const at = steps.indexOf(o.status);
     box.append(E('div', { class: 'card oc' }, E('button', { class: 'oh', onclick: () => { open.has(m.token) ? open.delete(m.token) : open.add(m.token); paint(); } }, E('div', null, E('div', { class: 't' }, o.number), E('div', { class: 'live' }, live ? E('i') : null, E('b', null, cap(o.status)), E('span', null, ' · ' + (STAT_MSG[o.status] || '')))), E('div', { class: 'tr' }, inr(o.total))),
       o.status === 'cancelled' ? null : E('div', { class: 'steps' }, steps.map((_, i) => E('i', { class: i <= at ? 'on' : '' }))), open.has(m.token) ? det : null)); }); };
@@ -562,20 +652,37 @@ function route() {
   document.body.classList.toggle('homehero', id === 'home'); const fn = V[id] || V.home; try { const r = fn(view, parts[1]); if (r && r.catch) r.catch((e) => view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message))); } catch (e) { view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message)); }
   $('#menu') && $('#menu').classList.remove('on'); $('#srch') && $('#srch').classList.remove('on');
   document.title = (id === 'home' ? '' : cap(id === 'p' ? (BYID[parts[1]] || {}).name || 'Product' : id) + ' · ') + D.shop.name;
+  if (id !== 'p') setMeta(document.title, cfg().tagline || ('Shop online at ' + D.shop.name), ((D.styles || [])[0] && photos((D.styles || [])[0])[0]) || '', location.origin + location.pathname);
   window.scrollTo(0, 0); document.body.classList.add('atop');
   TR.enter(id === 'p' ? 'p/' + (parts[1] || '') : id); if (id === 'p' && BYID[parts[1]]) TR.push('product', null, { id: parts[1], name: BYID[parts[1]].name });
   if (id === 'checkout') TR.push('checkout', null, { step: 'start' });
 }
 window.addEventListener('scroll', () => document.body.classList.toggle('atop', window.scrollY < 40), { passive: true });
-async function boot() {
-  const app = $('#app'); app.append(E('div', { class: 'spin' }));
-  if (!SLUG) { clear(app).append(E('div', { class: 'empty' }, E('h2', null, 'Open this store from the shop address'), E('div', { class: 'mut' }, 'For example yourshop.auzslab.in/store.html'))); return; }
-  try { D = await rpc('public_sty_store', { p_slug: SLUG }); } catch (e) { clear(app).append(E('div', { class: 'empty' }, E('h2', null, 'Could not open the store'), E('div', { class: 'mut' }, e.message))); return; }
-  if (!D) { clear(app).append(E('div', { class: 'empty' }, E('h2', null, 'This store was not found'))); return; }
-  if (D.closed) { clear(app).append(E('div', { class: 'empty' }, E('h1', null, D.name || 'Store'), E('div', { class: 'mut' }, 'Our online store is not open yet. Please check back soon.'))); document.title = D.name || 'Store'; return; }
-  STY = (D.styles || []).filter((s) => s.variants && s.variants.length); BYID = {}; VAR = {};
-  STY.forEach((s) => { BYID[s.id] = s; s.variants.forEach((x) => { VAR[x.id] = { ...x, sid: s.id }; }); });
+function ingest(d) {
+  D = d; STY = (D.styles || []).filter((x) => x.variants && x.variants.length); BYID = {}; VAR = {};
+  STY.forEach((x) => { BYID[x.id] = x; x.variants.forEach((y) => { VAR[y.id] = { ...y, sid: x.id }; }); });
   bag = LS.get('bag', []).filter((b) => VAR[b.v]); wish = LS.get('wish', []).filter((id) => BYID[id]);
-  shell(); window.addEventListener('hashchange', route); route();
+}
+async function boot() {
+  const app = $('#app');
+  try { const p = new URLSearchParams(location.search).get('p'); if (p && !location.hash) { history.replaceState(null, '', location.pathname); location.hash = '#/p/' + p; } } catch (e) { /* plain link */ }
+  if (!SLUG) { app.append(E('div', { class: 'spin' })); clear(app).append(E('div', { class: 'empty' }, E('h2', null, 'Open this store from the shop address'), E('div', { class: 'mut' }, 'For example yourshop.auzslab.in/store.html'))); return; }
+  // instant first paint from the last visit; the fresh catalogue is fetched right behind it
+  let cached = null; try { cached = JSON.parse(localStorage.getItem('st.cat.' + SLUG) || 'null'); } catch (e) { cached = null; }
+  const fresh = rpc('public_sty_store', { p_slug: SLUG });
+  const fail = (e) => { clear(app).append(E('div', { class: 'empty' }, E('h2', null, 'Could not open the store'), E('div', { class: 'mut' }, e.message))); };
+  const closed = (d) => { clear(app).append(E('div', { class: 'empty' }, E('h1', null, d.name || 'Store'), E('div', { class: 'mut' }, 'Our online store is not open yet. Please check back soon.'))); document.title = d.name || 'Store'; };
+  if (cached && cached.styles && !cached.closed) {
+    ingest(cached); shell(); window.addEventListener('hashchange', route); route();
+    fresh.then((d) => { if (!d || d.closed) return; try { localStorage.setItem('st.cat.' + SLUG, JSON.stringify(d)); } catch (e) { /* storage full */ }
+      ingest(d); const h = (location.hash || '').replace(/^#\/?/, '').split('?')[0].split('/')[0]; if (!['checkout', 'order', 'orders', 'me'].includes(h) && !document.querySelector('.sheetwrap')) { const y = scrollY; route(); scrollTo(0, y); } }).catch(() => {});
+    return;
+  }
+  app.append(E('div', { class: 'spin' }));
+  let d; try { d = await fresh; } catch (e) { fail(e); return; }
+  if (!d) { clear(app).append(E('div', { class: 'empty' }, E('h2', null, 'This store was not found'))); return; }
+  if (d.closed) { closed(d); return; }
+  try { localStorage.setItem('st.cat.' + SLUG, JSON.stringify(d)); } catch (e) { /* storage full */ }
+  ingest(d); shell(); window.addEventListener('hashchange', route); route();
 }
 boot();

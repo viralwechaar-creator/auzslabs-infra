@@ -411,10 +411,55 @@ export default async function run({ browser, stack }) {
     assert(!(await call(staff, 'sty_store_analytics', { p_days: 30 })).ok, 'a plain staffer must not read visitor analytics');
   });
 
+  await s.check('Store round 5: coupons, tracking, reviews after delivery, returns, order lookup, back-in-stock, own-Razorpay confirm', async () => {
+    await ok(manager, 'sty_store_save', { p: { on: true, waOrder: false, shipping: { fee: 80, freeOver: 0 }, pay: { cod: true, upi: false }, sizeGuide: { note: 'x', rows: [['M', '38-40', '32']] } } });
+    const cat = await ok(owner, 'sty_catalog', { p_branch: null });
+    const sty = cat.find((x) => x.variants.some((v) => v.stock >= 3 && x.price > 0)); const vr = sty.variants.find((v) => v.stock >= 3);
+    const base = { name: 'Ravi Kumar', phone: '9811122233', address: '5 Lane', city: 'Jodhpur', state: 'Rajasthan', pin: '342001', payment: 'cod' };
+    await fails(manager, 'sty_coupon_save', { p: { code: 'x', kind: 'pct', value: 10 } }, /3 to 24/);
+    await ok(manager, 'sty_coupon_save', { p: { code: 'save10', kind: 'pct', value: 10, firstOnly: true, maxUses: 5 } });
+    await fails(null, 'public_sty_place_order', { p_slug: 'teststyle', p: { ...base, coupon: 'NOPE', lines: [{ variantId: vr.id, qty: 1 }] } }, /coupon/i);
+    const chk = await ok(null, 'public_sty_coupon_check', { p_slug: 'teststyle', p: { code: 'SAVE10', subtotal: 1000, phone: '9811122233' } }); assert(chk.ok && +chk.discount === 100, 'coupon check ' + JSON.stringify(chk));
+    const o = await ok(null, 'public_sty_place_order', { p_slug: 'teststyle', p: { ...base, coupon: 'SAVE10', lines: [{ variantId: vr.id, qty: 1 }] } });
+    assert(+o.discount > 0 && +o.total === +vr.price - +o.discount + 80, 'discount maths ' + JSON.stringify(o));
+    const again = await call(null, 'public_sty_place_order', { p_slug: 'teststyle', p: { ...base, coupon: 'SAVE10', lines: [{ variantId: vr.id, qty: 1 }] } }); assert(!again.ok && /first orders|already used/i.test(again.error || ''), 'a first-order coupon must not work twice: ' + again.error);
+    await fails(null, 'public_sty_review_submit', { p_token: o.token, p: { styleId: sty.id, rating: 5 } }, /delivered/i);
+    await fails(null, 'public_sty_return_request', { p_token: o.token, p: { kind: 'return', reason: 'too big' } }, /delivered/i);
+    const inbox = await ok(staff, 'sty_web_orders_list', { p: {} }); const row = inbox.find((x) => x.number === o.number);
+    await ok(staff, 'sty_web_order_update', { p_id: row.id, p: { status: 'confirmed' } });
+    await ok(staff, 'sty_web_order_update', { p_id: row.id, p: { status: 'shipped', courier: 'Delhivery', trackingNo: 'DL123456' } });
+    let pg = await ok(null, 'public_sty_order', { p_token: o.token }); assert(pg.courier === 'Delhivery' && pg.trackingNo === 'DL123456', 'tracking ' + JSON.stringify(pg).slice(0, 200));
+    await ok(staff, 'sty_web_order_update', { p_id: row.id, p: { status: 'delivered' } });
+    pg = await ok(null, 'public_sty_order', { p_token: o.token }); assert(pg.canReturn === true, 'canReturn');
+    await fails(null, 'public_sty_review_submit', { p_token: o.token, p: { styleId: sty.id, rating: 9 } }, /1 to 5/);
+    await ok(null, 'public_sty_review_submit', { p_token: o.token, p: { styleId: sty.id, rating: 5, body: 'Great fit' } });
+    const rv = await ok(null, 'public_sty_reviews', { p_slug: 'teststyle', p_style: sty.id }); assert(rv.count === 1 && rv.items[0].name === 'Ravi', 'review ' + JSON.stringify(rv));
+    await ok(manager, 'sty_review_set', { p_id: (await ok(manager, 'sty_reviews_list'))[0].id, p_status: 'hidden' });
+    assert((await ok(null, 'public_sty_reviews', { p_slug: 'teststyle', p_style: sty.id })).count === 0, 'a hidden review must not show');
+    await ok(null, 'public_sty_return_request', { p_token: o.token, p: { kind: 'exchange', reason: 'Need a bigger size' } });
+    await fails(null, 'public_sty_return_request', { p_token: o.token, p: { kind: 'return', reason: 'again please' } }, /already/i);
+    const rets = await ok(staff, 'sty_web_returns_list'); assert(rets.length === 1 && rets[0].kind === 'exchange', 'returns inbox');
+    await ok(staff, 'sty_web_return_set', { p_id: rets[0].id, p: { status: 'approved', staffNote: 'Send it back' } });
+    const f = await ok(null, 'public_sty_order_find', { p_slug: 'teststyle', p: { number: o.number.toLowerCase(), phone: '98111 22233' } }); assert(f.token === o.token, 'order lookup');
+    await fails(null, 'public_sty_order_find', { p_slug: 'teststyle', p: { number: o.number, phone: '9000000000' } }, /could not find/i);
+    await ok(null, 'public_sty_notify_me', { p_slug: 'teststyle', p: { variantId: vr.id, phone: '9811122233', name: 'Ravi' } });
+    assert(Number((await q('select count(*)::int c from sty_web_notify where tenant_id=$1 and sent_at is null', [tid]))[0].c) === 1, 'notify row');
+    // the shop's own Razorpay keys: only a correct signature marks the order paid
+    await ok(manager, 'sty_store_set_razorpay', { p: { keyId: 'rzp_test_abcdefgh12', secret: 'secret-secret-12345' } });
+    const pub = await ok(null, 'public_sty_store', { p_slug: 'teststyle' }); assert(pub.config.payOnline === true && !JSON.stringify(pub).includes('secret-secret'), 'payOnline exposed, secret never');
+    const o2 = await ok(null, 'public_sty_place_order', { p_slug: 'teststyle', p: { ...base, phone: '9822233344', payment: 'online', lines: [{ variantId: vr.id, qty: 1 }] } });
+    await q('select sty_online_set_order($1,$2)', [o2.token, 'order_TEST1']);
+    const bad = await q("select sty_online_confirm($1,$2,$3,$4) r", [o2.token, 'order_TEST1', 'pay_TEST1', 'deadbeef']).then(() => null, (e) => e.message); assert(bad && /could not be verified/i.test(bad), 'a wrong signature must be refused: ' + bad);
+    const sig = (await q("select encode(hmac('order_TEST1|pay_TEST1'::bytea, 'secret-secret-12345'::bytea, 'sha256'),'hex') s"))[0].s;
+    const good = (await q('select sty_online_confirm($1,$2,$3,$4) r', [o2.token, 'order_TEST1', 'pay_TEST1', sig]))[0].r; assert(good.paymentStatus === 'paid', 'paid ' + JSON.stringify(good));
+    const sh = await ok(null, 'public_sty_share', { p_slug: 'teststyle', p_style: sty.id }); assert(sh && sh.shop && sh.name, 'share data');
+    await integrity();
+  });
+
   await s.check('Online store page: browse, filter, product page, bag, checkout and the owner inbox, on phone and desktop', async () => {
     await ok(manager, 'sty_store_save', { p: { on: true } });
     for (const dev of [{ w: 390, h: 844, mobile: true }, { w: 1366, h: 800 }]) {
-      const c = await newCtx(browser, stack, dev); const page = await c.newPage(); const errs = watch(page);
+      const c = await newCtx(browser, stack, dev); const page = await c.newPage(); const errs = watch(page); await page.route('**//api.postalpincode.in/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '[{"PostOffice":[{"District":"Jodhpur","State":"Rajasthan"}]}]' }));
       await page.goto(stack.url('teststyle', '/store.html')); await page.waitForSelector('.pc', { timeout: 20000 });
       await s.shot(page, 'store home ' + dev.w);
       assert(await page.locator('.hero').count() === 1, 'hero');
