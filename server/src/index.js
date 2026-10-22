@@ -58,5 +58,17 @@ const server = http.createServer(async (req, res) => {
 startRealtime(server, { onPushEvent: handlePushEvent });
 
 server.listen(PORT, () => console.log(`auzlabs-api listening on :${PORT}`));
+
+// Graceful stop (deploys, restarts): stop taking new requests, let the ones in progress finish, then exit. Gives up after 10 s.
+let stopping = false;
+for (const sig of ['SIGTERM', 'SIGINT']) {
+  process.on(sig, () => {
+    if (stopping) return; stopping = true;
+    console.log(`${sig}: finishing requests and stopping`);
+    server.close(() => process.exit(0));
+    server.closeIdleConnections?.();
+    setTimeout(() => process.exit(0), 10_000).unref();
+  });
+}
 startWhatsAppWorker(); // sends queued WhatsApp messages (whatsapp.js)
 startMaintenance(); // daily cleanup of expired sessions / codes / links (see maintenance.js)

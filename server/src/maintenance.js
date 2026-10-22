@@ -4,6 +4,7 @@
 import { pool } from './db.js';
 import { sendRenewalEmail } from './mail.js';
 import { runClientGreetings, runLapsedClientWinback, runMembershipExpiryReminders, runPaymentDueReminders, runPostVisitReviews, runSalonDailySummaries } from './salon/automations.js';
+import { metricsReport } from './metrics.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -71,12 +72,22 @@ export async function runStyleAbandoned() {
   catch (err) { console.warn('style abandoned bags failed:', err.message); }
 }
 
+// Daily server health check (db/243): tells the admin when the database or the API needs attention.
+export async function runHealthAlert() {
+  try {
+    const m = await metricsReport();
+    const tot = m.families.reduce((a, f) => a + f.count, 0), err = m.families.reduce((a, f) => a + f.errors, 0);
+    const p95 = Math.max(0, ...m.families.filter((f) => f.count >= 20).map((f) => f.p95_ms));
+    await pool.query('select health_alert_run($1::jsonb)', [JSON.stringify({ lag_ms: m.process.loop_lag_p99_ms, rss_mb: Math.round(m.process.rss / 1048576), error_pct: tot >= 50 ? +(100 * err / tot).toFixed(1) : 0, p95_ms: p95 })]);
+  } catch (err) { console.warn('health alert failed:', err.message); }
+}
+
 export function startMaintenance() {
   if (process.env.DISABLE_MAINTENANCE === '1') return;
   const runAll = () => {
     runMaintenance(); runRenewals(); runBookingReminders(); runQuoteFollowups(); runAdminSummary();
     runSalonDailySummaries(); runLapsedClientWinback(); runPostVisitReviews(); runPaymentDueReminders();
-    runClientGreetings(); runMembershipExpiryReminders(); runStyleGreetings(); runStyleAbandoned();
+    runClientGreetings(); runMembershipExpiryReminders(); runStyleGreetings(); runStyleAbandoned(); runHealthAlert();
   };
   setTimeout(() => { runAll(); setInterval(runAll, DAY).unref(); }, 60_000).unref();
 }
