@@ -1,6 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /admin.html
+Disallow: /post-studio.html
 Disallow: /account.html
 Disallow: /signup.html
 Disallow: /cart.html
