@@ -879,3 +879,20 @@ footer .col a,footer .col span{font-size:9.5px}
   .gal .main::before{content:"";position:absolute;inset:-30px;background:var(--bgi) center/cover;filter:blur(28px) saturate(1.1);opacity:.55;z-index:-1}
   .gal .main img{position:absolute!important;inset:0;width:100%;height:100%;object-fit:contain;background:transparent}
 }
+
+/* product page (reference layout): many pictures = big 2-column grid, details card on the right with tabs */
+.tabs2 .tr{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:10px}
+.tabs2 .tr button{flex:1;padding:10px 4px;font-size:11px;font-weight:700;color:var(--mut);border-bottom:2px solid transparent;margin-bottom:-1px;text-align:center}
+.tabs2 .tr button.on{color:#000;border-bottom-color:#000}
+.gal .pgrid{display:none}
+@media(min-width:900px){
+  .gal.multi{display:block;height:auto;position:static}
+  .gal.multi .main,.gal.multi .rail{display:none}
+  .gal.multi .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .gal.multi .gi{border-radius:var(--r1);overflow:hidden;aspect-ratio:3/4;background:var(--soft)}
+  .gal.multi .gi img{width:100%;height:100%;object-fit:cover;display:block}
+  .gal.multi .pgrid.odd .gi:last-child{grid-column:1/-1;aspect-ratio:16/10}
+  .pd{align-items:start}
+  .pd .info{position:sticky;top:calc(var(--hh) + 6px)}
+}
+@media(max-width:899px){.gal .pgrid{display:none!important}}
