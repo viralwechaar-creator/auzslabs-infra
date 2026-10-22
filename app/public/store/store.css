@@ -896,3 +896,28 @@ footer .col a,footer .col span{font-size:9.5px}
   .pd .info{position:sticky;top:calc(var(--hh) + 6px)}
 }
 @media(max-width:899px){.gal .pgrid{display:none!important}}
+
+/* phone product page (reference): big cover picture, white details card, large pill sizes, stacked buttons, grey tabs card */
+@media(max-width:899px){
+  .gal .main{border-radius:22px;aspect-ratio:3/4.2}
+  .gal .swp img,.gal .main>img{object-fit:cover}
+  .gal .swp img{width:100%;height:100%}
+  .gal .main .ct{left:16px;right:auto;bottom:14px;background:none;color:#fff;font-size:13px;font-weight:500;padding:0;text-shadow:0 1px 8px rgba(0,0,0,.5)}
+  .gal .dots3{display:none}
+  .info{background:#fff;border:1px solid var(--line);border-radius:22px;padding:14px 12px 16px;box-shadow:none}
+  .info .nm{font-size:17px;font-weight:800}
+  .info .pr{font-size:13px;font-weight:500;color:#555}
+  .info .fwrap{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  .info .sz{min-height:40px;height:40px;border-radius:20px;border:1px solid #d9d9d9;background:#fff;font-size:12px;font-weight:600;color:#000}
+  .info .sz.on{background:#000;color:#fff;border-color:#000;box-shadow:0 6px 14px rgba(0,0,0,.25)}
+  .info .sz.off{color:#aaa;text-decoration:line-through}
+  .info .tiny{background:#f0f0f0;border-radius:10px;padding:8px 12px;font-size:11px;text-decoration:none!important;color:#000!important}
+  .info .row2{display:grid;grid-template-columns:1fr;gap:10px}
+  .info .row2 .btn{height:52px;border-radius:26px;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;width:100%}
+  .info .row2 .btn.out{background:#fff;border:1.5px solid #000;color:#000}
+  .info .row2 .btn:not(.out){background:#000;color:#fff}
+  .info .row2.fx .btn{height:40px;font-size:11px}
+  .tabs2 .tb{background:#f0f0f0;border-radius:16px;padding:12px}
+  .tabs2 .tr{background:#f0f0f0;border-radius:16px 16px 0 0;padding:0 8px;margin:0;border-bottom:0}
+  .tabs2 .tr button{font-size:12px;padding:12px 2px}
+}
