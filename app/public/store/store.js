@@ -23,6 +23,7 @@ function add(el, kids) { for (const k of kids.flat(9)) { if (k == null || k === 
 const clear = (el) => { while (el.firstChild) el.removeChild(el.firstChild); return el; };
 const IC = {
   menu: 'M4 8h16M4 16h16', bag: 'M6 8h12l-1 12H7L6 8Zm3 0V6a3 3 0 0 1 6 0v2', mark: 'M7 4h10v17l-5-4-5 4V4Z', pin: 'M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21Zm0-8.8a2.7 2.7 0 1 0 0-5.4 2.7 2.7 0 0 0 0 5.4Z',
+  dense: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z', big: 'M4 5h16v14H4z',
   search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Zm9 3-4.2-4.2', x: 'M6 6l12 12M18 6 6 18', plus: 'M12 5v14M5 12h14', left: 'M15 6l-6 6 6 6', right: 'M9 6l6 6-6 6',
   user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 9a7 7 0 0 1 14 0',
   chat: 'M5 6h14v9H10l-5 4V6Z', home: 'M4 11 12 4l8 7v9h-5v-6H9v6H4v-9Z', compass: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm3-12-2 5-5 2 2-5 5-2Z', filter: 'M4 7h10M18 7h2M4 17h2M10 17h10M14 5v4M6 15v4',
@@ -402,16 +403,18 @@ function pagedGrid(list) {
 V.shop = (v) => {
   const q = q$(); const list = filterSet(q); const cols = D.collections;
   const act = []; const lab = { cat: 'Type', colour: 'Colour', fam: 'Colour', size: 'Size', gender: '', stock: 'In stock', new: 'New in' };
+  let dens = false; try { dens = localStorage.getItem('st.dens') === '1'; } catch (x) {}
+  const gw = E('div', { class: 'gw' + (dens ? ' dense' : '') });
   const colName = q.col ? (cols.find((x) => x.id === q.col) || {}).name : '';
   const title = colName || q.cat || (q.new ? 'New arrivals' : 'All products');
   for (const k of ['cat', 'colour', 'fam', 'size', 'gender', 'stock', 'new', 'min', 'max']) if (q[k]) act.push([k, k === 'stock' ? 'In stock' : k === 'new' ? 'New in' : k === 'min' ? 'From ' + inr(q[k]) : k === 'max' ? 'Up to ' + inr(q[k]) : (lab[k] ? lab[k] + ': ' : '') + q[k]]);
   if (q.col) act.push(['col', colName || 'Collection']);
   v.append(E('div', { class: 'crumbs' }, E('a', { href: link('') }, 'Home'), ' / ', title),
-    E('div', { class: 'shophd' }, E('div', null, E('h1', null, title), E('div', { class: 'mut tiny' }, list.length + (list.length === 1 ? ' piece' : ' pieces'))), E('button', { class: 'btn soft', onclick: (e) => refine(e.currentTarget) }, icon('filter'), 'Refine')),
+    E('div', { class: 'shophd' }, E('div', null, E('h1', null, title), E('div', { class: 'mut tiny' }, list.length + (list.length === 1 ? ' piece' : ' pieces'))), E('div', { class: 'shact' }, E('button', { class: 'btn soft icb', 'aria-label': 'Picture view', title: 'Picture view', onclick: (e) => { const on = !gw.classList.contains('dense'); gw.classList.toggle('dense', on); gw.classList.add('flip'); setTimeout(() => gw.classList.remove('flip'), 320); try { localStorage.setItem('st.dens', on ? '1' : '0'); } catch (x) {} e.currentTarget.replaceChildren(icon(on ? 'big' : 'dense')); } }, icon(dens ? 'big' : 'dense')), E('button', { class: 'btn soft', onclick: (e) => refine(e.currentTarget) }, icon('filter'), 'Refine'))),
     act.length ? E('div', { class: 'chips' }, act.map(([k, l]) => E('button', { class: 'chip on', onclick: () => setQ({ [k]: '' }) }, l, E('span', { class: 'x' }, '×')))) : null,
     !act.length && [...new Set(STY.map((s) => s.category))].length > 1 ? E('div', { class: 'chips' }, [...new Set(STY.map((s) => s.category).filter(Boolean))].map((c) => E('button', { class: 'chip', onclick: () => setQ({ cat: c }) }, c))) : null,
     (q.cat || list.length === STY.length) ? stack(list, q.cat ? q.cat : 'All products') : null,
-    list.length ? pagedGrid(list) : E('div', { class: 'empty' }, E('h2', null, 'Nothing matches'), E('div', { class: 'mut' }, 'Try removing a filter.'), E('a', { class: 'btn', href: link('shop') }, 'Clear filters')));
+    list.length ? (gw.append(pagedGrid(list)), gw) : E('div', { class: 'empty' }, E('h2', null, 'Nothing matches'), E('div', { class: 'mut' }, 'Try removing a filter.'), E('a', { class: 'btn', href: link('shop') }, 'Clear filters')));
 };
 V.collections = (v) => {
   const cols = D.collections.filter((x) => x.styleIds.some((id) => BYID[id]));

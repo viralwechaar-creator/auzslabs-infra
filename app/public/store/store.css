@@ -1016,3 +1016,14 @@ body.homehero .announce{display:none}
   body.homehero .dock{transform:translateX(-50%) translateY(calc((1 - var(--dp,0)) * 150%));opacity:var(--dp,0);pointer-events:none;transition:none;will-change:transform,opacity}
   body.homehero.dockon .dock{pointer-events:auto}
 }
+
+/* picture view: a button next to Refine zooms the shop grid out to pictures only (no names, prices or controls) */
+.shact{display:flex;gap:6px;align-items:center}
+.btn.icb{width:34px;padding:0;display:inline-grid;place-items:center}.btn.icb svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.6}
+.gw .grid{transition:opacity .25s,transform .25s}.gw.flip .grid{opacity:.2;transform:scale(.97)}
+.gw.dense .grid{grid-template-columns:repeat(4,1fr)!important;gap:3px!important}
+@media(min-width:900px){.gw.dense .grid{grid-template-columns:repeat(8,1fr)!important}}
+.gw.dense .pc .in,.gw.dense .pc .bm,.gw.dense .pc .nx,.gw.dense .pc .dt,.gw.dense .pc .tag,.gw.dense .blank{display:none!important}
+.gw.dense .pc .sc{overflow:hidden}.gw.dense .pc .ph{border-radius:12px}
+/* tighter spacing in the shop and the product lists */
+.grid{gap:3px!important}.pc .in{padding:5px 2px 2px}.shophd{margin:4px 0 6px}.crumbs{margin:2px 0 4px}.chips{margin:0 0 6px}
