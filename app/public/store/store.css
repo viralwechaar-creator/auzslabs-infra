@@ -971,3 +971,10 @@ footer .col a,footer .col span{font-size:9.5px}
 .pd .info{position:relative;z-index:1}
 .gal.solo .main>img{max-height:none!important}
 @media(min-width:900px){.pd .info{position:sticky;top:calc(var(--hh) + 6px)}}
+
+/* one-picture cards: the card is exactly as tall as its picture, so there is no empty space above or below */
+.pc.one .ph{aspect-ratio:auto!important}
+.pc.one .sc{height:auto!important}
+.pc.one .sc a{display:block;width:100%;flex:0 0 100%}
+.pc.one .sc img{width:100%;height:auto!important;display:block;object-fit:cover}
+.grid{align-items:start}
