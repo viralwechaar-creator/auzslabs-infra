@@ -483,10 +483,23 @@ body.homehero .hero::before{content:"";position:absolute;left:0;right:0;top:0;he
   .brand{font-size:16px;max-width:none;width:100%;justify-self:stretch;justify-content:center;text-align:center;min-width:0}
   .top .r{gap:0}.top .ic{width:32px;height:32px}
   .menu-pill{flex:none}
-  #view{padding-bottom:120px}
+  #view{padding-bottom:0}
   .announce{position:relative;z-index:31;line-height:1.3;padding:8px 10px}
 }
 .shophd{padding-top:12px}
 /* size guide, stars, tracking (round 5) */
 .sgt{width:100%;border-collapse:collapse;font-size:10.5px;margin:8px 0}.sgt th,.sgt td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left}.sgt tr.hit td{background:#f1f1ef;font-weight:700}
 .stars{display:flex;gap:2px}.stars button{line-height:1;padding:2px}
+
+/* overlapping card stack: big centre card, neighbours tucked behind it (about 83% hidden), smaller and darker, swipe or auto-advance */
+.stk{position:relative;display:block;overflow:hidden;padding:0;margin:6px 0 4px;aspect-ratio:1/1.2;max-width:560px;margin-left:auto;margin-right:auto;touch-action:pan-y;user-select:none}
+.stk .sk{position:absolute;left:12.5%;top:0;width:75%;height:100%;max-width:none;flex:none;aspect-ratio:auto;margin:0;border-radius:22px;opacity:1;box-shadow:0 10px 30px rgba(0,0,0,.18);will-change:transform;transition:transform .6s cubic-bezier(.22,.8,.2,1),filter .6s,opacity .4s}
+.stk .sk:first-child{margin:0}.stk .sk.on{filter:none}
+.stk .sk .nm{flex-direction:column;align-items:center;justify-content:flex-end;height:55%;top:auto;text-align:center;background:linear-gradient(transparent,rgba(0,0,0,.45));padding:0 14px 18px;gap:2px;font-size:14px;font-weight:500}
+.stk .sk .nm b{font-size:11px;font-weight:500;opacity:.9}
+@media(prefers-reduced-motion:reduce){.stk .sk{transition:none}}
+/* no empty strip under the stores: the closing area is a dark panel so the white cards stand out */
+.ftwrap{margin:14px 0 0;padding:12px 0 104px;background:#161515;border-radius:26px 26px 0 0}
+.ftwrap .ftstrip{margin-top:0}.ftwrap footer{margin-bottom:0}
+@media(min-width:900px){.ftwrap{padding-bottom:28px}}
+.chatfab{box-shadow:0 0 0 2px #fff,0 6px 18px rgba(0,0,0,.3)}

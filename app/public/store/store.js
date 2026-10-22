@@ -206,17 +206,29 @@ function newest(n) { return [...STY].sort((a, b) => String(b.createdAt).localeCo
 // slide stack: a deck of product cards that slides by itself; the centre card is full size, its neighbours peek out
 function stack(list, label) {
   list = list.filter((s) => photos(s)[0]).slice(0, 14); if (list.length < 3) return null;
-  const deck = E('div', { class: 'stk' }, list.map((s) => E('a', { class: 'sk', href: link('p/' + s.id) }, E('img', { src: photos(s)[0], alt: '', loading: 'lazy' }), E('div', { class: 'nm' }, E('span', null, s.name), E('b', null, inr(s.price))))));
-  const items = [...deck.children]; let hold = false, holdT = 0;
-  const near = () => { const mid = deck.scrollLeft + deck.clientWidth / 2; let bi = 0, bd = 1e9; items.forEach((el, i) => { const d = Math.abs(el.offsetLeft + el.offsetWidth / 2 - mid); if (d < bd) { bd = d; bi = i; } }); return bi; };
-  const mark = () => { const n = near(); items.forEach((el, i) => el.classList.toggle('on', i === n)); };
-  const go = (i) => { const el = items[i]; if (el) deck.scrollTo({ left: el.offsetLeft - (deck.clientWidth - el.offsetWidth) / 2, behavior: 'smooth' }); };
-  deck.addEventListener('scroll', () => requestAnimationFrame(mark), { passive: true });
-  const pause = () => { hold = true; clearTimeout(holdT); holdT = setTimeout(() => { hold = false; }, 5000); };
-  ['pointerdown', 'touchstart', 'wheel', 'mouseenter'].forEach((ev) => deck.addEventListener(ev, pause, { passive: true }));
-  deck.addEventListener('mouseleave', () => { clearTimeout(holdT); holdT = setTimeout(() => { hold = false; }, 1500); });
-  setTimeout(mark, 60);
-  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) { const t = setInterval(() => { if (!document.body.contains(deck)) return clearInterval(t); if (hold || document.hidden) return; go((near() + 1) % items.length); }, 3200); }
+  const n = list.length; let cur = 0, hold = false, holdT = 0, moved = false;
+  const deck = E('div', { class: 'stk' }, list.map((s, i) => E('a', { class: 'sk', href: link('p/' + s.id) }, E('img', { src: photos(s)[0], alt: '', loading: i < 3 ? 'eager' : 'lazy', draggable: 'false' }), E('div', { class: 'nm' }, E('span', null, s.name), E('b', null, inr(s.price))))));
+  const items = [...deck.children];
+  // each card sits behind the centre card, shifted a little to the side, smaller and darker the further it is
+  const OFF = [0, 17, 30], SC = [1, .87, .76], BR = [1, .62, .4];
+  const place = () => items.forEach((el, i) => {
+    let d = i - cur; if (d > n / 2) d -= n; if (d < -n / 2) d += n; const a = Math.abs(d), sg = d < 0 ? -1 : 1;
+    if (a > 2) { el.style.opacity = '0'; el.style.pointerEvents = 'none'; el.style.zIndex = '0'; el.style.transform = 'translateX(' + sg * OFF[2] + '%) scale(' + SC[2] * .9 + ')'; return; }
+    el.style.opacity = '1'; el.style.pointerEvents = 'auto'; el.style.zIndex = String(10 - a);
+    el.style.transform = 'translateX(' + sg * OFF[a] + '%) scale(' + SC[a] + ')'; el.style.filter = a ? 'brightness(' + BR[a] + ')' : 'none';
+    el.classList.toggle('on', a === 0);
+  });
+  const go = (i) => { cur = ((i % n) + n) % n; place(); };
+  const pause = (ms) => { hold = true; clearTimeout(holdT); holdT = setTimeout(() => { hold = false; }, ms || 5000); };
+  let x0 = null;
+  deck.addEventListener('pointerdown', (e) => { x0 = e.clientX; moved = false; pause(); });
+  deck.addEventListener('pointermove', (e) => { if (x0 != null && Math.abs(e.clientX - x0) > 10) moved = true; });
+  const end = (e) => { if (x0 == null) return; const dx = e.clientX - x0; x0 = null; if (Math.abs(dx) > 36) go(cur + (dx < 0 ? 1 : -1)); };
+  deck.addEventListener('pointerup', end); deck.addEventListener('pointercancel', () => { x0 = null; });
+  items.forEach((el, i) => el.addEventListener('click', (e) => { if (moved) { e.preventDefault(); moved = false; return; } if (i !== cur) { e.preventDefault(); go(i); pause(); } }));
+  deck.addEventListener('mouseenter', () => pause(60000)); deck.addEventListener('mouseleave', () => pause(1500));
+  place();
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) { const t = setInterval(() => { if (!document.body.contains(deck)) return clearInterval(t); if (hold || document.hidden) return; go(cur + 1); }, 3200); }
   return E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, label)), deck);
 }
 function gridOf(list, withBlanks) {
