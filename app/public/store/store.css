@@ -832,3 +832,15 @@ footer .col a,footer .col span{font-size:9.5px}
 .dtl dd{color:#5a5754;font-weight:400}
 .info .sz,.info .btn{font-weight:700}
 .info .tiny{font-weight:600}
+
+/* gallery v2 (desktop): many pictures = big fixed main at left + thin scrolling column at right;
+   one picture = suggestion cards on ONE side; tighter gaps */
+@media(min-width:900px){
+  .gal{gap:6px;grid-template-columns:minmax(0,1fr) 96px}
+  .gal .main{grid-column:1;grid-row:1}
+  .gal .rail{grid-column:2;grid-row:1;gap:6px}
+  .gal .th{width:100%}
+  .gal.solo{grid-template-columns:190px minmax(0,1fr)}
+  .gal.solo .sugg{display:flex;grid-column:1;grid-row:1;flex-direction:column;gap:8px;overflow-y:auto;scrollbar-width:none;min-height:0}
+  .gal.solo .main{grid-column:2;grid-row:1}
+}
