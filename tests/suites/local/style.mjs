@@ -55,6 +55,19 @@ export default async function run({ browser, stack }) {
     await fails(staff, 'sty_set_colour_photos', { p_id: shirt.id, p: { Blue: ['/u/x.webp'] } }, /does not allow/i);
   });
 
+  await s.check('Which picture shows where: card, hero and banner come from the style\'s own pictures only, staff cannot change them, collections carry a picture', async () => {
+    let r = await ok(owner, 'sty_set_photo_use', { p_id: shirt.id, p: { card: '/u/blue-2.webp', hero: '/u/white-1.webp', banner: '/u/not-mine.webp' } });
+    assert(r.photoUse.card === '/u/blue-2.webp' && r.photoUse.hero === '/u/white-1.webp' && !('banner' in r.photoUse), JSON.stringify(r.photoUse));
+    r = await ok(owner, 'sty_set_photo_use', { p_id: shirt.id, p: { card: '' } }); assert(!('card' in r.photoUse) && r.photoUse.hero === '/u/white-1.webp', 'clearing card failed: ' + JSON.stringify(r.photoUse));
+    await fails(staff, 'sty_set_photo_use', { p_id: shirt.id, p: { card: '/u/blue-1.webp' } }, /does not allow/i);
+    const cat = await ok(owner, 'sty_catalog', {}); assert(cat.find((x) => x.id === shirt.id).photoUse.hero === '/u/white-1.webp', 'catalogue lacks photoUse');
+    const c = await ok(manager, 'sty_collection_save', { p: { name: 'Picture test', image: '/u/col.webp' } });
+    const list = await ok(manager, 'sty_collections_list', {}); assert(list.find((x) => x.id === c.id).image === '/u/col.webp', 'collection picture missing');
+    await ok(manager, 'sty_collection_save', { p: { id: c.id, name: 'Picture test', image: '' } });
+    assert(!(await ok(manager, 'sty_collections_list', {})).find((x) => x.id === c.id).image, 'collection picture not cleared');
+    await ok(manager, 'sty_collection_delete', { p_id: c.id });
+  });
+
   await s.check('Product details (type, fabric, collection, wash care, weight, description) are saved and grouped in analytics', async () => {
     const r = await ok(owner, 'sty_save_style', { p: { name: 'Linen Kurta', category: 'Kurtas', subcategory: 'Long', fabric: 'Linen', collection: 'Summer 26', washcare: 'Machine wash cold', weightG: 240, description: 'Light kurta', details: 'Side slits', price: 1500, colours: ['Beige'], sizes: ['M'], opening: { qty: 4, unitCost: 600 } } });
     assert(r.fabric === 'Linen' && r.collection === 'Summer 26' && r.washcare === 'Machine wash cold' && Number(r.weightG) === 240 && r.subcategory === 'Long' && r.description === 'Light kurta' && r.details === 'Side slits', JSON.stringify(r));

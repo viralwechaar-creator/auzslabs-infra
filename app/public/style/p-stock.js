@@ -130,12 +130,23 @@ function styleForm(s, done) {
   // pictures per colour: the till switches to these when a colour is picked
   const colPics = {}; const colHost = h('div', { class: 'grid' }); const colInit = (s && s.colourPhotos) || {};
   const paintColPics = () => {
-    const cs = cols.peek(); cs.forEach((c) => { if (!colPics[c]) colPics[c] = photoEditor((colInit[c] || [])[0] || '', (colInit[c] || []).slice(1)); });
+    const cs = cols.peek(); cs.forEach((c) => { if (!colPics[c]) colPics[c] = photoEditor((colInit[c] || [])[0] || '', (colInit[c] || []).slice(1)); colPics[c].onChange = () => { typeof paintUse === 'function' && paintUse(); }; });
     clear(colHost).append(...cs.map((c) => h('div', { class: 'card grid' }, h('div', { class: 'cap' }, c), colPics[c])));
     colWrap.style.display = cs.length ? '' : 'none';
   };
   const colWrap = h('div', { class: 'field' }, h('label', null, t('Pictures per colour')), h('div', { class: 'hint' }, t('Optional. When a colour is picked on the till, its pictures show instead.')), colHost);
   cols.onChange = paintColPics; paintColPics();
+  // where each picture shows on the online store: product card, home hero, collection banner
+  const use = Object.assign({}, (s && s.photoUse) || {}); const useHost = h('div', { class: 'grid' });
+  const allPics = () => { const out = []; const add = (u) => { if (u && !out.includes(u)) out.push(u); }; const g = pics.get(); add(g.main); g.extra.forEach(add); cols.peek().forEach((c) => { const x = colPics[c] && colPics[c].get(); if (x) { add(x.main); x.extra.forEach(add); } }); return out; };
+  const paintUse = () => {
+    const all = allPics(); const roles = [['card', t('Product card'), t('Shop grids and the card stack')], ['hero', t('Home hero'), t('The big picture at the top of the shop')], ['banner', t('Collection banner'), t('Wide collection pictures')]];
+    Object.keys(use).forEach((k) => { if (!all.includes(use[k])) delete use[k]; });
+    clear(useHost).append(...roles.map(([k, label, hint]) => h('div', null, h('div', { class: 'cap' }, label + ' · ' + hint),
+      h('div', { class: 'pe-grid' }, all.length ? all.map((u, i) => h('button', { class: 'pe-t' + ((use[k] || all[0]) === u ? ' on' : ''), type: 'button', style: { outline: (use[k] || all[0]) === u ? '2px solid var(--accent, #800020)' : '' }, title: i === 0 && !use[k] ? t('Default') : '', onclick: () => { if (i === 0) delete use[k]; else use[k] = u; paintUse(); } }, h('img', { src: u, alt: '' }))) : h('div', { class: 'hint' }, t('Add pictures first')) ))));
+  };
+  const useWrap = h('div', { class: 'field' }, h('label', null, t('Where each picture shows')), h('div', { class: 'hint' }, t('Optional. By default the main picture is used everywhere. Tap a picture to use it for that place.')), useHost);
+  pics.onChange = paintUse; paintUse();
   // show on the till as: normal / limited stock (exclusivity, display only) / sold out (cannot be added to a bill)
   let badge = (s && s.badge) || '';
   const badgeHost = h('div', { class: 'chips' });
@@ -147,7 +158,7 @@ function styleForm(s, done) {
   const body = h('div', { class: 'grid edgrid' }, spanOf(pics), field(t('Name'), f.name), field(t('Product code'), f.code, t('Used to find the style and as the start of each size barcode label. Leave empty to skip.')), field(t('Category'), cat, t('Type any name to add your own category. It appears everywhere once the style is saved.')), spanOf(catList), h('div', { class: 'two' }, field(t('Brand'), f.brand), field(t('Gender'), f.gender)),
     h('div', { class: 'two' }, field(t('Selling price'), f.price), field(t('MRP'), f.mrp)), seeCost ? h('div', { class: 'two' }, field(t('Cost'), f.cost), field(t('Tax %'), f.tax)) : field(t('Tax %'), f.tax),
     h('div', { class: 'two' }, field(t('Type'), f.type), field(t('Fabric'), f.fabric)), h('div', { class: 'two' }, field(t('Collection'), f.collection), field(t('Weight') + ' (g)', f.weight)),
-    spanOf(cols), spanOf(colWrap), spanOf(szs), spanOf(badgeField), spanOf(field(t('Description'), f.desc)), spanOf(field(t('Details'), f.det)), spanOf(field(t('Wash care'), f.wash)),
+    spanOf(cols), spanOf(colWrap), spanOf(useWrap), spanOf(szs), spanOf(badgeField), spanOf(field(t('Description'), f.desc)), spanOf(field(t('Details'), f.det)), spanOf(field(t('Wash care'), f.wash)),
     isNew ? h('div', { class: 'two' }, field(t('Opening stock per size'), f.qty), h('div')) : null,
     spanOf(h('details', { class: 'more' }, h('summary', null, t('More details')), h('div', { class: 'grid', style: { marginTop: '10px' } }, h('div', { class: 'two' }, field(t('Season'), f.season), field(t('HSN code'), f.hsn))))));
   sheet({ title: isNew ? t('New style') : t('Edit style'), full: true, wide: true, body, actions: [
@@ -164,6 +175,7 @@ function styleForm(s, done) {
       const r = await api('sty_save_style', { p });
       const cp = {}; cols.peek().forEach((c) => { const g = colPics[c] && colPics[c].get(); if (g && g.main) cp[c] = [g.main, ...g.extra]; });
       if (Object.keys(cp).length || Object.keys(colInit).length) await api('sty_set_colour_photos', { p_id: r.id, p: cp });
+      { const want = JSON.stringify(Object.keys(use).sort().map((k) => [k, use[k]])), had = JSON.stringify(Object.keys((s && s.photoUse) || {}).sort().map((k) => [k, s.photoUse[k]])); if (want !== had) await api('sty_set_photo_use', { p_id: r.id, p: { card: use.card || '', hero: use.hero || '', banner: use.banner || '' } }); }
       if (badge !== ((s && s.badge) || '')) await api('sty_set_badge', { p_id: r.id, p_badge: badge || null });
       close(); S.catAt = 0; toast(t('Saved'));
       done && done();
