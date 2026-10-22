@@ -422,11 +422,11 @@ V.wishlist = (v) => {
 V.p = (v, id) => {
   const s = BYID[id];
   if (!s) { v.append(E('div', { class: 'empty' }, E('h2', null, 'Piece not found'), E('a', { class: 'btn', href: link('shop') }, 'Shop all'))); return; }
-  let colour = colours(s)[0] || '', size = '', qty = 1; const open = { d: true }; let folded = false, pinned = false; seen(s.id);
+  let colour = colours(s)[0] || '', size = '', qty = 1; let tab = 'd'; let folded = false, pinned = false; seen(s.id);
   const gal = E('div', { class: 'gal' }), info = E('div', { class: 'info' });
   let cur = 0;
   const paintGal = () => {
-    const ims = photosFor(s, colour); clear(gal); gal.classList.toggle('solo', ims.length <= 1);
+    const ims = photosFor(s, colour); clear(gal); gal.classList.toggle('solo', ims.length <= 1); gal.classList.remove('multi');
     if (!ims.length) { gal.append(E('div', { class: 'main' }, placeholder(s.name))); return; }
     const main = E('div', { class: 'main', style: { '--bgi': 'url("' + (ims[cur] || ims[0]) + '")' } }, E('img', { src: ims[cur] || ims[0], alt: s.name }), E('div', { class: 'ct' }, (cur + 1) + ' / ' + ims.length));
     const rail = E('div', { class: 'rail' }, ims.map((u, i) => E('button', { class: 'th' + (i === cur ? ' on' : ''), 'aria-label': 'Picture ' + (i + 1), onclick: () => { cur = i; paintGal(); } }, E('img', { src: u, alt: '', loading: 'lazy' }))));
@@ -435,7 +435,9 @@ V.p = (v, id) => {
       const ct = main.querySelector('.ct'), dots = E('div', { class: 'dots3' }, ims.map((_, i) => E('i', { class: i === cur ? 'on' : '' })));
       const swp = E('div', { class: 'swp' }, ims.map((u) => E('img', { src: u, alt: s.name, loading: 'lazy' })));
       swp.addEventListener('scroll', () => { const i = Math.max(0, Math.min(ims.length - 1, Math.round(swp.scrollLeft / (swp.clientWidth || 1)))); if (i === cur) return; cur = i; ct.textContent = (i + 1) + ' / ' + ims.length; [...dots.children].forEach((d, k) => d.classList.toggle('on', k === i)); rail.querySelectorAll('.th').forEach((b, k) => b.classList.toggle('on', k === i)); }, { passive: true });
-      main.append(swp, dots); gal.append(main, rail);
+      main.append(swp, dots);
+      const pgrid = E('div', { class: 'pgrid' + (ims.length % 2 ? ' odd' : '') }, ims.map((u) => E('div', { class: 'gi' }, E('img', { src: u, alt: s.name, loading: 'lazy' }))));
+      gal.classList.add('multi'); gal.append(main, rail, pgrid);
       requestAnimationFrame(() => { swp.scrollLeft = cur * swp.clientWidth; });
       return;
     }
@@ -464,7 +466,7 @@ V.p = (v, id) => {
       chosen && chosen.left > 0 && chosen.left <= 3 ? E('div', { class: 'left fx' }, 'Only ' + chosen.left + ' left in this size') : null,
       gone ? E('div', { class: 'note fx' }, 'This piece is sold out right now.') : E('div', { class: 'fx', style: { display: 'flex', alignItems: 'center', gap: '10px' } }, E('span', { class: 'lbl' }, 'Qty'), E('div', { class: 'qty' }, E('button', { onclick: () => { qty = Math.max(1, qty - 1); paintInfo(); } }, '–'), E('span', null, qty), E('button', { onclick: () => { qty = Math.min(chosen ? (chosen.left >= 9 ? 20 : chosen.left) : 9, qty + 1); paintInfo(); } }, '+'))),
       E('div', { class: 'row2' }, E('button', { class: 'btn out', disabled: gone, onclick: () => need(chosen) && (addBag(chosen.id, qty)) }, 'Add to bag'), E('button', { class: 'btn', disabled: gone, onclick: () => { if (!need(chosen)) return; addBag(chosen.id, qty); go('checkout'); } }, 'Buy now')),
-      E('div', { class: 'acc fx' }, [['d', 'Details & Description'], ['w', 'Washcare'], ['s', 'Shipping & returns']].map(([k, l]) => E('div', { class: 'ai' + (open[k] ? ' on' : '') }, E('button', { 'aria-expanded': String(!!open[k]), onclick: () => { open[k] = !open[k]; paintInfo(); } }, E('span', null, l), E('span', { class: 'pl' }, open[k] ? '–' : '+')), open[k] ? E('div', { class: 'ab' }, dtl(k)) : null))),
+      E('div', { class: 'tabs2 fx' }, E('div', { class: 'tr' }, [['d', 'Details & Description'], ['w', 'Washcare'], ['s', 'Shipping']].map(([k, l]) => E('button', { class: k === tab ? 'on' : '', onclick: () => { tab = k; paintInfo(); } }, l))), E('div', { class: 'tb' }, dtl(tab))),
       E('div', { class: 'row2 fx' }, E('button', { class: 'btn out sm', onclick: share }, 'Share'), gone ? E('button', { class: 'btn out sm', onclick: notify }, 'Notify me') : null),
       E('button', { class: 'unfold', onclick: () => { pinned = true; folded = false; info.classList.remove('fold'); } }, 'Show size, colour and details'));
   };
