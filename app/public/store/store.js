@@ -67,6 +67,8 @@ function recentBand(except, title) {
   return E('section', { class: 'band' }, E('div', { class: 'hd' }, E('h2', null, title || 'Recently viewed'), E('button', { class: 'btn sm out', onclick: () => { LS.set('recent', []); route(); } }, 'Clear')), E('div', { class: 'row' }, list.map((x) => card(x))));
 }
 const photos = (s) => { const out = []; const push = (u) => { if (u && !out.includes(u)) out.push(u); }; push(s.photoUrl); (s.photos || []).forEach(push); Object.values(s.colourPhotos || {}).forEach((a) => (a || []).forEach(push)); return out; };
+const pickPic = (s, role) => { const u = (s.photoUse || {})[role]; return u && photos(s).includes(u) ? u : photos(s)[0]; };
+const withFirst = (list, u) => (u && list.includes(u) ? [u, ...list.filter((x) => x !== u)] : list);
 const photosFor = (s, colour) => { const cp = (s.colourPhotos || {})[colour] || []; const rest = photos(s).filter((u) => !cp.includes(u)); return [...cp, ...rest]; };
 const leftOf = (s) => s.variants.reduce((a, v) => a + v.left, 0);
 const isGone = (s) => s.badge === 'soldout' || leftOf(s) === 0;
@@ -101,7 +103,7 @@ function placeholder(name) { return E('div', { style: { height: '100%', display:
 
 function card(s, opt) {
   opt = opt || {};
-  const ims = photos(s), gone = isGone(s), on = wish.includes(s.id);
+  const ims = withFirst(photos(s), pickPic(s, 'card')), gone = isGone(s), on = wish.includes(s.id);
   const sc = E('div', { class: 'sc' });
   const dt = E('div', { class: 'dt' });
   const list = ims.length ? ims.slice(0, 6) : [null];
@@ -256,7 +258,7 @@ function newest(n) { return [...STY].sort((a, b) => String(b.createdAt).localeCo
 function stack(list, label) {
   list = list.filter((s) => photos(s)[0]).slice(0, 14); if (list.length < 3) return null;
   const n = list.length; let cur = 0, hold = false, holdT = 0, moved = false;
-  const deck = E('div', { class: 'stk' }, list.map((s, i) => E('a', { class: 'sk', href: link('p/' + s.id) }, E('img', { src: photos(s)[0], alt: '', loading: i < 3 ? 'eager' : 'lazy', draggable: 'false' }), E('div', { class: 'nm' }, E('span', null, s.name), E('b', null, inr(s.price))))));
+  const deck = E('div', { class: 'stk' }, list.map((s, i) => E('a', { class: 'sk', href: link('p/' + s.id) }, E('img', { src: pickPic(s, 'card'), alt: '', loading: i < 3 ? 'eager' : 'lazy', draggable: 'false' }), E('div', { class: 'nm' }, E('span', null, s.name), E('b', null, inr(s.price))))));
   const items = [...deck.children];
   // each card sits behind the centre card, shifted a little to the side, smaller and darker the further it is
   const wide = () => matchMedia('(min-width: 900px)').matches, SC = [1, .87, .76], BR = [1, .62, .4];
@@ -306,7 +308,7 @@ function gridOf(list, withBlanks) {
 }
 V.home = (v) => {
   const c = cfg(); const hi = (c.heroImages || []).filter(Boolean);
-  const fallback = hi.length ? hi : newest(5).map((s) => photos(s)[0]).filter(Boolean);
+  const fallback = hi.length ? hi : [...STY.filter((s) => (s.photoUse || {}).hero), ...newest(5)].filter((s, i, a) => a.indexOf(s) === i).slice(0, 5).map((s) => pickPic(s, 'hero')).filter(Boolean);
   let hero;
   if (fallback.length) {
     let i = 0; const sls = fallback.map((u, k) => E('div', { class: 'sl' + (k === 0 ? ' on' : '') }, E('img', { src: u, alt: '', loading: k ? 'lazy' : 'eager' })));
@@ -331,8 +333,8 @@ V.home = (v) => {
   });
   // 3. big collection pictures
   cols.slice(0, 3).forEach((x) => {
-    const s0 = x.styleIds.map((id) => BYID[id]).find((s) => s && photos(s)[0]); if (!s0) return;
-    v.append(E('a', { class: 'bigcol', href: link('shop?col=' + x.id) }, E('img', { src: photos(s0)[0], alt: '', loading: 'lazy' }), E('div', { class: 'cap' }, E('div', { class: 't' }, x.name), E('span', { class: 'btn' }, 'Shop now'))));
+    const s0 = x.styleIds.map((id) => BYID[id]).find((s) => s && photos(s)[0]); const pic = x.image || (s0 && pickPic(s0, 'banner')); if (!pic) return;
+    v.append(E('a', { class: 'bigcol', href: link('shop?col=' + x.id) }, E('img', { src: pic, alt: '', loading: 'lazy' }), E('div', { class: 'cap' }, E('div', { class: 't' }, x.name), E('span', { class: 'btn' }, 'Shop now'))));
   });
   // 4. products again
   if (STY.length > 4) v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'All products'), E('a', { class: 'btn sm out', href: link('shop') }, 'Shop all')), gridOf(STY.slice(0, 12), true)));
@@ -401,7 +403,7 @@ V.shop = (v) => {
 };
 V.collections = (v) => {
   const cols = D.collections.filter((x) => x.styleIds.some((id) => BYID[id]));
-  v.append(E('div', { class: 'shophd' }, E('h1', null, 'Collections')), cols.length ? E('div', { class: 'deck', style: { flexWrap: 'wrap', overflow: 'visible' } }, cols.map((x) => { const s0 = x.styleIds.map((id) => BYID[id]).find((s) => s && photos(s)[0]); return E('a', { class: 'dk' + (s0 ? '' : ' ph'), href: link('shop?col=' + x.id) }, s0 ? E('img', { src: photos(s0)[0], alt: '', loading: 'lazy' }) : null, E('div', { class: 'nm' }, x.name)); })) : E('div', { class: 'empty' }, E('div', { class: 'mut' }, 'No collections yet.'), E('a', { class: 'btn', href: link('shop') }, 'Shop all')));
+  v.append(E('div', { class: 'shophd' }, E('h1', null, 'Collections')), cols.length ? E('div', { class: 'deck', style: { flexWrap: 'wrap', overflow: 'visible' } }, cols.map((x) => { const s0 = x.styleIds.map((id) => BYID[id]).find((s) => s && photos(s)[0]); const pic = x.image || (s0 && pickPic(s0, 'banner')); return E('a', { class: 'dk' + (pic ? '' : ' ph'), href: link('shop?col=' + x.id) }, pic ? E('img', { src: pic, alt: '', loading: 'lazy' }) : null, E('div', { class: 'nm' }, x.name)); })) : E('div', { class: 'empty' }, E('div', { class: 'mut' }, 'No collections yet.'), E('a', { class: 'btn', href: link('shop') }, 'Shop all')));
 };
 V.wishlist = (v) => {
   const list = wish.map((id) => BYID[id]).filter(Boolean);

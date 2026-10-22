@@ -214,8 +214,9 @@ function photoEditor(main, extra) {
       h('div', null, h('div', { class: 'cap' }, t('More pictures') + ' (' + st.extra.length + ')'), h('div', { class: 'pe-grid' },
         st.extra.map((u, i) => h('div', { class: 'pe-t' }, h('img', { src: u, alt: '' }), h('div', { class: 'pe-a' }, h('button', { type: 'button', title: t('Make main'), onclick: () => { const old = st.main; st.main = u; st.extra.splice(i, 1); if (old) st.extra.unshift(old); paint(); } }, icon('check', 14)), h('button', { type: 'button', title: t('Remove'), onclick: () => { st.extra.splice(i, 1); paint(); } }, icon('x', 14))))),
         h('button', { class: 'pe-add', type: 'button', onclick: () => pick((u) => { if (!st.main) st.main = u; else st.extra.push(u); }) }, icon('plus', 22)))));
+    host.onChange && host.onChange();
   };
-  paint(); host.get = () => st; return host;
+  paint(); host.get = () => st; host.onChange = null; const _p = paint; return host;
 }
 
 // ---- colour families (Blues, Reds ...) ----
