@@ -795,3 +795,8 @@ footer .col a,footer .col span{font-size:9.5px}
   .dock svg,.dock svg.f{width:19px!important;height:19px!important}
   .dock .pill .n{right:calc(50% - 19px)}
 }
+
+/* dock v5: the white pill must beat the earlier transparent rule (higher specificity) */
+@media(max-width:899px){
+  .dock>div.pill:not(.chat),.dock .pill{background:#fff!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;box-shadow:0 6px 22px rgba(0,0,0,.16),0 0 0 .5px rgba(0,0,0,.06)!important}
+}
