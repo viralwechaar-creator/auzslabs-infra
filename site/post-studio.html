@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>AUZslab Post Studio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Anton&family=Bebas+Neue&family=Syne:wght@400;600;800&family=Space+Grotesk:wght@400;500;700&family=Instrument+Serif&family=DM+Serif+Display&family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@500;800&family=Silkscreen:wght@400;700&family=Unbounded:wght@400;700&family=Space+Mono:wght@400;700&display=swap">
+<style>
+/* Layout: a quiet studio bench. Template shelf on top, big preview left, controls right; stacks on phones.
+   Colour: ink, paper, two greys, one wine. Type: Archivo (display, tight), Inter Tight (text), JetBrains Mono (labels). */
+:root{--bg:#0b0b0c;--panel:#121214;--line:#26262a;--fg:#f2f1ef;--dim:#8d8c90;--faint:#5a595d;--wine:#c2183f;--wine-d:#800020;color-scheme:dark;
+ --disp:'Archivo','Helvetica Neue',Arial,sans-serif;--body:'Inter Tight','Helvetica Neue',Arial,sans-serif;--mono:'JetBrains Mono',ui-monospace,Menlo,monospace}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:14px;line-height:1.5;margin:0;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1240px;margin:0 auto;display:grid;gap:22px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.brand svg{width:22px;height:22px}
+.tabs{display:flex;gap:6px}
+.tab{font:500 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--dim);background:none;border:1px solid var(--line);border-radius:99px;padding:8px 14px;cursor:pointer}
+.tab[aria-selected=true]{color:var(--bg);background:var(--fg);border-color:var(--fg)}
+.tab:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--wine);outline-offset:2px}
+.shelf{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;scrollbar-width:thin}
+.th{flex:0 0 auto;width:112px;background:none;border:1px solid transparent;border-radius:8px;padding:5px;cursor:pointer;color:var(--dim);font:500 10px var(--mono);letter-spacing:.06em;text-transform:uppercase;text-align:left}
+.th canvas{display:block;width:100%;height:auto;border-radius:4px;margin-bottom:6px}
+.th[aria-pressed=true]{border-color:var(--fg);color:var(--fg)}
+.bench{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:26px;align-items:start}
+.stage{display:grid;gap:12px;justify-items:center;min-width:0}
+.stage canvas{width:100%;max-width:560px;height:auto;border-radius:3px;box-shadow:0 30px 80px rgba(0,0,0,.55)}
+.cap{font:400 11px var(--mono);color:var(--faint);letter-spacing:.04em}
+.panel{display:grid;gap:18px;min-width:0}
+.grp{display:grid;gap:10px;border-top:1px solid var(--line);padding-top:14px}
+.grp h3{margin:0;font:500 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+label.f{display:grid;gap:5px;font:500 11px var(--mono);color:var(--faint);letter-spacing:.04em;text-transform:uppercase}
+input[type=text],textarea,select{width:100%;background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px 11px;font:400 14px var(--body)}
+textarea{resize:vertical;min-height:70px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+input[type=range]{width:100%;accent-color:var(--wine)}
+.rg{display:grid;gap:2px}.rg span{display:flex;justify-content:space-between;font:500 11px var(--mono);color:var(--faint);letter-spacing:.04em;text-transform:uppercase}
+.btn{font:600 13px var(--body);border:1px solid var(--fg);background:var(--fg);color:var(--bg);border-radius:10px;padding:12px 16px;cursor:pointer}
+.btn.ghost{background:none;color:var(--fg);border-color:var(--line)}
+.btn:active{transform:scale(.98)}
+.chk{display:flex;align-items:center;gap:8px;font:500 12px var(--mono);color:var(--dim);letter-spacing:.04em;text-transform:uppercase}
+.chk input{accent-color:var(--wine);width:16px;height:16px}
+.sec{display:grid;gap:22px}
+.sec h2{margin:0;font:800 clamp(28px,5vw,52px)/1 var(--disp);letter-spacing:-.04em;text-wrap:balance}
+.lede{max-width:56ch;color:var(--dim);margin:0}
+.sw{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.sw div{border:1px solid var(--line);border-radius:10px;overflow:hidden;font:400 11px var(--mono);color:var(--dim)}
+.sw i{display:block;height:84px}.sw p{margin:0;padding:9px 11px;display:grid;gap:2px}.sw b{color:var(--fg);font-weight:500}
+.spec{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.spec>div{border:1px solid var(--line);border-radius:12px;padding:18px;display:grid;gap:10px;min-width:0}
+.spec small{font:500 11px var(--mono);color:var(--faint);letter-spacing:.08em;text-transform:uppercase}
+.rules{display:grid;gap:0;border-top:1px solid var(--line)}
+.rules div{display:grid;grid-template-columns:34px 1fr;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+.rules b{font:500 12px var(--mono);color:var(--wine)}
+.rules p{margin:0}.rules p span{color:var(--dim)}
+.ideas{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.idea{border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:12px;align-content:space-between;background:var(--panel)}
+.idea b{font:800 20px/1.1 var(--disp);letter-spacing:-.03em}
+.idea small{font:400 11px var(--mono);color:var(--faint);letter-spacing:.04em}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--fg);padding:16px;max-width:min(520px,calc(100vw - 24px))}
+dialog::backdrop{background:rgba(0,0,0,.7)}
+dialog img{width:100%;height:auto;display:block;border-radius:4px;max-height:64vh;object-fit:contain}
+.note{font:400 12px var(--mono);color:var(--dim)}
+[hidden]{display:none!important}
+.lib{display:flex;gap:8px;flex-wrap:wrap}.lib button{border:2px solid transparent;padding:0;border-radius:7px;background:none;cursor:pointer}.lib button[aria-pressed=true]{border-color:var(--wine)}.lib canvas{display:block;width:56px;height:56px;border-radius:5px}
+.tsample{font-size:30px;line-height:1.1;padding:10px 0;color:var(--fg);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+@media(max-width:900px){.bench{grid-template-columns:1fr}.stage canvas{max-width:100%}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+<header>
+  <div class="brand"><img alt="AUZslab" src="data:image/png;base64,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" style="height:22px;width:auto;filter:invert(1);margin-right:10px">Post Studio</div>
+  <div class="tabs" role="tablist"><button class="tab" role="tab" data-t="studio" aria-selected="true">Studio</button><button class="tab" role="tab" data-t="ideas" aria-selected="false">Ideas</button><button class="tab" role="tab" data-t="identity" aria-selected="false">Identity</button></div>
+</header>
+
+<section id="v-studio" class="sec">
+  <div class="shelf" id="shelf" aria-label="Templates"></div>
+  <div class="bench">
+    <div class="stage"><canvas id="cv" width="1080" height="1350" aria-label="Post preview"></canvas><div class="cap" id="capline"></div></div>
+    <div class="panel">
+      <div class="grp"><h3>Words</h3><div id="fields" style="display:grid;gap:10px"></div></div>
+      <div class="grp"><h3>Type</h3>
+        <div class="row2"><label class="f">Style<select id="tstyle"></select></label><label class="f">Headline font<select id="hfont"></select></label></div>
+        <div class="rg"><span>Headline size <b id="o-hs"></b></span><input type="range" id="hs" min="60" max="140"></div>
+        <div class="tsample" id="tsample">Built around you</div></div>
+      <div class="grp"><h3>Pictures</h3>
+        <label class="f">Add pictures (one or many)<input type="file" id="add" accept="image/*" multiple></label>
+        <div class="lib" id="lib"></div>
+        <div class="row2"><button class="btn ghost" id="useBg">Use as background</button><button class="btn ghost" id="useEx">Add into the post</button></div>
+        <button class="btn ghost" id="rmPic">Remove selected picture</button>
+        <label class="chk"><input type="checkbox" id="bgbw" checked> Black and white background</label>
+        <div id="exbox" hidden style="display:grid;gap:10px;border-top:1px solid var(--line);padding-top:10px">
+          <div class="row2"><label class="f">Place<select id="exPos"><option value="tr">Top right</option><option value="tl">Top left</option><option value="br">Bottom right</option><option value="bl">Bottom left</option><option value="c">Centre</option></select></label>
+          <label class="f">Shape<select id="exShape"><option value="sq">Square</option><option value="tall">Tall</option><option value="wide">Wide</option><option value="round">Round</option></select></label></div>
+          <div class="rg"><span>Size <b id="o-exSize"></b></span><input type="range" id="exSize" min="14" max="80"></div>
+          <label class="chk"><input type="checkbox" id="exBw" checked> Black and white</label>
+          <button class="btn ghost" id="exOff">Take it out of the post</button></div>
+      </div>
+      <div class="grp"><h3>Picture and mood</h3>
+        <div class="row2"><label class="f">Size<select id="size"><option value="1350">Post 4:5</option><option value="1080">Square 1:1</option><option value="1920">Story 9:16</option></select></label>
+        <label class="f">Background<select id="bg"><option value="wall">Concrete + walker</option><option value="smoke">Smoke</option><option value="flare">Dark flare</option><option value="dark">Black</option><option value="paper">Paper</option><option value="photo">My photo</option></select></label></div>
+        <div id="photoRow2" hidden style="display:grid;gap:8px"><label class="f">Three frames<input type="file" id="frames" accept="image/*" multiple></label><button class="btn ghost" id="fillFrames">Fill frames from my pictures</button></div>
+        <div class="rg"><span>Grain <b id="o-grain"></b></span><input type="range" id="grain" min="0" max="100"></div>
+        <div class="rg"><span>Soft focus <b id="o-blur"></b></span><input type="range" id="blur" min="0" max="100"></div>
+        <div class="rg"><span>Motion <b id="o-motion"></b></span><input type="range" id="motion" min="0" max="100"></div>
+        <div class="rg"><span>Light <b id="o-dim"></b></span><input type="range" id="dim" min="-60" max="60"></div>
+        <div class="row2"><label class="f">Text colour<select id="tone"><option value="auto">Auto</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
+        <label class="chk" style="align-self:end;padding-bottom:10px"><input type="checkbox" id="accent"> One wine moment</label></div>
+      </div>
+      <div class="grp"><h3>Caption</h3><textarea id="caption" rows="5"></textarea>
+        <div class="row2"><button class="btn ghost" id="copycap">Copy caption</button><button class="btn" id="make">Make image</button></div>
+        <div class="note" id="msg" aria-live="polite"></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="v-ideas" class="sec" hidden>
+  <h2>Posts to make next</h2>
+  <p class="lede">Each one opens in the studio with the words already in AUZslab's voice. Change anything you like.</p>
+  <div class="ideas" id="ideas"></div>
+</section>
+
+<section id="v-identity" class="sec" hidden>
+  <h2>How AUZslab looks and sounds on social</h2>
+  <p class="lede">Taken from the references: quiet black, white and grey; blurred people in motion; film grain; short lines said plainly. Wine is the only colour and appears once.</p>
+  <div class="sw">
+    <div><i style="background:#0b0b0c"></i><p><b>Ink</b>#0B0B0C<br>most posts start here</p></div>
+    <div><i style="background:#ecebe9"></i><p><b>Paper</b>#ECEBE9<br>the light poster</p></div>
+    <div><i style="background:#7b7c7e"></i><p><b>Wall grey</b>#7B7C7E<br>concrete behind the walker</p></div>
+    <div><i style="background:#8d8c90"></i><p><b>Quiet text</b>#8D8C90<br>second line, small print</p></div>
+    <div><i style="background:#c2183f"></i><p><b>Wine</b>#C2183F on dark, #800020 on light<br>one dot, one word, one bracket</p></div>
+  </div>
+  <div class="spec">
+    <div><small>Display / Archivo 800, tight</small><div style="font:800 54px/.95 var(--disp);letter-spacing:-.05em">built around you</div><small>Headlines: uppercase and wide for statements, lowercase and tight for questions.</small></div>
+    <div><small>Text / Inter Tight 400</small><div style="font:400 17px/1.55 var(--body);color:var(--dim)">When you work with us, you become part of something bigger. <b style="color:var(--fg);font-weight:600">A family of founders, shop owners and builders.</b></div><small>Quiet grey, with the one important phrase in white.</small></div>
+    <div><small>Label / JetBrains Mono</small><div style="font:500 15px/1.7 var(--mono);letter-spacing:.06em">[BUILT FOR] SMALL BUSINESSES<br>[WHERE] JODHPUR, INDIA</div><small>Brackets, coordinates, dates, numbers like [1/4]. Real details only.</small></div>
+  </div>
+  <div class="rules">
+    <div><b>01</b><p>One idea per post.<br><span>If it needs two sentences, it is two posts.</span></p></div>
+    <div><b>02</b><p>Speak to the person, not the product.<br><span>"You", "we", "your shop". Features go in the caption.</span></p></div>
+    <div><b>03</b><p>Seven words or fewer on the picture.<br><span>The rest is air. Space is part of the message.</span></p></div>
+    <div><b>04</b><p>People in motion, never stock smiles.<br><span>Blurred walkers, hands, screens in soft light. Always black and white, always grain.</span></p></div>
+    <div><b>05</b><p>One wine moment.<br><span>A dot, a bracket or the last square of the mark. Never a wine background.</span></p></div>
+    <div><b>06</b><p>Sign every post the same way.<br><span>The mark or "AUZslab" small at the foot, and a counter like [1/4] on carousels.</span></p></div>
+    <div><b>07</b><p>Say only what is true.<br><span>No invented numbers, reviews or logos. Use real places, real products, real dates.</span></p></div>
+  </div>
+</section>
+</div>
+
+<dialog id="dlg"><img id="out" alt="Finished post"><p class="note">On a phone, press and hold the picture to save it. On a computer, right-click and choose Save image.</p><div class="row2"><button class="btn ghost" id="copyimg">Copy image</button><button class="btn" id="close">Close</button></div></dialog>
+
+<script>
+'use strict';
+let DISP,BODY,MONO,DW=0,HS=1,LSM=1;
+const $=(s)=>document.querySelector(s);
+const F=(sz,w,fam,it)=>{if(fam===DISP){sz=sz*HS;if(DW)w=DW}return `${it?'italic ':''}${w} ${Math.round(sz)}px ${fam}`};
+const lsOf=(o)=>(o.ls||0)*(o.fam===DISP?LSM*HS:1)*o.size;
+const today=()=>new Date().toLocaleDateString('en-GB',{day:'numeric',month:'numeric',year:'numeric'});
+
+/* ---------- drawing helpers ---------- */
+function T(c,s,x,y,o){
+  c.font=F(o.size,o.w||500,o.fam||BODY,o.it);c.fillStyle=o.col;c.textBaseline=o.base||'alphabetic';
+  const ls=lsOf(o);
+  if(!ls){c.textAlign=o.al||'left';c.fillText(s,x,y);return c.measureText(s).width}
+  c.textAlign='left';let w=0;for(const ch of s)w+=c.measureText(ch).width+ls;w-=ls;
+  let cx=o.al==='center'?x-w/2:o.al==='right'?x-w:x;
+  for(const ch of s){c.fillText(ch,cx,y);cx+=c.measureText(ch).width+ls}
+  return w;
+}
+function Mw(c,s,o){c.font=F(o.size,o.w||500,o.fam||BODY,o.it);const ls=lsOf(o);let w=0;for(const ch of s)w+=c.measureText(ch).width+ls;return ls?w-ls:c.measureText(s).width}
+function rich(c,text,x,y,maxW,o){
+  const toks=[];text.split(/(\*\*[^*]+\*\*)/).forEach((seg)=>{const b=/^\*\*/.test(seg);if(b)seg=seg.slice(2,-2);seg.split(/\s+/).filter(Boolean).forEach((w)=>toks.push({w,b}))});
+  const fnt=(b)=>F(o.size,b?(o.hiw||700):(o.w||400),o.fam||BODY,b&&o.hiIt);
+  const lines=[[]];let lw=0;
+  for(const t of toks){c.font=fnt(t.b);t.tw=c.measureText(t.w+' ').width;if(lw+t.tw-c.measureText(' ').width>maxW&&lines[lines.length-1].length){lines.push([]);lw=0}lines[lines.length-1].push(t);lw+=t.tw}
+  lines.forEach((ln,i)=>{let cx=x;ln.forEach((t)=>{c.font=fnt(t.b);c.fillStyle=t.b?o.hi:o.col;c.textAlign='left';c.textBaseline='alphabetic';c.fillText(t.w,cx,y+i*o.lh);cx+=t.tw})});
+  return y+lines.length*o.lh;
+}
+function richLines(c,text,x,y,maxW,o){let yy=y;String(text).split('\n').forEach((p)=>{yy=rich(c,p||' ',x,yy,maxW,o)});return yy}
+const LOGO=new Image();let LOGO_OK=false;const LOGO_P=new Promise((r)=>{LOGO.onload=()=>{LOGO_OK=true;r()};LOGO.onerror=r;LOGO.src="data:image/png;base64,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"});
+const _lt={};
+function mark(c,x,y,s,col,acc){
+  if(!LOGO_OK)return;const h=s,w=s*LOGO.width/LOGO.height,k=col+'|'+Math.round(w);
+  if(!_lt[k]){const t=mk(w,h),q=t.getContext('2d');q.imageSmoothingEnabled=false;q.drawImage(LOGO,0,0,t.width,t.height);q.globalCompositeOperation='source-in';q.fillStyle=col;q.fillRect(0,0,t.width,t.height);_lt[k]=t}
+  c.drawImage(_lt[k],x,y,w,h);
+}
+function rrect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
+function mk(w,h){const c=document.createElement('canvas');c.width=Math.max(1,Math.round(w));c.height=Math.max(1,Math.round(h));return c}
+function softBlur(src,px){
+  if(px<1.5)return src;let f=Math.max(2,px*1.6),n=Math.max(1,Math.round(Math.log2(f)));
+  let cur=src;for(let i=0;i<n;i++){const s=mk(cur.width/2,cur.height/2),x=s.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(cur,0,0,s.width,s.height);cur=s}
+  for(let i=0;i<n;i++){const w=i===n-1?src.width:cur.width*2,h=i===n-1?src.height:cur.height*2,s=mk(w,h),x=s.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(cur,0,0,w,h);cur=s}
+  return cur;
+}
+function streak(src,len,steps){
+  if(len<2)return src;const o=mk(src.width,src.height),x=o.getContext('2d');steps=Math.max(4,steps|0);
+  for(let i=0;i<steps;i++){x.globalAlpha=1/(i+1);x.drawImage(src,(i/(steps-1)-.5)*len,0)}x.globalAlpha=1;return o;
+}
+function grey(cv,bright,contrast){
+  const x=cv.getContext('2d'),d=x.getImageData(0,0,cv.width,cv.height),p=d.data;
+  for(let i=0;i<p.length;i+=4){let g=.299*p[i]+.587*p[i+1]+.114*p[i+2];g=(g-128)*contrast+128+bright;g=g<0?0:g>255?255:g;p[i]=p[i+1]=p[i+2]=g}
+  x.putImageData(d,0,0);
+}
+function cover(c,img,x,y,w,h){const r=Math.max(w/img.width,h/img.height),iw=img.width*r,ih=img.height*r;c.save();c.beginPath();c.rect(x,y,w,h);c.clip();c.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);c.restore()}
+let noiseTile=null;
+function grain(c,W,H,amt){
+  if(amt<=0)return;
+  if(!noiseTile){noiseTile=mk(220,220);const x=noiseTile.getContext('2d'),d=x.createImageData(220,220);let s=7;for(let i=0;i<d.data.length;i+=4){s=(s*16807)%2147483647;const v=(s&255);d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=255}x.putImageData(d,0,0)}
+  c.save();c.globalCompositeOperation='overlay';c.globalAlpha=Math.min(1,amt*.55);c.fillStyle=c.createPattern(noiseTile,'repeat');c.fillRect(0,0,W,H);c.restore();
+}
+
+
+/* ---------- text + picture helpers ---------- */
+function wrap(c,str,maxW,o){const out=[];String(str).split('\n').forEach((p)=>{let cur='';String(p||' ').split(/\s+/).filter(Boolean).forEach((w)=>{const t=cur?cur+' '+w:w;if(cur&&Mw(c,t,o)>maxW){out.push(cur);cur=w}else cur=t});out.push(cur)});return out}
+function para(c,str,x,y,maxW,o,lh){let yy=y;wrap(c,str,maxW,o).forEach((l)=>{T(c,l,x,yy,o);yy+=lh});return yy}
+function fit(c,str,maxW,o,max){const m=Mw(c,String(str),{...o,size:100});return Math.min(max,100*maxW/Math.max(1,m))}
+function drawExtra(c,W,H,e,k){
+  const img=e.img,w=W*e.size/100,r={sq:1,tall:1.25,wide:.62,round:1}[e.shape]||1,h=w*r,m=W*.06;
+  const x=e.pos==='tl'||e.pos==='bl'?m:e.pos==='c'?(W-w)/2:W-m-w,y=e.pos==='tl'||e.pos==='tr'?m+W*.04:e.pos==='c'?(H-h)/2:H-m-h-W*.04;
+  const t=mk(w,h),q=t.getContext('2d');cover(q,img,0,0,w,h);if(e.bw)grey(t,0,1.1);
+  c.save();if(e.shape==='round'){c.beginPath();c.arc(x+w/2,y+h/2,w/2,0,7);c.clip()}else{rrect(c,x,y,w,h,W*.006);c.clip()}
+  c.drawImage(t,x,y,w,h);c.restore();
+  c.strokeStyle=k.line;c.lineWidth=Math.max(1,W/700);if(e.shape==='round'){c.beginPath();c.arc(x+w/2,y+h/2,w/2,0,7);c.stroke()}else c.strokeRect(x,y,w,h);
+}
+
+/* ---------- backgrounds ---------- */
+function bgBase(kind,W,H,st){
+  const cv=mk(W,H),c=cv.getContext('2d'),u=W/1080;
+  if(kind==='wall'){
+    const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#8e8f91');g.addColorStop(.8,'#77787a');g.addColorStop(.84,'#77787a');g.addColorStop(.85,'#a1a2a3');g.addColorStop(.855,'#3a3a3c');g.addColorStop(1,'#232324');c.fillStyle=g;c.fillRect(0,0,W,H);
+    let s=11;for(let i=0;i<260;i++){s=(s*16807)%2147483647;const a=s/2147483647;s=(s*16807)%2147483647;const b=s/2147483647;c.fillStyle='rgba(0,0,0,.10)';c.fillRect(a*W,b*H*.84,(1+a*2)*u,(1+b*2)*u)}
+    let fg=mk(W,H),f=fg.getContext('2d');f.fillStyle='#0d0d0e';f.strokeStyle='#0d0d0e';f.lineCap='round';
+    f.beginPath();f.ellipse(W*.45,H*.25,W*.085,H*.06,0,0,7);f.fill();
+    f.beginPath();f.moveTo(W*.36,H*.34);f.lineTo(W*.6,H*.34);f.lineTo(W*.66,H*.64);f.lineTo(W*.4,H*.66);f.closePath();f.fill();
+    f.lineWidth=W*.1;f.beginPath();f.moveTo(W*.46,H*.62);f.lineTo(W*.37,H*.93);f.stroke();f.beginPath();f.moveTo(W*.56,H*.62);f.lineTo(W*.78,H*.9);f.stroke();
+    fg=streak(softBlur(fg,22*u),(90+st.motion*2.4)*u,14);c.drawImage(fg,0,0);
+  }else if(kind==='smoke'){
+    c.fillStyle='#0b0b0c';c.fillRect(0,0,W,H);let sm=mk(W,H),s=sm.getContext('2d');
+    const blob=(cx,cy,rx,ry,rot,a)=>{s.save();s.translate(W*cx,H*cy);s.rotate(rot);s.scale(rx*W,ry*H);const g=s.createRadialGradient(0,0,0,0,0,1);g.addColorStop(0,`rgba(235,235,235,${a})`);g.addColorStop(1,'rgba(235,235,235,0)');s.fillStyle=g;s.beginPath();s.arc(0,0,1,0,7);s.fill();s.restore()};
+    blob(.58,.4,.5,.12,-.5,.9);blob(.4,.55,.38,.08,-.6,.7);blob(.78,.5,.16,.14,-.3,.8);blob(.22,.72,.2,.05,-.7,.5);
+    c.drawImage(softBlur(sm,26*u),0,0);
+  }else if(kind==='flare'){
+    c.fillStyle='#0f0f10';c.fillRect(0,0,W,H);let fl=mk(W,H),f=fl.getContext('2d');
+    const g=f.createRadialGradient(W*1.05,H*.5,0,W*1.05,H*.5,W*.7);g.addColorStop(0,'rgba(240,240,240,1)');g.addColorStop(.5,'rgba(190,190,190,.5)');g.addColorStop(1,'rgba(120,120,120,0)');f.fillStyle=g;f.fillRect(0,0,W,H);
+    f.fillStyle='rgba(0,0,0,.8)';for(let i=0;i<7;i++){f.fillRect(W*.4,H*(.05+i*.15),W*.7,H*.045)}
+    c.drawImage(streak(softBlur(fl,30*u),W*.18,16),0,0);
+  }else if(kind==='paper'){c.fillStyle='#ecebe9';c.fillRect(0,0,W,H)}
+  else if(kind==='dark'){c.fillStyle='#0c0c0d';c.fillRect(0,0,W,H);const g=c.createRadialGradient(W/2,H*.4,0,W/2,H*.4,H*.8);g.addColorStop(0,'rgba(255,255,255,.05)');g.addColorStop(1,'rgba(0,0,0,.35)');c.fillStyle=g;c.fillRect(0,0,W,H)}
+  else if(kind==='photo'){
+    c.fillStyle='#202022';c.fillRect(0,0,W,H);
+    if(st.photo){cover(c,st.photo,0,0,W,H);if(st.bw!==false)grey(cv,0,1.15)}else{c.fillStyle='#8a8a8c';c.font=F(30*u,500,MONO);c.textAlign='center';c.fillText('add a photo',W/2,H/2)}
+  }
+  return cv;
+}
+const bgCache={};
+function background(st,W,H){
+  const key=[st.bg,W,H,st.blur,st.motion,st.dim,st.photoVer,st.bw].join('|');
+  if(bgCache[key])return bgCache[key];
+  let cv=bgBase(st.bg,W,H,st);
+  if(st.bg!=='wall'&&st.bg!=='flare'&&st.motion>0)cv=streak(cv,st.motion*1.4*W/1080,10);
+  if(st.blur>0)cv=softBlur(cv,st.blur*.45*W/1080);
+  if(st.dim!==0){const c=cv.getContext('2d');c.fillStyle=st.dim>0?`rgba(255,255,255,${st.dim/220})`:`rgba(0,0,0,${-st.dim/110})`;c.fillRect(0,0,W,H)}
+  const s=mk(8,8).getContext('2d');s.drawImage(cv,0,0,8,8);const p=s.getImageData(0,0,8,8).data;let L=0;for(let i=0;i<p.length;i+=4)L+=(.299*p[i]+.587*p[i+1]+.114*p[i+2])/255;L/=64;
+  const keys=Object.keys(bgCache);if(keys.length>8)delete bgCache[keys[0]];
+  return bgCache[key]={cv,lum:L};
+}
+
+/* ---------- templates ---------- */
+const S=(k,l,d)=>({k,l,d,t:'s'}),L=(k,l,d)=>({k,l,d,t:'l'});
+const TPL=[
+{id:'statement',name:'Statement',bg:'dark',grid:true,
+ fields:[S('brand','Top left','AUZSLAB.'),S('nav','Top right','FOR YOU  /  WHY WE EXIST'),S('l1','Line 1',"YOU'RE NOT"),S('l2','Line 2 (quiet)','JUST OUR'),S('l3','Line 3','CLIENT.'),L('body','Paragraph (**bold** = white)','When you work with AUZslab, you become part of something bigger. **A family of shop owners, founders and builders** who believe their software should work as hard as they do. We are in this together, from the first sale to the last bill, and long after.')],
+ caption:"You are not just our client.\n\nWhen you work with AUZslab you become part of something bigger: a family of shop owners, founders and builders. We stay from the first sale to the last bill, and long after.",
+ draw(c,W,H,v,k){const u=W/1080,i=70*u;
+  c.strokeStyle=k.line;c.lineWidth=Math.max(1,u);const cell=74*u;
+  for(let x=i;x<=W-i+1;x+=cell){c.beginPath();c.moveTo(x,i);c.lineTo(x,H-i);c.stroke()}
+  for(let y=i;y<=H-i+1;y+=cell){c.beginPath();c.moveTo(i,y);c.lineTo(W-i,y);c.stroke()}
+  c.fillStyle=k.dark?'rgba(8,8,9,.96)':'rgba(236,235,233,.96)';c.fillRect(i,H*.37,W*.72,H*.3);
+  T(c,v.brand,i+34*u,i+52*u,{size:22*u,w:600,col:k.fg,ls:.02});T(c,v.nav,W-i-34*u,i+52*u,{size:19*u,w:500,col:k.dim,ls:.04,al:'right'});
+  const sz=96*u;[[v.l1,k.fg],[v.l2,k.dim],[v.l3,k.fg]].forEach(([s,col],n)=>T(c,String(s).toUpperCase(),i+36*u,H*.37+(n+1)*sz*1.03+16*u,{size:sz,w:800,fam:DISP,col,ls:-.02}));
+  rich(c,v.body,i+36*u,H*.705,W*.42,{size:21*u,lh:31*u,col:k.dim,hi:k.fg,hiw:600});
+  mark(c,W-i-94*u,H-i-34*u,34*u,k.fg,k.acc);}},
+{id:'cover',name:'Cover',bg:'wall',
+ fields:[S('p1','Pill 1','WHO'),S('p2','Pill 2','WHAT'),S('p3','Pill 3','HOW'),S('title','Title','ABOUT US'),S('foot','Foot','AUZslab'),S('count','Counter','[1/4]')],
+ caption:"About us, in four short slides.\n\nWho we are, what we build, how we work. Swipe.",
+ draw(c,W,H,v,k){const u=W/1080;let x=110*u;
+  [v.p1,v.p2,v.p3].forEach((s)=>{const w=240*u,h=64*u;c.strokeStyle=k.fg;c.lineWidth=1.6*u;rrect(c,x,100*u,w,h,h/2);c.stroke();T(c,String(s).toUpperCase(),x+w/2,100*u+h/2+8*u,{size:26*u,w:500,col:k.fg,ls:.03,al:'center'});x+=w+20*u});
+  T(c,String(v.title).toUpperCase(),W/2,H*.5,{size:78*u,w:800,fam:DISP,col:k.fg,ls:.06,al:'center'});
+  T(c,v.foot,W/2,H-100*u,{size:22*u,w:400,col:k.fg,al:'center',ls:.02});T(c,v.count,W/2,H-52*u,{size:19*u,w:400,fam:MONO,col:k.acc,al:'center'});}},
+{id:'swiss',name:'Swiss',bg:'paper',
+ fields:[S('m1','Meta left','@auzslab'),S('m2','Meta middle','6:47 PM'),S('m3','Meta right',today()),S('sub','Series','poster 01'),S('pre','Small word','the'),S('a','Word, plain','un'),S('b','Word, boxed','rigid'),S('pos','Type','adjective'),L('def','Meaning','not fixed in one shape. built around the way you work.'),S('f1','Foot left','exploring how software should feel'),S('f2','Foot right','8pt, 16pt, 54pt')],
+ caption:"unrigid (adj.)\n\nnot fixed in one shape. built around the way you work.\n\nA small poster on how we think about software.",
+ draw(c,W,H,v,k){const u=W/1080,x0=W*.2,x1=W*.8,tight={w:600,fam:BODY,col:k.fg,ls:-.045};
+  T(c,'+',x0-30*u,H*.2,{size:40*u,w:400,col:k.fg});T(c,v.m1,x0,H*.225,{...tight,size:17*u});
+  T(c,'an attempt at swiss typography',W*.52,H*.2,{...tight,size:30*u,w:700});T(c,v.m2,W*.52,H*.225,{...tight,size:15*u});T(c,v.m3,x1,H*.225,{...tight,size:15*u,al:'right'});
+  const cx=W*.31,by=H*.455;T(c,v.sub,W*.66,H*.37,{...tight,size:28*u,w:700});T(c,v.pre,cx,by-100*u,{...tight,size:34*u,it:true,w:700});
+  const sz=118*u;c.font=F(sz,800,DISP);const wa=Mw(c,v.a,{size:sz,w:800,fam:DISP,ls:-.06}),wb=Mw(c,v.b,{size:sz,w:800,fam:DISP,ls:-.06});
+  c.fillStyle=k.fg;c.fillRect(cx+wa+2*u,by-sz*.86,wb+14*u,sz*1.0);
+  T(c,v.a,cx,by,{size:sz,w:800,fam:DISP,col:k.fg,ls:-.06});T(c,v.b,cx+wa+8*u,by,{size:sz,w:800,fam:DISP,col:k.dark?'#0c0c0d':'#ecebe9',ls:-.06});
+  T(c,v.pos,cx,by+52*u,{...tight,size:34*u,it:true,w:700,col:k.acc});
+  richLines(c,v.def,cx,by+110*u,W*.36,{size:32*u,lh:34*u,w:700,col:k.fg,hi:k.fg});
+  T(c,v.f1,W*.19,H*.78,{...tight,size:32*u,w:700});T(c,v.f2,x1,H*.745,{...tight,size:15*u,al:'right'});T(c,'+',x1+20*u,H*.78,{size:40*u,w:400,col:k.fg,al:'right'});}},
+{id:'flux',name:'Flux',bg:'smoke',
+ fields:[S('tl','Top label','AUZSLAB — NOTES'),S('tr','Top right','©2026'),S('geo','Vertical text','26.2389° N, 73.0243° E'),L('head','Headline','WHY MOST\nSOFTWARE\nSTAYS RIGID'),S('by','Foot left','MADE IN JODHPUR'),S('mid','Foot middle','NOTES — S001'),S('fr','Foot right','SAVE THIS FOR LATER')],
+ caption:"Why most software stays rigid.\n\nIt is built once, for everyone. We build ours around you.\n\nSave this for later.",
+ draw(c,W,H,v,k){const u=W/1080,sm={size:19*u,w:500,col:k.fg,ls:.03};
+  c.strokeStyle=k.dim;c.lineWidth=Math.max(1,1.3*u);const vx=W*.35;
+  c.beginPath();c.moveTo(vx,H*.015);c.lineTo(vx,H*.78);c.moveTo(vx,H*.84);c.lineTo(vx,H*.99);c.stroke();
+  const hy=H*.81;c.beginPath();c.moveTo(0,hy);c.lineTo(W*.31,hy);c.moveTo(W*.39,hy);c.lineTo(W,hy);c.stroke();
+  c.beginPath();c.moveTo(vx-26*u,hy);c.lineTo(vx+26*u,hy);c.moveTo(vx,hy-26*u);c.lineTo(vx,hy+26*u);c.stroke();
+  c.strokeStyle=k.fg;c.lineWidth=1.6*u;c.strokeRect(W*.05,H*.05,W*.075,W*.075);mark(c,W*.05+W*.0075,H*.05+(W*.075-W*.0218)/2,W*.0218,k.fg,k.acc);
+  T(c,v.tl,vx+W*.05,H*.057,sm);T(c,v.tr,W-W*.05,H*.057,{...sm,al:'right'});
+  c.save();c.translate(vx-W*.04,H*.045);c.rotate(Math.PI/2);T(c,v.geo,0,0,{...sm,fam:BODY,col:k.fg});c.restore();
+  String(v.head).toUpperCase().split('\n').forEach((s,n,a)=>T(c,s,vx+W*.045,hy-(a.length-1-n)*88*u-W*.04,{size:82*u,w:500,fam:BODY,col:k.fg,ls:-.01}));
+  T(c,v.by,W*.05,H*.953,{...sm,size:17*u});T(c,v.mid,vx+W*.045,H*.953,{...sm,size:17*u});T(c,v.fr,W-W*.05,H*.953,{...sm,size:17*u,al:'right'});}},
+{id:'brief',name:'Brief',bg:'flare',
+ fields:[S('tl','Top left','AUZslab'),S('tag','Tag','[NOW LIVE]'),L('head','Headline','We built it\naround you.'),S('r0','Row','FOR CAFES / SALONS / SHOPS'),S('k1','Label 1','[BUILT FOR]'),S('v1','Value 1','SMALL BUSINESSES'),S('k2','Label 2','[WHERE]'),S('v2','Value 2','JODHPUR, INDIA'),S('url','Web','www.auzslab.in')],
+ caption:"We built it around you.\n\nFor cafes, salons and shops. Made in Jodhpur.\n\nauzslab.in",
+ draw(c,W,H,v,k){const u=W/1080,i=118*u,mo={fam:MONO,w:400,col:k.fg,ls:.02,it:true};
+  T(c,v.tl,i,i+14*u,{size:38*u,w:500,col:k.fg,ls:-.02});
+  c.save();c.translate(W-i-8*u,i);c.fillStyle=k.fg;for(let a=0;a<12;a++){c.rotate(Math.PI/6);c.fillRect(-4*u,-30*u,8*u,18*u)}c.restore();
+  T(c,v.tag,W-i,H*.345,{...mo,size:25*u,al:'right',col:k.acc});
+  String(v.head).split('\n').forEach((s,n)=>T(c,s,i,H*.345+n*80*u+14*u,{size:70*u,w:500,col:k.fg,ls:-.025}));
+  T(c,String(v.r0).toUpperCase(),i,H*.6,{...mo,size:25*u});
+  T(c,v.k1,i,H*.655,{...mo,size:25*u});T(c,v.v1,i+345*u,H*.655,{...mo,size:25*u});T(c,v.k2,i,H*.68,{...mo,size:25*u});T(c,v.v2,i+345*u,H*.68,{...mo,size:25*u});
+  T(c,v.url,i,H-i-20*u,{...mo,it:false,size:25*u});}},
+{id:'orbit',name:'Orbit',bg:'wall',
+ fields:[S('mid','Centre','You work with us'),S('o0','Top','POS'),S('o1','Top right','PAYROLL'),S('o2','Right','LEDGER'),S('o3','Bottom right','SCAN'),S('o4','Bottom','MOBILE SHOPS'),S('o5','Bottom left','STYLE'),S('o6','Left','FINANCE'),S('o7','Top left','YOUR WAY'),S('pill','Pill','auzslab.in')],
+ caption:"You work with us.\n\nOne team, many tools, all of them bent around your business.\n\nauzslab.in",
+ draw(c,W,H,v,k){const u=W/1080,cx=W/2,cy=H*.5,r=W*.35;
+  mark(c,cx-55*u,H*.07,40*u,k.fg,k.acc);
+  c.strokeStyle=k.fg;c.lineWidth=2*u;c.beginPath();c.arc(cx,cy,r,0,7);c.stroke();
+  const names=[v.o0,v.o1,v.o2,v.o3,v.o4,v.o5,v.o6,v.o7];
+  names.forEach((s,n)=>{const a=-Math.PI/2+n*Math.PI/4,x=cx+Math.cos(a)*r,y=cy+Math.sin(a)*r;c.fillStyle=n===0?k.acc:k.fg;c.beginPath();c.arc(x,y,6*u,0,7);c.fill();
+   const al=Math.abs(Math.cos(a))<.1?'center':Math.cos(a)>0?'left':'right',ox=al==='center'?0:(al==='left'?24:-24)*u,oy=Math.abs(Math.cos(a))<.1?(Math.sin(a)<0?-46*u:62*u):8*u;
+   const words=String(s).toUpperCase().split(' ');words.length>1&&words.join(' ').length>8?words.forEach((w,j)=>T(c,w,x+ox,y+oy+j*30*u-(Math.sin(a)<0&&al==='center'?30*u:0),{size:25*u,w:400,col:k.fg,al,ls:.01})):T(c,words.join(' '),x+ox,y+oy,{size:25*u,w:400,col:k.fg,al,ls:.01})});
+  T(c,v.mid,cx,cy+18*u,{size:60*u,w:500,col:k.fg,al:'center',ls:-.02});
+  const pw=330*u,ph=64*u;c.strokeStyle=k.fg;c.lineWidth=1.6*u;rrect(c,cx-pw/2,H-130*u,pw,ph,ph/2);c.stroke();T(c,String(v.pill).toUpperCase(),cx,H-130*u+ph/2+8*u,{size:24*u,w:400,col:k.fg,al:'center',ls:.01});}},
+{id:'triptych',name:'Triptych',bg:'dark',photos:3,
+ fields:[L('head','Question','how did\nit start?'),L('body','Paragraph','AUZslab started with one simple idea: software should bend to the business, not the other way around. We build for people who run real shops, and we stay long after the launch.')],
+ caption:"How did it start?\n\nOne simple idea: software should bend to the business, not the other way around.",
+ draw(c,W,H,v,k,st){const u=W/1080,i=100*u,gap=26*u,w=(W-2*i-2*gap)/3,y=H*.15,h=H*.37;
+  for(let n=0;n<3;n++){const x=i+n*(w+gap);c.save();c.beginPath();c.rect(x,y,w,h);c.clip();
+   const im=st.frames[n];if(im){const t=mk(w,h);cover(t.getContext('2d'),im,0,0,w,h);grey(t,0,1.1);c.drawImage(t,x,y)}else{const g=c.createLinearGradient(x,y,x+w,y+h);g.addColorStop(0,['#d9d9d9','#c9c9c9','#bdbdbd'][n]);g.addColorStop(1,['#3a3a3a','#555','#2a2a2a'][n]);c.fillStyle=g;c.fillRect(x,y,w,h);const sh=mk(w,h);const s=sh.getContext('2d');s.fillStyle='rgba(10,10,10,.8)';s.beginPath();s.ellipse(w*(.35+n*.15),h*.62,w*.22,h*.28,0,0,7);s.fill();c.drawImage(softBlur(sh,10*u),x,y)}
+   c.restore()}
+  const ty=H*.65;String(v.head).split('\n').forEach((s,n)=>T(c,s,i,ty+n*84*u,{size:84*u,w:800,fam:DISP,col:k.fg,ls:-.055}));
+  rich(c,v.body,i+w+gap,ty-52*u,w*2+gap,{size:27*u,lh:32*u,col:k.fg,hi:k.fg,w:500});
+  mark(c,W-i-83*u,H-i-30*u,30*u,k.fg,k.acc);}},
+{id:'core',name:'Core',bg:'dark',grid:true,
+ fields:[L('top','Top block','DEFINE\n  YOUR CORE.\n\nSHAPE YOUR\n  STORY.'),L('bot','Bottom block','BUILD A BUSINESS\nTHAT RUNS\nTHE WAY YOU DO.\n\nBE BOLD.\nBE SIMPLE. BE YOU.'),S('small','Small note','©2026 ←\nAUZSLAB ✱ STUDIO'),S('by','Foot left','Made in\nJODHPUR'),S('yr','Foot middle','©2026'),S('tag','Foot right','@auzslab')],
+ caption:"Define your core. Shape your story.\n\nBuild a business that runs the way you do.",
+ draw(c,W,H,v,k){const u=W/1080,i=54*u,cw=(W-2*i)/4,ch=(H-2*i)/6;
+  c.strokeStyle=k.line;c.lineWidth=Math.max(1,1.3*u);c.strokeRect(i,i,W-2*i,H-2*i);
+  for(let n=1;n<4;n++){c.beginPath();c.moveTo(i+n*cw,i);c.lineTo(i+n*cw,H-i);c.stroke()}for(let n=1;n<6;n++){c.beginPath();c.moveTo(i,i+n*ch);c.lineTo(W-i,i+n*ch);c.stroke()}
+  for(let n=0;n<40;n++){c.fillStyle=k.fg;c.fillRect(i+n*3*u,i+10*u,(n%3?1.4:2.4)*u,60*u)}
+  mark(c,W-i-210*u,i+25*u,40*u,k.fg,k.acc);c.strokeStyle=k.fg;c.lineWidth=1.5*u;c.strokeRect(W-i-84*u,i+10*u,80*u,80*u);mark(c,W-i-77*u,i+38*u,24*u,k.fg,k.acc);
+  const ft={size:70*u,w:400,fam:BODY,col:k.fg,ls:-.01};
+  String(v.top).toUpperCase().split('\n').forEach((s,n)=>{const ind=(s.match(/^ */)||[''])[0].length;T(c,s.trim(),i+ind*40*u,H*.22+n*74*u,ft)});
+  const lines=String(v.bot).toUpperCase().split('\n');lines.forEach((s,n)=>T(c,s,W-i-4*u,H*.6+n*66*u,{...ft,size:62*u,al:'right'}));
+  String(v.small).split('\n').forEach((s,n)=>T(c,s,i+cw*2+20*u,H*.395+n*30*u,{size:14*u,w:400,fam:MONO,col:k.fg,ls:.04}));
+  String(v.by).split('\n').forEach((s,n)=>T(c,s,i,H-i-52*u+n*34*u,{size:25*u,w:n?500:600,col:k.fg}));
+  T(c,v.yr,i+cw*3,H-i-18*u,{size:24*u,w:500,col:k.fg});T(c,v.tag,W-i,H-i-18*u,{size:24*u,w:500,col:k.fg,al:'right'});}},
+{id:'list',name:'List',bg:'photo',
+ fields:[S('title','Title','What we do:'),L('body','Lines (**bold** = italic)','**Billing** that never stalls.\n**Payroll** that is always right.\n**Stock** that knows itself.\n**Software** that bends to you.')],
+ caption:"What we do.\n\nBilling that never stalls. Payroll that is always right. Stock that knows itself. Software that bends to you.",
+ draw(c,W,H,v,k){const u=W/1080;
+  const g=c.createLinearGradient(0,H*.62,0,H);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.72)');c.fillStyle=g;c.fillRect(0,H*.55,W,H*.45);
+  T(c,v.title,W-70*u,H*.13,{size:84*u,w:600,fam:BODY,col:'#fff',al:'right',ls:-.02});
+  c.fillStyle=k.acc;c.fillRect(70*u,H*.78,3*u,H*.14);
+  richLines(c,v.body,100*u,H*.805,W*.75,{size:36*u,lh:44*u,col:'#fff',hi:'#fff',w:400,hiw:700,hiIt:true});}},
+{id:'quote',name:'Quote',bg:'smoke',
+ fields:[S('lab','Label','[A NOTE]'),L('q','Quote','Software should bend, not break.'),S('by','Signed','AUZSLAB, JODHPUR')],
+ caption:"Software should bend, not break.\n\nThat is the whole idea. We shape it around you.\n\nauzslab.in",
+ draw(c,W,H,v,k){const u=W/1080,i=96*u;
+  T(c,v.lab,i,i+14*u,{size:22*u,w:500,fam:MONO,col:k.dim,ls:.06});
+  T(c,'“',i-10*u,H*.34,{size:420*u,w:800,fam:DISP,col:k.acc});
+  const o={size:112*u,w:800,fam:DISP,col:k.fg,ls:-.045};para(c,v.q,i,H*.47,W-i*2,o,112*u*1.0);
+  T(c,v.by,i,H-i-4*u,{size:22*u,w:500,fam:MONO,col:k.dim,ls:.06});
+  mark(c,W-i-110*u,H-i-40*u,40*u,k.fg,k.acc);}},
+{id:'seven',name:'Seven',bg:'dark',
+ fields:[S('top','Top','[AUZSLAB / THE SUITE]'),S('num','Number','7'),S('l1','Line 1','APPS.'),S('l2','Line 2','ONE LOGIN.'),S('small','Small print','POS  PAY  LEDGER  SCAN  MOB  STYLE  FINANCE')],
+ caption:"Seven apps. One login.\n\nPOS, Pay, Ledger, Scan, Mob, Style and Finance, all behind a single sign in.\n\nauzslab.in",
+ draw(c,W,H,v,k){const u=W/1080,i=96*u;
+  T(c,v.top,i,i+14*u,{size:22*u,w:500,fam:MONO,col:k.dim,ls:.06});
+  const sz=fit(c,v.num,W-i*2,{w:800,fam:DISP,ls:-.06},760*u);T(c,v.num,i-12*u,H*.6,{size:sz,w:800,fam:DISP,col:k.fg,ls:-.06});
+  T(c,v.l1,i,H*.7,{size:76*u,w:800,fam:DISP,col:k.fg,ls:-.03});T(c,v.l2,i,H*.7+84*u,{size:76*u,w:800,fam:DISP,col:k.acc,ls:-.03});
+  T(c,v.small,i,H-i-4*u,{size:19*u,w:500,fam:MONO,col:k.dim,ls:.05});
+  mark(c,W-i-110*u,i-6*u,40*u,k.fg,k.acc);}},
+{id:'split',name:'Split',bg:'dark',
+ fields:[S('ta','Left label','[WHAT IT IS]'),S('a','Left word','rigid'),S('tb','Right label','[WHAT IT SHOULD BE]'),S('b','Right word','yours')],
+ caption:"Rigid on one side. Yours on the other.\n\nWe build the second one.\n\nauzslab.in",
+ draw(c,W,H,v,k){const u=W/1080,h=W/2,p=54*u;
+  c.fillStyle='#ecebe9';c.fillRect(0,0,h,H);
+  T(c,v.ta,p,p+20*u,{size:19*u,w:500,fam:MONO,col:'#0c0c0d',ls:.05});T(c,v.tb,h+p,p+20*u,{size:19*u,w:500,fam:MONO,col:k.dim,ls:.05});
+  const o={w:800,fam:DISP,ls:-.05},sa=fit(c,v.a,h-p*2,o,170*u),sb=fit(c,v.b,h-p*2,o,170*u);
+  T(c,v.a,p,H*.52,{size:sa,w:800,fam:DISP,col:'#0c0c0d',ls:-.05});
+  c.fillStyle='#0c0c0d';c.fillRect(p,H*.52-sa*.3,Mw(c,v.a,{size:sa,w:800,fam:DISP,ls:-.05}),Math.max(3,5*u));
+  T(c,v.b,h+p,H*.52,{size:sb,w:800,fam:DISP,col:k.fg,ls:-.05});
+  c.fillStyle=k.acc;c.fillRect(h+p,H*.52+24*u,70*u,Math.max(3,6*u));
+  mark(c,p,H-p-34*u,34*u,'#0c0c0d','#800020');mark(c,W-p-94*u,H-p-34*u,34*u,k.fg,k.acc);}},
+{id:'ticker',name:'Ticker',bg:'dark',
+ fields:[S('tag','Tag','[AUZSLAB]'),S('word','Phrase','BUILT AROUND YOU'),S('foot','Foot','SOFTWARE FOR SHOPS')],
+ caption:"Built around you.\n\nOver and over, until it is true for every shop.\n\nauzslab.in",
+ draw(c,W,H,v,k){const u=W/1080,i=80*u,sz=118*u,rows=7;
+  T(c,v.tag,i,i+10*u,{size:22*u,w:500,fam:MONO,col:k.dim,ls:.06});
+  const line=(String(v.word).toUpperCase()+'   /   ').repeat(8);
+  for(let n=0;n<rows;n++){const y=H*.17+n*(H*.64/(rows-1))+sz*.35,x=-n*210*u;c.font=F(sz,800,DISP);c.textAlign='left';c.textBaseline='alphabetic';
+   if(n===3){c.fillStyle=k.acc;c.fillText(line,x,y)}else if(n%2){c.strokeStyle=k.fg;c.lineWidth=Math.max(1.5,2.2*u);c.strokeText(line,x,y)}else{c.fillStyle=k.fg;c.fillText(line,x,y)}}
+  T(c,v.foot,i,H-i-4*u,{size:19*u,w:500,fam:MONO,col:k.dim,ls:.05});mark(c,W-i-94*u,H-i-34*u,34*u,k.fg,k.acc);}},
+{id:'checklist',name:'Checklist',bg:'dark',
+ fields:[S('top','Label','[WHAT YOU GET]'),S('head','Heading','Everything,\nplainly.'),L('items','Lines (last one is wine)',"Bills on your phone\nWorks without internet\nStaff sign in with a PIN\nBill link on WhatsApp\nYour own idea, built")],
+ caption:"Everything, plainly.\n\nBills on your phone. Works without internet. Staff sign in with a PIN. Bill link on WhatsApp.\n\nAnd your own idea, built.",
+ draw(c,W,H,v,k){const u=W/1080,i=96*u;
+  T(c,v.top,i,i+14*u,{size:22*u,w:500,fam:MONO,col:k.dim,ls:.06});
+  let y=H*.2;String(v.head).split('\n').forEach((s)=>{T(c,s,i,y+70*u,{size:84*u,w:800,fam:DISP,col:k.fg,ls:-.045});y+=86*u});
+  const items=String(v.items).split('\n').filter(Boolean),top=H*.2+190*u,rh=Math.min(104*u,(H-top-i-60*u)/items.length);
+  items.forEach((s,n)=>{const yy=top+n*rh,last=n===items.length-1;c.strokeStyle=k.line;c.lineWidth=Math.max(1,1.4*u);c.beginPath();c.moveTo(i,yy);c.lineTo(W-i,yy);c.stroke();
+   T(c,last?'[+]':'[x]',i,yy+rh*.64,{size:30*u,w:500,fam:MONO,col:last?k.acc:k.dim});T(c,s,i+96*u,yy+rh*.66,{size:50*u,w:500,fam:BODY,col:k.fg,ls:-.01})});
+  mark(c,W-i-94*u,H-i-34*u,34*u,k.fg,k.acc);}},
+{id:'question',name:'Question',bg:'flare',
+ fields:[S('lab','Label','[ASK YOURSELF]'),L('q','Question','what would your shop look like if the software listened?'),S('url','Foot','auzslab.in')],
+ caption:"What would your shop look like if the software listened?\n\nTell us how your business works. We will build around it.\n\nauzslab.in",
+ draw(c,W,H,v,k){const u=W/1080,i=96*u;
+  T(c,v.lab,i,i+14*u,{size:22*u,w:500,fam:MONO,col:k.dim,ls:.06});
+  const q=String(v.q).replace(/\?\s*$/,''),o={size:124*u,w:800,fam:DISP,col:k.fg,ls:-.055},lines=wrap(c,q,W-i*1.6,o),lh=124*u*.98;
+  let y=H*.34;lines.forEach((l,n)=>{const w=T(c,l,i,y,o);if(n===lines.length-1)T(c,'?',i+w+8*u,y,{...o,col:k.acc});y+=lh});
+  T(c,v.url,i,H-i-4*u,{size:22*u,w:500,fam:MONO,col:k.dim,ls:.06});mark(c,W-i-94*u,H-i-34*u,34*u,k.fg,k.acc);}},
+{id:'steps',name:'Steps',bg:'dark',
+ fields:[S('top','Label','[HOW WE START]'),S('s1','Step 1','Talk'),S('d1','Note 1','Tell us how your shop works.'),S('s2','Step 2','Shape'),S('d2','Note 2','We bend the software to fit.'),S('s3','Step 3','Launch'),S('d3','Note 3','Your team starts. We stand beside you.'),S('s4','Step 4','Stay'),S('d4','Note 4','We keep shaping as you grow.')],
+ caption:"Talk. Shape. Launch. Stay.\n\nFour steps, and the last one never ends.\n\nauzslab.in",
+ draw(c,W,H,v,k){const u=W/1080,i=96*u,x=i+30*u;
+  T(c,v.top,i,i+14*u,{size:22*u,w:500,fam:MONO,col:k.dim,ls:.06});
+  const y0=H*.2,gap=(H-y0-i-90*u)/3;c.strokeStyle=k.line;c.lineWidth=Math.max(1.5,2*u);c.beginPath();c.moveTo(x,y0);c.lineTo(x,y0+gap*3);c.stroke();
+  [1,2,3,4].forEach((n,j)=>{const y=y0+j*gap,last=n===4;c.fillStyle=last?k.acc:k.fg;c.beginPath();c.arc(x,y,13*u,0,7);c.fill();
+   T(c,'0'+n,x+52*u,y-34*u,{size:20*u,w:500,fam:MONO,col:k.dim,ls:.06});T(c,v['s'+n],x+52*u,y+48*u,{size:92*u,w:800,fam:DISP,col:k.fg,ls:-.05});
+   para(c,v['d'+n],x+54*u,y+96*u,W-x-i-60*u,{size:28*u,w:400,fam:BODY,col:k.dim},34*u)});
+  mark(c,W-i-94*u,i-6*u,34*u,k.fg,k.acc);}},
+{id:'stamp',name:'Stamp',bg:'paper',
+ fields:[S('ring','Ring text','MADE IN JODHPUR  /  BUILT AROUND YOU  /  AUZSLAB  /  '),S('note','Under the logo','JODHPUR, INDIA'),S('foot','Foot','auzslab.in')],
+ caption:"Made in Jodhpur. Built around you.\n\nauzslab.in",
+ draw(c,W,H,v,k){const u=W/1080,cx=W/2,cy=H*.47,r=Math.min(W*.36,H*.3);
+  c.strokeStyle=k.fg;c.lineWidth=Math.max(2,3*u);c.beginPath();c.arc(cx,cy,r+58*u,0,7);c.stroke();c.lineWidth=Math.max(1,1.4*u);c.beginPath();c.arc(cx,cy,r-46*u,0,7);c.stroke();
+  const str=String(v.ring).toUpperCase(),o={size:40*u,w:700,fam:MONO,col:k.fg},ch=[...str];c.font=F(o.size,o.w,o.fam);c.textBaseline='middle';
+  const ws=ch.map((x)=>c.measureText(x).width),tot=ws.reduce((a,b)=>a+b,0),gap=(2*Math.PI*r-tot)/ch.length;let a=-Math.PI/2;
+  ch.forEach((x,n)=>{const aa=a+ws[n]/2/r;c.save();c.translate(cx+Math.cos(aa)*r,cy+Math.sin(aa)*r);c.rotate(aa+Math.PI/2);c.fillStyle=k.fg;c.textAlign='center';c.fillText(x,0,0);c.restore();a+=(ws[n]+gap)/r});
+  const lw=r*1.25,ls=lw/2.75;mark(c,cx-lw/2,cy-ls/2-12*u,ls,k.fg,k.acc);
+  T(c,v.note,cx,cy+ls/2+34*u,{size:20*u,w:500,fam:MONO,col:k.dim,al:'center',ls:.08});
+  T(c,v.foot,cx,H-84*u,{size:24*u,w:500,fam:MONO,col:k.dim,al:'center',ls:.06});}},
+{id:'contact',name:'Contact',bg:'smoke',
+ fields:[S('lab','Label','[SAY HELLO]'),L('head',"Heading","Let's\ntalk."),S('line','Line','Tell us how your business works.'),S('phone','Phone','+91 92512 50829'),S('mail','Email','helloauzslab@gmail.com'),S('web','Web','auzslab.in')],
+ caption:"Let's talk.\n\nTell us how your business works. We will build around it.\n\nCall or WhatsApp +91 92512 50829\nhelloauzslab@gmail.com\nauzslab.in",
+ draw(c,W,H,v,k){const u=W/1080,i=96*u;
+  T(c,v.lab,i,i+14*u,{size:22*u,w:500,fam:MONO,col:k.dim,ls:.06});
+  let y=H*.2;String(v.head).split('\n').forEach((s)=>{T(c,s,i-8*u,y+170*u,{size:220*u,w:800,fam:DISP,col:k.fg,ls:-.06});y+=190*u});
+  T(c,v.line,i,y+80*u,{size:34*u,w:400,fam:BODY,col:k.dim,ls:-.01});
+  const rows=[['[CALL]',v.phone],['[WRITE]',v.mail],['[VISIT]',v.web]],y1=H-i-170*u;
+  rows.forEach(([a,b],n)=>{const yy=y1+n*58*u;T(c,a,i,yy,{size:20*u,w:500,fam:MONO,col:n===0?k.acc:k.dim,ls:.05});T(c,b,i+150*u,yy+2*u,{size:36*u,w:500,fam:BODY,col:k.fg,ls:-.01})});
+  mark(c,W-i-94*u,i-6*u,34*u,k.fg,k.acc);}},
+{id:'caption',name:'Caption',bg:'wall',
+ fields:[S('tag','Tag','[AUZSLAB]'),S('count','Counter','[1/3]'),L('head','Headline','made for\nthe way you\nwork.')],
+ caption:"Made for the way you work.\n\nauzslab.in",
+ draw(c,W,H,v,k){const u=W/1080,i=80*u;
+  const g=c.createLinearGradient(0,H*.38,0,H);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.82)');c.fillStyle=g;c.fillRect(0,H*.38,W,H*.62);
+  T(c,v.tag,i,i+10*u,{size:22*u,w:500,fam:MONO,col:'#f3f2f0',ls:.06});T(c,v.count,W-i,i+10*u,{size:22*u,w:500,fam:MONO,col:'#f3f2f0',al:'right',ls:.06});
+  const lines=String(v.head).split('\n'),sz=118*u,lh=sz*.95;let y=H-i-70*u-(lines.length-1)*lh;
+  lines.forEach((s)=>{T(c,s,i,y,{size:sz,w:800,fam:DISP,col:'#f3f2f0',ls:-.05});y+=lh});
+  mark(c,i,H-i-34*u,34*u,'#f3f2f0','#c2183f');}},
+
+{id:'s-morning',name:'Morning',story:true,bg:'wall',
+ fields:[S('lab','Label','[LIVE]'),S('time','Time','9:00'),S('ap','AM / PM','AM'),L('head','Line','Monday.\nShop open.'),S('url','Foot','auzslab.in')],
+ caption:"Monday, 9 AM. Shop open.\n\nFirst bill of the week, on the phone.\n\nauzslab.in",
+ draw(c,W,H,v,k){const u=W/1080,i=96*u,y0=250*u;
+  T(c,v.lab,i,y0,{size:24*u,w:500,fam:MONO,col:k.acc,ls:.06});
+  const sz=fit(c,v.time,W-i*2-190*u,{w:800,fam:DISP,ls:-.06},420*u);const w=T(c,v.time,i-8*u,y0+sz*1.05+60*u,{size:sz,w:800,fam:DISP,col:k.fg,ls:-.06});
+  T(c,v.ap,i+w+14*u,y0+sz*1.05+60*u,{size:70*u,w:800,fam:DISP,col:k.dim,ls:-.03});
+  let y=H*.62;String(v.head).split('\n').forEach((s)=>{T(c,s,i,y,{size:104*u,w:800,fam:DISP,col:k.fg,ls:-.05});y+=104*u});
+  T(c,v.url,i,H-340*u,{size:24*u,w:500,fam:MONO,col:k.dim,ls:.06});mark(c,W-i-110*u,H-340*u-34*u,40*u,k.fg,k.acc);}},
+{id:'s-poll',name:'This or that',story:true,bg:'dark',
+ fields:[S('lab','Label','[YOUR VOTE]'),S('q','Question','Which one?'),S('a','Option A','rigid software'),S('b','Option B','software that bends')],
+ caption:"This or that.\n\nTap your side.",
+ draw(c,W,H,v,k){const u=W/1080,i=80*u,top=330*u,bot=H-360*u,mid=(top+bot)/2,h=(bot-top)/2-14*u;
+  T(c,v.lab,i,top-60*u,{size:22*u,w:500,fam:MONO,col:k.dim,ls:.06});T(c,v.q,W-i,top-58*u,{size:46*u,w:800,fam:DISP,col:k.fg,al:'right',ls:-.03});
+  c.fillStyle='#ecebe9';rrect(c,i,top,W-i*2,h,26*u);c.fill();
+  c.strokeStyle=k.fg;c.lineWidth=Math.max(2,3*u);rrect(c,i,mid+14*u,W-i*2,h,26*u);c.stroke();
+  const o={w:800,fam:DISP,ls:-.045},sa=fit(c,v.a,W-i*2-90*u,o,92*u),sb=fit(c,v.b,W-i*2-90*u,o,92*u);
+  T(c,'A',i+44*u,top+70*u,{size:24*u,w:500,fam:MONO,col:'#6b6a6d'});T(c,v.a,i+44*u,top+h*.62,{size:sa,w:800,fam:DISP,col:'#0c0c0d',ls:-.045});
+  T(c,'B',i+44*u,mid+14*u+70*u,{size:24*u,w:500,fam:MONO,col:k.acc});T(c,v.b,i+44*u,mid+14*u+h*.62,{size:sb,w:800,fam:DISP,col:k.fg,ls:-.045});
+  mark(c,W/2-47*u,bot+36*u,34*u,k.fg,k.acc);}},
+{id:'s-soon',name:'Soon',story:true,bg:'flare',
+ fields:[S('lab','Label','[COMING NEXT]'),S('word','Word','soon.'),L('line','Line','Something new, built\nfor the way you work.'),S('bar','Bar label','LOADING'),S('pct','Percent (0-100)','72')],
+ caption:"Soon.\n\nSomething new, built for the way you work.\n\nauzslab.in",
+ draw(c,W,H,v,k){const u=W/1080,i=96*u;
+  T(c,v.lab,i,300*u,{size:24*u,w:500,fam:MONO,col:k.dim,ls:.06});
+  const sz=fit(c,v.word,W-i*2,{w:800,fam:DISP,ls:-.06},400*u);T(c,v.word,i-8*u,H*.46,{size:sz,w:800,fam:DISP,col:k.fg,ls:-.06});
+  let y=H*.46+90*u;String(v.line).split('\n').forEach((s)=>{T(c,s,i,y,{size:42*u,w:400,fam:BODY,col:k.dim,ls:-.01});y+=54*u});
+  const by=H-470*u,p=Math.max(0,Math.min(100,+v.pct||0))/100;T(c,v.bar,i,by-22*u,{size:20*u,w:500,fam:MONO,col:k.dim,ls:.06});T(c,Math.round(p*100)+'%',W-i,by-22*u,{size:20*u,w:500,fam:MONO,col:k.fg,al:'right'});
+  c.strokeStyle=k.line;c.lineWidth=Math.max(2,3*u);c.beginPath();c.moveTo(i,by);c.lineTo(W-i,by);c.stroke();c.strokeStyle=k.acc;c.beginPath();c.moveTo(i,by);c.lineTo(i+(W-i*2)*p,by);c.stroke();
+  mark(c,W-i-94*u,H-340*u-30*u,34*u,k.fg,k.acc);}},
+{id:'s-tip',name:'Tip',story:true,bg:'paper',
+ fields:[S('lab','Label','[TIP]'),S('num','Number','01'),L('head','Tip','Keep your\nprices in\none place.'),L('body','Why','One list. Every counter, every phone, always the same price.'),S('url','Foot','auzslab.in')],
+ caption:"Tip 01: keep your prices in one place.\n\nOne list. Every counter, every phone, always the same price.\n\nauzslab.in",
+ draw(c,W,H,v,k){const u=W/1080,i=96*u;
+  T(c,v.lab,i,300*u,{size:24*u,w:500,fam:MONO,col:k.dim,ls:.06});
+  T(c,v.num,i-10*u,300*u+330*u,{size:360*u,w:800,fam:DISP,col:k.acc,ls:-.06});
+  let y=H*.5;String(v.head).split('\n').forEach((s)=>{T(c,s,i,y,{size:112*u,w:800,fam:DISP,col:k.fg,ls:-.05});y+=112*u});
+  para(c,v.body,i,y+30*u,W-i*2-60*u,{size:36*u,w:400,fam:BODY,col:k.dim},48*u);
+  T(c,v.url,i,H-340*u,{size:24*u,w:500,fam:MONO,col:k.dim,ls:.06});mark(c,W-i-110*u,H-340*u-34*u,40*u,k.fg,k.acc);}},
+{id:'s-swipe',name:'Swipe',story:true,bg:'wall',
+ fields:[S('tag','Tag','[AUZSLAB]'),L('head','Headline','made for\nthe way\nyou work.'),S('cue','Cue','SWIPE')],
+ caption:"Made for the way you work.\n\nSwipe up.",
+ draw(c,W,H,v,k){const u=W/1080,i=90*u;
+  const g=c.createLinearGradient(0,H*.3,0,H);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.85)');c.fillStyle=g;c.fillRect(0,H*.3,W,H*.7);
+  T(c,v.tag,i,300*u,{size:24*u,w:500,fam:MONO,col:'#f3f2f0',ls:.06});
+  const ls=String(v.head).split('\n'),sz=132*u;let y=H*.66;ls.forEach((s)=>{T(c,s,i,y,{size:sz,w:800,fam:DISP,col:'#f3f2f0',ls:-.05});y+=sz*.95});
+  const cx=W/2,cy=H-340*u-50*u;c.strokeStyle='#f3f2f0';c.lineWidth=Math.max(2,3*u);c.beginPath();c.moveTo(cx-26*u,cy+10*u);c.lineTo(cx,cy-16*u);c.lineTo(cx+26*u,cy+10*u);c.stroke();
+  T(c,v.cue,cx,cy+54*u,{size:22*u,w:500,fam:MONO,col:'#f3f2f0',al:'center',ls:.14});}},
+{id:'s-ask',name:'Ask us',story:true,bg:'smoke',
+ fields:[S('lab','Label','[ASK US]'),S('q','Question box','Ask us how your shop could run on it'),S('head','Heading','Questions?'),S('url','Foot','auzslab.in')],
+ caption:"Questions?\n\nSend us yours. We answer every one.\n\nauzslab.in",
+ draw(c,W,H,v,k){const u=W/1080,i=96*u;
+  T(c,v.lab,i,300*u,{size:24*u,w:500,fam:MONO,col:k.dim,ls:.06});
+  const hs=fit(c,v.head,W-i*2,{w:800,fam:DISP,ls:-.06},210*u);T(c,v.head,i-6*u,H*.34,{size:hs,w:800,fam:DISP,col:k.fg,ls:-.06});
+  const bw=W-i*2,o={size:50*u,w:700,fam:BODY,col:'#0c0c0d',ls:-.02},lines=wrap(c,v.q,bw-90*u,o),bh=lines.length*64*u+110*u,by=H*.5;
+  c.fillStyle='#f3f2f0';rrect(c,i,by,bw,bh,36*u);c.fill();
+  T(c,'Type something...',i+45*u,by+66*u,{size:22*u,w:500,fam:MONO,col:'#8d8c90',ls:.03});
+  lines.forEach((l,n)=>T(c,l,i+45*u,by+120*u+n*64*u,o));
+  T(c,v.url,i,H-340*u,{size:24*u,w:500,fam:MONO,col:k.dim,ls:.06});mark(c,W-i-110*u,H-340*u-34*u,40*u,k.fg,k.acc);}},
+{id:'s-stack',name:'Stack',story:true,bg:'dark',
+ fields:[S('lab','Label','[THE SUITE]'),S('w1','Word 1','ONE'),S('w2','Word 2','LOGIN'),S('w3','Word 3','SEVEN'),S('w4','Word 4','APPS')],
+ caption:"One login. Seven apps.\n\nauzslab.in",
+ draw(c,W,H,v,k){const u=W/1080,i=80*u;
+  T(c,v.lab,i,300*u,{size:24*u,w:500,fam:MONO,col:k.dim,ls:.06});
+  const ws=[v.w1,v.w2,v.w3,v.w4],top=380*u,bot=H-380*u,rh=(bot-top)/4;
+  ws.forEach((w,n)=>{const sz=fit(c,String(w).toUpperCase(),W-i*2,{w:800,fam:DISP,ls:-.04},rh*1.02),y=top+(n+1)*rh-rh*.14;
+   if(n%2){c.font=F(sz,800,DISP);c.textAlign='left';c.textBaseline='alphabetic';c.strokeStyle=k.fg;c.lineWidth=Math.max(1.5,2.4*u);c.strokeText(String(w).toUpperCase(),i,y)}
+   else T(c,String(w).toUpperCase(),i,y,{size:sz,w:800,fam:DISP,col:n===2?k.acc:k.fg,ls:-.04})});
+  mark(c,W-i-94*u,H-340*u-30*u,34*u,k.fg,k.acc);}},
+{id:'s-link',name:'Link',story:true,bg:'flare',
+ fields:[S('lab','Label','[NEW]'),L('head','Headline','See it\nrun.'),S('cta','Call to action','LINK IN BIO'),S('url','Web','auzslab.in')],
+ caption:"See it run.\n\nTry the live demo. Link in bio.\n\nauzslab.in",
+ draw(c,W,H,v,k){const u=W/1080,i=96*u;
+  T(c,v.lab,i,300*u,{size:24*u,w:500,fam:MONO,col:k.dim,ls:.06});
+  let y=H*.38;String(v.head).split('\n').forEach((s)=>{T(c,s,i-8*u,y,{size:230*u,w:800,fam:DISP,col:k.fg,ls:-.06});y+=215*u});
+  const px=i,pw=Mw(c,v.cta,{size:30*u,w:700,fam:MONO,ls:.1})+90*u,py=H*.66;c.fillStyle=k.fg;rrect(c,px,py,pw,92*u,46*u);c.fill();
+  T(c,v.cta,px+45*u,py+58*u,{size:30*u,w:700,fam:MONO,col:k.dark?'#0c0c0d':'#f3f2f0',ls:.1});
+  c.strokeStyle=k.fg;c.lineWidth=Math.max(3,5*u);c.beginPath();c.moveTo(px+pw+60*u,py+70*u);c.lineTo(px+pw+130*u,py+22*u);c.moveTo(px+pw+80*u,py+22*u);c.lineTo(px+pw+130*u,py+22*u);c.lineTo(px+pw+130*u,py+72*u);c.stroke();
+  T(c,v.url,i,H-340*u,{size:24*u,w:500,fam:MONO,col:k.dim,ls:.06});mark(c,W-i-110*u,H-340*u-34*u,40*u,k.fg,k.acc);}},
+];
+
+/* ---------- ideas ---------- */
+const IDEAS=[
+{t:"You're not just our client.",tpl:'statement',n:'The family post. Warm, direct.'},
+{t:'Why most software stays rigid.',tpl:'flux',n:'A point of view in four lines.'},
+{t:'You work with us.',tpl:'orbit',n:'All products around one circle.'},
+{t:'How did it start?',tpl:'triptych',n:'The origin in three frames and a paragraph.',v:{}},
+{t:'We built it around you.',tpl:'brief',n:'Who it is for and where it was made.'},
+{t:'About us, slide 1 of 4.',tpl:'cover',n:'First slide of a carousel.'},
+{t:'Define your core.',tpl:'core',n:'Manifesto poster for the feed.'},
+{t:'What we do.',tpl:'list',n:'Four promises over a photo.'},
+{t:'unrigid (adj.)',tpl:'swiss',n:'A definition poster in the Swiss style.'},
+{t:'Your shop, your way.',tpl:'statement',n:'Customisation as a promise.',v:{l1:'YOUR SHOP,',l2:'YOUR WAY,',l3:'ALWAYS.',body:'We do not give you a box to fit into. **We shape the software around how your shop already works**, then we keep shaping it as you grow.'}},
+{t:'Monday morning, opened.',tpl:'brief',n:'A day-in-the-life moment.',v:{head:'Monday, 9 AM.\nShop open.',tag:'[LIVE]',r0:'FIRST BILL OF THE WEEK',k1:'[BILLED]',v1:'ON THE PHONE',k2:'[SYNCED]',v2:'EVEN OFFLINE'}},
+{t:'Software should bend, not break.',tpl:'quote',n:'A single line, big and quiet.'},
+{t:'Seven apps. One login.',tpl:'seven',n:'The suite in one number.'},
+{t:'Rigid vs yours.',tpl:'split',n:'Two halves, two words.'},
+{t:'Built around you. (x7)',tpl:'ticker',n:'A repeating line that fills the feed.'},
+{t:'Everything, plainly.',tpl:'checklist',n:'Four true features and your own idea.'},
+{t:'What if the software listened?',tpl:'question',n:'One question, lowercase, tight.'},
+{t:'Talk. Shape. Launch. Stay.',tpl:'steps',n:'How a start with AUZslab goes.'},
+{t:'Made in Jodhpur.',tpl:'stamp',n:'A round stamp with the logo.'},
+{t:"Let's talk.",tpl:'contact',n:'Call, write, visit. Real details.'},
+{t:'Made for the way you work.',tpl:'caption',n:'Your own photo, one headline.'},
+{t:'Monday, 9 AM. Shop open.',tpl:'s-morning',n:'Story: a live moment.'},
+{t:'This or that.',tpl:'s-poll',n:'Story: two options to tap.'},
+{t:'Soon.',tpl:'s-soon',n:'Story: a teaser with a progress bar.'},
+{t:'Tip 01.',tpl:'s-tip',n:'Story: one useful tip, big number.'},
+{t:'Made for the way you work.',tpl:'s-swipe',n:'Story: your photo, swipe up.'},
+{t:'Questions?',tpl:'s-ask',n:'Story: question box for replies.'},
+{t:'One login. Seven apps.',tpl:'s-stack',n:'Story: four words, stacked.'},
+{t:'See it run.',tpl:'s-link',n:'Story: link in bio button.'},
+{t:'Stay long after launch.',tpl:'core',n:'Support and care.',v:{top:'WE STAY.\n  AFTER THE\nLAUNCH.',bot:'CALL US.\nWE ANSWER.\n\nTHAT IS THE\nWHOLE PLAN.'}},
+];
+
+/* ---------- state ---------- */
+const FONTS={archivo:{n:'Archivo',f:'Archivo'},inter:{n:'Inter Tight',f:"'Inter Tight'"},grotesk:{n:'Space Grotesk',f:"'Space Grotesk'"},anton:{n:'Anton (tall, heavy)',f:'Anton',dw:400},bebas:{n:'Bebas Neue (tall)',f:"'Bebas Neue'",dw:400},syne:{n:'Syne (wide, odd)',f:'Syne'},unb:{n:'Unbounded (round, wide)',f:'Unbounded'},instr:{n:'Instrument Serif',f:"'Instrument Serif'",dw:400},dmserif:{n:'DM Serif Display',f:"'DM Serif Display'",dw:400},playfair:{n:'Playfair Display',f:"'Playfair Display'"},pixel:{n:'Silkscreen (pixel, like the logo)',f:'Silkscreen',dw:400},smono:{n:'Space Mono',f:"'Space Mono'"}};
+const PRE=[{id:'classic',n:'Classic',d:'archivo',b:"'Inter Tight'",m:"'JetBrains Mono'"},{id:'poster',n:'Poster (tall)',d:'anton',b:"'Inter Tight'",m:"'JetBrains Mono'"},{id:'tall',n:'Bebas',d:'bebas',b:"'Inter Tight'",m:"'Space Mono'"},{id:'editorial',n:'Editorial serif',d:'instr',b:"'Inter Tight'",m:"'JetBrains Mono'"},{id:'serif',n:'Soft serif',d:'dmserif',b:"'DM Sans'",m:"'DM Mono'"},{id:'playfair',n:'Playfair',d:'playfair',b:"'Inter Tight'",m:"'JetBrains Mono'"},{id:'wide',n:'Wide',d:'unb',b:"'Inter Tight'",m:"'JetBrains Mono'"},{id:'grotesk',n:'Grotesk',d:'grotesk',b:"'Space Grotesk'",m:"'Space Mono'"},{id:'pixel',n:'Pixel (matches the logo)',d:'pixel',b:"'Inter Tight'",m:"'Space Mono'"},{id:'machine',n:'Type machine',d:'smono',b:"'Space Mono'",m:"'Space Mono'"}];
+const KEY='auz.studio.v1';
+const st={tpl:'statement',size:1350,bg:null,grain:42,blur:0,motion:0,dim:0,tone:'auto',accent:true,vals:{},cap:{},photo:null,frames:[null,null,null],photoVer:0,type:'classic',hfont:'',hs:100,bw:true,lib:[],act:-1,exIdx:-1,ex:{on:false,pos:'tr',shape:'sq',size:34,bw:true}};
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s){Object.assign(st,{tpl:s.tpl,size:s.size,grain:s.grain,blur:s.blur,motion:s.motion,dim:s.dim,tone:s.tone,accent:s.accent,vals:s.vals||{},cap:s.cap||{},type:s.type||'classic',hfont:s.hfont||'',hs:s.hs||100,bw:s.bw!==false,ex:{...st.ex,...(s.ex||{}),on:false}});st.bg=s.bgs||null}}catch{}
+st.bgs=st.bg||{};
+const tpl=()=>TPL.find((t)=>t.id===st.tpl);
+const bgOf=()=>st.bgs[st.tpl]||tpl().bg;
+function vals(t){const v={};t.fields.forEach((f)=>v[f.k]=(st.vals[t.id]||{})[f.k]??f.d);return v}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({tpl:st.tpl,size:st.size,grain:st.grain,blur:st.blur,motion:st.motion,dim:st.dim,tone:st.tone,accent:st.accent,vals:st.vals,cap:st.cap,bgs:st.bgs,type:st.type,hfont:st.hfont,hs:st.hs,bw:st.bw,ex:st.ex}))}catch{}}
+const exObj=()=>st.ex.on&&st.lib[st.exIdx]?{...st.ex,img:st.lib[st.exIdx]}:null;
+function applyType(){const p=PRE.find((x)=>x.id===st.type)||PRE[0],df=FONTS[st.hfont||p.d]||FONTS[p.d];DISP=df.f+",'Helvetica Neue',Arial,sans-serif";DW=df.dw||0;LSM=(df.f==='Silkscreen'||/Mono/.test(df.f))?0:1;BODY=p.b+',Arial,sans-serif';MONO=p.m+',ui-monospace,Menlo,monospace';HS=st.hs/100;const t=$('#tsample');if(t)t.style.fontFamily=DISP}
+async function loadType(){const p=PRE.find((x)=>x.id===st.type)||PRE[0],need=new Set([(FONTS[st.hfont||p.d]||{}).f,p.b,p.m]);await Promise.all([...need].filter(Boolean).map((f)=>document.fonts.load('400 40px '+f).catch(()=>0).then(()=>document.fonts.load('800 40px '+f).catch(()=>0))));applyType()}
+
+/* ---------- render ---------- */
+function render(cv,t,W,H,v,o){
+  const c=cv.getContext('2d');cv.width=W;cv.height=H;
+  const bgst={bg:o.bg,blur:o.blur,motion:o.motion,dim:o.dim,photo:o.photo,photoVer:o.photoVer,bw:o.bw};
+  const b=background(bgst,W,H);c.drawImage(b.cv,0,0);
+  const dark=o.tone==='auto'?b.lum<.55:o.tone==='light';
+  const k={dark,fg:dark?'#f3f2f0':'#0c0c0d',dim:dark?'rgba(243,242,240,.55)':'rgba(12,12,13,.6)',line:dark?'rgba(243,242,240,.14)':'rgba(12,12,13,.16)',acc:o.accent?(dark?'#c2183f':'#800020'):(dark?'#f3f2f0':'#0c0c0d')};
+  t.draw(c,W,H,v,k,{frames:o.frames});
+  if(o.extra&&o.extra.img)drawExtra(c,W,H,o.extra,k);
+  grain(c,W,H,o.grain/100);
+}
+const cv=$('#cv');let pend=0;
+function draw(){cancelAnimationFrame(pend);pend=requestAnimationFrame(()=>{const t=tpl(),W=1080,H=st.size;render(cv,t,W,H,vals(t),{bg:bgOf(),blur:st.blur,motion:st.motion,dim:st.dim,tone:st.tone,accent:st.accent,grain:st.grain,photo:st.photo,photoVer:st.photoVer,frames:st.frames,bw:st.bw,extra:exObj()});$('#capline').textContent=`${W} × ${H} px · ${t.name}`})}
+
+/* ---------- ui ---------- */
+function shelf(){
+  const sh=$('#shelf');sh.textContent='';
+  TPL.forEach((t)=>{const b=document.createElement('button');b.className='th';b.setAttribute('aria-pressed',String(t.id===st.tpl));const c=document.createElement('canvas');b.append(c,document.createTextNode(t.name+(t.story?' 9:16':'')));
+   render(c,t,216,t.story?384:270,(()=>{const v={};t.fields.forEach((f)=>v[f.k]=f.d);return v})(),{bg:t.bg,blur:0,motion:0,dim:0,tone:'auto',accent:true,grain:40,photo:null,photoVer:0,frames:[null,null,null]});
+   b.onclick=()=>{st.tpl=t.id;if(t.story)st.size=1920;sync()};sh.append(b)});
+}
+function fields(){
+  const t=tpl(),host=$('#fields');host.textContent='';const v=vals(t);
+  t.fields.forEach((f,n)=>{const l=document.createElement('label');l.className='f';l.append(document.createTextNode(f.l));const el=document.createElement(f.t==='l'?'textarea':'input');if(f.t!=='l')el.type='text';else el.rows=Math.min(5,String(v[f.k]).split('\n').length+1);el.id='f-'+f.k;el.value=v[f.k];
+   el.oninput=()=>{(st.vals[t.id]=st.vals[t.id]||{})[f.k]=el.value;save();draw()};l.append(el);host.append(l)});
+}
+function controls(){
+  $('#size').value=String(st.size);$('#bg').value=bgOf();$('#tone').value=st.tone;$('#accent').checked=st.accent;
+  ['grain','blur','motion','dim'].forEach((k)=>{$('#'+k).value=st[k];$('#o-'+k).textContent=st[k]});
+  $('#photoRow2').hidden=!tpl().photos;$('#tstyle').value=st.type;$('#hfont').value=st.hfont;$('#hs').value=st.hs;$('#o-hs').textContent=st.hs+'%';$('#bgbw').checked=st.bw;exUi();
+  $('#caption').value=st.cap[st.tpl]??tpl().caption;
+}
+function sync(){shelf();fields();controls();save();draw()}
+$('#size').onchange=(e)=>{st.size=+e.target.value;save();draw()};
+$('#bg').onchange=(e)=>{st.bgs[st.tpl]=e.target.value;save();draw()};
+$('#tone').onchange=(e)=>{st.tone=e.target.value;save();draw()};
+$('#accent').onchange=(e)=>{st.accent=e.target.checked;save();draw()};
+['grain','blur','motion','dim'].forEach((k)=>$('#'+k).oninput=(e)=>{st[k]=+e.target.value;$('#o-'+k).textContent=st[k];save();draw()});
+$('#caption').oninput=(e)=>{st.cap[st.tpl]=e.target.value;save()};
+function loadImg(file){return new Promise((res)=>{const r=new FileReader();r.onload=()=>{const i=new Image();i.onload=()=>{const m=Math.max(i.width,i.height),k=m>1800?1800/m:1,c=mk(i.width*k,i.height*k);c.getContext('2d').drawImage(i,0,0,c.width,c.height);res(c)};i.onerror=()=>res(null);i.src=r.result};r.onerror=()=>res(null);r.readAsDataURL(file)})}
+function exUi(){$('#exbox').hidden=!st.ex.on;$('#exPos').value=st.ex.pos;$('#exShape').value=st.ex.shape;$('#exSize').value=st.ex.size;$('#o-exSize').textContent=st.ex.size+'%';$('#exBw').checked=st.ex.bw}
+function libUi(){const h=$('#lib');h.textContent='';st.lib.forEach((im,n)=>{const b=document.createElement('button');b.setAttribute('aria-pressed',String(n===st.act));b.setAttribute('aria-label','Picture '+(n+1));const c=mk(112,112);cover(c.getContext('2d'),im,0,0,112,112);b.append(c);b.onclick=()=>{st.act=n;libUi()};h.append(b)});if(!st.lib.length){const p=document.createElement('span');p.className='note';p.textContent='No pictures yet. Add some and they appear here.';h.append(p)}}
+$('#add').onchange=async(e)=>{const fs=[...e.target.files];for(const f of fs){const i=await loadImg(f);if(i)st.lib.push(i)}e.target.value='';if(fs.length){st.act=st.lib.length-1;libUi();$('#msg').textContent='Added. Choose how to use it below.'}};
+$('#useBg').onclick=()=>{const i=st.lib[st.act];if(!i){$('#msg').textContent='Tap a picture first.';return}st.photo=i;st.photoVer++;st.bgs[st.tpl]='photo';$('#bg').value='photo';save();draw()};
+$('#useEx').onclick=()=>{if(!st.lib[st.act]){$('#msg').textContent='Tap a picture first.';return}st.exIdx=st.act;st.ex.on=true;exUi();save();draw()};
+$('#exOff').onclick=()=>{st.ex.on=false;exUi();draw()};
+$('#rmPic').onclick=()=>{if(st.act<0)return;const i=st.lib[st.act];st.lib.splice(st.act,1);if(st.photo===i){st.photo=null;st.photoVer++}if(st.exIdx===st.act){st.exIdx=-1;st.ex.on=false}else if(st.exIdx>st.act)st.exIdx--;st.act=Math.min(st.act,st.lib.length-1);libUi();exUi();draw()};
+$('#fillFrames').onclick=()=>{if(!st.lib.length){$('#msg').textContent='Add pictures first.';return}for(let n=0;n<3;n++)st.frames[n]=st.lib[n%st.lib.length];st.photoVer++;draw()};
+$('#bgbw').onchange=(e)=>{st.bw=e.target.checked;save();draw()};
+$('#exPos').onchange=(e)=>{st.ex.pos=e.target.value;save();draw()};
+$('#exShape').onchange=(e)=>{st.ex.shape=e.target.value;save();draw()};
+$('#exSize').oninput=(e)=>{st.ex.size=+e.target.value;$('#o-exSize').textContent=st.ex.size+'%';save();draw()};
+$('#exBw').onchange=(e)=>{st.ex.bw=e.target.checked;save();draw()};
+/* type */
+PRE.forEach((p)=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.n;$('#tstyle').append(o)});
+{const o=document.createElement('option');o.value='';o.textContent='From the style';$('#hfont').append(o)}
+Object.entries(FONTS).forEach(([k,f])=>{const o=document.createElement('option');o.value=k;o.textContent=f.n;$('#hfont').append(o)});
+async function typeChanged(){save();await loadType();shelf();draw()}
+$('#tstyle').onchange=(e)=>{st.type=e.target.value;st.hfont='';$('#hfont').value='';typeChanged()};
+$('#hfont').onchange=(e)=>{st.hfont=e.target.value;typeChanged()};
+$('#hs').oninput=(e)=>{st.hs=+e.target.value;$('#o-hs').textContent=st.hs+'%';HS=st.hs/100;save();shelf();draw()};
+$('#frames').onchange=async(e)=>{const fs=[...e.target.files].slice(0,3);for(let n=0;n<fs.length;n++){const i=await loadImg(fs[n]);if(i)st.frames[n]=i}st.photoVer++;draw()};
+async function copyText(s,m){try{await navigator.clipboard.writeText(s);m.textContent='Copied.'}catch{const ta=$('#caption');ta.select();m.textContent='Press copy on the selected text.'}}
+$('#copycap').onclick=()=>copyText($('#caption').value,$('#msg'));
+let dataUrl='';
+$('#make').onclick=()=>{try{dataUrl=cv.toDataURL('image/png');$('#out').src=dataUrl;$('#dlg').showModal()}catch{$('#msg').textContent='Could not make the image. Try removing the photo.'}};
+$('#close').onclick=()=>$('#dlg').close();
+$('#copyimg').onclick=async()=>{try{const b=await (await fetch(dataUrl)).blob();await navigator.clipboard.write([new ClipboardItem({'image/png':b})]);$('#copyimg').textContent='Copied'}catch{$('#copyimg').textContent='Press and hold the picture instead'}};
+/* tabs */
+function tab(n){['studio','ideas','identity'].forEach((x)=>{$('#v-'+x).hidden=x!==n});document.querySelectorAll('.tab').forEach((b)=>b.setAttribute('aria-selected',String(b.dataset.t===n)))}
+document.querySelectorAll('.tab').forEach((b)=>b.onclick=()=>tab(b.dataset.t));
+/* ideas */
+const ih=$('#ideas');
+IDEAS.forEach((d)=>{const el=document.createElement('div');el.className='idea';const b=document.createElement('b');b.textContent=d.t;const s=document.createElement('small');s.textContent=d.n+' · '+TPL.find((x)=>x.id===d.tpl).name;const u=document.createElement('button');u.className='btn ghost';u.textContent='Open in studio';
+ u.onclick=()=>{st.tpl=d.tpl;if(TPL.find((x)=>x.id===d.tpl).story)st.size=1920;if(d.v){st.vals[d.tpl]={...(st.vals[d.tpl]||{}),...d.v}}delete st.cap[d.tpl];tab('studio');sync();window.scrollTo(0,0)};el.append(b,s,u);ih.append(el)});
+/* start once fonts are ready so the first frame uses the real faces */
+const boot=async()=>{await loadType();libUi();sync()};
+Promise.all([LOGO_P].concat(["800 40px Archivo","400 40px 'Inter Tight'","500 40px 'JetBrains Mono'","600 40px Archivo","500 40px 'Inter Tight'"].map((f)=>document.fonts.load(f).catch(()=>0)))).then(boot,boot);
+applyType();libUi();sync();
+</script>
+</body>
+</html>
