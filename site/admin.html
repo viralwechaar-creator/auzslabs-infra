@@ -365,6 +365,18 @@ body.admin-shell .btn-primary:hover{background:#940a2c}
 .a-search:focus{outline:none;background:var(--card-bg);box-shadow:0 0 0 2px var(--wine-soft),inset 0 0 0 1px var(--accent)}
 .a-nav-row{transition:background .2s,padding .25s var(--out)}
 .a-nav-row:active{background:var(--wine-soft)}
+#postStudioSection.active{animation:none}
+.ps-box{display:flex;flex-direction:column;gap:8px}
+.ps-bar{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ps-bar b{font:600 15px var(--font-body);color:var(--ink)}
+.ps-btn{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--card,#fff);color:var(--ink);font:600 13px var(--font-body);cursor:pointer}
+.ps-btn svg{width:16px;height:16px}
+.ps-box iframe{width:100%;height:calc(100vh - 190px);min-height:600px;border:0;border-radius:12px;background:#0b0b0c}
+.ps-box.full{position:fixed;inset:0;z-index:9999;background:#0b0b0c;gap:0;padding:0}
+.ps-box.full .ps-bar{height:48px;padding:0 14px;background:#121214;border-bottom:1px solid #26262a}
+.ps-box.full .ps-bar b{color:#f2f1ef}
+.ps-box.full .ps-btn{background:#f2f1ef;color:#0b0b0c;border-color:#f2f1ef}
+.ps-box.full iframe{flex:1;height:auto;min-height:0;border-radius:0}
 
 /* layer 7: desktop sidebar */
 @media (min-width:860px){
@@ -890,7 +902,10 @@ body.admin-shell .bn-in input{border:none!important;background:none!important;bo
       </section>
 
       <section class="a-page" id="postStudioSection" data-title="Post studio" data-parent="more">
-        <iframe id="postStudioFrame" title="AUZslab Post Studio" data-src="post-studio.html?v=1" style="width:100%;height:calc(100vh - 150px);min-height:640px;border:0;border-radius:12px;background:#0b0b0c" loading="lazy"></iframe>
+        <div class="ps-box" id="postStudioBox">
+          <div class="ps-bar"><b>Post studio</b><button type="button" class="ps-btn" id="psFull" aria-label="Open full page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="psIco"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span id="psTxt">Open full page</span></button></div>
+          <iframe id="postStudioFrame" title="AUZslab Post Studio" data-src="post-studio.html?v=2" loading="lazy"></iframe>
+        </div>
       </section>
 
       <section class="a-page" id="moreSection" data-title="More">
@@ -1222,6 +1237,7 @@ function ensureSectionLoaded(name) {
 }
 
 function openSection(name, opts = {}) {
+  if (window.psCloseFull) window.psCloseFull();
   currentSection = name;
   document.querySelectorAll('.a-page').forEach((s) => s.classList.remove('active'));
   const target = document.getElementById(name + 'Section');
@@ -1248,6 +1264,19 @@ function openSection(name, opts = {}) {
 document.querySelectorAll('[data-section]').forEach((btn) => {
   btn.addEventListener('click', () => openSection(btn.dataset.section));
 });
+(function () {
+  const box = document.getElementById('postStudioBox'), btn = document.getElementById('psFull');
+  if (!box || !btn) return;
+  const set = (on) => {
+    box.classList.toggle('full', on); document.body.style.overflow = on ? 'hidden' : '';
+    document.getElementById('psTxt').textContent = on ? 'Close' : 'Open full page';
+    document.getElementById('psIco').innerHTML = on ? '<path d="M6 6l12 12M18 6L6 18"/>' : '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>';
+    btn.setAttribute('aria-label', on ? 'Close full page' : 'Open full page');
+  };
+  btn.onclick = () => set(!box.classList.contains('full'));
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && box.classList.contains('full')) set(false); });
+  window.psCloseFull = () => set(false);
+})();
 document.getElementById('aBack').onclick = () => openSection('more');
 document.getElementById('goOnboardBtn').onclick = () => openSection('onboard');
 document.getElementById('signOutRow').onclick = () => document.getElementById('signOutBtn').click();
