@@ -1001,3 +1001,6 @@ footer .col a,footer .col span{font-size:9.5px}
 body.homehero:not(.pasthero) .top{transform:translateY(-110%);pointer-events:none}
 body.homehero.pasthero .top{background:rgba(239,238,237,.92)!important;color:#000}
 body.homehero.pasthero .top,body.homehero.pasthero .top .l a,body.homehero.pasthero .top .ic,body.homehero.pasthero .brand{color:#000!important;text-shadow:none!important}
+
+/* intentional blank space in the product grid: just empty space, no card */
+.blank,.blank.ghost{background:transparent!important;box-shadow:none!important;border:0;opacity:1}
