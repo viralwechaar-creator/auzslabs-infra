@@ -162,10 +162,10 @@ let counts = [];
 function paintCounts() { counts.forEach((f) => f()); }
 function countBadge(get) { const n = E('span', { class: 'n' }); const f = () => { const v = get(); n.textContent = v; n.style.display = v ? '' : 'none'; }; counts.push(f); f(); return n; }
 function denseOn() { try { return localStorage.getItem('st.dens') === '1'; } catch (x) { return false; } }
-function paintDense() { const b = $('#dview'); if (b) b.replaceChildren(icon(denseOn() ? 'big' : 'dense')); }
+function paintDense() { document.querySelectorAll('.dview').forEach((b) => b.replaceChildren(icon(denseOn() ? 'big' : 'dense'))); }
 function toggleDense() {
   const on = !denseOn(); try { localStorage.setItem('st.dens', on ? '1' : '0'); } catch (x) {}
-  const gw = $('.gw'); if (gw) { gw.classList.toggle('dense', on); gw.classList.add('flip'); setTimeout(() => gw.classList.remove('flip'), 320); }
+  document.querySelectorAll('.gw').forEach((gw) => { gw.classList.toggle('dense', on); gw.classList.add('flip'); setTimeout(() => gw.classList.remove('flip'), 320); });
   paintDense();
 }
 function shell() {
@@ -187,9 +187,9 @@ function shell() {
     E('button', { class: 'mark', 'aria-label': name, onclick: () => go('') }, mk),
     E('div', { class: 'pill' }, E('button', { 'aria-label': 'Explore', onclick: openMenu }, icon('compass')), E('button', { 'aria-label': 'Shop', onclick: () => go('shop') }, icon('home')),
       E('button', { 'aria-label': 'Saved', onclick: () => go('wishlist') }, icon('mark'), countBadge(() => wish.length)), E('button', { 'aria-label': 'Stores', onclick: () => go('stores') }, icon('pin'))),
-    E('button', { class: 'chat', 'aria-label': 'Contact us', onclick: toContact }, icon('chat')));
+    E('div', { class: 'chatwrap' }, E('button', { class: 'zfab dview', 'aria-label': 'Picture view', title: 'Picture view', onclick: toggleDense }, icon('dense')), E('button', { class: 'chat', 'aria-label': 'Contact us', onclick: toContact }, icon('chat'))));
   const root = $('#app'); clear(root);
-  root.append(c.announce ? E('div', { class: 'announce' }, c.announce) : null, top, E('main', { id: 'view' }), footer(), dock, E('button', { class: 'chatfab', 'aria-label': 'Contact us', onclick: toContact }, icon('chat')),
+  root.append(c.announce ? E('div', { class: 'announce' }, c.announce) : null, top, E('main', { id: 'view' }), footer(), dock, E('button', { class: 'zfab zdesk dview', 'aria-label': 'Picture view', title: 'Picture view', onclick: toggleDense }, icon('dense')), E('button', { class: 'chatfab', 'aria-label': 'Contact us', onclick: toContact }, icon('chat')),
     E('div', { class: 'menu', id: 'menu' }), E('div', { class: 'srch', id: 'srch' }));
 
   try { if (!sessionStorage.getItem('st.wel.' + SLUG)) { sessionStorage.setItem('st.wel.' + SLUG, '1');
@@ -827,7 +827,7 @@ const TR = (() => {
 function route() {
   const raw = (location.hash || '').replace(/^#\/?/, '').split('?')[0]; const parts = raw.split('/').filter(Boolean).map(decodeURIComponent);
   const id = parts[0] || 'home'; const view = $('#view'); if (!view) return; clear(view);
-  document.body.classList.toggle('homehero', id === 'home'); document.body.classList.toggle('onlist', id === 'shop'); paintDense(); const fn = V[id] || V.home; try { const r = fn(view, parts[1]); if (r && r.catch) r.catch((e) => view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message))); } catch (e) { view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message)); }
+  document.body.classList.toggle('homehero', id === 'home'); document.body.classList.toggle('onlist', id === 'shop'); view.classList.toggle('gw', id === 'home'); view.classList.toggle('dense', id === 'home' && denseOn()); paintDense(); const fn = V[id] || V.home; try { const r = fn(view, parts[1]); if (r && r.catch) r.catch((e) => view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message))); } catch (e) { view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message)); }
   $('#menu') && $('#menu').classList.remove('on'); $('#srch') && $('#srch').classList.remove('on');
   document.title = (id === 'home' ? '' : cap(id === 'p' ? (BYID[parts[1]] || {}).name || 'Product' : id) + ' · ') + D.shop.name;
   if (id !== 'p') setMeta(document.title, cfg().tagline || ('Shop online at ' + D.shop.name), ((D.styles || [])[0] && photos((D.styles || [])[0])[0]) || '', location.origin + location.pathname);
