@@ -127,6 +127,16 @@
         rewrite * /salon-api/share
         reverse_proxy api:3000
     }
+    # Store links (/store.html?p=<product>): preview bots get the product's own picture, name, price and the shop name + address
+    # (server/src/routes/system.js /store-share). People get the normal page.
+    @storeBot {
+        header_regexp ua User-Agent (?i)(whatsapp|facebookexternalhit|twitterbot|telegrambot|linkedinbot|slackbot|discordbot)
+        path /store.html
+    }
+    handle @storeBot {
+        rewrite * /store-share?{query}
+        reverse_proxy api:3000
+    }
     # The website (site.html, site-kiln.html) and POS (index.html) pages go through the API so each business's own
     # icon is written INTO the page: an iPhone ignores a home-screen icon that is linked by address or set by script.
     @iconPages path /site-kiln.html /site.html /index.html
