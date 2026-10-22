@@ -176,17 +176,25 @@ function groups() {
   const other = cats.filter((c) => !used.has(c)); if (other.length) out.push([out.some((x) => x[1].length) ? 'More' : 'Shop', other]);
   return out.filter((x) => x[1].length);
 }
+const slugOf = (t) => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+const blogsOn = () => (cfg().blogs || []).some((x) => x && x.title);
+const mediaOn = () => (cfg().media || []).some((x) => x && (x.title || x.image));
+const jobsOn = () => (cfg().jobs || []).some((x) => x && x.title) || !!(cfg().hiring && (cfg().hiring.email || cfg().hiring.text));
 function openMenu() {
   const m = $('#menu'); clear(m); m.classList.add('on');
-  const close = () => m.classList.remove('on');
+  const close = () => { m.classList.remove('on'); document.body.classList.remove('menuopen'); };
+  document.body.classList.add('menuopen');
   const fams = FAM.filter((f) => STY.some((s) => colours(s).some((c) => famOf(c) === f[0])));
   const nav = (p) => (e) => { e.preventDefault(); close(); location.hash = '#/' + p; };
-  const a = (txt, p) => E('a', { href: link(p), onclick: nav(p) }, txt);
-  const panel = E('div', { class: 'mp' }, E('button', { class: 'ic mx', 'aria-label': 'Close', onclick: close }, icon('x')),
-    E('div', { class: 'cols' },
-      E('div', { class: 'col nv' }, a('New arrivals', 'shop?new=1'), a('All products', 'shop'), ...D.collections.filter((c) => c.styleIds.length).slice(0, 4).map((c) => a(c.name, 'shop?col=' + c.id))),
-      ...groups().map(([n, cs]) => E('div', { class: 'col' }, E('span', { class: 'lbl' }, n), E('div', { class: 'wrapc' }, cs.map((c) => a(c, 'shop?cat=' + encodeURIComponent(c)))))),
-      fams.length ? E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Shop by colour'), E('div', { class: 'wrapc' }, fams.map((f) => E('a', { class: 'fam', href: link('shop?fam=' + f[0]), onclick: nav('shop?fam=' + f[0]) }, f[0], E('span', { class: 'bar', style: { background: 'linear-gradient(90deg,' + f[2][0] + ',' + f[2][1] + ')' } }))))) : null));
+  const a = (txt, p, cls) => E('a', { class: cls || '', href: link(p), onclick: nav(p) }, txt);
+  const cols = D.collections.filter((c) => c.styleIds.length).slice(0, 3);
+  const more = [blogsOn() ? ['Journal', 'blog'] : null, mediaOn() ? ['Media & gallery', 'media'] : null, jobsOn() ? ['Careers', 'careers'] : null, ['Our stores', 'stores'], ['Our story', 'about'], ['FAQs', 'faq'], ['Contact', 'contact'], ['My account & orders', 'me']].filter(Boolean);
+  const panel = E('div', { class: 'mp' },
+    E('div', { class: 'mhd' }, E('b', null, D.shop.name), E('button', { class: 'ic mx', 'aria-label': 'Close', onclick: close }, icon('x'))),
+    E('nav', { class: 'mbig' }, a('New arrivals', 'shop?new=1', 'b'), a('All products', 'shop', 'b'), ...cols.map((c) => a(c.name, 'shop?col=' + c.id, 'b'))),
+    ...groups().map(([n, cs]) => E('div', { class: 'mgrp' }, E('span', { class: 'ml' }, n), E('div', { class: 'mrow' }, cs.map((c) => a(c, 'shop?cat=' + encodeURIComponent(c)))))),
+    fams.length ? E('div', { class: 'mgrp' }, E('span', { class: 'ml' }, 'Shop by colour'), E('div', { class: 'mdots' }, fams.map((f) => E('a', { class: 'md', 'aria-label': f[0], title: f[0], href: link('shop?fam=' + f[0]), onclick: nav('shop?fam=' + f[0]), style: { background: 'linear-gradient(135deg,' + f[2][0] + ',' + f[2][1] + ')' } })))) : null,
+    E('div', { class: 'mmore' }, more.map(([t, p]) => a(t, p))));
   m.append(panel);
   m.onclick = (e) => { if (e.target === m) close(); };
 }
@@ -630,6 +638,47 @@ V.orders = async (v) => {
   v._ot = setInterval(() => { if (!document.body.contains(v) || !location.hash.includes('orders')) return clearInterval(v._ot); load(true); }, 12000);
 };
 V.me = V.orders;
+
+// ---------- Journal (blogs / news), Media & gallery, Careers: all written by the owner in AUZsStyle -> Online store -> Store ----------
+const dateTxt = (d) => { try { return d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : ''; } catch (e) { return ''; } };
+const para = (t) => String(t || '').split(/\n+/).filter(Boolean).map((x) => E('p', null, x));
+V.blog = (v, which) => {
+  const list = (cfg().blogs || []).filter((x) => x && x.title);
+  if (which) {
+    const i = list.findIndex((x, k) => slugOf(x.title) === which || String(k) === which); const b = list[i];
+    if (!b) { v.append(E('div', { class: 'empty' }, E('h2', null, 'Article not found'), E('a', { class: 'btn', href: link('blog') }, 'All articles'))); return; }
+    setMeta(b.title + ' · ' + D.shop.name, b.excerpt || String(b.body || '').slice(0, 150), b.image, location.origin + location.pathname + '#/blog/' + slugOf(b.title));
+    const others = list.filter((x, k) => k !== i).slice(0, 2);
+    v.append(E('div', { class: 'pg' }, E('div', { class: 'crumbs' }, E('a', { href: link('') }, 'Home'), ' / ', E('a', { href: link('blog') }, 'Journal')),
+      E('article', { class: 'card art' }, b.image ? E('img', { src: b.image, alt: '', class: 'artimg' }) : null, b.date ? E('div', { class: 'lbl' }, dateTxt(b.date)) : null, E('h1', null, b.title), para(b.body || b.excerpt)),
+      others.length ? E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'Keep reading')), blogGrid(others)) : null));
+    return;
+  }
+  v.append(E('div', { class: 'pg wide' }, E('div', { class: 'shophd' }, E('h1', null, 'Journal')), list.length ? blogGrid(list) : E('div', { class: 'card mut' }, 'Nothing published yet. Check back soon.')));
+};
+function blogGrid(list) {
+  return E('div', { class: 'bgrid' }, list.map((b) => E('a', { class: 'bcard', href: link('blog/' + slugOf(b.title)) },
+    E('div', { class: 'im' }, b.image ? E('img', { src: b.image, alt: '', loading: 'lazy' }) : placeholder(b.title)),
+    E('div', { class: 'tx' }, E('h3', null, b.title), E('p', null, b.excerpt || String(b.body || '').slice(0, 130))))));
+}
+V.media = (v) => {
+  const list = (cfg().media || []).filter((x) => x && (x.title || x.image));
+  const open = (m) => { const u = m.link || ''; if (!u) return null; return /^https?:|^\/\//.test(u) ? E('a', { class: 'btn soft sm', href: u, target: '_blank', rel: 'noopener' }, m.cta || 'View') : E('a', { class: 'btn soft sm', href: /^#/.test(u) ? u : link(u.replace(/^\/+/, '')) }, m.cta || 'View'); };
+  v.append(E('div', { class: 'pg wide' }, E('div', { class: 'shophd' }, E('h1', null, 'Media & gallery')), list.length ? E('div', { class: 'mgal' }, list.map((m) => E('div', { class: 'mcard' },
+    E('div', { class: 'im' }, m.image ? E('img', { src: m.image, alt: m.title || '', loading: 'lazy' }) : placeholder(m.title)),
+    E('div', { class: 'ft' }, E('div', null, m.title ? E('div', { class: 't' }, m.title) : null, m.date ? E('div', { class: 's' }, dateTxt(m.date)) : null, m.place ? E('div', { class: 's' }, m.place) : null), open(m))))) : E('div', { class: 'card mut' }, 'Nothing here yet. Check back soon.')));
+};
+V.careers = (v) => {
+  const h = cfg().hiring || {}, jobs = (cfg().jobs || []).filter((x) => x && x.title && x.active !== false && x.status !== 'closed');
+  const ph = String(D.shop.phone || '').replace(/\D/g, '');
+  const apply = (j) => { const subj = 'Application: ' + j.title; if (h.email) return 'mailto:' + h.email + '?subject=' + encodeURIComponent(subj); if (ph) return 'https://wa.me/' + (ph.length === 10 ? '91' + ph : ph) + '?text=' + encodeURIComponent('Hi, I would like to apply for ' + j.title); return link('contact'); };
+  v.append(E('div', { class: 'pg wide' }, E('div', { class: 'card hire' }, E('h1', null, 'We are hiring'), E('p', null, h.text || ('If you see yourself growing with ' + D.shop.name + ', we would love to hear from you.' + (h.email ? ' Send your resume to ' + h.email + ' and our team will be in touch.' : '')))),
+    jobs.length ? E('div', { class: 'jobs' }, jobs.map((j) => E('div', { class: 'job' },
+      E('div', { class: 'jt' }, E('div', null, E('h3', null, j.title), j.exp ? E('div', { class: 's' }, j.exp) : null), E('span', { class: 'act' }, E('i'), 'Active')),
+      E('div', { class: 'jtags' }, String(j.tags || '').split(',').map((x) => x.trim()).filter(Boolean).map((x) => E('span', null, x))),
+      j.desc ? E('div', { class: 'jd' }, j.desc) : null,
+      E('div', { class: 'jf' }, E('div', { class: 'jl' }, j.location || ''), E('a', { class: 'btn', href: apply(j), target: /^https?:/.test(apply(j)) ? '_blank' : null, rel: 'noopener' }, 'Apply now'))))) : E('div', { class: 'card mut', style: { marginTop: '10px' } }, 'No open roles right now. Write to us anyway' + (h.email ? ' at ' + h.email : '') + '.')));
+};
 const POL = { shipping: ['Shipping', () => (cfg().policies || {}).shipping || 'We ship across India. Orders are packed within 1 to 2 working days and usually arrive in 3 to 7 days. You will get an update on the phone number you gave us.'], returns: ['Returns & exchanges', () => (cfg().policies || {}).returns || 'You can return or exchange a piece within ' + (D.shop.returnDays || 30) + ' days of delivery if it is unworn, unwashed and the tags are intact. Contact the store to arrange it.'], terms: ['Terms', () => (cfg().policies || {}).terms || 'By placing an order you confirm that the details you gave are correct. Prices include taxes. An order is confirmed only after the store accepts it, and the store may cancel an order if an item cannot be supplied.'], privacy: ['Privacy', () => (cfg().policies || {}).privacy || 'We use your name, phone, email and address only to deliver your order and to contact you about it. We do not sell your details.'] };
 V.policy = (v, k) => { const p = POL[k] || POL.terms; v.append(E('div', { class: 'pg' }, E('div', { class: 'shophd' }, E('h1', null, p[0])), E('div', { class: 'card' }, String(p[1]()).split(/\n+/).map((x) => E('p', null, x))))); };
 
@@ -652,7 +701,7 @@ function footer() {
   return E('div', { class: 'ftwrap' }, perks, strip, E('footer', null, E('div', { class: 'cols' },
     E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Connect with us'), ph ? E('a', { href: 'tel:+' + (ph.length === 10 ? '91' + ph : ph) }, 'Call') : null, ph ? E('a', { href: 'https://wa.me/' + (ph.length === 10 ? '91' + ph : ph), target: '_blank', rel: 'noopener' }, 'Text (WhatsApp)') : null, ext('Instagram', so.instagram), ext('Facebook', so.facebook), c.email ? E('a', { href: 'mailto:' + c.email }, 'Email') : null),
     E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Order support'), E('a', { href: link('me') }, 'My account & orders'), E('a', { href: link('orders') }, 'Track your order'), E('a', { href: link('policy/returns') }, 'Returns & exchanges'), E('a', { href: link('policy/shipping') }, 'Shipping policy'), E('a', { href: link('faq') }, 'FAQs'), E('a', { href: link('policy/terms') }, 'Terms'), E('a', { href: link('policy/privacy') }, 'Privacy')),
-    E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'We are ' + D.shop.name), E('a', { href: link('about') }, 'Our story'), E('a', { href: link('stores') }, 'Walk-in stores'), E('a', { href: link('collections') }, 'Collections'), E('a', { href: link('contact') }, 'Contact')),
+    E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'We are ' + D.shop.name), E('a', { href: link('about') }, 'Our story'), E('a', { href: link('stores') }, 'Walk-in stores'), E('a', { href: link('collections') }, 'Collections'), blogsOn() ? E('a', { href: link('blog') }, 'Journal') : null, mediaOn() ? E('a', { href: link('media') }, 'Media & gallery') : null, jobsOn() ? E('a', { href: link('careers') }, 'Careers') : null, E('a', { href: link('contact') }, 'Contact')),
     E('div', { class: 'ftbrand' }, E('div', { class: 'big' }, D.shop.name))),
     E('div', { class: 'fin' }, E('span', null, '© ' + new Date().getFullYear() + ' ' + D.shop.name + '. All rights reserved'), E('a', { href: 'https://auzslab.in', target: '_blank', rel: 'noopener' }, 'Store by AUZslab'))));
 }
