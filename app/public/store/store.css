@@ -964,3 +964,10 @@ footer .col a,footer .col span{font-size:9.5px}
 .gal.solo .main::before{display:none!important}
 .gal.solo .main>img{position:static!important;display:block!important;width:100%!important;height:auto!important;max-height:78svh;object-fit:contain;margin:0 auto}
 @media(min-width:900px){.gal.solo{height:auto;position:static;align-items:start}.gal.solo .main{align-self:start}}
+
+/* picture cards never overlap the details card; one picture = the card is exactly the picture (no bands) */
+.gal .main{position:relative!important;top:auto!important}
+.gal{position:relative!important;top:auto!important;z-index:0}
+.pd .info{position:relative;z-index:1}
+.gal.solo .main>img{max-height:none!important}
+@media(min-width:900px){.pd .info{position:sticky;top:calc(var(--hh) + 6px)}}
