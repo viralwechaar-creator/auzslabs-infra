@@ -22,3 +22,14 @@
 .page{max-width:760px;margin:0 auto;width:100%}
 .li .t{font-size:16px}
 .kpi .n{font-size:22px}
+
+/* Phase 2: lists are quiet (icon, name, amount); tabs, cards and buttons are flat and light */
+.li{min-height:56px;border-radius:0}.li .t{font-weight:550}
+.li .tile{width:34px;height:34px;border-radius:10px}
+.list{border-radius:16px;box-shadow:none;border:1px solid var(--sep)}
+.btn{border-radius:12px;box-shadow:none;font-weight:600}.btn.fill{box-shadow:none}
+.seg{border-radius:12px;box-shadow:none}
+.kpi{border-radius:16px;box-shadow:none;border:1px solid var(--sep)}
+.sheet{border-radius:22px}
+.chk{width:22px;text-align:center;font-weight:700;color:var(--tint)}
+.sec-h h3{font-size:13px;font-weight:600;color:var(--label2);letter-spacing:.02em;text-transform:none}

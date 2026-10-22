@@ -5,12 +5,14 @@ page('accounts', { title: 'Accounts', async render(v) {
   await reloadCtx();
   const tot = S.ctx.accounts.filter((a) => a.active).reduce((x, a) => x + Number(a.balance), 0);
   v.root.append(h('div', { class: 'hero-n' }, h('div', { class: 'k' }, 'Total in all accounts'), h('div', { class: 'n num' }, inr(tot))),
-    h('div', { class: 'list' }, S.ctx.accounts.map((a) => liRow({ icon: a.kind === 'cash' ? 'cash' : 'building', tone: 'gray', title: a.name, sub: a.kind + (a.active ? '' : ' · hidden'), value: inr(a.balance), chevron: true, onclick: () => accountDetail(a) }))));
+    h('div', { class: 'list' }, S.ctx.accounts.map((a) => liRow({ icon: a.kind === 'cash' ? 'cash' : 'building', tone: 'gray', title: a.name, value: inr(a.balance), onclick: () => accountDetail(a) }))));
   if (can('write') && S.ctx.accounts.length > 1) v.root.append(h('button', { class: 'btn', onclick: () => addTxn({ kind: 'transfer' }) }, icon('swap', 18), 'Move money between accounts'));
 } });
 async function accountDetail(a) {
   const txns = await api('fin_txn_list', { p: { account_id: a.id, limit: 100 } });
   const body = h('div', { class: 'grid' }, h('div', { class: 'hero-n small' }, h('div', { class: 'k' }, a.name), h('div', { class: 'n num' }, inr(a.balance))),
+    h('div', { class: 'list' }, liRow({ title: 'Kind', value: a.kind }), liRow({ title: 'Shown', value: a.active ? 'Yes' : 'Hidden' })),
+    h('button', { class: 'btn', onclick: () => { s.close(); reconSheet(a); } }, icon('check', 18), 'Match with statement'),
     can('admin') ? h('button', { class: 'btn', onclick: () => { s.close(); accountSheet(a); } }, 'Rename or hide') : null,
     section('Entries', txns.length ? h('div', { class: 'list' }, txns.map((x) => txnRow(x, () => { s.close(); txnSheet(x.id, txns); }))) : empty('swap', 'Nothing yet')));
   const s = sheet({ title: a.name, closeLabel: 'Done', body });
@@ -33,3 +35,15 @@ page('settings', { title: 'Settings', async render(v) {
     section('About', h('div', { class: 'list' }, liRow({ title: 'Locked up to', value: S.ctx.lock_date ? fmtD(S.ctx.lock_date) : 'Not locked', sub: 'Set in AUZsLedger settings. Entries on or before this date are refused.' }),
       liRow({ title: 'Nothing is ever deleted', sub: 'A wrong entry is cancelled and stays in history, so your books always have a trail.' }))));
 } });
+
+async function reconSheet(a) {
+  const r = await api('fin_recon_list', { p_account: a.id });
+  const stmt = input({ type: 'number', mode: 'decimal', placeholder: 'Balance on the statement' });
+  const diff = h('div', { class: 'preview' });
+  const paintDiff = () => { const d = N(stmt.value) - Number(r.cleared_balance); diff.textContent = stmt.value === '' ? 'Enter the statement balance to compare.' : Math.abs(d) < 0.01 ? 'Matches. Everything ticked agrees with the statement.' : 'Difference ' + inr(d) + ' - look at what is not ticked.'; };
+  stmt.oninput = paintDiff; paintDiff();
+  const list = h('div', { class: 'list' }, r.rows.map((x) => { const row = liRow({ title: (x.title || x.kind) + ' · ' + fmtShort(x.date), value: h('span', { class: 'money num ' + (Number(x.amount) > 0 ? 'up' : 'down') }, (Number(x.amount) > 0 ? '+' : '-') + inr(Math.abs(x.amount))), right: h('span', { class: 'chk', 'aria-hidden': 'true' }, x.cleared ? '✓' : '') });
+    row.onclick = async () => { if (!can('write')) return; try { await api('fin_recon_set', { p_txn: x.id, p_account: a.id, p_cleared: !x.cleared }); x.cleared = !x.cleared; row.querySelector('.chk').textContent = x.cleared ? '✓' : ''; r.cleared_balance = Number(r.cleared_balance) + (x.cleared ? 1 : -1) * Number(x.amount); paintDiff(); } catch (e) { fail(e); } };
+    return row; }));
+  sheet({ title: a.name + ' · match', closeLabel: 'Done', body: h('div', { class: 'grid' }, h('div', { class: 'hero-n small' }, h('div', { class: 'k' }, 'Ticked so far'), h('div', { class: 'n num' }, inr(r.cleared_balance))), field('Statement balance', stmt), diff, list) });
+}

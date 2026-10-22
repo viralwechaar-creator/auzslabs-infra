@@ -55,7 +55,7 @@ function flags(r) {
   return f;
 }
 function txnRow(r, onclick) {
-  return liRow({ icon: (KINDS[r.kind] || {}).ic || 'cash', tone: r.status === 'reversed' ? 'gray' : (KINDS[r.kind] || {}).sign > 0 ? 'green' : (KINDS[r.kind] || {}).sign < 0 ? '' : 'blue', title: txnTitle(r), sub: txnSub(r), value: amountNode(r), valueSub: null, badge: flags(r).length ? h('span', { class: 'flags' }, flags(r)) : null, onclick });
+  return liRow({ icon: (KINDS[r.kind] || {}).ic || 'cash', tone: r.status === 'reversed' ? 'gray' : (KINDS[r.kind] || {}).sign > 0 ? 'green' : (KINDS[r.kind] || {}).sign < 0 ? '' : 'blue', title: txnTitle(r), value: amountNode(r), onclick });
 }
 function pickOrNew(opts, o) {
   // select of existing + "Add new…" which reveals a name box. get() -> {id} | {name}
