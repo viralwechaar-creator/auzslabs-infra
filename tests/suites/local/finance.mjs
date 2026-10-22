@@ -231,6 +231,23 @@ export default async function run({ browser, stack }) {
     await fails(owner, 'fin_save_txn', { p: { kind: 'expense', amount: 100, account_id: cash, tds_amt: 500 } }, /TDS/i);
     await fails(cafe, 'fin_tax_summary', { p_from: from, p_to: today }, /not enabled/i); await integrity();
   }, 'major');
+  await s.check('Live demo: the shared demo business has AUZsFinance with sample entries, opens in the app, and the demo page links to it', async () => {
+    const demo = (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'demo@auzslab.in', password: 'Auzslab@Demo' }) })).json()).access_token;
+    assert(demo, 'demo login');
+    const ctx = await ok(demo, 'fin_bootstrap'); assert(ctx.accounts.length >= 2, 'accounts');
+    const list = await ok(demo, 'fin_txn_list', { p: { limit: 500 } }); assert(list.length >= 25, 'sample entries ' + list.length);
+    const d = await ok(demo, 'fin_dashboard', {}); assert(Number(d.cash_total) > 0, 'cash');
+    const today = new Date().toISOString().slice(0, 10), t = await ok(demo, 'fin_tax_summary', { p_from: today.slice(0, 8) + '01', p_to: today }); assert(Number(t.output_gst) > 0, 'sample GST');
+    const ic = await ok(demo, 'fin_integrity_check'); assert(ic.ok, 'demo books out of line');
+    const c = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await c.newPage(); const errs = watch(page);
+    await page.goto(stack.url('demo', '/finance.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
+    await page.fill('input[type=email]', 'demo@auzslab.in'); await page.fill('input[type=password]', 'Auzslab@Demo');
+    await page.locator('button', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.hero-n .n', { timeout: 20000 });
+    await page.waitForSelector('svg.flow', { timeout: 8000 });
+    assert(!errs.filter((e) => !/sentry/i.test(e)).length, 'script errors'); await c.close();
+    const html = (await import('node:fs')).readFileSync(new URL('../../../site/live-demo.html', import.meta.url), 'utf8');
+    assert(/demo\.auzslab\.in\/finance\.html/.test(html) && /AUZsFinance/.test(html), 'live-demo page card');
+  }, 'major');
   // ---------- the app in a browser ----------
   const open = async (dev) => {
     const c = await newCtx(browser, stack, dev); const page = await c.newPage(); const errs = watch(page);
