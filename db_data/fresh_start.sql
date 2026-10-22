@@ -1,10 +1,10 @@
 -- FRESH START (owner request, Oct 2026): every client was a trial, so start clean and onboard real clients from now.
 --
 -- KEEPS: showoffsalon (becomes THE live salon demo), arpittraders (AUZsMob demo), newbookworld (AUZsScan / AUZsLedger /
---        AUZsPay demo), demo (the shared AUZslab Demo business), platform admins, team members and their logins, leads.
+--        AUZsPay demo), Genx Clothes (AUZsStyle demo, found by name or slug starting "genx"), demo (the shared AUZslab Demo business), platform admins, team members and their logins, leads.
 -- DELETES: every other business and all its data in every app, their logins, sessions and sign-in links; EVERY client bill,
 --        quote and client payment record (and restarts bill numbering at 0001).
--- CLEARS the real business data of arpittraders and newbookworld (their setup, settings, logins and staff stay).
+-- CLEARS the real business data of arpittraders, newbookworld and Genx (their setup, settings, logins and staff stay).
 -- MAKES showoffsalon a demo: its real bookings, clients, bills and expenses are removed (its menu, photos and website stay),
 --        it is marked is_demo (no uploads, no password changes, no real messages) and it gets a public demo login.
 --
@@ -18,6 +18,16 @@ set local session_replication_role = replica;   -- guard triggers (append-only) 
 
 create temp table keep_slugs(slug text primary key);
 insert into keep_slugs values ('showoffsalon'), ('arpittraders'), ('newbookworld'), ('demo');
+-- the AUZsStyle demo: the business whose slug or name starts with "genx" (must be exactly one)
+do $$ declare n int; begin
+  select count(*) into n from tenants where slug ilike 'genx%' or name ilike 'genx%';
+  if n <> 1 then raise exception 'Expected exactly one Genx business, found %. Nothing deleted. Check the slug and edit this script.', n; end if;
+end $$;
+insert into keep_slugs select slug from tenants where slug ilike 'genx%' or name ilike 'genx%';
+-- demos whose real business data is cleared (setup and logins stay)
+create temp table app_demos(slug text primary key);
+insert into app_demos values ('arpittraders'), ('newbookworld');
+insert into app_demos select slug from tenants where slug ilike 'genx%' or name ilike 'genx%';
 
 do $$ declare s text; begin
   for s in select slug from keep_slugs loop
@@ -111,11 +121,12 @@ delete from phone_otps;
 
 -- clear the real business data of the two app demos (same rules as the owner's own "clear all data": setup, settings, logins and audit stay)
 do $$ declare r record; t record; n bigint; begin
-  for t in select id, slug from tenants where slug in ('arpittraders', 'newbookworld') loop
+  for t in select id, slug from tenants where slug in (select slug from app_demos) loop
     for r in
       select c.table_name tn from information_schema.columns c
       join information_schema.tables tb on tb.table_schema = c.table_schema and tb.table_name = c.table_name and tb.table_type = 'BASE TABLE'
       where c.table_schema = 'public' and c.column_name = 'tenant_id' and c.table_name <> all (my_data_keep_tables())
+        and c.table_name <> all (array['sty_settings','sty_branches','sty_store','sty_store_secrets'])   -- AUZsStyle setup stays
     loop
       if r.tn = 'records' then delete from records where tenant_id = t.id and kind <> 'settings';
       elsif r.tn = 'salon_store' then delete from salon_store where tenant_id = t.id and key not in ('site','staff','admin');
