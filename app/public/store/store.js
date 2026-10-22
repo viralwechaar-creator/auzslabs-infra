@@ -433,8 +433,7 @@ V.p = (v, id) => {
     if (ims.length > 1) { gal.append(main, rail); return; }
     // one picture only: the empty sides show other pieces to look at
     const others = STY.filter((x) => x.id !== s.id), same = others.filter((x) => x.category === s.category), pool = same.concat(others.filter((x) => x.category !== s.category)).slice(0, 6);
-    const side = (arr) => E('div', { class: 'sugg phoneoff' }, arr.map((x) => card(x)));
-    gal.append(side(pool.filter((_, i) => i % 2 === 0).slice(0, 3)), main, side(pool.filter((_, i) => i % 2 === 1).slice(0, 3)));
+    gal.append(E('div', { class: 'sugg' }, pool.slice(0, 4).map((x) => card(x))), main);
   };
   const dtl = (k) => {
     if (k === 'w') return E('div', { class: 'dtl' }, s.washcare ? E('div', null, s.washcare) : E('div', { class: 'mut' }, 'Wash cold, dry in shade, do not bleach.'));
