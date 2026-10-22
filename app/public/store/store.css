@@ -928,3 +928,7 @@ footer .col a,footer .col span{font-size:9.5px}
 .tabs2 .tr{padding:0 10px;margin:0;border-bottom:1px solid rgba(0,0,0,.08)}
 .tabs2 .tr button{white-space:nowrap;font-size:11px;padding:13px 2px;margin-bottom:-1px}
 .tabs2 .tb{padding:12px 14px 14px}
+
+/* sections (Products you may like, Recently viewed, ...): no background card, just the title and the product cards */
+.band,.band.t-l,.band.t-m,.band.t-s{background:transparent!important;border-radius:0;box-shadow:none;border:0;padding:0;margin-top:22px}
+.band .hd{padding:0 2px 10px}
