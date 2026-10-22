@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<script src="/launch.js?v=101"></script>
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <!-- Google tag (gtag.js) -->
@@ -110,7 +110,7 @@
 /* the plan/compare/add-on styles live in theme.css under the #salon-* ids; this page reuses those ids on purpose */
 #salon-plans .sp-feats li.sp-off{opacity:.5;text-decoration:line-through}
 </style>
-</head>
+<style>.sp-toggle-row,.sp-was,.sp-save2,.sp-strip-per,.sp-unit,.sp-per,.sp-gst,.gst-t,.sp-save{display:none!important}</style></head>
 <body>
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
 
@@ -124,7 +124,7 @@
       </button>
     </div>
     <a href="index.html" class="topbar-logo"><img src="logo.png" alt="AUZslab"></a>
-    <nav class="topbar-nav" aria-label="Main"><div class="tbn-item"><a href="products.html" class="tbn-top">Business types<i aria-hidden="true">&#9662;</i></a><div class="tbn-menu"><a href="products.html#slab-pos">AUZsPOS<small></small></a><a href="products.html#slab-qr">AUZsPOS QR<small></small></a><a href="products.html#slab-payroll">AUZsPay<small></small></a><a href="products.html#slab-accounting">AUZsLedger<small></small></a><a href="products.html#slab-scan">AUZsScan<small></small></a><a href="products.html#slab-mobile">AUZsMob<small></small></a><a href="products.html#slab-salon">AUZslab Salon<small></small></a><a href="products.html" class="tbn-all">All products</a></div></div><div class="tbn-item"><a href="platform.html" class="tbn-top" aria-current="page">Businesses<i aria-hidden="true">&#9662;</i></a><div class="tbn-menu"><a href="business-cafes.html">Cafes &amp; restaurants<small></small></a><a href="business-retail.html">Retail &amp; bookstores<small></small></a><a href="business-salons.html">Salons &amp; studios<small></small></a><a href="business-mobile-repair.html">Mobile shops<small></small></a><a href="business-clothing.html">Clothing &amp; apparel<small></small></a><a href="platform.html" class="tbn-all">All business types</a></div></div><div class="tbn-item"><a href="live-demo.html" class="tbn-top">Live demo<i aria-hidden="true">&#9662;</i></a><div class="tbn-menu"><a href="https://demo.auzslab.in/" target="_blank" rel="noopener">AUZsPOS<small>Try</small></a><a href="https://demo.auzslab.in/payroll.html" target="_blank" rel="noopener">AUZsPay<small>Try</small></a><a href="https://demo.auzslab.in/accounts.html" target="_blank" rel="noopener">AUZsLedger<small>Try</small></a><a href="https://demo.auzslab.in/scan.html" target="_blank" rel="noopener">AUZsScan<small>Try</small></a><a href="https://demo.auzslab.in/mob.html" target="_blank" rel="noopener">AUZsMob<small>Try</small></a><a href="https://demo-salon.auzslab.in/salon/admin/" target="_blank" rel="noopener">AUZslab Salon<small>Try</small></a><a href="live-demo.html" class="tbn-all">All demos</a></div></div><a href="contact.html" class="tbn-top">Contact</a></nav>
+    <nav class="topbar-nav" aria-label="Main"><div class="tbn-item"><a href="products.html" class="tbn-top">Business types<i aria-hidden="true">&#9662;</i></a><div class="tbn-menu"><a href="products.html#slab-pos">AUZsPOS<small></small></a><a href="products.html#slab-qr">AUZsPOS QR<small></small></a><a href="products.html#slab-payroll">AUZsPay<small></small></a><a href="products.html#slab-accounting">AUZsLedger<small></small></a><a href="products.html#slab-scan">AUZsScan<small></small></a><a href="products.html#slab-mobile">AUZsMob<small></small></a><a href="products.html#slab-salon">AUZslab Salon<small></small></a><a href="products.html" class="tbn-all">All products</a></div></div><div class="tbn-item"><a href="platform.html" class="tbn-top" aria-current="page">Businesses<i aria-hidden="true">&#9662;</i></a><div class="tbn-menu"><a href="business-cafes.html">Cafes &amp; restaurants<small></small></a><a href="business-retail.html">Retail &amp; bookstores<small></small></a><a href="business-salons.html">Salons &amp; studios<small></small></a><a href="business-mobile-repair.html">Mobile shops<small></small></a><a href="business-clothing.html">Clothing &amp; apparel<small></small></a><a href="platform.html" class="tbn-all">All business types</a></div></div><div class="tbn-item"><a href="live-demo.html" class="tbn-top">Live demo<i aria-hidden="true">&#9662;</i></a><div class="tbn-menu"><a href="https://demo.auzslab.in/" target="_blank" rel="noopener">AUZsPOS<small>Try</small></a><a href="https://demo.auzslab.in/payroll.html" target="_blank" rel="noopener">AUZsPay<small>Try</small></a><a href="https://demo.auzslab.in/accounts.html" target="_blank" rel="noopener">AUZsLedger<small>Try</small></a><a href="https://demo.auzslab.in/scan.html" target="_blank" rel="noopener">AUZsScan<small>Try</small></a><a href="https://demo.auzslab.in/mob.html" target="_blank" rel="noopener">AUZsMob<small>Try</small></a><a href="https://demo.auzslab.in/style.html" target="_blank" rel="noopener">AUZsStyle<small>Try</small></a><a href="https://demo-salon.auzslab.in/salon/admin/" target="_blank" rel="noopener">AUZslab Salon<small>Try</small></a><a href="live-demo.html" class="tbn-all">All demos</a></div></div><a href="contact.html" class="tbn-top">Contact</a></nav>
   </header>
 
   <div class="drawer-overlay" id="drawerOverlay"></div>
@@ -157,6 +157,7 @@
             <a href="products.html#slab-mobile" class="nav-sublink"><span>AUZsMob</span></a>
             <a href="products.html#slab-salon" class="nav-sublink"><span>AUZslab Salon</span></a>
             <a href="studio.html" class="nav-sublink"><span>Studio &mdash; bespoke software</span></a>
+            <a href="web-design.html" class="nav-sublink"><span>Websites &amp; online stores</span></a>
           </div>
         </div>
       </div>
@@ -333,9 +334,9 @@
       <hr class="dash">
 
       <section class="section tight" id="salon-plans">
-        <div class="label">Simple, transparent pricing</div>
+        <div class="label">Packages</div>
         <h2 class="h-2" style="font-size:28px">Find the right setup for your shop.</h2>
-        <p class="p" style="margin-top:8px;max-width:48em">Clear monthly or annual pricing. Pick the package that fits the way you work today and grow when you are ready. Every plan is set up and switched on by us once we know your shop.</p>
+        <p class="p" style="margin-top:8px;max-width:48em">Pick the package that fits the way you work today and grow when you are ready. Every plan is set up and switched on by us once we know your shop.</p>
 
         <div class="sp-toggle-row">
           <div class="sp-toggle" id="cfToggle" role="group" aria-label="Billing period">
@@ -350,8 +351,8 @@
             
             <div class="sp-head"><span class="sp-num">I</span><span class="sp-name">Essential</span></div>
             <p class="sp-tagline">For smaller mobile shops that need essential billing and sales management.</p>
-            <div class="sp-price-row"><span class="sp-price sp-amt">&#8377;560</span><span class="sp-per sp-unit">/month</span> <span class="sp-gst gst-t" hidden>+ GST</span></div>
-            <div class="sp-wassave"><span class="sp-was">&#8377;6,720</span><span class="sp-save2">Save &#8377;1,120</span></div>
+            <div class="sp-price-row"><span class="sp-price sp-amt">Custom quote</span></div>
+            <div class="sp-wassave"><span class="sp-was"></span><span class="sp-save2"></span></div>
             <button type="button" class="btn btn-ghost sp-cta" data-open-contact data-plan="Essential">Choose Essential</button>
             <ul class="sp-feats"><li class="">Basic sales and billing</li><li class="">Customer and invoice records</li><li class="">Basic product management</li><li class="">Essential sales summary</li></ul>
           </div>
@@ -360,8 +361,8 @@
             
             <div class="sp-head"><span class="sp-num">II</span><span class="sp-name">Retail &amp; Repair</span></div>
             <p class="sp-tagline">For shops selling devices and accessories while handling customer repairs.</p>
-            <div class="sp-price-row"><span class="sp-price sp-amt">&#8377;820</span><span class="sp-per sp-unit">/month</span> <span class="sp-gst gst-t" hidden>+ GST</span></div>
-            <div class="sp-wassave"><span class="sp-was">&#8377;9,840</span><span class="sp-save2">Save &#8377;1,640</span></div>
+            <div class="sp-price-row"><span class="sp-price sp-amt">Custom quote</span></div>
+            <div class="sp-wassave"><span class="sp-was"></span><span class="sp-save2"></span></div>
             <button type="button" class="btn btn-ghost sp-cta" data-open-contact data-plan="Retail & Repair">Choose Retail & Repair</button>
             <ul class="sp-feats"><li class="">Essential package capabilities</li><li class="">AUZsMob repair management</li><li class="">Repair status and service history</li><li class="">Device purchase and sale tracking</li><li class="">Customer repair records</li><li class="">Retail product management</li></ul>
           </div>
@@ -370,8 +371,8 @@
             <span class="sp-fav">Most popular</span>
             <div class="sp-head"><span class="sp-num">III</span><span class="sp-name">Smart Retail</span></div>
             <p class="sp-tagline">For busy shops that want faster scan-based inventory workflows.</p>
-            <div class="sp-price-row"><span class="sp-price sp-amt">&#8377;1,360</span><span class="sp-per sp-unit">/month</span> <span class="sp-gst gst-t" hidden>+ GST</span></div>
-            <div class="sp-wassave"><span class="sp-was">&#8377;16,320</span><span class="sp-save2">Save &#8377;2,720</span></div>
+            <div class="sp-price-row"><span class="sp-price sp-amt">Custom quote</span></div>
+            <div class="sp-wassave"><span class="sp-was"></span><span class="sp-save2"></span></div>
             <button type="button" class="btn btn-primary sp-cta" data-open-contact data-plan="Smart Retail">Choose Smart Retail</button>
             <ul class="sp-feats"><li class="">Retail & Repair capabilities</li><li class="">AUZsScan GTIN/barcode scanning</li><li class="">Scan-based stock handling</li><li class="">Faster product identification</li><li class="">Improved stock visibility</li><li class="">Relevant stock and sales reports</li></ul>
           </div>
@@ -380,14 +381,14 @@
             
             <div class="sp-head"><span class="sp-num">IV</span><span class="sp-name">Business 360</span></div>
             <p class="sp-tagline">For businesses seeking connected retail, repairs, stock and accounts.</p>
-            <div class="sp-price-row"><span class="sp-price sp-amt">&#8377;2,260</span><span class="sp-per sp-unit">/month</span> <span class="sp-gst gst-t" hidden>+ GST</span></div>
-            <div class="sp-wassave"><span class="sp-was">&#8377;27,120</span><span class="sp-save2">Save &#8377;4,520</span></div>
+            <div class="sp-price-row"><span class="sp-price sp-amt">Custom quote</span></div>
+            <div class="sp-wassave"><span class="sp-was"></span><span class="sp-save2"></span></div>
             <button type="button" class="btn btn-ghost sp-cta" data-open-contact data-plan="Business 360">Choose Business 360</button>
             <ul class="sp-feats"><li class="">AUZsMob repair and sales</li><li class="">AUZsScan barcode workflows</li><li class="">Stock, purchase and sales</li><li class="">Complete accounts software</li><li class="">Relevant business reports</li><li class="">Setup configured to your needs</li></ul>
           </div>
         </div>
 
-        <p class="sp-note">All prices are in INR and exclude GST<span class="gst-t" hidden>, added on top</span>. Annual billing is priced at 10 months of the monthly subscription. A one-time onboarding fee (&#8377;1,460) applies to every new account and is confirmed in your quote. Hardware, such as a barcode scanner, is charged additionally; AUZsMob&#39;s own camera scanning needs none.</p>
+        <p class="sp-note">Every plan is quoted to you directly &mdash; the package, what is included and the commercials are agreed in a written quote before anything starts. One-time onboarding and setup, and any hardware, are part of that quote.</p>
         <p class="sp-note" style="margin-top:6px">Shown for comparison, not a checkout &mdash; every shop is quoted directly. <button type="button" class="sp-link" data-open-contact>Tell us about your shop &rarr;</button></p>
       </section>
 
@@ -586,7 +587,7 @@
   var toggle = document.getElementById('cfToggle'), grid = document.getElementById('cfGrid');
   if (!toggle || !grid) return;
   var prices = [560, 820, 1360, 2260], yprices = [0, 0, 0, 0], cur = 'm';
-  function inr(n) { return '\u20B9' + Math.round(n).toLocaleString('en-IN'); }
+  function inr() { return 'Custom quote'; }
   function setPeriod(p) {
     var y = p === 'y'; cur = p;
     toggle.querySelectorAll('button[data-period]').forEach(function (b) {
@@ -640,7 +641,7 @@
 // AUZsMob's own card is handled separately below (it also shows the
 // yearly/renewal line, same as its card elsewhere on the site.
 (function () {
-  var inr = function (n) { return '₹' + Number(n).toLocaleString('en-IN'); };
+  var inr = function () { return 'Custom quote'; };
   var sb; try { sb = supabase.createClient(CFG.url, CFG.key); } catch (e) { return; }
   Promise.all([sb.rpc('public_product_prices'), sb.rpc('public_bundles')]).then(function (r) {
     var prices = {}; ((r[0] && r[0].data) || []).forEach(function (p) { prices[p.key] = p; });

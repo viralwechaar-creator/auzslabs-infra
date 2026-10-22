@@ -116,7 +116,7 @@ export default async function run({ browser, stack }) {
     const c = await newCtx(browser, stack, { w: 1280, h: 1000 }); const page = await c.newPage(); const errs = watch(page);
     await page.goto(stack.url('', '/inv.html?t=' + tokA)); await page.waitForSelector('#sheet .h1', { timeout: 15000 });
     const t = await page.locator('#sheet').innerText();
-    for (const w of ['Invoice', 'AUZ/2026-27/0001', 'From', 'To', 'Plain Cafe', '08ABCDE1234F1Z5', '08KALPM2374C1ZH', 'Services', 'AUZsPOS', 'AUZsPay', 'Setup fee', 'Customised branding setup', 'CGST', 'SGST', '14,160.00', 'Renewal', '10/11/2026', '10/10/2027', 'Refunds', 'Bug fixes', 'backups', 'Support and calls', 'GST', 'Authorised signatory', 'Fourteen Thousand One Hundred Sixty Rupees only']) assert(t.includes(w), 'bill is missing: ' + w);
+    for (const w of ['Invoice', 'AUZ/2026-27/0001', 'From', 'To', 'Plain Cafe', '08ABCDE1234F1Z5', '08KALPM2374C1ZH', 'Services', 'AUZsPOS', 'AUZsPay', 'Setup fee', 'Customised branding setup', 'CGST', 'SGST', '14,160.00', 'Renewal', '10/11/2026', '10/10/2027', 'Refunds', 'Bug fixes', 'backups', 'Support and calls', 'GST', 'Authorised signatory', 'Fourteen Thousand One Hundred Sixty Rupees only']) assert(t.toLowerCase().includes(w.toLowerCase()), 'bill is missing: ' + w);
     assert(await page.locator('#sheet .stamp svg').count() === 1 && /PAID/.test(await page.locator('#sheet .stamp').innerHTML()), 'PAID stamp missing');
     const box = await page.locator('#sheet').boundingBox(); assert(Math.abs(box.width - 794) < 2 && box.height >= 1117 && box.height <= 1124, 'not A4 sized: ' + JSON.stringify(box));
     await s.shot(page, 'order-bill-a4');

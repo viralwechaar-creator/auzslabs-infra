@@ -9,6 +9,11 @@
 # lets a tenant's own pages sit inside each other if that's ever needed, just blocks a
 # third-party site from framing this one (clickjacking). geolocation stays unrestricted
 # (self) because payroll.html's clock-in uses navigator.geolocation on the same origin.
+# Text, scripts and JSON are compressed on the way out (zstd or gzip): much less data on slow phones.
+(compress) {
+    encode zstd gzip
+}
+
 (security_headers) {
     header {
         Strict-Transport-Security "max-age=31536000; includeSubDomains"
@@ -24,6 +29,7 @@
 # The root domain is the AUZlabs marketing site.
 {$DOMAIN} {
     import security_headers
+    import compress
     root * /srv/site
     # iOS Safari (especially a Home Screen web-clip) has been seen serving
     # a stale cached copy of a page's own HTML even after a fresh deploy --
@@ -61,6 +67,7 @@
         propagation_timeout 5m
     }
     import security_headers
+    import compress
     root * /srv/app
     # a stale cached service worker can pin clients to old code indefinitely
     header /sw.js Cache-Control "no-cache"
@@ -106,6 +113,8 @@
     }
     handle_path /uploads/* {
         root * /srv/uploads
+        # uploaded files get a new name every time, so browsers may keep them for a year
+        header Cache-Control "public, max-age=31536000, immutable"
         file_server
     }
     # Link-preview bots (WhatsApp, Facebook, Telegram ...) do not run JavaScript, so they get a small
@@ -127,6 +136,22 @@
         rewrite * /salon-api/share
         reverse_proxy api:3000
     }
+    # Store links (/store.html?p=<product>): preview bots get the product's own picture, name, price and the shop name + address
+    # (server/src/routes/system.js /store-share). People get the normal page.
+    @storeBot {
+        header_regexp ua User-Agent (?i)(whatsapp|facebookexternalhit|twitterbot|telegrambot|linkedinbot|slackbot|discordbot)
+        path /store.html
+    }
+    handle @storeBot {
+        rewrite * /store-share?{query}
+        reverse_proxy api:3000
+    }
+    # The website (site.html, site-kiln.html) and POS (index.html) pages go through the API so each business's own
+    # icon is written INTO the page: an iPhone ignores a home-screen icon that is linked by address or set by script.
+    @iconPages path /site-kiln.html /site.html /index.html /store.html
+    handle @iconPages {
+        reverse_proxy api:3000
+    }
     # Everything else. Wrapped in handle so the /api and /uploads blocks
     # above win: Caddy runs try_files BEFORE handle in its fixed directive
     # order, so a bare top-level try_files would rewrite /api/site to
@@ -140,6 +165,9 @@
         rewrite @salonDir {re.sd.1}/index.html
         @salonInvoice path_regexp ^/i/[a-f0-9]{8,32}$
         rewrite @salonInvoice /salon/invoice.html
+        # AUZsStyle short bill link: https://<shop>.auzslab.in/b/<token>
+        @styBill path_regexp ^/b/[a-f0-9]{8,32}$
+        rewrite @styBill /stybill.html
         file_server
         # A request for a real file (index.html, booking.html, site.html,
         # backoffice.html, ...) is served directly, above -- this fallback
@@ -155,6 +183,7 @@
 # Monitoring dashboard, kept on its own subdomain
 status.{$DOMAIN} {
     import security_headers
+    import compress
     reverse_proxy uptime-kuma:3001
 }
 
@@ -162,6 +191,7 @@ status.{$DOMAIN} {
 # started only with `docker compose --profile agents up -d --build agents-office`. Until then this address shows 502.
 agents.{$DOMAIN} {
     import security_headers
+    import compress
     reverse_proxy agents-office:3100
 }
 
@@ -174,8 +204,11 @@ agents.{$DOMAIN} {
 # Access-Control-Allow-Origin), not duplicated here.
 api.{$DOMAIN} {
     import security_headers
+    import compress
     handle_path /uploads/* {
         root * /srv/uploads
+        # uploaded files get a new name every time, so browsers may keep them for a year
+        header Cache-Control "public, max-age=31536000, immutable"
         file_server
     }
     handle {

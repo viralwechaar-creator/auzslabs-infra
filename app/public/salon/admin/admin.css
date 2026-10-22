@@ -233,15 +233,15 @@ dialog.a-dialog h2 { font-size: 22px; margin-bottom: 14px; }
 }
 
 /* Edit website: form + live preview side by side (stacked on phones) */
-.a-split { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
-.a-split .a-cardgrid { grid-template-columns: minmax(0, 1fr); }
-.a-split-r { border: 1px solid var(--line, rgba(0,0,0,.12)); border-radius: 18px; background: #fff; overflow: hidden; }
+.a-edit { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+.a-edit .a-cardgrid { grid-template-columns: minmax(0, 1fr); }
+.a-edit-r { border: 1px solid var(--line, rgba(0,0,0,.12)); border-radius: 18px; background: #fff; overflow: hidden; }
 .a-pv-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line, rgba(0,0,0,.1)); }
 .a-pv-tabs { display: flex; gap: 6px; }
 .a-pv-tabs .btn.on { background: var(--plum, #2e2c2a); color: #fff; }
 .a-pv-frame { display: block; width: 100%; height: 70vh; min-height: 420px; border: 0; background: #fff; }
 @media (min-width: 1100px) {
-  .a-split { grid-template-columns: minmax(360px, 5fr) minmax(0, 7fr); }
-  .a-split-r { position: sticky; top: 12px; }
+  .a-edit { grid-template-columns: minmax(360px, 5fr) minmax(0, 7fr); }
+  .a-edit-r { position: sticky; top: 12px; }
   .a-pv-frame { height: calc(100vh - 110px); }
 }

@@ -1,3 +1,9 @@
+x-logging: &log
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   # ---- Reverse proxy: serves both static sites + the API + handles
   # HTTPS automatically. The marketing site (./site) answers the root
@@ -9,6 +15,7 @@ services:
   caddy:
     build: ./caddy   # stock caddy + the GoDaddy DNS plugin (needed for the wildcard cert's DNS-01 challenge) -- see caddy/Dockerfile
     restart: unless-stopped
+    logging: *log
     # Caddy faces the internet, so it gets only the three values the Caddyfile actually uses, NOT the whole .env
     # (database passwords, JWT_SECRET and every API key used to be passed in here too).
     environment:
@@ -31,8 +38,43 @@ services:
   # against this database, not a Supabase feature -- see db/ for schema. ----
   postgres:
     image: postgres:16-alpine
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    stop_grace_period: 30s
     restart: unless-stopped
+    logging: *log
     env_file: .env
+    # query statistics for admin -> System resources -> Slowest database work (needs `create extension pg_stat_statements` once, see CLAUDE.md)
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - pg_stat_statements.track=top
+      - -c
+      - track_activity_query_size=2048
+      # memory sized for a 4 GB server that also runs the API and web server (default is a tiny 128 MB cache)
+      - -c
+      - shared_buffers=768MB
+      - -c
+      - effective_cache_size=2GB
+      - -c
+      - work_mem=16MB
+      - -c
+      - maintenance_work_mem=128MB
+      - -c
+      - random_page_cost=1.1
+      - -c
+      - checkpoint_completion_target=0.9
+      - -c
+      - wal_buffers=16MB
+      - -c
+      - autovacuum_vacuum_scale_factor=0.1
+      - -c
+      - autovacuum_analyze_scale_factor=0.05
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db:/docker-entrypoint-initdb.d:ro   # schema files here auto-run on first boot only
@@ -46,7 +88,15 @@ services:
   # never POSTGRES_USER -- see that file for why. ----
   api:
     build: ./server
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    stop_grace_period: 15s
     restart: unless-stopped
+    logging: *log
     security_opt:
       - no-new-privileges:true
     env_file: .env
@@ -55,6 +105,8 @@ services:
       PGPORT: 5432
     volumes:
       - uploads_data:/data/uploads
+      # read-only copy of the website and app pages: the API writes each business's icon into the page it sends (routes/system.js)
+      - ./app/public:/srv/app:ro
       # Employee documents (Aadhar/PAN/driving-licence) are private --
       # unlike uploads_data above, this volume is mounted into the api
       # container ONLY, never into caddy, so there is no static-file
@@ -72,6 +124,7 @@ services:
   backup:
     image: prodrigestivill/postgres-backup-local:16
     restart: unless-stopped
+    logging: *log
     env_file: .env
     environment:
       POSTGRES_HOST: postgres
@@ -97,6 +150,7 @@ services:
   offsite-backup:
     image: rclone/rclone:latest
     restart: unless-stopped
+    logging: *log
     # only the backup-bucket name from .env; the account/key below are interpolated explicitly
     environment:
       B2_BUCKET: ${B2_BUCKET}
@@ -127,6 +181,7 @@ services:
   uptime-kuma:
     image: louislam/uptime-kuma:1
     restart: unless-stopped
+    logging: *log
     volumes:
       - uptime_kuma_data:/app/data
     expose:
@@ -140,6 +195,7 @@ services:
     build:
       context: ./agents-office
     restart: unless-stopped
+    logging: *log
     env_file:
       - ./agents-office/.env
     environment:

@@ -13,7 +13,7 @@ import { pool } from './db.js';
 
 const UPLOAD_ROOT = process.env.UPLOAD_ROOT || '/data/uploads';
 const DOMAIN = process.env.DOMAIN || '';
-const RESERVED = new Set(['app', 'www', 'api', 'auzspos', 'auzsmob', 'auzspay', 'auzsledger', 'auzsscan', 'auzsqr', 'auzslab', 'hub', 'agents', 'status']);
+const RESERVED = new Set(['app', 'www', 'api', 'auzspos', 'auzsmob', 'auzspay', 'auzsledger', 'auzsscan', 'auzsstyle', 'auzsqr', 'auzslab', 'hub', 'agents', 'status']);
 
 // tenants and records both have RLS, and `pool` connects as the `app` role
 // (db.js) -- a bare pool.query against either, with no app.uid set (there is
@@ -48,19 +48,36 @@ export async function appIcon(tenant, settings, size) {
   // on their own home-screen icon. Parse out the path instead.
   const logoPath = (() => { try { return typeof s.logo === 'string' && s.logo ? new URL(s.logo, 'https://x').pathname : null; } catch { return null; } })();
   const logo = logoPath && logoPath.startsWith('/uploads/') ? logoPath : null;
-  const key = [tenant.slug, logo, s.name, bg, size].join('|');
+  // an uploaded home-screen icon wins over everything: used as-is, full bleed, nothing drawn around it
+  const iconPath = (() => { try { return typeof s.appIcon === 'string' && s.appIcon ? new URL(s.appIcon, 'https://x').pathname : null; } catch { return null; } })();
+  const upIcon = iconPath && iconPath.startsWith('/uploads/') ? iconPath : null;
+  const key = ['v3', tenant.slug, upIcon, logo, s.name, bg, size].join('|');
   if (iconCache.has(key)) return iconCache.get(key);
   const sharp = (await import('sharp')).default;
   let out = null;
-  if (logo) {
+  if (upIcon) {
+    try {
+      const file = path.join(UPLOAD_ROOT, upIcon.replace(/^\/uploads\//, ''));
+      out = await sharp(await fs.readFile(file), { density: 300 }).resize(size, size, { fit: 'cover' }).flatten({ background: '#ffffff' }).png().toBuffer();
+    } catch { out = null; }
+  }
+  if (!out && logo) {
     try {
       const file = path.join(UPLOAD_ROOT, logo.replace(/^\/uploads\//, ''));
-      const inner = Math.round(size * 0.66);
-      const lg = await sharp(await fs.readFile(file), { density: 300 })
-        .resize(inner, inner, { fit: 'inside', background: { r: 0, g: 0, b: 0, alpha: 0 } })
-        .png().toBuffer();
-      out = await sharp({ create: { width: size, height: size, channels: 4, background: bg } })
-        .composite([{ input: lg, gravity: 'centre' }]).png().toBuffer();
+      // the logo fills the whole icon: a roughly square logo is cropped to fill, a wide or tall one is fitted
+      // with a small margin on white, so there is never a big empty tile around it
+      let buf = await fs.readFile(file);
+      // cut away the empty border many logo files carry, so the mark itself fills the icon
+      try { buf = await sharp(buf, { density: 300 }).trim({ threshold: 18 }).png().toBuffer(); } catch { /* keep the original */ }
+      const meta = await sharp(buf, { density: 300 }).metadata();
+      const ratio = (meta.width || 1) / (meta.height || 1);
+      if (ratio > 0.8 && ratio < 1.25) {
+        out = await sharp(buf, { density: 300 }).resize(size, size, { fit: 'cover' }).flatten({ background: '#ffffff' }).png().toBuffer();
+      } else {
+        const inner = Math.round(size * 0.9);
+        const lg = await sharp(buf, { density: 300 }).resize(inner, inner, { fit: 'inside', background: { r: 255, g: 255, b: 255, alpha: 0 } }).png().toBuffer();
+        out = await sharp({ create: { width: size, height: size, channels: 4, background: '#ffffff' } }).composite([{ input: lg, gravity: 'centre' }]).png().toBuffer();
+      }
     } catch { out = null; } // a missing/unreadable logo file falls through to initials below
   }
   if (!out) {

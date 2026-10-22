@@ -1000,7 +1000,7 @@
       const split = clientSplit(from, to), splitTotal = split.newCount + split.retCount;
       const splitSection = splitTotal ? h('div', { class: 'a-section' }, h('h2', { class: 'a-h2', text: 'New vs returning clients' }),
         h('p', { class: 'a-note', style: 'margin:0 0 14px', text: 'A client counts as "new" if their very first bill ever falls in this period.' }),
-        h('div', { class: 'a-split' },
+        h('div', { class: 'a-edit' },
           split.newCount ? h('i', { style: 'width:' + Math.round(split.newCount / splitTotal * 100) + '%;background:var(--gold-d)' }) : null,
           split.retCount ? h('i', { style: 'width:' + Math.round(split.retCount / splitTotal * 100) + '%;background:var(--plum)' }) : null),
         h('div', { class: 'a-funnel-legend' },
@@ -1172,7 +1172,7 @@
     left.addEventListener('input', send);
     const tabs = h('div', { class: 'a-pv-tabs' }, pages.map(([label, url]) => h('button', { type: 'button', class: 'btn btn-alt btn-sm' + (url === page ? ' on' : ''), onclick: (ev) => { page = url; frame.src = url; tabs.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === ev.currentTarget)); } }, label)));
     const reload = () => { frame.src = page; };
-    const box = h('div', { class: 'a-split' }, h('div', { class: 'a-split-l' }, left), h('aside', { class: 'a-split-r' }, h('div', { class: 'a-pv-bar' }, h('strong', { text: 'Live preview' }), tabs), frame));
+    const box = h('div', { class: 'a-edit' }, h('div', { class: 'a-edit-l' }, left), h('aside', { class: 'a-edit-r' }, h('div', { class: 'a-pv-bar' }, h('strong', { text: 'Live preview' }), tabs), frame));
     return { box, reload };
   }
   function viewContent() {

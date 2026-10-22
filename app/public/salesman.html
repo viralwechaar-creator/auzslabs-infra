@@ -239,10 +239,8 @@ button:active:not(:disabled){transform:translateY(1px) scale(.99)}
         <h2 style="margin-top:0">Show the client</h2>
         <p class=sub id=showSub>Opens the website and the POS in two separate tabs: place an order on the website, then check it in the POS tab. Already loaded with their logo, colours and a 24-item menu.</p>
         <div class=actions>
-          <button id=demoRoomBtn>Start demo (2 tabs) ↗</button>
-          <button class=ghost id=openPosBtn>Open their POS ↗</button>
-          <button class=ghost id=openQrBtn>Open table QR order ↗</button>
-          <button class=ghost id=openSiteBtn>Open their website ↗</button>
+          <button id=openSiteBtn>Open their website ↗</button>
+          <button id=openPosBtn>Open their POS ↗</button>
         </div>
         <div id=demoErr class=err></div>
 
@@ -275,6 +273,8 @@ button:active:not(:disabled){transform:translateY(1px) scale(.99)}
 
           <h2>Website photos</h2>
           <p class=sub>Without these the website still works — it shows a drawn icon instead of a photo. Upload the client's own when you have them.</p>
+          <label>Home-screen icon (square PNG: used when the client adds their website or POS to the phone home screen)<input id=bIconFile type=file accept="image/png,image/jpeg,image/webp"></label>
+          <div id=bIconPrev style="margin:6px 0"></div>
           <label>Hero photo (top of the page)<input id=bHeroFile type=file accept="image/png,image/jpeg,image/webp"></label>
           <div id=bHeroPrev style="margin-top:8px"></div><button type=button class="ghost small hidden" id=bHeroRm>Remove hero photo</button>
           <label>Gallery photos (add one at a time)<input id=bGalFile type=file accept="image/png,image/jpeg,image/webp"></label>
@@ -295,9 +295,10 @@ button:active:not(:disabled){transform:translateY(1px) scale(.99)}
         </div>
         </details>
 
-        <h2>Once they buy</h2>
-        <p class=sub>A real login with a password, to hand over to the owner.</p>
-        <button class=ghost id=ownerLoginBtn>Create a real owner login</button>
+        <h2>Trial login for the client</h2>
+        <p class=sub>An email and password so the client can try it on their own phone or computer (the POS and the website editor) without going live. Press again to get a fresh password.</p>
+        <div id=trialLoginBox class="hidden" style="background:var(--fill);border-radius:14px;padding:10px 12px;margin:8px 0;font-size:13px;line-height:1.55;word-break:break-all"></div>
+        <button class=ghost id=ownerLoginBtn>Create trial login</button><div id=trialLoginErr class=err style="margin:6px 0;color:#c0392b;font-size:14px"></div>
 
         <h2 style="color:var(--red)">Delete this prospect</h2>
         <p class=sub>Permanent — removes the business and everything in it (menu, logo, any owner login). Cannot be undone.</p>
@@ -840,10 +841,8 @@ const cafeSub = $('showSub').textContent;
 function applyNiche(t) {
   const a = nicheApp(t);
   $('openPosBtn').textContent = a.main;
-  $('openQrBtn').classList.toggle('hidden', !a.qr);
   $('openSiteBtn').classList.toggle('hidden', !a.site);
-  $('demoRoomBtn').classList.toggle('hidden', !a.demo);
-  $('openPosBtn').classList.toggle('ghost', a.demo);
+  $('trialLoginBox').classList.add('hidden');
   $('brandDet').open = !a.demo;
   $('brandDet').classList.toggle('hidden', !a.brand);
   $('brandForm').classList.toggle('hidden', !a.brand);
@@ -874,8 +873,8 @@ async function openBrand(tenantId) {
   $('bTint').value = /^#[0-9a-f]{6}$/i.test(b.tint || '') ? b.tint : '#f5f4f2';
   $('bMuted').value = /^#[0-9a-f]{6}$/i.test(b.muted || '') ? b.muted : '#7a756d';
   $('bLine').value = /^#[0-9a-f]{6}$/i.test(b.line || '') ? b.line : '#e2dcd4';
-  current.logoUrl = data.logo || null; current.heroUrl = data.siteHero || null;
-  showLogo(); showHero();
+  current.logoUrl = data.logo || null; current.heroUrl = data.siteHero || null; current.iconUrl = data.appIcon || null;
+  showLogo(); showHero(); showIcon();
   current.galleryUrls = (data.siteGallery || '').split(',').map((s) => s.trim()).filter(Boolean);
   renderGalleryPrev();
   $('brandPanel').classList.remove('hidden');
@@ -903,6 +902,14 @@ function showHero() {
   $('bHeroPrev').innerHTML = current.heroUrl ? `<img src="${esc(current.heroUrl)}" style="height:70px;border-radius:8px" alt="">` : '';
   $('bHeroRm').classList.toggle('hidden', !current.heroUrl);
 }
+function showIcon() { $('bIconPrev').innerHTML = current.iconUrl ? `<img src="${esc(current.iconUrl)}" style="height:64px;width:64px;object-fit:cover;border-radius:14px" alt="">` : ''; }
+$('bIconFile').onchange = async () => {
+  const file = $('bIconFile').files[0];
+  if (!file || !current) return;
+  $('brandErr').textContent = '';
+  try { current.iconUrl = await uploadBrandImage(file, 'icon'); showIcon(); toast('Icon uploaded — click Save to make it live'); } catch (e) { $('brandErr').textContent = e.message; }
+  $('bIconFile').value = '';
+};
 $('bLogoRm').onclick = () => { current.logoUrl = ''; showLogo(); toast('Logo removed — click Save to make it live'); };
 $('bHeroRm').onclick = () => { current.heroUrl = ''; showHero(); toast('Hero photo removed — click Save to make it live'); };
 
@@ -968,6 +975,7 @@ $('saveBrandBtn').onclick = async () => {
   };
   if (current.logoUrl != null) patch.logo = current.logoUrl;
   if (current.heroUrl != null) patch.siteHero = current.heroUrl;
+  if (current.iconUrl != null) patch.appIcon = current.iconUrl;
   if (current.galleryUrls) patch.siteGallery = current.galleryUrls.join(',');
   $('saveBrandBtn').disabled = true;
   const { data, error } = await sb.rpc('salesman_branding_save', { p_tenant_id: current.id, p_patch: patch });
@@ -983,25 +991,6 @@ $('saveBrandBtn').onclick = async () => {
 
 $('openSiteBtn').onclick = () => { if (current && nicheApp(current).site) window.open('https://' + current.slug + '.auzslab.in' + nicheApp(current).site, '_blank'); };
 
-$('openQrBtn').onclick = () => {
-  if (!current) return;
-  // No table yet (older trials): open the website as a takeaway order page instead of refusing.
-  window.open('https://' + current.slug + '.auzslab.in/site.html' + (current.table_id ? '?t=' + current.table_id : ''), '_blank');
-};
-
-$('demoRoomBtn').onclick = async () => {
-  if (!current) return;
-  $('demoErr').textContent = '';
-  // Open both tabs inside the tap (browsers block a second pop-up opened after an await), fill them in afterwards.
-  const base = 'https://' + current.slug + '.auzslab.in';
-  const wSite = window.open(base + '/site.html' + (current.table_id ? '?t=' + encodeURIComponent(current.table_id) : ''), '_blank');
-  const wPos = window.open('about:blank', '_blank');
-  $('demoRoomBtn').disabled = true;
-  try { await openBusiness(current.id, current.slug, nicheApp(current).page, wPos); }
-  catch (e) { $('demoErr').textContent = e.message; if (wPos) wPos.close(); }
-  $('demoRoomBtn').disabled = false;
-};
-
 $('openPosBtn').onclick = async () => {
   if (!current) return;
   $('demoErr').textContent = '';
@@ -1012,23 +1001,31 @@ $('openPosBtn').onclick = async () => {
 
 $('ownerLoginBtn').onclick = async () => {
   if (!current) return;
-  const email = prompt("Owner's email for their first login:");
-  if (!email) return;
-  $('brandErr').textContent = '';
+  $('brandErr').textContent = ''; $('trialLoginErr').textContent = '';
+  $('ownerLoginBtn').disabled = true;
   try {
     const { data: { session } } = await sb.auth.getSession();
     const res = await fetch(CFG.url + '/admin/salesman-provision-owner', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
-      body: JSON.stringify({ tenant_id: current.id, email, name: current.name }),
+      body: JSON.stringify({ tenant_id: current.id, trial: true, name: current.name }),
     });
     const body = await res.json();
     if (!res.ok) throw new Error(body.error || 'failed');
-    alert('Owner login created.\n\nEmail: ' + email + '\nTemporary password: ' + body.temp_password + '\n\nShare this with the client directly.');
+    const a = nicheApp(current), base = 'https://' + current.slug + '.auzslab.in';
+    // one shared address per product (the sign-in finds the business), so no separate POS link per trial
+    const SHARED = { '/index.html': 'https://auzspos.auzslab.in', '/mob.html': 'https://auzsmob.auzslab.in', '/accounts.html': 'https://auzsledger.auzslab.in' };
+    const lines = [['Email', body.email], ['Password', body.temp_password], [a.main.replace(/^Open their |\s*\u2197$/g, ''), SHARED[a.page] || (base + a.page)]];
+    if (current.niche === 'cafe') lines.push(['Website editor', base + '/site-edit.html']);
+    const text = lines.map(([k, v]) => k + ': ' + v).join('\n');
+    $('trialLoginBox').innerHTML = lines.map(([k, v]) => `<div><b>${esc(k)}:</b> ${esc(v)}</div>`).join('') + '<button class=ghost id=copyTrialBtn style="margin-top:8px">Copy to send</button>';
+    $('trialLoginBox').classList.remove('hidden'); $('trialLoginBox').scrollIntoView({block:'center'});
+    $('copyTrialBtn').onclick = async () => { try { await navigator.clipboard.writeText(text); toast('Copied'); } catch { prompt('Copy this', text); } };
     current.has_owner = true;
     const idx = trials.findIndex((t) => t.id === current.id); if (idx > -1) trials[idx].has_owner = true;
     renderTrials();
-  } catch (e) { $('brandErr').textContent = e.message; }
+  } catch (e) { $('trialLoginErr').textContent = 'Could not create the login: ' + e.message; }
+  $('ownerLoginBtn').disabled = false;
 };
 
 $('deleteTrialBtn').onclick = async () => {
