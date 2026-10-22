@@ -739,3 +739,18 @@ footer .col a,footer .col span{font-size:9.5px}
 .bigcol::after{background:linear-gradient(transparent 45%,rgba(0,0,0,.55))}
 .bigcol .cap{inset:auto var(--pad) 28px var(--pad);justify-content:flex-end;gap:12px}
 .bigcol .t{font-size:clamp(24px,4.6vw,54px);line-height:1.05;font-weight:800;letter-spacing:-.02em}
+
+/* phone dock v2: one black bar, brand at left, labelled icons, chat at right */
+@media(max-width:899px){
+  .dock{left:12px;right:12px;transform:none;bottom:max(12px,env(safe-area-inset-bottom));gap:0;height:62px;padding:6px;border-radius:31px;background:#000;box-shadow:0 10px 34px rgba(0,0,0,.35),0 0 0 .5px rgba(255,255,255,.14) inset;justify-content:space-between}
+  .dock .mark{width:50px;height:50px;flex:none;background:#fff;color:#000;box-shadow:none!important;font-weight:800}
+  .dock .pill{flex:1;height:50px;padding:0 4px;gap:0;justify-content:space-around;background:transparent!important;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+  .dock .pill button{width:auto;flex:1;height:50px;border-radius:25px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:rgba(255,255,255,.62)}
+  .dock .pill button:active{background:rgba(255,255,255,.12);color:#fff}
+  .dock .pill button::after{content:attr(aria-label);font:600 8.5px/1 'Space Mono',ui-monospace,monospace;letter-spacing:.06em;text-transform:uppercase}
+  .dock svg,.dock svg.f{width:18px!important;height:18px!important;color:inherit}
+  .dock .pill .n{top:4px;right:calc(50% - 20px);background:#fff;color:#000;font-weight:700;min-width:14px;height:14px;font-size:8.5px}
+  .dock .chat{width:50px;height:50px;flex:none;background:#fff;color:#000;box-shadow:none!important}
+  .dock .chat svg,.dock .chat svg.f{color:#000;stroke:#000}
+  .chatfab{display:none}
+}
