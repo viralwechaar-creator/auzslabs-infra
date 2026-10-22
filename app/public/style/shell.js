@@ -13,7 +13,7 @@ function parseHash() {
 }
 const go = (path) => { const tgt = '#/' + path.replace(/^#?\/?/, ''); if (location.hash === tgt) route_(); else location.hash = tgt; };
 const allowed = (def) => !!def && (!def.perm || can(def.perm));
-const NAV = [['sell', 'Sell', 'cash'], ['stock', 'Stock', 'shirt'], ['bills', 'Bills', 'tag'], ['home', 'Overview', 'home'], ['analytics', 'Analytics', 'chart'], ['buy', 'Buy', 'truck'], ['people', 'People', 'users'], ['store', 'Online store', 'globe'], ['settings', 'Settings', 'gear']];
+const NAV = [['sell', 'Sell', 'cash'], ['stock', 'Stock', 'shirt'], ['bills', 'Bills', 'tag'], ['home', 'Overview', 'home'], ['analytics', 'Analytics', 'chart'], ['intel', 'Buying intelligence', 'bolt'], ['requests', 'Requests', 'users'], ['buy', 'Buy', 'truck'], ['people', 'People', 'users'], ['store', 'Online store', 'globe'], ['settings', 'Settings', 'gear']];
 const navList = () => NAV.filter(([id]) => allowed(PAGES[id]));
 const tabsFor = () => navList().slice(0, 4).map((x) => x[0]);
 
@@ -187,7 +187,7 @@ async function refreshNotes() {
   try { const { data } = await sb.from('notifications').select('id,type,title,body,read,created_at').gte('created_at', new Date(Date.now() - 30 * 864e5).toISOString()).order('created_at').limit(500); NOTES = (data || []).filter((x) => NOTE_TYPES.test(x.type)).reverse(); } catch { return; }
   document.querySelectorAll('.btn.bell').forEach((b) => b.replaceWith(bellBtn()));
 }
-function noteTarget(n) { const t_ = n.type === 'style_request' ? 'requests' : n.type === 'style_soldout' ? 'stock' : 'store'; return PAGES[t_] ? t_ : 'store'; }
+function noteTarget(n) { return n.type === 'style_request' ? 'requests' : n.type === 'style_soldout' ? 'stock' : 'store'; }
 function notesSheet() {
   const unread = NOTES.filter((n) => !n.read);
   const rows = NOTES.length ? NOTES.slice(0, 40).map((n) => liRow({ icon: n.type === 'store_order' ? 'globe' : n.type === 'store_return' ? 'swap' : n.type === 'store_paid' ? 'cash' : 'bell', title: n.title, sub: (n.body ? n.body + ' · ' : '') + fmtDT(n.created_at), badge: n.read ? null : h('span', { class: 'dot', style: { background: 'var(--tint)', width: '8px', height: '8px', borderRadius: '50%', display: 'inline-block' } }), chevron: true,

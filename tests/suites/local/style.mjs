@@ -231,7 +231,7 @@ export default async function run({ browser, stack }) {
   };
   const screens = async (dev, label) => {
     const { c, page, errs } = await open(USERS.styOwner, dev); const bad = [];
-    for (const [hash, name] of [['sell', 'Sell'], ['home', 'Overview'], ['stock', 'Stock'], ['analytics', 'Analytics'], ['analytics?tab=sizes', 'Sizes'], ['analytics?tab=groups', 'Groups'], ['analytics?tab=variants', 'Variants'], ['analytics?tab=next', 'Next'], ['analytics?tab=staff', 'Staff'], ['bills', 'Bills'], ['buy', 'Buy'], ['buy?tab=suppliers', 'Suppliers'], ['people', 'People'], ['people?tab=staff', 'People staff'], ['settings', 'Settings']]) {
+    for (const [hash, name] of [['sell', 'Sell'], ['home', 'Overview'], ['stock', 'Stock'], ['analytics', 'Analytics'], ['analytics?tab=sizes', 'Sizes'], ['analytics?tab=groups', 'Groups'], ['analytics?tab=variants', 'Variants'], ['analytics?tab=next', 'Next'], ['analytics?tab=staff', 'Staff'], ['intel', 'Intel overview'], ['intel?tab=designs', 'Intel designs'], ['intel?tab=reorder', 'Intel reorder'], ['intel?tab=capital', 'Intel capital'], ['intel?tab=lost', 'Intel lost'], ['intel?tab=basket', 'Intel basket'], ['intel?tab=advice', 'Intel advice'], ['requests', 'Requests'], ['bills', 'Bills'], ['buy', 'Buy'], ['buy?tab=suppliers', 'Suppliers'], ['people', 'People'], ['people?tab=staff', 'People staff'], ['settings', 'Settings']]) {
       const before = errs.length; await page.evaluate((x) => { location.hash = '#/' + x; }, hash); await page.waitForTimeout(1100);
       if (process.env.SHOTS) { await s.shot(page, `${label} ${name}`); await page.emulateMedia({ colorScheme: 'dark' }); await page.waitForTimeout(250); await s.shot(page, `${label} ${name} DARK`); await page.emulateMedia({ colorScheme: 'light' }); }
       const body = await page.locator('#main').innerText();
@@ -467,6 +467,76 @@ export default async function run({ browser, stack }) {
     const good = (await q('select sty_online_confirm($1,$2,$3,$4) r', [o2.token, 'order_TEST1', 'pay_TEST1', sig]))[0].r; assert(good.paymentStatus === 'paid', 'paid ' + JSON.stringify(good));
     const sh = await ok(null, 'public_sty_share', { p_slug: 'teststyle', p_style: sty.id }); assert(sh && sh.shop && sh.name, 'share data');
     await integrity();
+  });
+
+  await s.check('Buying intelligence: designs, size curve, reorder, lost demand, requests, cost hiding and isolation', async () => {
+    const tee = await ok(owner, 'sty_save_style', { p: { name: 'Intel Tee', category: 'Tees', price: 1000, mrp: 1000, cost: 400, colours: ['Black'], sizes: ['S', 'M', 'L', 'XL'], opening: { qty: 20, unitCost: 400 } } });
+    const vv = (z) => tee.variants.find((v) => v.size === z);
+    const ago = (n) => `now() - interval '${n} days'`;
+    await q(`update sty_stock_moves set at = ${ago(40)} where variant_id = any($1)`, [tee.variants.map((v) => v.id)]);
+    const sell = async (z, qty, daysAgo) => { const id = uid(); await ok(owner, 'sty_sell', { p: { id, lines: [{ variantId: vv(z).id, qty }], payments: [{ mode: 'cash', amount: 5000 * qty }] } });
+      await q(`update sty_sales set at = ${ago(daysAgo)} where id = $1`, [id]); await q(`update sty_stock_moves set at = ${ago(daysAgo)} where ref_id = $1`, [id]); };
+    for (const d of [36, 28, 20, 8, 1]) await sell('M', 4, d);
+    for (const d of [30, 10]) await sell('L', 4, d);
+    await sell('S', 20, 30);
+    const per = { p: { from: new Date(Date.now() - 59 * 864e5).toISOString().slice(0, 10) } };
+    const ov = await ok(owner, 'sty_intel_overview', per); const ds = await ok(owner, 'sty_intel_designs', per);
+    const sumUnits = ds.designs.reduce((a, d) => a + d.units, 0); assert(sumUnits === ov.units, `designs ${sumUnits} must add up to the overview ${ov.units}`);
+    const d = ds.designs.find((x) => x.name === 'Intel Tee'); assert(d && d.units === 48 && d.confidence === 'high' && d.score != null, 'design ' + JSON.stringify(d));
+    assert(d.components && d.components.velocity != null && d.weights === undefined && ds.weights.velocity === 25, 'score must show its components and weights');
+    const det = await ok(owner, 'sty_intel_design', { p: { ...per.p, styleId: tee.id } });
+    const m = det.variants.find((v) => v.size === 'M'), sS = det.variants.find((v) => v.size === 'S'), xl = det.variants.find((v) => v.size === 'XL');
+    assert(m.units === 20 && m.stockoutDays <= 1 && m.stock === 0, 'M ' + JSON.stringify(m)); assert(sS.stockoutDays >= 25 && sS.estLostUnits > 20, 'S lost demand ' + JSON.stringify(sS)); assert(xl.units === 0 && xl.estLostUnits == null, 'XL has no estimate');
+    assert(det.sizeCurve.find((x) => x.size === 'S').ownShare === 41.7, 'size curve ' + JSON.stringify(det.sizeCurve));
+    const ro = await ok(owner, 'sty_intel_reorder', { p: { ...per.p, styleId: tee.id } });
+    const rM = ro.items.find((i) => i.size === 'M'), rS = ro.items.find((i) => i.size === 'S');
+    assert(rM && rM.suggestQty > 0 && rM.basis === 'own' && rM.leadDays === 7 && /Out of stock/.test(rM.reason), 'M reorder ' + JSON.stringify(rM)); assert(rS && rS.stock === 0, 'S out and selling must be listed');
+    assert(!ro.items.some((i) => i.size === 'XL'), 'a size with no sales must not be reordered');
+    await ok(owner, 'sty_intel_set_policy', { p_style: tee.id, p: { policy: 'seasonal', seasonEnd: new Date(Date.now() + 3 * 864e5).toISOString().slice(0, 10) } });
+    const ro2 = await ok(owner, 'sty_intel_reorder', { p: { ...per.p, styleId: tee.id } }); assert(ro2.items.every((i) => i.suggestQty === 0) && /season ends/i.test(ro2.items[0].reason), 'season ending before delivery must stop the reorder: ' + JSON.stringify(ro2.items[0]));
+    await ok(owner, 'sty_intel_set_policy', { p_style: tee.id, p: { policy: 'evergreen', seasonEnd: null } });
+    const lost = await ok(owner, 'sty_intel_lost', per); assert(lost.variants.some((v) => v.name === 'Intel Tee' && v.size === 'S' && v.estLostUnits > 0 && /estimate/i.test(v.note)), 'lost demand');
+    const cap = await ok(owner, 'sty_intel_capital', {}); assert(typeof cap.totalCost === 'number' || cap.totalCost >= 0, 'capital');
+    const bk = await ok(owner, 'sty_intel_basket', per); assert(Array.isArray(bk.pairs) && bk.bills >= 1, 'basket');
+    const as = await ok(owner, 'sty_intel_assistant', per); assert(as.items.some((i) => i.kind === 'reorder' && /Intel Tee/.test(i.title) && i.confidence && i.period), 'assistant ' + JSON.stringify(as.items.slice(0, 2)));
+    // weights: must give all six, saved, and used
+    await fails(manager, 'sty_intel_set_settings', { p: { weights: { velocity: 50 } } }, /six weights/i);
+    await ok(manager, 'sty_intel_set_settings', { p: { weights: { velocity: 50, profit: 10, fullPrice: 10, availability: 10, returns: 10, age: 10 }, safetyDays: 5 } });
+    assert((await ok(owner, 'sty_intel_designs', per)).weights.velocity === 50, 'weights not saved');
+    await ok(manager, 'sty_intel_set_settings', { p: { weights: { velocity: 25, profit: 20, fullPrice: 15, availability: 15, returns: 10, age: 15 }, safetyDays: 3 } });
+    // a plain staffer gets no cost or profit figures
+    const sov = await call(staff, 'sty_intel_overview', per); if (sov.ok) { assert(sov.data.costHidden === true && sov.data.grossProfit == null && sov.data.stockCost == null, 'staff must not see profit'); await fails(staff, 'sty_intel_capital', {}, /cost/i); } else s.note('staff has no analytics permission here: ' + sov.error);
+    await fails(cafe, 'sty_intel_overview', {}, /not enabled/i);
+    // requests: noted at the till, owner told, marked arrived when the stock comes in
+    await fails(staff, 'sty_request_save', { p: { description: 'x' } }, /what the customer/i);
+    const rq = await ok(staff, 'sty_request_save', { p: { name: 'Meera', phone: '98 7654 3210', description: 'Intel Tee in XL, black', variantId: vv('XL').id, qty: 2 } }); assert(rq.status === 'open' && rq.styleName === 'Intel Tee', 'request ' + JSON.stringify(rq));
+    assert(Number((await q("select count(*)::int c from notifications where tenant_id=$1 and type='style_request'", [tid]))[0].c) >= 1, 'owner must be notified');
+    assert(await ok(staff, 'sty_requests_open') >= 1, 'open count');
+    const lost2 = await ok(owner, 'sty_intel_lost', per); assert(lost2.requestCount >= 1, 'requests count as lost-demand evidence');
+    await q('insert into wa_tenant_settings (tenant_id, enabled) values ($1, true) on conflict (tenant_id) do update set enabled = true', [tid]);
+    await ok(owner, 'sty_request_set', { p_id: rq.id, p: { status: 'ordered' } });
+    assert(Number((await q("select count(*)::int c from wa_outbox where tenant_id=$1 and template='style_request_ordered'", [tid]))[0].c) === 1, 'customer message for ordered');
+    await ok(manager, 'sty_receive', { p: { id: uid(), lines: [{ variantId: vv('XL').id, qty: 5, unitCost: 410 }], paid: 0 } });
+    const after = (await ok(staff, 'sty_requests_list', { p: {} })).find((x) => x.id === rq.id); assert(after.status === 'arrived', 'stock arrival must mark the request: ' + after.status);
+    assert(Number((await q("select count(*)::int c from wa_outbox where tenant_id=$1 and template='style_request_ready'", [tid]))[0].c) === 1, 'customer message for arrived');
+    await integrity();
+  });
+
+  await s.check('Buying intelligence screens show the real design, matrix and reorder plan on phone and desktop', async () => {
+    for (const dev of [{ w: 390, h: 844, mobile: true }, { w: 1280, h: 800 }]) {
+      const { c, page, errs } = await open(USERS.styOwner, dev);
+      await page.evaluate(() => { location.hash = '#/intel?tab=designs'; }); await page.waitForSelector('.dcard', { timeout: 15000 });
+      const card = page.locator('.dcard', { hasText: 'Intel Tee' }).first(); assert(await card.count() === 1, 'Intel Tee card');
+      await card.click(); await page.waitForSelector('.sheet .mx', { timeout: 10000 });
+      const txt = await page.locator('.sheet').innerText(); assert(/Colour . size/.test(txt) && /Size curve/.test(txt) && /left/.test(txt), 'matrix content: ' + txt.slice(0, 120));
+      await s.shot(page, 'intel design ' + dev.w);
+      await page.keyboard.press('Escape'); await page.locator('.sheet .btn', { hasText: /Done/ }).first().click().catch(() => {});
+      await page.evaluate(() => { location.hash = '#/intel?tab=reorder'; }); await page.waitForSelector('.rrow', { timeout: 15000 }); await s.shot(page, 'intel reorder ' + dev.w);
+      const sx = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth); assert(sx <= 1, 'sideways scroll ' + sx);
+      await page.evaluate(() => { location.hash = '#/sell'; }); await page.waitForSelector('.sgrid', { timeout: 15000 });
+      await page.fill('.sellpage input[type=search], .sellpage .search input', 'zzzz-nothing'); await page.waitForSelector('text=Note a customer request', { timeout: 8000 });
+      const real = errs.filter((e) => !/sentry/i.test(e)); assert(real.length === 0, 'script errors: ' + real.join(' | ').slice(0, 200)); await c.close();
+    }
   });
 
   await s.check('The public AUZsStyle bill is the black invoice design and works on phone and desktop', async () => {

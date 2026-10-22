@@ -327,6 +327,22 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .sd-c{display:flex;flex-direction:column;justify-content:flex-end;height:100%;text-align:center;font-size:10px}
 .sd-f{background:var(--tint);border-radius:4px 4px 0 0;opacity:.85}.sd-l{margin-top:3px}
 
+/* Buying intelligence + requests */
+.itag{display:inline-flex;align-items:center;min-height:22px;padding:0 9px;border-radius:11px;font-size:12px;font-weight:600;background:var(--fill);color:var(--label2)}
+.itag.green{background:color-mix(in srgb,var(--green,#1a7f3c) 14%,transparent);color:var(--green,#1a7f3c)}.itag.orange{background:color-mix(in srgb,#d97706 14%,transparent);color:#b45309}
+.itag.red{background:color-mix(in srgb,var(--red,#c0392b) 14%,transparent);color:var(--red,#c0392b)}.itag.blue{background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent)}
+.dcard{display:flex;gap:12px;align-items:flex-start;text-align:left;width:100%;padding:12px;border-radius:16px;background:var(--card);box-shadow:var(--sh1,0 0 0 .5px var(--sep))}
+.dcard .t{font-weight:700}.dcard .s{font-size:12.5px;color:var(--label2)}.dc-t{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}.dc-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(74px,1fr));gap:6px;margin-top:4px}
+.sring{flex:none;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:16px;border:3px solid var(--fill);color:var(--label)}
+.sring.green{border-color:var(--green,#1a7f3c)}.sring.orange{border-color:#d97706}.sring.red{border-color:var(--red,#c0392b)}
+.trend{font-size:11px}.trend.up{color:var(--green,#1a7f3c)}.trend.down{color:var(--red,#c0392b)}.trend.flat{color:var(--label3)}
+.hb-f.green{background:var(--green,#1a7f3c)}.hb-f.orange{background:#d97706}.hb-f.red{background:var(--red,#c0392b)}
+.mx .mx-s{font-size:10.5px;color:var(--label3)}.mx .mx-o{font-size:10.5px;color:var(--red,#c0392b);font-weight:600}.mx td.mx-out{background:color-mix(in srgb,var(--red,#c0392b) 8%,transparent)}
+.rrow{align-items:flex-start}.rrow .rq{display:grid;gap:2px;justify-items:center}.rrow .fl{font-size:11px;color:var(--label3)}.advice .t{font-weight:700}
+
+/* solid glyph icons */
+.ic svg.f{fill:currentColor!important;stroke:none!important}
+
 .upiq{justify-content:space-between}
 .upiq-card{display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px 0}
 .upiq-card .upiq-i{width:min(260px,70vw);height:auto;aspect-ratio:1;padding:8px}
