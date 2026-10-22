@@ -57,6 +57,8 @@ function orderSheet(r, changed) {
     ['confirmed', 'packed'].includes(r.status) ? { label: t('Shipped'), onclick: (close) => set({ status: 'shipped' }, close) } : null,
     r.status === 'shipped' ? { label: t('Delivered'), primary: true, onclick: (close) => set(r.payment === 'cod' ? { status: 'delivered', paymentStatus: 'paid' } : { status: 'delivered' }, close) } : null,
     !r.saleId && r.status !== 'cancelled' && r.paymentStatus !== 'paid' ? { label: t('Make bill now (stock goes out)'), onclick: billNow } : null,
+    r.saleId ? { label: t('Share invoice'), primary: !!(c.phone), onclick: async () => { await shareWa({ id: r.saleId, number: r.saleNo, at: r.createdAt, customer: { name: c.name, phone: c.phone }, lines: r.lines.map((l) => ({ qty: l.qty, name: l.name, colour: l.colour, size: l.size, net: l.price * l.qty })), discount: r.discount || 0, total: r.total, payments: [{ mode: r.payment === 'cod' ? 'cash' : r.payment }], balance: 0 }, c.phone); return false; } } : null,
+    r.saleId ? { label: t('Copy invoice link'), onclick: async () => { const l = await billLink({ id: r.saleId }); try { await navigator.clipboard.writeText(l); toast(t('Link copied')); } catch { toast(l); } return false; } } : null,
     !['delivered', 'cancelled'].includes(r.status) ? { label: t('Cancel order'), danger: true, onclick: async (close) => { if (!await confirmBox(t('Cancel this order?'), t('The customer is not told automatically.'), t('Cancel order'), true)) return false; await set({ status: 'cancelled' }, close); } } : null] });
 }
 
