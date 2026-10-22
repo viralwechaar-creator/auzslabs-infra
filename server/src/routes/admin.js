@@ -1,6 +1,7 @@
 import { pool, withAuth } from '../db.js';
 import { createUser, resetToRandomPassword, signToken, listSessions, revokeAllSessionsForUser } from '../auth.js';
 import { saveSiteUpload, getUploadsDiskUsage } from '../storage.js';
+import { metricsReport } from '../metrics.js';
 import { sendStaffInviteEmail } from '../mail.js';
 import { safeResetBase } from '../config.js';
 import { myProfile } from '../lib/guards.js';
@@ -193,6 +194,14 @@ export async function handle(ctx) {
     );
     if (!rows.length) throw new HttpError(403, 'forbidden -- not a platform admin');
     return reply(200, await getUploadsDiskUsage());
+  }
+
+  // ---- admin: product load (System resources panel): request metrics kept in memory by metrics.js ----
+  if (url.pathname === '/admin/load' && req.method === 'GET') {
+    if (!user) throw new HttpError(401, 'unauthorized');
+    const { rows } = await withAuth(user.id, (client) => client.query('select 1 from platform_admins where id = $1', [user.id]));
+    if (!rows.length) throw new HttpError(403, 'forbidden -- not a platform admin');
+    return reply(200, await metricsReport());
   }
 
   // ---- admin: Users directory -- list a user's active sessions (same

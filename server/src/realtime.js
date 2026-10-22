@@ -13,6 +13,8 @@ import { verifyToken, onSessionRevoked } from './auth.js';
 // queries) relays every db/002_core_engine.sql pg_notify('live_changes'
 // | 'push_events', ...) to whichever open WebSocket connections belong
 // to that notification's tenant_id.
+let wsOpen = 0;
+export const wsCount = () => wsOpen;
 export function startRealtime(server, { onPushEvent }) {
   const wss = new WebSocketServer({ noServer: true });
   const clientsByTenant = new Map(); // tenant_id -> Set<ws>
@@ -26,7 +28,7 @@ export function startRealtime(server, { onPushEvent }) {
     const tenantId = user?.app_metadata?.tenant_id;
     if (!tenantId) { socket.destroy(); return; }
     wss.handleUpgrade(req, socket, head, (ws) => {
-      ws.tenantId = tenantId;
+      ws.tenantId = tenantId; wsOpen++;
       ws.jti = user.jti || null; // a token signed without meta (see signToken's own comment) has no jti -- nothing to track here, same as it isn't individually revocable
       if (!clientsByTenant.has(tenantId)) clientsByTenant.set(tenantId, new Set());
       clientsByTenant.get(tenantId).add(ws);
@@ -35,6 +37,7 @@ export function startRealtime(server, { onPushEvent }) {
         clientsByJti.get(ws.jti).add(ws);
       }
       ws.on('close', () => {
+        wsOpen = Math.max(0, wsOpen - 1);
         clientsByTenant.get(tenantId)?.delete(ws);
         if (ws.jti) clientsByJti.get(ws.jti)?.delete(ws);
       });
