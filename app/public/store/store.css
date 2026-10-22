@@ -932,3 +932,21 @@ footer .col a,footer .col span{font-size:9.5px}
 /* sections (Products you may like, Recently viewed, ...): no background card, just the title and the product cards */
 .band,.band.t-l,.band.t-m,.band.t-s{background:transparent!important;border-radius:0;box-shadow:none;border:0;padding:0;margin-top:22px}
 .band .hd{padding:0 2px 10px}
+
+/* remove the sticky "Choose size" bar */
+.buybar{display:none!important}
+/* phone product card: slightly smaller and calmer */
+@media(max-width:899px){
+  .info{padding:12px 12px 14px}
+  .info .nm{font-size:15px}
+  .info .pr{font-size:12px}
+  .info .lbl{font-size:9.5px}
+  .info .sz{min-height:34px;height:34px;border-radius:17px;font-size:11px}
+  .info .sz.on{box-shadow:0 4px 10px rgba(0,0,0,.18)}
+  .info .dots2 button{transform:scale(.85)}
+  .info .tiny{padding:6px 10px;font-size:10px}
+  .info .row2 .btn{height:44px;border-radius:22px;font-size:11px}
+  .tabs2 .tr button{font-size:10.5px;padding:11px 2px}
+  .tabs2 .tb{padding:10px 12px 12px}
+  .info .qty{transform:scale(.9);transform-origin:left center}
+}
