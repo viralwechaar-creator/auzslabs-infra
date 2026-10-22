@@ -1,5 +1,5 @@
 import { pool } from '../db.js';
-import { makeSeed, makeTemplate, makeDemo, DEMO_STAFF_PHONE } from '../salon-seed.js';
+import { makeSeed, makeTemplate, makeDemo, addDemoActivity, DEMO_STAFF_PHONE } from '../salon-seed.js';
 import * as engine from '../salon-engine.js';
 import { DOMAIN, fail, todayStr } from './util.js';
 import { hashPassword } from './session.js';
@@ -101,7 +101,25 @@ const DEMO_PASSWORD = 'Auzslab@Demo'; // same public demo password as demo-cafe 
 const DEMO_TTL = 12 * 3600 * 1000;
 // The public demo salon puts itself back to a clean, populated state every
 // 12 hours (and recreates its sample staff login + payroll employee).
+// A demo salon on the shared records engine (the live Showoff Salon demo) keeps its own menu, look and copy:
+// only the fake activity (bookings, bills, expenses) is regenerated, dated relative to today.
+async function refreshGenericDemo(tenant) {
+  const client = await pool.connect();
+  try {
+    await client.query('begin');
+    await engine.authorize(client, tenant.id);
+    const before = await engine.assembleDb(client, tenant.id, true);
+    const db = JSON.parse(JSON.stringify(before));
+    addDemoActivity(db, todayStr());
+    db.clients = []; db.cashlog = []; db.packages = db.packages || []; db.clientPackages = []; db.checkins = [];
+    db.settings.demoSeededAt = Date.now();
+    await engine.persistDb(client, tenant.id, before, db);
+    await client.query('commit');
+  } catch (e) { await client.query('rollback').catch(() => {}); throw e; } finally { client.release(); }
+  dropCaches(tenant.id);
+}
 export async function reseedDemo(tenant) {
+  if (usesGeneric(tenant)) { await refreshGenericDemo(tenant); return { site: await loadSite(tenant), data: {} }; }
   const { site, data } = splitDb(freshDb(tenant));
   const eid = (await pool.query('select salon_hr_ensure($1, $2, $3, $4) as id', [tenant.id, 'Priya', DEMO_STAFF_PHONE, 'Senior hair stylist'])).rows[0].id;
   const client = await pool.connect();
@@ -155,6 +173,11 @@ async function loadSiteUncached(tenant) {
     await engine.initGenericStorage(pool, tenant, freshDb(tenant));
     const db = await engine.withSalonAuth(pool, tid, (c) => engine.assembleDb(c, tid, false));
     site = { settings: db.settings, content: db.content, menu: db.menu, stylists: db.stylists, gallery: db.gallery };
+    if (tenant.is_demo && (!db.settings.demoSeededAt || Date.now() - db.settings.demoSeededAt > DEMO_TTL)) {
+      await refreshGenericDemo(tenant);
+      const again = await engine.withSalonAuth(pool, tid, (c) => engine.assembleDb(c, tid, false));
+      site = { settings: again.settings, content: again.content, menu: again.menu, stylists: again.stylists, gallery: again.gallery };
+    }
   } else {
     site = await readKey(pool, tid, 'site');
     if (!site) site = await initStorage(tenant);

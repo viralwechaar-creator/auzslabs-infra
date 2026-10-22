@@ -35,6 +35,7 @@ const server = http.createServer(async (req, res) => {
 
   const url = new URL(req.url, 'http://internal');
   const user = verifyToken(bearerFrom(req) || '');
+  if (user?.app_metadata?.tenant_id) req.auzTenant = user.app_metadata.tenant_id; // read by metrics.js for the per-client cost report
   const ip = clientIp(req);
   const meta = { ip, userAgent: req.headers['user-agent'] || '' }; // threaded into every sign-in, so it gets its own row in auth_sessions (db/071)
 
@@ -46,7 +47,7 @@ const server = http.createServer(async (req, res) => {
     throw new HttpError(404, 'not found');
   } catch (err) {
     // the visitor closed the tab or lost signal mid-request ("aborted", e.g. the page-view beacon): nobody is waiting for an answer, so it is neither an error nor worth an alert
-    if (err && (err.message === 'aborted' || err.code === 'ECONNRESET' || err.code === 'ERR_STREAM_PREMATURE_CLOSE' || req.destroyed || res.destroyed)) { if (!res.writableEnded && !res.destroyed) { try { res.end(); } catch {} } return; }
+    if (err && (err.message === 'aborted' || err.code === 'ECONNRESET' || err.code === 'ERR_STREAM_PREMATURE_CLOSE' || res.destroyed)) { if (!res.writableEnded && !res.destroyed) { try { res.end(); } catch {} } return; }
     const { status, message } = httpFromError(err);
     if (status === 500) {
       console.error(err);

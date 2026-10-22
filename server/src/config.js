@@ -22,4 +22,4 @@ export function safeResetBase(candidate) {
 // or office IP within the same 15 minutes is expected traffic, not an
 // attack, so they get their own much looser rate-limit bucket below
 // instead of sharing login's tight one.
-export const DEMO_LOGIN_EMAILS = new Set(['demo@auzslab.in', 'demo-salon@auzslab.in']);
+export const DEMO_LOGIN_EMAILS = new Set(['demo@auzslab.in', 'demo-salon@auzslab.in', 'showoffsalon-demo@auzslab.in']);

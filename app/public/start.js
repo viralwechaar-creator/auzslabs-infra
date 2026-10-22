@@ -31,6 +31,7 @@
     ['pos', 'AUZsPOS', 'Billing, tables and kitchen', '/index.html', function (d) { return own(d, 'pos'); }],
     ['mob', 'AUZsMob', 'Phone shop stock, sales and repairs', '/mob.html', function (d) { return own(d, 'mobile'); }],
     ['sty', 'AUZsStyle', 'Clothing and shoe shop: sizes, billing, analytics', '/style.html', function (d) { return own(d, 'style'); }],
+    ['fin', 'AUZsFinance', 'Money in and out, capital, loans and dues', '/finance.html', function (d) { return own(d, 'finance'); }],
     ['payroll', 'AUZsPay', 'Attendance, salary and leave', '/payroll.html', function (d) { return own(d, 'payroll'); }],
     ['accounts', 'AUZsLedger', 'Invoices, GST and books', '/accounts.html', function (d) { return own(d, 'accounting'); }],
     ['scan', 'AUZsScan', 'Scan, sell and add stock', '/scan.html', function (d) { return own(d, 'accounting') || own(d, 'scan'); }],

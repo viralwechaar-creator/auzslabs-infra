@@ -126,6 +126,15 @@ async function dirSize(dir) {
   return total;
 }
 
+// Bytes of files per business for the cost report: public pictures are under site/<slug>, private documents under <tenant id>.
+export async function getTenantFileSizes() {
+  const out = {};
+  const sub = async (root) => { try { return (await fs.readdir(root, { withFileTypes: true })).filter((e) => e.isDirectory()); } catch { return []; } };
+  for (const d of await sub(path.join(UPLOAD_ROOT, 'site'))) out[d.name] = (out[d.name] || 0) + await dirSize(path.join(UPLOAD_ROOT, 'site', d.name));
+  for (const d of await sub(DOC_ROOT)) out[d.name] = (out[d.name] || 0) + await dirSize(path.join(DOC_ROOT, d.name));
+  return out;
+}
+
 export async function getUploadsDiskUsage() {
   const [siteBytes, docBytes] = await Promise.all([dirSize(UPLOAD_ROOT), dirSize(DOC_ROOT)]);
   return { site_bytes: siteBytes, doc_bytes: docBytes, total_bytes: siteBytes + docBytes };

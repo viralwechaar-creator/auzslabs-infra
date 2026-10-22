@@ -143,7 +143,7 @@ input:disabled+.slider{opacity:.4;cursor:default}
       </button>
     </div>
     <a href="index.html" class="topbar-logo"><img src="logo.png" alt="AUZslab"></a>
-    <nav class="topbar-nav" aria-label="Main"><div class="tbn-item"><a href="products.html" class="tbn-top">Business types<i aria-hidden="true">&#9662;</i></a><div class="tbn-menu"><a href="business-cafes.html">Caf&eacute;s &amp; restaurants<small></small></a><a href="business-salons.html">Salons &amp; studios<small></small></a><a href="business-retail.html">Retail &amp; bookstores<small></small></a><a href="business-clothing.html">Clothing &amp; apparel<small></small></a><a href="business-mobile-repair.html">Mobile shops<small></small></a><a href="products.html" class="tbn-all">All products</a></div></div><div class="tbn-item"><a href="live-demo.html" class="tbn-top">Live demo<i aria-hidden="true">&#9662;</i></a><div class="tbn-menu"><a href="https://demo.auzslab.in/" target="_blank" rel="noopener">AUZsPOS<small>Try</small></a><a href="https://demo.auzslab.in/payroll.html" target="_blank" rel="noopener">AUZsPay<small>Try</small></a><a href="https://demo.auzslab.in/accounts.html" target="_blank" rel="noopener">AUZsLedger<small>Try</small></a><a href="https://demo.auzslab.in/scan.html" target="_blank" rel="noopener">AUZsScan<small>Try</small></a><a href="https://demo.auzslab.in/mob.html" target="_blank" rel="noopener">AUZsMob<small>Try</small></a><a href="https://demo.auzslab.in/style.html" target="_blank" rel="noopener">AUZsStyle<small>Try</small></a><a href="https://demo-salon.auzslab.in/salon/admin/" target="_blank" rel="noopener">AUZslab Salon<small>Try</small></a><a href="live-demo.html" class="tbn-all">All demos</a></div></div><a href="contact.html" class="tbn-top">Contact</a></nav>
+    <nav class="topbar-nav" aria-label="Main"><div class="tbn-item"><a href="products.html" class="tbn-top">Business types<i aria-hidden="true">&#9662;</i></a><div class="tbn-menu"><a href="business-cafes.html">Caf&eacute;s &amp; restaurants<small></small></a><a href="business-salons.html">Salons &amp; studios<small></small></a><a href="business-retail.html">Retail &amp; bookstores<small></small></a><a href="business-clothing.html">Clothing &amp; apparel<small></small></a><a href="business-mobile-repair.html">Mobile shops<small></small></a><a href="products.html" class="tbn-all">All products</a></div></div><div class="tbn-item"><a href="live-demo.html" class="tbn-top">Live demo<i aria-hidden="true">&#9662;</i></a><div class="tbn-menu"><a href="https://demo.auzslab.in/" target="_blank" rel="noopener">AUZsPOS<small>Try</small></a><a href="https://demo.auzslab.in/payroll.html" target="_blank" rel="noopener">AUZsPay<small>Try</small></a><a href="https://demo.auzslab.in/accounts.html" target="_blank" rel="noopener">AUZsLedger<small>Try</small></a><a href="https://demo.auzslab.in/scan.html" target="_blank" rel="noopener">AUZsScan<small>Try</small></a><a href="https://demo.auzslab.in/mob.html" target="_blank" rel="noopener">AUZsMob<small>Try</small></a><a href="https://demo.auzslab.in/style.html" target="_blank" rel="noopener">AUZsStyle<small>Try</small></a><a href="https://showoffsalon.auzslab.in/salon/admin/" target="_blank" rel="noopener">AUZslab Salon<small>Try</small></a><a href="live-demo.html" class="tbn-all">All demos</a></div></div><a href="contact.html" class="tbn-top">Contact</a></nav>
   </header>
 
   <div class="drawer-overlay" id="drawerOverlay"></div>
@@ -250,7 +250,7 @@ function visiblePermKeys() {
   });
 }
 
-const PRODUCT_CHOICES = [['pos', 'AUZsPOS (billing, kitchen, stock, customers)'], ['self_order', 'AUZsPOS QR (table QR ordering)'], ['payroll', 'AUZsPay (attendance and payroll)'], ['accounting', 'AUZsLedger (accounting and GST)'], ['mobile', 'AUZsMob (mobile shop)'], ['style', 'AUZsStyle (clothing and footwear shop)'], ['scan', 'AUZsScan (scan, bill and add stock)'], ['salon', 'AUZslab Salon (booking, billing, website)'], ['website_builder', 'Website Builder'], ['whatsapp', 'WhatsApp automation (add-on)'], ['aggregators', 'Zomato / Swiggy orders (add-on)'], ['custom', 'Custom software']];
+const PRODUCT_CHOICES = [['pos', 'AUZsPOS (billing, kitchen, stock, customers)'], ['self_order', 'AUZsPOS QR (table QR ordering)'], ['payroll', 'AUZsPay (attendance and payroll)'], ['accounting', 'AUZsLedger (accounting and GST)'], ['mobile', 'AUZsMob (mobile shop)'], ['style', 'AUZsStyle (clothing and footwear shop)'], ['finance', 'AUZsFinance (money in and out, loans, dues)'], ['scan', 'AUZsScan (scan, bill and add stock)'], ['salon', 'AUZslab Salon (booking, billing, website)'], ['website_builder', 'Website Builder'], ['whatsapp', 'WhatsApp automation (add-on)'], ['aggregators', 'Zomato / Swiggy orders (add-on)'], ['custom', 'Custom software']];
 const BIZ_TYPES = ['Cafe / restaurant / bar', 'Salon / spa', 'Retail shop', 'Clothing / boutique', 'Mobile phone shop', 'Office / services', 'Other'];
 const START_WHEN = [['', 'Choose'], ['now', 'As soon as possible'], ['month', 'Within a month'], ['quarter', 'In 2 to 3 months'], ['exploring', 'Just exploring']];
 let PROFILE = null, LOGIN_EMAIL = '';
@@ -500,6 +500,7 @@ function renderAccount() {
     : own('pos') ? { name: 'POS system', path: '' }
     : own('mobile') ? { name: 'AUZsMob', path: '/mob.html' }
     : own('style') ? { name: 'AUZsStyle', path: '/style.html' }
+    : own('finance') ? { name: 'AUZsFinance', path: '/finance.html' }
     : own('accounting') ? { name: 'AUZsLedger', path: '/accounts.html' }
     : own('scan') ? { name: 'AUZsScan', path: '/scan.html' }
     : own('payroll') ? { name: 'AUZsPay', path: '/payroll.html' } : null;
@@ -747,6 +748,7 @@ const SALON_SERVICE_GROUPS = [
   ['AUZsLedger', ['accounting']],
   ['AUZsMob', ['mobile']],
   ['AUZsStyle', ['style']],
+  ['AUZsFinance', ['finance']],
   ['AUZsScan', ['scan']],
 ];
 const SERVICE_GROUPS = [
@@ -756,6 +758,7 @@ const SERVICE_GROUPS = [
   ['AUZsLedger', ['accounting']],
   ['AUZsMob', ['mobile']],
   ['AUZsStyle', ['style']],
+  ['AUZsFinance', ['finance']],
   ['AUZsScan', ['scan']],
 ];
 function renderServices() {

@@ -29,3 +29,7 @@ Restore if needed: `docker compose exec -T postgres psql -U "$POSTGRES_USER" -d 
   Back Office (menu), Console (side nav, "Data"), Builder (My data button) and `site/account.html` ("Your data" card). The salon console keeps its own
   Download backup / Clear history / Reset buttons.
 - Deploy: `psql ... -v ON_ERROR_STOP=1 < db/097_my_data_tools.sql`, `docker compose up -d --build api`.
+
+## Fresh start (Oct 2026): `db_data/fresh_start.sql`
+Owner request: every client was a trial, start clean and onboard real clients from now. Keeps `showoffsalon` (the live salon demo, replaces `demo-salon`), `arpittraders` (AUZsMob demo), `newbookworld` (AUZsScan / AUZsLedger / AUZsPay demo), Genx Clothes (AUZsStyle demo), `demo`, platform admins, team members, leads. Deletes every other business with all its data and its owners' / staff logins, and every client bill, quote and client payment (bill numbering restarts at 0001). `arpittraders` and `newbookworld` lose their real business data (Genx keeps everything) (setup, settings and logins stay). `showoffsalon` loses real bookings, clients, bills and expenses (menu, photos, website stay), is marked a demo and gets the logins `showoffsalon-demo@auzslab.in` (owner console password `Auzslab@Demo`) and staff `priya.showoffsalon` / PIN `1234`.
+Dry run by default (prints, rolls back); `-v confirm=yes` really does it. Take a `pg_dump` first (commands in the script header).

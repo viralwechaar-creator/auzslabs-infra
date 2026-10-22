@@ -860,6 +860,10 @@ body.admin-shell .bn-in input{border:none!important;background:none!important;bo
         <h2 class="h-2" style="font-size:20px">What each product is costing the server</h2>
         <p class="p">A rough guide, not a billing meter. Request figures cover the time since the server last restarted; database figures are live. Ratings come from simple thresholds listed at the bottom.</p>
         <div id="loadReport">Loading&hellip;</div>
+        <div class="label" style="margin-top:26px">Cost per client</div>
+        <h2 class="h-2" style="font-size:20px">What each client costs us each month</h2>
+        <p class="p">An estimate, not an invoice. Fixed costs (server, failover, other tools) are shared by how much each client uses; WhatsApp and online-payment fees are counted exactly per client. Request time covers the period since the server last restarted.</p>
+        <div id="costReport">Loading&hellip;</div>
       </section>
 
       <section class="a-page" id="auditLogSection" data-title="Audit log" data-parent="more">
@@ -1306,7 +1310,7 @@ document.getElementById('signOutBtn').onclick = async () => {
 };
 
 
-const PROFILE_PRODUCT_LABEL = { pos: 'AUZsPOS', self_order: 'AUZsPOS QR', payroll: 'AUZsPay', accounting: 'AUZsLedger', mobile: 'AUZsMob', style: 'AUZsStyle', scan: 'AUZsScan', salon: 'AUZslab Salon', website_builder: 'Website Builder', whatsapp: 'WhatsApp automation', aggregators: 'Zomato/Swiggy', custom: 'Custom software' };
+const PROFILE_PRODUCT_LABEL = { pos: 'AUZsPOS', self_order: 'AUZsPOS QR', payroll: 'AUZsPay', accounting: 'AUZsLedger', mobile: 'AUZsMob', style: 'AUZsStyle', finance: 'AUZsFinance', scan: 'AUZsScan', salon: 'AUZslab Salon', website_builder: 'Website Builder', whatsapp: 'WhatsApp automation', aggregators: 'Zomato/Swiggy', custom: 'Custom software' };
 const START_LABEL = { now: 'As soon as possible', month: 'Within a month', quarter: '2 to 3 months', exploring: 'Just exploring' };
 async function loadProfiles() {
   const el = document.getElementById('profilesList');
@@ -1417,7 +1421,7 @@ const NICHE_LABEL = { custom: 'Custom-built', cafe: 'Café / restaurant / bar / 
 // sage = money, slate = people/ops, amber = mobile shop.
 const TONE = { pos: 'wine', crm: 'wine', billing: 'wine', inventory: 'wine', kds: 'wine', purchases: 'wine', membership: 'wine', self_order: 'wine', salon: 'sand', booking: 'sand', website_builder: 'sand', payroll: 'slate', tasks: 'slate', helpdesk: 'slate', accounting: 'sage', mobile: 'amber' };
 const featTone = (k) => 'tone-' + (TONE[k] || 'slate');
-const FEATURE_LABEL = { salon: 'AUZslab Salon', pos: 'AUZsPOS', crm: 'CRM', booking: 'Booking', billing: 'Billing', self_order: 'AUZsPOS QR', kds: 'Kitchen display', inventory: 'Inventory', website_builder: 'Website Builder', payroll: 'AUZsPay', membership: 'Memberships', helpdesk: 'Helpdesk', tasks: 'Tasks', purchases: 'Purchases', accounting: 'AUZsLedger', mobile: 'AUZsMob', style: 'AUZsStyle', scan: 'AUZsScan' };
+const FEATURE_LABEL = { salon: 'AUZslab Salon', pos: 'AUZsPOS', crm: 'CRM', booking: 'Booking', billing: 'Billing', self_order: 'AUZsPOS QR', kds: 'Kitchen display', inventory: 'Inventory', website_builder: 'Website Builder', payroll: 'AUZsPay', membership: 'Memberships', helpdesk: 'Helpdesk', tasks: 'Tasks', purchases: 'Purchases', accounting: 'AUZsLedger', mobile: 'AUZsMob', style: 'AUZsStyle', finance: 'AUZsFinance', scan: 'AUZsScan' };
 const PRODUCT_KEYS = new Set(['pos', 'self_order', 'payroll', 'accounting', 'mobile', 'scan', 'salon', 'website_builder']);
 
 async function loadSignupRequests() {
@@ -1564,6 +1568,7 @@ async function loadSystemStats() {
   `;
 
   loadLoadReport(data);
+  loadCostReport();
   const uploadsEl = document.getElementById('uploadsUsageVal');
   try {
     const { data: { session } } = await sb.auth.getSession();
@@ -1627,6 +1632,48 @@ async function loadLoadReport(sys) {
     <div class="label" style="margin-top:16px">Slowest database work (total time)</div>
     ${slow ? `<div class="admin-table-wrap" style="margin-top:8px"><table class="admin-table"><tr><th>Calls</th><th>Total time</th><th>Average</th><th>Query</th></tr>${slow}</table></div>` : '<p class="p">Not available: query statistics are not switched on in the database. Ask me to enable them.</p>'}
     <p class="p" style="margin-top:14px;font-size:12px;color:var(--ink-faint)">Thresholds: Watch when the slowest 5% of requests take over 0.9 s, errors pass 1%, connections pass 60% of the limit, database memory hits fall under 97%, disk passes 70%, or a table has over 20% dead rows. Risk is roughly three times that. They are rules of thumb for this 2 CPU / 4 GB server.</p>`;
+}
+
+const COST_FIELDS = [['server', 'Server (&#8377;/month)'], ['failover', 'Failover / extra server (&#8377;/month)'], ['other', 'Other paid tools (&#8377;/month)'], ['wa_utility', 'WhatsApp bill/utility message (&#8377;)'], ['wa_marketing', 'WhatsApp marketing message (&#8377;)'], ['razorpay_pct', 'Razorpay fee (%)'], ['w_requests', 'Share by server time (weight)'], ['w_data', 'Share by data stored (weight)'], ['w_files', 'Share by pictures/files (weight)']];
+async function loadCostReport() {
+  const el = document.getElementById('costReport'); if (!el) return;
+  let d;
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const res = await fetch(CFG.url + '/admin/costs', { headers: { Authorization: 'Bearer ' + session.access_token } });
+    d = await res.json(); if (!res.ok) throw new Error(d.error || 'failed');
+  } catch (e) { el.innerHTML = `<div class="err">${esc(e.message)} (needs the latest server update and database step)</div>`; return; }
+  const S = d.settings, rs = (n) => '&#8377;' + Math.round(n).toLocaleString('en-IN');
+  const all = (d.usage.clients || []), real = all.filter((c) => !c.is_demo);
+  const use = real.map((c) => ({ c, req: (d.requests[c.id] || {}).ms || 0, reqN: (d.requests[c.id] || {}).count || 0, data: Number(c.rows) || 0, files: d.files[c.slug] || 0 }));
+  const sum = (k) => use.reduce((a, u) => a + u[k], 0);
+  const dims = [['req', 'w_requests'], ['data', 'w_data'], ['files', 'w_files']].filter(([k]) => sum(k) > 0);
+  const wTotal = dims.reduce((a, [, w]) => a + Number(S[w] || 0), 0);
+  const fixed = Number(S.server) + Number(S.failover) + Number(S.other) + (d.usage.own_messages || 0) * Number(S.wa_utility);
+  const rows = use.map((u) => {
+    const share = wTotal > 0 ? dims.reduce((a, [k, w]) => a + (Number(S[w]) / wTotal) * (u[k] / sum(k)), 0) : 1 / Math.max(1, use.length);
+    const infra = fixed * share, wa = u.c.wa_util * Number(S.wa_utility) + u.c.wa_marketing * Number(S.wa_marketing), rz = Number(u.c.online_paid) * Number(S.razorpay_pct) / 100;
+    return { u, share, infra, wa, rz, cost: infra + wa + rz, fee: Number(u.c.fee) };
+  }).sort((a, b) => b.cost - a.cost);
+  const tc = rows.reduce((a, r) => a + r.cost, 0), tf = rows.reduce((a, r) => a + r.fee, 0);
+  const tr = rows.map((r) => `<tr><td data-label="Client"><b>${esc(r.u.c.name)}</b><br><span style="color:var(--ink-faint)">${esc(r.u.c.slug)}</span></td><td data-label="Costs us"><b>${rs(r.cost)}</b><br><span style="color:var(--ink-faint)">server share ${rs(r.infra)} (${(r.share * 100).toFixed(1)}%), WhatsApp ${rs(r.wa)}, Razorpay ${rs(r.rz)}</span></td><td data-label="Usage">${r.u.data.toLocaleString()} rows, ${formatBytes(r.u.files)}<br><span style="color:var(--ink-faint)">${r.u.reqN.toLocaleString()} requests, ${(r.u.req / 1000).toFixed(1)} s server time</span></td><td data-label="Pays us">${r.fee ? rs(r.fee) : '&mdash;'}</td><td data-label="Margin" style="font-weight:700;color:${r.fee && r.fee - r.cost < 0 ? '#b00020' : '#1a7f37'}">${r.fee ? rs(r.fee - r.cost) : '&mdash;'}</td></tr>`).join('');
+  el.innerHTML = `
+    <div class="a-kpis" style="grid-template-columns:repeat(2,1fr)">
+      <div class="a-kpi"><div class="k">Fixed costs / month</div><div class="n">${rs(fixed)}</div></div>
+      <div class="a-kpi"><div class="k">Total cost of clients</div><div class="n">${rs(tc)}</div></div>
+      <div class="a-kpi"><div class="k">Fees they pay us</div><div class="n">${rs(tf)}</div></div>
+      <div class="a-kpi"><div class="k">Margin</div><div class="n" style="color:${tf - tc < 0 ? '#b00020' : '#1a7f37'}">${rs(tf - tc)}</div></div>
+    </div>
+    <div class="admin-table-wrap" style="margin-top:10px"><table class="admin-table"><tr><th>Client</th><th>Costs us</th><th>Usage</th><th>Pays us</th><th>Margin</th></tr>${tr || '<tr><td colspan="5">No clients yet.</td></tr>'}</table></div>
+    <p class="p" style="margin-top:10px;font-size:12px;color:var(--ink-faint)">Demo accounts are left out; their small cost stays inside the fixed costs. WhatsApp counts messages sent through the AUZslab number in the last 30 days (a shop using its own number costs us nothing). Razorpay counts online payments in the last 30 days. Backblaze, Resend, Sentry and Firebase are on free plans, so they count as &#8377;0 until you change the "other tools" line.</p>
+    <div class="label" style="margin-top:14px">Cost settings</div>
+    <div class="a-card" style="padding:12px;margin-top:6px"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">${COST_FIELDS.map(([k, l]) => `<label style="font-size:12px">${l}<input id="cost_${k}" type="number" min="0" step="any" value="${esc(String(S[k]))}"></label>`).join('')}</div>
+    <button class="btn btn-primary" id="costSave" style="margin-top:10px">Save settings</button></div>`;
+  document.getElementById('costSave').onclick = async () => {
+    const p = {}; COST_FIELDS.forEach(([k]) => { p[k] = Number(document.getElementById('cost_' + k).value); });
+    const r = await sb.rpc('admin_set_cost_settings', { p }); if (r.error) { alert(r.error.message); return; }
+    loadCostReport();
+  };
 }
 
 async function loadPricing() {
@@ -2065,6 +2112,7 @@ const SELLABLE = [
   { id: 'ledger', label: 'AUZsLedger', keys: ['accounting'], note: 'Accounting and GST books' },
   { id: 'scan', label: 'AUZsScan', keys: ['scan'], note: 'Scan, bill and add stock (runs on AUZsLedger books)' },
   { id: 'mob', label: 'AUZsMob', keys: ['mobile'], note: 'Mobile shop: stock, sales, repairs' },
+  { id: 'fin', label: 'AUZsFinance', keys: ['finance'], note: 'Money in and out, owner capital, loans, dues, accounts' },
   { id: 'sty', label: 'AUZsStyle', keys: ['style'], note: 'Clothing and footwear shop: sizes, colours, billing, analytics' },
   { id: 'salon', label: 'AUZslab Salon', keys: ['salon', 'booking', 'crm', 'billing'], note: 'Website, booking, customers (CRM) and billing are always included' },
   { id: 'web', label: 'Website Builder', keys: ['website_builder'], note: 'Drag-and-drop website editor' },
@@ -2803,7 +2851,7 @@ document.getElementById('swDays').onchange = loadSalesWork;
 
 // ---------- Client requests: verify, quote, payment link, confirm payment, bill (db/155) ----------
 const ORD_STATUS = { requested: 'New request', verifying: 'Under verification', confirmed: 'Confirmed', link_sent: 'Payment link sent', payment_submitted: 'Payment to confirm', paid: 'Paid', rejected: 'Rejected' };
-const ORD_PRODUCTS = [['pos', 'AUZsPOS'], ['self_order', 'AUZsPOS QR'], ['payroll', 'AUZsPay'], ['accounting', 'AUZsLedger'], ['mobile', 'AUZsMob'], ['style', 'AUZsStyle'], ['scan', 'AUZsScan'], ['salon', 'AUZslab Salon'], ['website_builder', 'Website Builder']];
+const ORD_PRODUCTS = [['pos', 'AUZsPOS'], ['self_order', 'AUZsPOS QR'], ['payroll', 'AUZsPay'], ['accounting', 'AUZsLedger'], ['mobile', 'AUZsMob'], ['style', 'AUZsStyle'], ['finance', 'AUZsFinance'], ['scan', 'AUZsScan'], ['salon', 'AUZslab Salon'], ['website_builder', 'Website Builder']];
 const ORD_NICHES = [['cafe', 'Cafe / restaurant'], ['retail', 'Retail / General'], ['salon', 'Salon / spa'], ['mobile', 'Mobile shop']];
 const ORD_STATES = { '01': 'Jammu and Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab', '04': 'Chandigarh', '05': 'Uttarakhand', '06': 'Haryana', '07': 'Delhi', '08': 'Rajasthan', '09': 'Uttar Pradesh', '10': 'Bihar', '11': 'Sikkim', '12': 'Arunachal Pradesh', '13': 'Nagaland', '14': 'Manipur', '15': 'Mizoram', '16': 'Tripura', '17': 'Meghalaya', '18': 'Assam', '19': 'West Bengal', '20': 'Jharkhand', '21': 'Odisha', '22': 'Chhattisgarh', '23': 'Madhya Pradesh', '24': 'Gujarat', '26': 'Dadra and Nagar Haveli and Daman and Diu', '27': 'Maharashtra', '29': 'Karnataka', '30': 'Goa', '31': 'Lakshadweep', '32': 'Kerala', '33': 'Tamil Nadu', '34': 'Puducherry', '35': 'Andaman and Nicobar Islands', '36': 'Telangana', '37': 'Andhra Pradesh', '38': 'Ladakh' };
 const SETUP_DEFAULT = 2190;
