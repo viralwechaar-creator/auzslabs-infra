@@ -8,7 +8,7 @@ import { DEVICES, layoutIssues } from './lib/common.mjs';
 
 const BASE = (process.env.BASE_URL || 'https://auzslab.in').replace(/\/$/, '');
 const HOST = new URL(BASE).hostname;
-const DEMOS = (process.env.DEMO_TENANTS || 'demo-salon,demo').split(',').filter(Boolean);
+const DEMOS = (process.env.DEMO_TENANTS || 'showoffsalon,demo').split(',').filter(Boolean);
 const SAFE_POST = /\/rpc\/(public_menu|public_page|public_invoice|my_dashboard)\b|\/salon-api\/(slots|site)\b|\/auth\/login\b/;
 reset('live site (read-only)');
 const blocked = [];
@@ -80,10 +80,10 @@ const tenantUrl = (slug, p = '/') => `https://${slug}.${HOST}${p}`;
     await s.check(`${slug}: front door loads`, async () => { const r = await page.goto(tenantUrl(slug), { waitUntil: 'load' }); assert(r.status() < 400, 'HTTP ' + r.status()); await page.waitForTimeout(1800); assert(!errs.length, errs.splice(0).slice(0, 3).join(' | ')); }, 'critical');
     await s.shot(page, slug + ' front door'); await page.close();
   }
-  if (DEMOS.includes('demo-salon')) {
-    await s.check('demo-salon: booking slots load', async () => { const r = await fetch(tenantUrl('demo-salon', '/api/slots?date=' + new Date(Date.now() + 864e5).toISOString().slice(0, 10))); assert(r.ok); const d = await r.json(); assert(d.closed || (d.slots && d.slots.length), 'no slots'); }, 'critical');
-    await s.check('demo-salon: admin login page renders', async () => { await page.goto(tenantUrl('demo-salon', '/salon/admin/')); await page.waitForTimeout(1200); assert(await page.locator('#loginForm').isVisible()); }, 'critical');
-    await s.check('demo-salon: admin area is closed without a password', async () => { const r = await fetch(tenantUrl('demo-salon', '/api/admin/data')); assert(r.status === 401, 'status ' + r.status); }, 'critical');
+  if (DEMOS.includes('showoffsalon')) {
+    await s.check('showoffsalon: booking slots load', async () => { const r = await fetch(tenantUrl('showoffsalon', '/api/slots?date=' + new Date(Date.now() + 864e5).toISOString().slice(0, 10))); assert(r.ok); const d = await r.json(); assert(d.closed || (d.slots && d.slots.length), 'no slots'); }, 'critical');
+    await s.check('showoffsalon: admin login page renders', async () => { await page.goto(tenantUrl('showoffsalon', '/salon/admin/')); await page.waitForTimeout(1200); assert(await page.locator('#loginForm').isVisible()); }, 'critical');
+    await s.check('showoffsalon: admin area is closed without a password', async () => { const r = await fetch(tenantUrl('showoffsalon', '/api/admin/data')); assert(r.status === 401, 'status ' + r.status); }, 'critical');
   }
   await ctx.close(); s.done();
 }
@@ -95,7 +95,7 @@ const tenantUrl = (slug, p = '/') => `https://${slug}.${HOST}${p}`;
     const days = await new Promise((ok, no) => { const sock = tls.connect(443, HOST, { servername: HOST }, () => { const c = sock.getPeerCertificate(); sock.end(); ok((new Date(c.valid_to) - Date.now()) / 864e5); }); sock.on('error', no); });
     assert(days > 14, 'expires in ' + Math.round(days) + ' days');
   }, 'critical');
-  await s.check('Wildcard certificate covers tenant subdomains', async () => { const r = await fetch(tenantUrl(DEMOS[0] || 'demo-salon')); assert(r.status < 500); }, 'critical');
+  await s.check('Wildcard certificate covers tenant subdomains', async () => { const r = await fetch(tenantUrl(DEMOS[0] || 'showoffsalon')); assert(r.status < 500); }, 'critical');
   await s.check('Home page responds in under 1.5 s (5 tries, median)', async () => { const t = []; for (let i = 0; i < 5; i++) { const a = Date.now(); await (await fetch(BASE + '/?_=' + i)).text(); t.push(Date.now() - a); } t.sort((a, b) => a - b); assert(t[2] < 1500, 'median ' + t[2] + ' ms'); }, 'major');
   await s.check('Unknown page gives a proper 404 (not a blank or server error)', async () => { const r = await fetch(BASE + '/definitely-not-a-page-xyz.html'); assert(r.status === 404, 'status ' + r.status); }, 'minor');
   await s.check('Internal tools are not exposed publicly (.env, .git, db dumps)', async () => { const bad = []; for (const p of ['/.env', '/.git/config', '/docker-compose.yml', '/server/src/index.js', '/db/000_own_auth.sql']) { const r = await fetch(BASE + p); const t = await r.text(); if (r.status === 200 && !/<html/i.test(t)) bad.push(p); } assert(!bad.length, 'exposed: ' + bad.join(', ')); }, 'critical');
