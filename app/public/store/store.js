@@ -430,7 +430,11 @@ V.p = (v, id) => {
     if (!ims.length) { gal.append(E('div', { class: 'main' }, placeholder(s.name))); return; }
     const main = E('div', { class: 'main' }, E('img', { src: ims[cur] || ims[0], alt: s.name }), E('div', { class: 'ct' }, (cur + 1) + ' / ' + ims.length));
     const rail = E('div', { class: 'rail' }, ims.map((u, i) => E('button', { class: 'th' + (i === cur ? ' on' : ''), 'aria-label': 'Picture ' + (i + 1), onclick: () => { cur = i; paintGal(); } }, E('img', { src: u, alt: '', loading: 'lazy' }))));
-    gal.append(main, ims.length > 1 ? rail : null);
+    if (ims.length > 1) { gal.append(main, rail); return; }
+    // one picture only: the empty sides show other pieces to look at
+    const others = STY.filter((x) => x.id !== s.id), same = others.filter((x) => x.category === s.category), pool = same.concat(others.filter((x) => x.category !== s.category)).slice(0, 6);
+    const side = (arr) => E('div', { class: 'sugg phoneoff' }, arr.map((x) => card(x)));
+    gal.append(side(pool.filter((_, i) => i % 2 === 0).slice(0, 3)), main, side(pool.filter((_, i) => i % 2 === 1).slice(0, 3)));
   };
   const dtl = (k) => {
     if (k === 'w') return E('div', { class: 'dtl' }, s.washcare ? E('div', null, s.washcare) : E('div', { class: 'mut' }, 'Wash cold, dry in shade, do not bleach.'));
