@@ -468,7 +468,7 @@ export default async function run({ browser, stack }) {
       await page.evaluate(() => { location.hash = '#/shop'; }); await page.waitForSelector('.pc'); const all = await page.locator('.pc').count();
       await page.getByRole('button', { name: /Refine/ }).click(); await page.waitForSelector('.sheet .sz');
       await s.shot(page, 'store refine ' + dev.w);
-      await page.locator('.sheet .sz', { hasText: /^L$/ }).first().click(); const showTxt = await page.locator('.sheet .btn.wide').last().innerText(); assert(/show \d+/i.test(showTxt), showTxt);
+      await page.locator('.sheet .sz', { hasText: /^L$/ }).first().click(); const showTxt = await page.locator('.sheet .btn.wide').last().innerText(); assert(/view \d+ item/i.test(showTxt), showTxt);
       await page.locator('.sheet .btn.wide').last().click(); await page.waitForTimeout(250);
       assert(await page.locator('.pc').count() <= all, 'filter should not add products');
       await page.evaluate(() => { location.hash = '#/shop'; }); await page.waitForSelector('.pc');
