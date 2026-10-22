@@ -51,7 +51,7 @@ export async function appIcon(tenant, settings, size) {
   // an uploaded home-screen icon wins over everything: used as-is, full bleed, nothing drawn around it
   const iconPath = (() => { try { return typeof s.appIcon === 'string' && s.appIcon ? new URL(s.appIcon, 'https://x').pathname : null; } catch { return null; } })();
   const upIcon = iconPath && iconPath.startsWith('/uploads/') ? iconPath : null;
-  const key = ['v2', tenant.slug, upIcon, logo, s.name, bg, size].join('|');
+  const key = ['v3', tenant.slug, upIcon, logo, s.name, bg, size].join('|');
   if (iconCache.has(key)) return iconCache.get(key);
   const sharp = (await import('sharp')).default;
   let out = null;
@@ -66,7 +66,9 @@ export async function appIcon(tenant, settings, size) {
       const file = path.join(UPLOAD_ROOT, logo.replace(/^\/uploads\//, ''));
       // the logo fills the whole icon: a roughly square logo is cropped to fill, a wide or tall one is fitted
       // with a small margin on white, so there is never a big empty tile around it
-      const buf = await fs.readFile(file);
+      let buf = await fs.readFile(file);
+      // cut away the empty border many logo files carry, so the mark itself fills the icon
+      try { buf = await sharp(buf, { density: 300 }).trim({ threshold: 18 }).png().toBuffer(); } catch { /* keep the original */ }
       const meta = await sharp(buf, { density: 300 }).metadata();
       const ratio = (meta.width || 1) / (meta.height || 1);
       if (ratio > 0.8 && ratio < 1.25) {
