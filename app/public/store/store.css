@@ -754,3 +754,12 @@ footer .col a,footer .col span{font-size:9.5px}
   .dock .chat svg,.dock .chat svg.f{color:#000;stroke:#000}
   .chatfab{display:none}
 }
+
+/* dock v2 fix: an older rule made the middle part white, so labels vanished */
+@media(max-width:899px){
+  .dock .pill,.dock>div.pill:not(.chat){background:transparent!important;box-shadow:none!important}
+  .dock .pill button{color:rgba(255,255,255,.7)!important}
+  .dock .pill button svg,.dock .pill button svg.f{color:inherit;fill:currentColor}
+  .dock .pill button svg:not(.f){fill:none;stroke:currentColor}
+  .dock .mark{color:#000}
+}
