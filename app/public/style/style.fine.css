@@ -326,3 +326,11 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .sd-b{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;height:70px;margin-top:6px;align-items:end}
 .sd-c{display:flex;flex-direction:column;justify-content:flex-end;height:100%;text-align:center;font-size:10px}
 .sd-f{background:var(--tint);border-radius:4px 4px 0 0;opacity:.85}.sd-l{margin-top:3px}
+
+.upiq{justify-content:space-between}
+.upiq-card{display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px 0}
+.upiq-card .upiq-i{width:min(260px,70vw);height:auto;aspect-ratio:1;padding:8px}
+.upiq-amt{font-size:30px;font-weight:800}
+.upiq-rows{width:100%;display:flex;flex-direction:column;gap:6px}
+.upiq-r{display:flex;justify-content:space-between;gap:12px;padding:8px 12px;border-radius:12px;background:var(--panel);box-shadow:0 0 0 .5px var(--sep)}
+.upiq-r b{text-align:right;word-break:break-all;font-weight:600}
