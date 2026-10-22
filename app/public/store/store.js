@@ -377,7 +377,7 @@ function refine(anchor) {
   paint();
   const foot = E('div', { class: 'rf' }, showBtn, E('button', { class: 'rclr', onclick: () => { sh.close(); location.hash = '#/shop'; } }, 'Clear all'));
   const sh = sheet('Filter', body, foot); sh.el.querySelector('.sheet').classList.add('refine');
-  if (anchor && anchor.getBoundingClientRect && matchMedia('(min-width: 900px)').matches) { const r = anchor.getBoundingClientRect(), W = 340, left = Math.max(8, Math.min(r.right - W, innerWidth - W - 8)), top = r.bottom + 8, card = sh.el.querySelector('.sheet'); sh.el.classList.add('pop'); card.style.cssText = 'left:' + left + 'px;top:' + top + 'px;width:' + W + 'px;max-height:' + Math.max(260, innerHeight - top - 12) + 'px;transform-origin:' + (r.left + r.width / 2 - left) + 'px 0'; }
+  if (anchor && anchor.getBoundingClientRect && matchMedia('(min-width: 900px)').matches) { const r = anchor.getBoundingClientRect(), hd = document.querySelector('header, .nav, .hdr'), hb = hd ? Math.max(0, hd.getBoundingClientRect().bottom) : 56, W = Math.min(740, innerWidth - 32), left = Math.max(16, Math.min(r.right + 24 - W, innerWidth - W - 16)), top = Math.min(r.top - 10, hb + 12), card = sh.el.querySelector('.sheet'); sh.el.classList.add('pop'); card.style.cssText = 'left:' + left + 'px;top:' + Math.max(hb + 6, top) + 'px;width:' + W + 'px;max-height:' + Math.max(300, innerHeight - hb - 24) + 'px;transform-origin:' + (r.left + r.width / 2 - left) + 'px ' + (r.top + r.height / 2 - Math.max(hb + 6, top)) + 'px'; }
   showBtn.onclick = () => { sh.close(); const q = { ...draft }; for (const k in q) if (!q[k]) delete q[k]; location.hash = '#/shop' + (Object.keys(q).length ? '?' + new URLSearchParams(q).toString() : ''); };
 }
 function pagedGrid(list) {
