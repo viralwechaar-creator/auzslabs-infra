@@ -176,6 +176,26 @@ async function route_() {
   }
   main.focus({ preventScroll: true }); window.scrollTo(0, 0);
 }
+const NOTE_TYPES = /^(store_|style_)/;
+let NOTES = [];
+function bellCount() { return NOTES.filter((n) => !n.read).length; }
+function bellBtn() {
+  const n = bellCount();
+  return h('button', { class: 'btn plain icon bell', type: 'button', 'aria-label': t('Notifications'), title: t('Notifications'), onclick: notesSheet }, icon('bell', 20), n ? h('span', { class: 'fcount' }, n > 9 ? '9+' : String(n)) : null);
+}
+async function refreshNotes() {
+  try { const { data } = await sb.from('notifications').select('id,type,title,body,read,created_at').gte('created_at', new Date(Date.now() - 30 * 864e5).toISOString()).order('created_at').limit(500); NOTES = (data || []).filter((x) => NOTE_TYPES.test(x.type)).reverse(); } catch { return; }
+  document.querySelectorAll('.btn.bell').forEach((b) => b.replaceWith(bellBtn()));
+}
+function noteTarget(n) { const t_ = n.type === 'style_request' ? 'requests' : n.type === 'style_soldout' ? 'stock' : 'store'; return PAGES[t_] ? t_ : 'store'; }
+function notesSheet() {
+  const unread = NOTES.filter((n) => !n.read);
+  const rows = NOTES.length ? NOTES.slice(0, 40).map((n) => liRow({ icon: n.type === 'store_order' ? 'globe' : n.type === 'store_return' ? 'swap' : n.type === 'store_paid' ? 'cash' : 'bell', title: n.title, sub: (n.body ? n.body + ' · ' : '') + fmtDT(n.created_at), badge: n.read ? null : h('span', { class: 'dot', style: { background: 'var(--tint)', width: '8px', height: '8px', borderRadius: '50%', display: 'inline-block' } }), chevron: true,
+    onclick: async () => { s.close(); if (!n.read) { n.read = true; try { await sb.from('notifications').update({ read: true }).eq('id', n.id); } catch {} } if (noteTarget(n) === 'store') OST.tab = 'orders'; go(noteTarget(n)); refreshNotes(); } })) : [empty('bell', t('No notifications'), t('Website orders, returns and requests show here.'))];
+  const s = sheet({ title: t('Notifications'), closeLabel: t('Done'), body: h('div', { class: 'grid' }, unread.length ? h('button', { class: 'btn sm', type: 'button', onclick: async () => { for (const n of unread) { n.read = true; try { await sb.from('notifications').update({ read: true }).eq('id', n.id); } catch {} } s.close(); refreshNotes(); } }, t('Mark all as read')) : null, h('div', { class: 'list' }, rows)) });
+}
+setTimeout(refreshNotes, 1500); setInterval(refreshNotes, 60000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshNotes(); });
 function header(o, root) {
   const l = $('#tb-l'), t_ = $('#tb-t'), r = $('#tb-r'); if (!l) return;
   clear(l); clear(r);
@@ -185,6 +205,7 @@ function header(o, root) {
   else if (!isDesk()) l.append(h('button', { class: 'brandpill', type: 'button', onclick: moreSheet }, (S.ctx.settings && S.ctx.settings.logoUrl) ? h('img', { class: 'pill-logo', src: S.ctx.settings.logoUrl, alt: '' }) : icon('shirt', 16), h('b', null, (S.ctx.settings.shopName || (S.dash.tenant && S.dash.tenant.name) || 'AUZsStyle').slice(0, 18))));
   const desk = isDesk();
   (o.actions || []).filter(Boolean).forEach((a) => r.append(h('button', { class: 'btn ' + (desk ? (a.primary ? 'fill' : '') : 'plain') + (!desk ? ' icon' : ''), type: 'button', 'aria-label': a.label, title: a.label, onclick: a.run }, a.icon ? icon(a.icon, 20) : null, desk ? a.label : null)));
+  r.append(bellBtn());
   r.append(h('a', { class: 'btn plain icon', href: '/store.html', 'aria-label': 'Open my website', title: 'Open my website' }, icon('globe', 20)));
   if (root) { const old = root.querySelector(':scope > .large-title'); if (old) old.remove(); }
   if (!desk && root && !o.noLarge) root.prepend(h('h1', { class: 'large-title' }, o.title));

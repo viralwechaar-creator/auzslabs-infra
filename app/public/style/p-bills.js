@@ -1,6 +1,6 @@
 /* AUZsStyle: Bills. Find a bill, reprint, share, take a return or exchange back, or cancel it (manager). */
 'use strict';
-const BU = { k: 'today', from: null, to: null, q: '', status: '' };
+const BU = { k: 'today', from: null, to: null, q: '', status: '', src: 'shop' };
 page('bills', {
   title: 'Bills', perm: 'sty_view',
   async render(v) {
@@ -10,12 +10,23 @@ page('bills', {
     const list = h('div', { class: 'list' }), kp = h('div', { class: 'kpis' });
     async function load() {
       clear(list).append(h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '20px auto' } }));
+      if (BU.src === 'web') return loadWeb();
       let rows = []; try { rows = await api('sty_list_sales', { p: { from: custId ? '' : BU.from, to: custId ? '' : BU.to, q: BU.q, status: BU.status, customerId: custId, limit: 200 } }) || []; } catch (e) { return clear(list).append(empty('cloudOff', t('Could not load'), e.message)); }
       const live = rows.filter((r) => r.status !== 'void'), tot = live.reduce((a, r) => a + r.total, 0);
       clear(kp).append(kpi(t('Sales'), inr(tot, 0), live.length + ' ' + t('Bills')), kpi(t('Due'), inr(live.reduce((a, r) => a + Math.max(r.total - r.paid, 0), 0), 0), '', null, ''));
       clear(list).append(...(rows.length ? rows.map((r) => liRow({ icon: r.status === 'void' ? 'x' : 'tag', title: r.number + (r.customer ? ' · ' + r.customer : ''), sub: fmtDT(r.at) + ' · ' + r.units + ' ' + t('Units') + (r.staff ? ' · ' + r.staff : ''), value: inr(r.total), valueSub: r.status === 'void' ? t('Cancelled') : r.status === 'due' ? t('Due') + ' ' + inr(r.total - r.paid) : '', chevron: true, onclick: () => billSheet(r.id, load) })) : [empty('tag', t('No bills'), t('Bills show here as you sell.'))]));
     }
-    v.root.append(h('div', { class: 'grid' }, custId ? banner('', 'user', t('Bills of one customer'), ' ', h('button', { class: 'btn plain sm', onclick: () => go('bills') }, t('Show all'))) : rangePicker(BU, load),
+    const WST = { new: 'New', confirmed: 'Confirmed', packed: 'Packed', shipped: 'Shipped', delivered: 'Delivered', cancelled: 'Cancelled' };
+    async function loadWeb() {
+      let rows = []; try { rows = await api('sty_web_orders_list', { p: {} }) || []; } catch (e) { return clear(list).append(empty('cloudOff', t('Could not load'), e.message)); }
+      const q = BU.q.trim().toLowerCase();
+      if (q) rows = rows.filter((r) => (r.number + ' ' + (r.customer.name || '') + ' ' + (r.customer.phone || '')).toLowerCase().includes(q));
+      const live = rows.filter((r) => r.status !== 'cancelled');
+      clear(kp).append(kpi(t('Website orders'), inr(live.reduce((a, r) => a + r.total, 0), 0), live.length + ' ' + t('Orders')), kpi(t('New'), String(rows.filter((r) => r.status === 'new').length), '', null, ''));
+      clear(list).append(...(rows.length ? rows.map((r) => liRow({ icon: 'globe', title: r.number + ' · ' + r.customer.name, sub: fmtDT(r.createdAt) + ' · ' + r.lines.reduce((a, l) => a + l.qty, 0) + ' ' + t('Units') + (r.saleNo ? ' · ' + t('Bill') + ' ' + r.saleNo : ''), value: inr(r.total), valueSub: t(WST[r.status] || r.status) + (r.paymentStatus === 'paid' ? ' · ' + t('Paid') : ''), chevron: true, onclick: () => orderSheet(r, load) })) : [empty('globe', t('No website orders'), t('Orders from your online store show here.'))]));
+    }
+    const srcSeg = seg([['shop', t('Shop bills')], ['web', t('Website orders')]], BU.src, (x) => { BU.src = x; v.refresh(); }, { full: true });
+    v.root.append(h('div', { class: 'grid' }, srcSeg, custId ? banner('', 'user', t('Bills of one customer'), ' ', h('button', { class: 'btn plain sm', onclick: () => go('bills') }, t('Show all'))) : (BU.src === 'web' ? null : rangePicker(BU, load)),
       searchField(t('Bill number, customer, phone'), debounce((x) => { BU.q = x; load(); }, 250), BU.q), kp, list));
     load();
   },
