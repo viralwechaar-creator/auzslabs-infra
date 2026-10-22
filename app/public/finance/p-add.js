@@ -13,7 +13,9 @@ function addTxn(preset) {
   const acc = K.acc ? selectEl(accounts.map((a) => [a.id, a.name]), preset.account_id || (accounts[0] || {}).id, { label: K.acc }) : null;
   const to = K.to ? selectEl(accounts.map((a) => [a.id, a.name]), preset.to_account_id || (accounts[1] || accounts[0] || {}).id, { label: K.to }) : null;
   const cats = K.cat ? S.ctx.categories[K.cat] : null;
-  const cat = cats ? selectEl([['', K.cat === 'income' ? 'Other income' : 'General expenses'], ...cats.map((c) => [c.id, c.name])], preset.category_id || '', { label: K.catLabel }) : null;
+  const cat = cats ? selectEl([['', K.cat === 'income' ? 'Other income' : 'General expenses'], ...cats.map((c) => [c.id, c.name]), ['__new', '+ New category…']], preset.category_id || '', { label: K.catLabel }) : null;
+  const newCat = input({ placeholder: K.cat === 'income' ? 'e.g. Consulting fees' : 'e.g. Packaging', label: 'New category name' }); newCat.style.display = 'none';
+  if (cat) cat.addEventListener('change', () => { const n = cat.value === '__new'; newCat.style.display = n ? '' : 'none'; if (n) newCat.focus(); });
   const purpose = input({ placeholder: 'e.g. Shop rent for October', value: preset.purpose || '', label: 'Note' });
   const interest = K.interest ? input({ type: 'number', mode: 'decimal', step: '0.01', min: '0', value: preset.interest || '', placeholder: '0', label: 'Interest' }) : null;
   const dueDate = K.due ? input({ type: 'date', value: preset.due_date || '' }) : null;
@@ -79,7 +81,7 @@ function addTxn(preset) {
     earlyWhy ? field('Why not from the books', earlyWhy, 'Counted as money you put into the business, so the books stay true.') : null,
     people ? field(K.personLabel, people.el) : null, partners ? field(K.partnerLabel, partners.el) : null, loans ? field('Loan', loans.el) : null,
     interest ? field(preset.kind === 'loan_repay' ? 'Interest part of this payment' : 'Interest part', interest, 'Leave empty if there is no interest.') : null,
-    cat ? field(K.catLabel, cat) : null, dueDate ? field('Due date (optional)', dueDate) : null,
+    cat ? field(K.catLabel, h('div', { class: 'col' }, cat, newCat)) : null, dueDate ? field('Due date (optional)', dueDate) : null,
     partyOn ? field(inbound ? 'Who paid' : 'Paid to', partyName) : null, partyOn ? field('GST number', partyGst, 'Of the ' + (inbound ? 'person who paid' : 'seller or person you paid') + ' (optional).') : null,
     field('Note', purpose), field('Proof', evid), h('div', { class: 'row', style: { gap: '8px', flexWrap: 'wrap' } }, h('button', { class: 'btn sm', type: 'button', onclick: () => file.click() }, icon('camera', 16), 'Add photo'), h('button', { class: 'btn sm', type: 'button', onclick: () => pdfIn.click() }, icon('download', 16), 'Attach PDF (up to 10 KB)'), file, pdfIn, fileNote),
     taxBox, review, preview);
@@ -95,7 +97,7 @@ function addTxn(preset) {
     if (partyOn) { const gs = partyGst.value.trim().toUpperCase(); if (gs && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(gs)) { toast('That GST number does not look right (15 letters and numbers)', { err: true }); partyGst.focus(); return false; } if (gs) p.party_gstin = gs; if (partyName.value.trim()) p.party_name = partyName.value.trim(); }
     if (earlyWhy) p.early_reason = earlyWhy.value;
     if (gst && gst.value) p.tax_rate = N(gst.value); if (tds && tds.value) p.tds_amt = N(tds.value);
-    if (acc) p.account_id = acc.value; if (to) p.to_account_id = to.value; if (cat && cat.value) p.category_id = cat.value; if (interest) p.interest = N(interest.value); if (dueDate && dueDate.value) p.due_date = dueDate.value;
+    if (acc) p.account_id = acc.value; if (to) p.to_account_id = to.value; if (cat && cat.value === '__new') { const nm = newCat.value.trim(); if (!nm) { toast('Type the new category name', { err: true }); newCat.focus(); return false; } p.category_id = (await api('fin_save_category', { p: { name: nm, kind: K.cat } })).id; } else if (cat && cat.value) p.category_id = cat.value; if (interest) p.interest = N(interest.value); if (dueDate && dueDate.value) p.due_date = dueDate.value;
     if (people) { const g = people.get(); if (K.person === 'req' && !g) { toast('Choose who this is with', { err: true }); return false; } if (g && g.name !== undefined) { if (!g.name) { toast('Type the name', { err: true }); return false; } const r = await api('fin_save_person', { p: { name: g.name, kind: preset.kind.indexOf('purchase') >= 0 || preset.kind === 'dues_out' ? 'supplier' : 'customer' } }); p.person_id = r.id; } else if (g) p.person_id = g.id; }
     if (partners) { const g = partners.get(); if (!g) { toast('Choose who', { err: true }); return false; } if (g.name !== undefined) { if (!g.name) { toast('Type the name', { err: true }); return false; } const r = await api('fin_save_partner', { p: { name: g.name, kind: 'partner' } }); p.partner_id = r.id; } else p.partner_id = g.id; }
     if (loans) { const g = loans.get(); if (!g) { toast('Choose the loan', { err: true }); return false; } if (g.name !== undefined) { if (!g.name) { toast('Type who the loan is with', { err: true }); return false; } const r = await api('fin_save_loan', { p: { direction: K.loan, counterparty: g.name, rate_pct: rate && rate.value ? N(rate.value) : null, start_date: date.value } }); p.loan_id = r.id; } else p.loan_id = g.id; }
