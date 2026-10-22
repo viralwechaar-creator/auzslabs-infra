@@ -658,3 +658,30 @@ body{font-size:10px}
 .bigcol .t{font-size:16px}
 footer .col a,footer .col span{font-size:9.5px}
 .sec{margin-top:8px}
+
+/* Phone: thinner nav, smaller type, brand mark + welcome bubble */
+.chatfab{border:0;cursor:pointer}
+.dock .mark{border:0;cursor:pointer;color:var(--ink);overflow:hidden;box-shadow:0 0 0 2px #fff,0 6px 18px rgba(0,0,0,.18)}
+.chatwel{position:fixed;z-index:45;right:16px;bottom:calc(max(14px,env(safe-area-inset-bottom)) + 62px);max-width:210px;text-align:left;background:#fff;color:var(--ink);border:0;border-radius:16px 16px 4px 16px;padding:9px 12px;box-shadow:0 8px 28px rgba(0,0,0,.18);display:flex;flex-direction:column;gap:2px;animation:wel .35s ease;cursor:pointer;transform-origin:100% 100%;transition:opacity .5s,transform .5s}
+.chatwel b{font-size:10.5px;font-weight:700}.chatwel span{font-size:9.5px;color:var(--mut)}
+.chatwel.out{opacity:0;transform:scale(.4) translate(10px,16px)}
+@keyframes wel{from{opacity:0;transform:scale(.6) translateY(10px)}}
+@media(min-width:900px){.chatwel{bottom:68px;right:22px}}
+@media(max-width:899px){
+  :root{--hh:40px}.top{height:40px}
+  body{font-size:9.5px}
+  .brand{font-size:12.5px;letter-spacing:.07em}
+  .menu-pill,.top .ic{transform:scale(.88)}
+  .dock{gap:6px;bottom:max(10px,env(safe-area-inset-bottom))}
+  .dock .pill{height:42px;padding:0 5px;border-radius:21px}
+  .dock .pill button{width:38px;height:34px}
+  .dock svg,.dock svg.f{width:15px!important;height:15px!important}
+  .dock .mark,.dock .chat{width:42px;height:42px;font-size:12px}
+  .hero .cap .t{font-size:9.5px}.hero .btn{height:26px;font-size:9px}
+  .rl{padding:14px 14px 10px;border-radius:18px}.rl-s{font-size:13.5px;line-height:1.45}
+  .rl .ch{height:22px;font-size:9px;padding:0 9px}.rl-go{height:28px;font-size:9.5px;padding:0 14px}
+  .pc .nm,.pc .in .n,.pc .pr,.pc .in .p{font-size:9.5px}
+  .hd .btn.sm{height:20px;font-size:8px;padding:0 9px}
+  footer .col a,footer .col span{font-size:9px}
+  .ftwrap footer .lbl,footer .col>.lbl{font-size:10px}
+}

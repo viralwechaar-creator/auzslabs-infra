@@ -159,14 +159,19 @@ function shell() {
   const c = cfg();
   const phoneNo = String(D.shop.phone || '').replace(/\D/g, '');
   const waUrl = phoneNo ? 'https://wa.me/' + (phoneNo.length === 10 ? '91' + phoneNo : phoneNo) : '';
+  const mk = D.shop.logoUrl ? E('img', { src: D.shop.logoUrl, alt: '' }) : String(name || 'S').trim().charAt(0).toUpperCase();
+  const toContact = () => { const w = $('#chatwel'); if (w) w.remove(); go('contact'); };
   const dock = E('div', { class: 'dock phoneonly' },
+    E('button', { class: 'mark', 'aria-label': name, onclick: () => go('') }, mk),
     E('div', { class: 'pill' }, E('button', { 'aria-label': 'Explore', onclick: openMenu }, icon('compass')), E('button', { 'aria-label': 'Shop', onclick: () => go('shop') }, icon('home')),
       E('button', { 'aria-label': 'Saved', onclick: () => go('wishlist') }, icon('mark'), countBadge(() => wish.length)), E('button', { 'aria-label': 'Stores', onclick: () => go('stores') }, icon('pin'))),
-    waUrl ? E('a', { class: 'chat', href: waUrl, target: '_blank', rel: 'noopener', 'aria-label': 'Chat on WhatsApp' }, icon('chat')) : E('button', { class: 'chat', 'aria-label': 'Contact', onclick: () => go('contact') }, icon('chat')));
+    E('button', { class: 'chat', 'aria-label': 'Contact us', onclick: toContact }, icon('chat')));
   const root = $('#app'); clear(root);
-  root.append(c.announce ? E('div', { class: 'announce' }, c.announce) : null, top, E('main', { id: 'view' }), footer(), dock, waUrl ? E('a', { class: 'chatfab', href: waUrl, target: '_blank', rel: 'noopener', 'aria-label': 'Chat on WhatsApp' }, icon('chat')) : null,
+  root.append(c.announce ? E('div', { class: 'announce' }, c.announce) : null, top, E('main', { id: 'view' }), footer(), dock, E('button', { class: 'chatfab', 'aria-label': 'Contact us', onclick: toContact }, icon('chat')),
     E('div', { class: 'menu', id: 'menu' }), E('div', { class: 'srch', id: 'srch' }));
-}
+
+  try { if (!sessionStorage.getItem('st.wel.' + SLUG)) { sessionStorage.setItem('st.wel.' + SLUG, '1');
+    setTimeout(() => { const b = E('button', { class: 'chatwel', id: 'chatwel', onclick: toContact }, E('b', null, 'Welcome to ' + name), E('span', null, c.welcome || 'Need a hand? Tap to reach us.')); document.body.append(b); setTimeout(() => b.classList.add('out'), 6500); setTimeout(() => b.remove(), 7100); }, 1200); } } catch (e) { /* no storage */ }}
 function groups() {
   const cats = [...new Set(STY.map((s) => s.category).filter(Boolean))];
   const G = [['Top', /shirt|tee|polo|sweat|hood|jacket|top|kurta|blazer|coat|knit|vest/i], ['Bottom', /jean|pant|trouser|short|cargo|skirt|jogger|chino|denim|legging/i], ['Footwear', /shoe|sneaker|sandal|slipper|boot|loafer|footwear|heel/i], ['Accessories', /bag|cap|hat|belt|wallet|sock|scarf|watch|case|glass|jewel|tie/i]];
