@@ -318,33 +318,6 @@ function gridOf(list, withBlanks) {
   list.forEach((s, i) => { g.append(card(s)); if (withBlanks && (i + 1) % 7 === 0 && i + 1 < list.length) g.append(E('div', { class: 'blank' + (((i + 1) / 7) % 2 ? '' : ' ghost') + ' d', 'aria-hidden': 'true' })); });
   return g;
 }
-function catBrowser() {
-  const cats = [...new Set(STY.map((x) => x.category).filter(Boolean))];
-  let cur = '';
-  const tabs = E('div', { class: 'tabs' });
-  const row = E('div', { class: 'row' });
-  const more = E('a', { class: 'btn sm out', href: link('shop') }, 'Discover more');
-  let hold = 0;
-  const fill = () => {
-    const list = (cur ? STY.filter((x) => x.category === cur) : newest(12)).slice(0, 14);
-    row.replaceChildren(...list.map((s) => card(s))); row.scrollLeft = 0;
-    more.setAttribute('href', link(cur ? 'shop?cat=' + encodeURIComponent(cur) : 'shop'));
-    [...tabs.children].forEach((b) => b.classList.toggle('on', b.dataset.c === cur));
-  };
-  [['', 'All'], ...cats.map((c) => [c, c])].forEach(([k, label]) => tabs.append(E('button', { type: 'button', 'data-c': k, onclick: () => { cur = k; hold = Date.now() + 8000; fill(); } }, label)));
-  const box = E('section', { class: 'cb' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'Shop by category'), more), tabs, row);
-  fill();
-  ['touchstart', 'pointerdown', 'wheel'].forEach((ev) => row.addEventListener(ev, () => { hold = Date.now() + 6000; }, { passive: true }));
-  const t = setInterval(() => {
-    if (!document.body.contains(box)) return clearInterval(t);
-    if (Date.now() < hold || document.hidden || matchMedia('(prefers-reduced-motion:reduce)').matches) return;
-    const w = (row.firstElementChild ? row.firstElementChild.getBoundingClientRect().width : 0) + 8;
-    if (!w || row.scrollWidth <= row.clientWidth + 4) return;
-    if (row.scrollLeft + row.clientWidth >= row.scrollWidth - 6) row.scrollTo({ left: 0, behavior: 'smooth' });
-    else row.scrollBy({ left: w, behavior: 'smooth' });
-  }, 3600);
-  return box;
-}
 V.home = (v) => {
   const c = cfg(); const hi = (c.heroImages || []).filter(Boolean);
   const fallback = hi.length ? hi : [...STY.filter((s) => (s.photoUse || {}).hero), ...newest(5)].filter((s, i, a) => a.indexOf(s) === i).slice(0, 5).map((s) => pickPic(s, 'hero')).filter(Boolean);
@@ -358,10 +331,18 @@ V.home = (v) => {
   v.append(hero);
   const cols = D.collections.filter((x) => x.styleIds.some((id) => BYID[id]));
   const phone = matchMedia('(max-width:700px)').matches;
-  // 1. one category browser: pick a category and only its products show, in a row that swipes by itself
+  // 1. latest products
   v.append(refineLine());
   v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'Latest drop'), E('a', { class: 'btn sm out', href: link('shop?new=1') }, 'Discover more')), gridOf(newest(8), true)));
-  v.append(catBrowser());
+  // 2. category by category: a swipe row on desktop, a slide deck on phones
+  // size hierarchy: each category band gets its own scale (L big, deck, S compact, M medium); product cards inside one band are always the same size
+  const TIER = ['l', 'deck', 's', 'm'];
+  [...new Set(STY.map((x) => x.category).filter(Boolean))].slice(0, 4).forEach((cat, i) => {
+    const items = STY.filter((x) => x.category === cat).slice(0, 10); if (items.length < 2) return;
+    const tier = TIER[i % TIER.length];
+    const dk = tier === 'deck' || (phone && tier === 'm') ? stack(items, cat) : null;
+    v.append(dk || E('section', { class: 'band t-' + tier }, E('div', { class: 'hd' }, E('h2', null, cat), E('a', { class: 'btn sm', href: link('shop?cat=' + encodeURIComponent(cat)) }, 'Discover more')), E('div', { class: 'row' }, items.map((s) => card(s)))));
+  });
   // 3. big collection pictures
   cols.slice(0, 3).forEach((x) => {
     const s0 = x.styleIds.map((id) => BYID[id]).find((s) => s && photos(s)[0]); const pic = x.image || (s0 && pickPic(s0, 'banner')); if (!pic) return;
