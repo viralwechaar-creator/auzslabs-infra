@@ -950,3 +950,11 @@ footer .col a,footer .col span{font-size:9.5px}
   .tabs2 .tb{padding:10px 12px 12px}
   .info .qty{transform:scale(.9);transform-origin:left center}
 }
+
+/* a piece with ONE picture: show the whole picture (no crop) over a soft backdrop, on cards and on the product page */
+.pc.one .sc img{object-fit:contain}
+@media(max-width:899px){
+  .gal.solo .main{position:relative;overflow:hidden;isolation:isolate}
+  .gal.solo .main::before{content:"";position:absolute;inset:-30px;background:var(--bgi) center/cover;filter:blur(28px) saturate(1.1);opacity:.5;z-index:-1}
+  .gal.solo .main>img{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+}
