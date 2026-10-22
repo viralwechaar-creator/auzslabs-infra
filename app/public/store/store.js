@@ -728,12 +728,16 @@ function footer() {
   const fo = +((c.shipping || {}).freeOver) || 0, pays = [D.cod ? 'Cash on delivery' : '', D.upi ? 'UPI' : '', c.payOnline ? 'Cards' : ''].filter(Boolean).join(' · ');
   const perks = E('div', { class: 'perks' }, perk('ship', 'Delivery across India', fo ? 'Free above ' + inr(fo) : 'Packed fresh, tracked to you'), perk('tag', 'Easy returns', (D.shop.returnDays || 30) + ' days from delivery'),
     ph ? perk('chat', 'Talk to the store', 'Message us on WhatsApp') : perk('chat', 'We reply fast', 'See Contact for help'), perk('globe', 'Pay your way', pays || 'Ask the store'));
-  return E('div', { class: 'ftwrap' }, perks, strip, E('footer', null, E('div', { class: 'cols' },
+  const tog = E('button', { class: 'ftt', 'aria-expanded': 'false' }, E('span', { class: 'ftti' }, icon('ship'), icon('tag'), icon('chat'), icon('globe')), E('span', { class: 'ftl' }, 'Delivery, returns and help'), E('i', { class: 'pl' }, '+'));
+  const info = E('div', { class: 'ftinfo' }, perks, strip);
+  const wrap = E('div', { class: 'ftwrap' }, tog, info, E('footer', null, E('div', { class: 'cols' },
     E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Connect with us'), ph ? E('a', { href: 'tel:+' + (ph.length === 10 ? '91' + ph : ph) }, 'Call') : null, ph ? E('a', { href: 'https://wa.me/' + (ph.length === 10 ? '91' + ph : ph), target: '_blank', rel: 'noopener' }, 'Text (WhatsApp)') : null, ext('Instagram', so.instagram), ext('Facebook', so.facebook), c.email ? E('a', { href: 'mailto:' + c.email }, 'Email') : null),
     E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Order support'), E('a', { href: link('me') }, 'My account & orders'), E('a', { href: link('orders') }, 'Track your order'), E('a', { href: link('policy/returns') }, 'Returns & exchanges'), E('a', { href: link('policy/shipping') }, 'Shipping policy'), E('a', { href: link('faq') }, 'FAQs'), E('a', { href: link('policy/terms') }, 'Terms'), E('a', { href: link('policy/privacy') }, 'Privacy')),
     E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'We are ' + D.shop.name), E('a', { href: link('about') }, 'Our story'), E('a', { href: link('stores') }, 'Walk-in stores'), E('a', { href: link('collections') }, 'Collections'), blogsOn() ? E('a', { href: link('blog') }, 'Journal') : null, mediaOn() ? E('a', { href: link('media') }, 'Media & gallery') : null, jobsOn() ? E('a', { href: link('careers') }, 'Careers') : null, E('a', { href: link('contact') }, 'Contact')),
     E('div', { class: 'ftbrand' }, E('div', { class: 'big' }, D.shop.name))),
-    E('div', { class: 'fin' }, E('span', null, '© ' + new Date().getFullYear() + ' ' + D.shop.name + '. All rights reserved'), E('a', { href: 'https://auzslab.in', target: '_blank', rel: 'noopener' }, 'Store by AUZslab'))));
+    E('div', { class: 'fin' }, E('span', null, '© ' + new Date().getFullYear() + ' ' + D.shop.name + '. All rights reserved'), E('a', { href: 'https://auzslab.in', target: '_blank', rel: 'noopener' }, 'Store by AUZslab'))))
+  tog.onclick = () => { const on = wrap.classList.toggle('open'); tog.setAttribute('aria-expanded', String(on)); tog.querySelector('.pl').textContent = on ? '\u2013' : '+'; };
+  return wrap;
 }
 
 // ---------- anonymous visitor analytics (no names, phones or addresses) ----------
