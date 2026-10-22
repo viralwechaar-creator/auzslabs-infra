@@ -811,3 +811,13 @@ footer .col a,footer .col span{font-size:9.5px}
 
 /* product page: show the whole picture, never crop it */
 .gal .main img,.gal .th img{object-fit:contain;background:var(--soft)}
+
+/* one picture only: suggestion cards fill the sides (desktop) */
+.gal .sugg{display:none}
+@media(min-width:900px){
+  .gal.solo{grid-template-columns:170px minmax(0,1fr) 170px}
+  .gal.solo .main{grid-column:2}
+  .gal.solo .sugg{display:flex;flex-direction:column;gap:10px;overflow-y:auto;scrollbar-width:none;min-height:0}
+  .gal.solo .sugg::-webkit-scrollbar{display:none}
+  .gal.solo .sugg .pc{flex:none}
+}
