@@ -844,3 +844,13 @@ footer .col a,footer .col span{font-size:9.5px}
   .gal.solo .sugg{display:flex;grid-column:1;grid-row:1;flex-direction:column;gap:8px;overflow-y:auto;scrollbar-width:none;min-height:0}
   .gal.solo .main{grid-column:2;grid-row:1}
 }
+
+/* gallery v3 (desktop): the picture card is exactly as wide as its picture, so there is no empty space beside it */
+@media(min-width:900px){
+  .pd{grid-template-columns:auto minmax(320px,400px);justify-content:center;gap:18px}
+  .gal{grid-template-columns:auto 96px}
+  .gal.solo{grid-template-columns:190px auto}
+  .gal .main{display:flex;justify-content:center;width:fit-content;max-width:100%;min-width:0}
+  .gal .main img{position:static!important;inset:auto;height:100%;width:auto;max-width:100%;object-fit:contain;background:transparent}
+  .gal .main .ct{left:10px;bottom:10px}
+}
