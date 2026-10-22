@@ -44,7 +44,7 @@ page('settings', {
     const paintBr = () => clear(brHost).append(...(S.ctx.branches || []).map((b) => liRow({ icon: 'building', title: b.name, sub: (b.kind === 'warehouse' ? t('Warehouse') : t('Shop')) + (b.isMain ? ' · ' + t('Main') : ''), chevron: true, onclick: () => branchForm(b) })));
     function branchForm(b) {
       const nm = input({ value: b ? b.name : '' }), kd = selectEl([['shop', t('Shop')], ['warehouse', t('Warehouse')]], b ? b.kind : 'shop'), ad = input({ value: b ? b.address || '' : '' });
-      sheet({ title: b ? t('Edit branch') : t('New branch'), body: h('div', { class: 'grid' }, field(t('Name'), nm), field(t('Type'), kd), field(t('Address'), ad)), actions: [{ label: t('Save'), primary: true, onclick: async (close) => { S.ctx = await api('sty_save_branch', { p: { id: b && b.id, name: nm.value, kind: kd.value, address: ad.value } }); close(); buildShell(); route_(); } }] });
+      sheet({ title: b ? t('Edit branch') : t('New branch'), body: h('div', { class: 'grid' }, field(t('Name'), nm), field(t('Type'), kd), field(t('Address'), ad)), actions: [{ label: t('Save'), primary: true, onclick: async (close) => { S.ctx = await api('sty_save_branch', { p: { id: b && b.id, name: nm.value, kind: kd.value, address: ad.value } }); close(); location.reload(); } }] });
     }
     paintBr();
     const dc = input({ type: 'date', value: st.dayCloseDate ? String(st.dayCloseDate).slice(0, 10) : '' });
@@ -56,7 +56,7 @@ page('settings', {
         const p = { features: Object.assign({}, feat, { upiId: upi, upiName: F.upiName.value.trim() }), logoUrl, shopName: F.shopName.value, address: F.address.value, phone: F.phone.value, gstin: F.gstin.value, billFooter: F.billFooter.value, billPrefix: F.billPrefix.value, maxDiscountPct: N(F.maxDiscountPct.value), returnDays: Math.round(N(F.returnDays.value)),
           defaultTaxPct: N(F.defaultTaxPct.value), loyaltyEarnPct: N(F.loyaltyEarnPct.value), loyaltyPointValue: N(F.loyaltyPointValue.value), leadDays: Math.round(N(F.leadDays.value)), coverDays: Math.round(N(F.coverDays.value)), slowDays: Math.round(N(F.slowDays.value)),
           allowNegativeStock: st.allowNegativeStock, roundOff: st.roundOff, requireCustomerPhone: st.requireCustomerPhone, staffSeeCost: st.staffSeeCost, priceIncludesTax: st.priceIncludesTax, taxSlabs: sl };
-        S.ctx = await api('sty_save_settings', { p }); S.perms = S.ctx.perms; toast(t('Saved')); buildShell();  route_();
+        S.ctx = await api('sty_save_settings', { p }); S.perms = S.ctx.perms; toast(t('Saved')); setTimeout(() => location.reload(), 350);
       } catch (e) { fail(e); } finally { ev.currentTarget && (ev.currentTarget.disabled = false); }
     } }, t('Save settings'));
     v.root.append(h('div', { class: 'grid setg' },
