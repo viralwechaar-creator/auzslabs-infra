@@ -262,7 +262,13 @@ function stack(list, label) {
     el.style.transform = 'translateX(' + sg * OFF[a] + '%) scale(' + SC[a] + ')'; el.style.filter = a ? 'brightness(' + BR[a] + ')' : 'none';
     el.classList.toggle('on', a === 0);
   });
-  const go = (i) => { cur = ((i % n) + n) % n; place(); };
+  // desktop side rails: counter + arrows on the left, the front piece's details on the right
+  const num = E('b', null, '01'), bar = E('i'), pn = E('span', { class: 'pn' }), pp = E('span', { class: 'pp' }), pl = E('a', { class: 'pl', href: '#' }, 'View piece ', icon('right'));
+  const rails = () => {
+    const s = list[cur]; num.textContent = String(cur + 1).padStart(2, '0'); bar.style.width = ((cur + 1) / n * 100) + '%';
+    pn.textContent = s.name; pp.textContent = inr(s.price); pl.href = link('p/' + s.id);
+  };
+  const go = (i) => { cur = ((i % n) + n) % n; place(); rails(); };
   const pause = (ms) => { hold = true; clearTimeout(holdT); holdT = setTimeout(() => { hold = false; }, ms || 5000); };
   let x0 = null;
   deck.addEventListener('pointerdown', (e) => { x0 = e.clientX; moved = false; pause(); });
@@ -271,9 +277,12 @@ function stack(list, label) {
   deck.addEventListener('pointerup', end); deck.addEventListener('pointercancel', () => { x0 = null; });
   items.forEach((el, i) => el.addEventListener('click', (e) => { if (moved) { e.preventDefault(); moved = false; return; } if (i !== cur) { e.preventDefault(); go(i); pause(); } }));
   deck.addEventListener('mouseenter', () => pause(60000)); deck.addEventListener('mouseleave', () => pause(1500));
-  place();
+  place(); rails();
   if (!matchMedia('(prefers-reduced-motion: reduce)').matches) { const t = setInterval(() => { if (!document.body.contains(deck)) return clearInterval(t); if (hold || document.hidden) return; go(cur + 1); }, 3200); }
-  return E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, label)), deck);
+  const prev = E('button', { class: 'ar', type: 'button', 'aria-label': 'Previous', onclick: () => { go(cur - 1); pause(); } }, icon('left')), next = E('button', { class: 'ar nx', type: 'button', 'aria-label': 'Next', onclick: () => { go(cur + 1); pause(); } }, icon('right'));
+  const left = E('div', { class: 'srl' }, E('div', { class: 'cnt' }, num, E('span', null, '/ ' + String(n).padStart(2, '0'))), E('div', { class: 'sbar' }, bar), E('div', { class: 'ars' }, prev, next));
+  const right = E('div', { class: 'srr' }, E('span', { class: 'tg' }, 'In front'), pn, pp, pl);
+  return E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, label)), E('div', { class: 'stkw' }, E('span', { class: 'gh', 'aria-hidden': 'true' }, label), left, deck, right));
 }
 function gridOf(list, withBlanks) {
   const g = E('div', { class: 'grid' });

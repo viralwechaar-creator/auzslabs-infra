@@ -609,3 +609,27 @@ body.menuopen{overflow:hidden}
 .ftwrap footer .ftbrand .big{font-size:19px;letter-spacing:-.03em}
 .ftwrap footer .fin{margin-top:10px;padding-top:7px;font-size:8px}
 @media(min-width:900px){.ftt{width:auto;margin:0 28px 10px}.perks{margin:0 28px 10px}}
+
+/* desktop: fill the sides of the card stack (rails + ghost word); phones unchanged */
+.stkw .srl,.stkw .srr,.stkw .gh{display:none}
+@media(min-width:900px){
+.stkw{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,560px) minmax(0,1fr);align-items:center;gap:32px;padding:8px 0}
+.stkw .gh{display:block;position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;font-size:clamp(90px,15vw,220px);font-weight:800;letter-spacing:-.04em;line-height:1;text-transform:uppercase;color:transparent;-webkit-text-stroke:1px rgba(0,0,0,.09);white-space:nowrap;overflow:hidden;pointer-events:none;z-index:0}
+.stkw .stk{position:relative;z-index:1;width:100%;margin:0}
+.stkw .srl,.stkw .srr{display:flex;flex-direction:column;gap:14px;position:relative;z-index:1}
+.stkw .srl{align-items:flex-start;padding-left:8px}
+.stkw .srr{align-items:flex-end;text-align:right;padding-right:8px}
+.stkw .tg{font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:#777}
+.stkw .cnt{display:flex;align-items:baseline;gap:8px;font-size:11px;color:#777}
+.stkw .cnt b{font-size:56px;line-height:1;font-weight:800;letter-spacing:-.04em;color:#0a0a0a}
+.stkw .sbar{width:120px;height:1px;background:rgba(0,0,0,.15)}
+.stkw .sbar i{display:block;width:0;height:1px;background:#0a0a0a;transition:width .5s}
+.stkw .ars{display:flex;gap:8px}
+.stkw .ar{width:36px;height:36px;border-radius:50%;border:1px solid rgba(0,0,0,.2);background:#fff;display:grid;place-items:center;cursor:pointer;transition:background .2s,color .2s}
+.stkw .ar:hover{background:#0a0a0a;color:#fff}
+.stkw .ar svg{width:14px;height:14px}
+.stkw .pn{font-size:20px;font-weight:700;letter-spacing:-.02em;line-height:1.15;max-width:240px}
+.stkw .pp{font-size:13px;color:#555}
+.stkw .pl{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:9px 16px;border-radius:99px;background:#0a0a0a;color:#fff;text-decoration:none}
+.stkw .pl svg{width:12px;height:12px}
+}
