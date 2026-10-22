@@ -1006,3 +1006,7 @@ footer .col a,footer .col span{font-size:9.5px}
 
 /* intentional blank space in the product grid: just empty space, no card */
 .blank,.blank.ghost{background:transparent!important;box-shadow:none!important;border:0;opacity:1}
+/* home hero: no border, covers the whole screen edge to edge */
+body.homehero .hero,.hero{border-radius:0!important;border:0!important;box-shadow:none!important}
+body.homehero .hero{width:100vw!important;margin:calc(-1 * var(--hh) - 6px) 0 0 calc(50% - 50vw)!important;height:100svh!important;min-height:520px!important;max-height:none!important}
+body.homehero main{padding-top:0}
