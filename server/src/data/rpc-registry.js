@@ -13,6 +13,8 @@ export const RPC = {
   provision_custom_tenant: { params: ['p_name', 'p_slug', 'p_brief'], auth: true },
   public_menu: { params: ['tenant_slug'], auth: false },
   public_reviews: { params: ['tenant_slug'], auth: false },
+  public_site_content: { params: [], auth: false },
+  admin_site_content_save: { params: ['p'], auth: true },
   public_page: { params: ['tenant_slug', 'page_slug'], auth: false },
   public_salon_page: { params: ['tenant_slug'], auth: false },
   public_salon_slots: { params: ['tenant_slug', 'p_date'], auth: false },

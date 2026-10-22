@@ -1,5 +1,5 @@
 import { pool, withAuth } from '../db.js';
-import { saveSiteUpload, saveDocUpload, readDocUpload } from '../storage.js';
+import { savePlatformUpload, saveSiteUpload, saveDocUpload, readDocUpload } from '../storage.js';
 import { myProfile } from '../lib/guards.js';
 import { HttpError, clientIp, rateLimited, readRawBody } from '../lib/http.js';
 
@@ -7,6 +7,16 @@ import { HttpError, clientIp, rateLimited, readRawBody } from '../lib/http.js';
 // any other return (including the undefined that `return reply(...)` gives) means the request was handled.
 export async function handle(ctx) {
   const { req, res, url, user, ip, meta, reply, origin } = ctx;
+  // ---- storage: POST /storage/platform/:prefix (platform admin only, marketing-site pictures) ----
+  const platMatch = url.pathname.match(/^\/storage\/platform\/([a-zA-Z0-9_-]+)$/);
+  if (platMatch && req.method === 'POST') {
+    if (!user) throw new HttpError(401, 'authentication required');
+    const { rows } = await withAuth(user.id, (client) => client.query('select is_platform_admin() as a'));
+    if (!rows[0]?.a) throw new HttpError(403, 'platform admin only');
+    const buffer = await readRawBody(req, 8_000_000);
+    return reply(200, await savePlatformUpload({ prefix: platMatch[1], buffer }));
+  }
+
   // ---- storage: POST /storage/site/:prefix (raw image body) ----
   const storageMatch = url.pathname.match(/^\/storage\/site\/([a-zA-Z0-9_-]+)$/);
   if (storageMatch && req.method === 'POST') {

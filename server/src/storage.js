@@ -155,3 +155,17 @@ export async function saveSiteUpload({ tenantId, uid, prefix, buffer }) {
   const publicPath = `/uploads/site/${safeSegment(slug)}/${safeSegment(prefix)}/${filename}`;
   return { path: publicPath };
 }
+
+// Marketing-site pictures edited by the platform admin (Admin -> Website): not tied to any tenant.
+export async function savePlatformUpload({ prefix, buffer }) {
+  if (!looksLikeImage(buffer)) {
+    const err = new Error('file does not look like a supported image (jpeg/png/webp)');
+    err.status = 400;
+    throw err;
+  }
+  const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}.jpg`;
+  const dir = path.join(UPLOAD_ROOT, 'site', '_platform', safeSegment(prefix));
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(path.join(dir, filename), buffer);
+  return { path: `/uploads/site/_platform/${safeSegment(prefix)}/${filename}` };
+}
