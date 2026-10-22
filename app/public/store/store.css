@@ -978,3 +978,10 @@ footer .col a,footer .col span{font-size:9.5px}
 .pc.one .sc a{display:block;width:100%;flex:0 0 100%}
 .pc.one .sc img{width:100%;height:auto!important;display:block;object-fit:cover}
 .grid{align-items:start}
+
+/* all product cards the same size; the picture fills the card edge to edge (no empty space) */
+.pc.one .ph{aspect-ratio:3/4!important}
+.pc.one .sc{height:100%!important}
+.pc.one .sc img{height:100%!important;object-fit:cover!important;object-position:center 35%}
+.pc .sc img{object-position:center 35%}
+.grid{align-items:stretch}
