@@ -1,0 +1,71 @@
+/* AUZslab public site: editorial minimal layer (from the owner's references).
+   Grey paper, no cards, hairline rules, very small light type, blank picture frames. */
+:root{--bg:#e9e9e8;--card:transparent;--line:#c9c9c6;--soft:#e1e1df;--sh:none;--ink:#111;--dim:#555;--mut:#8c8c89;--r1:2px;--r2:2px;--r3:2px;--pad:16px;--fs:10px}
+:root[data-theme=dark]{--bg:#121212;--line:#333;--soft:#1c1c1c;--ink:#eee;--dim:#aaa;--mut:#777}
+body{font-weight:400;letter-spacing:.01em}
+/* header: plain text, no pills */
+.u-top{background:transparent!important;box-shadow:none!important;border:0!important;backdrop-filter:none!important}
+.u-nav a{font-size:9px;letter-spacing:.14em;text-transform:uppercase;background:none!important;color:var(--ink)!important;padding:4px 10px}
+.u-nav a.on{border-bottom:1px solid var(--ink)}
+.u-pill,.u-menu,.u-ic{background:none!important;box-shadow:none!important;border:0!important;font-size:9px!important;letter-spacing:.14em;text-transform:uppercase;color:var(--ink)!important;height:auto!important;padding:6px 8px!important}
+.u-pill{border-bottom:1px solid var(--ink)!important}
+/* flatten every legacy card, tag and chip */
+main.content .card,main.content .feat-card,main.content .price-card,main.content .fee-card,main.content .pr-card,main.content .hm-tile,main.content .hm-hero,main.content .demo-note,main.content .biz-band,.bento>.card,.bento>.card.feat{background:transparent!important;color:var(--ink)!important;box-shadow:none!important;border:0!important;border-top:1px solid var(--line)!important;border-radius:0!important;padding:14px 0!important;min-height:0!important}
+.bento>.card.feat .h-2,.bento>.card.feat .p,.biz-band .h-2,.biz-band .p,.demo-note .h-2,.demo-note .p{color:var(--ink)!important}
+main.content .tag,main.content .label,main.content .eye{background:none!important;border:0!important;padding:0!important;font-size:8px!important;letter-spacing:.18em;text-transform:uppercase;color:var(--mut)!important}
+main.content h1.h-1,main.content h1{font-weight:300!important;font-size:clamp(20px,5vw,30px)!important;letter-spacing:-.025em!important;line-height:1.1!important}
+main.content h2,main.content .h-2{font-weight:400!important;font-size:13px!important;letter-spacing:-.005em}
+main.content .btn,main.content .btn-ghost,main.content .btn-primary{background:none!important;color:var(--ink)!important;border:0!important;border-bottom:1px solid var(--ink)!important;border-radius:0!important;height:auto!important;padding:3px 0!important;font-size:9px!important;letter-spacing:.14em;text-transform:uppercase;font-weight:500!important;box-shadow:none!important}
+main.content .btn:hover{opacity:.6}
+main.content .row-b{gap:18px!important}
+main.content .hm-chips a{background:none;padding:0;border-bottom:1px solid var(--line);border-radius:0}
+/* picture frames: blank until a picture is added in Admin -> Website */
+.ph{position:relative;background:#dcdcda;overflow:hidden;display:block}
+:root[data-theme=dark] .ph{background:#1d1d1d}
+.ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.ph.r45{aspect-ratio:4/5}.ph.r32{aspect-ratio:3/2}.ph.r169{aspect-ratio:16/9}.ph.r11{aspect-ratio:1}.ph.r21{aspect-ratio:2/1}
+/* editorial layout */
+.ed{max-width:1240px;margin:0 auto;padding:6px var(--pad) 0}
+.ed-hero{display:grid;gap:14px}
+.ed-hero h1{margin:0;max-width:12em}
+.ed-side{display:grid;gap:10px;max-width:30em;color:var(--dim);font-size:10px;line-height:1.5}
+.ed-side a,.ed-link{font-size:9px;letter-spacing:.14em;text-transform:uppercase;border-bottom:1px solid var(--ink);padding-bottom:2px;justify-self:start;color:var(--ink)}
+.ed-rule{border:0;border-top:1px solid var(--line);margin:34px 0 0}
+.ed-list{display:grid}
+.ed-list a,.ed-row{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:baseline;padding:13px 0;border-top:1px solid var(--line);color:var(--ink)}
+.ed-list a:last-child{border-bottom:1px solid var(--line)}
+.ed-list i{font-style:normal;font-size:8.5px;color:var(--mut);letter-spacing:.1em}
+.ed-list b{font-weight:400;font-size:15px;letter-spacing:-.01em}
+.ed-list span{font-size:9.5px;color:var(--mut);text-align:right;max-width:16em}
+.ed-two{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:34px}
+.ed-two figure{margin:0;display:grid;gap:6px}.ed-two figcaption{font-size:9px;color:var(--mut);letter-spacing:.05em}
+.ed-words{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:14px;font-size:10px}
+.ed-words a{border-bottom:1px solid var(--line)}
+.ed-cta{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-top:34px;padding:16px 0;border-top:1px solid var(--line);font-size:15px;font-weight:300;letter-spacing:-.01em}
+/* products */
+.pe{display:grid;gap:10px;padding:18px 0;border-top:1px solid var(--line);scroll-margin-top:64px}
+.pe h2{font-size:18px!important;font-weight:300!important;letter-spacing:-.02em;margin:0}
+.pe .no{font-size:8.5px;color:var(--mut);letter-spacing:.14em}
+.pe p{margin:0;font-size:10px;line-height:1.5;color:var(--dim);max-width:34em}
+.pe details{font-size:9.5px;color:var(--dim)}
+.pe summary{cursor:pointer;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+.pe ul{margin:6px 0 0;padding-left:14px}.pe li{margin:2px 0}
+.pe .acts{display:flex;gap:18px;flex-wrap:wrap}
+.pe .acts .btn{font-size:9px}
+@media(min-width:900px){
+ .ed{padding:10px 40px 0}
+ .ed-hero{grid-template-columns:1.4fr 1fr;align-items:end;gap:60px}
+ .ed-hero .ph{grid-column:1/-1}
+ .ed-hero h1{font-size:40px!important}
+ .ed-two{gap:24px}
+ .ed-list b{font-size:22px}
+ .pe{grid-template-columns:90px 1fr 1fr;gap:30px;align-items:start;padding:30px 0}
+ .pe .pt{grid-column:2}.pe .ph{grid-column:3;grid-row:1/span 3}
+ main.content h1.h-1,main.content h1{font-size:36px!important}
+}
+.u-dock .chat{color:#fff!important}.u-dock .chat svg{stroke:#fff}
+.u-dock .pill{background:rgba(250,250,249,.92)!important}:root[data-theme=dark] .u-dock .pill{background:rgba(30,30,30,.92)!important}
+#salon-plans .sp-card,#salon-addons .sp-addon,.sp-card{background:transparent!important;border:0!important;border-top:1px solid var(--line)!important;border-radius:0!important;box-shadow:none!important;padding:14px 0!important}
+#salon-plans .sp-name{font-size:15px!important;font-weight:300!important}
+#salon-plans .sp-amt,.sp-price{font-size:16px!important;font-weight:300!important}
+.ftwrap{background:#0a0a0a}
