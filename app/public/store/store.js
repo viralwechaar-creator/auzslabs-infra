@@ -181,16 +181,19 @@ const mediaOn = () => (cfg().media || []).some((x) => x && (x.title || x.image))
 const jobsOn = () => (cfg().jobs || []).some((x) => x && x.title) || !!(cfg().hiring && (cfg().hiring.email || cfg().hiring.text));
 function openMenu() {
   const m = $('#menu'); clear(m); m.classList.add('on');
-  const close = () => m.classList.remove('on');
+  const close = () => { m.classList.remove('on'); document.body.classList.remove('menuopen'); };
+  document.body.classList.add('menuopen');
   const fams = FAM.filter((f) => STY.some((s) => colours(s).some((c) => famOf(c) === f[0])));
   const nav = (p) => (e) => { e.preventDefault(); close(); location.hash = '#/' + p; };
-  const a = (txt, p) => E('a', { href: link(p), onclick: nav(p) }, txt);
-  const panel = E('div', { class: 'mp' }, E('button', { class: 'ic mx', 'aria-label': 'Close', onclick: close }, icon('x')),
-    E('div', { class: 'cols' },
-      E('div', { class: 'col nv' }, a('New arrivals', 'shop?new=1'), a('All products', 'shop'), ...D.collections.filter((c) => c.styleIds.length).slice(0, 4).map((c) => a(c.name, 'shop?col=' + c.id))),
-      ...groups().map(([n, cs]) => E('div', { class: 'col' }, E('span', { class: 'lbl' }, n), E('div', { class: 'wrapc' }, cs.map((c) => a(c, 'shop?cat=' + encodeURIComponent(c)))))),
-      (blogsOn() || mediaOn() || jobsOn()) ? E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Explore'), E('div', { class: 'wrapc' }, [blogsOn() ? a('Journal', 'blog') : null, mediaOn() ? a('Media & gallery', 'media') : null, jobsOn() ? a('Careers', 'careers') : null].filter(Boolean))) : null,
-      fams.length ? E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Shop by colour'), E('div', { class: 'wrapc' }, fams.map((f) => E('a', { class: 'fam', href: link('shop?fam=' + f[0]), onclick: nav('shop?fam=' + f[0]) }, f[0], E('span', { class: 'bar', style: { background: 'linear-gradient(90deg,' + f[2][0] + ',' + f[2][1] + ')' } }))))) : null));
+  const a = (txt, p, cls) => E('a', { class: cls || '', href: link(p), onclick: nav(p) }, txt);
+  const cols = D.collections.filter((c) => c.styleIds.length).slice(0, 3);
+  const more = [blogsOn() ? ['Journal', 'blog'] : null, mediaOn() ? ['Media & gallery', 'media'] : null, jobsOn() ? ['Careers', 'careers'] : null, ['Our stores', 'stores'], ['Our story', 'about'], ['FAQs', 'faq'], ['Contact', 'contact'], ['My account & orders', 'me']].filter(Boolean);
+  const panel = E('div', { class: 'mp' },
+    E('div', { class: 'mhd' }, E('b', null, D.shop.name), E('button', { class: 'ic mx', 'aria-label': 'Close', onclick: close }, icon('x'))),
+    E('nav', { class: 'mbig' }, a('New arrivals', 'shop?new=1', 'b'), a('All products', 'shop', 'b'), ...cols.map((c) => a(c.name, 'shop?col=' + c.id, 'b'))),
+    ...groups().map(([n, cs]) => E('div', { class: 'mgrp' }, E('span', { class: 'ml' }, n), E('div', { class: 'mrow' }, cs.map((c) => a(c, 'shop?cat=' + encodeURIComponent(c)))))),
+    fams.length ? E('div', { class: 'mgrp' }, E('span', { class: 'ml' }, 'Shop by colour'), E('div', { class: 'mdots' }, fams.map((f) => E('a', { class: 'md', 'aria-label': f[0], title: f[0], href: link('shop?fam=' + f[0]), onclick: nav('shop?fam=' + f[0]), style: { background: 'linear-gradient(135deg,' + f[2][0] + ',' + f[2][1] + ')' } })))) : null,
+    E('div', { class: 'mmore' }, more.map(([t, p]) => a(t, p))));
   m.append(panel);
   m.onclick = (e) => { if (e.target === m) close(); };
 }
