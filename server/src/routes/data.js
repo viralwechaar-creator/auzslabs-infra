@@ -7,6 +7,7 @@ import { HttpError, httpFromError, rateLimited, readJsonBody } from '../lib/http
 import { TABLES } from '../data/tables.js';
 import { RPC } from '../data/rpc-registry.js';
 import { callRpc, handleInsert, handleSelect, handleUpdate } from '../data/queries.js';
+import { cached, invalidatePublic } from '../lib/pubcache.js';
 
 // Returns false when none of this module's routes matched, so the dispatcher in index.js tries the next module;
 // any other return (including the undefined that `return reply(...)` gives) means the request was handled.
@@ -20,6 +21,7 @@ export async function handle(ctx) {
     if (!cfg) throw new HttpError(404, 'unknown table');
     const uid = user?.id || null;
 
+    if (req.method !== 'GET' && user) invalidatePublic();
     const result = await withAuth(uid, async (client) => {
       if (req.method === 'GET') return handleSelect(client, table, cfg, url.searchParams);
       if (req.method === 'POST') {
@@ -95,7 +97,8 @@ export async function handle(ctx) {
     const uid = user?.id || null;
     // Anything that checks a password or sets someone's PIN/password is limited per person, so a stolen session token cannot be used to guess the current password.
     if (user && ['change_my_password', 'reset_staff_password', 'staff_reset_pin', 'admin_reset_client_password'].includes(fnName) && rateLimited(`pwrpc:${user.id}`, 10, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
-    const result = await withAuth(uid, (client) => callRpc(client, fnName, args));
+    // read-only, much-repeated or expensive answers are shared for a few seconds (lib/pubcache.js lists which and for how long)
+    const result = await cached(fnName, args, uid, () => withAuth(uid, (client) => callRpc(client, fnName, args)));
     // After a password / PIN change, old sessions must stop working at once (the person changing their own password keeps the one they are using).
     if (user && fnName === 'change_my_password') await revokeAllSessionsForUser(user.id, user.jti || null).catch(() => {});
     if (user && ['reset_staff_password', 'staff_reset_pin'].includes(fnName) && args && /^[0-9a-f-]{36}$/i.test(String(args.p_staff_id || ''))) await revokeAllSessionsForUser(args.p_staff_id).catch(() => {});
@@ -113,6 +116,7 @@ export async function handle(ctx) {
     if (fnName === 'admin_decide_team_application' && result && result.email) {
       sendTeamDecisionEmail({ to: result.email, name: result.name, approved: result.status === 'approved', role: result.role }).catch(() => {});
     }
+    if (user && (fnName.startsWith('sty_') || fnName.startsWith('admin_') || fnName === 'push_record' || fnName.startsWith('save_') || fnName.startsWith('salesman_'))) invalidatePublic();
     return reply(200, { data: result });
   }
   return false;

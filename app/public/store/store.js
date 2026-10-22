@@ -62,7 +62,9 @@ async function shopIcon(d) {
   } catch (e) { /* the default icon stays */ }
 }
 // a picture that failed to load (flaky network, phone memory) is asked for once more before giving up
-document.addEventListener('error', (e) => { const im = e.target; if (!im || im.tagName !== 'IMG' || im.dataset.retry || !im.src || im.src.startsWith('data:')) return; im.dataset.retry = '1'; const u = im.src; im.removeAttribute('loading'); setTimeout(() => { im.src = u + (u.includes('?') ? '&' : '?') + 'r=1'; }, 600); }, true);
+// small copy of an uploaded picture for cards (see server storage.js makeThumbs); older pictures without one fall back to the original
+const thumb = (u, w) => (u && /\/uploads\/site\//.test(u) ? u.replace(/\.(jpe?g|png|webp)$/i, '.w' + (w || 480) + '.webp') : u);
+document.addEventListener('error', (e) => { const im = e.target; if (im && im.tagName === 'IMG' && im.dataset.orig && im.src !== im.dataset.orig) { im.src = im.dataset.orig; return; } if (!im || im.tagName !== 'IMG' || im.dataset.retry || !im.src || im.src.startsWith('data:')) return; im.dataset.retry = '1'; const u = im.src; im.removeAttribute('loading'); setTimeout(() => { im.src = u + (u.includes('?') ? '&' : '?') + 'r=1'; }, 600); }, true);
 let D = null;            // public_sty_store result
 let STY = [], BYID = {}, VAR = {};
 let bag = [], wish = [];
@@ -117,7 +119,7 @@ function card(s, opt) {
   const sc = E('div', { class: 'sc' });
   const dt = E('div', { class: 'dt' });
   const list = ims.length ? ims.slice(0, 6) : [null];
-  list.forEach((u, i) => { sc.append(E('a', { href: link('p/' + s.id) }, u ? E('img', { src: u, alt: s.name, loading: i === 0 ? 'eager' : 'lazy', decoding: 'async' }) : placeholder(s.name))); if (list.length > 1) dt.append(E('i', { class: i === 0 ? 'on' : '' })); });
+  list.forEach((u, i) => { sc.append(E('a', { href: link('p/' + s.id) }, u ? E('img', { src: thumb(u, 480), 'data-orig': u, alt: s.name, loading: i === 0 ? 'eager' : 'lazy', decoding: 'async' }) : placeholder(s.name))); if (list.length > 1) dt.append(E('i', { class: i === 0 ? 'on' : '' })); });
   sc.addEventListener('scroll', () => { const i = Math.round(sc.scrollLeft / Math.max(sc.clientWidth, 1)); [...dt.children].forEach((d, j) => d.classList.toggle('on', i === j)); }, { passive: true });
   const step = (d) => (e) => { e.preventDefault(); sc.scrollBy({ left: d * sc.clientWidth, behavior: 'smooth' }); };
   const bm = E('button', { class: 'bm' + (on ? ' on' : ''), 'aria-label': 'Save', onclick: (e) => { e.preventDefault(); toggleWish(s.id); bm.classList.toggle('on', wish.includes(s.id)); } }, icon('mark'));

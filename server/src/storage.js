@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pool, withAuth } from './db.js';
 import { s3Enabled, s3Put, s3Get } from './s3.js';
+import { limiter } from './lib/limit.js';
 
 // Replaces Supabase Storage's 'site' bucket. Files live on disk under
 // ./uploads/site/<tenant-slug>/<prefix>/<file>, written here and served
@@ -13,6 +14,21 @@ import { s3Enabled, s3Put, s3Get } from './s3.js';
 // session -- never trusted from the client -- so there's no way to
 // write into another tenant's folder no matter what path is requested.
 const UPLOAD_ROOT = process.env.UPLOAD_ROOT || '/data/uploads';
+const resizeSlot = limiter(2); // at most two pictures are resized at once, so a burst of uploads cannot slow every other request
+
+// Small copies of an uploaded picture (480 and 900 px wide, WebP) written next to it as <name>.w480.webp / <name>.w900.webp.
+// Cards and lists load the small one; the full picture stays for the product page. Best effort: a failure here never fails the upload.
+export const THUMB_WIDTHS = [480, 900];
+export async function makeThumbs(file) {
+  try {
+    const sharp = (await import('sharp')).default;
+    const base = file.replace(/\.[a-z0-9]+$/i, '');
+    for (const w of THUMB_WIDTHS) {
+      await resizeSlot(() => sharp(file).rotate().resize({ width: w, withoutEnlargement: true }).webp({ quality: 74 }).toFile(`${base}.w${w}.webp`));
+    }
+    return true;
+  } catch { return false; }
+}
 
 function safeSegment(s) {
   return String(s).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60) || 'x';
@@ -61,6 +77,7 @@ export async function saveDocUpload({ tenantId, empId, buffer }) {
     const dir = path.join(DOC_ROOT, safeSegment(tenantId), safeSegment(empId));
     await fs.mkdir(dir, { recursive: true });
     await fs.writeFile(path.join(dir, filename), buffer);
+  makeThumbs(path.join(dir, filename)); // not awaited: the upload answers at once
   }
   return { path: `${safeSegment(tenantId)}/${safeSegment(empId)}/${filename}`, contentType: kind.type };
 }
