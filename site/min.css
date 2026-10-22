@@ -129,3 +129,35 @@ html body .prh-links a{font-size:10px;letter-spacing:.08em;text-transform:upperc
 @media(min-width:900px){html body .slab{padding:30px 34px!important}html body .slab h2.nm{font-size:26px!important}}
 html body{background-image:none!important}
 html body .card,html body [class*="wob"],html body .price-card,html body .feat{transform:none!important;rotate:none!important}
+
+/* ---- dense pass: no dead space, extreme minimal ---- */
+html body .section{padding:16px 0}html body .section.tight{padding:12px 0}
+html body .stack-panel,html body .stack-panel.alt,html body section.stack-panel{padding-top:14px!important;padding-bottom:14px!important}
+html body .doodle-arrow,html body .dot-texture,html body hr.dash,html body .doodle-empty{display:none!important}
+html body .home-hero{padding-top:18px!important;padding-bottom:6px!important}
+html body .home-hero h1.label{margin:0 0 6px}
+html body .home-hero .h-hero{margin:0 0 8px}
+html body .home-hero .lede{margin:0;max-width:34em}
+html body .hero-services{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:12px}
+html body .hero-services-label{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--m-mut);margin-right:4px}
+html body .hero-service{font-size:10px;padding:5px 12px;border-radius:14px;background:var(--m-card);box-shadow:var(--m-sh);color:var(--m-ink);opacity:1}
+html body .hero-service.is-primary{background:var(--m-ink);color:var(--m-card)}
+@media(min-width:900px){
+ html body .home-hero .wrap>div{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);column-gap:48px;align-items:center}
+ html body .home-hero .wrap>div>*{grid-column:1}
+ html body .home-hero .wrap>div>.hero-services{grid-column:2;grid-row:1/span 5;justify-content:flex-end;align-content:center;margin:0}
+ html body .h1,html body .h-hero{max-width:16em}
+ html body .grid-3,html body .bento{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+ html body main.content>section:not(.stack-panel)>.wrap,html body .wrap{max-width:1240px}
+}
+html body .reveal{opacity:1!important;transform:none!important}
+html body h2.h-1,html body .label+.h-1{margin-top:4px;margin-bottom:10px}
+html body .section>.wrap>.p,html body .section>.wrap>p{margin-top:0}
+html body .uk-accordion,html body details{margin:6px 0}
+html body .biz-pick{gap:10px}html body .biz-tab{padding:12px 14px;font-size:12px}
+html body .biz-card{padding:18px}
+html body main.content{padding-bottom:0}
+html body .content,html body main.content{margin-left:0!important;margin-right:0!important;width:100%!important;max-width:none!important;padding-left:0!important;padding-right:0!important}
+html body .shell{display:block!important}
+html body .home-hero .wrap,html body .hero .wrap{width:100%;max-width:1240px;padding-left:24px;padding-right:24px}
+@media(min-width:900px){html body .home-hero .wrap>div{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}html body .home-hero .wrap>div>*:not(.hero-services){max-width:38em}}
