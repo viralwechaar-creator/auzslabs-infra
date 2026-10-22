@@ -720,3 +720,12 @@ footer .col a,footer .col span{font-size:9.5px}
 @keyframes rfIn{from{opacity:0;transform:scale(.15)}to{opacity:1;transform:scale(1)}}
 @keyframes rfOut{to{opacity:0;transform:scale(.15)}}
 }
+
+/* Refine card on desktop: wide and short, two columns of filters, no scrolling */
+@media(min-width:900px){
+.sheetwrap.pop .sheet.refine{overflow:auto;display:block}
+.sheetwrap.pop .sheet.refine>div:nth-child(3){display:grid;grid-template-columns:1fr 1fr;column-gap:28px;align-items:start;overflow:visible}
+.sheetwrap.pop .sheet.refine .fgrp{padding:9px 0}
+.sheetwrap.pop .sheet.refine .rf{display:flex;align-items:center;gap:14px;border-top:1px solid var(--line);margin-top:6px}
+.sheetwrap.pop .sheet.refine .rf .btn{flex:1}
+}
