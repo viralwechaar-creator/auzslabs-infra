@@ -1006,3 +1006,15 @@ footer .col a,footer .col span{font-size:9.5px}
 
 /* intentional blank space in the product grid: just empty space, no card */
 .blank,.blank.ghost{background:transparent!important;box-shadow:none!important;border:0;opacity:1}
+
+/* category browser: a soft card with category tabs; the row below swipes by itself */
+.cb{background:var(--soft);border-radius:var(--r1);padding:10px 0 14px;margin-top:10px}
+.cb .hd{display:flex;justify-content:space-between;align-items:center;padding:2px 14px 8px}
+.cb .tabs{display:flex;gap:6px;overflow-x:auto;padding:0 14px 10px;scrollbar-width:none}
+.cb .tabs::-webkit-scrollbar,.cb .row::-webkit-scrollbar{display:none}
+.cb .tabs button{flex:none;height:28px;padding:0 13px;border-radius:14px;background:var(--card);color:var(--ink);font-size:10px;font-weight:600;border:1px solid var(--line);white-space:nowrap}
+.cb .tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.cb .row{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:0 14px;scroll-padding-left:14px}
+.cb .row .pc{flex:0 0 86%;scroll-snap-align:start}
+@media(min-width:700px){.cb .row .pc{flex-basis:calc(34% - 8px)}}
+@media(min-width:1100px){.cb .row .pc{flex-basis:calc(23% - 8px)}}
