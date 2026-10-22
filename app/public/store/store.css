@@ -921,3 +921,10 @@ footer .col a,footer .col span{font-size:9.5px}
   .tabs2 .tr{background:#f0f0f0;border-radius:16px 16px 0 0;padding:0 8px;margin:0;border-bottom:0}
   .tabs2 .tr button{font-size:12px;padding:12px 2px}
 }
+
+/* tabs card: one clean rounded card, no mismatched corners */
+.tabs2{background:#f0f0f0;border-radius:18px;overflow:hidden}
+.tabs2 .tr,.tabs2 .tb{background:transparent!important;border-radius:0!important}
+.tabs2 .tr{padding:0 10px;margin:0;border-bottom:1px solid rgba(0,0,0,.08)}
+.tabs2 .tr button{white-space:nowrap;font-size:11px;padding:13px 2px;margin-bottom:-1px}
+.tabs2 .tb{padding:12px 14px 14px}
