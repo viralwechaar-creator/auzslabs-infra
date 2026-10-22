@@ -11,55 +11,61 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;background:#4a4a4a;color:#fff;font-family:"Helvetica Neue",Helvetica,Arial,Inter,sans-serif;-webkit-text-size-adjust:100%}
+html,body{margin:0;background:#e9e7e4;color:#161616;font-family:Inter,-apple-system,"Helvetica Neue",Arial,sans-serif;-webkit-text-size-adjust:100%}
 .bar{display:flex;gap:10px;align-items:center;justify-content:center;padding:12px 16px;flex-wrap:wrap}
-.bar a,.bar button{font:600 14px Inter,Arial,sans-serif;padding:11px 18px;border-radius:999px;border:1.5px solid #fff;background:#000;color:#fff;cursor:pointer;text-decoration:none}
-.bar button.go{background:#fff;color:#000}
+.bar a,.bar button{font:600 14px Inter,Arial,sans-serif;padding:11px 18px;border-radius:999px;border:1.5px solid #161616;background:#fff;color:#161616;cursor:pointer;text-decoration:none}
+.bar button.go{background:#161616;color:#fff}
 #msg{max-width:520px;margin:60px auto;padding:0 20px;text-align:center;font-size:15px;line-height:1.6}
 #wrap{display:flex;justify-content:center;padding:max(24px, env(safe-area-inset-top) + 16px) 0 28px;overflow:hidden}
-/* one fixed A4 sheet (794 x 1123 CSS px), black, scaled to the screen width, real A4 when printed. flex-shrink:0 keeps the
-   sheet at its real width inside the flex container (a phone would otherwise squeeze it before the scale is applied) */
-.sheet{position:relative;width:794px;flex-shrink:0;height:1123px;background:#000;color:#fff;padding:38px 44px 26px;box-shadow:0 2px 24px rgba(0,0,0,.4);transform-origin:top left;display:flex;flex-direction:column;font-size:9.5px;line-height:1.3;font-weight:500;letter-spacing:-.1px;overflow:hidden}
-.brand{font-size:104px;line-height:.9;font-weight:700;letter-spacing:-5px;margin:0;white-space:nowrap}
-.meta{display:grid;grid-template-columns:200px 1fr auto;gap:0 26px;align-items:end;margin-top:54px;padding-bottom:12px}
-.meta .m{font-size:16px;line-height:1.12;font-weight:600;letter-spacing:-.3px}
-.h1{font-size:42px;line-height:.9;font-weight:700;letter-spacing:-2px;margin:0;text-transform:none}
-hr{border:0;border-top:1px solid #fff;margin:0}
-.to{display:grid;grid-template-columns:200px 1fr 1fr;gap:0 26px;padding:9px 0 12px;font-size:8.6px;line-height:1.35}
-.to .k{color:#9b9b9b}
-.table{margin-top:2px}
-.th,.line{display:grid;grid-template-columns:1fr 46px 86px 76px 104px;gap:8px;align-items:start}
-.th{padding:7px 0 5px;font-size:8px;color:#9b9b9b;letter-spacing:.3px}
-.line{padding:8px 0 3px;font-size:10.5px;line-height:1.2;font-weight:600}
-.line small{display:block;font-weight:500;color:#bdbdbd;font-size:8.6px;padding-left:34px;line-height:1.25}
+/* one fixed A4 sheet (794 x 1123 CSS px), scaled to the screen width, real A4 when printed -- bill and
+   terms both on the one page (owner explicitly asked to go back to this after trying the two-page split) */
+/* flex-shrink:0 matters here: #wrap is a flex container, and a flex item's declared width is only a
+   suggestion unless shrinking is disabled -- on a phone-width viewport the browser was quietly compressing
+   .sheet well below its real 794px (to ~435px seen on a 393px-wide screen), and the fit() scale transform
+   then shrank that ALREADY-wrong width again, which is what made the bill "open only half" and look cut off */
+.sheet{position:relative;width:794px;flex-shrink:0;min-height:1118px;background:#fff;padding:36px 46px 28px;box-shadow:0 2px 24px rgba(0,0,0,.14);transform-origin:top left;display:flex;flex-direction:column;font-size:11px;line-height:1.45}
+.row{display:flex;justify-content:space-between;align-items:flex-start;gap:30px}
+.h1{font-size:46px;line-height:1;font-weight:500;letter-spacing:-2px;margin:0}
+.no{font-size:12px;line-height:1.2;font-weight:500;letter-spacing:.2px;margin:2px 0 0;color:#555;white-space:nowrap}
+.hlogo{height:40px;width:auto;display:block}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:16px}
+.h2{font-size:17px;font-weight:500;letter-spacing:-.3px;margin:0 0 4px}
+.kv{display:grid;grid-template-columns:62px 1fr;gap:0 7px;font-size:8.6px;line-height:1.32}
+.kv span:nth-child(odd){color:#8a8a8a}
+.kv b{font-weight:500}
+.svc{margin-top:14px;position:relative}
+.svc-h{display:grid;grid-template-columns:1fr 44px 92px 92px;gap:8px;align-items:end;border-bottom:1.5px solid #161616;padding-bottom:6px}
+.svc-h .h2{margin:0;font-size:26px;letter-spacing:-1px;font-weight:500}
+.svc-h .c{font-size:15px;font-weight:500}
 .r{text-align:right}
-.mid{display:flex;justify-content:space-between;align-items:flex-end;margin-top:auto;padding-top:14px;position:relative}
-.ren{width:300px;font-size:8.4px}
-.ren .t{font-size:8.6px;font-weight:700;letter-spacing:.2px;margin-bottom:4px}
-.ren table{width:100%;border-collapse:collapse}
-.ren th{text-align:left;font-weight:500;color:#9b9b9b;font-size:7.6px;padding:2px 0;border-bottom:1px solid #444}
-.ren td{padding:3px 0;border-bottom:1px solid #2c2c2c;font-size:8.4px}
-.tots{width:326px;font-size:10px;line-height:1.28;font-weight:700;letter-spacing:-.1px}
-.tr{display:flex;justify-content:space-between;gap:12px}
-.tr.sp{margin-top:9px}
-.tr.big{font-size:12px;margin-top:6px}
-.words{font-size:8px;color:#bdbdbd;font-weight:500;margin-top:5px;text-align:right}
-.pay{display:grid;grid-template-columns:1fr 1.18fr;gap:0 24px;padding-top:14px;margin-top:18px;border-top:1px solid #fff;position:relative}
-.pay h2{margin:0;font-size:40px;line-height:.9;font-weight:700;letter-spacing:-2px;display:inline}
-.pay .ref{display:inline-block;vertical-align:top;margin-left:9px;font-size:7.6px;line-height:1.25;font-weight:600;max-width:150px}
-.pay .info{margin-top:11px;font-size:7.6px;line-height:1.45;font-weight:500}
-.pay .info b{font-weight:600}
-.pay .qrrow{display:flex;gap:12px;align-items:flex-end;margin-top:8px}
-.qr{background:#fff;padding:3px;width:76px;height:76px}.qr img{width:100%;height:100%;display:block}
-.pay .scan{font-size:7.6px;font-weight:700;letter-spacing:.2px;padding-bottom:2px}
-.terms{columns:2;column-gap:14px;font-size:5.9px;line-height:1.28;color:#e6e6e6;font-weight:500}
-.terms h4{margin:0;font-size:6px;color:#fff;font-weight:700;display:inline}
-.terms p{margin:0 0 2.5px;break-inside:avoid;display:block}
-.foot{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;border-top:1px solid #fff;margin-top:14px;padding-top:7px;font-size:6.6px;line-height:1.3;font-weight:600}
-.stamp{position:absolute;left:170px;bottom:150px;width:104px;height:104px;transform:rotate(-13deg);opacity:.85;pointer-events:none;color:#fff}
+.line{display:grid;grid-template-columns:1fr 44px 92px 92px;gap:8px;padding:5px 0;border-bottom:1px solid #ececec;font-size:10.5px}
+.line small{display:block;color:#8a8a8a;font-size:9px}
+.tots{margin-left:auto;width:290px;margin-top:8px}
+.tr{display:flex;justify-content:space-between;padding:1.5px 0;font-size:10px;color:#555}
+.tr b{color:#161616;font-weight:500}
+.tr.big{border-top:1.5px solid #161616;margin-top:5px;padding-top:7px;font-size:20px;color:#161616;letter-spacing:-.4px}
+.tr.big b{font-weight:600}
+.words{font-size:9.5px;color:#555;text-align:right;margin-top:3px}
+.ren{margin-top:8px}
+.ren table{width:100%;border-collapse:collapse;font-size:10px;margin-top:4px}
+.ren th{text-align:left;font-weight:500;color:#8a8a8a;font-size:9px;padding:3px 0;border-bottom:1px solid #ddd}
+.ren td{padding:3px 0;border-bottom:1px solid #f0f0f0}
+.terms{margin-top:6px;columns:2;column-gap:24px;font-size:7.3px;line-height:1.3;color:#444}
+.terms h4{margin:0 0 1px;font-size:7.9px;color:#161616;font-weight:600;break-after:avoid}
+.terms p{margin:0 0 3.5px;break-inside:avoid}
+.foot{margin-top:auto;padding-top:12px;display:flex;justify-content:space-between;align-items:flex-end;position:relative}
+.mark{display:flex;align-items:flex-end;gap:8px}
+.mark img{height:40px;width:auto}
+.mark small{font-size:8.5px;color:#8a8a8a;padding-bottom:3px}
+.sign{width:240px;text-align:center;font-size:9.5px;color:#555}
+.sign .line2{border-top:1px solid #161616;margin-top:30px;padding-top:4px}
+/* sits in the blank space to the left of .tots (which is right-aligned, width:290px, inside .svc's
+   702px content width -- its own left edge lands around x:412px) -- left:140px keeps a clear ~270px gap
+   from .tots on one side and the page margin on the other, so it never touches a number */
+.stamp{position:absolute;left:140px;bottom:28px;width:118px;height:118px;transform:rotate(-13deg);opacity:.88;pointer-events:none;color:#800020}
 @page{size:A4;margin:0}
 @media print{
-  html,body{background:#000}
+  html,body{background:#fff}
   .bar{display:none!important}
   #printHint{display:none!important}
   #wrap{padding:0;display:block}
@@ -74,7 +80,6 @@ hr{border:0;border-top:1px solid #fff;margin:0}
 <div id="wrap" hidden><div class="sheet" id="sheet"></div></div>
 <div class="bar" id="bar" hidden><button class="go" id="printBtn" type="button">Print or save as PDF</button><a href="#" id="backLink">Back to payment page</a></div>
 <p id="printHint" hidden style="max-width:420px;margin:0 auto 20px;padding:0 20px;text-align:center;font-size:12.5px;color:#8a8a8a;line-height:1.5">If the button above doesn't open a Print/Save box, this page may be opened inside WhatsApp's own browser. Tap the <b>⋯</b> or <b>Share</b> icon at the top or bottom of this screen, choose <b>Open in Safari/Chrome</b>, then try again.</p>
-<script src="vendor/qrcode.js"></script>
 <script src="company.js?v=104"></script>
 <script src="orderterms.js?v=103"></script>
 <script>
@@ -104,66 +109,46 @@ function stampSvg(dateTxt) {
   <text font-family="Inter,Arial,sans-serif" font-size="15" font-weight="700" letter-spacing="5" fill="currentColor" text-anchor="middle"><textPath href="#cpt" startOffset="50%">AUZSLAB</textPath></text>
   <text font-family="Inter,Arial,sans-serif" font-size="8.6" font-weight="600" letter-spacing="1.6" fill="currentColor" text-anchor="middle"><textPath href="#cpb" startOffset="50%">IDEAS | PRODUCTS | SOLUTIONS</textPath></text>
   <text x="100" y="78" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="800" letter-spacing="3" fill="currentColor">PAID</text>
-  <image href="logo.png" x="56" y="87" width="88" height="32" style="filter:invert(1)" preserveAspectRatio="xMidYMid meet"/>
+  <image href="logo.png" x="56" y="87" width="88" height="32" filter="url(#wine)" preserveAspectRatio="xMidYMid meet"/>
   <text x="100" y="138" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="9.5" font-weight="600" fill="currentColor">${esc(dateTxt)}</text></svg>`;
 }
 
 function build(D) {
   const t = D.totals || {}, lines = t.lines || [], st = (O.states || {})[D.state_code] || '';
   const prods = lines.filter((l) => l.type === 'product');
-  const U = (x) => esc(String(x == null ? '' : x).toUpperCase());
-  const co = esc(CO.legalName || 'AUZslab'), shortName = U((CO.name || 'AUZslab'));
-  const bank = (O.bank && O.bank.account) ? `<div>[BANK TRANSFER]</div><div style="margin-top:5px">[${U(O.bank.holder)}]<br>BANK: ${esc(O.bank.bank)}<br>ACC NO. ${esc(O.bank.account)}<br>IFSC: ${esc(O.bank.ifsc)}</div>` : '';
-  const svcRows = lines.map((l) => {
-    const sub = l.type === 'product' ? (l.plan === 'year' ? 'Yearly plan' : 'Monthly plan') + (l.renewal ? ' · renews ' + dmy(l.renewal) : '') + ' · SAC ' + O.sac.product : (l.type === 'setup' || l.type === 'onboarding' ? 'SAC ' + O.sac.setup : '');
-    const extra = (l.gst ? 'GST ' + l.gst + '%' : '') + (l.discount > 0 ? ' · discount ' + money(l.discount) : '');
-    const subs = [sub, extra].filter(Boolean).join(' · ');
-    return `<div class="line"><div>${esc(l.label)}${subs ? `<small>${esc(subs)}</small>` : ''}</div><div class="r">${esc(l.qty || 1)}</div><div class="r">${esc(money(l.rate != null ? l.rate : l.net))}</div><div class="r">${esc(money(l.discount || 0))}</div><div class="r">${esc(money(l.net))}</div></div>`;
-  }).join('');
-  const renRows = prods.map((l) => `<tr><td>${esc(l.label)}</td><td>${l.plan === 'year' ? 'Yearly' : 'Monthly'}</td><td>${esc(dmy(l.renewal))}</td><td class="r">${esc(money(l.net + l.gst_amt))}</td></tr>`).join('');
-  const subject = prods.length ? prods.map((l) => l.label).slice(0, 3).join(', ') : 'Services';
+  const bankTxt = (O.bank && O.bank.account) ? `<span>Bank</span><b>${esc(O.bank.bank)}</b><span>Account</span><b>${esc(O.bank.holder)} · ${esc(O.bank.account)}</b><span>IFSC</span><b>${esc(O.bank.ifsc)}</b>` : '';
+  const svcRows = lines.map((l) => `<div class="line"><div>${esc(l.label)}<small>${l.type === 'product' ? (l.plan === 'year' ? 'Yearly plan' : 'Monthly plan') + (l.renewal ? ' · renews ' + esc(dmy(l.renewal)) : '') + ' · SAC ' + esc(O.sac.product) : (l.type === 'setup' || l.type === 'onboarding' ? 'SAC ' + esc(O.sac.setup) : '')}${l.gst ? ' · GST ' + l.gst + '%' : ''}${l.discount > 0 ? ' · discount ' + esc(money(l.discount)) : ''}</small></div><div class="r">1</div><div class="r">${esc(money(l.rate))}</div><div class="r">${esc(money(l.net))}</div></div>`).join('');
+  const renRows = prods.map((l) => `<tr><td>${esc(l.label)}</td><td>${l.plan === 'year' ? 'Yearly' : 'Monthly'}</td><td>${esc(longDate(l.renewal))}</td><td class="r">${esc(money(l.net + l.gst_amt))} ${l.plan === 'year' ? 'per year' : 'per month'}</td></tr>`).join('');
+  const fromAddr = esc(CO.address || ''), co = esc(CO.legalName || 'AUZslab');
   return `
-  <h1 class="brand" aria-label="${co}">[${shortName}]</h1>
-  <div class="meta">
-    <div class="m">[${U(longDate(D.invoice_date))}]<br>[${U(D.business_name || 'Client')}]</div>
-    <div class="m">[${esc(D.invoice_no || '')}]<br>[${U(subject)}]</div>
-    <h2 class="h1">INVOICE</h2>
+  <div class="row"><div><h1 class="h1">Invoice</h1><div class="no">${esc(D.invoice_no || '')}</div></div><img class="hlogo" src="logo.png" alt="AUZslab"></div>
+  <div class="cols">
+    <div><h2 class="h2">From</h2><div class="kv"><span>Name</span><b>${co}</b><span>GSTIN</span><b>${esc(CO.gstin || '')}</b><span>Address</span><b>${fromAddr}</b><span>Phone</span><b>${esc(CO.phone || '')}</b><span>Email</span><b>${esc(CO.grievanceEmail || '')}</b></div></div>
+    <div><h2 class="h2">To</h2><div class="kv"><span>Name</span><b>${esc(D.business_name || '')}</b>${D.contact_name ? `<span>Contact</span><b>${esc(D.contact_name)}</b>` : ''}${D.gstin ? `<span>GSTIN</span><b>${esc(D.gstin)}</b>` : '<span>GSTIN</span><b>Unregistered</b>'}${D.address ? `<span>Address</span><b>${esc(D.address)}</b>` : ''}${st ? `<span>State</span><b>${esc(st)} (${esc(D.state_code)})</b>` : ''}<span>Phone</span><b>${esc(D.phone || '')}</b>${D.email ? `<span>Email</span><b>${esc(D.email)}</b>` : ''}</div></div>
   </div>
-  <hr>
-  <div class="to">
-    <div><span class="k">[BILLED TO]</span><br>${esc(D.contact_name || '')}${D.address ? '<br>' + esc(D.address) : ''}</div>
-    <div><span class="k">[GSTIN]</span><br>${D.gstin ? esc(D.gstin) : 'Unregistered'}<br><span class="k">[STATE]</span> ${st ? esc(st) + ' (' + esc(D.state_code) + ')' : '—'}</div>
-    <div><span class="k">[SUPPLY]</span><br>${t.intra ? 'Within Rajasthan (CGST + SGST)' : 'Inter-state (IGST)'}<br><span class="k">[REVERSE CHARGE]</span> No</div>
+  <div class="cols" style="margin-top:10px">
+    <div><h2 class="h2">Payment</h2><div class="kv"><span>Status</span><b>Paid in full</b><span>Mode</span><b>UPI</b>${D.payment && D.payment.utr ? `<span>UTR</span><b>${esc(D.payment.utr)}</b>` : ''}<span>Pay to</span><b>${esc((O.upi || {}).id || '')}</b>${bankTxt}</div></div>
+    <div><h2 class="h2">Date</h2><div class="kv"><span>Invoice</span><b>${esc(longDate(D.invoice_date))}</b><span>Paid on</span><b>${esc(longDate(D.paid_at))}</b><span>Supply</span><b>${t.intra ? 'Within Rajasthan (CGST + SGST)' : 'Inter-state (IGST)'}</b><span>Reverse chg.</span><b>No</b></div></div>
   </div>
-  <hr>
-  <div class="table"><div class="th"><div>SERVICES</div><div class="r">QTY</div><div class="r">PRICE</div><div class="r">DISCOUNT</div><div class="r">TOTAL</div></div>${svcRows}</div>
-  <div class="mid">
-    <div class="ren"><div class="t">RENEWAL</div><table><tr><th>PRODUCT</th><th>PLAN</th><th>RENEWS ON</th><th class="r">AMOUNT (INCL. GST)</th></tr>${renRows}</table></div>
-    <div class="stamp">${stampSvg(dmy(D.paid_at || D.invoice_date))}</div>
+  <div class="svc">
+    <div class="svc-h"><h2 class="h2">Services</h2><div class="c r">Qty</div><div class="c r">Price</div><div class="c r">Total</div></div>
+    ${svcRows}
     <div class="tots">
-      <div class="tr"><span>SUB TOTAL:</span><span>${esc(money(t.subtotal))}</span></div>
-      ${t.discount > 0 ? `<div class="tr"><span>DISCOUNT:</span><span>−${esc(money(t.discount))}</span></div>` : ''}
-      <div class="tr"><span>TAXABLE VALUE:</span><span>${esc(money(t.taxable))}</span></div>
-      ${t.intra ? `<div class="tr"><span>CGST:</span><span>${esc(money(t.cgst))}</span></div><div class="tr"><span>SGST:</span><span>${esc(money(t.sgst))}</span></div>` : `<div class="tr"><span>IGST:</span><span>${esc(money(t.igst))}</span></div>`}
-      ${t.round ? `<div class="tr"><span>ROUND OFF:</span><span>${t.round > 0 ? '+' : ''}${esc(money(t.round))}</span></div>` : ''}
-      <div class="tr big"><span>TOTAL:</span><span>${esc(money(t.total))}</span></div>
-      <div class="tr sp"><span>BALANCE DUE (INR) :</span><span>${esc(money(0))}</span></div>
+      <div class="tr"><span>Subtotal</span><b>${esc(money(t.subtotal))}</b></div>
+      ${t.discount > 0 ? `<div class="tr"><span>Discount</span><b>−${esc(money(t.discount))}</b></div>` : ''}
+      <div class="tr"><span>Taxable value</span><b>${esc(money(t.taxable))}</b></div>
+      ${t.intra ? `<div class="tr"><span>CGST</span><b>${esc(money(t.cgst))}</b></div><div class="tr"><span>SGST</span><b>${esc(money(t.sgst))}</b></div>` : `<div class="tr"><span>IGST</span><b>${esc(money(t.igst))}</b></div>`}
+      ${t.round ? `<div class="tr"><span>Round off</span><b>${t.round > 0 ? '+' : ''}${esc(money(t.round))}</b></div>` : ''}
+      <div class="tr big"><span>Total</span><b>${esc(money(t.total))}</b></div>
       <div class="words">${esc(words(Number(t.total || 0)))}</div>
     </div>
+    <div class="stamp">${stampSvg(dmy(D.paid_at || D.invoice_date))}</div>
   </div>
-  <div class="pay">
-    <div>
-      <h2>PAYMENT</h2><span class="ref">[INV NO. ${esc(D.invoice_no || '')}]<br>[REF: ${esc((D.payment && D.payment.utr) || '-')}]</span>
-      <div class="info"><div>[PAID IN FULL${D.paid_at ? ' ON ' + esc(dmy(D.paid_at)) : ''}]</div><div style="margin-top:5px">[UPI: ${esc((O.upi || {}).id || '')}]</div><div style="margin-top:5px">${bank}</div></div>
-      <div class="qrrow"><div class="qr" id="qrbox"></div><div class="scan">SCAN QR TO<br>VIEW THIS BILL</div></div>
-    </div>
-    <div class="terms"><b style="font-size:6.2px">TERMS &amp; CONDITIONS:</b>${O.terms.map(([h, p], i) => `<p>${i + 1}. <b>${esc(h)}.</b> ${esc(p)}</p>`).join('')}</div>
-  </div>
+  <div class="ren"><h2 class="h2" style="font-size:15px">Renewal</h2><table><tr><th>Product</th><th>Plan</th><th>Renews on</th><th class="r">Renewal amount (incl. GST)</th></tr>${renRows}</table></div>
+  <div class="terms">${O.terms.map(([h, p]) => `<h4>${esc(h)}</h4><p>${esc(p)}</p>`).join('')}</div>
   <div class="foot">
-    <div>[FROM]<br>[${co}]<br>For ${co}: Authorised signatory</div>
-    <div>${esc(CO.address || '')}</div>
-    <div>[GSTIN: ${esc(CO.gstin || '')}]</div>
-    <div>[${esc(CO.grievanceEmail || '')}]<br>[${esc(CO.phone || '')}]</div>
+    <div class="mark"><small>Business software built around the way you work</small></div>
+    <div class="sign"><div class="line2">For ${co}<br>Authorised signatory</div></div>
   </div>`;
 }
 
@@ -180,7 +165,6 @@ function fit() {
   try { const r = await fetch(CFG.url + '/rpc/public_client_order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ p_token: TOKEN }) }); const j = await r.json(); D = j && (j.data !== undefined ? j.data : j); } catch (e) {}
   if (!D || D.status !== 'paid' || !D.invoice_no) { msg.textContent = D ? 'Your bill is ready once we confirm your payment. Please check again soon.' : 'We could not find this bill. Please check the link we sent you.'; return; }
   document.getElementById('sheet').innerHTML = build(D);
-  try { const qb = document.getElementById('qrbox'); if (qb && window.qrcode) { const q = qrcode(0, 'M'); q.addData(location.href); q.make(); qb.innerHTML = q.createImgTag(4, 0); } } catch (e) { /* no QR */ }
   msg.hidden = true; document.getElementById('wrap').hidden = false; document.getElementById('bar').hidden = false;
   document.title = 'Invoice ' + D.invoice_no + ' — AUZslab';
   document.getElementById('backLink').href = 'pay.html?t=' + encodeURIComponent(TOKEN);

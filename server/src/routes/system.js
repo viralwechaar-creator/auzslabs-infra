@@ -25,7 +25,7 @@ async function iconBuf(tenant, size) {
 // part of the page it receives: the same picture linked by web address, or put in by script afterwards, showed a
 // grey letter tile.
 const APP_ROOT = process.env.APP_ROOT || '/srv/app';
-const ICON_PAGES = new Set(['/site-kiln.html', '/site.html', '/index.html']);
+const ICON_PAGES = new Set(['/site-kiln.html', '/site.html', '/index.html', '/store.html']);
 
 // Returns false when none of this module's routes matched, so the dispatcher in index.js tries the next module;
 // any other return (including the undefined that `return reply(...)` gives) means the request was handled.
