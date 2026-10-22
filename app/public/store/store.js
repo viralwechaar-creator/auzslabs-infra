@@ -626,7 +626,11 @@ function afterSale(o, tok, v) {
       wrap.append(box);
     });
   }
-  if (o.returns && o.returns.length) wrap.append(E('h2', { style: { marginTop: '10px' } }, 'Return / exchange'), o.returns.map((r) => E('div', { class: 'note', style: { marginTop: '6px' } }, cap(r.kind) + ': ' + cap(r.status) + (r.staffNote ? ' · ' + r.staffNote : ''))));
+  if (o.returns && o.returns.length) {
+    const addr = o.shop && o.shop.address ? o.shop.address : '';
+    const RMSG = { requested: 'We have your request and will reply here soon.', approved: 'Approved. Please send the item back' + (addr ? ' to ' + addr : '') + ', with the tags intact and your order number ' + o.number + ' on the parcel.', rejected: 'We could not approve this request.', received: 'We received your parcel and are checking it.', refunded: 'All done: your refund or exchange is complete.' };
+    wrap.append(E('h2', { style: { marginTop: '10px' } }, 'Return / exchange'), ...o.returns.map((r) => E('div', { class: 'note', style: { marginTop: '6px' } }, E('b', null, cap(r.kind) + ': ' + cap(r.status)), E('div', null, RMSG[r.status] || ''), r.staffNote ? E('div', { class: 'mut' }, r.staffNote) : null)));
+  }
   if (o.canReturn) {
     const kind = { v: 'return' }; const reason = E('input', { placeholder: 'Reason (size, fit, damaged...)', 'aria-label': 'Reason' }); const m = E('div', { class: 'tiny', style: { color: '#c0392b', minHeight: '14px' } });
     const kb = E('div', { class: 'fwrap' }); const kp = () => { clear(kb); ['return', 'exchange'].forEach((k) => kb.append(E('button', { type: 'button', class: 'sz' + (kind.v === k ? ' on' : ''), onclick: () => { kind.v = k; kp(); } }, cap(k)))); }; kp();
@@ -657,7 +661,7 @@ V.order = async (v, tok) => {
     E('div', { style: { marginTop: '12px' } }, (o.lines || []).map((l) => E('div', { class: 'ln' }, E('div', { class: 'im' }, l.photo ? E('img', { src: l.photo, alt: '' }) : placeholder(l.name)), E('div', null, E('div', { class: 't' }, l.name), E('div', { class: 's' }, [l.colour, l.size].filter(Boolean).join(' · ') + ' × ' + l.qty)), E('div', null, inr(l.price * l.qty))))),
     E('div', { class: 'sum', style: { marginTop: '10px' } }, E('div', { class: 't' }, E('span', null, 'Shipping'), E('span', null, o.shipping ? inr(o.shipping) : 'Free')), +o.discount ? E('div', { class: 't', style: { color: '#1a7f3c' } }, E('span', null, 'Coupon' + (o.coupon ? ' ' + o.coupon : '')), E('span', null, '– ' + inr(o.discount))) : null, E('div', { class: 't g' }, E('span', null, 'Total'), E('span', null, inr(o.total)))),
     trackBox(o),
-    E('div', { class: 'mut tiny', style: { marginTop: '10px' } }, 'Save this page to follow your order. Questions? ', E('a', { href: link('contact'), style: { textDecoration: 'underline' } }, 'Contact us'))), pbox, o.status === 'delivered' ? afterSale(o, tok, v) : null, E('a', { class: 'btn out', href: link('shop'), style: { justifySelf: 'center' } }, 'Keep shopping')));
+    E('div', { class: 'mut tiny', style: { marginTop: '10px' } }, 'Save this page to follow your order. Questions? ', E('a', { href: link('contact'), style: { textDecoration: 'underline' } }, 'Contact us'))), pbox, o.billUrl ? E('div', { class: 'note', style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' } }, E('div', null, E('b', null, 'Invoice'), E('div', { class: 'mut tiny' }, o.billNo ? 'Bill ' + o.billNo : 'Ready')), E('a', { class: 'btn sm', href: o.billUrl, target: '_blank', rel: 'noopener' }, 'View invoice')) : null, o.status === 'delivered' ? afterSale(o, tok, v) : null, E('a', { class: 'btn out', href: link('shop'), style: { justifySelf: 'center' } }, 'Keep shopping')));
   if (!['delivered', 'cancelled'].includes(o.status)) { const last = o.status + '|' + o.paymentStatus; v._ot = setInterval(async () => { if (!document.body.contains(v) || !location.hash.includes(tok)) return clearInterval(v._ot); let n = null; try { n = await rpc('public_sty_order', { p_token: tok }); } catch { return; } if (n && n.status + '|' + n.paymentStatus !== last) { clearInterval(v._ot); const y = scrollY; await V.order(v, tok); scrollTo(0, y); toast('Order update: ' + cap(n.status)); } }, 12000); }
 };
 
