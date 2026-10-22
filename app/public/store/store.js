@@ -826,7 +826,7 @@ function route() {
   if (id === 'checkout') TR.push('checkout', null, { step: 'start' });
 }
 const heroEnd = () => { const h = document.querySelector('.hero'); return h ? h.offsetHeight - 70 : window.innerHeight * 0.9; };
-const navState = () => { document.body.classList.toggle('atop', window.scrollY < 40); document.body.classList.toggle('pasthero', window.scrollY > heroEnd()); };
+const navState = () => { document.body.classList.toggle('atop', window.scrollY < 40); document.body.classList.toggle('pasthero', window.scrollY > heroEnd()); const dp = Math.max(0, Math.min(1, (window.scrollY - (heroEnd() - 260)) / 220)); document.documentElement.style.setProperty('--dp', dp.toFixed(3)); document.body.classList.toggle('dockon', dp > 0.6); };
 window.addEventListener('scroll', navState, { passive: true }); window.addEventListener('hashchange', () => setTimeout(navState, 50));
 function ingest(d) {
   shopIcon(d);

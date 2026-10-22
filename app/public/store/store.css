@@ -999,7 +999,6 @@ footer .col a,footer .col span{font-size:9.5px}
 /* home page, PHONES ONLY: the top bar stays hidden over the hero and slides in once you scroll past it (desktop keeps its bar as before) */
 .top{transition:transform .35s cubic-bezier(.2,.7,.2,1),background .25s}
 @media(max-width:899px){
-  body.homehero:not(.pasthero) .top{transform:translateY(-110%);pointer-events:none}
   body.homehero.pasthero .top{background:rgba(239,238,237,.92)!important;color:#000}
   body.homehero.pasthero .top,body.homehero.pasthero .top .l a,body.homehero.pasthero .top .ic,body.homehero.pasthero .brand{color:#000!important;text-shadow:none!important}
 }
@@ -1010,3 +1009,10 @@ footer .col a,footer .col span{font-size:9.5px}
 body.homehero .hero,.hero{border-radius:0!important;border:0!important;box-shadow:none!important}
 body.homehero .hero{width:100vw!important;margin:calc(-1 * var(--hh) - 6px) 0 0 calc(50% - 50vw)!important;height:100svh!important;min-height:520px!important;max-height:none!important}
 body.homehero main{padding-top:0}
+
+/* home page: no announcement strip above the hero; phones: header always shown, bottom dock rises in as you scroll past the hero */
+body.homehero .announce{display:none}
+@media(max-width:899px){
+  body.homehero .dock{transform:translateX(-50%) translateY(calc((1 - var(--dp,0)) * 150%));opacity:var(--dp,0);pointer-events:none;transition:none;will-change:transform,opacity}
+  body.homehero.dockon .dock{pointer-events:auto}
+}
