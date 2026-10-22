@@ -528,6 +528,7 @@ export const RPC = {
   fin_save_txn: { params: ['p'], jsonb: ['p'], auth: true },
   fin_mark_txn: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
   fin_reverse_txn: { params: ['p_id', 'p_reason'], auth: true },
+  fin_save_category: { params: ['p'], auth: true },
   fin_profile_get: { params: [], auth: true },
   fin_profile_save: { params: ['p'], auth: true },
   fin_set_lock_date: { params: ['p_date'], auth: true },

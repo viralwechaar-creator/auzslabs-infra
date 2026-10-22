@@ -283,6 +283,17 @@ export default async function run({ browser, stack }) {
     const other = await fetch(stack.apiBase + j1.url, { headers: { Authorization: 'Bearer ' + cafe } }); assert(other.status >= 400, 'other business must be refused');
     await fetch(stack.apiBase + '/storage/fin', { method: 'POST', headers: { 'content-type': 'application/octet-stream' }, body: big }).then((r) => assert(r.status === 401, 'anon'));
   });
+  await s.check('A new expense category can be created, is reused by name, appears in the list and can be used on an entry; staff cannot', async () => {
+    const c = await ok(owner, 'fin_save_category', { p: { name: 'Packaging', kind: 'expense' } });
+    const again = await ok(owner, 'fin_save_category', { p: { name: ' packaging ', kind: 'expense' } }); assert(again.id === c.id, 'same name reused');
+    const inc = await ok(owner, 'fin_save_category', { p: { name: 'Consulting fees', kind: 'income' } });
+    const ctx2 = await ok(owner, 'fin_bootstrap'); assert(ctx2.categories.expense.some((x) => x.id === c.id) && ctx2.categories.income.some((x) => x.id === inc.id), 'listed');
+    const e = await ok(owner, 'fin_save_txn', { p: { op: uid(), kind: 'expense', amount: 77, account_id: cash, category_id: c.id } });
+    assert((await ok(owner, 'fin_txn_list', { p: { limit: 50 } })).find((x) => x.id === e.id).category === 'Packaging', 'used');
+    await fails(owner, 'fin_save_category', { p: { name: '  ' } }, /name/i);
+    await fails(staff, 'fin_save_category', { p: { name: 'Nope' } }, /does not allow/i);
+    await integrity();
+  });
   await s.check('Live demo: the shared demo business has AUZsFinance with sample entries, opens in the app, and the demo page links to it', async () => {
     const demo = (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'demo@auzslab.in', password: 'Auzslab@Demo' }) })).json()).access_token;
     assert(demo, 'demo login');
