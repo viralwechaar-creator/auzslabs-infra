@@ -98,6 +98,7 @@ export const RPC = {
   mark_client_delivered: { params: ['p_tenant_id'], auth: true },
   delete_client: { params: ['p_tenant_id'], auth: true },
   admin_system_stats: { params: [], auth: true },
+  admin_load_report: { params: [], auth: true },
 
   // --- Admin: Users directory + audit log (db/087) ---
   admin_list_users: { params: ['p_query', 'p_limit'], defaults: { p_query: null, p_limit: 50 }, auth: true },
