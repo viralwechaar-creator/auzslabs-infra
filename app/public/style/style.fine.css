@@ -382,3 +382,13 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .tagprev{display:flex;justify-content:center;padding:14px;background:var(--soft,#f3f3f2);border-radius:14px}.tagprev .tagbox{box-shadow:0 1px 8px rgba(0,0,0,.12);transform:scale(1.5);transform-origin:center;margin:14px 0}
 .tagprev .tag-g,.tagprev .tag-l{page-break-after:auto;break-after:auto}.tagprev .tag-l{width:50mm;height:25mm;display:grid;justify-items:center;align-content:center;text-align:center;font-family:Arial,sans-serif;background:#fff}
 .tagtotal{opacity:.8}
+
+/* GenX tag, tighter: the barcode takes all the free height, every line sits snug */
+.tag-g{padding:1.5mm 2.2mm 1.3mm;column-gap:1.5mm;grid-template-rows:auto auto auto minmax(0,1fr) auto}
+.tag-g .tg-b{font-size:5pt;letter-spacing:.38em;font-weight:600;line-height:1;margin-top:.2mm}
+.tag-g .tg-sz{font-size:14pt;font-weight:300;line-height:.9;grid-row:1/4}
+.tag-g .tg-nm{font-size:6.6pt;font-weight:600;line-height:1.05;margin-top:.9mm;max-height:2.1em}
+.tag-g .tg-cl{grid-column:1;font-size:4.8pt;letter-spacing:.14em;margin-top:.3mm;line-height:1}
+.tag-g .tg-bc{margin-top:.9mm;align-self:stretch;min-height:0}.tag-g .tg-bc svg{height:100%;min-height:6mm}
+.tag-g .tg-ft{margin-top:.7mm;font-size:4.6pt;letter-spacing:.16em;line-height:1}
+.tag-g .tg-pr b{font-size:9.5pt;line-height:.9}
