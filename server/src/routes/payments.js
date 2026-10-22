@@ -61,6 +61,32 @@ export async function handle(ctx) {
       .catch((e) => { throw new HttpError(400, e.message || 'could not verify payment'); });
     return reply(200, rows[0].r);
   }
+  // AUZsStyle: refunding a received return/exchange that was paid online, through the SHOP'S OWN Razorpay
+  // account (db/248) -- a real refund, not just a status change. One route doing two things in order:
+  // sty_refund_prepare validates (received stage, paid-online order, amount, the shop's own keys) WITHOUT
+  // changing anything yet, then the real Razorpay refund call happens, and only once Razorpay has actually
+  // confirmed it does this call sty_web_return_set to move the request to 'refunded' -- the exact same
+  // function every other status change already goes through, so the stage graph and sty_manage gate apply
+  // here exactly as everywhere else; this route never writes the status itself. Owner/manager only:
+  // withAuth(user.id, ...) is what lets sty_guard('sty_manage') inside the SQL see the real caller.
+  if (url.pathname === '/payments/sty/refund/start' && req.method === 'POST') {
+    if (!user) throw new HttpError(401, 'authentication required');
+    if (rateLimited(`styrzpr:${ip}`, 15, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+    const { returnId, amount } = await readJsonBody(req);
+    const prep = await withAuth(user.id, (client) => client.query('select sty_refund_prepare($1, $2) as r', [String(returnId || ''), Number(amount) || null]))
+      .catch((e) => { throw new HttpError(400, e.message || 'could not start the refund'); });
+    const k = prep.rows[0].r;
+    const res = await fetch(`${process.env.RAZORPAY_API_URL || 'https://api.razorpay.com/v1'}/payments/${encodeURIComponent(k.paymentId)}/refund`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: 'Basic ' + Buffer.from(`${k.key}:${k.secret}`).toString('base64') },
+      body: JSON.stringify({ amount: Math.round(Number(k.amount) * 100) }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || !body.id) throw new HttpError(400, (body && body.error && body.error.description) || 'Razorpay could not process this refund. Nothing was changed -- try again or refund it from the Razorpay dashboard directly.');
+    await withAuth(user.id, (client) => client.query('select sty_web_return_set($1, $2) as r', [String(returnId), JSON.stringify({ status: 'refunded', refundAmount: k.amount, rzpRefundId: body.id })]))
+      .catch((e) => { throw new HttpError(400, 'Razorpay refunded ' + k.amount + ' (refund id ' + body.id + ') but the request could not be marked refunded here: ' + (e.message || 'unknown error') + '. The money has already moved -- fix the record by hand.'); });
+    return reply(200, { ok: true, rzpRefundId: body.id, amount: k.amount });
+  }
   // ---- Renewals and auto-renewal (db/201): provider-agnostic front door for the apps' "Plan & account" sheet.
   // Razorpay Subscriptions when Razorpay is configured, else the older Cashfree code. Owner-only, gated in the SQL/route. ----
   if (url.pathname === '/payments/autorenew/config' && req.method === 'GET') {

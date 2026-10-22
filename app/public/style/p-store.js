@@ -136,6 +136,27 @@ async function editor(host) {
 }
 
 
+// A received return/exchange whose order was paid online (r.rzpPaid, db/248) is refunded through the
+// shop's own Razorpay account for real, not just a status change -- sb.styRefund.start() calls the
+// server (server/src/routes/payments.js /payments/sty/refund/start), which validates everything again
+// itself, calls Razorpay with the shop's own keys, and only then moves the request to 'refunded'
+// (sty_web_return_set) -- so nothing here needs to trust the amount typed in beyond what the server
+// re-checks. `onDone` repaints the returns list once the sheet closes on success.
+function styRazorpayRefundSheet(r, onDone) {
+  const amt = input({ type: 'number', inputmode: 'decimal', value: r.total, placeholder: t('Amount') });
+  const s = sheet({ title: t('Refund via Razorpay'), closeLabel: t('Cancel'), body: h('div', { class: 'grid' },
+    h('div', { class: 'muted small' }, r.number + ' · ' + r.customer.name),
+    h('div', { class: 'muted small' }, t('This sends the money back to the customer through your own Razorpay account.')),
+    field(t('Amount') + ' (' + t('up to') + ' ₹' + r.total + ')', amt)),
+    actions: [{ label: t('Refund'), primary: true, onclick: async (close) => {
+      const n = Number(amt.value);
+      if (!(n > 0) || n > r.total) { toast(t('Enter an amount up to') + ' ₹' + r.total); return false; }
+      try { await sb.styRefund.start(r.id, n); toast(t('Refunded')); close(); onDone(); }
+      catch (e) { fail(e); return false; }
+    } }] });
+  return s;
+}
+
 // ---- offers and reviews: coupons, returns requested from the website, reviews from real buyers ----
 async function extras(host) {
   const box = h('div', { class: 'grid' }); host.append(box);
@@ -144,16 +165,27 @@ async function extras(host) {
     let cps = [], rets = [], revs = [];
     try { [cps, rets, revs] = await Promise.all([api('sty_coupons_list'), api('sty_web_returns_list'), api('sty_reviews_list')]); } catch (e) { return box.append(empty('cloudOff', t('Could not load'), e.message)); }
     // A request only ever moves forward one step at a time -- requested -> approved/rejected -> received ->
-    // refunded -- and the server (sty_web_return_set, db/247) refuses any other move or a change to an
+    // refunded -- and the server (sty_web_return_set, db/248) refuses any other move or a change to an
     // already-decided request outright. The buttons here only ever offer the real next step(s), matching
     // the server exactly, instead of letting someone pick any of the 5 statuses at any time.
     const RETURN_NEXT = { requested: [['approved', t('Approve')], ['rejected', t('Reject')]], approved: [['received', t('Mark received')]], received: [['refunded', t('Finish') + ' ' + t('refund')]], rejected: [], refunded: [] };
+    // When the order was actually paid online, "Finish refund" sends the money back through the shop's own
+    // Razorpay account (db/248) instead of only changing the status label -- see styRazorpayRefundSheet().
     box.append(
       section(t('Returns and exchanges asked online'), h('div', { class: 'list' }, (rets && rets.length ? rets : []).map((r) => liRow({ icon: 'box', title: r.number + ' · ' + r.customer.name, sub: t(r.kind === 'return' ? 'Return' : 'Exchange') + ': ' + r.reason, value: t(r.status), chevron: true, onclick: () => {
           const note = input({ value: r.staffNote || '', placeholder: t('Note for the customer') });
           const next = RETURN_NEXT[r.status] || [];
-          sheet({ title: r.number, closeLabel: t('Done'), body: h('div', { class: 'grid' }, h('div', { class: 'card grid' }, h('b', null, r.customer.name), h('div', { class: 'muted small' }, r.customer.phone), h('div', null, r.reason), (r.items || []).map((x) => h('div', { class: 'muted small' }, x.name + ' · ' + [x.colour, x.size].filter(Boolean).join(' ') + ' × ' + x.qty)), !next.length ? h('div', { class: 'muted small' }, t('status') + ': ' + t(r.status) + ' · ' + t('this cannot be changed')) : null), field(t('Note'), note)),
-            actions: next.map(([x, label]) => ({ label, primary: x === 'approved' || x === 'refunded', onclick: async (close) => { await api('sty_web_return_set', { p_id: r.id, p: { status: x, staffNote: note.value } }); toast(t('Saved')); close(); paint(); } })) });
+          const refundedLine = r.status === 'refunded' && r.refundAmount != null
+            ? h('div', { class: 'muted small' }, r.rzpRefundId ? t('Refunded') + ' ₹' + r.refundAmount + ' ' + t('via Razorpay') + ' (' + r.rzpRefundId + ')' : t('Refunded') + ' ₹' + r.refundAmount)
+            : null;
+          sheet({ title: r.number, closeLabel: t('Done'), body: h('div', { class: 'grid' }, h('div', { class: 'card grid' }, h('b', null, r.customer.name), h('div', { class: 'muted small' }, r.customer.phone), h('div', null, r.reason), (r.items || []).map((x) => h('div', { class: 'muted small' }, x.name + ' · ' + [x.colour, x.size].filter(Boolean).join(' ') + ' × ' + x.qty)), refundedLine, !next.length && !refundedLine ? h('div', { class: 'muted small' }, t('status') + ': ' + t(r.status) + ' · ' + t('this cannot be changed')) : null), field(t('Note'), note)),
+            actions: next.map(([x, label]) => ({
+              label: x === 'refunded' && r.rzpPaid ? t('Refund via Razorpay') : label, primary: x === 'approved' || x === 'refunded',
+              onclick: async (close) => {
+                if (x === 'refunded' && r.rzpPaid) { close(); return styRazorpayRefundSheet(r, paint); }
+                await api('sty_web_return_set', { p_id: r.id, p: { status: x, staffNote: note.value } }); toast(t('Saved')); close(); paint();
+              },
+            })) });
         } })).concat(rets && rets.length ? [] : [empty('box', t('No requests'), t('Return and exchange requests from your online customers show here.'))]))),
       section(t('Coupon codes'), h('div', { class: 'list' }, cps.map((c) => liRow({ icon: 'tag', title: c.code, sub: (c.kind === 'pct' ? c.value + '% off' : c.kind === 'flat' ? '₹' + c.value + ' off' : t('Free shipping')) + (c.minOrder ? ' · ' + t('min') + ' ₹' + c.minOrder : '') + (c.firstOnly ? ' · ' + t('first order only') : ''), value: c.used + (c.maxUses ? '/' + c.maxUses : ''), valueSub: c.active ? t('On') : t('Off'), chevron: true, onclick: () => couponSheet(c) })).concat([h('button', { class: 'btn', type: 'button', onclick: () => couponSheet(null) }, t('Add a coupon'))]))),
       section(t('Reviews from buyers'), h('div', { class: 'list' }, (revs && revs.length ? revs : []).map((r) => liRow({ icon: 'star', title: '★'.repeat(r.rating) + ' ' + r.style, sub: (r.name || '') + (r.body ? ': ' + r.body : ''), value: r.status === 'hidden' ? t('Hidden') : t('Shown'), chevron: true, onclick: async () => { await api('sty_review_set', { p_id: r.id, p_status: r.status === 'hidden' ? 'published' : 'hidden' }); toast(t('Saved')); paint(); } })).concat(revs && revs.length ? [] : [empty('star', t('No reviews yet'), t('Customers can review a piece after their order is delivered.'))]))));

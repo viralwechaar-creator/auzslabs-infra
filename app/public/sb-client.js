@@ -321,9 +321,16 @@
       async connect(body) { return request('/whatsapp/connect', { method: 'POST', body, auth: true }); },
     };
 
+    // ---- AUZsStyle: refunding a received return/exchange that was paid online, through the shop's OWN
+    // Razorpay account (db/248) -- needs a real outbound HTTP call to Razorpay, so this goes through the
+    // server (same reason autorenew/whatsapp above do), not a plain rpc(). ----
+    const styRefund = {
+      async start(returnId, amount) { return request('/payments/sty/refund/start', { method: 'POST', body: { returnId, amount }, auth: true }); },
+    };
+
     // One request for a whole queue (POST /sync): see server/src/index.js. Resolves {data:{results:[{id,ok,data|status,error|skipped}]}}.
     async function sync(ops) { return request('/sync', { method: 'POST', body: { ops }, auth: true }); }
-    return { auth, from, rpc, sync, storage, channel, autorenew, whatsapp };
+    return { auth, from, rpc, sync, storage, channel, autorenew, whatsapp, styRefund };
   }
 
   window.supabase = { createClient };
