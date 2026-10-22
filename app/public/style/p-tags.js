@@ -6,7 +6,7 @@ const TAG_DESIGNS = [
       h('div', { class: 'tg-b' }, (shop || '').toUpperCase().slice(0, 18)),
       h('div', { class: 'tg-sz' }, x.size || ''),
       h('div', { class: 'tg-nm' }, x.style.name.slice(0, 40)),
-      h('div', { class: 'tg-cl' }, [x.colour, x.style.category].filter(Boolean).join('  ·  ')),
+      h('div', { class: 'tg-cl' }, x.colour || ''),
       h('div', { class: 'tg-bc' }, barcodeSvg(x.barcode, { height: 30, width: 150 })),
       h('div', { class: 'tg-ft' }, h('span', null, x.barcode), h('span', { class: 'tg-pr' }, x.style.mrp > x.price ? h('s', null, inr(x.style.mrp)) : null, h('b', null, inr(x.price))))) },
   { id: 'classic', name: 'Classic', build: (x, shop) => h('div', { class: 'tag-l' }, h('div', { class: 'tg-s' }, shop), h('div', { class: 'tg-n' }, x.style.name.slice(0, 26)), h('div', { class: 'tg-v' }, [x.colour, x.size].filter(Boolean).join(' · ')), barcodeSvg(x.barcode, { height: 34, width: 150 }), h('div', { class: 'tg-c' }, x.barcode), h('div', { class: 'tg-p' }, h('s', null, x.style.mrp > x.price ? inr(x.style.mrp) : ''), ' ', h('b', null, inr(x.price)))) },
