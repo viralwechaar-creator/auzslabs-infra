@@ -23,7 +23,8 @@ function tagsSheet(styles, onlyVariant, preset) {
   const inputs = {}; const total = h('b'); const prev = h('div', { class: 'tagprev' });
   let design = tagDesignId(); const size = selectEl([['50x25', '50 × 25 mm'], ['38x25', '38 × 25 mm'], ['a4', 'A4 sheet (4 × 10)']], '50x25');
   const dsel = selectEl(TAG_DESIGNS.map((d) => [d.id, d.name]), design);
-  const sum = () => { total.textContent = Object.values(copies).reduce((a, b) => a + b, 0); };
+  const note = h('div', { class: 'muted small' });
+  const sum = () => { const n = Object.values(copies).reduce((a, b) => a + b, 0); total.textContent = n; note.textContent = size.value === 'a4' ? t('Prints on') + ' ' + Math.ceil(n / 40) + ' ' + t('A4 sheets, 40 tags each') : t('Prints') + ' ' + n + ' ' + t('labels, one label per page. The print window shows page 1 of') + ' ' + n + '.'; };
   const paintPrev = () => { clear(prev); const d = TAG_DESIGNS.find((q) => q.id === dsel.value) || TAG_DESIGNS[0]; if (vs[0]) prev.append(h('div', { class: 'tags tags-' + size.value + ' tagbox' }, d.build(vs[0], shop))); };
   const setAll = (fn) => { vs.forEach((x) => { copies[x.id] = fn(x); inputs[x.id].value = copies[x.id]; }); sum(); };
   const row = (x) => {
@@ -39,10 +40,10 @@ function tagsSheet(styles, onlyVariant, preset) {
     h('button', { class: 'btn sm', type: 'button', onclick: () => setAll((x) => (copies[x.id] || 0) + 1) }, '+1 ' + t('all')),
     h('button', { class: 'btn sm', type: 'button', onclick: () => setAll(() => 0) }, t('Clear')));
   dsel.onchange = () => { try { localStorage.setItem('sty.tagDesign', dsel.value); } catch (e) {} paintPrev(); };
-  size.onchange = paintPrev; paintPrev(); sum();
+  size.onchange = () => { paintPrev(); sum(); }; paintPrev(); sum();
   sheet({ title: t('Print tags'), full: true, body: h('div', { class: 'grid' },
       prev, h('div', { class: 'row', style: { gap: '8px' } }, h('div', { class: 'grow' }, field(t('Tag design'), dsel)), h('div', { class: 'grow' }, field(t('Label size'), size))),
-      h('div', { class: 'muted small' }, t('Set how many tags to print for each item. One tag goes on each piece.')), h('div', { class: 'row', style: { justifyContent: 'space-between' } }, h('span', { class: 'muted small' }, t('Total tags')), total), quick, rows),
+      h('div', { class: 'muted small' }, t('Set how many tags to print for each item. One tag goes on each piece.')), h('div', { class: 'row', style: { justifyContent: 'space-between' } }, h('span', { class: 'muted small' }, t('Total tags')), total), note, quick, rows),
     actions: [{ label: t('Print'), primary: true, onclick: () => { printTags(vs, copies, size.value, dsel.value); return false; } }] });
 }
 function printTags(vs, copies, size, designId) {
