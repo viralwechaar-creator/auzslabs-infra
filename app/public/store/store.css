@@ -785,3 +785,13 @@ footer .col a,footer .col span{font-size:9.5px}
 .chatwel b{font-size:11px;font-weight:700;color:rgba(255,255,255,.6);letter-spacing:.02em}
 .chatwel span{font-size:14px;font-weight:500;color:#fff}
 .chatwel u{text-decoration:none;flex:none;width:26px;height:26px;border-radius:13px;background:rgba(255,255,255,.12);display:grid;place-items:center;font-size:16px;color:rgba(255,255,255,.8)}
+
+/* dock v4: slightly smaller, solid white (no blur) */
+@media(max-width:899px){
+  .dock{width:min(88vw,370px);gap:7px;bottom:max(12px,env(safe-area-inset-bottom))}
+  .dock .mark,.dock .chat{width:48px;height:48px}
+  .dock .pill{height:46px;padding:0 4px;background:#fff!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;box-shadow:0 6px 22px rgba(0,0,0,.16),0 0 0 .5px rgba(0,0,0,.06)!important}
+  .dock .pill button{height:40px}
+  .dock svg,.dock svg.f{width:19px!important;height:19px!important}
+  .dock .pill .n{right:calc(50% - 19px)}
+}
