@@ -800,3 +800,11 @@ footer .col a,footer .col span{font-size:9.5px}
 @media(max-width:899px){
   .dock>div.pill:not(.chat),.dock .pill{background:#fff!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;box-shadow:0 6px 22px rgba(0,0,0,.16),0 0 0 .5px rgba(0,0,0,.06)!important}
 }
+
+/* welcome card: small, one row */
+.chatwel{display:flex!important;flex-direction:row!important;align-items:center;gap:9px;width:auto;max-width:min(78vw,250px);padding:8px 10px 8px 8px;border-radius:16px;text-align:left}
+.chatwel .wl{width:26px;height:26px;border-radius:8px;font-size:12px}
+.chatwel .wt{flex-direction:column;gap:1px}
+.chatwel b{display:none}
+.chatwel span{font-size:12px;font-weight:500;line-height:1.25}
+.chatwel u{width:20px;height:20px;border-radius:10px;font-size:13px;margin-left:2px}
