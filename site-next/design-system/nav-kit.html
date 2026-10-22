@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AUZslab UI Kit — Navigation</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="ui-kit.css?v=1">
+<style>
+  html,body{margin:0;background:#faf9f7}
+  .uk-page{max-width:920px;margin:0 auto;padding:56px 24px 120px}
+  .uk-page h1{font-family:var(--uk-font-display);font-weight:700;font-size:28px;margin:0 0 6px}
+  .uk-page .uk-intro{font-size:13px;color:var(--uk-ink-dim);margin:0 0 56px;max-width:44em;line-height:1.7}
+</style>
+</head>
+<body class="uk-kit">
+<div class="uk-page">
+  <h1>Navigation — 1/4</h1>
+  <p class="uk-intro">Minimal, premium, unmistakably AUZslab: ink / white / gray carry the interface, orange marks only the one active or important thing. Group 1 of 4 — Accordion through List of Links.</p>
+
+  <div class="uk-demo-block">
+    <div class="uk-demo-label">01 · Accordion</div>
+    <div class="uk-demo-stage" style="display:block;padding:8px 24px">
+      <div class="uk-accordion">
+        <div class="uk-accordion-item is-open">
+          <button class="uk-accordion-head">
+            <span>What comes with AUZslab POS?</span>
+            <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Billing, kitchen orders, inventory and staff — one till, no add-ons to unlock later.</p></div></div>
+        </div>
+        <div class="uk-accordion-item">
+          <button class="uk-accordion-head">
+            <span>Can I run more than one outlet?</span>
+            <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>Yes — every outlet shares one account, one login, one customer list.</p></div></div>
+        </div>
+        <div class="uk-accordion-item">
+          <button class="uk-accordion-head">
+            <span>Is my data mine?</span>
+            <svg class="uk-accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="uk-accordion-body"><div class="uk-accordion-body-inner"><p>It lives on infrastructure we run for you — not rented from, or resold by, someone else.</p></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="uk-demo-block">
+    <div class="uk-demo-label">02 · Bento menu</div>
+    <div class="uk-demo-stage" style="display:block">
+      <div class="uk-bento">
+        <a href="#" class="uk-bento-tile uk-dark uk-span-2">
+          <span class="uk-bento-code">.pos-till {<br>&nbsp;&nbsp;display: <b>flex</b>;<br>}</span>
+        </a>
+        <a href="#" class="uk-bento-tile uk-accent">
+          <span class="uk-bento-label">POS</span>
+          <span class="uk-bento-sub" style="color:rgba(255,255,255,.8)">Live</span>
+        </a>
+        <a href="#" class="uk-bento-tile">
+          <span class="uk-bento-label">CRM</span>
+          <span class="uk-bento-sub">Live</span>
+        </a>
+        <a href="#" class="uk-bento-tile uk-span-2-row uk-dark" style="justify-content:space-between;padding-top:14px">
+          <span class="uk-bento-sub" style="color:rgba(255,255,255,.55)">Module</span>
+          <span class="uk-bento-label">Reports &amp; insights</span>
+        </a>
+        <a href="#" class="uk-bento-tile">
+          <span class="uk-bento-label">Booking</span>
+          <span class="uk-bento-sub">Soon</span>
+        </a>
+        <a href="#" class="uk-bento-tile uk-soon">
+          <span class="uk-bento-label">Payroll</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="uk-demo-block">
+    <div class="uk-demo-label">03 · Breadcrumb</div>
+    <div class="uk-demo-stage">
+      <nav class="uk-breadcrumb" aria-label="Breadcrumb">
+        <a href="#">Dashboard</a><span class="uk-breadcrumb-sep">/</span>
+        <a href="#">Orders</a><span class="uk-breadcrumb-sep">/</span>
+        <span class="uk-breadcrumb-current">#1042</span>
+      </nav>
+    </div>
+  </div>
+
+  <div class="uk-demo-block">
+    <div class="uk-demo-label">04 · Hamburger menu</div>
+    <div class="uk-demo-stage">
+      <button class="uk-hamburger" data-toggle-target="#uk-demo-drawer" aria-label="Open menu" aria-expanded="false">
+        <span class="uk-hamburger-bars"><span></span><span></span><span></span></span>
+      </button>
+      <span style="font-size:12px;color:var(--uk-ink-faint)">click to morph into a close icon</span>
+    </div>
+  </div>
+
+  <div class="uk-demo-block">
+    <div class="uk-demo-label">05 · Kebab menu</div>
+    <div class="uk-demo-stage">
+      <div class="uk-overflow-menu">
+        <button class="uk-overflow-trigger" aria-haspopup="true" aria-expanded="false">
+          <span class="uk-kebab-dots"><span></span><span></span><span></span></span>
+        </button>
+        <div class="uk-overflow-panel">
+          <button class="uk-overflow-item">Edit item</button>
+          <button class="uk-overflow-item">Duplicate</button>
+          <button class="uk-overflow-item uk-danger">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="uk-demo-block">
+    <div class="uk-demo-label">06 · Meatballs menu</div>
+    <div class="uk-demo-stage">
+      <div class="uk-overflow-menu">
+        <button class="uk-overflow-trigger" aria-haspopup="true" aria-expanded="false">
+          <span class="uk-meatballs-dots"><span></span><span></span><span></span></span>
+        </button>
+        <div class="uk-overflow-panel">
+          <button class="uk-overflow-item">Share</button>
+          <button class="uk-overflow-item">Export CSV</button>
+          <button class="uk-overflow-item">Archive</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="uk-demo-block">
+    <div class="uk-demo-label">07 · Tab / nav bar</div>
+    <div class="uk-demo-stage">
+      <div class="uk-tabbar-row">
+        <div class="uk-tabbar">
+          <button class="uk-tab is-active">Home</button>
+          <button class="uk-tab">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </button>
+          <button class="uk-tab">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          </button>
+        </div>
+        <button class="uk-tabbar-action" aria-label="Add">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="uk-demo-block">
+    <div class="uk-demo-label">08 · Sidebar</div>
+    <div class="uk-demo-stage">
+      <nav class="uk-sidebar">
+        <a class="uk-sidebar-item is-active" href="#">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9Z"/></svg>
+          Overview
+        </a>
+        <a class="uk-sidebar-item" href="#">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg>
+          Orders
+        </a>
+        <a class="uk-sidebar-item" href="#">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Customers
+        </a>
+        <a class="uk-sidebar-item" href="#">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M18 20V4M6 20v-6"/></svg>
+          Reports
+        </a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="uk-demo-block">
+    <div class="uk-demo-label">09 · Pagination</div>
+    <div class="uk-demo-stage">
+      <div class="uk-pagination" data-demo>
+        <button class="uk-page-btn" aria-label="Previous">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <button class="uk-page-btn is-active" data-page="1">1</button>
+        <button class="uk-page-btn" data-page="2">2</button>
+        <button class="uk-page-btn" data-page="3">3</button>
+        <button class="uk-page-btn" data-page="4">4</button>
+        <button class="uk-page-btn" data-page="5">5</button>
+        <button class="uk-page-btn" aria-label="Next">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="uk-demo-block">
+    <div class="uk-demo-label">10 · List of links</div>
+    <div class="uk-demo-stage" style="display:block">
+      <ul class="uk-linklist">
+        <li><a href="#"><span>Documentation</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></li>
+        <li><a href="#"><span>API reference</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></li>
+        <li><a href="#"><span>Status page</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></li>
+        <li><a href="#"><span>Contact support</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+<script src="ui-kit.js?v=1"></script>
+</body>
+</html>

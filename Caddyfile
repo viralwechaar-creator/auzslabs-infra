@@ -46,6 +46,16 @@
     }
 }
 
+# New design preview (copy of the marketing site and admin panel): next.auzslab.in. Not indexed by search engines.
+next.{$DOMAIN} {
+    import security_headers
+    import compress
+    root * /srv/site-next
+    header /*.html Cache-Control "no-cache"
+    header X-Robots-Tag "noindex, nofollow"
+    file_server
+}
+
 # Every client's subdomain serves the POS app. Which client it is gets
 # figured out client-side (tenant.js reads the subdomain) or via RLS
 # once a staff member logs in — same files for every tenant.

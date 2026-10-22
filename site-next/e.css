@@ -69,3 +69,23 @@ main.content .hm-chips a{background:none;padding:0;border-bottom:1px solid var(-
 #salon-plans .sp-name{font-size:15px!important;font-weight:300!important}
 #salon-plans .sp-amt,.sp-price{font-size:16px!important;font-weight:300!important}
 .ftwrap{background:#0a0a0a}
+/* curvy edges */
+.ph{border-radius:26px}
+.ed-two .ph,.pe .ph{border-radius:24px}
+main.content .btn,main.content .btn-ghost,main.content .btn-primary{border:1px solid var(--ink)!important;border-radius:999px!important;padding:7px 16px!important}
+.ed-side a,.ed-link{border:1px solid var(--ink);border-radius:999px;padding:7px 16px}
+.u-pill,.u-menu{border:1px solid var(--ink)!important;border-radius:999px!important;padding:7px 14px!important}
+.u-ic{border:1px solid var(--line)!important;border-radius:50%!important;width:32px;height:32px;padding:0!important;display:inline-flex;align-items:center;justify-content:center}
+.u-nav a.on{border:1px solid var(--ink);border-radius:999px}
+.ed-words a{border:1px solid var(--line);border-radius:999px;padding:5px 12px}
+.hm-chips a{border-radius:999px;padding:5px 12px}
+.ed-list{border-radius:22px;border:1px solid var(--line);padding:0 16px}
+.ed-list a:first-child{border-top:0}.ed-list a:last-child{border-bottom:0}
+.ed-cta{border:1px solid var(--line);border-radius:22px;padding:16px 20px;margin-top:34px}
+.pe{border-top:0;border:1px solid var(--line);border-radius:26px;padding:18px;margin-top:10px}
+main.content .card,main.content .feat-card,main.content .price-card,main.content .fee-card,.bento>.card,.bento>.card.feat,main.content .demo-note,main.content .biz-band,.sp-card,#salon-plans .sp-card{border:1px solid var(--line)!important;border-radius:22px!important;padding:16px!important}
+.u-sheet{border-radius:26px 0 0 26px}
+.modal{border-radius:26px 26px 0 0}
+.ftwrap footer,.ftstrip,.ftwrap{border-radius:26px}
+.ftwrap{border-radius:30px 30px 0 0}
+@media(min-width:900px){.pe{padding:26px}.ph{border-radius:30px}}
