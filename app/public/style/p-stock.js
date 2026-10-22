@@ -2,10 +2,12 @@
    colours x sizes with barcodes), adjust or count stock, print barcode tags, move stock between branches. */
 'use strict';
 const SU = { q: '', cat: 'All', f: 'all' };
+const SEL = { on: false, ids: new Set() };
 page('stock', {
   title: 'Stock', perm: 'sty_view',
   async render(v) {
     v.header({ title: t('Stock'), actions: [can('sty_manage') ? { label: t('New style'), icon: 'plus', primary: true, run: () => styleForm(null, () => v.refresh()) } : null,
+      can('sty_manage') ? { label: SEL.on ? t('Done selecting') : t('Select'), icon: 'check', run: () => { SEL.on = !SEL.on; SEL.ids.clear(); v.refresh(); } } : null,
       { label: t('Collections'), icon: 'tag', run: () => collectionsSheet(() => v.refresh()) },
       can('sty_stock') ? { label: t('Transfers'), icon: 'swap', run: () => transfersSheet(() => v.refresh()) } : null].filter(Boolean) });
     const root = v.root; root.append(h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '30px auto' } }));
@@ -19,17 +21,28 @@ page('stock', {
     const filtHost = h('span'); const paintF = () => clear(filtHost).append(filterButton(() => { paintF(); paint(); }));
     const paintChips = () => clear(chips).append(...cats.map((c) => h('button', { class: 'chip', type: 'button', 'aria-pressed': String(SU.cat === c), onclick: () => { SU.cat = c; paintChips(); paint(); } }, c === 'All' ? t('All') : c)));
     const flt = seg([['all', t('All')], ['low', t('Low stock')], ['out', t('Out of stock')]], SU.f, (x) => { SU.f = x; paint(); }, { full: true });
+    let CUR = []; const selH = h('div');
+    function paintSel() {
+      clear(selH); if (!SEL.on) return;
+      selH.append(h('div', { class: 'selbar' }, h('b', null, SEL.ids.size + ' ' + t('selected')),
+        h('button', { class: 'btn sm', type: 'button', onclick: () => { CUR.forEach((x) => SEL.ids.add(x.id)); paint(); } }, t('Select all') + ' (' + CUR.length + ')'),
+        h('button', { class: 'btn sm', type: 'button', onclick: () => { SEL.ids.clear(); paint(); } }, t('Clear')),
+        h('button', { class: 'btn sm fill', type: 'button', disabled: !SEL.ids.size, onclick: () => bulkEditSheet([...SEL.ids], () => { SEL.ids.clear(); v.refresh(); }) }, t('Edit selected')),
+        h('button', { class: 'btn sm danger', type: 'button', disabled: !SEL.ids.size, onclick: () => bulkDelete([...SEL.ids], () => { SEL.ids.clear(); v.refresh(); }) }, t('Delete selected'))));
+    }
     function paint() {
       const q = SU.q.trim().toLowerCase();
       let rows = S.cat.filter((s) => (SU.cat === 'All' || s.category === SU.cat) && styleMatches(s) && (!q || (s.name + ' ' + (s.brand || '') + ' ' + (s.code || '') + ' ' + (s.fabric || '') + ' ' + (s.collection || '')).toLowerCase().includes(q) || s.variants.some((x) => x.barcode === q || (x.sku || '').toLowerCase() === q)));
       if (SU.f === 'low') rows = rows.filter((s) => s.variants.some((x) => x.active !== false && x.stock > 0 && x.stock <= (x.reorderAt || 0)));
       if (SU.f === 'out') rows = rows.filter((s) => s.variants.some((x) => x.active !== false && x.stock <= 0));
+      CUR = rows; paintSel();
       clear(list).append(...(rows.length ? rows.map((s) => {
         const st = styleStock(s), sizes = [...new Set(s.variants.map((x) => x.size))].length, cols = [...new Set(s.variants.map((x) => x.colour))].length;
         const mx = Math.max(1, ...S.cat.map(styleStock)), lowS = s.variants.some((x) => x.active !== false && x.stock > 0 && x.stock <= (x.reorderAt || 0));
         const tone = st <= 0 ? 'z' : lowS || st <= 3 ? 'lo' : 'ok';
-        return h('button', { class: 'icard' + (s.active === false ? ' off' : ''), type: 'button', onclick: () => styleSheet(s.id, () => v.refresh()) },
-          h('div', { class: 'ic-p' }, s.photoUrl ? h('img', { src: s.photoUrl, alt: '', loading: 'lazy' }) : icon('shirt', 24)),
+        return h('button', { class: 'icard' + (s.active === false ? ' off' : '') + (SEL.on && SEL.ids.has(s.id) ? ' sel' : ''), type: 'button', onclick: () => { if (SEL.on) { SEL.ids.has(s.id) ? SEL.ids.delete(s.id) : SEL.ids.add(s.id); paint(); } else styleSheet(s.id, () => v.refresh()); } },
+          SEL.on ? h('span', { class: 'ic-tick' + (SEL.ids.has(s.id) ? ' on' : '') }, SEL.ids.has(s.id) ? icon('check', 14) : null) : null,
+          h('div', { class: 'ic-p' }, s.photoUrl ? h('img', { src: thumbOf(s.photoUrl), alt: '', loading: 'lazy', onerror: (e) => { const i = e.target; if (i.src !== s.photoUrl) i.src = s.photoUrl; } }) : icon('shirt', 24)),
           h('div', { class: 'ic-b' },
             h('div', { class: 'ic-t' }, h('span', { class: 'ic-n' }, s.name), h('span', { class: 'ic-pr num' }, inr(s.price))),
             h('div', { class: 'ic-s' }, [s.category, s.fabric, cols + ' ' + t('colours'), sizes + ' ' + t('sizes')].filter(Boolean).join(' · ')),
@@ -40,7 +53,8 @@ page('stock', {
     }
     clear(root); if (!isDesk()) root.append(h('h1', { class: 'large-title' }, t('Stock')));
     root.append(h('div', { class: 'kpis' }, kpi(t('Units'), nf0.format(units), `${S.cat.length} ${t('styles')}`), kpi(t('Stock value'), inr(cost, 0), t('at cost')), kpi(t('Retail value'), inr(retail, 0)), kpi(t('Low stock'), lowN, outN + ' ' + t('Out of stock'), null, lowN ? 'neg' : '')),
-      h('div', { class: 'toolbar' }, h('div', { class: 'row', style: { gap: '8px' } }, h('div', { class: 'grow' }, searchField(t('Search styles, scan a barcode'), (x) => { SU.q = x; paint(); }, SU.q)), filtHost, h('button', { class: 'btn icon', type: 'button', 'aria-label': t('Scan'), onclick: () => scanWith((c) => { const f = findBarcode(c), sc = findStyleCode(c); const st = f ? f.style : sc; if (st) { styleSheet(st.id, () => v.refresh()); } else toast(t('No item with that code'), { err: true }); }) }, icon('camera', 18)), h('button', { class: 'btn icon', type: 'button', 'aria-label': t('Print tags'), onclick: () => tagsSheet(S.cat.filter((x) => x.active !== false && styleMatches(x))) }, icon('barcode', 18))), chips, flt), list);
+      h('div', { class: 'toolbar' }, h('div', { class: 'row', style: { gap: '8px' } }, h('div', { class: 'grow' }, searchField(t('Search styles, scan a barcode'), (x) => { SU.q = x; paint(); }, SU.q)), filtHost, h('button', { class: 'btn icon', type: 'button', 'aria-label': t('Scan'), onclick: () => scanWith((c) => { const f = findBarcode(c), sc = findStyleCode(c); const st = f ? f.style : sc; if (st) { styleSheet(st.id, () => v.refresh()); } else toast(t('No item with that code'), { err: true }); }) }, icon('camera', 18)), h('button', { class: 'btn icon', type: 'button', 'aria-label': t('Print tags'), onclick: () => tagsSheet(S.cat.filter((x) => x.active !== false && styleMatches(x))) }, icon('barcode', 18))), chips, flt), selH, list);
+    list.before ? 0 : 0;
     paintChips(); paintF(); paint();
   },
 });
@@ -130,12 +144,23 @@ function styleForm(s, done) {
   // pictures per colour: the till switches to these when a colour is picked
   const colPics = {}; const colHost = h('div', { class: 'grid' }); const colInit = (s && s.colourPhotos) || {};
   const paintColPics = () => {
-    const cs = cols.peek(); cs.forEach((c) => { if (!colPics[c]) colPics[c] = photoEditor((colInit[c] || [])[0] || '', (colInit[c] || []).slice(1)); });
+    const cs = cols.peek(); cs.forEach((c) => { if (!colPics[c]) colPics[c] = photoEditor((colInit[c] || [])[0] || '', (colInit[c] || []).slice(1)); colPics[c].onChange = () => { typeof paintUse === 'function' && paintUse(); }; });
     clear(colHost).append(...cs.map((c) => h('div', { class: 'card grid' }, h('div', { class: 'cap' }, c), colPics[c])));
     colWrap.style.display = cs.length ? '' : 'none';
   };
   const colWrap = h('div', { class: 'field' }, h('label', null, t('Pictures per colour')), h('div', { class: 'hint' }, t('Optional. When a colour is picked on the till, its pictures show instead.')), colHost);
   cols.onChange = paintColPics; paintColPics();
+  // where each picture shows on the online store: product card, home hero, collection banner
+  const use = Object.assign({}, (s && s.photoUse) || {}); const useHost = h('div', { class: 'grid' });
+  const allPics = () => { const out = []; const add = (u) => { if (u && !out.includes(u)) out.push(u); }; const g = pics.get(); add(g.main); g.extra.forEach(add); cols.peek().forEach((c) => { const x = colPics[c] && colPics[c].get(); if (x) { add(x.main); x.extra.forEach(add); } }); return out; };
+  const paintUse = () => {
+    const all = allPics(); const roles = [['card', t('Product card'), t('Shop grids and the card stack')], ['hero', t('Home hero'), t('The big picture at the top of the shop')], ['banner', t('Collection banner'), t('Wide collection pictures')]];
+    Object.keys(use).forEach((k) => { if (!all.includes(use[k])) delete use[k]; });
+    clear(useHost).append(...roles.map(([k, label, hint]) => h('div', null, h('div', { class: 'cap' }, label + ' · ' + hint),
+      h('div', { class: 'pe-grid' }, all.length ? all.map((u, i) => h('button', { class: 'pe-t' + ((use[k] || all[0]) === u ? ' on' : ''), type: 'button', style: { outline: (use[k] || all[0]) === u ? '2px solid var(--accent, #800020)' : '' }, title: i === 0 && !use[k] ? t('Default') : '', onclick: () => { if (i === 0) delete use[k]; else use[k] = u; paintUse(); } }, h('img', { src: u, alt: '' }))) : h('div', { class: 'hint' }, t('Add pictures first')) ))));
+  };
+  const useWrap = h('div', { class: 'field' }, h('label', null, t('Where each picture shows')), h('div', { class: 'hint' }, t('Optional. By default the main picture is used everywhere. Tap a picture to use it for that place.')), useHost);
+  pics.onChange = paintUse; paintUse();
   // show on the till as: normal / limited stock (exclusivity, display only) / sold out (cannot be added to a bill)
   let badge = (s && s.badge) || '';
   const badgeHost = h('div', { class: 'chips' });
@@ -147,7 +172,7 @@ function styleForm(s, done) {
   const body = h('div', { class: 'grid edgrid' }, spanOf(pics), field(t('Name'), f.name), field(t('Product code'), f.code, t('Used to find the style and as the start of each size barcode label. Leave empty to skip.')), field(t('Category'), cat, t('Type any name to add your own category. It appears everywhere once the style is saved.')), spanOf(catList), h('div', { class: 'two' }, field(t('Brand'), f.brand), field(t('Gender'), f.gender)),
     h('div', { class: 'two' }, field(t('Selling price'), f.price), field(t('MRP'), f.mrp)), seeCost ? h('div', { class: 'two' }, field(t('Cost'), f.cost), field(t('Tax %'), f.tax)) : field(t('Tax %'), f.tax),
     h('div', { class: 'two' }, field(t('Type'), f.type), field(t('Fabric'), f.fabric)), h('div', { class: 'two' }, field(t('Collection'), f.collection), field(t('Weight') + ' (g)', f.weight)),
-    spanOf(cols), spanOf(colWrap), spanOf(szs), spanOf(badgeField), spanOf(field(t('Description'), f.desc)), spanOf(field(t('Details'), f.det)), spanOf(field(t('Wash care'), f.wash)),
+    spanOf(cols), spanOf(colWrap), spanOf(useWrap), spanOf(szs), spanOf(badgeField), spanOf(field(t('Description'), f.desc)), spanOf(field(t('Details'), f.det)), spanOf(field(t('Wash care'), f.wash)),
     isNew ? h('div', { class: 'two' }, field(t('Opening stock per size'), f.qty), h('div')) : null,
     spanOf(h('details', { class: 'more' }, h('summary', null, t('More details')), h('div', { class: 'grid', style: { marginTop: '10px' } }, h('div', { class: 'two' }, field(t('Season'), f.season), field(t('HSN code'), f.hsn))))));
   sheet({ title: isNew ? t('New style') : t('Edit style'), full: true, wide: true, body, actions: [
@@ -164,6 +189,7 @@ function styleForm(s, done) {
       const r = await api('sty_save_style', { p });
       const cp = {}; cols.peek().forEach((c) => { const g = colPics[c] && colPics[c].get(); if (g && g.main) cp[c] = [g.main, ...g.extra]; });
       if (Object.keys(cp).length || Object.keys(colInit).length) await api('sty_set_colour_photos', { p_id: r.id, p: cp });
+      { const want = JSON.stringify(Object.keys(use).sort().map((k) => [k, use[k]])), had = JSON.stringify(Object.keys((s && s.photoUse) || {}).sort().map((k) => [k, s.photoUse[k]])); if (want !== had) await api('sty_set_photo_use', { p_id: r.id, p: { card: use.card || '', hero: use.hero || '', banner: use.banner || '' } }); }
       if (badge !== ((s && s.badge) || '')) await api('sty_set_badge', { p_id: r.id, p_badge: badge || null });
       close(); S.catAt = 0; toast(t('Saved'));
       done && done();
@@ -216,4 +242,34 @@ function transferForm(done) {
   loadCatalog().then(() => {});
   sheet({ title: t('New transfer'), full: true, body: h('div', { class: 'grid' }, h('div', { class: 'two' }, field(t('From'), from), field(t('To'), to)), q, res, host),
     actions: [{ label: t('Send stock'), primary: true, onclick: async (close) => { if (!lines.length) { toast(t('Add at least one item'), { err: true }); return false; } await api('sty_transfer', { p: { id: uid(), fromBranch: from.value, toBranch: to.value, lines: lines.map((l) => ({ variantId: l.variantId, qty: l.qty })) } }); close(); S.catAt = 0; toast(t('Transfer sent')); done && done(); } }] });
+}
+
+// ---- bulk edit / bulk delete of the chosen styles ----
+function bulkEditSheet(ids, done) {
+  const mine = (f) => [...new Set(S.cat.map((x) => x[f]).filter(Boolean))];
+  const opts = (arr, keep) => [['', keep || t('Keep as is')], ...arr.map((x) => [x, x])];
+  const cat = input({ placeholder: t('Keep as is') }); cat.setAttribute('list', 'bk-cats');
+  const dl = h('datalist', { id: 'bk-cats' }, mine('category').map((c) => h('option', { value: c })));
+  const brand = input({ placeholder: t('Keep as is') }), season = input({ placeholder: t('Keep as is') }), coll = input({ placeholder: t('Keep as is') }), hsn = input({ placeholder: t('Keep as is') });
+  const tax = input({ type: 'number', mode: 'decimal', placeholder: t('Keep as is') });
+  const gender = selectEl(opts(['Men', 'Women', 'Unisex', 'Kids']), '');
+  const badge = selectEl([['', t('Keep as is')], ['normal', t('Normal')], ['limited', t('Limited stock')], ['soldout', t('Sold out')]], '');
+  const vis = selectEl([['', t('Keep as is')], ['true', t('Show on the till')], ['false', t('Hide')]], '');
+  const mode = selectEl([['', t('No price change')], ['pct', t('Change by percent (+ or -)')], ['amt', t('Change by rupees (+ or -)')]], '');
+  const val = input({ type: 'number', mode: 'decimal', placeholder: '10  or  -5' });
+  const body = h('div', { class: 'grid' }, h('p', { class: 'muted small' }, ids.length + ' ' + t('styles will change. Only the boxes you fill in are changed.')), dl,
+    field(t('Category'), cat), h('div', { class: 'edgrid' }, field(t('Brand'), brand), field(t('For'), gender), field(t('Season'), season), field(t('Collection'), coll), field(t('HSN'), hsn), field(t('GST %'), tax)),
+    h('div', { class: 'edgrid' }, field(t('Price'), mode), field(t('By how much'), val)),
+    h('div', { class: 'edgrid' }, field(t('Label on the till'), badge), field(t('Visibility'), vis)));
+  sheet({ title: t('Edit selected styles'), body, actions: [{ label: t('Apply to') + ' ' + ids.length, primary: true, onclick: async (close) => {
+    const set = {}; [['category', cat], ['brand', brand], ['season', season], ['collection', coll], ['hsn', hsn], ['taxPct', tax], ['gender', gender], ['badge', badge], ['active', vis]].forEach(([k, el]) => { if (el.value !== '') set[k] = el.value; });
+    const adj = mode.value && val.value !== '' ? { mode: mode.value, value: N(val.value) } : null;
+    if (!Object.keys(set).length && !adj) { toast(t('Fill in at least one box'), { err: true }); return false; }
+    if (adj && !(await confirmBox(t('Change prices'), t('This changes the selling price (and MRP) of') + ' ' + ids.length + ' ' + t('styles.'), t('Change prices')))) return false;
+    try { const r = await api('sty_bulk_edit', { p: { ids, set, priceAdjust: adj } }); toast(r.changed + ' ' + t('styles updated')); close(); await loadCatalog(true).catch(() => {}); done(); } catch (e) { toast(e.message || t('Failed'), { err: true }); return false; }
+  } }] });
+}
+async function bulkDelete(ids, done) {
+  if (!(await confirmBox(t('Delete') + ' ' + ids.length + ' ' + t('styles?'), t('Styles that were never sold or stocked are erased. A style with sales or stock history cannot be erased without breaking the books, so it is hidden instead.'), t('Delete'), true))) return;
+  try { const r = await api('sty_delete_styles', { p: { ids } }); toast(r.deleted + ' ' + t('deleted') + (r.hidden ? ' · ' + r.hidden + ' ' + t('hidden (they have history)') : '')); await loadCatalog(true).catch(() => {}); done(); } catch (e) { toast(e.message || t('Failed'), { err: true }); }
 }

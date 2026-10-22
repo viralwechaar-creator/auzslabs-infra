@@ -33,6 +33,17 @@ export default async function run({ browser, stack }) {
     await fails('team_me', {}, null, 'logged out');
   }, 'critical');
 
+  await s.check('Product load report: only the admin can read it, and it shows data per product and request speed per area', async () => {
+    await fails('admin_load_report', {}, plain, 'not admin');
+    const d = await ok('admin_load_report', {}, adm);
+    assert(d.db_size > 0 && Array.isArray(d.products) && d.products.length > 0, 'no database figures: ' + JSON.stringify(d).slice(0, 200));
+    assert(d.products.some((x) => /AUZsStyle|AUZsPay|AUZsMob/.test(x.product)), 'products not grouped');
+    const r = await fetch(stack.apiBase + '/admin/load', { headers: { authorization: 'Bearer ' + adm } }); const j = await r.json();
+    assert(r.status === 200 && Array.isArray(j.families) && j.families.length > 0 && j.process.rss > 0, 'api figures missing: ' + JSON.stringify(j).slice(0, 200));
+    assert(j.families.some((f) => f.name === 'Sign-in'), 'requests not grouped by area');
+    const r2 = await fetch(stack.apiBase + '/admin/load', { headers: { authorization: 'Bearer ' + plain } }); assert(r2.status === 403, 'plain user read it: ' + r2.status);
+  });
+
   await s.check('Only a salesman or manager adds a lead; it is assigned to them, with a history', async () => {
     const lead = { name: 'Ravi Kumar', business: 'Ravi Cafe', contact: '9812345678', niche: 'cafe', message: 'Wants QR ordering', next_followup: '2020-01-01' };
     await fails('team_add_lead', { p: lead }, T.setup, 'setup staff');

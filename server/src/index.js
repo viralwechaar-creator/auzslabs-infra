@@ -1,6 +1,7 @@
 import http from 'node:http';
 import { verifyToken, bearerFrom } from './auth.js';
-import { startRealtime } from './realtime.js';
+import { startRealtime, wsCount } from './realtime.js';
+import { trackRequest, setWsCounter } from './metrics.js';
 import { handlePushEvent } from './push.js';
 import { startMaintenance } from './maintenance.js';
 import { handleSalon } from './salon.js';
@@ -22,7 +23,9 @@ initErrorTracking(); // dormant unless SENTRY_DSN is set -- see errors.js
 // wins) -> 404. Each module in routes/ owns one area; see docs/BACKEND_MAP.md. Order matters only where paths overlap.
 const ROUTE_MODULES = [handleSystem, handleAuth, handlePayments, handleData, handleStorage, handleAdmin, handleWhatsApp];
 
+setWsCounter(wsCount);
 const server = http.createServer(async (req, res) => {
+  trackRequest(req, res);
   // Salon Suite (Showoff Salon's original app, see salon.js): same-origin
   // /api/* on a tenant subdomain, rewritten to /salon-api by Caddy.
   if (req.url.startsWith('/salon-api')) { handleSalon(req, res, clientIp(req)); return; }
@@ -55,5 +58,17 @@ const server = http.createServer(async (req, res) => {
 startRealtime(server, { onPushEvent: handlePushEvent });
 
 server.listen(PORT, () => console.log(`auzlabs-api listening on :${PORT}`));
+
+// Graceful stop (deploys, restarts): stop taking new requests, let the ones in progress finish, then exit. Gives up after 10 s.
+let stopping = false;
+for (const sig of ['SIGTERM', 'SIGINT']) {
+  process.on(sig, () => {
+    if (stopping) return; stopping = true;
+    console.log(`${sig}: finishing requests and stopping`);
+    server.close(() => process.exit(0));
+    server.closeIdleConnections?.();
+    setTimeout(() => process.exit(0), 10_000).unref();
+  });
+}
 startWhatsAppWorker(); // sends queued WhatsApp messages (whatsapp.js)
 startMaintenance(); // daily cleanup of expired sessions / codes / links (see maintenance.js)

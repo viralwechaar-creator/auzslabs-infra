@@ -98,6 +98,7 @@ export const RPC = {
   mark_client_delivered: { params: ['p_tenant_id'], auth: true },
   delete_client: { params: ['p_tenant_id'], auth: true },
   admin_system_stats: { params: [], auth: true },
+  admin_load_report: { params: [], auth: true },
 
   // --- Admin: Users directory + audit log (db/087) ---
   admin_list_users: { params: ['p_query', 'p_limit'], defaults: { p_query: null, p_limit: 50 }, auth: true },
@@ -427,10 +428,13 @@ export const RPC = {
   sty_save_branch: { params: ['p'], jsonb: ['p'], auth: true },
   sty_catalog: { params: ['p_branch'], defaults: { p_branch: null }, auth: true },
   sty_save_style: { params: ['p'], jsonb: ['p'], auth: true },
+  sty_bulk_edit: { params: ['p'], jsonb: ['p'], auth: true },
+  sty_delete_styles: { params: ['p'], jsonb: ['p'], auth: true },
   sty_set_variant: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
   sty_set_colour_photos: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
   sty_share_sale: { params: ['p_id'], auth: true },
   sty_set_badge: { params: ['p_id', 'p_badge'], auth: true },
+  sty_set_photo_use: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
   sty_collections_list: { params: [], auth: true },
   sty_collection_save: { params: ['p'], jsonb: ['p'], auth: true },
   sty_collection_delete: { params: ['p_id'], auth: true },

@@ -644,10 +644,14 @@ async function callWaiter(){
    if(!n)return alert('Please enter your name');if(!p)return alert('Please enter your mobile number');
    e.target.disabled=true;e.target.textContent='Placing order…';
    const noteTxt=so.querySelector('#coNote').value.trim(),nt=payUpi?('Paid by UPI (self-reported, please verify)'+(noteTxt?' — '+noteTxt:'')):noteTxt;
-   const{error}=await sb.rpc('place_order',{tenant_slug:TENANT_SLUG,t:T,n,p,nt,its:Object.values(cart).map(c=>({id:c.id,size:c.size,qty:c.q}))});
-   if(error){e.target.disabled=false;e.target.textContent='Place order';return alert(/busy/.test(error.message)?'Too many pending orders right now. Please call us or try again shortly.':'Could not place the order. Please try again or call our staff.')}
+   const{data:orderTok,error}=await sb.rpc('place_order',{tenant_slug:TENANT_SLUG,t:T,n,p,nt,its:Object.values(cart).map(c=>({id:c.id,size:c.size,qty:c.q}))});
+   if(error){e.target.disabled=false;e.target.textContent='Place order';return alert(/busy/.test(error.message)?'Too many pending orders right now. Please call us or try again shortly.':error.message||'Could not place the order. Please try again or call our staff.')}
    for(const k in cart)delete cart[k];so.remove();drawMenu();drawCartBar();
-   const ok=document.createElement('div');ok.className='sheet-ov';ok.innerHTML='<div class=sht style="text-align:center"><div class=okmark><svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div><h3>Order sent</h3><p style="color:var(--muted)">Thank you '+esc(n)+'. Our staff will confirm it shortly.</p><button class="pill dark" id=okClose style="width:100%">Order more</button></div>';document.body.append(ok);ok.onclick=e=>{if(e.target===ok||e.target.id=='okClose')ok.remove()}
+   // Keep the one link that will show this exact bill once it's billed, so the customer never has to
+   // depend on a WhatsApp message arriving -- they can open it themselves, any time, from this page.
+   try{if(orderTok)localStorage['auz_last_order_'+TENANT_SLUG]=orderTok}catch(e2){}
+   const billLink=orderTok?'<a class="pill line" href="/i.html?o='+encodeURIComponent(orderTok)+'" target=_blank rel=noopener style="width:100%;display:block;box-sizing:border-box;margin-top:10px">View my bill</a><p style="color:var(--muted);font-size:12px;margin-top:8px">Your bill will appear here as soon as it is ready — no need to wait for WhatsApp.</p>':'';
+   const ok=document.createElement('div');ok.className='sheet-ov';ok.innerHTML='<div class=sht style="text-align:center"><div class=okmark><svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div><h3>Order sent</h3><p style="color:var(--muted)">Thank you '+esc(n)+'. Our staff will confirm it shortly.</p>'+billLink+'<button class="pill dark" id=okClose style="width:100%;margin-top:10px">Order more</button></div>';document.body.append(ok);ok.onclick=e=>{if(e.target===ok||e.target.id=='okClose')ok.remove()}
   };
  }
  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));

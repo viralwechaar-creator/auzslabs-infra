@@ -700,3 +700,309 @@ footer .col a,footer .col span{font-size:9.5px}
 .stkw .psz{display:flex;flex-wrap:wrap;gap:5px}.stkw .psz em{font-style:normal;font-size:9.5px;min-width:26px;text-align:center;padding:4px 7px;border:1px solid var(--line);border-radius:8px;background:#fff}
 .stkw [hidden]{display:none}
 }
+
+/* desktop: the slide stack uses the full middle area, details fill the right rail */
+@media(min-width:900px){
+.stkw{grid-template-columns:130px minmax(0,1fr) minmax(300px,380px);gap:20px}
+.stkw .stk{max-width:none;aspect-ratio:auto;height:clamp(480px,74vh,760px)}
+.stkw .stk .sk{left:28%;width:44%}
+.stkw .srr{max-width:none;padding-left:8px}
+.stkw .pd{-webkit-line-clamp:8}
+}
+
+/* desktop: Refine opens as a small card under its button and folds back into it */
+@media(min-width:900px){
+.sheetwrap.pop{display:block}
+.sheetwrap.pop .bd{background:transparent}
+.sheetwrap.pop .sheet{position:fixed;max-width:none;border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.22),0 0 0 1px var(--line);animation:rfIn .2s cubic-bezier(.2,.8,.2,1)}
+.sheetwrap.pop.out .sheet{animation:rfOut .19s ease forwards}
+.sheetwrap.pop .grab{display:none}
+@keyframes rfIn{from{opacity:0;transform:scale(.15)}to{opacity:1;transform:scale(1)}}
+@keyframes rfOut{to{opacity:0;transform:scale(.15)}}
+}
+
+/* Refine card on desktop: wide and short, two columns of filters, no scrolling */
+@media(min-width:900px){
+.sheetwrap.pop .sheet.refine{overflow:auto;display:block}
+.sheetwrap.pop .sheet.refine>div:nth-child(3){display:grid;grid-template-columns:1fr 1fr;column-gap:28px;align-items:start;overflow:visible}
+.sheetwrap.pop .sheet.refine .fgrp{padding:9px 0}
+.sheetwrap.pop .sheet.refine .rf{display:flex;align-items:center;gap:14px;border-top:1px solid var(--line);margin-top:6px}
+.sheetwrap.pop .sheet.refine .rf .btn{flex:1}
+}
+
+/* collection banners: the name is big and sits in the middle */
+.bigcol::after{background:rgba(0,0,0,.28)}
+.bigcol .cap{inset:0;bottom:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:16px;padding:0 var(--pad)}
+.bigcol .t{font-size:clamp(34px,8vw,84px);line-height:1.02;font-weight:800;letter-spacing:-.03em;text-transform:uppercase;text-shadow:0 2px 24px rgba(0,0,0,.35)}
+
+/* collection banners: name at the bottom, centred, a little smaller */
+.bigcol::after{background:linear-gradient(transparent 45%,rgba(0,0,0,.55))}
+.bigcol .cap{inset:auto var(--pad) 28px var(--pad);justify-content:flex-end;gap:12px}
+.bigcol .t{font-size:clamp(24px,4.6vw,54px);line-height:1.05;font-weight:800;letter-spacing:-.02em}
+
+/* phone dock v2: one black bar, brand at left, labelled icons, chat at right */
+@media(max-width:899px){
+  .dock{left:12px;right:12px;transform:none;bottom:max(12px,env(safe-area-inset-bottom));gap:0;height:62px;padding:6px;border-radius:31px;background:#000;box-shadow:0 10px 34px rgba(0,0,0,.35),0 0 0 .5px rgba(255,255,255,.14) inset;justify-content:space-between}
+  .dock .mark{width:50px;height:50px;flex:none;background:#fff;color:#000;box-shadow:none!important;font-weight:800}
+  .dock .pill{flex:1;height:50px;padding:0 4px;gap:0;justify-content:space-around;background:transparent!important;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+  .dock .pill button{width:auto;flex:1;height:50px;border-radius:25px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:rgba(255,255,255,.62)}
+  .dock .pill button:active{background:rgba(255,255,255,.12);color:#fff}
+  .dock .pill button::after{content:attr(aria-label);font:600 8.5px/1 'Space Mono',ui-monospace,monospace;letter-spacing:.06em;text-transform:uppercase}
+  .dock svg,.dock svg.f{width:18px!important;height:18px!important;color:inherit}
+  .dock .pill .n{top:4px;right:calc(50% - 20px);background:#fff;color:#000;font-weight:700;min-width:14px;height:14px;font-size:8.5px}
+  .dock .chat{width:50px;height:50px;flex:none;background:#fff;color:#000;box-shadow:none!important}
+  .dock .chat svg,.dock .chat svg.f{color:#000;stroke:#000}
+  .chatfab{display:none}
+}
+
+/* dock v2 fix: an older rule made the middle part white, so labels vanished */
+@media(max-width:899px){
+  .dock .pill,.dock>div.pill:not(.chat){background:transparent!important;box-shadow:none!important}
+  .dock .pill button{color:rgba(255,255,255,.7)!important}
+  .dock .pill button svg,.dock .pill button svg.f{color:inherit;fill:currentColor}
+  .dock .pill button svg:not(.f){fill:none;stroke:currentColor}
+  .dock .mark{color:#000}
+}
+
+/* dock v3 (reference): frosted glass pill, plain icons, logo circle with a blue ring, dark chat circle */
+@media(max-width:899px){
+  .dock{left:50%;right:auto;transform:translateX(-50%);width:min(94vw,420px);height:auto;padding:0;gap:8px;border-radius:0;background:none;box-shadow:none;justify-content:center;bottom:max(14px,env(safe-area-inset-bottom))}
+  .dock .mark{width:56px;height:56px;background:#fff;color:#000;box-shadow:0 0 0 3px #3b6fe0,0 8px 24px rgba(0,0,0,.18)!important}
+  .dock .mark img{border-radius:50%}
+  .dock .pill{flex:1;height:54px;padding:0 6px;border-radius:27px;background:rgba(240,240,240,.78)!important;-webkit-backdrop-filter:blur(22px) saturate(1.6);backdrop-filter:blur(22px) saturate(1.6);box-shadow:0 8px 28px rgba(0,0,0,.18),inset 0 0 0 1px rgba(255,255,255,.7)!important;justify-content:space-around}
+  .dock .pill button{flex:1;width:auto;height:46px;color:#000!important;display:grid;place-items:center}
+  .dock .pill button::after{content:none}
+  .dock .pill button:active{background:rgba(0,0,0,.07);color:#000}
+  .dock svg,.dock svg.f{width:22px!important;height:22px!important}
+  .dock .pill .n{background:#000;color:#fff;right:calc(50% - 22px)}
+  .dock .chat{width:56px;height:56px;background:#17181a;color:#fff;box-shadow:0 0 0 3px #fff,0 8px 24px rgba(0,0,0,.28)!important}
+  .dock .chat svg,.dock .chat svg.f{color:#fff;stroke:#fff}
+}
+/* welcome card: dark, logo + name + message + close */
+.chatwel{display:flex;align-items:center;gap:12px;max-width:min(88vw,340px);padding:12px 14px;border-radius:22px;background:#17181a;color:#fff;box-shadow:0 12px 36px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.08)}
+.chatwel .wl{width:40px;height:40px;border-radius:11px;object-fit:cover;background:#fff;color:#000;display:grid;place-items:center;font:800 16px/1 inherit;font-style:normal;flex:none}
+.chatwel .wt{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.chatwel b{font-size:11px;font-weight:700;color:rgba(255,255,255,.6);letter-spacing:.02em}
+.chatwel span{font-size:14px;font-weight:500;color:#fff}
+.chatwel u{text-decoration:none;flex:none;width:26px;height:26px;border-radius:13px;background:rgba(255,255,255,.12);display:grid;place-items:center;font-size:16px;color:rgba(255,255,255,.8)}
+
+/* dock v4: slightly smaller, solid white (no blur) */
+@media(max-width:899px){
+  .dock{width:min(88vw,370px);gap:7px;bottom:max(12px,env(safe-area-inset-bottom))}
+  .dock .mark,.dock .chat{width:48px;height:48px}
+  .dock .pill{height:46px;padding:0 4px;background:#fff!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;box-shadow:0 6px 22px rgba(0,0,0,.16),0 0 0 .5px rgba(0,0,0,.06)!important}
+  .dock .pill button{height:40px}
+  .dock svg,.dock svg.f{width:19px!important;height:19px!important}
+  .dock .pill .n{right:calc(50% - 19px)}
+}
+
+/* dock v5: the white pill must beat the earlier transparent rule (higher specificity) */
+@media(max-width:899px){
+  .dock>div.pill:not(.chat),.dock .pill{background:#fff!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;box-shadow:0 6px 22px rgba(0,0,0,.16),0 0 0 .5px rgba(0,0,0,.06)!important}
+}
+
+/* welcome card: small, one row */
+.chatwel{display:flex!important;flex-direction:row!important;align-items:center;gap:9px;width:auto;max-width:min(78vw,250px);padding:8px 10px 8px 8px;border-radius:16px;text-align:left}
+.chatwel .wl{width:26px;height:26px;border-radius:8px;font-size:12px}
+.chatwel .wt{flex-direction:column;gap:1px}
+.chatwel b{display:none}
+.chatwel span{font-size:12px;font-weight:500;line-height:1.25}
+.chatwel u{width:20px;height:20px;border-radius:10px;font-size:13px;margin-left:2px}
+
+/* product page: show the whole picture, never crop it */
+.gal .main img,.gal .th img{object-fit:contain;background:var(--soft)}
+
+/* one picture only: suggestion cards fill the sides (desktop) */
+.gal .sugg{display:none}
+@media(min-width:900px){
+  .gal.solo{grid-template-columns:170px minmax(0,1fr) 170px}
+  .gal.solo .main{grid-column:2}
+  .gal.solo .sugg{display:flex;flex-direction:column;gap:10px;overflow-y:auto;scrollbar-width:none;min-height:0}
+  .gal.solo .sugg::-webkit-scrollbar{display:none}
+  .gal.solo .sugg .pc{flex:none}
+}
+
+/* product details: small text, bold titles for contrast */
+.info .nm{font-size:14px;font-weight:800;letter-spacing:-.01em}
+.info .pr{font-size:11px;font-weight:700;color:#000}
+.info .lbl{font-weight:800;letter-spacing:.08em;color:#000}
+.info .ai>button,.info .ai>button span:first-child{font-weight:800;font-size:11px}
+.dtl h3{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin:0 0 4px;color:#000}
+.dtl dt{font-weight:700;color:#000}
+.dtl dd{color:#5a5754;font-weight:400}
+.info .sz,.info .btn{font-weight:700}
+.info .tiny{font-weight:600}
+
+/* gallery v2 (desktop): many pictures = big fixed main at left + thin scrolling column at right;
+   one picture = suggestion cards on ONE side; tighter gaps */
+@media(min-width:900px){
+  .gal{gap:6px;grid-template-columns:minmax(0,1fr) 96px}
+  .gal .main{grid-column:1;grid-row:1}
+  .gal .rail{grid-column:2;grid-row:1;gap:6px}
+  .gal .th{width:100%}
+  .gal.solo{grid-template-columns:190px minmax(0,1fr)}
+  .gal.solo .sugg{display:flex;grid-column:1;grid-row:1;flex-direction:column;gap:8px;overflow-y:auto;scrollbar-width:none;min-height:0}
+  .gal.solo .main{grid-column:2;grid-row:1}
+}
+
+/* gallery v3 (desktop): the picture card is exactly as wide as its picture, so there is no empty space beside it */
+@media(min-width:900px){
+  .pd{grid-template-columns:auto minmax(320px,400px);justify-content:center;gap:18px}
+  .gal{grid-template-columns:auto 96px}
+  .gal.solo{grid-template-columns:190px auto}
+  .gal .main{display:flex;justify-content:center;width:fit-content;max-width:100%;min-width:0}
+  .gal .main img{position:static!important;inset:auto;height:100%;width:auto;max-width:100%;object-fit:contain;background:transparent}
+  .gal .main .ct{left:10px;bottom:10px}
+}
+
+/* many pictures: swipe on phones (dots), no highlight border on thumbnails */
+.gal .th.on{box-shadow:none}
+.gal .swp,.gal .dots3{display:none}
+@media(max-width:899px){
+  .gal .main>img{display:none}
+  .gal .swp{display:flex;position:absolute;inset:0;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .gal .swp::-webkit-scrollbar{display:none}
+  .gal .swp img{flex:0 0 100%;width:100%;height:100%;object-fit:contain;scroll-snap-align:center}
+  .gal .rail{display:none}
+  .gal .dots3{display:flex;gap:5px;position:absolute;left:50%;bottom:12px;transform:translateX(-50%);padding:5px 8px;border-radius:12px;background:rgba(255,255,255,.85);z-index:2}
+  .gal .dots3 i{width:5px;height:5px;border-radius:3px;background:rgba(0,0,0,.25);transition:width .2s,background .2s}
+  .gal .dots3 i.on{width:16px;background:#000}
+  .gal .main .ct{left:auto;right:12px}
+}
+
+/* gallery v4 (desktop): picture area fills all the width; the whole picture is shown over a soft blurred copy of itself, so there is never an empty band */
+@media(min-width:900px){
+  .pd{grid-template-columns:minmax(0,1fr) 400px;justify-content:stretch;gap:14px}
+  .gal{grid-template-columns:minmax(0,1fr) 96px;width:100%}
+  .gal.solo{grid-template-columns:190px minmax(0,1fr)}
+  .gal .main{width:100%;max-width:none;position:relative;overflow:hidden;isolation:isolate}
+  .gal .main::before{content:"";position:absolute;inset:-30px;background:var(--bgi) center/cover;filter:blur(28px) saturate(1.1);opacity:.55;z-index:-1}
+  .gal .main img{position:absolute!important;inset:0;width:100%;height:100%;object-fit:contain;background:transparent}
+}
+
+/* product page (reference layout): many pictures = big 2-column grid, details card on the right with tabs */
+.tabs2 .tr{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:10px}
+.tabs2 .tr button{flex:1;padding:10px 4px;font-size:11px;font-weight:700;color:var(--mut);border-bottom:2px solid transparent;margin-bottom:-1px;text-align:center}
+.tabs2 .tr button.on{color:#000;border-bottom-color:#000}
+.gal .pgrid{display:none}
+@media(min-width:900px){
+  .gal.multi{display:block;height:auto;position:static}
+  .gal.multi .main,.gal.multi .rail{display:none}
+  .gal.multi .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .gal.multi .gi{border-radius:var(--r1);overflow:hidden;aspect-ratio:3/4;background:var(--soft)}
+  .gal.multi .gi img{width:100%;height:100%;object-fit:cover;display:block}
+  .gal.multi .pgrid.odd .gi:last-child{grid-column:1/-1;aspect-ratio:16/10}
+  .pd{align-items:start}
+  .pd .info{position:sticky;top:calc(var(--hh) + 6px)}
+}
+@media(max-width:899px){.gal .pgrid{display:none!important}}
+
+/* phone product page (reference): big cover picture, white details card, large pill sizes, stacked buttons, grey tabs card */
+@media(max-width:899px){
+  .gal .main{border-radius:22px;aspect-ratio:3/4.2}
+  .gal .swp img,.gal .main>img{object-fit:cover}
+  .gal .swp img{width:100%;height:100%}
+  .gal .main .ct{left:16px;right:auto;bottom:14px;background:none;color:#fff;font-size:13px;font-weight:500;padding:0;text-shadow:0 1px 8px rgba(0,0,0,.5)}
+  .gal .dots3{display:none}
+  .info{background:#fff;border:1px solid var(--line);border-radius:22px;padding:14px 12px 16px;box-shadow:none}
+  .info .nm{font-size:17px;font-weight:800}
+  .info .pr{font-size:13px;font-weight:500;color:#555}
+  .info .fwrap{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  .info .sz{min-height:40px;height:40px;border-radius:20px;border:1px solid #d9d9d9;background:#fff;font-size:12px;font-weight:600;color:#000}
+  .info .sz.on{background:#000;color:#fff;border-color:#000;box-shadow:0 6px 14px rgba(0,0,0,.25)}
+  .info .sz.off{color:#aaa;text-decoration:line-through}
+  .info .tiny{background:#f0f0f0;border-radius:10px;padding:8px 12px;font-size:11px;text-decoration:none!important;color:#000!important}
+  .info .row2{display:grid;grid-template-columns:1fr;gap:10px}
+  .info .row2 .btn{height:52px;border-radius:26px;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;width:100%}
+  .info .row2 .btn.out{background:#fff;border:1.5px solid #000;color:#000}
+  .info .row2 .btn:not(.out){background:#000;color:#fff}
+  .info .row2.fx .btn{height:40px;font-size:11px}
+  .tabs2 .tb{background:#f0f0f0;border-radius:16px;padding:12px}
+  .tabs2 .tr{background:#f0f0f0;border-radius:16px 16px 0 0;padding:0 8px;margin:0;border-bottom:0}
+  .tabs2 .tr button{font-size:12px;padding:12px 2px}
+}
+
+/* tabs card: one clean rounded card, no mismatched corners */
+.tabs2{background:#f0f0f0;border-radius:18px;overflow:hidden}
+.tabs2 .tr,.tabs2 .tb{background:transparent!important;border-radius:0!important}
+.tabs2 .tr{padding:0 10px;margin:0;border-bottom:1px solid rgba(0,0,0,.08)}
+.tabs2 .tr button{white-space:nowrap;font-size:11px;padding:13px 2px;margin-bottom:-1px}
+.tabs2 .tb{padding:12px 14px 14px}
+
+/* sections (Products you may like, Recently viewed, ...): no background card, just the title and the product cards */
+.band,.band.t-l,.band.t-m,.band.t-s{background:transparent!important;border-radius:0;box-shadow:none;border:0;padding:0;margin-top:22px}
+.band .hd{padding:0 2px 10px}
+
+/* remove the sticky "Choose size" bar */
+.buybar{display:none!important}
+/* phone product card: slightly smaller and calmer */
+@media(max-width:899px){
+  .info{padding:12px 12px 14px}
+  .info .nm{font-size:15px}
+  .info .pr{font-size:12px}
+  .info .lbl{font-size:9.5px}
+  .info .sz{min-height:34px;height:34px;border-radius:17px;font-size:11px}
+  .info .sz.on{box-shadow:0 4px 10px rgba(0,0,0,.18)}
+  .info .dots2 button{transform:scale(.85)}
+  .info .tiny{padding:6px 10px;font-size:10px}
+  .info .row2 .btn{height:44px;border-radius:22px;font-size:11px}
+  .tabs2 .tr button{font-size:10.5px;padding:11px 2px}
+  .tabs2 .tb{padding:10px 12px 12px}
+  .info .qty{transform:scale(.9);transform-origin:left center}
+}
+
+/* a piece with ONE picture: show the whole picture (no crop) over a soft backdrop, on cards and on the product page */
+.pc.one .sc img{object-fit:contain}
+@media(max-width:899px){
+  .gal.solo .main{position:relative;overflow:hidden;isolation:isolate}
+  .gal.solo .main::before{content:"";position:absolute;inset:-30px;background:var(--bgi) center/cover;filter:blur(28px) saturate(1.1);opacity:.5;z-index:-1}
+  .gal.solo .main>img{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+}
+
+/* one picture: the card takes the picture's own shape (clean rounded edges, no bands, no blurred backdrop) */
+.gal.solo .main{aspect-ratio:auto!important;height:auto!important;background:var(--soft);border-radius:22px;overflow:hidden}
+.gal.solo .main::before{display:none!important}
+.gal.solo .main>img{position:static!important;display:block!important;width:100%!important;height:auto!important;max-height:78svh;object-fit:contain;margin:0 auto}
+@media(min-width:900px){.gal.solo{height:auto;position:static;align-items:start}.gal.solo .main{align-self:start}}
+
+/* picture cards never overlap the details card; one picture = the card is exactly the picture (no bands) */
+.gal .main{position:relative!important;top:auto!important}
+.gal{position:relative!important;top:auto!important;z-index:0}
+.pd .info{position:relative;z-index:1}
+.gal.solo .main>img{max-height:none!important}
+@media(min-width:900px){.pd .info{position:sticky;top:calc(var(--hh) + 6px)}}
+
+/* one-picture cards: the card is exactly as tall as its picture, so there is no empty space above or below */
+.pc.one .ph{aspect-ratio:auto!important}
+.pc.one .sc{height:auto!important}
+.pc.one .sc a{display:block;width:100%;flex:0 0 100%}
+.pc.one .sc img{width:100%;height:auto!important;display:block;object-fit:cover}
+.grid{align-items:start}
+
+/* all product cards the same size; the picture fills the card edge to edge (no empty space) */
+.pc.one .ph{aspect-ratio:3/4!important}
+.pc.one .sc{height:100%!important}
+.pc.one .sc img{height:100%!important;object-fit:cover!important;object-position:center 35%}
+.pc .sc img{object-position:center 35%}
+.grid{align-items:stretch}
+
+/* equal cards for real: the link around each picture must fill the card height, and the picture is zoomed slightly */
+.pc .ph{aspect-ratio:3/4!important;height:auto}
+.pc .sc{height:100%!important}
+.pc .sc a{display:block;height:100%!important;flex:0 0 100%;overflow:hidden}
+.pc .sc img{width:100%;height:100%!important;object-fit:cover!important;transform:scale(1.08)}
+
+/* card picture slider: every picture snaps exactly to the card edge, so the neighbouring picture never peeks in */
+.pc .sc{scroll-snap-type:x mandatory;overscroll-behavior-x:contain}
+.pc .sc>a,.pc .sc>div{scroll-snap-align:start;scroll-snap-stop:always;min-width:100%;max-width:100%;overflow:hidden;contain:paint}
+
+/* home page, PHONES ONLY: the top bar stays hidden over the hero and slides in once you scroll past it (desktop keeps its bar as before) */
+.top{transition:transform .35s cubic-bezier(.2,.7,.2,1),background .25s}
+@media(max-width:899px){
+  body.homehero:not(.pasthero) .top{transform:translateY(-110%);pointer-events:none}
+  body.homehero.pasthero .top{background:rgba(239,238,237,.92)!important;color:#000}
+  body.homehero.pasthero .top,body.homehero.pasthero .top .l a,body.homehero.pasthero .top .ic,body.homehero.pasthero .brand{color:#000!important;text-shadow:none!important}
+}
+
+/* intentional blank space in the product grid: just empty space, no card */
+.blank,.blank.ghost{background:transparent!important;box-shadow:none!important;border:0;opacity:1}

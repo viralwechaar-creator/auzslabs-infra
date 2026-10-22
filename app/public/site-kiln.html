@@ -860,19 +860,23 @@ $('#orderForm').addEventListener('submit',function(e){e.preventDefault();if(!car
  if(!(a&&b&&c)){(!a?$('#cName'):!b?$('#cPhone'):$('#cTable')).focus();return}
  if(LIVE&&!selfOn){toast(closed?'We are closed right now, so orders are paused. Please try again when we open.':'Online ordering is switched off. Please order at the counter.');return}
  var note=$('#cNote').value.trim(),lines=cart.slice(),tot=total();
- function finish(oid){
+ function finish(oid,tok){
   var items=lines.map(function(l){var o=optTxt(l);return '<dd>'+l.q+' × '+esc(BY[l.id].name)+(o?' <span style="color:var(--mute)">('+esc(o)+')</span>':'')+'</dd>'}).join('');
   var tname=dine?(function(){var o=$('#cTable').selectedOptions[0];return o?o.textContent:'table '+tb})():'';
   var upi=(LIVE&&CFGt.upiId&&typeof qrcode==='function')?upiBox(tot,oid):'';
-  $('#cartDone').innerHTML='<span class="mono" style="color:var(--mute)">Order received</span><h2>Thank you, '+esc(name.split(' ')[0])+'.</h2><div class="big">'+esc(oid)+'</div><dl><dt>Type</dt><dd>'+(dine?'Dine in, '+esc(tname):'Takeaway, '+esc($('#cPickup').value.toLowerCase()))+'</dd><dt>Mobile</dt><dd>+91 '+ph+'</dd><dt>Items</dt><div>'+items+'</div>'+(note?'<dt>Note</dt><dd>'+esc(note)+'</dd>':'')+'<dt>Total</dt><dd><b>'+rs(tot)+'</b>, GST included</dd></dl>'+upi+'<div class="cta"><a class="btn red" href="#menu">Order something else</a><a class="btn ghost" href="#home">Back home</a></div>';
+  // Keep the one link that will show this exact bill once it's billed, so the customer never has to
+  // depend on a WhatsApp message arriving -- they can open it themselves, any time, from this page.
+  var billLink='';
+  if(tok){try{localStorage['auz_last_order_'+SLUG]=tok}catch(x){}billLink='<a class="btn ghost" href="/i.html?o='+encodeURIComponent(tok)+'" target="_blank" rel="noopener">View my bill</a>'}
+  $('#cartDone').innerHTML='<span class="mono" style="color:var(--mute)">Order received</span><h2>Thank you, '+esc(name.split(' ')[0])+'.</h2><div class="big">'+esc(oid)+'</div><dl><dt>Type</dt><dd>'+(dine?'Dine in, '+esc(tname):'Takeaway, '+esc($('#cPickup').value.toLowerCase()))+'</dd><dt>Mobile</dt><dd>+91 '+ph+'</dd><dt>Items</dt><div>'+items+'</div>'+(note?'<dt>Note</dt><dd>'+esc(note)+'</dd>':'')+'<dt>Total</dt><dd><b>'+rs(tot)+'</b>, GST included</dd></dl>'+upi+(tok?'<p class="mono" style="color:var(--mute);font-size:12px">Your bill will appear at that link as soon as it is ready — no need to wait for WhatsApp.</p>':'')+'<div class="cta"><a class="btn red" href="#menu">Order something else</a>'+billLink+'<a class="btn ghost" href="#home">Back home</a></div>';
   cart=[];save();$('#cartView').hidden=true;$('#cartDone').hidden=false;window.scrollTo(0,0);refresh();$('#orderForm').reset();$('#fTable').hidden=!$('input[name="otype"]:checked')||$('input[name="otype"]:checked').value!=='dine';$('#fPickup').hidden=$('#fTable').hidden===false}
  if(!LIVE){finish('K-'+(Math.floor(Math.random()*9000)+1000));return}
  var btn=$('#placeBtn');btn.disabled=true;var old=btn.textContent;btn.textContent='Placing order…';
  var nt=(dine?'':'Takeaway · '+$('#cPickup').value+(note?' · ':''))+note;
  sbc.rpc('place_order',{tenant_slug:SLUG,t:dine?tb:null,n:name,p:ph,nt:nt,its:lines.map(function(l){var p=BY[l.id];return {id:l.id,size:p.sizes?p.sizes[l.s].n:'',qty:l.q}})}).then(function(r){
   btn.disabled=false;btn.textContent=old;
-  if(r.error){toast(/busy/.test(r.error.message)?'Too many pending orders right now. Please call us or try again shortly.':'Could not place the order. Please try again or call us.');return}
-  finish('Order sent')}).catch(function(){btn.disabled=false;btn.textContent=old;toast('Could not reach us. Please try again.')})});
+  if(r.error){toast(/busy/.test(r.error.message)?'Too many pending orders right now. Please call us or try again shortly.':(r.error.message||'Could not place the order. Please try again or call us.'));return}
+  finish('Order sent',r.data)}).catch(function(){btn.disabled=false;btn.textContent=old;toast('Could not reach us. Please try again.')})});
 function upiBox(amount,oid){try{var uri='upi://pay?pa='+encodeURIComponent(CFGt.upiId)+'&pn='+encodeURIComponent(CFGt.upiName||CFGt.name||'')+'&am='+Number(amount).toFixed(2)+'&cu=INR&tn='+encodeURIComponent('Order');var q=qrcode(0,'M');q.addData(uri);q.make();return '<div class="col"><span class="mono" style="color:var(--mute)">Pay by UPI (optional)</span><div style="width:180px;background:#fff;padding:8px;border:1px solid var(--line)">'+q.createSvgTag(4,0)+'</div><p>Scan with any UPI app, or pay at the counter. Staff check the payment before handing over.</p></div>'}catch(x){return ''}}
 $$('a[data-page="cart"],a.cb,#cartBar').forEach(function(a){a.addEventListener('click',function(){$('#cartDone').hidden=true;$('#cartView').hidden=false})});
 

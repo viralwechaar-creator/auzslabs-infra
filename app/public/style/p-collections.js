@@ -21,10 +21,15 @@ async function collectionsSheet(done) {
 }
 function collectionForm(c, done) {
   const nm = input({ value: c ? c.name : '', placeholder: t('Summer 2026') }), note = input({ value: c && c.note ? c.note : '', placeholder: t('Note (optional)') });
-  sheet({ title: c ? t('Edit collection') : t('New collection'), body: h('div', { class: 'grid' }, field(t('Name'), nm), field(t('Note'), note)),
+  let img = (c && c.image) || ''; const imgHost = h('div', { class: 'pe-row' });
+  const paintImg = () => clear(imgHost).append(h('div', { class: 'pe-main' }, img ? h('img', { src: img, alt: '' }) : icon('camera', 28)),
+    h('div', { class: 'grid', style: { gap: '6px', alignContent: 'start' } }, h('button', { class: 'btn sm', type: 'button', onclick: () => { const i = h('input', { type: 'file', accept: 'image/*', class: 'hidden' }); document.body.append(i); i.onchange = async () => { const f = i.files[0]; i.remove(); if (!f) return; try { img = await uploadPhoto(f); paintImg(); } catch (e) { toast(e.message || t('Failed'), { err: true }); } }; i.click(); } }, icon('camera', 16), img ? t('Change') : t('Add picture')),
+      img ? h('button', { class: 'btn sm danger', type: 'button', onclick: () => { img = ''; paintImg(); } }, t('Remove')) : null));
+  paintImg();
+  sheet({ title: c ? t('Edit collection') : t('New collection'), body: h('div', { class: 'grid' }, field(t('Name'), nm), field(t('Note'), note), h('div', { class: 'field' }, h('label', null, t('Collection picture')), h('div', { class: 'hint' }, t('Shown on the store for this collection. Without one, a picture of a style in it is used.')), imgHost)),
     actions: [{ label: t('Save'), primary: true, onclick: async (close) => {
       if (!nm.value.trim()) { toast(t('Enter a name'), { err: true }); return false; }
-      try { const r = await api('sty_collection_save', { p: { id: c && c.id, name: nm.value, note: note.value } }); COL.at = 0; close(); const list = await loadCollections(true); const made = list.find((x) => x.id === r.id); toast(t('Saved')); made ? collectionSheet(made, done) : collectionsSheet(done); }
+      try { const r = await api('sty_collection_save', { p: { id: c && c.id, name: nm.value, note: note.value, image: img } }); COL.at = 0; close(); const list = await loadCollections(true); const made = list.find((x) => x.id === r.id); toast(t('Saved')); made ? collectionSheet(made, done) : collectionsSheet(done); }
       catch (e) { toast(e.message || t('Failed'), { err: true }); return false; }
     } }] });
 }

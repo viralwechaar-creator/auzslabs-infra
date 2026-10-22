@@ -57,6 +57,8 @@ function orderSheet(r, changed) {
     ['confirmed', 'packed'].includes(r.status) ? { label: t('Shipped'), onclick: (close) => set({ status: 'shipped' }, close) } : null,
     r.status === 'shipped' ? { label: t('Delivered'), primary: true, onclick: (close) => set(r.payment === 'cod' ? { status: 'delivered', paymentStatus: 'paid' } : { status: 'delivered' }, close) } : null,
     !r.saleId && r.status !== 'cancelled' && r.paymentStatus !== 'paid' ? { label: t('Make bill now (stock goes out)'), onclick: billNow } : null,
+    r.saleId ? { label: t('Share invoice'), primary: !!(c.phone), onclick: async () => { await shareWa({ id: r.saleId, number: r.saleNo, at: r.createdAt, customer: { name: c.name, phone: c.phone }, lines: r.lines.map((l) => ({ qty: l.qty, name: l.name, colour: l.colour, size: l.size, net: l.price * l.qty })), discount: r.discount || 0, total: r.total, payments: [{ mode: r.payment === 'cod' ? 'cash' : r.payment }], balance: 0 }, c.phone); return false; } } : null,
+    r.saleId ? { label: t('Copy invoice link'), onclick: async () => { const l = await billLink({ id: r.saleId }); try { await navigator.clipboard.writeText(l); toast(t('Link copied')); } catch { toast(l); } return false; } } : null,
     !['delivered', 'cancelled'].includes(r.status) ? { label: t('Cancel order'), danger: true, onclick: async (close) => { if (!await confirmBox(t('Cancel this order?'), t('The customer is not told automatically.'), t('Cancel order'), true)) return false; await set({ status: 'cancelled' }, close); } } : null] });
 }
 
@@ -141,12 +143,17 @@ async function extras(host) {
     clear(box);
     let cps = [], rets = [], revs = [];
     try { [cps, rets, revs] = await Promise.all([api('sty_coupons_list'), api('sty_web_returns_list'), api('sty_reviews_list')]); } catch (e) { return box.append(empty('cloudOff', t('Could not load'), e.message)); }
-    const RS = ['requested', 'approved', 'rejected', 'received', 'refunded'];
+    // A request only ever moves forward one step at a time -- requested -> approved/rejected -> received ->
+    // refunded -- and the server (sty_web_return_set, db/247) refuses any other move or a change to an
+    // already-decided request outright. The buttons here only ever offer the real next step(s), matching
+    // the server exactly, instead of letting someone pick any of the 5 statuses at any time.
+    const RETURN_NEXT = { requested: [['approved', t('Approve')], ['rejected', t('Reject')]], approved: [['received', t('Mark received')]], received: [['refunded', t('Finish') + ' ' + t('refund')]], rejected: [], refunded: [] };
     box.append(
       section(t('Returns and exchanges asked online'), h('div', { class: 'list' }, (rets && rets.length ? rets : []).map((r) => liRow({ icon: 'box', title: r.number + ' · ' + r.customer.name, sub: t(r.kind === 'return' ? 'Return' : 'Exchange') + ': ' + r.reason, value: t(r.status), chevron: true, onclick: () => {
           const note = input({ value: r.staffNote || '', placeholder: t('Note for the customer') });
-          sheet({ title: r.number, closeLabel: t('Done'), body: h('div', { class: 'grid' }, h('div', { class: 'card grid' }, h('b', null, r.customer.name), h('div', { class: 'muted small' }, r.customer.phone), h('div', null, r.reason), (r.items || []).map((x) => h('div', { class: 'muted small' }, x.name + ' · ' + [x.colour, x.size].filter(Boolean).join(' ') + ' × ' + x.qty))), field(t('Note'), note)),
-            actions: RS.filter((x) => x !== r.status).map((x) => ({ label: t(x), primary: x === 'approved', onclick: async (close) => { await api('sty_web_return_set', { p_id: r.id, p: { status: x, staffNote: note.value } }); toast(t('Saved')); close(); paint(); } })) });
+          const next = RETURN_NEXT[r.status] || [];
+          sheet({ title: r.number, closeLabel: t('Done'), body: h('div', { class: 'grid' }, h('div', { class: 'card grid' }, h('b', null, r.customer.name), h('div', { class: 'muted small' }, r.customer.phone), h('div', null, r.reason), (r.items || []).map((x) => h('div', { class: 'muted small' }, x.name + ' · ' + [x.colour, x.size].filter(Boolean).join(' ') + ' × ' + x.qty)), !next.length ? h('div', { class: 'muted small' }, t('status') + ': ' + t(r.status) + ' · ' + t('this cannot be changed')) : null), field(t('Note'), note)),
+            actions: next.map(([x, label]) => ({ label, primary: x === 'approved' || x === 'refunded', onclick: async (close) => { await api('sty_web_return_set', { p_id: r.id, p: { status: x, staffNote: note.value } }); toast(t('Saved')); close(); paint(); } })) });
         } })).concat(rets && rets.length ? [] : [empty('box', t('No requests'), t('Return and exchange requests from your online customers show here.'))]))),
       section(t('Coupon codes'), h('div', { class: 'list' }, cps.map((c) => liRow({ icon: 'tag', title: c.code, sub: (c.kind === 'pct' ? c.value + '% off' : c.kind === 'flat' ? '₹' + c.value + ' off' : t('Free shipping')) + (c.minOrder ? ' · ' + t('min') + ' ₹' + c.minOrder : '') + (c.firstOnly ? ' · ' + t('first order only') : ''), value: c.used + (c.maxUses ? '/' + c.maxUses : ''), valueSub: c.active ? t('On') : t('Off'), chevron: true, onclick: () => couponSheet(c) })).concat([h('button', { class: 'btn', type: 'button', onclick: () => couponSheet(null) }, t('Add a coupon'))]))),
       section(t('Reviews from buyers'), h('div', { class: 'list' }, (revs && revs.length ? revs : []).map((r) => liRow({ icon: 'star', title: '★'.repeat(r.rating) + ' ' + r.style, sub: (r.name || '') + (r.body ? ': ' + r.body : ''), value: r.status === 'hidden' ? t('Hidden') : t('Shown'), chevron: true, onclick: async () => { await api('sty_review_set', { p_id: r.id, p_status: r.status === 'hidden' ? 'published' : 'hidden' }); toast(t('Saved')); paint(); } })).concat(revs && revs.length ? [] : [empty('star', t('No reviews yet'), t('Customers can review a piece after their order is delivered.'))]))));

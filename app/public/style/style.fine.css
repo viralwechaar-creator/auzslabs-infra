@@ -334,3 +334,21 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .upiq-rows{width:100%;display:flex;flex-direction:column;gap:6px}
 .upiq-r{display:flex;justify-content:space-between;gap:12px;padding:8px 12px;border-radius:12px;background:var(--panel);box-shadow:0 0 0 .5px var(--sep)}
 .upiq-r b{text-align:right;word-break:break-all;font-weight:600}
+
+/* phone top bar: columns follow their content, icons sit together at the right edge */
+@media (max-width:899px){
+  .topbar{grid-template-columns:minmax(0,1fr) auto;padding-left:14px;padding-right:10px}
+  .topbar .tt{display:none}
+  .topbar .l{min-width:0;justify-self:start}
+  .topbar .r{gap:0;flex:none}
+  .topbar .r .btn.icon{min-width:40px;width:40px;padding:0}
+  .brandpill{max-width:100%}
+}
+
+/* bulk select */
+.selbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;margin:8px 0;border-radius:16px;background:var(--card);box-shadow:var(--ring,0 0 0 .5px var(--sep))}
+.selbar b{margin-right:auto;font-size:13px}
+.icard{position:relative}
+.icard.sel{outline:2px solid var(--tint);outline-offset:-2px}
+.ic-tick{position:absolute;top:8px;left:8px;z-index:2;width:22px;height:22px;border-radius:11px;background:var(--bg);border:1.5px solid var(--sep);display:grid;place-items:center;color:#fff}
+.ic-tick.on{background:var(--tint);border-color:var(--tint)}

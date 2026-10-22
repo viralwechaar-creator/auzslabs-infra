@@ -856,6 +856,10 @@ body.admin-shell .bn-in input{border:none!important;background:none!important;bo
         <div class="label">Droplet: 2 vCPU / 4GB RAM / 75GB disk</div>
         <h2 class="h-2">System resources</h2>
         <div id="systemStatsList">Loading&hellip;</div>
+        <div class="label" style="margin-top:26px">Product load and health</div>
+        <h2 class="h-2" style="font-size:20px">What each product is costing the server</h2>
+        <p class="p">A rough guide, not a billing meter. Request figures cover the time since the server last restarted; database figures are live. Ratings come from simple thresholds listed at the bottom.</p>
+        <div id="loadReport">Loading&hellip;</div>
       </section>
 
       <section class="a-page" id="auditLogSection" data-title="Audit log" data-parent="more">
@@ -1559,6 +1563,7 @@ async function loadSystemStats() {
     <p class="p" style="margin-top:12px">Droplet is 2 vCPU / 4GB RAM / 75GB disk.</p>
   `;
 
+  loadLoadReport(data);
   const uploadsEl = document.getElementById('uploadsUsageVal');
   try {
     const { data: { session } } = await sb.auth.getSession();
@@ -1570,6 +1575,58 @@ async function loadSystemStats() {
   } catch {
     uploadsEl.textContent = '—';
   }
+}
+
+const LOAD_RATE = ['Healthy', 'Watch', 'Risk'];
+function rateTone(n) { return ['#1a7f37', '#a86400', '#b00020'][n]; }
+async function loadLoadReport(sys) {
+  const el = document.getElementById('loadReport'); if (!el) return;
+  let db, api;
+  try {
+    const r1 = await sb.rpc('admin_load_report', {}); if (r1.error) throw new Error(r1.error.message); db = r1.data;
+    const { data: { session } } = await sb.auth.getSession();
+    const res = await fetch(CFG.url + '/admin/load', { headers: { Authorization: 'Bearer ' + session.access_token } });
+    api = await res.json(); if (!res.ok) throw new Error(api.error || 'load failed');
+  } catch (e) { el.innerHTML = `<div class="err">${esc(e.message)} (the server needs the latest update: see deploy notes)</div>`; return; }
+  const GB = 1024 ** 3, fam = {}; (api.families || []).forEach((f) => { fam[f.name] = f; });
+  const items = []; // [rating 0-2, title, why, fix]
+  const add = (n, title, why, fix) => items.push({ n, title, why, fix });
+  const conns = Number(db.connections || 0);
+  add(conns >= 0.85 * APP_POOL_MAX ? 2 : conns >= 0.6 * APP_POOL_MAX ? 1 : 0, 'Database connections', conns + ' open (limit ' + APP_POOL_MAX + ').', 'If this stays high: raise the pool or find the slow query holding connections open.');
+  const hit = Number(db.cache_hit_pct || 100);
+  add(hit < 90 ? 2 : hit < 97 ? 1 : 0, 'Database memory use', hit + '% of reads come from memory.', 'Low means the database keeps going to disk: give it more memory or add indexes to the busiest tables.');
+  const lag = api.process.loop_lag_p99_ms;
+  add(lag > 500 ? 2 : lag > 100 ? 1 : 0, 'API responsiveness', 'Worst 1% of moments are delayed by ' + lag + ' ms.', 'High means the API is busy doing heavy work: move heavy reports or image work out of the request path.');
+  const rssGb = api.process.rss / GB;
+  add(rssGb > 2 ? 2 : rssGb > 1 ? 1 : 0, 'API memory', rssGb.toFixed(2) + ' GB in use; ' + api.process.websockets + ' live tills/screens connected.', 'Growing steadily over days means a leak or too many live connections.');
+  if (api.disk) { const used = 1 - api.disk.free / api.disk.total; add(used > 0.85 ? 2 : used > 0.7 ? 1 : 0, 'Disk space', Math.round(used * 100) + '% used (' + formatBytes(api.disk.total - api.disk.free) + ' of ' + formatBytes(api.disk.total) + ').', 'Over 70%: prune old backups, move pictures to cloud storage, or grow the disk.'); }
+  (api.families || []).forEach((f) => { if (f.count < 20) return; const errPct = 100 * f.errors / f.count; const n = errPct > 5 || f.p95_ms > 2500 ? 2 : errPct > 1 || f.p95_ms > 900 ? 1 : 0; if (n) add(n, f.name + ' is slow or failing', 'Typical slowest 5%: ' + f.p95_ms + ' ms; ' + f.errors + ' server errors in ' + f.count + ' requests.', 'Ask me to look at the slowest calls for this product.'); });
+  (db.bloat || []).forEach((b) => add(1, 'Table "' + b.table + '" needs tidying', b.dead.toLocaleString() + ' dead rows against ' + b.live.toLocaleString() + ' live.', 'Run VACUUM (ANALYZE) on this table in a quiet hour.'));
+  (db.scan_heavy || []).forEach((b) => add(1, 'Table "' + b.table + '" is read in full a lot', b.scans.toLocaleString() + ' full reads of ' + b.rows.toLocaleString() + ' rows.', 'Usually a missing index. Ask me to add one for this table.'));
+  const worst = Math.max(0, ...items.map((i) => i.n));
+  const rows = (db.products || []).map((p) => {
+    const f = Object.entries(fam).filter(([k]) => k.startsWith(p.product.split(' ')[0]) || k === p.product).map(([, v]) => v)[0];
+    const bl = p.rows > 5000 ? p.dead / p.rows : 0, n = bl > 0.3 || (f && (f.p95_ms > 2500 || (f.count > 20 && f.errors / f.count > 0.05))) ? 2 : bl > 0.2 || (f && (f.p95_ms > 900 || (f.count > 20 && f.errors / f.count > 0.01))) ? 1 : 0;
+    return `<tr><td data-label="Product"><b>${esc(p.product)}</b></td><td data-label="Rating" style="color:${rateTone(n)};font-weight:700">${LOAD_RATE[n]}</td><td data-label="Data stored">${formatBytes(p.size)}<br><span style="color:var(--ink-faint)">${p.rows.toLocaleString()} rows, ${p.tables} tables</span></td><td data-label="Requests">${f ? f.count.toLocaleString() + '<br><span style="color:var(--ink-faint)">' + f.per_min + '/min, slowest 5% ' + f.p95_ms + ' ms, ' + f.errors + ' errors</span>' : '<span style="color:var(--ink-faint)">none seen yet</span>'}</td></tr>`;
+  }).join('');
+  const famOnly = (api.families || []).filter((f) => !(db.products || []).some((p) => f.name.startsWith(p.product.split(' ')[0]) || f.name === p.product));
+  const famRows = famOnly.map((f) => `<tr><td data-label="Area"><b>${esc(f.name)}</b></td><td data-label="Requests">${f.count.toLocaleString()}</td><td data-label="Speed">${f.per_min}/min, slowest 5% ${f.p95_ms} ms</td><td data-label="Errors">${f.errors}</td></tr>`).join('');
+  const slow = (db.slow || []).map((q) => `<tr><td data-label="Calls">${Number(q.calls).toLocaleString()}</td><td data-label="Total time">${(q.total_ms / 1000).toFixed(1)} s</td><td data-label="Average">${q.mean_ms} ms</td><td data-label="Query"><code style="font-size:11px">${esc(q.q)}</code></td></tr>`).join('');
+  el.innerHTML = `
+    <div class="a-kpis" style="grid-template-columns:repeat(2,1fr)">
+      <div class="a-kpi"><div class="k">Overall</div><div class="n" style="color:${rateTone(worst)}">${LOAD_RATE[worst]}</div></div>
+      <div class="a-kpi"><div class="k">Live screens</div><div class="n">${api.process.websockets}</div></div>
+      <div class="a-kpi"><div class="k">Busy now</div><div class="n">${db.active} queries</div></div>
+      <div class="a-kpi"><div class="k">Server up for</div><div class="n">${api.minutes >= 120 ? Math.round(api.minutes / 60) + ' h' : api.minutes + ' min'}</div></div>
+    </div>
+    <div class="label" style="margin-top:16px">What needs attention</div>
+    ${items.filter((i) => i.n > 0).length ? items.filter((i) => i.n > 0).sort((a, b) => b.n - a.n).map((i) => `<div class="a-card" style="padding:10px 12px;margin-top:6px"><b style="color:${rateTone(i.n)}">${LOAD_RATE[i.n]}</b> &middot; <b>${esc(i.title)}</b><br><span style="color:var(--ink-dim)">${esc(i.why)}</span><br><span style="color:var(--ink-faint)">${esc(i.fix)}</span></div>`).join('') : '<p class="p">Nothing needs attention right now.</p>'}
+    <div class="label" style="margin-top:16px">By product</div>
+    <div class="admin-table-wrap" style="margin-top:8px"><table class="admin-table"><tr><th>Product</th><th>Rating</th><th>Data stored</th><th>Requests</th></tr>${rows}</table></div>
+    ${famRows ? `<div class="label" style="margin-top:16px">Other traffic</div><div class="admin-table-wrap" style="margin-top:8px"><table class="admin-table"><tr><th>Area</th><th>Requests</th><th>Speed</th><th>Errors</th></tr>${famRows}</table></div>` : ''}
+    <div class="label" style="margin-top:16px">Slowest database work (total time)</div>
+    ${slow ? `<div class="admin-table-wrap" style="margin-top:8px"><table class="admin-table"><tr><th>Calls</th><th>Total time</th><th>Average</th><th>Query</th></tr>${slow}</table></div>` : '<p class="p">Not available: query statistics are not switched on in the database. Ask me to enable them.</p>'}
+    <p class="p" style="margin-top:14px;font-size:12px;color:var(--ink-faint)">Thresholds: Watch when the slowest 5% of requests take over 0.9 s, errors pass 1%, connections pass 60% of the limit, database memory hits fall under 97%, disk passes 70%, or a table has over 20% dead rows. Risk is roughly three times that. They are rules of thumb for this 2 CPU / 4 GB server.</p>`;
 }
 
 async function loadPricing() {

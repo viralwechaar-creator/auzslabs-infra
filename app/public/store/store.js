@@ -53,6 +53,18 @@ const FAM = [['Blues', /blue|navy|sky|denim|indigo|teal/, ['#2f5fd0', '#1f2a44']
 const famOf = (c) => { const n = String(c || '').toLowerCase(); const f = FAM.find((x) => x[1].test(n)); return f ? f[0] : null; };
 
 // ---------- state ----------
+// the shop's own logo becomes the home-screen icon of this website (a data URI, so iOS never shows a blank icon)
+async function shopIcon(d) {
+  try {
+    const logo = d && d.shop && d.shop.logoUrl; if (!logo) return;
+    const r = await fetch('/app-icon/180.png?v=' + encodeURIComponent(String(logo).slice(-14))); if (!r.ok) return;
+    const fr = new FileReader(); fr.onload = () => { document.querySelectorAll('link[rel=apple-touch-icon],link[rel=icon]').forEach((l) => l.remove()); ['apple-touch-icon', 'icon'].forEach((rel) => { const l = document.createElement('link'); l.rel = rel; l.href = fr.result; document.head.append(l); }); }; fr.readAsDataURL(await r.blob());
+  } catch (e) { /* the default icon stays */ }
+}
+// a picture that failed to load (flaky network, phone memory) is asked for once more before giving up
+// small copy of an uploaded picture for cards (see server storage.js makeThumbs); older pictures without one fall back to the original
+const thumb = (u, w) => (u && /\/uploads\/site\//.test(u) ? u.replace(/\.(jpe?g|png|webp)$/i, '.w' + (w || 480) + '.webp') : u);
+document.addEventListener('error', (e) => { const im = e.target; if (im && im.tagName === 'IMG' && im.dataset.orig && im.src !== im.dataset.orig) { im.src = im.dataset.orig; return; } if (!im || im.tagName !== 'IMG' || im.dataset.retry || !im.src || im.src.startsWith('data:')) return; im.dataset.retry = '1'; const u = im.src; im.removeAttribute('loading'); setTimeout(() => { im.src = u + (u.includes('?') ? '&' : '?') + 'r=1'; }, 600); }, true);
 let D = null;            // public_sty_store result
 let STY = [], BYID = {}, VAR = {};
 let bag = [], wish = [];
@@ -67,6 +79,8 @@ function recentBand(except, title) {
   return E('section', { class: 'band' }, E('div', { class: 'hd' }, E('h2', null, title || 'Recently viewed'), E('button', { class: 'btn sm out', onclick: () => { LS.set('recent', []); route(); } }, 'Clear')), E('div', { class: 'row' }, list.map((x) => card(x))));
 }
 const photos = (s) => { const out = []; const push = (u) => { if (u && !out.includes(u)) out.push(u); }; push(s.photoUrl); (s.photos || []).forEach(push); Object.values(s.colourPhotos || {}).forEach((a) => (a || []).forEach(push)); return out; };
+const pickPic = (s, role) => { const u = (s.photoUse || {})[role]; return u && photos(s).includes(u) ? u : photos(s)[0]; };
+const withFirst = (list, u) => (u && list.includes(u) ? [u, ...list.filter((x) => x !== u)] : list);
 const photosFor = (s, colour) => { const cp = (s.colourPhotos || {})[colour] || []; const rest = photos(s).filter((u) => !cp.includes(u)); return [...cp, ...rest]; };
 const leftOf = (s) => s.variants.reduce((a, v) => a + v.left, 0);
 const isGone = (s) => s.badge === 'soldout' || leftOf(s) === 0;
@@ -93,7 +107,7 @@ function setMeta(title, desc, img, canon) {
 // ---------- small ui ----------
 function sheet(title, body, foot) {
   const w = E('div', { class: 'sheetwrap', role: 'dialog', 'aria-modal': 'true' });
-  const close = () => w.remove();
+  const close = () => { if (w.classList.contains('pop') && !w.classList.contains('out')) { w.classList.add('out'); setTimeout(() => w.remove(), 190); } else w.remove(); };
   w.append(E('div', { class: 'bd', onclick: close }), E('div', { class: 'sheet' }, E('div', { class: 'grab' }), E('div', { class: 'hd' }, E('h2', null, title), E('button', { class: 'ic', 'aria-label': 'Close', onclick: close }, icon('x'))), body, foot || null));
   document.body.append(w); return { close, el: w };
 }
@@ -101,18 +115,18 @@ function placeholder(name) { return E('div', { style: { height: '100%', display:
 
 function card(s, opt) {
   opt = opt || {};
-  const ims = photos(s), gone = isGone(s), on = wish.includes(s.id);
+  const ims = withFirst(photos(s), pickPic(s, 'card')), gone = isGone(s), on = wish.includes(s.id);
   const sc = E('div', { class: 'sc' });
   const dt = E('div', { class: 'dt' });
   const list = ims.length ? ims.slice(0, 6) : [null];
-  list.forEach((u, i) => { sc.append(E('a', { href: link('p/' + s.id) }, u ? E('img', { src: u, alt: s.name, loading: 'lazy', decoding: 'async' }) : placeholder(s.name))); if (list.length > 1) dt.append(E('i', { class: i === 0 ? 'on' : '' })); });
+  list.forEach((u, i) => { sc.append(E('a', { href: link('p/' + s.id) }, u ? E('img', { src: thumb(u, 480), 'data-orig': u, alt: s.name, loading: i === 0 ? 'eager' : 'lazy', decoding: 'async' }) : placeholder(s.name))); if (list.length > 1) dt.append(E('i', { class: i === 0 ? 'on' : '' })); });
   sc.addEventListener('scroll', () => { const i = Math.round(sc.scrollLeft / Math.max(sc.clientWidth, 1)); [...dt.children].forEach((d, j) => d.classList.toggle('on', i === j)); }, { passive: true });
   const step = (d) => (e) => { e.preventDefault(); sc.scrollBy({ left: d * sc.clientWidth, behavior: 'smooth' }); };
   const bm = E('button', { class: 'bm' + (on ? ' on' : ''), 'aria-label': 'Save', onclick: (e) => { e.preventDefault(); toggleWish(s.id); bm.classList.toggle('on', wish.includes(s.id)); } }, icon('mark'));
   const ph = E('div', { class: 'ph' }, sc, dt, bm,
     gone ? E('div', { class: 'tag' }, 'Sold Out') : s.badge === 'limited' ? E('div', { class: 'tag' }, 'Limited') : discPct(s) >= 10 ? E('div', { class: 'tag' }, discPct(s) + '% off') : null,
     list.length > 1 ? E('button', { class: 'nx p', 'aria-label': 'Previous picture', onclick: step(-1) }, icon('left')) : null, list.length > 1 ? E('button', { class: 'nx n', 'aria-label': 'Next picture', onclick: step(1) }, icon('right')) : null);
-  return E('div', { class: 'pc' + (gone ? ' gone' : '') }, ph, E('div', { class: 'in' },
+  return E('div', { class: 'pc' + (gone ? ' gone' : '') + (list.length === 1 ? ' one' : '') }, ph, E('div', { class: 'in' },
     E('a', { href: link('p/' + s.id), style: { minWidth: 0 } }, E('div', { class: 'nm' }, s.name), E('div', { class: 'pr' }, inr(s.price), saleOn() && s.mrp > s.price ? E('s', null, inr(s.mrp)) : null)),
     gone ? null : E('button', { class: 'add', 'aria-label': 'Quick add', onclick: () => quickAdd(s) }, icon('plus'))));
 }
@@ -171,7 +185,7 @@ function shell() {
     E('div', { class: 'menu', id: 'menu' }), E('div', { class: 'srch', id: 'srch' }));
 
   try { if (!sessionStorage.getItem('st.wel.' + SLUG)) { sessionStorage.setItem('st.wel.' + SLUG, '1');
-    setTimeout(() => { const b = E('button', { class: 'chatwel', id: 'chatwel', onclick: toContact }, E('b', null, 'Welcome to ' + name), E('span', null, c.welcome || 'Need a hand? Tap to reach us.')); document.body.append(b); setTimeout(() => b.classList.add('out'), 6500); setTimeout(() => b.remove(), 7100); }, 1200); } } catch (e) { /* no storage */ }}
+    setTimeout(() => { const b = E('button', { class: 'chatwel', id: 'chatwel', onclick: toContact }, (D.shop.logoUrl ? E('img', { class: 'wl', src: D.shop.logoUrl, alt: '' }) : E('i', { class: 'wl' }, String(name || 'S').trim().charAt(0).toUpperCase())), E('div', { class: 'wt' }, E('b', null, name), E('span', null, c.welcome || 'Welcome to ' + name + '!')), E('u', { 'aria-label': 'Close', onclick: (ev) => { ev.stopPropagation(); b.remove(); } }, '×')); document.body.append(b); setTimeout(() => b.classList.add('out'), 6500); setTimeout(() => b.remove(), 7100); }, 1200); } } catch (e) { /* no storage */ }}
 function groups() {
   const cats = [...new Set(STY.map((s) => s.category).filter(Boolean))];
   const G = [['Top', /shirt|tee|polo|sweat|hood|jacket|top|kurta|blazer|coat|knit|vest/i], ['Bottom', /jean|pant|trouser|short|cargo|skirt|jogger|chino|denim|legging/i], ['Footwear', /shoe|sneaker|sandal|slipper|boot|loafer|footwear|heel/i], ['Accessories', /bag|cap|hat|belt|wallet|sock|scarf|watch|case|glass|jewel|tie/i]];
@@ -256,17 +270,17 @@ function newest(n) { return [...STY].sort((a, b) => String(b.createdAt).localeCo
 function stack(list, label) {
   list = list.filter((s) => photos(s)[0]).slice(0, 14); if (list.length < 3) return null;
   const n = list.length; let cur = 0, hold = false, holdT = 0, moved = false;
-  const deck = E('div', { class: 'stk' }, list.map((s, i) => E('a', { class: 'sk', href: link('p/' + s.id) }, E('img', { src: photos(s)[0], alt: '', loading: i < 3 ? 'eager' : 'lazy', draggable: 'false' }), E('div', { class: 'nm' }, E('span', null, s.name), E('b', null, inr(s.price))))));
+  const deck = E('div', { class: 'stk' }, list.map((s, i) => E('a', { class: 'sk', href: link('p/' + s.id) }, E('img', { src: pickPic(s, 'card'), alt: '', loading: i < 3 ? 'eager' : 'lazy', draggable: 'false' }), E('div', { class: 'nm' }, E('span', null, s.name), E('b', null, inr(s.price))))));
   const items = [...deck.children];
   // each card sits behind the centre card, shifted a little to the side, smaller and darker the further it is
-  const OFF = [0, 17, 30], SC = [1, .87, .76], BR = [1, .62, .4];
-  const place = () => items.forEach((el, i) => {
+  const wide = () => matchMedia('(min-width: 900px)').matches, SC = [1, .87, .76], BR = [1, .62, .4];
+  const place = () => { const OFF = wide() ? [0, 58, 104] : [0, 17, 30]; items.forEach((el, i) => {
     let d = i - cur; if (d > n / 2) d -= n; if (d < -n / 2) d += n; const a = Math.abs(d), sg = d < 0 ? -1 : 1;
     if (a > 2) { el.style.opacity = '0'; el.style.pointerEvents = 'none'; el.style.zIndex = '0'; el.style.transform = 'translateX(' + sg * OFF[2] + '%) scale(' + SC[2] * .9 + ')'; return; }
     el.style.opacity = '1'; el.style.pointerEvents = 'auto'; el.style.zIndex = String(10 - a);
     el.style.transform = 'translateX(' + sg * OFF[a] + '%) scale(' + SC[a] + ')'; el.style.filter = a ? 'brightness(' + BR[a] + ')' : 'none';
     el.classList.toggle('on', a === 0);
-  });
+  }); };
   // desktop side rails: counter + arrows on the left, the front piece's details on the right
   const pcat = E('span', { class: 'pcat' }), pd = E('p', { class: 'pd' }), pbl = E('ul', { class: 'pbl' }), psp = E('div', { class: 'psp' }), pco = E('div', { class: 'pco' }), psz = E('div', { class: 'psz' });
   const num = E('b', null, '01'), bar = E('i'), pn = E('span', { class: 'pn' }), pp = E('span', { class: 'pp' }), pl = E('a', { class: 'pl', href: '#' }, 'View piece ', icon('right'));
@@ -282,6 +296,7 @@ function stack(list, label) {
     clear(pco); colours(s).slice(0, 8).forEach((c) => pco.append(E('i', { title: c, style: { background: hex(c) } }))); pco.hidden = !pco.children.length;
     clear(psz); sizesOf(s).slice(0, 10).forEach((z) => psz.append(E('em', null, z))); psz.hidden = !psz.children.length;
   };
+  addEventListener('resize', () => place());
   const go = (i) => { cur = ((i % n) + n) % n; place(); rails(); };
   const pause = (ms) => { hold = true; clearTimeout(holdT); holdT = setTimeout(() => { hold = false; }, ms || 5000); };
   let x0 = null;
@@ -305,7 +320,7 @@ function gridOf(list, withBlanks) {
 }
 V.home = (v) => {
   const c = cfg(); const hi = (c.heroImages || []).filter(Boolean);
-  const fallback = hi.length ? hi : newest(5).map((s) => photos(s)[0]).filter(Boolean);
+  const fallback = hi.length ? hi : [...STY.filter((s) => (s.photoUse || {}).hero), ...newest(5)].filter((s, i, a) => a.indexOf(s) === i).slice(0, 5).map((s) => pickPic(s, 'hero')).filter(Boolean);
   let hero;
   if (fallback.length) {
     let i = 0; const sls = fallback.map((u, k) => E('div', { class: 'sl' + (k === 0 ? ' on' : '') }, E('img', { src: u, alt: '', loading: k ? 'lazy' : 'eager' })));
@@ -330,8 +345,8 @@ V.home = (v) => {
   });
   // 3. big collection pictures
   cols.slice(0, 3).forEach((x) => {
-    const s0 = x.styleIds.map((id) => BYID[id]).find((s) => s && photos(s)[0]); if (!s0) return;
-    v.append(E('a', { class: 'bigcol', href: link('shop?col=' + x.id) }, E('img', { src: photos(s0)[0], alt: '', loading: 'lazy' }), E('div', { class: 'cap' }, E('div', { class: 't' }, x.name), E('span', { class: 'btn' }, 'Shop now'))));
+    const s0 = x.styleIds.map((id) => BYID[id]).find((s) => s && photos(s)[0]); const pic = x.image || (s0 && pickPic(s0, 'banner')); if (!pic) return;
+    v.append(E('a', { class: 'bigcol', href: link('shop?col=' + x.id) }, E('img', { src: pic, alt: '', loading: 'eager' }), E('div', { class: 'cap' }, E('div', { class: 't' }, x.name), E('span', { class: 'btn' }, 'Shop now'))));
   });
   // 4. products again
   if (STY.length > 4) v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'All products'), E('a', { class: 'btn sm out', href: link('shop') }, 'Shop all')), gridOf(STY.slice(0, 12), true)));
@@ -356,7 +371,7 @@ function filterSet(q) {
   return list;
 }
 function setQ(patch) { const q = { ...q$(), ...patch }; for (const k in q) if (q[k] == null || q[k] === '') delete q[k]; const qs = new URLSearchParams(q).toString(); location.hash = '#/shop' + (qs ? '?' + qs : ''); }
-function refine() {
+function refine(anchor) {
   const base = q$(); const draft = { ...base };
   const prices = STY.map((s) => s.price); const lo = Math.floor(Math.min(...prices, 0)), hi = Math.ceil(Math.max(...prices, 1) / 100) * 100;
   const body = E('div'); const showBtn = E('button', { class: 'btn wide' }, 'View items'); const live = () => { const n = filterSet(draft).length; showBtn.textContent = 'View ' + n + (n === 1 ? ' item' : ' items'); };
@@ -376,6 +391,7 @@ function refine() {
   paint();
   const foot = E('div', { class: 'rf' }, showBtn, E('button', { class: 'rclr', onclick: () => { sh.close(); location.hash = '#/shop'; } }, 'Clear all'));
   const sh = sheet('Filter', body, foot); sh.el.querySelector('.sheet').classList.add('refine');
+  if (anchor && anchor.getBoundingClientRect && matchMedia('(min-width: 900px)').matches) { const r = anchor.getBoundingClientRect(), hd = document.querySelector('header, .nav, .hdr'), hb = hd ? Math.max(0, hd.getBoundingClientRect().bottom) : 56, W = Math.min(740, innerWidth - 32), left = Math.max(16, Math.min(r.right + 24 - W, innerWidth - W - 16)), top = Math.min(r.top - 10, hb + 12), card = sh.el.querySelector('.sheet'); sh.el.classList.add('pop'); card.style.cssText = 'left:' + left + 'px;top:' + Math.max(hb + 6, top) + 'px;width:' + W + 'px;max-height:' + Math.max(300, innerHeight - hb - 24) + 'px;transform-origin:' + (r.left + r.width / 2 - left) + 'px ' + (r.top + r.height / 2 - Math.max(hb + 6, top)) + 'px'; }
   showBtn.onclick = () => { sh.close(); const q = { ...draft }; for (const k in q) if (!q[k]) delete q[k]; location.hash = '#/shop' + (Object.keys(q).length ? '?' + new URLSearchParams(q).toString() : ''); };
 }
 function pagedGrid(list) {
@@ -391,7 +407,7 @@ V.shop = (v) => {
   for (const k of ['cat', 'colour', 'fam', 'size', 'gender', 'stock', 'new', 'min', 'max']) if (q[k]) act.push([k, k === 'stock' ? 'In stock' : k === 'new' ? 'New in' : k === 'min' ? 'From ' + inr(q[k]) : k === 'max' ? 'Up to ' + inr(q[k]) : (lab[k] ? lab[k] + ': ' : '') + q[k]]);
   if (q.col) act.push(['col', colName || 'Collection']);
   v.append(E('div', { class: 'crumbs' }, E('a', { href: link('') }, 'Home'), ' / ', title),
-    E('div', { class: 'shophd' }, E('div', null, E('h1', null, title), E('div', { class: 'mut tiny' }, list.length + (list.length === 1 ? ' piece' : ' pieces'))), E('button', { class: 'btn soft', onclick: refine }, icon('filter'), 'Refine')),
+    E('div', { class: 'shophd' }, E('div', null, E('h1', null, title), E('div', { class: 'mut tiny' }, list.length + (list.length === 1 ? ' piece' : ' pieces'))), E('button', { class: 'btn soft', onclick: (e) => refine(e.currentTarget) }, icon('filter'), 'Refine')),
     act.length ? E('div', { class: 'chips' }, act.map(([k, l]) => E('button', { class: 'chip on', onclick: () => setQ({ [k]: '' }) }, l, E('span', { class: 'x' }, '×')))) : null,
     !act.length && [...new Set(STY.map((s) => s.category))].length > 1 ? E('div', { class: 'chips' }, [...new Set(STY.map((s) => s.category).filter(Boolean))].map((c) => E('button', { class: 'chip', onclick: () => setQ({ cat: c }) }, c))) : null,
     (q.cat || list.length === STY.length) ? stack(list, q.cat ? q.cat : 'All products') : null,
@@ -399,7 +415,7 @@ V.shop = (v) => {
 };
 V.collections = (v) => {
   const cols = D.collections.filter((x) => x.styleIds.some((id) => BYID[id]));
-  v.append(E('div', { class: 'shophd' }, E('h1', null, 'Collections')), cols.length ? E('div', { class: 'deck', style: { flexWrap: 'wrap', overflow: 'visible' } }, cols.map((x) => { const s0 = x.styleIds.map((id) => BYID[id]).find((s) => s && photos(s)[0]); return E('a', { class: 'dk' + (s0 ? '' : ' ph'), href: link('shop?col=' + x.id) }, s0 ? E('img', { src: photos(s0)[0], alt: '', loading: 'lazy' }) : null, E('div', { class: 'nm' }, x.name)); })) : E('div', { class: 'empty' }, E('div', { class: 'mut' }, 'No collections yet.'), E('a', { class: 'btn', href: link('shop') }, 'Shop all')));
+  v.append(E('div', { class: 'shophd' }, E('h1', null, 'Collections')), cols.length ? E('div', { class: 'deck', style: { flexWrap: 'wrap', overflow: 'visible' } }, cols.map((x) => { const s0 = x.styleIds.map((id) => BYID[id]).find((s) => s && photos(s)[0]); const pic = x.image || (s0 && pickPic(s0, 'banner')); return E('a', { class: 'dk' + (pic ? '' : ' ph'), href: link('shop?col=' + x.id) }, pic ? E('img', { src: pic, alt: '', loading: 'lazy' }) : null, E('div', { class: 'nm' }, x.name)); })) : E('div', { class: 'empty' }, E('div', { class: 'mut' }, 'No collections yet.'), E('a', { class: 'btn', href: link('shop') }, 'Shop all')));
 };
 V.wishlist = (v) => {
   const list = wish.map((id) => BYID[id]).filter(Boolean);
@@ -410,15 +426,28 @@ V.wishlist = (v) => {
 V.p = (v, id) => {
   const s = BYID[id];
   if (!s) { v.append(E('div', { class: 'empty' }, E('h2', null, 'Piece not found'), E('a', { class: 'btn', href: link('shop') }, 'Shop all'))); return; }
-  let colour = colours(s)[0] || '', size = '', qty = 1; const open = { d: true }; let folded = false, pinned = false; seen(s.id);
+  let colour = colours(s)[0] || '', size = '', qty = 1; let tab = 'd'; let folded = false, pinned = false; seen(s.id);
   const gal = E('div', { class: 'gal' }), info = E('div', { class: 'info' });
   let cur = 0;
   const paintGal = () => {
-    const ims = photosFor(s, colour); clear(gal); gal.classList.toggle('solo', ims.length <= 1);
+    const ims = photosFor(s, colour); clear(gal); gal.classList.toggle('solo', ims.length <= 1); gal.classList.remove('multi');
     if (!ims.length) { gal.append(E('div', { class: 'main' }, placeholder(s.name))); return; }
-    const main = E('div', { class: 'main' }, E('img', { src: ims[cur] || ims[0], alt: s.name }), E('div', { class: 'ct' }, (cur + 1) + ' / ' + ims.length));
+    const main = E('div', { class: 'main', style: { '--bgi': 'url("' + (ims[cur] || ims[0]) + '")' } }, E('img', { src: ims[cur] || ims[0], alt: s.name }), E('div', { class: 'ct' }, (cur + 1) + ' / ' + ims.length));
     const rail = E('div', { class: 'rail' }, ims.map((u, i) => E('button', { class: 'th' + (i === cur ? ' on' : ''), 'aria-label': 'Picture ' + (i + 1), onclick: () => { cur = i; paintGal(); } }, E('img', { src: u, alt: '', loading: 'lazy' }))));
-    gal.append(main, ims.length > 1 ? rail : null);
+    if (ims.length > 1) {
+      // phones: swipe through the pictures with dots; desktop keeps the thumbnail column
+      const ct = main.querySelector('.ct'), dots = E('div', { class: 'dots3' }, ims.map((_, i) => E('i', { class: i === cur ? 'on' : '' })));
+      const swp = E('div', { class: 'swp' }, ims.map((u, k) => E('img', { src: u, alt: s.name, loading: k < 2 ? 'eager' : 'lazy' })));
+      swp.addEventListener('scroll', () => { const i = Math.max(0, Math.min(ims.length - 1, Math.round(swp.scrollLeft / (swp.clientWidth || 1)))); if (i === cur) return; cur = i; ct.textContent = (i + 1) + ' / ' + ims.length; [...dots.children].forEach((d, k) => d.classList.toggle('on', k === i)); rail.querySelectorAll('.th').forEach((b, k) => b.classList.toggle('on', k === i)); }, { passive: true });
+      main.append(swp, dots);
+      const pgrid = E('div', { class: 'pgrid' + (ims.length % 2 ? ' odd' : '') }, ims.map((u) => E('div', { class: 'gi' }, E('img', { src: u, alt: s.name, loading: 'lazy' }))));
+      gal.classList.add('multi'); gal.append(main, rail, pgrid);
+      requestAnimationFrame(() => { swp.scrollLeft = cur * swp.clientWidth; });
+      return;
+    }
+    // one picture only: the empty sides show other pieces to look at
+    const others = STY.filter((x) => x.id !== s.id), same = others.filter((x) => x.category === s.category), pool = same.concat(others.filter((x) => x.category !== s.category)).slice(0, 6);
+    gal.append(E('div', { class: 'sugg' }, pool.slice(0, 4).map((x) => card(x))), main);
   };
   const dtl = (k) => {
     if (k === 'w') return E('div', { class: 'dtl' }, s.washcare ? E('div', null, s.washcare) : E('div', { class: 'mut' }, 'Wash cold, dry in shade, do not bleach.'));
@@ -441,7 +470,7 @@ V.p = (v, id) => {
       chosen && chosen.left > 0 && chosen.left <= 3 ? E('div', { class: 'left fx' }, 'Only ' + chosen.left + ' left in this size') : null,
       gone ? E('div', { class: 'note fx' }, 'This piece is sold out right now.') : E('div', { class: 'fx', style: { display: 'flex', alignItems: 'center', gap: '10px' } }, E('span', { class: 'lbl' }, 'Qty'), E('div', { class: 'qty' }, E('button', { onclick: () => { qty = Math.max(1, qty - 1); paintInfo(); } }, '–'), E('span', null, qty), E('button', { onclick: () => { qty = Math.min(chosen ? (chosen.left >= 9 ? 20 : chosen.left) : 9, qty + 1); paintInfo(); } }, '+'))),
       E('div', { class: 'row2' }, E('button', { class: 'btn out', disabled: gone, onclick: () => need(chosen) && (addBag(chosen.id, qty)) }, 'Add to bag'), E('button', { class: 'btn', disabled: gone, onclick: () => { if (!need(chosen)) return; addBag(chosen.id, qty); go('checkout'); } }, 'Buy now')),
-      E('div', { class: 'acc fx' }, [['d', 'Details & Description'], ['w', 'Washcare'], ['s', 'Shipping & returns']].map(([k, l]) => E('div', { class: 'ai' + (open[k] ? ' on' : '') }, E('button', { 'aria-expanded': String(!!open[k]), onclick: () => { open[k] = !open[k]; paintInfo(); } }, E('span', null, l), E('span', { class: 'pl' }, open[k] ? '–' : '+')), open[k] ? E('div', { class: 'ab' }, dtl(k)) : null))),
+      E('div', { class: 'tabs2 fx' }, E('div', { class: 'tr' }, [['d', 'Details & Description'], ['w', 'Washcare'], ['s', 'Shipping']].map(([k, l]) => E('button', { class: k === tab ? 'on' : '', onclick: () => { tab = k; paintInfo(); } }, l))), E('div', { class: 'tb' }, dtl(tab))),
       E('div', { class: 'row2 fx' }, E('button', { class: 'btn out sm', onclick: share }, 'Share'), gone ? E('button', { class: 'btn out sm', onclick: notify }, 'Notify me') : null),
       E('button', { class: 'unfold', onclick: () => { pinned = true; folded = false; info.classList.remove('fold'); } }, 'Show size, colour and details'));
   };
@@ -597,7 +626,11 @@ function afterSale(o, tok, v) {
       wrap.append(box);
     });
   }
-  if (o.returns && o.returns.length) wrap.append(E('h2', { style: { marginTop: '10px' } }, 'Return / exchange'), o.returns.map((r) => E('div', { class: 'note', style: { marginTop: '6px' } }, cap(r.kind) + ': ' + cap(r.status) + (r.staffNote ? ' · ' + r.staffNote : ''))));
+  if (o.returns && o.returns.length) {
+    const addr = o.shop && o.shop.address ? o.shop.address : '';
+    const RMSG = { requested: 'We have your request and will reply here soon.', approved: 'Approved. Please send the item back' + (addr ? ' to ' + addr : '') + ', with the tags intact and your order number ' + o.number + ' on the parcel.', rejected: 'We could not approve this request.', received: 'We received your parcel and are checking it.', refunded: 'All done: your refund or exchange is complete.' };
+    wrap.append(E('h2', { style: { marginTop: '10px' } }, 'Return / exchange'), ...o.returns.map((r) => E('div', { class: 'note', style: { marginTop: '6px' } }, E('b', null, cap(r.kind) + ': ' + cap(r.status)), E('div', null, RMSG[r.status] || ''), r.staffNote ? E('div', { class: 'mut' }, r.staffNote) : null)));
+  }
   if (o.canReturn) {
     const kind = { v: 'return' }; const reason = E('input', { placeholder: 'Reason (size, fit, damaged...)', 'aria-label': 'Reason' }); const m = E('div', { class: 'tiny', style: { color: '#c0392b', minHeight: '14px' } });
     const kb = E('div', { class: 'fwrap' }); const kp = () => { clear(kb); ['return', 'exchange'].forEach((k) => kb.append(E('button', { type: 'button', class: 'sz' + (kind.v === k ? ' on' : ''), onclick: () => { kind.v = k; kp(); } }, cap(k)))); }; kp();
@@ -628,7 +661,7 @@ V.order = async (v, tok) => {
     E('div', { style: { marginTop: '12px' } }, (o.lines || []).map((l) => E('div', { class: 'ln' }, E('div', { class: 'im' }, l.photo ? E('img', { src: l.photo, alt: '' }) : placeholder(l.name)), E('div', null, E('div', { class: 't' }, l.name), E('div', { class: 's' }, [l.colour, l.size].filter(Boolean).join(' · ') + ' × ' + l.qty)), E('div', null, inr(l.price * l.qty))))),
     E('div', { class: 'sum', style: { marginTop: '10px' } }, E('div', { class: 't' }, E('span', null, 'Shipping'), E('span', null, o.shipping ? inr(o.shipping) : 'Free')), +o.discount ? E('div', { class: 't', style: { color: '#1a7f3c' } }, E('span', null, 'Coupon' + (o.coupon ? ' ' + o.coupon : '')), E('span', null, '– ' + inr(o.discount))) : null, E('div', { class: 't g' }, E('span', null, 'Total'), E('span', null, inr(o.total)))),
     trackBox(o),
-    E('div', { class: 'mut tiny', style: { marginTop: '10px' } }, 'Save this page to follow your order. Questions? ', E('a', { href: link('contact'), style: { textDecoration: 'underline' } }, 'Contact us'))), pbox, o.status === 'delivered' ? afterSale(o, tok, v) : null, E('a', { class: 'btn out', href: link('shop'), style: { justifySelf: 'center' } }, 'Keep shopping')));
+    E('div', { class: 'mut tiny', style: { marginTop: '10px' } }, 'Save this page to follow your order. Questions? ', E('a', { href: link('contact'), style: { textDecoration: 'underline' } }, 'Contact us'))), pbox, o.billUrl ? E('div', { class: 'note', style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' } }, E('div', null, E('b', null, 'Invoice'), E('div', { class: 'mut tiny' }, o.billNo ? 'Bill ' + o.billNo : 'Ready')), E('a', { class: 'btn sm', href: o.billUrl, target: '_blank', rel: 'noopener' }, 'View invoice')) : null, o.status === 'delivered' ? afterSale(o, tok, v) : null, E('a', { class: 'btn out', href: link('shop'), style: { justifySelf: 'center' } }, 'Keep shopping')));
   if (!['delivered', 'cancelled'].includes(o.status)) { const last = o.status + '|' + o.paymentStatus; v._ot = setInterval(async () => { if (!document.body.contains(v) || !location.hash.includes(tok)) return clearInterval(v._ot); let n = null; try { n = await rpc('public_sty_order', { p_token: tok }); } catch { return; } if (n && n.status + '|' + n.paymentStatus !== last) { clearInterval(v._ot); const y = scrollY; await V.order(v, tok); scrollTo(0, y); toast('Order update: ' + cap(n.status)); } }, 12000); }
 };
 
@@ -792,8 +825,11 @@ function route() {
   TR.enter(id === 'p' ? 'p/' + (parts[1] || '') : id); if (id === 'p' && BYID[parts[1]]) TR.push('product', null, { id: parts[1], name: BYID[parts[1]].name });
   if (id === 'checkout') TR.push('checkout', null, { step: 'start' });
 }
-window.addEventListener('scroll', () => document.body.classList.toggle('atop', window.scrollY < 40), { passive: true });
+const heroEnd = () => { const h = document.querySelector('.hero'); return h ? h.offsetHeight - 70 : window.innerHeight * 0.9; };
+const navState = () => { document.body.classList.toggle('atop', window.scrollY < 40); document.body.classList.toggle('pasthero', window.scrollY > heroEnd()); };
+window.addEventListener('scroll', navState, { passive: true }); window.addEventListener('hashchange', () => setTimeout(navState, 50));
 function ingest(d) {
+  shopIcon(d);
   D = d; STY = (D.styles || []).filter((x) => x.variants && x.variants.length); BYID = {}; VAR = {};
   STY.forEach((x) => { BYID[x.id] = x; x.variants.forEach((y) => { VAR[y.id] = { ...y, sid: x.id }; }); });
   bag = LS.get('bag', []).filter((b) => VAR[b.v]); wish = LS.get('wish', []).filter((id) => BYID[id]);

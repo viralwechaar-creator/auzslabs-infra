@@ -50,13 +50,17 @@ th.c,td.c{text-align:center}th.r,td.r{text-align:right}
 </style></head><body>
 <div class=bar><button onclick="print()">Print / Download</button></div>
 <div class=wrap id=a>Loading…</div>
-<script src=/sb-client.js?v=6></script><script src=/config.js></script><script src=/pos/bill-templates.js?v=1></script><script>
+<script src=/sb-client.js?v=6></script><script src=/config.js></script><script src=/pos/bill-templates.js?v=2></script><script>
 const sb=supabase.createClient(CFG.url,CFG.key),A=document.getElementById('a'),esc=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';'),r2=n=>Math.round(n*100)/100,inr=n=>'₹'+r2(n).toLocaleString('en-IN');
 const id=new URLSearchParams(location.search).get('o');
 (async()=>{
  if(!id)return A.innerHTML='<div class=err>Invoice not found.</div>';
  const{data,error}=await sb.rpc('public_invoice',{oid:id});
- if(error||!data||!data.order)return A.innerHTML='<div class=err>Invoice not found.</div>';
+ // A real online (QR/takeaway website) order link exists the instant the order is placed (place_order,
+ // db/213), before staff have accepted or billed it -- so "no order yet" here is the normal, expected
+ // state for the first minute or two, not necessarily a dead link. Softened the message to say so; a
+ // genuinely wrong/expired link still ends up here too, since this page has no way to tell the two apart.
+ if(error||!data||!data.order)return A.innerHTML='<div class=err>No bill yet. If you just placed an order, this page will show your bill as soon as it is ready — try refreshing in a minute.</div>';
  const o=data.order,s=data.cfg||{},t=o.t,b=s.brand||null,logo=s.logo||'/logo.png';
  // A tenant's own brand (colours/font/doodle, the same settings.brand
  // object booking.html reads) re-themes this same invoice markup instead

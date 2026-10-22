@@ -236,8 +236,8 @@ async function renderPlan() {
   const tier = ((t && t.data) || []).find((x) => x.tier_key === s.tier_key), ads = ((a && a.data) || []).filter((x) => (s.addons || []).includes(x.addon_key));
   const yr = s.period === 'year', inr = (n) => '\u20B9' + Math.round(n).toLocaleString('en-IN');
   const rows = [];
-  if (tier) rows.push(`<div class="cart-item"><span><b>${esc(tier.name)} plan</b><br><span style="font-size:12px;color:var(--ink-faint)">${yr ? 'Yearly' : 'Monthly'} &middot; ${inr(yr ? (tier.yearly_price || tier.monthly_price * 10) : tier.monthly_price)} ${yr ? '/year' : '/month'} + GST (indicative)</span></span></div>`);
-  ads.forEach((x) => rows.push(`<div class="cart-item"><span><b>${esc(x.name)}</b><br><span style="font-size:12px;color:var(--ink-faint)">${Number(x.monthly_price) > 0 ? inr(x.monthly_price) + ' /month + GST (indicative)' : esc(x.price_label || 'Price in your quote')}</span></span><button class="btn btn-ghost" data-rmad="${esc(x.addon_key)}" type="button">Remove</button></div>`));
+  if (tier) rows.push(`<div class="cart-item"><span><b>${esc(tier.name)} plan</b><br><span style="font-size:12px;color:var(--ink-faint)">Price agreed in your quote</span></span></div>`);
+  ads.forEach((x) => rows.push(`<div class="cart-item"><span><b>${esc(x.name)}</b><br><span style="font-size:12px;color:var(--ink-faint)">Price agreed in your quote</span></span><button class="btn btn-ghost" data-rmad="${esc(x.addon_key)}" type="button">Remove</button></div>`));
   box.innerHTML = rows.length ? `<div class="label" style="margin-bottom:8px">Your plan</div>${rows.join('')}<p class="pay-note"><a href="#" id="planClear" style="color:var(--accent)">Remove plan</a> &middot; We confirm the final prices in your quote; you can ask us to change anything.</p>` : '';
   box.querySelectorAll('[data-rmad]').forEach((b) => { b.onclick = () => { const cur = planSel(); cur.addons = cur.addons.filter((k) => k !== b.dataset.rmad); localStorage.setItem('auz_plan', JSON.stringify(cur)); renderPlan(); }; });
   if ($('planClear')) $('planClear').onclick = (e) => { e.preventDefault(); localStorage.removeItem('auz_plan'); renderPlan(); };

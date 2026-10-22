@@ -70,7 +70,40 @@ function navbar(navs) {
   const n = navs.find((x) => x.k === S.tab) || { label: 'AUZslab' };
   return h('header', { class: 'navbar' }, h('div', { class: 'title grow ellip' + (S.tab === 'sell' ? ' keep' : '') }, S.tab === 'sell' && S.cur && S.cur.table ? 'Sell · ' + tn(S.cur.table) : n.label === 'More' ? 'More' : n.label),
     h('span', { id: 'net', class: 'status' }),
-    h('button', { class: 'iconbtn', 'aria-label': 'Notifications', onclick: () => (location.href = 'https://auzslab.in/account.html#notifications') }, icon('bell', 22), h('span', { id: 'notifCount', class: 'dot hidden' })));
+    h('button', { class: 'iconbtn', 'aria-label': 'Notifications', onclick: notifSheet }, icon('bell', 22), h('span', { id: 'notifCount', class: 'dot hidden' })));
+}
+// Bell icon badge/sheet: pending website/QR orders (G, already polled by getG()) + any open return or
+// exchange request (pos/returns.js) + the platform's own account-wide notifications (renewals, requests
+// from AUZslab itself). Owner request: one notification icon in the POS that actually shows what needs
+// attention, instead of only the separate in-page guest-order banner that scrolls away.
+let platformNotifCount = 0;
+function totalNotifCount() { return platformNotifCount + G.length + (typeof openReturnReqs === 'function' ? openReturnReqs().length : 0); }
+function updateNotifBadge() { const el = $('#notifCount'); if (!el) return; const n = totalNotifCount(); el.textContent = n ? String(n) : ''; el.classList.toggle('hidden', !n); }
+async function refreshNotifCount() { try { const { data } = await sb.from('notifications').select('id').eq('read', false); platformNotifCount = (data && data.length) || 0; } catch {} updateNotifBadge(); }
+function notifSec(title, body) { return h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, title)), body); }
+function notifSheet() {
+  const retReqs = typeof openReturnReqs === 'function' ? openReturnReqs() : [];
+  const secs = [];
+  if (G.length) {
+    const rows = G.map((g) => liRow({
+      ic: g.items && g.items.length ? 'qr' : 'bell', tone: 'orange',
+      title: (g.tbl ? (tn(g.tbl) || 'Table') : 'Takeaway') + (g.items && g.items.length ? ' · new order' : ' · waiter called'),
+      sub: [g.name, g.phone].filter(Boolean).join(' · '), chev: true, onclick: () => { s.close(); acceptG(g); }, // same acceptG() already used by the inline guest banner
+    }));
+    secs.push(notifSec('Website & QR orders', h('div', { class: 'list' }, rows)));
+  }
+  if (retReqs.length) {
+    const rows = retReqs.slice(0, 10).map((r) => liRow({
+      ic: 'move', tone: RETURN_STAGE_TONE[r.stage], title: r.itemName + (r.size ? ' (' + r.size + ')' : ''),
+      sub: RETURN_STAGE_LABEL[r.stage] + ' · ' + returnReqSub(r), chev: true, onclick: () => { s.close(); returnReqSheet(r); },
+    }));
+    secs.push(notifSec('Returns & exchanges', h('div', { class: 'list' }, rows)));
+  }
+  const acctBody = platformNotifCount
+    ? h('div', { class: 'list' }, liRow({ ic: 'bell', tone: 'blue', title: plural(platformNotifCount, 'unread notice'), sub: 'Renewals, requests and other account updates', chev: true, onclick: () => { s.close(); location.href = 'https://auzslab.in/account.html#notifications'; } }))
+    : h('p', { class: 'muted', style: { padding: '4px 4px 8px' } }, 'Nothing new.');
+  secs.push(notifSec('Account notices', acctBody));
+  const s = sheet({ title: 'Notifications', body: h('div', { class: 'stack s16' }, secs) });
 }
 
 // ---------- render ----------
@@ -86,7 +119,7 @@ function render() {
     h('div', { class: 'main' }, navbar(navs), banners.length ? h('div', { class: 'banners' }, banners) : null,
       h('main', { class: 'body' + (view.fixed ? ' fixed' : ''), id: 'body' }, view()), tabBar(navs))));
   for (const sel in keep) { const e = $('#app ' + sel); if (e) e.scrollTop = keep[sel]; }
-  setNote(); refreshNotifCount(); refreshTicketSheet();
+  setNote(); updateNotifBadge(); refreshNotifCount(); refreshTicketSheet();
 }
 
 // ---------- QR orders (guest_orders): accepted exactly once, even with several tills open ----------
@@ -119,6 +152,10 @@ async function acceptG(g) {
   if (!(o.cust && (o.cust.name || o.cust.phone))) o.cust = { name: g.name, phone: g.phone };
   if (g.note) o.gn = g.note;
   o.src = o.src || 'QR';
+  // carry the guest's own order token forward -- the website already gave the customer a link to
+  // /i.html?o=<tok> the moment they placed the order (place_order, db/213), so this real order needs
+  // to keep the exact same token or that link would never find it once the bill is ready.
+  if (g.tok && !o.tok) o.tok = g.tok;
   if (gone.length) toast('Not on the menu any more, left out: ' + gone.join(', '), { err: true });
   if (!o.no) o.no = await nextNo();
   const kno = await nextKot(), n = mk(o, kno);
@@ -174,8 +211,6 @@ function checkAlerts() {
   if (alertsPrimed && can('kitchen') && stillNew.length && Date.now() - lastReping > 15000) { lastReping = Date.now(); alertSound('kot'); }
   alertsPrimed = true;
 }
-async function refreshNotifCount() { try { const { data } = await sb.from('notifications').select('id').eq('read', false); const el = $('#notifCount'); if (el) { el.textContent = data && data.length ? String(data.length) : ''; el.classList.toggle('hidden', !(data && data.length)); } } catch {} }
-
 // ---------- sign in, start ----------
 // Google/Apple/phone sign-in (db/069) alongside the original email+password
 // form -- same sb.auth.* methods site/signup.html already uses. Phone has
