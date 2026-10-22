@@ -430,7 +430,15 @@ V.p = (v, id) => {
     if (!ims.length) { gal.append(E('div', { class: 'main' }, placeholder(s.name))); return; }
     const main = E('div', { class: 'main' }, E('img', { src: ims[cur] || ims[0], alt: s.name }), E('div', { class: 'ct' }, (cur + 1) + ' / ' + ims.length));
     const rail = E('div', { class: 'rail' }, ims.map((u, i) => E('button', { class: 'th' + (i === cur ? ' on' : ''), 'aria-label': 'Picture ' + (i + 1), onclick: () => { cur = i; paintGal(); } }, E('img', { src: u, alt: '', loading: 'lazy' }))));
-    if (ims.length > 1) { gal.append(main, rail); return; }
+    if (ims.length > 1) {
+      // phones: swipe through the pictures with dots; desktop keeps the thumbnail column
+      const ct = main.querySelector('.ct'), dots = E('div', { class: 'dots3' }, ims.map((_, i) => E('i', { class: i === cur ? 'on' : '' })));
+      const swp = E('div', { class: 'swp' }, ims.map((u) => E('img', { src: u, alt: s.name, loading: 'lazy' })));
+      swp.addEventListener('scroll', () => { const i = Math.max(0, Math.min(ims.length - 1, Math.round(swp.scrollLeft / (swp.clientWidth || 1)))); if (i === cur) return; cur = i; ct.textContent = (i + 1) + ' / ' + ims.length; [...dots.children].forEach((d, k) => d.classList.toggle('on', k === i)); rail.querySelectorAll('.th').forEach((b, k) => b.classList.toggle('on', k === i)); }, { passive: true });
+      main.append(swp, dots); gal.append(main, rail);
+      requestAnimationFrame(() => { swp.scrollLeft = cur * swp.clientWidth; });
+      return;
+    }
     // one picture only: the empty sides show other pieces to look at
     const others = STY.filter((x) => x.id !== s.id), same = others.filter((x) => x.category === s.category), pool = same.concat(others.filter((x) => x.category !== s.category)).slice(0, 6);
     gal.append(E('div', { class: 'sugg' }, pool.slice(0, 4).map((x) => card(x))), main);
