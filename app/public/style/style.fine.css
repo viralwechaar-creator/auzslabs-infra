@@ -392,3 +392,8 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .tag-g .tg-bc{margin-top:.9mm;align-self:stretch;min-height:0}.tag-g .tg-bc svg{height:100%;min-height:6mm}
 .tag-g .tg-ft{margin-top:.7mm;font-size:4.6pt;letter-spacing:.16em;line-height:1}
 .tag-g .tg-pr b{font-size:9.5pt;line-height:.9}
+
+.tagall{display:grid;grid-template-columns:repeat(auto-fill,minmax(204px,1fr));gap:10px}
+.tagone{display:grid;gap:4px;justify-items:start}.tagone .tagbox{box-shadow:0 0 0 1px var(--line,#e4e4e2);background:#fff}
+.tagone .tag-g,.tagone .tag-l{page-break-after:auto;break-after:auto}.tagone .tag-l{width:50mm;height:25mm;display:grid;justify-items:center;align-content:center;text-align:center;font-family:Arial,sans-serif;background:#fff}
+.tagone .q{font-size:11px;color:var(--mut,#888);padding-left:2px}

@@ -24,8 +24,9 @@ function tagsSheet(styles, onlyVariant, preset) {
   let design = tagDesignId(); const size = selectEl([['50x25', '50 × 25 mm'], ['38x25', '38 × 25 mm'], ['a4', 'A4 sheet (4 × 10)']], '50x25');
   const dsel = selectEl(TAG_DESIGNS.map((d) => [d.id, d.name]), design);
   const note = h('div', { class: 'muted small' });
-  const sum = () => { const n = Object.values(copies).reduce((a, b) => a + b, 0); total.textContent = n; note.textContent = size.value === 'a4' ? t('Prints on') + ' ' + Math.ceil(n / 40) + ' ' + t('A4 sheets, 40 tags each') : t('Prints') + ' ' + n + ' ' + t('labels, one label per page. The print window shows page 1 of') + ' ' + n + '.'; };
-  const paintPrev = () => { clear(prev); const d = TAG_DESIGNS.find((q) => q.id === dsel.value) || TAG_DESIGNS[0]; if (vs[0]) prev.append(h('div', { class: 'tags tags-' + size.value + ' tagbox' }, d.build(vs[0], shop))); };
+  let paintAll = null;
+  const sum = () => { if (paintAll) paintAll(); const n = Object.values(copies).reduce((a, b) => a + b, 0); total.textContent = n; note.textContent = size.value === 'a4' ? t('Prints on') + ' ' + Math.ceil(n / 40) + ' ' + t('A4 sheets, 40 tags each') : t('Prints') + ' ' + n + ' ' + t('labels, one label per page. The print window shows page 1 of') + ' ' + n + '.'; };
+  const paintPrev = () => { if (paintAll) paintAll(); clear(prev); const d = TAG_DESIGNS.find((q) => q.id === dsel.value) || TAG_DESIGNS[0]; if (vs[0]) prev.append(h('div', { class: 'tags tags-' + size.value + ' tagbox' }, d.build(vs[0], shop))); };
   const setAll = (fn) => { vs.forEach((x) => { copies[x.id] = fn(x); inputs[x.id].value = copies[x.id]; }); sum(); };
   const row = (x) => {
     const i = input({ type: 'number', mode: 'numeric', value: copies[x.id], oninput: () => { copies[x.id] = Math.max(0, Math.round(N(i.value))); sum(); } }); i.style.width = '64px'; i.style.textAlign = 'center'; inputs[x.id] = i;
@@ -34,16 +35,19 @@ function tagsSheet(styles, onlyVariant, preset) {
       h('div', { class: 'row', style: { gap: '4px', alignItems: 'center' } }, h('button', { class: 'btn sm', type: 'button', 'aria-label': '-1', onclick: bump(-1) }, '−'), i, h('button', { class: 'btn sm', type: 'button', 'aria-label': '+1', onclick: bump(1) }, '+')));
   };
   const rows = h('div', { class: 'list' }, vs.map(row));
+  const all = h('div', { class: 'tagall' }); let showAll = false;
+  paintAll = () => { clear(all); if (!showAll) return; const d = TAG_DESIGNS.find((q) => q.id === dsel.value) || TAG_DESIGNS[0]; const list = vs.filter((x) => (copies[x.id] || 0) > 0); all.append(...list.map((x) => h('div', { class: 'tagone' }, h('div', { class: 'tags tags-' + size.value + ' tagbox' }, d.build(x, shop)), h('div', { class: 'q' }, '× ' + copies[x.id])))); if (!list.length) all.append(h('div', { class: 'muted small' }, t('Nothing to print'))); };
+  const seeAll = h('button', { class: 'btn sm', type: 'button', onclick: () => { showAll = !showAll; seeAll.textContent = showAll ? t('Hide all tags') : t('Preview all tags'); paintAll(); } }, t('Preview all tags'));
   const quick = h('div', { class: 'row', style: { gap: '6px', flexWrap: 'wrap' } },
     h('button', { class: 'btn sm', type: 'button', onclick: () => setAll((x) => Math.max(1, x.stock > 0 ? x.stock : 1)) }, t('Stock quantity')),
     h('button', { class: 'btn sm', type: 'button', onclick: () => setAll(() => 1) }, t('1 each')),
     h('button', { class: 'btn sm', type: 'button', onclick: () => setAll((x) => (copies[x.id] || 0) + 1) }, '+1 ' + t('all')),
-    h('button', { class: 'btn sm', type: 'button', onclick: () => setAll(() => 0) }, t('Clear')));
+    h('button', { class: 'btn sm', type: 'button', onclick: () => setAll(() => 0) }, t('Clear')), seeAll);
   dsel.onchange = () => { try { localStorage.setItem('sty.tagDesign', dsel.value); } catch (e) {} paintPrev(); };
   size.onchange = () => { paintPrev(); sum(); }; paintPrev(); sum();
   sheet({ title: t('Print tags'), full: true, body: h('div', { class: 'grid' },
       prev, h('div', { class: 'row', style: { gap: '8px' } }, h('div', { class: 'grow' }, field(t('Tag design'), dsel)), h('div', { class: 'grow' }, field(t('Label size'), size))),
-      h('div', { class: 'muted small' }, t('Set how many tags to print for each item. One tag goes on each piece.')), h('div', { class: 'row', style: { justifyContent: 'space-between' } }, h('span', { class: 'muted small' }, t('Total tags')), total), note, quick, rows),
+      h('div', { class: 'muted small' }, t('Set how many tags to print for each item. Every item has its own barcode. Tags print item by item, in this list order.')), h('div', { class: 'row', style: { justifyContent: 'space-between' } }, h('span', { class: 'muted small' }, t('Total tags')), total), note, quick, all, rows),
     actions: [{ label: t('Print'), primary: true, onclick: () => { printTags(vs, copies, size.value, dsel.value); return false; } }] });
 }
 function printTags(vs, copies, size, designId) {
