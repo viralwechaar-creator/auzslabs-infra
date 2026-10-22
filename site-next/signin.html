@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head><meta name="robots" content="noindex,nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KQRQJFT0V0"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KQRQJFT0V0');
+</script>
+<title>Sign in with Google — AUZslab</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="/logo.png">
+<link rel="stylesheet" href="tool/theme.mobile.css?v=346" media="(max-width:899px)"><link rel="stylesheet" href="tool/theme.desktop.css?v=146" media="(min-width:900px)"><script src="theme.js?v=101"></script>
+<style>
+.vwrap{min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:24px}
+.vcard{width:100%;max-width:420px;background:var(--bg);border:1px solid var(--line);border-radius:22px;padding:30px 26px;box-shadow:0 10px 28px -12px rgba(0,0,0,.30);text-align:center}
+.vcard h1{font:700 24px var(--font-display);letter-spacing:-.02em;margin:0 0 8px}
+.vcard p{color:var(--ink-dim);line-height:1.6;margin:0 0 20px}
+#gHost{display:flex;justify-content:center;min-height:44px}
+#gErr{color:var(--accent);margin-top:14px;min-height:20px}
+</style>
+<style id="util-bar">.util-bar{display:flex;align-items:center;padding:10px 24px;background:#faf9f7;border-bottom:1px solid #e6e2dc;position:sticky;top:0;z-index:30}.util-bar img{height:28px;width:auto;display:block}:root[data-theme=dark] .util-bar{background:#1b1a19;border-color:#33302d}:root[data-theme=dark] .util-bar img{filter:invert(1)}@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .util-bar{background:#1b1a19;border-color:#33302d}:root:not([data-theme=light]) .util-bar img{filter:invert(1)}}</style><link rel="stylesheet" href="min.css?v=5">
+</head>
+<body><header class="util-bar"><a href="/index.html" aria-label="AUZslab home"><img src="/logo.png" alt="AUZslab"></a></header>
+<div class="vwrap"><div class="vcard">
+  <h1>Sign in with Google</h1>
+  <p id="gText">Use your Google account to continue to <b id="gApp">AUZslab</b>.</p>
+  <div id="gHost"></div>
+  <div id="gErr" role="alert"></div>
+</div></div>
+<script>
+// Central Google sign-in, full-page redirect (no popup: iPhone browsers block or lose popups).
+// App -> https://auzslab.in/signin.html?app=pos&return=<app page> -> accounts.google.com -> back here with #id_token -> POST /auth/google
+// -> back to the app with the session in the URL fragment (#auz_gt=...). The return address must be an AUZslab address.
+// Google Cloud > Clients > "AUZslab web" must list https://auzslab.in/signin.html under Authorized redirect URIs.
+window.CFG = { url: 'https://api.auzslab.in', key: '', googleClientId: '264113646597-b734l9r8cfav1okvopin0qt1kojknf08.apps.googleusercontent.com' };
+(function () {
+  var local = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) || /\.localhost$/.test(location.hostname);
+  if (location.hostname === 'www.auzslab.in') { location.replace('https://auzslab.in' + location.pathname + location.search + location.hash); return; }
+  var REDIRECT = local ? location.origin + location.pathname : 'https://auzslab.in/signin.html';
+  var q = new URLSearchParams(location.search), h = new URLSearchParams((location.hash || '').replace(/^#/, ''));
+  var err = document.getElementById('gErr'), text = document.getElementById('gText'), host = document.getElementById('gHost');
+  var names = { start: 'AUZslab', hub: 'AUZslab', pos: 'AUZsPOS', payroll: 'AUZsPay', accounts: 'AUZsLedger', mob: 'AUZsMob', site: 'AUZslab' };
+  function okReturn(r) { return /^auzs(pos|mob|scan|pay|ledger):\/\/signin$/i.test(r || '') || /^auzslab:\/\/signin$/i.test(r || '') || /^https:\/\/([a-z0-9-]+\.)*auzslab\.in(\/|$)/i.test(r || '') || (local && /^http:\/\/([a-z0-9-]+\.)*localhost(:\d+)?(\/|$)/i.test(r || '')); }
+  function b64u(o) { return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+  function unb64u(t) { return JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g, '+').replace(/_/g, '/'))))); }
+  function fail(m) { text.textContent = 'Google sign-in did not finish.'; err.textContent = m; }
+  function ss(k, v) { try { if (v === undefined) return sessionStorage.getItem(k); sessionStorage.setItem(k, v); } catch (e) {} return null; }
+
+  var idToken = h.get('id_token');
+  if (idToken) {
+    // ---- coming back from Google ----
+    try { history.replaceState(null, '', location.pathname); } catch (e) {}
+    var st; try { st = unb64u(h.get('state') || ''); } catch (e) { return fail('The sign-in link was damaged. Open the app and try again.'); }
+    var payload; try { payload = JSON.parse(decodeURIComponent(escape(atob(idToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))))); } catch (e) { return fail('Google sent an unreadable answer. Try again.'); }
+    if (!st || !okReturn(st.r)) return fail('This sign-in link is not valid. Open the app and try again.');
+    if (!st.n || st.n !== ss('auz.nonce') || payload.nonce !== st.n) return fail('This sign-in expired or was opened in another browser. Open the app and try again.');
+    ss('auz.nonce', '');
+    text.textContent = 'Signing you in...';
+    fetch(CFG.url + '/auth/google', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id_token: idToken }) })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (x) {
+        var d = x.j && x.j.data !== undefined ? x.j.data : x.j;
+        if (!x.ok || !d || !d.access_token) return fail((x.j && x.j.error) || 'AUZslab did not accept the Google sign-in.');
+        text.textContent = 'Signed in. Taking you back...';
+        var go = function () {
+          var target = st.r.split('#')[0] + '#auz_gt=' + b64u({ t: d.access_token, u: d.user });
+          if (!/^auzs?[a-z]*:\/\//i.test(st.r)) { location.replace(target); return; }
+          // Opening an app from a web page: the phone's browser often refuses to do it by itself (no tap on this page), so try, and
+          // also show a button. A tap on the button always opens the app.
+          text.textContent = 'Signed in. Tap the button to go back to the app.';
+          var b = document.createElement('a'); b.href = target; b.className = 'btn btn-primary'; b.textContent = 'Open the app';
+          b.style.cssText = 'display:inline-flex;margin-top:6px'; host.textContent = ''; host.appendChild(b);
+          try { location.href = target; } catch (e) { /* the button is there */ }
+        };
+        if (!st.c) return go();
+        // signed up here: record the privacy choice made on the sign-up page against the new account, then go on
+        var timer = setTimeout(go, 4000);
+        fetch(CFG.url + '/rpc/record_my_consent', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + d.access_token }, body: JSON.stringify({ p_purposes: { service: true, updates: st.c === 2 }, p_source: 'signup' }) })
+          .catch(function () {}).then(function () { clearTimeout(timer); go(); });
+      }).catch(function () { fail('Could not reach AUZslab. Check your internet and try again.'); });
+    return;
+  }
+  // ---- starting ----
+  var ret = q.get('return') || '', app = q.get('app') || '';
+  if (names[app]) document.getElementById('gApp').textContent = names[app];
+  if (!okReturn(ret)) { text.textContent = 'This sign-in link is not valid.'; err.textContent = 'Open the app again and tap Continue with Google.'; return; }
+  var nonce = (window.crypto && crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now()).replace(/-/g, '');
+  ss('auz.nonce', nonce);
+  var url = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=' + encodeURIComponent(CFG.googleClientId) + '&redirect_uri=' + encodeURIComponent(REDIRECT)
+    + '&response_type=id_token&scope=' + encodeURIComponent('openid email profile') + '&nonce=' + encodeURIComponent(nonce)
+    + '&state=' + encodeURIComponent(b64u({ r: ret, a: app, n: nonce, c: q.get('consent') === '1' ? (q.get('upd') === '1' ? 2 : 1) : 0 })) + '&prompt=select_account';
+  var a = document.createElement('a'); a.href = url; a.className = 'btn btn-primary'; a.textContent = 'Continue with Google'; host.appendChild(a);
+  text.textContent = 'Opening Google...';
+  setTimeout(function () { location.href = url; }, 400);
+})();
+</script>
+</body>
+</html>

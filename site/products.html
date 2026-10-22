@@ -27,6 +27,17 @@
 <link rel="icon" href="/logo.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
+<link rel="stylesheet" href="kept/theme.css?v=154"><link rel="stylesheet" href="menu.css?v=116">
+<link rel="stylesheet" href="kept/sketch.css?v=101">
+<link rel="stylesheet" href="kept/fx.css?v=102">
+<link rel="stylesheet" href="kept/fx-flow.css?v=113">
+<script src="kept/sketch.js?v=101"></script>
+<script src="kept/fx-art.js?v=101" defer></script>
+<script src="kept/fx.js?v=102" defer></script>
+<script src="kept/fx-canvas.js?v=101" defer></script>
+<script src="kept/fx-stack.js?v=110" defer></script>
+<script src="kept/fx-phys.js?v=101" defer></script>
+<link rel="stylesheet" href="kept/design-system/ui-kit.css?v=103">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -192,48 +203,211 @@
 }
 @media(min-width:900px){.footer-top{grid-template-columns:1.5fr 1fr 1fr 1fr}}
 </style>
-<script type="application/ld+json">{"@context": "https://schema.org", "@type": "ItemList", "name": "AUZslab products", "itemListElement": [{"@type": "ListItem", "position": 1, "item": {"@type": "SoftwareApplication", "name": "AUZsPOS", "description": "Point of sale, billing, KOT, tables and stock for cafes, restaurants and shops.", "applicationCategory": "BusinessApplication", "operatingSystem": "Web, Android"}}, {"@type": "ListItem", "position": 2, "item": {"@type": "SoftwareApplication", "name": "AUZsPay", "description": "Staff attendance, leave and payroll.", "applicationCategory": "BusinessApplication", "operatingSystem": "Web, Android"}}, {"@type": "ListItem", "position": 3, "item": {"@type": "SoftwareApplication", "name": "AUZsLedger", "description": "Double-entry accounting with GST.", "applicationCategory": "BusinessApplication", "operatingSystem": "Web, Android"}}, {"@type": "ListItem", "position": 4, "item": {"@type": "SoftwareApplication", "name": "AUZsScan", "description": "Scan products with the phone camera and bill them.", "applicationCategory": "BusinessApplication", "operatingSystem": "Web, Android"}}, {"@type": "ListItem", "position": 5, "item": {"@type": "SoftwareApplication", "name": "AUZsMob", "description": "Sales, purchases, repairs and dues for mobile shops.", "applicationCategory": "BusinessApplication", "operatingSystem": "Web, Android"}}]}</script>
-<link rel="stylesheet" href="u.css?v=2"><link rel="stylesheet" href="e.css?v=3">
-<meta name="theme-color" content="#efeeed">
+<script id="topbar-nav-js">(function(){function f(){var n=document.querySelector('.topbar-nav'),t=document.querySelector('.topbar');if(!n||!t)return;var hide=matchMedia('(min-width:900px)').matches&&getComputedStyle(t).display==='none';if(hide&&n.parentNode===t){document.body.appendChild(n);n.classList.add('tbn-fixed');if(!n.querySelector('.tbn-logo')){var a=document.createElement('a');a.className='tbn-logo';a.href='index.html';a.setAttribute('aria-label','AUZslab home');var im=document.createElement('img');im.src='logo.png';im.alt='AUZslab';a.appendChild(im);n.insertBefore(a,n.firstChild)}document.body.classList.add('has-tbn')}else if(!hide&&n.classList.contains('tbn-fixed')&&!matchMedia('(min-width:900px)').matches){}}f();addEventListener('load',f)})();</script>
+<link rel="stylesheet" href="reach.css?v=101"><script type="application/ld+json">{"@context": "https://schema.org", "@type": "ItemList", "name": "AUZslab products", "itemListElement": [{"@type": "ListItem", "position": 1, "item": {"@type": "SoftwareApplication", "name": "AUZsPOS", "description": "Point of sale, billing, KOT, tables and stock for cafes, restaurants and shops.", "applicationCategory": "BusinessApplication", "operatingSystem": "Web, Android"}}, {"@type": "ListItem", "position": 2, "item": {"@type": "SoftwareApplication", "name": "AUZsPay", "description": "Staff attendance, leave and payroll.", "applicationCategory": "BusinessApplication", "operatingSystem": "Web, Android"}}, {"@type": "ListItem", "position": 3, "item": {"@type": "SoftwareApplication", "name": "AUZsLedger", "description": "Double-entry accounting with GST.", "applicationCategory": "BusinessApplication", "operatingSystem": "Web, Android"}}, {"@type": "ListItem", "position": 4, "item": {"@type": "SoftwareApplication", "name": "AUZsScan", "description": "Scan products with the phone camera and bill them.", "applicationCategory": "BusinessApplication", "operatingSystem": "Web, Android"}}, {"@type": "ListItem", "position": 5, "item": {"@type": "SoftwareApplication", "name": "AUZsMob", "description": "Sales, purchases, repairs and dues for mobile shops.", "applicationCategory": "BusinessApplication", "operatingSystem": "Web, Android"}}]}</script>
 </head>
 <body class="fx products">
+<div id="pageTransition" class="page-transition" aria-hidden="true"></div>
+
 <div class="shell">
-  <header class="u-top">
-    <a href="index.html" class="u-logo" aria-label="AUZslab home"><img src="logo.png" alt="AUZslab"></a>
-    <nav class="u-nav" aria-label="Main"><a href="products.html" class="on">Products</a><a href="live-demo.html">Live demo</a><a href="studio.html">Studio</a><a href="platform.html">Why AUZslab</a><a href="contact.html">Contact</a></nav>
-    <div class="u-r">
-      <button type="button" class="u-ic" data-theme-toggle aria-label="Dark mode"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M20 14.500A8 8 0 0 1 9.500 4 8 8 0 1 0 20 14.500Z"/></svg></button>
-      <a href="signup.html" class="u-pill" data-signin-link>Get started</a>
-      <button class="u-menu" id="menuToggle" aria-label="Open menu" aria-expanded="false"><i></i><span class="menu-btn-label">Menu</span></button>
+  <header class="topbar">
+    <div style="display:flex;gap:8px;align-items:center;order:2">
+      <button type="button" class="theme-toggle" data-theme-toggle role="switch" aria-checked="false" aria-label="Dark mode"></button>
+      <a href="signup.html" class="btn btn-ghost" data-signin-link style="padding:9px 14px;font-size:10px">Get started</a>
+      <button class="hamburger" id="menuToggle" aria-label="Open menu" aria-expanded="false">
+        <span class="menu-btn-label">Menu</span>
+      </button>
     </div>
+    <a href="index.html" class="topbar-logo"><img src="logo.png" alt="AUZslab"></a>
+    <nav class="topbar-nav" aria-label="Main"><div class="tbn-item"><a href="products.html" class="tbn-top" aria-current="page">Business types<i aria-hidden="true">&#9662;</i></a><div class="tbn-menu"><a href="business-cafes.html">Caf&eacute;s &amp; restaurants<small></small></a><a href="business-salons.html">Salons &amp; studios<small></small></a><a href="business-retail.html">Retail &amp; bookstores<small></small></a><a href="business-clothing.html">Clothing &amp; apparel<small></small></a><a href="business-mobile-repair.html">Mobile shops<small></small></a><a href="products.html" class="tbn-all">All products</a></div></div><div class="tbn-item"><a href="live-demo.html" class="tbn-top">Live demo<i aria-hidden="true">&#9662;</i></a><div class="tbn-menu"><a href="https://demo.auzslab.in/" target="_blank" rel="noopener">AUZsPOS<small>Try</small></a><a href="https://demo.auzslab.in/payroll.html" target="_blank" rel="noopener">AUZsPay<small>Try</small></a><a href="https://demo.auzslab.in/accounts.html" target="_blank" rel="noopener">AUZsLedger<small>Try</small></a><a href="https://demo.auzslab.in/scan.html" target="_blank" rel="noopener">AUZsScan<small>Try</small></a><a href="https://demo.auzslab.in/mob.html" target="_blank" rel="noopener">AUZsMob<small>Try</small></a><a href="https://demo.auzslab.in/style.html" target="_blank" rel="noopener">AUZsStyle<small>Try</small></a><a href="https://demo-salon.auzslab.in/salon/admin/" target="_blank" rel="noopener">AUZslab Salon<small>Try</small></a><a href="live-demo.html" class="tbn-all">All demos</a></div></div><a href="contact.html" class="tbn-top">Contact</a></nav>
   </header>
 
   <div class="drawer-overlay" id="drawerOverlay"></div>
-  <aside class="u-sheet sidebar" id="sidebarDrawer" aria-label="Menu">
-    <div class="u-sheet-top"><a href="index.html"><img src="logo.png" alt="AUZslab"></a><button id="drawerClose" aria-label="Close menu">Close</button></div>
+
+  <aside class="sidebar" id="sidebarDrawer">
+    <div class="drawer-topbar">
+      <button class="drawer-close" id="drawerClose" aria-label="Close menu"><span aria-hidden="true">&times;</span> Close</button>
+      <a href="index.html" class="drawer-topbar-logo"><img src="logo.png" alt="AUZslab"></a>
+      <div class="drawer-topbar-icons">
+        <a href="cart.html" class="drawer-icon-link" aria-label="Cart"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 7h12l-1 13H7L6 7Z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg></a>
+        <a href="signup.html" class="drawer-icon-link" aria-label="Account"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></a>
+      </div>
+      </div>
     <nav class="sidebar-nav" aria-label="Primary">
-      <a href="index.html" class="nav-link">Home</a><a href="products.html" class="nav-link active">Products</a><div class="nav-group"><button class="nav-link nav-group-toggle" aria-expanded="false"><span>Business types <sup class="nav-group-count">(+7)</sup></span><span class="nav-group-indicator" aria-hidden="true"></span></button><div class="nav-submenu"><div class="nav-submenu-inner"><a href="business-cafes.html" class="nav-sublink"><span>Caf&eacute;s &amp; restaurants</span></a><a href="business-salons.html" class="nav-sublink"><span>Salons &amp; studios</span></a><a href="business-retail.html" class="nav-sublink"><span>Retail &amp; bookstores</span></a><a href="business-clothing.html" class="nav-sublink"><span>Clothing &amp; apparel</span></a><a href="business-mobile-repair.html" class="nav-sublink"><span>Mobile retail &amp; repair</span></a><a href="studio.html" class="nav-sublink"><span>Custom software (Studio)</span></a><a href="web-design.html" class="nav-sublink"><span>Websites &amp; online stores</span></a></div></div></div><a href="platform.html" class="nav-link">Why AUZslab</a><a href="live-demo.html" class="nav-link">Live demo</a><a href="download-apps.html" class="nav-link">Download apps</a><a href="cart.html" class="nav-link">Cart <span class="cart-count"></span></a><div class="nav-group"><button class="nav-link nav-group-toggle" aria-expanded="false"><span>Resources <sup class="nav-group-count">(+4)</sup></span><span class="nav-group-indicator" aria-hidden="true"></span></button><div class="nav-submenu"><div class="nav-submenu-inner"><a href="resources-getting-started.html" class="nav-sublink"><span>Getting started</span></a><a href="learn.html" class="nav-sublink"><span>Learn: beginner manual</span></a><a href="resources-operations.html" class="nav-sublink"><span>Operations &amp; workflows</span></a><a href="resources-growth.html" class="nav-sublink"><span>Growth &amp; scaling</span></a></div></div></div><a href="contact.html" class="nav-link">Contact</a>
+      <a href="index.html" class="nav-link">Home</a>
+
+      <div class="nav-group nav-biz">
+        <button class="nav-link nav-group-toggle" aria-expanded="false">
+          <span>Business types <sup class="nav-group-count">(+6)</sup></span>
+          <span class="nav-group-indicator" aria-hidden="true"></span>
+        </button>
+        <div class="nav-submenu">
+          <div class="nav-submenu-head">Business types</div>
+          <div class="nav-submenu-inner">
+            <a href="business-cafes.html" class="nav-sublink"><span>Caf&eacute;s &amp; restaurants</span></a>
+            <a href="business-salons.html" class="nav-sublink"><span>Salons &amp; studios</span></a>
+            <a href="business-retail.html" class="nav-sublink"><span>Retail &amp; bookstores</span></a>
+            <a href="business-clothing.html" class="nav-sublink"><span>Clothing &amp; apparel</span></a>
+            <a href="business-mobile-repair.html" class="nav-sublink"><span>Mobile retail &amp; repair</span></a>
+            <a href="studio.html" class="nav-sublink"><span>Custom software (Studio)</span></a>
+            <a href="web-design.html" class="nav-sublink"><span>Websites &amp; online stores</span></a>
+          </div>
+        </div>
+      </div>
+
+
+            <a href="platform.html" class="nav-link">Why AUZslab</a>
+      <a href="live-demo.html" class="nav-link">Live demo</a>
+      <a href="download-apps.html" class="nav-link">Download apps</a>
+      <a href="cart.html" class="nav-link">Cart <span class="cart-count"></span></a>
+
+      <div class="nav-group">
+        <button class="nav-link nav-group-toggle" aria-expanded="false">
+          <span>Resources <sup class="nav-group-count">(+5)</sup></span>
+          <span class="nav-group-indicator" aria-hidden="true"></span>
+        </button>
+        <div class="nav-submenu">
+          <div class="nav-submenu-head">Resources</div>
+          <div class="nav-submenu-inner">
+            <a href="resources-getting-started.html" class="nav-sublink"><span>Getting started</span></a>
+            <a href="learn.html" class="nav-sublink"><span>Learn: beginner manual</span></a>
+            <a href="resources-operations.html" class="nav-sublink"><span>Operations &amp; workflows</span></a>
+            <a href="resources-growth.html" class="nav-sublink"><span>Growth &amp; scaling</span></a>
+          </div>
+        </div>
+      </div>
+
+      <a href="contact.html" class="nav-link">Contact</a>
     </nav>
-    <div class="foot"><div class="row"><a href="signup.html" class="btn btn-ghost" data-signin-link>Get started</a><button class="btn" data-open-contact>Let's talk</button></div><div class="copy">&copy; 2026 AUZslab</div></div>
-  </aside>
-
-          <main class="content"><div class="ed"><h1 data-ed="products.h" style="margin:6px 0 4px">Built around you.</h1><p class="ed-side" data-ed="products.sub" style="margin:0 0 18px">Connected systems for every part of your business.</p><article class="pe" id="slab-pos" data-product="pos"><div class="no">01</div><div class="pt"><h2>AUZsPOS</h2></div><div class="pt"><p>Everything the counter and kitchen touch during service, in one till.</p><details><summary>What is included</summary><ul><li>Order taking, GST billing &amp; due/credit tracking</li><li>Table floor plan, kitchen order tickets (KOT) &amp; kitchen display</li><li>Token / queue display for counter service</li><li>Day settlement, day &amp; KOT reports, a build-your-own report tool</li><li>Custom staff roles &amp; permissions &middot; barcode scanner support (optional hardware)</li></ul></details></div><div class="pt acts"><button class="btn " data-cart-btn>Add to cart</button></div><div class="ph r32" data-ed-img="products.pos"></div></article><article class="pe" id="slab-crm" data-product="crm"><div class="no">02</div><div class="pt"><h2>CRM</h2></div><div class="pt"><p>Know who your customers are, and give them a reason to come back.</p><details><summary>What is included</summary><ul><li><i class="tape"></i>Customer profiles with full visit &amp; spend history</li><li><i class="tape"></i>Automatic segments: new, regular, at-risk, VIP</li><li><i class="tape"></i>Loyalty points &amp; coupons</li><li><i class="tape"></i>Post-purchase customer feedback, collected right off the receipt</li></ul></details></div><div class="pt acts"><button class="btn " data-cart-btn>Add to cart</button></div><div class="ph r32" data-ed-img="products.crm"></div></article><article class="pe" id="slab-billing" data-product="billing"><div class="no">03</div><div class="pt"><h2>Billing & Invoicing</h2></div><div class="pt"><p>GST-ready invoices, automatic numbering and tax breakdowns.</p><details><summary>What is included</summary><ul><li>GST invoices with automatic numbering &amp; tax breakdown</li><li>Shareable public receipt page: print, or send straight to WhatsApp</li><li>Due &amp; credit tracking</li></ul></details></div><div class="pt acts"><button class="btn " data-cart-btn>Add to cart</button></div><div class="ph r32" data-ed-img="products.billing"></div></article><article class="pe" id="slab-inventory" data-product="inventory"><div class="no">04</div><div class="pt"><h2>Inventory</h2></div><div class="pt"><p></p><details><summary>What is included</summary><ul><li>Ingredient &amp; stock tracking</li><li>Purchase entry &amp; vendor tracking, wastage logging</li><li>Stock movement reports &amp; reorder forecasting</li></ul></details></div><div class="pt acts"><button class="btn " data-cart-btn>Add to cart</button></div><div class="ph r32" data-ed-img="products.inventory"></div></article><article class="pe" id="slab-qr" data-product="self_order"><div class="no">05</div><div class="pt"><h2>QR Ordering</h2></div><div class="pt"><p>A QR code on every table. Guests browse and order from their own phone.</p><details><summary>What is included</summary><ul><li> Table QR codes: guest self-ordering, straight to the kitchen</li><li> Your own public mini-website: menu, hours, location</li><li> Toggle it off any time, enforced everywhere, not just on screen</li></ul></details></div><div class="pt acts"><button class="btn " data-cart-btn>Add to cart</button></div><div class="ph r32" data-ed-img="products.self_order"></div></article><article class="pe" id="slab-payroll" data-product="payroll"><div class="no">06</div><div class="pt"><h2>AUZsPay</h2></div><div class="pt"><p>Attendance-based staff pay, computed and marked paid from the same account.</p><details><summary>What is included</summary><ul><li>Staff clock in on their phone or a shared kiosk, even offline &mdash; hours flow straight into the pay run</li><li>Salary structures, overtime, PF, ESI, PT and TDS, kept as dated rules you can see and change</li><li>Leave requests, salary advances and loans, and expense claims, all settled in the same run</li><li>Managers see their team, staff see only themselves &mdash; salary stays with you unless you choose to share it</li></ul></details></div><div class="pt acts"><button class="btn " data-cart-btn>Add to cart</button></div><div class="ph r32" data-ed-img="products.payroll"></div></article><article class="pe" id="slab-salon" data-product="salon"><div class="no">07</div><div class="pt"><h2>AUZslab Salon</h2></div><div class="pt"><p>Your salon's own website, online booking, billing, clients, expenses and analytics: one admin console, styled with your logo, colours and fonts. Add Payroll, Website Builder or any other product on top, any time.</p><details><summary>What is included</summary><ul><li>Public site with service menu, gallery, stylists and a live booking form</li><li>Branded invoices shared as a link over WhatsApp, printable as PDF</li><li>Every word, price and photo editable from your phone, no developer needed</li></ul></details></div><div class="pt acts"><a href="products.html#slab-salon" class="btn btn-ghost">Details</a><button class="btn " data-cart-btn>Add to cart</button></div><div class="ph r32" data-ed-img="products.salon"></div></article><article class="pe" id="slab-accounting" data-product="accounting"><div class="no">08</div><div class="pt"><h2>AUZsLedger</h2></div><div class="pt"><p>GST invoicing, purchases, stock, bank reconciliation and financial reports on a real double-entry ledger. Every figure drills down to the bill behind it.</p><details><summary>What is included</summary><ul><li>CGST, SGST and IGST worked out for you, with input credit and GSTR-2B matching</li><li>One posting updates the ledger, stock and receivables together; posted entries are only ever reversed</li><li>Quotation, order, challan, invoice and receipt &mdash; part payments and credit notes settle against the right bill</li><li>Bank statement import and reconciliation to zero, bank charges posted in one tap</li><li>Trial balance, profit and loss, balance sheet and ageing &mdash; tap any figure to reach the bill behind it</li></ul></details></div><div class="pt acts"><button class="btn " data-cart-btn>Add to cart</button></div><div class="ph r32" data-ed-img="products.accounting"></div></article><article class="pe" id="slab-mobile" data-product="mobile"><div class="no">09</div><div class="pt"><h2>AUZsMob</h2></div><div class="pt"><p>Phones tracked by IMEI, accessory stock, a full repair-ticket workflow, and staff sales/work kept private between staff &mdash; the same login as the rest of your account.</p><details><summary>What is included</summary><ul><li>Every handset its own IMEI/serial unit, with condition and warranty</li><li>Repair tickets: intake, status, parts used, payment — a real job tracker</li><li>Each staffer sees only their own sales and jobs; the owner sees everyone's</li></ul></details></div><div class="pt acts"><a href="products.html#slab-mobile" class="btn btn-ghost">Details</a><button class="btn " data-cart-btn>Add to cart</button></div><div class="ph r32" data-ed-img="products.mobile"></div></article><article class="pe" id="slab-scan" data-product="scan"><div class="no">10</div><div class="pt"><h2>AUZsScan</h2></div><div class="pt"><p>Point your phone at a barcode to bill it with GST, take payment and send the invoice on WhatsApp. Scan stock in the same way.</p><details><summary>What is included</summary><ul><li>Camera scanning on Android and iPhone, or a Bluetooth scanner &mdash; nothing extra to buy</li><li>A new barcode is added once; every scan after that fills in price, HSN and GST</li><li>Each sale is a real invoice with GST, with stock taken down</li><li><b>Quoted with your package</b></li></ul></details></div><div class="pt acts"><button class="btn " data-cart-btn>Add to cart</button></div><div class="ph r32" data-ed-img="products.scan"></div></article><div class="ed-cta"><span>Ready when you are.</span><a class="btn" href="cart.html">View cart <span class="cart-count"></span></a></div></div><div class="ftwrap" id="ftwrap">
-    <button class="ftt" aria-expanded="false"><span class="ftti"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M3 3h8l10 10-8 8L3 11V3Z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5Z"/></svg><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.500 0 18M12 3c-3 3.5-3 14.500 0 18"/></svg></span><span class="ftl">Setup, support and help</span><i class="pl">+</i></button>
-    <div class="ftinfo">
-      <div class="perks"><div class="perk"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M3 3h8l10 10-8 8L3 11V3Z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg><div><b>Set up with you</b><span>Shaped to your workflow</span></div></div><div class="perk"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg><div><b>Works offline</b><span>POS and AUZsMob keep selling</span></div></div><div class="perk"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.500 0 18M12 3c-3 3.5-3 14.500 0 18"/></svg><div><b>Your data is yours</b><span>Back up or export any time</span></div></div><div class="perk"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5Z"/></svg><div><b>Talk to a person</b><span>Call or WhatsApp us</span></div></div></div>
-      <div class="ftstrip"><div class="ftfold" id="ftfold"><p>AUZslab builds connected business software: point of sale, accounting, payroll, scanning and shop apps that you shape to the way you work. One login, one picture of your business, set up for you and looked after.</p><button class="ftmore" id="ftmore">Read more...</button></div>
-        <div class="ftabs"><button class="ftab" data-i="0">Products</button><button class="ftab" data-i="1">Business types</button><button class="ftab" data-i="2">Resources</button><button class="ftab" data-i="3">Company</button></div><div class="ftpanel" id="ftpanel" data-tabs='[[["products.html#slab-pos","AUZsPOS"],["products.html#slab-payroll","AUZsPay"],["products.html#slab-accounting","AUZsLedger"],["products.html#slab-scan","AUZsScan"],["products.html#slab-mobile","AUZsMob"],["products.html#slab-salon","AUZslab Salon"],["products.html#slab-qr","QR ordering"]],[["business-cafes.html","Cafes & restaurants"],["business-salons.html","Salons & studios"],["business-retail.html","Retail & bookstores"],["business-clothing.html","Clothing & apparel"],["business-mobile-repair.html","Mobile retail & repair"],["studio.html","Custom software (Studio)"],["web-design.html","Websites & online stores"]],[["resources-getting-started.html","Getting started"],["learn.html","Learn: beginner manual"],["resources-operations.html","Operations & workflows"],["resources-growth.html","Growth & scaling"]],[["platform.html","Why AUZslab"],["live-demo.html","Live demo"],["download-apps.html","Download apps"],["join-team.html","Join our team"],["sitemap.html","Sitemap"]]]'></div></div>
+    <div class="sidebar-foot">
+      <div style="display:flex;gap:10px">
+        <a href="signup.html" class="btn btn-ghost" data-signin-link style="flex:1;justify-content:center">Get started</a>
+        <button class="btn btn-ghost" data-open-contact style="flex:1;justify-content:center">Let's talk</button>
+      </div>
+      <div class="sidebar-copy">&copy; 2026 AUZslab</div>
     </div>
-    <footer><div class="cols">
-      <div class="col"><span class="lbl">Connect with us</span><a href="tel:+919251250829">Call</a><a href="https://wa.me/919251250829" target="_blank" rel="noopener">Text (WhatsApp)</a><a href="https://www.instagram.com/auzslab.in" target="_blank" rel="noopener">Instagram</a><a href="https://www.facebook.com/share/1FMd3FoFyZ/?mibextid=wwXIfr" target="_blank" rel="noopener">Facebook</a><a href="mailto:helloauzslab@gmail.com">Email</a></div>
-      <div class="col"><span class="lbl">Explore</span><a href="products.html">Products</a><a href="live-demo.html">Live demo</a><a href="download-apps.html">Download apps</a><a href="studio.html">Studio</a><a href="web-design.html">Websites &amp; stores</a><a href="platform.html">Why AUZslab</a></div>
-      <div class="col"><span class="lbl">Company</span><a href="contact.html">Contact</a><a href="join-team.html">Join our team</a><a href="signup.html">Sign in</a><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a><a href="refund.html">Refunds</a></div>
-      <div class="ftbrand"><div class="big">AUZslab</div></div></div>
-      <div class="fin"><span>&copy; 2026 AUZslab. All rights reserved</span><a href="sitemap.html">Sitemap</a></div></footer>
-  </div>
-<nav class="u-dock" aria-label="Quick"><div class="pill"><a href="index.html" aria-label="Home"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></a><a href="products.html" aria-label="Products" class="on"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M3 7l9-4 9 4-9 4-9-4Z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/></svg></a><a href="live-demo.html" aria-label="Live demo"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></svg></a><a href="signup.html" aria-label="Sign in"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></a></div><button class="chat" data-open-contact aria-label="Talk to us"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5Z"/></svg></button></nav>
+  <div class="drawer-social"><a href="https://www.instagram.com/auzslab.in" aria-label="Instagram" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg></a><a href="https://www.facebook.com/share/1FMd3FoFyZ/?mibextid=wwXIfr" aria-label="Facebook" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 8V6.5c0-.8.3-1.2 1.3-1.2H17V2h-2.6C11.6 2 10 3.7 10 6.2V8H8v3.2h2V22h4V11.2h2.7l.4-3.2z"/></svg></a></div></aside>
 
-      </main>
+          <main class="content">
+
+    <section class="prh" id="lab">
+      <div class="prh-eye">Products</div>
+      <h1 class="prh-h">Built around you.</h1>
+      <p class="prh-lede">Connected systems for every part of your business. Start with what you need, shape it to how you work.</p>
+      <nav class="prh-links" aria-label="Jump to a product">
+        <a href="#slab-pos">AUZsPOS</a>
+        <a href="#slab-crm">CRM</a>
+        <a href="#slab-billing">Billing</a>
+        <a href="#slab-inventory">Stock</a>
+        <a href="#slab-qr">QR ordering</a>
+        <a href="#slab-payroll">AUZsPay</a>
+        <a href="#slab-salon">Salon</a>
+        <a href="#slab-mobile">AUZsMob</a>
+        <a href="#slab-accounting">AUZsLedger</a>
+        <a href="#slab-scan">AUZsScan</a>
+      </nav>
+    </section>
+
+<div class="band" data-marquee data-speed="46"><span>One login</span><i></i><span>Every module</span><i></i><span>Works offline</span><i></i><span>Your data stays yours</span><i></i></div>
+<section class="slab s-pos" id="slab-pos" data-product="pos">
+<span class="no" data-par=".12" aria-hidden="true">01</span><h2 class="nm giant" data-split="rise" aria-label="AUZsPOS">AUZs<br><span class="hand">POS</span></h2><div class="blk" data-reveal><div class="eye">01 &middot; Front of house</div><p class="sum">Everything the counter and kitchen touch during service, in one till.</p><ul class="feats"><li>Order taking, GST billing &amp; due/credit tracking</li><li>Table floor plan, kitchen order tickets (KOT) &amp; kitchen display</li><li>Token / queue display for counter service</li><li>Day settlement, day &amp; KOT reports, a build-your-own report tool</li><li>Custom staff roles &amp; permissions &middot; barcode scanner support (optional hardware)</li></ul><div class="acts"><button class="btn btn-primary" data-cart-btn>Add to cart</button></div></div><svg class="art a-big" data-art="pos" data-draw-in data-wob="1" data-par="-.08"></svg>
+</section>
+<section class="slab s-crm" id="slab-crm" data-product="crm">
+<span class="no" data-par=".12" aria-hidden="true">02</span><div class="blk" data-reveal><div class="eye">02 &middot; Customers &middot; included with AUZsPOS</div><h2 class="nm giant tilt" data-split="rise">CRM</h2><p class="sum">Know who your customers are, and give them a reason to come back.</p><div class="acts"><button class="btn btn-primary" data-cart-btn>Add to cart</button></div></div><ul class="notes"><li style="--r:-4deg;--x:0"><i class="tape"></i>Customer profiles with full visit &amp; spend history</li><li style="--r:3deg;--x:6vw"><i class="tape"></i>Automatic segments: new, regular, at-risk, VIP</li><li style="--r:-2deg;--x:-3vw"><i class="tape"></i>Loyalty points &amp; coupons</li><li style="--r:5deg;--x:4vw"><i class="tape"></i>Post-purchase customer feedback, collected right off the receipt</li></ul><svg class="art a-left" data-art="crm" data-draw-in data-wob="1" data-par=".1"></svg>
+</section>
+<section class="slab s-billing" id="slab-billing" data-product="billing">
+<span class="no" data-par=".12" aria-hidden="true">03</span><h2 class="nm vert" aria-label="Billing &amp; Invoicing">Billing</h2><div class="receipt" data-reveal><div class="eye">03 &middot; Billing &middot; included with AUZsPOS</div><p class="sum">GST-ready invoices, automatic numbering and tax breakdowns.</p><ul class="feats lines"><li>GST invoices with automatic numbering &amp; tax breakdown</li><li>Shareable public receipt page: print, or send straight to WhatsApp</li><li>Due &amp; credit tracking</li></ul><div class="tot"><span>Total</span><b class="stamp">Paid</b></div><div class="acts"><button class="btn btn-primary" data-cart-btn>Add to cart</button></div></div><svg class="art a-corner" data-art="billing" data-draw-in data-wob="1" ></svg>
+</section>
+<div class="band" data-marquee data-speed="38" data-dir="r"><span>Stock</span><i></i><span>Billing</span><i></i><span>Orders</span><i></i><span>Payroll</span><i></i><span>Bookings</span><i></i><span>Clients</span><i></i></div>
+<section class="slab s-inventory" id="slab-inventory" data-product="inventory">
+<span class="no" data-par=".12" aria-hidden="true">04</span><div class="eye">04 &middot; Stock &middot; included with AUZsPOS</div><h2 class="nm giant center" data-split="pop">Inventory</h2><svg class="art a-mid" data-art="inventory" data-draw-in data-wob="1" ></svg><p class="sum center" data-reveal>Stock tracking and purchasing, kept alongside your daily billing.</p><ul class="labels"><li style="--r:-3deg">Ingredient &amp; stock tracking</li><li style="--r:2deg">Purchase entry &amp; vendor tracking, wastage logging</li><li style="--r:-1deg">Stock movement reports &amp; reorder forecasting</li></ul><div class="acts"><button class="btn btn-primary" data-cart-btn>Add to cart</button></div>
+</section>
+<section class="slab s-qr" id="slab-qr" data-product="self_order">
+<span class="no" data-par=".12" aria-hidden="true">05</span><svg class="art a-phone" data-art="qr" data-draw-in data-wob="1" ></svg><p class="orb o1" data-reveal><b>1</b>Table QR codes: guest self-ordering, straight to the kitchen</p><p class="orb o2" data-reveal><b>2</b>Your own public mini-website: menu, hours, location</p><p class="orb o3" data-reveal><b>3</b>Toggle it off any time, enforced everywhere, not just on screen</p><div class="blk" data-reveal><div class="eye">05 &middot; Online &amp; self-order</div><h2 class="nm giant" data-split="rise">QR<br>Ordering</h2><p class="sum">A QR code on every table. Guests browse and order from their own phone.</p><div class="acts"><button class="btn btn-primary" data-cart-btn>Add to cart</button></div></div>
+</section>
+<section class="slab s-payroll" id="slab-payroll" data-product="payroll">
+<span class="no" data-par=".12" aria-hidden="true">06</span><svg class="art a-clock" data-art="payroll" data-draw-in data-wob="1" ></svg><div class="blk" data-reveal><div class="eye">06 &middot; Your team</div><h2 class="nm giant" data-split="rise" aria-label="AUZsPay">AUZs<br><span class="hand">Pay</span></h2><p class="sum">Attendance-based staff pay, computed and marked paid from the same account.</p><ul class="feats"><li>Staff clock in on their phone or a shared kiosk, even offline &mdash; hours flow straight into the pay run</li><li>Salary structures, overtime, PF, ESI, PT and TDS, kept as dated rules you can see and change</li><li>Leave requests, salary advances and loans, and expense claims, all settled in the same run</li><li>Managers see their team, staff see only themselves &mdash; salary stays with you unless you choose to share it</li></ul><div class="acts"><button class="btn btn-primary" data-cart-btn>Add to cart</button></div></div>
+</section>
+<section class="slab s-salon" id="slab-salon" data-product="salon">
+<div class="band-bg" aria-hidden="true"></div><span class="no" data-par=".12" aria-hidden="true">07</span><div class="blk" data-reveal><div class="eye">07 &middot; For salons &amp; spas</div><h2 class="nm giant" data-split="rise">AUZslab<br><span class="hand">Salon</span></h2><p class="sum">Your salon's own website, online booking, billing, clients, expenses and analytics: one admin console, styled with your logo, colours and fonts. Add Payroll, Website Builder or any other product on top, any time.</p><ul class="feats"><li>Public site with service menu, gallery, stylists and a live booking form</li><li>Branded invoices shared as a link over WhatsApp, printable as PDF</li><li>Every word, price and photo editable from your phone, no developer needed</li></ul><div class="acts"><a href="products.html#slab-salon" class="btn btn-ghost">Details</a><button class="btn btn-primary" data-cart-btn>Add to cart</button></div></div><svg class="art a-scissors" data-art="salon" data-draw-in data-wob="1" ></svg>
+</section>
+<section class="slab s-web" id="slab-accounting" data-product="accounting">
+<span class="no" data-par=".12" aria-hidden="true">08</span><div class="blk" data-reveal><div class="eye">08 &middot; Your books</div><h2 class="nm giant" data-split="rise" aria-label="AUZsLedger">AUZs<br><span class="hand">Ledger</span></h2><p class="sum">GST invoicing, purchases, stock, bank reconciliation and financial reports on a real double-entry ledger. Every figure drills down to the bill behind it.</p><ul class="feats"><li>CGST, SGST and IGST worked out for you, with input credit and GSTR-2B matching</li><li>One posting updates the ledger, stock and receivables together; posted entries are only ever reversed</li><li>Quotation, order, challan, invoice and receipt &mdash; part payments and credit notes settle against the right bill</li><li>Bank statement import and reconciliation to zero, bank charges posted in one tap</li><li>Trial balance, profit and loss, balance sheet and ageing &mdash; tap any figure to reach the bill behind it</li></ul><div class="acts"><button class="btn btn-primary" data-cart-btn>Add to cart</button></div></div>
+</section>
+<section class="slab s-salon" id="slab-mobile" data-product="mobile">
+<div class="band-bg" aria-hidden="true"></div><span class="no" data-par=".12" aria-hidden="true">09</span><div class="blk" data-reveal><div class="eye">09 &middot; For mobile retail &amp; repair shops</div><h2 class="nm giant" data-split="rise" aria-label="AUZsMob">AUZs<br><span class="hand">Mob</span></h2><p class="sum">Phones tracked by IMEI, accessory stock, a full repair-ticket workflow, and staff sales/work kept private between staff &mdash; the same login as the rest of your account.</p><ul class="feats"><li>Every handset its own IMEI/serial unit, with condition and warranty</li><li>Repair tickets: intake, status, parts used, payment — a real job tracker</li><li>Each staffer sees only their own sales and jobs; the owner sees everyone's</li></ul><div class="acts"><a href="products.html#slab-mobile" class="btn btn-ghost">Details</a><button class="btn btn-primary" data-cart-btn>Add to cart</button></div></div><svg class="art a-scissors" data-art="mobile" data-draw-in data-wob="1" data-par="-.08"></svg>
+</section>
+<section class="slab s-web" id="slab-scan" data-product="scan">
+<span class="no" data-par=".12" aria-hidden="true">10</span><div class="blk" data-reveal><div class="eye">10 &middot; Scan and bill</div><h2 class="nm giant" data-split="rise" aria-label="AUZsScan">AUZs<br><span class="hand">Scan</span></h2><p class="sum">Point your phone at a barcode to bill it with GST, take payment and send the invoice on WhatsApp. Scan stock in the same way.</p><ul class="feats"><li>Camera scanning on Android and iPhone, or a Bluetooth scanner &mdash; nothing extra to buy</li><li>A new barcode is added once; every scan after that fills in price, HSN and GST</li><li>Each sale is a real invoice with GST, with stock taken down</li><li><b>Quoted with your package</b></li></ul><div class="acts"><button class="btn btn-primary" data-cart-btn>Add to cart</button></div></div>
+</section>
+<section class="checkout" id="checkout">
+  <div class="eye">Your cart</div>
+  <h2 class="fx-h2" data-split="rise">Ready to get started?</h2>
+  <p class="fx-copy">Pick everything your business needs above, then head to your cart to create an account and send your requirements to us.</p>
+  <a href="cart.html" class="btn btn-primary" data-magnet>View cart <span class="cart-count"></span></a>
+  <div class="tags"><span class="tag">Works offline</span><span class="tag">One login, every module</span><span class="tag">Your data stays yours</span></div>
+</section>
+
+    <div class="stack">
+
+      <section class="stack-panel stack-panel-dark" data-tab="CONNECT">
+
+      <footer class="footer-dark">
+        <div class="wrap">
+          <div class="footer-top">
+            <div class="footer-col footer-col-brand">
+              <span class="brand-mark">AUZ<span class="brand-accent">slab</span></span>
+              <p class="footer-tag">Business software built around the way you work.</p>
+              <a class="footer-cta" href="tel:+919251250829">+91 92512 50829</a>
+              <a class="footer-mail" href="mailto:helloauzslab@gmail.com">helloauzslab@gmail.com</a>
+            </div>
+            <div class="footer-col">
+              <div class="footer-col-title">Products</div>
+              <a href="products.html#slab-pos">AUZsPOS</a>
+              <a href="products.html#slab-payroll">AUZsPay</a>
+              <a href="products.html#slab-accounting">AUZsLedger</a>
+              <a href="products.html#slab-scan">AUZsScan</a>
+              <a href="products.html#slab-mobile">AUZsMob</a>
+              <a href="products.html">All products</a>
+            </div>
+            <div class="footer-col">
+              <div class="footer-col-title">Business types</div>
+              <a href="business-cafes.html">Cafes &amp; restaurants</a>
+              <a href="business-retail.html">Retail &amp; bookstores</a>
+              <a href="business-salons.html">Salons &amp; studios</a>
+              <a href="business-mobile-repair.html">Mobile shops</a>
+              <a href="business-clothing.html">Clothing &amp; apparel</a>
+            </div>
+            <div class="footer-col">
+              <div class="footer-col-title">Company</div>
+              <a href="live-demo.html">Live demo</a>
+              <a href="download-apps.html">Download apps</a>
+              <a href="contact.html">Contact</a>
+              <a href="join-team.html">Join our team</a>
+              <a href="signup.html">Sign in</a>
+            </div>
+          </div>
+
+          <div class="footer-bottom">
+            <nav class="footer-legal" aria-label="Legal">
+              <a href="terms.html">Terms</a>
+              <a href="privacy.html">Privacy</a>
+              <a href="refund.html">Refunds</a>
+              <a href="sitemap.html">Sitemap</a>
+              <a href="https://www.instagram.com/auzslab.in" target="_blank" rel="noopener noreferrer">Instagram</a>
+              <a href="https://www.facebook.com/share/1FMd3FoFyZ/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer">Facebook</a>
+            </nav>
+            <span class="footer-copy">&copy; 2026 AUZslab</span>
+          </div>
+        </div>
+      </footer>
+
+      </section>
+
+      </div>
+
+    </div>
+  </main>
 
 
   <div class="modal-overlay" id="modalOverlay">
@@ -324,6 +498,5 @@
 })();
 </script>
 <script src="company.js"></script>
-<script src="ed.js?v=1" defer></script><script src="u.js?v=1" defer></script>
 </body>
 </html>
