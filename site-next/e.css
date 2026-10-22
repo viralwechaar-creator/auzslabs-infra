@@ -107,3 +107,34 @@ main.content details.gfold>summary::-webkit-details-marker{display:none}
 main.content details.gfold>summary:after{content:"+";color:var(--mut)}
 main.content details.gfold[open]>summary:after{content:"\2212"}
 main.content details.gfold>.gb{padding:0 0 14px}
+/* ---- cleaner: white page, hairlines instead of boxes, quiet pictures, plain buttons ---- */
+:root{--bg:#fff;--line:#e4e4e2;--soft:#f6f6f5;--mut:#9a9a97}
+:root[data-theme=dark]{--bg:#0e0e0e;--line:#2a2a2a;--soft:#171717}
+html,body{background:#fff}
+:root[data-theme=dark] html,:root[data-theme=dark] body{background:#0e0e0e}
+.ph{background:#f1f1f0;border-radius:14px!important}
+:root[data-theme=dark] .ph{background:#181818}
+/* rows: hairlines only, no outlined boxes */
+.fold,main.content details.gfold{border:0!important;border-top:1px solid var(--line)!important;border-radius:0!important;padding:0!important;margin:0!important}
+.folds{gap:0;border-bottom:1px solid var(--line)}
+.fold>summary{padding:15px 0}
+.fold .fb{padding-left:38px}
+main.content details.gfold:last-of-type{border-bottom:1px solid var(--line)!important}
+.ed-list{border:0!important;border-radius:0!important;padding:0!important}
+.ed-cta{border:0!important;border-top:1px solid var(--line)!important;border-radius:0!important;padding:18px 0!important}
+.pe{border:0!important;border-top:1px solid var(--line)!important;border-radius:0!important;padding:20px 0!important;margin:0!important}
+main.content .card,main.content .feat-card,main.content .price-card,main.content .fee-card,.bento>.card,.bento>.card.feat,main.content .demo-note,main.content .biz-band,.sp-card,#salon-plans .sp-card,#salon-addons .sp-addon{border:0!important;border-top:1px solid var(--line)!important;border-radius:0!important;padding:16px 0!important}
+/* buttons and pills: thin, square-ish, no crafty rounding */
+main.content .btn,main.content .btn-ghost,main.content .btn-primary,.u-pill,.u-menu{border:1px solid #111!important;border-radius:6px!important;padding:8px 16px!important}
+.ed-side a,.ed-link{border:1px solid #111;border-radius:6px;padding:8px 16px}
+.u-ic{border:0!important;border-radius:0!important}
+.u-nav a.on{border:0;border-bottom:1px solid #111;border-radius:0}
+.ed-words a,.hm-chips a{border:0;border-bottom:1px solid var(--line);border-radius:0;padding:2px 0}
+/* header and dock stay light and quiet */
+.u-top{background:rgba(255,255,255,.92)!important}
+:root[data-theme=dark] .u-top{background:rgba(14,14,14,.92)!important}
+.u-dock .pill{background:rgba(255,255,255,.96)!important;box-shadow:0 4px 24px rgba(0,0,0,.1)!important}
+.u-sheet{background:#fff;border-radius:0}
+.modal{border-radius:14px 14px 0 0!important}
+/* footer: calmer, square-cornered */
+.ftwrap{border-radius:0!important}.ftwrap footer,.ftstrip{border-radius:10px!important}
