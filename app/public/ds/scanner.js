@@ -8,8 +8,8 @@
 (function (root) {
   'use strict';
   const FORMATS = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf', 'qr_code', 'codabar'];
-  const REPEAT_MS = 1600;      // the same code is ignored for this long after it was accepted
-  const GAP_MS = 500;          // any code is ignored for this long after the last accepted one
+  const REPEAT_MS = 900;       // the same code is accepted again once it has been out of view this long (so a second piece with the same tag scans)
+  const GAP_MS = 300;          // a different code (another size of the same style) is accepted this soon after the last one
 
   // ---------- helpers ----------
   const el = (tag, props, ...kids) => {

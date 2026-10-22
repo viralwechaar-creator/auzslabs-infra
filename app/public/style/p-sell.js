@@ -34,13 +34,20 @@ page('sell', {
     const grid = h('div', { class: 'sgrid' });
     const cartHost = h('aside', { class: 'cartpane' });
     const bar = h('button', { class: 'cartbar', type: 'button', onclick: () => cartSheet() });
-    const scanBtn = window.auzScanner ? h('button', { class: 'btn icon', type: 'button', 'aria-label': t('Scan'), onclick: () => scanWith((c) => { onCode(c); }) }, icon('camera', 20)) : null;
+    const scanBtn = window.auzScanner ? h('button', { class: 'btn icon', type: 'button', 'aria-label': t('Scan'), onclick: () => scanWith((c) => scanCode(c)) }, icon('camera', 20)) : null;
     const sf = searchField(t('Search or scan a tag'), (val) => { UI.q = val; paintGrid(); }, UI.q);
     sf.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const val = sf.input.value.trim(); if (val && onCode(val, true)) { sf.input.value = ''; UI.q = ''; paintGrid(); } } });
     const chips = h('div', { class: 'chips' });
     const filterHost = h('span');
     const paintFilter = () => { clear(filterHost).append(filterButton(() => { paintFilter(); paintGrid(); })); };
     function paintChips() { clear(chips).append(...COL.list.filter((c) => (c.styleIds || []).length).map((c) => h('button', { class: 'chip', type: 'button', 'aria-pressed': String(UI.col === c.id), onclick: () => { UI.col = UI.col === c.id ? null : c.id; paintChips(); paintGrid(); } }, icon('tag', 14), c.name)), ...cats.map((c) => h('button', { class: 'chip', type: 'button', 'aria-pressed': String(UI.cat === c), onclick: () => { UI.cat = c; paintChips(); paintGrid(); } }, c === 'All' ? t('All') : c))); }
+    // camera scan: say what happened on the scanner itself, so every scan has a visible answer
+    function scanCode(code) {
+      const f = findBarcode(code);
+      if (f) { const ok = addLine(f.style, f.variant); const l = BILL.lines.find((z) => z.variantId === f.variant.id); if (ok) paintCart(); return { text: `${f.style.name} · ${[f.variant.colour, f.variant.size].filter(Boolean).join(' ')} · ${t('on the bill')}: ${l ? l.qty : 1}`, bad: !ok }; }
+      if (findStyleCode(code)) { onCode(code); return null; }
+      return { text: t('No item with that code') + ': ' + code, bad: true };
+    }
     function onCode(code, fromEnter) {
       const f = findBarcode(code);
       if (f) { if (addLine(f.style, f.variant)) { paintCart(); } return true; }
