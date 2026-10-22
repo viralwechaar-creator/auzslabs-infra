@@ -35,6 +35,7 @@ const server = http.createServer(async (req, res) => {
 
   const url = new URL(req.url, 'http://internal');
   const user = verifyToken(bearerFrom(req) || '');
+  if (user?.app_metadata?.tenant_id) req.auzTenant = user.app_metadata.tenant_id; // read by metrics.js for the per-client cost report
   const ip = clientIp(req);
   const meta = { ip, userAgent: req.headers['user-agent'] || '' }; // threaded into every sign-in, so it gets its own row in auth_sessions (db/071)
 

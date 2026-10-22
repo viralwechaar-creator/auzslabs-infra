@@ -1,10 +1,11 @@
 // Rough request metrics per product area, kept in memory since the API last started (admin -> System resources -> Product load).
-// Nothing is stored and nothing identifies a client; a restart clears it. Cost: one timer and a few counters per request.
+// Nothing is stored; a restart clears it. Per-business request counts are kept by tenant id for the cost report. Cost: one timer and a few counters per request.
 import { monitorEventLoopDelay } from 'node:perf_hooks';
 import fs from 'node:fs';
 
 const since = Date.now();
 const lag = monitorEventLoopDelay({ resolution: 20 }); lag.enable();
+const tenantUse = new Map(); // tenant id -> { count, ms } (only requests that carry a signed-in business login)
 const fam = new Map(); // name -> { count, errors, client, total, max, recent[] }
 const KEEP = 400;
 let wsReader = () => 0;
@@ -43,6 +44,7 @@ export function trackRequest(req, res) {
     const name = familyOf(pathname);
     let f = fam.get(name); if (!f) { f = { count: 0, errors: 0, client: 0, total: 0, max: 0, recent: [] }; fam.set(name, f); }
     const ms = Number(process.hrtime.bigint() - t0) / 1e6;
+    const tid = req.auzTenant; if (tid) { let u = tenantUse.get(tid); if (!u) { u = { count: 0, ms: 0 }; tenantUse.set(tid, u); } u.count++; u.ms += ms; }
     f.count++; f.total += ms; if (ms > f.max) f.max = ms;
     if (res.statusCode >= 500) f.errors++; else if (res.statusCode >= 400) f.client++;
     f.recent.push(ms); if (f.recent.length > KEEP) f.recent.shift();
@@ -50,6 +52,8 @@ export function trackRequest(req, res) {
 }
 
 const pct = (arr, p) => { if (!arr.length) return 0; const s = [...arr].sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.floor(s.length * p))]; };
+
+export function tenantUsage() { return Object.fromEntries([...tenantUse.entries()].map(([k, v]) => [k, { count: v.count, ms: Math.round(v.ms) }])); }
 
 export async function metricsReport() {
   const mins = Math.max(1 / 60, (Date.now() - since) / 60000);

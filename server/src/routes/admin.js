@@ -1,7 +1,7 @@
 import { pool, withAuth } from '../db.js';
 import { createUser, resetToRandomPassword, signToken, listSessions, revokeAllSessionsForUser } from '../auth.js';
-import { saveSiteUpload, getUploadsDiskUsage } from '../storage.js';
-import { metricsReport } from '../metrics.js';
+import { saveSiteUpload, getUploadsDiskUsage, getTenantFileSizes } from '../storage.js';
+import { metricsReport, tenantUsage } from '../metrics.js';
 import { sendStaffInviteEmail } from '../mail.js';
 import { safeResetBase } from '../config.js';
 import { myProfile } from '../lib/guards.js';
@@ -194,6 +194,20 @@ export async function handle(ctx) {
     );
     if (!rows.length) throw new HttpError(403, 'forbidden -- not a platform admin');
     return reply(200, await getUploadsDiskUsage());
+  }
+
+  // ---- admin: what each client costs us (System resources). Combines database usage, files on disk and request time kept in memory. ----
+  if (url.pathname === '/admin/costs' && req.method === 'GET') {
+    if (!user) throw new HttpError(401, 'unauthorized');
+    const { rows: adm } = await withAuth(user.id, (client) => client.query('select 1 from platform_admins where id = $1', [user.id]));
+    if (!adm.length) throw new HttpError(403, 'forbidden -- not a platform admin');
+    const [{ rows: u }, { rows: s }, files] = await Promise.all([
+      withAuth(user.id, (client) => client.query('select admin_client_usage() as r')),
+      withAuth(user.id, (client) => client.query('select admin_cost_settings() as r')),
+      getTenantFileSizes(),
+    ]);
+    const m = await metricsReport();
+    return reply(200, { settings: s[0].r, usage: u[0].r, files, requests: tenantUsage(), since: m.since, minutes: m.minutes });
   }
 
   // ---- admin: product load (System resources panel): request metrics kept in memory by metrics.js ----
