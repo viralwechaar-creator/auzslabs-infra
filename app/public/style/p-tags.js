@@ -15,10 +15,11 @@ function tagDesignId() {
   try { const k = localStorage.getItem('sty.tagDesign'); if (TAG_DESIGNS.some((d) => d.id === k)) return k; } catch (e) {}
   return /genx/i.test((S.ctx.settings || {}).shopName || '') ? 'genx' : 'classic';
 }
-function tagsSheet(styles, onlyVariant) {
-  const vs = styles.flatMap((s) => s.variants.filter((x) => x.active !== false && (!onlyVariant || x.id === onlyVariant)).map((x) => ({ ...x, style: s })));
+function tagsSheet(styles, onlyVariant, preset) {
+  const vs = styles.flatMap((s) => s.variants.filter((x) => x.active !== false && (!onlyVariant || [].concat(onlyVariant).includes(x.id))).map((x) => ({ ...x, style: s })));
   const shop = (S.ctx.settings.shopName || '').slice(0, 24);
   const copies = {}; const setStock = () => vs.forEach((x) => { copies[x.id] = Math.max(1, x.stock > 0 ? x.stock : 1); }); setStock();
+  if (preset) vs.forEach((x) => { if (preset[x.id] > 0) copies[x.id] = preset[x.id]; });
   const inputs = {}; const total = h('b'); const prev = h('div', { class: 'tagprev' });
   let design = tagDesignId(); const size = selectEl([['50x25', '50 × 25 mm'], ['38x25', '38 × 25 mm'], ['a4', 'A4 sheet (4 × 10)']], '50x25');
   const dsel = selectEl(TAG_DESIGNS.map((d) => [d.id, d.name]), design);

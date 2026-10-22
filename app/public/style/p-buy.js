@@ -81,5 +81,14 @@ async function receiveForm(o, done) {
       const r = await sendOrQueue('sty_receive', { p: { id: uid(), supplierId: sup.value || null, branchId: S.branch, invoiceNo: inv.value, paid: Math.min(N(paid.value), total), lines: ls.map((l) => ({ variantId: l.variantId, qty: l.qty, unitCost: l.cost })) } });
       close(); S.catAt = 0; toast(r.done ? t('Stock received') : t('Saved on this device')); done && done();
       if (r.done) { await loadCatalog(true).catch(() => {}); }
+    } },
+    { label: t('Receive & print tags'), onclick: async (close) => {
+      const ls = lines.filter((l) => l.qty > 0); if (!ls.length) { toast(t('Enter a quantity for at least one item'), { err: true }); return false; }
+      const total = ls.reduce((a, l) => a + l.qty * l.cost, 0);
+      const r = await sendOrQueue('sty_receive', { p: { id: uid(), supplierId: sup.value || null, branchId: S.branch, invoiceNo: inv.value, paid: Math.min(N(paid.value), total), lines: ls.map((l) => ({ variantId: l.variantId, qty: l.qty, unitCost: l.cost })) } });
+      close(); S.catAt = 0; toast(r.done ? t('Stock received') : t('Saved on this device')); done && done();
+      await loadCatalog(true).catch(() => {});
+      const preset = {}; ls.forEach((l) => { preset[l.variantId] = l.qty; });
+      const sts = S.cat.filter((z) => z.variants.some((vv) => preset[vv.id])); if (sts.length) tagsSheet(sts, Object.keys(preset), preset);
     } }] });
 }
