@@ -428,7 +428,7 @@ V.p = (v, id) => {
   const paintGal = () => {
     const ims = photosFor(s, colour); clear(gal); gal.classList.toggle('solo', ims.length <= 1);
     if (!ims.length) { gal.append(E('div', { class: 'main' }, placeholder(s.name))); return; }
-    const main = E('div', { class: 'main' }, E('img', { src: ims[cur] || ims[0], alt: s.name }), E('div', { class: 'ct' }, (cur + 1) + ' / ' + ims.length));
+    const main = E('div', { class: 'main', style: { '--bgi': 'url("' + (ims[cur] || ims[0]) + '")' } }, E('img', { src: ims[cur] || ims[0], alt: s.name }), E('div', { class: 'ct' }, (cur + 1) + ' / ' + ims.length));
     const rail = E('div', { class: 'rail' }, ims.map((u, i) => E('button', { class: 'th' + (i === cur ? ' on' : ''), 'aria-label': 'Picture ' + (i + 1), onclick: () => { cur = i; paintGal(); } }, E('img', { src: u, alt: '', loading: 'lazy' }))));
     if (ims.length > 1) {
       // phones: swipe through the pictures with dots; desktop keeps the thumbnail column
