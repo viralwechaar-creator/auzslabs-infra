@@ -25,7 +25,7 @@ function beep(ok) {
 page('sell', {
   title: 'Sell', perm: 'sty_sell', pos: true,
   async render(v) {
-    v.header({ title: t('Sell'), noLarge: true, actions: [{ label: t('Held bills'), icon: 'clock', run: heldSheet }, { label: t('Shift'), icon: 'cash', run: shiftSheet }] });
+    v.header({ title: t('Sell'), noLarge: true, actions: [{ label: t('Customer request'), icon: 'plus', run: () => requestSheet({ description: UI.q || '' }) }, { label: t('Held bills'), icon: 'clock', run: heldSheet }, { label: t('Shift'), icon: 'cash', run: shiftSheet }] });
     const root = v.root; root.classList.add('sellpage');
     clear(root).append(h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '40px auto' } }));
     try { await loadCatalog(); } catch (e) { return clear(root).append(empty('cloudOff', t('Could not load the catalogue'), e.message, h('button', { class: 'btn fill', onclick: () => v.refresh() }, t('Try again')))); }
@@ -54,6 +54,7 @@ page('sell', {
       let list = S.cat.filter((s) => s.active !== false && (UI.cat === 'All' || s.category === UI.cat) && (!UI.col || ((COL.list.find((c) => c.id === UI.col) || {}).styleIds || []).includes(s.id)) && styleMatches(s));
       if (q) list = list.filter((s) => (s.name + ' ' + (s.brand || '') + ' ' + s.category + ' ' + (s.code || '') + ' ' + (s.subcategory || '') + ' ' + (s.fabric || '') + ' ' + (s.collection || '')).toLowerCase().includes(q) || s.variants.some((x) => x.barcode === q || (x.sku || '').toLowerCase() === q));
       clear(grid);
+      if (!list.length && S.cat.length && UI.q) { grid.append(empty('shirt', t('No match'), t('Customer wants it? Note it as a request.'), h('button', { class: 'btn fill', onclick: () => requestSheet({ description: UI.q }) }, t('Note a customer request')))); return; }
       if (!list.length) { grid.append(empty('shirt', S.cat.length ? t('No match') : t('No styles yet'), S.cat.length ? '' : t('Add your first style in Stock.'), !S.cat.length && can('sty_manage') ? h('button', { class: 'btn fill', onclick: () => go('stock') }, t('Go to Stock')) : null)); return; }
       list.slice(0, 160).forEach((s) => {
         const st = styleStock(s); const pics = [s.photoUrl, ...(s.photos || [])].filter(Boolean);

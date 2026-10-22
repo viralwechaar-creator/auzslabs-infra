@@ -136,10 +136,12 @@ function rangeFor(k, custom) {
   if (k === 'week') return { from: d(6), to: d(0) };
   if (k === 'month') return { from: ymd(new Date(t0.getFullYear(), t0.getMonth(), 1)), to: d(0) };
   if (k === '30') return { from: d(29), to: d(0) };
+  if (k === '60') return { from: d(59), to: d(0) };
+  if (k === '90') return { from: d(89), to: d(0) };
   return custom || { from: d(29), to: d(0) };
 }
 function rangePicker(state, onChange, keys = ['today', 'yesterday', 'week', 'month', '30', 'custom']) {
-  const LBL = { today: 'Today', yesterday: 'Yesterday', week: 'This week', month: 'This month', 30: 'Last 30 days', custom: 'Pick dates' };
+  const LBL = { today: 'Today', yesterday: 'Yesterday', week: 'This week', month: 'This month', 30: 'Last 30 days', 60: 'Last 60 days', 90: 'Last 90 days', custom: 'Pick dates' };
   const wrap = h('div', { class: 'grid', style: { gap: '8px' } });
   const paint = () => {
     clear(wrap).append(h('div', { class: 'chips' }, keys.map((k) => h('button', { class: 'chip', type: 'button', 'aria-pressed': String(state.k === k), onclick: () => { state.k = k; if (k !== 'custom') { Object.assign(state, rangeFor(k)); onChange(); paint(); } else paint(); } }, t(LBL[k])))));
