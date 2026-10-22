@@ -27,7 +27,21 @@ const IC = {
   user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 9a7 7 0 0 1 14 0',
   chat: 'M5 6h14v9H10l-5 4V6Z', home: 'M4 11 12 4l8 7v9h-5v-6H9v6H4v-9Z', compass: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm3-12-2 5-5 2 2-5 5-2Z', filter: 'M4 7h10M18 7h2M4 17h2M10 17h10M14 5v4M6 15v4',
 };
-const icon = (n) => { const s = document.createElementNS(NS, 'svg'); s.setAttribute('viewBox', '0 0 24 24'); const p = document.createElementNS(NS, 'path'); p.setAttribute('d', IC[n] || ''); s.append(p); return s; };
+// hand-cut solid glyphs (call, support, favourite, shipping, bag, tag, arrow, globe...) drawn in plain black; thin strokes are kept only for plain controls (x, plus, arrows, search)
+const FIL = {
+  bag: 'M5 9.500h14l-.8 11H5.800L5 9.500ZM8.400 9.500V7.200a3.600 3.600 0 0 1 7.200 0v2.300h-1.900V7.200a1.700 1.700 0 0 0-3.400 0v2.300H8.400Z',
+  mark: 'M12 20.500C5 15.600 3 12 3 8.900A4.600 4.600 0 0 1 7.600 4.300c1.700 0 3.400.9 4.400 2.500 1-1.600 2.700-2.500 4.400-2.500A4.600 4.600 0 0 1 21 8.900c0 3.100-2 6.700-9 11.600Z',
+  chat: 'M12 3.500c5 0 9 3.200 9 7.300 0 4-4 7.200-9 7.200-.9 0-1.800-.1-2.600-.3L4 20.500l1.200-3.600C3.800 15.600 3 13.800 3 10.800 3 6.700 7 3.500 12 3.500ZM8 10a1.200 1.200 0 1 0 0 2.400A1.200 1.200 0 0 0 8 10Zm4 0a1.200 1.200 0 1 0 0 2.400A1.200 1.200 0 0 0 12 10Zm4 0a1.200 1.200 0 1 0 0 2.400A1.200 1.200 0 0 0 16 10Z',
+  user: 'M12 11.500a4.200 4.200 0 1 0 0-8.400 4.200 4.200 0 0 0 0 8.400ZM3.500 21c0-4.200 3.800-6.700 8.500-6.700s8.500 2.500 8.500 6.700H3.500Z',
+  pin: 'M12 22s7.500-6.400 7.500-12a7.500 7.500 0 0 0-15 0c0 5.600 7.500 12 7.500 12Zm0-9a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z',
+  home: 'M3 11.500 12 3.500l9 8h-2.500V21h-5v-6h-3v6h-5v-9.500H3Z',
+  compass: 'M5 3l14.500 8.500-6 1.500 3.500 7-2.800 1.300L9.200 14 5 18V3Z',
+  ship: 'M2.500 7.500c5-1.200 9-.6 12 2.500 1.500-2.500 4-3.800 7-4-.9 3.400-2.200 6.200-5.800 8l-3.200.6L8.500 21l-.3-6.200C5 13.800 3.300 11 2.500 7.500Z',
+  tag: 'M3 3h8l10 10-8 8L3 11V3Zm4 2.500a1.500 1.500 0 1 0 0 3 1.500 1.500 0 0 0 0-3Z',
+  globe: 'M12 2.500a9.500 9.500 0 1 0 0 19 9.500 9.500 0 0 0 0-19Zm-1 1.800c-2 2-3.200 4.700-3.300 7.700H11V4.300Zm2 0V12h3.300c-.1-3-1.300-5.700-3.300-7.700ZM7.700 14c.1 3 1.300 5.700 3.300 7.700V14H7.700Zm5.300 0v7.700c2-2 3.200-4.700 3.300-7.700H13Z',
+  phone: 'M6.600 2.500 9 2c.5 0 .9.300 1 .8l.8 3.200c.1.400 0 .8-.3 1.100L9.200 8.400a12 12 0 0 0 6.400 6.400l1.300-1.300c.3-.3.7-.4 1.100-.3l3.200.8c.5.100.8.500.8 1l-.5 2.400c-.2 1.200-1.300 2-2.500 1.900C10.300 19.200 4.800 13.700 4.700 5c-.1-1.200.7-2.300 1.900-2.500Z',
+};
+const icon = (n) => { const s = document.createElementNS(NS, 'svg'); s.setAttribute('viewBox', '0 0 24 24'); const p = document.createElementNS(NS, 'path'); p.setAttribute('d', FIL[n] || IC[n] || ''); if (FIL[n]) { s.setAttribute('class', 'f'); p.setAttribute('fill-rule', 'evenodd'); } s.append(p); return s; };
 const inr = (n) => '₹' + Math.round(+n || 0).toLocaleString('en-IN');
 const LS = { get(k, d) { try { const v = localStorage.getItem('st.' + SLUG + '.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { localStorage.setItem('st.' + SLUG + '.' + k, JSON.stringify(v)); } catch { /* private mode */ } } };
 const cap = (s) => (s || '').replace(/\w\S*/g, (w) => w[0].toUpperCase() + w.slice(1).toLowerCase());
@@ -631,7 +645,11 @@ function footer() {
   const more = E('button', { class: 'ftmore', onclick: () => { const t = fold.classList.toggle('open'); more.textContent = t ? 'Read less' : 'Read more...'; } }, 'Read more...');
   const fold = E('div', { class: 'ftfold' }, E('p', null, blurb), more);
   const strip = tabs.length ? E('div', { class: 'ftstrip' }, fold, E('div', { class: 'ftabs' }, tabEls), pn) : null;
-  return E('div', { class: 'ftwrap' }, strip, E('footer', null, E('div', { class: 'cols' },
+  const perk = (ic, t, d) => E('div', { class: 'perk' }, icon(ic), E('div', null, E('b', null, t), E('span', null, d)));
+  const fo = +((c.shipping || {}).freeOver) || 0, pays = [D.cod ? 'Cash on delivery' : '', D.upi ? 'UPI' : '', c.payOnline ? 'Cards' : ''].filter(Boolean).join(' · ');
+  const perks = E('div', { class: 'perks' }, perk('ship', 'Delivery across India', fo ? 'Free above ' + inr(fo) : 'Packed fresh, tracked to you'), perk('tag', 'Easy returns', (D.shop.returnDays || 30) + ' days from delivery'),
+    ph ? perk('chat', 'Talk to the store', 'Message us on WhatsApp') : perk('chat', 'We reply fast', 'See Contact for help'), perk('globe', 'Pay your way', pays || 'Ask the store'));
+  return E('div', { class: 'ftwrap' }, perks, strip, E('footer', null, E('div', { class: 'cols' },
     E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Connect with us'), ph ? E('a', { href: 'tel:+' + (ph.length === 10 ? '91' + ph : ph) }, 'Call') : null, ph ? E('a', { href: 'https://wa.me/' + (ph.length === 10 ? '91' + ph : ph), target: '_blank', rel: 'noopener' }, 'Text (WhatsApp)') : null, ext('Instagram', so.instagram), ext('Facebook', so.facebook), c.email ? E('a', { href: 'mailto:' + c.email }, 'Email') : null),
     E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Order support'), E('a', { href: link('me') }, 'My account & orders'), E('a', { href: link('orders') }, 'Track your order'), E('a', { href: link('policy/returns') }, 'Returns & exchanges'), E('a', { href: link('policy/shipping') }, 'Shipping policy'), E('a', { href: link('faq') }, 'FAQs'), E('a', { href: link('policy/terms') }, 'Terms'), E('a', { href: link('policy/privacy') }, 'Privacy')),
     E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'We are ' + D.shop.name), E('a', { href: link('about') }, 'Our story'), E('a', { href: link('stores') }, 'Walk-in stores'), E('a', { href: link('collections') }, 'Collections'), E('a', { href: link('contact') }, 'Contact')),
