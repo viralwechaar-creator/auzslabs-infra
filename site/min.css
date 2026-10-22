@@ -127,3 +127,5 @@ html body .prh-h{font-size:28px;font-weight:600}
 html body .prh-lede{font-size:13px;color:var(--ink-dim)}
 html body .prh-links a{font-size:10px;letter-spacing:.08em;text-transform:uppercase;background:var(--m-card);border-radius:15px;padding:6px 12px;box-shadow:var(--m-sh);border:0}
 @media(min-width:900px){html body .slab{padding:30px 34px!important}html body .slab h2.nm{font-size:26px!important}}
+html body{background-image:none!important}
+html body .card,html body [class*="wob"],html body .price-card,html body .feat{transform:none!important;rotate:none!important}
