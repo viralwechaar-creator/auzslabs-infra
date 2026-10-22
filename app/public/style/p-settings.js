@@ -22,7 +22,15 @@ page('settings', {
       const file = h('input', { type: 'file', accept: 'image/*', class: 'hidden', onchange: async (e) => { const f = e.target.files[0]; if (!f) return; try { logoUrl = await uploadPhoto(f); paintLogo(); toast(t('Logo ready, press Save settings')); } catch (er) { fail(er); } } });
       clear(logoBtns).append(file, h('button', { class: 'btn sm', type: 'button', onclick: () => file.click() }, icon('camera', 16), logoUrl ? t('Change logo') : t('Upload logo')), logoUrl ? h('button', { class: 'btn sm danger', type: 'button', onclick: () => { logoUrl = ''; paintLogo(); } }, t('Remove')) : null);
     };
-    paintLogo();
+    // separate home-screen icon: used exactly as uploaded, edge to edge (a square picture, 512 x 512 is ideal)
+    let appIcon = feat.appIcon || '';
+    const iconImg = h('div', { class: 'logo-prev' }), iconBtns = h('div', { class: 'row', style: { gap: '8px' } });
+    const paintIcon = () => {
+      clear(iconImg).append(appIcon ? h('img', { src: appIcon, alt: '', style: { objectFit: 'cover' } }) : icon('shirt', 26));
+      const file = h('input', { type: 'file', accept: 'image/*', class: 'hidden', onchange: async (e) => { const f = e.target.files[0]; if (!f) return; try { appIcon = await uploadPhoto(f); paintIcon(); toast(t('Icon ready, press Save settings')); } catch (er) { fail(er); } } });
+      clear(iconBtns).append(file, h('button', { class: 'btn sm', type: 'button', onclick: () => file.click() }, icon('camera', 16), appIcon ? t('Change app icon') : t('Upload app icon')), appIcon ? h('button', { class: 'btn sm danger', type: 'button', onclick: () => { appIcon = ''; paintIcon(); } }, t('Remove')) : null);
+    };
+    paintIcon();
     const waCard = () => {
       const host = h('div', { class: 'card grid' }, h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '12px auto' } }));
       const EV = [['invoice_link', t('Bill link after every bill')], ['birthday_greeting', t('Birthday wishes')], ['anniversary_greeting', t('Anniversary wishes')], ['style_winback', t('We miss you (not back in 60 days)')]];
@@ -53,14 +61,14 @@ page('settings', {
       try {
         const sl = []; if (N(s1.value) && N(r1.value) >= 0) sl.push({ upto: N(s1.value), rate: N(r1.value) }); if (r2_.value !== '') sl.push({ rate: N(r2_.value) });
         const upi = F.upiId.value.trim(); if (upi && !/^[\w.\-]{2,}@[\w.\-]{2,}$/.test(upi)) { toast(t('That UPI id does not look right. It looks like name@bank.'), { err: true }); ev.currentTarget.disabled = false; return; }
-        const p = { features: Object.assign({}, feat, { upiId: upi, upiName: F.upiName.value.trim() }), logoUrl, shopName: F.shopName.value, address: F.address.value, phone: F.phone.value, gstin: F.gstin.value, billFooter: F.billFooter.value, billPrefix: F.billPrefix.value, maxDiscountPct: N(F.maxDiscountPct.value), returnDays: Math.round(N(F.returnDays.value)),
+        const p = { features: Object.assign({}, feat, { upiId: upi, upiName: F.upiName.value.trim(), appIcon }), logoUrl, shopName: F.shopName.value, address: F.address.value, phone: F.phone.value, gstin: F.gstin.value, billFooter: F.billFooter.value, billPrefix: F.billPrefix.value, maxDiscountPct: N(F.maxDiscountPct.value), returnDays: Math.round(N(F.returnDays.value)),
           defaultTaxPct: N(F.defaultTaxPct.value), loyaltyEarnPct: N(F.loyaltyEarnPct.value), loyaltyPointValue: N(F.loyaltyPointValue.value), leadDays: Math.round(N(F.leadDays.value)), coverDays: Math.round(N(F.coverDays.value)), slowDays: Math.round(N(F.slowDays.value)),
           allowNegativeStock: st.allowNegativeStock, roundOff: st.roundOff, requireCustomerPhone: st.requireCustomerPhone, staffSeeCost: st.staffSeeCost, priceIncludesTax: st.priceIncludesTax, taxSlabs: sl };
         S.ctx = await api('sty_save_settings', { p }); S.perms = S.ctx.perms; toast(t('Saved')); setTimeout(() => location.reload(), 350);
       } catch (e) { fail(e); } finally { ev.currentTarget && (ev.currentTarget.disabled = false); }
     } }, t('Save settings'));
     v.root.append(h('div', { class: 'grid setg' },
-      section(t('Shop'), h('div', { class: 'card grid' }, h('div', { class: 'logo-row' }, logoImg, h('div', { class: 'grow' }, h('div', { class: 'cap' }, t('Shop logo') + ' · ' + t('used for the home-screen icon')), logoBtns)), field(t('Shop name'), F.shopName), field(t('Address'), F.address), h('div', { class: 'two' }, field(t('Phone'), F.phone), field('GSTIN', F.gstin)), h('div', { class: 'two' }, field(t('Bill prefix'), F.billPrefix), field(t('Bill footer'), F.billFooter)))),
+      section(t('Shop'), h('div', { class: 'card grid' }, h('div', { class: 'logo-row' }, logoImg, h('div', { class: 'grow' }, h('div', { class: 'cap' }, t('Shop logo') + ' · ' + t('used for the home-screen icon')), logoBtns)), h('div', { class: 'logo-row' }, iconImg, h('div', { class: 'grow' }, h('div', { class: 'cap' }, t('App icon (home screen)') + ' · ' + t('fills the whole icon')), iconBtns)), field(t('Shop name'), F.shopName), field(t('Address'), F.address), h('div', { class: 'two' }, field(t('Phone'), F.phone), field('GSTIN', F.gstin)), h('div', { class: 'two' }, field(t('Bill prefix'), F.billPrefix), field(t('Bill footer'), F.billFooter)))),
       section(t('Pay by UPI'), h('div', { class: 'card grid' }, h('div', { class: 'muted small' }, t('Your UPI id. At billing, a QR with the exact amount appears so the customer can scan and pay.')), h('div', { class: 'two' }, field(t('UPI id'), F.upiId), field(t('Shown as'), F.upiName)))),
       section(t('Pictures'), h('div', { class: 'card grid' }, h('div', { class: 'mut small' }, t('New pictures are shrunk automatically. Press this once to shrink the old, heavy ones so they load fast on every phone.')), (() => { const out = h('div', { class: 'mut small' }); const b = h('button', { class: 'btn', type: 'button', onclick: async () => { b.disabled = true; try { const r = await lightenPictures((d, n) => { out.textContent = d + ' / ' + n; }); out.textContent = r.changed + ' ' + t('styles lightened') + ' · ' + r.savedKb + ' KB ' + t('saved') + (r.failed ? ' · ' + r.failed + ' ' + t('could not be read') : ''); } catch (e) { toast(e.message || t('Failed'), { err: true }); } b.disabled = false; } }, icon('camera', 16), t('Make old pictures lighter')); return h('div', { class: 'grid' }, b, out); })())),
       section(t('Selling rules'), h('div', { class: 'card grid' }, h('div', { class: 'two' }, field(t('Staff can give discount up to') + ' %', F.maxDiscountPct), field(t('Returns allowed for (days)'), F.returnDays)),
