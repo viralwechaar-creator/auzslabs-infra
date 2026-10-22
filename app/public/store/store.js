@@ -61,6 +61,8 @@ async function shopIcon(d) {
     const fr = new FileReader(); fr.onload = () => { document.querySelectorAll('link[rel=apple-touch-icon],link[rel=icon]').forEach((l) => l.remove()); ['apple-touch-icon', 'icon'].forEach((rel) => { const l = document.createElement('link'); l.rel = rel; l.href = fr.result; document.head.append(l); }); }; fr.readAsDataURL(await r.blob());
   } catch (e) { /* the default icon stays */ }
 }
+// a picture that failed to load (flaky network, phone memory) is asked for once more before giving up
+document.addEventListener('error', (e) => { const im = e.target; if (!im || im.tagName !== 'IMG' || im.dataset.retry || !im.src || im.src.startsWith('data:')) return; im.dataset.retry = '1'; const u = im.src; im.removeAttribute('loading'); setTimeout(() => { im.src = u + (u.includes('?') ? '&' : '?') + 'r=1'; }, 600); }, true);
 let D = null;            // public_sty_store result
 let STY = [], BYID = {}, VAR = {};
 let bag = [], wish = [];
@@ -115,7 +117,7 @@ function card(s, opt) {
   const sc = E('div', { class: 'sc' });
   const dt = E('div', { class: 'dt' });
   const list = ims.length ? ims.slice(0, 6) : [null];
-  list.forEach((u, i) => { sc.append(E('a', { href: link('p/' + s.id) }, u ? E('img', { src: u, alt: s.name, loading: 'lazy', decoding: 'async' }) : placeholder(s.name))); if (list.length > 1) dt.append(E('i', { class: i === 0 ? 'on' : '' })); });
+  list.forEach((u, i) => { sc.append(E('a', { href: link('p/' + s.id) }, u ? E('img', { src: u, alt: s.name, loading: i === 0 ? 'eager' : 'lazy', decoding: 'async' }) : placeholder(s.name))); if (list.length > 1) dt.append(E('i', { class: i === 0 ? 'on' : '' })); });
   sc.addEventListener('scroll', () => { const i = Math.round(sc.scrollLeft / Math.max(sc.clientWidth, 1)); [...dt.children].forEach((d, j) => d.classList.toggle('on', i === j)); }, { passive: true });
   const step = (d) => (e) => { e.preventDefault(); sc.scrollBy({ left: d * sc.clientWidth, behavior: 'smooth' }); };
   const bm = E('button', { class: 'bm' + (on ? ' on' : ''), 'aria-label': 'Save', onclick: (e) => { e.preventDefault(); toggleWish(s.id); bm.classList.toggle('on', wish.includes(s.id)); } }, icon('mark'));
@@ -342,7 +344,7 @@ V.home = (v) => {
   // 3. big collection pictures
   cols.slice(0, 3).forEach((x) => {
     const s0 = x.styleIds.map((id) => BYID[id]).find((s) => s && photos(s)[0]); const pic = x.image || (s0 && pickPic(s0, 'banner')); if (!pic) return;
-    v.append(E('a', { class: 'bigcol', href: link('shop?col=' + x.id) }, E('img', { src: pic, alt: '', loading: 'lazy' }), E('div', { class: 'cap' }, E('div', { class: 't' }, x.name), E('span', { class: 'btn' }, 'Shop now'))));
+    v.append(E('a', { class: 'bigcol', href: link('shop?col=' + x.id) }, E('img', { src: pic, alt: '', loading: 'eager' }), E('div', { class: 'cap' }, E('div', { class: 't' }, x.name), E('span', { class: 'btn' }, 'Shop now'))));
   });
   // 4. products again
   if (STY.length > 4) v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'All products'), E('a', { class: 'btn sm out', href: link('shop') }, 'Shop all')), gridOf(STY.slice(0, 12), true)));
@@ -433,7 +435,7 @@ V.p = (v, id) => {
     if (ims.length > 1) {
       // phones: swipe through the pictures with dots; desktop keeps the thumbnail column
       const ct = main.querySelector('.ct'), dots = E('div', { class: 'dots3' }, ims.map((_, i) => E('i', { class: i === cur ? 'on' : '' })));
-      const swp = E('div', { class: 'swp' }, ims.map((u) => E('img', { src: u, alt: s.name, loading: 'lazy' })));
+      const swp = E('div', { class: 'swp' }, ims.map((u, k) => E('img', { src: u, alt: s.name, loading: k < 2 ? 'eager' : 'lazy' })));
       swp.addEventListener('scroll', () => { const i = Math.max(0, Math.min(ims.length - 1, Math.round(swp.scrollLeft / (swp.clientWidth || 1)))); if (i === cur) return; cur = i; ct.textContent = (i + 1) + ' / ' + ims.length; [...dots.children].forEach((d, k) => d.classList.toggle('on', k === i)); rail.querySelectorAll('.th').forEach((b, k) => b.classList.toggle('on', k === i)); }, { passive: true });
       main.append(swp, dots);
       const pgrid = E('div', { class: 'pgrid' + (ims.length % 2 ? ' odd' : '') }, ims.map((u) => E('div', { class: 'gi' }, E('img', { src: u, alt: s.name, loading: 'lazy' }))));
