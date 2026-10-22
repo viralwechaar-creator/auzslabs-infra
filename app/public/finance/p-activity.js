@@ -18,9 +18,9 @@ page('activity', { title: 'Activity', async render(v) {
   v.root.append(search, chips, list); paintChips(); await load();
   async function exportCsv() {
     const all = await api('fin_txn_list', { p: { limit: 500 } });
-    const head = ['Date', 'Type', 'Amount', 'Interest', 'Account', 'To account', 'Category', 'Person', 'Owner/partner', 'Loan', 'Reference', 'Note', 'Proof', 'Review', 'Status'];
+    const head = ['Date', 'Type', 'Amount', 'Interest', 'Account', 'To account', 'Category', 'Person', 'Owner/partner', 'Loan', 'Reference', 'Paid by', 'Party', 'Party GST', 'Note', 'Proof', 'Review', 'Status'];
     const q = (x) => '"' + String(x == null ? '' : x).replace(/"/g, '""') + '"';
-    const csv = '﻿' + [head, ...all.map((r) => [r.txn_date, kindName(r.kind), r.amount, r.interest, r.account, r.to_account, r.category, r.person, r.partner, r.loan, r.purpose, r.reference, EVIDENCE[r.evidence], r.review === 'needs_review' ? 'Needs check' : 'OK', r.status])].map((l) => l.map(q).join(',')).join('\n');
+    const csv = '﻿' + [head, ...all.map((r) => [r.txn_date, kindName(r.kind), r.amount, r.interest, r.account, r.to_account, r.category, r.person, r.partner, r.loan, r.reference, modeName(r.method), r.party_name, r.party_gstin, r.purpose, EVIDENCE[r.evidence], r.review === 'needs_review' ? 'Needs check' : 'OK', r.status])].map((l) => l.map(q).join(',')).join('\n');
     const a = h('a', { href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })), download: 'finance-entries.csv' }); document.body.append(a); a.click(); a.remove();
   }
 } });
@@ -35,7 +35,8 @@ async function txnSheet(id, known) {
   file.onchange = async () => { if (!file.files[0]) return; try { await uploadEvidence(r.id, file.files[0]); toast('Attached'); s.close(); route_(); } catch (e) { fail(e); } };
   const body = h('div', { class: 'grid' },
     h('div', { class: 'hero-n small' }, h('div', { class: 'k' }, K.label), h('div', { class: 'n num' }, amountNode(r)), r.status === 'reversed' ? h('div', { class: 'small muted' }, 'Cancelled: ' + (r.reversed_reason || '')) : null),
-    h('div', { class: 'list' }, row('Date', fmtD(r.txn_date)), row('Time', r.created_at ? new Date(r.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : ''), row('Type', K.label), row('Reference / UTR', r.reference), row('Method', r.method),
+    h('div', { class: 'list' }, row('Date', fmtD(r.txn_date)), row('Time', r.created_at ? new Date(r.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : ''), row('Type', K.label), row('Reference / UTR', r.reference), row('Paid by', modeName(r.method)), row('Cheque number', r.cheque_no), row('Cheque date', r.cheque_date ? fmtD(r.cheque_date) : ''), row('Cheque bank', r.cheque_bank),
+      row(['money_in', 'credit_sale', 'dues_in'].includes(r.kind) ? 'Who paid' : 'Paid to', r.party_name), row('GST number', r.party_gstin), row('Why it is earlier', r.early_reason ? (EARLY.find((x) => x[0] === r.early_reason) || [0, r.early_reason])[1] : ''),
       row('Account', r.kind === 'transfer' ? r.account + ' → ' + r.to_account : r.account), row('Category', r.category), row('Person', r.person), row('Owner / partner', r.partner), row('Loan', r.loan),
       Number(r.interest) ? row('Interest', inr(r.interest)) : null, row('Note', r.purpose), row('Due date', r.due_date ? fmtD(r.due_date) : ''), Number(r.tax_rate) ? row('GST', Number(r.tax_rate) + '% included') : null, Number(r.tds_amt) ? row('TDS cut', inr(r.tds_amt)) : null, row('Proof', EVIDENCE[r.evidence]), row('Review', r.review === 'needs_review' ? 'Needs a check' : 'Confirmed'), row('Journal', r.journal_no)),
     r.files && r.files.length ? section('Proof files', h('div', { class: 'list' }, r.files.map((f) => liRow({ icon: 'eye', tone: 'gray', title: f.name, chevron: true, onclick: () => openEvidence(f).catch(fail) })))) : null,

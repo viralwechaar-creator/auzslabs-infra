@@ -231,6 +231,58 @@ export default async function run({ browser, stack }) {
     await fails(owner, 'fin_save_txn', { p: { kind: 'expense', amount: 100, account_id: cash, tds_amt: 500 } }, /TDS/i);
     await fails(cafe, 'fin_tax_summary', { p_from: from, p_to: today }, /not enabled/i); await integrity();
   }, 'major');
+  await s.check('Payment mode details, who paid and their GST number are kept; a bad GST number or mode is refused', async () => {
+    const e = await ok(owner, 'fin_save_txn', { p: { op: uid(), kind: 'expense', amount: 400, account_id: bank, method: 'cheque', cheque_no: '123456', cheque_date: '2026-10-01', cheque_bank: 'SBI', party_name: 'Shree Traders', party_gstin: '08aaavf9235h1zl'.toUpperCase() } });
+    const l = (await ok(owner, 'fin_txn_list', { p: { limit: 50 } })).find((x) => x.id === e.id);
+    assert(l.method === 'cheque' && l.cheque_no === '123456' && l.cheque_bank === 'SBI' && l.party_name === 'Shree Traders' && l.party_gstin === '08AAAVF9235H1ZL', JSON.stringify(l));
+    const u = await ok(owner, 'fin_save_txn', { p: { op: uid(), kind: 'money_in', amount: 90, account_id: bank, method: 'upi', reference: 'UTR998877' } });
+    assert((await ok(owner, 'fin_txn_list', { p: { limit: 50 } })).find((x) => x.id === u.id).reference === 'UTR998877', 'utr');
+    await fails(owner, 'fin_save_txn', { p: { op: uid(), kind: 'expense', amount: 5, account_id: bank, party_gstin: '123' } }, /GST number/i);
+    await fails(owner, 'fin_save_txn', { p: { op: uid(), kind: 'expense', amount: 5, account_id: bank, method: 'bitcoin' } }, /payment mode/i);
+    await integrity();
+  });
+  await s.check('Earlier expense: counts as an expense and as owner capital, moves no account, shows in the profit report, books balance', async () => {
+    const before = await ok(owner, 'fin_bootstrap'); const bankBefore = Number(before.accounts.find((a) => a.id === bank).balance);
+    const pl0 = await ok(owner, 'fin_report_pl', { p_from: '2026-01-01', p_to: '2026-12-31' });
+    const op = uid();
+    const e = await ok(owner, 'fin_save_txn', { p: { op, kind: 'early_expense', amount: 1200, date: '2026-04-02', partner_id: mahendra, early_reason: 'before_bank', purpose: 'Shop board', party_gstin: '' } });
+    assert(e.kind === 'early_expense' && e.early_reason === 'before_bank', JSON.stringify(e));
+    assert((await ok(owner, 'fin_save_txn', { p: { op, kind: 'early_expense', amount: 1200, date: '2026-04-02', partner_id: mahendra } })).duplicate === true, 'replay');
+    assert(await bal(bank) === bankBefore, 'bank must not move');
+    const pl1 = await ok(owner, 'fin_report_pl', { p_from: '2026-01-01', p_to: '2026-12-31' });
+    assert(JSON.stringify(pl1) !== JSON.stringify(pl0), 'profit report should change');
+    await fails(owner, 'fin_save_txn', { p: { op: uid(), kind: 'early_expense', amount: 10 } }, /who paid/i);
+    await integrity();
+  });
+  await s.check('Business profile is its own record: owner saves it, GST/PAN are checked, staff can read but not change; lock date works', async () => {
+    const p0 = await ok(owner, 'fin_profile_get'); assert(p0.can_edit === true && p0.business_name, JSON.stringify(p0));
+    const p1 = await ok(owner, 'fin_profile_save', { p: { business_name: 'Test Traders', gstin: '08AAAVF9235H1ZL', pan: 'ABCDE1234F', city: 'Jodhpur' } });
+    assert(p1.business_name === 'Test Traders' && p1.city === 'Jodhpur' && p1.gstin === '08AAAVF9235H1ZL', JSON.stringify(p1));
+    await fails(owner, 'fin_profile_save', { p: { business_name: 'X', gstin: 'bad' } }, /GST number/i);
+    await fails(owner, 'fin_profile_save', { p: { business_name: 'X', pan: 'bad' } }, /PAN/i);
+    await fails(manager, 'fin_profile_save', { p: { business_name: 'Y' } }, /does not allow/i);
+    assert((await ok(manager, 'fin_profile_get')).business_name === 'Test Traders', 'manager reads');
+    const lk = await ok(owner, 'fin_set_lock_date', { p_date: '2026-01-01' }); assert(lk.lock_date === '2026-01-01', 'lock');
+    await fails(owner, 'fin_save_txn', { p: { op: uid(), kind: 'expense', amount: 5, account_id: bank, date: '2025-12-31' } }, /lock|closed|period/i);
+    await ok(owner, 'fin_set_lock_date', { p_date: null });
+  });
+  await s.check('Own file storage: a photo is squeezed, a PDF over 10 KB is refused, a small PDF is kept, files list on the entry', async () => {
+    const sharp = (await import('../../../server/node_modules/sharp/lib/index.js')).default;
+    const big = await sharp({ create: { width: 3000, height: 2000, channels: 3, background: { r: 200, g: 50, b: 50 } } }).png().toBuffer();
+    const tok = owner;
+    const up = async (buf) => fetch(stack.apiBase + '/storage/fin', { method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'content-type': 'application/octet-stream' }, body: buf });
+    const r1 = await up(big); const j1 = await r1.json(); assert(r1.status === 200 && j1.url.startsWith('/storage/fin/') && j1.size < 120000, JSON.stringify(j1));
+    const bigPdf = Buffer.concat([Buffer.from('%PDF-1.4\n'), Buffer.alloc(12000, 32)]);
+    const r2 = await up(bigPdf); assert(r2.status === 400, 'big pdf ' + r2.status);
+    const smallPdf = Buffer.concat([Buffer.from('%PDF-1.4\n'), Buffer.alloc(2000, 32)]);
+    const r3 = await up(smallPdf); const j3 = await r3.json(); assert(r3.status === 200 && j3.url.endsWith('.pdf'), JSON.stringify(j3));
+    const e = await ok(owner, 'fin_save_txn', { p: { op: uid(), kind: 'expense', amount: 33, account_id: cash } });
+    await ok(owner, 'fin_attach', { p_id: e.id, p_name: 'a.jpg', p_url: j1.url, p_size: j1.size });
+    const l = (await ok(owner, 'fin_txn_list', { p: { limit: 50 } })).find((x) => x.id === e.id); assert(l.files.length === 1 && l.evidence === 'have', JSON.stringify(l.files));
+    const g = await fetch(stack.apiBase + j1.url, { headers: { Authorization: 'Bearer ' + owner } }); assert(g.status === 200, 'download ' + g.status);
+    const other = await fetch(stack.apiBase + j1.url, { headers: { Authorization: 'Bearer ' + cafe } }); assert(other.status >= 400, 'other business must be refused');
+    await fetch(stack.apiBase + '/storage/fin', { method: 'POST', headers: { 'content-type': 'application/octet-stream' }, body: big }).then((r) => assert(r.status === 401, 'anon'));
+  });
   await s.check('Live demo: the shared demo business has AUZsFinance with sample entries, opens in the app, and the demo page links to it', async () => {
     const demo = (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'demo@auzslab.in', password: 'Auzslab@Demo' }) })).json()).access_token;
     assert(demo, 'demo login');
@@ -263,7 +315,7 @@ export default async function run({ browser, stack }) {
       for (const id of ['home', 'activity', 'dues', 'owner', 'accounts', 'reports', 'assets', 'budget', 'approvals', 'repeat', 'bank', 'insights', 'tools', 'tax', 'settings']) {
         await page.evaluate((x) => { location.hash = '#/' + x; }, id); await page.waitForTimeout(700);
         await page.waitForSelector('.page[data-p="' + id + '"]', { timeout: 10000 });
-        const txt = await page.locator('.page').innerText(); assert(!/undefined|NaN|\[object/i.test(txt), id + ' shows a bad value: ' + txt.slice(0, 200));
+        const txt = await page.locator('.page').innerText(); assert(!/undefined|\bNaN\b|\[object/.test(txt), id + ' shows a bad value: ' + (txt.match(/.{0,40}(undefined|NaN|\[object).{0,40}/i) || [txt.slice(0,80)])[0]);
         const iss = await layoutIssues(page); assert(!iss.length, id + ': ' + iss.join('; '));
       }
       await s.shot(page, 'finance ' + dev.name);

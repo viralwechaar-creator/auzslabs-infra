@@ -14,6 +14,7 @@ const KINDS = {
   credit_purchase: { label: 'Bought on credit', hint: 'You will pay them later', sign: 0, ic: 'truck', cat: 'expense', catLabel: 'Kind of expense', person: 'req', personLabel: 'Who you owe', due: true },
   dues_in:         { label: 'They paid me', hint: 'A customer cleared their dues', sign: 1, ic: 'check', acc: 'Received into', person: 'req', personLabel: 'Who paid' },
   dues_out:        { label: 'I paid them', hint: 'You cleared what you owed', sign: -1, ic: 'check', acc: 'Paid from', person: 'req', personLabel: 'Who you paid' },
+  early_expense:   { label: 'Earlier expense', hint: 'Paid by you before the bank account or GST number existed', sign: -1, ic: 'clock', partner: true, partnerLabel: 'Who paid from their own pocket', cat: 'expense', catLabel: 'Kind of expense', early: true },
   asset_buy:       { label: 'Bought an asset', hint: 'Machine, furniture, vehicle', sign: -1, ic: 'building', acc: 'Paid from' },
 };
 const GROUPS = [
@@ -22,7 +23,12 @@ const GROUPS = [
   ['Loans', ['loan_taken', 'loan_repay', 'loan_given', 'loan_collect']],
   ['Credit and dues', ['credit_sale', 'credit_purchase', 'dues_in', 'dues_out']],
   ['Assets', ['asset_buy']],
+  ['Before the books', ['early_expense']],
 ];
+const PAYMODES = [['cash', 'Cash'], ['upi', 'UPI'], ['card', 'Card'], ['cheque', 'Cheque'], ['online', 'Online transfer (NEFT / IMPS / RTGS)']];
+const modeName = (m) => (PAYMODES.find((x) => x[0] === m) || [0, m || ''])[1];
+const EARLY = [['before_bank', 'Before the bank account was opened'], ['before_gst', 'Before the GST number came'], ['before_books', 'Before I started these books'], ['other', 'Other']];
+const GSTK = ['money_in', 'expense', 'credit_sale', 'credit_purchase', 'dues_in', 'dues_out', 'asset_buy', 'early_expense'];
 const kindName = (k) => (KINDS[k] || {}).label || k;
 const EVIDENCE = { have: 'Bill kept', pending: 'Bill to come', none: 'No bill' };
 const todayISO = () => (S.ctx && S.ctx.today) || new Date().toISOString().slice(0, 10);

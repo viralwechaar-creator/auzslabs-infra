@@ -77,6 +77,39 @@ export async function handle(ctx) {
     const saved = await saveDocUpload({ tenantId, empId: 'acc', buffer });
     return reply(200, { url: `/storage/acc/${saved.path.split('/')[0]}/${saved.path.split('/')[2]}`, contentType: saved.contentType });
   }
+  // ---- AUZsFinance's own files: separate folder from AUZsLedger. Pictures are squeezed here again (the phone already shrinks them);
+  // a PDF may be at most 10 KB so nobody stores big scans. fin_storage_check() re-checks entitlement and role. ----
+  if (url.pathname === '/storage/fin' && req.method === 'POST') {
+    if (!user) throw new HttpError(401, 'authentication required');
+    const profile = await myProfile(user.id);
+    const tenantId = profile?.tenant_id;
+    if (!tenantId) throw new HttpError(400, 'could not resolve your business -- sign in again');
+    await withAuth(user.id, (client) => client.query('select fin_storage_check() as ok'));
+    let buffer = await readRawBody(req, 4_000_000);
+    if (buffer.slice(0, 4).toString() === '%PDF') {
+      if (buffer.length > 10240) throw new HttpError(400, 'A PDF can be up to 10 KB. Use a photo instead (it is made small automatically).');
+    } else {
+      try {
+        const sharp = (await import('sharp')).default;
+        buffer = await sharp(buffer).rotate().resize({ width: 1280, height: 1280, fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 60, mozjpeg: true }).toBuffer();
+      } catch { throw new HttpError(400, 'Send a photo (JPEG or PNG) or a PDF up to 10 KB'); }
+    }
+    const saved = await saveDocUpload({ tenantId, empId: 'fin', buffer });
+    return reply(200, { url: `/storage/fin/${saved.path.split('/')[0]}/${saved.path.split('/')[2]}`, contentType: saved.contentType, size: buffer.length });
+  }
+  const finMatch = url.pathname.match(/^\/storage\/fin\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_.-]+)$/);
+  if (finMatch && req.method === 'GET') {
+    if (!user) throw new HttpError(401, 'authentication required');
+    const [, tenantId, filename] = finMatch;
+    const profile = await myProfile(user.id);
+    if (profile?.tenant_id !== tenantId) throw new HttpError(403, 'not authorized');
+    await withAuth(user.id, (client) => client.query(`select fin_guard('view')`));
+    const doc = await readDocUpload({ tenantId, empId: 'fin', filename });
+    if (!doc) throw new HttpError(404, 'not found');
+    res.writeHead(200, { 'Content-Type': doc.type, 'Cache-Control': 'private, max-age=31536000', ...(origin ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : {}) });
+    res.end(doc.buffer);
+    return;
+  }
   const accMatch = url.pathname.match(/^\/storage\/acc\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_.-]+)$/);
   if (accMatch && req.method === 'GET') {
     if (!user) throw new HttpError(401, 'authentication required');
