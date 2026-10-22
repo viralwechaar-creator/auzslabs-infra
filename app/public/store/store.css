@@ -700,3 +700,12 @@ footer .col a,footer .col span{font-size:9.5px}
 .stkw .psz{display:flex;flex-wrap:wrap;gap:5px}.stkw .psz em{font-style:normal;font-size:9.5px;min-width:26px;text-align:center;padding:4px 7px;border:1px solid var(--line);border-radius:8px;background:#fff}
 .stkw [hidden]{display:none}
 }
+
+/* desktop: the slide stack uses the full middle area, details fill the right rail */
+@media(min-width:900px){
+.stkw{grid-template-columns:130px minmax(0,1fr) minmax(300px,380px);gap:20px}
+.stkw .stk{max-width:none;aspect-ratio:auto;height:clamp(480px,74vh,760px)}
+.stkw .stk .sk{left:28%;width:44%}
+.stkw .srr{max-width:none;padding-left:8px}
+.stkw .pd{-webkit-line-clamp:8}
+}

@@ -259,14 +259,14 @@ function stack(list, label) {
   const deck = E('div', { class: 'stk' }, list.map((s, i) => E('a', { class: 'sk', href: link('p/' + s.id) }, E('img', { src: photos(s)[0], alt: '', loading: i < 3 ? 'eager' : 'lazy', draggable: 'false' }), E('div', { class: 'nm' }, E('span', null, s.name), E('b', null, inr(s.price))))));
   const items = [...deck.children];
   // each card sits behind the centre card, shifted a little to the side, smaller and darker the further it is
-  const OFF = [0, 17, 30], SC = [1, .87, .76], BR = [1, .62, .4];
-  const place = () => items.forEach((el, i) => {
+  const wide = () => matchMedia('(min-width: 900px)').matches, SC = [1, .87, .76], BR = [1, .62, .4];
+  const place = () => { const OFF = wide() ? [0, 58, 104] : [0, 17, 30]; items.forEach((el, i) => {
     let d = i - cur; if (d > n / 2) d -= n; if (d < -n / 2) d += n; const a = Math.abs(d), sg = d < 0 ? -1 : 1;
     if (a > 2) { el.style.opacity = '0'; el.style.pointerEvents = 'none'; el.style.zIndex = '0'; el.style.transform = 'translateX(' + sg * OFF[2] + '%) scale(' + SC[2] * .9 + ')'; return; }
     el.style.opacity = '1'; el.style.pointerEvents = 'auto'; el.style.zIndex = String(10 - a);
     el.style.transform = 'translateX(' + sg * OFF[a] + '%) scale(' + SC[a] + ')'; el.style.filter = a ? 'brightness(' + BR[a] + ')' : 'none';
     el.classList.toggle('on', a === 0);
-  });
+  }); };
   // desktop side rails: counter + arrows on the left, the front piece's details on the right
   const pcat = E('span', { class: 'pcat' }), pd = E('p', { class: 'pd' }), pbl = E('ul', { class: 'pbl' }), psp = E('div', { class: 'psp' }), pco = E('div', { class: 'pco' }), psz = E('div', { class: 'psz' });
   const num = E('b', null, '01'), bar = E('i'), pn = E('span', { class: 'pn' }), pp = E('span', { class: 'pp' }), pl = E('a', { class: 'pl', href: '#' }, 'View piece ', icon('right'));
@@ -282,6 +282,7 @@ function stack(list, label) {
     clear(pco); colours(s).slice(0, 8).forEach((c) => pco.append(E('i', { title: c, style: { background: hex(c) } }))); pco.hidden = !pco.children.length;
     clear(psz); sizesOf(s).slice(0, 10).forEach((z) => psz.append(E('em', null, z))); psz.hidden = !psz.children.length;
   };
+  addEventListener('resize', () => place());
   const go = (i) => { cur = ((i % n) + n) % n; place(); rails(); };
   const pause = (ms) => { hold = true; clearTimeout(holdT); holdT = setTimeout(() => { hold = false; }, ms || 5000); };
   let x0 = null;
