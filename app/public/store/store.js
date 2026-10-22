@@ -93,7 +93,7 @@ function setMeta(title, desc, img, canon) {
 // ---------- small ui ----------
 function sheet(title, body, foot) {
   const w = E('div', { class: 'sheetwrap', role: 'dialog', 'aria-modal': 'true' });
-  const close = () => { if (w.classList.contains('pop') && !w.classList.contains('out')) { w.classList.add('out'); setTimeout(() => w.remove(), 190); } else w.remove(); };
+  const close = () => { if (w.classList.contains('out')) return; w.classList.add('out'); setTimeout(() => w.remove(), 190); };
   w.append(E('div', { class: 'bd', onclick: close }), E('div', { class: 'sheet' }, E('div', { class: 'grab' }), E('div', { class: 'hd' }, E('h2', null, title), E('button', { class: 'ic', 'aria-label': 'Close', onclick: close }, icon('x'))), body, foot || null));
   document.body.append(w); return { close, el: w };
 }
