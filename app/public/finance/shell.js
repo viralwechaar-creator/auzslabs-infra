@@ -12,7 +12,7 @@ function parseHash() {
 }
 const go = (path) => { const tgt = '#/' + path.replace(/^#?\/?/, ''); if (location.hash === tgt) route_(); else location.hash = tgt; };
 const allowed = (def) => !!def && (!def.perm || can(def.perm));
-const NAV = [['home', 'Today', 'home'], ['activity', 'Activity', 'swap'], ['dues', 'Dues', 'users'], ['owner', 'Owner & loans', 'wallet'], ['accounts', 'Accounts', 'cash'], ['reports', 'Reports', 'chart'], ['assets', 'Assets', 'building'], ['budget', 'Budget', 'tag'], ['settings', 'Settings', 'gear']];
+const NAV = [['home', 'Today', 'home'], ['activity', 'Activity', 'swap'], ['dues', 'Dues', 'users'], ['owner', 'Owner & loans', 'wallet'], ['accounts', 'Accounts', 'cash'], ['reports', 'Reports', 'chart'], ['assets', 'Assets', 'building'], ['budget', 'Budget', 'tag'], ['approvals', 'Approvals', 'check'], ['repeat', 'Repeating', 'refresh'], ['bank', 'Bank import', 'download'], ['insights', 'Insights', 'bolt'], ['settings', 'Settings', 'gear']];
 const navList = () => NAV.filter(([id]) => allowed(PAGES[id]));
 const tabsFor = () => navList().slice(0, 4).map((x) => x[0]);
 
