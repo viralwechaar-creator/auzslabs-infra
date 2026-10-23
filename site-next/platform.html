@@ -60,10 +60,10 @@
 }
 @media(min-width:900px){.footer-top{grid-template-columns:1.5fr 1fr 1fr 1fr}}
 </style>
-<link rel="stylesheet" href="u.css?v=2"><link rel="stylesheet" href="e.css?v=5">
+<link rel="stylesheet" href="u.css?v=2"><link rel="stylesheet" href="e.css?v=5"><link rel="stylesheet" href="x.css?v=1">
 <meta name="theme-color" content="#efeeed">
 </head>
-<body>
+<body class="mk-page">
 <div class="shell">
   <header class="u-top">
     <a href="index.html" class="u-logo" aria-label="AUZslab home"><img src="logo.png" alt="AUZslab"></a>
@@ -84,21 +84,29 @@
     <div class="foot"><div class="row"><a href="signup.html" class="btn btn-ghost" data-signin-link>Get started</a><button class="btn" data-open-contact>Let's talk</button></div><div class="copy">&copy; 2026 AUZslab</div></div>
   </aside>
 
-  <main class="content"><div class="ed">
-<section class="ed-hero">
-<div class="ph r32" data-ed-img="why.hero" role="img" aria-label=""></div>
-<h1 data-ed="why.h">Software never fit.<br>We changed that.</h1>
-<div class="ed-side"><span data-ed="why.sub">A complete ecosystem for business, shaped to you.</span></div>
-</section>
-<div class="folds">
-<details class="fold" open><summary><i>01</i><b>Old systems are rigid</b></summary><div class="fb"><span>One template. You adapt to it.</span></div></details>
-<details class="fold"><summary><i>02</i><b>Ours bends</b></summary><div class="fb"><span>Screens, bills, rules, fields: all yours to shape.</span></div></details>
-<details class="fold"><summary><i>03</i><b>One connected whole</b></summary><div class="fb"><span>Sell, stock, accounts, people, online. One login.</span></div></details>
-<details class="fold"><summary><i>04</i><b>Set up with you</b></summary><div class="fb"><span>We start it with you. Your data stays yours.</span></div></details>
-</div>
-<div class="ed-cta"><span>Make it yours.</span><button class="btn" data-open-contact>Talk</button></div>
-</div>
-<div class="ftwrap" id="ftwrap">
+  <main class="content"><div class="mk wy">
+<section class="wy-hero"><span class="mk-eye rv">Why AUZslab</span>
+<h1 class="mk-h1 rv" data-ed="why.h">Software never fit. <em>We changed that.</em></h1>
+<p class="mk-lede rv" data-ed="why.sub">A complete ecosystem for business, shaped to you.</p></section>
+<section class="wy-stage rv"><div><div class="wy-seg" role="tablist"><button data-v="r" class="on">A rigid system</button><button data-v="y">Yours</button></div>
+<p class="wy-note" data-r="Same screens for everyone. Fields you never use, names you cannot change, a layout you must live with." data-y="Rename fields, add the ones you need, reshape the layout and the look. The software moves, not you.">Same screens for everyone. Fields you never use, names you cannot change, a layout you must live with.</p></div>
+<div class="wy-screen" data-m="r"><div class="wy-top"><span data-r="New sale" data-y="New booking">New sale</span><span data-r="Template 01" data-y="Made for you">Template 01</span></div>
+<div class="wy-fields">
+<div class="wy-f"><small data-r="Customer" data-y="Guest name">Customer</small><span data-r="Fixed label" data-y="Your own word">Fixed label</span></div>
+<div class="wy-f"><small data-r="Item" data-y="Service">Item</small><span data-r="One list" data-y="Your menu">One list</span></div>
+<div class="wy-f lock"><small>Field 7</small><span>Not used</span></div>
+<div class="wy-f lock"><small>Field 8</small><span>Cannot remove</span></div>
+<div class="wy-f add"><small>Stylist</small><span>Added by you</span></div>
+<div class="wy-f add"><small>Size</small><span>Added by you</span></div>
+<div class="wy-f add"><small>WhatsApp</small><span>Bill link</span></div></div>
+<div class="wy-btn"><span data-r="Save" data-y="Confirm and share">Save</span></div></div></section>
+<section class="eco"><div class="eco-map"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><line x1="50" y1="50" x2="50.0" y2="12.0"/><line x1="50" y1="50" x2="82.9" y2="31.0"/><line x1="50" y1="50" x2="82.9" y2="69.0"/><line x1="50" y1="50" x2="50.0" y2="88.0"/><line x1="50" y1="50" x2="17.1" y2="69.0"/><line x1="50" y1="50" x2="17.1" y2="31.0"/></svg><div class="eco-c">One<br>login</div><button class="eco-n" style="left:50.0%;top:12.0%" data-t="AUZsPOS" data-d="Sell at the counter, run the kitchen, take table orders.">AUZsPOS</button><button class="eco-n" style="left:82.9%;top:31.0%" data-t="AUZsPay" data-d="Clock-ins flow straight into the pay run.">AUZsPay</button><button class="eco-n" style="left:82.9%;top:69.0%" data-t="AUZsLedger" data-d="Every sale lands in real double-entry books.">AUZsLedger</button><button class="eco-n" style="left:50.0%;top:88.0%" data-t="AUZsScan" data-d="Scan a barcode, bill it, update stock.">AUZsScan</button><button class="eco-n" style="left:17.1%;top:69.0%" data-t="AUZsMob" data-d="Phones by IMEI, repairs and staff ledgers.">AUZsMob</button><button class="eco-n" style="left:17.1%;top:31.0%" data-t="AUZsStyle" data-d="Clothing and shoes: sizes, colours, tags, analytics.">AUZsStyle</button></div>
+<div><span class="mk-eye">One connected whole</span><h2 class="mk-h2" style="margin-top:12px">Sell, stock, accounts, people, online.</h2><div class="eco-cap" aria-live="polite"></div></div></section>
+<section class="bl"><div class="rv"><i>01</i><div><b>Old systems are rigid</b><span>One template. You adapt to it.</span></div></div>
+<div class="rv"><i>02</i><div><b>Ours bends</b><span>Screens, bills, rules, fields: all yours to shape.</span></div></div>
+<div class="rv"><i>03</i><div><b>One connected whole</b><span>Sell, stock, accounts, people, online. One login.</span></div></div>
+<div class="rv"><i>04</i><div><b>Set up with you</b><span>We start it with you. Your data stays yours.</span></div></div></section>
+<div class="mk-end rv"><b>Make it yours.</b><span class="mk-row"><button class="mk-btn solid" data-open-contact>Talk to us</button><a class="mk-btn" href="products.html">See products</a></span></div></div><div class="ftwrap" id="ftwrap">
     <button class="ftt" aria-expanded="false"><span class="ftti"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M3 3h8l10 10-8 8L3 11V3Z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5Z"/></svg><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.500 0 18M12 3c-3 3.5-3 14.500 0 18"/></svg></span><span class="ftl">Setup, support and help</span><i class="pl">+</i></button>
     <div class="ftinfo">
       <div class="perks"><div class="perk"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M3 3h8l10 10-8 8L3 11V3Z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg><div><b>Set up with you</b><span>Shaped to your workflow</span></div></div><div class="perk"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg><div><b>Works offline</b><span>POS and AUZsMob keep selling</span></div></div><div class="perk"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.500 0 18M12 3c-3 3.5-3 14.500 0 18"/></svg><div><b>Your data is yours</b><span>Back up or export any time</span></div></div><div class="perk"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5Z"/></svg><div><b>Talk to a person</b><span>Call or WhatsApp us</span></div></div></div>
@@ -177,5 +185,5 @@
 <script src="design-system/ui-kit.js?v=101"></script>
 <script src="company.js"></script>
 <script src="ed.js?v=1" defer></script><script src="fold.js?v=1" defer></script><script src="u.js?v=1" defer></script>
-</body>
+<script src="x.js?v=1" defer></script></body>
 </html>
