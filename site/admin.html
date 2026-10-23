@@ -612,7 +612,30 @@ html[data-theme=dark] .a-tab-btn.on{color:#fff}
 .rd-tools button{font:600 10.5px var(--font-body);background:none;border:1px solid var(--rd-hair);border-radius:999px;padding:4px 11px;color:var(--ink-dim);cursor:pointer}
 @media (prefers-reduced-motion:reduce){.rd-gl::after,.rd-fh .pm::before,.rd-fh .pm::after{transition:none}}
 </style>
-</head>
+<style id="rd2">
+/* Contrast pass: pure white + black, strong icons */
+body.admin-shell{--rd-page:#fff;--rd-card:#fff;--rd-hair:rgba(0,0,0,.22);--rd-sh:0 1px 2px rgba(0,0,0,.08);--ink:#000;--ink-dim:#222;--ink-faint:#555;--bg-raised:#f0f0f0}
+html[data-theme=dark] body.admin-shell{--rd-page:#000;--rd-card:#111;--rd-hair:rgba(255,255,255,.3);--ink:#fff;--ink-dim:#e5e5e5;--ink-faint:#aaa;--bg-raised:#1c1c1c}
+@media (prefers-color-scheme:dark){html:not([data-theme=light]) body.admin-shell{--rd-page:#000;--rd-card:#111;--rd-hair:rgba(255,255,255,.3);--ink:#fff;--ink-dim:#e5e5e5;--ink-faint:#aaa;--bg-raised:#1c1c1c}}
+body.admin-shell,body.admin-shell .a-main,.a-topbar,.a-tabbar,.a-side{background:var(--rd-page)!important;color:var(--ink)}
+body.admin-shell svg{color:var(--ink);stroke:currentColor;opacity:1}
+.a-tab-btn,.a-nav-row svg,.a-nav-row .chev,.a-side-btn svg,.a-iconbtn,.a-iconbtn svg,.a-side-link svg{color:var(--ink)!important}
+.a-tab-btn{color:var(--ink-dim)!important}
+.a-tab-btn.on{color:var(--ink)!important;font-weight:700}
+.a-tab-btn svg{width:23px;height:23px;stroke-width:2}
+.a-side-btn svg,.a-nav-row svg{stroke-width:2}
+.a-side-btn{color:var(--ink)!important}
+.a-side-btn.on svg,.a-side-btn.on{color:#fff!important}
+html[data-theme=dark] .a-side-btn.on,html[data-theme=dark] .a-side-btn.on svg{color:#000!important}
+.rd-fh .t b,.cc-name,.cc-big{color:var(--ink)}
+.rd-fh .t i,.a-page .label,.cc-label,.a-kpi .k,.admin-table th{color:var(--ink-faint)}
+body.admin-shell .btn-ghost{border-color:var(--ink)!important;color:var(--ink)!important}
+body.admin-shell input:not([type=checkbox]):not([type=radio]),body.admin-shell select,body.admin-shell textarea{border-color:var(--rd-hair)!important;color:var(--ink);background:var(--rd-card)}
+.rd-fh .pm{border-color:var(--ink)}
+.status-pill{border:1px solid var(--rd-hair);color:var(--ink)}
+.status-new{background:#000!important;color:#fff!important}
+.rd-fold,.client-card,.req-card,.price-card,.list-card,.a-nav-list{border-color:var(--rd-hair)!important}
+</style></head>
 <body class="admin-shell">
 <div class="a-shell">
   <header class="a-topbar">
