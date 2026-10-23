@@ -408,3 +408,6 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .tags-2up .tagpage{display:flex;width:calc(100mm + var(--gap,3mm));height:25mm;gap:var(--gap,3mm);margin-left:var(--left,0);overflow:hidden;page-break-after:always;break-after:page;box-sizing:border-box}
 .tags-2up .tagpage:last-child{page-break-after:auto;break-after:auto}
 .tags-2up .tagpage>*{flex:0 0 50mm;width:50mm;height:25mm}
+
+/* printing while a sheet is open: the scroll lock pins the body (position:fixed), and a fixed body prints as ONE page */
+@media print{html.auz-lock body{position:static!important;top:auto!important;width:auto!important;overflow:visible!important;height:auto!important}html.auz-lock{overflow:visible!important}}
