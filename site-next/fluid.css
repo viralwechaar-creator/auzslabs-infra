@@ -1,0 +1,59 @@
+/* AUZslab marketing: fluid scale. The design was fixed at one size, so on a big monitor it looked tiny and empty.
+   Here everything (type, lines, cards, tags, spacing) grows with the screen in small steps (html zoom), the content
+   column gets wider, and wide screens use more columns so pages are shorter. Phones and small laptops are unchanged.
+   --z is the zoom of the current step; any rule that uses vh must divide by it. */
+:root{--z:1}
+@media(min-width:1280px){:root{--z:1.06}html{zoom:1.06}}
+@media(min-width:1440px){:root{--z:1.14}html{zoom:1.14}}
+@media(min-width:1600px){:root{--z:1.24}html{zoom:1.24}}
+@media(min-width:1800px){:root{--z:1.36}html{zoom:1.36}}
+@media(min-width:2000px){:root{--z:1.5}html{zoom:1.5}}
+@media(min-width:2300px){:root{--z:1.68}html{zoom:1.68}}
+@media(min-width:2700px){:root{--z:1.9}html{zoom:1.9}}
+@media(min-width:3200px){:root{--z:2.2}html{zoom:2.2}}
+@media(min-width:3800px){:root{--z:2.6}html{zoom:2.6}}
+
+/* a wider column that fills the (zoomed) screen instead of a 1240px strip */
+@media(min-width:1100px){
+ :root{--pad:clamp(28px,3.2vw,64px)}
+ .wrap,main.content>.wrap,main.content .wrap.hm,.ed,.mk{max-width:min(1560px,100%)!important}
+ .mk,.ed{padding-left:var(--pad);padding-right:var(--pad)}
+}
+/* things sized in vh must not grow with the zoom */
+.st-step{min-height:calc(44vh / var(--z))!important}
+.modal{max-height:calc(92vh / var(--z))!important}
+
+/* wide screens: more columns, shorter pages */
+@media(min-width:1400px){
+ /* products: two chapters side by side */
+ .pr-wrap{grid-template-columns:200px 1fr;gap:56px}
+ .pr-list{display:grid;grid-template-columns:1fr 1fr;column-gap:56px}
+ .pc{grid-template-columns:1fr!important;padding:34px 0!important;align-items:start!important;gap:22px!important}
+ .pc:nth-child(even) .pc-art{order:0!important}
+ .pc-n{position:static!important;font-size:84px!important;margin-bottom:-4px}
+ /* why: four beliefs in a row already; stage wider */
+ .wy-stage{gap:90px}
+ .eco{gap:110px}
+ /* contact / live demo / download: roomier two-column splits */
+ .ct-wrap{gap:110px}
+ .dm-wrap{grid-template-columns:300px 1fr;gap:56px}
+ .dl-steps{gap:18px}
+ /* studio */
+ .st-story{gap:110px}
+ .st-cmp,.st-two{gap:20px}
+ /* folds on content pages: two columns instead of one tall stack */
+ .folds{display:grid;grid-template-columns:1fr 1fr;column-gap:56px}
+ .ed-list{display:grid;grid-template-columns:1fr 1fr;column-gap:40px}
+ .ed-list a:last-child{border-bottom:0}
+}
+@media(min-width:2000px){
+ .pr-list{grid-template-columns:1fr 1fr 1fr}
+}
+/* long prose pages keep a readable line, centred, never a thin strip hugging the left */
+.legal,.prose,.ed-prose{max-width:min(980px,100%);margin-left:auto;margin-right:auto}
+/* picture frames: on a wide screen a full-width frame became a screen-high grey block; cap them to the viewport */
+@media(min-width:900px){
+ .ph{max-height:calc(72vh / var(--z))}
+ .ed-hero .ph{aspect-ratio:auto!important;height:calc(56vh / var(--z));max-height:none}
+ .ed-two .ph{aspect-ratio:auto!important;height:calc(46vh / var(--z));max-height:none}
+}
