@@ -524,6 +524,94 @@ body.admin-shell .bn-in input{border:none!important;background:none!important;bo
 .chk-row{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:14px}
 .chk-row input{width:18px;height:18px}
 </style>
+<style id="rd">
+/* ===== Redesign (Oct 2026): AUZsStyle / AUZsFinance / online-store look =====
+   Flat light page, white rounded cards, hairline rows instead of boxes, tiny type,
+   black pills, wine only for the active/primary signal. Layered on top of the older
+   rules; components keep their class names so every loader keeps working. */
+body.admin-shell{--rd-page:#f2f2f4;--rd-card:#fff;--rd-hair:rgba(0,0,0,.09);--rd-r:18px;--rd-r2:12px;--rd-sh:0 1px 0 rgba(0,0,0,.04),0 8px 24px -18px rgba(0,0,0,.25);font-family:var(--font-body);font-size:13px;letter-spacing:-.003em}
+@media (prefers-color-scheme:dark){html:not([data-theme=light]) body.admin-shell{--rd-page:#171615;--rd-card:#232120;--rd-hair:rgba(255,255,255,.1);--rd-sh:none}}
+html[data-theme=dark] body.admin-shell{--rd-page:#171615;--rd-card:#232120;--rd-hair:rgba(255,255,255,.1);--rd-sh:none}
+body.admin-shell,body.admin-shell .a-main{background:var(--rd-page)}
+.a-topbar{background:var(--rd-page);border-bottom:1px solid var(--rd-hair);min-height:calc(44px + env(safe-area-inset-top))}
+.a-topbar-title{font:700 14px var(--font-body);letter-spacing:-.01em}
+.a-main{padding:12px 14px calc(96px + env(safe-area-inset-bottom))}
+@media (min-width:900px){.a-main{padding:20px 28px 40px}.a-page{max-width:1180px;margin:0 auto}}
+/* headings */
+.a-page .label{font:600 9.5px var(--font-mono);text-transform:uppercase;letter-spacing:.09em;color:var(--ink-faint)}
+.a-page h2.h-2{font:700 17px var(--font-body);letter-spacing:-.02em;margin:3px 0 4px}
+.a-page>p.p,.rd-body>p.p{font-size:11.5px;line-height:1.45;color:var(--ink-faint)}
+/* cards */
+.card,.client-card,.req-card,.price-card,.list-card,.bn-card,.onb-card,.pay-card,.a-login-card .card,.tm-form{background:var(--rd-card)!important;border:1px solid var(--rd-hair)!important;border-radius:var(--rd-r)!important;box-shadow:var(--rd-sh)!important}
+.client-card,.req-card,.price-card,.list-card,.bn-card,.pay-card{padding:12px 13px}
+.cc-grid{gap:10px}
+.cc-name{font:700 14.5px var(--font-body)}
+.cc-big{font:700 14px var(--font-body)}
+.cc-label,.a-kpi .k,.admin-table th{font:600 8.5px var(--font-mono);letter-spacing:.08em}
+.a-kpi{background:var(--rd-card);border:1px solid var(--rd-hair);border-radius:14px;padding:9px 11px}
+.a-kpi .n{font:700 18px var(--font-body)}
+/* buttons: black pills, ghost = hairline pill */
+body.admin-shell .btn{border-radius:999px!important;box-shadow:none!important;transform:none!important;font:600 11px var(--font-body)!important;letter-spacing:0!important;text-transform:none!important;min-height:32px;padding:7px 14px}
+body.admin-shell .btn-primary{background:#000!important;color:#fff!important;border:1px solid #000!important}
+html[data-theme=dark] body.admin-shell .btn-primary{background:#f2f2f0!important;color:#111!important;border-color:#f2f2f0!important}
+body.admin-shell .btn-ghost{background:transparent!important;color:var(--ink)!important;border:1px solid var(--rd-hair)!important}
+body.admin-shell .btn-ghost:hover{background:var(--bg-raised)!important}
+body.admin-shell .btn:active{opacity:.8}
+/* inputs */
+body.admin-shell input:not([type=checkbox]):not([type=radio]),body.admin-shell select,body.admin-shell textarea,.a-search{background:var(--rd-card);border:1px solid var(--rd-hair)!important;border-radius:12px!important;font:13px var(--font-body);padding:9px 12px;box-shadow:none!important}
+body.admin-shell input:focus,body.admin-shell select:focus,body.admin-shell textarea:focus{outline:none;border-color:#000!important;box-shadow:0 0 0 3px rgba(128,0,32,.12)!important}
+body.admin-shell label,body.admin-shell .lbl{font:600 10.5px var(--font-body);color:var(--ink-dim)}
+/* pills / chips */
+.status-pill{border:none;background:var(--bg-raised);color:var(--ink-dim);font:600 9px var(--font-mono);padding:3px 9px;letter-spacing:.04em}
+.feature-tag{border:none;background:var(--bg-raised);border-radius:999px;font:500 9px var(--font-mono)}
+/* tables -> hairline lists */
+.admin-table-wrap{background:var(--rd-card);border:1px solid var(--rd-hair);border-radius:var(--rd-r);box-shadow:var(--rd-sh);overflow:hidden}
+.admin-table th{background:transparent;border-bottom:1px solid var(--rd-hair)}
+.admin-table td{border-bottom:1px solid var(--rd-hair)}
+@media (max-width:639px){
+  .admin-table-wrap{background:none;border:none;box-shadow:none}
+  .admin-table tr{background:var(--rd-card)!important;border:1px solid var(--rd-hair)!important;border-radius:16px!important;box-shadow:var(--rd-sh)}
+}
+/* nav rows (More list) */
+.a-nav-list{background:var(--rd-card);border:1px solid var(--rd-hair);border-radius:var(--rd-r);padding:0 12px;box-shadow:var(--rd-sh)}
+.a-nav-row{font:500 13px var(--font-body);min-height:42px;border-bottom:1px solid var(--rd-hair)}
+/* phone tab bar */
+.a-tabbar{background:var(--rd-card);border-top:1px solid var(--rd-hair)}
+.a-tab-btn{font:600 9.5px var(--font-body)}
+.a-tab-btn.on{color:#000}
+html[data-theme=dark] .a-tab-btn.on{color:#fff}
+/* desktop sidebar */
+@media (min-width:900px){
+  .a-side{background:var(--rd-card)!important;box-shadow:none!important;border-right:1px solid var(--rd-hair);width:236px}
+  .a-side-btn{font:500 12.5px var(--font-body);border-radius:10px;padding:8px 10px;transform:none!important}
+  .a-side-btn:hover{background:var(--bg-raised)!important;transform:none!important}
+  .a-side-btn.on{background:#000!important;color:#fff!important;font-weight:600}
+  html[data-theme=dark] .a-side-btn.on{background:#f2f2f0!important;color:#111!important}
+  .a-side-btn.on::before{display:none}
+  .a-side-btn.on svg{color:inherit!important}
+}
+/* collapsible: sidebar + More groups */
+.rd-gl{display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:none;cursor:pointer;text-align:left}
+.rd-gl::after{content:'';width:7px;height:7px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(45deg) translateY(-2px);transition:transform .2s;margin-right:4px;opacity:.6}
+.rd-gl[aria-expanded=false]::after{transform:rotate(-45deg)}
+.rd-hide{display:none!important}
+/* collapsible: page panels */
+.rd-fold{background:var(--rd-card);border:1px solid var(--rd-hair);border-radius:var(--rd-r);box-shadow:var(--rd-sh);margin:0 0 10px;overflow:hidden}
+.rd-fh{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;text-align:left;cursor:pointer;padding:12px 14px;color:var(--ink);font-family:var(--font-body)}
+.rd-fh .t{flex:1;min-width:0}
+.rd-fh .t i{display:block;font:600 8.5px var(--font-mono);font-style:normal;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-faint)}
+.rd-fh .t b{display:block;font:700 14px var(--font-body);letter-spacing:-.015em;margin-top:1px}
+.rd-fh .pm{width:22px;height:22px;border-radius:999px;border:1px solid var(--rd-hair);position:relative;flex:none}
+.rd-fh .pm::before,.rd-fh .pm::after{content:'';position:absolute;left:50%;top:50%;width:9px;height:1.5px;background:var(--ink);transform:translate(-50%,-50%);transition:transform .2s}
+.rd-fh .pm::after{transform:translate(-50%,-50%) rotate(90deg)}
+.rd-fold.open .rd-fh .pm::after{transform:translate(-50%,-50%) rotate(0)}
+.rd-body{display:none;padding:0 14px 14px;border-top:1px solid var(--rd-hair);padding-top:12px}
+.rd-fold.open .rd-body{display:block}
+.rd-body .card,.rd-body .tm-form{box-shadow:none!important;background:var(--rd-page)!important}
+.rd-tools{display:flex;gap:6px;justify-content:flex-end;margin:0 0 8px}
+.rd-tools button{font:600 10.5px var(--font-body);background:none;border:1px solid var(--rd-hair);border-radius:999px;padding:4px 11px;color:var(--ink-dim);cursor:pointer}
+@media (prefers-reduced-motion:reduce){.rd-gl::after,.rd-fh .pm::before,.rd-fh .pm::after{transition:none}}
+</style>
 </head>
 <body class="admin-shell">
 <div class="a-shell">
@@ -3337,6 +3425,75 @@ async function loadWhatsApp() {
     requestAnimationFrame(step);
   }
   new MutationObserver(function () { main.querySelectorAll('.a-kpi .n').forEach(run); }).observe(main, { childList: true, subtree: true });
+})();
+</script>
+<script id="rdjs">
+/* Redesign helpers: fold sidebar/More groups and page panels. Pure DOM wrapping,
+   ids and listeners of the existing loaders are untouched. State kept per browser. */
+(function(){
+  var KEY='admin.fold.v1',st={};
+  try{st=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}
+  function groups(container,labelSel,pre){
+    var kids=Array.prototype.slice.call(container.children),cur=null,n=0;
+    kids.forEach(function(el){
+      if(el.matches(labelSel)){
+        n++;var id=pre+(el.textContent||'').trim();
+        var b=document.createElement('button');b.type='button';b.className=el.className+' rd-gl';b.textContent=el.textContent;
+        var members=[];
+        var open=st[id]!==0;
+        b.setAttribute('aria-expanded',open);
+        b.addEventListener('click',function(){var o=b.getAttribute('aria-expanded')!=='true';b.setAttribute('aria-expanded',o);members.forEach(function(m){m.classList.toggle('rd-hide',!o)});st[id]=o?1:0;save()});
+        el.replaceWith(b);cur={members:members,open:open};
+        return;
+      }
+      if(cur){cur.members.push(el);if(!cur.open)el.classList.add('rd-hide')}
+    });
+  }
+  var sn=document.querySelector('.a-side-nav');if(sn)groups(sn,'.a-side-group-label','side:');
+  var mr=document.getElementById('moreSection');if(mr)groups(mr,'.a-more-group-label','more:');
+  /* page panels: every  .label + h2.h-2 [+ p.p] ... block becomes a foldable card */
+  document.querySelectorAll('.a-page').forEach(function(pg){
+    if(pg.id==='moreSection'||pg.id==='postStudioSection')return;
+    var kids=Array.prototype.slice.call(pg.children),blocks=[],cur=null;
+    kids.forEach(function(el){
+      if(el.classList.contains('label')&&el.nextElementSibling&&el.nextElementSibling.matches('h2')){cur={label:el,head:el.nextElementSibling,items:[]};blocks.push(cur);return}
+      if(cur&&el===cur.head)return;
+      if(cur)cur.items.push(el);
+    });
+    if(!blocks.length)return;
+    var many=blocks.length>1;
+    blocks.forEach(function(b,i){
+      var id='pg:'+pg.id+':'+i;
+      var wrap=document.createElement('div');wrap.className='rd-fold';
+      var open=st[id]===undefined?(i===0||blocks.length<=3):st[id]===1;
+      if(open)wrap.classList.add('open');
+      var h=document.createElement('button');h.type='button';h.className='rd-fh';h.setAttribute('aria-expanded',open);
+      var t=document.createElement('span');t.className='t';
+      var s1=document.createElement('i');s1.textContent=b.label.textContent;
+      var s2=document.createElement('b');s2.textContent=b.head.textContent.replace(/\s+/g,' ').trim().replace(/\+ New client$/,'').trim();
+      t.appendChild(s1);t.appendChild(s2);
+      var pm=document.createElement('span');pm.className='pm';
+      h.appendChild(t);h.appendChild(pm);
+      var body=document.createElement('div');body.className='rd-body';
+      /* keep inline controls that live inside the heading (e.g. "+ New client") */
+      var ctrl=b.head.querySelector('button');if(ctrl){var wr=document.createElement('div');wr.className='rd-tools';wr.appendChild(ctrl);body.appendChild(wr)}
+      b.items.forEach(function(x){body.appendChild(x)});
+      b.label.parentNode.insertBefore(wrap,b.label);
+      wrap.appendChild(h);wrap.appendChild(body);
+      b.label.remove();b.head.remove();
+      h.addEventListener('click',function(){var o=!wrap.classList.contains('open');wrap.classList.toggle('open',o);h.setAttribute('aria-expanded',o);st[id]=o?1:0;save()});
+    });
+    if(many){
+      var bar=document.createElement('div');bar.className='rd-tools';
+      var a=document.createElement('button');a.type='button';a.textContent='Expand all';
+      var c=document.createElement('button');c.type='button';c.textContent='Collapse all';
+      function all(o){pg.querySelectorAll('.rd-fold').forEach(function(w,j){w.classList.toggle('open',o);w.querySelector('.rd-fh').setAttribute('aria-expanded',o);st['pg:'+pg.id+':'+j]=o?1:0});save()}
+      a.onclick=function(){all(true)};c.onclick=function(){all(false)};
+      bar.appendChild(a);bar.appendChild(c);pg.insertBefore(bar,pg.firstChild);
+    }
+  });
+  /* a collapsed panel opens itself when a section is opened by a deep link with data to show */
 })();
 </script>
 </body>
