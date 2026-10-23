@@ -60,7 +60,8 @@ function printTags(vs, copies, size, designId) {
   const d = TAG_DESIGNS.find((q) => q.id === (designId || tagDesignId())) || TAG_DESIGNS[0];
   const wrap = h('div', { class: 'print-only tags tags-' + size });
   const shop = (S.ctx.settings.shopName || '').slice(0, 24);
-  vs.forEach((x) => { for (let i = 0; i < (copies[x.id] || 0); i++) wrap.append(d.build(x, shop)); });
+  const made = []; vs.forEach((x) => { for (let i = 0; i < (copies[x.id] || 0); i++) made.push(d.build(x, shop)); });
+  if (size === '2up') { for (let i = 0; i < made.length; i += 2) { const pg = h('div', { class: 'tagpage' }); pg.append(made[i]); if (made[i + 1]) pg.append(made[i + 1]); wrap.append(pg); } } else made.forEach((n) => wrap.append(n));
   if (!wrap.childNodes.length) return toast(t('Nothing to print'), { err: true });
   const g = tagGeo(); if (size === '2up') { wrap.style.setProperty('--gap', g.gap + 'mm'); wrap.style.setProperty('--left', g.left + 'mm'); }
   const st = document.createElement('style'); st.textContent = '@media print{@page{size:' + (size === 'a4' ? 'A4;margin:8mm' : size === '2up' ? (100 + g.gap) + 'mm 25mm;margin:0' : size.replace('x', 'mm ') + 'mm;margin:0') + '}}'; document.head.append(st);
