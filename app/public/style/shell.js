@@ -14,7 +14,8 @@ function parseHash() {
 const go = (path) => { const tgt = '#/' + path.replace(/^#?\/?/, ''); if (location.hash === tgt) route_(); else location.hash = tgt; };
 const allowed = (def) => !!def && (!def.perm || can(def.perm));
 const NAV = [['sell', 'Sell', 'cash'], ['stock', 'Stock', 'shirt'], ['bills', 'Bills', 'tag'], ['home', 'Overview', 'home'], ['analytics', 'Analytics', 'chart'], ['intel', 'Buying intelligence', 'bolt'], ['requests', 'Requests', 'users'], ['buy', 'Buy', 'truck'], ['people', 'People', 'users'], ['store', 'Online store', 'globe'], ['settings', 'Settings', 'gear']];
-const navList = () => NAV.filter(([id]) => allowed(PAGES[id]));
+const capOff = (k) => !!(S.ctx && S.ctx.caps && S.ctx.caps[k] === false);
+const navList = () => NAV.filter(([id]) => allowed(PAGES[id]) && !(id === 'store' && capOff('online_store')));
 const tabsFor = () => navList().slice(0, 4).map((x) => x[0]);
 
 function showLogin(msg) {
@@ -206,7 +207,7 @@ function header(o, root) {
   const desk = isDesk();
   (o.actions || []).filter(Boolean).forEach((a) => r.append(h('button', { class: 'btn ' + (desk ? (a.primary ? 'fill' : '') : 'plain') + (!desk ? ' icon' : ''), type: 'button', 'aria-label': a.label, title: a.label, onclick: a.run }, a.icon ? icon(a.icon, 20) : null, desk ? a.label : null)));
   r.append(bellBtn());
-  r.append(h('a', { class: 'btn plain icon', href: '/store.html', 'aria-label': 'Open my website', title: 'Open my website' }, icon('globe', 20)));
+  r.append(capOff('online_store') ? null : h('a', { class: 'btn plain icon', href: '/store.html', 'aria-label': 'Open my website', title: 'Open my website' }, icon('globe', 20)));
   if (root) { const old = root.querySelector(':scope > .large-title'); if (old) old.remove(); }
   if (!desk && root && !o.noLarge) root.prepend(h('h1', { class: 'large-title' }, o.title));
 }

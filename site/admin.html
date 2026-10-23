@@ -1508,6 +1508,16 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <label>Services entitled</label>
         <div id="editFeatures" style="display:flex;flex-wrap:wrap;gap:10px"></div>
       </div>
+      <div class="field" id="editCapsField">
+        <label>Plan and limits</label>
+        <select id="editPlan"><option value="full">Full access (no limits)</option><option value="base">Base plan: no online store, no picture upload, no WhatsApp automation</option><option value="pro">Pro plan: online store and pictures, no WhatsApp automation</option><option value="custom">Custom (tick below)</option></select>
+        <div id="editCaps" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px">
+          <label class="svc-row"><input type="checkbox" data-cap="online_store"><span><b>Online store</b><small>The public store page and its orders (AUZsStyle)</small></span></label>
+          <label class="svc-row"><input type="checkbox" data-cap="images"><span><b>Picture upload</b><small>Photos in the POS and the website editor</small></span></label>
+          <label class="svc-row"><input type="checkbox" data-cap="whatsapp"><span><b>WhatsApp automation</b><small>Automatic messages to their customers</small></span></label>
+        </div>
+        <small style="color:var(--ink-faint)">Ticked = the client may use it. Changes apply at once.</small>
+      </div>
       <button type="submit" class="btn btn-primary form-submit">Save</button>
       <div id="editErr" class="err"></div>
     </form>
@@ -2603,9 +2613,17 @@ function openEditModal(id) {
       <input type="checkbox" data-prod="${esc(p.id)}" ${entitled[p.keys[0]] === true ? 'checked' : ''}>
       <span><b>${esc(p.label)}</b><small>${esc(p.note)}</small></span>
     </label>`).join('');
+  const caps0 = c.caps || {};
+  document.querySelectorAll('#editCaps [data-cap]').forEach((cb) => { cb.checked = caps0[cb.dataset.cap] !== false; });
+  syncPlanSelect();
   document.getElementById('editErr').textContent = '';
   document.getElementById('editOverlay').classList.add('open');
 }
+const PLAN_PRESETS = { full: { online_store: true, images: true, whatsapp: true }, base: { online_store: false, images: false, whatsapp: false }, pro: { online_store: true, images: true, whatsapp: false } };
+function readCaps() { const o = {}; document.querySelectorAll('#editCaps [data-cap]').forEach((cb) => { o[cb.dataset.cap] = cb.checked; }); return o; }
+function syncPlanSelect() { const cur = readCaps(); const hit = Object.keys(PLAN_PRESETS).find((k) => Object.keys(cur).every((c) => PLAN_PRESETS[k][c] === cur[c])); document.getElementById('editPlan').value = hit || 'custom'; }
+document.getElementById('editPlan').onchange = (e) => { const pr = PLAN_PRESETS[e.target.value]; if (!pr) return; document.querySelectorAll('#editCaps [data-cap]').forEach((cb) => { cb.checked = pr[cb.dataset.cap]; }); };
+document.getElementById('editCaps').addEventListener('change', syncPlanSelect);
 document.getElementById('editClose').onclick = () => document.getElementById('editOverlay').classList.remove('open');
 document.getElementById('editOverlay').onclick = (e) => { if (e.target.id === 'editOverlay') e.currentTarget.classList.remove('open'); };
 
@@ -2634,6 +2652,8 @@ document.getElementById('editForm').onsubmit = async (e) => {
   // A module stays on while any ticked product contains it (CRM is in both AUZsPOS and Salon).
   const on = new Set();
   document.querySelectorAll('#editFeatures [data-prod]').forEach((cb) => { if (cb.checked) SELLABLE.find((p) => p.id === cb.dataset.prod).keys.forEach((k) => on.add(k)); });
+  const { error: capErr } = await sb.rpc('admin_set_tenant_caps', { p_tenant_id: id, p_caps: readCaps() });
+  if (capErr) { errEl.textContent = capErr.message; return; }
   const features = {};
   SELLABLE.forEach((p) => p.keys.forEach((k) => { features[k] = on.has(k); }));
   if (document.getElementById('editModal').dataset.custom) { document.getElementById('editOverlay').classList.remove('open'); loadClients(); return; }   // custom-built clients have no standard products to set
