@@ -367,6 +367,23 @@ export default async function run({ browser, stack }) {
     await ok(owner, 'sty_save_settings', { p: { features: {} } });
   });
 
+  await s.check('Plan limits: a Base plan blocks the online store, pictures and WhatsApp automation; Pro blocks only WhatsApp', async () => {
+    const setCaps = (c) => q("update tenant_settings set caps=$1::jsonb where tenant_id=$2", [JSON.stringify(c), tid]);
+    await setCaps({ online_store: false, images: false, whatsapp: false });
+    const ctx = await ok(owner, 'sty_context'); assert(ctx.caps && ctx.caps.online_store === false, 'caps missing in context');
+    await fails(owner, 'sty_store_save', { p: { on: true } }, /not part of your plan/i);
+    const pub = await ok(null, 'public_sty_store', { p_slug: 'teststyle' }); assert(pub.closed, 'store should read as closed');
+    await fails(null, 'public_sty_place_order', { p_slug: 'teststyle', p: { name: 'A B', phone: '9876543210', address: '1 Road', city: 'Jodhpur', pin: '342001', payment: 'cod', lines: [] } }, /not available/i);
+    const up = await fetch(stack.url('api', '/storage/site/style'), { method: 'POST', headers: { authorization: 'Bearer ' + owner, 'content-type': 'image/png' }, body: Buffer.from('x') }).catch(() => null);
+    if (up) assert(up.status === 403, 'upload should be refused, got ' + up.status);
+    const w1 = (await q("select wa_enqueue($1,'9876543210','invoice_link','[\"a\",\"b\",\"c\"]'::jsonb,'cap-test') id", [tid]))[0].id;
+    assert(w1 === null, 'WhatsApp must not queue on a Base plan');
+    await setCaps({ online_store: true, images: true, whatsapp: false });
+    await ok(owner, 'sty_store_save', { p: { on: false } });
+    assert((await q("select wa_enqueue($1,'9876543210','invoice_link','[\"a\",\"b\",\"c\"]'::jsonb,'cap-test2') id", [tid]))[0].id === null, 'WhatsApp must not queue on Pro');
+    await setCaps({});
+  });
+
   await s.check('Online store: closed by default, then public catalogue, orders (COD + UPI), stock and price checks, staff inbox', async () => {
     const anon = null;
     let pub = await ok(anon, 'public_sty_store', { p_slug: 'teststyle' }); assert(pub && pub.closed, 'should be closed by default: ' + JSON.stringify(pub).slice(0, 120));

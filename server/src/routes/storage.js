@@ -23,6 +23,7 @@ export async function handle(ctx) {
     if (!user) throw new HttpError(401, 'authentication required');
     const profile = await myProfile(user.id);
     if (!profile?.tenant_id || (profile.role !== 'owner' && !(profile.role === 'manager' && storageMatch[1] === 'style'))) throw new HttpError(403, 'owner only');
+    if (!(await pool.query('select tenant_cap($1, $2) as ok', [profile.tenant_id, 'images'])).rows[0].ok) throw new HttpError(403, 'Picture upload is not part of your plan. Ask AUZslab to upgrade.');
     const buffer = await readRawBody(req, 8_000_000); // 8MB cap -- client already compresses to well under this
     const result = await saveSiteUpload({ tenantId: profile.tenant_id, uid: user.id, prefix: storageMatch[1], buffer });
     return reply(200, result);
