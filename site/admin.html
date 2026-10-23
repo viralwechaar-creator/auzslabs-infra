@@ -747,7 +747,58 @@ html[data-theme=dark] .hm .bar i{background:#f3f3f3}
 @media (prefers-reduced-motion:no-preference){.hm>div{animation:mkUp .5s both}.hm>div:nth-child(2){animation-delay:.05s}.hm>div:nth-child(3){animation-delay:.1s}.hm>div:nth-child(4){animation-delay:.15s}.hm>div:nth-child(5){animation-delay:.2s}.hm>div:nth-child(6){animation-delay:.25s}}
 @keyframes mkUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 </style>
-</head>
+<style id="mk2">
+/* Compact pass: no dead space inside tiles; Post studio clear of the floating nav */
+.pg-hero{padding:10px 4px 12px;gap:4px}
+.pg-hero h1{font-size:clamp(30px,6vw,56px)}
+.hm{gap:10px}
+.hm>div{min-height:0!important;padding:14px 18px;border-radius:26px;justify-content:flex-start}
+.hm .hero{min-height:0!important;grid-row:auto!important}
+.hm .big{margin-top:6px;font-size:clamp(46px,7vw,76px);line-height:.85}
+.hm .mid{margin-top:6px;font-size:clamp(28px,3.6vw,40px)}
+.hm .tags{margin-top:8px}
+.hm .sub{margin-top:4px}
+.hm .bars{margin-top:8px;gap:5px}
+.hm .rows,.hm .need{margin-top:8px;gap:6px}
+.hm .rows button{padding:8px 14px}
+.hm .need button{padding:8px 12px}
+@media (min-width:900px){
+  .hm .hero{grid-column:span 4}
+  .hm .t3{grid-column:span 4}
+  .hm .t6{grid-column:span 6}
+  .hm .needs{grid-column:1/-1}
+}
+.hm{align-items:start}
+.hm .needs{grid-column:1/-1}
+.hm .need{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}
+.hm .need button{flex-direction:column;align-items:flex-start;gap:2px}
+.hm .jumpt .rows{display:flex;flex-wrap:wrap}
+.client-card{min-height:0!important;padding:15px 17px!important;border-radius:26px!important}
+.cc-name{font-size:20px!important}
+.cc-sub{margin-top:3px}
+.cc-stats{margin-top:12px!important;padding-top:0!important;gap:14px!important}
+.cc-big,.cc-big.renewal-soon,.cc-big.renewal-overdue{font-size:22px!important;margin-top:2px!important}
+.cc-svc{margin-top:10px!important;padding-top:8px!important}
+.cc-actions{padding-top:8px!important;margin-top:6px!important}
+.cc-grid{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))!important;gap:10px!important}
+.rd-fold{border-radius:24px!important;margin-bottom:8px}
+.rd-fh{padding:11px 16px!important}
+.rd-fh .t b{font-size:clamp(16px,2vw,20px)!important}
+.rd-fh .pm{width:28px;height:28px}
+.rd-body{padding:0 16px 14px!important}
+.req-card,.price-card,.list-card,.bn-card,.pay-card{padding:11px 14px!important;border-radius:22px!important}
+.card,.onb-card,.tm-form{border-radius:22px!important}
+.a-kpi{padding:10px 13px!important;border-radius:18px!important}
+.a-kpi .n{font-size:22px}
+@media (max-width:639px){.admin-table tr{padding:11px 13px!important;border-radius:20px!important;margin-bottom:8px}}
+/* Post studio */
+#postStudioSection.active{padding-bottom:0}
+@media (max-width:899px){.ps-box iframe{height:calc(100dvh - 235px);min-height:380px}}
+.ps-box.full{padding-top:env(safe-area-inset-top)}
+.ps-box.full .ps-bar{height:52px;flex:none;padding:0 14px;position:relative;z-index:2}
+.ps-box.full .ps-btn{min-height:36px;margin:0}
+.ps-box.full iframe{margin-top:0;padding-bottom:env(safe-area-inset-bottom)}
+</style></head>
 <body class="admin-shell">
 <div class="a-shell">
   <header class="a-topbar">
@@ -3678,8 +3729,8 @@ async function loadWhatsApp() {
     h+='<div class="t3 wide"><small>Monthly fees</small><div class="mid">'+money(fee)+'</div><div class="sub">across '+cl.filter(function(c){return Number(c.monthly_fee)>0}).length+' paying clients</div></div>';
     h+='<div class="t3"><small>Renewing in 7 days</small><div class="mid">'+due.length+'</div><div class="sub">'+(due.slice(0,2).map(function(c){return E(c.name)}).join(', ')||'Nothing due')+'</div></div>';
     h+='<div class="t6 wide"><small>Products in use</small><div class="bars">'+(mk.map(function(k){return '<div class="bar"><span>'+E(lab[k]||k)+'</span><i style="width:'+Math.max(4,Math.round(mix[k]/mx*100))+'%"></i><b>'+mix[k]+'</b></div>'}).join('')||'<div class="sub">No products yet</div>')+'</div></div>';
-    h+='<div class="t6 blk wide"><small>Needs you</small><div class="need">'+need.map(function(x){return '<button data-go="'+x[1]+'"><span>'+x[0]+'</span><b>'+x[2]+'</b></button>'}).join('')+'</div></div>';
-    h+='<div class="t6 wide"><small>Jump to</small><div class="rows">'+[['New client','onboard'],['Client requests','orders'],['Client payments & bills','clientPay'],['Team','team'],['Pricing','pricing'],['Audit log','auditLog']].map(function(x){return '<button data-go="'+x[1]+'">'+x[0]+'<span>→</span></button>'}).join('')+'</div></div>';
+    h+='<div class="t6 wide jumpt"><small>Jump to</small><div class="rows">'+[['New client','onboard'],['Client requests','orders'],['Client payments & bills','clientPay'],['Team','team'],['Pricing','pricing'],['Audit log','auditLog']].map(function(x){return '<button data-go="'+x[1]+'">'+x[0]+'<span>→</span></button>'}).join('')+'</div></div>';
+    h+='<div class="blk wide needs"><small>Needs you</small><div class="need">'+need.map(function(x){return '<button data-go="'+x[1]+'"><span>'+x[0]+'</span><b>'+x[2]+'</b></button>'}).join('')+'</div></div>';
     g.innerHTML=h;
     g.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){openSection(b.dataset.go)}});
   };
