@@ -2843,3 +2843,6 @@ Label size "2 across (50 x 25 mm each)" (`2up`) for rolls with two labels side b
 
 ### AUZsStyle tags: 2-across prints one explicit page per pair (p-tags.js v7, style.fine.css v47)
 Owner's Edge window said "Total: 1 sheet of paper" for many tags. `printTags()` now builds `.tagpage` divs (103 mm x 25 mm, one pair of labels each, `page-break-after:always`, last one `auto`) instead of relying on CSS grid fragmentation. Checked in headless Chromium: 5 tags -> 3 pages, 28 -> 14. Sideways printing is the Windows driver rotating the page (Edge sends the page as landscape); the in-app layout itself is upright. Not seen on the real printer. Static only: `git pull` (sw `pos-v224`).
+
+### The real reason only ONE tag page ever printed: the scroll lock pinned the body (style.fine.css v48)
+`ds/lock.js` adds `html.auz-lock` while a sheet is open, and `ds/auz.css` makes `html.auz-lock body` `position:fixed`. `printTags()` runs while the Print tags sheet is still open, and a fixed body prints as a single page whatever its content (Edge said "Total: 1 sheet of paper"). Reproduced in headless Chromium (locked body: 1 page; with the fix: 3 for 5 tags). `style.fine.css` now un-pins the body inside `@media print`. Any other print started from inside a sheet in a locked app had the same limit. Static only (sw `pos-v225`).
