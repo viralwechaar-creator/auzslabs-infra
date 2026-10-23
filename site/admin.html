@@ -880,6 +880,65 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
 .tm-form input,.tm-form select,.tm-form textarea,.tm-bar select{background:var(--mk-white)!important}
 #setupForm input,#setupForm select,#noticeForm input,#noticeForm select,#noticeForm textarea{background:rgba(255,255,255,.12)!important}
 .tm-form label.lbl{text-transform:none;letter-spacing:0;font:600 11px 'Inter',sans-serif}
+</style><style id="mk6">
+/* No dots anywhere; actions are plain text; tighter, smaller cards; real desktop layouts */
+.client-card,.tm-card,.hm .blk,#setupForm,#noticeForm,.onb-col:first-child{background-image:none!important}
+/* plain-text actions */
+.cc-actions button,.req-actions button,.req-actions a,.lc-action{background:none!important;border-radius:0!important;padding:2px 0!important;font:600 11.5px 'Inter',sans-serif;color:var(--c-mut,var(--mk-mut))!important;text-decoration:none;box-shadow:none}
+.cc-actions button:hover,.req-actions button:hover,.req-actions a:hover,.lc-action:hover{background:none!important;color:var(--c-fg,var(--mk-ink))!important;text-decoration:underline}
+.cc-actions button.cc-danger,.req-actions .req-danger{color:#d4402a!important}
+.req-actions .req-primary{background:none!important;color:var(--mk-ink)!important}
+.tm-card .lc-action,.tm-card .lc-action:hover{background:none!important;color:var(--c-mut)!important}
+.tm-card .lc-action:hover{color:var(--c-fg)!important}
+.cc-actions,.req-actions{gap:2px 14px!important;padding-top:6px!important;margin-top:4px!important}
+/* client cards: small */
+.cc-grid{grid-template-columns:repeat(auto-fill,minmax(235px,1fr))!important;gap:8px!important}
+.client-card{padding:11px 14px!important;border-radius:20px!important;min-height:0!important;display:block}
+.cc-head{gap:6px}
+.cc-name{font-size:15.5px!important;letter-spacing:-.025em!important}
+.cc-sub{font:500 10px var(--font-mono)!important;margin-top:2px!important;line-height:1.3}
+.client-card .status-pill{padding:3px 7px!important;font-size:8.5px}
+.cc-stats{display:flex!important;gap:18px!important;margin-top:8px!important;padding-top:0!important}
+.cc-label{font-size:8px!important}
+.cc-big,.cc-big.renewal-soon,.cc-big.renewal-overdue{font-size:15px!important;margin-top:1px!important;letter-spacing:-.02em!important}
+.cc-svc{margin-top:7px!important;padding-top:6px!important;font-size:11px}
+.cc-notes{margin-top:5px;font-size:10.5px}
+.cc-chips{margin-top:4px}
+/* leads: desktop row layout */
+@media (min-width:900px){
+  #leadsList .req-grid,#profilesList .req-grid{grid-template-columns:1fr!important}
+  #leadsList .req-card{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.5fr);grid-template-areas:"head ctl" "msg ctl" "notes notes" "act act";column-gap:28px;row-gap:4px;padding:12px 18px!important;align-items:start}
+  #leadsList .req-card .req-head{grid-area:head}
+  #leadsList .req-card .req-body{grid-area:msg;margin:0!important}
+  #leadsList .req-card .lead-ctl{grid-area:ctl;grid-template-columns:repeat(3,minmax(0,1fr));margin:0!important;align-self:center}
+  #leadsList .req-card .lead-notes{grid-area:notes}
+  #leadsList .req-card .req-actions{grid-area:act;margin-top:2px!important}
+  #profilesList .req-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+.lead-ctl{gap:6px 10px!important}
+.lead-ctl select,.lead-ctl input{padding:7px 10px!important;font-size:12px!important}
+.lead-ctl label{text-transform:none;letter-spacing:0;font:600 10px 'Inter',sans-serif;color:var(--mk-mut)}
+.req-card,.price-card,.list-card,.bn-card,.pay-card{padding:10px 14px!important;border-radius:18px!important}
+.req-name{font-size:15px!important}
+/* desktop page layout: closed panels sit two-up, an open panel takes the full row */
+@media (min-width:900px){
+  .a-page.rd-multi.active{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}
+  .a-page.rd-multi>.pg-hero,.a-page.rd-multi>.rd-tools{grid-column:1/-1}
+  .a-page.rd-multi .rd-fold{margin:0}
+  .a-page.rd-multi .rd-fold.open{grid-column:1/-1}
+  .pg-hero{padding:6px 4px 8px}
+  .pg-hero h1{font-size:clamp(30px,3.6vw,46px)}
+  .rd-body>p.p,.a-page>p.p{max-width:78ch}
+  .lc-list{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+  .req-grid{grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}
+  .rd-body{display:none}
+  .rd-fold.open .rd-body{display:block}
+  .tm-form{max-width:none}
+  .tm-form-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .hm{grid-template-columns:repeat(12,1fr)}
+  .a-main{padding:6px 28px 36px!important}
+}
+@media (min-width:1500px){.cc-grid{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))!important}}
 </style></head>
 <body class="admin-shell">
 <div class="a-shell">
@@ -3764,6 +3823,7 @@ async function loadWhatsApp() {
       b.label.remove();b.head.remove();
       h.addEventListener('click',function(){var o=!wrap.classList.contains('open');wrap.classList.toggle('open',o);h.setAttribute('aria-expanded',o);st[id]=o?1:0;save()});
     });
+    if(many)pg.classList.add('rd-multi');
     if(many){
       var bar=document.createElement('div');bar.className='rd-tools';
       var a=document.createElement('button');a.type='button';a.textContent='Expand all';
