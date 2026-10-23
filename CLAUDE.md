@@ -2840,3 +2840,6 @@ Owner report: on a PC the new pages looked tiny, empty and long, because type, l
 
 ### AUZsStyle tags: "2 across" label size (p-tags.js, static only)
 Label size "2 across (50 x 25 mm each)" (`2up`) for rolls with two labels side by side: one print row per page (page = 100mm + gap by 25mm), tags fill left then right, an odd last tag leaves the right label empty. The sheet shows "Gap between the two labels" (default 3 mm) and "Shift right" (default 0) for fine-tuning; both and the chosen size are remembered per device (`sty.tagGeo`, `sty.tagSize`). Printer paper size must be set to the same page size (e.g. 103 x 25 mm) in Windows printing preferences. Not tried on the real TVS LP46 Dlite roll: first test print decides the gap/shift.
+
+### AUZsStyle tags: 2-across prints one explicit page per pair (p-tags.js v7, style.fine.css v47)
+Owner's Edge window said "Total: 1 sheet of paper" for many tags. `printTags()` now builds `.tagpage` divs (103 mm x 25 mm, one pair of labels each, `page-break-after:always`, last one `auto`) instead of relying on CSS grid fragmentation. Checked in headless Chromium: 5 tags -> 3 pages, 28 -> 14. Sideways printing is the Windows driver rotating the page (Edge sends the page as landscape); the in-app layout itself is upright. Not seen on the real printer. Static only: `git pull` (sw `pos-v224`).

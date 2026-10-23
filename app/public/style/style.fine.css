@@ -402,3 +402,9 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .tags-2up .tag-l,.tags-2up .tag-g{width:50mm;height:25mm;page-break-after:auto;break-after:auto}
 .tags-2up.print-only{display:grid!important;grid-template-columns:50mm 50mm;grid-auto-rows:25mm;column-gap:var(--gap,3mm);width:calc(100mm + var(--gap,3mm));margin-left:var(--left,0);justify-content:start}
 .tags-2up.print-only>*{break-inside:avoid}
+
+/* 2 across: one explicit page per pair of labels (does not rely on grid page breaks) */
+.tags-2up.print-only{display:block!important;width:auto;margin-left:0}
+.tags-2up .tagpage{display:flex;width:calc(100mm + var(--gap,3mm));height:25mm;gap:var(--gap,3mm);margin-left:var(--left,0);overflow:hidden;page-break-after:always;break-after:page;box-sizing:border-box}
+.tags-2up .tagpage:last-child{page-break-after:auto;break-after:auto}
+.tags-2up .tagpage>*{flex:0 0 50mm;width:50mm;height:25mm}
