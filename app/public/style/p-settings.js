@@ -1,5 +1,22 @@
 /* AUZsStyle: Settings (manager). Shop details, selling rules, tax, loyalty, analytics tuning, branches, day close, health check. */
 'use strict';
+function installCard() {
+  const box = h('div', { class: 'card grid' });
+  const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  const draw = async () => {
+    clear(box);
+    let cached = false;
+    try { cached = !!(await caches.match('/style.html')); } catch {}
+    box.append(h('p', { class: 'muted small' }, t('Install AUZsStyle on this computer. It opens in its own window like any program and keeps selling when the internet is off. Bills made offline are sent by themselves when the internet is back.')));
+    box.append(banner(cached ? 'ok' : 'warn', cached ? 'check' : 'alert', cached ? t('Ready to work offline on this computer') : t('Open this page once with internet so it can get ready for offline use')));
+    if (standalone) box.append(h('div', { class: 'cap' }, t('You are using the installed app')));
+    else if (window.AUZ_INSTALL) box.append(h('button', { class: 'btn', type: 'button', onclick: async () => { const e = window.AUZ_INSTALL; e.prompt(); try { await e.userChoice; } catch {} window.AUZ_INSTALL = null; draw(); } }, t('Install on this computer')));
+    else box.append(h('div', { class: 'cap' }, t('In Chrome or Edge: open the menu (three dots) and choose Install AUZsStyle, or press the install icon at the right end of the address bar.')));
+  };
+  document.addEventListener('auz:installable', draw);
+  draw();
+  return box;
+}
 page('settings', {
   title: 'Settings', perm: 'sty_manage',
   async render(v) {
@@ -81,6 +98,7 @@ page('settings', {
       section(t('Branches and warehouses'), brHost, h('button', { class: 'btn', type: 'button', onclick: () => branchForm(null) }, icon('plus', 18), t('New branch'))),
       section(t('Day close'), h('div', { class: 'card grid' }, h('p', { class: 'muted small' }, t('Closing a day stops anyone adding or changing bills on or before that date.')), field(t('Closed up to'), dc),
         h('button', { class: 'btn', type: 'button', onclick: async () => { if (!dc.value) return; if (!await confirmBox(t('Close the books?'), t('Bills on or before') + ' ' + dc.value + ' ' + t('cannot be changed after this.'), t('Close day'), true)) return; S.ctx = await api('sty_day_close', { p_date: dc.value }); toast(t('Day closed')); } }, t('Close day')))),
+      section(t('Install on this computer'), installCard()),
       section(t('WhatsApp messages'), waCard()),
       section(t('Health check'), h('div', { class: 'card grid' }, h('p', { class: 'muted small' }, t('Checks that bill totals, stock and returns all agree.')), h('div', { id: 'hc' }),
         h('button', { class: 'btn', type: 'button', onclick: async () => { const r = await api('sty_integrity_check'); const el = $('#hc'); clear(el).append(r.ok ? banner('ok', 'check', t('Everything agrees')) : banner('warn', 'alert', r.problems.map((p) => p.check + ' (' + p.count + ')').join('; '))); } }, t('Run check')),

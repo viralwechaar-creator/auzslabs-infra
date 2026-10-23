@@ -15,4 +15,3 @@ begin
   end if;
   return place_order_core(tenant_slug, t, n, p, nt, its);
 end $$;
-grant execute on function place_order(text, text, text, text, text, jsonb) to anon, authenticated;

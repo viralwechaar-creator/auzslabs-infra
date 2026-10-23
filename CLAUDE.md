@@ -2828,3 +2828,6 @@ A normal business named "AUZslab" with slug **`auzslabhq`** (the slug `auzslab` 
 
 ### Plan limits, part 2 (db/258)
 `place_order` (classic and Kiln QR websites, takeaway) is wrapped (`place_order_core`): a business whose caps have `online_store:false` gets "Online ordering is not part of this business's plan. Please order at the counter." Blocked uploads already answer "Picture upload is not part of your plan. Ask AUZslab to upgrade." (toast text). Not done: a dedicated upgrade screen, POS-side hiding of the QR ordering page. Deploy: `bash tools/migrate.sh apply`.
+
+### AUZsStyle on a PC: install + offline (Oct 2026)
+AUZsStyle is an installable web app (manifest `manifest-style.json`, `sw.js` precaches the whole app, sales made offline queue in `style/data.js` and send when the internet returns). Settings -> **Install on this computer** (`installCard()` in `style/p-settings.js`, event captured in `style/shell.js`) shows an Install button in Chrome/Edge, whether offline files are ready, and plain steps otherwise. The client opens `https://<shop>.auzslab.in/style.html` once with internet, presses Install, then it opens like a program. A Windows .exe (Electron) is NOT built; add one only if the client needs it. Also fixed: db/258 had a `grant ... to anon` line that failed (roles do not exist here). Not tried on a real PC.

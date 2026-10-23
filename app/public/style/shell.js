@@ -60,6 +60,9 @@ function blocked(title, text) {
     h('button', { class: 'btn wide', onclick: async () => { await sb.auth.signOut(); location.reload(); } }, t('Sign out')))));
 }
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+// "Install on this computer": Chrome/Edge offer the install through this event; we keep it for the Settings button.
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); window.AUZ_INSTALL = e; document.dispatchEvent(new Event('auz:installable')); });
+window.addEventListener('appinstalled', () => { window.AUZ_INSTALL = null; document.dispatchEvent(new Event('auz:installable')); });
 
 async function boot() {
   try { setLang(localStorage['sty.lang'] || 'en'); } catch { setLang('en'); }
