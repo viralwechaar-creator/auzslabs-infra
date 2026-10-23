@@ -397,3 +397,8 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .tagone{display:grid;gap:4px;justify-items:start}.tagone .tagbox{box-shadow:0 0 0 1px var(--line,#e4e4e2);background:#fff}
 .tagone .tag-g,.tagone .tag-l{page-break-after:auto;break-after:auto}.tagone .tag-l{width:50mm;height:25mm;display:grid;justify-items:center;align-content:center;text-align:center;font-family:Arial,sans-serif;background:#fff}
 .tagone .q{font-size:11px;color:var(--mut,#888);padding-left:2px}
+
+/* 2 labels across one roll: page = 2 labels + gap, one row per page */
+.tags-2up .tag-l,.tags-2up .tag-g{width:50mm;height:25mm;page-break-after:auto;break-after:auto}
+.tags-2up.print-only{display:grid!important;grid-template-columns:50mm 50mm;grid-auto-rows:25mm;column-gap:var(--gap,3mm);width:calc(100mm + var(--gap,3mm));margin-left:var(--left,0);justify-content:start}
+.tags-2up.print-only>*{break-inside:avoid}
