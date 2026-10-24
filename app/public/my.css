@@ -80,3 +80,66 @@ h1{margin:0;font-weight:800;letter-spacing:-.045em;line-height:.95;font-size:cla
 .panel .done{margin-top:18px;width:100%;background:#fff;color:#000;font-weight:700}
 @media(prefers-reduced-motion:reduce){.ln,.pill,.tile{animation:none;transition:none}}
 @media(max-width:600px){.tiles{grid-template-columns:1fr 1fr;gap:8px}.tile{min-height:132px;padding:14px;border-radius:20px}.tile b{font-size:17px}.tile small{font-size:12px}.tile .plus{width:28px;height:28px;right:10px;top:10px;font-size:17px}.rig{order:-1}}
+/* ---- v4: areas, design step, live phone ---- */
+.steps{display:flex;flex-direction:column;gap:44px}
+.sn{color:#8a8a8a;margin:0 0 14px}
+.tiles{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+.tile{min-height:190px;overflow:hidden;justify-content:flex-end}
+.tile b{font-size:21px}
+.gl{position:absolute;left:18px;top:18px;width:64px;height:64px;display:block;transition:transform .5s cubic-bezier(.2,.8,.2,1)}
+.gl i{position:absolute;display:block;background:currentColor;opacity:.9}
+.tile:hover .gl{transform:rotate(-8deg) scale(1.08)}
+.tile.on .gl i{background:var(--my)}
+.gl-bars i{bottom:0;width:11px;border-radius:3px}.gl-bars i:nth-child(1){left:0;height:30%}.gl-bars i:nth-child(2){left:16px;height:60%}.gl-bars i:nth-child(3){left:32px;height:45%}.gl-bars i:nth-child(4){left:48px;height:90%}
+.gl-ring i:nth-child(1){inset:0;border-radius:50%;background:none;border:7px solid currentColor}.gl-ring i:nth-child(2){left:24px;top:24px;width:16px;height:16px;border-radius:50%}.gl-ring i:nth-child(n+3){display:none}
+.gl-tri i:nth-child(1){left:0;top:6px;width:0;height:0;background:none;border-left:32px solid transparent;border-right:32px solid transparent;border-bottom:54px solid currentColor}.gl-tri i:nth-child(n+2){display:none}
+.gl-dots i{width:20px;height:20px;border-radius:50%}.gl-dots i:nth-child(1){left:0;top:0}.gl-dots i:nth-child(2){left:40px;top:0}.gl-dots i:nth-child(3){left:0;top:40px}.gl-dots i:nth-child(4){left:40px;top:40px}
+.gl-sq i{width:28px;height:28px;border-radius:6px}.gl-sq i:nth-child(1){left:0;top:0}.gl-sq i:nth-child(2){left:34px;top:0;border-radius:50%}.gl-sq i:nth-child(3){left:0;top:34px;border-radius:50%}.gl-sq i:nth-child(4){left:34px;top:34px}
+.gl-orbit i:nth-child(1){inset:0;border-radius:50%;background:none;border:2px solid currentColor}.gl-orbit i:nth-child(2){inset:14px;border-radius:50%;background:none;border:2px dashed currentColor}.gl-orbit i:nth-child(3){left:27px;top:27px;width:10px;height:10px;border-radius:50%}.gl-orbit i:nth-child(4){display:none}
+.opt{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.opt>.mono{color:#8a8a8a}
+.opt .seg button.on{background:#fff;color:#000}
+/* the live phone */
+.phone{--my:#800020;border:2px solid rgba(255,255,255,.85);border-radius:30px;overflow:hidden;background:#0b0b0b;color:#fff;transition:background .3s,color .3s}
+.phone[data-theme=light]{background:#f5f4f2;color:#111;border-color:#111}
+.pbar{display:flex;gap:6px;align-items:center;padding:12px 16px;border-bottom:1px solid rgba(128,128,128,.3)}
+.pbar i{width:9px;height:9px;border-radius:50%;background:rgba(128,128,128,.5)}
+.pbar span{margin-left:auto;opacity:.6}
+.papp{display:flex;min-height:340px;flex-direction:column}
+.pmain{flex:1;padding:14px;display:flex;flex-direction:column;gap:12px}
+.phead{display:flex;justify-content:space-between;align-items:baseline}
+.phead small{opacity:.55}
+.pcards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pc{padding:14px;border-radius:18px;display:flex;flex-direction:column;gap:4px;min-height:96px;animation:pop .45s cubic-bezier(.2,.9,.3,1.3) both;background:rgba(128,128,128,.14)}
+.pc small{opacity:.6;font-size:11px}
+.pc:first-child{grid-column:1/-1;background:var(--my);color:#fff}
+.phone[data-card=line] .pc{background:none;border:1.5px solid rgba(128,128,128,.5)}
+.phone[data-card=line] .pc:first-child{border-color:var(--my);background:none;color:inherit}
+.phone[data-card=solid] .pc{background:rgba(128,128,128,.3);border-radius:8px}
+.pbars{display:flex;align-items:flex-end;gap:4px;height:34px;margin-top:auto}
+.pbars i{flex:1;background:currentColor;opacity:.4;border-radius:2px}
+.pnav{display:flex;gap:6px;padding:10px;border-top:1px solid rgba(128,128,128,.3);overflow:hidden}
+.pn{font-size:11px;padding:6px 10px;border-radius:999px;opacity:.6;white-space:nowrap}
+.pn.on{background:var(--my);color:#fff;opacity:1}
+.phone[data-nav=bottom] .papp{flex-direction:column-reverse}
+.phone[data-nav=top] .papp{flex-direction:column}
+.phone[data-nav=top] .pnav{border-top:0;border-bottom:1px solid rgba(128,128,128,.3)}
+.phone[data-nav=side] .papp{flex-direction:row}
+.phone[data-nav=side] .pnav{flex-direction:column;border-top:0;border-right:1px solid rgba(128,128,128,.3);width:92px}
+/* the workspace follows the same design */
+#work[data-theme=light] .bar{background:#f5f4f2;color:#111;border-color:rgba(0,0,0,.15)}
+#work[data-theme=light] .chip{color:#111;border-color:rgba(0,0,0,.3)}
+#work[data-theme=light] .chip.on{background:var(--my);color:#fff;border-color:var(--my)}
+#work[data-theme=light] .gear{color:#444}
+#work .chip.on{background:var(--my);border-color:var(--my);color:#fff}
+#work[data-nav=bottom]{flex-direction:column-reverse}
+#work[data-nav=bottom] .bar{border-bottom:0;border-top:1px solid rgba(128,128,128,.3);padding-bottom:calc(10px + env(safe-area-inset-bottom))}
+#work[data-nav=bottom] .brand{display:none}
+#work[data-nav=bottom] .trial{order:3}
+#work[data-nav=side]{flex-direction:row;flex-wrap:wrap}
+#work[data-nav=side] .bar{flex-direction:column;align-items:stretch;width:150px;border-bottom:0;border-right:1px solid rgba(128,128,128,.3);height:100vh;height:100dvh;position:sticky;top:0}
+#work[data-nav=side] .chips{flex-direction:column;overflow-y:auto}
+#work[data-nav=side] .chip{border-radius:12px;text-align:left}
+#work[data-nav=side] .trial{width:calc(100% - 150px);margin-left:150px;position:absolute;top:0;right:0;z-index:2}
+#work[data-nav=side] .stage{height:100vh;height:100dvh;flex:1 1 0}
+@media(max-width:600px){#work[data-nav=side] .bar{width:84px}#work[data-nav=side] .brand{display:none}#work[data-nav=side] .trial{width:calc(100% - 84px);margin-left:84px}}

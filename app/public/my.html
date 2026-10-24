@@ -14,28 +14,30 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/my.css?v=3">
+<link rel="stylesheet" href="/my.css?v=5">
 </head>
 <body>
 <div class="grain" aria-hidden="true"></div>
 
-<!-- 1. the builder: pick blocks, watch your software assemble -->
+<!-- 1. the builder: choose what the business does, design how it looks, start -->
 <section id="build" class="build" hidden>
   <header class="top"><img class="word" src="/logo.png" alt="AUZslab"><span class="mono">BUILD YOUR OWN</span></header>
   <div class="hero">
-    <p class="mono eyebrow">01 / PICK</p>
-    <h1><span class="ln">Pick the blocks.</span><span class="ln">Get your software.</span><span class="ln dim">Try it 3 days free.</span></h1>
+    <p class="mono eyebrow">YOUR BUSINESS, YOUR APP</p>
+    <h1><span class="ln">Say what you do.</span><span class="ln">We build the app.</span><span class="ln dim">You shape the look.</span></h1>
   </div>
   <div class="cols">
-    <div class="tiles" id="tiles"><p class="mono">Loading…</p></div>
+    <div class="steps">
+      <section class="step"><p class="mono sn">01 / WHAT DOES YOUR BUSINESS DO</p><div class="tiles" id="tiles"><p class="mono">Loading...</p></div></section>
+      <section class="step" id="designStep"><p class="mono sn">02 / HOW SHOULD IT FEEL</p><div id="design"></div></section>
+      <section class="step"><p class="mono sn">03 / START</p><div class="go" id="go"></div>
+      <p class="mono fine">Need something we do not have, like hourly rentals? <a href="https://auzslab.in/contact.html">Tell us</a>.</p></section>
+    </div>
     <aside class="rig">
-      <div class="device">
-        <div class="dbar"><i></i><i></i><i></i><span class="mono" id="devname">YOUR SOFTWARE</span></div>
-        <div class="dbody" id="stack"><p class="empty mono">Nothing yet.<br>Tap a block.</p></div>
-        <div class="dfoot"><span class="mono" id="count">0 BLOCKS</span></div>
+      <div class="phone" id="phone" data-nav="bottom" data-card="soft" data-theme="dark">
+        <div class="pbar"><i></i><i></i><i></i><span class="mono" id="devname">YOUR APP</span></div>
+        <div class="papp" id="papp"><nav class="pnav" id="pnav"></nav><div class="pmain"><div class="phead"><b>Your business</b><small class="mono" id="count">0 AREAS</small></div><div class="pcards" id="pcards"><p class="empty mono">Pick what you do.<br>Your app appears here.</p></div></div></div>
       </div>
-      <div class="go" id="go"></div>
-      <p class="mono fine">Need something that is not here, like hourly rentals? <a href="https://auzslab.in/contact.html">Tell us</a>.</p>
     </aside>
   </div>
 </section>
@@ -65,6 +67,6 @@
 <script src="/sb-client.js?v=7"></script>
 <script src="/ds/twofa.js?v=1"></script>
 <script src="/ds/appshell.js?v=4"></script>
-<script src="/my.js?v=2"></script>
+<script src="/my.js?v=3"></script>
 </body>
 </html>
