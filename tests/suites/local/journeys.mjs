@@ -92,8 +92,8 @@ export default async function run({ browser, stack }) {
     await p.check('#pickAdd input[data-k=addon_website]', { force: true });
     await p.fill('#rqName', 'QA Owner'); await p.fill('#rqPhone', '9811100011'); await p.fill('#rqBiz', 'QA Business ' + (Date.now() % 10000)); await p.fill('#rqReq', 'Billing and stock for two outlets');
     await p.click('#rqSend'); await p.waitForSelector('#sent', { state: 'visible', timeout: 10000 });
-    const r = await q("select count(*)::int n, min(status) st, (array_agg(products))[1] pr from client_orders where business_name like 'QA Business%'");
-    assert(r[0].n >= 1 && r[0].st === 'requested' && ['pos', 'mobile', 'addon_website'].every((k) => r[0].pr.includes(k)), 'no request stored: ' + JSON.stringify(r[0]));
+    const r = await q("select count(*)::int n, min(status) st, (select products from client_orders where business_name like 'QA Business%' order by created_at desc limit 1) pr from client_orders where business_name like 'QA Business%'");
+    assert(r[0].n >= 1 && r[0].st === 'requested' && r[0].pr && ['pos', 'mobile', 'addon_website'].every((k) => r[0].pr.includes(k)), 'no request stored: ' + JSON.stringify(r[0]));
     assert(/pay\.html\?t=[a-f0-9]{32}/.test(await p.locator('#trackLink').getAttribute('href')), 'no track link');
     await s.shot(p, 'cart-request-sent'); assert(!e5.some((x) => /JS error/.test(x)), e5.join(' | ')); await c5.close();
   }, 'critical');
