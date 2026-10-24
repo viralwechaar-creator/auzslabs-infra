@@ -1,0 +1,46 @@
+/* Contrast and depth layer: tinted page, white raised cards, dark bands, designed picture frames. */
+:root{--cbg:#ebe9e5;--cink:#0b0b0b;--cwine:#800020}
+html body{background:var(--cbg)}
+.ed h1,.ed h2{font-weight:600;color:var(--cink);letter-spacing:-.035em}
+.ed p,.ed .fb{color:#3d3a37}
+/* picture frames that have no picture yet: dark, with a soft wine glow and fine grid */
+.ph:not(.has){background:radial-gradient(120% 80% at 85% 10%,rgba(128,0,32,.55),transparent 60%),linear-gradient(160deg,#1b1b1b,#050505)!important;box-shadow:0 18px 40px rgba(0,0,0,.18)}
+.ph:not(.has)::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.07) 1px,transparent 1px);background-size:36px 36px;-webkit-mask-image:linear-gradient(180deg,#000,transparent 85%);mask-image:linear-gradient(180deg,#000,transparent 85%)}
+.ph:not(.has)::after{content:"";position:absolute;left:50%;top:50%;width:46%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;border:1px solid rgba(255,255,255,.28);box-shadow:0 0 0 22px rgba(255,255,255,.05),0 0 0 54px rgba(255,255,255,.035)}
+.ed-two figure:nth-child(2) .ph:not(.has){background:radial-gradient(110% 80% at 15% 90%,rgba(255,255,255,.14),transparent 55%),linear-gradient(160deg,#a10029,#4a0014)!important}
+.ph.has{box-shadow:0 18px 40px rgba(0,0,0,.18)}
+/* raised rows */
+.fold,.pe{background:#fff;border:1px solid rgba(0,0,0,.08)!important;border-radius:18px!important;box-shadow:0 1px 2px rgba(0,0,0,.04),0 10px 26px rgba(0,0,0,.06);margin-bottom:10px}
+.fold summary,.fold>summary{padding:18px 20px!important}
+.fold .fb{padding:0 20px 18px!important}
+.fold summary b{font-weight:600;color:var(--cink)}
+.folds{border:0!important}
+.pe{padding:20px}
+/* closing call to action = black band */
+.ed-cta{background:var(--cink);color:#fff;border-radius:24px;padding:30px 28px;margin-top:22px;box-shadow:0 18px 40px rgba(0,0,0,.22)}
+.ed-cta span{color:#fff;font-weight:600}
+.ed-cta .btn{background:#fff!important;color:#000!important;border-color:#fff!important}
+/* buttons and links gain weight */
+.btn,.u-pill{font-weight:600}
+.btn:not(.btn-ghost):not(.ed-cta .btn){background:var(--cink);color:#fff}
+.ed-side a{background:var(--cink);color:#fff!important;border-color:var(--cink)!important}
+/* tool and legal cards */
+.tl-card,.card{background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04),0 10px 26px rgba(0,0,0,.06)}
+html .ed-hero h1,html main h1{font-weight:600!important;color:var(--cink)}
+/* pages still written with the older section classes (careers, resources, sitemap...): give them room and structure */
+main.content .stack-panel{padding:48px 0 28px;background:none}
+main.content .stack-panel.alt{padding-top:20px}
+main.content .stack-panel .wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+main.content .stack-panel .label{font:600 10px/1 "Space Mono",monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--cwine);margin-bottom:12px}
+main.content .stack-panel .h-hero{font-size:clamp(34px,6.5vw,72px);line-height:1.02;margin:0 0 16px}
+main.content .stack-panel .lede{font-size:clamp(15px,1.6vw,19px);line-height:1.6;max-width:760px;color:#3d3a37}
+main.content .stack-panel .h-2{font-size:22px;font-weight:600;margin:0 0 6px;color:var(--cink)}
+main.content .stack-panel .p{font-size:15px;line-height:1.7;margin:12px 0 0;color:#3d3a37;display:block;-webkit-line-clamp:unset;overflow:visible}
+main.content .stack-panel .card{background:#fff;border-radius:20px;padding:24px;border:1px solid rgba(0,0,0,.08)}
+main.content .stack-panel .grid-2{display:grid;gap:22px}
+@media(min-width:900px){main.content .stack-panel .grid-2{grid-template-columns:1fr 1fr;gap:48px}}
+main.content .stack-panel .form-submit{display:flex;justify-content:center;margin-top:16px}
+main.content .stack-panel input,main.content .stack-panel select,main.content .stack-panel textarea{width:100%;font-size:16px;padding:12px 14px;border-radius:12px;border:1px solid rgba(0,0,0,.18);background:#fff;margin:4px 0 12px}
+html main.content .stack-panel .h-hero{font-size:clamp(34px,6.5vw,72px)}
+html main.content .stack-panel .lede{display:block;-webkit-line-clamp:unset;overflow:visible}
+html main.content .stack-panel .card{background:#fff!important;padding:24px!important;border:1px solid rgba(0,0,0,.08)!important;border-radius:20px!important;box-shadow:0 10px 26px rgba(0,0,0,.06)}
