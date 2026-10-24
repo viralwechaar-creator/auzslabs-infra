@@ -513,6 +513,14 @@ body.admin-shell .bn-in input{border:none!important;background:none!important;bo
 @media (min-width:600px){#payForm{grid-template-columns:1fr 1fr}#payForm>.label,#payForm>.err,#payForm>button,#payForm>label:nth-of-type(5),#payForm>label:nth-of-type(6){grid-column:1/-1}}
 #payForm .lbl{margin-top:0!important}
 #payForm>button{margin-top:4px!important;justify-self:start}
+.web-grp{margin:0 0 18px}.web-h{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;margin:0 0 8px;color:var(--ink-faint)}
+.web-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.web-f{display:grid;gap:4px;align-content:start}.web-f>label{font-size:11px;color:var(--ink-dim)}
+.web-f input,.web-f textarea{width:100%}
+.web-prev{aspect-ratio:3/2;background:#e1e1df;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--ink-faint)}
+.web-prev img{width:100%;height:100%;object-fit:cover}
+.web-act{display:flex;gap:8px;flex-wrap:wrap}.web-act .btn{font-size:11px;padding:6px 12px}
+.web-save{position:sticky;bottom:70px;display:flex;gap:12px;align-items:center;padding:10px 0}
 </style>
 <style>
 .ord-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:8px}
@@ -983,6 +991,7 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <button class="a-side-btn" data-section="systemStats"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="7" rx="1.6"/><rect x="4" y="13" width="16" height="7" rx="1.6"/><circle cx="8" cy="7.5" r=".9" fill="currentColor" stroke="none"/><circle cx="8" cy="16.5" r=".9" fill="currentColor" stroke="none"/></svg>System resources</button>
         <button class="a-side-btn" data-section="auditLog"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>Audit log</button>
         <button class="a-side-btn" data-section="privacyReq"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3Z"/><path d="M9.5 12l2 2 3.5-4"/></svg>Privacy requests<span class="a-row-badge" id="privReqBadge" style="display:none"></span></button>
+        <button class="a-side-btn" data-section="website"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 14h8"/></svg>Website</button>
         <button class="a-side-btn" data-section="whatsapp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20l1.3-4.2A8 8 0 1 1 8.4 18.8L4 20Z"/><path d="M9 9.5c.3 2.2 2.3 4.2 4.5 4.5l1.2-1.2-1.8-1-.8.6c-.8-.4-1.4-1-1.8-1.8l.6-.8-1-1.8L9 9.5Z"/></svg>WhatsApp</button>
 
         <div class="a-side-group-label">Tools</div>
@@ -1203,6 +1212,12 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <div id="teamSetupList" style="margin-top:14px">Loading&hellip;</div>
       </section>
 
+      <section class="a-page" id="websiteSection" data-title="Website" data-parent="more">
+        <p class="p" style="margin:0 0 10px">Change the words and pictures on auzslab.in. Leave a box empty to use the original. Pictures are shrunk automatically.</p>
+        <div id="webBody">Loading&hellip;</div>
+      </section>
+
+
       <section class="a-page" id="tasksSection" data-title="Tasks" data-parent="more">
         <div class="label">General task list</div>
         <h2 class="h-2">Tasks</h2>
@@ -1344,6 +1359,11 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
           <button class="a-nav-row" data-section="team">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14.2a5 5 0 0 1 5 5.3"/></svg>
             <span class="grow">Team</span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <button class="a-nav-row" data-section="website">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 14h8"/></svg>
+            <span class="grow">Website text and pictures</span>
             <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
           </button>
           <button class="a-nav-row" data-section="tasks">
@@ -1632,7 +1652,7 @@ function resetMainScroll() {
 // signing in used to fire about 11 database requests together; now it is 2.
 const SECTION_LOADERS = {
   leads: () => { loadLeads(); refreshOrdersBadge(); }, orders: () => loadOrders(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(),
-  users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(), privacyReq: () => loadPrivacyReq(), whatsapp: () => loadWhatsApp(),
+  users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(), privacyReq: () => loadPrivacyReq(), whatsapp: () => loadWhatsApp(), website: () => loadWebsite(),
   team: () => { loadTeam(); loadSetups(); loadTeamApps(); }, tasks: () => loadTasks(), postStudio: () => { const f = document.getElementById('postStudioFrame'); if (f && !f.getAttribute('src')) f.src = f.dataset.src; }, salesWork: () => loadSalesWork(), clientPay: () => { loadClientPay(); loadBills(); },
 };
 const sectionLoadedAt = {};
@@ -2750,6 +2770,62 @@ function taskCard(t) {
       ${t.status === 'open' ? '<button data-done>Mark done</button><button data-cancel class="req-danger">Cancel</button>' : ''}
     </div>
   </div>`;
+}
+/* ---- Website editor: words and pictures of the public site (site_content) ---- */
+const WEB_FIELDS = [
+  ['Home', [['home.hero','Top picture','img'],['home.h','Headline','text'],['home.sub','Short line','long'],['home.l1','List 1 title','text'],['home.l1s','List 1 note','text'],['home.l2','List 2 title','text'],['home.l2s','List 2 note','text'],['home.l3','List 3 title','text'],['home.l3s','List 3 note','text'],['home.a','Picture A','img'],['home.ca','Caption A','text'],['home.b','Picture B','img'],['home.cb','Caption B','text']]],
+  ['Products page', [['products.h','Headline','text'],['products.sub','Short line','long'],['products.pos','AUZsPOS picture','img'],['products.crm','CRM picture','img'],['products.billing','Billing picture','img'],['products.inventory','Inventory picture','img'],['products.qr','QR ordering picture','img'],['products.payroll','AUZsPay picture','img'],['products.salon','Salon picture','img'],['products.accounting','AUZsLedger picture','img'],['products.mobile','AUZsMob picture','img'],['products.scan','AUZsScan picture','img']]],
+  ['Why AUZslab', [['why.h','Headline','text'],['why.sub','Short line','long']]],
+  ['Cafes & restaurants page', [['biz.cafes','Top picture','img'],['biz.cafes.h','Headline','text'],['biz.cafes.sub','Short line','long']]],
+  ['Salons page', [['biz.salons','Top picture','img'],['biz.salons.h','Headline','text'],['biz.salons.sub','Short line','long']]],
+  ['Retail & bookstores page', [['biz.retail','Top picture','img'],['biz.retail.h','Headline','text'],['biz.retail.sub','Short line','long']]],
+  ['Clothing & apparel page', [['biz.clothing','Top picture','img'],['biz.clothing.h','Headline','text'],['biz.clothing.sub','Short line','long']]],
+  ['Mobile shops page', [['biz.mobile-repair','Top picture','img'],['biz.mobile-repair.h','Headline','text'],['biz.mobile-repair.sub','Short line','long']]]
+];
+let webCache = {};
+function webImgUrl(v) { return /^\/uploads\//.test(v) ? CFG.url + v : v; }
+async function loadWebsite() {
+  const el = document.getElementById('webBody');
+  const { data, error } = await sb.rpc('public_site_content', {});
+  if (error) { el.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  webCache = data || {};
+  el.innerHTML = WEB_FIELDS.map(([grp, fields]) => `<div class="web-grp"><div class="web-h">${esc(grp)}</div><div class="web-fields">` + fields.map(([k, label, type]) => {
+    const v = webCache[k] || '';
+    if (type === 'img') return `<div class="web-f web-img"><label>${esc(label)}</label><div class="web-prev" data-prev="${k}">${v ? `<img src="${esc(webImgUrl(v))}" alt="">` : '<span>No picture</span>'}</div><div class="web-act"><label class="btn btn-ghost web-up">Choose picture<input type="file" accept="image/*" hidden data-k="${k}"></label><button class="btn btn-ghost" data-clear="${k}">Remove</button></div></div>`;
+    return `<div class="web-f"><label>${esc(label)}</label>` + (type === 'long' ? `<textarea rows="3" data-k="${k}">${esc(v)}</textarea>` : `<input type="text" data-k="${k}" value="${esc(v)}">`) + `</div>`;
+  }).join('') + `</div></div>`).join('') + '<div class="web-save"><button class="btn btn-primary" id="webSave">Save changes</button><span id="webMsg" class="p"></span></div>';
+  el.querySelectorAll('input[type=file]').forEach((inp) => inp.addEventListener('change', () => webUpload(inp)));
+  el.querySelectorAll('[data-clear]').forEach((b) => b.addEventListener('click', () => { const k = b.dataset.clear; webCache[k] = ''; el.querySelector(`[data-prev="${k}"]`).innerHTML = '<span>No picture</span>'; }));
+  document.getElementById('webSave').addEventListener('click', webSave);
+}
+async function webShrink(file) {
+  const bmp = await createImageBitmap(file);
+  const w = Math.min(1600, bmp.width), h = Math.round(bmp.height * w / bmp.width);
+  const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(bmp, 0, 0, w, h);
+  return await new Promise((r) => c.toBlob((b) => r(b), 'image/jpeg', 0.82));
+}
+async function webUpload(inp) {
+  const k = inp.dataset.k, f = inp.files[0]; if (!f) return;
+  const msg = document.getElementById('webMsg'); msg.textContent = 'Uploading\u2026';
+  try {
+    const blob = await webShrink(f);
+    const { data: { session } } = await sb.auth.getSession();
+    const r = await fetch(CFG.url + '/storage/platform/site', { method: 'POST', headers: { Authorization: 'Bearer ' + session.access_token, 'Content-Type': 'application/octet-stream' }, body: blob });
+    const j = await r.json(); if (!r.ok) throw new Error(j.error || 'upload failed');
+    webCache[k] = j.path;
+    document.querySelector(`[data-prev="${k}"]`).innerHTML = `<img src="${esc(webImgUrl(j.path))}" alt="">`;
+    msg.textContent = 'Picture ready. Press Save changes.';
+  } catch (e) { msg.textContent = 'Upload failed: ' + e.message; }
+}
+async function webSave() {
+  const body = {};
+  WEB_FIELDS.forEach(([, fields]) => fields.forEach(([k, , type]) => {
+    if (type === 'img') body[k] = webCache[k] || '';
+    else { const i = document.querySelector(`[data-k="${k}"]`); body[k] = i ? i.value.trim() : ''; }
+  }));
+  const msg = document.getElementById('webMsg');
+  const { error } = await sb.rpc('admin_site_content_save', { p: body });
+  msg.textContent = error ? 'Could not save: ' + error.message : 'Saved. The site shows it within a minute.';
 }
 async function loadTasks() {
   const listEl = document.getElementById('tasksList');
