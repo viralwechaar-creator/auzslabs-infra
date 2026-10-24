@@ -143,3 +143,6 @@ h1{margin:0;font-weight:800;letter-spacing:-.045em;line-height:.95;font-size:cla
 #work[data-nav=side] .trial{width:calc(100% - 150px);margin-left:150px;position:absolute;top:0;right:0;z-index:2}
 #work[data-nav=side] .stage{height:100vh;height:100dvh;flex:1 1 0}
 @media(max-width:600px){#work[data-nav=side] .bar{width:84px}#work[data-nav=side] .brand{display:none}#work[data-nav=side] .trial{width:calc(100% - 84px);margin-left:84px}}
+
+#tiles .area{grid-column:1/-1;margin:14px 0 0;font-size:11px;letter-spacing:.14em;color:#8a8a8a;font-weight:500}
+#tiles .tile{min-height:104px}
