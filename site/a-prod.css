@@ -53,3 +53,7 @@ html body.a-prod main.content .pc h2{font-size:clamp(24px,4vw,52px)!important;fo
 .pc-art .mk-ph{display:none}
 html body.a-prod .pr-list{grid-template-columns:1fr!important;display:grid;gap:14px}
 html body.a-prod .pr-list .pc{width:auto;margin:0}
+html body.a-prod main.content .ap-big{font-size:clamp(18px,2.8vw,38px)!important}
+.ap-num{font-size:clamp(60px,9vw,120px)!important;top:10px!important;opacity:.9}
+html body.a-prod main.content .ap-h{font-size:clamp(30px,5.2vw,68px)!important;max-width:9em!important}
+.ap-slide.light{overflow:visible}

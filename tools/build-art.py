@@ -26,9 +26,9 @@ def put(page, body, cls, css=None, js=True, keep_main=False):
 
 def home():
     tiles = lambda items: ''.join('<a class="ah-t t%d a-rise" href="%s"><i>%s</i><b>%s</b><span>%s</span><em></em></a>' % (i % 4, u, n, t, s) for i, (n, t, s, u) in enumerate(items))
-    run = [('01', 'AUZsPOS', 'Counter, kitchen, tables', 'products.html#slab-pos'), ('02', 'AUZsPay', 'Clock-ins to payslips', 'products.html#slab-payroll'), ('03', 'AUZsLedger', 'Books that balance', 'products.html#slab-accounting'), ('04', 'AUZsScan', 'Scan, bill, share', 'products.html#slab-scan')]
-    grow = [('05', 'QR ordering', 'Guests order at the table', 'products.html#slab-qr'), ('06', 'AUZsMob', 'Phones, repairs, stock', 'products.html#slab-mobile'), ('07', 'Salon', 'Bookings and clients', 'products.html#slab-salon'), ('08', 'Websites', 'Your own online store', 'web-design.html')]
-    idx = ''.join('<li><a href="%s"><i>%s</i>%s</a></li>' % (u, n, t) for n, t, u in [('1.0', 'Sell', 'products.html#slab-pos'), ('2.0', 'Account', 'products.html#slab-accounting'), ('3.0', 'Pay people', 'products.html#slab-payroll'), ('4.0', 'Scan', 'products.html#slab-scan'), ('5.0', 'Sell online', 'web-design.html')])
+    run = [('01', 'Custom website', 'Looks like your brand, sells for you', 'products.html#slab-web'), ('02', 'POS, billing & CRM', 'Counter, tables, customers', 'products.html#slab-pos'), ('03', 'Website CRM', 'Every enquiry becomes a customer', 'products.html#slab-crm'), ('04', 'Automation', 'WhatsApp bills and reminders', 'products.html#slab-auto')]
+    grow = [('05', 'Payroll', 'Clock-ins to payslips', 'products.html#slab-payroll'), ('06', 'Accounting', 'Books that balance', 'products.html#slab-acct'), ('07', 'Your industry', 'Phones, clothing, salons', 'products.html#slab-ind'), ('08', 'Hardware & more', 'Printers, scanners, custom', 'products.html#slab-hw')]
+    idx = ''.join('<li><a href="%s"><i>%s</i>%s</a></li>' % (u, n, t) for n, t, u in [('1.0', 'Custom website', 'products.html#slab-web'), ('2.0', 'POS, billing, CRM', 'products.html#slab-pos'), ('3.0', 'Automation', 'products.html#slab-auto'), ('4.0', 'Payroll', 'products.html#slab-payroll'), ('5.0', 'Accounting', 'products.html#slab-acct')])
     return '''
 <div class="ah">
 <section class="ah-hero">
@@ -38,7 +38,7 @@ def home():
 <p class="ah-sub" data-ed="home.sub">Rigid software ends here.</p>
 </section>
 <section class="ah-grey">
-<div class="ah-head"><span>Selected systems</span><span>Pick today &middot; add later</span><span>2026</span></div>
+<div class="ah-head"><span>Selected services</span><span>Pick today &middot; add later</span><span>2026</span></div>
 <h2 class="ah-big a-slide" style="--from:14%%;--to:-4%%">Run</h2>
 <div class="ah-row">%s</div>
 <h2 class="ah-big a-slide" style="--from:-14%%;--to:4%%">Grow</h2>
@@ -50,7 +50,7 @@ def home():
 <div class="ah-pic a-rise"><div class="ph r45" data-ed-img="home.a"></div></div>
 <dl>
 <div class="a-rise"><dt>Overview</dt><dd data-ed="home.l2s">Every screen, bill, rule and field bends to how you work. One login, one ledger, and every part is yours to shape.</dd></div>
-<div class="a-rise"><dt>Systems</dt><dd><a href="products.html#slab-pos">Sell</a><a href="products.html#slab-accounting">Account</a><a href="products.html#slab-payroll">Pay</a><a href="products.html#slab-scan">Scan</a><a href="products.html#slab-mobile">Mobile</a></dd></div>
+<div class="a-rise"><dt>Services</dt><dd><a href="products.html#slab-web">Website</a><a href="products.html#slab-pos">POS &amp; CRM</a><a href="products.html#slab-auto">Automation</a><a href="products.html#slab-payroll">Payroll</a><a href="products.html#slab-acct">Accounting</a></dd></div>
 <div class="a-rise"><dt>Businesses</dt><dd><a href="business-cafes.html">Cafes</a><a href="business-salons.html">Salons</a><a href="business-retail.html">Retail</a><a href="business-clothing.html">Clothing</a><a href="business-mobile-repair.html">Mobile shops</a></dd></div>
 <div class="a-rise"><dt>See it run</dt><dd><a href="live-demo.html">Live demo</a><a href="download-apps.html">Apps</a><a href="studio.html">Studio</a></dd></div>
 </dl></div>
@@ -108,22 +108,57 @@ def _():
 
 @reg('products')
 def _():
-    h = rd('products')
-    wrap = re.search(r'<div class="pr-wrap">.*', h[h.index('<main'):h.index('<div class="ftwrap"')], re.S).group(0)
+    def sk(title, rows, pill):
+        r = ''.join('<div class="sk-r"><span>%s</span><i%s style="--w:%d%%"></i></div>' % (a, ' class="hi"' if hi else '', w) for a, w, hi in rows)
+        return '<div class="sk"><div class="sk-bar"><i></i><i></i><i></i></div><div class="sk-t">%s</div>%s<div class="sk-tot"><span>%s</span><span class="sk-pill on">Live</span></div></div>' % (title, r, pill)
+    S = [
+     ('web', 'Custom website & online store', 'A website that looks like your brand and sells for you, designed with you and connected to your business.',
+      ['Designed around your brand, not a template', 'Online store with cart, checkout and order tracking', 'QR table-ordering and takeaway pages for restaurants', 'You edit the words and pictures yourself', 'Orders land straight in your POS and CRM'],
+      ('addon_website', 'Request a website'), ('web-design.html', 'See the website work'), sk('Your website', [('Home page', 80, 0), ('Online store', 62, 1), ('Order tracking', 45, 0)], 'Orders reach your till')),
+     ('pos', 'POS, billing & CRM', 'Sell at the counter and the table, bill with GST, and know every customer, all in one place.',
+      ['Counter, tables, kitchen tickets and kitchen display', 'GST invoices, split bills, due and credit tracking', 'Customer profiles, loyalty points, coupons and feedback', 'Stock levels, vendors, purchases and reorder alerts', 'Custom staff roles and permissions'],
+      ('pos', 'Request POS, billing & CRM'), ('live-demo.html', 'Try the demo'), sk('Table 4 · open', [('Cappuccino', 40, 0), ('Club sandwich', 70, 0), ('Cold coffee', 52, 1)], 'Bill ready')),
+     ('crm', 'Website-integrated CRM', 'Every enquiry, order and booking from your website becomes a customer record you can follow up.',
+      ['Website orders and bookings create customer profiles', 'Segments: new, regular, at risk, VIP', 'Follow-ups by WhatsApp in one tap', 'Full visit and spend history per customer', 'One customer list across counter, website and QR'],
+      ('pos', 'Request the CRM'), ('contact.html', 'Talk to us'), sk('Customers', [('Website order · new', 55, 0), ('Regular guest', 75, 0), ('Not seen in 60 days', 35, 1)], 'Follow-up sent')),
+     ('auto', 'Business automation', 'The routine messages and chasing that eat your day, done automatically.',
+      ['Bill links on WhatsApp the moment a sale completes', 'Order ready, booking and payment reminders', 'Birthday, win-back and renewal messages', 'Daily summary of sales and dues to the owner', 'Low-stock and overdue alerts'],
+      ('addon_whatsapp', 'Request automation'), ('contact.html', 'Talk to us'), sk('Today', [('Bill sent on WhatsApp', 80, 0), ('Reminder sent', 60, 1), ('Daily summary ready', 50, 0)], 'No one had to remember')),
+     ('payroll', 'Payroll & attendance', 'Clock-ins from a phone to payslips, with leave, advances and statutory deductions handled.',
+      ['Clock in and out from a phone, with location', 'Leave, loans, advances and expense claims', 'PF, ESI, professional tax and TDS rules kept current', 'Payslips and bank transfer files', 'Staff see their own time and pay'],
+      ('payroll', 'Request payroll'), ('live-demo.html', 'Try the demo'), sk('This week · hours', [('Mon', 70, 0), ('Tue', 82, 1), ('Wed', 64, 0)], 'Run payroll')),
+     ('acct', 'Accounting & finance', 'Real double-entry books for the business, and a simple money app for owners and partners.',
+      ['Sales, purchases, GST, banking and reports that balance', 'Scan a bill, post it, and share the invoice', 'Owner capital, loans, dues and cash in one view', 'Budgets, approvals and a full audit trail', 'Works with your POS and payroll'],
+      ('accounting', 'Request accounting'), ('live-demo.html', 'Try the demo'), sk('Ledger', [('Debit', 66, 0), ('Credit', 66, 1), ('Trial balance', 50, 0)], 'Books balance')),
+     ('ind', 'Systems for your kind of business', 'Ready-made setups for shops, salons, phone stores and clothing and footwear retailers.',
+      ['Mobile shops: IMEI stock, repairs and staff profit', 'Clothing and footwear: sizes, colours, barcode tags, online store', 'Salons: bookings, billing, clients and staff logins', 'Scan to bill: barcode to GST invoice in seconds', 'Each one still shaped to how you work'],
+      ('mobile', 'Request a setup'), ('contact.html', 'Tell us your business'), sk('Your business', [('Phones and repairs', 70, 0), ('Sizes and colours', 60, 1), ('Bookings', 45, 0)], 'Set up with you')),
+     ('hw', 'Hardware & integrations', 'Printers, scanners and the tools you already use, connected so nothing is typed twice.',
+      ['Receipt and label printers, barcode scanners', 'Tag and barcode printing for stock', 'Connect to the software you already run', 'Set up on site or remotely', 'Quoted for your shop'],
+      ('addon_hardware', 'Request integration'), ('contact.html', 'Talk to us'), sk('Counter', [('Scanner paired', 60, 0), ('Printer paired', 60, 1), ('Drawer ready', 40, 0)], 'Ready to sell')),
+     ('studio', 'Custom software, and more', 'If it does not exist yet, we build it with you. Tell us what you need.',
+      ['Designed from a blank page around your workflow', 'Your own private workspace and logins', 'Scoped and quoted before work starts', 'New pieces added whenever you grow', 'Anything not listed here: just ask'],
+      ('', 'Tell us what you need'), ('studio.html', 'See Studio'), sk('Your idea', [('Describe it', 70, 0), ('We scope it', 55, 1), ('We build it', 45, 0)], 'Shaped to you')),
+    ]
+    idx = ''.join('<a href="#slab-%s"><i>%02d</i>%s</a>' % (k, n + 1, t) for n, (k, t, *_r) in enumerate(S))
+    arts = ''
+    for n, (k, t, sm, feats, (ck, cl), (lu, ll), art) in enumerate(S):
+        btn = ('<a class="mk-btn solid" href="cart.html?add=%s">%s</a>' % (ck, cl)) if ck else '<a class="mk-btn solid" href="contact.html">%s</a>' % cl
+        arts += '<article class="pc rv" id="slab-%s"><div class="pc-n">%02d</div><div class="pc-main"><h2>%s</h2><p class="pc-s">%s</p><ul class="pc-f">%s</ul><div class="pc-a">%s<a class="mk-link" href="%s">%s</a></div></div><figure class="pc-art">%s</figure></article>' % (k, n + 1, t, sm, ''.join('<li>%s</li>' % f for f in feats), btn, lu, ll, art)
     intro = '''
 <section class="ap-intro">
-<div class="ap-slide light"><span class="ap-pill">WELCOME</span><p class="ap-big">Everything your business touches, <em>connected and yours to shape.</em></p><a class="ap-go" href="#slab-pos">Get to know us <i>&searr;</i></a><span class="ap-deco d1"></span><span class="ap-deco d2"></span></div>
-<div class="ap-slide dark"><span class="ap-pill">SECTION 1</span><b class="ap-num">01</b><h1 class="ap-h" data-ed="products.h">Built around you.</h1><p class="ap-p" data-ed="products.sub">Connected systems for every part of your business. Pick what you need today; add the rest when you grow.</p><i class="ap-arrow">&swarr;</i></div>
+<div class="ap-slide light"><span class="ap-pill">SERVICES</span><p class="ap-big">Websites, POS, CRM, automation, payroll and accounting, <em>built around your business.</em></p><a class="ap-go" href="#slab-web">See what we build <i>&searr;</i></a><span class="ap-deco d1"></span><span class="ap-deco d2"></span></div>
+<div class="ap-slide dark"><span class="ap-pill">WHAT WE DO</span><b class="ap-num">09</b><h1 class="ap-h" data-ed="products.h">What we build for you.</h1><p class="ap-p" data-ed="products.sub">Pick one service or combine them. Everything connects, and every part is shaped to how you work.</p><i class="ap-arrow">&swarr;</i></div>
 <div class="ap-bento">
-<div class="b1"><b data-count="10">10</b><span>connected systems</span></div>
+<div class="b1"><b data-count="9">9</b><span>services that connect</span></div>
 <div class="b2"><i></i></div>
 <div class="b3"><i></i></div>
 <div class="b4"><b>1</b><span>login</span><em>&#9678;</em></div>
-<div class="b5"><b>1</b><span>ledger</span><em>&#9711;</em></div>
+<div class="b5"><b>1</b><span>customer list</span><em>&#9711;</em></div>
 </div>
 </section>'''
+    wrap = '<div class="pr-wrap"><nav class="pr-idx" aria-label="Services">%s</nav><div class="pr-list">%s</div></div>' % (idx, arts)
     put('products', intro + wrap, 'a-prod', 'a-prod')
-
 
 def strip(x): return re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', '', x)).strip()
 
