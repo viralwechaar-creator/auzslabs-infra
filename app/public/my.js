@@ -204,7 +204,6 @@
     if (sess) {
       var hm = await sb.rpc('hub_me');
       if (hm && hm.error && (hm.error.status || 0) === 401) { await sb.auth.signOut(); sess = null; }
-      else if (hm && hm.data && (hm.data.admin || (hm.data.team && !hm.data.business))) { location.replace('/start.html'); return; }
       else if (hm && hm.data && hm.data.business) {
         var r = await sb.rpc('my_dashboard');
         if (r.error || !r.data) { location.replace('/start.html'); return; }
