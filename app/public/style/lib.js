@@ -204,7 +204,7 @@ async function lightenPictures(onProgress) {
   return { total: list.length, changed, failed, savedKb: Math.round(saved / 1024) };
 }
 // main picture + extra pictures editor: value {main, extra[]}; returns a node with .get()
-function photoEditor(main, extra) {
+function photoEditor(main, extra, single) {
   const st = { main: main || '', extra: [...(extra || [])] }; const host = h('div', { class: 'grid' });
   const pick = (cb) => { const i = h('input', { type: 'file', accept: 'image/*', multiple: true, class: 'hidden' }); document.body.append(i); i.onchange = async () => { const fs = [...i.files]; i.remove(); for (const f of fs) { try { await cb(await uploadPhoto(f)); } catch (e) { fail(e); } } paint(); }; i.click(); };
   const paint = () => {
@@ -213,7 +213,7 @@ function photoEditor(main, extra) {
         h('div', { class: 'pe-main' }, st.main ? h('img', { src: st.main, alt: '' }) : icon('camera', 28)),
         h('div', { class: 'grid', style: { gap: '6px', alignContent: 'start' } }, h('button', { class: 'btn sm', type: 'button', onclick: () => pick((u) => { st.main = u; }) }, icon('camera', 16), st.main ? t('Change') : t('Add picture')),
           st.main ? h('button', { class: 'btn sm danger', type: 'button', onclick: () => { st.main = ''; paint(); } }, t('Remove')) : null))),
-      h('div', null, h('div', { class: 'cap' }, t('More pictures') + ' (' + st.extra.length + ')'), h('div', { class: 'pe-grid' },
+      single ? null : h('div', null, h('div', { class: 'cap' }, t('More pictures') + ' (' + st.extra.length + ')'), h('div', { class: 'pe-grid' },
         st.extra.map((u, i) => h('div', { class: 'pe-t' }, h('img', { src: u, alt: '' }), h('div', { class: 'pe-a' }, h('button', { type: 'button', title: t('Make main'), onclick: () => { const old = st.main; st.main = u; st.extra.splice(i, 1); if (old) st.extra.unshift(old); paint(); } }, icon('check', 14)), h('button', { type: 'button', title: t('Remove'), onclick: () => { st.extra.splice(i, 1); paint(); } }, icon('x', 14))))),
         h('button', { class: 'pe-add', type: 'button', onclick: () => pick((u) => { if (!st.main) st.main = u; else st.extra.push(u); }) }, icon('plus', 22)))));
     host.onChange && host.onChange();
