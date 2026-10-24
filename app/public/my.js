@@ -18,33 +18,77 @@
   function show(id) { ['build', 'work', 'lock'].forEach(function (k) { $(k).hidden = k !== id; }); }
   function own(d, k) { return d.features && d.features[k] === true && (d.enabled_features || {})[k] !== false; }
 
-  /* ---------- builder ---------- */
+  /* ---------- builder: areas of a business, not a feature list ---------- */
+  var CATS = [
+    { id: 'sell', name: 'Sell', line: 'Counter, tables, ordering', keys: ['pos', 'self_order', 'scan'], g: 'bars' },
+    { id: 'phone', name: 'Phone shop', line: 'Stock, repairs, sales', keys: ['mobile'], g: 'ring' },
+    { id: 'style', name: 'Clothing and footwear', line: 'Sizes, colours, store', keys: ['style'], g: 'tri' },
+    { id: 'people', name: 'People', line: 'Attendance and pay', keys: ['payroll'], g: 'dots' },
+    { id: 'money', name: 'Money', line: 'Books and cash', keys: ['accounting', 'finance'], g: 'sq' },
+    { id: 'online', name: 'Online', line: 'Your own website', keys: ['website_builder'], g: 'orbit' }
+  ];
+  var DK = 'auz_build_design';
+  var DESIGN = (function () { try { return Object.assign({ nav: 'bottom', card: 'soft', theme: 'dark', accent: '#800020' }, JSON.parse(localStorage.getItem(DK) || '{}')); } catch (e) { return { nav: 'bottom', card: 'soft', theme: 'dark', accent: '#800020' }; } })();
+  function saveDesign() { try { localStorage.setItem(DK, JSON.stringify(DESIGN)); } catch (e) {} }
   var BLOCKS = [], HAS_SESSION = false;
+  function cats() {
+    var have = BLOCKS.map(function (b) { return b.key; }), used = [], out = [];
+    CATS.forEach(function (c) { var k = c.keys.filter(function (x) { return have.indexOf(x) >= 0; }); if (k.length) { used = used.concat(k); out.push(Object.assign({}, c, { keys: k })); } });
+    BLOCKS.forEach(function (b) { if (used.indexOf(b.key) < 0) out.push({ id: b.key, name: b.label, line: b.blurb, keys: [b.key], g: 'sq' }); });
+    return out;
+  }
+  function catOn(c, sel) { return c.keys.every(function (k) { return sel.indexOf(k) >= 0; }); }
+  function glyph(g) {
+    var d = el('span', { class: 'gl gl-' + g, 'aria-hidden': 'true' });
+    for (var i = 0; i < 4; i++) d.append(el('i'));
+    return d;
+  }
   function paintBuilder() {
     var sel = getSel(), t = $('tiles'); t.textContent = '';
-    BLOCKS.forEach(function (b, i) {
-      var on = sel.indexOf(b.key) >= 0;
+    var list = cats(), chosen = [];
+    list.forEach(function (c, i) {
+      var on = catOn(c, sel); if (on) chosen.push(c);
       t.append(el('button', { type: 'button', class: 'tile' + (on ? ' on' : ''), 'aria-pressed': on ? 'true' : 'false', onclick: function () {
-        var s = getSel(), j = s.indexOf(b.key); if (j >= 0) s.splice(j, 1); else s.push(b.key); setSel(s); paintBuilder(); } },
-        [el('span', { class: 'mono n', text: (i + 1) + '.0' }), el('span', { class: 'plus', text: '+' }), el('b', { text: b.label }), el('small', { text: b.blurb })]));
+        var s = getSel(); if (on) s = s.filter(function (k) { return c.keys.indexOf(k) < 0; }); else c.keys.forEach(function (k) { if (s.indexOf(k) < 0) s.push(k); }); setSel(s); paintBuilder(); } },
+        [glyph(c.g), el('span', { class: 'plus', text: '+' }), el('b', { text: c.name }), el('small', { text: c.line })]));
     });
-    var st = $('stack'); st.textContent = '';
-    var chosen = BLOCKS.filter(function (b) { return sel.indexOf(b.key) >= 0; });
-    if (!chosen.length) st.append(el('p', { class: 'empty mono' }, ['Nothing yet.', el('br'), 'Tap a block.']));
-    chosen.forEach(function (b, i) { st.append(el('div', { class: 'pill', style: 'animation-delay:' + (i * 40) + 'ms' }, [el('span', { text: b.label }), el('em', { text: 'BLOCK ' + (i + 1) })])); });
-    $('count').textContent = chosen.length + (chosen.length === 1 ? ' BLOCK' : ' BLOCKS');
-    $('devname').textContent = chosen.length ? 'YOUR SOFTWARE · 3 DAYS FREE' : 'YOUR SOFTWARE';
-    paintGo(chosen.length);
+    paintDesign(); paintPhone(chosen); paintGo(chosen.length);
   }
-  var goMode = 'start';
+  function opt(label, key, vals) {
+    var row = el('div', { class: 'opt' }, [el('span', { class: 'mono', text: label })]), seg = el('div', { class: 'seg' });
+    vals.forEach(function (v) { seg.append(el('button', { type: 'button', class: DESIGN[key] === v[0] ? 'on' : '', text: v[1], onclick: function () { DESIGN[key] = v[0]; saveDesign(); paintDesign(); paintPhone(); } })); });
+    row.append(seg); return row;
+  }
+  function paintDesign() {
+    var d = $('design'); d.textContent = '';
+    d.append(opt('MENU', 'nav', [['bottom', 'Bottom bar'], ['side', 'Side rail'], ['top', 'Top tabs']]),
+      opt('CARDS', 'card', [['soft', 'Soft'], ['line', 'Outlined'], ['solid', 'Solid']]),
+      opt('LOOK', 'theme', [['dark', 'Dark'], ['light', 'Light']]));
+    var sw = el('div', { class: 'sw' });
+    ['#800020', '#0f5a56', '#2a3f9a', '#a24a14', '#7a2e5a', '#3a3a3a'].forEach(function (c) { var b = el('button', { type: 'button', 'aria-label': c, class: DESIGN.accent === c ? 'on' : '' }); b.style.background = c; b.onclick = function () { DESIGN.accent = c; saveDesign(); paintDesign(); paintPhone(); }; sw.append(b); });
+    d.append(el('div', { class: 'opt' }, [el('span', { class: 'mono', text: 'COLOUR' }), sw]));
+  }
+  function paintPhone(chosen) {
+    if (!chosen) { var sel = getSel(); chosen = cats().filter(function (c) { return catOn(c, sel); }); }
+    var ph = $('phone'); ph.dataset.nav = DESIGN.nav; ph.dataset.card = DESIGN.card; ph.dataset.theme = DESIGN.theme; ph.style.setProperty('--my', DESIGN.accent);
+    var nav = $('pnav'), cards = $('pcards'); nav.textContent = ''; cards.textContent = '';
+    if (!chosen.length) cards.append(el('p', { class: 'empty mono' }, ['Pick what you do.', el('br'), 'Your app appears here.']));
+    chosen.forEach(function (c, i) {
+      nav.append(el('span', { class: 'pn' + (i === 0 ? ' on' : ''), text: c.name.split(' ')[0] }));
+      var bars = el('div', { class: 'pbars' }); [40, 70, 55, 90, 62].forEach(function (h) { var b = el('i'); b.style.height = h + '%'; bars.append(b); });
+      cards.append(el('div', { class: 'pc', style: 'animation-delay:' + (i * 50) + 'ms' }, [el('b', { text: c.name }), el('small', { text: c.line }), bars]));
+    });
+    $('count').textContent = chosen.length + (chosen.length === 1 ? ' AREA' : ' AREAS');
+    $('devname').textContent = chosen.length ? 'YOUR APP' : 'YOUR APP';
+  }
   function paintGo(n) {
     var g = $('go'); g.textContent = '';
     if (HAS_SESSION) {
       var name = el('input', { placeholder: 'Your name', autocomplete: 'name' }), phone = el('input', { placeholder: 'Mobile / WhatsApp', type: 'tel', inputmode: 'tel', autocomplete: 'tel' }), biz = el('input', { placeholder: 'Business name', autocomplete: 'organization' });
-      var err = el('div', { class: 'err' }), btn = el('button', { class: 'btn', type: 'button', text: 'Start my 3-day trial' });
+      var err = el('div', { class: 'err' }), btn = el('button', { class: 'btn', type: 'button', text: 'Build my app, 3 days free' });
       btn.disabled = !n;
       btn.onclick = async function () {
-        err.textContent = ''; if (!getSel().length) { err.textContent = 'Tap at least one block.'; return; }
+        err.textContent = ''; if (!getSel().length) { err.textContent = 'Pick at least one area.'; return; }
         btn.disabled = true;
         var r = await sb.rpc('start_self_trial', { p: { business_name: biz.value, contact_name: name.value, phone: phone.value, blocks: getSel() } });
         if (r.error) { btn.disabled = false; err.textContent = r.error.message; return; }
@@ -54,8 +98,8 @@
       g.append(name, phone, biz, btn, err, el('p', { class: 'note', text: 'No payment now. Nothing is charged during the trial.' }));
       return;
     }
-    var go = el('a', { class: 'btn', href: '/start.html', text: 'Sign in to start my trial' });
-    go.onclick = function () { if (!getSel().length) { var e = $('go').querySelector('.err'); if (e) e.textContent = 'Tap at least one block first.'; return false; } };
+    var go = el('a', { class: 'btn', href: '/start.html', text: 'Sign in to build my app' });
+    go.onclick = function () { if (!getSel().length) { var e = $('go').querySelector('.err'); if (e) e.textContent = 'Pick what you do first.'; return false; } };
     var demo = el('button', { class: 'btn ghost', type: 'button', text: 'Testing? Use the demo login' }), err2 = el('div', { class: 'err' });
     demo.onclick = async function () {
       demo.disabled = true; err2.textContent = '';
@@ -84,7 +128,7 @@
   var D, list = [], cfg, cfgKey, current = null, frames = {};
   function load() { try { return JSON.parse(localStorage.getItem(cfgKey) || '{}'); } catch (e) { return {}; } }
   function save() { try { localStorage.setItem(cfgKey, JSON.stringify(cfg)); } catch (e) {} }
-  function look() { document.body.style.setProperty('--my', cfg.accent || '#800020'); }
+  function look() { document.body.style.setProperty('--my', cfg.accent || '#800020'); $('work').dataset.nav = cfg.nav || 'top'; $('work').dataset.theme = cfg.theme || 'dark'; $('work').dataset.card = cfg.card || 'soft'; }
   function visible() {
     var order = cfg.order || [];
     var l = list.filter(function (a) { return (cfg.hidden || []).indexOf(a[0]) < 0; });
@@ -104,7 +148,13 @@
   }
   function panel() {
     var p = $('panel'); p.textContent = '';
-    p.append(el('h2', { text: 'Customise' }), el('p', { text: 'Make it yours. These choices stay on this device.' }), el('h3', { text: 'Colour' }));
+    p.append(el('h2', { text: 'Customise' }), el('p', { text: 'Make it yours. These choices stay on this device.' }));
+    [['Menu', 'nav', [['top', 'Top'], ['side', 'Side'], ['bottom', 'Bottom']]], ['Look', 'theme', [['dark', 'Dark'], ['light', 'Light']]]].forEach(function (o) {
+      p.append(el('h3', { text: o[0] })); var sg = el('div', { class: 'seg' });
+      o[2].forEach(function (v) { sg.append(el('button', { type: 'button', class: (cfg[o[1]] || (o[1] === 'nav' ? 'top' : 'dark')) === v[0] ? 'on' : '', text: v[1], onclick: function () { cfg[o[1]] = v[0]; save(); look(); panel(); } })); });
+      p.append(sg);
+    });
+    p.append(el('h3', { text: 'Colour' }));
     var sw = el('div', { class: 'sw' });
     COLOURS.forEach(function (c) { var b = el('button', { type: 'button', 'aria-label': c, class: (cfg.accent || '#800020') === c ? 'on' : '' }); b.style.background = c; b.onclick = function () { cfg.accent = c; save(); look(); panel(); }; sw.append(b); });
     p.append(sw, el('h3', { text: 'Your blocks' }));
@@ -132,7 +182,9 @@
     D = d;
     list = APPS.filter(function (a) { return a[3](D); });
     if (!list.length) { location.replace('/start.html?switch=1'); return; }
-    cfgKey = 'my.cfg.' + (D.tenant ? D.tenant.slug : 'x'); cfg = load(); look();
+    cfgKey = 'my.cfg.' + (D.tenant ? D.tenant.slug : 'x'); cfg = load();
+    try { var bd = JSON.parse(localStorage.getItem('auz_build_design') || 'null'); if (bd && !cfg.designed) { cfg.nav = bd.nav; cfg.card = bd.card; cfg.theme = bd.theme; cfg.accent = bd.accent; cfg.designed = 1; save(); localStorage.removeItem('auz_build_design'); } } catch (e) {}
+    look();
     $('brand').textContent = D.tenant ? D.tenant.name : 'AUZslab'; document.title = $('brand').textContent;
     if (tr && tr.state === 'active') {
       var days = Math.max(0, Math.ceil(tr.seconds_left / 86400)), t = $('trial'); t.hidden = false;
