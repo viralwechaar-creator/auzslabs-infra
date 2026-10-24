@@ -1,0 +1,48 @@
+/* "Modern" look for the POS (opt-in per device: Staff & settings -> Look). CSS only, scoped under html.ui-modern,
+   so Classic is untouched and no behaviour changes. Sell screen first; other screens follow one by one.
+   Same tokens as the rest of the POS (ds/auz.css): flat, small type, hairlines, big radius, quiet shadows. */
+html.ui-modern .sell{background:var(--bg)}
+html.ui-modern .sell .items-head{gap:8px}
+html.ui-modern .sell .search .input{min-height:40px;border-radius:999px;background:var(--card);box-shadow:0 0 0 1px var(--sep);font-size:14px;padding-left:40px}
+/* category chips: thin outlined pills, selected = solid ink */
+html.ui-modern .cat-chips{gap:6px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+html.ui-modern .cat-chips::-webkit-scrollbar{display:none}
+html.ui-modern .cat-chips .chip{flex:none;min-height:32px;padding:0 12px;border-radius:999px;background:transparent;box-shadow:0 0 0 1px var(--sep2);font-size:12.5px;font-weight:500;color:var(--label2)}
+html.ui-modern .cat-chips .chip.on{background:var(--label);color:var(--bg);box-shadow:none}
+html.ui-modern .cat-chips .chip .n,html.ui-modern .cats button .n{font-size:11px;opacity:.55;margin-left:6px}
+html.ui-modern .cats button{min-height:38px;border-radius:999px;font-size:13px;font-weight:500}
+html.ui-modern .cats button.on{background:var(--label);color:var(--bg)}
+/* item tiles: picture on top, name and price underneath, no heavy card */
+html.ui-modern .items{grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:10px}
+html.ui-modern .tile{min-height:0;padding:0;gap:0;background:transparent;box-shadow:none;border-radius:var(--r3);overflow:visible;justify-content:flex-start}
+html.ui-modern .tile.has-img img{width:100%;height:auto;aspect-ratio:1/1;margin:0;border-radius:var(--r3);box-shadow:0 0 0 .5px var(--sep)}
+html.ui-modern .tile:not(.has-img)::before{content:"";display:block;width:100%;aspect-ratio:1/1;border-radius:var(--r3);background:var(--fill3);box-shadow:0 0 0 .5px var(--sep);order:-1}
+html.ui-modern .tile .nm{font-size:12.5px;font-weight:600;line-height:1.25;padding:8px 2px 0}
+html.ui-modern .tile .pr{font-size:12px;padding:2px 2px 0;color:var(--label2)}
+html.ui-modern .tile .offwhy{font-size:11px;padding:2px 2px 0}
+html.ui-modern .tile .qty{top:6px;right:6px;min-width:22px;height:22px;line-height:22px;font-size:12px;border-radius:11px;background:var(--label);color:var(--bg)}
+html.ui-modern .tile:active{transform:scale(.98)}
+/* the order ticket: quiet, small type, hairline rows */
+html.ui-modern .sell .ticket-pane{background:var(--card);border-left:0;box-shadow:-1px 0 0 var(--sep)}
+html.ui-modern .tk-h{padding:12px 14px 8px}
+html.ui-modern .tk-h .ttl b{font-size:16px;font-weight:700}
+html.ui-modern .tk-meta .chip{min-height:28px;font-size:12px;padding:0 10px;border-radius:999px;background:transparent;box-shadow:0 0 0 1px var(--sep2)}
+html.ui-modern .tk-meta .chip.set{background:var(--fill2);color:var(--label);box-shadow:none}
+html.ui-modern .tk-cust .input{min-height:36px;font-size:14px;border-radius:12px}
+html.ui-modern .ln{padding:9px 14px}
+html.ui-modern .ln .lt b{font-size:13.5px;font-weight:600}
+html.ui-modern .ln .lt span{font-size:11.5px}
+html.ui-modern .ln .lp{font-size:13.5px;font-weight:600}
+html.ui-modern .stepper{border-radius:999px}
+html.ui-modern .tk-sum{padding:8px 14px;gap:3px}
+html.ui-modern .tk-sum .r{font-size:12.5px}
+html.ui-modern .tk-sum .r.tot{font-size:18px;color:var(--label)}
+html.ui-modern .tk-act{padding:8px 14px calc(12px + env(safe-area-inset-bottom));gap:6px}
+html.ui-modern .tk-act .btn{min-height:40px;font-size:13px;border-radius:999px}
+html.ui-modern .tk-act .btn.pay{min-height:46px;font-size:14px;background:var(--label);color:var(--bg)}
+/* phone cart bar: slim floating pill */
+html.ui-modern .cart-bar{margin:0 12px 10px;padding:6px 6px 6px 16px;border-radius:999px;background:var(--label);box-shadow:0 8px 24px -10px rgba(0,0,0,.5)}
+html.ui-modern .cart-bar .ct b{font-size:15px}
+html.ui-modern .cart-bar .ct span{font-size:11.5px}
+html.ui-modern .cart-bar .btn{min-height:38px;border-radius:999px;font-size:13px;background:var(--bg);color:var(--label)}
+html.ui-modern .cart-bar .btn.ghost{background:rgba(128,128,128,.28);color:var(--bg)}
