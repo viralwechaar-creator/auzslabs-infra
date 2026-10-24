@@ -3296,7 +3296,7 @@ function renderOrder() {
   <div class="row-actions" style="margin-top:8px;flex-wrap:wrap"><button class="btn btn-ghost" id="qCAdd" type="button">+ Other charge</button><button class="btn btn-ghost" id="qBrand" type="button">+ Customised branding setup &#8377;2,910</button></div>
   <label class="lbl" style="margin-top:10px">Note on the bill (optional)<input id="qNote" class="inp" value="${esc(ordQ.note || '')}"></label>`}
   <div class="ord-tot" id="qTot"></div>
-  ${o.status === 'paid' ? '' : `<div class="row-actions" style="margin-top:10px"><button class="btn btn-primary" id="qSave" type="button">Save quote</button></div>`}`}
+  ${o.status === 'paid' ? '' : `<div class="row-actions" style="margin-top:10px"><button class="btn btn-primary" id="qSend" type="button">${o.status === 'link_sent' || o.status === 'payment_submitted' ? 'Save changes' : 'Save and send to client on WhatsApp'}</button><button class="btn btn-ghost" id="qSave" type="button">Save as draft only</button></div><p class="p" style="margin-top:6px;font-size:12px">Sending uses the AUZslab WhatsApp number and puts the quote on the client's payment page. A repeat send is not possible once the link has gone.</p>`}`}
   ${(['confirmed', 'link_sent', 'payment_submitted'].includes(o.status) && o.totals) ? `
   <div class="label" style="margin-top:20px">Payment link</div>
   <label class="lbl">Message to send on WhatsApp<textarea id="waPay" class="inp" rows="9">${esc(payMessage(o))}</textarea></label>
@@ -3363,6 +3363,17 @@ function wireOrder() {
     g('qOnbOn').onchange = () => { g('qOnb').style.display = g('qOnbOn').checked ? '' : 'none'; paintTotals(); };
     g('qSetupOn').onchange = () => { g('qSetup').style.display = g('qSetupOn').checked ? '' : 'none'; paintTotals(); };
     g('qSave').onclick = () => { ordQ = readQuote(); ordAct('admin_save_order_quote', { p_id: o.id, p_quote: ordQ }, reloadOrder); };
+    g('qSend').onclick = async () => {
+      ordQ = readQuote();
+      const saved = await ordAct('admin_save_order_quote', { p_id: o.id, p_quote: ordQ });
+      if (!saved) return;
+      if (o.status !== 'link_sent' && o.status !== 'payment_submitted') {
+        const ok = await ordAct('admin_set_order_status', { p_id: o.id, p_status: 'link_sent' });
+        if (!ok) return;
+        alert('Quote saved and the payment link is on its way to ' + (o.phone || 'the client') + ' on WhatsApp.');
+      }
+      sectionLoadedAt.orders = 0; reloadOrder();
+    };
   }
   paintTotals();
   if (g('waSendPay')) {
