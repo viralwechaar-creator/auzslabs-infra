@@ -125,6 +125,8 @@ export const RPC = {
   team_probe: { params: [], auth: true },
   hub_me: { params: [], auth: true },
   public_trial_blocks: { params: [], auth: false },
+  public_module_catalogue: { params: [], auth: false },
+  public_module_resolve: { params: ['p'], jsonb: ['p'], auth: false },
   start_self_trial: { params: ['p'], jsonb: ['p'], auth: true },
   trial_status: { params: [], auth: true },
   trial_subscribe: { params: [], auth: true },
