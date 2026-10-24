@@ -31,6 +31,11 @@
     ['gst', 'GST invoices and books', 'Money', 'accounting', 'sq'], ['cash', 'Expenses and cash', 'Money', 'finance', 'sq'], ['loans', 'Loans and owner money', 'Money', 'finance', 'sq'],
     ['web', 'Your own website', 'Online', 'website_builder', 'orbit']
   ];
+  var SCREEN = { bill: '/index.html?tab=sell', tables: '/index.html?tab=tables', kitchen: '/index.html?tab=kitchen', stock: '/dashboard.html#inv/stock', cust: '/dashboard.html#crm/customers', offers: '/dashboard.html#mkt/offers',
+    qr: '/dashboard.html#qr/ordering', scan: '/scan.html', phones: '/mob.html#/sell', repair: '/mob.html#/repairs', dues: '/mob.html#/dues',
+    sizes: '/style.html#/stock', tags: '/style.html#/stock', store: '/style.html#/store', attend: '/payroll.html#/time', pay: '/payroll.html#/pay', leave: '/payroll.html#/leave',
+    gst: '/accounts.html#/home', cash: '/finance.html#/activity', loans: '/finance.html#/owner', web: '/builder.html' };
+  function embedUrl(u) { var h = u.indexOf('#'), base = h < 0 ? u : u.slice(0, h), hash = h < 0 ? '' : u.slice(h); return base + (base.indexOf('?') < 0 ? '?' : '&') + 'embed=1' + hash; }
   var FK = 'auz_feat';
   function getFeat() { try { return JSON.parse(localStorage.getItem(FK) || '[]'); } catch (e) { return []; } }
   function setFeat(a) { try { localStorage.setItem(FK, JSON.stringify(a)); } catch (e) {} setSel(blocksOf(a)); }
@@ -189,6 +194,8 @@
   async function workspace(d, tr) {
     D = d;
     list = APPS.filter(function (a) { return a[3](D); });
+    try { var fd0 = JSON.parse(localStorage.getItem('auz_feat_done') || 'null'), k0 = 'my.cfg.' + (D.tenant ? D.tenant.slug : 'x'), c0 = JSON.parse(localStorage.getItem(k0) || '{}'); var fl = fd0 || c0.feat;
+      if (fl && fl.length) { var fa = FEATS.filter(function (f) { return fl.indexOf(f[0]) >= 0 && SCREEN[f[0]] && own(D, f[3]); }).map(function (f) { return [f[0], f[1], embedUrl(SCREEN[f[0]]), function () { return true; }]; }); if (fa.length) list = fa; } } catch (e) {}
     if (!list.length) { location.replace('/start.html?switch=1'); return; }
     cfgKey = 'my.cfg.' + (D.tenant ? D.tenant.slug : 'x'); cfg = load();
     try { var bd = JSON.parse(localStorage.getItem('auz_build_design') || 'null'); if (bd && !cfg.designed) { cfg.nav = bd.nav; cfg.card = bd.card; cfg.theme = bd.theme; cfg.accent = bd.accent; cfg.designed = 1; save(); localStorage.removeItem('auz_build_design'); } } catch (e) {}
