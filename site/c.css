@@ -48,3 +48,12 @@ html main.content .stack-panel .card{background:#fff!important;padding:24px!impo
 .page-transition{position:fixed;inset:0;z-index:999;pointer-events:none;background:#000;clip-path:circle(0% at var(--ox,50%) var(--oy,50%));transition:clip-path .38s cubic-bezier(.4,0,.2,1)}
 .page-transition.is-active{clip-path:circle(150% at var(--ox,50%) var(--oy,50%))}
 @media(prefers-reduced-motion:reduce){.page-transition{transition:none}}
+
+/* Phone dock: icons clearly visible on every page (light and dark) */
+html body .u-dock .pill{background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.12),0 8px 28px rgba(0,0,0,.28);-webkit-backdrop-filter:none;backdrop-filter:none;height:52px;gap:4px}
+html body .u-dock .pill a{width:48px;height:44px;color:#000}
+html body .u-dock .pill a.on{background:#000;color:#fff}
+html body .u-dock svg{width:22px;height:22px;stroke-width:2.1}
+html body .u-dock .chat{background:#800020;color:#fff;width:52px;height:52px;box-shadow:0 0 0 1px rgba(255,255,255,.25),0 8px 28px rgba(0,0,0,.35)}
+html body .u-dock .chat svg{width:22px;height:22px}
+:root[data-theme=dark] body .u-dock .pill{background:#fff}
