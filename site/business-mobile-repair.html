@@ -108,9 +108,9 @@
 /* the plan/compare/add-on styles live in theme.css under the #salon-* ids; this page reuses those ids on purpose */
 #salon-plans .sp-feats li.sp-off{opacity:.5;text-decoration:line-through}
 </style>
-<style>.sp-toggle-row,.sp-was,.sp-save2,.sp-strip-per,.sp-unit,.sp-per,.sp-gst,.gst-t,.sp-save{display:none!important}</style><link rel="stylesheet" href="u.css?v=4"><link rel="stylesheet" href="e.css?v=5"><link rel="stylesheet" href="fluid.css?v=3"><link rel="stylesheet" href="m.css?v=2"><link rel="stylesheet" href="c.css?v=5">
+<style>.sp-toggle-row,.sp-was,.sp-save2,.sp-strip-per,.sp-unit,.sp-per,.sp-gst,.gst-t,.sp-save{display:none!important}</style><link rel="stylesheet" href="u.css?v=4"><link rel="stylesheet" href="e.css?v=5"><link rel="stylesheet" href="fluid.css?v=3"><link rel="stylesheet" href="c.css?v=5">
 <meta name="theme-color" content="#efeeed">
-<link rel="stylesheet" href="a.css?v=1"><link rel="stylesheet" href="a-biz.css?v=1"></head>
+<link rel="stylesheet" href="a.css?v=1"><link rel="stylesheet" href="a-biz.css?v=1"><link rel="stylesheet" href="menu-old.css?v=2"></head>
 <body class="a-biz">
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
 <div class="shell">
@@ -125,13 +125,70 @@
   </header>
 
   <div class="drawer-overlay" id="drawerOverlay"></div>
-  <aside class="u-sheet sidebar" id="sidebarDrawer" aria-label="Menu">
-    <div class="u-sheet-top"><a href="index.html"><img src="logo.png" alt="AUZslab"></a><button id="drawerClose" aria-label="Close menu">Close</button></div>
+  <aside class="sidebar" id="sidebarDrawer">
+    <div class="drawer-topbar">
+      <button class="drawer-close" id="drawerClose" aria-label="Close menu"><span aria-hidden="true">&times;</span> Close</button>
+      <a href="index.html" class="drawer-topbar-logo"><img src="logo.png" alt="AUZslab"></a>
+      <div class="drawer-topbar-icons">
+        <a href="cart.html" class="drawer-icon-link" aria-label="Cart"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 7h12l-1 13H7L6 7Z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg></a>
+        <a href="signup.html" class="drawer-icon-link" aria-label="Account"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></a>
+      </div>
+      </div>
     <nav class="sidebar-nav" aria-label="Primary">
-      <a href="index.html" class="nav-link">Home</a><a href="products.html" class="nav-link">Services</a><div class="nav-group"><button class="nav-link nav-group-toggle" aria-expanded="false"><span>Business types <sup class="nav-group-count">(+7)</sup></span><span class="nav-group-indicator" aria-hidden="true"></span></button><div class="nav-submenu"><div class="nav-submenu-inner"><a href="business-cafes.html" class="nav-sublink"><span>Caf&eacute;s &amp; restaurants</span></a><a href="business-salons.html" class="nav-sublink"><span>Salons &amp; studios</span></a><a href="business-retail.html" class="nav-sublink"><span>Retail &amp; bookstores</span></a><a href="business-clothing.html" class="nav-sublink"><span>Clothing &amp; apparel</span></a><a href="business-mobile-repair.html" class="nav-sublink"><span>Mobile retail &amp; repair</span></a><a href="studio.html" class="nav-sublink"><span>Custom software (Studio)</span></a><a href="web-design.html" class="nav-sublink"><span>Websites &amp; online stores</span></a></div></div></div><a href="platform.html" class="nav-link">Why AUZslab</a><a href="live-demo.html" class="nav-link">Live demo</a><a href="download-apps.html" class="nav-link">Download apps</a><a href="cart.html" class="nav-link">Cart <span class="cart-count"></span></a><div class="nav-group"><button class="nav-link nav-group-toggle" aria-expanded="false"><span>Resources <sup class="nav-group-count">(+4)</sup></span><span class="nav-group-indicator" aria-hidden="true"></span></button><div class="nav-submenu"><div class="nav-submenu-inner"><a href="resources-getting-started.html" class="nav-sublink"><span>Getting started</span></a><a href="learn.html" class="nav-sublink"><span>Learn: beginner manual</span></a><a href="resources-operations.html" class="nav-sublink"><span>Operations &amp; workflows</span></a><a href="resources-growth.html" class="nav-sublink"><span>Growth &amp; scaling</span></a></div></div></div><a href="contact.html" class="nav-link">Contact</a>
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="products.html" class="nav-link">Services</a>
+
+      <div class="nav-group nav-biz">
+        <button class="nav-link nav-group-toggle" aria-expanded="false">
+          <span>Business types <sup class="nav-group-count">(+6)</sup></span>
+          <span class="nav-group-indicator" aria-hidden="true"></span>
+        </button>
+        <div class="nav-submenu">
+          <div class="nav-submenu-head">Business types</div>
+          <div class="nav-submenu-inner">
+            <a href="business-cafes.html" class="nav-sublink"><span>Caf&eacute;s &amp; restaurants</span></a>
+            <a href="business-salons.html" class="nav-sublink"><span>Salons &amp; studios</span></a>
+            <a href="business-retail.html" class="nav-sublink"><span>Retail &amp; bookstores</span></a>
+            <a href="business-clothing.html" class="nav-sublink"><span>Clothing &amp; apparel</span></a>
+            <a href="business-mobile-repair.html" class="nav-sublink"><span>Mobile retail &amp; repair</span></a>
+            <a href="studio.html" class="nav-sublink"><span>Custom software (Studio)</span></a>
+            <a href="web-design.html" class="nav-sublink"><span>Websites &amp; online stores</span></a>
+          </div>
+        </div>
+      </div>
+
+
+            <a href="platform.html" class="nav-link">Why AUZslab</a>
+      <a href="live-demo.html" class="nav-link">Live demo</a>
+      <a href="download-apps.html" class="nav-link">Download apps</a>
+      <a href="cart.html" class="nav-link">Cart <span class="cart-count"></span></a>
+
+      <div class="nav-group">
+        <button class="nav-link nav-group-toggle" aria-expanded="false">
+          <span>Resources <sup class="nav-group-count">(+5)</sup></span>
+          <span class="nav-group-indicator" aria-hidden="true"></span>
+        </button>
+        <div class="nav-submenu">
+          <div class="nav-submenu-head">Resources</div>
+          <div class="nav-submenu-inner">
+            <a href="resources-getting-started.html" class="nav-sublink"><span>Getting started</span></a>
+            <a href="learn.html" class="nav-sublink"><span>Learn: beginner manual</span></a>
+            <a href="resources-operations.html" class="nav-sublink"><span>Operations &amp; workflows</span></a>
+            <a href="resources-growth.html" class="nav-sublink"><span>Growth &amp; scaling</span></a>
+          </div>
+        </div>
+      </div>
+
+      <a href="contact.html" class="nav-link">Contact</a>
     </nav>
-    <div class="foot"><div class="row"><a href="signup.html" class="btn btn-ghost" data-signin-link>Get started</a><button class="btn" data-open-contact>Let's talk</button></div><div class="copy">&copy; 2026 AUZslab</div></div>
-  </aside>
+    <div class="sidebar-foot">
+      <div style="display:flex;gap:10px">
+        <a href="signup.html" class="btn btn-ghost" data-signin-link style="flex:1;justify-content:center">Get started</a>
+        <button class="btn btn-ghost" data-open-contact style="flex:1;justify-content:center">Let's talk</button>
+      </div>
+      <div class="sidebar-copy">&copy; 2026 AUZslab</div>
+    </div>
+  <div class="drawer-social"><a href="https://www.instagram.com/auzslab.in" aria-label="Instagram" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg></a><a href="https://www.facebook.com/share/1FMd3FoFyZ/?mibextid=wwXIfr" aria-label="Facebook" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 8V6.5c0-.8.3-1.2 1.3-1.2H17V2h-2.6C11.6 2 10 3.7 10 6.2V8H8v3.2h2V22h4V11.2h2.7l.4-3.2z"/></svg></a></div></aside>
 
   <main class="content">
 <div class="ab" style="--ac:#2a3f9a">
