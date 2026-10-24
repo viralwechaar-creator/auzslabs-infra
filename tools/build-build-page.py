@@ -19,6 +19,9 @@ BODY = '''    <div class="tl">
             <h2>Sign in to start your trial</h2>
             <p class="tl-note">Your ticks are saved. Use your Google account.</p>
             <div class="tl-actions"><a class="tb pri wide" href="signup.html?next=build.html">Sign in or create account</a></div>
+            <p class="tl-note" style="margin-top:12px">Testing for now? Use the demo login: <b>demo@auzslab.in</b> / <b>Auzslab@Demo</b></p>
+            <div class="tl-actions"><button class="tb wide" id="demoGo" type="button">Open the combined app with the demo login</button></div>
+            <div class="tl-err" id="demoErr"></div>
           </section>
           <form class="tl-card" id="trialForm" novalidate style="display:none">
             <span class="tl-cap">2 &middot; Your business</span>
@@ -64,7 +67,19 @@ const CHECK = '<span class="bx"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.7 2.7
   $('blocks').innerHTML = list.map((b) => '<label class="tl-opt"><input type="checkbox" data-k="' + esc(b.key) + '"' + (sel.includes(b.key) ? ' checked' : '') + '>' + CHECK + '<span><b>' + esc(b.label) + '</b><small>' + esc(b.blurb) + '</small></span></label>').join('') || '<p class="tl-note">Blocks are not available right now.</p>';
   $('blocks').addEventListener('change', () => setSel([...document.querySelectorAll('#blocks input:checked')].map((i) => i.dataset.k)));
   const sess = (await sb.auth.getSession()).data.session;
-  if (!sess) { $('signedOut').style.display = ''; return; }
+  if (!sess) {
+    $('signedOut').style.display = '';
+    $('demoGo').onclick = async () => {
+      $('demoErr').textContent = ''; $('demoGo').disabled = true;
+      let r = await sb.auth.signInWithPassword({ email: 'demo@auzslab.in', password: 'Auzslab@Demo' });
+      try { if (window.auz2fa) r = await auz2fa.resolve(sb, r); } catch (e) {}
+      $('demoGo').disabled = false;
+      if (r.error || !(r.data && r.data.session)) { $('demoErr').textContent = (r.error && r.error.message) || 'Could not sign in.'; return; }
+      const s = r.data.session;
+      location.href = 'https://app.auzslab.in/my.html#auz_gt=' + b64({ t: s.access_token, u: s.user });
+    };
+    return;
+  }
   const hm = await sb.rpc('hub_me');
   if (hm.data && hm.data.business) { $('hasBiz').style.display = ''; $('openApps').href = await appsUrl(); $('openApps').onclick = async (e) => { e.preventDefault(); location.href = await appsUrl(); }; return; }
   $('trialForm').style.display = '';
