@@ -137,7 +137,7 @@ export default async function run({ browser, stack }) {
     const c = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await c.newPage(); const errs = watch(page);
     await page.goto(stack.url('', '/pay.html?t=' + tokB)); await page.waitForSelector('#agree', { timeout: 15000 });
     const t = await page.locator('body').innerText();
-    for (const w of ['AUZsLedger', '1,490.00', 'CGST', 'SGST', '1,758.00', 'Refunds', 'Pay online', 'Cash in hand']) assert(t.toLowerCase().includes(w.toLowerCase()), 'pay page is missing: ' + w);
+    for (const w of ['AUZsLedger', '1,490.00', 'CGST', 'SGST', '1,758.00', 'Refund Policy', 'Pay online', 'Cash in hand']) assert(t.toLowerCase().includes(w.toLowerCase()), 'pay page is missing: ' + w);
     assert(!/screenshot|UPI QR/i.test(t), 'the old screenshot / UPI QR route is still on the page');
     assert(await page.locator('#agree').isChecked() === false, 'the terms box is ticked by default');
     await page.click('input[value=cash]'); await page.click('#payBtn'); assert(/tick the box/i.test(await page.locator('#payErr').innerText()), 'the unticked box was not enforced');

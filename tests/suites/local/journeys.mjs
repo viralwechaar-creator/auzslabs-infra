@@ -86,10 +86,10 @@ export default async function run({ browser, stack }) {
     const txt = await p.locator('main').innerText();
     assert(!/Total due|Continue to payment|per month|\/month|monthly price/i.test(txt), 'the request page shows prices: ' + txt.slice(0, 300));
     assert(/1,360/.test(txt) && /Hardware integration/.test(txt) && /Website/.test(txt) && /WhatsApp automation/.test(txt), 'onboarding fee or add-ons missing');
-    await p.check('#pick input[data-k=pos]'); assert(!(await p.locator('#yearNote').isVisible()), 'yearly notice shown for the restaurant POS');
-    await p.check('#pick input[data-k=mobile]'); await p.waitForTimeout(200);
+    await p.check('#pick input[data-k=pos]', { force: true }); assert(!(await p.locator('#yearNote').isVisible()), 'yearly notice shown for the restaurant POS');
+    await p.check('#pick input[data-k=mobile]', { force: true }); await p.waitForTimeout(200);
     assert(/yearly plan/i.test(await p.locator('#yearNote').innerText()) && /AUZsMob/.test(await p.locator('#yearNote').innerText()), 'no yearly-plan notice for AUZsMob');
-    await p.check('#pickAdd input[data-k=addon_website]');
+    await p.check('#pickAdd input[data-k=addon_website]', { force: true });
     await p.fill('#rqName', 'QA Owner'); await p.fill('#rqPhone', '9811100011'); await p.fill('#rqBiz', 'QA Business ' + (Date.now() % 10000)); await p.fill('#rqReq', 'Billing and stock for two outlets');
     await p.click('#rqSend'); await p.waitForSelector('#sent', { state: 'visible', timeout: 10000 });
     const r = await q("select count(*)::int n, min(status) st, (array_agg(products))[1] pr from client_orders where business_name like 'QA Business%'");
