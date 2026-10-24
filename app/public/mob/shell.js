@@ -228,7 +228,7 @@ function moreSheet() {
     nav.length ? section(t('more'), h('div', { class: 'list' }, nav.map(([id, , ic]) => liRow({ icon: ic, title: t(id), chevron: true, onclick: () => { s.close(); go(id); } })))) : null,
     h('div', { class: 'list' },
       liRow({ icon: 'globe', tone: 'gray', title: t('language'), badge: seg([['en', 'EN'], ['hi', 'HI']], S_LANG, (v) => saveLang(v)) }),
-      liRow({ icon: 'moon', tone: 'gray', title: 'Appearance', badge: seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v)) })),
+      liRow({ icon: 'moon', tone: 'gray', title: 'Appearance', badge: seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v)) }), liRow({ icon: 'sell', tone: 'gray', title: 'Look', badge: auzModernSeg(seg) })),
     h('div', { class: 'list' }, liRow({ icon: 'user', tone: 'gray', title: S.user.email, sub: S.user.role }), liRow({ icon: 'user', tone: 'gray', title: 'Plan & account', onclick: () => { s.close(); auzPlan.open(sb); } }), liRow({ icon: 'user', tone: 'gray', title: 'Help & report a problem', onclick: () => { s.close(); auzHelp.open(sb); } }), S.user.role === 'owner' ? liRow({ icon: 'download', tone: 'gray', title: 'Backup, export or clear data', onclick: () => { s.close(); auzMyData(sb); } }) : null, liRow({ icon: 'logout', tone: 'gray', title: t('signOut'), onclick: signOut })));
   const s = sheet({ title: t('more'), closeLabel: 'Done', body });
 }
