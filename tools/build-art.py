@@ -261,5 +261,7 @@ def biz(page, accent):
 for _p, _a in [('business-cafes', '#800020'), ('business-salons', '#7a2e5a'), ('business-retail', '#0f5a56'), ('business-clothing', '#a24a14'), ('business-mobile-repair', '#2a3f9a')]:
     PAGES[_p] = (lambda p=_p, a=_a: biz(p, a))
 
+exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'art2.py'), encoding='utf-8').read())
+
 if __name__ == '__main__':
     for n in (sys.argv[1:] or list(PAGES)): PAGES[n]()
