@@ -1,0 +1,61 @@
+/* Legal documents: a calm reading room. Warm paper, a document shelf, a sticky contents rail with a reading line. */
+html body.a-legal{background:#f1eeea}
+html body.a-legal main.content .al{max-width:1180px;margin:0 auto;padding:clamp(96px,14vh,140px) 20px 80px;color:#111}
+html body.a-legal main.content .al-top{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+html body.a-legal main.content .al-mono{font:700 11px/1 "Space Mono",ui-monospace,monospace;letter-spacing:.14em;color:#6b6762}
+html body.a-legal main.content .al-pill{font:600 12px/1 Inter,system-ui,sans-serif;padding:7px 12px;border-radius:99px;background:#111;color:#fff}
+html body.a-legal main.content h1.al-h{font-size:clamp(46px,9.5vw,132px)!important;line-height:.94!important;letter-spacing:-.045em!important;font-weight:700!important;margin:22px 0 0!important;max-width:11ch;color:#111!important;text-align:left!important}
+html body.a-legal main.content p.al-lede{font-size:clamp(17px,2.2vw,22px)!important;line-height:1.5!important;color:#4a4743!important;max-width:36em;margin:22px 0 0!important;text-align:left!important}
+/* document shelf */
+html body.a-legal main.content .al-shelf{display:flex;gap:8px;flex-wrap:wrap;margin-top:30px}
+html body.a-legal main.content .al-shelf a{font:600 13px/1 Inter,system-ui,sans-serif;padding:11px 16px;border-radius:99px;background:#fff;color:#111;border:1px solid #ddd8d2;text-decoration:none;transition:transform .2s,background .2s,color .2s}
+html body.a-legal main.content .al-shelf a:hover{transform:translateY(-2px);background:#e9e5df}
+html body.a-legal main.content .al-shelf a.on{background:#111;color:#fff;border-color:#111;box-shadow:0 8px 20px -8px rgba(0,0,0,.5)}
+/* body */
+html body.a-legal main.content .al-body{display:grid;grid-template-columns:230px minmax(0,1fr);gap:clamp(28px,6vw,90px);margin-top:clamp(40px,8vw,90px);align-items:start}
+html body.a-legal main.content .al-rail{position:sticky;top:calc(var(--hhs,64px) + 22px);padding-left:16px;max-height:calc(100vh - var(--hhs,64px) - 40px);overflow:auto}
+html body.a-legal main.content .al-rail>b{display:block;font:700 11px/1 "Space Mono",ui-monospace,monospace;letter-spacing:.14em;color:#6b6762;margin-bottom:14px;text-transform:uppercase}
+html body.a-legal main.content .al-rail ol{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+html body.a-legal main.content .al-rail a{display:flex;gap:10px;align-items:baseline;padding:7px 0;color:#6b6762;text-decoration:none;font:500 13.5px/1.35 Inter,system-ui,sans-serif;transition:color .2s,transform .2s}
+html body.a-legal main.content .al-rail a i{font:700 10px/1 "Space Mono",ui-monospace,monospace;font-style:normal;color:#aaa49d}
+html body.a-legal main.content .al-rail a:hover{color:#111}
+html body.a-legal main.content .al-rail a.on{color:#111;font-weight:700;transform:translateX(4px)}
+html body.a-legal main.content .al-rail a.on i{color:#800020}
+html body.a-legal main.content .al-bar{position:absolute;left:0;top:0;bottom:0;width:2px;background:#d8d3cc;border-radius:2px}
+html body.a-legal main.content .al-bar::after{content:"";position:absolute;inset:0;background:#800020;transform-origin:top;transform:scaleY(0)}
+@supports(animation-timeline:scroll()){html body.a-legal main.content .al-bar::after{animation:alProg linear both;animation-timeline:scroll(root)}@keyframes alProg{to{transform:scaleY(1)}}}
+/* reading column */
+html body.a-legal main.content .al-doc{max-width:700px}
+html body.a-legal main.content .al-sec{position:relative;padding:34px 0 34px;border-top:1px solid #d8d3cc;scroll-margin-top:calc(var(--hhs,64px) + 20px)}
+html body.a-legal main.content .al-sec:first-child{border-top:0;padding-top:0}
+html body.a-legal main.content .al-n{position:absolute;left:-.04em;top:30px;font:700 clamp(48px,6.4vw,78px)/1 Inter,system-ui,sans-serif;letter-spacing:-.05em;color:transparent;-webkit-text-stroke:1px #cfc9c1;pointer-events:none;z-index:0;transition:-webkit-text-stroke-color .3s}
+html body.a-legal main.content .al-sec:first-child .al-n{top:-4px}
+html body.a-legal main.content .al-sec.on .al-n{-webkit-text-stroke-color:#800020}
+html body.a-legal main.content .al-sec h2{position:relative;z-index:1;font-size:clamp(24px,3.2vw,34px)!important;line-height:1.12!important;letter-spacing:-.025em!important;font-weight:700!important;margin:0 0 14px!important;padding-top:clamp(46px,5.4vw,70px);color:#111!important;text-align:left!important}
+html body.a-legal main.content .al-sec p,html body.a-legal main.content .al-sec li{position:relative;z-index:1;font-size:16.5px!important;line-height:1.75!important;color:#2c2a27!important;text-align:left!important;max-width:none}
+html body.a-legal main.content .al-sec p,html body.a-legal main.content .al-sec .p,html body.a-legal main.content .al-sec li{display:block!important;-webkit-line-clamp:unset!important;overflow:visible!important}
+html body.a-legal main.content .al-sec li{display:list-item!important}
+html body.a-legal main.content .al-sec p{margin:0 0 14px!important}
+html body.a-legal main.content .al-sec ul,html body.a-legal main.content .al-sec ol{padding-left:20px!important;margin:0 0 14px!important;display:block!important}
+html body.a-legal main.content .al-sec li{margin:0 0 8px!important;display:list-item!important;border:0!important;padding:0!important}
+html body.a-legal main.content .al-sec b{color:#111}
+html body.a-legal main.content .al-sec a{color:#800020;text-underline-offset:3px}
+html body.a-legal main.content .al-sec table{width:100%;border-collapse:collapse;font-size:14.5px}
+html body.a-legal main.content .al-sec td,html body.a-legal main.content .al-sec th{border-bottom:1px solid #d8d3cc;padding:10px 8px;text-align:left}
+/* end strip */
+html body.a-legal main.content .al-end{margin-top:70px;background:#111;color:#fff;border-radius:28px;padding:clamp(26px,5vw,46px);display:flex;flex-wrap:wrap;gap:14px 28px;align-items:center}
+html body.a-legal main.content .al-end .al-mono{color:#8a8a88;width:100%}
+html body.a-legal main.content .al-end p{font-size:clamp(20px,3vw,30px)!important;font-weight:600!important;letter-spacing:-.02em;color:#fff!important;margin:0!important;flex:1 1 280px}
+html body.a-legal main.content .al-end .btn{background:#fff;color:#111;border-color:#fff}
+@media(max-width:899px){
+  html body.a-legal main.content .al-body{grid-template-columns:1fr;gap:0;margin-top:34px}
+  html body.a-legal main.content .al-rail{position:sticky;top:var(--hhs,64px);z-index:5;margin:0 -20px;padding:10px 20px;background:#f1eeea;max-height:none;border-bottom:1px solid #d8d3cc;overflow-x:auto;overflow-y:hidden}
+  html body.a-legal main.content .al-rail>b,html body.a-legal main.content .al-bar{display:none}
+  html body.a-legal main.content .al-rail ol{display:flex;gap:6px;width:max-content}
+  html body.a-legal main.content .al-rail a{padding:9px 13px;border-radius:99px;background:#fff;border:1px solid #ddd8d2;white-space:nowrap;color:#111}
+  html body.a-legal main.content .al-rail a i{display:none}
+  html body.a-legal main.content .al-rail a.on{background:#111;color:#fff;transform:none}
+  html body.a-legal main.content .al-n{font-size:64px;top:14px}
+  html body.a-legal main.content .al-sec{scroll-margin-top:calc(var(--hhs,64px) + 56px)}
+}
+@media print{html body.a-legal main.content .al-rail,html body.a-legal main.content .al-shelf,html body.a-legal main.content .al-end{display:none}html body.a-legal main.content .al-body{display:block}html body.a-legal main.content .al-n{display:none}}
