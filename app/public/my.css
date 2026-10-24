@@ -146,3 +146,8 @@ h1{margin:0;font-weight:800;letter-spacing:-.045em;line-height:.95;font-size:cla
 
 #tiles .area{grid-column:1/-1;margin:14px 0 0;font-size:11px;letter-spacing:.14em;color:#8a8a8a;font-weight:500}
 #tiles .tile{min-height:104px}
+
+.deps{display:grid;gap:8px;margin:12px 0}.deps .dep{border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:10px 14px;display:grid;gap:2px}.deps .dep b{font-size:14px}.deps small{color:#9a9a9a;font-size:12px;line-height:1.4}.deps .why{color:#fff}
+
+.ob{display:inline-block;align-self:flex-start;font-size:11px;letter-spacing:.02em;border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:2px 9px;color:#cfcfcf;margin-top:2px}.ob-full{border-color:#3d9a6a;color:#8fe0b4}.ob-partial{border-color:#c79a2e;color:#f0cf7a}.ob-online_only,.ob-unknown{color:#aaa}.ob-note{color:#cfcfcf}
+.ob-basis{color:#9a9a9a;font-size:11px}

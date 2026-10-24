@@ -19,22 +19,36 @@
   function own(d, k) { return d.features && d.features[k] === true && (d.enabled_features || {})[k] !== false; }
 
   /* ---------- builder: areas of a business, not a feature list ---------- */
-  /* Features a client ticks one by one. Each is backed by one building block (an existing app's feature key); the software
-     is the union of the blocks behind the ticked features. */
-  var FEATS = [
-    ['bill', 'Billing and invoices', 'Sell', 'pos', 'bars'], ['tables', 'Tables and dine-in', 'Sell', 'pos', 'bars'], ['kitchen', 'Kitchen orders', 'Sell', 'pos', 'bars'],
-    ['stock', 'Stock and items', 'Sell', 'pos', 'bars'], ['cust', 'Customers and loyalty', 'Sell', 'pos', 'bars'], ['offers', 'Offers and coupons', 'Sell', 'pos', 'bars'],
-    ['qr', 'QR table ordering', 'Sell', 'self_order', 'bars'], ['scan', 'Scan to bill', 'Sell', 'scan', 'bars'],
-    ['phones', 'Phone sales and IMEI', 'Phone shop', 'mobile', 'ring'], ['repair', 'Repairs', 'Phone shop', 'mobile', 'ring'], ['dues', 'Customer and vendor dues', 'Phone shop', 'mobile', 'ring'],
-    ['sizes', 'Sizes and colours', 'Clothing', 'style', 'tri'], ['tags', 'Barcode tags', 'Clothing', 'style', 'tri'], ['store', 'Online store', 'Clothing', 'style', 'tri'],
-    ['attend', 'Staff attendance', 'People', 'payroll', 'dots'], ['pay', 'Salary and payslips', 'People', 'payroll', 'dots'], ['leave', 'Leave requests', 'People', 'payroll', 'dots'],
-    ['gst', 'GST invoices and books', 'Money', 'accounting', 'sq'], ['cash', 'Expenses and cash', 'Money', 'finance', 'sq'], ['loans', 'Loans and owner money', 'Money', 'finance', 'sq'],
-    ['web', 'Your own website', 'Online', 'website_builder', 'orbit']
-  ];
-  var SCREEN = { bill: '/index.html?tab=sell', tables: '/index.html?tab=tables', kitchen: '/index.html?tab=kitchen', stock: '/dashboard.html#inv/stock', cust: '/dashboard.html#crm/customers', offers: '/dashboard.html#mkt/offers',
-    qr: '/dashboard.html#qr/ordering', scan: '/scan.html', phones: '/mob.html#/sell', repair: '/mob.html#/repairs', dues: '/mob.html#/dues',
-    sizes: '/style.html#/stock', tags: '/style.html#/stock', store: '/style.html#/store', attend: '/payroll.html#/time', pay: '/payroll.html#/pay', leave: '/payroll.html#/leave',
-    gst: '/accounts.html#/home', cash: '/finance.html#/activity', loans: '/finance.html#/owner', web: '/builder.html' };
+  /* The modules, their single screens and their dependencies come from the database (public_module_catalogue). Nothing is
+     hardcoded here, so if the list cannot be loaded the builder shows an error instead of guessing. A feature is one screen
+     of a module; ticking it turns on the module behind it, and the server adds anything that module needs. */
+  var CAT = [], FEATS = [], SCREEN = {};
+  function useCatalogue(list) {
+    CAT = list || []; FEATS = []; SCREEN = {};
+    CAT.forEach(function (m) { (m.screens || []).forEach(function (sc) { FEATS.push([sc.id, sc.label, m.family, m.key, sc.g || 'sq']); SCREEN[sc.id] = sc.url; }); });
+  }
+  /* Offline label and evidence qualifier come from the database metadata only. Anything missing, malformed or contradictory
+     (an unknown level, a flag that is not true/false, "full" that is not verified, "verified" without a browser test) is
+     shown as "Not yet checked". Nothing here lists which module can do what. */
+  var OFFLINE_LABEL = { full: 'Works offline', partial: 'Partly offline', online_only: 'Needs internet', unknown: 'Not yet checked' };
+  var BASES = ['browser_tested', 'code_inspected', 'documentation_only', 'none'];
+  var BASIS_TEXT = {
+    browser_tested: 'Tested in a test browser. Not yet tested on real phones or computers.',
+    code_inspected: 'Based on reading the code. Not tested.',
+    documentation_only: 'Based on documentation only. Not tested.',
+    none: 'Not checked yet.'
+  };
+  function offlineOf(m) {
+    var o = m && m.offline, unknown = { level: 'unknown', note: '', basis: 'none', qualifier: BASIS_TEXT.none };
+    if (!o || typeof o !== 'object' || Array.isArray(o)) return unknown;
+    var lv = o.level, bs = o.basis;
+    if (typeof lv !== 'string' || !OFFLINE_LABEL.hasOwnProperty(lv) || typeof o.verified !== 'boolean' || typeof bs !== 'string' || BASES.indexOf(bs) < 0) return unknown;
+    if ((lv === 'full' && o.verified !== true) || (o.verified === true && bs !== 'browser_tested') || (lv === 'unknown' && o.verified === true)) return unknown;
+    if (lv === 'unknown') return unknown;
+    return { level: lv, basis: bs, qualifier: BASIS_TEXT[bs], note: lv === 'partial' && typeof o.summary === 'string' ? o.summary : '' };
+  }
+  function offlineBadge(m) { var d = offlineOf(m); return el('span', { class: 'ob ob-' + d.level, title: d.qualifier, text: OFFLINE_LABEL[d.level] }); }
+  function modLabel(k) { var m = CAT.filter(function (x) { return x.key === k; })[0]; return m ? m.label : k; }
   function embedUrl(u) { var h = u.indexOf('#'), base = h < 0 ? u : u.slice(0, h), hash = h < 0 ? '' : u.slice(h); return base + (base.indexOf('?') < 0 ? '?' : '&') + 'embed=1' + hash; }
   var FK = 'auz_feat';
   function getFeat() { try { return JSON.parse(localStorage.getItem(FK) || '[]'); } catch (e) { return []; } }
@@ -43,10 +57,9 @@
   var DK = 'auz_build_design';
   var DESIGN = (function () { try { return Object.assign({ nav: 'bottom', card: 'soft', theme: 'dark', accent: '#800020' }, JSON.parse(localStorage.getItem(DK) || '{}')); } catch (e) { return { nav: 'bottom', card: 'soft', theme: 'dark', accent: '#800020' }; } })();
   function saveDesign() { try { localStorage.setItem(DK, JSON.stringify(DESIGN)); } catch (e) {} }
-  var BLOCKS = [], HAS_SESSION = false;
+  var HAS_SESSION = false;
   function cats() {
-    var have = BLOCKS.map(function (b) { return b.key; });
-    return FEATS.filter(function (f) { return have.indexOf(f[3]) >= 0; }).map(function (f) { return { id: f[0], name: f[1], line: f[2], keys: [f[3]], g: f[4] }; });
+    return FEATS.filter(function (f) { return CAT.some(function (m) { return m.key === f[3] && m.status === 'available'; }); }).map(function (f) { return { id: f[0], name: f[1], line: f[2], keys: [f[3]], g: f[4], mod: f[3] }; });
   }
   function glyph(g) {
     var d = el('span', { class: 'gl gl-' + g, 'aria-hidden': 'true' });
@@ -61,9 +74,25 @@
       var on = feats.indexOf(c.id) >= 0; if (on) chosen.push(c);
       t.append(el('button', { type: 'button', class: 'tile' + (on ? ' on' : ''), 'aria-pressed': on ? 'true' : 'false', onclick: function () {
         var s = getFeat(); if (on) s = s.filter(function (k) { return k !== c.id; }); else s.push(c.id); setFeat(s); paintBuilder(); } },
-        [glyph(c.g), el('span', { class: 'plus', text: '+' }), el('b', { text: c.name })]));
+        [glyph(c.g), el('span', { class: 'plus', text: '+' }), el('b', { text: c.name }), offlineBadge(CAT.filter(function (m) { return m.key === c.mod; })[0])]));
     });
-    paintDesign(); paintPhone(chosen); paintGo(chosen.length);
+    paintDesign(); paintPhone(chosen); paintGo(chosen.length); paintDeps();
+  }
+  var depSeq = 0;
+  async function paintDeps() {
+    var box = $('deps'); if (!box) return;
+    var sel = getSel(), my = ++depSeq; box.textContent = '';
+    if (!sel.length) return;
+    var r = await sb.rpc('public_module_resolve', { p: { blocks: sel } });
+    if (my !== depSeq) return;
+    box.textContent = '';
+    if (r.error || !r.data) { box.append(el('p', { class: 'err', text: (r.error && r.error.message) || 'Could not check your choices.' })); return; }
+    (r.data.keys || []).forEach(function (k) {
+      var m = CAT.filter(function (x) { return x.key === k; })[0]; if (!m) return;
+      var add = (r.data.added || []).filter(function (a) { return a.key === k; })[0];
+      box.append(el('div', { class: 'dep' }, [el('b', { text: m.label }), el('small', { text: m.description }), offlineBadge(m), el('small', { class: 'ob-basis', text: offlineOf(m).qualifier }), offlineOf(m).note ? el('small', { class: 'ob-note', text: offlineOf(m).note }) : null,
+        add ? el('small', { class: 'why', text: 'Added because ' + modLabel(add.because) + ' needs it.' }) : null]));
+    });
   }
   function opt(label, key, vals) {
     var row = el('div', { class: 'opt' }, [el('span', { class: 'mono', text: label })]), seg = el('div', { class: 'seg' });
@@ -214,8 +243,8 @@
   }
 
   async function boot() {
-    var bl = await sb.rpc('public_trial_blocks');
-    BLOCKS = (bl && bl.data) || [];
+    var cl = await sb.rpc('public_module_catalogue'), catOk = !!(cl && !cl.error && Array.isArray(cl.data) && cl.data.length);
+    if (catOk) useCatalogue(cl.data);
     var sess = (await sb.auth.getSession()).data.session;
     if (sess) {
       var hm = await sb.rpc('hub_me');
@@ -228,7 +257,9 @@
         return workspace(r.data, tr);
       }
     }
-    HAS_SESSION = !!sess; show('build'); paintBuilder();
+    HAS_SESSION = !!sess; show('build');
+    if (!catOk) { var t0 = $('tiles'); t0.textContent = ''; t0.append(el('p', { class: 'err', text: 'We could not load the list of features. Nothing was changed. Check your connection and try again.' }), el('button', { class: 'btn ghost', type: 'button', text: 'Try again', onclick: function () { location.reload(); } })); $('go').textContent = ''; return; }
+    paintBuilder();
   }
   boot().catch(function (e) { show('build'); $('tiles').textContent = (e && e.message) || 'Could not load. Check your connection and try again.'; });
 })();
