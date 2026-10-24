@@ -29,3 +29,33 @@
   q('[data-cyc-next]').addEventListener('click', function () { clearInterval(t); show(at + 1); });
   show(0); if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) t = setInterval(function () { if (!document.hidden) show(at + 1); }, 4200);
 })();
+/* why: rigid vs flexible duel */
+(function () {
+  var rg = document.getElementById('ayRigid'), fx = document.getElementById('ayFlex'); if (!rg || !fx) return;
+  var no = document.getElementById('ayNo'), toast = document.getElementById('ayToast'), tries = 0;
+  var M = ['Locked by the vendor.', 'Custom field? That is a paid upgrade.', 'Feature request #4821: planned for 2028.', 'Rename it? Please raise a ticket.', 'Moving a button needs a developer.', 'Not possible. Use it as it comes.'];
+  rg.addEventListener('pointerdown', function (e) {
+    tries++; toast.textContent = M[(tries - 1) % M.length] + ' (tries: ' + tries + ', changes: 0)';
+    rg.classList.remove('shake'); void rg.offsetWidth; rg.classList.add('shake');
+  });
+  var box = document.getElementById('ayFields'), n = 0, hint = document.getElementById('ayHint'), yes = document.getElementById('ayYes'), touched = false;
+  function count() { n++; yes.textContent = n; }
+  function field(label, val, wide) {
+    var d = document.createElement('div'); d.className = 'ay-f' + (wide ? ' wide' : '');
+    d.innerHTML = '<small contenteditable="true" spellcheck="false"></small><span contenteditable="true" spellcheck="false"></span><b class="u" title="Move up">↑</b><b class="x" title="Remove">×</b>';
+    d.children[0].textContent = label; d.children[1].textContent = val;
+    d.querySelector('.x').addEventListener('click', function () { touched = true; d.remove(); count(); hint.textContent = 'Removed. Nobody asked a vendor.'; });
+    d.querySelector('.u').addEventListener('click', function () { touched = true; if (d.previousElementSibling) box.insertBefore(d, d.previousElementSibling); count(); hint.textContent = 'Moved. Instantly.'; });
+    d.addEventListener('input', function () { touched = true; count(); hint.textContent = 'Renamed. Your word, your screen.'; });
+    box.appendChild(d); return d;
+  }
+  [['Guest name', 'Your own word'], ['Service', 'Your menu']].forEach(function (a) { field(a[0], a[1]); });
+  var extra = [['Stylist', 'Added by you'], ['Size', 'Added by you'], ['WhatsApp', 'Bill link'], ['GST no.', 'Auto-filled'], ['Table', 'T4'], ['Discount', '10%']], k = 0;
+  document.getElementById('ayAdd').addEventListener('click', function () { touched = true; var e = extra[k++ % extra.length]; field(e[0], e[1], k % 3 === 0); count(); hint.textContent = 'Added. No ticket, no wait.'; });
+  Array.prototype.forEach.call(document.querySelectorAll('#aySw i'), function (i) { i.style.setProperty('--c', i.getAttribute('data-c')); i.addEventListener('click', function () { touched = true; fx.style.setProperty('--ac', i.getAttribute('data-c')); count(); hint.textContent = 'Recoloured to your brand.'; }); });
+  /* the page shows it alive until the visitor touches it */
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    var steps = [function () { field('Stylist', 'Added by you'); count(); hint.textContent = 'Added. No ticket, no wait.'; }, function () { fx.style.setProperty('--ac', '#1f6f5c'); count(); hint.textContent = 'Recoloured to your brand.'; }, function () { var f = box.firstChild; if (f) { f.children[0].textContent = 'Client'; count(); hint.textContent = 'Renamed. Your word, your screen.'; } }], i = 0;
+    var t = setInterval(function () { if (touched || i >= steps.length) { clearInterval(t); return; } steps[i++](); }, 2200);
+  }
+})();

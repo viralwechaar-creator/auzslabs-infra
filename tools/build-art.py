@@ -73,23 +73,37 @@ def _():
 @reg('platform')
 def _():
     h = rd('platform')
-    stage = re.search(r'<section class="wy-stage.*?</section>', h, re.S).group(0)
     eco = re.search(r'<section class="eco">.*?</section>', h, re.S).group(0)
     bl = re.search(r'<section class="bl">.*?</section>', h, re.S).group(0)
     body = '''
 <div class="aw-y">
-<section class="ay-poster">
+<section class="ay-duel">
 <div class="ay-blob"><i></i><i></i><i></i></div><div class="a-grain"></div>
-<span class="ay-vl"></span><span class="ay-hl"></span><span class="ay-cross"></span>
-<span class="ay-c1">&copy;2026</span><span class="ay-coord">26.2389&deg; N, 73.0243&deg; E</span><span class="ay-c2">AUZSLAB &mdash; NOTES</span>
-<h1 class="ay-h"><span class="aw" style="--i:0"><span data-ed="why.h">SOFTWARE NEVER FIT.</span></span><span class="aw" style="--i:1"><span>WE CHANGED</span></span><span class="aw" style="--i:2"><span>THAT.</span></span></h1>
-<p class="ay-sub" data-ed="why.sub">A complete ecosystem for business, shaped to you.</p>
-<span class="ay-f1">MADE IN JODHPUR</span><span class="ay-f2">NOTES &mdash; W001</span><span class="ay-f3">SCROLL &darr;</span>
+<div class="ay-head">
+<span class="ay-mono">WHY AUZSLAB &mdash; TRY IT YOURSELF</span>
+<h1 class="ay-h"><span class="aw" style="--i:0"><span data-ed="why.h">Others make you fit.</span></span><span class="aw" style="--i:1"><span class="ay-us">We fit you.</span></span></h1>
+<p class="ay-sub" data-ed="why.sub">Left is every other software. Right is AUZslab. Try to change something on each.</p>
+</div>
+<div class="ay-stage">
+<div class="ay-pane ay-rigid" id="ayRigid"><div class="ay-tag"><b>OTHER SOFTWARE</b><span>Changes allowed: <i id="ayNo">0</i></span></div>
+<div class="ay-ui"><div class="ay-ui-top">New sale<small>Template 01</small></div>
+<div class="ay-f"><small>Customer</small>Fixed label</div><div class="ay-f"><small>Item</small>One list</div>
+<div class="ay-f lock"><small>Field 7</small>Not used</div><div class="ay-f lock"><small>Field 8</small>Cannot remove</div>
+<div class="ay-btn">Save</div></div>
+<div class="ay-toast" id="ayToast">Tap anything. Try to change it.</div>
+<span class="ay-lock">&#128274;</span></div>
+<div class="ay-vs">VS</div>
+<div class="ay-pane ay-flex" id="ayFlex"><div class="ay-tag"><b>AUZSLAB</b><span>Changes made: <i id="ayYes">0</i></span></div>
+<div class="ay-ui"><div class="ay-ui-top"><span contenteditable="true" spellcheck="false">New sale</span><small>Made for you</small></div>
+<div class="ay-fl" id="ayFields"></div>
+<div class="ay-tools"><button type="button" id="ayAdd">+ Add a field</button><span class="ay-sw" id="aySw"><i data-c="#800020"></i><i data-c="#1f6f5c"></i><i data-c="#2b4cc7"></i><i data-c="#c26a00"></i></span></div>
+<div class="ay-btn" contenteditable="true" spellcheck="false">Confirm and share</div></div>
+<div class="ay-toast" id="ayHint">Rename it. Move it. Add one. Recolour it.</div></div>
+</div>
 </section>
-<div class="ay-stagewrap">%s</div>
 <div class="ay-ecowrap">%s</div>
 %s
-</div>''' % (stage, eco, bl)
+</div>''' % (eco, bl)
     put('platform', body, 'a-dark a-why', 'a-why')
 
 @reg('products')
