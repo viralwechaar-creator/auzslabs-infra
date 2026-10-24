@@ -1,0 +1,36 @@
+/* "Modern" look: flat, small type, hairlines, big radius. Opt-in per device (ds/modern.js). CSS only, nothing changes
+   unless <html class="ui-modern">. Covers the kit shared by POS, AUZsPay, AUZsLedger, AUZsScan and AUZsMob. */
+html.ui-modern{--r-lg:20px;--r3:16px;--r4:22px}
+html.ui-modern body{font-size:14px}
+/* surfaces */
+html.ui-modern .card,html.ui-modern .list,html.ui-modern .kpi{border-radius:20px;box-shadow:0 0 0 1px var(--sep)}
+html.ui-modern .card{padding:14px}
+html.ui-modern .li{min-height:44px;padding:9px 14px}
+html.ui-modern .li .t{font-size:14px;font-weight:500}
+html.ui-modern .li .s{font-size:12px}
+html.ui-modern .kpi .k{font-size:12px}
+html.ui-modern .kpi .n{font-size:22px}
+/* controls */
+html.ui-modern .btn{border-radius:999px;font-size:14px;font-weight:600;padding:0 16px}
+html.ui-modern .btn.sm{font-size:13px;min-height:34px;padding:0 12px}
+html.ui-modern .btn.fill{background:var(--label);color:var(--bg)}
+html.ui-modern .btn.fill.danger{background:var(--red);color:#fff}
+html.ui-modern .input,html.ui-modern .select,html.ui-modern .textarea{border-radius:12px;font-size:14px;background:var(--card);box-shadow:0 0 0 1px var(--sep2)}
+html.ui-modern .input:focus,html.ui-modern .select:focus,html.ui-modern .textarea:focus{box-shadow:0 0 0 2px var(--label)}
+html.ui-modern .seg{border-radius:999px;padding:3px;background:transparent;box-shadow:0 0 0 1px var(--sep2)}
+html.ui-modern .seg button{border-radius:999px;font-size:13px;font-weight:500}
+html.ui-modern .seg button[aria-selected=true]{background:var(--label);color:var(--bg);box-shadow:none;font-weight:600}
+html.ui-modern .chip{border-radius:999px;background:transparent;box-shadow:0 0 0 1px var(--sep2);font-size:12.5px;color:var(--label2)}
+html.ui-modern .chip.on,html.ui-modern .chip[aria-pressed=true]{background:var(--label);color:var(--bg);box-shadow:none}
+/* sheets */
+html.ui-modern .sheet{border-radius:22px}
+html.ui-modern .sheet-h h2{font-size:15px;font-weight:600}
+html.ui-modern .sheet-b{padding:14px;gap:14px}
+/* navigation */
+html.ui-modern .tabbar button{font-size:10.5px;font-weight:500}
+html.ui-modern .side a,html.ui-modern .side button.nav{font-size:13px;border-radius:999px}
+html.ui-modern .side a[aria-current=page],html.ui-modern .side button.nav[aria-current=page]{background:var(--label);color:var(--bg)}
+html.ui-modern .side a[aria-current=page] .ic,html.ui-modern .side button.nav[aria-current=page] .ic{color:inherit}
+/* tables */
+html.ui-modern table th{font-size:11.5px;font-weight:600;color:var(--label2);text-transform:none}
+html.ui-modern table td{font-size:13px}
