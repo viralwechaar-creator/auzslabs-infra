@@ -144,13 +144,14 @@ function styleForm(s, done) {
   const szs = chipEditor(s ? [...new Set(s.variants.map((x) => x.size).filter(Boolean))] : [], presetFor(s ? s.category : ''), t('Sizes'), '');
   function setSizes() { szs.setSuggestions(presetFor(cat.value)); }
   cat.addEventListener('input', setSizes);
-  const pics = photoEditor(s ? s.photoUrl : '', s ? s.photos : []);
+  const one = capOff('multi_pictures'); // plan allows one picture per style
+  const pics = photoEditor(s ? s.photoUrl : '', s ? s.photos : [], one);
   // pictures per colour: the till switches to these when a colour is picked
   const colPics = {}; const colHost = h('div', { class: 'grid' }); const colInit = (s && s.colourPhotos) || {};
   const paintColPics = () => {
     const cs = cols.peek(); cs.forEach((c) => { if (!colPics[c]) colPics[c] = photoEditor((colInit[c] || [])[0] || '', (colInit[c] || []).slice(1)); colPics[c].onChange = () => { typeof paintUse === 'function' && paintUse(); }; });
     clear(colHost).append(...cs.map((c) => h('div', { class: 'card grid' }, h('div', { class: 'cap' }, c), colPics[c])));
-    colWrap.style.display = cs.length ? '' : 'none';
+    colWrap.style.display = cs.length && !one ? '' : 'none';
   };
   const colWrap = h('div', { class: 'field' }, h('label', null, t('Pictures per colour')), h('div', { class: 'hint' }, t('Optional. When a colour is picked on the till, its pictures show instead.')), colHost);
   cols.onChange = paintColPics; paintColPics();
