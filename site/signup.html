@@ -274,7 +274,7 @@ document.getElementById('pwEyeToggle').onclick = () => {
 
 // ---- after any successful sign-in, by whatever method ----
 // "Sign in to send your request": the cart (and join-team.html) link here with ?next=<page> and we bring the person back after sign-in
-const NEXT_PAGES = ['cart.html', 'join-team.html', 'build.html'];
+const NEXT_PAGES = ['cart.html', 'join-team.html'];
 (function () { try { const n = new URLSearchParams(location.search).get('next'); if (NEXT_PAGES.includes(n)) sessionStorage.setItem('auz.next', n); } catch (e) {} })();
 function goNext() { try { const n = sessionStorage.getItem('auz.next'); if (NEXT_PAGES.includes(n)) { sessionStorage.removeItem('auz.next'); window.location.href = n; return true; } } catch (e) {} return false; }
 // AUZslab team members (salesman, setup, support, manager) have no business: signing in on the website must not drop them
