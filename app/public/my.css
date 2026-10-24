@@ -151,3 +151,10 @@ h1{margin:0;font-weight:800;letter-spacing:-.045em;line-height:.95;font-size:cla
 
 .ob{display:inline-block;align-self:flex-start;font-size:11px;letter-spacing:.02em;border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:2px 9px;color:#cfcfcf;margin-top:2px}.ob-full{border-color:#3d9a6a;color:#8fe0b4}.ob-partial{border-color:#c79a2e;color:#f0cf7a}.ob-online_only,.ob-unknown{color:#aaa}.ob-note{color:#cfcfcf}
 .ob-basis{color:#9a9a9a;font-size:11px}
+
+/* Feature tiles: small icon above the name (it used to sit under the title) */
+#tiles .tile{min-height:0;justify-content:flex-start;gap:8px;padding:56px 54px 16px 16px}
+#tiles .tile .gl{left:16px;top:16px;transform:scale(.4);transform-origin:left top}
+#tiles .tile:hover .gl{transform:scale(.44) rotate(-8deg)}
+#tiles .tile b{font-size:18px;line-height:1.15}
+@media(max-width:600px){#tiles .tile{padding:50px 46px 14px 14px}#tiles .tile .gl{left:14px;top:14px}#tiles .tile b{font-size:16px}}
