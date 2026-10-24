@@ -129,24 +129,22 @@ export default async function run({ browser, stack }) {
     assert(!errs.some((e) => /JS error/.test(e)), errs.join(' | ')); await c.close();
   }, 'critical');
 
-  await s.check('Payment page (pay.html): bill with GST, terms with an UNTICKED box, UPI QR, screenshot upload; the box is enforced; works on a phone', async () => {
+  await s.check('Payment page (pay.html): the quote with GST, online or cash in hand, terms with an UNTICKED box that is enforced; cash in hand reaches the admin; works on a phone', async () => {
     const r = await call('submit_client_order', { p: { contact_name: 'Meera Test', phone: '9812345670', requirement: 'More products', products: ['accounting'] } }, other);
     idB = r.data.id; tokB = r.data.token;
     await call('admin_save_order_quote', { p_id: idB, p_quote: { items: [{ key: 'accounting', plan: 'month', rate: 1490, discount: 0, gst: 18 }], setup: { on: false } } }, adm);
     await call('admin_set_order_status', { p_id: idB, p_status: 'link_sent' }, adm);
     const c = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await c.newPage(); const errs = watch(page);
-    // the test stack has Razorpay switched on; this check covers the fallback used when online payment is off
-    await page.route('**/payments/config', (r) => r.fulfill({ status: 200, headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' }, body: JSON.stringify({ enabled: false }) }));
     await page.goto(stack.url('', '/pay.html?t=' + tokB)); await page.waitForSelector('#agree', { timeout: 15000 });
     const t = await page.locator('body').innerText();
-    for (const w of ['AUZsLedger', '1,490.00', 'CGST', 'SGST', '1,758.00', 'Refunds', 'Bug fixes', 'Pay', 'Screenshot of your payment']) assert(t.toLowerCase().includes(w.toLowerCase()), 'pay page is missing: ' + w);
+    for (const w of ['AUZsLedger', '1,490.00', 'CGST', 'SGST', '1,758.00', 'Refund Policy', 'Pay online', 'Cash in hand']) assert(t.toLowerCase().includes(w.toLowerCase()), 'pay page is missing: ' + w);
+    assert(!/screenshot|UPI QR/i.test(t), 'the old screenshot / UPI QR route is still on the page');
     assert(await page.locator('#agree').isChecked() === false, 'the terms box is ticked by default');
-    assert(await page.locator('#qr').evaluate((i) => i.complete && i.naturalWidth > 50), 'no UPI QR');
-    await page.click('#send'); assert(/tick the box/i.test(await page.locator('#err').innerText()), 'the unticked box was not enforced');
-    await page.check('#agree'); await page.click('#send'); assert(/choose the screenshot/i.test(await page.locator('#err').innerText()), 'no screenshot was not refused');
-    await page.setInputFiles('#shot', { name: 'pay.png', mimeType: 'image/png', buffer: PNG }); await page.fill('#utr', '998877665544'); await page.click('#send');
-    await page.waitForFunction(() => /confirming your payment/i.test(document.body.innerText), null, { timeout: 15000 });
-    assert((await q('select status from client_orders where id=$1', [idB]))[0].status === 'payment_submitted', 'payment not recorded');
+    await page.click('input[value=cash]'); await page.click('#payBtn'); assert(/tick the box/i.test(await page.locator('#payErr').innerText()), 'the unticked box was not enforced');
+    await page.check('#agree'); await page.click('#payBtn');
+    await page.waitForFunction(() => /cash in hand/i.test(document.querySelector('#ttl')?.innerText || ''), null, { timeout: 15000 });
+    const st = (await q('select status, payment from client_orders where id=$1', [idB]))[0];
+    assert(st.status === 'payment_submitted' && st.payment.method === 'cash' && st.payment.terms_accepted_at, JSON.stringify(st));
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'sideways scroll on a phone');
     await s.shot(page, 'order-pay-phone'); assert(!errs.some((e) => /JS error/.test(e)), errs.join(' | ')); await c.close();
   }, 'critical');
@@ -156,10 +154,10 @@ export default async function run({ browser, stack }) {
     await p.goto(stack.url('', '/admin.html')); await p.waitForTimeout(800); await p.fill('#email', USERS.admin); await p.fill('#password', PASSWORD); await p.click('#signin'); await p.waitForTimeout(2500);
     await p.click('.a-side-btn[data-section=orders]'); await p.waitForSelector('#ordersList tr[data-oid]', { timeout: 10000 });
     await p.click('[data-ordf=payment_submitted]'); await p.waitForFunction(() => /Meera|Plain|Unpaid|Cafe|Test/.test(document.querySelector('#ordersList')?.innerText || ''), null, { timeout: 8000 });
-    await p.locator('#ordersList tr[data-oid]', { hasText: /screenshot sent/ }).first().locator('[data-oopen]').click();
-    await p.waitForSelector('#cfPay', { timeout: 10000 }); await p.waitForSelector('#proofBox img', { timeout: 10000 });
+    await p.locator('#ordersList tr[data-oid]').first().locator('[data-oopen]').click();
+    await p.waitForSelector('#cfPay', { timeout: 10000 });
     const txt = await p.locator('#ordBody').innerText();
-    for (const w of ['Quote', 'Setup fee', 'Payment link', 'Message to send on WhatsApp', 'Confirm payment', '1,758.00', 'UTR']) assert(txt.toLowerCase().includes(w.toLowerCase()), 'admin order screen is missing: ' + w);
+    for (const w of ['Quote', 'Payment link', 'Message to send on WhatsApp', 'Confirm payment', '1,758.00', 'cash in hand']) assert(txt.toLowerCase().includes(w.toLowerCase()), 'admin order screen is missing: ' + w);
     const msg = await p.locator('#waPay').inputValue(); assert(/pay\.html\?t=[a-f0-9]{32}/.test(msg) && /Team AUZslab/.test(msg) && /1,758.00/.test(msg), 'payment link message: ' + msg.slice(0, 200));
     await s.shot(p, 'order-admin-quote');
     // quote builder: add a branding charge, the total follows live
@@ -225,44 +223,6 @@ export default async function run({ browser, stack }) {
     assert((await card.locator('[data-cview],[data-cwa]').count()) === 0, 'bill buttons came back on the client card');
     assert(!errs.some((e) => /JS error/.test(e)), errs.join(' | ')); await c.close();
   }, 'critical');
-  await s.check('Business-page plans and add-ons (db/204): admin-managed prices are served live, a request carries the chosen plan with server-side prices, and the quote starts from it', async () => {
-    const tiers = (await call('public_plan_tiers', { p_niche: 'cafe' })).data;
-    assert(tiers.length === 4 && Number(tiers[1].monthly_price) === 1360, 'cafe tiers: ' + JSON.stringify(tiers.map((t) => t.monthly_price)));
-    assert((await call('public_plan_tiers', { p_niche: 'salon' })).data.length === 4 && (await call('public_salon_tiers', {})).data.length === 4, 'salon tiers wrong');
-    assert((await call('admin_save_niche_addon', { p: { addon_key: 'cafe_qr', monthly_price: 500 } }, cust)).status >= 400, 'customer saved an add-on price');
-    assert((await call('admin_save_niche_addon', { p: { addon_key: 'cafe_qr', monthly_price: 500 } }, adm)).status === 200, 'admin cannot save add-on');
-    assert((await call('admin_save_salon_tier', { p: { tier_key: 'cafe_growth', monthly_price: 1400 } }, adm)).status === 200, 'admin cannot save cafe tier');
-    assert(Number((await call('public_niche_addons', { p_niche: 'cafe' })).data.find((a) => a.addon_key === 'cafe_qr').monthly_price) === 500, 'add-on price not live');
-    await q('delete from client_orders where user_id = (select id from auth_users where email=$1)', [USERS.cafeOwner]);
-    const base = { contact_name: 'Plan Test', phone: '9812345678', business_name: 'Plan Cafe', requirement: 'Growth plan', plan: { niche: 'cafe', tier_key: 'cafe_growth', period: 'year', addons: ['cafe_qr', 'cafe_delivery', 'nope'], price: 1 } };
-    const r = await call('submit_client_order', { p: base }, other);
-    assert(r.status === 200, 'plan request refused: ' + JSON.stringify(r.raw));
-    const row = (await q('select niche, products, selection from client_orders where id=$1', [r.data.id]))[0];
-    assert(row.selection.tier.key === 'cafe_growth' && Number(row.selection.tier.monthly) === 1400 && row.selection.period === 'year' && row.selection.addons.length === 2, JSON.stringify(row.selection));
-    assert(row.niche === 'cafe' && row.products.includes('pos') && row.products.includes('self_order'), JSON.stringify(row));
-    const got = (await call('admin_get_client_order', { p_id: r.data.id }, adm)).data;
-    assert(got.selection && got.selection.addons.some((a) => a.key === 'cafe_qr' && Number(a.price) === 500), 'admin does not see the selection');
-    await q('delete from client_orders where id=$1', [r.data.id]);
-    await call('admin_save_niche_addon', { p: { addon_key: 'cafe_qr', monthly_price: 460 } }, adm); await call('admin_save_salon_tier', { p: { tier_key: 'cafe_growth', monthly_price: 1360 } }, adm);
-  }, 'critical');
-  await s.check('Cafe and salon pages read the admin prices live; Choose plan and Add-on land in the cart', async () => {
-    await call('admin_save_salon_tier', { p: { tier_key: 'cafe_growth', monthly_price: 1777 } }, adm);
-    const c = await newCtx(browser, stack, { w: 1280, h: 900 }); const page = await c.newPage(); const errs = watch(page);
-    await page.goto(stack.url('', '/business-cafes.html')); await page.waitForFunction(() => /1,777/.test(document.querySelector('#cfGrid').innerText), null, { timeout: 15000 });
-    await page.waitForFunction(() => document.querySelector('#salon-addons [data-addon="cafe_qr"] .sp-addon-add'), null, { timeout: 15000 });
-    await page.locator('#salon-addons [data-addon="cafe_delivery"] .sp-addon-add').click();
-    await page.locator('#cfGrid .sp-card').nth(1).locator('.sp-cta').click();
-    await page.waitForURL(/cart\.html/, { timeout: 15000 });
-    await page.waitForSelector('#planBox .cart-item', { timeout: 15000 });
-    const t = await page.locator('#planBox').innerText();
-    assert(/Growth plan/.test(t) && /1,777/.test(t) && /Zomato/.test(t), 'cart plan box: ' + t);
-    assert(await page.evaluate(() => JSON.parse(localStorage.getItem('auz_plan')).tier_key) === 'cafe_growth', 'plan not stored');
-    await page.goto(stack.url('', '/business-salons.html')); await page.waitForFunction(() => document.querySelector('#salon-addons [data-addon="salon_branch"] .sp-addon-add'), null, { timeout: 15000 });
-    assert((await page.locator('#spGrid .sp-card').count()) === 4, 'salon tiers missing');
-    await call('admin_save_salon_tier', { p: { tier_key: 'cafe_growth', monthly_price: 1360 } }, adm);
-    await s.shot(page, 'salon-plan-pick');
-    assert(!errs.some((e) => /JS error/.test(e)), errs.join(' | ')); await c.close();
-  }, 'critical');
   await s.check('Automations (db/205): unpaid quote reminder once per stage, daily summary, setup task for a paid new business, retry link after a failed payment', async () => {
     await q("insert into platform_flags (key, value) values ('whatsapp_platform_auto','on') on conflict (key) do update set value='on'");
     const mk = async (extra) => (await q("insert into client_orders (user_id, kind, status, contact_name, phone, business_name, niche, products) values ((select id from auth_users where email=$1),'new','link_sent','Auto Test','9812300001','Auto Biz','cafe','{pos}') returning id, token", [USERS.plain]))[0];
@@ -293,19 +253,20 @@ export default async function run({ browser, stack }) {
     await q('delete from team_tasks where source=$1', ['auto:payment_setup']); await q('delete from platform_salesmen where id=$1', [uid]);
     await q('delete from payments where id=$1', [pid]); await q('delete from client_orders where id=$1', [o.id]);
   }, 'critical');
-  await s.check('Mobile shop plans (db/206): four admin-managed tiers, a plan can switch on extra products (Smart Retail adds AUZsScan, Business 360 adds AUZsScan + AUZsLedger)', async () => {
-    const t = (await call('public_plan_tiers', { p_niche: 'mobile' })).data;
-    assert(t.length === 4 && t.map((x) => Number(x.monthly_price)).join() === '560,820,1360,2260', 'mobile tiers: ' + JSON.stringify(t.map((x) => x.monthly_price)));
-    assert(t[2].extra_keys.join() === 'scan' && t[3].extra_keys.join() === 'scan,accounting' && t[0].extra_keys.length === 0, 'extra keys: ' + JSON.stringify(t.map((x) => x.extra_keys)));
-    assert((await call('public_niche_addons', { p_niche: 'mobile' })).data.length === 3, 'mobile add-ons');
-    assert((await call('admin_list_salon_tiers', {}, adm)).data.filter((x) => x.niche === 'mobile').length === 4, 'admin does not list the mobile tiers');
-    await q('delete from client_orders where user_id = (select id from auth_users where email=$1)', [USERS.cafeOwner]);
-    const base = { contact_name: 'Mob Test', phone: '9812345678', business_name: 'Mob Shop', requirement: 'Business 360', plan: { niche: 'mobile', tier_key: 'mobile_business_360', period: 'month', addons: ['mobile_multi'] } };
-    const r = await call('submit_client_order', { p: base }, other); assert(r.status === 200, 'refused: ' + JSON.stringify(r.raw));
-    const row = (await q('select niche, products, selection from client_orders where id=$1', [r.data.id]))[0];
-    assert(row.niche === 'mobile' && ['mobile', 'scan', 'accounting'].every((k) => row.products.includes(k)), JSON.stringify(row));
-    assert(row.selection.tier.extra_keys.join() === 'scan,accounting', JSON.stringify(row.selection));
-    await q('delete from client_orders where id=$1', [r.data.id]);
+  await s.check('Cash in hand (db/260): needs the terms and a sent quote; the admin confirms it and the payment is recorded as cash', async () => {
+    const r = await call('submit_client_order', { p: { contact_name: 'Cash Test', phone: '9812345671', business_name: 'Cash Cafe', requirement: 'x', products: ['pos', 'addon_hardware'] } }, other);
+    assert(r.status === 200, 'request with an add-on refused: ' + JSON.stringify(r.raw));
+    const id = r.data.id, tok = r.data.token;
+    assert((await call('public_order_choose_cash', { p_token: tok, p_terms: true })).status >= 400, 'cash chosen before a quote was sent');
+    await call('admin_save_order_quote', { p_id: id, p_quote: { items: [{ key: 'pos', plan: 'month', rate: 1000, discount: 0, gst: 18 }], onboarding: { on: true, amount: 1360, gst: 0 }, custom: [{ label: 'Hardware integration', amount: 500, gst: 18 }] } }, adm);
+    await call('admin_set_order_status', { p_id: id, p_status: 'link_sent' }, adm);
+    assert((await call('public_order_choose_cash', { p_token: tok, p_terms: false })).status >= 400, 'cash accepted without the terms');
+    assert((await call('public_order_choose_cash', { p_token: tok, p_terms: true })).status === 200, 'cash refused');
+    const pub = (await call('public_client_order', { p_token: tok })).data;
+    assert(pub.status === 'payment_submitted' && pub.payment.method === 'cash', JSON.stringify(pub.payment));
+    const c = await call('admin_confirm_order_payment', { p_id: id }, adm); assert(c.status === 200, 'confirm failed ' + JSON.stringify(c.raw));
+    assert((await q("select mode from client_payments order by created_at desc limit 1"))[0].mode === 'cash', 'not recorded as cash');
+    assert((await q("select order_product_label('addon_hardware') l, order_product_label('style') s"))[0].l === 'Hardware integration', 'add-on label missing');
   }, 'critical');
   s.done();
 }

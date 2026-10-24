@@ -1,325 +1,163 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
+<head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-KQRQJFT0V0"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-KQRQJFT0V0');
-</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Your request and payment — AUZslab</title>
 <meta name="robots" content="noindex,nofollow">
+<title>Your quote — AUZslab</title>
 <link rel="icon" href="/logo.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="tool/theme.mobile.css?v=146" media="(max-width:899px)"><link rel="stylesheet" href="tool/theme.desktop.css?v=146" media="(min-width:900px)"><script src="theme.js?v=101"></script>
-<link rel="stylesheet" href="tool/sketch.mobile.css?v=101" media="(max-width:899px)"><link rel="stylesheet" href="tool/sketch.desktop.css?v=101" media="(min-width:900px)">
-<script src="tool/sketch.js?v=101"></script>
-<script src="tool/sketch-art.js?v=101" defer></script>
-<link rel="stylesheet" href="tool/design-system/ui-kit.mobile.css?v=103" media="(max-width:899px)"><link rel="stylesheet" href="tool/design-system/ui-kit.desktop.css?v=103" media="(min-width:900px)">
+<script src="theme.js?v=101"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<style>
-
-/* clean header: logo + home, no half-cut menu */
-.shell{display:block!important}
-.shell>.content{margin:0!important;width:100%}
-.shell>.topbar{display:flex!important;position:sticky;top:0;z-index:30;background:var(--bg);border-bottom:1px solid var(--line);align-items:center;justify-content:space-between;padding:10px 24px}
-.shell>.topbar .topbar-nav,.shell>.topbar .topbar-nav.tbn-fixed{display:none!important}
-.shell>.topbar .topbar-logo{order:0!important;display:block}
-.shell>.topbar .topbar-logo img{max-width:112px;height:auto;display:block}
-body.has-tbn main.content{padding-top:0!important}
-.pay-wrap{margin-left:auto;margin-right:auto;padding-left:20px;padding-right:20px}
-.pay-hero{padding-top:30px!important;padding-bottom:6px!important}
-.pay-hero .h-1{font-size:clamp(28px,4vw,40px);margin:6px 0 8px}
-.pay-hero .lede{margin:0 0 4px;max-width:640px}
-.state-card{text-align:center;padding:30px 22px}
-.state-ico{width:56px;height:56px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;margin:0 auto 14px;font-size:26px;font-weight:700}
-.state-ico.ok{background:#1f7a4d}.state-ico.bad{background:var(--accent)}
-.state-card h2{margin:0 0 6px;font-size:20px}
-.state-card p{margin:0 auto 14px;max-width:420px;color:var(--ink-faint);font-size:14px}
-.help-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-.err{color:var(--accent);font-size:12.5px;margin-top:10px}
-.pay-wrap{max-width:720px}
-.pay-grid{display:block}
-.pay-grid>section{margin:0}
-.pay-col{display:grid;gap:16px;align-content:start}
-.next-list{margin:8px 0 0;padding:0;list-style:none;display:grid;gap:10px;font-size:13.5px}
-.next-list li{display:flex;gap:10px;align-items:flex-start}
-.next-list b{flex:none;width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;font-size:12px;display:grid;place-items:center}
-@media(min-width:1000px){
-  .pay-wrap{max-width:1240px!important;width:100%}
-  .pay-wrap>section.section:first-child{padding-bottom:6px}
-  .pay-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
-  .pay-grid .pay-side{position:sticky;top:76px}
-}
-.steps{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 4px}
-.steps span{font-size:12px;padding:6px 12px;border-radius:999px;border:1.5px solid var(--line);color:var(--ink-faint);white-space:nowrap}
-.steps span.on{background:var(--ink);color:#fff;border-color:var(--ink)}
-.steps span.done{border-color:var(--ink);color:var(--ink)}
-.bill-t{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:8px}
-.bill-t th{text-align:left;font-weight:600;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-faint);padding:6px 6px;border-bottom:1.5px solid var(--ink)}
-.bill-t td{padding:9px 6px;border-bottom:1px solid var(--line);vertical-align:top}
-.bill-t .r{text-align:right;white-space:nowrap}
-.bill-t small{display:block;color:var(--ink-faint);font-size:11.5px}
-.tot-row{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:14px;color:var(--ink-faint)}
-.tot-row b{color:var(--ink)}
-.tot-row.big{border-top:2px solid var(--ink);margin-top:8px;padding-top:12px;font-size:18px;color:var(--ink)}
-.terms-box{border:1px solid var(--line);border-radius:14px;padding:6px 16px;margin-top:10px;max-height:300px;overflow:auto;font-size:13px;line-height:1.55}
-.terms-box h4{margin:12px 0 2px;font-size:13px}
-.terms-box p{margin:0 0 6px;color:var(--ink-faint)}
-.chk{display:flex;gap:10px;align-items:flex-start;margin:14px 0;font-size:14px;cursor:pointer}
-.chk input{width:20px;height:20px;margin-top:2px;flex:none}
-.upi-card{text-align:center}
-.upi-card img{margin:10px auto;display:block;border-radius:12px;background:#fff}
-.kv{display:grid;grid-template-columns:120px 1fr;gap:4px 12px;font-size:13.5px;margin-top:8px}
-.kv span:nth-child(odd){color:var(--ink-faint)}
-</style>
-<style id="topbar-nav-css">
-.topbar-nav{display:none}
-@media(min-width:900px){
-  .topbar-nav{display:flex;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);gap:26px;margin:0;order:0}
-  .tbn-item{position:relative}
-  .topbar-nav .tbn-top{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink);padding:10px 2px;white-space:nowrap;position:relative}
-  .topbar-nav .tbn-top i{font-style:normal;font-size:9px;opacity:.6;transition:transform .15s}
-  .tbn-item:hover .tbn-top i,.tbn-item:focus-within .tbn-top i{transform:rotate(180deg)}
-  .topbar-nav .tbn-top:hover{color:var(--accent)}
-  .topbar-nav .tbn-top[aria-current="page"]{color:var(--accent)}
-  .topbar-nav .tbn-top[aria-current="page"]::before{content:"[ ";white-space:pre}
-  .topbar-nav .tbn-top[aria-current="page"]::after{content:" ]";white-space:pre}
-  .tbn-menu{display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);min-width:240px;padding:8px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 40px -18px rgba(0,0,0,.4);z-index:40}
-  .tbn-menu::before{content:"";position:absolute;left:0;right:0;top:-12px;height:12px}
-  .tbn-item:hover .tbn-menu,.tbn-item:focus-within .tbn-menu{display:block}
-  .tbn-menu a{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:9px 12px;border-radius:10px;font-family:var(--font-body);font-size:13px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--ink);white-space:nowrap}
-  .tbn-menu a small{font:500 10px/1 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint,#8a847f)}
-  .tbn-menu a:hover{background:var(--bg,#f6f4f1);color:var(--accent)}
-  .tbn-menu a.tbn-all{margin-top:4px;border-top:1px dashed var(--line);border-radius:0 0 10px 10px;color:var(--accent)}
-  .topbar-nav.tbn-fixed{display:flex;position:fixed;left:0;right:var(--sidebar-w,280px);top:0;transform:none;height:54px;align-items:center;justify-content:center;background:var(--bg);border-bottom:1px solid var(--line);z-index:24;padding-left:120px}
-  body:not(:has(.sidebar)) .topbar-nav.tbn-fixed{right:0}
-  .tbn-logo{position:absolute;left:20px;top:50%;transform:translateY(-50%);display:block;line-height:0}
-  .tbn-logo img{height:28px;width:auto;display:block}
-  :root[data-theme=dark] .tbn-logo img{filter:invert(1)}
-  @media (prefers-color-scheme:dark){:root:not([data-theme=light]) .tbn-logo img{filter:invert(1)}}
-  body.has-tbn main.content{padding-top:54px}
-}
-</style>
-<script id="topbar-nav-js">(function(){function f(){var n=document.querySelector('.topbar-nav'),t=document.querySelector('.topbar');if(!n||!t)return;var hide=matchMedia('(min-width:900px)').matches&&getComputedStyle(t).display==='none';if(hide&&n.parentNode===t){document.body.appendChild(n);n.classList.add('tbn-fixed');if(!n.querySelector('.tbn-logo')){var a=document.createElement('a');a.className='tbn-logo';a.href='index.html';a.setAttribute('aria-label','AUZslab home');var im=document.createElement('img');im.src='logo.png';im.alt='AUZslab';a.appendChild(im);n.insertBefore(a,n.firstChild)}document.body.classList.add('has-tbn')}else if(!hide&&n.classList.contains('tbn-fixed')&&!matchMedia('(min-width:900px)').matches){}}f();addEventListener('load',f)})();</script>
+<link rel="stylesheet" href="u.css?v=4"><link rel="stylesheet" href="t.css?v=2"><link rel="stylesheet" href="fluid.css?v=3">
+<meta name="theme-color" content="#efeeed">
 </head>
-<body>
-<div id="pageTransition" class="page-transition" aria-hidden="true"></div>
+<body class="mk-page">
 <div class="shell">
-  <header class="topbar">
-    <div style="display:flex;gap:8px;align-items:center;order:2">
-      <button type="button" class="theme-toggle" data-theme-toggle role="switch" aria-checked="false" aria-label="Dark mode"></button>
-      <a href="index.html" class="btn btn-ghost">&larr; Home</a>
+  <header class="u-top">
+    <a href="index.html" class="u-logo" aria-label="AUZslab home"><img src="logo.png" alt="AUZslab"></a>
+    <nav class="u-nav" aria-label="Main"><a href="products.html">Products</a><a href="live-demo.html">Live demo</a><a href="studio.html">Studio</a><a href="platform.html">Why AUZslab</a><a href="contact.html">Contact</a></nav>
+    <div class="u-r">
+      <button type="button" class="u-ic" data-theme-toggle aria-label="Dark mode"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M20 14.500A8 8 0 0 1 9.500 4 8 8 0 1 0 20 14.500Z"/></svg></button>
+      <a href="signup.html" class="u-pill" data-signin-link>Get started</a>
+      <button class="u-menu" id="menuToggle" aria-label="Open menu" aria-expanded="false"><i></i><span class="menu-btn-label">Menu</span></button>
     </div>
-    <a href="index.html" class="topbar-logo"><img src="logo.png" alt="AUZslab"></a>
-    <nav class="topbar-nav" aria-label="Main"><div class="tbn-item"><a href="products.html" class="tbn-top">Business types<i aria-hidden="true">&#9662;</i></a><div class="tbn-menu"><a href="business-cafes.html">Caf&eacute;s &amp; restaurants<small></small></a><a href="business-salons.html">Salons &amp; studios<small></small></a><a href="business-retail.html">Retail &amp; bookstores<small></small></a><a href="business-clothing.html">Clothing &amp; apparel<small></small></a><a href="business-mobile-repair.html">Mobile shops<small></small></a><a href="products.html" class="tbn-all">All products</a></div></div><div class="tbn-item"><a href="live-demo.html" class="tbn-top">Live demo<i aria-hidden="true">&#9662;</i></a><div class="tbn-menu"><a href="https://demo.auzslab.in/" target="_blank" rel="noopener">AUZsPOS<small>Try</small></a><a href="https://demo.auzslab.in/payroll.html" target="_blank" rel="noopener">AUZsPay<small>Try</small></a><a href="https://demo.auzslab.in/accounts.html" target="_blank" rel="noopener">AUZsLedger<small>Try</small></a><a href="https://demo.auzslab.in/scan.html" target="_blank" rel="noopener">AUZsScan<small>Try</small></a><a href="https://demo.auzslab.in/mob.html" target="_blank" rel="noopener">AUZsMob<small>Try</small></a><a href="https://demo.auzslab.in/style.html" target="_blank" rel="noopener">AUZsStyle<small>Try</small></a><a href="https://demo.auzslab.in/finance.html" target="_blank" rel="noopener">AUZsFinance<small>Try</small></a><a href="https://showoffsalon.auzslab.in/salon/admin/" target="_blank" rel="noopener">AUZslab Salon<small>Try</small></a><a href="live-demo.html" class="tbn-all">All demos</a></div></div><a href="contact.html" class="tbn-top">Contact</a></nav>
   </header>
+
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <aside class="u-sheet sidebar" id="sidebarDrawer" aria-label="Menu">
+    <div class="u-sheet-top"><a href="index.html"><img src="logo.png" alt="AUZslab"></a><button id="drawerClose" aria-label="Close menu">Close</button></div>
+    <nav class="sidebar-nav" aria-label="Primary">
+      <a href="index.html" class="nav-link">Home</a><a href="products.html" class="nav-link">Products</a><div class="nav-group"><button class="nav-link nav-group-toggle" aria-expanded="false"><span>Business types <sup class="nav-group-count">(+7)</sup></span><span class="nav-group-indicator" aria-hidden="true"></span></button><div class="nav-submenu"><div class="nav-submenu-inner"><a href="business-cafes.html" class="nav-sublink"><span>Caf&eacute;s &amp; restaurants</span></a><a href="business-salons.html" class="nav-sublink"><span>Salons &amp; studios</span></a><a href="business-retail.html" class="nav-sublink"><span>Retail &amp; bookstores</span></a><a href="business-clothing.html" class="nav-sublink"><span>Clothing &amp; apparel</span></a><a href="business-mobile-repair.html" class="nav-sublink"><span>Mobile retail &amp; repair</span></a><a href="studio.html" class="nav-sublink"><span>Custom software (Studio)</span></a><a href="web-design.html" class="nav-sublink"><span>Websites &amp; online stores</span></a></div></div></div><a href="platform.html" class="nav-link">Why AUZslab</a><a href="live-demo.html" class="nav-link">Live demo</a><a href="download-apps.html" class="nav-link">Download apps</a><a href="cart.html" class="nav-link">Cart <span class="cart-count"></span></a><div class="nav-group"><button class="nav-link nav-group-toggle" aria-expanded="false"><span>Resources <sup class="nav-group-count">(+4)</sup></span><span class="nav-group-indicator" aria-hidden="true"></span></button><div class="nav-submenu"><div class="nav-submenu-inner"><a href="resources-getting-started.html" class="nav-sublink"><span>Getting started</span></a><a href="learn.html" class="nav-sublink"><span>Learn: beginner manual</span></a><a href="resources-operations.html" class="nav-sublink"><span>Operations &amp; workflows</span></a><a href="resources-growth.html" class="nav-sublink"><span>Growth &amp; scaling</span></a></div></div></div><a href="contact.html" class="nav-link active">Contact</a>
+    </nav>
+    <div class="foot"><div class="row"><a href="signup.html" class="btn btn-ghost" data-signin-link>Get started</a><a class="btn" href="contact.html">Let's talk</a></div><div class="copy">&copy; 2026 AUZslab</div></div>
+  </aside>
+
   <main class="content">
-    <div class="wrap pay-wrap">
-      <section class="section pay-hero">
-        <div class="label" id="pgLabel">Your request</div>
-        <h1 class="h-1" id="pgTitle">One moment...</h1>
-        <p class="lede" id="pgLede"></p>
-        <div class="steps" id="steps"></div>
-      </section>
-      <div id="body"></div>
+    <div class="tl narrow">
+      <div class="tl-head"><span class="tl-eye" id="eye">Your quote</span><h1 class="tl-h" id="ttl">Loading...</h1><p class="tl-sub" id="sub"></p></div>
+      <ol class="tl-steps" id="steps"><li class="done">Request sent</li><li class="on">Your quote</li><li>Pay</li></ol>
+      <div id="box"></div>
     </div>
   </main>
 </div>
+<nav class="u-dock" aria-label="Quick"><div class="pill"><a href="index.html" aria-label="Home"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></a><a href="products.html" aria-label="Products"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M3 7l9-4 9 4-9 4-9-4Z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/></svg></a><a href="live-demo.html" aria-label="Live demo"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></svg></a><a href="signup.html" aria-label="Sign in"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></a></div><a class="chat" href="contact.html" aria-label="Talk to us"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5Z"/></svg></a></nav>
 <script src="/sb-client.js?v=105"></script>
-<script src="tool/lock.js?v=101"></script>
-<script src="tool/site.js?v=113"></script>
-<script src="company.js?v=104"></script>
-<script src="orderterms.js?v=103"></script>
+<script src="site.js?v=113"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
-<script src="vendor/qrcode.js"></script>
+<script src="orderterms.js?v=105"></script>
 <script>
 const sb = supabase.createClient(CFG.url, CFG.key);
-const O = window.AUZ_ORDER, CO = window.AUZ_CO || {};
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const inr = (n) => '₹' + Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const TOKEN = (new URLSearchParams(location.search).get('t') || '').trim();
-const STEPS = [['requested', 'Request'], ['verifying', 'Verification'], ['link_sent', 'Payment'], ['payment_submitted', 'Confirming'], ['paid', 'Done']];
-const ORDER_OF = { requested: 0, verifying: 1, confirmed: 1, link_sent: 2, payment_submitted: 3, paid: 4 };
-let D = null, PAYCFG = { enabled: false };
+const TOKEN = new URLSearchParams(location.search).get('t') || (function () { try { return localStorage.getItem('auz_order_token') || ''; } catch (e) { return ''; } })();
+let O = null, CFGPAY = { enabled: false };
 
-function setHead(label, title, lede) { $('pgLabel').textContent = label; $('pgTitle').textContent = title; $('pgLede').textContent = lede || ''; }
-function setSteps(status) {
-  const at = ORDER_OF[status] == null ? -1 : ORDER_OF[status];
-  $('steps').innerHTML = status === 'rejected' ? '' : STEPS.map(([k, t], i) => `<span class="${i < at ? 'done' : i === at ? 'on' : ''}">${i + 1}. ${esc(t)}</span>`).join('');
-}
-function billHtml(D) {
-  const q = D.quote || {}, t = D.totals || {}, lines = t.lines || [];
-  const planTxt = (l) => l.type === 'product' ? (l.plan === 'year' ? 'Yearly' : 'Monthly') : '';
-  const rows = lines.map((l) => `<tr><td>${esc(l.label)}${planTxt(l) ? `<small>${planTxt(l)} plan${l.renewal ? ' &middot; renews ' + esc(l.renewal) : ''}</small>` : ''}</td><td class="r">${inr(l.rate)}</td><td class="r">${l.discount > 0 ? '−' + inr(l.discount) : '&mdash;'}</td><td class="r">${l.gst ? l.gst + '%' : '0%'}</td><td class="r"><b>${inr(l.total)}</b></td></tr>`).join('');
-  return `<table class="bill-t"><tr><th>Item</th><th class="r">Price</th><th class="r">Discount</th><th class="r">GST</th><th class="r">Amount</th></tr>${rows}</table>
-  <div style="margin-top:12px">
-    <div class="tot-row"><span>Total before GST</span><b>${inr(t.taxable)}</b></div>
-    ${t.intra ? `<div class="tot-row"><span>CGST</span><b>${inr(t.cgst)}</b></div><div class="tot-row"><span>SGST</span><b>${inr(t.sgst)}</b></div>` : `<div class="tot-row"><span>IGST</span><b>${inr(t.igst)}</b></div>`}
-    ${t.round ? `<div class="tot-row"><span>Round off</span><b>${t.round > 0 ? '+' : ''}${inr(t.round)}</b></div>` : ''}
-    <div class="tot-row big"><span>Total to pay</span><b>${inr(t.total)}</b></div>
-  </div>${q.note ? `<p class="pay-note">${esc(q.note)}</p>` : ''}`;
-}
-function termsHtml() { return O.terms.map(([h, p]) => `<h4>${esc(h)}</h4><p>${esc(p)}</p>`).join(''); }
-function detailsHtml(D) {
-  return `<div class="kv"><span>Name</span><span>${esc(D.contact_name)}</span><span>Mobile</span><span>${esc(D.phone)}</span><span>Business</span><span>${esc(D.business_name)}</span>${D.gstin ? `<span>GSTIN</span><span>${esc(D.gstin)}</span>` : ''}${D.address ? `<span>Address</span><span>${esc(D.address)}</span>` : ''}${(D.products || []).length ? `<span>Products</span><span>${D.products.map((k) => esc(O.labels[k] || k)).join(', ')}</span>` : ''}</div>`;
-}
-function bankHtml() {
-  const b = O.bank || {}; if (!b.account) return '';
-  return `<div class="kv"><span>Account name</span><span>${esc(b.holder)}</span><span>Bank</span><span>${esc(b.bank)}</span><span>Account no.</span><span>${esc(b.account)}</span><span>IFSC</span><span>${esc(b.ifsc)}</span>${b.branch ? `<span>Branch</span><span>${esc(b.branch)}</span>` : ''}</div>`;
+function steps(n) { const li = document.querySelectorAll('#steps li'); li.forEach((x, i) => { x.className = i < n ? 'done' : i === n ? 'on' : ''; }); }
+function head(eye, title, sub) { $('eye').textContent = eye; $('ttl').textContent = title; $('sub').textContent = sub || ''; }
+
+function billHtml(o) {
+  const t = o.totals, q = o.quote || {};
+  const lines = (t.lines || []).map((l) => `<tr><td>${esc(l.label)}${l.type === 'product' ? `<small>${l.plan === 'year' ? 'Yearly plan' : 'Monthly plan'}</small>` : ''}</td><td class="r">${inr(l.net)}</td></tr>`).join('');
+  const gst = Number(t.gst) > 0 ? (t.intra ? `<tr class="sub"><td>CGST</td><td class="r">${inr(t.cgst)}</td></tr><tr class="sub"><td>SGST</td><td class="r">${inr(t.sgst)}</td></tr>` : `<tr class="sub"><td>IGST</td><td class="r">${inr(t.igst)}</td></tr>`) : '';
+  return `<table class="tl-bill"><thead><tr><th>Service</th><th class="r">Amount</th></tr></thead><tbody>${lines}${gst}<tr class="tot"><td>Total to pay</td><td class="r">${inr(t.total)}</td></tr></tbody></table>${q.note ? `<p class="tl-note" style="margin-top:12px">${esc(q.note)}</p>` : ''}`;
 }
 
-function helpCard(title) {
-  const ph = String(CO.phone || '').replace(/[^0-9]/g, '');
-  return `<div class="card"><div class="label">${title || 'Need help?'}</div><p class="pay-note" style="margin:6px 0 12px">Write to us and quote your request. We reply the same day.</p><div class="help-btns">${ph ? `<a class="btn btn-primary" href="https://wa.me/${ph}" target="_blank" rel="noopener">WhatsApp us</a><a class="btn btn-ghost" href="tel:+${ph}">Call</a>` : ''}${CO.grievanceEmail ? `<a class="btn btn-ghost" href="mailto:${esc(CO.grievanceEmail)}">Email</a>` : ''}</div></div>`;
-}
-function stateBody(kind, title, text, extra) {
-  const ico = kind === 'ok' ? '&#10003;' : kind === 'bad' ? '!' : '?';
-  $('body').innerHTML = `<div class="pay-grid"><div class="pay-col"><div class="card state-card"><div class="state-ico ${kind}">${ico}</div><h2>${esc(title)}</h2><p>${esc(text)}</p>${extra || ''}</div></div><div class="pay-col pay-side">${helpCard()}<div class="card"><div class="label">Not sure what to do?</div><ul class="next-list"><li><b>1</b><span>Open the latest message we sent you on WhatsApp.</span></li><li><b>2</b><span>Tap the payment link in it.</span></li><li><b>3</b><span>Or send a new request from the cart.</span></li></ul><a class="btn btn-ghost" style="margin-top:12px" href="cart.html">Go to cart</a></div></div></div>`;
+function termsHtml() {
+  const T = (window.AUZ_ORDER || {}).terms || [];
+  return `<details class="tl-fold"><summary>Read the terms</summary>${T.map((t) => `<p><b>${esc(t[0])}.</b> ${esc(t[1])}</p>`).join('')}</details>`;
 }
 
-function render() {
-  const st = D.status; setSteps(st);
-  if (st === 'rejected') { setHead('Your request', 'We could not take this request.', 'Please write to us on WhatsApp or email if you would like to talk about it.'); $('body').innerHTML = `<div class="pay-grid"><div class="pay-col"><div class="card"><div class="label">What you sent us</div>${detailsHtml(D)}</div></div><div class="pay-col pay-side">${helpCard('Talk to us')}</div></div>`; return; }
+function show() {
+  const o = O, st = o.status, box = $('box');
+  const who = esc(o.business_name || '');
+  if (st === 'rejected') { head('Request closed', 'This request is closed.', ''); steps(0); box.innerHTML = '<section class="tl-card"><p class="tl-note" style="font-size:12.5px">If you think this is a mistake, please contact AUZslab.</p><div class="tl-actions"><a class="tb pri" href="contact.html">Contact AUZslab</a></div></section>'; return; }
   if (st === 'requested' || st === 'verifying' || st === 'confirmed') {
-    setHead('Your request', st === 'requested' ? 'Request received.' : st === 'verifying' ? 'We are checking your business.' : 'You are confirmed.',
-      st === 'confirmed' ? 'Your bill is being prepared. We will send the payment link on WhatsApp.' : 'We will contact you on WhatsApp. After that you will get your payment link here.');
-    $('body').innerHTML = `<div class="pay-grid"><div class="pay-col"><div class="card"><div class="label">What you sent us</div>${detailsHtml(D)}${D.requirement ? `<p class="pay-note" style="margin-top:12px">${esc(D.requirement)}</p>` : ''}</div></div>
-      <div class="pay-col pay-side"><div class="card"><div class="label">What happens next</div><ol class="next-list">
-        <li><b>1</b><span>We check your details and contact you on WhatsApp.</span></li>
-        <li><b>2</b><span>You get your bill and a payment link on this page.</span></li>
-        <li><b>3</b><span>Pay online. Your access starts as soon as the payment is confirmed.</span></li></ol></div>
-        ${helpCard('Need help?')}</div>`;
+    head('Request received', 'We are preparing your quote.', 'We check your business first. Your quote and payment page arrive on WhatsApp, usually the same day. This page updates when it is ready.');
+    steps(1);
+    box.innerHTML = `<section class="tl-card"><span class="tl-cap">${who}</span>${(o.products || []).map((k) => `<div class="tl-row"><b>${esc((window.AUZ_ORDER.labels || {})[k] || k)}</b><span class="tl-chip">Requested</span></div>`).join('')}<div class="tl-actions"><a class="tb" href="index.html">Back to home</a></div></section>`;
     return;
   }
   if (st === 'paid') {
-    setHead('Payment confirmed', 'Thank you. You are all set.', 'Your access is active. Your bill is below.');
-    const slug = D.tenant_slug;
-    $('body').innerHTML = `<div class="pay-grid"><div class="pay-col"><div class="card"><div class="label">Your bill</div>${billHtml(D)}</div></div><div class="pay-col pay-side"><div class="card"><div class="label">Bill ${esc(D.invoice_no || '')}</div>
-      <p class="p">Paid on ${esc(String(D.paid_at || '').slice(0, 10))}. ${slug ? `Open your workspace at <a href="https://${esc(slug)}.auzslab.in" style="color:var(--accent)">${esc(slug)}.auzslab.in</a> and sign in with the same account you used to send the request.` : ''}</p>
-      <a class="btn btn-primary form-submit" href="inv.html?t=${encodeURIComponent(TOKEN)}">View or print your bill</a></div></div></div>`;
+    head('Paid', 'Thank you. You are all set.', 'Your payment is confirmed and your access is on.');
+    steps(3);
+    box.innerHTML = `<section class="tl-card"><div class="tl-row"><span>Bill number</span><b>${esc(o.invoice_no || '')}</b></div><div class="tl-row"><span>Amount paid</span><b>${inr(o.totals && o.totals.total)}</b></div><div class="tl-actions">${o.invoice_no ? `<a class="tb pri" href="inv.html?t=${encodeURIComponent(TOKEN)}">View my bill</a>` : ''}<a class="tb" href="https://app.auzslab.in/start.html">Open my apps</a></div></section>`;
     return;
   }
-  // link_sent / payment_submitted: the bill and the payment card
-  const submitted = st === 'payment_submitted';
-  setHead(submitted ? 'Payment received' : 'Payment', submitted ? 'Thank you. We are confirming your payment.' : 'Your bill and payment.', submitted ? 'You will get your bill on WhatsApp once we confirm it. You can send the screenshot again below if needed.' : (PAYCFG.enabled ? 'Read the terms, tick the box and pay online.' : 'Read the terms, tick the box, pay, then send us the screenshot.'));
-  const total = Number((D.totals || {}).total || 0);
-  const upi = O.upi || {}; const uri = 'upi://pay?pa=' + encodeURIComponent(upi.id) + '&pn=' + encodeURIComponent(upi.name || 'AUZslab') + '&am=' + total.toFixed(2) + '&cu=INR&tn=' + encodeURIComponent('AUZslab ' + (D.business_name || ''));
-  $('body').innerHTML = `<div class="pay-grid"><div class="pay-col">
-  <div class="card"><div class="label">Your bill</div>${billHtml(D)}</div>
-  <div class="card"><div class="label">Good to know</div><ul class="next-list"><li><b>1</b><span>Tick the box to agree to the terms.</span></li><li><b>2</b><span>Pay ${inr(total)} online.</span></li><li><b>3</b><span>Your bill and access arrive as soon as it is confirmed.</span></li></ul></div>
-  </div>
-  <div class="pay-col pay-side">
-  <div class="card"><div class="label">Terms, privacy and refunds</div>
-    <div class="terms-box" id="termsBox">${termsHtml()}</div>
-    <p class="pay-note"><a href="terms.html" target="_blank" rel="noopener" style="color:var(--accent)">Terms &amp; conditions</a> &middot; <a href="privacy.html" target="_blank" rel="noopener" style="color:var(--accent)">Privacy policy</a> &middot; <a href="refund.html" target="_blank" rel="noopener" style="color:var(--accent)">Refund policy</a></p>
-    <label class="chk"><input type="checkbox" id="agree" ${submitted ? 'checked' : ''}><span>I have read and I agree to the Terms &amp; Conditions, Privacy Policy and Refund Policy.</span></label>
-  </div>
-
-  ${PAYCFG.enabled ? `<div class="card" style="text-align:center"><div class="label" style="justify-content:center">Pay online</div>
-    <p class="pay-note" style="margin:6px 0 12px">Cards, UPI and net banking, secured by Razorpay. Your bill is created automatically as soon as the payment goes through.</p>
-    <button class="btn btn-primary form-submit" id="payOnline" type="button">Pay ${inr(total)} online</button>
-    <div class="err" id="onErr"></div>
-  </div>` : ''}
-  ${PAYCFG.enabled ? '' : `<div class="card upi-card" id="payCard"><div class="label" style="justify-content:center">Pay ${inr(total)}</div>
-    <img id="qr" alt="UPI QR code" width="200" height="200">
-    <p class="pay-note" style="margin:0">Scan with any UPI app, or pay to <b>${esc(upi.id)}</b> (${esc(upi.name)}).</p>
-    <a class="btn btn-ghost" style="margin-top:10px" href="${esc(uri)}" id="upiOpen">Open my UPI app</a>
-    ${bankHtml() ? `<div style="text-align:left;margin-top:14px"><div class="label">Or pay by bank transfer</div>${bankHtml()}</div>` : ''}
-    <div class="field" style="text-align:left;margin-top:16px"><label for="shot">Screenshot of your payment *</label><input id="shot" type="file" accept="image/*,application/pdf"></div>
-    <div class="field" style="text-align:left"><label for="utr">UTR / reference number <span style="text-transform:none;letter-spacing:0">(optional)</span></label><input id="utr" inputmode="numeric" autocomplete="off" placeholder="12-digit number from your UPI app" value="${esc(D.payment.utr || '')}"></div>
-    <button class="btn btn-primary form-submit" id="send" type="button">${submitted ? 'Send again' : 'I have paid: send screenshot'}</button>
-    <div class="err" id="err"></div>
-    ${D.payment.proof ? '<p class="pay-note">We already have a screenshot from you.</p>' : ''}
-  </div>`}
-  </div></div>`;
-  if (!PAYCFG.enabled) {
-    try { const q = qrcode(0, 'M'); q.addData(uri); q.make(); $('qr').src = q.createDataURL(5, 2); } catch (e) { $('qr').style.display = 'none'; }
-    $('send').onclick = send;
+  if (st === 'payment_submitted') {
+    const cash = o.payment && o.payment.method === 'cash';
+    head('Payment', cash ? 'You chose cash in hand.' : 'We have your payment.', cash ? 'Please hand the amount to AUZslab. We switch your access on as soon as we receive it.' : 'We are confirming it. Your access starts as soon as it is confirmed.');
+    steps(2);
+    box.innerHTML = `<section class="tl-card"><span class="tl-cap">${who}</span>${billHtml(o)}</section>`;
+    return;
   }
-  if ($('payOnline')) $('payOnline').onclick = payOnline;
+  // link_sent: the quote, then pay
+  head('Your quote', 'Your quote is ready.', 'Check it, choose how you want to pay, and you are done.');
+  steps(1);
+  box.innerHTML = `<section class="tl-card"><span class="tl-cap">${who}</span>${billHtml(o)}</section>
+  <section class="tl-card"><span class="tl-cap">Pay</span>
+    <div class="tl-paychoice">
+      ${CFGPAY.enabled ? `<label><input type="radio" name="pm" value="online" checked><span><b>Pay online</b><small>Card, UPI or net banking, safely through Razorpay</small></span></label>` : ''}
+      <label><input type="radio" name="pm" value="cash" ${CFGPAY.enabled ? '' : 'checked'}><span><b>Cash in hand</b><small>Pay AUZslab in cash. We confirm it when we receive it</small></span></label>
+    </div>
+    <label class="tl-terms"><input type="checkbox" id="agree"><span>I accept the <a href="terms.html" target="_blank" rel="noopener">Terms</a>, <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a> and <a href="refund.html" target="_blank" rel="noopener">Refund Policy</a>.</span></label>
+    ${termsHtml()}
+    <div class="tl-actions"><button class="tb pri wide" id="payBtn" type="button">Continue</button></div>
+    <div class="tl-err" id="payErr"></div>
+  </section>`;
+  const pm = () => (document.querySelector('input[name=pm]:checked') || {}).value;
+  const upd = () => { $('payBtn').textContent = pm() === 'online' ? 'Pay ' + inr(o.totals.total) : 'Confirm cash in hand'; };
+  document.querySelectorAll('input[name=pm]').forEach((r) => r.addEventListener('change', upd)); upd();
+  $('payBtn').onclick = () => pm() === 'online' ? payOnline() : payCash();
 }
 
-function loadCheckout() {
-  return new Promise((resolve, reject) => {
-    if (window.Razorpay) return resolve();
-    const el = document.createElement('script'); el.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    el.onload = () => resolve(); el.onerror = () => reject(new Error('Could not load the payment window. Check your connection and try again.'));
-    document.head.appendChild(el);
-  });
+async function payCash() {
+  const err = $('payErr'); err.textContent = '';
+  if (!$('agree').checked) { err.textContent = 'Please tick the box to accept the Terms, Privacy Policy and Refund Policy.'; return; }
+  $('payBtn').disabled = true;
+  const { error } = await sb.rpc('public_order_choose_cash', { p_token: TOKEN, p_terms: true });
+  $('payBtn').disabled = false;
+  if (error) { err.textContent = error.message; return; }
+  await load();
 }
-async function waitPaid() {
-  const box = $('onErr'); const btn = $('payOnline');
-  if (btn) { btn.disabled = true; btn.textContent = 'Confirming your payment...'; }
-  for (let i = 0; i < 30; i++) {
-    await new Promise((r) => setTimeout(r, 3000));
-    const { data } = await sb.rpc('public_client_order', { p_token: TOKEN });
-    if (data && data.status === 'paid') { D = data; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
-  }
-  if (box) box.textContent = 'Your payment is being confirmed. This can take a minute. You will get your bill on WhatsApp; you can also refresh this page.';
-}
+
+function loadCheckout() { return new Promise((res, rej) => { if (window.Razorpay) return res(); const s = document.createElement('script'); s.src = 'https://checkout.razorpay.com/v1/checkout.js'; s.onload = res; s.onerror = () => rej(new Error('Could not load the payment window. Check your internet and try again.')); document.head.appendChild(s); }); }
 async function payOnline() {
-  const err = $('onErr'); err.textContent = '';
-  if (!$('agree').checked) { err.textContent = 'Please tick the box to accept the terms, privacy policy and refund policy.'; $('agree').scrollIntoView({ block: 'center' }); return; }
-  const btn = $('payOnline'); const old = btn.textContent; btn.disabled = true; btn.textContent = 'Opening...';
+  const err = $('payErr'); err.textContent = '';
+  if (!$('agree').checked) { err.textContent = 'Please tick the box to accept the Terms, Privacy Policy and Refund Policy.'; return; }
+  $('payBtn').disabled = true;
   try {
     const r = await fetch(CFG.url + '/payments/order/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: TOKEN, terms: true }) });
-    const o = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(o.error || 'Could not start the payment.');
+    const d = await r.json(); if (!r.ok) throw new Error(d.error || d.message || 'Could not start the payment.');
     await loadCheckout();
-    const rz = new window.Razorpay({
-      key: o.keyId, amount: o.amount, currency: o.currency, order_id: o.orderId, name: 'AUZslab', description: o.description,
-      prefill: o.prefill, theme: { color: '#800020' },
-      handler: () => { waitPaid(); },
-      modal: { ondismiss: () => { btn.disabled = false; btn.textContent = old; } },
-    });
-    rz.on('payment.failed', (resp) => { err.textContent = (resp && resp.error && resp.error.description) || 'The payment did not go through. You can try again.'; btn.disabled = false; btn.textContent = old; });
+    const rz = new Razorpay({ key: d.keyId, amount: d.amount, currency: d.currency, order_id: d.orderId, name: 'AUZslab', description: d.description || 'AUZslab quote', prefill: d.prefill || { name: O.contact_name || '', contact: O.phone || '', email: O.email || '' }, theme: { color: '#800020' },
+      handler: () => { waitPaid(); }, modal: { ondismiss: () => { $('payBtn').disabled = false; } } });
+    rz.on('payment.failed', (resp) => { err.textContent = (resp && resp.error && resp.error.description) || 'The payment did not go through. You can try again.'; $('payBtn').disabled = false; });
     rz.open();
-  } catch (e) { err.textContent = e.message; btn.disabled = false; btn.textContent = old; }
+  } catch (e) { err.textContent = e.message; $('payBtn').disabled = false; }
 }
-
-async function send() {
-  const err = $('err'); err.textContent = '';
-  if (!$('agree').checked) { err.textContent = 'Please tick the box to accept the terms, privacy policy and refund policy.'; $('agree').scrollIntoView({ block: 'center' }); return; }
-  const file = $('shot').files[0];
-  if (!file && !D.payment.proof) { err.textContent = 'Please choose the screenshot of your payment.'; return; }
-  const btn = $('send'); btn.disabled = true; const old = btn.textContent; btn.textContent = 'Sending...';
-  try {
-    if (file) {
-      // auto-compress on the device before it ever leaves (window.auzCompressImage, from sb-client.js) -- a
-      // PDF or an already-small file passes through unchanged; a phone photo is shrunk to a smaller JPEG
-      const toSend = window.auzCompressImage ? await window.auzCompressImage(file) : file;
-      if (toSend.size > 5_500_000) { throw new Error('That file is too big (5 MB at most, even after compressing). Please send a smaller screenshot.'); }
-      const buf = await toSend.arrayBuffer();
-      const r = await fetch(CFG.url + '/storage/order-proof/' + encodeURIComponent(TOKEN), { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: buf });
-      if (!r.ok) { let m = 'The screenshot could not be sent.'; try { m = (await r.json()).error || m; } catch (e) {} throw new Error(m); }
-    }
-    const { error } = await sb.rpc('public_order_submit_payment', { p_token: TOKEN, p_utr: $('utr').value.trim(), p_terms: true });
-    if (error) throw new Error(error.message);
-    await load();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  } catch (e) { err.textContent = e.message; btn.disabled = false; btn.textContent = old; }
+async function waitPaid() {
+  head('Payment', 'Confirming your payment...', 'Please keep this page open for a few seconds.');
+  for (let i = 0; i < 30; i++) { await new Promise((r) => setTimeout(r, 1500)); await load(); if (O.status === 'paid') return; }
+  $('sub').textContent = 'It is taking longer than usual. You do not need to pay again; we will confirm it shortly.';
 }
 
 async function load() {
-  if (!/^[a-f0-9]{32}$/.test(TOKEN)) { setHead('Payment link', 'This link is not valid.', 'Please use the link we sent you on WhatsApp, or send a new request from the cart.'); setSteps('x'); stateBody('bad', 'This link does not look right', 'It may have been cut short when copied. Open the original message and tap the link again.'); return; }
+  if (!TOKEN) { head('Your quote', 'We could not find your request.', ''); $('box').innerHTML = '<section class="tl-card"><div class="tl-actions"><a class="tb pri" href="cart.html">Start a request</a></div></section>'; return; }
   const { data, error } = await sb.rpc('public_client_order', { p_token: TOKEN });
-  if (error || !data) { setHead('Payment link', 'We could not find this request.', 'Please check the link we sent you on WhatsApp.'); setSteps('x'); stateBody('bad', 'No request found for this link', 'The request may have been removed, or the link is from an older message.'); return; }
-  try { const c = await fetch(CFG.url + '/payments/config'); if (c.ok) PAYCFG = await c.json(); } catch (e) {}
-  D = data; render();
+  if (error || !data) { head('Your quote', 'This link is not valid.', ''); $('box').innerHTML = '<section class="tl-card"><div class="tl-actions"><a class="tb pri" href="cart.html">Start a request</a></div></section>'; return; }
+  O = data; show();
 }
-load();
+(async function () {
+  try { const c = await sb.payments.config(); CFGPAY = (c && c.data) || { enabled: false }; } catch (e) {}
+  await load();
+  setInterval(() => { if (O && ['requested', 'verifying', 'confirmed', 'payment_submitted'].includes(O.status)) load(); }, 20000);
+})();
 </script>
-<button type="button" class="theme-fab" onclick="auzThemeToggle()" aria-label="Toggle dark mode" title="Toggle dark mode"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg></button>
 </body>
 </html>

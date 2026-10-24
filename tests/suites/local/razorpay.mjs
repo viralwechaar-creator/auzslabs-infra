@@ -70,35 +70,34 @@ export default async function run({ browser, stack }) {
     assert((await post('/payments/order/create', { token: tok, terms: true })).status === 400, 'a paid order could be paid again');
   }, 'critical');
 
-  await s.check('pay.html: the "Pay online" card shows with the bill, enforces the terms box and opens the payment with the right amount', async () => {
+  await s.check('pay.html: "Pay online" is offered with the quote, enforces the terms box and opens the payment with the right amount', async () => {
     const r = await call('submit_client_order', { p: { contact_name: 'Page Payer', phone: '9812300012', business_name: 'Page Cafe', requirement: 'x', products: ['payroll'] } }, cust);
-    await call('admin_save_order_quote', { p_id: r.data.id, p_quote: { items: [{ key: 'payroll', plan: 'month', rate: 590, discount: 0, gst: 18 }], setup: { on: false } } }, adm);
+    await call('admin_save_order_quote', { p_id: r.data.id, p_quote: { items: [{ key: 'payroll', plan: 'year', rate: 590, discount: 0, gst: 18 }], setup: { on: false } } }, adm);
     await call('admin_set_order_status', { p_id: r.data.id, p_status: 'link_sent' }, adm);
     const c = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await c.newPage(); const errs = watch(page);
-    let opened = null;
     await page.route('https://checkout.razorpay.com/**', (route) => route.fulfill({ contentType: 'text/javascript', body: 'window.Razorpay=function(o){window.__rz=o;this.on=function(){};this.open=function(){window.__rzOpened=true;};};' }));
-    await page.goto(stack.url('', '/pay.html?t=' + r.data.token)); await page.waitForSelector('#payOnline', { timeout: 15000 });
-    const amt = (await call('public_client_order', { p_token: r.data.token })).data.totals.total; assert(new RegExp(Number(amt).toLocaleString('en-IN', { minimumFractionDigits: 2 }).replace('.', '\\.') + ' online', 'i').test(await page.locator('#payOnline').innerText()), 'button amount: ' + await page.locator('#payOnline').innerText());
-    await page.click('#payOnline'); assert(/tick the box/i.test(await page.locator('#onErr').innerText()), 'the terms box was not enforced');
-    await page.check('#agree'); await page.click('#payOnline'); await page.waitForFunction(() => window.__rzOpened === true, null, { timeout: 15000 });
+    await page.goto(stack.url('', '/pay.html?t=' + r.data.token)); await page.waitForSelector('#payBtn', { timeout: 15000 });
+    const amt = (await call('public_client_order', { p_token: r.data.token })).data.totals.total;
+    assert(await page.locator('input[value=online]').isChecked(), 'online is not the default choice');
+    assert(new RegExp(Number(amt).toLocaleString('en-IN', { minimumFractionDigits: 2 }).replace('.', '\\.'), 'i').test(await page.locator('#payBtn').innerText()), 'the button does not show the amount');
+    await page.click('#payBtn'); assert(/tick the box/i.test(await page.locator('#payErr').innerText()), 'the terms box was not enforced');
+    await page.check('#agree'); await page.click('#payBtn'); await page.waitForFunction(() => window.__rzOpened === true, null, { timeout: 15000 });
     const o = await page.evaluate(() => window.__rz); assert(o.amount === Math.round(Number(amt) * 100) && o.key === 'rzp_test_TESTKEY' && /^order_/.test(o.order_id) && o.theme.color === '#800020', JSON.stringify(o));
-    assert(await page.locator('#qr').count() === 0, 'the manual UPI QR is still shown when online payment is on');
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'sideways scroll');
     await s.shot(page, 'razorpay-pay-page'); await page.setViewportSize({ width: 1440, height: 900 }); await page.waitForTimeout(400); await s.shot(page, 'razorpay-pay-page-desktop');
     assert(!errs.some((e) => /JS error/.test(e)), errs.join(' | ')); await c.close();
+  }, 'critical');
 
-  await s.check('pay.html: every step page has a clean header, the logo and filled cards', async () => {
+  await s.check('pay.html: every step page has the header, the logo and a card', async () => {
     const r = await call('submit_client_order', { p: { contact_name: 'Step Payer', phone: '9812300013', business_name: 'Step Cafe', requirement: 'Need POS', products: ['payroll'] } }, cust);
     const c = await newCtx(browser, stack, { w: 1440, h: 900 }); const page = await c.newPage(); const errs = watch(page);
     for (const [name, url] of [['notfound', '/pay.html?t=' + '0'.repeat(32)], ['invalid', '/pay.html?t=abc'], ['requested', '/pay.html?t=' + r.data.token]]) {
-      await page.goto(stack.url('', url)); await page.waitForSelector('.pay-grid', { timeout: 15000 });
-      const logo = await page.locator('.shell>.topbar .topbar-logo img').boundingBox(); assert(logo && logo.width > 60 && logo.y >= 0, name + ': logo missing or cut');
-      assert(await page.locator('.topbar-nav').isHidden(), name + ': half-cut menu still visible');
+      await page.goto(stack.url('', url)); await page.waitForSelector('.tl-card', { timeout: 15000 });
+      const logo = await page.locator('.u-top .u-logo img').boundingBox(); assert(logo && logo.width > 60 && logo.y >= 0, name + ': logo missing or cut');
       await s.shot(page, 'pay-step-' + name);
     }
     assert(!errs.some((e) => /JS error/.test(e)), errs.join(' | ')); await c.close();
   });
-  }, 'critical');
 
   const other = await login(USERS.cafeOwner);
   let tenantId, rtok, sub1;

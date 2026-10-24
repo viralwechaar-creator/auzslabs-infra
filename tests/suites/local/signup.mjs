@@ -63,8 +63,6 @@ export default async function run({ stack }) {
       const r = await rpc(stack, fn, { p_features: {}, p_notes: '' }, token);
       assert(r.status === 403 && /confirm your email/i.test(JSON.stringify(r.data)), fn + ' -> ' + r.status + ' ' + JSON.stringify(r.data));
     }
-    const p = await api('/payments/create-order', { method: 'POST', token, body: {} });
-    assert(p.status === 403, 'create-order -> ' + p.status);
   }, 'critical');
 
   await s.check('Switch ON: other accounts that were already verified are not affected', async () => {

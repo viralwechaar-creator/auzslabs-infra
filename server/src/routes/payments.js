@@ -1,5 +1,5 @@
 import { pool, withAuth } from '../db.js';
-import { paymentConfig, gstPct, createOrder, createClientOrderPayment, createRenewalOrder, startRazorpayAutorenew, cancelRazorpayAutorenew, razorpayConfigured, verifyWebhookSignature, handleWebhookEvent } from '../payments.js';
+import { paymentConfig, gstPct, createClientOrderPayment, createRenewalOrder, startRazorpayAutorenew, cancelRazorpayAutorenew, razorpayConfigured, verifyWebhookSignature, handleWebhookEvent } from '../payments.js';
 import { cashfreeConfigured, startAutorenew, cancelAutorenew, verifyWebhookSignature as verifyCashfreeSignature, handleWebhookEvent as handleCashfreeWebhookEvent } from '../cashfree.js';
 import { requireVerifiedEmail } from '../lib/guards.js';
 import { HttpError, rateLimited, readJsonBody, readRawBody } from '../lib/http.js';
@@ -13,20 +13,6 @@ export async function handle(ctx) {
   // whether to even offer online checkout. ----
   if (url.pathname === '/payments/config' && req.method === 'GET') {
     return reply(200, { ...paymentConfig(), gstPct: await gstPct() });
-  }
-  if (url.pathname === '/payments/create-order' && req.method === 'POST') {
-    if (!user) throw new HttpError(401, 'authentication required');
-    // Each call hits Razorpay's own API -- worth a modest per-caller cap.
-    if (rateLimited(`payorder:${ip}`, 20, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
-    await requireVerifiedEmail(user.id);
-    const { signup_request_id, addon_request_id, period } = await readJsonBody(req);
-    let result;
-    try {
-      result = await createOrder({ userId: user.id, signupRequestId: signup_request_id, addonRequestId: addon_request_id, period: period === 'year' ? 'year' : 'month' });
-    } catch (err) {
-      throw new HttpError(400, err.message || 'could not start payment');
-    }
-    return reply(200, result);
   }
   // Pay online for a request-first order (db/200). The unguessable token in the pay link is the credential.
   if (url.pathname === '/payments/order/create' && req.method === 'POST') {

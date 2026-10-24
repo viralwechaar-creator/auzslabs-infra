@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en">
-<head>
+<head><meta name="robots" content="noindex,nofollow">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -27,8 +27,7 @@
 <link rel="icon" href="/logo.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="theme.css?v=155"><link rel="stylesheet" href="menu.css?v=116"><link rel="stylesheet" href="balance.css?v=103" media="(min-width:1000px)"><script src="theme.js?v=101"></script>
-<link rel="stylesheet" href="design-system/ui-kit.css?v=103">
+<script src="theme.js?v=101"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -78,7 +77,6 @@
 }
 @media(min-width:900px){.footer-top{grid-template-columns:1.5fr 1fr 1fr 1fr}}
 </style>
-<script id="topbar-nav-js">(function(){function f(){var n=document.querySelector('.topbar-nav'),t=document.querySelector('.topbar');if(!n||!t)return;var hide=matchMedia('(min-width:900px)').matches&&getComputedStyle(t).display==='none';if(hide&&n.parentNode===t){document.body.appendChild(n);n.classList.add('tbn-fixed');if(!n.querySelector('.tbn-logo')){var a=document.createElement('a');a.className='tbn-logo';a.href='index.html';a.setAttribute('aria-label','AUZslab home');var im=document.createElement('img');im.src='logo.png';im.alt='AUZslab';a.appendChild(im);n.insertBefore(a,n.firstChild)}document.body.classList.add('has-tbn')}else if(!hide&&n.classList.contains('tbn-fixed')&&!matchMedia('(min-width:900px)').matches){}}f();addEventListener('load',f)})();</script>
 <style id="biz-layout-css">
 .bento{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
 @media(min-width:900px){.bento{grid-template-columns:repeat(3,minmax(0,1fr))}.bento>.feat{grid-column:span 2}}
@@ -93,308 +91,66 @@
 .biz-band .p,.demo-note .p{color:rgba(255,255,255,.78)}
 .biz-band .btn-primary,.demo-note .btn-primary{background:#fff;color:var(--ink-solid,#000000);border-color:#fff}
 </style>
-<link rel="stylesheet" href="reach.css?v=101"><style>.sp-toggle-row,.sp-was,.sp-save2,.sp-strip-per,.sp-unit,.sp-per,.sp-gst,.gst-t,.sp-save{display:none!important}</style></head>
+<style>.sp-toggle-row,.sp-was,.sp-save2,.sp-strip-per,.sp-unit,.sp-per,.sp-gst,.gst-t,.sp-save{display:none!important}</style><link rel="stylesheet" href="u.css?v=4"><link rel="stylesheet" href="e.css?v=5"><link rel="stylesheet" href="fluid.css?v=3">
+<meta name="theme-color" content="#efeeed">
+</head>
 <body>
-<div id="pageTransition" class="page-transition" aria-hidden="true"></div>
-
 <div class="shell">
-  <header class="topbar">
-    <div style="display:flex;gap:8px;align-items:center;order:2">
-      <button type="button" class="theme-toggle" data-theme-toggle role="switch" aria-checked="false" aria-label="Dark mode"></button>
-      <a href="signup.html" class="btn btn-ghost" data-signin-link style="padding:9px 14px;font-size:10px">Get started</a>
-      <button class="hamburger" id="menuToggle" aria-label="Open menu" aria-expanded="false">
-        <span class="menu-btn-label">Menu</span>
-      </button>
+  <header class="u-top">
+    <a href="index.html" class="u-logo" aria-label="AUZslab home"><img src="logo.png" alt="AUZslab"></a>
+    <nav class="u-nav" aria-label="Main"><a href="products.html">Products</a><a href="live-demo.html">Live demo</a><a href="studio.html">Studio</a><a href="platform.html">Why AUZslab</a><a href="contact.html">Contact</a></nav>
+    <div class="u-r">
+      <button type="button" class="u-ic" data-theme-toggle aria-label="Dark mode"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M20 14.500A8 8 0 0 1 9.500 4 8 8 0 1 0 20 14.500Z"/></svg></button>
+      <a href="signup.html" class="u-pill" data-signin-link>Get started</a>
+      <button class="u-menu" id="menuToggle" aria-label="Open menu" aria-expanded="false"><i></i><span class="menu-btn-label">Menu</span></button>
     </div>
-    <a href="index.html" class="topbar-logo"><img src="logo.png" alt="AUZslab"></a>
-    <nav class="topbar-nav" aria-label="Main"><div class="tbn-item"><a href="products.html" class="tbn-top">Business types<i aria-hidden="true">&#9662;</i></a><div class="tbn-menu"><a href="products.html#slab-pos">AUZsPOS<small></small></a><a href="products.html#slab-qr">AUZsPOS QR<small></small></a><a href="products.html#slab-payroll">AUZsPay<small></small></a><a href="products.html#slab-accounting">AUZsLedger<small></small></a><a href="products.html#slab-scan">AUZsScan<small></small></a><a href="products.html#slab-mobile">AUZsMob<small></small></a><a href="products.html#slab-salon">AUZslab Salon<small></small></a><a href="products.html" class="tbn-all">All products</a></div></div><div class="tbn-item"><a href="platform.html" class="tbn-top" aria-current="page">Businesses<i aria-hidden="true">&#9662;</i></a><div class="tbn-menu"><a href="business-cafes.html">Cafes &amp; restaurants<small></small></a><a href="business-retail.html">Retail &amp; bookstores<small></small></a><a href="business-salons.html">Salons &amp; studios<small></small></a><a href="business-mobile-repair.html">Mobile shops<small></small></a><a href="business-clothing.html">Clothing &amp; apparel<small></small></a><a href="platform.html" class="tbn-all">All business types</a></div></div><div class="tbn-item"><a href="live-demo.html" class="tbn-top">Live demo<i aria-hidden="true">&#9662;</i></a><div class="tbn-menu"><a href="https://demo.auzslab.in/" target="_blank" rel="noopener">AUZsPOS<small>Try</small></a><a href="https://demo.auzslab.in/payroll.html" target="_blank" rel="noopener">AUZsPay<small>Try</small></a><a href="https://demo.auzslab.in/accounts.html" target="_blank" rel="noopener">AUZsLedger<small>Try</small></a><a href="https://demo.auzslab.in/scan.html" target="_blank" rel="noopener">AUZsScan<small>Try</small></a><a href="https://demo.auzslab.in/mob.html" target="_blank" rel="noopener">AUZsMob<small>Try</small></a><a href="https://demo.auzslab.in/style.html" target="_blank" rel="noopener">AUZsStyle<small>Try</small></a><a href="https://demo.auzslab.in/finance.html" target="_blank" rel="noopener">AUZsFinance<small>Try</small></a><a href="https://showoffsalon.auzslab.in/salon/admin/" target="_blank" rel="noopener">AUZslab Salon<small>Try</small></a><a href="live-demo.html" class="tbn-all">All demos</a></div></div><a href="contact.html" class="tbn-top">Contact</a></nav>
   </header>
 
   <div class="drawer-overlay" id="drawerOverlay"></div>
-
-  <aside class="sidebar" id="sidebarDrawer">
-    <div class="drawer-topbar">
-      <button class="drawer-close" id="drawerClose" aria-label="Close menu"><span aria-hidden="true">&times;</span> Close</button>
-      <a href="index.html" class="drawer-topbar-logo"><img src="logo.png" alt="AUZslab"></a>
-      <div class="drawer-topbar-icons">
-        <a href="cart.html" class="drawer-icon-link" aria-label="Cart"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 7h12l-1 13H7L6 7Z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg></a>
-        <a href="signup.html" class="drawer-icon-link" aria-label="Account"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></a>
-      </div>
-      </div>
+  <aside class="u-sheet sidebar" id="sidebarDrawer" aria-label="Menu">
+    <div class="u-sheet-top"><a href="index.html"><img src="logo.png" alt="AUZslab"></a><button id="drawerClose" aria-label="Close menu">Close</button></div>
     <nav class="sidebar-nav" aria-label="Primary">
-      <a href="index.html" class="nav-link">Home</a>
-
-      <div class="nav-group">
-        <button class="nav-link nav-group-toggle" aria-expanded="false">
-          <span>Products <sup class="nav-group-count">(+8)</sup></span>
-          <span class="nav-group-indicator" aria-hidden="true"></span>
-        </button>
-        <div class="nav-submenu">
-          <div class="nav-submenu-head">Products</div>
-          <div class="nav-submenu-inner">
-            <a href="products.html#slab-pos" class="nav-sublink"><span>AUZsPOS</span></a>
-            <a href="products.html#slab-qr" class="nav-sublink"><span>AUZsPOS QR</span></a>
-            <a href="products.html#slab-payroll" class="nav-sublink"><span>AUZsPay</span></a>
-            <a href="products.html#slab-accounting" class="nav-sublink"><span>AUZsLedger</span></a>
-            <a href="products.html#slab-scan" class="nav-sublink"><span>AUZsScan</span></a>
-            <a href="products.html#slab-mobile" class="nav-sublink"><span>AUZsMob</span></a>
-            <a href="products.html#slab-salon" class="nav-sublink"><span>AUZslab Salon</span></a>
-            <a href="studio.html" class="nav-sublink"><span>Studio &mdash; bespoke software</span></a>
-            <a href="web-design.html" class="nav-sublink"><span>Websites &amp; online stores</span></a>
-          </div>
-        </div>
-      </div>
-
-      <div class="nav-group nav-biz">
-        <button class="nav-link nav-group-toggle" aria-expanded="false">
-          <span>Business types <sup class="nav-group-count">(+5)</sup></span>
-          <span class="nav-group-indicator" aria-hidden="true"></span>
-        </button>
-        <div class="nav-submenu">
-          <div class="nav-submenu-head">Business types</div>
-          <div class="nav-submenu-inner">
-            <a href="business-cafes.html" class="nav-sublink"><span>Caf&eacute;s &amp; restaurants</span></a>
-            <a href="business-salons.html" class="nav-sublink"><span>Salons</span></a>
-            <a href="business-retail.html" class="nav-sublink"><span>Retail &amp; bookstores</span></a>
-            <a href="business-clothing.html" class="nav-sublink active"><span>Clothing &amp; apparel</span></a>
-            <a href="business-mobile-repair.html" class="nav-sublink"><span>Mobile retail &amp; repair</span></a>
-          </div>
-        </div>
-      </div>
-
-            <a href="platform.html" class="nav-link">Why AUZslab</a>
-      <a href="live-demo.html" class="nav-link">Live demo</a>
-      <a href="download-apps.html" class="nav-link">Download apps</a>
-      <a href="cart.html" class="nav-link">Cart <span class="cart-count"></span></a>
-
-      <div class="nav-group">
-        <button class="nav-link nav-group-toggle" aria-expanded="false">
-          <span>Resources <sup class="nav-group-count">(+5)</sup></span>
-          <span class="nav-group-indicator" aria-hidden="true"></span>
-        </button>
-        <div class="nav-submenu">
-          <div class="nav-submenu-head">Resources</div>
-          <div class="nav-submenu-inner">
-            <a href="resources-getting-started.html" class="nav-sublink"><span>Getting started</span></a>
-            <a href="learn.html" class="nav-sublink"><span>Learn: beginner manual</span></a>
-            <a href="resources-operations.html" class="nav-sublink"><span>Operations &amp; workflows</span></a>
-            <a href="resources-growth.html" class="nav-sublink"><span>Growth &amp; scaling</span></a>
-          </div>
-        </div>
-      </div>
-
-      <a href="contact.html" class="nav-link">Contact</a>
+      <a href="index.html" class="nav-link">Home</a><a href="products.html" class="nav-link">Products</a><div class="nav-group"><button class="nav-link nav-group-toggle" aria-expanded="false"><span>Business types <sup class="nav-group-count">(+7)</sup></span><span class="nav-group-indicator" aria-hidden="true"></span></button><div class="nav-submenu"><div class="nav-submenu-inner"><a href="business-cafes.html" class="nav-sublink"><span>Caf&eacute;s &amp; restaurants</span></a><a href="business-salons.html" class="nav-sublink"><span>Salons &amp; studios</span></a><a href="business-retail.html" class="nav-sublink"><span>Retail &amp; bookstores</span></a><a href="business-clothing.html" class="nav-sublink"><span>Clothing &amp; apparel</span></a><a href="business-mobile-repair.html" class="nav-sublink"><span>Mobile retail &amp; repair</span></a><a href="studio.html" class="nav-sublink"><span>Custom software (Studio)</span></a><a href="web-design.html" class="nav-sublink"><span>Websites &amp; online stores</span></a></div></div></div><a href="platform.html" class="nav-link">Why AUZslab</a><a href="live-demo.html" class="nav-link">Live demo</a><a href="download-apps.html" class="nav-link">Download apps</a><a href="cart.html" class="nav-link">Cart <span class="cart-count"></span></a><div class="nav-group"><button class="nav-link nav-group-toggle" aria-expanded="false"><span>Resources <sup class="nav-group-count">(+4)</sup></span><span class="nav-group-indicator" aria-hidden="true"></span></button><div class="nav-submenu"><div class="nav-submenu-inner"><a href="resources-getting-started.html" class="nav-sublink"><span>Getting started</span></a><a href="learn.html" class="nav-sublink"><span>Learn: beginner manual</span></a><a href="resources-operations.html" class="nav-sublink"><span>Operations &amp; workflows</span></a><a href="resources-growth.html" class="nav-sublink"><span>Growth &amp; scaling</span></a></div></div></div><a href="contact.html" class="nav-link">Contact</a>
     </nav>
-    <div class="sidebar-foot">
-      <div style="display:flex;gap:10px">
-        <a href="signup.html" class="btn btn-ghost" data-signin-link style="flex:1;justify-content:center">Get started</a>
-        <button class="btn btn-ghost" data-open-contact style="flex:1;justify-content:center">Let's talk</button>
-      </div>
-      <div class="sidebar-copy">&copy; 2026 AUZslab</div>
-    </div>
-  <div class="drawer-social"><a href="https://www.instagram.com/auzslab.in" aria-label="Instagram" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg></a><a href="https://www.facebook.com/share/1FMd3FoFyZ/?mibextid=wwXIfr" aria-label="Facebook" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 8V6.5c0-.8.3-1.2 1.3-1.2H17V2h-2.6C11.6 2 10 3.7 10 6.2V8H8v3.2h2V22h4V11.2h2.7l.4-3.2z"/></svg></a></div></aside>
+    <div class="foot"><div class="row"><a href="signup.html" class="btn btn-ghost" data-signin-link>Get started</a><button class="btn" data-open-contact>Let's talk</button></div><div class="copy">&copy; 2026 AUZslab</div></div>
+  </aside>
 
   <main class="content">
-    <div class="wrap">
-
-      <section class="section" style="padding-top:104px">
-        <div class="hero-grid">
-        <div>
-        <div class="uk-kit uk-breadcrumb" style="margin-bottom:18px">
-          <a href="platform.html">Business types</a><span class="uk-breadcrumb-sep">/</span><span class="uk-breadcrumb-current">Clothing &amp; apparel</span>
-        </div>
-        <div class="label">Clothing &amp; apparel</div>
-        <h1 class="h-1" style="font-size:44px">Stock by size and<br>color, not by guess.</h1>
-        <p class="lede">A clothing shop isn't "one item, one stock count" &mdash; it's a size/color matrix, a trial room, and returns. This is the one built for that.</p>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px">
-          <button class="btn btn-primary" data-open-contact>Let's talk</button>
-          <a href="products.html" class="btn btn-ghost">See all products</a>
-        </div>
-        </div>
-        <div class="hero-art" role="presentation">
-          <img class="hero-art-logo" src="logo.png" alt="" aria-hidden="true">
-        </div>
+    <div class="wrap"><div class="ed"><section class="ed-hero"><div class="ph r45" data-ed-img="biz.clothing"></div><h1 data-ed="biz.clothing.h">Stock by size and color, not by guess.</h1><div class="ed-side"><span data-ed="biz.clothing.sub">A clothing shop isn&#x27;t &quot;one item, one stock count&quot; — it&#x27;s a size/color matrix, a trial room, and returns.</span><button class="btn" data-open-contact>Let's talk</button></div></section><div class="ed-list" style="margin-top:28px;display:grid"><div class="ed-row" style="grid-template-columns:28px 1fr"><i style="font-style:normal;font-size:8.5px;color:var(--mut)">01</i><b style="font-weight:400;font-size:14px;letter-spacing:-.01em">One stock number per product isn&#x27;t enough</b></div><div class="ed-row" style="grid-template-columns:28px 1fr"><i style="font-style:normal;font-size:8.5px;color:var(--mut)">02</i><b style="font-weight:400;font-size:14px;letter-spacing:-.01em">Trial room chaos, returns on paper</b></div><div class="ed-row" style="grid-template-columns:28px 1fr"><i style="font-style:normal;font-size:8.5px;color:var(--mut)">03</i><b style="font-weight:400;font-size:14px;letter-spacing:-.01em">Size &amp; color billing</b></div><div class="ed-row" style="grid-template-columns:28px 1fr"><i style="font-style:normal;font-size:8.5px;color:var(--mut)">04</i><b style="font-weight:400;font-size:14px;letter-spacing:-.01em">Trial room queue</b></div><div class="ed-row" style="grid-template-columns:28px 1fr"><i style="font-style:normal;font-size:8.5px;color:var(--mut)">05</i><b style="font-weight:400;font-size:14px;letter-spacing:-.01em">Returns &amp; exchanges</b></div><div class="ed-row" style="grid-template-columns:28px 1fr"><i style="font-style:normal;font-size:8.5px;color:var(--mut)">06</i><b style="font-weight:400;font-size:14px;letter-spacing:-.01em">Purchase entry, per variant</b></div><div class="ed-row" style="grid-template-columns:28px 1fr"><i style="font-style:normal;font-size:8.5px;color:var(--mut)">07</i><b style="font-weight:400;font-size:14px;letter-spacing:-.01em">Reorder forecasting</b></div><div class="ed-row" style="grid-template-columns:28px 1fr"><i style="font-style:normal;font-size:8.5px;color:var(--mut)">08</i><b style="font-weight:400;font-size:14px;letter-spacing:-.01em">Sell a size/color variant in a live account, not a demo reel.</b></div></div></div>
+<section class="section tight" id="quote">
+        <div class="wrap">
+          <div class="label">How buying works</div>
+          <h2 class="h-2" style="margin-top:10px">Choose what you need. We send you a quote.</h2>
+          <ol class="ct-steps" style="margin-top:18px">
+            <li><b>1</b><div><strong>Tell us what you want</strong>Tick the services and fill in your business details. It takes two minutes.</div></li>
+            <li><b>2</b><div><strong>We check and send your quote</strong>We look at your request and send a quote made for your business, with the payment page.</div></li>
+            <li><b>3</b><div><strong>Pay and start</strong>Pay online by Razorpay, or in cash. Your software opens the same day.</div></li>
+          </ol>
+          <p class="p" style="margin-top:14px;font-size:13px">One-time onboarding fee: &#8377;1,360. Hardware integration, a website and WhatsApp automation are separate add-ons, quoted on request. The restaurant POS can run monthly; every other service is available on a yearly plan. Questions? <a href="contact.html">Contact AUZslab</a>.</p>
+          <div style="margin-top:16px"><a href="cart.html" class="btn btn-primary">Choose what you need</a></div>
         </div>
       </section>
 
-      <hr class="dash">
-
-      <section class="section tight">
-        <div class="label">What most POS software gets wrong for clothing</div>
-        <div class="grid-2" style="margin-top:12px">
-          <div style="border-top:1px dashed var(--line);padding-top:20px">
-            <div class="h-2" style="font-size:19px">One stock number per product isn't enough</div>
-            <p class="p" style="margin-top:10px">A "T-shirt" isn't one thing to stock &mdash; it's a dozen size/color combinations, each running low on its own schedule.</p>
-          </div>
-          <div style="border-top:1px dashed var(--line);padding-top:20px">
-            <div class="h-2" style="font-size:19px">Trial room chaos, returns on paper</div>
-            <p class="p" style="margin-top:10px">What a customer took to try on isn't a sale yet, but most tills have no way to tell the two apart &mdash; and a return means undoing a receipt by hand.</p>
-          </div>
-        </div>
-      </section>
-
-      <hr class="dash">
-
-      <section class="section tight">
-        <div class="label">Built specifically for this</div>
-        <div class="bento" style="margin-top:12px">
-          <div class="card feat">
-            <span class="tag">POS</span>
-            <div class="h-2" style="margin-top:12px;font-size:19px">Size &amp; color billing</div>
-            <p class="p" style="margin-top:8px">Every product's stock tracked by size and color, not one flat number &mdash; pick the exact variant a customer wants, or scan its own barcode.</p>
-          </div>
-          <div class="card">
-            <span class="tag">POS</span>
-            <div class="h-2" style="margin-top:12px;font-size:19px">Trial room queue</div>
-            <p class="p" style="margin-top:8px">Garments a customer's trying on go into their own queue, kept apart from actual sales until they decide.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Billing</span>
-            <div class="h-2" style="margin-top:12px;font-size:19px">Returns &amp; exchanges</div>
-            <p class="p" style="margin-top:8px">Return or exchange a sold variant against its original invoice &mdash; stock restocks or swaps automatically either way.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Inventory</span>
-            <div class="h-2" style="margin-top:12px;font-size:19px">Purchase entry, per variant</div>
-            <p class="p" style="margin-top:8px">Enter a vendor bill straight against the exact size/color rows it restocks &mdash; not a flat "add stock" number.</p>
-          </div>
-          <div class="card">
-            <span class="tag">Inventory</span>
-            <div class="h-2" style="margin-top:12px;font-size:19px">Reorder forecasting</div>
-            <p class="p" style="margin-top:8px">A suggested reorder quantity built off which specific size/color is actually selling, not a guess.</p>
-          </div>
-        </div>
-      </section>
-
-      <hr class="dash">
-
-      <section class="section tight biz-band">
-        <div class="label">Zero risk, try it first</div>
-        <h2 class="h-2">Sell a size/color variant in a live account, not a demo reel.</h2>
-        <p class="p" style="margin-top:8px">A live, shared account seeded with sample size/color stock &mdash; sell a variant, put something in the trial room, try a return.</p>
-        <a href="https://demo.auzslab.in" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top:14px">Try a variant &rarr;</a>
-      </section>
-
-      <hr class="dash">
-
-      <section class="section tight" id="pricing">
-        <div class="label">What you get, and what it costs</div>
-        <h2 class="h-2" style="margin-bottom:6px">Software for a clothing shop.</h2>
-        <p class="p" style="max-width:34em">AUZsPOS covers size/color billing, stock, trial room, returns, customers and staff in one till. Add AUZsLedger if you want full double-entry accounts on top. Prices exclude GST<span class="gst-t" hidden> (18%, added at checkout)</span>.</p>
-        <div class="grid-2 grid-4" style="margin-top:18px">
-
-          <div class="card price-card" data-price-card>
-            <img src="icon-pos.svg" alt="" class="price-card-icon">
-            <div class="price-card-name">AUZsPOS</div>
-            <div class="price-card-price">Custom quote</div>
-            <p class="price-card-sub">Size/color billing, stock, customers &amp; staff.</p>
-            <div class="acts">
-              <a href="products.html#slab-pos" class="btn btn-ghost">Details</a>
-              <button class="btn btn-primary" data-add-plan="pos">Get it</button>
-            </div>
-          </div>
-
-          <div class="card price-card" data-price-card>
-            <img src="icon-accounts.svg" alt="" class="price-card-icon">
-            <div class="price-card-name">AUZsPOS + AUZsLedger</div>
-            <div class="price-card-price">Custom quote</div>
-            <p class="price-card-sub">Full double-entry books on top of your till.</p>
-            <div class="acts">
-              <a href="products.html#slab-accounting" class="btn btn-ghost">Details</a>
-              <button class="btn btn-primary" data-add-plan="pos,accounting">Get it</button>
-            </div>
-          </div>
-
-          <div class="card price-card" data-price-card>
-            <img src="icon-payroll.svg" alt="" class="price-card-icon">
-            <div class="price-card-badge">Works with any plan</div>
-            <div class="price-card-name" style="margin-top:10px">+ AUZsPay</div>
-            <div class="price-card-price">Custom quote</div>
-            <p class="price-card-sub">Add staff attendance &amp; payroll, on top of whatever you pick above.</p>
-            <div class="acts">
-              <a href="products.html#slab-payroll" class="btn btn-ghost">Details</a>
-              <button class="btn btn-primary" data-add-plan="payroll">Add it</button>
-            </div>
-          </div>
-
-        </div>
-
-        <div class="card" style="margin-top:22px;max-width:640px">
-          <div class="label">One-time items, agreed in your quote</div>
-          <div class="acct-row" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px dashed var(--line)">
-            <span style="font-size:13px;color:var(--ink-dim)">Onboarding fee <b style="color:var(--accent)">(every new client)</b></span>
-            <b style="white-space:nowrap;margin-left:10px">In your quote</b>
-          </div>
-          <div class="acct-row" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px dashed var(--line)">
-            <span style="font-size:13px;color:var(--ink-dim)">Setup fee &mdash; installing and configuring the till, catalogue and stock</span>
-            <b style="white-space:nowrap;margin-left:10px">In your quote</b>
-          </div>
-          <div class="acct-row" style="display:flex;justify-content:space-between;padding:10px 0">
-            <span style="font-size:13px;color:var(--ink-dim)">Hardware &mdash; barcode scanner, receipt printer, tablet</span>
-            <b style="white-space:nowrap;margin-left:10px">Charged additionally</b>
-          </div>
-          <p class="p" style="margin-top:10px;font-size:12px;color:var(--ink-faint)">Everything is confirmed in your written quote before anything is charged. Hardware and any third-party integrations are quoted separately.</p>
-        </div>
-
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px">
-          <button class="btn btn-primary" data-open-contact>Let's talk</button>
-          <a href="products.html" class="btn btn-ghost">See every product</a>
-        </div>
-      </section>
 
       <div class="stack">
 
       <section class="stack-panel stack-panel-dark" data-tab="CONNECT">
 
-      <footer class="footer-dark">
-        <div class="wrap">
-          <div class="footer-top">
-            <div class="footer-col footer-col-brand">
-              <span class="brand-mark">AUZ<span class="brand-accent">slab</span></span>
-              <p class="footer-tag">Business software built around the way you work.</p>
-              <a class="footer-cta" href="tel:+919251250829">+91 92512 50829</a>
-              <a class="footer-mail" href="mailto:helloauzslab@gmail.com">helloauzslab@gmail.com</a>
-            </div>
-            <div class="footer-col">
-              <div class="footer-col-title">Products</div>
-              <a href="products.html#slab-pos">AUZsPOS</a>
-              <a href="products.html#slab-payroll">AUZsPay</a>
-              <a href="products.html#slab-accounting">AUZsLedger</a>
-              <a href="products.html#slab-scan">AUZsScan</a>
-              <a href="products.html#slab-mobile">AUZsMob</a>
-              <a href="products.html">All products</a>
-            </div>
-            <div class="footer-col">
-              <div class="footer-col-title">Business types</div>
-              <a href="business-cafes.html">Cafes &amp; restaurants</a>
-              <a href="business-retail.html">Retail &amp; bookstores</a>
-              <a href="business-salons.html">Salons &amp; studios</a>
-              <a href="business-mobile-repair.html">Mobile shops</a>
-              <a href="business-clothing.html">Clothing &amp; apparel</a>
-            </div>
-            <div class="footer-col">
-              <div class="footer-col-title">Company</div>
-              <a href="live-demo.html">Live demo</a>
-              <a href="download-apps.html">Download apps</a>
-              <a href="contact.html">Contact</a>
-              <a href="join-team.html">Join our team</a>
-              <a href="signup.html">Sign in</a>
-            </div>
-          </div>
-
-          <div class="footer-bottom">
-            <nav class="footer-legal" aria-label="Legal">
-              <a href="terms.html">Terms</a>
-              <a href="privacy.html">Privacy</a>
-              <a href="refund.html">Refunds</a>
-              <a href="sitemap.html">Sitemap</a>
-              <a href="https://www.instagram.com/auzslab.in" target="_blank" rel="noopener noreferrer">Instagram</a>
-              <a href="https://www.facebook.com/share/1FMd3FoFyZ/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer">Facebook</a>
-            </nav>
-            <span class="footer-copy">&copy; 2026 AUZslab</span>
-          </div>
-        </div>
-      </footer>
+      <div class="ftwrap" id="ftwrap">
+    <button class="ftt" aria-expanded="false"><span class="ftti"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M3 3h8l10 10-8 8L3 11V3Z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5Z"/></svg><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.500 0 18M12 3c-3 3.5-3 14.500 0 18"/></svg></span><span class="ftl">Setup, support and help</span><i class="pl">+</i></button>
+    <div class="ftinfo">
+      <div class="perks"><div class="perk"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M3 3h8l10 10-8 8L3 11V3Z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg><div><b>Set up with you</b><span>Shaped to your workflow</span></div></div><div class="perk"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg><div><b>Works offline</b><span>POS and AUZsMob keep selling</span></div></div><div class="perk"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.500 0 18M12 3c-3 3.5-3 14.500 0 18"/></svg><div><b>Your data is yours</b><span>Back up or export any time</span></div></div><div class="perk"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5Z"/></svg><div><b>Talk to a person</b><span>Call or WhatsApp us</span></div></div></div>
+      <div class="ftstrip"><div class="ftfold" id="ftfold"><p>AUZslab is a complete ecosystem for business. We break rigid software: every part connects, and every part is yours to shape.</p><button class="ftmore" id="ftmore">Read more...</button></div>
+        <div class="ftabs"><button class="ftab" data-i="0">Products</button><button class="ftab" data-i="1">Business types</button><button class="ftab" data-i="2">Resources</button><button class="ftab" data-i="3">Company</button></div><div class="ftpanel" id="ftpanel" data-tabs='[[["products.html#slab-pos","AUZsPOS"],["products.html#slab-payroll","AUZsPay"],["products.html#slab-accounting","AUZsLedger"],["products.html#slab-scan","AUZsScan"],["products.html#slab-mobile","AUZsMob"],["products.html#slab-salon","AUZslab Salon"],["products.html#slab-qr","QR ordering"]],[["business-cafes.html","Cafes & restaurants"],["business-salons.html","Salons & studios"],["business-retail.html","Retail & bookstores"],["business-clothing.html","Clothing & apparel"],["business-mobile-repair.html","Mobile retail & repair"],["studio.html","Custom software (Studio)"],["web-design.html","Websites & online stores"]],[["resources-getting-started.html","Getting started"],["learn.html","Learn: beginner manual"],["resources-operations.html","Operations & workflows"],["resources-growth.html","Growth & scaling"]],[["platform.html","Why AUZslab"],["live-demo.html","Live demo"],["download-apps.html","Download apps"],["join-team.html","Join our team"],["sitemap.html","Sitemap"]]]'></div></div>
+    </div>
+    <footer><div class="cols">
+      <div class="col"><span class="lbl">Connect with us</span><a href="tel:+919251250829">Call</a><a href="https://wa.me/919251250829" target="_blank" rel="noopener">Text (WhatsApp)</a><a href="https://www.instagram.com/auzslab.in" target="_blank" rel="noopener">Instagram</a><a href="https://www.facebook.com/share/1FMd3FoFyZ/?mibextid=wwXIfr" target="_blank" rel="noopener">Facebook</a><a href="mailto:helloauzslab@gmail.com">Email</a></div>
+      <div class="col"><span class="lbl">Explore</span><a href="products.html">Products</a><a href="live-demo.html">Live demo</a><a href="download-apps.html">Download apps</a><a href="studio.html">Studio</a><a href="web-design.html">Websites &amp; stores</a><a href="platform.html">Why AUZslab</a></div>
+      <div class="col"><span class="lbl">Company</span><a href="contact.html">Contact</a><a href="join-team.html">Join our team</a><a href="signup.html">Sign in</a><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a><a href="refund.html">Refunds</a></div>
+      <div class="ftbrand"><div class="big">AUZslab</div></div></div>
+      <div class="fin"><span>&copy; 2026 AUZslab. All rights reserved</span><a href="sitemap.html">Sitemap</a></div></footer>
+  </div>
+<nav class="u-dock" aria-label="Quick"><div class="pill"><a href="index.html" aria-label="Home"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></a><a href="products.html" aria-label="Products"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M3 7l9-4 9 4-9 4-9-4Z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/></svg></a><a href="live-demo.html" aria-label="Live demo"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></svg></a><a href="signup.html" aria-label="Sign in"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></a></div><button class="chat" data-open-contact aria-label="Talk to us"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5Z"/></svg></button></nav>
 
       </section>
 
@@ -456,41 +212,7 @@
 <script src="site.js?v=113"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script src="design-system/ui-kit.js?v=101"></script>
-<script>
-// Live prices: the cards above are a fallback; this reads what the admin
-// has set (public_product_prices / public_bundles) so edits show up here
-// without a deploy. A matching bundle wins over the flat per-product sum.
-(function () {
-  var inr = function () { return 'Custom quote'; };
-  var sb; try { sb = supabase.createClient(CFG.url, CFG.key); } catch (e) { return; }
-  Promise.all([sb.rpc('public_product_prices'), sb.rpc('public_bundles')]).then(function (r) {
-    var prices = {}; ((r[0] && r[0].data) || []).forEach(function (p) { prices[p.key] = p; });
-    var bundles = (r[1] && r[1].data) || [];
-    if (!Object.keys(prices).length) return;
-    function setPrice(el, text, strike) {
-      var tail = el.querySelector('span');
-      while (el.firstChild && el.firstChild !== tail) el.removeChild(el.firstChild);
-      if (strike) { var s = document.createElement('s'); s.textContent = strike; el.insertBefore(s, tail); el.insertBefore(document.createTextNode(' '), tail); }
-      el.insertBefore(document.createTextNode(text), tail);
-    }
-    document.querySelectorAll('[data-add-plan]').forEach(function (btn) {
-      var keys = btn.dataset.addPlan.split(',').sort(), card = btn.closest('[data-price-card]');
-      var el = card && card.querySelector('.price-card-price'); if (!el) return;
-      var b = bundles.filter(function (x) { return x.feature_keys.slice().sort().join(',') === keys.join(','); })[0];
-      var total = 0, ok = true; keys.forEach(function (k) { var p = prices[k]; if (!p || !(Number(p.monthly_price) > 0)) ok = false; else total += Number(p.monthly_price); });
-      var v = b ? Number(b.monthly_price) : (ok ? total : 0), list = b ? Number(b.list_price) : 0;
-      if (v > 0) setPrice(el, inr(v), list > v ? inr(list) : null);
-    });
-    try { sb.payments.config().then(function (c) { c = c && c.data; if (c && c.gstPct > 0) document.querySelectorAll('.gst-t').forEach(function (e) { e.hidden = false; }); }); } catch (e) {}
-  }).catch(function () {});
-})();
-document.querySelectorAll('[data-add-plan]').forEach(function (btn) {
-  btn.addEventListener('click', function () {
-    btn.dataset.addPlan.split(',').forEach(function (key) { window.AUZcart.add(key); });
-    window.location.href = 'cart.html';
-  });
-});
-</script>
 <script src="company.js"></script>
+<script src="ed.js?v=1" defer></script><script src="fold.js?v=1" defer></script><script src="u.js?v=1" defer></script>
 </body>
 </html>

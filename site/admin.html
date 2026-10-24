@@ -962,7 +962,6 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <button class="a-side-btn active" data-section="home"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1v-9Z"/></svg>Home</button>
         <button class="a-side-btn" data-section="leads"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l2 3h6l2-3h4"/><path d="M5 5h14l2 7v7a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-7l2-7Z"/></svg>Leads<span class="a-row-badge" id="notifBadgeLeadsSide" style="display:none"></span></button>
         <button class="a-side-btn" data-section="clients"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10v11h16V10"/><path d="M2 10l2-6h16l2 6"/><path d="M9 21v-6h6v6"/></svg>Clients</button>
-        <button class="a-side-btn" data-section="pricing"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 12.5 12.5 20 4 11.5V4h7.5L20 12.5Z"/><circle cx="8" cy="8" r="1.4"/></svg>Pricing &amp; payments</button>
         <button class="a-side-btn" data-section="users"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 8a3 3 0 1 1 0 6"/><path d="M15.5 14.3A5.9 5.9 0 0 1 21 20"/></svg>Users</button>
 
         <div class="a-side-group-label">Requests to review</div>
@@ -1061,31 +1060,7 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <div id="addonRequestsList">Loading&hellip;</div>
       </section>
 
-      <section class="a-page" id="pricingSection" data-title="Pricing">
-        <div class="label">Online checkout</div>
-        <h2 class="h-2">Pricing</h2>
-        <p class="p">These prices fill in the quote builder under Client requests and show on the pricing page. Leave it at &#8377;0 to keep it on the request-and-we'll-call-you flow.</p>
-        <div id="pricingList">Loading&hellip;</div>
-
-        <div class="label" style="margin-top:28px">AUZslab Salon plans</div>
-        <h2 class="h-2">Plan tiers (salon, cafe &amp; restaurant, mobile shop)</h2>
-        <p class="p">The four tiers on <a href="business-salons.html#salon-plans" target="_blank" rel="noopener">the salon</a>, <a href="business-cafes.html#salon-plans" target="_blank" rel="noopener">cafe &amp; restaurant</a> and <a href="business-mobile-repair.html#salon-plans" target="_blank" rel="noopener">mobile shop</a> pages &mdash; edit their prices, names and features here; the live page reads these the moment you save.</p>
-        <div id="salonTiersList">Loading&hellip;</div>
-
-        <div class="label" style="margin-top:28px">Business-page add-ons</div>
-        <h2 class="h-2">Add-ons on the salon and cafe pages</h2>
-        <p class="p">The optional add-ons under the plans on the <a href="business-salons.html#salon-addons" target="_blank" rel="noopener">salon</a> and <a href="business-cafes.html#salon-addons" target="_blank" rel="noopener">cafe &amp; restaurant</a> pages. A price of &#8377;0 shows the label instead (for example &ldquo;Ask for pricing&rdquo;). Customers can add them to their request, and your quote starts from these prices.</p>
-        <div id="nicheAddonsList">Loading&hellip;</div>
-
-        <div class="label" style="margin-top:28px">Bundle plans</div>
-        <h2 class="h-2">Bundles</h2>
-        <p class="p">Create bundles from any two or more products. A bundle's price (monthly, or the whole-year price if set) applies when a cart's products exactly match its set; everything else is a flat sum of the products above.</p>
-        <div id="bundlesList">Loading&hellip;</div>
-
-        <div class="label" style="margin-top:28px">Razorpay</div>
-        <h2 class="h-2">Recent payments</h2>
-        <div id="paymentsList">Loading&hellip;</div>
-      </section>
+      
 
       <section class="a-page" id="clientsSection" data-title="Clients">
         <div class="label">Your clients</div>
@@ -1454,10 +1429,6 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10v11h16V10"/><path d="M2 10l2-6h16l2 6"/><path d="M9 21v-6h6v6"/></svg>
       <span>Clients</span>
     </button>
-    <button class="a-tab-btn" data-section="pricing">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 12.5 12.5 20 4 11.5V4h7.5L20 12.5Z"/><circle cx="8" cy="8" r="1.4"/></svg>
-      <span>Pricing</span>
-    </button>
     <button class="a-tab-btn" data-section="users">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 8a3 3 0 1 1 0 6"/><path d="M15.5 14.3A5.9 5.9 0 0 1 21 20"/></svg>
       <span>Users</span>
@@ -1639,7 +1610,7 @@ async function copyDemoLink(kind, id, btn) {
 }
 
 // ---------- navigation: tab bar (phone) + flat sidebar (tablet/desktop) + a "More" page for overflow ----------
-const PRIMARY = ['leads', 'clients', 'pricing', 'users'];
+const PRIMARY = ['leads', 'clients', 'users'];
 let currentSection = 'leads';
 
 function isDeskNav() { return innerWidth >= 860; }
@@ -1661,7 +1632,6 @@ function resetMainScroll() {
 // signing in used to fire about 11 database requests together; now it is 2.
 const SECTION_LOADERS = {
   leads: () => { loadLeads(); refreshOrdersBadge(); }, orders: () => loadOrders(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(),
-  pricing: () => { loadPricing(); loadSalonTiers(); loadNicheAddons(); loadBundles(); loadPayments(); },
   users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(), privacyReq: () => loadPrivacyReq(), whatsapp: () => loadWhatsApp(),
   team: () => { loadTeam(); loadSetups(); loadTeamApps(); }, tasks: () => loadTasks(), postStudio: () => { const f = document.getElementById('postStudioFrame'); if (f && !f.getAttribute('src')) f.src = f.dataset.src; }, salesWork: () => loadSalesWork(), clientPay: () => { loadClientPay(); loadBills(); },
 };
@@ -2153,236 +2123,6 @@ async function loadCostReport() {
   };
 }
 
-async function loadPricing() {
-  const listEl = document.getElementById('pricingList');
-  const { data, error } = await sb.rpc('public_product_prices', {});
-  if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
-
-  const INCLUDED = ['crm', 'billing', 'inventory'];
-  const cards = (data || []).map((p) => {
-    if (INCLUDED.includes(p.key)) return `
-      <div class="price-card" data-key="${esc(p.key)}">
-        <div class="price-head"><div class="price-name">${esc(p.label)}</div></div>
-        <div class="price-note" style="margin-top:4px">Included in AUZsPOS and the other apps &mdash; not sold separately (stays &#8377;0)</div>
-      </div>`;
-    return `
-    <div class="price-card" data-key="${esc(p.key)}">
-      <div class="price-head">
-        <div class="price-name">${esc(p.label)}</div>
-        <button class="price-save" data-save>Save</button>
-      </div>
-      ${p.key === 'salon' ? `<div class="price-note" style="margin-top:2px"><a href="business-salons.html#salon-plans" target="_blank" rel="noopener">View the live salon plans page &#8599;</a> &mdash; its four tiers are fixed prices, set on that page directly, not from this field</div>` : ''}
-      <div class="price-fields">
-        <div class="price-field"><label>Monthly</label><div class="pf-row">&#8377;<input data-price type="number" min="0" step="1" value="${Number(p.monthly_price)}"><span class="pf-unit">/mo</span></div></div>
-        <div class="price-field"><label>Whole year</label><div class="pf-row">&#8377;<input data-yearly type="number" min="0" step="1" value="${Number(p.yearly_price || 0)}" title="Price if paid for the whole year (0 = no yearly option)"><span class="pf-unit">/yr</span></div></div>
-        <div class="price-field"><label>After year 1</label><div class="pf-row">&#8377;<input data-renew type="number" min="0" step="1" value="${Number(p.renewal_yearly_price || 0)}" title="Yearly renewal price from year two (0 = same as year one)"><span class="pf-unit">/yr</span></div></div>
-      </div>
-    </div>`;
-  }).join('');
-
-  listEl.innerHTML = `<div class="price-grid">${cards}</div>`;
-
-  listEl.querySelectorAll('[data-key]').forEach((tr) => {
-    const saveBtn = tr.querySelector('[data-save]'); if (!saveBtn) return;
-    saveBtn.onclick = async () => {
-      const price = Number(tr.querySelector('[data-price]').value);
-      if (!(price >= 0)) { alert('Enter a price of 0 or more.'); return; }
-      const yearly = Number(tr.querySelector('[data-yearly]').value || 0), renew = Number(tr.querySelector('[data-renew]').value || 0);
-      if (!(yearly >= 0) || !(renew >= 0)) { alert('Yearly prices must be 0 or more.'); return; }
-      const { error: saveErr } = await sb.rpc('admin_set_product_price', { p_key: tr.dataset.key, p_monthly_price: price });
-      if (saveErr) { alert(saveErr.message); return; }
-      const { error: yErr } = await sb.rpc('admin_set_product_yearly', { p_key: tr.dataset.key, p_yearly_price: yearly, p_renewal_yearly_price: renew });
-      if (yErr) { alert(yErr.message); return; }
-      loadPricing();
-    };
-  });
-}
-
-async function loadSalonTiers() {
-  const listEl = document.getElementById('salonTiersList');
-  const { data, error } = await sb.rpc('admin_list_salon_tiers', {});
-  if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
-  const NICHE_NAME = { salon: 'Salon plans', cafe: 'Cafe & restaurant plans', mobile: 'Mobile shop & repair plans' };
-  const cards = (data || []).map((t, i, all) => `${(i === 0 || all[i - 1].niche !== t.niche) ? `<h3 class="h-3" style="grid-column:1/-1;margin:14px 0 0">${esc(NICHE_NAME[t.niche] || t.niche)}</h3>` : ''}
-    <div class="a-card bn-card" data-tier="${esc(t.tier_key)}">
-      <div class="bn-top">
-        <input class="inp" data-f="name" placeholder="Tier name" value="${esc(t.name || '')}">
-        <input class="inp" data-f="badge" placeholder="Badge (e.g. House favourite)" value="${esc(t.badge || '')}">
-      </div>
-      <input class="inp" data-f="tagline" placeholder="One-line tagline shown on the card" value="${esc(t.tagline || '')}">
-      <div class="bn-grid">
-        <label class="bn-field"><span>Monthly</span><div class="bn-in"><i>&#8377;</i><input data-f="monthly_price" type="number" min="0" step="1" value="${Number(t.monthly_price || 0)}"></div></label>
-        <label class="bn-field"><span>Whole year</span><div class="bn-in"><i>&#8377;</i><input data-f="yearly_price" type="number" min="0" step="1" value="${Number(t.yearly_price || 0)}"></div></label>
-      </div>
-      <textarea class="inp" data-f="features" rows="3" placeholder="One feature per line" style="margin-top:8px;resize:vertical">${esc((t.features || []).join('\n'))}</textarea>
-      <div class="bn-toggles">
-        <label class="bn-switch"><input type="checkbox" data-f="highlighted" ${t.highlighted ? 'checked' : ''}><span>Highlighted (shown as the popular tier)</span></label>
-        <label class="bn-switch"><input type="checkbox" data-f="active" ${t.active === false ? '' : 'checked'}><span>Show on the page</span></label>
-      </div>
-      <div class="bn-foot"><button class="btn btn-primary" data-save>Save</button></div>
-    </div>`).join('');
-  listEl.innerHTML = `<div class="price-grid">${cards}</div>`;
-
-  listEl.querySelectorAll('[data-tier]').forEach((card) => {
-    card.querySelector('[data-save]').onclick = async () => {
-      const val = (f) => card.querySelector(`[data-f="${f}"]`).value;
-      const monthly = Number(val('monthly_price')), yearly = Number(val('yearly_price'));
-      if (!(monthly >= 0) || !(yearly >= 0)) { alert('Prices must be 0 or more.'); return; }
-      const features = val('features').split('\n').map((s) => s.trim()).filter(Boolean);
-      const p = {
-        tier_key: card.dataset.tier,
-        name: val('name'), tagline: val('tagline'), badge: val('badge'),
-        monthly_price: monthly, yearly_price: yearly, features,
-        highlighted: card.querySelector('[data-f="highlighted"]').checked,
-        active: card.querySelector('[data-f="active"]').checked,
-      };
-      const { error: saveErr } = await sb.rpc('admin_save_salon_tier', { p });
-      if (saveErr) { alert(saveErr.message); return; }
-      loadSalonTiers();
-    };
-  });
-}
-
-async function loadNicheAddons() {
-  const listEl = document.getElementById('nicheAddonsList'); if (!listEl) return;
-  const { data, error } = await sb.rpc('admin_list_niche_addons', {});
-  if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
-  const NICHE_NAME = { salon: 'Salon add-ons', cafe: 'Cafe & restaurant add-ons', mobile: 'Mobile shop & repair add-ons' };
-  const cards = (data || []).map((a, i, all) => `${(i === 0 || all[i - 1].niche !== a.niche) ? `<h3 class="h-3" style="grid-column:1/-1;margin:14px 0 0">${esc(NICHE_NAME[a.niche] || a.niche)}</h3>` : ''}
-    <div class="a-card bn-card" data-addon="${esc(a.addon_key)}">
-      <input class="inp" data-f="name" placeholder="Add-on name" value="${esc(a.name || '')}">
-      <textarea class="inp" data-f="blurb" rows="2" placeholder="Short description" style="margin-top:8px;resize:vertical">${esc(a.blurb || '')}</textarea>
-      <div class="bn-grid">
-        <label class="bn-field"><span>Monthly price</span><div class="bn-in"><i>&#8377;</i><input data-f="monthly_price" type="number" min="0" step="1" value="${Number(a.monthly_price || 0)}"></div></label>
-        <label class="bn-field"><span>Label when &#8377;0</span><div class="bn-in"><input data-f="price_label" value="${esc(a.price_label || '')}" placeholder="Ask for pricing"></div></label>
-      </div>
-      <input class="inp" data-f="unit_note" placeholder="Small print under the price" value="${esc(a.unit_note || '')}" style="margin-top:8px">
-      <div class="bn-toggles"><label class="bn-switch"><input type="checkbox" data-f="active" ${a.active === false ? '' : 'checked'}><span>Show on the page</span></label>${a.product_key ? `<span style="font-size:12px;color:var(--ink-faint)">Also switches on: ${esc(PROD_NAME[a.product_key] || a.product_key)}</span>` : ''}</div>
-      <div class="bn-foot"><button class="btn btn-primary" data-save>Save</button></div>
-    </div>`).join('');
-  listEl.innerHTML = `<div class="price-grid">${cards}</div>`;
-  listEl.querySelectorAll('[data-addon]').forEach((card) => {
-    card.querySelector('[data-save]').onclick = async () => {
-      const val = (f) => card.querySelector(`[data-f="${f}"]`).value, price = Number(val('monthly_price'));
-      if (!(price >= 0)) { alert('Price must be 0 or more.'); return; }
-      const p = { addon_key: card.dataset.addon, name: val('name'), blurb: val('blurb'), monthly_price: price, price_label: val('price_label'), unit_note: val('unit_note'), active: card.querySelector('[data-f="active"]').checked };
-      const { error: e2 } = await sb.rpc('admin_save_niche_addon', { p });
-      if (e2) { alert(e2.message); return; }
-      loadNicheAddons();
-    };
-  });
-}
-
-async function loadBundles() {
-  const listEl = document.getElementById('bundlesList');
-  const [{ data, error }, { data: prods }, { data: addons }] = await Promise.all([
-    sb.rpc('admin_list_bundles', {}), sb.rpc('public_product_prices', {}), sb.rpc('public_addon_price_overrides', {}),
-  ]);
-  if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
-  const sellable = (prods || []).filter((p) => !['crm', 'billing', 'inventory'].includes(p.key));
-  const card = (b) => {
-    const isNew = !b.key;
-    const sum = (b.feature_keys || []).reduce((a, k) => a + Number((sellable.find((p) => p.key === k) || {}).monthly_price || 0), 0);
-    const num = (f, label, v, extra) => `<label class="bn-field"><span>${label}</span><div class="bn-in">${extra === 'pct' ? '' : '<i>&#8377;</i>'}<input data-f="${f}" type="number" min="0" ${extra === 'pct' ? 'max="90" step="0.5"' : 'step="1"'} value="${Number(v || 0)}">${extra === 'pct' ? '<i>%</i>' : ''}</div></label>`;
-    return `<div class="a-card bn-card" data-bkey="${esc(b.key || '')}">
-      <div class="bn-top">
-        <input class="inp" data-f="label" placeholder="Bundle name" value="${esc(b.label || '')}">
-        <input class="inp" data-f="badge" placeholder="Badge (e.g. Most popular)" value="${esc(b.badge || '')}">
-      </div>
-      <div class="bn-prods">${sellable.map((p) => `<label class="bn-chip"><input type="checkbox" data-prod="${esc(p.key)}" ${(b.feature_keys || []).includes(p.key) ? 'checked' : ''}><span>${esc(p.label)}</span></label>`).join('')}</div>
-      <input class="inp" data-f="blurb" placeholder="One line shown on the pricing page" value="${esc(b.blurb || '')}">
-      <div class="bn-grid">
-        ${num('discount_pct', 'Discount', b.discount_pct, 'pct')}
-        ${num('monthly_price', 'Monthly price', b.monthly_price)}
-        ${num('list_price', 'Total if bought separately', b.list_price)}
-        ${num('yearly_price', 'Whole-year price', b.yearly_price)}
-      </div>
-      <div class="bn-toggles">
-        <label class="bn-switch" title="Price follows the products' prices minus the discount"><input type="checkbox" data-f="auto" ${b.auto ? 'checked' : ''}><span>Follow product prices</span></label>
-        <label class="bn-switch"><input type="checkbox" data-f="active" ${b.active === false ? '' : 'checked'}><span>Show on site</span></label>
-      </div>
-      <div class="bn-disc" data-disc></div>
-      <div class="bn-foot"><button class="btn btn-primary" data-save>${isNew ? 'Create bundle' : 'Save'}</button>${isNew ? '<button class="btn" data-cancel>Cancel</button>' : '<button class="btn" data-del>Delete</button>'}</div>
-      <input type="hidden" data-sum value="${sum}">
-    </div>`;
-  };
-  const addonRows = (addons || []).map((o) => `<div style="display:flex;gap:8px;align-items:center;margin:6px 0" data-addon data-akey="${esc(o.key)}" data-areq="${esc(o.requires)}">
-      <span><b>${esc(FEATURE_LABEL[o.key] || o.key)}</b> as an add-on for clients who already have <b>${esc(FEATURE_LABEL[o.requires] || o.requires)}</b>: &#8377; <input class="input" data-aprice type="number" min="0" step="1" value="${Number(o.monthly_price)}" style="width:100px">/mo</span>
-      <button class="btn btn-primary" data-asave>Save</button></div>`).join('');
-  listEl.innerHTML = (data || []).map(card).join('') +
-    `<div id="newBundleBox"></div><button class="btn" id="addBundleBtn">+ New bundle</button>
-     ${addonRows ? `<div class="label" style="margin-top:22px">Add-on prices</div>${addonRows}` : ''}`;
-
-  const refreshDisc = (c) => {
-    const keys = [...c.querySelectorAll('[data-prod]:checked')].map((x) => x.dataset.prod);
-    const sep = keys.reduce((a, k) => a + Number((sellable.find((p) => p.key === k) || {}).monthly_price || 0), 0);
-    const m = Number(c.querySelector('[data-f=monthly_price]').value || 0), l = Number(c.querySelector('[data-f=list_price]').value || 0) || sep;
-    const y = Number(c.querySelector('[data-f=yearly_price]').value || 0);
-    const bits = [`Separately these cost ${'₹'}${sep.toLocaleString('en-IN')}/mo`];
-    if (l > m) bits.push(`bundle discount ${'₹'}${(l - m).toLocaleString('en-IN')}/mo (${Math.round((l - m) / l * 100)}%)`);
-    if (y > 0 && m > 0) bits.push(y < m * 12 ? `whole year ${'₹'}${y.toLocaleString('en-IN')} saves ${'₹'}${(m * 12 - y).toLocaleString('en-IN')} (${Math.round((m * 12 - y) / (m * 12) * 100)}%) vs 12 months` : `whole year ${'₹'}${y.toLocaleString('en-IN')}`);
-    c.querySelector('[data-disc]').textContent = bits.join(' · ');
-  };
-  const wire = (c) => {
-    const syncAuto = () => { const a = c.querySelector('[data-f=auto]').checked; ['monthly_price', 'list_price', 'yearly_price'].forEach((n) => { c.querySelector('[data-f=' + n + ']').disabled = a; }); };
-    c.querySelectorAll('input').forEach((i) => { i.oninput = () => refreshDisc(c); i.onchange = () => { syncAuto(); refreshDisc(c); }; });
-    syncAuto(); refreshDisc(c);
-    c.querySelector('[data-save]').onclick = async () => {
-      const f = (n) => c.querySelector('[data-f=' + n + ']');
-      const keys = [...c.querySelectorAll('[data-prod]:checked')].map((x) => x.dataset.prod);
-      const { error: e } = await sb.rpc('admin_save_bundle', {
-        p_key: c.dataset.bkey || null, p_label: f('label').value, p_feature_keys: keys,
-        p_monthly_price: Number(f('monthly_price').value || 0), p_list_price: Number(f('list_price').value || 0),
-        p_yearly_price: Number(f('yearly_price').value || 0), p_badge: f('badge').value, p_blurb: f('blurb').value, p_active: f('active').checked, p_auto: f('auto').checked, p_discount_pct: Number(f('discount_pct').value || 0),
-      });
-      if (e) { alert(e.message); return; }
-      loadBundles();
-    };
-    const del = c.querySelector('[data-del]');
-    if (del) del.onclick = async () => {
-      if (!confirm('Delete this bundle? Carts with these products will price as separate items again.')) return;
-      const { error: e } = await sb.rpc('admin_delete_bundle', { p_key: c.dataset.bkey });
-      if (e) { alert(e.message); return; }
-      loadBundles();
-    };
-    const cancel = c.querySelector('[data-cancel]');
-    if (cancel) cancel.onclick = () => { document.getElementById('newBundleBox').innerHTML = ''; };
-  };
-  listEl.querySelectorAll('[data-bkey]').forEach(wire);
-  document.getElementById('addBundleBtn').onclick = () => {
-    const box = document.getElementById('newBundleBox');
-    box.innerHTML = card({ active: true });
-    wire(box.firstElementChild);
-  };
-  listEl.querySelectorAll('[data-addon]').forEach((r) => {
-    r.querySelector('[data-asave]').onclick = async () => {
-      const { error: e } = await sb.rpc('admin_set_addon_price', { p_key: r.dataset.akey, p_requires: r.dataset.areq, p_monthly_price: Number(r.querySelector('[data-aprice]').value) });
-      if (e) { alert(e.message); return; }
-      loadBundles();
-    };
-  });
-}
-
-async function loadPayments() {
-  const listEl = document.getElementById('paymentsList');
-  const { data, error } = await sb.rpc('admin_list_payments', {});
-  if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
-  if (!data || !data.length) { listEl.innerHTML = emptyDoodle('No payments yet.'); return; }
-
-  const rows = data.map((p) => `
-    <tr>
-      <td data-label="For"><b>${esc(p.target_name)}</b><br><span style="color:var(--ink-faint)">${esc(p.kind === 'signup' ? 'New signup' : 'Add-on')}</span></td>
-      <td data-label="Customer">${esc(p.user_email)}</td>
-      <td data-label="Amount">&#8377;${Number(p.amount).toLocaleString('en-IN')}</td>
-      <td data-label="Status"><span class="tag" style="background:${p.status === 'paid' ? 'var(--accent)' : 'transparent'};color:${p.status === 'paid' ? '#fff' : 'inherit'}">${esc(p.status)}</span></td>
-      <td data-label="When" style="color:var(--ink-faint)">${new Date(p.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</td>
-    </tr>`).join('');
-
-  listEl.innerHTML = `<div class="admin-table-wrap"><table class="admin-table">
-    <tr><th>For</th><th>Customer</th><th>Amount</th><th>Status</th><th>When</th></tr>
-    ${rows}
-  </table></div>`;
-}
 
 let clientsCache = [];
 
@@ -3341,13 +3081,13 @@ const ORD_STATUS = { requested: 'New request', verifying: 'Under verification', 
 const ORD_PRODUCTS = [['pos', 'AUZsPOS'], ['self_order', 'AUZsPOS QR'], ['payroll', 'AUZsPay'], ['accounting', 'AUZsLedger'], ['mobile', 'AUZsMob'], ['style', 'AUZsStyle'], ['finance', 'AUZsFinance'], ['scan', 'AUZsScan'], ['salon', 'AUZslab Salon'], ['website_builder', 'Website Builder']];
 const ORD_NICHES = [['cafe', 'Cafe / restaurant'], ['retail', 'Retail / General'], ['salon', 'Salon / spa'], ['mobile', 'Mobile shop']];
 const ORD_STATES = { '01': 'Jammu and Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab', '04': 'Chandigarh', '05': 'Uttarakhand', '06': 'Haryana', '07': 'Delhi', '08': 'Rajasthan', '09': 'Uttar Pradesh', '10': 'Bihar', '11': 'Sikkim', '12': 'Arunachal Pradesh', '13': 'Nagaland', '14': 'Manipur', '15': 'Mizoram', '16': 'Tripura', '17': 'Meghalaya', '18': 'Assam', '19': 'West Bengal', '20': 'Jharkhand', '21': 'Odisha', '22': 'Chhattisgarh', '23': 'Madhya Pradesh', '24': 'Gujarat', '26': 'Dadra and Nagar Haveli and Daman and Diu', '27': 'Maharashtra', '29': 'Karnataka', '30': 'Goa', '31': 'Lakshadweep', '32': 'Kerala', '33': 'Tamil Nadu', '34': 'Puducherry', '35': 'Andaman and Nicobar Islands', '36': 'Telangana', '37': 'Andhra Pradesh', '38': 'Ladakh' };
-const SETUP_DEFAULT = 2190;
-const ONBOARDING_DEFAULT = 1460; // flat, every new client -- separate from the setup fee, which only applies when pos/self_order is in the request
+const SETUP_DEFAULT = 0;
+const ONBOARDING_DEFAULT = 1360; // flat one-time onboarding fee for every new client; there is no separate setup fee any more
 let ordFilter = 'open', ordCur = null, ordQ = null, ordPrices = null, ordProofUrl = null;
 const ordPill = (s) => `<span class="status-pill ${s === 'paid' ? 'status-active' : s === 'rejected' ? 'status-suspended' : ''}">${esc(ORD_STATUS[s] || s)}</span>`;
 const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 const money2 = (n) => '&#8377;' + Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const PROD_NAME = Object.fromEntries(ORD_PRODUCTS);
+const PROD_NAME = Object.fromEntries(ORD_PRODUCTS.concat([['addon_hardware', 'Hardware integration'], ['addon_website', 'Website'], ['addon_whatsapp', 'WhatsApp automation']]));
 
 async function refreshOrdersBadge() {
   const { data } = await sb.rpc('admin_open_client_orders_count', {}).catch(() => ({ data: 0 }));
@@ -3389,31 +3129,24 @@ function calcQuote(Q, stateCode) {
   return { lines, subtotal: sub, discount: dis, taxable: tax, intra, cgst: intra ? Math.round(g * 50) / 100 : 0, sgst: intra ? g - Math.round(g * 50) / 100 : 0, igst: intra ? 0 : g, gst: g, round, total };
 }
 
+// There is no price list any more: every quote is typed by the admin. Only two defaults are kept:
+// AUZsMob and AUZsScan carry no GST, and only the restaurant POS (and its QR ordering) can be monthly.
+const GST_EXEMPT = ['mobile', 'scan'], MONTHLY_OK = ['pos', 'self_order'];
+const ADDON_NAME = { addon_hardware: 'Hardware integration', addon_website: 'Website', addon_whatsapp: 'WhatsApp automation' };
 async function ensurePrices() {
-  if (ordPrices) return ordPrices;
-  const { data } = await sb.rpc('public_product_prices', {}).catch(() => ({ data: [] }));
-  ordPrices = Object.fromEntries((data || []).map((p) => [p.key, p]));
+  if (!ordPrices) ordPrices = Object.fromEntries(GST_EXEMPT.map((k) => [k, { gst_exempt: true }]));
   return ordPrices;
 }
 
 function defaultQuote(o, defGst) {
-  const g = num(defGst);
-  const sel = o.selection, yr = sel && sel.period === 'year', used = new Set(), custom = [], items = [];
-  const gstOf = (k) => ((ordPrices[k] || {}).gst_exempt ? 0 : g);
-  if (sel && sel.tier) {
-    const t = sel.tier; used.add(t.product_key);
-    items.push({ key: t.product_key, label: t.name + ' plan', plan: yr ? 'year' : 'month', rate: num(yr ? (t.yearly || num(t.monthly) * 10) : t.monthly), discount: 0, gst: gstOf(t.product_key) });
-    (t.extra_keys || []).forEach((k) => { if (!used.has(k)) { used.add(k); items.push({ key: k, label: (PROD_NAME[k] || k) + ' (included in ' + t.name + ')', plan: yr ? 'year' : 'month', rate: 0, discount: 0, gst: 0 }); } });
-  }
-  ((sel && sel.addons) || []).forEach((a) => {
-    const price = num(a.price), label = a.name + (price > 0 ? '' : ' (price to be agreed)');
-    if (a.product_key && !used.has(a.product_key)) { used.add(a.product_key); items.push({ key: a.product_key, label: a.name, plan: yr ? 'year' : 'month', rate: yr ? price * 10 : price, discount: 0, gst: gstOf(a.product_key) }); }
-    else custom.push({ label: label + (yr ? ' (yearly)' : ' (monthly)'), amount: yr ? price * 10 : price, gst: g });
+  const g = num(defGst), items = [], custom = [];
+  (o.products || []).forEach((k) => {
+    if (ADDON_NAME[k]) custom.push({ label: ADDON_NAME[k], amount: 0, gst: g });
+    else if (PROD_NAME[k]) items.push({ key: k, plan: MONTHLY_OK.includes(k) ? 'month' : 'year', rate: 0, discount: 0, gst: GST_EXEMPT.includes(k) ? 0 : g });
   });
-  (o.products || []).filter((k) => PROD_NAME[k] && !used.has(k)).forEach((k) => { const p = ordPrices[k] || {}; items.push({ key: k, plan: 'month', rate: num(p.monthly_price), discount: 0, gst: p.gst_exempt ? 0 : g }); });
   return { items,
     onboarding: { on: o.kind === 'new', amount: ONBOARDING_DEFAULT, gst: 0 },
-    setup: { on: o.kind === 'new' && !((o.products || []).length && (o.products || []).every((k) => (ordPrices[k] || {}).setup_fee_exempt)), amount: SETUP_DEFAULT, gst: g },
+    setup: { on: false, amount: 0, gst: 0 },
     custom, note: '' };
 }
 
@@ -3466,7 +3199,6 @@ function renderOrder() {
     <button class="btn ${o.status === 'verifying' ? 'btn-primary' : 'btn-ghost'}" data-ost="verifying" type="button">Under verification</button>
     <button class="btn ${o.status === 'confirmed' ? 'btn-primary' : 'btn-ghost'}" data-ost="confirmed" type="button">Confirmed</button>
     <button class="btn btn-ghost" data-ost="rejected" type="button" style="color:var(--accent);border-color:var(--accent)">Reject</button></div>`}
-  ${o.selection ? `<div class="a-card" style="margin-top:14px;padding:12px 14px"><b>Chosen on the website:</b> ${esc((o.selection.tier ? o.selection.tier.name + ' plan (' + (o.selection.period === 'year' ? 'yearly' : 'monthly') + ')' : 'no plan') + ((o.selection.addons || []).length ? ' + ' + o.selection.addons.map((a) => a.name).join(', ') : ''))}<br><span style="font-size:12px;color:var(--ink-faint)">The quote below starts from these prices. Change anything before you save.</span></div>` : ''}
   <div class="label" style="margin-top:16px">Client details</div>
   <div class="ord-grid">${f('odName', 'Name', o.contact_name)}${f('odPhone', 'Mobile / WhatsApp', o.phone)}${f('odEmail', 'Email', o.email)}${f('odBiz', 'Business name', o.business_name)}${f('odGstin', 'GSTIN', o.gstin, 'maxlength="15"')}
     <label class="lbl">State${sel('odState', stOpts, o.state_code)}</label><label class="lbl">Business type${sel('odNiche', ORD_NICHES, o.niche)}</label>${o.kind === 'new' ? f('odSlug', 'Address (.auzslab.in)', o.slug) : ''}
@@ -3495,8 +3227,8 @@ function renderOrder() {
   <div class="row-actions" style="margin-top:8px;flex-wrap:wrap"><button class="btn btn-primary" id="waSendPay" type="button">Send payment link on WhatsApp</button><button class="btn btn-ghost" id="copyPay" type="button">Copy link</button></div>` : ''}
   ${(['link_sent', 'payment_submitted', 'confirmed'].includes(o.status) && o.totals) ? `
   <div class="label" style="margin-top:20px">Payment</div>
-  <p class="p">${o.payment && o.payment.submitted_at ? `The client says they paid. Terms accepted ${esc(String(o.payment.terms_accepted_at || '').slice(0, 16).replace('T', ' '))}.${o.payment.utr ? ' UTR: <b>' + esc(o.payment.utr) + '</b>.' : ''}` : 'Nothing submitted by the client yet.'}</p>
-  <div id="proofBox">${proof ? 'Loading screenshot&hellip;' : '<p class="p" style="color:var(--ink-faint)">No screenshot yet.</p>'}</div>
+  <p class="p">${o.payment && o.payment.method === 'cash' ? `The client chose <b>cash in hand</b>. Confirm the payment when you have received the cash.` : o.payment && o.payment.submitted_at ? `The client says they paid. Terms accepted ${esc(String(o.payment.terms_accepted_at || '').slice(0, 16).replace('T', ' '))}.${o.payment.utr ? ' UTR: <b>' + esc(o.payment.utr) + '</b>.' : ''}` : 'Nothing submitted by the client yet.'}</p>
+  <div id="proofBox">${proof ? 'Loading screenshot&hellip;' : (o.payment && o.payment.method === 'cash' ? '' : '<p class="p" style="color:var(--ink-faint)">No screenshot yet.</p>')}</div>
   <div class="ord-grid" style="margin-top:8px"><label class="lbl">Paid on<input id="cfDate" class="inp" type="date" value="${new Date().toISOString().slice(0, 10)}"></label><label class="lbl">UTR / reference<input id="cfUtr" class="inp" value="${esc((o.payment && o.payment.utr) || '')}"></label></div>
   <div class="row-actions" style="margin-top:8px"><button class="btn btn-primary" id="cfPay" type="button">Confirm payment: switch on access and make the bill</button></div>
   <p class="pay-note" style="font-size:12px;color:var(--ink-faint);margin-top:6px">Confirming switches on the products above for this client, gives the bill its number and fixes each renewal date from today's payment date. It cannot be undone.</p>` : ''}
@@ -3892,7 +3624,7 @@ async function loadWhatsApp() {
     h+='<div class="t3 wide"><small>Monthly fees</small><div class="mid">'+money(fee)+'</div><div class="sub">across '+cl.filter(function(c){return Number(c.monthly_fee)>0}).length+' paying clients</div></div>';
     h+='<div class="t3"><small>Renewing in 7 days</small><div class="mid">'+due.length+'</div><div class="sub">'+(due.slice(0,2).map(function(c){return E(c.name)}).join(', ')||'Nothing due')+'</div></div>';
     h+='<div class="t6 wide"><small>Products in use</small><div class="bars">'+(mk.map(function(k){return '<div class="bar"><span>'+E(lab[k]||k)+'</span><i style="width:'+Math.max(4,Math.round(mix[k]/mx*100))+'%"></i><b>'+mix[k]+'</b></div>'}).join('')||'<div class="sub">No products yet</div>')+'</div></div>';
-    h+='<div class="t6 wide jumpt"><small>Jump to</small><div class="rows">'+[['New client','onboard'],['Client requests','orders'],['Client payments & bills','clientPay'],['Team','team'],['Pricing','pricing'],['Audit log','auditLog']].map(function(x){return '<button data-go="'+x[1]+'">'+x[0]+'<span>→</span></button>'}).join('')+'</div></div>';
+    h+='<div class="t6 wide jumpt"><small>Jump to</small><div class="rows">'+[['New client','onboard'],['Client requests','orders'],['Client payments & bills','clientPay'],['Team','team'],['Audit log','auditLog']].map(function(x){return '<button data-go="'+x[1]+'">'+x[0]+'<span>→</span></button>'}).join('')+'</div></div>';
     h+='<div class="blk wide needs"><small>Needs you</small><div class="need">'+need.map(function(x){return '<button data-go="'+x[1]+'"><span>'+x[0]+'</span><b>'+x[2]+'</b></button>'}).join('')+'</div></div>';
     g.innerHTML=h;
     g.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){openSection(b.dataset.go)}});

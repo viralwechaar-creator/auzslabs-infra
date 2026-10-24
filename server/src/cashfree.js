@@ -1,6 +1,5 @@
 import crypto from 'node:crypto';
 import { pool } from './db.js';
-import { priceInfo } from './payments.js';
 
 // Cashfree Subscriptions (recurring auto-renewal). Same dormant-until-
 // configured discipline as payments.js's Razorpay integration -- with no
@@ -35,18 +34,17 @@ async function cashfreeApi(path, method, body) {
 }
 
 // Starts auto-renewal for the caller's own tenant, at their current
-// entitled products' monthly price (bundle-aware, via payments.js's own
-// priceInfo -- the same pricing rule as a fresh signup, just priced
-// against what this tenant already owns instead of a cart). Returns the
+// entitled products' monthly price (from the last paid quote, renewal_quote). Returns the
 // authorization link the owner must open to approve the recurring debit
 // (UPI Autopay / eNACH / card, Cashfree's choice at authorization time) --
 // nothing is charged until they do.
 export async function startAutorenew({ userId, tenantId, tenantName, email, phone }) {
   if (!cashfreeConfigured()) throw new Error('Auto-renewal is not set up yet -- renew manually for now.');
 
-  const { rows: fr } = await pool.query('select features from tenant_settings where tenant_id = $1', [tenantId]);
-  const features = fr[0]?.features || {};
-  const info = await priceInfo(pool, features, { period: 'month' });
+  // priced from what the tenant was last billed (renewal_quote, db/201), never from a price list
+  const { rows: rq } = await pool.query('select renewal_quote($1) as result', [tenantId]);
+  const q = rq[0]?.result;
+  const info = q && !q.error && q.period !== 'year' ? { subtotal: Number(q.totals.total) } : null;
   if (!info || info.subtotal <= 0) throw new Error('Your current plan cannot be auto-renewed online yet -- contact AUZslab.');
 
   const subscriptionId = `autorenew_${tenantId}_${Date.now()}`;
@@ -57,7 +55,7 @@ export async function startAutorenew({ userId, tenantId, tenantName, email, phon
   // documented two-step flow. If the plan already exists this first call
   // is expected to fail with a "plan already exists"-shaped error; that
   // is swallowed deliberately since the plan itself never needs editing
-  // (amount comes from priceInfo fresh each time a tenant restarts
+  // (amount comes from renewal_quote fresh each time a tenant restarts
   // auto-renewal, which creates a new plan id only if the amount changed
   // -- see planId below).
   const amountPlanId = `${planId}_${Math.round(info.subtotal * 100)}`;
