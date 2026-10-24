@@ -250,6 +250,8 @@
     if (me && me.team) list.unshift({ id: 'team', name: 'Team workspace', note: 'Leads, client setups and your team work', path: '/salesman.html' });
     foot.textContent = ''; foot.append(el('span', { text: (d.my_email || '') }), el('button', { type: 'button', onclick: signOut, text: 'Sign out' }));
     if (!list.length) return set([el('h1', { text: d.tenant ? d.tenant.name : 'AUZslab' }), el('p', { class: 'sub', text: 'No apps are switched on for this login yet. Ask AUZslab or your owner.' })]);
+    var combo = list.filter(function (a) { return a.id !== 'salon' && a.id !== 'team'; });
+    if (!sw && (combo.length >= 2 || (onTrial && combo.length >= 1))) { location.replace('/my.html'); return; }
     if (list.length === 1 && !sw && !onTrial) { lastSet(list[0].id); location.replace(list[0].path); return; }
     set([el('h1', { text: d.tenant ? d.tenant.name : 'AUZslab' }), el('p', { class: 'sub', text: 'Choose an app.' }),
       el('div', { class: 'tiles' }, (onTrial ? [trialBanner(tr)] : []).concat(list.map(function (a) { return el('a', { class: 'tile', href: a.path, onclick: function () { lastSet(a.id); } }, [el('b', { text: a.name }), el('span', { text: a.note })]); }).concat(accountTiles()).concat(exploreTiles().slice(0, 1))))]);
