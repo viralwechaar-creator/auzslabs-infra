@@ -31,7 +31,7 @@ HEAD = '''<!doctype html>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="u.css?v=4"><link rel="stylesheet" href="t.css?v=1"><link rel="stylesheet" href="fluid.css?v=3">
+<link rel="stylesheet" href="u.css?v=4"><link rel="stylesheet" href="t.css?v=2"><link rel="stylesheet" href="fluid.css?v=3">
 <meta name="theme-color" content="#efeeed">
 </head>
 <body class="mk-page">

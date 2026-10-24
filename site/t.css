@@ -197,3 +197,21 @@ a.tl-row{color:inherit}
 @media(min-width:900px){.ac-body input[type=text],.ac-body input[type=email],.ac-body input[type=tel],.ac-body input[type=password],.ac-body select,.ac-body textarea{font-size:13px;padding:11px 13px}}
 .ac-nav .acct-nav-btn{width:auto}
 @media(min-width:900px){.ac-nav{flex-wrap:wrap;overflow:visible}}
+
+/* ---------- legal and information pages ---------- */
+.tl.legal{max-width:760px}
+.tl.legal .section{padding:0 0 22px!important;max-width:none!important}
+.tl.legal .section:first-child{padding-top:10px!important}
+.tl.legal h1,.tl.legal .h-1{font-size:28px!important;line-height:1.12;font-weight:700;letter-spacing:-.02em;margin-top:8px}
+.tl.legal .h-2{font-size:14px;font-weight:700;margin-top:6px}
+.tl.legal .p,.tl.legal p,.tl.legal li{font-size:12.5px;line-height:1.7;color:var(--dim)}
+.tl.legal .lede{font-size:13.5px;margin-top:8px}
+.tl.legal ul{padding-left:18px!important;list-style:disc;line-height:1.7}
+.tl.legal a{color:var(--accent);text-decoration:underline}
+.tl.legal table{font-size:11.5px}
+.tl.legal .card,.tl.legal .grid-2>*{background:var(--card);border-radius:var(--r1);box-shadow:var(--sh);padding:16px}
+.tl.legal .grid-2,.tl.legal .grid-3{display:grid;gap:12px}
+@media(min-width:900px){.tl.legal h1,.tl.legal .h-1{font-size:40px!important}.tl.legal .p,.tl.legal p,.tl.legal li{font-size:13px}.tl.legal .grid-2{grid-template-columns:1fr 1fr}.tl.legal .grid-3{grid-template-columns:repeat(3,1fr)}}
+
+/* u.css cuts marketing paragraphs to two lines; tool and legal pages show their full text */
+main.content .tl .p,main.content .tl .lede,main.content .tl .card>p,main.content .tl li,main.content .tl p{display:block;-webkit-line-clamp:unset;overflow:visible}
