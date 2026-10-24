@@ -55,5 +55,4 @@ begin
   perform acc_seed_demo(tid);
   perform fin_demo_seed(tid);
 end $$;
-grant execute on function acc_reset_demo(uuid) to postgres;
 revoke all on function acc_reset_demo(uuid) from public, app;
