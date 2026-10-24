@@ -123,7 +123,7 @@ const getSel = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'
 const setSel = (a) => { try { localStorage.setItem(KEY, JSON.stringify(a)); } catch (e) {} };
 let DASH = null, SESSION = null;
 
-try { const pre = new URLSearchParams(location.search).get('add'); if (pre && NAME[pre]) { const a = getSel(); if (!a.includes(pre)) { a.push(pre); setSel(a); } } } catch (e) {}
+try { const pre = new URLSearchParams(location.search).get('add'); if (pre && (NAME[pre] || /^addon_/.test(pre))) { const a = getSel(); if (!a.includes(pre)) { a.push(pre); setSel(a); } } } catch (e) {}
 
 function paint() {
   const sel = getSel();
