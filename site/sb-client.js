@@ -277,12 +277,6 @@
       async config() {
         return request('/payments/config', { method: 'GET', auth: false });
       },
-      async createOrder({ signupRequestId, addonRequestId, period } = {}) {
-        return request('/payments/create-order', {
-          method: 'POST',
-          body: { signup_request_id: signupRequestId || undefined, addon_request_id: addonRequestId || undefined, period: period || undefined },
-        });
-      },
     };
 
     // The server picks the actual stored filename (never a client-

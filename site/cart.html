@@ -1,336 +1,216 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
+<head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-KQRQJFT0V0"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-KQRQJFT0V0');
-</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Your cart — AUZslab</title>
 <meta name="robots" content="noindex,nofollow">
+<title>Your request — AUZslab</title>
 <link rel="icon" href="/logo.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="tool/theme.mobile.css?v=146" media="(max-width:899px)"><link rel="stylesheet" href="tool/theme.desktop.css?v=146" media="(min-width:900px)"><script src="theme.js?v=101"></script>
-<link rel="stylesheet" href="tool/sketch.mobile.css?v=101" media="(max-width:899px)"><link rel="stylesheet" href="tool/sketch.desktop.css?v=101" media="(min-width:900px)">
-<script src="tool/sketch.js?v=101"></script>
-<script src="tool/sketch-art.js?v=101" defer></script>
-<link rel="stylesheet" href="tool/design-system/ui-kit.mobile.css?v=103" media="(max-width:899px)"><link rel="stylesheet" href="tool/design-system/ui-kit.desktop.css?v=103" media="(min-width:900px)">
+<script src="theme.js?v=101"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<style>
-.err{color:var(--accent);font-size:12.5px;margin-top:10px}
-.cart-item{
-  display:flex;align-items:center;justify-content:space-between;gap:10px;
-  padding:12px 16px;border:1px solid var(--ink);border-radius:14px;margin-bottom:10px;background:#fff;
-}
-.cart-item b{font-family:var(--font-display);font-size:15px}
-.cart-item .price{font-size:13px;color:var(--ink-faint);margin-left:10px;white-space:nowrap}
-.cart-total{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;font-family:var(--font-display);font-size:16px;margin-bottom:14px}
-.bill-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:5px 16px;font-size:13.5px;color:var(--ink-faint)}
-.bill-row b{color:var(--ink);font-weight:600}
-.bill-row i{font-style:normal;font-size:11px}
-.bundle-note{display:flex;align-items:center;gap:8px;padding:8px 16px 12px;font-size:12.5px;color:var(--accent);font-weight:600}
-.bundle-note .tag{background:var(--accent);color:#fff;font-size:10px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:3px 8px;border-radius:999px;white-space:nowrap}
-.pay-note{font-size:12.5px;color:var(--ink-faint);margin-top:8px}
-.period-seg{gap:8px;margin:12px 0 4px;flex-wrap:wrap}
-.period-seg button{flex:1;min-width:140px;border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:12px 14px;font:600 14px var(--font-body);color:var(--ink-dim);cursor:pointer}
-.period-seg button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
-</style>
-<style>
-/* Cart: items and bill on the left, details form on the right (desktop); one column on phones. */
-.cart-cols{display:block}
-.cart-cols .section{max-width:none!important}
-@media (min-width:1000px){.cart-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px;align-items:start}}
-</style>
-<style id="steps-css">
-.steps3{list-style:none;margin:0 0 14px;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;counter-reset:st}
-.steps3 li{counter-increment:st;border:1px solid var(--line);border-radius:14px;padding:10px 10px 10px 12px;font-size:12.5px;line-height:1.35;color:var(--ink-dim);background:var(--bg-raised,#fff)}
-.steps3 li::before{content:counter(st);display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--bg,#fff);font-size:11px;font-weight:700;margin-bottom:6px}
-.steps3 li b{display:block;color:var(--ink);font-size:13px;margin-bottom:2px}
-.steps3 li.on{border-color:var(--ink)}
-.steps3 li.done{opacity:.6}
-.steps3 li.done::before{content:"\2713"}
-@media(max-width:420px){.steps3{grid-template-columns:1fr}.steps3 li{display:flex;gap:10px;align-items:flex-start}.steps3 li::before{margin:0;flex:none}}
-</style>
-<style id="topbar-nav-css">
-.topbar-nav{display:none}
-@media(min-width:900px){
-  .topbar-nav{display:flex;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);gap:26px;margin:0;order:0}
-  .tbn-item{position:relative}
-  .topbar-nav .tbn-top{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink);padding:10px 2px;white-space:nowrap;position:relative}
-  .topbar-nav .tbn-top i{font-style:normal;font-size:9px;opacity:.6;transition:transform .15s}
-  .tbn-item:hover .tbn-top i,.tbn-item:focus-within .tbn-top i{transform:rotate(180deg)}
-  .topbar-nav .tbn-top:hover{color:var(--accent)}
-  .topbar-nav .tbn-top[aria-current="page"]{color:var(--accent)}
-  .topbar-nav .tbn-top[aria-current="page"]::before{content:"[ ";white-space:pre}
-  .topbar-nav .tbn-top[aria-current="page"]::after{content:" ]";white-space:pre}
-  .tbn-menu{display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);min-width:240px;padding:8px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 40px -18px rgba(0,0,0,.4);z-index:40}
-  .tbn-menu::before{content:"";position:absolute;left:0;right:0;top:-12px;height:12px}
-  .tbn-item:hover .tbn-menu,.tbn-item:focus-within .tbn-menu{display:block}
-  .tbn-menu a{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:9px 12px;border-radius:10px;font-family:var(--font-body);font-size:13px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--ink);white-space:nowrap}
-  .tbn-menu a small{font:500 10px/1 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint,#8a847f)}
-  .tbn-menu a:hover{background:var(--bg,#f6f4f1);color:var(--accent)}
-  .tbn-menu a.tbn-all{margin-top:4px;border-top:1px dashed var(--line);border-radius:0 0 10px 10px;color:var(--accent)}
-  .topbar-nav.tbn-fixed{display:flex;position:fixed;left:0;right:var(--sidebar-w,280px);top:0;transform:none;height:54px;align-items:center;justify-content:center;background:var(--bg);border-bottom:1px solid var(--line);z-index:24;padding-left:120px}
-  body:not(:has(.sidebar)) .topbar-nav.tbn-fixed{right:0}
-  .tbn-logo{position:absolute;left:20px;top:50%;transform:translateY(-50%);display:block;line-height:0}
-  .tbn-logo img{height:28px;width:auto;display:block}
-  :root[data-theme=dark] .tbn-logo img{filter:invert(1)}
-  @media (prefers-color-scheme:dark){:root:not([data-theme=light]) .tbn-logo img{filter:invert(1)}}
-  body.has-tbn main.content{padding-top:54px}
-}
-</style>
-<script id="topbar-nav-js">(function(){function f(){var n=document.querySelector('.topbar-nav'),t=document.querySelector('.topbar');if(!n||!t)return;var hide=matchMedia('(min-width:900px)').matches&&getComputedStyle(t).display==='none';if(hide&&n.parentNode===t){document.body.appendChild(n);n.classList.add('tbn-fixed');if(!n.querySelector('.tbn-logo')){var a=document.createElement('a');a.className='tbn-logo';a.href='index.html';a.setAttribute('aria-label','AUZslab home');var im=document.createElement('img');im.src='logo.png';im.alt='AUZslab';a.appendChild(im);n.insertBefore(a,n.firstChild)}document.body.classList.add('has-tbn')}else if(!hide&&n.classList.contains('tbn-fixed')&&!matchMedia('(min-width:900px)').matches){}}f();addEventListener('load',f)})();</script>
+<link rel="stylesheet" href="u.css?v=4"><link rel="stylesheet" href="t.css?v=1"><link rel="stylesheet" href="fluid.css?v=3">
+<meta name="theme-color" content="#efeeed">
 </head>
-<body>
-<div id="pageTransition" class="page-transition" aria-hidden="true"></div>
+<body class="mk-page">
 <div class="shell">
-  <header class="topbar">
-    <div style="display:flex;gap:8px;align-items:center;order:2">
-      <button type="button" class="theme-toggle" data-theme-toggle role="switch" aria-checked="false" aria-label="Dark mode"></button>
-      <a href="products.html" class="btn btn-ghost">&larr; Products</a>
+  <header class="u-top">
+    <a href="index.html" class="u-logo" aria-label="AUZslab home"><img src="logo.png" alt="AUZslab"></a>
+    <nav class="u-nav" aria-label="Main"><a href="products.html">Products</a><a href="live-demo.html">Live demo</a><a href="studio.html">Studio</a><a href="platform.html">Why AUZslab</a><a href="contact.html">Contact</a></nav>
+    <div class="u-r">
+      <button type="button" class="u-ic" data-theme-toggle aria-label="Dark mode"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M20 14.500A8 8 0 0 1 9.500 4 8 8 0 1 0 20 14.500Z"/></svg></button>
+      <a href="signup.html" class="u-pill" data-signin-link>Get started</a>
+      <button class="u-menu" id="menuToggle" aria-label="Open menu" aria-expanded="false"><i></i><span class="menu-btn-label">Menu</span></button>
     </div>
-    <a href="index.html" class="topbar-logo"><img src="logo.png" alt="AUZslab"></a>
-    <nav class="topbar-nav" aria-label="Main"><div class="tbn-item"><a href="products.html" class="tbn-top">Business types<i aria-hidden="true">&#9662;</i></a><div class="tbn-menu"><a href="business-cafes.html">Caf&eacute;s &amp; restaurants<small></small></a><a href="business-salons.html">Salons &amp; studios<small></small></a><a href="business-retail.html">Retail &amp; bookstores<small></small></a><a href="business-clothing.html">Clothing &amp; apparel<small></small></a><a href="business-mobile-repair.html">Mobile shops<small></small></a><a href="products.html" class="tbn-all">All products</a></div></div><div class="tbn-item"><a href="live-demo.html" class="tbn-top">Live demo<i aria-hidden="true">&#9662;</i></a><div class="tbn-menu"><a href="https://demo.auzslab.in/" target="_blank" rel="noopener">AUZsPOS<small>Try</small></a><a href="https://demo.auzslab.in/payroll.html" target="_blank" rel="noopener">AUZsPay<small>Try</small></a><a href="https://demo.auzslab.in/accounts.html" target="_blank" rel="noopener">AUZsLedger<small>Try</small></a><a href="https://demo.auzslab.in/scan.html" target="_blank" rel="noopener">AUZsScan<small>Try</small></a><a href="https://demo.auzslab.in/mob.html" target="_blank" rel="noopener">AUZsMob<small>Try</small></a><a href="https://demo.auzslab.in/style.html" target="_blank" rel="noopener">AUZsStyle<small>Try</small></a><a href="https://demo.auzslab.in/finance.html" target="_blank" rel="noopener">AUZsFinance<small>Try</small></a><a href="https://showoffsalon.auzslab.in/salon/admin/" target="_blank" rel="noopener">AUZslab Salon<small>Try</small></a><a href="live-demo.html" class="tbn-all">All demos</a></div></div><a href="contact.html" class="tbn-top">Contact</a></nav>
   </header>
 
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <aside class="u-sheet sidebar" id="sidebarDrawer" aria-label="Menu">
+    <div class="u-sheet-top"><a href="index.html"><img src="logo.png" alt="AUZslab"></a><button id="drawerClose" aria-label="Close menu">Close</button></div>
+    <nav class="sidebar-nav" aria-label="Primary">
+      <a href="index.html" class="nav-link">Home</a><a href="products.html" class="nav-link">Products</a><div class="nav-group"><button class="nav-link nav-group-toggle" aria-expanded="false"><span>Business types <sup class="nav-group-count">(+7)</sup></span><span class="nav-group-indicator" aria-hidden="true"></span></button><div class="nav-submenu"><div class="nav-submenu-inner"><a href="business-cafes.html" class="nav-sublink"><span>Caf&eacute;s &amp; restaurants</span></a><a href="business-salons.html" class="nav-sublink"><span>Salons &amp; studios</span></a><a href="business-retail.html" class="nav-sublink"><span>Retail &amp; bookstores</span></a><a href="business-clothing.html" class="nav-sublink"><span>Clothing &amp; apparel</span></a><a href="business-mobile-repair.html" class="nav-sublink"><span>Mobile retail &amp; repair</span></a><a href="studio.html" class="nav-sublink"><span>Custom software (Studio)</span></a><a href="web-design.html" class="nav-sublink"><span>Websites &amp; online stores</span></a></div></div></div><a href="platform.html" class="nav-link">Why AUZslab</a><a href="live-demo.html" class="nav-link">Live demo</a><a href="download-apps.html" class="nav-link">Download apps</a><a href="cart.html" class="nav-link">Cart <span class="cart-count"></span></a><div class="nav-group"><button class="nav-link nav-group-toggle" aria-expanded="false"><span>Resources <sup class="nav-group-count">(+4)</sup></span><span class="nav-group-indicator" aria-hidden="true"></span></button><div class="nav-submenu"><div class="nav-submenu-inner"><a href="resources-getting-started.html" class="nav-sublink"><span>Getting started</span></a><a href="learn.html" class="nav-sublink"><span>Learn: beginner manual</span></a><a href="resources-operations.html" class="nav-sublink"><span>Operations &amp; workflows</span></a><a href="resources-growth.html" class="nav-sublink"><span>Growth &amp; scaling</span></a></div></div></div><a href="contact.html" class="nav-link active">Contact</a>
+    </nav>
+    <div class="foot"><div class="row"><a href="signup.html" class="btn btn-ghost" data-signin-link>Get started</a><a class="btn" href="contact.html">Let's talk</a></div><div class="copy">&copy; 2026 AUZslab</div></div>
+  </aside>
+
   <main class="content">
-    <div class="wrap">
+    <div class="tl">
+      <div class="tl-head"><span class="tl-eye">Your request</span><h1 class="tl-h">Tell us what you need.</h1>
+      <p class="tl-sub">Choose your services and tell us about your business. We check it, send you a quote made for your business, and you pay. Nothing is charged on this page.</p></div>
+      <ol class="tl-steps" id="steps"><li class="on">Choose and tell us</li><li>We send your quote</li><li>You pay</li></ol>
 
-      <section class="section" style="padding-top:56px">
-        <div class="hero-grid">
+      <div id="formWrap" class="tl-grid two">
         <div>
-        <div class="label">Your request</div>
-        <h1 class="h-1">Tell us what you need.</h1>
-        <p class="lede">Pick your products and tell us about your business. We check your business first, then send you a payment link on WhatsApp. Nothing is charged on this page.</p>
+          <section class="tl-card">
+            <span class="tl-cap">1 &middot; What do you want?</span>
+            <div class="tl-pick" id="pick">
+              <label class="tl-opt"><input type="checkbox" data-k="pos"><span class="bx"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.7 2.7L10 3.5"/></svg></span><span><b>AUZsPOS</b><small>Billing, tables, kitchen, stock and customers for cafes and restaurants</small></span></label>
+              <label class="tl-opt"><input type="checkbox" data-k="self_order"><span class="bx"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.7 2.7L10 3.5"/></svg></span><span><b>AUZsPOS QR</b><small>Customers order from the table by scanning a QR</small></span></label>
+              <label class="tl-opt"><input type="checkbox" data-k="payroll"><span class="bx"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.7 2.7L10 3.5"/></svg></span><span><b>AUZsPay</b><small>Attendance, leave and salary for your staff</small></span></label>
+              <label class="tl-opt"><input type="checkbox" data-k="accounting"><span class="bx"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.7 2.7L10 3.5"/></svg></span><span><b>AUZsLedger</b><small>Invoices, bills, GST and full accounts</small></span></label>
+              <label class="tl-opt"><input type="checkbox" data-k="scan"><span class="bx"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.7 2.7L10 3.5"/></svg></span><span><b>AUZsScan</b><small>Scan barcodes to bill and manage stock</small></span></label>
+              <label class="tl-opt"><input type="checkbox" data-k="mobile"><span class="bx"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.7 2.7L10 3.5"/></svg></span><span><b>AUZsMob</b><small>For mobile phone shops: sales, repairs, stock, dues</small></span></label>
+              <label class="tl-opt"><input type="checkbox" data-k="style"><span class="bx"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.7 2.7L10 3.5"/></svg></span><span><b>AUZsStyle</b><small>Clothing and footwear: sizes, colours, tags, online store</small></span></label>
+              <label class="tl-opt"><input type="checkbox" data-k="finance"><span class="bx"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.7 2.7L10 3.5"/></svg></span><span><b>AUZsFinance</b><small>Money in and out, loans, dues, cash and bank</small></span></label>
+              <label class="tl-opt"><input type="checkbox" data-k="salon"><span class="bx"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.7 2.7L10 3.5"/></svg></span><span><b>AUZslab Salon</b><small>Salon website, bookings, billing and clients</small></span></label>
+            </div>
+            <div class="tl-notice" id="yearNote"></div>
+          </section>
+          <section class="tl-card">
+            <span class="tl-cap">Add-ons, quoted separately</span>
+            <div class="tl-pick" id="pickAdd">
+              <label class="tl-opt"><input type="checkbox" data-k="addon_hardware"><span class="bx"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.7 2.7L10 3.5"/></svg></span><span><b>Hardware integration</b><small>Printers, scanners, cash drawers, devices</small></span></label>
+              <label class="tl-opt"><input type="checkbox" data-k="addon_website"><span class="bx"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.7 2.7L10 3.5"/></svg></span><span><b>Website</b><small>A website made for your business</small></span></label>
+              <label class="tl-opt"><input type="checkbox" data-k="addon_whatsapp"><span class="bx"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.7 2.7L10 3.5"/></svg></span><span><b>WhatsApp automation</b><small>Automatic messages to your customers</small></span></label>
+            </div>
+            <p class="tl-note">One-time onboarding fee: &#8377;1,360. These add-ons are not part of any service and are priced in your quote.</p>
+          </section>
         </div>
-        <div class="hero-art" role="presentation">
-          <img class="hero-art-logo" src="logo.png" alt="" aria-hidden="true">
-        </div>
-        </div>
-      </section>
 
-      <div class="cart-cols">
-      <div class="cart-left">
-      <section class="section tight" style="max-width:640px">
-        <div class="label" style="margin-bottom:8px">Products you picked</div>
-        <div id="planBox"></div>
-        <div id="cartItems"></div>
-        <p class="pay-note"><a href="products.html" style="color:var(--accent)">Add more products</a> &middot; Prices are confirmed in your payment link after we verify your business.</p>
-      </section>
+        <div class="side">
+          <section class="tl-card" id="signedOut" style="display:none">
+            <h2>Sign in to send your request</h2>
+            <p class="tl-note">Use your Google account or email. Your choices above are saved.</p>
+            <div class="tl-actions"><a class="tb pri wide" href="signup.html?next=cart.html">Sign in or create account</a></div>
+          </section>
 
-      <section class="section tight" id="myOrdersSection" style="display:none;max-width:640px">
-        <div class="label" style="margin-bottom:8px">Your earlier requests</div>
-        <div id="myOrders"></div>
-      </section>
+          <form class="tl-card" id="reqForm" novalidate style="display:none">
+            <span class="tl-cap">2 &middot; Your business</span>
+            <p class="tl-note" id="whoLine" style="margin:-4px 0 10px"></p>
+            <div id="detail">
+              <div class="tf-row two">
+                <label class="tf"><span>Your name</span><input id="rqName" autocomplete="name" required></label>
+                <label class="tf"><span>Mobile / WhatsApp</span><input id="rqPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="9876543210" required></label>
+              </div>
+              <div id="newBiz">
+                <label class="tf"><span>Business name</span><input id="rqBiz" autocomplete="organization"></label>
+                <div class="tf-row two">
+                  <label class="tf"><span>Business type</span><select id="rqNiche"><option value="cafe">Cafe / restaurant / hotel</option><option value="retail">Retail / general shop</option><option value="salon">Salon / spa</option><option value="mobile">Mobile shop / repair</option><option value="general">Something else</option></select></label>
+                  <label class="tf"><span>Email <em>(optional)</em></span><input id="rqEmail" type="email" autocomplete="email"></label>
+                </div>
+              </div>
+              <label class="tf"><span>Business address <em>(optional)</em></span><textarea id="rqAddress" rows="2" autocomplete="street-address" placeholder="Shop, area, city, PIN"></textarea></label>
+              <label class="tf"><span>GSTIN <em>(if you have one)</em></span><input id="rqGstin" maxlength="15" autocapitalize="characters" autocomplete="off" placeholder="08ABCDE1234F1Z5"></label>
+              <label class="tf"><span>Anything we should know? <em>(optional)</em></span><textarea id="rqReq" rows="3" placeholder="How many outlets and staff, when you want to start"></textarea></label>
+            </div>
+            <div class="tl-actions"><button class="tb pri wide" id="rqSend" type="submit">Send request</button></div>
+            <div class="tl-err" id="rqErr"></div>
+            <p class="tl-note">We read every request and reply on WhatsApp.</p>
+          </form>
+
+          <section class="tl-card" id="mine" style="display:none"><span class="tl-cap">Your earlier requests</span><div id="mineList"></div></section>
+        </div>
       </div>
 
-      <div class="cart-right">
-      <section class="section tight" id="signedOutNotice" style="display:none;max-width:640px">
-        <div class="card">
-          <p class="p">Sign in or create an account first -- then tell us about your business and send your request.</p>
-          <a href="signup.html?next=cart.html" class="btn btn-primary form-submit">Sign in / Create account</a>
-        </div>
+      <section class="tl-card" id="sent" style="display:none;max-width:560px">
+        <span class="tl-cap">Request received</span>
+        <h2 style="font-size:20px">Thank you. We have your request.</h2>
+        <p class="tl-note" style="font-size:12.5px;margin-top:8px">We will check your business and send your quote and payment page on WhatsApp, usually the same day. You can follow it here any time.</p>
+        <div class="tl-actions"><a id="trackLink" class="tb pri" href="#">Follow my request</a><a class="tb" href="index.html">Back to home</a></div>
       </section>
-
-      <section class="section tight" id="requestSection" style="display:none;max-width:640px">
-        <form class="card" id="reqForm" novalidate>
-          <ol class="steps3" aria-label="How it works"><li class="on"><b>Send your request</b>Tell us about your business.</li><li><b>We check, you get a quote</b>On WhatsApp, usually the same day.</li><li><b>Pay and start</b>We switch your access on and send your bill.</li></ol>
-          <p class="p" style="margin-bottom:4px" id="whoLine"></p>
-          <div id="quickSummary" class="pay-note" style="display:none;background:var(--bg-alt,#f6f4f1);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:12px"></div>
-          <div id="reqDetailFields">
-          <div class="field"><label for="rqName">Your name *</label><input id="rqName" autocomplete="name" required></div>
-          <div class="field"><label for="rqPhone">Mobile / WhatsApp number *</label><input id="rqPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="9876543210" required></div>
-          <div class="field"><label for="rqEmail">Email</label><input id="rqEmail" type="email" autocomplete="email"></div>
-          <div id="newBizFields">
-            <div class="field"><label for="rqBiz">Business name *</label><input id="rqBiz" autocomplete="organization"></div>
-            <div class="field"><label for="rqNiche">Business type *</label>
-              <select id="rqNiche">
-                <option value="cafe">Cafe / restaurant / bar / bakery / hotel</option>
-                <option value="retail">Retail / general shop (books, clothing, general store)</option>
-                <option value="salon">Salon / spa</option>
-                <option value="mobile">Mobile phone shop / repair</option>
-                <option value="general">Something else</option>
-              </select></div>
-            <div class="field"><label for="rqSlug">Business address you would like <span style="text-transform:none;letter-spacing:0">(optional)</span></label><input id="rqSlug" placeholder="mybusiness" autocapitalize="none" autocomplete="off"><span class="pay-note" id="rqSlugNote" style="margin:0">Your workspace will be mybusiness.auzslab.in</span></div>
-          </div>
-          <div class="field"><label for="rqGstin">GSTIN <span style="text-transform:none;letter-spacing:0">(if you have one)</span></label><input id="rqGstin" maxlength="15" autocapitalize="characters" autocomplete="off" placeholder="08ABCDE1234F1Z5"></div>
-          <div class="field"><label for="rqState">State</label><select id="rqState"></select></div>
-          <div class="field"><label for="rqAddress">Business address</label><textarea id="rqAddress" rows="2" autocomplete="street-address" placeholder="Shop / building, area, city, PIN"></textarea></div>
-          <div class="field"><label for="rqNotes">Anything else we should know?</label><textarea id="rqNotes" rows="2" placeholder="When you want to start, who to call, etc. (optional)"></textarea></div>
-          </div>
-          <div class="field"><label for="rqReq">What do you need? *</label><textarea id="rqReq" rows="4" placeholder="Tell us how your business works and what you want the software to do: number of outlets and staff, billing, stock, payroll, bookings, anything special."></textarea></div>
-          <button id="rqSend" class="btn btn-primary form-submit" type="submit">Send request</button>
-          <div id="rqErr" class="err"></div>
-          <p class="pay-note">We read every request, check your business and reply on WhatsApp. We never charge anything before you receive our payment link.</p>
-        </form>
-      </section>
-
-      <section class="section tight" id="sentSection" style="display:none;max-width:640px">
-        <div class="card">
-          <div class="label">Request received</div>
-          <h2 class="h-2" style="font-size:22px;margin-top:6px">Thank you. We have your request.</h2>
-          <ol class="steps3" style="margin-top:12px"><li class="done"><b>Request sent</b>We have it.</li><li class="on"><b>We check, you get a quote</b>On WhatsApp, usually the same day.</li><li><b>Pay and start</b>Access on, bill sent.</li></ol>
-          <p class="p">We will check your business and contact you on WhatsApp. After that you get a payment link with your bill. You can follow the status any time:</p>
-          <a id="trackLink" class="btn btn-primary form-submit" href="#">Track my request</a>
-        </div>
-      </section>
-      </div>
-      </div>
-
-      <hr class="dash">
-
-      <section class="section tight">
-        <div class="label">What happens next</div>
-        <div class="grid-3" style="margin-top:14px">
-          <div style="border-top:1px dashed var(--line);padding-top:16px">
-            <div class="h-2" style="font-size:16px">1. We check your business</div>
-            <p class="p" style="margin-top:6px;font-size:13.5px">We read your request and confirm what you actually need — usually within a day.</p>
-          </div>
-          <div style="border-top:1px dashed var(--line);padding-top:16px">
-            <div class="h-2" style="font-size:16px">2. You get a payment link</div>
-            <p class="p" style="margin-top:6px;font-size:13.5px">Sent on WhatsApp, with everything itemised. Nothing is charged until you confirm it.</p>
-          </div>
-          <div style="border-top:1px dashed var(--line);padding-top:16px">
-            <div class="h-2" style="font-size:16px">3. You're set up</div>
-            <p class="p" style="margin-top:6px;font-size:13.5px">Pay, and your account is ready — with your own business address.</p>
-          </div>
-        </div>
-      </section>
-
     </div>
   </main>
-
 </div>
-
+<nav class="u-dock" aria-label="Quick"><div class="pill"><a href="index.html" aria-label="Home"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></a><a href="products.html" aria-label="Products"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M3 7l9-4 9 4-9 4-9-4Z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/></svg></a><a href="live-demo.html" aria-label="Live demo"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></svg></a><a href="signup.html" aria-label="Sign in"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></a></div><a class="chat" href="contact.html" aria-label="Talk to us"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5Z"/></svg></a></nav>
 <script src="/sb-client.js?v=105"></script>
-<script src="tool/lock.js?v=101"></script>
-<script src="tool/site.js?v=113"></script>
-<script src="orderterms.js?v=103"></script>
+<script src="site.js?v=113"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
+<script src="orderterms.js?v=105"></script>
 <script>
 const sb = supabase.createClient(CFG.url, CFG.key);
-const PRODUCT_LABEL = { salon: 'AUZslab Salon', pos: 'AUZsPOS', crm: 'CRM', billing: 'Billing & Invoicing', inventory: 'Inventory', self_order: 'AUZsPOS QR', payroll: 'AUZsPay', website_builder: 'Website Builder', accounting: 'AUZsLedger', mobile: 'AUZsMob', scan: 'AUZsScan' };
-// Apps link here as cart.html?add=<product key>: pre-select that product.
-try { const pre = new URLSearchParams(location.search).get('add'); if (pre && PRODUCT_LABEL[pre]) AUZcart.add(pre); } catch (e) {}
-
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const STATUS_TEXT = { requested: 'Received', verifying: 'We are checking your business', confirmed: 'Confirmed: your payment link is being prepared', link_sent: 'Payment link sent: please pay', payment_submitted: 'Payment received: we are confirming it', paid: 'Paid: your access is active', rejected: 'Not accepted' };
+// only the restaurant POS (and its QR ordering) can be bought monthly; every other service is a yearly plan
+const MONTHLY_OK = ['pos', 'self_order'];
+const NAME = { pos: 'AUZsPOS', self_order: 'AUZsPOS QR', payroll: 'AUZsPay', accounting: 'AUZsLedger', scan: 'AUZsScan', mobile: 'AUZsMob', style: 'AUZsStyle', finance: 'AUZsFinance', salon: 'AUZslab Salon' };
+const KEY = 'auz_cart';
+const getSel = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
+const setSel = (a) => { try { localStorage.setItem(KEY, JSON.stringify(a)); } catch (e) {} };
 let DASH = null, SESSION = null;
 
-// plan + add-ons chosen on a business page (prices are the admin's; the server re-reads them)
-function planSel() { try { const s = JSON.parse(localStorage.getItem('auz_plan') || 'null'); return s && (s.tier_key || (s.addons || []).length) ? s : null; } catch (e) { return null; } }
-async function renderPlan() {
-  const box = $('planBox'), s = planSel(); if (!s) { box.innerHTML = ''; return; }
-  const [t, a] = await Promise.all([sb.rpc('public_plan_tiers', { p_niche: s.niche }), sb.rpc('public_niche_addons', { p_niche: s.niche })]).catch(() => [{}, {}]);
-  const tier = ((t && t.data) || []).find((x) => x.tier_key === s.tier_key), ads = ((a && a.data) || []).filter((x) => (s.addons || []).includes(x.addon_key));
-  const yr = s.period === 'year', inr = (n) => '\u20B9' + Math.round(n).toLocaleString('en-IN');
-  const rows = [];
-  if (tier) rows.push(`<div class="cart-item"><span><b>${esc(tier.name)} plan</b><br><span style="font-size:12px;color:var(--ink-faint)">Price agreed in your quote</span></span></div>`);
-  ads.forEach((x) => rows.push(`<div class="cart-item"><span><b>${esc(x.name)}</b><br><span style="font-size:12px;color:var(--ink-faint)">Price agreed in your quote</span></span><button class="btn btn-ghost" data-rmad="${esc(x.addon_key)}" type="button">Remove</button></div>`));
-  box.innerHTML = rows.length ? `<div class="label" style="margin-bottom:8px">Your plan</div>${rows.join('')}<p class="pay-note"><a href="#" id="planClear" style="color:var(--accent)">Remove plan</a> &middot; We confirm the final prices in your quote; you can ask us to change anything.</p>` : '';
-  box.querySelectorAll('[data-rmad]').forEach((b) => { b.onclick = () => { const cur = planSel(); cur.addons = cur.addons.filter((k) => k !== b.dataset.rmad); localStorage.setItem('auz_plan', JSON.stringify(cur)); renderPlan(); }; });
-  if ($('planClear')) $('planClear').onclick = (e) => { e.preventDefault(); localStorage.removeItem('auz_plan'); renderPlan(); };
-  if (s.niche && $('rqNiche') && $('rqNiche').querySelector('option[value="' + s.niche + '"]') && !$('rqNiche').dataset.touched) $('rqNiche').value = s.niche;
-}
-function renderCart() {
-  const items = AUZcart.get(), el = $('cartItems');
-  if (!items.length) {
-    el.innerHTML = '<div class="card"><p class="p" style="margin:0">No products picked yet. <a href="products.html" style="color:var(--accent)">Browse products</a>, or just tell us what you need below and we will suggest the right ones.</p></div>';
-    return;
-  }
-  el.innerHTML = items.map((key) => `<div class="cart-item" data-key="${esc(key)}"><b>${esc(PRODUCT_LABEL[key] || key)}</b><button class="btn btn-ghost" data-remove="${esc(key)}" type="button">Remove</button></div>`).join('');
-  el.querySelectorAll('[data-remove]').forEach((b) => { b.onclick = () => { AUZcart.remove(b.dataset.remove); renderCart(); }; });
-}
+try { const pre = new URLSearchParams(location.search).get('add'); if (pre && NAME[pre]) { const a = getSel(); if (!a.includes(pre)) { a.push(pre); setSel(a); } } } catch (e) {}
 
-// state list + GSTIN: the first two digits of a GSTIN are the state code
-(function fillStates() {
-  const sel = $('rqState'); const st = (window.AUZ_ORDER || {}).states || {};
-  sel.innerHTML = '<option value="">Choose state</option>' + Object.keys(st).map((c) => `<option value="${c}">${esc(st[c])}</option>`).join('');
-  $('rqGstin').addEventListener('input', () => { const v = $('rqGstin').value.trim().toUpperCase(); if (/^\d{2}/.test(v) && st[v.slice(0, 2)]) $('rqState').value = v.slice(0, 2); });
-  $('rqSlug').addEventListener('input', () => { const v = $('rqSlug').value.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30); $('rqSlug').value = v; $('rqSlugNote').textContent = 'Your workspace will be ' + (v || 'mybusiness') + '.auzslab.in'; });
+function paint() {
+  const sel = getSel();
+  document.querySelectorAll('#pick input,#pickAdd input').forEach((i) => { i.checked = sel.includes(i.dataset.k); });
+  const yearly = sel.filter((k) => NAME[k] && !MONTHLY_OK.includes(k));
+  const n = $('yearNote');
+  if (yearly.length) {
+    n.classList.add('on');
+    n.innerHTML = esc(yearly.map((k) => NAME[k]).join(', ')) + (yearly.length > 1 ? ' are' : ' is') + ' currently available on a <b>yearly plan</b>. For further queries <a href="contact.html">contact AUZslab</a>.';
+  } else n.classList.remove('on');
+}
+document.querySelectorAll('#pick input,#pickAdd input').forEach((i) => {
+  i.addEventListener('change', () => {
+    let a = getSel().filter((k) => k !== i.dataset.k);
+    if (i.checked) a.push(i.dataset.k);
+    setSel(a); paint();
+  });
+});
+
+(function () {
+  $('rqGstin').addEventListener('input', () => { $('rqGstin').value = $('rqGstin').value.toUpperCase().replace(/[^0-9A-Z]/g, ''); });
 })();
 
-async function loadMyOrders() {
+async function loadMine() {
   const { data } = await sb.rpc('my_client_orders').catch(() => ({ data: null }));
   const rows = data || [];
-  $('myOrdersSection').style.display = rows.length ? 'block' : 'none';
-  $('myOrders').innerHTML = rows.map((o) => `<a class="cart-item" style="text-decoration:none;color:inherit" href="pay.html?t=${esc(o.token)}"><span><b>${esc(o.business_name || 'Request')}</b><br><span style="font-size:12px;color:var(--ink-faint)">${esc(String(o.created_at).slice(0, 10))} &middot; ${esc(STATUS_TEXT[o.status] || o.status)}</span></span><span class="btn btn-ghost">Open</span></a>`).join('');
+  $('mine').style.display = rows.length ? 'block' : 'none';
+  const T = { requested: 'Received', verifying: 'Checking', confirmed: 'Preparing quote', link_sent: 'Quote ready', payment_submitted: 'Payment received', paid: 'Active', rejected: 'Closed' };
+  $('mineList').innerHTML = rows.map((o) => `<a class="tl-row" href="pay.html?t=${esc(o.token)}"><span><b>${esc(o.business_name || 'Request')}</b><br><span class="m">${esc((o.products || []).map((k) => NAME[k] || k).join(', '))}</span></span><span class="tl-chip ${o.status === 'link_sent' ? 'warn' : o.status === 'paid' ? 'ok' : ''}">${esc(T[o.status] || o.status)}</span></a>`).join('');
 }
 
 async function checkSession() {
   const { data: { session } } = await sb.auth.getSession();
   SESSION = session;
-  if (!session) { $('signedOutNotice').style.display = 'block'; $('requestSection').style.display = 'none'; return; }
-  $('signedOutNotice').style.display = 'none';
-  DASH = await AUZaccount.fetch(sb);
-  $('requestSection').style.display = 'block';
+  if (!session) { $('signedOut').style.display = 'block'; $('reqForm').style.display = 'none'; return; }
+  $('signedOut').style.display = 'none'; $('reqForm').style.display = 'block';
   $('rqEmail').value = session.user.email || '';
+  DASH = await AUZaccount.fetch(sb);
   if (DASH) {
-    $('newBizFields').style.display = 'none';
-    $('whoLine').innerHTML = 'Adding products to <b>' + esc(DASH.tenant.name) + '</b> (' + esc(session.user.email) + ')';
+    $('newBiz').style.display = 'none';
+    $('whoLine').innerHTML = 'Adding services to <b>' + esc(DASH.tenant.name) + '</b>';
   } else {
     $('whoLine').innerHTML = 'Signed in as <b>' + esc(session.user.email) + '</b>';
-    // pre-fill from the saved profile, when there is one
     const { data: pr } = await sb.rpc('my_profile').catch(() => ({ data: null }));
     const P = (pr && pr.profile) || null;
     if (P) {
       if (P.name) $('rqName').value = P.name; if (P.phone) $('rqPhone').value = P.phone; if (P.business_name) $('rqBiz').value = P.business_name;
-      if (P.biz_slug) { $('rqSlug').value = P.biz_slug; $('rqSlug').dispatchEvent(new Event('input')); }
-      if (P.address) $('rqAddress').value = P.address; if (P.niche && $('rqNiche').querySelector('option[value="' + P.niche + '"]')) $('rqNiche').value = P.niche;
-      if (P.notes) $('rqNotes').value = P.notes;
+      if (P.address) $('rqAddress').value = P.address;
+      if (P.niche && $('rqNiche').querySelector('option[value="' + P.niche + '"]')) $('rqNiche').value = P.niche;
     }
-    // Skip straight to product + requirement when the saved profile already has what we need -- zero re-entry.
-    // The fields stay filled in the DOM (just hidden) so the submit handler reads the exact same values as before.
-    setQuickMode(!!(P && P.name && P.phone && P.business_name), P);
   }
-  loadMyOrders();
-}
-
-function setQuickMode(on, P) {
-  $('reqDetailFields').style.display = on ? 'none' : '';
-  $('quickSummary').style.display = on ? 'block' : 'none';
-  if (on && P) {
-    $('quickSummary').innerHTML = 'Sending as: <b>' + esc(P.business_name) + '</b>' + (P.phone ? ', ' + esc(P.phone) : '') +
-      ' &middot; <a href="#" id="quickEditLink" style="color:var(--accent)">that\'s wrong, let me fix it</a>';
-    $('quickEditLink').onclick = (e) => { e.preventDefault(); setQuickMode(false); };
-  }
+  loadMine();
 }
 
 $('reqForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const err = $('rqErr'); err.textContent = '';
-  const p = { contact_name: $('rqName').value.trim(), phone: $('rqPhone').value.trim(), email: $('rqEmail').value.trim(), business_name: $('rqBiz').value.trim(), niche: $('rqNiche').value, slug: $('rqSlug').value.trim(),
-    gstin: $('rqGstin').value.trim(), state_code: $('rqState').value, address: $('rqAddress').value.trim(), requirement: $('rqReq').value.trim(), notes: $('rqNotes').value.trim(), products: AUZcart.get(), plan: planSel() };
+  const sel = getSel();
+  const p = { contact_name: $('rqName').value.trim(), phone: $('rqPhone').value.trim(), email: $('rqEmail').value.trim(), business_name: $('rqBiz').value.trim(), niche: $('rqNiche').value,
+    gstin: $('rqGstin').value.trim(), address: $('rqAddress').value.trim(), requirement: $('rqReq').value.trim(), products: sel };
+  if (!sel.length) { err.textContent = 'Please choose at least one service above.'; window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
   if (!p.contact_name) { err.textContent = 'Please enter your name.'; return; }
   if (p.phone.replace(/\D/g, '').length < 10) { err.textContent = 'Please enter your mobile number (10 digits).'; return; }
   if (!DASH && !p.business_name) { err.textContent = 'Please enter your business name.'; return; }
-  if (!p.requirement) { err.textContent = 'Please tell us what you need.'; return; }
+  if (p.gstin && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9A-Z]Z[0-9A-Z]$/.test(p.gstin)) { err.textContent = 'That GSTIN does not look right. Leave it empty if you have none.'; return; }
   const btn = $('rqSend'); btn.disabled = true; btn.textContent = 'Sending...';
   const { data, error } = await sb.rpc('submit_client_order', { p });
   btn.disabled = false; btn.textContent = 'Send request';
   if (error) { err.textContent = error.message; return; }
-  try { AUZcart.clear(); localStorage.removeItem('auz_plan'); } catch (x) {}
+  setSel([]);
   try { localStorage.setItem('auz_order_token', data.token); } catch (x) {}
-  $('requestSection').style.display = 'none'; $('sentSection').style.display = 'block';
+  $('formWrap').style.display = 'none'; $('sent').style.display = 'block';
+  const st = document.querySelectorAll('#steps li'); st[0].className = 'done'; st[1].className = 'on';
   $('trackLink').href = 'pay.html?t=' + encodeURIComponent(data.token);
-  renderCart(); loadMyOrders();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 
-renderCart(); renderPlan();
-checkSession();
+paint(); checkSession();
 </script>
-<button type="button" class="theme-fab" onclick="auzThemeToggle()" aria-label="Toggle dark mode" title="Toggle dark mode"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg></button>
 </body>
 </html>

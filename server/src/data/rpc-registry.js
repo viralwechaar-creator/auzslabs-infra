@@ -53,28 +53,8 @@ export const RPC = {
   decline_signup_request: { params: ['p_request_id'], auth: true },
 
   // --- Razorpay payments (db/070): dormant until RAZORPAY_KEY_ID/SECRET are set, see payments.js ---
-  public_product_prices: { params: [], auth: false },
   payment_status: { params: ['p_order_id'], auth: true },
   admin_list_payments: { params: [], auth: true },
-  admin_set_product_price: { params: ['p_key', 'p_monthly_price'], auth: true },
-  // --- Bundle pricing (db/072) ---
-  public_bundles: { params: [], auth: false },
-  admin_set_bundle_price: { params: ['p_key', 'p_monthly_price'], auth: true },
-  public_addon_price_overrides: { params: [], auth: false },
-  // --- Admin-managed bundles + yearly prices (db/113) ---
-  admin_list_bundles: { params: [], auth: true },
-  admin_save_bundle: { params: ['p_key', 'p_label', 'p_feature_keys', 'p_monthly_price', 'p_list_price', 'p_yearly_price', 'p_badge', 'p_blurb', 'p_active', 'p_auto', 'p_discount_pct'], auth: true },
-  admin_delete_bundle: { params: ['p_key'], auth: true },
-  admin_set_product_yearly: { params: ['p_key', 'p_yearly_price', 'p_renewal_yearly_price'], auth: true },
-  admin_set_addon_price: { params: ['p_key', 'p_requires', 'p_monthly_price'], auth: true },
-  // --- AUZslab Salon's four-tier pricing page (db/198) ---
-  public_salon_tiers: { params: [], auth: false },
-  public_plan_tiers: { params: ['p_niche'], auth: false },
-  public_niche_addons: { params: ['p_niche'], auth: false },
-  admin_list_niche_addons: { params: [], auth: true },
-  admin_save_niche_addon: { params: ['p'], jsonb: ['p'], auth: true },
-  admin_list_salon_tiers: { params: [], auth: true },
-  admin_save_salon_tier: { params: ['p'], jsonb: ['p'], auth: true },
   // provision_from_payment / provision_addon_from_payment deliberately NOT
   // registered here -- they skip the is_platform_admin() check that every
   // other provisioning path requires, trusting instead that the only
@@ -121,6 +101,7 @@ export const RPC = {
   my_client_orders: { params: [], auth: true },
   public_client_order: { params: ['p_token'], auth: false },
   public_order_submit_payment: { params: ['p_token', 'p_utr', 'p_terms'], defaults: { p_utr: null, p_terms: false }, auth: false },
+  public_order_choose_cash: { params: ['p_token', 'p_terms'], defaults: { p_terms: false }, auth: false },
   admin_list_client_orders: { params: ['p_status'], defaults: { p_status: null }, auth: true },
   admin_get_client_order: { params: ['p_id'], auth: true },
   admin_set_order_status: { params: ['p_id', 'p_status', 'p_note'], defaults: { p_note: null }, auth: true },

@@ -8,7 +8,6 @@ const store = new Map(); // key -> { exp, value } | { pending: Promise }
 // ttl in seconds. perUser: the answer can differ by who asks (cost and profit are hidden from some staff), so the person is part of the key.
 export const CACHEABLE = {
   public_menu: { ttl: 15 }, public_sty_store: { ttl: 15 }, public_reviews: { ttl: 30 }, public_page: { ttl: 15 },
-  public_product_prices: { ttl: 60 }, public_bundles: { ttl: 60 }, public_plan_tiers: { ttl: 60 }, public_niche_addons: { ttl: 60 }, public_addon_price_overrides: { ttl: 60 },
   sty_analytics: { ttl: 45, perUser: true }, sty_insights: { ttl: 45, perUser: true },
   sty_intel_overview: { ttl: 60, perUser: true }, sty_intel_designs: { ttl: 60, perUser: true }, sty_intel_reorder: { ttl: 60, perUser: true }, sty_intel_capital: { ttl: 60, perUser: true },
   acc_balance_sheet: { ttl: 30, perUser: true }, acc_trial_balance: { ttl: 30, perUser: true }, acc_cash_flow: { ttl: 30, perUser: true }, acc_gst_summary: { ttl: 30, perUser: true },

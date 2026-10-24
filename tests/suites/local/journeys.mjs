@@ -51,36 +51,19 @@ export default async function run({ browser, stack }) {
     p.on('request', (r) => { const u = r.url(); if (/\/(rpc|db)\//.test(u) && r.method() !== 'OPTIONS') calls.push(u.split('/').slice(-2).join('/')); });
     await p.goto(stack.url('', '/admin.html')); await p.waitForTimeout(800); await p.fill('#email', USERS.admin); await p.fill('#password', PASSWORD); await p.click('#signin'); await p.waitForTimeout(3500);
     const atLogin = calls.length; assert(atLogin <= 9, 'sign-in made ' + atLogin + ' requests: ' + calls.join(', '));
-    const before = calls.length; await p.click('.a-side-btn[data-section=pricing]'); await p.waitForTimeout(1500);
-    assert(calls.length > before, 'opening Pricing loaded nothing');
-    assert(await p.locator('#pricingSection tr[data-key]').count() > 0 || /Pricing/i.test(await p.locator('#pageTitle').innerText()), 'pricing not shown');
+    const before = calls.length; await p.click('.a-side-btn[data-section=users]'); await p.waitForTimeout(1500);
+    assert(calls.length > before, 'opening Users loaded nothing');
+    assert(await p.locator('.a-side-btn[data-section=pricing]').count() === 0 && await p.locator('#pricingSection').count() === 0, 'the Pricing section is still in the admin panel');
     await ca.close();
   }, 'major');
-  await s.check('Admin bundles + yearly prices: create, shown live on the pricing page, refused for non-admins, deleted', async () => {
+  await s.check('There is no price list: the price, bundle, plan-tier and add-on-price functions and tables are gone', async () => {
     const login = async (email) => (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password: PASSWORD }) })).json()).access_token;
-    const call = async (fn, args, tok) => { const r = await fetch(stack.apiBase + '/rpc/' + fn, { method: 'POST', headers: { 'content-type': 'application/json', ...(tok ? { authorization: 'Bearer ' + tok } : {}) }, body: JSON.stringify(args) }); return { status: r.status, body: await r.json().catch(() => null) }; };
-    const adm = await login(USERS.admin), plain = await login(USERS.plain);
-    const args = { p_key: null, p_label: 'QA Duo', p_feature_keys: ['pos', 'accounting'], p_monthly_price: 2222, p_list_price: 2598, p_yearly_price: 22000, p_badge: 'QA badge', p_blurb: 'QA blurb', p_active: true };
-    assert((await call('admin_save_bundle', args, plain)).status >= 400, 'non-admin created a bundle');
-    const made = await call('admin_save_bundle', args, adm); assert(made.status === 200, 'create failed ' + JSON.stringify(made.body));
-    const key = made.body.data || made.body;
-    assert((await call('admin_save_bundle', { ...args, p_label: 'Dup' }, adm)).status >= 400, 'duplicate product set accepted');
-    assert((await call('admin_save_bundle', { ...args, p_key: 'x1', p_feature_keys: ['pos'] }, adm)).status >= 400, 'single-product bundle accepted');
-    const pub = await call('public_bundles', {}); const list = pub.body.data || pub.body;
-    const b = list.find((x) => x.key === key); assert(b && Number(b.yearly_price) === 22000 && Number(b.list_price) === 2598, 'public bundle missing fields');
-    assert((await call('admin_set_product_yearly', { p_key: 'payroll', p_yearly_price: 9000, p_renewal_yearly_price: 8000 }, adm)).status === 200, 'yearly set failed');
-    await call('admin_set_product_price', { p_key: 'payroll', p_monthly_price: 1234 }, adm);
-    // (the standalone pricing page no longer exists; the live prices are asserted through the public RPCs above)
-    const au = await call('admin_save_bundle', { ...args, p_key: key, p_auto: true, p_discount_pct: 10 }, adm); assert(au.status === 200, 'auto save failed ' + JSON.stringify(au.body));
-    const eff = async () => ((await call('public_bundles', {})).body.data || []).find((x) => x.key === key);
-    const pp = Number(((await call('public_product_prices', {})).body.data || []).find((x) => x.key === 'pos').monthly_price), pa = Number(((await call('public_product_prices', {})).body.data || []).find((x) => x.key === 'accounting').monthly_price);
-    assert(Number((await eff()).monthly_price) === Math.round((pp + pa) * 0.9), 'auto bundle price wrong: ' + JSON.stringify(await eff()));
-    await call('admin_set_product_price', { p_key: 'pos', p_monthly_price: pp + 1000 }, adm);
-    assert(Number((await eff()).monthly_price) === Math.round((pp + 1000 + pa) * 0.9), 'bundle did not follow the product price change');
-    await call('admin_set_product_price', { p_key: 'pos', p_monthly_price: pp }, adm);
-    assert((await call('admin_delete_bundle', { p_key: key }, plain)).status >= 400, 'non-admin deleted a bundle');
-    assert((await call('admin_delete_bundle', { p_key: key }, adm)).status === 200, 'delete failed');
-    await call('admin_set_product_price', { p_key: 'payroll', p_monthly_price: 999 }, adm);
+    const call = async (fn, args, tok) => (await fetch(stack.apiBase + '/rpc/' + fn, { method: 'POST', headers: { 'content-type': 'application/json', ...(tok ? { authorization: 'Bearer ' + tok } : {}) }, body: JSON.stringify(args) })).status;
+    const adm = await login(USERS.admin);
+    for (const fn of ['public_product_prices', 'public_bundles', 'public_plan_tiers', 'public_niche_addons', 'public_addon_price_overrides']) assert((await call(fn, { p_niche: 'cafe' })) >= 400, fn + ' still answers');
+    for (const fn of ['admin_set_product_price', 'admin_save_bundle', 'admin_list_bundles', 'admin_save_salon_tier', 'admin_set_product_yearly', 'admin_set_addon_price']) assert((await call(fn, {}, adm)) >= 400, fn + ' still answers for the admin');
+    const t = await q("select count(*)::int n from pg_tables where schemaname='public' and tablename in ('product_prices','bundles','salon_plan_tiers','niche_addons','addon_price_overrides')");
+    assert(t[0].n === 0, 'a price table is still there');
   }, 'critical');
   await s.check('Platform admin signing in lands on the admin dashboard', async () => {
     const c3 = await newCtx(browser, stack); const p = await c3.newPage(); const e3 = watch(p);
@@ -96,27 +79,21 @@ export default async function run({ browser, stack }) {
     const vis = await p.locator('#clientsList').isVisible().catch(() => false); const txt = await p.locator('#clientsList').innerText().catch(() => '');
     assert(!vis || !/testcafe|Test Cafe/i.test(txt), 'a normal customer can see the client list'); await c4.close();
   }, 'critical');
-  await s.check('Cart is request-only: no prices or payment, a signed-in visitor fills in their details and requirements and sends a request', async () => {
+  await s.check('Request page: choose services (a yearly-plan notice for anything but the restaurant POS), tell us about the business, send; no prices except the onboarding fee', async () => {
     const c5 = await newCtx(browser, stack); const p = await c5.newPage(); const e5 = watch(p);
     await p.goto(stack.url('', '/signup.html')); await p.waitForTimeout(500); await p.click('#modeLogin'); await p.fill('#email', USERS.plain); await p.fill('#password', PASSWORD); await p.click('#submitBtn'); await p.waitForTimeout(1500);
-    await p.goto(stack.url('', '/products.html')); await p.waitForTimeout(800);
-    const adds = p.locator('[data-cart-btn]'); assert((await adds.count()) >= 3, 'products page has too few Add to cart buttons');
-    await adds.first().click(); await p.waitForTimeout(400);
     await p.goto(stack.url('', '/cart.html')); await p.waitForSelector('#reqForm', { state: 'visible', timeout: 15000 });
-    assert(!/account\.html/.test(p.url()), 'cart redirected away: ' + p.url());
     const txt = await p.locator('main').innerText();
-    assert(!/₹|Continue to payment|Total due|Setup fee|GST/i.test(txt.replace(/GSTIN[^\n]*/gi, '').replace(/^.*GSTIN.*$/gm, '')), 'the cart still shows prices or payment: ' + txt.slice(0, 300));
-    assert(/\S/.test(await p.locator('#cartItems').innerText()), 'cart is empty after adding a product');
-    // this login already has a complete saved profile (an earlier check in this file saved one) -- the cart must
-    // skip straight to product + requirement (zero re-entry), with a plain "that's wrong" escape hatch back to the full form
-    assert(await p.locator('#quickSummary').isVisible(), 'a complete saved profile should skip the business-details form');
-    assert(/Sending as:/.test(await p.locator('#quickSummary').innerText()), 'no "sending as" summary shown in quick mode');
-    assert(!(await p.locator('#rqName').isVisible()), 'business-detail fields should be hidden in quick mode');
-    await p.click('#quickEditLink'); await p.waitForSelector('#rqName', { state: 'visible', timeout: 5000 });
+    assert(!/Total due|Continue to payment|per month|\/month|monthly price/i.test(txt), 'the request page shows prices: ' + txt.slice(0, 300));
+    assert(/1,360/.test(txt) && /Hardware integration/.test(txt) && /Website/.test(txt) && /WhatsApp automation/.test(txt), 'onboarding fee or add-ons missing');
+    await p.check('#pick input[data-k=pos]'); assert(!(await p.locator('#yearNote').isVisible()), 'yearly notice shown for the restaurant POS');
+    await p.check('#pick input[data-k=mobile]'); await p.waitForTimeout(200);
+    assert(/yearly plan/i.test(await p.locator('#yearNote').innerText()) && /AUZsMob/.test(await p.locator('#yearNote').innerText()), 'no yearly-plan notice for AUZsMob');
+    await p.check('#pickAdd input[data-k=addon_website]');
     await p.fill('#rqName', 'QA Owner'); await p.fill('#rqPhone', '9811100011'); await p.fill('#rqBiz', 'QA Business ' + (Date.now() % 10000)); await p.fill('#rqReq', 'Billing and stock for two outlets');
-    await p.click('#rqSend'); await p.waitForSelector('#sentSection', { state: 'visible', timeout: 10000 });
-    const r = await q("select count(*)::int n, min(status) st from client_orders where business_name like 'QA Business%'");
-    assert(r[0].n >= 1 && r[0].st === 'requested', 'no request stored');
+    await p.click('#rqSend'); await p.waitForSelector('#sent', { state: 'visible', timeout: 10000 });
+    const r = await q("select count(*)::int n, min(status) st, (array_agg(products))[1] pr from client_orders where business_name like 'QA Business%'");
+    assert(r[0].n >= 1 && r[0].st === 'requested' && ['pos', 'mobile', 'addon_website'].every((k) => r[0].pr.includes(k)), 'no request stored: ' + JSON.stringify(r[0]));
     assert(/pay\.html\?t=[a-f0-9]{32}/.test(await p.locator('#trackLink').getAttribute('href')), 'no track link');
     await s.shot(p, 'cart-request-sent'); assert(!e5.some((x) => /JS error/.test(x)), e5.join(' | ')); await c5.close();
   }, 'critical');

@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en">
-<head>
+<head><meta name="robots" content="noindex,nofollow">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -27,8 +27,7 @@
 <link rel="icon" href="/logo.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="theme.css?v=160"><link rel="stylesheet" href="menu.css?v=116"><link rel="stylesheet" href="reach.css?v=101"><link rel="stylesheet" href="balance.css?v=103" media="(min-width:1000px)"><script src="theme.js?v=101"></script>
-<link rel="stylesheet" href="design-system/ui-kit.css?v=103">
+<script src="theme.js?v=101"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -83,7 +82,6 @@
 }
 @media(min-width:900px){.footer-top{grid-template-columns:1.5fr 1fr 1fr 1fr}}
 </style>
-<script id="topbar-nav-js">(function(){function f(){var n=document.querySelector('.topbar-nav'),t=document.querySelector('.topbar');if(!n||!t)return;var hide=matchMedia('(min-width:900px)').matches&&getComputedStyle(t).display==='none';if(hide&&n.parentNode===t){document.body.appendChild(n);n.classList.add('tbn-fixed');if(!n.querySelector('.tbn-logo')){var a=document.createElement('a');a.className='tbn-logo';a.href='index.html';a.setAttribute('aria-label','AUZslab home');var im=document.createElement('img');im.src='logo.png';im.alt='AUZslab';a.appendChild(im);n.insertBefore(a,n.firstChild)}document.body.classList.add('has-tbn')}else if(!hide&&n.classList.contains('tbn-fixed')&&!matchMedia('(min-width:900px)').matches){}}f();addEventListener('load',f)})();</script>
 <style id="biz-layout-css">
 .bento{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
 @media(min-width:900px){.bento{grid-template-columns:repeat(3,minmax(0,1fr))}.bento>.feat{grid-column:span 2}}
@@ -98,7 +96,7 @@
 .biz-band .p,.demo-note .p{color:rgba(255,255,255,.78)}
 .biz-band .btn-primary,.demo-note .btn-primary{background:#fff;color:var(--ink-solid,#000000);border-color:#fff}
 </style>
-<link rel="stylesheet" href="reach.css?v=101"><style id="cafe-contrast-base">
+<style id="cafe-contrast-base">
 /* minimal contrast: soft warm band, white cards, one ink featured tier */
 #salon-plans .sp-card{background:#fff;border-color:var(--line)}
 #salon-plans .sp-card.hi{background:var(--ink-solid);border-color:var(--ink-solid);color:#fff}
@@ -115,349 +113,50 @@
 /* the plan/compare/add-on styles live in theme.css under the #salon-* ids; this page reuses those ids on purpose */
 #salon-plans .sp-feats li.sp-off{opacity:.5;text-decoration:line-through}
 </style>
-<style>.sp-toggle-row,.sp-was,.sp-save2,.sp-strip-per,.sp-unit,.sp-per,.sp-gst,.gst-t,.sp-save{display:none!important}</style></head>
+<style>.sp-toggle-row,.sp-was,.sp-save2,.sp-strip-per,.sp-unit,.sp-per,.sp-gst,.gst-t,.sp-save{display:none!important}</style><link rel="stylesheet" href="u.css?v=4"><link rel="stylesheet" href="e.css?v=5"><link rel="stylesheet" href="fluid.css?v=3">
+<meta name="theme-color" content="#efeeed">
+</head>
 <body>
-<div id="pageTransition" class="page-transition" aria-hidden="true"></div>
-
 <div class="shell">
-  <header class="topbar">
-    <div style="display:flex;gap:8px;align-items:center;order:2">
-      <button type="button" class="theme-toggle" data-theme-toggle role="switch" aria-checked="false" aria-label="Dark mode"></button>
-      <a href="signup.html" class="btn btn-ghost" data-signin-link style="padding:9px 14px;font-size:10px">Get started</a>
-      <button class="hamburger" id="menuToggle" aria-label="Open menu" aria-expanded="false">
-        <span class="menu-btn-label">Menu</span>
-      </button>
+  <header class="u-top">
+    <a href="index.html" class="u-logo" aria-label="AUZslab home"><img src="logo.png" alt="AUZslab"></a>
+    <nav class="u-nav" aria-label="Main"><a href="products.html">Products</a><a href="live-demo.html">Live demo</a><a href="studio.html">Studio</a><a href="platform.html">Why AUZslab</a><a href="contact.html">Contact</a></nav>
+    <div class="u-r">
+      <button type="button" class="u-ic" data-theme-toggle aria-label="Dark mode"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M20 14.500A8 8 0 0 1 9.500 4 8 8 0 1 0 20 14.500Z"/></svg></button>
+      <a href="signup.html" class="u-pill" data-signin-link>Get started</a>
+      <button class="u-menu" id="menuToggle" aria-label="Open menu" aria-expanded="false"><i></i><span class="menu-btn-label">Menu</span></button>
     </div>
-    <a href="index.html" class="topbar-logo"><img src="logo.png" alt="AUZslab"></a>
-    <nav class="topbar-nav" aria-label="Main"><div class="tbn-item"><a href="products.html" class="tbn-top">Business types<i aria-hidden="true">&#9662;</i></a><div class="tbn-menu"><a href="products.html#slab-pos">AUZsPOS<small></small></a><a href="products.html#slab-qr">AUZsPOS QR<small></small></a><a href="products.html#slab-payroll">AUZsPay<small></small></a><a href="products.html#slab-accounting">AUZsLedger<small></small></a><a href="products.html#slab-scan">AUZsScan<small></small></a><a href="products.html#slab-mobile">AUZsMob<small></small></a><a href="products.html#slab-salon">AUZslab Salon<small></small></a><a href="products.html" class="tbn-all">All products</a></div></div><div class="tbn-item"><a href="platform.html" class="tbn-top" aria-current="page">Businesses<i aria-hidden="true">&#9662;</i></a><div class="tbn-menu"><a href="business-cafes.html">Cafes &amp; restaurants<small></small></a><a href="business-retail.html">Retail &amp; bookstores<small></small></a><a href="business-salons.html">Salons &amp; studios<small></small></a><a href="business-mobile-repair.html">Mobile shops<small></small></a><a href="business-clothing.html">Clothing &amp; apparel<small></small></a><a href="platform.html" class="tbn-all">All business types</a></div></div><div class="tbn-item"><a href="live-demo.html" class="tbn-top">Live demo<i aria-hidden="true">&#9662;</i></a><div class="tbn-menu"><a href="https://demo.auzslab.in/" target="_blank" rel="noopener">AUZsPOS<small>Try</small></a><a href="https://demo.auzslab.in/payroll.html" target="_blank" rel="noopener">AUZsPay<small>Try</small></a><a href="https://demo.auzslab.in/accounts.html" target="_blank" rel="noopener">AUZsLedger<small>Try</small></a><a href="https://demo.auzslab.in/scan.html" target="_blank" rel="noopener">AUZsScan<small>Try</small></a><a href="https://demo.auzslab.in/mob.html" target="_blank" rel="noopener">AUZsMob<small>Try</small></a><a href="https://demo.auzslab.in/style.html" target="_blank" rel="noopener">AUZsStyle<small>Try</small></a><a href="https://demo.auzslab.in/finance.html" target="_blank" rel="noopener">AUZsFinance<small>Try</small></a><a href="https://showoffsalon.auzslab.in/salon/admin/" target="_blank" rel="noopener">AUZslab Salon<small>Try</small></a><a href="live-demo.html" class="tbn-all">All demos</a></div></div><a href="contact.html" class="tbn-top">Contact</a></nav>
   </header>
 
   <div class="drawer-overlay" id="drawerOverlay"></div>
-
-  <aside class="sidebar" id="sidebarDrawer">
-    <div class="drawer-topbar">
-      <button class="drawer-close" id="drawerClose" aria-label="Close menu"><span aria-hidden="true">&times;</span> Close</button>
-      <a href="index.html" class="drawer-topbar-logo"><img src="logo.png" alt="AUZslab"></a>
-      <div class="drawer-topbar-icons">
-        <a href="cart.html" class="drawer-icon-link" aria-label="Cart"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 7h12l-1 13H7L6 7Z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg></a>
-        <a href="signup.html" class="drawer-icon-link" aria-label="Account"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></a>
-      </div>
-      </div>
+  <aside class="u-sheet sidebar" id="sidebarDrawer" aria-label="Menu">
+    <div class="u-sheet-top"><a href="index.html"><img src="logo.png" alt="AUZslab"></a><button id="drawerClose" aria-label="Close menu">Close</button></div>
     <nav class="sidebar-nav" aria-label="Primary">
-      <a href="index.html" class="nav-link">Home</a>
-
-      <div class="nav-group">
-        <button class="nav-link nav-group-toggle" aria-expanded="false">
-          <span>Products <sup class="nav-group-count">(+8)</sup></span>
-          <span class="nav-group-indicator" aria-hidden="true"></span>
-        </button>
-        <div class="nav-submenu">
-          <div class="nav-submenu-head">Products</div>
-          <div class="nav-submenu-inner">
-            <a href="products.html#slab-pos" class="nav-sublink"><span>AUZsPOS</span></a>
-            <a href="products.html#slab-qr" class="nav-sublink"><span>AUZsPOS QR</span></a>
-            <a href="products.html#slab-payroll" class="nav-sublink"><span>AUZsPay</span></a>
-            <a href="products.html#slab-accounting" class="nav-sublink"><span>AUZsLedger</span></a>
-            <a href="products.html#slab-scan" class="nav-sublink"><span>AUZsScan</span></a>
-            <a href="products.html#slab-mobile" class="nav-sublink"><span>AUZsMob</span></a>
-            <a href="products.html#slab-salon" class="nav-sublink"><span>AUZslab Salon</span></a>
-            <a href="studio.html" class="nav-sublink"><span>Studio &mdash; bespoke software</span></a>
-            <a href="web-design.html" class="nav-sublink"><span>Websites &amp; online stores</span></a>
-          </div>
-        </div>
-      </div>
-
-      <div class="nav-group nav-biz">
-        <button class="nav-link nav-group-toggle" aria-expanded="false">
-          <span>Business types <sup class="nav-group-count">(+5)</sup></span>
-          <span class="nav-group-indicator" aria-hidden="true"></span>
-        </button>
-        <div class="nav-submenu">
-          <div class="nav-submenu-head">Business types</div>
-          <div class="nav-submenu-inner">
-            <a href="business-cafes.html" class="nav-sublink active"><span>Caf&eacute;s &amp; restaurants</span></a>
-            <a href="business-salons.html" class="nav-sublink"><span>Salons</span></a>
-            <a href="business-retail.html" class="nav-sublink"><span>Retail &amp; bookstores</span></a>
-            <a href="business-clothing.html" class="nav-sublink"><span>Clothing &amp; apparel</span></a>
-            <a href="business-mobile-repair.html" class="nav-sublink"><span>Mobile retail &amp; repair</span></a>
-          </div>
-        </div>
-      </div>
-
-            <a href="platform.html" class="nav-link">Why AUZslab</a>
-      <a href="live-demo.html" class="nav-link">Live demo</a>
-      <a href="download-apps.html" class="nav-link">Download apps</a>
-      <a href="cart.html" class="nav-link">Cart <span class="cart-count"></span></a>
-
-      <div class="nav-group">
-        <button class="nav-link nav-group-toggle" aria-expanded="false">
-          <span>Resources <sup class="nav-group-count">(+5)</sup></span>
-          <span class="nav-group-indicator" aria-hidden="true"></span>
-        </button>
-        <div class="nav-submenu">
-          <div class="nav-submenu-head">Resources</div>
-          <div class="nav-submenu-inner">
-            <a href="resources-getting-started.html" class="nav-sublink"><span>Getting started</span></a>
-            <a href="learn.html" class="nav-sublink"><span>Learn: beginner manual</span></a>
-            <a href="resources-operations.html" class="nav-sublink"><span>Operations &amp; workflows</span></a>
-            <a href="resources-growth.html" class="nav-sublink"><span>Growth &amp; scaling</span></a>
-          </div>
-        </div>
-      </div>
-
-      <a href="contact.html" class="nav-link">Contact</a>
+      <a href="index.html" class="nav-link">Home</a><a href="products.html" class="nav-link">Products</a><div class="nav-group"><button class="nav-link nav-group-toggle" aria-expanded="false"><span>Business types <sup class="nav-group-count">(+7)</sup></span><span class="nav-group-indicator" aria-hidden="true"></span></button><div class="nav-submenu"><div class="nav-submenu-inner"><a href="business-cafes.html" class="nav-sublink"><span>Caf&eacute;s &amp; restaurants</span></a><a href="business-salons.html" class="nav-sublink"><span>Salons &amp; studios</span></a><a href="business-retail.html" class="nav-sublink"><span>Retail &amp; bookstores</span></a><a href="business-clothing.html" class="nav-sublink"><span>Clothing &amp; apparel</span></a><a href="business-mobile-repair.html" class="nav-sublink"><span>Mobile retail &amp; repair</span></a><a href="studio.html" class="nav-sublink"><span>Custom software (Studio)</span></a><a href="web-design.html" class="nav-sublink"><span>Websites &amp; online stores</span></a></div></div></div><a href="platform.html" class="nav-link">Why AUZslab</a><a href="live-demo.html" class="nav-link">Live demo</a><a href="download-apps.html" class="nav-link">Download apps</a><a href="cart.html" class="nav-link">Cart <span class="cart-count"></span></a><div class="nav-group"><button class="nav-link nav-group-toggle" aria-expanded="false"><span>Resources <sup class="nav-group-count">(+4)</sup></span><span class="nav-group-indicator" aria-hidden="true"></span></button><div class="nav-submenu"><div class="nav-submenu-inner"><a href="resources-getting-started.html" class="nav-sublink"><span>Getting started</span></a><a href="learn.html" class="nav-sublink"><span>Learn: beginner manual</span></a><a href="resources-operations.html" class="nav-sublink"><span>Operations &amp; workflows</span></a><a href="resources-growth.html" class="nav-sublink"><span>Growth &amp; scaling</span></a></div></div></div><a href="contact.html" class="nav-link">Contact</a>
     </nav>
-    <div class="sidebar-foot">
-      <div style="display:flex;gap:10px">
-        <a href="signup.html" class="btn btn-ghost" data-signin-link style="flex:1;justify-content:center">Get started</a>
-        <button class="btn btn-ghost" data-open-contact style="flex:1;justify-content:center">Let's talk</button>
-      </div>
-      <div class="sidebar-copy">&copy; 2026 AUZslab</div>
-    </div>
-  <div class="drawer-social"><a href="https://www.instagram.com/auzslab.in" aria-label="Instagram" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg></a><a href="https://www.facebook.com/share/1FMd3FoFyZ/?mibextid=wwXIfr" aria-label="Facebook" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 8V6.5c0-.8.3-1.2 1.3-1.2H17V2h-2.6C11.6 2 10 3.7 10 6.2V8H8v3.2h2V22h4V11.2h2.7l.4-3.2z"/></svg></a></div></aside>
+    <div class="foot"><div class="row"><a href="signup.html" class="btn btn-ghost" data-signin-link>Get started</a><button class="btn" data-open-contact>Let's talk</button></div><div class="copy">&copy; 2026 AUZslab</div></div>
+  </aside>
 
       <main class="content">
-    <div class="wrap">
-
-      <section class="section" style="padding-top:104px">
-        <div class="hero-grid">
-        <div>
-        <div class="uk-kit uk-breadcrumb" style="margin-bottom:18px">
-          <a href="platform.html">Business types</a><span class="uk-breadcrumb-sep">/</span><span class="uk-breadcrumb-current">Caf&eacute;s &amp; restaurants</span>
-        </div>
-        <div class="label">Caf&eacute;s, restaurants, bars, bakeries &amp; hotels</div>
-        <h1 class="h-1" style="font-size:44px">Built for how a hospitality business actually runs.</h1>
-        <p class="lede">From a table getting sat, to the kitchen finding out, to the bill printing right &mdash; one account, no paper tickets, no separate stock spreadsheet. The same system for a caf&eacute;, a restaurant, a bar, a bakery or a hotel&apos;s own food and beverage counter.</p>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px">
-          <button class="btn btn-primary" data-open-contact>Let's talk</button>
-          <a href="products.html" class="btn btn-ghost">See all products</a>
-        </div>
-        <div class="sp-badges">
-          <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>GST bills built in</span>
-          <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9" stroke-linecap="round"/><path d="M3 4v8h8" stroke-linecap="round" stroke-linejoin="round"/></svg>Keeps working without internet</span>
-          <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z" stroke-linejoin="round"/></svg>Kitchen tickets and screen</span>
-        </div>
-        </div>
-        <div class="hero-art" role="presentation">
-          <img class="hero-art-logo" src="logo.png" alt="" aria-hidden="true">
-        </div>
+    <div class="wrap"><div class="ed"><section class="ed-hero"><div class="ph r45" data-ed-img="biz.cafes"></div><h1 data-ed="biz.cafes.h">Built for how a hospitality business actually runs.</h1><div class="ed-side"><span data-ed="biz.cafes.sub">From a table getting sat, to the kitchen finding out, to the bill printing right — one account, no paper tickets, no separate stock spreadsheet.</span><button class="btn" data-open-contact>Let's talk</button></div></section><div class="ed-list" style="margin-top:28px;display:grid"><div class="ed-row" style="grid-template-columns:28px 1fr"><i style="font-style:normal;font-size:8.5px;color:var(--mut)">01</i><b style="font-weight:400;font-size:14px;letter-spacing:-.01em">Paper tickets and shouting across the counter</b></div><div class="ed-row" style="grid-template-columns:28px 1fr"><i style="font-style:normal;font-size:8.5px;color:var(--mut)">02</i><b style="font-weight:400;font-size:14px;letter-spacing:-.01em">No idea what is actually running low</b></div><div class="ed-row" style="grid-template-columns:28px 1fr"><i style="font-style:normal;font-size:8.5px;color:var(--mut)">03</i><b style="font-weight:400;font-size:14px;letter-spacing:-.01em">Tables, KOT &amp; kitchen display</b></div><div class="ed-row" style="grid-template-columns:28px 1fr"><i style="font-style:normal;font-size:8.5px;color:var(--mut)">04</i><b style="font-weight:400;font-size:14px;letter-spacing:-.01em">Ingredient stock &amp; reorder alerts</b></div><div class="ed-row" style="grid-template-columns:28px 1fr"><i style="font-style:normal;font-size:8.5px;color:var(--mut)">05</i><b style="font-weight:400;font-size:14px;letter-spacing:-.01em">GST invoices &amp; day settlement</b></div><div class="ed-row" style="grid-template-columns:28px 1fr"><i style="font-style:normal;font-size:8.5px;color:var(--mut)">06</i><b style="font-weight:400;font-size:14px;letter-spacing:-.01em">Self-order &amp; your own mini-site</b></div><div class="ed-row" style="grid-template-columns:28px 1fr"><i style="font-style:normal;font-size:8.5px;color:var(--mut)">07</i><b style="font-weight:400;font-size:14px;letter-spacing:-.01em">Regulars, loyalty &amp; feedback</b></div><div class="ed-row" style="grid-template-columns:28px 1fr"><i style="font-style:normal;font-size:8.5px;color:var(--mut)">08</i><b style="font-weight:400;font-size:14px;letter-spacing:-.01em">Ring one up. It is a real café account, not a mockup.</b></div></div></div>
+<section class="section tight" id="quote">
+        <div class="wrap">
+          <div class="label">How buying works</div>
+          <h2 class="h-2" style="margin-top:10px">Choose what you need. We send you a quote.</h2>
+          <ol class="ct-steps" style="margin-top:18px">
+            <li><b>1</b><div><strong>Tell us what you want</strong>Tick the services and fill in your business details. It takes two minutes.</div></li>
+            <li><b>2</b><div><strong>We check and send your quote</strong>We look at your request and send a quote made for your business, with the payment page.</div></li>
+            <li><b>3</b><div><strong>Pay and start</strong>Pay online by Razorpay, or in cash. Your software opens the same day.</div></li>
+          </ol>
+          <p class="p" style="margin-top:14px;font-size:13px">One-time onboarding fee: &#8377;1,360. Hardware integration, a website and WhatsApp automation are separate add-ons, quoted on request. The restaurant POS can run monthly; every other service is available on a yearly plan. Questions? <a href="contact.html">Contact AUZslab</a>.</p>
+          <div style="margin-top:16px"><a href="cart.html" class="btn btn-primary">Choose what you need</a></div>
         </div>
       </section>
 
-      <hr class="dash">
 
-      <section class="section tight">
-        <div class="label">What caf&eacute;s struggle with</div>
-        <div class="grid-2" style="margin-top:12px">
-          <div style="border-top:1px dashed var(--line);padding-top:20px">
-            <div class="h-2" style="font-size:19px">Paper tickets and shouting across the counter</div>
-            <p class="p" style="margin-top:10px">An order written on paper can get lost, misread or forgotten between the till and the kitchen.</p>
-          </div>
-          <div style="border-top:1px dashed var(--line);padding-top:20px">
-            <div class="h-2" style="font-size:19px">No idea what is actually running low</div>
-            <p class="p" style="margin-top:10px">Ingredient stock kept in a notebook, if at all &mdash; you find out you are out of something when a customer orders it.</p>
-          </div>
-        </div>
-      </section>
+      
 
-      <hr class="dash">
-
-      <section class="section tight">
-        <div class="label">Everything a caf&eacute; needs, in one account</div>
-        <div class="bento" style="margin-top:12px">
-          <div class="card feat feat-card">
-            <span class="tag">POS</span>
-            <div class="h-2" style="margin-top:12px;font-size:19px">Tables, KOT &amp; kitchen display</div>
-            <p class="p" style="margin-top:8px">A floor plan by section, kitchen tickets the instant an order is sent, and a kitchen display that moves through new, preparing and ready.</p>
-          </div>
-          <div class="card feat-card">
-            <span class="tag">Inventory</span>
-            <div class="h-2" style="margin-top:12px;font-size:19px">Ingredient stock &amp; reorder alerts</div>
-            <p class="p" style="margin-top:8px">Recipes deduct ingredient stock automatically as orders go through, with a reorder forecast built off real usage.</p>
-          </div>
-          <div class="card feat-card">
-            <span class="tag">Billing</span>
-            <div class="h-2" style="margin-top:12px;font-size:19px">GST invoices &amp; day settlement</div>
-            <p class="p" style="margin-top:8px">Every bill numbered and tax-broken-down automatically; close a day once it is settled, reopen it if something needs fixing.</p>
-          </div>
-          <div class="card feat-card">
-            <span class="tag">QR Ordering</span>
-            <div class="h-2" style="margin-top:12px;font-size:19px">Self-order &amp; your own mini-site</div>
-            <p class="p" style="margin-top:8px">A QR code on every table, and a public page for your caf&eacute; that doubles as the ordering menu.</p>
-          </div>
-          <div class="card feat-card">
-            <span class="tag">CRM</span>
-            <div class="h-2" style="margin-top:12px;font-size:19px">Regulars, loyalty &amp; feedback</div>
-            <p class="p" style="margin-top:8px">See who is coming back and who has gone quiet, run a coupon, and collect a star rating right off the receipt.</p>
-          </div>
-        </div>
-      </section>
-
-      <hr class="dash">
-
-      <section class="section tight">
-        <div class="demo-note">
-          <div class="label">Before you sign anything</div>
-          <h2 class="h-2" style="margin-top:10px;font-size:24px">Ring one up. It is a real caf&eacute; account, not a mockup.</h2>
-          <p class="p" style="margin-top:8px">A live, shared account seeded with a sample menu &mdash; take an order, send it to the kitchen, print a receipt.</p>
-          <a href="https://demo.auzslab.in" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top:14px">Ring up an order &rarr;</a>
-        </div>
-      </section>
-
-      <hr class="dash">
-
-      <section class="section tight" id="salon-plans">
-        <div class="label">Plans built for how you serve</div>
-        <h2 class="h-2" style="font-size:28px">From the first counter to the whole group.</h2>
-        <p class="p" style="margin-top:8px;max-width:48em">Run your food business, not the complexity. Choose the plan that fits today and grow when you are ready. Every plan is set up and switched on by us once we know your business.</p>
-
-        <div class="sp-toggle-row">
-          <div class="sp-toggle" id="cfToggle" role="group" aria-label="Billing period">
-            <button type="button" class="on" data-period="m" aria-pressed="true">Monthly</button>
-            <button type="button" data-period="y" aria-pressed="false">Yearly <span class="sp-save">2 months free</span></button>
-          </div>
-          <span class="sp-toggle-note">&larr; pay for 10 months, use all 12</span>
-        </div>
-
-        <div class="sp-grid" id="cfGrid">
-          <div class="sp-card" data-plan="Starter">
-            <div class="sp-head"><span class="sp-num">I</span><span class="sp-name">Starter</span></div>
-            <p class="sp-tagline">For small cafes, food trucks and new businesses.</p>
-            <div class="sp-price-row"><span class="sp-price sp-amt">Custom quote</span></div>
-            <div class="sp-wassave"><span class="sp-was"></span><span class="sp-save2"></span></div>
-            <button type="button" class="btn btn-ghost sp-cta" data-open-contact data-plan="Starter">Choose Starter</button>
-            <ul class="sp-feats">
-              <li class="">Basic POS billing</li>
-              <li class="">Basic receipts</li>
-              <li class="">Simple menu and product management</li>
-              <li class="">Essential sales summary</li>
-              <li class="sp-off">Advanced inventory and wastage</li>
-              <li class="sp-off">Advanced analytics</li>
-            </ul>
-          </div>
-
-          <div class="sp-card" data-plan="Growth">
-            <div class="sp-head"><span class="sp-num">II</span><span class="sp-name">Growth</span></div>
-            <p class="sp-tagline">For established cafes, restaurants and cloud kitchens.</p>
-            <div class="sp-price-row"><span class="sp-price sp-amt">Custom quote</span></div>
-            <div class="sp-wassave"><span class="sp-was"></span><span class="sp-save2"></span></div>
-            <button type="button" class="btn btn-ghost sp-cta" data-open-contact data-plan="Growth">Choose Growth</button>
-            <ul class="sp-feats">
-              <li class="">Complete POS functionality</li>
-              <li class="">Advanced inventory management</li>
-              <li class="">Advanced analytics dashboard</li>
-              <li class="">Core order and kitchen workflows</li>
-              <li class="">QR ordering as an add-on</li>
-              <li class="">Zomato / Swiggy as an add-on</li>
-              <li class="">WhatsApp automation as an add-on</li>
-            </ul>
-          </div>
-
-          <div class="sp-card hi" data-plan="Professional">
-            <span class="sp-fav">Best for growing restaurants</span>
-            <div class="sp-head"><span class="sp-num">III</span><span class="sp-name">Professional</span></div>
-            <p class="sp-tagline">For busy restaurants ready for connected ordering.</p>
-            <div class="sp-price-row"><span class="sp-price sp-amt">Custom quote</span></div>
-            <div class="sp-wassave"><span class="sp-was"></span><span class="sp-save2"></span></div>
-            <button type="button" class="btn btn-primary sp-cta" data-open-contact data-plan="Professional">Choose Professional</button>
-            <ul class="sp-feats">
-              <li class="">Everything in Growth</li>
-              <li class="">Preset QR ordering website included</li>
-              <li class="">Zomato and Swiggy integration included</li>
-              <li class="">Multiple invoice template options</li>
-              <li class="">Advanced inventory and analytics</li>
-              <li class="">WhatsApp automation as a paid add-on</li>
-            </ul>
-          </div>
-
-          <div class="sp-card" data-plan="Enterprise">
-            <div class="sp-head"><span class="sp-num">IV</span><span class="sp-name">Enterprise</span></div>
-            <p class="sp-tagline">For restaurant groups and multi-outlet businesses.</p>
-            <div class="sp-price-row"><span class="sp-price sp-amt">Custom quote</span></div>
-            <div class="sp-wassave"><span class="sp-was"></span><span class="sp-save2"></span></div>
-            <button type="button" class="btn btn-ghost sp-cta" data-open-contact data-plan="Enterprise">Talk to our team</button>
-            <ul class="sp-feats">
-              <li class="">Professional plan capabilities</li>
-              <li class="">Multi-outlet requirements discussed with you</li>
-              <li class="">Outlet and team setup scoped to your business</li>
-              <li class="">Dedicated account manager</li>
-              <li class="">Custom integrations quoted separately</li>
-              <li class="">WhatsApp automation as a paid add-on</li>
-            </ul>
-          </div>
-        </div>
-
-        <p class="sp-note">Every plan is quoted to you directly &mdash; the package, what is included and the commercials are agreed in a written quote before anything starts. One-time onboarding and setup, and any hardware, are part of that quote.</p>
-        <p class="sp-note" style="margin-top:6px">Shown for comparison, not a checkout &mdash; every business is quoted directly. <button type="button" class="sp-link" data-open-contact>Tell us about your cafe or restaurant &rarr;</button></p>
-      </section>
-
-      <hr class="dash">
-
-      <section class="section tight" id="salon-compare">
-        <div class="label">Compare plans</div>
-        <h2 class="h-2" style="font-size:24px">Compare the essentials.</h2>
-        <p class="p" style="margin-top:8px">Clear differences between plans, so you can choose based on what your business needs.</p>
-        <div class="sp-tablewrap">
-          <table class="sp-table">
-            <thead><tr><th>Feature</th><th>Starter</th><th>Growth</th><th>Professional</th><th>Enterprise</th></tr></thead>
-            <tbody>
-              <tr><td>Basic POS billing</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td></tr>
-              <tr><td>Complete POS</td><td class="sp-dash">&mdash;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td></tr>
-              <tr><td>Advanced inventory</td><td class="sp-dash">&mdash;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td></tr>
-              <tr><td>Advanced analytics</td><td class="sp-dash">&mdash;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td><td class="sp-check">&#10003;</td></tr>
-              <tr><td>Preset QR ordering</td><td>Paid add-on</td><td>Paid add-on</td><td class="sp-check">&#10003;</td><td>Included / scoped</td></tr>
-              <tr><td>Zomato + Swiggy integration</td><td>Paid add-on</td><td>Paid add-on</td><td class="sp-check">&#10003;</td><td>Included / scoped</td></tr>
-              <tr><td>WhatsApp automation</td><td>Paid add-on</td><td>Paid add-on</td><td>Paid add-on</td><td>Paid add-on</td></tr>
-              <tr><td>Custom ordering website</td><td>Separate quote</td><td>Separate quote</td><td>Separate quote</td><td>Separate quote</td></tr>
-              <tr><td>Payroll module</td><td>Paid add-on</td><td>Paid add-on</td><td>Paid add-on</td><td>Paid add-on</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <hr class="dash">
-
-      <section class="section tight" id="salon-addons">
-        <div class="addons-head">
-          <div>
-            <div class="label">Optional add-ons</div>
-            <h2 class="h-2" style="margin-top:12px;font-size:22px">Add what you need.</h2>
-            <p class="p" style="margin-top:6px;max-width:40em">Keep your core plan simple. Add extra capabilities when they make sense for your business.</p>
-          </div>
-          <button type="button" class="btn btn-ghost" data-open-contact>Ask about add-ons</button>
-        </div>
-        <div class="sp-addon-grid">
-          <div class="sp-addon" data-addon="cafe_qr">
-            <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v7h-4M14 21h.01" stroke-linecap="round"/></svg></span>
-            <b>QR Ordering + Invoice Templates</b>
-            <div class="sp-addon-pr">Custom quote</div>
-            <div class="sp-addon-sub">Agreed with you</div>
-            <p>Preset QR ordering website and multiple invoice template options. Included in Professional. Custom website development is quoted separately.</p>
-          </div>
-          <div class="sp-addon" data-addon="cafe_delivery">
-            <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M9 7h8v8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-            <b>Zomato &amp; Swiggy Integration</b>
-            <div class="sp-addon-pr">Ask for pricing</div>
-            <div class="sp-addon-sub">No add-on rate published yet</div>
-            <p>Available as an add-on for Growth. Included in Professional, subject to integration availability and agreed scope.</p>
-          </div>
-          <div class="sp-addon" data-addon="cafe_whatsapp">
-            <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 0 0-7.6 13.8L3 21l4.4-1.3A9 9 0 1 0 12 3z" stroke-linejoin="round"/></svg></span>
-            <b>WhatsApp Automation</b>
-            <div class="sp-addon-pr">Pay per message</div>
-            <div class="sp-addon-sub">Rates depend on message type</div>
-            <p>Monthly usage-based billing, with different rates by message category and provider charges.</p>
-          </div>
-          <div class="sp-addon" data-addon="cafe_payroll">
-            <span class="sp-addon-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-            <b>Payroll Module</b>
-            <div class="sp-addon-pr">Custom quote</div>
-            <div class="sp-addon-sub">Agreed with you</div>
-            <p>Add payroll to your setup without changing your core subscription. Billed separately from your plan.</p>
-          </div>
-        </div>
-        
-      </section>
+      
 
       <hr class="dash">
 
@@ -485,55 +184,21 @@
 
       <section class="stack-panel stack-panel-dark" data-tab="CONNECT">
 
-      <footer class="footer-dark">
-        <div class="wrap">
-          <div class="footer-top">
-            <div class="footer-col footer-col-brand">
-              <span class="brand-mark">AUZ<span class="brand-accent">slab</span></span>
-              <p class="footer-tag">Business software built around the way you work.</p>
-              <a class="footer-cta" href="tel:+919251250829">+91 92512 50829</a>
-              <a class="footer-mail" href="mailto:helloauzslab@gmail.com">helloauzslab@gmail.com</a>
-            </div>
-            <div class="footer-col">
-              <div class="footer-col-title">Products</div>
-              <a href="products.html#slab-pos">AUZsPOS</a>
-              <a href="products.html#slab-payroll">AUZsPay</a>
-              <a href="products.html#slab-accounting">AUZsLedger</a>
-              <a href="products.html#slab-scan">AUZsScan</a>
-              <a href="products.html#slab-mobile">AUZsMob</a>
-              <a href="products.html">All products</a>
-            </div>
-            <div class="footer-col">
-              <div class="footer-col-title">Business types</div>
-              <a href="business-cafes.html">Cafes &amp; restaurants</a>
-              <a href="business-retail.html">Retail &amp; bookstores</a>
-              <a href="business-salons.html">Salons &amp; studios</a>
-              <a href="business-mobile-repair.html">Mobile shops</a>
-              <a href="business-clothing.html">Clothing &amp; apparel</a>
-            </div>
-            <div class="footer-col">
-              <div class="footer-col-title">Company</div>
-              <a href="live-demo.html">Live demo</a>
-              <a href="download-apps.html">Download apps</a>
-              <a href="contact.html">Contact</a>
-              <a href="join-team.html">Join our team</a>
-              <a href="signup.html">Sign in</a>
-            </div>
-          </div>
-
-          <div class="footer-bottom">
-            <nav class="footer-legal" aria-label="Legal">
-              <a href="terms.html">Terms</a>
-              <a href="privacy.html">Privacy</a>
-              <a href="refund.html">Refunds</a>
-              <a href="sitemap.html">Sitemap</a>
-              <a href="https://www.instagram.com/auzslab.in" target="_blank" rel="noopener noreferrer">Instagram</a>
-              <a href="https://www.facebook.com/share/1FMd3FoFyZ/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer">Facebook</a>
-            </nav>
-            <span class="footer-copy">&copy; 2026 AUZslab</span>
-          </div>
-        </div>
-      </footer>
+      <div class="ftwrap" id="ftwrap">
+    <button class="ftt" aria-expanded="false"><span class="ftti"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M3 3h8l10 10-8 8L3 11V3Z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5Z"/></svg><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.500 0 18M12 3c-3 3.5-3 14.500 0 18"/></svg></span><span class="ftl">Setup, support and help</span><i class="pl">+</i></button>
+    <div class="ftinfo">
+      <div class="perks"><div class="perk"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M3 3h8l10 10-8 8L3 11V3Z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg><div><b>Set up with you</b><span>Shaped to your workflow</span></div></div><div class="perk"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg><div><b>Works offline</b><span>POS and AUZsMob keep selling</span></div></div><div class="perk"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.500 0 18M12 3c-3 3.5-3 14.500 0 18"/></svg><div><b>Your data is yours</b><span>Back up or export any time</span></div></div><div class="perk"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5Z"/></svg><div><b>Talk to a person</b><span>Call or WhatsApp us</span></div></div></div>
+      <div class="ftstrip"><div class="ftfold" id="ftfold"><p>AUZslab is a complete ecosystem for business. We break rigid software: every part connects, and every part is yours to shape.</p><button class="ftmore" id="ftmore">Read more...</button></div>
+        <div class="ftabs"><button class="ftab" data-i="0">Products</button><button class="ftab" data-i="1">Business types</button><button class="ftab" data-i="2">Resources</button><button class="ftab" data-i="3">Company</button></div><div class="ftpanel" id="ftpanel" data-tabs='[[["products.html#slab-pos","AUZsPOS"],["products.html#slab-payroll","AUZsPay"],["products.html#slab-accounting","AUZsLedger"],["products.html#slab-scan","AUZsScan"],["products.html#slab-mobile","AUZsMob"],["products.html#slab-salon","AUZslab Salon"],["products.html#slab-qr","QR ordering"]],[["business-cafes.html","Cafes & restaurants"],["business-salons.html","Salons & studios"],["business-retail.html","Retail & bookstores"],["business-clothing.html","Clothing & apparel"],["business-mobile-repair.html","Mobile retail & repair"],["studio.html","Custom software (Studio)"],["web-design.html","Websites & online stores"]],[["resources-getting-started.html","Getting started"],["learn.html","Learn: beginner manual"],["resources-operations.html","Operations & workflows"],["resources-growth.html","Growth & scaling"]],[["platform.html","Why AUZslab"],["live-demo.html","Live demo"],["download-apps.html","Download apps"],["join-team.html","Join our team"],["sitemap.html","Sitemap"]]]'></div></div>
+    </div>
+    <footer><div class="cols">
+      <div class="col"><span class="lbl">Connect with us</span><a href="tel:+919251250829">Call</a><a href="https://wa.me/919251250829" target="_blank" rel="noopener">Text (WhatsApp)</a><a href="https://www.instagram.com/auzslab.in" target="_blank" rel="noopener">Instagram</a><a href="https://www.facebook.com/share/1FMd3FoFyZ/?mibextid=wwXIfr" target="_blank" rel="noopener">Facebook</a><a href="mailto:helloauzslab@gmail.com">Email</a></div>
+      <div class="col"><span class="lbl">Explore</span><a href="products.html">Products</a><a href="live-demo.html">Live demo</a><a href="download-apps.html">Download apps</a><a href="studio.html">Studio</a><a href="web-design.html">Websites &amp; stores</a><a href="platform.html">Why AUZslab</a></div>
+      <div class="col"><span class="lbl">Company</span><a href="contact.html">Contact</a><a href="join-team.html">Join our team</a><a href="signup.html">Sign in</a><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a><a href="refund.html">Refunds</a></div>
+      <div class="ftbrand"><div class="big">AUZslab</div></div></div>
+      <div class="fin"><span>&copy; 2026 AUZslab. All rights reserved</span><a href="sitemap.html">Sitemap</a></div></footer>
+  </div>
+<nav class="u-dock" aria-label="Quick"><div class="pill"><a href="index.html" aria-label="Home"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></a><a href="products.html" aria-label="Products"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M3 7l9-4 9 4-9 4-9-4Z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/></svg></a><a href="live-demo.html" aria-label="Live demo"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></svg></a><a href="signup.html" aria-label="Sign in"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></a></div><button class="chat" data-open-contact aria-label="Talk to us"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5Z"/></svg></button></nav>
 
       </section>
 
@@ -595,94 +260,8 @@
 <script src="site.js?v=113"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script src="design-system/ui-kit.js?v=101"></script>
-<script>
-// Live prices: the cards above are a fallback; this reads what the admin
-// has set (public_product_prices / public_bundles) so edits show up here
-// without a deploy. A matching bundle wins over the flat per-product sum.
-(function () {
-  var inr = function () { return 'Custom quote'; };
-  var sb; try { sb = supabase.createClient(CFG.url, CFG.key); } catch (e) { return; }
-  Promise.all([sb.rpc('public_product_prices'), sb.rpc('public_bundles')]).then(function (r) {
-    var prices = {}; ((r[0] && r[0].data) || []).forEach(function (p) { prices[p.key] = p; });
-    var bundles = (r[1] && r[1].data) || [];
-    if (!Object.keys(prices).length) return;
-    function setPrice(el, text, strike) {
-      var tail = el.querySelector('span');
-      while (el.firstChild && el.firstChild !== tail) el.removeChild(el.firstChild);
-      if (strike) { var s = document.createElement('s'); s.textContent = strike; el.insertBefore(s, tail); el.insertBefore(document.createTextNode(' '), tail); }
-      el.insertBefore(document.createTextNode(text), tail);
-    }
-    document.querySelectorAll('[data-add-plan]').forEach(function (btn) {
-      var keys = btn.dataset.addPlan.split(',').sort(), card = btn.closest('[data-price-card]');
-      var el = card && card.querySelector('.price-card-price'); if (!el) return;
-      var b = bundles.filter(function (x) { return x.feature_keys.slice().sort().join(',') === keys.join(','); })[0];
-      var total = 0, ok = true; keys.forEach(function (k) { var p = prices[k]; if (!p || !(Number(p.monthly_price) > 0)) ok = false; else total += Number(p.monthly_price); });
-      var v = b ? Number(b.monthly_price) : (ok ? total : 0), list = b ? Number(b.list_price) : 0;
-      if (v > 0) setPrice(el, inr(v), list > v ? inr(list) : null);
-    });
-    try { sb.payments.config().then(function (c) { c = c && c.data; if (c && c.gstPct > 0) document.querySelectorAll('.gst-t').forEach(function (e) { e.hidden = false; }); }); } catch (e) {}
-  }).catch(function () {});
-})();
-document.querySelectorAll('[data-add-plan]').forEach(function (btn) {
-  btn.addEventListener('click', function () {
-    btn.dataset.addPlan.split(',').forEach(function (key) { window.AUZcart.add(key); });
-    window.location.href = 'cart.html';
-  });
-});
-</script>
 <script>window.PLAN_NICHE = 'cafe';</script>
 <script src="company.js"></script>
-<script>
-(function () {
-  var toggle = document.getElementById('cfToggle'), grid = document.getElementById('cfGrid');
-  if (!toggle || !grid) return;
-  var prices = [820, 1360, 2260, 3610], yprices = [0, 0, 0, 0], cur = 'm';
-  function inr() { return 'Custom quote'; }
-  function setPeriod(p) {
-    var y = p === 'y'; cur = p;
-    toggle.querySelectorAll('button[data-period]').forEach(function (b) {
-      var on = b.getAttribute('data-period') === p; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
-    });
-    grid.querySelectorAll('.sp-card').forEach(function (c, i) {
-      var m = prices[i], shown = y ? (yprices[i] || m * 10) : m;
-      c.querySelector('.sp-amt').textContent = inr(shown);
-      c.querySelector('.sp-unit').textContent = y ? '/year' : '/month';
-      c.querySelector('.sp-was').textContent = inr(m * 12);
-      c.querySelector('.sp-save2').textContent = 'Save ' + inr(m * 12 - shown);
-    });
-  }
-  toggle.querySelectorAll('button[data-period]').forEach(function (b) { b.addEventListener('click', function () { setPeriod(b.getAttribute('data-period')); }); });
-  window.planApply = function (tiers) {
-    if (!tiers || tiers.length !== 4) return;
-    prices = tiers.map(function (t) { return Number(t.monthly_price) || 0; });
-    yprices = tiers.map(function (t) { return Number(t.yearly_price) || 0; });
-    grid.querySelectorAll('.sp-card').forEach(function (card, i) {
-      var t = tiers[i]; card.classList.toggle('hi', !!t.highlighted);
-      card.querySelector('.sp-name').textContent = t.name;
-      card.querySelector('.sp-tagline').textContent = t.tagline || '';
-      var fav = card.querySelector('.sp-fav');
-      if (t.badge) { if (!fav) { fav = document.createElement('span'); fav.className = 'sp-fav'; card.insertBefore(fav, card.firstChild); } fav.textContent = t.badge; fav.hidden = false; } else if (fav) fav.hidden = true;
-      var feats = card.querySelector('.sp-feats'); feats.textContent = '';
-      (t.features || []).forEach(function (f) { var li = document.createElement('li'); li.textContent = f; feats.appendChild(li); });
-      var cta = card.querySelector('.sp-cta'); if (cta) { cta.setAttribute('data-plan', t.name); cta.textContent = 'Choose ' + t.name; cta.className = 'btn ' + (t.highlighted ? 'btn-primary' : 'btn-ghost') + ' sp-cta'; }
-    });
-    setPeriod(cur);
-  };
-  document.querySelectorAll('#salon-plans .sp-cta').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var plan = btn.getAttribute('data-plan'), msg = document.getElementById('m-message');
-      if (plan && msg && !msg.value) msg.value = 'Interested in the ' + plan + ' plan for my cafe or restaurant.';
-    });
-  });
-  try {
-    var sb = supabase.createClient(CFG.url, CFG.key);
-    sb.payments.config().then(function (c) {
-      c = c && c.data;
-      if (c && c.gstPct > 0) document.querySelectorAll('#salon-plans .gst-t').forEach(function (e) { e.hidden = false; });
-    }).catch(function () {});
-  } catch (e) {}
-})();
-</script>
-<script src="plan-pick.js?v=102"></script>
+<script src="ed.js?v=1" defer></script><script src="fold.js?v=1" defer></script><script src="u.js?v=1" defer></script>
 </body>
 </html>
