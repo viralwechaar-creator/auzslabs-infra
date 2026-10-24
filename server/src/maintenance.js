@@ -82,6 +82,12 @@ export async function runHealthAlert() {
   } catch (err) { console.warn('health alert failed:', err.message); }
 }
 
+// Self-serve trials (db/262): lock every 3-day trial that has run out. Runs every 5 minutes.
+export async function runTrialLock() {
+  try { const { rows } = await pool.query('select trial_lock_run() as n'); if (rows[0]?.n) console.log(`trials locked: ${rows[0].n}`); }
+  catch (err) { console.warn('trial lock failed:', err.message); }
+}
+
 export function startMaintenance() {
   if (process.env.DISABLE_MAINTENANCE === '1') return;
   const runAll = () => {
@@ -90,4 +96,5 @@ export function startMaintenance() {
     runClientGreetings(); runMembershipExpiryReminders(); runStyleGreetings(); runStyleAbandoned(); runHealthAlert();
   };
   setTimeout(() => { runAll(); setInterval(runAll, DAY).unref(); }, 60_000).unref();
+  setTimeout(() => { runTrialLock(); setInterval(runTrialLock, 5 * 60_000).unref(); }, 30_000).unref();
 }

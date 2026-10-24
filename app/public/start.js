@@ -208,6 +208,25 @@
     return list;
   }
 
+  // ---- 3-day trial of a self-built software (db/262): a banner while it runs, a lock screen when it ends
+  function trialBanner(tr) {
+    var days = Math.max(0, Math.ceil(tr.seconds_left / 86400));
+    return el('div', { class: 'tile', style: 'border-color:var(--accent,#800020)' }, [el('b', { text: 'Free trial: ' + (days <= 1 ? 'ends within a day' : days + ' days left') }),
+      el('span', { text: 'Everything works. Subscribe any time to keep it.' }), el('button', { class: 'btn', type: 'button', onclick: function () { subscribe(tr); }, text: 'Subscribe' })]);
+  }
+  async function subscribe(tr) {
+    var o = tr.order;
+    if (!o) { var r = await sb.rpc('trial_subscribe'); if (r.error) { alert(r.error.message); return; } o = r.data; }
+    if (o.status === 'link_sent') { location.href = await siteHref('pay.html?t=' + o.token); return; }
+    set([el('h1', { text: 'Thank you' }), el('p', { class: 'sub', text: 'We are preparing your quote. You will get it on WhatsApp shortly and can pay from there. Your data is safe.' }),
+      el('button', { class: 'btn', type: 'button', onclick: boot, text: 'Back' })]);
+  }
+  function trialLocked(tr, d) {
+    foot.textContent = ''; foot.append(el('span', { text: (d && d.my_email) || '' }), el('button', { type: 'button', onclick: signOut, text: 'Sign out' }));
+    set([el('h1', { text: 'Your 3-day trial has ended' }), el('p', { class: 'sub', text: 'Your software and all your data are safe. Subscribe to open it again.' }),
+      el('button', { class: 'btn', type: 'button', onclick: function () { subscribe(tr); }, text: tr.order && tr.order.status === 'link_sent' ? 'Pay and continue' : 'Subscribe' })]);
+  }
+
   async function boot() {
     var sess = (await sb.auth.getSession()).data.session;
     if (!sess) return welcome();
@@ -225,12 +244,15 @@
       return customerHome();
     }
     var d = r.data, list = apps(d), sw = new URLSearchParams(location.search).get('switch') === '1';
+    var ts = await sb.rpc('trial_status'), tr = ts && ts.data;
+    if (tr && tr.state === 'locked') return trialLocked(tr, d);
+    var onTrial = tr && tr.state === 'active';
     if (me && me.team) list.unshift({ id: 'team', name: 'Team workspace', note: 'Leads, client setups and your team work', path: '/salesman.html' });
     foot.textContent = ''; foot.append(el('span', { text: (d.my_email || '') }), el('button', { type: 'button', onclick: signOut, text: 'Sign out' }));
     if (!list.length) return set([el('h1', { text: d.tenant ? d.tenant.name : 'AUZslab' }), el('p', { class: 'sub', text: 'No apps are switched on for this login yet. Ask AUZslab or your owner.' })]);
-    if (list.length === 1 && !sw) { lastSet(list[0].id); location.replace(list[0].path); return; }
+    if (list.length === 1 && !sw && !onTrial) { lastSet(list[0].id); location.replace(list[0].path); return; }
     set([el('h1', { text: d.tenant ? d.tenant.name : 'AUZslab' }), el('p', { class: 'sub', text: 'Choose an app.' }),
-      el('div', { class: 'tiles' }, list.map(function (a) { return el('a', { class: 'tile', href: a.path, onclick: function () { lastSet(a.id); } }, [el('b', { text: a.name }), el('span', { text: a.note })]); }).concat(accountTiles()).concat(exploreTiles().slice(0, 1)))]);
+      el('div', { class: 'tiles' }, (onTrial ? [trialBanner(tr)] : []).concat(list.map(function (a) { return el('a', { class: 'tile', href: a.path, onclick: function () { lastSet(a.id); } }, [el('b', { text: a.name }), el('span', { text: a.note })]); }).concat(accountTiles()).concat(exploreTiles().slice(0, 1))))]);
   }
   boot().catch(function (e) { set([el('h1', { text: 'Could not load' }), el('p', { class: 'sub', text: (e && e.message) || 'Check your connection and try again.' }), el('button', { class: 'btn', type: 'button', onclick: boot, text: 'Try again' })]); });
 })();
