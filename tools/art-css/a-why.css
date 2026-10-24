@@ -1,0 +1,45 @@
+/* WHY: black poster with grain, light blob, hairlines, mono corners (reference: poster story) */
+@P{padding:0}
+.aw-y{background:#0a0a0a;color:#f4f4f2;overflow:hidden}
+.ay-poster{position:relative;min-height:calc(100svh - var(--hhs));overflow:hidden;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:#e8e8e6}
+.ay-poster>span{position:absolute;z-index:2}
+.ay-vl{left:28%;top:0;bottom:0;width:1px;background:rgba(255,255,255,.55)}
+.ay-hl{left:0;right:0;top:74%;height:1px;background:rgba(255,255,255,.55)}
+.ay-cross{left:calc(28% - 14px);top:calc(74% - 14px);width:28px;height:28px;background:#0a0a0a}
+.ay-cross::before,.ay-cross::after{content:"";position:absolute;background:rgba(255,255,255,.7)}
+.ay-cross::before{left:13px;top:3px;width:1px;height:22px}.ay-cross::after{top:13px;left:3px;height:1px;width:22px}
+.ay-c1{left:var(--pad);top:22px}.ay-c2{left:calc(28% + 20px);top:22px}
+.ay-coord{left:calc(28% - 28px);top:22px;writing-mode:vertical-rl;letter-spacing:.1em}
+.ay-f1{left:var(--pad);bottom:22px}.ay-f2{left:calc(28% + 20px);bottom:22px}.ay-f3{right:var(--pad);bottom:22px}
+@P .ay-h{position:absolute;z-index:2;left:calc(28% + 20px);right:var(--pad);bottom:calc(26% + 24px);font-size:clamp(26px,5.4vw,96px)!important;line-height:.98;font-weight:500!important;letter-spacing:-.025em!important;color:#f4f4f2!important;max-width:none!important}
+@P .ay-sub{position:absolute;z-index:2;left:calc(28% + 20px);top:calc(74% + 16px);max-width:300px;font-size:10px;text-transform:none;letter-spacing:0;color:#b8b8b6}
+.ay-blob{position:absolute;inset:0;filter:blur(38px)}
+.ay-blob i{position:absolute;border-radius:50%;background:radial-gradient(circle,#f0f0ee 0%,rgba(240,240,238,.5) 38%,transparent 70%);animation:ayDrift 14s ease-in-out infinite alternate}
+.ay-blob i:nth-child(1){width:46vw;height:20vw;left:30%;top:22%;transform:rotate(-24deg)}
+.ay-blob i:nth-child(2){width:30vw;height:14vw;left:6%;top:42%;opacity:.55;animation-delay:-4s;transform:rotate(-36deg)}
+.ay-blob i:nth-child(3){width:26vw;height:16vw;left:56%;top:34%;opacity:.7;animation-delay:-8s;transform:rotate(18deg)}
+@keyframes ayDrift{to{transform:translate(4vw,-3vw) rotate(-10deg) scale(1.12)}}
+@media(prefers-reduced-motion:reduce){.ay-blob i{animation:none}}
+.ay-poster .a-grain{opacity:.4;z-index:1}
+/* rigid vs yours: dark glass */
+.ay-stagewrap,.ay-ecowrap{max-width:1500px;margin:0 auto;padding:0 var(--pad)}
+.ay-stagewrap{padding-top:70px}
+.aw-y .wy-stage{background:rgba(255,255,255,.04);border:1px solid #2a2a2a;border-radius:26px;padding:26px}
+.aw-y .wy-screen,.aw-y .wy-f{background:#121212;border-color:#2c2c2c;color:#eee}
+.aw-y .wy-f.lock{background:repeating-linear-gradient(135deg,#171717 0 6px,#121212 6px 12px)}
+.aw-y .wy-seg{background:#161616;border-color:#2a2a2a}.aw-y .wy-seg button{color:#bbb}.aw-y .wy-seg .on,.aw-y .wy-seg button.on{color:#000}
+.aw-y .wy-seg::before{background:#f4f4f2}
+.aw-y .wy-btn span,.aw-y .wy-btn{background:#f4f4f2;color:#000}
+.aw-y .wy-note{color:#aaa}
+.aw-y .eco{padding:70px 0}
+.aw-y .eco-map line{stroke:#555}.aw-y .eco-map circle{fill:#f4f4f2}
+@P .mk-h2{color:#f4f4f2}
+/* four big numbered statements */
+.aw-y .bl{border-top:1px solid #333;margin-top:30px}
+.aw-y .bl>div{display:grid;grid-template-columns:minmax(80px,22%) 1fr;align-items:end;min-height:46vh;padding:30px var(--pad);border-bottom:1px solid #333;max-width:1500px;margin:0 auto;background:none;gap:20px}
+.aw-y .bl>div i{font-style:normal;font-size:clamp(70px,16vw,260px);line-height:.8;font-weight:600;letter-spacing:-.06em;color:transparent;-webkit-text-stroke:1.5px #f4f4f2;transition:color .6s,-webkit-text-stroke-color .6s}
+.aw-y .bl>div.in i{color:#f4f4f2}
+.aw-y .bl b{display:block;font-size:clamp(22px,4.6vw,76px);line-height:1;letter-spacing:-.035em;font-weight:500;color:#f4f4f2;text-transform:uppercase}
+.aw-y .bl span{display:block;margin-top:12px;font-size:12px;color:#aaa;max-width:420px}
+.aw-y .bl{display:block;overflow:visible;margin:30px 0 0;padding:0}
+.aw-y .bl>div{width:auto!important;box-shadow:none;border-radius:0;flex:none}

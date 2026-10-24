@@ -1,0 +1,38 @@
+/* LIVE DEMO: pale page, dark dot-grid cards (reference: job card) */
+html body.a-demo{background:linear-gradient(180deg,#f1f1f1,#e4e4e4)!important}
+@P{padding:0 var(--pad) 50px}
+.ad{max-width:1180px;margin:0 auto}
+.ad-hero{padding:36px 0 26px}
+.ad-mono{font:600 9px/1 "Space Mono",monospace;letter-spacing:.16em;color:#777}
+@P .ad-h{font-size:clamp(40px,9vw,120px)!important;line-height:.95;font-weight:500!important;letter-spacing:-.05em!important;margin:14px 0 14px;color:#111!important}
+.ad-p{max-width:380px;font-size:11px;color:#666}
+.ad .dm-wrap{display:grid;gap:18px}
+@media(min-width:900px){.ad .dm-wrap{grid-template-columns:300px 1fr;align-items:start}}
+.ad .dm-list{counter-reset:v;display:grid;gap:10px}
+.ad .dm-list button{counter-increment:v;position:relative;text-align:left;display:flex;flex-direction:column;gap:3px;padding:18px 16px 16px;border-radius:22px;color:#fff;background:radial-gradient(circle,rgba(255,255,255,.1) 1px,transparent 1.5px) 0 0/18px 18px,linear-gradient(180deg,#303030,#0a0a0a);box-shadow:0 10px 22px rgba(0,0,0,.2);transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s,opacity .3s;opacity:.78}
+.ad .dm-list button::before{content:"Variant-0" counter(v);font-size:9px;opacity:.6}
+.ad .dm-list button small{font-size:8.5px;display:inline-block;align-self:flex-start;padding:3px 8px;border-radius:5px;background:rgba(255,255,255,.14);color:#ddd}
+.ad .dm-list button b{font-size:17px;font-weight:500;color:#fff;letter-spacing:-.02em}
+.ad .dm-list button::after{content:"Open";position:absolute;right:14px;bottom:14px;padding:6px 12px;border-radius:7px;background:#fff;color:#000;font-size:9px;font-weight:600}
+.ad .dm-list button:hover{transform:translateY(-4px) rotate(-.6deg);opacity:1}
+.ad .dm-list button.on{opacity:1;transform:translateX(10px) scale(1.02);box-shadow:0 20px 40px rgba(0,0,0,.34),0 0 0 2px #800020}
+.ad .dm-card{position:relative;border-radius:28px;padding:30px;color:#fff;background:radial-gradient(circle,rgba(255,255,255,.09) 1px,transparent 1.5px) 0 0/22px 22px,linear-gradient(180deg,#2a2a2a,#050505);box-shadow:0 30px 60px rgba(0,0,0,.28);min-height:380px;transition:opacity .2s,transform .3s}
+.ad .dm-card.sw{opacity:0;transform:translateY(10px) scale(.99)}
+.ad .dm-card h2{font-size:clamp(28px,4vw,52px)!important;font-weight:500!important;letter-spacing:-.04em;color:#fff!important;margin:10px 0}
+.ad .dm-card p{color:#bdbdbd;max-width:46em}
+.ad .dm-card .mk-eye{color:#aaa}
+.ad .dm-cred{margin:18px 0;display:grid;gap:6px}
+.ad .dm-cred>div{display:grid;grid-template-columns:110px 1fr auto;gap:12px;align-items:center;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.08)}
+.ad .dm-cred span{font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:#999}
+.ad .dm-cred b{font:500 11.5px "Space Mono",monospace;color:#fff;word-break:break-all}
+.ad .dm-cred button{padding:6px 12px;border-radius:7px;background:#fff;color:#000;font-size:9px;font-weight:600}
+.ad .dm-card .mk-btn,.ad .dm-card a.mk-btn{background:#fff;color:#000;border-radius:8px}
+.ad .dm-card .mk-btn.solid{background:#800020;color:#fff}
+.ad-end{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:34px;padding:18px 22px;border-radius:20px;background:#fff;box-shadow:0 10px 26px rgba(0,0,0,.08)}
+.ad-end b{margin-right:auto;font-size:15px;font-weight:600}
+@media(max-width:700px){.ad .dm-cred>div{grid-template-columns:1fr auto}.ad .dm-cred span{grid-column:1/-1}}
+.ad .dm-card .dm-cred,.ad .dm-card .dm-cred>div{background:rgba(255,255,255,.07)!important;color:#fff;border:0;box-shadow:none}
+.ad .dm-card .dm-cred{padding:6px;border-radius:16px}
+.ad .dm-card .dm-cred>div{border-bottom:0!important;background:transparent!important}
+.ad .dm-card .dm-cred>div+div{border-top:1px solid rgba(255,255,255,.1)!important}
+.ad .dm-card .dm-cred b{color:#fff!important}

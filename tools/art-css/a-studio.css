@@ -1,0 +1,47 @@
+/* STUDIO: framed device with bento cells and a step cycler (reference: Impact card) */
+html body.a-studio{background:#ececea!important}
+@P{padding:0 var(--pad) 50px}
+.as{max-width:1180px;margin:0 auto}
+.as-hero{padding:34px 0 20px;text-align:center}
+.as-mono{font:600 9px/1 "Space Mono",monospace;letter-spacing:.16em;color:#777}
+.as-frame{margin:20px auto 0;max-width:760px;display:grid;grid-template-columns:1.9fr 1fr;grid-template-rows:auto auto;gap:3px;background:#1b1b1b;border:5px solid #1b1b1b;border-radius:32px;overflow:hidden;box-shadow:0 30px 60px rgba(0,0,0,.28),0 0 0 1px rgba(0,0,0,.4)}
+.as-c{background:#f1f1f0;position:relative}
+.as-title{padding:26px 22px;text-align:left;border-radius:26px 0 0 0}
+@P .as-title h1{font-size:clamp(46px,9vw,104px)!important;font-weight:600!important;letter-spacing:-.06em!important;line-height:.9;color:#2a2a2a!important;margin:0}
+.as-title h1 b{color:#800020}.as-title small{display:block;margin-top:10px;font-size:9px;color:#888}
+.as-metal{border-radius:0 26px 0 0;background:conic-gradient(from 20deg,#f4f4f4,#8e8e8e,#f4f4f4,#6f6f6f,#f4f4f4,#a0a0a0,#f4f4f4);animation:asSpin 12s linear infinite}
+@keyframes asSpin{to{filter:hue-rotate(0deg);transform:none}}
+.as-metal::after{content:"";position:absolute;inset:0;background:conic-gradient(from 0deg,transparent,rgba(255,255,255,.7),transparent 30%);animation:asRot 6s linear infinite;mix-blend-mode:overlay}
+@keyframes asRot{to{transform:rotate(360deg)}}
+.as-num{grid-column:1;grid-row:2;display:none}
+.as-frame{grid-template-columns:minmax(0,.9fr) minmax(0,2fr)}
+.as-title{grid-column:1/2}.as-metal{grid-column:2}
+.as-num{display:block;grid-column:1;grid-row:2;background:#800020;min-height:300px;border-radius:0 0 0 26px;overflow:hidden}
+.as-hatch{position:absolute;left:0;right:0;top:0;height:40%;background:repeating-linear-gradient(135deg,#1b1b1b 0 2px,transparent 2px 9px);border-bottom:2px solid #1b1b1b}
+.as-n{position:absolute;left:0;right:0;bottom:14px;text-align:center;color:#1b1b1b}
+.as-n span{display:block;font-size:clamp(46px,8vw,90px);font-weight:300;letter-spacing:-.05em;line-height:1}
+.as-n em{font-style:normal;display:inline-grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#1b1b1b;color:#fff;font-size:9px}
+.as-panel{grid-column:2;grid-row:2;border-radius:0 0 26px 0;padding:14px 18px 22px;display:flex;flex-direction:column;min-height:300px;text-align:left}
+.as-nav{display:flex;justify-content:space-between;align-items:center}
+.as-nav button{width:34px;height:34px;border-radius:50%;background:#e6e6e4;font-size:14px;transition:transform .2s,background .2s}.as-nav button:hover{background:#1b1b1b;color:#fff;transform:scale(1.08)}
+.as-nav code{font:500 11px "Space Mono",monospace;color:#555}
+.as-body{margin-top:auto;transition:opacity .25s,transform .35s}.as-body.sw{opacity:0;transform:translateX(16px)}
+@P .as-body h2{font-size:clamp(20px,3vw,32px)!important;font-weight:500!important;letter-spacing:-.03em!important;color:#222!important;margin:0 0 8px;max-width:11em}
+.as-body p{color:#777;font-size:11.5px;max-width:26em}
+.as-cta{display:flex;gap:16px;justify-content:center;align-items:center;margin-top:26px}
+.as-link{font-size:10px;text-decoration:underline;text-underline-offset:3px}
+.as-cta .btn{background:#111!important;color:#fff!important}
+.as .st-story{display:none}
+.as .st-cmp,.as .st-own,.as .st-two,.as .st-case{max-width:1100px;margin:34px auto 0}
+.as .st-cmp{display:grid;gap:12px}@media(min-width:800px){.as .st-cmp{grid-template-columns:1fr 1fr}}
+.as .st-cmp>div{border-radius:26px;padding:28px;background:#fff;box-shadow:0 10px 26px rgba(0,0,0,.07)}
+.as .st-cmp .b{background:#800020;color:#fff}.as .st-cmp .b *{color:#fff}
+.as .st-case{border-radius:26px;padding:30px;background:#1b1b1b;color:#fff;box-shadow:0 20px 40px rgba(0,0,0,.2)}.as .st-case *{color:#fff}.as .st-case .mk-eye{color:#aaa}
+.as .st-ws{border-radius:26px}
+@media(max-width:700px){.as-frame{grid-template-columns:1fr}.as-title,.as-metal,.as-num,.as-panel{grid-column:1;grid-row:auto}.as-metal{height:120px}.as-num{min-height:150px}}
+@media(min-width:701px){
+.as-frame{grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr) minmax(0,1fr)}
+.as-title{grid-column:1/3}.as-metal{grid-column:3}.as-num{grid-column:1}.as-panel{grid-column:2/4}
+}
+.as .st-case .mk-btn,.as .st-case a{background:#fff!important;color:#000!important;border-radius:999px}
+.as-title{overflow:hidden}
