@@ -1,0 +1,55 @@
+/* PRODUCTS: sage deck of rounded slides, bento tiles, floating rail (reference: slide deck + control kit) */
+html body.a-prod{--sage:#b1b6b0;background:var(--sage)!important}
+html body.a-prod main.content{padding:0 var(--pad) 40px}
+.ap-intro{max-width:1100px;margin:18px auto 0;display:grid;gap:12px}
+.ap-slide{position:relative;border-radius:22px;padding:22px;overflow:hidden;min-height:260px}
+.ap-slide.light{background:#f6f6f4;color:#0a0a0a;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:18px;min-height:340px}
+.ap-pill{align-self:flex-start;display:inline-flex;padding:5px 11px;border:1px solid currentColor;border-radius:999px;font-size:8px;letter-spacing:.1em;opacity:.85}
+.ap-slide.light .ap-pill{position:absolute;left:20px;top:18px}
+html body.a-prod main.content .ap-big{font-size:clamp(22px,4.2vw,52px)!important;line-height:1.08;letter-spacing:-.04em;font-weight:500;color:#0a0a0a!important;max-width:15em;margin:0}
+html body.a-prod main.content .ap-big em{font-style:normal;color:#b5b5b3}
+.ap-go{display:inline-flex;gap:10px;align-items:center;padding:6px 6px 6px 14px;border:1px solid #111;border-radius:999px;font-size:8.5px;letter-spacing:.08em;text-transform:uppercase}
+.ap-go i{font-style:normal;display:grid;place-items:center;width:26px;height:26px;border:1px solid #111;border-radius:50%;transition:transform .3s}
+.ap-go:hover i{transform:rotate(-45deg)}
+.ap-deco{position:absolute;border-radius:10px;background:linear-gradient(135deg,#d7d7d5,#8f8f8d);box-shadow:0 10px 20px rgba(0,0,0,.18);animation:apFloat 7s ease-in-out infinite alternate}
+.ap-deco.d1{right:8%;top:14%;width:110px;height:46px;transform:rotate(-8deg)}.ap-deco.d2{left:8%;bottom:16%;width:96px;height:56px;transform:rotate(6deg);animation-delay:-3s;background:linear-gradient(135deg,#222,#666)}
+@keyframes apFloat{to{transform:translateY(-10px) rotate(0deg)}}
+.ap-slide.dark{background:#0d0d0d;color:#e9ebe8;min-height:380px;display:flex;flex-direction:column;justify-content:flex-end}
+.ap-slide.dark .ap-pill{position:absolute;left:20px;top:18px;background:#2a2a2a;border-color:#2a2a2a}
+.ap-num{position:absolute;right:20px;top:2px;font-size:clamp(90px,16vw,200px);line-height:1;font-weight:500;letter-spacing:-.06em;color:#e3e7e2!important}
+html body.a-prod main.content .ap-h{font-size:clamp(34px,7vw,92px)!important;line-height:.98;font-weight:500!important;letter-spacing:-.045em!important;color:#f2f4f1!important;max-width:8em;margin:0}
+html body.a-prod main.content .ap-p{max-width:330px;font-size:10px!important;color:#b8bbb6!important;margin-top:12px}
+.ap-arrow{position:absolute;left:20px;bottom:20px;display:none}
+.ap-bento{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:minmax(110px,18vw);gap:10px}
+@media(min-width:900px){.ap-bento{grid-auto-rows:150px}}
+.ap-bento>div{position:relative;border-radius:18px;padding:16px;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between}
+.ap-bento b{font-size:clamp(26px,4vw,52px);font-weight:400;letter-spacing:-.04em;line-height:1}
+.ap-bento span{font-size:9.5px;opacity:.8}
+.ap-bento .b1{grid-column:span 2;background:#0d0d0d;color:#fff;align-items:center;justify-content:center;text-align:center;gap:6px}
+.ap-bento .b2{grid-column:span 2;background:linear-gradient(135deg,#2a2a2a,#7a7a78 55%,#c9c9c6)}
+.ap-bento .b3{grid-column:span 2;background:linear-gradient(200deg,#dcdcda,#8b8d8a);border-radius:60px 18px 18px 18px}
+.ap-bento .b2 i,.ap-bento .b3 i{position:absolute;inset:0;background:repeating-linear-gradient(115deg,rgba(255,255,255,.1) 0 2px,transparent 2px 14px)}
+.ap-bento .b4{background:#dde3dd;color:#0a0a0a}.ap-bento .b5{background:#a5a8a4;color:#fff}
+.ap-bento em{position:absolute;right:12px;bottom:12px;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#fff;color:#111;font-style:normal;font-size:12px}
+@media(min-width:900px){.ap-intro{grid-template-columns:1.2fr 1fr;grid-template-areas:"a b" "c c"}.ap-intro>.ap-slide.light{grid-area:a;min-height:420px}.ap-intro>.ap-slide.dark{grid-area:b;min-height:420px}.ap-bento{grid-area:c;grid-template-columns:repeat(6,1fr)}.ap-bento .b1,.ap-bento .b2,.ap-bento .b3{grid-column:span 2}.ap-bento .b4,.ap-bento .b5{grid-column:span 1}}
+/* product slides */
+.pr-wrap{max-width:1100px;margin:40px auto 0;display:block}
+.pr-idx{position:fixed;left:14px;top:50%;transform:translateY(-50%);z-index:20;display:none;flex-direction:column;gap:2px;padding:8px;border-radius:30px;background:rgba(255,255,255,.88);box-shadow:0 10px 30px rgba(0,0,0,.14);backdrop-filter:blur(10px)}
+@media(min-width:1280px){.pr-idx{display:flex}}
+.pr-idx a{display:block;padding:7px 10px;border-radius:20px;font-size:9px;white-space:nowrap}.pr-idx a i{font-style:normal;opacity:.45;margin-right:8px}
+.pr-idx a.on{background:#0d0d0d;color:#fff;box-shadow:0 6px 14px rgba(0,0,0,.3)}
+.pr-list{display:grid;gap:14px}
+.pr-list .pc{position:relative;border-radius:26px;padding:24px;background:#f6f6f4;color:#0a0a0a;display:grid;gap:22px;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,.1)}
+@media(min-width:900px){.pr-list .pc{grid-template-columns:1.1fr .9fr;padding:34px;gap:40px}.pr-list .pc:nth-child(even) .pc-art{order:-1}}
+.pr-list .pc:nth-child(3n+2){background:#0d0d0d;color:#eceeea}
+.pr-list .pc:nth-child(3n+2) h2,.pr-list .pc:nth-child(3n+2) li,.pr-list .pc:nth-child(3n+2) .pc-s{color:#eceeea!important}
+.pr-list .pc:nth-child(3n){background:#dde3dd}
+.pr-list .pc-n{position:absolute;right:20px;top:6px;font-size:clamp(70px,12vw,170px);font-weight:500;line-height:1;letter-spacing:-.06em;color:transparent;-webkit-text-stroke:1px currentColor;opacity:.35}
+html body.a-prod main.content .pc h2{font-size:clamp(24px,4vw,52px)!important;font-weight:500!important;letter-spacing:-.04em;line-height:1;margin:34px 0 8px}
+.pc-f li{border-top:1px solid currentColor;border-color:rgba(128,128,128,.35);padding:9px 0;font-size:10.5px}
+.pr-list .mk-btn.solid{background:#0a0a0a;color:#fff}.pr-list .pc:nth-child(3n+2) .mk-btn.solid{background:#fff;color:#000}
+.pc-art .sk{background:#fff;color:#111;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,.2);transform:rotate(-2deg);transition:transform .5s}
+.pc:hover .pc-art .sk{transform:rotate(0) scale(1.03)}
+.pc-art .mk-ph{display:none}
+html body.a-prod .pr-list{grid-template-columns:1fr!important;display:grid;gap:14px}
+html body.a-prod .pr-list .pc{width:auto;margin:0}

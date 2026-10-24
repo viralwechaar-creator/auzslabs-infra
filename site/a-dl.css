@@ -1,0 +1,36 @@
+/* APPS: soft control-kit (reference: segmented control, pagination, toggles) */
+html body.a-dl{background:linear-gradient(180deg,#f3f3f3,#dcdcdc)!important}
+html body.a-dl main.content{padding:0 var(--pad) 50px}
+.adl{max-width:980px;margin:0 auto}
+.adl-hero{padding:38px 0 20px}.adl-mono{font:600 9px/1 "Space Mono",monospace;letter-spacing:.16em;color:#888}
+html body.a-dl main.content .adl-h{font-size:clamp(38px,8vw,100px)!important;line-height:.95;font-weight:500!important;letter-spacing:-.05em!important;margin:12px 0;color:#111!important}
+.adl-h em{font-style:normal;color:#aaa}.adl-hero p{max-width:420px;font-size:11px;color:#666}
+.adl-kit{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:10px 0 26px}
+.adl-bar{padding:8px;border-radius:999px;background:#fff;box-shadow:0 14px 30px rgba(0,0,0,.1),inset 0 0 0 1px rgba(255,255,255,.8)}
+.adl-bar .wy-seg{background:none;border:0;box-shadow:none;display:flex;position:relative;padding:0}
+.adl-bar .wy-seg button{position:relative;z-index:1;padding:14px 26px;border-radius:999px;font-size:13px;color:#777;transition:color .3s}
+.adl-bar .wy-seg button.on{color:#fff}
+.adl-bar .wy-seg::before{content:"";position:absolute;left:calc(var(--x,0px) + 4px);top:0;bottom:0;width:var(--w,100px);border-radius:999px;background:linear-gradient(180deg,#2c2c2c,#000);box-shadow:0 10px 18px rgba(0,0,0,.35);transition:left .35s cubic-bezier(.2,.8,.2,1),width .35s}
+.adl-toggles{display:flex;gap:10px}
+.adl-toggles .tg{width:54px;height:30px;border-radius:999px;background:#d9d9d9;position:relative;box-shadow:inset 0 2px 4px rgba(0,0,0,.15)}
+.adl-toggles .tg::after{content:"";position:absolute;left:3px;top:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 3px 6px rgba(0,0,0,.25);transition:left .3s}
+.adl-toggles .tg.on{background:#222}.adl-toggles .tg.on::after{left:27px}
+.adl-toggles .ck{width:36px;height:36px;border-radius:12px;background:linear-gradient(180deg,#2c2c2c,#000);box-shadow:0 8px 14px rgba(0,0,0,.3)}
+.adl .dl-panel{display:none}.adl .dl-panel.on{display:block;animation:adlIn .5s cubic-bezier(.2,.8,.2,1)}
+@keyframes adlIn{from{opacity:0;transform:translateY(14px)}}
+.adl .dl-steps{display:flex;gap:10px;flex-wrap:wrap;counter-reset:s;margin-bottom:20px}
+.adl .dl-steps li{counter-increment:s;flex:1 1 220px;display:flex;gap:12px;align-items:flex-start;padding:16px;border-radius:22px;background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.07)}
+.adl .dl-steps li::before{content:counter(s);flex:none;display:grid;place-items:center;width:38px;height:38px;border-radius:13px;background:#f0f0f0;font-size:13px;color:#555}
+.adl .dl-steps li:first-child::before{background:linear-gradient(180deg,#2c2c2c,#000);color:#fff;box-shadow:0 8px 14px rgba(0,0,0,.3)}
+.adl .dl-steps b{display:block;font-size:13px}.adl .dl-steps span{font-size:10.5px;color:#777}
+.adl .dl-apps{display:grid;gap:10px}
+.adl .dl-apps>div{display:flex;gap:14px;align-items:center;padding:14px 16px;border-radius:24px;background:#fff;box-shadow:0 12px 26px rgba(0,0,0,.08);transition:transform .3s}
+.adl .dl-apps>div:hover{transform:translateY(-3px)}
+.adl .dl-ic{flex:none;display:grid;place-items:center;width:54px;height:54px;border-radius:18px;background:linear-gradient(180deg,#2c2c2c,#000);color:#fff;font-weight:600;box-shadow:0 10px 18px rgba(0,0,0,.3)}
+.adl .dl-apps .t{flex:1}.adl .dl-apps h3{font-size:15px}.adl .dl-apps p{font-size:10.5px;color:#777}
+.adl .dl-apps .mk-btn{border-radius:14px}
+.adl .dl-warn{margin-top:14px;font-size:10px;color:#777}
+@media(max-width:700px){.adl .dl-apps>div{flex-wrap:wrap}}
+@media(max-width:700px){.adl-bar .wy-seg button{padding:12px 14px;font-size:11px}.adl-bar{max-width:100%}}
+@media(max-width:700px){.adl-bar{width:100%}.adl-bar .wy-seg{width:100%}.adl-bar .wy-seg button{flex:1;padding:12px 4px;white-space:nowrap;text-align:center}.adl-toggles{display:none}.adl{overflow:hidden}}
+@media(max-width:700px){.adl-bar .wy-seg{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))}.adl-bar .wy-seg button{font-size:10px!important;letter-spacing:0!important;padding:12px 2px!important;min-width:0;overflow:hidden;text-overflow:ellipsis}}

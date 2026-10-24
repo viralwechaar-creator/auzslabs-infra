@@ -17,7 +17,7 @@
     function mark(b) { box.style.setProperty('--x', b.offsetLeft - 4 + 'px'); box.style.setProperty('--w', b.offsetWidth + 'px'); btns.forEach(function (x) { x.classList.toggle('on', x === b); }); }
     btns.forEach(function (b) { b.addEventListener('click', function () { mark(b); on(b.getAttribute('data-v')); }); });
     var first = btns.filter(function (b) { return b.classList.contains('on'); })[0] || btns[0];
-    setTimeout(function () { mark(first); }, 30); window.addEventListener('resize', function () { var c = btns.filter(function (b) { return b.classList.contains('on'); })[0]; if (c) mark(c); });
+    setTimeout(function () { mark(btns.filter(function (b) { return b.classList.contains('on'); })[0] || first); }, 30); window.addEventListener('resize', function () { var c = btns.filter(function (b) { return b.classList.contains('on'); })[0]; if (c) mark(c); });
     return { set: function (v) { var b = btns.filter(function (x) { return x.getAttribute('data-v') === v; })[0]; if (b) { mark(b); on(v); } } };
   }
 
