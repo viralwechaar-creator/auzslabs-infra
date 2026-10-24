@@ -2,3 +2,21 @@
 node_modules/
 .claude/worktrees/
 .claude/settings.local.json
+
+# Secrets and credentials
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+google-services.json
+GoogleService-Info.plist
+service-account*.json
+*.keystore
+*.jks
+!native/*/android/app/test-release.jks
+env-backups/
+*.sql.gz
