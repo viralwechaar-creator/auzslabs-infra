@@ -165,7 +165,7 @@ export default async function run({ browser, stack }) {
     await q(`update module_catalogue set screens = jsonb_set(screens, '{0,label}', '"ZZ Catalogue Marker"') where key = 'payroll'`);
     const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage(); const errs = watch(page);
     try {
-      await page.goto(stack.url('app', '/my.html')); await pickType(page); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
+      await page.goto(stack.url('app', '/my.html?classic=1')); await pickType(page); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
       const txt = await page.locator('#tiles').innerText(); assert(txt.includes('ZZ Catalogue Marker'), 'database change not shown: ' + txt.slice(0, 200));
       assert(txt.includes('Billing and invoices') && txt.includes('Repairs'), 'normal features missing');
     } finally { await q(`update module_catalogue set screens = jsonb_set(screens, '{0,label}', '"Staff attendance"') where key = 'payroll'`); await ctx.close(); }
@@ -233,7 +233,7 @@ export default async function run({ browser, stack }) {
   await s.check('The builder shows the offline label from the database: Works offline for POS, Needs internet for Finance, Partly offline note for Pay', async () => {
     const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage(); await allCompat(page, ALLKEYS);
     try {
-      await page.goto(stack.url('app', '/my.html')); await page.evaluate(() => localStorage.clear()); await page.reload(); await pickType(page); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
+      await page.goto(stack.url('app', '/my.html?classic=1')); await page.evaluate(() => localStorage.clear()); await page.reload(); await pickType(page); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
       const tile = (name) => page.locator('#tiles .frow', { hasText: name }).first().textContent();
       assert(/Works offline/.test(await tile('Billing and invoices')), 'POS label: ' + await tile('Billing and invoices'));
       assert(/Needs internet/.test(await tile('Expenses and cash')), 'Finance label');
@@ -251,7 +251,7 @@ export default async function run({ browser, stack }) {
     const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage(); await allCompat(page, ALLKEYS);
     await page.route('https://api.auzslab.in/rpc/public_module_catalogue', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: t }) }));
     try {
-      await page.goto(stack.url('app', '/my.html')); await page.evaluate(() => localStorage.clear()); await page.reload(); await pickType(page); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
+      await page.goto(stack.url('app', '/my.html?classic=1')); await page.evaluate(() => localStorage.clear()); await page.reload(); await pickType(page); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
       for (const name of ['Billing and invoices', 'Staff attendance', 'Barcode & Scan', 'Phone sales and IMEI']) {
         const tx = await page.locator('#tiles .frow', { hasText: name }).first().textContent();
         assert(/Not yet checked/.test(tx) && !/Works offline/.test(tx), name + ' shown as: ' + tx);
@@ -272,7 +272,7 @@ export default async function run({ browser, stack }) {
     const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage(); await allCompat(page, ALLKEYS);
     await page.route('https://api.auzslab.in/rpc/public_module_catalogue', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: t }) }));
     try {
-      await page.goto(stack.url('app', '/my.html')); await page.evaluate(() => localStorage.clear()); await page.reload(); await pickType(page); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
+      await page.goto(stack.url('app', '/my.html?classic=1')); await page.evaluate(() => localStorage.clear()); await page.reload(); await pickType(page); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
       const tip = async (name) => { const b = page.locator('#tiles .frow', { hasText: name }).first().locator('.ob'); return { label: await b.textContent(), title: await b.getAttribute('title') }; };
       let x = await tip('Billing and invoices'); assert(x.label === 'Works offline' && /test browser/i.test(x.title) && /Not yet tested on real/i.test(x.title), JSON.stringify(x));
       x = await tip('Barcode & Scan'); assert(x.label === 'Partly offline' && /reading the code/i.test(x.title) && /Not tested/i.test(x.title) && !/test browser/i.test(x.title), JSON.stringify(x));
@@ -288,7 +288,7 @@ export default async function run({ browser, stack }) {
   await s.check('The builder explains an added dependency before the trial starts', async () => {
     const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage();
     try {
-      await page.goto(stack.url('app', '/my.html')); await page.evaluate(() => localStorage.clear()); await page.reload(); await pickType(page, 'Cafe'); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
+      await page.goto(stack.url('app', '/my.html?classic=1')); await page.evaluate(() => localStorage.clear()); await page.reload(); await pickType(page, 'Cafe'); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
       await page.locator('#tiles .tile', { hasText: 'QR table ordering' }).click(); await page.waitForSelector('#deps .dep .why', { timeout: 10000 });
       const t = await page.locator('#deps').innerText(); assert(/AUZsPOS/.test(t) && /Added because/i.test(t), t);
     } finally { await ctx.close(); }
@@ -298,7 +298,7 @@ export default async function run({ browser, stack }) {
     const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage();
     await page.route('https://api.auzslab.in/rpc/public_module_catalogue', (r) => r.fulfill({ status: 500, contentType: 'application/json', body: '{"error":"down"}' }));
     try {
-      await page.goto(stack.url('app', '/my.html')); await page.waitForSelector('#tiles .err', { timeout: 15000 });
+      await page.goto(stack.url('app', '/my.html?classic=1')); await page.waitForSelector('#tiles .err', { timeout: 15000 });
       assert((await page.locator('#tiles .tile').count()) === 0, 'tiles shown without a catalogue');
       assert(/could not load/i.test(await page.locator('#tiles').innerText()), 'no clear error');
       assert((await page.locator('#go button, #go a').count()) === 0, 'a start button is offered');
@@ -308,7 +308,7 @@ export default async function run({ browser, stack }) {
   await s.check('Build page: a visitor makes a username + password and gets the 3-day trial in one step (no email, no Google)', async () => {
     const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage(); const errs = watch(page);
     try {
-      await page.goto(stack.url('app', '/my.html')); await pickType(page); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
+      await page.goto(stack.url('app', '/my.html?classic=1')); await pickType(page); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
       assert(await page.locator('#go a[href*="start.html"]').count() === 0, 'there should be no link to the old login page');
       await page.locator('#tiles .tile').first().click();
       await page.fill('#go input[placeholder="Your name"]', 'Tara Trial'); await page.fill('#go input[placeholder^="Mobile"]', '9876501234'); await page.fill('#go input[placeholder="Business name"]', 'Username Trial Shop');
@@ -420,7 +420,7 @@ export default async function run({ browser, stack }) {
     assert(cat.find((m) => m.key === 'scan').screens.find((x) => x.id === 'scan').label === 'Barcode & Scan', 'scan label not renamed');
     const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage(); const errs = watch(page);
     try {
-      await page.goto(stack.url('app', '/my.html')); await page.evaluate(() => localStorage.clear()); await page.reload(); await pickType(page, 'Retail'); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
+      await page.goto(stack.url('app', '/my.html?classic=1')); await page.evaluate(() => localStorage.clear()); await page.reload(); await pickType(page, 'Retail'); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
       assert((await page.locator('#types .tile.soon').innerText()).includes('Coming soon'), 'Salon is not shown as Coming soon');
       await page.locator('#types .tile.soon').click({ force: true }); assert(/coming soon here/i.test(await page.locator('#typeNote').innerText()), 'no Coming soon message');
       assert((await page.locator('#types .tile.soon').getAttribute('aria-pressed')) === 'false', 'Salon could be selected');

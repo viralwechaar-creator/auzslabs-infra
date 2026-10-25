@@ -70,6 +70,20 @@ def reg(n):
 def _():
     put('index', home(), 'a-dark a-home', 'a-home')
 
+SEC = '''<section class="by" id="bd">
+<div class="by-head"><span class="ay-mono">BUILD YOURS &mdash; FREE FOR 3 DAYS</span>
+<h2 class="by-h"><span>Say what you do.</span><span class="dim">We build the app.</span></h2>
+<p class="by-sub">Pick your kind of business, tick what it needs, shape how it looks. Start a 3-day trial and your app opens, ready to use. No payment now.</p></div>
+<div class="by-cols"><div class="by-steps">
+<div class="by-s"><p class="by-n">01 &middot; What kind of business</p><div class="bd-types" id="bdTypes"><p class="bd-hint">Loading...</p></div><p class="bd-hint" id="bdNote"></p></div>
+<div class="by-s"><p class="by-n">02 &middot; What it needs <span id="bdTally"></span></p><div class="bd-needs" id="bdNeeds"></div></div>
+<div class="by-s"><p class="by-n">03 &middot; How it should feel</p><div id="bdDesign"></div></div>
+<div class="by-s"><p class="by-n">04 &middot; Start</p><div class="bd-go" id="bdGo"></div><p class="bd-hint">Need something we do not have? <a href="contact.html">Tell us</a>.</p></div>
+</div>
+<aside class="by-rig"><div class="bd-phone" id="bdPhone" data-nav="bottom" data-card="soft" data-theme="dark"><div class="bd-bar"><i></i><i></i><i></i><span>YOUR APP</span></div><div class="bd-app"><nav class="bd-nav" id="bdNav"></nav><div class="bd-main"><div class="bd-ph"><b>Your business</b><small id="bdCount">0 features</small></div><div class="bd-cards" id="bdCards"></div></div></div></div></aside></div>
+</section>
+'''
+
 @reg('platform')
 def _():
     h = rd('platform')
@@ -101,10 +115,13 @@ def _():
 <div class="ay-toast" id="ayHint">Rename it. Move it. Add one. Recolour it.</div></div>
 </div>
 </section>
-<div class="ay-ecowrap">%s</div>
+%s<div class="ay-ecowrap">%s</div>
 %s
-</div>''' % (eco, bl)
+</div>''' % (SEC, eco, bl)
     put('platform', body, 'a-dark a-why', 'a-why')
+    t = open(os.path.join(OUT, 'platform.html'), encoding='utf-8').read()
+    t = t.replace('</body>', '<script src="build-inline.js?v=1" defer></script></body>', 1)
+    open(os.path.join(OUT, 'platform.html'), 'w', encoding='utf-8').write(t)
 
 @reg('products')
 def _():
@@ -140,24 +157,18 @@ def _():
       ['Designed from a blank page around your workflow', 'Your own private workspace and logins', 'Scoped and quoted before work starts', 'New pieces added whenever you grow', 'Anything not listed here: just ask'],
       ('', 'Tell us what you need'), ('studio.html', 'See Studio'), sk('Your idea', [('Describe it', 70, 0), ('We scope it', 55, 1), ('We build it', 45, 0)], 'Shaped to you')),
     ]
-    idx = ''.join('<a href="#slab-%s"><i>%02d</i>%s</a>' % (k, n + 1, t) for n, (k, t, *_r) in enumerate(S))
+    idx = ''.join('<a href="#slab-%s"><i>%02d</i><span>%s</span></a>' % (k, n + 1, t) for n, (k, t, *_r) in enumerate(S))
     arts = ''
     for n, (k, t, sm, feats, (ck, cl), (lu, ll), art) in enumerate(S):
         btn = ('<a class="mk-btn solid" href="cart.html?add=%s">%s</a>' % (ck, cl)) if ck else '<a class="mk-btn solid" href="contact.html">%s</a>' % cl
-        arts += '<article class="pc rv" id="slab-%s"><div class="pc-n">%02d</div><div class="pc-main"><h2>%s</h2><p class="pc-s">%s</p><ul class="pc-f">%s</ul><div class="pc-a">%s<a class="mk-link" href="%s">%s</a></div></div><figure class="pc-art">%s</figure></article>' % (k, n + 1, t, sm, ''.join('<li>%s</li>' % f for f in feats), btn, lu, ll, art)
+        arts += '<article class="pc rv" id="slab-%s"><header class="pc-h"><i class="pc-n">%02d</i><h2>%s</h2></header><p class="pc-s">%s</p><ul class="pc-f">%s</ul><div class="pc-a">%s<a class="mk-link" href="%s">%s</a></div></article>' % (k, n + 1, t, sm, ''.join('<li>%s</li>' % f for f in feats), btn, lu, ll)
     intro = '''
 <section class="ap-intro">
 <div class="ap-slide light"><span class="ap-pill">SERVICES</span><p class="ap-big">Websites, POS, CRM, automation, payroll and accounting, <em>built around your business.</em></p><a class="ap-go" href="#slab-web">See what we build <i>&searr;</i></a><span class="ap-deco d1"></span><span class="ap-deco d2"></span></div>
 <div class="ap-slide dark"><span class="ap-pill">WHAT WE DO</span><b class="ap-num">09</b><h1 class="ap-h" data-ed="products.h">What we build for you.</h1><p class="ap-p" data-ed="products.sub">Pick one service or combine them. Everything connects, and every part is shaped to how you work.</p><i class="ap-arrow">&swarr;</i></div>
-<div class="ap-bento">
-<div class="b1"><b data-count="9">9</b><span>services that connect</span></div>
-<div class="b2"><i></i></div>
-<div class="b3"><i></i></div>
-<div class="b4"><b>1</b><span>login</span><em>&#9678;</em></div>
-<div class="b5"><b>1</b><span>customer list</span><em>&#9711;</em></div>
-</div>
+<div class="ap-strip"><span><b data-count="9">9</b> services</span><span><b>1</b> login for all of it</span><span><b>1</b> customer list</span><span><b>0</b> rigid templates</span></div>
 </section>'''
-    wrap = '<div class="pr-wrap"><nav class="pr-idx" aria-label="Services">%s</nav><div class="pr-list">%s</div></div>' % (idx, arts)
+    wrap = '<div class="pr-wrap"><aside class="pr-side"><nav class="pr-idx" aria-label="Services"><p class="pr-cap">All services <b>09</b></p>%s</nav><a class="pr-help" href="contact.html">Not sure what you need?<span>Tell us about your business &rarr;</span></a></aside><div class="pr-list">%s</div></div>' % (idx, arts)
     put('products', intro + wrap, 'a-prod', 'a-prod')
 
 def strip(x): return re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', '', x)).strip()
@@ -170,7 +181,7 @@ def _():
     end = re.search(r'<div class="mk-end rv">.*?</div></div>', h[h.index('<main'):], re.S)
     body = '''
 <div class="ad">
-<header class="ad-hero"><span class="ad-mono">LIVE DEMO &mdash; 4 VARIANTS</span><h1 class="ad-h"><span class="aw" style="--i:0"><span>Try it</span></span><span class="aw" style="--i:1"><span>before you buy.</span></span></h1>
+<header class="ad-hero"><span class="ad-mono">LIVE DEMO &mdash; 8 FULLY BUILT APPS</span><h1 class="ad-h"><span class="aw" style="--i:0"><span>Try it</span></span><span class="aw" style="--i:1"><span>before you buy.</span></span></h1>
 <p class="ad-p">Real working accounts, open to everyone. Pick a card, copy the login, click around. Nothing here touches your business.</p></header>
 %s%s
 <div class="ad-end"><b>Not sure which one?</b><button class="btn" data-open-contact>We will walk you through it</button><a class="btn btn-ghost" href="products.html">See all products</a></div>
