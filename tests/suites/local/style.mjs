@@ -559,6 +559,25 @@ export default async function run({ browser, stack }) {
     assert(!blocked.ok && /first orders|already used/i.test(blocked.error || ''), 'a web-used first-order coupon must also be refused at the till: ' + blocked.error);
   }, 'critical');
 
+  await s.check('An overpayment by any mode (not just cash) is capped out of the stored payment breakdown, not left inflated', async () => {
+    const cat = await ok(owner, 'sty_catalog', { p_branch: null });
+    const sty = cat.find((x) => x.variants.some((v) => v.stock >= 2 && x.price >= 200)); const vr = sty.variants.find((v) => v.stock >= 2);
+    const sale = await ok(staff, 'sty_sell', { p: { id: uid(), lines: [{ variantId: vr.id, qty: 1 }], payments: [{ mode: 'upi', amount: vr.price + 100 }] } });
+    assert(sale.paid === vr.price && sale.payments.length === 1 && sale.payments[0].mode === 'upi' && +sale.payments[0].amount === vr.price,
+      'overpaid UPI line must be capped at the real total, not left showing the extra: ' + JSON.stringify(sale.payments) + ' paid=' + sale.paid);
+  }, 'critical');
+
+  await s.check('Online store: two cart lines for the same variant cannot together oversell past real stock', async () => {
+    const cat = await ok(owner, 'sty_catalog', { p_branch: null });
+    const sty = cat.find((x) => x.variants.some((v) => v.stock >= 2 && v.stock <= 4)); const vr = sty.variants.find((v) => v.stock >= 2 && v.stock <= 4);
+    const base = { name: 'Dup Line', phone: '9800011122', address: '1 Lane', city: 'Jodhpur', state: 'Rajasthan', pin: '342001', payment: 'cod' };
+    // split the same variant across two lines, together asking for one more than is in stock
+    const over = await call(null, 'public_sty_place_order', { p_slug: 'teststyle', p: { ...base, lines: [{ variantId: vr.id, qty: vr.stock }, { variantId: vr.id, qty: 1 }] } });
+    assert(!over.ok && /only \d+ left/i.test(over.error || ''), 'two lines for the same item must be checked together, not separately: ' + JSON.stringify(over));
+    const ok1 = await ok(null, 'public_sty_place_order', { p_slug: 'teststyle', p: { ...base, lines: [{ variantId: vr.id, qty: vr.stock - 1 }, { variantId: vr.id, qty: 1 }] } });
+    assert(ok1.number, 'the same total split across two lines, within stock, should still succeed: ' + JSON.stringify(ok1));
+  });
+
   await s.check('Buying intelligence: designs, size curve, reorder, lost demand, requests, cost hiding and isolation', async () => {
     const tee = await ok(owner, 'sty_save_style', { p: { name: 'Intel Tee', category: 'Tees', price: 1000, mrp: 1000, cost: 400, colours: ['Black'], sizes: ['S', 'M', 'L', 'XL'], opening: { qty: 20, unitCost: 400 } } });
     const vv = (z) => tee.variants.find((v) => v.size === z);
