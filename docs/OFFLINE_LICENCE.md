@@ -17,8 +17,14 @@ code from AUZslab and stops when the plan ends. Cloud storage, WhatsApp automati
 - Test: `node tests/run-local.mjs licence` (6 checks).
 
 ## Windows installer (desktop-style/, db/268, workflow "AUZsStyle for Windows")
-- One setup file `AUZsStyle-Setup-x.y.z.exe` (Electron 33 + PostgreSQL 16 + the local server). **Windows 10 or 11, 64-bit.** It does not run on Windows 7: the server
-  needs a modern Node that Windows 7 cannot run. A Windows 7 build would need a separate older-Node server; not built.
+- Two setup files from the same code (workflow matrix):
+  - **Modern** `AUZsStyle-Setup-x.y.z.exe` (Electron 33, Node 20, PostgreSQL 16): Windows 10 / 11, 64-bit.
+  - **Compatible** `AUZsStyle-Setup-Compatible-x.y.z.exe` (Electron 22, Node 16, PostgreSQL 12, Visual C++ 2019 runtime): **Windows 7 SP1, 8, 8.1, 10, 11, 64-bit**. Same features. The server runs on Node 16 with a few
+    packages swapped for older versions (`COMPAT=1` in `tools/stage.mjs`) and `lib/compat-preload.cjs` adds the web functions old Node lacks. Verified here by running the whole desktop suite on real Node 16.20 +
+    PostgreSQL 12.20 (7/7); Electron 22 itself, the Windows 7 operating system and the Visual C++ runtime on Windows 7 are NOT verified.
+  - Both need a **64-bit** Windows. A 32-bit Windows is not covered (no 32-bit PostgreSQL build is used). Windows 7 needs Service Pack 1 and the Windows updates that bring the Universal C Runtime (KB2999226).
+  - Computer size: works from 2 GB RAM (database memory is tuned small automatically); about 1 GB free disk for the program, more for data; an SSD makes the first setup much faster.
+  - Not covered at all: 32-bit Windows, Windows Vista/XP, macOS, Linux.
 - First start: makes the database cluster in `%APPDATA%\AUZsStyle\pgdata` (own port 54329, small memory settings, passwords made once and kept in `secrets.json`), builds the tables from
   `db/*.sql` (1-3 minutes, progress shown), removes AUZslab's sample businesses, starts the local server on a fixed address (`127.0.0.1:38417`, kept in `settings.json`; the browser part keeps its waiting
   changes under that address) and opens the app. App screens: Activate (licence code) -> Set up your shop (`offline_first_run`, only while the database holds no business) -> sign in.

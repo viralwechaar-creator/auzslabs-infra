@@ -12,7 +12,17 @@ fs.rmSync(st, { recursive: true, force: true }); fs.mkdirSync(st, { recursive: t
 const cp = (a, b, filter) => fs.cpSync(a, b, { recursive: true, filter });
 
 cp(path.join(root, 'server'), path.join(st, 'server'), (s) => !/node_modules|[\\/]\.git/.test(s));
-execSync('npm ci --omit=dev --no-audit --no-fund', { cwd: path.join(st, 'server'), stdio: 'inherit' });
+const sdir = path.join(st, 'server');
+if (process.env.COMPAT === '1') {
+  // Windows 7 build: the server runs on Node 16 (Electron 22), so a few packages are swapped for versions that support it; compat-preload.cjs adds the missing web functions
+  const pj = JSON.parse(fs.readFileSync(path.join(sdir, 'package.json'), 'utf8'));
+  Object.assign(pj.dependencies, { sharp: '0.32.6', '@sentry/node': '7.120.0', 'google-auth-library': '9.15.1', jose: '4.15.9', undici: '5.28.4' });
+  fs.writeFileSync(path.join(sdir, 'package.json'), JSON.stringify(pj, null, 2)); fs.rmSync(path.join(sdir, 'package-lock.json'), { force: true });
+  execSync('npm install --omit=dev --no-audit --no-fund', { cwd: sdir, stdio: 'inherit' });
+} else execSync('npm ci --omit=dev --no-audit --no-fund', { cwd: sdir, stdio: 'inherit' });
+fs.copyFileSync(path.join(dd, 'lib', 'compat-preload.cjs'), path.join(st, 'compat-preload.cjs'));
+// Visual C++ runtime that PostgreSQL needs; the installer runs it quietly (downloaded by the workflow). An empty placeholder keeps local test stages working.
+if (process.env.VC_REDIST && fs.existsSync(process.env.VC_REDIST)) fs.copyFileSync(process.env.VC_REDIST, path.join(st, 'vc_redist.x64.exe')); else { console.warn('VC_REDIST not set: placeholder written'); fs.writeFileSync(path.join(st, 'vc_redist.x64.exe'), ''); }
 cp(path.join(root, 'app', 'public'), path.join(st, 'app'));
 cp(path.join(root, 'db'), path.join(st, 'db'), (s) => !/mannat/i.test(s));
 const pub = (process.env.LICENCE_PUBLIC_KEY || '').trim();
