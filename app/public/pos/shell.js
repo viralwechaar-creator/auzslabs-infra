@@ -21,7 +21,7 @@ function defaultTab(navs) {
   if (saved && navs.some((n) => n.k === saved)) return saved;
   return (navs[0] || { k: 'more' }).k;
 }
-function go(tab) { S.tab = tab; try { localStorage['pos.tab'] = tab; } catch {} closeTicketSheet(); render(); const b = $('#body'); if (b && !V[tab].fixed) b.scrollTop = 0; }
+function go(tab) { S.tab = tab; S.embedMissing = null; try { localStorage['pos.tab'] = tab; } catch {} closeTicketSheet(); render(); const b = $('#body'); if (b && !V[tab].fixed) b.scrollTop = 0; }
 const navBadge = (k) => { if (k === 'kitchen') return L('order').filter((o) => o.status !== 'void' && o.kstat === 'new').length; if (k === 'orders') return G.length; return 0; };
 
 // the wordmark is ink on a light page; dark mode swaps in the white-type lockup
@@ -106,13 +106,25 @@ function notifSheet() {
   const s = sheet({ title: 'Notifications', body: h('div', { class: 'stack s16' }, secs) });
 }
 
+// Shown instead of a screen that cannot open inside the combined app (e.g. Tables before any table exists).
+const EMBED_NAMES = { tables: 'Tables and dine-in', kitchen: 'Kitchen orders', sell: 'Billing', orders: 'Orders', reserve: 'Reservations', register: 'Register', token: 'Token board', kotrep: 'KOT report', more: 'Settings' };
+const EMBED_HINTS = { tables: 'Add your tables first: open Reports and settings > Menu > Tables, then come back here.', kitchen: 'The kitchen screen needs the Kitchen feature to be switched on for your business, and a login that can use it. Ask your owner or AUZslab.' };
+function embedMissingView() {
+  const k = S.embedMissing, name = EMBED_NAMES[k] || k;
+  return h('div', { class: 'page' }, h('div', { class: 'card pad' }, empty('tables', name + ' is not ready yet', EMBED_HINTS[k] || 'Some setup may be needed before this screen can open. Ask your owner or AUZslab.',
+    h('div', { class: 'row', style: { justifyContent: 'center', gap: '8px', marginTop: '14px', flexWrap: 'wrap' } },
+      h('button', { class: 'btn fill', onclick: async () => { try { await syncNow(); } catch {} render(); } }, 'Check again'),
+      navItems().some((n) => n.k === 'sell') ? h('button', { class: 'btn', onclick: () => { S.embedMissing = null; go('sell'); } }, 'Open Billing instead') : null))));
+}
+
 // ---------- render ----------
 function render() {
   if (S.authExpired || !S.user) return login('Your session ended. Please sign in again.');
   applyTheme(); freshCur();
   const navs = navItems();
+  if (S.embedMissing && navs.some((n) => n.k === S.embedMissing)) { S.tab = S.embedMissing; S.embedMissing = null; }   // the data arrived (sync): open the screen that was asked for
   if (!V[S.tab]) S.tab = defaultTab(navs);
-  const view = V[S.tab] || V.more, keep = {};
+  const view = S.embedMissing ? embedMissingView : (V[S.tab] || V.more), keep = {};
   for (const sel of ['#body', '.items-scroll', '.cats-col', '.tk-lines']) { const e = $('#app ' + sel); if (e) keep[sel] = e.scrollTop; }
   const banners = [standaloneBanner(), guestBanner(), readyBanner(), dispatchedBanner()].filter(Boolean);
   $('#app').replaceChildren(h('div', { class: 'shell' }, sideNav(navs),
@@ -359,7 +371,12 @@ async function boot() {
   }
   await syncNow(); getG(); checkAlerts();
   if (can('o') && !L('cat').length && !localStorage.seeded) await seed();
-  S.tab = askedTab && navItems().some((n) => n.k === askedTab) ? askedTab : defaultTab(navItems());
+  // Inside the combined app (?embed=1) a screen that is not available must say so, never open Billing or the last-used screen instead.
+  // The same page can be open in two frames at once, and the other frame may just have created the starter tables or menu: read the shared local copy before giving up.
+  const embedded = /[?&]embed=1/.test(location.search), hasTab = (k) => navItems().some((n) => n.k === k);
+  if (embedded && askedTab && !hasTab(askedTab)) { try { (await all('rec')).forEach((r) => { R[r.id] = r; }); } catch {} }
+  S.embedMissing = embedded && askedTab && !hasTab(askedTab) ? askedTab : null;
+  S.tab = askedTab && hasTab(askedTab) ? askedTab : defaultTab(navItems());
   if (isRestaurant()) loadBookings(today()).then(() => { if (S.tab === 'tables' && !isTyping()) render(); });
   loadStaffList(); loadPinStatus();
   render();
