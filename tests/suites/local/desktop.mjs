@@ -89,6 +89,14 @@ export default async function run({ browser }) {
       out = L.backup({ ...o, uploadDir: uploads, targetDir: bak });
       assert(fs.statSync(path.join(out, 'db.dump')).size > 1000 && fs.existsSync(path.join(out, 'uploads', 'photo.txt')) && fs.existsSync(path.join(out, 'about.json')), 'backup incomplete');
     }, 'critical');
+    await s.check('Automatic local backup: a free daily backup to this computer\'s own disk, with no licence add-on, keeping only the newest N', async () => {
+      const localDir = fs.mkdtempSync(path.join(os.tmpdir(), 'auzlocalbak-'));
+      if (L.setRunAs && process.getuid && process.getuid() === 0) fs.chownSync(localDir, ...[Number(spawnSync('id', ['-u', 'postgres'], { encoding: 'utf8' }).stdout), Number(spawnSync('id', ['-g', 'postgres'], { encoding: 'utf8' }).stdout)]);
+      for (let i = 0; i < 3; i++) { L.backupAndPrune({ ...o, uploadDir: uploads, targetDir: localDir, keep: 2 }); await new Promise((res) => setTimeout(res, 1100)); }
+      const left = fs.readdirSync(localDir).filter((n) => n.startsWith('AUZsStyle-backup-'));
+      assert(left.length === 2, 'should keep exactly 2, kept ' + left.length + ': ' + JSON.stringify(left));
+      for (const b of left) assert(fs.existsSync(path.join(localDir, b, 'db.dump')), b + ' missing db.dump');
+    }, 'critical');
     await s.check('After changes, a restore brings the shop back exactly as it was and sign-in still works', async () => {
       await page.evaluate(async () => { await api('sty_save_style', { p: { name: 'Added later', category: 'Tees', price: 100, mrp: 100, cost: 50, colours: ['Blue'], sizes: ['L'] } }); });
       fs.rmSync(path.join(uploads, 'photo.txt'));

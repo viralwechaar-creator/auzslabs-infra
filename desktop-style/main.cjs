@@ -134,6 +134,28 @@ async function cloudNow(manual) {
 }
 setInterval(() => { const s = cloudState(); if (win && (!s.lastOk || Date.now() - Date.parse(s.lastOk) > 20 * 3600e3) && (!s.lastTry || Date.now() - Date.parse(s.lastTry) > 3600e3)) cloudNow(false); }, 30 * 60e3).unref();
 setTimeout(() => { if (win) cloudNow(false); }, 3 * 60e3).unref();
+
+// ---- a free, automatic backup to THIS computer's own disk, once a day, with no licence add-on needed ----
+// Cloud backup above only runs for a shop that paid for the "cloud" extra -- every other shop had no automatic
+// backup at all, only the manual "Back up to a pen drive" menu item. A laptop disk failing, or a bad update,
+// should never be able to erase a shop's whole history just because nobody remembered to click that menu item.
+const localBakFile = () => path.join(dataDir, 'local-backup.json');
+const localBakState = () => { try { return JSON.parse(fs.readFileSync(localBakFile(), 'utf8')); } catch { return {}; } };
+const saveLocalBak = (o) => fs.writeFileSync(localBakFile(), JSON.stringify({ ...localBakState(), ...o }));
+const KEEP_LOCAL_BACKUPS = 7;
+let localBakBusy = false;
+async function localBackupNow() {
+  if (localBakBusy) return; localBakBusy = true;
+  try {
+    const dir = path.join(dataDir, 'backups');
+    const { out } = L.backupAndPrune({ ...pgOpts(), targetDir: dir, appVersion: app.getVersion(), keep: KEEP_LOCAL_BACKUPS });
+    saveLocalBak({ lastOk: new Date().toISOString(), lastError: null, lastPath: out });
+    log('automatic local backup made: ' + out);
+  } catch (e) { log('automatic local backup failed: ' + e.message); saveLocalBak({ lastError: e.message, lastTry: new Date().toISOString() }); }
+  finally { localBakBusy = false; }
+}
+setInterval(() => { const s = localBakState(); if (win && (!s.lastOk || Date.now() - Date.parse(s.lastOk) > 20 * 3600e3) && (!s.lastTry || Date.now() - Date.parse(s.lastTry) > 3600e3)) localBackupNow(); }, 30 * 60e3).unref();
+setTimeout(() => { if (win) localBackupNow(); }, 90 * 1000).unref();
 async function doCloudRestore() {
   let list;
   try { list = await C.listCloud(pgOpts()); } catch (e) { dialog.showErrorBox('Cloud storage', e.message); return; }
@@ -154,7 +176,8 @@ async function showLicence() {
   try {
     const s = (await getJson(`http://127.0.0.1:${port}/licence/status`)).json;
     const extras = s.addons ? Object.entries(s.addons).filter(([, v]) => v).map(([k]) => ({ cloud: 'Cloud storage', whatsapp: 'WhatsApp automation', store: 'Online store' }[k])).join(', ') || 'none' : '';
-    dialog.showMessageBox(win, { type: 'info', message: s.state === 'none' ? 'Not activated yet' : 'Licensed to ' + s.shop, detail: s.state === 'none' ? 'Type the licence code AUZslab gave you on the first screen.' : `Plan ends on ${s.end} (${s.daysLeft >= 0 ? s.daysLeft + ' days left' : 'ended'}).\nExtras: ${extras}.\n${s.addons && s.addons.cloud ? 'Last cloud backup: ' + (cloudState().lastOk ? new Date(cloudState().lastOk).toLocaleString() : 'none yet') + (cloudState().lastError ? ' (last problem: ' + cloudState().lastError + ')' : '') + '.\n' : ''}To renew, ask AUZslab for a new code and type it in the app when asked.` });
+    const lb = localBakState();
+    dialog.showMessageBox(win, { type: 'info', message: s.state === 'none' ? 'Not activated yet' : 'Licensed to ' + s.shop, detail: s.state === 'none' ? 'Type the licence code AUZslab gave you on the first screen.' : `Plan ends on ${s.end} (${s.daysLeft >= 0 ? s.daysLeft + ' days left' : 'ended'}).\nExtras: ${extras}.\nLast automatic backup on this computer: ${lb.lastOk ? new Date(lb.lastOk).toLocaleString() : 'none yet'}${lb.lastError ? ' (last problem: ' + lb.lastError + ')' : ''}.\n${s.addons && s.addons.cloud ? 'Last cloud backup: ' + (cloudState().lastOk ? new Date(cloudState().lastOk).toLocaleString() : 'none yet') + (cloudState().lastError ? ' (last problem: ' + cloudState().lastError + ')' : '') + '.\n' : ''}To renew, ask AUZslab for a new code and type it in the app when asked.` });
   } catch (e) { dialog.showErrorBox('Licence', e.message); }
 }
 
