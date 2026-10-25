@@ -133,6 +133,21 @@ async function shareWa(sale, phone) {
   if (w) w.location.href = url; else window.open(url, '_blank', 'noopener');
 }
 
+// ---- backup, all in one Excel file (not a code/JSON dump) ----
+async function backupExcel() {
+  const [styles, customers, sales] = await Promise.all([
+    api('sty_catalog', { p_branch: null }), api('sty_list_customers', { p_q: '', p_limit: 20000 }).catch(() => []), api('sty_list_sales', { p: { limit: 20000 } }).catch(() => []),
+  ]);
+  const invHead = [t('Style'), t('Category'), t('Brand'), t('Colour'), t('Size'), t('Barcode'), t('SKU'), t('Cost'), t('Price'), t('MRP'), t('Stock'), t('Active')];
+  const invRows = []; (styles || []).forEach((s) => (s.variants || []).forEach((x) => invRows.push([s.name, s.category || '', s.brand || '', x.colour || '', x.size || '', x.barcode || '', x.sku || '', x.cost ?? s.cost ?? 0, x.price ?? s.price ?? 0, s.mrp ?? 0, x.stock ?? 0, x.active === false ? t('No') : t('Yes')])));
+  const custHead = [t('Name'), t('Phone'), t('Points'), t('Store credit'), t('City'), t('Birthday'), t('Anniversary'), t('Notes')];
+  const custRows = (customers || []).map((c) => [c.name || '', c.phone || '', c.points || 0, c.credit || 0, c.city || '', c.birthday ? String(c.birthday).slice(0, 10) : '', c.anniversary ? String(c.anniversary).slice(0, 10) : '', c.notes || '']);
+  const saleHead = [t('Bill no.'), t('Date'), t('Customer'), t('Staff'), t('Units'), t('Discount'), t('Total'), t('Paid'), t('Status')];
+  const saleRows = (sales || []).map((x) => [x.number || '', new Date(x.at).toLocaleString('en-GB'), x.customer || '', x.staff || '', x.units || 0, x.discount || 0, x.total || 0, x.paid || 0, x.status || '']);
+  const slug = (S.dash && S.dash.tenant && S.dash.tenant.slug) || 'shop';
+  exportXLSXMulti('auzsstyle-backup-' + slug + '-' + new Date().toISOString().slice(0, 10), [[t('Inventory'), invHead, invRows], [t('Customers'), custHead, custRows], [t('Sales'), saleHead, saleRows]]);
+}
+
 // ---- pickers ----
 function customerPicker(onPick) {
   let list = [], q = '';
