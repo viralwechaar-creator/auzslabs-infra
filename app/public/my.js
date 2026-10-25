@@ -322,6 +322,8 @@
         return workspace(r.data, tr);
       }
     }
+    /* the builder now lives on the Why AUZslab page (one page); ?classic=1 keeps this copy for tests and support */
+    if (!/[?&]classic=1/.test(location.search)) { location.replace('https://auzslab.in/platform.html#build'); return; }
     HAS_SESSION = !!sess; show('build');
     if (!typOk) { var t1 = $('types'); t1.textContent = ''; t1.append(el('p', { class: 'err', text: 'We could not load the business types. Nothing was changed. Check your connection and try again.' }), el('button', { class: 'btn ghost', type: 'button', text: 'Try again', onclick: function () { location.reload(); } })); $('tiles').textContent = ''; $('go').textContent = ''; return; }
     if (!catOk) { var t0 = $('tiles'); t0.textContent = ''; t0.append(el('p', { class: 'err', text: 'We could not load the list of features. Nothing was changed. Check your connection and try again.' }), el('button', { class: 'btn ghost', type: 'button', text: 'Try again', onclick: function () { location.reload(); } })); $('go').textContent = ''; return; }
