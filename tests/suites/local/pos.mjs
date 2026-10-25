@@ -347,6 +347,19 @@ export default async function run({ browser, stack }) {
     await page.evaluate(() => { localStorage['pos.look'] = 'classic'; localStorage['ui.modern'] = '0'; document.documentElement.classList.remove('ui-counter', 'ui-modern'); render(); }); await page.setViewportSize({ width: 1280, height: 900 });
   });
 
+  await s.check('Embedded deep link to an unavailable screen says so instead of opening Billing; standalone and available screens are unchanged', async () => {
+    const base = stack.url('testcafe', '/index.html');
+    await page.goto(base + '?tab=token&embed=1'); await page.waitForSelector('.page .empty, .shell', { timeout: 15000 }); await page.waitForTimeout(800);
+    const t1 = await page.locator('body').innerText(); assert(/Token board is not ready yet/.test(t1), 'no clear message for an unavailable embedded screen: ' + t1.slice(0, 200));
+    assert(await page.locator('.items .tile').count() === 0, 'Billing must not open in its place');
+    await page.goto(base + '?tab=tables&embed=1'); await page.waitForSelector('.tbl-tile', { timeout: 15000 });
+    assert(!/is not ready yet/.test(await page.locator('body').innerText()), 'an available screen showed the message');
+    await page.goto(base + '?tab=token'); await page.waitForSelector('.shell', { timeout: 15000 }); await page.waitForTimeout(600);
+    assert(!/is not ready yet/.test(await page.locator('body').innerText()), 'standalone navigation must keep its normal fallback');
+    await page.goto(base + '?tab=token&embed=1'); await page.waitForSelector('.page .empty', { timeout: 15000 });
+    await page.locator('button', { hasText: 'Open Billing instead' }).click(); await page.waitForSelector('.items .tile', { timeout: 10000 });
+  });
+
   // the 409 from the deliberate double booking above is the expected answer, not an error
   await s.check('No JavaScript errors during the whole workflow', async () => { const bad = errs.filter((e) => !/print|callback|WebSocket|ERR_CERT|tunnel/i.test(e) && !/icon-[a-z]+\.svg.*ERR_ABORTED/.test(e) && !/409.*\/db\/bookings/.test(e)); assert(!bad.length, bad.slice(0, 3).join(' | ')); }, 'major');
   await ctx.close(); s.done();
