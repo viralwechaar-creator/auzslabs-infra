@@ -420,6 +420,7 @@ export const RPC = {
   sty_context: { params: [], auth: true },
   sty_save_settings: { params: ['p'], jsonb: ['p'], auth: true },
   sty_save_branch: { params: ['p'], jsonb: ['p'], auth: true },
+  sty_reserve_barcodes: { params: ['p_n'], defaults: { p_n: 200 }, auth: true },
   sty_catalog: { params: ['p_branch'], defaults: { p_branch: null }, auth: true },
   sty_save_style: { params: ['p'], jsonb: ['p'], auth: true },
   sty_bulk_edit: { params: ['p'], jsonb: ['p'], auth: true },

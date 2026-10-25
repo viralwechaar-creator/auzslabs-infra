@@ -12,12 +12,12 @@ begin
   rates := (me()->>'role') in ('owner', 'manager') or coalesce((select staff_see_purchase_rates from mob_settings where tenant_id = tid), false);
   with lines as (
     select s.id sale_id, s.bill_no, s.created_at sold_at, it->>'name' item_name, s.customer_name,
-           coalesce((it->>'qty')::numeric, 1) qty, (it->>'price')::numeric price, coalesce((it->>'costPrice')::numeric, 0) cost
+           coalesce((it->>'qty')::numeric, 1) qty, (it->>'price')::numeric price, coalesce((it->>'costPrice')::numeric, 0) as cost
     from mob_sales s cross join lateral jsonb_array_elements(s.items) it
     where s.tenant_id = tid and s.staff_id = app_uid() and not s.voided and s.created_at >= from_ts and s.created_at < to_ts
   ), tot as (
     select count(distinct sale_id) bills, count(*) n, coalesce(sum(round(price * qty, 2)), 0) sale,
-           coalesce(sum(round((price - cost) * qty, 2)), 0) profit, coalesce(sum(round(cost * qty, 2)), 0) cost from lines
+           coalesce(sum(round((price - cost) * qty, 2)), 0) profit, coalesce(sum(round(cost * qty, 2)), 0) as cost from lines
   )
   select jsonb_build_object(
     'can_see_cost', rates,

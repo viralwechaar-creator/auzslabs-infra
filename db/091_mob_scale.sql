@@ -151,7 +151,7 @@ begin
   with lines as (
     select s.id sale_id, s.bill_no, s.created_at sold_at, it, s.customer_name, s.staff_id sold_by_id,
            u.imei, pu.created_at purchased_at, pu.staff_id purchased_by_id, v.name vendor_name,
-           coalesce((it->>'qty')::numeric, 1) qty, (it->>'price')::numeric price, coalesce((it->>'costPrice')::numeric, 0) cost
+           coalesce((it->>'qty')::numeric, 1) qty, (it->>'price')::numeric price, coalesce((it->>'costPrice')::numeric, 0) as cost
     from mob_sales s
     cross join lateral jsonb_array_elements(s.items) it
     left join mob_item_units u on u.id = nullif(it->>'unitId', '')::uuid
@@ -161,7 +161,7 @@ begin
       and s.created_at >= from_ts and s.created_at < to_ts
       and (p_staff_id is null or s.staff_id = p_staff_id or pu.staff_id = p_staff_id)
   ), tot as (
-    select count(*) n, coalesce(sum(round(price * qty, 2)), 0) sale, coalesce(sum(round(cost * qty, 2)), 0) cost,
+    select count(*) n, coalesce(sum(round(price * qty, 2)), 0) sale, coalesce(sum(round(cost * qty, 2)), 0) as cost,
            coalesce(sum(round((price - cost) * qty, 2)), 0) profit from lines
   ), top as (
     select * from lines order by sold_at desc limit greatest(coalesce(p_limit, 2000), 1)

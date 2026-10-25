@@ -61,7 +61,17 @@ export async function handle(ctx) {
         if (!cfg.auth) throw new HttpError(400, 'this function cannot be sent in a batch');
         if (fnName === 'submit_signup_request' || fnName === 'submit_addon_request') await requireVerifiedEmail(user.id);
         const args = op.args && typeof op.args === 'object' ? op.args : {};
-        const data = await withAuth(user.id, (client) => callRpc(client, fnName, args));
+        // AUZsStyle changes carry a phone-made id; the answer is kept so a resend (lost reply) is applied once (db/266)
+        const once = fnName.startsWith('sty_') && id;
+        const data = await withAuth(user.id, async (client) => {
+          if (once) {
+            const seen = (await client.query('select sty_op_get($1) as r', [id])).rows[0].r;
+            if (seen && seen.seen) return seen.result;
+          }
+          const out = await callRpc(client, fnName, args);
+          if (once) await client.query('select sty_op_put($1, $2, $3::jsonb)', [id, fnName, JSON.stringify(out === undefined ? null : out)]);
+          return out;
+        });
         results.push({ id, ok: true, data });
       } catch (e) {
         const { status, message } = httpFromError(e);

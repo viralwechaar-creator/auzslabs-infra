@@ -69,7 +69,7 @@ page('settings', {
     const paintBr = () => clear(brHost).append(...(S.ctx.branches || []).map((b) => liRow({ icon: 'building', title: b.name, sub: (b.kind === 'warehouse' ? t('Warehouse') : t('Shop')) + (b.isMain ? ' · ' + t('Main') : ''), chevron: true, onclick: () => branchForm(b) })));
     function branchForm(b) {
       const nm = input({ value: b ? b.name : '' }), kd = selectEl([['shop', t('Shop')], ['warehouse', t('Warehouse')]], b ? b.kind : 'shop'), ad = input({ value: b ? b.address || '' : '' });
-      sheet({ title: b ? t('Edit branch') : t('New branch'), body: h('div', { class: 'grid' }, field(t('Name'), nm), field(t('Type'), kd), field(t('Address'), ad)), actions: [{ label: t('Save'), primary: true, onclick: async (close) => { S.ctx = await api('sty_save_branch', { p: { id: b && b.id, name: nm.value, kind: kd.value, address: ad.value } }); close(); location.reload(); } }] });
+      sheet({ title: b ? t('Edit branch') : t('New branch'), body: h('div', { class: 'grid' }, field(t('Name'), nm), field(t('Type'), kd), field(t('Address'), ad)), actions: [{ label: t('Save'), primary: true, onclick: async (close) => { S.ctx = await api('sty_save_branch', { p: { id: b && b.id, newId: b ? undefined : uid(), name: nm.value, kind: kd.value, address: ad.value } }); close(); location.reload(); } }] });
     }
     paintBr();
     const dc = input({ type: 'date', value: st.dayCloseDate ? String(st.dayCloseDate).slice(0, 10) : '' });

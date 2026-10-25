@@ -42,7 +42,7 @@ begin
     'discount', coalesce((select sum(discount) from sty_sales where tenant_id = tid and status <> 'void' and (b is null or branch_id = b) and (at at time zone 'Asia/Kolkata')::date between d1 and d2), 0),
     'returns', (select jsonb_build_object('count', count(*), 'amount', coalesce(sum(refund), 0)) from sty_returns where tenant_id = tid and (b is null or branch_id = b) and (at at time zone 'Asia/Kolkata')::date between d1 and d2),
     'byPayment', coalesce((select jsonb_agg(jsonb_build_object('mode', mode, 'amount', amt) order by amt desc) from (
-        select e->>'mode' mode, sum((e->>'amount')::numeric) amt from sty_sales s, jsonb_array_elements(s.payments) e
+        select e->>'mode' as mode, sum((e->>'amount')::numeric) as amt from sty_sales s, jsonb_array_elements(s.payments) e
         where s.tenant_id = tid and s.status <> 'void' and (b is null or s.branch_id = b) and (s.at at time zone 'Asia/Kolkata')::date between d1 and d2 group by 1) x), '[]'::jsonb),
     'daily', coalesce((select jsonb_agg(jsonb_build_object('day', day, 'revenue', r, 'units', u) order by day) from (
         select day, sum(revenue) r, sum(kept) u from sty_sold_lines(tid, d1, d2, b) group by day) x), '[]'::jsonb),
@@ -70,7 +70,7 @@ begin
                     where m.tenant_id = tid and st.category = s.category and (b is null or m.branch_id = b)), 0)::int stock
         from sty_sold_lines(tid, d1, d2, b) s group by s.category) x), '[]'::jsonb),
     'byStyle', coalesce((select jsonb_agg(row_to_json(x) order by x.units desc, x.revenue desc) from (
-        select s.style_id id, s.style_name name, max(s.category) category, sum(s.kept)::int units, sum(s.revenue) revenue, sum(s.profit) profit,
+        select s.style_id id, s.style_name as name, max(s.category) category, sum(s.kept)::int units, sum(s.revenue) revenue, sum(s.profit) profit,
           round(sum(s.kept)::numeric / days, 2) per_day,
           (select size from sty_sold_lines(tid, d1, d2, b) q where q.style_id = s.style_id group by size order by sum(kept) desc limit 1) best_size,
           (select colour from sty_sold_lines(tid, d1, d2, b) q where q.style_id = s.style_id and colour <> '' group by colour order by sum(kept) desc limit 1) best_colour,
@@ -87,7 +87,7 @@ begin
     'byHour', coalesce((select jsonb_agg(row_to_json(x) order by x.hour) from (
         select hour, sum(revenue) revenue, sum(kept)::int units from sty_sold_lines(tid, d1, d2, b) group by hour) x), '[]'::jsonb),
     'variants', coalesce((select jsonb_agg(row_to_json(x) order by x.units desc, x.revenue desc) from (
-        select s.variant_id id, s.style_name name, s.category, s.colour, s.size, s.barcode, sum(s.kept)::int units, sum(s.revenue) revenue, sum(s.profit) profit,
+        select s.variant_id id, s.style_name as name, s.category, s.colour, s.size, s.barcode, sum(s.kept)::int units, sum(s.revenue) revenue, sum(s.profit) profit,
           st.stock, st.received,
           case when st.received > 0 then round(sum(s.kept)::numeric * 100 / st.received, 1) end sell_through,
           round(sum(s.kept)::numeric / days, 2) per_day,
@@ -105,7 +105,7 @@ begin
         select size, sum(qty)::int sold, sum(qty - kept)::int returned, round(sum(qty - kept)::numeric * 100 / nullif(sum(qty), 0), 1) rate
         from sty_sold_lines(tid, d1, d2, b) where size <> '' group by size) x), '[]'::jsonb),
     'staff', coalesce((select jsonb_agg(row_to_json(x) order by x.revenue desc) from (
-        select s.staff_id id, coalesce(nullif(pr.name, ''), pr.email, 'Staff') name, count(distinct s.sale_id)::int bills, sum(s.kept)::int units, sum(s.revenue) revenue, sum(s.profit) profit,
+        select s.staff_id id, coalesce(nullif(pr.name, ''), pr.email, 'Staff') as name, count(distinct s.sale_id)::int bills, sum(s.kept)::int units, sum(s.revenue) revenue, sum(s.profit) profit,
           round(sum(s.revenue) / nullif(count(distinct s.sale_id), 0), 0) avg_bill,
           coalesce(t.target, 0) target, coalesce(t.commission_pct, 0) commission_pct,
           round(sum(s.revenue) * coalesce(t.commission_pct, 0) / 100, 2) commission
@@ -145,7 +145,7 @@ begin
     'stockOutSelling', coalesce((select jsonb_agg(row_to_json(x) order by x.per_day desc) from (
         select id, name, category, colour, size, round(u30 / 30, 2) per_day, last_sale from v where active and s_active and stock <= 0 and u30 > 0 limit 30) x), '[]'::jsonb),
     'slow', coalesce((select jsonb_agg(row_to_json(x) order by x.value desc) from (
-        select id, name, category, colour, size, stock, round(stock * cost, 0) value, today - coalesce(last_sale, first_in, today) days_idle
+        select id, name, category, colour, size, stock, round(stock * cost, 0) as value, today - coalesce(last_sale, first_in, today) days_idle
         from v where active and s_active and stock > 0 and today - coalesce(last_sale, first_in, today) >= st.slow_days order by stock * cost desc limit 40) x), '[]'::jsonb),
     'overstock', coalesce((select jsonb_agg(row_to_json(x) order by x.cover_days desc) from (
         select id, name, category, colour, size, stock, round(stock / (u30 / 30), 0) cover_days from v where active and s_active and u30 > 0 and stock / (u30 / 30) > 120 limit 20) x), '[]'::jsonb),

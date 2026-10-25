@@ -337,7 +337,7 @@ begin
     'totalCost', coalesce((select sum(val) from v), 0), 'tiedCost', coalesce((select sum(val) from tagged where tag is not null), 0),
     'tiedRetail', coalesce((select sum(retail) from tagged where tag is not null), 0), 'slowDays', slow,
     'byTag', coalesce((select jsonb_agg(jsonb_build_object('tag', tag, 'cost', c, 'units', u, 'variants', n) order by c desc) from (select tag, sum(val) c, sum(stock) u, count(*) n from tagged where tag is not null group by tag) q), '[]'::jsonb),
-    'oldest', coalesce((select jsonb_agg(row_to_json(o)) from (select name, colour, size, stock, round(val) cost, idle from tagged order by idle desc, val desc limit 15) o), '[]'::jsonb),
+    'oldest', coalesce((select jsonb_agg(row_to_json(o)) from (select name, colour, size, stock, round(val) as cost, idle from tagged order by idle desc, val desc limit 15) o), '[]'::jsonb),
     'designs', coalesce((select jsonb_agg(jsonb_build_object('styleId', style_id, 'name', name, 'category', category, 'cost', round(c), 'retail', round(r), 'units', u, 'variants', n, 'maxIdle', mi, 'tag', tg,
         'action', case tg when 'Seasonal risk' then 'Review a markdown before the season ends' when 'Stagnant' then 'Markdown or discontinuation review' when 'Excess' then 'Stop reordering; consider a promotion' else 'Watch; no purchase for now' end,
         'clearMonths', case when rate > 0 then round(u / (rate * 30), 1) end) order by c desc)
@@ -414,8 +414,8 @@ begin
   see := sty_perm('sty_manage') or coalesce((select staff_see_cost from sty_settings where tenant_id = tid), false);
   ro := sty_intel_reorder(p); lost := sty_intel_lost(p); ds := sty_intel_designs(p);
   -- 1) reorder, grouped by design, sizes ordered by urgency
-  for r in select (i->>'name') name, (i->>'colour') colour, sum((i->>'suggestQty')::int) qty,
-        string_agg((i->>'size') || ' (' || (i->>'suggestQty') || ')', ', ' order by (i->>'stock')::int, (i->>'size')) sizes, sum(coalesce((i->>'estCost')::numeric, 0)) cost,
+  for r in select (i->>'name') as name, (i->>'colour') colour, sum((i->>'suggestQty')::int) qty,
+        string_agg((i->>'size') || ' (' || (i->>'suggestQty') || ')', ', ' order by (i->>'stock')::int, (i->>'size')) sizes, sum(coalesce((i->>'estCost')::numeric, 0)) as cost,
         min(i->>'confidence') conf, min(i->>'stockoutDate') soonest, bool_or(i->>'basis' <> 'own') fallback
       from jsonb_array_elements(ro->'items') i where (i->>'suggestQty')::int > 0 group by 1, 2 order by sum((i->>'suggestQty')::int) desc limit 6 loop
     out := out || jsonb_build_object('kind', 'reorder', 'title', 'Reorder ' || r.name || coalesce(' in ' || nullif(r.colour, ''), ''),
@@ -424,28 +424,28 @@ begin
       'assumptions', 'Incoming orders are not tracked, so check what is already on its way. Delivery time and cover days come from your settings.', 'alternative', 'Order only the sizes that are already out of stock.');
   end loop;
   -- 2) do not reorder: seasonal block
-  for r in select (i->>'name') name, (i->>'reason') reason from jsonb_array_elements(ro->'items') i where (i->>'suggestQty')::int = 0 limit 3 loop
+  for r in select (i->>'name') as name, (i->>'reason') reason from jsonb_array_elements(ro->'items') i where (i->>'suggestQty')::int = 0 limit 3 loop
     out := out || jsonb_build_object('kind', 'hold', 'title', 'Do not reorder ' || r.name, 'text', r.reason, 'confidence', 'high', 'period', d1 || ' to ' || d2, 'assumptions', 'Season end date set on the design.');
   end loop;
   -- 3) money stuck
   if see then
     cap := sty_intel_capital(p);
-    for r in select (d->>'name') name, (d->>'cost')::numeric cost, (d->>'units')::int units, (d->>'tag') tag, (d->>'action') action from jsonb_array_elements(cap->'designs') d order by (d->>'cost')::numeric desc limit 3 loop
+    for r in select (d->>'name') as name, (d->>'cost')::numeric as cost, (d->>'units')::int units, (d->>'tag') tag, (d->>'action') as action from jsonb_array_elements(cap->'designs') d order by (d->>'cost')::numeric desc limit 3 loop
       out := out || jsonb_build_object('kind', 'capital', 'title', r.name || ': ' || round(r.cost) || ' is tied up', 'text', r.units || ' units are tagged ' || lower(r.tag) || '. ' || r.action || '.',
         'impact', 'Cost value ' || round(r.cost), 'confidence', 'medium', 'period', 'stock held today', 'assumptions', 'Nothing is discounted or written off automatically.', 'alternative', 'Wait one more week of sales before acting.');
     end loop;
   end if;
   -- 4) lost demand
-  for r in select (v->>'name') name, (v->>'colour') colour, (v->>'size') size, (v->>'stockoutDays') so, (v->>'windowDays') wd, (v->>'estLostUnits') est, (v->>'confidence') conf
+  for r in select (v->>'name') as name, (v->>'colour') colour, (v->>'size') size, (v->>'stockoutDays') so, (v->>'windowDays') wd, (v->>'estLostUnits') est, (v->>'confidence') conf
       from jsonb_array_elements(lost->'variants') v where v->>'estLostUnits' is not null order by (v->>'estLostUnits')::numeric desc limit 3 loop
     out := out || jsonb_build_object('kind', 'lost', 'title', r.name || ' ' || coalesce(r.colour, '') || ' ' || coalesce(r.size, '') || ' was unavailable', 'text', 'It was out of stock on ' || r.so || ' of ' || r.wd || ' days. Estimated lost sales: about ' || r.est || ' units (an estimate, not recorded sales).',
       'confidence', r.conf, 'period', d1 || ' to ' || d2, 'assumptions', 'Demand on in-stock days is assumed to continue on the stockout days.');
   end loop;
   -- 5) winners and discount dependence
-  for r in select (d->>'name') name, (d->>'score') score, (d->>'class') cls, (d->>'confidence') conf from jsonb_array_elements(ds->'designs') d where d->>'class' = 'High-demand winner' limit 2 loop
+  for r in select (d->>'name') as name, (d->>'score') score, (d->>'class') cls, (d->>'confidence') conf from jsonb_array_elements(ds->'designs') d where d->>'class' = 'High-demand winner' limit 2 loop
     out := out || jsonb_build_object('kind', 'winner', 'title', r.name || ' is a winner', 'text', 'Score ' || r.score || ' out of 100: strong demand, healthy sell-through. Keep it in stock in the sizes that sell.', 'confidence', r.conf, 'period', d1 || ' to ' || d2, 'assumptions', 'Score weights are set in Settings and can be changed.');
   end loop;
-  for r in select (d->>'name') name, (d->>'fullPricePct') fp, (d->>'confidence') conf from jsonb_array_elements(ds->'designs') d where d->>'class' = 'Discount-dependent' limit 2 loop
+  for r in select (d->>'name') as name, (d->>'fullPricePct') fp, (d->>'confidence') conf from jsonb_array_elements(ds->'designs') d where d->>'class' = 'Discount-dependent' limit 2 loop
     out := out || jsonb_build_object('kind', 'discount', 'title', r.name || ' sells mostly with discounts', 'text', 'Only ' || r.fp || '% of units sold at full price. Think twice before buying more at the same cost.', 'confidence', r.conf, 'period', d1 || ' to ' || d2);
   end loop;
   return jsonb_build_object('from', d1, 'to', d2, 'items', out, 'note', 'Every line comes from your own sales, stock and purchases. Nothing is bought or priced for you: you approve every action.');

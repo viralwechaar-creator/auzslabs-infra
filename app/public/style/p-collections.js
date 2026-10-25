@@ -29,7 +29,7 @@ function collectionForm(c, done) {
   sheet({ title: c ? t('Edit collection') : t('New collection'), body: h('div', { class: 'grid' }, field(t('Name'), nm), field(t('Note'), note), h('div', { class: 'field' }, h('label', null, t('Collection picture')), h('div', { class: 'hint' }, t('Shown on the store for this collection. Without one, a picture of a style in it is used.')), imgHost)),
     actions: [{ label: t('Save'), primary: true, onclick: async (close) => {
       if (!nm.value.trim()) { toast(t('Enter a name'), { err: true }); return false; }
-      try { const r = await api('sty_collection_save', { p: { id: c && c.id, name: nm.value, note: note.value, image: img } }); COL.at = 0; close(); const list = await loadCollections(true); const made = list.find((x) => x.id === r.id); toast(t('Saved')); made ? collectionSheet(made, done) : collectionsSheet(done); }
+      try { const r = await api('sty_collection_save', { p: { id: c && c.id, newId: c ? undefined : uid(), name: nm.value, note: note.value, image: img } }); COL.at = 0; close(); const list = await loadCollections(true); const made = list.find((x) => x.id === r.id); toast(t('Saved')); made ? collectionSheet(made, done) : collectionsSheet(done); }
       catch (e) { toast(e.message || t('Failed'), { err: true }); return false; }
     } }] });
 }
@@ -81,7 +81,7 @@ async function styleCollectionsSheet(s, done) {
     h('button', { class: 'btn', type: 'button', onclick: () => { const nm = input({ placeholder: t('Summer 2026') });
       sheet({ title: t('New collection'), body: h('div', { class: 'grid' }, field(t('Name'), nm)), actions: [{ label: t('Create and add'), primary: true, onclick: async (close) => {
         if (!nm.value.trim()) { toast(t('Enter a name'), { err: true }); return false; }
-        try { const r = await api('sty_collection_save', { p: { name: nm.value } }); await api('sty_collection_members', { p_id: r.id, p_add: [s.id] }); COL.at = 0; close(); toast(t('Saved')); done && done(); }
+        try { const r = await api('sty_collection_save', { p: { newId: uid(), name: nm.value } }); await api('sty_collection_members', { p_id: r.id, p_add: [s.id] }); COL.at = 0; close(); toast(t('Saved')); done && done(); }
         catch (e) { toast(e.message || t('Failed'), { err: true }); return false; } } }] }); } }, icon('plus', 18), t('New collection'))),
     actions: can('sty_manage') ? [{ label: t('Save'), primary: true, onclick: async (close) => {
       try {

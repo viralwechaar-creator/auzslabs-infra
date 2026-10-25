@@ -414,7 +414,7 @@ begin
            u.imei, coalesce(pu.created_at, case when it ? 'partCost' then s.created_at end) purchased_at,
            coalesce(pu.staff_id, case when it ? 'partCost' then s.staff_id end) purchased_by_id, coalesce(v.name, v2.name) vendor_name,
            (it ? 'partCost' or it ? 'partName') is_repair, nullif(it->>'partName', '') part_name,
-           coalesce((it->>'qty')::numeric, 1) qty, (it->>'price')::numeric price, coalesce((it->>'costPrice')::numeric, 0) cost
+           coalesce((it->>'qty')::numeric, 1) qty, (it->>'price')::numeric price, coalesce((it->>'costPrice')::numeric, 0) as cost
     from mob_sales s
     cross join lateral jsonb_array_elements(s.items) it
     left join mob_item_units u on u.id = nullif(it->>'unitId', '')::uuid
@@ -425,7 +425,7 @@ begin
       and s.created_at >= from_ts and s.created_at < to_ts
       and (p_staff_id is null or s.staff_id = p_staff_id or pu.staff_id = p_staff_id)
   ), tot as (
-    select count(*) n, coalesce(sum(round(price * qty, 2)), 0) sale, coalesce(sum(round(cost * qty, 2)), 0) cost,
+    select count(*) n, coalesce(sum(round(price * qty, 2)), 0) sale, coalesce(sum(round(cost * qty, 2)), 0) as cost,
            coalesce(sum(round((price - cost) * qty, 2)), 0) profit from lines
   ), top as (
     select * from lines order by sold_at desc limit greatest(coalesce(p_limit, 2000), 1)

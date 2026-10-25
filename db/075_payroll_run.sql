@@ -1010,8 +1010,8 @@ begin
   if b.status = 'cancelled' then raise exception 'This batch was cancelled'; end if;
   d := coalesce(nullif(p->>'paid_on', '')::date, pay_today(tid));
   if d > pay_today(tid) then raise exception 'The payment date cannot be in the future'; end if;
-  for l in select bl.*, x.st, x.ref xref, x.reason from pay_batch_lines bl
-           left join lateral (select y->>'status' st, y->>'ref' ref, y->>'reason' reason from jsonb_array_elements(coalesce(p->'lines', '[]')) y where (y->>'id')::uuid = bl.id limit 1) x on true
+  for l in select bl.*, x.st, x.ref as xref, x.reason from pay_batch_lines bl
+           left join lateral (select y->>'status' st, y->>'ref' as ref, y->>'reason' reason from jsonb_array_elements(coalesce(p->'lines', '[]')) y where (y->>'id')::uuid = bl.id limit 1) x on true
            where bl.batch_id = b.id and bl.status = 'pending' loop
     st := coalesce(l.st, p->>'all');
     if st is null then continue; end if;

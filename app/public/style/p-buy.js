@@ -30,7 +30,7 @@ function purchaseSheet(p) {
 function supplierForm(s, done) {
   const f = { name: input({ value: s ? s.name : '' }), phone: input({ value: s ? s.phone || '' : '', mode: 'tel' }), gstin: input({ value: s ? s.gstin || '' : '' }), contact: input({ value: s ? s.contact || '' : '' }) };
   sheet({ title: s ? t('Edit supplier') : t('New supplier'), body: h('div', { class: 'grid' }, field(t('Name'), f.name), field(t('Phone'), f.phone), field(t('Contact person'), f.contact), field('GSTIN', f.gstin)),
-    actions: [{ label: t('Save'), primary: true, onclick: async (close) => { if (!f.name.value.trim()) { toast(t('Enter a name'), { err: true }); return false; } const r = await api('sty_save_supplier', { p: { id: s && s.id, name: f.name.value, phone: f.phone.value, gstin: f.gstin.value, contact: f.contact.value } }); close(); done && done(r); } }] });
+    actions: [{ label: t('Save'), primary: true, onclick: async (close) => { if (!f.name.value.trim()) { toast(t('Enter a name'), { err: true }); return false; } const r = await api('sty_save_supplier', { p: { id: s && s.id, newId: s ? undefined : uid(), name: f.name.value, phone: f.phone.value, gstin: f.gstin.value, contact: f.contact.value } }); close(); done && done(r); } }] });
 }
 function supplierSheet(s, done) {
   const amt = input({ type: 'number', mode: 'decimal', value: s.due > 0 ? s.due : '', placeholder: '0' }), mode = selectEl([['cash', t('Cash')], ['upi', 'UPI'], ['bank', t('Bank')]], 'cash');
