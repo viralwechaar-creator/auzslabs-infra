@@ -36,9 +36,19 @@ code from AUZslab and stops when the plan ends. Cloud storage, WhatsApp automati
   The installer is not code-signed, so Windows SmartScreen shows "unknown publisher" (More info -> Run anyway) until a code-signing certificate is bought.
 - **Not verified:** the Electron window, the NSIS installer and the Windows PostgreSQL binaries have never been run (no Windows here): the first GitHub build and the first install on a real PC are the true tests.
 
+## Cloud storage extra (db/269, server/src/routes/cloud.js, desktop-style/lib/cloud.cjs + pack.cjs)
+- **What it is:** a safe copy of the shop in AUZslab's cloud, not a live two-way sync. The computer stays the master. About once a day (and on "Shop > Back up to the cloud now") the app takes a backup (database + pictures),
+  packs it into one `.tgz` (own tar writer, no outside tools) and uploads it with the licence code as the password. "Shop > Restore from the cloud" brings back one of the last copies (also onto a new computer after typing the same licence code).
+- **Rules (server-side):** the code must be ours (signature), include the **cloud** extra, and the plan must be running for uploads (3 days grace); listing and downloading still work for 60 days after it ends. A shop keeps one
+  identity (lineage) across renewals: in Admin -> Licences choose "Renewal for <shop>" when making the new code. The newest 14 copies are kept (`CLOUD_BACKUP_KEEP`), 400 MB max each (`CLOUD_BACKUP_MAX_MB`),
+  files in the docker volume `cloud_backups_data` (`CLOUD_BACKUP_ROOT`, api only, never served by Caddy). Upload is checked with a SHA-256.
+- Admin -> Licences shows copies, size and last backup per shop (use it to price storage). The computer shows the last cloud backup under Shop > Licence.
+- **Not built:** a live mirror (needed before online-store hosting or WhatsApp automation can read the shop's data in the cloud), two-computer use of one shop, encrypting backups with a shop-held key (they are encrypted in transit only; AUZslab can read them).
+- Test: desktop suite check "Cloud storage" (upload, list, refusals for no-cloud / foreign / ended codes, restore). Needs: `docker compose up -d --build api` (new route + volume).
+
 ## Not built yet (in order)
 1. Windows 7 build (see above).
-2. **Cloud storage extra:** a sync between the computer and the cloud when the extra is paid for and the computer is online (two-way; the offline queue already makes changes idempotent).
+2. A live cloud mirror (see above).
 3. **WhatsApp automation and online store hosting extras:** need the cloud, so they are enabled by the extra flags in the licence and work only while connected.
 4. Auto-update of the installed app, code signing, an uninstaller option that also removes the data.
 5. Licence weaknesses to accept or fix later: a technical person could edit the installed files to skip the check; codes are not tied to one computer (add a computer id to the code if sharing becomes a problem).

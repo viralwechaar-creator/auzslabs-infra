@@ -9,6 +9,7 @@ const http = require('node:http');
 const os = require('node:os');
 const path = require('node:path');
 const L = require('./lib/setup.cjs');
+const C = require('./lib/cloud.cjs');
 
 const RES = app.isPackaged ? process.resourcesPath : path.join(__dirname, 'stage');
 const paths = { pgBin: path.join(RES, 'pg', 'bin'), serverDir: path.join(RES, 'server'), appDir: path.join(RES, 'app'), dbDir: path.join(RES, 'db') };
@@ -84,6 +85,8 @@ function openWindow() {
     { label: 'Shop', submenu: [
       { label: 'Back up to a pen drive or folder...', click: doBackup },
       { label: 'Restore from a backup...', click: doRestore },
+      { label: 'Back up to the cloud now', click: () => cloudNow(true) },
+      { label: 'Restore from the cloud...', click: doCloudRestore },
       { label: 'Open the data folder', click: () => shell.openPath(dataDir) },
       { type: 'separator' },
       { label: 'Licence', click: showLicence },
@@ -111,11 +114,47 @@ async function doRestore() {
     dialog.showMessageBox(win, { type: 'info', message: 'Backup restored' });
   } catch (e) { log('restore failed ' + e.message); dialog.showErrorBox('Restore failed', e.message); try { if (!server) { startServer(L.secrets(dataDir)); await waitServer(); win.loadURL(`http://127.0.0.1:${port}/`); } } catch { /* ignore */ } }
 }
+// ---- cloud storage extra (only when the licence includes it): a copy goes to AUZslab about once a day while the computer is online ----
+const cloudFile = () => path.join(dataDir, 'cloud.json');
+const cloudState = () => { try { return JSON.parse(fs.readFileSync(cloudFile(), 'utf8')); } catch { return {}; } };
+const saveCloud = (o) => fs.writeFileSync(cloudFile(), JSON.stringify({ ...cloudState(), ...o }));
+let cloudBusy = false;
+async function cloudNow(manual) {
+  if (cloudBusy) return; cloudBusy = true;
+  try {
+    const lic = (await getJson(`http://127.0.0.1:${port}/licence/status`)).json;
+    if (!lic.addons || !lic.addons.cloud) { if (manual) dialog.showMessageBox(win, { type: 'info', message: 'Cloud storage is not part of your plan', detail: 'Ask AUZslab to add cloud storage to your plan, and send you a new licence code.' }); return; }
+    await C.backupToCloud({ ...pgOpts(), appVersion: app.getVersion() });
+    saveCloud({ lastOk: new Date().toISOString(), lastError: null });
+    if (manual) dialog.showMessageBox(win, { type: 'info', message: 'Backed up to the AUZslab cloud', detail: 'The newest copy of your shop is safe on our server.' });
+  } catch (e) {
+    log('cloud backup failed: ' + e.message); saveCloud({ lastError: e.message, lastTry: new Date().toISOString() });
+    if (manual) dialog.showErrorBox('Cloud backup did not work', e.message);
+  } finally { cloudBusy = false; }
+}
+setInterval(() => { const s = cloudState(); if (win && (!s.lastOk || Date.now() - Date.parse(s.lastOk) > 20 * 3600e3) && (!s.lastTry || Date.now() - Date.parse(s.lastTry) > 3600e3)) cloudNow(false); }, 30 * 60e3).unref();
+setTimeout(() => { if (win) cloudNow(false); }, 3 * 60e3).unref();
+async function doCloudRestore() {
+  let list;
+  try { list = await C.listCloud(pgOpts()); } catch (e) { dialog.showErrorBox('Cloud storage', e.message); return; }
+  const items = (list.backups || []).slice(0, 3);
+  if (!items.length) { dialog.showMessageBox(win, { type: 'info', message: 'No cloud backups yet', detail: 'Choose Shop > Back up to the cloud now first.' }); return; }
+  const fmt = (b) => new Date(b.madeAt).toLocaleString() + ' (' + (b.size / 1048576).toFixed(1) + ' MB' + (b.device ? ', ' + b.device : '') + ')';
+  const pick = await dialog.showMessageBox(win, { type: 'warning', buttons: [...items.map((b) => 'Restore ' + fmt(b)), 'Cancel'], defaultId: items.length, cancelId: items.length, message: 'Replace everything on this computer with a copy from the cloud?', detail: 'Sales, stock and bills made after that copy was taken will be lost. This cannot be undone.' });
+  if (pick.response >= items.length) return;
+  try {
+    await stopServer(); await C.restoreFromCloud(pgOpts(), items[pick.response].id);
+    await L.migrate({ ...pgOpts() }); startServer(L.secrets(dataDir)); await waitServer();
+    win.webContents.session.clearStorageData().catch(() => {}); win.loadURL(`http://127.0.0.1:${port}/`);
+    dialog.showMessageBox(win, { type: 'info', message: 'Restored from the cloud' });
+  } catch (e) { log('cloud restore failed ' + e.message); dialog.showErrorBox('Restore failed', e.message); try { if (!server) { startServer(L.secrets(dataDir)); await waitServer(); win.loadURL(`http://127.0.0.1:${port}/`); } } catch { /* ignore */ } }
+}
+
 async function showLicence() {
   try {
     const s = (await getJson(`http://127.0.0.1:${port}/licence/status`)).json;
     const extras = s.addons ? Object.entries(s.addons).filter(([, v]) => v).map(([k]) => ({ cloud: 'Cloud storage', whatsapp: 'WhatsApp automation', store: 'Online store' }[k])).join(', ') || 'none' : '';
-    dialog.showMessageBox(win, { type: 'info', message: s.state === 'none' ? 'Not activated yet' : 'Licensed to ' + s.shop, detail: s.state === 'none' ? 'Type the licence code AUZslab gave you on the first screen.' : `Plan ends on ${s.end} (${s.daysLeft >= 0 ? s.daysLeft + ' days left' : 'ended'}).\nExtras: ${extras}.\nTo renew, ask AUZslab for a new code and type it in the app when asked.` });
+    dialog.showMessageBox(win, { type: 'info', message: s.state === 'none' ? 'Not activated yet' : 'Licensed to ' + s.shop, detail: s.state === 'none' ? 'Type the licence code AUZslab gave you on the first screen.' : `Plan ends on ${s.end} (${s.daysLeft >= 0 ? s.daysLeft + ' days left' : 'ended'}).\nExtras: ${extras}.\n${s.addons && s.addons.cloud ? 'Last cloud backup: ' + (cloudState().lastOk ? new Date(cloudState().lastOk).toLocaleString() : 'none yet') + (cloudState().lastError ? ' (last problem: ' + cloudState().lastError + ')' : '') + '.\n' : ''}To renew, ask AUZslab for a new code and type it in the app when asked.` });
   } catch (e) { dialog.showErrorBox('Licence', e.message); }
 }
 

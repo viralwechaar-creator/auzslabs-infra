@@ -116,6 +116,8 @@ services:
       # through GET /storage/doc/... (server/src/index.js), which
       # checks the caller's own session before touching disk.
       - private_uploads_data:/data/private-uploads
+      # cloud backups sent by installed AUZsStyle copies (api only, never served by Caddy)
+      - cloud_backups_data:/data/cloud-backups
     expose:
       - "3000"
     depends_on:
@@ -216,3 +218,4 @@ volumes:
   agents_office_data:
   uploads_data:
   private_uploads_data:
+  cloud_backups_data:
