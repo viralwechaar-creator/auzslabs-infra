@@ -1,0 +1,75 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import { pipeline } from 'node:stream/promises';
+import { pool } from '../db.js';
+import { verifyLicence, publicFromPrivate, dayNumber, isoOf } from '../licence.js';
+import { OFFLINE } from './licence.js';
+import { HttpError, rateLimited } from '../lib/http.js';
+
+// Cloud storage for installed AUZsStyle copies. The licence code is the password: it proves the shop (our signature), says whether the cloud
+// extra is paid for, and its id leads to the shop's lineage (one identity across renewals). Uploads need a running plan; the list and the
+// download also work for 60 days after the plan ends, so a client can always get their data back.
+const ROOT = process.env.CLOUD_BACKUP_ROOT || '/data/cloud-backups';
+const MAX_BYTES = Number(process.env.CLOUD_BACKUP_MAX_MB || 400) * 1048576;
+const KEEP = Number(process.env.CLOUD_BACKUP_KEEP || 14);
+const RESTORE_DAYS = 60;
+let PUB = null;
+const pub = () => (PUB ||= process.env.LICENCE_PUBLIC_KEY || (process.env.LICENCE_PRIVATE_KEY ? publicFromPrivate(process.env.LICENCE_PRIVATE_KEY) : ''));
+
+async function who(req, needActive) {
+  if (!pub()) throw new HttpError(503, 'Cloud storage is not set up on the server yet.');
+  const code = String(req.headers['x-licence'] || '');
+  const v = verifyLicence(code, pub());
+  if (!v.ok) throw new HttpError(401, 'The licence code is not valid.');
+  if (!v.addons.cloud) throw new HttpError(402, 'Cloud storage is not part of your plan. Ask AUZslab to add it.');
+  const left = dayNumber(v.end) - Math.floor((Date.now() - Date.UTC(2020, 0, 1)) / 86400000);
+  if (needActive ? left < -3 : left < -RESTORE_DAYS) throw new HttpError(402, needActive ? 'Your plan has ended. Renew it to keep backing up to the cloud.' : 'Your plan ended more than ' + RESTORE_DAYS + ' days ago.');
+  const { rows } = await pool.query('select cloud_lineage($1) as l', [v.id]);
+  return { lineage: rows[0].l, shop: v.shop, end: v.end };
+}
+
+export async function handle(ctx) {
+  if (OFFLINE) return false;
+  const { req, res, url, ip, reply } = ctx;
+  if (!url.pathname.startsWith('/cloud/')) return false;
+  if (rateLimited('cloud:' + ip, 120, 15 * 60_000)) throw new HttpError(429, 'Too many requests. Try again in a few minutes.');
+
+  if (url.pathname === '/cloud/backups' && req.method === 'GET') {
+    const w = await who(req, false);
+    const { rows } = await pool.query('select cloud_backup_list($1) as r', [w.lineage]);
+    return reply(200, { shop: w.shop, plan_end: w.end, backups: rows[0].r });
+  }
+
+  if (url.pathname === '/cloud/backup' && req.method === 'POST') {
+    const w = await who(req, true);
+    const declared = Number(req.headers['content-length'] || 0);
+    if (!declared || declared > MAX_BYTES) throw new HttpError(413, 'The backup is too big (limit ' + Math.round(MAX_BYTES / 1048576) + ' MB).');
+    const dir = path.join(ROOT, w.lineage.replace(/[^a-z0-9]/gi, '')); fs.mkdirSync(dir, { recursive: true });
+    const file = path.join(dir, Date.now() + '-' + crypto.randomBytes(4).toString('hex') + '.tgz');
+    const hash = crypto.createHash('sha256'); let size = 0;
+    try {
+      await pipeline(req, async function* (src) { for await (const chunk of src) { size += chunk.length; if (size > MAX_BYTES) throw new HttpError(413, 'The backup is too big.'); hash.update(chunk); yield chunk; } }, fs.createWriteStream(file));
+    } catch (e) { fs.rmSync(file, { force: true }); throw e; }
+    const sha = hash.digest('hex');
+    if (req.headers['x-sha256'] && String(req.headers['x-sha256']).toLowerCase() !== sha) { fs.rmSync(file, { force: true }); throw new HttpError(400, 'The upload was damaged on the way. Try again.'); }
+    const madeAt = req.headers['x-made-at'] && !isNaN(Date.parse(req.headers['x-made-at'])) ? new Date(req.headers['x-made-at']).toISOString() : new Date().toISOString();
+    const { rows } = await pool.query('select cloud_backup_add($1::jsonb) as id', [JSON.stringify({ lineage: w.lineage, size, sha256: sha, madeAt, device: String(req.headers['x-device'] || ''), appVersion: String(req.headers['x-app-version'] || ''), file: path.relative(ROOT, file) })]);
+    const old = (await pool.query('select cloud_backup_prune($1, $2) as r', [w.lineage, KEEP])).rows[0].r;
+    for (const f of old) fs.rmSync(path.join(ROOT, f), { force: true });
+    return reply(200, { id: rows[0].id, size, sha256: sha });
+  }
+
+  const m = url.pathname.match(/^\/cloud\/backup\/([0-9a-f-]{36})$/);
+  if (m && req.method === 'GET') {
+    const w = await who(req, false);
+    const row = (await pool.query('select cloud_backup_file($1, $2) as r', [w.lineage, m[1]])).rows[0].r;
+    if (!row) throw new HttpError(404, 'That backup was not found.');
+    const f = path.join(ROOT, row.file);
+    if (!f.startsWith(path.resolve(ROOT) + path.sep) || !fs.existsSync(f)) throw new HttpError(404, 'That backup file is no longer on the server.');
+    res.writeHead(200, { 'Content-Type': 'application/gzip', 'Content-Length': fs.statSync(f).size, 'X-Sha256': row.sha256 || '', 'X-Made-At': new Date(row.made_at).toISOString() });
+    fs.createReadStream(f).pipe(res);
+    return;
+  }
+  return false;
+}

@@ -1320,6 +1320,7 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <h2 class="h-2">Licence codes</h2>
         <p class="p">The Windows app works with no internet, but only after a licence code is typed in. Make a code for a shop, choose the day the plan ends and which extras they paid for, and send it on WhatsApp. When the plan ends the app stops until a new code is entered (3 days of grace). To renew, make a new code with a later end date.</p>
         <div class="card" style="padding:14px;margin:12px 0;display:grid;gap:10px;max-width:560px">
+          <label style="display:grid;gap:4px">This code is for <select class="input" id="licRenew"><option value="">A new shop</option></select></label>
           <input class="input" id="licShop" placeholder="Shop name shown in the app (e.g. GenX Clothes)" maxlength="40">
           <label style="display:grid;gap:4px">Plan ends on <input class="input" type="date" id="licEnd"></label>
           <div class="row" style="gap:14px;flex-wrap:wrap"><label><input type="checkbox" id="licCloud"> Cloud storage</label><label><input type="checkbox" id="licWa"> WhatsApp automation</label><label><input type="checkbox" id="licStore"> Online store hosting</label></div>
@@ -3613,22 +3614,24 @@ async function loadLicences() {
   const e = document.getElementById('licEnd'); if (!e.value) { const d = new Date(); d.setFullYear(d.getFullYear() + 1); e.value = d.toISOString().slice(0, 10); }
   const { data, error } = await sb.rpc('admin_list_licences');
   if (error) { box.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  const sel = document.getElementById('licRenew'); const seen = new Set(); sel.innerHTML = '<option value="">A new shop</option>' + (data || []).filter((l) => l.lineage && !seen.has(l.lineage) && seen.add(l.lineage)).map((l) => `<option value="${esc(l.lineage)}" data-shop="${esc(l.shop)}">Renewal for ${esc(l.shop)}</option>`).join('');
   if (!data || !data.length) { box.innerHTML = emptyDoodle('No licence codes made yet.'); return; }
   const ex = (a) => ['cloud', 'whatsapp', 'store'].filter((k) => a && a[k]).map((k) => ({ cloud: 'Cloud', whatsapp: 'WhatsApp', store: 'Store' }[k])).join(', ') || 'None';
-  box.innerHTML = `<div class="admin-table-wrap"><table class="admin-table"><tr><th>Shop</th><th>Plan ends</th><th>Extras</th><th>Note</th><th></th></tr>${data.map((l) => `<tr>
+  box.innerHTML = `<div class="admin-table-wrap"><table class="admin-table"><tr><th>Shop</th><th>Plan ends</th><th>Extras</th><th>Cloud copies</th><th>Note</th><th></th></tr>${data.map((l) => `<tr>
     <td data-label="Shop">${esc(l.shop)}<div style="color:var(--ink-faint)">Made ${new Date(l.issuedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</div></td>
     <td data-label="Plan ends" style="${l.daysLeft < 15 ? 'color:var(--accent)' : ''}">${esc(l.end)}<div>${l.daysLeft >= 0 ? l.daysLeft + ' days left' : 'Ended'}</div></td>
-    <td data-label="Extras">${esc(ex(l.addons))}</td><td data-label="Note">${esc(l.note || '')}</td>
+    <td data-label="Extras">${esc(ex(l.addons))}</td><td data-label="Cloud copies">${l.addons && l.addons.cloud ? (l.backups ? l.backups + ' &middot; ' + (l.backupBytes / 1048576).toFixed(1) + ' MB<div style="color:var(--ink-faint)">Last ' + new Date(l.lastBackup).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) + '</div>' : 'None yet') : '&mdash;'}</td><td data-label="Note">${esc(l.note || '')}</td>
     <td><button class="btn btn-ghost" data-lic-copy="${esc(l.code)}">Copy code</button> <button class="btn btn-ghost" data-lic-wa="${esc(l.code)}" data-shop="${esc(l.shop)}" data-end="${esc(l.end)}">WhatsApp text</button></td></tr>`).join('')}</table></div>`;
   box.querySelectorAll('[data-lic-copy]').forEach((b) => { b.onclick = () => { navigator.clipboard.writeText(b.dataset.licCopy); b.textContent = 'Copied'; }; });
   box.querySelectorAll('[data-lic-wa]').forEach((b) => { b.onclick = () => window.open('https://wa.me/?text=' + encodeURIComponent(licText(b.dataset.shop, b.dataset.end, b.dataset.licWa)), '_blank'); });
 }
 const licText = (shop, end, code) => `AUZsStyle licence for ${shop}\nValid until ${end}\n\nOpen the app and type this code:\n${code}`;
+document.getElementById('licRenew').addEventListener('change', (e) => { const o = e.target.selectedOptions[0]; if (o && o.dataset.shop) document.getElementById('licShop').value = o.dataset.shop; });
 document.getElementById('licMake').addEventListener('click', async () => {
   const out = document.getElementById('licOut'); const shop = document.getElementById('licShop').value.trim(), end = document.getElementById('licEnd').value;
   if (!shop || !end) { out.innerHTML = '<div class="err">Enter the shop name and the plan end date.</div>'; return; }
   out.textContent = 'Making...';
-  const res = await fetch(CFG.url + '/admin/licence/issue', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token }, body: JSON.stringify({ shop, end, addons: { cloud: licCloud.checked, whatsapp: licWa.checked, store: licStore.checked }, note: document.getElementById('licNote').value }) });
+  const res = await fetch(CFG.url + '/admin/licence/issue', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token }, body: JSON.stringify({ shop, end, addons: { cloud: licCloud.checked, whatsapp: licWa.checked, store: licStore.checked }, note: document.getElementById('licNote').value, renewOf: document.getElementById('licRenew').value || null }) });
   const j = await res.json().catch(() => ({}));
   if (!res.ok) { out.innerHTML = `<div class="err">${esc(j.error || 'Could not make the code')}</div>`; return; }
   out.innerHTML = `<div style="word-break:break-all;font-family:monospace;padding:10px;background:var(--bg-soft,#f2f2f2);border-radius:10px">${esc(j.code)}</div>`;

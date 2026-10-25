@@ -6,7 +6,7 @@ import { sendStaffInviteEmail } from '../mail.js';
 import { safeResetBase } from '../config.js';
 import { myProfile } from '../lib/guards.js';
 import { HttpError, rateLimited, readJsonBody, readRawBody } from '../lib/http.js';
-import { signLicence } from '../licence.js';
+import { signLicence, verifyLicence, publicFromPrivate } from '../licence.js';
 
 // Returns false when none of this module's routes matched, so the dispatcher in index.js tries the next module;
 // any other return (including the undefined that `return reply(...)` gives) means the request was handled.
@@ -207,7 +207,7 @@ export async function handle(ctx) {
     const shop = String(b.shop || '').trim(); if (!shop) throw new HttpError(400, 'Shop name is required');
     const addons = { cloud: !!(b.addons && b.addons.cloud), whatsapp: !!(b.addons && b.addons.whatsapp), store: !!(b.addons && b.addons.store) };
     let code; try { code = signLicence({ shop, end: String(b.end || ''), addons }, process.env.LICENCE_PRIVATE_KEY); } catch (e) { throw new HttpError(400, e.message); }
-    await withAuth(user.id, (client) => client.query('select admin_log_licence($1::jsonb) as r', [JSON.stringify({ shop, end: b.end, addons, note: b.note || '', tenantId: b.tenantId || null, code })]));
+    await withAuth(user.id, (client) => client.query('select admin_log_licence($1::jsonb) as r', [JSON.stringify({ shop, end: b.end, addons, note: b.note || '', tenantId: b.tenantId || null, code, codeId: verifyLicence(code, publicFromPrivate(process.env.LICENCE_PRIVATE_KEY)).id, renewOf: b.renewOf || null })]));
     return reply(200, { code });
   }
 

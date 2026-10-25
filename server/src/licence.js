@@ -76,3 +76,8 @@ export function licenceStore(dir, pub) {
   }
   return { status, activate };
 }
+
+// The cloud server only holds the private key; the public half (to check codes sent by installed copies) is derived from it.
+export function publicFromPrivate(priv) {
+  return crypto.createPublicKey(privKey(priv)).export({ format: 'der', type: 'spki' }).subarray(12).toString('base64url');
+}

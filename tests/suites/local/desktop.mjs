@@ -12,6 +12,7 @@ import { makeKeypair, signLicence } from '../../../server/src/licence.js';
 
 const require = createRequire(import.meta.url);
 const L = require('../../../desktop-style/lib/setup.cjs');
+const CL = require('../../../desktop-style/lib/cloud.cjs');
 const root = path.resolve('.');
 const free = () => new Promise((r) => { const s = net.createServer().listen(0, () => { const p = s.address().port; s.close(() => r(p)); }); });
 const SERVER_DIR = process.env.TEST_SERVER_DIR || path.join(root, 'server'); // the Windows 7 build is tested with its older dependencies and an older Node
@@ -89,6 +90,34 @@ export default async function run({ browser }) {
       const H = { 'content-type': 'application/json', authorization: 'Bearer ' + login.access_token }; const cx = (await (await fetch(base + '/rpc/sty_context', { method: 'POST', headers: H, body: '{}' })).json()).data || {};
       const cat = (await (await fetch(base + '/rpc/sty_catalog', { method: 'POST', headers: H, body: JSON.stringify({ p_branch: (cx.branches || [])[0] ? cx.branches[0].id : null }) })).json()).data;
       const names = (Array.isArray(cat) ? cat : (cat.styles || cat.items || [])).map((x) => x.name); assert(names.includes('Offline Tee') && !names.includes('Added later'), JSON.stringify(names) + ' raw=' + JSON.stringify(cat).slice(0, 200) + ' ctx=' + JSON.stringify(cx).slice(0, 200));
+    }, 'critical');
+    await s.check('Cloud storage: a backup goes to the server with the licence code, is listed, and can be restored on this computer', async () => {
+      const cport = await free(), croot = fs.mkdtempSync(path.join(os.tmpdir(), 'auzcloudroot-')); const cbase = `http://127.0.0.1:${cport}`;
+      const cloud = spawn(NODE, [...PRELOAD, 'src/index.js'], { cwd: SERVER_DIR, stdio: 'ignore', env: { ...process.env, PORT: String(cport), PGHOST: '127.0.0.1', PGPORT: String(pgPort), POSTGRES_APP_PASSWORD: sec.appPassword, POSTGRES_DB: L.DB, JWT_SECRET: sec.jwtSecret, LICENCE_PRIVATE_KEY: k.priv, CLOUD_BACKUP_ROOT: croot, DISABLE_MAINTENANCE: '1', PG_POOL_MAX: '5', DISABLE_RATE_LIMIT: '1' } });
+      try {
+        for (let i = 0; i < 80; i++) { try { if ((await fetch(cbase + '/health')).ok) break; } catch { /* starting */ } await new Promise((r) => setTimeout(r, 250)); }
+        const runAs = process.getuid && process.getuid() === 0 ? { uid: Number(spawnSync('id', ['-u', 'postgres'], { encoding: 'utf8' }).stdout), gid: Number(spawnSync('id', ['-g', 'postgres'], { encoding: 'utf8' }).stdout) } : null;
+        const co = { ...o, uploadDir: uploads, cloudUrl: cbase, runAs, appVersion: 'test' };
+        const up = await CL.backupToCloud(co); assert(up.id && up.size > 1000, JSON.stringify(up));
+        const ls = await CL.listCloud(co); assert(ls.backups.length === 1 && ls.shop === 'Offline Shop', JSON.stringify(ls));
+        // a code without the cloud extra, a code that is not ours, and an ended plan are all refused
+        const send = async (c) => (await fetch(cbase + '/cloud/backups', { headers: { 'x-licence': c } })).status;
+        assert(await send(signLicence({ shop: 'No Cloud', end: '2099-01-01' }, k.priv)) === 402, 'no cloud extra should be 402');
+        assert(await send('AUZ-NOTACODE') === 401 && await send(signLicence({ shop: 'X', end: '2099-01-01', addons: { cloud: true } }, makeKeypair().priv)) === 401, 'foreign code should be 401');
+        const ended = signLicence({ shop: 'Old', end: '2024-01-01', addons: { cloud: true } }, k.priv); assert(await send(ended) === 402, 'long-ended plan cannot even list');
+        const up2 = await fetch(cbase + '/cloud/backup', { method: 'POST', headers: { 'x-licence': signLicence({ shop: 'Old', end: '2026-10-20', addons: { cloud: true } }, k.priv), 'content-length': '5', 'content-type': 'application/gzip' }, body: 'hello' });
+        assert(up2.status === 402 || up2.status === 200, 'ended-plan upload status ' + up2.status);
+        // change something after the backup, then bring the cloud copy back
+        await page.evaluate(async () => { await api('sty_save_style', { p: { name: 'After cloud', category: 'Tees', price: 100, mrp: 100, cost: 50, colours: ['Blue'], sizes: ['L'] } }); });
+        server.kill(); await new Promise((r) => setTimeout(r, 800));
+        await CL.restoreFromCloud(co, ls.backups[0].id); await startServer();
+        const lg = await (await fetch(base + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'asha@shop.test', password: 'Secret!pass1' }) })).json();
+        const H2 = { 'content-type': 'application/json', authorization: 'Bearer ' + lg.access_token };
+        const cx2 = (await (await fetch(base + '/rpc/sty_context', { method: 'POST', headers: H2, body: '{}' })).json()).data;
+        const cat2 = (await (await fetch(base + '/rpc/sty_catalog', { method: 'POST', headers: H2, body: JSON.stringify({ p_branch: cx2.branches[0].id }) })).json()).data.map((x) => x.name);
+        assert(cat2.includes('Offline Tee') && !cat2.includes('After cloud'), JSON.stringify(cat2));
+        assert((await (await fetch(base + '/licence/status')).json()).state === 'active', 'licence should survive');
+      } finally { cloud.kill(); fs.rmSync(croot, { recursive: true, force: true }); }
     }, 'critical');
     await s.check('No script errors in the app', async () => { const bad = errs.filter((e) => !/favicon|sentry|net::|Failed to load resource|Failed to fetch|licence\/activate|first time you open it/i.test(String(e))); assert(!bad.length, bad.slice(0, 3).join(' | ')); });
     await ctx.close();
