@@ -6,6 +6,7 @@ const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const net = require('node:net');
 const http = require('node:http');
+const https = require('node:https');
 const os = require('node:os');
 const path = require('node:path');
 const L = require('./lib/setup.cjs');
@@ -19,6 +20,7 @@ let server = null, win = null, splash = null, ctx = null, port = 0, pgPort = 0, 
 
 // (Electron 22, used for Windows 7, has no built-in fetch in this part of the program)
 const getJson = (u) => new Promise((res, rej) => http.get(u, (r) => { let b = ''; r.on('data', (c) => { b += c; }); r.on('end', () => { let j = {}; try { j = JSON.parse(b || '{}'); } catch { /* not json */ } res({ ok: r.statusCode < 400, json: j }); }); }).on('error', rej));
+const getJsonHttps = (u) => new Promise((res, rej) => { const req = https.get(u, { timeout: 8000 }, (r) => { let b = ''; r.on('data', (c) => { b += c; }); r.on('end', () => { let j = {}; try { j = JSON.parse(b || '{}'); } catch { /* not json */ } res({ ok: r.statusCode < 400, json: j }); }); }); req.on('error', rej); req.on('timeout', () => req.destroy(new Error('timed out'))); });
 const log = (m) => { try { fs.mkdirSync(dataDir, { recursive: true }); fs.appendFileSync(path.join(dataDir, 'app.log'), new Date().toISOString() + ' ' + m + '\n'); } catch { /* ignore */ } };
 const free = () => new Promise((r) => { const s = net.createServer().listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => r(p)); }); });
 const portOk = (p) => new Promise((r) => { const s = net.createServer(); s.once('error', () => r(false)); s.listen(p, '127.0.0.1', () => s.close(() => r(true))); });
@@ -90,6 +92,7 @@ function openWindow() {
       { label: 'Open the data folder', click: () => shell.openPath(dataDir) },
       { type: 'separator' },
       { label: 'Licence', click: showLicence },
+      { label: 'Check for an update', click: () => checkForUpdate(true) },
       { type: 'separator' }, { role: 'quit', label: 'Quit' }] },
     { label: 'View', submenu: [{ role: 'reload', label: 'Reload' }, { role: 'togglefullscreen', label: 'Full screen' }, { role: 'zoomIn' }, { role: 'zoomOut' }, { role: 'resetZoom' }] },
   ]));
@@ -156,6 +159,27 @@ async function localBackupNow() {
 }
 setInterval(() => { const s = localBakState(); if (win && (!s.lastOk || Date.now() - Date.parse(s.lastOk) > 20 * 3600e3) && (!s.lastTry || Date.now() - Date.parse(s.lastTry) > 3600e3)) localBackupNow(); }, 30 * 60e3).unref();
 setTimeout(() => { if (win) localBackupNow(); }, 90 * 1000).unref();
+
+// ---- "a newer version is available" -- a lightweight check, never a silent auto-install ----
+// Every bug fix needs the owner to manually download and run a new installer; with no update check at all, most
+// shops likely stay frozen on whatever version they first installed. This only ever shows a dialog with a link
+// to the download page -- it never downloads or runs anything by itself.
+const higherVersion = (a, b) => { const pa = String(a).split('.').map(Number), pb = String(b).split('.').map(Number); for (let i = 0; i < 3; i++) { if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) > (pb[i] || 0); } return false; };
+const updateFile = () => path.join(dataDir, 'update-check.json');
+const updateState = () => { try { return JSON.parse(fs.readFileSync(updateFile(), 'utf8')); } catch { return {}; } };
+const saveUpdate = (o) => fs.writeFileSync(updateFile(), JSON.stringify({ ...updateState(), ...o }));
+async function checkForUpdate(manual) {
+  try {
+    const r = await getJsonHttps('https://auzslab.in/style-version.json');
+    if (!r.ok || !r.json.version) throw new Error('bad response');
+    const newer = higherVersion(r.json.version, app.getVersion());
+    saveUpdate({ lastChecked: new Date().toISOString(), latest: r.json.version, url: r.json.url, newer });
+    if (newer) dialog.showMessageBox(win, { type: 'info', buttons: ['Open download page', 'Later'], message: 'A newer version of AUZsStyle is available', detail: `You have ${app.getVersion()}, the newest is ${r.json.version}.\n\nThis never installs anything by itself -- you choose when to download and run the new installer.` }).then((r2) => { if (r2.response === 0 && r.json.url) shell.openExternal(r.json.url); });
+    else if (manual) dialog.showMessageBox(win, { type: 'info', message: 'You have the newest version', detail: 'AUZsStyle ' + app.getVersion() });
+  } catch (e) { if (manual) dialog.showErrorBox('Could not check for an update', 'No internet, or the update check could not be reached. ' + e.message); }
+}
+setTimeout(() => { if (win) checkForUpdate(false); }, 5 * 60 * 1000).unref();
+setInterval(() => { const s = updateState(); if (win && (!s.lastChecked || Date.now() - Date.parse(s.lastChecked) > 24 * 3600e3)) checkForUpdate(false); }, 60 * 60e3).unref();
 async function doCloudRestore() {
   let list;
   try { list = await C.listCloud(pgOpts()); } catch (e) { dialog.showErrorBox('Cloud storage', e.message); return; }
