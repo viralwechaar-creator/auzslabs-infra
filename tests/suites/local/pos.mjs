@@ -330,6 +330,23 @@ export default async function run({ browser, stack }) {
     await page.reload(); await page.waitForSelector('.shell'); assert(await page.locator('.c-dock').count() === 0, 'Classic should not draw the dock');
   });
 
+  await s.check('Counter and Modern looks: every screen opens on a phone and a desktop with no sideways scroll', async () => {
+    const tabs = ['tables', 'sell', 'orders', 'kitchen', 'reserve', 'register', 'more'];
+    for (const look of ['counter', 'modern']) {
+      for (const [w, h] of [[390, 844], [1280, 860]]) {
+        await page.setViewportSize({ width: w, height: h });
+        await page.evaluate((l) => { localStorage['pos.look'] = l; localStorage['ui.modern'] = l === 'modern' ? '1' : '0'; document.documentElement.classList.toggle('ui-counter', l === 'counter'); document.documentElement.classList.toggle('ui-modern', l === 'modern'); render(); }, look);
+        for (const t of tabs) {
+          const ok = await page.evaluate((t) => { if (!V[t]) return 'skip'; go(t); return 'ok'; }, t); if (ok === 'skip') continue;
+          await page.waitForTimeout(250);
+          const over = await page.evaluate(() => { const d = document.documentElement; const bad = [...document.querySelectorAll('.shell *')].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.right > innerWidth + 2 && !e.closest('.kds,.chips,.seg,.c-dock,.cats,.cat-chips,.c-rail,.tabbar'); }).slice(0, 3).map((e) => e.className); return { x: d.scrollWidth > innerWidth + 1, bad }; });
+          assert(!over.x, look + ' ' + t + ' at ' + w + ': sideways scroll (' + over.bad.join(', ') + ')');
+        }
+      }
+    }
+    await page.evaluate(() => { localStorage['pos.look'] = 'classic'; localStorage['ui.modern'] = '0'; document.documentElement.classList.remove('ui-counter', 'ui-modern'); render(); }); await page.setViewportSize({ width: 1280, height: 900 });
+  });
+
   // the 409 from the deliberate double booking above is the expected answer, not an error
   await s.check('No JavaScript errors during the whole workflow', async () => { const bad = errs.filter((e) => !/print|callback|WebSocket|ERR_CERT|tunnel/i.test(e) && !/icon-[a-z]+\.svg.*ERR_ABORTED/.test(e) && !/409.*\/db\/bookings/.test(e)); assert(!bad.length, bad.slice(0, 3).join(' | ')); }, 'major');
   await ctx.close(); s.done();

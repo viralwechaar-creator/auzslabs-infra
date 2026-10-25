@@ -75,3 +75,61 @@ html.ui-counter .c-sell .ticket-pane{display:none}
 html.ui-counter .banners{padding:0 12px}
 @media (max-width:899px){html.ui-counter .c-dock .c-x{display:none}}
 html.ui-counter .c-sell .ticket .only-desk{display:none!important}
+
+/* ---------- every other screen: one Counter language ----------
+   Big plain headline with pill actions, rows as separate rounded cards (not one grouped list), table tokens, a ticket board for the kitchen. */
+html.ui-counter .page{padding:max(14px,env(safe-area-inset-top)) 16px 20px;gap:14px}
+html.ui-counter .body:not(.fixed) .page-head{align-items:center}
+html.ui-counter .page-head .eyebrow{display:none}
+html.ui-counter .page-head h1{font-size:34px;font-weight:780;letter-spacing:-.045em;line-height:1}
+html.ui-counter .page-head .sub{font-size:13px;margin-top:6px;color:var(--label3)}
+html.ui-counter .btn{border-radius:999px;min-height:44px}
+html.ui-counter .btn.sm{min-height:34px}
+html.ui-counter .chip{border-radius:999px;background:var(--card);border:1px solid var(--sep);min-height:38px}
+html.ui-counter .chip.on{background:var(--label);color:var(--bg);border-color:var(--label)}
+html.ui-counter .seg{border-radius:999px;padding:3px;background:var(--fill2)}
+html.ui-counter .seg button{border-radius:999px;min-height:34px}
+html.ui-counter .seg button.on{background:var(--label);color:var(--bg);box-shadow:none}
+html.ui-counter .input,html.ui-counter .search .input{border-radius:999px}
+html.ui-counter .card{border-radius:24px;box-shadow:none;border:1px solid var(--sep)}
+html.ui-counter .body .page .list{background:none;box-shadow:none;border-radius:0;overflow:visible;display:grid;gap:8px}
+html.ui-counter .body .page .li{background:var(--card);border:1px solid var(--sep);border-radius:20px;min-height:60px}
+html.ui-counter .body .page .li::before{display:none}
+html.ui-counter .sec-h h3{font-size:22px;letter-spacing:-.03em}
+html.ui-counter .banner{border-radius:22px}
+html.ui-counter .md,html.ui-counter .sheet-p{border-radius:28px}
+/* tables: each table is a token, the status is a dot, busy tables get a soft colour wash */
+html.ui-counter .tables{grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:12px}
+html.ui-counter .tbl-main{padding:6px}
+html.ui-counter .tbl-tile{min-height:132px;padding:16px;border-radius:28px;box-shadow:none;border:1px solid var(--sep);overflow:hidden}
+html.ui-counter .tbl-tile::before{left:16px;top:16px;bottom:auto;width:12px;height:12px;border-radius:50%;background:#34c759}
+html.ui-counter .tbl-tile.st-placed::before,html.ui-counter .tbl-tile.st-served::before{background:#8e8e93}
+html.ui-counter .tbl-tile.st-kot::before,html.ui-counter .tbl-tile.st-prep::before{background:#ff9500}
+html.ui-counter .tbl-tile.st-ready::before{background:#34c759}
+html.ui-counter .tbl-tile.st-bill::before{background:var(--accent)}
+html.ui-counter .tbl-tile.st-res::before{background:#007aff}
+html.ui-counter .tbl-tile.st-dirty::before{background:#8e8e93}
+html.ui-counter .tbl-tile .ttop{padding-top:18px}
+html.ui-counter .tbl-tile .tn{font-size:30px;font-weight:800;letter-spacing:-.05em}
+html.ui-counter .tbl-tile.st-kot,html.ui-counter .tbl-tile.st-prep{background:color-mix(in srgb,#ff9500 10%,var(--card))}
+html.ui-counter .tbl-tile.st-bill,html.ui-counter .tbl-tile.st-served,html.ui-counter .tbl-tile.st-placed{background:color-mix(in srgb,var(--accent) 8%,var(--card))}
+html.ui-counter .tbl-tile.sel{box-shadow:0 0 0 3px var(--label);border-color:transparent}
+html.ui-counter .tbl-detail .dban{border-radius:24px 24px 0 0}
+html.ui-counter .tstats>*{border-radius:20px}
+/* kitchen: one row of tickets you swipe along, like rails at the pass */
+html.ui-counter .kds{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x proximity;align-items:stretch;padding-bottom:10px;-webkit-overflow-scrolling:touch}
+html.ui-counter .kds .kc{flex:0 0 min(310px,84vw);scroll-snap-align:start;border-radius:26px;box-shadow:none;border:1px solid var(--sep)}
+html.ui-counter .kc-h{background:transparent;padding:14px 16px 6px}
+html.ui-counter .kc-h b{font-size:22px;letter-spacing:-.03em}
+html.ui-counter .kc.late{border-color:#ff3b30;box-shadow:0 0 0 2px color-mix(in srgb,#ff3b30 25%,transparent)}
+html.ui-counter .kc .btn.fill{min-height:50px;font-size:16px}
+html.ui-counter .token-grid .token{border-radius:28px}
+/* more / staff & settings: sections as tiles side by side on wide screens (already columns) */
+html.ui-counter .more-grid .sec-h h3{font-size:18px}
+@media (min-width:900px){html.ui-counter .page{padding-left:24px;padding-right:24px}html.ui-counter .page-head h1{font-size:40px}}
+html.ui-counter .tbl-tile .tmeta{flex-direction:column;align-items:flex-start;gap:4px}
+html.ui-counter .tbl-tile .tinfo{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+html.ui-counter .tbl-tile .tarea{display:none}
+html.ui-counter .tbl-tile .ta{font-size:16px}
+html.ui-counter .li:has(> .seg){flex-wrap:wrap}
+html.ui-counter .li:has(> .seg)>.seg{margin-left:0;flex:1 1 100%}
