@@ -108,13 +108,13 @@
       var off = c.tier === 'unavailable', on = !off && feats.indexOf(c.id) >= 0; if (on) chosen.push(c);
       var mod = CAT.filter(function (m) { return m.key === c.mod; })[0];
       var open = !!FOLD[c.id];
-      var desc = el('div', { class: 'fd', id: 'fd-' + c.id, hidden: !open }, [el('p', { text: off ? (c.reason || 'Not available for this business type.') : (FDESC[c.id] || (mod && mod.description) || '') })]);
+      var desc = el('div', { class: 'fd', id: 'fd-' + c.id }, [el('p', { text: off ? (c.reason || 'Not available for this business type.') : (FDESC[c.id] || (mod && mod.description) || '') })].concat(off ? [] : [offlineBadge(mod)]));
+      desc.hidden = !open;
       var fb = el('button', { type: 'button', class: 'fb', 'aria-expanded': open ? 'true' : 'false', 'aria-controls': 'fd-' + c.id, 'aria-label': 'About ' + c.name, text: open ? '\u2212' : '+', onclick: function () {
         FOLD[c.id] = !FOLD[c.id]; fb.textContent = FOLD[c.id] ? '\u2212' : '+'; fb.setAttribute('aria-expanded', FOLD[c.id] ? 'true' : 'false'); desc.hidden = !FOLD[c.id]; } });
       var pick = el('button', { type: 'button', class: 'tile' + (on ? ' on' : '') + (off ? ' soon' : ''), 'aria-pressed': on ? 'true' : 'false', 'aria-disabled': off ? 'true' : 'false', onclick: function () {
         if (off) return; var s = getFeat(); if (on) s = s.filter(function (k) { return k !== c.id; }); else s.push(c.id); setFeat(s); paintBuilder(); } },
-        [el('i', { class: 'dot', 'aria-hidden': 'true' }), el('b', { text: c.name }), c.tier === 'recommended' ? el('span', { class: 'ob ob-full', text: 'Recommended' }) : null,
-          off ? null : offlineBadge(mod)]);
+        [el('i', { class: 'dot', 'aria-hidden': 'true' }), el('b', { text: c.name }), c.tier === 'recommended' ? el('span', { class: 'rec', text: 'Recommended' }) : null]);
       rail.append(el('div', { class: 'frow' + (on ? ' on' : '') + (off ? ' off' : '') }, [el('div', { class: 'fh' }, [pick, fb]), desc]));
     });
     var tally = $('tally'); if (tally) tally.textContent = chosen.length ? chosen.length + (chosen.length === 1 ? ' chosen' : ' chosen') : 'none chosen yet';
