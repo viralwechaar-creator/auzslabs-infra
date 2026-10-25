@@ -31,5 +31,6 @@ fs.writeFileSync(path.join(st, 'licence-public.txt'), pub);
 if (process.env.PG_DIR) {
   for (const d of ['bin', 'lib', 'share']) if (fs.existsSync(path.join(process.env.PG_DIR, d))) cp(path.join(process.env.PG_DIR, d), path.join(st, 'pg', d));
 } else console.warn('PG_DIR not set: PostgreSQL is not included (fine for a test run, not for an installer)');
+fs.mkdirSync(path.join(dd, 'build'), { recursive: true });
 fs.copyFileSync(path.join(root, 'app', 'public', 'icon-style-512.png'), path.join(dd, 'build', 'icon.png'));
 console.log('staged in', st);
