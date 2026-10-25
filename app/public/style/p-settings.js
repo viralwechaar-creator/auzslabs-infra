@@ -63,6 +63,10 @@ page('settings', {
       })();
       return host;
     };
+    const billTplSel = selectEl(RECEIPT_TEMPLATES.map((d) => [d.id, d.name]), receiptTemplateId());
+    const billPrev = h('div', { class: 'tagprev' });
+    const paintBillPrev = () => { const sample = { number: 'AS-0001', at: Date.now(), lines: [{ name: 'Classic Shirt', colour: 'Blue', size: 'M', qty: 1, price: 999, net: 999, tax: 47.5 }], subtotal: 999, discount: 0, tax: 47.5, rounding: 0, total: 999, payments: [{ mode: 'cash', amount: 999 }], balance: 0 }; clear(billPrev).append(receiptNode(sample, billTplSel.value)); };
+    billTplSel.onchange = paintBillPrev; paintBillPrev();
     const slabs = Array.isArray(st.taxSlabs) ? st.taxSlabs : [];
     const s1 = input({ type: 'number', mode: 'decimal', value: slabs[0] ? slabs[0].upto : '', placeholder: '2500' }), r1 = input({ type: 'number', mode: 'decimal', value: slabs[0] ? slabs[0].rate : '', placeholder: '5' }), r2_ = input({ type: 'number', mode: 'decimal', value: slabs[1] ? slabs[1].rate : '', placeholder: '18' });
     const brHost = h('div', { class: 'list' });
@@ -78,7 +82,7 @@ page('settings', {
       try {
         const sl = []; if (N(s1.value) && N(r1.value) >= 0) sl.push({ upto: N(s1.value), rate: N(r1.value) }); if (r2_.value !== '') sl.push({ rate: N(r2_.value) });
         const upi = F.upiId.value.trim(); if (upi && !/^[\w.\-]{2,}@[\w.\-]{2,}$/.test(upi)) { toast(t('That UPI id does not look right. It looks like name@bank.'), { err: true }); ev.currentTarget.disabled = false; return; }
-        const p = { features: Object.assign({}, feat, { upiId: upi, upiName: F.upiName.value.trim(), appIcon }), logoUrl, shopName: F.shopName.value, address: F.address.value, phone: F.phone.value, gstin: F.gstin.value, billFooter: F.billFooter.value, billPrefix: F.billPrefix.value, maxDiscountPct: N(F.maxDiscountPct.value), returnDays: Math.round(N(F.returnDays.value)),
+        const p = { features: Object.assign({}, feat, { upiId: upi, upiName: F.upiName.value.trim(), appIcon, receiptTemplate: billTplSel.value }), logoUrl, shopName: F.shopName.value, address: F.address.value, phone: F.phone.value, gstin: F.gstin.value, billFooter: F.billFooter.value, billPrefix: F.billPrefix.value, maxDiscountPct: N(F.maxDiscountPct.value), returnDays: Math.round(N(F.returnDays.value)),
           defaultTaxPct: N(F.defaultTaxPct.value), loyaltyEarnPct: N(F.loyaltyEarnPct.value), loyaltyPointValue: N(F.loyaltyPointValue.value), leadDays: Math.round(N(F.leadDays.value)), coverDays: Math.round(N(F.coverDays.value)), slowDays: Math.round(N(F.slowDays.value)),
           allowNegativeStock: st.allowNegativeStock, roundOff: st.roundOff, requireCustomerPhone: st.requireCustomerPhone, staffSeeCost: st.staffSeeCost, priceIncludesTax: st.priceIncludesTax, taxSlabs: sl };
         S.ctx = await api('sty_save_settings', { p }); S.perms = S.ctx.perms; toast(t('Saved')); setTimeout(() => location.reload(), 350);
@@ -86,6 +90,7 @@ page('settings', {
     } }, t('Save settings'));
     v.root.append(h('div', { class: 'grid setg' },
       section(t('Shop'), h('div', { class: 'card grid' }, h('div', { class: 'logo-row' }, logoImg, h('div', { class: 'grow' }, h('div', { class: 'cap' }, t('Shop logo') + ' · ' + t('used for the home-screen icon')), logoBtns)), h('div', { class: 'logo-row' }, iconImg, h('div', { class: 'grow' }, h('div', { class: 'cap' }, t('App icon (home screen)') + ' · ' + t('fills the whole icon')), iconBtns)), field(t('Shop name'), F.shopName), field(t('Address'), F.address), h('div', { class: 'two' }, field(t('Phone'), F.phone), field('GSTIN', F.gstin)), h('div', { class: 'two' }, field(t('Bill prefix'), F.billPrefix), field(t('Bill footer'), F.billFooter)))),
+      section(t('Bill template'), h('div', { class: 'card grid' }, h('div', { class: 'muted small' }, t('Switch the look of every printed/shared bill. Turn it on here -- nothing else to install.')), field(t('Design'), billTplSel), billPrev)),
       section(t('Pay by UPI'), h('div', { class: 'card grid' }, h('div', { class: 'muted small' }, t('Your UPI id. At billing, a QR with the exact amount appears so the customer can scan and pay.')), h('div', { class: 'two' }, field(t('UPI id'), F.upiId), field(t('Shown as'), F.upiName)))),
       section(t('Pictures'), h('div', { class: 'card grid' }, h('div', { class: 'mut small' }, t('New pictures are shrunk automatically. Press this once to shrink the old, heavy ones so they load fast on every phone.')), (() => { const out = h('div', { class: 'mut small' }); const b = h('button', { class: 'btn', type: 'button', onclick: async () => { b.disabled = true; try { const r = await lightenPictures((d, n) => { out.textContent = d + ' / ' + n; }); out.textContent = r.changed + ' ' + t('styles lightened') + ' · ' + r.savedKb + ' KB ' + t('saved') + (r.failed ? ' · ' + r.failed + ' ' + t('could not be read') : ''); } catch (e) { toast(e.message || t('Failed'), { err: true }); } b.disabled = false; } }, icon('camera', 16), t('Make old pictures lighter')); return h('div', { class: 'grid' }, b, out); })())),
       section(t('Selling rules'), h('div', { class: 'card grid' }, h('div', { class: 'two' }, field(t('Staff can give discount up to') + ' %', F.maxDiscountPct), field(t('Returns allowed for (days)'), F.returnDays)),

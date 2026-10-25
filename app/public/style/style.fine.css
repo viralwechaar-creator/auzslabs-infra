@@ -74,6 +74,14 @@
 .receipt{font-family:var(--mono);font-size:12.5px;line-height:1.45;background:#fff;color:#111;border-radius:10px;padding:14px;box-shadow:0 0 0 .5px var(--sep);max-width:340px;margin:0 auto;width:100%}
 .rc-h{text-align:center}.rc-h b{font-size:15px}.rc-sep{border-top:1px dashed #999;margin:8px 0}
 .rc-r{display:flex;justify-content:space-between;gap:10px}.rc-r.big{font-weight:700;font-size:14px}.rc-l{margin-bottom:4px}.rc-f{text-align:center;margin-top:6px;font-size:11.5px}
+/* Formal tax-invoice template: item-wise grid + a signatory line, bigger box than a thermal receipt */
+.rc-formal{max-width:420px;font-size:12px}.rc-tag{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut,#888);margin-top:3px}
+.rc-thead,.rc-tr{display:grid;grid-template-columns:1fr 32px 60px 50px 64px;gap:6px;align-items:baseline}
+.rc-thead{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut,#888);padding-bottom:3px;border-bottom:1px solid var(--sep,#ddd)}
+.rc-tr{padding:2px 0}.rc-tr .num{text-align:right}
+.rc-sig{margin-top:14px;text-align:right;font-size:11px}
+/* Compact template: smaller line height, fits more on a short thermal roll */
+.rc-compact{font-size:11.5px;line-height:1.3}
 
 /* barcode tags */
 .tags .tag-l{page-break-after:always;break-after:page;display:grid;justify-items:center;align-content:center;gap:1px;text-align:center;font-family:'Segoe UI',Arial,sans-serif;color:#000;overflow:hidden}
