@@ -98,7 +98,7 @@ async function boot() {
   window.addEventListener('sty:q', updatePill); window.addEventListener('online', updatePill); window.addEventListener('offline', updatePill);
   window.addEventListener('sty:synced', () => { updatePill(); if (['sell', 'stock', 'home'].includes(route.id)) route_(); });
   window.addEventListener('sty:auth', () => showLogin('Your session ended. Please sign in again.'));
-  flushQueue(); topUpBarcodes();
+  flushQueue(); topUpBarcodes(); setTimeout(warmScreens, 4000);
   route_();
 }
 
@@ -162,6 +162,24 @@ function moreSheet() {
       S.user.role === 'owner' ? liRow({ icon: 'download', tone: 'gray', title: 'Backup, export or clear data', onclick: () => { s.close(); auzMyData(sb); } }) : null,
       liRow({ icon: 'logout', tone: 'gray', title: t('Sign out'), onclick: signOut })));
   const s = sheet({ title: t('More'), closeLabel: t('Done'), body });
+}
+
+// While online, open every screen once out of sight so its answers are saved on the device and the whole app opens offline.
+async function warmScreens() {
+  if (navigator.onLine === false || window.__warming) return;
+  const stamp = 'warm.' + scope(); if (Date.now() - Number(LS.get(stamp, 0)) < 6 * 36e5) return;
+  window.__warming = true;
+  try {
+    for (const id of Object.keys(PAGES)) {
+      if (id === 'sell' || id === 'store' || !allowed(PAGES[id])) continue;
+      const root = h('div', { class: 'page' });
+      const view = { id, args: [], q: new URLSearchParams(), root, header: () => {}, refresh() {}, onLeave() {} };
+      try { await PAGES[id].render(view); } catch { /* a screen that fails is simply not saved */ }
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    for (const fn of ['sty_list_transfers', 'sty_hold_list', 'sty_staff_list', 'sty_coupons_list', 'sty_list_suppliers', 'sty_collections_list', 'sty_crm_overview']) { try { await api(fn); } catch { /* ignore */ } }
+    LS.set(stamp, Date.now());
+  } finally { window.__warming = false; }
 }
 
 async function route_() {

@@ -15,6 +15,7 @@ export default async function run({ browser, stack }) {
   await page.locator('button', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 });
   // open the screens once while online so their answers are kept on the device
   await page.evaluate(async () => { await loadCatalog(true); await api('sty_list_suppliers'); await api('sty_collections_list'); await api('sty_list_customers', {}); await topUpBarcodes(); if (!S.cat.length) { await api('sty_save_style', { p: { name: 'Base Tee', category: 'Tees', price: 300, mrp: 300, cost: 100, colours: ['Blue'], sizes: ['M'], opening: { qty: 3, unitCost: 100, branchId: S.branch } } }); await loadCatalog(true); } });
+  await page.evaluate(async () => { LS.set('warm.' + scope(), 0); await warmScreens(); });
   await page.waitForTimeout(800);
   const names = { style: 'Offline Tee ' + Date.now(), shop: 'Offline Shop ' + Date.now() };
 
@@ -92,7 +93,10 @@ export default async function run({ browser, stack }) {
     const after = Number((await q('select count(*)::int n from sty_stock_moves where tenant_id=$1', [tid]))[0].n); assert(after === before + 1, `moves ${before} -> ${after}`);
   });
   await s.check('Every screen opens offline from its saved copy, with no script errors', async () => {
+    down = true;
     await page.evaluate(async () => { for (const id of ['stock', 'buy', 'people', 'bills', 'home', 'settings']) { location.hash = '#/' + id; await new Promise((r) => setTimeout(r, 900)); } });
+    const msg = await page.evaluate(async () => { const out = []; for (const id of ['stock', 'buy', 'people', 'bills', 'home', 'analytics', 'settings', 'requests', 'intel']) { location.hash = '#/' + id; await new Promise((r) => setTimeout(r, 900)); if (/first time you open it/.test(document.body.innerText)) out.push(id); } return out; });
+    assert(!msg.length, 'needs internet: ' + msg.join(','));
     const bad = errs.filter((e) => !/favicon|sentry|net::|Failed to load resource/i.test(String(e))); assert(!bad.length, bad.slice(0, 3).join(' | '));
   });
   await c.close();
