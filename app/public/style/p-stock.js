@@ -191,6 +191,15 @@ function styleForm(s, done) {
         price: N(f.price.value), mrp: N(f.mrp.value) || N(f.price.value), taxPct: f.tax.value === '' ? null : N(f.tax.value), colours, sizes };
       if (seeCost && f.cost.value !== '') p.cost = N(f.cost.value);
       if (isNew && N(f.qty.value) > 0) p.opening = { qty: Math.round(N(f.qty.value)), unitCost: N(f.cost.value), branchId: S.branch };
+      if (isNew) {
+        p.newId = uid();
+        let c2 = colours.map((x) => String(x).trim()), z2 = sizes.map((x) => String(x).trim());
+        if (!c2.length && z2.length) c2 = ['']; if (!z2.length && c2.length) z2 = [''];
+        const keys = []; c2.forEach((c) => z2.forEach((z) => keys.push(c + '|' + z)));
+        p.variantIds = {}; keys.forEach((k) => { p.variantIds[k] = uid(); });
+        const codes = takeBarcodes(keys.length);   // reserved while online, so tags can be printed even with no connection
+        if (codes) { p.barcodes = {}; keys.forEach((k, i) => { p.barcodes[k] = codes[i]; }); }
+      }
       const r = await api('sty_save_style', { p });
       const cp = {}; cols.peek().forEach((c) => { const g = colPics[c] && colPics[c].get(); if (g && g.main) cp[c] = [g.main, ...g.extra]; });
       if (Object.keys(cp).length || Object.keys(colInit).length) await api('sty_set_colour_photos', { p_id: r.id, p: cp });

@@ -262,7 +262,7 @@ function paySheet(c, done) {
       const r = await sendOrQueue('sty_sell', { p });
       const snapshot = r.done ? r.data : provisional(p, c);
       sh.close(); newBill(); S.catAt = 0;
-      if (r.done) { await loadCatalog(true).catch(() => {}); } else applyQueueToCatalog();
+      await loadCatalog(true).catch(() => {});
       done(); successSheet(snapshot, !r.done);
     } catch (e) { ok.disabled = false; fail(e); }
   };
@@ -273,7 +273,7 @@ async function resolveTypedCustomer() {
   const name = (BILL.custName || '').trim(), phone = (BILL.custPhone || '').trim();
   if (!name && !phone) return;
   if (navigator.onLine === false) return;
-  try { BILL.customer = await api('sty_save_customer', { p: { name: name || phone, phone: phone || undefined } }); } catch { /* the bill can still go through as walk-in */ }
+  try { BILL.customer = await api('sty_save_customer', { p: { newId: uid(), name: name || phone, phone: phone || undefined } }); } catch { /* the bill can still go through as walk-in */ }
 }
 function provisional(p, c) {
   return { number: 'WAITING', at: new Date().toISOString(), customer: BILL.customer, lines: c.lines.map((l, i) => ({ name: BILL.lines[i].name, colour: BILL.lines[i].colour, size: BILL.lines[i].size, qty: l.qty, price: l.unit, net: l.net })),

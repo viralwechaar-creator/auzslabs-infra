@@ -123,7 +123,7 @@ function customerForm(c, onSaved) {
     h('label', { class: 'swrow' }, h('div', { class: 'grow' }, h('div', null, t('Send WhatsApp messages')), h('div', { class: 'muted small' }, t('Bill link, birthday wishes and offers'))), wa)),
     actions: [{ label: t('Save'), primary: true, onclick: async (close) => {
       if (!name.value.trim()) { toast(t('Enter a name'), { err: true }); return false; }
-      const r = await api('sty_save_customer', { p: { id: c && c.id, name: name.value, phone: ph.value, usualSize: size.value, birthday: bday.value || null, anniversary: anni.value || null, gender: gender.value, city: city.value, waOptin: wa.checked, notes: notes.value } });
+      const r = await api('sty_save_customer', { p: { id: c && c.id, newId: c ? undefined : uid(), name: name.value, phone: ph.value, usualSize: size.value, birthday: bday.value || null, anniversary: anni.value || null, gender: gender.value, city: city.value, waOptin: wa.checked, notes: notes.value } });
       close(); onSaved && onSaved(r);
     } }] });
 }

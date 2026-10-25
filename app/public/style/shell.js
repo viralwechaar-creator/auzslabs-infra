@@ -84,6 +84,7 @@ async function boot() {
     if (!c) return blocked('Could not open AUZsStyle', e.message);
     dash = c.dash; ctx = c.ctx;
   }
+  ctx = overlayRead('sty_context', {}, clone(ctx));   // settings/branches changed with no connection show at once
   S.dash = dash; S.ctx = ctx; S.perms = ctx.perms || {};
   S.user = { email: dash.my_email, role: dash.my_role, id: session.user.id };
   const lang = LS.get('lang.' + S.user.id, null) || ctx.settings.language || 'en';
@@ -94,9 +95,10 @@ async function boot() {
   buildShell();
   shopIcon();
   window.addEventListener('hashchange', route_);
-  window.addEventListener('sty:q', updatePill);
+  window.addEventListener('sty:q', updatePill); window.addEventListener('online', updatePill); window.addEventListener('offline', updatePill);
   window.addEventListener('sty:synced', () => { updatePill(); if (['sell', 'stock', 'home'].includes(route.id)) route_(); });
-  flushQueue();
+  window.addEventListener('sty:auth', () => showLogin('Your session ended. Please sign in again.'));
+  flushQueue(); topUpBarcodes();
   route_();
 }
 
@@ -114,8 +116,9 @@ function navItem(id, label, ic) {
   return h('a', { href: '#/' + id, 'data-nav': id, class: 'nav-i', title: t(label) }, icon(ic, 20), h('span', { class: 'lbl-t' }, t(label)));
 }
 function pillNode() {
-  const n = getQ().length;
-  return h('span', { class: 'sync-pill' + (n ? ' warn' : ''), onclick: n ? () => { flushQueue().then(() => toast(getQ().length ? t('Still offline') : t('All sent'))); } : null }, n ? icon('cloudOff', 14) : icon('cloudCheck', 14), n ? ' ' + n + ' ' + t('waiting to send') : ' ' + t('Up to date'));
+  const n = pendingCount(), bad = failedOps().length, off = navigator.onLine === false || S.offlineData;
+  const label = bad ? bad + ' ' + t('need attention') : n ? n + ' ' + t('waiting to send') : off ? t('Offline') : t('Up to date');
+  return h('span', { class: 'sync-pill' + (n || bad ? ' warn' : ''), role: 'button', tabindex: 0, 'aria-label': t('Waiting changes'), onclick: () => waitingSheet() }, (n || bad || off) ? icon('cloudOff', 14) : icon('cloudCheck', 14), ' ' + label);
 }
 function updatePill() { const el = $('.sync-pill'); if (el) el.replaceWith(pillNode()); }
 function branchName() { const b = (S.ctx.branches || []).find((x) => x.id === S.branch); return b ? b.name : ''; }
