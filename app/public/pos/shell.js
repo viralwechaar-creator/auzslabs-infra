@@ -116,8 +116,8 @@ function render() {
   for (const sel of ['#body', '.items-scroll', '.cats-col', '.tk-lines']) { const e = $('#app ' + sel); if (e) keep[sel] = e.scrollTop; }
   const banners = [standaloneBanner(), guestBanner(), readyBanner(), dispatchedBanner()].filter(Boolean);
   $('#app').replaceChildren(h('div', { class: 'shell' }, sideNav(navs),
-    h('div', { class: 'main' }, navbar(navs), banners.length ? h('div', { class: 'banners' }, banners) : null,
-      h('main', { class: 'body' + (view.fixed ? ' fixed' : ''), id: 'body' }, view()), tabBar(navs))));
+    h('div', { class: 'main' }, counterOn() && S.tab === 'sell' ? null : navbar(navs), banners.length ? h('div', { class: 'banners' }, banners) : null,
+      h('main', { class: 'body' + (view.fixed ? ' fixed' : ''), id: 'body' }, view()), counterOn() ? counterDock(navs) : tabBar(navs))));
   for (const sel in keep) { const e = $('#app ' + sel); if (e) e.scrollTop = keep[sel]; }
   setNote(); updateNotifBadge(); refreshNotifCount(); refreshTicketSheet();
 }

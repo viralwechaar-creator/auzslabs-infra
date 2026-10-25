@@ -1,0 +1,77 @@
+/* "Counter" look (opt-in, Settings > Look). Everything is under html.ui-counter, so Classic and Modern are untouched.
+   Structure: floating dock for navigation, category rail + one top line + item grid + bill ribbon/receipt panel for Sell. */
+html.ui-counter .side,html.ui-counter .only-desk.c-off{display:none!important}
+html.ui-counter .shell{flex-direction:column;background:var(--bg)}
+html.ui-counter .body:not(.fixed){padding-bottom:96px}
+html.ui-counter .navbar{background:transparent;border:0;box-shadow:none}
+
+/* the dock: the app's whole navigation, one floating pill, same on every screen size */
+.c-dock{display:none}
+html.ui-counter .c-dock{position:fixed;z-index:30;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom));display:flex;gap:2px;max-width:calc(100vw - 16px);overflow-x:auto;scrollbar-width:none;background:var(--label);border-radius:999px;padding:6px;box-shadow:0 12px 32px -8px rgba(0,0,0,.45)}
+html.ui-counter .c-dock::-webkit-scrollbar{display:none}
+html.ui-counter .c-dock button{position:relative;flex:none;min-height:44px;padding:0 15px;border-radius:999px;color:var(--bg);opacity:.62;font-weight:600;font-size:14px;white-space:nowrap}
+html.ui-counter .c-dock button.on{background:var(--bg);color:var(--label);opacity:1}
+html.ui-counter .c-dock .badge{position:absolute;top:0;right:2px;min-width:18px;height:18px;line-height:18px;font-size:11px;margin:0}
+
+/* Sell */
+html.ui-counter .c-sell{flex:1 1 auto;min-height:0;min-width:0;display:grid;grid-template-columns:84px minmax(0,1fr);gap:0}
+html.ui-counter .c-sell .ticket-pane{display:none}
+.c-rail{display:flex;flex-direction:column;gap:6px;padding:max(14px,env(safe-area-inset-top)) 8px 120px;overflow-y:auto;scrollbar-width:none}
+.c-rail::-webkit-scrollbar{display:none}
+.c-logo{width:44px;height:44px;border-radius:14px;overflow:hidden;margin:0 auto 10px;flex:none}
+.c-logo img{width:100%;height:100%;display:block}
+.c-cat{flex:none;width:100%;padding:8px 2px;border-radius:18px;text-align:center;font-size:11px;font-weight:600;line-height:1.15;color:var(--label3);min-height:44px}
+.c-cat i{display:grid;place-items:center;width:36px;height:36px;border-radius:12px;margin:0 auto 4px;background:var(--fill,rgba(120,120,120,.14));font-style:normal;font-size:16px;font-weight:800;color:var(--label)}
+.c-cat span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px}
+.c-cat b{display:block;font-size:10px;font-weight:700;opacity:.7}
+.c-cat.on{color:var(--label)}.c-cat.on i{background:var(--accent);color:var(--on-accent)}
+.c-mid{display:flex;flex-direction:column;min-width:0;min-height:0}
+.c-top{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:max(14px,env(safe-area-inset-top)) 12px 6px 6px;min-width:0}
+.c-top .seg{flex:0 1 auto;min-width:0}
+.c-chip{min-height:40px;padding:0 14px;border-radius:999px;background:var(--card);border:1px solid var(--sep);font-weight:600;margin-right:auto}
+.c-chip.set{border-color:var(--accent);color:var(--accent-text)}
+.c-find{flex:1 1 100%;order:5;display:flex;align-items:center;gap:8px;min-height:44px;background:var(--card);border:1px solid var(--sep);border-radius:999px;padding:0 14px;color:var(--label3);min-width:0}
+.c-find input{flex:1;min-width:0;border:0;outline:0;background:none;font:inherit;font-size:16px;color:var(--label)}
+.c-ico{position:relative;width:40px;height:40px;border-radius:50%;background:var(--card);border:1px solid var(--sep);display:grid;place-items:center;color:var(--label2);flex:none}
+.c-ico.on{background:var(--label);color:var(--bg);border-color:var(--label)}
+.c-ico .dot{position:absolute;top:6px;right:6px}
+.c-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 12px 190px 6px}
+.c-hd{display:flex;align-items:baseline;justify-content:space-between;margin:8px 2px 12px}
+.c-hd h1{font-size:26px;letter-spacing:-.03em;font-weight:750;margin:0}
+.c-hd span{color:var(--label3);font-size:13px}
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(122px,1fr));gap:10px}
+.ct{position:relative;text-align:left;background:var(--card);border-radius:22px;padding:10px;display:flex;flex-direction:column;gap:8px;min-height:92px;transition:transform .15s var(--ease)}
+.ct:active{transform:scale(.97)}
+.ct .ph{aspect-ratio:4/3;border-radius:14px;overflow:hidden;background:linear-gradient(135deg,rgba(150,140,125,.35),rgba(120,110,95,.5));display:grid;place-items:center;font-size:28px;font-weight:800;color:rgba(255,255,255,.85)}
+.ct .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.ct .nm{font-weight:650;font-size:14px;letter-spacing:-.01em;line-height:1.2}
+.ct .pr{display:flex;justify-content:space-between;align-items:center;color:var(--label3)}
+.ct .pr b{color:var(--label);font-size:14px}
+.ct .q{position:absolute;top:8px;right:8px;min-width:24px;height:24px;border-radius:12px;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:12px;display:grid;place-items:center;padding:0 7px}
+.ct.off{opacity:.5}.ct .offwhy{font-size:12px;color:var(--label3)}
+.cgrid.nophoto{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+.cgrid.nophoto .ct{flex-direction:row;align-items:center;justify-content:space-between;min-height:58px;padding:12px 14px;gap:10px}
+.cgrid.nophoto .ct .pr{flex-direction:column;align-items:flex-end;gap:2px;flex:none}
+/* phones: the bill is a floating ribbon above the dock */
+.c-ribbon{position:fixed;z-index:25;left:92px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:10px;padding:8px 8px 8px 18px;border-radius:26px;background:var(--card);box-shadow:0 12px 30px -8px rgba(0,0,0,.3);border:1px solid var(--sep)}
+.c-ribbon.empty{display:none}
+.c-ribbon .rt{flex:1;min-width:0;text-align:left;display:grid;line-height:1.2}
+.c-ribbon .rt b{font-size:20px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.c-ribbon .rt span{font-size:12px;color:var(--label3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-ribbon .pay{min-height:48px;padding:0 26px;border-radius:20px;font-size:16px;font-weight:700}
+/* tablets and computers: the bill is a receipt panel on the right */
+@media (min-width:900px){
+ html.ui-counter .c-sell{grid-template-columns:96px minmax(0,1fr) 380px}
+ html.ui-counter .c-sell .ticket-pane{display:flex;flex-direction:column;min-height:0;margin:14px 14px 90px 0;border-radius:22px;background:var(--card);border:1px solid var(--sep);overflow:hidden}
+ html.ui-counter .c-sell .ticket-pane .ticket{flex:1 1 auto;min-height:0}
+ html.ui-counter .c-top{flex-wrap:nowrap}
+ html.ui-counter .c-find{flex:1 1 0;order:0}
+ html.ui-counter .c-ribbon{display:none}
+ html.ui-counter .c-scroll{padding-bottom:110px}
+ html.ui-counter .c-dock{left:calc(96px + (100vw - 96px - 380px) / 2)}
+ html.ui-counter .shell.cs-nosell .c-dock,html.ui-counter .c-dock.wide{left:50%}
+ .c-cat{font-size:12px}
+}
+html.ui-counter .banners{padding:0 12px}
+@media (max-width:899px){html.ui-counter .c-dock .c-x{display:none}}
+html.ui-counter .c-sell .ticket .only-desk{display:none!important}
