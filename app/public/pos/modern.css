@@ -46,30 +46,54 @@ html.ui-modern .cart-bar .ct b{font-size:15px}
 html.ui-modern .cart-bar .ct span{font-size:11.5px}
 html.ui-modern .cart-bar .btn{min-height:38px;border-radius:999px;font-size:13px;background:var(--bg);color:var(--label)}
 html.ui-modern .cart-bar .btn.ghost{background:rgba(128,128,128,.28);color:var(--bg)}
-<<<<<<< HEAD
 
-/* ---- other POS screens (step 2): Tables, Orders, Kitchen, More, bars ---- */
-html.ui-modern .navbar{border-bottom:.5px solid var(--sep)}
-html.ui-modern .page-head h1,html.ui-modern .page-head .t{font-size:20px;letter-spacing:-.02em}
+/* ---- the other POS screens: flat, hairlines, small type, outlined controls ---- */
+html.ui-modern .navbar{background:var(--bg);border-bottom:.5px solid var(--sep)}
+html.ui-modern .page{gap:12px}
+html.ui-modern .page-head .eyebrow{display:none}
+html.ui-modern .page-head h1{font-size:21px;font-weight:700;letter-spacing:-.025em}
+html.ui-modern .page-head .sub{font-size:12px}
+html.ui-modern .btn{min-height:38px;border-radius:999px;background:transparent;box-shadow:0 0 0 1px var(--sep2);font-size:13px;font-weight:600}
+html.ui-modern .btn.fill,html.ui-modern .btn.tinted{box-shadow:none}
+html.ui-modern .btn.fill{background:var(--label);color:var(--bg)}
+html.ui-modern .btn.tinted{background:var(--fill2)}
+html.ui-modern .chip{min-height:30px;padding:0 12px;border-radius:999px;background:transparent;box-shadow:0 0 0 1px var(--sep2);font-size:12.5px;font-weight:500}
+html.ui-modern .chip.on{background:var(--label);color:var(--bg);box-shadow:none}
+html.ui-modern .seg{background:transparent;box-shadow:0 0 0 1px var(--sep2);border-radius:999px}
+html.ui-modern .seg button{border-radius:999px;min-height:30px;font-size:13px}
+html.ui-modern .seg button.on{background:var(--label);color:var(--bg);box-shadow:none}
+html.ui-modern .card,html.ui-modern .list{box-shadow:0 0 0 1px var(--sep);border-radius:16px}
+html.ui-modern .li{min-height:46px;padding:8px 14px}
+html.ui-modern .li .t{font-size:14px}
+html.ui-modern .li .s{font-size:12px}
+html.ui-modern .sec-h h3{font-size:14px;letter-spacing:0;text-transform:uppercase;color:var(--label3);font-weight:600}
 html.ui-modern .tabbar button{font-size:10.5px}
 html.ui-modern .nav button,html.ui-modern .nav a{font-size:13px;border-radius:999px}
-html.ui-modern .nav [aria-current=page]{background:var(--label);color:var(--bg)}
-/* tables floor */
-html.ui-modern .tbl-tile{border-radius:16px;box-shadow:0 0 0 1px var(--sep);background:var(--card)}
-html.ui-modern .tbl-tile .tn{font-size:15px;font-weight:700}
+html.ui-modern .nav button.on{background:var(--label);color:var(--bg)}
+/* tables: plain outlined tiles, the status is only a small dot */
+html.ui-modern .tables{grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
+html.ui-modern .tbl-tile{min-height:84px;padding:10px 12px;border-radius:14px;box-shadow:0 0 0 1px var(--sep);background:transparent}
+html.ui-modern .tbl-tile::before{left:auto;right:10px;top:12px;bottom:auto;width:8px;height:8px;border-radius:50%;background:#34c759}
+html.ui-modern .tbl-tile.st-placed::before,html.ui-modern .tbl-tile.st-served::before,html.ui-modern .tbl-tile.st-dirty::before{background:#8e8e93}
+html.ui-modern .tbl-tile.st-kot::before,html.ui-modern .tbl-tile.st-prep::before{background:#ff9500}
+html.ui-modern .tbl-tile.st-bill::before{background:var(--accent)}
+html.ui-modern .tbl-tile.st-res::before{background:#007aff}
+html.ui-modern .tbl-tile.st-ready,html.ui-modern .tbl-tile.st-dirty{background:transparent}
+html.ui-modern .tbl-tile .tn{font-size:16px;font-weight:700}
 html.ui-modern .tbl-tile.sel{box-shadow:0 0 0 2px var(--label)}
-html.ui-modern .tbl-detail,html.ui-modern .tbl-side .card,html.ui-modern .tbl-wrap{border-radius:20px}
-html.ui-modern .tbl-chips .chip,html.ui-modern .tbl-bar .chip{font-size:12px}
-html.ui-modern .tstat,html.ui-modern .tstats>*{border-radius:16px;box-shadow:0 0 0 1px var(--sep)}
-/* kitchen */
-html.ui-modern .kc{border-radius:18px;box-shadow:0 0 0 1px var(--sep);background:var(--card)}
-html.ui-modern .kc-h{font-size:14px}
+html.ui-modern .tbl-detail,html.ui-modern .tbl-side .card,html.ui-modern .tbl-wrap,html.ui-modern .tbl-main{border-radius:16px}
+html.ui-modern .tstats>*{border-radius:12px;box-shadow:0 0 0 1px var(--sep)}
+/* kitchen: outlined tickets, a thin colour line on top */
+html.ui-modern .kc{border-radius:14px;box-shadow:0 0 0 1px var(--sep);background:var(--card)}
+html.ui-modern .kc-h{background:transparent;padding:10px 12px 4px}
+html.ui-modern .kc-h b{font-size:15px}
 html.ui-modern .kc-b{font-size:13px}
-/* order cards, banners, pills */
-html.ui-modern .banner,html.ui-modern .dban{border-radius:16px;font-size:13px}
+html.ui-modern .banner,html.ui-modern .dban{border-radius:14px;font-size:13px}
 html.ui-modern .pill{font-size:11px;border-radius:999px}
 html.ui-modern .toast{border-radius:999px;font-size:13px}
-html.ui-modern .sec-h{font-size:12px;letter-spacing:.02em}
-html.ui-modern .login .card{border-radius:24px}
-=======
->>>>>>> origin/main
+html.ui-modern .login .card{border-radius:22px}
+html.ui-modern .tbl-tile .tmeta{flex-direction:column;align-items:flex-start;gap:3px}
+html.ui-modern .tbl-tile .tinfo{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+html.ui-modern .tbl-tile .ttop{align-items:flex-start}
+html.ui-modern .li:has(> .seg){flex-wrap:wrap}
+html.ui-modern .li:has(> .seg)>.seg{margin-left:0;flex:1 1 100%}
