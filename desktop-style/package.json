@@ -1,0 +1,26 @@
+{
+  "name": "auzsstyle-desktop",
+  "version": "1.0.0",
+  "description": "AUZsStyle for Windows (works offline)",
+  "main": "main.cjs",
+  "private": true,
+  "author": "AUZslab",
+  "scripts": { "start": "electron .", "dist": "electron-builder --win --x64 --publish never" },
+  "devDependencies": { "electron": "33.2.1", "electron-builder": "25.1.8" },
+  "build": {
+    "appId": "in.auzslab.style.desktop",
+    "productName": "AUZsStyle",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["main.cjs", "splash.html", "lib/**", "package.json"],
+    "extraResources": [
+      { "from": "stage/server", "to": "server" },
+      { "from": "stage/app", "to": "app" },
+      { "from": "stage/db", "to": "db" },
+      { "from": "stage/pg", "to": "pg" },
+      { "from": "stage/licence-public.txt", "to": "licence-public.txt" }
+    ],
+    "win": { "target": [{ "target": "nsis", "arch": ["x64"] }], "icon": "build/icon.png" },
+    "nsis": { "oneClick": false, "perMachine": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "createStartMenuShortcut": true, "shortcutName": "AUZsStyle", "deleteAppDataOnUninstall": false },
+    "artifactName": "AUZsStyle-Setup-${version}.${ext}"
+  }
+}

@@ -17,12 +17,13 @@ import { handle as handleAdmin } from './routes/admin.js';
 import { handle as handleWhatsApp } from './routes/whatsapp.js';
 import { startWhatsAppWorker } from './whatsapp.js';
 import { handle as handleLicence, gate as licenceGate } from './routes/licence.js';
+import { handle as handleOffline } from './routes/offline.js';
 
 initErrorTracking(); // dormant unless SENTRY_DSN is set -- see errors.js
 
 // Request flow: CORS preflight -> identify the caller -> try each route module in order (first one that handles it
 // wins) -> 404. Each module in routes/ owns one area; see docs/BACKEND_MAP.md. Order matters only where paths overlap.
-const ROUTE_MODULES = [handleLicence, handleSystem, handleAuth, handlePayments, handleData, handleStorage, handleAdmin, handleWhatsApp];
+const ROUTE_MODULES = [handleLicence, handleSystem, handleAuth, handlePayments, handleData, handleStorage, handleAdmin, handleWhatsApp, handleOffline];
 
 setWsCounter(wsCount);
 const server = http.createServer(async (req, res) => {
@@ -42,7 +43,7 @@ const server = http.createServer(async (req, res) => {
 
   const ctx = { req, res, url, user, ip, meta, reply, origin };
   try {
-    licenceGate(url); // installed (offline) copy only: nothing works without a valid licence code
+    licenceGate(url, req.method); // installed (offline) copy only: nothing works without a valid licence code
     for (const handler of ROUTE_MODULES) {
       if ((await handler(ctx)) !== false) return;
     }

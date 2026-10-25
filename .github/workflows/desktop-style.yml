@@ -1,0 +1,49 @@
+name: AUZsStyle for Windows
+# Builds the offline Windows installer (AUZsStyle-Setup-x.y.z.exe): Electron window + PostgreSQL + the local server, all in one file.
+# Needs the repository VARIABLE LICENCE_PUBLIC_KEY (Settings > Secrets and variables > Actions > Variables): the PUBLIC half made by
+# `node tools/licence-keygen.mjs` (the private half stays in the server .env). Run from the Actions tab; the installer is published
+# on the release page "desktop-style-latest" (no GitHub login needed to download).
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+env:
+  PG_URL: https://get.enterprisedb.com/postgresql/postgresql-16.4-1-windows-x64-binaries.zip
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Download PostgreSQL (portable binaries)
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri $env:PG_URL -OutFile pg.zip
+          Expand-Archive pg.zip -DestinationPath pgx
+          Get-ChildItem pgx/pgsql | Select-Object Name
+      - name: Install builder
+        working-directory: desktop-style
+        run: npm install --no-audit --no-fund
+      - name: Collect files
+        working-directory: desktop-style
+        env:
+          PG_DIR: ${{ github.workspace }}/pgx/pgsql
+          LICENCE_PUBLIC_KEY: ${{ vars.LICENCE_PUBLIC_KEY }}
+        run: node tools/stage.mjs
+      - name: Build the installer
+        working-directory: desktop-style
+        run: npm run dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AUZsStyle-Setup
+          path: desktop-style/dist/AUZsStyle-Setup-*.exe
+      - name: Publish on a release page
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete desktop-style-latest --yes --cleanup-tag --repo "$GITHUB_REPOSITORY" || true
+          gh release create desktop-style-latest desktop-style/dist/AUZsStyle-Setup-*.exe --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
+            --title "AUZsStyle for Windows (test build)" --notes "Offline Windows installer. Needs a licence code from AUZslab. Built from commit $GITHUB_SHA."
