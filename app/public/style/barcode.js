@@ -11,7 +11,14 @@ function code128Values(text) {
   return vals;
 }
 function barcodeSvg(text, o = {}) {
-  const vals = code128Values(text); const mod = o.module || 1.6, hgt = o.height || 40, quiet = 10 * mod;
+  const vals = code128Values(text);
+  // Every Code 128 character is 11 modules wide; the quiet zone is 10 modules each side. Total module count is fixed
+  // by the text length alone, so when a caller asks for a specific pixel width (e.g. to fit a label), the module size
+  // is solved for that width -- never stretched non-uniformly afterward. A barcode squeezed or stretched unevenly to
+  // hit a fixed box size still looks right but throws off the bar-width ratios, which a real scanner (unlike a lenient
+  // software decoder) refuses to read -- this is why printed tags scanned fine in testing but not with a real gun.
+  const units = vals.length * 11 + 20;
+  const mod = o.width ? o.width / units : (o.module || 1.6), hgt = o.height || 40, quiet = 10 * mod;
   let x = quiet, bars = '';
   for (const v of vals) {
     const p = C128[v]; let dark = true;
@@ -19,6 +26,6 @@ function barcodeSvg(text, o = {}) {
   }
   const W = x + quiet;
   const wrap = document.createElement('span');
-  wrap.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W.toFixed(2)} ${hgt}" width="${o.width || W.toFixed(0)}" height="${hgt}" preserveAspectRatio="none" fill="#000" role="img" aria-label="${String(text).replace(/[^0-9A-Za-z-]/g, '')}">${bars}</svg>`;
+  wrap.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W.toFixed(2)} ${hgt}" width="${W.toFixed(0)}" height="${hgt}" fill="#000" role="img" aria-label="${String(text).replace(/[^0-9A-Za-z-]/g, '')}">${bars}</svg>`;
   return wrap.firstChild;
 }
