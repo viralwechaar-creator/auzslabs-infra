@@ -297,10 +297,19 @@ async function shiftSheet() {
     sheet({ title: t('Open shift'), body: h('div', { class: 'grid' }, h('p', { class: 'muted' }, t('Count the cash in the drawer and start your shift.')), field(t('Opening cash'), oc)), actions: [{ label: t('Open shift'), primary: true, onclick: async (close) => { await api('sty_shift_open', { p: { branchId: S.branch, openingCash: N(oc.value) } }); close(); toast(t('Shift started')); } }] });
   } else {
     const moves = await api('sty_cash_moves_list', {});
-    const cc = input({ type: 'number', mode: 'decimal', placeholder: '0' }), nt = input({ placeholder: t('Note (optional)') });
+    const nt = input({ placeholder: t('Note (optional)') });
     const moveList = moves.length ? h('div', { class: 'grid', style: { gap: '2px' } }, moves.map((m) => h('div', { class: 'kv small' },
       h('span', null, (m.kind === 'in' ? '+ ' : '- ') + (m.reason || t(m.kind === 'in' ? 'Cash in' : 'Cash out')) + ' · ' + (m.staff || '')),
       h('b', { class: 'num' }, inr(m.amount))))) : null;
+    const DENOMS = [500, 200, 100, 50, 20, 10, 5, 2, 1];
+    const qty = {}; const totalEl = h('b', { class: 'num' }, inr(0));
+    const recalcTotal = () => { const n = DENOMS.reduce((a, d) => a + d * (qty[d] || 0), 0); totalEl.textContent = inr(n); return n; };
+    recalcTotal();
+    const denomGrid = h('div', { class: 'grid', style: { gap: '4px' } }, DENOMS.map((d) => {
+      const qi = input({ type: 'number', mode: 'numeric', placeholder: '0', min: '0', oninput: (e) => { qty[d] = parseInt(e.target.value, 10) || 0; recalcTotal(); } });
+      return h('div', { class: 'row', style: { gap: '8px', alignItems: 'center' } },
+        h('span', { style: { width: '64px' } }, '₹' + d), h('div', { class: 'grow' }, qi));
+    }));
     sheet({ title: t('Close shift'), body: h('div', { class: 'grid' }, h('div', { class: 'kv' }, h('span', null, t('Opening cash')), h('b', { class: 'num' }, inr(cur.openingCash))), h('div', { class: 'kv' }, h('span', null, t('Cash sales')), h('b', { class: 'num' }, inr(cur.cashSales))),
       cur.cashIn ? h('div', { class: 'kv' }, h('span', null, t('Cash in')), h('b', { class: 'num' }, '+' + inr(cur.cashIn))) : null,
       cur.cashOut ? h('div', { class: 'kv' }, h('span', null, t('Cash out')), h('b', { class: 'num' }, '-' + inr(cur.cashOut))) : null,
@@ -308,9 +317,11 @@ async function shiftSheet() {
       h('div', { class: 'row', style: { gap: '8px' } },
         h('button', { class: 'btn', type: 'button', onclick: () => cashMoveSheet('in', () => shiftSheet()) }, t('Cash in')),
         h('button', { class: 'btn', type: 'button', onclick: () => cashMoveSheet('out', () => shiftSheet()) }, t('Cash out'))),
-      moveList, field(t('Counted cash'), cc), field(t('Note'), nt)),
+      moveList, h('div', { class: 'cap' }, t('Count the drawer')), denomGrid,
+      h('div', { class: 'kv' }, h('span', null, t('Counted total')), totalEl), field(t('Note'), nt)),
       actions: [{ label: t('Close shift'), primary: true, onclick: async (close) => {
-        const r = await api('sty_shift_close', { p: { countedCash: cc.value, note: nt.value } }); close();
+        const denominations = {}; for (const d of DENOMS) if (qty[d]) denominations[d] = qty[d];
+        const r = await api('sty_shift_close', { p: { denominations, note: nt.value } }); close();
         alertBox({ title: Math.abs(r.difference) < 1 ? t('Drawer matches') : (r.difference > 0 ? t('Over by') : t('Short by')) + ' ' + inr(Math.abs(r.difference)), actions: [{ label: t('Done'), value: true, role: 'def' }] });
       } }] });
   }

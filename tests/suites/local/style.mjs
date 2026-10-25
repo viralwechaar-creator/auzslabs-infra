@@ -208,6 +208,19 @@ export default async function run({ browser, stack }) {
     const h = hist.find((x) => x.id === opened.id); assert(h && h.cashIn === 100 && h.cashOut === 300, 'history row ' + JSON.stringify(h));
   });
 
+  await s.check('Denomination count at shift close: total is computed server-side from the count, not trusted from the client', async () => {
+    const opened = await ok(staff, 'sty_shift_open', { p: { openingCash: 1000 } });
+    await fails(staff, 'sty_shift_close', { p: { denominations: { 500: 2, 37: 1 } } }, /not a real note or coin/i);
+    await fails(staff, 'sty_shift_close', { p: { denominations: { 500: -1 } } }, /cannot be negative/i);
+    // 2x500 + 1x200 + 3x100 + 1x50 + 2x20 = 1000+200+300+50+40 = 1590
+    const r = await ok(staff, 'sty_shift_close', { p: { denominations: { 500: 2, 200: 1, 100: 3, 50: 1, 20: 2 }, note: 'end of day' } });
+    assert(r.countedCash === 1590, 'counted from denominations: ' + r.countedCash);
+    assert(Math.abs(r.difference - (1590 - opened.expectedCash)) < 0.02, 'difference ' + r.difference);
+    const hist = await ok(owner, 'sty_list_shifts', {});
+    const h = hist.find((x) => x.id === opened.id);
+    assert(h && h.counted === 1590 && h.denominations && h.denominations['500'] === 2 && h.denominations['100'] === 3, 'history denominations: ' + JSON.stringify(h));
+  });
+
   await s.check('Analytics: category, size, colour and variant velocity add up; reorder and size curve respond', async () => {
     const a = await ok(owner, 'sty_analytics', { p: { from: '2000-01-01', to: '2100-01-01' } });
     const units = a.byCategory.reduce((x, c) => x + c.units, 0), bySize = a.bySize.reduce((x, c) => x + c.units, 0);
