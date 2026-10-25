@@ -32,9 +32,15 @@
       var soon = t.status !== 'active', on = TYPE === t.key;
       box.append(el('button', { type: 'button', class: 'bd-t' + (on ? ' on' : '') + (soon ? ' soon' : ''), 'aria-pressed': on ? 'true' : 'false', onclick: function () {
         if (soon) { note.textContent = t.label + ' is coming soon here. Our team sets these businesses up for you. Tell us at contact.html.'; return; }
-        if (TYPE !== t.key) { TYPE = t.key; ls('auz_build_type', TYPE); FEAT = []; saveFeat(); } paintTypes(); paintNeeds(); } },
+        var changed = TYPE !== t.key; if (changed) { TYPE = t.key; ls('auz_build_type', TYPE); FEAT = []; saveFeat(); } paintTypes(); paintNeeds(); nextCue(); } },
         [el('b', { text: t.label }), el('small', { text: t.description }), soon ? el('em', { text: 'Coming soon' }) : null]));
     });
+  }
+  // after a type is chosen, show a cue and bring the next step into view (not on page load, only on a tap)
+  function nextCue() {
+    var c = $('bdCue'), n = $('bdStep2'); if (c) c.hidden = false; if (!n) return;
+    var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    setTimeout(function () { n.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'start' }); }, 120);
   }
   function loadTiers(k) {
     if (TIERS[k] || BUSY[k]) return; BUSY[k] = true;
