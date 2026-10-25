@@ -52,6 +52,7 @@ function calcBill(lines, o = {}) {
 // settings.features.receiptTemplate (a business-wide choice, same as upiId -- not per-device like the tag design).
 function shopHeader() { const s = S.ctx.settings; return { name: s.shopName || (S.dash.tenant && S.dash.tenant.name) || 'Shop', address: s.address, phone: s.phone, gstin: s.gstin, footer: s.billFooter }; }
 function receiptTemplateId() { const k = (S.ctx.settings.features || {}).receiptTemplate; return RECEIPT_TEMPLATES.some((d) => d.id === k) ? k : 'classic'; }
+const poweredBy = () => h('div', { class: 'rc-pwr' }, 'Powered by ', h('a', { href: 'https://auzslab.in', target: '_blank', rel: 'noopener' }, 'auzslab.in'));
 const RECEIPT_TEMPLATES = [
   { id: 'classic', name: 'Classic', build: (sale, sh, d, row) => h('div', { class: 'receipt rc-classic' },
       h('div', { class: 'rc-h' }, (S.ctx.settings && S.ctx.settings.logoUrl) ? h('img', { class: 'rc-logo', src: S.ctx.settings.logoUrl, alt: '' }) : null, h('b', null, sh.name), sh.address ? h('div', null, sh.address) : null, sh.phone ? h('div', null, sh.phone) : null, sh.gstin ? h('div', null, 'GSTIN ' + sh.gstin) : null),
@@ -69,7 +70,7 @@ const RECEIPT_TEMPLATES = [
       (sale.payments || []).map((p) => row(String(p.mode).toUpperCase(), inr(p.amount))),
       sale.balance > 0 ? row(t('Due'), inr(sale.balance), 'big') : null,
       sale.pointsEarned ? h('div', { class: 'rc-f' }, '+' + sale.pointsEarned + ' ' + t('Points')) : null,
-      h('div', { class: 'rc-f' }, sh.footer || 'Thank you, visit again')) },
+      h('div', { class: 'rc-f' }, sh.footer || 'Thank you, visit again'), poweredBy()) },
   { id: 'compact', name: 'Compact (short, items on one line, total only)', build: (sale, sh, d, row) => h('div', { class: 'receipt rc-compact' },
       h('div', { class: 'rc-h' }, h('b', null, sh.name), sh.phone ? h('div', null, sh.phone) : null),
       h('div', { class: 'rc-sep' }),
@@ -79,7 +80,7 @@ const RECEIPT_TEMPLATES = [
       row(t('Total'), inr(sale.total), 'big'),
       (sale.payments || []).map((p) => row(String(p.mode).toUpperCase(), inr(p.amount))),
       sale.balance > 0 ? row(t('Due'), inr(sale.balance), 'big') : null,
-      h('div', { class: 'rc-f' }, sh.footer || 'Thank you, visit again')) },
+      h('div', { class: 'rc-f' }, sh.footer || 'Thank you, visit again'), poweredBy()) },
   { id: 'formal', name: 'Formal tax invoice (GSTIN, item-wise tax, signatory line)', build: (sale, sh, d, row) => h('div', { class: 'receipt rc-formal' },
       h('div', { class: 'rc-h' }, (S.ctx.settings && S.ctx.settings.logoUrl) ? h('img', { class: 'rc-logo', src: S.ctx.settings.logoUrl, alt: '' }) : null, h('b', null, sh.name), sh.address ? h('div', null, sh.address) : null, sh.phone ? h('div', null, sh.phone) : null, sh.gstin ? h('div', null, 'GSTIN: ' + sh.gstin) : null, h('div', { class: 'rc-tag' }, t('Tax invoice'))),
       h('div', { class: 'rc-sep' }),
@@ -97,7 +98,7 @@ const RECEIPT_TEMPLATES = [
       (sale.payments || []).map((p) => row(String(p.mode).toUpperCase(), inr(p.amount))),
       sale.balance > 0 ? row(t('Balance due'), inr(sale.balance), 'big') : null,
       sale.pointsEarned ? h('div', { class: 'rc-f' }, '+' + sale.pointsEarned + ' ' + t('Points')) : null,
-      h('div', { class: 'rc-sig' }, t('For') + ' ' + sh.name), h('div', { class: 'rc-f' }, sh.footer || 'Thank you, visit again')) },
+      h('div', { class: 'rc-sig' }, t('For') + ' ' + sh.name), h('div', { class: 'rc-f' }, sh.footer || 'Thank you, visit again'), poweredBy()) },
 ];
 function receiptNode(sale, templateId) {
   const sh = shopHeader(), d = new Date(sale.at || Date.now());
