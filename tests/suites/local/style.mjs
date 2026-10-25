@@ -169,6 +169,24 @@ export default async function run({ browser, stack }) {
     const r = await ok(owner, 'sty_shift_close', { p: { countedCash: cur.expectedCash - 50 } }); assert(r.difference === -50, 'difference ' + r.difference);
   });
 
+  await s.check('Cash in/out: move the drawer total, need an open shift, amount must be positive', async () => {
+    await fails(staff, 'sty_cash_move', { p: { kind: 'out', amount: 100 } }, /open a shift/i);
+    const opened = await ok(staff, 'sty_shift_open', { p: { openingCash: 500 } });
+    await fails(staff, 'sty_cash_move', { p: { kind: 'sideways', amount: 100 } }, /kind must be/i);
+    await fails(staff, 'sty_cash_move', { p: { kind: 'out', amount: 0 } }, /above 0/i);
+    await fails(staff, 'sty_cash_move', { p: { kind: 'out', amount: -50 } }, /above 0/i);
+    let cur = await ok(staff, 'sty_cash_move', { p: { kind: 'out', amount: 300, reason: 'Change for delivery boy' } });
+    assert(cur.cashOut === 300 && cur.expectedCash === opened.expectedCash - 300, 'after out: ' + JSON.stringify(cur));
+    cur = await ok(staff, 'sty_cash_move', { p: { kind: 'in', amount: 100, reason: 'Owner top-up' } });
+    assert(cur.cashIn === 100 && cur.cashOut === 300 && cur.expectedCash === opened.expectedCash - 300 + 100, 'after in: ' + JSON.stringify(cur));
+    const moves = await ok(staff, 'sty_cash_moves_list', {});
+    assert(moves.length === 2 && moves[0].kind === 'in' && moves[0].amount === 100 && moves[1].kind === 'out' && moves[1].reason === 'Change for delivery boy', JSON.stringify(moves));
+    const closed = await ok(staff, 'sty_shift_close', { p: { countedCash: cur.expectedCash } });
+    assert(closed.difference === 0, 'closed difference ' + closed.difference);
+    const hist = await ok(owner, 'sty_list_shifts', {});
+    const h = hist.find((x) => x.id === opened.id); assert(h && h.cashIn === 100 && h.cashOut === 300, 'history row ' + JSON.stringify(h));
+  });
+
   await s.check('Analytics: category, size, colour and variant velocity add up; reorder and size curve respond', async () => {
     const a = await ok(owner, 'sty_analytics', { p: { from: '2000-01-01', to: '2100-01-01' } });
     const units = a.byCategory.reduce((x, c) => x + c.units, 0), bySize = a.bySize.reduce((x, c) => x + c.units, 0);

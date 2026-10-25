@@ -296,12 +296,32 @@ async function shiftSheet() {
     const oc = input({ type: 'number', mode: 'decimal', placeholder: '0' });
     sheet({ title: t('Open shift'), body: h('div', { class: 'grid' }, h('p', { class: 'muted' }, t('Count the cash in the drawer and start your shift.')), field(t('Opening cash'), oc)), actions: [{ label: t('Open shift'), primary: true, onclick: async (close) => { await api('sty_shift_open', { p: { branchId: S.branch, openingCash: N(oc.value) } }); close(); toast(t('Shift started')); } }] });
   } else {
+    const moves = await api('sty_cash_moves_list', {});
     const cc = input({ type: 'number', mode: 'decimal', placeholder: '0' }), nt = input({ placeholder: t('Note (optional)') });
+    const moveList = moves.length ? h('div', { class: 'grid', style: { gap: '2px' } }, moves.map((m) => h('div', { class: 'kv small' },
+      h('span', null, (m.kind === 'in' ? '+ ' : '- ') + (m.reason || t(m.kind === 'in' ? 'Cash in' : 'Cash out')) + ' · ' + (m.staff || '')),
+      h('b', { class: 'num' }, inr(m.amount))))) : null;
     sheet({ title: t('Close shift'), body: h('div', { class: 'grid' }, h('div', { class: 'kv' }, h('span', null, t('Opening cash')), h('b', { class: 'num' }, inr(cur.openingCash))), h('div', { class: 'kv' }, h('span', null, t('Cash sales')), h('b', { class: 'num' }, inr(cur.cashSales))),
-      h('div', { class: 'kv' }, h('span', null, t('Expected in drawer')), h('b', { class: 'num' }, inr(cur.expectedCash))), field(t('Counted cash'), cc), field(t('Note'), nt)),
+      cur.cashIn ? h('div', { class: 'kv' }, h('span', null, t('Cash in')), h('b', { class: 'num' }, '+' + inr(cur.cashIn))) : null,
+      cur.cashOut ? h('div', { class: 'kv' }, h('span', null, t('Cash out')), h('b', { class: 'num' }, '-' + inr(cur.cashOut))) : null,
+      h('div', { class: 'kv' }, h('span', null, t('Expected in drawer')), h('b', { class: 'num' }, inr(cur.expectedCash))),
+      h('div', { class: 'row', style: { gap: '8px' } },
+        h('button', { class: 'btn', type: 'button', onclick: () => cashMoveSheet('in', () => shiftSheet()) }, t('Cash in')),
+        h('button', { class: 'btn', type: 'button', onclick: () => cashMoveSheet('out', () => shiftSheet()) }, t('Cash out'))),
+      moveList, field(t('Counted cash'), cc), field(t('Note'), nt)),
       actions: [{ label: t('Close shift'), primary: true, onclick: async (close) => {
         const r = await api('sty_shift_close', { p: { countedCash: cc.value, note: nt.value } }); close();
         alertBox({ title: Math.abs(r.difference) < 1 ? t('Drawer matches') : (r.difference > 0 ? t('Over by') : t('Short by')) + ' ' + inr(Math.abs(r.difference)), actions: [{ label: t('Done'), value: true, role: 'def' }] });
       } }] });
   }
+}
+
+function cashMoveSheet(kind, done) {
+  const amt = input({ type: 'number', mode: 'decimal', placeholder: '0' }), rs = input({ placeholder: t('Reason (optional)') });
+  sheet({ title: t(kind === 'in' ? 'Cash in' : 'Cash out'), body: h('div', { class: 'grid' }, field(t('Amount'), amt), field(t('Reason'), rs)),
+    actions: [{ label: t('Save'), primary: true, onclick: async (close) => {
+      const n = N(amt.value); if (!(n > 0)) { toast(t('Enter an amount above 0'), { err: true }); return false; }
+      try { await api('sty_cash_move', { p: { kind, amount: n, reason: rs.value } }); } catch (e) { return fail(e); }
+      close(); toast(kind === 'in' ? t('Cash in saved') : t('Cash out saved')); done && done();
+    } }] });
 }

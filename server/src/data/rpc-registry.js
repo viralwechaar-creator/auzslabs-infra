@@ -507,6 +507,8 @@ export const RPC = {
   sty_shift_open: { params: ['p'], jsonb: ['p'], auth: true },
   sty_shift_close: { params: ['p'], jsonb: ['p'], auth: true },
   sty_list_shifts: { params: ['p_limit'], defaults: { p_limit: 40 }, auth: true },
+  sty_cash_move: { params: ['p'], jsonb: ['p'], auth: true },
+  sty_cash_moves_list: { params: ['p_shift_id'], defaults: { p_shift_id: null }, auth: true },
   sty_hold_save: { params: ['p'], jsonb: ['p'], auth: true },
   sty_hold_list: { params: [], auth: true },
   sty_hold_close: { params: ['p_id'], auth: true },
