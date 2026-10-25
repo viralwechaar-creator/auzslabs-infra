@@ -435,3 +435,6 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 
 /* printing while a sheet is open: the scroll lock pins the body (position:fixed), and a fixed body prints as ONE page */
 @media print{html.auz-lock body{position:static!important;top:auto!important;width:auto!important;overflow:visible!important;height:auto!important}html.auz-lock{overflow:visible!important}}
+
+/* offline user manual */
+.man-sec{margin-bottom:16px}.man-sec h3{font-size:15px;font-weight:700;margin:0 0 6px}.man-sec p{font-size:13.5px;line-height:1.5;color:var(--label2);margin:0 0 7px}

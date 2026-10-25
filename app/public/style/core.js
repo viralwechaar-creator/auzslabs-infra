@@ -52,6 +52,7 @@ const ICONS = {
   print: '<path d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z"/>',
   download: '<path d="M12 3v12M8 11l4 4 4-4M5 20h14"/>',
   upload: '<path d="M12 21V9M8 13l4-4 4 4M5 4h14"/>',
+  book: '<path d="M4 5.5C4 4.1 5.3 3 7 3h4.5v16H7c-1.7 0-3 1.1-3 2.5V5.5Z"/><path d="M20 5.5C20 4.1 18.7 3 17 3h-4.5v16H17c1.7 0 3 1.1 3 2.5V5.5Z"/>',
   trash: '<path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13M10 11v6M14 11v6"/>', edit: '<path d="M4 20l1-4L16 5l3 3L8 19z"/><path d="M14 7l3 3"/>',
   alert: '<path d="M12 4 2.8 19.5h18.4z"/><path d="M12 10v4.5M12 17.3v.2"/>', info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8v.2"/>',
   lock: '<rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',

@@ -216,6 +216,7 @@ function moreSheet() {
       liRow({ icon: 'moon', tone: 'gray', title: t('Appearance'), badge: seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v)) })),
     h('div', { class: 'list' }, liRow({ icon: 'user', tone: 'gray', title: S.user.email, sub: S.user.role }),
       liRow({ icon: 'user', tone: 'gray', title: 'Plan & account', onclick: () => { s.close(); auzPlan.open(sb); } }),
+      liRow({ icon: 'book', tone: 'gray', title: t('User manual'), sub: t('Works offline, no internet needed'), onclick: () => { s.close(); manualSheet(); } }),
       liRow({ icon: 'info', tone: 'gray', title: 'Help & report a problem', onclick: () => { s.close(); auzHelp.open(sb); } }),
       S.user.role === 'owner' ? liRow({ icon: 'download', tone: 'gray', title: 'Backup, export or clear data', onclick: () => { s.close(); auzMyData(sb); } }) : null,
       liRow({ icon: 'logout', tone: 'gray', title: t('Sign out'), onclick: signOut })));
