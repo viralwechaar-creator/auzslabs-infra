@@ -61,16 +61,16 @@ jobs:
       - name: Build the installer
         working-directory: desktop-style
         shell: bash
-        run: npm run dist -- '-c.artifactName=${{ matrix.name }}-${version}.${ext}'
+        run: npm run dist -- '-c.artifactName=${{ matrix.name }}.${ext}'
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}
-          path: desktop-style/dist/${{ matrix.name }}-*.exe
+          path: desktop-style/dist/${{ matrix.name }}.exe
       - name: Publish on a release page
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete ${{ matrix.tag }} --yes --cleanup-tag --repo "$GITHUB_REPOSITORY" || true
-          gh release create ${{ matrix.tag }} desktop-style/dist/${{ matrix.name }}-*.exe --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
+          gh release create ${{ matrix.tag }} desktop-style/dist/${{ matrix.name }}.exe --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
             --title "AUZsStyle for Windows (${{ matrix.variant }} build)" --notes "Offline Windows installer, ${{ matrix.variant }} build. Needs a licence code from AUZslab. Built from commit $GITHUB_SHA."
