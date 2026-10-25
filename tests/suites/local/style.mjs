@@ -146,6 +146,27 @@ export default async function run({ browser, stack }) {
     await integrity();
   });
 
+  await s.check('Voiding a credit-paid bill gives the store credit back; exchange credit is real and capped, not trusted at face value', async () => {
+    const cu = (await ok(staff, 'sty_list_customers', { p_q: 'Asha' }))[0]; const before = cu.credit; assert(before > 0, 'test needs existing store credit');
+    const spend = Math.min(before, 50);
+    const b = await ok(staff, 'sty_sell', { p: { id: uid(), customerId: cu.id, lines: [{ variantId: vL.id, qty: 1 }], payments: [{ mode: 'credit', amount: spend }, { mode: 'cash', amount: 3000 }] } });
+    let cu2 = (await ok(staff, 'sty_list_customers', { p_q: 'Asha' }))[0]; assert(Math.abs(cu2.credit - (before - spend)) < 0.02, 'credit not spent: ' + cu2.credit);
+    await ok(manager, 'sty_void_sale', { p_id: b.id, p_reason: 'test void' });
+    cu2 = (await ok(staff, 'sty_list_customers', { p_q: 'Asha' }))[0]; assert(Math.abs(cu2.credit - before) < 0.02, 'credit not restored after void: ' + cu2.credit + ' vs ' + before);
+
+    // exchange: a return with mode='exchange' must grant real credit, and sty_sell must cap an 'exchange' payment
+    // against that real balance -- not accept whatever amount the client claims.
+    const b2 = await ok(staff, 'sty_sell', { p: { id: uid(), customerId: cu.id, lines: [{ variantId: vL.id, qty: 1 }], payments: [{ mode: 'cash', amount: 3000 }] } });
+    const r = await ok(staff, 'sty_return', { p: { id: uid(), saleId: b2.id, mode: 'exchange', reason: 'size swap', lines: [{ saleLineId: b2.lines[0].id, qty: 1 }] } });
+    const exVal = r.returns.find((x) => x.mode === 'exchange').refund;
+    const cu3 = (await ok(staff, 'sty_list_customers', { p_q: 'Asha' }))[0]; assert(cu3.credit >= exVal - 0.02, 'exchange did not grant real credit: ' + cu3.credit);
+    const claimed = exVal * 50 + 9999; // a wildly inflated amount a tampered client could send
+    const b3 = await ok(staff, 'sty_sell', { p: { id: uid(), customerId: cu.id, lines: [{ variantId: vL.id, qty: 1 }], payments: [{ mode: 'exchange', amount: claimed }, { mode: 'cash', amount: 3000 }] } });
+    const cu4 = (await ok(staff, 'sty_list_customers', { p_q: 'Asha' }))[0]; assert(cu4.credit === 0, 'inflated exchange amount was not capped: ' + cu4.credit);
+    assert(b3.status === 'paid', 'bill should still be payable with cash covering the rest');
+    await integrity();
+  }, 'critical');
+
   await s.check('Branch transfer moves stock out then in, and a wrong branch pair is refused', async () => {
     const c2 = await ok(owner, 'sty_save_branch', { p: { name: 'Warehouse', kind: 'warehouse' } }); branch2 = c2.branches.find((b) => b.name === 'Warehouse').id;
     const tr = uid(); const before = await stock(vL.id, branch1);
