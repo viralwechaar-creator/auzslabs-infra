@@ -135,25 +135,23 @@ function closeTicketSheet() { if (S.ticketSheet) { const s = S.ticketSheet; S.ti
 // ---------- adding items ----------
 function addItemFlow(i) {
   if (isRetail() && i.variants && i.variants.length) return variantSheet(i);
-  const groups = (i.addonGroups || []).map(rec).filter(Boolean);
-  const own = groups.length ? i.ownMods || [] : i.mods || [];
-  if ((i.sizes && i.sizes.length) || groups.length || own.length || i.askNote) return optionSheet(i, groups, own);
+  const groups = itemGroups(i);
+  if ((i.sizes && i.sizes.length) || groups.length || (i.removable || []).length || i.askNote) return optionSheet(i, groups);
   addLine(i, '', i.price);
 }
-const parseMods = (list) => (Array.isArray(list) ? list : String(list || '').split(',')).map((m) => { const [n, v] = String(m).split(':'); return { n: (n || '').trim(), v: +v || 0 }; }).filter((m) => m.n);
-function optionSheet(i, groups, own) {
+function optionSheet(i, allGroups) {
   const sizes = i.sizes || [];
   let size = sizes[0] || null, qty = 1;
   const picked = new Map(); // group index -> Set of mod names
-  const allGroups = [...groups.map((g) => ({ name: g.name, min: +g.min || 0, max: +g.max || 0, mods: parseMods(g.mods) })), ...(own.length ? [{ name: groups.length ? 'Extras' : 'Add-ons', min: 0, max: 0, mods: parseMods(own) }] : [])];
+  const removed = new Set(), removable = i.removable || [];
   const note = h('input', { class: 'input', placeholder: 'e.g. less spicy, no onion', 'aria-label': 'Note for the kitchen' });
   const priceNow = () => r2(((size ? size.p : i.price) + allGroups.reduce((a, g, gi) => a + g.mods.filter((m) => (picked.get(gi) || new Set()).has(m.n)).reduce((x, m) => x + m.v, 0), 0)) * qty);
   const addBtn = { label: 'Add', primary: true, run: () => {
     for (const [gi, g] of allGroups.entries()) { const n = (picked.get(gi) || new Set()).size; if (g.min && n < g.min) { toast('Choose at least ' + g.min + ' in ' + g.name, { err: true }); return false; } }
     const mods = allGroups.flatMap((g, gi) => g.mods.filter((m) => (picked.get(gi) || new Set()).has(m.n)));
     const unit = r2((size ? size.p : i.price) + mods.reduce((a, m) => a + m.v, 0));
-    const noteTxt = [mods.map((m) => m.n).join(', '), note.value.trim()].filter(Boolean).join(' · ') || undefined;
-    addLine(i, size ? size.l : '', unit, noteTxt, null, qty);
+    const rmArr = [...removed], noteTxt = [mods.map((m) => m.n).join(', '), rmArr.map((x) => 'No ' + x).join(', '), note.value.trim()].filter(Boolean).join(' · ') || undefined;
+    addLine(i, size ? size.l : '', unit, noteTxt, null, qty, { ad: mods.map((m) => ({ n: m.n, u: m.u })).filter((m) => m.u), rm: rmArr });
   } };
   const body = h('div', { class: 'stack s20' });
   const draw = () => {
@@ -162,12 +160,13 @@ function optionSheet(i, groups, own) {
       ...allGroups.map((g, gi) => {
         const set = picked.get(gi) || new Set(); picked.set(gi, set);
         const rule = g.min && g.max ? 'Choose ' + (g.min === g.max ? g.min : g.min + ' to ' + g.max) : g.min ? 'Choose at least ' + g.min : g.max ? 'Up to ' + g.max : 'Optional';
-        return h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('div', { class: 'lbl' }, g.name), h('span', { class: 'small sub' }, rule)), h('div', { class: 'list' }, g.mods.map((m) => liRow({ title: m.n, value: m.v ? '+' + inr(m.v) : '', right: h('span', { style: { color: 'var(--accent-text)', width: '20px' } }, set.has(m.n) ? icon('check', 20) : null), onclick: () => {
+        return h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('div', { class: 'lbl' }, g.name), h('span', { class: 'small sub' }, rule)), h('div', { class: 'list' }, g.mods.map((m) => liRow({ title: m.n, sub: modLow(m) ? 'Out of stock' : undefined, value: m.v ? '+' + inr(m.v) : '', right: h('span', { style: { color: 'var(--accent-text)', width: '20px' } }, set.has(m.n) ? icon('check', 20) : null), onclick: () => {
           if (set.has(m.n)) set.delete(m.n);
           else { if (g.max === 1) set.clear(); else if (g.max && set.size >= g.max) { toast('Up to ' + g.max + ' in ' + g.name, { err: true }); return; } set.add(m.n); }
           draw();
         } }))));
       }),
+      removable.length ? h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('div', { class: 'lbl' }, 'Without'), h('span', { class: 'small sub' }, 'Optional')), h('div', { class: 'list' }, removable.map((n) => liRow({ title: 'No ' + n, right: h('span', { style: { color: 'var(--accent-text)', width: '20px' } }, removed.has(n) ? icon('check', 20) : null), onclick: () => { if (removed.has(n)) removed.delete(n); else removed.add(n); draw(); } })))) : null,
       h('div', { class: 'sec' }, h('div', { class: 'lbl' }, 'Note for the kitchen'), note),
       h('div', { class: 'row sp' }, h('span', { class: 'lbl' }, 'Quantity'), stepper(qty, (v) => { qty = v; addBtn.el.textContent = 'Add ' + qty + ' · ' + inr(priceNow()); }, 1, 99)));
     if (addBtn.el) addBtn.el.textContent = 'Add ' + qty + ' · ' + inr(priceNow());
@@ -176,19 +175,20 @@ function optionSheet(i, groups, own) {
   sheet({ title: i.name, body, closeLabel: 'Cancel', actions: [addBtn] });
   addBtn.el.textContent = 'Add ' + qty + ' · ' + inr(priceNow());
 }
+const modLow = (m) => modUse(m.u).some(([n]) => { const g = ingByName(n); return g && g.qty <= 0; });
 function variantSheet(i) {
   const s = sheet({ title: i.name, narrow: true, closeLabel: 'Cancel', body: h('div', { class: 'list' }, (i.variants || []).map((v) => liRow({ title: v.size + (v.color ? ' / ' + v.color : ''), sub: v.qty > 0 ? v.qty + ' in stock' : 'Out of stock', value: inr(i.price), onclick: async () => {
     if (v.qty <= 0 && !(await confirmBox('Out of stock', 'This variant shows 0 in stock. Add it anyway?', 'Add'))) return;
     s.close(); addLine(i, v.size + (v.color ? ' / ' + v.color : ''), i.price, undefined, { size: v.size, color: v.color });
   } }))) });
 }
-function addLine(i, size, price, note, variant, qty = 1) {
+function addLine(i, size, price, note, variant, qty = 1, extra) {
   const o = curOrder();
   // a dish cancelled from another order in the last 15 minutes may still be sitting in the kitchen
   const recent = L('waste').find((w) => w.itemId === i.id && w.at && Date.now() - new Date(w.at) < 15 * 60000);
   if (recent && !(S._dupWarned || (S._dupWarned = {}))[i.id]) { S._dupWarned[i.id] = true; toast(i.name + ' was cancelled from another order ' + Math.max(1, minsSince(recent.at)) + ' min ago. Check the kitchen before cooking a new one.', { ms: 6000 }); }
-  const same = o.lines.find((x) => x.id === i.id && (x.size || '') === (size || '') && x.price === price && (x.note || '') === (note || '') && (x.variant ? x.variant.size + '/' + (x.variant.color || '') : '') === (variant ? variant.size + '/' + (variant.color || '') : ''));
-  if (same) same.qty += qty; else o.lines.push({ id: i.id, name: i.name, size: size || '', price, qty, sent: 0, st: i.st || 'Kitchen', note: note || undefined, variant: variant || undefined });
+  const same = o.lines.find((x) => x.id === i.id && (x.size || '') === (size || '') && x.price === price && (x.note || '') === (note || '') && !(x.ad && x.ad.length) && !(extra && extra.ad && extra.ad.length) && (x.rm || []).join() === ((extra && extra.rm) || []).join() && (x.variant ? x.variant.size + '/' + (x.variant.color || '') : '') === (variant ? variant.size + '/' + (variant.color || '') : ''));
+  if (same) same.qty += qty; else o.lines.push({ id: i.id, name: i.name, size: size || '', price, qty, sent: 0, st: i.st || 'Kitchen', note: note || undefined, variant: variant || undefined, ad: extra && extra.ad && extra.ad.length ? extra.ad : undefined, rm: extra && extra.rm && extra.rm.length ? extra.rm : undefined });
   render();
 }
 async function changeQty(o, l, d) {

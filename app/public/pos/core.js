@@ -390,22 +390,43 @@ function mk(o, kno) {
   return n;
 }
 
-// stock: recipes on ingredients, retail variants
-async function deduRecipe(recipe, mult) {
-  for (const p of recipe.split(',')) {
-    const [n, q] = p.split(':'), g = L('ing').find((x) => x.name.toLowerCase() === (n || '').trim().toLowerCase());
-    if (g && +q) { const used = +q * mult; g.qty = r2(g.qty - used); g.usage = (g.usage || []).concat({ q: used, d: today(), at: now() }).slice(-200); await save('ing', g, g.id); }
-  }
+// ---- add-ons, per-size recipes, removable ingredients and packaging ----
+// recipe text "Cheese:20, Bun:1" -> [[name, qty]]
+function parseRec(t) { return String(t || '').split(',').map((p) => { const [n, q] = p.split(':'); return [(n || '').trim(), +q || 0]; }).filter((x) => x[0] && x[1]); }
+// add-on option text "Extra cheese:30:Cheese=20|Bun=1" (name:price:ingredient=qty|...)
+const parseMods = (list) => (Array.isArray(list) ? list : String(list || '').split(',')).map((m) => { const [n, v, u] = String(m).split(':'); return { n: (n || '').trim(), v: +v || 0, u: (u || '').trim() }; }).filter((m) => m.n);
+const modUse = (u) => String(u || '').split('|').map((p) => { const [n, q] = p.split('='); return [(n || '').trim(), +q || 0]; }).filter((x) => x[0] && x[1]);
+function itemGroups(i) {
+  const groups = (i.addonGroups || []).map(rec).filter(Boolean);
+  const own = groups.length ? i.ownMods || [] : i.mods || [];
+  return [...groups.map((g) => ({ name: g.name, min: +g.min || 0, max: +g.max || 0, mods: parseMods(g.mods) })), ...(own.length ? [{ name: groups.length ? 'Extras' : 'Add-ons', min: 0, max: 0, mods: parseMods(own) }] : [])];
+}
+const ingByName = (n) => L('ing').find((x) => x.name.toLowerCase() === String(n || '').trim().toLowerCase());
+// what one unit of this line uses: base recipe (per size if set) minus removed ingredients, plus add-on usage, plus the dish's own packaging when it leaves the table
+function lineUse(l, o, only) {
+  const it = rec(l.id); if (!it) return [];
+  const out = [], push = (arr, m) => arr.forEach(([n, q]) => out.push([n, q * (m || 1)]));
+  const comp = (item, mult) => {
+    const base = (item.recSizes && l.size && item.recSizes[l.size]) || item.rec;
+    const rm = (l.rm || []).map((x) => x.toLowerCase());
+    parseRec(base).forEach(([n, q]) => { if (!rm.includes(n.toLowerCase())) out.push([n, q * mult]); });
+  };
+  if (it.combo && it.comboText) {
+    for (const part of it.comboText.split(',')) { const [cn, cq] = part.split(':'); if (!cn || !cn.trim()) continue; const c = L('item').find((x) => x.name.toLowerCase() === cn.trim().toLowerCase()); if (c) comp(c, +cq || 1); }
+  } else comp(it, 1);
+  (l.ad || []).forEach((a) => push(modUse(a.u), 1));
+  if (only !== 'noPack' && o && o.type && o.type !== 'Dine-in') push(parseRec(it.pack), 1);
+  return out;
+}
+// packaging per order (box, bag, ketchup sachets...) from Settings -> packaging kit
+function kitUse(o) { const k = (cfg().packKit || {})[o.type]; return k ? parseRec(k) : []; }
+async function takeStock(name, used, extra) {
+  const g = ingByName(name); if (!g || !used) return null;
+  g.qty = r2(g.qty - used); g.usage = (g.usage || []).concat(Object.assign({ q: used, d: today(), at: now() }, extra || {})).slice(-200); await save('ing', g, g.id); return g;
 }
 async function dedu(o) {
-  for (const l of o.lines) {
-    const it = rec(l.id); if (!it) continue;
-    if (it.combo && it.comboText) {
-      for (const part of it.comboText.split(',')) { const [cn, cq] = part.split(':'); if (!cn || !cn.trim()) continue; const c = L('item').find((x) => x.name.toLowerCase() === cn.trim().toLowerCase()); if (c && c.rec) await deduRecipe(c.rec, (+cq || 1) * l.qty); }
-      continue;
-    }
-    if (it.rec) await deduRecipe(it.rec, l.qty);
-  }
+  for (const l of o.lines) for (const [n, q] of lineUse(l, o)) await takeStock(n, q * l.qty);
+  for (const [n, q] of kitUse(o)) await takeStock(n, q, { kit: true });
 }
 async function deduVariant(o) {
   for (const l of o.lines) {
@@ -417,10 +438,10 @@ async function deduVariant(o) {
 // a dish cancelled after the kitchen cooked it: its ingredients were used, log the loss
 async function deduAndWasteLine(l, q, reason) {
   const it = rec(l.id);
-  if (it && it.rec) {
-    for (const p of it.rec.split(',')) {
-      const [n, qq] = p.split(':'), g = L('ing').find((x) => x.name.toLowerCase() === (n || '').trim().toLowerCase());
-      if (g && +qq) { const used = +qq * q; g.qty = r2(g.qty - used); g.usage = (g.usage || []).concat({ q: used, d: today(), at: now() }).slice(-200); await save('ing', g, g.id); await save('waste', { ing: g.name, q: used, d: today(), reason: 'Cancelled after KOT: ' + l.name, itemId: l.id, at: now() }); }
+  if (it && (it.rec || it.recSizes || (l.ad || []).length)) {
+    for (const [n, qq] of lineUse(l, null, 'noPack')) {
+      const g = await takeStock(n, qq * q);
+      if (g) await save('waste', { ing: g.name, q: qq * q, d: today(), reason: 'Cancelled after KOT: ' + l.name, itemId: l.id, at: now() });
     }
   } else await save('waste', { ing: l.name, q, d: today(), reason, itemId: l.id, at: now() });
 }

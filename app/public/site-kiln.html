@@ -788,7 +788,7 @@ var CK='kiln-cart-'+(window.TENANT_SLUG||'demo');var cart=[];var S={cat:'all',ve
 try{var raw=JSON.parse(localStorage.getItem(CK)||'[]');if(Array.isArray(raw))cart=raw.filter(function(l){return l&&BY[l.id]&&l.q>0})}catch(e){}
 function save(){try{localStorage.setItem(CK,JSON.stringify(cart))}catch(e){}}
 function unit(l){var p=BY[l.id],u=p.price;if(p.sizes)u+=p.sizes[l.s].d;if(p.vr)u+=p.vr.opts[l.v].d;l.a.forEach(function(i){u+=p.ad[i].p});return u}
-function optTxt(l){var p=BY[l.id],o=[];if(p.sizes)o.push(p.sizes[l.s].n);if(p.vr)o.push(p.vr.opts[l.v].n);l.a.forEach(function(i){o.push('+ '+p.ad[i].n)});return o.join(' · ')}
+function optTxt(l){var p=BY[l.id],o=[];if(p.sizes)o.push(p.sizes[l.s].n);if(p.vr)o.push(p.vr.opts[l.v].n);l.a.forEach(function(i){o.push(p.ad[i].rm?p.ad[i].n:'+ '+p.ad[i].n)});return o.join(' · ')}
 function count(){return cart.reduce(function(n,l){return n+l.q},0)}
 function total(){return cart.reduce(function(n,l){return n+unit(l)*l.q},0)}
 function addLine(id,s,v,a,q){a=a.slice().sort(function(x,y){return x-y});var k=[id,s,v,a.join('.')].join('|');var f=cart.filter(function(l){return l.k===k})[0];if(f)f.q+=q;else cart.push({k:k,id:id,s:s,v:v,a:a,q:q});save();refresh()}
@@ -873,7 +873,7 @@ $('#orderForm').addEventListener('submit',function(e){e.preventDefault();if(!car
  if(!LIVE){finish('K-'+(Math.floor(Math.random()*9000)+1000));return}
  var btn=$('#placeBtn');btn.disabled=true;var old=btn.textContent;btn.textContent='Placing order…';
  var nt=(dine?'':'Takeaway · '+$('#cPickup').value+(note?' · ':''))+note;
- sbc.rpc('place_order',{tenant_slug:SLUG,t:dine?tb:null,n:name,p:ph,nt:nt,its:lines.map(function(l){var p=BY[l.id];return {id:l.id,size:p.sizes?p.sizes[l.s].n:'',qty:l.q}})}).then(function(r){
+ sbc.rpc('place_order',{tenant_slug:SLUG,t:dine?tb:null,n:name,p:ph,nt:nt,its:lines.map(function(l){var p=BY[l.id];var ao=l.a.map(function(x){return p.ad[x]}),op=ao.filter(function(x){return !x.rm}).map(function(x){return x.n}),rm=ao.filter(function(x){return x.rm}).map(function(x){return x.r});return {id:l.id,size:p.sizes?p.sizes[l.s].n:'',qty:l.q,opts:op.length?op:undefined,rm:rm.length?rm:undefined}})}).then(function(r){
   btn.disabled=false;btn.textContent=old;
   if(r.error){toast(/busy/.test(r.error.message)?'Too many pending orders right now. Please call us or try again shortly.':(r.error.message||'Could not place the order. Please try again or call us.'));return}
   finish('Order sent',r.data)}).catch(function(){btn.disabled=false;btn.textContent=old;toast('Could not reach us. Please try again.')})});
@@ -909,8 +909,15 @@ function artFor(cat,name,i){var c=(cat||'').toLowerCase(),n=(name||'').toLowerCa
  if(/pastry|croissant|puff/.test(t))return {k:'croissant',stripe:1};
  if(/pasta|quiche|pizza/.test(t))return {k:'quiche'};
  var ks=[{k:'toast'},{k:'brioche'},{k:'quiche'},{k:'sandwich',fill:K.pist},{k:'loaf',seeds:1}];return ks[i%ks.length]}
+function kilnAds(i,ings){var low=function(u){return String(u||'').split('|').some(function(q){var n=q.split('=')[0].trim().toLowerCase(),g=ings.find(function(x){return String(x.name).toLowerCase()==n});return g&&g.qty<=0})};
+ var groups=(i.addonGroups||[]).map(function(id){return ((window.__M&&window.__M.groups)||[]).filter(function(g){return g.id==id})[0]}).filter(Boolean),mods=[];
+ groups.forEach(function(g){String(g.mods||'').split(',').forEach(function(m){mods.push(m)})});
+ (groups.length?(i.ownMods||[]):(i.mods||[])).forEach(function(m){mods.push(m)});
+ var ad=[];mods.forEach(function(m){var a=String(m).split(':'),n=(a[0]||'').trim();if(n&&!low(a[2]))ad.push({n:n,p:Number(a[1])||0})});
+ (i.removable||[]).forEach(function(n){ad.push({n:'No '+n,p:0,rm:true,r:n})});
+ return ad}
 function loadLive(){if(!sbc||!SLUG)return Promise.resolve();
- return sbc.rpc('public_menu',{tenant_slug:SLUG}).then(function(r){var M=r&&r.data;if(!M||!M.items||!M.items.length||!M.cats||!M.cats.length)return;
+ return sbc.rpc('public_menu',{tenant_slug:SLUG}).then(function(r){var M=r&&r.data;window.__M=M;if(!M||!M.items||!M.items.length||!M.cats||!M.cats.length)return;
   LIVE=true;CFGt=M.cfg||{};closed=CFGt.storeOpen===false;selfOn=!closed&&!!(CFGt._features&&CFGt._features.self_order===true&&(!CFGt._enabled_features||CFGt._enabled_features.self_order!==false));
   var cats=M.cats.slice().sort(function(a,b){return (a.n||0)-(b.n||0)});
   var ings=M.ings||[];
@@ -920,7 +927,7 @@ function loadLive(){if(!sbc||!SLUG)return Promise.resolve();
   M.items.filter(function(i){return i&&i.id&&i.name&&!off(i)&&cats.some(function(c){return c.id==i.cat})}).forEach(function(i,n){
    var cn=(cats.filter(function(c){return c.id==i.cat})[0]||{}).name;
    var sz0=i.sizes&&i.sizes.length?i.sizes:null,base=sz0?Number(sz0[0].p):Number(i.price)||0;
-   P.push({id:i.id,cat:i.cat,name:i.name,price:base,veg:(i.veg||'veg')==='veg'?1:0,img:i.img||'',bg:BGS[n%BGS.length],art:artFor(cn,i.name,n),desc:i.desc||('Made fresh at '+(CFGt.name||'our kitchen')+'.'),sizes:sz0?sz0.map(function(x){return {n:x.l,d:Number(x.p)-base}}):null,vr:null,ad:[]})});
+   P.push({id:i.id,cat:i.cat,name:i.name,price:base,veg:(i.veg||'veg')==='veg'?1:0,img:i.img||'',bg:BGS[n%BGS.length],art:artFor(cn,i.name,n),desc:i.desc||('Made fresh at '+(CFGt.name||'our kitchen')+'.'),sizes:sz0?sz0.map(function(x){return {n:x.l,d:Number(x.p)-base}}):null,vr:null,ad:kilnAds(i,ings)})});
   Object.keys(BY).forEach(function(k){delete BY[k]});P.forEach(function(p){BY[p.id]=p});
   try{var raw=JSON.parse(localStorage.getItem(CK)||'[]');cart=Array.isArray(raw)?raw.filter(function(l){return l&&BY[l.id]&&l.q>0&&(!BY[l.id].sizes||BY[l.id].sizes[l.s])}):[]}catch(x){cart=[]}
   brand(M);S.cat='all';
