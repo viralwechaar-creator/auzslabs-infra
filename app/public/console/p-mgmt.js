@@ -5,8 +5,22 @@ const cfgSelect=(k,label,options,o={})=>h('div',{class:'fld'+(o.wide?' s2':'')},
 const cfgImage=(k,label,prefix,o={})=>{const prev=h('div',{class:'hint'},cfg()[k]?'Image is set':'No image yet'),inp=h('input',{type:'file',accept:'image/*',disabled:S.role!='owner'});
  inp.onchange=async()=>{const file=inp.files[0];if(!file)return;prev.textContent='Uploading…';try{const url=await uploadImage(file,prefix);await saveSettings({[k]:url});prev.textContent='Uploaded';toast('Saved')}catch(e){prev.textContent='Upload failed: '+e.message}};
  return h('div',{class:'fld'+(o.wide?' s2':'')},h('label',{},label),inp,prev)};
+// Business type: one choice from the registry (db/270) that sets BOTH the business category (tenants.niche) and how the POS behaves
+// (settings.bizType) on the server (set_business_type, db/272), so the two can never drift apart.
+const bizTypeField=()=>{const box=h('div',{class:'fld'},h('label',{},'Business type'),h('div',{class:'hint'},'Loading...'));
+ const draw=bt=>{box.replaceChildren(h('label',{},'Business type'));
+  if(!bt||!bt.types){box.append(h('div',{class:'hint'},'Could not load the business types. Reload and try again.'));return}
+  if(bt.locked||S.role!='owner'||!bt.can_change){box.append(h('input',{value:bt.label||bt.niche||'',disabled:true}),h('div',{class:'hint'},S.role!='owner'?'Only the owner can change this.':'This business type is set up by AUZslab. Contact us to change it.'));return}
+  const sel=h('select',{},...(bt.key?[]:[h('option',{value:'',selected:true},'Choose...')]),...bt.types.map(t=>h('option',{value:t.key,selected:t.key==bt.key},t.label)));
+  sel.onchange=()=>{const k=sel.value,t=bt.types.find(x=>x.key==k);sel.value=bt.key||'';if(!t||k==bt.key)return;
+   confirmBox('Change the business type to "'+t.label+'"? This changes how the POS behaves for everyone in this business. Your menu, bills and stock are not touched.',async()=>{
+    const r=await sb.rpc('set_business_type',{p_key:k});if(r.error){toast(r.error.message||'Could not change the business type');return}
+    S.bt=r.data;const m=await sb.rpc('my_business_type');if(m.data)S.bt=m.data;
+    await saveSettings({bizType:t.pos_mode||settingsRec().bizType});toast('Saved');render()},'Change')};
+  box.append(sel,h('div',{class:'hint'},(bt.types.find(t=>t.key==bt.key)||{}).description||''))};
+ if(S.bt)draw(S.bt);else sb.rpc('my_business_type').then(r=>{S.bt=r.data||null;draw(S.bt)}).catch(()=>draw(null));return box};
 PAGES['mgmt/config']=()=>{const c=cfg();return[pageHead('Configuration','Business details used on bills, the public site and reports.'),ownerOnly(),
- card(cardHead('Business'),h('div',{class:'fgrid'},cfgSelect('bizType','Business type',[['restaurant','Café, restaurant, bar, bakery, hotel'],['salon','Salon / spa'],['retail','Retail (size & colour stock)']]),cfgField('name','Business name'),cfgField('phone','Phone'),cfgField('whatsapp','WhatsApp number',{hint:'Used for the WhatsApp links in Marketing'}),cfgField('gstin','GSTIN'),cfgField('addr','Address',{wide:true,area:true}))),
+ card(cardHead('Business'),h('div',{class:'fgrid'},bizTypeField(),cfgField('name','Business name'),cfgField('phone','Phone'),cfgField('whatsapp','WhatsApp number',{hint:'Used for the WhatsApp links in Marketing'}),cfgField('gstin','GSTIN'),cfgField('addr','Address',{wide:true,area:true}))),
  card(cardHead('Billing'),h('div',{class:'fgrid'},cfgField('tax','Default tax (%)',{type:'number'}),cfgField('prefix','Invoice prefix'),cfgField('upi','UPI ID for QR payments'),cfgField('ftr','Bill footer',{wide:true,area:true}))),
  card(cardHead('Look & invoice'),h('div',{class:'fgrid'},cfgField('col','Brand colour (hex, e.g. #800020)'),cfgImage('logo','Logo',  'brand'),cfgSelect('w','Paper width',[[80,'80 mm'],[58,'58 mm']]),cfgSelect('sty','Invoice style',[['mono','Thermal (monospace)'],['sans','Clean (sans-serif)']]),cfgField('fs','Invoice font size (px)',{type:'number'}),cfgSelect('billStyle','Bill design',[['',  'Standard (default)'],...(window.auzBillTemplates?auzBillTemplates.list.map(([k,label])=>[k,label]):[])]),h('div',{class:'fld'},h('label',{},' '),btn('Preview with sample data',()=>previewBillStyle(cfg().billStyle),''))),h('p',{class:'hint'},(window.auzBillTemplates&&auzBillTemplates.list.find(([k])=>k==cfg().billStyle)||[])[2]||''),billPreviewInline()),
  card(cardHead('Self-order'),h('div',{class:'fgrid'},cfgField('gw','Guest ordering welcome text',{wide:true,area:true}))),

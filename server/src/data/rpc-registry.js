@@ -187,6 +187,8 @@ export const RPC = {
   my_data_export: { params: [], auth: true },
   my_data_clear: { params: ['p_confirm'], auth: true },
   update_my_features: { params: ['p_enabled'], jsonb: ['p_enabled'], auth: true },
+  my_business_type: { params: [], auth: true },
+  set_business_type: { params: ['p_key'], auth: true },
   change_my_password: { params: ['p_old_password', 'p_new_password'], auth: true },
   staff_create: { params: ['p_name', 'p_phone', 'p_role_id', 'p_builtin', 'p_outlet', 'p_username'], defaults: { p_phone: null, p_role_id: null, p_builtin: null, p_outlet: null, p_username: null }, auth: true },
   staff_reset_pin: { params: ['p_staff_id', 'p_pin'], defaults: { p_pin: null }, auth: true },

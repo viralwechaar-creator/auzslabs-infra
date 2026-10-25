@@ -437,6 +437,48 @@ export default async function run({ browser, stack }) {
     } finally { await ctx.close(); }
   });
 
+  await s.check('Owner changes the business type: category and POS mode move together, drift is healed, and locked businesses are refused', async () => {
+    const tok = await newUser('bt'); const name = 'Change Type Shop'; await trialNamed(name, ['pos'], tok, 'retail');
+    const tid = (await tenantOf(name)).id;
+    const me = await call('my_business_type', {}, tok); assert(me.status === 200 && me.data.key === 'retail' && me.data.can_change === true && me.data.types.length === 3 && !me.data.types.some((t) => t.key === 'salon'), 'my_business_type: ' + JSON.stringify(me.raw));
+    // simulate the old drift: POS mode says restaurant while the category is retail
+    await q(`update records set data = data || '{"bizType":"restaurant"}' where tenant_id = $1 and kind = 'settings' and id = 'settings'`, [tid]);
+    const fix = await call('set_business_type', { p_key: 'retail' }, tok); assert(fix.status === 200, JSON.stringify(fix.raw));
+    let t = await tenantOf(name); assert(t.niche === 'retail' && t.settings.bizType === 'retail', 'drift not healed: ' + JSON.stringify([t.niche, t.settings]));
+    const cafe = await call('set_business_type', { p_key: 'cafe' }, tok); assert(cafe.status === 200 && cafe.data.key === 'cafe', JSON.stringify(cafe.raw));
+    t = await tenantOf(name); assert(t.niche === 'cafe' && t.settings.bizType === 'restaurant', 'cafe: ' + JSON.stringify([t.niche, t.settings]));
+    const mob = await call('set_business_type', { p_key: 'mobile' }, tok); t = await tenantOf(name); assert(mob.status === 200 && t.niche === 'mobile' && t.settings.bizType === 'retail', 'mobile: ' + JSON.stringify([t.niche, t.settings]));
+    assert((await tenantOf(name)).features.pos === true, 'features were touched');
+    const sal = await call('set_business_type', { p_key: 'salon' }, tok); assert(sal.status >= 400 && /not available/i.test(JSON.stringify(sal.raw)), 'salon allowed: ' + JSON.stringify(sal.raw));
+    const bad = await call('set_business_type', { p_key: 'spaceship' }, tok); assert(bad.status >= 400, 'unknown type allowed');
+    assert((await tenantOf(name)).niche === 'mobile', 'a refused change altered the business');
+    await q(`update tenants set niche = 'salon' where id = $1`, [tid]);
+    const lock = await call('set_business_type', { p_key: 'cafe' }, tok); assert(lock.status >= 400 && /AUZslab/i.test(JSON.stringify(lock.raw)), 'salon business was changed: ' + JSON.stringify(lock.raw));
+    assert((await call('my_business_type', {}, tok)).data.locked === true, 'salon business not reported locked');
+    await q(`update tenants set niche = 'mobile', is_demo = true where id = $1`, [tid]);
+    assert((await call('set_business_type', { p_key: 'cafe' }, tok)).status >= 400, 'demo business was changed');
+    await q(`update tenants set is_demo = false where id = $1`, [tid]);
+    const anon = await call('set_business_type', { p_key: 'cafe' }); assert(anon.status >= 400, 'anonymous change allowed');
+  }, 'critical');
+
+  await s.check('Settings -> Configuration: the owner picks a registry type and both category and POS mode are saved', async () => {
+    const { PASSWORD: PW, USERS: U } = await import('../../lib/db.mjs');
+    const before = (await q(`select niche from tenants where slug = 'testcafe'`))[0].niche;
+    const ctx = await newCtx(browser, stack, { w: 1366, h: 900 }); const page = await ctx.newPage(); const w = watch(page);
+    try {
+      await page.goto(stack.url('testcafe', '/dashboard.html'), { waitUntil: 'load' }); await page.waitForSelector('input[type=password]', { timeout: 15000 });
+      await page.fill('input[type=email]', U.cafeOwner); await page.fill('input[type=password]', PW); await page.locator('button', { hasText: /sign in/i }).last().click();
+      await page.waitForSelector('.hello', { timeout: 15000 });
+      await page.evaluate(() => { location.hash = '#mgmt/config'; }); await page.waitForSelector('select option:has-text("Mobile shop")', { state: 'attached', timeout: 15000 });
+      const opts = await page.locator('select:has(option:has-text("Mobile shop")) option').allInnerTexts(); assert(opts.length === 3 && !opts.some((o) => /salon/i.test(o)), 'options: ' + opts);
+      await page.locator('select:has(option:has-text("Mobile shop"))').selectOption({ label: opts.find((o) => /mobile/i.test(o)) });
+      await page.locator('.modal button.p, .modal .btn.p').first().click(); await page.waitForTimeout(2500);
+      const row = (await q(`select t.niche, (select data->>'bizType' from records r where r.tenant_id = t.id and r.kind = 'settings' and r.id = 'settings') bt from tenants t where slug = 'testcafe'`))[0];
+      assert(row.niche === 'mobile' && row.bt === 'retail', 'saved: ' + JSON.stringify(row));
+      const we = w.filter((e) => !/sentry/i.test(e)); assert(!we.length, 'script errors: ' + we.join(' | '));
+    } finally { await ctx.close(); await q(`update tenants set niche = $1 where slug = 'testcafe'`, [before]); await q(`update records set data = data || '{"bizType":"restaurant"}' where kind = 'settings' and id = 'settings' and tenant_id = (select id from tenants where slug = 'testcafe')`); }
+  });
+
   await q(`update platform_flags set value = 'off' where key = 'password_signup'`);
   s.done();
 }
