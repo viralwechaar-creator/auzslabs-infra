@@ -159,6 +159,11 @@
       async getSession() {
         return { data: { session } };
       },
+      // build page: username + password + the trial details in one call; signs the new person in
+      async trialAccount(p) {
+        const { data, error } = await request('/auth/trial-account', { method: 'POST', body: p, auth: false });
+        return applySignInResult(data, error);
+      },
       async signInWithPassword({ email, password }) {
         const { data, error } = await request('/auth/login', { method: 'POST', body: { email, password }, auth: false });
         return applySignInResult(data, error);

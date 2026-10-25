@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
-import { withAuth } from '../db.js';
+import { withAuth, pool } from '../db.js';
+import { callRpc } from '../data/queries.js';
 import { login, createUser, signToken, refreshToken, loginWithGoogle, loginWithApple, createPhoneOtp, loginWithPhone, createPasswordReset, resetPassword, deleteOwnAccount, listSessions, revokeSession, staffLogin, createEmailVerification, confirmEmailVerification, emailVerificationState, passwordSignupAllowed, verify2faChallenge, my2faStatus, generate2faSecret, confirm2fa, disable2fa, verifyPassword, emailInUse, createEmailChange, confirmEmailChange, createRecoveryEmailVerification, confirmRecoveryEmail, removeRecoveryEmail } from '../auth.js';
 import { sendPasswordResetEmail, sendEmailVerification, sendEmailChangeVerification, sendRecoveryEmailVerification, mailConfigured } from '../mail.js';
 import { verifyCaptcha, captchaEnabled } from '../captcha.js';
@@ -22,7 +23,9 @@ export async function handle(ctx) {
     return reply(200, result);
   }
   if (url.pathname === '/auth/login' && req.method === 'POST') {
-    const { email, password } = await readJsonBody(req);
+    let { email, password } = await readJsonBody(req);
+    // a bare username (no @) is a build-page trial login
+    if (typeof email === 'string' && email.trim() && !email.includes('@')) email = `${email.trim().toLowerCase()}@trial.auzslab.in`;
     // 20 attempts / 15 min per IP for real accounts -- bcrypt is
     // expensive on purpose, and login is the endpoint most worth
     // brute-forcing. The two published demo logins get a far looser,
@@ -39,6 +42,27 @@ export async function handle(ctx) {
     if (!result) throw new HttpError(401, 'invalid credentials');
     if (result.unverified) throw new HttpError(403, 'Please verify your email first -- check your inbox for the verification link, or ask your manager to resend it.');
     return reply(200, result);
+  }
+  // ---- build page: make a username + password and start the 3-day trial in one step (no email, no Google).
+  // The login is stored as <username>@trial.auzslab.in (never mailed); /auth/login accepts the bare username.
+  if (url.pathname === '/auth/trial-account' && req.method === 'POST') {
+    if (rateLimited(`trialacct:${ip}`, 6, 60 * 60_000)) throw new HttpError(429, 'Too many trials started from this network. Try again in an hour.');
+    const b = await readJsonBody(req);
+    const username = String(b.username || '').trim().toLowerCase();
+    if (!/^[a-z0-9][a-z0-9._-]{2,23}$/.test(username)) throw new HttpError(400, 'Username: 3 to 24 letters, numbers, dots, dashes or underscores.');
+    if (String(b.password || '').length < 8) throw new HttpError(400, 'Password must be at least 8 characters.');
+    if (!(await verifyCaptcha(b.captcha_token, ip))) throw new HttpError(400, 'Please complete the verification check and try again.');
+    let created;
+    try { created = await createUser({ email: `${username}@trial.auzslab.in`, password: String(b.password), verified: true, user_metadata: { trial_username: username } }); }
+    catch (err) { if (err.code === '23505') throw new HttpError(409, 'That username is taken. Pick another one.'); throw err; }
+    try {
+      const p = { business_name: b.business_name, contact_name: b.contact_name, phone: b.phone, blocks: b.blocks, features: b.features };
+      await withAuth(created.id, (client) => callRpc(client, 'start_self_trial', { p }));
+    } catch (err) {
+      await pool.query('delete from auth_users where id = $1', [created.id]).catch(() => {});   // nothing was made for them, so do not leave a half-made login behind
+      throw err;
+    }
+    return reply(200, { access_token: await signToken(created, meta), user: created });
   }
   // ---- silent session renewal (owner report: POS clients got logged out
   // "again and again" mid-shift -- nothing ever refreshed a token before

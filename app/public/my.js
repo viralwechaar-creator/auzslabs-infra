@@ -143,18 +143,33 @@
       g.append(name, phone, biz, btn, err, el('p', { class: 'note', text: 'No payment now. Nothing is charged during the trial.' }));
       return;
     }
-    var go = el('a', { class: 'btn', href: '/start.html', text: 'Sign in to build my app' });
-    go.onclick = function () { if (!getSel().length) { var e = $('go').querySelector('.err'); if (e) e.textContent = 'Tick the features you need first.'; return false; } try { localStorage.setItem('auz_go_build', '1'); } catch (e2) {} };
-    var demo = el('button', { class: 'btn ghost', type: 'button', text: 'Testing? Use the demo login' }), err2 = el('div', { class: 'err' });
-    demo.onclick = async function () {
-      demo.disabled = true; err2.textContent = '';
-      var r = await sb.auth.signInWithPassword({ email: 'demo@auzslab.in', password: 'Auzslab@Demo' });
-      try { if (window.auz2fa) r = await auz2fa.resolve(sb, r); } catch (e) {}
-      demo.disabled = false;
-      if (r.error || !(r.data && r.data.session)) { err2.textContent = (r.error && r.error.message) || 'Could not sign in.'; return; }
+    // signed out: make a username + password right here (no email, no Google) and the 3-day trial starts in one step
+    var mode = 'new', uName = el('input', { placeholder: 'Your name', autocomplete: 'name' }), uPhone = el('input', { placeholder: 'Mobile / WhatsApp', type: 'tel', inputmode: 'tel', autocomplete: 'tel' }),
+      uBiz = el('input', { placeholder: 'Business name', autocomplete: 'organization' }), uUser = el('input', { placeholder: 'Make a username', autocomplete: 'username', autocapitalize: 'none', spellcheck: false }),
+      uPass = el('input', { placeholder: 'Make a password (8+ characters)', type: 'password', autocomplete: 'new-password' }), uErr = el('div', { class: 'err' });
+    var main = el('button', { class: 'btn', type: 'button', text: 'Build my app, 3 days free' }), swap = el('button', { class: 'btn ghost', type: 'button', text: 'I already made one: sign in' });
+    var note = el('p', { class: 'note', text: 'No email, no payment. Keep your username and password safe: they are how you open this app again.' });
+    function drawForm() {
+      var isNew = mode === 'new'; g.textContent = '';
+      uPass.autocomplete = isNew ? 'new-password' : 'current-password'; uPass.placeholder = isNew ? 'Make a password (8+ characters)' : 'Your password'; uUser.placeholder = isNew ? 'Make a username' : 'Your username';
+      main.textContent = isNew ? 'Build my app, 3 days free' : 'Sign in'; swap.textContent = isNew ? 'I already made one: sign in' : 'Start a new one instead';
+      g.append.apply(g, (isNew ? [uName, uPhone, uBiz] : []).concat([uUser, uPass, main, uErr, swap, note]));
+      note.textContent = isNew ? 'No email, no payment. Keep your username and password safe: they are how you open this app again.' : 'Use the username and password you made on this page.';
+    }
+    main.onclick = async function () {
+      uErr.textContent = '';
+      if (mode === 'new' && !getSel().length) { uErr.textContent = 'Tick the features you need first.'; return; }
+      main.disabled = true;
+      var r;
+      if (mode === 'new') r = await sb.auth.trialAccount({ username: uUser.value, password: uPass.value, business_name: uBiz.value, contact_name: uName.value, phone: uPhone.value, blocks: getSel(), features: getFeat() });
+      else r = await sb.auth.signInWithPassword({ email: uUser.value, password: uPass.value });
+      main.disabled = false;
+      if (r.error || !(r.data && r.data.session)) { uErr.textContent = (r.error && r.error.message) || 'Could not continue.'; return; }
+      if (mode === 'new') { setSel([]); try { localStorage.setItem('auz_feat_done', JSON.stringify(getFeat())); } catch (e) {} setFeat([]); }
       location.reload();
     };
-    g.append(go, demo, err2, el('p', { class: 'note', text: 'Demo login: demo@auzslab.in / Auzslab@Demo' }));
+    swap.onclick = function () { mode = mode === 'new' ? 'in' : 'new'; uErr.textContent = ''; drawForm(); };
+    drawForm();
   }
 
   /* ---------- workspace ---------- */
