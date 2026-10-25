@@ -235,6 +235,8 @@
     if (me && (me.admin || me.team) && window.auzNativePush) { try { window.auzNativePush.enablePlatform(sb); window.auzNativePush.enablePlatformWeb(sb, false); } catch (e) {} }
     if (hm && hm.error && (hm.error.status || 0) === 401) { await sb.auth.signOut(); return signInForm('Your session ended. Please sign in again.'); }
     if (me && me.admin) return adminHome(me);
+    // someone who pressed "Sign in to build my app" goes back to the builder after signing in (not to a tile screen)
+    if (me && !me.admin && !me.team && !me.business) { var gb = false; try { gb = localStorage.getItem('auz_go_build') === '1'; localStorage.removeItem('auz_go_build'); } catch (e) {} if (gb) { location.replace('/my.html'); return; } }
     if (me && me.team && !me.business) { location.replace('/salesman.html'); return; }
     if (me && !me.business) return customerHome();
     var r = await sb.rpc('my_dashboard');

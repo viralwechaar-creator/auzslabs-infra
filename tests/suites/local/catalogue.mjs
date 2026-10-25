@@ -300,6 +300,23 @@ export default async function run({ browser, stack }) {
     } finally { await ctx.close(); }
   }, 'critical');
 
+  await s.check('Build page: "Sign in to build my app" remembers the visit; staff logins get a clear note instead of a dead form', async () => {
+    const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage();
+    try {
+      await page.goto(stack.url('app', '/my.html')); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
+      await page.locator('#tiles .tile').first().click();
+      await page.locator('#go a', { hasText: /sign in/i }).click(); await page.waitForURL(/start\.html/, { timeout: 15000 });
+      assert(await page.evaluate(() => localStorage.getItem('auz_go_build') === '1'), 'the visit was not remembered');
+    } finally { await ctx.close(); }
+    const c2 = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const p2 = await c2.newPage();
+    try {
+      await p2.goto(stack.url('app', '/my.html')); await p2.waitForSelector('#tiles .tile', { timeout: 15000 });
+      const r = await p2.evaluate(async () => { const x = await supabase.createClient(CFG.url, CFG.key).auth.signInWithPassword({ email: 'admin@test.local', password: 'Test!pass123' }); return !!(x.data && x.data.session); });
+      if (r) { await p2.reload(); await p2.waitForSelector('#tiles .tile', { timeout: 15000 }); await p2.locator('#tiles .tile').first().click(); await p2.waitForSelector('#go .note', { timeout: 8000 });
+        const t = await p2.locator('#go').innerText(); assert(/staff/i.test(t) && /sign out/i.test(t), 'no staff note: ' + t); assert(await p2.locator('#go input').count() === 0, 'a form was shown to staff'); }
+    } finally { await c2.close(); }
+  }, 'major');
+
   await q(`update platform_flags set value = 'off' where key = 'password_signup'`);
   s.done();
 }
