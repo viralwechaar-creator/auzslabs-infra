@@ -241,7 +241,7 @@ def _():
 <div class="adl">
 <header class="adl-hero"><span class="adl-mono">APPS</span><h1 class="adl-h">Take AUZslab <em>with you.</em></h1>
 <p>Every AUZslab app opens the real, live website inside the app, so you always see the newest version the moment it ships.</p></header>
-<div class="adl-kit"><div class="adl-bar">%s</div><div class="adl-toggles"><span class="tg on"></span><span class="tg"></span><span class="ck"></span></div></div>
+<div class="adl-kit"><div class="adl-bar">%s</div></div>
 <div class="adl-panels">%s</div>
 </div>''' % (seg, panels)
     put('download-apps', body, 'a-dl', 'a-dl')
