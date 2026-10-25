@@ -70,7 +70,9 @@ function stopPg({ pgBin, dataDir }) { if (isRunning({ pgBin, dataDir })) pgCtl(p
 // connects with the pg module the server already ships with
 function client({ serverDir, port, password, database }) {
   const pg = require(require.resolve('pg', { paths: [serverDir] }));
-  return new pg.Client({ host: '127.0.0.1', port, user: 'postgres', password, database });
+  // No timeout here means a blocked loopback connection (antivirus/firewall silently intercepting it, seen on a real Windows
+  // machine) freezes the whole app forever with no error and no clue why. 20s is generous for a local connection.
+  return new pg.Client({ host: '127.0.0.1', port, user: 'postgres', password, database, connectionTimeoutMillis: 20000 });
 }
 
 const REVOKE = `do $$ declare t text; begin for t in select tablename from pg_tables where schemaname = 'public' and (tablename like 'pay\\_%' or tablename like 'mob\\_%' or tablename like 'sty\\_%' or tablename like 'acc\\_%' or tablename like 'fin\\_%') loop execute format('revoke all on %I from app', t); end loop; end $$`;
