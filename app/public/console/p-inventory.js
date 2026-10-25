@@ -63,7 +63,13 @@ PAGES['inv/recipes']=()=>{const items=rawL('item').filter(i=>!i.combo&&matchQ(i.
   card(table([{label:'Item',get:i=>h('span',{},vegDot(i.veg),h('b',{},i.name),h('div',{class:'sub'},catName(i.cat)))},{label:'Ingredients',get:i=>i.rec?h('span',{class:'sub'},parseRec(i.rec).map(r=>r.qty+' '+r.ing).join(', ')):pill('No recipe','n')},{label:'Price',r:true,get:i=>inr(i.price)},{label:'Food cost',r:true,get:i=>unitCost(i)?inr(unitCost(i)):'—'},{label:'Margin',r:true,get:i=>unitCost(i)&&i.price?Math.round((i.price-unitCost(i))/i.price*100)+'%':'—'},{label:'',get:i=>actBtns(btn(i.rec?'Edit recipe':'Add recipe',()=>recipeForm(i),'sm2'))}],list,{empty:'No items',onRow:recipeForm}))]};
 // ---------- consumption ----------
 PAGES['inv/consumption']=()=>{const f=rangeFrom(),t=rangeTo(),use={};
- orders().filter(o=>o.status=='paid'&&dayOf(o.paidAt)>=f&&dayOf(o.paidAt)<=t).forEach(o=>o.lines.forEach(l=>{const it=rec(l.id)||rawL('item').find(x=>x.name==l.name);if(!it||!it.rec)return;parseRec(it.rec).forEach(r=>{use[r.ing.toLowerCase()]=(use[r.ing.toLowerCase()]||0)+r.qty*l.qty})}));
+ const addU=(n,q)=>{n=String(n).toLowerCase();use[n]=(use[n]||0)+q};
+ orders().filter(o=>o.status=='paid'&&dayOf(o.paidAt)>=f&&dayOf(o.paidAt)<=t).forEach(o=>{o.lines.forEach(l=>{const it=rec(l.id)||rawL('item').find(x=>x.name==l.name);if(!it)return;
+  const rm=(l.rm||[]).map(x=>x.toLowerCase()),base=(it.recSizes&&l.size&&it.recSizes[l.size])||it.rec;
+  if(base)parseRec(base).forEach(r=>{if(!rm.includes(r.ing.toLowerCase()))addU(r.ing,r.qty*l.qty)});
+  (l.ad||[]).forEach(a=>String(a.u||'').split('|').forEach(p=>{const[n,q]=p.split('=');if(n&&+q)addU(n.trim(),+q*l.qty)}));
+  if(it.pack&&o.type&&o.type!='Dine-in')parseRec(it.pack).forEach(r=>addU(r.ing,r.qty*l.qty))});
+  const kit=(cfg().packKit||{})[o.type];if(kit)parseRec(kit).forEach(r=>addU(r.ing,r.qty))});
  const waste={};L('waste').filter(w=>(w.d||'')>=f&&(w.d||'')<=t).forEach(w=>waste[w.ing.toLowerCase()]=(waste[w.ing.toLowerCase()]||0)+w.q);
  const adj={};L('adjustment').filter(a=>dayOf(a.at)>=f&&dayOf(a.at)<=t).forEach(a=>adj[a.ing.toLowerCase()]=(adj[a.ing.toLowerCase()]||0)+a.q);
  const rows=L('ing').map(g=>({g,sold:use[g.name.toLowerCase()]||0,w:waste[g.name.toLowerCase()]||0,a:adj[g.name.toLowerCase()]||0})).filter(r=>r.sold||r.w||r.a||matchQ(r.g.name)&&S.q).sort((a,b)=>b.sold-a.sold);
@@ -82,3 +88,13 @@ function invReport(tab){const f=rangeFrom(),t=rangeTo();
  const items=rawL('item').filter(i=>i.rec||i.cost).map(i=>({i,c:unitCost(i)})).filter(r=>r.c>0).sort((a,b)=>((a.i.price-a.c)/a.i.price)-((b.i.price-b.c)/b.i.price));
  return card(table([{label:'Item',get:r=>h('b',{},r.i.name)},{label:'Price',r:true,get:r=>inr(r.i.price)},{label:'Food cost',r:true,get:r=>inr(r.c)},{label:'Margin',r:true,get:r=>Math.round((r.i.price-r.c)/r.i.price*100)+'%'},{label:'Cost %',r:true,get:r=>Math.round(r.c/r.i.price*100)+'%'}],items,{empty:'No costed items',emptyText:'Add recipes or a cost price to items.'}))}
 PAGES['inv/reports']=()=>{const tab=S.f.rt||'stock';return[pageHead('Inventory Reports','Stock, reordering, expiry, purchases, wastage and food cost.'),allOutletsNote(),h('div',{class:'bar-row'},tabsBar(invReportTabs(),tab,k=>{S.f.rt=k;render()}),['purchases','waste'].includes(tab)?rangeBar():null),...[].concat(invReport(tab))]};
+
+// ---------- packaging & free items ----------
+PAGES['inv/packaging']=()=>{const kit=cfg().packKit||{},types=['Dine-in','Takeaway','Delivery'],ro=S.role!='owner',
+ inputs=types.map(t=>h('input',{class:'input',value:kit[t]||'',placeholder:t=='Dine-in'?'usually empty':'Pizza box:1, Carry bag:1, Ketchup sachet:2, Tissue:2',disabled:ro?true:null}));
+ const save_=async()=>{const k={};types.forEach((t,i)=>{if(inputs[i].value.trim())k[t]=inputs[i].value.trim()});if(await saveSettings({packKit:k})!==false){toast('Packaging saved');render()}};
+ const month=new Date().toISOString().slice(0,7),used={};
+ orders().filter(o=>o.status=='paid'&&dayOf(o.paidAt).startsWith(month)).forEach(o=>{const k=kit[o.type];if(k)parseRec(k).forEach(r=>{used[r.ing]=(used[r.ing]||0)+r.qty})});
+ return[pageHead('Packaging & free items','Boxes, bags, ketchup sachets and tissues. Each takeaway or delivery order takes these off stock automatically. Add each one under Raw Materials first (same name).'),
+  card(h('h3',{style:'margin-bottom:10px'},'Kit per order type'),...types.map((t,i)=>h('div',{style:'margin-bottom:10px'},h('div',{class:'sub'},t),inputs[i])),h('div',{class:'sub',style:'margin:6px 0 10px'},'Format: Name:quantity, comma separated. Item-specific boxes (a pizza box only for pizza) go on the item itself.'),ro?h('div',{class:'sub'},'Only the owner can change this'):btn('Save',save_,'p')),
+  card(h('h3',{style:'margin-bottom:8px'},'Used this month by order kits'),Object.keys(used).length?h('div',{class:'chips'},...Object.entries(used).map(([n,q])=>h('span',{class:'chipx'},n+' · '+r2(q)))):h('div',{class:'sub'},'Nothing yet'))]};

@@ -589,11 +589,26 @@ async function callWaiter(){
  const DIET={veg:['leaf','Veg'],nonveg:['meat','Non-veg'],egg:['egg','Egg']};
  let active=cats[0]&&cats[0].id,vf='all';
  vfEl.innerHTML='<button class="dchip on" data-vf=all>All</button><button class=dchip data-vf=veg>'+ic('leaf')+' Veg</button><button class=dchip data-vf=nonveg>'+ic('meat')+' Non-veg</button>';
- const priceOf=k=>{const j=k.indexOf('|'),i=items.find(x=>x.id==k.slice(0,j)),sz=k.slice(j+1),s=sz&&(i.sizes||[]).find(x=>x.l==sz);return[i,sz,s?s.p:i.price]};
+ // cart key: id|size|opt~opt|rm~rm (add-ons and "without" choices make a line of their own)
+ const parseKey=k=>{const a=k.split('|');return{id:a[0],sz:a[1]||'',opts:a[2]?a[2].split('~'):[],rm:a[3]?a[3].split('~'):[]}};
+ const mkKey=(id,sz,opts,rm)=>id+'|'+sz+((opts.length||rm.length)?'|'+opts.join('~')+'|'+rm.join('~'):'');
+ const parseMods=t=>String(t||'').split(',').map(m=>{const[n,v,u]=m.split(':');return{n:(n||'').trim(),v:+v||0,u:(u||'').trim()}}).filter(m=>m.n);
+ const groupsOf=i=>{const gs=(i.addonGroups||[]).map(id=>((M&&M.groups)||[]).find(g=>g.id==id)).filter(Boolean).map(g=>({name:g.name,min:+g.min||0,max:+g.max||0,mods:parseMods(g.mods)})),own=gs.length?(i.ownMods||[]):(i.mods||[]);if(own.length)gs.push({name:gs.length?'Extras':'Add-ons',min:0,max:0,mods:parseMods(own)});return gs};
+ const hasOpts=i=>groupsOf(i).length||(i.removable||[]).length;
+ const modLow=m=>String(m.u||'').split('|').some(p=>{const n=p.split('=')[0].trim().toLowerCase(),g=((M&&M.ings)||[]).find(x=>String(x.name).toLowerCase()==n);return g&&g.qty<=0});
+ const priceOf=k=>{const p=parseKey(k),i=items.find(x=>x.id==p.id),s=p.sz&&(i.sizes||[]).find(x=>x.l==p.sz),mods=groupsOf(i).flatMap(g=>g.mods).filter(m=>p.opts.includes(m.n));return[i,p.sz,(s?s.p:i.price)+mods.reduce((a,m)=>a+m.v,0),p]};
  const cartTotal=()=>{let n=0,t=0;for(const k in cart){t+=priceOf(k)[2]*cart[k].q;n+=cart[k].q}return{n,t}};
  let lastBumped=null,toastT=null;
  function toastMsg(msg){let el=document.querySelector('.toastmsg');if(!el){el=document.createElement('div');el.className='toastmsg';document.body.append(el)}el.textContent=msg;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),1400)}
- function chg(k,d){const[i,sz]=priceOf(k),c=cart[k]||(cart[k]={id:i.id,size:sz,q:0});c.q=Math.max(0,c.q+d);if(!c.q)delete cart[k];lastBumped=k;if(d>0)toastMsg(esc(i.name)+' added · '+cartTotal().n+' item'+(cartTotal().n>1?'s':'')+' in cart');drawMenu(true);drawCartBar()}
+ function chg(k,d){const[i,sz,,pk]=priceOf(k),c=cart[k]||(cart[k]={id:i.id,size:sz,opts:pk.opts,rm:pk.rm,q:0});c.q=Math.max(0,c.q+d);if(!c.q)delete cart[k];lastBumped=k;if(d>0)toastMsg(esc(i.name)+' added · '+cartTotal().n+' item'+(cartTotal().n>1?'s':'')+' in cart');drawMenu(true);drawCartBar()}
+function optSheet(i,sz){const gs=groupsOf(i),rmL=i.removable||[],picked=gs.map(()=>new Set()),removed=new Set(),so=document.createElement('div');so.className='sheet-ov';so.onclick=e=>{if(e.target===so)so.remove()};
+  const base=(sz&&(i.sizes||[]).find(x=>x.l==sz)||{p:i.price}).p,total=()=>base+gs.reduce((a,g,gi)=>a+g.mods.filter(m=>picked[gi].has(m.n)).reduce((x,m)=>x+m.v,0),0);
+  const draw=()=>{so.innerHTML='<div class=sht><h3>'+esc(i.name)+(sz?' ('+esc(sz)+')':'')+'</h3>'+gs.map((g,gi)=>'<div class=lbl style="margin:10px 0 4px;font-weight:600">'+esc(g.name)+'<span style="font-weight:400;color:var(--muted)"> '+(g.min?'choose at least '+g.min:g.max?'up to '+g.max:'optional')+'</span></div>'+g.mods.map((m,mi)=>{const off=modLow(m);return '<div class=sline><span>'+esc(m.n)+(off?' <small style="color:var(--muted)">(sold out)</small>':'')+'</span><button class="dchip'+(picked[gi].has(m.n)?' on':'')+'" type=button data-g='+gi+' data-m='+mi+(off?' disabled':'')+'>'+(m.v?'+'+inr(m.v):'Add')+'</button></div>'}).join('')).join('')+(rmL.length?'<div class=lbl style="margin:10px 0 4px;font-weight:600">Without</div>'+rmL.map((n,ri)=>'<div class=sline><span>'+esc(n)+'</span><button class="dchip'+(removed.has(n)?' on':'')+'" type=button data-r='+ri+'>'+(removed.has(n)?'No '+esc(n):'Leave out')+'</button></div>').join(''):'')+'<div class=row style="margin-top:12px"><button class="pill line" id=oBack>Cancel</button><button class="pill dark" id=oGo>Add · '+inr(total())+'</button></div></div>';
+   so.querySelectorAll('button[data-g]').forEach(b=>b.onclick=()=>{const gi=+b.dataset.g,g=gs[gi],n=g.mods[+b.dataset.m].n,set=picked[gi];if(set.has(n))set.delete(n);else{if(g.max===1)set.clear();else if(g.max&&set.size>=g.max)return;set.add(n)}draw()});
+   so.querySelectorAll('button[data-r]').forEach(b=>b.onclick=()=>{const n=rmL[+b.dataset.r];removed.has(n)?removed.delete(n):removed.add(n);draw()});
+   so.querySelector('#oBack').onclick=()=>so.remove();
+   so.querySelector('#oGo').onclick=()=>{for(const[gi,g]of gs.entries())if(g.min&&picked[gi].size<g.min)return alert('Choose at least '+g.min+' in '+g.name);const opts=gs.flatMap((g,gi)=>g.mods.filter(m=>picked[gi].has(m.n)).map(m=>m.n));so.remove();chg(mkKey(i.id,sz,opts,[...removed]),1)}};
+  draw();document.body.append(so)}
  function drawCartBar(){const{n,t}=cartTotal(),bar=$('cartBar');if(!selfOrderOn||!n){bar.classList.remove('show');return}bar.classList.add('show');$('cartBarText').innerHTML=ic('bag')+' '+n+' item'+(n>1?'s':'')+' · '+inr(t)}
  const qtyCtl=(k,q)=>q?'<span class=stepper><button data-k="'+esc(k)+'" data-d=-1 aria-label=Less>'+ic('minus')+'</button><b'+(k===lastBumped?' class=pop':'')+'>'+q+'</b><button data-k="'+esc(k)+'" data-d=1 aria-label=More>'+ic('plus')+'</button></span>':'<button class=add data-k="'+esc(k)+'" data-d=1>'+ic('plus')+' Add</button>';
  function drawMenu(keepAnim){
@@ -607,8 +622,9 @@ async function callWaiter(){
    const desc=i.desc?'<p class=mdesc>'+esc(i.desc)+'</p>':'';
    if(selfOrderOn){
     const variants=i.sizes&&i.sizes.length?i.sizes.map(s=>[s.l,s.p]):[['',i.price]];
-    c.innerHTML=panel+'<div class=mbody><div class=mname>'+esc(i.name)+'</div>'+desc+'<div class=vlist>'+variants.map(([sz,p])=>{const k=i.id+'|'+sz,q=(cart[k]||{}).q||0;return '<div class=vline><span>'+(sz?esc(sz)+' — ':'')+'<b class=mprice>'+inr(p)+'</b></span>'+qtyCtl(k,q)+'</div>'}).join('')+'</div></div>';
+    c.innerHTML=panel+'<div class=mbody><div class=mname>'+esc(i.name)+'</div>'+desc+'<div class=vlist>'+variants.map(([sz,p])=>{const k=i.id+'|'+sz,q=(cart[k]||{}).q||0;return '<div class=vline><span>'+(sz?esc(sz)+' — ':'')+'<b class=mprice>'+inr(p)+'</b></span>'+(hasOpts(i)?'<button class=add data-o="'+esc(sz)+'" data-i="'+esc(i.id)+'">'+ic('plus')+' Add'+(Object.keys(cart).some(x=>x.startsWith(i.id+'|'+sz))?' more':'')+'</button>':qtyCtl(k,q))+'</div>'}).join('')+'</div></div>';
     c.querySelectorAll('button[data-k]').forEach(b=>b.onclick=()=>chg(b.dataset.k,+b.dataset.d));
+    c.querySelectorAll('button[data-o]').forEach(b=>b.onclick=()=>optSheet(i,b.dataset.o));
    }else{
     const price=i.sizes&&i.sizes.length?i.sizes.map(s=>s.l+' '+inr(s.p)).join(' / '):inr(i.price);
     c.innerHTML=panel+'<div class=mbody><div class=mname>'+esc(i.name)+'</div>'+desc+'<span class=mprice>'+esc(price)+'</span></div>';
@@ -628,7 +644,7 @@ async function callWaiter(){
  }
  function openCheckout(){
   const{t}=cartTotal(),so=document.createElement('div');so.className='sheet-ov';so.onclick=e=>{if(e.target===so)so.remove()};
-  const rows=Object.keys(cart).map(k=>{const[i,sz,p]=priceOf(k);return '<div class=sline><span>'+cart[k].q+'× '+esc(i.name)+(sz?' ('+esc(sz)+')':'')+'</span><span>'+inr(p*cart[k].q)+'</span></div>'}).join('');
+  const rows=Object.keys(cart).map(k=>{const[i,sz,p,pk]=priceOf(k),ex=[...pk.opts,...pk.rm.map(x=>'No '+x)].join(', ');return '<div class=sline><span>'+cart[k].q+'× '+esc(i.name)+(sz?' ('+esc(sz)+')':'')+(ex?'<br><small style="color:var(--muted)">'+esc(ex)+'</small>':'')+'</span><span>'+inr(p*cart[k].q)+'</span></div>'}).join('');
   const payRow=cfg.upiId?'<div class="row" style="gap:8px;margin:4px 0"><button class="dchip on" id=payCounter type=button>Pay at counter</button><button class="dchip" id=payUpi type=button>Pay by UPI</button></div><div id=upiBox style="display:none;text-align:center;padding:12px 0">'+upiQrSvg(t,(cfg.name||'')+' order')+'<p style="font-size:13px;color:var(--muted);margin-top:8px">Scan with any UPI app to pay '+inr(t)+', then place your order below.</p></div>':'';
   so.innerHTML='<div class=sht><h3>Your order'+(tb?' · '+esc(tb.name):' · Takeaway')+'</h3>'+rows+'<div class="sline tot"><b>Estimated total</b><b>'+inr(t)+'</b></div>'+payRow+'<input id=coName placeholder="Your name *" autocomplete=name><input id=coPhone type=tel placeholder="Mobile number *" autocomplete=tel><textarea id=coNote placeholder="Notes (e.g. less spicy, no onion)" rows=2></textarea><div class=row><button class="pill line" id=coBack>Back</button><button class="pill dark" id=coGo>Place order</button></div></div>';
   document.body.append(so);
@@ -644,7 +660,7 @@ async function callWaiter(){
    if(!n)return alert('Please enter your name');if(!p)return alert('Please enter your mobile number');
    e.target.disabled=true;e.target.textContent='Placing order…';
    const noteTxt=so.querySelector('#coNote').value.trim(),nt=payUpi?('Paid by UPI (self-reported, please verify)'+(noteTxt?' — '+noteTxt:'')):noteTxt;
-   const{data:orderTok,error}=await sb.rpc('place_order',{tenant_slug:TENANT_SLUG,t:T,n,p,nt,its:Object.values(cart).map(c=>({id:c.id,size:c.size,qty:c.q}))});
+   const{data:orderTok,error}=await sb.rpc('place_order',{tenant_slug:TENANT_SLUG,t:T,n,p,nt,its:Object.values(cart).map(c=>({id:c.id,size:c.size,qty:c.q,opts:c.opts&&c.opts.length?c.opts:undefined,rm:c.rm&&c.rm.length?c.rm:undefined}))});
    if(error){e.target.disabled=false;e.target.textContent='Place order';return alert(/busy/.test(error.message)?'Too many pending orders right now. Please call us or try again shortly.':error.message||'Could not place the order. Please try again or call our staff.')}
    for(const k in cart)delete cart[k];so.remove();drawMenu();drawCartBar();
    // Keep the one link that will show this exact bill once it's billed, so the customer never has to

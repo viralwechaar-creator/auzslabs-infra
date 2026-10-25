@@ -173,7 +173,7 @@ const NAV=[
  ['g:price','Pricing, tax & offers','card',[['menu/taxes','Taxes'],['menu/discounts','Discounts'],['menu/bogo','Buy X Get Y'],['menu/commission','Commission']]],
  ['g:tbl','Tables & ordering','dine',[['menu/tables','Tables'],['menu/preferences','Order preferences']]],
  ['lbl','Stock'],
- ['g:inv','Stock & purchasing','inv',[['inv/stock','Stock'],['inv/raw','Raw Materials'],['inv/purchase','Purchases'],['inv/vendors','Vendors'],['inv/recipes','Recipes'],['inv/consumption','Consumption']]],
+ ['g:inv','Stock & purchasing','inv',[['inv/stock','Stock'],['inv/raw','Raw Materials'],['inv/purchase','Purchases'],['inv/vendors','Vendors'],['inv/recipes','Recipes'],['inv/consumption','Consumption'],['inv/packaging','Packaging']]],
  ['lbl','Customers & marketing'],
  ['g:crm','Customers','crm',[['crm/customers','Customers'],['crm/loyalty','Loyalty'],['crm/membership','Membership'],['crm/giftcards','Gift Cards'],['crm/feedback','Feedback'],['crm/support','Support']]],
  ['g:mkt','Marketing','mkt',[['mkt/campaigns','Campaigns'],['mkt/segments','Segments'],['mkt/offers','Offers'],['mkt/promotions','Promotions'],['mkt/loyaltycamp','Loyalty Campaigns'],['mkt/whatsapp','WhatsApp']]],
