@@ -23,6 +23,6 @@
     ],
     "win": { "target": [{ "target": "nsis", "arch": ["x64"] }], "icon": "build/icon.png" },
     "nsis": { "include": "build-extra/installer.nsh", "oneClick": false, "perMachine": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "createStartMenuShortcut": true, "shortcutName": "AUZsStyle", "deleteAppDataOnUninstall": false },
-    "artifactName": "AUZsStyle-Setup-${version}.${ext}"
+    "artifactName": "AUZsStyle-Setup.${ext}"
   }
 }
