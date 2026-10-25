@@ -19,6 +19,12 @@ One folder from the pen drive, no installer needed (a Setup.exe wrapper can come
 4. GitHub Actions workflow that assembles the zip (downloads Electron 22, PG 12 Windows binaries, Node deps for win32 ia32/x64, `sharp` replaced by a pure-JS fallback because sharp 0.34 does not support Win7). Build cannot run in the sandbox (PG download blocked here), so CI makes the zip.
 5. Test on a real Windows 7 PC (or VM) - nothing here can be tested on Windows 7 from this sandbox.
 
+## Phase 1 result (done)
+All 260 migrations (db/000-259, minus the 4 Mannat one-offs) now apply cleanly on a real **PostgreSQL 12.20** (pgcrypto present). 12 files failed only because PG 12 requires `AS` before output-column aliases such as `ref`, `cost`, `mode`, `name`, `at`, `views`; `as` was added (alias-only, same meaning on PG 16). Rule for new migrations: always write `as` before a column alias. Test PG 12 binaries came from Maven (`io.zonky.test.postgres:embedded-postgres-binaries-linux-amd64:12.20.0`); the same project publishes Windows binaries to try on the client PC. Not yet run: the API and the style suite against PG 12, and PG 12 on a real Windows 7 machine.
+
+## Client PC (from the owner)
+Windows 7 Ultimate 64-bit, Intel Pentium E5700 (2 cores), 2 GB RAM, USB 2.0 only, ethernet only. Build 64-bit only. 2 GB is tight for Electron + PostgreSQL: ask the client to upgrade to 4 GB (and an SSD).
+
 ## Open risks (say plainly to the client)
 - 32- vs 64-bit Windows 7 must be checked (Control Panel > System); we ship both.
 - Windows 7 needs Service Pack 1 and the Visual C++ 2015-2019 runtime (include the redistributable on the drive).

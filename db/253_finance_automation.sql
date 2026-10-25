@@ -262,7 +262,7 @@ begin
     out := out || jsonb_build_array(jsonb_build_object('type', 'loan', 'tone', 'red', 'title', 'Loan past its date: ' || r.counterparty, 'date', r.due_date));
   end loop;
   -- money owed for a long time
-  for r in select b->>'name' name, (b->>'balance')::numeric bal, current_date - (b->>'oldest')::date age from jsonb_array_elements(fin_people_balances()) b
+  for r in select b->>'name' as name, (b->>'balance')::numeric bal, current_date - (b->>'oldest')::date age from jsonb_array_elements(fin_people_balances()) b
       where (b->>'balance')::numeric > 0 and (b->>'oldest') is not null and current_date - (b->>'oldest')::date > 60 order by (b->>'balance')::numeric desc limit 10 loop
     out := out || jsonb_build_array(jsonb_build_object('type', 'olddue', 'tone', 'orange', 'title', r.name || ' has owed you for ' || r.age || ' days', 'amount', r.bal));
   end loop;

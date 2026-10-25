@@ -80,7 +80,7 @@ begin
   from_ts := coalesce(p_from, current_date - 6)::timestamptz; to_ts := coalesce(p_to, current_date)::timestamptz + interval '1 day';
   return coalesce((
     select jsonb_agg(x order by at desc) from (
-      select 'sale' kind, id, staff_id, total amount, created_at at from mob_sales where tenant_id = tid and created_at >= from_ts and created_at < to_ts and not voided
+      select 'sale' kind, id, staff_id, total as amount, created_at as at from mob_sales where tenant_id = tid and created_at >= from_ts and created_at < to_ts and not voided
       union all
       select 'purchase', id, staff_id, total, created_at from mob_purchases where tenant_id = tid and created_at >= from_ts and created_at < to_ts
       union all

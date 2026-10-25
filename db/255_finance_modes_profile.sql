@@ -51,7 +51,7 @@ create or replace function fin_txn_json(t fin_txns, tid uuid) returns jsonb lang
     'category', (select name from acc_accounts where id = t.category_id), 'person', (select name from fin_people where id = t.person_id),
     'partner', (select name from fin_partners where id = t.partner_id), 'loan', (select counterparty from fin_loans where id = t.loan_id),
     'files', (select coalesce(jsonb_agg(x.f order by x.at), '[]') from (
-        select jsonb_build_object('name', name, 'url', url) f, created_at at from fin_files where tenant_id = tid and txn_id = t.id
+        select jsonb_build_object('name', name, 'url', url) as f, created_at as at from fin_files where tenant_id = tid and txn_id = t.id
         union all
         select jsonb_build_object('name', name, 'url', url), created_at from acc_attachments where tenant_id = tid and entity = 'fin_txn' and entity_id = t.id) x),
     'journal_no', (select number from acc_journals where id = t.journal_id))
