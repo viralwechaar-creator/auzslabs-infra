@@ -92,10 +92,39 @@ function licenceScreen(s) {
     code, m, btn, h('p', { class: 'small muted' }, t('Need a code? Call or WhatsApp AUZslab: +91 92512 50829')))));
 }
 
+// First start of the installed copy: no shop exists yet, so ask for the shop name and the owner's login (kept on this computer only).
+async function setupNeeded() {
+  if (!window.AUZ_LIC) return false;
+  try { return !!(await (await fetch(CFG.url + '/setup/state')).json()).needed; } catch { return false; }
+}
+function setupScreen() {
+  const f = (ph, type = 'text', ac) => h('input', { class: 'input', type, placeholder: ph, 'aria-label': ph, autocomplete: ac || 'off' });
+  const shop = f(t('Shop name')), name = f(t('Your name'), 'text', 'name'), email = f(t('Email (you will sign in with this)'), 'email', 'username'), pw = f(t('Password (at least 8 characters)'), 'password', 'new-password'), pw2 = f(t('Type the password again'), 'password', 'new-password');
+  const m = h('div', { class: 'small', role: 'alert', style: { color: 'var(--red)', minHeight: '18px' } });
+  const btn = h('button', { class: 'btn fill wide', type: 'submit' }, t('Create my shop'));
+  const form = h('form', { style: { display: 'grid', gap: '10px' } }, shop, name, email, pw, pw2, m, btn);
+  form.onsubmit = async (e) => {
+    e.preventDefault(); m.textContent = '';
+    if (pw.value !== pw2.value) { m.textContent = t('The two passwords are different.'); return; }
+    btn.disabled = true;
+    try {
+      const r = await fetch(CFG.url + '/setup/first-run', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ shop: shop.value, name: name.value, email: email.value, password: pw.value }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { m.textContent = j.error || t('Could not set up'); btn.disabled = false; return; }
+      const { error } = await sb.auth.signInWithPassword({ email: email.value.trim().toLowerCase(), password: pw.value });
+      if (error) { m.textContent = error.message; btn.disabled = false; return; }
+      location.reload();
+    } catch { m.textContent = t('Could not reach the app on this computer.'); btn.disabled = false; }
+  };
+  clear($('#app')).append(h('div', { class: 'login' }, h('div', { class: 'card' }, h('div', { style: { fontWeight: 800, fontSize: '20px' } }, 'AUZs', h('span', { style: { color: 'var(--accent)' } }, 'Style')),
+    h('h1', null, t('Set up your shop')), h('p', { class: 'muted' }, t('This is the first time AUZsStyle is opened on this computer. Your sales and stock are kept on this computer.')), form)));
+}
+
 async function boot() {
   try { setLang(localStorage['sty.lang'] || 'en'); } catch { setLang('en'); }
   clear($('#app')).append(h('div', { class: 'login' }, h('div', { class: 'spin', style: { color: 'var(--tint)', width: '28px', height: '28px' } })));
   if (await licenceCheck() === 'locked') return;
+  if (await setupNeeded()) return setupScreen();
   const { data: { session } } = await sb.auth.getSession();
   if (!session) return showLogin();
   let dash, ctx;
@@ -238,6 +267,7 @@ function bellBtn() {
   return h('button', { class: 'btn plain icon bell', type: 'button', 'aria-label': t('Notifications'), title: t('Notifications'), onclick: notesSheet }, icon('bell', 20), n ? h('span', { class: 'fcount' }, n > 9 ? '9+' : String(n)) : null);
 }
 async function refreshNotes() {
+  if (!S.user) return; // nothing to ask before sign-in (or while the licence screen shows)
   try { const { data } = await sb.from('notifications').select('id,type,title,body,read,created_at').gte('created_at', new Date(Date.now() - 30 * 864e5).toISOString()).order('created_at').limit(500); NOTES = (data || []).filter((x) => NOTE_TYPES.test(x.type)).reverse(); } catch { return; }
   document.querySelectorAll('.btn.bell').forEach((b) => b.replaceWith(bellBtn()));
 }

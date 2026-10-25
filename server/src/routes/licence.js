@@ -8,9 +8,10 @@ const store = OFFLINE ? licenceStore(process.env.AUZ_DATA_DIR || './data', PUB) 
 export const licenceStatus = () => (store ? store.status() : { state: 'active', cloud: true });
 
 // Without a valid (or just-expired, grace) plan the installed app answers nothing except the licence screen, health and the pages themselves.
-const OPEN = (p) => p === '/health' || p.startsWith('/licence/');
-export function gate(url) {
-  if (!OFFLINE || OPEN(url.pathname)) return;
+// (the app's own pages and pictures are open too, so the Activate screen can show: they are files, not data)
+const OPEN = (p, m) => p === '/health' || p.startsWith('/licence/') || p.startsWith('/setup/') || (m === 'GET' && (p === '/' || /\.[a-z0-9]{2,5}$/i.test(p)));
+export function gate(url, method = 'GET') {
+  if (!OFFLINE || OPEN(url.pathname, method)) return;
   const s = store.status();
   if (s.state === 'active' || s.state === 'grace') return;
   throw new HttpError(402, s.state === 'expired' ? 'Your AUZsStyle plan has ended. Enter a new licence code to continue.' : 'Enter your AUZsStyle licence code to start.');
