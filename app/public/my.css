@@ -194,3 +194,7 @@ h1{margin:0;font-weight:800;letter-spacing:-.045em;line-height:.95;font-size:cla
 #tiles .frow .tile .ob,#tiles .frow .tile .ob-full{border:0;padding:0;background:none;font-size:9.5px;letter-spacing:.04em;color:#8a8a8a;opacity:1}
 #tiles .frow .tile .ob-full{color:#d9a0ae}
 #tiles .frow .tile{align-items:baseline;align-content:center}
+#tiles .frow .tile .rec{font-size:9.5px;letter-spacing:.04em;color:#d9a0ae}
+#tiles .fd .ob{display:inline-block;margin-top:5px;border:0;padding:0;background:none;font-size:10px;letter-spacing:.04em;color:#8a8a8a}
+#tiles .fd .ob-full{color:#7fc79a}#tiles .fd .ob-partial{color:#d8a94a}
+#tiles .fd .ob{display:block;margin-top:4px}

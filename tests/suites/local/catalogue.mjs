@@ -234,7 +234,7 @@ export default async function run({ browser, stack }) {
     const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage(); await allCompat(page, ALLKEYS);
     try {
       await page.goto(stack.url('app', '/my.html')); await page.evaluate(() => localStorage.clear()); await page.reload(); await pickType(page); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
-      const tile = (name) => page.locator('#tiles .tile', { hasText: name }).first().innerText();
+      const tile = (name) => page.locator('#tiles .frow', { hasText: name }).first().textContent();
       assert(/Works offline/.test(await tile('Billing and invoices')), 'POS label: ' + await tile('Billing and invoices'));
       assert(/Needs internet/.test(await tile('Expenses and cash')), 'Finance label');
       assert(/Partly offline/.test(await tile('Staff attendance')), 'Pay label');
@@ -253,7 +253,7 @@ export default async function run({ browser, stack }) {
     try {
       await page.goto(stack.url('app', '/my.html')); await page.evaluate(() => localStorage.clear()); await page.reload(); await pickType(page); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
       for (const name of ['Billing and invoices', 'Staff attendance', 'Barcode & Scan', 'Phone sales and IMEI']) {
-        const tx = await page.locator('#tiles .tile', { hasText: name }).first().innerText();
+        const tx = await page.locator('#tiles .frow', { hasText: name }).first().textContent();
         assert(/Not yet checked/.test(tx) && !/Works offline/.test(tx), name + ' shown as: ' + tx);
       }
     } finally { await ctx.close(); }
@@ -273,7 +273,7 @@ export default async function run({ browser, stack }) {
     await page.route('https://api.auzslab.in/rpc/public_module_catalogue', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: t }) }));
     try {
       await page.goto(stack.url('app', '/my.html')); await page.evaluate(() => localStorage.clear()); await page.reload(); await pickType(page); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
-      const tip = async (name) => { const b = page.locator('#tiles .tile', { hasText: name }).first().locator('.ob'); return { label: await b.innerText(), title: await b.getAttribute('title') }; };
+      const tip = async (name) => { const b = page.locator('#tiles .frow', { hasText: name }).first().locator('.ob'); return { label: await b.textContent(), title: await b.getAttribute('title') }; };
       let x = await tip('Billing and invoices'); assert(x.label === 'Works offline' && /test browser/i.test(x.title) && /Not yet tested on real/i.test(x.title), JSON.stringify(x));
       x = await tip('Barcode & Scan'); assert(x.label === 'Partly offline' && /reading the code/i.test(x.title) && /Not tested/i.test(x.title) && !/test browser/i.test(x.title), JSON.stringify(x));
       x = await tip('Phone sales and IMEI'); assert(x.label === 'Partly offline' && /documentation only/i.test(x.title) && !/test browser/i.test(x.title), JSON.stringify(x));
