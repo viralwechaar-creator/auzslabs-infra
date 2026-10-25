@@ -307,6 +307,29 @@ export default async function run({ browser, stack }) {
     assert(/Sold out/.test(await t.innerText()), 'the reason is not shown');
   });
 
+  await s.check('Counter look: dock instead of the side menu, category rail, photos switch, bill ribbon on a phone', async () => {
+    await page.evaluate(() => { localStorage['pos.look'] = 'counter'; location.reload(); });
+    await page.waitForSelector('.c-dock', { timeout: 15000 });
+    await page.evaluate(() => { S.cur = newOrder(); go('sell'); }); await page.waitForSelector('.c-sell .ct');
+    assert(await page.locator('.side').isHidden(), 'the side menu should be hidden in the Counter look');
+    assert(await page.locator('.tabbar').count() === 0, 'the tab bar should not be drawn');
+    assert(await page.locator('.c-rail .c-cat').count() > 0, 'no category rail');
+    assert(await page.locator('.c-sell .ticket-pane').isVisible(), 'the bill panel should show on a wide screen');
+    await page.waitForTimeout(4500); await s.shot(page, 'pos-counter-desktop');
+    const withPhotos = await page.locator('.c-sell .ct .ph').count();
+    await page.locator('.c-ico[aria-label*=photos]').click(); await page.waitForTimeout(300);
+    assert(withPhotos > 0 && await page.locator('.c-sell .ct .ph').count() === 0, 'the photos switch did not hide the thumbnails');
+    await page.locator('.c-ico[aria-label*=photos]').click(); await page.waitForTimeout(300);
+    await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(400);
+    assert(await page.locator('.c-sell .ticket-pane').isHidden(), 'the bill panel should be hidden on a phone');
+    assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'sideways scroll on a phone');
+    await s.shot(page, 'pos-counter-phone');
+    await page.locator('.c-dock button[data-tab=orders]').click(); await page.waitForTimeout(400);
+    assert(await page.locator('.c-dock').isVisible(), 'dock missing on another screen');
+    await page.evaluate(() => { localStorage['pos.look'] = 'classic'; }); await page.setViewportSize({ width: 1280, height: 900 });
+    await page.reload(); await page.waitForSelector('.shell'); assert(await page.locator('.c-dock').count() === 0, 'Classic should not draw the dock');
+  });
+
   // the 409 from the deliberate double booking above is the expected answer, not an error
   await s.check('No JavaScript errors during the whole workflow', async () => { const bad = errs.filter((e) => !/print|callback|WebSocket|ERR_CERT|tunnel/i.test(e) && !/icon-[a-z]+\.svg.*ERR_ABORTED/.test(e) && !/409.*\/db\/bookings/.test(e)); assert(!bad.length, bad.slice(0, 3).join(' | ')); }, 'major');
   await ctx.close(); s.done();
