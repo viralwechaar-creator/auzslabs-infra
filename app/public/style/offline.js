@@ -60,8 +60,10 @@ const READS = new Set([
 
 // ---------- the queue ----------
 const qKey = () => 'q.' + scope();
+const emptyBill = (e) => e && e.fn === 'sty_sell' && e.args && e.args.p && !(e.args.p.lines || []).length;
 const getQ = () => {
-  const q = LS.get(qKey(), []);
+  let q = LS.get(qKey(), []);
+  if (q.some(emptyBill)) { q = q.filter((e) => !emptyBill(e)); LS.set(qKey(), q); }   // an empty bill (made by a double tap in an older version) can never be sold: drop it
   if (q.some((e) => !e.id)) { q.forEach((e, i) => { if (!e.id) e.id = 'old-' + (e.at || 0) + '-' + i; }); LS.set(qKey(), q); }   // bills queued by the older version
   return q;
 };
@@ -135,6 +137,7 @@ function learnIds(e, data) {
 // Returns {done:true, data} when the server has applied it, {queued:true} when it is waiting on this device.
 // A refusal by the server (4xx) is thrown to the caller, as it always was.
 async function submit(fn, args) {
+  if (fn === 'sty_sell' && !((args && args.p && args.p.lines) || []).length) throw new Error(t('The bill is empty'));
   const op = { id: uid(), fn, args: args || {}, at: Date.now() };
   const q = getQ(); q.push(op); setQ(q);
   WAIT.add(op.id);

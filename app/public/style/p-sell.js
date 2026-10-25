@@ -249,6 +249,7 @@ function paySheet(c, done) {
   sh.el.querySelector('.sheet-f').append(ok);
   upd();
   ok.onclick = async () => {
+    if (ok.disabled || !BILL.lines.length) return; // a second tap (or Enter) after the bill was sent must not send an empty one
     ok.disabled = true;
     const payments = MODES.map(([m]) => ({ mode: m, amount: pay[m] })).filter((p) => p.amount > 0);
     const p = { id: uid(), branchId: S.branch, customerId: cust ? cust.id : null, note: note.value || undefined, redeemPoints: BILL.redeem || 0,
