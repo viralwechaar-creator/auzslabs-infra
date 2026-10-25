@@ -300,21 +300,27 @@ export default async function run({ browser, stack }) {
     } finally { await ctx.close(); }
   }, 'critical');
 
-  await s.check('Build page: "Sign in to build my app" remembers the visit; staff logins get a clear note instead of a dead form', async () => {
-    const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage();
+  await s.check('Build page: a visitor makes a username + password and gets the 3-day trial in one step (no email, no Google)', async () => {
+    const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage(); const errs = watch(page);
     try {
       await page.goto(stack.url('app', '/my.html')); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
+      assert(await page.locator('#go a[href*="start.html"]').count() === 0, 'there should be no link to the old login page');
       await page.locator('#tiles .tile').first().click();
-      await page.locator('#go a', { hasText: /sign in/i }).click(); await page.waitForURL(/start\.html/, { timeout: 15000 });
-      assert(await page.evaluate(() => localStorage.getItem('auz_go_build') === '1'), 'the visit was not remembered');
+      await page.fill('#go input[placeholder="Your name"]', 'Tara Trial'); await page.fill('#go input[placeholder^="Mobile"]', '9876501234'); await page.fill('#go input[placeholder="Business name"]', 'Username Trial Shop');
+      await page.fill('#go input[placeholder="Make a username"]', 'tara.trial'); await page.fill('#go input[type=password]', 'pw-12345678');
+      await page.locator('#go button', { hasText: /build my app/i }).click();
+      await page.waitForSelector('#work:not([hidden]), .chips, #chips', { timeout: 20000 });
+      const row = (await q(`select t.is_trial, t.name from auth_users u join profiles p on p.id = u.id join tenants t on t.id = p.tenant_id where u.email = 'tara.trial@trial.auzslab.in'`))[0];
+      assert(row && row.is_trial && row.name === 'Username Trial Shop', 'trial business not created: ' + JSON.stringify(row));
+      const login = await post('/auth/login', { email: 'tara.trial', password: 'pw-12345678' }); assert(login.status === 200 && login.raw && login.raw.access_token, 'the bare username should sign in: ' + login.status);
     } finally { await ctx.close(); }
-    const c2 = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const p2 = await c2.newPage();
-    try {
-      await p2.goto(stack.url('app', '/my.html')); await p2.waitForSelector('#tiles .tile', { timeout: 15000 });
-      const r = await p2.evaluate(async () => { const x = await supabase.createClient(CFG.url, CFG.key).auth.signInWithPassword({ email: 'admin@test.local', password: 'Test!pass123' }); return !!(x.data && x.data.session); });
-      if (r) { await p2.reload(); await p2.waitForSelector('#tiles .tile', { timeout: 15000 }); await p2.locator('#tiles .tile').first().click(); await p2.waitForSelector('#go .note', { timeout: 8000 });
-        const t = await p2.locator('#go').innerText(); assert(/staff/i.test(t) && /sign out/i.test(t), 'no staff note: ' + t); assert(await p2.locator('#go input').count() === 0, 'a form was shown to staff'); }
-    } finally { await c2.close(); }
+    const dup = await fetch(stack.apiBase + '/auth/trial-account', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username: 'Tara.Trial', password: 'pw-12345678', business_name: 'X', phone: '9876501234', blocks: ['pos'], features: ['billing'] }) });
+    assert(dup.status === 409, 'a taken username should be refused with 409, got ' + dup.status);
+    const short = await fetch(stack.apiBase + '/auth/trial-account', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username: 'shorty1', password: 'abc', business_name: 'X', phone: '9876501234', blocks: ['pos'] }) });
+    assert(short.status === 400, 'a short password should be refused, got ' + short.status);
+    const nobiz = await fetch(stack.apiBase + '/auth/trial-account', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username: 'nobiz.user', password: 'pw-12345678', business_name: '', phone: '9876501234', blocks: ['pos'] }) });
+    assert(nobiz.status === 400, 'a missing business name should be refused, got ' + nobiz.status);
+    assert((await q(`select 1 from auth_users where email = 'nobiz.user@trial.auzslab.in'`)).length === 0, 'a refused trial left a login behind');
   }, 'major');
 
   await q(`update platform_flags set value = 'off' where key = 'password_signup'`);
