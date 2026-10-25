@@ -28,7 +28,6 @@ const ROUTE_MODULES = [handleLicence, handleSystem, handleAuth, handlePayments, 
 
 setWsCounter(wsCount);
 const server = http.createServer(async (req, res) => {
-  if (req.url.includes('licence')) console.log('[req]', req.method, req.url, 'content-length:', req.headers['content-length'], 'transfer-encoding:', req.headers['transfer-encoding']);
   trackRequest(req, res);
   // Salon Suite (Showoff Salon's original app, see salon.js): same-origin
   // /api/* on a tenant subdomain, rewritten to /salon-api by Caddy.
@@ -44,7 +43,6 @@ const server = http.createServer(async (req, res) => {
   const meta = { ip, userAgent: req.headers['user-agent'] || '' }; // threaded into every sign-in, so it gets its own row in auth_sessions (db/071)
 
   const ctx = { req, res, url, user, ip, meta, reply, origin };
-  if (url.pathname.includes('licence')) console.log('[req] past preflight, dispatching', url.pathname, req.method);
   try {
     licenceGate(url, req.method); // installed (offline) copy only: nothing works without a valid licence code
     for (const handler of ROUTE_MODULES) {

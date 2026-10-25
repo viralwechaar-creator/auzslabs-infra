@@ -199,21 +199,15 @@ export async function handle(ctx) {
 
   // ---- admin: make a licence code for the installed (offline) AUZsStyle. Signed with LICENCE_PRIVATE_KEY (server .env only). ----
   if (url.pathname === '/admin/licence/issue' && req.method === 'POST') {
-    console.log('[licence] start', user && user.id);
     if (!user) throw new HttpError(401, 'unauthorized');
     const { rows: adm } = await withAuth(user.id, (client) => client.query('select 1 from platform_admins where id = $1', [user.id]));
-    console.log('[licence] admin check done', adm.length);
     if (!adm.length) throw new HttpError(403, 'forbidden -- not a platform admin');
     if (!process.env.LICENCE_PRIVATE_KEY) throw new HttpError(400, 'Licence signing is not set up on the server yet (LICENCE_PRIVATE_KEY).');
-    console.log('[licence] reading body...');
     const b = await readJsonBody(req);
-    console.log('[licence] body read', JSON.stringify(b));
     const shop = String(b.shop || '').trim(); if (!shop) throw new HttpError(400, 'Shop name is required');
     const addons = { cloud: !!(b.addons && b.addons.cloud), whatsapp: !!(b.addons && b.addons.whatsapp), store: !!(b.addons && b.addons.store) };
     let code; try { code = signLicence({ shop, end: String(b.end || ''), addons }, process.env.LICENCE_PRIVATE_KEY); } catch (e) { throw new HttpError(400, e.message); }
-    console.log('[licence] signed, writing log row...');
     await withAuth(user.id, (client) => client.query('select admin_log_licence($1::jsonb) as r', [JSON.stringify({ shop, end: b.end, addons, note: b.note || '', tenantId: b.tenantId || null, code, codeId: verifyLicence(code, publicFromPrivate(process.env.LICENCE_PRIVATE_KEY)).id, renewOf: b.renewOf || null })]));
-    console.log('[licence] done, replying');
     return reply(200, { code });
   }
 

@@ -3631,6 +3631,7 @@ document.getElementById('licMake').addEventListener('click', async () => {
   const out = document.getElementById('licOut'); const shop = document.getElementById('licShop').value.trim(), end = document.getElementById('licEnd').value;
   if (!shop || !end) { out.innerHTML = '<div class="err">Enter the shop name and the plan end date.</div>'; return; }
   out.textContent = 'Making...';
+  const { data: { session } } = await sb.auth.getSession();
   const res = await fetch(CFG.url + '/admin/licence/issue', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token }, body: JSON.stringify({ shop, end, addons: { cloud: licCloud.checked, whatsapp: licWa.checked, store: licStore.checked }, note: document.getElementById('licNote').value, renewOf: document.getElementById('licRenew').value || null }) });
   const j = await res.json().catch(() => ({}));
   if (!res.ok) { out.innerHTML = `<div class="err">${esc(j.error || 'Could not make the code')}</div>`; return; }
