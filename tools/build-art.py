@@ -75,8 +75,8 @@ SEC = '''<section class="by" id="bd">
 <h2 class="by-h"><span>Say what you do.</span><span class="dim">We build the app.</span></h2>
 <p class="by-sub">Pick your kind of business, tick what it needs, shape how it looks. Start a 3-day trial and your app opens, ready to use. No payment now.</p></div>
 <div class="by-cols"><div class="by-steps">
-<div class="by-s"><p class="by-n">01 &middot; What kind of business</p><div class="bd-types" id="bdTypes"><p class="bd-hint">Loading...</p></div><p class="bd-hint" id="bdNote"></p></div>
-<div class="by-s"><p class="by-n">02 &middot; What it needs <span id="bdTally"></span></p><div class="bd-needs" id="bdNeeds"></div></div>
+<div class="by-s"><p class="by-n">01 &middot; What kind of business</p><div class="bd-types" id="bdTypes"><p class="bd-hint">Loading...</p></div><p class="bd-hint" id="bdNote"></p><p class="bd-cue" id="bdCue" hidden>Next: tick what your business needs, just below.</p></div>
+<div class="by-s" id="bdStep2"><p class="by-n">02 &middot; What it needs <span id="bdTally"></span></p><div class="bd-needs" id="bdNeeds"></div></div>
 <div class="by-s"><p class="by-n">03 &middot; How it should feel</p><div id="bdDesign"></div></div>
 <div class="by-s"><p class="by-n">04 &middot; Start</p><div class="bd-go" id="bdGo"></div><p class="bd-hint">Need something we do not have? <a href="contact.html">Tell us</a>.</p></div>
 </div>
@@ -120,7 +120,7 @@ def _():
 </div>''' % (SEC, eco, bl)
     put('platform', body, 'a-dark a-why', 'a-why')
     t = open(os.path.join(OUT, 'platform.html'), encoding='utf-8').read()
-    t = t.replace('</body>', '<script src="build-inline.js?v=1" defer></script></body>', 1)
+    t = t.replace('</body>', '<script src="build-inline.js?v=2" defer></script></body>', 1)
     open(os.path.join(OUT, 'platform.html'), 'w', encoding='utf-8').write(t)
 
 @reg('products')
