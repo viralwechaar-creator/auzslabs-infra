@@ -64,9 +64,38 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').cat
 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); window.AUZ_INSTALL = e; document.dispatchEvent(new Event('auz:installable')); });
 window.addEventListener('appinstalled', () => { window.AUZ_INSTALL = null; document.dispatchEvent(new Event('auz:installable')); });
 
+// Installed (offline) copy: the local server answers /licence/status. On the cloud site it says offline:false and nothing changes.
+async function licenceCheck() {
+  let s; try { const c = new AbortController(); setTimeout(() => c.abort(), 4000); s = await (await fetch(CFG.url + '/licence/status', { signal: c.signal })).json(); } catch { return null; }
+  if (!s || !s.offline) return null;
+  window.AUZ_LIC = s;
+  if (s.state === 'none' || s.state === 'expired') { licenceScreen(s); return 'locked'; }
+  if (s.daysLeft <= 14) setTimeout(() => toast(s.state === 'grace' ? t('Your plan has ended. Enter a new licence code within %d days.').replace('%d', s.graceLeft) : t('Your plan ends in %d days. Ask AUZslab for a renewal code.').replace('%d', Math.max(s.daysLeft, 0)), { err: s.state === 'grace' }), 3000);
+  return null;
+}
+function licenceScreen(s) {
+  const code = h('textarea', { class: 'input', rows: 4, placeholder: 'AUZ-XXXXX-XXXXX-...', 'aria-label': 'Licence code', style: { fontFamily: 'monospace', textTransform: 'uppercase' } });
+  const m = h('div', { class: 'small', role: 'alert', style: { color: 'var(--red)', minHeight: '18px' } });
+  const btn = h('button', { class: 'btn fill wide', type: 'button' }, t('Activate'));
+  btn.onclick = async () => {
+    m.textContent = ''; btn.disabled = true;
+    try {
+      const r = await fetch(CFG.url + '/licence/activate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code: code.value }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { m.textContent = j.error || t('Could not activate'); btn.disabled = false; return; }
+      location.reload();
+    } catch { m.textContent = t('Could not reach the app on this computer.'); btn.disabled = false; }
+  };
+  clear($('#app')).append(h('div', { class: 'login' }, h('div', { class: 'card' }, h('div', { style: { fontWeight: 800, fontSize: '20px' } }, 'AUZs', h('span', { style: { color: 'var(--accent)' } }, 'Style')),
+    h('h1', null, s.state === 'expired' ? t('Your plan has ended') : t('Activate AUZsStyle')),
+    h('p', { class: 'muted' }, s.state === 'expired' ? t('Your data is safe on this computer. Enter the new code AUZslab sent you to continue.') + (s.shop ? ' (' + s.shop + ', ' + s.end + ')' : '') : t('Type the licence code AUZslab gave you. No internet is needed.')),
+    code, m, btn, h('p', { class: 'small muted' }, t('Need a code? Call or WhatsApp AUZslab: +91 92512 50829')))));
+}
+
 async function boot() {
   try { setLang(localStorage['sty.lang'] || 'en'); } catch { setLang('en'); }
   clear($('#app')).append(h('div', { class: 'login' }, h('div', { class: 'spin', style: { color: 'var(--tint)', width: '28px', height: '28px' } })));
+  if (await licenceCheck() === 'locked') return;
   const { data: { session } } = await sb.auth.getSession();
   if (!session) return showLogin();
   let dash, ctx;
