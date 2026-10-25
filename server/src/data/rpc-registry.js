@@ -127,6 +127,8 @@ export const RPC = {
   public_trial_blocks: { params: [], auth: false },
   public_module_catalogue: { params: [], auth: false },
   public_module_resolve: { params: ['p'], jsonb: ['p'], auth: false },
+  public_business_types: { params: [], auth: false },
+  public_module_tiers: { params: ['p'], jsonb: ['p'], auth: false },
   start_self_trial: { params: ['p'], jsonb: ['p'], auth: true },
   trial_status: { params: [], auth: true },
   trial_subscribe: { params: [], auth: true },
