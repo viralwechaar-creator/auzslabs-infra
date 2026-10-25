@@ -57,7 +57,7 @@
   var DK = 'auz_build_design';
   var DESIGN = (function () { try { return Object.assign({ nav: 'bottom', card: 'soft', theme: 'dark', accent: '#800020' }, JSON.parse(localStorage.getItem(DK) || '{}')); } catch (e) { return { nav: 'bottom', card: 'soft', theme: 'dark', accent: '#800020' }; } })();
   function saveDesign() { try { localStorage.setItem(DK, JSON.stringify(DESIGN)); } catch (e) {} }
-  var HAS_SESSION = false;
+  var HAS_SESSION = false, IS_STAFF = false;
   function cats() {
     return FEATS.filter(function (f) { return CAT.some(function (m) { return m.key === f[3] && m.status === 'available'; }); }).map(function (f) { return { id: f[0], name: f[1], line: f[2], keys: [f[3]], g: f[4], mod: f[3] }; });
   }
@@ -123,6 +123,11 @@
   }
   function paintGo(n) {
     var g = $('go'); g.textContent = '';
+    if (HAS_SESSION && IS_STAFF) {
+      g.append(el('p', { class: 'note', text: 'You are signed in as AUZslab staff, and staff logins cannot start a trial. To try the builder, sign out and use a customer login (or the demo login).' }),
+        el('button', { class: 'btn ghost', type: 'button', text: 'Sign out', onclick: async function () { await sb.auth.signOut(); location.reload(); } }));
+      return;
+    }
     if (HAS_SESSION) {
       var name = el('input', { placeholder: 'Your name', autocomplete: 'name' }), phone = el('input', { placeholder: 'Mobile / WhatsApp', type: 'tel', inputmode: 'tel', autocomplete: 'tel' }), biz = el('input', { placeholder: 'Business name', autocomplete: 'organization' });
       var err = el('div', { class: 'err' }), btn = el('button', { class: 'btn', type: 'button', text: 'Build my app, 3 days free' });
@@ -139,7 +144,7 @@
       return;
     }
     var go = el('a', { class: 'btn', href: '/start.html', text: 'Sign in to build my app' });
-    go.onclick = function () { if (!getSel().length) { var e = $('go').querySelector('.err'); if (e) e.textContent = 'Tick the features you need first.'; return false; } };
+    go.onclick = function () { if (!getSel().length) { var e = $('go').querySelector('.err'); if (e) e.textContent = 'Tick the features you need first.'; return false; } try { localStorage.setItem('auz_go_build', '1'); } catch (e2) {} };
     var demo = el('button', { class: 'btn ghost', type: 'button', text: 'Testing? Use the demo login' }), err2 = el('div', { class: 'err' });
     demo.onclick = async function () {
       demo.disabled = true; err2.textContent = '';
@@ -225,7 +230,7 @@
     list = APPS.filter(function (a) { return a[3](D); });
     try { var fd0 = JSON.parse(localStorage.getItem('auz_feat_done') || 'null'), k0 = 'my.cfg.' + (D.tenant ? D.tenant.slug : 'x'), c0 = JSON.parse(localStorage.getItem(k0) || '{}'); var fl = fd0 || c0.feat;
       if (fl && fl.length) { var fa = FEATS.filter(function (f) { return fl.indexOf(f[0]) >= 0 && SCREEN[f[0]] && own(D, f[3]); }).map(function (f) { return [f[0], f[1], embedUrl(SCREEN[f[0]]), function () { return true; }]; }); if (fa.length) list = fa; } } catch (e) {}
-    if (!list.length) { location.replace('/start.html?switch=1'); return; }
+    if (!list.length) { show('build'); HAS_SESSION = true; var g0 = $('go'); g0.textContent = ''; g0.append(el('p', { class: 'note', text: 'This login already runs ' + (D.tenant ? D.tenant.name : 'a business') + ', and none of its apps are switched on for you here. Open your apps from the hub, or ask AUZslab.' }), el('a', { class: 'btn ghost', href: '/start.html?switch=1', text: 'Open my apps' })); return; }
     cfgKey = 'my.cfg.' + (D.tenant ? D.tenant.slug : 'x'); cfg = load();
     try { var bd = JSON.parse(localStorage.getItem('auz_build_design') || 'null'); if (bd && !cfg.designed) { cfg.nav = bd.nav; cfg.card = bd.card; cfg.theme = bd.theme; cfg.accent = bd.accent; cfg.designed = 1; save(); localStorage.removeItem('auz_build_design'); } } catch (e) {}
     try { var fd = JSON.parse(localStorage.getItem('auz_feat_done') || 'null'); if (fd && !cfg.feat) { cfg.feat = fd; save(); localStorage.removeItem('auz_feat_done'); } } catch (e) {}
@@ -247,11 +252,11 @@
     if (catOk) useCatalogue(cl.data);
     var sess = (await sb.auth.getSession()).data.session;
     if (sess) {
-      var hm = await sb.rpc('hub_me');
+      var hm = await sb.rpc('hub_me'); IS_STAFF = !!(hm && hm.data && (hm.data.admin || hm.data.team) && !hm.data.business);
       if (hm && hm.error && (hm.error.status || 0) === 401) { await sb.auth.signOut(); sess = null; }
       else if (hm && hm.data && hm.data.business) {
         var r = await sb.rpc('my_dashboard');
-        if (r.error || !r.data) { location.replace('/start.html'); return; }
+        if (r.error || !r.data) { HAS_SESSION = true; show('build'); paintBuilder(); var g1 = $('go'); g1.textContent = ''; g1.append(el('p', { class: 'err', text: 'We could not open your business just now. Check your connection and try again.' }), el('button', { class: 'btn ghost', type: 'button', text: 'Try again', onclick: function () { location.reload(); } })); return; }
         var ts = await sb.rpc('trial_status'), tr = ts && ts.data;
         if (tr && tr.state === 'locked') { show('lock'); $('lockGo').onclick = function () { subscribe(tr); }; return; }
         return workspace(r.data, tr);
