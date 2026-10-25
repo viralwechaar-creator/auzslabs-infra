@@ -152,6 +152,7 @@ async function rawApi(fn, args) {
   let r;
   try { r = await sb.rpc(fn, args || {}); } catch (e) { const er = new Error(navigator.onLine === false ? t('You are offline') : t('Could not reach the server')); er.net = true; throw er; }
   const { data, error } = r;
+  if (error && error.status === 402) { location.reload(); }
   if (error) { const e = new Error(error.message || t('Something went wrong')); e.code = error.code; e.status = error.status; e.net = !error.status || error.status >= 500 || error.status === 408 || error.status === 429; throw e; }
   return data;
 }

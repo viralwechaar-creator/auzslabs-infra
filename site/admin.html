@@ -992,6 +992,7 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <button class="a-side-btn" data-section="systemStats"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="7" rx="1.6"/><rect x="4" y="13" width="16" height="7" rx="1.6"/><circle cx="8" cy="7.5" r=".9" fill="currentColor" stroke="none"/><circle cx="8" cy="16.5" r=".9" fill="currentColor" stroke="none"/></svg>System resources</button>
         <button class="a-side-btn" data-section="auditLog"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>Audit log</button>
         <button class="a-side-btn" data-section="privacyReq"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3Z"/><path d="M9.5 12l2 2 3.5-4"/></svg>Privacy requests<span class="a-row-badge" id="privReqBadge" style="display:none"></span></button>
+        <button class="a-side-btn" data-section="licences"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Licences</button>
         <button class="a-side-btn" data-section="website"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 14h8"/></svg>Website</button>
         <button class="a-side-btn" data-section="whatsapp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20l1.3-4.2A8 8 0 1 1 8.4 18.8L4 20Z"/><path d="M9 9.5c.3 2.2 2.3 4.2 4.5 4.5l1.2-1.2-1.8-1-.8.6c-.8-.4-1.4-1-1.8-1.8l.6-.8-1-1.8L9 9.5Z"/></svg>WhatsApp</button>
 
@@ -1314,6 +1315,21 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <div id="privacyReqList">Loading&hellip;</div>
       </section>
 
+      <section class="a-page" id="licencesSection" data-title="Licences" data-parent="more">
+        <div class="label">Installed AUZsStyle</div>
+        <h2 class="h-2">Licence codes</h2>
+        <p class="p">The Windows app works with no internet, but only after a licence code is typed in. Make a code for a shop, choose the day the plan ends and which extras they paid for, and send it on WhatsApp. When the plan ends the app stops until a new code is entered (3 days of grace). To renew, make a new code with a later end date.</p>
+        <div class="card" style="padding:14px;margin:12px 0;display:grid;gap:10px;max-width:560px">
+          <input class="input" id="licShop" placeholder="Shop name shown in the app (e.g. GenX Clothes)" maxlength="40">
+          <label style="display:grid;gap:4px">Plan ends on <input class="input" type="date" id="licEnd"></label>
+          <div class="row" style="gap:14px;flex-wrap:wrap"><label><input type="checkbox" id="licCloud"> Cloud storage</label><label><input type="checkbox" id="licWa"> WhatsApp automation</label><label><input type="checkbox" id="licStore"> Online store hosting</label></div>
+          <input class="input" id="licNote" placeholder="Note for us (payment, UTR) - optional">
+          <button class="btn btn-primary" id="licMake">Make licence code</button>
+          <div id="licOut"></div>
+        </div>
+        <div id="licList">Loading&hellip;</div>
+      </section>
+
       <section class="a-page" id="whatsappSection" data-title="WhatsApp" data-parent="more">
         <div class="label">Automatic messages</div>
         <h2 class="h-2">WhatsApp</h2>
@@ -1411,6 +1427,11 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
           <button class="a-nav-row" data-section="auditLog">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
             <span class="grow">Audit log</span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <button class="a-nav-row" data-section="licences">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <span class="grow">Licences (offline app)</span>
             <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
           </button>
           <button class="a-nav-row" data-section="privacyReq">
@@ -1666,7 +1687,7 @@ function resetMainScroll() {
 // signing in used to fire about 11 database requests together; now it is 2.
 const SECTION_LOADERS = {
   leads: () => { loadLeads(); refreshOrdersBadge(); }, orders: () => loadOrders(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(),
-  users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(), privacyReq: () => loadPrivacyReq(), whatsapp: () => loadWhatsApp(), website: () => loadWebsite(),
+  users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(), privacyReq: () => loadPrivacyReq(), licences: () => loadLicences(), whatsapp: () => loadWhatsApp(), website: () => loadWebsite(),
   team: () => { loadTeam(); loadSetups(); loadTeamApps(); }, tasks: () => loadTasks(), trialBlocks: () => loadTrialBlocks(), postStudio: () => { const f = document.getElementById('postStudioFrame'); if (f && !f.getAttribute('src')) f.src = f.dataset.src; }, salesWork: () => loadSalesWork(), clientPay: () => { loadClientPay(); loadBills(); },
 };
 const sectionLoadedAt = {};
@@ -3585,6 +3606,34 @@ async function loadPrivacyReq() {
     const { error: e } = await sb.rpc('admin_update_data_request', { p_id: el.dataset.prClose, p_status: el.dataset.st, p_response: txt }); if (e) return alert(e.message); loadPrivacyReq(); }; });
 }
 document.querySelectorAll('[data-pr]').forEach((c) => { c.addEventListener('click', () => { prFilter = c.dataset.pr; document.querySelectorAll('[data-pr]').forEach((x) => { x.className = 'btn ' + (x === c ? 'btn-primary' : 'btn-ghost'); }); loadPrivacyReq(); }); });
+
+// ---- Licence codes for the installed (offline) AUZsStyle (db/267, POST /admin/licence/issue) ----
+async function loadLicences() {
+  const box = document.getElementById('licList');
+  const e = document.getElementById('licEnd'); if (!e.value) { const d = new Date(); d.setFullYear(d.getFullYear() + 1); e.value = d.toISOString().slice(0, 10); }
+  const { data, error } = await sb.rpc('admin_list_licences');
+  if (error) { box.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  if (!data || !data.length) { box.innerHTML = emptyDoodle('No licence codes made yet.'); return; }
+  const ex = (a) => ['cloud', 'whatsapp', 'store'].filter((k) => a && a[k]).map((k) => ({ cloud: 'Cloud', whatsapp: 'WhatsApp', store: 'Store' }[k])).join(', ') || 'None';
+  box.innerHTML = `<div class="admin-table-wrap"><table class="admin-table"><tr><th>Shop</th><th>Plan ends</th><th>Extras</th><th>Note</th><th></th></tr>${data.map((l) => `<tr>
+    <td data-label="Shop">${esc(l.shop)}<div style="color:var(--ink-faint)">Made ${new Date(l.issuedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</div></td>
+    <td data-label="Plan ends" style="${l.daysLeft < 15 ? 'color:var(--accent)' : ''}">${esc(l.end)}<div>${l.daysLeft >= 0 ? l.daysLeft + ' days left' : 'Ended'}</div></td>
+    <td data-label="Extras">${esc(ex(l.addons))}</td><td data-label="Note">${esc(l.note || '')}</td>
+    <td><button class="btn btn-ghost" data-lic-copy="${esc(l.code)}">Copy code</button> <button class="btn btn-ghost" data-lic-wa="${esc(l.code)}" data-shop="${esc(l.shop)}" data-end="${esc(l.end)}">WhatsApp text</button></td></tr>`).join('')}</table></div>`;
+  box.querySelectorAll('[data-lic-copy]').forEach((b) => { b.onclick = () => { navigator.clipboard.writeText(b.dataset.licCopy); b.textContent = 'Copied'; }; });
+  box.querySelectorAll('[data-lic-wa]').forEach((b) => { b.onclick = () => window.open('https://wa.me/?text=' + encodeURIComponent(licText(b.dataset.shop, b.dataset.end, b.dataset.licWa)), '_blank'); });
+}
+const licText = (shop, end, code) => `AUZsStyle licence for ${shop}\nValid until ${end}\n\nOpen the app and type this code:\n${code}`;
+document.getElementById('licMake').addEventListener('click', async () => {
+  const out = document.getElementById('licOut'); const shop = document.getElementById('licShop').value.trim(), end = document.getElementById('licEnd').value;
+  if (!shop || !end) { out.innerHTML = '<div class="err">Enter the shop name and the plan end date.</div>'; return; }
+  out.textContent = 'Making...';
+  const res = await fetch(CFG.url + '/admin/licence/issue', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token }, body: JSON.stringify({ shop, end, addons: { cloud: licCloud.checked, whatsapp: licWa.checked, store: licStore.checked }, note: document.getElementById('licNote').value }) });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok) { out.innerHTML = `<div class="err">${esc(j.error || 'Could not make the code')}</div>`; return; }
+  out.innerHTML = `<div style="word-break:break-all;font-family:monospace;padding:10px;background:var(--bg-soft,#f2f2f2);border-radius:10px">${esc(j.code)}</div>`;
+  document.getElementById('licShop').value = ''; document.getElementById('licNote').value = ''; loadLicences();
+});
 
 // ---- WhatsApp automation (db/184): the AUZslab number, which shops may use it, and the message log ----
 const WA_TONE = { queued: '#b8942f', sending: '#b8942f', sent: '#555', delivered: '#1a7f37', read: '#1a7f37', failed: '#b42318', skipped: '#888' };
