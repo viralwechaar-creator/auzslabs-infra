@@ -13,7 +13,12 @@ export default async function run({ browser, stack }) {
   const post = async (path, body, tok) => { const r = await fetch(stack.apiBase + path, { method: 'POST', headers: { 'content-type': 'application/json', ...(tok ? { authorization: 'Bearer ' + tok } : {}) }, body: JSON.stringify(body || {}) }); let d = null; try { d = await r.json(); } catch {} return { status: r.status, data: d && d.data !== undefined ? d.data : d, raw: d }; };
   const call = (fn, args, tok) => post('/rpc/' + fn, args, tok);
   const newUser = async (tag) => { const r = await post('/auth/signup', { email: `cat-${tag}-${Date.now()}@cat.test`, password: 'Sup3rSecret!' }); const d = r.raw.data || r.raw; assert(d.access_token, 'signup failed: ' + JSON.stringify(r.raw)); return d.access_token; };
-  const trial = (blocks, tok) => call('start_self_trial', { p: { business_name: 'Cat Test ' + Math.random().toString(36).slice(2, 7), contact_name: 'Tester', phone: '9876543210', blocks } }, tok);
+  const trial = (blocks, tok, type = 'retail') => call('start_self_trial', { p: { business_name: 'Cat Test ' + Math.random().toString(36).slice(2, 7), contact_name: 'Tester', phone: '9876543210', business_type: type, blocks } }, tok);
+  // the builder asks the business type first; features appear only after it is chosen
+  const pickType = async (page, label = 'Retail') => { await page.waitForSelector('#types .tile', { timeout: 15000 }); const t = page.locator('#types .tile', { hasText: label }).first(); if ((await t.getAttribute('aria-pressed')) !== 'true') await t.click(); };
+  // for label-display tests only: every module shown as optional, whatever the business type (tiers are display advice, not access)
+  const allCompat = async (page, keys) => page.route('https://api.auzslab.in/rpc/public_module_tiers', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: { business_type: 'retail', status: 'active', modules: keys.map((k) => ({ key: k, tier: 'compatible', reason: null })) } }) }));
+  const ALLKEYS = ['pos', 'kitchen', 'self_order', 'scan', 'accounting', 'payroll', 'mobile', 'style', 'finance', 'website_builder', 'salon', 'hub'];
   const tenantCount = async () => (await q('select count(*)::int n from tenants'))[0].n;
   await q(`update platform_flags set value = 'on' where key = 'password_signup'`);
 
@@ -160,7 +165,7 @@ export default async function run({ browser, stack }) {
     await q(`update module_catalogue set screens = jsonb_set(screens, '{0,label}', '"ZZ Catalogue Marker"') where key = 'payroll'`);
     const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage(); const errs = watch(page);
     try {
-      await page.goto(stack.url('app', '/my.html')); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
+      await page.goto(stack.url('app', '/my.html')); await pickType(page); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
       const txt = await page.locator('#tiles').innerText(); assert(txt.includes('ZZ Catalogue Marker'), 'database change not shown: ' + txt.slice(0, 200));
       assert(txt.includes('Billing and invoices') && txt.includes('Repairs'), 'normal features missing');
     } finally { await q(`update module_catalogue set screens = jsonb_set(screens, '{0,label}', '"Staff attendance"') where key = 'payroll'`); await ctx.close(); }
@@ -226,9 +231,9 @@ export default async function run({ browser, stack }) {
   }, 'critical');
 
   await s.check('The builder shows the offline label from the database: Works offline for POS, Needs internet for Finance, Partly offline note for Pay', async () => {
-    const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage();
+    const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage(); await allCompat(page, ALLKEYS);
     try {
-      await page.goto(stack.url('app', '/my.html')); await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
+      await page.goto(stack.url('app', '/my.html')); await page.evaluate(() => localStorage.clear()); await page.reload(); await pickType(page); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
       const tile = (name) => page.locator('#tiles .tile', { hasText: name }).first().innerText();
       assert(/Works offline/.test(await tile('Billing and invoices')), 'POS label: ' + await tile('Billing and invoices'));
       assert(/Needs internet/.test(await tile('Expenses and cash')), 'Finance label');
@@ -243,11 +248,11 @@ export default async function run({ browser, stack }) {
     const cat = real.data || real; const t = JSON.parse(JSON.stringify(cat));
     const by = (k) => t.find((m) => m.key === k);
     delete by('pos').offline; by('payroll').offline = { level: 'full', verified: false }; by('scan').offline = 'oops'; by('mobile').offline = { level: 'teleport', verified: true };
-    const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage();
+    const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage(); await allCompat(page, ALLKEYS);
     await page.route('https://api.auzslab.in/rpc/public_module_catalogue', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: t }) }));
     try {
-      await page.goto(stack.url('app', '/my.html')); await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
-      for (const name of ['Billing and invoices', 'Staff attendance', 'Scan to bill', 'Phone sales and IMEI']) {
+      await page.goto(stack.url('app', '/my.html')); await page.evaluate(() => localStorage.clear()); await page.reload(); await pickType(page); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
+      for (const name of ['Billing and invoices', 'Staff attendance', 'Barcode & Scan', 'Phone sales and IMEI']) {
         const tx = await page.locator('#tiles .tile', { hasText: name }).first().innerText();
         assert(/Not yet checked/.test(tx) && !/Works offline/.test(tx), name + ' shown as: ' + tx);
       }
@@ -264,13 +269,13 @@ export default async function run({ browser, stack }) {
     by('style').offline = { ...base, level: 'unknown', verified: false, basis: 'none' };
     by('finance').offline = { ...base, level: 'full', verified: true, basis: 'code_inspected' };      // contradiction
     by('website_builder').offline = { ...base, level: 'partial', verified: 'yes', basis: 'browser_tested' }; // wrong type
-    const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage();
+    const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage(); await allCompat(page, ALLKEYS);
     await page.route('https://api.auzslab.in/rpc/public_module_catalogue', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: t }) }));
     try {
-      await page.goto(stack.url('app', '/my.html')); await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
+      await page.goto(stack.url('app', '/my.html')); await page.evaluate(() => localStorage.clear()); await page.reload(); await pickType(page); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
       const tip = async (name) => { const b = page.locator('#tiles .tile', { hasText: name }).first().locator('.ob'); return { label: await b.innerText(), title: await b.getAttribute('title') }; };
       let x = await tip('Billing and invoices'); assert(x.label === 'Works offline' && /test browser/i.test(x.title) && /Not yet tested on real/i.test(x.title), JSON.stringify(x));
-      x = await tip('Scan to bill'); assert(x.label === 'Partly offline' && /reading the code/i.test(x.title) && /Not tested/i.test(x.title) && !/test browser/i.test(x.title), JSON.stringify(x));
+      x = await tip('Barcode & Scan'); assert(x.label === 'Partly offline' && /reading the code/i.test(x.title) && /Not tested/i.test(x.title) && !/test browser/i.test(x.title), JSON.stringify(x));
       x = await tip('Phone sales and IMEI'); assert(x.label === 'Partly offline' && /documentation only/i.test(x.title) && !/test browser/i.test(x.title), JSON.stringify(x));
       x = await tip('Sizes and colours'); assert(x.label === 'Not yet checked' && /Not checked/i.test(x.title), JSON.stringify(x));
       x = await tip('Expenses and cash'); assert(x.label === 'Not yet checked' && !/test browser/i.test(x.title), 'contradiction trusted: ' + JSON.stringify(x));
@@ -283,7 +288,7 @@ export default async function run({ browser, stack }) {
   await s.check('The builder explains an added dependency before the trial starts', async () => {
     const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage();
     try {
-      await page.goto(stack.url('app', '/my.html')); await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
+      await page.goto(stack.url('app', '/my.html')); await page.evaluate(() => localStorage.clear()); await page.reload(); await pickType(page, 'Cafe'); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
       await page.locator('#tiles .tile', { hasText: 'QR table ordering' }).click(); await page.waitForSelector('#deps .dep .why', { timeout: 10000 });
       const t = await page.locator('#deps').innerText(); assert(/AUZsPOS/.test(t) && /Added because/i.test(t), t);
     } finally { await ctx.close(); }
@@ -303,7 +308,7 @@ export default async function run({ browser, stack }) {
   await s.check('Build page: a visitor makes a username + password and gets the 3-day trial in one step (no email, no Google)', async () => {
     const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage(); const errs = watch(page);
     try {
-      await page.goto(stack.url('app', '/my.html')); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
+      await page.goto(stack.url('app', '/my.html')); await pickType(page); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
       assert(await page.locator('#go a[href*="start.html"]').count() === 0, 'there should be no link to the old login page');
       await page.locator('#tiles .tile').first().click();
       await page.fill('#go input[placeholder="Your name"]', 'Tara Trial'); await page.fill('#go input[placeholder^="Mobile"]', '9876501234'); await page.fill('#go input[placeholder="Business name"]', 'Username Trial Shop');
@@ -314,14 +319,123 @@ export default async function run({ browser, stack }) {
       assert(row && row.is_trial && row.name === 'Username Trial Shop', 'trial business not created: ' + JSON.stringify(row));
       const login = await post('/auth/login', { email: 'tara.trial', password: 'pw-12345678' }); assert(login.status === 200 && login.raw && login.raw.access_token, 'the bare username should sign in: ' + login.status);
     } finally { await ctx.close(); }
-    const dup = await fetch(stack.apiBase + '/auth/trial-account', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username: 'Tara.Trial', password: 'pw-12345678', business_name: 'X', phone: '9876501234', blocks: ['pos'], features: ['billing'] }) });
+    const dup = await fetch(stack.apiBase + '/auth/trial-account', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username: 'Tara.Trial', password: 'pw-12345678', business_name: 'X', phone: '9876501234', business_type: 'retail', blocks: ['pos'], features: ['billing'] }) });
     assert(dup.status === 409, 'a taken username should be refused with 409, got ' + dup.status);
-    const short = await fetch(stack.apiBase + '/auth/trial-account', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username: 'shorty1', password: 'abc', business_name: 'X', phone: '9876501234', blocks: ['pos'] }) });
+    const short = await fetch(stack.apiBase + '/auth/trial-account', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username: 'shorty1', password: 'abc', business_name: 'X', phone: '9876501234', business_type: 'retail', blocks: ['pos'] }) });
     assert(short.status === 400, 'a short password should be refused, got ' + short.status);
-    const nobiz = await fetch(stack.apiBase + '/auth/trial-account', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username: 'nobiz.user', password: 'pw-12345678', business_name: '', phone: '9876501234', blocks: ['pos'] }) });
+    const nobiz = await fetch(stack.apiBase + '/auth/trial-account', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username: 'nobiz.user', password: 'pw-12345678', business_name: '', phone: '9876501234', business_type: 'retail', blocks: ['pos'] }) });
     assert(nobiz.status === 400, 'a missing business name should be refused, got ' + nobiz.status);
     assert((await q(`select 1 from auth_users where email = 'nobiz.user@trial.auzslab.in'`)).length === 0, 'a refused trial left a login behind');
   }, 'major');
+
+  // ---------------- business types (db/270) ----------------
+  const tenantOf = async (name) => (await q(`select t.id, t.niche, ts.trial, ts.features, (select data from records r where r.tenant_id = t.id and r.kind = 'settings' and r.id = 'settings') settings from tenants t join tenant_settings ts on ts.tenant_id = t.id where t.name = $1`, [name]))[0];
+  const trialNamed = (name, blocks, tok, type) => call('start_self_trial', { p: { business_name: name, contact_name: 'Tester', phone: '9876543210', business_type: type, blocks } }, tok);
+
+  await s.check('Business types: public registry lists the four types, Salon is Coming soon, and no internals are exposed', async () => {
+    const r = await call('public_business_types', {}); assert(r.status === 200 && Array.isArray(r.data), JSON.stringify(r.raw));
+    const keys = r.data.map((t) => t.key); for (const k of ['retail', 'cafe', 'salon', 'mobile']) assert(keys.includes(k), 'missing type ' + k);
+    assert(r.data.find((t) => t.key === 'salon').status === 'coming_soon', 'salon should be coming soon');
+    assert(r.data.filter((t) => t.key !== 'salon').every((t) => t.status === 'active'), 'the other types should be active');
+    assert(!/niche|pos_mode|bizType|recommended|unavailable|catalogue_tags/i.test(JSON.stringify(r.data)), 'internal registry fields are public: ' + JSON.stringify(r.data));
+  }, 'critical');
+
+  await s.check('Missing, unknown and Coming soon types are refused on the database call and on the trial-account route, leaving nothing behind', async () => {
+    const before = await tenantCount(); const tok = await newUser('bt1');
+    const none = await trialNamed('No Type Shop', ['payroll'], tok, ''); assert(none.status >= 400 && /choose your business type/i.test(JSON.stringify(none.raw)), 'missing type: ' + JSON.stringify(none.raw));
+    const unk = await trialNamed('Unknown Type Shop', ['payroll'], tok, 'spaceship'); assert(unk.status >= 400 && /not available/i.test(JSON.stringify(unk.raw)), 'unknown type: ' + JSON.stringify(unk.raw));
+    const salon = await trialNamed('Salon Direct Shop', ['payroll'], tok, 'salon'); assert(salon.status === 400 && /Salon \/ services is coming soon and cannot be started here yet\. Please contact AUZslab and we will set it up for you\./.test(JSON.stringify(salon.raw)), 'salon via rpc: ' + salon.status + JSON.stringify(salon.raw));
+    const logins = async () => (await q(`select count(*)::int n from auth_users where email like '%@trial.auzslab.in'`))[0].n; const l0 = await logins();
+    const via = await post('/auth/trial-account', { username: 'salon.try', password: 'pw-12345678', business_name: 'Salon Route Shop', phone: '9876501234', business_type: 'salon', blocks: ['payroll'] });
+    assert(via.status === 400 && /coming soon/i.test(JSON.stringify(via.raw)), 'salon via route: ' + via.status + JSON.stringify(via.raw));
+    const miss = await post('/auth/trial-account', { username: 'notype.try', password: 'pw-12345678', business_name: 'No Type Route', phone: '9876501234', blocks: ['payroll'] });
+    assert(miss.status === 400 && /choose your business type/i.test(JSON.stringify(miss.raw)), 'missing type via route: ' + JSON.stringify(miss.raw));
+    assert(await tenantCount() === before, 'a refused trial left a business behind'); assert(await logins() === l0, 'a refused trial left a login behind');
+  }, 'critical');
+
+  await s.check('Each active type writes the right niche (category) and POS mode (bizType); the mode is never defaulted', async () => {
+    for (const [type, niche, mode] of [['retail', 'retail', 'retail'], ['cafe', 'cafe', 'restaurant'], ['mobile', 'mobile', 'retail']]) {
+      const tok = await newUser('t' + type); const name = 'Type ' + type + ' Shop'; const r = await trialNamed(name, ['payroll'], tok, type);
+      assert(r.status === 200 && r.data.business_type === type, type + ': ' + JSON.stringify(r.raw));
+      const t = await tenantOf(name); assert(t.niche === niche, type + ' niche was ' + t.niche); assert(t.settings && t.settings.bizType === mode, type + ' bizType was ' + JSON.stringify(t.settings)); assert(t.trial.business_type === type, 'type not recorded in the trial');
+    }
+  }, 'critical');
+
+  await s.check('The type is chosen, not inferred: a cafe that ticks only Billing stays a restaurant, a retail shop that ticks Billing stays retail', async () => {
+    const a = await trialNamed('Cafe Billing Only', ['pos'], await newUser('ca'), 'cafe'); const b = await trialNamed('Retail Billing Only', ['pos'], await newUser('cb'), 'retail');
+    assert(a.status === 200 && b.status === 200, JSON.stringify([a.raw, b.raw]));
+    assert((await tenantOf('Cafe Billing Only')).settings.bizType === 'restaurant', 'cafe turned into something else'); assert((await tenantOf('Retail Billing Only')).settings.bizType === 'retail', 'retail wrong');
+  }, 'critical');
+
+  await s.check('Module tiers are display advice: recommended / compatible / unavailable by type, and the server still accepts what the existing checks accept', async () => {
+    const tiers = async (type) => (await call('public_module_tiers', { p: { business_type: type } })).data;
+    const cafe = await tiers('cafe'), retail = await tiers('retail'); const t = (x, k) => x.modules.find((m) => m.key === k);
+    assert(t(cafe, 'self_order').tier === 'recommended' && t(cafe, 'kitchen').tier === 'recommended', 'cafe recommendations');
+    assert(t(retail, 'scan').tier === 'recommended' && t(retail, 'payroll').tier === 'compatible', 'retail tiers');
+    assert(t(retail, 'self_order').tier === 'unavailable' && t(retail, 'salon').tier === 'unavailable' && /team/i.test(t(retail, 'salon').reason || ''), 'unavailable tiers / reasons');
+    const bad = await call('public_module_tiers', { p: { business_type: 'spaceship' } }); assert(bad.status >= 400, 'unknown type gave tiers');
+    assert(!/niche|pos_mode|bizType/i.test(JSON.stringify(cafe)), 'tiers expose internals');
+    // tags are advice only: the same dependency / conflict / set-up-by-team checks apply as before
+    const sa = await trialNamed('Salon Module Retail', ['salon'], await newUser('sm'), 'retail'); assert(sa.status >= 400 && /set up by our team/i.test(JSON.stringify(sa.raw)), 'set-up-by-team module accepted: ' + JSON.stringify(sa.raw));
+    const so = await trialNamed('Retail Qr Dep', ['self_order'], await newUser('qd'), 'retail'); assert(so.status === 200 && so.data.keys.includes('pos'), 'dependency not added: ' + JSON.stringify(so.raw));
+  });
+
+  await s.check('Entitlements are unchanged: a scan-only business is still refused banking even though its type is retail', async () => {
+    const tok = await newUser('ent'); const r = await trialNamed('Scan Only Retail', ['scan'], tok, 'retail'); assert(r.status === 200, JSON.stringify(r.raw));
+    const bank = await call('acc_bank_list', { p: {} }, tok); assert(bank.status >= 400 && /part of AUZsLedger|not enabled|does not allow/i.test(JSON.stringify(bank.raw)), 'banking reachable with scan only: ' + bank.status + JSON.stringify(bank.raw).slice(0, 160));
+  }, 'critical');
+
+  await s.check('A new business type is just a registry row (no code change); an active Salon row is impossible; existing Salon access is unchanged', async () => {
+    await q(`insert into business_types (key, label, description, niche, pos_mode, catalogue_tags, recommended, status, sort) values ('gift_shop', 'Gift shop', 'test', 'retail', 'retail', '{retail}', '{pos}', 'active', 99)`);
+    try {
+      const list = (await call('public_business_types', {})).data; assert(list.some((t) => t.key === 'gift_shop'), 'new row not listed');
+      const r = await trialNamed('Gift Shop Test', ['payroll'], await newUser('gs'), 'gift_shop'); assert(r.status === 200, JSON.stringify(r.raw)); const t = await tenantOf('Gift Shop Test'); assert(t.niche === 'retail' && t.settings.bizType === 'retail', 'wrong mapping for a new row');
+    } finally { await q(`delete from business_types where key = 'gift_shop'`); }
+    let blocked = false; try { await q(`update business_types set status = 'active' where key = 'salon'`); } catch (e) { blocked = /business_types_salon_not_active/.test(String(e.message || e)); }
+    assert(blocked, 'a salon row could be switched to active');
+    let badMode = false; try { await q(`insert into business_types (key, label, niche, pos_mode) values ('bad_mode', 'Bad', 'retail', 'teleport')`); } catch (e) { badMode = true; } assert(badMode, 'an unknown POS mode was accepted');
+    const salonRows = await q(`select count(*)::int n from tenants where slug = 'testsalon' and niche = 'salon'`); assert(salonRows[0].n === 1, 'the existing salon tenant changed');
+    assert((await q(`select count(*)::int n from salon_tenant('testsalon')`))[0].n === 1, 'salon_tenant() no longer resolves the existing salon');
+  }, 'critical');
+
+  await s.check('Existing trials and tenants are untouched by the migration, and it is repeatable inside one transaction', async () => {
+    await q(`insert into tenants (name, slug, niche, status, is_trial) values ('Legacy Trial Shop', 'legacytrialshop', 'retail', 'trial', true)`);
+    const lt = (await q(`select id from tenants where slug = 'legacytrialshop'`))[0].id;
+    await q(`insert into tenant_settings (tenant_id, features, trial) values ($1, '{"pos":true}', '{"state":"active","blocks":[]}')`, [lt]);
+    await q(`insert into records (id, tenant_id, kind, data) values ('settings', $1, 'settings', '{"name":"Legacy Trial Shop"}')`, [lt]);
+    const snap = async () => JSON.stringify([(await q(`select niche, status from tenants where id = $1`, [lt])), (await q(`select features, trial from tenant_settings where tenant_id = $1`, [lt])), (await q(`select data from records where tenant_id = $1 and kind = 'settings'`, [lt])), (await q(`select slug, niche from tenants where slug in ('testsalon','testcafe','testretail') order by slug`))]);
+    const before = await snap(); const sql = fs.readFileSync(path.join(ROOT, 'db', '270_business_types.sql'), 'utf8');
+    assert(/^begin;/m.test(sql) && /^commit;/m.test(sql), 'the migration is not wrapped in a transaction');
+    await q(sql); await q(sql);
+    assert(await snap() === before, 'the migration changed an existing tenant, trial or setting');
+    assert((await q(`select count(*)::int n from business_types`))[0].n >= 4, 'registry rows lost on a second run');
+    const sc = (await call('public_module_catalogue', {})).data.find((m) => m.key === 'scan').screens; assert(sc.length === 1 && sc[0].id === 'scan' && sc[0].label === 'Barcode & Scan', 'scan screen after repeat: ' + JSON.stringify(sc));
+    // the legacy trial still has no recorded type or POS mode: nothing guessed for it
+    const st = (await q(`select data from records where tenant_id = $1 and kind = 'settings'`, [lt]))[0].data; assert(st.bizType === undefined, 'a legacy trial was given a business type');
+  }, 'critical');
+
+  await s.check('Stable ids: the scan screen keeps id "scan" with the new label, Billing keeps id "bill", and a saved workspace with those ids still opens', async () => {
+    const cat = (await call('public_module_catalogue', {})).data; const ids = cat.flatMap((m) => (m.screens || []).map((x) => x.id));
+    for (const id of ['bill', 'tables', 'kitchen', 'qr', 'scan', 'phones', 'repair', 'attend', 'pay', 'gst', 'cash', 'web']) assert(ids.includes(id), 'screen id lost: ' + id);
+    assert(cat.find((m) => m.key === 'scan').screens.find((x) => x.id === 'scan').label === 'Barcode & Scan', 'scan label not renamed');
+    const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage(); const errs = watch(page);
+    try {
+      await page.goto(stack.url('app', '/my.html')); await page.evaluate(() => localStorage.clear()); await page.reload(); await pickType(page, 'Retail'); await page.waitForSelector('#tiles .tile', { timeout: 15000 });
+      assert((await page.locator('#types .tile.soon').innerText()).includes('Coming soon'), 'Salon is not shown as Coming soon');
+      await page.locator('#types .tile.soon').click({ force: true }); assert(/coming soon here/i.test(await page.locator('#typeNote').innerText()), 'no Coming soon message');
+      assert((await page.locator('#types .tile.soon').getAttribute('aria-pressed')) === 'false', 'Salon could be selected');
+      assert(/Recommended/.test(await page.locator('#tiles .tile', { hasText: 'Barcode & Scan' }).first().innerText()), 'the renamed scan tile is not recommended for retail');
+      await page.locator('#tiles .tile', { hasText: 'Barcode & Scan' }).first().click(); await page.waitForSelector('#go input', { timeout: 10000 });
+      await page.fill('#go input[placeholder="Your name"]', 'Stable Ids'); await page.fill('#go input[placeholder^="Mobile"]', '9876501299'); await page.fill('#go input[placeholder="Business name"]', 'Stable Ids Shop');
+      await page.fill('#go input[placeholder="Make a username"]', 'stable.ids'); await page.fill('#go input[type=password]', 'pw-12345678');
+      await page.locator('#go button', { hasText: /build my app/i }).click(); await page.waitForSelector('#work:not([hidden])', { timeout: 20000 });
+      const t = await tenantOf('Stable Ids Shop'); assert(t.niche === 'retail' && t.settings.bizType === 'retail', 'builder-made business: ' + JSON.stringify([t.niche, t.settings]));
+      const cfg = await page.evaluate(() => { const k = Object.keys(localStorage).find((x) => x.startsWith('my.cfg.')); return JSON.parse(localStorage.getItem(k) || '{}'); });
+      assert((cfg.feat || []).includes('scan'), 'the saved workspace does not hold the stable id: ' + JSON.stringify(cfg));
+      assert(/Barcode & Scan/.test(await page.locator('#chips').innerText()), 'the chip does not show the new label');
+      await page.reload(); await page.waitForSelector('#work:not([hidden])', { timeout: 15000 }); assert(/Barcode & Scan/.test(await page.locator('#chips').innerText()), 'saved workspace did not reopen');
+    } finally { await ctx.close(); }
+  });
 
   await q(`update platform_flags set value = 'off' where key = 'password_signup'`);
   s.done();

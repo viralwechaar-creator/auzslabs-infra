@@ -360,6 +360,36 @@ export default async function run({ browser, stack }) {
     await page.locator('button', { hasText: 'Open Billing instead' }).click(); await page.waitForSelector('.items .tile', { timeout: 10000 });
   });
 
+  await s.check('Business type decides the checkout: a retail business made on the build page gets the retail POS, a cafe keeps the restaurant POS', async () => {
+    const mk = async (type, user) => {
+      const r = await fetch(stack.apiBase + '/auth/trial-account', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username: user, password: 'pw-12345678', business_name: 'Mode ' + type + ' Shop', contact_name: 'T', phone: '9876501234', business_type: type, blocks: ['pos'] }) });
+      assert(r.status === 200, type + ' trial: ' + r.status + ' ' + (await r.text()).slice(0, 150));
+      return (await q("select slug from tenants where name = $1", ['Mode ' + type + ' Shop']))[0].slug;
+    };
+    const open = async (slug, user) => {
+      const c = await newCtx(browser, stack, { w: 1280, h: 900 }); const pg = await c.newPage();
+      await pg.goto(stack.url(slug, '/index.html')); await pg.waitForSelector('input[type=password]');
+      await pg.fill('input[type=email]', user + '@trial.auzslab.in'); await pg.fill('input[type=password]', 'pw-12345678'); await pg.locator('button', { hasText: /sign in/i }).last().click();
+      await pg.waitForSelector('.shell', { timeout: 20000 }); await pg.waitForTimeout(1500);
+      return { c, pg };
+    };
+    const rs = await mk('retail', 'mode.retail'), cs = await mk('cafe', 'mode.cafe');
+    const R = await open(rs, 'mode.retail');
+    try {
+      await R.pg.evaluate(() => { S.cur = newOrder(); go('sell'); }); await R.pg.waitForSelector('.sell', { timeout: 10000 });
+      const mode = await R.pg.evaluate(() => ({ biz: bizType(), retail: isRetail(), tabs: navItems().map((n) => n.k) }));
+      assert(mode.biz === 'retail' && mode.retail, 'retail POS mode: ' + JSON.stringify(mode)); assert(!mode.tabs.includes('tables'), 'a retail business shows Tables: ' + mode.tabs);
+      const txt = await R.pg.locator('.sell').innerText(); assert(!/Dine-in|Choose table|Guests/.test(txt), 'restaurant controls on a retail checkout: ' + txt.slice(0, 200));
+    } finally { await R.c.close(); }
+    const C = await open(cs, 'mode.cafe');
+    try {
+      await C.pg.evaluate(() => { S.cur = newOrder(); go('sell'); }); await C.pg.waitForSelector('.sell', { timeout: 10000 });
+      const mode = await C.pg.evaluate(() => ({ biz: bizType(), rest: isRestaurant(), tabs: navItems().map((n) => n.k) }));
+      assert(mode.biz === 'restaurant' && mode.rest, 'cafe POS mode: ' + JSON.stringify(mode)); assert(mode.tabs.includes('tables'), 'the cafe lost its Tables tab: ' + mode.tabs);
+      assert(/Dine-in/.test(await C.pg.locator('.sell').innerText()), 'the cafe checkout lost Dine-in');
+    } finally { await C.c.close(); }
+  });
+
   // the 409 from the deliberate double booking above is the expected answer, not an error
   await s.check('No JavaScript errors during the whole workflow', async () => { const bad = errs.filter((e) => !/print|callback|WebSocket|ERR_CERT|tunnel/i.test(e) && !/icon-[a-z]+\.svg.*ERR_ABORTED/.test(e) && !/409.*\/db\/bookings/.test(e)); assert(!bad.length, bad.slice(0, 3).join(' | ')); }, 'major');
   await ctx.close(); s.done();

@@ -158,3 +158,9 @@ h1{margin:0;font-weight:800;letter-spacing:-.045em;line-height:.95;font-size:cla
 #tiles .tile:hover .gl{transform:scale(.44) rotate(-8deg)}
 #tiles .tile b{font-size:18px;line-height:1.15}
 @media(max-width:600px){#tiles .tile{padding:50px 46px 14px 14px}#tiles .tile .gl{left:14px;top:14px}#tiles .tile b{font-size:16px}}
+
+/* business type tiles + tiles that cannot be picked (coming soon / not offered for this type) */
+.tiles.types{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.tile.type small{color:#9a9a9a;font-size:12.5px;line-height:1.35}
+.tile.soon{opacity:.55;cursor:not-allowed}
+.tile.soon:hover{transform:none}
