@@ -17,6 +17,28 @@ function installCard() {
   draw();
   return box;
 }
+// Offline Windows install only: /offline/lan-info (server/src/routes/offline.js) exists and answers once a licence
+// is active; on the cloud it 404s/fails and this whole section quietly removes itself (same dormant-until-
+// applicable pattern as waCard() below). Lets a phone on the same WiFi reach this computer to add product photos
+// straight into the gallery -- no cloud, no app to install on the phone, same page the PC already runs.
+function phoneUploadCard() {
+  const host = h('div', { class: 'card grid' }, h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '12px auto' } }));
+  (async () => {
+    let info;
+    try { const r = await fetch('/offline/lan-info'); if (!r.ok) throw 0; info = await r.json(); } catch (e) { const sec = host.closest('.sec'); if (sec) sec.remove(); return; }
+    const ip = (info.ips || [])[0];
+    if (!ip || !info.port) { clear(host).append(h('p', { class: 'muted small' }, t('Could not find this computer\'s WiFi address. Make sure it is connected to the shop\'s WiFi (not just a wired/ethernet connection), then come back to this screen.'))); return; }
+    const url = 'http://' + ip + ':' + info.port + '/';
+    let img = null;
+    try { const q = qrcode(0, 'M'); q.addData(url); q.make(); img = q.createDataURL(6, 2); } catch (e) { /* no QR library */ }
+    clear(host).append(
+      h('p', { class: 'muted small' }, t('Scan this with your phone\'s camera while it is on the same WiFi as this computer. It opens the same AUZsStyle you already use -- sign in once, then open a style and add photos straight from the phone\'s camera. No app to install, nothing leaves this computer.')),
+      h('div', { style: { display: 'flex', justifyContent: 'center', padding: '10px' } }, img ? h('img', { src: img, alt: t('Scan to open AUZsStyle on your phone'), style: { width: '180px', height: '180px' } }) : h('div', { class: 'muted small' }, url)),
+      h('div', { class: 'mono small', style: { textAlign: 'center' } }, url),
+      (info.ips || []).length > 1 ? h('p', { class: 'muted small' }, t('This computer has more than one network address; if the QR code does not work, try typing the address by hand on the phone.')) : null);
+  })();
+  return host;
+}
 page('settings', {
   title: 'Settings', perm: 'sty_manage',
   async render(v) {
@@ -106,6 +128,7 @@ page('settings', {
       section(t('Backup'), h('div', { class: 'card grid' },
         h('p', { class: 'muted small' }, t('Download everything -- your inventory, customers and bills -- as one Excel file you can open directly in Excel or Google Sheets. It is a real spreadsheet, not a code file; keep a copy somewhere safe (a pendrive, email, cloud drive).')),
         (() => { const out = h('div', { class: 'muted small' }); const b = h('button', { class: 'btn fill', type: 'button', onclick: async () => { b.disabled = true; out.textContent = t('Preparing…'); try { await backupExcel(); out.textContent = t('Downloaded'); } catch (e) { out.textContent = ''; fail(e); } b.disabled = false; } }, icon('download', 18), t('Download Excel backup')); return h('div', { class: 'grid' }, b, out); })())),
+      section(t('Add photos from your phone'), phoneUploadCard()),
       section(t('Install on this computer'), installCard()),
       section(t('WhatsApp messages'), waCard()),
       section(t('Health check'), h('div', { class: 'card grid' }, h('p', { class: 'muted small' }, t('Checks that bill totals, stock and returns all agree.')), h('div', { id: 'hc' }),
