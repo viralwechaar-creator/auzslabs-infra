@@ -5,6 +5,7 @@ const { app, BrowserWindow, Menu, dialog, shell, session } = require('electron')
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const net = require('node:net');
+const http = require('node:http');
 const os = require('node:os');
 const path = require('node:path');
 const L = require('./lib/setup.cjs');
@@ -15,6 +16,8 @@ const dataDir = app.getPath('userData');
 const uploads = path.join(dataDir, 'uploads');
 let server = null, win = null, splash = null, ctx = null, port = 0, pgPort = 0, quitting = false;
 
+// (Electron 22, used for Windows 7, has no built-in fetch in this part of the program)
+const getJson = (u) => new Promise((res, rej) => http.get(u, (r) => { let b = ''; r.on('data', (c) => { b += c; }); r.on('end', () => { let j = {}; try { j = JSON.parse(b || '{}'); } catch { /* not json */ } res({ ok: r.statusCode < 400, json: j }); }); }).on('error', rej));
 const log = (m) => { try { fs.mkdirSync(dataDir, { recursive: true }); fs.appendFileSync(path.join(dataDir, 'app.log'), new Date().toISOString() + ' ' + m + '\n'); } catch { /* ignore */ } };
 const free = () => new Promise((r) => { const s = net.createServer().listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => r(p)); }); });
 const portOk = (p) => new Promise((r) => { const s = net.createServer(); s.once('error', () => r(false)); s.listen(p, '127.0.0.1', () => s.close(() => r(true))); });
@@ -34,7 +37,7 @@ function startServer(sec) {
   const pub = fs.existsSync(path.join(RES, 'licence-public.txt')) ? fs.readFileSync(path.join(RES, 'licence-public.txt'), 'utf8').trim() : (process.env.LICENCE_PUBLIC_KEY || '');
   if (!pub) throw new Error('This copy of AUZsStyle has no licence key inside it. Please download the installer again.');
   const out = fs.openSync(path.join(dataDir, 'server.log'), 'a');
-  server = spawn(process.execPath, [path.join(paths.serverDir, 'src', 'index.js')], {
+  server = spawn(process.execPath, ['--require', path.join(RES, 'compat-preload.cjs'), path.join(paths.serverDir, 'src', 'index.js')], {
     cwd: paths.serverDir, stdio: ['ignore', out, out], windowsHide: true,
     env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', NODE_ENV: 'production', PORT: String(port), AUZ_OFFLINE: '1', AUZ_DATA_DIR: dataDir, AUZ_APP_ROOT: paths.appDir, UPLOAD_ROOT: uploads, DOC_UPLOAD_ROOT: path.join(dataDir, 'docs'), PGHOST: '127.0.0.1', PGPORT: String(pgPort), POSTGRES_APP_PASSWORD: sec.appPassword, POSTGRES_DB: L.DB, JWT_SECRET: sec.jwtSecret, LICENCE_PUBLIC_KEY: pub, DISABLE_MAINTENANCE: '1', PG_POOL_MAX: '6' },
   });
@@ -42,7 +45,7 @@ function startServer(sec) {
 }
 const stopServer = () => new Promise((r) => { if (!server) return r(); const s = server; s.once('exit', () => r()); s.kill(); setTimeout(r, 5000); });
 async function waitServer() {
-  for (let i = 0; i < 120; i++) { try { const r = await fetch(`http://127.0.0.1:${port}/health`); if (r.ok) return; } catch { /* starting */ } await new Promise((r) => setTimeout(r, 500)); }
+  for (let i = 0; i < 120; i++) { try { const r = await getJson(`http://127.0.0.1:${port}/health`); if (r.ok) return; } catch { /* starting */ } await new Promise((r) => setTimeout(r, 500)); }
   throw new Error('The program behind AUZsStyle did not start. See ' + path.join(dataDir, 'server.log'));
 }
 
@@ -110,7 +113,7 @@ async function doRestore() {
 }
 async function showLicence() {
   try {
-    const s = await (await fetch(`http://127.0.0.1:${port}/licence/status`)).json();
+    const s = (await getJson(`http://127.0.0.1:${port}/licence/status`)).json;
     const extras = s.addons ? Object.entries(s.addons).filter(([, v]) => v).map(([k]) => ({ cloud: 'Cloud storage', whatsapp: 'WhatsApp automation', store: 'Online store' }[k])).join(', ') || 'none' : '';
     dialog.showMessageBox(win, { type: 'info', message: s.state === 'none' ? 'Not activated yet' : 'Licensed to ' + s.shop, detail: s.state === 'none' ? 'Type the licence code AUZslab gave you on the first screen.' : `Plan ends on ${s.end} (${s.daysLeft >= 0 ? s.daysLeft + ' days left' : 'ended'}).\nExtras: ${extras}.\nTo renew, ask AUZslab for a new code and type it in the app when asked.` });
   } catch (e) { dialog.showErrorBox('Licence', e.message); }

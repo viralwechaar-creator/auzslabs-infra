@@ -14,6 +14,8 @@ const require = createRequire(import.meta.url);
 const L = require('../../../desktop-style/lib/setup.cjs');
 const root = path.resolve('.');
 const free = () => new Promise((r) => { const s = net.createServer().listen(0, () => { const p = s.address().port; s.close(() => r(p)); }); });
+const SERVER_DIR = process.env.TEST_SERVER_DIR || path.join(root, 'server'); // the Windows 7 build is tested with its older dependencies and an older Node
+const NODE = process.env.TEST_NODE || 'node', PRELOAD = process.env.TEST_PRELOAD ? ['--require', process.env.TEST_PRELOAD] : [];
 const PGBIN = process.env.TEST_PG_BIN || ['/usr/lib/postgresql/16/bin', '/usr/lib/postgresql/15/bin', '/usr/lib/postgresql/14/bin'].find((d) => fs.existsSync(d + '/initdb'));
 
 export default async function run({ browser }) {
@@ -24,11 +26,11 @@ export default async function run({ browser }) {
   const bak = fs.mkdtempSync(path.join(os.tmpdir(), 'auzbak-')); if (L.setRunAs && process.getuid && process.getuid() === 0) fs.chownSync(bak, ...[Number(spawnSync('id', ['-u', 'postgres'], { encoding: 'utf8' }).stdout), Number(spawnSync('id', ['-g', 'postgres'], { encoding: 'utf8' }).stdout)]);
   const pgPort = await free(), apiPort = await free();
   const sec = L.secrets(dataDir); const uploads = path.join(dataDir, 'uploads'); fs.mkdirSync(uploads, { recursive: true });
-  const o = { pgBin: PGBIN, dataDir, port: pgPort, superPassword: sec.superPassword, serverDir: path.join(root, 'server'), dbDir: path.join(root, 'db'), appPassword: sec.appPassword };
+  const o = { pgBin: PGBIN, dataDir, port: pgPort, superPassword: sec.superPassword, serverDir: SERVER_DIR, dbDir: path.join(root, 'db'), appPassword: sec.appPassword };
   const k = makeKeypair();
   let server;
   const startServer = async () => {
-    server = spawn('node', ['src/index.js'], { cwd: path.join(root, 'server'), stdio: 'ignore', env: { ...process.env, PORT: String(apiPort), AUZ_OFFLINE: '1', AUZ_DATA_DIR: dataDir, AUZ_APP_ROOT: path.join(root, 'app/public'), UPLOAD_ROOT: uploads, DOC_UPLOAD_ROOT: path.join(dataDir, 'docs'), PGHOST: '127.0.0.1', PGPORT: String(pgPort), POSTGRES_APP_PASSWORD: sec.appPassword, POSTGRES_DB: L.DB, JWT_SECRET: sec.jwtSecret, LICENCE_PUBLIC_KEY: k.pub, DISABLE_MAINTENANCE: '1', PG_POOL_MAX: '5', DISABLE_RATE_LIMIT: '1' } });
+    server = spawn(NODE, [...PRELOAD, 'src/index.js'], { cwd: SERVER_DIR, stdio: 'ignore', env: { ...process.env, PORT: String(apiPort), AUZ_OFFLINE: '1', AUZ_DATA_DIR: dataDir, AUZ_APP_ROOT: path.join(root, 'app/public'), UPLOAD_ROOT: uploads, DOC_UPLOAD_ROOT: path.join(dataDir, 'docs'), PGHOST: '127.0.0.1', PGPORT: String(pgPort), POSTGRES_APP_PASSWORD: sec.appPassword, POSTGRES_DB: L.DB, JWT_SECRET: sec.jwtSecret, LICENCE_PUBLIC_KEY: k.pub, DISABLE_MAINTENANCE: '1', PG_POOL_MAX: '5', DISABLE_RATE_LIMIT: '1' } });
     for (let i = 0; i < 80; i++) { try { const r = await fetch(`http://127.0.0.1:${apiPort}/health`); if (r.ok) return; } catch { /* starting */ } await new Promise((r) => setTimeout(r, 250)); }
     throw new Error('local server did not start');
   };

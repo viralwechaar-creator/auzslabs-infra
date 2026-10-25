@@ -1,49 +1,76 @@
 name: AUZsStyle for Windows
-# Builds the offline Windows installer (AUZsStyle-Setup-x.y.z.exe): Electron window + PostgreSQL + the local server, all in one file.
+# Builds the offline Windows installers (Electron window + PostgreSQL + the local server in one file):
+#   modern     = Windows 10 / 11 (64-bit)                      -> release page "desktop-style-latest"
+#   compatible = Windows 7 SP1, 8, 8.1, 10, 11 (64-bit)        -> release page "desktop-style-compat-latest"
+# The compatible one uses older, still-supported-on-Windows-7 parts (Electron 22, Node 16, PostgreSQL 12, Visual C++ 2019 runtime).
 # Needs the repository VARIABLE LICENCE_PUBLIC_KEY (Settings > Secrets and variables > Actions > Variables): the PUBLIC half made by
-# `node tools/licence-keygen.mjs` (the private half stays in the server .env). Run from the Actions tab; the installer is published
-# on the release page "desktop-style-latest" (no GitHub login needed to download).
+# `node tools/licence-keygen.mjs` (the private half stays in the server .env). Run from the Actions tab (no GitHub login needed to download).
 on:
   workflow_dispatch:
 permissions:
   contents: write
-env:
-  PG_URL: https://get.enterprisedb.com/postgresql/postgresql-16.4-1-windows-x64-binaries.zip
 jobs:
   build:
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: modern
+            compat: '0'
+            tag: desktop-style-latest
+            name: AUZsStyle-Setup
+            redist: https://aka.ms/vs/17/release/vc_redist.x64.exe
+            pg_urls: https://get.enterprisedb.com/postgresql/postgresql-16.4-1-windows-x64-binaries.zip
+          - variant: compatible
+            compat: '1'
+            tag: desktop-style-compat-latest
+            name: AUZsStyle-Setup-Compatible
+            redist: https://aka.ms/vs/16/release/vc_redist.x64.exe
+            pg_urls: https://get.enterprisedb.com/postgresql/postgresql-12.22-1-windows-x64-binaries.zip https://get.enterprisedb.com/postgresql/postgresql-12.20-1-windows-x64-binaries.zip
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Download PostgreSQL (portable binaries)
+      - name: Download PostgreSQL (portable binaries) and the Visual C++ runtime
         shell: pwsh
         run: |
-          Invoke-WebRequest -Uri $env:PG_URL -OutFile pg.zip
+          $ok = $false
+          foreach ($u in "${{ matrix.pg_urls }}".Split(" ")) {
+            try { Invoke-WebRequest -Uri $u -OutFile pg.zip; $ok = $true; Write-Host "PostgreSQL from $u"; break } catch { Write-Host "not available: $u" }
+          }
+          if (-not $ok) { throw "PostgreSQL download failed" }
           Expand-Archive pg.zip -DestinationPath pgx
+          Invoke-WebRequest -Uri "${{ matrix.redist }}" -OutFile vc_redist.x64.exe
           Get-ChildItem pgx/pgsql | Select-Object Name
-      - name: Install builder
+      - name: Install builder (Windows 7 build uses Electron 22)
         working-directory: desktop-style
-        run: npm install --no-audit --no-fund
+        shell: bash
+        run: |
+          if [ "${{ matrix.compat }}" = "1" ]; then npm install --save-dev electron@22.3.27 --no-audit --no-fund; else npm install --no-audit --no-fund; fi
       - name: Collect files
         working-directory: desktop-style
+        shell: bash
         env:
           PG_DIR: ${{ github.workspace }}/pgx/pgsql
+          VC_REDIST: ${{ github.workspace }}/vc_redist.x64.exe
           LICENCE_PUBLIC_KEY: ${{ vars.LICENCE_PUBLIC_KEY }}
+          COMPAT: ${{ matrix.compat }}
         run: node tools/stage.mjs
       - name: Build the installer
         working-directory: desktop-style
-        run: npm run dist
+        shell: bash
+        run: npm run dist -- '-c.artifactName=${{ matrix.name }}-${version}.${ext}'
       - uses: actions/upload-artifact@v4
         with:
-          name: AUZsStyle-Setup
-          path: desktop-style/dist/AUZsStyle-Setup-*.exe
+          name: ${{ matrix.name }}
+          path: desktop-style/dist/${{ matrix.name }}-*.exe
       - name: Publish on a release page
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete desktop-style-latest --yes --cleanup-tag --repo "$GITHUB_REPOSITORY" || true
-          gh release create desktop-style-latest desktop-style/dist/AUZsStyle-Setup-*.exe --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
-            --title "AUZsStyle for Windows (test build)" --notes "Offline Windows installer. Needs a licence code from AUZslab. Built from commit $GITHUB_SHA."
+          gh release delete ${{ matrix.tag }} --yes --cleanup-tag --repo "$GITHUB_REPOSITORY" || true
+          gh release create ${{ matrix.tag }} desktop-style/dist/${{ matrix.name }}-*.exe --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
+            --title "AUZsStyle for Windows (${{ matrix.variant }} build)" --notes "Offline Windows installer, ${{ matrix.variant }} build. Needs a licence code from AUZslab. Built from commit $GITHUB_SHA."
