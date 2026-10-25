@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import bcrypt from 'bcryptjs';
 import { pool } from '../db.js';
@@ -38,6 +39,26 @@ export async function handle(ctx) {
     try { await pool.query('select offline_first_run($1, $2, $3, $4)', [shop, String(b.name || ''), email, await bcrypt.hash(password, 10)]); }
     catch (e) { throw new HttpError(400, /already set up/.test(e.message) ? 'This computer is already set up. Sign in instead.' : 'Could not set up: ' + e.message); }
     return reply(200, { ok: true });
+  }
+  // The LAN address(es) this computer answers on, so a phone on the same WiFi can reach it (e.g. to add product
+  // photos from the phone's camera -- see p-settings.js "Add photos from your phone"). Loopback and virtual
+  // adapters (Docker, VPN, Hyper-V) are left out; what remains is what a phone on the shop's real WiFi can use.
+  if (url.pathname === '/offline/lan-info' && req.method === 'GET') {
+    const ifaces = os.networkInterfaces();
+    const ips = [];
+    for (const name of Object.keys(ifaces)) {
+      if (/vethernet|virtual|docker|vmware|vpn|loopback/i.test(name)) continue;
+      for (const a of ifaces[name] || []) if (a.family === 'IPv4' && !a.internal) ips.push(a.address);
+    }
+    return reply(200, { ips, port: Number(process.env.PORT) || null });
+  }
+  // The last part of this computer's own app.log / server.log -- so "Help & report a problem" can send the real
+  // error, not just a screenshot, even though this program has no remote crash reporting (it is meant to run with
+  // no internet). Capped so a huge log file is never sent whole.
+  if (url.pathname === '/offline/logs' && req.method === 'GET') {
+    const dataDir = process.env.AUZ_DATA_DIR || '';
+    const tail = (file, max = 20000) => { try { const s = fs.readFileSync(file, 'utf8'); return s.length > max ? '...(earlier lines cut)...\n' + s.slice(-max) : s; } catch { return ''; } };
+    return reply(200, { appLog: dataDir ? tail(path.join(dataDir, 'app.log')) : '', serverLog: dataDir ? tail(path.join(dataDir, 'server.log')) : '' });
   }
   if (req.method !== 'GET' && req.method !== 'HEAD') return false;
   const p = url.pathname;

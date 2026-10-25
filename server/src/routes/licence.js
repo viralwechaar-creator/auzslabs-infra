@@ -9,7 +9,9 @@ export const licenceStatus = () => (store ? store.status() : { state: 'active', 
 
 // Without a valid (or just-expired, grace) plan the installed app answers nothing except the licence screen, health and the pages themselves.
 // (the app's own pages and pictures are open too, so the Activate screen can show: they are files, not data)
-const OPEN = (p, m) => p === '/health' || p.startsWith('/licence/') || p.startsWith('/setup/') || (m === 'GET' && (p === '/' || /\.[a-z0-9]{2,5}$/i.test(p)));
+// /offline/logs is open too: reporting a bug is exactly the thing an owner needs to do with an expired/unactivated
+// licence, not just a healthy one. /offline/lan-info stays gated behind an active licence like the rest of the app.
+const OPEN = (p, m) => p === '/health' || p.startsWith('/licence/') || p.startsWith('/setup/') || p === '/offline/logs' || (m === 'GET' && (p === '/' || /\.[a-z0-9]{2,5}$/i.test(p)));
 export function gate(url, method = 'GET') {
   if (!OFFLINE || OPEN(url.pathname, method)) return;
   const s = store.status();

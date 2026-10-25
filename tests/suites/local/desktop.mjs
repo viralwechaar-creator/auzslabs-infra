@@ -53,6 +53,12 @@ export default async function run({ browser }) {
       assert((await fetch(base + '/rpc/sty_context', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })).status === 402, 'data not locked');
       assert((await fetch(base + '/../../etc/passwd')).status !== 200, 'path escape');
     }, 'critical');
+    await s.check('Offline diagnostics: /offline/logs works even with no licence yet (reporting a bug must not need an active plan); /offline/lan-info stays locked', async () => {
+      fs.writeFileSync(path.join(dataDir, 'app.log'), 'hello from app.log\n');
+      const logs = await (await fetch(base + '/offline/logs')).json();
+      assert(logs.appLog.includes('hello from app.log'), 'app.log not read: ' + JSON.stringify(logs));
+      assert((await fetch(base + '/offline/lan-info')).status === 402, 'lan-info should still be licence-gated');
+    });
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 860 } }); const page = await ctx.newPage(); const errs = watch(page);
     const code = signLicence({ shop: 'Offline Shop', end: '2099-12-31', addons: { cloud: true } }, k.priv);
     await s.check('In a browser: Activate screen, then first-run setup, then the app opens signed in', async () => {
@@ -72,6 +78,11 @@ export default async function run({ browser }) {
       const r = await page.evaluate(async () => { const x = await api('sty_save_style', { p: { name: 'Offline Tee', category: 'Tees', price: 500, mrp: 600, cost: 200, colours: ['Red'], sizes: ['M'], opening: { qty: 4, unitCost: 200, branchId: S.branch } } }); S.catAt = 0; await loadCatalog(true); return { id: x.id, n: S.cat.length }; });
       assert(r.id && r.n === 1, JSON.stringify(r));
     }, 'critical');
+    await s.check('Offline diagnostics: /offline/lan-info now works once a licence is active, and leaves out loopback', async () => {
+      const info = await (await fetch(base + '/offline/lan-info')).json();
+      assert(Array.isArray(info.ips) && info.ips.every((ip) => ip !== '127.0.0.1'), 'lan-info: ' + JSON.stringify(info));
+      assert(info.port === apiPort, 'wrong port reported: ' + JSON.stringify(info));
+    });
     let out;
     await s.check('A backup folder is made (database + pictures)', async () => {
       fs.writeFileSync(path.join(uploads, 'photo.txt'), 'pic'); if (process.getuid && process.getuid() === 0) fs.chmodSync(path.join(uploads, 'photo.txt'), 0o644);
