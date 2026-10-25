@@ -50,6 +50,8 @@
   function offlineBadge(m) { var d = offlineOf(m); return el('span', { class: 'ob ob-' + d.level, title: d.qualifier, text: OFFLINE_LABEL[d.level] }); }
   function modLabel(k) { var m = CAT.filter(function (x) { return x.key === k; })[0]; return m ? m.label : k; }
   function embedUrl(u) { var h = u.indexOf('#'), base = h < 0 ? u : u.slice(0, h), hash = h < 0 ? '' : u.slice(h); return base + (base.indexOf('?') < 0 ? '?' : '&') + 'embed=1' + hash; }
+  var FOLD = {};
+  var FDESC = { bill: 'Make bills with tax, discounts and part payments. Print them or send on WhatsApp.', tables: 'A floor plan with table status. Seat guests, move or merge bills.', kitchen: 'Orders reach a kitchen screen with timers and a ready alert.', stock: 'Items, raw materials, purchases and low-stock alerts.', cust: 'Your customer list with visits, loyalty points and groups.', offers: 'Coupons and buy-X-get-Y offers on the bill.', qr: 'Guests scan the table QR and order from their phone.', scan: 'Scan a barcode with the camera to bill or add stock.', phones: 'Sell phones by IMEI and keep each unit\u2019s history.', repair: 'Repair job cards with status, parts and payments.', dues: 'Money owed by customers and to vendors.', sizes: 'Colour and size variants, each with its own stock.', tags: 'Print a barcode tag for every size and colour.', store: 'Your own online shop; orders arrive in the app.' };
   var FK = 'auz_feat';
   function getFeat() { try { return JSON.parse(localStorage.getItem(FK) || '[]'); } catch (e) { return []; } }
   function setFeat(a) { try { localStorage.setItem(FK, JSON.stringify(a)); } catch (e) {} setSel(blocksOf(a)); }
@@ -99,14 +101,23 @@
     // a feature that is not offered for this type any more (or an old saved choice) is dropped, never sent
     var usable = list.filter(function (c) { return c.tier !== 'unavailable'; }).map(function (c) { return c.id; });
     if (typ && TIERS[typ.key] && feats.some(function (f) { return usable.indexOf(f) < 0; })) { feats = feats.filter(function (f) { return usable.indexOf(f) >= 0; }); setFeat(feats); }
+    var rail = null, count = {}, rails = {};
+    list.forEach(function (c) { count[c.line] = (count[c.line] || 0) + 1; });
     list.forEach(function (c) {
-      if (c.line !== area) { area = c.line; t.append(el('h3', { class: 'area mono', text: area.toUpperCase() })); }
+      if (!rails[c.line]) { t.append(el('h3', { class: 'area mono', text: c.line.toUpperCase() + '  ' + count[c.line] })); rails[c.line] = el('div', { class: 'rail' }); t.append(rails[c.line]); } rail = rails[c.line];
       var off = c.tier === 'unavailable', on = !off && feats.indexOf(c.id) >= 0; if (on) chosen.push(c);
-      t.append(el('button', { type: 'button', class: 'tile' + (on ? ' on' : '') + (off ? ' soon' : ''), 'aria-pressed': on ? 'true' : 'false', 'aria-disabled': off ? 'true' : 'false', onclick: function () {
+      var mod = CAT.filter(function (m) { return m.key === c.mod; })[0];
+      var open = !!FOLD[c.id];
+      var desc = el('div', { class: 'fd', id: 'fd-' + c.id, hidden: !open }, [el('p', { text: off ? (c.reason || 'Not available for this business type.') : (FDESC[c.id] || (mod && mod.description) || '') })]);
+      var fb = el('button', { type: 'button', class: 'fb', 'aria-expanded': open ? 'true' : 'false', 'aria-controls': 'fd-' + c.id, 'aria-label': 'About ' + c.name, text: open ? '\u2212' : '+', onclick: function () {
+        FOLD[c.id] = !FOLD[c.id]; fb.textContent = FOLD[c.id] ? '\u2212' : '+'; fb.setAttribute('aria-expanded', FOLD[c.id] ? 'true' : 'false'); desc.hidden = !FOLD[c.id]; } });
+      var pick = el('button', { type: 'button', class: 'tile' + (on ? ' on' : '') + (off ? ' soon' : ''), 'aria-pressed': on ? 'true' : 'false', 'aria-disabled': off ? 'true' : 'false', onclick: function () {
         if (off) return; var s = getFeat(); if (on) s = s.filter(function (k) { return k !== c.id; }); else s.push(c.id); setFeat(s); paintBuilder(); } },
-        [glyph(c.g), el('span', { class: 'plus', text: '+' }), el('b', { text: c.name }), c.tier === 'recommended' ? el('span', { class: 'ob ob-full', text: 'Recommended' }) : null,
-          off ? el('small', { text: c.reason || 'Not available for this business type.' }) : offlineBadge(CAT.filter(function (m) { return m.key === c.mod; })[0])]));
+        [el('i', { class: 'dot', 'aria-hidden': 'true' }), el('b', { text: c.name }), c.tier === 'recommended' ? el('span', { class: 'ob ob-full', text: 'Recommended' }) : null,
+          off ? null : offlineBadge(mod)]);
+      rail.append(el('div', { class: 'frow' + (on ? ' on' : '') + (off ? ' off' : '') }, [el('div', { class: 'fh' }, [pick, fb]), desc]));
     });
+    var tally = $('tally'); if (tally) tally.textContent = chosen.length ? chosen.length + (chosen.length === 1 ? ' chosen' : ' chosen') : 'none chosen yet';
     paintDesign(); paintPhone(chosen); paintGo(chosen.length); paintDeps();
   }
   var depSeq = 0;
