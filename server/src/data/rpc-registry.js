@@ -464,6 +464,7 @@ export const RPC = {
   sty_coupons_list: { params: [], auth: true },
   sty_coupon_save: { params: ['p'], jsonb: ['p'], auth: true },
   sty_coupon_delete: { params: ['p_id'], auth: true },
+  sty_coupon_check: { params: ['p'], jsonb: ['p'], auth: true },
   public_sty_cart_save: { params: ['p_slug', 'p'], jsonb: ['p'], auth: false },
   public_sty_review_submit: { params: ['p_token', 'p'], jsonb: ['p'], auth: false },
   public_sty_reviews: { params: ['p_slug', 'p_style'], auth: false },

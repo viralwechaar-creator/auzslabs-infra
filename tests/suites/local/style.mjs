@@ -538,6 +538,27 @@ export default async function run({ browser, stack }) {
     await integrity();
   });
 
+  await s.check('Coupons at the till: owner-created coupons work on an in-person bill too, never trusted blindly', async () => {
+    await ok(manager, 'sty_coupon_save', { p: { code: 'fest50', kind: 'flat', value: 50, minOrder: 100 } });
+    const cat = await ok(owner, 'sty_catalog', { p_branch: null });
+    const sty = cat.find((x) => x.variants.some((v) => v.stock >= 5 && x.price >= 200)); const vr = sty.variants.find((v) => v.stock >= 5);
+    const cust = await ok(staff, 'sty_save_customer', { p: { newId: uid(), name: 'Till Coupon Cust', phone: '9833344455' } });
+    await fails(staff, 'sty_sell', { p: { id: uid(), customerId: cust.id, lines: [{ variantId: vr.id, qty: 1 }], coupon: 'NOPE', payments: [{ mode: 'cash', amount: vr.price }] } }, /coupon/i);
+    const chk = await ok(staff, 'sty_coupon_check', { p: { code: 'FEST50', subtotal: vr.price, phone: cust.phone } }); assert(chk.ok && +chk.discount === 50, 'coupon check ' + JSON.stringify(chk));
+    const sale = await ok(staff, 'sty_sell', { p: { id: uid(), customerId: cust.id, lines: [{ variantId: vr.id, qty: 1 }], coupon: 'FEST50', payments: [{ mode: 'cash', amount: vr.price }] } });
+    assert(sale.discount === 50 && sale.coupon === 'FEST50', 'coupon discount applied on a real bill: ' + JSON.stringify(sale));
+    const again = await call(staff, 'sty_sell', { p: { id: uid(), customerId: cust.id, lines: [{ variantId: vr.id, qty: 1 }], coupon: 'FEST50', payments: [{ mode: 'cash', amount: vr.price }] } });
+    // the same customer cannot use the same coupon code twice, online or in-store -- a different customer still can.
+    assert(!again.ok && /already used/i.test(again.error || ''), 'the same customer must not reuse a coupon: ' + (again.error || ''));
+    const cust3 = await ok(staff, 'sty_save_customer', { p: { newId: uid(), name: 'Another Coupon Cust', phone: '9833355566' } });
+    const sale2 = await ok(staff, 'sty_sell', { p: { id: uid(), customerId: cust3.id, lines: [{ variantId: vr.id, qty: 1 }], coupon: 'FEST50', payments: [{ mode: 'cash', amount: vr.price }] } });
+    assert(sale2.discount === 50, 'a different customer can still use the same coupon: ' + JSON.stringify(sale2));
+    // SAVE10 (created in the Store round 5 test above) is first-order-only and was already used online by phone 9811122233 -- the till must see that too.
+    const c2 = await ok(staff, 'sty_save_customer', { p: { newId: uid(), name: 'Repeat Buyer', phone: '9811122233' } });
+    const blocked = await call(staff, 'sty_sell', { p: { id: uid(), customerId: c2.id, lines: [{ variantId: vr.id, qty: 1 }], coupon: 'SAVE10', payments: [{ mode: 'cash', amount: vr.price }] } });
+    assert(!blocked.ok && /first orders|already used/i.test(blocked.error || ''), 'a web-used first-order coupon must also be refused at the till: ' + blocked.error);
+  }, 'critical');
+
   await s.check('Buying intelligence: designs, size curve, reorder, lost demand, requests, cost hiding and isolation', async () => {
     const tee = await ok(owner, 'sty_save_style', { p: { name: 'Intel Tee', category: 'Tees', price: 1000, mrp: 1000, cost: 400, colours: ['Black'], sizes: ['S', 'M', 'L', 'XL'], opening: { qty: 20, unitCost: 400 } } });
     const vv = (z) => tee.variants.find((v) => v.size === z);

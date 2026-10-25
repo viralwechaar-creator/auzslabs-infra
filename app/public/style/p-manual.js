@@ -45,6 +45,12 @@ const MANUAL = [
   { h: 'Online store (if turned on)', body: [
     'A public page where customers browse your catalogue and place an order (cash on delivery or UPI) without visiting the shop. New orders land in Requests/Store for staff to confirm.',
   ] },
+  { h: 'Coupons and festive/special offers', body: [
+    'Online store -> Coupon codes -> Add a coupon. Give it a code (e.g. DIWALI20), a type (percent off, a flat rupee amount off, or free shipping for the online store), a minimum order, an optional end date and a maximum number of uses.',
+    'The same coupon also works on an in-person bill: in the cart, open Discount and type the code into "Coupon code", then Apply -- it shows the exact saving before you charge the customer.',
+    'A coupon is always re-checked at the moment the bill is saved (expired, already used by this customer, below the minimum order, fully used up) -- never trusted blindly, so what is shown when applying is exactly what the bill will actually charge.',
+    'For a festive sale on everything (not a code a customer has to type), make a coupon and simply tell staff/customers the code, or run it as the shop-wide "Bill discount %" for the sale period instead -- both are the same safe, server-checked discount path.',
+  ] },
   { h: 'Settings', body: [
     'Shop: name, address, phone, GSTIN, logo, bill footer and prefix.',
     'Bill template: pick how every printed/shared bill looks (Classic, Compact, or a Formal tax invoice with GSTIN and item-wise tax) -- changes instantly for every device at the shop, with a live preview right there.',

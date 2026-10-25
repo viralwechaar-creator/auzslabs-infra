@@ -1,10 +1,10 @@
 /* AUZsStyle: Sell (the till). Left/top: styles grid with category chips + barcode/search. Right (desktop) or a bottom bar
    (phone): the bill. Pick a style -> choose colour + size (stock shown) -> it joins the bill. */
 'use strict';
-const BILL = { lines: [], customer: null, custName: '', custPhone: '', billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0 };
+const BILL = { lines: [], customer: null, custName: '', custPhone: '', billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0, coupon: '', couponDiscount: 0 };
 const UI = { q: '', cat: 'All', col: null };
-const newBill = () => { Object.assign(BILL, { lines: [], customer: null, custName: '', custPhone: '', billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0 }); };
-const billCalc = () => calcBill(BILL.lines.map((l) => ({ unit: l.price, qty: l.qty, discPct: l.discPct, discAmt: l.discAmt, taxPct: l.taxPct })), { billDiscPct: BILL.billDiscPct, billDiscAmt: BILL.billDiscAmt });
+const newBill = () => { Object.assign(BILL, { lines: [], customer: null, custName: '', custPhone: '', billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0, coupon: '', couponDiscount: 0 }); };
+const billCalc = () => calcBill(BILL.lines.map((l) => ({ unit: l.price, qty: l.qty, discPct: l.discPct, discAmt: l.discAmt, taxPct: l.taxPct })), { billDiscPct: BILL.billDiscPct, billDiscAmt: BILL.billDiscAmt, extraAmt: BILL.couponDiscount });
 const unitCount = () => BILL.lines.reduce((a, l) => a + l.qty, 0);
 
 function addLine(style, v, q = 1) {
@@ -165,8 +165,21 @@ function discountSheet(done) {
   const st = S.ctx.settings;
   const dp = input({ type: 'number', value: BILL.billDiscPct || '', mode: 'decimal', placeholder: '%' }), da = input({ type: 'number', value: BILL.billDiscAmt || '', mode: 'decimal', placeholder: '₹' });
   const pts = BILL.customer && BILL.customer.points > 0 ? input({ type: 'number', value: BILL.redeem || '', mode: 'numeric', placeholder: '0' }) : null;
+  const cp = input({ value: BILL.coupon || '', placeholder: t('Festive sale, loyalty code, etc.') });
+  const cpMsg = h('div', { class: 'muted small' }, BILL.coupon ? t('Applied') + ': ' + BILL.coupon + ' (– ' + inr(BILL.couponDiscount) + ')' : '');
+  const cpBtn = h('button', { class: 'btn sm', type: 'button', onclick: async () => {
+    const code = cp.value.trim(); if (!code) { BILL.coupon = ''; BILL.couponDiscount = 0; cpMsg.textContent = ''; return; }
+    try {
+      const sub = BILL.lines.reduce((a, l) => a + l.price * l.qty, 0);
+      const r = await api('sty_coupon_check', { p: { code, subtotal: sub, phone: (BILL.customer && BILL.customer.phone) || BILL.custPhone || '' } });
+      if (!r.ok) { BILL.coupon = ''; BILL.couponDiscount = 0; cpMsg.textContent = r.msg; return; }
+      if (r.kind === 'ship') { BILL.coupon = ''; BILL.couponDiscount = 0; cpMsg.textContent = t('That coupon is for online shipping, not for in-shop bills'); return; }
+      BILL.coupon = r.code; BILL.couponDiscount = r.discount; cpMsg.textContent = r.msg;
+    } catch (e) { BILL.coupon = ''; BILL.couponDiscount = 0; cpMsg.textContent = e.message || t('Could not check that code'); }
+  } }, t('Apply'));
   sheet({ title: t('Discount'), body: h('div', { class: 'grid' }, h('div', { class: 'two' }, field(t('Bill discount') + ' %', dp), field(t('Bill discount') + ' ₹', da)),
     can('sty_manage') ? null : h('div', { class: 'muted small' }, t('Above') + ' ' + st.maxDiscountPct + '% ' + t('needs a manager')),
+    h('div', { class: 'row', style: { gap: '8px' } }, h('div', { class: 'grow' }, field(t('Coupon code'), cp)), cpBtn), cpMsg,
     pts ? field(t('Use points') + ' (' + BILL.customer.points + ' ' + t('available') + ', ₹' + st.loyaltyPointValue + ' ' + t('each') + ')', pts) : null),
     actions: [{ label: t('Apply'), primary: true, onclick: (close) => { BILL.billDiscPct = N(dp.value); BILL.billDiscAmt = BILL.billDiscPct ? 0 : N(da.value); BILL.redeem = pts ? Math.min(Math.floor(N(pts.value)), BILL.customer.points) : 0; close(); done(); } }] });
 }
@@ -253,7 +266,7 @@ function paySheet(c, done) {
     ok.disabled = true;
     const payments = MODES.map(([m]) => ({ mode: m, amount: pay[m] })).filter((p) => p.amount > 0);
     const p = { id: uid(), branchId: S.branch, customerId: cust ? cust.id : null, note: note.value || undefined, redeemPoints: BILL.redeem || 0,
-      billDiscPct: BILL.billDiscPct || undefined, billDiscAmt: BILL.billDiscAmt || undefined, holdId: BILL.holdId || undefined, payments,
+      billDiscPct: BILL.billDiscPct || undefined, billDiscAmt: BILL.billDiscAmt || undefined, coupon: BILL.coupon || undefined, holdId: BILL.holdId || undefined, payments,
       lines: BILL.lines.map((l) => ({ variantId: l.variantId, qty: l.qty, discPct: l.discPct || undefined, discAmt: l.discAmt || undefined, price: l.price })) };
     // a changed price is only sent when it differs from the catalogue (the server refuses it for non-managers)
     p.lines.forEach((l, i) => { const vv = allVariants().find((x) => x.id === l.variantId); if (vv && Math.abs(vv.price - l.price) < .005) delete l.price; });

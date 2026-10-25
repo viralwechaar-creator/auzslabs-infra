@@ -30,7 +30,7 @@ function calcBill(lines, o = {}) {
     sub += gross; ld += d; after += gross - d;
     return { ...l, gross, ld: d, after: gross - d };
   });
-  let bd = o.billDiscPct ? after * o.billDiscPct / 100 : (o.billDiscAmt || 0);
+  let bd = (o.billDiscPct ? after * o.billDiscPct / 100 : (o.billDiscAmt || 0)) + (o.extraAmt || 0);
   bd = r2(Math.min(Math.max(bd, 0), after));
   let tot = 0, tax = 0;
   for (const l of L) {
