@@ -354,6 +354,75 @@ export default async function run({ browser }) {
         cloud6.kill(); await cl.end(); fs.rmSync(dataDir4, { recursive: true, force: true });
       }
     }, 'critical');
+    await s.check('Cloud Sync Stage 6: a style\'s photo is uploaded to the cloud too, not just the row that names it, and the same picture is never uploaded twice', async () => {
+      const c = require(require.resolve('pg', { paths: [o.serverDir] }));
+      const cl = new c.Client({ host: '127.0.0.1', port: pgPort, user: 'postgres', password: sec.superPassword, database: L.DB }); await cl.connect();
+      const cloudUploads = fs.mkdtempSync(path.join(os.tmpdir(), 'auzcloudup-'));
+      const localUploads = fs.mkdtempSync(path.join(os.tmpdir(), 'auzlocalup-'));
+      const dataDir6 = fs.mkdtempSync(path.join(os.tmpdir(), 'auzdesk6-'));
+      const cport = await free(), cbase = `http://127.0.0.1:${cport}`;
+      const cloud7 = spawn(NODE, [...PRELOAD, 'src/index.js'], { cwd: SERVER_DIR, stdio: 'ignore', env: { ...process.env, PORT: String(cport), PGHOST: '127.0.0.1', PGPORT: String(pgPort), POSTGRES_APP_PASSWORD: sec.appPassword, POSTGRES_DB: L.DB, JWT_SECRET: sec.jwtSecret, LICENCE_PRIVATE_KEY: k.priv, UPLOAD_ROOT: cloudUploads, DISABLE_MAINTENANCE: '1', PG_POOL_MAX: '5', DISABLE_RATE_LIMIT: '1' } });
+      let offline6;
+      try {
+        for (let i = 0; i < 80; i++) { try { if ((await fetch(cbase + '/health')).ok) break; } catch { /* starting */ } await new Promise((r) => setTimeout(r, 250)); }
+        // the offline PC's own (only) tenant, made directly by SQL -- a full first-run setup is not needed, the
+        // sync worker only ever looks for "whichever tenant this computer has"
+        // this test shares one Postgres database with the cloud tenant that gets auto-provisioned mid-push (production
+        // never does -- the PC and the cloud are always separate databases, so offline_my_tenant_id()'s "newest
+        // tenant wins" is never ambiguous there); created_at is pinned into the future so it stays unambiguous here too
+        const localTid = (await cl.query("insert into tenants (slug, name, niche, plan, status, created_at) values ('sixth-pc', 'Sixth PC', 'retail', 'pro', 'active', now() + interval '1 day') returning id")).rows[0].id;
+        const photoDir = path.join(localUploads, 'site', 'sixth-pc', 'style'); fs.mkdirSync(photoDir, { recursive: true });
+        const jpeg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.from('a real-enough JPEG for looksLikeImage')]);
+        fs.writeFileSync(path.join(photoDir, 'shirt.jpg'), jpeg);
+        const localUrl = 'http://192.168.1.50:51234/uploads/site/sixth-pc/style/shirt.jpg';
+        const styleId = crypto.randomUUID();
+        await cl.query(
+          `insert into sty_styles (id, tenant_id, name, category, price, mrp, cost, photo_url, photos, colour_photos)
+           values ($1, $2, 'Photo Tee', 'Tees', 500, 600, 200, $3, $4::jsonb, $5::jsonb)`,
+          [styleId, localTid, localUrl, JSON.stringify([localUrl]), JSON.stringify({ Red: [localUrl] })],
+        );
+
+        const syncCode = signLicence({ shop: 'Sixth Shop', end: '2099-12-31', addons: { sync: true } }, k.priv);
+        fs.writeFileSync(path.join(dataDir6, 'licence.json'), JSON.stringify({ code: syncCode }));
+        const oport = await free(), obase = `http://127.0.0.1:${oport}`;
+        offline6 = spawn(NODE, [...PRELOAD, 'src/index.js'], { cwd: SERVER_DIR, stdio: 'ignore', env: { ...process.env, PORT: String(oport), AUZ_OFFLINE: '1', AUZ_DATA_DIR: dataDir6, AUZ_APP_ROOT: path.join(root, 'app/public'), AUZ_CLOUD_URL: cbase, UPLOAD_ROOT: localUploads, PGHOST: '127.0.0.1', PGPORT: String(pgPort), POSTGRES_APP_PASSWORD: sec.appPassword, POSTGRES_DB: L.DB, JWT_SECRET: sec.jwtSecret, LICENCE_PUBLIC_KEY: k.pub, DISABLE_MAINTENANCE: '1', PG_POOL_MAX: '5', DISABLE_RATE_LIMIT: '1' } });
+        for (let i = 0; i < 80; i++) { try { if ((await fetch(obase + '/health')).ok) break; } catch { /* starting */ } await new Promise((r) => setTimeout(r, 250)); }
+
+        const sync1 = await (await fetch(obase + '/offline/sync-now', { method: 'POST' })).json();
+        assert(sync1.pushed >= 1, '"Sync now" should have pushed the new style: ' + JSON.stringify(sync1));
+
+        const cloudTid = (await cl.query('select tenant_id from sty_sync_tenants order by created_at desc limit 1')).rows[0].tenant_id;
+        const cloudStyle = (await cl.query('select photo_url, photos, colour_photos from sty_styles where id = $1 and tenant_id = $2', [styleId, cloudTid])).rows[0];
+        assert(cloudStyle, 'the style should have reached the cloud tenant');
+        assert(/^https:\/\/([a-z0-9-]+)\.auzslab\.in\/uploads\/cloud-sync\/\1\/[0-9a-f]{64}\.jpg$/.test(cloudStyle.photo_url), 'photo_url should now be a real cloud url: ' + cloudStyle.photo_url);
+        assert(cloudStyle.photos[0] === cloudStyle.photo_url && cloudStyle.colour_photos.Red[0] === cloudStyle.photo_url, 'photos[] and colour_photos should get the same cloud url: ' + JSON.stringify(cloudStyle));
+        const savedPath = path.join(cloudUploads, new URL(cloudStyle.photo_url).pathname.replace(/^\/uploads\//, ''));
+        assert(Buffer.compare(fs.readFileSync(savedPath), jpeg) === 0, 'the uploaded file should be byte-identical to the original');
+        const mapRow = (await cl.query('select cloud_url from sty_sync_photo_map where tenant_id = $1 and local_url = $2', [localTid, localUrl])).rows[0];
+        assert(mapRow && mapRow.cloud_url === cloudStyle.photo_url, 'the mapping should be cached on the PC side: ' + JSON.stringify(mapRow));
+
+        // A second style re-using the SAME photo (the local file now gone) -- real life would be a different
+        // style, not an edit of the first: once pushed to the cloud, the first style's id itself now belongs to
+        // the cloud tenant (on conflict(id) do update reassigned its tenant_id), the exact same shared-one-
+        // database-for-convenience pitfall Stage 1's own test already works around with a fresh id.
+        fs.rmSync(localUploads, { recursive: true, force: true });
+        const styleId2 = crypto.randomUUID();
+        await cl.query(
+          `insert into sty_styles (id, tenant_id, name, category, price, mrp, cost, photo_url, photos, colour_photos)
+           values ($1, $2, 'Photo Tee 2', 'Tees', 450, 500, 180, $3, $4::jsonb, $5::jsonb)`,
+          [styleId2, localTid, localUrl, JSON.stringify([localUrl]), JSON.stringify({})],
+        );
+        const sync2 = await (await fetch(obase + '/offline/sync-now', { method: 'POST' })).json();
+        assert(sync2.pushed >= 1, 'the second style should still push even with the local photo file gone: ' + JSON.stringify(sync2));
+        const cloudStyle2 = (await cl.query('select price, photo_url from sty_styles where id = $1 and tenant_id = $2', [styleId2, cloudTid])).rows[0];
+        assert(cloudStyle2, 'the second style should have reached the cloud tenant');
+        assert(Number(cloudStyle2.price) === 450 && cloudStyle2.photo_url === cloudStyle.photo_url, 'the second style should reuse the SAME cached cloud photo url, not fail or re-upload: ' + JSON.stringify(cloudStyle2));
+      } finally {
+        try { offline6 && offline6.kill(); } catch { /* ignore */ }
+        cloud7.kill(); await cl.end();
+        fs.rmSync(cloudUploads, { recursive: true, force: true }); fs.rmSync(localUploads, { recursive: true, force: true }); fs.rmSync(dataDir6, { recursive: true, force: true });
+      }
+    }, 'critical');
     await s.check('No script errors in the app', async () => { const bad = errs.filter((e) => !/favicon|sentry|net::|Failed to load resource|Failed to fetch|licence\/activate|first time you open it/i.test(String(e))); assert(!bad.length, bad.slice(0, 3).join(' | ')); });
     await ctx.close();
   } finally {
