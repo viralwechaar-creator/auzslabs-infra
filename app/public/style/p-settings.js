@@ -39,6 +39,41 @@ function phoneUploadCard() {
   })();
   return host;
 }
+// Offline Windows install with the 'sync' licence add-on only: /licence/status (server/src/routes/licence.js)
+// reports it; on the cloud, or without the add-on, this whole section quietly removes itself (same pattern as
+// phoneUploadCard() above). Lets the owner give this shop's data a remote sign-in -- the Windows PC keeps being
+// the one real copy (Cloud Sync Stage 1 already pushes its changes up), this just opens a window into it.
+function remoteAccessCard() {
+  const host = h('div', { class: 'card grid' }, h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '12px auto' } }));
+  (async () => {
+    let st;
+    try { const r = await fetch('/licence/status'); if (!r.ok) throw 0; st = await r.json(); } catch (e) { const sec = host.closest('.sec'); if (sec) sec.remove(); return; }
+    if (!st.offline || !(st.addons && st.addons.sync) || (st.state !== 'active' && st.state !== 'grace')) { const sec = host.closest('.sec'); if (sec) sec.remove(); return; }
+    const ago = (iso) => { if (!iso) return t('never'); const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000); return m < 1 ? t('just now') : m < 60 ? m + ' ' + t('min ago') : Math.round(m / 60) + ' ' + t('hr ago'); };
+    let ss; try { ss = await (await fetch('/offline/sync-status')).json(); } catch (e) { ss = null; }
+    const statusNode = ss && ss.available ? (
+      ss.lastError ? banner('warn', 'alert', t('Last sync tried') + ' ' + ago(ss.lastTriedAt) + ': ' + ss.lastError)
+      : banner('ok', 'check', t('Last synced') + ' ' + ago(ss.lastOkAt) + (ss.pending ? ' · ' + ss.pending + ' ' + t('change(s) waiting to go up') : ''))
+    ) : null;
+    const email = input({ value: '', placeholder: 'you@email.com', mode: 'email' }), pass = input({ type: 'password', value: '' }), name = input({ value: '' });
+    const out = h('div', { class: 'muted small' });
+    const go = h('button', { class: 'btn fill', type: 'button', onclick: async () => {
+      go.disabled = true; out.textContent = '';
+      try {
+        const r = await fetch('/offline/cloud-sync-register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.value, password: pass.value, name: name.value }) });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(d.error || t('Could not turn on remote access.'));
+        clear(host).append(banner('ok', 'check', t('Remote access is on.')), h('p', { class: 'muted small' }, t('Sign in from anywhere at:')), h('div', { class: 'mono small', style: { textAlign: 'center' } }, d.url || ''), h('p', { class: 'muted small' }, t('Use the email and password you just set.')));
+      } catch (e) { out.textContent = e.message || t('Failed'); }
+      go.disabled = false;
+    } }, t('Turn on remote access'));
+    clear(host).append(
+      statusNode,
+      h('p', { class: 'muted small' }, t('Set an email and password for this shop\'s data in the cloud, so you (or anyone you trust) can check it from a phone or another computer anywhere, over the internet. This computer stays the one that actually runs the shop -- the cloud copy only follows along.')),
+      field(t('Email'), email), field(t('Password'), pass), field(t('Your name (optional)'), name), out, go);
+  })();
+  return host;
+}
 page('settings', {
   title: 'Settings', perm: 'sty_manage',
   async render(v) {
@@ -129,6 +164,7 @@ page('settings', {
         h('p', { class: 'muted small' }, t('Download everything -- your inventory, customers and bills -- as one Excel file you can open directly in Excel or Google Sheets. It is a real spreadsheet, not a code file; keep a copy somewhere safe (a pendrive, email, cloud drive).')),
         (() => { const out = h('div', { class: 'muted small' }); const b = h('button', { class: 'btn fill', type: 'button', onclick: async () => { b.disabled = true; out.textContent = t('Preparing…'); try { await backupExcel(); out.textContent = t('Downloaded'); } catch (e) { out.textContent = ''; fail(e); } b.disabled = false; } }, icon('download', 18), t('Download Excel backup')); return h('div', { class: 'grid' }, b, out); })())),
       section(t('Add photos from your phone'), phoneUploadCard()),
+      section(t('Remote access'), remoteAccessCard()),
       section(t('Install on this computer'), installCard()),
       section(t('WhatsApp messages'), waCard()),
       section(t('Health check'), h('div', { class: 'card grid' }, h('p', { class: 'muted small' }, t('Checks that bill totals, stock and returns all agree.')), h('div', { id: 'hc' }),

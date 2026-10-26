@@ -1,10 +1,10 @@
 # AUZsStyle offline install: licence, extras and what is built
 
 Plan (owner, Oct 2026): AUZsStyle as a Windows install that works with no internet and keeps its data on the computer. It only opens with a licence
-code from AUZslab and stops when the plan ends. Cloud storage, WhatsApp automation and online store hosting are paid extras.
+code from AUZslab and stops when the plan ends. Cloud storage, cloud sync, WhatsApp automation and online store hosting are paid extras.
 
 ## Built (db/267, server/src/licence.js, routes/licence.js)
-- **Licence code** (`AUZ-XXXXX-...`, about 170 characters, no ambiguous letters): product, shop name, plan end date, extras (cloud, whatsapp, store),
+- **Licence code** (`AUZ-XXXXX-...`, about 170 characters, no ambiguous letters): product, shop name, plan end date, extras (cloud, whatsapp, store, sync),
   signed with Ed25519. The server holds the private key (`LICENCE_PRIVATE_KEY`); the install holds only the public key (`LICENCE_PUBLIC_KEY`), so it checks
   a code with no internet and nobody can make one.
 - **Make a code:** Admin -> More -> Licences (offline app). Pick shop, end date, extras, note (payment/UTR); copy the code or send it as a WhatsApp text.
@@ -46,9 +46,24 @@ code from AUZslab and stops when the plan ends. Cloud storage, WhatsApp automati
 - **Not built:** a live mirror (needed before online-store hosting or WhatsApp automation can read the shop's data in the cloud), two-computer use of one shop, encrypting backups with a shop-held key (they are encrypted in transit only; AUZslab can read them).
 - Test: desktop suite check "Cloud storage" (upload, list, refusals for no-cloud / foreign / ended codes, restore). Needs: `docker compose up -d --build api` (new route + volume).
 
+## Cloud sync extra (db/276-278, server/src/sync-worker.js, server/src/routes/cloud.js, app/public/style/p-settings.js "Remote access")
+- **What it is:** the live mirror the cloud storage extra above explicitly does not provide. The computer is still the one real copy ("the shop PC always wins" any conflict), but someone can now also check and edit the shop's
+  data from anywhere -- a phone, another computer -- through a plain web sign-in, without needing to be on the shop's WiFi.
+- **How it works, in three stages:**
+  1. **Push (db/276).** A trigger on every core retail table (styles, variants, stock, sales, customers, suppliers, purchases, returns, transfers) logs each row change into `sty_change_log`. Every 2 minutes the installed
+     app sends whatever is new, in order, to `POST /cloud/sync`; the first successful push for a shop auto-creates a matching cloud tenant (no manual setup).
+  2. **A remote sign-in (db/277).** Settings -> Remote access lets the owner set an email/password for that cloud tenant (typed once on the PC, hashed on the server, never stored anywhere in the clear) -- from then on
+     anyone with that email/password can sign into `https://<tenant>.auzslab.in/style.html` directly, from anywhere.
+  3. **Pull, with "the PC always wins" (db/278).** Anything changed while signed in directly to the cloud tenant is pulled back down by the same worker, every 2 minutes, through `GET /cloud/sync`. If the PC has ALSO
+     changed that exact row since its own last push, the incoming remote change is skipped outright (not merged, not compared by timestamp) -- the PC's pending edit always wins, and will overwrite the cloud again on its
+     next push anyway. A session flag (`sty.suppress_log`) stops a push or a pull from re-logging itself, which would otherwise bounce the same row back and forth forever.
+- **Rules (server-side):** needs the **sync** extra on the licence and a connection; `/cloud/sync/register` additionally needs the plan active (not just in grace).
+- Settings -> Remote access shows when the worker last tried, when it last actually got through, the last error (if any), and how many of this computer's own changes are still waiting to go up (`/offline/sync-status`).
+- **Not built:** a live progress view in the cloud-side app for the owner (they can only tell from the PC's own Settings page), a way to turn remote access back off once set, more than one remote login per shop.
+- Test: desktop suite checks "Cloud Sync Stage 1/2/3" (push + auto-provision, the register broker end to end including the email-reuse refusal, and the pull + conflict round trip). Needs: `docker compose up -d --build api`.
+
 ## Not built yet (in order)
 1. Windows 7 build (see above).
-2. A live cloud mirror (see above).
-3. **WhatsApp automation and online store hosting extras:** need the cloud, so they are enabled by the extra flags in the licence and work only while connected.
-4. Auto-update of the installed app, code signing, an uninstaller option that also removes the data.
-5. Licence weaknesses to accept or fix later: a technical person could edit the installed files to skip the check; codes are not tied to one computer (add a computer id to the code if sharing becomes a problem).
+2. **WhatsApp automation and online store hosting extras:** need the cloud, so they are enabled by the extra flags in the licence and work only while connected.
+3. Auto-update of the installed app, code signing, an uninstaller option that also removes the data.
+4. Licence weaknesses to accept or fix later: a technical person could edit the installed files to skip the check; codes are not tied to one computer (add a computer id to the code if sharing becomes a problem).

@@ -84,6 +84,10 @@ export default async function run({ browser }) {
       assert(Array.isArray(info.ips) && info.ips.every((ip) => ip !== '127.0.0.1'), 'lan-info: ' + JSON.stringify(info));
       assert(info.port === apiPort, 'wrong port reported: ' + JSON.stringify(info));
     });
+    await s.check('Cloud Sync status (Stage 4): /offline/sync-status says plainly it is not available when the licence has no sync add-on', async () => {
+      const st = await (await fetch(base + '/offline/sync-status')).json();
+      assert(st.available === false, 'this shop\'s licence has no sync add-on, status should say unavailable: ' + JSON.stringify(st));
+    });
     let out;
     await s.check('A backup folder is made (database + pictures)', async () => {
       fs.writeFileSync(path.join(uploads, 'photo.txt'), 'pic'); if (process.getuid && process.getuid() === 0) fs.chmodSync(path.join(uploads, 'photo.txt'), 0o644);
@@ -183,6 +187,115 @@ export default async function run({ browser }) {
           assert(badTbl.failed && badTbl.failed.length === 1 && badTbl.applied === 0, 'an unknown/disallowed table must be refused, not run: ' + JSON.stringify(badTbl));
         } finally { cloud2.kill(); }
       } finally { await cl.end(); }
+    }, 'critical');
+    await s.check('Cloud Sync Stage 2: Settings\' "Turn on remote access" broker (offline PC -> cloud) actually creates a working owner login on the paired cloud tenant', async () => {
+      const cport = await free(), cbase = `http://127.0.0.1:${cport}`;
+      const cloud3 = spawn(NODE, [...PRELOAD, 'src/index.js'], { cwd: SERVER_DIR, stdio: 'ignore', env: { ...process.env, PORT: String(cport), PGHOST: '127.0.0.1', PGPORT: String(pgPort), POSTGRES_APP_PASSWORD: sec.appPassword, POSTGRES_DB: L.DB, JWT_SECRET: sec.jwtSecret, LICENCE_PRIVATE_KEY: k.priv, DISABLE_MAINTENANCE: '1', PG_POOL_MAX: '5', DISABLE_RATE_LIMIT: '1' } });
+      const dataDir2 = fs.mkdtempSync(path.join(os.tmpdir(), 'auzdesk2-'));
+      let offline3;
+      try {
+        for (let i = 0; i < 80; i++) { try { if ((await fetch(cbase + '/health')).ok) break; } catch { /* starting */ } await new Promise((r) => setTimeout(r, 250)); }
+        const syncCode = signLicence({ shop: 'Second Shop', end: '2099-12-31', addons: { sync: true } }, k.priv);
+        fs.writeFileSync(path.join(dataDir2, 'licence.json'), JSON.stringify({ code: syncCode }));
+        const oport = await free(), obase = `http://127.0.0.1:${oport}`;
+        offline3 = spawn(NODE, [...PRELOAD, 'src/index.js'], { cwd: SERVER_DIR, stdio: 'ignore', env: { ...process.env, PORT: String(oport), AUZ_OFFLINE: '1', AUZ_DATA_DIR: dataDir2, AUZ_APP_ROOT: path.join(root, 'app/public'), AUZ_CLOUD_URL: cbase, PGHOST: '127.0.0.1', PGPORT: String(pgPort), POSTGRES_APP_PASSWORD: sec.appPassword, POSTGRES_DB: L.DB, JWT_SECRET: sec.jwtSecret, LICENCE_PUBLIC_KEY: k.pub, DISABLE_MAINTENANCE: '1', PG_POOL_MAX: '5', DISABLE_RATE_LIMIT: '1' } });
+        for (let i = 0; i < 80; i++) { try { if ((await fetch(obase + '/health')).ok) break; } catch { /* starting */ } await new Promise((r) => setTimeout(r, 250)); }
+        const st = await (await fetch(obase + '/offline/sync-status')).json();
+        assert(st.available === true, 'this shop\'s licence has the sync add-on, status should say available: ' + JSON.stringify(st));
+        // bad email / short password are refused by the local broker itself, before any call reaches the cloud
+        const badEmail = await fetch(obase + '/offline/cloud-sync-register', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'nope', password: 'longenough1' }) });
+        assert(badEmail.status === 400, 'bad email should be refused locally: ' + badEmail.status);
+        const shortPw = await fetch(obase + '/offline/cloud-sync-register', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'owner@shop.test', password: 'short' }) });
+        assert(shortPw.status === 400, 'short password should be refused locally: ' + shortPw.status);
+        const reg = await (await fetch(obase + '/offline/cloud-sync-register', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'owner@shop.test', password: 'Secret!pass1', name: 'Asha' }) })).json();
+        assert(reg.created && reg.url && /^https:\/\/sync-.*\.auzslab\.in\/style\.html$/.test(reg.url), 'registration should succeed with a sign-in url: ' + JSON.stringify(reg));
+        const c = require(require.resolve('pg', { paths: [o.serverDir] }));
+        const cl = new c.Client({ host: '127.0.0.1', port: pgPort, user: 'postgres', password: sec.superPassword, database: L.DB }); await cl.connect();
+        try {
+          const row = (await cl.query(`select p.role, t.slug from profiles p join auth_users u on u.id = p.id join tenants t on t.id = p.tenant_id where u.email = 'owner@shop.test'`)).rows[0];
+          assert(row && row.role === 'owner' && 'https://' + row.slug + '.auzslab.in/style.html' === reg.url, 'the owner login should exist under the cloud tenant the url points at: ' + JSON.stringify(row));
+        } finally { await cl.end(); }
+        // registering again for the same shop is a no-op that says so, not an error or a second login
+        const again = await (await fetch(obase + '/offline/cloud-sync-register', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'owner@shop.test', password: 'Secret!pass1' }) })).json();
+        assert(again.already === true, 'a second registration for the same shop should say already: ' + JSON.stringify(again));
+        // a DIFFERENT shop (its own licence id -> its own lineage -> its own new cloud tenant, with no owner yet)
+        // trying to reuse asha@shop.test (the first offline shop's real owner login, same shared database in this
+        // test) must be refused: that email already belongs to a different real business
+        const dataDir3 = fs.mkdtempSync(path.join(os.tmpdir(), 'auzdesk3-'));
+        const syncCode2 = signLicence({ shop: 'Third Shop', end: '2099-12-31', addons: { sync: true } }, k.priv);
+        fs.writeFileSync(path.join(dataDir3, 'licence.json'), JSON.stringify({ code: syncCode2 }));
+        const oport2 = await free(), obase2 = `http://127.0.0.1:${oport2}`;
+        const offline4 = spawn(NODE, [...PRELOAD, 'src/index.js'], { cwd: SERVER_DIR, stdio: 'ignore', env: { ...process.env, PORT: String(oport2), AUZ_OFFLINE: '1', AUZ_DATA_DIR: dataDir3, AUZ_APP_ROOT: path.join(root, 'app/public'), AUZ_CLOUD_URL: cbase, PGHOST: '127.0.0.1', PGPORT: String(pgPort), POSTGRES_APP_PASSWORD: sec.appPassword, POSTGRES_DB: L.DB, JWT_SECRET: sec.jwtSecret, LICENCE_PUBLIC_KEY: k.pub, DISABLE_MAINTENANCE: '1', PG_POOL_MAX: '5', DISABLE_RATE_LIMIT: '1' } });
+        try {
+          for (let i = 0; i < 80; i++) { try { if ((await fetch(obase2 + '/health')).ok) break; } catch { /* starting */ } await new Promise((r) => setTimeout(r, 250)); }
+          const clashRes = await fetch(obase2 + '/offline/cloud-sync-register', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'asha@shop.test', password: 'Secret!pass1' }) });
+          const clashBody = await clashRes.json().catch(() => ({}));
+          assert(clashRes.status === 400, 'reusing another business\'s login email should be refused: ' + clashRes.status + ' body=' + JSON.stringify(clashBody));
+        } finally { offline4.kill(); fs.rmSync(dataDir3, { recursive: true, force: true }); }
+      } finally {
+        try { offline3 && offline3.kill(); } catch { /* ignore */ }
+        cloud3.kill(); fs.rmSync(dataDir2, { recursive: true, force: true });
+      }
+    }, 'critical');
+    await s.check('Cloud Sync Stage 3: a real edit made directly on the cloud tenant pulls down to the PC, but never when the PC itself has a newer, not-yet-pushed edit on that same row ("the PC always wins")', async () => {
+      const c = require(require.resolve('pg', { paths: [o.serverDir] }));
+      const cl = new c.Client({ host: '127.0.0.1', port: pgPort, user: 'postgres', password: sec.superPassword, database: L.DB }); await cl.connect();
+      const cport = await free(), cbase = `http://127.0.0.1:${cport}`;
+      const cloud5 = spawn(NODE, [...PRELOAD, 'src/index.js'], { cwd: SERVER_DIR, stdio: 'ignore', env: { ...process.env, PORT: String(cport), PGHOST: '127.0.0.1', PGPORT: String(pgPort), POSTGRES_APP_PASSWORD: sec.appPassword, POSTGRES_DB: L.DB, JWT_SECRET: sec.jwtSecret, LICENCE_PRIVATE_KEY: k.priv, DISABLE_MAINTENANCE: '1', PG_POOL_MAX: '5', DISABLE_RATE_LIMIT: '1' } });
+      try {
+        for (let i = 0; i < 80; i++) { try { if ((await fetch(cbase + '/health')).ok) break; } catch { /* starting */ } await new Promise((r) => setTimeout(r, 250)); }
+        const syncCode = signLicence({ shop: 'Fourth Shop', end: '2099-12-31', addons: { sync: true } }, k.priv);
+        const now = new Date().toISOString();
+        const fullRow = (id, tenant, name) => ({ id, tenant_id: tenant, name, category: 'Tees', subcategory: null, brand: null, season: null, gender: null, hsn: null, tax_pct: null, cost: 200, price: 500, mrp: 600, notes: null, photo_url: null, active: true, created_by: null, created_at: now, updated_at: now, photos: [], colour_photos: {}, photo_use: {} });
+        // push a THROWAWAY row up, exactly like Stage 1, just to auto-provision a fresh cloud tenant paired to this shop
+        const setupId = crypto.randomUUID();
+        const push = await (await fetch(cbase + '/cloud/sync', { method: 'POST', headers: { 'content-type': 'application/json', 'x-licence': syncCode }, body: JSON.stringify({ changes: [{ tbl: 'sty_styles', rowId: setupId, op: 'upsert', row: fullRow(setupId, null, 'Setup Row') }] }) })).json();
+        assert(push.tenantId && push.applied === 1, 'setup push should apply cleanly: ' + JSON.stringify(push));
+        const cloudTenant = push.tenantId;
+        // the push must not have logged itself as a "remote" change -- the cloud's own change log must still be empty
+        const afterPush = (await cl.query('select count(*) n from sty_change_log where tenant_id = $1', [cloudTenant])).rows[0];
+        assert(Number(afterPush.n) === 0, 'a push must not log itself as a fresh remote change: ' + JSON.stringify(afterPush));
+
+        // the row this test is actually about: this test shares one Postgres cluster for convenience (production
+        // never does -- the PC and the cloud are entirely separate databases, so the same real row genuinely has
+        // the same id in both), so a "remote edit" on it is inserted directly into the cloud's own change log
+        // instead of through an actual update on an actual cloud-side row, which would collide on sty_styles'
+        // global id primary key with the PC-side row of the same id created below.
+        const rowId = crypto.randomUUID();
+        const remoteEdit = (name) => cl.query('insert into sty_change_log (tenant_id, tbl, row_id, op, row) values ($1, $2, $3, $4, $5::jsonb)', [cloudTenant, 'sty_styles', rowId, 'upsert', JSON.stringify(fullRow(rowId, cloudTenant, name))]);
+        await remoteEdit('Remote Edited Name');
+        const pull1 = await (await fetch(cbase + '/cloud/sync?since=0', { headers: { 'x-licence': syncCode } })).json();
+        assert(pull1.changes.length === 1 && pull1.changes[0].row.name === 'Remote Edited Name', 'the remote edit should be the only pulled change: ' + JSON.stringify(pull1));
+
+        // set up a stand-in for "the PC's own local database": its own tenant, its own copy of the same real row
+        // (same id -- in production this is literally the same row, just a separate physical database), and a
+        // cursor saying that copy has already been pushed up (so it is not "pending")
+        const pcTenant = (await cl.query("insert into tenants (slug, name, niche, plan, status) values ('fourth-pc', 'Fourth PC', 'retail', 'pro', 'active') returning id")).rows[0].id;
+        await cl.query('insert into sty_sync_cursor (tenant_id, last_pushed, last_pulled) values ($1, 0, 0)', [pcTenant]);
+        await cl.query('insert into sty_styles select * from jsonb_populate_record(null::sty_styles, $1::jsonb)', [JSON.stringify(fullRow(rowId, pcTenant, 'Local Original'))]);
+        const afterLocalInsert = (await cl.query('select max(id) m from sty_change_log where tenant_id = $1 and row_id = $2', [pcTenant, rowId])).rows[0].m;
+        await cl.query('update sty_sync_cursor set last_pushed = $1 where tenant_id = $2', [afterLocalInsert, pcTenant]); // "already pushed up"
+
+        // applying the pulled remote edit now: nothing pending locally for this row, so it applies normally
+        const apply1 = (await cl.query('select sty_local_apply_pulled_batch($1, $2::jsonb) as r', [pcTenant, JSON.stringify(pull1.changes)])).rows[0].r;
+        assert(apply1.applied === 1 && apply1.skipped === 0, 'the remote edit should apply with nothing pending: ' + JSON.stringify(apply1));
+        const name1 = (await cl.query('select name from sty_styles where tenant_id = $1 and id = $2', [pcTenant, rowId])).rows[0].name;
+        assert(name1 === 'Remote Edited Name', 'local row should now show the remote edit: ' + name1);
+        // applying a pulled change must not log itself as a fresh LOCAL change either, or push and pull would bounce the same row forever
+        const logCountAfterApply = (await cl.query('select count(*) n from sty_change_log where tenant_id = $1 and row_id = $2', [pcTenant, rowId])).rows[0].n;
+        assert(Number(logCountAfterApply) === 1, 'applying a pulled change must not re-log itself: ' + logCountAfterApply);
+
+        // now the PC makes its OWN newer edit to the same row (not pushed up yet), and -- independently -- someone
+        // changes the row again directly on the cloud
+        await cl.query("update sty_styles set name = 'Local Newer Edit' where tenant_id = $1 and id = $2", [pcTenant, rowId]);
+        await remoteEdit('Remote Second Edit');
+        const pull2 = await (await fetch(cbase + '/cloud/sync?since=' + pull1.cursor, { headers: { 'x-licence': syncCode } })).json();
+        assert(pull2.changes.length === 1 && pull2.changes[0].row.name === 'Remote Second Edit', 'the second remote edit should be the only new pulled change: ' + JSON.stringify(pull2));
+        const apply2 = (await cl.query('select sty_local_apply_pulled_batch($1, $2::jsonb) as r', [pcTenant, JSON.stringify(pull2.changes)])).rows[0].r;
+        assert(apply2.applied === 0 && apply2.skipped === 1, 'the PC\'s own unpushed newer edit must win, the remote edit must be skipped: ' + JSON.stringify(apply2));
+        const name2 = (await cl.query('select name from sty_styles where tenant_id = $1 and id = $2', [pcTenant, rowId])).rows[0].name;
+        assert(name2 === 'Local Newer Edit', 'the PC\'s own newer edit must survive untouched: ' + name2);
+      } finally { cloud5.kill(); await cl.end(); }
     }, 'critical');
     await s.check('No script errors in the app', async () => { const bad = errs.filter((e) => !/favicon|sentry|net::|Failed to load resource|Failed to fetch|licence\/activate|first time you open it/i.test(String(e))); assert(!bad.length, bad.slice(0, 3).join(' | ')); });
     await ctx.close();

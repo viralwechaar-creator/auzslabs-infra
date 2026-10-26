@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import bcrypt from 'bcryptjs';
 import { pipeline } from 'node:stream/promises';
 import { pool } from '../db.js';
 import { verifyLicence, publicFromPrivate, dayNumber, isoOf } from '../licence.js';
@@ -62,14 +63,41 @@ export async function handle(ctx) {
 
   // AUZsStyle Cloud Sync (Stage 1, db/276): the offline PC pushes its change log up here, in order, in batches.
   // The PC is always the source of truth -- nothing it sends is ever rejected for "the cloud already changed
-  // this"; Stage 3 is what adds real writes coming back down, and with them, the comparison that lets a cloud-side
-  // edit ever lose to a newer PC one instead of the other way round.
+  // this".
   if (url.pathname === '/cloud/sync' && req.method === 'POST') {
     const w = await who(req, true, 'sync');
     const body = await readJsonBody(req);
     const changes = Array.isArray(body.changes) ? body.changes.slice(0, 500) : [];
     const { rows } = await pool.query('select sty_cloud_sync_push($1, $2, $3::jsonb) as r', [w.lineage, w.shop, JSON.stringify(changes)]);
     return reply(200, rows[0].r);
+  }
+
+  // Stage 3 (db/278): the other direction. Whatever someone changed while signed into the paired cloud tenant
+  // directly (db/277 gives them a login) -- never the PC's own pushes reflected back, see db/278's header for how
+  // that's kept apart -- is handed down here, in order, since the cursor the PC already has.
+  if (url.pathname === '/cloud/sync' && req.method === 'GET') {
+    const w = await who(req, true, 'sync');
+    const since = Math.max(0, Math.trunc(Number(url.searchParams.get('since'))) || 0);
+    const { rows: trows } = await pool.query('select sty_cloud_sync_ensure_tenant($1, $2) as t', [w.lineage, w.shop]);
+    const tid = trows[0].t;
+    const { rows } = await pool.query('select sty_cloud_sync_pull($1, $2, 200) as r', [tid, since]);
+    const changes = rows[0].r;
+    return reply(200, { tenantId: tid, changes, cursor: changes.length ? changes[changes.length - 1].id : since });
+  }
+
+  // Stage 2 (db/277): give the paired cloud tenant an owner login, so someone can actually sign into it from
+  // anywhere. Only the installed PC's own /offline/cloud-sync-register broker calls this -- the plaintext
+  // password reaches this process over TLS and is hashed right here; it is never stored or logged in the clear.
+  if (url.pathname === '/cloud/sync/register' && req.method === 'POST') {
+    const w = await who(req, true, 'sync');
+    const body = await readJsonBody(req);
+    const email = String(body.email || '').trim();
+    const password = String(body.password || '');
+    if (password.length < 8) throw new HttpError(400, 'Password must be at least 8 characters.');
+    const hash = await bcrypt.hash(password, 10);
+    const r = await pool.query('select sty_cloud_sync_set_owner($1, $2, $3, $4, $5) as r', [w.lineage, w.shop, email, hash, String(body.name || '')])
+      .then((x) => x.rows[0].r).catch((e) => { throw new HttpError(400, e.message); });
+    return reply(200, { created: r.created, already: r.already, url: r.slug ? 'https://' + r.slug + '.auzslab.in/style.html' : null });
   }
 
   const m = url.pathname.match(/^\/cloud\/backup\/([0-9a-f-]{36})$/);
