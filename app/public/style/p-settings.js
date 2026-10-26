@@ -1,5 +1,26 @@
 /* AUZsStyle: Settings (manager). Shop details, selling rules, tax, loyalty, analytics tuning, branches, day close, health check. */
 'use strict';
+// Offline Windows install only: /licence/status reports it; on the cloud this whole section quietly removes itself
+// (same pattern as the other offline-only cards below). Lets the owner type a new code -- to renew the plan or add
+// an extra -- without going near the data folder; licenceScreen() (shell.js) is the exact same screen first-run
+// activation uses, just reachable here too, with a Cancel link back to the app since nothing is actually locked.
+function licenceCard() {
+  const host = h('div', { class: 'card grid' }, h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '12px auto' } }));
+  (async () => {
+    let s;
+    try { const r = await fetch('/licence/status'); if (!r.ok) throw 0; s = await r.json(); } catch (e) { const sec = host.closest('.sec'); if (sec) sec.remove(); return; }
+    if (!s.offline) { const sec = host.closest('.sec'); if (sec) sec.remove(); return; }
+    const ADDON_LABEL = { cloud: t('Cloud storage'), whatsapp: t('WhatsApp'), store: t('Online store'), sync: t('Cloud sync') };
+    const extras = s.addons ? Object.keys(s.addons).filter((k) => s.addons[k]).map((k) => ADDON_LABEL[k] || k).join(', ') : '';
+    clear(host).append(
+      s.state === 'none' ? h('p', { class: 'muted small' }, t('Not activated yet.')) : h('div', { class: 'grid' },
+        h('p', null, t('Licensed to') + ' ' + (s.shop || '')),
+        h('p', { class: 'muted small' }, t('Plan ends') + ' ' + s.end + (s.daysLeft != null ? ' (' + (s.daysLeft >= 0 ? s.daysLeft + ' ' + t('days left') : t('ended')) + ')' : '')),
+        extras ? h('p', { class: 'muted small' }, t('Extras') + ': ' + extras) : null),
+      h('button', { class: 'btn', type: 'button', onclick: () => licenceScreen(s, { optional: s.state !== 'none' }) }, s.state === 'none' ? t('Activate') : t('Change licence code')));
+  })();
+  return host;
+}
 function installCard() {
   const box = h('div', { class: 'card grid' });
   const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
@@ -195,6 +216,7 @@ page('settings', {
         (() => { const out = h('div', { class: 'muted small' }); const b = h('button', { class: 'btn fill', type: 'button', onclick: async () => { b.disabled = true; out.textContent = t('Preparing…'); try { await backupExcel(); out.textContent = t('Downloaded'); } catch (e) { out.textContent = ''; fail(e); } b.disabled = false; } }, icon('download', 18), t('Download Excel backup')); return h('div', { class: 'grid' }, b, out); })())),
       section(t('Add photos from your phone'), phoneUploadCard()),
       section(t('Remote access'), remoteAccessCard()),
+      section(t('Licence'), licenceCard()),
       section(t('Install on this computer'), installCard()),
       section(t('WhatsApp messages'), waCard()),
       section(t('Health check'), h('div', { class: 'card grid' }, h('p', { class: 'muted small' }, t('Checks that bill totals, stock and returns all agree.')), h('div', { id: 'hc' }),
