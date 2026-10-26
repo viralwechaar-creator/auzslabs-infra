@@ -88,7 +88,9 @@ function licenceBannerNode() {
   bn.classList.add('lic-banner');
   return bn;
 }
-function licenceScreen(s) {
+// o.optional: called from Settings on an already-active install (to renew or add an extra), not the mandatory
+// first-run/expired gate -- so it gets a Cancel link back to the app instead of nowhere else to go.
+function licenceScreen(s, o = {}) {
   const code = h('textarea', { class: 'input', rows: 4, placeholder: 'AUZ-XXXXX-XXXXX-...', 'aria-label': 'Licence code', style: { fontFamily: 'monospace', textTransform: 'uppercase' } });
   const m = h('div', { class: 'small', role: 'alert', style: { color: 'var(--red)', minHeight: '18px' } });
   const btn = h('button', { class: 'btn fill wide', type: 'button' }, t('Activate'));
@@ -102,9 +104,10 @@ function licenceScreen(s) {
     } catch { m.textContent = t('Could not reach the app on this computer.'); btn.disabled = false; }
   };
   clear($('#app')).append(h('div', { class: 'login' }, h('div', { class: 'card' }, h('div', { style: { fontWeight: 800, fontSize: '20px' } }, 'AUZs', h('span', { style: { color: 'var(--accent)' } }, 'Style')),
-    h('h1', null, s.state === 'expired' ? t('Your plan has ended') : t('Activate AUZsStyle')),
-    h('p', { class: 'muted' }, s.state === 'expired' ? t('Your data is safe on this computer. Enter the new code AUZslab sent you to continue.') + (s.shop ? ' (' + s.shop + ', ' + s.end + ')' : '') : t('Type the licence code AUZslab gave you. No internet is needed.')),
-    code, m, btn, h('p', { class: 'small muted' }, t('Need a code? Call or WhatsApp AUZslab: +91 92512 50829')))));
+    h('h1', null, s.state === 'expired' ? t('Your plan has ended') : o.optional ? t('Change licence code') : t('Activate AUZsStyle')),
+    h('p', { class: 'muted' }, s.state === 'expired' ? t('Your data is safe on this computer. Enter the new code AUZslab sent you to continue.') + (s.shop ? ' (' + s.shop + ', ' + s.end + ')' : '') : o.optional ? t('Type the new code AUZslab gave you -- to renew the plan or add an extra. Your shop\'s data is not touched.') : t('Type the licence code AUZslab gave you. No internet is needed.')),
+    code, m, btn, o.optional ? h('button', { class: 'btn wide', type: 'button', onclick: () => location.reload() }, t('Cancel')) : null,
+    h('p', { class: 'small muted' }, t('Need a code? Call or WhatsApp AUZslab: +91 92512 50829')))));
 }
 
 // First start of the installed copy: no shop exists yet, so ask for the shop name and the owner's login (kept on this computer only).
