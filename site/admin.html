@@ -947,7 +947,30 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
   .a-main{padding:6px 28px 36px!important}
 }
 @media (min-width:1500px){.cc-grid{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))!important}}
-</style></head>
+</style><style>
+.bm-steps{display:flex;gap:8px;margin:14px 0;flex-wrap:wrap}
+.bm-steps button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;font:inherit;font-size:13px;cursor:pointer;display:flex;gap:8px;align-items:center}
+.bm-steps button b{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#e9e9e9;font-size:11px}
+.bm-steps button.on{background:#000;color:#fff;border-color:#000}.bm-steps button.on b{background:#fff;color:#000}
+.bm-card{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fff;margin-top:10px}
+.bm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.bm-grid .wide{grid-column:1/-1}
+.bm-item{border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:10px;background:#fff}
+.bm-item .top{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px}
+.bm-tag{font-size:11px;border-radius:999px;padding:3px 9px;background:#000;color:#fff}.bm-tag.hw{background:#800020}.bm-tag.sv{background:#555}
+.bm-tot{margin-top:12px;border:1px solid var(--line);border-radius:14px;padding:12px;background:#fafafa}
+.bm-tot div{display:flex;justify-content:space-between;font-size:13px;padding:2px 0}.bm-tot .big{font-weight:800;font-size:16px;border-top:1px solid var(--line);margin-top:6px;padding-top:8px}
+.bm-res{border:1px solid var(--line);border-radius:12px;margin-top:6px;overflow:hidden}
+.bm-res button{display:block;width:100%;text-align:left;background:#fff;border:0;border-bottom:1px solid var(--line);padding:9px 12px;font:inherit;cursor:pointer}
+.bm-res button:last-child{border:0}.bm-res button small{color:var(--ink-faint);display:block}
+.bm-prev{border:1px solid #000;border-radius:6px;padding:18px;background:#fff;max-width:760px;font-size:12.5px}
+.bm-prev h3{margin:0 0 4px;font-size:22px}.bm-prev table{width:100%;border-collapse:collapse;margin-top:10px}
+.bm-prev th,.bm-prev td{border-bottom:1px solid #e4e4e4;padding:6px 4px;text-align:left;vertical-align:top}.bm-prev .r{text-align:right}
+.bm-prev small{color:#777;display:block}
+.bm-act{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.bm-pill{font-size:11px;border-radius:999px;padding:3px 9px}.bm-pill.ok{background:#e4f4e6;color:#14602a}.bm-pill.due{background:#fff0d6;color:#8a5200}
+</style>
+</head>
 <body class="admin-shell">
 <div class="a-shell">
   <header class="a-topbar">
@@ -987,6 +1010,7 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
 
         <div class="a-side-group-label">Money</div>
         <button class="a-side-btn" data-section="clientPay"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3"/></svg>Client payments &amp; bills</button>
+        <button class="a-side-btn" data-section="billMake"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h7M12 7v0"/></svg>Make a bill</button>
 
         <div class="a-side-group-label">Oversight</div>
         <button class="a-side-btn" data-section="systemStats"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="7" rx="1.6"/><rect x="4" y="13" width="16" height="7" rx="1.6"/><circle cx="8" cy="7.5" r=".9" fill="currentColor" stroke="none"/><circle cx="8" cy="16.5" r=".9" fill="currentColor" stroke="none"/></svg>System resources</button>
@@ -1266,6 +1290,18 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <div id="salesWorkBody" style="margin-top:16px">Loading&hellip;</div>
       </section>
 
+      <section class="a-page" id="billMakeSection" data-title="Make a bill" data-parent="more">
+        <div class="label">Money</div>
+        <h2 class="h-2">Make a bill</h2>
+        <p class="p">Software and hardware on one GST bill. Pick the client, add the items, check the preview, then generate. Use it for a new client or for something bought later.</p>
+        <div class="bm-steps" id="bmSteps">
+          <button type="button" data-bms="1" class="on"><b>1</b> Client</button><button type="button" data-bms="2"><b>2</b> Items &amp; prices</button><button type="button" data-bms="3"><b>3</b> Preview &amp; bill</button>
+        </div>
+        <div id="bmBody"></div>
+        <div class="label" style="margin-top:34px">Recent direct bills</div>
+        <div id="bmRecent" style="margin-top:8px">Loading&hellip;</div>
+      </section>
+
       <section class="a-page" id="clientPaySection" data-title="Client payments" data-parent="more">
         <div class="label">Money received</div>
         <h2 class="h-2">Client payments</h2>
@@ -1416,6 +1452,11 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
           <button class="a-nav-row" data-section="clientPay">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3"/></svg>
             <span class="grow">Client payments &amp; bills</span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <button class="a-nav-row" data-section="billMake">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h7"/></svg>
+            <span class="grow">Make a bill</span>
             <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
           </button>
         </div>
@@ -1691,7 +1732,7 @@ function resetMainScroll() {
 const SECTION_LOADERS = {
   leads: () => { loadLeads(); refreshOrdersBadge(); }, orders: () => loadOrders(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(),
   users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(), privacyReq: () => loadPrivacyReq(), licences: () => loadLicences(), whatsapp: () => loadWhatsApp(), website: () => loadWebsite(),
-  team: () => { loadTeam(); loadSetups(); loadTeamApps(); }, tasks: () => loadTasks(), trialBlocks: () => loadTrialBlocks(), postStudio: () => { const f = document.getElementById('postStudioFrame'); if (f && !f.getAttribute('src')) f.src = f.dataset.src; }, salesWork: () => loadSalesWork(), clientPay: () => { loadClientPay(); loadBills(); },
+  team: () => { loadTeam(); loadSetups(); loadTeamApps(); }, tasks: () => loadTasks(), trialBlocks: () => loadTrialBlocks(), postStudio: () => { const f = document.getElementById('postStudioFrame'); if (f && !f.getAttribute('src')) f.src = f.dataset.src; }, salesWork: () => loadSalesWork(), clientPay: () => { loadClientPay(); loadBills(); }, billMake: () => bmInit(),
 };
 const sectionLoadedAt = {};
 function ensureSectionLoaded(name) {
@@ -3823,5 +3864,156 @@ async function loadWhatsApp() {
   /* re-render home once clients arrive */
   var iv=setInterval(function(){if(typeof clientsCache!=='undefined'&&clientsCache.length){window.renderHome();clearInterval(iv)}},600);setTimeout(function(){clearInterval(iv)},15000);
 })();
-</script></body>
+</script><script>
+/* Make a bill: client -> items & prices -> preview -> generate. The maths mirrors bill_totals() in db/282; the saved totals always come from the database. */
+const BM = { step: 1, c: { business_name: '', contact_name: '', phone: '', email: '', gstin: '', address: '', state_code: '08', tenant_id: '', date: '' }, items: [], note: '', paid: false, mode: 'upi', utr: '', paidOn: '', done: null, inited: false };
+const BM_GSTIN = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9A-Z]Z[0-9A-Z]$/;
+const bmToday = () => new Date().toISOString().slice(0, 10);
+const bmState = () => (BM_GSTIN.test((BM.c.gstin || '').toUpperCase()) ? BM.c.gstin.slice(0, 2) : (BM.c.state_code || '08'));
+function bmNew(kind) {
+  const sw = kind === 'software';
+  BM.items.push({ kind, label: '', hsn: kind === 'hardware' ? '' : '998314', mrp: '', qty: 1, rate: '', incl: false, discount: '', gst: 18, plan: sw ? 'year' : '' });
+}
+function bmCalc() {
+  const intra = bmState() === '08'; let sub = 0, dis = 0, tax = 0, gs = 0; const lines = [];
+  BM.items.forEach((i) => {
+    if (!String(i.label || '').trim()) return;
+    const qty = Math.max(num(i.qty) || 1, 0.001), rate = Math.max(num(i.rate), 0), g = Math.min(Math.max(num(i.gst), 0), 100), gross = Math.round(qty * rate * 100) / 100, disc = Math.min(Math.max(num(i.discount), 0), gross);
+    let net, ga, rex, dex;
+    if (i.incl) { const paid = gross - disc; net = Math.round(paid / (1 + g / 100) * 100) / 100; ga = Math.round((paid - net) * 100) / 100; rex = Math.round(gross / (1 + g / 100) * 100) / 100; dex = rex - net; }
+    else { net = gross - disc; ga = Math.round(net * g) / 100; rex = gross; dex = disc; }
+    lines.push({ i, qty, g, rex, dex, net, ga, total: net + ga, unit: Math.round(rex / qty * 100) / 100 });
+    sub += rex; dis += dex; tax += net; gs += ga;
+  });
+  gs = Math.round(gs * 100) / 100;
+  const raw = Math.round((tax + gs) * 100) / 100, total = Math.round(raw);
+  return { lines, intra, sub, dis, tax, gst: gs, cgst: intra ? Math.round(gs * 50) / 100 : 0, sgst: intra ? gs - Math.round(gs * 50) / 100 : 0, igst: intra ? 0 : gs, round: Math.round((total - raw) * 100) / 100, total };
+}
+const bmIn = (id, label, val, extra = '') => `<label class="lbl">${label}<input class="inp" id="${id}" value="${esc(val == null ? '' : val)}" ${extra}></label>`;
+
+function bmRender() {
+  document.querySelectorAll('#bmSteps button').forEach((b) => b.classList.toggle('on', Number(b.dataset.bms) === BM.step));
+  const el = document.getElementById('bmBody');
+  if (BM.done) { bmRenderDone(el); return; }
+  if (BM.step === 1) bmStep1(el); else if (BM.step === 2) bmStep2(el); else bmStep3(el);
+}
+function bmStep1(el) {
+  const c = BM.c, stOpts = Object.keys(ORD_STATES).map((k) => `<option value="${k}" ${c.state_code === k ? 'selected' : ''}>${esc(ORD_STATES[k])} (${k})</option>`).join('');
+  el.innerHTML = `<div class="bm-card"><div class="label">Find an existing client</div>
+    <input class="inp" id="bmSearch" placeholder="Type a name, GST number or phone" autocomplete="off" style="margin-top:6px"><div id="bmRes"></div></div>
+  <div class="bm-card"><div class="label">Client details</div><div class="bm-grid" style="margin-top:8px">
+    ${bmIn('bmName', 'Business / client name *', c.business_name)}${bmIn('bmContact', 'Contact person', c.contact_name)}${bmIn('bmPhone', 'Phone', c.phone, 'inputmode="tel"')}${bmIn('bmEmail', 'Email', c.email)}
+    ${bmIn('bmGstin', 'GST number (blank if none)', c.gstin, 'maxlength="15" style="text-transform:uppercase"')}
+    <label class="lbl">State<select class="inp" id="bmState">${stOpts}</select></label>
+    ${bmIn('bmDate', 'Bill date', c.date || bmToday(), 'type="date"')}
+    <label class="lbl wide">Address<textarea class="inp" id="bmAddr" rows="2">${esc(c.address)}</textarea></label></div>
+    <div id="bmClientNote" class="p" style="margin-top:8px"></div>
+    <div class="bm-act"><button class="btn btn-primary" id="bmTo2" type="button">Next: items &amp; prices</button></div></div>`;
+  const read = () => { c.business_name = g('bmName').value.trim(); c.contact_name = g('bmContact').value.trim(); c.phone = g('bmPhone').value.trim(); c.email = g('bmEmail').value.trim(); c.gstin = g('bmGstin').value.trim().toUpperCase(); c.address = g('bmAddr').value.trim(); c.state_code = g('bmState').value; c.date = g('bmDate').value; };
+  function g(id) { return document.getElementById(id); }
+  const note = () => { read(); const ok = !c.gstin || BM_GSTIN.test(c.gstin); g('bmClientNote').innerHTML = (c.tenant_id ? 'Registered AUZslab client. ' : '') + (c.gstin ? (ok ? 'GST state <b>' + esc(ORD_STATES[c.gstin.slice(0, 2)] || '?') + '</b> will decide CGST+SGST or IGST.' : '<span style="color:var(--accent)">The GST number should be 15 characters.</span>') : 'No GST number: the bill goes to an unregistered buyer.'); };
+  ['bmName', 'bmContact', 'bmPhone', 'bmEmail', 'bmGstin', 'bmAddr', 'bmState', 'bmDate'].forEach((id) => { g(id).oninput = note; g(id).onchange = note; }); note();
+  g('bmTo2').onclick = () => { read(); if (!c.business_name) { alert('Enter the client name.'); return; } if (c.gstin && !BM_GSTIN.test(c.gstin)) { alert('The GST number does not look right (15 characters).'); return; } if (c.gstin) c.state_code = c.gstin.slice(0, 2); BM.step = 2; bmRender(); };
+  let tm; g('bmSearch').oninput = () => { clearTimeout(tm); tm = setTimeout(async () => {
+    const q = g('bmSearch').value.trim(), box = g('bmRes'); if (q.length < 2) { box.innerHTML = ''; return; }
+    const { data, error } = await sb.rpc('admin_search_bill_clients', { p_q: q }); if (error) { box.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+    const rows = data || []; BM.found = rows;
+    box.innerHTML = rows.length ? `<div class="bm-res">${rows.map((r, n) => `<button type="button" data-bmr="${n}">${esc(r.business_name || '')}<small>${esc([r.gstin, r.phone, r.contact_name].filter(Boolean).join(' · ') || 'no details yet')}</small></button>`).join('')}</div>` : '<div class="p">No client found. Type the details below.</div>';
+    box.querySelectorAll('[data-bmr]').forEach((b) => { b.onclick = () => { const r = BM.found[Number(b.dataset.bmr)]; Object.assign(BM.c, { business_name: r.business_name || '', contact_name: r.contact_name || '', phone: r.phone || '', email: r.email || '', gstin: r.gstin || '', address: r.address || '', state_code: r.state_code || '08', tenant_id: r.tenant_id || '' }); bmRender(); }; });
+  }, 250); };
+}
+function bmStep2(el) {
+  const cards = BM.items.map((i, n) => { const hw = i.kind === 'hardware', sw = i.kind === 'software';
+    const L = bmCalc().lines.find((x) => x.i === i);
+    return `<div class="bm-item" data-n="${n}"><div class="top"><span class="bm-tag ${hw ? 'hw' : sw ? 'sw' : ''}">${hw ? 'Hardware' : sw ? 'Software' : 'Service'}</span><span>${L ? esc(money2(L.total)) + ' <small>incl. GST</small>' : ''}</span><button class="btn btn-ghost" data-bmdel="${n}" type="button">Remove</button></div>
+    <div class="bm-grid">
+      ${sw ? `<label class="lbl wide">Product<select class="inp" data-f="pick"><option value="">Choose or type the name below</option>${ORD_PRODUCTS.map(([k, v]) => `<option value="${esc(v)}">${esc(v)}</option>`).join('')}</select></label>` : ''}
+      <label class="lbl wide">Item name<input class="inp" data-f="label" value="${esc(i.label)}" placeholder="${hw ? 'e.g. Barcode scanner, Thermal printer' : 'e.g. AUZsPOS yearly plan'}"></label>
+      <label class="lbl">${hw ? 'HSN code' : 'SAC code'}<input class="inp" data-f="hsn" value="${esc(i.hsn)}"></label>
+      ${hw ? `<label class="lbl">MRP (each)<input class="inp" data-f="mrp" type="number" min="0" step="0.01" value="${esc(i.mrp)}"></label>` : ''}
+      <label class="lbl">Quantity<input class="inp" data-f="qty" type="number" min="0.001" step="any" value="${esc(i.qty)}"></label>
+      <label class="lbl">Price (each)<input class="inp" data-f="rate" type="number" min="0" step="0.01" value="${esc(i.rate)}"></label>
+      <label class="lbl">GST %<input class="inp" data-f="gst" type="number" min="0" step="0.01" value="${esc(i.gst)}"></label>
+      <label class="lbl">Discount (total)<input class="inp" data-f="discount" type="number" min="0" step="0.01" value="${esc(i.discount)}"></label>
+      ${sw ? `<label class="lbl">Plan<select class="inp" data-f="plan"><option value="year" ${i.plan === 'year' ? 'selected' : ''}>Yearly</option><option value="month" ${i.plan === 'month' ? 'selected' : ''}>Monthly</option><option value="" ${!i.plan ? 'selected' : ''}>One-time</option></select></label>` : ''}
+      <label class="lbl" style="display:flex;gap:8px;align-items:center;padding-top:22px"><input type="checkbox" data-f="incl" ${i.incl ? 'checked' : ''}> Price already includes GST</label>
+    </div></div>`; }).join('');
+  el.innerHTML = `<div class="bm-act" style="margin:0"><button class="btn btn-ghost" data-bmadd="software" type="button">+ Software</button><button class="btn btn-ghost" data-bmadd="hardware" type="button">+ Hardware</button><button class="btn btn-ghost" data-bmadd="service" type="button">+ Other service</button></div>
+    ${cards || '<div class="bm-card">Add the software or hardware you are billing.</div>'}
+    <div class="bm-tot" id="bmTot"></div>
+    <label class="lbl" style="margin-top:12px">Note on the bill (optional)<input class="inp" id="bmNote" value="${esc(BM.note)}" placeholder="e.g. Warranty 1 year from the bill date"></label>
+    <div class="bm-act"><button class="btn btn-ghost" id="bmBack1" type="button">Back</button><button class="btn btn-primary" id="bmTo3" type="button">Next: preview</button></div>`;
+  const tot = () => { const t = bmCalc(); document.getElementById('bmTot').innerHTML = `<div><span>Subtotal</span><b>${money2(t.sub)}</b></div>${t.dis > 0 ? `<div><span>Discount</span><b>&minus;${money2(t.dis)}</b></div>` : ''}<div><span>Taxable value</span><b>${money2(t.tax)}</b></div>${t.intra ? `<div><span>CGST</span><b>${money2(t.cgst)}</b></div><div><span>SGST</span><b>${money2(t.sgst)}</b></div>` : `<div><span>IGST</span><b>${money2(t.igst)}</b></div>`}${t.round ? `<div><span>Round off</span><b>${money2(t.round)}</b></div>` : ''}<div class="big"><span>Total</span><b>${money2(t.total)}</b></div>`; };
+  tot();
+  el.querySelectorAll('.bm-item').forEach((card) => { const it = BM.items[Number(card.dataset.n)];
+    card.querySelectorAll('[data-f]').forEach((f) => { const key = f.dataset.f; const h = () => {
+      if (key === 'pick') { if (f.value) { it.label = f.value; const inp = card.querySelector('[data-f=label]'); inp.value = f.value; } }
+      else if (key === 'incl') it.incl = f.checked; else it[key] = f.value;
+      tot(); const L = bmCalc().lines.find((x) => x.i === it), top = card.querySelector('.top span:nth-child(2)'); if (top) top.innerHTML = L ? esc(money2(L.total)) + ' <small>incl. GST</small>' : ''; };
+      f.oninput = h; f.onchange = h; }); });
+  el.querySelectorAll('[data-bmdel]').forEach((b) => { b.onclick = () => { BM.items.splice(Number(b.dataset.bmdel), 1); bmRender(); }; });
+  el.querySelectorAll('[data-bmadd]').forEach((b) => { b.onclick = () => { bmNew(b.dataset.bmadd); bmRender(); }; });
+  document.getElementById('bmNote').oninput = (e) => { BM.note = e.target.value; };
+  document.getElementById('bmBack1').onclick = () => { BM.step = 1; bmRender(); };
+  document.getElementById('bmTo3').onclick = () => { const t = bmCalc(); if (!t.lines.length) { alert('Add at least one item with a name.'); return; } if (t.total <= 0) { alert('Enter a price for the items.'); return; } BM.step = 3; bmRender(); };
+}
+function bmPreviewHtml() {
+  const t = bmCalc(), c = BM.c, co = (window.AUZ_CO || {}), st = ORD_STATES[bmState()] || '';
+  return `<div class="bm-prev"><h3>Invoice <small style="font-size:12px;color:#777">(preview, number is given when generated)</small></h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div><b>From</b><br>${esc(co.legalName || 'AUZslab')}<br>GSTIN ${esc(co.gstin || '')}<br>${esc(co.address || '')}</div>
+    <div><b>To</b><br>${esc(c.business_name)}${c.contact_name ? '<br>' + esc(c.contact_name) : ''}<br>${c.gstin ? 'GSTIN ' + esc(c.gstin) : 'Unregistered'}<br>${esc(c.address)}${c.phone ? '<br>' + esc(c.phone) : ''}<br>${esc(st)} (${esc(bmState())})</div></div>
+    <p style="margin:8px 0 0">Date: ${esc(c.date || bmToday())} &middot; ${t.intra ? 'Within Rajasthan (CGST + SGST)' : 'Inter-state (IGST)'}</p>
+    <table><tr><th>Item</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">GST</th><th class="r">Amount</th></tr>
+    ${t.lines.map((L) => `<tr><td>${esc(L.i.label)}<small>${[L.i.hsn ? (L.i.kind === 'hardware' ? 'HSN ' : 'SAC ') + esc(L.i.hsn) : '', L.i.mrp ? 'MRP ' + money2(L.i.mrp).replace('&#8377;', 'Rs ') : '', L.i.incl ? 'price incl. GST' : '', L.i.plan ? (L.i.plan === 'year' ? 'Yearly' : 'Monthly') : ''].filter(Boolean).join(' · ')}</small></td><td class="r">${esc(String(L.qty))}</td><td class="r">${money2(L.unit)}</td><td class="r">${L.g}%<small>${money2(L.ga)}</small></td><td class="r">${money2(L.net)}</td></tr>`).join('')}</table>
+    <div class="bm-tot" style="background:#fff;margin-top:10px"><div><span>Taxable value</span><b>${money2(t.tax)}</b></div>${t.intra ? `<div><span>CGST</span><b>${money2(t.cgst)}</b></div><div><span>SGST</span><b>${money2(t.sgst)}</b></div>` : `<div><span>IGST</span><b>${money2(t.igst)}</b></div>`}${t.round ? `<div><span>Round off</span><b>${money2(t.round)}</b></div>` : ''}<div class="big"><span>Total</span><b>${money2(t.total)}</b></div></div>
+    ${BM.note ? `<p>${esc(BM.note)}</p>` : ''}</div>`;
+}
+function bmStep3(el) {
+  const g = (id) => document.getElementById(id);
+  el.innerHTML = `${bmPreviewHtml()}
+  <div class="bm-card"><div class="label">Payment</div>
+    <div class="bm-act" style="margin-top:8px"><button class="btn ${BM.paid ? 'btn-ghost' : 'btn-primary'}" id="bmUnpaid" type="button">Bill now, payment later</button><button class="btn ${BM.paid ? 'btn-primary' : 'btn-ghost'}" id="bmPaid" type="button">Already paid</button></div>
+    <div id="bmPayBox" class="bm-grid" style="margin-top:10px" ${BM.paid ? '' : 'hidden'}>
+      <label class="lbl">Mode<select class="inp" id="bmMode">${['upi', 'bank', 'cash', 'cheque', 'card', 'other'].map((m) => `<option value="${m}" ${BM.mode === m ? 'selected' : ''}>${m.toUpperCase()}</option>`).join('')}</select></label>
+      ${bmIn('bmUtr', 'UTR / reference', BM.utr)}<label class="lbl">Paid on<input class="inp" id="bmPaidOn" type="date" value="${esc(BM.paidOn || BM.c.date || bmToday())}"></label></div></div>
+  <div class="bm-act"><button class="btn btn-ghost" id="bmBack2" type="button">Back</button><button class="btn btn-primary" id="bmGen" type="button">Generate bill</button></div><div id="bmErr" class="err"></div>`;
+  g('bmUnpaid').onclick = () => { BM.paid = false; bmRender(); }; g('bmPaid').onclick = () => { BM.paid = true; bmRender(); };
+  ['bmMode', 'bmUtr', 'bmPaidOn'].forEach((id) => { const f = g(id); if (f) f.onchange = f.oninput = () => { BM.mode = g('bmMode').value; BM.utr = g('bmUtr').value; BM.paidOn = g('bmPaidOn').value; }; });
+  g('bmBack2').onclick = () => { BM.step = 2; bmRender(); };
+  g('bmGen').onclick = async () => {
+    const btn = g('bmGen'); btn.disabled = true; g('bmErr').textContent = '';
+    const c = BM.c, items = BM.items.filter((i) => String(i.label || '').trim()).map((i) => ({ kind: i.kind, label: i.label.trim(), hsn: i.hsn, mrp: i.mrp === '' ? null : num(i.mrp), qty: num(i.qty) || 1, rate: num(i.rate), incl: !!i.incl, discount: num(i.discount), gst: num(i.gst), plan: i.plan || '' }));
+    const { data, error } = await sb.rpc('admin_create_direct_bill', { p: { business_name: c.business_name, contact_name: c.contact_name, phone: c.phone, email: c.email, gstin: c.gstin, address: c.address, state_code: bmState(), tenant_id: c.tenant_id || null, invoice_date: c.date || bmToday(), note: BM.note, items, paid: BM.paid, mode: BM.mode, utr: BM.utr, paid_on: BM.paidOn || c.date || bmToday() } });
+    btn.disabled = false; if (error) { g('bmErr').textContent = error.message; return; }
+    BM.done = { ...data, business_name: c.business_name, phone: c.phone, contact_name: c.contact_name, paid: BM.paid }; bmRender(); bmRecent();
+  };
+}
+function bmRenderDone(el) {
+  const d = BM.done, link = location.origin + '/inv.html?t=' + d.token;
+  const msg = `Hello ${d.contact_name || ''},\n\nYour GST bill ${d.invoice_no} from AUZslab (Rs ${Number(d.total).toLocaleString('en-IN')}${d.paid ? ', paid' : ', payment due'}):\n${link}\n\nTeam AUZslab`;
+  el.innerHTML = `<div class="bm-card"><div class="label">Bill generated</div><h3 style="margin:6px 0">${esc(d.invoice_no)}</h3><p class="p">${money2(d.total)} for ${esc(d.business_name)}. ${d.paid ? 'Marked paid.' : 'Marked as payment due; mark it paid later from the list below.'}</p>
+    <div class="bm-act"><a class="btn btn-primary" href="${esc(link)}" target="_blank" rel="noopener">View bill</a>${d.phone ? `<a class="btn btn-ghost" href="${esc(waUrl(d.phone, msg))}" target="_blank" rel="noopener">Send on WhatsApp</a>` : ''}<button class="btn btn-ghost" id="bmCopy" type="button">Copy link</button><button class="btn btn-ghost" id="bmNewBill" type="button">Make another bill</button></div></div>`;
+  document.getElementById('bmCopy').onclick = () => { try { navigator.clipboard.writeText(link); document.getElementById('bmCopy').textContent = 'Copied'; } catch (e) { prompt('Copy this link', link); } };
+  document.getElementById('bmNewBill').onclick = () => { Object.assign(BM, { step: 1, items: [], note: '', paid: false, utr: '', paidOn: '', done: null }); BM.c = { business_name: '', contact_name: '', phone: '', email: '', gstin: '', address: '', state_code: '08', tenant_id: '', date: '' }; bmNew('software'); bmRender(); };
+}
+async function bmRecent() {
+  const el = document.getElementById('bmRecent');
+  const { data, error } = await sb.rpc('admin_list_client_bills', { p_from: null, p_to: null });
+  if (error) { el.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  const rows = (data || []).filter((b) => b.kind === 'bill').slice(0, 15);
+  el.innerHTML = rows.length ? rows.map((b) => { const due = b.status === 'billed', t = b.totals || {}, link = location.origin + '/inv.html?t=' + b.token;
+    return `<div class="bm-card" style="margin-top:8px" data-bid="${b.id}"><div style="display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;align-items:center"><div><b>${esc(b.invoice_no)}</b> &middot; ${esc(b.business_name || '')}<br><small style="color:var(--ink-faint)">${esc(String(b.invoice_date).slice(0, 10))}${b.gstin ? ' &middot; ' + esc(b.gstin) : ''}</small></div><div style="text-align:right"><b>${money2(t.total)}</b><br><span class="bm-pill ${due ? 'due' : 'ok'}">${due ? 'Payment due' : 'Paid'}</span></div></div>
+      <div class="bm-act" style="margin-top:8px"><a class="btn btn-ghost" href="${esc(link)}" target="_blank" rel="noopener">View</a>${b.phone ? `<a class="btn btn-ghost" href="${esc(waUrl(b.phone, 'Hello,\n\nYour GST bill ' + b.invoice_no + ' from AUZslab: ' + link + '\n\nTeam AUZslab'))}" target="_blank" rel="noopener">WhatsApp</a>` : ''}${due ? '<button class="btn btn-primary" data-bmpaid type="button">Mark paid</button>' : ''}</div><div data-bmpf></div></div>`; }).join('') : '<div class="p">No direct bills yet.</div>';
+  el.querySelectorAll('[data-bmpaid]').forEach((btn) => { btn.onclick = () => { const card = btn.closest('[data-bid]'), box = card.querySelector('[data-bmpf]');
+    box.innerHTML = `<div class="bm-grid" style="margin-top:8px"><label class="lbl">Paid on<input class="inp" type="date" data-p="on" value="${bmToday()}"></label><label class="lbl">Mode<select class="inp" data-p="mode">${['upi', 'bank', 'cash', 'cheque', 'card', 'other'].map((m) => `<option value="${m}">${m.toUpperCase()}</option>`).join('')}</select></label><label class="lbl">UTR / reference<input class="inp" data-p="utr"></label></div><div class="bm-act"><button class="btn btn-primary" data-p="ok" type="button">Confirm payment received</button></div><div class="err" data-p="err"></div>`;
+    box.querySelector('[data-p=ok]').onclick = async () => { const q = (k) => box.querySelector('[data-p=' + k + ']');
+      const { error } = await sb.rpc('admin_mark_bill_paid', { p_id: card.dataset.bid, p_paid_on: q('on').value || null, p_utr: q('utr').value || null, p_mode: q('mode').value });
+      if (error) { q('err').textContent = error.message; return; } bmRecent(); sectionLoadedAt.clientPay = 0; }; }; });
+}
+function bmInit() {
+  if (!BM.inited) { BM.inited = true; if (!BM.items.length) bmNew('software'); document.querySelectorAll('#bmSteps button').forEach((b) => { b.onclick = () => { const n = Number(b.dataset.bms); if (n > 1 && !BM.c.business_name) { alert('Enter the client details first.'); return; } if (n === 3 && !bmCalc().lines.length) { alert('Add the items first.'); return; } BM.done = null; BM.step = n; bmRender(); }; }); }
+  bmRender(); bmRecent();
+}
+</script>
+</body>
 </html>
