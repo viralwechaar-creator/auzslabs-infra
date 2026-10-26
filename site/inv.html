@@ -115,9 +115,10 @@ function stampSvg(dateTxt) {
 
 function build(D) {
   const t = D.totals || {}, lines = t.lines || [], st = (O.states || {})[D.state_code] || '';
-  const prods = lines.filter((l) => l.type === 'product');
+  const prods = lines.filter((l) => l.type === 'product' || (l.type === 'item' && l.plan));
   const bankTxt = (O.bank && O.bank.account) ? `<span>Bank</span><b>${esc(O.bank.bank)}</b><span>Account</span><b>${esc(O.bank.holder)} · ${esc(O.bank.account)}</b><span>IFSC</span><b>${esc(O.bank.ifsc)}</b>` : '';
-  const svcRows = lines.map((l) => `<div class="line"><div>${esc(l.label)}<small>${l.type === 'product' ? (l.plan === 'year' ? 'Yearly plan' : 'Monthly plan') + (l.renewal ? ' · renews ' + esc(dmy(l.renewal)) : '') + ' · SAC ' + esc(O.sac.product) : (l.type === 'setup' || l.type === 'onboarding' ? 'SAC ' + esc(O.sac.setup) : '')}${l.gst ? ' · GST ' + l.gst + '%' : ''}${l.discount > 0 ? ' · discount ' + esc(money(l.discount)) : ''}</small></div><div class="r">1</div><div class="r">${esc(money(l.rate))}</div><div class="r">${esc(money(l.net))}</div></div>`).join('');
+  const isBill = D.kind === 'bill', paid = D.status === 'paid';
+  const svcRows = lines.map((l) => l.type === 'item' ? `<div class="line"><div>${esc(l.label)}<small>${[l.hsn ? (l.kind === 'hardware' ? 'HSN ' : 'SAC ') + esc(l.hsn) : '', l.mrp ? 'MRP ' + esc(money(l.mrp)) : '', l.gst ? 'GST ' + l.gst + '%' : 'No GST', l.plan ? (l.plan === 'year' ? 'Yearly plan' : 'Monthly plan') + (l.renewal ? ' · renews ' + esc(dmy(l.renewal)) : '') : '', l.discount > 0 ? 'discount ' + esc(money(l.discount)) : ''].filter(Boolean).join(' · ')}</small></div><div class="r">${esc(String(l.qty))}</div><div class="r">${esc(money(l.unit))}</div><div class="r">${esc(money(l.net))}</div></div>` : `<div class="line"><div>${esc(l.label)}<small>${l.type === 'product' ? (l.plan === 'year' ? 'Yearly plan' : 'Monthly plan') + (l.renewal ? ' · renews ' + esc(dmy(l.renewal)) : '') + ' · SAC ' + esc(O.sac.product) : (l.type === 'setup' || l.type === 'onboarding' ? 'SAC ' + esc(O.sac.setup) : '')}${l.gst ? ' · GST ' + l.gst + '%' : ''}${l.discount > 0 ? ' · discount ' + esc(money(l.discount)) : ''}</small></div><div class="r">1</div><div class="r">${esc(money(l.rate))}</div><div class="r">${esc(money(l.net))}</div></div>`).join('');
   const renRows = prods.map((l) => `<tr><td>${esc(l.label)}</td><td>${l.plan === 'year' ? 'Yearly' : 'Monthly'}</td><td>${esc(longDate(l.renewal))}</td><td class="r">${esc(money(l.net + l.gst_amt))} ${l.plan === 'year' ? 'per year' : 'per month'}</td></tr>`).join('');
   const fromAddr = esc(CO.address || ''), co = esc(CO.legalName || 'AUZslab');
   return `
@@ -127,11 +128,11 @@ function build(D) {
     <div><h2 class="h2">To</h2><div class="kv"><span>Name</span><b>${esc(D.business_name || '')}</b>${D.contact_name ? `<span>Contact</span><b>${esc(D.contact_name)}</b>` : ''}${D.gstin ? `<span>GSTIN</span><b>${esc(D.gstin)}</b>` : '<span>GSTIN</span><b>Unregistered</b>'}${D.address ? `<span>Address</span><b>${esc(D.address)}</b>` : ''}${st ? `<span>State</span><b>${esc(st)} (${esc(D.state_code)})</b>` : ''}<span>Phone</span><b>${esc(D.phone || '')}</b>${D.email ? `<span>Email</span><b>${esc(D.email)}</b>` : ''}</div></div>
   </div>
   <div class="cols" style="margin-top:10px">
-    <div><h2 class="h2">Payment</h2><div class="kv"><span>Status</span><b>Paid in full</b><span>Mode</span><b>UPI</b>${D.payment && D.payment.utr ? `<span>UTR</span><b>${esc(D.payment.utr)}</b>` : ''}<span>Pay to</span><b>${esc((O.upi || {}).id || '')}</b>${bankTxt}</div></div>
-    <div><h2 class="h2">Date</h2><div class="kv"><span>Invoice</span><b>${esc(longDate(D.invoice_date))}</b><span>Paid on</span><b>${esc(longDate(D.paid_at))}</b><span>Supply</span><b>${t.intra ? 'Within Rajasthan (CGST + SGST)' : 'Inter-state (IGST)'}</b><span>Reverse chg.</span><b>No</b></div></div>
+    <div><h2 class="h2">Payment</h2><div class="kv"><span>Status</span><b>${paid ? 'Paid in full' : 'Payment due'}</b>${paid ? `<span>Mode</span><b>${esc(String((D.payment && D.payment.method) || 'UPI').toUpperCase())}</b>` : ''}${D.payment && D.payment.utr ? `<span>UTR</span><b>${esc(D.payment.utr)}</b>` : ''}<span>Pay to</span><b>${esc((O.upi || {}).id || '')}</b>${bankTxt}</div></div>
+    <div><h2 class="h2">Date</h2><div class="kv"><span>Invoice</span><b>${esc(longDate(D.invoice_date))}</b>${paid ? `<span>Paid on</span><b>${esc(longDate(D.paid_at))}</b>` : ''}<span>Supply</span><b>${t.intra ? 'Within Rajasthan (CGST + SGST)' : 'Inter-state (IGST)'}</b><span>Reverse chg.</span><b>No</b></div></div>
   </div>
   <div class="svc">
-    <div class="svc-h"><h2 class="h2">Services</h2><div class="c r">Qty</div><div class="c r">Price</div><div class="c r">Total</div></div>
+    <div class="svc-h"><h2 class="h2">${isBill ? 'Items' : 'Services'}</h2><div class="c r">Qty</div><div class="c r">Price</div><div class="c r">Total</div></div>
     ${svcRows}
     <div class="tots">
       <div class="tr"><span>Subtotal</span><b>${esc(money(t.subtotal))}</b></div>
@@ -142,10 +143,11 @@ function build(D) {
       <div class="tr big"><span>Total</span><b>${esc(money(t.total))}</b></div>
       <div class="words">${esc(words(Number(t.total || 0)))}</div>
     </div>
-    <div class="stamp">${stampSvg(dmy(D.paid_at || D.invoice_date))}</div>
+    ${paid ? `<div class="stamp">${stampSvg(dmy(D.paid_at || D.invoice_date))}</div>` : ''}
+    ${isBill && D.quote && D.quote.note ? `<div class="words" style="margin-top:8px">${esc(D.quote.note)}</div>` : ''}
   </div>
-  <div class="ren"><h2 class="h2" style="font-size:15px">Renewal</h2><table><tr><th>Product</th><th>Plan</th><th>Renews on</th><th class="r">Renewal amount (incl. GST)</th></tr>${renRows}</table></div>
-  <div class="terms">${O.terms.map(([h, p]) => `<h4>${esc(h)}</h4><p>${esc(p)}</p>`).join('')}</div>
+  ${renRows ? `<div class="ren"><h2 class="h2" style="font-size:15px">Renewal</h2><table><tr><th>Product</th><th>Plan</th><th>Renews on</th><th class="r">Renewal amount (incl. GST)</th></tr>${renRows}</table></div>` : ''}
+  <div class="terms">${(isBill && !prods.length ? [] : O.terms).map(([h, p]) => `<h4>${esc(h)}</h4><p>${esc(p)}</p>`).join('')}</div>
   <div class="foot">
     <div class="mark"><small>Business software built around the way you work</small></div>
     <div class="sign"><div class="line2">For ${co}<br>Authorised signatory</div></div>
@@ -163,7 +165,7 @@ function fit() {
   if (!/^[a-f0-9]{32}$/.test(TOKEN)) { msg.textContent = 'This link is not valid. Please use the link we sent you.'; return; }
   let D = null;
   try { const r = await fetch(CFG.url + '/rpc/public_client_order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ p_token: TOKEN }) }); const j = await r.json(); D = j && (j.data !== undefined ? j.data : j); } catch (e) {}
-  if (!D || D.status !== 'paid' || !D.invoice_no) { msg.textContent = D ? 'Your bill is ready once we confirm your payment. Please check again soon.' : 'We could not find this bill. Please check the link we sent you.'; return; }
+  if (!D || (D.status !== 'paid' && D.status !== 'billed') || !D.invoice_no) { msg.textContent = D ? 'Your bill is ready once we confirm your payment. Please check again soon.' : 'We could not find this bill. Please check the link we sent you.'; return; }
   document.getElementById('sheet').innerHTML = build(D);
   msg.hidden = true; document.getElementById('wrap').hidden = false; document.getElementById('bar').hidden = false;
   document.title = 'Invoice ' + D.invoice_no + ' — AUZslab';
