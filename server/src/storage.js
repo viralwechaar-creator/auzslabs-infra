@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { pool, withAuth } from './db.js';
 import { s3Enabled, s3Put, s3Get } from './s3.js';
 import { limiter } from './lib/limit.js';
@@ -39,7 +40,7 @@ function safeSegment(s) {
 // this only ever rejects a request that bypassed that client entirely
 // -- checked by magic bytes, not the (client-supplied, untrustworthy)
 // filename or content-type.
-function looksLikeImage(buffer) {
+export function looksLikeImage(buffer) {
   if (buffer.length < 12) return false;
   if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return true; // JPEG
   if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) return true; // PNG
@@ -163,6 +164,26 @@ export async function saveSiteUpload({ tenantId, uid, prefix, buffer }) {
 
   const publicPath = `/uploads/site/${safeSegment(slug)}/${safeSegment(prefix)}/${filename}`;
   return { path: publicPath };
+}
+
+// AUZsStyle Cloud Sync photo upload (db/280): a style's photo lives only on the offline PC's own disk until the
+// sync worker uploads it here. Deliberately NOT under /uploads/site/<slug>/... like saveSiteUpload above -- that
+// is exactly the path shape the PC's own push logic treats as "still local, needs uploading", so a cloud-side
+// URL must never collide with it or the worker would try to re-upload its own already-cloud copy forever.
+// Content-hashed filename: re-pushing the same picture (an unrelated field on the same style changed) writes the
+// same file over itself instead of piling up duplicates.
+export async function saveCloudSyncUpload({ slug, buffer }) {
+  if (!looksLikeImage(buffer)) {
+    const err = new Error('file does not look like a supported image (jpeg/png/webp)');
+    err.status = 400;
+    throw err;
+  }
+  const hash = crypto.createHash('sha256').update(buffer).digest('hex');
+  const dir = path.join(UPLOAD_ROOT, 'cloud-sync', safeSegment(slug));
+  await fs.mkdir(dir, { recursive: true });
+  const filename = `${hash}.jpg`;
+  await fs.writeFile(path.join(dir, filename), buffer);
+  return { path: `/uploads/cloud-sync/${safeSegment(slug)}/${filename}` };
 }
 
 // Marketing-site pictures edited by the platform admin (Admin -> Website): not tied to any tenant.
