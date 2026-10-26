@@ -2,6 +2,7 @@
 // build the database from db/*.sql, start the local server in offline mode, activate a licence code, set up the shop in a real browser,
 // sell nothing but save a style, then take a backup, wipe, restore it and sign in again.
 import { spawn, spawnSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -137,6 +138,51 @@ export default async function run({ browser }) {
         assert(cat2.includes('Offline Tee') && !cat2.includes('After cloud'), JSON.stringify(cat2));
         assert((await (await fetch(base + '/licence/status')).json()).state === 'active', 'licence should survive');
       } finally { cloud.kill(); fs.rmSync(croot, { recursive: true, force: true }); }
+    }, 'critical');
+    await s.check('Cloud Sync Stage 1: the change log records real writes, and the cloud ingest endpoint applies them into a new, auto-paired tenant', async () => {
+      const c = require(require.resolve('pg', { paths: [o.serverDir] }));
+      const cl = new c.Client({ host: '127.0.0.1', port: pgPort, user: 'postgres', password: sec.superPassword, database: L.DB }); await cl.connect();
+      try {
+        // a real write already made earlier in this suite ("Offline Tee") must have been logged by the trigger
+        const logged = (await cl.query(`select id, tbl, row_id as "rowId", op, row from sty_change_log where tbl = 'sty_styles' and row->>'name' = 'Offline Tee' order by id desc limit 1`)).rows[0];
+        assert(logged && logged.op === 'upsert' && logged.row.name === 'Offline Tee', 'the style save should have been logged: ' + JSON.stringify(logged));
+
+        const cport = await free(), cbase = `http://127.0.0.1:${cport}`;
+        const cloud2 = spawn(NODE, [...PRELOAD, 'src/index.js'], { cwd: SERVER_DIR, stdio: 'ignore', env: { ...process.env, PORT: String(cport), PGHOST: '127.0.0.1', PGPORT: String(pgPort), POSTGRES_APP_PASSWORD: sec.appPassword, POSTGRES_DB: L.DB, JWT_SECRET: sec.jwtSecret, LICENCE_PRIVATE_KEY: k.priv, DISABLE_MAINTENANCE: '1', PG_POOL_MAX: '5', DISABLE_RATE_LIMIT: '1' } });
+        try {
+          for (let i = 0; i < 80; i++) { try { if ((await fetch(cbase + '/health')).ok) break; } catch { /* starting */ } await new Promise((r) => setTimeout(r, 250)); }
+          // no 'sync' add-on: refused
+          const noSync = signLicence({ shop: 'Offline Shop', end: '2099-12-31', addons: { cloud: true } }, k.priv);
+          const r1 = await fetch(cbase + '/cloud/sync', { method: 'POST', headers: { 'content-type': 'application/json', 'x-licence': noSync }, body: JSON.stringify({ changes: [] }) });
+          assert(r1.status === 402, 'sync add-on should be required, got ' + r1.status);
+          // with 'sync': the push is applied, and a brand-new cloud tenant is auto-provisioned the first time.
+          // In real life the offline PC and the cloud have entirely separate databases, so an id can never clash
+          // between them; this test shares one Postgres cluster for convenience, so it clones the real logged row
+          // under a FRESH id to push (a realistic full row, not a hand-built one, but one that cannot collide with
+          // the offline tenant's own actual "Offline Tee" row still sitting in this same shared database).
+          const freshId = crypto.randomUUID(); const freshRow = { ...logged.row, id: freshId };
+          const syncCode = signLicence({ shop: 'Offline Shop', end: '2099-12-31', addons: { sync: true } }, k.priv);
+          const push = await (await fetch(cbase + '/cloud/sync', { method: 'POST', headers: { 'content-type': 'application/json', 'x-licence': syncCode }, body: JSON.stringify({ changes: [{ tbl: logged.tbl, rowId: freshId, op: 'upsert', row: freshRow }] }) })).json();
+          assert(push.tenantId && push.applied === 1 && push.failed.length === 0, 'push should apply cleanly: ' + JSON.stringify(push));
+          const cloudTenant = (await cl.query('select id, niche from tenants where id = $1', [push.tenantId])).rows[0];
+          assert(cloudTenant && cloudTenant.niche === 'retail', 'a real cloud tenant should have been created: ' + JSON.stringify(cloudTenant));
+          const cloudStyle = (await cl.query('select name, tenant_id from sty_styles where id = $1', [freshId])).rows[0];
+          assert(cloudStyle && cloudStyle.name === 'Offline Tee' && cloudStyle.tenant_id === push.tenantId, 'the style should exist under the NEW cloud tenant, not the offline one: ' + JSON.stringify(cloudStyle));
+          const offlineStyleUntouched = (await cl.query('select tenant_id from sty_styles where id = $1', [logged.rowId])).rows[0];
+          assert(offlineStyleUntouched && offlineStyleUntouched.tenant_id !== push.tenantId, 'the PC\'s own real row must be untouched by the push: ' + JSON.stringify(offlineStyleUntouched));
+          // pushing again (the same lineage) reuses the SAME tenant, it does not make a second one
+          const push2 = await (await fetch(cbase + '/cloud/sync', { method: 'POST', headers: { 'content-type': 'application/json', 'x-licence': syncCode }, body: JSON.stringify({ changes: [{ tbl: logged.tbl, rowId: freshId, op: 'upsert', row: freshRow }] }) })).json();
+          assert(push2.tenantId === push.tenantId, 'a second push from the same install should reuse the same cloud tenant: ' + JSON.stringify(push2));
+          // a delete is applied too
+          const delPush = await (await fetch(cbase + '/cloud/sync', { method: 'POST', headers: { 'content-type': 'application/json', 'x-licence': syncCode }, body: JSON.stringify({ changes: [{ tbl: logged.tbl, rowId: freshId, op: 'delete' }] }) })).json();
+          assert(delPush.applied === 1, 'delete should apply: ' + JSON.stringify(delPush));
+          const gone = (await cl.query('select 1 from sty_styles where id = $1', [freshId])).rows[0];
+          assert(!gone, 'the row should be gone from the cloud tenant after a delete push');
+          // an unknown table name is refused outright, never silently run through dynamic SQL
+          const badTbl = await (await fetch(cbase + '/cloud/sync', { method: 'POST', headers: { 'content-type': 'application/json', 'x-licence': syncCode }, body: JSON.stringify({ changes: [{ tbl: 'pg_shadow', rowId: crypto.randomUUID(), op: 'upsert', row: {} }] }) })).json();
+          assert(badTbl.failed && badTbl.failed.length === 1 && badTbl.applied === 0, 'an unknown/disallowed table must be refused, not run: ' + JSON.stringify(badTbl));
+        } finally { cloud2.kill(); }
+      } finally { await cl.end(); }
     }, 'critical');
     await s.check('No script errors in the app', async () => { const bad = errs.filter((e) => !/favicon|sentry|net::|Failed to load resource|Failed to fetch|licence\/activate|first time you open it/i.test(String(e))); assert(!bad.length, bad.slice(0, 3).join(' | ')); });
     await ctx.close();

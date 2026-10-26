@@ -5,7 +5,7 @@ import { pipeline } from 'node:stream/promises';
 import { pool } from '../db.js';
 import { verifyLicence, publicFromPrivate, dayNumber, isoOf } from '../licence.js';
 import { OFFLINE } from './licence.js';
-import { HttpError, rateLimited } from '../lib/http.js';
+import { HttpError, rateLimited, readJsonBody } from '../lib/http.js';
 
 // Cloud storage for installed AUZsStyle copies. The licence code is the password: it proves the shop (our signature), says whether the cloud
 // extra is paid for, and its id leads to the shop's lineage (one identity across renewals). Uploads need a running plan; the list and the
@@ -17,12 +17,12 @@ const RESTORE_DAYS = 60;
 let PUB = null;
 const pub = () => (PUB ||= process.env.LICENCE_PUBLIC_KEY || (process.env.LICENCE_PRIVATE_KEY ? publicFromPrivate(process.env.LICENCE_PRIVATE_KEY) : ''));
 
-async function who(req, needActive) {
+async function who(req, needActive, addon = 'cloud') {
   if (!pub()) throw new HttpError(503, 'Cloud storage is not set up on the server yet.');
   const code = String(req.headers['x-licence'] || '');
   const v = verifyLicence(code, pub());
   if (!v.ok) throw new HttpError(401, 'The licence code is not valid.');
-  if (!v.addons.cloud) throw new HttpError(402, 'Cloud storage is not part of your plan. Ask AUZslab to add it.');
+  if (!v.addons[addon]) throw new HttpError(402, (addon === 'sync' ? 'Cloud sync' : 'Cloud storage') + ' is not part of your plan. Ask AUZslab to add it.');
   const left = dayNumber(v.end) - Math.floor((Date.now() - Date.UTC(2020, 0, 1)) / 86400000);
   if (needActive ? left < -3 : left < -RESTORE_DAYS) throw new HttpError(402, needActive ? 'Your plan has ended. Renew it to keep backing up to the cloud.' : 'Your plan ended more than ' + RESTORE_DAYS + ' days ago.');
   const { rows } = await pool.query('select cloud_lineage($1) as l', [v.id]);
@@ -58,6 +58,18 @@ export async function handle(ctx) {
     const old = (await pool.query('select cloud_backup_prune($1, $2) as r', [w.lineage, KEEP])).rows[0].r;
     for (const f of old) fs.rmSync(path.join(ROOT, f), { force: true });
     return reply(200, { id: rows[0].id, size, sha256: sha });
+  }
+
+  // AUZsStyle Cloud Sync (Stage 1, db/276): the offline PC pushes its change log up here, in order, in batches.
+  // The PC is always the source of truth -- nothing it sends is ever rejected for "the cloud already changed
+  // this"; Stage 3 is what adds real writes coming back down, and with them, the comparison that lets a cloud-side
+  // edit ever lose to a newer PC one instead of the other way round.
+  if (url.pathname === '/cloud/sync' && req.method === 'POST') {
+    const w = await who(req, true, 'sync');
+    const body = await readJsonBody(req);
+    const changes = Array.isArray(body.changes) ? body.changes.slice(0, 500) : [];
+    const { rows } = await pool.query('select sty_cloud_sync_push($1, $2, $3::jsonb) as r', [w.lineage, w.shop, JSON.stringify(changes)]);
+    return reply(200, rows[0].r);
   }
 
   const m = url.pathname.match(/^\/cloud\/backup\/([0-9a-f-]{36})$/);

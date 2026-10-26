@@ -16,6 +16,7 @@ import { handle as handleStorage } from './routes/storage.js';
 import { handle as handleAdmin } from './routes/admin.js';
 import { handle as handleWhatsApp } from './routes/whatsapp.js';
 import { startWhatsAppWorker } from './whatsapp.js';
+import { startSyncWorker } from './sync-worker.js';
 import { handle as handleLicence, gate as licenceGate } from './routes/licence.js';
 import { handle as handleOffline } from './routes/offline.js';
 import { handle as handleCloud } from './routes/cloud.js';
@@ -79,3 +80,4 @@ for (const sig of ['SIGTERM', 'SIGINT']) {
 }
 startWhatsAppWorker(); // sends queued WhatsApp messages (whatsapp.js)
 startMaintenance(); // daily cleanup of expired sessions / codes / links (see maintenance.js)
+startSyncWorker(); // offline install only, "sync" add-on only: pushes the change log to the cloud (sync-worker.js)

@@ -11,7 +11,7 @@ const ED_PRIV = Buffer.from('302e020100300506032b657004220420', 'hex');
 const ED_PUB = Buffer.from('302a300506032b6570032100', 'hex');
 const B32 = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no I, O, 0, 1: easy to read out loud
 export const PRODUCTS = { style: 1 };
-export const ADDONS = { cloud: 1, whatsapp: 2, store: 4 };
+export const ADDONS = { cloud: 1, whatsapp: 2, store: 4, sync: 8 };
 export const GRACE_DAYS = 3;
 
 const b32enc = (buf) => { let bits = 0, val = 0, out = ''; for (const b of buf) { val = (val << 8) | b; bits += 8; while (bits >= 5) { out += B32[(val >>> (bits - 5)) & 31]; bits -= 5; } } if (bits) out += B32[(val << (5 - bits)) & 31]; return out; };
