@@ -201,6 +201,8 @@ export const RPC = {
   delete_role: { params: ['p_role_id'], auth: true },
 
   // --- Notifications ---
+  inbox_list: { params: ['p_limit'], auth: true },
+  inbox_mark_read: { params: ['p_ids'], auth: true },
   send_client_notification: { params: ['p_tenant_id', 'p_title', 'p_body'], auth: true },
 
   // --- Add-on requests (existing client asking to add modules) ---
