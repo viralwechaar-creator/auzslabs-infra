@@ -4,6 +4,16 @@
    44pt touch targets, warm-neutral surfaces, charcoal text, one accent (the business colour, AUZslab wine by
    default), colour reserved for state and action, light and dark appearance.
    Layout tiers (each app's own CSS): compact < 600, medium 600-899, expanded 900-1199, wide >= 1200. */
+/* The Indian Rupee Sign (U+20B9) was only added to Windows' own fonts in 2010 -- an old,
+   never-updated Windows 7 PC's Segoe UI/Arial has no glyph for it at all and shows a blank
+   box instead, even though every other character renders fine (reported: GenX Clothes' old
+   PC showed a tofu box instead of the rupee sign in front of every price). unicode-range
+   scopes this font to ONLY that one
+   character, so it changes nothing anywhere the system font already has it -- it only kicks
+   in as a fallback for the one codepoint that might be missing. Subset from DejaVu Sans
+   (free, redistributable), 1.8-2KB each. */
+@font-face{font-family:'AUZRupee';src:url('/fonts/rupee.woff2') format('woff2');font-weight:400;unicode-range:U+20B9}
+@font-face{font-family:'AUZRupee';src:url('/fonts/rupee-bold.woff2') format('woff2');font-weight:700;unicode-range:U+20B9}
 :root{
   /* accent: --brand is set per business by ds/brand.js; everything else derives from it */
   --accent:var(--brand,#800020);--on-accent:#fff;--accent-text:var(--accent);
@@ -26,7 +36,7 @@
   --gray-bg:rgba(118,112,104,.14);
   --veg:#2e7d32;--nonveg:#c62828;--egg:#c98a00;
   /* type (Apple text styles) */
-  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",system-ui,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --font:'AUZRupee',-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",system-ui,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
   --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
   --fs-cap:12px;--fs-foot:13px;--fs-sub:15px;--fs-body:16px;--fs-head:17px;--fs-t3:20px;--fs-t2:22px;--fs-t1:28px;--fs-large:34px;
   /* space, shape, depth, motion */
