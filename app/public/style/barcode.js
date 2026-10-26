@@ -26,6 +26,8 @@ function barcodeSvg(text, o = {}) {
   }
   const W = x + quiet;
   const wrap = document.createElement('span');
-  wrap.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W.toFixed(2)} ${hgt}" width="${W.toFixed(0)}" height="${hgt}" fill="#000" role="img" aria-label="${String(text).replace(/[^0-9A-Za-z-]/g, '')}">${bars}</svg>`;
+  // preserveAspectRatio is spelled out (not left to the default) so an older print engine can never interpret a
+  // missing attribute as "none" and stretch the bars unevenly -- the one thing that actually breaks a real scanner.
+  wrap.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W.toFixed(2)} ${hgt}" width="${W.toFixed(0)}" height="${hgt}" preserveAspectRatio="xMidYMid meet" fill="#000" role="img" aria-label="${String(text).replace(/[^0-9A-Za-z-]/g, '')}">${bars}</svg>`;
   return wrap.firstChild;
 }
