@@ -3807,6 +3807,7 @@ async function loadWhatsApp() {
     h+='<div class="t6 wide"><small>Products in use</small><div class="bars">'+(mk.map(function(k){return '<div class="bar"><span>'+E(lab[k]||k)+'</span><i style="width:'+Math.max(4,Math.round(mix[k]/mx*100))+'%"></i><b>'+mix[k]+'</b></div>'}).join('')||'<div class="sub">No products yet</div>')+'</div></div>';
     h+='<div class="t6 wide jumpt"><small>Jump to</small><div class="rows">'+[['New client','onboard'],['Client requests','orders'],['Client payments & bills','clientPay'],['Team','team'],['Audit log','auditLog']].map(function(x){return '<button data-go="'+x[1]+'">'+x[0]+'<span>→</span></button>'}).join('')+'</div></div>';
     h+='<div class="blk wide needs"><small>Needs you</small><div class="need">'+need.map(function(x){return '<button data-go="'+x[1]+'"><span>'+x[0]+'</span><b>'+x[2]+'</b></button>'}).join('')+'</div></div>';
+    if(g.__lastHtml===h)return; g.__lastHtml=h;
     g.innerHTML=h;
     g.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){openSection(b.dataset.go)}});
   };
