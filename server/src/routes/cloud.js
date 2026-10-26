@@ -6,7 +6,8 @@ import { pipeline } from 'node:stream/promises';
 import { pool } from '../db.js';
 import { verifyLicence, publicFromPrivate, dayNumber, isoOf } from '../licence.js';
 import { OFFLINE } from './licence.js';
-import { HttpError, rateLimited, readJsonBody } from '../lib/http.js';
+import { saveCloudSyncUpload } from '../storage.js';
+import { HttpError, rateLimited, readJsonBody, readRawBody } from '../lib/http.js';
 
 // Cloud storage for installed AUZsStyle copies. The licence code is the password: it proves the shop (our signature), says whether the cloud
 // extra is paid for, and its id leads to the shop's lineage (one identity across renewals). Uploads need a running plan; the list and the
@@ -123,6 +124,17 @@ export async function handle(ctx) {
     const email = String(url.searchParams.get('email') || '').trim();
     const { rows } = await pool.query('select sty_cloud_sync_remove_login($1, $2) as r', [w.lineage, email]);
     return reply(200, rows[0].r);
+  }
+
+  // Stage 6 (db/280): the PC uploads a style's photo here the first time a push would otherwise carry a URL that
+  // still only points at the PC's own disk -- see sync-worker.js's own comments for when it calls this.
+  if (url.pathname === '/cloud/sync/photo' && req.method === 'POST') {
+    const w = await who(req, true, 'sync');
+    const { rows } = await pool.query('select sty_cloud_sync_tenant_slug($1, $2) as r', [w.lineage, w.shop]);
+    const slug = rows[0].r.slug;
+    const buffer = await readRawBody(req, 2_000_000); // already client-compressed to well under this
+    const { path: p } = await saveCloudSyncUpload({ slug, buffer });
+    return reply(200, { url: 'https://' + slug + '.auzslab.in' + p });
   }
 
   const m = url.pathname.match(/^\/cloud\/backup\/([0-9a-f-]{36})$/);

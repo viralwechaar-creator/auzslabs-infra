@@ -72,10 +72,15 @@ function remoteAccessCard() {
     const lic = await (await fetch('/licence/status')).json();
     if (!lic.offline || !(lic.addons && lic.addons.sync) || (lic.state !== 'active' && lic.state !== 'grace')) { const sec = host.closest('.sec'); if (sec) sec.remove(); return; }
     let ss; try { ss = await (await fetch('/offline/sync-status')).json(); } catch (e) { ss = null; }
-    const statusNode = ss && ss.available ? (
+    const syncNowBtn = h('button', { class: 'btn sm', type: 'button', onclick: async (ev) => {
+      ev.currentTarget.disabled = true; ev.currentTarget.textContent = t('Syncing…');
+      try { await fetch('/offline/sync-now', { method: 'POST' }); } catch (e) { /* status banner below shows the error after repaint */ }
+      paint();
+    } }, t('Sync now'));
+    const statusNode = ss && ss.available ? h('div', { class: 'grid', style: { gap: '6px' } },
       ss.lastError ? banner('warn', 'alert', t('Last sync tried') + ' ' + ago(ss.lastTriedAt) + ': ' + ss.lastError)
-      : banner('ok', 'check', t('Last synced') + ' ' + ago(ss.lastOkAt) + (ss.pending ? ' · ' + ss.pending + ' ' + t('change(s) waiting to go up') : ''))
-    ) : null;
+        : banner('ok', 'check', t('Last synced') + ' ' + ago(ss.lastOkAt) + (ss.pending ? ' · ' + ss.pending + ' ' + t('change(s) waiting to go up') : '')),
+      syncNowBtn) : null;
     let logins = []; try { logins = (await (await fetch('/offline/cloud-sync-logins')).json()).logins || []; } catch (e) { /* treated as none yet */ }
     const listHost = h('div', { class: 'list' });
     const paintList = () => clear(listHost).append(...logins.map((l) => liRow({

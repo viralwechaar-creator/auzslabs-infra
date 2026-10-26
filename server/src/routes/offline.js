@@ -6,7 +6,7 @@ import https from 'node:https';
 import bcrypt from 'bcryptjs';
 import { pool } from '../db.js';
 import { OFFLINE, licenceStatus } from './licence.js';
-import { syncStatus } from '../sync-worker.js';
+import { syncStatus, syncNow } from '../sync-worker.js';
 import { HttpError, rateLimited, readJsonBody } from '../lib/http.js';
 
 const CLOUD_URL = () => process.env.AUZ_CLOUD_URL || 'https://api.auzslab.in';
@@ -145,6 +145,14 @@ export async function handle(ctx) {
     let pending = 0;
     if (tid) { const { rows } = await pool.query('select count(*) n from sty_change_log where tenant_id = $1 and id > (select coalesce(last_pushed, 0) from sty_sync_cursor where tenant_id = $1)', [tid]); pending = Number(rows[0].n); }
     return reply(200, { available: true, pending, ...syncStatus() });
+  }
+  // The "Sync now" button (Settings -> Remote access): runs a push and a pull right away instead of waiting for
+  // the 2-minute timer. Same needSync() gate as the other cloud-sync broker routes.
+  if (url.pathname === '/offline/sync-now' && req.method === 'POST') {
+    if (rateLimited('syncnow:' + ip, 10, 5 * 60_000)) throw new HttpError(429, 'Too many tries. Wait a few minutes.');
+    needSync();
+    try { return reply(200, await syncNow()); }
+    catch (e) { throw new HttpError(502, e.message); }
   }
   if (req.method !== 'GET' && req.method !== 'HEAD') return false;
   const p = url.pathname;
