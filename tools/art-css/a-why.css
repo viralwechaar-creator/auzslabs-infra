@@ -65,3 +65,59 @@
 .aw-y .bl>div.in i{color:#f4f4f2}
 .aw-y .bl b{display:block;font-size:clamp(22px,4.6vw,76px);line-height:1;letter-spacing:-.035em;font-weight:500;color:#f4f4f2;text-transform:uppercase}
 .aw-y .bl span{display:block;margin-top:12px;font-size:12px;color:#aaa;max-width:420px}
+
+/* BUILD YOURS (merged from app.auzslab.in/my.html): same dark world as the duel */
+.by{position:relative;max-width:1500px;margin:0 auto;padding:50px var(--pad) 40px;border-top:1px solid #2a2a2a}
+.by-head{max-width:760px;margin-bottom:26px}
+@P .by-h{font-size:clamp(30px,5.4vw,84px)!important;line-height:.95;font-weight:600!important;letter-spacing:-.05em!important;color:#f4f4f2!important;margin:14px 0 12px;max-width:none!important}
+.by-h span{display:block}.by-h .dim{color:#6c6c6a}
+.by-sub{max-width:460px;font-size:11px;color:#aaa}
+.by-cols{display:grid;gap:22px}
+@media(min-width:960px){.by-cols{grid-template-columns:1.25fr 1fr;align-items:start;gap:40px}.by-rig{position:sticky;top:calc(var(--hhs,64px) + 16px)}}
+.by-steps{display:grid;gap:30px}
+.by-n{font:600 9px/1 "Space Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:#8a8a88;margin:0 0 12px}
+.by-n span{margin-left:8px;color:#fff}
+.bd-hint{font-size:10px;color:#8a8a88;margin:8px 0 0}.bd-hint a{color:#fff;text-decoration:underline}
+.bd-types{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.bd-t{position:relative;text-align:left;display:flex;flex-direction:column;gap:5px;padding:14px 16px;border-radius:18px;border:1px solid #333;background:#121212;color:#fff;cursor:pointer;transition:transform .25s,background .25s,color .25s}
+.bd-t b{font-size:14px;font-weight:600;letter-spacing:-.02em}.bd-t small{font-size:10px;line-height:1.4;color:#999}
+.bd-t:hover{transform:translateY(-3px)}
+.bd-t.on{background:#fff;color:#000;border-color:#fff}.bd-t.on small{color:#555}
+.bd-t.soon{opacity:.5}.bd-t em,.bd-n em{font-style:normal;font-size:8px;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:99px;background:rgba(128,128,128,.25);align-self:flex-start}
+.bd-needs{display:grid;gap:7px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+.bd-n{display:flex;align-items:center;gap:11px;text-align:left;padding:11px 13px;border-radius:14px;border:1px solid #333;background:#121212;color:#fff;cursor:pointer;transition:background .2s,border-color .2s}
+.bd-n i{flex:0 0 auto;width:16px;height:16px;border-radius:50%;border:1.5px solid #666;transition:.2s}
+.bd-n.on{background:#1d1d1d;border-color:#800020}.bd-n.on i{background:#800020;border-color:#800020;box-shadow:0 0 0 3px rgba(128,0,32,.3)}
+.bd-n span{flex:1;min-width:0}.bd-n b{display:block;font-size:12px;font-weight:600}.bd-n small{display:block;font-size:9px;color:#8a8a88;margin-top:2px}
+.bd-n.off{opacity:.4;cursor:default}
+.bd-o{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}.bd-o>span{font:600 8.5px "Space Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:#8a8a88}
+.bd-seg{display:flex;gap:6px;flex-wrap:wrap}.bd-seg button{padding:8px 14px;border-radius:99px;border:1px solid #444;background:none;color:#fff;font-size:10.5px;cursor:pointer}.bd-seg button.on{background:#fff;color:#000;border-color:#fff}
+.bd-sw{display:flex;gap:10px}.bd-sw button{width:28px;height:28px;border-radius:50%;border:2px solid transparent;cursor:pointer;box-shadow:0 0 0 1px #444}.bd-sw button.on{border-color:#fff}
+.bd-go{display:grid;gap:8px;max-width:420px}
+.bd-go input{width:100%;padding:13px 15px;border-radius:12px;border:1px solid #444;background:#0f0f0f;color:#fff;font:16px Inter,sans-serif}
+.bd-btn{display:inline-block;text-align:center;padding:14px 22px;border-radius:99px;border:0;background:#fff;color:#000;font:700 11px Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.bd-btn[disabled]{opacity:.4}.bd-err{color:#ff8a8a;font-size:11px;min-height:14px}.bd-note{font-size:10px;color:#999;margin:0}.bd-alt{font-size:10px;color:#fff;text-decoration:underline}
+.bd-phone{--my:#800020;border:2px solid rgba(255,255,255,.8);border-radius:28px;overflow:hidden;background:#0b0b0b;color:#fff;transition:background .3s}
+.bd-phone[data-theme=light]{background:#f5f4f2;color:#111;border-color:#111}
+.bd-bar{display:flex;gap:6px;align-items:center;padding:11px 14px;border-bottom:1px solid rgba(128,128,128,.3)}.bd-bar i{width:8px;height:8px;border-radius:50%;background:rgba(128,128,128,.5)}.bd-bar span{margin-left:auto;font:8px "Space Mono",monospace;letter-spacing:.12em;opacity:.6}
+.bd-app{display:flex;flex-direction:column;min-height:320px}
+.bd-phone[data-nav=bottom] .bd-app{flex-direction:column-reverse}.bd-phone[data-nav=side] .bd-app{flex-direction:row}
+.bd-nav{display:flex;gap:6px;padding:9px 12px;overflow:hidden;border-top:1px solid rgba(128,128,128,.25)}
+.bd-phone[data-nav=top] .bd-nav{border:0;border-bottom:1px solid rgba(128,128,128,.25)}
+.bd-phone[data-nav=side] .bd-nav{flex-direction:column;border:0;border-right:1px solid rgba(128,128,128,.25);width:78px}
+.bd-nav span{font-size:9px;padding:6px 10px;border-radius:99px;white-space:nowrap;opacity:.6}.bd-nav span.on{background:var(--my);color:#fff;opacity:1}
+.bd-main{flex:1;padding:12px;display:flex;flex-direction:column;gap:10px}
+.bd-ph{display:flex;justify-content:space-between;align-items:baseline;font-size:12px}.bd-ph small{opacity:.55;font-size:9px}
+.bd-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bd-c{padding:12px;border-radius:16px;display:flex;flex-direction:column;gap:6px;min-height:78px;background:rgba(128,128,128,.16);font-size:11px;animation:bdPop .4s cubic-bezier(.2,.9,.3,1.3) both}
+.bd-c:first-child{grid-column:1/-1;background:var(--my);color:#fff}
+.bd-phone[data-card=line] .bd-c{background:none;border:1.5px solid rgba(128,128,128,.5)}.bd-phone[data-card=line] .bd-c:first-child{border-color:var(--my);color:inherit}
+.bd-phone[data-card=solid] .bd-c{background:rgba(128,128,128,.32);border-radius:7px}
+.bd-bars{display:flex;align-items:flex-end;gap:4px;height:28px;margin-top:auto}.bd-bars i{flex:1;background:currentColor;opacity:.4;border-radius:2px}
+.bd-empty{grid-column:1/-1;font-size:10px;opacity:.5;text-align:center;margin:30px 0}
+@keyframes bdPop{from{transform:scale(.8) translateY(10px);opacity:0}}
+
+/* builder: next-step cue after choosing a business type */
+@P .bd-cue{font-size:11px;color:#fff;margin:10px 0 0;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.08);display:inline-block}
+@P .bd-cue::before{content:'\2193  ';opacity:.7}
+#bdStep2{scroll-margin-top:90px}

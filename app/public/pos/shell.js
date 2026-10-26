@@ -158,8 +158,13 @@ async function acceptG(g) {
   g.items.forEach((i) => {
     const it = rec(i.id); if (!it) { gone.push(i.name || 'item'); return; }
     const sz = i.size && (it.sizes || []).find((s) => s.l === i.size), price = sz ? sz.p : it.price;
-    const l = o.lines.find((x) => x.id === i.id && (x.size || '') === (i.size || '') && x.price === price && !x.note);
-    if (l) l.qty += i.qty; else o.lines.push({ id: i.id, name: it.name, size: i.size || '', price, qty: i.qty, sent: 0, st: it.st || 'Kitchen' });
+    // add-ons and "without" choices are re-read from the menu, so the guest's own prices/usage are never trusted
+    const picked = new Set((i.opts || []).map((x) => String(x).toLowerCase())), mods = itemGroups(it).flatMap((gr) => gr.mods).filter((m) => picked.has(m.n.toLowerCase()));
+    const rmArr = (i.rm || []).filter((x) => (it.removable || []).includes(x));
+    const unit = r2(price + mods.reduce((a, m) => a + m.v, 0));
+    const note = [mods.map((m) => m.n).join(', '), rmArr.map((x) => 'No ' + x).join(', ')].filter(Boolean).join(' · ') || undefined;
+    const l = !mods.length && !rmArr.length && o.lines.find((x) => x.id === i.id && (x.size || '') === (i.size || '') && x.price === price && !x.note);
+    if (l) l.qty += i.qty; else o.lines.push({ id: i.id, name: it.name, size: i.size || '', price: unit, qty: i.qty, sent: 0, st: it.st || 'Kitchen', note, ad: mods.map((m) => ({ n: m.n, u: m.u })).filter((m) => m.u).length ? mods.map((m) => ({ n: m.n, u: m.u })).filter((m) => m.u) : undefined, rm: rmArr.length ? rmArr : undefined });
   });
   if (!(o.cust && (o.cust.name || o.cust.phone))) o.cust = { name: g.name, phone: g.phone };
   if (g.note) o.gn = g.note;

@@ -24,7 +24,7 @@ HEAD = '''<!doctype html>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="robots" content="noindex,nofollow">
 <title>%(title)s</title>
-<link rel="icon" href="/logo.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2"><link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png?v=2">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
 <script src="theme.js?v=101"></script>
@@ -204,7 +204,7 @@ $('reqForm').addEventListener('submit', async (e) => {
 paint(); checkSession();
 </script>'''
 
-SCRIPTS_COMMON = '''<script src="/sb-client.js?v=105"></script>
+SCRIPTS_COMMON = '''<script src="/sb-client.js?v=106"></script>
 <script src="site.js?v=113"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script src="orderterms.js?v=105"></script>'''

@@ -56,7 +56,7 @@ export async function handle(ctx) {
     try { created = await createUser({ email: `${username}@trial.auzslab.in`, password: String(b.password), verified: true, user_metadata: { trial_username: username } }); }
     catch (err) { if (err.code === '23505') throw new HttpError(409, 'That username is taken. Pick another one.'); throw err; }
     try {
-      const p = { business_name: b.business_name, contact_name: b.contact_name, phone: b.phone, blocks: b.blocks, features: b.features };
+      const p = { business_name: b.business_name, contact_name: b.contact_name, phone: b.phone, business_type: b.business_type, blocks: b.blocks, features: b.features };
       await withAuth(created.id, (client) => callRpc(client, 'start_self_trial', { p }));
     } catch (err) {
       await pool.query('delete from auth_users where id = $1', [created.id]).catch(() => {});   // nothing was made for them, so do not leave a half-made login behind

@@ -50,6 +50,8 @@
   function offlineBadge(m) { var d = offlineOf(m); return el('span', { class: 'ob ob-' + d.level, title: d.qualifier, text: OFFLINE_LABEL[d.level] }); }
   function modLabel(k) { var m = CAT.filter(function (x) { return x.key === k; })[0]; return m ? m.label : k; }
   function embedUrl(u) { var h = u.indexOf('#'), base = h < 0 ? u : u.slice(0, h), hash = h < 0 ? '' : u.slice(h); return base + (base.indexOf('?') < 0 ? '?' : '&') + 'embed=1' + hash; }
+  var FOLD = {};
+  var FDESC = { bill: 'Make bills with tax, discounts and part payments. Print them or send on WhatsApp.', tables: 'A floor plan with table status. Seat guests, move or merge bills.', kitchen: 'Orders reach a kitchen screen with timers and a ready alert.', stock: 'Items, raw materials, purchases and low-stock alerts.', cust: 'Your customer list with visits, loyalty points and groups.', offers: 'Coupons and buy-X-get-Y offers on the bill.', qr: 'Guests scan the table QR and order from their phone.', scan: 'Scan a barcode with the camera to bill or add stock.', phones: 'Sell phones by IMEI and keep each unit\u2019s history.', repair: 'Repair job cards with status, parts and payments.', dues: 'Money owed by customers and to vendors.', sizes: 'Colour and size variants, each with its own stock.', tags: 'Print a barcode tag for every size and colour.', store: 'Your own online shop; orders arrive in the app.' };
   var FK = 'auz_feat';
   function getFeat() { try { return JSON.parse(localStorage.getItem(FK) || '[]'); } catch (e) { return []; } }
   function setFeat(a) { try { localStorage.setItem(FK, JSON.stringify(a)); } catch (e) {} setSel(blocksOf(a)); }
@@ -58,8 +60,32 @@
   var DESIGN = (function () { try { return Object.assign({ nav: 'bottom', card: 'soft', theme: 'dark', accent: '#800020' }, JSON.parse(localStorage.getItem(DK) || '{}')); } catch (e) { return { nav: 'bottom', card: 'soft', theme: 'dark', accent: '#800020' }; } })();
   function saveDesign() { try { localStorage.setItem(DK, JSON.stringify(DESIGN)); } catch (e) {} }
   var HAS_SESSION = false, IS_STAFF = false;
+  /* Business types come from the database (public_business_types); nothing about a type is hardcoded here. The person chooses
+     the type, it is never guessed from the features ticked. Which modules to recommend, offer or mark unavailable for that type
+     comes from public_module_tiers; that is advice for the display, the server still enforces access. */
+  var TK = 'auz_build_type', BT = [], TIERS = {}, TIER_BUSY = {};
+  function getType() { try { return localStorage.getItem(TK) || ''; } catch (e) { return ''; } }
+  function setType(k) { try { localStorage.setItem(TK, k); } catch (e) {} }
+  function typeOf(k) { return BT.filter(function (t) { return t.key === k; })[0] || null; }
+  function tierOf(mod) { var t = TIERS[getType()]; var m = t && t.modules.filter(function (x) { return x.key === mod; })[0]; return m || { tier: 'unavailable', reason: 'Checking...' }; }
   function cats() {
-    return FEATS.filter(function (f) { return CAT.some(function (m) { return m.key === f[3] && m.status === 'available'; }); }).map(function (f) { return { id: f[0], name: f[1], line: f[2], keys: [f[3]], g: f[4], mod: f[3] }; });
+    var t = typeOf(getType()); if (!t || t.status !== 'active' || !TIERS[t.key]) return [];
+    return FEATS.filter(function (f) { return CAT.some(function (m) { return m.key === f[3]; }); }).map(function (f) { var ti = tierOf(f[3]); return { id: f[0], name: f[1], line: f[2], keys: [f[3]], g: f[4], mod: f[3], tier: ti.tier, reason: ti.reason }; })
+      .sort(function (a, b) { var r = { recommended: 0, compatible: 1, unavailable: 2 }; return r[a.tier] - r[b.tier]; });
+  }
+  function paintTypes() {
+    var box = $('types'), note = $('typeNote'); box.textContent = ''; note.textContent = '';
+    BT.forEach(function (t) {
+      var soon = t.status !== 'active', on = getType() === t.key;
+      box.append(el('button', { type: 'button', class: 'tile type' + (on ? ' on' : '') + (soon ? ' soon' : ''), 'aria-pressed': on ? 'true' : 'false', 'aria-disabled': soon ? 'true' : 'false', onclick: function () {
+        if (soon) { note.textContent = t.label + ' is coming soon here. Our team sets these businesses up for you. Tell us at auzslab.in/contact.html.'; return; }
+        if (getType() !== t.key) { setType(t.key); setFeat([]); } paintTypes(); paintBuilder(); } },
+        [el('b', { text: t.label }), el('small', { text: t.description }), soon ? el('span', { class: 'ob ob-unknown', text: 'Coming soon' }) : null]));
+    });
+  }
+  function loadTiers(k) {
+    if (TIERS[k] || TIER_BUSY[k]) return; TIER_BUSY[k] = true;
+    sb.rpc('public_module_tiers', { p: { business_type: k } }).then(function (r) { TIER_BUSY[k] = false; if (r && r.data) TIERS[k] = r.data; if (getType() === k) paintBuilder(); }).catch(function () { TIER_BUSY[k] = false; });
   }
   function glyph(g) {
     var d = el('span', { class: 'gl gl-' + g, 'aria-hidden': 'true' });
@@ -67,15 +93,31 @@
     return d;
   }
   function paintBuilder() {
+    var typ = typeOf(getType()); if (typ && typ.status !== 'active') { typ = null; setType(''); }
     var feats = getFeat(), t = $('tiles'); t.textContent = '';
     var list = cats(), chosen = [], area = '';
+    if (!typ) t.append(el('p', { class: 'mono', text: 'Choose your business type first.' }));
+    else if (!TIERS[typ.key]) { t.append(el('p', { class: 'mono', text: 'Loading...' })); loadTiers(typ.key); }
+    // a feature that is not offered for this type any more (or an old saved choice) is dropped, never sent
+    var usable = list.filter(function (c) { return c.tier !== 'unavailable'; }).map(function (c) { return c.id; });
+    if (typ && TIERS[typ.key] && feats.some(function (f) { return usable.indexOf(f) < 0; })) { feats = feats.filter(function (f) { return usable.indexOf(f) >= 0; }); setFeat(feats); }
+    var rail = null, count = {}, rails = {};
+    list.forEach(function (c) { count[c.line] = (count[c.line] || 0) + 1; });
     list.forEach(function (c) {
-      if (c.line !== area) { area = c.line; t.append(el('h3', { class: 'area mono', text: area.toUpperCase() })); }
-      var on = feats.indexOf(c.id) >= 0; if (on) chosen.push(c);
-      t.append(el('button', { type: 'button', class: 'tile' + (on ? ' on' : ''), 'aria-pressed': on ? 'true' : 'false', onclick: function () {
-        var s = getFeat(); if (on) s = s.filter(function (k) { return k !== c.id; }); else s.push(c.id); setFeat(s); paintBuilder(); } },
-        [glyph(c.g), el('span', { class: 'plus', text: '+' }), el('b', { text: c.name }), offlineBadge(CAT.filter(function (m) { return m.key === c.mod; })[0])]));
+      if (!rails[c.line]) { t.append(el('h3', { class: 'area mono', text: c.line.toUpperCase() + '  ' + count[c.line] })); rails[c.line] = el('div', { class: 'rail' }); t.append(rails[c.line]); } rail = rails[c.line];
+      var off = c.tier === 'unavailable', on = !off && feats.indexOf(c.id) >= 0; if (on) chosen.push(c);
+      var mod = CAT.filter(function (m) { return m.key === c.mod; })[0];
+      var open = !!FOLD[c.id];
+      var desc = el('div', { class: 'fd', id: 'fd-' + c.id }, [el('p', { text: off ? (c.reason || 'Not available for this business type.') : (FDESC[c.id] || (mod && mod.description) || '') })].concat(off ? [] : [offlineBadge(mod)]));
+      desc.hidden = !open;
+      var fb = el('button', { type: 'button', class: 'fb', 'aria-expanded': open ? 'true' : 'false', 'aria-controls': 'fd-' + c.id, 'aria-label': 'About ' + c.name, text: open ? '\u2212' : '+', onclick: function () {
+        FOLD[c.id] = !FOLD[c.id]; fb.textContent = FOLD[c.id] ? '\u2212' : '+'; fb.setAttribute('aria-expanded', FOLD[c.id] ? 'true' : 'false'); desc.hidden = !FOLD[c.id]; } });
+      var pick = el('button', { type: 'button', class: 'tile' + (on ? ' on' : '') + (off ? ' soon' : ''), 'aria-pressed': on ? 'true' : 'false', 'aria-disabled': off ? 'true' : 'false', onclick: function () {
+        if (off) return; var s = getFeat(); if (on) s = s.filter(function (k) { return k !== c.id; }); else s.push(c.id); setFeat(s); paintBuilder(); } },
+        [el('i', { class: 'dot', 'aria-hidden': 'true' }), el('b', { text: c.name }), c.tier === 'recommended' ? el('span', { class: 'rec', text: 'Recommended' }) : null]);
+      rail.append(el('div', { class: 'frow' + (on ? ' on' : '') + (off ? ' off' : '') }, [el('div', { class: 'fh' }, [pick, fb]), desc]));
     });
+    var tally = $('tally'); if (tally) tally.textContent = chosen.length ? chosen.length + (chosen.length === 1 ? ' chosen' : ' chosen') : 'none chosen yet';
     paintDesign(); paintPhone(chosen); paintGo(chosen.length); paintDeps();
   }
   var depSeq = 0;
@@ -133,11 +175,11 @@
       var err = el('div', { class: 'err' }), btn = el('button', { class: 'btn', type: 'button', text: 'Build my app, 3 days free' });
       btn.disabled = !n;
       btn.onclick = async function () {
-        err.textContent = ''; if (!getSel().length) { err.textContent = 'Tick at least one feature.'; return; }
+        err.textContent = ''; if (!getType()) { err.textContent = 'Choose your business type first.'; return; } if (!getSel().length) { err.textContent = 'Tick at least one feature.'; return; }
         btn.disabled = true;
-        var r = await sb.rpc('start_self_trial', { p: { business_name: biz.value, contact_name: name.value, phone: phone.value, blocks: getSel(), features: getFeat() } });
+        var r = await sb.rpc('start_self_trial', { p: { business_name: biz.value, contact_name: name.value, phone: phone.value, business_type: getType(), blocks: getSel(), features: getFeat() } });
         if (r.error) { btn.disabled = false; err.textContent = r.error.message; return; }
-        setSel([]); try { localStorage.setItem('auz_feat_done', JSON.stringify(getFeat())); } catch (e) {} setFeat([]); location.reload();
+        try { localStorage.removeItem(TK); } catch (e0) {} setSel([]); try { localStorage.setItem('auz_feat_done', JSON.stringify(getFeat())); } catch (e) {} setFeat([]); location.reload();
       };
       sb.rpc('my_profile').then(function (p) { if (p && p.data) { name.value = name.value || p.data.name || ''; phone.value = phone.value || p.data.phone || ''; biz.value = biz.value || p.data.business_name || ''; } }).catch(function () {});
       g.append(name, phone, biz, btn, err, el('p', { class: 'note', text: 'No payment now. Nothing is charged during the trial.' }));
@@ -158,14 +200,15 @@
     }
     main.onclick = async function () {
       uErr.textContent = '';
+      if (mode === 'new' && !getType()) { uErr.textContent = 'Choose your business type first.'; return; }
       if (mode === 'new' && !getSel().length) { uErr.textContent = 'Tick the features you need first.'; return; }
       main.disabled = true;
       var r;
-      if (mode === 'new') r = await sb.auth.trialAccount({ username: uUser.value, password: uPass.value, business_name: uBiz.value, contact_name: uName.value, phone: uPhone.value, blocks: getSel(), features: getFeat() });
+      if (mode === 'new') r = await sb.auth.trialAccount({ username: uUser.value, password: uPass.value, business_name: uBiz.value, contact_name: uName.value, phone: uPhone.value, business_type: getType(), blocks: getSel(), features: getFeat() });
       else r = await sb.auth.signInWithPassword({ email: uUser.value, password: uPass.value });
       main.disabled = false;
       if (r.error || !(r.data && r.data.session)) { uErr.textContent = (r.error && r.error.message) || 'Could not continue.'; return; }
-      if (mode === 'new') { setSel([]); try { localStorage.setItem('auz_feat_done', JSON.stringify(getFeat())); } catch (e) {} setFeat([]); }
+      if (mode === 'new') { try { localStorage.removeItem(TK); } catch (e0) {} setSel([]); try { localStorage.setItem('auz_feat_done', JSON.stringify(getFeat())); } catch (e) {} setFeat([]); }
       location.reload();
     };
     swap.onclick = function () { mode = mode === 'new' ? 'in' : 'new'; uErr.textContent = ''; drawForm(); };
@@ -265,6 +308,8 @@
   async function boot() {
     var cl = await sb.rpc('public_module_catalogue'), catOk = !!(cl && !cl.error && Array.isArray(cl.data) && cl.data.length);
     if (catOk) useCatalogue(cl.data);
+    var tl = await sb.rpc('public_business_types'), typOk = !!(tl && !tl.error && Array.isArray(tl.data) && tl.data.length);
+    if (typOk) BT = tl.data;
     var sess = (await sb.auth.getSession()).data.session;
     if (sess) {
       var hm = await sb.rpc('hub_me'); IS_STAFF = !!(hm && hm.data && (hm.data.admin || hm.data.team) && !hm.data.business);
@@ -277,9 +322,12 @@
         return workspace(r.data, tr);
       }
     }
+    /* the builder now lives on the Why AUZslab page (one page); ?classic=1 keeps this copy for tests and support */
+    if (!/[?&]classic=1/.test(location.search)) { location.replace('https://auzslab.in/platform.html#build'); return; }
     HAS_SESSION = !!sess; show('build');
+    if (!typOk) { var t1 = $('types'); t1.textContent = ''; t1.append(el('p', { class: 'err', text: 'We could not load the business types. Nothing was changed. Check your connection and try again.' }), el('button', { class: 'btn ghost', type: 'button', text: 'Try again', onclick: function () { location.reload(); } })); $('tiles').textContent = ''; $('go').textContent = ''; return; }
     if (!catOk) { var t0 = $('tiles'); t0.textContent = ''; t0.append(el('p', { class: 'err', text: 'We could not load the list of features. Nothing was changed. Check your connection and try again.' }), el('button', { class: 'btn ghost', type: 'button', text: 'Try again', onclick: function () { location.reload(); } })); $('go').textContent = ''; return; }
-    paintBuilder();
+    paintTypes(); paintBuilder();
   }
   boot().catch(function (e) { show('build'); $('tiles').textContent = (e && e.message) || 'Could not load. Check your connection and try again.'; });
 })();

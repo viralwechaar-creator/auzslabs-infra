@@ -127,6 +127,8 @@ export const RPC = {
   public_trial_blocks: { params: [], auth: false },
   public_module_catalogue: { params: [], auth: false },
   public_module_resolve: { params: ['p'], jsonb: ['p'], auth: false },
+  public_business_types: { params: [], auth: false },
+  public_module_tiers: { params: ['p'], jsonb: ['p'], auth: false },
   start_self_trial: { params: ['p'], jsonb: ['p'], auth: true },
   trial_status: { params: [], auth: true },
   trial_subscribe: { params: [], auth: true },
@@ -185,6 +187,8 @@ export const RPC = {
   my_data_export: { params: [], auth: true },
   my_data_clear: { params: ['p_confirm'], auth: true },
   update_my_features: { params: ['p_enabled'], jsonb: ['p_enabled'], auth: true },
+  my_business_type: { params: [], auth: true },
+  set_business_type: { params: ['p_key'], auth: true },
   change_my_password: { params: ['p_old_password', 'p_new_password'], auth: true },
   staff_create: { params: ['p_name', 'p_phone', 'p_role_id', 'p_builtin', 'p_outlet', 'p_username'], defaults: { p_phone: null, p_role_id: null, p_builtin: null, p_outlet: null, p_username: null }, auth: true },
   staff_reset_pin: { params: ['p_staff_id', 'p_pin'], defaults: { p_pin: null }, auth: true },
@@ -197,6 +201,8 @@ export const RPC = {
   delete_role: { params: ['p_role_id'], auth: true },
 
   // --- Notifications ---
+  inbox_list: { params: ['p_limit'], auth: true },
+  inbox_mark_read: { params: ['p_ids'], auth: true },
   send_client_notification: { params: ['p_tenant_id', 'p_title', 'p_body'], auth: true },
 
   // --- Add-on requests (existing client asking to add modules) ---
