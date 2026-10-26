@@ -38,8 +38,16 @@ export default async function run({ browser }) {
   };
   const base = `http://127.0.0.1:${apiPort}`;
   try {
+    await s.check('A leftover, broken pgdata folder (from a setup that crashed or was killed mid-way, no PG_VERSION file) does not jam the computer forever -- it is cleared and a real cluster is made in its place', async () => {
+      const pgdata = path.join(dataDir, 'pgdata');
+      fs.mkdirSync(pgdata, { recursive: true });
+      fs.writeFileSync(path.join(pgdata, 'junk.tmp'), 'leftover from an interrupted first run');
+      assert(L.ensureCluster(o) === true, 'cluster not created over leftover junk');
+      assert(fs.existsSync(path.join(pgdata, 'PG_VERSION')), 'a real cluster should exist now');
+      assert(!fs.existsSync(path.join(pgdata, 'junk.tmp')), 'the leftover file should be gone');
+    }, 'critical');
     await s.check('A new database cluster is made, started and built from the migrations with the sample data removed', async () => {
-      assert(L.ensureCluster(o) === true, 'cluster not created');
+      assert(L.ensureCluster(o) === false, 'cluster already made by the previous check, should not be remade');
       L.startPg(o);
       const r = await L.migrate(o); assert(r.fresh && r.applied > 200, JSON.stringify(r));
       const again = await L.migrate(o); assert(!again.fresh && again.applied === 0, 'second run should apply nothing: ' + JSON.stringify(again));
