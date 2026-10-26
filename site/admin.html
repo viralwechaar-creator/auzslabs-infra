@@ -1116,6 +1116,7 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
                       <option value="cafe">Café, restaurant, bar & more</option>
                       <option value="salon">Salon / spa</option>
                       <option value="retail">Retail / General (AUZsLedger)</option>
+                      <option value="mobile">Mobile shop (AUZsMob)</option>
                     </select>
                   </div>
                   <div class="field">
@@ -1919,7 +1920,7 @@ async function loadLeads() {
   });
 }
 
-const NICHE_LABEL = { custom: 'Custom-built', cafe: 'Café / restaurant / bar / bakery / hotel', salon: 'Salon / spa', retail: 'Retail / General', general: 'Retail / General', gym: 'Retail / General' };
+const NICHE_LABEL = { custom: 'Custom-built', cafe: 'Café / restaurant / bar / bakery / hotel', salon: 'Salon / spa', retail: 'Retail / General', general: 'Retail / General', gym: 'Retail / General', mobile: 'Mobile shop' };
 // Colour groups for module tags, all from the brand palette: wine = AUZsPOS family, sand = salon/website,
 // sage = money, slate = people/ops, amber = mobile shop.
 const TONE = { pos: 'wine', crm: 'wine', billing: 'wine', inventory: 'wine', kds: 'wine', purchases: 'wine', membership: 'wine', self_order: 'wine', salon: 'sand', booking: 'sand', website_builder: 'sand', payroll: 'slate', tasks: 'slate', helpdesk: 'slate', accounting: 'sage', mobile: 'amber' };
@@ -1965,9 +1966,9 @@ async function loadSignupRequests() {
     const demoBtn = tr.querySelector('[data-demo]');
     demoBtn.onclick = () => copyDemoLink('req', id, demoBtn);
     tr.querySelector('[data-approve]').onclick = async () => {
-      const niche = prompt('Niche for this tenant (cafe / salon / retail)', req?.niche || 'retail');
+      const niche = prompt('Niche for this tenant (cafe / salon / retail / mobile)', req?.niche || 'retail');
       if (niche === null) return;
-      const cleanNiche = ['cafe', 'salon', 'retail'].includes(niche.trim()) ? niche.trim() : 'retail';
+      const cleanNiche = ['cafe', 'salon', 'retail', 'mobile'].includes(niche.trim()) ? niche.trim() : 'retail';
       const { error: appErr } = await sb.rpc('approve_signup_request', { p_request_id: id, p_niche: cleanNiche });
       if (appErr) { alert(appErr.message); return; }
       loadSignupRequests();
@@ -2377,9 +2378,11 @@ function loadSetupQueue() {
 }
 
 // What a client can be given, as products (not internal switches). Each product turns on every module it contains,
-// so CRM, billing, inventory, kitchen display etc. are never ticked separately. keys[0] is the product's own key.
+// so CRM, billing, inventory etc. are never ticked separately. keys[0] is the product's own key. Kitchen (db/264)
+// is its own module in module_catalogue, not bundled into POS, so it is its own toggle here too.
 const SELLABLE = [
-  { id: 'pos', label: 'AUZsPOS', keys: ['pos', 'crm', 'billing', 'inventory', 'kds', 'purchases', 'membership', 'tasks', 'helpdesk'], note: 'Includes billing, inventory, customers (CRM), kitchen display, purchases, memberships, tasks, helpdesk' },
+  { id: 'pos', label: 'AUZsPOS', keys: ['pos', 'crm', 'billing', 'inventory', 'purchases', 'membership', 'tasks', 'helpdesk'], note: 'Includes billing, inventory, customers (CRM), purchases, memberships, tasks, helpdesk' },
+  { id: 'kds', label: 'Kitchen screen', keys: ['kds'], note: 'Orders appear on a kitchen screen with timers, and the KOT report. Needs AUZsPOS.' },
   { id: 'qr', label: 'AUZsPOS QR', keys: ['self_order'], note: 'Customers scan a table QR and order themselves' },
   { id: 'pay', label: 'AUZsPay', keys: ['payroll'], note: 'Payroll and attendance' },
   { id: 'ledger', label: 'AUZsLedger', keys: ['accounting'], note: 'Accounting and GST books' },
