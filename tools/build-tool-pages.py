@@ -204,7 +204,7 @@ $('reqForm').addEventListener('submit', async (e) => {
 paint(); checkSession();
 </script>'''
 
-SCRIPTS_COMMON = '''<script src="/sb-client.js?v=105"></script>
+SCRIPTS_COMMON = '''<script src="/sb-client.js?v=106"></script>
 <script src="site.js?v=113"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script src="orderterms.js?v=105"></script>'''

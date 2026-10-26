@@ -393,7 +393,8 @@ export default async function run({ browser, stack }) {
     assert(sw.some((l) => l.startsWith("self.addEventListener('push'")), 'the push listener must start its own line (a // comment above once swallowed it)');
     assert(sw.some((l) => l.startsWith("self.addEventListener('notificationclick'")), 'notification click handler missing');
     const sub = { p_endpoint: 'https://push.example.test/send/' + 'a'.repeat(30), p_p256dh: 'B'.repeat(80), p_auth: 'c'.repeat(22) };
-    await fails('register_platform_web_push', sub, plain, 'not on the team');
+    await ok('register_platform_web_push', sub, plain); // since db/273 any signed-in person (a client) may get browser alerts for notices addressed to them
+    await fails('register_platform_web_push', sub, null, 'logged out');
     await fails('register_platform_web_push', { ...sub, p_endpoint: 'http://insecure.test/x' }, T.sales, 'must be https');
     await ok('register_platform_web_push', sub, T.sales); await ok('register_platform_web_push', sub, adm);
     const rows = await q('select user_id from platform_web_push where endpoint = $1', [sub.p_endpoint]);
