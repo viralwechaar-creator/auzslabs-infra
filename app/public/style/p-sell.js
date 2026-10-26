@@ -1,10 +1,10 @@
 /* AUZsStyle: Sell (the till). Left/top: styles grid with category chips + barcode/search. Right (desktop) or a bottom bar
    (phone): the bill. Pick a style -> choose colour + size (stock shown) -> it joins the bill. */
 'use strict';
-const BILL = { lines: [], customer: null, custName: '', custPhone: '', billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0 };
+const BILL = { lines: [], customer: null, custName: '', custPhone: '', billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0, coupon: '', couponDiscount: 0 };
 const UI = { q: '', cat: 'All', col: null };
-const newBill = () => { Object.assign(BILL, { lines: [], customer: null, custName: '', custPhone: '', billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0 }); };
-const billCalc = () => calcBill(BILL.lines.map((l) => ({ unit: l.price, qty: l.qty, discPct: l.discPct, discAmt: l.discAmt, taxPct: l.taxPct })), { billDiscPct: BILL.billDiscPct, billDiscAmt: BILL.billDiscAmt });
+const newBill = () => { Object.assign(BILL, { lines: [], customer: null, custName: '', custPhone: '', billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0, coupon: '', couponDiscount: 0 }); };
+const billCalc = () => calcBill(BILL.lines.map((l) => ({ unit: l.price, qty: l.qty, discPct: l.discPct, discAmt: l.discAmt, taxPct: l.taxPct })), { billDiscPct: BILL.billDiscPct, billDiscAmt: BILL.billDiscAmt, extraAmt: BILL.couponDiscount });
 const unitCount = () => BILL.lines.reduce((a, l) => a + l.qty, 0);
 
 function addLine(style, v, q = 1) {
@@ -110,11 +110,11 @@ page('sell', {
         BILL.exchange > 0 ? h('div', { class: 'exbar' }, icon('swap', 16), t('Exchange credit') + ' ' + inr(BILL.exchange)) : null,
         h('div', { class: 'bill-h' }, h('b', null, t('Bill')), h('span', { class: 'muted small' }, unitCount() + ' ' + t('Units')), h('span', { class: 'grow' }), BILL.lines.length ? h('button', { class: 'btn plain sm', type: 'button', onclick: async () => { if (await confirmBox(t('Clear'), t('Remove everything from this bill?'), t('Clear'), true)) { newBill(); paintCart(); inSheet && inSheet(true); } } }, t('Clear')) : null),
         BILL.customer
-          ? h('button', { class: 'cust', type: 'button', onclick: () => customerPicker((cu) => { BILL.customer = cu; paintCart(); inSheet && inSheet(); }) }, icon('user', 18), h('span', { class: 'grow' }, BILL.customer.name + (BILL.customer.phone ? ' · ' + BILL.customer.phone : '')), h('span', { class: 'muted small' }, (BILL.customer.points || 0) + ' ' + t('Points')), h('span', { class: 'cust-x', role: 'button', 'aria-label': t('Clear'), onclick: (e) => { e.stopPropagation(); BILL.customer = null; paintCart(); inSheet && inSheet(); } }, icon('x', 14)))
+          ? h('button', { class: 'cust', type: 'button', onclick: () => customerPicker((cu) => { if (cu.id !== (BILL.customer && BILL.customer.id)) BILL.exchange = 0; BILL.customer = cu; paintCart(); inSheet && inSheet(); }) }, icon('user', 18), h('span', { class: 'grow' }, BILL.customer.name + (BILL.customer.phone ? ' · ' + BILL.customer.phone : '')), h('span', { class: 'muted small' }, (BILL.customer.points || 0) + ' ' + t('Points')), h('span', { class: 'cust-x', role: 'button', 'aria-label': t('Clear'), onclick: (e) => { e.stopPropagation(); BILL.customer = null; BILL.exchange = 0; paintCart(); inSheet && inSheet(); } }, icon('x', 14)))
           : h('div', { class: 'custrow' },
             h('input', { class: 'input cin', placeholder: t('Customer name'), value: BILL.custName, 'aria-label': t('Customer name'), autocomplete: 'off', oninput: (e) => { BILL.custName = e.target.value; } }),
             h('input', { class: 'input cin', placeholder: t('Phone'), value: BILL.custPhone, inputmode: 'tel', 'aria-label': t('Phone'), autocomplete: 'off', oninput: (e) => { BILL.custPhone = e.target.value; } }),
-            h('button', { class: 'btn icon sm', type: 'button', 'aria-label': t('Customer'), title: t('Find a customer'), onclick: () => customerPicker((cu) => { BILL.customer = cu; paintCart(); inSheet && inSheet(); }) }, icon('search', 16))),
+            h('button', { class: 'btn icon sm', type: 'button', 'aria-label': t('Customer'), title: t('Find a customer'), onclick: () => customerPicker((cu) => { if (cu.id !== (BILL.customer && BILL.customer.id)) BILL.exchange = 0; BILL.customer = cu; paintCart(); inSheet && inSheet(); }) }, icon('search', 16))),
         BILL.lines.length ? h('div', { class: 'blines' }, lines, inSheet ? null : quickAdd()) : h('div', { class: 'bempty' }, icon('tag', 26), h('div', null, t('Cart is empty')), h('div', { class: 'small' }, t('Tap a style or scan a tag'))),
         BILL.lines.length ? h('div', { class: 'tots' },
           trow(t('Subtotal'), inr(c.subtotal)), c.discount > 0 ? trow(t('Discount'), '-' + inr(c.discount), 'g') : null, trow(t('Tax') + ' (incl.)', inr(c.tax)), c.rounding ? trow(t('Round off'), inr(c.rounding)) : null,
@@ -165,8 +165,21 @@ function discountSheet(done) {
   const st = S.ctx.settings;
   const dp = input({ type: 'number', value: BILL.billDiscPct || '', mode: 'decimal', placeholder: '%' }), da = input({ type: 'number', value: BILL.billDiscAmt || '', mode: 'decimal', placeholder: '₹' });
   const pts = BILL.customer && BILL.customer.points > 0 ? input({ type: 'number', value: BILL.redeem || '', mode: 'numeric', placeholder: '0' }) : null;
+  const cp = input({ value: BILL.coupon || '', placeholder: t('Festive sale, loyalty code, etc.') });
+  const cpMsg = h('div', { class: 'muted small' }, BILL.coupon ? t('Applied') + ': ' + BILL.coupon + ' (– ' + inr(BILL.couponDiscount) + ')' : '');
+  const cpBtn = h('button', { class: 'btn sm', type: 'button', onclick: async () => {
+    const code = cp.value.trim(); if (!code) { BILL.coupon = ''; BILL.couponDiscount = 0; cpMsg.textContent = ''; return; }
+    try {
+      const sub = BILL.lines.reduce((a, l) => a + l.price * l.qty, 0);
+      const r = await api('sty_coupon_check', { p: { code, subtotal: sub, phone: (BILL.customer && BILL.customer.phone) || BILL.custPhone || '' } });
+      if (!r.ok) { BILL.coupon = ''; BILL.couponDiscount = 0; cpMsg.textContent = r.msg; return; }
+      if (r.kind === 'ship') { BILL.coupon = ''; BILL.couponDiscount = 0; cpMsg.textContent = t('That coupon is for online shipping, not for in-shop bills'); return; }
+      BILL.coupon = r.code; BILL.couponDiscount = r.discount; cpMsg.textContent = r.msg;
+    } catch (e) { BILL.coupon = ''; BILL.couponDiscount = 0; cpMsg.textContent = e.message || t('Could not check that code'); }
+  } }, t('Apply'));
   sheet({ title: t('Discount'), body: h('div', { class: 'grid' }, h('div', { class: 'two' }, field(t('Bill discount') + ' %', dp), field(t('Bill discount') + ' ₹', da)),
     can('sty_manage') ? null : h('div', { class: 'muted small' }, t('Above') + ' ' + st.maxDiscountPct + '% ' + t('needs a manager')),
+    h('div', { class: 'row', style: { gap: '8px' } }, h('div', { class: 'grow' }, field(t('Coupon code'), cp)), cpBtn), cpMsg,
     pts ? field(t('Use points') + ' (' + BILL.customer.points + ' ' + t('available') + ', ₹' + st.loyaltyPointValue + ' ' + t('each') + ')', pts) : null),
     actions: [{ label: t('Apply'), primary: true, onclick: (close) => { BILL.billDiscPct = N(dp.value); BILL.billDiscAmt = BILL.billDiscPct ? 0 : N(da.value); BILL.redeem = pts ? Math.min(Math.floor(N(pts.value)), BILL.customer.points) : 0; close(); done(); } }] });
 }
@@ -253,7 +266,7 @@ function paySheet(c, done) {
     ok.disabled = true;
     const payments = MODES.map(([m]) => ({ mode: m, amount: pay[m] })).filter((p) => p.amount > 0);
     const p = { id: uid(), branchId: S.branch, customerId: cust ? cust.id : null, note: note.value || undefined, redeemPoints: BILL.redeem || 0,
-      billDiscPct: BILL.billDiscPct || undefined, billDiscAmt: BILL.billDiscAmt || undefined, holdId: BILL.holdId || undefined, payments,
+      billDiscPct: BILL.billDiscPct || undefined, billDiscAmt: BILL.billDiscAmt || undefined, coupon: BILL.coupon || undefined, holdId: BILL.holdId || undefined, payments,
       lines: BILL.lines.map((l) => ({ variantId: l.variantId, qty: l.qty, discPct: l.discPct || undefined, discAmt: l.discAmt || undefined, price: l.price })) };
     // a changed price is only sent when it differs from the catalogue (the server refuses it for non-managers)
     p.lines.forEach((l, i) => { const vv = allVariants().find((x) => x.id === l.variantId); if (vv && Math.abs(vv.price - l.price) < .005) delete l.price; });
@@ -296,12 +309,43 @@ async function shiftSheet() {
     const oc = input({ type: 'number', mode: 'decimal', placeholder: '0' });
     sheet({ title: t('Open shift'), body: h('div', { class: 'grid' }, h('p', { class: 'muted' }, t('Count the cash in the drawer and start your shift.')), field(t('Opening cash'), oc)), actions: [{ label: t('Open shift'), primary: true, onclick: async (close) => { await api('sty_shift_open', { p: { branchId: S.branch, openingCash: N(oc.value) } }); close(); toast(t('Shift started')); } }] });
   } else {
-    const cc = input({ type: 'number', mode: 'decimal', placeholder: '0' }), nt = input({ placeholder: t('Note (optional)') });
+    const moves = await api('sty_cash_moves_list', {});
+    const nt = input({ placeholder: t('Note (optional)') });
+    const moveList = moves.length ? h('div', { class: 'grid', style: { gap: '2px' } }, moves.map((m) => h('div', { class: 'kv small' },
+      h('span', null, (m.kind === 'in' ? '+ ' : '- ') + (m.reason || t(m.kind === 'in' ? 'Cash in' : 'Cash out')) + ' · ' + (m.staff || '')),
+      h('b', { class: 'num' }, inr(m.amount))))) : null;
+    const DENOMS = [500, 200, 100, 50, 20, 10, 5, 2, 1];
+    const qty = {}; const totalEl = h('b', { class: 'num' }, inr(0));
+    const recalcTotal = () => { const n = DENOMS.reduce((a, d) => a + d * (qty[d] || 0), 0); totalEl.textContent = inr(n); return n; };
+    recalcTotal();
+    const denomGrid = h('div', { class: 'grid', style: { gap: '4px' } }, DENOMS.map((d) => {
+      const qi = input({ type: 'number', mode: 'numeric', placeholder: '0', min: '0', oninput: (e) => { qty[d] = parseInt(e.target.value, 10) || 0; recalcTotal(); } });
+      return h('div', { class: 'row', style: { gap: '8px', alignItems: 'center' } },
+        h('span', { style: { width: '64px' } }, '₹' + d), h('div', { class: 'grow' }, qi));
+    }));
     sheet({ title: t('Close shift'), body: h('div', { class: 'grid' }, h('div', { class: 'kv' }, h('span', null, t('Opening cash')), h('b', { class: 'num' }, inr(cur.openingCash))), h('div', { class: 'kv' }, h('span', null, t('Cash sales')), h('b', { class: 'num' }, inr(cur.cashSales))),
-      h('div', { class: 'kv' }, h('span', null, t('Expected in drawer')), h('b', { class: 'num' }, inr(cur.expectedCash))), field(t('Counted cash'), cc), field(t('Note'), nt)),
+      cur.cashIn ? h('div', { class: 'kv' }, h('span', null, t('Cash in')), h('b', { class: 'num' }, '+' + inr(cur.cashIn))) : null,
+      cur.cashOut ? h('div', { class: 'kv' }, h('span', null, t('Cash out')), h('b', { class: 'num' }, '-' + inr(cur.cashOut))) : null,
+      h('div', { class: 'kv' }, h('span', null, t('Expected in drawer')), h('b', { class: 'num' }, inr(cur.expectedCash))),
+      h('div', { class: 'row', style: { gap: '8px' } },
+        h('button', { class: 'btn', type: 'button', onclick: () => cashMoveSheet('in', () => shiftSheet()) }, t('Cash in')),
+        h('button', { class: 'btn', type: 'button', onclick: () => cashMoveSheet('out', () => shiftSheet()) }, t('Cash out'))),
+      moveList, h('div', { class: 'cap' }, t('Count the drawer')), denomGrid,
+      h('div', { class: 'kv' }, h('span', null, t('Counted total')), totalEl), field(t('Note'), nt)),
       actions: [{ label: t('Close shift'), primary: true, onclick: async (close) => {
-        const r = await api('sty_shift_close', { p: { countedCash: cc.value, note: nt.value } }); close();
+        const denominations = {}; for (const d of DENOMS) if (qty[d]) denominations[d] = qty[d];
+        const r = await api('sty_shift_close', { p: { denominations, note: nt.value } }); close();
         alertBox({ title: Math.abs(r.difference) < 1 ? t('Drawer matches') : (r.difference > 0 ? t('Over by') : t('Short by')) + ' ' + inr(Math.abs(r.difference)), actions: [{ label: t('Done'), value: true, role: 'def' }] });
       } }] });
   }
+}
+
+function cashMoveSheet(kind, done) {
+  const amt = input({ type: 'number', mode: 'decimal', placeholder: '0' }), rs = input({ placeholder: t('Reason (optional)') });
+  sheet({ title: t(kind === 'in' ? 'Cash in' : 'Cash out'), body: h('div', { class: 'grid' }, field(t('Amount'), amt), field(t('Reason'), rs)),
+    actions: [{ label: t('Save'), primary: true, onclick: async (close) => {
+      const n = N(amt.value); if (!(n > 0)) { toast(t('Enter an amount above 0'), { err: true }); return false; }
+      try { await api('sty_cash_move', { p: { kind, amount: n, reason: rs.value } }); } catch (e) { return fail(e); }
+      close(); toast(kind === 'in' ? t('Cash in saved') : t('Cash out saved')); done && done();
+    } }] });
 }

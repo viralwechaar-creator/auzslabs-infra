@@ -9,7 +9,9 @@ page('stock', {
     v.header({ title: t('Stock'), actions: [can('sty_manage') ? { label: t('New style'), icon: 'plus', primary: true, run: () => styleForm(null, () => v.refresh()) } : null,
       can('sty_manage') ? { label: SEL.on ? t('Done selecting') : t('Select'), icon: 'check', run: () => { SEL.on = !SEL.on; SEL.ids.clear(); v.refresh(); } } : null,
       { label: t('Collections'), icon: 'tag', run: () => collectionsSheet(() => v.refresh()) },
-      can('sty_stock') ? { label: t('Transfers'), icon: 'swap', run: () => transfersSheet(() => v.refresh()) } : null].filter(Boolean) });
+      can('sty_stock') ? { label: t('Transfers'), icon: 'swap', run: () => transfersSheet(() => v.refresh()) } : null,
+      can('sty_manage') ? { label: t('Export Excel'), icon: 'download', run: () => exportInventoryExcel() } : null,
+      can('sty_stock') ? { label: t('Import Excel'), icon: 'upload', run: () => importInventorySheet(() => v.refresh()) } : null].filter(Boolean) });
     const root = v.root; root.append(h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '30px auto' } }));
     try { await loadCatalog(true); } catch (e) { return clear(root).append(empty('cloudOff', t('Could not load'), e.message, h('button', { class: 'btn fill', onclick: () => v.refresh() }, t('Try again')))); }
     await loadCollections();
@@ -268,4 +270,43 @@ function bulkEditSheet(ids, done) {
 async function bulkDelete(ids, done) {
   if (!(await confirmBox(t('Delete') + ' ' + ids.length + ' ' + t('styles?'), t('Styles that were never sold or stocked are erased. A style with sales or stock history cannot be erased without breaking the books, so it is hidden instead.'), t('Delete'), true))) return;
   try { const r = await api('sty_delete_styles', { p: { ids } }); toast(r.deleted + ' ' + t('deleted') + (r.hidden ? ' · ' + r.hidden + ' ' + t('hidden (they have history)') : '')); await loadCatalog(true).catch(() => {}); done(); } catch (e) { toast(e.message || t('Failed'), { err: true }); }
+}
+
+// ---- inventory in/out as a real Excel file (not a code file) ----
+// Columns: a shop owner can edit Price and Stock in Excel and bring it back in; every other column is for reference
+// (Style/Colour/Size identify the row, Barcode is the real matching key when present).
+const INV_HEAD = [t('Style'), t('Category'), t('Brand'), t('Colour'), t('Size'), t('Barcode'), t('SKU'), t('Price'), t('MRP'), t('Stock')];
+function exportInventoryExcel() {
+  const rows = allVariants().map((x) => [x.style.name, x.style.category || '', x.style.brand || '', x.colour || '', x.size || '', x.barcode || '', x.sku || '', x.price, x.style.mrp ?? '', x.stock]);
+  exportXLSX('auzsstyle-inventory-' + new Date().toISOString().slice(0, 10), INV_HEAD, rows);
+}
+function importInventorySheet(done) {
+  const file = h('input', { type: 'file', accept: '.xlsx,.csv', class: 'hidden' });
+  file.onchange = async () => {
+    const f = file.files[0]; if (!f) return;
+    let rows; try { rows = await readTable(f); } catch (e) { toast(e.message || t('Could not read that file'), { err: true }); return; }
+    if (rows.length < 2) { toast(t('That sheet has no rows to import'), { err: true }); return; }
+    const head = rows[0].map((x) => String(x).trim().toLowerCase());
+    const col = (name) => head.indexOf(name.toLowerCase());
+    const iBar = col('Barcode'), iStyle = col('Style'), iCol = col('Colour'), iSize = col('Size'), iPrice = col('Price'), iStock = col('Stock');
+    if (iBar < 0 && (iStyle < 0 || iCol < 0 || iSize < 0)) { toast(t('This sheet needs a Barcode column, or Style + Colour + Size columns, to match each row to a product'), { err: true }); return; }
+    const vs = allVariants();
+    let updated = 0, priceChanges = 0, stockChanges = 0; const notFound = [];
+    if (!(await confirmBox(t('Import this sheet?'), t('Rows are matched by barcode (or by style, colour and size). Price and Stock in the sheet will overwrite what is in AUZsStyle for every matching row.'), t('Import')))) return;
+    for (let r = 1; r < rows.length; r++) {
+      const row = rows[r]; if (!row.some((c) => String(c).trim() !== '')) continue;
+      const barcode = iBar >= 0 ? String(row[iBar] || '').trim() : '';
+      let x = barcode ? vs.find((v) => v.barcode === barcode) : null;
+      if (!x && iStyle >= 0) x = vs.find((v) => v.style.name.trim().toLowerCase() === String(row[iStyle] || '').trim().toLowerCase() && (iCol < 0 || (v.colour || '').trim().toLowerCase() === String(row[iCol] || '').trim().toLowerCase()) && (iSize < 0 || (v.size || '').trim().toLowerCase() === String(row[iSize] || '').trim().toLowerCase()));
+      if (!x) { notFound.push(barcode || (row[iStyle] || '') + ' ' + (row[iCol] || '') + ' ' + (row[iSize] || '')); continue; }
+      let touched = false;
+      if (iPrice >= 0 && row[iPrice] !== '' && row[iPrice] != null) { const np = N(row[iPrice]); if (isFinite(np) && np >= 0 && Math.abs(np - x.price) > .005) { try { await api('sty_set_variant', { p_id: x.id, p: { price: np } }); priceChanges++; touched = true; } catch (e) {} } }
+      if (iStock >= 0 && row[iStock] !== '' && row[iStock] != null) { const ns = Math.round(N(row[iStock])); if (isFinite(ns) && ns >= 0 && ns !== x.stock) { try { await api('sty_adjust', { p: { variantId: x.id, qty: ns, mode: 'count', note: t('Excel import') } }); stockChanges++; touched = true; } catch (e) {} } }
+      if (touched) updated++;
+    }
+    await loadCatalog(true).catch(() => {});
+    toast(updated + ' ' + t('rows updated') + ' (' + priceChanges + ' ' + t('price') + ', ' + stockChanges + ' ' + t('stock') + ')' + (notFound.length ? ' · ' + notFound.length + ' ' + t('rows did not match any product') : ''));
+    done && done();
+  };
+  document.body.append(file); file.click(); setTimeout(() => file.remove(), 3000);
 }

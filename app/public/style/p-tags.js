@@ -7,9 +7,20 @@ const TAG_DESIGNS = [
       h('div', { class: 'tg-sz' }, x.size || ''),
       h('div', { class: 'tg-nm' }, x.style.name.slice(0, 40)),
       h('div', { class: 'tg-cl' }, x.colour || ''),
-      h('div', { class: 'tg-bc' }, barcodeSvg(x.barcode, { height: 30, width: 150 })),
+      h('div', { class: 'tg-bc' }, barcodeSvg(x.barcode, { height: 27, width: 138 })),
       h('div', { class: 'tg-ft' }, h('span', null, x.barcode), h('span', { class: 'tg-pr' }, x.style.mrp > x.price ? h('s', null, inr(x.style.mrp)) : null, h('b', null, inr(x.price))))) },
-  { id: 'classic', name: 'Classic', build: (x, shop) => h('div', { class: 'tag-l' }, h('div', { class: 'tg-s' }, shop), h('div', { class: 'tg-n' }, x.style.name.slice(0, 26)), h('div', { class: 'tg-v' }, [x.colour, x.size].filter(Boolean).join(' · ')), barcodeSvg(x.barcode, { height: 34, width: 150 }), h('div', { class: 'tg-c' }, x.barcode), h('div', { class: 'tg-p' }, h('s', null, x.style.mrp > x.price ? inr(x.style.mrp) : ''), ' ', h('b', null, inr(x.price)))) },
+  { id: 'classic', name: 'Classic', build: (x, shop) => h('div', { class: 'tag-l' }, h('div', { class: 'tg-s' }, shop), h('div', { class: 'tg-n' }, x.style.name.slice(0, 26)), h('div', { class: 'tg-v' }, [x.colour, x.size].filter(Boolean).join(' · ')), barcodeSvg(x.barcode, { height: 30, width: 136 }), h('div', { class: 'tg-c' }, x.barcode), h('div', { class: 'tg-p' }, h('s', null, x.style.mrp > x.price ? inr(x.style.mrp) : ''), ' ', h('b', null, inr(x.price)))) },
+  { id: 'minimal', name: 'Minimal (price only)', build: (x, shop) => h('div', { class: 'tag-m' },
+      h('div', { class: 'tg-mn' }, x.style.name.slice(0, 30)),
+      h('div', { class: 'tg-bc' }, barcodeSvg(x.barcode, { height: 24, width: 130 })),
+      h('div', { class: 'tg-mf' }, h('span', null, x.barcode), h('b', null, inr(x.price)))) },
+  { id: 'detailed', name: 'Detailed (shop + size + colour + MRP)', build: (x, shop) => h('div', { class: 'tag-d' },
+      h('div', { class: 'tg-dh' }, h('span', null, (shop || '').slice(0, 22)), h('span', null, x.size || '')),
+      h('div', { class: 'tg-dn' }, x.style.name.slice(0, 34)),
+      h('div', { class: 'tg-dc' }, x.colour || ''),
+      h('div', { class: 'tg-bc' }, barcodeSvg(x.barcode, { height: 26, width: 134 })),
+      h('div', { class: 'tg-c' }, x.barcode),
+      h('div', { class: 'tg-dp' }, x.style.mrp > x.price ? h('s', null, inr(x.style.mrp)) : null, h('b', null, inr(x.price)))) },
 ];
 function tagDesignId() {
   try { const k = localStorage.getItem('sty.tagDesign'); if (TAG_DESIGNS.some((d) => d.id === k)) return k; } catch (e) {}

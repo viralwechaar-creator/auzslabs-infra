@@ -73,6 +73,21 @@ async function licenceCheck() {
   if (s.daysLeft <= 14) setTimeout(() => toast(s.state === 'grace' ? t('Your plan has ended. Enter a new licence code within %d days.').replace('%d', s.graceLeft) : t('Your plan ends in %d days. Ask AUZslab for a renewal code.').replace('%d', Math.max(s.daysLeft, 0)), { err: s.state === 'grace' }), 3000);
   return null;
 }
+// A toast disappears in a few seconds, easy to miss on a busy till -- within the last week (or already in the
+// grace period), also show a banner that stays until the owner closes it, and only once per day after that
+// (so it comes back tomorrow if still not renewed, but does not nag on every single screen all day).
+function licenceBannerNode() {
+  const s = window.AUZ_LIC;
+  if (!s || (s.state !== 'grace' && (s.state !== 'active' || s.daysLeft > 7))) return null;
+  const key = 'sty.licBanner.' + new Date().toDateString();
+  if (LS.get(key, false)) return null;
+  const msg = s.state === 'grace' ? t('Your plan has ended. Enter a new licence code within %d days to keep using AUZsStyle.').replace('%d', s.graceLeft)
+    : t('Your plan ends in %d days. Ask AUZslab for a renewal code so the shop is never interrupted.').replace('%d', Math.max(s.daysLeft, 0));
+  const bn = banner(s.state === 'grace' ? 'warn' : 'info', 'alert', msg);
+  bn.append(h('button', { class: 'btn plain icon sm', type: 'button', 'aria-label': t('Dismiss'), onclick: () => { LS.set(key, true); bn.remove(); } }, icon('x', 16)));
+  bn.classList.add('lic-banner');
+  return bn;
+}
 function licenceScreen(s) {
   const code = h('textarea', { class: 'input', rows: 4, placeholder: 'AUZ-XXXXX-XXXXX-...', 'aria-label': 'Licence code', style: { fontFamily: 'monospace', textTransform: 'uppercase' } });
   const m = h('div', { class: 'small', role: 'alert', style: { color: 'var(--red)', minHeight: '18px' } });
@@ -201,7 +216,7 @@ function buildShell() {
     tabs.map((id) => { const n = NAV.find((x) => x[0] === id); return h('button', { type: 'button', 'data-tab': id, 'aria-label': t(n[1]), title: t(n[1]), onclick: () => go(id) }, icon(n[2], 24), h('span', null, t(n[1]))); }),
     nav.length > tabs.length || true ? h('button', { type: 'button', 'data-tab': 'more', 'aria-label': t('More'), title: t('More'), onclick: moreSheet }, icon('more', 24), h('span', null, t('More'))) : null);
   shopIcon();
-  clear($('#app')).append(h('div', { class: 'shell' + (LS.get('side', '') ? ' ' + LS.get('side', '') : ''), id: 'shell' }, side, h('div', { class: 'main' }, topbar, h('main', { id: 'main', tabindex: '-1' })), tabbar));
+  clear($('#app')).append(h('div', { class: 'shell' + (LS.get('side', '') ? ' ' + LS.get('side', '') : ''), id: 'shell' }, side, h('div', { class: 'main' }, topbar, licenceBannerNode(), h('main', { id: 'main', tabindex: '-1' })), tabbar));
   matchMedia('(min-width:900px)').addEventListener('change', () => route_());
 }
 function signOut() { sb.auth.signOut().then(() => location.reload()); }
@@ -216,6 +231,7 @@ function moreSheet() {
       liRow({ icon: 'moon', tone: 'gray', title: t('Appearance'), badge: seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v)) })),
     h('div', { class: 'list' }, liRow({ icon: 'user', tone: 'gray', title: S.user.email, sub: S.user.role }),
       liRow({ icon: 'user', tone: 'gray', title: 'Plan & account', onclick: () => { s.close(); auzPlan.open(sb); } }),
+      liRow({ icon: 'book', tone: 'gray', title: t('User manual'), sub: t('Works offline, no internet needed'), onclick: () => { s.close(); manualSheet(); } }),
       liRow({ icon: 'info', tone: 'gray', title: 'Help & report a problem', onclick: () => { s.close(); auzHelp.open(sb); } }),
       S.user.role === 'owner' ? liRow({ icon: 'download', tone: 'gray', title: 'Backup, export or clear data', onclick: () => { s.close(); auzMyData(sb); } }) : null,
       liRow({ icon: 'logout', tone: 'gray', title: t('Sign out'), onclick: signOut })));

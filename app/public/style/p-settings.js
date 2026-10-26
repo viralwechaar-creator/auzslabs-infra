@@ -17,6 +17,93 @@ function installCard() {
   draw();
   return box;
 }
+// Offline Windows install only: /offline/lan-info (server/src/routes/offline.js) exists and answers once a licence
+// is active; on the cloud it 404s/fails and this whole section quietly removes itself (same dormant-until-
+// applicable pattern as waCard() below). Lets a phone on the same WiFi reach this computer to add product photos
+// straight into the gallery -- no cloud, no app to install on the phone, same page the PC already runs.
+function phoneUploadCard() {
+  const host = h('div', { class: 'card grid' }, h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '12px auto' } }));
+  (async () => {
+    let info;
+    try { const r = await fetch('/offline/lan-info'); if (!r.ok) throw 0; info = await r.json(); } catch (e) { const sec = host.closest('.sec'); if (sec) sec.remove(); return; }
+    const ip = (info.ips || [])[0];
+    if (!ip || !info.port) { clear(host).append(h('p', { class: 'muted small' }, t('Could not find this computer\'s WiFi address. Make sure it is connected to the shop\'s WiFi (not just a wired/ethernet connection), then come back to this screen.'))); return; }
+    const url = 'http://' + ip + ':' + info.port + '/';
+    let img = null;
+    try { const q = qrcode(0, 'M'); q.addData(url); q.make(); img = q.createDataURL(6, 2); } catch (e) { /* no QR library */ }
+    clear(host).append(
+      h('p', { class: 'muted small' }, t('Scan this with your phone\'s camera while it is on the same WiFi as this computer. It opens the same AUZsStyle you already use -- sign in once, then open a style and add photos straight from the phone\'s camera. No app to install, nothing leaves this computer.')),
+      h('div', { style: { display: 'flex', justifyContent: 'center', padding: '10px' } }, img ? h('img', { src: img, alt: t('Scan to open AUZsStyle on your phone'), style: { width: '180px', height: '180px' } }) : h('div', { class: 'muted small' }, url)),
+      h('div', { class: 'mono small', style: { textAlign: 'center' } }, url),
+      (info.ips || []).length > 1 ? h('p', { class: 'muted small' }, t('This computer has more than one network address; if the QR code does not work, try typing the address by hand on the phone.')) : null);
+  })();
+  return host;
+}
+// Offline Windows install with the 'sync' licence add-on only: /licence/status (server/src/routes/licence.js)
+// reports it; on the cloud, or without the add-on, this whole section quietly removes itself (same pattern as
+// phoneUploadCard() above). Lets the owner give this shop's data a remote sign-in -- the Windows PC keeps being
+// the one real copy (Cloud Sync Stage 1 already pushes its changes up), this just opens a window into it.
+function remoteAccessCard() {
+  const host = h('div', { class: 'card grid' }, h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '12px auto' } }));
+  const ago = (iso) => { if (!iso) return t('never'); const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000); return m < 1 ? t('just now') : m < 60 ? m + ' ' + t('min ago') : Math.round(m / 60) + ' ' + t('hr ago'); };
+  const roleLabel = { owner: t('Owner'), manager: t('Manager'), cashier: t('Cashier') };
+  async function paint() {
+    const lic = await (await fetch('/licence/status')).json();
+    if (!lic.offline || !(lic.addons && lic.addons.sync) || (lic.state !== 'active' && lic.state !== 'grace')) { const sec = host.closest('.sec'); if (sec) sec.remove(); return; }
+    let ss; try { ss = await (await fetch('/offline/sync-status')).json(); } catch (e) { ss = null; }
+    const statusNode = ss && ss.available ? (
+      ss.lastError ? banner('warn', 'alert', t('Last sync tried') + ' ' + ago(ss.lastTriedAt) + ': ' + ss.lastError)
+      : banner('ok', 'check', t('Last synced') + ' ' + ago(ss.lastOkAt) + (ss.pending ? ' · ' + ss.pending + ' ' + t('change(s) waiting to go up') : ''))
+    ) : null;
+    let logins = []; try { logins = (await (await fetch('/offline/cloud-sync-logins')).json()).logins || []; } catch (e) { /* treated as none yet */ }
+    const listHost = h('div', { class: 'list' });
+    const paintList = () => clear(listHost).append(...logins.map((l) => liRow({
+      icon: 'user', title: l.email, sub: roleLabel[l.role] || l.role,
+      right: h('button', { class: 'btn sm danger', type: 'button', onclick: async (ev) => {
+        if (!await confirmBox(t('Remove this login?'), l.email + ' ' + t('will no longer be able to sign in remotely.'), t('Remove'), true)) return;
+        ev.currentTarget.disabled = true;
+        try { await fetch('/offline/cloud-sync-logins?email=' + encodeURIComponent(l.email), { method: 'DELETE' }); paint(); } catch (e) { fail(e); ev.currentTarget.disabled = false; }
+      } }, icon('trash', 16)),
+    })));
+    paintList();
+    const out = h('div', { class: 'muted small' });
+    let formNode;
+    if (!logins.length) {
+      const email = input({ value: '', placeholder: 'you@email.com', mode: 'email' }), pass = input({ type: 'password', value: '' }), name = input({ value: '' });
+      const go = h('button', { class: 'btn fill', type: 'button', onclick: async () => {
+        go.disabled = true; out.textContent = '';
+        try {
+          const r = await fetch('/offline/cloud-sync-register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.value, password: pass.value, name: name.value }) });
+          const d = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(d.error || t('Could not turn on remote access.'));
+          toast(t('Remote access is on') + (d.url ? ' · ' + d.url : '')); paint();
+        } catch (e) { out.textContent = e.message || t('Failed'); }
+        go.disabled = false;
+      } }, t('Turn on remote access'));
+      formNode = h('div', { class: 'grid' },
+        h('p', { class: 'muted small' }, t('Set an email and password for this shop\'s data in the cloud, so you (or anyone you trust) can check it from a phone or another computer anywhere, over the internet. This computer stays the one that actually runs the shop -- the cloud copy only follows along.')),
+        field(t('Email'), email), field(t('Password'), pass), field(t('Your name (optional)'), name), out, go);
+    } else {
+      const email = input({ value: '', placeholder: 'you@email.com', mode: 'email' }), pass = input({ type: 'password', value: '' }), name = input({ value: '' }), role = selectEl([['cashier', t('Cashier')], ['manager', t('Manager')]], 'cashier');
+      const go = h('button', { class: 'btn', type: 'button', onclick: async () => {
+        go.disabled = true; out.textContent = '';
+        try {
+          const r = await fetch('/offline/cloud-sync-logins', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.value, password: pass.value, name: name.value, role: role.value }) });
+          const d = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(d.error || t('Could not add that login.'));
+          toast(d.already ? t('That login already has access') : t('Login added')); paint();
+        } catch (e) { out.textContent = e.message || t('Failed'); }
+        go.disabled = false;
+      } }, t('Add a login'));
+      formNode = h('div', { class: 'grid' },
+        h('p', { class: 'muted small' }, t('Add another email and password -- for staff or anyone else who should also be able to check this shop remotely. Each gets their own login; remove one any time with no effect on the others.')),
+        field(t('Email'), email), field(t('Password'), pass), field(t('Name (optional)'), name), field(t('Role'), role), out, go);
+    }
+    clear(host).append(statusNode, listHost.children.length ? h('div', { class: 'cap' }, t('Who has remote access')) : null, listHost, formNode);
+  }
+  paint().catch(() => { const sec = host.closest('.sec'); if (sec) sec.remove(); });
+  return host;
+}
 page('settings', {
   title: 'Settings', perm: 'sty_manage',
   async render(v) {
@@ -63,6 +150,10 @@ page('settings', {
       })();
       return host;
     };
+    const billTplSel = selectEl(RECEIPT_TEMPLATES.map((d) => [d.id, d.name]), receiptTemplateId());
+    const billPrev = h('div', { class: 'tagprev' });
+    const paintBillPrev = () => { const sample = { number: 'AS-0001', at: Date.now(), lines: [{ name: 'Classic Shirt', colour: 'Blue', size: 'M', qty: 1, price: 999, net: 999, tax: 47.5 }], subtotal: 999, discount: 0, tax: 47.5, rounding: 0, total: 999, payments: [{ mode: 'cash', amount: 999 }], balance: 0 }; clear(billPrev).append(receiptNode(sample, billTplSel.value)); };
+    billTplSel.onchange = paintBillPrev; paintBillPrev();
     const slabs = Array.isArray(st.taxSlabs) ? st.taxSlabs : [];
     const s1 = input({ type: 'number', mode: 'decimal', value: slabs[0] ? slabs[0].upto : '', placeholder: '2500' }), r1 = input({ type: 'number', mode: 'decimal', value: slabs[0] ? slabs[0].rate : '', placeholder: '5' }), r2_ = input({ type: 'number', mode: 'decimal', value: slabs[1] ? slabs[1].rate : '', placeholder: '18' });
     const brHost = h('div', { class: 'list' });
@@ -78,7 +169,7 @@ page('settings', {
       try {
         const sl = []; if (N(s1.value) && N(r1.value) >= 0) sl.push({ upto: N(s1.value), rate: N(r1.value) }); if (r2_.value !== '') sl.push({ rate: N(r2_.value) });
         const upi = F.upiId.value.trim(); if (upi && !/^[\w.\-]{2,}@[\w.\-]{2,}$/.test(upi)) { toast(t('That UPI id does not look right. It looks like name@bank.'), { err: true }); ev.currentTarget.disabled = false; return; }
-        const p = { features: Object.assign({}, feat, { upiId: upi, upiName: F.upiName.value.trim(), appIcon }), logoUrl, shopName: F.shopName.value, address: F.address.value, phone: F.phone.value, gstin: F.gstin.value, billFooter: F.billFooter.value, billPrefix: F.billPrefix.value, maxDiscountPct: N(F.maxDiscountPct.value), returnDays: Math.round(N(F.returnDays.value)),
+        const p = { features: Object.assign({}, feat, { upiId: upi, upiName: F.upiName.value.trim(), appIcon, receiptTemplate: billTplSel.value }), logoUrl, shopName: F.shopName.value, address: F.address.value, phone: F.phone.value, gstin: F.gstin.value, billFooter: F.billFooter.value, billPrefix: F.billPrefix.value, maxDiscountPct: N(F.maxDiscountPct.value), returnDays: Math.round(N(F.returnDays.value)),
           defaultTaxPct: N(F.defaultTaxPct.value), loyaltyEarnPct: N(F.loyaltyEarnPct.value), loyaltyPointValue: N(F.loyaltyPointValue.value), leadDays: Math.round(N(F.leadDays.value)), coverDays: Math.round(N(F.coverDays.value)), slowDays: Math.round(N(F.slowDays.value)),
           allowNegativeStock: st.allowNegativeStock, roundOff: st.roundOff, requireCustomerPhone: st.requireCustomerPhone, staffSeeCost: st.staffSeeCost, priceIncludesTax: st.priceIncludesTax, taxSlabs: sl };
         S.ctx = await api('sty_save_settings', { p }); S.perms = S.ctx.perms; toast(t('Saved')); setTimeout(() => location.reload(), 350);
@@ -86,6 +177,7 @@ page('settings', {
     } }, t('Save settings'));
     v.root.append(h('div', { class: 'grid setg' },
       section(t('Shop'), h('div', { class: 'card grid' }, h('div', { class: 'logo-row' }, logoImg, h('div', { class: 'grow' }, h('div', { class: 'cap' }, t('Shop logo') + ' · ' + t('used for the home-screen icon')), logoBtns)), h('div', { class: 'logo-row' }, iconImg, h('div', { class: 'grow' }, h('div', { class: 'cap' }, t('App icon (home screen)') + ' · ' + t('fills the whole icon')), iconBtns)), field(t('Shop name'), F.shopName), field(t('Address'), F.address), h('div', { class: 'two' }, field(t('Phone'), F.phone), field('GSTIN', F.gstin)), h('div', { class: 'two' }, field(t('Bill prefix'), F.billPrefix), field(t('Bill footer'), F.billFooter)))),
+      section(t('Bill template'), h('div', { class: 'card grid' }, h('div', { class: 'muted small' }, t('Switch the look of every printed/shared bill. Turn it on here -- nothing else to install.')), field(t('Design'), billTplSel), billPrev)),
       section(t('Pay by UPI'), h('div', { class: 'card grid' }, h('div', { class: 'muted small' }, t('Your UPI id. At billing, a QR with the exact amount appears so the customer can scan and pay.')), h('div', { class: 'two' }, field(t('UPI id'), F.upiId), field(t('Shown as'), F.upiName)))),
       section(t('Pictures'), h('div', { class: 'card grid' }, h('div', { class: 'mut small' }, t('New pictures are shrunk automatically. Press this once to shrink the old, heavy ones so they load fast on every phone.')), (() => { const out = h('div', { class: 'mut small' }); const b = h('button', { class: 'btn', type: 'button', onclick: async () => { b.disabled = true; try { const r = await lightenPictures((d, n) => { out.textContent = d + ' / ' + n; }); out.textContent = r.changed + ' ' + t('styles lightened') + ' · ' + r.savedKb + ' KB ' + t('saved') + (r.failed ? ' · ' + r.failed + ' ' + t('could not be read') : ''); } catch (e) { toast(e.message || t('Failed'), { err: true }); } b.disabled = false; } }, icon('camera', 16), t('Make old pictures lighter')); return h('div', { class: 'grid' }, b, out); })())),
       section(t('Selling rules'), h('div', { class: 'card grid' }, h('div', { class: 'two' }, field(t('Staff can give discount up to') + ' %', F.maxDiscountPct), field(t('Returns allowed for (days)'), F.returnDays)),
@@ -98,6 +190,11 @@ page('settings', {
       section(t('Branches and warehouses'), brHost, h('button', { class: 'btn', type: 'button', onclick: () => branchForm(null) }, icon('plus', 18), t('New branch'))),
       section(t('Day close'), h('div', { class: 'card grid' }, h('p', { class: 'muted small' }, t('Closing a day stops anyone adding or changing bills on or before that date.')), field(t('Closed up to'), dc),
         h('button', { class: 'btn', type: 'button', onclick: async () => { if (!dc.value) return; if (!await confirmBox(t('Close the books?'), t('Bills on or before') + ' ' + dc.value + ' ' + t('cannot be changed after this.'), t('Close day'), true)) return; S.ctx = await api('sty_day_close', { p_date: dc.value }); toast(t('Day closed')); } }, t('Close day')))),
+      section(t('Backup'), h('div', { class: 'card grid' },
+        h('p', { class: 'muted small' }, t('Download everything -- your inventory, customers and bills -- as one Excel file you can open directly in Excel or Google Sheets. It is a real spreadsheet, not a code file; keep a copy somewhere safe (a pendrive, email, cloud drive).')),
+        (() => { const out = h('div', { class: 'muted small' }); const b = h('button', { class: 'btn fill', type: 'button', onclick: async () => { b.disabled = true; out.textContent = t('Preparing…'); try { await backupExcel(); out.textContent = t('Downloaded'); } catch (e) { out.textContent = ''; fail(e); } b.disabled = false; } }, icon('download', 18), t('Download Excel backup')); return h('div', { class: 'grid' }, b, out); })())),
+      section(t('Add photos from your phone'), phoneUploadCard()),
+      section(t('Remote access'), remoteAccessCard()),
       section(t('Install on this computer'), installCard()),
       section(t('WhatsApp messages'), waCard()),
       section(t('Health check'), h('div', { class: 'card grid' }, h('p', { class: 'muted small' }, t('Checks that bill totals, stock and returns all agree.')), h('div', { id: 'hc' }),

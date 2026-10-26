@@ -30,7 +30,7 @@ function calcBill(lines, o = {}) {
     sub += gross; ld += d; after += gross - d;
     return { ...l, gross, ld: d, after: gross - d };
   });
-  let bd = o.billDiscPct ? after * o.billDiscPct / 100 : (o.billDiscAmt || 0);
+  let bd = (o.billDiscPct ? after * o.billDiscPct / 100 : (o.billDiscAmt || 0)) + (o.extraAmt || 0);
   bd = r2(Math.min(Math.max(bd, 0), after));
   let tot = 0, tax = 0;
   for (const l of L) {
@@ -48,27 +48,63 @@ function calcBill(lines, o = {}) {
 }
 
 // ---- receipt ----
+// Several bill/invoice designs (not just one): the owner picks one in Settings -> Bill template, stored in
+// settings.features.receiptTemplate (a business-wide choice, same as upiId -- not per-device like the tag design).
 function shopHeader() { const s = S.ctx.settings; return { name: s.shopName || (S.dash.tenant && S.dash.tenant.name) || 'Shop', address: s.address, phone: s.phone, gstin: s.gstin, footer: s.billFooter }; }
-function receiptNode(sale) {
+function receiptTemplateId() { const k = (S.ctx.settings.features || {}).receiptTemplate; return RECEIPT_TEMPLATES.some((d) => d.id === k) ? k : 'classic'; }
+const poweredBy = () => h('div', { class: 'rc-pwr' }, 'Powered by ', h('a', { href: 'https://auzslab.in', target: '_blank', rel: 'noopener' }, 'auzslab.in'));
+const RECEIPT_TEMPLATES = [
+  { id: 'classic', name: 'Classic', build: (sale, sh, d, row) => h('div', { class: 'receipt rc-classic' },
+      h('div', { class: 'rc-h' }, (S.ctx.settings && S.ctx.settings.logoUrl) ? h('img', { class: 'rc-logo', src: S.ctx.settings.logoUrl, alt: '' }) : null, h('b', null, sh.name), sh.address ? h('div', null, sh.address) : null, sh.phone ? h('div', null, sh.phone) : null, sh.gstin ? h('div', null, 'GSTIN ' + sh.gstin) : null),
+      h('div', { class: 'rc-sep' }),
+      row(sale.number || '—', d.toLocaleString('en-GB', { day: 'numeric', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' })),
+      sale.customer ? row(sale.customer.name, sale.customer.phone || '') : null,
+      h('div', { class: 'rc-sep' }),
+      sale.lines.map((l) => h('div', { class: 'rc-l' }, h('div', null, l.name + (l.colour ? ' · ' + l.colour : '') + (l.size ? ' · ' + l.size : '')), row(l.qty + ' × ' + inr(l.price), inr(l.net)))),
+      h('div', { class: 'rc-sep' }),
+      row(t('Subtotal'), inr(sale.subtotal)),
+      sale.discount > 0 ? row(t('Discount'), '-' + inr(sale.discount)) : null,
+      row(t('Tax') + ' (incl.)', inr(sale.tax)),
+      sale.rounding ? row(t('Round off'), inr(sale.rounding)) : null,
+      row(t('Total'), inr(sale.total), 'big'),
+      (sale.payments || []).map((p) => row(String(p.mode).toUpperCase(), inr(p.amount))),
+      sale.balance > 0 ? row(t('Due'), inr(sale.balance), 'big') : null,
+      sale.pointsEarned ? h('div', { class: 'rc-f' }, '+' + sale.pointsEarned + ' ' + t('Points')) : null,
+      h('div', { class: 'rc-f' }, sh.footer || 'Thank you, visit again'), poweredBy()) },
+  { id: 'compact', name: 'Compact (short, items on one line, total only)', build: (sale, sh, d, row) => h('div', { class: 'receipt rc-compact' },
+      h('div', { class: 'rc-h' }, h('b', null, sh.name), sh.phone ? h('div', null, sh.phone) : null),
+      h('div', { class: 'rc-sep' }),
+      row(sale.number || '—', d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })),
+      sale.lines.map((l) => row(l.qty + ' ' + l.name.slice(0, 22), inr(l.net))),
+      h('div', { class: 'rc-sep' }),
+      row(t('Total'), inr(sale.total), 'big'),
+      (sale.payments || []).map((p) => row(String(p.mode).toUpperCase(), inr(p.amount))),
+      sale.balance > 0 ? row(t('Due'), inr(sale.balance), 'big') : null,
+      h('div', { class: 'rc-f' }, sh.footer || 'Thank you, visit again'), poweredBy()) },
+  { id: 'formal', name: 'Formal tax invoice (GSTIN, item-wise tax, signatory line)', build: (sale, sh, d, row) => h('div', { class: 'receipt rc-formal' },
+      h('div', { class: 'rc-h' }, (S.ctx.settings && S.ctx.settings.logoUrl) ? h('img', { class: 'rc-logo', src: S.ctx.settings.logoUrl, alt: '' }) : null, h('b', null, sh.name), sh.address ? h('div', null, sh.address) : null, sh.phone ? h('div', null, sh.phone) : null, sh.gstin ? h('div', null, 'GSTIN: ' + sh.gstin) : null, h('div', { class: 'rc-tag' }, t('Tax invoice'))),
+      h('div', { class: 'rc-sep' }),
+      row(t('Invoice no.'), sale.number || '—'), row(t('Date'), d.toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })),
+      sale.customer ? row(t('Customer'), sale.customer.name + (sale.customer.phone ? ' · ' + sale.customer.phone : '')) : null,
+      h('div', { class: 'rc-sep' }),
+      h('div', { class: 'rc-thead' }, h('span', null, t('Item')), h('span', null, t('Qty')), h('span', { class: 'num' }, t('Rate')), h('span', { class: 'num' }, t('Tax')), h('span', { class: 'num' }, t('Amount'))),
+      sale.lines.map((l) => h('div', { class: 'rc-tr' }, h('span', null, l.name + (l.colour ? ' · ' + l.colour : '') + (l.size ? ' · ' + l.size : '')), h('span', null, l.qty), h('span', { class: 'num' }, inr(l.price)), h('span', { class: 'num' }, inr(l.tax || 0)), h('span', { class: 'num' }, inr(l.net)))),
+      h('div', { class: 'rc-sep' }),
+      row(t('Subtotal'), inr(sale.subtotal)),
+      sale.discount > 0 ? row(t('Discount'), '-' + inr(sale.discount)) : null,
+      row(t('Total tax (incl.)'), inr(sale.tax)),
+      sale.rounding ? row(t('Round off'), inr(sale.rounding)) : null,
+      row(t('Grand total'), inr(sale.total), 'big'),
+      (sale.payments || []).map((p) => row(String(p.mode).toUpperCase(), inr(p.amount))),
+      sale.balance > 0 ? row(t('Balance due'), inr(sale.balance), 'big') : null,
+      sale.pointsEarned ? h('div', { class: 'rc-f' }, '+' + sale.pointsEarned + ' ' + t('Points')) : null,
+      h('div', { class: 'rc-sig' }, t('For') + ' ' + sh.name), h('div', { class: 'rc-f' }, sh.footer || 'Thank you, visit again'), poweredBy()) },
+];
+function receiptNode(sale, templateId) {
   const sh = shopHeader(), d = new Date(sale.at || Date.now());
   const row = (a, b, cls) => h('div', { class: 'rc-r' + (cls ? ' ' + cls : '') }, h('span', null, a), h('span', { class: 'num' }, b));
-  return h('div', { class: 'receipt' },
-    h('div', { class: 'rc-h' }, (S.ctx.settings && S.ctx.settings.logoUrl) ? h('img', { class: 'rc-logo', src: S.ctx.settings.logoUrl, alt: '' }) : null, h('b', null, sh.name), sh.address ? h('div', null, sh.address) : null, sh.phone ? h('div', null, sh.phone) : null, sh.gstin ? h('div', null, 'GSTIN ' + sh.gstin) : null),
-    h('div', { class: 'rc-sep' }),
-    row(sale.number || '—', d.toLocaleString('en-GB', { day: 'numeric', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' })),
-    sale.customer ? row(sale.customer.name, sale.customer.phone || '') : null,
-    h('div', { class: 'rc-sep' }),
-    sale.lines.map((l) => h('div', { class: 'rc-l' }, h('div', null, l.name + (l.colour ? ' · ' + l.colour : '') + (l.size ? ' · ' + l.size : '')), row(l.qty + ' × ' + inr(l.price), inr(l.net)))),
-    h('div', { class: 'rc-sep' }),
-    row(t('Subtotal'), inr(sale.subtotal)),
-    sale.discount > 0 ? row(t('Discount'), '-' + inr(sale.discount)) : null,
-    row(t('Tax') + ' (incl.)', inr(sale.tax)),
-    sale.rounding ? row(t('Round off'), inr(sale.rounding)) : null,
-    row(t('Total'), inr(sale.total), 'big'),
-    (sale.payments || []).map((p) => row(String(p.mode).toUpperCase(), inr(p.amount))),
-    sale.balance > 0 ? row(t('Due'), inr(sale.balance), 'big') : null,
-    sale.pointsEarned ? h('div', { class: 'rc-f' }, '+' + sale.pointsEarned + ' ' + t('Points')) : null,
-    h('div', { class: 'rc-f' }, sh.footer || 'Thank you, visit again'));
+  const tpl = RECEIPT_TEMPLATES.find((q) => q.id === (templateId || receiptTemplateId())) || RECEIPT_TEMPLATES[0];
+  return tpl.build(sale, sh, d, row);
 }
 function printReceipt(sale) {
   const wrap = h('div', { class: 'print-only' }, receiptNode(sale));
@@ -96,6 +132,21 @@ async function shareWa(sale, phone) {
   const link = await billLink(sale);
   const url = 'https://wa.me/' + (p ? (p.length === 10 ? '91' + p : p) : '') + '?text=' + encodeURIComponent(waText(sale, link));
   if (w) w.location.href = url; else window.open(url, '_blank', 'noopener');
+}
+
+// ---- backup, all in one Excel file (not a code/JSON dump) ----
+async function backupExcel() {
+  const [styles, customers, sales] = await Promise.all([
+    api('sty_catalog', { p_branch: null }), api('sty_list_customers', { p_q: '', p_limit: 20000 }).catch(() => []), api('sty_list_sales', { p: { limit: 20000 } }).catch(() => []),
+  ]);
+  const invHead = [t('Style'), t('Category'), t('Brand'), t('Colour'), t('Size'), t('Barcode'), t('SKU'), t('Cost'), t('Price'), t('MRP'), t('Stock'), t('Active')];
+  const invRows = []; (styles || []).forEach((s) => (s.variants || []).forEach((x) => invRows.push([s.name, s.category || '', s.brand || '', x.colour || '', x.size || '', x.barcode || '', x.sku || '', x.cost ?? s.cost ?? 0, x.price ?? s.price ?? 0, s.mrp ?? 0, x.stock ?? 0, x.active === false ? t('No') : t('Yes')])));
+  const custHead = [t('Name'), t('Phone'), t('Points'), t('Store credit'), t('City'), t('Birthday'), t('Anniversary'), t('Notes')];
+  const custRows = (customers || []).map((c) => [c.name || '', c.phone || '', c.points || 0, c.credit || 0, c.city || '', c.birthday ? String(c.birthday).slice(0, 10) : '', c.anniversary ? String(c.anniversary).slice(0, 10) : '', c.notes || '']);
+  const saleHead = [t('Bill no.'), t('Date'), t('Customer'), t('Staff'), t('Units'), t('Discount'), t('Total'), t('Paid'), t('Status')];
+  const saleRows = (sales || []).map((x) => [x.number || '', new Date(x.at).toLocaleString('en-GB'), x.customer || '', x.staff || '', x.units || 0, x.discount || 0, x.total || 0, x.paid || 0, x.status || '']);
+  const slug = (S.dash && S.dash.tenant && S.dash.tenant.slug) || 'shop';
+  exportXLSXMulti('auzsstyle-backup-' + slug + '-' + new Date().toISOString().slice(0, 10), [[t('Inventory'), invHead, invRows], [t('Customers'), custHead, custRows], [t('Sales'), saleHead, saleRows]]);
 }
 
 // ---- pickers ----

@@ -205,7 +205,7 @@ export async function handle(ctx) {
     if (!process.env.LICENCE_PRIVATE_KEY) throw new HttpError(400, 'Licence signing is not set up on the server yet (LICENCE_PRIVATE_KEY).');
     const b = await readJsonBody(req);
     const shop = String(b.shop || '').trim(); if (!shop) throw new HttpError(400, 'Shop name is required');
-    const addons = { cloud: !!(b.addons && b.addons.cloud), whatsapp: !!(b.addons && b.addons.whatsapp), store: !!(b.addons && b.addons.store) };
+    const addons = { cloud: !!(b.addons && b.addons.cloud), whatsapp: !!(b.addons && b.addons.whatsapp), store: !!(b.addons && b.addons.store), sync: !!(b.addons && b.addons.sync) };
     let code; try { code = signLicence({ shop, end: String(b.end || ''), addons }, process.env.LICENCE_PRIVATE_KEY); } catch (e) { throw new HttpError(400, e.message); }
     await withAuth(user.id, (client) => client.query('select admin_log_licence($1::jsonb) as r', [JSON.stringify({ shop, end: b.end, addons, note: b.note || '', tenantId: b.tenantId || null, code, codeId: verifyLicence(code, publicFromPrivate(process.env.LICENCE_PRIVATE_KEY)).id, renewOf: b.renewOf || null })]));
     return reply(200, { code });

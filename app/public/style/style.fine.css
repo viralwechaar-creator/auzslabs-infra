@@ -74,12 +74,21 @@
 .receipt{font-family:var(--mono);font-size:12.5px;line-height:1.45;background:#fff;color:#111;border-radius:10px;padding:14px;box-shadow:0 0 0 .5px var(--sep);max-width:340px;margin:0 auto;width:100%}
 .rc-h{text-align:center}.rc-h b{font-size:15px}.rc-sep{border-top:1px dashed #999;margin:8px 0}
 .rc-r{display:flex;justify-content:space-between;gap:10px}.rc-r.big{font-weight:700;font-size:14px}.rc-l{margin-bottom:4px}.rc-f{text-align:center;margin-top:6px;font-size:11.5px}
+.rc-pwr{text-align:center;margin-top:8px;font-size:10px;opacity:.6}.rc-pwr a{color:inherit;text-decoration:underline}
+/* Formal tax-invoice template: item-wise grid + a signatory line, bigger box than a thermal receipt */
+.rc-formal{max-width:420px;font-size:12px}.rc-tag{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut,#888);margin-top:3px}
+.rc-thead,.rc-tr{display:grid;grid-template-columns:1fr 32px 60px 50px 64px;gap:6px;align-items:baseline}
+.rc-thead{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut,#888);padding-bottom:3px;border-bottom:1px solid var(--sep,#ddd)}
+.rc-tr{padding:2px 0}.rc-tr .num{text-align:right}
+.rc-sig{margin-top:14px;text-align:right;font-size:11px}
+/* Compact template: smaller line height, fits more on a short thermal roll */
+.rc-compact{font-size:11.5px;line-height:1.3}
 
 /* barcode tags */
-.tags .tag-l{page-break-after:always;break-after:page;display:grid;justify-items:center;align-content:center;gap:1px;text-align:center;font-family:Arial,sans-serif;color:#000;overflow:hidden}
+.tags .tag-l{page-break-after:always;break-after:page;display:grid;justify-items:center;align-content:center;gap:1px;text-align:center;font-family:'Segoe UI',Arial,sans-serif;color:#000;overflow:hidden}
 .tags-50x25 .tag-l{width:50mm;height:25mm}.tags-38x25 .tag-l{width:38mm;height:25mm}
 .tags-a4{display:grid;grid-template-columns:repeat(4,1fr);gap:0}.tags-a4 .tag-l{width:auto;height:27mm;page-break-after:auto;break-after:auto;border:.2mm dashed #bbb}
-.tag-l .tg-s{font-size:7pt;font-weight:700}.tag-l .tg-n{font-size:8pt;font-weight:700;line-height:1.05}.tag-l .tg-v{font-size:7pt}.tag-l svg{max-width:90%;height:9mm}.tag-l .tg-c{font-size:6pt;letter-spacing:.5px}.tag-l .tg-p{font-size:9pt}
+.tag-l .tg-s{font-size:7pt;font-weight:700}.tag-l .tg-n{font-size:8pt;font-weight:700;line-height:1.05}.tag-l .tg-v{font-size:7pt}.tag-l svg{max-width:84%;height:8mm}.tag-l .tg-c{font-size:6pt;letter-spacing:.5px}.tag-l .tg-p{font-size:9pt}
 @media print{.tags.print-only{display:block!important}.tags-a4.print-only{display:grid!important}.receipt{box-shadow:none;max-width:none;padding:0}}
 
 /* density: slightly small and calm on phones */
@@ -370,7 +379,7 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .ic-tick.on{background:var(--tint);border-color:var(--tint)}
 
 /* barcode tag designs: GenX premium (minimal, size-forward) */
-.tag-g{width:50mm;height:25mm;box-sizing:border-box;padding:2mm 2.6mm 1.5mm;display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto auto 1fr auto;column-gap:2mm;font-family:Helvetica,Arial,sans-serif;color:#000;background:#fff;overflow:hidden;page-break-after:always;break-after:page}
+.tag-g{width:50mm;height:25mm;box-sizing:border-box;padding:2mm 2.6mm 1.5mm;display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto auto 1fr auto;column-gap:2mm;font-family:'Segoe UI',Helvetica,Arial,sans-serif;color:#000;background:#fff;overflow:hidden;page-break-after:always;break-after:page}
 .tags-38x25 .tag-g{width:38mm}.tags-a4 .tag-g{width:auto;height:27mm;page-break-after:auto;break-after:auto;border:.2mm dashed #ccc}
 .tag-g .tg-b{grid-column:1;font-size:5.4pt;letter-spacing:.34em;font-weight:600;line-height:1}
 .tag-g .tg-sz{grid-column:2;grid-row:1/3;font-size:15pt;font-weight:300;line-height:1;text-align:right;letter-spacing:-.02em}
@@ -380,7 +389,7 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .tag-g .tg-ft{grid-column:1/-1;display:flex;justify-content:space-between;align-items:baseline;font-size:4.8pt;letter-spacing:.2em;margin-top:.4mm}
 .tag-g .tg-pr{display:inline-flex;gap:1.2mm;align-items:baseline;letter-spacing:0}.tag-g .tg-pr b{font-size:9pt;font-weight:600}.tag-g .tg-pr s{font-size:5.4pt;color:#777}
 .tagprev{display:flex;justify-content:center;padding:14px;background:var(--soft,#f3f3f2);border-radius:14px}.tagprev .tagbox{box-shadow:0 1px 8px rgba(0,0,0,.12);transform:scale(1.5);transform-origin:center;margin:14px 0}
-.tagprev .tag-g,.tagprev .tag-l{page-break-after:auto;break-after:auto}.tagprev .tag-l{width:50mm;height:25mm;display:grid;justify-items:center;align-content:center;text-align:center;font-family:Arial,sans-serif;background:#fff}
+.tagprev .tag-g,.tagprev .tag-l,.tagprev .tag-m,.tagprev .tag-d{page-break-after:auto;break-after:auto}.tagprev .tag-l{width:50mm;height:25mm;display:grid;justify-items:center;align-content:center;text-align:center;font-family:'Segoe UI',Arial,sans-serif;background:#fff}
 .tagtotal{opacity:.8}
 
 /* GenX tag, tighter: the barcode takes all the free height, every line sits snug */
@@ -389,13 +398,29 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .tag-g .tg-sz{font-size:14pt;font-weight:300;line-height:.9;grid-row:1/4}
 .tag-g .tg-nm{font-size:6.6pt;font-weight:600;line-height:1.05;margin-top:.9mm;max-height:2.1em}
 .tag-g .tg-cl{grid-column:1;font-size:4.8pt;letter-spacing:.14em;margin-top:.3mm;line-height:1}
-.tag-g .tg-bc{margin-top:.9mm;align-self:stretch;min-height:0}.tag-g .tg-bc svg{height:100%;min-height:6mm}
+.tag-g .tg-bc{margin-top:.9mm;align-self:stretch;min-height:0;text-align:center}.tag-g .tg-bc svg{width:92%;height:92%;min-height:5.4mm}
 .tag-g .tg-ft{margin-top:.7mm;font-size:4.6pt;letter-spacing:.16em;line-height:1}
 .tag-g .tg-pr b{font-size:9.5pt;line-height:.9}
 
+/* Minimal tag: name + barcode + price only, biggest barcode margin of all four designs */
+.tag-m{width:50mm;height:25mm;box-sizing:border-box;padding:2mm 2.6mm;display:grid;grid-template-rows:auto 1fr auto;justify-items:center;text-align:center;gap:.8mm;font-family:'Segoe UI',Helvetica,Arial,sans-serif;color:#000;background:#fff;overflow:hidden;page-break-after:always;break-after:page}
+.tags-38x25 .tag-m{width:38mm}.tags-a4 .tag-m{width:auto;height:27mm;page-break-after:auto;break-after:auto;border:.2mm dashed #ccc}
+.tag-m .tg-mn{font-size:7.5pt;font-weight:600;line-height:1.1;max-height:2.2em;overflow:hidden}
+.tag-m .tg-bc{align-self:center;width:88%}.tag-m .tg-bc svg{width:100%;height:8mm;display:block;margin:0 auto}
+.tag-m .tg-mf{display:flex;justify-content:space-between;gap:3mm;font-size:6.5pt;width:100%}.tag-m .tg-mf b{font-size:9.5pt}
+
+/* Detailed tag: shop + size header, colour line, barcode, price row -- everything one notch smaller to leave margin */
+.tag-d{width:50mm;height:25mm;box-sizing:border-box;padding:1.8mm 2.4mm;display:grid;grid-template-rows:auto auto auto 1fr auto;gap:.5mm;font-family:'Segoe UI',Helvetica,Arial,sans-serif;color:#000;background:#fff;overflow:hidden;page-break-after:always;break-after:page}
+.tags-38x25 .tag-d{width:38mm}.tags-a4 .tag-d{width:auto;height:27mm;page-break-after:auto;break-after:auto;border:.2mm dashed #ccc}
+.tag-d .tg-dh{display:flex;justify-content:space-between;font-size:5.4pt;letter-spacing:.08em;font-weight:600;text-transform:uppercase;white-space:nowrap;overflow:hidden}
+.tag-d .tg-dn{font-size:6.6pt;font-weight:600;line-height:1.05;max-height:1.2em;overflow:hidden}
+.tag-d .tg-dc{font-size:5pt;color:#555;letter-spacing:.08em;text-transform:uppercase;overflow:hidden}
+.tag-d .tg-bc{align-self:center;text-align:center}.tag-d .tg-bc svg{width:88%;height:6.6mm;display:inline-block}
+.tag-d .tg-dp{display:flex;align-items:baseline;gap:1.4mm;justify-self:end;font-size:9pt}.tag-d .tg-dp s{font-size:5.4pt;color:#777}
+
 .tagall{display:grid;grid-template-columns:repeat(auto-fill,minmax(204px,1fr));gap:10px}
 .tagone{display:grid;gap:4px;justify-items:start}.tagone .tagbox{box-shadow:0 0 0 1px var(--line,#e4e4e2);background:#fff}
-.tagone .tag-g,.tagone .tag-l{page-break-after:auto;break-after:auto}.tagone .tag-l{width:50mm;height:25mm;display:grid;justify-items:center;align-content:center;text-align:center;font-family:Arial,sans-serif;background:#fff}
+.tagone .tag-g,.tagone .tag-l,.tagone .tag-m,.tagone .tag-d{page-break-after:auto;break-after:auto}.tagone .tag-l{width:50mm;height:25mm;display:grid;justify-items:center;align-content:center;text-align:center;font-family:'Segoe UI',Arial,sans-serif;background:#fff}
 .tagone .q{font-size:11px;color:var(--mut,#888);padding-left:2px}
 
 /* 2 labels across one roll: page = 2 labels + gap, one row per page */
@@ -411,3 +436,6 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 
 /* printing while a sheet is open: the scroll lock pins the body (position:fixed), and a fixed body prints as ONE page */
 @media print{html.auz-lock body{position:static!important;top:auto!important;width:auto!important;overflow:visible!important;height:auto!important}html.auz-lock{overflow:visible!important}}
+
+/* offline user manual */
+.man-sec{margin-bottom:16px}.man-sec h3{font-size:15px;font-weight:700;margin:0 0 6px}.man-sec p{font-size:13.5px;line-height:1.5;color:var(--label2);margin:0 0 7px}

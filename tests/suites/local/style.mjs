@@ -146,6 +146,27 @@ export default async function run({ browser, stack }) {
     await integrity();
   });
 
+  await s.check('Voiding a credit-paid bill gives the store credit back; exchange credit is real and capped, not trusted at face value', async () => {
+    const cu = (await ok(staff, 'sty_list_customers', { p_q: 'Asha' }))[0]; const before = cu.credit; assert(before > 0, 'test needs existing store credit');
+    const spend = Math.min(before, 50);
+    const b = await ok(staff, 'sty_sell', { p: { id: uid(), customerId: cu.id, lines: [{ variantId: vL.id, qty: 1 }], payments: [{ mode: 'credit', amount: spend }, { mode: 'cash', amount: 3000 }] } });
+    let cu2 = (await ok(staff, 'sty_list_customers', { p_q: 'Asha' }))[0]; assert(Math.abs(cu2.credit - (before - spend)) < 0.02, 'credit not spent: ' + cu2.credit);
+    await ok(manager, 'sty_void_sale', { p_id: b.id, p_reason: 'test void' });
+    cu2 = (await ok(staff, 'sty_list_customers', { p_q: 'Asha' }))[0]; assert(Math.abs(cu2.credit - before) < 0.02, 'credit not restored after void: ' + cu2.credit + ' vs ' + before);
+
+    // exchange: a return with mode='exchange' must grant real credit, and sty_sell must cap an 'exchange' payment
+    // against that real balance -- not accept whatever amount the client claims.
+    const b2 = await ok(staff, 'sty_sell', { p: { id: uid(), customerId: cu.id, lines: [{ variantId: vL.id, qty: 1 }], payments: [{ mode: 'cash', amount: 3000 }] } });
+    const r = await ok(staff, 'sty_return', { p: { id: uid(), saleId: b2.id, mode: 'exchange', reason: 'size swap', lines: [{ saleLineId: b2.lines[0].id, qty: 1 }] } });
+    const exVal = r.returns.find((x) => x.mode === 'exchange').refund;
+    const cu3 = (await ok(staff, 'sty_list_customers', { p_q: 'Asha' }))[0]; assert(cu3.credit >= exVal - 0.02, 'exchange did not grant real credit: ' + cu3.credit);
+    const claimed = exVal * 50 + 9999; // a wildly inflated amount a tampered client could send
+    const b3 = await ok(staff, 'sty_sell', { p: { id: uid(), customerId: cu.id, lines: [{ variantId: vL.id, qty: 1 }], payments: [{ mode: 'exchange', amount: claimed }, { mode: 'cash', amount: 3000 }] } });
+    const cu4 = (await ok(staff, 'sty_list_customers', { p_q: 'Asha' }))[0]; assert(cu4.credit === 0, 'inflated exchange amount was not capped: ' + cu4.credit);
+    assert(b3.status === 'paid', 'bill should still be payable with cash covering the rest');
+    await integrity();
+  }, 'critical');
+
   await s.check('Branch transfer moves stock out then in, and a wrong branch pair is refused', async () => {
     const c2 = await ok(owner, 'sty_save_branch', { p: { name: 'Warehouse', kind: 'warehouse' } }); branch2 = c2.branches.find((b) => b.name === 'Warehouse').id;
     const tr = uid(); const before = await stock(vL.id, branch1);
@@ -167,6 +188,37 @@ export default async function run({ browser, stack }) {
     await ok(owner, 'sty_sell', { p: { id: uid(), lines: [{ variantId: vJ32.id, qty: 1 }], payments: [{ mode: 'cash', amount: 2100 }] } });
     const cur = await ok(owner, 'sty_shift_current', {}); assert(cur.cashSales >= 2000 && cur.expectedCash === cur.openingCash + cur.cashSales, JSON.stringify(cur));
     const r = await ok(owner, 'sty_shift_close', { p: { countedCash: cur.expectedCash - 50 } }); assert(r.difference === -50, 'difference ' + r.difference);
+  });
+
+  await s.check('Cash in/out: move the drawer total, need an open shift, amount must be positive', async () => {
+    await fails(staff, 'sty_cash_move', { p: { kind: 'out', amount: 100 } }, /open a shift/i);
+    const opened = await ok(staff, 'sty_shift_open', { p: { openingCash: 500 } });
+    await fails(staff, 'sty_cash_move', { p: { kind: 'sideways', amount: 100 } }, /kind must be/i);
+    await fails(staff, 'sty_cash_move', { p: { kind: 'out', amount: 0 } }, /above 0/i);
+    await fails(staff, 'sty_cash_move', { p: { kind: 'out', amount: -50 } }, /above 0/i);
+    let cur = await ok(staff, 'sty_cash_move', { p: { kind: 'out', amount: 300, reason: 'Change for delivery boy' } });
+    assert(cur.cashOut === 300 && cur.expectedCash === opened.expectedCash - 300, 'after out: ' + JSON.stringify(cur));
+    cur = await ok(staff, 'sty_cash_move', { p: { kind: 'in', amount: 100, reason: 'Owner top-up' } });
+    assert(cur.cashIn === 100 && cur.cashOut === 300 && cur.expectedCash === opened.expectedCash - 300 + 100, 'after in: ' + JSON.stringify(cur));
+    const moves = await ok(staff, 'sty_cash_moves_list', {});
+    assert(moves.length === 2 && moves[0].kind === 'in' && moves[0].amount === 100 && moves[1].kind === 'out' && moves[1].reason === 'Change for delivery boy', JSON.stringify(moves));
+    const closed = await ok(staff, 'sty_shift_close', { p: { countedCash: cur.expectedCash } });
+    assert(closed.difference === 0, 'closed difference ' + closed.difference);
+    const hist = await ok(owner, 'sty_list_shifts', {});
+    const h = hist.find((x) => x.id === opened.id); assert(h && h.cashIn === 100 && h.cashOut === 300, 'history row ' + JSON.stringify(h));
+  });
+
+  await s.check('Denomination count at shift close: total is computed server-side from the count, not trusted from the client', async () => {
+    const opened = await ok(staff, 'sty_shift_open', { p: { openingCash: 1000 } });
+    await fails(staff, 'sty_shift_close', { p: { denominations: { 500: 2, 37: 1 } } }, /not a real note or coin/i);
+    await fails(staff, 'sty_shift_close', { p: { denominations: { 500: -1 } } }, /cannot be negative/i);
+    // 2x500 + 1x200 + 3x100 + 1x50 + 2x20 = 1000+200+300+50+40 = 1590
+    const r = await ok(staff, 'sty_shift_close', { p: { denominations: { 500: 2, 200: 1, 100: 3, 50: 1, 20: 2 }, note: 'end of day' } });
+    assert(r.countedCash === 1590, 'counted from denominations: ' + r.countedCash);
+    assert(Math.abs(r.difference - (1590 - opened.expectedCash)) < 0.02, 'difference ' + r.difference);
+    const hist = await ok(owner, 'sty_list_shifts', {});
+    const h = hist.find((x) => x.id === opened.id);
+    assert(h && h.counted === 1590 && h.denominations && h.denominations['500'] === 2 && h.denominations['100'] === 3, 'history denominations: ' + JSON.stringify(h));
   });
 
   await s.check('Analytics: category, size, colour and variant velocity add up; reorder and size curve respond', async () => {
@@ -484,6 +536,46 @@ export default async function run({ browser, stack }) {
     const good = (await q('select sty_online_confirm($1,$2,$3,$4) r', [o2.token, 'order_TEST1', 'pay_TEST1', sig]))[0].r; assert(good.paymentStatus === 'paid', 'paid ' + JSON.stringify(good));
     const sh = await ok(null, 'public_sty_share', { p_slug: 'teststyle', p_style: sty.id }); assert(sh && sh.shop && sh.name, 'share data');
     await integrity();
+  });
+
+  await s.check('Coupons at the till: owner-created coupons work on an in-person bill too, never trusted blindly', async () => {
+    await ok(manager, 'sty_coupon_save', { p: { code: 'fest50', kind: 'flat', value: 50, minOrder: 100 } });
+    const cat = await ok(owner, 'sty_catalog', { p_branch: null });
+    const sty = cat.find((x) => x.variants.some((v) => v.stock >= 5 && x.price >= 200)); const vr = sty.variants.find((v) => v.stock >= 5);
+    const cust = await ok(staff, 'sty_save_customer', { p: { newId: uid(), name: 'Till Coupon Cust', phone: '9833344455' } });
+    await fails(staff, 'sty_sell', { p: { id: uid(), customerId: cust.id, lines: [{ variantId: vr.id, qty: 1 }], coupon: 'NOPE', payments: [{ mode: 'cash', amount: vr.price }] } }, /coupon/i);
+    const chk = await ok(staff, 'sty_coupon_check', { p: { code: 'FEST50', subtotal: vr.price, phone: cust.phone } }); assert(chk.ok && +chk.discount === 50, 'coupon check ' + JSON.stringify(chk));
+    const sale = await ok(staff, 'sty_sell', { p: { id: uid(), customerId: cust.id, lines: [{ variantId: vr.id, qty: 1 }], coupon: 'FEST50', payments: [{ mode: 'cash', amount: vr.price }] } });
+    assert(sale.discount === 50 && sale.coupon === 'FEST50', 'coupon discount applied on a real bill: ' + JSON.stringify(sale));
+    const again = await call(staff, 'sty_sell', { p: { id: uid(), customerId: cust.id, lines: [{ variantId: vr.id, qty: 1 }], coupon: 'FEST50', payments: [{ mode: 'cash', amount: vr.price }] } });
+    // the same customer cannot use the same coupon code twice, online or in-store -- a different customer still can.
+    assert(!again.ok && /already used/i.test(again.error || ''), 'the same customer must not reuse a coupon: ' + (again.error || ''));
+    const cust3 = await ok(staff, 'sty_save_customer', { p: { newId: uid(), name: 'Another Coupon Cust', phone: '9833355566' } });
+    const sale2 = await ok(staff, 'sty_sell', { p: { id: uid(), customerId: cust3.id, lines: [{ variantId: vr.id, qty: 1 }], coupon: 'FEST50', payments: [{ mode: 'cash', amount: vr.price }] } });
+    assert(sale2.discount === 50, 'a different customer can still use the same coupon: ' + JSON.stringify(sale2));
+    // SAVE10 (created in the Store round 5 test above) is first-order-only and was already used online by phone 9811122233 -- the till must see that too.
+    const c2 = await ok(staff, 'sty_save_customer', { p: { newId: uid(), name: 'Repeat Buyer', phone: '9811122233' } });
+    const blocked = await call(staff, 'sty_sell', { p: { id: uid(), customerId: c2.id, lines: [{ variantId: vr.id, qty: 1 }], coupon: 'SAVE10', payments: [{ mode: 'cash', amount: vr.price }] } });
+    assert(!blocked.ok && /first orders|already used/i.test(blocked.error || ''), 'a web-used first-order coupon must also be refused at the till: ' + blocked.error);
+  }, 'critical');
+
+  await s.check('An overpayment by any mode (not just cash) is capped out of the stored payment breakdown, not left inflated', async () => {
+    const cat = await ok(owner, 'sty_catalog', { p_branch: null });
+    const sty = cat.find((x) => x.variants.some((v) => v.stock >= 2 && x.price >= 200)); const vr = sty.variants.find((v) => v.stock >= 2);
+    const sale = await ok(staff, 'sty_sell', { p: { id: uid(), lines: [{ variantId: vr.id, qty: 1 }], payments: [{ mode: 'upi', amount: vr.price + 100 }] } });
+    assert(sale.paid === vr.price && sale.payments.length === 1 && sale.payments[0].mode === 'upi' && +sale.payments[0].amount === vr.price,
+      'overpaid UPI line must be capped at the real total, not left showing the extra: ' + JSON.stringify(sale.payments) + ' paid=' + sale.paid);
+  }, 'critical');
+
+  await s.check('Online store: two cart lines for the same variant cannot together oversell past real stock', async () => {
+    const cat = await ok(owner, 'sty_catalog', { p_branch: null });
+    const sty = cat.find((x) => x.variants.some((v) => v.stock >= 2 && v.stock <= 4)); const vr = sty.variants.find((v) => v.stock >= 2 && v.stock <= 4);
+    const base = { name: 'Dup Line', phone: '9800011122', address: '1 Lane', city: 'Jodhpur', state: 'Rajasthan', pin: '342001', payment: 'cod' };
+    // split the same variant across two lines, together asking for one more than is in stock
+    const over = await call(null, 'public_sty_place_order', { p_slug: 'teststyle', p: { ...base, lines: [{ variantId: vr.id, qty: vr.stock }, { variantId: vr.id, qty: 1 }] } });
+    assert(!over.ok && /only \d+ left/i.test(over.error || ''), 'two lines for the same item must be checked together, not separately: ' + JSON.stringify(over));
+    const ok1 = await ok(null, 'public_sty_place_order', { p_slug: 'teststyle', p: { ...base, lines: [{ variantId: vr.id, qty: vr.stock - 1 }, { variantId: vr.id, qty: 1 }] } });
+    assert(ok1.number, 'the same total split across two lines, within stock, should still succeed: ' + JSON.stringify(ok1));
   });
 
   await s.check('Buying intelligence: designs, size curve, reorder, lost demand, requests, cost hiding and isolation', async () => {

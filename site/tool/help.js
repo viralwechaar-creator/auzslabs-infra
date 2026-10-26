@@ -39,11 +39,27 @@
     });
   }
 
+  // Only the offline Windows installer has /offline/logs (OFFLINE flag, server/src/routes/offline.js) -- on the
+  // cloud it 404s/fails and this just stays empty, same dormant-until-applicable pattern as everything else here.
+  // Real log files, not a screenshot: this program has no remote crash reporting since it is meant to run with
+  // no internet, so the one time it DOES get online, the actual error text matters far more than a photo of it.
+  var logsP = null;
+  function fetchLogs() {
+    if (logsP) return logsP;
+    logsP = new Promise(function (resolve) {
+      var c = new AbortController(); var to = setTimeout(function () { c.abort(); resolve(null); }, 3000);
+      fetch(location.origin + '/offline/logs', { signal: c.signal }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { clearTimeout(to); resolve(j); }, function () { clearTimeout(to); resolve(null); });
+    });
+    return logsP;
+  }
+
   function open(sb) {
     var info = { app: appName(), shop: location.hostname, who: '', role: '' };
     if (sb && sb.rpc) {
       try { sb.rpc('my_dashboard').then(function (r) { var d = r && r.data; if (d) { info.shop = ((d.tenant && d.tenant.name) || '') + ' (' + ((d.tenant && d.tenant.slug) || location.hostname) + ')'; info.who = d.my_email || ''; info.role = d.my_role || ''; } }, function () {}); } catch (e) { /* ignore */ }
     }
+    var logs = null;
+    fetchLogs().then(function (j) { if (j && (j.appLog || j.serverLog)) { logs = j; logBtn.style.display = 'block'; } });
     var shot = null;
     var box = el('div', 'background:var(--bg,#fff);color:var(--label,#000000);border-radius:20px;max-width:440px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.35);max-height:90vh;overflow:auto;font:16px/1.4 system-ui,sans-serif');
     var ov = el('div', 'position:fixed;inset:0;z-index:2147482000;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px');
@@ -62,11 +78,19 @@
       shrink(file.files[0]).then(function (f) { shot = f; thumb.src = URL.createObjectURL(f); thumb.style.display = 'block'; pick.textContent = 'Change screenshot'; });
     };
     var msg = el('p', 'margin:10px 0 0;font-size:14px;opacity:.75;min-height:1em');
+    var logBtn = el('button', BTN, 'Download the log file'); logBtn.type = 'button'; logBtn.style.display = 'none';
+    logBtn.onclick = function () {
+      if (!logs) return;
+      var text = '--- app.log ---\n' + (logs.appLog || '(empty)') + '\n\n--- server.log ---\n' + (logs.serverLog || '(empty)');
+      var a = el('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' })); a.download = 'auzsstyle-logs.txt'; document.body.appendChild(a); a.click(); a.remove();
+      msg.textContent = 'Log file saved. Attach it to your email or WhatsApp message to us.';
+    };
 
     function context() {
       var lines = ['Business: ' + info.shop, 'User: ' + (info.who || '(not signed in)') + (info.role ? ' (' + info.role + ')' : ''), 'App: ' + info.app,
         'Page: ' + location.href.replace(/#auz_gt=.*/, ''), 'Time: ' + new Date().toString(), 'Screen: ' + innerWidth + 'x' + innerHeight, 'Device: ' + navigator.userAgent];
       if (recent.length) lines.push('Recent errors: ' + recent.join(' | '));
+      if (logs) lines.push('Last lines of the app log: ' + String(logs.serverLog || logs.appLog || '').slice(-600).replace(/\n/g, ' | '));
       return lines.join('\n');
     }
     function subject() { return '[AUZslab help] ' + info.app + ' - ' + info.shop; }
@@ -75,10 +99,13 @@
     var email = el('button', PRI, 'Send by email'); email.type = 'button';
     email.onclick = function () {
       var text = body();
-      if (shot && navigator.canShare && navigator.canShare({ files: [shot] })) {
-        navigator.share({ files: [shot], title: subject(), text: SUPPORT.email + '\n\n' + text }).then(function () { msg.textContent = 'Choose Mail or Gmail and send it to ' + SUPPORT.email + '.'; }, function () { /* cancelled */ });
+      var files = shot ? [shot] : [];
+      if (logs) files.push(new File([new Blob(['--- app.log ---\n' + (logs.appLog || '(empty)') + '\n\n--- server.log ---\n' + (logs.serverLog || '(empty)')])], 'auzsstyle-logs.txt', { type: 'text/plain' }));
+      if (files.length && navigator.canShare && navigator.canShare({ files: files })) {
+        navigator.share({ files: files, title: subject(), text: SUPPORT.email + '\n\n' + text }).then(function () { msg.textContent = 'Choose Mail or Gmail and send it to ' + SUPPORT.email + '.'; }, function () { /* cancelled */ });
         return;
       }
+      if (logs) logBtn.onclick();
       if (shot) { var a = el('a'); a.href = URL.createObjectURL(shot); a.download = 'screenshot.jpg'; document.body.appendChild(a); a.click(); a.remove(); msg.textContent = 'Your screenshot was saved. Attach it to the email that opens.'; }
       location.href = 'mailto:' + SUPPORT.email + '?subject=' + encodeURIComponent(subject()) + '&body=' + encodeURIComponent(text);
     };
@@ -90,7 +117,7 @@
     var guide = el('a', BTN, 'Beginner guide: how to use the apps'); guide.href = 'https://auzslab.in/learn.html'; guide.target = '_blank'; guide.rel = 'noopener'; box.appendChild(guide);
     if (SUPPORT.phone) { var call = el('a', PRI, 'Call us  ' + SUPPORT.phone); call.href = 'tel:' + SUPPORT.phone.replace(/[^+\d]/g, ''); box.appendChild(call); }
     if (SUPPORT.whatsapp) { var wa = el('a', BTN, 'WhatsApp us'); wa.target = '_blank'; wa.rel = 'noopener'; wa.href = 'https://wa.me/' + SUPPORT.whatsapp; wa.onclick = function () { wa.href = 'https://wa.me/' + SUPPORT.whatsapp + '?text=' + encodeURIComponent(subject() + '\n' + (what.value.trim() || '')); }; box.appendChild(wa); }
-    [what, pick, file, thumb, email, copy, msg].forEach(function (n) { box.appendChild(n); });
+    [what, pick, file, thumb, logBtn, email, copy, msg].forEach(function (n) { box.appendChild(n); });
     var done = el('button', BTN, 'Close'); done.type = 'button'; done.onclick = close; box.appendChild(done);
     ov.appendChild(box); document.body.appendChild(ov);
     what.focus();

@@ -109,7 +109,10 @@ async function migrate({ serverDir, dbDir, port, superPassword, appPassword, onP
   } finally { await c.end(); }
 }
 
-function stamp() { const d = new Date(), p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`; }
+// Seconds included (not just hours/minutes) so two backups made close together -- the daily automatic one and a
+// manual one, or two automatic attempts near a minute boundary -- never land in the exact same folder name and
+// silently overwrite each other.
+function stamp() { const d = new Date(), p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`; }
 
 // A backup is a folder: db.dump (everything in the database) + uploads (pictures) + about.json. Put it anywhere, e.g. a pen drive.
 function backup({ pgBin, dataDir, uploadDir, port, superPassword, targetDir, appVersion = '' }) {
@@ -119,6 +122,19 @@ function backup({ pgBin, dataDir, uploadDir, port, superPassword, targetDir, app
   if (uploadDir && fs.existsSync(uploadDir)) fs.cpSync(uploadDir, path.join(out, 'uploads'), { recursive: true });
   fs.writeFileSync(path.join(out, 'about.json'), JSON.stringify({ app: 'AUZsStyle', made: new Date().toISOString(), appVersion }));
   return out;
+}
+
+// backup() above + keep only the newest `keep` backups in that folder -- used for the free, automatic local
+// backup (main.cjs) that runs once a day on every shop, not just the ones with the paid cloud add-on. Pulled out
+// here (not left inline in main.cjs) so the pruning logic itself -- the part most likely to have an off-by-one
+// and quietly eat a backup nobody meant to lose -- can be exercised by the real test suite, not just read by eye.
+function backupAndPrune({ pgBin, dataDir, uploadDir, port, superPassword, targetDir, appVersion = '', keep = 7 }) {
+  fs.mkdirSync(targetDir, { recursive: true });
+  const out = backup({ pgBin, dataDir, uploadDir, port, superPassword, targetDir, appVersion });
+  const all = fs.readdirSync(targetDir).filter((n) => n.startsWith('AUZsStyle-backup-')).sort();
+  const removed = all.slice(0, Math.max(0, all.length - keep));
+  for (const old of removed) fs.rmSync(path.join(targetDir, old), { recursive: true, force: true });
+  return { out, removed, kept: all.length - removed.length };
 }
 
 // Replaces everything on this computer with the backup. The caller stops the server first.
@@ -136,4 +152,4 @@ async function restore({ serverDir, pgBin, dataDir, uploadDir, port, superPasswo
   if (uploadDir && fs.existsSync(up)) { fs.rmSync(uploadDir, { recursive: true, force: true }); fs.cpSync(up, uploadDir, { recursive: true }); }
 }
 
-module.exports = { setRunAs, secrets, ensureCluster, startPg, stopPg, isRunning, migrate, backup, restore, DB };
+module.exports = { setRunAs, secrets, ensureCluster, startPg, stopPg, isRunning, migrate, backup, backupAndPrune, restore, DB };
