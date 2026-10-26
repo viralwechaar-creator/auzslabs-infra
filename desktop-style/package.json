@@ -1,6 +1,6 @@
 {
   "name": "auzsstyle-desktop",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "AUZsStyle for Windows (works offline)",
   "main": "main.cjs",
   "private": true,

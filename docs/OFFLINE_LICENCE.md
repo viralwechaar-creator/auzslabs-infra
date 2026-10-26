@@ -59,8 +59,14 @@ code from AUZslab and stops when the plan ends. Cloud storage, cloud sync, Whats
      next push anyway. A session flag (`sty.suppress_log`) stops a push or a pull from re-logging itself, which would otherwise bounce the same row back and forth forever.
 - **Rules (server-side):** needs the **sync** extra on the licence and a connection; `/cloud/sync/register` additionally needs the plan active (not just in grace).
 - Settings -> Remote access shows when the worker last tried, when it last actually got through, the last error (if any), and how many of this computer's own changes are still waiting to go up (`/offline/sync-status`).
-- **Not built:** a live progress view in the cloud-side app for the owner (they can only tell from the PC's own Settings page), a way to turn remote access back off once set, more than one remote login per shop.
-- Test: desktop suite checks "Cloud Sync Stage 1/2/3" (push + auto-provision, the register broker end to end including the email-reuse refusal, and the pull + conflict round trip). Needs: `docker compose up -d --build api`.
+- **More than one login, and turning it off (db/279).** Settings -> Remote access lists everyone who currently has a remote login and lets the owner add another (role manager or cashier; the first login is always
+  made through the owner flow above) or remove one. Removing a login only drops its `profiles` row for this tenant -- the underlying `auth_users` login is left alone, since it may be a real AUZslab account used
+  elsewhere (it can be linked, not just freshly created -- see db/277's "an auth_users row can exist with no profile" branch). There is deliberately no separate on/off switch for remote access: removing every login
+  is what turns it off, and adding one again turns it back on.
+- **Not built:** a live progress view in the cloud-side app for the owner (they can only tell from the PC's own Settings page), letting a removed login's owner reset or reuse their password directly (they would need
+  a brand-new email), roles beyond owner/manager/cashier.
+- Test: desktop suite checks "Cloud Sync Stage 1/2/3/5" (push + auto-provision, the register broker end to end including the email-reuse refusal, the pull + conflict round trip, and list/add/remove including the
+  turn-everything-off case). Needs: `docker compose up -d --build api`.
 
 ## Not built yet (in order)
 1. Windows 7 build (see above).

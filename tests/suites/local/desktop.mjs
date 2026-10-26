@@ -297,6 +297,55 @@ export default async function run({ browser }) {
         assert(name2 === 'Local Newer Edit', 'the PC\'s own newer edit must survive untouched: ' + name2);
       } finally { cloud5.kill(); await cl.end(); }
     }, 'critical');
+    await s.check('Cloud Sync Stage 5: more than one remote login, and removing every one of them is how "remote access" turns off', async () => {
+      const c = require(require.resolve('pg', { paths: [o.serverDir] }));
+      const cl = new c.Client({ host: '127.0.0.1', port: pgPort, user: 'postgres', password: sec.superPassword, database: L.DB }); await cl.connect();
+      const cport = await free(), cbase = `http://127.0.0.1:${cport}`;
+      const cloud6 = spawn(NODE, [...PRELOAD, 'src/index.js'], { cwd: SERVER_DIR, stdio: 'ignore', env: { ...process.env, PORT: String(cport), PGHOST: '127.0.0.1', PGPORT: String(pgPort), POSTGRES_APP_PASSWORD: sec.appPassword, POSTGRES_DB: L.DB, JWT_SECRET: sec.jwtSecret, LICENCE_PRIVATE_KEY: k.priv, DISABLE_MAINTENANCE: '1', PG_POOL_MAX: '5', DISABLE_RATE_LIMIT: '1' } });
+      const dataDir4 = fs.mkdtempSync(path.join(os.tmpdir(), 'auzdesk4-'));
+      let offline5;
+      try {
+        for (let i = 0; i < 80; i++) { try { if ((await fetch(cbase + '/health')).ok) break; } catch { /* starting */ } await new Promise((r) => setTimeout(r, 250)); }
+        const syncCode = signLicence({ shop: 'Fifth Shop', end: '2099-12-31', addons: { sync: true } }, k.priv);
+        fs.writeFileSync(path.join(dataDir4, 'licence.json'), JSON.stringify({ code: syncCode }));
+        const oport = await free(), obase = `http://127.0.0.1:${oport}`;
+        offline5 = spawn(NODE, [...PRELOAD, 'src/index.js'], { cwd: SERVER_DIR, stdio: 'ignore', env: { ...process.env, PORT: String(oport), AUZ_OFFLINE: '1', AUZ_DATA_DIR: dataDir4, AUZ_APP_ROOT: path.join(root, 'app/public'), AUZ_CLOUD_URL: cbase, PGHOST: '127.0.0.1', PGPORT: String(pgPort), POSTGRES_APP_PASSWORD: sec.appPassword, POSTGRES_DB: L.DB, JWT_SECRET: sec.jwtSecret, LICENCE_PUBLIC_KEY: k.pub, DISABLE_MAINTENANCE: '1', PG_POOL_MAX: '5', DISABLE_RATE_LIMIT: '1' } });
+        for (let i = 0; i < 80; i++) { try { if ((await fetch(obase + '/health')).ok) break; } catch { /* starting */ } await new Promise((r) => setTimeout(r, 250)); }
+        // nothing to list before anyone has registered
+        const empty0 = await (await fetch(obase + '/offline/cloud-sync-logins')).json();
+        assert(Array.isArray(empty0.logins) && empty0.logins.length === 0, 'no logins yet: ' + JSON.stringify(empty0));
+        const reg = await (await fetch(obase + '/offline/cloud-sync-register', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'fifth-owner@shop.test', password: 'Secret!pass1', name: 'Owner' }) })).json();
+        assert(reg.created, 'owner registration should succeed: ' + JSON.stringify(reg));
+        const after1 = await (await fetch(obase + '/offline/cloud-sync-logins')).json();
+        assert(after1.logins.length === 1 && after1.logins[0].email === 'fifth-owner@shop.test' && after1.logins[0].role === 'owner', 'owner should be the only login: ' + JSON.stringify(after1));
+        // a bad role is refused before it even reaches the cloud
+        const badRole = await fetch(obase + '/offline/cloud-sync-logins', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'staff@shop.test', password: 'Secret!pass1', role: 'owner' }) });
+        assert(badRole.status === 400, 'owner is not a choosable extra role: ' + badRole.status);
+        // add a second, different login
+        const add = await (await fetch(obase + '/offline/cloud-sync-logins', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'staff@shop.test', password: 'Secret!pass1', role: 'manager', name: 'Staff' }) })).json();
+        assert(add.created, 'adding a manager login should succeed: ' + JSON.stringify(add));
+        const after2 = await (await fetch(obase + '/offline/cloud-sync-logins')).json();
+        assert(after2.logins.length === 2 && after2.logins.some((l) => l.email === 'staff@shop.test' && l.role === 'manager'), 'both logins should be listed: ' + JSON.stringify(after2));
+        // remove the staff login: it loses access, but its real AUZslab login (auth_users) is untouched, not deleted
+        const rm = await (await fetch(obase + '/offline/cloud-sync-logins?email=staff@shop.test', { method: 'DELETE' })).json();
+        assert(rm.removed && rm.role === 'manager', 'removing the staff login should succeed: ' + JSON.stringify(rm));
+        const stillAuthUser = (await cl.query("select 1 from auth_users where email = 'staff@shop.test'")).rows[0];
+        assert(stillAuthUser, 'removing a login must not delete the underlying auth_users row');
+        const after3 = await (await fetch(obase + '/offline/cloud-sync-logins')).json();
+        assert(after3.logins.length === 1 && after3.logins[0].email === 'fifth-owner@shop.test', 'only the owner should remain: ' + JSON.stringify(after3));
+        // removing the LAST login (the owner too) is how remote access turns off altogether
+        const rmOwner = await (await fetch(obase + '/offline/cloud-sync-logins?email=fifth-owner@shop.test', { method: 'DELETE' })).json();
+        assert(rmOwner.removed, 'removing the owner login should succeed: ' + JSON.stringify(rmOwner));
+        const after4 = await (await fetch(obase + '/offline/cloud-sync-logins')).json();
+        assert(after4.logins.length === 0, 'remote access should now be off (no logins left): ' + JSON.stringify(after4));
+        // removing something already gone is reported plainly, not an error
+        const rmAgain = await (await fetch(obase + '/offline/cloud-sync-logins?email=fifth-owner@shop.test', { method: 'DELETE' })).json();
+        assert(rmAgain.removed === false, 'removing an already-gone login should just say so: ' + JSON.stringify(rmAgain));
+      } finally {
+        try { offline5 && offline5.kill(); } catch { /* ignore */ }
+        cloud6.kill(); await cl.end(); fs.rmSync(dataDir4, { recursive: true, force: true });
+      }
+    }, 'critical');
     await s.check('No script errors in the app', async () => { const bad = errs.filter((e) => !/favicon|sentry|net::|Failed to load resource|Failed to fetch|licence\/activate|first time you open it/i.test(String(e))); assert(!bad.length, bad.slice(0, 3).join(' | ')); });
     await ctx.close();
   } finally {

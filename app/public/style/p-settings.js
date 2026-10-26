@@ -45,33 +45,63 @@ function phoneUploadCard() {
 // the one real copy (Cloud Sync Stage 1 already pushes its changes up), this just opens a window into it.
 function remoteAccessCard() {
   const host = h('div', { class: 'card grid' }, h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '12px auto' } }));
-  (async () => {
-    let st;
-    try { const r = await fetch('/licence/status'); if (!r.ok) throw 0; st = await r.json(); } catch (e) { const sec = host.closest('.sec'); if (sec) sec.remove(); return; }
-    if (!st.offline || !(st.addons && st.addons.sync) || (st.state !== 'active' && st.state !== 'grace')) { const sec = host.closest('.sec'); if (sec) sec.remove(); return; }
-    const ago = (iso) => { if (!iso) return t('never'); const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000); return m < 1 ? t('just now') : m < 60 ? m + ' ' + t('min ago') : Math.round(m / 60) + ' ' + t('hr ago'); };
+  const ago = (iso) => { if (!iso) return t('never'); const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000); return m < 1 ? t('just now') : m < 60 ? m + ' ' + t('min ago') : Math.round(m / 60) + ' ' + t('hr ago'); };
+  const roleLabel = { owner: t('Owner'), manager: t('Manager'), cashier: t('Cashier') };
+  async function paint() {
+    const lic = await (await fetch('/licence/status')).json();
+    if (!lic.offline || !(lic.addons && lic.addons.sync) || (lic.state !== 'active' && lic.state !== 'grace')) { const sec = host.closest('.sec'); if (sec) sec.remove(); return; }
     let ss; try { ss = await (await fetch('/offline/sync-status')).json(); } catch (e) { ss = null; }
     const statusNode = ss && ss.available ? (
       ss.lastError ? banner('warn', 'alert', t('Last sync tried') + ' ' + ago(ss.lastTriedAt) + ': ' + ss.lastError)
       : banner('ok', 'check', t('Last synced') + ' ' + ago(ss.lastOkAt) + (ss.pending ? ' · ' + ss.pending + ' ' + t('change(s) waiting to go up') : ''))
     ) : null;
-    const email = input({ value: '', placeholder: 'you@email.com', mode: 'email' }), pass = input({ type: 'password', value: '' }), name = input({ value: '' });
+    let logins = []; try { logins = (await (await fetch('/offline/cloud-sync-logins')).json()).logins || []; } catch (e) { /* treated as none yet */ }
+    const listHost = h('div', { class: 'list' });
+    const paintList = () => clear(listHost).append(...logins.map((l) => liRow({
+      icon: 'user', title: l.email, sub: roleLabel[l.role] || l.role,
+      right: h('button', { class: 'btn sm danger', type: 'button', onclick: async (ev) => {
+        if (!await confirmBox(t('Remove this login?'), l.email + ' ' + t('will no longer be able to sign in remotely.'), t('Remove'), true)) return;
+        ev.currentTarget.disabled = true;
+        try { await fetch('/offline/cloud-sync-logins?email=' + encodeURIComponent(l.email), { method: 'DELETE' }); paint(); } catch (e) { fail(e); ev.currentTarget.disabled = false; }
+      } }, icon('trash', 16)),
+    })));
+    paintList();
     const out = h('div', { class: 'muted small' });
-    const go = h('button', { class: 'btn fill', type: 'button', onclick: async () => {
-      go.disabled = true; out.textContent = '';
-      try {
-        const r = await fetch('/offline/cloud-sync-register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.value, password: pass.value, name: name.value }) });
-        const d = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(d.error || t('Could not turn on remote access.'));
-        clear(host).append(banner('ok', 'check', t('Remote access is on.')), h('p', { class: 'muted small' }, t('Sign in from anywhere at:')), h('div', { class: 'mono small', style: { textAlign: 'center' } }, d.url || ''), h('p', { class: 'muted small' }, t('Use the email and password you just set.')));
-      } catch (e) { out.textContent = e.message || t('Failed'); }
-      go.disabled = false;
-    } }, t('Turn on remote access'));
-    clear(host).append(
-      statusNode,
-      h('p', { class: 'muted small' }, t('Set an email and password for this shop\'s data in the cloud, so you (or anyone you trust) can check it from a phone or another computer anywhere, over the internet. This computer stays the one that actually runs the shop -- the cloud copy only follows along.')),
-      field(t('Email'), email), field(t('Password'), pass), field(t('Your name (optional)'), name), out, go);
-  })();
+    let formNode;
+    if (!logins.length) {
+      const email = input({ value: '', placeholder: 'you@email.com', mode: 'email' }), pass = input({ type: 'password', value: '' }), name = input({ value: '' });
+      const go = h('button', { class: 'btn fill', type: 'button', onclick: async () => {
+        go.disabled = true; out.textContent = '';
+        try {
+          const r = await fetch('/offline/cloud-sync-register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.value, password: pass.value, name: name.value }) });
+          const d = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(d.error || t('Could not turn on remote access.'));
+          toast(t('Remote access is on') + (d.url ? ' · ' + d.url : '')); paint();
+        } catch (e) { out.textContent = e.message || t('Failed'); }
+        go.disabled = false;
+      } }, t('Turn on remote access'));
+      formNode = h('div', { class: 'grid' },
+        h('p', { class: 'muted small' }, t('Set an email and password for this shop\'s data in the cloud, so you (or anyone you trust) can check it from a phone or another computer anywhere, over the internet. This computer stays the one that actually runs the shop -- the cloud copy only follows along.')),
+        field(t('Email'), email), field(t('Password'), pass), field(t('Your name (optional)'), name), out, go);
+    } else {
+      const email = input({ value: '', placeholder: 'you@email.com', mode: 'email' }), pass = input({ type: 'password', value: '' }), name = input({ value: '' }), role = selectEl([['cashier', t('Cashier')], ['manager', t('Manager')]], 'cashier');
+      const go = h('button', { class: 'btn', type: 'button', onclick: async () => {
+        go.disabled = true; out.textContent = '';
+        try {
+          const r = await fetch('/offline/cloud-sync-logins', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.value, password: pass.value, name: name.value, role: role.value }) });
+          const d = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(d.error || t('Could not add that login.'));
+          toast(d.already ? t('That login already has access') : t('Login added')); paint();
+        } catch (e) { out.textContent = e.message || t('Failed'); }
+        go.disabled = false;
+      } }, t('Add a login'));
+      formNode = h('div', { class: 'grid' },
+        h('p', { class: 'muted small' }, t('Add another email and password -- for staff or anyone else who should also be able to check this shop remotely. Each gets their own login; remove one any time with no effect on the others.')),
+        field(t('Email'), email), field(t('Password'), pass), field(t('Name (optional)'), name), field(t('Role'), role), out, go);
+    }
+    clear(host).append(statusNode, listHost.children.length ? h('div', { class: 'cap' }, t('Who has remote access')) : null, listHost, formNode);
+  }
+  paint().catch(() => { const sec = host.closest('.sec'); if (sec) sec.remove(); });
   return host;
 }
 page('settings', {

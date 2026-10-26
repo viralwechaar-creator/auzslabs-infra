@@ -100,6 +100,31 @@ export async function handle(ctx) {
     return reply(200, { created: r.created, already: r.already, url: r.slug ? 'https://' + r.slug + '.auzslab.in/style.html' : null });
   }
 
+  // Stage 5 (db/279): more than one remote login, and a way to turn one off -- list, add (manager/cashier; the
+  // owner login above stays the one way to make the FIRST login), remove.
+  if (url.pathname === '/cloud/sync/logins' && req.method === 'GET') {
+    const w = await who(req, true, 'sync');
+    const { rows } = await pool.query('select sty_cloud_sync_list_logins($1) as r', [w.lineage]);
+    return reply(200, { logins: rows[0].r });
+  }
+  if (url.pathname === '/cloud/sync/logins' && req.method === 'POST') {
+    const w = await who(req, true, 'sync');
+    const body = await readJsonBody(req);
+    const email = String(body.email || '').trim();
+    const password = String(body.password || '');
+    if (password.length < 8) throw new HttpError(400, 'Password must be at least 8 characters.');
+    const hash = await bcrypt.hash(password, 10);
+    const r = await pool.query('select sty_cloud_sync_add_login($1, $2, $3, $4, $5, $6) as r', [w.lineage, w.shop, email, hash, String(body.role || 'cashier'), String(body.name || '')])
+      .then((x) => x.rows[0].r).catch((e) => { throw new HttpError(400, e.message); });
+    return reply(200, r);
+  }
+  if (url.pathname === '/cloud/sync/logins' && req.method === 'DELETE') {
+    const w = await who(req, true, 'sync');
+    const email = String(url.searchParams.get('email') || '').trim();
+    const { rows } = await pool.query('select sty_cloud_sync_remove_login($1, $2) as r', [w.lineage, email]);
+    return reply(200, rows[0].r);
+  }
+
   const m = url.pathname.match(/^\/cloud\/backup\/([0-9a-f-]{36})$/);
   if (m && req.method === 'GET') {
     const w = await who(req, false);
