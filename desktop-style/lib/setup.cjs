@@ -38,6 +38,11 @@ function secrets(dir) {
 function ensureCluster({ pgBin, dataDir, port, superPassword, memoryMb = 2048 }) {
   const pgdata = path.join(dataDir, 'pgdata');
   if (fs.existsSync(path.join(pgdata, 'PG_VERSION'))) return false;
+  // PG_VERSION is the very first thing a real initdb writes, so its absence means this directory can only be
+  // empty or leftover junk from an earlier run that crashed or was killed mid-setup -- never a usable cluster.
+  // initdb refuses to run into a non-empty directory, so without this a broken first run leaves the computer
+  // permanently stuck on "AUZsStyle could not start" with no way to recover short of finding this folder by hand.
+  if (fs.existsSync(pgdata)) fs.rmSync(pgdata, { recursive: true, force: true });
   fs.mkdirSync(dataDir, { recursive: true }); own(dataDir);
   const pw = path.join(dataDir, '.pw'); fs.writeFileSync(pw, superPassword, { mode: 0o600 }); own(pw);
   try { run(bin(pgBin, 'initdb'), ['-D', pgdata, '-U', 'postgres', '-A', 'scram-sha-256', '--pwfile=' + pw, '-E', 'UTF8', '--locale=C']); } finally { fs.rmSync(pw, { force: true }); }
