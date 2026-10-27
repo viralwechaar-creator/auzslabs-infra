@@ -172,6 +172,26 @@ export default async function run({ browser, stack }) {
     assert((await ok(owner, 'acc_list_parties', { p: { party_type: 'employee' } })).rows.some((x) => x.id === e), 'employee missing');
     await fails(cashier, 'acc_party_adjust', { p: { party_id: c2, kind: 'write_off', amount: 100 } }, /role does not allow/i);
   }, 'major');
+  await s.check('Follow-ups are saved per customer, can be done, and automatic reminders send once per period', async () => {
+    const c3 = (await ok(owner, 'acc_save_party', { p: { kind: 'customer', name: 'Chase Me', phone: '9876500011' } })).id;
+    await fails(owner, 'acc_followup_save', { p: { party_id: c3, note: ' ' } }, /follow up/i);
+    const f1 = (await ok(owner, 'acc_followup_save', { p: { party_id: c3, note: 'Call on Monday', due_on: '2020-01-01' } })).id;
+    let l = (await ok(owner, 'acc_followup_list', { p: { party_id: c3 } })).rows; assert(l.length === 1 && l[0].late === true, 'late follow-up');
+    assert((await ok(owner, 'acc_team_list')).rows.length >= 1, 'team list');
+    await ok(owner, 'acc_followup_done', { p_id: f1, p_done: true });
+    assert((await ok(owner, 'acc_followup_list', { p: { party_id: c3 } })).rows.length === 0, 'done hidden from open');
+    assert((await ok(owner, 'acc_followup_list', { p: { party_id: c3, status: 'done' } })).rows.length === 1, 'done list');
+    const st0 = (await ok(owner, 'acc_context')).fys[1].start_date;
+    await ok(owner, 'acc_save_document', { p: { doc_type: 'invoice', party_id: c3, post: true, doc_date: st0, due_date: st0, lines: [{ description: 'Old job', qty: 1, rate: 700 }] } });
+    await fails(manager, 'acc_auto_remind_set', { p: { on: true } }, /role does not allow/i);
+    await ok(owner, 'acc_auto_remind_set', { p: { on: true, min_days: 1, repeat_days: 7 } });
+    await q("insert into wa_tenant_settings (tenant_id, enabled, allow_platform) values ($1, true, true) on conflict (tenant_id) do update set enabled = true, allow_platform = true", [tid]);
+    await q("insert into platform_flags (key, value) values ('whatsapp_platform_auto', 'on') on conflict (key) do update set value = 'on'");
+    const a = (await q('select acc_auto_remind_run() as r'))[0].r; assert(a.sent >= 1, 'first run sends ' + JSON.stringify(a));
+    const b = (await q('select acc_auto_remind_run() as r'))[0].r; assert(b.sent === 0, 'second run sends nothing ' + JSON.stringify(b));
+    assert((await q("select count(*)::int n from wa_outbox where tenant_id = $1 and template = 'payment_due'", [tid]))[0].n >= 1, 'queued');
+    await ok(owner, 'acc_auto_remind_set', { p: { on: false } }); await integrity();
+  }, 'major');
   await s.check('Physical count adjustment posts only the difference; transfers keep totals and value', async () => {
     await ok(owner, 'acc_stock_adjust', { p: { mode: 'count', reason: 'Count', lines: [{ product_id: tee, qty: 97 }] } });
     assert(Number((await ok(owner, 'acc_list_products', { p: {} })).rows.find((p) => p.id === tee).stock) === 97, 'count');

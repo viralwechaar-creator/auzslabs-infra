@@ -95,13 +95,25 @@ function partySheet(kind, p, onSaved) {
 }
 
 // ---------- reminders ----------
+function autoRemindRow(a) {
+  const save = (patch) => api('acc_auto_remind_set', { p: Object.assign({ on: !!a.on, min_days: a.min_days || 1, repeat_days: a.repeat_days || 7 }, patch) }).then((x) => { Object.assign(a, x); toast('Saved'); }).catch((e) => toast(e.message || 'Could not save', { err: true }));
+  const days = selectEl([[1, 'the day after it is due'], [3, '3 days after'], [7, '7 days after'], [15, '15 days after']], String(a.min_days || 1), {});
+  const rep = selectEl([[3, 'every 3 days'], [7, 'every week'], [15, 'every 15 days'], [30, 'every month']], String(a.repeat_days || 7), {});
+  days.onchange = () => save({ min_days: Number(days.value) }); rep.onchange = () => save({ repeat_days: Number(rep.value) });
+  return h('div', { class: 'card grid', style: { gap: '8px' } },
+    toggleRow('Remind automatically on WhatsApp', !!a.on, (x) => { a.on = x; save({ on: x }); }, a.wa_ready ? 'Overdue customers are messaged by themselves. One message per customer per period.' : 'Turn on WhatsApp in Settings first, or nothing will be sent.'),
+    h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('First reminder', days), field('Then', rep)));
+}
+
 async function remindersSheet(side) {
   const r = (await api('acc_due_reminders', { p_side: side })).rows;
+  const auto = side === 'receivable' ? await api('acc_auto_remind_get').catch(() => null) : null;
   const org = S.org.trade_name || S.org.legal_name;
   const msg = (x) => side === 'receivable' ? `Hello ${x.name}, a gentle reminder from ${org}: ${inr(x.overdue, 0)} is overdue (${x.items.map((i) => i.number + ' due ' + fmtD(i.due)).slice(0, 4).join(', ')}). Please pay at your earliest. Thank you.` : `Payment due to ${x.name}: ${inr(x.overdue, 0)} (${x.items.map((i) => i.number).slice(0, 4).join(', ')}).`;
   const log = (channel, x) => api('acc_log_comm', { p: { channel, kind: 'payment_reminder', party_id: x.party_id, recipient: channel === 'email' ? x.email : x.phone, subject: 'Payment reminder', body: msg(x), status: 'logged' } }).catch(() => {});
   sheet({ title: side === 'receivable' ? 'Payment reminders' : 'Payables due', closeLabel: 'Done', body: h('div', { class: 'grid' },
     h('p', { class: 'muted small' }, side === 'receivable' ? 'These customers have overdue invoices. Choose how to remind each one; the message opens in WhatsApp or your email app and is logged under Messages.' : 'Suppliers whose bills are past due.'),
+    auto && can('acc_admin') ? autoRemindRow(auto) : null,
     r.length ? h('div', { class: 'list' }, r.map((x) => h('div', { class: 'li' }, h('div', { class: 'grow' }, h('div', { class: 't' }, x.name), h('div', { class: 's' }, x.docs + ' overdue · oldest ' + fmtD(x.oldest_due))), h('div', { class: 'v' }, h('div', { class: 't' }, money(x.overdue)), side === 'receivable' ? h('div', { class: 'row', style: { gap: '6px', marginTop: '4px', justifyContent: 'flex-end' } },
       side === 'receivable' ? h('button', { class: 'btn sm', disabled: !x.phone, onclick: async (e) => { const b = e.currentTarget; b.disabled = true; try { const r = await api('acc_send_due_reminder', { p_party_id: x.party_id }); toast(r.sent ? 'Reminder sent on WhatsApp' : r.reason === 'off' ? 'Turn on WhatsApp in Settings first, or use the WhatsApp button' : r.reason === 'already_sent' ? 'Already reminded today' : 'No phone number saved for this customer'); } catch (err) { toast(err.message || 'Could not send', { err: true }); } b.disabled = false; } }, 'Send automatically') : null, h('button', { class: 'btn sm', disabled: !x.phone, onclick: () => { window.open(waLink(x.phone, msg(x)), '_blank'); log('whatsapp', x); } }, 'WhatsApp'), h('button', { class: 'btn sm', disabled: !x.email, onclick: () => { location.href = 'mailto:' + x.email + '?subject=' + encodeURIComponent('Payment reminder') + '&body=' + encodeURIComponent(msg(x)); log('email', x); } }, 'Email')) : null)))) : empty('check', 'Nothing overdue', side === 'receivable' ? 'Every customer is within terms.' : 'You are within terms with every supplier.')) });
 }
@@ -125,7 +137,7 @@ page('party', {
       p.billing_address ? h('div', { class: 'small' }, p.billing_address) : null, p.notes ? h('div', { class: 'small muted' }, p.notes) : null));
     const bal = Number(p.balance);
     v.root.append(h('div', { class: 'kpis k3' }, kpi(isCust ? (bal >= 0 ? 'Owes you' : 'Advance held') : (bal <= 0 ? 'You owe' : 'Advance paid'), inr(Math.abs(bal), 0), bal === 0 ? 'Settled' : ''), kpi('Overdue', inr(p.overdue, 0), Number(p.overdue) ? 'Past due date' : 'None', null), kpi('Terms', p.credit_days ? p.credit_days + ' days' : 'Immediate', Number(p.credit_limit) ? 'Limit ' + inr(p.credit_limit, 0) : 'No credit limit')));
-    v.root.append(seg([['documents', 'Documents'], ['payments', 'Payments'], ['statement', 'Statement'], ['ageing', 'Ageing']], tab, (t) => go('party/' + id + '?tab=' + t)));
+    v.root.append(seg([['documents', 'Documents'], ['payments', 'Payments'], ['statement', 'Statement'], ['ageing', 'Ageing'], ...(isCust ? [['followups', 'Follow-ups']] : [])], tab, (t) => go('party/' + id + '?tab=' + t)));
     const host = h('div', { class: 'grid' }); v.root.append(host);
     if (tab === 'documents') {
       const types = isCust ? ['invoice', 'credit_note', 'quotation', 'sales_order'] : ['bill', 'debit_note', 'expense', 'purchase_order'];
@@ -135,6 +147,8 @@ page('party', {
         { key: 'due_date', label: 'Due', render: (x) => (x.due_date ? fmtD(x.due_date) : '') }, { key: 'pay_status', label: 'Status', badge: true, render: (x) => statusBadge(x.pay_status) },
         { key: 'total', label: 'Total', r: true, value: true, render: (x) => money(x.total), sortVal: (x) => Number(x.total) }, { key: 'outstanding', label: 'Outstanding', r: true, render: (x) => (x.status === 'posted' && Number(x.outstanding) > 0 ? money(x.outstanding) : '') },
       ], r.rows, { onRow: (x) => go(docPath(x)), empty: empty('doc', 'No documents yet', 'Documents for this ' + (isCust ? 'customer' : 'supplier') + ' appear here.') }));
+    } else if (tab === 'followups' && isCust) {
+      await followupsTab(host, p, () => v.refresh());
     } else if (tab === 'payments') {
       const r = (await api('acc_list_payments', { p: { party_id: id, limit: 200 } })).rows;
       host.append(dataView([{ key: 'number', label: 'Number', title: true }, { key: 'pay_date', label: 'Date', sub: true, render: (x) => fmtD(x.pay_date) + ' · ' + x.account }, { key: 'mode', label: 'Method', render: (x) => x.mode || '' },

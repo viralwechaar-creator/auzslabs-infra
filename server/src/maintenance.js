@@ -45,6 +45,15 @@ export async function runBookingReminders() {
   } catch (err) { console.warn('booking reminder run failed:', err.message); }
 }
 
+// AUZsLedger automatic overdue reminders (db/285): only shops that switched it on.
+export async function runLedgerReminders() {
+  try {
+    const { rows } = await pool.query('select acc_auto_remind_run() as r');
+    const sent = rows[0]?.r?.sent || 0;
+    if (sent) console.log(`ledger reminders: queued ${sent}`);
+  } catch (err) { console.warn('ledger reminder run failed:', err.message); }
+}
+
 // Unpaid-quote reminders to the client (and a note to the admin) after 2 and 5 days, db/205.
 export async function runQuoteFollowups() {
   try {
@@ -91,7 +100,7 @@ export async function runTrialLock() {
 export function startMaintenance() {
   if (process.env.DISABLE_MAINTENANCE === '1') return;
   const runAll = () => {
-    runMaintenance(); runRenewals(); runBookingReminders(); runQuoteFollowups(); runAdminSummary();
+    runMaintenance(); runRenewals(); runBookingReminders(); runLedgerReminders(); runQuoteFollowups(); runAdminSummary();
     runSalonDailySummaries(); runLapsedClientWinback(); runPostVisitReviews(); runPaymentDueReminders();
     runClientGreetings(); runMembershipExpiryReminders(); runStyleGreetings(); runStyleAbandoned(); runHealthAlert();
   };
