@@ -78,6 +78,7 @@ async function boot() {
   }
   S.dash = dash; S.ctx = ctx; S.perms = ctx.perms || {};
   S.user = { email: ctx.email, role: ctx.role, id: session.user.id };
+  if (S.perms.write && navigator.onLine) api('fin_sync_people').catch(() => {});
   buildShell();
   window.addEventListener('hashchange', route_);
   route_();
