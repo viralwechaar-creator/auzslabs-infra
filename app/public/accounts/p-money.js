@@ -71,7 +71,7 @@ function moneyPage(id, kind, title, tabLabel, icn) {
       v.root.append(h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, isIn ? 'Recent receipts' : 'Recent payments')),
         dataView([{ key: 'number', label: 'Number', title: true }, { key: 'party_name', label: 'Party', sub: true, render: (x) => (x.party_name || '') + ' · ' + fmtD(x.pay_date) }, { key: 'pay_date', label: 'Date', render: (x) => fmtD(x.pay_date) }, { key: 'account', label: 'Account' }, { key: 'mode', label: 'Method', render: (x) => x.mode || '' },
           { key: 'status', label: 'Status', badge: true, render: (x) => statusBadge(x.status === 'cancelled' ? 'cancelled' : Number(x.unallocated) > 0 ? 'open' : 'posted') }, { key: 'amount', label: 'Amount', r: true, value: true, render: (x) => money(x.amount), sortVal: (x) => Number(x.amount) }, { key: 'unallocated', label: 'Unallocated', r: true, render: (x) => (x.status === 'posted' && Number(x.unallocated) > 0 ? money(x.unallocated) : '') }],
-          pays.rows, { onRow: (x) => go('payment/' + x.id), empty: empty('wallet', 'No ' + (isIn ? 'receipts' : 'payments') + ' yet') })));
+          pays.rows, { cards: true, onRow: (x) => go('payment/' + x.id), empty: empty('wallet', 'No ' + (isIn ? 'receipts' : 'payments') + ' yet') })));
     },
   });
 }

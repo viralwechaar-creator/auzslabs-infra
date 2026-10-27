@@ -266,7 +266,7 @@ async function route_() {
   const tab = TABS.includes(navId) ? navId : 'more'; $(`[data-tab="${tab}"]`)?.setAttribute('aria-current', 'page');
   if (def.perm && !can(def.perm)) { header({ title: def.title }); clear(root).append(empty('lock', 'No access', 'Your role does not include ' + def.title.toLowerCase() + '. Ask the owner to change your role.')); return; }
   const view = { id: route.id, args: route.args, q: route.q, root, header: (o) => header(o, root), refresh: () => route_(), onLeave: (f) => cleanup.push(f) };
-  try { clear(root); header({ title: def.title }, root); await def.render(view); } catch (e) {
+  try { clear(root); header({ title: def.title }, root); root.dataset.p = route.id.split('/')[0]; if (route.id.startsWith('settings')) root.classList.add('cols2'); await def.render(view); } catch (e) {
     console.error(e); clear(root).append(empty('alert', 'Could not load this page', e.message, h('button', { class: 'btn fill', onclick: route_ }, 'Try again')));
   }
   main.focus({ preventScroll: true }); window.scrollTo(0, 0);
