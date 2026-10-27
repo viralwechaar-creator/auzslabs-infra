@@ -84,6 +84,7 @@ page('payment', {
     const r = await api('acc_get_payment', { p_id: v.args[0] }), p = r.payment, isIn = p.kind === 'receipt', cancelled = p.status === 'cancelled';
     const acts = [];
     if (!cancelled && Number(p.amount) > Number(p.allocated) && can(isIn ? 'acc_sales' : 'acc_purchase')) acts.push({ label: 'Allocate', icon: 'link', primary: true, run: () => allocateSheet(r, () => v.refresh()) });
+    if (!cancelled && can('acc_post')) acts.push({ label: 'Edit details', icon: 'edit', run: () => editPaySheet(p, () => v.refresh()) });
     if (!cancelled && can('acc_cancel')) acts.push({ label: 'Cancel…', icon: 'x', danger: true, run: async () => { const why = await askText('Cancel ' + p.number + '?', 'Posts a reversing entry and releases anything it settled. A reason is required.', 'Reason'); if (why == null) return; if (!why) return toast('Enter a reason', { err: true }); try { await api('acc_cancel_payment', { p_payment: p.id, p_reason: why }); toast('Cancelled'); v.refresh(); } catch (e) { fail(e); } } });
     v.header({ title: p.number, back: isIn ? 'receipts' : 'payments', actions: acts });
     v.root.append(h('div', { class: 'card grid' }, h('div', { class: 'row sp wrap' }, h('div', null, h('div', { class: 'cap' }, isIn ? 'Receipt' : 'Payment'), h('h2', { style: { fontSize: '22px' } }, inr(p.amount))), statusBadge(cancelled ? 'cancelled' : Number(p.amount) > Number(p.allocated) ? 'open' : 'posted')),
@@ -95,6 +96,12 @@ page('payment', {
     v.root.append(attachmentsCard('payment', p.id, r.attachments, can(isIn ? 'acc_sales' : 'acc_purchase'), () => v.refresh()));
   },
 });
+// Change the method, UTR / reference or note of a posted payment. Amount, date and books are not touched; the old values go to the audit log.
+function editPaySheet(p, done) {
+  const md = input({ value: p.mode || '', placeholder: 'Cash, UPI, Bank transfer, Cheque…' }), rf = input({ value: p.reference || '', placeholder: 'UTR / cheque / transaction no.' }), nt = input({ value: p.notes || '', placeholder: 'Note' });
+  sheet({ title: 'Edit ' + p.number, body: h('div', { class: 'grid' }, field('Method', md), field('UTR / reference', rf), field('Note', nt), h('p', { class: 'cap' }, 'The amount, date and accounting entries stay as posted. The change is recorded in the history.')),
+    actions: [{ label: 'Save', primary: true, onclick: async (c) => { try { await api('acc_update_payment_details', { p_payment: p.id, p: { mode: md.value, reference: rf.value, notes: nt.value } }); c(); toast('Saved'); done(); } catch (e) { fail(e); return false; } } }] });
+}
 async function allocateSheet(r, done) {
   const p = r.payment, party = r.party, unalloc = Number(p.amount) - Number(p.allocated);
   const types = payDocTypes(p.kind, party);
