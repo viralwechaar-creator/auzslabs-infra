@@ -88,8 +88,26 @@ async function docList(v, o) {
     bar.replaceChildren(h('span', null, total + ' ' + (total === 1 ? typeLabel : typeLabel + 's')), sums && POSTING.includes(o.types[0]) ? h('span', null, 'Total ', money(sums.total, { compact: true }), ' · Outstanding ', money(sums.outstanding, { compact: true })) : null);
     if (!rows.length) { listEl.append(empty('doc', F.search || F.status || F.from ? 'No matches' : 'No ' + typeLabel + 's yet', F.search || F.status ? 'Try a different search or clear the filters.' : o.writable ? 'Create your first ' + typeLabel + '.' : '', o.writable && !F.search && !F.status ? h('button', { class: 'btn fill', onclick: () => go('new/' + o.types[0]) }, 'New ' + typeLabel) : null)); return; }
     const canBulk = o.writable && can('acc_post') && POSTING.includes(o.types[0]);
-    listEl.append(dataView(cols, rows, { cards: true, onRow: (r) => go(docPath(r)), selectable: canBulk, sortKey: null, onSelect: (s) => { sel = s; bulkBar.classList.toggle('hidden', !s.size); bulkBar.replaceChildren(h('span', null, s.size + ' selected'), h('button', { class: 'btn sm fill', onclick: bulkPost }, 'Post selected drafts')); } }));
+    listEl.append(dataView(cols, rows, { cards: true, onRow: (r) => go(docPath(r)), selectable: canBulk, sortKey: null, onSelect: (s) => { sel = s; bulkBar.classList.toggle('hidden', !s.size); barUp(s); } }));
     if (rows.length < total) more.append(h('button', { class: 'btn', onclick: () => load(true) }, 'Show more (' + (total - rows.length) + ' left)'));
+  }
+  function barUp(s) {
+    sel = s; bulkBar.classList.toggle('hidden', !s.size);
+    const dv = listEl.firstChild;
+    bulkBar.replaceChildren(h('span', null, s.size + ' selected'), h('div', { class: 'row wrap', style: { gap: '8px' } },
+      h('button', { class: 'btn sm', onclick: () => { rows.forEach((r) => s.add(r.id)); dv._repaint(); barUp(s); } }, 'Select all'),
+      h('button', { class: 'btn sm', onclick: () => { s.clear(); dv._repaint(); barUp(s); } }, 'Deselect'),
+      h('button', { class: 'btn sm fill', onclick: bulkPost }, 'Post selected drafts'),
+      h('button', { class: 'btn sm', style: { color: 'var(--red)' }, onclick: bulkDelete }, 'Delete')));
+  }
+  async function bulkDelete() {
+    const drafts = [...sel].filter((id) => { const r = rows.find((x) => x.id === id) || {}; return r.status === 'draft' || r.status === 'open'; });
+    const skipped = sel.size - drafts.length;
+    if (!drafts.length) return toast('Only drafts can be deleted. Posted bills are cancelled instead, so your books keep a record.', { err: true });
+    if (!(await confirmBox('Delete ' + drafts.length + ' draft' + (drafts.length > 1 ? 's' : '') + '?', 'This removes them for good.' + (skipped ? ' ' + skipped + ' posted or cancelled bill' + (skipped > 1 ? 's' : '') + ' will be left as they are.' : ''), 'Delete'))) return;
+    let ok = 0, bad = 0;
+    for (const id of drafts) { try { await api('acc_delete_document', { p_doc_id: id }); ok++; } catch (e) { bad++; } }
+    toast(ok + ' deleted' + (bad ? ', ' + bad + ' could not be deleted' : '')); load();
   }
   async function bulkPost() {
     const ids = [...sel].filter((id) => (rows.find((r) => r.id === id) || {}).status === 'draft');
