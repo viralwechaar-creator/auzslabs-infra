@@ -6,7 +6,7 @@ page('home', {
     let branch = v.q.get('branch') || '';
     const hostEl = h('div', { class: 'grid', style: { gap: '22px' } });
     v.header({ title: 'Home', sub: (S.org.trade_name || S.org.legal_name || '') + ' · ' + fmtD(today()), actions: [{ label: 'New', icon: 'plus', primary: true, run: (b) => quickMenu(b) }, isDesk() ? null : { label: 'Search', icon: 'search', run: openPalette }] });
-    v.root.append(hostEl);
+    v.root.dataset.p = 'home'; v.root.append(hostEl);
     const draw = async () => {
       let d;
       try { d = await api('acc_dashboard', { p: branch ? { branch_id: branch } : {} }); } catch (e) { clear(hostEl).append(empty('alert', 'Could not load the dashboard', e.message)); return; }
@@ -19,14 +19,28 @@ page('home', {
       if (S.branches.length > 1) hostEl.append(chips([['', 'All branches'], ...S.branches.map((b) => [b.id, b.name])], branch, (x) => { branch = x; draw(); }));
       const m = d.month, delta = (a, b) => b ? Math.round((a - b) / Math.abs(b) * 100) : null;
       const sd = delta(m.sales, m.prev_sales);
-      hostEl.append(h('div', { class: 'kpis' },
+      const fine = window.accLook && accLook.on();
+      if (fine) {      // the new look leads with today's sales and a big Sell button; the figures are the same ones the Classic Home shows
+        const sellTo = SCANAPP ? 'scan' : 'new/invoice';
+        hostEl.append(h('div', { class: 'hero-k home-hero' },
+          h('div', { class: 'cap' }, 'Sales today'), h('div', { class: 'big num' }, inr(d.sales_today, 0)),
+          h('div', { class: 'muted small' }, 'Collected ' + inr(d.collections_today, 0) + ' · this month ' + compact(m.sales) + (sd != null ? ` (${sd >= 0 ? '+' : ''}${sd}%)` : '')),
+          can('acc_sales') ? h('button', { class: 'btn fill sell-big', type: 'button', onclick: () => go(sellTo) }, icon('plus', 22), 'Sell') : null));
+        const a0 = d.alerts, over = (a0.overdue_invoices || 0) + (a0.drafts || 0);
+        hostEl.append(h('div', { class: 'kpis fine-k', 'data-kg': '1' },
+          kpi('Customers owe you', inr(d.receivables, 0), d.overdue_receivables > 0 ? inr(d.overdue_receivables, 0) + ' overdue' : 'Nothing overdue', () => go('reports/ageing_receivable')),
+          kpi('You owe suppliers', inr(d.payables, 0), d.overdue_payables > 0 ? inr(d.overdue_payables, 0) + ' overdue' : 'Nothing overdue', () => go('reports/ageing_payable')),
+          kpi('Cash and bank', inr(d.cash_bank.reduce((s, c) => s + Number(c.balance), 0), 0), d.cash_bank.length + ' account' + (d.cash_bank.length === 1 ? '' : 's'), () => go('banking')),
+          kpi('Needs action', String(over), over ? 'Overdue or draft bills' : 'All clear', () => go('sales?status=overdue'))));
+      }
+      if (!fine) hostEl.append(h('div', { class: 'kpis' },
         kpi('Sales today', inr(d.sales_today, 0), 'This month ' + compact(m.sales) + (sd != null ? ` (${sd >= 0 ? '+' : ''}${sd}% vs last)` : ''), () => go('sales')),
         kpi('Collected today', inr(d.collections_today, 0), 'Money received', () => go('receipts')),
         kpi('Purchases today', inr(d.purchases_today, 0), 'Bills raised', () => go('purchases')),
         kpi('Expenses today', inr(d.expenses_today, 0), 'Operating costs', () => go('expenses'))));
-      hostEl.append(h('div', { class: 'kpis' },
-        kpi('Customers owe you', inr(d.receivables, 0), d.overdue_receivables > 0 ? inr(d.overdue_receivables, 0) + ' overdue' : 'Nothing overdue', () => go('reports/ageing_receivable')),
-        kpi('You owe suppliers', inr(d.payables, 0), d.overdue_payables > 0 ? inr(d.overdue_payables, 0) + ' overdue' : 'Nothing overdue', () => go('reports/ageing_payable')),
+      hostEl.append(h('div', fine ? { class: 'kpis fine-k', 'data-kg': '1' } : { class: 'kpis' },
+        fine ? kpi('Purchases today', inr(d.purchases_today, 0), 'Bills raised', () => go('purchases')) : kpi('Customers owe you', inr(d.receivables, 0), d.overdue_receivables > 0 ? inr(d.overdue_receivables, 0) + ' overdue' : 'Nothing overdue', () => go('reports/ageing_receivable')),
+        fine ? kpi('Expenses today', inr(d.expenses_today, 0), 'Operating costs', () => go('expenses')) : kpi('You owe suppliers', inr(d.payables, 0), d.overdue_payables > 0 ? inr(d.overdue_payables, 0) + ' overdue' : 'Nothing overdue', () => go('reports/ageing_payable')),
         kpi('Stock value', inr(d.stock_value, 0), 'At cost', () => go('stock')),
         kpi('Profit this month', inr(m.profit, 0), m.gross_margin + '% gross margin', () => go('reports/pnl'), m.profit < 0 ? 'down' : 'up')));
       // things needing attention
