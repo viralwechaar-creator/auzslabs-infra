@@ -227,6 +227,7 @@ export const RPC = {
   acc_unallocate: { params: ['p_allocation'], auth: true },
   acc_cancel_payment: { params: ['p_payment', 'p_reason'], auth: true },
   acc_save_voucher: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_party_adjust: { params: ['p'], jsonb: ['p'], auth: true },
   acc_post_opening: { params: ['p_date', 'p_lines'], jsonb: ['p_lines'], auth: true },
   acc_set_party_opening: { params: ['p_party', 'p_amount', 'p_date'], auth: true },
   acc_stock_adjust: { params: ['p'], jsonb: ['p'], auth: true },

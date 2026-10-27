@@ -73,15 +73,20 @@ function partySheet(kind, p, onSaved) {
   const ph = input({ value: p.phone || '', type: 'tel', mode: 'tel', placeholder: 'Mobile number' }), em = input({ value: p.email || '', type: 'email', placeholder: 'name@example.com' }), cn = input({ value: p.contact_name || '', placeholder: 'Contact person' });
   const ba = h('textarea', { class: 'textarea', placeholder: 'Billing address', style: { minHeight: '70px' } }, p.billing_address || ''), sa = h('textarea', { class: 'textarea', placeholder: 'Shipping address (if different)', style: { minHeight: '70px' } }, p.shipping_address || '');
   const cl = input({ value: p.credit_limit && Number(p.credit_limit) ? p.credit_limit : '', type: 'number', mode: 'decimal', placeholder: '0 = no limit' }), cd = input({ value: p.credit_days || '', type: 'number', mode: 'numeric', placeholder: '0 = immediate' }), tg = input({ value: p.tags || '' }), nt = h('textarea', { class: 'textarea', style: { minHeight: '70px' } }, p.notes || '');
-  const kindSeg = isNew && kind !== 'any' ? null : null;
+  const typeSel = selectEl([['', k === 'supplier' ? 'Supplier' : 'Customer'], ['employee', 'Employee'], ['partner', 'Partner'], ['other', 'Other']], p.party_type && !['customer', 'supplier'].includes(p.party_type) ? p.party_type : '', {});
+  const cat = input({ value: p.category || '', placeholder: 'e.g. Retail, Wholesale, VIP', label: 'Category' });
+  const bnk = input({ value: p.bank_name || '', placeholder: 'Bank name' }), bac = input({ value: p.bank_account || '', placeholder: 'Account number' }), bif = input({ value: p.bank_ifsc || '', placeholder: 'IFSC', max: 11 }), upi = input({ value: p.upi_id || '', placeholder: 'name@bank' });
   const s = sheet({ title: (isNew ? 'New ' : 'Edit ') + (k === 'supplier' ? 'supplier' : 'customer'), body: h('div', { class: 'grid' },
-    field('Name', name), field('GSTIN', gst, null), fetchBtn, gstMsg, h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('State', stSel), field('Registration', reg)), field('PAN', pan),
+    isNew || p.party_type ? field('Type', typeSel) : null, field('Name', name), field('GSTIN', gst, null), fetchBtn, gstMsg, h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('State', stSel), field('Registration', reg)), field('PAN', pan),
     h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Phone', ph), field('Email', em)), field('Contact person', cn), field('Billing address', ba), field('Shipping address', sa),
-    h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Credit days', cd), field('Credit limit (₹)', cl)), field('Tags', tg), field('Notes', nt),
+    h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Credit days', cd), field('Credit limit (₹)', cl)), field('Tags', tg), k === 'supplier' ? null : field('Category', cat),
+    k === 'supplier' ? h('div', { class: 'grid' }, h('div', { class: 'small muted' }, 'Bank details (to pay this supplier)'), h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Bank', bnk), field('Account number', bac)), h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('IFSC', bif), field('UPI ID', upi))) : null,
+    field('Notes', nt),
     !isNew ? toggleRow('Active', p.active !== false, (x) => { p.active = x; }) : null),
     actions: [{ label: isNew ? 'Add' : 'Save', primary: true, onclick: async (c) => {
       if (!name.value.trim()) { name.classList.add('err'); name.focus(); return false; }
-      const body = { id: p.id || null, kind: p.kind || k, name: name.value, gstin: gst.value, pan: pan.value, state_code: stSel.value, reg_type: reg.value, phone: ph.value, email: em.value, contact_name: cn.value, billing_address: ba.value, shipping_address: sa.value, credit_days: cd.value || 0, credit_limit: cl.value || 0, tags: tg.value, notes: nt.value, active: p.active !== false };
+      const body = { id: p.id || null, kind: p.kind || k, name: name.value, gstin: gst.value, pan: pan.value, state_code: stSel.value, reg_type: reg.value, phone: ph.value, email: em.value, contact_name: cn.value, billing_address: ba.value, shipping_address: sa.value, credit_days: cd.value || 0, credit_limit: cl.value || 0, tags: tg.value, notes: nt.value, active: p.active !== false, category: cat.value, bank_name: bnk.value, bank_account: bac.value, bank_ifsc: bif.value, upi_id: upi.value };
+      if (typeSel.value) body.party_type = typeSel.value; else if (p.party_type && !['customer', 'supplier'].includes(p.party_type)) body.party_type = k === 'supplier' ? 'supplier' : 'customer';
       const r = await api('acc_save_party', { p: body }); bust('parties'); c();
       if (r.duplicate_gstin_of) toast('Saved. Note: another party already uses this GSTIN (' + r.duplicate_gstin_of + ')'); else toast(isNew ? 'Added' : 'Saved');
       const list = await parties(true); onSaved && onSaved(list.find((x) => x.id === r.id));
@@ -113,6 +118,7 @@ page('party', {
       writable && isCust ? { label: 'New invoice', icon: 'plus', primary: true, run: () => go('new/invoice?party=' + p.id) } : null, writable && !isCust ? { label: 'New bill', icon: 'plus', primary: true, run: () => go('new/bill?party=' + p.id) } : null,
       writable ? { label: isCust ? 'Receive money' : 'Pay money', icon: 'wallet', run: () => receiptSheet(isCust ? 'receipt' : 'payment', { party: p, done: () => v.refresh() }) } : null,
       writable ? { label: 'Edit', icon: 'edit', run: () => partySheet(p.kind, p, () => v.refresh()) } : null,
+      writable && can('acc_post') && Math.abs(Number(p.balance)) > 0.004 && (isCust ? Number(p.balance) > 0 : Number(p.balance) < 0) ? { label: isCust ? 'Write off or discount' : 'Discount received', icon: 'tag', run: () => adjustSheet(p, isCust, () => v.refresh()) } : null,
       can('acc_admin') && !p.is_walkin ? { label: 'Opening balance', icon: 'book', run: () => openingSheet(p, () => v.refresh()) } : null].filter(Boolean) });
     v.root.append(h('div', { class: 'card grid', style: { gap: '10px' } },
       h('div', { class: 'row sp wrap' }, h('div', null, p.gstin ? h('div', { class: 'mono' }, p.gstin) : h('div', { class: 'muted' }, 'Unregistered'), h('div', { class: 'small muted' }, [p.state_code ? stateName(p.state_code) : '', p.phone, p.email].filter(Boolean).join(' · '))), p.active ? null : badge('Inactive')),
@@ -156,6 +162,19 @@ page('party', {
     }
   },
 });
+function adjustSheet(p, isCust, done) {
+  const owed = Math.abs(Number(p.balance));
+  const kinds = isCust ? [['write_off', 'Write off as bad debt'], ['discount_given', 'Discount given']] : [['discount_received', 'Discount received']];
+  const kSel = selectEl(kinds, kinds[0][0], {}), amt = input({ value: owed, type: 'number', mode: 'decimal', label: 'Amount' }), d = input({ value: new Date().toISOString().slice(0, 10), type: 'date' }), nt = input({ placeholder: 'Reason (optional)' });
+  sheet({ title: isCust ? 'Write off or discount' : 'Discount received', body: h('div', { class: 'grid' },
+    h('p', { class: 'muted' }, (isCust ? p.name + ' owes you ' : 'You owe ' + p.name + ' ') + inr(owed, 0) + '. This clears the oldest open ' + (isCust ? 'invoices' : 'bills') + ' first and posts to your books. It can be cancelled from Receipts and payments.'),
+    isCust ? field('What is this', kSel) : null, field('Amount (₹)', amt), field('Date', d), field('Reason', nt)),
+    actions: [{ label: 'Save', primary: true, onclick: async (c) => {
+      const a = Number(amt.value); if (!(a > 0) || a > owed + 0.004) { amt.classList.add('err'); toast('Enter an amount up to ' + inr(owed, 0)); return false; }
+      await api('acc_party_adjust', { p: { party_id: p.id, kind: kSel.value, amount: a, date: d.value, notes: nt.value } }); bust('parties'); c(); toast('Saved'); done && done();
+    } }] });
+}
+
 function openingSheet(p, done) {
   const amt = input({ type: 'number', mode: 'decimal', placeholder: '0.00' }), d = dateInput(curFY().start_date);
   sheet({ title: 'Opening balance', body: h('div', { class: 'grid' }, h('p', { class: 'muted' }, 'Money ' + (p.kind === 'supplier' ? 'you already owed ' : 'they already owed you ') + 'before you started using AUZslab. It becomes an opening ' + (p.kind === 'supplier' ? 'bill' : 'invoice') + ' you can settle like any other, balanced against “Opening balance equity”.'), field('Amount', amt), field('As of', d)),
