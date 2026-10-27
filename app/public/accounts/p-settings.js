@@ -60,7 +60,7 @@ function imageField(label, hint, br, key, maxW, maxH) {
 // Shared by the Organisation page (below) and AUZsScan's own lightweight Invoice layout
 // page (above) -- exactly one implementation of the picker + "Preview with sample data",
 // behind two entry points onto the same acc_org.settings.brand.invoiceStyle.
-const INVOICE_LAYOUTS = [['', 'Standard'], ['classic', 'Classic tax invoice (logo box, MRP, Billed to / Shipped to)'], ['noir', 'Noir (dark, minimalist)'], ['playful', 'Playful (cream & blue, friendly)'], ['bold', 'Bold (red, graphic, thick rules)'], ['minimal', 'Minimal (clean, corporate, pill info boxes)'], ['stamped', 'Stamped (perforated receipt, typewriter)']];
+const INVOICE_LAYOUTS = [['', 'Standard'], ['classic', 'Classic tax invoice (logo box, MRP, Billed to / Shipped to)'], ['noir', 'Noir (dark, minimalist)'], ['playful', 'Playful (cream & blue, friendly)'], ['bold', 'Bold (red, graphic, thick rules)'], ['minimal', 'Minimal (clean, corporate, pill info boxes)'], ['stamped', 'Stamped (perforated receipt, typewriter)'], ['auzslab', 'AUZslab (big Invoice title, logo top right, PAID stamp)']];
 function invoiceLayoutField(value, getPreviewData) {
   const lay = selectEl(INVOICE_LAYOUTS, value || '');
   const previewBtn = h('button', { class: 'btn sm', type: 'button', style: { justifySelf: 'start' }, onclick: () => previewInvoiceLayout(lay.value, getPreviewData()) }, icon('eye', 16), 'Preview with sample data');

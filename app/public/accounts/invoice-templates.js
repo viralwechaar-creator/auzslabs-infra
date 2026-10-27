@@ -345,7 +345,92 @@
     return wrap;
   }
 
-  const api = { noir: buildNoir, playful: buildPlayful, bold: buildBold, minimal: buildMinimal, stamped: buildStamped, computeDoc };
+  // =====================================================================================================================
+  // 6) "auzslab" -- the AUZslab main bill: big light "Invoice" word with the number small under it, logo top right, small
+  //    From / To / Payment / Date blocks, hairline-ruled item table, large total, PAID stamp when settled, two-column
+  //    small terms, signature. The same design AUZslab sends its own clients (site/inv.html), here for AUZsLedger data.
+  //    Here the document word is the headline on purpose (it is the AUZslab house design); the business name sits in From.
+  // =====================================================================================================================
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  function svg(tag, props) {
+    const e = document.createElementNS(SVGNS, tag);
+    for (const k in props || {}) e.setAttribute(k, props[k]);
+    for (let i = 2; i < arguments.length; i++) [].concat(arguments[i]).flat(Infinity).forEach((c) => { if (c != null && c !== false) e.append(c instanceof Node ? c : document.createTextNode(String(c))); });
+    return e;
+  }
+  function paidStamp(name, dateTxt) {
+    const f = { 'font-family': 'Helvetica,Arial,sans-serif', fill: 'currentColor', 'text-anchor': 'middle' };
+    const o = svg('svg', { viewBox: '0 0 200 200', width: '100%', height: '100%', 'aria-hidden': 'true' },
+      svg('defs', null, svg('path', { id: 'auzcpt', d: 'M24,100 A76,76 0 0 1 176,100' }), svg('path', { id: 'auzcpb', d: 'M20,100 A80,80 0 0 0 180,100' })),
+      svg('circle', { cx: 100, cy: 100, r: 96, fill: 'none', stroke: 'currentColor', 'stroke-width': 4 }),
+      svg('circle', { cx: 100, cy: 100, r: 90, fill: 'none', stroke: 'currentColor', 'stroke-width': 1.2 }),
+      svg('circle', { cx: 100, cy: 100, r: 58, fill: 'none', stroke: 'currentColor', 'stroke-width': 1.4 }),
+      svg('text', Object.assign({ 'font-size': 15, 'font-weight': 700, 'letter-spacing': 5 }, f), svg('textPath', { href: '#auzcpt', startOffset: '50%' }, String(name || '').toUpperCase().slice(0, 18))),
+      svg('text', Object.assign({ 'font-size': 8.6, 'font-weight': 600, 'letter-spacing': 1.6 }, f), svg('textPath', { href: '#auzcpb', startOffset: '50%' }, 'PAID IN FULL')),
+      svg('text', Object.assign({ x: 100, y: 108, 'font-size': 26, 'font-weight': 800, 'letter-spacing': 3 }, f), 'PAID'),
+      svg('text', Object.assign({ x: 100, y: 132, 'font-size': 10, 'font-weight': 600 }, f), dateTxt));
+    return o;
+  }
+  function buildAuzslab(data) {
+    injectCss('inv-auz-css', '.inv-auz-wrap{width:100%;display:flex;justify-content:center;overflow:hidden}' + PAGE_RESET +
+      '.inv-auz{width:794px;min-height:1118px;flex:none;position:relative;background:#fff;color:#161616;padding:36px 46px 28px;display:flex;flex-direction:column;font:11px/1.45 Inter,-apple-system,"Helvetica Neue",Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+      '.inv-auz .row{display:flex;justify-content:space-between;align-items:flex-start;gap:30px}' +
+      '.inv-auz .h1{font-size:46px;line-height:1;font-weight:500;letter-spacing:-2px;margin:0}.inv-auz .no{font-size:12px;font-weight:500;color:#555;margin:2px 0 0;white-space:nowrap}' +
+      '.inv-auz .lg{height:40px;width:auto;max-width:170px;object-fit:contain;display:block}' +
+      '.inv-auz .cols{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:16px}.inv-auz .cols.t2{margin-top:10px}' +
+      '.inv-auz .h2{font-size:17px;font-weight:500;letter-spacing:-.3px;margin:0 0 4px}' +
+      '.inv-auz .kv{display:grid;grid-template-columns:62px 1fr;gap:0 7px;font-size:8.6px;line-height:1.32}.inv-auz .kv span:nth-child(odd){color:#8a8a8a}.inv-auz .kv b{font-weight:500;word-break:break-word}' +
+      '.inv-auz .svc{margin-top:14px;position:relative;flex:1}' +
+      '.inv-auz .gr{display:grid;grid-template-columns:1fr 44px 92px 92px;gap:8px}' +
+      '.inv-auz .gr.hd{align-items:end;border-bottom:1.5px solid #161616;padding-bottom:6px}.inv-auz .gr.hd .h2{margin:0;font-size:26px;letter-spacing:-1px}.inv-auz .gr.hd .c{font-size:15px;font-weight:500}' +
+      '.inv-auz .gr.ln{padding:5px 0;border-bottom:var(--bw,1px) solid #ececec;font-size:10.5px}.inv-auz .gr.ln small{display:block;color:#8a8a8a;font-size:9px}' +
+      '.inv-auz .r{text-align:right;white-space:nowrap}' +
+      '.inv-auz .tots{margin-left:auto;width:290px;margin-top:8px}.inv-auz .tr{display:flex;justify-content:space-between;padding:1.5px 0;font-size:10px;color:#555}.inv-auz .tr b{color:#161616;font-weight:500}' +
+      '.inv-auz .tr.big{border-top:1.5px solid #161616;margin-top:5px;padding-top:7px;font-size:20px;color:#161616;letter-spacing:-.4px}.inv-auz .tr.big b{font-weight:600}' +
+      '.inv-auz .words{font-size:9.5px;color:#555;text-align:right;margin-top:3px}' +
+      '.inv-auz .stamp{position:absolute;left:140px;bottom:20px;width:118px;height:118px;transform:rotate(-13deg);opacity:.88;pointer-events:none;color:#800020}' +
+      '.inv-auz .terms{margin-top:6px;columns:2;column-gap:24px;font-size:7.3px;line-height:1.3;color:#444}.inv-auz .terms p{margin:0 0 3.5px;break-inside:avoid}' +
+      '.inv-auz .foot{margin-top:12px;display:flex;justify-content:space-between;align-items:flex-end}.inv-auz .foot small{font-size:8.5px;color:#8a8a8a}' +
+      '.inv-auz .sign{width:240px;text-align:center;font-size:9.5px;color:#555}.inv-auz .sign div{border-top:1px solid #161616;margin-top:30px;padding-top:4px}' +
+      '.inv-auz .cx{position:absolute;top:40%;left:0;right:0;text-align:center;font-size:70px;font-weight:800;color:rgba(176,0,0,.16);transform:rotate(-18deg);pointer-events:none}' +
+      '@media print{html,body{background:#fff!important}.inv-auz-wrap{display:block;overflow:visible}.inv-auz{zoom:1!important;width:210mm;min-height:297mm}}');
+    const c = computeDoc(data), { o, d, b, k, lines, adr, title, gross, disc, intra, addRows, phone, billTo, terms } = c;
+    const paid = n(d.total) > 0 && n(d.paid) >= n(d.total) - 0.005 && !d.cancelled;
+    const kv = (rows) => el('div', { class: 'kv' }, rows.filter((r) => r[1]).map((r) => [el('span', null, r[0]), el('b', null, r[1])]));
+    const bankRows = [['Pay to', b.upi], ['Bank', k.name], ['Account', [k.holder, k.account].filter(Boolean).join(' · ')], ['IFSC', k.ifsc], ['Branch', k.branch]];
+    if (!(k.name || k.account) && o.bank_details) bankRows.push(['Bank', o.bank_details]);
+    const lineEls = lines.map((l) => {
+      const sub = [l.hsn ? 'HSN/SAC ' + l.hsn : '', n(l.mrp) ? 'MRP ' + nf.format(n(l.mrp)) : '', n(l.tax_rate) ? 'GST ' + n(l.tax_rate) + '%' : 'No GST', n(l.disc_amt) ? 'discount ' + nf.format(n(l.disc_amt)) : ''].filter(Boolean).join(' · ');
+      return el('div', { class: 'gr ln' }, el('div', null, l.description || '', el('small', null, sub)), el('div', { class: 'r' }, q3.format(n(l.qty))), el('div', { class: 'r' }, '₹' + nf.format(n(l.rate))), el('div', { class: 'r' }, '₹' + nf.format(n(l.taxable))));
+    });
+    const sheet = el('div', { class: 'inv-auz' },
+      d.cancelled ? el('div', { class: 'cx' }, 'CANCELLED') : null,
+      el('div', { class: 'row' }, el('div', null, el('h1', { class: 'h1' }, title.replace(/^Tax /, '')), el('div', { class: 'no' }, d.number || '')), el('img', { class: 'lg', src: b.logo || '/logo.png', alt: '' })),
+      el('div', { class: 'cols' },
+        el('div', null, el('h2', { class: 'h2' }, 'From'), kv([['Name', o.legal_name || o.name], ['GSTIN', o.gstin], ['Address', adr], ['Phone', o.phone], ['Email', o.email]])),
+        el('div', null, el('h2', { class: 'h2' }, 'To'), kv([['Name', billTo], ['GSTIN', d.party_gstin || 'Unregistered'], ['Address', d.billing_address], ['Phone', phone]]))),
+      el('div', { class: 'cols t2' },
+        el('div', null, el('h2', { class: 'h2' }, 'Payment'), kv([['Status', d.cancelled ? 'Cancelled' : (paid ? 'Paid in full' : 'Payment due')]].concat(bankRows))),
+        el('div', null, el('h2', { class: 'h2' }, 'Date'), kv([['Invoice', fdate(d.date)], ['Due', fdate(d.due_date)], ['Place', stateText(d.place_of_supply || o.state_code)], ['Supply', intra ? 'Within state (CGST + SGST)' : 'Inter-state (IGST)'], ['Reverse chg.', d.reverse_charge ? 'Yes' : 'No']]))),
+      el('div', { class: 'svc' },
+        el('div', { class: 'gr hd' }, el('h2', { class: 'h2' }, 'Items'), el('div', { class: 'c r' }, 'Qty'), el('div', { class: 'c r' }, 'Price'), el('div', { class: 'c r' }, 'Total')),
+        lineEls,
+        el('div', { class: 'tots' },
+          el('div', { class: 'tr' }, el('span', null, 'Subtotal'), el('b', null, '₹' + nf.format(gross))),
+          disc ? el('div', { class: 'tr' }, el('span', null, 'Discount'), el('b', null, '-₹' + nf.format(disc))) : null,
+          el('div', { class: 'tr' }, el('span', null, 'Taxable value'), el('b', null, '₹' + nf.format(n(d.taxable)))),
+          addRows.map(([a, v]) => el('div', { class: 'tr' }, el('span', null, a), el('b', null, '₹' + nf.format(n(v))))),
+          el('div', { class: 'tr big' }, el('span', null, 'Total'), el('b', null, '₹' + nf.format(n(d.total)))),
+          el('div', { class: 'words' }, inWords(n(d.total)))),
+        paid ? el('div', { class: 'stamp' }, paidStamp(o.name || o.legal_name, fdate(d.date))) : null),
+      terms.length ? el('div', { class: 'terms' }, terms.map((t) => el('p', null, t))) : null,
+      el('div', { class: 'foot' }, el('small', null, o.footer || ''), el('div', { class: 'sign' }, el('div', null, 'For ' + (o.legal_name || o.name || ''), el('br'), 'Authorised signatory'))));
+    const wrap = el('div', { class: 'inv-auz-wrap' }, sheet);
+    makeFit(wrap, sheet);
+    return wrap;
+  }
+
+  const api = { auzslab: buildAuzslab, noir: buildNoir, playful: buildPlayful, bold: buildBold, minimal: buildMinimal, stamped: buildStamped, computeDoc };
   root.auzInvoiceTemplates = Object.assign(root.auzInvoiceTemplates || {}, api);
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
