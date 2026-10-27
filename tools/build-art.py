@@ -241,8 +241,16 @@ def _():
 <div class="adl">
 <header class="adl-hero"><span class="adl-mono">APPS</span><h1 class="adl-h">Take AUZslab <em>with you.</em></h1>
 <p>Every AUZslab app opens the real, live website inside the app, so you always see the newest version the moment it ships.</p></header>
+<div class="dl-plans" role="tablist" aria-label="Choose your plan">
+<button data-plan="base"><i>1</i><b>Base</b><em>Works completely offline</em><span>Data stays on one computer in your shop. Other devices join over the shop Wi-Fi. No internet, no account: a licence code opens it. Everything is by hand: bills go out through your own WhatsApp, GST details are typed in.</span></button>
+<button data-plan="pro"><i>2</i><b>Pro</b><em>Offline, with sync</em><span>Data is stored on your own devices and works offline. Internet is used only for automation, API features and keeping your devices up to date with each other. You sign in with your AUZslab account.</span></button>
+<button data-plan="cloud"><i>3</i><b>Cloud</b><em>Nothing to keep</em><span>Everything lives on AUZslab\'s servers and opens on any device with internet. You sign in with your AUZslab account; staff use a name and PIN.</span></button>
+</div>
+<p class="dl-hint">1. Choose your plan, then 2. choose your device.</p>
+<div class="adl-flow" data-plan="">
 <div class="adl-kit"><div class="adl-bar">%s</div></div>
 <div class="adl-panels">%s</div>
+</div>
 </div>''' % (seg, panels)
     put('download-apps', body, 'a-dl', 'a-dl')
 

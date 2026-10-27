@@ -104,6 +104,13 @@
     var panels = $$('.dl-panel');
     var s = seg(dl, function (v) { panels.forEach(function (p) { p.classList.toggle('on', p.getAttribute('data-p') === v); }); });
     s.set(first);
+    /* plan first: Base / Pro / Cloud decide which apps and steps are shown for each device */
+    var flow = $('.adl-flow'), pb = $$('.dl-plans button');
+    if (flow && pb.length) {
+      var pick = function (v) { flow.setAttribute('data-plan', v); pb.forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-plan') === v); }); if (v) { try { history.replaceState(null, '', '#' + v); } catch (e) {} s.set(first); } };
+      pb.forEach(function (b) { b.addEventListener('click', function () { pick(b.getAttribute('data-plan')); }); });
+      var h0 = location.hash.slice(1); if (/^(base|pro|cloud)$/.test(h0)) pick(h0);
+    }
   }
 
   /* ---------- CONTACT: one question at a time ---------- */
