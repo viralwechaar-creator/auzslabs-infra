@@ -173,6 +173,7 @@ export const RPC = {
   // --- Client dashboard: own account, staff, feature toggles ---
   my_dashboard: { params: [], auth: true },
   my_profile: { params: [], auth: true },
+  is_platform_admin: { params: [], auth: true },
   save_my_profile: { params: ['p'], jsonb: ['p'], auth: true },
   admin_list_profiles: { params: ['p_limit'], defaults: { p_limit: 200 }, auth: true },
   privacy_current_version: { params: [], auth: false },
