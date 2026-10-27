@@ -1,0 +1,71 @@
+/* AUZsLedger / AUZsScan in the AUZsStyle look. Every rule sits under html.ui-fine, so "Classic" (More > Look) is untouched.
+   Look only: no screen's data or behaviour is changed here. */
+html.ui-fine{--glass:rgba(255,255,255,.78);--tab-on:#fff;--tab-on-fg:#111;--panel:#e9e9eb;--ring:rgba(255,255,255,.7);--hit:40px}
+@media (prefers-color-scheme:dark){html.ui-fine:not([data-theme=light]){--glass:rgba(38,38,42,.82);--tab-on:rgba(255,255,255,.18);--tab-on-fg:#fff;--panel:#1c1c1f;--ring:rgba(255,255,255,.1)}}
+html[data-theme=dark].ui-fine{--glass:rgba(38,38,42,.82);--tab-on:rgba(255,255,255,.18);--tab-on-fg:#fff;--panel:#1c1c1f;--ring:rgba(255,255,255,.1)}
+html.ui-fine,html.ui-fine body{touch-action:manipulation;-webkit-text-size-adjust:100%}
+/* small, quiet type; thin lines; round buttons */
+html.ui-fine .btn{font-size:14.5px;min-height:38px;padding:0 14px;gap:6px;line-height:1.1;border-radius:999px}
+html.ui-fine .btn.sm{min-height:32px;padding:0 11px;font-size:13.5px}
+html.ui-fine .btn.icon{width:38px;padding:0}
+html.ui-fine .btn .ic svg{width:18px;height:18px}
+html.ui-fine .chip{min-height:30px;font-size:13.5px;padding:0 12px}
+html.ui-fine .input,html.ui-fine .select{min-height:38px;font-size:15px;padding:7px 12px}
+html.ui-fine .card{padding:12px 14px;border-radius:16px;box-shadow:0 0 0 .5px var(--sep)}
+html.ui-fine .list{border-radius:16px}
+html.ui-fine .li{min-height:44px;padding:8px 12px}
+html.ui-fine .li .t{font-size:14.5px;font-weight:500}
+html.ui-fine .li .s{font-size:12.5px}
+html.ui-fine .sec{gap:8px}html.ui-fine .sec-h h3{font-size:12.5px}
+html.ui-fine .page{gap:14px}
+html.ui-fine .seg{min-height:34px}html.ui-fine .seg button{font-size:13.5px;min-height:30px}
+html.ui-fine .kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+html.ui-fine .kpi{padding:10px 12px;border-radius:14px;gap:2px}
+html.ui-fine .kpi .n{font-size:20px}html.ui-fine .kpi .k{font-size:12.5px}html.ui-fine .kpi .d{font-size:12px}
+html.ui-fine .tbl th,html.ui-fine .tbl td{padding:8px 12px}
+/* Home */
+html.ui-fine .home-hero{display:grid;gap:4px;padding:16px 18px;border-radius:20px;background:var(--card);box-shadow:0 0 0 .5px var(--sep)}
+html.ui-fine .home-hero .cap{font-size:12.5px;color:var(--label2)}
+html.ui-fine .home-hero .big{font-size:34px;font-weight:700;letter-spacing:-.03em}
+html.ui-fine .home-hero .sell-big{margin-top:10px;min-height:52px;font-size:17px;font-weight:600;width:100%;justify-content:center}
+html.ui-fine .home-hero .sell-big .ic svg{width:22px;height:22px}
+/* lists of bills, customers and products are picture-style cards, not rows */
+html.ui-fine .list.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;background:none;box-shadow:none;border-radius:0;overflow:visible}
+html.ui-fine .list.cards .li{background:var(--card);border-radius:16px;box-shadow:0 0 0 .5px var(--sep);padding:12px 14px;min-height:64px}
+html.ui-fine .list.cards .li::before{display:none}
+@media (max-width:899px){
+  html.ui-fine .btn,html.ui-fine .btn.sm,html.ui-fine .btn.icon{min-height:44px}
+  html.ui-fine .btn.icon{width:44px}
+  html.ui-fine .input,html.ui-fine .select{min-height:44px}
+  html.ui-fine .list.cards{grid-template-columns:1fr;gap:8px}
+  html.ui-fine .topbar{background:var(--bg);-webkit-backdrop-filter:none;backdrop-filter:none;min-height:calc(50px + var(--safe-t));padding-top:calc(var(--safe-t) + 4px)}
+  html.ui-fine .topbar .tt{display:none}
+  html.ui-fine .large-title{font-size:26px}
+  html.ui-fine .page{padding-left:12px;padding-right:12px}
+  html.ui-fine .shell{padding-bottom:calc(88px + var(--safe-b))}
+  html.ui-fine .shell::after{content:"";position:fixed;left:0;right:0;bottom:0;height:calc(64px + var(--safe-b));background:linear-gradient(transparent,var(--bg) 60%);pointer-events:none;z-index:34}
+  /* floating phone bar, labels hidden, selected tab filled with the accent */
+  html.ui-fine .tabbar{left:50%;right:auto;transform:translateX(-50%);width:min(430px,calc(100% - 28px));bottom:calc(10px + var(--safe-b));border-radius:34px;padding:5px;gap:2px;background:var(--glass);border:.5px solid var(--ring);box-shadow:0 8px 30px rgba(0,0,0,.14);-webkit-backdrop-filter:none;backdrop-filter:none}
+  html.ui-fine .tabbar button{min-height:46px;border-radius:26px;color:var(--label2)}
+  html.ui-fine .tabbar button span:not(.ic){position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  html.ui-fine .tabbar button[aria-current=page]{background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+  html.ui-fine .tabbar button[aria-current=page] svg{color:#fff}
+  html.ui-fine .dock{bottom:calc(76px + var(--safe-b))}
+  html.ui-fine .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  html.ui-fine .kpis>.kpi:last-child:nth-child(odd){grid-column:1/-1}
+}
+@media (min-width:900px){
+  html.ui-fine .topbar{background:var(--bg);-webkit-backdrop-filter:none;backdrop-filter:none;min-height:54px;padding:8px 22px}
+  html.ui-fine .topbar .tt{font-size:19px}
+  html.ui-fine .page{max-width:none;padding:16px 22px 28px}
+  html.ui-fine .side{background:var(--glass);padding:14px 10px 12px;-webkit-backdrop-filter:none;backdrop-filter:none}
+  html.ui-fine .side a{min-height:36px;font-size:14.5px;border-radius:9px}
+  html.ui-fine .side a[aria-current=page]{background:var(--accent);color:#fff;font-weight:700}
+  html.ui-fine .side a[aria-current=page] svg{color:#fff;stroke:currentColor}
+  html.ui-fine .home-hero{grid-template-columns:1fr auto;align-items:center;column-gap:20px}
+  html.ui-fine .home-hero .cap,html.ui-fine .home-hero .big,html.ui-fine .home-hero .muted{grid-column:1}
+  html.ui-fine .home-hero .sell-big{grid-column:2;grid-row:1/4;width:auto;margin:0;padding:0 34px;min-height:60px}
+  html.ui-fine .page[data-p=home]>.grid{display:block;columns:2;column-gap:14px}
+  html.ui-fine .page[data-p=home]>.grid>*{break-inside:avoid;margin-bottom:14px}
+  html.ui-fine .page[data-p=home]>.grid>.home-hero,html.ui-fine .page[data-p=home]>.grid>.kpis,html.ui-fine .page[data-p=home]>.grid>.banner{column-span:all}
+}

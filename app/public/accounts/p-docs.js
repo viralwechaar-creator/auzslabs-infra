@@ -88,7 +88,7 @@ async function docList(v, o) {
     bar.replaceChildren(h('span', null, total + ' ' + (total === 1 ? typeLabel : typeLabel + 's')), sums && POSTING.includes(o.types[0]) ? h('span', null, 'Total ', money(sums.total, { compact: true }), ' · Outstanding ', money(sums.outstanding, { compact: true })) : null);
     if (!rows.length) { listEl.append(empty('doc', F.search || F.status || F.from ? 'No matches' : 'No ' + typeLabel + 's yet', F.search || F.status ? 'Try a different search or clear the filters.' : o.writable ? 'Create your first ' + typeLabel + '.' : '', o.writable && !F.search && !F.status ? h('button', { class: 'btn fill', onclick: () => go('new/' + o.types[0]) }, 'New ' + typeLabel) : null)); return; }
     const canBulk = o.writable && can('acc_post') && POSTING.includes(o.types[0]);
-    listEl.append(dataView(cols, rows, { onRow: (r) => go(docPath(r)), selectable: canBulk, sortKey: null, onSelect: (s) => { sel = s; bulkBar.classList.toggle('hidden', !s.size); bulkBar.replaceChildren(h('span', null, s.size + ' selected'), h('button', { class: 'btn sm fill', onclick: bulkPost }, 'Post selected drafts')); } }));
+    listEl.append(dataView(cols, rows, { cards: true, onRow: (r) => go(docPath(r)), selectable: canBulk, sortKey: null, onSelect: (s) => { sel = s; bulkBar.classList.toggle('hidden', !s.size); bulkBar.replaceChildren(h('span', null, s.size + ' selected'), h('button', { class: 'btn sm fill', onclick: bulkPost }, 'Post selected drafts')); } }));
     if (rows.length < total) more.append(h('button', { class: 'btn', onclick: () => load(true) }, 'Show more (' + (total - rows.length) + ' left)'));
   }
   async function bulkPost() {

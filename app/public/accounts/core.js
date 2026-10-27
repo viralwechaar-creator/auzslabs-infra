@@ -368,7 +368,7 @@ function dataView(columns, rows, o = {}) {
   const paint = () => {
     clear(wrap);
     const data = sorted();
-    if (isDesk()) {
+    if (isDesk() && !(o.cards && window.accLook && accLook.on())) {
       const thead = h('tr', null, sel ? h('th', { style: { width: '44px' } }, h('input', { type: 'checkbox', 'aria-label': 'Select all', onchange: (e) => { data.forEach((r) => e.target.checked ? sel.add(r.id) : sel.delete(r.id)); o.onSelect && o.onSelect(sel); paint(); } })) : null,
         columns.filter((c) => !c.hideDesk).map((c) => h('th', { class: (c.r ? 'r ' : '') + (c.sort !== false && c.key ? 'sortable' : ''), 'aria-sort': state.key === c.key ? (state.dir > 0 ? 'ascending' : 'descending') : 'none', onclick: c.sort !== false && c.key ? () => { state.dir = state.key === c.key ? -state.dir : 1; state.key = c.key; paint(); } : null }, c.label, state.key === c.key ? (state.dir > 0 ? ' ↑' : ' ↓') : '')));
       const tbody = h('tbody', null, data.map((r) => h('tr', { class: o.onRow ? 'click' : '', tabindex: o.onRow ? 0 : null, onclick: (e) => { if (!e.target.closest('input,button,a,select')) o.onRow && o.onRow(r); }, onkeydown: (e) => { if (e.key === 'Enter' && o.onRow) o.onRow(r); } },
@@ -378,7 +378,7 @@ function dataView(columns, rows, o = {}) {
       wrap.append(h('div', { class: 'card flush' }, h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl' }, h('thead', null, thead), tbody, foot))));
     } else {
       const T = columns.find((c) => c.title) || columns[0], Sb = columns.find((c) => c.sub), V = columns.find((c) => c.value), B = columns.find((c) => c.badge);
-      wrap.append(h('div', { class: 'list' }, data.map((r) => h(o.onRow ? 'button' : 'div', { class: 'li', type: o.onRow ? 'button' : null, onclick: o.onRow ? () => o.onRow(r) : null },
+      wrap.append(h('div', { class: 'list' + (o.cards ? ' cards' : '') }, data.map((r) => h(o.onRow ? 'button' : 'div', { class: 'li', type: o.onRow ? 'button' : null, onclick: o.onRow ? () => o.onRow(r) : null },
         sel ? h('input', { type: 'checkbox', checked: sel.has(r.id), 'aria-label': 'Select row', onclick: (e) => e.stopPropagation(), onchange: (e) => { e.target.checked ? sel.add(r.id) : sel.delete(r.id); o.onSelect && o.onSelect(sel); } }) : null,
         h('div', { class: 'grow' }, h('div', { class: 't' }, cellVal(T, r)), Sb ? h('div', { class: 's' }, cellVal(Sb, r)) : null),
         h('div', { class: 'v' }, V ? h('div', { class: 't' }, cellVal(V, r)) : null, B ? h('div', { style: { marginTop: '3px' } }, cellVal(B, r)) : null),
