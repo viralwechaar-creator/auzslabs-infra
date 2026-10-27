@@ -88,6 +88,14 @@ export default async function run({ browser, stack }) {
     const d = (await ok(owner, 'acc_get_document', { p_id: inv })).doc; assert(d.pay_status === 'paid', d.pay_status);
     const ag = await ok(owner, 'acc_ageing', { p: { kind: 'receivable' } }); assert(Number(ag.totals.advance) === -350, 'advance ' + ag.totals.advance); await integrity();
   }, 'critical');
+  await s.check('A posted payment\'s UTR and method can be edited without changing amounts or the books', async () => {
+    const pays = await ok(owner, 'acc_list_payments', { p: { kind: 'receipt', limit: 5 } });
+    const pid = (pays.rows || pays)[0].id;
+    const r = await ok(owner, 'acc_update_payment_details', { p_payment: pid, p: { reference: 'UTR123456789', mode: 'Bank transfer' } });
+    assert(r.reference === 'UTR123456789', JSON.stringify(r));
+    const g = await ok(owner, 'acc_get_payment', { p_id: pid }); assert(g.payment.reference === 'UTR123456789' && Number(g.payment.amount) === 2500, JSON.stringify(g.payment));
+    await integrity();
+  });
   await s.check('A paid invoice cannot be cancelled until its payments are unlinked; then cancelling reverses everything', async () => {
     await fails(owner, 'acc_cancel_document', { p_doc_id: inv, p_reason: 'test' }, /payments or credit notes applied/i);
     const d = await ok(owner, 'acc_get_document', { p_id: inv }); for (const a of d.allocations.filter((x) => !x.reversed)) await ok(owner, 'acc_unallocate', { p_allocation: a.id });

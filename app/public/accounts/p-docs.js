@@ -218,7 +218,7 @@ page('doc', {
     const al = r.allocations.filter((a) => !a.reversed);
     if (al.length || r.children.length) {
       v.root.append(h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, 'Payments, credits and related documents')), h('div', { class: 'list' },
-        al.map((a) => liRow({ icon: a.payment_id ? 'wallet' : 'undo', tone: 'green', title: (a.payment_number || (a.note_id === d.id ? 'Applied to ' + a.doc_number : 'Credit note ' + a.note_number)), sub: fmtD(a.date), value: money(a.amount), chevron: true,
+        al.map((a) => liRow({ icon: a.payment_id ? 'wallet' : 'undo', tone: 'green', title: (a.payment_number || (a.note_id === d.id ? 'Applied to ' + a.doc_number : 'Credit note ' + a.note_number)), sub: fmtD(a.date) + (a.payment_id ? ' · tap to edit UTR or method' : ''), value: money(a.amount), chevron: true,
           onclick: () => (a.payment_id ? go('payment/' + a.payment_id) : go('doc/' + (a.note_id === d.id ? a.doc_id : a.note_id))) })),
         r.children.map((c) => liRow({ icon: 'doc', tone: 'gray', title: DOC_LABEL[c.doc_type] + ' ' + c.number, sub: cap1(c.status), value: money(c.total), chevron: true, onclick: () => go('doc/' + c.id) })))));
     }

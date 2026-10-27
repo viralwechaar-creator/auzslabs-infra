@@ -3094,3 +3094,6 @@ One Electron + PostgreSQL + local-server codebase (`desktop-style/`, still that 
 
 ### AUZsLedger New look: off-white + wine (round 5)
 Owner: the AUZsLedger New look uses the Classic colours (off-white page `#f5f3f0`, wine `#800020`, a lifted wine in dark mode) instead of the ink/grey of round 4. `accounts/look.js` adds `html.ui-wine` on every page except `scan.html`, and `accounts.fine.css` (`?v=5`, last block) sets the tokens under `html.ui-fine.ui-wine`. AUZsScan keeps the ink colours. CSS only. Static only: `git pull` (sw `pos-v277`).
+
+## AUZsLedger: edit a posted payment's UTR / method / note (db/290)
+Posted bills and payments are locked, but the money details of a payment can be corrected: `acc_update_payment_details(p_payment, p)` (needs `acc_post`, registered) changes only `mode`, `reference` (UTR) and `notes` of a non-cancelled payment/receipt; amount, date and journals never change and the old values go to the audit log. UI: open the payment (from the bill's "Payments" list, now marked "tap to edit UTR or method", or Receipts/Payments) -> **Edit details** (`editPaySheet` in `accounts/p-money.js`). Test: accounts suite. Deploy: `bash tools/migrate.sh apply` (db/290), `docker compose up -d --build api`, `git pull`.
