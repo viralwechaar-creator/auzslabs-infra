@@ -1,4 +1,5 @@
 // AUZslab Accounting: the books must balance and trace, rules must hold server-side, and the app must work on phone and desktop.
+import fs from 'node:fs';
 import { suite, watch, assert } from '../../lib/harness.mjs';
 import { newCtx } from '../../lib/common.mjs';
 import { rpc } from '../../lib/api.mjs';
@@ -229,6 +230,61 @@ export default async function run({ browser, stack }) {
     const pl = await ok(owner, 'acc_pnl', { p_from: '2020-01-01', p_to: '2099-12-31' }); assert(Math.abs(Number(pl.net_profit) - Number(bs.current_profit) - Number(bs.retained_prior)) < 0.01 || true, 'pnl');
     const cf = await ok(owner, 'acc_cash_flow', { p_from: '2020-01-01', p_to: '2099-12-31' }); assert(Math.abs(Number(cf.net) - cf.rows.reduce((a, x) => a + Number(x.amount), 0)) < 0.01, 'cash flow does not explain the change in cash');
   }, 'critical');
+  await s.check('Reports & analytics: dashboard, party, collection, ageing, register and ratio figures agree with the books', async () => {
+    const today = new Date().toISOString().slice(0, 10), yr = today.slice(0, 4) + '-01-01', P = { from: yr, to: today };
+    for (const fn of ['dashboard', 'collection', 'unallocated', 'duplicates', 'branch', 'paymode', 'customer_profit', 'ratios', 'fy_compare']) await fails(cashier, 'acc_rep_' + fn, { p: P }, /role does not allow/i);
+    await fails(cafe, 'acc_rep_dashboard', { p: P }, /not enabled/i);
+    const d = await ok(owner, 'acc_rep_dashboard', { p: P });
+    const pl = await ok(owner, 'acc_pnl', { p_from: yr, p_to: today });
+    assert(Math.abs(Number(d.net_profit) - Number(pl.net_profit)) < 0.01, 'dashboard profit ' + d.net_profit + ' vs P&L ' + pl.net_profit);
+    const ar = await ok(owner, 'acc_ageing', { p: { kind: 'receivable', as_of: today } });
+    assert(Math.abs(Number(d.receivable) - Number(ar.totals.total)) < 0.01, 'receivable ' + d.receivable + ' vs ageing ' + ar.totals.total);
+    const cust1 = await ok(owner, 'acc_rep_party_summary', { p: { kind: 'customer', from: yr, to: today } });
+    assert(Math.abs(Number(cust1.sums.closing) - Number(ar.totals.total)) < 0.01, 'customer closings add up to the ageing total ' + cust1.sums.closing + ' / ' + ar.totals.total);
+    for (const f of ['outstanding', 'zero', 'advance', 'new', 'inactive']) await ok(owner, 'acc_rep_party_summary', { p: { kind: 'customer', from: yr, to: today, filter: f } });
+    const sup = await ok(owner, 'acc_rep_party_summary', { p: { kind: 'supplier', from: yr, to: today } });
+    const ap = await ok(owner, 'acc_ageing', { p: { kind: 'payable', as_of: today } });
+    assert(Math.abs(Number(sup.sums.closing) - Number(ap.totals.total)) < 0.01, 'supplier closings vs payable ageing');
+    const mp = d.months.reduce((a, x) => a + Number(x.profit), 0); assert(Math.abs(mp - Number(d.net_profit)) < 0.01, 'monthly profit adds up to the total');
+    const cbal = d.accounts.reduce((a, x) => a + Number(x.balance), 0); assert(Math.abs(cbal - Number(d.cash) - Number(d.bank)) < 0.01, 'cash and bank accounts add up');
+    const col = await ok(owner, 'acc_rep_collection', { p: P }); assert(Number(col.collected) === Number(d.collected), 'dashboard collected equals collection report');
+    const cd = col.daily.reduce((a, x) => a + Number(x.collected), 0); assert(Math.abs(cd - Number(col.collected)) < 0.01, 'daily collections add up');
+    const due = await ok(owner, 'acc_rep_due', { p: { kind: 'receivable', bucket: 'all' } }); assert(Array.isArray(due.rows), 'due rows');
+    const docs = await ok(owner, 'acc_rep_docs', { p: { kind: 'sales', from: yr, to: today } }); assert(docs.rows.length >= 1 && docs.counts && docs.sums, 'sales register');
+    for (const st of ['paid', 'unpaid', 'partial', 'cancelled']) await ok(owner, 'acc_rep_docs', { p: { kind: 'sales', from: yr, to: today, status: st } });
+    await ok(owner, 'acc_rep_docs', { p: { kind: 'purchase', from: yr, to: today } });
+    const jr = await ok(owner, 'acc_rep_journals', { p: { from: yr, to: today } }); assert(jr.rows.length >= 1, 'journals');
+    for (const m of ['reversed', 'backdated', 'adjustment', 'transfer']) await ok(owner, 'acc_rep_journals', { p: { from: yr, to: today, mode: m } });
+    await ok(owner, 'acc_rep_unallocated', { p: {} }); await ok(owner, 'acc_rep_duplicates', { p: P }); await ok(owner, 'acc_rep_branch', { p: P }); await ok(owner, 'acc_rep_paymode', { p: P }); await ok(owner, 'acc_rep_customer_profit', { p: P });
+    for (const k of ['income', 'expense']) for (const by of ['account', 'month', 'day', 'vendor']) await ok(owner, 'acc_rep_category', { p: { kind: k, by, from: yr, to: today } });
+    const ec = await ok(owner, 'acc_rep_category', { p: { kind: 'expense', by: 'account', from: yr, to: today } }); assert(Math.abs(Number(ec.total) - Number(d.expense)) < 0.01, 'expense categories add up to total expense');
+    const rt = await ok(owner, 'acc_rep_ratios', { p: P }); assert(Math.abs(Number(rt.net_profit) - Number(d.net_profit)) < 0.01, 'ratios profit equals dashboard profit');
+    await ok(owner, 'acc_rep_fy_compare', { p: {} });
+    await integrity();
+  }, 'major');
+  await s.check('POS and AUZsMob sales post into the books once, reverse on void, and refunds post; integrity holds', async () => {
+    const day = new Date().toISOString().slice(0, 10), paidAt = new Date().toISOString();
+    const order = (id, extra) => ({ id, no: 'T-' + id, status: 'paid', paidAt, t: { sub: 1000, d: 0, tax: 50, round: 0, total: 1050, net: 1000, rates: {} }, pays: [{ m: 'cash', amt: 500 }, { m: 'upi', amt: 550 }], ...extra });
+    for (const o of [order('so-1'), order('so-2', { pays: [{ m: 'cash', amt: 1100, change: 50 }] }), order('so-3', { refunds: [{ amt: 105, m: 'cash', at: paidAt }] })]) await q("insert into records (id, tenant_id, kind, data) values ($1, $2, 'order', $3) on conflict (tenant_id, id) do update set data = excluded.data", [o.id, tid, JSON.stringify(o)]);
+    const mobId = (await q('select gen_random_uuid() id'))[0].id;
+    await q("insert into mob_sales (id, tenant_id, bill_no, items, subtotal, total, paid, balance, payment_mode, staff_id) values ($1, $2, 'M-1', '[]', 3000, 3000, 1000, 2000, 'cash', gen_random_uuid())", [mobId, tid]);
+    await fails(cashier, 'acc_sales_sync_run', { p: {} }, /role does not allow/i);
+    const before = Number((await q("select coalesce(sum(debit - credit), 0) b from acc_journal_lines jl join acc_accounts a on a.id = jl.account_id where jl.tenant_id = $1 and a.system_key = 'cash'", [tid]))[0].b);
+    const run = async () => { const a = await ok(owner, 'acc_sales_sync_run', { p: { source: 'pos', from: day, to: day } }), b = await ok(owner, 'acc_sales_sync_run', { p: { source: 'mob', from: day, to: day } }); return { result: { pos: a.result.pos, mob: b.result.mob } }; };
+    const r1 = await run();
+    assert(r1.result.pos.posted === 3 && r1.result.pos.refunds === 1 && r1.result.pos.errors.length === 0, 'pos ' + JSON.stringify(r1.result.pos));
+    assert(r1.result.mob.posted === 1, 'mob ' + JSON.stringify(r1.result.mob));
+    const cashNow = Number((await q("select coalesce(sum(debit - credit), 0) b from acc_journal_lines jl join acc_accounts a on a.id = jl.account_id where jl.tenant_id = $1 and a.system_key = 'cash'", [tid]))[0].b);
+    assert(Math.abs((cashNow - before) - (500 + 1050 + 500 - 105 + 1000)) < 0.01, 'cash moved by ' + (cashNow - before));
+    const r2 = await run(); assert(r2.result.pos.posted === 0 && r2.result.pos.refunds === 0 && r2.result.mob.posted === 0, 'second run posts nothing ' + JSON.stringify(r2.result));
+    await q("update records set data = jsonb_set(data, '{status}', '\"void\"') where tenant_id = $1 and id = 'so-1'", [tid]); await q('update mob_sales set voided = true where id = $1', [mobId]);
+    const r3 = await run(); assert(r3.result.pos.reversed === 1 && r3.result.mob.reversed === 1, 'void reverses ' + JSON.stringify(r3.result));
+    const r4 = await run(); assert(r4.result.pos.reversed === 0 && r4.result.mob.reversed === 0, 'void reverses once');
+    const tt = await ok(owner, 'acc_sales_sync_totals', { p_from: day, p_to: day }); assert(Number(tt.pos.tax) > 0, 'tax held for the GST view ' + JSON.stringify(tt));
+    await ok(owner, 'acc_sales_sync_settings', { p: { pos: true, mob: true } }); const st = await ok(owner, 'acc_sales_sync_status'); assert(st.settings.pos === true, 'settings saved');
+    assert((await q('select (acc_sales_sync_auto()->>\'tenants\')::int t'))[0].t >= 1, 'auto run');
+    await integrity();
+  }, 'major');
   await s.check('Dashboard, registers, stock valuation and global search answer', async () => {
     const d = await ok(owner, 'acc_dashboard'); assert(d.cash_bank.length >= 2 && Array.isArray(d.sales_trend) && d.sales_trend.length === 30, 'dashboard');
     for (const g of ['party', 'item', 'category', 'month', 'tax_rate']) await ok(owner, 'acc_register', { p: { kind: 'sales', group: g, from: '2020-01-01', to: '2099-12-31' } });
@@ -318,10 +374,19 @@ export default async function run({ browser, stack }) {
   const ctxD = await newCtx(browser, stack, { w: 1280, h: 900 }); const page = await ctxD.newPage(); const errs = watch(page);
   await s.check('Screens: sign in on desktop, dashboard shows real figures', async () => { await ownerLogin(page, 'testacct'); await page.waitForSelector('.kpi'); assert(/Customers owe you/.test(await page.locator('body').innerText()), 'dashboard'); assert(await page.locator('.side').isVisible(), 'sidebar'); await s.shot(page, 'desktop-home'); }, 'critical');
   await s.check('Screens: every section opens without an error', async () => {
-    const routes = ['sales', 'purchases', 'expenses', 'customers', 'suppliers', 'receipts', 'payments', 'products', 'stock', 'banking', 'books', 'books?tab=daybook', 'assets', 'gst', 'gst?tab=registers', 'reports', 'reports/tb', 'reports/pnl', 'reports/bs', 'reports/cf', 'reports/ageing_receivable', 'reports/sales_register', 'reports/health', 'data', 'data?entity=products', 'messages', 'settings', 'settings/organisation', 'settings/years', 'settings/gst', 'settings/access'];
+    const routes = ['sales', 'purchases', 'expenses', 'customers', 'suppliers', 'receipts', 'payments', 'products', 'stock', 'banking', 'books', 'books?tab=daybook', 'assets', 'gst', 'gst?tab=registers', 'reports', 'reports/tb', 'analytics', 'analytics/all', 'analytics/customers', 'analytics/suppliers', 'analytics/credit', 'analytics/due', 'analytics/collection', 'analytics/unallocated', 'analytics/income', 'analytics/expense?by=month', 'analytics/expense?by=vendor', 'analytics/paymode', 'analytics/docs', 'analytics/docs?status=cancelled', 'analytics/journals?mode=backdated', 'analytics/duplicates', 'analytics/fy', 'analytics/ratios', 'analytics/branch', 'analytics/cprofit', 'analytics/gstr3b', 'analytics/gstr1', 'reports/pnl', 'reports/bs', 'reports/cf', 'reports/ageing_receivable', 'reports/sales_register', 'reports/health', 'data', 'data?entity=products', 'messages', 'settings', 'settings/organisation', 'settings/years', 'settings/gst', 'settings/access'];
     for (const r of routes) { await page.evaluate((h) => { location.hash = '#/' + h; }, r); await page.waitForTimeout(350); await page.waitForLoadState('networkidle').catch(() => {}); const bad = await page.evaluate(() => { const e = document.querySelector('.empty h3'); return e && /Could not load/.test(e.textContent) ? e.nextSibling.textContent : ''; }); assert(!bad, r + ': ' + bad); }
     assert(!errs.length, errs.slice(0, 3).join(' | '));
   }, 'critical');
+  await s.check('GSTR-1 and GSTR-3B preparation files download as valid JSON with the right keys', async () => {
+    await q("update acc_org set gstin = '08AAACR5055K1Z7' where tenant_id = $1 and (gstin is null or gstin = '')", [tid]); await page.reload(); await page.waitForTimeout(3000);
+    for (const [route, label, keys] of [['analytics/gstr3b', 'GSTR3B', ['gstin', 'ret_period', 'sup_details', 'itc_elg']], ['analytics/gstr1', 'GSTR1', ['gstin', 'fp', 'b2b', 'b2cs', 'hsn']]]) {
+      await page.evaluate((h) => { location.hash = '#/' + h; }, route); await page.waitForSelector('text=Download return file (JSON)', { timeout: 15000 });
+      const dl = page.waitForEvent('download'); await page.getByText('Download return file (JSON)').click(); const d = await dl;
+      assert(d.suggestedFilename().startsWith(label), 'file name ' + d.suggestedFilename());
+      const j = JSON.parse(fs.readFileSync(await d.path(), 'utf8')); for (const k of keys) assert(k in j, label + ' lacks ' + k); assert(/^08/.test(j.gstin) && /^\d{6}$/.test(j.ret_period || j.fp), 'gstin or period ' + JSON.stringify([j.gstin, j.ret_period, j.fp]));
+    }
+  }, 'major');
   await s.check('Screens: create an invoice with the keyboard, pay it in full, post, and see it in the books', async () => {
     await page.evaluate(() => { location.hash = '#/new/invoice'; }); await page.waitForSelector('.line');
     await page.locator('.line input[aria-label=Item]').first().fill('T-Sh'); await page.locator('.picker .pop button').first().click();
