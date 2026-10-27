@@ -63,12 +63,19 @@ function partySheet(kind, p, onSaved) {
   gst.addEventListener('input', () => { const g = gst.value.trim().toUpperCase(); gst.value = g; if (!g) { gst.classList.remove('err'); gstMsg.textContent = 'Optional. Registered businesses should have one so they can claim input credit.'; return; }
     if (g.length < 15) { gst.classList.remove('err'); gstMsg.textContent = g.length + ' of 15 characters'; return; }
     if (gstinValid(g)) { gst.classList.remove('err'); gstMsg.textContent = 'Valid GSTIN · ' + (STATES[g.slice(0, 2)] || 'unknown state'); stSel.value = g.slice(0, 2); if (reg.value === 'unregistered') reg.value = 'regular'; } else { gst.classList.add('err'); gstMsg.textContent = 'This GSTIN is not valid. Check the characters and the last check digit.'; } });
+  const fetchBtn = gstFetchBtn(gst, gstMsg, (d) => {
+    if (!name.value.trim()) name.value = d.trade_name || d.legal_name;
+    if (!ba.value.trim() && d.address) ba.value = d.address;
+    if (d.state_code && STATES[d.state_code]) stSel.value = d.state_code;
+    if (!pan.value.trim()) pan.value = d.pan;
+    reg.value = d.reg_type || 'regular';
+  });
   const ph = input({ value: p.phone || '', type: 'tel', mode: 'tel', placeholder: 'Mobile number' }), em = input({ value: p.email || '', type: 'email', placeholder: 'name@example.com' }), cn = input({ value: p.contact_name || '', placeholder: 'Contact person' });
   const ba = h('textarea', { class: 'textarea', placeholder: 'Billing address', style: { minHeight: '70px' } }, p.billing_address || ''), sa = h('textarea', { class: 'textarea', placeholder: 'Shipping address (if different)', style: { minHeight: '70px' } }, p.shipping_address || '');
   const cl = input({ value: p.credit_limit && Number(p.credit_limit) ? p.credit_limit : '', type: 'number', mode: 'decimal', placeholder: '0 = no limit' }), cd = input({ value: p.credit_days || '', type: 'number', mode: 'numeric', placeholder: '0 = immediate' }), tg = input({ value: p.tags || '' }), nt = h('textarea', { class: 'textarea', style: { minHeight: '70px' } }, p.notes || '');
   const kindSeg = isNew && kind !== 'any' ? null : null;
   const s = sheet({ title: (isNew ? 'New ' : 'Edit ') + (k === 'supplier' ? 'supplier' : 'customer'), body: h('div', { class: 'grid' },
-    field('Name', name), field('GSTIN', gst, null), gstMsg, h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('State', stSel), field('Registration', reg)), field('PAN', pan),
+    field('Name', name), field('GSTIN', gst, null), fetchBtn, gstMsg, h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('State', stSel), field('Registration', reg)), field('PAN', pan),
     h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Phone', ph), field('Email', em)), field('Contact person', cn), field('Billing address', ba), field('Shipping address', sa),
     h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Credit days', cd), field('Credit limit (₹)', cl)), field('Tags', tg), field('Notes', nt),
     !isNew ? toggleRow('Active', p.active !== false, (x) => { p.active = x; }) : null),

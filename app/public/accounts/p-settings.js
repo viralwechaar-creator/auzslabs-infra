@@ -77,9 +77,19 @@ function setOrg(v) {
   const st = selectEl([['', 'Choose state'], ...Object.keys(STATES).map((c) => [c, stateName(c)])], o.state_code || ''); gst.addEventListener('input', val);
   const f = { legal: input({ value: o.legal_name || '' }), trade: input({ value: o.trade_name || '' }), pan: input({ value: o.pan || '', max: 10 }), addr: h('textarea', { class: 'textarea', style: { minHeight: '70px' } }, o.address || ''), city: input({ value: o.city || '' }), pin: input({ value: o.pincode || '', mode: 'numeric', max: 6 }), ph: input({ value: o.phone || '' }), em: input({ value: o.email || '', type: 'email' }),
     reg: selectEl([['regular', 'Regular (charges GST)'], ['composition', 'Composition scheme (no GST on invoices)'], ['unregistered', 'Not registered (no GST on invoices)']], o.reg_type), terms: h('textarea', { class: 'textarea' }, o.invoice_terms || ''), bank: h('textarea', { class: 'textarea', style: { minHeight: '70px' } }, o.bank_details || ''), foot: input({ value: o.invoice_footer || '' }), numst: selectEl([['', 'INV/2026-27/00001'], ['plain', '1/2026-27']], (o.settings && o.settings.number_style) || '') };
+  const fetchBtn = gstFetchBtn(gst, msg, (d) => {
+    if (!f.legal.value.trim()) f.legal.value = d.legal_name;
+    if (!f.trade.value.trim()) f.trade.value = d.trade_name || d.legal_name;
+    if (!f.addr.value.trim()) f.addr.value = d.address;
+    if (!f.city.value.trim()) f.city.value = d.city;
+    if (!f.pin.value.trim()) f.pin.value = d.pincode;
+    if (!f.pan.value.trim()) f.pan.value = d.pan;
+    if (d.state_code && STATES[d.state_code]) st.value = d.state_code;
+    f.reg.value = d.reg_type === 'composition' ? 'composition' : 'regular';
+  });
   const lf = invoiceLayoutField(br.invoiceStyle, () => ({ legal_name: f.legal.value, trade_name: f.trade.value, name: f.trade.value || f.legal.value, gstin: gst.value, state_code: st.value, address: f.addr.value, city: f.city.value, pincode: f.pin.value, phone: f.ph.value, email: f.em.value, terms: f.terms.value, bank_details: f.bank.value, brand: Object.assign({}, br, { upi: bf.upi.value.trim(), bank: { holder: bf.hold.value.trim(), name: bf.bname.value.trim(), account: bf.acno.value.trim(), ifsc: bf.ifsc.value.trim().toUpperCase(), branch: bf.brn.value.trim() } }) }));
   f.lay = lf.lay;
-  v.root.append(h('div', { class: 'card grid' }, field('Legal name', f.legal), field('Trade name (shown on documents)', f.trade), field('GSTIN', gst), msg, h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('State', st), field('Registration', f.reg)), field('PAN', f.pan), field('Address', f.addr), h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('City', f.city), field('Pincode', f.pin)), h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Phone', f.ph), field('Email', f.em))),
+  v.root.append(h('div', { class: 'card grid' }, field('Legal name', f.legal), field('Trade name (shown on documents)', f.trade), field('GSTIN', gst), fetchBtn, msg, h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('State', st), field('Registration', f.reg)), field('PAN', f.pan), field('Address', f.addr), h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('City', f.city), field('Pincode', f.pin)), h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Phone', f.ph), field('Email', f.em))),
     h('div', { class: 'card grid' }, h('h3', null, 'On invoices'), field('Terms and conditions', f.terms), field('Bank details', f.bank), field('Footer line', f.foot),
       lf.row, lf.previewBtn,
       field('Invoice number style', f.numst)),
