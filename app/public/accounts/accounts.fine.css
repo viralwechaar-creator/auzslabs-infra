@@ -117,3 +117,12 @@ html[data-theme=dark].ui-fine{--accent:#f2f2f2!important;--accent-text:#f2f2f2!i
 html.ui-fine .chip{background:var(--card);box-shadow:none;font-weight:500}
 html.ui-fine .chip[aria-pressed=true]{background:var(--label);color:var(--bg)}
 html.ui-fine .btn.fill,html.ui-fine .btn.primary{background:var(--label);color:var(--bg)}
+
+/* Round 5: AUZsLedger New look = off-white page + wine (the Classic colours); AUZsScan stays ink (no .ui-wine there). */
+html.ui-fine.ui-wine{--accent:#800020!important;--accent-text:#800020!important;--accent-soft:rgba(128,0,32,.08)!important;--accent-soft2:rgba(128,0,32,.12)!important;--accent-line:rgba(128,0,32,.3)!important;--on-accent:#fff!important;--tint:#800020;--tint-text:#800020;--tint-fg:#fff;--tint-soft:rgba(128,0,32,.08);--tint-line:rgba(128,0,32,.3);--tab-on-fg:#800020}
+@media (prefers-color-scheme:light){html.ui-fine.ui-wine:not([data-theme=dark]){--bg:#f5f3f0}}
+html[data-theme=light].ui-fine.ui-wine{--bg:#f5f3f0}
+@media (prefers-color-scheme:dark){html.ui-fine.ui-wine:not([data-theme=light]){--accent:#e0567a!important;--accent-text:#e0567a!important;--accent-soft:rgba(224,86,122,.16)!important;--accent-line:rgba(224,86,122,.4)!important;--on-accent:#fff!important;--tint:#e0567a;--tint-text:#e0567a;--tint-fg:#fff;--tint-soft:rgba(224,86,122,.16)}}
+html[data-theme=dark].ui-fine.ui-wine{--accent:#e0567a!important;--accent-text:#e0567a!important;--accent-soft:rgba(224,86,122,.16)!important;--accent-line:rgba(224,86,122,.4)!important;--on-accent:#fff!important;--tint:#e0567a;--tint-text:#e0567a;--tint-fg:#fff;--tint-soft:rgba(224,86,122,.16)}
+html.ui-fine.ui-wine .chip[aria-pressed=true]{background:var(--accent);color:#fff}
+html.ui-fine.ui-wine .btn.fill,html.ui-fine.ui-wine .btn.primary{background:var(--accent);color:#fff}
