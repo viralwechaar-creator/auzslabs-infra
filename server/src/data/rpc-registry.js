@@ -221,6 +221,7 @@ export const RPC = {
   acc_post_document: { params: ['p_doc_id', 'p_payments'], jsonb: ['p_payments'], defaults: {'p_payments': []}, auth: true },
   acc_delete_document: { params: ['p_doc_id'], auth: true },
   acc_cancel_document: { params: ['p_doc_id', 'p_reason'], auth: true },
+  acc_amend_document: { params: ['p_doc_id', 'p_reason'], auth: true },
   acc_convert_document: { params: ['p_src', 'p_to'], auth: true },
   acc_save_payment: { params: ['p'], jsonb: ['p'], auth: true },
   acc_allocate: { params: ['p_payment', 'p_doc', 'p_amount'], auth: true },
