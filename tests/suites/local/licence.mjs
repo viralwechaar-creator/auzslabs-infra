@@ -46,6 +46,14 @@ export default async function run() {
       const old = signLicence({ shop: 'GenX Clothes', end: '2090-01-01' }, k.priv);
       assert((await J(base + '/licence/activate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code: old }) })).s === 400, 'accepted older');
     });
+    await s.check('A code for another shop is refused; a renewal for the same shop works and the plan is shown', async () => {
+      const post = (code) => J(base + '/licence/activate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code }) });
+      const other = await post(signLicence({ shop: 'Other Shop', end: '2099-01-01' }, k.priv));
+      assert(other.s === 400 && /another shop/i.test(other.j.error), JSON.stringify(other));
+      const st0 = await J(base + '/licence/status'); assert(st0.j.shop === 'GenX Clothes' && st0.j.plan === 'local', JSON.stringify(st0.j));
+      const ren = await post(signLicence({ shop: ' genx  clothes ', end: '2100-06-01', addons: { sync: true } }, k.priv));
+      assert(ren.s === 200 && ren.j.plan === 'sync', JSON.stringify(ren));
+    });
   } finally { p.kill(); }
   await s.check('An ended plan locks after 3 days of grace; a clock set back does not unlock it', async () => {
     const d2 = fs.mkdtempSync(path.join(os.tmpdir(), 'auzlic-'));

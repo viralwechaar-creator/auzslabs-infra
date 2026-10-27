@@ -53,6 +53,11 @@ export function verifyLicence(code, pub) {
   } catch { return { ok: false, error: 'This code is not valid. Check every letter and number.' }; }
 }
 
+// Plans: 'local' = data on this computer only, everything by hand (no extras); 'sync' = data stays on the device and the cloud sync extra is
+// paid for (automation, API calls and updates between devices); the 'cloud' plan is the hosted service and never uses a licence code.
+export const planOf = (addons = {}) => (addons.sync ? 'sync' : 'local');
+const sameShop = (name) => String(name || '').normalize('NFKC').toLowerCase().replace(/\s+/g, ' ').trim();
+
 // ---------- the installed copy: keeps the code and the latest date it has seen (so setting the clock back does not extend a plan) ----------
 export function licenceStore(dir, pub) {
   const file = path.join(dir, 'licence.json');
@@ -65,12 +70,16 @@ export function licenceStore(dir, pub) {
     const seen = Math.max(s.seen || 0, today(now)); if (seen !== s.seen) write({ ...s, seen });
     const left = dayNumber(v.end) - seen;
     const state = left >= 0 ? 'active' : left >= -GRACE_DAYS ? 'grace' : 'expired';
-    return { state, shop: v.shop, end: v.end, daysLeft: left, graceLeft: left < 0 ? GRACE_DAYS + left : null, addons: v.addons, id: v.id };
+    return { state, shop: v.shop, end: v.end, daysLeft: left, graceLeft: left < 0 ? GRACE_DAYS + left : null, addons: v.addons, id: v.id, plan: planOf(v.addons) };
   }
   function activate(code, now = Date.now()) {
     const v = verifyLicence(code, pub); if (!v.ok) return { ok: false, error: v.error };
     const old = read();
-    if (old && old.code) { const o = verifyLicence(old.code, pub); if (o.ok && o.end > v.end) return { ok: false, error: 'This code is older than the plan already on this computer (it ends ' + o.end + ').' }; }
+    if (old && old.code) { const o = verifyLicence(old.code, pub);
+      // One computer, one shop: the first code activated here ties this computer to that shop. A code made for another shop is refused;
+      // a renewal (same shop name, made with "Renewal for" in Admin -> Licences) is accepted.
+      if (o.ok && sameShop(o.shop) !== sameShop(v.shop)) return { ok: false, error: 'This code is for another shop (' + v.shop + '). This computer is set up for ' + o.shop + '. Install a separate copy of AUZsStyle for the other shop.' };
+      if (o.ok && o.end > v.end) return { ok: false, error: 'This code is older than the plan already on this computer (it ends ' + o.end + ').' }; }
     write({ code: String(code).trim(), seen: Math.max((old && old.seen) || 0, today(now)) });
     return { ok: true, status: status(now) };
   }
