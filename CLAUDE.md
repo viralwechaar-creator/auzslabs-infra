@@ -3054,3 +3054,6 @@ Default look for `accounts.html` and `scan.html` (More -> Look: New / Classic, `
 
 ### AUZsLedger / AUZsScan AUZsStyle look, round 2
 `accounts.fine.css` v2 adds: compact tables (small headers on a soft panel, rounded flush cards), small headings, badges, banners, sheets, empty states; receipts/payments and book-entry lists (`p-money`, `p-books`) use `cards: true`; every page root gets `data-p=<first route part>` (shell.js) and Settings pages get `cols2` (two balanced columns on desktop). CSS/markup only, no logic change; reports, banking and GST tables keep their columns (they are real tables) but share the new look. Test: accounts and scan suites. Static only (sw `pos-v269`).
+
+### AUZsLedger / AUZsScan AUZsStyle look, round 3: metric cards use both sides
+In the New look every metric (`.kpi`) card puts its name and note at the left and the figure at the right (`accounts.fine.css` v3, grid `1fr auto`; one card per row on phones, auto-fit on desktop). CSS only. Static only: `git pull` (sw `pos-v270`).
