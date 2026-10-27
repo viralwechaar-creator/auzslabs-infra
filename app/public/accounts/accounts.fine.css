@@ -109,3 +109,11 @@ html.ui-fine .kpis>.kpi:not(.k-hero)>:is(.v,.n,.k-v,b){grid-column:2;grid-row:1/
 html.ui-fine .kpis>.kpi:not(.k-hero):not(:has(.s,.d,.k-s))>:is(.l,.k,.k-l,span){grid-row:1/3;align-self:center}
 html.ui-fine .kpis.kg>.kmore>.kt{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
 @media (max-width:899px){html.ui-fine .kpis,html.ui-fine .kpis.kg{grid-template-columns:1fr}html.ui-fine .kpis>.kpi:last-child:nth-child(odd){grid-column:auto}}
+
+/* Round 4: the AUZsStyle colours. Ink accent on a light grey page, black pills, white cards (same tokens as style.fine.css). */
+html.ui-fine{--accent:#111!important;--accent-text:#111!important;--accent-soft:rgba(0,0,0,.07)!important;--accent-soft2:rgba(0,0,0,.1)!important;--accent-line:rgba(0,0,0,.28)!important;--on-accent:#fff!important;--tint:#111;--tint-text:#111;--tint-fg:#fff;--tint-soft:rgba(0,0,0,.07);--tint-line:rgba(0,0,0,.28);--bg:#f1f1f1}
+@media (prefers-color-scheme:dark){html.ui-fine:not([data-theme=light]){--accent:#f2f2f2!important;--accent-text:#f2f2f2!important;--accent-soft:rgba(255,255,255,.12)!important;--accent-line:rgba(255,255,255,.35)!important;--on-accent:#111!important;--tint:#f2f2f2;--tint-text:#f2f2f2;--tint-fg:#111;--tint-soft:rgba(255,255,255,.12)}}
+html[data-theme=dark].ui-fine{--accent:#f2f2f2!important;--accent-text:#f2f2f2!important;--accent-soft:rgba(255,255,255,.12)!important;--accent-line:rgba(255,255,255,.35)!important;--on-accent:#111!important;--tint:#f2f2f2;--tint-text:#f2f2f2;--tint-fg:#111;--tint-soft:rgba(255,255,255,.12)}
+html.ui-fine .chip{background:var(--card);box-shadow:none;font-weight:500}
+html.ui-fine .chip[aria-pressed=true]{background:var(--label);color:var(--bg)}
+html.ui-fine .btn.fill,html.ui-fine .btn.primary{background:var(--label);color:var(--bg)}

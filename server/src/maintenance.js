@@ -54,6 +54,15 @@ export async function runLedgerReminders() {
   } catch (err) { console.warn('ledger reminder run failed:', err.message); }
 }
 
+// Post POS and AUZsMob sales into the Ledger books for businesses that switched it on (db/288). Already-posted sales are skipped.
+export async function runSalesSync() {
+  try {
+    const { rows } = await pool.query('select acc_sales_sync_auto() as r');
+    const r = rows[0]?.r || {};
+    if (r.tenants || r.failed) console.log(`sales sync: ${r.tenants} business(es), ${r.failed} failed`);
+  } catch (err) { console.warn('sales sync run failed:', err.message); }
+}
+
 // Unpaid-quote reminders to the client (and a note to the admin) after 2 and 5 days, db/205.
 export async function runQuoteFollowups() {
   try {
@@ -100,7 +109,7 @@ export async function runTrialLock() {
 export function startMaintenance() {
   if (process.env.DISABLE_MAINTENANCE === '1') return;
   const runAll = () => {
-    runMaintenance(); runRenewals(); runBookingReminders(); runLedgerReminders(); runQuoteFollowups(); runAdminSummary();
+    runMaintenance(); runRenewals(); runBookingReminders(); runLedgerReminders(); runSalesSync(); runQuoteFollowups(); runAdminSummary();
     runSalonDailySummaries(); runLapsedClientWinback(); runPostVisitReviews(); runPaymentDueReminders();
     runClientGreetings(); runMembershipExpiryReminders(); runStyleGreetings(); runStyleAbandoned(); runHealthAlert();
   };

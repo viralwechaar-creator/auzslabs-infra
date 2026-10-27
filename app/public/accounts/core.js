@@ -427,6 +427,47 @@ function hbars(items, o = {}) { // [{label, value, sub?}]
   return h('div', { class: 'hbar' }, items.map((i) => h('div', { class: 'r' }, h('div', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, i.label), h('div', { class: 'tr', 'aria-hidden': 'true' }, h('i', { style: { width: Math.max(2, Math.abs(i.value) / mx * 100) + '%' } })), h('div', { class: 'num', style: { textAlign: 'right' } }, o.fmt ? o.fmt(i.value) : inr(i.value, 0)))));
 }
 
+// ---------- extra charts for the reports: donut, grouped/multi-series line, stacked bars (series colours are CSS classes s0..s4) ----------
+function donutChart(items, o = {}) { // items: [{label, value}]
+  const tot = items.reduce((a, i) => a + Math.max(Number(i.value) || 0, 0), 0), R = 54, C = 2 * Math.PI * R;
+  const svg = sv('svg', { viewBox: '0 0 160 160', class: 'chart donut', role: 'img', 'aria-label': o.label || 'Share chart' });
+  svg.append(sv('circle', { cx: 80, cy: 80, r: R, fill: 'none', 'stroke-width': 22, class: 'donut-bg' }));
+  let off = 0;
+  items.forEach((it, i) => { const v = Math.max(Number(it.value) || 0, 0); if (!tot || !v) return; const len = v / tot * C;
+    const c = sv('circle', { cx: 80, cy: 80, r: R, fill: 'none', 'stroke-width': 22, class: 'sl s' + (i % 5), 'stroke-dasharray': `${len} ${C - len}`, 'stroke-dashoffset': -off, transform: 'rotate(-90 80 80)' });
+    c.append(sv('title', {}, `${it.label}: ${inr(v, 0)} (${Math.round(v / tot * 100)}%)`)); if (o.onclick) { c.style.cursor = 'pointer'; c.onclick = () => o.onclick(it); } svg.append(c); off += len; });
+  svg.append(sv('text', { x: 80, y: 84, 'text-anchor': 'middle', class: 'donut-n' }, o.center != null ? o.center : compact(tot)));
+  const legend = h('div', { class: 'legend' }, items.filter((i) => Number(i.value) > 0).map((it, i) => h(o.onclick ? 'button' : 'div', { class: 'lg', type: o.onclick ? 'button' : undefined, onclick: o.onclick ? () => o.onclick(it) : undefined }, h('i', { class: 'sw s' + (items.indexOf(it) % 5) }), h('span', { class: 'grow' }, it.label), h('b', null, tot ? Math.round(Number(it.value) / tot * 100) + '%' : ''))));
+  return h('div', { class: 'donutwrap' }, tot ? svg : h('div', { class: 'muted' }, 'No data for this period'), legend);
+}
+// series: [{key,label}], points: [{label, <key>: number}]. mode 'line' | 'group' | 'stack'
+function multiChart(points, series, o = {}) {
+  const W = 640, H = 220, pl = 8, pb = 26, pt = 10, n = points.length;
+  if (!n) return h('div', { class: 'muted' }, 'No data for this period');
+  const mode = o.mode || 'group';
+  const tops = points.map((p) => mode === 'stack' ? series.reduce((a, s) => a + Math.max(Number(p[s.key]) || 0, 0), 0) : Math.max(...series.map((s) => Number(p[s.key]) || 0)));
+  const lows = points.map((p) => Math.min(0, ...series.map((s) => Number(p[s.key]) || 0)));
+  const mx = niceMax(Math.max(...tops, 1)), mn = mode === 'stack' ? 0 : -niceMax(Math.abs(Math.min(...lows, 0))) * (Math.min(...lows, 0) < 0 ? 1 : 0), span = mx - mn, ch = H - pt - pb;
+  const yv = (v) => pt + ch * (1 - (v - mn) / span), bw = (W - pl * 2) / n, svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart', role: 'img', 'aria-label': o.label || 'Chart' });
+  [0, .5, 1].forEach((f) => svg.append(sv('line', { x1: pl, x2: W - pl, y1: pt + ch * (1 - f), y2: pt + ch * (1 - f), stroke: 'currentColor', 'stroke-opacity': '.12' })));
+  if (mn < 0) svg.append(sv('line', { x1: pl, x2: W - pl, y1: yv(0), y2: yv(0), stroke: 'currentColor', 'stroke-opacity': '.35' }));
+  const tip = (p, s) => `${p.label} · ${s.label}: ${inr(p[s.key], 0)}`;
+  if (mode === 'line') {
+    const step = (W - pl * 2) / Math.max(n - 1, 1);
+    series.forEach((s, si) => { const xy = points.map((p, i) => [pl + i * step, yv(Number(p[s.key]) || 0)]); svg.append(sv('path', { d: xy.map((q, i) => (i ? 'L' : 'M') + q[0] + ',' + q[1]).join(' '), class: 'ln s' + si }));
+      xy.forEach((q, i) => { const c = sv('circle', { cx: q[0], cy: q[1], r: n > 40 ? 3 : 5, class: 'dot s' + si }); c.append(sv('title', {}, tip(points[i], s))); if (o.onclick) { c.style.cursor = 'pointer'; c.onclick = () => o.onclick(points[i]); } svg.append(c); }); });
+  } else points.forEach((p, i) => {
+    const x = pl + i * bw + bw / 2, w = Math.min(bw * .7, 44); let acc = 0;
+    series.forEach((s, si) => { let v = Number(p[s.key]) || 0; let y0, y1, bx, bww;
+      if (mode === 'stack') { v < 0 ? (v = 0) : 0; y0 = yv(acc); y1 = yv(acc + v); acc += v; bx = x - w / 2; bww = w; } else { const gw = w / series.length; y0 = yv(0); y1 = yv(v); bx = x - w / 2 + si * gw; bww = gw - 1; }
+      const r = sv('rect', { x: bx, y: Math.min(y0, y1), width: Math.max(bww, 2), height: Math.max(Math.abs(y0 - y1), v ? 1.5 : 0), rx: 3, class: 'bar s' + si }); r.append(sv('title', {}, tip(p, s)));
+      if (o.onclick) { r.style.cursor = 'pointer'; r.onclick = () => o.onclick(p); } svg.append(r); });
+  });
+  points.forEach((p, i) => { if (n <= 14 || i % Math.ceil(n / 12) === 0) svg.append(sv('text', { x: mode === 'line' ? pl + i * ((W - pl * 2) / Math.max(n - 1, 1)) : pl + i * bw + bw / 2, y: H - 7, 'text-anchor': 'middle' }, p.label)); });
+  svg.append(sv('text', { x: W - pl, y: pt + 10, 'text-anchor': 'end' }, compact(mx)));
+  return h('div', null, svg, h('div', { class: 'legend row' }, series.map((s, si) => h('span', { class: 'lg' }, h('i', { class: 'sw s' + si }), s.label))));
+}
+
 // ---------- files: CSV / XLSX in and out ----------
 function parseCSV(text) {
   text = text.replace(/^﻿/, '');
@@ -500,13 +541,17 @@ async function readTable(file) { // CSV or XLSX -> [[...]] rows
   if (/\.xls$/i.test(file.name)) throw new Error('Old .xls files are not supported. Save as .xlsx or .csv first');
   return parseCSV(await file.text());
 }
-function exportMenu(anchor, name, head, rows) {
-  menu(anchor, [{ label: 'CSV file', icon: 'download', run: () => exportCSV(name, head, rows) }, { label: 'Excel (.xlsx)', icon: 'download', run: () => exportXLSX(name, head, rows) }, { label: 'Print or save as PDF', icon: 'print', run: () => printTable(name, head, rows) }]);
+function exportMenu(anchor, name, head, rows, meta) {
+  const withFoot = meta && meta.foot ? rows.concat([meta.foot]) : rows;
+  menu(anchor, [{ label: 'CSV file', icon: 'download', run: () => exportCSV(name, head, withFoot) }, { label: 'Excel (.xlsx)', icon: 'download', run: () => exportXLSX(name, head, withFoot) }, { label: 'Print or save as PDF', icon: 'print', run: () => printTable(name, head, rows, meta) }]);
 }
-function printTable(title, head, rows) {
+function printTable(title, head, rows, meta) {
   let ps = $('#printSheet'); if (!ps) { ps = h('div', { id: 'printSheet', class: 'print-only' }); document.body.append(ps); }
-  clear(ps).append(h('h1', null, title), h('div', { class: 'small' }, (S.org && (S.org.trade_name || S.org.legal_name)) + ' · printed ' + fmtDT(new Date())), h('div', { class: 'rule' }),
-    h('table', null, h('thead', null, h('tr', null, head.map((x) => h('th', null, x)))), h('tbody', null, rows.map((r) => h('tr', null, r.map((v, i) => h('td', { class: typeof v === 'number' ? 'r' : '' }, typeof v === 'number' ? nf2.format(v) : v)))))));
+  const logo = S.org && S.org.settings && S.org.settings.brand && S.org.settings.brand.logo;
+  const cell = (v) => h('td', { class: typeof v === 'number' ? 'r' : '' }, typeof v === 'number' ? nf2.format(v) : v);
+  clear(ps).append(h('div', { class: 'ph-head' }, logo ? h('img', { src: logo, alt: '', class: 'ph-logo' }) : null, h('div', null, h('div', { class: 'ph-biz' }, S.org && (S.org.trade_name || S.org.legal_name) || ''), h('h1', null, title))),
+    meta && meta.sub ? h('div', { class: 'small' }, meta.sub) : null, h('div', { class: 'small' }, 'Generated ' + fmtDT(new Date())), h('div', { class: 'rule' }),
+    h('table', null, h('thead', null, h('tr', null, head.map((x) => h('th', null, x)))), h('tbody', null, rows.map((r) => h('tr', null, r.map(cell)))), meta && meta.foot ? h('tfoot', null, h('tr', null, meta.foot.map(cell))) : null));
   setTimeout(() => window.print(), 50);
 }
 

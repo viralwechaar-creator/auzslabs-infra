@@ -26,7 +26,7 @@ page('settings', {
     const sec = v.args[0];
     const admin = can('acc_admin');
     const SECS = [['organisation', 'Organisation', 'building', 'Name, GSTIN, address, invoice terms', 'acc_admin'], ['years', 'Financial years and locks', 'calendar', 'Open and close years, lock past periods', 'acc_admin'], ['branches', 'Branches and warehouses', 'layers', 'Locations for sales and stock', 'acc_admin'], ['gst', 'GST rates', 'percent', 'Rates available on documents', 'acc_admin'],
-      ['numbering', 'Numbering', 'list', 'Prefixes for document numbers', 'acc_admin'], ['rules', 'Rules and approvals', 'shield', 'Approval limit, negative stock, round-off, e-invoice', 'acc_admin'], ['access', 'Your access', 'lock', 'What your role can do', null]];
+      ['numbering', 'Numbering', 'list', 'Prefixes for document numbers', 'acc_admin'], ['rules', 'Rules and approvals', 'shield', 'Approval limit, negative stock, round-off, e-invoice', 'acc_admin'], ['sales', 'Sales from POS and shop app', 'repeat', 'Post POS and AUZsMob sales into the books', 'acc_admin'], ['access', 'Your access', 'lock', 'What your role can do', null]];
     if (!sec) {
       v.header({ title: 'Settings' });
       v.root.append(h('div', { class: 'list' }, SECS.filter((s) => !s[4] || can(s[4])).map(([k, t, i, sub]) => liRow({ icon: i, title: t, sub, chevron: true, onclick: () => go('settings/' + k) }))),
@@ -36,10 +36,26 @@ page('settings', {
     const meta = SECS.find((s) => s[0] === sec); if (!meta) throw new Error('Unknown settings page');
     v.header({ title: meta[1], back: 'settings' });
     if (meta[4] && !can(meta[4])) { v.root.append(empty('lock', 'No access', 'Only the owner can change this.')); return; }
-    const F = { organisation: setOrg, years: setYears, branches: setBranches, gst: setGst, numbering: setNumbering, rules: setRules, access: setAccess }[sec];
+    const F = { organisation: setOrg, years: setYears, branches: setBranches, gst: setGst, numbering: setNumbering, rules: setRules, sales: setSalesSync, access: setAccess }[sec];
     return F(v);
   },
 });
+
+// POS and AUZsMob sales into the books (db/288): switch the daily automation on, or post a period now
+async function setSalesSync(v) {
+  const st = await api('acc_sales_sync_status');
+  if (!st.has_pos && !st.has_mob) { v.root.append(empty('repeat', 'Nothing to post', 'This business does not use AUZsPOS or AUZsMob.')); return; }
+  const pos = { on: !!(st.settings && st.settings.pos) }, mob = { on: !!(st.settings && st.settings.mob) }, out = h('div', { class: 'grid' });
+  const save = async () => { try { await api('acc_sales_sync_settings', { p: { pos: pos.on, mob: mob.on } }); toast('Saved'); } catch (e) { toast(e.message, { error: true }); } };
+  const from = dateInput(addDays(today(), -30), { label: 'From' }), to = dateInput(today(), { label: 'To' });
+  const run = async (source) => { try { const r = await api('acc_sales_sync_run', { p: { source, from: from.value, to: to.value } }); const rows = Object.entries(r.result).map(([k, x]) => h('div', { class: 'li' }, h('div', { class: 'grow' }, h('div', { class: 't' }, k === 'pos' ? 'AUZsPOS' : 'AUZsMob'), h('div', { class: 's' }, x.posted + ' posted · ' + x.reversed + ' reversed · ' + x.refunds + ' refunds · ' + x.skipped + ' skipped' + (x.errors.length ? ' · ' + x.errors.length + ' could not post: ' + x.errors[0].error : '') + (x.more ? ' · more remain, run again' : ''))))); clear(out).append(h('div', { class: 'list' }, rows)); } catch (e) { toast(e.message, { error: true }); } };
+  v.root.append(h('div', { class: 'card grid' }, h('h3', null, 'What is posted'), h('p', { class: 'muted small' }, 'Each finished bill becomes one entry in the books: cash or bank received, sales, and the tax collected (kept in "GST on POS and shop sales"). A voided bill is reversed and POS refunds are posted. Each bill is posted once. Stock and cost of goods are not posted: those apps keep their own stock.')),
+    h('div', { class: 'card grid' }, h('h3', null, 'Post automatically every day'),
+      st.has_pos ? toggleRow('AUZsPOS bills', pos.on, (c) => { pos.on = c; save(); }) : null, st.has_mob ? toggleRow('AUZsMob bills', mob.on, (c) => { mob.on = c; save(); }) : null),
+    h('div', { class: 'card grid' }, h('h3', null, 'Post now'), h('div', { class: 'row wrap' }, h('div', { class: 'grow' }, from), h('div', { class: 'grow' }, to)),
+      h('div', { class: 'row wrap' }, st.has_pos ? h('button', { class: 'btn primary', type: 'button', onclick: () => run('pos') }, 'Post AUZsPOS bills') : null, st.has_mob ? h('button', { class: 'btn primary', type: 'button', onclick: () => run('mob') }, 'Post AUZsMob bills') : null), out),
+    h('div', { class: 'muted small' }, (st.counts.pos || 0) + ' POS and ' + (st.counts.mob || 0) + ' shop bills are in the books' + (st.last ? ' · last posted ' + fmtDT(st.last) : '') + '.'));
+}
 
 // shrink a picked image to a small data URL so it can travel inside the organisation record (and the public invoice link)
 function shrinkImage(file, maxW, maxH) {
