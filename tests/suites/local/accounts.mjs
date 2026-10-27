@@ -192,6 +192,25 @@ export default async function run({ browser, stack }) {
     assert((await q("select count(*)::int n from wa_outbox where tenant_id = $1 and template = 'payment_due'", [tid]))[0].n >= 1, 'queued');
     await ok(owner, 'acc_auto_remind_set', { p: { on: false } }); await integrity();
   }, 'major');
+  await s.check('Expense requests: staff ask, someone else approves and pays, nothing posts before payment', async () => {
+    const cash = (await ok(owner, 'acc_context')).accounts.find((a) => a.system_key === 'cash' || a.type === 'asset' && /cash/i.test(a.name));
+    await fails(cashier, 'acc_expense_request_save', { p: { description: '', amount: 100 } }, /./);
+    const r1 = await ok(cashier, 'acc_expense_request_save', { p: { description: 'Shop cleaning', amount: 450 } });
+    const lst = await ok(cashier, 'acc_expense_request_list', { p: {} });
+    assert(lst.rows.length >= 1 && lst.rows.some((x) => x.id === r1.id && x.mine), 'own request visible');
+    await fails(cashier, 'acc_expense_request_decide', { p_id: r1.id, p_decision: 'approve', p_note: null }, /./);
+    await fails(owner, 'acc_expense_request_decide', { p_id: r1.id, p_decision: 'reject', p_note: null }, /./);
+    await fails(owner, 'acc_expense_request_pay', { p: { id: r1.id, account_id: cash.id } }, /approved/i);
+    await ok(owner, 'acc_expense_request_decide', { p_id: r1.id, p_decision: 'approve', p_note: null });
+    await fails(cashier, 'acc_expense_request_pay', { p: { id: r1.id, account_id: cash.id } }, /./);
+    const paid = await ok(owner, 'acc_expense_request_pay', { p: { id: r1.id, account_id: cash.id } });
+    assert(paid && (paid.number || paid.id), 'paid result ' + JSON.stringify(paid));
+    await fails(owner, 'acc_expense_request_pay', { p: { id: r1.id, account_id: cash.id } }, /./);
+    const r2 = await ok(cashier, 'acc_expense_request_save', { p: { description: 'Not needed', amount: 90 } });
+    await ok(owner, 'acc_expense_request_decide', { p_id: r2.id, p_decision: 'reject', p_note: 'Not now' });
+    const done = (await ok(owner, 'acc_expense_request_list', { p: { status: 'paid' } })).rows; assert(done.some((x) => x.id === r1.id), 'paid listed');
+    await integrity();
+  }, 'major');
   await s.check('Physical count adjustment posts only the difference; transfers keep totals and value', async () => {
     await ok(owner, 'acc_stock_adjust', { p: { mode: 'count', reason: 'Count', lines: [{ product_id: tee, qty: 97 }] } });
     assert(Number((await ok(owner, 'acc_list_products', { p: {} })).rows.find((p) => p.id === tee).stock) === 97, 'count');
