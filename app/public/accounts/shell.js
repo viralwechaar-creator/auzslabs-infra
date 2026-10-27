@@ -12,7 +12,7 @@ const NAV = SCANAPP ? [
   { group: 'Settings', items: ['invoicelayout'] },
 ] : [
   { group: '', items: ['home'] },
-  { group: 'Sales', items: ['scan', 'sales', 'customers', 'receipts'] },
+  { group: 'Sales', items: ['scan', 'sales', 'customers', 'followups', 'receipts'] },
   { group: 'Purchases', items: ['purchases', 'suppliers', 'payments', 'expenses'] },
   { group: 'Accounts', items: ['books', 'banking', 'assets'] },
   { group: 'Financial reports', items: ['reports', 'gst'] },
