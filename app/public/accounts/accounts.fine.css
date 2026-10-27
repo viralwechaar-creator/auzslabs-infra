@@ -69,3 +69,33 @@ html.ui-fine .list.cards .li::before{display:none}
   html.ui-fine .page[data-p=home]>.grid>*{break-inside:avoid;margin-bottom:14px}
   html.ui-fine .page[data-p=home]>.grid>.home-hero,html.ui-fine .page[data-p=home]>.grid>.kpis,html.ui-fine .page[data-p=home]>.grid>.banner{column-span:all}
 }
+
+/* ===== Round 2: tables, reports, banking, GST, settings ===== */
+html.ui-fine .card.flush{border-radius:16px;overflow:hidden}
+html.ui-fine .tbl{font-size:13.5px}
+html.ui-fine .tbl th{font-size:12px;font-weight:600;padding:8px 12px;background:var(--panel);letter-spacing:0}
+html.ui-fine .tbl td{padding:8px 12px}
+html.ui-fine .tbl tbody tr:hover{background:var(--card2)}
+html.ui-fine .tbl tfoot td{background:var(--panel)}
+html.ui-fine h3{font-size:14.5px;font-weight:600}
+html.ui-fine .muted.small,html.ui-fine .small{font-size:12.5px}
+html.ui-fine .toolbar{gap:8px}
+html.ui-fine .banner{border-radius:14px;padding:10px 12px;font-size:13.5px}
+html.ui-fine .badge{font-size:11.5px;min-height:22px;padding:0 9px;border-radius:999px}
+html.ui-fine .hbar,html.ui-fine .tabs{border-radius:999px}
+html.ui-fine .field label,html.ui-fine .field .lbl{font-size:12.5px}
+html.ui-fine .sheet{border-radius:22px}
+html.ui-fine .sheet-h h2,html.ui-fine .sheet-h .t{font-size:16px}
+html.ui-fine .empty{padding:28px 16px}
+html.ui-fine .empty h3{font-size:15px}
+/* settings and long forms: two balanced columns on desktop so the right half is not empty */
+@media (min-width:900px){
+  html.ui-fine .page[data-p=settings]>.card.grid,html.ui-fine .page>.card.grid{max-width:none}
+  html.ui-fine .page.cols2{display:block;columns:2;column-gap:14px}
+  html.ui-fine .page.cols2>*{break-inside:avoid;margin-bottom:14px}
+  html.ui-fine .page.cols2>.kpis,html.ui-fine .page.cols2>.toolbar,html.ui-fine .page.cols2>.banner{column-span:all}
+}
+@media (max-width:899px){
+  html.ui-fine .tbl{font-size:13px}
+  html.ui-fine .card.pad-s{padding:10px}
+}
