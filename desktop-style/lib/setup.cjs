@@ -120,12 +120,12 @@ async function migrate({ serverDir, dbDir, port, superPassword, appPassword, onP
 function stamp() { const d = new Date(), p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`; }
 
 // A backup is a folder: db.dump (everything in the database) + uploads (pictures) + about.json. Put it anywhere, e.g. a pen drive.
-function backup({ pgBin, dataDir, uploadDir, port, superPassword, targetDir, appVersion = '' }) {
-  const out = path.join(targetDir, 'AUZsStyle-backup-' + stamp());
+function backup({ pgBin, dataDir, uploadDir, port, superPassword, targetDir, appVersion = '', backupName = 'AUZsStyle' }) {
+  const out = path.join(targetDir, backupName + '-backup-' + stamp());
   fs.mkdirSync(out, { recursive: true }); own(out);
   run(bin(pgBin, 'pg_dump'), ['-h', '127.0.0.1', '-p', String(port), '-U', 'postgres', '-Fc', '-f', path.join(out, 'db.dump'), DB], { PGPASSWORD: superPassword });
   if (uploadDir && fs.existsSync(uploadDir)) fs.cpSync(uploadDir, path.join(out, 'uploads'), { recursive: true });
-  fs.writeFileSync(path.join(out, 'about.json'), JSON.stringify({ app: 'AUZsStyle', made: new Date().toISOString(), appVersion }));
+  fs.writeFileSync(path.join(out, 'about.json'), JSON.stringify({ app: backupName, made: new Date().toISOString(), appVersion }));
   return out;
 }
 
@@ -133,10 +133,10 @@ function backup({ pgBin, dataDir, uploadDir, port, superPassword, targetDir, app
 // backup (main.cjs) that runs once a day on every shop, not just the ones with the paid cloud add-on. Pulled out
 // here (not left inline in main.cjs) so the pruning logic itself -- the part most likely to have an off-by-one
 // and quietly eat a backup nobody meant to lose -- can be exercised by the real test suite, not just read by eye.
-function backupAndPrune({ pgBin, dataDir, uploadDir, port, superPassword, targetDir, appVersion = '', keep = 7 }) {
+function backupAndPrune({ pgBin, dataDir, uploadDir, port, superPassword, targetDir, appVersion = '', keep = 7, backupName = 'AUZsStyle' }) {
   fs.mkdirSync(targetDir, { recursive: true });
-  const out = backup({ pgBin, dataDir, uploadDir, port, superPassword, targetDir, appVersion });
-  const all = fs.readdirSync(targetDir).filter((n) => n.startsWith('AUZsStyle-backup-')).sort();
+  const out = backup({ pgBin, dataDir, uploadDir, port, superPassword, targetDir, appVersion, backupName });
+  const all = fs.readdirSync(targetDir).filter((n) => n.startsWith(backupName + '-backup-')).sort();
   const removed = all.slice(0, Math.max(0, all.length - keep));
   for (const old of removed) fs.rmSync(path.join(targetDir, old), { recursive: true, force: true });
   return { out, removed, kept: all.length - removed.length };
@@ -145,7 +145,7 @@ function backupAndPrune({ pgBin, dataDir, uploadDir, port, superPassword, target
 // Replaces everything on this computer with the backup. The caller stops the server first.
 async function restore({ serverDir, pgBin, dataDir, uploadDir, port, superPassword, sourceDir }) {
   const dump = path.join(sourceDir, 'db.dump');
-  if (!fs.existsSync(dump)) throw new Error('This folder is not an AUZsStyle backup (db.dump is missing).');
+  if (!fs.existsSync(dump)) throw new Error('This folder is not a backup of this app (db.dump is missing).');
   const c = client({ serverDir, port, password: superPassword, database: 'postgres' }); await c.connect();
   try {
     await c.query(`select pg_terminate_backend(pid) from pg_stat_activity where datname = $1 and pid <> pg_backend_pid()`, [DB]);

@@ -15,19 +15,26 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        product: [style, pos, ledger]
+        variant: [modern, compatible]
         include:
           - variant: modern
             compat: '0'
-            tag: desktop-style-latest
-            name: AUZsStyle-Setup
             redist: https://aka.ms/vs/17/release/vc_redist.x64.exe
             pg_urls: https://get.enterprisedb.com/postgresql/postgresql-16.4-1-windows-x64-binaries.zip
           - variant: compatible
             compat: '1'
-            tag: desktop-style-compat-latest
-            name: AUZsStyle-Setup-Compatible
             redist: https://aka.ms/vs/16/release/vc_redist.x64.exe
             pg_urls: https://get.enterprisedb.com/postgresql/postgresql-12.22-1-windows-x64-binaries.zip https://get.enterprisedb.com/postgresql/postgresql-12.20-1-windows-x64-binaries.zip
+          - product: style
+            pname: AUZsStyle
+            tagbase: desktop-style
+          - product: pos
+            pname: AUZsPOS
+            tagbase: desktop-pos
+          - product: ledger
+            pname: AUZsLedger
+            tagbase: desktop-ledger
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -57,20 +64,26 @@ jobs:
           VC_REDIST: ${{ github.workspace }}/vc_redist.x64.exe
           LICENCE_PUBLIC_KEY: ${{ vars.LICENCE_PUBLIC_KEY }}
           COMPAT: ${{ matrix.compat }}
+          PRODUCT: ${{ matrix.product }}
         run: node tools/stage.mjs
       - name: Build the installer
         working-directory: desktop-style
         shell: bash
-        run: npm run dist -- '-c.artifactName=${{ matrix.name }}.${ext}'
+        run: |
+          N="${{ matrix.pname }}-Setup"; [ "${{ matrix.compat }}" = "1" ] && N="$N-Compatible"
+          echo "SETUP_NAME=$N" >> $GITHUB_ENV
+          TAG="${{ matrix.tagbase }}"; [ "${{ matrix.compat }}" = "1" ] && TAG="$TAG-compat"
+          echo "REL_TAG=$TAG-latest" >> $GITHUB_ENV
+          npm run dist -- "-c.artifactName=$N.\${ext}" "-c.productName=${{ matrix.pname }}" "-c.appId=in.auzslab.${{ matrix.product }}.desktop" "-c.nsis.shortcutName=${{ matrix.pname }}"
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.name }}
-          path: desktop-style/dist/${{ matrix.name }}.exe
+          name: ${{ env.SETUP_NAME }}
+          path: desktop-style/dist/${{ env.SETUP_NAME }}.exe
       - name: Publish on a release page
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete ${{ matrix.tag }} --yes --cleanup-tag --repo "$GITHUB_REPOSITORY" || true
-          gh release create ${{ matrix.tag }} desktop-style/dist/${{ matrix.name }}.exe --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
-            --title "AUZsStyle for Windows (${{ matrix.variant }} build)" --notes "Offline Windows installer, ${{ matrix.variant }} build. Needs a licence code from AUZslab. Built from commit $GITHUB_SHA."
+          gh release delete $REL_TAG --yes --cleanup-tag --repo "$GITHUB_REPOSITORY" || true
+          gh release create $REL_TAG desktop-style/dist/$SETUP_NAME.exe --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
+            --title "${{ matrix.pname }} for Windows (${{ matrix.variant }} build)" --notes "Offline Windows installer, ${{ matrix.variant }} build. Needs a licence code from AUZslab. Built from commit $GITHUB_SHA."

@@ -9,11 +9,11 @@
   ; would ever see to click "Allow". Rule is by program path, not a fixed port, since the app picks its own free
   ; port per computer. Silently continues if netsh is missing/blocked (e.g. a locked-down corporate machine) --
   ; the app itself still works fine on this computer either way, it just stays unreachable from other devices.
-  nsExec::ExecToLog 'netsh advfirewall firewall add rule name="AUZsStyle" dir=in action=allow program="$INSTDIR\AUZsStyle.exe" enable=yes profile=private,domain'
+  nsExec::ExecToLog 'netsh advfirewall firewall add rule name="${PRODUCT_NAME}" dir=in action=allow program="$INSTDIR\${PRODUCT_FILENAME}.exe" enable=yes profile=private,domain'
   Pop $0
 !macroend
 
 !macro customUnInstall
-  nsExec::ExecToLog 'netsh advfirewall firewall delete rule name="AUZsStyle"'
+  nsExec::ExecToLog 'netsh advfirewall firewall delete rule name="${PRODUCT_NAME}"'
   Pop $0
 !macroend

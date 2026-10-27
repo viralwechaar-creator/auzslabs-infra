@@ -6,7 +6,7 @@ import { sendStaffInviteEmail } from '../mail.js';
 import { safeResetBase } from '../config.js';
 import { myProfile } from '../lib/guards.js';
 import { HttpError, rateLimited, readJsonBody, readRawBody } from '../lib/http.js';
-import { signLicence, verifyLicence, publicFromPrivate } from '../licence.js';
+import { signLicence, verifyLicence, publicFromPrivate, PRODUCTS } from '../licence.js';
 
 // Returns false when none of this module's routes matched, so the dispatcher in index.js tries the next module;
 // any other return (including the undefined that `return reply(...)` gives) means the request was handled.
@@ -205,9 +205,11 @@ export async function handle(ctx) {
     if (!process.env.LICENCE_PRIVATE_KEY) throw new HttpError(400, 'Licence signing is not set up on the server yet (LICENCE_PRIVATE_KEY).');
     const b = await readJsonBody(req);
     const shop = String(b.shop || '').trim(); if (!shop) throw new HttpError(400, 'Shop name is required');
-    const addons = { cloud: !!(b.addons && b.addons.cloud), whatsapp: !!(b.addons && b.addons.whatsapp), store: !!(b.addons && b.addons.store), sync: !!(b.addons && b.addons.sync) };
-    let code; try { code = signLicence({ shop, end: String(b.end || ''), addons }, process.env.LICENCE_PRIVATE_KEY); } catch (e) { throw new HttpError(400, e.message); }
-    await withAuth(user.id, (client) => client.query('select admin_log_licence($1::jsonb) as r', [JSON.stringify({ shop, end: b.end, addons, note: b.note || '', tenantId: b.tenantId || null, code, codeId: verifyLicence(code, publicFromPrivate(process.env.LICENCE_PRIVATE_KEY)).id, renewOf: b.renewOf || null })]));
+    const prodKey = PRODUCTS[b.product] ? String(b.product) : 'style';
+    const addons = { cloud: !!(b.addons && b.addons.cloud), whatsapp: !!(b.addons && b.addons.whatsapp), store: !!(b.addons && b.addons.store), sync: prodKey === 'style' && !!(b.addons && b.addons.sync) }; // live cloud sync exists only for AUZsStyle
+    let code; const product = PRODUCTS[b.product] ? String(b.product) : 'style';
+    try { code = signLicence({ shop, end: String(b.end || ''), addons, product }, process.env.LICENCE_PRIVATE_KEY); } catch (e) { throw new HttpError(400, e.message); }
+    await withAuth(user.id, (client) => client.query('select admin_log_licence($1::jsonb) as r', [JSON.stringify({ shop, product, end: b.end, addons, note: b.note || '', tenantId: b.tenantId || null, code, codeId: verifyLicence(code, publicFromPrivate(process.env.LICENCE_PRIVATE_KEY)).id, renewOf: b.renewOf || null })]));
     return reply(200, { code });
   }
 

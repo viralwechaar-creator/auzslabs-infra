@@ -17,6 +17,7 @@
       { "from": "stage/app", "to": "app" },
       { "from": "stage/db", "to": "db" },
       { "from": "stage/pg", "to": "pg" },
+      { "from": "stage/product.json", "to": "product.json" },
       { "from": "stage/licence-public.txt", "to": "licence-public.txt" },
       { "from": "stage/compat-preload.cjs", "to": "compat-preload.cjs" },
       { "from": "stage/vc_redist.x64.exe", "to": "vc_redist.x64.exe" }

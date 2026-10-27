@@ -1,5 +1,5 @@
 'use strict';
-// AUZsStyle for Windows: one window around the app, with its own PostgreSQL database and local server running quietly behind it.
+// AUZsStyle / AUZsPOS / AUZsLedger for Windows (resources/product.json says which): one window around the app, with its own PostgreSQL database and local server running quietly behind it.
 // Works with no internet. Needs a licence code from AUZslab (checked by the local server, see server/src/licence.js).
 const { app, BrowserWindow, Menu, dialog, shell, session } = require('electron');
 const { spawn } = require('node:child_process');
@@ -13,7 +13,12 @@ const L = require('./lib/setup.cjs');
 const C = require('./lib/cloud.cjs');
 
 const RES = app.isPackaged ? process.resourcesPath : path.join(__dirname, 'stage');
+// which product this installer is (written by tools/stage.mjs); an older stage without the file is AUZsStyle
+let P = { id: 'style', name: 'AUZsStyle', versionFile: 'style-version.json', bg: '#f5f4f2' };
+try { P = { ...P, ...JSON.parse(fs.readFileSync(path.join(RES, 'product.json'), 'utf8')) }; } catch { /* keep the default */ }
 const paths = { pgBin: path.join(RES, 'pg', 'bin'), serverDir: path.join(RES, 'server'), appDir: path.join(RES, 'app'), dbDir: path.join(RES, 'db') };
+// each product keeps its own folder (AUZsStyle keeps the name it always had)
+if (P.id !== 'style') app.setPath('userData', path.join(app.getPath('appData'), P.name));
 const dataDir = app.getPath('userData');
 const uploads = path.join(dataDir, 'uploads');
 let server = null, win = null, splash = null, ctx = null, port = 0, pgPort = 0, quitting = false;
@@ -38,18 +43,18 @@ async function chooseAddress() {
 
 function startServer(sec) {
   const pub = fs.existsSync(path.join(RES, 'licence-public.txt')) ? fs.readFileSync(path.join(RES, 'licence-public.txt'), 'utf8').trim() : (process.env.LICENCE_PUBLIC_KEY || '');
-  if (!pub) throw new Error('This copy of AUZsStyle has no licence key inside it. Please download the installer again.');
+  if (!pub) throw new Error('This copy of ' + P.name + ' has no licence key inside it. Please download the installer again.');
   const out = fs.openSync(path.join(dataDir, 'server.log'), 'a');
   server = spawn(process.execPath, ['--require', path.join(RES, 'compat-preload.cjs'), path.join(paths.serverDir, 'src', 'index.js')], {
     cwd: paths.serverDir, stdio: ['ignore', out, out], windowsHide: true,
-    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', NODE_ENV: 'production', PORT: String(port), AUZ_OFFLINE: '1', AUZ_DATA_DIR: dataDir, AUZ_APP_ROOT: paths.appDir, UPLOAD_ROOT: uploads, DOC_UPLOAD_ROOT: path.join(dataDir, 'docs'), PGHOST: '127.0.0.1', PGPORT: String(pgPort), POSTGRES_APP_PASSWORD: sec.appPassword, POSTGRES_DB: L.DB, JWT_SECRET: sec.jwtSecret, LICENCE_PUBLIC_KEY: pub, DISABLE_MAINTENANCE: '1', PG_POOL_MAX: '6' },
+    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', NODE_ENV: 'production', PORT: String(port), AUZ_OFFLINE: '1', AUZ_PRODUCT: P.id, AUZ_DATA_DIR: dataDir, AUZ_APP_ROOT: paths.appDir, UPLOAD_ROOT: uploads, DOC_UPLOAD_ROOT: path.join(dataDir, 'docs'), PGHOST: '127.0.0.1', PGPORT: String(pgPort), POSTGRES_APP_PASSWORD: sec.appPassword, POSTGRES_DB: L.DB, JWT_SECRET: sec.jwtSecret, LICENCE_PUBLIC_KEY: pub, DISABLE_MAINTENANCE: '1', PG_POOL_MAX: '6' },
   });
   server.on('exit', (c) => { log('server exited ' + c); server = null; });
 }
 const stopServer = () => new Promise((r) => { if (!server) return r(); const s = server; s.once('exit', () => r()); s.kill(); setTimeout(r, 5000); });
 async function waitServer() {
   for (let i = 0; i < 120; i++) { try { const r = await getJson(`http://127.0.0.1:${port}/health`); if (r.ok) return; } catch { /* starting */ } await new Promise((r) => setTimeout(r, 500)); }
-  throw new Error('The program behind AUZsStyle did not start. See ' + path.join(dataDir, 'server.log'));
+  throw new Error('The program behind ' + P.name + ' did not start. See ' + path.join(dataDir, 'server.log'));
 }
 
 async function boot() {
@@ -69,14 +74,14 @@ async function boot() {
     openWindow();
   } catch (e) {
     log('start failed: ' + (e && e.stack || e));
-    dialog.showErrorBox('AUZsStyle could not start', String(e && e.message || e) + '\n\nDetails are saved in ' + path.join(dataDir, 'app.log'));
+    dialog.showErrorBox(P.name + ' could not start', String(e && e.message || e) + '\n\nDetails are saved in ' + path.join(dataDir, 'app.log'));
     app.exit(1);
   } finally { if (splash && !splash.isDestroyed()) splash.close(); }
 }
 
 function openWindow() {
   const origin = `http://127.0.0.1:${port}`;
-  win = new BrowserWindow({ width: 1280, height: 820, minWidth: 900, minHeight: 600, title: 'AUZsStyle', backgroundColor: '#f5f4f2', autoHideMenuBar: false, webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true } });
+  win = new BrowserWindow({ width: 1280, height: 820, minWidth: 900, minHeight: 600, title: P.name, backgroundColor: P.bg, autoHideMenuBar: false, webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true } });
   // the camera is used to scan tags; nothing else is allowed
   session.defaultSession.setPermissionRequestHandler((wc, perm, cb) => cb(perm === 'media' && wc.getURL().startsWith(origin)));
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:\/\//.test(url) && !url.startsWith(origin)) shell.openExternal(url); return { action: 'deny' }; }); // WhatsApp bill links open in the browser
@@ -98,7 +103,7 @@ function openWindow() {
   ]));
 }
 
-const pgOpts = () => { const sec = L.secrets(dataDir); return { ...paths, dataDir, port: pgPort, superPassword: sec.superPassword, appPassword: sec.appPassword, uploadDir: uploads }; };
+const pgOpts = () => { const sec = L.secrets(dataDir); return { ...paths, backupName: P.name, dataDir, port: pgPort, superPassword: sec.superPassword, appPassword: sec.appPassword, uploadDir: uploads }; };
 async function doBackup() {
   const r = await dialog.showOpenDialog(win, { title: 'Choose where to save the backup (a pen drive is best)', properties: ['openDirectory', 'createDirectory'] });
   if (r.canceled || !r.filePaths[0]) return;
@@ -106,7 +111,7 @@ async function doBackup() {
   catch (e) { log('backup failed ' + e.message); dialog.showErrorBox('Backup failed', e.message); }
 }
 async function doRestore() {
-  const r = await dialog.showOpenDialog(win, { title: 'Choose the backup folder (AUZsStyle-backup-...)', properties: ['openDirectory'] });
+  const r = await dialog.showOpenDialog(win, { title: 'Choose the backup folder (' + P.name + '-backup-...)', properties: ['openDirectory'] });
   if (r.canceled || !r.filePaths[0]) return;
   const ok = await dialog.showMessageBox(win, { type: 'warning', buttons: ['Restore', 'Cancel'], defaultId: 1, cancelId: 1, message: 'Replace everything on this computer with this backup?', detail: 'Sales, stock and bills made after the backup was taken will be lost. This cannot be undone. Take a fresh backup first if unsure.' });
   if (ok.response !== 0) return;
@@ -170,12 +175,12 @@ const updateState = () => { try { return JSON.parse(fs.readFileSync(updateFile()
 const saveUpdate = (o) => fs.writeFileSync(updateFile(), JSON.stringify({ ...updateState(), ...o }));
 async function checkForUpdate(manual) {
   try {
-    const r = await getJsonHttps('https://auzslab.in/style-version.json');
+    const r = await getJsonHttps('https://auzslab.in/' + P.versionFile + '');
     if (!r.ok || !r.json.version) throw new Error('bad response');
     const newer = higherVersion(r.json.version, app.getVersion());
     saveUpdate({ lastChecked: new Date().toISOString(), latest: r.json.version, url: r.json.url, newer });
-    if (newer) dialog.showMessageBox(win, { type: 'info', buttons: ['Open download page', 'Later'], message: 'A newer version of AUZsStyle is available', detail: `You have ${app.getVersion()}, the newest is ${r.json.version}.\n\nThis never installs anything by itself -- you choose when to download and run the new installer.` }).then((r2) => { if (r2.response === 0 && r.json.url) shell.openExternal(r.json.url); });
-    else if (manual) dialog.showMessageBox(win, { type: 'info', message: 'You have the newest version', detail: 'AUZsStyle ' + app.getVersion() });
+    if (newer) dialog.showMessageBox(win, { type: 'info', buttons: ['Open download page', 'Later'], message: 'A newer version of ' + P.name + ' is available', detail: `You have ${app.getVersion()}, the newest is ${r.json.version}.\n\nThis never installs anything by itself -- you choose when to download and run the new installer.` }).then((r2) => { if (r2.response === 0 && r.json.url) shell.openExternal(r.json.url); });
+    else if (manual) dialog.showMessageBox(win, { type: 'info', message: 'You have the newest version', detail: P.name + ' ' + app.getVersion() });
   } catch (e) { if (manual) dialog.showErrorBox('Could not check for an update', 'No internet, or the update check could not be reached. ' + e.message); }
 }
 setTimeout(() => { if (win) checkForUpdate(false); }, 5 * 60 * 1000).unref();
