@@ -333,9 +333,15 @@
       async start(returnId, amount) { return request('/payments/sty/refund/start', { method: 'POST', body: { returnId, amount }, auth: true }); },
     };
 
+    // GSTIN details lookup (AUZsLedger / AUZsScan / AUZsFinance): the provider key stays on the server.
+    const gst = {
+      async config() { return request('/gst/config', { method: 'GET', auth: false }); },
+      async lookup(gstin) { return request('/gst/lookup', { method: 'POST', body: { gstin }, auth: true }); },
+    };
+
     // One request for a whole queue (POST /sync): see server/src/index.js. Resolves {data:{results:[{id,ok,data|status,error|skipped}]}}.
     async function sync(ops) { return request('/sync', { method: 'POST', body: { ops }, auth: true }); }
-    return { auth, from, rpc, sync, storage, channel, autorenew, whatsapp, styRefund };
+    return { auth, from, rpc, sync, storage, channel, autorenew, whatsapp, styRefund, gst };
   }
 
   window.supabase = { createClient };

@@ -141,6 +141,31 @@ async function apiFile(path, opts = {}) {
   return res;
 }
 
+// GST lookup: fetch taxpayer details for a GSTIN (server holds the provider key). Returns the details or throws a readable Error.
+async function gstFetch(g) {
+  g = String(g || '').trim().toUpperCase();
+  if (!gstinValid(g)) throw new Error('Enter a valid 15-character GSTIN first.');
+  if (!navigator.onLine) throw new Error('You are offline. GST lookup needs a connection.');
+  const r = await sb.gst.lookup(g);
+  if (r.error) throw new Error(r.error.message || 'Could not fetch the details.');
+  return r.data;
+}
+// Button that fetches details for the GSTIN in `gstInput` and hands them to onFill(details). `msg` is the hint line to report in.
+function gstFetchBtn(gstInput, msg, onFill) {
+  const b = h('button', { class: 'btn sm', type: 'button' }, icon('search', 16), 'Fetch details');
+  b.addEventListener('click', async () => {
+    b.disabled = true; const old = msg.textContent;
+    try {
+      msg.textContent = 'Fetching details...';
+      const d = await gstFetch(gstInput.value);
+      onFill(d);
+      msg.textContent = (d.active ? 'Found: ' : 'Found, but status is ' + (d.status || 'unknown') + ': ') + (d.legal_name || d.trade_name || d.gstin);
+    } catch (e) { msg.textContent = e.message; toast(e.message, { err: true }); }
+    finally { b.disabled = false; }
+  });
+  return b;
+}
+
 // ---------- state ----------
 const S = { ctx: null, org: null, perms: {}, accounts: [], taxcodes: [], branches: [], warehouses: [], masters: [], fys: [], products: null, parties: null, user: null };
 const tenantOrigin = () => { if (window.TENANT_SLUG) return location.origin; const slug = S.ctx && S.ctx.tenant && S.ctx.tenant.slug; if (!slug) return location.origin; const parts = location.host.split('.'); return location.protocol + '//' + slug + '.' + (parts.length > 1 ? parts.slice(1).join('.') : parts[0]); };

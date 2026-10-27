@@ -20,12 +20,13 @@ import { startSyncWorker } from './sync-worker.js';
 import { handle as handleLicence, gate as licenceGate } from './routes/licence.js';
 import { handle as handleOffline } from './routes/offline.js';
 import { handle as handleCloud } from './routes/cloud.js';
+import { handle as handleGst } from './routes/gst.js';
 
 initErrorTracking(); // dormant unless SENTRY_DSN is set -- see errors.js
 
 // Request flow: CORS preflight -> identify the caller -> try each route module in order (first one that handles it
 // wins) -> 404. Each module in routes/ owns one area; see docs/BACKEND_MAP.md. Order matters only where paths overlap.
-const ROUTE_MODULES = [handleLicence, handleSystem, handleAuth, handlePayments, handleData, handleStorage, handleAdmin, handleWhatsApp, handleOffline, handleCloud];
+const ROUTE_MODULES = [handleLicence, handleSystem, handleAuth, handlePayments, handleData, handleStorage, handleAdmin, handleWhatsApp, handleOffline, handleCloud, handleGst];
 
 setWsCounter(wsCount);
 const server = http.createServer(async (req, res) => {
