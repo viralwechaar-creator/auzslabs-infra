@@ -64,6 +64,14 @@ export default async function run() {
     assert(at('2030-06-30') === 'active' && at('2030-07-02') === 'grace' && at('2030-07-04') === 'expired', 'timeline');
     assert(at('2030-06-01') === 'expired', 'clock set back should not unlock');
   }, 'critical');
+  await s.check('A code works only in its own app (POS code refused by Ledger and Style)', async () => {
+    const d3 = fs.mkdtempSync(path.join(os.tmpdir(), 'auzlic-'));
+    const { licenceStore } = await import('../../../server/src/licence.js');
+    const posCode = signLicence({ shop: 'P', end: '2030-06-30', product: 'pos' }, k.priv);
+    const led = licenceStore(d3, k.pub, 'ledger'), pos = licenceStore(d3, k.pub, 'pos');
+    const bad = led.activate(posCode, Date.parse('2030-06-01')); assert(!bad.ok && /AUZsPOS, not AUZsLedger/.test(bad.error), JSON.stringify(bad));
+    const ok = pos.activate(posCode, Date.parse('2030-06-01')); assert(ok.ok && ok.status.product === 'pos', JSON.stringify(ok));
+  });
   const cloud = await start({});
   try {
     await s.check('The cloud server never locks anything', async () => {

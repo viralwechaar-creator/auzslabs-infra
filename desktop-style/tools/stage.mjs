@@ -31,6 +31,9 @@ fs.writeFileSync(path.join(st, 'licence-public.txt'), pub);
 if (process.env.PG_DIR) {
   for (const d of ['bin', 'lib', 'share']) if (fs.existsSync(path.join(process.env.PG_DIR, d))) cp(path.join(process.env.PG_DIR, d), path.join(st, 'pg', d));
 } else console.warn('PG_DIR not set: PostgreSQL is not included (fine for a test run, not for an installer)');
+const PRODUCTS = { style: { id: 'style', name: 'AUZsStyle', versionFile: 'style-version.json', bg: '#f5f4f2' }, pos: { id: 'pos', name: 'AUZsPOS', versionFile: 'pos-version.json', bg: '#f2f2f4' }, ledger: { id: 'ledger', name: 'AUZsLedger', versionFile: 'ledger-version.json', bg: '#f2f2f4' } };
+const prod = PRODUCTS[process.env.PRODUCT || 'style']; if (!prod) throw new Error('PRODUCT must be style, pos or ledger');
+fs.writeFileSync(path.join(st, 'product.json'), JSON.stringify(prod));
 fs.mkdirSync(path.join(dd, 'build'), { recursive: true });
 fs.copyFileSync(path.join(root, 'app', 'public', 'icon-512.png'), path.join(dd, 'build', 'icon.png'));
 console.log('staged in', st);

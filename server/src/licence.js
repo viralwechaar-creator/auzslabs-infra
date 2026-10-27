@@ -10,7 +10,8 @@ const DAY = 86400000;
 const ED_PRIV = Buffer.from('302e020100300506032b657004220420', 'hex');
 const ED_PUB = Buffer.from('302a300506032b6570032100', 'hex');
 const B32 = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no I, O, 0, 1: easy to read out loud
-export const PRODUCTS = { style: 1 };
+export const PRODUCTS = { style: 1, pos: 2, ledger: 3 };
+export const PRODUCT_NAMES = { style: 'AUZsStyle', pos: 'AUZsPOS', ledger: 'AUZsLedger' };
 export const ADDONS = { cloud: 1, whatsapp: 2, store: 4, sync: 8 };
 export const GRACE_DAYS = 3;
 
@@ -59,7 +60,7 @@ export const planOf = (addons = {}) => (addons.sync ? 'sync' : 'local');
 const sameShop = (name) => String(name || '').normalize('NFKC').toLowerCase().replace(/\s+/g, ' ').trim();
 
 // ---------- the installed copy: keeps the code and the latest date it has seen (so setting the clock back does not extend a plan) ----------
-export function licenceStore(dir, pub) {
+export function licenceStore(dir, pub, product = '') {
   const file = path.join(dir, 'licence.json');
   const read = () => { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; } };
   const write = (o) => { fs.mkdirSync(dir, { recursive: true }); fs.writeFileSync(file, JSON.stringify(o)); };
@@ -70,15 +71,17 @@ export function licenceStore(dir, pub) {
     const seen = Math.max(s.seen || 0, today(now)); if (seen !== s.seen) write({ ...s, seen });
     const left = dayNumber(v.end) - seen;
     const state = left >= 0 ? 'active' : left >= -GRACE_DAYS ? 'grace' : 'expired';
-    return { state, shop: v.shop, end: v.end, daysLeft: left, graceLeft: left < 0 ? GRACE_DAYS + left : null, addons: v.addons, id: v.id, plan: planOf(v.addons) };
+    return { state, product: v.product, shop: v.shop, end: v.end, daysLeft: left, graceLeft: left < 0 ? GRACE_DAYS + left : null, addons: v.addons, id: v.id, plan: planOf(v.addons) };
   }
   function activate(code, now = Date.now()) {
     const v = verifyLicence(code, pub); if (!v.ok) return { ok: false, error: v.error };
+    // a code is for one product: an AUZsPOS code never opens AUZsLedger or AUZsStyle
+    if (product && v.product !== product) return { ok: false, error: 'This code is for ' + (PRODUCT_NAMES[v.product] || v.product) + ', not ' + (PRODUCT_NAMES[product] || product) + '. Check you typed the right code.' };
     const old = read();
     if (old && old.code) { const o = verifyLicence(old.code, pub);
       // One computer, one shop: the first code activated here ties this computer to that shop. A code made for another shop is refused;
       // a renewal (same shop name, made with "Renewal for" in Admin -> Licences) is accepted.
-      if (o.ok && sameShop(o.shop) !== sameShop(v.shop)) return { ok: false, error: 'This code is for another shop (' + v.shop + '). This computer is set up for ' + o.shop + '. Install a separate copy of AUZsStyle for the other shop.' };
+      if (o.ok && sameShop(o.shop) !== sameShop(v.shop)) return { ok: false, error: 'This code is for another shop (' + v.shop + '). This computer is set up for ' + o.shop + '. Install a separate copy for the other shop.' };
       if (o.ok && o.end > v.end) return { ok: false, error: 'This code is older than the plan already on this computer (it ends ' + o.end + ').' }; }
     write({ code: String(code).trim(), seen: Math.max((old && old.seen) || 0, today(now)) });
     return { ok: true, status: status(now) };
