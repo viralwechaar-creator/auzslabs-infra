@@ -121,9 +121,8 @@ html.ui-fine .btn.fill,html.ui-fine .btn.primary{background:var(--label);color:v
 html.ui-fine{--ic1:#2563eb;--ic2:#16a34a;--ic3:#ea580c;--ic4:#9333ea;--ic5:#475569}
 @media (prefers-color-scheme:dark){html.ui-fine:not([data-theme=light]){--ic1:#60a5fa;--ic2:#4ade80;--ic3:#fb923c;--ic4:#c084fc;--ic5:#cbd5e1}}
 html[data-theme=dark].ui-fine{--ic1:#60a5fa;--ic2:#4ade80;--ic3:#fb923c;--ic4:#c084fc;--ic5:#cbd5e1}
-html.ui-fine .tabbar{background:var(--card);border:1px solid var(--line,rgba(0,0,0,.18));box-shadow:0 10px 32px rgba(0,0,0,.22)}
+html.ui-fine .tabbar{box-shadow:0 10px 32px rgba(0,0,0,.22)}
 html.ui-fine .tabbar button{color:var(--label)}
-html.ui-fine .tabbar button svg{stroke-width:2.1}
 html.ui-fine .tabbar button:nth-child(1):not([aria-current=page]) svg{color:var(--ic1)}
 html.ui-fine .tabbar button:nth-child(2):not([aria-current=page]) svg{color:var(--ic2)}
 html.ui-fine .tabbar button:nth-child(3):not([aria-current=page]) svg{color:var(--ic3)}
