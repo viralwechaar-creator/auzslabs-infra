@@ -177,6 +177,7 @@ page('doc', {
     if (CONVERT[t] && d.status === 'open' && can(perm)) CONVERT[t].forEach((to) => more.push({ label: 'Convert to ' + DOC_LABEL[to].toLowerCase(), icon: 'refresh', run: () => convertDoc(d, to) }));
     if (t === 'invoice' && d.status === 'posted' && can('acc_sales')) more.push({ label: 'Create credit note', icon: 'undo', run: () => go('new/credit_note?ref=' + d.id) });
     if (t === 'bill' && d.status === 'posted' && can('acc_purchase')) more.push({ label: 'Create debit note', icon: 'undo', run: () => go('new/debit_note?ref=' + d.id) });
+    if (d.status === 'posted' && posting && can('acc_cancel') && can(perm) && !d.is_opening) acts.splice(Math.min(1, acts.length), 0, { label: 'Edit', icon: 'edit', primary: true, run: () => amendDoc(d) });
     if (can(perm) && !d.is_opening) more.push({ label: 'Duplicate', icon: 'file', run: () => go('new/' + t + '?copy=' + d.id) });
     if (d.status === 'posted' && can('acc_cancel') && !d.is_opening) more.push({ label: 'Cancel with reversal…', icon: 'x', danger: true, run: () => cancelDoc(d) });
     if ((d.status === 'open') && can('acc_cancel')) more.push({ label: 'Cancel…', icon: 'x', danger: true, run: () => cancelDoc(d) });
@@ -243,6 +244,11 @@ async function postDoc(d) {
   const msg = 'Posting creates ledger' + (d.doc_type === 'invoice' || d.doc_type === 'credit_note' || d.doc_type === 'bill' || d.doc_type === 'debit_note' ? ', stock' : '') + ' and GST entries and gives it its final number. You cannot edit it afterwards; you can cancel it with a reversal.';
   if (!(await confirmBox('Post ' + DOC_LABEL[d.doc_type].toLowerCase() + '?', msg, 'Post'))) return;
   try { const r = await api('acc_post_document', { p_doc_id: d.id }); toast('Posted ' + r.number); go('doc/' + d.id); route_(); } catch (e) { fail(e); }
+}
+async function amendDoc(d) {
+  const msg = d.number + ' is posted, so the books keep it as it was. Editing cancels it with a reversing entry (stock and tax are reversed) and opens a corrected copy where you can change anything: party, items, tax, reverse charge. Payments linked to it are released and kept as advances to link again. The corrected copy gets a new number when you post it.';
+  if (!(await confirmBox('Edit ' + d.number + '?', msg, 'Cancel and edit'))) return;
+  try { const r = await api('acc_amend_document', { p_doc_id: d.id, p_reason: 'Edited: corrected copy created' }); toast('Cancelled ' + r.old_number + '. Edit the corrected copy, then post it.'); go('edit/' + r.id); } catch (e) { fail(e); }
 }
 async function cancelDoc(d) {
   const reason = await askText('Cancel ' + (d.number.startsWith('DRAFT') ? 'document' : d.number) + '?', d.status === 'posted' ? 'This posts a reversing entry and returns the stock. The original stays on record. A reason is required.' : 'A reason is required.', 'Reason');
