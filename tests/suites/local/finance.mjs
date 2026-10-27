@@ -27,6 +27,24 @@ export default async function run({ browser, stack }) {
     bank = ctx.accounts.find((a) => a.kind === 'bank').id; cash = ctx.accounts.find((a) => a.kind === 'cash').id;
     assert(ctx.categories.expense.length > 3 && ctx.categories.income.length > 0, 'categories');
   }, 'critical');
+  await s.check('Finance and Ledger share one list of people, and Ledger entries show in the Finance feed', async () => {
+    const tid = (await q("select id from tenants where slug='testfin'"))[0].id;
+    const per = await ok(owner, 'fin_save_person', { p: { name: 'Link Test Co', phone: '9000000001', kind: 'supplier' } });
+    const pa = await q("select id, kind, party_type from acc_parties where tenant_id=$1 and name='Link Test Co'", [tid]);
+    assert(pa.length === 1 && pa[0].kind === 'supplier', 'a person added in Finance becomes a Ledger supplier: ' + JSON.stringify(pa));
+    assert((await q('select party_id from fin_people where id=$1', [per.id]))[0].party_id === pa[0].id, 'linked');
+    await q("insert into acc_parties (tenant_id, kind, name, phone) values ($1,'customer','Ledger Side Customer','9000000002')", [tid]);
+    const fp = await q("select kind, party_id from fin_people where tenant_id=$1 and name='Ledger Side Customer'", [tid]);
+    assert(fp.length === 1 && fp[0].kind === 'customer' && fp[0].party_id, 'a Ledger customer appears in Finance: ' + JSON.stringify(fp));
+    await q("update acc_parties set name='Ledger Side Renamed' where id=$1", [(await q("select id from acc_parties where tenant_id=$1 and name='Ledger Side Customer'", [tid]))[0].id]);
+    assert((await q("select count(*)::int n from fin_people where tenant_id=$1 and name='Ledger Side Renamed'", [tid]))[0].n === 1, 'a rename in Ledger reaches Finance');
+    await q("update fin_people set name='Link Test Renamed' where id=$1", [per.id]);
+    assert((await q("select count(*)::int n from acc_parties where tenant_id=$1 and name='Link Test Renamed'", [tid]))[0].n === 1, 'a rename in Finance reaches Ledger');
+    await ok(owner, 'fin_sync_people');
+    assert((await q("select count(*)::int n from fin_people where tenant_id=$1 and name like 'Link Test%'", [tid]))[0].n === 1, 'sync adds no duplicates');
+    const feed = await ok(owner, 'fin_ledger_feed', { p: {} }); assert(Array.isArray(feed), 'feed is a list');
+    await fails(cafe, 'fin_ledger_feed', { p: {} }, /not enabled/i);
+  });
   await s.check('Staff cannot add entries; a manager can add entries but cannot create accounts or partners', async () => {
     await fails(staff, 'fin_save_txn', { p: { kind: 'expense', amount: 10, account_id: cash } }, /does not allow/i);
     const m = await ok(manager, 'fin_bootstrap'); assert(m.perms.write && !m.perms.admin, JSON.stringify(m.perms));
