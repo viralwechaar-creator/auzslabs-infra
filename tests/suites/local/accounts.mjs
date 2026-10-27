@@ -155,6 +155,23 @@ export default async function run({ browser, stack }) {
     const o2 = await ok(owner, 'acc_set_party_opening', { p_party: cust, p_amount: 7000, p_date: ctx.fys[1].start_date }); const d = (await ok(owner, 'acc_get_document', { p_id: o2.id })).doc; assert(d.is_opening && d.pay_status !== 'paid', 'opening doc');
     await ok(owner, 'acc_save_payment', { p: { kind: 'receipt', party_id: cust, account_id: bank, amount: 7000, allocations: [{ doc_id: o2.id, amount: 7000 }] } }); await integrity();
   }, 'major');
+  await s.check('Write-off and discounts clear dues, keep the books tied, and need the right role', async () => {
+    const ctx = await ok(owner, 'acc_context'), st = ctx.fys[1].start_date;
+    const c2 = (await ok(owner, 'acc_save_party', { p: { kind: 'customer', name: 'Adj Customer', category: 'Wholesale' } })).id;
+    const s2 = (await ok(owner, 'acc_save_party', { p: { kind: 'supplier', name: 'Adj Supplier', bank_name: 'SBI', bank_account: '123456', bank_ifsc: 'sbin0001234' } })).id;
+    await ok(owner, 'acc_set_party_opening', { p_party: c2, p_amount: 5000, p_date: st }); await ok(owner, 'acc_set_party_opening', { p_party: s2, p_amount: 3000, p_date: st });
+    await fails(owner, 'acc_party_adjust', { p: { party_id: c2, kind: 'write_off', amount: 6000 } }, /outstanding/i);
+    await fails(owner, 'acc_party_adjust', { p: { party_id: s2, kind: 'write_off', amount: 100 } }, /customers/i);
+    await ok(owner, 'acc_party_adjust', { p: { party_id: c2, kind: 'write_off', amount: 2000, notes: 'gone' } }); await integrity();
+    await ok(owner, 'acc_party_adjust', { p: { party_id: c2, kind: 'discount_given', amount: 500 } }); await integrity();
+    await ok(owner, 'acc_party_adjust', { p: { party_id: s2, kind: 'discount_received', amount: 1000 } }); await integrity();
+    const rows = (await ok(owner, 'acc_list_parties', { p: {} })).rows, a = rows.find((x) => x.id === c2), b = rows.find((x) => x.id === s2);
+    assert(Number(a.balance) === 2500 && a.category === 'Wholesale', 'customer balance ' + a.balance); assert(Number(b.balance) === -2000 && b.bank_ifsc === 'SBIN0001234', 'supplier balance ' + b.balance);
+    const e = (await ok(owner, 'acc_save_party', { p: { party_type: 'employee', name: 'Adj Employee' } })).id;
+    const lc = (await ok(owner, 'acc_list_parties', { p: { kind: 'customer' } })).rows; assert(!lc.some((x) => x.id === e), 'employee leaked into customers');
+    assert((await ok(owner, 'acc_list_parties', { p: { party_type: 'employee' } })).rows.some((x) => x.id === e), 'employee missing');
+    await fails(cashier, 'acc_party_adjust', { p: { party_id: c2, kind: 'write_off', amount: 100 } }, /role does not allow/i);
+  }, 'major');
   await s.check('Physical count adjustment posts only the difference; transfers keep totals and value', async () => {
     await ok(owner, 'acc_stock_adjust', { p: { mode: 'count', reason: 'Count', lines: [{ product_id: tee, qty: 97 }] } });
     assert(Number((await ok(owner, 'acc_list_products', { p: {} })).rows.find((p) => p.id === tee).stock) === 97, 'count');
