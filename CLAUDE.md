@@ -3091,3 +3091,6 @@ One Electron + PostgreSQL + local-server codebase (`desktop-style/`, still that 
 - **Pro (sync):** exists only for AUZsStyle. POS/Ledger on Pro behave like Base for now.
 - **Verified:** licence suite (8), desktop suite (18, AUZsStyle path), the three first-run feature sets by direct SQL. **NOT verified:** a full POS or Ledger offline install (no Windows here, desktop suite not extended to boot the server as POS/Ledger), the Electron shell, NSIS, Windows PostgreSQL. POS website/QR ordering and online store are not part of the offline copy.
 - Deploy: `bash tools/migrate.sh apply` (db/289), `docker compose up -d --build api`, `git pull`; run the workflow to publish the six installers.
+
+### AUZsLedger New look: off-white + wine (round 5)
+Owner: the AUZsLedger New look uses the Classic colours (off-white page `#f5f3f0`, wine `#800020`, a lifted wine in dark mode) instead of the ink/grey of round 4. `accounts/look.js` adds `html.ui-wine` on every page except `scan.html`, and `accounts.fine.css` (`?v=5`, last block) sets the tokens under `html.ui-fine.ui-wine`. AUZsScan keeps the ink colours. CSS only. Static only: `git pull` (sw `pos-v277`).

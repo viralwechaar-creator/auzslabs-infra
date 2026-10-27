@@ -5,6 +5,8 @@
   function on() { try { return localStorage[KEY] !== 'classic'; } catch (e) { return true; } }
   function set(v) { try { localStorage[KEY] = v ? 'style' : 'classic'; } catch (e) {} root.classList.toggle('ui-fine', !!v); }
   if (on()) root.classList.add('ui-fine');
+  // AUZsLedger keeps the wine accent on an off-white page; AUZsScan keeps the ink colours
+  if (!/scan\.html/.test(location.pathname)) root.classList.add('ui-wine');
   window.accLook = { on: on, set: set };
   window.accLookSeg = function (seg) { return seg([['style', 'New'], ['classic', 'Classic']], on() ? 'style' : 'classic', function (v) { set(v === 'style'); }); };
 })();
