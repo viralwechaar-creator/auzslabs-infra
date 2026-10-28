@@ -27,20 +27,11 @@ const navBadge = (k) => { if (k === 'kitchen') return L('order').filter((o) => o
 // the wordmark is ink on a light page; dark mode swaps in the white-type lockup
 // both wordmarks are drawn; CSS shows the one that matches the app's own light/dark choice (not just the phone's), so the name is never white-on-white
 const posLogo = () => h('span', { class: 'logo2' }, h('img', { class: 'lg-l', src: '/logo-pos.svg', alt: 'AUZslab POS' }), h('img', { class: 'lg-d', src: '/logo-pos-light.svg', alt: '' }));
-// sidebar width: an icon rail below 1200px wide, the full sidebar above; the toggle remembers the other choice
-const sidePref = () => { try { return localStorage['pos.side'] || ''; } catch { return ''; } };
-function toggleSide() {
-  const wide = matchMedia('(min-width:1200px)').matches, cur = sidePref(), mini = cur ? cur === 'min' : !wide;
-  try { localStorage['pos.side'] = mini ? 'full' : 'min'; } catch {}
-  render();
-}
 function sideNav(navs) {
   const main = navs.filter((n) => !n.grp), more = navs.filter((n) => n.grp && n.k !== 'more');
   const btn = (n) => h('button', { class: S.tab === n.k ? 'on' : '', 'data-nav': n.k, title: n.label, 'aria-current': S.tab === n.k ? 'page' : null, onclick: () => go(n.k) }, icon(n.ic, 20), h('span', { class: 'grow ellip lbl-t' }, n.label), navBadge(n.k) ? h('span', { class: 'badge' }, String(navBadge(n.k))) : null);
-  const pref = sidePref();
-  return h('aside', { class: 'side' + (pref ? ' ' + pref : ''), 'aria-label': 'Sections' },
-    h('div', { class: 'brand' }, h('span', { class: 'brand-logo' }, posLogo()), h('img', { class: 'brand-mark', src: '/icon-pos.svg', alt: 'AUZslab POS' }),
-      h('button', { class: 'side-tg', title: 'Collapse or expand the sidebar', 'aria-label': 'Collapse or expand the sidebar', onclick: toggleSide }, icon('sidebar', 20))),
+  return h('aside', { class: 'side', 'aria-label': 'Sections' },
+    h('div', { class: 'brand' }, h('span', { class: 'brand-logo' }, posLogo()), h('img', { class: 'brand-mark', src: '/icon-pos.svg', alt: 'AUZslab POS' })),
     h('nav', { class: 'nav', 'aria-label': 'Main' }, h('div', { class: 'grp' }, h('span', { class: 'lbl-t' }, 'Service')), main.map(btn),
       h('div', { class: 'grp' }, h('span', { class: 'lbl-t' }, 'More')), more.map(btn), btn({ k: 'more', label: 'Staff & settings', ic: 'staff' })),
     h('div', { class: 'foot' }, L('outlet').length ? h('button', { onclick: pickOutlet, title: 'Outlet' }, icon('building', 18), h('span', { class: 'lbl-t ellip' }, outletName())) : null,
