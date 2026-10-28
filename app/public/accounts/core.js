@@ -236,7 +236,7 @@ function toast(msg, o = {}) {
   document.body.append(toastEl);
   const el = toastEl; setTimeout(() => el.remove(), o.err ? 6000 : 2800);
 }
-const fail = (e) => { console.error(e); toast(e && e.message ? e.message : String(e), { err: true }); };
+const fail = (e) => { console.error(e); const m = e && e.message ? e.message : String(e); toast(typeof friendly === 'function' ? friendly(m) : m, { err: true }); };
 function trap(root, onEsc) {
   const key = (e) => {
     if (e.key === 'Escape') { e.stopPropagation(); onEsc(); }

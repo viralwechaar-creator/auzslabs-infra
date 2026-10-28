@@ -10,9 +10,15 @@ export const DEVICES = [
 ];
 export const sitePages = () => fs.readdirSync(path.join(ROOT, 'site')).filter((f) => f.endsWith('.html')).sort();
 
+export async function fullView(ctx) {
+  await ctx.addInitScript(() => { try { const g = Storage.prototype.getItem; Storage.prototype.getItem = function (k) { const v = g.call(this, k); return v == null && String(k).startsWith('acc.mode.') ? 'full' : v; }; } catch (e) { /* ignore */ } });
+}
 export async function newCtx(browser, stack, dev = { w: 1280, h: 800 }) {
   const ctx = await browser.newContext({ viewport: { width: dev.w, height: dev.h }, isMobile: !!dev.mobile, hasTouch: !!dev.mobile, deviceScaleFactor: 1 });
   if (stack) await stack.attach(ctx);
+  // AUZsLedger starts new businesses in the short beginner view (p-easy.js); the older suites test the full menu, so they ask for it
+  // unless a suite passes { simple: true }.
+  if (!dev.simple) await fullView(ctx);
   return ctx;
 }
 // Horizontal overflow, tiny text and tiny tap targets: the usual "looks broken on phone" problems.

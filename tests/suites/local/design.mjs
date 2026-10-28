@@ -2,7 +2,7 @@
 // medium 600-899, expanded 900-1199, wide >= 1200), never scrolls sideways, keeps text >= 12px and touch targets >= 44px,
 // works in dark mode, and the POS keyboard shortcuts work.
 import { suite, watch, assert } from '../../lib/harness.mjs';
-import { newCtx, layoutIssues } from '../../lib/common.mjs';
+import { newCtx, layoutIssues, fullView } from '../../lib/common.mjs';
 import { PASSWORD, USERS } from '../../lib/db.mjs';
 
 const APPS = [
@@ -21,7 +21,7 @@ export default async function run({ browser, stack }) {
   const s = suite('Design system: one look across the staff apps, at every width', 'Checks that POS, admin console, Payroll and Accounting share the AUZslab tokens and accent, adapt at every layout tier, and stay readable and usable.');
   const open = async (app, w, h = 900, opts = {}) => {
     let c2;
-    if (opts.dark) { c2 = await browser.newContext({ viewport: { width: w, height: h }, colorScheme: 'dark' }); await stack.attach(c2); }
+    if (opts.dark) { c2 = await browser.newContext({ viewport: { width: w, height: h }, colorScheme: 'dark' }); await stack.attach(c2); await fullView(c2); }
     else c2 = await newCtx(browser, stack, { w, h, mobile: w < 900 });
     const page = await c2.newPage(); const errs = watch(page);
     await page.goto(stack.url(app.host, app.path)); await page.waitForSelector('input[type=password]', { timeout: 20000 });
