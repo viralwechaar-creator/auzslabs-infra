@@ -226,7 +226,7 @@ async function docEditor(v, type, existing) {
     isExpense ? partyBtn : null,
     h('div', { class: 'card grid', style: { gap: '14px' } },
       h('div', { class: 'row g2', style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Date', dateEl), posting && type !== 'credit_note' && type !== 'debit_note' && !isExpense ? field('Due date', dueEl) : h('div')),
-      sales && posting ? field('Place of supply', posEl, 'Decides CGST + SGST (same state) or IGST (other state).') : null,
+      sales && posting ? field(window.lbl ? lbl('Place of supply', 'pos') : 'Place of supply', posEl, 'Decides CGST + SGST (same state) or IGST (other state).') : null,
       type === 'bill' || type === 'debit_note' || isExpense ? h('div', { class: 'row g2', style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field(isExpense ? 'Receipt / bill no.' : 'Supplier invoice no.', refEl), field('Supplier invoice date', refDate)) : null,
       brEl ? field('Branch', brEl) : null, whEl ? field('Warehouse', whEl) : null,
       !sales && posting ? h('div', null, checkbox('Reverse charge (tax paid by you)', D.reverse_charge, (x) => { D.reverse_charge = x; recalc(); }), checkbox('Input tax credit can be claimed', D.itc_eligible, (x) => { D.itc_eligible = x; recalc(); })) : null,

@@ -16,6 +16,7 @@ page('home', {
       if (!S.org.state_code) setup.push('choose your state');
       if (setup.length && can('acc_admin')) hostEl.append(h('div', { class: 'banner info' }, icon('info', 20), h('div', { class: 'grow' }, h('b', null, 'Finish setting up. '), setup.join(' and ') + ' so GST is calculated on every document.'), h('button', { class: 'btn sm', onclick: () => go('settings/organisation') }, 'Open settings')));
       if (S.ctx.tenant.is_demo) hostEl.append(h('div', { class: 'banner' }, icon('info', 20), h('div', null, h('b', null, 'This is demo data. '), 'Try anything: it is rebuilt every 12 hours.')));
+      if (window.easyOn && easyOn() && (await easyHome(hostEl, d, draw))) return;
       if (S.branches.length > 1) hostEl.append(chips([['', 'All branches'], ...S.branches.map((b) => [b.id, b.name])], branch, (x) => { branch = x; draw(); }));
       const m = d.month, delta = (a, b) => b ? Math.round((a - b) / Math.abs(b) * 100) : null;
       const sd = delta(m.sales, m.prev_sales);

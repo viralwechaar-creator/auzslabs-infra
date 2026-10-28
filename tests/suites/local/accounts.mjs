@@ -1,7 +1,7 @@
 // AUZslab Accounting: the books must balance and trace, rules must hold server-side, and the app must work on phone and desktop.
 import fs from 'node:fs';
 import { suite, watch, assert } from '../../lib/harness.mjs';
-import { newCtx } from '../../lib/common.mjs';
+import { newCtx, fullView } from '../../lib/common.mjs';
 import { rpc } from '../../lib/api.mjs';
 import { q, PASSWORD, USERS } from '../../lib/db.mjs';
 
@@ -461,7 +461,7 @@ export default async function run({ browser, stack }) {
   }, 'minor');
   await ctxM.close();
 
-  const ctxK = await browser.newContext({ viewport: { width: 1280, height: 900 }, colorScheme: 'dark' }); await stack.attach(ctxK); const dk = await ctxK.newPage(); const derrs = watch(dk);
+  const ctxK = await browser.newContext({ viewport: { width: 1280, height: 900 }, colorScheme: 'dark' }); await stack.attach(ctxK); await fullView(ctxK); const dk = await ctxK.newPage(); const derrs = watch(dk);
   await s.check('Dark mode: loads and keeps readable contrast on the main screens', async () => {
     await ownerLogin(dk, 'testacct'); await dk.waitForSelector('.kpi'); const bg = await dk.evaluate(() => getComputedStyle(document.body).backgroundColor); assert(/rgb\(0, 0, 0\)|rgba\(0, 0, 0/.test(bg), 'background ' + bg); await s.shot(dk, 'dark-home'); assert(!derrs.length, derrs.slice(0, 2).join(' | '));
   }, 'minor');

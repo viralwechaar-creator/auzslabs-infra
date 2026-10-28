@@ -6,11 +6,7 @@ const page = (id, def) => { PAGES[id] = def; };
 // scan.html (the standalone AUZsScan app, window.AUZ_SCAN) runs this same shell with a short menu: scan, sales, products, stock.
 const SCANAPP = !!window.AUZ_SCAN, HOME = SCANAPP ? 'scan' : 'home';
 const BRAND = SCANAPP ? { name: 'Scan & bill', title: 'AUZsScan', logo: '/logo-scan.svg', icon: '/icon-scan.svg' } : { name: 'Accounting', title: 'AUZslab Accounting', logo: '/logo-accounts.svg', icon: '/icon-accounts.svg' };
-const NAV = SCANAPP ? [
-  { group: '', items: ['scan'] },
-  { group: 'Records', items: ['sales', 'products', 'stock', 'data'] },
-  { group: 'Settings', items: ['invoicelayout', 'alerts'] },
-] : [
+const NAV_LEDGER = [
   { group: '', items: ['home'] },
   { group: 'Sales', items: ['scan', 'sales', 'customers', 'followups', 'receipts'] },
   { group: 'Purchases', items: ['purchases', 'suppliers', 'payments', 'expenses', 'expreq'] },
@@ -19,7 +15,14 @@ const NAV = SCANAPP ? [
   { group: 'Inventory', items: ['products', 'stock'] },
   { group: 'Tools', items: ['data', 'messages', 'alerts', 'settings'] },
 ];
+const NAV = SCANAPP ? [
+  { group: '', items: ['scan'] },
+  { group: 'Records', items: ['sales', 'products', 'stock', 'data'] },
+  { group: 'Settings', items: ['invoicelayout', 'alerts'] },
+] : NAV_LEDGER;
 const TABS = SCANAPP ? ['scan', 'sales', 'products', 'stock'] : ['home', 'sales', 'receipts', 'expenses'];
+// AUZsScan only (p-easy.js): a short beginner menu by default; "Show all ledger tools" switches to the whole ledger menu
+const navNow = () => (window.easyOn && easyOn() ? EASY_NAV : SCANAPP && window.easyOn ? SCAN_ALL_NAV : NAV), tabsNow = () => (window.easyOn && easyOn() ? EASY_TABS : TABS);
 let route = { id: HOME, args: [], q: new URLSearchParams() };
 let cleanup = [];
 
@@ -158,6 +161,7 @@ async function boot() {
   S.user = { email: dash.my_email, role: dash.my_role }; S.dash = dash;
   try { await loadCtx(); } catch (e) { return blocked('Could not open Accounting', e.message); }
   cacheBoot(); parties().catch(() => {}); products().catch(() => {});     // keep a copy for offline drafts
+  window.applyWords && applyWords();
   buildShell();
   if (window.auzBrandLoad) auzBrandLoad(sb);
   window.addEventListener('hashchange', route_);
@@ -169,6 +173,7 @@ async function boot() {
 // last online visit. Only writing new drafts works; everything else says it needs a connection, as before.
 function bootOffline(c) {
   S.offline = true; S.dash = c.dash; S.user = c.user; applyCtx(c.ctx);
+  window.applyWords && applyWords();
   buildShell();
   window.addEventListener('hashchange', route_);
   if (!SCANAPP && (!location.hash || /^#\/?(home)?$/.test(location.hash))) location.hash = '#/offline';
@@ -195,14 +200,14 @@ function buildShell() {
   const side = h('aside', { class: 'side', 'aria-label': 'Sections' },
     h('div', { class: 'brand' }, h('img', { src: BRAND.icon, alt: '', width: 30, height: 30 }), h('div', { class: 'lbl-t grow' }, h('b', null, BRAND.name), h('span', null, S.org.trade_name || S.org.legal_name || S.ctx.tenant.name)),
       h('button', { class: 'side-tg', type: 'button', title: 'Collapse or expand the sidebar', 'aria-label': 'Collapse or expand the sidebar', onclick: toggleSide }, icon('sidebar', 20))),
-    NAV.map((g) => [g.group ? h('div', { class: 'gh' }, h('span', { class: 'lbl-t' }, g.group)) : null, g.items.map((i) => navItem(i))]),
+    navNow().map((g) => [g.group ? h('div', { class: 'gh' }, h('span', { class: 'lbl-t' }, g.group)) : null, g.items.map((i) => navItem(i))]),
     apps.length ? [h('div', { class: 'gh' }, h('span', { class: 'lbl-t' }, 'Other apps')), apps.map(([href, t, ic]) => h('a', { href, class: 'nav-i', title: t }, icon(ic, 20), h('span', { class: 'lbl-t' }, t)))] : null,
     h('div', { class: 'foot' }, S.ctx.tenant.is_demo ? h('span', { class: 'badge orange' }, 'Demo data') : null, h('span', null, S.user.email), h('span', null, cap1(S.user.role)),
       seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v), { full: true }),
       h('div', { class: 'row', style: { gap: '6px', marginTop: '6px' } }, h('button', { class: 'btn sm', type: 'button', onclick: shortcutsSheet }, 'Shortcuts'), h('button', { class: 'btn sm', type: 'button', onclick: signOut }, 'Sign out'))));
   const topbar = h('header', { class: 'topbar', id: 'topbar' }, h('div', { class: 'l', id: 'tb-l' }), h('div', { class: 'tt', id: 'tb-t', 'aria-live': 'polite' }), h('div', { class: 'r', id: 'tb-r' }));
   const tabbar = h('nav', { class: 'tabbar', 'aria-label': 'Main' },
-    TABS.map((id) => h('button', { type: 'button', 'data-tab': id, onclick: () => go(id) }, icon(PAGES[id].icon, 25), h('span', null, PAGES[id].tabLabel || PAGES[id].title))),
+    tabsNow().map((id) => h('button', { type: 'button', 'data-tab': id, onclick: () => go(id) }, icon(PAGES[id].icon, 25), h('span', null, PAGES[id].tabLabel || PAGES[id].title))),
     h('button', { type: 'button', 'data-tab': 'more', onclick: moreSheet }, icon('more', 25), h('span', null, 'More')));
   clear($('#app')).append(h('div', { class: 'shell' + (sidePref() ? ' ' + sidePref() : ''), id: 'shell' }, side, h('div', { class: 'main' }, topbar, h('div', { class: 'banner info', id: 'offbar', hidden: true, style: { margin: '8px 16px 0' } }), h('main', { id: 'main', tabindex: '-1' })), tabbar));
   document.addEventListener('keydown', globalKeys);
@@ -219,7 +224,7 @@ async function deleteAccountFlow() {
   location.href = location.pathname;
 }
 function moreSheet() {
-  const body = h('div', { class: 'grid' }, NAV.filter((g) => g.group).map((g) => h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, g.group)), h('div', { class: 'list' },
+  const body = h('div', { class: 'grid' }, window.easyToggleRow ? h('div', { class: 'list' }, easyToggleRow()) : null, navNow().filter((g) => g.group).map((g) => h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, g.group)), h('div', { class: 'list' },
     g.items.map((i) => PAGES[i] && (!PAGES[i].perm || can(PAGES[i].perm)) ? liRow({ icon: PAGES[i].icon, title: PAGES[i].title, chevron: true, onclick: () => { s.close(); go(i); } }) : null)))),
     window.auzCTheme && !window.AUZ_SCAN ? h('div', { class: 'sec' }, auzCTheme.fold()) : null,
     h('div', { class: 'list' }, liRow({ icon: 'moon', tone: 'gray', title: 'Appearance', badge: seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v)) }), liRow({ icon: 'sell', tone: 'gray', title: 'Look', badge: accLookSeg(seg) })),
@@ -264,7 +269,7 @@ async function route_() {
   $$('[data-nav]').forEach((a) => a.removeAttribute('aria-current')); $$('[data-tab]').forEach((a) => a.removeAttribute('aria-current'));
   const navId = def.navAs || route.id;
   $(`[data-nav="${navId}"]`)?.setAttribute('aria-current', 'page');
-  const tab = TABS.includes(navId) ? navId : 'more'; $(`[data-tab="${tab}"]`)?.setAttribute('aria-current', 'page');
+  const tab = tabsNow().includes(navId) ? navId : 'more'; $(`[data-tab="${tab}"]`)?.setAttribute('aria-current', 'page');
   if (def.perm && !can(def.perm)) { header({ title: def.title }); clear(root).append(empty('lock', 'No access', 'Your role does not include ' + def.title.toLowerCase() + '. Ask the owner to change your role.')); return; }
   const view = { id: route.id, args: route.args, q: route.q, root, header: (o) => header(o, root), refresh: () => route_(), onLeave: (f) => cleanup.push(f) };
   try { clear(root); header({ title: def.title }, root); root.dataset.p = route.id.split('/')[0]; if (route.id.startsWith('settings')) root.classList.add('cols2'); await def.render(view); } catch (e) {
