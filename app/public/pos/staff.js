@@ -31,6 +31,7 @@ V.more = () => {
         liRow({ ic: 'lock', tone: 'orange', title: ps && ps.mine ? 'Change my approval PIN' : 'Set my approval PIN', sub: 'Type it on a cashier\'s till to approve discounts, cancellations and refunds' + (ps ? ' · ' + plural(+ps.approvers || 0, 'approver') + ' set' : ''), chev: true, onclick: setPinFlow }))) : null,
       h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, 'This device')), h('div', { class: 'list' },
         liRow({ ic: 'sell', tone: 'blue', title: 'Look', right: lookSeg() }),
+        window.auzCTheme ? auzCTheme.fold() : null,
         liRow({ ic: 'moon', tone: 'purple', title: 'Appearance', right: seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v)) }),
         L('outlet').length ? liRow({ ic: 'building', tone: 'gray', title: 'Outlet', value: outletName(), chev: true, onclick: pickOutlet }) : null,
         liRow({ ic: 'printer', tone: 'gray', title: 'Receipt printer', value: printerLabel(), chev: true, onclick: printerSheet }),
