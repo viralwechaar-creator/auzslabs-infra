@@ -71,7 +71,21 @@
     });
     paint(); return wrap;
   }
+  // Foldable version for the More screens: one slim row (name + swatches + chevron) that opens the cards. Closed by default.
+  function fold() {
+    const box = document.createElement('div'); box.className = 'ctheme-fold';
+    const head = document.createElement('button'); head.type = 'button'; head.className = 'ctheme-head'; head.setAttribute('aria-expanded', 'false');
+    const lab = document.createElement('span'); lab.className = 'cl'; lab.textContent = 'Colour theme';
+    const sw = document.createElement('span'); sw.className = 'cs';
+    const cur = document.createElement('span'); cur.className = 'cn';
+    const chev = document.createElement('span'); chev.className = 'cv'; chev.textContent = '+';
+    head.append(lab, sw, cur, chev);
+    const body = document.createElement('div'); body.className = 'ctheme-body'; body.hidden = true; body.append(cards());
+    const paint = () => { const t = THEMES[get()]; sw.textContent = ''; [t.bg, t.surface, t.primary].forEach((c) => { const i = document.createElement('i'); i.style.background = c; sw.append(i); }); cur.textContent = t.name; };
+    head.onclick = () => { const open = body.hidden; body.hidden = !open; head.setAttribute('aria-expanded', String(open)); chev.textContent = open ? '-' : '+'; };
+    document.addEventListener('auz:ctheme', paint); paint(); box.append(head, body); return box;
+  }
   // AUZsScan shares the Ledger files but is not part of this rollout yet
   if (!window.AUZ_SCAN && !/\/scan\.html$/.test(location.pathname)) apply(get());
-  Object.assign(window, { auzCTheme: { get, set, cards, THEMES } });
+  Object.assign(window, { auzCTheme: { get, set, cards, fold, THEMES } });
 })();
