@@ -14,6 +14,9 @@ const APPS = [
 ];
 const WIDTHS = [360, 600, 768, 900, 1024, 1200, 1440];
 
+// AUZsLedger wears the colour themes (ds/themes.css): Calm is the default; page backgrounds and ink (button fill = --label) per theme
+const THEME_BG = ['rgb(247, 248, 245)', 'rgb(245, 248, 252)', 'rgb(250, 246, 240)', 'rgb(248, 245, 250)', 'rgb(246, 247, 248)'];
+const THEME_INK = ['rgb(40, 51, 45)', 'rgb(39, 55, 71)', 'rgb(59, 51, 43)', 'rgb(53, 45, 60)', 'rgb(44, 51, 56)'];
 export default async function run({ browser, stack }) {
   const s = suite('Design system: one look across the staff apps, at every width', 'Checks that POS, admin console, Payroll and Accounting share the AUZslab tokens and accent, adapt at every layout tier, and stay readable and usable.');
   const open = async (app, w, h = 900, opts = {}) => {
@@ -41,8 +44,8 @@ export default async function run({ browser, stack }) {
       const x = await sample(page, app); fills[app.name] = x.fill;
       assert(x.ds, 'does not link /ds/auz.css');
       assert(/-apple-system|system-ui/.test(x.font) && !/^Inter/.test(x.font), 'body font is ' + x.font);
-      assert(x.bg === 'rgb(239, 236, 232)' || (app.name === 'Accounting' && x.bg === 'rgb(241, 241, 241)'), 'page background is ' + x.bg + ', not the shared --bg');
-      assert(x.label === '#2e2c2a', 'text token is ' + x.label);
+      assert(x.bg === 'rgb(239, 236, 232)' || (app.name === 'Accounting' && ['rgb(241, 241, 241)', ...THEME_BG].includes(x.bg)), 'page background is ' + x.bg + ', not the shared --bg');
+      assert(x.label === '#2e2c2a' || (app.name === 'Accounting' && ['#28332D', '#273747', '#3B332B', '#352D3C', '#2C3338'].includes(x.label)), 'text token is ' + x.label);
       const bad = errs.filter((e) => !/WebSocket|ERR_CERT|tunnel|ERR_FAILED|print/i.test(e)); assert(!bad.length, bad.slice(0, 2).join(' | '));
       await ctx.close();
     }, 'major');
@@ -52,7 +55,7 @@ export default async function run({ browser, stack }) {
     assert(cafe.every((c) => c && c === cafe[0]), 'primary colours differ: ' + JSON.stringify(fills));
     assert(cafe[0] === 'rgb(128, 0, 32)', 'staff apps must wear AUZslab wine whatever colour the business set: ' + cafe[0]);
     // AUZsLedger / AUZsScan wear the AUZsStyle ink accent in the New look (owner request); Classic keeps wine
-    assert(fills.Accounting === 'rgb(128, 0, 32)' || fills.Accounting === 'rgb(17, 17, 17)', 'Accounting accent is neither AUZslab wine nor the AUZsStyle ink: ' + fills.Accounting);
+    assert(fills.Accounting === 'rgb(128, 0, 32)' || fills.Accounting === 'rgb(17, 17, 17)' || THEME_INK.includes(fills.Accounting), 'Accounting accent is neither AUZslab wine nor the AUZsStyle ink: ' + fills.Accounting);
   }, 'major');
 
   for (const app of APPS) {
