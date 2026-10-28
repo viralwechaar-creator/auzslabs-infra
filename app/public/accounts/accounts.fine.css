@@ -123,27 +123,5 @@ html.ui-fine{--ic1:#2563eb;--ic2:#16a34a;--ic3:#ea580c;--ic4:#9333ea;--ic5:#4755
 html[data-theme=dark].ui-fine{--ic1:#60a5fa;--ic2:#4ade80;--ic3:#fb923c;--ic4:#c084fc;--ic5:#cbd5e1}
 html.ui-fine .tabbar{box-shadow:0 10px 32px rgba(0,0,0,.22)}
 html.ui-fine .tabbar button{color:var(--label)}
-html.ui-fine .tabbar button:nth-child(1):not([aria-current=page]) svg{color:var(--ic1)}
-html.ui-fine .tabbar button:nth-child(2):not([aria-current=page]) svg{color:var(--ic2)}
-html.ui-fine .tabbar button:nth-child(3):not([aria-current=page]) svg{color:var(--ic3)}
-html.ui-fine .tabbar button:nth-child(4):not([aria-current=page]) svg{color:var(--ic4)}
-html.ui-fine .tabbar button:nth-child(5):not([aria-current=page]) svg{color:var(--ic5)}
 html.ui-fine .tabbar button[aria-current=page]{box-shadow:0 3px 10px rgba(0,0,0,.35)}
 html.ui-fine .side a{color:var(--label)}
-html.ui-fine .side a:not([aria-current=page]) svg{color:var(--ic5)}
-html.ui-fine .side a:nth-of-type(5n+1):not([aria-current=page]) svg{color:var(--ic1)}
-html.ui-fine .side a:nth-of-type(5n+2):not([aria-current=page]) svg{color:var(--ic2)}
-html.ui-fine .side a:nth-of-type(5n+3):not([aria-current=page]) svg{color:var(--ic3)}
-html.ui-fine .side a:nth-of-type(5n+4):not([aria-current=page]) svg{color:var(--ic4)}
-/* Round 7: icons sit in solid coloured rounded tiles with a white glyph (like the POS) */
-html.ui-fine{--ic6:#0891b2;--ic7:#db2777;--ic8:#ca8a04}
-html.ui-fine .side a svg,html.ui-fine .tabbar button svg{box-sizing:content-box;width:18px;height:18px;padding:6px;border-radius:10px;color:#fff!important;background:var(--ic5)}
-html.ui-fine .tabbar button svg{width:17px;height:17px;padding:5px;border-radius:9px}
-html.ui-fine .side a:nth-of-type(8n+1) svg{background:var(--ic1)}html.ui-fine .side a:nth-of-type(8n+2) svg{background:var(--ic2)}
-html.ui-fine .side a:nth-of-type(8n+3) svg{background:var(--ic3)}html.ui-fine .side a:nth-of-type(8n+4) svg{background:var(--ic4)}
-html.ui-fine .side a:nth-of-type(8n+5) svg{background:var(--ic6)}html.ui-fine .side a:nth-of-type(8n+6) svg{background:var(--ic7)}
-html.ui-fine .side a:nth-of-type(8n+7) svg{background:var(--ic8)}html.ui-fine .side a:nth-of-type(8n) svg{background:var(--ic5)}
-html.ui-fine .tabbar button:nth-child(1) svg{background:var(--ic1)}html.ui-fine .tabbar button:nth-child(2) svg{background:var(--ic2)}
-html.ui-fine .tabbar button:nth-child(3) svg{background:var(--ic3)}html.ui-fine .tabbar button:nth-child(4) svg{background:var(--ic4)}
-html.ui-fine .tabbar button:nth-child(5) svg{background:var(--ic6)}
-html.ui-fine .side a[aria-current=page] svg,html.ui-fine .tabbar button[aria-current=page] svg{background:rgba(255,255,255,.22)}
