@@ -380,7 +380,8 @@ export default async function run({ browser, stack }) {
     try {
       const ok = await rpc(stack, 'acc_list_products', { limit: 5 }, owner); assert(ok.status === 200, 'products blocked: ' + JSON.stringify(ok.data));
       const sale = await rpc(stack, 'acc_save_product', { p: { id: null, name: 'ScanOnly Item', sku: 'SO1', barcode: '7000000000017', category: '', brand: '', unit: 'Nos', hsn: '3401', tax_rate: '18', tax_inclusive: false, sale_price: '10', purchase_price: '5', mrp: '12', is_service: false, track_stock: true, reorder_level: '0', active: true } }, owner); assert(sale.status === 200, 'new product blocked: ' + JSON.stringify(sale.data));
-      const no = await rpc(stack, 'acc_trial_balance', { p_from: '2020-01-01', p_to: '2030-01-01' }, owner); assert(no.status >= 400 && /AUZsLedger/.test(JSON.stringify(no.data)), 'ledger report not refused: ' + no.status + JSON.stringify(no.data));
+      const okb = await rpc(stack, 'acc_trial_balance', { p_from: '2020-01-01', p_to: '2030-01-01' }, owner); assert(okb.status === 200, 'basic report blocked: ' + JSON.stringify(okb.data));
+      const no = await rpc(stack, 'acc_bank_import', { p_account: '00000000-0000-0000-0000-000000000000', p_rows: [] }, owner); assert(no.status >= 400 && /AUZsLedger/.test(JSON.stringify(no.data)), 'banking not refused: ' + no.status + JSON.stringify(no.data));
       const c = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const pg = await c.newPage();
       await pg.goto(stack.url('testacct', '/accounts.html')); await pg.waitForSelector('input[type=password]'); await pg.fill('input[type=email]', USERS.acctOwner); await pg.fill('input[type=password]', PASSWORD);
       await pg.locator('button', { hasText: /^Sign in$/ }).click(); await pg.waitForSelector('h1:has-text("Accounting is not enabled")', { timeout: 20000 }); await c.close();
