@@ -199,8 +199,37 @@ function goBack(){
  // page was opened directly on a deep link with no history yet).
  if(history.length>1){history.back()}else{go('dashboard')}
 }
-function go(p){S.page=p;S.sideOpen=false;S.q='';S.f={};const g=NAV.find(n=>n[0].startsWith('g:')&&n[3].some(c=>c[0]==p));if(g)S.open[g[0]]=true;try{location.hash='#'+p}catch{}render();const c=$('.content');if(c)c.scrollTop=0}
+function go(p){if(S.closeMore){S.closeMore();S.closeMore=null}S.page=p;S.sideOpen=false;S.q='';S.f={};const g=NAV.find(n=>n[0].startsWith('g:')&&n[3].some(c=>c[0]==p));if(g)S.open[g[0]]=true;try{location.hash='#'+p}catch{}render();const c=$('.content');if(c)c.scrollTop=0}
+
+// ---------- new grouped menu (like AUZsLedger) / classic accordion: a per-device choice ----------
+const navMode=()=>{try{return localStorage.getItem('con.nav')==='classic'?'classic':'new'}catch{return 'new'}};
+function setNavMode(m){try{localStorage.setItem('con.nav',m)}catch{}if(S.closeMore){S.closeMore();S.closeMore=null}render()}
+function navSwitch(){const b=(m,t)=>h('button',{type:'button',class:navMode()==m?'on':'','aria-pressed':String(navMode()==m),onclick:()=>setNavMode(m)},t);
+ return h('div',{class:'nvrow'},h('span',{},'Menu style'),h('div',{class:'nvseg'},b('new','New'),b('classic','Classic')))}
+function appearanceBits(){return [window.auzCTheme?h('div',{class:'nvtheme'},auzCTheme.fold()):null,navSwitch()]}
+function newNav(){
+ const nav=h('div',{class:'nav newnav'});let lbl=null;
+ const flat=(pid,t)=>h('button',{class:'nb flat'+(S.page==pid?' on':''),onclick:()=>go(pid)},h('span',{},t));
+ NAV.forEach(n=>{
+  if(n[0]=='lbl'){lbl=n[1];return}
+  if(n[0]=='href'){nav.append(h('a',{class:'nb',href:n[1]},ic(n[3]),h('span',{},n[2])));return}
+  if(n[0].startsWith('g:')){lbl=null;nav.append(h('div',{class:'nav-lbl'},n[1]),...n[3].map(([pid,t])=>flat(pid,t)));return}
+  if(lbl){nav.append(h('div',{class:'nav-lbl'},lbl));lbl=null}
+  nav.append(h('button',{class:'nb'+(S.page==n[0]?' on':''),onclick:()=>go(n[0])},ic(n[2]),h('span',{},n[1])))});
+ return nav}
+function otherLinks(nav){
+ const apps=[['payroll','/payroll.html','Payroll','team'],['accounting','/accounts.html','Accounting','fin'],['mobile','/mob.html','AUZsMob','box']].filter(a=>S.features&&S.features[a[0]]===true&&S.enabledFeatures[a[0]]!==false);
+ if(apps.length){nav.append(h('div',{class:'nav-lbl'},'Other apps'));apps.forEach(a=>nav.append(h('a',{class:'nb',href:a[1]},ic(a[3]),h('span',{},a[2]))))}
+ nav.append(h('div',{class:'nav-lbl'},'Account'));nav.append(h('a',{class:'nb',href:'#',onclick:e=>{e.preventDefault();auzPlan.open(sb)}},h('span',{},'Plan & account')));nav.append(h('a',{class:'nb',href:'#',onclick:e=>{e.preventDefault();auzHelp.open(sb)}},h('span',{},'Help & report a problem')));
+ if(S.role=='owner'){nav.append(h('div',{class:'nav-lbl'},'Data'));nav.append(h('a',{class:'nb',href:'#',onclick:e=>{e.preventDefault();auzMyData(sb)}},h('span',{},'Backup, export or clear data')))}
+ nav.append(h('div',{class:'nav-lbl'},'This device'),...appearanceBits());return nav}
+const TABS_NEW=[['dashboard','Overview','home'],['daily/live','Live','live'],['menu/items','Items','menu'],['rep/sales','Reports','rep']];
+function openMore(){const body=otherLinks(newNav());const close=modal('Menu',[body]);S.closeMore=close;const w=document.querySelector('.mwrap:last-of-type');if(w)w.classList.add('more-sheet')}
+function tabBar(){const inTabs=TABS_NEW.some(t=>t[0]==S.page);
+ return h('nav',{class:'ctab','aria-label':'Main'},...TABS_NEW.map(([pid,t,i])=>h('button',{type:'button',class:S.page==pid?'on':'','aria-current':S.page==pid?'page':null,onclick:()=>go(pid)},ic(i,22),h('span',{},t))),
+  h('button',{type:'button',class:inTabs?'':'on',onclick:openMore},ic('menu3',22),h('span',{},'More')))}
 function sideNav(){
+ if(navMode()=='new')return otherLinks(newNav());
  const nav=h('div',{class:'nav'});
  NAV.forEach(n=>{
   if(n[0]=='lbl'){nav.append(h('div',{class:'nav-lbl'},n[1]));return}
@@ -214,6 +243,7 @@ function sideNav(){
  if(apps.length){nav.append(h('div',{class:'nav-lbl'},'Other apps'));apps.forEach(a=>nav.append(h('a',{class:'nb',href:a[1]},ic(a[3]),h('span',{},a[2]))))}
  nav.append(h('div',{class:'nav-lbl'},'Account'));nav.append(h('a',{class:'nb',href:'#',onclick:e=>{e.preventDefault();auzPlan.open(sb)}},h('span',{},'Plan & account')));nav.append(h('a',{class:'nb',href:'#',onclick:e=>{e.preventDefault();auzHelp.open(sb)}},h('span',{},'Help & report a problem')));
  if(S.role=='owner'){nav.append(h('div',{class:'nav-lbl'},'Data'));nav.append(h('a',{class:'nb',href:'#',onclick:e=>{e.preventDefault();auzMyData(sb)}},h('span',{},'Backup, export or clear data')))}
+ nav.append(h('div',{class:'nav-lbl'},'This device'),...appearanceBits());
  return nav}
 function syncCard(){const ago=S.lastSync?Math.max(0,Math.round((Date.now()-S.lastSync)/60000)):null;
  return h('div',{class:'sync'+(S.syncOk?'':' bad'),'data-sync':1},h('i'),h('div',{},h('b',{},S.syncOk?'POS Connected':'POS Offline'),h('span',{},ago==null?'Syncing…':'Last synced '+(ago<1?'just now':ago+' min ago'))))}
@@ -245,7 +275,7 @@ function render(){
  const keep=document.querySelector('.content'),top=keep?keep.scrollTop:0,fn=PAGES[S.page]||PAGES.dashboard;let body;
  const navKeep=document.querySelector('.side .nav'),navTop=navKeep?navKeep.scrollTop:0;
  try{body=fn()}catch(e){console.error(e);body=[card(h('b',{},'This page hit an error'),h('p',{class:'sm'},String(e&&e.message||e)))]}
- $('#app').replaceChildren(sidebar(),h('main',{class:'main'},topBar(),h('section',{class:'content'},...[].concat(body))));
+ $('#app').className='app'+(navMode()=='new'?' nav-new':'');$('#app').replaceChildren(sidebar(),h('main',{class:'main'},topBar(),h('section',{class:'content'},...[].concat(body))),...(navMode()=='new'?[tabBar()]:[]));
  $('#ov').className='ov'+(S.sideOpen?' show':'');
  const c=document.querySelector('.content');if(c)c.scrollTop=top;
  const nv=document.querySelector('.side .nav');if(nv)nv.scrollTop=navTop}

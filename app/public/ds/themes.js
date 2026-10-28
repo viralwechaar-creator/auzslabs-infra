@@ -4,7 +4,7 @@
    Light/dark is separate (ds/theme.js): dark mode keeps its own colours. The tokens live in ds/themes.css. */
 'use strict';
 (function () {
-  const KEY = 'auz.ctheme', DEF = 'calm';
+  const KEY = 'auz.ctheme', DEF = window.AUZ_CTHEME_DEF || 'calm';
   const THEMES = {
  "calm": {
   "name": "Calm",
@@ -52,6 +52,7 @@
   "surface": "#FFFFFF"
  }
 };
+  if (DEF === 'classic') { const c = { classic: { name: 'Classic', sub: 'AUZslab Wine', desc: 'The original AUZslab look', primary: '#800020', soft: '#F4E4E8', bg: '#F2F2F4', surface: '#FFFFFF' } }; Object.assign(c, THEMES); Object.keys(THEMES).forEach((k) => delete THEMES[k]); Object.assign(THEMES, c); }
   const ids = Object.keys(THEMES);
   function get() { try { const v = localStorage[KEY]; return THEMES[v] ? v : DEF; } catch { return DEF; } }
   function apply(id) { document.documentElement.setAttribute('data-ctheme', THEMES[id] ? id : DEF); }

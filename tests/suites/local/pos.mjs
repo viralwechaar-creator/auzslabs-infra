@@ -256,7 +256,7 @@ export default async function run({ browser, stack }) {
     await page.goto(stack.url('testcafe', '/dashboard.html#fin/withdrawals')); await page.waitForSelector('button:has-text("Cash top-up")', { timeout: 15000 }); await page.waitForTimeout(800);
     const fillAmount = async (amt) => { await page.locator('.fld', { hasText: 'Amount' }).locator('input').fill(amt); await page.locator('.mf button.p, .mf button:has-text("Save")').first().click(); await page.waitForTimeout(700); };
     await page.locator('button', { hasText: 'Cash top-up' }).first().click(); await page.waitForTimeout(400); await fillAmount('500');
-    await page.locator('button', { hasText: /^Withdrawal$|^\s*Withdrawal/ }).first().click(); await page.waitForTimeout(400); await fillAmount('120');
+    await page.locator('.content button', { hasText: /^Withdrawal$|^\s*Withdrawal/ }).first().click(); await page.waitForTimeout(400); await fillAmount('120');
     assert(await until(async () => (await q("select data from records where tenant_id=$1 and kind='cashmove'", [tid])).length === before + 2), 'cash movements did not reach the server');
     const t = await text(); assert(/\+₹500/.test(t) && /−₹120/.test(t), 'Withdrawals & Top-ups does not show the top-up and withdrawal');
   }, 'major');
