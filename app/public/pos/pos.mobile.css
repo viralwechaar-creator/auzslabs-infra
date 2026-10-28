@@ -1,7 +1,7 @@
 /* phones and tablet portrait (0-899px): bottom tab bar, single-column selling screen with a cart bar, bottom sheets */
 .shell{flex-direction:column}
 .side,.only-desk{display:none!important}
-.tabbar{flex:none;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:4px 4px max(2px,calc(env(safe-area-inset-bottom) - 14px));background:var(--bar);border-top:.5px solid var(--sep);position:relative;z-index:20}
+.tabbar{flex:none;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:4px 4px max(2px,calc(env(safe-area-inset-bottom) - 24px));background:var(--bar);border-top:.5px solid var(--sep);position:relative;z-index:20}
 .tabbar button{flex-direction:column;justify-content:center;gap:2px;min-height:46px;font-size:12px;font-weight:500;position:relative;color:var(--label3)}
 .tabbar button svg{color:inherit}
 .tabbar button.on{color:var(--accent-text)}

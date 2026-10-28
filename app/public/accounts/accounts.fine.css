@@ -47,7 +47,7 @@ html.ui-fine .list.cards .li .s{font-size:12px}
   html.ui-fine .shell{padding-bottom:calc(88px + var(--safe-b))}
   html.ui-fine .shell::after{content:"";position:fixed;left:0;right:0;bottom:0;height:calc(64px + var(--safe-b));background:linear-gradient(transparent,var(--bg) 60%);pointer-events:none;z-index:34}
   /* floating phone bar, labels hidden, selected tab filled with the accent */
-  html.ui-fine .tabbar{left:50%;right:auto;transform:translateX(-50%);width:min(430px,calc(100% - 28px));bottom:calc(10px + var(--safe-b));border-radius:34px;padding:5px;gap:2px;background:var(--glass);border:.5px solid var(--ring);box-shadow:0 8px 30px rgba(0,0,0,.14);-webkit-backdrop-filter:none;backdrop-filter:none}
+  html.ui-fine .tabbar{left:50%;right:auto;transform:translateX(-50%);width:min(430px,calc(100% - 28px));bottom:max(6px,calc(var(--safe-b) - 18px));border-radius:34px;padding:5px;gap:2px;background:var(--glass);border:.5px solid var(--ring);box-shadow:0 8px 30px rgba(0,0,0,.14);-webkit-backdrop-filter:none;backdrop-filter:none}
   html.ui-fine .tabbar button{min-height:46px;border-radius:26px;color:var(--label2)}
   html.ui-fine .tabbar button span:not(.ic){position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
   html.ui-fine .tabbar button[aria-current=page]{background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.25)}
