@@ -125,3 +125,16 @@ html.ui-fine .tabbar{box-shadow:0 10px 32px rgba(0,0,0,.22)}
 html.ui-fine .tabbar button{color:var(--label)}
 html.ui-fine .tabbar button[aria-current=page]{box-shadow:0 3px 10px rgba(0,0,0,.35)}
 html.ui-fine .side a{color:var(--label)}
+
+/* Round 8 (phones): bill lines fill the row evenly, the action bar sits on the tab bar, nothing shows through either */
+@media (max-width:599px){
+  html.ui-fine .line{grid-template-columns:repeat(6,minmax(0,1fr));grid-template-areas:"item item item item item item" "hsn hsn hsn unit unit unit" "q q rt rt d d" "tx tx tx amt amt amt" "del del del del del del";align-items:end}
+  html.ui-fine .line .lf.item{grid-area:item}html.ui-fine .line .lf.hsn{grid-area:hsn}html.ui-fine .line .lf.u{grid-area:unit}
+  html.ui-fine .line .lf.q{grid-area:q}html.ui-fine .line .lf.rt{grid-area:rt}html.ui-fine .line .lf.d{grid-area:d}
+  html.ui-fine .line .lf.tx{grid-area:tx}html.ui-fine .line .lf.amt{grid-area:amt;text-align:right;align-self:end}
+  html.ui-fine .line .del{grid-area:del;justify-self:end;min-height:36px;padding:0 8px}
+  html.ui-fine .line .lf.amt .money,html.ui-fine .line .lf.amt b,html.ui-fine .line .lf.amt div{font-size:18px}
+  html.ui-fine .tabbar{background:var(--card)}
+  html.ui-fine .dock{bottom:calc(58px + var(--safe-b));padding:10px 0 14px;background:var(--bg);box-shadow:0 14px 0 var(--bg)}
+  html.ui-fine .page{padding-bottom:calc(150px + var(--safe-b))}
+}
