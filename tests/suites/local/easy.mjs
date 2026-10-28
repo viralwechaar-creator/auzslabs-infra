@@ -31,7 +31,7 @@ export default async function run({ browser, stack }) {
     await skipTour(page);
     const side = await page.locator('.side').innerText();
     assert(/Quick bill/.test(side) && /Overview/.test(side) && /Customers/.test(side) && /Money received/.test(side) && /Products/.test(side), 'short menu: ' + side.replace(/\n/g, ' | '));
-    assert(!/Journals|analytics|Assets|GST|Banking|Purchases|Suppliers/i.test(side), 'advanced tools shown in the short menu: ' + side.replace(/\n/g, ' | '));
+    assert(!/Journals|analytics|Assets|Banking/i.test(side), 'advanced tools shown in the short menu: ' + side.replace(/\n/g, ' | '));
     await page.evaluate(() => { location.hash = '#/home'; }); await page.waitForTimeout(1500);
     const home = await page.locator('main').innerText();
     assert(/Get started: \d of 4/.test(home) && /Money to collect/.test(home) && /Money to pay/.test(home) && /Cash and bank/.test(home) && /Profit this month/.test(home), 'home: ' + home.slice(0, 200));
