@@ -438,3 +438,14 @@ input,select,textarea,button,table{font-weight:inherit}
 .newnav .nb.flat.on{background:var(--accent-soft);color:var(--accent-text);font-weight:700}
 .newnav .nav-lbl{padding:14px 12px 4px;font-weight:600;color:var(--label)}
 .ctab{display:none}
+
+/* foldable sections in the desktop menu */
+.msec{margin:0 0 2px}
+.mh{display:flex;width:100%;align-items:center;justify-content:space-between;padding:10px 10px 4px;font-size:12.5px;font-weight:700;color:var(--accent-text)}
+.mchev{display:inline-flex;transition:transform .15s}.msec.open .mchev{transform:rotate(180deg)}
+.mcard{display:flex;flex-direction:column}
+.mr{display:flex;align-items:center;gap:9px;width:100%;padding:7px 10px;text-align:left;font-size:13px;color:var(--label2);border-radius:9px}
+.mr:hover{background:var(--fill2)}.mr.on{background:var(--accent-soft);color:var(--accent-text);font-weight:600}
+.mr .ml{flex:1}.mr>svg,.mr>span:last-child{display:none}
+.mt{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;background:var(--accent-soft);color:var(--accent-text)}
+.mdev{padding:4px 0}

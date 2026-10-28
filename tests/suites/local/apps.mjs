@@ -30,7 +30,7 @@ export default async function run({ browser, stack }) {
     const t = await page.locator('body').innerText();
     for (const w of ['Order Channels', 'Online Orders Overview', 'Sales Trend', 'Top Performing Items', 'Business Health', 'Expenses & Cash Flow', 'Revenue Leakage', 'Daily Snapshot', 'Quick Actions']) assert(t.includes(w), 'dashboard is missing the "' + w + '" card');
     for (const pg of ['Live Orders', 'All Orders', 'Online Orders', 'KOT', 'Due Payment']) {
-      await page.evaluate((x) => { [...document.querySelectorAll('.nb')].find((b) => b.textContent.trim().startsWith(x)).click(); }, pg); await page.waitForTimeout(500);
+      await page.evaluate((x) => { let b = [...document.querySelectorAll('.nb, .mr')].find((e) => e.textContent.trim().startsWith(x)); if (!b) { [...document.querySelectorAll('.msec:not(.open) .mh')].forEach((h) => h.click()); b = [...document.querySelectorAll('.nb, .mr')].find((e) => e.textContent.trim().startsWith(x)); } b.click(); }, pg); await page.waitForTimeout(500);
       assert((await page.locator('.ph h1').first().innerText()).length > 2, pg + ' page did not render');
     }
     await page.evaluate(async () => { await save('table', { name: 'T1', sec: 'Main' }, 'tq1'); go('menu/tables'); }); await page.waitForTimeout(300);
