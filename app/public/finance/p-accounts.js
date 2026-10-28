@@ -6,7 +6,24 @@ page('accounts', { title: 'Accounts', async render(v) {
   const tot = S.ctx.accounts.filter((a) => a.active).reduce((x, a) => x + Number(a.balance), 0);
   v.root.append(h('div', { class: 'hero-n' }, h('div', { class: 'k' }, 'Total in all accounts'), h('div', { class: 'n num' }, inr(tot))),
     h('div', { class: 'list' }, S.ctx.accounts.map((a) => liRow({ icon: a.kind === 'cash' ? 'cash' : 'building', tone: 'gray', title: a.name, value: inr(a.balance), onclick: () => accountDetail(a) }))));
-  if (can('write') && S.ctx.accounts.length > 1) v.root.append(h('button', { class: 'btn', onclick: () => addTxn({ kind: 'transfer' }) }, icon('swap', 18), 'Move money between accounts'));
+  if (can('write') && S.ctx.accounts.length > 1) v.root.append(h('button', { class: 'btn', onclick: () => addTxn({ kind: 'transfer' }) }, icon('swap', 18), 'Move money between accounts'),
+    h('button', { class: 'btn', onclick: () => withdrawCash() }, icon('cash', 18), 'Withdraw cash from bank'), h('button', { class: 'btn', onclick: () => go('withdrawals') }, icon('swap', 18), 'Cash withdrawals'));
+} });
+// Cash withdrawal = a transfer from a bank/UPI/card account into a cash account (nothing is a cost; only the place the money sits changes)
+function withdrawCash() {
+  const acs = S.ctx.accounts.filter((a) => a.active), cash = acs.find((a) => a.kind === 'cash'), bank = acs.find((a) => a.kind !== 'cash');
+  if (!cash || !bank) return toast('You need a bank account and a cash account first', { err: true });
+  addTxn({ kind: 'transfer', account_id: bank.id, to_account_id: cash.id, purpose: 'Cash withdrawal' });
+}
+const isWithdrawal = (r) => { const k = (n) => (S.ctx.accounts.find((a) => a.name === n) || {}).kind; return r.kind === 'transfer' && r.status === 'posted' && k(r.to_account) === 'cash' && !!k(r.account) && k(r.account) !== 'cash'; };
+page('withdrawals', { title: 'Cash withdrawals', async render(v) {
+  const per = LS.get('per', 'month'); const [f, to] = periodDates(per);
+  v.header({ title: 'Cash withdrawals', back: 'tools', actions: [can('write') ? { label: 'Withdraw cash', icon: 'plus', primary: true, run: () => withdrawCash() } : null] });
+  v.root.append(seg(PERIODS, per, (x) => { LS.set('per', x); v.refresh(); }, { full: true }));
+  const all = await api('fin_txn_list', { p: { kind: 'transfer', from: f, to, limit: 500 } });
+  const rows = all.filter(isWithdrawal), tot = rows.reduce((x, r) => x + Number(r.amount), 0);
+  v.root.append(h('div', { class: 'hero-n small' }, h('div', { class: 'k' }, 'Cash taken from the bank'), h('div', { class: 'n num' }, inr(tot)), h('div', { class: 'small muted' }, rows.length + (rows.length === 1 ? ' withdrawal' : ' withdrawals'))),
+    rows.length ? h('div', { class: 'list' }, rows.map((r) => txnRow(r, () => txnSheet(r.id, rows)))) : empty('cash', 'No withdrawals', 'Use Withdraw cash when you take money out of the bank.'));
 } });
 async function accountDetail(a) {
   const txns = await api('fin_txn_list', { p: { account_id: a.id, limit: 100 } });

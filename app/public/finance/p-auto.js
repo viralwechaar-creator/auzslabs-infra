@@ -184,7 +184,7 @@ async function scanBill(file) {
 page('tools', { title: 'Tools', async render(v) {
   v.header({ title: 'Tools' });
   let pend = 0; try { pend = (await api('fin_txn_list', { p: { review: 'needs_review', limit: 200 } })).filter((r) => r.status === 'posted').length; } catch { /* ignore */ }
-  const T = [['approvals', 'Approvals', 'check', 'Entries waiting for a check', pend], ['repeat', 'Repeating', 'refresh', 'Rent, salary, EMI on its own'], ['bank', 'Bank import', 'download', 'Match a bank statement'], ['tax', 'Tax', 'tag', 'GST and TDS for filing'], ['assets', 'Assets', 'building', 'Things you own, losing value'], ['budget', 'Budget', 'chart', 'A limit for each kind of spend']];
+  const T = [['approvals', 'Approvals', 'check', 'Entries waiting for a check', pend], ['repeat', 'Repeating', 'refresh', 'Rent, salary, EMI on its own'], ['bank', 'Bank import', 'download', 'Match a bank statement'], ['withdrawals', 'Cash withdrawals', 'cash', 'Money taken from the bank as cash'], ['tax', 'Tax', 'tag', 'GST and TDS for filing'], ['assets', 'Assets', 'building', 'Things you own, losing value'], ['budget', 'Budget', 'chart', 'A limit for each kind of spend']];
   v.root.append(h('div', { class: 'tools' }, T.filter(([id]) => allowed(PAGES[id])).map(([id, name, ic, sub, n]) => h('button', { class: 'tool', type: 'button', onclick: () => go(id) }, h('span', { class: 'tile' }, icon(ic, 20)), h('b', null, name, n ? h('span', { class: 'badge-n' }, String(n)) : null), h('span', { class: 'small muted' }, sub)))));
 } });
 
