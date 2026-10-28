@@ -7,12 +7,12 @@ const page = (id, def) => { PAGES[id] = def; };
 const SCANAPP = !!window.AUZ_SCAN, HOME = SCANAPP ? 'scan' : 'home';
 const BRAND = SCANAPP ? { name: 'Scan & bill', title: 'AUZsScan', logo: '/logo-scan.svg', icon: '/icon-scan.svg' } : { name: 'Accounting', title: 'AUZslab Accounting', logo: '/logo-accounts.svg', icon: '/icon-accounts.svg' };
 const NAV_LEDGER = [
-  { group: '', items: ['home'] },
-  { group: 'Sales', items: ['scan', 'sales', 'customers', 'followups', 'receipts'] },
-  { group: 'Purchases', items: ['purchases', 'suppliers', 'payments', 'expenses', 'expreq'] },
-  { group: 'Accounts', items: ['books', 'banking', 'assets'] },
+  { group: '', items: ['home', 'scan', 'purchases'] },
+  { group: 'Sales', items: ['sales', 'customers', 'receipts', 'followups'] },
+  { group: 'Buying', items: ['suppliers', 'payments', 'expenses', 'expreq'] },
+  { group: 'Stock', items: ['products', 'stock'] },
   { group: 'Financial reports', items: ['analytics', 'reports', 'gst'] },
-  { group: 'Inventory', items: ['products', 'stock'] },
+  { group: 'Accounts', items: ['books', 'banking', 'assets'] },
   { group: 'Tools', items: ['data', 'messages', 'alerts', 'settings'] },
 ];
 const NAV = SCANAPP ? [
@@ -20,7 +20,7 @@ const NAV = SCANAPP ? [
   { group: 'Records', items: ['sales', 'products', 'stock', 'data'] },
   { group: 'Settings', items: ['invoicelayout', 'alerts'] },
 ] : NAV_LEDGER;
-const TABS = SCANAPP ? ['scan', 'sales', 'products', 'stock'] : ['home', 'sales', 'receipts', 'expenses'];
+const TABS = SCANAPP ? ['scan', 'sales', 'products', 'stock'] : ['home', 'scan', 'purchases', 'sales'];
 // AUZsScan only (p-easy.js): a short beginner menu by default; "Show all ledger tools" switches to the whole ledger menu
 const navNow = () => (window.easyOn && easyOn() ? EASY_NAV : SCANAPP && window.easyOn ? SCAN_ALL_NAV : NAV), tabsNow = () => (window.easyOn && easyOn() ? EASY_TABS : TABS);
 let route = { id: HOME, args: [], q: new URLSearchParams() };
