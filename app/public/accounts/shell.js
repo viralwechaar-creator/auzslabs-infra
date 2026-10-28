@@ -257,8 +257,10 @@ function quickMenu(anchor) {
 }
 
 // ---------- router ----------
+let lastRouteKey = '';
 async function route_() {
   closeMenus();
+  const key = location.hash, keepY = key === lastRouteKey ? (window.scrollY || document.documentElement.scrollTop || 0) : 0; lastRouteKey = key;   // same page re-drawn (a button was tapped): stay where you were
   cleanup.forEach((f) => { try { f(); } catch { /* ignore */ } }); cleanup = [];
   route = parseHash();
   let def = PAGES[route.id];
@@ -275,7 +277,7 @@ async function route_() {
   try { clear(root); header({ title: def.title }, root); root.dataset.p = route.id.split('/')[0]; if (route.id.startsWith('settings')) root.classList.add('cols2'); await def.render(view); } catch (e) {
     console.error(e); clear(root).append(empty('alert', 'Could not load this page', e.message, h('button', { class: 'btn fill', onclick: route_ }, 'Try again')));
   }
-  main.focus({ preventScroll: true }); window.scrollTo(0, 0);
+  main.focus({ preventScroll: true }); window.scrollTo(0, keepY);
 }
 // o: {title, sub, back: 'path', actions:[{label, icon, primary, run, menu:[...]}]}
 function header(o, root) {
