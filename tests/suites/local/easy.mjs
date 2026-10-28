@@ -111,7 +111,7 @@ export default async function run({ browser, stack }) {
     D = await open({ w: 390, h: 844, mobile: true }); const { page } = D; await skipTour(page);
     const tabs = await page.locator('.tabbar button').count(); assert(tabs === 5, 'tabs ' + tabs);
     for (const r of ['scan', 'quick', 'sales', 'home']) { await page.evaluate((x) => { location.hash = '#/' + x; }, r); await page.waitForTimeout(900); assert(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2), 'sideways scroll on ' + r); }
-    await page.locator('.tabbar button[data-tab=more]').click(); await page.waitForSelector('.sheet'); assert(/Show all ledger tools/.test(await page.locator('.sheet').innerText()), 'no switch in More');
+    await page.locator('.tabbar button[data-tab=more]').click(); await page.waitForSelector('.sheet'); assert(!/Show all ledger tools/.test(await page.locator('.sheet').innerText()), 'switch still in More');
     await page.screenshot({ path: 'tests/report/shots/easy-more-390.png' }).catch(() => {});
     await D.c.close();
   });

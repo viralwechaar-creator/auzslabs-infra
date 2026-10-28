@@ -22,10 +22,7 @@ function easyMode() {
 }
 function easyOn() { return easyMode() === 'simple'; }
 function setEasy(m) { lsSet(easyKey('mode'), m); applyWords(); buildShell(); route_(); }
-function easyToggleRow() {
-  if (!SCANAPP) return null;
-  return toggleRow('Show all ledger tools', !easyOn(), (on) => setEasy(on ? 'full' : 'simple'), easyOn() ? 'Purchases, banking, GST, reports, assets and more (some need AUZsLedger in your plan)' : 'Turn off for the short beginner menu');
-}
+function easyToggleRow() { return null; }   // no switch: AUZsScan always shows the short menu
 
 // ---------- plain words (simple view only) ----------
 const ORIG_WORDS = {};
@@ -75,7 +72,6 @@ quickMenu = function (anchor) {
   const it = [];
   if (can('acc_sales')) it.push({ label: 'Bill a customer', icon: 'bolt', run: () => go('quick') }, { label: 'Record money received', icon: 'wallet', run: () => receiptSheet('receipt') }, { label: 'Add a customer', icon: 'user', run: () => partySheet('customer') });
   if (can('acc_purchase')) it.push({ label: 'Record a purchase', icon: 'receipt', run: () => go('new/bill') }, { label: 'Record an expense', icon: 'cash', run: () => go('new/expense') }, { label: 'Pay a supplier', icon: 'wallet', run: () => receiptSheet('payment') });
-  it.push({ label: 'Show all ledger tools', icon: 'more', run: () => setEasy('full') });
   menu(anchor, it);
 };
 
@@ -210,7 +206,7 @@ function easyTour() {
     ['Make a bill', 'Scan items with the camera, or press Quick bill and add them by name. Pick the customer, add items, press Issue.', 'bolt'],
     ['Get paid', 'Money received lists payments. Open a customer to see what they owe and send a reminder.', 'wallet'],
     ['Record what you buy', 'Buy: record a purchase, an expense, or a payment to a supplier.', 'receipt'],
-    ['Need more?', 'More shows every tool. Switch on "Show all ledger tools" any time for purchases, banking, GST and reports. Help is in the More menu.', 'more'],
+    ['Need more?', 'The Buying and books group has purchases, suppliers, reports and GST. Help is in the More menu.', 'more'],
   ];
   let i = 0; const body = h('div', { class: 'grid', style: { textAlign: 'center', gap: '10px', minHeight: '180px', alignContent: 'center' } });
   const next = h('button', { class: 'btn fill', type: 'button' }), back = h('button', { class: 'btn', type: 'button' }, 'Back');
