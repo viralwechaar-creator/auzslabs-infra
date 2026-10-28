@@ -91,7 +91,7 @@
 </style>
 <link rel="stylesheet" href="u.css?v=4"><link rel="stylesheet" href="e.css?v=5"><link rel="stylesheet" href="fluid.css?v=3"><link rel="stylesheet" href="c.css?v=6">
 <meta name="theme-color" content="#efeeed">
-<link rel="stylesheet" href="a.css?v=1"><link rel="stylesheet" href="a-home.css?v=2"><link rel="stylesheet" href="menu-old.css?v=2"></head>
+<link rel="stylesheet" href="a.css?v=1"><link rel="stylesheet" href="a-home.css?v=3"><link rel="stylesheet" href="menu-old.css?v=2"></head>
 <body class="a-dark a-home">
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
 <div class="shell">
@@ -196,6 +196,10 @@
 <div class="a-rise"><dt>Businesses</dt><dd><a href="business-cafes.html">Cafes</a><a href="business-salons.html">Salons</a><a href="business-retail.html">Retail</a><a href="business-clothing.html">Clothing</a><a href="business-mobile-repair.html">Mobile shops</a></dd></div>
 <div class="a-rise"><dt>See it run</dt><dd><a href="live-demo.html">Live demo</a><a href="download-apps.html">Apps</a><a href="studio.html">Studio</a></dd></div>
 </dl></div>
+<div class="ah-testi-wrap" id="ahTestiWrap" hidden>
+<div class="ah-case"><i>2.8</i><b>CLIENTS<small>What they say</small></b></div>
+<div class="ah-testi-grid" id="ahTestiGrid"></div>
+</div>
 <div class="ah-cta a-rise"><span>Build yours.</span><button class="btn" data-open-contact>Talk to us</button></div>
 </section>
 </div><div class="ftwrap" id="ftwrap">
@@ -269,6 +273,26 @@
 <script src="site.js?v=113"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script src="company.js"></script>
+<script>
+(function () {
+  var wrap = document.getElementById('ahTestiWrap'), grid = document.getElementById('ahTestiGrid');
+  if (!wrap || !grid) return;
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+  function stars(n) { if (!n) return ''; var f = '&#9733;'.repeat(n) + '&#9734;'.repeat(5 - n); return '<div class="ah-testi-stars">' + f + '</div>'; }
+  fetch(window.CFG.url + '/rpc/public_testimonials', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+    .then(function (r) { return r.json(); })
+    .then(function (list) {
+      if (!Array.isArray(list) || !list.length) return;
+      grid.innerHTML = list.slice(0, 6).map(function (t) {
+        return '<div class="ah-testi-card">' + stars(t.rating) + '<p class="ah-testi-quote">&ldquo;' + esc(t.quote) + '&rdquo;</p>' +
+          '<div class="ah-testi-who"><b>' + esc(t.authorName || (t.businessName || 'A client')) + '</b>' +
+          (t.businessName ? '<span>' + esc(t.businessName) + (t.niche ? ' &middot; ' + esc(t.niche) : '') + '</span>' : '') + '</div></div>';
+      }).join('');
+      wrap.hidden = false;
+    })
+    .catch(function () { /* stays hidden if the call fails -- the rest of the homepage must not depend on this */ });
+})();
+</script>
 <script src="ed.js?v=1" defer></script><script src="fold.js?v=1" defer></script><script src="u.js?v=1" defer></script>
 <script src="a.js?v=1" defer></script></body>
 </html>

@@ -498,6 +498,7 @@ function renderAccount() {
       <p class="muted">This login also has platform admin rights -- manage every client, licence and request from one place.</p>
       <a href="admin.html" class="btn btn-primary form-submit">Open admin panel &#8599;</a>
     </div>` : ''}
+    ${['owner', 'manager'].includes(DASH.my_role) ? `<div class="card" id="testiCard"><p class="muted">Loading...</p></div>` : ''}
     <div class="card">
       <h3 class="h-2">Your business</h3>
       <div class="acct-row"><span class="muted">Business</span><b>${esc(t.name)}</b></div>
@@ -665,10 +666,52 @@ function renderAccount() {
     };
   });
   if ($('#tfaCard')) render2fa();
+  if ($('#testiCard')) renderTestimonial();
 }
 
 // Two-factor authentication (db/117): owner/manager only -- see server/src/auth.js's own comment.
 // Loaded async into its own card so the rest of the account page renders immediately either way.
+// Client testimonials (db/297): a client's own feedback, owner/manager only. Never shown on the homepage
+// until an AUZslab admin approves it -- see admin.html's Testimonials section.
+async function renderTestimonial() {
+  const card = $('#testiCard');
+  const { data: mine, error } = await sb.rpc('my_testimonial');
+  if (error || !card) { if (card) card.remove(); return; }
+  const stars = (n, onPick) => {
+    const row = document.createElement('div'); row.className = 'testi-stars';
+    for (let i = 1; i <= 5; i++) {
+      const s = document.createElement('button'); s.type = 'button'; s.textContent = i <= n ? '★' : '☆';
+      s.style.cssText = 'font-size:22px;background:none;border:none;cursor:pointer;color:#c9a227;padding:2px';
+      s.onclick = () => onPick(i);
+      row.appendChild(s);
+    }
+    return row;
+  };
+  const statusLine = (s) => s === 'approved' ? '<span style="color:#1a7f37">Live on the homepage.</span>'
+    : s === 'rejected' ? '<span style="color:var(--ink-faint)">Not used -- you can share something else any time.</span>'
+    : '<span style="color:#b8942f">Sent -- waiting for AUZslab to review it.</span>';
+  let rating = (mine && mine.rating) || 5;
+  card.innerHTML = `
+    <h3 class="h-2">Share your feedback</h3>
+    <p class="muted">A short line about your experience, shown on the AUZslab homepage once we review it. Never published without your say-so.</p>
+    ${mine ? `<p>${statusLine(mine.status)}</p>` : ''}
+    <div class="field"><label>Your rating</label><div id="testiStars"></div></div>
+    <div class="field"><label>Your feedback</label><textarea id="testiQuote" maxlength="600" rows="3" placeholder="What's working well, or what changed for you?">${esc((mine && mine.quote) || '')}</textarea></div>
+    <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="testiShowBiz" ${!mine || mine.showBusiness !== false ? 'checked' : ''}> Show my business name with the quote</label>
+    <button class="btn btn-primary form-submit" id="testiSend">${mine ? 'Update and re-send' : 'Send feedback'}</button>
+    <div id="testiMsg"></div>
+  `;
+  const starsHost = $('#testiStars'); const paintStars = () => { starsHost.innerHTML = ''; starsHost.appendChild(stars(rating, (n) => { rating = n; paintStars(); })); };
+  paintStars();
+  $('#testiSend').onclick = async () => {
+    const out = $('#testiMsg');
+    const q = $('#testiQuote').value.trim();
+    if (!q) { out.textContent = 'Write something first.'; out.style.color = 'var(--accent)'; return; }
+    const { error: e2 } = await sb.rpc('submit_my_testimonial', { p: { quote: q, rating, showBusiness: $('#testiShowBiz').checked } });
+    if (e2) { out.textContent = e2.message; out.style.color = 'var(--accent)'; return; }
+    renderTestimonial();
+  };
+}
 async function render2fa() {
   const card = $('#tfaCard');
   const { data: st, error } = await sb.auth.get2faStatus();

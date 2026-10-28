@@ -1370,6 +1370,14 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <div id="licList">Loading&hellip;</div>
       </section>
 
+      <section class="a-page" id="testimonialsSection" data-title="Testimonials" data-parent="more">
+        <div class="label">Homepage</div>
+        <h2 class="h-2">Client feedback</h2>
+        <p class="p">Clients can send feedback from their own dashboard. Nothing shows on the homepage until you approve it here &mdash; you can also lightly clean up the wording before it goes live (typos, length), without changing what they meant.</p>
+        <div class="row" style="gap:8px;margin:10px 0" id="testiTabs"></div>
+        <div id="testiList">Loading&hellip;</div>
+      </section>
+
       <section class="a-page" id="whatsappSection" data-title="WhatsApp" data-parent="more">
         <div class="label">Automatic messages</div>
         <h2 class="h-2">WhatsApp</h2>
@@ -1477,6 +1485,11 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
           <button class="a-nav-row" data-section="licences">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
             <span class="grow">Licences (offline app)</span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <button class="a-nav-row" data-section="testimonials">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 15h5l4 4v-4h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2Z"/></svg>
+            <span class="grow">Testimonials</span><span class="a-row-badge" id="notifBadgeTestiMore" style="display:none"></span>
             <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
           </button>
           <button class="a-nav-row" data-section="privacyReq">
@@ -1732,7 +1745,7 @@ function resetMainScroll() {
 // signing in used to fire about 11 database requests together; now it is 2.
 const SECTION_LOADERS = {
   leads: () => { loadLeads(); refreshOrdersBadge(); }, orders: () => loadOrders(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(),
-  users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(), privacyReq: () => loadPrivacyReq(), licences: () => loadLicences(), whatsapp: () => loadWhatsApp(), website: () => loadWebsite(),
+  users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(), privacyReq: () => loadPrivacyReq(), licences: () => loadLicences(), testimonials: () => loadTestimonials(), whatsapp: () => loadWhatsApp(), website: () => loadWebsite(),
   team: () => { loadTeam(); loadSetups(); loadTeamApps(); }, tasks: () => loadTasks(), trialBlocks: () => loadTrialBlocks(), postStudio: () => { const f = document.getElementById('postStudioFrame'); if (f && !f.getAttribute('src')) f.src = f.dataset.src; }, salesWork: () => loadSalesWork(), clientPay: () => { loadClientPay(); loadBills(); }, billMake: () => bmInit(),
 };
 const sectionLoadedAt = {};
@@ -3688,6 +3701,38 @@ document.getElementById('licMake').addEventListener('click', async () => {
   out.innerHTML = `<div style="word-break:break-all;font-family:monospace;padding:10px;background:var(--bg-soft,#f2f2f2);border-radius:10px">${esc(j.code)}</div>`;
   document.getElementById('licShop').value = ''; document.getElementById('licNote').value = ''; document.getElementById('licTenant').value = ''; loadLicences();
 });
+
+// ---- Testimonials (db/297): a client's own feedback, approved here before it shows on the homepage ----
+let testiTab = 'pending';
+async function loadTestimonials() {
+  const tabsHost = document.getElementById('testiTabs'), box = document.getElementById('testiList');
+  tabsHost.innerHTML = [['pending', 'Waiting for review'], ['approved', 'Live'], ['rejected', 'Not used']]
+    .map(([k, label]) => `<button class="btn ${testiTab === k ? 'btn-primary' : 'btn-ghost'}" data-testi-tab="${k}">${label}</button>`).join('');
+  tabsHost.querySelectorAll('[data-testi-tab]').forEach((b) => { b.onclick = () => { testiTab = b.dataset.testiTab; loadTestimonials(); }; });
+  box.innerHTML = 'Loading&hellip;';
+  const { data, error } = await sb.rpc('admin_list_testimonials', { p_status: testiTab });
+  if (error) { box.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  if (!data || !data.length) { box.innerHTML = emptyDoodle(testiTab === 'pending' ? 'Nothing waiting for review.' : 'Nothing here yet.'); return; }
+  const stars = (n) => n ? '&#9733;'.repeat(n) + '&#9734;'.repeat(5 - n) : '&mdash;';
+  box.innerHTML = data.map((t) => `<div class="card" style="padding:14px;margin:10px 0;display:grid;gap:8px">
+    <div class="row" style="justify-content:space-between;flex-wrap:wrap"><b>${esc(t.businessName)}</b><span style="color:#c9a227">${stars(t.rating)}</span></div>
+    <div style="color:var(--ink-faint);font-size:12.5px">${esc(t.authorName || '')} &middot; ${new Date(t.submittedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} &middot; ${t.showBusiness ? 'business name shown' : 'business name hidden'}</div>
+    <p class="p" style="margin:0">${esc(t.quote)}</p>
+    ${testiTab === 'pending' ? `
+      <label style="display:grid;gap:4px"><span class="muted small">Shown publicly as (optional, leave blank to use their own words)</span><textarea class="input" data-testi-display="${t.id}" rows="2">${esc(t.displayText || '')}</textarea></label>
+      <div class="row" style="gap:8px"><button class="btn btn-primary" data-testi-approve="${t.id}">Approve</button><button class="btn btn-ghost" data-testi-reject="${t.id}">Don't use it</button></div>
+    ` : t.displayText ? `<div class="muted small">Shown publicly as: "${esc(t.displayText)}"</div>` : ''}
+  </div>`).join('');
+  box.querySelectorAll('[data-testi-approve]').forEach((b) => { b.onclick = async () => {
+    const id = b.dataset.testiApprove; const dt = box.querySelector(`[data-testi-display="${id}"]`).value;
+    b.disabled = true; const { error: e2 } = await sb.rpc('admin_review_testimonial', { p_id: id, p_decision: 'approved', p_display_text: dt || null });
+    if (e2) { alert(e2.message); b.disabled = false; return; } loadTestimonials();
+  }; });
+  box.querySelectorAll('[data-testi-reject]').forEach((b) => { b.onclick = async () => {
+    b.disabled = true; const { error: e2 } = await sb.rpc('admin_review_testimonial', { p_id: b.dataset.testiReject, p_decision: 'rejected' });
+    if (e2) { alert(e2.message); b.disabled = false; return; } loadTestimonials();
+  }; });
+}
 
 // ---- WhatsApp automation (db/184): the AUZslab number, which shops may use it, and the message log ----
 const WA_TONE = { queued: '#b8942f', sending: '#b8942f', sent: '#555', delivered: '#1a7f37', read: '#1a7f37', failed: '#b42318', skipped: '#888' };
