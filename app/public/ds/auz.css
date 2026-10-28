@@ -87,3 +87,5 @@ html.auz-lock .shell .body,html.auz-lock .items-scroll,html.auz-lock .cats-col,h
 .ov:not(#ov),.scrim,.mwrap{overscroll-behavior:none;touch-action:none}
 .md,.md-b,.sheet,.sheet-b,.menu,.alert,.mf,.modal{overscroll-behavior:contain}
 .md-b,.sheet-b,.menu,.mf,.md .tk-lines{touch-action:pan-y;-webkit-overflow-scrolling:touch}
+/* iPhone zooms the page when a field under 16px gets focus: keep touch fields at 16px */
+@media (pointer:coarse){input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not(.bigamt),select,textarea{font-size:16px!important}}

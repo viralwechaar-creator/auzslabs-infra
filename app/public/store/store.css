@@ -1038,3 +1038,4 @@ body.homehero .announce{display:none}
 body.homehero .dock .zfab{display:grid;position:absolute;left:6px;bottom:calc(100% + 8px)}
 @media(min-width:900px){body.homehero .zfab.zdesk{display:grid;position:fixed;right:22px;bottom:70px;z-index:30}}
 .top .dview{display:none}body.onlist .top .dview{display:inline-grid}
+@media (pointer:coarse){input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not(.bigamt),select,textarea{font-size:16px!important}}
