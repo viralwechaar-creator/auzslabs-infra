@@ -55,7 +55,8 @@ function bulkParties(ids, done) {
 // ---------- create / edit sheet ----------
 function partySheet(kind, p, onSaved) {
   const isNew = !p; p = p || {};
-  let k = p.kind || kind || 'customer';
+  const asCourier = kind === 'transporter'; if (asCourier && !p.party_type) p = Object.assign({}, p, { party_type: 'transporter' });
+  let k = p.kind || (asCourier ? 'supplier' : kind) || 'customer';
   const name = input({ value: p.name || '', placeholder: 'Name', label: 'Name' }), gst = input({ value: p.gstin || '', placeholder: '15-character GSTIN', max: 15, label: 'GSTIN' }), pan = input({ value: p.pan || '', placeholder: 'PAN', max: 10 });
   const gstMsg = h('div', { class: 'hint' }, 'Optional. Registered businesses should have one so they can claim input credit.');
   const stSel = selectEl([['', 'Choose state'], ...Object.keys(STATES).map((c) => [c, stateName(c)])], p.state_code || '', {});
@@ -73,7 +74,8 @@ function partySheet(kind, p, onSaved) {
   const ph = input({ value: p.phone || '', type: 'tel', mode: 'tel', placeholder: 'Mobile number' }), em = input({ value: p.email || '', type: 'email', placeholder: 'name@example.com' }), cn = input({ value: p.contact_name || '', placeholder: 'Contact person' });
   const ba = h('textarea', { class: 'textarea', placeholder: 'Billing address', style: { minHeight: '70px' } }, p.billing_address || ''), sa = h('textarea', { class: 'textarea', placeholder: 'Shipping address (if different)', style: { minHeight: '70px' } }, p.shipping_address || '');
   const cl = input({ value: p.credit_limit && Number(p.credit_limit) ? p.credit_limit : '', type: 'number', mode: 'decimal', placeholder: '0 = no limit' }), cd = input({ value: p.credit_days || '', type: 'number', mode: 'numeric', placeholder: '0 = immediate' }), tg = input({ value: p.tags || '' }), nt = h('textarea', { class: 'textarea', style: { minHeight: '70px' } }, p.notes || '');
-  const typeSel = selectEl([['', k === 'supplier' ? 'Supplier' : 'Customer'], ['employee', 'Employee'], ['partner', 'Partner'], ['other', 'Other']], p.party_type && !['customer', 'supplier'].includes(p.party_type) ? p.party_type : '', {});
+  const typeSel = selectEl([['', k === 'supplier' || k === 'transporter' ? 'Supplier' : 'Customer'], ...(k === 'customer' ? [] : [['transporter', 'Courier / transporter']]), ['employee', 'Employee'], ['partner', 'Partner'], ['other', 'Other']], p.party_type && !['customer', 'supplier'].includes(p.party_type) ? p.party_type : '', {});
+  const gm = selectEl([['item', 'Itemwise (each item has its own GST rate)'], ['bill', 'One GST rate on the whole bill']], p.gst_mode || 'item', {}), gr = selectEl(taxRates().map((r) => [String(r), r + '%']), String(p.bill_gst_rate == null ? defaultTaxRate() : p.bill_gst_rate), {});
   const cat = input({ value: p.category || '', placeholder: 'e.g. Retail, Wholesale, VIP', label: 'Category' });
   const bnk = input({ value: p.bank_name || '', placeholder: 'Bank name' }), bac = input({ value: p.bank_account || '', placeholder: 'Account number' }), bif = input({ value: p.bank_ifsc || '', placeholder: 'IFSC', max: 11 }), upi = input({ value: p.upi_id || '', placeholder: 'name@bank' });
   const s = sheet({ title: (isNew ? 'New ' : 'Edit ') + (k === 'supplier' ? 'supplier' : 'customer'), body: h('div', { class: 'grid' },
@@ -81,11 +83,13 @@ function partySheet(kind, p, onSaved) {
     h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Phone', ph), field('Email', em)), field('Contact person', cn), field('Billing address', ba), field('Shipping address', sa),
     h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Credit days', cd), field('Credit limit (₹)', cl)), field('Tags', tg), k === 'supplier' ? null : field('Category', cat),
     k === 'supplier' ? h('div', { class: 'grid' }, h('div', { class: 'small muted' }, 'Bank details (to pay this supplier)'), h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Bank', bnk), field('Account number', bac)), h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('IFSC', bif), field('UPI ID', upi))) : null,
+    k === 'supplier' ? h('div', { class: 'grid' }, field('How this supplier charges GST', gm), field('GST rate when it is one rate for the bill', gr)) : null,
     field('Notes', nt),
     !isNew ? toggleRow('Active', p.active !== false, (x) => { p.active = x; }) : null),
     actions: [{ label: isNew ? 'Add' : 'Save', primary: true, onclick: async (c) => {
       if (!name.value.trim()) { name.classList.add('err'); name.focus(); return false; }
       const body = { id: p.id || null, kind: p.kind || k, name: name.value, gstin: gst.value, pan: pan.value, state_code: stSel.value, reg_type: reg.value, phone: ph.value, email: em.value, contact_name: cn.value, billing_address: ba.value, shipping_address: sa.value, credit_days: cd.value || 0, credit_limit: cl.value || 0, tags: tg.value, notes: nt.value, active: p.active !== false, category: cat.value, bank_name: bnk.value, bank_account: bac.value, bank_ifsc: bif.value, upi_id: upi.value };
+      if (k === 'supplier') { body.gst_mode = gm.value; body.bill_gst_rate = gm.value === 'bill' ? gr.value : ''; }
       if (typeSel.value) body.party_type = typeSel.value; else if (p.party_type && !['customer', 'supplier'].includes(p.party_type)) body.party_type = k === 'supplier' ? 'supplier' : 'customer';
       const r = await api('acc_save_party', { p: body }); bust('parties'); c();
       if (r.duplicate_gstin_of) toast('Saved. Note: another party already uses this GSTIN (' + r.duplicate_gstin_of + ')'); else toast(isNew ? 'Added' : 'Saved');

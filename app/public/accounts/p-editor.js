@@ -4,6 +4,16 @@
 const defaultTaxRate = () => { const v = S.org && S.org.settings && S.org.settings.default_tax_rate; return v == null || v === '' ? 18 : Number(v); };
 const blankLine = (type) => ({ product_id: '', description: '', hsn: '', qty: '1', unit: '', rate: '', disc_pct: '', tax_rate: String(defaultTaxRate()), account_id: '', batch_no: '', expiry: '', warehouse_id: '' });
 
+// Delivery and other charges on a purchase bill. A charge "on this bill" is added as one more line (no stock, Transport account, its own GST rate),
+// so totals, GST, input credit and the preview all follow the normal rules. A charge on the courier's own bill is posted as a separate bill (see saveCourierBills).
+const CHARGE_KINDS = ['Freight / delivery', 'Packing', 'Loading / unloading', 'Other charge'];
+const transportAcct = () => (S.accounts.find((a) => a.code === '5104') || S.accounts.find((a) => a.code === '5107') || {}).id || '';
+function chargeText(c) { const cp = (S.parties || []).find((x) => x.id === c.courier_id); return [c.kind || 'Freight / delivery', cp ? cp.name : '', c.lr_no ? 'LR ' + c.lr_no : ''].filter(Boolean).join(' · '); }
+function allLines(D) {
+  const ex = (D.charges || []).filter((c) => c.how !== 'courier_bill' && N(c.amount) > 0).map((c) => ({ product_id: '', description: chargeText(c), hsn: c.hsn || '9965', qty: '1', unit: '', rate: c.amount, disc_pct: '', tax_rate: String(c.tax_rate == null || c.tax_rate === '' ? 0 : c.tax_rate), account_id: transportAcct(), batch_no: '', expiry: '', warehouse_id: '' }));
+  return ex.length ? D.lines.concat(ex) : D.lines;
+}
+
 function calcDoc(D) {
   const org = S.org, party = (S.parties || []).find((p) => p.id === D.party_id) || null, sales = SALES_TYPES.includes(D.doc_type);
   let supply = 'intra', zero = false;
@@ -18,7 +28,7 @@ function calcDoc(D) {
     if (party && party.reg_type === 'composition') zero = true;
   }
   const out = { supply, zero, lines: [], subtotal: 0, discount: 0, taxable: 0, cgst: 0, sgst: 0, igst: 0, cess: 0, roundoff: 0, total: 0, byRate: {} };
-  for (const l of D.lines) {
+  for (const l of allLines(D)) {
     const q = N(l.qty) || 0, rate = N(l.rate), gross = r2(q * rate);
     let damt = N(l.disc_amt), dp = N(l.disc_pct);
     if (dp > 0 && !damt) damt = r2(gross * dp / 100);
@@ -53,7 +63,7 @@ function effectRows(D, c, payNow) {
     D.lines.forEach((l, i) => { const p = prodOf(l); if (p && p.track_stock && !p.is_service) { const q = c.lines[i].qty; cogs += q * Number(p.avg_cost || 0); stock.push((flip ? '+' : '−') + qty(q) + ' ' + p.name); } });
     if (cogs) { push('Cost of goods sold', cogs, !flip); push('Inventory', cogs, flip); }
   } else {
-    D.lines.forEach((l, i) => { const p = prodOf(l); const cost = c.lines[i].taxable + (D.itc_eligible === false ? c.lines[i].tax : 0);
+    allLines(D).forEach((l, i) => { const p = prodOf(l); const cost = c.lines[i].taxable + (D.itc_eligible === false ? c.lines[i].tax : 0);
       if (p && p.track_stock && !p.is_service) { push('Inventory', cost, !flip); stock.push((flip ? '−' : '+') + qty(c.lines[i].qty) + ' ' + p.name); }
       else push(t === 'expense' ? (acctName(l.account_id) || 'Expense') : (acctName(l.account_id) || 'Purchases'), cost, !flip); });
     if (D.itc_eligible !== false) tax('Input', !flip);
@@ -66,7 +76,7 @@ function effectRows(D, c, payNow) {
 }
 
 async function pickParty(kind, current) {
-  const list = (await parties()).filter((p) => p.active && (p.kind === 'both' || p.kind === kind || kind === 'any'));
+  const list = (await parties()).filter((p) => p.active && (kind === 'transporter' ? p.party_type === 'transporter' : p.party_type !== 'transporter' && (p.kind === 'both' || p.kind === kind || kind === 'any')));
   return new Promise((resolve) => {
     let pickedSomething = false;
     const host = h('div', { class: 'list' });
@@ -187,7 +197,20 @@ async function docEditor(v, type, existing) {
   if (scan) root.append(scanBanner(scan, v));
 
   // ----- details form -----
-  const partyBtn = h('button', { class: 'li', type: 'button', style: { borderRadius: '16px', background: 'var(--card)', boxShadow: '0 0 0 .5px var(--sep)' }, onclick: async () => { const p = await pickParty(sales ? 'customer' : 'supplier', D.party_id); if (p) { D.party_id = p.id; D.place_of_supply = ''; if (!D.due_date && p.credit_days) D.due_date = addDays(D.doc_date, p.credit_days); drawParty(); recalc(); } } });
+  const partyBtn = h('button', { class: 'li', type: 'button', style: { borderRadius: '16px', background: 'var(--card)', boxShadow: '0 0 0 .5px var(--sep)' }, onclick: async () => { const p = await pickParty(sales ? 'customer' : 'supplier', D.party_id); if (p) { D.party_id = p.id; D.place_of_supply = ''; applySupplierGst(p); if (!D.due_date && p.credit_days) D.due_date = addDays(D.doc_date, p.credit_days); drawParty(); recalc(); } } });
+  // a supplier that charges one GST rate on the whole bill: every item line gets that rate (change it in the box under the items)
+  function applySupplierGst(p) {
+    if (sales || !p) return; D.gst_mode = p.gst_mode === 'bill' ? 'bill' : 'item'; D.bill_gst = p.bill_gst_rate == null ? '' : String(p.bill_gst_rate);
+    if (D.gst_mode === 'bill' && D.bill_gst !== '') { D.lines.forEach((l) => { l.tax_rate = D.bill_gst; }); drawLines(); }
+    drawGstMode();
+  }
+  const gstModeHost = h('div');
+  function drawGstMode() {
+    clear(gstModeHost); if (sales || isExpense || D.gst_mode !== 'bill') return;
+    const rs = taxRates().map(String); if (D.bill_gst !== '' && D.bill_gst != null && !rs.includes(String(D.bill_gst))) rs.push(String(D.bill_gst));
+    const sel = selectEl(rs.map((r) => [r, r + '%']), String(D.bill_gst === '' || D.bill_gst == null ? defaultTaxRate() : D.bill_gst), { onchange: () => { D.bill_gst = sel.value; D.lines.forEach((l) => { l.tax_rate = sel.value; }); drawLines(); } });
+    gstModeHost.append(h('div', { class: 'card grid' }, h('div', { class: 'small muted' }, 'This supplier charges one GST rate on the whole bill.'), field('GST rate for all items', sel)));
+  }
   const drawParty = () => {
     const p = party(); clear(partyBtn);
     partyBtn.append(h('span', { class: 'tile gray' }, icon(sales ? 'user' : 'building', 18)), h('div', { class: 'grow' }, h('div', { class: 'cap' }, sales ? 'Customer' : 'Supplier'), h('div', { class: 't' }, p ? p.name : (isExpense ? 'No vendor (paid at once)' : sales ? 'Walk-in / choose customer' : 'Choose supplier')), p ? h('div', { class: 's' }, [p.gstin || 'No GSTIN', p.state_code ? stateName(p.state_code) : ''].filter(Boolean).join(' · ')) : null), h('span', { class: 'chev' }, icon('chevR', 18)));
@@ -250,6 +273,30 @@ async function docEditor(v, type, existing) {
     if (focusLast) { const last = $$('.line input.input', linesEl).filter((x) => x.getAttribute('aria-label') === 'Item').pop(); last && last.focus(); }
     recalc();
   }
+
+  // ----- delivery and other charges (purchase bills) -----
+  const chHost = h('div');
+  function drawCharges() {
+    clear(chHost); if (type !== 'bill') return;
+    D.charges = D.charges || [];
+    const couriers = (S.parties || []).filter((x) => x.active && x.party_type === 'transporter');
+    const rates = taxRates().map(String);
+    const rows = D.charges.map((c, i) => {
+      const kind = selectEl(CHARGE_KINDS.map((k) => [k, k]), c.kind || CHARGE_KINDS[0], { onchange: () => { c.kind = kind.value; recalc(); } });
+      const cs = selectEl([['', 'Supplier delivers it'], ...couriers.map((x) => [x.id, x.name]), ['__new', '+ New courier...']], c.courier_id || '', { onchange: () => { if (cs.value === '__new') { cs.value = c.courier_id || ''; partySheet('transporter', null, (np) => { if (np) { c.courier_id = np.id; if (c.how !== 'courier_bill') c.how = 'courier_bill'; } drawCharges(); recalc(); }); } else { c.courier_id = cs.value; if (!cs.value) c.how = 'on_bill'; drawCharges(); recalc(); } } });
+      const lr = input({ value: c.lr_no || '', placeholder: 'LR / tracking no. (optional)', onchange: (e) => { c.lr_no = e.target.value; recalc(); } });
+      const am = h('input', { class: 'input', inputmode: 'decimal', placeholder: '0.00', value: c.amount || '', 'aria-label': 'Charge amount', oninput: (e) => { c.amount = e.target.value; recalc(); } });
+      const tr = selectEl(rates.map((r) => [r, r + '% GST']), String(c.tax_rate == null || c.tax_rate === '' ? 18 : c.tax_rate), { onchange: () => { c.tax_rate = tr.value; recalc(); } });
+      const how = c.courier_id ? seg([['on_bill', 'Add to this bill'], ['courier_bill', 'Courier\'s own bill']], c.how || 'on_bill', (x) => { c.how = x; drawCharges(); recalc(); }) : null;
+      return h('div', { class: 'card grid', style: { gap: '10px' } }, h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' } }, field('Charge', kind), field('Courier', cs)),
+        h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' } }, field('Amount (before GST)', am), field('GST', tr), field('LR no.', lr)), how,
+        c.how === 'courier_bill' ? h('div', { class: 'small muted' }, 'A separate bill for ' + ((couriers.find((x) => x.id === c.courier_id) || {}).name || 'the courier') + ' is made when you save, so you pay them on their own.') : null,
+        h('button', { class: 'btn plain', type: 'button', onclick: () => { D.charges.splice(i, 1); drawCharges(); recalc(); } }, icon('trash', 18), 'Remove charge'));
+    });
+    chHost.append(h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, 'Delivery and other charges')), ...rows, h('button', { class: 'btn', type: 'button', onclick: () => { D.charges.push({ kind: CHARGE_KINDS[0], amount: '', tax_rate: 18, how: 'on_bill', courier_id: '', lr_no: '' }); drawCharges(); } }, icon('plus', 18), 'Add delivery / other charge')));
+  }
+
+  root.append(gstModeHost, chHost); drawGstMode(); drawCharges();
 
   // ----- expense quick form -----
   if (isExpense) {
@@ -314,7 +361,7 @@ async function docEditor(v, type, existing) {
 
   // ----- actions -----
   const build = (post) => {
-    const lines = D.lines.map((l) => ({ product_id: l.product_id || null, description: l.description, hsn: l.hsn, qty: l.qty, unit: l.unit, rate: l.rate, disc_pct: l.disc_pct, disc_amt: l.disc_amt, tax_rate: l.tax_rate, account_id: l.account_id || null, batch_no: l.batch_no, expiry: l.expiry || null, warehouse_id: l.warehouse_id || null }));
+    const lines = allLines(D).map((l) => ({ product_id: l.product_id || null, description: l.description, hsn: l.hsn, qty: l.qty, unit: l.unit, rate: l.rate, disc_pct: l.disc_pct, disc_amt: l.disc_amt, tax_rate: l.tax_rate, account_id: l.account_id || null, batch_no: l.batch_no, expiry: l.expiry || null, warehouse_id: l.warehouse_id || null }));
     const payments = payable && D.pay !== 'later' ? D.payments.map((p) => ({ account_id: p.account_id, amount: D.pay === 'full' ? C.total : N(p.amount), mode: p.mode, reference: p.reference })).filter((p) => p.amount > 0) : [];
     return { id: D.id || null, doc_type: type, doc_date: D.doc_date, due_date: D.due_date || null, party_id: D.party_id || null, branch_id: D.branch_id || null, warehouse_id: D.warehouse_id || null, place_of_supply: D.place_of_supply || null, reverse_charge: D.reverse_charge, itc_eligible: D.itc_eligible,
       price_includes_tax: D.price_includes_tax, supplier_ref: D.supplier_ref || null, supplier_ref_date: D.supplier_ref_date || null, ref_doc_id: D.ref_doc_id || null, source_doc_id: D.source_doc_id || null, notes: D.notes, terms: D.terms, roundoff: D.roundoff === '' ? null : D.roundoff, lines, payments, post };
@@ -335,12 +382,24 @@ async function docEditor(v, type, existing) {
     dirty = false; window.__scan = null;
     toast('Saved on this device. It will be sent to your books as a draft when you are back online.'); go('offline'); return r;
   };
+  // a charge on the courier's own bill becomes its own purchase bill for that courier (same date, posted only if this bill is)
+  const saveCourierBills = async (r, post) => {
+    const list = (D.charges || []).filter((c) => c.how === 'courier_bill' && c.courier_id && N(c.amount) > 0); let made = 0;
+    for (const c of list) {
+      const note = 'Delivery of ' + (D.supplier_ref ? 'supplier bill ' + D.supplier_ref : 'purchase') + (party() ? ' from ' + party().name : '') + (r.number ? ' (' + r.number + ')' : '');
+      try { await api('acc_save_document', { p: { doc_type: 'bill', doc_date: D.doc_date, party_id: c.courier_id, reverse_charge: false, itc_eligible: D.itc_eligible, price_includes_tax: false, supplier_ref: c.lr_no || null, notes: note, post: !!post, payments: [],
+        lines: [{ product_id: null, description: chargeText(c), hsn: '9965', qty: '1', unit: '', rate: c.amount, tax_rate: String(c.tax_rate == null ? 18 : c.tax_rate), account_id: transportAcct() }] } }); made++; }
+      catch (e) { toast('Bill saved, but the courier bill for ' + chargeText(c) + ' failed: ' + (e.message || 'error'), { err: true }); }
+    }
+    if (made) toast(made + ' courier bill' + (made > 1 ? 's' : '') + ' made');
+  };
   const save = async (post) => {
     const err = validate(); if (err) return toast(err, { err: true });
     if (offlineNow()) {
       if (post) return toast('Posting needs a connection. Save it as a draft now and post it when you are back online.', { err: true });
       if (D.id) return toast('Changing a saved document needs a connection.', { err: true });
       if (!OFFLINE_TYPES.includes(type)) return toast('This kind of document needs a connection.', { err: true });
+      if ((D.charges || []).some((c) => c.how === 'courier_bill')) return toast('A courier\'s own bill needs a connection.', { err: true });
       return keepOffline();
     }
     if (post && !(await confirmBox('Post ' + DOC_LABEL[type].toLowerCase() + ' for ' + inr(C.total) + '?', 'This creates ledger' + (posting ? ', stock and GST' : '') + ' entries and gives it its final number. You can cancel it later with a reversal but not edit it.', 'Post'))) return;
@@ -348,6 +407,7 @@ async function docEditor(v, type, existing) {
     try {
       const r = await api('acc_save_document', { p: build(post) });
       dirty = false; bust('products', 'parties');
+      await saveCourierBills(r, post);
       if (scan && scan.file) { try { await uploadAttachment('document', r.id, scan.file); } catch (e) { toast('Saved, but the invoice file could not be attached', { err: true }); } window.__scan = null; }
       if (r.pending_approval) { toast('Saved. It needs a manager’s approval before it can be posted.'); go('doc/' + r.id); return; }
       toast(r.posted ? 'Posted ' + r.number : 'Draft saved'); go('doc/' + r.id);

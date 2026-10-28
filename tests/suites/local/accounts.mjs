@@ -466,5 +466,17 @@ export default async function run({ browser, stack }) {
     await ownerLogin(dk, 'testacct'); await dk.waitForSelector('.kpi'); const bg = await dk.evaluate(() => getComputedStyle(document.body).backgroundColor); assert(/rgb\(0, 0, 0\)|rgba\(0, 0, 0/.test(bg), 'background ' + bg); await s.shot(dk, 'dark-home'); assert(!derrs.length, derrs.slice(0, 2).join(' | '));
   }, 'minor');
   await ctxK.close();
+  await s.check('Courier charges: a courier party, supplier GST style, freight on the bill with its own GST, and a separate courier bill', async () => {
+    const cour = (await ok(owner, 'acc_save_party', { p: { kind: 'supplier', party_type: 'transporter', name: 'Fast Courier', state_code: '07', reg_type: 'regular', gst_mode: 'item' } })).id;
+    const sp2 = (await ok(owner, 'acc_save_party', { p: { kind: 'supplier', name: 'One Rate Supplier', state_code: '07', reg_type: 'regular', gst_mode: 'bill', bill_gst_rate: 12 } })).id;
+    const rows = (await ok(owner, 'acc_list_parties', {})).rows;
+    assert(rows.find((r) => r.id === cour).party_type === 'transporter', 'courier type');
+    const s2 = rows.find((r) => r.id === sp2); assert(s2.gst_mode === 'bill' && Number(s2.bill_gst_rate) === 12, 'supplier gst style ' + JSON.stringify(s2));
+    const r = await ok(owner, 'acc_save_document', { p: { doc_type: 'bill', party_id: sp2, supplier_ref: 'OR/1', post: true, lines: [{ description: 'Goods', qty: 1, rate: 1000, tax_rate: 12 }, { description: 'Freight / delivery - Fast Courier', qty: 1, rate: 100, tax_rate: 18 }] } });
+    const d = (await ok(owner, 'acc_get_document', { p_id: r.id })).doc; assert(Number(d.total) === 1000 * 1.12 + 118 && Number(d.igst) === 120 + 18, 'bill total ' + d.total + ' igst ' + d.igst);
+    const cb = await ok(owner, 'acc_save_document', { p: { doc_type: 'bill', party_id: cour, supplier_ref: 'LR123', post: true, lines: [{ description: 'Freight / delivery', qty: 1, rate: 100, tax_rate: 18 }] } });
+    assert(Number(cb.total) === 118, 'courier bill ' + cb.total);
+    assert((await ok(owner, 'acc_integrity_check', {})).ok !== false, 'books balance');
+  });
   s.done();
 }
