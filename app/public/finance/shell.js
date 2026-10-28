@@ -113,7 +113,7 @@ function moreSheet() {
   const tabs = tabsFor(); const rest = navList().filter(([id]) => !tabs.includes(id));
   const body = h('div', { class: 'grid' },
     rest.length ? h('div', { class: 'list' }, rest.map(([id, l, ic]) => liRow({ icon: ic, title: l, chevron: true, onclick: () => { s.close(); go(id); } }))) : null,
-    window.auzCTheme ? h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, 'Colour theme')), h('div', { class: 'list' }, auzCTheme.cards())) : null,
+    window.auzCTheme ? h('div', { class: 'sec' }, auzCTheme.fold()) : null,
     h('div', { class: 'list' }, liRow({ icon: 'moon', tone: 'gray', title: 'Appearance', badge: seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v)) }),
       liRow({ icon: 'globe', tone: 'gray', title: 'Language', badge: seg([['en', 'English'], ['hi', 'हिंदी']], S_LANG, (v) => { setLang(v); location.reload(); }) })),
     h('div', { class: 'list' }, liRow({ icon: 'user', tone: 'gray', title: S.user.email, sub: S.user.role }),

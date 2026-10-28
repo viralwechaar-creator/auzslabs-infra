@@ -22,3 +22,14 @@ html[data-ctheme]:not([data-theme=dark]) .tabbar button[aria-current=page] svg,h
 .ctheme .sw i{flex:1}.ctheme .sw i:nth-child(1){flex:2}
 .ctheme b{font-size:14px}.ctheme span.d{font-size:12px;color:var(--label2);line-height:1.3}
 .ctheme .on{font-size:12px;font-weight:700;color:var(--accent-text)}
+
+.ctheme-fold{background:var(--card);border-radius:14px;overflow:hidden}
+.ctheme-head{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:8px 14px;border:0;background:transparent;color:var(--label);font:inherit;font-size:14px;font-weight:600;text-align:left;cursor:pointer}
+.ctheme-head .cl{flex:1}
+.ctheme-head .cs{display:flex;width:44px;height:18px;border-radius:6px;overflow:hidden;border:1px solid rgba(0,0,0,.1)}
+.ctheme-head .cs i{flex:1}.ctheme-head .cs i:nth-child(1){flex:2}
+.ctheme-head .cn{font-size:12px;font-weight:500;color:var(--label2);min-width:48px}
+.ctheme-head .cv{width:22px;text-align:center;font-size:18px;color:var(--label2)}
+.ctheme-head:focus-visible{outline:2px solid var(--accent-text);outline-offset:-2px}
+.ctheme-body{border-top:1px solid var(--sep)}
+.ctheme-body[hidden]{display:none}
