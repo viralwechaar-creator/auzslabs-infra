@@ -89,3 +89,8 @@ html.auz-lock .shell .body,html.auz-lock .items-scroll,html.auz-lock .cats-col,h
 .md-b,.sheet-b,.menu,.mf,.md .tk-lines{touch-action:pan-y;-webkit-overflow-scrolling:touch}
 /* iPhone zooms the page when a field under 16px gets focus: keep touch fields at 16px */
 @media (pointer:coarse){input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not(.bigamt),select,textarea{font-size:16px!important}}
+
+/* iPhone draws the dots of a password box with the first font of the stack; the rupee-only font made them look like bars */
+input[type=password]{font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;letter-spacing:.06em}
+/* the page container takes focus after a route change; it must never draw an outline (it showed as a green line above the tab bar) */
+[tabindex="-1"]:focus,[tabindex="-1"]:focus-visible{outline:none!important}
