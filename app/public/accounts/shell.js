@@ -9,7 +9,7 @@ const BRAND = SCANAPP ? { name: 'Scan & bill', title: 'AUZsScan', logo: '/logo-s
 const NAV = SCANAPP ? [
   { group: '', items: ['scan'] },
   { group: 'Records', items: ['sales', 'products', 'stock', 'data'] },
-  { group: 'Settings', items: ['invoicelayout'] },
+  { group: 'Settings', items: ['invoicelayout', 'alerts'] },
 ] : [
   { group: '', items: ['home'] },
   { group: 'Sales', items: ['scan', 'sales', 'customers', 'followups', 'receipts'] },
@@ -17,7 +17,7 @@ const NAV = SCANAPP ? [
   { group: 'Accounts', items: ['books', 'banking', 'assets'] },
   { group: 'Financial reports', items: ['analytics', 'reports', 'gst'] },
   { group: 'Inventory', items: ['products', 'stock'] },
-  { group: 'Tools', items: ['data', 'messages', 'settings'] },
+  { group: 'Tools', items: ['data', 'messages', 'alerts', 'settings'] },
 ];
 const TABS = SCANAPP ? ['scan', 'sales', 'products', 'stock'] : ['home', 'sales', 'receipts', 'expenses'];
 let route = { id: HOME, args: [], q: new URLSearchParams() };
