@@ -207,27 +207,36 @@ function setNavMode(m){try{localStorage.setItem('con.nav',m)}catch{}if(S.closeMo
 function navSwitch(){const b=(m,t)=>h('button',{type:'button',class:navMode()==m?'on':'','aria-pressed':String(navMode()==m),onclick:()=>setNavMode(m)},t);
  return h('div',{class:'nvrow'},h('span',{},'Menu style'),h('div',{class:'nvseg'},b('new','New'),b('classic','Classic')))}
 function appearanceBits(){return [window.auzCTheme?h('div',{class:'nvtheme'},auzCTheme.fold()):null,navSwitch()]}
+function mrow(icon,label,fn,href){const t=ic(icon||'menu3',17);const c=[h('i',{class:'mt'},t),h('span',{class:'ml'},label),ic('chr',14)];return href?h('a',{class:'mr',href},...c):h('button',{type:'button',class:'mr'+(fn&&fn.on?' on':''),onclick:fn},...c)}
+function msec(key,title,rows,open){const o=S.moreOpen||(S.moreOpen={});const isOpen=key in o?o[key]:open;
+ return h('section',{class:'msec'+(isOpen?' open':'')},h('button',{type:'button',class:'mh',onclick:()=>{o[key]=!isOpen;const m=document.querySelector('.more-sheet .msheet');const sc=m?m.scrollTop:0;if(S.closeMore){const c=S.closeMore;c();openMore();const n=document.querySelector('.more-sheet .msheet');if(n)n.scrollTop=sc}else render()}},h('span',{},title),h('span',{class:'mchev'},ic('chd',15))),isOpen?h('div',{class:'mcard'},...rows):null)}
 function newNav(){
- const nav=h('div',{class:'nav newnav'});let lbl=null;
- const flat=(pid,t)=>h('button',{class:'nb flat'+(S.page==pid?' on':''),onclick:()=>go(pid)},h('span',{},t));
+ const nav=h('div',{class:'nav newnav'});let lbl=null,solo=[];
+ const goRow=(pid,t,i)=>{const f=()=>{if(S.closeMore){S.closeMore();S.closeMore=null}go(pid)};f.on=S.page==pid;return mrow(i,t,f)};
+ const flush=()=>{if(solo.length){nav.append(msec('s:'+(lbl||'Main'),lbl||'Main',solo.map(x=>goRow(x[0],x[1],x[2])),solo.some(x=>x[0]==S.page)));solo=[]}};
  NAV.forEach(n=>{
-  if(n[0]=='lbl'){lbl=n[1];return}
-  if(n[0]=='href'){nav.append(h('a',{class:'nb',href:n[1]},ic(n[3]),h('span',{},n[2])));return}
-  if(n[0].startsWith('g:')){lbl=null;nav.append(h('div',{class:'nav-lbl'},n[1]),...n[3].map(([pid,t])=>flat(pid,t)));return}
-  if(lbl){nav.append(h('div',{class:'nav-lbl'},lbl));lbl=null}
-  nav.append(h('button',{class:'nb'+(S.page==n[0]?' on':''),onclick:()=>go(n[0])},ic(n[2]),h('span',{},n[1])))});
+  if(n[0]=='lbl'){flush();lbl=n[1];return}
+  if(n[0]=='href'){nav.append(msec('h:'+n[2],n[2],[mrow(n[3],n[2],null,n[1])],false));return}
+  if(n[0].startsWith('g:')){flush();lbl=null;nav.append(msec(n[0],n[1],n[3].map(([pid,t])=>goRow(pid,t,n[2])),n[3].some(c=>c[0]==S.page)));return}
+  solo.push([n[0],n[1],n[2]])});
+ flush();
  return nav}
 function otherLinks(nav){
  const apps=[['payroll','/payroll.html','Payroll','team'],['accounting','/accounts.html','Accounting','fin'],['mobile','/mob.html','AUZsMob','box']].filter(a=>S.features&&S.features[a[0]]===true&&S.enabledFeatures[a[0]]!==false);
- if(apps.length){nav.append(h('div',{class:'nav-lbl'},'Other apps'));apps.forEach(a=>nav.append(h('a',{class:'nb',href:a[1]},ic(a[3]),h('span',{},a[2]))))}
- nav.append(h('div',{class:'nav-lbl'},'Account'));nav.append(h('a',{class:'nb',href:'#',onclick:e=>{e.preventDefault();auzPlan.open(sb)}},h('span',{},'Plan & account')));nav.append(h('a',{class:'nb',href:'#',onclick:e=>{e.preventDefault();auzHelp.open(sb)}},h('span',{},'Help & report a problem')));
- if(S.role=='owner'){nav.append(h('div',{class:'nav-lbl'},'Data'));nav.append(h('a',{class:'nb',href:'#',onclick:e=>{e.preventDefault();auzMyData(sb)}},h('span',{},'Backup, export or clear data')))}
- nav.append(h('div',{class:'nav-lbl'},'This device'),...appearanceBits());return nav}
+ if(apps.length)nav.append(msec('apps','Other apps',apps.map(a=>mrow(a[3],a[2],null,a[1])),false));
+ const acc=[mrow('gear','Plan & account',()=>auzPlan.open(sb)),mrow('link','Help & report a problem',()=>auzHelp.open(sb))];
+ if(S.role=='owner')acc.push(mrow('rep','Backup, export or clear data',()=>auzMyData(sb)));
+ nav.append(msec('acct','Account',acc,false));
+ nav.append(msec('dev','This device',[h('div',{class:'mdev'},...appearanceBits())],false));return nav}
 const TABS_NEW=[['dashboard','Overview','home'],['daily/live','Live','live'],['menu/items','Items','menu'],['rep/sales','Reports','rep']];
-function openMore(){const body=otherLinks(newNav());const close=modal('Menu',[body]);S.closeMore=close;const w=document.querySelector('.mwrap:last-of-type');if(w)w.classList.add('more-sheet')}
+function openMore(){
+ const old=document.querySelector('.more-sheet');if(old)old.remove();
+ const close=()=>{const e=document.querySelector('.more-sheet');if(e)e.remove();S.closeMore=null;document.documentElement.classList.remove('auz-lock')};
+ const sheet=h('div',{class:'mwrap more-sheet'},h('div',{class:'msheet'},h('div',{class:'mtop'},h('button',{type:'button',class:'mdone',onclick:close},'Done'),h('b',{},'More'),h('a',{class:'mbell',href:'https://auzslab.in/account.html#notifications','aria-label':'Notifications'},ic('bell',18))),h('div',{class:'mbody'},otherLinks(newNav()))));
+ document.body.append(sheet);S.closeMore=close}
 function tabBar(){const inTabs=TABS_NEW.some(t=>t[0]==S.page);
- return h('nav',{class:'ctab','aria-label':'Main'},...TABS_NEW.map(([pid,t,i])=>h('button',{type:'button',class:S.page==pid?'on':'','aria-current':S.page==pid?'page':null,onclick:()=>go(pid)},ic(i,22),h('span',{},t))),
-  h('button',{type:'button',class:inTabs?'':'on',onclick:openMore},ic('menu3',22),h('span',{},'More')))}
+ return h('nav',{class:'ctab','aria-label':'Main'},...TABS_NEW.map(([pid,t,i])=>h('button',{type:'button','aria-label':t,class:S.page==pid?'on':'','aria-current':S.page==pid?'page':null,onclick:()=>go(pid)},ic(i,20),h('span',{class:'tl'},t))),
+  h('button',{type:'button','aria-label':'More',class:inTabs?'':'on',onclick:openMore},ic('menu3',20),h('span',{class:'tl'},'More')))}
 function sideNav(){
  if(navMode()=='new')return otherLinks(newNav());
  const nav=h('div',{class:'nav'});
