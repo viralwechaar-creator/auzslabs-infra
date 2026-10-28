@@ -74,8 +74,8 @@ async function docList(v, o) {
   };
   const typeLabel = DOC_LABEL[o.types[0]].toLowerCase();
   const cols = [
-    { key: 'number', label: 'Number', title: true, render: (r) => h('span', { class: 't' }, r.number.startsWith('DRAFT-') ? 'Draft' : r.number, r.reverse_charge ? h('span', { class: 'cap' }, ' · RCM') : '') },
-    { key: 'party_name', label: 'Party', sub: true, render: (r) => (r.party_name || 'Walk-in') + (isDesk() ? '' : ' · ' + fmtD(r.doc_date)) },
+    { key: 'party_name', label: 'Party', title: true, render: (r) => r.party_name || 'Walk-in' },
+    { key: 'number', label: 'Number', sub: true, render: (r) => h('span', null, (isDesk() ? '' : fmtD(r.doc_date) + ' · ') + (r.number.startsWith('DRAFT-') ? 'Draft' : r.number), r.reverse_charge ? ' · RCM' : '') },
     { key: 'doc_date', label: 'Date', hideMobile: true, render: (r) => fmtD(r.doc_date) },
     { key: 'due_date', label: 'Due', render: (r) => (POSTING.includes(r.doc_type) && r.due_date ? fmtD(r.due_date) : '') },
     { key: 'pay_status', label: 'Status', badge: true, render: (r) => statusBadge(r.pay_status) },
