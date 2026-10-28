@@ -106,6 +106,16 @@ export async function runTrialLock() {
   catch (err) { console.warn('trial lock failed:', err.message); }
 }
 
+// AUZsLedger / AUZsFinance notifications (db/295): due dates, cash, budgets, GST dates, summaries. Every hour; each notice carries its own
+// once-only reference, so running it again never repeats one.
+export async function runAlerts() {
+  try {
+    const { rows } = await pool.query('select alerts_run() as r');
+    const r = rows[0]?.r || {};
+    if (r.problems?.length) console.warn('alerts: problems', JSON.stringify(r.problems).slice(0, 400));
+  } catch (err) { console.warn('alerts run failed:', err.message); }
+}
+
 export function startMaintenance() {
   if (process.env.DISABLE_MAINTENANCE === '1') return;
   const runAll = () => {
@@ -115,4 +125,5 @@ export function startMaintenance() {
   };
   setTimeout(() => { runAll(); setInterval(runAll, DAY).unref(); }, 60_000).unref();
   setTimeout(() => { runTrialLock(); setInterval(runTrialLock, 5 * 60_000).unref(); }, 30_000).unref();
+  setTimeout(() => { runAlerts(); setInterval(runAlerts, 60 * 60_000).unref(); }, 90_000).unref();
 }

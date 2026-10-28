@@ -207,6 +207,9 @@ export const RPC = {
   // --- Notifications ---
   inbox_list: { params: ['p_limit'], auth: true },
   inbox_mark_read: { params: ['p_ids'], auth: true },
+  alerts_settings_get: { params: [], auth: true },
+  alerts_settings_save: { params: ['p'], jsonb: ['p'], auth: true },
+  alerts_send_test: { params: [], auth: true },
   send_client_notification: { params: ['p_tenant_id', 'p_title', 'p_body'], auth: true },
 
   // --- Add-on requests (existing client asking to add modules) ---
