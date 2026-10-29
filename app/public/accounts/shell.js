@@ -287,6 +287,7 @@ function header(o, root) {
   document.title = (o.title ? o.title + ' · ' : '') + BRAND.title;
   if (o.back) l.append(h('button', { class: 'btn plain', type: 'button', 'aria-label': 'Back', onclick: () => (typeof o.back === 'function' ? o.back() : go(o.back)) }, icon('chevL', 22), h('span', { class: 'desk-only' }, 'Back')));
   const desk = isDesk();
+  if (S.fys && S.fys.length) r.append(fyPill());
   if (desk) { r.append(h('div', { class: 'gsearch' }, h('button', { class: 'input', type: 'button', style: { textAlign: 'left', color: 'var(--label3)', display: 'flex', alignItems: 'center', gap: '8px' }, onclick: openPalette, 'aria-label': 'Search everything' }, icon('search', 18), h('span', { class: 'gs-t' }, 'Search'), h('span', { class: 'muted small gs-t', style: { marginLeft: 'auto' } }, '⌘K')))); }
   const acts = (o.actions || []).filter(Boolean);
   const primary = acts.filter((a) => a.primary), others = acts.filter((a) => !a.primary);

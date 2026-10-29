@@ -226,3 +226,5 @@ html,body{max-width:100%;overflow-x:clip}
 
 /* "?" help button next to hard words */
 .tip{width:22px;height:22px;border-radius:50%;border:1px solid var(--sep);background:var(--fill);font:700 12px/1 var(--font);color:var(--label2);padding:0;margin-left:6px;cursor:pointer;position:relative;vertical-align:middle}.tip::after{content:"";position:absolute;inset:-11px}
+.fypill{min-height:30px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--fill2,rgba(128,128,128,.14));color:var(--label)}
+.fypill.on{background:var(--accent);color:var(--on-accent)}

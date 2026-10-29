@@ -61,7 +61,7 @@ page('expenses', {
 });
 
 async function docList(v, o) {
-  const F = { search: '', status: o.status, from: '', to: '', party_id: '', limit: 50, offset: 0 };
+  const F = { search: '', status: o.status, from: (pickedFY() || {}).start_date || '', to: (pickedFY() || {}).end_date || '', party_id: '', limit: 50, offset: 0 };
   const host = h('div', { class: 'grid' }), listEl = h('div'), more = h('div', { style: { textAlign: 'center' } });
   let rows = [], total = 0, sums = null, sel = new Set(), busyLoad = false;
   const bar = h('div', { class: 'sum row sp small muted' });
@@ -117,7 +117,7 @@ async function docList(v, o) {
   }
   // toolbar: search, status chips, date range, saved views, export
   const search = searchField('Search ' + typeLabel + 's', debounce((q) => { F.search = q; load(); }, 300));
-  const dateBtn = h('button', { class: 'btn', onclick: dateSheet }, icon('calendar', 18), h('span', { class: 'dl' }, 'Dates'));
+  const dateBtn = h('button', { class: 'btn', onclick: dateSheet }, icon('calendar', 18), h('span', { class: 'dl' }, pickedFY() ? pickedFY().label : 'Dates'));
   const viewsBtn = h('button', { class: 'btn', onclick: () => viewsMenu(viewsBtn) }, icon('star', 18), h('span', null, 'Views'));
   const expBtn = h('button', { class: 'btn', onclick: () => doExport(expBtn) }, icon('download', 18), h('span', null, 'Export'));
   function dateSheet() {
