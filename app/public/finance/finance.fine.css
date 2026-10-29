@@ -368,3 +368,6 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .icard.sel{outline:2px solid var(--tint);outline-offset:-2px}
 .ic-tick{position:absolute;top:8px;left:8px;z-index:2;width:22px;height:22px;border-radius:11px;background:var(--bg);border:1.5px solid var(--sep);display:grid;place-items:center;color:#fff}
 .ic-tick.on{background:var(--tint);border-color:var(--tint)}
+
+/* the search icon sits inside the box: keep the typed text and placeholder clear of it (the New look's input padding was winning) */
+.search .input,html.ui-fine .search .input,html.ui-modern .search .input{padding-left:40px!important;padding-right:38px!important}

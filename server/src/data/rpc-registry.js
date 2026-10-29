@@ -263,6 +263,7 @@ export const RPC = {
   acc_get_document: { params: ['p_id'], auth: true },
   acc_list_payments: { params: ['p'], jsonb: ['p'], auth: true },
   acc_get_payment: { params: ['p_id'], auth: true },
+  acc_parties_directory: { params: ["p"], jsonb: ["p"], auth: true },
   acc_list_parties: { params: ['p'], jsonb: ['p'], auth: true },
   acc_list_products: { params: ['p'], jsonb: ['p'], auth: true },
   acc_product_stock: { params: ['p_product'], auth: true },

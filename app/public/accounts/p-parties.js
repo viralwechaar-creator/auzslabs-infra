@@ -207,3 +207,42 @@ function printStatement(st, from, to) {
       h('tr', null, h('td'), h('td', null, h('b', null, 'Closing balance')), h('td'), h('td'), h('td', { class: 'r' }, h('b', null, nf2.format(L.closing)))))));
   setTimeout(() => window.print(), 50);
 }
+
+
+// ---------- Parties: every customer and supplier with their GST details and balances, for a chosen financial year ----------
+page('parties', {
+  title: 'Parties', icon: 'users', perm: 'acc_view',
+  async render(v) {
+    v.header({ title: 'Parties' });
+    let kind = v.q.get('k') || '', gstOnly = v.q.get('g') === '1', q = '', fyId = (pickedFY() || {}).id || '';
+    const host = h('div'), kp = h('div', { class: 'kpis k3' });
+    const fySel = selectEl([['', 'All time']].concat(S.fys.map((f) => [f.id, f.label + (f.status === 'closed' ? ' (closed)' : '')])), fyId, { label: 'Financial year', onchange: (e) => { fyId = e.target.value; setPickedFY(fyId); load(); } });
+    let rows = [];
+    const range = () => { const f = S.fys.find((y) => y.id === fyId); return f ? { from: f.start_date, to: f.end_date } : {}; };
+    const draw = () => {
+      const shown = rows.filter((p) => p.active || Number(p.closing) !== 0);
+      const toYou = shown.filter((p) => Number(p.closing) > 0).reduce((s, p) => s + Number(p.closing), 0), fromYou = shown.filter((p) => Number(p.closing) < 0).reduce((s, p) => s - Number(p.closing), 0);
+      clear(kp).append(kpi('Owed to you', inr(toYou, 0), shown.filter((p) => Number(p.closing) > 0).length + ' parties'), kpi('You owe', inr(fromYou, 0), shown.filter((p) => Number(p.closing) < 0).length + ' parties'), kpi('Parties', String(shown.length), shown.filter((p) => p.gstin).length + ' with GST number'));
+      clear(host);
+      host.append(dataView([
+        { key: 'name', label: 'Name', title: true, render: (p) => h('div', null, h('div', { class: 't' }, p.name), h('div', { class: 's' }, [p.gstin || 'No GST number', p.phone].filter(Boolean).join(' · '))) },
+        { key: 'party_type', label: 'Type', render: (p) => ({ customer: 'Customer', supplier: 'Supplier', both: 'Customer and supplier' }[p.kind] || p.kind), sub: false },
+        { key: 'gstin', label: 'GSTIN', sub: false, render: (p) => (p.gstin ? h('span', { class: 'mono' }, p.gstin) : h('span', { class: 'muted' }, 'Unregistered')) },
+        { key: 'state_code', label: 'State', sub: false, render: (p) => (p.state_code ? stateName(p.state_code) : '') },
+        { key: 'opening', label: 'Brought forward', r: true, sub: false, sortVal: (p) => Number(p.opening), render: (p) => (Number(p.opening) ? money(Math.abs(p.opening)) : h('span', { class: 'muted' }, '–')) },
+        { key: 'debit', label: 'Billed / paid out', r: true, sub: false, sortVal: (p) => Number(p.debit), render: (p) => (Number(p.debit) ? money(p.debit) : h('span', { class: 'muted' }, '–')) },
+        { key: 'credit', label: 'Received / billed to you', r: true, sub: false, sortVal: (p) => Number(p.credit), render: (p) => (Number(p.credit) ? money(p.credit) : h('span', { class: 'muted' }, '–')) },
+        { key: 'closing', label: 'Balance', r: true, value: true, sortVal: (p) => Number(p.closing), render: (p) => Number(p.closing) === 0 ? h('span', { class: 'muted' }, 'Settled') : h('span', null, money(Math.abs(p.closing)), h('div', { class: 's' }, Number(p.closing) > 0 ? 'owes you' : 'you owe')) },
+      ], shown, { cards: true, onRow: (p) => go('party/' + p.id), empty: empty('users', 'No parties match', 'Try another filter, or add customers and suppliers first.') }));
+    };
+    const load = async () => { try { rows = (await api('acc_parties_directory', { p: Object.assign({ kind: kind || null, gst_only: gstOnly, search: q || null, limit: 5000 }, range()) })).rows; } catch (e) { return fail(e); } draw(); };
+    v.root.append(
+      h('div', { class: 'banner info' }, 'Balances carry forward by themselves: the ledger is continuous, so a year\'s opening is whatever the last year ended with. Switch the year to see each party\'s account for that year.'),
+      kp,
+      h('div', { class: 'toolbar' }, searchField('Search name, GST number or phone', debounce((x) => { q = x; load(); }, 250)),
+        chips([['', 'All'], ['customer', 'Customers'], ['supplier', 'Suppliers'], ['gst', 'With GST number']], gstOnly ? 'gst' : kind, (x) => { gstOnly = x === 'gst'; kind = x === 'gst' ? '' : x; load(); }),
+        h('div', { class: 'row' }, field('Financial year', fySel))),
+      host);
+    await load();
+  },
+});

@@ -226,7 +226,11 @@ async function parties(force) {
 }
 const bust = (...k) => { if (k.includes('products') || !k.length) S.products = null; if (k.includes('parties') || !k.length) S.parties = null; };
 const orgState = () => S.org && S.org.state_code;
-const curFY = () => S.fys.find((f) => f.start_date <= today() && today() <= f.end_date) || S.fys[0];
+// The financial year the person chose to look at (Parties tab, reports); today's year when none was chosen.
+const FY_KEY = 'acc.fy';
+const pickedFY = () => { try { const id = localStorage.getItem(FY_KEY); return id && S.fys.find((f) => f.id === id) || null; } catch { return null; } };
+const setPickedFY = (id) => { try { if (id) localStorage.setItem(FY_KEY, id); else localStorage.removeItem(FY_KEY); } catch { /* ignore */ } };
+const curFY = () => pickedFY() || S.fys.find((f) => f.start_date <= today() && today() <= f.end_date) || S.fys[0];
 
 // ---------- toasts, alerts, menus, sheets ----------
 let toastEl;
