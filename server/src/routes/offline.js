@@ -128,6 +128,16 @@ export async function handle(ctx) {
     try { return reply(200, await postJson(CLOUD_URL(), '/cloud/sync/logins', code, { email, password, role, name: String(b.name || '') })); }
     catch (e) { throw new HttpError(e.status && e.status < 500 ? e.status : 502, e.message); }
   }
+  if (url.pathname === '/offline/cloud-sync-password' && req.method === 'POST') {
+    if (rateLimited('syncpw:' + ip, 10, 15 * 60_000)) throw new HttpError(429, 'Too many tries. Wait a few minutes.');
+    const code = needSync();
+    const b = await readJsonBody(req);
+    const email = String(b.email || '').trim().toLowerCase(), password = String(b.password || '');
+    if (!/^\S+@\S+\.\S+$/.test(email)) throw new HttpError(400, 'Which login?');
+    if (password.length < 8) throw new HttpError(400, 'Password must be at least 8 characters.');
+    try { return reply(200, await postJson(CLOUD_URL(), '/cloud/sync/logins/password', code, { email, password })); }
+    catch (e) { throw new HttpError(e.status && e.status < 500 ? e.status : 502, e.message); }
+  }
   if (url.pathname === '/offline/cloud-sync-logins' && req.method === 'DELETE') {
     const code = needSync();
     const email = String(url.searchParams.get('email') || '').trim().toLowerCase();

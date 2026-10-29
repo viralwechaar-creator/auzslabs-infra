@@ -119,6 +119,18 @@ export async function handle(ctx) {
       .then((x) => x.rows[0].r).catch((e) => { throw new HttpError(400, e.message); });
     return reply(200, r);
   }
+  if (url.pathname === '/cloud/sync/logins/password' && req.method === 'POST') {
+    if (rateLimited('syncpw:' + (req.socket.remoteAddress || ''), 10, 15 * 60_000)) throw new HttpError(429, 'Too many tries. Wait a few minutes.');
+    const w = await who(req, true, 'sync');
+    const body = await readJsonBody(req);
+    const password = String(body.password || '');
+    if (password.length < 8) throw new HttpError(400, 'Password must be at least 8 characters.');
+    const hash = await bcrypt.hash(password, 10);
+    const r = await pool.query('select sty_cloud_sync_set_password($1, $2, $3) as r', [w.lineage, String(body.email || ''), hash])
+      .then((x) => x.rows[0].r).catch((e) => { throw new HttpError(400, e.message); });
+    try { const { revokeAllSessionsForUser } = await import('../auth.js'); if (r.userId) await revokeAllSessionsForUser(r.userId); } catch { /* the new password still works */ }
+    return reply(200, { changed: true });
+  }
   if (url.pathname === '/cloud/sync/logins' && req.method === 'DELETE') {
     const w = await who(req, true, 'sync');
     const email = String(url.searchParams.get('email') || '').trim();
