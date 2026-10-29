@@ -457,5 +457,21 @@ export default async function run({ browser, stack }) {
     assert(await stockOf(dud) === -1, 'the real sale was posted even though stock is now ' + await stockOf(dud));
     await c.close();
   }, 'critical');
+  await s.check('Bulk import: a whole purchase bill from one sheet, creating the products that are new', async () => {
+    const { c, page } = await openPage('/scan.html', USERS.acctOwner, { w: 1280, h: 900 }); page.setDefaultTimeout(20000);
+    await page.evaluate(() => { location.hash = '#/bulk'; }); await page.waitForSelector('text=What do you want to import?');
+    await page.locator('.li', { hasText: 'A purchase bill' }).click(); await page.waitForSelector('text=Which columns does your sheet need?');
+    assert(/Item name · Qty · Rate · Selling price · MRP · Purchase price · HSN code · GST %/.test(await page.locator('main').innerText()), 'columns not shown');
+    await page.locator('select').first().selectOption('__new'); await page.getByLabel('New name').fill('Bulk Supplier Co');
+    const csv = 'Item name,Qty,Rate,Selling price,MRP,Purchase price,HSN code,GST %\nBulk Pen One,10,12,15,20,12,9608,18\nBulk Pen Two,5,30,40,45,30,9608,12\n';
+    await page.setInputFiles('input[type=file]', { name: 'bill.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+    await page.waitForSelector('text=2 new products'); await page.locator('button', { hasText: 'Create the bill' }).click();
+    await page.waitForSelector('text=Draft saved', { timeout: 20000 });
+    const pr = await q("select name, mrp::float8 mrp, hsn, tax_rate::float8 gst, purchase_price::float8 buy from acc_products where tenant_id=$1 and name like 'Bulk Pen%' order by name", [tid]);
+    assert(pr.length === 2 && pr[0].mrp === 20 && pr[0].hsn === '9608' && pr[1].gst === 12 && pr[1].buy === 30, 'products: ' + JSON.stringify(pr));
+    const d = await q("select d.doc_type, count(l.*)::int n from acc_documents d join acc_doc_lines l on l.doc_id=d.id where d.tenant_id=$1 and d.created_at > now() - interval '5 minutes' and d.doc_type='bill' group by d.doc_type", [tid]);
+    assert(d.length === 1 && d[0].n === 2, 'bill: ' + JSON.stringify(d));
+    await c.close();
+  });
   s.done();
 }

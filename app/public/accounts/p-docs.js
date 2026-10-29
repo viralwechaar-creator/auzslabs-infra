@@ -120,6 +120,7 @@ async function docList(v, o) {
   const dateBtn = h('button', { class: 'btn', onclick: dateSheet }, icon('calendar', 18), h('span', { class: 'dl' }, pickedFY() ? pickedFY().label : 'Dates'));
   const viewsBtn = h('button', { class: 'btn', onclick: () => viewsMenu(viewsBtn) }, icon('star', 18), h('span', null, 'Views'));
   const expBtn = h('button', { class: 'btn', onclick: () => doExport(expBtn) }, icon('download', 18), h('span', null, 'Export'));
+  const moreBtn = h('button', { class: 'btn', type: 'button', 'aria-label': 'More options', onclick: () => menu(moreBtn, [{ label: 'Saved views', icon: 'star', run: () => setTimeout(() => viewsMenu(moreBtn), 60) }, { label: 'Export', icon: 'download', run: () => setTimeout(() => doExport(moreBtn), 60) }, ...(typeLabel && /bill|invoice/i.test(typeLabel) && can('acc_import') ? [{ label: 'Import from Excel', icon: 'upload', run: () => go('bulk?kind=' + (/bill/i.test(typeLabel) ? 'purchase' : 'sale')) }] : [])]) }, icon('more', 18), h('span', null, 'More'));
   function dateSheet() {
     const f = dateInput(F.from), t = dateInput(F.to);
     const s = sheet({ title: 'Date range', body: h('div', { class: 'grid' }, field('From', f), field('To', t), h('div', { class: 'row wrap' }, [['This month', monthStart(), monthEnd()], ['Last month', monthStart(addDays(monthStart(), -1)), addDays(monthStart(), -1)], ['Last 30 days', addDays(today(), -30), today()], ['This year', curFY().start_date, curFY().end_date]].map(([l, a, b]) => h('button', { class: 'chip', onclick: () => { f.value = a; t.value = b; } }, l)))),
@@ -141,7 +142,7 @@ async function docList(v, o) {
   }
   const statusChips = () => chips(statusOptions(o.types[0]), F.status, (x) => { F.status = x; load(); });
   const chipsHost = h('div', null, statusChips());
-  v.root.append(h('div', { class: 'toolbar' }, search, chipsHost, h('div', { class: 'row wrap' }, dateBtn, viewsBtn, expBtn)), bar, bulkBar, listEl, more);
+  v.root.append(h('div', { class: 'toolbar' }, search, chipsHost, h('div', { class: 'row wrap' }, dateBtn, moreBtn)), bar, bulkBar, listEl, more);
   await load();
 }
 
