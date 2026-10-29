@@ -29,7 +29,7 @@
   function css() {
     if (document.getElementById('auz-alerts-css')) return;
     var s = el('style'); s.id = 'auz-alerts-css';
-    s.textContent = '.al{display:grid;gap:14px;max-width:760px;margin:0 auto}.al h3{margin:0;font-size:15px}.al .muted{color:var(--label2,#777);font-size:12px}'
+    s.textContent = '.al{display:grid;gap:14px;max-width:760px;margin:0 auto}@media(min-width:1000px){.al{max-width:1180px;margin:0;grid-template-columns:minmax(0,1.5fr) minmax(300px,1fr);align-items:start;column-gap:22px}.al>*{grid-column:1}.al>.al-sum,.al>.al-set{grid-column:2}.al>.al-sum{grid-row:1}.al>.al-set{grid-row:2/span 3}.al>.al-tabs,.al>.al-list{grid-column:1}.al-sum{grid-template-columns:repeat(3,1fr)}}.al h3{margin:0;font-size:15px}.al .muted{color:var(--label2,#777);font-size:12px}'
       + '.al-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.al-sum div{background:var(--bg2,#fff);border:1px solid var(--sep,rgba(0,0,0,.1));border-radius:14px;padding:10px 12px}.al-sum b{display:block;font-size:22px;line-height:1.1}.al-sum span{font-size:11px;color:var(--label2,#777)}'
       + '.al-sum .c b{color:var(--red,#c62828)}.al-sum .w b{color:var(--orange,#e08a00)}'
       + '.al-tabs{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.al-tabs button,.al-btn{border:1px solid var(--sep,rgba(0,0,0,.14));background:var(--bg2,#fff);color:inherit;border-radius:999px;padding:7px 13px;font:600 12px var(--font,system-ui);cursor:pointer;min-height:34px}'

@@ -236,16 +236,36 @@ function shortcutsSheet() {
   sheet({ title: 'Keyboard shortcuts', closeLabel: 'Done', body: h('div', { class: 'list' }, rows.map(([a, b]) => h('div', { class: 'li' }, h('div', { class: 'grow' }, a), h('span', { class: 'muted mono' }, b)))) });
 }
 let pendingN = 0;
+let pendingG = 0;
+const GO_KEYS = { h: ['home', 'Overview'], s: ['sales', 'Sales'], p: ['purchases', 'Purchases'], c: ['customers', 'Customers'], u: ['suppliers', 'Suppliers'], a: ['parties', 'All parties'], r: ['receipts', 'Money received'], y: ['payments', 'Money paid'], e: ['expenses', 'Expenses'], t: ['products', 'Products'], k: ['stock', 'Stock'], g: ['gst', 'GST'], b: ['banking', 'Bank and cash'], x: ['reports', 'Reports'], d: ['data', 'Import and export'], i: ['bulk', 'Bulk import'], n: ['alerts', 'Notifications'], o: ['settings', 'Settings'] };
+function shortcutsSheet() {
+  const row = (k, t) => h('div', { class: 'li' }, h('div', { class: 'grow' }, h('div', { class: 't' }, t)), h('span', { class: 'badge' }, k));
+  const nm = [['N then I', 'New invoice'], ['N then B', 'New purchase bill'], ['N then E', 'New expense'], ['N then Q', 'New quotation'], ['N then R', 'Record money received'], ['N then P', 'Record money paid'], ['N then C', 'New customer'], ['N then S', 'New supplier'], ['N then T', 'New product']];
+  sheet({ title: 'Keyboard shortcuts', closeLabel: 'Done', body: h('div', { class: 'grid' },
+    h('div', { class: 'list' }, row('/ or Ctrl+K', 'Search anything and jump to it'), row('F', 'Choose the financial year'), row('?', 'Show this list')),
+    h('h3', null, 'Create'), h('div', { class: 'list' }, nm.map((x) => row(x[0], x[1]))),
+    h('h3', null, 'Go to (press G, then a letter)'), h('div', { class: 'list' }, Object.entries(GO_KEYS).map(([k, v]) => row('G then ' + k.toUpperCase(), v[1]))))});
+}
 function globalKeys(e) {
   const tag = (e.target.tagName || '').toLowerCase(), typing = tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable;
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openPalette(); return; }
   if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (document.querySelector('.sheet, .scrim, .alert')) return;
+  const k = e.key.toLowerCase();
   if (e.key === '/') { e.preventDefault(); openPalette(); return; }
-  if (e.key.toLowerCase() === 'n') { pendingN = Date.now(); return; }
+  if (e.key === '?') { e.preventDefault(); shortcutsSheet(); return; }
   if (Date.now() - pendingN < 1500) {
-    const k = e.key.toLowerCase(); pendingN = 0;
-    if (k === 'i' && can('acc_sales')) go('new/invoice'); else if (k === 'b' && can('acc_purchase')) go('new/bill'); else if (k === 'e' && can('acc_purchase')) go('new/expense');
+    pendingN = 0;
+    const m = { i: ['acc_sales', () => go('new/invoice')], b: ['acc_purchase', () => go('new/bill')], e: ['acc_purchase', () => go('new/expense')], q: ['acc_sales', () => go('new/quotation')],
+      r: ['acc_post', () => receiptSheet('receipt')], p: ['acc_post', () => receiptSheet('payment')], c: ['acc_sales', () => partySheet('customer', null, () => route_())], s: ['acc_purchase', () => partySheet('supplier', null, () => route_())], t: ['acc_inventory', () => productSheet(null, () => route_())] }[k];
+    if (m && can(m[0])) { e.preventDefault(); try { m[1](); } catch { /* ignore */ } } return;
   }
+  if (Date.now() - pendingG < 1500) {
+    pendingG = 0; const t = GO_KEYS[k]; if (t && PAGES[t[0]] && (!PAGES[t[0]].perm || can(PAGES[t[0]].perm))) { e.preventDefault(); go(t[0]); } return;
+  }
+  if (k === 'n') { pendingN = Date.now(); return; }
+  if (k === 'g') { pendingG = Date.now(); return; }
+  if (k === 'f' && S.fys && S.fys.length && window.fySheet) { e.preventDefault(); fySheet(); }
 }
 function quickMenu(anchor) {
   const it = [];
