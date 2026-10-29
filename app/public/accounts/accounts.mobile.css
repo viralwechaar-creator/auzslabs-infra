@@ -1,11 +1,11 @@
 /* AUZslab Accounting: compact (phones, under 600px) and medium (600-899px: tablet portrait, open foldables). Independent of accounts.desktop.css. */
 .shell{min-height:100dvh;padding-bottom:calc(54px + var(--safe-b))}
 .side{display:none}
-.topbar{position:sticky;top:0;z-index:30;display:grid;grid-template-columns:72px 1fr 72px;align-items:center;min-height:calc(48px + var(--safe-t));padding:var(--safe-t) 8px 0;background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:.5px solid transparent;transition:border-color .2s}
+.topbar{position:sticky;top:0;z-index:30;display:grid;grid-template-columns:auto 1fr auto;align-items:center;min-height:calc(48px + var(--safe-t));padding:var(--safe-t) 8px 0;background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:.5px solid transparent;transition:border-color .2s}
 .topbar.scrolled{border-bottom-color:var(--sep)}
 .topbar .tt{font-size:17px;font-weight:600;text-align:center;opacity:0;transition:opacity .2s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .topbar.scrolled .tt{opacity:1}
-.topbar .l{justify-self:start;display:flex}.topbar .r{justify-self:end;margin-left:auto;display:flex;gap:2px}
+.topbar .l{grid-column:1;justify-self:start;display:flex}.topbar .tt{grid-column:2}.topbar .r{grid-column:3;justify-self:end;margin-left:auto;display:flex;gap:2px}
 .topbar .btn.plain{min-width:44px}
 .page{padding:0 16px 28px;display:grid;gap:22px;align-content:start}
 .large-title{font-size:34px;line-height:1.12;font-weight:700;letter-spacing:-.03em;padding:2px 0 0}

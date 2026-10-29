@@ -5,7 +5,7 @@
 .topbar.scrolled{border-bottom-color:var(--sep)}
 .topbar .tt{font-size:17px;font-weight:600;text-align:center;opacity:0;transition:opacity .2s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .topbar.scrolled .tt{opacity:1}
-.topbar .l{justify-self:start;display:flex}.topbar .r{justify-self:end;margin-left:auto;display:flex;gap:2px}
+.topbar .l{grid-column:1;justify-self:start;display:flex}.topbar .tt{grid-column:2}.topbar .r{grid-column:3;justify-self:end;margin-left:auto;display:flex;gap:2px}
 .topbar .btn.plain{min-width:44px}
 .page{padding:0 16px 28px;display:grid;gap:22px;align-content:start}
 .large-title{font-size:34px;line-height:1.12;font-weight:700;letter-spacing:-.03em;padding:2px 0 0}
