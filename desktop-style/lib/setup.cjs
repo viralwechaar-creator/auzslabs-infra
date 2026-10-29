@@ -78,8 +78,17 @@ function ensureCluster({ pgBin, dataDir, port, superPassword, memoryMb = 2048 })
 
 function pgCtl(pgBin, dataDir, args) { return run(bin(pgBin, 'pg_ctl'), ['-D', path.join(dataDir, 'pgdata'), ...args]); }
 function isRunning({ pgBin, dataDir }) { const r = spawnSync(bin(pgBin, 'pg_ctl'), ['-D', path.join(dataDir, 'pgdata'), 'status'], { encoding: 'utf8', windowsHide: true, ...asUser() }); return r.status === 0; }
+// postmaster.pid line 4 is the port a running database really listens on
+function runningPort(dataDir) {
+  try { return Number(fs.readFileSync(path.join(dataDir, 'pgdata', 'postmaster.pid'), 'utf8').split(/\r?\n/)[3]); } catch { return 0; }
+}
 function startPg({ pgBin, dataDir, port }) {
-  if (isRunning({ pgBin, dataDir })) return;
+  if (isRunning({ pgBin, dataDir })) {
+    // A database left running from an earlier, cut-off setup listens on PostgreSQL's default port (5432). Restart it on ours.
+    const have = runningPort(dataDir);
+    if (!port || !have || have === Number(port)) return;
+    try { pgCtl(pgBin, dataDir, ['-m', 'fast', '-w', '-t', '60', 'stop']); } catch { /* start below reports the real problem */ }
+  }
   pgCtl(pgBin, dataDir, ['-l', path.join(dataDir, 'postgres.log'), '-w', '-t', '180', '-o', `-p ${port} -c listen_addresses=127.0.0.1`, 'start']);
 }
 function stopPg({ pgBin, dataDir }) { if (isRunning({ pgBin, dataDir })) pgCtl(pgBin, dataDir, ['-m', 'fast', '-w', '-t', '60', 'stop']); }
