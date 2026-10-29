@@ -88,7 +88,12 @@ function remoteAccessCard() {
       right: h('button', { class: 'btn sm danger', type: 'button', onclick: async (ev) => {
         if (!await confirmBox(t('Remove this login?'), l.email + ' ' + t('will no longer be able to sign in remotely.'), t('Remove'), true)) return;
         ev.currentTarget.disabled = true;
-        try { await fetch('/offline/cloud-sync-logins?email=' + encodeURIComponent(l.email), { method: 'DELETE' }); paint(); } catch (e) { fail(e); ev.currentTarget.disabled = false; }
+        try {
+          const r = await fetch('/offline/cloud-sync-logins?email=' + encodeURIComponent(l.email), { method: 'DELETE' });
+          const d = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(d.error || t('Could not remove that login.'));
+          toast(d.removed === false ? t('That login was already removed.') : t('Login removed')); paint();
+        } catch (e) { toast(e.message || t('Failed'), { err: true }); ev.currentTarget.disabled = false; }
       } }, icon('trash', 16)),
     })));
     paintList();
