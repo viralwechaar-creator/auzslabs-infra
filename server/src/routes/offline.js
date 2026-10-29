@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
@@ -63,6 +64,31 @@ function inside(root, rel) {
 export async function handle(ctx) {
   if (!OFFLINE) return false;
   const { req, res, url, ip, reply } = ctx;
+  // A cloud picture (https://<shop>.auzslab.in/uploads/...) seen from this computer. Older Windows (7) browsers often cannot verify
+  // our certificate, so the page asks this server to fetch it instead (Node carries its own certificate list). A copy is kept on
+  // disk, so once seen it also shows with no internet.
+  if (url.pathname === '/offline/photo' && req.method === 'GET') {
+    let u; try { u = new URL(String(url.searchParams.get('u') || '')); } catch { throw new HttpError(400, 'Which picture?'); }
+    if (u.protocol !== 'https:' || !/(^|\.)auzslab\.in$/i.test(u.hostname) || !u.pathname.startsWith('/uploads/') || u.pathname.includes('..')) throw new HttpError(400, 'Not an AUZslab picture.');
+    if (!UPLOADS) throw new HttpError(404, 'No picture folder.');
+    const key = crypto.createHash('sha256').update(u.href).digest('hex').slice(0, 40);
+    const ext = (path.extname(u.pathname).toLowerCase().match(/^\.(jpe?g|png|webp)$/) || ['.jpg'])[0];
+    const dir = path.join(UPLOADS, 'site', '_cloud'); const file = path.join(dir, key + ext);
+    if (!fs.existsSync(file)) {
+      const buf = await new Promise((resolve, reject) => {
+        const rq = https.get(u, { timeout: 15000 }, (r) => {
+          if (r.statusCode !== 200) { r.resume(); return reject(new HttpError(r.statusCode === 404 ? 404 : 502, 'Picture not found.')); }
+          const parts = []; let n = 0;
+          r.on('data', (c) => { n += c.length; if (n > 8_000_000) { rq.destroy(new Error('Picture too big.')); } else parts.push(c); });
+          r.on('end', () => resolve(Buffer.concat(parts)));
+        });
+        rq.on('timeout', () => rq.destroy(new Error('timed out')));
+        rq.on('error', (e) => reject(e instanceof HttpError ? e : new HttpError(502, 'Could not reach AUZslab.')));
+      });
+      fs.mkdirSync(dir, { recursive: true }); fs.writeFileSync(file + '.part', buf); fs.renameSync(file + '.part', file);
+    }
+    return sendFile(res, file, { cache: 'public, max-age=31536000, immutable' });
+  }
   if (url.pathname === '/setup/state' && req.method === 'GET') {
     const { rows } = await pool.query('select offline_setup_needed() as needed');
     return reply(200, { needed: rows[0].needed, product: PRODUCT });

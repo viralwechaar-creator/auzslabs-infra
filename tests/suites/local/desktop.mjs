@@ -129,6 +129,11 @@ export default async function run({ browser }) {
       assert(await page.locator('.upiq-i').count() === 1, 'no QR image in the popup: ' + (await page.locator('.upiq-card').innerText().catch(() => 'no popup')) + ' errs=' + errs.slice(-3).join(' ; '));
       await page.keyboard.press('Escape');
     }, 'critical');
+    await s.check('The picture helper only fetches AUZslab pictures (no other sites, no odd paths)', async () => {
+      for (const u of ['https://evil.example.com/uploads/x.jpg', 'http://x.auzslab.in/uploads/x.jpg', 'https://x.auzslab.in/other/x.jpg', 'https://x.auzslab.in/uploads/../x.jpg', 'notaurl']) {
+        const r = await fetch(base + '/offline/photo?u=' + encodeURIComponent(u)); assert(r.status === 400, u + ' -> ' + r.status);
+      }
+    });
     await s.check('Offline diagnostics: /offline/lan-info now works once a licence is active, and leaves out loopback', async () => {
       const info = await (await fetch(base + '/offline/lan-info')).json();
       assert(Array.isArray(info.ips) && info.ips.every((ip) => ip !== '127.0.0.1'), 'lan-info: ' + JSON.stringify(info));

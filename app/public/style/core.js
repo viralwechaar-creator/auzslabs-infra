@@ -4,6 +4,13 @@
    textContent / attributes, never innerHTML, which is the XSS defence (icons are static strings). */
 'use strict';
 // An installed PC (Windows 7 especially) with no network card reports navigator.onLine = false even though the local server is on the same machine: there it is never "offline".
+// Installed copy only (address 127.0.0.1): a cloud picture that fails to load (old Windows cannot verify our certificate) is
+// loaded again through this computer's own server, which fetches and keeps a copy.
+if (/^(127\.0\.0\.1|localhost)$/.test(location.hostname)) window.addEventListener('error', (e) => {
+  const i = e.target; if (!i || i.tagName !== 'IMG') return;
+  const u = i.currentSrc || i.src || ''; if (!/^https:\/\/[^/]*\.auzslab\.in\/uploads\//i.test(u)) return;
+  i.src = '/offline/photo?u=' + encodeURIComponent(u);
+}, true);
 function netDown() { return navigator.onLine === false && !/^(127\.0\.0\.1|localhost|\[::1\])$/.test(location.hostname); }
 const CFG = window.CFG || {};
 const sb = window.supabase.createClient(CFG.url, CFG.key);
