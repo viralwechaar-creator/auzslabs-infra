@@ -232,6 +232,16 @@ const pickedFY = () => { try { const id = localStorage.getItem(FY_KEY); return i
 const setPickedFY = (id) => { try { if (id) localStorage.setItem(FY_KEY, id); else localStorage.removeItem(FY_KEY); } catch { /* ignore */ } };
 const curFY = () => pickedFY() || S.fys.find((f) => f.start_date <= today() && today() <= f.end_date) || S.fys[0];
 
+// Financial-year switcher, available from every page (like the year box in desktop accounting software).
+function fyShort(f) { return f ? 'FY ' + String(f.label).replace(/^(\d{2})(\d{2})-(\d{2})(\d{2})?$/, '$2-$3') : 'FY'; }
+function fySheet() {
+  const sel = pickedFY(), now = S.fys.find((f) => f.start_date <= today() && today() <= f.end_date);
+  const row = (f) => liRow({ icon: 'calendar', title: f.label + (now && f.id === now.id ? ' (this year)' : ''), sub: f.start_date + ' to ' + f.end_date + (f.status === 'closed' ? ' · closed' : ''), badge: (sel ? sel.id === f.id : now && f.id === now.id) ? h('span', { class: 'badge green' }, 'Showing') : null,
+    onclick: () => { setPickedFY(now && f.id === now.id ? '' : f.id); s.close(); bust('parties'); route_(); toast('Showing ' + f.label); } });
+  const s = sheet({ title: 'Financial year', closeLabel: 'Done', body: h('div', { class: 'grid' }, h('p', { class: 'muted small' }, 'Pick a year to see its reports, bills, payments and each party\'s balance for that year. Opening balances carry forward by themselves.'), h('div', { class: 'list' }, S.fys.slice().sort((a, b) => (a.start_date < b.start_date ? 1 : -1)).map(row))) });
+}
+const fyPill = () => h('button', { class: 'btn fypill' + (pickedFY() ? ' on' : ''), type: 'button', 'aria-label': 'Financial year', title: 'Financial year', onclick: fySheet }, fyShort(curFY()));
+
 // ---------- toasts, alerts, menus, sheets ----------
 let toastEl;
 function toast(msg, o = {}) {
