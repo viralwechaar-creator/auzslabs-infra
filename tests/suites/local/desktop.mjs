@@ -46,6 +46,14 @@ export default async function run({ browser }) {
       assert(fs.existsSync(path.join(pgdata, 'PG_VERSION')), 'a real cluster should exist now');
       assert(!fs.existsSync(path.join(pgdata, 'junk.tmp')), 'the leftover file should be gone');
     }, 'critical');
+    await s.check('A cluster whose first setup was cut off (our settings never written, so it would use port 5432) is repaired on the next start', async () => {
+      const f = path.join(dataDir, 'pgdata', 'postgresql.conf');
+      const t = fs.readFileSync(f, 'utf8'); fs.writeFileSync(f, t.slice(0, t.indexOf('# AUZslab settings')));
+      assert(L.ensureCluster(o) === false, 'should not be remade');
+      const u = fs.readFileSync(f, 'utf8');
+      assert(u.includes('# AUZslab settings') && new RegExp('^port = ' + pgPort + '$', 'm').test(u), 'settings not restored');
+      L.ensureCluster(o); assert((fs.readFileSync(f, 'utf8').match(/# AUZslab settings/g) || []).length === 1, 'settings written twice');
+    }, 'critical');
     await s.check('A new database cluster is made, started and built from the migrations with the sample data removed', async () => {
       assert(L.ensureCluster(o) === false, 'cluster already made by the previous check, should not be remade');
       L.startPg(o);

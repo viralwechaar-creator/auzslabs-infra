@@ -35,20 +35,17 @@ function secrets(dir) {
   return s;
 }
 
-function ensureCluster({ pgBin, dataDir, port, superPassword, memoryMb = 2048 }) {
-  const pgdata = path.join(dataDir, 'pgdata');
-  if (fs.existsSync(path.join(pgdata, 'PG_VERSION'))) return false;
-  // PG_VERSION is the very first thing a real initdb writes, so its absence means this directory can only be
-  // empty or leftover junk from an earlier run that crashed or was killed mid-setup -- never a usable cluster.
-  // initdb refuses to run into a non-empty directory, so without this a broken first run leaves the computer
-  // permanently stuck on "AUZsStyle could not start" with no way to recover short of finding this folder by hand.
-  if (fs.existsSync(pgdata)) fs.rmSync(pgdata, { recursive: true, force: true });
-  fs.mkdirSync(dataDir, { recursive: true }); own(dataDir);
-  const pw = path.join(dataDir, '.pw'); fs.writeFileSync(pw, superPassword, { mode: 0o600 }); own(pw);
-  try { run(bin(pgBin, 'initdb'), ['-D', pgdata, '-U', 'postgres', '-A', 'scram-sha-256', '--pwfile=' + pw, '-E', 'UTF8', '--locale=C']); } finally { fs.rmSync(pw, { force: true }); }
-  // small and safe for an old shop computer: few connections, modest memory, writes always flushed to disk
+// Our settings go at the end of postgresql.conf. Written by its own function so a database whose first setup was cut off
+// (the app closed while a slow computer was still creating it) is repaired on the next start instead of staying on PostgreSQL's
+// default port forever.
+const CONF_MARK = '# AUZslab settings';
+function ensureConf({ dataDir, port, memoryMb = 2048 }) {
+  const f = path.join(dataDir, 'pgdata', 'postgresql.conf');
+  let t = ''; try { t = fs.readFileSync(f, 'utf8'); } catch { return; }
   const small = memoryMb <= 2048;
-  fs.appendFileSync(path.join(pgdata, 'postgresql.conf'), `
+  if (!t.includes(CONF_MARK)) {
+    fs.appendFileSync(f, `
+${CONF_MARK}
 listen_addresses = '127.0.0.1'
 port = ${port}
 max_connections = 30
@@ -61,14 +58,29 @@ fsync = on
 synchronous_commit = on
 logging_collector = off
 `);
+  } else if (!new RegExp('^port = ' + port + '\\s*$', 'm').test(t.slice(t.indexOf(CONF_MARK)))) {
+    fs.writeFileSync(f, t.slice(0, t.indexOf(CONF_MARK)) + t.slice(t.indexOf(CONF_MARK)).replace(/^port = .*$/m, 'port = ' + port));
+  }
+}
+
+function ensureCluster({ pgBin, dataDir, port, superPassword, memoryMb = 2048 }) {
+  const pgdata = path.join(dataDir, 'pgdata');
+  if (fs.existsSync(path.join(pgdata, 'PG_VERSION'))) { ensureConf({ dataDir, port, memoryMb }); return false; }
+  // PG_VERSION is the very first thing a real initdb writes, so its absence means this directory can only be
+  // empty or leftover junk from an earlier run that crashed or was killed mid-setup -- never a usable cluster.
+  if (fs.existsSync(pgdata)) fs.rmSync(pgdata, { recursive: true, force: true });
+  fs.mkdirSync(dataDir, { recursive: true }); own(dataDir);
+  const pw = path.join(dataDir, '.pw'); fs.writeFileSync(pw, superPassword, { mode: 0o600 }); own(pw);
+  try { run(bin(pgBin, 'initdb'), ['-D', pgdata, '-U', 'postgres', '-A', 'scram-sha-256', '--pwfile=' + pw, '-E', 'UTF8', '--locale=C']); } finally { fs.rmSync(pw, { force: true }); }
+  ensureConf({ dataDir, port, memoryMb });
   return true;
 }
 
 function pgCtl(pgBin, dataDir, args) { return run(bin(pgBin, 'pg_ctl'), ['-D', path.join(dataDir, 'pgdata'), ...args]); }
 function isRunning({ pgBin, dataDir }) { const r = spawnSync(bin(pgBin, 'pg_ctl'), ['-D', path.join(dataDir, 'pgdata'), 'status'], { encoding: 'utf8', windowsHide: true, ...asUser() }); return r.status === 0; }
-function startPg({ pgBin, dataDir }) {
+function startPg({ pgBin, dataDir, port }) {
   if (isRunning({ pgBin, dataDir })) return;
-  pgCtl(pgBin, dataDir, ['-l', path.join(dataDir, 'postgres.log'), '-w', '-t', '180', 'start']);
+  pgCtl(pgBin, dataDir, ['-l', path.join(dataDir, 'postgres.log'), '-w', '-t', '180', '-o', `-p ${port} -c listen_addresses=127.0.0.1`, 'start']);
 }
 function stopPg({ pgBin, dataDir }) { if (isRunning({ pgBin, dataDir })) pgCtl(pgBin, dataDir, ['-m', 'fast', '-w', '-t', '60', 'stop']); }
 
