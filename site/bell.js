@@ -28,7 +28,7 @@
       + '.auzp.on{display:flex}.auzp-h{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid rgba(0,0,0,.08);font-weight:700}'
       + '.auzp-h button,.auzp-f button{background:none;border:0;color:#800020;font:600 12px system-ui,sans-serif;cursor:pointer;padding:4px}'
       + '.auzp-l{overflow:auto;flex:1}.auzp-i{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid rgba(0,0,0,.06);padding:10px 14px;cursor:pointer;color:inherit;font:inherit}'
-      + '.auzp-i{display:flex;align-items:baseline;justify-content:space-between;gap:10px}.auzp-i b{display:block;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.auzp-i small{flex:none}.auzp-f:empty,.auzp-f:not(:has(button:not([hidden]),span:not(:empty))){display:none}.auzp-i span{display:block;color:#555;margin-top:2px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.auzp-i small{color:#888}'
+      + '.auzp-i:not(.u){opacity:.55}.auzp-i{display:flex;align-items:baseline;justify-content:space-between;gap:10px}.auzp-i b{display:block;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.auzp-i small{flex:none}.auzp-f:empty,.auzp-f:not(:has(button:not([hidden]),span:not(:empty))){display:none}.auzp-i span{display:block;color:#555;margin-top:2px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.auzp-i small{color:#888}'
       + '.auzp-i.u{background:rgba(128,0,32,.05)}.auzp-i.u b:before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#800020;margin-right:6px}'
       + '.auzp-e{padding:26px 14px;text-align:center;color:#777}.auzp-f{padding:8px 14px;border-top:1px solid rgba(0,0,0,.08);display:flex;justify-content:space-between;align-items:center;gap:8px;color:#666;font-size:12px}'
       + '@media (prefers-color-scheme:dark){html[data-theme=dark] .auzp{background:#1c1c1e;color:#f2f2f2;border-color:rgba(255,255,255,.14)}html[data-theme=dark] .auzp-i span{color:#aaa}}'
@@ -48,7 +48,7 @@
     if (host) { if (host.classList.contains('top-in')) btn.style.marginLeft = 'auto'; host.insertBefore(btn, host.firstChild); }
     else { btn.classList.add('auzb-float'); document.body.appendChild(btn); }
     panel = document.createElement('div'); panel.className = 'auzp'; panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-label', 'Notifications');
-    panel.innerHTML = '<div class="auzp-h"><span>Notifications</span><button type="button" data-all>Clear</button></div><div class="auzp-t"></div><div class="auzp-l"></div><div class="auzp-f"><span data-st></span><button type="button" data-al>Turn on alerts</button></div>';
+    panel.innerHTML = '<div class="auzp-h"><span>Notifications</span><button type="button" data-all>Mark all read</button></div><div class="auzp-t"></div><div class="auzp-l"></div><div class="auzp-f"><span data-st></span><button type="button" data-al>Turn on alerts</button></div>';
     document.body.appendChild(panel); list = panel.querySelector('.auzp-l'); tabs = panel.querySelector('.auzp-t');
     btn.onclick = function (e) { e.stopPropagation(); toggle(); };
     panel.onclick = function (e) { e.stopPropagation(); };
@@ -64,12 +64,12 @@
     if (unread > 0) { badge.hidden = false; badge.textContent = unread > 99 ? '99+' : unread; } else badge.hidden = true;
     tabs.classList.remove('on'); tabs.textContent = '';
     list.textContent = '';
-    /* only what needs attention: unread notices, one line each */
-    var shown = items.filter(function (n) { return !n.read; }).slice(0, 12);
-    panel.querySelector('[data-all]').hidden = shown.length < 2;
-    if (!shown.length) { var e = document.createElement('div'); e.className = 'auzp-e'; e.textContent = 'All caught up'; list.appendChild(e); return; }
+    /* every notice, one short line each; unread ones are bold with a dot, read ones are dimmed */
+    var shown = items.slice(0, 30);
+    panel.querySelector('[data-all]').hidden = unread < 1;
+    if (!shown.length) { var e = document.createElement('div'); e.className = 'auzp-e'; e.textContent = 'No notifications'; list.appendChild(e); return; }
     shown.forEach(function (n) {
-      var b = document.createElement('button'); b.type = 'button'; b.className = 'auzp-i u' + (n.severity ? ' s-' + n.severity : '');
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'auzp-i' + (n.read ? '' : ' u') + (n.severity ? ' s-' + n.severity : '');
       var t = document.createElement('b'); t.textContent = n.title || '';
       var a = document.createElement('small'); a.textContent = ago(n.created_at);
       b.appendChild(t); b.appendChild(a);

@@ -296,11 +296,11 @@ async function refreshNotes() {
 }
 function noteTarget(n) { return n.type === 'style_request' ? 'requests' : n.type === 'style_soldout' ? 'stock' : 'store'; }
 function notesSheet() {
-  // Only what needs attention: unread notices, one line each. Read ones are gone from the list.
+  // Every notice, kept short: title and time only. Unread ones have a dot.
   const unread = NOTES.filter((n) => !n.read);
   const open = async (n, s) => { s.close(); if (!n.read) { n.read = true; try { await sb.from('notifications').update({ read: true }).eq('id', n.id); } catch {} } if (noteTarget(n) === 'store') OST.tab = 'orders'; go(noteTarget(n)); refreshNotes(); };
-  const rows = unread.length ? unread.slice(0, 20).map((n) => liRow({ icon: n.type === 'store_order' ? 'globe' : n.type === 'store_return' ? 'swap' : n.type === 'store_paid' ? 'cash' : 'bell', title: n.title, chevron: true, onclick: () => open(n, s) })) : [empty('bell', t('All caught up'), t('Nothing needs your attention.'))];
-  const s = sheet({ title: t('Notifications'), closeLabel: t('Done'), body: h('div', { class: 'grid' }, unread.length > 1 ? h('button', { class: 'btn sm', type: 'button', onclick: async () => { for (const n of unread) { n.read = true; try { await sb.from('notifications').update({ read: true }).eq('id', n.id); } catch {} } s.close(); refreshNotes(); } }, t('Clear all')) : null, h('div', { class: 'list' }, rows)) });
+  const rows = NOTES.length ? NOTES.slice(0, 40).map((n) => liRow({ icon: n.type === 'store_order' ? 'globe' : n.type === 'store_return' ? 'swap' : n.type === 'store_paid' ? 'cash' : 'bell', title: n.title, sub: fmtDT(n.created_at), chevron: true, badge: n.read ? null : h('span', { class: 'dot', style: { background: 'var(--tint)', width: '8px', height: '8px', borderRadius: '50%', display: 'inline-block' } }), onclick: () => open(n, s) })) : [empty('bell', t('No notifications'), t('Website orders, returns and requests show here.'))];
+  const s = sheet({ title: t('Notifications'), closeLabel: t('Done'), body: h('div', { class: 'grid' }, unread.length ? h('button', { class: 'btn sm', type: 'button', onclick: async () => { for (const n of unread) { n.read = true; try { await sb.from('notifications').update({ read: true }).eq('id', n.id); } catch {} } s.close(); refreshNotes(); } }, t('Mark all as read')) : null, h('div', { class: 'list' }, rows)) });
 }
 setTimeout(refreshNotes, 1500); setInterval(refreshNotes, 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshNotes(); });
