@@ -47,7 +47,7 @@ def opt(key, name, desc):
 
 CART_BODY = '''    <div class="tl">
       <div class="tl-head"><span class="tl-eye">Your request</span><h1 class="tl-h">Tell us what you need.</h1>
-      <p class="tl-sub">Choose your services and tell us about your business. We check it, send you a quote made for your business, and you pay. Nothing is charged on this page. Want to try first? <a href="build.html">Build your own and use it free for 3 days</a>.</p></div>
+      <p class="tl-sub">Choose your services and tell us about your business. We check it, send you a quote made for your business, and you pay. Nothing is charged on this page. Want to try first? <a href="platform.html#build">Build your own and use it free for 3 days</a>.</p></div>
       <ol class="tl-steps" id="steps"><li class="on">Choose and tell us</li><li>We send your quote</li><li>You pay</li></ol>
 
       <div id="formWrap" class="tl-grid two">

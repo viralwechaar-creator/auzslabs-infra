@@ -1,3 +1,0 @@
-/* AUZslab minimal layer: folds footer columns on phones (tap the small heading). Presentation only. */
-(function(){function f(){document.querySelectorAll('.footer-dark .footer-col').forEach(function(c){if(c.classList.contains('footer-col-brand')||c.dataset.minDone)return;c.dataset.minDone='1';c.classList.add('min-fold');var h=c.firstElementChild;if(!h)return;h.setAttribute('role','button');h.setAttribute('tabindex','0');function t(){c.classList.toggle('open')}h.addEventListener('click',t);h.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();t()}})})}
-if(document.readyState!=='loading')f();else document.addEventListener('DOMContentLoaded',f)})();

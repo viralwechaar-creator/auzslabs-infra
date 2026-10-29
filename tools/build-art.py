@@ -51,7 +51,7 @@ def home():
 <dl>
 <div class="a-rise"><dt>Overview</dt><dd data-ed="home.l2s">Every screen, bill, rule and field bends to how you work. One login, one ledger, and every part is yours to shape.</dd></div>
 <div class="a-rise"><dt>Services</dt><dd><a href="products.html#slab-web">Website</a><a href="products.html#slab-pos">POS &amp; CRM</a><a href="products.html#slab-auto">Automation</a><a href="products.html#slab-payroll">Payroll</a><a href="products.html#slab-acct">Accounting</a></dd></div>
-<div class="a-rise"><dt>Businesses</dt><dd><a href="business-cafes.html">Cafes</a><a href="business-salons.html">Salons</a><a href="business-retail.html">Retail</a><a href="business-clothing.html">Clothing</a><a href="business-mobile-repair.html">Mobile shops</a></dd></div>
+<div class="a-rise"><dt>Businesses</dt><dd><a href="products.html#slab-pos">Cafes</a><a href="products.html#slab-ind">Salons</a><a href="products.html#slab-acct">Retail</a><a href="products.html#slab-ind">Clothing</a><a href="products.html#slab-ind">Mobile shops</a></dd></div>
 <div class="a-rise"><dt>See it run</dt><dd><a href="live-demo.html">Live demo</a><a href="download-apps.html">Apps</a><a href="studio.html">Studio</a></dd></div>
 </dl></div>
 <div class="ah-cta a-rise"><span>Build yours.</span><button class="btn" data-open-contact>Talk to us</button></div>
@@ -253,32 +253,6 @@ def _():
 </div>
 </div>''' % (seg, panels)
     put('download-apps', body, 'a-dl', 'a-dl')
-
-def biz(page, accent):
-    h = rd(page)
-    m = h[h.index('<main'):h.index('<div class="ftwrap"')]
-    img = re.search(r'data-ed-img="(biz\.[a-z-]+)"', m).group(1)
-    hk = re.search(r'<h1 data-ed="([^"]+)">(.*?)</h1>', m, re.S)
-    sk = re.search(r'<span data-ed="([^"]+)">(.*?)</span>', m, re.S)
-    rows = re.findall(r'<b style="font-weight:400[^>]*>(.*?)</b>', m, re.S)
-    tail = m[m.index('<section class="section tight" id="quote">'):]
-    tail = tail[:tail.rindex('</section>') + 10] if '<div class="stack">' not in tail else tail[:tail.index('<div class="stack">')]
-    cells = ''.join('<div class="ab-c a-rise"><i>%02d</i><b>%s</b><em></em></div>' % (i + 1, r) for i, r in enumerate(rows))
-    body = '''
-<div class="ab" style="--ac:%s">
-<span class="ab-mono">%s</span>
-<div class="ab-frame">
-<div class="ab-top"><div class="ab-title"><h1 data-ed="%s">%s</h1></div><div class="ab-metal"></div></div>
-<div class="ab-sub"><span>&larr;</span><code>business: %s</code><span>&rarr;</span></div>
-<div class="ab-grid">%s</div>
-</div>
-<div class="ab-band a-rise"><div><h2>Tell us how your business works.</h2><p data-ed="%s">%s</p><button class="btn" data-open-contact>Let's talk</button></div><div class="ab-dots"></div></div>
-</div>
-<div class="ab-tail">%s</div>''' % (accent, page.replace('business-', '').replace('-', ' ').upper(), hk.group(1), hk.group(2), page.replace('business-', '').replace('-repair', ''), cells, sk.group(1), sk.group(2), tail)
-    put(page, body, 'a-biz', 'a-biz')
-
-for _p, _a in [('business-cafes', '#800020'), ('business-salons', '#7a2e5a'), ('business-retail', '#0f5a56'), ('business-clothing', '#a24a14'), ('business-mobile-repair', '#2a3f9a')]:
-    PAGES[_p] = (lambda p=_p, a=_a: biz(p, a))
 
 exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'art2.py'), encoding='utf-8').read())
 

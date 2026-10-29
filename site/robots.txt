@@ -5,15 +5,11 @@ Disallow: /post-studio.html
 Disallow: /account.html
 Disallow: /signup.html
 Disallow: /cart.html
-Disallow: /demo.html
 Disallow: /pay.html
 Disallow: /inv.html
-Disallow: /checkout.html
 Disallow: /signin.html
 Disallow: /verify-email.html
 Disallow: /confirm-email.html
-Disallow: /open.html
-Disallow: /partners.html
 Disallow: /partners-guide.pdf
 
 Sitemap: https://auzslab.in/sitemap.xml

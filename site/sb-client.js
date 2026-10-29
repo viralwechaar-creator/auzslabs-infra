@@ -343,7 +343,7 @@
 (function () {
   try {
     if (!localStorage.getItem('auz_session') || window.__auzBell || document.querySelector('script[data-bell]')) return;
-    var go = function () { var s = document.createElement('script'); s.src = '/bell.js?v=5'; s.defer = true; s.setAttribute('data-bell', '1'); document.head.appendChild(s); };
+    var go = function () { var s = document.createElement('script'); s.src = '/bell.js?v=6'; s.defer = true; s.setAttribute('data-bell', '1'); document.head.appendChild(s); };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
   } catch (e) {}
 })();

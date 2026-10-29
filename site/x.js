@@ -100,7 +100,7 @@
   /* ---------- DOWNLOAD: device switch ---------- */
   var dl = $('.dl-seg');
   if (dl) {
-    var ua = navigator.userAgent, first = /iPhone|iPad|iPod/.test(ua) ? 'ios' : /Android/.test(ua) ? 'and' : 'pc';
+    var ua = navigator.userAgent, first = 'pc';
     var panels = $$('.dl-panel');
     var s = seg(dl, function (v) { panels.forEach(function (p) { p.classList.toggle('on', p.getAttribute('data-p') === v); }); });
     s.set(first);

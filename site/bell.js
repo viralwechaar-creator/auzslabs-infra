@@ -39,14 +39,27 @@
       + 'html[data-theme=dark] .auzp-t button.on{background:#f2f2f2;color:#111}html[data-theme=dark] .auzp-t button{border-color:rgba(255,255,255,.2)}';
     document.head.appendChild(s);
   }
+  /* Put the bell inside the page's own header button row so it never sits on top of other buttons. Headers are redrawn
+     by the apps on every page change (which removes the bell), so this runs again whenever the page changes. */
+  function hostEl() { return document.querySelector('#tb-r') || document.querySelector('.u-r') || document.querySelector('.a-topbar-actions') || document.querySelector('.top-in'); }
+  function place() {
+    if (!btn) return;
+    var host = hostEl();
+    if (host) {
+      if (btn.parentNode !== host || host.firstChild !== btn) { if (host.classList.contains('top-in')) btn.style.marginLeft = 'auto'; host.insertBefore(btn, host.firstChild); }
+      btn.classList.remove('auzb-float');
+    } else if (!btn.classList.contains('auzb-float') || !btn.parentNode) { btn.classList.add('auzb-float'); document.body.appendChild(btn); }
+  }
+  var placing = false;
+  function watchPlace() {
+    new MutationObserver(function () { if (placing) return; placing = true; requestAnimationFrame(function () { placing = false; place(); }); }).observe(document.body, { childList: true, subtree: true });
+  }
   function build() {
     css();
     btn = document.createElement('button'); btn.type = 'button'; btn.className = 'auzb' + (window.AUZ_ALERT_PAGE ? ' auzb-app' : ''); btn.setAttribute('aria-label', 'Notifications');
     btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 1 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><i hidden></i>';
     badge = btn.querySelector('i');
-    var host = document.querySelector('.u-r') || document.querySelector('.a-topbar-actions') || document.querySelector('.top-in') || document.querySelector('#tb-r');
-    if (host) { if (host.classList.contains('top-in')) btn.style.marginLeft = 'auto'; host.insertBefore(btn, host.firstChild); }
-    else { btn.classList.add('auzb-float'); document.body.appendChild(btn); }
+    place();
     panel = document.createElement('div'); panel.className = 'auzp'; panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-label', 'Notifications');
     panel.innerHTML = '<div class="auzp-h"><span>Notifications</span><button type="button" data-all>Mark all read</button></div><div class="auzp-t"></div><div class="auzp-l"></div><div class="auzp-f"><span data-st></span><button type="button" data-al>Turn on alerts</button></div>';
     document.body.appendChild(panel); list = panel.querySelector('.auzp-l'); tabs = panel.querySelector('.auzp-t');
@@ -56,7 +69,7 @@
     panel.querySelector('[data-all]').onclick = function () { rpc('inbox_mark_read', { p_ids: null }).then(refresh); };
     panel.querySelector('[data-al]').onclick = enableAlerts;
     if (window.AUZ_ALERT_PAGE) { var more = document.createElement('button'); more.type = 'button'; more.onclick = function () { toggle(false); location.hash = window.AUZ_ALERT_PAGE; }; more.textContent = 'Settings'; panel.querySelector('.auzp-f').insertBefore(more, panel.querySelector('[data-al]')); }
-    alertState();
+    alertState(); watchPlace();
   }
   var KINDS = [['all', 'All'], ['critical', 'Critical'], ['warning', 'Warnings'], ['info', 'Updates']];
   function kindOf(n) { return n.severity === 'critical' ? 'critical' : n.severity === 'warning' ? 'warning' : 'info'; }
