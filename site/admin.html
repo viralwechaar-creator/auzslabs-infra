@@ -1689,7 +1689,7 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
   </div>
 </div>
 
-<script src="/sb-client.js?v=108"></script>
+<script src="/sb-client.js?v=109"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script>
 const sb = supabase.createClient(CFG.url, CFG.key);
@@ -1711,7 +1711,7 @@ function emptyDoodle(text) {
 }
 
 async function copyDemoLink(kind, id, btn) {
-  const url = `https://auzslab.in/demo.html?${kind}=${id}`;
+  const url = `https://auzslab.in/live-demo.html`;
   try {
     await navigator.clipboard.writeText(url);
     const orig = btn.textContent;

@@ -28,7 +28,6 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./site:/srv/site:ro
-      - ./site-next:/srv/site-next:ro
       - ./app/public:/srv/app:ro
       - uploads_data:/srv/uploads:ro
       - caddy_data:/data
