@@ -28,7 +28,7 @@
       + '.auzp.on{display:flex}.auzp-h{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid rgba(0,0,0,.08);font-weight:700}'
       + '.auzp-h button,.auzp-f button{background:none;border:0;color:#800020;font:600 12px system-ui,sans-serif;cursor:pointer;padding:4px}'
       + '.auzp-l{overflow:auto;flex:1}.auzp-i{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid rgba(0,0,0,.06);padding:10px 14px;cursor:pointer;color:inherit;font:inherit}'
-      + '.auzp-i b{display:block;font-weight:600}.auzp-i span{display:block;color:#555;margin-top:2px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.auzp-i small{color:#888}'
+      + '.auzp-i{display:flex;align-items:baseline;justify-content:space-between;gap:10px}.auzp-i b{display:block;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.auzp-i small{flex:none}.auzp-f:empty,.auzp-f:not(:has(button:not([hidden]),span:not(:empty))){display:none}.auzp-i span{display:block;color:#555;margin-top:2px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.auzp-i small{color:#888}'
       + '.auzp-i.u{background:rgba(128,0,32,.05)}.auzp-i.u b:before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#800020;margin-right:6px}'
       + '.auzp-e{padding:26px 14px;text-align:center;color:#777}.auzp-f{padding:8px 14px;border-top:1px solid rgba(0,0,0,.08);display:flex;justify-content:space-between;align-items:center;gap:8px;color:#666;font-size:12px}'
       + '@media (prefers-color-scheme:dark){html[data-theme=dark] .auzp{background:#1c1c1e;color:#f2f2f2;border-color:rgba(255,255,255,.14)}html[data-theme=dark] .auzp-i span{color:#aaa}}'
@@ -48,37 +48,31 @@
     if (host) { if (host.classList.contains('top-in')) btn.style.marginLeft = 'auto'; host.insertBefore(btn, host.firstChild); }
     else { btn.classList.add('auzb-float'); document.body.appendChild(btn); }
     panel = document.createElement('div'); panel.className = 'auzp'; panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-label', 'Notifications');
-    panel.innerHTML = '<div class="auzp-h"><span>Notifications</span><button type="button" data-all>Mark all read</button></div><div class="auzp-t"></div><div class="auzp-l"></div><div class="auzp-f"><span data-st></span><button type="button" data-al>Turn on alerts</button></div>';
+    panel.innerHTML = '<div class="auzp-h"><span>Notifications</span><button type="button" data-all>Clear</button></div><div class="auzp-t"></div><div class="auzp-l"></div><div class="auzp-f"><span data-st></span><button type="button" data-al>Turn on alerts</button></div>';
     document.body.appendChild(panel); list = panel.querySelector('.auzp-l'); tabs = panel.querySelector('.auzp-t');
     btn.onclick = function (e) { e.stopPropagation(); toggle(); };
     panel.onclick = function (e) { e.stopPropagation(); };
     document.addEventListener('click', function () { if (open) toggle(false); });
     panel.querySelector('[data-all]').onclick = function () { rpc('inbox_mark_read', { p_ids: null }).then(refresh); };
     panel.querySelector('[data-al]').onclick = enableAlerts;
-    if (window.AUZ_ALERT_PAGE) { var more = document.createElement('button'); more.type = 'button'; more.textContent = 'All notifications and settings'; more.onclick = function () { toggle(false); location.hash = window.AUZ_ALERT_PAGE; }; panel.querySelector('.auzp-h').insertBefore(more, panel.querySelector('[data-all]')); }
+    if (window.AUZ_ALERT_PAGE) { var more = document.createElement('button'); more.type = 'button'; more.onclick = function () { toggle(false); location.hash = window.AUZ_ALERT_PAGE; }; more.textContent = 'Settings'; panel.querySelector('.auzp-f').insertBefore(more, panel.querySelector('[data-al]')); }
     alertState();
   }
   var KINDS = [['all', 'All'], ['critical', 'Critical'], ['warning', 'Warnings'], ['info', 'Updates']];
   function kindOf(n) { return n.severity === 'critical' ? 'critical' : n.severity === 'warning' ? 'warning' : 'info'; }
   function paint() {
     if (unread > 0) { badge.hidden = false; badge.textContent = unread > 99 ? '99+' : unread; } else badge.hidden = true;
-    var graded = items.some(function (n) { return n.severity; });
-    tabs.classList.toggle('on', graded); tabs.textContent = '';
-    if (graded) KINDS.forEach(function (k) {
-      var c = items.filter(function (n) { return k[0] === 'all' || kindOf(n) === k[0]; }).length;
-      var b = document.createElement('button'); b.type = 'button'; b.className = filt === k[0] ? 'on' : ''; b.textContent = k[1] + ' ' + c;
-      b.onclick = function () { filt = k[0]; paint(); }; tabs.appendChild(b);
-    });
+    tabs.classList.remove('on'); tabs.textContent = '';
     list.textContent = '';
-    var shown = items.filter(function (n) { return !graded || filt === 'all' || kindOf(n) === filt; });
-    if (!shown.length) { var e = document.createElement('div'); e.className = 'auzp-e'; e.textContent = 'Nothing new yet.'; list.appendChild(e); return; }
+    /* only what needs attention: unread notices, one line each */
+    var shown = items.filter(function (n) { return !n.read; }).slice(0, 12);
+    panel.querySelector('[data-all]').hidden = shown.length < 2;
+    if (!shown.length) { var e = document.createElement('div'); e.className = 'auzp-e'; e.textContent = 'All caught up'; list.appendChild(e); return; }
     shown.forEach(function (n) {
-      var b = document.createElement('button'); b.type = 'button'; b.className = 'auzp-i' + (n.read ? '' : ' u') + (n.severity ? ' s-' + n.severity : '');
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'auzp-i u' + (n.severity ? ' s-' + n.severity : '');
       var t = document.createElement('b'); t.textContent = n.title || '';
-      var d = document.createElement('span'); d.textContent = n.body || '';
       var a = document.createElement('small'); a.textContent = ago(n.created_at);
-      b.appendChild(t); if (n.body) b.appendChild(d); b.appendChild(a);
-      if (n.action) { var x = document.createElement('em'); x.textContent = n.action; b.appendChild(x); }
+      b.appendChild(t); b.appendChild(a);
       b.onclick = function () { go(n); };
       list.appendChild(b);
     });
@@ -107,7 +101,7 @@
     var ios = /iphone|ipad|ipod/i.test(navigator.userAgent), standalone = navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
     if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) { st.textContent = ios && !standalone ? 'On iPhone: Share, Add to Home Screen, then open from there for alerts.' : 'This browser cannot show alerts.'; bt.hidden = true; return; }
     if (Notification.permission === 'denied') { st.textContent = 'Alerts are blocked in the browser settings.'; bt.hidden = true; return; }
-    if (Notification.permission === 'granted') { st.textContent = 'Alerts are on for this device.'; bt.hidden = true; return; }
+    if (Notification.permission === 'granted') { st.textContent = ''; bt.hidden = true; return; }
     st.textContent = 'Get alerts even when this page is closed.'; bt.hidden = false;
   }
   function register(reg) {
