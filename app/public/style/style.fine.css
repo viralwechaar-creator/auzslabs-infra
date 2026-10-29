@@ -365,7 +365,7 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
   .topbar{grid-template-columns:minmax(0,1fr) auto;padding-left:14px;padding-right:10px}
   .topbar .tt{display:none}
   .topbar .l{min-width:0;justify-self:start}
-  .topbar .r{gap:0;flex:none}
+  .topbar .r{gap:0;flex:none;margin-left:auto}
   .topbar .r .btn.icon{min-width:40px;width:40px;padding:0}
   .brandpill{max-width:100%}
 }
