@@ -133,6 +133,7 @@ page('party', {
     v.header({ title: p.name, back: isCust ? 'customers' : 'suppliers', actions: [
       writable && isCust ? { label: 'New invoice', icon: 'plus', primary: true, run: () => go('new/invoice?party=' + p.id) } : null, writable && !isCust ? { label: 'New bill', icon: 'plus', primary: true, run: () => go('new/bill?party=' + p.id) } : null,
       writable ? { label: isCust ? 'Receive money' : 'Pay money', icon: 'wallet', run: () => receiptSheet(isCust ? 'receipt' : 'payment', { party: p, done: () => v.refresh() }) } : null,
+      writable && !p.is_walkin ? { label: isCust ? 'Credit note' : 'Debit note', icon: 'undo', run: () => go('new/' + (isCust ? 'credit_note' : 'debit_note') + '?party=' + p.id) } : null,
       writable ? { label: 'Edit', icon: 'edit', run: () => partySheet(p.kind, p, () => v.refresh()) } : null,
       writable && can('acc_post') && Math.abs(Number(p.balance)) > 0.004 && (isCust ? Number(p.balance) > 0 : Number(p.balance) < 0) ? { label: isCust ? 'Write off or discount' : 'Discount received', icon: 'tag', run: () => adjustSheet(p, isCust, () => v.refresh()) } : null,
       can('acc_admin') && !p.is_walkin ? { label: 'Opening balance', icon: 'book', run: () => openingSheet(p, () => v.refresh()) } : null].filter(Boolean) });
@@ -235,8 +236,17 @@ page('parties', {
         { key: 'closing', label: 'Balance', r: true, value: true, sortVal: (p) => Number(p.closing), render: (p) => Number(p.closing) === 0 ? h('span', { class: 'muted' }, 'Settled') : h('span', null, money(Math.abs(p.closing)), h('div', { class: 's' }, Number(p.closing) > 0 ? 'owes you' : 'you owe')) },
       ], shown, { cards: true, onRow: (p) => go('party/' + p.id), empty: empty('users', 'No parties match', 'Try another filter, or add customers and suppliers first.') }));
     };
-    const load = async () => { try { rows = (await api('acc_parties_directory', { p: Object.assign({ kind: kind || null, gst_only: gstOnly, search: q || null, limit: 5000 }, range()) })).rows; } catch (e) { return fail(e); } draw(); };
-    v.root.append(
+    const load = async () => { try { fallback.hidden = true; rows = (await api('acc_parties_directory', { p: Object.assign({ kind: kind || null, gst_only: gstOnly, search: q || null, limit: 5000 }, range()) })).rows; } catch (e) {
+      // The year-by-year view needs a newer database step on the server. Fall back to the plain party list (current balances) so the tab still works.
+      try {
+        const all = (await api('acc_list_parties', { p: { limit: 5000 } })).rows || [], ql = (q || '').toLowerCase();
+        rows = all.filter((x) => (!kind || x.kind === kind || x.kind === 'both') && (!gstOnly || x.gstin) && (!ql || [x.name, x.gstin, x.phone].some((f) => String(f || '').toLowerCase().includes(ql))) && !x.is_walkin)
+          .map((x) => ({ ...x, opening: 0, debit: 0, credit: 0, closing: Number(x.balance || 0) }));
+        fallback.hidden = false;
+      } catch (e2) { return fail(e2); }
+    } draw(); };
+    const fallback = h('div', { class: 'banner info' }, 'Showing current balances only. The year-by-year view will appear once AUZslab finishes updating your account.'); fallback.hidden = true;
+    v.root.append(fallback, 
       h('div', { class: 'banner info' }, 'Balances carry forward by themselves: the ledger is continuous, so a year\'s opening is whatever the last year ended with. Switch the year to see each party\'s account for that year.'),
       kp,
       h('div', { class: 'toolbar' }, searchField('Search name, GST number or phone', debounce((x) => { q = x; load(); }, 250)),
