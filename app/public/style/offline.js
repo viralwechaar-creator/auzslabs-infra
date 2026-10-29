@@ -93,7 +93,7 @@ function flushQueue() {
   return flushP;
 }
 async function runFlush() {
-  if (navigator.onLine === false || !sb.sync) return;
+  if (netDown() || !sb.sync) return;
   let any = false;
   for (let guard = 0; guard < 200; guard++) {
     const todo = getQ().filter((e) => !e.fail).slice(0, 20);
@@ -153,7 +153,7 @@ async function submit(fn, args) {
 // ---------- read / write entry points used by the whole app ----------
 async function rawApi(fn, args) {
   let r;
-  try { r = await sb.rpc(fn, args || {}); } catch (e) { const er = new Error(navigator.onLine === false ? t('You are offline') : t('Could not reach the server')); er.net = true; throw er; }
+  try { r = await sb.rpc(fn, args || {}); } catch (e) { const er = new Error(netDown() ? t('You are offline') : t('Could not reach the server')); er.net = true; throw er; }
   const { data, error } = r;
   if (error && error.status === 402) { location.reload(); }
   if (error) { const e = new Error(error.message || t('Something went wrong')); e.code = error.code; e.status = error.status; e.net = !error.status || error.status >= 500 || error.status === 408 || error.status === 429; throw e; }
@@ -192,7 +192,7 @@ const bcKey = () => 'bc.' + scope();
 const barcodePool = () => LS.get(bcKey(), []);
 async function topUpBarcodes() {
   try {
-    if (!can('sty_manage') || navigator.onLine === false) return;
+    if (!can('sty_manage') || netDown()) return;
     if (barcodePool().length >= 60) return;
     const codes = await rawApi('sty_reserve_barcodes', { p_n: 200 });
     if (Array.isArray(codes)) LS.set(bcKey(), [...barcodePool(), ...codes]);

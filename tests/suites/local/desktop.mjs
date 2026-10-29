@@ -87,6 +87,29 @@ export default async function run({ browser }) {
       const r = await page.evaluate(async () => { const x = await api('sty_save_style', { p: { name: 'Offline Tee', category: 'Tees', price: 500, mrp: 600, cost: 200, colours: ['Red'], sizes: ['M'], opening: { qty: 4, unitCost: 200, branchId: S.branch } } }); S.catAt = 0; await loadCatalog(true); return { id: x.id, n: S.cat.length }; });
       assert(r.id && r.n === 1, JSON.stringify(r));
     }, 'critical');
+    await s.check('Installed copy: the UPI id saves in Settings and survives a reload, and Sell shows the UPI QR', async () => {
+      await page.addInitScript(() => { Object.defineProperty(Navigator.prototype, 'onLine', { get: () => false, configurable: true }); });   // an installed PC with no network card (Windows 7) reports itself offline even though the local server is right there
+      await page.evaluate(() => { Object.defineProperty(Navigator.prototype, 'onLine', { get: () => false, configurable: true }); location.hash = '#/settings'; }); await page.waitForSelector('.setg', { timeout: 15000 });
+      const idIn = page.locator('.field', { hasText: /UPI id/ }).locator('input').first();
+      await idIn.fill('shop@okaxis');
+      await page.locator('button', { hasText: /Save settings/ }).click(); await page.waitForTimeout(1500);
+      await page.waitForSelector('.setg', { timeout: 15000 });
+      const after = await page.locator('.field', { hasText: /UPI id/ }).locator('input').first().inputValue();
+      const q = await page.evaluate(() => JSON.stringify((JSON.parse(localStorage.getItem('sty.q.' + (S.dash && S.dash.tenant ? S.dash.tenant.slug : 'x')) || '[]')).map((e) => [e.fn, e.fail || ''])));
+      assert(q === '[]', 'the change is stuck waiting on this PC and never reaches the local server: ' + q);
+      assert(after === 'shop@okaxis', 'UPI id not kept after reload: "' + after + '" queue=' + q + ' errs=' + errs.slice(-3).join(' ; '));
+      const feat = await page.evaluate(async () => { const c = await api('sty_context'); return (c.settings.features || {}).upiId; });
+      assert(feat === 'shop@okaxis', 'server did not keep the UPI id: ' + feat);
+      await page.evaluate(() => { location.hash = '#/sell'; }); await page.waitForSelector('.scard', { timeout: 15000 });
+      const bc = await page.evaluate(async () => { const c = await api('sty_catalog', { p_branch: null }); return c[0].variants[0].barcode; });
+      await page.fill('.sell-l input[type=search]', bc); await page.keyboard.press('Enter'); await page.waitForTimeout(600);
+      await page.locator('.cartpane .btn.fill', { hasText: /Pay/ }).click(); await page.waitForSelector('.paytot', { timeout: 8000 });
+      const pays = page.locator('.payl'); const n = await pays.count(); let row = null; for (let i = 0; i < n; i++) { if (/UPI/i.test(await pays.nth(i).locator('label').innerText())) row = pays.nth(i); }
+      await row.locator('.btn.sm').click(); await page.waitForTimeout(300);
+      await page.locator('.upiq .btn', { hasText: /Show QR/ }).click(); await page.waitForTimeout(600);
+      assert(await page.locator('.upiq-i').count() === 1, 'no QR image in the popup: ' + (await page.locator('.upiq-card').innerText().catch(() => 'no popup')) + ' errs=' + errs.slice(-3).join(' ; '));
+      await page.keyboard.press('Escape');
+    }, 'critical');
     await s.check('Offline diagnostics: /offline/lan-info now works once a licence is active, and leaves out loopback', async () => {
       const info = await (await fetch(base + '/offline/lan-info')).json();
       assert(Array.isArray(info.ips) && info.ips.every((ip) => ip !== '127.0.0.1'), 'lan-info: ' + JSON.stringify(info));
