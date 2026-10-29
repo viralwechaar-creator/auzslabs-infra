@@ -648,16 +648,15 @@ export default async function run({ browser, stack }) {
     }
   });
 
-  await s.check('The public AUZsStyle bill is the black invoice design and works on phone and desktop', async () => {
+  await s.check('The public AUZsStyle bill is a white invoice with the shop details and works on phone and desktop', async () => {
     const id = uid(); const sale = await ok(owner, 'sty_sell', { p: { id, lines: [{ variantId: vJ32.id, qty: 1 }], payments: [{ mode: 'cash', amount: 5000 }] } });
     const tok = (await ok(owner, 'sty_share_sale', { p_id: sale.id })).token;
     for (const dev of [{ w: 390, h: 844, mobile: true }, { w: 1280, h: 900 }]) {
       const c = await newCtx(browser, stack, dev); const page = await c.newPage(); const errs = watch(page);
-      await page.goto(stack.url('teststyle', '/stybill.html?t=' + tok)); await page.waitForSelector('.sheet .brand', { timeout: 15000 });
+      await page.goto(stack.url('teststyle', '/stybill.html?t=' + tok)); await page.waitForSelector('.sheet .shop h1', { timeout: 15000 });
       const t = await page.locator('.sheet').innerText();
-      for (const w of ['INVOICE', 'PAYMENT', 'SUB TOTAL', 'TOTAL', 'SCAN QR', sale.number, 'Skinny Jeans']) assert(t.toLowerCase().includes(w.toLowerCase()), 'bill missing: ' + w);
-      assert(await page.locator('.qr img').count() === 1, 'QR missing');
-      const bg = await page.evaluate(() => getComputedStyle(document.querySelector('.sheet')).backgroundColor); assert(bg === 'rgb(0, 0, 0)', 'sheet must be black: ' + bg);
+      for (const w of ['INVOICE', 'Billed to', 'Subtotal', 'Total', 'Paid in full', sale.number, 'Skinny Jeans']) assert(t.toLowerCase().includes(w.toLowerCase()), 'bill missing: ' + w);
+      const bg = await page.evaluate(() => getComputedStyle(document.querySelector('.sheet')).backgroundColor); assert(bg === 'rgb(255, 255, 255)', 'sheet must be white: ' + bg);
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'sideways scroll');
       await s.shot(page, 'style-bill ' + dev.w);
       assert(!errs.filter((e) => !/sentry/i.test(e)).length, errs.join(' | ')); await c.close();
