@@ -119,6 +119,7 @@
 
         <div id="authSection">
         <div id="consentBox" style="display:none;margin:0 0 14px;font-size:14px;line-height:1.4;text-align:left">
+          <label style="display:flex;gap:10px;align-items:center;cursor:pointer"><input type="checkbox" id="consentAge" style="flex:none"><span>I am 18 years or older</span></label>
           <label style="display:flex;gap:10px;align-items:center;cursor:pointer"><input type="checkbox" id="consentService" style="flex:none"><span>I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a></span></label>
           <label style="display:flex;gap:10px;align-items:center;cursor:pointer;margin-top:8px;color:var(--ink-dim,#666)"><input type="checkbox" id="consentUpdates" style="flex:none"><span>Send me product updates (optional)</span></label>
         </div>
@@ -301,6 +302,7 @@ async function afterSignIn(user) {
 function consentGate() {
   const ok = document.getElementById('consentService').checked, errEl = document.getElementById('authErr');
   if (!ok) { errEl.textContent = 'Please tick the box to agree to the Privacy policy and Terms first.'; document.getElementById('consentService').focus(); return false; }
+  if (!document.getElementById('consentAge').checked) { errEl.textContent = 'Please confirm that you are 18 years or older.'; document.getElementById('consentAge').focus(); return false; }
   errEl.textContent = ''; return true;
 }
 // ---- Google Sign-In: full-page redirect through https://auzslab.in/signin.html (see that page), then back here signed in ----

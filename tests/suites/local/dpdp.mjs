@@ -67,7 +67,7 @@ export default async function run({ browser, stack }) {
     await page.goto(stack.url('', '/signup.html')); await page.waitForSelector('#consentBox', { state: 'visible', timeout: 10000 });
     await page.locator('#googleBtnHost a').click(); await page.waitForTimeout(400);
     assert(/tick the box/i.test(await page.locator('#authErr').innerText()), 'no message without consent'); assert(/signup\.html/.test(page.url()), 'it navigated without consent');
-    await page.check('#consentService'); await page.check('#consentUpdates');
+    await page.check('#consentAge'); await page.check('#consentService'); await page.check('#consentUpdates');
     const [req] = await Promise.all([page.waitForRequest((r) => /signin\.html\?/.test(r.url()), { timeout: 8000 }), page.locator('#googleBtnHost a').click()]);
     assert(/consent=1/.test(req.url()) && /upd=1/.test(req.url()), req.url());
     await page.goto(stack.url('', '/signup.html')); await page.click('#modeLogin'); await page.waitForTimeout(300);
