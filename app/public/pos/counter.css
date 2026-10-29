@@ -133,3 +133,8 @@ html.ui-counter .tbl-tile .tarea{display:none}
 html.ui-counter .tbl-tile .ta{font-size:16px}
 html.ui-counter .li:has(> .seg){flex-wrap:wrap}
 html.ui-counter .li:has(> .seg)>.seg{margin-left:0;flex:1 1 100%}
+/* the cart bar's total block shares the class name .ct with the product tile: keep it a plain text block */
+.cart-bar .ct{background:transparent;border-radius:0;padding:0;min-height:0;display:grid;gap:0;flex-direction:row;transition:none}
+.cart-bar .ct:active{transform:none}
+.cart-bar .ct b,.cart-bar .ct span{color:inherit;font-size:inherit}
+.cart-bar .ct span{opacity:.75;font-size:12px}

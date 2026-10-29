@@ -395,3 +395,7 @@ picture{display:contents}
 
 .tbl-tile,.tbl-tile.st-dirty{box-shadow:0 0 0 1px var(--sep2),0 1px 3px rgba(0,0,0,.05)}
 .tbl-tile.sel{box-shadow:0 0 0 2px var(--accent),0 10px 24px -12px color-mix(in srgb,var(--accent) 45%,transparent)}
+/* banners: text takes the free space and wraps, buttons never get squeezed or cut off */
+.banner{flex-wrap:wrap}
+.banner .grow{flex:1 1 150px;min-width:0;overflow-wrap:anywhere}
+.banner .btn{flex:none}
