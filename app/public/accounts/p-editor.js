@@ -4,6 +4,32 @@
 const defaultTaxRate = () => { const v = S.org && S.org.settings && S.org.settings.default_tax_rate; return v == null || v === '' ? 18 : Number(v); };
 const blankLine = (type) => ({ product_id: '', description: '', hsn: '', qty: '1', unit: '', rate: '', disc_pct: '', tax_rate: String(defaultTaxRate()), account_id: '', batch_no: '', expiry: '', warehouse_id: '' });
 
+// Paste a list from Excel / Google Sheets / CSV into a bill: columns Item, Qty, Rate, then optional Disc %, GST %, HSN, Unit (a header row is understood).
+function parsePasteList(text) {
+  const rows = String(text || '').replace(/\r/g, '').split('\n').map((r) => (r.includes('\t') ? r.split('\t') : r.split(',')).map((c) => c.trim().replace(/^"|"$/g, ''))).filter((r) => r.some(Boolean));
+  if (!rows.length) return [];
+  const num = (v) => v !== '' && !isNaN(Number(String(v).replace(/[₹,\s%]/g, '')));
+  const KEYS = { item: /^(item|name|product|description|particulars?|goods)/i, qty: /^(qty|quantity|nos|pcs)/i, rate: /^(rate|price|mrp|cost|unit price)/i, disc: /^(disc|discount)/i, gst: /^(gst|tax|igst)/i, hsn: /^(hsn|sac)/i, unit: /^(unit|uom)/i };
+  let map = { item: 0, qty: 1, rate: 2, disc: 3, gst: 4, hsn: 5, unit: 6 }, body = rows;
+  const hdr = rows[0];
+  if (hdr.some((c) => KEYS.item.test(c)) && !hdr.some((c, i) => i > 0 && num(c))) {
+    map = {}; hdr.forEach((c, i) => { for (const k in KEYS) if (map[k] == null && KEYS[k].test(c)) { map[k] = i; break; } });
+    if (map.item == null) map.item = 0; body = rows.slice(1);
+  } else if (rows.every((r) => r.length === 2 && num(r[1]))) { map = { item: 0, qty: 1 }; }
+  const get = (r, k) => (map[k] == null ? '' : (r[map[k]] || ''));
+  const clean = (v) => String(v).replace(/[₹,\s%]/g, '');
+  return body.map((r) => ({ name: get(r, 'item'), qty: clean(get(r, 'qty')), rate: clean(get(r, 'rate')), disc: clean(get(r, 'disc')), gst: clean(get(r, 'gst')), hsn: get(r, 'hsn'), unit: get(r, 'unit') })).filter((x) => x.name);
+}
+function pasteLineFor(x, sales, type) {
+  const key = x.name.toLowerCase();
+  const p = (S.products || []).find((q) => q.active !== false && ((q.name || '').toLowerCase() === key || (q.sku || '').toLowerCase() === key || (q.barcode || '') === x.name));
+  const l = blankLine(type);
+  l.description = p ? p.name : x.name; l.qty = x.qty && Number(x.qty) > 0 ? x.qty : '1';
+  if (p) { l.product_id = p.id; l.hsn = p.hsn || ''; l.unit = p.unit || ''; l.rate = String(sales ? p.sale_price : p.purchase_price); l.tax_rate = String(p.tax_rate); }
+  if (x.rate) l.rate = x.rate; if (x.disc) l.disc_pct = x.disc; if (x.gst) l.tax_rate = x.gst; if (x.hsn) l.hsn = x.hsn; if (x.unit) l.unit = x.unit;
+  return { l, matched: !!p };
+}
+
 // Delivery and other charges on a purchase bill. A charge "on this bill" is added as one more line (no stock, Transport account, its own GST rate),
 // so totals, GST, input credit and the preview all follow the normal rules. A charge on the courier's own bill is posted as a separate bill (see saveCourierBills).
 const CHARGE_KINDS = ['Freight / delivery', 'Packing', 'Loading / unloading', 'Other charge'];
@@ -246,7 +272,7 @@ async function docEditor(v, type, existing) {
 
   // ----- lines -----
   const lineHead = h('div', { class: 'lines-head desk-only', 'aria-hidden': 'true' }, ['Item', 'HSN/SAC', 'Qty', 'Unit', 'Rate', 'Disc %', 'GST %', 'Amount', ''].map((x, i) => h('span', { class: i >= 2 && i !== 3 ? 'r' : '' }, x)));
-  if (!isExpense) root.append(h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, 'Items')), lineHead, linesEl, h('button', { class: 'btn', type: 'button', onclick: () => { D.lines.push(blankLine(type)); drawLines(true); } }, icon('plus', 18), 'Add line')));
+  if (!isExpense) root.append(h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, 'Items')), lineHead, linesEl, h('div', { class: 'row', style: { gap: '8px', flexWrap: 'wrap' } }, h('button', { class: 'btn', type: 'button', onclick: () => { D.lines.push(blankLine(type)); drawLines(true); } }, icon('plus', 18), 'Add line'), h('button', { class: 'btn', type: 'button', onclick: () => pasteSheet() }, icon('plus', 18), 'Paste list from Excel'))));
   function lineNode(l, i) {
     const lf = (label, ctl, cls) => h('div', { class: 'lf ' + (cls || '') }, h('label', { class: 'lf-l' }, label), ctl);
     const amt = h('div', { class: 'lf r amt' }, h('label', { class: 'lf-l' }, 'Amount'), h('div', { class: 'money num', style: { fontWeight: 600, padding: '8px 0' } }, inr(0)));
@@ -267,6 +293,30 @@ async function docEditor(v, type, existing) {
       h('button', { class: 'btn plain icon del', type: 'button', 'aria-label': 'Remove line ' + (i + 1), disabled: D.lines.length === 1, onclick: () => { D.lines.splice(i, 1); drawLines(); recalc(); } }, icon('trash', 18)));
     return node;
   }
+
+  function addPasted(text, startAt) {
+    const items = parsePasteList(text); if (!items.length) { toast('Nothing to add. Copy rows with item name, quantity and rate.'); return; }
+    const made = items.map((x) => pasteLineFor(x, sales, type)), blank = (l) => !l.description && !l.product_id && !N(l.rate);
+    let at = startAt == null ? D.lines.length : startAt;
+    while (at < D.lines.length && blank(D.lines[at]) && made.length) { D.lines[at] = made.shift().l; at++; }
+    if (startAt == null || at >= D.lines.length) { D.lines = D.lines.filter((l, i) => !(blank(l) && D.lines.length > 1 && i >= (startAt == null ? 0 : startAt))); }
+    made.forEach((m) => D.lines.push(m.l)); if (!D.lines.length) D.lines = [blankLine(type)];
+    drawLines(); recalc();
+    const un = items.length - items.map((x) => pasteLineFor(x, sales, type)).filter((m) => m.matched).length;
+    toast(items.length + ' line' + (items.length > 1 ? 's' : '') + ' added' + (un ? ' · ' + un + ' not in your products (added as typed)' : ''));
+  }
+  function pasteSheet() {
+    const ta = h('textarea', { class: 'input', rows: 8, placeholder: 'Item\tQty\tRate\nBlue pen\t10\t12\nNotebook\t5\t45', style: { width: '100%', fontFamily: 'monospace' } });
+    const s = sheet({ title: 'Paste list from Excel', closeLabel: 'Cancel', body: h('div', { class: 'grid' },
+      h('p', { class: 'muted small' }, 'In Excel or Google Sheets, select the rows (Item, Qty, Rate, then optional Disc %, GST %, HSN, Unit), copy, and paste here. A header row is understood. Names that match your products pick up their GST and HSN.'), ta,
+      h('button', { class: 'btn fill', type: 'button', onclick: () => { addPasted(ta.value); s.close(); } }, 'Add to bill')) });
+    setTimeout(() => ta.focus(), 50);
+  }
+  linesEl.addEventListener('paste', (e) => {
+    const t = (e.clipboardData && e.clipboardData.getData('text')) || ''; if (!/[\n\t]/.test(t.trim())) return;
+    const line = e.target.closest && e.target.closest('.line'); if (!line) return;
+    e.preventDefault(); addPasted(t, $$('.line', linesEl).indexOf(line));
+  });
   function drawLines(focusLast) {
     clear(linesEl); amountCells.length = 0;
     D.lines.forEach((l, i) => linesEl.append(lineNode(l, i)));
