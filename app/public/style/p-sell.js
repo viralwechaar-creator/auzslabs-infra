@@ -3,6 +3,9 @@
 'use strict';
 const BILL = { lines: [], customer: null, custName: '', custPhone: '', billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0, coupon: '', couponDiscount: 0 };
 const UI = { q: '', cat: 'All', col: null };
+// How the style cards look on the Sell screen: big picture cards, small picture cards, or a plain list with no pictures (remembered on this device).
+const SELL_VIEWS = ['photos', 'small', 'list'];
+const sellView = () => { try { const v = localStorage.getItem('sty.sellView'); return SELL_VIEWS.includes(v) ? v : 'photos'; } catch { return 'photos'; } };
 const newBill = () => { Object.assign(BILL, { lines: [], customer: null, custName: '', custPhone: '', billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0, coupon: '', couponDiscount: 0 }); };
 const billCalc = () => calcBill(BILL.lines.map((l) => ({ unit: l.price, qty: l.qty, discPct: l.discPct, discAmt: l.discAmt, taxPct: l.taxPct })), { billDiscPct: BILL.billDiscPct, billDiscAmt: BILL.billDiscAmt, extraAmt: BILL.couponDiscount });
 const unitCount = () => BILL.lines.reduce((a, l) => a + l.qty, 0);
@@ -25,13 +28,18 @@ function beep(ok) {
 page('sell', {
   title: 'Sell', perm: 'sty_sell', pos: true,
   async render(v) {
-    v.header({ title: t('Sell'), noLarge: true, actions: [{ label: t('Held bills'), icon: 'clock', run: heldSheet }] });
+    const viewLabel = { photos: t('Big pictures'), small: t('Small cards'), list: t('List, no pictures') };
+    v.header({ title: t('Sell'), noLarge: true, actions: [{ label: t('Card size') + ': ' + viewLabel[sellView()], icon: 'eye', run: () => {
+      const next = SELL_VIEWS[(SELL_VIEWS.indexOf(sellView()) + 1) % SELL_VIEWS.length];
+      try { localStorage.setItem('sty.sellView', next); } catch { /* not saved */ }
+      v.refresh();
+    } }, { label: t('Held bills'), icon: 'clock', run: heldSheet }] });
     const root = v.root; root.classList.add('sellpage');
     clear(root).append(h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '40px auto' } }));
     try { await loadCatalog(); } catch (e) { return clear(root).append(empty('cloudOff', t('Could not load the catalogue'), e.message, h('button', { class: 'btn fill', onclick: () => v.refresh() }, t('Try again')))); }
     await loadCollections();
     const cats = ['All', ...[...new Set(S.cat.filter((s) => s.active !== false).map((s) => s.category))].sort()];
-    const grid = h('div', { class: 'sgrid' });
+    const grid = h('div', { class: 'sgrid sv-' + sellView() });
     const cartHost = h('aside', { class: 'cartpane' });
     const bar = h('button', { class: 'cartbar', type: 'button', onclick: () => cartSheet() });
     const scanBtn = window.auzScanner ? h('button', { class: 'btn icon', type: 'button', 'aria-label': t('Scan'), onclick: () => scanWith((c) => scanCode(c)) }, icon('camera', 20)) : null;

@@ -64,6 +64,21 @@ function phoneUploadCard() {
 // reports it; on the cloud, or without the add-on, this whole section quietly removes itself (same pattern as
 // phoneUploadCard() above). Lets the owner give this shop's data a remote sign-in -- the Windows PC keeps being
 // the one real copy (Cloud Sync Stage 1 already pushes its changes up), this just opens a window into it.
+// Sets a new password for one remote login (needs this computer to be online). The person is signed out everywhere else.
+function changeRemotePassword(email) {
+  const pass = input({ type: 'password', value: '' }), again = input({ type: 'password', value: '' });
+  sheet({ title: t('New password for') + ' ' + email, body: h('div', { class: 'grid' }, field(t('New password (8 or more characters)'), pass), field(t('Type it again'), again)),
+    actions: [{ label: t('Save'), primary: true, onclick: async (close) => {
+      if (pass.value.length < 8) { toast(t('Password must be at least 8 characters.'), { err: true }); return false; }
+      if (pass.value !== again.value) { toast(t('The two passwords are not the same.'), { err: true }); return false; }
+      try {
+        const r = await fetch('/offline/cloud-sync-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password: pass.value }) });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(d.error || t('Could not change the password.'));
+        close(); toast(t('Password changed'));
+      } catch (e) { toast(e.message || t('Failed'), { err: true }); return false; }
+    } }] });
+}
 function remoteAccessCard() {
   const host = h('div', { class: 'card grid' }, h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '12px auto' } }));
   const ago = (iso) => { if (!iso) return t('never'); const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000); return m < 1 ? t('just now') : m < 60 ? m + ' ' + t('min ago') : Math.round(m / 60) + ' ' + t('hr ago'); };
@@ -85,7 +100,7 @@ function remoteAccessCard() {
     const listHost = h('div', { class: 'list' });
     const paintList = () => clear(listHost).append(...logins.map((l) => liRow({
       icon: 'user', title: l.email, sub: roleLabel[l.role] || l.role,
-      right: h('button', { class: 'btn sm danger', type: 'button', onclick: async (ev) => {
+      right: h('div', { style: { display: 'flex', gap: '6px' } }, h('button', { class: 'btn sm', type: 'button', onclick: () => changeRemotePassword(l.email) }, icon('lock', 16), t('Password')), h('button', { class: 'btn sm danger', type: 'button', onclick: async (ev) => {
         if (!await confirmBox(t('Remove this login?'), l.email + ' ' + t('will no longer be able to sign in remotely.'), t('Remove'), true)) return;
         ev.currentTarget.disabled = true;
         try {
@@ -94,7 +109,7 @@ function remoteAccessCard() {
           if (!r.ok) throw new Error(d.error || t('Could not remove that login.'));
           toast(d.removed === false ? t('That login was already removed.') : t('Login removed')); paint();
         } catch (e) { toast(e.message || t('Failed'), { err: true }); ev.currentTarget.disabled = false; }
-      } }, icon('trash', 16)),
+      } }, icon('trash', 16))),
     })));
     paintList();
     const out = h('div', { class: 'muted small' });
