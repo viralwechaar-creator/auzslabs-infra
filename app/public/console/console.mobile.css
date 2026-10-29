@@ -445,11 +445,12 @@ input,select,textarea,button,table{font-weight:inherit}
 .newnav .nb.flat{padding:7px 11px 7px 14px;font-size:13px;color:var(--label2);margin:0}
 .newnav .nb.flat.on{background:var(--accent-soft);color:var(--accent-text);font-weight:700}
 .newnav .nav-lbl{padding:14px 12px 4px;font-weight:600;color:var(--label)}
-.ctab{display:flex;position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:50;background:var(--card);border:1px solid var(--sep);border-radius:22px;box-shadow:0 6px 24px rgba(0,0,0,.14);padding:6px}
-.ctab button{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 2px;border-radius:16px;font-size:12.5px;color:var(--label2);min-height:58px}
-.ctab button.on{background:var(--accent);color:var(--on-accent);font-weight:600}
+.ctab{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--card);border-top:.5px solid var(--sep);padding:8px 6px calc(8px + env(safe-area-inset-bottom))}
+.ctab .tl{display:none}
+.ctab button{flex:1;display:flex;align-items:center;justify-content:center;border-radius:14px;color:var(--label2);min-height:44px}
+.ctab button.on{background:var(--accent);color:var(--on-accent)}
 #app.nav-new .side,#app.nav-new .menu-btn{display:none!important}
-#app.nav-new .content{padding-bottom:92px}
+#app.nav-new .content{padding-bottom:calc(60px + env(safe-area-inset-bottom))}
 .mwrap.more-sheet{align-items:flex-end}
 .mwrap.more-sheet .modal{width:100%;max-width:none;max-height:85dvh;overflow:auto;border-radius:22px 22px 0 0;margin:0}
 @media print{.ctab{display:none!important}}
