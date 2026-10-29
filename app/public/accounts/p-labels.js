@@ -43,6 +43,8 @@ page('labels', {
     const c = lblCfg(), qty = {}; let list = []; await products().catch(() => {}); list = (S.products || []).filter((p) => p.active !== false && !p.is_service);
     const pre = (v.q.get('ids') || '').split(',').filter(Boolean); pre.forEach((id) => { qty[id] = 1; });
     let filter = '';
+    const docId = v.q.get('doc'); let fromDoc = '';
+    if (docId) { try { const r = await api('acc_get_document', { p_id: docId }); fromDoc = r.doc.number || ''; (r.lines || []).forEach((l) => { if (l.product_id) qty[l.product_id] = (qty[l.product_id] || 0) + Math.max(Math.round(Number(l.qty)) || 0, 0); }); } catch (e) { fail(e); } }
     const prevEl = h('div', { class: 'lblprev' }), listEl = h('div', { class: 'list' }), totEl = h('div', { class: 'muted small' });
     const save = () => { lblSave(c); paintPrev(); };
     const items = () => list.filter((p) => qty[p.id] > 0).map((p) => ({ p, n: qty[p.id] }));
@@ -68,6 +70,7 @@ page('labels', {
     const paintTwo = () => { twoEl.hidden = c.size !== '2up'; }; paintTwo();
     const fillStock = h('button', { class: 'btn', type: 'button', onclick: () => { list.forEach((p) => { if (Number(p.stock) > 0) qty[p.id] = Math.min(Math.round(Number(p.stock)), 500); }); paintList(); paintPrev(); } }, 'Use stock quantities'), clearAll = h('button', { class: 'btn', type: 'button', onclick: () => { Object.keys(qty).forEach((k) => { qty[k] = 0; }); paintList(); paintPrev(); } }, 'Clear');
     v.root.append(h('div', { class: 'grid', style: { gap: '14px', maxWidth: '860px' } },
+      fromDoc ? h('div', { class: 'banner info' }, 'Labels filled from bill ' + fromDoc + ': one label for every piece bought. Change the numbers below if you need.') : null,
       h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, '1. Design your label')), h('div', { class: 'card grid' },
         h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' } }, field('Label size', sizeSel), field('Design', designSel)), twoEl,
         h('div', { class: 'list' }, opt('Shop name', 'shop'), opt('Product name', 'name'), opt('Selling price', 'price'), opt('MRP', 'mrp'), opt('Barcode number under the bars', 'code')), field('Text size (6 to 14)', fs), prevEl)),

@@ -483,5 +483,15 @@ export default async function run({ browser, stack }) {
     assert(await page.evaluate(() => window.__pages) === 5 && await page.evaluate(() => window.__bars) === 5, 'pages ' + await page.evaluate(() => window.__pages));
     await c.close();
   });
+  await s.check('Print barcodes from a product page and from a purchase bill', async () => {
+    const { c, page } = await openPage('/scan.html', USERS.acctOwner, { w: 1280, h: 900 }); page.setDefaultTimeout(20000);
+    const pid = (await q("select id from acc_products where tenant_id=$1 and name='Bulk Pen One'", [tid]))[0].id;
+    await page.evaluate((id) => { location.hash = '#/product/' + id; }, pid); await page.locator('button', { hasText: 'Print barcodes' }).first().click();
+    await page.waitForSelector('text=Design your label'); assert(/1 labels for 1 products/.test(await page.locator('main').innerText()), 'product link');
+    const did = (await q("select d.id from acc_documents d where d.tenant_id=$1 and d.doc_type='bill' order by d.created_at desc limit 1", [tid]))[0].id;
+    await page.evaluate((id) => { location.hash = '#/labels?doc=' + id; }, did); await page.waitForSelector('text=Labels filled from bill');
+    assert(/15 labels for 2 products/.test(await page.locator('main').innerText()), 'bill qty: ' + await page.locator('main').innerText().then((x) => x.slice(0, 300)));
+    await c.close();
+  });
   s.done();
 }

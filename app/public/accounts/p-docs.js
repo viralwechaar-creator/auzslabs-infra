@@ -194,6 +194,7 @@ page('doc', {
     if (['invoice', 'credit_note', 'quotation', 'sales_order', 'delivery_challan'].includes(t) && ['posted', 'open', 'converted'].includes(d.status)) acts.push({ label: 'Share', icon: 'share', run: (b) => shareMenu(b, r) });
     const more = [];
     if (CONVERT[t] && d.status === 'open' && can(perm)) CONVERT[t].forEach((to) => more.push({ label: 'Convert to ' + DOC_LABEL[to].toLowerCase(), icon: 'refresh', run: () => convertDoc(d, to) }));
+    if (['bill', 'goods_receipt', 'purchase_order'].includes(t) && (r.lines || []).some((l) => l.product_id)) more.push({ label: 'Print barcodes for these items', icon: 'scan', run: () => go('labels?doc=' + d.id) });
     if (t === 'invoice' && d.status === 'posted' && can('acc_sales')) more.push({ label: 'Create credit note', icon: 'undo', run: () => go('new/credit_note?ref=' + d.id) });
     if (t === 'bill' && d.status === 'posted' && can('acc_purchase')) more.push({ label: 'Create debit note', icon: 'undo', run: () => go('new/debit_note?ref=' + d.id) });
     if (d.status === 'posted' && posting && can('acc_cancel') && can(perm) && !d.is_opening) acts.splice(Math.min(1, acts.length), 0, { label: 'Edit', icon: 'edit', primary: true, run: () => amendDoc(d) });

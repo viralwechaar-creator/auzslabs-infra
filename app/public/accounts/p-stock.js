@@ -6,7 +6,7 @@ page('products', {
   title: 'Products', icon: 'box', perm: 'acc_view',
   async render(v) {
     const writable = can('acc_inventory');
-    v.header({ title: 'Products and services', actions: [writable ? { label: 'New product', icon: 'plus', primary: true, run: () => productSheet(null, () => v.refresh()) } : null, writable ? { label: 'Categories and units', icon: 'tag', run: () => listsSheet(() => v.refresh()) } : null, can('acc_import') ? { label: 'Import', icon: 'upload', run: () => go('data?entity=products') } : null].filter(Boolean) });
+    v.header({ title: 'Products and services', actions: [{ label: 'Print barcodes', icon: 'scan', run: () => go('labels') }, writable ? { label: 'New product', icon: 'plus', primary: true, run: () => productSheet(null, () => v.refresh()) } : null, writable ? { label: 'Categories and units', icon: 'tag', run: () => listsSheet(() => v.refresh()) } : null, can('acc_import') ? { label: 'Import', icon: 'upload', run: () => go('data?entity=products') } : null].filter(Boolean) });
     const rows = (await products(true));
     let q = '', cat = v.q.get('cat') || '', low = v.q.get('low') === '1', type = '';
     const host = h('div'), bulk = h('div', { class: 'row sp hidden banner info' });
@@ -99,7 +99,7 @@ page('product', {
     const id = v.args[0];
     const p = (await products(true)).find((x) => x.id === id); if (!p) throw new Error('Product not found');
     const st = await api('acc_product_stock', { p_product: id });
-    v.header({ title: p.name, back: 'products', actions: [can('acc_inventory') ? { label: 'Edit', icon: 'edit', primary: true, run: () => productSheet(p, () => v.refresh()) } : null, can('acc_inventory') && !p.is_service ? { label: 'Adjust stock', icon: 'layers', run: () => stockAdjustSheet(p, () => v.refresh()) } : null, can('acc_inventory') && !p.is_service && S.warehouses.length > 1 ? { label: 'Transfer', icon: 'swap', run: () => stockTransferSheet(p, () => v.refresh()) } : null].filter(Boolean) });
+    v.header({ title: p.name, back: 'products', actions: [{ label: 'Print barcodes', icon: 'scan', run: () => go('labels?ids=' + p.id) }, can('acc_inventory') ? { label: 'Edit', icon: 'edit', primary: true, run: () => productSheet(p, () => v.refresh()) } : null, can('acc_inventory') && !p.is_service ? { label: 'Adjust stock', icon: 'layers', run: () => stockAdjustSheet(p, () => v.refresh()) } : null, can('acc_inventory') && !p.is_service && S.warehouses.length > 1 ? { label: 'Transfer', icon: 'swap', run: () => stockTransferSheet(p, () => v.refresh()) } : null].filter(Boolean) });
     const margin = Number(p.sale_price) && Number(p.avg_cost) ? Math.round((Number(p.sale_price) - Number(p.avg_cost)) / Number(p.sale_price) * 100) : null;
     v.root.append(h('div', { class: 'card grid', style: { gap: '6px' } }, h('div', { class: 'row sp wrap' }, h('div', null, h('div', { class: 'mono' }, p.sku), h('div', { class: 'small muted' }, [p.category, p.brand, p.hsn ? 'HSN/SAC ' + p.hsn : '', 'GST ' + p.tax_rate + '%'].filter(Boolean).join(' · '))), p.active ? null : badge('Inactive'))),
       h('div', { class: 'kpis' }, kpi('In stock', p.is_service || !p.track_stock ? 'Service' : qty(p.stock) + ' ' + p.unit, Number(p.reorder_level) > 0 ? 'Reorder at ' + qty(p.reorder_level) : ''), kpi('Average cost', p.is_service ? '–' : inr(p.avg_cost), p.is_service ? '' : 'Stock value ' + inr(p.stock_value, 0)), kpi('Sale price', inr(p.sale_price), margin != null ? margin + '% margin' : ''), kpi('Purchase price', inr(p.purchase_price), p.mrp && Number(p.mrp) ? 'MRP ' + inr(p.mrp) : '')));
