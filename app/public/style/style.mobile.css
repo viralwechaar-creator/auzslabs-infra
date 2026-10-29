@@ -1,11 +1,15 @@
 /* AUZsMob: compact (phones, under 600px) and medium (600-899px: tablet portrait, open foldables). Independent of payroll.desktop.css. */
 .shell{min-height:100dvh;padding-bottom:calc(54px + var(--safe-b))}
 .side{display:none}
-.topbar{position:sticky;top:0;z-index:30;display:grid;grid-template-columns:76px 1fr 76px;align-items:center;min-height:calc(48px + var(--safe-t));padding:var(--safe-t) 8px 0;background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:.5px solid transparent;transition:border-color .2s}
+/* flex, not a fixed-width grid: a page can pass several header actions (Stock alone has up to 6, plus the
+   bell and website icons header() always adds) -- a rigid 76px-wide .r track forced them to overflow outside
+   their own column and visually sit on top of the shop-name pill in .l. .r now takes the room .l doesn't need
+   and scrolls sideways instead of overlapping anything if it still has more icons than fit. */
+.topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:6px;min-height:calc(48px + var(--safe-t));padding:var(--safe-t) 8px 0;background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:.5px solid transparent;transition:border-color .2s}
 .topbar.scrolled{border-bottom-color:var(--sep)}
 .topbar .tt{font-size:17px;font-weight:600;text-align:center;opacity:0;transition:opacity .2s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .topbar.scrolled .tt{opacity:1}
-.topbar .l{justify-self:start;display:flex}.topbar .r{justify-self:end;display:flex;gap:2px}
+.topbar .l{flex:none;min-width:0;display:flex}.topbar .r{flex:1;min-width:0;display:flex;justify-content:flex-end;align-items:center;gap:2px;overflow-x:auto;scrollbar-width:none}.topbar .r::-webkit-scrollbar{display:none}
 .topbar .btn.plain{min-width:44px}
 .page{padding:0 16px 28px;display:grid;gap:22px;align-content:start}
 .large-title{font-size:34px;line-height:1.12;font-weight:700;letter-spacing:-.03em;padding:2px 0 0}
