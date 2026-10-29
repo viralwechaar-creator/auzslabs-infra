@@ -13,11 +13,11 @@ const NAV_LEDGER = [
   { group: 'Stock', items: ['products', 'stock'] },
   { group: 'Financial reports', items: ['analytics', 'reports', 'gst'] },
   { group: 'Accounts', items: ['books', 'banking', 'assets'] },
-  { group: 'Tools', items: ['data', 'messages', 'alerts', 'settings'] },
+  { group: 'Tools', items: ['bulk', 'data', 'messages', 'alerts', 'settings'] },
 ];
 const NAV = SCANAPP ? [
   { group: '', items: ['scan'] },
-  { group: 'Records', items: ['sales', 'products', 'stock', 'data'] },
+  { group: 'Records', items: ['sales', 'products', 'stock', 'bulk', 'data'] },
   { group: 'Settings', items: ['invoicelayout', 'alerts'] },
 ] : NAV_LEDGER;
 const TABS = SCANAPP ? ['scan', 'sales', 'products', 'stock'] : ['home', 'scan', 'purchases', 'sales'];

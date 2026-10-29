@@ -8,7 +8,7 @@ const EASY_NAV = [
   { group: '', items: ['scan', 'quick', 'home'] },
   { group: 'Records', items: ['sales', 'customers', 'receipts', 'products', 'stock'] },
   { group: 'Buying and books', items: ['purchases', 'suppliers', 'payments', 'expenses', 'reports', 'gst'] },
-  { group: 'Settings', items: ['data', 'invoicelayout', 'alerts'] },
+  { group: 'Settings', items: ['bulk', 'data', 'invoicelayout', 'alerts'] },
 ];
 const EASY_TABS = ['scan', 'quick', 'sales', 'home'];
 // "all ledger tools": the whole AUZsLedger menu plus Quick bill and the invoice layout page
