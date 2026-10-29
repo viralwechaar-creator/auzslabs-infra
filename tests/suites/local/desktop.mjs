@@ -54,6 +54,17 @@ export default async function run({ browser }) {
       assert(u.includes('# AUZslab settings') && new RegExp('^port = ' + pgPort + '$', 'm').test(u), 'settings not restored');
       L.ensureCluster(o); assert((fs.readFileSync(f, 'utf8').match(/# AUZslab settings/g) || []).length === 1, 'settings written twice');
     }, 'critical');
+    await s.check('A database left running on the wrong port (old cut-off setup) is restarted on the right one', async () => {
+      L.stopPg(o);
+      const f = path.join(dataDir, 'pgdata', 'postgresql.conf'); const keep = fs.readFileSync(f, 'utf8');
+      fs.writeFileSync(f, keep.replace(/^port = .*$/m, 'port = ' + (pgPort + 1)));
+      L.startPg({ ...o, port: pgPort + 1 });
+      assert(L.isRunning(o), 'should be running on the wrong port first');
+      fs.writeFileSync(f, keep);
+      L.startPg(o);
+      const net = require('node:net');
+      await new Promise((res, rej) => { const k = net.connect(pgPort, '127.0.0.1', () => { k.end(); res(); }); k.on('error', rej); });
+    }, 'critical');
     await s.check('A new database cluster is made, started and built from the migrations with the sample data removed', async () => {
       assert(L.ensureCluster(o) === false, 'cluster already made by the previous check, should not be remade');
       L.startPg(o);
