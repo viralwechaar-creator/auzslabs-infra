@@ -192,7 +192,7 @@ function navItem(id, label, ic) {
   return h('a', { href: '#/' + id, 'data-nav': id, class: 'nav-i', title: t(label) }, icon(ic, 20), h('span', { class: 'lbl-t' }, t(label)));
 }
 function pillNode() {
-  const n = pendingCount(), bad = failedOps().length, off = navigator.onLine === false || S.offlineData;
+  const n = pendingCount(), bad = failedOps().length, off = netDown() || S.offlineData;
   const label = bad ? bad + ' ' + t('need attention') : n ? n + ' ' + t('waiting to send') : off ? t('Offline') : t('Up to date');
   return h('span', { class: 'sync-pill' + (n || bad ? ' warn' : ''), role: 'button', tabindex: 0, 'aria-label': t('Waiting changes'), onclick: () => waitingSheet() }, (n || bad || off) ? icon('cloudOff', 14) : icon('cloudCheck', 14), ' ' + label);
 }
@@ -247,7 +247,7 @@ function moreSheet() {
 
 // While online, open every screen once out of sight so its answers are saved on the device and the whole app opens offline.
 async function warmScreens() {
-  if (navigator.onLine === false || window.__warming) return;
+  if (netDown() || window.__warming) return;
   const stamp = 'warm.' + scope(); if (Date.now() - Number(LS.get(stamp, 0)) < 6 * 36e5) return;
   window.__warming = true;
   try {

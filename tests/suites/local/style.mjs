@@ -408,10 +408,10 @@ export default async function run({ browser, stack }) {
     const pays = page.locator('.payl'); const n = await pays.count();
     let upiRow = null; for (let i = 0; i < n; i++) { if (/UPI/i.test(await pays.nth(i).locator('label').innerText())) upiRow = pays.nth(i); }
     await upiRow.locator('.btn.sm').click(); await page.waitForTimeout(300);
-    assert(await page.locator('.upiq .upiq-i').count() === 1, 'no QR image');
-    assert(/testshop@upi/.test(await page.locator('.upiq').innerText()), 'UPI id missing');
+    await page.locator('.upiq .btn', { hasText: /Show QR/ }).click(); await page.waitForSelector('.upiq-i', { timeout: 5000 });
+    assert(/testshop@upi/.test(await page.locator('.upiq-card').innerText()), 'UPI id missing');
     assert(await page.locator('.sheet-f .btn.fill').last().isDisabled(), 'Complete sale should wait for the confirmation');
-    await page.locator('.upiq input[type=checkbox]').check(); await page.waitForTimeout(200);
+    await page.locator('.upiq-card').locator('xpath=ancestor::*[contains(@class,"sheet")][1]').locator('.btn.fill', { hasText: /Payment received/ }).click(); await page.waitForTimeout(300);
     assert(!(await page.locator('.sheet-f .btn.fill').last().isDisabled()), 'still disabled after confirming');
     await s.shot(page, 'upi qr');
     await page.locator('.sheet-f .btn.fill').last().click(); await page.waitForSelector('.receipt', { timeout: 15000 });

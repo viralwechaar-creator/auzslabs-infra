@@ -3,6 +3,8 @@
    the offline-first sync engine (IndexedDB store `mob1` + an outbox, see sync.js). h() only ever sets
    textContent / attributes, never innerHTML, which is the XSS defence (icons are static strings). */
 'use strict';
+// An installed PC (Windows 7 especially) with no network card reports navigator.onLine = false even though the local server is on the same machine: there it is never "offline".
+function netDown() { return navigator.onLine === false && !/^(127\.0\.0\.1|localhost|\[::1\])$/.test(location.hostname); }
 const CFG = window.CFG || {};
 const sb = window.supabase.createClient(CFG.url, CFG.key);
 

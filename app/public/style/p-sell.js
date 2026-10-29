@@ -271,7 +271,7 @@ function paySheet(c, done) {
     // a changed price is only sent when it differs from the catalogue (the server refuses it for non-managers)
     p.lines.forEach((l, i) => { const vv = allVariants().find((x) => x.id === l.variantId); if (vv && Math.abs(vv.price - l.price) < .005) delete l.price; });
     if (BILL.lines.some((l, i) => p.lines[i].price != null) && !can('sty_manage')) { ok.disabled = false; return toast(t('Changing a price needs a manager'), { err: true }); }
-    if (navigator.onLine === false) p.offline = true, p.at = new Date().toISOString();
+    if (netDown()) p.offline = true, p.at = new Date().toISOString();
     try {
       const r = await sendOrQueue('sty_sell', { p });
       const snapshot = r.done ? r.data : provisional(p, c);
@@ -286,7 +286,7 @@ async function resolveTypedCustomer() {
   if (BILL.customer) return;
   const name = (BILL.custName || '').trim(), phone = (BILL.custPhone || '').trim();
   if (!name && !phone) return;
-  if (navigator.onLine === false) return;
+  if (netDown()) return;
   try { BILL.customer = await api('sty_save_customer', { p: { newId: uid(), name: name || phone, phone: phone || undefined } }); } catch { /* the bill can still go through as walk-in */ }
 }
 function provisional(p, c) {
