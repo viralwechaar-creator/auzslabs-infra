@@ -478,5 +478,14 @@ export default async function run({ browser, stack }) {
     assert(Number(cb.total) === 118, 'courier bill ' + cb.total);
     assert((await ok(owner, 'acc_integrity_check', {})).ok !== false, 'books balance');
   });
+  await s.check('Parties directory: every customer and supplier with GST details; opening + period = closing; matches the party list', async () => {
+    const dir = (await ok(owner, 'acc_parties_directory', { p: {} })).rows, list = (await ok(owner, 'acc_list_parties', { p: { limit: 5000 } })).rows;
+    assert(dir.length > 0, 'directory empty');
+    for (const r of dir) { const l = list.find((x) => x.id === r.id); if (l) assert(Math.abs(Number(l.balance) - Number(r.closing)) < 0.01, 'balance differs for ' + r.name + ': ' + l.balance + ' vs ' + r.closing); }
+    const fy = (await ok(owner, 'acc_context')).fys[0];
+    const yr = (await ok(owner, 'acc_parties_directory', { p: { from: fy.start_date, to: fy.end_date } })).rows;
+    for (const r of yr) assert(Math.abs(Number(r.opening) + Number(r.debit) - Number(r.credit) - Number(r.closing)) < 0.01, 'opening+period != closing for ' + r.name);
+    const g = (await ok(owner, 'acc_parties_directory', { p: { gst_only: true } })).rows; assert(g.every((r) => r.gstin), 'gst filter leaked an unregistered party');
+  });
   s.done();
 }

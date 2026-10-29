@@ -8,7 +8,7 @@ const SCANAPP = !!window.AUZ_SCAN, HOME = SCANAPP ? 'scan' : 'home';
 const BRAND = SCANAPP ? { name: 'Scan & bill', title: 'AUZsScan', logo: '/logo-scan.svg', icon: '/icon-scan.svg' } : { name: 'Accounting', title: 'AUZslab Accounting', logo: '/logo-accounts.svg', icon: '/icon-accounts.svg' };
 const NAV_LEDGER = [
   { group: '', items: ['home', 'scan', 'purchases'] },
-  { group: 'Sales', items: ['sales', 'customers', 'receipts', 'followups'] },
+  { group: 'Sales', items: ['sales', 'customers', 'parties', 'receipts', 'followups'] },
   { group: 'Buying', items: ['suppliers', 'payments', 'expenses', 'expreq'] },
   { group: 'Stock', items: ['products', 'stock'] },
   { group: 'Financial reports', items: ['analytics', 'reports', 'gst'] },

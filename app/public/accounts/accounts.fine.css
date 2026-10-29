@@ -140,3 +140,6 @@ html.ui-fine .side a{color:var(--label)}
   html.ui-fine .dock{bottom:calc(58px + var(--safe-b));padding:10px 0 14px;background:var(--bg);box-shadow:0 14px 0 var(--bg)}
   html.ui-fine .page{padding-bottom:calc(150px + var(--safe-b))}
 }
+
+/* the search icon sits inside the box: keep the typed text and placeholder clear of it (the New look's input padding was winning) */
+.search .input,html.ui-fine .search .input,html.ui-modern .search .input{padding-left:40px!important;padding-right:38px!important}
