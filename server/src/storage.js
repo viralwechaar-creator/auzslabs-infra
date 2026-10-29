@@ -31,6 +31,18 @@ export async function makeThumbs(file) {
   } catch { return false; }
 }
 
+// Every picture saved on the server is shrunk (at most 1600 px on the long side, JPEG quality 80). The browser already does this,
+// so this catches anything that bypassed it. A picture with see-through parts (PNG logo) and anything that would get bigger is kept as sent.
+export async function squeezeImage(buffer) {
+  try {
+    const sharp = (await import('sharp')).default;
+    const meta = await sharp(buffer).metadata();
+    if (meta.hasAlpha) return buffer;
+    const out = await resizeSlot(() => sharp(buffer).rotate().resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 80, mozjpeg: true }).toBuffer());
+    return out.length < buffer.length ? out : buffer;
+  } catch { return buffer; }
+}
+
 function safeSegment(s) {
   return String(s).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60) || 'x';
 }
@@ -78,7 +90,6 @@ export async function saveDocUpload({ tenantId, empId, buffer }) {
     const dir = path.join(DOC_ROOT, safeSegment(tenantId), safeSegment(empId));
     await fs.mkdir(dir, { recursive: true });
     await fs.writeFile(path.join(dir, filename), buffer);
-  makeThumbs(path.join(dir, filename)); // not awaited: the upload answers at once
   }
   return { path: `${safeSegment(tenantId)}/${safeSegment(empId)}/${filename}`, contentType: kind.type };
 }
@@ -160,7 +171,8 @@ export async function saveSiteUpload({ tenantId, uid, prefix, buffer }) {
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}.jpg`;
   const dir = path.join(UPLOAD_ROOT, 'site', safeSegment(slug), safeSegment(prefix));
   await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(path.join(dir, filename), buffer);
+  await fs.writeFile(path.join(dir, filename), await squeezeImage(buffer));
+  makeThumbs(path.join(dir, filename));
 
   const publicPath = `/uploads/site/${safeSegment(slug)}/${safeSegment(prefix)}/${filename}`;
   return { path: publicPath };
@@ -182,7 +194,7 @@ export async function saveCloudSyncUpload({ slug, buffer }) {
   const dir = path.join(UPLOAD_ROOT, 'cloud-sync', safeSegment(slug));
   await fs.mkdir(dir, { recursive: true });
   const filename = `${hash}.jpg`;
-  await fs.writeFile(path.join(dir, filename), buffer);
+  await fs.writeFile(path.join(dir, filename), await squeezeImage(buffer));
   return { path: `/uploads/cloud-sync/${safeSegment(slug)}/${filename}` };
 }
 
@@ -196,6 +208,6 @@ export async function savePlatformUpload({ prefix, buffer }) {
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}.jpg`;
   const dir = path.join(UPLOAD_ROOT, 'site', '_platform', safeSegment(prefix));
   await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(path.join(dir, filename), buffer);
+  await fs.writeFile(path.join(dir, filename), await squeezeImage(buffer));
   return { path: `/uploads/site/_platform/${safeSegment(prefix)}/${filename}` };
 }
