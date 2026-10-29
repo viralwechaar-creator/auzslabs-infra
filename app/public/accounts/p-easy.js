@@ -6,7 +6,7 @@
 // ---------- simple view (per device, per business). New businesses (under 30 days old) start in it; older ones keep the full menu. ----------
 const EASY_NAV = [
   { group: '', items: ['scan', 'quick', 'home'] },
-  { group: 'Records', items: ['sales', 'customers', 'receipts', 'products', 'stock'] },
+  { group: 'Records', items: ['sales', 'customers', 'receipts', 'products', 'stock', 'labels'] },
   { group: 'Buying and books', items: ['purchases', 'suppliers', 'payments', 'expenses', 'reports', 'gst'] },
   { group: 'Settings', items: ['bulk', 'data', 'invoicelayout', 'alerts'] },
 ];

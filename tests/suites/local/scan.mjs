@@ -473,5 +473,15 @@ export default async function run({ browser, stack }) {
     assert(d.length === 1 && d[0].n === 2, 'bill: ' + JSON.stringify(d));
     await c.close();
   });
+  await s.check('Print barcodes: design, quantities, preview and one print page per label', async () => {
+    const { c, page } = await openPage('/scan.html', USERS.acctOwner, { w: 1280, h: 900 }); page.setDefaultTimeout(20000);
+    await page.evaluate(() => { window.print = () => { window.__pages = document.querySelectorAll('.lblsheet .lblpage, .lblsheet .lblgrid').length; window.__bars = document.querySelectorAll('.lblsheet svg').length; }; location.hash = '#/labels'; });
+    await page.waitForSelector('text=Design your label'); await page.waitForSelector('.lblprev svg');
+    const first = page.locator('.list .li input[inputmode=numeric]').first(); await first.fill('3'); await page.locator('.list .li input[inputmode=numeric]').nth(1).fill('2');
+    assert(/5 labels for 2 products/.test(await page.locator('main').innerText()), 'total');
+    await page.locator('button', { hasText: 'Print labels' }).click(); await page.waitForTimeout(300);
+    assert(await page.evaluate(() => window.__pages) === 5 && await page.evaluate(() => window.__bars) === 5, 'pages ' + await page.evaluate(() => window.__pages));
+    await c.close();
+  });
   s.done();
 }

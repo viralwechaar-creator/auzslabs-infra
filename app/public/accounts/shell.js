@@ -10,14 +10,14 @@ const NAV_LEDGER = [
   { group: '', items: ['home', 'scan', 'purchases'] },
   { group: 'Sales', items: ['sales', 'customers', 'parties', 'receipts', 'followups'] },
   { group: 'Buying', items: ['suppliers', 'payments', 'expenses', 'expreq'] },
-  { group: 'Stock', items: ['products', 'stock'] },
+  { group: 'Stock', items: ['products', 'stock', 'labels'] },
   { group: 'Financial reports', items: ['analytics', 'reports', 'gst'] },
   { group: 'Accounts', items: ['books', 'banking', 'assets'] },
   { group: 'Tools', items: ['bulk', 'data', 'messages', 'alerts', 'settings'] },
 ];
 const NAV = SCANAPP ? [
   { group: '', items: ['scan'] },
-  { group: 'Records', items: ['sales', 'products', 'stock', 'bulk', 'data'] },
+  { group: 'Records', items: ['sales', 'products', 'stock', 'labels', 'bulk', 'data'] },
   { group: 'Settings', items: ['invoicelayout', 'alerts'] },
 ] : NAV_LEDGER;
 const TABS = SCANAPP ? ['scan', 'sales', 'products', 'stock'] : ['home', 'scan', 'purchases', 'sales'];
@@ -237,12 +237,12 @@ function shortcutsSheet() {
 }
 let pendingN = 0;
 let pendingG = 0;
-const GO_KEYS = { h: ['home', 'Overview'], s: ['sales', 'Sales'], p: ['purchases', 'Purchases'], c: ['customers', 'Customers'], u: ['suppliers', 'Suppliers'], a: ['parties', 'All parties'], r: ['receipts', 'Money received'], y: ['payments', 'Money paid'], e: ['expenses', 'Expenses'], t: ['products', 'Products'], k: ['stock', 'Stock'], g: ['gst', 'GST'], b: ['banking', 'Bank and cash'], x: ['reports', 'Reports'], d: ['data', 'Import and export'], i: ['bulk', 'Bulk import'], n: ['alerts', 'Notifications'], o: ['settings', 'Settings'] };
+const GO_KEYS = { h: ['home', 'Overview'], s: ['sales', 'Sales'], p: ['purchases', 'Purchases'], c: ['customers', 'Customers'], u: ['suppliers', 'Suppliers'], a: ['parties', 'All parties'], r: ['receipts', 'Money received'], y: ['payments', 'Money paid'], e: ['expenses', 'Expenses'], t: ['products', 'Products'], k: ['stock', 'Stock'], g: ['gst', 'GST'], b: ['banking', 'Bank and cash'], x: ['reports', 'Reports'], d: ['data', 'Import and export'], i: ['bulk', 'Bulk import'], n: ['alerts', 'Notifications'], l: ['labels', 'Print barcodes'], o: ['settings', 'Settings'] };
 function shortcutsSheet() {
   const row = (k, t) => h('div', { class: 'li' }, h('div', { class: 'grow' }, h('div', { class: 't' }, t)), h('span', { class: 'badge' }, k));
   const nm = [['N then I', 'New invoice'], ['N then B', 'New purchase bill'], ['N then E', 'New expense'], ['N then Q', 'New quotation'], ['N then R', 'Record money received'], ['N then P', 'Record money paid'], ['N then C', 'New customer'], ['N then S', 'New supplier'], ['N then T', 'New product']];
   sheet({ title: 'Keyboard shortcuts', closeLabel: 'Done', body: h('div', { class: 'grid' },
-    h('div', { class: 'list' }, row('/ or Ctrl+K', 'Search anything and jump to it'), row('F', 'Choose the financial year'), row('?', 'Show this list')),
+    h('div', { class: 'list' }, row('/ or Ctrl+K', 'Search anything and jump to it'), row('F', 'Choose the financial year'), row('?', 'Show this list'), row('Enter', 'In a bill line: next box'), row('Alt+N', 'In a bill: add a line'), row('Ctrl+S', 'In a bill: save draft'), row('Ctrl+Enter', 'In a bill: post')),
     h('h3', null, 'Create'), h('div', { class: 'list' }, nm.map((x) => row(x[0], x[1]))),
     h('h3', null, 'Go to (press G, then a letter)'), h('div', { class: 'list' }, Object.entries(GO_KEYS).map(([k, v]) => row('G then ' + k.toUpperCase(), v[1]))))});
 }

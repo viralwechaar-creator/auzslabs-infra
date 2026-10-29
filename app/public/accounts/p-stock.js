@@ -32,6 +32,7 @@ page('products', {
         h('div', { class: 'row wrap', style: { gap: '8px' } },
           h('button', { class: 'btn sm', onclick: () => { cur.list.forEach((p) => s.add(p.id)); cur.dv._repaint(); barUpdate(s); } }, 'Select all (' + cur.list.length + ')'),
           s.size ? h('button', { class: 'btn sm', onclick: () => { s.clear(); cur.dv._repaint(); barUpdate(s); } }, 'Clear') : null,
+          s.size ? h('button', { class: 'btn sm', onclick: () => go('labels?ids=' + [...s].join(',')) }, 'Print barcodes') : null,
           s.size ? h('button', { class: 'btn sm fill', onclick: () => bulkProducts([...s], () => v.refresh()) }, 'Edit selected') : null,
           s.size ? h('button', { class: 'btn sm', style: { color: 'var(--red)' }, onclick: () => deleteProducts([...s], () => v.refresh()) }, 'Delete selected') : null));
     };

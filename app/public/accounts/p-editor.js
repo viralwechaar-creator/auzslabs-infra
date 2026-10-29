@@ -277,7 +277,7 @@ async function docEditor(v, type, existing) {
     const lf = (label, ctl, cls) => h('div', { class: 'lf ' + (cls || '') }, h('label', { class: 'lf-l' }, label), ctl);
     const amt = h('div', { class: 'lf r amt' }, h('label', { class: 'lf-l' }, 'Amount'), h('div', { class: 'money num', style: { fontWeight: 600, padding: '8px 0' } }, inr(0)));
     amountCells[i] = $('.money', amt);
-    const num = (key, ph, step) => h('input', { class: 'input', type: 'text', inputmode: 'decimal', value: l[key], placeholder: ph || '', 'aria-label': key, oninput: (e) => { l[key] = e.target.value; recalc(); }, onkeydown: (e) => { if (e.key === 'Enter' && key === 'tax_rate' && i === D.lines.length - 1) { e.preventDefault(); D.lines.push(blankLine(type)); drawLines(true); } } });
+    const num = (key, ph, step) => h('input', { class: 'input', type: 'text', inputmode: 'decimal', value: l[key], placeholder: ph || '', 'aria-label': key, oninput: (e) => { l[key] = e.target.value; recalc(); }, onkeydown: (e) => { if (e.key === 'Enter' && key === 'tax_rate' && i === D.lines.length - 1) { e.preventDefault(); D.lines.push(blankLine(type)); drawLines(true); } else if (e.key === 'Enter' && ['qty', 'rate', 'disc_pct'].includes(key)) { e.preventDefault(); const nx = { qty: 'rate', rate: 'disc_pct', disc_pct: 'GST rate' }[key], ln = e.target.closest('.line'), t = ln && (ln.querySelector('[aria-label="' + nx + '"]')); if (t) { t.focus(); t.select && t.select(); } else if (i === D.lines.length - 1) { D.lines.push(blankLine(type)); drawLines(true); } } } });
     const prod = productInput(l, sales, (p) => {
       l.product_id = p.id; l.description = p.name; l.hsn = p.hsn || ''; l.unit = p.unit || ''; l.rate = String(sales ? p.sale_price : p.purchase_price); l.tax_rate = String(p.tax_rate); if (p.tax_inclusive) D.price_includes_tax = true;
       drawLines(); recalc(); setTimeout(() => { const qi = $$('.line')[i] && $('[aria-label=qty]', $$('.line')[i]); qi && qi.select(); }, 30);
@@ -478,7 +478,7 @@ async function docEditor(v, type, existing) {
   const repBtn = posting && (type === 'invoice' || type === 'bill' || isExpense) ? h('button', { class: 'btn', type: 'button', onclick: saveSchedule, 'aria-label': 'Repeat on a schedule' }, icon('repeat', 18), h('span', { class: 'desk-only' }, 'Repeat…')) : null;
   const btns = [draftBtn, postBtn, repBtn].filter(Boolean);
   root.append(h('div', { class: 'dock' }, recurring ? h('button', { class: 'btn fill', type: 'button', onclick: saveSchedule }, 'Save schedule…') : [repBtn, draftBtn, postBtn]));
-  const keys = (e) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') { e.preventDefault(); save(false); } else if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && posting) { e.preventDefault(); save(true); } };
+  const keys = (e) => { if (e.altKey && e.key.toLowerCase() === 'n' && !isExpense) { e.preventDefault(); D.lines.push(blankLine(type)); drawLines(true); } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') { e.preventDefault(); save(false); } else if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && posting) { e.preventDefault(); save(true); } };
   document.addEventListener('keydown', keys); v.onLeave(() => document.removeEventListener('keydown', keys));
   const bu = (e) => { if (dirty) { e.preventDefault(); e.returnValue = ''; } }; window.addEventListener('beforeunload', bu); v.onLeave(() => window.removeEventListener('beforeunload', bu));
   recalc();
