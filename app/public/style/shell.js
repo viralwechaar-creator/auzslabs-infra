@@ -227,6 +227,10 @@ function moreSheet() {
   const tabs = tabsFor(); const rest = navList().filter(([id]) => !tabs.includes(id));
   const brs = S.ctx.branches || [];
   const body = h('div', { class: 'grid' },
+    h('div', { class: 'list' },
+      liRow({ icon: 'plus', title: t('Customer request'), chevron: true, onclick: () => { s.close(); requestSheet({}); } }),
+      liRow({ icon: 'cash', title: t('Shift'), chevron: true, onclick: () => { s.close(); shiftSheet(); } }),
+      capOff('online_store') ? null : liRow({ icon: 'globe', title: t('Open my website'), chevron: true, onclick: () => { location.href = '/store.html'; } })),
     rest.length ? section(t('More'), h('div', { class: 'list' }, rest.map(([id, l, ic]) => liRow({ icon: ic, title: t(l), chevron: true, onclick: () => { s.close(); go(id); } })))) : null,
     h('div', { class: 'list' },
       brs.length > 1 ? liRow({ icon: 'building', tone: 'gray', title: t('Branches'), sub: branchName(), chevron: true, onclick: (e) => { s.close(); setTimeout(() => pickBranch($('.topbar .tt')), 50); } }) : null,
@@ -292,10 +296,11 @@ async function refreshNotes() {
 }
 function noteTarget(n) { return n.type === 'style_request' ? 'requests' : n.type === 'style_soldout' ? 'stock' : 'store'; }
 function notesSheet() {
+  // Only what needs attention: unread notices, one line each. Read ones are gone from the list.
   const unread = NOTES.filter((n) => !n.read);
-  const rows = NOTES.length ? NOTES.slice(0, 40).map((n) => liRow({ icon: n.type === 'store_order' ? 'globe' : n.type === 'store_return' ? 'swap' : n.type === 'store_paid' ? 'cash' : 'bell', title: n.title, sub: (n.body ? n.body + ' · ' : '') + fmtDT(n.created_at), badge: n.read ? null : h('span', { class: 'dot', style: { background: 'var(--tint)', width: '8px', height: '8px', borderRadius: '50%', display: 'inline-block' } }), chevron: true,
-    onclick: async () => { s.close(); if (!n.read) { n.read = true; try { await sb.from('notifications').update({ read: true }).eq('id', n.id); } catch {} } if (noteTarget(n) === 'store') OST.tab = 'orders'; go(noteTarget(n)); refreshNotes(); } })) : [empty('bell', t('No notifications'), t('Website orders, returns and requests show here.'))];
-  const s = sheet({ title: t('Notifications'), closeLabel: t('Done'), body: h('div', { class: 'grid' }, unread.length ? h('button', { class: 'btn sm', type: 'button', onclick: async () => { for (const n of unread) { n.read = true; try { await sb.from('notifications').update({ read: true }).eq('id', n.id); } catch {} } s.close(); refreshNotes(); } }, t('Mark all as read')) : null, h('div', { class: 'list' }, rows)) });
+  const open = async (n, s) => { s.close(); if (!n.read) { n.read = true; try { await sb.from('notifications').update({ read: true }).eq('id', n.id); } catch {} } if (noteTarget(n) === 'store') OST.tab = 'orders'; go(noteTarget(n)); refreshNotes(); };
+  const rows = unread.length ? unread.slice(0, 20).map((n) => liRow({ icon: n.type === 'store_order' ? 'globe' : n.type === 'store_return' ? 'swap' : n.type === 'store_paid' ? 'cash' : 'bell', title: n.title, chevron: true, onclick: () => open(n, s) })) : [empty('bell', t('All caught up'), t('Nothing needs your attention.'))];
+  const s = sheet({ title: t('Notifications'), closeLabel: t('Done'), body: h('div', { class: 'grid' }, unread.length > 1 ? h('button', { class: 'btn sm', type: 'button', onclick: async () => { for (const n of unread) { n.read = true; try { await sb.from('notifications').update({ read: true }).eq('id', n.id); } catch {} } s.close(); refreshNotes(); } }, t('Clear all')) : null, h('div', { class: 'list' }, rows)) });
 }
 setTimeout(refreshNotes, 1500); setInterval(refreshNotes, 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshNotes(); });
@@ -309,7 +314,7 @@ function header(o, root) {
   const desk = isDesk();
   (o.actions || []).filter(Boolean).forEach((a) => r.append(h('button', { class: 'btn ' + (desk ? (a.primary ? 'fill' : '') : 'plain') + (!desk ? ' icon' : ''), type: 'button', 'aria-label': a.label, title: a.label, onclick: a.run }, a.icon ? icon(a.icon, 20) : null, desk ? a.label : null)));
   r.append(bellBtn());
-  r.append(capOff('online_store') ? null : h('a', { class: 'btn plain icon', href: '/store.html', 'aria-label': 'Open my website', title: 'Open my website' }, icon('globe', 20)));
+  r.append(capOff('online_store') || !desk ? null : h('a', { class: 'btn plain icon', href: '/store.html', 'aria-label': 'Open my website', title: 'Open my website' }, icon('globe', 20)));
   if (root) { const old = root.querySelector(':scope > .large-title'); if (old) old.remove(); }
   if (!desk && root && !o.noLarge) root.prepend(h('h1', { class: 'large-title' }, o.title));
 }

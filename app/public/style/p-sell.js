@@ -25,7 +25,7 @@ function beep(ok) {
 page('sell', {
   title: 'Sell', perm: 'sty_sell', pos: true,
   async render(v) {
-    v.header({ title: t('Sell'), noLarge: true, actions: [{ label: t('Customer request'), icon: 'plus', run: () => requestSheet({ description: UI.q || '' }) }, { label: t('Held bills'), icon: 'clock', run: heldSheet }, { label: t('Shift'), icon: 'cash', run: shiftSheet }] });
+    v.header({ title: t('Sell'), noLarge: true, actions: [{ label: t('Held bills'), icon: 'clock', run: heldSheet }] });
     const root = v.root; root.classList.add('sellpage');
     clear(root).append(h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '40px auto' } }));
     try { await loadCatalog(); } catch (e) { return clear(root).append(empty('cloudOff', t('Could not load the catalogue'), e.message, h('button', { class: 'btn fill', onclick: () => v.refresh() }, t('Try again')))); }
