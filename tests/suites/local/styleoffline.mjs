@@ -62,6 +62,29 @@ export default async function run({ browser, stack }) {
     await page.locator('.sync-pill').first().click(); await page.waitForSelector('.sheet');
     const txt = await page.locator('.sheet').innerText(); assert(/Waiting changes/i.test(txt) && /Style saved/i.test(txt) && /Stock bought/i.test(txt), txt.slice(0, 300));
   });
+  await s.check('Offline: a bill, a held bill and a cancel show on screen at once, and the waiting changes survive the browser losing its storage', async () => {
+    const vM = (Object.values(ids.variantIds))[0];
+    const out = await page.evaluate(async (vM) => {
+      const before = getQ().map((e) => e.id);
+      const saleId = uid(), holdId = uid();
+      await api('sty_sell', { p: { id: saleId, branchId: S.branch, offline: true, payments: [{ mode: 'cash', amount: 500 }], lines: [{ variantId: vM, qty: 1 }] } });
+      await api('sty_hold_save', { p: { id: holdId, branchId: S.branch, label: 'Trial room 9', lines: [{ variantId: vM, qty: 1 }] } });
+      const bills = await api('sty_list_sales', { p: { from: '', to: '', limit: 200 } });
+      const held = await api('sty_hold_list');
+      const mine = bills.find((b) => b.id === saleId);
+      // the browser loses its small storage: the copy in IndexedDB brings the waiting changes back
+      await new Promise((r) => setTimeout(r, 400));
+      const n = getQ().length; localStorage.removeItem('sty.' + qKey()); MIRROR.q = null; MIRROR.key = null;
+      await restoreQueue();
+      const added = getQ().filter((e) => !before.includes(e.id)).map((e) => e.id);
+      // leave the queue as it was for the checks that follow
+      setQ(getQ().filter((e) => before.includes(e.id)));
+      return { mine, held: held.some((h) => h.id === holdId && h.label === 'Trial room 9'), n, after: added.length, first: bills[0] && bills[0].id === saleId };
+    }, vM);
+    assert(out.mine && out.mine.waiting && out.mine.total === 500 && out.mine.status === 'paid' && out.first, JSON.stringify(out.mine));
+    assert(out.held, 'the held bill is not in the Held list');
+    assert(out.after === 2, 'the waiting changes were not restored: ' + out.after);
+  }, 'critical');
   await s.check('A change the server will refuse is kept, with the reason, instead of being lost', async () => {
     const vM = (Object.values(ids.variantIds))[0];
     await page.evaluate(async (v) => { await api('sty_adjust', { p: { branchId: S.branch, variantId: v, qty: 500, mode: 'remove', note: 'too many' } }); }, vM);
